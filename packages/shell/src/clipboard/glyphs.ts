@@ -1,6 +1,6 @@
 /**
  * The clipboard's glyphs, in the style of Dashi's command glyphs
- * (launcher/command-glyphs.ts: 16 × 16, 1.4 strokes, round ends), drawn in
+ * (launcher/lib/command-glyphs.ts: 16 × 16, 1.4 strokes, round ends), drawn in
  * ink on a neutral tile: a clipboard (copied text, the history's chip), a
  * page of files, and a snippet's brackets.
  */

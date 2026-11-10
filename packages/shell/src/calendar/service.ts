@@ -6,7 +6,7 @@
  */
 
 import { launch } from "../apps.ts";
-import type { NotificationStore } from "../notifications/store.ts";
+import type { NotificationStore } from "../notifications/index.ts";
 import { type App, FIRST_PARTY, firstPartyApp } from "../shared/apps/index.ts";
 import type { Day } from "../shared/calendar/dates.ts";
 import { openInRunning, socketPath } from "../shared/calendar/instance.ts";

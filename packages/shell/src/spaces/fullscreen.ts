@@ -29,9 +29,9 @@
  */
 
 import type { Compositor, CompositorEvent, CompositorWindow, Placing } from "../compositor.ts";
-import type { SpacesController } from "./controller.ts";
+import type { SpacesController } from "./lib/controller.ts";
+import { belongsTo, insertionPoint, nearestDesktop, originOf, slotOf } from "./lib/slots.ts";
 import { MAX_SPACES } from "./model.ts";
-import { belongsTo, insertionPoint, nearestDesktop, originOf, slotOf } from "./slots.ts";
 
 /** A slide takes 250 ms (comp/src/wm/spaces.rs); a Desktop left is removed at the latest this long after. */
 const SLIDE_WAIT_MS = 1000;

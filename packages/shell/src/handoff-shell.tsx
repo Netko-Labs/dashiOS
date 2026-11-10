@@ -2,7 +2,7 @@
  * Agents from the launcher, wired to the shell (boot/agents.ts starts it): the
  * service (agents/handoff/service.ts), its questions in the agents' panel
  * (agents/handoff/questions.ts), the panel itself (agents-panel.tsx), the
- * notifications, the launcher's side (launcher/agents/handoff-rows.ts), and
+ * notifications, the launcher's side (launcher/handoff-rows.ts), and
  * the context chips' source: the window in front and the selection when
  * the launcher opens.
  */
@@ -29,10 +29,9 @@ import {
   type TaskContext,
 } from "./agents/index.ts";
 import { AgentsPanel, type PanelActions } from "./agents-panel.tsx";
-import type { HandoffSnapshot, LauncherHandoff } from "./launcher/agents/handoff-rows.ts";
-import type { Store } from "./launcher/host.ts";
+import type { HandoffSnapshot, LauncherHandoff, Store } from "./launcher/index.ts";
 import type { MenuController } from "./menus/index.ts";
-import { type NotificationStore, SHELL_SENDER } from "./notifications/store.ts";
+import { type NotificationStore, SHELL_SENDER } from "./notifications/index.ts";
 
 /** The popover's layer: a yes in the panel counts only if the person pressed it there (agents/person.ts). */
 export const PANEL_LAYER = "dashi.popover";

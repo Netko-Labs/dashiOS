@@ -8,18 +8,18 @@
  * screen's side (edge.ts, from the compositor's `edge-hold`).
  */
 
-import { placedOutputs } from "../arrange.ts";
+import { placedOutputs } from "../arrange/index.ts";
 import type { Compositor, CompositorEvent, CompositorWindow } from "../compositor.ts";
 import type { Output } from "../layout.ts";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 import type { OverviewExtras } from "../overview/index.ts";
-import { SpacesController } from "./controller.ts";
-import { edgeHoldTarget } from "./edge.ts";
-import { type Rect, ROW, rowFrame, rowLayout, rowTarget } from "./model.ts";
-import type { SpaceNames } from "./names.ts";
-import { SpacesRow } from "./row.tsx";
-import { lifted, SHELF_HEIGHT, shelfLayout, shelfTarget } from "./shelf.ts";
-import { RowViewStore } from "./view.ts";
+import { SpacesController } from "./lib/controller.ts";
+import { edgeHoldTarget } from "./lib/edge.ts";
+import { SpacesRow } from "./lib/row.tsx";
+import { type Rect, ROW, rowFrame, rowLayout, rowTarget } from "./lib/row-layout.ts";
+import { lifted, SHELF_HEIGHT, shelfLayout, shelfTarget } from "./lib/shelf.ts";
+import { RowViewStore } from "./lib/view.ts";
+import type { SpaceNames } from "./types.ts";
 
 /** The row's surface namespace (its input region is limited to what shows). */
 const NAMESPACE = "dashi.spaces";

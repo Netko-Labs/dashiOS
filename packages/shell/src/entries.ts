@@ -25,8 +25,6 @@ import {
 import type { Localized } from "./shared/locale/messages.ts";
 import { type AppCatalog, catalogFrom } from "./shared/processes/index.ts";
 
-export { calculate } from "./launcher-math.ts";
-
 export interface Entry extends App {
   /** Other words people search for ("browser" for Firefox). */
   keywords: string[];
@@ -65,7 +63,7 @@ export function pinnedKeywords(app: Pick<App, "id" | "exec">): string[] {
  * How the shell's own apps are found: System Settings by the words people use
  * for settings. That "settings" means System Settings above anything else
  * named so, and that the Setup Assistant answers to "setup", "welcome" and
- * "first run" only, are the ranking's intents (launcher/ranking/intents.ts).
+ * "first run" only, are the ranking's intents (launcher/ranking/lib/intents.ts).
  */
 const SHELL_APP_WORDS: Readonly<Record<string, Pick<Entry, "keywords" | "detail">>> = {
   [SETTINGS_APP_ID]: {

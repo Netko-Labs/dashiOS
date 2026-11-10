@@ -5,7 +5,7 @@
  * Control when it ends. Pure: it says what to do, gestures.ts does it.
  */
 
-import type { SpacesState } from "./model.ts";
+import type { SpacesState, SwipeStep } from "./types.ts";
 
 /** How far (logical pixels, summed) a swipe must travel to count. */
 export const SWIPE_DISTANCE = 60;
@@ -25,17 +25,6 @@ export const AXIS_LOCK = 12;
 export const SPACE_SWIPE = 360;
 /** Let go past this much of the way, the switch completes; short of it, it goes back. */
 export const COMMIT_AT = 0.3;
-
-export type SwipeStep =
-  | { kind: "none" }
-  /** Mission Control opens (up) or closes (down). */
-  | { kind: "overview"; open: boolean }
-  /** Hold the switch to `target` this far along. */
-  | { kind: "space-hold"; target: number; progress: number }
-  /** Let the switch to `target` finish. */
-  | { kind: "space-finish"; target: number }
-  /** Go back to `origin` from wherever the switch got to. */
-  | { kind: "space-back"; origin: number };
 
 const NONE: SwipeStep = { kind: "none" };
 

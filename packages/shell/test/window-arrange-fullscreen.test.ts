@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { Arranger } from "../src/arrange.ts";
+import { Arranger } from "../src/arrange/arrange.ts";
 import { tileFrame } from "../src/layout.ts";
 import { settle } from "./support/time.ts";
 import { fake, files, OWN, rect, SCREEN, started, USABLE } from "./support/window-arrange.ts";

@@ -14,7 +14,7 @@ import { controlFlags } from "../control-center/index.ts";
 import type { DockPrefs } from "../dock/index.ts";
 import { type FileManagerService, filesLaunch, serveFileManager } from "../file-manager.ts";
 import { startNightShift } from "../night-shift.ts";
-import { type Notifications, startNotifications } from "../notifications/service.ts";
+import { type Notifications, startNotifications } from "../notifications/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import type { RegistryStores } from "../settings-app/registry/index.ts";
 import type { FlagsStore } from "../shared/control-center/flags.ts";

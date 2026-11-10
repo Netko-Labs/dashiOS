@@ -7,7 +7,7 @@
 
 import { spawnShellHost } from "../shared/metal/host.ts";
 import { mayServeNotifications } from "../system/stand-in.ts";
-import { serveNotifications } from "./server.ts";
+import { serveNotifications } from "./lib/server.ts";
 import { BannerStack } from "./stack.tsx";
 import { NotificationStore } from "./store.ts";
 

@@ -4,16 +4,16 @@
  * sends it a rectangle per window (plan.ts); a click on a window focuses it
  * and leaves, a press on the background, Esc, or ⌃↑ again just leaves, and
  * windows opening or closing meanwhile send a fresh layout. The Spaces row
- * (spaces/row.tsx) sits at the top: ⌃← ⌃→ and ⌃1…⌃9 change Space without
+ * (spaces/lib/row.tsx) sits at the top: ⌃← ⌃→ and ⌃1…⌃9 change Space without
  * leaving, and a window dragged onto a Space moves there (`extras`). Anything else the
  * person does (a shortcut, the launcher) leaves first, so it never acts under
  * a dimmed desktop. The hardware keys do not: volume is not a window action.
  */
 
-import { placedOutputs } from "../arrange.ts";
+import { placedOutputs } from "../arrange/index.ts";
 import type { Compositor, CompositorEvent } from "../compositor.ts";
 import { HARDWARE_BINDINGS } from "../system/keys.ts";
-import { planOverview } from "./plan.ts";
+import { planOverview } from "./lib/plan.ts";
 
 /** What the controller asks of the compositor. */
 export type OverviewCompositor = Pick<Compositor, "overview" | "focus" | "outputs" | "windows" | "on">;

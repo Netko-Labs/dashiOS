@@ -22,7 +22,7 @@ import type { ModelCall, PlanTool } from "./answerer.ts";
  * A plan longer than this is cut: the rest is not run. Nine 40 px steps,
  * their head and a line of the model's words fit the launcher's 600 px
  * surface under its field, so every step that runs is on screen (the plan's
- * rows keep text size 1's measures, launcher/agents/plan-view.tsx).
+ * rows keep text size 1's measures, launcher/lib/agents/plan-view.tsx).
  */
 export const MAX_STEPS = 9;
 

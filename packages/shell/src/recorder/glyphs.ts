@@ -1,12 +1,12 @@
 /**
- * The ⇧❖5 toolbar's glyphs (recorder/toolbar.tsx), in the style of Dashi's
+ * The ⇧❖5 toolbar's glyphs (recorder/lib/toolbar.tsx), in the style of Dashi's
  * command glyphs (16 × 16, round ends): the screen, the front window and an
  * area to capture, the two ways to record, the microphone, and close. The
  * launcher's Screenshot of the Screen and Screenshot of an Area rows wear
- * the screen's and the area's (launcher/command-glyphs.ts).
+ * the screen's and the area's (launcher/lib/command-glyphs.ts).
  */
 
-import type { CaptureMode } from "./toolbar.tsx";
+import type { CaptureMode } from "./types.ts";
 
 const svg = (body: string): string => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">${body}</svg>`;
 const line = (d: string, width = 1.4): string =>

@@ -5,7 +5,7 @@
  */
 
 import { homedir, userInfo } from "node:os";
-import { clean } from "../../notifications/text.ts";
+import { clean } from "../../notifications/index.ts";
 import { type AgentPolicy, listFolder as list, openForAgent, planTrash, searchFor, trashForAgent } from "../../shared/files/agent.ts";
 import { systemMimeIndex } from "../../shared/files/mime.ts";
 import { OPEN_TIMEOUT_MS } from "../../shared/files/open.ts";

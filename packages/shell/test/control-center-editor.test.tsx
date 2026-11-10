@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { type NativeRoot, type NativeTransport, render, View } from "@mirinjs/metal";
-import { ControlGrid, REMOVE_MARK, removeMarkAt } from "../src/control-center/grid.tsx";
 import { pack } from "../src/control-center/layout.ts";
+import { ControlGrid, REMOVE_MARK, removeMarkAt } from "../src/control-center/lib/grid.tsx";
 import { settle } from "./support/time.ts";
 
 // The editor's grid (the panel's edit mode and Settings' editor): a tile's "−" is drawn over everything in the grid.

@@ -11,8 +11,8 @@ import { useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import type { Rect } from "../layout.ts";
-import type { SwitcherApp, SwitcherState } from "./controller.ts";
 import { ICON, switcherLayout } from "./layout.ts";
+import type { SwitcherApp, SwitcherState } from "./types.ts";
 
 /** The current state, for the open panel to re-render from. */
 export class SwitcherStore {

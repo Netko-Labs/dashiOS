@@ -27,18 +27,15 @@
  */
 
 import { useSyncExternalStore } from "react";
-import { markClosed, recordInHistory } from "./history.ts";
-import { freeId, type Live } from "./live.ts";
-import { displayTime, HOVER_GRACE_MS, type Scheduler, timeoutScheduler } from "./timing.ts";
+import { markClosed, recordInHistory } from "./lib/history.ts";
+import { freeId, type Live } from "./lib/live.ts";
+import { displayTime, HOVER_GRACE_MS, type Scheduler, timeoutScheduler } from "./lib/timing.ts";
 import { CloseReason, type HistoryEntry, type Notification, type NotifyInput, type StoreEvent, type StoreSnapshot } from "./types.ts";
 
 export const MAX_BANNERS = 3;
 /** The `sender` of a notification the shell posts itself (no app on the bus to ask): a click in the center always runs its action. */
 export const SHELL_SENDER = "dashi:shell";
 const MAX_LIVE = 64;
-
-export { MAX_HISTORY } from "./history.ts";
-export { DEFAULT_TIMEOUT_MS, displayTime, HOVER_GRACE_MS, type Scheduler } from "./timing.ts";
 
 export interface StoreOptions {
   schedule?: Scheduler;

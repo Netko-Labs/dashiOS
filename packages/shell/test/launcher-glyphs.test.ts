@@ -2,10 +2,10 @@ import { expect, test } from "bun:test";
 import { commandActions } from "../src/actions/lib/sources/commands.ts";
 import { arrangeActions } from "../src/actions/lib/sources/windows.ts";
 import { TOOL_ACTIONS } from "../src/agents/index.ts";
-import { clipboardActions } from "../src/clipboard/actions.ts";
+import { clipboardActions } from "../src/clipboard/lib/actions.ts";
 import { KEYMAP } from "../src/keymap/keymap.ts";
-import { ADDRESS_GLYPHS, COMMAND_GLYPHS, commandGlyph } from "../src/launcher/command-glyphs.ts";
-import { launcherItems } from "../src/launcher/items.ts";
+import { ADDRESS_GLYPHS, COMMAND_GLYPHS, commandGlyph } from "../src/launcher/lib/command-glyphs.ts";
+import { launcherItems } from "../src/launcher/lib/items.ts";
 import { actionRow } from "../src/launcher/row-model.ts";
 
 const ICONS = { app: () => undefined, dashi: "/gear.svg" };

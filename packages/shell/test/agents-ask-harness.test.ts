@@ -2,9 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { ANSWERER_CHOICES } from "../src/agents/ask/answerer.ts";
 import { answererRows } from "../src/agents/ask/choices.ts";
 import { type Files, findHarness, HARNESSES, harnessStatuses, installReads, signedIn, signInCommand } from "../src/agents/ask/harness/index.ts";
-import { agentHandlers } from "../src/launcher/agents/handlers.ts";
-import { failureLine } from "../src/launcher/agents/plan-view.tsx";
-import { taskSubmit } from "../src/launcher/agents/task-mode.tsx";
+import { agentHandlers } from "../src/launcher/lib/agents/handlers.ts";
+import { failureLine } from "../src/launcher/lib/agents/plan-view.tsx";
+import { taskSubmit } from "../src/launcher/lib/agents/task-mode.tsx";
 
 describe("finding harnesses", () => {
   const home = "/home/alexk";

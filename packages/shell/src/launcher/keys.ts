@@ -19,9 +19,9 @@
  */
 
 import type { Keymap, Rule } from "../keymap/keymap.ts";
+import type { Move } from "./lib/selection.ts";
 import { RECORD_BINDING, RECORD_RULES, type ReportedChord } from "./person-keys.ts";
 import type { ArrowsWanted } from "./pictures.ts";
-import type { Move } from "./selection.ts";
 
 /** Binding name → how it moves the selection. */
 export const LAUNCHER_BINDINGS: Readonly<Record<string, Move>> = {

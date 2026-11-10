@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { statusRow } from "../src/menubar-fit.ts";
+import { statusRow } from "../src/menubar/lib/menubar-fit.ts";
 import { type BarStop, barCommand, barOrder, MORE_STOP, sideStep, stepStop, stopOfPopover } from "../src/menus/bar-keys.ts";
 import { MenuController } from "../src/menus/controller.ts";
 import { dropdownKey } from "../src/menus/lib/view.tsx";

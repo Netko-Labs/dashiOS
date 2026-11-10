@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import type { Output } from "../src/layout.ts";
-import { edgeHoldTarget, screenBeyond } from "../src/spaces/edge.ts";
-import { ROW } from "../src/spaces/model.ts";
-import { lifted, SHELF, SHELF_HEIGHT, shelfLayout, shelfSpaceAt, shelfTarget } from "../src/spaces/shelf.ts";
-import { CLOSE_AFTER_MS, RowViewStore, type Timers } from "../src/spaces/view.ts";
+import { edgeHoldTarget, screenBeyond } from "../src/spaces/lib/edge.ts";
+import { ROW } from "../src/spaces/lib/row-layout.ts";
+import { lifted, SHELF, SHELF_HEIGHT, shelfLayout, shelfSpaceAt, shelfTarget } from "../src/spaces/lib/shelf.ts";
+import { CLOSE_AFTER_MS, RowViewStore, type Timers } from "../src/spaces/lib/view.ts";
 
 describe("the opened row", () => {
   test("pictures have the screen's shape, side by side, names under them, the + at the end", () => {

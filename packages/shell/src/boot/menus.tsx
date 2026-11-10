@@ -4,9 +4,7 @@
  * the menus, Control Center and the battery panel that show them.
  */
 
-import { OverflowRow } from "../bar-overflow.tsx";
 import type { Compositor } from "../compositor.ts";
-import { setControlMotion } from "../control-center/index.ts";
 import { AutoRefresh, rateOnPower } from "../display-config/auto-refresh.ts";
 import { MirrorStore } from "../display-config/mirror.ts";
 import { bottomInset } from "../dock/index.ts";
@@ -14,11 +12,13 @@ import { startLostCardWatch } from "../graphics/lost-start.ts";
 import { keepAwake, keepAwakeEntries } from "../inhibit/index.ts";
 import { laptopEntries } from "../laptop/menu.ts";
 import { type Laptop, startLaptop } from "../laptop/start.ts";
+import { OverflowRow } from "../menubar/index.ts";
 import { extraEntries, type Menus, type StatusMenuAction, startMenus, useMenus } from "../menus/index.ts";
-import type { Notifications } from "../notifications/service.ts";
+import type { Notifications } from "../notifications/index.ts";
 import { chargeTarget } from "../power/battery-health.ts";
 import { powerOffReason } from "../power/nested.ts";
 import type { App } from "../shared/apps/index.ts";
+import { setControlMotion } from "../shared/controls/index.ts";
 import { isPaneId } from "../shared/settings/panes.ts";
 import { startAppMixer } from "../sound/apps/index.ts";
 import { MENU_BAR_HEIGHT } from "../theme.ts";

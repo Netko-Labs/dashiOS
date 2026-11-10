@@ -5,7 +5,7 @@
  * nothing else goes onto it, and its window stays there until it leaves full screen.
  */
 
-import { parseSpaces, spaceLabel } from "../../spaces/model.ts";
+import { parseSpaces, spaceLabel } from "../../spaces/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import { named, noWindow, subject } from "../lib/subject.ts";
 

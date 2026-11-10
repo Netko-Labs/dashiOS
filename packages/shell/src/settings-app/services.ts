@@ -8,12 +8,12 @@
  */
 
 import { AccountStore, type AccountsSetup, chooseAccounts, PasswordChangePrompt } from "../accounts/index.ts";
-import { holdingBar } from "../bar-hold.ts";
 import type { BatteryMonitor } from "../battery/index.ts";
 import type { BluetoothStore } from "../bluetooth/store.ts";
-import type { DeviceStore } from "../control-center/devices.ts";
+import type { DeviceStore } from "../control-center/index.ts";
 import type { AutoRefresh } from "../display-config/auto-refresh.ts";
 import type { Laptop } from "../laptop/start.ts";
+import { holdingBar } from "../menubar/bar-hold.ts";
 import { fakeNetInfo, NetInfoStore, nmcliNetInfo } from "../network/index.ts";
 import { openOverlay } from "../overlay.tsx";
 import { fakeLid, logindLid } from "../power/policy.ts";

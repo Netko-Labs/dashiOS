@@ -8,7 +8,7 @@
 import { expect, test } from "bun:test";
 import { type Bounds, type NativeEvent, type NativeTransport, render, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { StatusSide, type StatusSlot } from "../src/menubar-status.tsx";
+import { StatusSide, type StatusSlot } from "../src/menubar/lib/menubar-status.tsx";
 import type { BarStop } from "../src/menus/bar-keys.ts";
 import { settle } from "./support/time.ts";
 

@@ -11,9 +11,9 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { type Entry, launchable, loadEntries } from "../src/entries.ts";
-import { fitToRoom, listHeight } from "../src/launcher/fit.ts";
-import { measuresFor } from "../src/launcher/measures.ts";
-import { ALL_APPS_ROWS, allApps, buildSections, type ListInput } from "../src/launcher/rows.ts";
+import { fitToRoom, listHeight } from "../src/launcher/lib/fit.ts";
+import { measuresFor } from "../src/launcher/lib/measures.ts";
+import { ALL_APPS_ROWS, allApps, buildSections, type ListInput } from "../src/launcher/lib/rows.ts";
 import { desktopFiles, inTerminal, parseDesktopEntry } from "../src/shared/apps/index.ts";
 
 const desktop = (name: string, lines: string[] = []): string =>

@@ -4,10 +4,10 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { Arranger } from "../src/arrange.ts";
+import { Arranger } from "../src/arrange/arrange.ts";
 import type { Compositor } from "../src/compositor.ts";
-import { SpacesController } from "../src/spaces/controller.ts";
 import { FullscreenDesktops } from "../src/spaces/fullscreen.ts";
+import { SpacesController } from "../src/spaces/lib/controller.ts";
 import { desk, fakeCompositor, SETTINGS, win } from "./support/spaces-fullscreen.ts";
 import { fakeClock, settle } from "./support/time.ts";
 

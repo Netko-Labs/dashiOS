@@ -4,7 +4,7 @@
  * the menu bar over full screen, Mission Control and the touchpad's gestures.
  */
 
-import { Arranger } from "../arrange.ts";
+import { Arranger } from "../arrange/index.ts";
 import type { Compositor, CompositorWindow } from "../compositor.ts";
 import { DisplayManager, DisplayStore, keepSheet, watchLid } from "../display-config/index.ts";
 import { scaleForMonitor } from "../display-config/scale.ts";

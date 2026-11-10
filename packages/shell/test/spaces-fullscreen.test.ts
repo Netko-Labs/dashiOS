@@ -3,9 +3,9 @@ import type { CompositorWindow } from "../src/compositor.ts";
 import { buildMenu } from "../src/menus/model.ts";
 import type { MenuContext } from "../src/menus/types.ts";
 import { parseSettings } from "../src/settings.ts";
-import { edgeHoldTarget } from "../src/spaces/edge.ts";
+import { edgeHoldTarget } from "../src/spaces/lib/edge.ts";
+import { desktopCount, desktopOrdinal, fitSlots, insertionPoint, nearestDesktop, originOf, recoverSlots, type Slots } from "../src/spaces/lib/slots.ts";
 import { spaceLabels } from "../src/spaces/names.ts";
-import { desktopCount, desktopOrdinal, fitSlots, insertionPoint, nearestDesktop, originOf, recoverSlots, type Slots } from "../src/spaces/slots.ts";
 import { SCREEN, USABLE, win } from "./support/spaces-fullscreen.ts";
 
 describe("which Spaces are full-screen Desktops", () => {

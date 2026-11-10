@@ -10,7 +10,7 @@ import type { Toplevel } from "@mirinjs/metal";
 import type { CompositorWindow } from "../src/compositor.ts";
 import { DockController } from "../src/dock/controller.ts";
 import { dockLayout } from "../src/dock/layout.ts";
-import { buildDockMenu } from "../src/dock/menu.ts";
+import { buildDockMenu } from "../src/dock/lib/menu.ts";
 import type { Entry } from "../src/entries.ts";
 import { fakeCompositor } from "./support/compositor.ts";
 

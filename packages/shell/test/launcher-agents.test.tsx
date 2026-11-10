@@ -15,10 +15,10 @@ import {
   readsLikeSentence,
   SET_UP_ROW,
   withAgents,
-} from "../src/launcher/agents/rows.ts";
-import { agentField, taskSubmit } from "../src/launcher/agents/task-mode.tsx";
+} from "../src/launcher/agent-rows.ts";
 import { LAUNCHER_RULES, LauncherKeys } from "../src/launcher/keys.ts";
-import type { Section } from "../src/launcher/rows.ts";
+import { agentField, taskSubmit } from "../src/launcher/lib/agents/task-mode.tsx";
+import type { Section } from "../src/launcher/sections.ts";
 import { app, mount, unmountLauncher } from "./launcher-harness.tsx";
 import { settle } from "./support/time.ts";
 

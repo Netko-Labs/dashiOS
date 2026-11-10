@@ -1,7 +1,6 @@
 /** Notifications as agents see them: cut short and cleaned, newest first. */
 
-import { clean, plainBody } from "../../notifications/text.ts";
-import type { HistoryEntry, Urgency } from "../../notifications/types.ts";
+import { clean, type HistoryEntry, plainBody, type Urgency } from "../../notifications/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 
 /** How much of a body an agent gets; the store keeps up to a thousand characters. */

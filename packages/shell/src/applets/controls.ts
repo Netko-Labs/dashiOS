@@ -24,9 +24,7 @@ import {
   type Manifest,
   parseGlyph,
 } from "@dashi/applet";
-import { type AppletTile, type AppletTileSource, appletTileKey, type TileAction } from "../control-center/applet-tiles.ts";
-import { PUZZLE } from "../control-center/glyphs.ts";
-import type { Layout } from "../control-center/layout.ts";
+import { type AppletTile, type AppletTileSource, appletTileKey, type Layout, PUZZLE, type TileAction } from "../control-center/index.ts";
 import { type ControlState, controlStatePath, parseStates } from "./control-states.ts";
 
 export { type ControlState, controlStatePath, parseStates };

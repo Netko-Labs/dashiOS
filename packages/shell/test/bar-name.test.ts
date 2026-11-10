@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import type { NativeHostTransport, ToplevelEvent } from "@mirinjs/metal";
-import { type BarName, barName, DESKTOP, HANDOVER_MS } from "../src/bar-name.ts";
+import { type BarName, barName, DESKTOP, HANDOVER_MS } from "../src/menubar/lib/bar-name.ts";
 import { PORTAL_APP_ID, sheetTitle } from "../src/shared/portal-host/protocol.ts";
 import { ToplevelStore } from "../src/toplevels.ts";
 

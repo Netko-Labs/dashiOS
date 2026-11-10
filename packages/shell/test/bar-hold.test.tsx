@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { View } from "@mirinjs/metal";
-import { BarHold, holdingBar, SETTLE_MS } from "../src/bar-hold.ts";
+import { BarHold, holdingBar, SETTLE_MS } from "../src/menubar/bar-hold.ts";
 import type { OpenOverlay } from "../src/overlay.tsx";
 
 // A shell sheet that takes the keyboard (Settings' Change Password) holds the

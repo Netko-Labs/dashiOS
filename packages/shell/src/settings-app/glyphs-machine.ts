@@ -1,6 +1,6 @@
 /** Sidebar glyphs for the machine panes, on the same 16-unit grid as glyphs.ts. */
 
-import { BLUETOOTH } from "../control-center/glyphs.ts";
+import { BLUETOOTH } from "../control-center/index.ts";
 
 const svg = (body: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">${body}</svg>`;
 const stroke = (d: string, width = 1.4) => `<path d="${d}" stroke="#000" stroke-width="${width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;

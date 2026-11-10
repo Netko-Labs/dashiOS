@@ -25,9 +25,7 @@ import {
   switcherKey,
   visibleWindows,
 } from "./model.ts";
-import type { SwitcherHost, SwitcherKeys, SwitcherState } from "./surface.ts";
-
-export type { SwitcherApp, SwitcherHost, SwitcherKeys, SwitcherState, SwitcherWindow } from "./surface.ts";
+import type { SwitcherHost, SwitcherKeys, SwitcherState } from "./types.ts";
 
 /** A ❖Tab held this long shows the panel. */
 const SHOW_AFTER_MS = 150;

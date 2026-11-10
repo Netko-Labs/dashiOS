@@ -6,14 +6,11 @@
 
 import { joinShellMenus } from "../applets/popovers.ts";
 import { appFor } from "../apps.ts";
-import { barHold } from "../bar-hold.ts";
-import { startBarTips } from "../bar-tip.tsx";
 import type { Compositor } from "../compositor.ts";
 import { AnimationTargets, dockScreen, startDock, TileStore } from "../dock/index.ts";
-import { MenuBar } from "../menubar.tsx";
-import { MenuBars } from "../menubars.ts";
+import { barHold, MenuBar, MenuBars, startBarTips } from "../menubar/index.ts";
 import type { Menus } from "../menus/index.ts";
-import type { NotifyInput } from "../notifications/types.ts";
+import type { NotifyInput } from "../notifications/index.ts";
 import { openOverlay } from "../overlay.tsx";
 import type { App } from "../shared/apps/index.ts";
 import { configureMachineEnd } from "../shutdown.ts";

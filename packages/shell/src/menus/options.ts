@@ -3,13 +3,13 @@
 import type { ReactElement } from "react";
 import type { AppMenuStore } from "../app-menus/store.ts";
 import type { App } from "../apps.ts";
-import type { Arranger } from "../arrange.ts";
+import type { Arranger } from "../arrange/index.ts";
 import type { BatteryPopoverSources } from "../battery/popover.tsx";
 import type { BluetoothSetup } from "../bluetooth/select.ts";
 import type { Compositor, CompositorWindow } from "../compositor.ts";
 import type { AppletTileSource, ControlCenterProps, LayoutStore } from "../control-center/index.ts";
 import type { MirrorStore } from "../display-config/mirror.ts";
-import type { DockMenuAction } from "../dock/menu.ts";
+import type { DockMenuAction } from "../dock/types.ts";
 import type { Entry } from "../entries.ts";
 import type { Laptop } from "../laptop/start.ts";
 import type { NotificationStore } from "../notifications/index.ts";

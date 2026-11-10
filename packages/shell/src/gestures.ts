@@ -9,13 +9,12 @@
  */
 
 import type { Compositor, CompositorEvent } from "./compositor.ts";
-import type { SpacesState } from "./spaces/model.ts";
-import { type SwipeStep, SwipeTracker } from "./spaces/swipe.ts";
+import { type SpacesState, type SwipeStep, SwipeTracker } from "./spaces/index.ts";
 
 export interface GestureActions {
   /** Mission Control: open it (up) or close it (down). */
   overview(open: boolean): void;
-  /** Spaces (spaces/controller.ts): a sideways swipe holds the switch where the fingers are, then lets it finish or go back. */
+  /** Spaces (spaces/lib/controller.ts): a sideways swipe holds the switch where the fingers are, then lets it finish or go back. */
   spaces?: {
     getSnapshot(): SpacesState;
     hold(target: number, progress: number): void;

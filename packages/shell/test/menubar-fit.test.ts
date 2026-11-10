@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { extraGoes, type FitItem, fitStatus, GOES, MENU_GAP, MORE_WIDTH, statusRoom } from "../src/menubar-fit.ts";
+import { extraGoes, type FitItem, fitStatus, GOES, MENU_GAP, MORE_WIDTH, statusRoom } from "../src/menubar/lib/menubar-fit.ts";
 
 /** The bar's items in its order: two extras (the newest leftmost), the mark, a recording, the status area, the clock. */
 const bar = (): FitItem[] => [
@@ -74,7 +74,7 @@ describe("fitStatus", () => {
 
 describe("the bar's tooltip", () => {
   test("centered under its point, kept inside the bar", async () => {
-    const { tipLeft, tipWidth } = await import("../src/bar-tip.tsx");
+    const { tipLeft, tipWidth } = await import("../src/menubar/bar-tip.tsx");
     expect(tipLeft(500, 200, 1100)).toBe(400);
     // Near the right end it stays 6 inside; near the left, 6 from it.
     expect(tipLeft(1090, 200, 1100)).toBe(1100 - 200 - 6);

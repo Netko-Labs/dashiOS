@@ -13,7 +13,7 @@ import type { Entry } from "../entries.ts";
 import type { Keymap } from "../keymap/keymap.ts";
 import { isPaneId, type PaneId } from "../shared/settings/panes.ts";
 import type { LauncherHost } from "./host.ts";
-import { isPane } from "./items.ts";
+import { isPane } from "./lib/items.ts";
 
 export interface ShellHostDeps {
   compositor: Compositor | null;

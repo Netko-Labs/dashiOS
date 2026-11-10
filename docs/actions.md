@@ -77,13 +77,13 @@ supplied them. Such a row says so at its right, shows its own icon or a
 neutral puzzle piece (never one of Dashi's glyphs), is ranked as `foreign`
 (never above an exact match of an app's or a setting's name), and one
 titled like a first-party row reads "Weather › System Settings"
-(`launcher/items.ts`).
+(`launcher/lib/items.ts`).
 
 Added later by the shell (`boot/actions.ts`, `registry.add`):
 
 | Source | Addresses | What choosing does |
 | --- | --- | --- |
-| `clipboard` | `dashi://clipboard/history` (⌥❖V), `dashi://clipboard/snippets`, `dashi://clipboard/clear`, `dashi://settings/keyboard/clipboard-history` | opens the launcher in the Clipboard or Snippets scope (chosen in the launcher, the scope is entered in place); Clear Clipboard History asks on the person's sheet every time; the history's switch (off deletes what was kept). The person's alone (`clipboard/actions.ts`) |
+| `clipboard` | `dashi://clipboard/history` (⌥❖V), `dashi://clipboard/snippets`, `dashi://clipboard/clear`, `dashi://settings/keyboard/clipboard-history` | opens the launcher in the Clipboard or Snippets scope (chosen in the launcher, the scope is entered in place); Clear Clipboard History asks on the person's sheet every time; the history's switch (off deletes what was kept). The person's alone (`clipboard/lib/actions.ts`) |
 
 Menu rows read "Notes › File › New Note" with the item's shortcut. Items an
 app keeps from agents (`agents: false`) are offered here, because the
@@ -368,7 +368,7 @@ the screenshot tools work as before.
 ## In the launcher
 
 The launcher (`launcher.tsx`) lists `registry.list({ who: "person" })`
-beside the installed apps and panes (`launcher/items.ts`), ranked by
+beside the installed apps and panes (`launcher/lib/items.ts`), ranked by
 `launcher/ranking/`: every setting's row (a switch Space flips, or its
 value), Dashi's commands, the apps' Desktop Actions, the menus running apps
 publish, the arranging commands, and the agents' tools a person uses that
@@ -380,12 +380,12 @@ has Copy Address, Set alias… and Set shortcut….
 ### Scopes
 
 A scope narrows the panel to one source's rows behind a chip
-(`launcher/scope.ts`): its own placeholder, rows, verbs (❖K lists them, ↩
+(`launcher/types.ts`): its own placeholder, rows, verbs (❖K lists them, ↩
 is the first, ❖C the copy verb) and hints. A scope names the address that
 opens it; that action chosen in the launcher enters the scope in place, and
 Esc goes back to the search; opened by a key or a link (⌥❖V binds
 `dashi://clipboard/history`), Esc closes. The two scopes are the
-clipboard's (`clipboard/scope.ts`):
+clipboard's (`clipboard/lib/scope.ts`):
 
 - **Clipboard**: the history (`clipboard/`), pinned copies first, then
   newest first; ↩ pastes into the window under the launcher (its app's paste
@@ -411,7 +411,7 @@ itself opens the launcher with the action and its arguments filled in
 
 An applet's or a script's command may answer with more than a line: its
 `Outcome` carries `show` (`actions/types.ts`), which the launcher takes in
-place of closing (`launcher/extensions.ts`):
+place of closing (`launcher/lib/extensions.ts`):
 
 - `text`: its answer is the top row, in SemiBold, selected, with where it
   came from at the right; Return copies it. A link or a D-Bus caller gets
@@ -515,7 +515,7 @@ busctl --user call dev.dashi.Shell /dev/dashi/Shell dev.dashi.Shell.Actions1 Run
 Local first (docs/betterments.html, "Agents in the launcher",
 recommendation B): the rows above never wait for a model, and no model is
 called while typing. Code: `agents/ask/` (the answerers, the plan, the
-tasks, Now, the history) and `launcher/agents/` (the rows, the plan view,
+tasks, Now, the history) and `launcher/lib/agents/` (the rows, the plan view,
 the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
 
 - **Who answers.** Settings › Agents (or the Setup Assistant's Agents page):
@@ -677,7 +677,7 @@ from the launcher and back when it's done or needs the person (the 0.5.0
 design, dashi-0.5.0-review/mockups.html sections 1 to 3). Code:
 `agents/handoff/` (the service, the store of runs, the stream parsers, the
 grants, the questions, the follow-ups), `bin/dashi-task.ts`,
-`launcher/agents/handoff-rows.ts` and `handoff-views.tsx` (the rows, the
+`launcher/handoff-rows.ts` and `launcher/lib/agents/handoff-views.tsx` (the rows, the
 context chips, the grants card), `agents/mark.ts` and `agent-mark.tsx` (the
 menu bar's agent mark), `agents-panel.tsx` and `agents-rows.tsx` (its
 panel), `handoff-shell.tsx` (the wiring, the notifications, the context).

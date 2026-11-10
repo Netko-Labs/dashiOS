@@ -8,25 +8,30 @@
 import { homedir } from "node:os";
 import { type AgentStore, type Agents, NO_CONTEXT } from "../agents/index.ts";
 import { appFor } from "../apps.ts";
-import { placedOutputs } from "../arrange.ts";
+import { placedOutputs } from "../arrange/index.ts";
 import type { Compositor } from "../compositor.ts";
 import { type Entry, launchEntry } from "../entries.ts";
 import { primarySelection, readContext } from "../handoff-shell.tsx";
-import { hostIsAccessible } from "../launcher/access.ts";
-import { AppIndex } from "../launcher/app-index.ts";
-import { BUDGET } from "../launcher/budget.ts";
-import { LaunchFailures } from "../launcher/failures.ts";
-import type { Presented } from "../launcher/host.ts";
-import { LauncherKeys } from "../launcher/keys.ts";
-import { launcherOrigin, type PictureRect, picturesOnScreen } from "../launcher/pictures.ts";
-import { LauncherPrefs } from "../launcher/prefs.ts";
-import { languagesOf, messageLocales } from "../launcher/ranking/index.ts";
-import { LAUNCHER_MOTION, ResidentHost } from "../launcher/resident.tsx";
-import { FILE_ROWS } from "../launcher/rows.ts";
-import { logTiming, markOpen, sinceOpen } from "../launcher/timing.ts";
-import { LAUNCHER, type LauncherFiles } from "../launcher.tsx";
+import type { LauncherFiles, PictureRect, Presented } from "../launcher/index.ts";
+import {
+  AppIndex,
+  BUDGET,
+  FILE_ROWS,
+  hostIsAccessible,
+  LAUNCHER,
+  LAUNCHER_MOTION,
+  LauncherKeys,
+  LauncherPrefs,
+  LaunchFailures,
+  launcherOrigin,
+  logTiming,
+  markOpen,
+  picturesOnScreen,
+  ResidentHost,
+  sinceOpen,
+} from "../launcher/index.ts";
 import { findFiles, hasLocalSearch, LocalSearchEndpoint } from "../local-search.ts";
-import type { Notifications } from "../notifications/service.ts";
+import type { Notifications } from "../notifications/index.ts";
 import { type OpenOverlay, openOverlay } from "../overlay.tsx";
 import type { OverlaySlots } from "../overlay-slots.ts";
 import { RecentApps } from "../recents.ts";
@@ -34,6 +39,7 @@ import type { SettingsStore } from "../settings-app/index.ts";
 import { type App, fileIcon, METAL_HOST } from "../shared/apps/index.ts";
 import { systemClipboard } from "../shared/clipboard/clipboard.ts";
 import { FileSearch, iconNamesFor } from "../shared/files/file-search.ts";
+import { languagesOf, messageLocales } from "../shared/locale/messages.ts";
 import type { Handoff } from "./agents.ts";
 import type { Catalog } from "./apps.ts";
 import { LauncherKeyboard, TYPE_AHEAD_LIMIT_MS } from "./keys.ts";

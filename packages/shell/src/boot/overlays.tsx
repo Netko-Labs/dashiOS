@@ -6,20 +6,19 @@
 
 import type { CaptureKind } from "../actions/index.ts";
 import { appFor, displayName, registerShellApp, SCREENSHOT_APP_ID } from "../apps.ts";
-import { placedOutputs } from "../arrange.ts";
+import { placedOutputs } from "../arrange/index.ts";
 import type { Compositor, Frame } from "../compositor.ts";
 import type { Entry } from "../entries.ts";
 import { withSwitcher } from "../keymap/keymap.ts";
 import { currentKeymap, idleKeymap } from "../keymap/keymap-state.ts";
 import type { RankingMemory } from "../launcher/ranking/index.ts";
 import type { Menus } from "../menus/index.ts";
-import type { Notifications } from "../notifications/service.ts";
+import type { Notifications } from "../notifications/index.ts";
 import { openOverlay } from "../overlay.tsx";
 import type { OverlaySlots } from "../overlay-slots.ts";
-import { type Capture, startCapture } from "../recorder/start.ts";
-import type { ScreenCapture } from "../screen-capture.ts";
-import { type AreaCapture, areaCapture, captureScreenNear } from "../screenshot-area.tsx";
-import { takeScreenshot } from "../screenshots.ts";
+import { type Capture, startCapture } from "../recorder/index.ts";
+import type { ScreenCapture } from "../screen-capture/index.ts";
+import { type AreaCapture, areaCapture, captureScreenNear, takeScreenshot } from "../screenshots/index.ts";
 import type { App } from "../shared/apps/index.ts";
 import { iconPath } from "../shared/apps/index.ts";
 import { SHEET, ShortcutSheet } from "../sheet.tsx";

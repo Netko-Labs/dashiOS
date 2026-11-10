@@ -1,6 +1,6 @@
 /**
  * The notification server the portal's notifications go to: Dashi's own,
- * org.freedesktop.Notifications in the shell (src/notifications/server.ts),
+ * org.freedesktop.Notifications in the shell (src/notifications/lib/server.ts),
  * and the signals it sends back about them.
  */
 

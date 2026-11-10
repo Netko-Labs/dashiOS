@@ -13,7 +13,7 @@
 import { useColors } from "@dashi/ui";
 import { Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { BLUETOOTH } from "../control-center/glyphs.ts";
+import { BLUETOOTH } from "../control-center/index.ts";
 import { Button, Panel } from "../menus/sheets.tsx";
 import { KeyCatcher } from "../overlay.tsx";
 import type { BluetoothStore } from "./store.ts";

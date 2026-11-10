@@ -12,10 +12,10 @@ import type { Entry } from "../entries.ts";
 import type { App } from "../shared/apps/index.ts";
 import type { ToplevelStore } from "../toplevels.ts";
 import { appKey, type DockEntry } from "./layout.ts";
-import type { DockMenuAction } from "./menu.ts";
+import { type TaskbarButton, taskbarClick } from "./lib/taskbar-model.ts";
 import type { PinStore } from "./pins.ts";
 import type { DockPrefs } from "./prefs.ts";
-import { type TaskbarButton, taskbarClick } from "./taskbar-model.ts";
+import type { DockMenuAction } from "./types.ts";
 
 /** How long a started app shows its dot before a window appears. */
 const LAUNCH_GRACE_MS = 15_000;

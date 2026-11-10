@@ -9,9 +9,9 @@
 
 import type { ActionDef } from "../actions/index.ts";
 import type { CompositorWindow } from "../compositor.ts";
-import { spaceLabel } from "../spaces/model.ts";
+import { spaceLabel } from "../spaces/index.ts";
 import { groupByApp } from "../switcher/model.ts";
-import { type LauncherWindow, windowAddress } from "./items.ts";
+import { type LauncherWindow, windowAddress } from "./lib/items.ts";
 
 export interface WorldDeps {
   /** The registry's actions for the person (`registry.list({ who: "person" })`), and hearing it change. */

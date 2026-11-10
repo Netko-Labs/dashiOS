@@ -8,16 +8,16 @@
 
 import type { TaskContext } from "../agents/index.ts";
 import type { Entry } from "../entries.ts";
-import type { LauncherHandoff } from "./agents/handoff-rows.ts";
-import type { LauncherAgents } from "./agents/rows.ts";
-import type { ExtensionSession } from "./extensions.ts";
+import type { LauncherAgents } from "./agent-rows.ts";
+import type { ExtensionSession } from "./extension-state.ts";
+import type { LauncherHandoff } from "./handoff-rows.ts";
 import type { LauncherHost, LauncherPrefsStore, LauncherRanking, LauncherWorldStore, Presented, Store } from "./host.ts";
 import type { ExtraKeys, LauncherCommand } from "./keys.ts";
+import type { Move } from "./lib/selection.ts";
+import type { TypeAheadSource } from "./lib/use-type-ahead.ts";
 import type { ArrowsWanted, PictureRect } from "./pictures.ts";
-import type { FileRow } from "./rows.ts";
-import type { LauncherScope } from "./scope.ts";
-import type { Move } from "./selection.ts";
-import type { TypeAheadSource } from "./use-type-ahead.ts";
+import type { FileRow } from "./row-model.ts";
+import type { LauncherScope } from "./types.ts";
 
 /** Files for the launcher: whether it can look now (the placeholder says), and the looking; null when it couldn't. */
 export interface LauncherFiles {
@@ -52,9 +52,9 @@ export interface LauncherSources {
   ranking?: LauncherRanking;
   /** The person's languages, for Dashi's own words (shared/locale/messages.ts). */
   languages?: readonly string[];
-  /** What comes in from outside Dashi: search providers, applets' and scripts' answers (launcher/extensions.ts). */
+  /** What comes in from outside Dashi: search providers, applets' and scripts' answers (launcher/lib/extensions.ts). */
   extensions?: ExtensionSession;
-  /** Narrowed views of the panel (launcher/scope.ts): choosing one's address enters it. */
+  /** Narrowed views of the panel (launcher/types.ts): choosing one's address enters it. */
   scopes?: readonly LauncherScope[];
 }
 
@@ -77,9 +77,9 @@ export interface LauncherReach {
 
 /** Agents in the launcher. */
 export interface LauncherAgentProps {
-  /** Agents: Ask, the plan, Now, history (launcher/agents/); without it the launcher knows none. */
+  /** Agents: Ask, the plan, Now, history (launcher/lib/agents/); without it the launcher knows none. */
   agents?: LauncherAgents;
-  /** Agents from the launcher: "Hand it off", the grants card, the runs (launcher/agents/handoff-rows.ts). */
+  /** Agents from the launcher: "Hand it off", the grants card, the runs (launcher/handoff-rows.ts). */
   handoff?: LauncherHandoff;
   /** The window in front when the launcher opened, and what was selected: the context chips (filled in as it opens). */
   context?: Store<TaskContext>;

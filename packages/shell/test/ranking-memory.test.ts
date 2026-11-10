@@ -16,7 +16,7 @@ import {
   recordOpen,
   recordPick,
   serializeMemory,
-} from "../src/launcher/ranking/memory.ts";
+} from "../src/launcher/ranking/lib/memory.ts";
 import { MAX_FILE_BYTES } from "../src/launcher/ranking/store.ts";
 import { index } from "./ranking-fixture.ts";
 import { fakeClock } from "./support/time.ts";

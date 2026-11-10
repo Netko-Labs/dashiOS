@@ -15,7 +15,7 @@ import { useControlColors } from "../shared/controls/palette.ts";
 import { FocusRing } from "../shared/controls/parts.tsx";
 import { CHEVRON_LEFT as BACK } from "./glyphs.ts";
 import { GRID } from "./layout.ts";
-import { pageOrder, stepRow } from "./page-keys.ts";
+import { pageOrder, stepRow } from "./lib/page-keys.ts";
 
 /** Where the page's tile was in the grid; the header grows from there. Null: it was opened some other way. */
 export const PageOrigin = createContext<{ left: number; top: number; width: number } | null>(null);

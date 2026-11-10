@@ -1,4 +1,6 @@
-export { centerBottom, NotificationCenterPanel, type NotificationCenterProps } from "./center.tsx";
-export * from "./service.ts";
-export { NotificationStore, useNotifications } from "./store.ts";
-export type { HistoryEntry, Notification, StoreSnapshot } from "./types.ts";
+export { NotificationCenterPanel } from "./center.tsx";
+export { type Notifications, startNotifications } from "./service.ts";
+export { BannerStack } from "./stack.tsx";
+export { NotificationStore, SHELL_SENDER } from "./store.ts";
+export { clean, plainBody } from "./text.ts";
+export { CloseReason, type HistoryEntry, type Notification, type NotifyInput, type StoreSnapshot, type Urgency } from "./types.ts";

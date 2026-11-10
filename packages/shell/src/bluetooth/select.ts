@@ -7,7 +7,7 @@
  * the same switch Wi-Fi uses).
  */
 
-import { bluetoothRadio, type Radio } from "../control-center/radios.ts";
+import { bluetoothRadio, type Radio } from "../control-center/index.ts";
 import { run } from "../system/exec.ts";
 import { type Nesting, standsIn } from "../system/stand-in.ts";
 import { BluezBackend } from "./bluez.ts";

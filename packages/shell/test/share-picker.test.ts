@@ -2,7 +2,9 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { choiceLine, isPickRequest, PICKER, parseAnswer, pickerLayout, type ShareChoice, serveSharePicker, socketPath } from "../src/share-picker/index.ts";
+import { PICKER, pickerLayout } from "../src/share-picker/lib/layout.ts";
+import { serveSharePicker } from "../src/share-picker/lib/server.ts";
+import { choiceLine, isPickRequest, parseAnswer, type ShareChoice, socketPath } from "../src/share-picker/protocol.ts";
 import { until } from "./support/time.ts";
 
 describe("what the wlr portal reads", () => {

@@ -2,8 +2,7 @@
 
 import { SETTINGS_APP_ID, SETUP_APP_ID } from "../src/apps.ts";
 import type { Entry } from "../src/entries.ts";
-import { entryItem } from "../src/launcher/ranking/entries.ts";
-import { entryIndex, type RankItem } from "../src/launcher/ranking/index.ts";
+import { entryIndex, entryItem, type RankItem } from "../src/launcher/ranking/index.ts";
 import { paneEntry, paneKeywords } from "../src/settings-app/search.ts";
 import { PANES } from "../src/shared/settings/panes.ts";
 

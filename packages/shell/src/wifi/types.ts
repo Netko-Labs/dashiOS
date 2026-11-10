@@ -4,7 +4,7 @@
  * `networks.ts` turns those into the list a person sees.
  */
 
-import type { Radio } from "../control-center/radios.ts";
+import type { Radio } from "../control-center/index.ts";
 import type { Bars } from "../system/network.ts";
 
 /** How a network protects itself, as far as joining it goes. */

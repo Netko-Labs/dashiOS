@@ -6,8 +6,7 @@
  * `BatteryAlerts` class polls and talks to the notification store.
  */
 
-import type { NotificationStore } from "../notifications/store.ts";
-import { CloseReason, type NotifyInput, type Urgency } from "../notifications/types.ts";
+import { CloseReason, type NotificationStore, type NotifyInput, type Urgency } from "../notifications/index.ts";
 import { type Battery, readBattery } from "./battery.ts";
 import { INTERVALS } from "./store.ts";
 

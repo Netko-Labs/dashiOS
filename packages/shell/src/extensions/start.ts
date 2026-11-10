@@ -16,7 +16,7 @@
 import { type ActionRegistry, actionsInterface, type Outcome, ScriptSource, scriptsDir } from "../actions/index.ts";
 import type { AppletCommands } from "../applets/commands.ts";
 import type { Entry } from "../entries.ts";
-import { ExtensionSession } from "../launcher/extensions.ts";
+import { ExtensionSession } from "../launcher/index.ts";
 import type { PortalHost } from "../portal-host/service.ts";
 import { SearchProviders } from "../search-providers/index.ts";
 import { SHELL_PATH } from "../shared/portal-host/protocol.ts";
@@ -36,7 +36,7 @@ export interface ExtensionsOptions {
 }
 
 export interface Extensions {
-  /** What the launcher keeps for the session (launcher/extensions.ts). */
+  /** What the launcher keeps for the session (launcher/lib/extensions.ts). */
   readonly session: ExtensionSession;
   close(): void;
 }

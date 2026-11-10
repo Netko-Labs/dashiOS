@@ -1,13 +1,14 @@
 import { afterEach, expect, test } from "bun:test";
 import { type ActionDef, type Outcome, type PickRow, ready, type Shown } from "../src/actions/types.ts";
 import { KEYMAP } from "../src/keymap/keymap.ts";
-import { slowSections, viewRows } from "../src/launcher/extension-rows.ts";
-import { ExtensionSession, readArg, viewFrame } from "../src/launcher/extensions.ts";
+import { ExtensionSession, readArg } from "../src/launcher/extension-state.ts";
 import type { LauncherHost, LauncherWorldStore } from "../src/launcher/host.ts";
-import { launcherIndex, launcherItems, outsideName } from "../src/launcher/items.ts";
-import { found } from "../src/launcher/rows.ts";
+import { LAUNCHER } from "../src/launcher/launcher.tsx";
+import { slowSections, viewRows } from "../src/launcher/lib/extension-rows.ts";
+import { viewFrame } from "../src/launcher/lib/extensions.ts";
+import { launcherIndex, launcherItems, outsideName } from "../src/launcher/lib/items.ts";
+import { found } from "../src/launcher/lib/rows.ts";
 import type { WorldSnapshot } from "../src/launcher/world.ts";
-import { LAUNCHER } from "../src/launcher.tsx";
 import { app, mount, settle, unmountLauncher } from "./launcher-harness.tsx";
 
 // Wave 3 in the panel: rows from outside Dashi (applets' commands, your scripts, GNOME's search providers),

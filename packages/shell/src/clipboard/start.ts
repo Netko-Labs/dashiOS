@@ -10,18 +10,18 @@
 import type { ActionContext, ActionSource } from "../actions/index.ts";
 import type { ClipboardCopy } from "../agents/index.ts";
 import type { Compositor, CompositorWindow } from "../compositor.ts";
-import type { LauncherScope } from "../launcher/scope.ts";
+import type { LauncherScope } from "../launcher/index.ts";
 import type { SettingsStore } from "../settings-app/store.ts";
-import { clipboardSource } from "./actions.ts";
-import { expandSnippet } from "./expand.ts";
-import { atspiFieldCheck, type FieldCheck } from "./fields.ts";
 import { ClipboardHistory, type HistorySnapshot } from "./history.ts";
-import { type ClipboardIo, wlClipboard } from "./io.ts";
-import { copyEntry, type PasteDeps, pasteChord, pasteEntry } from "./paste.ts";
-import { DEFAULT_LEFT_OUT } from "./privacy.ts";
-import { historyScope, type PasteTarget, snippetsScope } from "./scope.ts";
-import { expand, SnippetStore } from "./snippets.ts";
-import { ClipboardWatch, fileUris } from "./watch.ts";
+import { DEFAULT_LEFT_OUT } from "./left-out.ts";
+import { clipboardSource } from "./lib/actions.ts";
+import { expandSnippet } from "./lib/expand.ts";
+import { atspiFieldCheck, type FieldCheck } from "./lib/fields.ts";
+import { type ClipboardIo, wlClipboard } from "./lib/io.ts";
+import { copyEntry, type PasteDeps, pasteChord, pasteEntry } from "./lib/paste.ts";
+import { historyScope, type PasteTarget, snippetsScope } from "./lib/scope.ts";
+import { expand, SnippetStore } from "./lib/snippets.ts";
+import { ClipboardWatch, fileUris } from "./lib/watch.ts";
 
 /** What an agent reads of one copy's text, at most. */
 const AGENT_TEXT = 4000;

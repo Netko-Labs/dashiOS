@@ -59,7 +59,7 @@ import {
   startSwitches,
   startSystemStores,
 } from "./boot/index.ts";
-import { pickPrimary } from "./menubars.ts";
+import { pickPrimary } from "./menubar/index.ts";
 import { OverlaySlots } from "./overlay-slots.ts";
 import { resolvePinned } from "./shared/apps/index.ts";
 

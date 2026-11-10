@@ -7,7 +7,7 @@
  */
 
 import type { Params } from "../compositor.ts";
-import { choosePrimary } from "../menubars.ts";
+import { choosePrimary } from "../menubar/menubars.ts";
 import { identityOf, type Mode, type Monitor, modeFor, type Rotation, type VrrMode } from "./monitors.ts";
 import type { SavedLayout, SavedMonitor } from "./saved.ts";
 

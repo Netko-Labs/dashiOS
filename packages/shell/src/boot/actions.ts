@@ -8,7 +8,7 @@
 import { type Actions, RadioSource, startActions } from "../actions/index.ts";
 import { type Agents, isVaultWindow } from "../agents/index.ts";
 import { appFor } from "../apps.ts";
-import { type Clipboard, startClipboard } from "../clipboard/start.ts";
+import { type Clipboard, startClipboard } from "../clipboard/index.ts";
 import type { Compositor } from "../compositor.ts";
 import { launchEntry } from "../entries.ts";
 import { type Extensions, openTarget, startExtensions } from "../extensions/index.ts";

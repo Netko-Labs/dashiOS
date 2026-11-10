@@ -15,7 +15,7 @@ import { type Backlight, levelOf, readBacklight, setBrightness } from "../system
 import { run as defaultRun, hasProgram, type Run } from "../system/exec.ts";
 import { readVolume, setVolume, type Volume } from "../system/volume.ts";
 import { VolumeFollow } from "../system/volume-follow.ts";
-import { latestWins } from "./coalesce.ts";
+import { latestWins } from "./lib/coalesce.ts";
 import { bluetoothRadio, nmcliRadio, type Radio } from "./radios.ts";
 
 export interface Devices {

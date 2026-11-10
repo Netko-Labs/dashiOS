@@ -16,17 +16,17 @@ import { spawnShellHost } from "../shared/metal/host.ts";
 import { DOCK, DOCK_HEIGHT, TASKBAR } from "../theme.ts";
 import type { ToplevelStore } from "../toplevels.ts";
 import type { AttentionStore } from "./attention.ts";
-import { Autohide } from "./autohide.ts";
 import type { DockController } from "./controller.ts";
-import { compositorEdges } from "./edges.ts";
+import { Autohide } from "./lib/autohide.ts";
+import { compositorEdges } from "./lib/edges.ts";
+import { Slide } from "./lib/slide.tsx";
+import { type DockHandle, DockSurface } from "./lib/surface.ts";
+import { Taskbar } from "./lib/taskbar.tsx";
+import { Dock } from "./lib/view.tsx";
 import type { PinStore } from "./pins.ts";
 import type { DockPrefs } from "./prefs.ts";
 import { DockPresenter, specOf } from "./presenter.ts";
-import { Slide } from "./slide.tsx";
-import { type DockHandle, DockSurface } from "./surface.ts";
-import { Taskbar } from "./taskbar.tsx";
 import type { TileStore } from "./tiles.ts";
-import { Dock } from "./view.tsx";
 
 export interface StartDockOptions {
   prefs: DockPrefs;

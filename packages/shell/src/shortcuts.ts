@@ -11,7 +11,7 @@
 
 import { chordText, type PressedChord } from "./app-menus/shortcut.ts";
 import type { Compositor, CompositorWindow } from "./compositor.ts";
-import { takeScreenshot } from "./screenshots.ts";
+import { takeScreenshot } from "./screenshots/index.ts";
 import type { SwitcherController } from "./switcher/index.ts";
 import type { HardwareKeys } from "./system/keys.ts";
 

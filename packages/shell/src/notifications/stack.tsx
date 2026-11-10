@@ -10,7 +10,7 @@
  */
 
 import { type NativeHostOptions, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
-import { BANNER, Banner, bannerHeight, bannerSurface } from "./banner.tsx";
+import { BANNER, Banner, bannerHeight, bannerSurface } from "./lib/banner.tsx";
 import type { NotificationStore } from "./store.ts";
 import type { Notification } from "./types.ts";
 

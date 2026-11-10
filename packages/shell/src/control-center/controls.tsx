@@ -9,6 +9,8 @@ import type { ReactNode } from "react";
 import { useSyncExternalStore } from "react";
 import type { AppletTile } from "./applet-tiles.ts";
 import { type ControlPage, type ControlSnapshot, controlInfo, isThere, SYSTEM_CONTROLS, tileState } from "./catalog.ts";
+import { PUZZLE } from "./glyphs.ts";
+import type { Layout, Placed, TileSize } from "./layout.ts";
 import {
   type ControlActions,
   type ControlScope,
@@ -18,14 +20,10 @@ import {
   presentationOf,
   pressControl,
   setControlLevel,
-} from "./control-actions.ts";
-import type { AddEntry } from "./edit.tsx";
-import { PUZZLE } from "./glyphs.ts";
-import type { Layout, Placed, TileSize } from "./layout.ts";
-import { useControlSnapshot } from "./snapshot.ts";
+} from "./lib/control-actions.ts";
+import type { AddEntry } from "./lib/edit.tsx";
+import { useControlSnapshot } from "./lib/snapshot.ts";
 import { BatteryRow, RoundTile, SliderTile, type TileLook, WideTile } from "./tiles.tsx";
-
-export type { ControlActions } from "./control-actions.ts";
 
 const EMPTY: readonly AppletTile[] = [];
 const NO_APPLETS = { subscribe: () => () => {}, getSnapshot: () => EMPTY };
