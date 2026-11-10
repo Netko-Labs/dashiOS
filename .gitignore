@@ -6,3 +6,7 @@ vm/images/
 
 # Agent worktrees (Claude Code)
 .claude/worktrees/
+
+# Python bytecode (H14: nothing generated is committed)
+__pycache__/
+*.pyc

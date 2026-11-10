@@ -6,6 +6,8 @@
 //! that got "test-dashi" in the 0.5.0 review); after each way something
 //! could take the keyboard, a key is typed and must reach the lock screen,
 //! and the window must never get the keyboard back until the unlock.
+// Tests may unwrap and touch files (H12 covers the compositor, not its tests).
+#![allow(clippy::unwrap_used, clippy::disallowed_methods)]
 
 use std::{
     io::{BufRead, BufReader, Write},

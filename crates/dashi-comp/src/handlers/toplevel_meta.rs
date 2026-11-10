@@ -218,6 +218,10 @@ fn copy_picture(
     .flatten()
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "runs on the window-icon thread (save_icon), off the loop"
+)]
 fn write_png(path: &std::path::Path, picture: &Picture) -> std::io::Result<()> {
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir)?;

@@ -453,6 +453,10 @@ fn capture(
             }
             let cursor = params.get("cursor").and_then(Value::as_bool) == Some(true);
             let picture = backend::capture_mirror(state, &target, cursor)?;
+            #[expect(
+                clippy::disallowed_methods,
+                reason = "H12 offender: PNG encode and write on the loop; the comp agent moves it to a thread (0.7 step 2)"
+            )]
             render::capture::save_png(&path, &picture)?;
             return Ok(json!({ "width": picture.width, "height": picture.height, "scale": 1.0 }));
         }
@@ -490,6 +494,10 @@ fn capture(
     if let Some(name) = &mask {
         state.apply_mask(state.capture_masks.named(name), area, scale, &mut picture);
     }
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "H12 offender: PNG encode and write on the loop; the comp agent moves it to a thread (0.7 step 2)"
+    )]
     render::capture::save_png(&path, &picture)?;
     Ok(json!({ "width": picture.width, "height": picture.height, "scale": scale }))
 }

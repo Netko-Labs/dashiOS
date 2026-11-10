@@ -1,5 +1,7 @@
 //! The compositor as the shell meets it: the real binary, headless (no GPU),
 //! in a runtime folder of its own.
+// Tests may unwrap and touch files (H12 covers the compositor, not its tests).
+#![allow(clippy::unwrap_used, clippy::disallowed_methods)]
 
 use std::{
     io::{BufRead, BufReader, Write},

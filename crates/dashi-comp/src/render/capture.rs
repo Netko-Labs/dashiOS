@@ -187,6 +187,10 @@ pub(crate) fn check_path(path: &str) -> Result<&Path, String> {
     Ok(path)
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "the PNG work itself: save_png is disallowed, so its callers carry the H12 marks"
+)]
 pub(crate) fn save_png(path: &Path, picture: &Picture) -> Result<(), String> {
     let file = OpenOptions::new()
         .write(true)

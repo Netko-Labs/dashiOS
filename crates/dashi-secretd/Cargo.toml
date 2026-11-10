@@ -21,6 +21,9 @@ path = "src/bin/dashi-secretd-pam.rs"
 name = "dashi-secret-bridge"
 path = "src/bin/dashi-secret-bridge.rs"
 
+[lints]
+workspace = true
+
 [dependencies]
 # Well-reviewed RustCrypto crates only: no cryptography of our own.
 aes = "0.8"

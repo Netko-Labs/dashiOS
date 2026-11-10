@@ -40,6 +40,10 @@ bitflags::bitflags! {
 
 impl From<xdg_toplevel::ResizeEdge> for ResizeEdge {
     #[inline]
+    #[expect(
+        clippy::unwrap_used,
+        reason = "H12 offender: say why it cannot fail (expect) or fall back"
+    )]
     fn from(x: xdg_toplevel::ResizeEdge) -> Self {
         Self::from_bits(x as u32).unwrap()
     }

@@ -5,6 +5,8 @@
 //! (dashi-0.5.0-review/56-helium-typing). The compositor runs headless with
 //! this test binary as its session client (`-c`), so this side is the shell
 //! and may be an input method, as fcitx5 is, the shell's child.
+// Tests may unwrap and touch files (H12 covers the compositor, not its tests).
+#![allow(clippy::unwrap_used, clippy::disallowed_methods)]
 
 use std::{
     io::{BufRead, BufReader, Write},

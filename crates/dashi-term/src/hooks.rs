@@ -157,8 +157,8 @@ unsafe extern "C" fn semantic_prompt(
             Step::Prompt
         }
         ffi::GhosttySemanticPromptKind_GHOSTTY_SEMANTIC_PROMPT_INPUT_START => Step::Input,
-        // SAFETY: the command string is valid during the call.
         ffi::GhosttySemanticPromptKind_GHOSTTY_SEMANTIC_PROMPT_OUTPUT_START => {
+            // SAFETY: the command string is valid during the call.
             Step::Output(unsafe { text_of(&event.command) })
         }
         ffi::GhosttySemanticPromptKind_GHOSTTY_SEMANTIC_PROMPT_COMMAND_END => {
