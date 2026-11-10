@@ -5,7 +5,7 @@
 
 import { existsSync } from "node:fs";
 import type { Entry } from "../entries.ts";
-import { spawnDetached } from "../shared/process/detached.ts";
+import { spawnDetached } from "../shared/apps/list.ts";
 
 /** The launcher entry for the app whose windows report `appId`, if one is installed. */
 export function findEntry(entries: readonly Entry[], appId: string): Entry | undefined {

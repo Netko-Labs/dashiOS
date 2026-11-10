@@ -1,4 +1,3 @@
-export { type App, iconPath, METAL_HOST } from "./app.ts";
 export {
   EDITOR_MIME_TYPES,
   FIRST_PARTY,
@@ -10,4 +9,4 @@ export {
   PREVIEW_MIME_TYPES,
   shellDir,
 } from "./first-party.ts";
-export { dockDefaults, inTerminal, resolvePinned } from "./pinned.ts";
+export { type App, dockDefaults, iconPath, inTerminal, METAL_HOST, resolvePinned, spawnDetached } from "./list.ts";

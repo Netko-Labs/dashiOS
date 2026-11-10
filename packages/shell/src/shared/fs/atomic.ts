@@ -1,6 +1,7 @@
 /**
  * Filesystem steps for stores of plain files (Notes, Calendar): atomic writes,
- * moves that never overwrite, and reads that refuse symlinks.
+ * moves that never overwrite, and reads that refuse symlinks; and a private
+ * text file (settings, setup's state) written the same way.
  */
 
 import { closeSync, fsyncSync, linkSync, lstatSync, openSync, renameSync, unlinkSync, writeSync } from "node:fs";
@@ -68,5 +69,29 @@ export function isRealDirectory(path: string): boolean {
     return lstatSync(path).isDirectory();
   } catch {
     return false;
+  }
+}
+
+let counter = 0;
+
+/** Writing a small text file (mode 0600) so a reader never sees half of it: a temp file next to it, flushed, renamed over it. */
+export function writeTextAtomic(path: string, text: string): void {
+  const temp = join(dirname(path), `.${basename(path)}.${process.pid}.${++counter}.tmp`);
+  try {
+    const fd = openSync(temp, "w", 0o600);
+    try {
+      writeSync(fd, text);
+      fsyncSync(fd);
+    } finally {
+      closeSync(fd);
+    }
+    renameSync(temp, path);
+  } catch (error) {
+    try {
+      unlinkSync(temp);
+    } catch {
+      // Never made, or already gone.
+    }
+    throw error;
   }
 }

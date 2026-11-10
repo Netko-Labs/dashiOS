@@ -2,8 +2,7 @@
 
 import { addDays, type Day, dayPart, instantOf, type Local, minuteOfDay, parseDay } from "../../src/shared/calendar/dates.ts";
 import type { CalEvent, NthDay, Repeat } from "../../src/shared/calendar/types.ts";
-import { type ClockPrefs, formatTime, usesHour24 } from "../../src/shared/time/clock.ts";
-import { weekdayNames } from "../../src/shared/time/week.ts";
+import { type ClockPrefs, formatTime, usesHour24, weekdayNames } from "../../src/shared/time/clock.ts";
 import type { View } from "./layout.ts";
 
 function format(locale: string, options: Intl.DateTimeFormatOptions, day: Day): string {

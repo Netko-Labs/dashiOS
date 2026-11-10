@@ -1,10 +1,46 @@
 /**
- * Dashi's own app list: the first installed choice of each, which the Dock
- * starts with and which Files, Preview and the portal offer to open things in.
+ * Dashi's apps as everyone sees them: what an app is, where its icon is, the
+ * Metal host every app runs on, starting a program detached, and Dashi's own
+ * app list (the first installed choice of each), which the Dock starts with
+ * and which Files, Preview and the portal offer to open things in.
  */
 
 import { existsSync } from "node:fs";
-import { type App, iconPath } from "./app.ts";
+
+/** An app as the Dock, the launcher and the apps that open others see it. */
+export interface App {
+  /** The app id its windows report (xdg-toplevel app_id). */
+  id: string;
+  name: string;
+  /** Full-color SVG or PNG path. */
+  icon: string;
+  /** Command line; absent for running apps the Dock cannot relaunch. */
+  exec?: readonly string[];
+  env?: Readonly<Record<string, string>>;
+  /** Working directory; Bun apps read their tsconfig and bunfig from it. */
+  cwd?: string;
+  /** Its desktop entry asks for the discrete GPU (`PrefersNonDefaultGPU`; gpu-env.ts). */
+  gpu?: "discrete";
+}
+
+const icons = new URL("../../../icons/", import.meta.url).pathname;
+const mirin = new URL("../../../../../../mirin/", import.meta.url).pathname;
+
+export function iconPath(name: string): string {
+  return `${icons}${name}.svg`;
+}
+
+/** The Metal host binary every Metal app (and the shell) runs on. */
+export const METAL_HOST = process.env.DASHI_METAL_HOST ?? `${mirin}crates/mirin-metal/target/release/mirin-metal-host`;
+
+/** Runs a command detached from the shell's input and output (the menus' New Window and Help, logging out, Software's links). */
+export function spawnDetached(command: readonly string[]): void {
+  try {
+    Bun.spawn([...command], { stdin: "ignore", stdout: "ignore", stderr: "ignore" }).unref();
+  } catch (error) {
+    console.error(`dashi-shell: could not run ${command[0]}:`, error);
+  }
+}
 
 interface Choice {
   id: string;

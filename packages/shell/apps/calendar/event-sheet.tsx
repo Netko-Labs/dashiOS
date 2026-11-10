@@ -12,7 +12,7 @@ import { ScrollView, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Calendar } from "../../src/shared/calendar/types.ts";
 import type { ClockPrefs } from "../../src/shared/time/clock.ts";
-import { weekdayNames } from "../../src/shared/time/week.ts";
+import { weekdayNames } from "../../src/shared/time/clock.ts";
 import { type Draft, type EndsChoice, type MonthlyBy, moveStart, nthOf, problemWith, type RepeatChoice, setAllDay } from "./draft.ts";
 import { DayField, FIELD_LINE, FormRow, LineText, Stepper, TimeField, ZoneField } from "./form-fields.tsx";
 import { ALL_DAY_ALERTS, alertLabel, nthName, TIMED_ALERTS } from "./format.ts";

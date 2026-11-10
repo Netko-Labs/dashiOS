@@ -5,7 +5,7 @@ import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { addDays, addMonths, type Day, firstOfMonth, monthOf, startOfWeek } from "../../src/shared/calendar/dates.ts";
 import type { ClockPrefs } from "../../src/shared/time/clock.ts";
-import { weekdayNames } from "../../src/shared/time/week.ts";
+import { weekdayNames } from "../../src/shared/time/clock.ts";
 import { monthTitle } from "./format.ts";
 import { CHEVRON_LEFT, CHEVRON_RIGHT } from "./glyphs.ts";
 import { monthGrid } from "./layout.ts";

@@ -11,7 +11,7 @@ import { homedir } from "node:os";
 import { detectLook, realProbes } from "../../src/appearance/look.ts";
 import { controlFlags } from "../../src/control-center/flags.ts";
 import { loadSettings, watchSettings } from "../../src/settings.ts";
-import { settingsPath } from "../../src/shared/settings/path.ts";
+import { settingsPath } from "../../src/shared/settings/file.ts";
 import { followDarkMode } from "../kit/appearance.ts";
 import type { LookState } from "./settings.ts";
 

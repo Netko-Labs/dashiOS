@@ -11,7 +11,7 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { writeTextAtomic } from "../shared/fs/private-text.ts";
+import { writeTextAtomic } from "../shared/fs/atomic.ts";
 import { isFormatsLocale } from "../shared/locale/locale.ts";
 
 /** The categories that are formats rather than language or collation. */

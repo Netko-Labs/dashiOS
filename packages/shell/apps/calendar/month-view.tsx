@@ -11,7 +11,7 @@ import { useState } from "react";
 import { addMinutes, type Day, dayPart, monthOf } from "../../src/shared/calendar/dates.ts";
 import type { Occurrence } from "../../src/shared/calendar/types.ts";
 import type { ClockPrefs } from "../../src/shared/time/clock.ts";
-import { weekdayNames } from "../../src/shared/time/week.ts";
+import { weekdayNames } from "../../src/shared/time/clock.ts";
 import { EventChip, MoreChip } from "./chips.tsx";
 import { tint } from "./colors.ts";
 import { monthDayAt } from "./drag.ts";

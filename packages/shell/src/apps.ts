@@ -1,6 +1,6 @@
 /**
  * Starting an app, the apps the shell itself opens, and how a click on an
- * icon maps to an action. Dashi's own app list is shared/apps/pinned.ts; what
+ * icon maps to an action. Dashi's own app list is shared/apps/list.ts; what
  * the Dock shows and keeps lives in dock/.
  */
 

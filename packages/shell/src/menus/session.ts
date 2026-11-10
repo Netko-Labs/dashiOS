@@ -22,7 +22,7 @@
 
 import { readFileSync } from "node:fs";
 import type { MachineAction } from "../power/machine.ts";
-import { spawnDetached } from "../shared/process/detached.ts";
+import { spawnDetached } from "../shared/apps/list.ts";
 import { powerAfterApps } from "../shutdown.ts";
 import type { PowerKind } from "./model.ts";
 

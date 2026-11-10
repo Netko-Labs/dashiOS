@@ -94,7 +94,7 @@
 313	packages/shell/src/notifications/store.ts
 372	packages/shell/src/settings-app/registry/look.ts
 355	packages/shell/src/settings-app/sidebar.tsx
-664	packages/shell/src/settings-app/store.ts
+663	packages/shell/src/settings-app/store.ts
 484	packages/shell/src/settings.ts
 313	packages/shell/src/shared/app-menus/protocol.ts
 386	packages/shell/src/shared/calendar/ics.ts

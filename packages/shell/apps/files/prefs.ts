@@ -10,7 +10,7 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import type { SortState } from "@dashi/ui";
-import { writeTextAtomic } from "../../src/shared/fs/private-text.ts";
+import { writeTextAtomic } from "../../src/shared/fs/atomic.ts";
 
 export interface FilesPrefs {
   view: "icons" | "list";

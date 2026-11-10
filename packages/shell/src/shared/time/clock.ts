@@ -7,7 +7,8 @@
  */
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { localeFromEnv, toBcp47 } from "../locale/locale.ts";
+import { isFormatsLocale, localeFromEnv, toBcp47 } from "../locale/locale.ts";
+import { isBoolean, isRaw, oneOf, readFields } from "../settings/file.ts";
 
 export interface ClockPrefs {
   /** The BCP 47 tag the formats follow (`de-DE`). */
@@ -16,7 +17,7 @@ export interface ClockPrefs {
   hour24: boolean | undefined;
   /** Whether the menu bar's clock shows the date before the time. */
   showDate: boolean;
-  /** The first day of the week the person chose; undefined follows the locale (week.ts). */
+  /** The first day of the week the person chose; undefined follows the locale (firstDayIndex). */
   firstWeekday?: "sunday" | "monday" | "saturday";
 }
 
@@ -144,4 +145,88 @@ export function useMinuteClock(): Date {
   // A new time zone changes what the same instant reads: look again.
   useEffect(() => clockPrefs.subscribe(() => setNow(new Date())), []);
   return now;
+}
+
+// What a region's formats look like, for the Language & Region pane's
+// preview: a date, a time, a number, and the days of the week starting on
+// the person's first day. Pure.
+
+export const WEEKDAYS = ["sunday", "monday", "saturday"] as const;
+export type FirstWeekday = (typeof WEEKDAYS)[number];
+
+const INDEX: Record<FirstWeekday, number> = { sunday: 0, monday: 1, saturday: 6 };
+
+/** The region's own first day (0 Sunday … 6 Saturday); Monday when ICU does not say. */
+export function localeFirstDay(locale: string): number {
+  try {
+    const info = new Intl.Locale(locale) as { getWeekInfo?: () => { firstDay: number }; weekInfo?: { firstDay: number } };
+    const first = (info.getWeekInfo?.() ?? info.weekInfo)?.firstDay;
+    // ICU counts 1 Monday … 7 Sunday.
+    return typeof first === "number" ? first % 7 : 1;
+  } catch {
+    return 1;
+  }
+}
+
+/** The first day of the week as 0 (Sunday) to 6 (Saturday): the person's choice, else the region's. */
+export const firstDayIndex = (locale: string, choice: FirstWeekday | undefined): number => (choice ? INDEX[choice] : localeFirstDay(locale));
+
+/** The seven days' short names, the first day first ("Mon Tue …"). */
+export function weekdayNames(locale: string, firstDay: number): string[] {
+  let format: Intl.DateTimeFormat;
+  try {
+    format = new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" });
+  } catch {
+    format = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "UTC" });
+  }
+  // 2023-01-01 was a Sunday.
+  return Array.from({ length: 7 }, (_, offset) => format.format(new Date(Date.UTC(2023, 0, 1 + ((firstDay + offset) % 7)))));
+}
+
+export interface FormatPreview {
+  date: string;
+  time: string;
+  number: string;
+}
+
+export function previewFormats(prefs: ClockPrefs, now: Date): FormatPreview {
+  let number: string;
+  try {
+    number = new Intl.NumberFormat(prefs.locale).format(1234567.89);
+  } catch {
+    number = new Intl.NumberFormat("en-US").format(1234567.89);
+  }
+  return { date: formatLongDay(now, prefs), time: formatTime(now, prefs), number };
+}
+
+// The `clock` and `region` sections: how the person writes times and dates.
+// System Settings writes them (settings-app/store.ts holds them in its sections);
+// Calendar and Calculator read them from the file.
+
+/** `clock`: how the menu bar, the lock screen, and the notification center write the time. */
+export interface ClockSettings {
+  /** 24-hour time on or off; the region's own habit when not set. */
+  hour24?: boolean;
+  /** The date in the menu bar; on when not set. */
+  showDate?: boolean;
+}
+
+/** `region`: this person's formats, apart from the system language. */
+export interface RegionSettings {
+  /** The locale dates, times, numbers, and money follow (`de_DE.UTF-8`); the language's own when not set. */
+  formats?: string;
+  /** The first day of the week; the region's own when not set. */
+  firstWeekday?: FirstWeekday;
+}
+
+export const CLOCK_SECTION = { path: ["clock"], fields: { hour24: isBoolean, showDate: isBoolean } } as const;
+export const REGION_SECTION = { path: ["region"], fields: { formats: isFormatsLocale, firstWeekday: oneOf(...WEEKDAYS) } } as const;
+
+/** The two sections from a decoded settings file. Never throws. */
+export function readRegionSettings(raw: unknown): { clock: ClockSettings; region: RegionSettings } {
+  const root = isRaw(raw) ? raw : {};
+  return {
+    clock: readFields(root, CLOCK_SECTION.path, CLOCK_SECTION.fields) as ClockSettings,
+    region: readFields(root, REGION_SECTION.path, REGION_SECTION.fields) as RegionSettings,
+  };
 }

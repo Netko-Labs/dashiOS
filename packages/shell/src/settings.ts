@@ -80,7 +80,7 @@ import { DEFAULT_INPUT_METHOD, INPUT_METHODS, type InputMethodName } from "./inp
 import { DEFAULT_POINTER_SIZE, POINTER_SIZES } from "./pointer.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "./scroll-speed.ts";
 import { parseCatalogs } from "./shared/applet-store/catalogs.ts";
-import { settingsPath } from "./shared/settings/path.ts";
+import { settingsPath } from "./shared/settings/file.ts";
 import { parseSpaceNames, type SpaceNames } from "./spaces/names.ts";
 import { DEFAULT_WALLPAPER_MODE, isWallpaperRef, WALLPAPER_MODES, type WallpaperChoice } from "./wallpaper/catalog.ts";
 import { FRAME_RATES, isVideoPath, LIVE_SHADERS, RETIRED_KEYS, RETIRED_KINDS, WALLPAPER_KINDS } from "./wallpaper/live/choice.ts";

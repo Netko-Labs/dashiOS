@@ -7,7 +7,7 @@
  */
 
 import { existsSync } from "node:fs";
-import { type App, iconPath } from "./app.ts";
+import { type App, iconPath } from "./list.ts";
 
 export interface FirstPartySpec {
   /** `dev.dashi.<name>`: the app id its window reports (`runApp`'s `id`). */

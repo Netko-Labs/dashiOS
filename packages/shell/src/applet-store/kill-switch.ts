@@ -15,7 +15,7 @@ import { CatalogSet, readSavedCatalogs } from "../shared/applet-store/catalog-se
 import { dashiCatalog } from "../shared/applet-store/catalogs.ts";
 import { AppletInstaller } from "../shared/applet-store/installer.ts";
 import { DASHI_INDEX_KEY } from "../shared/applet-store/keys.ts";
-import { settingsPath } from "../shared/settings/path.ts";
+import { settingsPath } from "../shared/settings/file.ts";
 
 const FIRST_MS = 3 * 60_000;
 const EVERY_MS = 24 * 60 * 60_000;

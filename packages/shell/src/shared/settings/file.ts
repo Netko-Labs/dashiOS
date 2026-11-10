@@ -1,9 +1,12 @@
 /**
- * Reading a section of the settings file: the object at its path, and only
- * the keys that hold a value of the right kind. System Settings' store
- * (settings-app/store.ts) reads every section this way; an app reads the few
- * it needs (region.ts).
+ * The settings file, `~/.config/dashi/settings.json`: where it is, and how a
+ * section is read (the object at its path, and only the keys that hold a
+ * value of the right kind). System Settings' store (settings-app/store.ts)
+ * reads every section this way; the clock reads its two (time/clock.ts).
  */
+
+import { homedir } from "node:os";
+import { join } from "node:path";
 
 export type Raw = Record<string, unknown>;
 export type Check = (value: unknown) => boolean;
@@ -39,4 +42,9 @@ export function readFields(raw: Raw, path: readonly string[], fields: Record<str
     if (Object.hasOwn(found, key) && check(found[key])) out[key] = found[key];
   }
   return out;
+}
+
+/** Where the person's settings live: `~/.config/dashi/settings.json`, or under `$XDG_CONFIG_HOME`. */
+export function settingsPath(env: Record<string, string | undefined> = process.env, home: string = homedir()): string {
+  return join(env.XDG_CONFIG_HOME || join(home, ".config"), "dashi", "settings.json");
 }

@@ -13,8 +13,8 @@ import { readFileSync, watch } from "node:fs";
 import { basename, dirname } from "node:path";
 import { useEffect, useState } from "react";
 import { localeFromEnv, toBcp47 } from "../../src/shared/locale/locale.ts";
-import { settingsPath } from "../../src/shared/settings/path.ts";
-import { readRegionSettings } from "../../src/shared/settings/region.ts";
+import { settingsPath } from "../../src/shared/settings/file.ts";
+import { readRegionSettings } from "../../src/shared/time/clock.ts";
 
 export interface NumberLocale {
   /** The BCP 47 tag the separators come from ("de-DE"). */

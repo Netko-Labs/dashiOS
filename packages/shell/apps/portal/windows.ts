@@ -1,7 +1,7 @@
 /**
  * The portal's dialogs on screen: each is its own Metal window (one host per
  * dialog, React through @mirinjs/metal), taken from a warm host so it opens
- * as fast as a sheet in Dashi's own apps (src/shared/metal/warm-host.ts). When the app
+ * as fast as a sheet in Dashi's own apps (src/shared/metal/host.ts). When the app
  * gave its window (`wayland:` or `x11:`), the shell is told first, and the
  * window comes up with a one-off title it knows, so it is hung from that
  * window as a sheet (src/portal-host/sheets.ts); then it takes its real title.
@@ -13,8 +13,7 @@ import { existsSync } from "node:fs";
 import { type NativeHostTransport, type NativeWindowOptions, render, spawnNativeHost } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { METAL_HOST } from "../../src/shared/apps/index.ts";
-import { shellHostOptions } from "../../src/shared/metal/host.ts";
-import { WarmHost } from "../../src/shared/metal/warm-host.ts";
+import { shellHostOptions, WarmHost } from "../../src/shared/metal/host.ts";
 import { PORTAL_APP_ID, parseParentWindow, sheetTitle } from "../../src/shared/portal-host/protocol.ts";
 import type { ShellLink } from "./shell.ts";
 
