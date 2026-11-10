@@ -22,7 +22,7 @@ import {
   parseDesktopEntry,
   resolvePinned,
 } from "./shared/apps/index.ts";
-import type { Localized } from "./shared/locale/messages.ts";
+import type { Localized } from "./shared/locale/index.ts";
 import { type AppCatalog, catalogFrom } from "./shared/processes/index.ts";
 
 export interface Entry extends App {

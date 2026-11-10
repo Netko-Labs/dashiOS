@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { isFormatsLocale, localeFromEnv, toBcp47 } from "../locale/locale.ts";
+import { isFormatsLocale, localeFromEnv, toBcp47 } from "../locale/index.ts";
 import { isBoolean, isRaw, oneOf, readFields } from "../settings/file.ts";
 
 export interface ClockPrefs {

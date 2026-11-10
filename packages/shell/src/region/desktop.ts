@@ -8,7 +8,7 @@
  */
 
 import type { SettingsStore } from "../settings-app/store.ts";
-import { isFormatsLocale } from "../shared/locale/locale.ts";
+import { isFormatsLocale } from "../shared/locale/index.ts";
 import { clockPrefsFrom, usesHour24 } from "../shared/time/index.ts";
 import type { RegionFailure } from "./lib/backend.ts";
 import type { RegionStore } from "./store.ts";

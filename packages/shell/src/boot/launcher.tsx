@@ -39,7 +39,7 @@ import type { SettingsStore } from "../settings-app/index.ts";
 import { type App, fileIcon, METAL_HOST } from "../shared/apps/index.ts";
 import { systemClipboard } from "../shared/clipboard/clipboard.ts";
 import { FileSearch, iconNamesFor } from "../shared/files/file-search.ts";
-import { languagesOf, messageLocales } from "../shared/locale/messages.ts";
+import { languagesOf, messageLocales } from "../shared/locale/index.ts";
 import type { Handoff } from "./agents.ts";
 import type { Catalog } from "./apps.ts";
 import { LauncherKeyboard, TYPE_AHEAD_LIMIT_MS } from "./keys.ts";

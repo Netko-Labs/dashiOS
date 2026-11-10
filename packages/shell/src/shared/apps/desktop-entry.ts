@@ -13,7 +13,7 @@
 
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
-import { type Localized, localizedDesktop } from "../locale/messages.ts";
+import { type Localized, localizedDesktop } from "../locale/index.ts";
 
 export interface DesktopAction {
   /** Its id in `Actions=`: letters, digits, and `-`. */

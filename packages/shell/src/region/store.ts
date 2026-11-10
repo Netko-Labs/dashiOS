@@ -8,7 +8,7 @@
  */
 
 import { useSyncExternalStore } from "react";
-import { isLocaleName, type LocaleEntry, languageOf, localeEntries, withLanguage } from "../shared/locale/locale.ts";
+import { isLocaleName, type LocaleEntry, languageOf, localeEntries, withLanguage } from "../shared/locale/index.ts";
 import { type RegionBackend, RegionError, type RegionFailure } from "./lib/backend.ts";
 import { buildZones, isTimezoneName, readZoneTables, type Zone, type ZoneTables } from "./timezones.ts";
 

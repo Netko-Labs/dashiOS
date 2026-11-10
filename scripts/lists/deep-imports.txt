@@ -9,7 +9,7 @@
 1	packages/shell/apps/activity-monitor/lib/sampler.ts
 1	packages/shell/apps/activity-monitor/lib/sampling.ts
 3	packages/shell/apps/activity-monitor/main.tsx
-2	packages/shell/apps/calculator/lib/locale.ts
+1	packages/shell/apps/calculator/lib/locale.ts
 5	packages/shell/apps/calendar/lib/draft.ts
 5	packages/shell/apps/calendar/lib/edits.ts
 2	packages/shell/apps/calendar/lib/event-changes.ts
@@ -214,7 +214,6 @@
 2	packages/shell/src/agents/tools/lib/calendar.ts
 1	packages/shell/src/agents/tools/lib/files.ts
 1	packages/shell/src/agents/tools/lib/notes.ts
-1	packages/shell/src/agents/tools/lib/region.ts
 1	packages/shell/src/agents/tools/lib/software.ts
 1	packages/shell/src/app-menus/lib/server.ts
 1	packages/shell/src/app-menus/shortcut.ts
@@ -232,7 +231,7 @@
 1	packages/shell/src/battery/lib/apps.ts
 1	packages/shell/src/battery/monitor.ts
 1	packages/shell/src/battery/start.ts
-3	packages/shell/src/boot/launcher.tsx
+2	packages/shell/src/boot/launcher.tsx
 1	packages/shell/src/boot/menus.tsx
 3	packages/shell/src/boot/notices.ts
 1	packages/shell/src/boot/parts.ts
@@ -245,13 +244,11 @@
 1	packages/shell/src/control-center/lib/snapshot.ts
 1	packages/shell/src/control-center/panel.tsx
 1	packages/shell/src/dock/start.tsx
-1	packages/shell/src/entries.ts
 1	packages/shell/src/extensions/start.ts
 1	packages/shell/src/force-quit/lib/controller.ts
 2	packages/shell/src/force-quit/start.tsx
 1	packages/shell/src/graphics/lib/notice.ts
 1	packages/shell/src/laptop/start.ts
-1	packages/shell/src/launcher/ranking/entries.ts
 1	packages/shell/src/launcher/resident.tsx
 2	packages/shell/src/launcher/row-model.ts
 1	packages/shell/src/launcher/sections.ts
@@ -269,16 +266,9 @@
 1	packages/shell/src/portal-host/index.ts
 1	packages/shell/src/portal-host/service.ts
 1	packages/shell/src/portal-host/sheets.ts
-1	packages/shell/src/region/desktop.ts
-1	packages/shell/src/region/lib/fake.ts
-1	packages/shell/src/region/lib/formats.ts
-1	packages/shell/src/region/lib/systemd.ts
-1	packages/shell/src/region/pickers.tsx
-1	packages/shell/src/region/store.ts
 2	packages/shell/src/settings-app/appearance.tsx
 2	packages/shell/src/settings-app/context.ts
 1	packages/shell/src/settings-app/keyboard.tsx
-1	packages/shell/src/settings-app/lib/changes/words.ts
 1	packages/shell/src/settings-app/lib/edit-menu.ts
 1	packages/shell/src/settings-app/lib/find.ts
 1	packages/shell/src/settings-app/lib/panes/agents-consent.tsx
@@ -324,10 +314,9 @@
 2	packages/shell/src/shared/applet-store/catalog.ts
 1	packages/shell/src/shared/applet-store/catalogs.ts
 2	packages/shell/src/shared/applet-store/images.ts
-1	packages/shell/src/shared/apps/desktop-entry.ts
 1	packages/shell/src/shared/calendar/store.ts
 1	packages/shell/src/shared/notes/store.ts
-2	packages/shell/src/shared/time/clock.ts
+1	packages/shell/src/shared/time/clock.ts
 1	packages/shell/src/sheet.tsx
 2	packages/shell/src/software/update-check.ts
 1	packages/shell/src/system/lib/osd-panel.tsx
@@ -408,7 +397,6 @@
 1	packages/shell/test/preview-empty.test.tsx
 1	packages/shell/test/preview-instance.test.ts
 1	packages/shell/test/ranking-fixture.ts
-1	packages/shell/test/ranking-locale.test.ts
 1	packages/shell/test/ranking-memory.test.ts
 3	packages/shell/test/recorder.test.ts
 2	packages/shell/test/refresh-rate-view.test.tsx

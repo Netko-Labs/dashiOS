@@ -8,7 +8,7 @@
  * names a change in Title Case, as menus do ("Undo Text Size").
  */
 
-import { toBcp47 } from "../../../shared/locale/locale.ts";
+import { toBcp47 } from "../../../shared/locale/index.ts";
 import { layoutWords, variantWords } from "../../layouts.ts";
 import { describeValue, findRow, type RowDef, rowName, SETTINGS_ROWS } from "../../registry/index.ts";
 import type { Change, ChangeWords } from "./log.ts";

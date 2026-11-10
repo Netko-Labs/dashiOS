@@ -8,7 +8,7 @@
  */
 
 import { DBusConnection, DBusError, propertyMap, unwrap } from "../../shared/dbus/index.ts";
-import { parseInstalledLocales } from "../../shared/locale/locale.ts";
+import { parseInstalledLocales } from "../../shared/locale/index.ts";
 import { isTimezoneName } from "../timezones.ts";
 import { type RegionBackend, RegionError, type TimeState } from "./backend.ts";
 
