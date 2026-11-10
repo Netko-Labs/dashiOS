@@ -59,7 +59,7 @@ One chooser everywhere. Make the file chooser Files-in-a-sheet and a `@dashi/ui`
 - **One alert frame.** `PortalFrame`, `DialogFrame` and `ConfirmSheet` become one `@dashi/ui` component with the same icon tile, title, message and button row, and the same Esc and Enter rules. A sheet has no title row: its first line is the question.
 - **Default buttons follow the risk.** Enter presses the button that goes ahead only when going ahead is safe and reversible. For grants, deletions and replacements, the default is the safe answer or click-only, and the destructive button is ume.
 - **A list of unknown length is never pills.** Printers, filters, paper sizes and apps use a PopUpButton or a list.
-- **Dates, weekdays and the clock come from Region settings,** through one helper (`src/shared/time/week.ts`), in every process the portal and dialog included.
+- **Dates, weekdays and the clock come from Region settings,** through one helper (`src/region/week.ts`), in every process the portal and dialog included.
 - **Disclosure has one pattern and one wording:** a chevron and "Show more …" / "Show fewer …", in ink, not in kombu link text.
 - **Copy points only at panes that exist.** A string that names a Settings pane should come from the pane registry, so a rename or a missing pane fails a test.
 - **Every animation checks Reduce Motion,** and nothing animates by re-rendering React on a timer.
