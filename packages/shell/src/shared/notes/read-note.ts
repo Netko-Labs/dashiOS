@@ -4,7 +4,7 @@
  */
 
 import { type Dirent, readFileSync, statSync } from "node:fs";
-import { isRegularFile } from "../fs/atomic.ts";
+import { isRegularFile } from "../fs/index.ts";
 import { noteId } from "./names.ts";
 import { parseNote } from "./text.ts";
 import { MAX_NOTE_BYTES, type Note } from "./types.ts";

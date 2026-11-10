@@ -16,7 +16,7 @@ import { type NotificationStore, type NotifyInput, SHELL_SENDER } from "../../no
 import { iconPath } from "../../shared/apps/index.ts";
 import { type Alert, alertMessage, alertsBetween } from "../../shared/calendar/alerts.ts";
 import { dayPart, instantOf } from "../../shared/calendar/dates.ts";
-import { writeAtomic } from "../../shared/fs/atomic.ts";
+import { writeAtomic } from "../../shared/fs/index.ts";
 import { type ClockPrefs, clockPrefs } from "../../shared/time/index.ts";
 import type { CalendarFeed } from "./feed.ts";
 

@@ -12,7 +12,7 @@ import { mkdirSync, readdirSync, readFileSync, rmdirSync, unlinkSync } from "nod
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { isErrno } from "../files/errno.ts";
-import { isRegularFile, moveNoClobber, writeAtomic, writeNew } from "../fs/atomic.ts";
+import { isRegularFile, moveNoClobber, writeAtomic, writeNew } from "../fs/index.ts";
 import { createFolder, ensureFolder, renameFolder, requireFolder } from "./folders.ts";
 import { inside, isNoteId, noteId, sanitizeName, splitId, uniqueName } from "./names.ts";
 import { isNoteFile, NoteCache } from "./read-note.ts";

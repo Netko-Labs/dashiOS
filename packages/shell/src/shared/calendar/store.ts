@@ -12,7 +12,7 @@ import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, unlinkSync
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { isErrno } from "../files/errno.ts";
-import { isRegularFile, writeAtomic, writeNew } from "../fs/atomic.ts";
+import { isRegularFile, writeAtomic, writeNew } from "../fs/index.ts";
 import { type EventInput, makeEvent } from "./event.ts";
 import { cleanName, isColor, MAX_ICS_BYTES, parseIcs, writeIcs } from "./ics.ts";
 import { addTimezoneBlocks } from "./ics-write.ts";

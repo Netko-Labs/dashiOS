@@ -6,7 +6,7 @@
 
 import { mkdirSync, readdirSync, renameSync } from "node:fs";
 import { join } from "node:path";
-import { isRealDirectory } from "../fs/atomic.ts";
+import { isRealDirectory } from "../fs/index.ts";
 import { DEFAULT_FOLDER_NAME, sanitizeName, uniqueName } from "./names.ts";
 import { TRASH_DIR } from "./recently-deleted.ts";
 import { updateSidecar } from "./sidecar.ts";

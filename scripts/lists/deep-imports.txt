@@ -33,7 +33,7 @@
 1	packages/shell/apps/calendar/lib/hooks/use-overlays.ts
 1	packages/shell/apps/calendar/lib/hooks/use-pending.ts
 1	packages/shell/apps/calendar/lib/hooks/use-picked.ts
-4	packages/shell/apps/calendar/lib/import.ts
+3	packages/shell/apps/calendar/lib/import.ts
 1	packages/shell/apps/calendar/lib/key-actions.ts
 2	packages/shell/apps/calendar/lib/layout.ts
 6	packages/shell/apps/calendar/lib/model.ts
@@ -63,7 +63,6 @@
 4	packages/shell/apps/calendar/main.tsx
 1	packages/shell/apps/dialog/file-selection.ts
 1	packages/shell/apps/editor/lib/names.ts
-1	packages/shell/apps/editor/lib/prefs.ts
 1	packages/shell/apps/editor/lib/views/chooser.tsx
 1	packages/shell/apps/files/chooser/lib/bars.tsx
 1	packages/shell/apps/files/chooser/lib/use-chooser-input.ts
@@ -90,7 +89,6 @@
 3	packages/shell/apps/files/lib/operations/transfer.ts
 4	packages/shell/apps/files/lib/operations/trash-jobs.ts
 5	packages/shell/apps/files/lib/operations/undoable.ts
-1	packages/shell/apps/files/lib/prefs.ts
 2	packages/shell/apps/files/lib/recent-file.ts
 1	packages/shell/apps/files/lib/recent.ts
 1	packages/shell/apps/files/lib/sort.ts
@@ -243,7 +241,7 @@
 1	packages/shell/src/boot/session.ts
 1	packages/shell/src/calendar/bridge.ts
 6	packages/shell/src/calendar/lib/feed.ts
-3	packages/shell/src/calendar/lib/reminders.ts
+2	packages/shell/src/calendar/lib/reminders.ts
 3	packages/shell/src/calendar/service.ts
 1	packages/shell/src/control-center/index.ts
 1	packages/shell/src/control-center/lib/snapshot.ts
@@ -275,7 +273,7 @@
 1	packages/shell/src/portal-host/sheets.ts
 1	packages/shell/src/region/desktop.ts
 1	packages/shell/src/region/lib/fake.ts
-2	packages/shell/src/region/lib/formats.ts
+1	packages/shell/src/region/lib/formats.ts
 1	packages/shell/src/region/lib/systemd.ts
 1	packages/shell/src/region/pickers.tsx
 1	packages/shell/src/region/store.ts
@@ -321,7 +319,6 @@
 2	packages/shell/src/setup/lib/extras/store.ts
 1	packages/shell/src/setup/lib/pages/done.tsx
 1	packages/shell/src/setup/lib/pages/extras.tsx
-1	packages/shell/src/setup/lib/state.ts
 1	packages/shell/src/setup/lib/view.tsx
 3	packages/shell/src/setup/start.tsx
 1	packages/shell/src/shared/accounts/parse.ts
@@ -330,12 +327,8 @@
 1	packages/shell/src/shared/applet-store/catalogs.ts
 2	packages/shell/src/shared/applet-store/images.ts
 1	packages/shell/src/shared/apps/desktop-entry.ts
-1	packages/shell/src/shared/calendar/sidecar.ts
-2	packages/shell/src/shared/calendar/store.ts
-1	packages/shell/src/shared/notes/folders.ts
-1	packages/shell/src/shared/notes/read-note.ts
-1	packages/shell/src/shared/notes/sidecar.ts
-2	packages/shell/src/shared/notes/store.ts
+1	packages/shell/src/shared/calendar/store.ts
+1	packages/shell/src/shared/notes/store.ts
 2	packages/shell/src/shared/time/clock.ts
 1	packages/shell/src/sheet.tsx
 2	packages/shell/src/software/update-check.ts
