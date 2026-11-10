@@ -1,6 +1,6 @@
 # H6: index.ts(x) files doing more than re-export (count = other statements). May only shrink.
 25	packages/shell/apps/portal/app-chooser/index.tsx
-12	packages/shell/apps/portal/file-chooser/index.tsx
+11	packages/shell/apps/portal/file-chooser/index.tsx
 15	packages/shell/apps/portal/print/index.ts
 3	packages/shell/browser-extension/src/background/index.ts
 12	packages/shell/browser-extension/src/content/index.ts
