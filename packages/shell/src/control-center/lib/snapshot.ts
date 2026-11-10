@@ -7,18 +7,18 @@
  */
 
 import { useSyncExternalStore } from "react";
-import { batteryTime } from "../battery/panel-numbers.ts";
-import type { BluetoothStore } from "../bluetooth/store.ts";
-import { type MirrorStore, useMirror } from "../display-config/mirror.ts";
-import { cardState, type GraphicsController, shownMode } from "../graphics/controller.ts";
-import { GRAPHICS_LABEL } from "../graphics/policy.ts";
-import type { Laptop } from "../laptop/start.ts";
-import { keyboardLight, type LaptopSnapshot, lightLabel } from "../laptop/store.ts";
-import type { ModeSnapshot } from "../power/modes/store.ts";
-import { type FlagsStore, useFlags } from "../shared/control-center/flags.ts";
-import { type SystemStore, useSystem } from "../system/store.ts";
-import type { ControlSnapshot } from "./catalog.ts";
-import { type DeviceStore, useDevices } from "./devices.ts";
+import { batteryTime } from "../../battery/panel-numbers.ts";
+import type { BluetoothStore } from "../../bluetooth/store.ts";
+import { type MirrorStore, useMirror } from "../../display-config/mirror.ts";
+import { cardState, type GraphicsController, shownMode } from "../../graphics/controller.ts";
+import { GRAPHICS_LABEL } from "../../graphics/policy.ts";
+import type { Laptop } from "../../laptop/start.ts";
+import { keyboardLight, type LaptopSnapshot, lightLabel } from "../../laptop/store.ts";
+import type { ModeSnapshot } from "../../power/modes/store.ts";
+import { type FlagsStore, useFlags } from "../../shared/control-center/flags.ts";
+import { type SystemStore, useSystem } from "../../system/store.ts";
+import type { ControlSnapshot } from "../catalog.ts";
+import { type DeviceStore, useDevices } from "../devices.ts";
 
 const NONE = { subscribe: () => () => {}, getSnapshot: () => null };
 

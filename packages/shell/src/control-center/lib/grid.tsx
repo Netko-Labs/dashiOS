@@ -10,10 +10,10 @@
 
 import { type Bounds, Svg, View } from "@mirinjs/metal";
 import { type ReactNode, useRef } from "react";
-import { useControlColors } from "../shared/controls/palette.ts";
-import { MINUS } from "./glyphs.ts";
-import { frameOf, GRID, gridHeight, type Placed, tileAt } from "./layout.ts";
-import { TileFrame } from "./tiles.tsx";
+import { useControlColors } from "../../shared/controls/palette.ts";
+import { MINUS } from "../glyphs.ts";
+import { frameOf, GRID, gridHeight, type Placed, tileAt } from "../layout.ts";
+import { TileFrame } from "../tiles.tsx";
 
 /** How far the pointer goes before a press is a drag. */
 const DRAG_SLOP = 6;

@@ -9,7 +9,7 @@
 
 import type { Palette } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
-import { MOON } from "./control-center/glyphs.ts";
+import { MOON } from "./control-center/index.ts";
 import { batteryGlyph, CONTROL_CENTER, networkGlyph, speakerGlyph } from "./glyphs.ts";
 import { GOES } from "./menubar-fit.ts";
 import { StatusItem, type StatusSlot } from "./menubar-status.tsx";

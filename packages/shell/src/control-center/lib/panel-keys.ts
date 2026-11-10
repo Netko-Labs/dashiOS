@@ -6,10 +6,10 @@
  */
 
 import type { KeyDownInfo } from "@mirinjs/metal";
-import { stepLevel } from "../shared/controls/slider-math.ts";
-import type { ControlPage } from "./catalog.ts";
-import type { Controls } from "./controls.tsx";
-import { type Direction, type Layout, moveToward, neighbor, nextSize, type Placed, removeItem } from "./layout.ts";
+import { stepLevel } from "../../shared/controls/slider-math.ts";
+import type { ControlPage } from "../catalog.ts";
+import type { Controls } from "../controls.tsx";
+import { type Direction, type Layout, moveToward, neighbor, nextSize, type Placed, removeItem } from "../layout.ts";
 
 const ARROWS: Readonly<Record<string, Direction>> = { left: "left", right: "right", up: "up", down: "down" };
 

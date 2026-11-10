@@ -7,11 +7,11 @@
  */
 
 import { Svg, Text, View } from "@mirinjs/metal";
-import { useControlColors } from "../shared/controls/palette.ts";
-import { DEFAULT_LAYOUT } from "./catalog.ts";
-import { PLUS } from "./glyphs.ts";
-import { addItem, COLUMN, GRID, type Layout, type TileSize } from "./layout.ts";
-import type { LayoutStore } from "./layout-store.ts";
+import { useControlColors } from "../../shared/controls/palette.ts";
+import { DEFAULT_LAYOUT } from "../catalog.ts";
+import { PLUS } from "../glyphs.ts";
+import { addItem, COLUMN, GRID, type Layout, type TileSize } from "../layout.ts";
+import type { LayoutStore } from "../layout-store.ts";
 
 export interface AddEntry {
   id: string;

@@ -4,7 +4,7 @@
  * or bluetoothd not running: the fallback the tile always had).
  */
 
-import type { Radio } from "../control-center/radios.ts";
+import type { Radio } from "../control-center/index.ts";
 import { classify } from "./failures.ts";
 import type { BluetoothBackend } from "./types.ts";
 

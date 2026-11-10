@@ -1,7 +1,7 @@
 import { CHECK, Group, Note, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect } from "react";
-import { LOCK } from "../../control-center/glyphs.ts";
+import { LOCK } from "../../control-center/index.ts";
 import { wifiGlyph } from "../../glyphs.ts";
 import { chooseNetwork } from "../../wifi/flow.ts";
 import { joinMessage } from "../../wifi/networks.ts";

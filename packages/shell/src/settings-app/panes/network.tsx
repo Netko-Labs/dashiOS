@@ -11,8 +11,7 @@
 
 import { Svg, Text } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
-import { LOCK } from "../../control-center/glyphs.ts";
-import { useDevices } from "../../control-center/index.ts";
+import { LOCK, useDevices } from "../../control-center/index.ts";
 import { wifiGlyph } from "../../glyphs.ts";
 import { type EthernetInfo, useNetInfo, type VpnConnection } from "../../network/index.ts";
 import { chooseNetwork } from "../../wifi/flow.ts";

@@ -5,14 +5,14 @@
  * (page-parts.tsx).
  */
 
-import { BluetoothPage } from "../bluetooth/page.tsx";
-import { SoundPage } from "../sound/page.tsx";
-import { WifiPage } from "../wifi/page.tsx";
-import type { ControlPage } from "./catalog.ts";
-import type { Controls } from "./controls.tsx";
+import { BluetoothPage } from "../../bluetooth/page.tsx";
+import { SoundPage } from "../../sound/page.tsx";
+import { WifiPage } from "../../wifi/page.tsx";
+import type { ControlPage } from "../catalog.ts";
+import type { Controls } from "../controls.tsx";
+import { PageBody, PageHeader, PageNote, PageRow } from "../page-parts.tsx";
+import type { ControlCenterProps } from "../panel.tsx";
 import { LaptopPageView } from "./laptop-pages.tsx";
-import { PageBody, PageHeader, PageNote, PageRow } from "./page-parts.tsx";
-import type { ControlCenterProps } from "./panel.tsx";
 
 function AppletChoicePage({ id, props, controls, onBack }: { id: string; props: ControlCenterProps; controls: Controls; onBack: () => void }) {
   const tile = controls.applet(id);

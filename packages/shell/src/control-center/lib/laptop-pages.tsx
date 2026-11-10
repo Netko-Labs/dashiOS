@@ -7,16 +7,16 @@
  * the green row.
  */
 
-import { cardState, useGraphics } from "../graphics/controller.ts";
-import { LOST_NOTICE } from "../graphics/lost-card.ts";
-import { GRAPHICS_LABEL, GRAPHICS_MODES } from "../graphics/policy.ts";
-import { keyboardLightGlyph, modeGlyph } from "../laptop/glyphs.ts";
-import type { Laptop } from "../laptop/start.ts";
-import { keyboardLight, lightLabel, useLaptop } from "../laptop/store.ts";
-import { useModes } from "../power/modes/store.ts";
-import { MODE_LABEL, MODE_SHORT } from "../power/modes/types.ts";
-import type { LaptopPage } from "./catalog.ts";
-import { PageBody, PageHeader, PageNote, PageRow, PageSection } from "./page-parts.tsx";
+import { cardState, useGraphics } from "../../graphics/controller.ts";
+import { LOST_NOTICE } from "../../graphics/lost-card.ts";
+import { GRAPHICS_LABEL, GRAPHICS_MODES } from "../../graphics/policy.ts";
+import { keyboardLightGlyph, modeGlyph } from "../../laptop/glyphs.ts";
+import type { Laptop } from "../../laptop/start.ts";
+import { keyboardLight, lightLabel, useLaptop } from "../../laptop/store.ts";
+import { useModes } from "../../power/modes/store.ts";
+import { MODE_LABEL, MODE_SHORT } from "../../power/modes/types.ts";
+import type { LaptopPage } from "../catalog.ts";
+import { PageBody, PageHeader, PageNote, PageRow, PageSection } from "../page-parts.tsx";
 
 function ModePage({ laptop, onBack }: { laptop: Laptop; onBack: () => void }) {
   const modes = useModes(laptop.modes);

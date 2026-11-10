@@ -17,7 +17,7 @@
 
 import { Text, View } from "@mirinjs/metal";
 import { useCallback, useState, useSyncExternalStore } from "react";
-import { DeviceStore, useDevices } from "../../control-center/devices.ts";
+import { DeviceStore, useDevices } from "../../control-center/index.ts";
 import type { AutoRefresh, RefreshScreen } from "../../display-config/auto-refresh.ts";
 import { mirrorSource } from "../../display-config/mirror.ts";
 import { type Mode, type Monitor, monitorLabel, ratesOf, sizeLabel } from "../../display-config/monitors.ts";

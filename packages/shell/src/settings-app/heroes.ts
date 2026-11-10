@@ -7,7 +7,7 @@
  */
 
 import { formatWatts, statusLine } from "../battery/panel-numbers.ts";
-import type { Placed } from "../control-center/layout.ts";
+import type { Placed } from "../control-center/index.ts";
 import { type Monitor, monitorLabel, refreshLabel, sizeLabel, uprightSize } from "../display-config/monitors.ts";
 import type { Battery } from "../system/battery.ts";
 

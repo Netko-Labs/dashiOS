@@ -26,13 +26,13 @@ import { type AppletTileSource, isAppletTile } from "./applet-tiles.ts";
 import { type ControlPage, isThere } from "./catalog.ts";
 import { useControls } from "./controls.tsx";
 import type { DeviceStore } from "./devices.ts";
-import { PanelEditor } from "./edit.tsx";
-import { ControlGrid } from "./grid.tsx";
 import { frameOf, GRID, type Layout, moveItem, nextSize, pack, removeItem, shown } from "./layout.ts";
 import { type LayoutStore, useLayout } from "./layout-store.ts";
+import { PanelEditor } from "./lib/edit.tsx";
+import { ControlGrid } from "./lib/grid.tsx";
+import { PageView } from "./lib/pages.tsx";
+import { panelKey } from "./lib/panel-keys.ts";
 import { PageKeysContext, PageOrigin, usePageKeys } from "./page-parts.tsx";
-import { PageView } from "./pages.tsx";
-import { panelKey } from "./panel-keys.ts";
 import { TILE_RADIUS } from "./tiles.tsx";
 
 export const CONTROL_CENTER_PANEL = { width: GRID.width, padding: GRID.padding, gap: GRID.gap } as const;

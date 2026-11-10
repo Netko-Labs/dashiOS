@@ -8,7 +8,7 @@
 
 import { useColors } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
-import { MOON } from "./control-center/glyphs.ts";
+import { MOON } from "./control-center/index.ts";
 import { type ExtrasStore, type MenuBarExtra, useExtras } from "./extras/index.ts";
 import { ExtraItem, TILE } from "./extras/view.tsx";
 import { networkGlyph, speakerGlyph } from "./glyphs.ts";

@@ -11,7 +11,7 @@ import { AccountStore, type AccountsSetup, chooseAccounts, PasswordChangePrompt 
 import { holdingBar } from "../bar-hold.ts";
 import type { BatteryMonitor } from "../battery/index.ts";
 import type { BluetoothStore } from "../bluetooth/store.ts";
-import type { DeviceStore } from "../control-center/devices.ts";
+import type { DeviceStore } from "../control-center/index.ts";
 import type { AutoRefresh } from "../display-config/auto-refresh.ts";
 import type { Laptop } from "../laptop/start.ts";
 import { fakeNetInfo, NetInfoStore, nmcliNetInfo } from "../network/index.ts";

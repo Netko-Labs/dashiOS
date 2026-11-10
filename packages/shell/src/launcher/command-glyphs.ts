@@ -10,7 +10,7 @@
 
 import { LOGO } from "@dashi/ui";
 import { CLIPBOARD, SNIPPET } from "../clipboard/glyphs.ts";
-import { LOCK, MOON } from "../control-center/glyphs.ts";
+import { LOCK, MOON } from "../control-center/index.ts";
 import { CAPTURE_GLYPHS } from "../recorder/index.ts";
 import { KEYBOARD } from "../settings-app/glyphs.ts";
 

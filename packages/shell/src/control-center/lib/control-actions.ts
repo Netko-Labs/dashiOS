@@ -6,11 +6,11 @@
  * slider's drag do, so the pointer and the keyboard agree.
  */
 
-import type { AppletTile, AppletTileSource } from "./applet-tiles.ts";
-import { levelOf, nextChoice, valueAt } from "./applet-tiles.ts";
-import { type ControlPage, type ControlSnapshot, controlInfo, lightToggle, powerToggle, tileState } from "./catalog.ts";
+import type { AppletTile, AppletTileSource } from "../applet-tiles.ts";
+import { levelOf, nextChoice, valueAt } from "../applet-tiles.ts";
+import { type ControlPage, type ControlSnapshot, controlInfo, lightToggle, powerToggle, tileState } from "../catalog.ts";
+import type { TileLook, TilePress } from "../tiles.tsx";
 import type { SnapshotSources } from "./snapshot.ts";
-import type { TileLook, TilePress } from "./tiles.tsx";
 
 /** The keyboard light's level before the knob turned it off, so on brings it back. */
 let lastLight: number | null = null;

@@ -15,12 +15,21 @@
 
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
-import { type AppletTile, isAppletTile } from "../../control-center/applet-tiles.ts";
-import { isThere } from "../../control-center/catalog.ts";
-import { type Controls, useControls } from "../../control-center/controls.tsx";
-import { PUZZLE } from "../../control-center/glyphs.ts";
-import { ControlCenterPanel, type ControlCenterProps, useLayout } from "../../control-center/index.ts";
-import { type Layout, type Placed, pack, shown } from "../../control-center/layout.ts";
+import {
+  type AppletTile,
+  ControlCenterPanel,
+  type ControlCenterProps,
+  type Controls,
+  isAppletTile,
+  isThere,
+  type Layout,
+  type Placed,
+  PUZZLE,
+  pack,
+  shown,
+  useControls,
+  useLayout,
+} from "../../control-center/index.ts";
 import { PillButton } from "../../shared/controls/inputs.tsx";
 import { useControlColors } from "../../shared/controls/palette.ts";
 import { InkFill } from "../../shared/controls/parts.tsx";
