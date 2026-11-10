@@ -8,8 +8,7 @@
 
 import { cannotDo } from "@dashi/applet";
 import { abilityLines, commandsLine, type StoreApplet } from "../../src/shared/applet-store/index.ts";
-import type { AppDetails } from "../../src/shared/software/flathub-types.ts";
-import { cannotReach, describeReach } from "../../src/shared/software/flatpak-permissions.ts";
+import { type AppDetails, cannotReach, describeReach } from "../../src/shared/software/index.ts";
 
 export interface TrustFacts {
   maker: { name: string; line: string; mark: "verified" | "reviewed" | null };

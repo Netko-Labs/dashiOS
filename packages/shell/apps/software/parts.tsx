@@ -5,8 +5,7 @@ import { tintFor } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { createContext, useContext } from "react";
 import type { StoreApplet } from "../../src/shared/applet-store/index.ts";
-import type { InstalledApp } from "../../src/shared/software/flatpak-parse.ts";
-import type { Installation } from "../../src/shared/software/ids.ts";
+import type { Installation, InstalledApp } from "../../src/shared/software/index.ts";
 import { useImage } from "./hooks.ts";
 
 /**

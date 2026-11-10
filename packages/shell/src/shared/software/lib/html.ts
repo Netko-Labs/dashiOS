@@ -6,7 +6,7 @@
  * result is cut to sane lengths. Nothing here produces markup.
  */
 
-import { tidy } from "./text.ts";
+import { tidy } from "../text.ts";
 
 const MAX_INPUT = 60_000;
 const MAX_BLOCKS = 40;

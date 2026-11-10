@@ -24,13 +24,7 @@ import {
 } from "../../src/shared/applet-store/index.ts";
 import { spawnDetached } from "../../src/shared/apps/index.ts";
 import { settingsPath } from "../../src/shared/settings/index.ts";
-import { ImageCache, JsonCache } from "../../src/shared/software/cache.ts";
-import { Flathub } from "../../src/shared/software/flathub.ts";
-import { Images } from "../../src/shared/software/images.ts";
-import { Software } from "../../src/shared/software/manager.ts";
-import { displayUrl } from "../../src/shared/software/parse-values.ts";
-import { cacheRoot } from "../../src/shared/software/paths.ts";
-import { standIn } from "../../src/shared/software/stand-in.ts";
+import { cacheRoot, displayUrl, Flathub, ImageCache, Images, JsonCache, Software, standIn } from "../../src/shared/software/index.ts";
 import { AppletStore } from "./applets/store.ts";
 import { SoftwareStore } from "./store.ts";
 

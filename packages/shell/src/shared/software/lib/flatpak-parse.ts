@@ -5,32 +5,9 @@
  * and carriage returns to peel off first.
  */
 
-import { type Installation, isAppId } from "./ids.ts";
-import { tidy } from "./text.ts";
-
-export interface InstalledApp {
-  id: string;
-  name: string;
-  version: string | null;
-  branch: string;
-  arch: string;
-  origin: string;
-  installation: Installation;
-  /** Installed size in bytes, when flatpak says. */
-  size: number | null;
-  summary: string;
-}
-
-export interface FlatpakUpdate {
-  id: string;
-  name: string;
-  version: string | null;
-  branch: string;
-  arch: string;
-  origin: string;
-  installation: Installation;
-  downloadSize: number | null;
-}
+import { type Installation, isAppId } from "../ids.ts";
+import { tidy } from "../text.ts";
+import type { FlatpakUpdate, InstalledApp } from "../types.ts";
 
 const UNITS: Readonly<Record<string, number>> = {
   bytes: 1,

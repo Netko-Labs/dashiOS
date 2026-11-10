@@ -6,8 +6,8 @@
  * Off unless the variable is set.
  */
 
+import type { Runner } from "./lib/run.ts";
 import type { ManagerDeps } from "./manager.ts";
-import type { Runner } from "./run.ts";
 
 const INSTALLED = [
   "org.gnome.Calculator\tCalculator\t51.1\tstable\tx86_64\tflathub\tuser\t5.1 MB\tPerform arithmetic, scientific or financial calculations",

@@ -27,7 +27,7 @@ import {
   skippedCount,
   statusOf,
 } from "../../../src/shared/applet-store/index.ts";
-import type { Outcome } from "../../../src/shared/software/manager.ts";
+import type { Outcome } from "../../../src/shared/software/index.ts";
 import type { Job } from "../queue.ts";
 import { type Failure, failureOf } from "../store.ts";
 

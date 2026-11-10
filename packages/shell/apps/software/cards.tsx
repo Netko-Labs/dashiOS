@@ -10,7 +10,7 @@
 import { useColors, useSurface } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { AppSummary } from "../../src/shared/software/flathub-types.ts";
+import type { AppSummary } from "../../src/shared/software/index.ts";
 import { StateChip } from "./chip.tsx";
 import { useAppState } from "./hooks.ts";
 import { VerifiedBadge } from "./marks.tsx";

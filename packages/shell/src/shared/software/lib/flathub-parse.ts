@@ -5,11 +5,11 @@
  * hosts. Unknown fields are ignored. Fixtures are in test/fixtures/software.
  */
 
-import type { AppDetails, AppSummary, Page, Release, Screenshot, Sizes } from "./flathub-types.ts";
-import { parsePermissions } from "./flatpak-permissions.ts";
+import { parsePermissions } from "../flatpak-permissions.ts";
+import { appIdOrNull } from "../ids.ts";
+import { count, displayUrl, flag, httpsUrl, isRecord, type JsonRecord, list, MEDIA_HOSTS, text, whole } from "../parse-values.ts";
+import type { AppDetails, AppSummary, Page, Release, Screenshot, Sizes } from "../types.ts";
 import { descriptionBlocks } from "./html.ts";
-import { appIdOrNull } from "./ids.ts";
-import { count, displayUrl, flag, httpsUrl, isRecord, type JsonRecord, list, MEDIA_HOSTS, text, whole } from "./parse-values.ts";
 
 const MAX_HITS = 100;
 

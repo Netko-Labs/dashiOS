@@ -4,7 +4,7 @@
  * checked first (ids.ts) so they can't read as an option.
  */
 
-import { type Installation, isAppId, isInstallation } from "./ids.ts";
+import { type Installation, isAppId, isInstallation } from "../ids.ts";
 
 export const FLATHUB_REMOTE = "flathub";
 export const FLATHUB_REPO_FILE = "https://dl.flathub.org/repo/flathub.flatpakrepo";

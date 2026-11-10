@@ -17,8 +17,7 @@ import { type Notifications, startNotifications } from "../notifications/index.t
 import type { SettingsStore } from "../settings-app/index.ts";
 import type { RegistryStores } from "../settings-app/registry/index.ts";
 import { controlFlags, type FlagsStore } from "../shared/control-center/index.ts";
-import { Software } from "../shared/software/manager.ts";
-import { standIn } from "../shared/software/stand-in.ts";
+import { Software, standIn } from "../shared/software/index.ts";
 import { checkPath, openSoftwareUpdates, UpdateCheck } from "../software/index.ts";
 import { BatteryAlerts, type System } from "../system/index.ts";
 import type { ToplevelStore } from "../toplevels.ts";

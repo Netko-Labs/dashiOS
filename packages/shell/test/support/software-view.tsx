@@ -20,8 +20,8 @@ import { AppletInstaller } from "../../src/shared/applet-store/installer.ts";
 import { ImageCache, JsonCache } from "../../src/shared/software/cache.ts";
 import { Flathub } from "../../src/shared/software/flathub.ts";
 import { Images } from "../../src/shared/software/images.ts";
+import type { Runner } from "../../src/shared/software/lib/run.ts";
 import { Software } from "../../src/shared/software/manager.ts";
-import type { Runner } from "../../src/shared/software/run.ts";
 import { settle } from "./time.ts";
 
 /** Runs a file's tests with a runtime dir of their own, put back after. */

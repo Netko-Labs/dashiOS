@@ -10,7 +10,7 @@ import { describeWhen, type InstalledApplet, permissionName, type UnreadableAppl
 import { Button, EmptyState, Group, glyphs, Switch, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { abilityLines, type StoreApplet } from "../../../src/shared/applet-store/index.ts";
-import { formatBytes } from "../../../src/shared/software/text.ts";
+import { formatBytes } from "../../../src/shared/software/index.ts";
 import { Gallery } from "../gallery.tsx";
 import { CHECK_MARK } from "../glyphs.ts";
 import { SectionHeader } from "../heading.tsx";

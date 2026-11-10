@@ -6,8 +6,7 @@
  * closes: dnf is never stopped halfway.
  */
 
-import type { Outcome, Progress, Software } from "../../../shared/software/manager.ts";
-import type { RecommendedApp } from "../../../shared/software/recommended.ts";
+import type { Outcome, Progress, RecommendedApp, Software } from "../../../shared/software/index.ts";
 import { applyEvent, type ExtraStep, endOfRun, failedSteps, isOffline, type StepStates, waitingStates } from "./events.ts";
 import type { RunHelper } from "./helper.ts";
 import { appsFor, defaultChoices, type ExtrasChoices, type ExtrasHardware, hasWork, stepsFor, toggleApp } from "./plan.ts";

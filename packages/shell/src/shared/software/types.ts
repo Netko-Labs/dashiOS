@@ -1,6 +1,7 @@
-/** What Software knows of an app in the catalog. Every field has been through parse.ts. */
+/** Software's public types: an app in the catalog (every field has been through parse), and what flatpak lists. */
 
 import type { FlatpakPermissions } from "./flatpak-permissions.ts";
+import type { Installation } from "./ids.ts";
 
 export interface AppSummary {
   /** The Flatpak application id (ids.ts). */
@@ -70,4 +71,28 @@ export interface Sizes {
   downloadSize: number | null;
   installedSize: number | null;
   permissions: FlatpakPermissions | null;
+}
+
+export interface InstalledApp {
+  id: string;
+  name: string;
+  version: string | null;
+  branch: string;
+  arch: string;
+  origin: string;
+  installation: Installation;
+  /** Installed size in bytes, when flatpak says. */
+  size: number | null;
+  summary: string;
+}
+
+export interface FlatpakUpdate {
+  id: string;
+  name: string;
+  version: string | null;
+  branch: string;
+  arch: string;
+  origin: string;
+  installation: Installation;
+  downloadSize: number | null;
 }

@@ -7,9 +7,9 @@ import { appTrust, askReasons, installsWords, isProprietary, licenseWords } from
 import { PORTAL_TABLES } from "../src/privacy/portal-grants.ts";
 import { splitAsks, trustLine } from "../src/shared/applet-store/consent-sheet.tsx";
 import { plainFailure } from "../src/shared/software/failure-words.ts";
-import { parseReleases, parseSizes, parseStats } from "../src/shared/software/flathub-parse.ts";
-import type { AppDetails } from "../src/shared/software/flathub-types.ts";
 import { cannotReach, describeReach, type FlatpakPermissions, parsePermissions } from "../src/shared/software/flatpak-permissions.ts";
+import { parseReleases, parseSizes, parseStats } from "../src/shared/software/lib/flathub-parse.ts";
+import type { AppDetails } from "../src/shared/software/types.ts";
 
 const none: FlatpakPermissions = { shared: [], sockets: [], devices: [], filesystems: [], sessionBus: { talk: [], own: [] }, systemBus: { talk: [], own: [] } };
 

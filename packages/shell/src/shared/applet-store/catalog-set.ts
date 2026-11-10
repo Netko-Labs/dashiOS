@@ -7,7 +7,7 @@
  */
 
 import { existsSync, readFileSync, rmSync } from "node:fs";
-import type { FetchLike } from "../software/fetch.ts";
+import type { FetchLike } from "../software/index.ts";
 import { Catalog, CatalogError, catalogCacheDir } from "./catalog.ts";
 import { type CatalogDraft, type CatalogSetting, type CatalogSource, catalogProblemWords, catalogSources, checkDraft, parseCatalogs } from "./catalogs.ts";
 import type { CatalogLoad } from "./merge.ts";

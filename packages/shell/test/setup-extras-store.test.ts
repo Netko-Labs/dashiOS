@@ -4,8 +4,8 @@ import type { HelperRun, RunHelper } from "../src/setup/lib/extras/helper.ts";
 import type { ExtrasHardware } from "../src/setup/lib/extras/plan.ts";
 import { type AppInstaller, ExtrasStore } from "../src/setup/lib/extras/store.ts";
 import { installingContinueLabel, OFFLINE_NOTICE, runNotice, runSummary, stepLine } from "../src/setup/lib/extras/words.ts";
-import type { InstalledApp } from "../src/shared/software/flatpak-parse.ts";
 import type { OnProgress, Outcome } from "../src/shared/software/manager.ts";
+import type { InstalledApp } from "../src/shared/software/types.ts";
 
 /** A helper that plays back `events` (or ends with `code` having said nothing). */
 function fakeHelper(script: (steps: readonly ExtraStep[]) => { events: ExtrasEvent[]; code: number }): RunHelper & { calls: ExtraStep[][] } {

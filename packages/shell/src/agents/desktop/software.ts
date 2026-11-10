@@ -9,13 +9,7 @@
  * person's password on screen.
  */
 
-import { JsonCache } from "../../shared/software/cache.ts";
-import { CatalogError, Flathub } from "../../shared/software/flathub.ts";
-import type { AppDetails } from "../../shared/software/flathub-types.ts";
-import { Software } from "../../shared/software/manager.ts";
-import { cacheRoot } from "../../shared/software/paths.ts";
-import { standIn } from "../../shared/software/stand-in.ts";
-import { formatBytes, tidy } from "../../shared/software/text.ts";
+import { type AppDetails, CatalogError, cacheRoot, Flathub, formatBytes, JsonCache, Software, standIn, tidy } from "../../shared/software/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import type { Call } from "../tools/index.ts";
 

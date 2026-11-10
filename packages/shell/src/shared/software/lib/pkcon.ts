@@ -4,7 +4,7 @@
  * a restart to finish.
  */
 
-import { tidy } from "./text.ts";
+import { tidy } from "../text.ts";
 
 export interface SystemUpdate {
   /** The package name: `kernel-core`. */

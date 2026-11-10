@@ -6,10 +6,16 @@
  * looks.
  */
 
-import { plainFailure } from "../../src/shared/software/failure-words.ts";
-import type { FlatpakUpdate, InstalledApp } from "../../src/shared/software/flatpak-parse.ts";
-import type { Installation } from "../../src/shared/software/ids.ts";
-import { MissingTool, type Outcome, type Software, type SystemUpdates } from "../../src/shared/software/manager.ts";
+import {
+  type FlatpakUpdate,
+  type Installation,
+  type InstalledApp,
+  MissingTool,
+  type Outcome,
+  plainFailure,
+  type Software,
+  type SystemUpdates,
+} from "../../src/shared/software/index.ts";
 import type { Operation } from "./model.ts";
 import { type Job, OperationQueue } from "./queue.ts";
 

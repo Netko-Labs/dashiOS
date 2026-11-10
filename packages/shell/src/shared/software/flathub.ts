@@ -8,10 +8,10 @@
 
 import type { JsonCache } from "./cache.ts";
 import { type FetchLike, getBytes, NetworkError } from "./fetch.ts";
-import { parseCategories, parseDetails, parsePage, parseSizes, parseStats } from "./flathub-parse.ts";
-import type { AppDetails, Page } from "./flathub-types.ts";
 import { appIdOrNull } from "./ids.ts";
+import { parseCategories, parseDetails, parsePage, parseSizes, parseStats } from "./lib/flathub-parse.ts";
 import { API_HOSTS } from "./parse-values.ts";
+import type { AppDetails, Page } from "./types.ts";
 
 const API = "https://flathub.org/api/v2";
 const MAX_ANSWER = 2_000_000;

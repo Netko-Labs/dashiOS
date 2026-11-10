@@ -7,8 +7,7 @@
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { type FetchLike, getBytes } from "../software/fetch.ts";
-import { digest } from "../software/paths.ts";
+import { digest, type FetchLike, getBytes } from "../software/index.ts";
 import { CATALOG_HOSTS } from "./catalog.ts";
 
 const MAX_IMAGE = 4 * 1024 * 1024;

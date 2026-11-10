@@ -15,8 +15,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { type NotificationStore, type NotifyInput, SHELL_SENDER } from "../notifications/index.ts";
 import { iconPath } from "../shared/apps/index.ts";
-import type { FlatpakUpdate } from "../shared/software/flatpak-parse.ts";
-import type { Software } from "../shared/software/manager.ts";
+import type { FlatpakUpdate, Software } from "../shared/software/index.ts";
 
 export const DAY_MS = 24 * 3_600_000;
 /** After the session starts: late enough not to slow it. */

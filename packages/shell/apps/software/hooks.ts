@@ -1,8 +1,7 @@
 /** Hooks the views share: catalog pages and image files loaded, one app's state picked out of the store, and the toolbar's "saved results" chip. */
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { type Answer, CatalogError } from "../../src/shared/software/flathub.ts";
-import type { InstalledApp } from "../../src/shared/software/flatpak-parse.ts";
+import { type Answer, CatalogError, type InstalledApp } from "../../src/shared/software/index.ts";
 import { findLocalIcon } from "./format.ts";
 import { type AppState, appState, appStateKey } from "./model.ts";
 import { useServices } from "./services.ts";

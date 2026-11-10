@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { enabledIds } from "../apps/kit/index.ts";
 import { type SoftwareMenuContext, softwareMenus } from "../apps/software/menus.ts";
 import type { NotifyInput } from "../src/notifications/types.ts";
-import type { FlatpakUpdate } from "../src/shared/software/flatpak-parse.ts";
+import type { FlatpakUpdate } from "../src/shared/software/types.ts";
 import { DAY_MS, dueIn, FIRST_LOOK_MS, parseCheckState, RETRY_MS, UpdateCheck, updatesNotice, updatesWords } from "../src/software/update-check.ts";
 
 test("the daily look's words: a short title, the counts in the body, and a Show button", () => {

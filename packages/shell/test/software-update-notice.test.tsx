@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { Banner, bannerHeight, buttonsFor } from "../src/notifications/lib/banner.tsx";
 import { NotificationStore } from "../src/notifications/store.ts";
-import type { FlatpakUpdate } from "../src/shared/software/flatpak-parse.ts";
+import type { FlatpakUpdate } from "../src/shared/software/types.ts";
 import { openSoftwareUpdates, UpdateCheck } from "../src/software/update-check.ts";
 import { settle } from "./support/time.ts";
 
