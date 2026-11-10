@@ -241,14 +241,16 @@ Each milestone ends with the shell running on it in the VM.
 - **Idle screens sleep (done, 0.7.0):** a lit screen that has nothing new to
   draw used to look again every refresh, rebuilding its scene to learn that
   nothing changed (every window's title bar walked, the elements diffed),
-  forever. Now, once nothing but the screens' own frame timers and vblanks has
-  woken the event loop for a second (`wakes.rs`), a screen with nothing new
-  sleeps: it looks once a second (and paces its clients' frame callbacks so)
-  until anything else wakes the loop (a client's request, input, IPC, a video
-  frame, any other timer or channel), and then draws at once
-  (`udev/frame.rs`, `wake_screens`). What moves by itself (a fade, a slide, a
-  flight) draws something new each frame, so its screen stays awake while it
-  runs. The nested (winit) backend is unchanged.
+  forever. Now a screen sleeps after 30 turns with nothing new since it last
+  drew or was poked (a client's request, input, IPC: what starts a fade),
+  looking once a second (and pacing its clients' frame callbacks so) until
+  something wakes the event loop (`wakes.rs`, `udev/frame.rs`). A poke wakes
+  it at once and keeps it looking for another 30 turns; any other wakeup (a
+  timer or a channel: a slide's or the overview's frame timer, a video frame,
+  the idle watch's tick every half second) makes it look once, and it sleeps
+  again at once if nothing changed. What moves by itself draws something new
+  each frame, so its screen stays awake while it runs. The nested (winit)
+  backend is unchanged.
 - **Title bars per scale (done, 0.7.0):** each window keeps its title bar
   image per screen scale (`wm/by_scale.rs`, up to four), so two screens at
   1× and 2× (or a capture at another scale) don't draw each other's out every

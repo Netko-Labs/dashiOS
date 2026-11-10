@@ -266,7 +266,7 @@ impl Dashi {
 
         Ok(Self {
             start_time: Instant::now(),
-            wakes: crate::wakes::Wakes::new(Instant::now()),
+            wakes: crate::wakes::Wakes::default(),
             decor_scale: 1,
             socket_name,
             display_handle: dh,
@@ -495,8 +495,9 @@ impl Dashi {
         }
         self.ipc.flush();
         // Anything but a screen's frame timer: sleeping screens look again (wakes.rs).
-        if self.wakes.turn_ended(Instant::now()) {
-            crate::backend::udev::wake_screens(self);
+        let woke = self.wakes.turn_ended();
+        if woke != crate::wakes::Woke::Frames {
+            crate::backend::udev::wake_screens(self, woke);
         }
     }
 }

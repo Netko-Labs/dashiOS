@@ -189,6 +189,8 @@ struct Screen {
     /// Nothing new to draw and nothing woke the loop for a while: only the
     /// watchdog's second until something does (wakes.rs, frame.rs).
     asleep: bool,
+    /// Turns with nothing new since it last drew or was poked.
+    quiet: crate::wakes::Quiet,
     /// The screen is lit (`power`, and on in Displays).
     powered: bool,
     /// Held dark by `power {on: false, output}` (brightness at 0 on a panel

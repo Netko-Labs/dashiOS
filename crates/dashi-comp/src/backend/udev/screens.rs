@@ -131,6 +131,7 @@ fn connector_connected(
                 flip: flip::Flip::default(),
                 scheduled: None,
                 asleep: false,
+                quiet: Default::default(),
                 powered: true,
                 held: false,
                 modes: connector.modes().to_vec(),

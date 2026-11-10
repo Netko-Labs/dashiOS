@@ -8,6 +8,7 @@
 use super::pace::{dark_pace, schedule, unschedule};
 use super::watchdog::watch;
 use super::*;
+use crate::wakes::Woke;
 use flip::Vblank;
 
 pub(super) fn render_device(state: &mut Dashi, node: DrmNode) {
@@ -111,10 +112,13 @@ pub(super) fn render_screen(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle
         return;
     };
     match turn {
-        Turn::Queued => state.send_frames(&output),
+        Turn::Queued => {
+            stir(state, node, crtc);
+            state.send_frames(&output);
+        }
         Turn::Idle => {
             state.send_frames(&output);
-            if state.wakes.may_sleep(std::time::Instant::now()) {
+            if quiet_turn(state, node, crtc) {
                 set_asleep(state, node, crtc, true);
                 schedule(state, node, crtc, ASLEEP_LOOK);
             } else {
@@ -171,31 +175,50 @@ pub(super) fn frame_finished(
 /// How often a sleeping screen still looks (and paces its clients' frame callbacks).
 const ASLEEP_LOOK: Duration = Duration::from_secs(1);
 
-fn set_asleep(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle, asleep: bool) {
+fn with_screen<T>(
+    state: &mut Dashi,
+    node: DrmNode,
+    crtc: crtc::Handle,
+    f: impl FnOnce(&mut Screen) -> T,
+) -> Option<T> {
     with_udev(state, |_, data| {
-        if let Some(screen) = data
-            .devices
+        data.devices
             .get_mut(&node)
             .and_then(|d| d.screens.get_mut(&crtc))
-        {
-            screen.asleep = asleep;
-        }
-    });
+            .map(f)
+    })
+    .flatten()
 }
 
-/// Something woke the event loop (wakes.rs): sleeping screens draw at once.
-pub(crate) fn wake_screens(state: &mut Dashi) {
+fn set_asleep(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle, asleep: bool) {
+    with_screen(state, node, crtc, |screen| screen.asleep = asleep);
+}
+
+fn stir(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle) {
+    with_screen(state, node, crtc, |screen| screen.quiet.stir());
+}
+
+/// A turn with nothing new: whether the screen may sleep (wakes.rs).
+fn quiet_turn(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle) -> bool {
+    with_screen(state, node, crtc, |screen| screen.quiet.idle_turn()).unwrap_or(false)
+}
+
+/// Something but a frame woke the event loop (wakes.rs): sleeping screens
+/// look at once; a poke also keeps every screen looking for a while.
+pub(crate) fn wake_screens(state: &mut Dashi, woke: Woke) {
     let asleep = with_udev(state, |_, data| {
-        data.devices
-            .iter()
-            .flat_map(|(node, device)| {
-                device
-                    .screens
-                    .iter()
-                    .filter(|(_, screen)| screen.asleep)
-                    .map(|(crtc, _)| (*node, *crtc))
-            })
-            .collect::<Vec<_>>()
+        let mut asleep = Vec::new();
+        for (node, device) in &mut data.devices {
+            for (crtc, screen) in &mut device.screens {
+                if woke == Woke::Poked {
+                    screen.quiet.stir();
+                }
+                if screen.asleep {
+                    asleep.push((*node, *crtc));
+                }
+            }
+        }
+        asleep
     })
     .unwrap_or_default();
     for (node, crtc) in asleep {
