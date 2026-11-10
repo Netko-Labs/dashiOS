@@ -9,7 +9,7 @@
  * `outputs` (displays.ts), in the same space.
  */
 
-import { type Compositor, type Frame, type Point, parsePointer } from "./compositor.ts";
+import type { Compositor, Frame, Point } from "./compositor.ts";
 import { parseScreens } from "./displays.ts";
 
 /** A screen's name and where it sits, in the space the pointer is reported in. */
@@ -45,11 +45,11 @@ export function chooseScreen(screens: readonly Placed[], pointer: Point | null, 
 }
 
 /** The screen the person is on now (see `chooseScreen`); `undefined` when the compositor can't say. */
-export async function activeScreen(compositor: Pick<Compositor, "request" | "windows">): Promise<string | undefined> {
+export async function activeScreen(compositor: Pick<Compositor, "request" | "session" | "windows">): Promise<string | undefined> {
   try {
-    const [outputs, session] = await Promise.all([compositor.request("outputs"), compositor.request("session").catch(() => null)]);
+    const [outputs, session] = await Promise.all([compositor.request("outputs"), compositor.session().catch(() => null)]);
     const screens = placedScreens(outputs);
-    const pointer = parsePointer(session);
+    const pointer = session?.pointer ?? null;
     // The windows are only asked when the pointer didn't say, and fail while locked.
     const focused =
       pointer && screenAt(pointer, screens) !== null

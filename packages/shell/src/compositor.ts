@@ -90,6 +90,8 @@ export interface Session {
   xwayland: "off" | "starting" | "ready" | "failed";
   /** Where the pointer is, global logical pixels; null while the session is locked. */
   pointer: Point | null;
+  /** The screen is locked (from ext-session-lock's lock to its unlock); the `lock` event follows changes. */
+  locked: boolean;
 }
 
 export interface Point {
@@ -441,7 +443,17 @@ export function parseGpus(value: unknown): Gpu[] {
   });
 }
 
-type Pending = { resolve: (result: unknown) => void; reject: (error: Error) => void };
+type Pending = { resolve: (result: unknown) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> };
+
+/** How long a request waits for its reply unless it says otherwise. */
+export const REQUEST_TIMEOUT_MS = 10_000;
+
+export interface ConnectOptions {
+  /** The socket; else `DASHI_COMP_SOCKET`, else `$XDG_RUNTIME_DIR/dashi-comp.sock`. */
+  path?: string;
+  /** How long a request waits for its reply (`REQUEST_TIMEOUT_MS`). */
+  timeoutMs?: number;
+}
 
 export class Compositor {
   private nextId = 0;
@@ -449,24 +461,29 @@ export class Compositor {
   private readonly listeners = new Set<(event: CompositorEvent) => void>();
   private readonly closeListeners = new Set<() => void>();
   private readonly lines = new LineBuffer();
+  private isClosed = false;
 
-  private constructor(private readonly socket: Bun.Socket<undefined>) {}
+  private constructor(
+    private readonly socket: Bun.Socket<undefined>,
+    private readonly timeoutMs: number,
+  ) {}
 
   /** Connect and subscribe to events; null when dashi-comp isn't there. */
-  static async connect(): Promise<Compositor | null> {
+  static async connect(options: ConnectOptions = {}): Promise<Compositor | null> {
     const dir = process.env.XDG_RUNTIME_DIR;
-    if (!dir) return null;
+    // DASHI_COMP_SOCKET: a compositor beside the session's (nested, tests) says where its socket is.
+    const path = options.path || process.env.DASHI_COMP_SOCKET || (dir ? join(dir, "dashi-comp.sock") : null);
+    if (!path) return null;
     let compositor: Compositor | null = null;
     try {
       const socket = await Bun.connect({
-        // DASHI_COMP_SOCKET: a compositor beside the session's (nested, tests) says where its socket is.
-        unix: process.env.DASHI_COMP_SOCKET || join(dir, "dashi-comp.sock"),
+        unix: path,
         socket: {
           data: (_socket, data) => compositor?.receive(data),
           close: () => compositor?.closed(),
         },
       });
-      compositor = new Compositor(socket);
+      compositor = new Compositor(socket, options.timeoutMs ?? REQUEST_TIMEOUT_MS);
       await compositor.request("subscribe");
       return compositor;
     } catch (error) {
@@ -475,11 +492,19 @@ export class Compositor {
     }
   }
 
-  /** Ask dashi-comp; rejects with its error message. */
-  request(method: string, params: Record<string, unknown> = {}): Promise<unknown> {
+  /**
+   * Ask dashi-comp; rejects with its error message, when no reply comes within
+   * `timeoutMs`, and at once once the compositor has gone.
+   */
+  request(method: string, params: Record<string, unknown> = {}, timeoutMs = this.timeoutMs): Promise<unknown> {
+    if (this.isClosed) return Promise.reject(new Error("dashi-comp closed the connection"));
     const id = ++this.nextId;
     return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
+      const timer = setTimeout(() => {
+        if (!this.pending.delete(id)) return;
+        reject(new Error(`dashi-comp: no reply to ${method}`));
+      }, timeoutMs);
+      this.pending.set(id, { resolve, reject, timer });
       this.socket.write(`${JSON.stringify({ id, method, params })}\n`);
     });
   }
@@ -495,11 +520,13 @@ export class Compositor {
     if (!isRecord(result) || typeof result.waylandDisplay !== "string") return null;
     const { xwayland } = result;
     if (xwayland !== "off" && xwayland !== "starting" && xwayland !== "ready" && xwayland !== "failed") return null;
+    if (typeof result.locked !== "boolean") return null;
     return {
       waylandDisplay: result.waylandDisplay,
       display: typeof result.display === "string" ? result.display : null,
       xwayland,
       pointer: parsePointer(result),
+      locked: result.locked,
     };
   }
 
@@ -541,6 +568,7 @@ export class Compositor {
       if (isNumber(message.id) && this.pending.has(message.id)) {
         const pending = this.pending.get(message.id) as Pending;
         this.pending.delete(message.id);
+        clearTimeout(pending.timer);
         if (typeof message.error === "string") pending.reject(new Error(message.error));
         else pending.resolve(message.result);
         continue;
@@ -568,7 +596,12 @@ export class Compositor {
   }
 
   private closed(): void {
-    for (const pending of this.pending.values()) pending.reject(new Error("dashi-comp closed the connection"));
+    if (this.isClosed) return;
+    this.isClosed = true;
+    for (const pending of this.pending.values()) {
+      clearTimeout(pending.timer);
+      pending.reject(new Error("dashi-comp closed the connection"));
+    }
     this.pending.clear();
     for (const listener of [...this.closeListeners]) listener();
     this.closeListeners.clear();

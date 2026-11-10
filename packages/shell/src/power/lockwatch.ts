@@ -49,16 +49,16 @@ export class LockWatch {
   }
 
   /** Follow the compositor; returns the function that stops. */
-  async follow(compositor: Pick<Compositor, "on" | "request">): Promise<() => void> {
+  async follow(compositor: Pick<Compositor, "on" | "session">): Promise<() => void> {
     let heard = false;
     const stop = compositor.on((event) => {
       if (event.event !== "lock") return;
       heard = true;
       this.set(event.locked);
     });
-    const session = await compositor.request("session").catch(() => null);
+    const session = await compositor.session().catch(() => null);
     // An event that came while the answer was on its way is newer than the answer.
-    if (!heard && typeof session === "object" && session !== null) this.set((session as { locked?: unknown }).locked === true);
+    if (!heard && session) this.set(session.locked);
     return stop;
   }
 }

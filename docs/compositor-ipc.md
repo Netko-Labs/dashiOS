@@ -26,6 +26,11 @@ them until the compositor side pins them down here.
 - A client that falls 8 MiB behind on reading is dropped: its socket is shut
   down (it reads the end of the stream, or a reset) and nothing it sent after
   is run.
+- The shell (`Compositor.request`) gives a request 10 s for its reply
+  (`REQUEST_TIMEOUT_MS`, or the caller's own) and then rejects it with
+  `dashi-comp: no reply to <method>`; once the socket closes, what waits is
+  rejected and every later request is refused at once. `session()` is the one
+  reader of the lock state at start (`locked`); the `lock` event follows it.
 - Event, unsolicited, only after `subscribe`: `{"event": "<name>", ...}`.
 - Window ids are positive integers, never reused within a session.
 - A `Window` also says `sheetOf: int|null`, the window it is a sheet of (`attach`).

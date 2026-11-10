@@ -36,9 +36,8 @@ export class LockController {
 
   /** Startup: a session left locked (the shell restarted) gets its lock screen back. */
   async resume(): Promise<void> {
-    const session = await this.compositor.request("session").catch(() => null);
-    const locked = typeof session === "object" && session !== null && (session as { locked?: unknown }).locked === true;
-    if (locked) this.lock();
+    const session = await this.compositor.session().catch(() => null);
+    if (session?.locked) this.lock();
   }
 
   get isLocked(): boolean {
