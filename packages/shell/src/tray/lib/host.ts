@@ -5,8 +5,8 @@
  * watcher the tray found (watcher.ts).
  */
 
-import type { ExtraActions, ExtraMenuRow, ExtrasStore, MenuBarExtra } from "../extras/index.ts";
-import type { DBusConnection } from "../shared/dbus/index.ts";
+import type { ExtraActions, ExtraMenuRow, ExtrasStore, MenuBarExtra } from "../../extras/index.ts";
+import type { DBusConnection } from "../../shared/dbus/index.ts";
 import { type ItemAddress, itemId, MAX_ITEMS } from "./address.ts";
 import type { TrayIcons } from "./icon.ts";
 import { TrayItem } from "./item.ts";

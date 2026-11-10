@@ -23,7 +23,7 @@ import {
   nameHasOwner,
   requestName,
   unwrap,
-} from "../shared/dbus/index.ts";
+} from "../../shared/dbus/index.ts";
 import { type ItemAddress, ItemRegistry, itemId, parseItemId, parseRegistration } from "./address.ts";
 
 export const WATCHER = "org.kde.StatusNotifierWatcher";

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { ExtraIcon } from "../src/extras/types.ts";
 import { Variant } from "../src/shared/dbus/variant.ts";
-import { iconSource, itemExtra, parseItemProperties } from "../src/tray/props.ts";
+import { iconSource, itemExtra, parseItemProperties } from "../src/tray/lib/props.ts";
 
 /** A GetAll reply as the bus hands it over: a Map of Variants. */
 function reply(values: Record<string, Variant>): Map<string, Variant> {

@@ -9,9 +9,9 @@
  * nesting are capped.
  */
 
-import type { ExtraMenuRow } from "../extras/index.ts";
-import { clean } from "../notifications/index.ts";
-import { type DBusConnection, propertyMap, Variant } from "../shared/dbus/index.ts";
+import type { ExtraMenuRow } from "../../extras/index.ts";
+import { clean } from "../../notifications/index.ts";
+import { type DBusConnection, propertyMap, Variant } from "../../shared/dbus/index.ts";
 
 export const DBUSMENU = "com.canonical.dbusmenu";
 

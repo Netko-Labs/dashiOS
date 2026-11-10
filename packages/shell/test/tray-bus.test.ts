@@ -12,7 +12,8 @@ import { join } from "node:path";
 import { ExtrasStore } from "../src/extras/store.ts";
 import type { MenuBarExtra } from "../src/extras/types.ts";
 import { DBusConnection, getNameOwner, type InterfaceSpec, Variant } from "../src/shared/dbus/index.ts";
-import { startTray, type Tray, WATCHER, WATCHER_PATH } from "../src/tray/index.ts";
+import { WATCHER, WATCHER_PATH } from "../src/tray/lib/watcher.ts";
+import { startTray, type Tray } from "../src/tray/start.ts";
 import { until as eventually, untilValue as until } from "./support/time.ts";
 
 const daemon = Bun.which("dbus-daemon");

@@ -10,8 +10,8 @@
  * calls and the last answer always wins.
  */
 
-import type { ExtraIcon, ExtraMenuRow, MenuBarExtra } from "../extras/index.ts";
-import { type DBusConnection, DBusError } from "../shared/dbus/index.ts";
+import type { ExtraIcon, ExtraMenuRow, MenuBarExtra } from "../../extras/index.ts";
+import { type DBusConnection, DBusError } from "../../shared/dbus/index.ts";
 import { type ItemAddress, itemKey } from "./address.ts";
 import { type MenuTarget, menuEvent, parseRowId, readMenu } from "./dbusmenu.ts";
 import type { TrayIcons } from "./icon.ts";

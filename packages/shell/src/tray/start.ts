@@ -8,10 +8,10 @@
 
 import type { ExtrasStore } from "../extras/index.ts";
 import { BUS_NAME, BUS_PATH, type ConnectOptions, DBusConnection, NameFlags, requestName } from "../shared/dbus/index.ts";
-import { nameGone } from "./address.ts";
-import { TrayHost } from "./host.ts";
-import { type TrayIconOptions, TrayIcons } from "./icon.ts";
-import { followWatcher, serveWatcher, WATCHER, type WatcherFollower, type WatcherService } from "./watcher.ts";
+import { nameGone } from "./lib/address.ts";
+import { TrayHost } from "./lib/host.ts";
+import { type TrayIconOptions, TrayIcons } from "./lib/icon.ts";
+import { followWatcher, serveWatcher, WATCHER, type WatcherFollower, type WatcherService } from "./lib/watcher.ts";
 
 export interface TrayOptions {
   bus?: ConnectOptions;
