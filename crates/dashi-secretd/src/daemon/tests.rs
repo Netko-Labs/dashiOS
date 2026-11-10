@@ -2,8 +2,11 @@
 
 use serde_json::{Value, json};
 
-use super::*;
-use crate::vault::{NoTpm, crypto::KdfParams};
+use super::{protocol::Request, reply::Reply, *};
+use crate::{
+    caller::Caller,
+    vault::{NoTpm, crypto::KdfParams, store::Store},
+};
 
 mod access;
 mod fixtures;

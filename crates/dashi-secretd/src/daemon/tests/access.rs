@@ -1,6 +1,6 @@
 //! Who may reach the daemon, when a vault is open, and how wrong passwords are slowed.
 
-use super::{fixtures::*, *};
+use super::{super::throttle::FREE_TRIES, fixtures::*, *};
 
 #[test]
 fn an_agent_is_refused_everything() {

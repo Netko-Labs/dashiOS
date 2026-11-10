@@ -1,5 +1,7 @@
 //! Payments, spending limits and the questions put to the person.
 
+use std::sync::Arc;
+
 use super::{fixtures::*, *};
 
 /// Stripe's test card number, which no bank takes.
