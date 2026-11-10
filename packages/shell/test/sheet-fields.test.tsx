@@ -16,8 +16,9 @@ import { EventSheet } from "../apps/calendar/event-sheet.tsx";
 import { ImportPathSheet } from "../apps/calendar/file-sheets.tsx";
 import { CalendarSheet } from "../apps/calendar/sheets.tsx";
 import { ReplaceSheet } from "../apps/editor/sheets.tsx";
-import { ChooserSheet, chooserRequest, openChooser } from "../apps/files/chooser/index.ts";
+import { ChooserSheet, openChooser } from "../apps/files/chooser/index.ts";
 import { NotesSheet } from "../apps/notes/sheets.tsx";
+import { chooserRequest } from "../src/shared/files/chooser/request.ts";
 
 interface Node {
   type: string;

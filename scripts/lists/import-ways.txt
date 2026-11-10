@@ -4,14 +4,11 @@
 1	packages/shell/apps/activity-monitor/sample.ts
 1	packages/shell/apps/activity-monitor/sampler.ts
 3	packages/shell/apps/dialog/file-selection-view.tsx
-1	packages/shell/apps/dialog/file-selection.ts
-1	packages/shell/apps/editor/names.ts
 1	packages/shell/apps/editor/view.tsx
 1	packages/shell/apps/installer/view.tsx
 1	packages/shell/apps/portal/access.tsx
 1	packages/shell/apps/portal/account.tsx
 2	packages/shell/apps/portal/file-chooser/index.tsx
-2	packages/shell/apps/portal/file-chooser/options.ts
 2	packages/shell/apps/portal/look.ts
 1	packages/shell/apps/portal/main.tsx
 2	packages/shell/apps/portal/settings.ts

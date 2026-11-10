@@ -2,14 +2,14 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { accept, type Standing, startFolder, startName } from "../apps/files/chooser/accept.ts";
-import { filterExtension, freeName, globRegex, mimeMatches, nameProblem, passes, withExtension } from "../apps/files/chooser/filters.ts";
 import { ChooserModel, chooserShows, folderName, folderTrail } from "../apps/files/chooser/model.ts";
 import type { Env } from "../apps/files/env.ts";
 import type { FilesPrefs } from "../apps/files/prefs.ts";
 import { type ChooserRequest, chooserReply, parseChooser } from "../apps/portal/file-chooser/options.ts";
 import { encodeBytePath } from "../apps/portal/vardict.ts";
 import { type Variant, variant } from "../src/shared/dbus/index.ts";
+import { accept, type Standing, startFolder, startName } from "../src/shared/files/chooser/accept.ts";
+import { filterExtension, freeName, globRegex, mimeMatches, nameProblem, passes, withExtension } from "../src/shared/files/chooser/filters.ts";
 
 const pdfs: [string, Array<[number, string]>] = ["PDF documents", [[1, "application/pdf"]]];
 const notes: [string, Array<[number, string]>] = [

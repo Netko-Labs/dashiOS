@@ -30,6 +30,8 @@ import {
 } from "@dashi/ui";
 import { Text, View, type WindowKeyInfo } from "@mirinjs/metal";
 import { type ReactNode, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { filterExtension, withExtension } from "../../../src/shared/files/chooser/filters.ts";
+import type { ChooserAnswer, ChooserRequest } from "../../../src/shared/files/chooser/request.ts";
 import { BrowserKeys, Listing } from "../browser.tsx";
 import { Files, quietActions } from "../context.ts";
 import type { Env } from "../env.ts";
@@ -40,9 +42,7 @@ import { Peek } from "../peek.tsx";
 import { recordRecents } from "../recent-file.ts";
 import { Sidebar } from "../sidebar.tsx";
 import { ViewSwitch } from "../toolbar.tsx";
-import { filterExtension, withExtension } from "./filters.ts";
 import { type ChooserModel, folderName, folderTrail, useChooser } from "./model.ts";
-import type { ChooserAnswer, ChooserRequest } from "./request.ts";
 import { openChooser } from "./start.ts";
 
 const UP = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 13V3.6M3.8 7.6L8 3.4l4.2 4.2" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
