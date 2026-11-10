@@ -7,8 +7,8 @@
  */
 
 import { chmodSync, existsSync, unlinkSync } from "node:fs";
-import { LineBuffer } from "../shared/io/lines.ts";
-import { choiceLine, isPickRequest, MAX_LINE, type ShareChoice } from "./protocol.ts";
+import { LineBuffer } from "../../shared/io/lines.ts";
+import { choiceLine, isPickRequest, MAX_LINE, type ShareChoice } from "../protocol.ts";
 
 /** Ask the person; resolves with what they chose (null: declined). `abort` fires when the asker hangs up. */
 export type Ask = (abort: AbortSignal) => Promise<ShareChoice | null>;

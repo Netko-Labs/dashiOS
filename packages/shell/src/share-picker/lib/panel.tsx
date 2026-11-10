@@ -9,10 +9,10 @@
 import { Button, isBuiltIn, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useRef, useSyncExternalStore } from "react";
-import type { Rect } from "../layout.ts";
-import { KeyCatcher } from "../overlay.tsx";
+import type { Rect } from "../../layout.ts";
+import { KeyCatcher } from "../../overlay.tsx";
+import type { ShareChoice } from "../protocol.ts";
 import { captionOf, type PickerLayout } from "./layout.ts";
-import type { ShareChoice } from "./protocol.ts";
 
 export interface PickerScreen {
   output: string;

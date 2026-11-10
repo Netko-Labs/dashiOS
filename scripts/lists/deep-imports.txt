@@ -513,7 +513,7 @@
 8	packages/shell/src/setup/start.tsx
 1	packages/shell/src/setup/state.ts
 3	packages/shell/src/setup/view.tsx
-1	packages/shell/src/share-picker/server.ts
+1	packages/shell/src/share-picker/lib/server.ts
 1	packages/shell/src/shared/accounts/backend.ts
 2	packages/shell/src/shared/accounts/parse.ts
 1	packages/shell/src/shared/applet-store/catalog-set.ts

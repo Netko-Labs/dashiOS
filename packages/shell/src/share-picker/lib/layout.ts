@@ -6,7 +6,7 @@
  * `screen`, `window-thumbnails`); the panel draws their frames and names.
  */
 
-import type { Rect } from "../layout.ts";
+import type { Rect } from "../../layout.ts";
 
 export const PICKER = {
   width: 720,

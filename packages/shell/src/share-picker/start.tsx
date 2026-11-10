@@ -12,10 +12,10 @@ import { placedOutputs } from "../arrange.ts";
 import type { Compositor, CompositorWindow } from "../compositor.ts";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 import { centeredOn } from "../switcher/index.ts";
-import { PICKER, pickerLayout } from "./layout.ts";
-import { PickerStore, SharePicker } from "./panel.tsx";
+import { PICKER, pickerLayout } from "./lib/layout.ts";
+import { PickerStore, SharePicker } from "./lib/panel.tsx";
+import { serveSharePicker } from "./lib/server.ts";
 import { type ShareChoice, socketPath } from "./protocol.ts";
-import { serveSharePicker } from "./server.ts";
 
 export interface SharePickerDeps {
   compositor: Compositor;
