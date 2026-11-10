@@ -11,10 +11,6 @@ import { serveNotifications } from "./server.ts";
 import { BannerStack } from "./stack.tsx";
 import { NotificationStore } from "./store.ts";
 
-export { centerBottom, NotificationCenterPanel, type NotificationCenterProps } from "./center.tsx";
-export { NotificationStore, useNotifications } from "./store.ts";
-export type { HistoryEntry, Notification, StoreSnapshot } from "./types.ts";
-
 export interface Notifications {
   store: NotificationStore;
   close(): void;

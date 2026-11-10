@@ -14,8 +14,6 @@ import { DEFAULT_STYLE, type GtkStyle } from "./gtk-colors.ts";
 import { gtkCssPath, syncGtkCss } from "./gtk-css.ts";
 import { detectLook, realProbes } from "./look.ts";
 
-export { type AppCommand, appThemeCommands, appThemeGate, type Gate, readCompositorEnviron } from "./apps.ts";
-
 export interface AppearanceDeps {
   gate: Gate;
   has: (program: string) => boolean;

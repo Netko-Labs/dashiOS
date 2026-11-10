@@ -16,10 +16,6 @@ import { setCalendarBridge } from "./bridge.ts";
 import { CalendarFeed } from "./feed.ts";
 import { APP_ID, Reminders } from "./reminders.ts";
 
-export { calendarBridge, setCalendarBridge, useBusyDays } from "./bridge.ts";
-export { CalendarFeed } from "./feed.ts";
-export { Reminders } from "./reminders.ts";
-
 export interface CalendarOptions {
   notifications: NotificationStore;
   toplevels: Pick<ToplevelStore, "getSnapshot" | "act">;
