@@ -7,7 +7,7 @@
 //                                                 files and modules it loads
 //   bun scripts/entry-weight.ts --compare REF     the entries that now load a module they did not
 //                                                 load at REF (exit 1), and file counts that moved
-//   bun scripts/entry-weight.ts --check           against the baseline, scripts/lists/entry-weight.txt:
+//   bun scripts/entry-weight.ts --check           against the baseline, scripts/lists/entry-weight.tsv:
 //                                                 an entry that loads a module its baseline lacks fails,
 //                                                 and so does a baseline module it no longer loads
 //   bun scripts/entry-weight.ts --shrink          drop from the baseline what entries no longer load
@@ -151,7 +151,7 @@ function why(entry: string, file: string): void {
   console.log(chain.join("\n  -> "));
 }
 
-const BASELINE = join(ROOT, "scripts", "lists", "entry-weight.txt");
+const BASELINE = join(ROOT, "scripts", "lists", "entry-weight.tsv");
 const HEADER =
   "# Entry weight: the modules each entry point loads when it starts (scripts/entry-weight.ts; a module is a folder, or a file outside one). A module not listed for its entry fails `bun run check`; so does a listed one it no longer loads (--shrink). For a module an entry is meant to load from now on: --update, and say why in the commit.";
 
@@ -200,10 +200,10 @@ function baseline(mode: string, now: Map<string, Weight>): void {
       next.set(entry, new Set([...weight.modules].filter((module) => mode === "--update" || listed.has(module))));
     }
     writeFileSync(BASELINE, formatBaseline(next));
-    return console.log(`entry-weight: ${mode === "--update" ? "wrote" : "shrank"} scripts/lists/entry-weight.txt`);
+    return console.log(`entry-weight: ${mode === "--update" ? "wrote" : "shrank"} scripts/lists/entry-weight.tsv`);
   }
   const { grown, stale } = againstBaseline(now, base, rename);
-  for (const line of grown) console.log(`  ${line}, which scripts/lists/entry-weight.txt does not list (a barrel, or a new import at start?)`);
+  for (const line of grown) console.log(`  ${line}, which scripts/lists/entry-weight.tsv does not list (a barrel, or a new import at start?)`);
   for (const line of stale) console.log(`  ${line}: trim the baseline (bun scripts/entry-weight.ts --shrink)`);
   const failed = grown.length + stale.length > 0;
   console.log(failed ? "entry-weight: the baseline differs (see --why ENTRY FILE)" : `entry-weight: ok (${now.size} entries)`);

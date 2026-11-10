@@ -8,17 +8,17 @@
 
 import { accept, bool, type Infer, int, literal, num, reject, type Shape, shape, str } from "@dashi/shape";
 import { TEXT_SIZES } from "@dashi/ui";
-import { DOCK_STYLES } from "./dock/settings.ts";
-import { INPUT_METHODS } from "./input-method.ts";
-import { POINTER_SIZES } from "./pointer.ts";
-import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "./scroll-speed.ts";
-import { CORNER_NAMES } from "./shared/appearance/index.ts";
-import { isPhotoPath } from "./shared/settings/index.ts";
-import { parseSpaceNames } from "./spaces/names.ts";
-import type { SpaceNames } from "./spaces/types.ts";
-import { isWallpaperRef, WALLPAPER_MODES } from "./wallpaper/catalog.ts";
-import { FRAME_RATES, isVideoList, isVideoPath, LIVE_SHADERS, WALLPAPER_KINDS } from "./wallpaper/live/choice.ts";
-import { X11_SCALINGS } from "./xwayland-scale.ts";
+import { DOCK_STYLES } from "../dock/settings.ts";
+import { INPUT_METHODS } from "../input-method.ts";
+import { POINTER_SIZES } from "../pointer.ts";
+import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../scroll-speed.ts";
+import { CORNER_NAMES } from "../shared/appearance/index.ts";
+import { isPhotoPath } from "../shared/settings/index.ts";
+import { parseSpaceNames } from "../spaces/names.ts";
+import type { SpaceNames } from "../spaces/types.ts";
+import { isWallpaperRef, WALLPAPER_MODES } from "../wallpaper/catalog.ts";
+import { FRAME_RATES, isVideoList, isVideoPath, LIVE_SHADERS, WALLPAPER_KINDS } from "../wallpaper/live/choice.ts";
+import { X11_SCALINGS } from "../xwayland-scale.ts";
 
 /** A value a type guard accepts; refused saying `wanted`. */
 const guarded = <T>(guard: (value: unknown) => value is T, wanted: string, schema: Record<string, unknown> = {}): Shape<T> =>

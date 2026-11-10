@@ -10,7 +10,7 @@ import type { RefreshChoice, VrrMode } from "../display-config/index.ts";
 import type { DockSettings } from "../dock/settings.ts";
 import type { InputMethodName } from "../input-method.ts";
 import type { GraphicsSettings, PowerSection } from "../power/index.ts";
-import type { KeyboardSettings, MouseSettings, TouchpadSettings } from "../settings-schema.ts";
+import type { KeyboardSettings, MouseSettings, TouchpadSettings } from "../settings/index.ts";
 import type { CornerName } from "../shared/appearance/index.ts";
 import type { CatalogSetting } from "../shared/applet-store/index.ts";
 import type { ClockSettings, RegionSettings } from "../shared/time/index.ts";

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { type Child, InputMethodRunner, inputMethodCommand } from "../src/input-method.ts";
-import { parseSettings } from "../src/settings.ts";
+import { parseSettings } from "../src/settings/settings.ts";
 import { settle } from "./support/time.ts";
 
 /** A child that exits when the test says, or when killed. */

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import type { CompositorWindow } from "../src/compositor/wire.ts";
 import { buildMenu } from "../src/menus/model.ts";
 import type { MenuContext } from "../src/menus/types.ts";
-import { parseSettings } from "../src/settings.ts";
+import { parseSettings } from "../src/settings/settings.ts";
 import { autoName, cleanName, MAX_NAME, parseSpaceNames, renamed, spaceLabels, withoutSpace } from "../src/spaces/names.ts";
 
 let nextId = 1;

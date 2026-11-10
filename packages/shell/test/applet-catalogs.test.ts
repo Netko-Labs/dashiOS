@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseSettings } from "../src/settings.ts";
+import { parseSettings } from "../src/settings/settings.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
 import { readSavedCatalogs } from "../src/shared/applet-store/catalog-set.ts";
 import { type CatalogSetting, catalogSources, checkDraft, isCatalogList, keyLineOf, parseCatalogs } from "../src/shared/applet-store/catalogs.ts";

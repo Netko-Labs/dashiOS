@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { parseSettings } from "../src/settings.ts";
+import { parseSettings } from "../src/settings/settings.ts";
 import { TextSize } from "../src/text-size.ts";
 import { settle } from "./support/time.ts";
 

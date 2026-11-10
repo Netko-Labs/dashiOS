@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { PointerSync, pointerCommands } from "../src/pointer.ts";
-import { parseSettings } from "../src/settings.ts";
+import { parseSettings } from "../src/settings/settings.ts";
 import { fakeCompositor } from "./support/compositor.ts";
 import { settle } from "./support/time.ts";
 

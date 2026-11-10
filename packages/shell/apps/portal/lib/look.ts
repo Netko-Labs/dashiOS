@@ -8,7 +8,7 @@
  */
 
 import { homedir } from "node:os";
-import { loadSettings, watchSettings } from "../../../src/settings.ts";
+import { loadSettings, watchSettings } from "../../../src/settings/index.ts";
 import { detectLook, realProbes } from "../../../src/shared/appearance/index.ts";
 import { controlFlags } from "../../../src/shared/control-center/index.ts";
 import { settingsPath } from "../../../src/shared/settings/index.ts";

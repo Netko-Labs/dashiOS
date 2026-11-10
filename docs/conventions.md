@@ -292,7 +292,7 @@ Imports between modules (H19):
   `bun scripts/entry-weight.ts --compare <base>` fails when a change makes an
   entry point load a module it did not load before; `--why ENTRY FILE` prints
   the imports that load a file. `bun run check` holds every entry point to
-  `scripts/lists/entry-weight.txt`, the modules each loads at start
+  `scripts/lists/entry-weight.tsv`, the modules each loads at start
   (`--check`): a module not listed for its entry fails, and so does a listed
   one it no longer loads (`--shrink` trims). A module an entry is meant to
   load from now on is added with `--update`, saying why in the commit. Both

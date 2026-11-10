@@ -74,10 +74,16 @@
 import { existsSync, mkdirSync, readFileSync, watch } from "node:fs";
 import { basename, dirname } from "node:path";
 import { DEFAULT_TEXT_SIZE } from "@dashi/ui";
-import type { Compositor } from "./compositor/index.ts";
-import { resolveDock } from "./dock/settings.ts";
-import { DEFAULT_INPUT_METHOD } from "./input-method.ts";
-import { DEFAULT_POINTER_SIZE } from "./pointer.ts";
+import type { Compositor } from "../compositor/index.ts";
+import { resolveDock } from "../dock/settings.ts";
+import { DEFAULT_INPUT_METHOD } from "../input-method.ts";
+import { DEFAULT_POINTER_SIZE } from "../pointer.ts";
+import { DEFAULT_CORNERS } from "../shared/appearance/index.ts";
+import { parseCatalogs } from "../shared/applet-store/catalogs.ts";
+import { settingsPath } from "../shared/settings/index.ts";
+import { DEFAULT_WALLPAPER_MODE, type WallpaperChoice } from "../wallpaper/catalog.ts";
+import { RETIRED_KEYS, RETIRED_KINDS } from "../wallpaper/live/choice.ts";
+import { DEFAULT_X11_SCALING } from "../xwayland-scale.ts";
 import { DEFAULT_BLANK_AFTER, defaults, type Loaded, type Settings } from "./settings-defaults.ts";
 import {
   APPEARANCE,
@@ -93,12 +99,6 @@ import {
   TOUCHPAD,
   WALLPAPER,
 } from "./settings-schema.ts";
-import { DEFAULT_CORNERS } from "./shared/appearance/index.ts";
-import { parseCatalogs } from "./shared/applet-store/catalogs.ts";
-import { settingsPath } from "./shared/settings/index.ts";
-import { DEFAULT_WALLPAPER_MODE, type WallpaperChoice } from "./wallpaper/catalog.ts";
-import { RETIRED_KEYS, RETIRED_KINDS } from "./wallpaper/live/choice.ts";
-import { DEFAULT_X11_SCALING } from "./xwayland-scale.ts";
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 

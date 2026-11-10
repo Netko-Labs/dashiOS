@@ -145,8 +145,8 @@ least that big (`src/arrange/arrange.ts`, `keepLeast`); an X11 window's `pid` is
 | `layout` | shell | `{zones: [{area, frame}], dwellMs}`: drag-to-tile zones; *see* `dragZones`, `src/arrange/arrange.ts` | `{}`; resting `dwellMs` in an `area` while dragging a window shows `frame`; letting go there is a `window-drop` (the compositor frames nothing itself) |
 | `gestures` | shell | `{swipe: number[]}`: finger counts the shell claims | `{}`; `gesture` events (none while locked: every swipe goes to the lock screen) |
 | `idle` | shell | `{timeouts: number[]}` (seconds) | `{}`; `idle` / `active` events |
-| `keyboard` | shell | `{layout?, variant?, options?, repeatRate?, repeatDelay?}`: xkb name lists ("" is the system's own: `DASHI_XKB_*`, else localed's `00-keyboard.conf`), repeat in characters a second and ms; *see* `keyboardRequest`, `src/settings.ts` | `{}`, or an error (nothing changes) when the layout does not compile |
-| `input` | shell | `{touchpad?: {tap?, naturalScroll?, accelSpeed?, disableWhileTyping?, clickMethod?, scrollSpeed?}, mouse?: {naturalScroll?, accelSpeed?, accelProfile?, scrollSpeed?}}`; a key left out is the device's default; *see* `src/settings.ts` | `{}`; devices plugged in later get them too |
+| `keyboard` | shell | `{layout?, variant?, options?, repeatRate?, repeatDelay?}`: xkb name lists ("" is the system's own: `DASHI_XKB_*`, else localed's `00-keyboard.conf`), repeat in characters a second and ms; *see* `keyboardRequest`, `src/settings/settings.ts` | `{}`, or an error (nothing changes) when the layout does not compile |
+| `input` | shell | `{touchpad?: {tap?, naturalScroll?, accelSpeed?, disableWhileTyping?, clickMethod?, scrollSpeed?}, mouse?: {naturalScroll?, accelSpeed?, accelProfile?, scrollSpeed?}}`; a key left out is the device's default; *see* `src/settings/settings.ts` | `{}`; devices plugged in later get them too |
 
 ### Spaces and overview
 

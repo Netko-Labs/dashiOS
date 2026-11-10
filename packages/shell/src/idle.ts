@@ -1,6 +1,6 @@
 /**
  * What the shell does when the user has been away: blank the screens after
- * `idle.blankAfterSeconds` (settings.ts) and bring them back on the next
+ * `idle.blankAfterSeconds` (settings/settings.ts) and bring them back on the next
  * input. dashi-comp keeps the clock (real input only; an inhibiting video
  * or presentation holds it back) and tells us over IPC; blanking is its
  * `power` method. Sleeping after `idle.sleepAfterSeconds` is a second

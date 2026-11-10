@@ -16,7 +16,7 @@ export type DockMenuAction =
    * when the compositor cannot name them (controller.ts).
    */
   | { kind: "quit"; key: string; windows: readonly number[] }
-  /** Change the Dock's own settings (settings.ts). */
+  /** Change the Dock's own settings (settings/settings.ts). */
   | { kind: "dock-prefs"; change: Partial<DockSettings> }
   /** Open System Settings on the Desktop & Dock pane. */
   | { kind: "dock-settings" };

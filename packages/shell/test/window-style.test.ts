@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { darkColors, lightColors } from "@dashi/ui";
 import { DARK_ALPHA, SHADOWS, WindowStyleSync, windowStyle } from "../src/appearance/window-style.ts";
-import { parseSettings } from "../src/settings.ts";
+import { parseSettings } from "../src/settings/settings.ts";
 import { fakeCompositor } from "./support/compositor.ts";
 import { flush } from "./support/time.ts";
 

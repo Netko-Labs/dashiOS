@@ -2,7 +2,7 @@
  * The Dock's settings, `dock` in settings.json: how it looks (the floating
  * Dock or a full-width taskbar), whether it hides until the pointer reaches
  * the screen's bottom edge, and whether it is shown at all. The shell's
- * parser (settings.ts) and System Settings' store (settings-app/store.ts)
+ * parser (settings/settings.ts) and System Settings' store (settings-app/store.ts)
  * both read the file; the keys, defaults, and checks live here so they
  * cannot disagree.
  *

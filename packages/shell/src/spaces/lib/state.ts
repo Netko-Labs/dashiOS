@@ -12,7 +12,7 @@ import { spaceLabels } from "../names.ts";
 import type { SpaceNames, SpacesState } from "../types.ts";
 import { desktopCount, fitSlots, type Slots } from "./slots.ts";
 
-/** What settings.json says about Spaces (settings.ts). */
+/** What settings.json says about Spaces (settings/settings.ts). */
 export interface SpacesSettings {
   /** How many Desktops to have, full-screen ones left out; none says leave them as they are. */
   count?: number;
