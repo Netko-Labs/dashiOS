@@ -7,7 +7,7 @@
  * Dock's area). With autohide off the Dock is simply there.
  *
  * This is the whole policy as a small state machine over timers. Where the
- * pointer is comes from the compositor (dock/edges.ts: a client is never
+ * pointer is comes from the compositor (dock/lib/edges.ts: a client is never
  * told that the pointer left its surface); dock/presenter.ts shows what
  * `revealed` says.
  */

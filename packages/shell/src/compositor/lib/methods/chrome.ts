@@ -4,7 +4,7 @@ import { bool, list, map, num, obj, optional, record, str } from "@dashi/shape";
 import { FrameShape } from "../../wire.ts";
 import { Done, method } from "./spec.ts";
 
-/** One keymap rule (the shell's src/keymap.ts `Rule`). */
+/** One keymap rule (the shell's src/keymap/keymap.ts `Rule`). */
 const Rule = obj({
   when: str(),
   app: optional(str()),

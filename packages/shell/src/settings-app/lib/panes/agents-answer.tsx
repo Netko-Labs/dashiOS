@@ -68,7 +68,7 @@ const PARTS_SHOWN = 20;
 
 const now = (): number => Math.floor(Date.now() / 1000);
 
-/** One agent's connections in quick succession (agents/ask/sessions.ts): one row, opened to list each. */
+/** One agent's connections in quick succession (agents/ask/lib/sessions.ts): one row, opened to list each. */
 function SessionsRow({ entry, parts }: { entry: HistoryEntry; parts: readonly HistoryEntry[] }) {
   const colors = useColors();
   const [opened, setOpened] = useState(false);

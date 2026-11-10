@@ -50,7 +50,7 @@ export type LauncherCommand =
   | { kind: "digits"; shown: boolean }
   /** A chord pressed while Set shortcut… records. */
   | { kind: "record"; chord: ReportedChord }
-  /** ⇥: Ask about the words (agents/rows.ts); on a plan, back to the words. */
+  /** ⇥: Ask about the words (lib/agents/agent-rows.ts); on a plan, back to the words. */
   | { kind: "tab" }
   /** ← or →, while they are the launcher's (the windows' live pictures). */
   | { kind: "arrow"; to: "left" | "right" }

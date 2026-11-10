@@ -40,7 +40,7 @@ export type RowAction =
   | { kind: "search-files"; query: string }
   | { kind: "find-software"; query: string }
   | { kind: "all-apps" }
-  /** Agents' rows: Ask, Now, history (agents/rows.ts). */
+  /** Agents' rows: Ask, Now, history (lib/agents/agent-rows.ts). */
   | { kind: "agent"; act: AgentAct }
   /** One of a launcher scope's verbs (scope.ts): the scope runs it. */
   | { kind: "scope"; verb: string };

@@ -5,7 +5,7 @@
  * extending, Home, End and the page keys, Return to open, ⌫ back, Delete to
  * the Trash, F2 to rename in place, Space to peek, Esc to clear the
  * selection, and typing to jump to a name. ❖↑ and ❖↓ arrive as Ctrl+Home and
- * Ctrl+End (the keymap turns them so for text, src/keymap.ts): Enclosing
+ * Ctrl+End (the keymap turns them so for text, src/keymap/keymap.ts): Enclosing
  * Folder and Open. Other ❖ chords are the menus' (appmenus.ts).
  */
 

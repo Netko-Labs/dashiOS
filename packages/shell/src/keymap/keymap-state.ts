@@ -1,6 +1,6 @@
 /**
  * The keymap the compositor should have now: Dashi's own (keymap.ts) with
- * this machine's rules first (the laptop's keys, laptop/hotkeys.ts), and the
+ * this machine's rules first (the laptop's keys, laptop/lib/hotkeys.ts), and the
  * person's own keys before those (launcher/person-keys.ts: a chord bound to
  * a `dashi://` address from the launcher's Set shortcut…). Anything that
  * sends a keymap for a while (the app switcher's session, the launcher)

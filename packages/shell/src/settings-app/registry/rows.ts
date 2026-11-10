@@ -1,6 +1,6 @@
 /**
  * Every row of System Settings, once. The panes draw them (setting.tsx), the
- * launcher and links find them (actions/sources/settings.ts), Spot lights
+ * launcher and links find them (actions/lib/sources/settings.ts), Spot lights
  * them, and the agents' get_settings and set_setting take the ones named
  * for agents.
  */

@@ -6,7 +6,7 @@
  *
  * The compositor watches for the keywords (IPC `snippets`) and says when
  * one was typed (`snippet`); the policy is here. Never in a password field
- * (AT-SPI, clipboard/fields.ts), never in a terminal unless Settings allows
+ * (AT-SPI, clipboard/lib/fields.ts), never in a terminal unless Settings allows
  * it. The keyword is erased only if it is still the last thing typed
  * (`snippet-erase`), then the text is pasted, and the clipboard gets back
  * the copy it had. Placeholders: {date}, {time}, {clipboard}, {cursor}

@@ -1,6 +1,6 @@
 /**
  * How long an agent has been recording or seeing the screen: the session's
- * clock of its calls (agents/watch-clock.ts), the time a row's chip says
+ * clock of its calls (agents/lib/watch-clock.ts), the time a row's chip says
  * (agents/mark.ts `watchTime`), and the chip ticking once a second while
  * the agents' panel shows it (agents-panel/lib/agents-rows.tsx).
  */

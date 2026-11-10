@@ -118,7 +118,7 @@ export function startRegistry(needs: RegistryNeeds): Registry {
   return { actions, clipboard, extensions };
 }
 
-/** Wi-Fi and Bluetooth as settings with state, from Control Center's own store (actions/sources/radios.ts). */
+/** Wi-Fi and Bluetooth as settings with state, from Control Center's own store (actions/radios.ts). */
 function addRadios({ menus, system, services }: RegistryNeeds, actions: Actions): void {
   const devices = menus.shared.devices;
   const radioSource = new RadioSource({

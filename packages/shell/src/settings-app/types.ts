@@ -105,7 +105,7 @@ export interface AgentsSettings {
   answerer?: AnswererChoice;
   /** The local model to ask by name; the first one installed when unset. */
   localModel?: string;
-  /** The OpenAI model GPT answers with; the most capable chat model the key lists when unset (agents/ask/gpt-models.ts). */
+  /** The OpenAI model GPT answers with; the most capable chat model the key lists when unset (agents/ask/lib/gpt-models.ts). */
   gptModel?: string;
   /** Who a task from the launcher is handed to first ("Hand it off"; agents/handoff/); the answerer, else the first installed, when unset. */
   handOff?: HarnessId;

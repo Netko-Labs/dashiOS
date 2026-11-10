@@ -1,5 +1,5 @@
 /**
- * A run that prints nothing (agents/handoff/quiet.ts): OpenCode with no
+ * A run that prints nothing (agents/handoff/lib/quiet.ts): OpenCode with no
  * account waits on its free model's limit, printing no event and never
  * exiting. After a while its card says so plainly, with Sign In…, Keep
  * Waiting and Stop; errors it wrote say why; a known error reads plainly.

@@ -1,6 +1,6 @@
 /**
  * Handing a `dashi://` link to the running shell from another process, over
- * the links socket (the shell serves it: actions/links.ts): what `dashi-open` does, and what Dashi's apps
+ * the links socket (the shell serves it: actions/lib/links.ts): what `dashi-open` does, and what Dashi's apps
  * do to open a place in Settings (the portal's Access sheet opens Privacy &
  * Security). One request per connection; the shell answers one line.
  */

@@ -1,6 +1,6 @@
 /**
  * Naming an agent in Settings from the key its answers are kept under
- * (agents/peer.ts, agents/invocation.ts): the executable's path, plus what an
+ * (agents/peer.ts, agents/lib/invocation.ts): the executable's path, plus what an
  * interpreter runs, or `ssh:<name>` for a remote agent.
  *
  *   /usr/bin/claude                              a program

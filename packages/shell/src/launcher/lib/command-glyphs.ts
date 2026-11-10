@@ -1,5 +1,5 @@
 /**
- * Glyphs for Dashi's own commands in the launcher (actions/sources/commands.ts,
+ * Glyphs for Dashi's own commands in the launcher (actions/lib/sources/commands.ts,
  * the clipboard's, the window arrangements, the agents' tools a person runs),
  * drawn in ink on a neutral tile like the Settings panes' (CO-2): the moon,
  * lock, keyboard, clipboard and snippet are the ones Control Center, Settings

@@ -1,7 +1,7 @@
 /**
  * When alerts fire and what they say. An event's alert is minutes before its
  * start; a repeating event has one per occurrence. Pure: the shell's reminders
- * (src/calendar/reminders.ts) decide when to look and what to post, from this.
+ * (src/calendar/lib/reminders.ts) decide when to look and what to post, from this.
  */
 
 import { type ClockPrefs, formatTime } from "../time/index.ts";

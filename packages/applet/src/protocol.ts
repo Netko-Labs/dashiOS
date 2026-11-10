@@ -2,7 +2,7 @@
  * The applets channel, `$XDG_RUNTIME_DIR/dashi-applets.sock`: how a program
  * puts its own items in the menu bar's status area (docs/applets.md).
  * Newline-delimited JSON, one message per line. The shell parses with this
- * module (its src/applets/protocol.ts is the facade), and so does the client,
+ * module (src/applets/ imports it from @dashi/applet), and so does the client,
  * so both sides refuse the same things.
  *
  * Version 1:

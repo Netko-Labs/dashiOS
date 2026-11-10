@@ -62,7 +62,7 @@ export interface LauncherPrefsStore extends Store<LauncherPrefsSnapshot> {
 
 export type LauncherWorldStore = Store<WorldSnapshot>;
 
-/** A `dashi://` link the launcher shows with its arguments filled in, waiting for Return (actions/run.ts `present`). */
+/** A `dashi://` link the launcher shows with its arguments filled in, waiting for Return (actions/lib/run.ts `present`). */
 export interface Presented {
   action: ActionDef;
   args: Args;

@@ -2,7 +2,7 @@
  * The settings registry's shapes: one entry per row of System Settings, at
  * `dashi://settings/<pane>/<row>`. A pane draws its rows from here
  * (setting.tsx), and the launcher, links, Spot and the agents' tools read
- * the same entries (actions/sources/settings.ts, agents/tools/settings.ts),
+ * the same entries (actions/lib/sources/settings.ts, agents/tools/lib/settings.ts),
  * so a row added to a pane is found everywhere.
  */
 

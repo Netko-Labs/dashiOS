@@ -1,6 +1,6 @@
 /**
  * What a file chooser is asked for and what it answers, the same whoever
- * asks: the portal's FileChooser calls (apps/portal/file-chooser/options.ts
+ * asks: the portal's FileChooser calls (apps/portal/lib/file-chooser/options.ts
  * reads them off the bus), `dashi-dialog --file-selection`, and Dashi's own
  * apps' Open and Save As (Text Editor).
  */

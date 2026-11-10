@@ -30,7 +30,7 @@ export class AppMenuStore {
   private readonly listeners = new Set<() => void>();
   /** Told when an app asks for its window to be brought forward (protocol.ts `front`). */
   private readonly frontListeners = new Set<(pid: number) => void>();
-  /** Told of every publish and withdrawal, whoever is focused (the action registry's menus: actions/sources/menus.ts). */
+  /** Told of every publish and withdrawal, whoever is focused (the action registry's menus: actions/lib/sources/menus.ts). */
   private readonly publishedListeners = new Set<() => void>();
 
   subscribe = (listener: () => void): (() => void) => {

@@ -9,7 +9,7 @@
  * the window's own keys do (keys.ts). The menu bar has no submenus yet, so
  * Open Recent is a run of rows under Open….
  * Not on the Mac's keys: Move to Trash (❖⌫), whose chord the keymap keeps
- * for itself (app-menus/reserved.ts); ⌫ asks instead.
+ * for itself (app-menus/lib/reserved.ts); ⌫ asks instead.
  */
 
 import { basename, dirname } from "node:path";

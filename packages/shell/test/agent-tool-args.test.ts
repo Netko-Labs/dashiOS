@@ -1,5 +1,5 @@
 /**
- * A tool's arguments are one shape (agents/tools/args.ts): the listing agents
+ * A tool's arguments are one shape (agents/tools/lib/args.ts): the listing agents
  * read and the check that runs when they call come from the same value, so a
  * listed argument is one the check reads and a required one is refused when
  * left out.

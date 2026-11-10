@@ -135,7 +135,7 @@ export const KEYMAP: Keymap = {
     // quarter, its own size, or the next screen (tiling.ts). ⌃❖↩ fills,
     // ⌃❖C centers, ⌃❖R gives back its own size (arrange.ts). Like every
     // ⌃❖ rule, above the reserved super+ctrl+* below. They bind the
-    // registry's addresses (actions/sources/windows.ts).
+    // registry's addresses (actions/lib/sources/windows.ts).
     { when: "super+ctrl+Left", bind: "dashi://window/arrange/left" },
     { when: "super+ctrl+Right", bind: "dashi://window/arrange/right" },
     { when: "super+ctrl+Up", bind: "dashi://window/arrange/up" },
@@ -175,7 +175,7 @@ export const KEYMAP: Keymap = {
     // focused window (screenshots.ts, screenshot-area.tsx); ⇧❖5 opens the
     // toolbar that also records the screen, or stops a recording (recorder/).
     // They bind the registry's addresses, the launcher's Screenshot rows
-    // (actions/sources/commands.ts).
+    // (actions/lib/sources/commands.ts).
     { when: "super+shift+3", bind: "dashi://dashi/screenshot" },
     { when: "super+shift+4", bind: "dashi://dashi/screenshot-area" },
     { when: "super+shift+5", bind: "dashi://dashi/capture" },
@@ -223,7 +223,7 @@ export const KEYMAP: Keymap = {
 
 /**
  * `keymap` with this machine's own rules first: the laptop's keys (Fn F5,
- * Fn F4, the ROG key; laptop/hotkeys.ts), whose keysyms come from the model
+ * Fn F4, the ROG key; laptop/lib/hotkeys.ts), whose keysyms come from the model
  * database. They carry no modifiers, so going first only matters for a key
  * the list above also names, and then the machine's meaning wins.
  */

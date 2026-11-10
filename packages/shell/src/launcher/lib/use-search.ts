@@ -235,7 +235,7 @@ export function useSearch(props: LauncherProps, s: LauncherState, m: Measures): 
  * From outside Dashi: a command's answer on top and providers' rows below the rest; in a command's own
  * scope (a pick, a view, its words) only its rows (launcher/lib/extensions.ts). A scope has its own rows only,
  * and so does a command from outside. Otherwise agents' rows go around the rest, never between them: Now on
- * top of an empty field, Ask last (launcher/agent-rows.ts).
+ * top of an empty field, Ask last (launcher/lib/agents/agent-rows.ts).
  */
 function assemble(props: LauncherProps, s: LauncherState, ext: Extensions, searched: Section[], text: string) {
   const { query, scope, allApps, handoff, agents, mode, context } = s;

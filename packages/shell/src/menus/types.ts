@@ -102,7 +102,7 @@ export type Popover =
   /** An app's menu in the Dock: its rows were built when it opened; `x` is the icon's center. */
   | { kind: "dock-menu"; x: number; entries: readonly MenuEntry<DockMenuAction>[]; above?: number }
   | { kind: "control-center"; page: ControlPage }
-  /** The battery panel (battery/panel.tsx), its right edge at `right` (screen pixels), or where Control Center is when null. */
+  /** The battery panel (battery/lib/panel.tsx), its right edge at `right` (screen pixels), or where Control Center is when null. */
   | { kind: "battery"; right: number | null }
   | { kind: "notification-center" }
   /** The agents' panel under their mark (agents-panel/agents-panel.tsx), its right edge at `right`; `focus` is the run it opened on. */

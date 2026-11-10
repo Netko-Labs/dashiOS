@@ -1,7 +1,7 @@
 /**
  * Recently changed: every change to a setting, newest first, with who made
  * it (you, or an agent by name, in shiso) and Undo while the setting still
- * holds what that change set (changes/log.ts `canUndo`). ❖Z undoes the
+ * holds what that change set (lib/changes/log.ts `canUndo`). ❖Z undoes the
  * newest. Pressing a change opens its pane at its row. A pane in the
  * sidebar (You), and at dashi://settings/recent.
  */

@@ -72,7 +72,7 @@ export type CommandTimers = Timers;
 export interface AppletCommandsOptions {
   /** Put a result's `copy` on the clipboard; whether it went. */
   copy(text: string): Promise<boolean>;
-  /** Open a result's `open`: a web page, or a `dashi://` address (as a link from outside: actions/run.ts). */
+  /** Open a result's `open`: a web page, or a `dashi://` address (as a link from outside: actions/lib/run.ts). */
   open(target: string): Promise<Outcome>;
   /** Where the launcher's surface is: its screen, and its top-left corner in that screen's points. */
   launcherOrigin(): Promise<{ output: string | null; x: number; y: number } | null>;

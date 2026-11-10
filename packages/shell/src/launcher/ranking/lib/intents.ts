@@ -82,7 +82,7 @@ export const INTENTS: Intents = {
       ],
     },
     {
-      // Screenshot…, the toolbar (actions/sources/commands.ts); the Screenshot app where it is installed.
+      // Screenshot…, the toolbar (actions/lib/sources/commands.ts); the Screenshot app where it is installed.
       id: formatAddress(["dashi", "capture"]),
       phrases: ["snip", "snipping tool", "print screen"],
     },

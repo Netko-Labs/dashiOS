@@ -43,7 +43,7 @@ export interface DeviceDeps {
   backlightRoot?: string;
   hasBluetoothctl?: boolean;
   hasBrightnessctl?: boolean;
-  /** The brightness level (0..1) after the slider set it: at 0 the built-in screen goes off (system/screen-dark.ts). */
+  /** The brightness level (0..1) after the slider set it: at 0 the built-in screen goes off (system/lib/screen-dark.ts). */
   brightnessChanged?: (level: number) => void;
   /** The volume after a slider change, for the menu bar's glyph. */
   volumeChanged?: (volume: Volume) => void;

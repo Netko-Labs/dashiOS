@@ -2,7 +2,7 @@
  * The menus under the status area's items: a menu bar extra's (a tray
  * icon's or an applet's, extras/). They open from the right of the bar,
  * below the item, and run through the one popover (controller.ts). The
- * battery's is a panel now (battery/panel.tsx), and its rows' actions are
+ * battery's is a panel now (battery/lib/panel.tsx), and its rows' actions are
  * these.
  */
 

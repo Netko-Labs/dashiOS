@@ -1,7 +1,7 @@
 /**
  * What an applet may touch, as applet.json names it, and what each name means
  * in plain words (the consent sheet, the store's page). The sandbox
- * (shell's src/applets/sandbox.ts) gives an applet exactly these and nothing
+ * (shell's src/applets/lib/sandbox.ts) gives an applet exactly these and nothing
  * else: no permission, no network, no files, no buses beyond the applets
  * socket and its own Wayland surfaces.
  *

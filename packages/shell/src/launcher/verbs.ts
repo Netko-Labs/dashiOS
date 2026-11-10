@@ -207,7 +207,7 @@ export function verbsFor(row: Row, ctx: VerbContext): Verb[] {
   return [verb("do", row.title, action, { key: KEYS.primary })];
 }
 
-/** A link's action, shown with its arguments filled in: Return runs it, nothing else does (actions/run.ts). */
+/** A link's action, shown with its arguments filled in: Return runs it, nothing else does (actions/lib/run.ts). */
 export function presentedVerbs(action: ActionDef, args: Args, ctx: VerbContext): Verb[] {
   const checked = action.check(args);
   return [

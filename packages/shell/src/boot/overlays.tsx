@@ -89,7 +89,7 @@ export class Screenshots {
   }
 
   /**
-   * ⇧❖3, ⇧❖4 and ⇧❖5, and the launcher's Screenshot rows (actions/sources/commands.ts). Chosen in the launcher,
+   * ⇧❖3, ⇧❖4 and ⇧❖5, and the launcher's Screenshot rows (actions/lib/sources/commands.ts). Chosen in the launcher,
    * it is taken down first and the capture waits until it is gone, so it isn't in the picture; "the focused
    * window" is then the one it was over (Space in ⇧❖4, Capture Window in the toolbar).
    */

@@ -237,7 +237,7 @@ export function useStatusSlots(sources: StatusSources, popover: Popover | null, 
       on: {
         battery: (bounds?: Bounds) => {
           if (!battery || !bounds) return;
-          // The battery panel (battery/panel.tsx) under the item, its right edge at the item's.
+          // The battery panel (battery/lib/panel.tsx) under the item, its right edge at the item's.
           void menus.toggleBattery(bounds.x + bounds.width, appName, output);
         },
         controlCenter: () => void menus.toggleControlCenter(appName, "main", output),

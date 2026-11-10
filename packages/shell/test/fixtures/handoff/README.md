@@ -1,4 +1,4 @@
-# Recorded harness streams (agents/handoff/stream.ts)
+# Recorded harness streams (agents/handoff/lib/stream.ts)
 
 - `claude-code.jsonl`: recorded from Claude Code 2.1.319 (`claude -p --output-format stream-json --verbose`
   with a throwaway MCP server named `dashi` offering `open_url` and `read_page`), trimmed: the

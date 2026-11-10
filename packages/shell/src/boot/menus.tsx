@@ -84,7 +84,7 @@ export function startMachine(needs: MachineNeeds): Machine {
   // An applet's pick of the power mode is the same as one in Control Center.
   needs.programs.appletPower.connect(laptop.modes);
   const autoRefresh = late.set("autoRefresh", startAutoRefresh(needs));
-  // Control Center's tiles step their corners and pages only while Reduce Motion is off (control-center/motion.ts).
+  // Control Center's tiles step their corners and pages only while Reduce Motion is off (shared/controls/motion.ts).
   setControlMotion(() => needs.look.state.reduceMotion);
   const chargeLimit = (): number | null => {
     if (!laptop.store.getSnapshot().knobs.has("charge-limit")) return null;

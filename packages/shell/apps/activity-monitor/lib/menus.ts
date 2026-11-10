@@ -5,7 +5,7 @@
  * are real: the shell matches them against the enabled rows
  * (app-menus/shortcut.ts). Quit Process is ❖K: the keymap swallows every ⌥❖
  * chord but two (⌥❖Esc and ⌥❖D are bound) and ⇧❖Q is Quit
- * (app-menus/reserved.ts), so no ❖Q variant can reach the app. Rows are
+ * (app-menus/lib/reserved.ts), so no ❖Q variant can reach the app. Rows are
  * disabled under a sheet or a menu, which hold the window. Menu-bar commands
  * are Title Case (CP-2).
  */

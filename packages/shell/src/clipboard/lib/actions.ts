@@ -6,7 +6,7 @@
  * first, every time; and the history's switch is a setting with state at
  * `dashi://settings/keyboard/clipboard-history`, as Settings › Keyboard has it.
  * The person's alone: agents read the history only through their own tool,
- * which asks every time (agents/tools/clipboard.ts).
+ * which asks every time (agents/tools/lib/clipboard.ts).
  */
 
 import { type ActionContext, type ActionDef, type ActionSource, failed, invalid, ok, ready } from "../../actions/index.ts";

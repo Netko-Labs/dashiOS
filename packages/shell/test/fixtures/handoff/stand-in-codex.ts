@@ -2,7 +2,7 @@
 /**
  * A stand-in for Codex, for checking agents from the launcher in the VM
  * where no harness is signed in (dashi-0.5.0-review/26-launcher-agents): it
- * takes `codex exec --json …` as agents/handoff/commands.ts builds it,
+ * takes `codex exec --json …` as agents/handoff/lib/commands.ts builds it,
  * starts Dashi's MCP server from its `-c mcp_servers.dashi.*` overrides,
  * makes real calls to it (so the steps, the questions and the sandbox are
  * Dashi's own), and prints Codex's documented JSONL events. Its "model" is
