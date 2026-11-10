@@ -40,10 +40,15 @@ export interface Timers {
   clear(handle: unknown): void;
 }
 
+/** Whether `handle` is one `setTimeout` gave out (a timer object, or a number). */
+const isTimeout = (handle: unknown): handle is ReturnType<typeof setTimeout> => typeof handle === "number" || (typeof handle === "object" && handle !== null);
+
 export const realTimers: Timers = {
   now: () => performance.now(),
   set: (callback, ms) => setTimeout(callback, ms),
-  clear: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+  clear: (handle) => {
+    if (isTimeout(handle)) clearTimeout(handle);
+  },
 };
 
 /** How long `work` took, and whether that was over `budgetMs`. */

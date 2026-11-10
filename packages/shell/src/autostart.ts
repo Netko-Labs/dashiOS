@@ -180,7 +180,8 @@ export function claimSession(runtimeDir: string, session?: string): boolean {
     closeSync(openSync(join(runtimeDir, markerName(session)), "wx", 0o600));
     return true;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
+    const code = typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
+    if (code !== "EEXIST") {
       console.error("dashi-shell: autostart: could not write its marker, so nothing starts:", error instanceof Error ? error.message : error);
     }
     return false;

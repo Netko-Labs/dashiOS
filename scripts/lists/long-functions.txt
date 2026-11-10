@@ -34,7 +34,6 @@
 103	packages/shell/src/dock/view.tsx
 163	packages/shell/src/laptop/start.ts
 969	packages/shell/src/launcher.tsx
-137	packages/shell/src/launcher/extensions.ts
 205	packages/shell/src/main.tsx
 230	packages/shell/src/menus/start.tsx
 82	packages/shell/src/notifications/center.tsx

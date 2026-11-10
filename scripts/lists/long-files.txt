@@ -73,13 +73,9 @@
 537	packages/shell/src/agents/session.ts
 392	packages/shell/src/applets/connection.ts
 306	packages/shell/src/applets/controls.ts
-394	packages/shell/src/arrange.ts
 318	packages/shell/src/bluetooth/store.ts
 307	packages/shell/src/display-config/manager.ts
 1189	packages/shell/src/launcher.tsx
-313	packages/shell/src/launcher/extensions.ts
-314	packages/shell/src/launcher/ranking/rank.ts
-353	packages/shell/src/launcher/rows.ts
 1902	packages/shell/src/main.tsx
 365	packages/shell/src/menus/controller.ts
 352	packages/shell/src/menus/model.ts
@@ -88,7 +84,6 @@
 372	packages/shell/src/settings-app/registry/look.ts
 355	packages/shell/src/settings-app/sidebar.tsx
 598	packages/shell/src/settings-app/store.ts
-329	packages/shell/src/settings.ts
 386	packages/shell/src/shared/calendar/ics.ts
 305	packages/shell/src/shared/calendar/store.ts
 328	packages/shell/src/shared/dbus/connection.ts

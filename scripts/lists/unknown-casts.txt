@@ -25,11 +25,9 @@
 1	packages/shell/src/applets/commands.ts
 1	packages/shell/src/applets/controls.ts
 1	packages/shell/src/applets/server.ts
-1	packages/shell/src/autostart.ts
 1	packages/shell/src/bluetooth/values.ts
 1	packages/shell/src/browser/bridge.ts
 1	packages/shell/src/hardware/describe.ts
-1	packages/shell/src/launcher/budget.ts
 1	packages/shell/src/notifications/server.ts
 1	packages/shell/src/polkit/service.ts
 1	packages/shell/src/session/parent.ts
