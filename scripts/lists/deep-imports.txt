@@ -411,7 +411,7 @@
 1	packages/shell/src/overlay.tsx
 1	packages/shell/src/overview/controller.ts
 1	packages/shell/src/pointer.ts
-1	packages/shell/src/polkit/helper.ts
+1	packages/shell/src/polkit/lib/helper.ts
 1	packages/shell/src/portal-host/index.ts
 1	packages/shell/src/portal-host/service.ts
 1	packages/shell/src/portal-host/sheets.ts

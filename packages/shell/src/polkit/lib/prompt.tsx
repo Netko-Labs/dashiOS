@@ -4,7 +4,7 @@
  * as the Wi-Fi password and power sheets).
  */
 
-import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
+import type { OpenOverlay, OverlayHandle } from "../../overlay.tsx";
 import type { Presenter } from "./controller.ts";
 import type { SheetActions, SheetStore } from "./model.ts";
 import { PolkitSheet, sheetSize } from "./sheet.tsx";

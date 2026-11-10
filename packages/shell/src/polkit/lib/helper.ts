@@ -14,7 +14,7 @@
  */
 
 import { existsSync } from "node:fs";
-import { LineBuffer } from "../shared/io/lines.ts";
+import { LineBuffer } from "../../shared/io/lines.ts";
 
 export type HelperEvent =
   | { type: "prompt"; text: string; echo: boolean }

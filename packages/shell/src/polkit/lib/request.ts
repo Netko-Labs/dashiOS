@@ -4,7 +4,7 @@
  * the agent sees it, and text that ends up on screen is cleaned.
  */
 
-import { DBusError, ERRORS, Variant } from "../shared/dbus/index.ts";
+import { DBusError, ERRORS, Variant } from "../../shared/dbus/index.ts";
 
 /** The two error names polkitd understands from an agent. */
 export const POLKIT_ERRORS = {

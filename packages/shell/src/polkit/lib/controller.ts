@@ -14,7 +14,7 @@
  *   typed survives) and its request goes back to the front of the line.
  */
 
-import { DBusError } from "../shared/dbus/index.ts";
+import { DBusError } from "../../shared/dbus/index.ts";
 import { type HelperEvent, type HelperProcess, startHelper } from "./helper.ts";
 import { detailRows, RETRY, type SheetActions, SheetStore, type SheetUser } from "./model.ts";
 import { type AuthRequest, orderUids, POLKIT_ERRORS } from "./request.ts";

@@ -11,7 +11,7 @@
  * (polkitd forgets its agents when it restarts).
  */
 
-import { BUS_NAME, BUS_PATH, type DBusConnection, DBusError, ERRORS, getNameOwner, type InterfaceSpec } from "../shared/dbus/index.ts";
+import { BUS_NAME, BUS_PATH, type DBusConnection, DBusError, ERRORS, getNameOwner, type InterfaceSpec } from "../../shared/dbus/index.ts";
 import type { PolkitController } from "./controller.ts";
 import { parseBegin } from "./request.ts";
 import type { Subject } from "./subject.ts";

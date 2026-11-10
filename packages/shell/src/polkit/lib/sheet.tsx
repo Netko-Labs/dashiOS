@@ -9,7 +9,7 @@
 import { useColors } from "@dashi/ui";
 import { Image, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { Button, Panel, SHEET_SIZE } from "../menus/sheets.tsx";
+import { Button, Panel, SHEET_SIZE } from "../../menus/sheets.tsx";
 import { type DetailRow, HINT, type SheetActions, type SheetState, type SheetStore, useSheet } from "./model.ts";
 
 /** A padlock, for requests that name no icon of their own. */
