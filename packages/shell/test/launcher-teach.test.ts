@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
-import { type ActionDeps, runMenuAction } from "../src/menus/actions.ts";
-import { buildMenu, type MenuContext } from "../src/menus/model.ts";
+import { type ActionDeps, runMenuAction } from "../src/menus/lib/actions.ts";
+import { buildMenu } from "../src/menus/model.ts";
+import type { MenuContext } from "../src/menus/types.ts";
 
 // Finding 12: nothing taught the launcher. The Dashi menu now lists it with its key.
 

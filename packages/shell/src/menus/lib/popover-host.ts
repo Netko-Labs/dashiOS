@@ -5,9 +5,9 @@
  * controller's (controller.ts).
  */
 
-import type { OverlayHandle } from "../overlay.tsx";
-import { stopOfPopover } from "./bar-keys.ts";
-import type { ControllerDeps, MenuState, Popover } from "./controller-types.ts";
+import type { OverlayHandle } from "../../overlay.tsx";
+import { stopOfPopover } from "../bar-keys.ts";
+import type { ControllerDeps, MenuState, Popover } from "../types.ts";
 
 export const CLOSED: MenuState = { popover: null, appName: null, context: null };
 

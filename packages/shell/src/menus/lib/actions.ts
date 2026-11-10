@@ -9,11 +9,11 @@
  * the keyboard back.
  */
 
-import type { Compositor, CompositorWindow } from "../compositor.ts";
-import type { Arrange } from "../layout.ts";
-import { sameApp } from "../shortcuts.ts";
-import { type EditCommand, editChord } from "./keystrokes.ts";
-import type { MenuAction, PowerKind } from "./model.ts";
+import type { Compositor, CompositorWindow } from "../../compositor.ts";
+import type { Arrange } from "../../layout.ts";
+import { sameApp } from "../../shortcuts.ts";
+import type { EditCommand, MenuAction, PowerKind } from "../types.ts";
+import { editChord } from "./keystrokes.ts";
 
 /** What the actions reach beyond the compositor. */
 export interface ActionDeps {

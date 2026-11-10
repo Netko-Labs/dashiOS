@@ -14,9 +14,7 @@ import { startLostCardWatch } from "../graphics/lost-start.ts";
 import { keepAwake, keepAwakeEntries } from "../inhibit/index.ts";
 import { laptopEntries } from "../laptop/menu.ts";
 import { type Laptop, startLaptop } from "../laptop/start.ts";
-import { type Menus, startMenus, useMenus } from "../menus/index.ts";
-import type { StatusMenuAction } from "../menus/status-menu.ts";
-import { extraEntries } from "../menus/status-menu.ts";
+import { extraEntries, type Menus, type StatusMenuAction, startMenus, useMenus } from "../menus/index.ts";
 import type { Notifications } from "../notifications/service.ts";
 import { chargeTarget } from "../power/battery-health.ts";
 import { powerOffReason } from "../power/nested.ts";
@@ -197,7 +195,7 @@ export function startBarMenus(needs: MenusNeeds): BarMenus {
   const menus = startMenus({
     mixer,
     pipewire: system.pipewire,
-    // The bar's ring is spoken from the popover's surface (menus/popover.tsx).
+    // The bar's ring is spoken from the popover's surface (menus/lib/popover.tsx).
     accessible: () => late.get("launcherAccess").accessible,
     layout: programs.controlLayout,
     appletControls: programs.appletControls,

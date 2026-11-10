@@ -19,8 +19,8 @@ import type { SystemStore } from "../system/store.ts";
 import type { WifiSetup } from "../wifi/select.ts";
 import type { WifiStore } from "../wifi/store.ts";
 import type { MenuController } from "./controller.ts";
-import type { MenuAction, PowerKind, WindowMenu } from "./model.ts";
 import type { StatusMenuAction } from "./status-menu.ts";
+import type { MenuAction, PowerKind, WindowMenu } from "./types.ts";
 
 /** The installed app with this app id, if any. */
 export type EntryFor = (appId: string) => Entry | undefined;

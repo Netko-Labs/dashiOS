@@ -6,7 +6,7 @@
  */
 
 import { canLaunch } from "../apps.ts";
-import type { MenuEntry } from "../menus/model.ts";
+import type { MenuEntry } from "../menus/index.ts";
 import type { DockEntry } from "./layout.ts";
 import type { DockSettings } from "./settings.ts";
 

@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { AppletPopovers, joinShellMenus } from "../src/applets/popovers.ts";
 import { MenuController } from "../src/menus/controller.ts";
-import type { MenuContext } from "../src/menus/model.ts";
+import type { MenuContext } from "../src/menus/types.ts";
 
 function shell() {
   const surfaces = { opened: 0, closed: 0 };

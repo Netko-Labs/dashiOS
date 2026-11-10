@@ -4,7 +4,7 @@
  * them counting (store.ts `ignoreAll`). Nothing when no app holds.
  */
 
-import type { MenuEntry } from "../menus/model.ts";
+import type { MenuEntry } from "../menus/index.ts";
 import type { Hold } from "./store.ts";
 
 /** The battery menu's row that lets the computer sleep again. */

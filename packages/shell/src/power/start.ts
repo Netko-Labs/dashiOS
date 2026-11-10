@@ -16,7 +16,7 @@
  */
 
 import type { Compositor } from "../compositor.ts";
-import { compositorAbove, isRealSession } from "../menus/session.ts";
+import { compositorAbove, isRealSession } from "../menus/index.ts";
 import type { ConnectOptions } from "../shared/dbus/index.ts";
 import { type Clock, systemClock } from "./clock.ts";
 import { logindLocks, type TakeLock } from "./inhibit.ts";

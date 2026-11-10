@@ -6,12 +6,12 @@
  * command line (apps/activity-monitor/args.ts reads both).
  */
 
-import { ownerPids } from "../app-menus/focus.ts";
-import type { AppMenuStore } from "../app-menus/store.ts";
-import type { Compositor, CompositorWindow } from "../compositor.ts";
-import { launchEntry } from "../entries.ts";
-import { windowToFront } from "../front-window.ts";
-import type { EntryFor } from "./options.ts";
+import { ownerPids } from "../../app-menus/focus.ts";
+import type { AppMenuStore } from "../../app-menus/store.ts";
+import type { Compositor, CompositorWindow } from "../../compositor.ts";
+import { launchEntry } from "../../entries.ts";
+import { windowToFront } from "../../front-window.ts";
+import type { EntryFor } from "../options.ts";
 
 export const ACTIVITY_MONITOR = "dev.dashi.activity-monitor";
 

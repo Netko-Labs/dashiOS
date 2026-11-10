@@ -1,13 +1,13 @@
 /**
  * Dashi's own commands, the rows of the Dashi menu (menus/model.ts) and a
  * few more, at `dashi://dashi/<command>`. Each runs the menu's own action
- * (menus/actions.ts), so Restart asks first here as it does from the menu;
+ * (menus/lib/actions.ts), so Restart asks first here as it does from the menu;
  * the screenshots run what ⇧❖3, ⇧❖4 and ⇧❖5 bind (keymap.ts binds them
  * here), on the window focused when they were asked.
  */
 
 import type { Keymap } from "../../keymap.ts";
-import type { MenuAction } from "../../menus/model.ts";
+import type { MenuAction } from "../../menus/index.ts";
 import { formatAddress } from "../address.ts";
 import { keyFor } from "../keys.ts";
 import { type ActionDef, type ActionKind, ok, ready } from "../types.ts";

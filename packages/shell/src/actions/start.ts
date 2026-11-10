@@ -18,7 +18,7 @@ import type { Compositor, CompositorWindow } from "../compositor.ts";
 import type { Entry } from "../entries.ts";
 import type { Keymap } from "../keymap.ts";
 import type { Arrange } from "../layout.ts";
-import type { MenuAction } from "../menus/model.ts";
+import type { MenuAction } from "../menus/index.ts";
 import { type RegistryStores, type RowDef, type SettingValue, valueOf } from "../settings-app/registry/index.ts";
 import type { PaneId } from "../shared/settings/panes.ts";
 import { isPaneId } from "../shared/settings/panes.ts";

@@ -10,10 +10,7 @@ import type { CompositorWindow } from "../compositor.ts";
 import type { Arrange, Tile } from "../layout.ts";
 import type { AppMenu, PublishedMenus } from "../shared/app-menus/protocol.ts";
 import { sameApp } from "../shortcuts.ts";
-import type { EditCommand } from "./keystrokes.ts";
-import type { AppMenuKey, BarMenuId, MenuAction, MenuContext, MenuEntry, MenuId, WindowMenu } from "./model-types.ts";
-
-export type { AppMenuKey, BarMenuId, MenuAction, MenuContext, MenuEntry, MenuId, PowerKind, WindowMenu } from "./model-types.ts";
+import type { AppMenuKey, BarMenuId, EditCommand, MenuAction, MenuContext, MenuEntry, MenuId, WindowMenu } from "./types.ts";
 
 /** The titles after the Dashi menu and the app's name, left to right. */
 export const BAR_MENUS: ReadonlyArray<{ id: BarMenuId; title: string }> = [

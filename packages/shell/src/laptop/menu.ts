@@ -10,7 +10,7 @@
 
 import type { GraphicsSnapshot } from "../graphics/controller.ts";
 import { LOST_NOTICE } from "../graphics/lost-card.ts";
-import type { MenuEntry } from "../menus/model.ts";
+import type { MenuEntry } from "../menus/index.ts";
 import { chargeTarget } from "../power/battery-health.ts";
 import type { PowerSection } from "../power/modes/settings.ts";
 import type { ModeSnapshot } from "../power/modes/store.ts";

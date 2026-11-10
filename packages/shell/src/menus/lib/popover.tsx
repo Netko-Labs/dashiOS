@@ -7,16 +7,17 @@
 import { type NativeHostOptions, Text, View } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
-import { type AppMenuStore, useAppMenus } from "../app-menus/store.ts";
-import { BatteryPopover, type BatteryPopoverSources } from "../battery/popover.tsx";
-import { ControlCenterPanel, type ControlCenterProps } from "../control-center/index.ts";
-import type { DockMenuAction } from "../dock/menu.ts";
-import { NotificationCenterPanel } from "../notifications/center.tsx";
-import type { NotificationStore } from "../notifications/store.ts";
-import { DOCK, DOCK_HEIGHT, MENU_BAR_HEIGHT } from "../theme.ts";
-import { type MenuController, useMenus } from "./controller.ts";
-import { buildMenu, type MenuAction, type MenuEntry } from "./model.ts";
-import type { StatusMenuAction } from "./status-menu.ts";
+import { type AppMenuStore, useAppMenus } from "../../app-menus/store.ts";
+import { BatteryPopover, type BatteryPopoverSources } from "../../battery/popover.tsx";
+import { ControlCenterPanel, type ControlCenterProps } from "../../control-center/index.ts";
+import type { DockMenuAction } from "../../dock/menu.ts";
+import { NotificationCenterPanel } from "../../notifications/center.tsx";
+import type { NotificationStore } from "../../notifications/store.ts";
+import { DOCK, DOCK_HEIGHT, MENU_BAR_HEIGHT } from "../../theme.ts";
+import { type MenuController, useMenus } from "../controller.ts";
+import { buildMenu } from "../model.ts";
+import type { StatusMenuAction } from "../status-menu.ts";
+import type { MenuAction, MenuEntry } from "../types.ts";
 import { DropdownMenu } from "./view.tsx";
 
 /** A status item's menu: the dropdown, telling its owner when it goes, however it went. */

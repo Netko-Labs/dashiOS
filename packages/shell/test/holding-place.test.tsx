@@ -2,8 +2,8 @@ import { expect, test } from "bun:test";
 import type { NativeHostOptions } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import type { Output } from "../src/layout.ts";
-import { Dialogs } from "../src/menus/dialogs.tsx";
-import { HOLDING_SURFACE, holdingPlace, SHEET_REACH } from "../src/menus/holding-place.ts";
+import { Dialogs } from "../src/menus/lib/dialogs.tsx";
+import { HOLDING_SURFACE, holdingPlace, SHEET_REACH } from "../src/menus/lib/holding-place.ts";
 import type { OpenOverlay } from "../src/overlay.tsx";
 import { fakeClockEachTest, settle } from "./support/time.ts";
 

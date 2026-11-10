@@ -8,7 +8,7 @@
 import { displayName } from "../apps.ts";
 import type { Compositor, CompositorEvent, CompositorWindow } from "../compositor.ts";
 import { type Entry, loadEntries } from "../entries.ts";
-import { findEntry } from "../menus/launch.ts";
+import { findEntry } from "../menus/index.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
 import { iconPath } from "../shared/apps/index.ts";
 import { isAlive, protectedPids, readProcStat, sendSignal } from "../shared/processes/kernel.ts";

@@ -6,7 +6,7 @@
  * at once; one that holds its window to ask (Text Editor's unsaved changes,
  * a busy Terminal) keeps the session waiting for its answer, and only then
  * is the next asked. After a moment a notice names who holds it, at the
- * foot of the screen, clear of the app's own sheet (menus/holding-place.ts),
+ * foot of the screen, clear of the app's own sheet (menus/lib/holding-place.ts),
  * with Cancel (the session stays, and the app asking is told so: its
  * question goes, kit/close.ts) and “Log out anyway” (it goes, as before:
  * apps still open are told to stop, and a hung one is ended). When the last
@@ -16,7 +16,7 @@
  * question behind it.
  */
 
-import type { PowerKind } from "./menus/model.ts";
+import type { PowerKind } from "./menus/index.ts";
 
 /** One app window to close: its toplevel id and its app's name. */
 export interface AppWindow {
@@ -93,7 +93,7 @@ export async function closeApps(deps: ClosingDeps, choice: ClosingChoice): Promi
 
 /**
  * The most characters the notice's line holds beside Cancel and the widest
- * "… anyway" at 12 px in its 560 px card (menus/holding-place.ts), so it is
+ * "… anyway" at 12 px in its 560 px card (menus/lib/holding-place.ts), so it is
  * always one line (VS-3: a notice that wraps reads like a second bar).
  */
 export const HOLDING_LINE = 50;

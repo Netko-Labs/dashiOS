@@ -10,11 +10,12 @@
 
 import type { NativeHostOptions } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import { type AppWindow, ClosingChoice, closeApps } from "../closing-apps.ts";
-import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
+import { type AppWindow, ClosingChoice, closeApps } from "../../closing-apps.ts";
+import type { OpenOverlay, OverlayHandle } from "../../overlay.tsx";
+import { SHEET_SIZE } from "../sheets.tsx";
+import type { PowerKind } from "../types.ts";
 import { HOLDING_SURFACE, type HoldingPlace } from "./holding-place.ts";
-import type { PowerKind } from "./model.ts";
-import { type AboutInfo, AboutWindow, ConfirmSheet, HoldingNotice, SHEET_SIZE } from "./sheets.tsx";
+import { type AboutInfo, AboutWindow, ConfirmSheet, HoldingNotice } from "./power-sheets.tsx";
 
 /** What closing the apps first needs: their windows, and the compositor's close and focus. */
 export interface DialogApps {

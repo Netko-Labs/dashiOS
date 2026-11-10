@@ -10,7 +10,7 @@
  * for the window's frame and the screens.
  */
 
-import { type Output, type Rect, screenFor } from "../layout.ts";
+import { type Output, type Rect, screenFor } from "../../layout.ts";
 
 /** The notice: its card at most this wide and tall (two lines of text), and the room its shadow takes around it on the surface. */
 export const HOLDING = { width: 560, height: 48, shadow: 28 } as const;

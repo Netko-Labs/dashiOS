@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { CompositorWindow } from "../src/compositor.ts";
-import { buildMenu, type MenuContext } from "../src/menus/model.ts";
+import { buildMenu } from "../src/menus/model.ts";
+import type { MenuContext } from "../src/menus/types.ts";
 import { parseSettings } from "../src/settings.ts";
 import { edgeHoldTarget } from "../src/spaces/edge.ts";
 import { spaceLabels } from "../src/spaces/names.ts";

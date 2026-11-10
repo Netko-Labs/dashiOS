@@ -1,23 +1,24 @@
 /** What the menus are wired to: Control Center's props, what choosing a row does, the popover's content, and the context the bar's menus are built from. */
 
 import type { ReactElement } from "react";
-import pkg from "../../package.json" with { type: "json" };
-import { ownerPids } from "../app-menus/focus.ts";
-import type { AppMenuStore } from "../app-menus/store.ts";
-import { appFor, iconPath } from "../apps.ts";
-import type { CompositorWindow } from "../compositor.ts";
-import { controlFlags, LayoutStore } from "../control-center/index.ts";
-import { launchEntry } from "../entries.ts";
-import { chooseNetwork } from "../wifi/flow.ts";
+import pkg from "../../../package.json" with { type: "json" };
+import { ownerPids } from "../../app-menus/focus.ts";
+import type { AppMenuStore } from "../../app-menus/store.ts";
+import { appFor, iconPath } from "../../apps.ts";
+import type { CompositorWindow } from "../../compositor.ts";
+import { controlFlags, LayoutStore } from "../../control-center/index.ts";
+import { launchEntry } from "../../entries.ts";
+import { chooseNetwork } from "../../wifi/flow.ts";
+import type { MenuController } from "../controller.ts";
+import { helpCommand, openHelp } from "../launch.ts";
+import { windowMenus } from "../model.ts";
+import type { ControlCenterStores, EntryFor, MenusOptions } from "../options.ts";
+import type { MenuAction, MenuContext, PowerKind, WindowMenu } from "../types.ts";
 import type { AboutTarget, ActionDeps } from "./actions.ts";
 import type { EnergyApp } from "./activity-monitor.ts";
-import type { MenuController } from "./controller.ts";
 import type { Dialogs } from "./dialogs.tsx";
-import { helpCommand, openHelp } from "./launch.ts";
-import { type MenuAction, type MenuContext, type PowerKind, type WindowMenu, windowMenus } from "./model.ts";
-import type { ControlCenterStores, EntryFor, MenusOptions } from "./options.ts";
 import { PopoverRoot } from "./popover.tsx";
-import type { AboutInfo } from "./sheets.tsx";
+import type { AboutInfo } from "./power-sheets.tsx";
 import type { MenuStores } from "./stores.ts";
 
 export const SETTLE_MS = 150;

@@ -25,7 +25,7 @@ import type { MachineAction } from "../power/machine.ts";
 import { spawnDetached } from "../shared/apps/index.ts";
 import { parseStat } from "../shared/processes/kernel.ts";
 import { powerAfterApps } from "../shutdown.ts";
-import type { PowerKind } from "./model.ts";
+import type { PowerKind } from "./types.ts";
 
 export const COMPOSITOR = "dashi-comp";
 

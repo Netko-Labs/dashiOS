@@ -12,7 +12,8 @@
 import { MENU, MenuLine, MenuRow, menuHeight, type Size, useColors, useSurface } from "@dashi/ui";
 import { ScrollView, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { isEnabled, type MenuEntry, stepHighlight } from "./model.ts";
+import { isEnabled, stepHighlight } from "../model.ts";
+import type { MenuEntry } from "../types.ts";
 import { DROPDOWN, type DropdownAnchor, placeDropdown } from "./place.ts";
 
 /**
