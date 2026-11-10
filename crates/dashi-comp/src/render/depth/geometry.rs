@@ -5,9 +5,9 @@
 mod focus;
 mod pixels;
 
-use smithay::utils::{Physical, Rectangle};
+use smithay::utils::Rectangle;
 
-pub(crate) use focus::{Focus, fade};
+pub(crate) use focus::Focus;
 pub(crate) use pixels::{bands, holes, outward};
 
 use super::style::{Layer, Shadow, Style};
