@@ -16,7 +16,7 @@
     },
     "packages/applet": {
       "name": "@dashi/applet",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "bin": {
         "dashi-applet": "./src/cli/main.ts",
       },
@@ -33,7 +33,7 @@
     },
     "packages/dashi-ui": {
       "name": "@dashi/ui",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "dependencies": {
         "@mirinjs/metal": "file:../../../mirin/packages/mirin-metal",
         "react": "^19.2.0",
@@ -46,7 +46,7 @@
     },
     "packages/greeter": {
       "name": "@dashi/greeter",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "dependencies": {
         "@dashi/ui": "workspace:*",
         "@mirinjs/metal": "file:../../../mirin/packages/mirin-metal",
@@ -60,7 +60,7 @@
     },
     "packages/shell": {
       "name": "@dashi/shell",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "dependencies": {
         "@anthropic-ai/sdk": "^1.6.0",
         "@dashi/applet": "workspace:*",
