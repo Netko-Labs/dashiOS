@@ -6,12 +6,13 @@
  */
 
 import { readFileSync } from "node:fs";
-import { DBusError, ERRORS } from "./errors.ts";
-import { type CallContext, INTROSPECTABLE, type InterfaceSpec, introspectXml, type MethodSpec, PEER, PROPERTIES } from "./introspect.ts";
-import type { Message } from "./message.ts";
-import { isInterfaceName, isMemberName, isObjectPath } from "./names.ts";
+import { DBusError, ERRORS } from "../errors.ts";
+import type { Message } from "../message.ts";
+import { isInterfaceName, isMemberName, isObjectPath } from "../names.ts";
+import type { CallContext, InterfaceSpec, MethodSpec } from "../types.ts";
+import { Variant } from "../variant.ts";
+import { INTROSPECTABLE, introspectXml, PEER, PROPERTIES } from "./introspect.ts";
 import { parseSignature, parseSingle } from "./signature.ts";
-import { Variant } from "./variant.ts";
 
 export type Reply = { type: "return"; signature: string; body: unknown[] } | { type: "error"; name: string; message: string };
 

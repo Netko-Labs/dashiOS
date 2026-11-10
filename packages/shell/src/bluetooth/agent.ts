@@ -15,8 +15,7 @@
  * but the daemon that is pairing.
  */
 
-import type { CallContext, InterfaceSpec, MethodSpec } from "../shared/dbus/index.ts";
-import { BUS_NAME, DBusError, ERRORS, getNameOwner } from "../shared/dbus/index.ts";
+import { BUS_NAME, type CallContext, DBusError, ERRORS, getNameOwner, type InterfaceSpec, type MethodSpec } from "../shared/dbus/index.ts";
 import { AGENT_MANAGER, BLUEZ, BLUEZ_ROOT, type BluezClient } from "./bluez-client.ts";
 import { classify } from "./failures.ts";
 import type { Answer, AskRequest, PairingHandler } from "./types.ts";

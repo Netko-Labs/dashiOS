@@ -1,10 +1,10 @@
 /** The pieces of exporting an object that don't touch the socket. */
 
+import { Flags, type Message, MessageType } from "../message.ts";
+import type { ExportedObject, SignalSpec } from "../types.ts";
+import { Variant } from "../variant.ts";
 import { PROPERTIES } from "./introspect.ts";
-import { Flags, type Message, MessageType } from "./message.ts";
 import type { ObjectRegistry, Reply } from "./object.ts";
-import type { ExportedObject, SignalSpec } from "./types.ts";
-import { Variant } from "./variant.ts";
 
 /** The handle `export()` returns: emit the object's signals, announce property changes, take it down. */
 export function exportedObject(path: string, registry: ObjectRegistry, emit: (signal: SignalSpec) => void): ExportedObject {

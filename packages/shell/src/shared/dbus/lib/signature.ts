@@ -5,7 +5,7 @@
  * without bound.
  */
 
-import { ProtocolError } from "./errors.ts";
+import { ProtocolError } from "../errors.ts";
 
 export type BasicCode = "y" | "b" | "n" | "q" | "i" | "u" | "x" | "t" | "d" | "s" | "o" | "g" | "h";
 

@@ -3,11 +3,12 @@
  * keeps the handler for the local check (signals.ts).
  */
 
-import { BUS_NAME, BUS_PATH, getNameOwner } from "./bus.ts";
-import type { DBusConnection } from "./connection.ts";
-import type { Message } from "./message.ts";
-import { isWellKnownName } from "./names.ts";
-import { type MatchRule, matchRuleString, type SignalRouter, type Subscription } from "./signals.ts";
+import { BUS_NAME, BUS_PATH, getNameOwner } from "../bus.ts";
+import type { DBusConnection } from "../connection.ts";
+import type { Message } from "../message.ts";
+import { isWellKnownName } from "../names.ts";
+import type { MatchRule } from "../types.ts";
+import { matchRuleString, type SignalRouter, type Subscription } from "./signals.ts";
 
 export async function subscribeTo(
   connection: DBusConnection,

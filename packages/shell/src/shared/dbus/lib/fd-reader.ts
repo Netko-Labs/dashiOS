@@ -7,7 +7,7 @@
  * Descriptors are process-wide, so a number read here is good on the main thread.
  */
 
-import { POLLERR, POLLHUP, POLLIN, POLLNVAL, pollWait, receiveWithFds } from "./libc.ts";
+import { POLLERR, POLLHUP, POLLIN, POLLNVAL, pollWait, receiveWithFds } from "../libc.ts";
 
 /** What the main thread sends: the socket to read. */
 export interface ReaderStart {

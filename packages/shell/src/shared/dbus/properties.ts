@@ -1,8 +1,7 @@
 /** Property dictionaries (`a{sv}`) as the services on the bus return them, unwrapped to plain values. */
 
 import type { Message } from "./message.ts";
-import type { MatchRule } from "./signals.ts";
-import type { CallSpec } from "./types.ts";
+import type { CallSpec, MatchRule } from "./types.ts";
 import { Variant } from "./variant.ts";
 
 /** A variant's value; anything else as it is. */

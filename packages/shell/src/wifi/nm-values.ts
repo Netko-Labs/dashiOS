@@ -6,8 +6,7 @@
  * one a new password.
  */
 
-import { Variant, variant } from "../shared/dbus/index.ts";
-import { propertyMap, unwrap } from "../shared/dbus/properties.ts";
+import { propertyMap, unwrap, Variant, variant } from "../shared/dbus/index.ts";
 import { securityOf } from "./networks.ts";
 import type { AccessPoint, KnownProfile, Security } from "./types.ts";
 

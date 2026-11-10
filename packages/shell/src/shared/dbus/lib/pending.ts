@@ -4,8 +4,8 @@
  * closing).
  */
 
-import { DBusError, ERRORS } from "./errors.ts";
-import { type Message, MessageType } from "./message.ts";
+import { DBusError, ERRORS } from "../errors.ts";
+import { type Message, MessageType } from "../message.ts";
 
 interface Pending {
   resolve(body: unknown[]): void;

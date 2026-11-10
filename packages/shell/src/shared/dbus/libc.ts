@@ -141,7 +141,7 @@ export function pollNow(fd: number, events: number): number {
 /**
  * `poll` on one descriptor for up to `timeoutMs` (-1: until something is
  * ready). It blocks the thread it runs on, so only a worker calls it with a
- * timeout (fd-reader.ts).
+ * timeout (lib/fd-reader.ts).
  */
 export function pollWait(fd: number, events: number, timeoutMs: number): number {
   const entry = new ArrayBuffer(8);

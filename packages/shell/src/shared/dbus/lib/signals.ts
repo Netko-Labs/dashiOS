@@ -5,19 +5,8 @@
  * rule, so a handler only sees what it asked for.
  */
 
-import { type Message, MessageType } from "./message.ts";
-
-export interface MatchRule {
-  type?: "signal" | "method_call" | "method_return" | "error";
-  sender?: string;
-  interface?: string;
-  member?: string;
-  path?: string;
-  pathNamespace?: string;
-  destination?: string;
-  /** Required string arguments by position (`arg0='x'`). */
-  args?: Readonly<Record<number, string>>;
-}
+import { type Message, MessageType } from "../message.ts";
+import type { MatchRule } from "../types.ts";
 
 const TYPE_CODES = {
   signal: MessageType.Signal,

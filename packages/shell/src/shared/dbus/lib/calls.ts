@@ -1,7 +1,7 @@
 /** The messages a connection sends: a method call and a signal, as `Message`s ready to encode. */
 
-import { Flags, type Message, MessageType } from "./message.ts";
-import type { CallSpec, SignalSpec } from "./types.ts";
+import { Flags, type Message, MessageType } from "../message.ts";
+import type { CallSpec, SignalSpec } from "../types.ts";
 
 export function callMessage(spec: CallSpec, serial: number): Message {
   const message: Message = {

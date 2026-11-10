@@ -2,8 +2,7 @@
 
 import type { Message } from "../src/shared/dbus/message.ts";
 import type { BusLike } from "../src/shared/dbus/properties.ts";
-import type { MatchRule } from "../src/shared/dbus/signals.ts";
-import type { CallSpec } from "../src/shared/dbus/types.ts";
+import type { CallSpec, MatchRule } from "../src/shared/dbus/types.ts";
 
 type Handler = (body: readonly unknown[]) => unknown[] | Promise<unknown[]>;
 

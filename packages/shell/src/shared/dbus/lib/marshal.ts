@@ -10,10 +10,10 @@
  * keys), `v` a `Variant`.
  */
 
-import { ProtocolError } from "./errors.ts";
-import { isObjectPath } from "./names.ts";
+import { ProtocolError } from "../errors.ts";
+import { isObjectPath } from "../names.ts";
+import { Variant } from "../variant.ts";
 import { alignOf, type BasicCode, type DBusType, elementAlign, parseSignature, parseSingle } from "./signature.ts";
-import { Variant } from "./variant.ts";
 
 /** The most the specification allows in one array. */
 export const MAX_ARRAY_BYTES = 1 << 26;

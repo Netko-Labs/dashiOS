@@ -9,11 +9,11 @@
  * back as bigints, dicts as Maps, `ay` as a Uint8Array.
  */
 
-import { ProtocolError } from "./errors.ts";
+import { ProtocolError } from "../errors.ts";
+import { isObjectPath } from "../names.ts";
+import { Variant } from "../variant.ts";
 import { MAX_ARRAY_BYTES } from "./marshal.ts";
-import { isObjectPath } from "./names.ts";
 import { alignOf, type BasicCode, type DBusType, elementAlign, parseSignature, parseSingle } from "./signature.ts";
-import { Variant } from "./variant.ts";
 
 /** Containers nested through variants as well as types; the specification allows 64. */
 const MAX_DEPTH = 64;

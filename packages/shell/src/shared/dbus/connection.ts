@@ -13,20 +13,19 @@
 
 import type { Shape } from "@dashi/shape";
 import { type BusKind, busAddress, socketPaths } from "./address.ts";
-import { AuthError, ClientAuth } from "./auth.ts";
 import { BUS_NAME, BUS_PATH } from "./bus.ts";
-import { callMessage, signalMessage } from "./calls.ts";
 import { DBusError, ERRORS, ProtocolError } from "./errors.ts";
-import { exportedObject, replyMessage } from "./exported.ts";
-import type { InterfaceSpec } from "./introspect.ts";
-import { MAX_MESSAGE } from "./marshal.ts";
+import { AuthError, ClientAuth } from "./lib/auth.ts";
+import { callMessage, signalMessage } from "./lib/calls.ts";
+import { exportedObject, replyMessage } from "./lib/exported.ts";
+import { MAX_MESSAGE } from "./lib/marshal.ts";
+import { ObjectRegistry, type Reply } from "./lib/object.ts";
+import { PendingCalls } from "./lib/pending.ts";
+import { readReply } from "./lib/reply.ts";
+import { SignalRouter } from "./lib/signals.ts";
+import { subscribeTo } from "./lib/subscribe.ts";
 import { decodeMessage, encodeMessage, Flags, FrameBuffer, type Message, MessageType } from "./message.ts";
-import { ObjectRegistry, type Reply } from "./object.ts";
-import { PendingCalls } from "./pending.ts";
-import { readReply } from "./reply.ts";
-import { type MatchRule, SignalRouter } from "./signals.ts";
-import { subscribeTo } from "./subscribe.ts";
-import type { CallSpec, ExportedObject, SignalSpec } from "./types.ts";
+import type { CallSpec, ExportedObject, InterfaceSpec, MatchRule, SignalSpec } from "./types.ts";
 
 export interface ConnectOptions {
   /** A bus address (`unix:path=…`). Overrides `bus`. */

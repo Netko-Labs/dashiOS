@@ -9,8 +9,8 @@
  */
 
 import { accept, type Infer, reject, type Shape, shape } from "@dashi/shape";
-import { ProtocolError } from "./errors.ts";
-import { Variant } from "./variant.ts";
+import { ProtocolError } from "../errors.ts";
+import { Variant } from "../variant.ts";
 
 type Tuple<S extends readonly Shape<unknown>[]> = { [K in keyof S]: Infer<S[K]> };
 

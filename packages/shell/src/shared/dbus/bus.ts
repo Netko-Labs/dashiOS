@@ -6,7 +6,7 @@
 import { list, str } from "@dashi/shape";
 import type { DBusConnection } from "./connection.ts";
 import { DBusError, ERRORS } from "./errors.ts";
-import { value } from "./reply.ts";
+import { value } from "./lib/reply.ts";
 
 export const BUS_NAME = "org.freedesktop.DBus";
 export const BUS_PATH = "/org/freedesktop/DBus";
