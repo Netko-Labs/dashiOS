@@ -10,14 +10,15 @@ import type { RowView } from "./row.tsx";
 /** The pointer can leave the row this long before it closes (crossing a gap, a slip). */
 export const CLOSE_AFTER_MS = 250;
 
-export interface Timers {
-  set(run: () => void, ms: number): unknown;
-  clear(handle: unknown): void;
+/** What `set` hands back is what `clear` takes; the test's timers use numbers, the shell's the runtime's own. */
+export interface Timers<Handle = unknown> {
+  set(run: () => void, ms: number): Handle;
+  clear(handle: Handle): void;
 }
 
-const realTimers: Timers = {
+const realTimers: Timers<ReturnType<typeof setTimeout>> = {
   set: (run, ms) => setTimeout(run, ms),
-  clear: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+  clear: (handle) => clearTimeout(handle),
 };
 
 export class RowViewStore {
