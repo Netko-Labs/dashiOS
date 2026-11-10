@@ -43,7 +43,7 @@ export function agentInterface(controller: PolkitController, fromAuthority: (sen
         in: "s",
         handler: ([cookie], call) => {
           guard(call.sender);
-          controller.cancel(cookie as string);
+          if (typeof cookie === "string") controller.cancel(cookie);
         },
       },
     },
@@ -67,6 +67,28 @@ export interface AgentService {
 
 const CALL_TIMEOUT_MS = 10_000;
 
+/** A call to polkitd's `Authority` object. */
+const authority = (member: string, signature: string, body: unknown[], on: DBusConnection) =>
+  on.call({ destination: AUTHORITY_NAME, path: AUTHORITY_PATH, interface: AUTHORITY_INTERFACE, member, signature, body }, CALL_TIMEOUT_MS);
+
+/** Whoever owns the polkit name; starting polkitd (it is bus-activated) if nobody does. */
+async function authorityOwner(on: DBusConnection): Promise<string> {
+  try {
+    return await getNameOwner(on, AUTHORITY_NAME);
+  } catch {
+    await on.call(
+      { destination: BUS_NAME, path: BUS_PATH, interface: BUS_NAME, member: "StartServiceByName", signature: "su", body: [AUTHORITY_NAME, 0] },
+      CALL_TIMEOUT_MS,
+    );
+    return getNameOwner(on, AUTHORITY_NAME);
+  }
+}
+
+/** Registers the agent at our path with polkitd, for this session. */
+async function registerAgent(on: DBusConnection, subject: Subject, locale: string): Promise<void> {
+  await authority("RegisterAuthenticationAgent", "(sa{sv})ss", [subject, locale, AGENT_PATH], on);
+}
+
 /** Keep the agent registered until `close()`. Never rejects: problems are logged and retried. */
 export function serveAgent(options: ServeOptions): AgentService {
   const { controller, subject, locale } = options;
@@ -85,25 +107,7 @@ export function serveAgent(options: ServeOptions): AgentService {
     lastComplaint = text;
   };
 
-  const authority = (member: string, signature: string, body: unknown[], on: DBusConnection) =>
-    on.call({ destination: AUTHORITY_NAME, path: AUTHORITY_PATH, interface: AUTHORITY_INTERFACE, member, signature, body }, CALL_TIMEOUT_MS);
-
-  /** Whoever owns the polkit name; starting polkitd (it is bus-activated) if nobody does. */
-  const authorityOwner = async (on: DBusConnection): Promise<string> => {
-    try {
-      return await getNameOwner(on, AUTHORITY_NAME);
-    } catch {
-      await on.call(
-        { destination: BUS_NAME, path: BUS_PATH, interface: BUS_NAME, member: "StartServiceByName", signature: "su", body: [AUTHORITY_NAME, 0] },
-        CALL_TIMEOUT_MS,
-      );
-      return getNameOwner(on, AUTHORITY_NAME);
-    }
-  };
-
-  const register = async (on: DBusConnection): Promise<void> => {
-    await authority("RegisterAuthenticationAgent", "(sa{sv})ss", [subject, locale, AGENT_PATH], on);
-  };
+  const register = (on: DBusConnection): Promise<void> => registerAgent(on, subject, locale);
 
   const attempt = async (): Promise<void> => {
     let on: DBusConnection | null = null;

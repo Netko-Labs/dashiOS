@@ -51,30 +51,33 @@ const passkeyText = (passkey: number): string => String(passkey).padStart(6, "0"
 
 const validPasskey = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 999_999;
 
-export function agentInterface(env: AgentEnv): InterfaceSpec {
-  /** The checks every call passes: from bluetoothd, about a device path BlueZ could have made. */
-  const check = (call: CallContext, path: unknown): string => {
-    if (!env.fromBluez(call.sender)) throw denied();
-    if (typeof path !== "string" || !DEVICE_PATH.test(path)) throw new DBusError(ERRORS.invalidArgs, "not a device");
-    return path;
-  };
+/** The checks every call passes: from bluetoothd, about a device path BlueZ could have made. */
+function checkDevice(env: AgentEnv, call: CallContext, path: unknown): string {
+  if (!env.fromBluez(call.sender)) throw denied();
+  if (typeof path !== "string" || !DEVICE_PATH.test(path)) throw new DBusError(ERRORS.invalidArgs, "not a device");
+  return path;
+}
 
-  /** Asks the person; an unanswered question is withdrawn after a while. */
-  const ask = async (build: (name: string) => AskRequest, path: string): Promise<Extract<Answer, { ok: true }>> => {
-    const handler = env.handler();
-    if (!handler) throw rejected("no one to ask");
-    const request = build(await env.nameOf(path));
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const timeout = new Promise<Answer>((resolve) => {
-      timer = setTimeout(() => {
-        handler.dismiss();
-        resolve({ ok: false, reason: "cancelled" });
-      }, env.askTimeoutMs ?? ASK_TIMEOUT_MS);
-    });
-    const answer = await Promise.race([handler.ask(request), timeout]).finally(() => clearTimeout(timer));
-    if (!answer.ok) throw answer.reason === "cancelled" ? canceled() : rejected("the person said no");
-    return answer;
-  };
+/** Asks the person; an unanswered question is withdrawn after a while. */
+async function askPerson(env: AgentEnv, build: (name: string) => AskRequest, path: string): Promise<Extract<Answer, { ok: true }>> {
+  const handler = env.handler();
+  if (!handler) throw rejected("no one to ask");
+  const request = build(await env.nameOf(path));
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<Answer>((resolve) => {
+    timer = setTimeout(() => {
+      handler.dismiss();
+      resolve({ ok: false, reason: "cancelled" });
+    }, env.askTimeoutMs ?? ASK_TIMEOUT_MS);
+  });
+  const answer = await Promise.race([handler.ask(request), timeout]).finally(() => clearTimeout(timer));
+  if (!answer.ok) throw answer.reason === "cancelled" ? canceled() : rejected("the person said no");
+  return answer;
+}
+
+export function agentInterface(env: AgentEnv): InterfaceSpec {
+  const check = (call: CallContext, path: unknown): string => checkDevice(env, call, path);
+  const ask = (build: (name: string) => AskRequest, path: string): Promise<Extract<Answer, { ok: true }>> => askPerson(env, build, path);
 
   const method = (spec: MethodSpec): MethodSpec => spec;
 
