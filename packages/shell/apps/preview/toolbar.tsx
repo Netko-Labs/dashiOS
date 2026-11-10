@@ -1,13 +1,16 @@
 /**
- * Preview's toolbar buttons: moving, zooming, rotating, and the rest; what
- * doesn't fit is in "…" (fold.ts). Every glyph names itself in a tooltip and
- * to a screen reader (UI-3), with the menu bar's words.
+ * Preview's chrome row: the name, the size words, the busy spinner and the
+ * toolbar buttons (moving, zooming, rotating, and the rest; what doesn't fit
+ * is in "…", fold.ts). Every glyph names itself in a tooltip and to a screen
+ * reader (UI-3), with the menu bar's words. The row is measured, so what it
+ * holds is planned to fit (fold.ts), never cut at the edge.
  */
 
-import { type MenuItem, MORE, ToolbarButton, useColors } from "@dashi/ui";
+import { type MenuItem, MORE, Spinner, ToolbarButton, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { Fragment } from "react";
-import { dividerBefore, TOOLS, type ToolId } from "./fold.ts";
+import { DETAIL_SIZE } from "./detail.ts";
+import { dividerBefore, MEASURES, TOOLS, type ToolbarPlan, type ToolId } from "./fold.ts";
 import * as glyphs from "./glyphs.ts";
 
 export interface ToolbarProps {
@@ -145,5 +148,65 @@ export function PreviewToolbar(props: ToolbarProps) {
       ))}
       <MoreButton onMore={props.onMore} open={props.moreOpen === true} />
     </>
+  );
+}
+
+/**
+ * The chrome row, as planned (fold.ts): the name (`title`, when the plan
+ * gives it room), the spinner while `busy`, the size words, then the tools
+ * that fit. `onRoom` reports the row's measured width, the plan's input.
+ */
+export function ToolbarRow({
+  title,
+  plan,
+  busy,
+  props,
+  shown,
+  onRoom,
+}: {
+  title: string;
+  plan: ToolbarPlan;
+  busy: boolean;
+  props: ToolbarProps;
+  /** The tools that fit, after the ones a file that can't be shown loses (toolsFor). */
+  shown: readonly ToolId[];
+  onRoom: (width: number) => void;
+}) {
+  const colors = useColors();
+  return (
+    // The whole row after the window controls, measured (from a zero basis, so what it holds never moves it):
+    // the name, then the words and the tools that fit what it leaves, whole: never "320 × 18…", never a button
+    // cut at the edge, never the name under "…".
+    <View
+      testID="toolbar-room"
+      onLayout={(bounds) => onRoom(bounds.width)}
+      style={{
+        flex: 1,
+        minWidth: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: plan.title > 0 ? "space-between" : "flex-end",
+        gap: MEASURES.gap,
+      }}
+    >
+      {plan.title > 0 && (
+        <View testID="title" style={{ flexShrink: 0, maxWidth: plan.title }}>
+          <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
+            {title}
+          </Text>
+        </View>
+      )}
+      <View style={{ flexShrink: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: MEASURES.gap }}>
+        {busy && <Spinner testID="busy" size={16} />}
+        {plan.detail !== null && (
+          <View testID="detail" style={{ flexShrink: 1, minWidth: 0 }}>
+            <Text numberOfLines={1} style={{ fontSize: DETAIL_SIZE, color: colors.textMuted }}>
+              {plan.detail}
+            </Text>
+          </View>
+        )}
+        <PreviewToolbar {...props} shown={shown} />
+      </View>
+    </View>
   );
 }

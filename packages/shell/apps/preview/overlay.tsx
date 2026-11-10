@@ -1,6 +1,10 @@
-/** Which of Preview's sheets is up over the window, and what answering it does. */
+/**
+ * Which of Preview's sheets is up over the window, what answering it does,
+ * and the window's overlay: a sheet, or the "…" menu hung from its button.
+ */
 
-import { ConfirmSheet } from "@dashi/ui";
+import { ConfirmSheet, type MenuEntry, PopupMenu } from "@dashi/ui";
+import type { ReactElement } from "react";
 import * as commands from "./commands.ts";
 import type { ExportFormat } from "./convert.ts";
 import * as glyphs from "./glyphs.ts";
@@ -17,6 +21,38 @@ export type SheetState =
   | { kind: "print-cups"; printer: string; pdf: string }
   | { kind: "message"; title: string; message: string }
   | null;
+
+/** The window's state the overlay shows (use-chrome.ts holds it; that file imports SheetState from here, so the type is named here). */
+export interface OverlayChrome {
+  sheet: SheetState;
+  menu: { x: number; y: number } | null;
+  setSheet(sheet: SheetState): void;
+  setMenu(menu: null): void;
+}
+
+/** What the window holds over its content: the sheet that is up, else the "…" menu, hung from its button; nothing otherwise. */
+export function windowOverlay({
+  chrome,
+  snap,
+  page,
+  hooks,
+  moreItems,
+}: {
+  chrome: OverlayChrome;
+  snap: Snapshot;
+  /** The PDF's page in view. */
+  page: number;
+  hooks: commands.CommandHooks;
+  moreItems: MenuEntry[];
+}): ReactElement | undefined {
+  if (chrome.sheet !== null) {
+    return <PreviewSheet sheet={chrome.sheet} snap={snap} page={page} hooks={hooks} onClose={() => chrome.setSheet(null)} />;
+  }
+  if (chrome.menu) {
+    return <PopupMenu testID="more-menu" x={chrome.menu.x} y={chrome.menu.y} anchor="end" items={moreItems} onClose={() => chrome.setMenu(null)} />;
+  }
+  return undefined;
+}
 
 export function PreviewSheet({
   sheet,

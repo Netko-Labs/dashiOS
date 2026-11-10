@@ -1,10 +1,10 @@
 /**
- * The viewer's state and everything slow it does: reading a file's header,
+ * The viewer's state and everything slow it does: reading a file's head (file-head.ts),
  * preparing a picture Metal can draw (converting or rotating it with
- * ImageMagick when it must), reading a PDF's pages (pdf-doc.ts makes them as
- * they come near the screen), and the open picture's folder (folder.ts). The
- * window (view.tsx) only subscribes to `getSnapshot()` and calls these
- * methods.
+ * ImageMagick when it must, image-job.ts), opening a PDF and reading its
+ * pages (pdf-session.ts, which pdf-doc.ts renders as they come near the
+ * screen), and the open picture's folder (folder.ts). The window (view.tsx)
+ * only subscribes to `getSnapshot()` and calls these methods.
  *
  * Every open is a new generation: work that finishes for an older one is
  * dropped, so a quick run of arrow presses never paints a stale picture. A
@@ -12,27 +12,25 @@
  * time the file is open.
  */
 
-import { stat } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
 import { FORMATS, type Format, formatFromName, otherMime, sniff } from "../../src/shared/files/kinds.ts";
-import { cacheFile, cacheKey, cacheRoot, ensureCache, partialName, publish, type Stamp } from "./cache.ts";
-import { CONVERT_MEMORY_MIB, CONVERT_TIMEOUT_MS, convertible, MAX_NATIVE_PIXELS, magickArgs, REDUCED_PIXELS } from "./convert.ts";
-import { HEADER_BYTES, jpegOrientation, readSize, type Size, swapsSides } from "./dimensions.ts";
+import { cacheRoot, ensureCache, type Stamp } from "./cache.ts";
+import { convertible, MAX_NATIVE_PIXELS } from "./convert.ts";
+import { jpegOrientation, readSize, type Size, swapsSides } from "./dimensions.ts";
+import { readFileHead } from "./file-head.ts";
 import { Folder } from "./folder.ts";
+import { pngSize, reducedPng } from "./image-job.ts";
 import { factsFrom } from "./info.ts";
 import { MemoryStore } from "./memory.ts";
 import { MESSAGES } from "./messages.ts";
-import { parsePdfInfo, pdfinfoArgs, plainTextArgs, wantsPassword } from "./pdf.ts";
-import { PdfPages } from "./pdf-doc.ts";
+import { PdfSession, plainTextOf, probePdf } from "./pdf-session.ts";
 import { neighbours, siblingPath } from "./siblings.ts";
 import { CLOSED, EMPTY_FOLDER, type Snapshot } from "./snapshot.ts";
 import type { PageText } from "./text.ts";
-import { haveTool, runTool } from "./tools.ts";
+import { haveTool } from "./tools.ts";
 import { mod4, turned } from "./zoom.ts";
 
-/** Files over this are not opened at all. */
-const MAX_FILE_BYTES = 1024 * 1024 * 1024;
-const INFO_TIMEOUT_MS = 30_000;
+export { pngSize } from "./image-job.ts";
 
 export interface ViewerOptions {
   cacheDir?: string;
@@ -51,8 +49,7 @@ export class Viewer {
   private readonly inflight = new Map<string, Promise<string | null>>();
   private readonly deviceScale: number;
   private readonly memory: MemoryStore;
-  private pages: PdfPages | null = null;
-  private pdfBase: { pages: number; title: string | null; sizes: Size[] } | null = null;
+  private readonly pdf = new PdfSession();
   private readonly folder: Folder;
 
   constructor(options: ViewerOptions = {}) {
@@ -96,7 +93,7 @@ export class Viewer {
   async open(input: string, { recent = true }: { recent?: boolean } = {}): Promise<void> {
     const path = resolve(input);
     const generation = ++this.generation;
-    this.closePdf();
+    this.pdf.close();
     // Stepping through a folder keeps its strip, and knows the new neighbours at once (a quick ← ← steps twice).
     const sameFolder = this.folder.dir !== "" && this.folder.dir === dirname(path);
     const folder = sameFolder ? { dir: this.folder.dir, files: this.folder.files, ...neighbours(this.folder.files, basename(path)) } : EMPTY_FOLDER;
@@ -110,23 +107,10 @@ export class Viewer {
       folderThumbs: sameFolder ? this.folder.thumbnails : new Map(),
       folderShapes: sameFolder ? this.folder.shapes : new Map(),
     });
-    let stamp: Stamp;
-    try {
-      const info = await stat(path);
-      if (generation !== this.generation) return;
-      if (!info.isFile()) return this.fail(generation, MESSAGES.notAFile);
-      if (info.size > MAX_FILE_BYTES) return this.fail(generation, MESSAGES.tooLarge);
-      stamp = { path, mtimeMs: info.mtimeMs, size: info.size };
-    } catch {
-      return this.fail(generation, MESSAGES.notFound);
-    }
-    let head: Uint8Array;
-    try {
-      head = new Uint8Array(await Bun.file(path).slice(0, HEADER_BYTES).arrayBuffer());
-    } catch {
-      return this.fail(generation, MESSAGES.unreadable);
-    }
+    const read = await readFileHead(path);
     if (generation !== this.generation) return;
+    if (!read.ok) return this.fail(generation, read.message);
+    const { stamp, head } = read;
     const format = sniff(head);
     if (!format) {
       this.set({ mime: otherMime(head, path) });
@@ -149,7 +133,7 @@ export class Viewer {
   /** Close what is open (the file went to the Trash). */
   clear(): void {
     this.generation++;
-    this.closePdf();
+    this.pdf.close();
     this.folder.hide();
     this.set({ ...CLOSED, recents: this.memory.recents() });
   }
@@ -175,8 +159,7 @@ export class Viewer {
     if (!path || !stamp || !format || !canTurn) return;
     const turns = mod4(this.snapshot.turns + direction);
     this.memory.rotated(path, turns, stamp);
-    if (kind === "pdf" && this.pages && this.pdfBase) {
-      this.pages.setTurns(turns);
+    if (kind === "pdf" && this.pdf.setTurns(turns)) {
       this.set({ turns });
       this.pdfChanged();
       return;
@@ -241,18 +224,7 @@ export class Viewer {
       return;
     }
     this.set({ busy: true });
-    const key = cacheKey(stamp, `img:${format}:${mod4(turns)}:${REDUCED_PIXELS}`);
-    const out = cacheFile(this.root, key, "png");
-    const made = await this.once(key, async () => {
-      if (await Bun.file(out).exists()) return out;
-      const partial = partialName(out);
-      const args = magickArgs({ format, turns, maxPixels: REDUCED_PIXELS, output: partial });
-      if (!args) return null;
-      const result = await runTool(args, { timeoutMs: CONVERT_TIMEOUT_MS, memoryMiB: CONVERT_MEMORY_MIB, input: Bun.file(path) });
-      if (!result.ok || !(await Bun.file(partial).exists())) return null;
-      publish(partial, out);
-      return out;
-    });
+    const made = await reducedPng({ root: this.root, path, stamp, format, turns, inflight: this.inflight });
     if (generation !== this.generation) return;
     if (!made) return this.fail(generation, MESSAGES.damaged);
     const size = await pngSize(made);
@@ -270,38 +242,19 @@ export class Viewer {
     });
   }
 
-  /** Run one job per key at a time; callers asking for the same thing share it. */
-  private once(key: string, job: () => Promise<string | null>): Promise<string | null> {
-    const running = this.inflight.get(key);
-    if (running) return running;
-    const started = job().finally(() => this.inflight.delete(key));
-    this.inflight.set(key, started);
-    return started;
-  }
-
   // --- PDFs -----------------------------------------------------------------
-
-  private closePdf(): void {
-    this.pages?.close();
-    this.pages = null;
-    this.pdfBase = null;
-  }
 
   private async openPdf(path: string, stamp: Stamp, turns: number, generation: number): Promise<void> {
     if (!this.snapshot.tools.poppler) return this.fail(generation, MESSAGES.cantOpenPdf);
-    const info = await runTool(pdfinfoArgs(path), { timeoutMs: INFO_TIMEOUT_MS, memoryMiB: 1024, maxOutput: 2 * 1024 * 1024 });
+    const probed = await probePdf(path);
     if (generation !== this.generation) return;
-    const parsed = info.ok ? parsePdfInfo(info.stdout) : null;
-    if (!parsed) return this.fail(generation, wantsPassword(info.stderr) ? MESSAGES.locked : MESSAGES.damagedPdf);
-    if (parsed.encrypted && !parsed.pageSize) return this.fail(generation, MESSAGES.locked);
+    if (!probed.ok) return this.fail(generation, probed.message);
     const canTurn = this.snapshot.tools.magick;
     const shownTurns = canTurn ? turns : 0;
-    this.pdfBase = { pages: parsed.pages, title: parsed.title, sizes: parsed.pageSizes };
-    this.pages = new PdfPages({
+    this.pdf.start(probed.probe, {
       path,
       stamp,
       root: this.root,
-      sizes: parsed.pageSizes,
       deviceScale: this.deviceScale,
       turns: shownTurns,
       onChange: () => {
@@ -313,48 +266,34 @@ export class Viewer {
   }
 
   private pdfChanged(): void {
-    const base = this.pdfBase;
-    if (!base || !this.pages) return;
-    const turns = this.snapshot.turns;
-    this.set({ pdf: { ...base, sizes: base.sizes.map((size) => turned(size, turns)), ...this.pages.state } });
+    const state = this.pdf.state(this.snapshot.turns);
+    if (state) this.set({ pdf: state });
   }
 
   /** What the document surface needs now: pages near the screen at `scale` (logical pixels per point), the strip's thumbnails. */
   wantPages(pages: readonly number[], scale: number, thumbs: readonly number[]): void {
-    this.pages?.want(pages, scale, thumbs);
+    this.pdf.want(pages, scale, thumbs);
   }
 
   /** A page's words, for a drag that selects text on it. */
   wantText(page: number): void {
-    this.pages?.wantText(page);
+    this.pdf.wantText(page);
   }
 
   /** The words of `pages`, read now where they aren't yet. */
   async textOf(pages: readonly number[]): Promise<ReadonlyMap<number, PageText>> {
-    return this.pages ? this.pages.textOf(pages) : new Map();
+    return this.pdf.textOf(pages);
   }
 
   /** Pages `from` to `to` as plain text (a copy across many pages); empty when they can't be read. */
   async plainText(from: number, to: number): Promise<string> {
     const { path, kind } = this.snapshot;
     if (!path || kind !== "pdf" || to < from) return "";
-    const result = await runTool(plainTextArgs(path, from, to), { timeoutMs: INFO_TIMEOUT_MS * 4, memoryMiB: 1024, maxOutput: 64 * 1024 * 1024 });
-    // pdftotext ends each page with a form feed.
-    return result.ok ? result.stdout.replaceAll("\f", "\n\n") : "";
+    return plainTextOf(path, from, to);
   }
 
   /** The resolution a page is rendered at for `scale`, so the window can ask for the same one (Copy, Export). */
   dpiFor(page: number, scale: number): number {
-    return this.pages?.dpiFor(page, scale) ?? 144;
-  }
-}
-
-/** A PNG's pixel size from its header, or null. */
-export async function pngSize(path: string): Promise<Size | null> {
-  try {
-    const bytes = new Uint8Array(await Bun.file(path).slice(0, 32).arrayBuffer());
-    return readSize("png", bytes);
-  } catch {
-    return null;
+    return this.pdf.dpiFor(page, scale);
   }
 }
