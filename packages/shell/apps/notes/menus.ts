@@ -77,14 +77,17 @@ const FORMATS: ReadonlyArray<{ command: FormatCommand; label: string; shortcut?:
   { command: "checklist", label: "Checklist", shortcut: "⇧❖L" },
 ];
 
-/** The menus, and what choosing each row does (only an enabled row runs). */
-export function notesMenus(context: MenuContext): { menus: MenuSpec[]; run: (id: string) => void } {
-  const { actions, folders, source, hasNote, hasDeleted } = context;
-  const inTrash = source.kind === "trash";
-  const openFolder = source.kind === "folder" && source.name !== "" ? source.name : null;
-  const places = ["", ...folders];
+/** The folder the open source is, when it is a folder of its own (not All Notes, not the default folder). */
+const openFolderOf = (source: Source): string | null => (source.kind === "folder" && source.name !== "" ? source.name : null);
 
-  const file: MenuSpec = {
+/** "" (the default folder) and the folders, in the order the Note and View menus list them. */
+const placesOf = (folders: readonly string[]): string[] => ["", ...folders];
+
+function fileMenu(context: MenuContext): MenuSpec {
+  const { source, hasNote, hasDeleted } = context;
+  const inTrash = source.kind === "trash";
+  const openFolder = openFolderOf(source);
+  return {
     id: "file",
     items: [
       { id: "note:new", label: "New Note", shortcut: "❖N", enabled: !inTrash },
@@ -99,7 +102,11 @@ export function notesMenus(context: MenuContext): { menus: MenuSpec[]; run: (id:
       { id: "folder:delete", label: "Delete Folder…", enabled: openFolder !== null },
     ],
   };
-  const edit: MenuSpec = {
+}
+
+function editMenu(context: MenuContext): MenuSpec {
+  const { hasNote, hasDeleted } = context;
+  return {
     id: "edit",
     items: [
       ...undoMenuItems(context.undo),
@@ -114,7 +121,10 @@ export function notesMenus(context: MenuContext): { menus: MenuSpec[]; run: (id:
       { id: "find:previous", label: "Find Previous", shortcut: "⇧❖G", enabled: context.hasMatches },
     ],
   };
-  const format: MenuSpec = {
+}
+
+function formatMenu({ hasNote }: MenuContext): MenuSpec {
+  return {
     id: "format",
     title: "Format",
     items: FORMATS.map((row) =>
@@ -123,13 +133,17 @@ export function notesMenus(context: MenuContext): { menus: MenuSpec[]; run: (id:
         : { id: `format:${row.command}`, label: row.label, ...(row.shortcut ? { shortcut: row.shortcut } : {}), enabled: hasNote },
     ),
   };
-  const note: MenuSpec = {
+}
+
+function noteMenu(context: MenuContext): MenuSpec {
+  const { hasNote } = context;
+  return {
     id: "note",
     title: "Note",
     items: [
       { id: "note:pin", label: context.pinned ? "Unpin Note" : "Pin Note", enabled: hasNote },
       { type: "separator" },
-      ...places.map((place, index) => ({
+      ...placesOf(context.folders).map((place, index) => ({
         id: `move:${index}`,
         label: `Move to ${place === "" ? DEFAULT_FOLDER_NAME : place}`,
         enabled: hasNote,
@@ -137,72 +151,83 @@ export function notesMenus(context: MenuContext): { menus: MenuSpec[]; run: (id:
       })),
     ],
   };
-  const view: MenuSpec = {
+}
+
+function viewMenu({ source, folders }: MenuContext): MenuSpec {
+  return {
     id: "view",
     items: [
       { id: "show:all", label: "All Notes", checked: source.kind === "all" },
-      ...places.map((place, index) => ({
+      ...placesOf(folders).map((place, index) => ({
         id: `show:${index}`,
         label: place === "" ? DEFAULT_FOLDER_NAME : place,
         checked: source.kind === "folder" && source.name === place,
       })),
-      { id: "show:trash", label: "Recently Deleted", checked: inTrash },
+      { id: "show:trash", label: "Recently Deleted", checked: source.kind === "trash" },
     ],
   };
-  const menus = [file, edit, format, note, view];
+}
 
-  const choose = (id: string): void => {
-    const index = /^(?:move|show):(\d+)$/.exec(id);
-    const place = index ? places[Number(index[1])] : undefined;
-    if (id.startsWith("move:") && place !== undefined) return actions.moveTo(place);
-    if (id.startsWith("show:") && place !== undefined) return actions.show({ kind: "folder", name: place });
-    const command = FORMATS.find((row) => row !== null && id === `format:${row.command}`);
-    if (command) return actions.format(command.command);
-    switch (id) {
-      case "note:new":
-        return actions.newNote();
-      case "folder:new":
-        return actions.newFolder();
-      case "note:delete":
-        return actions.deleteNote();
-      case "note:restore":
-        return actions.restore();
-      case "note:purge":
-        return actions.purge();
-      case "trash:empty":
-        return actions.emptyTrash();
-      case "folder:rename":
-        return openFolder === null ? undefined : actions.renameFolder(openFolder);
-      case "folder:delete":
-        return openFolder === null ? undefined : actions.deleteFolder(openFolder);
-      case "note:pin":
-        return actions.pin();
-      case "show:all":
-        return actions.show({ kind: "all" });
-      case "show:trash":
-        return actions.show({ kind: "trash" });
-      case "undo":
-        return actions.undo();
-      case "redo":
-        return actions.redo();
-      case "cut":
-        return actions.cut();
-      case "copy":
-        return actions.copy();
-      case "paste":
-        return actions.paste();
-      case "select-all":
-        return actions.selectAll();
-      case "find":
-        return actions.find();
-      case "find:next":
-        return actions.findNext(1);
-      case "find:previous":
-        return actions.findNext(-1);
-    }
-  };
+/** What choosing a row does. */
+function choose(id: string, context: MenuContext): void {
+  const { actions } = context;
+  const openFolder = openFolderOf(context.source);
+  const places = placesOf(context.folders);
+  const index = /^(?:move|show):(\d+)$/.exec(id);
+  const place = index ? places[Number(index[1])] : undefined;
+  if (id.startsWith("move:") && place !== undefined) return actions.moveTo(place);
+  if (id.startsWith("show:") && place !== undefined) return actions.show({ kind: "folder", name: place });
+  const command = FORMATS.find((row) => row !== null && id === `format:${row.command}`);
+  if (command) return actions.format(command.command);
+  switch (id) {
+    case "note:new":
+      return actions.newNote();
+    case "folder:new":
+      return actions.newFolder();
+    case "note:delete":
+      return actions.deleteNote();
+    case "note:restore":
+      return actions.restore();
+    case "note:purge":
+      return actions.purge();
+    case "trash:empty":
+      return actions.emptyTrash();
+    case "folder:rename":
+      return openFolder === null ? undefined : actions.renameFolder(openFolder);
+    case "folder:delete":
+      return openFolder === null ? undefined : actions.deleteFolder(openFolder);
+    case "note:pin":
+      return actions.pin();
+    case "show:all":
+      return actions.show({ kind: "all" });
+    case "show:trash":
+      return actions.show({ kind: "trash" });
+    case "undo":
+      return actions.undo();
+    case "redo":
+      return actions.redo();
+    case "cut":
+      return actions.cut();
+    case "copy":
+      return actions.copy();
+    case "paste":
+      return actions.paste();
+    case "select-all":
+      return actions.selectAll();
+    case "find":
+      return actions.find();
+    case "find:next":
+      return actions.findNext(1);
+    case "find:previous":
+      return actions.findNext(-1);
+  }
+}
+
+/** The menus, and what choosing each row does (only an enabled row runs). */
+export function notesMenus(context: MenuContext): { menus: MenuSpec[]; run: (id: string) => void } {
+  const menus = [fileMenu(context), editMenu(context), formatMenu(context), noteMenu(context), viewMenu(context)];
   const run = (id: string): void => {
-    if (enabledIds(menus).has(id)) choose(id);
+    if (enabledIds(menus).has(id)) choose(id, context);
   };
   return { menus, run };
 }
