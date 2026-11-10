@@ -200,7 +200,7 @@
 1	packages/shell/apps/terminal/engine.ts
 8	packages/shell/bin/dashi-graphics-preview.tsx
 1	packages/shell/bin/dashi-open.ts
-13	packages/shell/bin/dashi-settings-preview.tsx
+12	packages/shell/bin/dashi-settings-preview.tsx
 1	packages/shell/bin/dashi-share-picker.ts
 1	packages/shell/bin/default-handlers.ts
 2	packages/shell/src/accounts/index.ts
@@ -254,7 +254,7 @@
 1	packages/shell/src/applets/connection.ts
 1	packages/shell/src/applets/index.ts
 2	packages/shell/src/applets/power.ts
-2	packages/shell/src/applets/start.tsx
+1	packages/shell/src/applets/start.tsx
 1	packages/shell/src/approval-sheet.tsx
 1	packages/shell/src/battery/apps.ts
 1	packages/shell/src/battery/history.ts
@@ -271,7 +271,7 @@
 3	packages/shell/src/boot/launcher.tsx
 1	packages/shell/src/boot/look.ts
 8	packages/shell/src/boot/menus.tsx
-6	packages/shell/src/boot/notices.ts
+5	packages/shell/src/boot/notices.ts
 3	packages/shell/src/boot/parts.ts
 1	packages/shell/src/boot/session.ts
 3	packages/shell/src/boot/system.ts
@@ -306,11 +306,10 @@
 1	packages/shell/src/hardware/laptop.ts
 3	packages/shell/src/laptop/charge.ts
 1	packages/shell/src/laptop/glyphs.ts
-3	packages/shell/src/laptop/hotkeys.ts
+2	packages/shell/src/laptop/hotkeys.ts
 6	packages/shell/src/laptop/menu.ts
-17	packages/shell/src/laptop/start.ts
-2	packages/shell/src/laptop/store.ts
-4	packages/shell/src/laptop/tuning.ts
+15	packages/shell/src/laptop/start.ts
+3	packages/shell/src/laptop/tuning.ts
 1	packages/shell/src/launcher/lib/use-search.ts
 1	packages/shell/src/launcher/ranking/entries.ts
 1	packages/shell/src/launcher/resident.tsx
@@ -344,9 +343,8 @@
 1	packages/shell/src/portal-host/index.ts
 1	packages/shell/src/portal-host/service.ts
 1	packages/shell/src/portal-host/sheets.ts
-1	packages/shell/src/power/modes/recipes.ts
-3	packages/shell/src/power/modes/store.ts
-2	packages/shell/src/power/modes/types.ts
+1	packages/shell/src/power/modes/store.ts
+1	packages/shell/src/power/modes/types.ts
 1	packages/shell/src/recorder/indicator.tsx
 2	packages/shell/src/region/desktop.ts
 1	packages/shell/src/region/lib/fake.ts
@@ -471,10 +469,10 @@
 1	packages/shell/test/agents-desktop-chords.test.ts
 2	packages/shell/test/agents-desktop-hands.test.ts
 1	packages/shell/test/agents-desktop-scroll.test.ts
-5	packages/shell/test/applet-catalogs-install.test.ts
+4	packages/shell/test/applet-catalogs-install.test.ts
 3	packages/shell/test/applet-catalogs-merge.test.ts
 2	packages/shell/test/applet-catalogs.test.ts
-5	packages/shell/test/applet-store.test.ts
+4	packages/shell/test/applet-store.test.ts
 1	packages/shell/test/applets-commands.test.ts
 1	packages/shell/test/applets-controls.test.ts
 4	packages/shell/test/applets-power.test.ts
@@ -537,7 +535,7 @@
 6	packages/shell/test/graphics.test.ts
 3	packages/shell/test/installer.test.ts
 2	packages/shell/test/ipc-contract.test.ts
-10	packages/shell/test/laptop.test.ts
+7	packages/shell/test/laptop.test.ts
 1	packages/shell/test/launcher-files.test.ts
 1	packages/shell/test/launcher-model-apps.test.ts
 1	packages/shell/test/launcher-ranking.test.ts
@@ -563,7 +561,7 @@
 3	packages/shell/test/portal-sheets-prompts.test.ts
 4	packages/shell/test/portal-sheets-view.test.tsx
 2	packages/shell/test/portal-windows.test.ts
-9	packages/shell/test/power-modes.test.ts
+7	packages/shell/test/power-modes.test.ts
 6	packages/shell/test/preview-chrome.test.tsx
 1	packages/shell/test/preview-detail.test.ts
 4	packages/shell/test/preview-document.test.tsx
@@ -604,8 +602,8 @@
 3	packages/shell/test/software-layout.test.ts
 4	packages/shell/test/software-recommended.test.ts
 9	packages/shell/test/software-trust.test.ts
-3	packages/shell/test/software-update-check.test.ts
-2	packages/shell/test/software-update-notice.test.tsx
+2	packages/shell/test/software-update-check.test.ts
+1	packages/shell/test/software-update-notice.test.tsx
 1	packages/shell/test/sound-mixer-apps.test.ts
 1	packages/shell/test/sound-mixer-control.test.ts
 3	packages/shell/test/sound-mixer-view.test.tsx

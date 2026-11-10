@@ -16,8 +16,7 @@
  */
 
 import { useSyncExternalStore } from "react";
-import type { HardwareApi } from "../../hardware/client.ts";
-import type { Knob, KnobValue } from "../../hardware/describe.ts";
+import type { HardwareApi, Knob, KnobValue } from "../../hardware/index.ts";
 import { isProfileId, type ProfileId, type ProfileSource } from "../../system/profiles.ts";
 import { type Effective, effectiveMode, type PowerSource } from "./automatic.ts";
 import { EchoGuard } from "./guard.ts";

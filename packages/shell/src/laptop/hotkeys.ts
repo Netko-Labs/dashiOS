@@ -11,7 +11,7 @@
  * the mode store instead (power/modes/store.ts).
  */
 
-import type { Hotkeys } from "../hardware/describe.ts";
+import type { Hotkeys } from "../hardware/index.ts";
 import type { Rule } from "../keymap/keymap.ts";
 import type { ModeStore } from "../power/modes/store.ts";
 import type { OsdController } from "../system/osd-state.ts";

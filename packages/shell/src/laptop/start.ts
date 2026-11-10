@@ -15,8 +15,7 @@ import { cardwireClient, type GraphicsBackend, shadowGraphics } from "../graphic
 import { GraphicsController } from "../graphics/controller.ts";
 import type { LostCardStart } from "../graphics/lost-start.ts";
 import { graphicsNoticePlace } from "../graphics/notice-place.ts";
-import { type HardwareApi, hardwareClient, shadowHardware } from "../hardware/client.ts";
-import { detectLaptop } from "../hardware/laptop.ts";
+import { detectLaptop, type HardwareApi, hardwareClient, shadowHardware } from "../hardware/index.ts";
 import { idleKeymap, setMachineRules } from "../keymap/keymap-state.ts";
 import type { NotificationStore } from "../notifications/store.ts";
 import type { PowerSource } from "../power/modes/automatic.ts";
