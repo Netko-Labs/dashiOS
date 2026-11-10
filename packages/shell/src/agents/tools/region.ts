@@ -1,12 +1,14 @@
 /** Date, time, and region for agents, and the Setup Assistant. All under the "settings" permission. */
 
+import { accept, bool, optional, reject, shape } from "@dashi/shape";
 import { isTimezoneName } from "../../region/timezones.ts";
 import { PAGES } from "../../setup/flow.ts";
 import { isFormatsLocale } from "../../shared/locale/locale.ts";
-import { fail, type ToolDef } from "./define.ts";
+import { arg, custom, tool } from "./args.ts";
+import type { ToolDef } from "./define.ts";
 
 export const regionTools: readonly ToolDef[] = [
-  {
+  tool({
     name: "get_region_settings",
     title: "Read date, time, and region settings",
     description:
@@ -14,10 +16,10 @@ export const regionTools: readonly ToolDef[] = [
     scope: "settings",
     readOnly: true,
     destructive: false,
-    properties: {},
-    parse: () => ({ name: "get_region_settings" }),
-  },
-  {
+    args: {},
+    build: () => ({ name: "get_region_settings" }),
+  }),
+  tool({
     name: "set_time_zone",
     title: "Change the time zone",
     description:
@@ -26,14 +28,16 @@ export const regionTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     idempotent: true,
-    properties: { time_zone: { type: "string", description: "An IANA time zone name, like America/New_York." } },
-    required: ["time_zone"],
-    parse: (args) =>
-      isTimezoneName(args.time_zone)
-        ? { name: "set_time_zone", timeZone: args.time_zone }
-        : fail("`time_zone` must be an IANA time zone name such as Europe/Berlin."),
-  },
-  {
+    args: {
+      time_zone: custom(
+        { type: "string", description: "An IANA time zone name, like America/New_York." },
+        (value) => (isTimezoneName(value) ? value : null),
+        "`time_zone` must be an IANA time zone name such as Europe/Berlin.",
+      ),
+    },
+    build: ({ time_zone }) => ({ name: "set_time_zone", timeZone: time_zone }),
+  }),
+  tool({
     name: "set_clock_24_hour",
     title: "Switch between 12-hour and 24-hour time",
     description:
@@ -42,11 +46,10 @@ export const regionTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     idempotent: true,
-    properties: { value: { type: "boolean", description: "true for 24-hour time, false for 12-hour." } },
-    required: ["value"],
-    parse: (args) => (typeof args.value === "boolean" ? { name: "set_clock_24_hour", value: args.value } : fail("`value` must be true or false.")),
-  },
-  {
+    args: { value: arg(bool(), "`value` must be true or false.", "true for 24-hour time, false for 12-hour.") },
+    build: ({ value }) => ({ name: "set_clock_24_hour", value }),
+  }),
+  tool({
     name: "set_region_formats",
     title: "Change the region formats",
     description:
@@ -55,16 +58,16 @@ export const regionTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     idempotent: true,
-    properties: { locale: { type: ["string", "null"], description: "A locale name like fr_CA.UTF-8, or null to follow the language." } },
-    required: ["locale"],
-    parse: (args) => {
-      if (args.locale === null) return { name: "set_region_formats", locale: null };
-      return isFormatsLocale(args.locale)
-        ? { name: "set_region_formats", locale: args.locale }
-        : fail("`locale` must be a locale name such as de_DE.UTF-8, or null.");
+    args: {
+      locale: shape<string | null>(
+        (value) =>
+          value === null ? accept(null) : isFormatsLocale(value) ? accept(value) : reject("`locale` must be a locale name such as de_DE.UTF-8, or null."),
+        () => ({ type: ["string", "null"], description: "A locale name like fr_CA.UTF-8, or null to follow the language." }),
+      ),
     },
-  },
-  {
+    build: ({ locale }) => ({ name: "set_region_formats", locale }),
+  }),
+  tool({
     name: "open_setup_assistant",
     title: "Open the Setup Assistant",
     description: `Show the Setup Assistant window to the person (language, keyboard, Wi-Fi, time zone, appearance, agents): they make the choices, you do not. Optionally start on one page: ${PAGES.join(", ")}. It cannot be driven with click or type_text.`,
@@ -72,11 +75,15 @@ export const regionTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     idempotent: true,
-    properties: { page: { type: "string", enum: [...PAGES], description: "The page to start on; the welcome page by default." } },
-    parse: (args) => {
-      if (args.page === undefined) return { name: "open_setup_assistant", page: null };
-      const page = PAGES.find((candidate) => candidate === args.page);
-      return page ? { name: "open_setup_assistant", page } : fail(`\`page\` must be one of: ${PAGES.join(", ")}.`);
+    args: {
+      page: optional(
+        custom(
+          { type: "string", enum: [...PAGES], description: "The page to start on; the welcome page by default." },
+          (value) => PAGES.find((candidate) => candidate === value) ?? null,
+          `\`page\` must be one of: ${PAGES.join(", ")}.`,
+        ),
+      ),
     },
-  },
+    build: ({ page }) => ({ name: "open_setup_assistant", page: page ?? null }),
+  }),
 ];
