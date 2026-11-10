@@ -9,10 +9,10 @@ import type { RegionStore } from "../region/store.ts";
 import type { FlagsStore } from "../shared/control-center/flags.ts";
 import type { PaneId } from "../shared/settings/panes.ts";
 import type { PhotoChooser } from "../wallpaper/chooser.ts";
-import type { AboutInfo } from "./about.ts";
+import type { ControlCenterEditor } from "./control-center.tsx";
 import type { XkbLayouts } from "./layouts.ts";
-import type { ControlCenterEditor } from "./panes/control-center.tsx";
-import type { ScreensStore } from "./screens.ts";
+import type { AboutInfo } from "./lib/about.ts";
+import type { ScreensStore } from "./lib/screens.ts";
 import type { PaneServices } from "./services.ts";
 import type { SettingsStore } from "./store.ts";
 

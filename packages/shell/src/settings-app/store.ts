@@ -40,31 +40,11 @@ import { UndoStack } from "@dashi/ui";
 import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { isRefreshChoice, type RefreshChoice } from "../display-config/refresh-policy.ts";
 import { type Check, isRaw, type Raw, settingsPath } from "../shared/settings/file.ts";
-import { changesPath } from "./changes/file.ts";
-import { ChangeLog, type Change as LoggedChange } from "./changes/log.ts";
-import { describeChanges } from "./changes/words.ts";
-import type { SettingsData } from "./data.ts";
+import { changesPath } from "./lib/changes/file.ts";
+import { ChangeLog, type Change as LoggedChange } from "./lib/changes/log.ts";
+import { describeChanges } from "./lib/changes/words.ts";
 import { type Change, ensure, isOutputName, isScale, prune, readSettings, SECTIONS, type SectionName } from "./sections.ts";
-
-export type { KeyboardSettings, MouseSettings, TouchpadSettings } from "../settings-schema.ts";
-export { DEFAULT_BLANK_AFTER } from "./controls.ts";
-export type {
-  AgentsSettings,
-  AppearanceSettings,
-  AppletsSettings,
-  ClipboardSettings,
-  DisplaySettings,
-  IdleSettings,
-  InputMethodSettings,
-  LauncherSettings,
-  MenuBarSettings,
-  NightShiftSettings,
-  ScreenSharingSettings,
-  SettingsData,
-  SpacesSettings,
-  WallpaperSettings,
-} from "./data.ts";
-export { type Change, isProgramPath, MAX_PHOTOS, readSettings, type SectionName } from "./sections.ts";
+import type { SettingsData } from "./types.ts";
 
 /** What a view of the store sees: the settings, and why the last save failed (null when it did not). */
 export interface SettingsSnapshot {

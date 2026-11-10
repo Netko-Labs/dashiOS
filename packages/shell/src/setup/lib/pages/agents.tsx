@@ -1,9 +1,9 @@
 import { Caption, Group, Row, Shortcut, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { SCOPES } from "../../../agents/consent.ts";
+import { AnswererList, useHarnesses } from "../../../settings-app/answerer-list.tsx";
 import { SPARKLE } from "../../../settings-app/glyphs.ts";
 import { useSettings } from "../../../settings-app/hooks.ts";
-import { AnswererList, useHarnesses } from "../../../settings-app/panes/answerer-list.tsx";
 import type { SetupContext } from "../context.ts";
 
 /** What each promise is, in the words the consent sheet uses. */

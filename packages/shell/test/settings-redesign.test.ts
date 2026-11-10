@@ -1,8 +1,9 @@
 import { expect, test } from "bun:test";
 import { waitingCount } from "../src/agents/presence.ts";
 import { type Monitor, nativeSize } from "../src/display-config/monitors.ts";
-import { timePills } from "../src/settings-app/controls.ts";
-import { FOUND_MOST, findSettings } from "../src/settings-app/find.ts";
+import { slidersShape, withSliders } from "../src/settings-app/control-center.tsx";
+import { timePills } from "../src/settings-app/lib/controls.ts";
+import { FOUND_MOST, findSettings } from "../src/settings-app/lib/find.ts";
 import {
   appletOffers,
   aspectLabel,
@@ -14,11 +15,10 @@ import {
   miniatureFrame,
   miniatureHeight,
   scaleOffer,
-} from "../src/settings-app/heroes.ts";
-import { describeSchedule } from "../src/settings-app/night.ts";
-import { slidersShape, withSliders } from "../src/settings-app/panes/control-center.tsx";
-import { onBatteryLine } from "../src/settings-app/panes/on-battery.tsx";
-import { trackingWords } from "../src/settings-app/panes/speed-row.tsx";
+} from "../src/settings-app/lib/heroes.ts";
+import { describeSchedule } from "../src/settings-app/lib/night.ts";
+import { onBatteryLine } from "../src/settings-app/lib/panes/on-battery.tsx";
+import { trackingWords } from "../src/settings-app/lib/panes/speed-row.tsx";
 import { rowName, rowPlace, SETTINGS_ROWS } from "../src/settings-app/registry/index.ts";
 import { PANES, paneGroups, SIDEBAR_PANES } from "../src/shared/settings/panes.ts";
 

@@ -21,7 +21,7 @@ import { LauncherPrefs, type PrefsStore } from "../src/launcher/prefs.ts";
 import { buildSections, type ListInput, selectable } from "../src/launcher/rows.ts";
 import { describeBinding } from "../src/launcher/shell-host.ts";
 import { filterVerbs, hintFor, presentedVerbs, spaceFlips, verbsFor } from "../src/launcher/verbs.ts";
-import type { LauncherSettings } from "../src/settings-app/store.ts";
+import type { LauncherSettings } from "../src/settings-app/types.ts";
 import { action, app, darkMode, ICONS, window } from "./support/launcher-fixtures.ts";
 
 describe("a row's actions", () => {

@@ -16,15 +16,11 @@ import { FoldedChoices } from "../shared/controls/folded.tsx";
 import { InkSlider } from "../shared/controls/ink-slider.tsx";
 import { ControlSwitch, PillButton } from "../shared/controls/inputs.tsx";
 import { useControlColors } from "../shared/controls/palette.ts";
-import { CardRowsContext, cardRows } from "./edge.ts";
-import { PAGE } from "./row.tsx";
+import { CardRowsContext, cardRows } from "./lib/edge.ts";
+import { PAGE } from "./lib/row.tsx";
 import { PAGE_GAP, PageContext, SpotLit } from "./spot.tsx";
 
 export { Tile };
-
-export { PAGE } from "./row.tsx";
-export { Setting } from "./setting.tsx";
-export { Spot } from "./spot.tsx";
 
 /** A page's content is at most this wide, centered in a wider window (LA-2). */
 export const PAGE_MAX_WIDTH = 720;
@@ -93,7 +89,6 @@ export function Hero({ children, testID, padding = 14 }: { children: ReactNode; 
 }
 
 /** A row whose label is data, not a setting (a login, a device); a form's field. Settings' own rows are `Setting`s. */
-export { Row as FormRow, Row as Item, Row, type RowProps } from "./row.tsx";
 
 /**
  * A heading over cards, or a sentence under them (tucked 4 closer to the

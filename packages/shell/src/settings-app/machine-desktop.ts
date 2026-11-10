@@ -12,26 +12,12 @@
 import { describeAction } from "../power/policy.ts";
 import { describeBattery } from "../system/battery-details.ts";
 import { isProfileId, PROFILE_LABEL } from "../system/profiles.ts";
-import { networkMethods } from "./machine-network.ts";
+import { DEFAULT_BLANK_AFTER } from "./lib/controls.ts";
+import { networkMethods } from "./lib/machine-network.ts";
+import { soundMethods } from "./lib/machine-sound.ts";
 import type { MachineDesktop } from "./machine-reading.ts";
-import { soundMethods } from "./machine-sound.ts";
 import type { PaneServices } from "./services.ts";
-import { DEFAULT_BLANK_AFTER, type SettingsStore } from "./store.ts";
-
-export type {
-  AccountReading,
-  AppReading,
-  AppVolumeOutcome,
-  BluetoothReading,
-  ConnectionOutcome,
-  MachineDesktop,
-  NetworkReading,
-  OutputOutcome,
-  Pick,
-  PowerReading,
-  SoundReading,
-} from "./machine-reading.ts";
-export { pickByName } from "./machine-reading.ts";
+import type { SettingsStore } from "./store.ts";
 
 const minutes = (seconds: number): number => Math.round(seconds / 60);
 

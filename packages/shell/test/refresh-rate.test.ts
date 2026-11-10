@@ -4,8 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Monitor } from "../src/display-config/monitors.ts";
 import { autoRates, decideRefresh, type RefreshChoice } from "../src/display-config/refresh-policy.ts";
-import { graphicsOnBattery, refreshOnBattery } from "../src/settings-app/panes/on-battery.tsx";
-import { readSettings, SettingsStore } from "../src/settings-app/store.ts";
+import { graphicsOnBattery, refreshOnBattery } from "../src/settings-app/lib/panes/on-battery.tsx";
+import { readSettings } from "../src/settings-app/sections.ts";
+import { SettingsStore } from "../src/settings-app/store.ts";
 import { offered, panel } from "./support/refresh-rate.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "dashi-refresh-"));

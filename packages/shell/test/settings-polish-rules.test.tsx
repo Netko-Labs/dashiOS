@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
-import { BLANK_CHOICES, BLANK_COMMON, blankChoice, SLEEP_CHOICES, SLEEP_COMMON, timePills } from "../src/settings-app/controls.ts";
-import { findSettings } from "../src/settings-app/find.ts";
 import { layoutName, layoutWords, variantWords } from "../src/settings-app/layouts.ts";
-import { chargeLimitTitle } from "../src/settings-app/panes/battery-laptop.tsx";
+import { BLANK_CHOICES, BLANK_COMMON, blankChoice, SLEEP_CHOICES, SLEEP_COMMON, timePills } from "../src/settings-app/lib/controls.ts";
+import { findSettings } from "../src/settings-app/lib/find.ts";
+import { chargeLimitTitle } from "../src/settings-app/lib/panes/battery-laptop.tsx";
 import { SETTINGS_ROWS } from "../src/settings-app/registry/index.ts";
 import { FOLD_PAST, foldChoices, moreMenuOrigin } from "../src/shared/controls/fold.ts";
 import { settle } from "./support/time.ts";

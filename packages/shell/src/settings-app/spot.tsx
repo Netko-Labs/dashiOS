@@ -16,7 +16,7 @@
 import { type Bounds, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useSyncExternalStore } from "react";
 import { useControlColors } from "../shared/controls/palette.ts";
-import type { AppSpotId } from "./find.ts";
+import type { AppSpotId } from "./lib/find.ts";
 import { rowPlace, type SettingId } from "./registry/index.ts";
 
 /** How long a row stays lit. */

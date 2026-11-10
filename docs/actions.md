@@ -105,7 +105,7 @@ has an `agent` name.
 
 Everything reads the one list:
 
-- The panes draw their rows from it: `<Setting id>` (`settings-app/setting.tsx`)
+- The panes draw their rows from it: `<Setting id>` (`settings-app/lib/setting.tsx`)
   takes its title and detail from the entry, is a Spot (a link or the
   launcher scrolls to it and lights it), and draws the entry's own switch
   or pills when the pane passes no control. A pane passes a live detail or
@@ -120,7 +120,7 @@ Everything reads the one list:
 - Agents: `get_settings` and `set_setting` take every row with an `agent`
   name, checked by its binding's schema. None of Lock Screen, Users &
   Accounts, Passwords, Agents, or Privacy & Security is an agent's.
-- Settings' search, in its header strip (`settings-app/find.ts`), finds
+- Settings' search, in its header strip (`settings-app/lib/find.ts`), finds
   panes and rows by the same words.
 - The change log (`settings-app/changes/`): a binding names where its value
   is kept (`key`: `<section>.<key>` of settings.json, `flags.<key>`), and
@@ -527,7 +527,7 @@ the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
   with the person's key, then None. A harness that isn't installed goes
   after the APIs, reads "Not installed. Install it with …" (its install
   command) and can't be picked. Nothing is checked until the person picks
-  (`agents/ask/choices.ts`, `settings-app/panes/answerer-list.tsx`).
+  (`agents/ask/choices.ts`, `settings-app/answerer-list.tsx`).
   settings.json `agents.answerer` (`"claude-code" | "codex" | "opencode" |
   "local" | "claude" | "gpt" | "none"`, unset until the person picks),
   `agents.localModel` and `agents.gptModel`. A harness answers through plan
