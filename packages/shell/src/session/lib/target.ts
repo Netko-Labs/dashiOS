@@ -56,7 +56,7 @@ export async function startSessionTarget(deps: TargetDeps): Promise<void> {
   if (!deps.which("systemctl")) return;
   const files = deps.env.DASHI_SESSION_FILES;
   if (files) await linkCheckoutFiles(files, deps);
-  // Dashi's portal backend: a checkout's, or (installed) the system's (session/portal-files.ts).
+  // Dashi's portal backend: a checkout's, or (installed) the system's (lib/portal-files.ts).
   const changes = files ? linkCheckoutPortal(files, deps.env, deps.log) : forgetCheckoutPortal(deps.env);
   if (changes.unit) await deps.run(["systemctl", "--user", "daemon-reload"]);
   if (changes.service) await deps.run(BUS_RELOAD);

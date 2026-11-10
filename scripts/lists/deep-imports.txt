@@ -747,7 +747,6 @@
 2	packages/shell/test/portal-file-chooser-accept.test.ts
 4	packages/shell/test/portal-file-chooser-model.test.ts
 4	packages/shell/test/portal-file-chooser.test.ts
-2	packages/shell/test/portal-files.test.ts
 4	packages/shell/test/portal-interfaces-apps.test.ts
 6	packages/shell/test/portal-interfaces.test.ts
 6	packages/shell/test/portal-print.test.ts
@@ -781,7 +780,6 @@
 2	packages/shell/test/refresh-rate.test.ts
 2	packages/shell/test/screen-dark.test.ts
 1	packages/shell/test/screens-picked.test.ts
-1	packages/shell/test/session-keyring.test.ts
 4	packages/shell/test/settings-changes.test.ts
 4	packages/shell/test/settings-focus-view.test.tsx
 1	packages/shell/test/settings-nav.test.ts

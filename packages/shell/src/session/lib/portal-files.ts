@@ -21,7 +21,7 @@ const SERVICE = "org.freedesktop.impl.portal.desktop.dashi.service";
 const PORTAL = "dashi.portal";
 /** A checkout's unit: its own name, so the installed dashi-portal.service is never shadowed. */
 export const CHECKOUT_UNIT = "dashi-portal-checkout.service";
-/** The first line of a file this module wrote. */
+/** The first line of a file this module wrote. It keeps the file's old path: checkouts already have it. */
 const MARKER = "# Written by Dashi's session for a checkout (packages/shell/src/session/portal-files.ts).";
 
 /**
