@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { changeName } from "../apps/calendar/history.ts";
 import { CalendarModel } from "../apps/calendar/model.ts";
-import { CalendarStore } from "../apps/calendar/store.ts";
-import type { CalEvent } from "../apps/calendar/types.ts";
+import { CalendarStore } from "../src/shared/calendar/store.ts";
+import type { CalEvent } from "../src/shared/calendar/types.ts";
 
 let root = "";
 let model: CalendarModel;

@@ -7,14 +7,14 @@
 
 import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
+import { type Day, dayPart } from "../../src/shared/calendar/dates.ts";
+import type { Occurrence } from "../../src/shared/calendar/types.ts";
 import { inkOn, tint } from "./colors.ts";
-import { type Day, dayPart } from "./dates.ts";
 import { occurrenceKey } from "./event-block.tsx";
 import { titleOf } from "./format.ts";
 import type { GridHandlers, GridState } from "./grid-props.ts";
 import { InlineTitle } from "./inline-title.tsx";
 import { allDayOn, MONTH_CHIP_HEIGHT } from "./layout.ts";
-import type { Occurrence } from "./types.ts";
 
 export const ALL_DAY_ROWS = 4;
 

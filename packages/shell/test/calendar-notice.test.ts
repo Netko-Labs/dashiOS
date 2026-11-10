@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CalendarModel } from "../apps/calendar/model.ts";
-import { CalendarStore } from "../apps/calendar/store.ts";
+import { CalendarStore } from "../src/shared/calendar/store.ts";
 
 let root = "";
 beforeEach(() => {

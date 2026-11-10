@@ -1,16 +1,16 @@
 import { expect, test } from "bun:test";
 import { isDrag, monthDayAt, previewOf } from "../apps/calendar/drag.ts";
-import { makeEvent } from "../apps/calendar/event.ts";
 import { pendingInput } from "../apps/calendar/grid-edits.ts";
 import { HOUR_HEIGHT } from "../apps/calendar/layout.ts";
 import { calendarMenus, type MenuContext } from "../apps/calendar/menus.ts";
 import { parseQuickAdd } from "../apps/calendar/quickadd.ts";
 import { searchEvents } from "../apps/calendar/search.ts";
 import { dateOrder, formatDayText, parseDayText, parseTimeText } from "../apps/calendar/timetext.ts";
-import type { Occurrence } from "../apps/calendar/types.ts";
 import { keyAction } from "../apps/calendar/window-keys.ts";
 import { reservedBy } from "../src/app-menus/reserved.ts";
 import { chordFromShortcut } from "../src/app-menus/shortcut.ts";
+import { makeEvent } from "../src/shared/calendar/event.ts";
+import type { Occurrence } from "../src/shared/calendar/types.ts";
 
 const TODAY = "2026-11-05"; // a Thursday
 

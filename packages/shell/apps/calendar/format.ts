@@ -1,10 +1,10 @@
 /** How Calendar writes days and times: the region's formats and 12 or 24 hour time from Language & Region and Date & Time (clock.ts). */
 
+import { addDays, type Day, dayPart, instantOf, type Local, minuteOfDay, parseDay } from "../../src/shared/calendar/dates.ts";
+import type { CalEvent, NthDay, Repeat } from "../../src/shared/calendar/types.ts";
 import { type ClockPrefs, formatTime, usesHour24 } from "../../src/shared/time/clock.ts";
 import { weekdayNames } from "../../src/shared/time/week.ts";
-import { addDays, type Day, dayPart, instantOf, type Local, minuteOfDay, parseDay } from "./dates.ts";
 import type { View } from "./layout.ts";
-import type { CalEvent, NthDay, Repeat } from "./types.ts";
 
 function format(locale: string, options: Intl.DateTimeFormatOptions, day: Day): string {
   const time = parseDay(day);

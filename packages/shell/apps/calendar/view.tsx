@@ -12,15 +12,16 @@
 import { AppWindow, Button, type MenuItem, Notice, PopUpButton, PopupMenu, SEARCH, SearchField, Segmented, ToolbarButton, useColors, useUndo } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { dayPart } from "../../src/shared/calendar/dates.ts";
+import { parseIcs } from "../../src/shared/calendar/ics.ts";
+import { type Calendar, CalendarError, type Occurrence } from "../../src/shared/calendar/types.ts";
 import { useAppMenus } from "../kit/index.ts";
 import { chromeFor, VIEW_POPUP_WIDTH } from "./chrome.ts";
-import { dayPart } from "./dates.ts";
 import { type Draft, draftOf, inputOf, repeatChanged } from "./draft.ts";
 import { EventSheet } from "./event-sheet.tsx";
 import { shortViewTitle, viewTitle } from "./format.ts";
 import { CHEVRON_LEFT, CHEVRON_RIGHT, PLUS } from "./glyphs.ts";
 import { asksScope, refOf, zonedTimes } from "./grid-edits.ts";
-import { parseIcs } from "./ics.ts";
 import { type IcsChooser, isIcsPath, readIcsFile, writeIcsFile } from "./import.ts";
 import { type View as ViewName, viewDays, weekDays } from "./layout.ts";
 import { calendarMenus } from "./menus.ts";
@@ -35,7 +36,6 @@ import type { SheetState } from "./sheets.tsx";
 import { CalendarRail, Sidebar } from "./sidebar.tsx";
 import { choosableCalendars, newEventTarget } from "./target.ts";
 import { TimeGrid } from "./time-grid.tsx";
-import { type Calendar, CalendarError, type Occurrence } from "./types.ts";
 import { useGrid } from "./use-grid.ts";
 
 export const CALENDAR_SIZE = { width: 1120, height: 740 } as const;

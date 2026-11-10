@@ -8,9 +8,9 @@
 import { useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { addDays, firstOfMonth, startOfWeek } from "../../apps/calendar/dates.ts";
 import { calendarBridge, useBusyDays } from "../calendar/bridge.ts";
 import { CHEVRON_LEFT, CHEVRON_RIGHT } from "../control-center/glyphs.ts";
+import { addDays, firstOfMonth, startOfWeek } from "../shared/calendar/dates.ts";
 import { useClockPrefs } from "../shared/time/clock.ts";
 import { firstDayIndex, weekdayNames } from "../shared/time/week.ts";
 import { type MonthView, monthGrid, monthTitle, shiftMonth } from "./month.ts";

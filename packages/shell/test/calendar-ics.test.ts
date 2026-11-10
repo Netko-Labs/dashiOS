@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
-import { parseIcs, writeIcs } from "../apps/calendar/ics.ts";
-import { occurrencesOf } from "../apps/calendar/recurrence.ts";
-import { formatRule, parseRule } from "../apps/calendar/rules.ts";
-import type { CalEvent } from "../apps/calendar/types.ts";
+import { parseIcs, writeIcs } from "../src/shared/calendar/ics.ts";
+import { occurrencesOf } from "../src/shared/calendar/recurrence.ts";
+import { formatRule, parseRule } from "../src/shared/calendar/rules.ts";
+import type { CalEvent } from "../src/shared/calendar/types.ts";
 
 const LISBON = "Europe/Lisbon";
 const ics = (...lines: string[]): string => ["BEGIN:VCALENDAR", "VERSION:2.0", ...lines, "END:VCALENDAR", ""].join("\r\n");

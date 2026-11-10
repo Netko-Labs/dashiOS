@@ -51,9 +51,7 @@
 379	packages/dashi-ui/src/sheet.tsx
 338	packages/dashi-ui/test/controls-view.test.tsx
 339	packages/shell/apps/activity-monitor/view.tsx
-386	packages/shell/apps/calendar/ics.ts
 384	packages/shell/apps/calendar/model.ts
-305	packages/shell/apps/calendar/store.ts
 510	packages/shell/apps/calendar/view.tsx
 445	packages/shell/apps/editor/model.ts
 400	packages/shell/apps/editor/view.tsx
@@ -100,6 +98,8 @@
 355	packages/shell/src/settings-app/sidebar.tsx
 717	packages/shell/src/settings-app/store.ts
 488	packages/shell/src/settings.ts
+386	packages/shell/src/shared/calendar/ics.ts
+305	packages/shell/src/shared/calendar/store.ts
 328	packages/shell/src/shared/dbus/connection.ts
 349	packages/shell/src/shared/dbus/fd-service.ts
 378	packages/shell/src/shared/notes/store.ts

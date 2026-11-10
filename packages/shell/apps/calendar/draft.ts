@@ -7,11 +7,11 @@
  * not the repeat's first. Pure.
  */
 
-import { addDays, addMinutes, type Day, dayPart, daysBetween, minuteOfDay, minutesBetween, weekday } from "./dates.ts";
-import type { EventInput } from "./event.ts";
-import { isSimpleRepeat } from "./rules.ts";
-import type { CalEvent, Frequency, NthDay, Repeat } from "./types.ts";
-import { hereZone } from "./zones.ts";
+import { addDays, addMinutes, type Day, dayPart, daysBetween, minuteOfDay, minutesBetween, weekday } from "../../src/shared/calendar/dates.ts";
+import type { EventInput } from "../../src/shared/calendar/event.ts";
+import { isSimpleRepeat } from "../../src/shared/calendar/rules.ts";
+import type { CalEvent, Frequency, NthDay, Repeat } from "../../src/shared/calendar/types.ts";
+import { hereZone } from "../../src/shared/calendar/zones.ts";
 
 export type RepeatChoice = "none" | Frequency | "custom";
 export type EndsChoice = "never" | "count" | "until";

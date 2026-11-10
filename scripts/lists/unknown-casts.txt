@@ -3,10 +3,7 @@
 1	packages/applet/src/installed.ts
 8	packages/applet/src/protocol.ts
 1	packages/applet/src/warm-host.ts
-2	packages/shell/apps/calendar/event.ts
 1	packages/shell/apps/calendar/import.ts
-1	packages/shell/apps/calendar/store.ts
-1	packages/shell/apps/calendar/zones.ts
 3	packages/shell/apps/editor/files.ts
 1	packages/shell/apps/files/items.ts
 1	packages/shell/apps/files/mounts.ts
@@ -49,6 +46,9 @@
 1	packages/shell/src/session/parent.ts
 1	packages/shell/src/settings-app/panes/displays.tsx
 1	packages/shell/src/settings-app/store.ts
+2	packages/shell/src/shared/calendar/event.ts
+1	packages/shell/src/shared/calendar/store.ts
+1	packages/shell/src/shared/calendar/zones.ts
 2	packages/shell/src/shared/dbus/bus.ts
 2	packages/shell/src/shared/dbus/marshal.ts
 5	packages/shell/src/shared/dbus/message.ts

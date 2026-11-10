@@ -8,13 +8,13 @@
 import { TextField, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
+import { addDays, type Day } from "../../src/shared/calendar/dates.ts";
+import { hereZone, parseZone, zoneCity } from "../../src/shared/calendar/zones.ts";
 import { type ClockPrefs, usesHour24 } from "../../src/shared/time/clock.ts";
-import { addDays, type Day } from "./dates.ts";
 import { clock, weekdayShort } from "./format.ts";
 import { CALENDAR } from "./glyphs.ts";
 import { MiniMonth } from "./mini-month.tsx";
 import { dateOrder, formatDayText, parseDayText, parseTimeText } from "./timetext.ts";
-import { hereZone, parseZone, zoneCity } from "./zones.ts";
 
 /** A field's line: 28 tall, as a field and its arrows are; a row of pills is 26. */
 export const FIELD_LINE = 28;

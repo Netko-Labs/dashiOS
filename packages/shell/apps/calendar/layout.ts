@@ -5,8 +5,19 @@
  * and next move. Pure.
  */
 
-import { addDays, addMonths, type Day, dayPart, daysInMonth, firstOfMonth, minuteOfDay, monthOf, startOfWeek, weekday } from "./dates.ts";
-import type { Occurrence } from "./types.ts";
+import {
+  addDays,
+  addMonths,
+  type Day,
+  dayPart,
+  daysInMonth,
+  firstOfMonth,
+  minuteOfDay,
+  monthOf,
+  startOfWeek,
+  weekday,
+} from "../../src/shared/calendar/dates.ts";
+import type { Occurrence } from "../../src/shared/calendar/types.ts";
 
 export const VIEWS = ["day", "week", "month"] as const;
 export type View = (typeof VIEWS)[number];

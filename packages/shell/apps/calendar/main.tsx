@@ -9,15 +9,15 @@
  * window closed.
  */
 
+import { dayFromArgs, listenForOpen, openInRunning } from "../../src/shared/calendar/instance.ts";
+import { SIDECAR_FILE } from "../../src/shared/calendar/sidecar.ts";
+import { CalendarStore, defaultRoot } from "../../src/shared/calendar/store.ts";
+import { watchCalendars } from "../../src/shared/calendar/watch.ts";
 import { runApp } from "../kit/index.ts";
 import { CALENDAR_LEAST } from "./chrome.ts";
 import { portalIcsChooser } from "./import.ts";
-import { dayFromArgs, listenForOpen, openInRunning } from "./instance.ts";
 import { CalendarModel } from "./model.ts";
-import { SIDECAR_FILE } from "./sidecar.ts";
-import { CalendarStore, defaultRoot } from "./store.ts";
 import { CALENDAR_SIZE, CalendarWindow } from "./view.tsx";
-import { watchCalendars } from "./watch.ts";
 
 const day = dayFromArgs();
 

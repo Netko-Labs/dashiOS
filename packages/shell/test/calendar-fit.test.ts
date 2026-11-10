@@ -7,7 +7,7 @@ import { shortViewTitle, viewTitle } from "../apps/calendar/format.ts";
 import { placeDay, weekDays } from "../apps/calendar/layout.ts";
 import { popoverOrigin } from "../apps/calendar/popover.tsx";
 import { RESULTS_WIDTH, resultsPlace } from "../apps/calendar/search-results.tsx";
-import type { Occurrence } from "../apps/calendar/types.ts";
+import type { Occurrence } from "../src/shared/calendar/types.ts";
 
 // Review 54: Calendar in a small, narrow or tiled window, and the week's overlapping events.
 

@@ -7,11 +7,11 @@
 import { AlertSheet, alertButtonsWidth, Button, ConfirmSheet, Sheet, TextField, useColors, WARNING } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
+import type { EventInput } from "../../src/shared/calendar/event.ts";
+import { isColor } from "../../src/shared/calendar/ics.ts";
+import { PALETTE } from "../../src/shared/calendar/store.ts";
 import type { Scope } from "./edits.ts";
-import type { EventInput } from "./event.ts";
-import { isColor } from "./ics.ts";
 import type { OccurrenceRef } from "./model.ts";
-import { PALETTE } from "./store.ts";
 
 export type SheetState =
   | { kind: "new-calendar" }

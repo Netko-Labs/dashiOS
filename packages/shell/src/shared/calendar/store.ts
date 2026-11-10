@@ -12,7 +12,7 @@ import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, unlinkSync
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { TINT_VALUES } from "@dashi/ui";
-import { isRegularFile, writeAtomic, writeNew } from "../../src/shared/fs/atomic.ts";
+import { isRegularFile, writeAtomic, writeNew } from "../fs/atomic.ts";
 import { type EventInput, makeEvent } from "./event.ts";
 import { cleanName, isColor, MAX_ICS_BYTES, parseIcs, writeIcs } from "./ics.ts";
 import { type CalEvent, type Calendar, CalendarError, type IcsFile } from "./types.ts";

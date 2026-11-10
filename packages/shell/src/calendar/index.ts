@@ -5,12 +5,12 @@
  * Started once from main.tsx.
  */
 
-import type { Day } from "../../apps/calendar/dates.ts";
-import { openInRunning, socketPath } from "../../apps/calendar/instance.ts";
-import { defaultRoot } from "../../apps/calendar/store.ts";
 import { type App, launch } from "../apps.ts";
 import { FIRST_PARTY, firstPartyApp } from "../first-party.ts";
 import type { NotificationStore } from "../notifications/store.ts";
+import type { Day } from "../shared/calendar/dates.ts";
+import { openInRunning, socketPath } from "../shared/calendar/instance.ts";
+import { defaultRoot } from "../shared/calendar/store.ts";
 import type { ToplevelStore } from "../toplevels.ts";
 import { setCalendarBridge } from "./bridge.ts";
 import { CalendarFeed } from "./feed.ts";

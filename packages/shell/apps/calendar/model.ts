@@ -11,15 +11,15 @@
 
 import { UndoStack } from "@dashi/ui";
 
-import { addDays, type Day, dayOf, type Local } from "./dates.ts";
+import { addDays, type Day, dayOf, type Local } from "../../src/shared/calendar/dates.ts";
+import type { EventInput } from "../../src/shared/calendar/event.ts";
+import { busyDays, occurrencesIn } from "../../src/shared/calendar/recurrence.ts";
+import { readSidecar, writeSidecar } from "../../src/shared/calendar/sidecar.ts";
+import type { CalendarStore } from "../../src/shared/calendar/store.ts";
+import { type CalEvent, type Calendar, CalendarError, type Occurrence } from "../../src/shared/calendar/types.ts";
 import { changeOccurrence, deleteOccurrence, duplicateOf, type EditResult, type Scope } from "./edits.ts";
-import type { EventInput } from "./event.ts";
 import { type EventChange, eventStep } from "./history.ts";
 import { step, type View, viewDays, viewRange } from "./layout.ts";
-import { busyDays, occurrencesIn } from "./recurrence.ts";
-import { readSidecar, writeSidecar } from "./sidecar.ts";
-import type { CalendarStore } from "./store.ts";
-import { type CalEvent, type Calendar, CalendarError, type Occurrence } from "./types.ts";
 
 export interface CalendarState {
   calendars: Calendar[];

@@ -7,16 +7,16 @@
 
 import { useColors } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
+import { addDays, type Day, dayPart, type Local, minuteOfDay } from "../../src/shared/calendar/dates.ts";
+import type { Occurrence } from "../../src/shared/calendar/types.ts";
 import type { ClockPrefs } from "../../src/shared/time/clock.ts";
 import { tint } from "./colors.ts";
-import { addDays, type Day, dayPart, type Local, minuteOfDay } from "./dates.ts";
 import { minutesFor } from "./drag.ts";
 import { EventBlock, GhostBlock, occurrenceKey } from "./event-block.tsx";
 import { timeSpan, titleOf } from "./format.ts";
 import type { GridHandlers, GridState } from "./grid-props.ts";
 import { InlineTitle } from "./inline-title.tsx";
 import { GRID_HEIGHT, HOUR_HEIGHT, placeDay, yAtMinutes } from "./layout.ts";
-import type { Occurrence } from "./types.ts";
 
 const HALF = HOUR_HEIGHT / 2;
 

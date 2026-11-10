@@ -8,10 +8,10 @@
 import { Button, useColors, useSurface } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
+import type { Calendar, Occurrence } from "../../src/shared/calendar/types.ts";
+import { fromHere, hereZone, isZone, zoneCity } from "../../src/shared/calendar/zones.ts";
 import type { ClockPrefs } from "../../src/shared/time/clock.ts";
 import { alertLabel, repeatSummary, timeSpan, titleOf } from "./format.ts";
-import type { Calendar, Occurrence } from "./types.ts";
-import { fromHere, hereZone, isZone, zoneCity } from "./zones.ts";
 
 export const POPOVER_WIDTH = 270;
 const GAP = 8;
