@@ -6,7 +6,6 @@ use super::{
     approval::Approvals,
     ctaphid::{self, Assembler, BROADCAST, Message},
     request::cbor,
-    send::reply,
     uhid::{self, Device},
 };
 use crate::daemon::Daemon;
@@ -64,4 +63,11 @@ pub fn serve(daemon: Arc<Mutex<Daemon>>, approvals: Arc<Approvals>) -> Result<()
         }
     }
     Ok(())
+}
+
+/// Send `data` on channel `cid` as `cmd`, split into packets.
+pub(super) fn reply(device: &Device, cid: u32, cmd: u8, data: &[u8]) {
+    for packet in ctaphid::frame(cid, cmd, data) {
+        device.send(&packet);
+    }
 }

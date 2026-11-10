@@ -10,7 +10,6 @@ pub mod ctaphid;
 pub mod fprint;
 mod request;
 mod run;
-mod send;
 pub mod store;
 pub mod uhid;
 

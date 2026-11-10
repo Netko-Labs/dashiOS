@@ -15,7 +15,7 @@ use super::{
     approval::Approvals,
     ctap2::{self, Ask, Env},
     ctaphid, fprint,
-    send::reply,
+    run::reply,
     uhid::Device,
 };
 use crate::daemon::{Daemon, now};
