@@ -5,11 +5,11 @@ import { join } from "node:path";
 import { Appearance } from "@dashi/ui";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import type { PaneContext } from "../src/settings-app/context.ts";
-import { Nav, PANES, SIDEBAR_PANES } from "../src/settings-app/panes.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
 import { SettingsWindow } from "../src/settings-app/view.tsx";
 import { FlagsStore } from "../src/shared/control-center/flags.ts";
 import { DARK_CONTROLS, LIGHT_CONTROLS } from "../src/shared/controls/palette.ts";
+import { Nav, PANES, SIDEBAR_PANES } from "../src/shared/settings/panes.ts";
 
 // The Settings window and the keyboard (KB-1, KB-2): its ring is Control
 // Center's purple in both modes, and its sidebar is one Tab stop whose

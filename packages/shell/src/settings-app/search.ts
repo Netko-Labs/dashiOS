@@ -8,7 +8,7 @@
 
 import { registerShellEntry, SETTINGS_APP_ID, type ShellEntryLook } from "../apps.ts";
 import { type App, iconPath } from "../shared/apps/index.ts";
-import { PANES, type PaneId, type PaneInfo } from "./panes.ts";
+import { PANES, type PaneId, type PaneInfo } from "../shared/settings/panes.ts";
 
 /** Other words for each pane, lowercase; panes not listed answer to their title only. */
 export const PANE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {

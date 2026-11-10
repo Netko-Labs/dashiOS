@@ -137,7 +137,6 @@ import { startSettings } from "./settings.ts";
 import { SettingsStore, startSettingsApp } from "./settings-app/index.ts";
 import { machineDesktop } from "./settings-app/machine-desktop.ts";
 import type { ControlCenterEditor } from "./settings-app/panes/control-center.tsx";
-import { isPaneId } from "./settings-app/panes.ts";
 import { agentRow, type RegistryStores, valueOf } from "./settings-app/registry/index.ts";
 import { registerPaneEntries } from "./settings-app/search.ts";
 import { createPaneServices, type PaneServices } from "./settings-app/services.ts";
@@ -147,6 +146,7 @@ import { dockDefaults, fileIcon, iconPath, installedSpecs, METAL_HOST, resolvePi
 import { systemClipboard } from "./shared/clipboard/clipboard.ts";
 import { connectDarkMode } from "./shared/control-center/flags.ts";
 import { FileSearch, iconNamesFor } from "./shared/files/file-search.ts";
+import { isPaneId } from "./shared/settings/panes.ts";
 import { Software } from "./shared/software/manager.ts";
 import { standIn } from "./shared/software/stand-in.ts";
 import { SHEET, ShortcutSheet } from "./sheet.tsx";

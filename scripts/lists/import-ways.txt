@@ -3,7 +3,6 @@
 1	packages/shell/apps/dialog/file-selection-view.tsx
 1	packages/shell/apps/editor/view.tsx
 1	packages/shell/apps/installer/view.tsx
-1	packages/shell/apps/portal/access.tsx
 1	packages/shell/apps/portal/file-chooser/index.tsx
 1	packages/shell/apps/portal/look.ts
 1	packages/shell/apps/software/main.tsx

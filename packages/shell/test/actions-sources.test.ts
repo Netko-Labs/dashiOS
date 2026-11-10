@@ -15,10 +15,10 @@ import type { CompositorWindow } from "../src/compositor.ts";
 import type { Entry } from "../src/entries.ts";
 import { KEYMAP } from "../src/keymap.ts";
 import type { MenuAction } from "../src/menus/model.ts";
-import { PANES } from "../src/settings-app/panes.ts";
 import { AGENT_ROWS } from "../src/settings-app/registry/index.ts";
 import { scrollFor } from "../src/settings-app/spot.tsx";
 import { desktopActions, desktopFields, parseDesktopEntry, parseExec } from "../src/shared/apps/index.ts";
+import { PANES } from "../src/shared/settings/panes.ts";
 import { type Requests, runBinding, type ShellActions } from "../src/shortcuts.ts";
 
 const run = async (action: ActionDef | undefined, args: Record<string, unknown> = {}, ctx: ActionContext = { window: null }) => {

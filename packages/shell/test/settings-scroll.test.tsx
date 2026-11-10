@@ -8,7 +8,6 @@ import type { ReactNode } from "react";
 import { INITIAL_REGION, type RegionStore } from "../src/region/store.ts";
 import type { PaneContext } from "../src/settings-app/context.ts";
 import { DateTimePane } from "../src/settings-app/panes/date-time.tsx";
-import { Nav, type PaneId } from "../src/settings-app/panes.ts";
 import { PAGE } from "../src/settings-app/row.tsx";
 import { PaneStoresContext } from "../src/settings-app/setting.tsx";
 import { SIDEBAR } from "../src/settings-app/sidebar.tsx";
@@ -23,6 +22,7 @@ import { AgentsPage } from "../src/setup/pages/agents.tsx";
 import { ExtrasPage } from "../src/setup/pages/extras.tsx";
 import { FlagsStore } from "../src/shared/control-center/flags.ts";
 import { INK_SLIDER } from "../src/shared/controls/ink-slider.tsx";
+import { Nav, type PaneId } from "../src/shared/settings/panes.ts";
 
 // A Settings page (and a Setup page) scrolls to its last line at any height. mirin's layout
 // (its vendored taffy 0.9) sizes a column wrongly when a child that keeps its

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { FIRST_PANE, isPrivatePane, Nav, PANES } from "../src/settings-app/panes.ts";
+import { FIRST_PANE, isPrivatePane, Nav, PANES } from "../src/shared/settings/panes.ts";
 
 test("Passwords is the private pane, and Appearance isn't", () => {
   expect(PANES.filter((pane) => pane.private).map((pane) => pane.id)).toEqual(["passwords"]);

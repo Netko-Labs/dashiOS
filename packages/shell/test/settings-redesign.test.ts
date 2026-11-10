@@ -19,8 +19,8 @@ import { describeSchedule } from "../src/settings-app/night.ts";
 import { slidersShape, withSliders } from "../src/settings-app/panes/control-center.tsx";
 import { onBatteryLine } from "../src/settings-app/panes/on-battery.tsx";
 import { trackingWords } from "../src/settings-app/panes/speed-row.tsx";
-import { PANES, paneGroups, SIDEBAR_PANES } from "../src/settings-app/panes.ts";
 import { rowName, rowPlace, SETTINGS_ROWS } from "../src/settings-app/registry/index.ts";
+import { PANES, paneGroups, SIDEBAR_PANES } from "../src/shared/settings/panes.ts";
 
 // The redesigned Settings' pure parts: search and where it lands, the heroes' figures, and every row still reachable.
 

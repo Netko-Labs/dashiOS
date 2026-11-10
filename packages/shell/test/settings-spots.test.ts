@@ -5,9 +5,9 @@ import { settingsActions } from "../src/actions/sources/settings.ts";
 import type { Entry } from "../src/entries.ts";
 import { launcherIndex } from "../src/launcher/items.ts";
 import { buildSections, selectable } from "../src/launcher/rows.ts";
-import { PANES } from "../src/settings-app/panes.ts";
 import { findRow, rowPlace, SETTINGS_ROWS } from "../src/settings-app/registry/index.ts";
 import { paneEntry, paneKeywords, paneLook } from "../src/settings-app/search.ts";
+import { PANES } from "../src/shared/settings/panes.ts";
 
 // A search that names a row of Settings lands on the row: Settings opens scrolled to it and lights it, as a link does.
 

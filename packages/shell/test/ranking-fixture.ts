@@ -4,8 +4,8 @@ import { SETTINGS_APP_ID, SETUP_APP_ID } from "../src/apps.ts";
 import type { Entry } from "../src/entries.ts";
 import { entryItem } from "../src/launcher/ranking/entries.ts";
 import { entryIndex, type RankItem } from "../src/launcher/ranking/index.ts";
-import { PANES } from "../src/settings-app/panes.ts";
 import { paneEntry, paneKeywords } from "../src/settings-app/search.ts";
+import { PANES } from "../src/shared/settings/panes.ts";
 
 const app = (id: string, name: string, keywords: string[] = [], extra: Partial<Entry> = {}): Entry => ({ id, name, icon: "", keywords, ...extra });
 

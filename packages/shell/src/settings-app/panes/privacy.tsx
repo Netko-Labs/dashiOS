@@ -13,10 +13,10 @@
 import { useState, useSyncExternalStore } from "react";
 import { byApp } from "../../privacy/portal-grants.ts";
 import type { AppGrant, AppGrants } from "../../privacy/store.ts";
+import { paneTitle } from "../../shared/settings/panes.ts";
 import { useClockPrefs } from "../../shared/time/clock.ts";
 import type { PaneContext } from "../context.ts";
 import { useGrantEntries, useSettings } from "../hooks.ts";
-import { paneTitle } from "../panes.ts";
 import { agentPermissions, appTitle, grantDetail, lastUsedWords, programTitle, sinceWords } from "../privacy-words.ts";
 import { Button, Caption, Group, Item, Note, Page, Spot } from "../ui.tsx";
 
