@@ -429,7 +429,7 @@
 1	packages/shell/src/region/store.ts
 1	packages/shell/src/region/systemd.ts
 1	packages/shell/src/screen-capture.tsx
-2	packages/shell/src/search-providers/client.ts
+2	packages/shell/src/search-providers/lib/client.ts
 2	packages/shell/src/search-providers/providers.ts
 1	packages/shell/src/settings-app/changes/words.ts
 8	packages/shell/src/settings-app/context.ts
