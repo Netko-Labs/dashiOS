@@ -17,7 +17,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { type ComponentType, createElement, useSyncExternalStore } from "react";
-import { type AppletSpec, AppletsClient, type CommandRun, type PopoverPlacement } from "./client.ts";
+import { AppletsClient } from "./client.ts";
+import type { AppletSpec, CommandRun, PopoverPlacement } from "./client-types.ts";
 import type { CommandResult, CommandRow } from "./commands.ts";
 import { type ControlsApi, controlsApi } from "./controls-api.ts";
 import { type Manifest, readManifest } from "./manifest.ts";

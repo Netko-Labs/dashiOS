@@ -18,10 +18,10 @@ export {
   verifyIndex,
   verifyPackage,
 } from "./catalog.ts";
+export { AppletsClient } from "./client.ts";
 export {
   type AppletHandlers,
   type AppletSpec,
-  AppletsClient,
   type AppletsClientOptions,
   type ClientSocket,
   CONTROL_SPACING_MS,
@@ -30,7 +30,7 @@ export {
   type ControlHandlers,
   type PopoverPlacement,
   type SocketHandlers,
-} from "./client.ts";
+} from "./client-types.ts";
 export {
   type AppletCommand,
   ARG_TYPES,
