@@ -7,10 +7,10 @@
 
 import { EmptyState, glyphs, Table } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
-import { fitColumns } from "./columns.ts";
-import type { Line } from "./lines.ts";
+import { fitColumns } from "../columns.ts";
+import type { MonitorModel } from "../hooks/use-monitor-window.ts";
+import type { Line } from "../lines.ts";
 import { Summary } from "./summary.tsx";
-import type { MonitorModel } from "./use-monitor-window.ts";
 
 /** The person's own top line with the most energy impact, for the summary's sentence. */
 function heaviest(lines: readonly Line[]): Line | null {

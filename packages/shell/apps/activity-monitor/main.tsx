@@ -12,11 +12,12 @@ import { protectedPids, readProcStat, sendSignal } from "../../src/shared/proces
 import { parseStat } from "../../src/shared/processes/proc.ts";
 import { readUsers, sysconf } from "../../src/shared/processes/read.ts";
 import { menusClient, onWindowVisibility, runApp, systemClipboard } from "../kit/index.ts";
-import { parseOpenArgs } from "./args.ts";
-import { Monitor } from "./monitor.ts";
-import type { Target } from "./policy.ts";
-import { Sampler } from "./sampling.ts";
-import { MONITOR_MIN_SIZE, MONITOR_SIZE, MonitorWindow } from "./view.tsx";
+import { parseOpenArgs } from "./lib/args.ts";
+import { Monitor } from "./lib/monitor.ts";
+import type { Target } from "./lib/policy.ts";
+import { Sampler } from "./lib/sampling.ts";
+import { MONITOR_MIN_SIZE, MONITOR_SIZE } from "./lib/sizes.ts";
+import { MonitorWindow } from "./lib/views/view.tsx";
 
 /** The process `target` named, if it is still that one (a pid is reused once its process ends): its state letter, else null. */
 function stateOf(target: Target): string | null {

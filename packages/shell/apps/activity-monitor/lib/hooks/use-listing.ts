@@ -8,13 +8,13 @@
 
 import type { Column, SortState } from "@dashi/ui";
 import { type Dispatch, type SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
-import type { OpenRequest } from "./args.ts";
-import { COLUMNS, DEFAULT_SORT } from "./columns.ts";
-import { buildLines, type Line, lineForApp } from "./lines.ts";
-import type { ViewChoices } from "./menus.ts";
-import type { MonitorState, Tab } from "./monitor.ts";
-import { namedColumn } from "./name-cell.tsx";
-import { filterRows, scopeTotals } from "./sample.ts";
+import type { OpenRequest } from "../args.ts";
+import { COLUMNS, DEFAULT_SORT } from "../columns.ts";
+import { buildLines, type Line, lineForApp } from "../lines.ts";
+import type { ViewChoices } from "../menus.ts";
+import type { MonitorState, Tab } from "../monitor.ts";
+import { filterRows, scopeTotals } from "../sample.ts";
+import { namedColumn } from "../views/name-cell.tsx";
 
 /** An app a second start (or a battery menu) asked to see: its line is selected once listed. */
 export type WantedApp = NonNullable<OpenRequest["app"]>;

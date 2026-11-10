@@ -13,10 +13,10 @@
 
 import { useColors, useSurface } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import { sparkline } from "./graph.ts";
-import type { Line } from "./lines.ts";
-import type { MonitorState, Tab } from "./monitor.ts";
-import { briefFigures, content, type Figure, type GraphSpec } from "./summary-figures.ts";
+import { sparkline } from "../graph.ts";
+import type { Line } from "../lines.ts";
+import type { MonitorState, Tab } from "../monitor.ts";
+import { briefFigures, content, type Figure, type GraphSpec } from "../summary-figures.ts";
 
 export const SUMMARY_HEIGHT = 132;
 /** The strip as one line of figures, in a window shorter than `SHORT_WINDOW`. */

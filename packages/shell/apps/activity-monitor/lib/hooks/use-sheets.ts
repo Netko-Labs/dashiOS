@@ -7,11 +7,11 @@
  */
 
 import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from "react";
-import type { MonitorActions } from "./actions.ts";
-import type { Line } from "./lines.ts";
-import type { Monitor, MonitorState } from "./monitor.ts";
-import { STILL_RUNNING_MS } from "./policy.ts";
-import { lineRefusal, sendQuit } from "./quit.ts";
+import type { MonitorActions } from "../actions.ts";
+import type { Line } from "../lines.ts";
+import type { Monitor, MonitorState } from "../monitor.ts";
+import { STILL_RUNNING_MS } from "../policy.ts";
+import { lineRefusal, sendQuit } from "../quit.ts";
 
 export type SheetState =
   | { kind: "quit"; line: Line }

@@ -6,7 +6,7 @@
 
 import { CHEVRON_DOWN, type Column, useColors } from "@dashi/ui";
 import { Image, Svg, Text, View } from "@mirinjs/metal";
-import type { Line } from "./lines.ts";
+import type { Line } from "../lines.ts";
 
 /** Pointing right: closed. */
 const CHEVRON_RIGHT =

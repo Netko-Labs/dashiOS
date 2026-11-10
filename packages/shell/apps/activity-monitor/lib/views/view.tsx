@@ -24,17 +24,14 @@
 
 import { AppWindow } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
-import type { MonitorActions } from "./actions.ts";
-import type { OpenRequest } from "./args.ts";
+import type { MonitorActions } from "../actions.ts";
+import type { OpenRequest } from "../args.ts";
+import { useMonitorWindow } from "../hooks/use-monitor-window.ts";
+import type { Monitor } from "../monitor.ts";
 import { MonitorContent } from "./content.tsx";
-import type { Monitor } from "./monitor.ts";
 import { monitorOverlay } from "./overlay.tsx";
 import { Sized } from "./sized.tsx";
 import { MonitorBar } from "./toolbar.tsx";
-import { useMonitorWindow } from "./use-monitor-window.ts";
-
-export type { MonitorActions } from "./actions.ts";
-export { MONITOR_MIN_SIZE, MONITOR_SIZE } from "./sizes.ts";
 
 export function MonitorWindow({ monitor, actions, initial = {} }: { monitor: Monitor; actions: MonitorActions; initial?: OpenRequest }) {
   const model = useMonitorWindow(monitor, actions, initial);

@@ -6,8 +6,8 @@
  */
 
 import type { ReactNode } from "react";
+import type { MonitorModel } from "../hooks/use-monitor-window.ts";
 import { factsRoom, InspectSheet, QuitSheet, RefusedSheet, StillRunningSheet } from "./sheets.tsx";
-import type { MonitorModel } from "./use-monitor-window.ts";
 import { ContextMenu, ViewMenu } from "./view-menus.tsx";
 
 export function monitorOverlay(model: MonitorModel): ReactNode | undefined {

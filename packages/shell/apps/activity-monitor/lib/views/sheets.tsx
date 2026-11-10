@@ -10,9 +10,9 @@
 
 import { ALERT_WINDOW, AlertSheet, alertWordsWidth, glyphs, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
-import { formatBytes, formatCpuTime, formatPercent, formatState, middleCut } from "./format.ts";
-import type { Line } from "./lines.ts";
-import type { QuitSignal } from "./policy.ts";
+import { formatBytes, formatCpuTime, formatPercent, formatState, middleCut } from "../format.ts";
+import type { Line } from "../lines.ts";
+import type { QuitSignal } from "../policy.ts";
 
 /**
  * The question `ask` makes of `name`, the name cut in the middle to keep it

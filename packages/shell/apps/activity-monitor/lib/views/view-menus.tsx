@@ -6,8 +6,8 @@
 
 import { MENU_SEPARATOR, type MenuEntry, PopupMenu, ToolbarButton, useColors } from "@dashi/ui";
 import { type PressInfo, Text, View } from "@mirinjs/metal";
-import type { Line } from "./lines.ts";
-import type { ViewChoices } from "./menus.ts";
+import type { Line } from "../lines.ts";
+import type { ViewChoices } from "../menus.ts";
 
 /** The button's words: what is listed ("Apps" or "All processes"), and whose. */
 export function viewLabel(view: Pick<ViewChoices, "grouped" | "mine">): string {

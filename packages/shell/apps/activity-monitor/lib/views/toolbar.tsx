@@ -7,12 +7,12 @@
  */
 
 import { glyphs, SearchField, Segmented, ToolbarButton } from "@dashi/ui";
-import { submitSelection } from "./lines.ts";
-import type { ViewChoices } from "./menus.ts";
-import { TABS } from "./menus.ts";
-import type { Tab } from "./monitor.ts";
-import { TOOLBAR, type ToolbarFit, tabsWidth } from "./toolbar-fit.ts";
-import type { MonitorModel } from "./use-monitor-window.ts";
+import type { MonitorModel } from "../hooks/use-monitor-window.ts";
+import { submitSelection } from "../lines.ts";
+import type { ViewChoices } from "../menus.ts";
+import { TABS } from "../menus.ts";
+import type { Tab } from "../monitor.ts";
+import { TOOLBAR, type ToolbarFit, tabsWidth } from "../toolbar-fit.ts";
 import { ViewButton } from "./view-menus.tsx";
 
 export interface MonitorToolbarProps {

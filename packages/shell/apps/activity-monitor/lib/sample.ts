@@ -7,10 +7,10 @@
  * looks come in, rows and numbers go out.
  */
 
-import { energyImpact, gpuPercent } from "../../src/shared/processes/energy-proc.ts";
-import { type AppIdentity, ownerOf } from "../../src/shared/processes/index.ts";
-import type { Counters, CpuTimes, NetCounters } from "../../src/shared/processes/proc.ts";
-import type { ProcessSample, Snapshot } from "../../src/shared/processes/read.ts";
+import { energyImpact, gpuPercent } from "../../../src/shared/processes/energy-proc.ts";
+import { type AppIdentity, ownerOf } from "../../../src/shared/processes/index.ts";
+import type { Counters, CpuTimes, NetCounters } from "../../../src/shared/processes/proc.ts";
+import type { ProcessSample, Snapshot } from "../../../src/shared/processes/read.ts";
 
 /** Looks a process's % CPU is averaged over (with the newest): about six seconds at the two-second interval. */
 export const SMOOTHING = 3;

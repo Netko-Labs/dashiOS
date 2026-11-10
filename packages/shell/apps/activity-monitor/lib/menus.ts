@@ -10,7 +10,7 @@
  * are Title Case (CP-2).
  */
 
-import { enabledIds, type MenuSpec } from "../kit/index.ts";
+import { enabledIds, type MenuSpec } from "../../kit/index.ts";
 import type { Interval, Tab } from "./monitor.ts";
 
 export const TABS = [

@@ -9,12 +9,12 @@
 
 import { moveSelection } from "@dashi/ui";
 import { useRef } from "react";
-import { useAppMenus } from "../kit/index.ts";
-import type { MonitorActions } from "./actions.ts";
-import type { Line } from "./lines.ts";
-import { parentKey } from "./lines.ts";
-import { monitorMenus, type ViewChoices } from "./menus.ts";
-import type { Tab } from "./monitor.ts";
+import { useAppMenus } from "../../../kit/index.ts";
+import type { MonitorActions } from "../actions.ts";
+import type { Line } from "../lines.ts";
+import { parentKey } from "../lines.ts";
+import { monitorMenus, type ViewChoices } from "../menus.ts";
+import type { Tab } from "../monitor.ts";
 import type { Listing } from "./use-listing.ts";
 import type { Sheets } from "./use-sheets.ts";
 

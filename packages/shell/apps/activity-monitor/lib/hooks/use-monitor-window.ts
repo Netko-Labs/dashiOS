@@ -11,13 +11,13 @@
 
 import { useTitleBarInset } from "@dashi/ui";
 import { type Dispatch, type SetStateAction, useEffect, useState, useSyncExternalStore } from "react";
-import type { MonitorActions } from "./actions.ts";
-import type { OpenRequest } from "./args.ts";
-import type { ViewChoices } from "./menus.ts";
-import type { Monitor, MonitorState, Tab } from "./monitor.ts";
-import type { WindowSize } from "./sized.tsx";
-import { MONITOR_SIZE } from "./sizes.ts";
-import { type ToolbarFit, toolbarFit, toolbarRoom } from "./toolbar-fit.ts";
+import type { MonitorActions } from "../actions.ts";
+import type { OpenRequest } from "../args.ts";
+import type { ViewChoices } from "../menus.ts";
+import type { Monitor, MonitorState, Tab } from "../monitor.ts";
+import { MONITOR_SIZE } from "../sizes.ts";
+import { type ToolbarFit, toolbarFit, toolbarRoom } from "../toolbar-fit.ts";
+import type { WindowSize } from "../views/sized.tsx";
 import { type KeyboardHand, useKeyboardOwner } from "./use-keyboard-owner.ts";
 import { type MonitorKeys, useMonitorKeys } from "./use-keys.ts";
 import { type Listing, useListing } from "./use-listing.ts";

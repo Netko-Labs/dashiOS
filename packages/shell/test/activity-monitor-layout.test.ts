@@ -1,9 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { COLUMNS, fitColumns, NAME_MIN } from "../apps/activity-monitor/columns.ts";
-import { middleCut } from "../apps/activity-monitor/format.ts";
-import { factsRoom, questionFor } from "../apps/activity-monitor/sheets.tsx";
-import { graphWidth, SUMMARY_BRIEF_HEIGHT, SUMMARY_HEIGHT, summaryHeight } from "../apps/activity-monitor/summary.tsx";
-import { briefFigures } from "../apps/activity-monitor/summary-figures.ts";
+import { COLUMNS, fitColumns, NAME_MIN } from "../apps/activity-monitor/lib/columns.ts";
+import { middleCut } from "../apps/activity-monitor/lib/format.ts";
+import { briefFigures } from "../apps/activity-monitor/lib/summary-figures.ts";
 import {
   SEARCH_CHROME,
   TOOLBAR,
@@ -13,8 +11,10 @@ import {
   toolbarFit,
   toolbarRoom,
   toolbarWidth,
-} from "../apps/activity-monitor/toolbar-fit.ts";
-import { VIEW_LABELS, viewLabel } from "../apps/activity-monitor/view-menus.tsx";
+} from "../apps/activity-monitor/lib/toolbar-fit.ts";
+import { factsRoom, questionFor } from "../apps/activity-monitor/lib/views/sheets.tsx";
+import { graphWidth, SUMMARY_BRIEF_HEIGHT, SUMMARY_HEIGHT, summaryHeight } from "../apps/activity-monitor/lib/views/summary.tsx";
+import { VIEW_LABELS, viewLabel } from "../apps/activity-monitor/lib/views/view-menus.tsx";
 
 // Review 54 (Activity Monitor): the layout in a small or narrow window.
 

@@ -9,9 +9,9 @@
  * minutes so an app installed meanwhile is named.
  */
 
-import { loadAppCatalog } from "../../src/entries.ts";
-import type { AppCatalog } from "../../src/shared/processes/index.ts";
-import { type ReadOptions, readerMemory, readSnapshot, type Snapshot, sysconf } from "../../src/shared/processes/read.ts";
+import { loadAppCatalog } from "../../../src/entries.ts";
+import type { AppCatalog } from "../../../src/shared/processes/index.ts";
+import { type ReadOptions, readerMemory, readSnapshot, type Snapshot, sysconf } from "../../../src/shared/processes/read.ts";
 
 /** What a look reads beyond what the reader knows by itself. */
 export type LookWants = Pick<ReadOptions, "io" | "sockets" | "kernel" | "energy">;
