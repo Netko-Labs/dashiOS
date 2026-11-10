@@ -7,7 +7,7 @@
 import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
-import type { ScreenRecorder } from "./recorder/index.ts";
+import type { ScreenRecorder } from "../recorder/index.ts";
 import { type ScreenCaptureStore, useScreenCapture } from "./screen-capture.ts";
 
 const IDLE = () => false;

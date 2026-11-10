@@ -18,8 +18,7 @@ import { type ExtrasStore, type MenuBarExtra, useExtras } from "../../extras/ind
 import { ExtraItem } from "../../extras/view.tsx";
 import { extraEntries, type MenuController, type Popover } from "../../menus/index.ts";
 import { RecordingButton, type ScreenRecorder } from "../../recorder/index.ts";
-import { type ScreenCaptureStore, useScreenCapture } from "../../screen-capture.ts";
-import { CapturePill } from "../../screen-capture.tsx";
+import { CapturePill, type ScreenCaptureStore, useScreenCapture } from "../../screen-capture/index.ts";
 import { useSettings } from "../../settings-app/hooks.ts";
 import type { SettingsStore } from "../../settings-app/store.ts";
 import { controlFlags, useFlags } from "../../shared/control-center/flags.ts";

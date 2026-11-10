@@ -17,7 +17,7 @@ import type { Notifications } from "../notifications/index.ts";
 import { openOverlay } from "../overlay.tsx";
 import type { OverlaySlots } from "../overlay-slots.ts";
 import { type Capture, startCapture } from "../recorder/index.ts";
-import type { ScreenCapture } from "../screen-capture.ts";
+import type { ScreenCapture } from "../screen-capture/index.ts";
 import { type AreaCapture, areaCapture, captureScreenNear, takeScreenshot } from "../screenshots/index.ts";
 import type { App } from "../shared/apps/index.ts";
 import { iconPath } from "../shared/apps/index.ts";

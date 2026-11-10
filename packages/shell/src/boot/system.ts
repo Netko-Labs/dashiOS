@@ -14,7 +14,7 @@ import { openOverlay } from "../overlay.tsx";
 import { type Polkit, startPolkit } from "../polkit/index.ts";
 import { type Power, startPower } from "../power/index.ts";
 import { type Privacy, startPrivacy } from "../privacy/index.ts";
-import { type ScreenCapture, ScreenCaptureStore, startScreenCapture } from "../screen-capture.ts";
+import { type ScreenCapture, ScreenCaptureStore, startScreenCapture } from "../screen-capture/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import { type PipeWireWatch, pipewireWatch } from "../sound/apps/index.ts";
 import { isDevelopmentRun } from "../system/stand-in.ts";
