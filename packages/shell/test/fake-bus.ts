@@ -60,4 +60,4 @@ export class FakeBus implements BusLike {
 }
 
 /** Lets the promises queued so far settle. */
-export const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
+export { settle } from "./support/time.ts";

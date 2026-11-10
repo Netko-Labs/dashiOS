@@ -9,8 +9,9 @@ import { type NativeEvent, type NativeRoot, type NativeTransport, render } from 
 import type { Entry } from "../src/entries.ts";
 import type { FileRow } from "../src/launcher/rows.ts";
 import { Launcher, type LauncherFiles, type LauncherProps } from "../src/launcher.tsx";
+import { settle } from "./support/time.ts";
 
-export const settle = (ms = 10): Promise<void> => new Promise((done) => setTimeout(done, ms));
+export { settle };
 
 export const app = (name: string): Entry => ({ id: `app.${name.toLowerCase().replaceAll(" ", "-")}`, name, icon: "/icon.svg", keywords: [], exec: ["true"] });
 export const file = (name: string): FileRow => ({

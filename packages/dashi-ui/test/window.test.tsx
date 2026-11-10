@@ -3,7 +3,9 @@ import { render } from "@mirinjs/metal";
 import { Notice } from "../src/notice.tsx";
 import { TOOLTIP_DELAY_MS, tooltipOrigin } from "../src/tooltip.tsx";
 import { AppWindow, ToolbarButton, toolbarInset } from "../src/window.tsx";
-import { fakeHost, settle } from "./host.ts";
+import { fakeClockEachTest, fakeHost, settle } from "./host.ts";
+
+fakeClockEachTest();
 
 const unified = { type: "chrome", nodeId: "root", titleBar: "unified", controls: { x: 8, y: 8, width: 60, height: 22 } } as const;
 

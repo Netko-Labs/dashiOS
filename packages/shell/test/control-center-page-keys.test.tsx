@@ -10,6 +10,7 @@ import { type NativeEvent, type NativeTransport, render, View } from "@mirinjs/m
 import { useState } from "react";
 import { pageOrder, stepRow } from "../src/control-center/page-keys.ts";
 import { PageBody, PageHeader, PageKeysContext, PageRow, usePageKeys } from "../src/control-center/page-parts.tsx";
+import { settle } from "./support/time.ts";
 
 describe("pageOrder", () => {
   test("top to bottom as drawn; rows not laid out yet last, in their order", () => {
@@ -86,7 +87,6 @@ describe("a page's rows by the keyboard", () => {
       );
     }
     const root = render(<Page />, transport);
-    const settle = () => new Promise((done) => setTimeout(done, 20));
     await settle();
     const emit = (event: NativeEvent) => {
       for (const listener of listeners) listener(event);

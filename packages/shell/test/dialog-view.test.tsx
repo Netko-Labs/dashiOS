@@ -8,6 +8,7 @@ import type { Answer } from "../apps/dialog/frame.tsx";
 import { ListDialog } from "../apps/dialog/list-view.tsx";
 import { MessageDialog } from "../apps/dialog/message.tsx";
 import { type DialogSpec, specFrom } from "../apps/dialog/spec.ts";
+import { settle } from "./support/time.ts";
 
 /** A key the window got, as Metal hands it to a KeySink (`onWindowKeyDown`). */
 const windowKey = (nodeId: string, key: string): NativeEvent => ({
@@ -22,8 +23,6 @@ const windowKey = (nodeId: string, key: string): NativeEvent => ({
 });
 
 // The dialogs mounted on a stand-in for the Metal host: presses and keys sent as the host would, answers recorded.
-
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 20));
 
 function spec<K extends DialogSpec["kind"]>(kind: K, ...argv: string[]): Extract<DialogSpec, { kind: K }> {
   const result = specFrom(parseArgs([`--${kind}`, ...argv]), new Date(2026, 10, 3));

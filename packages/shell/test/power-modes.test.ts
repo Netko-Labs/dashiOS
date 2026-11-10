@@ -8,6 +8,7 @@ import type { PowerSection } from "../src/power/modes/settings.ts";
 import { ModeStore } from "../src/power/modes/store.ts";
 import type { ModeChoice } from "../src/power/modes/types.ts";
 import type { ProfileId, ProfileSource } from "../src/system/profiles.ts";
+import { settle as flush } from "./support/time.ts";
 
 /** The G14's knobs, as dashi-hardware describes them. */
 const G14_KNOBS = new Map<string, Knob>([
@@ -167,8 +168,6 @@ function fakeProfiles(active: ProfileId) {
   };
   return { source, sets, state };
 }
-
-const flush = () => new Promise((resolve) => setTimeout(resolve, 5));
 
 async function laptop(choice: ModeChoice = "automatic") {
   const hardware = fakeHardware(new Map(G14_KNOBS));

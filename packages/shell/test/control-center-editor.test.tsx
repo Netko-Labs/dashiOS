@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { type NativeRoot, type NativeTransport, render, View } from "@mirinjs/metal";
 import { ControlGrid, REMOVE_MARK, removeMarkAt } from "../src/control-center/grid.tsx";
 import { pack } from "../src/control-center/layout.ts";
+import { settle } from "./support/time.ts";
 
 // The editor's grid (the panel's edit mode and Settings' editor): a tile's "−" is drawn over everything in the grid.
 
@@ -39,7 +40,7 @@ test("every '−' comes after every tile and ring, so a tile laid flat under it 
     />,
     transport,
   );
-  await new Promise((done) => setTimeout(done, 20));
+  await settle();
   const tree = JSON.parse(root.lastTree() ?? last) as TreeNode;
   const grid = byId(tree, root.nodeId("cc-grid") ?? "");
   const order = (grid?.children ?? []).map((child) => String(child.props?.id ?? ""));

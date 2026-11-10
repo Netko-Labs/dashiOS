@@ -11,6 +11,7 @@ import {
   sheetTitle,
   sheetTop,
 } from "../src/portal-host/index.ts";
+import { flush } from "./support/time.ts";
 
 test("parent windows: wayland and x11 handles, nothing else", () => {
   expect(parseParentWindow("wayland:AbC123_-x")).toBe("wayland:AbC123_-x");
@@ -52,7 +53,7 @@ test("an expected portal window becomes a sheet of the window its handle names",
   expect(sheets.claim(placing(11, sheetTitle("b")))).toBe(true);
   // Claimed once only.
   expect(sheets.claim(placing(12, sheetTitle("a")))).toBe(false);
-  await Bun.sleep(5);
+  await flush();
   expect(sent).toContainEqual(["attach", { window: 10, parent: 3 }]);
   expect(placed).toEqual([11]);
 });
@@ -79,7 +80,7 @@ test("a sheet hangs below an app's own title bar and toolbar, guessed by the kin
   );
   sheets.expect(sheetTitle("a"), "wayland:helium");
   expect(sheets.claim(placing(10, sheetTitle("a")))).toBe(true);
-  await Bun.sleep(5);
+  await flush();
   expect(sent).toContainEqual(["attach", { window: 10, parent: 3, top: SHEET_TOPS.browser }]);
 });
 

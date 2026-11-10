@@ -6,8 +6,7 @@ import type { CompositorWindow } from "../src/compositor.ts";
 import { DockController } from "../src/dock/controller.ts";
 import type { DockEntry } from "../src/dock/layout.ts";
 import { SwitcherController } from "../src/switcher/controller.ts";
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+import { settle } from "./support/time.ts";
 
 function dock(opened: string[], launched: boolean) {
   const acted: Array<[number, string]> = [];

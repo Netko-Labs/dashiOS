@@ -13,6 +13,7 @@ import { DBusConnection, getNameOwner, type InterfaceSpec, Variant } from "../sr
 import { ExtrasStore } from "../src/extras/store.ts";
 import type { MenuBarExtra } from "../src/extras/types.ts";
 import { startTray, type Tray, WATCHER, WATCHER_PATH } from "../src/tray/index.ts";
+import { until as eventually, untilValue as until } from "./support/time.ts";
 
 const daemon = Bun.which("dbus-daemon");
 const dir = mkdtempSync(join(tmpdir(), "dashi-tray-bus-"));
@@ -39,31 +40,13 @@ beforeAll(async () => {
 `,
   );
   bus = Bun.spawn([daemon, "--config-file", config, "--nofork", "--print-address"], { stdout: "pipe", stderr: "inherit" });
-  for (let tries = 0; tries < 100 && !existsSync(socket); tries++) await Bun.sleep(20);
+  await until(() => existsSync(socket), "the bus socket");
 });
 
 afterAll(() => {
   bus?.kill();
   rmSync(dir, { recursive: true, force: true });
 });
-
-async function until<T>(read: () => T | undefined | null | false, what: string, timeoutMs = 3000): Promise<T> {
-  const end = Date.now() + timeoutMs;
-  for (;;) {
-    const value = read();
-    if (value) return value;
-    if (Date.now() > end) throw new Error(`timed out waiting for ${what}`);
-    await Bun.sleep(10);
-  }
-}
-
-async function eventually(check: () => Promise<boolean>, what: string, timeoutMs = 3000): Promise<void> {
-  const end = Date.now() + timeoutMs;
-  while (!(await check())) {
-    if (Date.now() > end) throw new Error(`timed out waiting for ${what}`);
-    await Bun.sleep(20);
-  }
-}
 
 /** A fake tray app: one item at /StatusNotifierItem with a menu at /MenuBar. */
 async function fakeApp() {

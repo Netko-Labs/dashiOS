@@ -11,6 +11,7 @@ import { afterAll, expect, test } from "bun:test";
 import { type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { CHOOSER_SHEET, ChooserSheet, chooserRequest, openChooser } from "../apps/files/chooser/index.ts";
+import { settle } from "./support/time.ts";
 
 interface Node {
   type: string;
@@ -19,23 +20,19 @@ interface Node {
 }
 
 /** The tree the host was sent, and a node by its testID with its parent. */
-function tree(element: ReactElement): Promise<(testID: string) => { node: Node; parent: Node | null }> {
+async function tree(element: ReactElement): Promise<(testID: string) => { node: Node; parent: Node | null }> {
   const trees: string[] = [];
   const transport: NativeTransport = { send: (sent) => void trees.push(sent), onEvent() {}, onClose() {}, simulate() {}, close() {} };
   const mounted = render(element, transport);
-  return new Promise((done) =>
-    setTimeout(() => {
-      const root = JSON.parse(trees.at(-1) ?? "{}") as Node;
-      const ids = new Map(["chooser", "chooser:name-box", "chooser:name"].map((testID) => [testID, mounted.nodeId(testID)]));
-      mounted.unmount();
-      const lookup = (testID: string) => {
-        const found = walk(root, null, ids.get(testID));
-        if (!found) throw new Error(`no ${testID}`);
-        return found;
-      };
-      done(lookup);
-    }, 20),
-  );
+  await settle();
+  const root = JSON.parse(trees.at(-1) ?? "{}") as Node;
+  const ids = new Map(["chooser", "chooser:name-box", "chooser:name"].map((testID) => [testID, mounted.nodeId(testID)]));
+  mounted.unmount();
+  return (testID: string) => {
+    const found = walk(root, null, ids.get(testID));
+    if (!found) throw new Error(`no ${testID}`);
+    return found;
+  };
 }
 
 function walk(node: Node, parent: Node | null, id: string | undefined): { node: Node; parent: Node | null } | undefined {

@@ -12,6 +12,7 @@ import { AgentMark } from "../src/agent-mark.tsx";
 import { AgentRuns } from "../src/agents/handoff/store.ts";
 import type { AgentInfo } from "../src/agents/index.ts";
 import { accessWords, agentRecording, connectionHarness, markState, mergeAgents, recordingPill, watchingOf } from "../src/agents/mark.ts";
+import { settle } from "./support/time.ts";
 
 const connection = (id: number, extra: Partial<AgentInfo> = {}): AgentInfo => ({
   id,
@@ -165,7 +166,6 @@ describe("recordings", () => {
 });
 
 describe("the drawn mark", () => {
-  const settle = (ms = 20): Promise<void> => new Promise((done) => setTimeout(done, ms));
   function host() {
     const trees: string[] = [];
     const listeners: ((event: NativeEvent) => void)[] = [];
@@ -238,7 +238,7 @@ describe("the panel", () => {
       stopAll: () => stopped.push("all"),
     };
     const root = render(<AgentsPanel runs={store} agents={agents} right={1000} focus={null} actions={actions} onClose={() => {}} />, transport);
-    await new Promise((done) => setTimeout(done, 20));
+    await settle();
     const tree = trees.at(-1) ?? "";
     expect(root.nodeId("agents-row:7")).toBeDefined();
     expect(root.nodeId("agents-card:r1")).toBeDefined();

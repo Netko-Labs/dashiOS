@@ -5,6 +5,9 @@ import type { Output } from "../src/layout.ts";
 import { Dialogs } from "../src/menus/dialogs.tsx";
 import { HOLDING_SURFACE, holdingPlace, SHEET_REACH } from "../src/menus/holding-place.ts";
 import type { OpenOverlay } from "../src/overlay.tsx";
+import { fakeClockEachTest, settle } from "./support/time.ts";
+
+fakeClockEachTest();
 
 // A 1646×936 screen (the VM's), its menu bar 28 tall and a Dock that keeps 74 at the foot.
 const SCREEN: Output = {
@@ -66,7 +69,7 @@ test("log out's notice opens at the place the shell found, on the window's scree
   // Log Out on the confirm sheet: its own surface first.
   const confirm = opened.length;
   (dialogs as unknown as { end(what: string): Promise<void> }).end("logout");
-  await new Promise((done) => setTimeout(done, 1300));
+  await settle(1300);
   const notice = opened.slice(confirm).find((options) => options.title === "Waiting");
   expect(notice?.surface).toMatchObject({ anchor: ["bottom"], output: "Virtual-1", keyboard: "on-demand" });
   expect(notice?.height).toBe(HOLDING_SURFACE.height);

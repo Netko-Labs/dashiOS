@@ -5,6 +5,7 @@ import { AgentRuns } from "../src/agents/handoff/store.ts";
 import type { AgentUi, Allow, Answer, SignInAsk, SignInChoice } from "../src/agents/presence.ts";
 import { type PlanProfile, parsePlanProfile, sandboxArgs } from "../src/agents/sandbox.ts";
 import { DENY } from "../src/agents/sheet-queue.ts";
+import { settle as tick } from "./support/time.ts";
 
 const who = { name: "claude", detail: "~/.local/bin/claude", claims: null, remote: false };
 const ask: SignInAsk = {
@@ -80,8 +81,6 @@ function setUp(open: boolean) {
   };
   return { runs, ui, fake, attention, closePanel: () => setPanel(false), openPanel: () => setPanel(true), answerInPanel, listeners };
 }
-
-const tick = () => Bun.sleep(0);
 
 describe("a task's questions in the panel", () => {
   test("which login: the first, in the panel, with no sheet while the panel is open", async () => {

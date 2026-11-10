@@ -8,6 +8,7 @@ import type { PowerSection } from "../src/power/modes/settings.ts";
 import { ModeStore } from "../src/power/modes/store.ts";
 import type { ModeChoice } from "../src/power/modes/types.ts";
 import type { ProfileId, ProfileSource } from "../src/system/profiles.ts";
+import { settle as flush } from "./support/time.ts";
 
 const MANIFEST = {
   id: "dev.netko.asus-control",
@@ -39,8 +40,6 @@ function profiles(): ProfileSource {
     watch: () => () => {},
   };
 }
-
-const flush = () => new Promise((resolve) => setTimeout(resolve, 5));
 
 /** Dashi's mode store as the laptop starts it, plugged in, Automatic chosen; and what Settings saved. */
 function modes(saved: Array<ModeChoice | undefined> = []) {

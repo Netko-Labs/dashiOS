@@ -6,6 +6,7 @@ import { idleKeymap } from "../src/keymap-state.ts";
 import { LAUNCHER_RULES } from "../src/launcher/keys.ts";
 import { applyEdits, TYPE_BINDING, TypeAhead, type Typed, typedFrom, withTypeAheadOnTap, withTyping } from "../src/launcher/type-ahead.ts";
 import { Launcher } from "../src/launcher.tsx";
+import { settle } from "./support/time.ts";
 
 const text = (value: string): Typed => ({ kind: "text", text: value });
 const key = (value: "BackSpace" | "Return" | "Escape" | "Up" | "Down"): Typed => ({ kind: "key", key: value });
@@ -146,7 +147,6 @@ describe("typing ahead: the buffer", () => {
 });
 
 describe("typing ahead: the launcher plays the keys in", () => {
-  const settle = (ms = 10): Promise<void> => new Promise((done) => setTimeout(done, ms));
   const app = (name: string): Entry => ({ id: `app.${name.toLowerCase()}`, name, icon: "/icon.svg", keywords: [], exec: ["true"] });
   let mounted: NativeRoot | null = null;
   afterEach(() => {

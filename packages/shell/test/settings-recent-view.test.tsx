@@ -18,13 +18,12 @@ import { PaneStoresContext } from "../src/settings-app/setting.tsx";
 import { RowFocus } from "../src/settings-app/spot.tsx";
 import { SettingsStore } from "../src/settings-app/store.ts";
 import { SettingsWindow } from "../src/settings-app/view.tsx";
+import { settle } from "./support/time.ts";
 
 // Recently changed, search in the header strip, and Agents as a consent dashboard, on a stand-in for the Metal host.
 
 const dir = mkdtempSync(join(tmpdir(), "dashi-settings-recent-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
-
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 20));
 
 interface TreeNode {
   props?: Record<string, unknown>;
@@ -226,7 +225,7 @@ test("Revoke All on an agent that isn't connected keeps its card, its rows and t
   expect(view.has("agent-scope:/usr/bin/vm-agent:see")).toBe(true);
   expect(view.has("agents-none")).toBe(false);
   // Still there long after five seconds.
-  await new Promise((done) => setTimeout(done, 60));
+  await settle();
   expect(view.has("agent-revoked:/usr/bin/vm-agent")).toBe(true);
   await view.press("agent-revoked-undo:/usr/bin/vm-agent");
   expect(grants.get("/usr/bin/vm-agent")).toEqual(new Set(["see", "screen"]));

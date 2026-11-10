@@ -6,6 +6,7 @@ import { SwitcherController } from "../src/switcher/controller.ts";
 import { type SwitcherState, switcherLayout, switcherSize } from "../src/switcher/index.ts";
 import { THUMB } from "../src/switcher/layout.ts";
 import { type AppGroup, chosenWindow, filterApps, groupByApp, isAway, stepSelection, switcherKey, visibleWindows } from "../src/switcher/model.ts";
+import { settle } from "./support/time.ts";
 
 let nextId = 1;
 const win = (appId: string, title: string, state: CompositorWindow["state"] = "normal", pid: number | null = null): CompositorWindow => ({
@@ -182,8 +183,6 @@ function fakeCompositor(windows: CompositorWindow[]) {
     },
   };
 }
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe("a session", () => {
   test("Tab, typing, an action, and letting go, in order", async () => {

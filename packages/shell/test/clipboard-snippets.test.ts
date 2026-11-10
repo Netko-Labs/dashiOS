@@ -11,6 +11,7 @@ import { snippetSections } from "../src/clipboard/rows.ts";
 import { expand, keywordProblem, parseAdd, parseSnippets, SnippetStore } from "../src/clipboard/snippets.ts";
 import { ClipboardWatch } from "../src/clipboard/watch.ts";
 import type { CompositorEvent, CompositorWindow } from "../src/compositor.ts";
+import { settle } from "./support/time.ts";
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -182,8 +183,6 @@ function fakeCompositor(windows: CompositorWindow[]) {
     },
   };
 }
-
-const settle = () => new Promise((done) => setTimeout(done, 5));
 
 test("the watch keeps what the rules allow, reads KDE's hint first, and counts what it left out", async () => {
   const history = new ClipboardHistory({ dir: tempDir(), sync: true });

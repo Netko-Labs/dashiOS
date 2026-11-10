@@ -12,6 +12,9 @@ import { AppSections, foldApps } from "../src/sound/app-rows.tsx";
 import { AppMixer, type AppSound, fixedGraph, heldControl, parseGraph, streamApp, useMicWords } from "../src/sound/apps/index.ts";
 import { MicPill } from "../src/sound/mic-pill.tsx";
 import { vmGraph } from "./fixtures/pw-graph.ts";
+import { fakeClockEachTest, settle } from "./support/time.ts";
+
+fakeClockEachTest();
 
 function AppSettingsCard({ mixer }: { mixer: AppMixer }) {
   return (
@@ -21,8 +24,6 @@ function AppSettingsCard({ mixer }: { mixer: AppMixer }) {
     </View>
   );
 }
-
-const settle = (ms = 20): Promise<void> => new Promise((done) => setTimeout(done, ms));
 
 function host() {
   const trees: string[] = [];

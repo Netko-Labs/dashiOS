@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { darkColors, lightColors } from "@dashi/ui";
 import { DARK_ALPHA, SHADOWS, WindowStyleSync, windowStyle } from "../src/appearance/window-style.ts";
 import { parseSettings } from "../src/settings.ts";
+import { flush } from "./support/time.ts";
 
 const repo = join(import.meta.dir, "../../..");
 
@@ -71,7 +72,7 @@ test("a refused style is sent again on the next change", async () => {
     },
   });
   sync.set({ dark: false, highlight: false, reduceMotion: false });
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await flush();
   refuse = false;
   sync.set({ dark: false });
   expect(sent).toHaveLength(2);

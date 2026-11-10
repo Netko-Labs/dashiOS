@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import type { Compositor, CompositorEvent } from "../src/compositor.ts";
 import { type ShellActions, startShortcuts } from "../src/shortcuts.ts";
+import { settle } from "./support/time.ts";
 
 /** The shortcuts on a fake compositor: `emit` plays its events, `done` lists what the shell did. */
 function setup() {
@@ -40,8 +41,6 @@ function setup() {
     },
   };
 }
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 test("while locked a ❖ tap opens no launcher and a hold no sheet behind the lock screen", async () => {
   const { emit, done, lock } = setup();

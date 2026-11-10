@@ -4,6 +4,7 @@ import { View } from "@mirinjs/metal";
 import { createElement } from "react";
 import { openPopoverWindow } from "../src/popover.tsx";
 import { REWARM_MS, WARM_AFTER_MS, WarmHost, type WarmTimers } from "../src/warm-host.ts";
+import { flush } from "./support/time.ts";
 
 function fakeHosts() {
   const spawned: { options: NativeHostOptions; opened: NativeWindowOptions[]; die: () => void }[] = [];
@@ -55,7 +56,7 @@ function fakeTimers() {
       timer.run();
       return timer.ms;
     });
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await flush();
     return ran;
   };
   return { due, timers, pass };
@@ -148,7 +149,7 @@ test("a popover or view opens on the warm host when one is ready, else on a new 
   warm.stop();
 });
 
-test("an applet's popover draws on a solid ground, clipped to its corners, whatever its own tint", () => {
+test("an applet's popover draws on a solid ground, clipped to its corners, whatever its own tint", async () => {
   const sent: string[] = [];
   const host = {
     send: (frame: string) => sent.push(frame),
@@ -173,14 +174,10 @@ test("an applet's popover draws on a solid ground, clipped to its corners, whate
     onClosed() {},
     spawn: () => host,
   });
-  return new Promise<void>((resolve) => {
-    setTimeout(() => {
-      const tree = JSON.parse(sent.at(-1) ?? "{}") as { props: Record<string, unknown>; children: { props: Record<string, unknown> }[] };
-      // The ground (solid card, the popover's radius, clipping), then the applet's own glass on it.
-      expect(tree.props).toMatchObject({ background: "#ffffff", cornerRadius: 12, clip: true });
-      expect(tree.children[0]?.props.background).toBe("#f5f5f7f5");
-      popover.close();
-      resolve();
-    }, 50);
-  });
+  await flush();
+  const tree = JSON.parse(sent.at(-1) ?? "{}") as { props: Record<string, unknown>; children: { props: Record<string, unknown> }[] };
+  // The ground (solid card, the popover's radius, clipping), then the applet's own glass on it.
+  expect(tree.props).toMatchObject({ background: "#ffffff", cornerRadius: 12, clip: true });
+  expect(tree.children[0]?.props.background).toBe("#f5f5f7f5");
+  popover.close();
 });

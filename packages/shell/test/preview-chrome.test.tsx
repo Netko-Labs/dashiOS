@@ -9,6 +9,7 @@ import { EmptyView, RECENT_FOLDER_WIDTH } from "../apps/preview/states.tsx";
 import { STRIP } from "../apps/preview/strip.tsx";
 import { PreviewWindow } from "../apps/preview/view.tsx";
 import { Viewer } from "../apps/preview/viewer.ts";
+import { settle } from "./support/time.ts";
 
 // Preview's chrome as the layout audit found it: the strip gives a narrow window to the picture, the name gives
 // way before a tool folds, "…" hangs from its button in groups, an Info row grows with its value, and a recent
@@ -39,7 +40,6 @@ afterAll(() => {
 
 /** A 1 × 1 PNG. */
 const PIXEL = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 40));
 
 function mount(element: (viewer: Viewer) => Parameters<typeof render>[0]) {
   const listeners: ((event: NativeEvent) => void)[] = [];

@@ -3,10 +3,9 @@ import { type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import { RowFocus, SpotContext } from "../src/settings-app/spot.tsx";
 import { Caption, Group, Note, Spot } from "../src/settings-app/ui.tsx";
 import { LIGHT_CONTROLS } from "../src/shared/controls/palette.ts";
+import { settle } from "./support/time.ts";
 
 // A link to a section (Privacy & Security › Apps) lights its card, not the strip behind its heading.
-
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 20));
 
 interface Node {
   type: string;

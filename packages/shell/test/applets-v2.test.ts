@@ -7,6 +7,7 @@ import { AppletPopovers } from "../src/applets/popovers.ts";
 import { flattenRows } from "../src/applets/protocol.ts";
 import { AppletConnection } from "../src/applets/server.ts";
 import { ExtrasStore } from "../src/extras/index.ts";
+import { settle } from "./support/time.ts";
 
 const MANIFEST = {
   id: "dev.example.weather",
@@ -56,7 +57,6 @@ function harness(extra: Partial<AppletContext> = {}) {
   };
   const conn = new AppletConnection(4242, wire, context);
   const send = (message: unknown) => conn.receive(new TextEncoder().encode(`${JSON.stringify(message)}\n`));
-  const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
   return { conn, extras, written, send, requests, grants, outside, catchers, settle, terminated: () => terminated };
 }
 

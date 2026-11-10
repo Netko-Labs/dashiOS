@@ -12,6 +12,11 @@ import { appInfo } from "../apps/portal/apps.ts";
 import { type ChooserAnswer, parseChooser } from "../apps/portal/file-chooser/options.ts";
 import { printOnScreen } from "../apps/portal/print/sheet.tsx";
 import type { ShowDialog } from "../apps/portal/windows.ts";
+import { fakeClockEachTest, flush, settle, until } from "./support/time.ts";
+
+fakeClockEachTest();
+/** Until the chooser is in `folder` and has drawn it (a folder lists on the file system, outside the event loop's turns). */
+const folderIs = (m: ChooserModel, folder: string) => until(() => m.folder() === folder && !m.store.getSnapshot().loading, folder).then(() => flush());
 
 /** A key the window got, as Metal hands it to a KeySink (`onWindowKeyDown`). */
 const windowKey = (nodeId: string, key: string): NativeEvent => ({
@@ -26,8 +31,6 @@ const windowKey = (nodeId: string, key: string): NativeEvent => ({
 });
 
 // The portal's sheets on a stand-in for the Metal host, with input sent back the way the host sends it.
-
-const settle = (ms = 5): Promise<void> => new Promise((done) => setTimeout(done, ms));
 
 interface Mounted {
   root: NativeRoot;
@@ -94,7 +97,7 @@ test("the chooser is Files: a slow second click only selects, a double-click ope
   model.store.go({ kind: "folder", path: docs });
   const answers: Array<ChooserAnswer | null> = [];
   const { root: mounted, node, send } = mount(<ChooserView model={model} title="Open Lease" exists={() => false} answer={(value) => answers.push(value)} />);
-  await settle(60);
+  await folderIs(model, docs);
   const lease = join(docs, "Lease.pdf");
   const taxes = join(docs, "Taxes");
   const press = (testID: string) => send({ type: "press", nodeId: node(testID) });
@@ -115,21 +118,17 @@ test("the chooser is Files: a slow second click only selects, a double-click ope
   await settle(500);
   press(`item:${taxes}`);
   press(`item:${taxes}`);
-  await settle(60);
-  expect(model.folder()).toBe(taxes);
+  await folderIs(model, taxes);
   press("chooser:up");
-  await settle(60);
-  expect(model.folder()).toBe(docs);
+  await folderIs(model, docs);
   press("chooser:back");
-  await settle(60);
-  expect(model.folder()).toBe(taxes);
+  await folderIs(model, taxes);
 
   // The folder pop-up lists the folders it is in; choosing one goes there.
   send({ type: "press", nodeId: node("chooser:folder"), bounds: { x: 300, y: 6, width: 120, height: 28 } });
   await settle();
   send({ type: "press", nodeId: node("chooser:folder:menu:Home") });
-  await settle(60);
-  expect(model.folder()).toBe(home);
+  await folderIs(model, home);
   // Esc, with nothing typed, cancels.
   send({ type: "windowkey", nodeId: node("keys"), key: "escape", ctrl: false, alt: false, shift: false, meta: false, repeat: false });
   expect(answers.at(-1)).toBeNull();
@@ -286,18 +285,17 @@ test("the chooser's search takes a typed path: Return goes there; one that leads
   );
   model.start();
   const { root: mounted, node, send } = mount(<ChooserView model={model} title="Open" exists={() => false} answer={() => {}} />);
-  await settle(60);
-  expect(model.folder()).toBe(home);
+  await folderIs(model, home);
   const field = node("chooser:search");
   // A path is not a name to look for: no search runs while it is typed.
   send({ type: "change", nodeId: field, value: "~/Docs/Tax" });
   expect(model.store.getSnapshot().query).toBe("");
   send({ type: "submit", nodeId: field, value: "~/Docs/Nope" });
-  await settle();
+  await until(() => model.getSnapshot().problem !== null, "the path's problem");
   expect(model.getSnapshot().problem).toContain("Nope");
   expect(model.folder()).toBe(home);
   send({ type: "submit", nodeId: field, value: "~/Docs/Taxes" });
-  await settle(60);
+  await until(() => model.folder() === join(docs, "Taxes"), "the path to open");
   expect(model.folder()).toBe(join(docs, "Taxes"));
   expect(model.getSnapshot().problem).toBeNull();
   // Words still search.

@@ -20,6 +20,9 @@ import { PANES } from "../src/settings-app/panes.ts";
 import { AGENT_ROWS } from "../src/settings-app/registry/index.ts";
 import { scrollFor } from "../src/settings-app/spot.tsx";
 import { type Requests, runBinding, type ShellActions } from "../src/shortcuts.ts";
+import { fakeClockEachTest, flush, settle } from "./support/time.ts";
+
+fakeClockEachTest();
 
 const run = async (action: ActionDef | undefined, args: Record<string, unknown> = {}, ctx: ActionContext = { window: null }) => {
   const checked = action?.check(args);
@@ -105,10 +108,7 @@ describe("Desktop Actions", () => {
     const entry: Entry = { id: "dev.dashi.notes", name: "Notes", icon: "", keywords: [] };
     let launches = 0;
     let running = true;
-    const [open] = appActions(entry, {
-      launch: () => ++launches,
-      activate: async () => running,
-    });
+    const [open] = appActions(entry, { launch: () => ++launches, activate: async () => running });
     expect(await run(open)).toEqual({ ok: true, text: "Notes is in front." });
     expect(launches).toBe(0);
     running = false;
@@ -154,7 +154,7 @@ describe("windows", () => {
     expect(registry.get("dashi://window/w5")).toBeUndefined();
     open = [];
     changed();
-    await Bun.sleep(0);
+    await flush();
     expect(registry.get("dashi://window/w3")).toBeUndefined();
     expect(registry.get("dashi://window/arrange/left")).toBeDefined();
     // A named window, and one that isn't an id.
@@ -250,7 +250,7 @@ describe("menus apps publish", () => {
     });
     try {
       changed();
-      await Bun.sleep(150);
+      await settle(150);
       expect(errors.length).toBe(1);
       expect(source.actions()).toEqual([]);
     } finally {

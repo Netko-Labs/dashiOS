@@ -344,7 +344,11 @@ earns its own file by having a concern of its own.
   `cargo test` run them all.
 - Tests never wait on real time (H11): no `Bun.sleep` or `setTimeout` waits;
   drive time with a fake clock. Each test has 2 s (`bunfig.toml`); one that
-  needs more is a bug to fix, not a limit to raise.
+  needs more is a bug to fix, not a limit to raise. Each package's
+  `test/support/time.ts` has `settle()` (let React, mirin and promises
+  finish), `until()` (a file, socket or process: turn the loop until a
+  condition holds) and `fakeClock()` / `fakeClockEachTest()` (stop timers,
+  `Date` and `Bun.sleep`; `clock.advance(ms)` moves them).
 - Pure helpers need unit tests when touched: parsers, layout math, IPC
   framing, key handling, recurrence, sort order.
 - Compositor and UI behavior is verified in the VM (`vm/vm desktop`), not on

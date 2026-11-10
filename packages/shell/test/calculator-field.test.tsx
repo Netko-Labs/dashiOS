@@ -8,6 +8,7 @@ import { EN_US } from "../apps/calculator/locale.ts";
 import { FRESH } from "../apps/calculator/store.ts";
 import { CalculatorWindow } from "../apps/calculator/view.tsx";
 import type { Clipboard } from "../apps/kit/index.ts";
+import { settle } from "./support/time.ts";
 
 // The Calculator against a stand-in for the Metal host's field that keeps its
 // own buffer and caret as the host does (mirin `window::sync_inputs` and
@@ -150,7 +151,7 @@ async function mount() {
   };
   const clipboard: Clipboard = { canWrite: true, writeText: async () => true, readText: async () => "" };
   const root = render(<CalculatorWindow clipboard={clipboard} locale={EN_US} remembered={FRESH} remember={() => {}} />, transport);
-  await new Promise((done) => setTimeout(done, 20));
+  await settle();
   const id = root.nodeId("line") ?? "";
   const field = new HostField(id);
   let taken = trees.length;

@@ -5,8 +5,7 @@ import { readHistory, type TaskRecord } from "../src/agents/ask/history.ts";
 import { nowItems, TurnWatch } from "../src/agents/ask/now.ts";
 import { AskTasks, FAILED_STAYS_MS, type TaskDeps } from "../src/agents/ask/tasks.ts";
 import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
-
-const settle = () => new Promise((done) => setTimeout(done, 5));
+import { settle } from "./support/time.ts";
 
 /** An answerer that replies with `calls` (or fails), and remembers each turn it was given. */
 function fakeAnswerer(replies: Array<ModelCall[] | AnswerError>): Answerer & { turns: Turn[]; histories: unknown[][] } {

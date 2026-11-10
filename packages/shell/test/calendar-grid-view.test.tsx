@@ -8,6 +8,7 @@ import { CalendarModel } from "../apps/calendar/model.ts";
 import { CalendarStore } from "../apps/calendar/store.ts";
 import type { CalEvent } from "../apps/calendar/types.ts";
 import { CalendarWindow } from "../apps/calendar/view.tsx";
+import { settle } from "./support/time.ts";
 
 // The grid as the editor, on a stand-in for the Metal host: draw an event and name it in place,
 // drag it to another day and time, stretch it, cancel a drag with Esc, and take it all back with Undo.
@@ -16,7 +17,6 @@ let dir = "";
 let model: CalendarModel;
 let root: NativeRoot;
 let listeners: ((event: NativeEvent) => void)[] = [];
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 30));
 
 beforeEach(async () => {
   dir = mkdtempSync(join(tmpdir(), "dashi-calendar-grid-"));

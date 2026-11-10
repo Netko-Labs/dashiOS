@@ -9,6 +9,7 @@ import { columnsFor, PAGES, stepPage } from "../apps/components/pages.ts";
 import { GalleryWindow } from "../apps/components/view.tsx";
 import { enabledIds } from "../apps/kit/index.ts";
 import { dockDefaults, resolvePinned } from "../src/apps.ts";
+import { settle } from "./support/time.ts";
 
 // The @dashi/ui gallery on a stand-in for the Metal host: every page draws, in both modes, and the keys and the mode control work.
 let dir = "";
@@ -24,8 +25,6 @@ afterAll(() => {
   else process.env.XDG_RUNTIME_DIR = runtime;
   rmSync(dir, { recursive: true, force: true });
 });
-
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 30));
 
 /** A key the window got, as Metal hands it to a KeySink (`onWindowKeyDown`). */
 const windowKey = (nodeId: string, key: string): NativeEvent => ({

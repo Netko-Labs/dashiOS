@@ -2,11 +2,10 @@ import { expect, test } from "bun:test";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { Files, type FilesContext } from "../apps/files/context.ts";
 import { Omnibox } from "../apps/files/omnibox.tsx";
+import { settle } from "./support/time.ts";
 
 // Files' path bar is the toolbar's first Tab stop at rest (KB-1): Space or
 // Return on it makes it text, as a click on its empty part does.
-
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 20));
 
 test("the omnibox at rest is a Tab stop, and pressing it starts a search", async () => {
   const state = { location: { kind: "folder", path: "/home/alexk/Documents" }, selection: [], query: "", free: null };

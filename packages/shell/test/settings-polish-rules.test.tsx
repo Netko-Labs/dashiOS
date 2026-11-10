@@ -27,14 +27,13 @@ import { SettingsStore } from "../src/settings-app/store.ts";
 import { FOLD_PAST, foldChoices, moreMenuOrigin } from "../src/shared/controls/fold.ts";
 import { fakeMeter, LevelsStore, SoundStore } from "../src/sound/index.ts";
 import type { Output } from "../src/sound/types.ts";
+import { settle } from "./support/time.ts";
 
 // The settings polish (47-settings-roast): folded pill rows, no-microphone Sound, the charge limit's title,
 // one search result per setting, and one left edge per card.
 
 const dir = mkdtempSync(join(tmpdir(), "dashi-settings-polish-rules-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
-
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 30));
 
 async function mount(tree: ReactNode) {
   const listeners: ((event: NativeEvent) => void)[] = [];

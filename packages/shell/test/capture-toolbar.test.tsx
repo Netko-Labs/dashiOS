@@ -12,8 +12,7 @@ import type { OpenOverlay } from "../src/overlay.tsx";
 import type { RecorderState } from "../src/recorder/recorder.ts";
 import { recordRefusal } from "../src/recorder/start.ts";
 import { captureToolbar, SLOW_DRAW_MS } from "../src/recorder/toolbar.tsx";
-
-const settle = (ms = 5): Promise<void> => new Promise((done) => setTimeout(done, ms));
+import { settle } from "./support/time.ts";
 
 /** An overlay opener whose host draws (or doesn't) when the test says, and goes when closed or when it dies. */
 function fakeOpen() {

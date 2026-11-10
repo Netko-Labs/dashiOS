@@ -23,6 +23,7 @@ import { Frame } from "../src/setup/frame.tsx";
 import { AgentsPage } from "../src/setup/pages/agents.tsx";
 import { ExtrasPage } from "../src/setup/pages/extras.tsx";
 import { INK_SLIDER } from "../src/shared/controls/ink-slider.tsx";
+import { settle } from "./support/time.ts";
 
 // A Settings page (and a Setup page) scrolls to its last line at any height. mirin's layout
 // (its vendored taffy 0.9) sizes a column wrongly when a child that keeps its
@@ -35,8 +36,6 @@ import { INK_SLIDER } from "../src/shared/controls/ink-slider.tsx";
 
 const dir = mkdtempSync(join(tmpdir(), "dashi-settings-scroll-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
-
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 30));
 
 interface Node {
   type: string;

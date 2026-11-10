@@ -8,6 +8,10 @@ import type { Exec } from "../apps/files/exec.ts";
 import { folderAt } from "../apps/files/location.ts";
 import { type Conflict, Operations, type Resolution } from "../apps/files/operations.ts";
 import { FilesStore } from "../apps/files/store.ts";
+import { fakeClockEachTest, settle, until } from "./support/time.ts";
+
+fakeClockEachTest();
+const listed = (store: FilesStore): Promise<void> => until(() => !store.getSnapshot().loading, "the folder to list");
 
 // PA-3: a copy or a move onto a taken name asks (Replace, Keep Both, Skip, for all), and Undo takes a Replace back.
 // New Folder takes a free name and renames in place.
@@ -53,8 +57,6 @@ beforeEach(() => {
 });
 
 afterEach(() => rmSync(root, { recursive: true, force: true }));
-
-const settle = (ms = 40): Promise<void> => new Promise((done) => setTimeout(done, ms));
 
 test("a collision asks; Replace sends the one there to the Trash, and Undo brings it back", async () => {
   const { store, ops, from, to } = files();
@@ -128,7 +130,7 @@ test("New Folder takes the first free “untitled folder”, renames in place, a
   const { store, ops, to } = files();
   mkdirSync(join(to, "untitled folder"));
   store.start();
-  await settle();
+  await listed(store);
   const made = await ops.newFolder();
   expect(made).toEqual({ path: join(to, "untitled folder 2") });
   expect(store.getSnapshot().renaming).toBe(join(to, "untitled folder 2"));
@@ -151,7 +153,7 @@ test("a rename that can't be done keeps the field and says why; Esc keeps the na
   writeFileSync(join(to, "a.txt"), "a");
   writeFileSync(join(to, "b.txt"), "b");
   store.start();
-  await settle();
+  await listed(store);
   store.startRename(join(to, "a.txt"));
   expect(await store.commitRename("b.txt")).toBe(false);
   expect(store.getSnapshot().renaming).toBe(join(to, "a.txt"));
@@ -168,12 +170,12 @@ test("while a new folder lists, the last one's items stay up (stale), then the n
   writeFileSync(join(to, "here.txt"), "");
   writeFileSync(join(from, "there.txt"), "");
   store.start();
-  await settle();
+  await listed(store);
   expect(store.visible().map((item) => item.name)).toEqual(["here.txt"]);
   store.go(folderAt(from));
   expect(store.stale).toBe(true);
   expect(store.visible().map((item) => item.name)).toEqual(["here.txt"]);
-  await settle();
+  await listed(store);
   expect(store.stale).toBe(false);
   expect(store.visible().map((item) => item.name)).toEqual(["there.txt"]);
   store.stop();

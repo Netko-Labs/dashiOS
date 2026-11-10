@@ -18,6 +18,7 @@ import { CalendarSheet } from "../apps/calendar/sheets.tsx";
 import { ReplaceSheet } from "../apps/editor/sheets.tsx";
 import { ChooserSheet, chooserRequest, openChooser } from "../apps/files/chooser/index.ts";
 import { NotesSheet } from "../apps/notes/sheets.tsx";
+import { settle } from "./support/time.ts";
 
 interface Node {
   type: string;
@@ -25,16 +26,14 @@ interface Node {
   children?: Node[];
 }
 
-function tree(element: ReactElement): Promise<{ root: Node; nodeId: (testID: string) => string | undefined }> {
+async function tree(element: ReactElement): Promise<{ root: Node; nodeId: (testID: string) => string | undefined }> {
   const trees: string[] = [];
   const transport: NativeTransport = { send: (sent) => void trees.push(sent), onEvent() {}, onClose() {}, simulate() {}, close() {} };
   const mounted = render(element, transport);
-  return new Promise((done) =>
-    setTimeout(() => {
-      done({ root: JSON.parse(trees.at(-1) ?? "{}") as Node, nodeId: (testID) => mounted.nodeId(testID) });
-      mounted.unmount();
-    }, 20),
-  );
+  await settle();
+  const found = { root: JSON.parse(trees.at(-1) ?? "{}") as Node, nodeId: (testID: string) => mounted.nodeId(testID) };
+  mounted.unmount();
+  return found;
 }
 
 /** The inputs, each with whether it is inside a focus trap. */

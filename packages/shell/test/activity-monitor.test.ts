@@ -5,6 +5,7 @@ import { isVirtualInterface, parseIo, parseNetDev, parseStatus } from "../apps/a
 import type { ProcessSample, Snapshot } from "../apps/activity-monitor/read.ts";
 import { cpuSplit, filterRows, type ProcessRow, processRows, scopeTotals } from "../apps/activity-monitor/sample.ts";
 import { Sampler } from "../apps/activity-monitor/sampling.ts";
+import { flush } from "./support/time.ts";
 
 const CONTEXT = { users: new Map([[1000, "alexk"]]), ownUid: 1000, clockTicks: 100 };
 
@@ -196,17 +197,17 @@ describe("monitor", () => {
     await first;
     expect(monitor.getSnapshot().rows).toHaveLength(1);
     // The queued one starts once the first lands.
-    await Bun.sleep(0);
+    await flush();
     expect(asked).toHaveLength(2);
     (release as unknown as () => void)();
-    await Bun.sleep(0);
+    await flush();
     expect(monitor.getSnapshot().rows[0]?.cpu).toBeCloseTo(100, 5);
     monitor.setTab("disk");
     monitor.setKernel(true);
     (release as unknown as () => void)();
-    await Bun.sleep(0);
+    await flush();
     (release as unknown as () => void)();
-    await Bun.sleep(0);
+    await flush();
     expect(asked.at(-1)).toEqual({ io: true, sockets: false, kernel: true, energy: false });
   });
 
@@ -221,11 +222,11 @@ describe("monitor", () => {
       10_000,
     );
     const stop = monitor.start();
-    await Bun.sleep(0);
+    await flush();
     expect(looks).toBe(1);
     stop();
     monitor.resume();
-    await Bun.sleep(0);
+    await flush();
     expect(looks).toBe(2);
     monitor.pause();
   });

@@ -11,6 +11,7 @@ import { exitLine, type FoundRun, serviceArgs, type TaskRunner, type TurnRead, t
 import { startHandoff } from "../src/agents/handoff/service.ts";
 import type { RunView } from "../src/agents/handoff/store.ts";
 import { taskOfCgroup } from "../src/agents/sandbox.ts";
+import { flush } from "./support/time.ts";
 
 const helium: TaskContext = {
   window: { id: 3, app: "Helium", title: "Clases · Bodytech", site: "bodytech.com.co", url: "https://bodytech.com.co/clases" },
@@ -31,8 +32,7 @@ describe("the grants card", () => {
   });
 
   test("a kind is the same grants, whatever the site", () => {
-    const other = { ...helium, window: { ...helium.window, site: "example.com" } } as TaskContext;
-    expect(grantsKind(taskGrants(helium))).toBe(grantsKind(taskGrants(other)));
+    expect(grantsKind(taskGrants(helium))).toBe(grantsKind(taskGrants({ ...helium, window: { ...helium.window, site: "example.com" } } as TaskContext)));
     expect(grantsKind(taskGrants(helium))).not.toBe(grantsKind(taskGrants(NO_CONTEXT)));
     expect(grantsKind(taskGrants(NO_CONTEXT))).toBe("logins+pay+web");
   });
@@ -268,7 +268,7 @@ describe("the hand-off service", () => {
     expect(stopped).toEqual(["run1:1"]);
     // Its turn ends (stopped): the next one starts, resuming the session; the stop isn't "stopped".
     watchers.get("run1:1")?.exit(143);
-    await Bun.sleep(0);
+    await flush();
     expect(started).toHaveLength(2);
     expect(started[1]?.turn).toBe(2);
     expect(started[1]?.argv.slice(-2)).toEqual(["--resume", "s-1"]);
@@ -286,12 +286,12 @@ describe("the hand-off service", () => {
     watchers.get("run1:1")?.line(line({ type: "system", subtype: "init", session_id: "s-1" }));
     expect(stopped).toEqual(["run1:1"]);
     watchers.get("run1:1")?.exit(143);
-    await Bun.sleep(0);
+    await flush();
     watchers.get("run1:2")?.line(line({ type: "result", subtype: "success", result: "ok", session_id: "s-1" }));
     watchers.get("run1:2")?.exit(0);
     expect(handoff.runs.get("run1")?.phase).toBe("done");
     handoff.tell("run1", "and add it to my calendar");
-    await Bun.sleep(0);
+    await flush();
     expect(started.map((each) => each.turn)).toEqual([1, 2, 3]);
     expect(started[2]?.stdin).toContain("follows up");
     handoff.close();

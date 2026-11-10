@@ -10,6 +10,7 @@ import type { FilesPrefs } from "../apps/files/prefs.ts";
 import { type ChooserRequest, chooserReply, parseChooser } from "../apps/portal/file-chooser/options.ts";
 import { encodeBytePath } from "../apps/portal/vardict.ts";
 import { type Variant, variant } from "../src/dbus/index.ts";
+import { until } from "./support/time.ts";
 
 const pdfs: [string, Array<[number, string]>] = ["PDF documents", [[1, "application/pdf"]]];
 const notes: [string, Array<[number, string]>] = [
@@ -253,15 +254,15 @@ function env(recents: string[] = []): Env {
 const PREFS: FilesPrefs = { view: "list", sort: { key: "name", ascending: true }, showHidden: false };
 const names = (model: ChooserModel): string[] => model.store.visible().map((item) => item.name);
 
-function chooser(over: Partial<ChooserRequest>, recents: string[] = [], name = ""): ChooserModel {
+async function chooser(over: Partial<ChooserRequest>, recents: string[] = [], name = ""): Promise<ChooserModel> {
   const model = new ChooserModel(request(over), env(recents), { folder: docs, name }, { prefs: PREFS, watch: false });
   model.start();
+  await until(() => !model.store.getSnapshot().loading, "the folder to list");
   return model;
 }
 
 test("what shows: folders always, files the filter lets by, no hidden ones; only folders when choosing folders", async () => {
-  const model = chooser({ mode: "save", currentFilter: PDF, filters: [PDF] });
-  await Bun.sleep(30);
+  const model = await chooser({ mode: "save", currentFilter: PDF, filters: [PDF] });
   expect(names(model)).toEqual(["Taxes", "learning.pdf", "Lease.pdf"]);
   model.setFilter(null);
   expect(names(model)).toEqual(["Taxes", "learning.pdf", "Lease.pdf", "x.png"]);
@@ -272,10 +273,9 @@ test("what shows: folders always, files the filter lets by, no hidden ones; only
 
 test("Open starts on Recents; a double-click or Return on a file accepts", async () => {
   const lease = join(docs, "Lease.pdf");
-  const model = chooser({}, [lease]);
+  const model = await chooser({}, [lease]);
   let accepted = 0;
   model.onAccept = () => accepted++;
-  await Bun.sleep(30);
   expect(model.store.getSnapshot().location).toEqual({ kind: "recents" });
   expect(names(model)).toEqual(["Lease.pdf"]);
   model.store.move("down");
@@ -287,26 +287,22 @@ test("Open starts on Recents; a double-click or Return on a file accepts", async
 });
 
 test("Open with nothing in Recents for it opens Home; a folder the asker names opens there", async () => {
-  const empty = chooser({});
-  await Bun.sleep(30);
+  const empty = await chooser({});
   expect(empty.store.getSnapshot().location).toEqual({ kind: "folder", path: home });
   expect(empty.store.getSnapshot().canBack).toBe(false);
   empty.stop();
   // A recent file the filter keeps out is as good as none.
-  const filtered = chooser({ currentFilter: PDF, filters: [PDF] }, [join(docs, "x.png")]);
-  await Bun.sleep(30);
+  const filtered = await chooser({ currentFilter: PDF, filters: [PDF] }, [join(docs, "x.png")]);
   expect(filtered.folder()).toBe(home);
   filtered.stop();
   // (start.ts opens the chooser in the folder named: here, Documents.)
-  const named = chooser({ currentFolder: docs }, [join(docs, "Lease.pdf")]);
-  await Bun.sleep(30);
+  const named = await chooser({ currentFolder: docs }, [join(docs, "Lease.pdf")]);
   expect(named.folder()).toBe(docs);
   named.stop();
 });
 
 test("a save takes the name of the file picked, asks before replacing, and makes a new folder that renames in place", async () => {
-  const model = chooser({ mode: "save" }, [], "Untitled.pdf");
-  await Bun.sleep(30);
+  const model = await chooser({ mode: "save" }, [], "Untitled.pdf");
   expect(model.folder()).toBe(docs);
   // By name, as people sort: "learning" before "Lease"; the folder first.
   model.store.move("down");
@@ -321,17 +317,16 @@ test("a save takes the name of the file picked, asks before replacing, and makes
 
   expect(model.canMakeFolder()).toBe(true);
   await model.newFolder();
-  await Bun.sleep(30);
+  await until(() => model.store.getSnapshot().renaming !== null, "the new folder's name field");
   expect(model.store.getSnapshot().renaming).toBe(join(docs, "untitled folder"));
   expect(await model.store.commitRename("Receipts")).toBe(true);
-  await Bun.sleep(30);
+  await until(() => names(model).includes("Receipts"), "the new folder to list");
   expect(names(model)).toContain("Receipts");
   model.stop();
 });
 
 test("Up goes to the folder this one is in; Back retraces the way", async () => {
-  const model = chooser({ directory: true });
-  await Bun.sleep(30);
+  const model = await chooser({ directory: true });
   expect(model.folder()).toBe(docs);
   model.store.go({ kind: "folder", path: join(docs, "Taxes") });
   model.store.goUp();
@@ -339,7 +334,7 @@ test("Up goes to the folder this one is in; Back retraces the way", async () => 
   model.store.goBack();
   expect(model.folder()).toBe(join(docs, "Taxes"));
   // Nothing picked: choosing folders takes the one shown.
-  await Bun.sleep(30);
+  await until(() => !model.store.getSnapshot().loading, "the folder to list");
   expect(model.decide(() => false)).toEqual({ kind: "done", paths: [join(docs, "Taxes")] });
   model.stop();
 });
@@ -349,23 +344,23 @@ test("a folder holding only what the chooser keeps out says so, not that it is e
   const files = join(docs, "Scans");
   mkdirSync(files);
   writeFileSync(join(files, "a.pdf"), "%PDF");
-  const folders = chooser({ directory: true });
+  const folders = await chooser({ directory: true });
   folders.store.go({ kind: "folder", path: files });
-  await Bun.sleep(30);
+  await until(() => !folders.store.getSnapshot().loading, "the folder to list");
   expect(names(folders)).toEqual([]);
   expect(folders.store.keptOut()).toBe("No folders here");
   // Really empty: empty.
   folders.store.go({ kind: "folder", path: join(docs, "Taxes") });
-  await Bun.sleep(30);
+  await until(() => !folders.store.getSnapshot().loading, "the folder to list");
   expect(folders.store.keptOut()).toBeNull();
   folders.stop();
   // A filter that lets nothing here by.
-  const pdfs = chooser({
+  const pdfs = await chooser({
     filters: [{ name: "PNG", patterns: [{ kind: "glob", pattern: "*.png" }] }],
     currentFilter: { name: "PNG", patterns: [{ kind: "glob", pattern: "*.png" }] },
   });
   pdfs.store.go({ kind: "folder", path: files });
-  await Bun.sleep(30);
+  await until(() => !pdfs.store.getSnapshot().loading, "the folder to list");
   expect(pdfs.store.keptOut()).toBe("No files of this kind here");
   pdfs.stop();
 });

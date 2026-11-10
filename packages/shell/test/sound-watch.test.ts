@@ -19,11 +19,11 @@ import type { Run } from "../src/system/exec.ts";
 import { SystemStore } from "../src/system/store.ts";
 import { VolumeFollow } from "../src/system/volume-follow.ts";
 import { metadata, node, vmGraph } from "./fixtures/pw-graph.ts";
+import { fakeClockEachTest } from "./support/time.ts";
 
 type Json = Record<string, unknown>;
-
-/** Longer than the watcher's 40 ms settle. */
-const settle = () => Bun.sleep(70);
+const clock = fakeClockEachTest();
+const settle = () => clock.advance(70); // longer than the watcher's 40 ms settle
 
 /** A pw-dump --monitor that prints what the test gives it, as it prints it (indented, line by line). */
 function monitor() {
@@ -199,7 +199,7 @@ describe("metadata, as the monitor prints it", () => {
     // A newer update while the read runs: the old read's answer is dropped and the object read again.
     print([only("default.audio.sink", "mixer-speakers")]);
     release(JSON.stringify([defaults("mixer-headphones")]));
-    await Bun.sleep(5);
+    await clock.advance(5);
     expect(reads).toEqual([33, 33]);
     release(JSON.stringify([defaults("mixer-speakers")]));
     await settle();
@@ -355,7 +355,7 @@ describe("the levels follow PipeWire", () => {
     await settle();
     expect(store.getSnapshot().output?.level).toBe(0.6);
     await store.setLevel("output", 0.2);
-    await Bun.sleep(1100);
+    await clock.advance(1100);
     pw.print([speakers([0.729, 0.729])]);
     await settle();
     expect(store.getSnapshot().output).toEqual({ level: 0.2, muted: false });
@@ -441,11 +441,11 @@ describe("VolumeFollow", () => {
     const follow = new VolumeFollow((volume) => shown.push(volume?.level ?? null), 10);
     follow.heard({ level: 0.4, muted: false });
     follow.set({ level: 0.8, muted: false });
-    await Bun.sleep(30);
+    await clock.advance(30);
     expect(shown).toEqual([0.4]);
     follow.set({ level: 0.9, muted: false });
     follow.heard({ level: 0.5, muted: false });
-    await Bun.sleep(30);
+    await clock.advance(30);
     expect(shown).toEqual([0.4, 0.5]);
   });
 });

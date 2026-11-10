@@ -12,6 +12,7 @@ import type { AgentInfo } from "../src/agents/index.ts";
 import { mergeAgents, watchTime } from "../src/agents/mark.ts";
 import { WatchClock } from "../src/agents/watch-clock.ts";
 import { AccessChip } from "../src/agents-rows.tsx";
+import { fakeClock, flush } from "./support/time.ts";
 
 const SETTLE = 3_000;
 
@@ -119,25 +120,29 @@ describe("the chip", () => {
   test("says the time and goes on once a second while shown", async () => {
     const trees: string[] = [];
     const transport: NativeTransport = { send: (tree) => trees.push(tree), onEvent() {}, onClose() {}, simulate() {}, close() {} };
+    const clock = fakeClock();
     const since = Date.now() - 134_400;
     const root = render(<AccessChip entry={{ watching: "recording", watchingSince: since, phase: "working", kind: "connection" }} />, transport);
-    await new Promise((done) => setTimeout(done, 20));
+    await flush();
     expect(trees.at(-1)).toContain("Recording the screen · 2:14");
-    await new Promise((done) => setTimeout(done, 1_100));
+    await clock.advance(1_100);
     expect(trees.at(-1)).toContain("Recording the screen · 2:15");
     root.unmount();
+    clock.restore();
   });
 
   test("its pointer: words only, nothing ticking", async () => {
     const trees: string[] = [];
     const transport: NativeTransport = { send: (tree) => trees.push(tree), onEvent() {}, onClose() {}, simulate() {}, close() {} };
+    const clock = fakeClock();
     const root = render(<AccessChip entry={{ watching: "pointer", watchingSince: 0, phase: "working", kind: "connection" }} />, transport);
-    await new Promise((done) => setTimeout(done, 20));
+    await flush();
     const sent = trees.length;
     expect(trees.at(-1)).toContain("Using its pointer");
     expect(trees.at(-1)).not.toContain("·");
-    await new Promise((done) => setTimeout(done, 1_100));
+    await clock.advance(1_100);
     expect(trees.length).toBe(sent);
     root.unmount();
+    clock.restore();
   });
 });

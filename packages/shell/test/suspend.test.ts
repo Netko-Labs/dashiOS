@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import type { CompositorEvent, CompositorWindow } from "../src/compositor.ts";
 import { followSuspension, suspendChanges } from "../src/suspend.ts";
+import { flush } from "./support/time.ts";
 
 const frame = { x: 0, y: 0, width: 800, height: 600 };
 const win = (id: number, shown: boolean, state: CompositorWindow["state"] = "normal"): CompositorWindow => ({
@@ -40,9 +41,9 @@ test("the shell tells windows as they go off screen and come back", async () => 
   });
   const emit = async (event: CompositorEvent): Promise<void> => {
     for (const listener of listeners) listener(event);
-    await Bun.sleep(5);
+    await flush();
   };
-  await Bun.sleep(5);
+  await flush();
   expect(sent).toEqual([]);
   windows = [win(1, false, "minimized"), win(2, true)];
   await emit({ event: "window-state", window: 1, state: "minimized" });
