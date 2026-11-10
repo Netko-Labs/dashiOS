@@ -1,21 +1,50 @@
 //! Who may do what, and what agents do (docs/compositor-ipc.md, "Capture and
 //! agents", "Secrets for agents", "Clipboard history and snippets").
 
-use serde_json::{Value, json};
+use std::path::PathBuf;
+
+use serde::{Deserialize, Serialize};
 
 use super::{Ask, done};
 use crate::{
     backend,
     ipc::{
-        grants::Grants,
-        params::{text, window},
+        grants::{Grants, IpcClients},
+        protocol::{Done, WindowId},
     },
-    session,
+    render::mask::CaptureMask,
+    session::{
+        self,
+        agent_input::AgentInput,
+        applets::AppletClientsParams,
+        origin::{Origin, OriginParams},
+    },
     state::Dashi,
 };
 
-pub(crate) fn agent_input(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    let result = state.agent_input(&ask.params);
+/// The keywords the compositor watches for (`[]` stops it).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Snippets {
+    pub keywords: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SnippetErase {
+    pub window: WindowId,
+    pub keyword: String,
+}
+
+/// The executables allowed to use screencopy (absolute paths).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct ScreencopyClients {
+    pub paths: Vec<String>,
+}
+
+pub(crate) fn agent_input(state: &mut Dashi, _: &Ask, params: AgentInput) -> Result<Done, String> {
+    let result = state.agent_input(&params);
     if result.is_ok() {
         // The screens may be dark (the person away): its window still shows what it did.
         backend::udev::agent_acted(state);
@@ -23,64 +52,65 @@ pub(crate) fn agent_input(state: &mut Dashi, ask: &Ask) -> Result<Value, String>
     done(result)
 }
 
-pub(crate) fn capture_mask(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    done(state.set_capture_mask(&ask.params))
+pub(crate) fn capture_mask(
+    state: &mut Dashi,
+    _: &Ask,
+    params: CaptureMask,
+) -> Result<Done, String> {
+    done(state.set_capture_mask(&params))
 }
 
-pub(crate) fn input_origin(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    let target = session::origin::parse_target(&ask.params)?;
+pub(crate) fn input_origin(
+    state: &mut Dashi,
+    _: &Ask,
+    params: OriginParams,
+) -> Result<Origin, String> {
+    let target = session::origin::parse_target(&params)?;
     Ok(state.origins.describe(&target, std::time::Instant::now()))
 }
 
-pub(crate) fn snippets(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    let keywords = ask
-        .params
-        .get("keywords")
-        .and_then(Value::as_array)
-        .ok_or("`keywords` must be a list of strings")?
-        .iter()
-        .map(|k| {
-            k.as_str()
-                .map(str::to_owned)
-                .ok_or("`keywords` must be a list of strings")
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    done(state.keys.snippets.set(&keywords))
+pub(crate) fn snippets(state: &mut Dashi, _: &Ask, params: Snippets) -> Result<Done, String> {
+    done(state.keys.snippets.set(&params.keywords))
 }
 
-pub(crate) fn snippet_erase(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    done(state.erase_snippet(window(&ask.params)?, text(&ask.params, "keyword")?))
+pub(crate) fn snippet_erase(
+    state: &mut Dashi,
+    _: &Ask,
+    params: SnippetErase,
+) -> Result<Done, String> {
+    done(state.erase_snippet(params.window.0, &params.keyword))
 }
 
-pub(crate) fn screencopy_clients(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    let paths = ask
-        .params
-        .get("paths")
-        .and_then(Value::as_array)
-        .ok_or("`paths` must be a list")?;
-    let paths: Vec<std::path::PathBuf> = paths
+pub(crate) fn screencopy_clients(
+    state: &mut Dashi,
+    _: &Ask,
+    params: ScreencopyClients,
+) -> Result<Done, String> {
+    let paths: Vec<PathBuf> = params
+        .paths
         .iter()
-        .map(|p| {
-            p.as_str()
-                .map(std::path::PathBuf::from)
-                .filter(|p| p.is_absolute())
-                .ok_or("`paths` must be absolute paths")
-        })
-        .collect::<Result<_, _>>()?;
+        .map(PathBuf::from)
+        .map(|path| path.is_absolute().then_some(path))
+        .collect::<Option<_>>()
+        .ok_or("`paths` must be absolute paths")?;
     if let Ok(mut granted) = state.screencopy_paths.lock() {
         *granted = paths;
     }
-    Ok(json!({}))
+    Ok(Done {})
 }
 
-pub(crate) fn applet_clients(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    let list = session::applets::AppletClients::parse(&ask.params)?;
+pub(crate) fn applet_clients(
+    state: &mut Dashi,
+    _: &Ask,
+    params: AppletClientsParams,
+) -> Result<Done, String> {
+    let list = session::applets::AppletClients::parse(&params)?;
     state.applet_clients.set(list);
     state.close_ungranted_layers();
-    Ok(json!({}))
+    Ok(Done {})
 }
 
-pub(crate) fn ipc_clients(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    state.ipc.grants = Grants::parse(&ask.params)?;
-    Ok(json!({}))
+pub(crate) fn ipc_clients(state: &mut Dashi, _: &Ask, params: IpcClients) -> Result<Done, String> {
+    state.ipc.grants = Grants::parse(&params)?;
+    Ok(Done {})
 }

@@ -3,6 +3,7 @@
 //! others), its gamma and identity (EDID).
 
 use super::*;
+use crate::ipc::protocol::Event;
 
 pub(super) fn scan_connectors(state: &mut Dashi, node: DrmNode) {
     let events = with_udev(state, |_, data| {
@@ -35,7 +36,7 @@ pub(super) fn scan_connectors(state: &mut Dashi, node: DrmNode) {
         }
     }
     if changed {
-        state.ipc.emit("outputs-changed", json!({}));
+        state.ipc.emit(Event::OutputsChanged);
     }
 }
 

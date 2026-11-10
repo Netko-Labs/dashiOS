@@ -3,7 +3,7 @@
 //! numbers of fingers (`gestures`, Spaces). Claimed swipes go to the shell,
 //! not to clients; the band only reports, it takes nothing.
 
-use serde_json::json;
+use crate::ipc::protocol::{Bottom, Event};
 use smithay::utils::{Logical, Point};
 
 use crate::state::Dashi;
@@ -54,8 +54,10 @@ impl Dashi {
         let inside = self.in_bottom_band(at);
         if inside != self.claims.inside {
             self.claims.inside = inside;
-            self.ipc
-                .emit("edge", json!({ "edge": "bottom", "inside": inside }));
+            self.ipc.emit(Event::Edge {
+                edge: Bottom::Bottom,
+                inside,
+            });
         }
     }
 

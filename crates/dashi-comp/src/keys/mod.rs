@@ -9,4 +9,5 @@ mod snippets;
 mod super_click;
 
 pub(crate) use handler::Keys;
-pub(crate) use keymap::{Chord, Keymap};
+pub(crate) use keymap::{Chord, Keymap, KeymapParams};
+pub(crate) use layout::KeyboardParams;

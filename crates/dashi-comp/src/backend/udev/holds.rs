@@ -6,6 +6,7 @@ use std::{fs, path::Path};
 
 use super::lifecycle::Holds;
 use super::*;
+use crate::ipc::protocol::{Gpu, Gpus};
 
 /// Where the kernel lists DRM cards and their connectors.
 pub(super) const DRM_SYSFS: &str = "/sys/class/drm";
@@ -68,51 +69,43 @@ impl UdevData {
     }
 
     /// `gpus`: each GPU, open or asleep, and what holds it.
-    pub(crate) fn describe_gpus(&mut self) -> Value {
+    pub(crate) fn describe_gpus(&mut self) -> Gpus {
         let primary = self.primary_gpu;
         let nodes: Vec<DrmNode> = self.devices.keys().copied().collect();
-        let mut gpus: Vec<(String, Value)> = nodes
+        let mut gpus: Vec<Gpu> = nodes
             .into_iter()
             .filter_map(|node| {
                 let holds = self.holds(node)?;
                 let device = self.devices.get(&node)?;
                 let screens: Vec<String> =
                     device.screens.values().map(|s| s.output.name()).collect();
-                Some((
-                    device.card.clone(),
-                    json!({
-                        "card": device.card,
-                        "open": true,
-                        "draws": is_drawing_gpu(node, primary),
-                        "kept": holds.kept,
-                        "screens": screens,
-                        "buffers": holds.buffers,
-                        "answering": true,
-                    }),
-                ))
+                Some(Gpu {
+                    card: device.card.clone(),
+                    open: true,
+                    draws: is_drawing_gpu(node, primary),
+                    kept: holds.kept,
+                    screens,
+                    buffers: holds.buffers,
+                    answering: true,
+                })
             })
             .collect();
         gpus.extend(
             self.cards
                 .iter()
                 .filter(|(node, _)| !self.devices.contains_key(node))
-                .map(|(_, card)| {
-                    (
-                        card.name.clone(),
-                        json!({
-                            "card": card.name,
-                            "open": false,
-                            "draws": false,
-                            "kept": self.kept.contains(&card.name),
-                            "screens": [],
-                            "buffers": 0,
-                            "answering": card.life.answers(),
-                        }),
-                    )
+                .map(|(_, card)| Gpu {
+                    card: card.name.clone(),
+                    open: false,
+                    draws: false,
+                    kept: self.kept.contains(&card.name),
+                    screens: Vec::new(),
+                    buffers: 0,
+                    answering: card.life.answers(),
                 }),
         );
-        gpus.sort_by(|a, b| a.0.cmp(&b.0));
-        json!({ "gpus": gpus.into_iter().map(|(_, gpu)| gpu).collect::<Vec<_>>() })
+        gpus.sort_by(|a, b| a.card.cmp(&b.card));
+        Gpus { gpus }
     }
 
     /// The GPU udev calls `card`, open or asleep.
@@ -131,8 +124,8 @@ impl UdevData {
 }
 
 /// `gpus`: none outside a seat of our own.
-pub(crate) fn describe_gpus(state: &mut Dashi) -> Value {
-    with_udev(state, |_, data| data.describe_gpus()).unwrap_or_else(|| json!({ "gpus": [] }))
+pub(crate) fn describe_gpus(state: &mut Dashi) -> Gpus {
+    with_udev(state, |_, data| data.describe_gpus()).unwrap_or(Gpus { gpus: Vec::new() })
 }
 
 #[cfg(test)]

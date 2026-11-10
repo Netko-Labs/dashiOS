@@ -1,9 +1,9 @@
 //! Starting Xwayland on a display known at once, and starting it again
 //! (backing off) when it fails.
 
+use crate::ipc::protocol::Event;
 use std::{process::Stdio, time::Duration};
 
-use serde_json::json;
 use smithay::{
     reexports::calloop::timer::{TimeoutAction, Timer},
     xwayland::{X11Wm, XWayland, XWaylandEvent},
@@ -63,7 +63,7 @@ impl Dashi {
                                 state.xwayland.state = XState::Failed;
                             }
                         }
-                        state.ipc.emit("session-changed", json!({}));
+                        state.ipc.emit(Event::SessionChanged);
                     }
                     XWaylandEvent::Error => {
                         tracing::warn!("Xwayland stopped");
@@ -81,7 +81,7 @@ impl Dashi {
         self.xwayland.client = None;
         self.xwayland.display = None;
         self.xwayland.state = XState::Failed;
-        self.ipc.emit("session-changed", json!({}));
+        self.ipc.emit(Event::SessionChanged);
         let wait = RESTART_AFTER[self.xwayland.restarts.min(RESTART_AFTER.len() - 1)];
         self.xwayland.restarts += 1;
         let _ = self.loop_handle.insert_source(

@@ -4,13 +4,17 @@
 //! checked before anything changes; the shell reverts on its own timer when
 //! the person does not keep it.
 
-use serde_json::{Map, Value};
+use serde::{Deserialize, Serialize};
 use smithay::{
     output::{Mode, Output, Scale},
     utils::{Logical, Point, Transform},
 };
 
-use crate::state::Dashi;
+use super::VrrMode;
+use crate::{
+    ipc::protocol::{Event, Int, Real},
+    state::Dashi,
+};
 
 struct Change {
     output: Output,
@@ -19,7 +23,7 @@ struct Change {
     mode: Option<Mode>,
     transform: Option<Transform>,
     scale: Option<f64>,
-    vrr: Option<super::VrrMode>,
+    vrr: Option<VrrMode>,
 }
 
 fn transform_for(rotation: u64, flipped: bool) -> Option<Transform> {
@@ -36,6 +40,92 @@ fn transform_for(rotation: u64, flipped: bool) -> Option<Transform> {
     })
 }
 
+/// `outputs-config`'s params: a whole arrangement (the shell's
+/// src/display-config/plan.ts `toWire`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct OutputsConfig {
+    pub outputs: Vec<OutputConfig>,
+    pub primary: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct OutputConfig {
+    pub name: String,
+    pub enabled: Option<bool>,
+    pub position: Option<Position>,
+    pub mode: Option<ModeChoice>,
+    pub transform: Option<TransformChoice>,
+    pub scale: Option<Real<500, 4000>>,
+    pub vrr: Option<VrrMode>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Position {
+    pub x: Int<{ -(1 << 16) }, { 1 << 16 }>,
+    pub y: Int<{ -(1 << 16) }, { 1 << 16 }>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct ModeChoice {
+    pub width: i64,
+    pub height: i64,
+    pub refresh_mhz: i64,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct TransformChoice {
+    #[serde(default)]
+    pub rotation: u64,
+    #[serde(default)]
+    pub flipped: bool,
+}
+
+/// One entry, checked against the screens there are.
+fn change(known: &[Output], entry: &OutputConfig) -> Result<Change, String> {
+    let name = entry.name.as_str();
+    let output = known
+        .iter()
+        .find(|o| o.name() == name)
+        .cloned()
+        .ok_or_else(|| format!("no screen named {name:?}"))?;
+    let mode = match entry.mode {
+        None => None,
+        Some(m) => Some(
+            output
+                .modes()
+                .into_iter()
+                .find(|mode| {
+                    i64::from(mode.size.w) == m.width
+                        && i64::from(mode.size.h) == m.height
+                        && i64::from(mode.refresh) == m.refresh_mhz
+                })
+                .ok_or_else(|| format!("{name} has no such mode"))?,
+        ),
+    };
+    let transform = match entry.transform {
+        None => None,
+        Some(t) => Some(
+            transform_for(t.rotation, t.flipped).ok_or("`rotation` must be 0, 90, 180, or 270")?,
+        ),
+    };
+    Ok(Change {
+        output,
+        enabled: entry.enabled,
+        position: entry
+            .position
+            .map(|p| Point::from((p.x.to::<i32>(), p.y.to::<i32>()))),
+        mode,
+        transform,
+        scale: entry.scale.map(Real::get),
+        vrr: entry.vrr,
+    })
+}
+
 impl Dashi {
     /// Every screen the compositor knows, shown or turned off.
     pub(crate) fn all_outputs(&self) -> Vec<Output> {
@@ -47,104 +137,17 @@ impl Dashi {
             .collect()
     }
 
-    pub(crate) fn configure_outputs(&mut self, params: &Map<String, Value>) -> Result<(), String> {
-        let entries = params
-            .get("outputs")
-            .and_then(Value::as_array)
-            .ok_or("`outputs` must be a list")?;
+    pub(crate) fn configure_outputs(&mut self, params: &OutputsConfig) -> Result<(), String> {
         let known = self.all_outputs();
-        let mut changes = Vec::new();
-        for entry in entries {
-            let entry = entry.as_object().ok_or("each output is an object")?;
-            let name = entry
-                .get("name")
-                .and_then(Value::as_str)
-                .ok_or("each output needs a name")?;
-            let output = known
-                .iter()
-                .find(|o| o.name() == name)
-                .cloned()
-                .ok_or_else(|| format!("no screen named {name:?}"))?;
-            let enabled = match entry.get("enabled") {
-                None => None,
-                Some(v) => Some(v.as_bool().ok_or("`enabled` must be true or false")?),
-            };
-            let position = match entry.get("position") {
-                None => None,
-                Some(p) => {
-                    let x = p
-                        .get("x")
-                        .and_then(Value::as_i64)
-                        .ok_or("`position` needs x and y")?;
-                    let y = p
-                        .get("y")
-                        .and_then(Value::as_i64)
-                        .ok_or("`position` needs x and y")?;
-                    if x.abs() > 1 << 16 || y.abs() > 1 << 16 {
-                        return Err("`position` is out of range".into());
-                    }
-                    Some(Point::from((x as i32, y as i32)))
-                }
-            };
-            let mode = match entry.get("mode") {
-                None => None,
-                Some(m) => {
-                    let get = |k: &str| m.get(k).and_then(Value::as_i64);
-                    let (w, h, refresh) = (get("width"), get("height"), get("refreshMhz"));
-                    let found = output.modes().into_iter().find(|mode| {
-                        Some(i64::from(mode.size.w)) == w
-                            && Some(i64::from(mode.size.h)) == h
-                            && Some(i64::from(mode.refresh)) == refresh
-                    });
-                    Some(found.ok_or_else(|| format!("{name} has no such mode"))?)
-                }
-            };
-            let transform = match entry.get("transform") {
-                None => None,
-                Some(t) => {
-                    let rotation = t.get("rotation").and_then(Value::as_u64).unwrap_or(0);
-                    let flipped = t.get("flipped").and_then(Value::as_bool).unwrap_or(false);
-                    Some(
-                        transform_for(rotation, flipped)
-                            .ok_or("`rotation` must be 0, 90, 180, or 270")?,
-                    )
-                }
-            };
-            let scale = match entry.get("scale") {
-                None => None,
-                Some(s) => Some(
-                    s.as_f64()
-                        .filter(|s| (0.5..=4.0).contains(s))
-                        .ok_or("`scale` must be 0.5–4")?,
-                ),
-            };
-            let vrr = match entry.get("vrr") {
-                None => None,
-                Some(v) => Some(
-                    v.as_str()
-                        .and_then(super::VrrMode::parse)
-                        .ok_or("`vrr` must be off, on, or fullscreen")?,
-                ),
-            };
-            changes.push(Change {
-                output,
-                enabled,
-                position,
-                mode,
-                transform,
-                scale,
-                vrr,
-            });
-        }
-        let primary = match params.get("primary") {
+        let changes = params
+            .outputs
+            .iter()
+            .map(|entry| change(&known, entry))
+            .collect::<Result<Vec<_>, String>>()?;
+        let primary = match &params.primary {
             None => None,
-            Some(p) => {
-                let name = p.as_str().ok_or("`primary` must be a screen's name")?;
-                if !known.iter().any(|o| o.name() == name) {
-                    return Err(format!("no screen named {name:?}"));
-                }
-                Some(name.to_owned())
-            }
+            Some(name) if known.iter().any(|o| o.name() == *name) => Some(name.clone()),
+            Some(name) => return Err(format!("no screen named {name:?}")),
         };
         if changes.iter().all(|c| c.enabled == Some(false))
             && !changes.is_empty()
@@ -162,7 +165,7 @@ impl Dashi {
         for output in self.space.outputs().cloned().collect::<Vec<_>>() {
             smithay::desktop::layer_map_for_output(&output).arrange();
         }
-        self.ipc.emit("outputs-changed", serde_json::json!({}));
+        self.ipc.emit(Event::OutputsChanged);
         Ok(())
     }
 

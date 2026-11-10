@@ -8,17 +8,35 @@
 
 use std::collections::HashMap;
 
-use serde_json::{Map, Value};
+use serde::{Deserialize, Serialize};
 use smithay::{
     desktop::{LayerMap, LayerSurface, WindowSurfaceType},
     utils::{Logical, Point, Rectangle},
     wayland::shell::wlr_layer::Layer,
 };
 
-use crate::state::Dashi;
+use crate::{ipc::protocol::Finite, state::Dashi};
 
 /// More rectangles than any surface of the shell's needs.
 const MOST: usize = 32;
+
+/// `input-region`'s params: a shell layer namespace and the rects (surface
+/// coordinates) where it takes the pointer, or null for the whole surface.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct InputRegion {
+    pub namespace: String,
+    pub rects: Option<Vec<RegionRect>>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct RegionRect {
+    pub x: Finite,
+    pub y: Finite,
+    pub width: Finite,
+    pub height: Finite,
+}
 
 /// The limited surfaces, by layer-shell namespace: rectangles in surface coordinates.
 #[derive(Default)]
@@ -73,39 +91,29 @@ impl Dashi {
     }
 
     /// IPC `input-region {namespace, rects}`: `rects` null is the whole surface again.
-    pub(crate) fn set_layer_region(&mut self, params: &Map<String, Value>) -> Result<(), String> {
-        let namespace = params
-            .get("namespace")
-            .and_then(Value::as_str)
-            .filter(|name| name.starts_with("dashi.") && name.len() <= 64)
-            .ok_or("input-region: `namespace` must be one of the shell's (dashi.*)")?;
-        let rects = match params.get("rects") {
-            None | Some(Value::Null) => {
-                self.layer_regions.0.remove(namespace);
-                return Ok(());
-            }
-            Some(Value::Array(rects)) if rects.len() <= MOST => rects,
-            Some(_) => {
-                return Err(format!(
-                    "input-region: `rects` must be a list of at most {MOST}, or null"
-                ));
-            }
+    pub(crate) fn set_layer_region(&mut self, params: &InputRegion) -> Result<(), String> {
+        let namespace = params.namespace.as_str();
+        if !namespace.starts_with("dashi.") || namespace.len() > 64 {
+            return Err("input-region: `namespace` must be one of the shell's (dashi.*)".into());
+        }
+        let Some(rects) = &params.rects else {
+            self.layer_regions.0.remove(namespace);
+            return Ok(());
         };
+        if rects.len() > MOST {
+            return Err(format!(
+                "input-region: `rects` must be a list of at most {MOST}, or null"
+            ));
+        }
         let parsed = rects
             .iter()
             .map(|rect| {
-                let get = |key: &str| {
-                    rect.get(key)
-                        .and_then(Value::as_f64)
-                        .filter(|v| v.is_finite())
-                };
-                Some(Rectangle::new(
-                    (get("x")?, get("y")?).into(),
-                    (get("width")?.max(0.0), get("height")?.max(0.0)).into(),
-                ))
+                Rectangle::new(
+                    (rect.x.get(), rect.y.get()).into(),
+                    (rect.width.get().max(0.0), rect.height.get().max(0.0)).into(),
+                )
             })
-            .collect::<Option<Vec<_>>>()
-            .ok_or("input-region: each rect needs x, y, width, and height")?;
+            .collect();
         self.layer_regions.0.insert(namespace.to_owned(), parsed);
         Ok(())
     }

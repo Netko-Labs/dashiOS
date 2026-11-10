@@ -1,136 +1,228 @@
 //! The session and its windows (docs/compositor-ipc.md, "Session and windows").
 
-use serde_json::{Value, json};
+use serde::{Deserialize, Serialize};
 use smithay::utils::Point;
 
 use super::{Ask, done};
 use crate::{
-    ipc::params::{coord, flag, index, int, on, text, window},
+    ipc::protocol::{At, Coord, Count, Done, Nothing, Rect, Wide, Window, WindowId},
     keys::Chord,
     state::Dashi,
     wm::{Shown, valid_frame},
+    xwayland::XState,
 };
 
-pub(crate) fn subscribe(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    state.ipc.subscribe(ask.connection);
-    Ok(json!({}))
+/// Params naming one window.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct OneWindow {
+    pub window: WindowId,
 }
 
-pub(crate) fn session(state: &mut Dashi, _: &Ask) -> Result<Value, String> {
+/// Params turning something on or off for one window.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Switch {
+    pub window: WindowId,
+    pub on: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct Session {
+    pub wayland_display: String,
+    pub display: Option<String>,
+    pub xwayland: XState,
+    pub pointer: Option<At>,
+    pub locked: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Windows {
+    pub windows: Vec<Window>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Place {
+    pub window: WindowId,
+    pub x: Coord,
+    pub y: Coord,
+    pub space: Option<Count>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct FrameParams {
+    pub window: WindowId,
+    pub x: Wide,
+    pub y: Wide,
+    pub width: Wide,
+    pub height: Wide,
+    #[serde(default)]
+    pub maximized: bool,
+    #[serde(default)]
+    pub tiled: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SendKeys {
+    pub window: WindowId,
+    pub chord: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct AnimationTargets {
+    pub targets: Vec<AnimationTarget>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct AnimationTarget {
+    pub window: WindowId,
+    /// Where it shrinks to; null forgets it.
+    pub rect: Option<Rect>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Handle {
+    pub handle: String,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct MaybeWindow {
+    pub window: Option<u64>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Attach {
+    pub window: WindowId,
+    pub parent: Option<WindowId>,
+    /// How far below the top of its parent's frame (0 to 512; kept within).
+    pub top: Option<Coord>,
+}
+
+pub(crate) fn subscribe(state: &mut Dashi, ask: &Ask, _: Nothing) -> Result<Done, String> {
+    state.ipc.subscribe(ask.connection);
+    Ok(Done {})
+}
+
+pub(crate) fn session(state: &mut Dashi, _: &Ask, _: Nothing) -> Result<Session, String> {
     let pointer = state.seat.get_pointer().map(|pointer| {
         let at = pointer.current_location();
-        json!({ "x": at.x, "y": at.y })
+        At { x: at.x, y: at.y }
     });
-    Ok(json!({
-        "waylandDisplay": state.socket_name.to_string_lossy(),
-        "display": state.xwayland.display.map(|n| format!(":{n}")),
-        "xwayland": state.xwayland.state.name(),
-        "pointer": pointer,
-        "locked": state.lock.locked,
-    }))
+    Ok(Session {
+        wayland_display: state.socket_name.to_string_lossy().into_owned(),
+        display: state.xwayland.display.map(|n| format!(":{n}")),
+        xwayland: state.xwayland.state,
+        pointer,
+        locked: state.lock.locked,
+    })
 }
 
-pub(crate) fn windows(state: &mut Dashi, _: &Ask) -> Result<Value, String> {
-    Ok(json!({ "windows": state.windows.describe_all(state) }))
+pub(crate) fn windows(state: &mut Dashi, _: &Ask, _: Nothing) -> Result<Windows, String> {
+    Ok(Windows {
+        windows: state.windows.describe_all(state),
+    })
 }
 
-pub(crate) fn focus(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    done(state.focus_window(window(&ask.params)?))
+pub(crate) fn focus(state: &mut Dashi, _: &Ask, params: OneWindow) -> Result<Done, String> {
+    done(state.focus_window(params.window.0))
 }
 
-pub(crate) fn close(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    done(state.close_window(window(&ask.params)?))
+pub(crate) fn close(state: &mut Dashi, _: &Ask, params: OneWindow) -> Result<Done, String> {
+    done(state.close_window(params.window.0))
 }
 
-pub(crate) fn minimize(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    done(state.park_window(window(&ask.params)?, Shown::Minimized))
+pub(crate) fn minimize(state: &mut Dashi, _: &Ask, params: OneWindow) -> Result<Done, String> {
+    done(state.park_window(params.window.0, Shown::Minimized))
 }
 
-pub(crate) fn hide(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    done(state.park_window(window(&ask.params)?, Shown::Hidden))
+pub(crate) fn hide(state: &mut Dashi, _: &Ask, params: OneWindow) -> Result<Done, String> {
+    done(state.park_window(params.window.0, Shown::Hidden))
 }
 
-pub(crate) fn suspend(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    let on = on(&ask.params, "on")?;
-    done(state.suspend_window(window(&ask.params)?, on))
+pub(crate) fn suspend(state: &mut Dashi, _: &Ask, params: Switch) -> Result<Done, String> {
+    done(state.suspend_window(params.window.0, params.on))
 }
 
-pub(crate) fn place(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    let params = &ask.params;
-    let at = Point::from((coord(params, "x")?, coord(params, "y")?));
-    let space = index(params, "space", "a Space's index")?;
-    done(state.place_window(window(params)?, at, space))
+pub(crate) fn place(state: &mut Dashi, _: &Ask, params: Place) -> Result<Done, String> {
+    let at = Point::from((params.x.i32(), params.y.i32()));
+    let space = params.space.map(Count::to::<usize>);
+    done(state.place_window(params.window.0, at, space))
 }
 
-pub(crate) fn frame(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    let params = &ask.params;
+pub(crate) fn frame(state: &mut Dashi, _: &Ask, params: FrameParams) -> Result<Done, String> {
     let frame = valid_frame(
-        int(params, "x")?,
-        int(params, "y")?,
-        int(params, "width")?,
-        int(params, "height")?,
+        params.x.get(),
+        params.y.get(),
+        params.width.get(),
+        params.height.get(),
     )
     .ok_or("frame: x, y, width, and height are required (a positive size, within range)")?;
-    let maximized = flag(params, "maximized");
-    let tiled = flag(params, "tiled");
-    done(state.frame_window(window(params)?, frame, maximized, tiled))
+    done(state.frame_window(params.window.0, frame, params.maximized, params.tiled))
 }
 
-pub(crate) fn fullscreen(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    let on = on(&ask.params, "on")?;
-    done(state.set_fullscreen(window(&ask.params)?, on))
+pub(crate) fn fullscreen(state: &mut Dashi, _: &Ask, params: Switch) -> Result<Done, String> {
+    done(state.set_fullscreen(params.window.0, params.on))
 }
 
-pub(crate) fn send_keys(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
+pub(crate) fn send_keys(state: &mut Dashi, _: &Ask, params: SendKeys) -> Result<Done, String> {
     // Nothing is typed into a window while locked (session/lock.rs).
     if state.lock.locked {
         return Err("the screen is locked".into());
     }
-    let params = &ask.params;
-    let id = window(params)?;
-    let chord = Chord::parse(text(params, "chord")?)?;
-    state.focus_window(id)?;
-    let time = state.start_time.elapsed().as_millis() as u32;
+    let chord = Chord::parse(&params.chord)?;
+    state.focus_window(params.window.0)?;
+    let time = u32::try_from(state.start_time.elapsed().as_millis()).unwrap_or(u32::MAX);
     if state.tap(&chord, None, false, time) {
-        Ok(json!({}))
+        Ok(Done {})
     } else {
         Err(format!(
             "send-keys: {:?} cannot be typed on this keyboard",
-            text(params, "chord")?
+            params.chord
         ))
     }
 }
 
-pub(crate) fn animation_target(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    done(state.set_animation_targets(&ask.params))
+pub(crate) fn animation_target(
+    state: &mut Dashi,
+    _: &Ask,
+    params: AnimationTargets,
+) -> Result<Done, String> {
+    state.set_animation_targets(&params.targets);
+    Ok(Done {})
 }
 
-pub(crate) fn layer_motion(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    done(state.layer_motion.set(&ask.params))
+pub(crate) fn layer_motion(
+    state: &mut Dashi,
+    _: &Ask,
+    params: crate::wm::LayerMotionParams,
+) -> Result<Done, String> {
+    done(state.layer_motion.set(&params))
 }
 
-pub(crate) fn attach(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    let params = &ask.params;
-    let parent = match params.get("parent") {
-        None | Some(Value::Null) => None,
-        Some(value) => Some(
-            value
-                .as_u64()
-                .filter(|id| *id > 0)
-                .ok_or("`parent` must be a window id or null")?,
-        ),
-    };
-    let top = params
-        .contains_key("top")
-        .then(|| coord(params, "top"))
-        .transpose()?
-        .map(|top| top.clamp(0, 512));
-    done(state.attach_sheet(window(params)?, parent, top))
+pub(crate) fn attach(state: &mut Dashi, _: &Ask, params: Attach) -> Result<Done, String> {
+    let parent = params.parent.map(|parent| parent.0);
+    let top = params.top.map(|top| top.i32().clamp(0, 512));
+    done(state.attach_sheet(params.window.0, parent, top))
 }
 
-pub(crate) fn window_for_handle(state: &mut Dashi, ask: &Ask) -> Result<Value, String> {
-    let handle = text(&ask.params, "handle")?;
-    Ok(json!({ "window": find_handle(state, handle) }))
+pub(crate) fn window_for_handle(
+    state: &mut Dashi,
+    _: &Ask,
+    params: Handle,
+) -> Result<MaybeWindow, String> {
+    Ok(MaybeWindow {
+        window: find_handle(state, &params.handle),
+    })
 }
 
 /// The window a portal's parent handle names: `wayland:<xdg-foreign handle>`

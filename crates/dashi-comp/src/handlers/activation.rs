@@ -7,9 +7,9 @@
 //! portal's dialog can be the child of the app window that asked for it, is
 //! protocols/xdg_foreign.rs.
 
+use crate::ipc::protocol::Event;
 use std::time::Duration;
 
-use serde_json::json;
 use smithay::{
     delegate_xdg_activation, delegate_xdg_dialog,
     reexports::wayland_server::{Resource, protocol::wl_surface::WlSurface},
@@ -76,7 +76,7 @@ impl Dashi {
             && !entry.attention
         {
             entry.attention = true;
-            self.ipc.emit("window-attention", json!({ "window": id }));
+            self.ipc.emit(Event::WindowAttention { window: id });
         }
     }
 }

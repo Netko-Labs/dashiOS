@@ -5,23 +5,13 @@
 /// A rectangle in floating point: (x, y, width, height).
 pub(crate) type Area = (f64, f64, f64, f64);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub(crate) enum Mode {
     #[default]
     Fill,
     Fit,
     Center,
-}
-
-impl Mode {
-    pub(crate) fn parse(name: &str) -> Option<Self> {
-        match name {
-            "fill" => Some(Mode::Fill),
-            "fit" => Some(Mode::Fit),
-            "center" => Some(Mode::Center),
-            _ => None,
-        }
-    }
 }
 
 /// The part of the source to show (in source pixels) and where it lands on
@@ -103,7 +93,10 @@ mod tests {
 
     #[test]
     fn modes_by_name() {
-        assert_eq!(Mode::parse("fit"), Some(Mode::Fit));
-        assert_eq!(Mode::parse("tile"), None);
+        assert_eq!(
+            serde_json::from_value::<Mode>(serde_json::json!("fit")).unwrap(),
+            Mode::Fit
+        );
+        assert!(serde_json::from_value::<Mode>(serde_json::json!("tile")).is_err());
     }
 }

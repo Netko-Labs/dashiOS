@@ -5,7 +5,9 @@
 
 use std::time::Duration;
 
-use serde_json::{Map, Value};
+use serde::{Deserialize, Serialize};
+
+use crate::ipc::protocol::{Millis, Real};
 
 /// One shadow, as CSS's `box-shadow` has it: an offset, a blur (a Gaussian
 /// of sigma blur/2), a spread, in logical pixels; black at `alpha`.
@@ -54,93 +56,115 @@ pub(crate) struct Style {
     pub fade: Duration,
 }
 
-const MOST_OFFSET: f64 = 128.0;
-const MOST_BLUR: f64 = 128.0;
 const MOST_LINE: f64 = 8.0;
 const MOST_FADE_MS: u64 = 1000;
 
-/// Parse a whole `window-style` request: keys left out are none.
-pub(crate) fn parse(params: &Map<String, Value>) -> Result<Style, String> {
-    let shadows = match params.get("shadow") {
-        None | Some(Value::Null) => Map::new(),
-        Some(Value::Object(map)) => map.clone(),
-        Some(_) => return Err("`shadow` must be an object".into()),
-    };
-    let shadow = |key: &str| -> Result<Shadow, String> {
-        shadow(shadows.get(key)).map_err(|error| format!("shadow.{key}: {error}"))
-    };
-    let fade = match params.get("fade") {
-        None | Some(Value::Null) => 0,
-        Some(value) => value
-            .as_u64()
-            .filter(|ms| *ms <= MOST_FADE_MS)
-            .ok_or(format!("`fade` must be 0 to {MOST_FADE_MS} ms"))?,
+/// An offset or a spread, -128 to 128.
+type Offset = Real<-128_000, 128_000>;
+/// A blur, 0 to 128.
+type Blur = Real<0, 128_000>;
+/// An opacity, 0 to 1.
+type Alpha = Real<0, 1000>;
+/// A line's width, 0 to 8.
+type LineWidth = Real<0, 8000>;
+
+/// `window-style`'s params, the whole look each time: keys left out are none.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct WindowStyle {
+    pub shadow: Option<Shadows>,
+    pub edge: Option<LineParams>,
+    pub ring: Option<LineParams>,
+    pub fade: Option<Millis<{ MOST_FADE_MS as i64 }>>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Shadows {
+    pub focused: Option<Vec<LayerParams>>,
+    pub other: Option<Vec<LayerParams>>,
+    pub tiled: Option<Vec<LayerParams>>,
+    pub filled: Option<Vec<LayerParams>>,
+    pub sheet: Option<Vec<LayerParams>>,
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct LayerParams {
+    pub x: Option<Offset>,
+    pub y: Option<Offset>,
+    pub blur: Option<Blur>,
+    pub spread: Option<Offset>,
+    pub alpha: Option<Alpha>,
+}
+
+/// A line: `{color, width}`; `on: false` (the ring) is none, and `filled`
+/// (the edge) says whether a filled window has it too.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct LineParams {
+    pub color: Option<String>,
+    pub width: Option<LineWidth>,
+    pub on: Option<bool>,
+    pub filled: Option<bool>,
+}
+
+/// A whole `window-style` request as the look it gives.
+pub(crate) fn parse(params: &WindowStyle) -> Result<Style, String> {
+    let shadows = params.shadow.clone().unwrap_or_default();
+    let shadow = |key: &str, layers: &Option<Vec<LayerParams>>| -> Result<Shadow, String> {
+        shadow(layers.as_deref()).map_err(|error| format!("shadow.{key}: {error}"))
     };
     Ok(Style {
-        focused: shadow("focused")?,
-        other: shadow("other")?,
-        tiled: shadow("tiled")?,
-        filled: shadow("filled")?,
-        sheet: shadow("sheet")?,
-        edge: line(params.get("edge")).map_err(|error| format!("edge: {error}"))?,
-        edge_filled: match params.get("edge").and_then(|edge| edge.get("filled")) {
-            None | Some(Value::Null) => true,
-            Some(filled) => filled
-                .as_bool()
-                .ok_or("`edge.filled` must be true or false")?,
-        },
-        ring: line(params.get("ring")).map_err(|error| format!("ring: {error}"))?,
-        fade: Duration::from_millis(fade),
+        focused: shadow("focused", &shadows.focused)?,
+        other: shadow("other", &shadows.other)?,
+        tiled: shadow("tiled", &shadows.tiled)?,
+        filled: shadow("filled", &shadows.filled)?,
+        sheet: shadow("sheet", &shadows.sheet)?,
+        edge: line(params.edge.as_ref()).map_err(|error| format!("edge: {error}"))?,
+        edge_filled: params
+            .edge
+            .as_ref()
+            .and_then(|edge| edge.filled)
+            .unwrap_or(true),
+        ring: line(params.ring.as_ref()).map_err(|error| format!("ring: {error}"))?,
+        fade: Duration::from_millis(params.fade.map_or(0, |fade| fade.to::<u64>())),
     })
 }
 
-fn shadow(value: Option<&Value>) -> Result<Shadow, String> {
-    let layers = match value {
-        None | Some(Value::Null) => return Ok(Shadow::default()),
-        Some(Value::Array(layers)) if layers.len() <= 2 => layers,
-        Some(_) => return Err("must be a list of up to two layers".into()),
-    };
+fn shadow(layers: Option<&[LayerParams]>) -> Result<Shadow, String> {
+    let layers = layers.unwrap_or_default();
+    if layers.len() > 2 {
+        return Err("must be a list of up to two layers".into());
+    }
     let mut shadow = Shadow::default();
     for (slot, layer) in shadow.iter_mut().zip(layers) {
-        let layer = layer.as_object().ok_or("each layer is an object")?;
-        let get = |key: &str, low: f64, high: f64| -> Result<f64, String> {
-            match layer.get(key) {
-                None => Ok(0.0),
-                Some(value) => value
-                    .as_f64()
-                    .filter(|v| (low..=high).contains(v))
-                    .ok_or(format!("`{key}` must be a number from {low} to {high}")),
-            }
-        };
         *slot = Layer {
-            x: get("x", -MOST_OFFSET, MOST_OFFSET)?,
-            y: get("y", -MOST_OFFSET, MOST_OFFSET)?,
-            blur: get("blur", 0.0, MOST_BLUR)?,
-            spread: get("spread", -MOST_OFFSET, MOST_OFFSET)?,
-            alpha: get("alpha", 0.0, 1.0)?,
+            x: layer.x.map_or(0.0, Offset::get),
+            y: layer.y.map_or(0.0, Offset::get),
+            blur: layer.blur.map_or(0.0, Blur::get),
+            spread: layer.spread.map_or(0.0, Offset::get),
+            alpha: layer.alpha.map_or(0.0, Alpha::get),
         };
     }
     Ok(shadow)
 }
 
-fn line(value: Option<&Value>) -> Result<Line, String> {
-    let line = match value {
-        None | Some(Value::Null) => return Ok(Line::default()),
-        Some(Value::Object(line)) => line,
-        Some(_) => return Err("must be an object".into()),
+fn line(params: Option<&LineParams>) -> Result<Line, String> {
+    let Some(line) = params else {
+        return Ok(Line::default());
     };
-    if line.get("on").is_some_and(|on| on.as_bool() == Some(false)) {
+    if line.on == Some(false) {
         return Ok(Line::default());
     }
     let color = line
-        .get("color")
-        .and_then(Value::as_str)
+        .color
+        .as_deref()
         .and_then(hex)
         .ok_or("`color` must be #rrggbb or #rrggbbaa")?;
     let width = line
-        .get("width")
-        .and_then(Value::as_f64)
-        .filter(|w| (0.0..=MOST_LINE).contains(w))
+        .width
+        .map(LineWidth::get)
         .ok_or(format!("`width` must be 0 to {MOST_LINE}"))?;
     Ok(Line { color, width })
 }
@@ -164,10 +188,14 @@ pub(crate) fn hex(text: &str) -> Option<[f32; 4]> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
+    use serde_json::{Value, json};
 
-    fn params(value: Value) -> Map<String, Value> {
-        value.as_object().cloned().unwrap_or_default()
+    fn params(value: Value) -> Value {
+        value
+    }
+
+    fn parse(value: Value) -> Result<Style, String> {
+        super::parse(&crate::ipc::protocol::read(value)?)
     }
 
     #[test]
@@ -182,7 +210,7 @@ mod tests {
 
     #[test]
     fn a_whole_style() {
-        let style = parse(&params(json!({
+        let style = parse(params(json!({
             "shadow": {
                 "focused": [{"x": 0, "y": 18, "blur": 40, "spread": -8, "alpha": 0.38}, {"y": 2, "blur": 6, "alpha": 0.16}],
                 "other": [{"y": 8, "blur": 20, "spread": -6, "alpha": 0.22}],
@@ -204,7 +232,7 @@ mod tests {
 
     #[test]
     fn nothing_is_nothing() {
-        let style = parse(&Map::new()).expect("an empty style");
+        let style = parse(json!({})).expect("an empty style");
         assert_eq!(
             style,
             Style {
@@ -228,7 +256,7 @@ mod tests {
             json!({"fade": 5000}),
         ];
         for value in bad {
-            assert!(parse(&params(value.clone())).is_err(), "{value}");
+            assert!(parse(params(value.clone())).is_err(), "{value}");
         }
     }
 }

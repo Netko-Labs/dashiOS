@@ -3,7 +3,10 @@
 //! or `{"id", "error"}`. Everything from a client is untrusted: a line that is
 //! not a request gets an error reply when it has an id, and is dropped when not.
 
-use serde_json::{Map, Value, json};
+use serde::Serialize;
+use serde_json::{Map, Value};
+
+use super::protocol::Event;
 
 /// A line longer than this ends the connection: no request is that big.
 pub(crate) const MAX_LINE: usize = 1 << 20;
@@ -87,27 +90,33 @@ pub(crate) fn parse_request(line: &str) -> Result<Request, Malformed> {
     Ok(Request { id, method, params })
 }
 
+/// A reply: exactly one per request, its result or why not.
+#[derive(Serialize)]
+#[serde(untagged)]
+enum Reply {
+    Answered { id: u64, result: Value },
+    Refused { id: u64, error: String },
+}
+
 /// A reply line, newline included.
 pub(crate) fn reply(id: u64, outcome: Result<Value, String>) -> String {
     let message = match outcome {
-        Ok(result) => json!({ "id": id, "result": result }),
-        Err(error) => json!({ "id": id, "error": error }),
+        Ok(result) => Reply::Answered { id, result },
+        Err(error) => Reply::Refused { id, error },
     };
-    format!("{message}\n")
+    // A `Value` and a `String` always serialize.
+    serde_json::to_string(&message).unwrap_or_default() + "\n"
 }
 
 /// An event line, newline included: `{"event": name, ...fields}`.
-pub(crate) fn event(name: &str, fields: Value) -> String {
-    let mut object = match fields {
-        Value::Object(object) => object,
-        _ => Map::new(),
-    };
-    object.insert("event".into(), Value::String(name.into()));
-    format!("{}\n", Value::Object(object))
+pub(crate) fn event(event: &Event) -> Option<String> {
+    serde_json::to_string(event).ok().map(|line| line + "\n")
 }
 
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
+
     use super::*;
 
     #[test]
@@ -160,10 +169,10 @@ mod tests {
     #[test]
     fn replies_and_events_are_one_line() {
         assert_eq!(reply(2, Ok(json!({}))), "{\"id\":2,\"result\":{}}\n");
-        assert_eq!(reply(2, Err("no".into())), "{\"error\":\"no\",\"id\":2}\n");
+        assert_eq!(reply(2, Err("no".into())), "{\"id\":2,\"error\":\"no\"}\n");
         assert_eq!(
-            event("window-closed", json!({"id": 9})),
-            "{\"event\":\"window-closed\",\"id\":9}\n"
+            event(&Event::WindowClosed { id: 9 }).as_deref(),
+            Some("{\"event\":\"window-closed\",\"id\":9}\n")
         );
     }
 }

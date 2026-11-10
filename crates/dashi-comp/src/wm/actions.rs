@@ -3,6 +3,7 @@
 //! decision (docs/compositor-ipc.md, "Session and windows"). Which frame a
 //! window had before it was tiled or filled is the shell's to remember too.
 
+use crate::ipc::protocol::Event;
 use smithay::{
     desktop::Window,
     reexports::wayland_protocols::xdg::shell::server::xdg_toplevel,
@@ -100,8 +101,7 @@ impl Dashi {
         self.foreign_closed(entry.id);
         crate::handlers::toplevel_meta::forget_icon_file(entry.icon.path.clone());
         if entry.announced {
-            self.ipc
-                .emit("window-closed", serde_json::json!({ "id": entry.id }));
+            self.ipc.emit(Event::WindowClosed { id: entry.id });
         }
     }
 
@@ -179,8 +179,7 @@ impl Dashi {
     /// Tell the shell a window was minimized, hidden, or shown again (`window-state`).
     fn emit_window_state(&mut self, id: WindowId) {
         if let Some(entry) = self.windows.get(id).filter(|entry| entry.announced) {
-            let event = serde_json::json!({ "window": id, "state": entry.shown.name() });
-            self.ipc.emit("window-state", event);
+            self.ipc.emit(Event::state(id, entry.shown.wire()));
         }
     }
 

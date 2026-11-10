@@ -11,7 +11,6 @@
 
 use std::time::Duration;
 
-use serde_json::{Map, Value};
 use smithay::{
     backend::input::{Axis, AxisSource, ButtonState, KeyState},
     desktop::WindowSurfaceType,
@@ -25,7 +24,10 @@ use smithay::{
     wayland::input_method::InputMethodSeat,
 };
 
-use crate::{render::titlebar::Part, session::agent_keys::key_route, state::Dashi};
+use super::agent_input::{AgentInput, Button, KeyMove, KeyStep, PointerAction};
+use crate::{
+    ipc::protocol::Finite, render::titlebar::Part, session::agent_keys::key_route, state::Dashi,
+};
 
 const BTN_LEFT: u32 = 0x110;
 const BTN_RIGHT: u32 = 0x111;
@@ -78,19 +80,18 @@ impl Agent {
     }
 }
 
-fn button_code(name: Option<&str>) -> Result<u32, String> {
-    match name.unwrap_or("left") {
-        "left" => Ok(BTN_LEFT),
-        "right" => Ok(BTN_RIGHT),
-        "middle" => Ok(BTN_MIDDLE),
-        other => Err(format!("unknown button {other:?}")),
+fn button_code(button: Option<Button>) -> u32 {
+    match button.unwrap_or_default() {
+        Button::Left => BTN_LEFT,
+        Button::Right => BTN_RIGHT,
+        Button::Middle => BTN_MIDDLE,
     }
 }
 
 impl Dashi {
     /// `agent-input {window, label, pointer?, action?, button?, scroll?, keys?, borrow?}` or `{release}`.
-    pub(crate) fn agent_input(&mut self, params: &Map<String, Value>) -> Result<(), String> {
-        if params.get("release") == Some(&Value::Bool(true)) {
+    pub(crate) fn agent_input(&mut self, params: &AgentInput) -> Result<(), String> {
+        if params.release {
             self.agent_release();
             return Ok(());
         }
@@ -98,8 +99,8 @@ impl Dashi {
             return Err("the screen is locked".into());
         }
         let id = params
-            .get("window")
-            .and_then(Value::as_u64)
+            .window
+            .map(|id| id.to::<u64>())
             .ok_or("`window` must be a window id")?;
         let entry = self
             .windows
@@ -112,21 +113,20 @@ impl Dashi {
             .element_geometry(&window)
             .ok_or("that window is not on screen")?;
         let label = params
-            .get("label")
-            .and_then(Value::as_str)
+            .label
+            .as_deref()
             .unwrap_or("Agent")
             .chars()
             .take(40)
             .collect::<String>();
 
         // The person's seat, borrowed, only when they have left it alone long enough.
-        let seat = match (params.get("borrow"), &self.agent.seat) {
+        let seat = match (params.borrow, &self.agent.seat) {
             (None, Some(agent)) => agent.clone(),
             (borrow, _) => {
                 let idle = borrow
-                    .and_then(|borrow| borrow.get("idleMs"))
-                    .and_then(Value::as_u64)
-                    .unwrap_or(BORROW_AFTER_MS)
+                    .and_then(|borrow| borrow.idle_ms)
+                    .map_or(BORROW_AFTER_MS, |ms| ms.to::<u64>())
                     .min(60_000);
                 // Only the person's own input counts: a page keeping the screen
                 // awake (session/idle.rs) and the agent's own actions do not.
@@ -143,15 +143,8 @@ impl Dashi {
             }
         };
 
-        if let Some(at) = params.get("pointer") {
-            let x = at
-                .get("x")
-                .and_then(Value::as_f64)
-                .ok_or("`pointer` needs x and y")?;
-            let y = at
-                .get("y")
-                .and_then(Value::as_f64)
-                .ok_or("`pointer` needs x and y")?;
+        if let Some(at) = params.pointer {
+            let (x, y) = (at.x.get(), at.y.get());
             if x < 0.0 || y < 0.0 || x > f64::from(content.size.w) || y > f64::from(content.size.h)
             {
                 return Err("the point is outside the window".into());
@@ -162,10 +155,7 @@ impl Dashi {
                 .surface_under(global - render_at.to_f64(), WindowSurfaceType::ALL)
                 .map(|(surface, loc)| (surface, (loc + render_at).to_f64()));
             self.agent.pointer = Some((global, label.clone()));
-            let action = params
-                .get("action")
-                .and_then(Value::as_str)
-                .unwrap_or("move");
+            let action = params.action.unwrap_or_default();
             // The lights are dashi-comp's, drawn over the window, and never reach the client: a click
             // there is the light's, as the person's press is (input/decorations.rs), active window or not.
             let light = light_click(action, self.light_of(id, &window, global));
@@ -173,19 +163,22 @@ impl Dashi {
                 &seat,
                 global,
                 under,
-                if light.is_some() { "move" } else { action },
+                if light.is_some() {
+                    PointerAction::Move
+                } else {
+                    action
+                },
                 params,
             )?;
             if let Some(part) = light {
                 self.press_light(id, part)?;
             }
-            if matches!(action, "click" | "press") {
+            if matches!(action, PointerAction::Click | PointerAction::Press) {
                 self.note_agent_press(id);
             }
         }
 
-        if let Some(keys) = params.get("keys") {
-            let keys = keys.as_array().ok_or("`keys` must be a list")?;
+        if let Some(keys) = &params.keys {
             let Some(surface) = crate::wm::toplevel_surface(&window) else {
                 return Ok(());
             };
@@ -206,8 +199,8 @@ impl Dashi {
         seat: &Seat<Dashi>,
         at: Point<f64, Logical>,
         under: Option<(WlSurface, Point<f64, Logical>)>,
-        action: &str,
-        params: &Map<String, Value>,
+        action: PointerAction,
+        params: &AgentInput,
     ) -> Result<(), String> {
         let Some(pointer) = seat.get_pointer() else {
             return Err("the seat has no pointer".into());
@@ -223,7 +216,7 @@ impl Dashi {
             },
         );
         pointer.frame(self);
-        let button = button_code(params.get("button").and_then(Value::as_str))?;
+        let button = button_code(params.button);
         let press = |state: &mut Dashi, down: bool| {
             let event = ButtonEvent {
                 serial: SERIAL_COUNTER.next_serial(),
@@ -239,37 +232,28 @@ impl Dashi {
             pointer.frame(state);
         };
         match action {
-            "move" => {}
-            "click" => {
+            PointerAction::Move => {}
+            PointerAction::Click => {
                 press(self, true);
                 press(self, false);
             }
-            "press" => {
+            PointerAction::Press => {
                 press(self, true);
                 self.agent.pressed_buttons.push(button);
             }
-            "release" => {
+            PointerAction::Release => {
                 press(self, false);
                 self.agent.pressed_buttons.retain(|b| *b != button);
             }
-            "scroll" => {
-                let scroll = params
-                    .get("scroll")
-                    .ok_or("scroll needs `scroll {dx, dy}`")?;
-                let dx = scroll
-                    .get("dx")
-                    .and_then(Value::as_f64)
-                    .unwrap_or(0.0)
-                    .clamp(-10_000.0, 10_000.0);
-                let dy = scroll
-                    .get("dy")
-                    .and_then(Value::as_f64)
-                    .unwrap_or(0.0)
-                    .clamp(-10_000.0, 10_000.0);
+            PointerAction::Scroll => {
+                let scroll = params.scroll.ok_or("scroll needs `scroll {dx, dy}`")?;
+                let amount = |value: Option<Finite>| {
+                    value.map_or(0.0, Finite::get).clamp(-10_000.0, 10_000.0)
+                };
+                let (dx, dy) = (amount(scroll.dx), amount(scroll.dy));
                 pointer.axis(self, wheel_frame(time, dx, dy));
                 pointer.frame(self);
             }
-            other => return Err(format!("unknown action {other:?}")),
         }
         Ok(())
     }
@@ -278,7 +262,7 @@ impl Dashi {
         &mut self,
         seat: &Seat<Dashi>,
         surface: WlSurface,
-        steps: &[Value],
+        steps: &[KeyStep],
     ) -> Result<(), String> {
         let Some(keyboard) = seat.get_keyboard() else {
             return Err("the seat has no keyboard".into());
@@ -298,7 +282,7 @@ impl Dashi {
             state.agent_key(&keyboard, &surface, route, code, down, time);
         };
         for step in steps {
-            if let Some(text) = step.get("text").and_then(Value::as_str) {
+            if let Some(text) = &step.text {
                 if text.chars().count() > MAX_TEXT {
                     return Err("too much text at once".into());
                 }
@@ -323,18 +307,18 @@ impl Dashi {
                 continue;
             }
             let name = step
-                .get("name")
-                .and_then(Value::as_str)
+                .name
+                .as_deref()
                 .ok_or("a key step needs text or a name")?;
             let (code, _) = self
                 .keycode_named(name)
                 .ok_or_else(|| format!("no key {name:?} on this keyboard"))?;
-            match step.get("state").and_then(Value::as_str) {
-                Some("down") => {
+            match step.state {
+                Some(KeyMove::Down) => {
                     send(self, code, true);
                     self.agent.pressed_keys.push(code);
                 }
-                Some("up") => {
+                Some(KeyMove::Up) => {
                     send(self, code, false);
                     self.agent.pressed_keys.retain(|c| *c != code);
                 }
@@ -342,7 +326,6 @@ impl Dashi {
                     send(self, code, true);
                     send(self, code, false);
                 }
-                Some(other) => return Err(format!("unknown key state {other:?}")),
             }
         }
         Ok(())
@@ -382,8 +365,8 @@ impl Dashi {
 
 /// The light an agent's `action` presses, when it lands on one (`light`): only a click does, as the
 /// lights act on the press and a held press would have nothing to let go.
-fn light_click(action: &str, light: Option<Part>) -> Option<Part> {
-    light.filter(|_| action == "click")
+fn light_click(action: PointerAction, light: Option<Part>) -> Option<Part> {
+    light.filter(|_| action == PointerAction::Click)
 }
 
 #[cfg(test)]
@@ -393,19 +376,22 @@ mod tests {
 
     #[test]
     fn a_click_on_a_light_is_the_lights() {
-        assert_eq!(light_click("click", Some(Part::Close)), Some(Part::Close));
-        assert_eq!(light_click("click", None), None);
-        assert_eq!(light_click("move", Some(Part::Close)), None);
-        assert_eq!(light_click("press", Some(Part::Zoom)), None);
+        assert_eq!(
+            light_click(PointerAction::Click, Some(Part::Close)),
+            Some(Part::Close)
+        );
+        assert_eq!(light_click(PointerAction::Click, None), None);
+        assert_eq!(light_click(PointerAction::Move, Some(Part::Close)), None);
+        assert_eq!(light_click(PointerAction::Press, Some(Part::Zoom)), None);
         // Over a unified window's surface, the first light is Close (render/titlebar.rs).
         assert_eq!(part_at(20.0, 19.0, 600, Decor::Unified), Some(Part::Close));
     }
 
     #[test]
     fn buttons_by_name() {
-        assert_eq!(button_code(None), Ok(BTN_LEFT));
-        assert_eq!(button_code(Some("right")), Ok(BTN_RIGHT));
-        assert!(button_code(Some("thumb")).is_err());
+        assert_eq!(button_code(None), BTN_LEFT);
+        assert_eq!(button_code(Some(Button::Right)), BTN_RIGHT);
+        assert!(serde_json::from_value::<Button>(serde_json::json!("thumb")).is_err());
     }
 
     #[test]

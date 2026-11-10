@@ -4,12 +4,12 @@
 //! bell (xdg-system-bell). The shell hears `window-icon` and `bell`; what
 //! they look or sound like is its decision.
 
+use crate::ipc::protocol::Event;
 use std::{
     hash::{Hash, Hasher},
     path::PathBuf,
 };
 
-use serde_json::json;
 use smithay::{
     delegate_xdg_system_bell, delegate_xdg_toplevel_icon,
     reexports::{
@@ -65,7 +65,7 @@ impl XdgToplevelIconHandler for Dashi {
 impl XdgSystemBellHandler for Dashi {
     fn ring(&mut self, surface: Option<WlSurface>) {
         let window = surface.and_then(|surface| crate::wm::window_id_for_surface(self, &surface));
-        self.ipc.emit("bell", json!({ "window": window }));
+        self.ipc.emit(Event::Bell { window });
     }
 }
 
@@ -157,8 +157,16 @@ impl Dashi {
         let Some(entry) = self.windows.get(id).filter(|e| e.announced) else {
             return;
         };
-        let event = json!({ "window": id, "name": entry.icon.name, "path": entry.icon.path });
-        self.ipc.emit("window-icon", event);
+        let event = Event::WindowIcon {
+            window: id,
+            name: entry.icon.name.clone(),
+            path: entry
+                .icon
+                .path
+                .as_ref()
+                .map(|path| path.to_string_lossy().into_owned()),
+        };
+        self.ipc.emit(event);
     }
 }
 

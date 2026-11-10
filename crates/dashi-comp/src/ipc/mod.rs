@@ -3,9 +3,9 @@
 mod frame;
 mod grants;
 mod incoming;
-mod methods;
-mod params;
+pub(crate) mod methods;
 mod peer;
+pub(crate) mod protocol;
 mod server;
 mod table;
 

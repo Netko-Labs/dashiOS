@@ -1,5 +1,6 @@
 //! A GPU that does not draw, gone while open: abandoned, not closed.
 
+use crate::ipc::protocol::Event;
 use std::mem::{self, ManuallyDrop};
 
 use smithay::backend::{egl::EGLContext, renderer::multigpu::ApiDevice};
@@ -46,8 +47,8 @@ pub(super) fn abandon(state: &mut Dashi, node: DrmNode, name: &str) {
     let _ = std::thread::Builder::new()
         .name("dashi-gpu-gone".into())
         .spawn(move || drop(ManuallyDrop::into_inner(device)));
-    state.ipc.emit("outputs-changed", json!({}));
-    state.ipc.emit("gpus-changed", json!({}));
+    state.ipc.emit(Event::OutputsChanged);
+    state.ipc.emit(Event::GpusChanged);
 }
 
 impl UdevData {

@@ -4,7 +4,7 @@
 //! person began to resize (`window-grab`), and the window stops being
 //! maximized: its size is the person's now, not the screen's.
 
-use crate::state::Dashi;
+use crate::{ipc::protocol::Grab, state::Dashi};
 use smithay::{
     desktop::{Space, Window},
     input::pointer::{
@@ -140,7 +140,7 @@ impl PointerGrab<Dashi> for ResizeSurfaceGrab {
 
         if !self.reported {
             self.reported = true;
-            data.report_grab(&self.window, "resize", self.start_data.location);
+            data.report_grab(&self.window, Grab::Resize, self.start_data.location);
             if let Some(entry) = data.windows.by_window_mut(&self.window) {
                 entry.maximized = false;
             }

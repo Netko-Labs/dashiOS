@@ -10,6 +10,7 @@
 //! recorder gets a steady stream instead of copies as fast as the GPU
 //! renders them; each reports the whole frame as damaged.
 
+use crate::ipc::protocol::Event;
 use std::{
     collections::HashMap,
     path::PathBuf,
@@ -17,7 +18,6 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
-use serde_json::json;
 use smithay::{
     output::Output,
     reexports::{
@@ -301,7 +301,7 @@ impl Dashi {
             return;
         }
         self.capture_activity.watching = true;
-        self.ipc.emit("screen-capture", json!({ "active": true }));
+        self.ipc.emit(Event::ScreenCapture { active: true });
         let _ = self
             .loop_handle
             .insert_source(Timer::from_duration(QUIET), |_, _, state| {
@@ -313,7 +313,7 @@ impl Dashi {
                     return TimeoutAction::ToDuration(QUIET);
                 }
                 state.capture_activity.watching = false;
-                state.ipc.emit("screen-capture", json!({ "active": false }));
+                state.ipc.emit(Event::ScreenCapture { active: false });
                 TimeoutAction::Drop
             });
     }

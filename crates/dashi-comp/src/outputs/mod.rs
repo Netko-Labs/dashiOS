@@ -7,6 +7,9 @@ mod mirror;
 mod report;
 mod vrr;
 
-pub(crate) use mirror::{BAR as MIRROR_BAR, Mirrors, bars as mirror_bars, drawn_size, letterbox};
+pub(crate) use config::OutputsConfig;
+pub(crate) use mirror::{
+    BAR as MIRROR_BAR, MirrorParams, Mirrors, bars as mirror_bars, drawn_size, letterbox,
+};
 pub(crate) use report::{ShownTransform, describe_all, set_scale};
 pub(crate) use vrr::VrrMode;

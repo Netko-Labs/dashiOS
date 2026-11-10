@@ -9,6 +9,7 @@
 //! connected it is tried again, less and less often, so the screen lights up
 //! once the shell switches to Hybrid.
 
+use crate::ipc::protocol::Event;
 use std::{
     fs::OpenOptions,
     io,
@@ -138,7 +139,7 @@ fn answered(state: &mut Dashi, answer: ProbeAnswer) {
                             card.life.reset_retry();
                         }
                     });
-                    state.ipc.emit("gpus-changed", json!({}));
+                    state.ipc.emit(Event::GpusChanged);
                     settle(state, node);
                 }
                 Err(error) => {
@@ -162,7 +163,7 @@ fn answered(state: &mut Dashi, answer: ProbeAnswer) {
             }
             Answer::Recovered => {
                 tracing::warn!(card = name, "a GPU that did not answer answers again");
-                state.ipc.emit("gpus-changed", json!({}));
+                state.ipc.emit(Event::GpusChanged);
                 super::sleep::gpu_changed(state, node);
             }
             Answer::Stale => {}
@@ -185,7 +186,7 @@ fn missed(state: &mut Dashi, node: DrmNode, id: u64) {
         seconds = PROBE_DEADLINE.as_secs(),
         "a GPU did not answer its probe: left alone until it does (it may have fallen off the bus)"
     );
-    state.ipc.emit("gpus-changed", json!({}));
+    state.ipc.emit(Event::GpusChanged);
     super::imports::answer_waiting(state);
 }
 
@@ -203,7 +204,7 @@ fn retry_if_screen(state: &mut Dashi, node: DrmNode) {
     })
     .flatten();
     let Some(wait) = wait else { return };
-    state.ipc.emit("gpus-changed", json!({}));
+    state.ipc.emit(Event::GpusChanged);
     let _ = state
         .loop_handle
         .insert_source(Timer::from_duration(wait), move |_, _, state| {

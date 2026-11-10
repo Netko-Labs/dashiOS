@@ -3,9 +3,9 @@
 //! answers; with no shell listening, or no answer in time, it cascades inside
 //! the usable area of the screen under the pointer.
 
+use crate::ipc::protocol::{Event, Placing, Position};
 use std::time::Duration;
 
-use serde_json::json;
 use smithay::{
     backend::renderer::utils::with_renderer_surface_state,
     desktop::layer_map_for_output,
@@ -61,19 +61,17 @@ impl Dashi {
         let mut size = window.geometry().size;
         size.h += super::geometry::bar_of(self, &window);
         let parent = super::windows::parent_of(self, &window);
-        self.ipc.emit(
-            "window-placing",
-            {
-                let mut placing = json!({ "id": id, "appId": app_id, "title": title, "width": size.w, "height": size.h });
-                if let Some(at) = asked {
-                    placing["position"] = json!({ "x": at.x, "y": at.y });
-                }
-                if let Some(parent) = parent {
-                    placing["parent"] = json!(parent);
-                }
-                json!({ "window": placing })
+        self.ipc.emit(Event::WindowPlacing {
+            window: Placing {
+                id,
+                app_id,
+                title,
+                width: size.w,
+                height: size.h,
+                position: asked.map(|at| Position { x: at.x, y: at.y }),
+                parent,
             },
-        );
+        });
         let waited = self.loop_handle.insert_source(
             Timer::from_duration(PLACING_WAIT),
             move |_, _, state| {
@@ -174,7 +172,7 @@ impl Dashi {
         }
         if let Some(entry) = self.windows.get(id) {
             let window = describe(entry, self);
-            self.ipc.emit("window-opened", json!({ "window": window }));
+            self.ipc.emit(Event::WindowOpened { window });
             self.foreign_opened(id);
         }
     }

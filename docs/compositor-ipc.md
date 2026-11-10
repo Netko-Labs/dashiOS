@@ -20,7 +20,15 @@ them until the compositor side pins them down here.
 - Request: `{"id": <int>, "method": "<name>", "params": {...}}`.
 - Reply, exactly one per request: `{"id": <int>, "result": <any>}` or
   `{"id": <int>, "error": "<message>"}`. Unknown methods and invalid params
-  get an `error`, never a dropped connection. A reply may come after replies
+  get an `error`, never a dropped connection.
+- Each method's params and reply are one Rust type each (serde, beside the
+  method in `ipc/methods/` or the module whose they are; the shared ones in
+  `ipc/protocol/`), and every event a variant of `protocol::Event`. Params
+  are read strictly: a field the method does not name is refused (``unknown
+  field `x` ``), and so is a number out of its range (a window id is a
+  positive whole number; a finger count, a pid, a Space's index, a
+  millisecond count each have theirs), never wrapped or truncated. A refusal
+  names the path to what was wrong (`` `rules[3].when`: … ``). A reply may come after replies
   to later requests: `capture` answers once its file is written, which runs
   off the compositor's event loop. Correlate by `id`.
 - A client that falls 8 MiB behind on reading is dropped: its socket is shut

@@ -2,6 +2,7 @@
 //! (MIT, github.com/Smithay/smithay, v0.7.0): windows join the registry,
 //! and the shell hears when they close.
 
+use crate::ipc::protocol::Asked;
 use smithay::{
     delegate_xdg_shell,
     desktop::{
@@ -152,21 +153,21 @@ impl XdgShellHandler for Dashi {
         surface: ToplevelSurface,
         _output: Option<wl_output::WlOutput>,
     ) {
-        self.ask_shell(&surface, "fullscreen", true);
+        self.ask_shell(&surface, Asked::Fullscreen, true);
     }
 
     fn unfullscreen_request(&mut self, surface: ToplevelSurface) {
-        self.ask_shell(&surface, "fullscreen", false);
+        self.ask_shell(&surface, Asked::Fullscreen, false);
     }
 
     fn maximize_request(&mut self, surface: ToplevelSurface) {
-        self.ask_shell(&surface, "zoom", true);
+        self.ask_shell(&surface, Asked::Zoom, true);
         // The protocol wants a configure in answer, whatever the shell does.
         surface.send_configure();
     }
 
     fn unmaximize_request(&mut self, surface: ToplevelSurface) {
-        self.ask_shell(&surface, "zoom", false);
+        self.ask_shell(&surface, Asked::Zoom, false);
         surface.send_configure();
     }
 
@@ -195,7 +196,7 @@ impl XdgShellHandler for Dashi {
 delegate_xdg_shell!(Dashi);
 
 impl Dashi {
-    fn ask_shell(&mut self, surface: &ToplevelSurface, event: &str, on: bool) {
+    fn ask_shell(&mut self, surface: &ToplevelSurface, asked: Asked, on: bool) {
         let Some(id) = self
             .windows
             .by_surface(surface.wl_surface())
@@ -204,8 +205,7 @@ impl Dashi {
         else {
             return;
         };
-        self.ipc
-            .emit(event, serde_json::json!({ "window": id, "on": on }));
+        self.ipc.emit(asked.event(id, on));
     }
 }
 

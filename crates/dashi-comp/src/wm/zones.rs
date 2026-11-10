@@ -6,14 +6,16 @@
 
 use std::time::{Duration, Instant};
 
-use serde_json::{Map, Value, json};
 use smithay::{
     desktop::Window,
     reexports::calloop::timer::{TimeoutAction, Timer},
     utils::{Logical, Point, Rectangle},
 };
 
-use crate::state::Dashi;
+use crate::{
+    ipc::{methods::chrome::Layout, protocol::Event},
+    state::Dashi,
+};
 
 #[derive(Default)]
 pub(crate) struct Zones {
@@ -25,35 +27,16 @@ pub(crate) struct Zones {
     pub preview: Option<Rectangle<i32, Logical>>,
 }
 
-fn rect(value: &Value) -> Option<Rectangle<i32, Logical>> {
-    let get = |k: &str| {
-        value
-            .get(k)
-            .and_then(Value::as_f64)
-            .filter(|v| v.is_finite())
-            .map(|v| v.round() as i32)
-    };
-    let (x, y, w, h) = (get("x")?, get("y")?, get("width")?, get("height")?);
-    (w > 0 && h > 0).then(|| Rectangle::new((x, y).into(), (w, h).into()))
-}
-
 impl Dashi {
     /// `layout {zones: [{area, frame}], dwellMs}`.
-    pub(crate) fn set_zones(&mut self, params: &Map<String, Value>) -> Result<(), String> {
-        let list = params
-            .get("zones")
-            .and_then(Value::as_array)
-            .ok_or("`zones` must be a list")?;
-        let zones = list
+    pub(crate) fn set_zones(&mut self, params: &Layout) -> Result<(), String> {
+        let zones = params
+            .zones
             .iter()
-            .map(|zone| Some((rect(zone.get("area")?)?, rect(zone.get("frame")?)?)))
+            .map(|zone| Some((zone.area.positive()?, zone.frame.positive()?)))
             .collect::<Option<Vec<_>>>()
             .ok_or("each zone needs an area and a frame")?;
-        let dwell = params
-            .get("dwellMs")
-            .and_then(Value::as_u64)
-            .unwrap_or(300)
-            .min(5_000);
+        let dwell = params.dwell_ms.map_or(300, |ms| ms.to::<u64>()).min(5_000);
         self.zones = Zones {
             zones,
             dwell: Duration::from_millis(dwell),
@@ -116,10 +99,11 @@ impl Dashi {
         ) else {
             return;
         };
-        self.ipc.emit(
-            "window-drop",
-            json!({ "window": id, "zone": zone, "frame": crate::wm::rect_json(frame) }),
-        );
+        self.ipc.emit(Event::WindowDrop {
+            window: id,
+            zone,
+            frame: frame.into(),
+        });
     }
 
     /// The drag ended without a drop (a click, or the window left the screen): no preview, no tile.

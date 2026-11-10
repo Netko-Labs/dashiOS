@@ -14,7 +14,6 @@
 
 use std::collections::HashMap;
 
-use serde_json::{Map, Value};
 use smithay::{
     desktop::layer_map_for_output,
     reexports::wayland_server::{Resource, protocol::wl_surface::WlSurface},
@@ -22,10 +21,11 @@ use smithay::{
 };
 
 use super::capture::Picture;
-use crate::{state::Dashi, wm::valid_frame};
+pub(crate) use super::mask_params::CaptureMask;
+use super::mask_params::parse;
+use crate::state::Dashi;
 
 /// The most entries of each kind one mask holds.
-const MAX_ENTRIES: usize = 256;
 /// What a blanked area is painted: an opaque dark gray, plainly not content.
 const BLANK: [u8; 4] = [38, 38, 42, 255];
 
@@ -67,80 +67,6 @@ impl Masks {
     pub(crate) fn for_pid(&self, pid: u32) -> Option<&Mask> {
         self.0.values().find(|mask| mask.pids.contains(&pid))
     }
-}
-
-fn list<'a>(params: &'a Map<String, Value>, key: &str) -> Result<&'a [Value], String> {
-    match params.get(key) {
-        None | Some(Value::Null) => Ok(&[]),
-        Some(Value::Array(items)) if items.len() <= MAX_ENTRIES => Ok(items),
-        Some(_) => Err(format!("`{key}` must be a list of at most {MAX_ENTRIES}")),
-    }
-}
-
-fn integer(value: &Value, key: &str) -> Result<i64, String> {
-    value
-        .get(key)
-        .and_then(Value::as_f64)
-        .filter(|v| v.is_finite() && v.abs() <= f64::from(1 << 16))
-        .map(|v| v.round() as i64)
-        .ok_or_else(|| format!("a rect needs a numeric `{key}`"))
-}
-
-/// `capture-mask {client, windows?, rects?, layers?, pids?}`; a mask with
-/// nothing in it is dropped.
-pub(crate) fn parse(params: &Map<String, Value>) -> Result<(String, Mask), String> {
-    let client = params
-        .get("client")
-        .and_then(Value::as_str)
-        .filter(|c| !c.is_empty() && c.len() <= 64)
-        .ok_or("`client` must name whose captures are masked")?
-        .to_owned();
-    let ids = |key: &str| -> Result<Vec<u64>, String> {
-        list(params, key)?
-            .iter()
-            .map(|v| v.as_u64().ok_or_else(|| format!("`{key}` must be ids")))
-            .collect()
-    };
-    let windows = ids("windows")?;
-    let popups = ids("popups")?;
-    let pids = ids("pids")?.into_iter().map(|p| p as u32).collect();
-    let layers = list(params, "layers")?
-        .iter()
-        .map(|v| {
-            v.as_str()
-                .filter(|s| s.len() <= 128)
-                .map(str::to_owned)
-                .ok_or_else(|| "`layers` must be namespaces".to_string())
-        })
-        .collect::<Result<_, _>>()?;
-    let rects = list(params, "rects")?
-        .iter()
-        .map(|r| {
-            let window = match r.get("window") {
-                None | Some(Value::Null) => None,
-                Some(v) => Some(v.as_u64().ok_or("a rect's `window` must be an id")?),
-            };
-            let frame = valid_frame(
-                integer(r, "x")?,
-                integer(r, "y")?,
-                integer(r, "width")?,
-                integer(r, "height")?,
-            )
-            .ok_or("a rect needs a positive size")?;
-            Ok((window, frame))
-        })
-        .collect::<Result<_, String>>()?;
-    Ok((
-        client,
-        Mask {
-            windows,
-            rects,
-            layers,
-            pids,
-            popups,
-            kept: Vec::new(),
-        },
-    ))
 }
 
 /// `rect` grown out to whole logical pixels: never a sliver of what is under it.
@@ -194,7 +120,7 @@ pub(crate) fn blank(
 }
 
 impl Dashi {
-    pub(crate) fn set_capture_mask(&mut self, params: &Map<String, Value>) -> Result<(), String> {
+    pub(crate) fn set_capture_mask(&mut self, params: &CaptureMask) -> Result<(), String> {
         let (client, mut mask) = parse(params)?;
         // The popups blanked before stay blanked while they live, and so do those blanked now.
         let mut kept = self
@@ -211,7 +137,7 @@ impl Dashi {
                 }
             }
         }
-        let over = kept.len().saturating_sub(MAX_ENTRIES);
+        let over = kept.len().saturating_sub(super::mask_params::MAX_ENTRIES);
         kept.drain(..over);
         mask.kept = kept;
         if mask.is_empty() && mask.pids.is_empty() {
@@ -344,7 +270,6 @@ impl Dashi {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
 
     use super::*;
 
@@ -410,37 +335,5 @@ mod tests {
         assert_eq!(blanked(&p), vec![(3, 3)]);
         blank(&mut p, area, 1.0, None);
         assert_eq!(blanked(&p).len(), 16);
-    }
-
-    #[test]
-    fn masks_parse_and_bad_ones_are_refused() {
-        let params = |v: Value| v.as_object().cloned().unwrap();
-        let (client, mask) = parse(&params(json!({
-            "client": "agent",
-            "windows": [3],
-            "rects": [{ "window": 3, "x": 10, "y": 20, "width": 200, "height": 30 }, { "x": 0, "y": 0, "width": 5, "height": 5 }],
-            "layers": ["dashi.agent-consent"],
-            "pids": [4242],
-            "popups": [5],
-        })))
-        .unwrap();
-        assert_eq!(client, "agent");
-        assert_eq!(mask.windows, vec![3]);
-        assert_eq!(mask.rects[0].0, Some(3));
-        assert_eq!(mask.rects[1].0, None);
-        assert_eq!(mask.pids, vec![4242]);
-        assert_eq!(mask.popups, vec![5]);
-        assert!(mask.kept.is_empty());
-        assert!(parse(&params(json!({ "client": "agent", "popups": [-1] }))).is_err());
-        assert!(parse(&params(json!({ "windows": [1] }))).is_err());
-        assert!(
-            parse(&params(
-                json!({ "client": "agent", "rects": [{ "x": 0, "y": 0, "width": 0, "height": 5 }] })
-            ))
-            .is_err()
-        );
-        assert!(parse(&params(json!({ "client": "agent", "windows": ["w3"] }))).is_err());
-        let many: Vec<u64> = (0..300).collect();
-        assert!(parse(&params(json!({ "client": "agent", "windows": many }))).is_err());
     }
 }

@@ -1,15 +1,15 @@
 //! Every toplevel the compositor shows, by the id the shell knows it by: a
 //! positive integer, never reused in a session (docs/compositor-ipc.md).
 
-use serde_json::{Value, json};
 use smithay::{
     desktop::Window,
-    reexports::wayland_server::{Resource, protocol::wl_surface::WlSurface},
+    reexports::wayland_server::protocol::wl_surface::WlSurface,
     utils::{Logical, Point, Rectangle},
     wayland::{compositor::with_states, shell::xdg::XdgToplevelSurfaceData},
 };
 
-use super::geometry::{configuring, frame_of, min_frame};
+pub(crate) use super::describe::describe;
+use crate::ipc::protocol;
 use crate::{
     render::titlebar::{self, Decor},
     state::Dashi,
@@ -26,11 +26,12 @@ pub(crate) enum Shown {
 }
 
 impl Shown {
-    pub(crate) fn name(self) -> &'static str {
+    /// As the IPC says it.
+    pub(crate) fn wire(self) -> protocol::State {
         match self {
-            Shown::Normal => "normal",
-            Shown::Minimized => "minimized",
-            Shown::Hidden => "hidden",
+            Shown::Normal => protocol::State::Normal,
+            Shown::Minimized => protocol::State::Minimized,
+            Shown::Hidden => protocol::State::Hidden,
         }
     }
 }
@@ -227,7 +228,7 @@ impl Windows {
     /// The announced windows as the shell sees them, front to back: those
     /// that show, most recently used first, then the minimized, then the
     /// hidden (each latest first); never used, newest first.
-    pub(crate) fn describe_all(&self, state: &Dashi) -> Vec<Value> {
+    pub(crate) fn describe_all(&self, state: &Dashi) -> Vec<protocol::Window> {
         let mut listed: Vec<&Entry> = self.entries.iter().filter(|e| e.announced).collect();
         listed.sort_by_key(|e| (recency_group(e.shown), std::cmp::Reverse((e.used, e.id))));
         listed.into_iter().map(|e| describe(e, state)).collect()
@@ -282,48 +283,6 @@ pub(crate) fn names(window: &Window) -> (String, String) {
         .unwrap_or_default()
 }
 
-/// A window in the IPC's `Window` shape.
-pub(crate) fn describe(entry: &Entry, state: &Dashi) -> Value {
-    let surface = toplevel_surface(&entry.window);
-    let (app_id, title) = names(&entry.window);
-    // Xwayland is one client for every X11 app: an X11 window says its own (_NET_WM_PID).
-    let pid = match entry.window.x11_surface() {
-        Some(x11) => x11.pid().map(|pid| pid as i32),
-        None => surface
-            .as_ref()
-            .and_then(|surface| state.display_handle.get_client(surface.id()).ok())
-            .and_then(|client| client.get_credentials(&state.display_handle).ok())
-            .map(|credentials| credentials.pid),
-    };
-    let focused = state
-        .seat
-        .get_keyboard()
-        .and_then(|keyboard| keyboard.current_focus())
-        .is_some_and(|focus| Some(&focus) == surface.as_ref());
-    let frame = frame_of(state, &entry.window).map(rect_json);
-    json!({
-        "id": entry.id,
-        "appId": app_id,
-        "title": title,
-        "pid": pid,
-        "focused": focused,
-        "state": entry.shown.name(),
-        "frame": frame,
-        "configuring": configuring(state, &entry.window).map(|size| json!({ "width": size.w, "height": size.h })),
-        "minSize": min_frame(state, &entry.window).map(|size| json!({ "width": size.w, "height": size.h })),
-        "titleBar": state.bar_height(&entry.window),
-        "fullscreen": entry.fullscreen.is_some(),
-        "space": entry.space,
-        "attention": entry.attention,
-        "x11": entry.window.x11_surface().is_some(),
-        "sheetOf": entry.sheet_of,
-        "parent": parent_of(state, &entry.window),
-        "icon": (entry.icon.name.is_some() || entry.icon.path.is_some())
-            .then(|| json!({ "name": entry.icon.name, "path": entry.icon.path })),
-        "toplevel": state.toplevel_list.as_ref().and_then(|list| list.identifier_of(entry.id)),
-    })
-}
-
 /// The window `window` is a dialog of: its xdg parent, or the X11 window it
 /// is transient for; None for a window of its own (or one the shell does not know).
 pub(crate) fn parent_of(state: &Dashi, window: &Window) -> Option<WindowId> {
@@ -342,8 +301,4 @@ pub(crate) fn parent_of(state: &Dashi, window: &Window) -> Option<WindowId> {
     }
     let parent = window.toplevel()?.parent()?;
     window_id_for_surface(state, &parent)
-}
-
-pub(crate) fn rect_json(rect: Rectangle<i32, Logical>) -> Value {
-    json!({ "x": rect.loc.x, "y": rect.loc.y, "width": rect.size.w, "height": rect.size.h })
 }

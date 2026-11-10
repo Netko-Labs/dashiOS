@@ -23,24 +23,14 @@ use smithay::{
 pub(super) const RESTART_AFTER: [u64; 4] = [1, 2, 5, 15];
 
 /// Where Xwayland is, as `session` reports it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub(crate) enum XState {
     #[default]
     Off,
     Starting,
     Ready,
     Failed,
-}
-
-impl XState {
-    pub(crate) fn name(self) -> &'static str {
-        match self {
-            XState::Off => "off",
-            XState::Starting => "starting",
-            XState::Ready => "ready",
-            XState::Failed => "failed",
-        }
-    }
 }
 
 pub(crate) struct Xwayland {
