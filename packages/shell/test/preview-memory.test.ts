@@ -3,17 +3,10 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { enabledIds } from "../apps/kit/index.ts";
-<<<<<<< HEAD
-import { keyAction } from "../apps/preview/keys.ts";
-import { keptTurns, MAX_RECENTS, MemoryStore, memoryPath, parseMemory, withRecent, withTurns } from "../apps/preview/memory.ts";
-import { type PreviewMenuContext, previewMenus, recentLabels } from "../apps/preview/menus.ts";
-import { reservedBy } from "../src/app-menus/lib/reserved.ts";
-=======
 import { keyAction } from "../apps/preview/lib/keys.ts";
 import { keptTurns, MAX_RECENTS, MemoryStore, memoryPath, parseMemory, withRecent, withTurns } from "../apps/preview/lib/memory.ts";
 import { type PreviewMenuContext, previewMenus, recentLabels } from "../apps/preview/lib/menus.ts";
-import { reservedBy } from "../src/app-menus/reserved.ts";
->>>>>>> origin/release/0.7.0
+import { reservedBy } from "../src/app-menus/lib/reserved.ts";
 import { chordFromShortcut } from "../src/app-menus/shortcut.ts";
 import { until } from "./support/time.ts";
 
