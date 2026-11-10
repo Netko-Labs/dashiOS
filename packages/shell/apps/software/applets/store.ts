@@ -14,10 +14,19 @@
  */
 
 import { consentNames, fits, type InstalledApplet, type Machine, type UnreadableApplet, writeRecord } from "@dashi/applet";
-import type { CatalogSet } from "../../../src/shared/applet-store/catalog-set.ts";
-import type { CatalogDraft, CatalogSource } from "../../../src/shared/applet-store/catalogs.ts";
-import { type AppletInstaller, type AppletStatus, statusOf } from "../../../src/shared/applet-store/installer.ts";
-import { type CatalogLoad, entryFromItsCatalog, mergeCatalogs, type StoreApplet, skippedCount } from "../../../src/shared/applet-store/merge.ts";
+import {
+  type AppletInstaller,
+  type AppletStatus,
+  type CatalogDraft,
+  type CatalogLoad,
+  type CatalogSet,
+  type CatalogSource,
+  entryFromItsCatalog,
+  mergeCatalogs,
+  type StoreApplet,
+  skippedCount,
+  statusOf,
+} from "../../../src/shared/applet-store/index.ts";
 import type { Outcome } from "../../../src/shared/software/manager.ts";
 import type { Job } from "../queue.ts";
 import { type Failure, failureOf } from "../store.ts";

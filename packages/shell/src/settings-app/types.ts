@@ -12,7 +12,7 @@ import type { InputMethodName } from "../input-method.ts";
 import type { GraphicsSettings, PowerSection } from "../power/index.ts";
 import type { KeyboardSettings, MouseSettings, TouchpadSettings } from "../settings-schema.ts";
 import type { CornerName } from "../shared/appearance/index.ts";
-import type { CatalogSetting } from "../shared/applet-store/catalogs.ts";
+import type { CatalogSetting } from "../shared/applet-store/index.ts";
 import type { ClockSettings, RegionSettings } from "../shared/time/index.ts";
 import type { SpaceNames } from "../spaces/types.ts";
 import type { WallpaperMode } from "../wallpaper/catalog.ts";

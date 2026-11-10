@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useState } from "react";
-import type { StoreApplet } from "../../src/shared/applet-store/merge.ts";
+import type { StoreApplet } from "../../src/shared/applet-store/index.ts";
 import type { AppletState } from "./applets/store.ts";
 import type { Services } from "./services.ts";
 import type { Answer, Ask } from "./sheets.tsx";

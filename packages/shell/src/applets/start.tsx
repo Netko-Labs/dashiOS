@@ -14,7 +14,7 @@ import type { Compositor } from "../compositor/index.ts";
 import { screensOf } from "../displays.ts";
 import type { ExtrasStore } from "../extras/index.ts";
 import type { OpenOverlay } from "../overlay.tsx";
-import { APPLET_CONSENT, AppletConsentCard } from "../shared/applet-store/consent-sheet.tsx";
+import { APPLET_CONSENT, AppletConsentCard } from "../shared/applet-store/index.ts";
 import { METAL_HOST } from "../shared/apps/index.ts";
 import { MENU_BAR_HEIGHT } from "../theme.ts";
 import type { AppletCommands } from "./commands.ts";

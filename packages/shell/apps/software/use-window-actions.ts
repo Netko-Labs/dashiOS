@@ -7,7 +7,7 @@
 
 import type { InstalledApplet, UnreadableApplet } from "@dashi/applet";
 import { useMemo } from "react";
-import type { StoreApplet } from "../../src/shared/applet-store/merge.ts";
+import type { StoreApplet } from "../../src/shared/applet-store/index.ts";
 import type { InstalledApp } from "../../src/shared/software/flatpak-parse.ts";
 import { type Nav, push } from "./nav.ts";
 import type { Actions } from "./parts.tsx";

@@ -10,13 +10,18 @@
 import { appletDataRoot, appletsRoot, SDK_VERSION } from "@dashi/applet";
 import { createContext, useContext } from "react";
 import { SettingsStore } from "../../src/settings-app/store.ts";
-import { hostsFor, keyFrom, storeCacheDir } from "../../src/shared/applet-store/catalog.ts";
-import { CatalogSet, readSavedCatalogs } from "../../src/shared/applet-store/catalog-set.ts";
-import { dashiCatalog } from "../../src/shared/applet-store/catalogs.ts";
-import { StoreImages } from "../../src/shared/applet-store/images.ts";
-import { AppletInstaller } from "../../src/shared/applet-store/installer.ts";
-import { DASHI_INDEX_KEY } from "../../src/shared/applet-store/keys.ts";
-import { readMachine } from "../../src/shared/applet-store/machine.ts";
+import {
+  AppletInstaller,
+  CatalogSet,
+  DASHI_INDEX_KEY,
+  dashiCatalog,
+  hostsFor,
+  keyFrom,
+  readMachine,
+  readSavedCatalogs,
+  StoreImages,
+  storeCacheDir,
+} from "../../src/shared/applet-store/index.ts";
 import { spawnDetached } from "../../src/shared/apps/index.ts";
 import { settingsPath } from "../../src/shared/settings/index.ts";
 import { ImageCache, JsonCache } from "../../src/shared/software/cache.ts";
