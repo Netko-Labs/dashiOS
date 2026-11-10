@@ -11,8 +11,8 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { writeTextAtomic } from "../shared/fs/private-text.ts";
 import { isFormatsLocale } from "../shared/locale/locale.ts";
-import { writeTextAtomic } from "./files.ts";
 
 /** The categories that are formats rather than language or collation. */
 export const FORMAT_VARIABLES = ["LC_TIME", "LC_NUMERIC", "LC_MONETARY", "LC_MEASUREMENT", "LC_PAPER"] as const;

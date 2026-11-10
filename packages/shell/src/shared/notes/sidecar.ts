@@ -7,7 +7,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { writeAtomic } from "./files.ts";
+import { writeAtomic } from "../fs/atomic.ts";
 
 export const SIDECAR_FILE = ".dashi-notes.json";
 

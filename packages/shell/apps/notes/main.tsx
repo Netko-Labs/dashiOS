@@ -4,10 +4,10 @@
  * them. `DASHI_NOTES_DIR` points it somewhere else.
  */
 
+import { defaultRoot, NotesStore } from "../../src/shared/notes/store.ts";
 import { runApp } from "../kit/index.ts";
 import { NOTES_MIN_SIZE } from "./layout.ts";
 import { NotesModel } from "./model.ts";
-import { defaultRoot, NotesStore } from "./store.ts";
 import { NOTES_SIZE, type NotesHost, NotesWindow } from "./view.tsx";
 import { watchNotes } from "./watch.ts";
 

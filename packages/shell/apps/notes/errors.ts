@@ -5,7 +5,7 @@
  * what the person sees instead. Pure.
  */
 
-import { NotesError } from "./types.ts";
+import { NotesError } from "../../src/shared/notes/types.ts";
 
 /** What Notes was doing when it failed. */
 export type Doing = "save" | "create" | "read" | "change";

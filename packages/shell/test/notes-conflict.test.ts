@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { conflictNotice, conflictTitle, saveOutcome } from "../apps/notes/conflict.ts";
 import { NotesModel } from "../apps/notes/model.ts";
-import { NotesStore } from "../apps/notes/store.ts";
+import { NotesStore } from "../src/shared/notes/store.ts";
 
 describe("which version a save keeps", () => {
   test("only one side changed: that side", () => {

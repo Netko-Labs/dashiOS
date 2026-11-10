@@ -11,8 +11,6 @@
 1	packages/shell/apps/files/items.ts
 1	packages/shell/apps/files/mounts.ts
 1	packages/shell/apps/files/ops.ts
-1	packages/shell/apps/notes/sidecar.ts
-1	packages/shell/apps/notes/store.ts
 4	packages/shell/apps/preview/memory.ts
 2	packages/shell/bin/dashi-a11y-again.ts
 3	packages/shell/bin/dashi-applet-run.ts
@@ -56,6 +54,8 @@
 5	packages/shell/src/shared/dbus/message.ts
 1	packages/shell/src/shared/dbus/object.ts
 1	packages/shell/src/shared/dbus/subscribe.ts
+1	packages/shell/src/shared/notes/sidecar.ts
+1	packages/shell/src/shared/notes/store.ts
 1	packages/shell/src/shared/portal/file-chooser.ts
 1	packages/shell/src/software/run.ts
 1	packages/shell/src/spaces/controller.ts

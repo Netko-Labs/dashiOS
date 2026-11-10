@@ -14,10 +14,10 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { type Alert, alertMessage, alertsBetween } from "../../apps/calendar/alerts.ts";
 import { dayPart, instantOf } from "../../apps/calendar/dates.ts";
-import { writeAtomic } from "../../apps/notes/files.ts";
 import { iconPath } from "../apps.ts";
 import { type NotificationStore, SHELL_SENDER } from "../notifications/store.ts";
 import type { NotifyInput } from "../notifications/types.ts";
+import { writeAtomic } from "../shared/fs/atomic.ts";
 import { type ClockPrefs, clockPrefs } from "../shared/time/clock.ts";
 import type { CalendarFeed } from "./feed.ts";
 

@@ -64,8 +64,7 @@
 308	packages/shell/apps/files/thumbnailer.ts
 376	packages/shell/apps/installer/view.tsx
 350	packages/shell/apps/notes/editor.tsx
-593	packages/shell/apps/notes/model.ts
-378	packages/shell/apps/notes/store.ts
+592	packages/shell/apps/notes/model.ts
 398	packages/shell/apps/notes/view.tsx
 383	packages/shell/apps/preview/view.tsx
 360	packages/shell/apps/preview/viewer.ts
@@ -103,6 +102,7 @@
 488	packages/shell/src/settings.ts
 328	packages/shell/src/shared/dbus/connection.ts
 349	packages/shell/src/shared/dbus/fd-service.ts
+378	packages/shell/src/shared/notes/store.ts
 348	packages/shell/src/spaces/controller.ts
 321	packages/shell/src/switcher/controller.ts
 409	packages/shell/test/actions-sources.test.ts

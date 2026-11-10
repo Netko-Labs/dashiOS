@@ -2,11 +2,11 @@
 
 import { rowLook, SelectionBar, useColors, useSurface } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
+import { untitled } from "../../src/shared/notes/names.ts";
+import { KEEP_DAYS } from "../../src/shared/notes/store.ts";
+import { daysLeft, listDate, preview } from "../../src/shared/notes/text.ts";
 import { FOLDER, PIN_FILLED } from "./glyphs.ts";
 import type { Row } from "./list.ts";
-import { untitled } from "./names.ts";
-import { KEEP_DAYS } from "./store.ts";
-import { daysLeft, listDate, preview } from "./text.ts";
 
 export interface NoteListProps {
   rows: readonly Row[];

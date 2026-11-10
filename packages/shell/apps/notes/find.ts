@@ -4,8 +4,8 @@
  * Edit › Find Next and Find Previous step the selection through them. Pure.
  */
 
+import { fold } from "../../src/shared/notes/text.ts";
 import type { Selection } from "./format.ts";
-import { fold } from "./text.ts";
 
 /** Each place in `body` that holds one of the query's words, in order, never overlapping. */
 export function findMatches(body: string, query: string): Selection[] {

@@ -1,5 +1,8 @@
 /** What the store hands the app (and the agents). */
 
+/** Larger files are not notes; they are left alone. */
+export const MAX_NOTE_BYTES = 4 * 1024 * 1024;
+
 export interface Note {
   /** "Folder/Title.md", or "Title.md" in the default folder: the path under the notes root. */
   id: string;

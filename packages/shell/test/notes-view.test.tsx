@@ -5,8 +5,8 @@ import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { type Row, withDraft } from "../apps/notes/list.ts";
 import { NotesModel } from "../apps/notes/model.ts";
-import { NotesStore } from "../apps/notes/store.ts";
 import { NotesWindow } from "../apps/notes/view.tsx";
+import { NotesStore } from "../src/shared/notes/store.ts";
 
 // The window on a stand-in for the Metal host: the trees it was sent, and events sent back as the host would.
 let runtime: string | undefined;

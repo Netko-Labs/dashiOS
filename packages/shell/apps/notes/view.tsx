@@ -15,6 +15,8 @@
 import { AppWindow, KeySink, type MenuItem, Notice, PopupMenu, SearchField, ToolbarButton, useUndo } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { DEFAULT_FOLDER_NAME } from "../../src/shared/notes/names.ts";
+import { noteCount, wordCount } from "../../src/shared/notes/text.ts";
 import { useAppMenus } from "../kit/index.ts";
 import { Editor } from "./editor.tsx";
 import { findMatches } from "./find.ts";
@@ -24,11 +26,9 @@ import { type DateForm, notesLayout, noticeWidth, RAIL_WIDTH, SEARCH_MIN } from 
 import { type Row, type Source, withDraft } from "./list.ts";
 import { notesMenus } from "./menus.ts";
 import type { NotesModel } from "./model.ts";
-import { DEFAULT_FOLDER_NAME } from "./names.ts";
 import { NoteList } from "./rows.tsx";
 import { NotesSheet, type SheetState } from "./sheets.tsx";
 import { Sidebar } from "./sidebar.tsx";
-import { noteCount, wordCount } from "./text.ts";
 
 export const NOTES_SIZE = { width: 980, height: 640 } as const;
 

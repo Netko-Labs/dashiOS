@@ -1,10 +1,10 @@
-/** The filesystem steps the store is built from: atomic writes, moves that never overwrite, and reads that refuse symlinks. */
+/**
+ * Filesystem steps for stores of plain files (Notes, Calendar): atomic writes,
+ * moves that never overwrite, and reads that refuse symlinks.
+ */
 
 import { closeSync, fsyncSync, linkSync, lstatSync, openSync, renameSync, unlinkSync, writeSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
-
-/** Larger files are not notes; they are left alone. */
-export const MAX_NOTE_BYTES = 4 * 1024 * 1024;
 
 /**
  * Writes `text` so no reader ever sees half of it: a temporary file in the
@@ -54,7 +54,7 @@ export function moveNoClobber(from: string, to: string): void {
   unlinkSync(from);
 }
 
-/** Whether `path` is a regular file (a symlink is not: nothing is followed out of the notes folder). */
+/** Whether `path` is a regular file (a symlink is not: nothing is followed out of the store's folder). */
 export function isRegularFile(path: string): boolean {
   try {
     return lstatSync(path).isFile();

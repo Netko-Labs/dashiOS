@@ -11,11 +11,11 @@
 import { type Dirent, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmdirSync, statSync, unlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { isRealDirectory, isRegularFile, MAX_NOTE_BYTES, moveNoClobber, writeAtomic, writeNew } from "./files.ts";
+import { isRealDirectory, isRegularFile, moveNoClobber, writeAtomic, writeNew } from "../fs/atomic.ts";
 import { DEFAULT_FOLDER_NAME, inside, isNoteId, noteId, sanitizeName, splitId, uniqueName } from "./names.ts";
 import { readSidecar, type Sidecar, writeSidecar } from "./sidecar.ts";
 import { parseNote, serializeNote } from "./text.ts";
-import { type DeletedNote, type Note, NotesError, type Snapshot } from "./types.ts";
+import { type DeletedNote, MAX_NOTE_BYTES, type Note, NotesError, type Snapshot } from "./types.ts";
 
 export const TRASH_DIR = ".Recently Deleted";
 /** How long a deleted note stays in Recently Deleted. */

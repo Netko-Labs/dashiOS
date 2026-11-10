@@ -5,8 +5,8 @@ import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { fitLine, LIST_NARROW, LIST_WIDTH, NOTES_MIN_SIZE, notesLayout, noticeWidth, RAIL_WIDTH } from "../apps/notes/layout.ts";
 import { NotesModel } from "../apps/notes/model.ts";
-import { NotesStore } from "../apps/notes/store.ts";
 import { NotesWindow } from "../apps/notes/view.tsx";
+import { NotesStore } from "../src/shared/notes/store.ts";
 
 // Review 54 (Notes): a small window left the note 45 pt wide, the Move menu opened far from its
 // button, the error covered the list, and a new source kept the old one's scroll.

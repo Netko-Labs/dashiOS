@@ -9,8 +9,8 @@
 import { readFileSync, statSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute } from "node:path";
 import type { DBusConnection } from "../../src/shared/dbus/index.ts";
+import { isRealDirectory, writeNew } from "../../src/shared/fs/atomic.ts";
 import { chooseFile } from "../../src/shared/portal/file-chooser.ts";
-import { isRealDirectory, writeNew } from "../notes/files.ts";
 import { MAX_ICS_BYTES } from "./ics.ts";
 import { CalendarError } from "./types.ts";
 

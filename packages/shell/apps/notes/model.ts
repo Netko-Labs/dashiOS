@@ -26,16 +26,15 @@
  */
 
 import { UndoStack, type UndoState } from "@dashi/ui";
-
+import type { NotesStore } from "../../src/shared/notes/store.ts";
+import { serializeNote } from "../../src/shared/notes/text.ts";
+import type { DeletedNote, Note } from "../../src/shared/notes/types.ts";
 import { conflictNotice, conflictTitle, saveOutcome } from "./conflict.ts";
 import { plainError } from "./errors.ts";
 import { currentMatch, findMatches, nextMatch } from "./find.ts";
 import { continueList, type Selection, toggleCheck } from "./format.ts";
 import { caretAfter, FORMAT_NAMES, type FormatCommand, formatted } from "./formats.ts";
 import { neighbor, type Row, type Source, step, visibleRows } from "./list.ts";
-import type { NotesStore } from "./store.ts";
-import { serializeNote } from "./text.ts";
-import type { DeletedNote, Note } from "./types.ts";
 
 export const SAVE_MS = 600;
 
