@@ -3,7 +3,7 @@
  * an app, moving a file to the Trash), and for what a link asked for. It is
  * the agents' confirm sheet without an agent: no mark, no "wants to", just
  * the question in the person's words. It goes in the agents' sheet queue
- * (agent-sheets.tsx), so only the person's own press answers yes.
+ * (agent-sheets/agent-sheets.tsx), so only the person's own press answers yes.
  */
 
 import { useColors } from "@dashi/ui";

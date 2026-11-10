@@ -3,7 +3,7 @@
  * nobody answers must not hold an agent's call forever: two minutes after it
  * is *shown* (not after it was queued behind another) it comes down and
  * counts as "Don't Allow", and only that sheet does. The queue is the
- * logic; agent-sheets.tsx supplies the Metal surfaces.
+ * logic; agent-sheets/agent-sheets.tsx supplies the Metal surfaces.
  */
 
 import { ASK_TIMEOUT_MS } from "./confirm.ts";

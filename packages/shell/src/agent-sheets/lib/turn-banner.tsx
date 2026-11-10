@@ -7,8 +7,8 @@
 
 import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import type { Turn } from "./agents/index.ts";
-import { Button, opaque } from "./consent.tsx";
+import type { Turn } from "../../agents/index.ts";
+import { Button, opaque } from "../../consent.tsx";
 
 export const TURN = { width: 560, height: 96 } as const;
 

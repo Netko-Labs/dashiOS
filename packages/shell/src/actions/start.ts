@@ -42,7 +42,7 @@ export interface ActionsOptions {
   agents: Pick<Agents, "runAsPerson" | "desktop"> | null;
   /** The settings registry's stores: Settings' rows read their state and change through them; null in a session without them. */
   settingsStores?: RegistryStores | null;
-  /** The person's own sheet (agent-sheets.tsx): only their press answers yes. */
+  /** The person's own sheet (agent-sheets/agent-sheets.tsx): only their press answers yes. */
   confirmPerson(question: PersonQuestion): Promise<boolean>;
   /** The installed apps (the shell's catalog). */
   entries(): readonly Entry[];

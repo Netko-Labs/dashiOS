@@ -1,13 +1,13 @@
 /**
- * The agents' overlays that are not queued sheets (agent-sheets.tsx): the
+ * The agents' overlays that are not queued sheets (../agent-sheets.tsx): the
  * "Your turn" banner, one per agent, and the note after a stop. Each is a
  * Metal surface in the shell's process.
  */
 
 import { type NativeHostTransport, type NativeRoot, render } from "@mirinjs/metal";
-import { personAnswered, type Turn } from "./agents/index.ts";
-import { STOPPED, StoppedNote } from "./consent.tsx";
-import { spawnShellHost } from "./shared/metal/host.ts";
+import { personAnswered, type Turn } from "../../agents/index.ts";
+import { STOPPED, StoppedNote } from "../../consent.tsx";
+import { spawnShellHost } from "../../shared/metal/host.ts";
 import { TURN, TurnBanner } from "./turn-banner.tsx";
 
 /** The "Your turn" banner's layer. */

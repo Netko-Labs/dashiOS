@@ -2,18 +2,18 @@
  * The shell's side of agents (docs/agents.html): consent sheets and
  * single-action questions, one at a time in the order agents asked, and the
  * note after a stop. Each is a Metal overlay; the agents server reaches them
- * through `AgentUi`. The sheets' views are agent-sheet-views.tsx, the banner
- * and the note agent-overlays.tsx.
+ * through `AgentUi`. The sheets' views are lib/agent-sheet-views.tsx, the banner
+ * and the note lib/agent-overlays.tsx.
  */
 
 import { TextSelectionLook } from "@dashi/ui";
 import { render } from "@mirinjs/metal";
-import type { PersonQuestion } from "./actions/index.ts";
-import { closeOverlay, createStoppedNotes, createTurns } from "./agent-overlays.tsx";
-import { allowSiteSheet, askSheet, confirmSheet, personSheet, type Sheet, signInSheet } from "./agent-sheet-views.tsx";
-import { type AgentUi, type Answer, DENY, personAnswered, SHEET_LAYERS, SheetQueue } from "./agents/index.ts";
-import { CONSENT } from "./consent.tsx";
-import { spawnShellHost } from "./shared/metal/host.ts";
+import type { PersonQuestion } from "../actions/index.ts";
+import { type AgentUi, type Answer, DENY, personAnswered, SHEET_LAYERS, SheetQueue } from "../agents/index.ts";
+import { CONSENT } from "../consent.tsx";
+import { spawnShellHost } from "../shared/metal/host.ts";
+import { closeOverlay, createStoppedNotes, createTurns } from "./lib/agent-overlays.tsx";
+import { allowSiteSheet, askSheet, confirmSheet, personSheet, type Sheet, signInSheet } from "./lib/agent-sheet-views.tsx";
 
 /** The sheets' layer: blanked in agents' pictures, and asked about for whose press answered. */
 const CONSENT_LAYER = SHEET_LAYERS[0];

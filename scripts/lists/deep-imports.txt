@@ -216,8 +216,8 @@
 1	packages/shell/src/actions/lib/sources/menus.ts
 3	packages/shell/src/actions/lib/sources/settings.ts
 3	packages/shell/src/actions/start.ts
-1	packages/shell/src/agent-overlays.tsx
-1	packages/shell/src/agent-sheets.tsx
+1	packages/shell/src/agent-sheets/agent-sheets.tsx
+1	packages/shell/src/agent-sheets/lib/agent-overlays.tsx
 1	packages/shell/src/agents/ask/harness/lib/plan-server.ts
 1	packages/shell/src/agents/ask/lib/launcher-snapshot.ts
 1	packages/shell/src/agents/ask/lib/tasks.ts

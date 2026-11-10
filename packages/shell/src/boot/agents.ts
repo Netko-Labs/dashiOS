@@ -5,7 +5,7 @@
  */
 
 import { formatAddress, type startActions } from "../actions/index.ts";
-import { createAgentUi } from "../agent-sheets.tsx";
+import { createAgentUi } from "../agent-sheets/index.ts";
 import type { Ask } from "../agents/ask/types.ts";
 import {
   AgentStore,

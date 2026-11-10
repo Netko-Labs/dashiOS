@@ -1,14 +1,24 @@
 /**
- * The agents' sheets, one builder each (agent-sheets.tsx queues and shows
+ * The agents' sheets, one builder each (../agent-sheets.tsx queues and shows
  * them): the view, how the person's answer becomes the queue's `Answer`,
  * and how that settles the asker's promise.
  */
 
 import type { ReactElement } from "react";
-import { PersonConfirmSheet, type PersonQuestion } from "./actions/index.ts";
-import { type Allow, type Answer, type Ask, type Confirm, DENY, type QueuedSheet, type SignInAsk, type SignInChoice, type SiteAsk } from "./agents/index.ts";
-import { ConfirmSheet } from "./confirm-sheet.tsx";
-import { ConsentSheet } from "./consent.tsx";
+import { PersonConfirmSheet, type PersonQuestion } from "../../actions/index.ts";
+import {
+  type Allow,
+  type Answer,
+  type Ask,
+  type Confirm,
+  DENY,
+  type QueuedSheet,
+  type SignInAsk,
+  type SignInChoice,
+  type SiteAsk,
+} from "../../agents/index.ts";
+import { ConfirmSheet } from "../../confirm-sheet.tsx";
+import { ConsentSheet } from "../../consent.tsx";
 import { SIGN_IN, SignInSheet } from "./sign-in-sheet.tsx";
 
 /** A sheet and how to draw it, given how the person's answer gets back. */
