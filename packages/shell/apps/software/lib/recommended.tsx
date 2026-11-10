@@ -6,7 +6,7 @@
  * the name and the line stay Dashi's own, which are written to fit a card.
  */
 
-import { type AppSummary, type Flathub, RECOMMENDED_APPS, type RecommendedApp } from "../../src/shared/software/index.ts";
+import { type AppSummary, type Flathub, RECOMMENDED_APPS, type RecommendedApp } from "../../../src/shared/software/index.ts";
 import { CardGrid } from "./cards.tsx";
 import { useLoad } from "./hooks.ts";
 import { useServices } from "./services.ts";

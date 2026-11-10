@@ -9,7 +9,7 @@
 
 import { appletDataRoot, appletsRoot, SDK_VERSION } from "@dashi/applet";
 import { createContext, useContext } from "react";
-import { SettingsStore } from "../../src/settings-app/store.ts";
+import { SettingsStore } from "../../../src/settings-app/store.ts";
 import {
   AppletInstaller,
   CatalogSet,
@@ -21,10 +21,10 @@ import {
   readSavedCatalogs,
   StoreImages,
   storeCacheDir,
-} from "../../src/shared/applet-store/index.ts";
-import { spawnDetached } from "../../src/shared/apps/index.ts";
-import { settingsPath } from "../../src/shared/settings/index.ts";
-import { cacheRoot, displayUrl, Flathub, ImageCache, Images, JsonCache, Software, standIn } from "../../src/shared/software/index.ts";
+} from "../../../src/shared/applet-store/index.ts";
+import { spawnDetached } from "../../../src/shared/apps/index.ts";
+import { settingsPath } from "../../../src/shared/settings/index.ts";
+import { cacheRoot, displayUrl, Flathub, ImageCache, Images, JsonCache, Software, standIn } from "../../../src/shared/software/index.ts";
 import { AppletStore } from "./applets/store.ts";
 import { SoftwareStore } from "./store.ts";
 

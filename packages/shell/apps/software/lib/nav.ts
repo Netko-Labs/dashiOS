@@ -6,7 +6,7 @@
  * a history that Back pops.
  */
 
-import type { CategoryId, Collection } from "../../src/shared/software/index.ts";
+import type { CategoryId, Collection } from "../../../src/shared/software/index.ts";
 
 export type Page =
   | { kind: "discover" }

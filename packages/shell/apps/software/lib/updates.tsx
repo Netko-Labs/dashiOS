@@ -10,7 +10,7 @@
 import { Button, EmptyState, Group, glyphs, Loading, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
-import { type FlatpakUpdate, formatBytes, plainFailure } from "../../src/shared/software/index.ts";
+import { type FlatpakUpdate, formatBytes, plainFailure } from "../../../src/shared/software/index.ts";
 import { AppletGroup } from "./applets/rows.tsx";
 import { StateChip } from "./chip.tsx";
 import { ago } from "./format.ts";

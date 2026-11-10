@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { loadRecommended, summaryOf } from "../apps/software/recommended.tsx";
+import { loadRecommended, summaryOf } from "../apps/software/lib/recommended.tsx";
 import { CatalogError } from "../src/shared/software/flathub.ts";
 import { RECOMMENDED_APPS } from "../src/shared/software/recommended.ts";
 import type { AppDetails } from "../src/shared/software/types.ts";

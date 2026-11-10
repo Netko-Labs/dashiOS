@@ -5,7 +5,7 @@
  * `useAppMenus`, so the shell's shortcuts reach them.
  */
 
-import { useAppMenus } from "../kit/index.ts";
+import { useAppMenus } from "../../kit/index.ts";
 import { softwareMenus } from "./menus.ts";
 import { canGoBack, type Nav, type Page } from "./nav.ts";
 import { useOpenThing } from "./open-thing.ts";

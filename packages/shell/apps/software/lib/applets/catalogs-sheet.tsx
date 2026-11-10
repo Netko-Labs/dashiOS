@@ -10,7 +10,7 @@
 import { AlertSheet, Button, Group, Row, Sheet, TextField, useColors, WARNING } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useRef, useState } from "react";
-import type { CatalogLoad, CatalogSource } from "../../../src/shared/applet-store/index.ts";
+import type { CatalogLoad, CatalogSource } from "../../../../src/shared/applet-store/index.ts";
 import { useServices } from "../services.ts";
 import { useAppletState } from "./rows.tsx";
 

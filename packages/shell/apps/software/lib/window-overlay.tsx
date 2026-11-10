@@ -5,7 +5,7 @@
  */
 
 import type { ReactNode } from "react";
-import { AppletConsentSheet, type StoreImages } from "../../src/shared/applet-store/index.ts";
+import { AppletConsentSheet, type StoreImages } from "../../../src/shared/applet-store/index.ts";
 import { CatalogsSheet } from "./applets/catalogs-sheet.tsx";
 import type { AppletStore } from "./applets/store.ts";
 import { PictureView } from "./gallery.tsx";

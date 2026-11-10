@@ -15,7 +15,7 @@ import {
   plainFailure,
   type Software,
   type SystemUpdates,
-} from "../../src/shared/software/index.ts";
+} from "../../../src/shared/software/index.ts";
 import type { Operation } from "./model.ts";
 import { type Job, OperationQueue } from "./queue.ts";
 

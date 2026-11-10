@@ -2,7 +2,7 @@
 
 import { EmptyState, glyphs } from "@dashi/ui";
 import { useSyncExternalStore } from "react";
-import { CATEGORIES, type Collection } from "../../src/shared/software/index.ts";
+import { CATEGORIES, type Collection } from "../../../src/shared/software/index.ts";
 import { AppPage } from "./app-page.tsx";
 import { AppletPage } from "./applets/page.tsx";
 import { AppletsPage } from "./applets/pages.tsx";

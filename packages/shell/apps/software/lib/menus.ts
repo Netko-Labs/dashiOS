@@ -11,7 +11,7 @@
  * disabled, so it has no key either.
  */
 
-import { enabledIds, type MenuSpec } from "../kit/index.ts";
+import { enabledIds, type MenuSpec } from "../../kit/index.ts";
 
 export type Place = "discover" | "installed" | "updates" | "applets";
 

@@ -11,8 +11,8 @@
 
 import { runPower } from "../../src/menus/session.ts";
 import { runApp } from "../kit/index.ts";
-import { createServices, ServicesContext } from "./services.ts";
-import { SOFTWARE_SIZE, SoftwareWindow } from "./view.tsx";
+import { createServices, ServicesContext } from "./lib/services.ts";
+import { SOFTWARE_SIZE, SoftwareWindow } from "./lib/view.tsx";
 
 const services = createServices(() => runPower("restart"));
 

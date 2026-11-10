@@ -7,7 +7,7 @@
  * AbortSignal. The queue knows nothing about flatpak: `start` does the work.
  */
 
-import type { Outcome, Progress } from "../../src/shared/software/index.ts";
+import type { Outcome, Progress } from "../../../src/shared/software/index.ts";
 import type { Operation } from "./model.ts";
 
 export interface Job {

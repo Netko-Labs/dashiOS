@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
-import { columnsFor } from "../apps/software/cards.tsx";
-import { ROW } from "../apps/software/parts.tsx";
-import { COMPACT_BELOW, isCompact, SEARCH_MIN_WIDTH, SEARCH_WIDTH } from "../apps/software/toolbar-fit.ts";
+import { columnsFor } from "../apps/software/lib/cards.tsx";
+import { ROW } from "../apps/software/lib/parts.tsx";
+import { COMPACT_BELOW, isCompact, SEARCH_MIN_WIDTH, SEARCH_WIDTH } from "../apps/software/lib/toolbar-fit.ts";
 
 // How Software fits a narrow window: cards keep their words, the toolbar keeps one row.
 

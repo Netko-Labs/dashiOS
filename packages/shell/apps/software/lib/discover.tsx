@@ -8,7 +8,7 @@
 
 import { Button, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
-import type { Answer, Collection, Flathub, Page } from "../../src/shared/software/index.ts";
+import type { Answer, Collection, Flathub, Page } from "../../../src/shared/software/index.ts";
 import { AppletGroup, useAppletState } from "./applets/rows.tsx";
 import { CardGrid } from "./cards.tsx";
 import { HeadingLink, SectionHeader } from "./heading.tsx";

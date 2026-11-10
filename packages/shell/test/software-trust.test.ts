@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test";
 import { REACH } from "@dashi/applet";
-import { appletChip } from "../apps/software/applets/words.ts";
-import { appChip, chipLabel, type Operation, queueLine } from "../apps/software/model.ts";
-import { failureOf } from "../apps/software/store.ts";
-import { appTrust, askReasons, installsWords, isProprietary, licenseWords } from "../apps/software/trust-words.ts";
+import { appletChip } from "../apps/software/lib/applets/words.ts";
+import { appChip, chipLabel, type Operation, queueLine } from "../apps/software/lib/model.ts";
+import { failureOf } from "../apps/software/lib/store.ts";
+import { appTrust, askReasons, installsWords, isProprietary, licenseWords } from "../apps/software/lib/trust-words.ts";
 import { PORTAL_TABLES } from "../src/privacy/portal-grants.ts";
 import { splitAsks, trustLine } from "../src/shared/applet-store/consent-sheet.tsx";
 import { plainFailure } from "../src/shared/software/failure-words.ts";

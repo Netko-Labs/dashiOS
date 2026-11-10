@@ -8,7 +8,7 @@
 
 import { SidebarItem, SidebarSection, TINTS } from "@dashi/ui";
 import { ScrollView } from "@mirinjs/metal";
-import { CATEGORIES } from "../../src/shared/software/index.ts";
+import { CATEGORIES } from "../../../src/shared/software/index.ts";
 import { APPLETS, CATEGORY_GLYPHS, CATEGORY_TINTS, DISCOVER, INSTALLED, UPDATES } from "./glyphs.ts";
 import type { Nav, Page } from "./nav.ts";
 

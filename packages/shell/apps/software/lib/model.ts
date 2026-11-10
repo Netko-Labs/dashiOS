@@ -5,7 +5,7 @@
  * 40%"). Pure, so the window and its tests agree.
  */
 
-import type { FlatpakUpdate, InstalledApp, Progress } from "../../src/shared/software/index.ts";
+import type { FlatpakUpdate, InstalledApp, Progress } from "../../../src/shared/software/index.ts";
 
 export type OperationKind = "install" | "remove" | "update" | "system-update";
 

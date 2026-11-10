@@ -10,7 +10,7 @@
 import { Button, Group, Loading, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { type AppDetails, formatBytes } from "../../src/shared/software/index.ts";
+import { type AppDetails, formatBytes } from "../../../src/shared/software/index.ts";
 import { StateChip } from "./chip.tsx";
 import { Gallery } from "./gallery.tsx";
 import { SectionHeader } from "./heading.tsx";

@@ -4,8 +4,8 @@ import type { InstalledApplet, UnreadableApplet } from "@dashi/applet";
 import { tintFor } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { createContext, useContext } from "react";
-import type { StoreApplet } from "../../src/shared/applet-store/index.ts";
-import type { Installation, InstalledApp } from "../../src/shared/software/index.ts";
+import type { StoreApplet } from "../../../src/shared/applet-store/index.ts";
+import type { Installation, InstalledApp } from "../../../src/shared/software/index.ts";
 import { useImage } from "./hooks.ts";
 
 /**
