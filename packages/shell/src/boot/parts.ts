@@ -14,7 +14,7 @@ import type { Clipboard } from "../clipboard/start.ts";
 import type { CompositorWindow } from "../compositor.ts";
 import type { AutoRefresh } from "../display-config/auto-refresh.ts";
 import type { Entry } from "../entries.ts";
-import type { Extensions } from "../extensions/start.ts";
+import type { Extensions } from "../extensions/index.ts";
 import type { FullscreenBars } from "../fullscreen.ts";
 import type { Laptop } from "../laptop/start.ts";
 import type { LauncherHost } from "../launcher/host.ts";

@@ -308,9 +308,9 @@
 2	packages/shell/src/bluetooth/select.ts
 1	packages/shell/src/bluetooth/sheet.tsx
 1	packages/shell/src/bluetooth/values.ts
-6	packages/shell/src/boot/actions.ts
+5	packages/shell/src/boot/actions.ts
 12	packages/shell/src/boot/agents.ts
-5	packages/shell/src/boot/apps.ts
+4	packages/shell/src/boot/apps.ts
 1	packages/shell/src/boot/desktop.ts
 3	packages/shell/src/boot/keys.ts
 4	packages/shell/src/boot/launcher-view.tsx
@@ -319,7 +319,7 @@
 8	packages/shell/src/boot/menus.tsx
 7	packages/shell/src/boot/notices.ts
 3	packages/shell/src/boot/overlays.tsx
-10	packages/shell/src/boot/parts.ts
+9	packages/shell/src/boot/parts.ts
 2	packages/shell/src/boot/session.ts
 6	packages/shell/src/boot/settings.ts
 4	packages/shell/src/boot/system.ts
@@ -560,7 +560,7 @@
 2	packages/shell/src/wifi/select.ts
 1	packages/shell/src/wifi/types.ts
 1	packages/shell/test/actions-approved.test.ts
-2	packages/shell/test/actions-dbus.test.ts
+1	packages/shell/test/actions-dbus.test.ts
 2	packages/shell/test/actions-run.test.ts
 1	packages/shell/test/actions-scripts.test.ts
 2	packages/shell/test/actions-sources-commands.test.ts

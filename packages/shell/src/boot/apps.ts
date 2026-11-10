@@ -18,7 +18,7 @@ import type { Compositor, CompositorWindow } from "../compositor.ts";
 import { LayoutStore } from "../control-center/index.ts";
 import { AttentionStore, DockController, matchEntry, PinStore } from "../dock/index.ts";
 import type { Entry } from "../entries.ts";
-import { openTarget } from "../extensions/start.ts";
+import { openTarget } from "../extensions/index.ts";
 import { ExtrasStore } from "../extras/index.ts";
 import { openFile } from "../file-manager.ts";
 import { InhibitFlag, keepAwake } from "../inhibit/index.ts";
