@@ -5,10 +5,10 @@
  * knob holds; ends a one-time full charge when it is done.
  */
 
-import { chargeTarget, fullChargeDone } from "../power/battery-health.ts";
-import type { PowerSource } from "../power/modes/automatic.ts";
-import type { PowerSection } from "../power/modes/settings.ts";
-import type { LaptopStore } from "./store.ts";
+import { chargeTarget, fullChargeDone } from "../../power/battery-health.ts";
+import type { PowerSource } from "../../power/modes/automatic.ts";
+import type { PowerSection } from "../../power/modes/settings.ts";
+import type { LaptopStore } from "../store.ts";
 
 export const CHARGE_TICK_MS = 60_000;
 

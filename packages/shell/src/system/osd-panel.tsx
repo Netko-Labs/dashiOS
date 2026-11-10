@@ -7,7 +7,7 @@
 import { useColors } from "@dashi/ui";
 import { render, Svg, Text, View } from "@mirinjs/metal";
 import { batteryGlyph, micGlyph, SUN, speakerGlyph } from "../glyphs.ts";
-import { keyboardLightGlyph, modeGlyph } from "../laptop/glyphs.ts";
+import { keyboardLightGlyph, modeGlyph } from "../laptop/index.ts";
 import { spawnShellHost } from "../shared/metal/host.ts";
 import { litSegments, type OpenOsd, OSD, type OsdState, type OsdStore, useOsd } from "./osd-state.ts";
 

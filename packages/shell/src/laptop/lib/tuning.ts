@@ -9,12 +9,12 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { GraphicsController } from "../graphics/controller.ts";
-import type { HardwareApi } from "../hardware/index.ts";
-import type { NotificationStore } from "../notifications/index.ts";
-import { Logind } from "../power/logind.ts";
-import type { ModeStore } from "../power/modes/store.ts";
-import { writeJsonAtomic } from "../settings-app/store.ts";
+import type { GraphicsController } from "../../graphics/controller.ts";
+import type { HardwareApi } from "../../hardware/index.ts";
+import type { NotificationStore } from "../../notifications/index.ts";
+import { Logind } from "../../power/logind.ts";
+import type { ModeStore } from "../../power/modes/store.ts";
+import { writeJsonAtomic } from "../../settings-app/store.ts";
 
 export const RESET_NOTICE = {
   summary: "Tuning was reset",

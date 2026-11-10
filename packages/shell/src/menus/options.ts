@@ -11,7 +11,7 @@ import type { AppletTileSource, ControlCenterProps, LayoutStore } from "../contr
 import type { MirrorStore } from "../display-config/mirror.ts";
 import type { DockMenuAction } from "../dock/types.ts";
 import type { Entry } from "../entries.ts";
-import type { Laptop } from "../laptop/start.ts";
+import type { Laptop } from "../laptop/index.ts";
 import type { NotificationStore } from "../notifications/index.ts";
 import type { SharedStores } from "../settings-app/services.ts";
 import type { AppMixer, PipeWireWatch } from "../sound/apps/index.ts";

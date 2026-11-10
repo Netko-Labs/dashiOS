@@ -7,10 +7,10 @@ import { HARDWARE, hardwareClient, knobVariant, parseBootGuard, parseTuning } fr
 import { parseDescribe } from "../src/hardware/describe.ts";
 import { detectLaptop, isLaptopChassis } from "../src/hardware/laptop.ts";
 import { withRules } from "../src/keymap/keymap.ts";
-import { KERNEL_KEYSYMS, laptopKeyRules, nextLightLevel } from "../src/laptop/hotkeys.ts";
+import { KERNEL_KEYSYMS, laptopKeyRules, nextLightLevel } from "../src/laptop/lib/hotkeys.ts";
+import { resetSaidFor } from "../src/laptop/lib/tuning.ts";
 import { type LaptopAction, laptopEntries } from "../src/laptop/menu.ts";
 import { keyboardLight, type LaptopSnapshot, lightLabel } from "../src/laptop/store.ts";
-import { resetSaidFor } from "../src/laptop/tuning.ts";
 import { chargeTarget, fullChargeDone, inScheduleWindow } from "../src/power/battery-health.ts";
 import type { ModeSnapshot } from "../src/power/modes/store.ts";
 import { FakeBus } from "./fake-bus.ts";

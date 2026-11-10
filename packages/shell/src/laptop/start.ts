@@ -30,11 +30,11 @@ import type { OsdController } from "../system/osd-state.ts";
 import { powerProfiles, shadowProfiles } from "../system/profiles.ts";
 import type { SystemStore } from "../system/store.ts";
 import { hardwareBus, systemBus } from "../system/system-bus.ts";
-import { ChargeKeeper } from "./charge.ts";
-import { keyboardLights, laptopKeyRules, machineKeyHandler } from "./hotkeys.ts";
+import { ChargeKeeper } from "./lib/charge.ts";
+import { keyboardLights, laptopKeyRules, machineKeyHandler } from "./lib/hotkeys.ts";
+import { followWake } from "./lib/tuning.ts";
 import type { LaptopAction } from "./menu.ts";
 import { keyboardLight, LaptopStore } from "./store.ts";
-import { followWake } from "./tuning.ts";
 
 export interface LaptopOptions {
   compositor: Compositor | null;

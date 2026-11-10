@@ -16,7 +16,7 @@ import type { AutoRefresh } from "../display-config/auto-refresh.ts";
 import type { Entry } from "../entries.ts";
 import type { Extensions } from "../extensions/index.ts";
 import type { FullscreenBars } from "../fullscreen.ts";
-import type { Laptop } from "../laptop/start.ts";
+import type { Laptop } from "../laptop/index.ts";
 import type { LauncherHost, LauncherWorld } from "../launcher/index.ts";
 import type { MenuBars } from "../menubar/index.ts";
 import type { Menus } from "../menus/index.ts";

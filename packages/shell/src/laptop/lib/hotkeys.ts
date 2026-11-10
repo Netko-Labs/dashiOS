@@ -11,11 +11,11 @@
  * the mode store instead (power/modes/store.ts).
  */
 
-import type { Hotkeys } from "../hardware/index.ts";
-import type { Rule } from "../keymap/keymap.ts";
-import type { ModeStore } from "../power/modes/store.ts";
-import type { OsdController } from "../system/osd-state.ts";
-import { keyboardLight, type LaptopStore } from "./store.ts";
+import type { Hotkeys } from "../../hardware/index.ts";
+import type { Rule } from "../../keymap/keymap.ts";
+import type { ModeStore } from "../../power/modes/store.ts";
+import type { OsdController } from "../../system/osd-state.ts";
+import { keyboardLight, type LaptopStore } from "../store.ts";
 
 /** Kernel key names (linux/input-event-codes.h) to xkb keysyms (xkeyboard-config's evdev keycodes, symbols/inet). */
 export const KERNEL_KEYSYMS: Readonly<Record<string, string>> = {
