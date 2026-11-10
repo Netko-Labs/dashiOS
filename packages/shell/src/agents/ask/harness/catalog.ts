@@ -30,6 +30,7 @@
 
 import { join } from "node:path";
 import type { HarnessId } from "../answerer.ts";
+import { isRaw, jsonLines, lastJson, str, toml } from "./harness-text.ts";
 
 /** What a turn's command line is built from. */
 export interface HarnessTurn {
@@ -93,38 +94,6 @@ export interface HarnessSpec {
 
 /** The plan-mode server's name in every harness: its tools are `mcp__dashi__*`, `dashi_*`. */
 export const PLAN_SERVER = "dashi";
-
-type Raw = Record<string, unknown>;
-const isRaw = (value: unknown): value is Raw => typeof value === "object" && value !== null && !Array.isArray(value);
-const str = (value: unknown): string | null => (typeof value === "string" && value.trim() ? value : null);
-
-function jsonLines(stdout: string): Raw[] {
-  return stdout.split("\n").flatMap((line) => {
-    const text = line.trim();
-    if (!text.startsWith("{")) return [];
-    try {
-      const value: unknown = JSON.parse(text);
-      return isRaw(value) ? [value] : [];
-    } catch {
-      return [];
-    }
-  });
-}
-
-/** The last JSON object a program printed (some print a banner first). */
-function lastJson(stdout: string): Raw | null {
-  const whole = stdout.trim();
-  try {
-    const value: unknown = JSON.parse(whole);
-    if (isRaw(value)) return value;
-  } catch {
-    // Not one object: look line by line.
-  }
-  return jsonLines(stdout).at(-1) ?? null;
-}
-
-/** A TOML basic string (JSON's escapes are TOML's for these characters). */
-const toml = (value: string): string => JSON.stringify(value);
 
 const SIGNED_OUT = /not logged in|log ?in|sign ?in|unauthori[sz]ed|\b401\b|authenticat|oauth|token (?:has )?expired|invalid api key|api key/i;
 
