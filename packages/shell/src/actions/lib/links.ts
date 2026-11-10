@@ -17,7 +17,7 @@
 import { chmodSync, existsSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { peerPid, socketFd } from "../../agents/peer.ts";
-import { LINKS_SOCKET } from "../../shared/links/open-link.ts";
+import { LINKS_SOCKET } from "../../shared/links/index.ts";
 import { MAX_ADDRESS } from "../address.ts";
 import type { Outcome } from "../types.ts";
 
