@@ -15,6 +15,7 @@
 
 import { View } from "@mirinjs/metal";
 import { type ReactElement, useSyncExternalStore } from "react";
+import { springOut } from "../shared/controls/motion.ts";
 
 const FRAME_MS = 16;
 
@@ -40,12 +41,6 @@ export const ease = (t: number): number => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 
 export const easeOutQuint = (t: number): number => 1 - (1 - t) ** 5;
 /** Slow to leave, then quick. */
 export const easeInCubic = (t: number): number => t * t * t;
-/** Past 1 a little and back (an underdamped spring, settled at t = 1). */
-export const springOut = (t: number): number => {
-  if (t <= 0) return 0;
-  if (t >= 1) return 1;
-  return 1 - Math.exp(-6 * t) * Math.cos(9 * t) * (1 - t ** 8);
-};
 
 export interface SlideState {
   position: number;

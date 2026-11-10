@@ -11,10 +11,10 @@
 import { existsSync, type FSWatcher, watch } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
+import { FORMATS, formatFromName } from "../../src/shared/files/kinds.ts";
 import { cacheFile, cacheKey, partialName, publish } from "./cache.ts";
 import { CONVERT_MEMORY_MIB, thumbnailArgs } from "./convert.ts";
 import { HEADER_BYTES, jpegOrientation, readSize, swapsSides } from "./dimensions.ts";
-import { FORMATS, formatFromName } from "./kinds.ts";
 import { orderSiblings } from "./siblings.ts";
 import { type RunOptions, type RunResult, runTool } from "./tools.ts";
 

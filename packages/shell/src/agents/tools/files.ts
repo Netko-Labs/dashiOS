@@ -2,12 +2,12 @@
  * Files: the person's folders as the Files app shows them. Listing, searching,
  * and opening are the `files` scope, which asks once; moving to the Trash asks
  * on screen every time as well (the answer is never kept). Paths are
- * resolved and limited in apps/files/agent.ts: the home folder and removable
+ * resolved and limited in shared/files/agent.ts: the home folder and removable
  * drives, never the folders that hold secrets. There is no tool that reads a
  * file's content, writes, or deletes for good.
  */
 
-import { DEFAULT_LIMIT, MAX_LIMIT } from "../../../apps/files/agent.ts";
+import { DEFAULT_LIMIT, MAX_LIMIT } from "../../shared/files/agent.ts";
 import { fail, type ToolDef, whole } from "./define.ts";
 
 const MAX_QUERY = 200;

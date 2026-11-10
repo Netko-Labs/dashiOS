@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { desktopActions } from "../src/actions/desktop-actions.ts";
 import { linksEntry } from "../src/actions/entry.ts";
 import { chordGlyphs, keyFor } from "../src/actions/keys.ts";
 import { ActionRegistry, fixedSource } from "../src/actions/registry.ts";
@@ -13,12 +12,13 @@ import type { ActionContext, ActionDef } from "../src/actions/types.ts";
 import type { Call } from "../src/agents/tools/types.ts";
 import { AppMenuStore } from "../src/app-menus/store.ts";
 import type { CompositorWindow } from "../src/compositor.ts";
-import { desktopFields, type Entry, parseDesktopEntry, parseExec } from "../src/entries.ts";
+import type { Entry } from "../src/entries.ts";
 import { KEYMAP } from "../src/keymap.ts";
 import type { MenuAction } from "../src/menus/model.ts";
-import { PANES } from "../src/settings-app/panes.ts";
 import { AGENT_ROWS } from "../src/settings-app/registry/index.ts";
 import { scrollFor } from "../src/settings-app/spot.tsx";
+import { desktopActions, desktopFields, parseDesktopEntry, parseExec } from "../src/shared/apps/index.ts";
+import { PANES } from "../src/shared/settings/panes.ts";
 import { type Requests, runBinding, type ShellActions } from "../src/shortcuts.ts";
 import { fakeClockEachTest, flush, settle } from "./support/time.ts";
 

@@ -1,6 +1,6 @@
 /** Copy Address: an action's `dashi://` address, with its arguments filled in, on the clipboard. */
 
-import { type Clipboard, systemClipboard } from "../../apps/kit/clipboard.ts";
+import { type Clipboard, systemClipboard } from "../shared/clipboard/clipboard.ts";
 import { withArgs } from "./address.ts";
 import type { ActionDef, Args } from "./types.ts";
 

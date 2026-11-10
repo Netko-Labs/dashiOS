@@ -10,9 +10,9 @@
  * (`shadowHardware`): what it sets is kept in memory.
  */
 
-import type { BusLike } from "../dbus/properties.ts";
-import { unwrap } from "../dbus/properties.ts";
-import { type Variant, variant } from "../dbus/variant.ts";
+import type { BusLike } from "../shared/dbus/properties.ts";
+import { unwrap } from "../shared/dbus/properties.ts";
+import { type Variant, variant } from "../shared/dbus/variant.ts";
 import { type KnobValue, type Machine, parseDescribe } from "./describe.ts";
 
 export const HARDWARE = { destination: "dev.dashi.Hardware1", path: "/dev/dashi/Hardware1", interface: "dev.dashi.Hardware1" } as const;

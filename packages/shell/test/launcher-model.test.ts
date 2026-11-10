@@ -9,7 +9,6 @@ import { clipboardActions } from "../src/clipboard/actions.ts";
 import { SNIPPETS_ADDRESS } from "../src/clipboard/scope.ts";
 import type { Entry } from "../src/entries.ts";
 import { calculate, shellEntries } from "../src/entries.ts";
-import { FileSearch, RETRY_MS } from "../src/file-search.ts";
 import { KEYMAP } from "../src/keymap.ts";
 import { AppIndex, nearestExisting } from "../src/launcher/app-index.ts";
 import { failureNotice, LaunchFailures, RETRY } from "../src/launcher/failures.ts";
@@ -20,6 +19,7 @@ import { buildSections, type FileRow, filesStateFor, found, type ListInput, plac
 import { keepInView, moveSelection, resolveSelection, wheelSteps } from "../src/launcher/selection.ts";
 import { NotificationStore } from "../src/notifications/store.ts";
 import { parseRecents, RecentApps, recentEntries, remember } from "../src/recents.ts";
+import { FileSearch, RETRY_MS } from "../src/shared/files/file-search.ts";
 
 const app = (name: string, extra: Partial<Entry> = {}): Entry => ({ id: `app.${name.toLowerCase()}`, name, icon: "/i.svg", keywords: [], ...extra });
 const pane = (name: string): Entry => ({ id: `dev.dashi.settings/${name.toLowerCase()}`, name, icon: "/i.svg", glyph: "<svg/>", keywords: [], shell: true });

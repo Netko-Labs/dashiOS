@@ -6,11 +6,11 @@
 
 import { rowLook, SelectionBar, useColors, useSurface } from "@dashi/ui";
 import { type Bounds, ScrollView, Text, View } from "@mirinjs/metal";
-import type { ClockPrefs } from "../../src/clock.ts";
-import { dayPart } from "./dates.ts";
+import { dayPart } from "../../src/shared/calendar/dates.ts";
+import type { Occurrence } from "../../src/shared/calendar/types.ts";
+import type { ClockPrefs } from "../../src/shared/time/clock.ts";
 import { occurrenceKey } from "./event-block.tsx";
 import { clock, shortDay, titleOf } from "./format.ts";
-import type { Occurrence } from "./types.ts";
 
 export const RESULTS_WIDTH = 340;
 const ROW = 30;

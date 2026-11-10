@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { darkColors, lightColors, TINT_VALUES, TINTS, tintFor } from "@dashi/ui";
-import { PANES } from "../src/settings-app/panes.ts";
+import { PANES } from "../src/shared/settings/panes.ts";
 
 // The job colors: kombu (selected), ume (destroy), broth (warning), moss (success), shiso (agents), and the shell's red.
 const JOBS = ["#3E8A72", "#D0596F", "#E5B13F", "#4F9A3E", lightColors.agent, darkColors.agent, lightColors.critical, darkColors.critical].map((hex) =>

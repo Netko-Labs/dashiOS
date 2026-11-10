@@ -35,8 +35,6 @@ import type { HarnessId } from "./agents/ask/answerer.ts";
 import { contextPrompt, NO_CONTEXT, type TaskContext } from "./agents/handoff/grants.ts";
 import { harnessGlyph } from "./agents/handoff/harness-icons.ts";
 import { cut } from "./agents/handoff/words.ts";
-import { iconPath } from "./apps.ts";
-import { useClockPrefs, usesHour24 } from "./clock.ts";
 import type { Entry } from "./entries.ts";
 import { fieldAccess, listAccess, pictureAccess, rowAccess } from "./launcher/access.ts";
 import type { AgentAct } from "./launcher/agents/acts.ts";
@@ -90,6 +88,8 @@ import {
 } from "./launcher/verbs.ts";
 import { WindowStrip } from "./launcher/window-strip.tsx";
 import type { WorldSnapshot } from "./launcher/world.ts";
+import { iconPath } from "./shared/apps/index.ts";
+import { useClockPrefs, usesHour24 } from "./shared/time/clock.ts";
 
 export type { FileRow } from "./launcher/rows.ts";
 
@@ -98,7 +98,7 @@ export const LAUNCHER = { ...SURFACE, top: 120, field: 48, fieldText: 17, radius
 
 /**
  * Files are asked as soon as the rows are drawn: one question at a time over one
- * LocalSearch connection, a newer one replacing one still waiting (file-search.ts),
+ * LocalSearch connection, a newer one replacing one still waiting (shared/files/file-search.ts),
  * so typing never queues them up, and they have 80 ms to fill their slots (launcher/budget.ts).
  */
 export const FILE_DELAY_MS = 0;
@@ -148,7 +148,7 @@ export interface LauncherProps {
   host?: LauncherHost;
   /** A link's action, waiting for Return. */
   presented?: Presented | null;
-  /** The person's languages, for Dashi's own words (ranking/locale.ts). */
+  /** The person's languages, for Dashi's own words (shared/locale/messages.ts). */
   languages?: readonly string[];
   /** Keys typed between the ❖ tap and the field taking the keyboard, played in order (launcher/type-ahead.ts). */
   typeAhead?: TypeAheadSource;

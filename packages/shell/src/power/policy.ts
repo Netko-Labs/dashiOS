@@ -7,8 +7,8 @@
  */
 
 import { readdirSync, readFileSync } from "node:fs";
-import { DBusConnection } from "../dbus/index.ts";
-import { propertyMap } from "../dbus/properties.ts";
+import { DBusConnection } from "../shared/dbus/index.ts";
+import { propertyMap } from "../shared/dbus/properties.ts";
 import { LOGIND, MANAGER, MANAGER_PATH } from "./logind.ts";
 
 export const POWER_ACTIONS = [

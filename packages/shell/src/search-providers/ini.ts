@@ -16,7 +16,7 @@
 
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { isObjectPath, isWellKnownName } from "../dbus/names.ts";
+import { isObjectPath, isWellKnownName } from "../shared/dbus/names.ts";
 
 export interface ProviderInfo {
   /** The desktop entry of the app it searches for (without `.desktop`): its name and icon head its rows. */

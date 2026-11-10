@@ -4,17 +4,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { FlagsStore } from "../src/control-center/flags.ts";
 import { AutoRefresh } from "../src/display-config/auto-refresh.ts";
 import type { ApplyResult } from "../src/display-config/manager.ts";
 import { parseMonitors } from "../src/display-config/monitors.ts";
 import { DisplaysPane } from "../src/settings-app/panes/displays.tsx";
 import { OnBatteryRow } from "../src/settings-app/panes/on-battery.tsx";
-import type { PaneId } from "../src/settings-app/panes.ts";
 import { type Arranger, ScreensStore } from "../src/settings-app/screens.ts";
 import { PaneStoresContext } from "../src/settings-app/setting.tsx";
 import { SettingsStore } from "../src/settings-app/store.ts";
 import { Page } from "../src/settings-app/ui.tsx";
+import { FlagsStore } from "../src/shared/control-center/flags.ts";
+import type { PaneId } from "../src/shared/settings/panes.ts";
 import { settle } from "./support/time.ts";
 
 // Displays' refresh rate row with Automatic, and Battery & Power's "On battery", on a stand-in for the Metal host.

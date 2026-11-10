@@ -12,7 +12,6 @@
 
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
-import { systemClipboard } from "../apps/kit/clipboard.ts";
 import { formatAddress } from "./actions/address.ts";
 import { linksEntry, startActions } from "./actions/index.ts";
 import type { CaptureKind } from "./actions/sources/commands.ts";
@@ -46,7 +45,7 @@ import { AppletPopovers, joinShellMenus } from "./applets/popovers.ts";
 import { AppletPower } from "./applets/power.ts";
 import { popoverScreen, startApplets } from "./applets/start.tsx";
 import { createApprovalUi } from "./approval-sheet.tsx";
-import { appFor, displayName, dockDefaults, iconPath, launch, METAL_HOST, ownApp, registerShellApp, resolvePinned, SCREENSHOT_APP_ID } from "./apps.ts";
+import { appFor, displayName, launch, ownApp, registerShellApp, SCREENSHOT_APP_ID } from "./apps.ts";
 import { Arranger, parseOutputs } from "./arrange.ts";
 import { startAutostart } from "./autostart.ts";
 import { barHold, holdingBar } from "./bar-hold.ts";
@@ -57,7 +56,6 @@ import { chooseBluetooth } from "./bluetooth/index.ts";
 import { startCalendar } from "./calendar/service.ts";
 import { type Clipboard, startClipboard } from "./clipboard/start.ts";
 import { Compositor, type CompositorWindow, type Frame } from "./compositor.ts";
-import { connectDarkMode } from "./control-center/dark-mode.ts";
 import { controlFlags, LayoutStore, setControlMotion } from "./control-center/index.ts";
 import { installDesktopEntries, shouldWriteEntries } from "./desktop-entries.ts";
 import { AutoRefresh, rateOnPower } from "./display-config/auto-refresh.ts";
@@ -78,12 +76,10 @@ import {
   startDock,
   TileStore,
 } from "./dock/index.ts";
-import { type Entry, fileIcon, launchEntry } from "./entries.ts";
+import { type Entry, launchEntry } from "./entries.ts";
 import { openTarget, startExtensions } from "./extensions/start.ts";
 import { ExtrasStore } from "./extras/index.ts";
 import { serveFileManager } from "./file-manager.ts";
-import { FileSearch, iconNamesFor } from "./file-search.ts";
-import { installedSpecs, shellDir } from "./first-party.ts";
 import { startForceQuit } from "./force-quit/index.ts";
 import { windowToFront } from "./front-window.ts";
 import { FullscreenBars } from "./fullscreen.ts";
@@ -145,17 +141,21 @@ import { startSettings } from "./settings.ts";
 import { SettingsStore, startSettingsApp } from "./settings-app/index.ts";
 import { machineDesktop } from "./settings-app/machine-desktop.ts";
 import type { ControlCenterEditor } from "./settings-app/panes/control-center.tsx";
-import { isPaneId } from "./settings-app/panes.ts";
 import { agentRow, type RegistryStores, valueOf } from "./settings-app/registry/index.ts";
 import { registerPaneEntries } from "./settings-app/search.ts";
 import { createPaneServices, type PaneServices } from "./settings-app/services.ts";
 import { startSetupAssistant } from "./setup/start.tsx";
 import { startSharePicker } from "./share-picker/index.ts";
+import { dockDefaults, fileIcon, iconPath, installedSpecs, METAL_HOST, resolvePinned, shellDir } from "./shared/apps/index.ts";
+import { systemClipboard } from "./shared/clipboard/clipboard.ts";
+import { connectDarkMode } from "./shared/control-center/flags.ts";
+import { FileSearch, iconNamesFor } from "./shared/files/file-search.ts";
+import { isPaneId } from "./shared/settings/panes.ts";
+import { Software } from "./shared/software/manager.ts";
+import { standIn } from "./shared/software/stand-in.ts";
 import { SHEET, ShortcutSheet } from "./sheet.tsx";
 import { startShortcuts } from "./shortcuts.ts";
 import { configureMachineEnd, runClosers } from "./shutdown.ts";
-import { Software } from "./software/manager.ts";
-import { standIn } from "./software/stand-in.ts";
 import { checkPath, openSoftwareUpdates, UpdateCheck } from "./software/update-check.ts";
 import { pipewireWatch, startAppMixer } from "./sound/apps/index.ts";
 import { FullscreenDesktops, startSpaces } from "./spaces/index.ts";
@@ -291,7 +291,7 @@ const idle = compositor && !idleOff ? new IdlePolicy(compositor) : null;
 const chromeStyle = compositor ? new ChromeStyle(compositor) : null;
 // The depth between windows: shadows, the hairline, the optional ring (IPC `window-style`; appearance/window-style.ts).
 const windowStyle = compositor ? new WindowStyleSync(compositor) : null;
-// GTK apps round their own windows to the same radius (appearance/gtk-colors.ts).
+// GTK apps round their own windows to the same radius (shared/appearance/gtk-colors.ts).
 const gtkCorners = new CornerFeed();
 // The wallpaper behind the windows and the lock screen (IPC `wallpaper`; wallpaper/).
 const wallpaper = compositor ? new WallpaperSync(compositor) : null;
@@ -1110,7 +1110,7 @@ const onScreen = (output: string | undefined): { output?: string } => (output ==
 // The launcher (launcher.tsx). Nothing on a ❖ tap touches the disk: the apps are an index built
 // once and kept fresh by inotify (launcher/app-index.ts), the history is held in memory
 // (recents.ts), icons were resolved when the index was built, and file search knows
-// whether it can look (file-search.ts).
+// whether it can look (shared/files/file-search.ts).
 const appIndex = new AppIndex();
 const stopAppIndex = appIndex.start();
 const launcherRecents = new RecentApps();
@@ -1204,7 +1204,7 @@ const followPersonKeys = () => {
 };
 followPersonKeys();
 const stopFollowingPersonKeys = settingsStore.subscribe(followPersonKeys);
-/** The person's languages, for Dashi's own words in the launcher (launcher/ranking/locale.ts). */
+/** The person's languages, for Dashi's own words in the launcher (shared/locale/messages.ts). */
 const launcherLanguages = languagesOf(messageLocales(process.env));
 // Made once the action registry is (below): what the launcher lists besides the apps, and what its verbs reach.
 let launcherWorld: LauncherWorld | null = null;

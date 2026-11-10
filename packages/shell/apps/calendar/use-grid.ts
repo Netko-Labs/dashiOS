@@ -8,8 +8,9 @@
 
 import type { Bounds, WindowKeyInfo } from "@mirinjs/metal";
 import { useRef, useState } from "react";
-import { type ClockPrefs, usesHour24 } from "../../src/clock.ts";
-import { type Day, dayPart } from "./dates.ts";
+import { type Day, dayPart } from "../../src/shared/calendar/dates.ts";
+import type { Occurrence } from "../../src/shared/calendar/types.ts";
+import { type ClockPrefs, usesHour24 } from "../../src/shared/time/clock.ts";
 import { isSameTimes } from "./drag.ts";
 import { occurrenceKey } from "./event-block.tsx";
 import { type Drag, useGesture } from "./gesture.ts";
@@ -19,7 +20,6 @@ import type { Pending } from "./inline-title.tsx";
 import type { CalendarModel, CalendarState } from "./model.ts";
 import type { SheetState } from "./sheets.tsx";
 import type { Target } from "./target.ts";
-import type { Occurrence } from "./types.ts";
 import { keyAction } from "./window-keys.ts";
 
 /** How soon a second click on the same day or half hour makes an event there. */

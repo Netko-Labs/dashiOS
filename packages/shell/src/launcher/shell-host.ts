@@ -11,7 +11,7 @@ import type { Actions } from "../actions/start.ts";
 import type { Compositor } from "../compositor.ts";
 import type { Entry } from "../entries.ts";
 import type { Keymap } from "../keymap.ts";
-import { isPaneId, type PaneId } from "../settings-app/panes.ts";
+import { isPaneId, type PaneId } from "../shared/settings/panes.ts";
 import type { LauncherHost } from "./host.ts";
 import { isPane } from "./items.ts";
 

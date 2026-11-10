@@ -3,9 +3,9 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, w
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { UndoStack } from "@dashi/ui";
-import type { Exec } from "../apps/files/exec.ts";
-import { findTrashed } from "../apps/files/trashops.ts";
 import { copyAction, moveAction, newFolderAction, renameAction, trashAction, type UndoEnv } from "../apps/files/undoable.ts";
+import type { Exec } from "../src/shared/files/exec.ts";
+import { findTrashed } from "../src/shared/files/trashops.ts";
 
 let root = "";
 let home = "";

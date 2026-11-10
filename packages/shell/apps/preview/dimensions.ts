@@ -5,7 +5,7 @@
  * for anything it does not recognise (headers are untrusted input).
  */
 
-import type { Format } from "./kinds.ts";
+import type { Format } from "../../src/shared/files/kinds.ts";
 
 export interface Size {
   width: number;

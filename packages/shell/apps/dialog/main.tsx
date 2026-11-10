@@ -8,7 +8,7 @@
 
 import { existsSync, writeSync } from "node:fs";
 import type { ReactElement } from "react";
-import { METAL_HOST } from "../../src/apps.ts";
+import { METAL_HOST } from "../../src/shared/apps/index.ts";
 import { type RunningApp, runApp } from "../kit/index.ts";
 import { CalendarDialog } from "./calendar.tsx";
 import { prepare } from "./cli.ts";

@@ -1,9 +1,9 @@
 /** The context menus' contents, decided from the selection and where the window is looking, in groups (PA-9). */
 
 import { MENU_SEPARATOR, type MenuEntry } from "@dashi/ui";
+import type { FileItem } from "../../src/shared/files/items.ts";
+import { mayOpen } from "../../src/shared/files/open.ts";
 import type { WindowActions } from "./context.ts";
-import type { FileItem } from "./items.ts";
-import { mayOpen } from "./open.ts";
 import type { Operations } from "./operations.ts";
 import type { FilesStore } from "./store.ts";
 

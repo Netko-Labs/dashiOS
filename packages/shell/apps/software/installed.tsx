@@ -8,8 +8,8 @@
 import { Button, EmptyState, Group, glyphs, Loading, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
-import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
-import { formatBytes } from "../../src/software/text.ts";
+import type { InstalledApp } from "../../src/shared/software/flatpak-parse.ts";
+import { formatBytes } from "../../src/shared/software/text.ts";
 import { InstalledApplets } from "./applets/pages.tsx";
 import { useAppletState } from "./applets/rows.tsx";
 import { StateChip } from "./chip.tsx";

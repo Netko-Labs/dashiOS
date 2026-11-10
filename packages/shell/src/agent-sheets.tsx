@@ -15,7 +15,7 @@ import { personAnswered } from "./agents/person.ts";
 import { DENY, type QueuedSheet, SheetQueue } from "./agents/sheet-queue.ts";
 import { ConfirmSheet } from "./confirm-sheet.tsx";
 import { CONSENT, ConsentSheet, STOPPED, StoppedNote } from "./consent.tsx";
-import { spawnShellHost } from "./metal-host.ts";
+import { spawnShellHost } from "./shared/metal/host.ts";
 import { SIGN_IN, SignInSheet } from "./sign-in-sheet.tsx";
 import { TURN, TurnBanner } from "./turn-banner.tsx";
 

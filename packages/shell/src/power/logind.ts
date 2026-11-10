@@ -5,7 +5,7 @@
  * descriptor are inhibit.ts's.
  */
 
-import { type ConnectOptions, DBusConnection, DBusError, getNameOwner } from "../dbus/index.ts";
+import { type ConnectOptions, DBusConnection, DBusError, getNameOwner } from "../shared/dbus/index.ts";
 
 export const LOGIND = "org.freedesktop.login1";
 export const MANAGER_PATH = "/org/freedesktop/login1";

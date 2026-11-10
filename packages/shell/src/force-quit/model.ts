@@ -5,7 +5,6 @@
  */
 
 import type { CompositorWindow } from "../compositor.ts";
-import { parseStat } from "../menus/session.ts";
 
 export interface AppGroup {
   /** The process that owns the windows; the process Force Quit signals. */
@@ -26,27 +25,6 @@ export interface Identity {
 
 /** Rows the list shows at once; the rest scroll into view with the arrow keys. */
 export const VISIBLE_ROWS = 6;
-
-/** Parents followed up to init; a session's process tree is a handful deep. */
-const MAX_DEPTH = 64;
-
-/**
- * The shell's own process and every process above it (its parents up to
- * init): the compositor it runs under, the session, and a terminal a nested
- * run was started from. Never listed, never signalled. `readStat` returns
- * /proc/<pid>/stat, or null when it cannot be read.
- */
-export function protectedPids(self: number, readStat: (pid: number) => string | null): ReadonlySet<number> {
-  const protectedSet = new Set<number>([0, 1, self]);
-  let pid = self;
-  for (let depth = 0; depth < MAX_DEPTH && pid > 1; depth++) {
-    const stat = parseStat(readStat(pid) ?? "");
-    if (!stat) break;
-    protectedSet.add(stat.ppid);
-    pid = stat.ppid;
-  }
-  return protectedSet;
-}
 
 /**
  * The apps with windows, one row per process, sorted by name and then pid

@@ -1,7 +1,7 @@
 /** The rows of Network, Bluetooth, Sound, Battery & Power, and Graphics. */
 
+import { BATTERY, BLUETOOTH, DISPLAY, GAUGE, GPU, MIC, MIC_OFF, MOON, MUTE, PLUG, REFRESH, VOLUME, WIFI } from "../../shared/settings/knob-glyphs.ts";
 import { BLANK_CHOICES, DEFAULT_BLANK_AFTER, SLEEP_CHOICES } from "../controls.ts";
-import { BATTERY, BLUETOOTH, DISPLAY, GAUGE, GPU, MIC, MIC_OFF, MOON, MUTE, PLUG, REFRESH, VOLUME, WIFI } from "../knob-glyphs.ts";
 import type { ChoiceOption, RowDef } from "./types.ts";
 import { storedChoice, storedSwitch } from "./values.ts";
 

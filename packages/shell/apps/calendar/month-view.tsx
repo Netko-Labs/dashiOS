@@ -8,18 +8,18 @@
 import { TRUE_BLACK, useColors, useDark, useSurface } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { ClockPrefs } from "../../src/clock.ts";
-import { weekdayNames } from "../../src/region/week.ts";
+import { addMinutes, type Day, dayPart, monthOf } from "../../src/shared/calendar/dates.ts";
+import type { Occurrence } from "../../src/shared/calendar/types.ts";
+import type { ClockPrefs } from "../../src/shared/time/clock.ts";
+import { weekdayNames } from "../../src/shared/time/clock.ts";
 import { EventChip, MoreChip } from "./chips.tsx";
 import { tint } from "./colors.ts";
-import { addMinutes, type Day, dayPart, monthOf } from "./dates.ts";
 import { monthDayAt } from "./drag.ts";
 import { occurrenceKey } from "./event-block.tsx";
 import { dayNumber, monthDay } from "./format.ts";
 import type { GridHandlers, GridState } from "./grid-props.ts";
 import { InlineTitle } from "./inline-title.tsx";
 import { CHIP_TIME_FROM, chipCapacity, fitChips, MONTH_CHIP_HEIGHT, monthGrid, onDay } from "./layout.ts";
-import type { Occurrence } from "./types.ts";
 
 /**
  * Days outside the month (design.html CO-8): sunk below the window's ground

@@ -5,8 +5,8 @@
  * own (power/logind.ts).
  */
 
-import { DBusConnection } from "../dbus/index.ts";
-import { BusLink } from "../dbus/link.ts";
+import { DBusConnection } from "../shared/dbus/index.ts";
+import { BusLink } from "../shared/dbus/link.ts";
 
 let shared: BusLink | null = null;
 

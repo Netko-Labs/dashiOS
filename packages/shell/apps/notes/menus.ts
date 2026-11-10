@@ -14,10 +14,10 @@
  */
 
 import { type UndoState, undoMenuItems } from "@dashi/ui";
+import { DEFAULT_FOLDER_NAME } from "../../src/shared/notes/names.ts";
 import { enabledIds, type MenuSpec } from "../kit/index.ts";
 import type { FormatCommand } from "./formats.ts";
 import type { Source } from "./list.ts";
-import { DEFAULT_FOLDER_NAME } from "./names.ts";
 
 export interface MenuContext {
   folders: readonly string[];

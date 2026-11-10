@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
-import { makeEvent } from "../apps/calendar/event.ts";
-import { occurrencesOf } from "../apps/calendar/recurrence.ts";
-import { convertWall, fromHere, instantIn, isZone, parseZone, toHere, wallAt, zoneCity } from "../apps/calendar/zones.ts";
+import { makeEvent } from "../src/shared/calendar/event.ts";
+import { occurrencesOf } from "../src/shared/calendar/recurrence.ts";
+import { convertWall, fromHere, instantIn, isZone, parseZone, toHere, wallAt, zoneCity } from "../src/shared/calendar/zones.ts";
 
 const NY = "America/New_York";
 const LISBON = "Europe/Lisbon";

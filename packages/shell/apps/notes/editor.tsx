@@ -19,6 +19,9 @@
 import { Button, EmptyState, type Palette, useColors, useSurface } from "@dashi/ui";
 import { ScrollView, Text, TextInput, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { untitled } from "../../src/shared/notes/names.ts";
+import { KEEP_DAYS } from "../../src/shared/notes/store.ts";
+import { daysLeft, editedLine } from "../../src/shared/notes/text.ts";
 import { findMatches } from "./find.ts";
 import type { Selection } from "./format.ts";
 import { NOTE } from "./glyphs.ts";
@@ -27,9 +30,6 @@ import type { Row } from "./list.ts";
 import { BODY_SIZE, lineSizes, lookOf, type Pressable, TITLE_SIZE } from "./look.ts";
 import { markup } from "./markup.ts";
 import type { Draft } from "./model.ts";
-import { untitled } from "./names.ts";
-import { KEEP_DAYS } from "./store.ts";
-import { daysLeft, editedLine } from "./text.ts";
 
 export interface EditorProps {
   draft: Draft | null;

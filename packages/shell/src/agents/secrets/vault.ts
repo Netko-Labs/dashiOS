@@ -5,7 +5,7 @@
  * errors carry dashi-secretd's words, which never hold one.
  */
 
-import { LineBuffer } from "../../lines.ts";
+import { LineBuffer } from "../../shared/io/lines.ts";
 
 export const VAULT_SOCKET = process.env.DASHI_SECRETD_SOCKET || "/run/dashi-secretd/socket";
 const TIMEOUT_MS = 10_000;

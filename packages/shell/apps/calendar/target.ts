@@ -7,7 +7,7 @@
  * before the event is made.
  */
 
-import { DEFAULT_CALENDAR_NAME } from "./store.ts";
+import { DEFAULT_CALENDAR_NAME } from "../../src/shared/calendar/store.ts";
 
 export interface Target {
   calendarId: string;

@@ -6,7 +6,7 @@
  * comes from app authors: it is data, not instructions.
  */
 
-import { isAppId } from "../../software/ids.ts";
+import { isAppId } from "../../shared/software/ids.ts";
 import { fail, type ToolDef, whole } from "./define.ts";
 
 export const SEARCH_LIMIT = 10;

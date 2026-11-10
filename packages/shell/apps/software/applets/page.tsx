@@ -9,9 +9,9 @@
 import { describeWhen, type InstalledApplet, permissionName, type UnreadableApplet } from "@dashi/applet";
 import { Button, EmptyState, Group, glyphs, Switch, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
-import type { StoreApplet } from "../../../src/applet-store/merge.ts";
-import { abilityLines } from "../../../src/applets/consent-sheet.tsx";
-import { formatBytes } from "../../../src/software/text.ts";
+import { abilityLines } from "../../../src/shared/applet-store/consent-sheet.tsx";
+import type { StoreApplet } from "../../../src/shared/applet-store/merge.ts";
+import { formatBytes } from "../../../src/shared/software/text.ts";
 import { Gallery } from "../gallery.tsx";
 import { CHECK_MARK } from "../glyphs.ts";
 import { SectionHeader } from "../heading.tsx";

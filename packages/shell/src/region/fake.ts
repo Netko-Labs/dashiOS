@@ -4,8 +4,8 @@
  * time zone or system language (`system/stand-in.ts` says when a run is one).
  */
 
+import { canonicalLocale, localeFromEnv, parseInstalledLocales } from "../shared/locale/locale.ts";
 import { type RegionBackend, RegionError, type TimeState } from "./backend.ts";
-import { canonicalLocale, localeFromEnv, parseInstalledLocales } from "./locale.ts";
 import { isTimezoneName } from "./timezones.ts";
 
 export interface FakeRegionOptions {

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { type Exec, exec } from "../apps/files/exec.ts";
-import { OPEN_TIMEOUT_MS, openDefault, openWithDefault } from "../apps/files/open.ts";
 import { runTool } from "../apps/preview/tools.ts";
+import { type Exec, exec } from "../src/shared/files/exec.ts";
+import { OPEN_TIMEOUT_MS, openDefault, openWithDefault } from "../src/shared/files/open.ts";
 
 // `gio open` exits once the app has the file, but the app it started holds gio's
 // stdout and stderr: reading them to their end waited for the app to quit, so the

@@ -6,10 +6,10 @@
  * the others xdg-desktop-portal offers; the short list stops at four, and
  * "Other…" shows the rest. "Always use" puts the app first for the type in
  * the person's own `~/.config/mimeapps.list`, as Files' Open With does,
- * with the same merge the installer uses (src/default-handlers.ts).
+ * with the same merge the installer uses (src/shared/apps/default-handlers.ts).
  */
 
-import { mergeDefaults } from "../../../src/default-handlers.ts";
+import { mergeDefaults } from "../../../src/shared/apps/default-handlers.ts";
 import { cleanString, str, vardict } from "../vardict.ts";
 
 export const SHORT_LIST = 4;

@@ -11,7 +11,8 @@
 
 import { existsSync, type FSWatcher, watch as fsWatch } from "node:fs";
 import { dirname, join } from "node:path";
-import { dataDirs, type Entry, loadEntries } from "../entries.ts";
+import { type Entry, loadEntries } from "../entries.ts";
+import { dataDirs } from "../shared/apps/index.ts";
 
 /** Changes come in bursts (a package installs a dozen files); one rebuild after the burst. */
 export const SETTLE_MS = 250;

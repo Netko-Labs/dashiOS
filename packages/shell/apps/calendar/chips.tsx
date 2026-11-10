@@ -6,13 +6,13 @@
 
 import { useColors } from "@dashi/ui";
 import { type Bounds, type PointerInfo, Text, View } from "@mirinjs/metal";
-import type { ClockPrefs } from "../../src/clock.ts";
+import { dayPart } from "../../src/shared/calendar/dates.ts";
+import type { Occurrence } from "../../src/shared/calendar/types.ts";
+import type { ClockPrefs } from "../../src/shared/time/clock.ts";
 import { inkOn, tint } from "./colors.ts";
-import { dayPart } from "./dates.ts";
 import { occurrenceKey } from "./event-block.tsx";
 import { clockShort, titleOf } from "./format.ts";
 import { MONTH_CHIP_HEIGHT } from "./layout.ts";
-import type { Occurrence } from "./types.ts";
 
 export function EventChip({
   occurrence,

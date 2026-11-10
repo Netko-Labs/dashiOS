@@ -3,11 +3,11 @@ import { existsSync, mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync }
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Env } from "../apps/files/env.ts";
-import type { Exec } from "../apps/files/exec.ts";
-import type { FileItem } from "../apps/files/items.ts";
 import { folderAt } from "../apps/files/location.ts";
 import { Operations } from "../apps/files/operations.ts";
 import { FilesStore } from "../apps/files/store.ts";
+import type { Exec } from "../src/shared/files/exec.ts";
+import type { FileItem } from "../src/shared/files/items.ts";
 import { fakeClockEachTest, settle } from "./support/time.ts";
 
 fakeClockEachTest();

@@ -2,9 +2,9 @@ import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { CallSpec } from "../src/dbus/index.ts";
-import { Variant } from "../src/dbus/index.ts";
 import { parseMetas, parseProviderIni, providerSource, readProviders, SearchProviders, termsOf } from "../src/search-providers/index.ts";
+import type { CallSpec } from "../src/shared/dbus/index.ts";
+import { Variant } from "../src/shared/dbus/index.ts";
 
 const CHARACTERS = [
   "[Shell Search Provider]",

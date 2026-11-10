@@ -5,9 +5,9 @@ import { join } from "node:path";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import { HOUR_HEIGHT } from "../apps/calendar/layout.ts";
 import { CalendarModel } from "../apps/calendar/model.ts";
-import { CalendarStore } from "../apps/calendar/store.ts";
-import type { CalEvent } from "../apps/calendar/types.ts";
 import { CalendarWindow } from "../apps/calendar/view.tsx";
+import { CalendarStore } from "../src/shared/calendar/store.ts";
+import type { CalEvent } from "../src/shared/calendar/types.ts";
 import { settle } from "./support/time.ts";
 
 // The grid as the editor, on a stand-in for the Metal host: draw an event and name it in place,

@@ -6,20 +6,20 @@
 
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import type { FlagsStore } from "../control-center/flags.ts";
+import { DEFAULT_STYLE, type GtkStyle } from "../shared/appearance/gtk-colors.ts";
+import { type AppLook, detectLook, realProbes } from "../shared/appearance/look.ts";
+import type { FlagsStore } from "../shared/control-center/flags.ts";
 import { hasProgram, type Run, run } from "../system/exec.ts";
-import { type AppCommand, type AppLook, appThemeCommands, appThemeGate, type Gate, readCompositorEnviron } from "./apps.ts";
+import { type AppCommand, appThemeCommands, appThemeGate, type Gate, readCompositorEnviron } from "./apps.ts";
 import type { CornerSource } from "./corner-feed.ts";
-import { DEFAULT_STYLE, type GtkStyle } from "./gtk-colors.ts";
 import { gtkCssPath, syncGtkCss } from "./gtk-css.ts";
-import { detectLook, realProbes } from "./look.ts";
 
 export interface AppearanceDeps {
   gate: Gate;
   has: (program: string) => boolean;
   /** A command that failed is `null`; it never throws. */
   run: Run;
-  /** What this machine can dress GTK apps with (look.ts); absent, only the scheme and button layout are set. */
+  /** What this machine can dress GTK apps with (shared/appearance/look.ts); absent, only the scheme and button layout are set. */
   look?: AppLook;
   /** The window corner radius the GTK CSS follows (corner-feed.ts); absent, the default radius. */
   corners?: CornerSource;

@@ -11,9 +11,9 @@
 import { rowLook, SelectionBar, SidebarSection, useColors, useTooltip } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
+import type { Calendar } from "../../src/shared/calendar/types.ts";
 import { CHECK, ELLIPSIS, IMPORT, PLUS } from "./glyphs.ts";
 import { MiniMonth, type MiniMonthProps } from "./mini-month.tsx";
-import type { Calendar } from "./types.ts";
 
 export interface SidebarProps extends MiniMonthProps {
   calendars: readonly Calendar[];

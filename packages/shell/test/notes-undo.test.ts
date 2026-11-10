@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { NotesModel } from "../apps/notes/model.ts";
-import { NotesStore } from "../apps/notes/store.ts";
+import { NotesStore } from "../src/shared/notes/store.ts";
 
 let root = "";
 let store: NotesStore;

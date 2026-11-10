@@ -6,7 +6,7 @@
  * absolute path, or `..` refuses the whole archive.
  */
 
-import { isInsidePath } from "./manifest.ts";
+import { isInsidePath } from "./parse.ts";
 
 const BLOCK = 512;
 

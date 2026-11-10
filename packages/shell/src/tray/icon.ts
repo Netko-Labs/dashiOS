@@ -1,7 +1,7 @@
 /**
  * A tray item's icon as a file the bar draws. An icon name is looked up in
  * the item's own IconThemePath first, then hicolor and the installed themes
- * (icon-themes.ts) at the sizes and categories tray icons come in; an absolute
+ * (shared/apps/icons.ts) at the sizes and categories tray icons come in; an absolute
  * path is used as it is. Without a name that resolves, the item's pixmap is
  * written as a PNG under `$XDG_RUNTIME_DIR/dashi-tray`, named by its content
  * so the same picture is written once and a changed one gets a new path.
@@ -10,9 +10,8 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
-import { dataDirs } from "../entries.ts";
 import type { ExtraIcon } from "../extras/types.ts";
-import { themeIcon } from "../icon-themes.ts";
+import { dataDirs, themeIcon } from "../shared/apps/index.ts";
 import { argbToRgba, encodePng, type Pixmap, PREFERRED_SIDE, pickPixmap } from "./png.ts";
 import type { IconSource } from "./props.ts";
 

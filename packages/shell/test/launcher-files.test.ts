@@ -1,8 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { writeSync } from "node:fs";
-import { closeFd, FdService, pipePair, type Variant } from "../src/dbus/index.ts";
-import { FileSearch } from "../src/file-search.ts";
-import { BUDGET, LatestOnly, SUPERSEDED } from "../src/launcher/budget.ts";
+import { BUDGET } from "../src/launcher/budget.ts";
 import {
   CANDIDATES,
   type DatedHit,
@@ -15,6 +13,8 @@ import {
   rankFiles,
   readToEnd,
 } from "../src/local-search.ts";
+import { closeFd, FdService, pipePair, type Variant } from "../src/shared/dbus/index.ts";
+import { FileSearch, LatestOnly, SUPERSEDED } from "../src/shared/files/file-search.ts";
 import { type PrivateBus, startPrivateBus } from "./private-bus.ts";
 import { flush } from "./support/time.ts";
 

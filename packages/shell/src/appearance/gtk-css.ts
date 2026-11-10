@@ -1,7 +1,7 @@
 /**
  * How GTK apps that draw their own title bar look (libadwaita and GTK 4
  * apps: Files, Text Editor, Calculator; GTK 3 headerbars; Chromium-based
- * browsers where they follow the GTK theme): Dashi's colors (gtk-colors.ts)
+ * browsers where they follow the GTK theme): Dashi's colors (shared/appearance/gtk-colors.ts)
  * and Dashi's window buttons. Dashi's title bars paint ume, broth, and kombu
  * controls in the Shapes style (comp/src/theme.rs: circle, bar, rounded
  * square); this ships the same look as the user's own GTK CSS, in a block
@@ -20,7 +20,7 @@
 
 import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { DEFAULT_STYLE, type GtkStyle, gtk3Colors, gtk4Colors } from "./gtk-colors.ts";
+import { DEFAULT_STYLE, type GtkStyle, gtk3Colors, gtk4Colors } from "../shared/appearance/gtk-colors.ts";
 
 export const BEGIN = "/* >>> dashi window buttons (managed by Dashi; edit outside this block) */";
 export const END = "/* <<< dashi window buttons */";

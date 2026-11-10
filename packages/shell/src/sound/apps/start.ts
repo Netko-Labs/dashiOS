@@ -4,10 +4,11 @@
  * development run, kept in memory (the host is read, never written).
  */
 
-import { type App, appFor, iconPath } from "../../apps.ts";
+import { appFor } from "../../apps.ts";
 import type { Compositor } from "../../compositor.ts";
-import { cachedIcon, type Entry } from "../../entries.ts";
-import { type AppIdentity, catalogFrom } from "../../process-apps/index.ts";
+import type { Entry } from "../../entries.ts";
+import { type App, cachedIcon, iconPath } from "../../shared/apps/index.ts";
+import { type AppIdentity, catalogFrom } from "../../shared/processes/index.ts";
 import { heldControl, pipewireControl } from "./commands.ts";
 import { streamOwners } from "./owners.ts";
 import { readProcess } from "./proc-look.ts";

@@ -10,7 +10,7 @@
  * Prints what the shell answered; exits 0 when it was opened, 1 otherwise.
  */
 
-import { openLink } from "../src/actions/open-link.ts";
+import { openLink } from "../src/shared/links/open-link.ts";
 
 const url = process.argv[2];
 if (!url || process.argv.length > 3) {

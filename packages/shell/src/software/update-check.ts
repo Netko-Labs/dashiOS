@@ -13,11 +13,11 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { iconPath } from "../apps.ts";
 import { type NotificationStore, SHELL_SENDER } from "../notifications/store.ts";
 import type { NotifyInput } from "../notifications/types.ts";
-import type { FlatpakUpdate } from "./flatpak-parse.ts";
-import type { Software } from "./manager.ts";
+import { iconPath } from "../shared/apps/index.ts";
+import type { FlatpakUpdate } from "../shared/software/flatpak-parse.ts";
+import type { Software } from "../shared/software/manager.ts";
 
 export const DAY_MS = 24 * 3_600_000;
 /** After the session starts: late enough not to slow it. */

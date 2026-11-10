@@ -6,7 +6,7 @@
  * Software's one queue (the toolbar's activity says so); a failure is
  * Software's failure sheet. Every change starts from a click, and one that
  * adds permissions waits for the consent sheet. Without a key for Dashi's
- * catalog (src/applet-store/keys.ts) and no catalog added, nothing is
+ * catalog (src/shared/applet-store/keys.ts) and no catalog added, nothing is
  * listed: Installed still lists what was added by hand. An applet a catalog
  * lists that this Dashi can't read is left out and counted (`skipped`); one
  * installed whose files no longer read is `unreadable`: listed, never run,
@@ -14,11 +14,11 @@
  */
 
 import { consentNames, fits, type InstalledApplet, type Machine, type UnreadableApplet, writeRecord } from "@dashi/applet";
-import type { CatalogSet } from "../../../src/applet-store/catalog-set.ts";
-import type { CatalogDraft, CatalogSource } from "../../../src/applet-store/catalogs.ts";
-import { type AppletInstaller, type AppletStatus, statusOf } from "../../../src/applet-store/installer.ts";
-import { type CatalogLoad, entryFromItsCatalog, mergeCatalogs, type StoreApplet, skippedCount } from "../../../src/applet-store/merge.ts";
-import type { Outcome } from "../../../src/software/manager.ts";
+import type { CatalogSet } from "../../../src/shared/applet-store/catalog-set.ts";
+import type { CatalogDraft, CatalogSource } from "../../../src/shared/applet-store/catalogs.ts";
+import { type AppletInstaller, type AppletStatus, statusOf } from "../../../src/shared/applet-store/installer.ts";
+import { type CatalogLoad, entryFromItsCatalog, mergeCatalogs, type StoreApplet, skippedCount } from "../../../src/shared/applet-store/merge.ts";
+import type { Outcome } from "../../../src/shared/software/manager.ts";
 import type { Job } from "../queue.ts";
 import { type Failure, failureOf } from "../store.ts";
 

@@ -7,8 +7,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { resolvePinned } from "../../src/apps.ts";
-import { dataDirs, desktopFields, resolveIcon } from "../../src/entries.ts";
+import { dataDirs, desktopFields, resolveIcon, resolvePinned } from "../../src/shared/apps/index.ts";
 
 export interface AppInfo {
   id: string;

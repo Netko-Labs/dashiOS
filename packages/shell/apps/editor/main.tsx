@@ -14,7 +14,7 @@
  */
 
 import { resolve } from "node:path";
-import { METAL_HOST } from "../../src/apps.ts";
+import { METAL_HOST } from "../../src/shared/apps/index.ts";
 import { runApp } from "../kit/index.ts";
 import { parseArgs } from "./args.ts";
 import { EditorModel } from "./model.ts";

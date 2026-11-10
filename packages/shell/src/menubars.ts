@@ -21,8 +21,7 @@
  * the end of the session if the screens, asked again, still list its screen.
  */
 
-// biome-ignore lint/nursery/noImportCycles: H5 offender (scripts/lists/import-cycles.txt)
-import { isBuiltIn } from "./displays.ts";
+import { isBuiltIn } from "@dashi/ui";
 
 /** The screen that holds the Dock and the session's anchor bar: the laptop's panel, else the first. */
 export function choosePrimary(names: readonly string[]): string | null {

@@ -9,6 +9,7 @@
 
 import { copyFile, rename, rm } from "node:fs/promises";
 import { join } from "node:path";
+import { FORMATS, type Format, type Kind } from "../../src/shared/files/kinds.ts";
 import { cacheFile, cacheKey, partialName, type Stamp } from "./cache.ts";
 import {
   CONVERT_MEMORY_MIB,
@@ -20,7 +21,6 @@ import {
   exportImageArgs,
   turnPngArgs,
 } from "./convert.ts";
-import { FORMATS, type Format, type Kind } from "./kinds.ts";
 import { pdftoppmArgs } from "./pdf.ts";
 import { type RunOptions, type RunResult, runTool } from "./tools.ts";
 import { mod4 } from "./zoom.ts";

@@ -13,7 +13,7 @@
  * (menubar-status.tsx), never the menus.
  */
 
-import { useColors } from "@dashi/ui";
+import { LOGO, useColors } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AgentMark } from "./agent-mark.tsx";
@@ -25,11 +25,8 @@ import { type AppMenuStore, useAppMenus } from "./app-menus/store.ts";
 import { type App, appFor } from "./apps.ts";
 import { barHold, useBarHeld } from "./bar-hold.ts";
 import { type BarName, barName, DESKTOP } from "./bar-name.ts";
-import { formatClock, useClockPrefs, useMinuteClock } from "./clock.ts";
-import { controlFlags, useFlags } from "./control-center/flags.ts";
 import { type ExtrasStore, type MenuBarExtra, useExtras } from "./extras/index.ts";
 import { ExtraItem } from "./extras/view.tsx";
-import { LOGO } from "./glyphs.ts";
 import { extraGoes, statusRoom } from "./menubar-fit.ts";
 import { systemSlots } from "./menubar-slots.tsx";
 import { BarRing, StatusSide, type StatusSlot } from "./menubar-status.tsx";
@@ -42,6 +39,8 @@ import { type ScreenCaptureStore, useScreenCapture } from "./screen-capture.ts";
 import { CapturePill } from "./screen-capture.tsx";
 import { useSettings } from "./settings-app/hooks.ts";
 import type { SettingsStore } from "./settings-app/store.ts";
+import { controlFlags, useFlags } from "./shared/control-center/flags.ts";
+import { formatClock, useClockPrefs, useMinuteClock } from "./shared/time/clock.ts";
 import { type AppMixer, useMicWords } from "./sound/apps/index.ts";
 import { MicPill } from "./sound/mic-pill.tsx";
 import { type SystemStore, useSystem } from "./system/store.ts";

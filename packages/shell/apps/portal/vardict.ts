@@ -5,7 +5,7 @@
  * undefined otherwise, so a wrong type is the same as an option left out.
  */
 
-import { Variant, variant } from "../../src/dbus/index.ts";
+import { Variant, variant } from "../../src/shared/dbus/index.ts";
 
 export type Vardict = ReadonlyMap<string, Variant>;
 

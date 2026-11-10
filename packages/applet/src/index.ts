@@ -97,7 +97,6 @@ export {
   type Category,
   compareVersions,
   dashiSatisfies,
-  isInsidePath,
   type Manifest,
   manifestJson,
   parseManifest,
@@ -105,7 +104,7 @@ export {
 } from "./manifest.ts";
 export { type AppletMenuRow, choosable, MENU_LIMITS, type MenuRowSpec, parseMenu } from "./menu.ts";
 export { PACKAGE_EXTENSION, type Packed, pack, packageName, SDK_VERSION, sha256, type Unpacked, unpack } from "./package.ts";
-export { isRefusal, type Refusal } from "./parse.ts";
+export { isInsidePath, isRefusal, type Refusal } from "./parse.ts";
 export {
   asksForPassword,
   CONTROLS_PERMISSION,

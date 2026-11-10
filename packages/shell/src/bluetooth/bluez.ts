@@ -1,6 +1,6 @@
 /**
  * The real Bluetooth backend: BlueZ on the system bus, through the shell's
- * own D-Bus (`../dbus`). It reads the adapter and its devices
+ * own D-Bus (`../shared/dbus`). It reads the adapter and its devices
  * (`GetManagedObjects`), follows them (`InterfacesAdded`, `InterfacesRemoved`,
  * `PropertiesChanged`), looks for devices, and pairs, connects, and forgets
  * them. The pairing agent (`agent.ts`) lives on the same connection, which
@@ -8,7 +8,7 @@
  * is made when first needed and made again if it dropped.
  */
 
-import { BUS_NAME, DBusConnection } from "../dbus/index.ts";
+import { BUS_NAME, DBusConnection } from "../shared/dbus/index.ts";
 import { AgentRegistration } from "./agent.ts";
 import { BLUEZ, BluezClient, OBJECT_MANAGER, PROPERTIES } from "./bluez-client.ts";
 import { classify, type Outcome } from "./failures.ts";

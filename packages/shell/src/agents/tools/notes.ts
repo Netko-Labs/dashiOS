@@ -5,7 +5,7 @@
  * is no tool that edits or deletes what is already written.
  */
 
-import { isNoteId } from "../../../apps/notes/names.ts";
+import { isNoteId } from "../../shared/notes/names.ts";
 import { fail, type ToolDef, whole } from "./define.ts";
 
 export const DEFAULT_LIMIT = 50;

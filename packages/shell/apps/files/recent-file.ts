@@ -2,9 +2,9 @@
 
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
-import { mimeOf, systemMimeIndex } from "./mime.ts";
+import { mimeOf, systemMimeIndex } from "../../src/shared/files/mime.ts";
+import { dataHome } from "../../src/shared/files/xdg.ts";
 import { parseRecentlyUsed, type RecentFile, withRecent } from "./recent.ts";
-import { dataHome } from "./xdg.ts";
 
 const historyPath = (env: Record<string, string | undefined>): string => join(dataHome(env), "recently-used.xbel");
 

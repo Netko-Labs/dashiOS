@@ -17,7 +17,7 @@
 import { type Manifest, permissionName } from "@dashi/applet";
 import { nameApplet } from "../apps.ts";
 import type { ExtraActions, ExtraMenuRow, ExtrasStore, MenuBarExtra } from "../extras/index.ts";
-import { LineBuffer } from "../lines.ts";
+import { LineBuffer } from "../shared/io/lines.ts";
 import type { AppletCommands, CommandMessage } from "./commands.ts";
 import type { AppletControls } from "./controls.ts";
 import type { AppletGrants } from "./grants.ts";

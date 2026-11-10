@@ -10,7 +10,7 @@
  * the screen saver is off: Dashi never asks apps before logging out.
  */
 
-import { DBusError, ERRORS, type InterfaceSpec, type Variant, variant } from "../../src/dbus/index.ts";
+import { DBusError, ERRORS, type InterfaceSpec, type Variant, variant } from "../../src/shared/dbus/index.ts";
 import { type Exporter, handlePath, openSession, REQUEST, Response, type Session } from "./request.ts";
 import type { ShellLink } from "./shell.ts";
 import { str, vardict } from "./vardict.ts";

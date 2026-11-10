@@ -1,12 +1,10 @@
 /**
- * Monochrome menu bar glyphs (tinted by the Svg `color`). The logo is a bowl
- * of dashi with steam. The status glyphs are drawn for their state: Wi-Fi
+ * Monochrome menu bar glyphs (tinted by the Svg `color`); the logo is
+ * @dashi/ui's `LOGO`. The status glyphs are drawn for their state: Wi-Fi
  * arcs, the speaker's waves, and the battery's fill change with the system.
  */
 
 import type { Bars, Network } from "./system/network.ts";
-
-export const LOGO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M1.5 8.25h13a6.5 6 0 0 1-13 0z" fill="#000"/><path d="M5 1.75c-.9 1 .9 1.9 0 2.9M8 1.25c-.9 1 .9 1.9 0 2.9M11 1.75c-.9 1 .9 1.9 0 2.9" stroke="#000" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>`;
 
 /** Parts of a glyph that are off stay visible, faintly, as on the Mac. */
 const DIM = 0.28;

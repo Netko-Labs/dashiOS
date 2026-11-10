@@ -7,7 +7,7 @@
 import { Group, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
-import type { StoreApplet } from "../../../src/applet-store/merge.ts";
+import type { StoreApplet } from "../../../src/shared/applet-store/merge.ts";
 import { StateChip } from "../chip.tsx";
 import { CHECK_MARK } from "../glyphs.ts";
 import { SectionHeader } from "../heading.tsx";

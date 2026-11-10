@@ -14,7 +14,7 @@
  * one place graphics notices have, so a new one replaces the last.
  */
 
-import { paneTitle } from "../settings-app/panes.ts";
+import { paneTitle } from "../shared/settings/panes.ts";
 import { type GraphicsMode, listNames } from "./policy.ts";
 
 /** How long a new mode holds before it is said: a second past the refresh rate's own wait (display-config/auto-refresh.ts, 5 s), so a notice can name both. */

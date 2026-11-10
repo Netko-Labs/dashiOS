@@ -6,8 +6,8 @@
  * deletes an event, so whatever an agent adds can be undone only by the person.
  */
 
-import { type Day, isDay, isLocal, type Local } from "../../../apps/calendar/dates.ts";
-import { FREQUENCIES } from "../../../apps/calendar/types.ts";
+import { type Day, isDay, isLocal, type Local } from "../../shared/calendar/dates.ts";
+import { FREQUENCIES } from "../../shared/calendar/types.ts";
 import { type Args, fail, type ToolDef, whole } from "./define.ts";
 
 export const DEFAULT_LIMIT = 100;

@@ -8,7 +8,7 @@
  */
 
 import { useSyncExternalStore } from "react";
-import type { ProcessSample } from "../../apps/activity-monitor/read.ts";
+import type { ProcessSample } from "../shared/processes/read.ts";
 import { type Battery, type readPowerSupplies, summarizeBattery } from "../system/battery.ts";
 import { type AppUse, averageUse, ownerOf, significant, usageBetween, type WindowOwner } from "./apps.ts";
 import type { HistoryFile } from "./file.ts";

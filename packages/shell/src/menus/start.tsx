@@ -37,7 +37,7 @@ import { ACTIVITY_MONITOR, type EnergyApp, energyArgs, openActivityMonitor } fro
 import { MenuController } from "./controller.ts";
 import { Dialogs } from "./dialogs.tsx";
 import { holdingPlace } from "./holding-place.ts";
-import { findEntry, helpCommand, spawnDetached } from "./launch.ts";
+import { findEntry, helpCommand, openHelp } from "./launch.ts";
 import { type MenuAction, type MenuContext, type PowerKind, type WindowMenu, windowMenus } from "./model.ts";
 import { PopoverRoot, popoverSurface } from "./popover.tsx";
 import { runPower } from "./session.ts";
@@ -324,10 +324,7 @@ export function startMenus(options: MenusOptions): Menus {
     showAbout: (target) => dialogs.about(aboutInfo(target, target.kind === "app" ? entryFor(target.appId)?.icon : undefined)),
     confirmPower,
     suspend: () => void setTimeout(options.sleep, SETTLE_MS),
-    openHelp: () => {
-      const command = helpCommand();
-      if (command) spawnDetached(command);
-    },
+    openHelp,
     showShortcuts: () => options.showShortcuts(lastAppName),
     openForceQuit: () => options.openForceQuit(),
     openSettings: () => options.openSettings?.(),

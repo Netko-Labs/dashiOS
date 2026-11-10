@@ -6,7 +6,7 @@
  * Print that follows with it prints with the same choices, without asking.
  */
 
-import { Variant } from "../../../src/dbus/index.ts";
+import { Variant } from "../../../src/shared/dbus/index.ts";
 import type { JobOptions, Printer } from "./cups.ts";
 
 export interface PrintChoice {

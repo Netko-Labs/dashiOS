@@ -8,11 +8,11 @@
 
 import { type Bounds, type NativeHostOptions, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import type { App } from "../apps.ts";
 import type { Compositor } from "../compositor.ts";
 import type { Entry } from "../entries.ts";
 import type { MenuController } from "../menus/index.ts";
-import { spawnShellHost } from "../metal-host.ts";
+import type { App } from "../shared/apps/index.ts";
+import { spawnShellHost } from "../shared/metal/host.ts";
 import { DOCK, DOCK_HEIGHT, TASKBAR } from "../theme.ts";
 import type { ToplevelStore } from "../toplevels.ts";
 import type { AttentionStore } from "./attention.ts";

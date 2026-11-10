@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
 import { changeOccurrence, deleteOccurrence } from "../apps/calendar/edits.ts";
-import { makeEvent } from "../apps/calendar/event.ts";
-import { countBefore, isStartOf, monthDays, occurrencesOf } from "../apps/calendar/recurrence.ts";
-import type { CalEvent, Repeat } from "../apps/calendar/types.ts";
+import { makeEvent } from "../src/shared/calendar/event.ts";
+import { countBefore, isStartOf, monthDays, occurrencesOf } from "../src/shared/calendar/recurrence.ts";
+import type { CalEvent, Repeat } from "../src/shared/calendar/types.ts";
 
 const HERE = "Europe/Lisbon";
 const starts = (event: CalEvent | null, from = "2026-11-01T00:00", to = "2026-12-01T00:00"): string[] =>

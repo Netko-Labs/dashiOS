@@ -309,7 +309,7 @@
     },
     {
       "includes": ["packages/shell/src/menus/start.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 232 } } } } }
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 230 } } } } }
     },
     {
       "includes": ["packages/shell/src/notifications/center.tsx"],

@@ -7,7 +7,7 @@
 
 import type { DropInfo } from "@mirinjs/metal";
 import { useState } from "react";
-import { kindOf } from "./kinds.ts";
+import { kindOf } from "../../src/shared/files/kinds.ts";
 
 export function droppedFile(paths: readonly string[]): string | null {
   return paths.find((path) => kindOf(path) !== null) ?? paths[0] ?? null;

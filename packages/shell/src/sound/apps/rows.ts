@@ -6,7 +6,7 @@
  * and who each belongs to in, rows out.
  */
 
-import type { AppIdentity } from "../../process-apps/index.ts";
+import type { AppIdentity } from "../../shared/processes/index.ts";
 import type { MixerOutput, Stream } from "./streams.ts";
 
 /** An app that plays sound. */

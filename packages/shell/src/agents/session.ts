@@ -11,7 +11,7 @@ import { type Actor, actingAs } from "../acting.ts";
 import type { BrowserBridge } from "../browser/bridge.ts";
 import type { Compositor } from "../compositor.ts";
 import type { Arrange, Tile } from "../layout.ts";
-import { LineBuffer } from "../lines.ts";
+import { LineBuffer } from "../shared/io/lines.ts";
 import type { Undo } from "./ask/plan.ts";
 import type { Question } from "./confirm.ts";
 import { choices, type Grants, isScope, kept, label, logActivity, type Scope } from "./consent.ts";

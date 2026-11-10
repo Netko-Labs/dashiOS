@@ -5,10 +5,10 @@ import { join } from "node:path";
 import { type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { TodayButton } from "../apps/calendar/view.tsx";
-import { FlagsStore } from "../src/control-center/flags.ts";
 import { AppearancePreviews } from "../src/settings-app/panes/appearance.tsx";
 import { WallpaperPane } from "../src/settings-app/panes/wallpaper.tsx";
 import { SettingsStore } from "../src/settings-app/store.ts";
+import { FlagsStore } from "../src/shared/control-center/flags.ts";
 import { settle } from "./support/time.ts";
 
 // The controls the VM review found Tab skipping (KB-1): Appearance's Light,

@@ -10,12 +10,12 @@
  */
 
 import { readFileSync } from "node:fs";
-import { BUS_NAME, BUS_PATH, getNameOwner, NameFlags, nameHasOwner, requestName } from "../dbus/bus.ts";
-import type { DBusConnection } from "../dbus/connection.ts";
-import { DBusError, ERRORS } from "../dbus/errors.ts";
-import type { InterfaceSpec } from "../dbus/introspect.ts";
-import { unwrap } from "../dbus/properties.ts";
-import type { ExportedObject } from "../dbus/types.ts";
+import { BUS_NAME, BUS_PATH, getNameOwner, NameFlags, nameHasOwner, requestName } from "../shared/dbus/bus.ts";
+import type { DBusConnection } from "../shared/dbus/connection.ts";
+import { DBusError, ERRORS } from "../shared/dbus/errors.ts";
+import type { InterfaceSpec } from "../shared/dbus/introspect.ts";
+import { unwrap } from "../shared/dbus/properties.ts";
+import type { ExportedObject } from "../shared/dbus/types.ts";
 import { type ItemAddress, ItemRegistry, itemId, parseItemId, parseRegistration } from "./address.ts";
 
 export const WATCHER = "org.kde.StatusNotifierWatcher";

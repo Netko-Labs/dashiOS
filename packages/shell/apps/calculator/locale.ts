@@ -12,8 +12,9 @@
 import { readFileSync, watch } from "node:fs";
 import { basename, dirname } from "node:path";
 import { useEffect, useState } from "react";
-import { localeFromEnv, toBcp47 } from "../../src/region/locale.ts";
-import { readSettings, settingsPath } from "../../src/settings-app/store.ts";
+import { localeFromEnv, toBcp47 } from "../../src/shared/locale/locale.ts";
+import { settingsPath } from "../../src/shared/settings/file.ts";
+import { readRegionSettings } from "../../src/shared/time/clock.ts";
 
 export interface NumberLocale {
   /** The BCP 47 tag the separators come from ("de-DE"). */
@@ -84,7 +85,7 @@ export function numberLocaleTag(formats: string | undefined, env: Readonly<Recor
 export function readNumberLocale(path: string = settingsPath(), env: Readonly<Record<string, string | undefined>> = process.env): NumberLocale {
   let formats: string | undefined;
   try {
-    formats = readSettings(JSON.parse(readFileSync(path, "utf8"))).region.formats;
+    formats = readRegionSettings(JSON.parse(readFileSync(path, "utf8"))).region.formats;
   } catch {
     formats = undefined;
   }

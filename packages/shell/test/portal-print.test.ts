@@ -6,8 +6,8 @@ import { attr, decodeResponse, encodeRequest, Operation, Tag, ValueTag } from ".
 import { choiceFrom, everydayMedia, gtkSettings, mediaLabel, PrintTokens, parseRanges, pdfPageCount } from "../apps/portal/print/settings.ts";
 import type { Exporter } from "../apps/portal/request.ts";
 import { Requests } from "../apps/portal/request.ts";
-import { type Variant, variant } from "../src/dbus/index.ts";
-import { closeFd, pipePair } from "../src/dbus/libc.ts";
+import { type Variant, variant } from "../src/shared/dbus/index.ts";
+import { closeFd, pipePair } from "../src/shared/dbus/libc.ts";
 
 /** An IPP response as CUPS would send it: printers, with a collection in the middle to read past. */
 function printersResponse(): Uint8Array {

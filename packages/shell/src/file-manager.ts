@@ -13,7 +13,7 @@
  * activation token, handed to Files so its window may take the focus.
  */
 
-import { type ConnectOptions, DBusConnection, type InterfaceSpec, NameFlags, requestName } from "./dbus/index.ts";
+import { type ConnectOptions, DBusConnection, type InterfaceSpec, NameFlags, requestName } from "./shared/dbus/index.ts";
 
 export const SERVICE = "org.freedesktop.FileManager1";
 export const OBJECT_PATH = "/org/freedesktop/FileManager1";

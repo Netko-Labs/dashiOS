@@ -1,12 +1,12 @@
 /**
  * The real Wi-Fi backend: NetworkManager on the system bus, through the
- * shell's own D-Bus (`../dbus`). It reads the Wi-Fi device's access points
+ * shell's own D-Bus (`../shared/dbus`). It reads the Wi-Fi device's access points
  * and the saved profiles, asks for scans, and joins networks; see
  * `nm-join.ts` for the last. The bus connection is made when first needed
  * and made again if it dropped.
  */
 
-import { DBusConnection } from "../dbus/index.ts";
+import { DBusConnection } from "../shared/dbus/index.ts";
 import { IFACE, NM, NM_PATH, NmClient, SETTINGS_PATH } from "./nm-client.ts";
 import { joinNetwork } from "./nm-join.ts";
 import { parseAccessPoint, parseProfile } from "./nm-values.ts";

@@ -5,7 +5,7 @@
  * thousand small files doesn't redraw the window a thousand times.
  */
 
-import { Cancelled, type OpContext } from "./ops.ts";
+import { Cancelled, type OpContext } from "../../src/shared/files/ops.ts";
 
 export type JobState = "running" | "done" | "failed" | "cancelled";
 

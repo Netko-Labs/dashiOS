@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
-import { GROUP_LABELS, PANES, paneGroups, SIDEBAR_PANES } from "../src/settings-app/panes.ts";
 import { SIDEBAR, sidebarListHeight, topBand } from "../src/settings-app/sidebar.tsx";
 import { SETTINGS_WINDOW } from "../src/settings-app/view.tsx";
+import { GROUP_LABELS, PANES, paneGroups, SIDEBAR_PANES } from "../src/shared/settings/panes.ts";
 
 const ids = (panes: readonly { id: string }[]) => panes.map((pane) => pane.id);
 

@@ -9,13 +9,13 @@
 
 import { rowLook, SelectionBar, SIDEBAR_ROW_HEIGHT, SidebarSection, useColors, useTooltip } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
+import { isInside } from "../../src/shared/files/paths.ts";
 import { useFiles, useFilesState } from "./context.ts";
 import { mount } from "./drives.ts";
 import { useDropTarget } from "./drop.ts";
 import { EJECT, sidebarGlyph } from "./glyphs.ts";
 import { favorites, folderAt, type GlyphName, type Location, sameLocation } from "./location.ts";
 import type { Volume } from "./mounts.ts";
-import { isInside } from "./paths.ts";
 
 function Row({
   id,

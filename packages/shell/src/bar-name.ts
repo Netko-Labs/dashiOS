@@ -6,7 +6,7 @@
  * the app's own sheet, or, over the desktop, the dialog itself by its title.
  */
 
-import { isSheetTitle } from "./portal-host/protocol.ts";
+import { isSheetTitle } from "./shared/portal-host/protocol.ts";
 
 export const DESKTOP = "Desktop";
 
@@ -41,6 +41,6 @@ export function barName({ app, dialog }: BarFocus, last: BarName, now: number): 
   }
   const over = last.under !== undefined && (last.desktopSince === undefined || now - last.desktopSince < HANDOVER_MS) ? last.under : undefined;
   if (over !== undefined) return { name: over, under: over };
-  // A sheet's one-off first title (portal-host/protocol.ts) is no name.
+  // A sheet's one-off first title (shared/portal-host/protocol.ts) is no name.
   return { name: isSheetTitle(dialog) ? DESKTOP : dialog.trim() || DESKTOP };
 }

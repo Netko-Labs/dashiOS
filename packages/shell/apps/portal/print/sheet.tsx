@@ -9,7 +9,7 @@
 import { Button, Choices, Group, MoreButton, PopUpButton, Row, TextField, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { variant } from "../../../src/dbus/index.ts";
+import { variant } from "../../../src/shared/dbus/index.ts";
 import type { ChooseFiles } from "../file-chooser/index.tsx";
 import { parseChooser } from "../file-chooser/options.ts";
 import { CheckBox, PortalFrame } from "../ui/frame.tsx";

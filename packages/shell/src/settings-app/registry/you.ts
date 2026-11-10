@@ -3,7 +3,25 @@
  * Accounts, Notifications, Passwords, Agents, Privacy & Security, and About.
  */
 
-import { AT, CALENDAR, CHIP, CLOCK, DISK, DISPLAY, GLOBE, GPU, IMAGE, KEY, LANGUAGE, LOCK, MEMORY, MOON, REFRESH, SPARK, USER } from "../knob-glyphs.ts";
+import {
+  AT,
+  CALENDAR,
+  CHIP,
+  CLOCK,
+  DISK,
+  DISPLAY,
+  GLOBE,
+  GPU,
+  IMAGE,
+  KEY,
+  LANGUAGE,
+  LOCK,
+  MEMORY,
+  MOON,
+  REFRESH,
+  SPARK,
+  USER,
+} from "../../shared/settings/knob-glyphs.ts";
 import type { ChoiceOption, RowDef } from "./types.ts";
 import { flag, storedChoice, storedSwitch } from "./values.ts";
 

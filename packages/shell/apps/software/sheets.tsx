@@ -8,7 +8,7 @@
 import { AlertSheet, CHEVRON_DOWN, CHEVRON_UP, ConfirmSheet, Switch, useColors, WARNING } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { InstalledApp } from "../../src/software/flatpak-parse.ts";
+import type { InstalledApp } from "../../src/shared/software/flatpak-parse.ts";
 import { RESTART, SHIELD } from "./glyphs.ts";
 import type { Failure } from "./store.ts";
 import { ReachLines } from "./trust.tsx";

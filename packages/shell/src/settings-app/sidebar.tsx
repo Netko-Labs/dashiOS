@@ -18,9 +18,9 @@ import { type Bounds, ScrollView, Svg, Text, TextInput, useWindowChrome, View } 
 import { useContext, useEffect, useRef, useState } from "react";
 import { useControlColors } from "../shared/controls/palette.ts";
 import { Knob } from "../shared/controls/parts.tsx";
+import { SEARCH } from "../shared/settings/knob-glyphs.ts";
+import { type PaneId, paneGroups, SIDEBAR_PANES } from "../shared/settings/panes.ts";
 import type { Found } from "./find.ts";
-import { SEARCH } from "./knob-glyphs.ts";
-import { type PaneId, paneGroups, SIDEBAR_PANES } from "./panes.ts";
 import { SpotContext, scrollFor } from "./spot.tsx";
 
 /** The sidebar's measures (docs/design.html, "Settings"). */

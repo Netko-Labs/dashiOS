@@ -58,23 +58,6 @@ export function parseEvent(line: string): ExtrasEvent | null {
   }
 }
 
-/** Cuts a stream into lines: `push` gives the lines a chunk completes, `end` whatever is left. */
-export class LineSplitter {
-  private rest = "";
-
-  push(chunk: string): string[] {
-    const lines = (this.rest + chunk).split("\n");
-    this.rest = lines.pop() ?? "";
-    return lines.filter((line) => line.trim() !== "");
-  }
-
-  end(): string[] {
-    const last = this.rest;
-    this.rest = "";
-    return last.trim() === "" ? [] : [last];
-  }
-}
-
 export type StepState =
   | { status: "waiting" }
   | { status: "running"; message: string | null; fraction: number | null }

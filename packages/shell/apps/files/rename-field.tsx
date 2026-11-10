@@ -9,9 +9,9 @@
 import { useColors, useSurface } from "@dashi/ui";
 import { TextInput } from "@mirinjs/metal";
 import { useState } from "react";
+import type { FileItem } from "../../src/shared/files/items.ts";
+import { splitName } from "../../src/shared/files/paths.ts";
 import { useFiles } from "./context.ts";
-import type { FileItem } from "./items.ts";
-import { splitName } from "./paths.ts";
 
 /** What the field selects when it opens: the stem, so the extension stays (a folder's whole name). */
 export function stemSelection(item: Pick<FileItem, "name" | "kind">): { start: number; end: number } {

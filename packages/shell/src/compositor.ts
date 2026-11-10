@@ -8,7 +8,7 @@
 
 import { join } from "node:path";
 import type { AnimationTarget, CompositorEvent, CompositorWindow, Frame, Gpu, Placing, Point, ScreenEdge, Session, WindowIcon } from "./compositor-types.ts";
-import { LineBuffer } from "./lines.ts";
+import { LineBuffer } from "./shared/io/lines.ts";
 import type { WallpaperRequest } from "./wallpaper/catalog.ts";
 
 export type {

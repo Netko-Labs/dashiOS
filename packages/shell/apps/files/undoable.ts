@@ -13,11 +13,11 @@
 import { readdir, readFile, rmdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { UndoAction } from "@dashi/ui";
-import type { Exec } from "./exec.ts";
-import { makeFolder, moveInto, OpError, quietContext, renamePath } from "./ops.ts";
-import { baseName, parentOf } from "./paths.ts";
-import { parseTrashInfo } from "./trash.ts";
-import { findTrashed, putBack, type TrashPlaces, trashPaths } from "./trashops.ts";
+import type { Exec } from "../../src/shared/files/exec.ts";
+import { makeFolder, moveInto, OpError, quietContext, renamePath } from "../../src/shared/files/ops.ts";
+import { baseName, parentOf } from "../../src/shared/files/paths.ts";
+import { parseTrashInfo } from "../../src/shared/files/trash.ts";
+import { findTrashed, putBack, type TrashPlaces, trashPaths } from "../../src/shared/files/trashops.ts";
 
 export interface UndoEnv {
   trash: TrashPlaces;

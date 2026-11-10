@@ -17,9 +17,9 @@
  */
 
 import { INFO } from "@dashi/ui";
-import { iconPath } from "../apps.ts";
 import { calculate, type Entry } from "../entries.ts";
-import { MIN_QUERY } from "../file-search.ts";
+import { iconPath } from "../shared/apps/index.ts";
+import { MIN_QUERY } from "../shared/files/file-search.ts";
 import { type Answer, type AnswerContext, answerFor } from "./answers/index.ts";
 import { isPane, type LauncherItem, type LauncherWindow, launcherIndex, windowsOf } from "./items.ts";
 import { commandCore } from "./ranking/commands.ts";

@@ -1,6 +1,6 @@
 /**
  * Dark Mode in an app's own process. The shell keeps the switch in
- * `$XDG_STATE_HOME/dashi/control-center.json` (control-center/flags.ts) and
+ * `$XDG_STATE_HOME/dashi/control-center.json` (src/shared/control-center/flags.ts) and
  * repaints its own surfaces from memory; an app reads that file at start and
  * follows it from then on, so the palette (`useColors`) and every kit control
  * flip with the shell. Outside a Dashi session (no file yet) the desktop's
@@ -9,7 +9,7 @@
 
 import { existsSync, readFileSync, statSync, watch } from "node:fs";
 import { basename, dirname } from "node:path";
-import { controlFlags, type Flags, type FlagsStore, flagsPath, parseFlags } from "../../src/control-center/flags.ts";
+import { controlFlags, type Flags, type FlagsStore, flagsPath, parseFlags } from "../../src/shared/control-center/flags.ts";
 
 /** How often the file is looked at when it (or its folder) can't be watched yet. */
 const POLL_MS = 1000;

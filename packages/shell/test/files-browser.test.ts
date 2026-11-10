@@ -6,7 +6,7 @@ import { browserKey } from "../apps/files/keys.ts";
 import { foldCrumbs } from "../apps/files/omnibox.tsx";
 import { DEFAULT_PREFS, parsePrefs } from "../apps/files/prefs.ts";
 import { navigate } from "../apps/files/selection.ts";
-import { looksLikeText } from "../apps/files/sniff.ts";
+import { looksLikeText } from "../src/shared/files/sniff.ts";
 
 // The file browser Files and every chooser share: its keys, two-way arrows, icons, and memory.
 

@@ -1,6 +1,6 @@
 /**
  * Which app a sound stream is, named as the Dock and Activity Monitor name
- * it (process-apps/, CP-6), first that answers:
+ * it (shared/processes/, CP-6), first that answers:
  *
  * 1. A Flatpak, by the portal's app id. Its claimed pid comes from inside
  *    its sandbox, so it is never trusted.
@@ -20,8 +20,8 @@
  * `icon`, which looks in the icon theme.
  */
 
-import type { AppCatalog, AppIdentity, ProcessFacts } from "../../process-apps/index.ts";
-import { DASHI_KEY, flatpakId, identify } from "../../process-apps/index.ts";
+import type { AppCatalog, AppIdentity, ProcessFacts } from "../../shared/processes/index.ts";
+import { DASHI_KEY, flatpakId, identify } from "../../shared/processes/index.ts";
 import type { Stream } from "./streams.ts";
 
 /** What the walk reads of a process. */

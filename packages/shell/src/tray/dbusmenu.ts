@@ -9,11 +9,11 @@
  * nesting are capped.
  */
 
-import type { DBusConnection } from "../dbus/connection.ts";
-import { propertyMap } from "../dbus/properties.ts";
-import { Variant } from "../dbus/variant.ts";
 import type { ExtraMenuRow } from "../extras/types.ts";
 import { clean } from "../notifications/text.ts";
+import type { DBusConnection } from "../shared/dbus/connection.ts";
+import { propertyMap } from "../shared/dbus/properties.ts";
+import { Variant } from "../shared/dbus/variant.ts";
 
 export const DBUSMENU = "com.canonical.dbusmenu";
 

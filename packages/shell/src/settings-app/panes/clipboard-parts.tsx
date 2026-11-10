@@ -7,9 +7,9 @@
 
 import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
-import { iconPath } from "../../apps.ts";
 import type { ClipboardHistory, HistorySnapshot } from "../../clipboard/history.ts";
 import { DEFAULT_LEFT_OUT, leftOutApps, withoutApp } from "../../clipboard/privacy.ts";
+import { iconPath } from "../../shared/apps/index.ts";
 import { useColors } from "../colors.ts";
 import { useSettings } from "../hooks.ts";
 import type { SettingsStore } from "../store.ts";

@@ -8,8 +8,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { resolvePinned } from "../../src/apps.ts";
-import { dataDirs, entryIcon, parseDesktopEntry } from "../../src/entries.ts";
+import { dataDirs, entryIcon, parseDesktopEntry, resolvePinned } from "../../src/shared/apps/index.ts";
 import { runTool } from "./tools.ts";
 
 export interface Handler {

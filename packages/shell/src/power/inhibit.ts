@@ -9,8 +9,8 @@
  * lock and keeps it held after the shell lets go.
  */
 
-import { FdConnection, type FdConnectOptions } from "../dbus/fds.ts";
-import { closeFd } from "../dbus/libc.ts";
+import { FdConnection, type FdConnectOptions } from "../shared/dbus/fds.ts";
+import { closeFd } from "../shared/dbus/libc.ts";
 import { LOGIND, MANAGER, MANAGER_PATH } from "./logind.ts";
 
 export interface InhibitRequest {

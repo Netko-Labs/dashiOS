@@ -4,9 +4,9 @@
  * what it is and goes there).
  */
 
+import { paneTitle } from "../../shared/settings/panes.ts";
 import { BLANK_CHOICES, blankChoice } from "../controls.ts";
 import { useSettings } from "../hooks.ts";
-import { paneTitle } from "../panes.ts";
 import { DEFAULT_BLANK_AFTER, type SettingsStore } from "../store.ts";
 import { Button, Caption, Group, Page, Setting } from "../ui.tsx";
 

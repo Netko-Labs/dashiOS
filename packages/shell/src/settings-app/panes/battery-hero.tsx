@@ -11,9 +11,9 @@ import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { chargeLine } from "../../battery/chart.ts";
 import type { Sample } from "../../battery/history.ts";
-import { formatTime, useClockPrefs } from "../../clock.ts";
 import { useControlColors } from "../../shared/controls/palette.ts";
 import { LimitBar } from "../../shared/controls/parts.tsx";
+import { formatTime, useClockPrefs } from "../../shared/time/clock.ts";
 import type { Battery } from "../../system/battery.ts";
 import { batteryHero, chargeScale } from "../heroes.ts";
 

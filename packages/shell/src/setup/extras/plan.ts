@@ -3,7 +3,7 @@
  * and Software to do. Pure.
  */
 
-import { RECOMMENDED_APPS, RECOMMENDED_DEFAULTS, type RecommendedApp } from "../../software/recommended.ts";
+import { RECOMMENDED_APPS, RECOMMENDED_DEFAULTS, type RecommendedApp } from "../../shared/software/recommended.ts";
 import type { ExtraStep } from "./events.ts";
 
 /** What this computer has, which decides what is offered and what is on at first. */

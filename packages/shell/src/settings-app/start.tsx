@@ -8,7 +8,6 @@
  */
 
 import { homedir } from "node:os";
-import { onWindowTyping } from "../../apps/kit/typing.ts";
 import type { AnswerStatus } from "../agents/ask/service.ts";
 import type { Grants } from "../agents/consent.ts";
 import type { AgentStore } from "../agents/presence.ts";
@@ -16,10 +15,12 @@ import type { Passwords } from "../agents/secrets/passwords.ts";
 import { registerShellApp, SETTINGS_APP_ID } from "../apps.ts";
 import type { ClipboardHistory } from "../clipboard/history.ts";
 import type { Compositor } from "../compositor.ts";
-import type { Flags, FlagsStore } from "../control-center/flags.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
 import type { PrivacyStore } from "../privacy/store.ts";
 import type { RegionStore } from "../region/store.ts";
+import type { Flags, FlagsStore } from "../shared/control-center/flags.ts";
+import { onWindowTyping } from "../shared/metal/typing.ts";
+import { Nav, type PaneId } from "../shared/settings/panes.ts";
 import { portalChooser } from "../wallpaper/chooser.ts";
 import { readAbout } from "./about.ts";
 import type { AheadSites, PaneContext } from "./context.ts";
@@ -27,7 +28,6 @@ import { type MenuHost, publishEditMenu } from "./edit-menu.ts";
 import { FindFocus } from "./find.ts";
 import { loadLayouts } from "./layouts.ts";
 import type { ControlCenterEditor } from "./panes/control-center.tsx";
-import { Nav, type PaneId } from "./panes.ts";
 import type { Arranger } from "./screens.ts";
 import { ScreensStore } from "./screens.ts";
 import type { PaneServices } from "./services.ts";
@@ -191,7 +191,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
     // No `surface`: an ordinary window with the compositor's window controls: over the content (the
     // unified title bar, see view.tsx) where the compositor can draw them so, else in a title bar.
     current.surface = openOverlay(
-      // Its least size holds on the warm host's window too, when its `open` takes one (warm-host.ts `hostTakesLeast`).
+      // Its least size holds on the warm host's window too, when its `open` takes one (shared/metal/host.ts `hostTakesLeast`).
       { title: SETTINGS_TITLE, appId: SETTINGS_APP_ID, ...SETTINGS_WINDOW, titleBar: "unified" },
       <SettingsWindow ctx={ctx} nav={nav} spots={spots} find={find} />,
       () => {

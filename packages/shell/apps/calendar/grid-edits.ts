@@ -4,14 +4,14 @@
  * and whether a change asks which times of a repeat it is for. Pure.
  */
 
-import { addDays, addMinutes, at, type Day, dayPart, minutesBetween } from "./dates.ts";
+import { addDays, addMinutes, at, type Day, dayPart, minutesBetween } from "../../src/shared/calendar/dates.ts";
+import type { EventInput } from "../../src/shared/calendar/event.ts";
+import type { Occurrence } from "../../src/shared/calendar/types.ts";
+import { fromHere } from "../../src/shared/calendar/zones.ts";
 import type { Preview } from "./drag.ts";
-import type { EventInput } from "./event.ts";
 import type { Pending } from "./inline-title.tsx";
 import type { OccurrenceRef } from "./model.ts";
 import { parseQuickAdd } from "./quickadd.ts";
-import type { Occurrence } from "./types.ts";
-import { fromHere } from "./zones.ts";
 
 export const refOf = (occurrence: Occurrence): OccurrenceRef => ({
   calendarId: occurrence.calendarId,

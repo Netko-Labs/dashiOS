@@ -10,9 +10,10 @@
 import { useColors } from "@dashi/ui";
 import { type Bounds, Image, type PointerInfo, View } from "@mirinjs/metal";
 import { useRef } from "react";
-import { type App, appFor } from "../apps.ts";
+import { appFor } from "../apps.ts";
 import type { Entry } from "../entries.ts";
 import type { MenuController } from "../menus/index.ts";
+import type { App } from "../shared/apps/index.ts";
 import { DOCK, DOCK_HEIGHT } from "../theme.ts";
 import { type ToplevelStore, useToplevels } from "../toplevels.ts";
 import { type AttentionStore, useAttention } from "./attention.ts";

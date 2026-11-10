@@ -14,7 +14,7 @@
  * nothing, and the rest are still read.
  */
 
-import type { CallSpec, MatchRule, Message } from "../dbus/index.ts";
+import type { CallSpec, MatchRule, Message } from "../shared/dbus/index.ts";
 import { grantsOf, MAX_ENTRIES, PORTAL_TABLES, type PortalGrant, parsePermissions } from "./portal-grants.ts";
 
 export const PERMISSION_STORE = {

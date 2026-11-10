@@ -5,7 +5,7 @@
  * odd message that carries the real reason (`br-connection-page-timeout`).
  */
 
-import { DBusError, ERRORS } from "../dbus/index.ts";
+import { DBusError, ERRORS } from "../shared/dbus/index.ts";
 import type { Failure, Reason } from "./types.ts";
 
 const BLUEZ = "org.bluez.Error.";

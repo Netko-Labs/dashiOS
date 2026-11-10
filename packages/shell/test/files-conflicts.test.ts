@@ -4,10 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sideLines } from "../apps/files/conflict-sheet.tsx";
 import type { Env } from "../apps/files/env.ts";
-import type { Exec } from "../apps/files/exec.ts";
 import { folderAt } from "../apps/files/location.ts";
 import { type Conflict, Operations, type Resolution } from "../apps/files/operations.ts";
 import { FilesStore } from "../apps/files/store.ts";
+import type { Exec } from "../src/shared/files/exec.ts";
 import { fakeClockEachTest, settle, until } from "./support/time.ts";
 
 fakeClockEachTest();

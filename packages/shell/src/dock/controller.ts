@@ -6,9 +6,10 @@
 
 import type { Toplevel } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
-import { type App, clickAction } from "../apps.ts";
+import { clickAction } from "../apps.ts";
 import type { Compositor } from "../compositor.ts";
 import type { Entry } from "../entries.ts";
+import type { App } from "../shared/apps/index.ts";
 import type { ToplevelStore } from "../toplevels.ts";
 import { appKey, type DockEntry } from "./layout.ts";
 import type { DockMenuAction } from "./menu.ts";

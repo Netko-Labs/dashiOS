@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import { Monitor } from "../apps/activity-monitor/monitor.ts";
-import type { ProcessSample, Snapshot } from "../apps/activity-monitor/read.ts";
 import { type MonitorActions, MonitorWindow } from "../apps/activity-monitor/view.tsx";
+import type { ProcessSample, Snapshot } from "../src/shared/processes/read.ts";
 import { settle } from "./support/time.ts";
 
 // Activity Monitor's window on a stand-in for the Metal host: who has the keyboard, ← and → on the list, Esc on Inspect.

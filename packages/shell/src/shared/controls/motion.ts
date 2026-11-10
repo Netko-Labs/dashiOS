@@ -7,7 +7,13 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { springOut } from "../../dock/slide.tsx";
+
+/** Past 1 a little and back (an underdamped spring, settled at t = 1): the Dock's icons and these. */
+export const springOut = (t: number): number => {
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  return 1 - Math.exp(-6 * t) * Math.cos(9 * t) * (1 - t ** 8);
+};
 
 /** The spring's length. */
 export const CONTROL_MOTION_MS = 220;

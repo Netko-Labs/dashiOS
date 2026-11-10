@@ -20,9 +20,9 @@ import type { Outcome } from "../actions/types.ts";
 import type { AppletCommands } from "../applets/commands.ts";
 import type { Entry } from "../entries.ts";
 import { ExtensionSession } from "../launcher/extensions.ts";
-import { SHELL_PATH } from "../portal-host/protocol.ts";
 import type { PortalHost } from "../portal-host/service.ts";
 import { SearchProviders } from "../search-providers/index.ts";
+import { SHELL_PATH } from "../shared/portal-host/protocol.ts";
 
 export interface ExtensionsOptions {
   registry: ActionRegistry;

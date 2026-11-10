@@ -2,7 +2,7 @@
 
 import type { Category } from "@dashi/applet";
 import { TINTS } from "@dashi/ui";
-import type { AppletStatus } from "../../../src/applet-store/installer.ts";
+import type { AppletStatus } from "../../../src/shared/applet-store/installer.ts";
 import { CATEGORY_GLYPHS, CATEGORY_TINTS, DISCOVER } from "../glyphs.ts";
 import type { Chip, Operation } from "../model.ts";
 

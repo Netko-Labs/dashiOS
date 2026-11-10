@@ -2,15 +2,16 @@
  * Where the Settings interface's values come from in this process: Control
  * Center's Dark Mode, followed from the shell's file (apps/kit/appearance.ts),
  * settings.json's appearance (followed the way the shell follows it), and
- * what this machine has to dress GTK apps with (src/appearance/look.ts).
+ * what this machine has to dress GTK apps with (src/shared/appearance/look.ts).
  * `onChange` hears every change, for SettingChanged. The dialogs' palette
  * follows the same store.
  */
 
 import { homedir } from "node:os";
-import { detectLook, realProbes } from "../../src/appearance/look.ts";
-import { controlFlags } from "../../src/control-center/flags.ts";
-import { loadSettings, settingsPath, watchSettings } from "../../src/settings.ts";
+import { loadSettings, watchSettings } from "../../src/settings.ts";
+import { detectLook, realProbes } from "../../src/shared/appearance/look.ts";
+import { controlFlags } from "../../src/shared/control-center/flags.ts";
+import { settingsPath } from "../../src/shared/settings/file.ts";
 import { followDarkMode } from "../kit/appearance.ts";
 import type { LookState } from "./settings.ts";
 

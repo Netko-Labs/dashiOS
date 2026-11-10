@@ -13,7 +13,7 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { writeTextAtomic } from "../region/files.ts";
+import { writeTextAtomic } from "../shared/fs/atomic.ts";
 
 export type SetupOutcome = "finished" | "skipped";
 

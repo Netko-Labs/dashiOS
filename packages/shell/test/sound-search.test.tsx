@@ -6,11 +6,11 @@
 
 import { describe, expect, test } from "bun:test";
 import { type NativeTransport, render, View } from "@mirinjs/metal";
-import { catalogFrom } from "../src/process-apps/index.ts";
 import { appRows, appSpot, findSettings } from "../src/settings-app/find.ts";
 import { AppsCard } from "../src/settings-app/panes/sound-apps.tsx";
 import { RowFocus, SpotContext } from "../src/settings-app/spot.tsx";
 import { LIGHT_CONTROLS } from "../src/shared/controls/palette.ts";
+import { catalogFrom } from "../src/shared/processes/index.ts";
 import { AppMixer, fixedGraph, heldControl, isIconName, parseGraph, type Stream, streamApp, streamOwners, useAppNames } from "../src/sound/apps/index.ts";
 import { client, link, node, vmGraph } from "./fixtures/pw-graph.ts";
 import { fakeClockEachTest, settle } from "./support/time.ts";

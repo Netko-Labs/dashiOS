@@ -130,7 +130,7 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
   by D-Bus activation (`org.freedesktop.impl.portal.desktop.dashi.service`,
   which starts the `dashi-portal` user unit); `dashi.portal` lists FileChooser,
   Settings, Access, AppChooser, Inhibit, Print, Notification, Account, Email
-  and DynamicLauncher. Its bus connection is an `FdService` (`src/dbus/fd-service.ts`:
+  and DynamicLauncher. Its bus connection is an `FdService` (`src/shared/dbus/fd-service.ts`:
   a worker thread blocks in `poll` and reads the socket with SCM_RIGHTS),
   because Print's document arrives as a file descriptor, which Bun's own
   sockets drop. The unit is `PartOf=graphical-session.target`, so the
@@ -142,12 +142,12 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
   (`src/session/portal-files.ts`); an installed session removes them.
 - **Dialogs** are Metal windows, React through `@mirinjs/metal` as the
   first-party apps are, one host per dialog, taken from a warm host
-  (`src/warm-host.ts`) so a dialog opens as fast as a sheet in Dashi's apps.
+  (`src/shared/metal/host.ts`) so a dialog opens as fast as a sheet in Dashi's apps.
   Each is a sheet on the window that asked: xdg-desktop-portal passes that
   window as `wayland:HANDLE` (an xdg-foreign export) or `x11:XID`. mirin's
   host can't import a foreign handle itself, so the shell does the
   parenting: before opening the window, dashi-portal tells the shell
-  (`dev.dashi.Shell.Portal1.ExpectSheet`, `src/portal-host/protocol.ts`) the
+  (`dev.dashi.Shell.Portal1.ExpectSheet`, `src/shared/portal-host/protocol.ts`) the
   one-off title it will have; when that window asks to be placed, the shell
   resolves the handle (IPC `window-for-handle`) and attaches the dialog to
   it (IPC `attach`). The compositor keeps a sheet under its parent's title
@@ -181,7 +181,7 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
   Security lists the grants per app with the agents' kept answers and
   `screenSharing.clients`, each taken back on its own (`DeletePermission`).
   The Access sheet's button opens it there, over the links socket
-  (`src/actions/open-link.ts`).
+  (`src/shared/links/open-link.ts`).
 
 ## Screens and the power source
 
@@ -242,7 +242,7 @@ separate MIT programs, with structured arguments only; it links nothing.
   listed, that object is read again with `pw-dump <id>`) and parses streams from it
   (`streams.ts`: a stream's client, its links to a device, its Props, the
   "default" metadata's `target.object`). Streams are named as the Dock
-  names apps (`identity.ts`, on `src/process-apps/`): a Flatpak by its portal
+  names apps (`identity.ts`, on `src/shared/processes/`): a Flatpak by its portal
   id, else the client's process (the socket's pid for a native client, the
   claimed pid for a Pulse one) and its parents, by itself or by its window;
   else its `application.name`. An app no desktop entry names gets the icon
@@ -265,7 +265,7 @@ separate MIT programs, with structured arguments only; it links nothing.
 | shell ↔ dashi-comp | `$XDG_RUNTIME_DIR/dashi-comp.sock`, newline JSON | `docs/compositor-ipc.md` |
 | shell/apps ↔ Metal host | mirin's element-tree protocol over the host's pipes | `../mirin/docs/metal.md` |
 | Metal host ↔ dashi-comp | Wayland (xdg-shell for windows, layer-shell for shell surfaces) | |
-| app ↔ shell, menus | `$XDG_RUNTIME_DIR/dashi-menus.sock` | `src/app-menus/protocol.ts` |
+| app ↔ shell, menus | `$XDG_RUNTIME_DIR/dashi-menus.sock` | `src/shared/app-menus/protocol.ts` |
 | applet ↔ shell, menu bar extras | `$XDG_RUNTIME_DIR/dashi-applets.sock` (an installed applet: `dashi-applets/<id>/applets.sock`), newline JSON | `docs/applets.md` |
 | tray icon ↔ shell | D-Bus session bus: StatusNotifierWatcher/Item, dbusmenu | `src/tray/` |
 | app ↔ shell, "Show in folder" | D-Bus session bus: `org.freedesktop.FileManager1` (ShowFolders, ShowItems, ShowItemProperties), answered with Files windows | `src/file-manager.ts` |
@@ -277,13 +277,13 @@ separate MIT programs, with structured arguments only; it links nothing.
 | PAM, bridge, shell ↔ vault | `/run/dashi-secretd/socket`, newline JSON; callers checked by uid and cgroup | `docs/secrets.md` |
 | app ↔ vault | D-Bus session bus: `org.freedesktop.secrets`, `org.freedesktop.impl.portal.Secret` (dashi-secret-bridge) | `docs/secrets.md` |
 | dashi-agent ↔ shell, token proxy | `$XDG_RUNTIME_DIR/dashi-tokens.sock`, one JSON line each way, held while the agent runs; then the sandbox's CONNECTs on its own `proxy.sock` | `docs/secrets.md` |
-| shell ↔ system | D-Bus (NetworkManager, BlueZ, logind, UPower, polkit, portals) | `src/dbus/` |
+| shell ↔ system | D-Bus (NetworkManager, BlueZ, logind, UPower, polkit, portals) | `src/shared/dbus/` |
 | shell/applets ↔ dashi-hardware | D-Bus system bus: `dev.dashi.Hardware1` (polkit per method); the shell decides the mode, the helper writes | `docs/hardware.md`, `src/laptop/`, `src/power/modes/` |
 | shell ↔ cardwire | D-Bus system bus: `org.opengamingcollective.cardwire` (packaged as dashi-graphics); the shell decides the graphics policy | `docs/hardware.md` (cardwire), `src/graphics/` |
 | shell ↔ tuned-ppd | D-Bus system bus, the power-profiles API, on the shell's one kept system-bus connection (`src/system/system-bus.ts`) | `src/system/profiles.ts` |
 | kernel log → shell | `journalctl -k -b 0 -f -o json`, followed for a graphics card falling off the bus (Xid 79, pciehp Link Down on its port) | `src/graphics/lost-card.ts` |
 | xdg-desktop-portal → dashi-portal | D-Bus session bus: `org.freedesktop.impl.portal.*` at `/org/freedesktop/portal/desktop` | `apps/portal/` |
-| dashi-portal → shell | D-Bus session bus: `dev.dashi.Shell.Portal1` at `/dev/dashi/Shell` (holds, sheets, the Dock) | `src/portal-host/protocol.ts` |
+| dashi-portal → shell | D-Bus session bus: `dev.dashi.Shell.Portal1` at `/dev/dashi/Shell` (holds, sheets, the Dock) | `src/shared/portal-host/protocol.ts` |
 | app → shell, keep awake | D-Bus session bus: `org.freedesktop.ScreenSaver` (Inhibit, UnInhibit) | `src/inhibit/screensaver.ts` |
 | program → shell, actions | D-Bus session bus: `dev.dashi.Shell.Actions1` at `/dev/dashi/Shell` (List, Describe, Run; a link's consent) | `docs/actions.md`, `src/actions/dbus.ts` |
 | shell → GNOME search providers | D-Bus session bus: `org.gnome.Shell.SearchProvider2`, read as the launcher's slow sources (results only) | `src/search-providers/` |

@@ -1,4 +1,3 @@
-export { applicationsDir, newLauncher, pinNextLauncher } from "./launchers.ts";
 export {
   isSheetTitle,
   PORTAL_APP_ID,
@@ -8,6 +7,7 @@ export {
   SHELL_NAME,
   SHELL_PATH,
   sheetTitle,
-} from "./protocol.ts";
+} from "../shared/portal-host/protocol.ts";
+export { applicationsDir, newLauncher, pinNextLauncher } from "./launchers.ts";
 export { type PortalHost, type PortalHostDeps, portalHostInterface, startPortalHost } from "./service.ts";
 export { PortalSheets, parseHandleAnswer, SHEET_TOPS, type SheetHost, sheetTop } from "./sheets.ts";

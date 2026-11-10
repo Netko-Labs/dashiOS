@@ -1,9 +1,10 @@
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { registerShellApp, SETTINGS_APP_ID, SETUP_APP_ID } from "../src/apps.ts";
-import { type Entry, parseDesktopEntry, shellEntries } from "../src/entries.ts";
+import { type Entry, shellEntries } from "../src/entries.ts";
 import { entryIndex, rankEntries } from "../src/launcher/ranking/index.ts";
-import { PANES } from "../src/settings-app/panes.ts";
 import { registerPaneEntries } from "../src/settings-app/search.ts";
+import { parseDesktopEntry } from "../src/shared/apps/index.ts";
+import { PANES } from "../src/shared/settings/panes.ts";
 
 // The launcher's ranking (launcher/ranking/), with the shell's real entries: System
 // Settings, the Setup Assistant, and every Settings pane, as the shell

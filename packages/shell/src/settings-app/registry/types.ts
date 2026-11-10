@@ -6,9 +6,9 @@
  * so a row added to a pane is found everywhere.
  */
 
-import type { FlagsStore } from "../../control-center/flags.ts";
 import type { DockPrefs } from "../../dock/prefs.ts";
-import type { PaneId } from "../panes.ts";
+import type { FlagsStore } from "../../shared/control-center/flags.ts";
+import type { PaneId } from "../../shared/settings/panes.ts";
 import type { SettingsStore } from "../store.ts";
 
 /** What a row is: a switch, one of a few choices, a value (a number, a text, a reading), or something to do (a button). */
@@ -65,7 +65,7 @@ export interface RowDef {
   /** The quieter line under the title; a pane may show a live one instead. */
   detail?: string;
   /**
-   * The glyph on its row's knob (knob-glyphs.ts), which the search's result
+   * The glyph on its row's knob (shared/settings/knob-glyphs.ts), which the search's result
    * carries too. A row in a card of plain facts or a list has none, and every
    * row of a card has one or none does (row.tsx, one left edge).
    */

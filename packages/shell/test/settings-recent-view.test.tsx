@@ -8,16 +8,16 @@ import type { ReactNode } from "react";
 import { actingAs } from "../src/acting.ts";
 import { Grants } from "../src/agents/consent.ts";
 import { AgentStore } from "../src/agents/presence.ts";
-import { FlagsStore } from "../src/control-center/flags.ts";
 import type { PaneContext } from "../src/settings-app/context.ts";
 import { FindFocus, findSettings, moveFound } from "../src/settings-app/find.ts";
 import { AgentsPane } from "../src/settings-app/panes/agents.tsx";
-import { Nav, type PaneId } from "../src/settings-app/panes.ts";
 import { agentCards } from "../src/settings-app/privacy-words.ts";
 import { PaneStoresContext } from "../src/settings-app/setting.tsx";
 import { RowFocus } from "../src/settings-app/spot.tsx";
 import { SettingsStore } from "../src/settings-app/store.ts";
 import { SettingsWindow } from "../src/settings-app/view.tsx";
+import { FlagsStore } from "../src/shared/control-center/flags.ts";
+import { Nav, type PaneId } from "../src/shared/settings/panes.ts";
 import { settle } from "./support/time.ts";
 
 // Recently changed, search in the header strip, and Agents as a consent dashboard, on a stand-in for the Metal host.

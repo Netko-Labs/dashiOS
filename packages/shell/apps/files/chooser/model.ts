@@ -11,16 +11,16 @@
  */
 
 import { useSyncExternalStore } from "react";
+import { accept, type Outcome, type Picked } from "../../../src/shared/files/chooser/accept.ts";
+import { passes } from "../../../src/shared/files/chooser/filters.ts";
+import type { ChooserAnswer, ChooserRequest, Filter } from "../../../src/shared/files/chooser/request.ts";
+import type { FileItem } from "../../../src/shared/files/items.ts";
+import { freeName, makeFolder, NEW_FOLDER_NAME, renamePath } from "../../../src/shared/files/ops.ts";
+import { parentOf } from "../../../src/shared/files/paths.ts";
 import type { Env } from "../env.ts";
-import type { FileItem } from "../items.ts";
 import { folderAt, type Location } from "../location.ts";
-import { freeName, makeFolder, NEW_FOLDER_NAME, renamePath } from "../ops.ts";
-import { parentOf } from "../paths.ts";
 import { type FilesPrefs, readPrefs } from "../prefs.ts";
 import { FilesStore } from "../store.ts";
-import { accept, type Outcome, type Picked } from "./accept.ts";
-import { passes } from "./filters.ts";
-import type { ChooserAnswer, ChooserRequest, Filter } from "./request.ts";
 
 export interface ChooserState {
   filter: Filter | null;

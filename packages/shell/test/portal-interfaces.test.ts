@@ -9,7 +9,7 @@ import { NotificationBackend, notifyCall, parseIcon, parseNotification, withFdIc
 import { type Exporter, Requests } from "../apps/portal/request.ts";
 import { accentTriple, changedSettings, namespaceWanted, readAll, settingsInterface, settingsTable } from "../apps/portal/settings.ts";
 import type { ShellLink } from "../apps/portal/shell.ts";
-import { type ExportedObject, type InterfaceSpec, type Variant, variant } from "../src/dbus/index.ts";
+import { type ExportedObject, type InterfaceSpec, type Variant, variant } from "../src/shared/dbus/index.ts";
 
 const dict = (entries: Record<string, Variant>) => new Map(Object.entries(entries));
 

@@ -6,9 +6,9 @@
  * row without an action is disabled.
  */
 
-import type { AppMenu, PublishedMenus } from "../app-menus/protocol.ts";
 import type { CompositorWindow } from "../compositor.ts";
 import type { Arrange, Tile } from "../layout.ts";
+import type { AppMenu, PublishedMenus } from "../shared/app-menus/protocol.ts";
 import { sameApp } from "../shortcuts.ts";
 import type { EditCommand } from "./keystrokes.ts";
 

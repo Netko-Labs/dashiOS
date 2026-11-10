@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
 import { loadRecommended, summaryOf } from "../apps/software/recommended.tsx";
-import { CatalogError } from "../src/software/flathub.ts";
-import type { AppDetails } from "../src/software/flathub-types.ts";
-import { RECOMMENDED_APPS } from "../src/software/recommended.ts";
+import { CatalogError } from "../src/shared/software/flathub.ts";
+import type { AppDetails } from "../src/shared/software/flathub-types.ts";
+import { RECOMMENDED_APPS } from "../src/shared/software/recommended.ts";
 
 const details = (id: string): AppDetails => ({
   ...summaryOf({ id, name: `${id} from Flathub`, summary: "From the catalog" }),

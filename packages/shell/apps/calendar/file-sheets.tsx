@@ -7,7 +7,7 @@
 import { Button, PopUpButton, Sheet, TextField, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { Calendar } from "./types.ts";
+import type { Calendar } from "../../src/shared/calendar/types.ts";
 
 /** The choice for a new calendar in the import sheet. */
 export const NEW_CALENDAR = "";

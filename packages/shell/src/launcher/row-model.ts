@@ -8,8 +8,8 @@
 
 import type { ActionState } from "../actions/types.ts";
 import type { Entry } from "../entries.ts";
-import type { FileHit } from "../file-search.ts";
-import { PANES } from "../settings-app/panes.ts";
+import type { FileHit } from "../shared/files/file-search.ts";
+import { PANES } from "../shared/settings/panes.ts";
 import type { AgentAct } from "./agents/acts.ts";
 import { commandGlyph } from "./command-glyphs.ts";
 import { outsideIcon } from "./extension-rows.ts";

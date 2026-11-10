@@ -10,20 +10,7 @@
 
 import type { Compositor, CompositorEvent } from "./compositor.ts";
 import type { SpacesState } from "./spaces/model.ts";
-// biome-ignore lint/nursery/noImportCycles: H5 offender (scripts/lists/import-cycles.txt)
 import { type SwipeStep, SwipeTracker } from "./spaces/swipe.ts";
-
-/** How far (logical pixels, summed) a swipe must travel to count. */
-export const SWIPE_DISTANCE = 60;
-
-export type SwipeAction = "up" | "down" | "left" | "right" | null;
-
-/** Where a finished swipe went: its main direction, if it went far enough. */
-export function swipeDirection(dx: number, dy: number): SwipeAction {
-  if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_DISTANCE) return null;
-  if (Math.abs(dy) >= Math.abs(dx)) return dy < 0 ? "up" : "down";
-  return dx < 0 ? "left" : "right";
-}
 
 export interface GestureActions {
   /** Mission Control: open it (up) or close it (down). */

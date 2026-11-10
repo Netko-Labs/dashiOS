@@ -6,12 +6,12 @@
  *   bun default-handlers.ts --remove <mimeapps.list>    the file without them, on stdout
  *
  * It only prints; the installer puts the result in place (with sudo when it
- * must). A missing file counts as empty. See src/default-handlers.ts.
+ * must). A missing file counts as empty. See src/shared/apps/default-handlers.ts.
  */
 
 import { existsSync, readFileSync } from "node:fs";
-import { defaultHandlers, mergeDefaults, removeDefaults } from "../src/default-handlers.ts";
-import { FIRST_PARTY } from "../src/first-party.ts";
+import { defaultHandlers, mergeDefaults, removeDefaults } from "../src/shared/apps/default-handlers.ts";
+import { FIRST_PARTY } from "../src/shared/apps/index.ts";
 
 const args = process.argv.slice(2);
 const remove = args[0] === "--remove";

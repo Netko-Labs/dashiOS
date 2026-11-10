@@ -8,8 +8,8 @@
  */
 
 import { useSyncExternalStore } from "react";
+import { isLocaleName, type LocaleEntry, languageOf, localeEntries, withLanguage } from "../shared/locale/locale.ts";
 import { type RegionBackend, RegionError, type RegionFailure } from "./backend.ts";
-import { isLocaleName, type LocaleEntry, languageOf, localeEntries, withLanguage } from "./locale.ts";
 import { buildZones, isTimezoneName, readZoneTables, type Zone, type ZoneTables } from "./timezones.ts";
 
 export type RegionWrite = "timezone" | "ntp" | "language";

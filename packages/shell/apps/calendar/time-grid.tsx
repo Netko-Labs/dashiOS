@@ -10,14 +10,14 @@
 import { useColors, useSurface } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
-import type { ClockPrefs } from "../../src/clock.ts";
+import type { Day } from "../../src/shared/calendar/dates.ts";
+import type { Occurrence } from "../../src/shared/calendar/types.ts";
+import type { ClockPrefs } from "../../src/shared/time/clock.ts";
 import { AllDayStrip } from "./allday-strip.tsx";
-import type { Day } from "./dates.ts";
 import { DayColumn } from "./day-column.tsx";
 import { dayNumber, hourLabel, weekdayShort } from "./format.ts";
 import type { GridHandlers, GridState } from "./grid-props.ts";
 import { firstHour, GRID_HEIGHT, HOUR_HEIGHT, revealOffset } from "./layout.ts";
-import type { Occurrence } from "./types.ts";
 
 const GUTTER = 58;
 /** Below this column width a day's name sits over its number, so the two never print over a neighbour's. */

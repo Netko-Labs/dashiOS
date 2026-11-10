@@ -6,8 +6,8 @@
  * a schedule the shell flips the switch at its edges.
  */
 
+import { NIGHT_SHIFT } from "../../shared/settings/knob-glyphs.ts";
 import { useSettings } from "../hooks.ts";
-import { NIGHT_SHIFT } from "../knob-glyphs.ts";
 import { clockLabel, clockText, DEFAULT_SCHEDULE, DEFAULT_WARMTH, describeWarmth, FROM_HOURS, scheduleOf, TO_HOURS, timeChoices, WARMTH } from "../night.ts";
 import type { SettingsStore } from "../store.ts";
 import { Caption, Choices, Group, Setting, Slider } from "../ui.tsx";

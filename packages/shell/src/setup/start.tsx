@@ -12,13 +12,13 @@
 import type { AnswerStatus } from "../agents/ask/service.ts";
 import { registerShellApp, SETUP_APP_ID } from "../apps.ts";
 import type { Compositor } from "../compositor.ts";
-import type { FlagsStore } from "../control-center/flags.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
 import type { RegionStore } from "../region/store.ts";
 import { loadLayouts } from "../settings-app/layouts.ts";
 import type { SettingsStore } from "../settings-app/store.ts";
-import { Software } from "../software/manager.ts";
-import { standIn } from "../software/stand-in.ts";
+import type { FlagsStore } from "../shared/control-center/flags.ts";
+import { Software } from "../shared/software/manager.ts";
+import { standIn } from "../shared/software/stand-in.ts";
 import { isDevelopmentRun } from "../system/stand-in.ts";
 import type { SystemStore } from "../system/store.ts";
 import { PasswordPrompt } from "../wifi/prompt.tsx";

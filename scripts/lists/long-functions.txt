@@ -42,7 +42,7 @@
 90	packages/shell/src/menubar-slots.tsx
 98	packages/shell/src/menubar-status.tsx
 212	packages/shell/src/menubar.tsx
-232	packages/shell/src/menus/start.tsx
+230	packages/shell/src/menus/start.tsx
 82	packages/shell/src/notifications/center.tsx
 88	packages/shell/src/polkit/service.ts
 132	packages/shell/src/settings-app/machine-desktop.ts

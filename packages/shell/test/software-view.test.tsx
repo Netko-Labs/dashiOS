@@ -8,15 +8,15 @@ import { AppletStore } from "../apps/software/applets/store.ts";
 import { type Services, ServicesContext } from "../apps/software/services.ts";
 import { SoftwareStore } from "../apps/software/store.ts";
 import { SoftwareWindow } from "../apps/software/view.tsx";
-import { CatalogSet } from "../src/applet-store/catalog-set.ts";
-import type { CatalogSetting } from "../src/applet-store/catalogs.ts";
-import { StoreImages } from "../src/applet-store/images.ts";
-import { AppletInstaller } from "../src/applet-store/installer.ts";
-import { ImageCache, JsonCache } from "../src/software/cache.ts";
-import { Flathub } from "../src/software/flathub.ts";
-import { Images } from "../src/software/images.ts";
-import { Software } from "../src/software/manager.ts";
-import type { Runner } from "../src/software/run.ts";
+import { CatalogSet } from "../src/shared/applet-store/catalog-set.ts";
+import type { CatalogSetting } from "../src/shared/applet-store/catalogs.ts";
+import { StoreImages } from "../src/shared/applet-store/images.ts";
+import { AppletInstaller } from "../src/shared/applet-store/installer.ts";
+import { ImageCache, JsonCache } from "../src/shared/software/cache.ts";
+import { Flathub } from "../src/shared/software/flathub.ts";
+import { Images } from "../src/shared/software/images.ts";
+import { Software } from "../src/shared/software/manager.ts";
+import type { Runner } from "../src/shared/software/run.ts";
 import { settle } from "./support/time.ts";
 
 // Software's window on a stand-in for the Metal host: Flathub from fixtures, flatpak and pkcon faked

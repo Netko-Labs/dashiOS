@@ -7,10 +7,10 @@
  */
 
 import { cannotDo } from "@dashi/applet";
-import type { StoreApplet } from "../../src/applet-store/merge.ts";
-import { abilityLines, commandsLine } from "../../src/applets/consent-sheet.tsx";
-import type { AppDetails } from "../../src/software/flathub-types.ts";
-import { cannotReach, describeReach } from "../../src/software/flatpak-permissions.ts";
+import { abilityLines, commandsLine } from "../../src/shared/applet-store/consent-sheet.tsx";
+import type { StoreApplet } from "../../src/shared/applet-store/merge.ts";
+import type { AppDetails } from "../../src/shared/software/flathub-types.ts";
+import { cannotReach, describeReach } from "../../src/shared/software/flatpak-permissions.ts";
 
 export interface TrustFacts {
   maker: { name: string; line: string; mark: "verified" | "reviewed" | null };

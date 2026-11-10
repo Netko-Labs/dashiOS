@@ -5,8 +5,8 @@ import { join } from "node:path";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import { HOUR_HEIGHT, revealOffset } from "../apps/calendar/layout.ts";
 import { CalendarModel } from "../apps/calendar/model.ts";
-import { CalendarStore } from "../apps/calendar/store.ts";
 import { CalendarWindow } from "../apps/calendar/view.tsx";
+import { CalendarStore } from "../src/shared/calendar/store.ts";
 import { settle } from "./support/time.ts";
 
 // The + button and naming in place, on a stand-in for the Metal host.

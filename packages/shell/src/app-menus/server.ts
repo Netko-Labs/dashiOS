@@ -13,8 +13,8 @@
 
 import { chmodSync, existsSync, unlinkSync } from "node:fs";
 import { peerPid } from "../agents/peer.ts";
-import { LineBuffer } from "../lines.ts";
-import { LIMITS, parseClientMessage, type ShellMessage } from "./protocol.ts";
+import { LIMITS, parseClientMessage, type ShellMessage } from "../shared/app-menus/protocol.ts";
+import { LineBuffer } from "../shared/io/lines.ts";
 import type { AppMenuStore, MenuOwner } from "./store.ts";
 
 /** Messages a connection may send in one second before it is cut off (an update per keystroke is far fewer). */

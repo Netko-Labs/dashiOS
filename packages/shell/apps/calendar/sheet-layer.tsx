@@ -1,11 +1,11 @@
 /** Which of Calendar's smaller sheets is open (sheets.tsx, file-sheets.tsx), and what its answers do. */
 
+import { paletteColor } from "../../src/shared/calendar/store.ts";
+import type { Calendar } from "../../src/shared/calendar/types.ts";
 import type { Scope } from "./edits.ts";
 import { ExportSheet, ImportPathSheet, ImportTargetSheet, ProblemsSheet } from "./file-sheets.tsx";
 import type { CalendarModel } from "./model.ts";
 import { CalendarSheet, DeleteCalendarSheet, ScopeSheet, type SheetState } from "./sheets.tsx";
-import { paletteColor } from "./store.ts";
-import type { Calendar } from "./types.ts";
 
 export function SheetLayer({
   sheet,

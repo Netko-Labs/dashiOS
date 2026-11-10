@@ -6,12 +6,12 @@
  * days that have events from it.
  */
 
-import type { Day } from "../../apps/calendar/dates.ts";
-import { busyDays } from "../../apps/calendar/recurrence.ts";
-import { readSidecar } from "../../apps/calendar/sidecar.ts";
-import { CalendarStore } from "../../apps/calendar/store.ts";
-import type { Calendar } from "../../apps/calendar/types.ts";
-import { watchCalendars } from "../../apps/calendar/watch.ts";
+import type { Day } from "../shared/calendar/dates.ts";
+import { busyDays } from "../shared/calendar/recurrence.ts";
+import { readSidecar } from "../shared/calendar/sidecar.ts";
+import { CalendarStore } from "../shared/calendar/store.ts";
+import type { Calendar } from "../shared/calendar/types.ts";
+import { watchCalendars } from "../shared/calendar/watch.ts";
 
 export class CalendarFeed {
   private calendars: Calendar[] = [];

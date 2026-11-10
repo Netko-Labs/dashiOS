@@ -3,8 +3,8 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { handToEmpty, listenWhileEmpty, parseHandoff } from "../apps/preview/instance.ts";
-import { parseClientMessage } from "../src/app-menus/protocol.ts";
 import { AppMenuStore } from "../src/app-menus/store.ts";
+import { parseClientMessage } from "../src/shared/app-menus/protocol.ts";
 
 // Review 20, B5: a file opened while Preview has an empty window opens in that window, not a second one.
 

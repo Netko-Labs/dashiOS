@@ -2,10 +2,10 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AppMenu } from "../src/app-menus/protocol.ts";
 import { AppMenuStore, type MenuOwner } from "../src/app-menus/store.ts";
 import { publishEditMenu } from "../src/settings-app/edit-menu.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
+import type { AppMenu } from "../src/shared/app-menus/protocol.ts";
 import { flush } from "./support/time.ts";
 
 let root = "";

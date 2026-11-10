@@ -6,7 +6,7 @@
  * nodes and time, and skips what isn't showing.
  */
 
-import { DBusError } from "../../dbus/index.ts";
+import { DBusError } from "../../shared/dbus/index.ts";
 
 /** AT-SPI roles (AtspiRole) the walk cares about. */
 export const ROLE = { FRAME: 23, PASSWORD_TEXT: 40, TEXT: 61, APPLICATION: 75, ENTRY: 79, DOCUMENT_WEB: 95 } as const;

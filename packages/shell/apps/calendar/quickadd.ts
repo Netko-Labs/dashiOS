@@ -6,9 +6,9 @@
  * needs a colon, AM or PM, or "at"). What is not read stays in the title. Pure.
  */
 
-import { addDays, type Day, weekday } from "./dates.ts";
+import { addDays, type Day, weekday } from "../../src/shared/calendar/dates.ts";
+import type { Frequency, Repeat } from "../../src/shared/calendar/types.ts";
 import { parseTimeText } from "./timetext.ts";
-import type { Frequency, Repeat } from "./types.ts";
 
 export interface QuickAdd {
   title: string;

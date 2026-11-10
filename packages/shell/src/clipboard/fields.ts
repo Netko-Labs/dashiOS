@@ -14,8 +14,8 @@
 
 import { Atspi } from "../agents/atspi/client.ts";
 import { fieldAt, focusedField, limits } from "../agents/atspi/tree.ts";
-import { DBusConnection } from "../dbus/index.ts";
-import { unwrap } from "../dbus/properties.ts";
+import { DBusConnection } from "../shared/dbus/index.ts";
+import { unwrap } from "../shared/dbus/properties.ts";
 
 /** How long "accessibility is off" is believed before asking again. */
 const STATUS_MS = 30_000;
