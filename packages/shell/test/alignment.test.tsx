@@ -22,7 +22,7 @@ async function lastTree(tree: ReactNode): Promise<Node> {
   const trees: string[] = [];
   const transport: NativeTransport = { send: (sent) => trees.push(sent), onEvent() {}, onClose() {}, simulate() {}, close() {} };
   const root = render(tree, transport);
-  await new Promise((done) => setTimeout(done, 30));
+  await settle();
   root.unmount();
   return JSON.parse(trees.at(-1) ?? "{}") as Node;
 }

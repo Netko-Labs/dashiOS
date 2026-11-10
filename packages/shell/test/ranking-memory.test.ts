@@ -19,6 +19,7 @@ import {
 } from "../src/launcher/ranking/memory.ts";
 import { MAX_FILE_BYTES } from "../src/launcher/ranking/store.ts";
 import { index } from "./ranking-fixture.ts";
+import { fakeClock } from "./support/time.ts";
 
 const INDEX = index();
 const DAY = 86_400_000;
@@ -149,11 +150,13 @@ describe("the file", () => {
 
   test("is written once after a burst of changes, readable by its owner only", async () => {
     const path = join(dir, "state", "dashi", "ranking.json");
+    const wall = fakeClock();
     const signals = new RankingMemory({ path, now, delayMs: 20 });
     signals.opened("dev.dashi.files");
     signals.picked("te", "dev.dashi.editor");
     expect(() => statSync(path)).toThrow();
-    await Bun.sleep(80);
+    await wall.advance(80);
+    wall.restore();
     expect(statSync(path).mode & 0o777).toBe(0o600);
     const again = new RankingMemory({ path, now });
     expect(again.frecency("dev.dashi.files")).toBeCloseTo(1);

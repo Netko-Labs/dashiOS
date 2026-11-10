@@ -4,6 +4,7 @@ import type { Answer, Ask, Turn } from "../src/agents/presence.ts";
 import { Session, type SessionContext } from "../src/agents/session.ts";
 import { DENY, type QueuedSheet, SheetQueue } from "../src/agents/sheet-queue.ts";
 import { opaque } from "../src/consent.tsx";
+import { flush } from "./support/time.ts";
 
 const WINDOW = {
   id: 3,
@@ -84,28 +85,28 @@ describe("a call the agent gives up on", () => {
   test("its 'Your turn' comes down, nothing is answered, and the agent's next calls aren't held", async () => {
     const h = harness(["act", "see"]);
     h.say(callTool(2, "hand_over", { window: "w3", reason: "Sign in to the bank" }));
-    await Bun.sleep(5);
+    await flush();
     expect(h.turns.length).toBe(1);
     h.say(cancel(2));
-    await Bun.sleep(5);
+    await flush();
     expect(h.turns[0]?.signal?.aborted).toBe(true);
     expect(h.sent.some((m) => m.id === 2)).toBe(false);
     h.say(callTool(3, "list_windows", {}));
-    await Bun.sleep(20);
+    await flush();
     expect(h.sent.some((m) => m.id === 3)).toBe(true);
   });
 
   test("its scope sheet comes down when no waiting call needs it, and that is no refusal", async () => {
     const h = harness([]);
     h.say(callTool(2, "list_windows", {}));
-    await Bun.sleep(5);
+    await flush();
     expect(h.asks.length).toBe(1);
     h.say(cancel(2));
-    await Bun.sleep(5);
+    await flush();
     expect(h.asks[0]?.signal?.aborted).toBe(true);
     // Asked again next time, not refused for good.
     h.say(callTool(3, "list_windows", {}));
-    await Bun.sleep(5);
+    await flush();
     expect(h.asks.length).toBe(2);
     expect(h.sent.some((m) => m.id === 2)).toBe(false);
   });

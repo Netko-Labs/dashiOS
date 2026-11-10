@@ -238,7 +238,7 @@ describe("the panel", () => {
       stopAll: () => stopped.push("all"),
     };
     const root = render(<AgentsPanel runs={store} agents={agents} right={1000} focus={null} actions={actions} onClose={() => {}} />, transport);
-    await new Promise((done) => setTimeout(done, 20));
+    await settle();
     const tree = trees.at(-1) ?? "";
     expect(root.nodeId("agents-row:7")).toBeDefined();
     expect(root.nodeId("agents-card:r1")).toBeDefined();

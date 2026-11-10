@@ -19,6 +19,9 @@ import {
   takeRecovery,
 } from "../apps/editor/recovery.ts";
 import { windowCommand } from "../apps/editor/windows.ts";
+import { fakeClockEachTest, settle } from "./support/time.ts";
+
+fakeClockEachTest();
 
 let dir = "";
 beforeEach(() => {
@@ -195,7 +198,6 @@ describe("recovery", () => {
 describe("keeping changes as they are typed", () => {
   let unsaved: Recovery | null = null;
   const keeper = (store: string, delay = 20) => new RecoveryKeeper(() => unsaved, { dir: store, delay, now: () => 1234 });
-  const wait = (ms: number): Promise<void> => new Promise((done) => setTimeout(done, ms));
   const sample: Recovery = { path: "/home/a/x.txt", text: "one", encoding: "utf-8", lineEnding: "lf", time: 1000 };
 
   test("a change is kept once typing stops, in one file of the window's own, and only the person's", async () => {
@@ -207,7 +209,7 @@ describe("keeping changes as they are typed", () => {
     unsaved = { ...sample, text: "one two" };
     kept.changed();
     expect(existsSync(join(store, kept.name))).toBe(false);
-    await wait(60);
+    await settle(60);
     expect(readdirSync(store)).toEqual([kept.name]);
     expect(parseRecovery(readFileSync(join(store, kept.name), "utf8"))?.text).toBe("one two");
     expect(statSync(join(store, kept.name)).mode & 0o777).toBe(0o600);
@@ -225,13 +227,13 @@ describe("keeping changes as they are typed", () => {
     expect(existsSync(join(store, kept.name))).toBe(true);
     unsaved = null;
     kept.changed();
-    await wait(60);
+    await settle(60);
     expect(readdirSync(store)).toEqual([]);
     unsaved = sample;
     kept.flush();
     kept.changed();
     kept.discard();
-    await wait(60);
+    await settle(60);
     expect(readdirSync(store)).toEqual([]);
   });
 

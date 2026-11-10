@@ -20,6 +20,7 @@ import { agentField, taskSubmit } from "../src/launcher/agents/task-mode.tsx";
 import { LAUNCHER_RULES, LauncherKeys } from "../src/launcher/keys.ts";
 import type { Section } from "../src/launcher/rows.ts";
 import { app, mount, unmountLauncher } from "./launcher-harness.tsx";
+import { settle } from "./support/time.ts";
 
 afterEach(unmountLauncher);
 
@@ -201,10 +202,10 @@ test("view: ⇥ asks, the plan shows its steps under the spark, and Return runs 
   expect(launcher.rows().ids).toEqual([ASK_ROW]);
   expect(launcher.rows().selected).toBeNull();
   keys.binding("launcher-tab");
-  await new Promise((done) => setTimeout(done, 10));
+  await settle();
   expect(agents.asked).toEqual(["dark mode and hide the dock"]);
   agents.set(snap({ tasks: [planned()] }));
-  await new Promise((done) => setTimeout(done, 10));
+  await settle();
   expect(launcher.has("launcher:section:plan")).toBe(true);
   expect(launcher.has("launcher:step:0")).toBe(true);
   expect(launcher.has("launcher:chip:1")).toBe(true);
@@ -224,9 +225,9 @@ test("view: after a plan ran, the field takes the next words alone; the plan's n
   const value = (): string | undefined => /"value":"([^"]*)"/.exec(launcher.tree())?.[1];
   await launcher.type("dark mode and hide the dock");
   keys.binding("launcher-tab");
-  await new Promise((done) => setTimeout(done, 10));
+  await settle();
   agents.set(snap({ tasks: [{ ...planned(), phase: "done" }] }));
-  await new Promise((done) => setTimeout(done, 10));
+  await settle();
   // On the plan the words are its chip; the field is empty for a follow-up.
   expect(value()).toBe("");
   await launcher.key("Escape");
@@ -239,8 +240,8 @@ test("view: after a plan ran, the field takes the next words alone; the plan's n
   await launcher.type("");
   await launcher.type("dark mode and hide the dock");
   keys.binding("launcher-tab");
-  await new Promise((done) => setTimeout(done, 10));
+  await settle();
   keys.binding("launcher-tab");
-  await new Promise((done) => setTimeout(done, 10));
+  await settle();
   expect(value()).toBe("dark mode and hide the dock");
 });

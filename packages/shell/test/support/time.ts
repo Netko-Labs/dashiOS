@@ -4,8 +4,8 @@
  * - `flush()` lets pending promises, React's scheduler and mirin's test
  *   renderer finish, without sleeping. React schedules its work on
  *   `setImmediate`, so a few turns of the event loop are enough; no clock runs.
- * - `until()` is for work that finishes outside the event loop's own turns (a
- *   socket, a file, a child process): it turns the loop until a condition holds.
+ * - `until()` and `untilValue()` are for work that finishes outside the event loop's own
+ *   turns (a socket, a file, a child process): they turn the loop until a condition holds.
  * - `fakeClock()` stops `setTimeout`, `setInterval`, `Date` and `Bun.sleep`, and
  *   moves them only when the test says (Bun's `jest.useFakeTimers`).
  *   `setImmediate` stays real, so `flush()` works with the clock stopped.
@@ -43,16 +43,36 @@ export async function settle(ms = 0): Promise<void> {
 }
 
 /**
- * Turn the event loop until `ready()` holds, for work that ends outside it (a socket, a file, a child
- * process). It counts turns, not milliseconds; it throws when `turns` run out.
+ * Turn the event loop until `read()` gives something (not null, undefined, false, 0 or ""), for work that
+ * ends outside it (a socket, a file, a child process). It does not sleep: it yields with `setImmediate` and
+ * looks again. It gives up after `ms` of real time, which a stopped fake clock does not stop; that is a
+ * failed test, not a wait.
  */
-export async function until(ready: () => boolean | Promise<boolean>, what = "the condition", turns = 20_000): Promise<void> {
-  for (let turn = 0; turn < turns; turn++) {
-    if (await ready()) return;
+export async function untilValue<T>(
+  read: () => T | null | undefined | false | Promise<T | null | undefined | false>,
+  what = "the condition",
+  ms = 5000,
+): Promise<T> {
+  const end = process.hrtime.bigint() + BigInt(ms) * 1_000_000n;
+  for (;;) {
+    const value = await read();
+    if (value) return value;
+    if (process.hrtime.bigint() > end) throw new Error(`gave up waiting for ${what}`);
     await new Promise<void>((done) => setImmediate(done));
   }
-  throw new Error(`gave up waiting for ${what}`);
 }
+
+/** `untilValue` for a yes-or-no condition. */
+export async function until(ready: () => boolean | Promise<boolean>, what = "the condition", ms = 5000): Promise<void> {
+  await untilValue(async () => (await ready()) || null, what, ms);
+}
+
+/** Until the mounted tree has a node with this testID (a sheet, a list that loads from disk); gives its node id. */
+export const shows = (root: { nodeId(testID: string): string | undefined }, testID: string): Promise<string> =>
+  untilValue(() => root.nodeId(testID), `${testID} to show`).then(async (id) => {
+    await flush();
+    return id;
+  });
 
 export type FakeClock = {
   /** Let pending promises finish, move time on by `ms` (in slices of `step`), run every timer that falls due, and let the promises they set free finish. */

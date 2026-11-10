@@ -8,6 +8,7 @@ import { keptTurns, MAX_RECENTS, MemoryStore, memoryPath, parseMemory, withRecen
 import { type PreviewMenuContext, previewMenus, recentLabels } from "../apps/preview/menus.ts";
 import { reservedBy } from "../src/app-menus/reserved.ts";
 import { chordFromShortcut } from "../src/app-menus/shortcut.ts";
+import { until } from "./support/time.ts";
 
 // What Preview remembers (memory.ts), its menus (menus.ts) and its bare keys (keys.ts).
 
@@ -77,8 +78,7 @@ describe("what Preview remembers", () => {
     let heard = 0;
     const stop = first.watch(() => heard++, 20);
     new MemoryStore(file).opened("/home/alexk/fake.png");
-    const end = Date.now() + 3000;
-    while (heard === 0 && Date.now() < end) await new Promise((done) => setTimeout(done, 20));
+    await until(() => heard > 0, "the other window's change");
     stop();
     expect(heard).toBeGreaterThan(0);
     expect(first.recents().map((recent) => recent.path)).toEqual(["/home/alexk/fake.png", "/home/alexk/img1.jpg"]);

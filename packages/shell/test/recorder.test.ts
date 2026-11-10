@@ -6,6 +6,7 @@ import { CODECS, recorderArgs, recordingName, WF_RECORDER } from "../src/recorde
 import { type RecorderProcess, ScreenRecorder } from "../src/recorder/recorder.ts";
 import { stopsRecording } from "../src/recorder/start.ts";
 import { elapsedText } from "../src/shared/time/elapsed.ts";
+import { flush } from "./support/time.ts";
 
 describe("recordingName", () => {
   test("the Mac's name, a copy number for one taken", () => {
@@ -87,14 +88,14 @@ describe("ScreenRecorder", () => {
     expect(recorder.getSnapshot().kind).toBe("recording");
     expect(allowed).toEqual([WF_RECORDER]);
     expect(await recorder.stop()).toBe(file);
-    await Bun.sleep(0);
+    await flush();
     expect(recorder.getSnapshot().kind).toBe("idle");
     expect(allowed).toEqual([]);
     expect(saved).toEqual([file]);
     // The compositor's capture tail is still the recorder's for a moment.
     expect(recorder.ownsCapture()).toBe(true);
     expect(recorder.ownsCapture(Date.now() + 5000)).toBe(false);
-  }, 5000);
+  });
 
   test("an agent's recording waits until its blanks are set, and doesn't start without them", async () => {
     const order: string[] = [];
@@ -127,7 +128,7 @@ describe("ScreenRecorder", () => {
     ).rejects.toThrow("couldn't blank");
     expect(order).not.toContain("go");
     expect(refused.getSnapshot().kind).toBe("idle");
-  }, 5000);
+  });
 
   test("⇧❖5 stops only the person's own recording; an agent's runs on and the toolbar opens", async () => {
     const recorder = new ScreenRecorder({ allow: () => () => {}, spawn: () => fakeProcess(), exists: (path) => path === WF_RECORDER, directory: () => videos });
@@ -138,7 +139,7 @@ describe("ScreenRecorder", () => {
     expect(stopsRecording(recorder.getSnapshot())).toBe(true);
     await recorder.stop();
     expect(stopsRecording({ kind: "idle" })).toBe(false);
-  }, 5000);
+  });
 
   test("a recording's length is the recorder's own clock, from wf-recorder's start to its end", async () => {
     let clock = 1_000;
@@ -158,7 +159,7 @@ describe("ScreenRecorder", () => {
     const { recordedLength } = await import("../src/agents/desktop/record.ts");
     expect(recordedLength(6.4, 0, 40_000)).toBe(6.4);
     expect(recordedLength(null, 0, 40_000)).toBe(40);
-  }, 5000);
+  });
 
   test("refuses without wf-recorder, and a second recording", async () => {
     const missing = new ScreenRecorder({ allow: () => () => {}, exists: () => false, directory: () => "/videos" });

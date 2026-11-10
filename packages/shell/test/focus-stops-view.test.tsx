@@ -9,6 +9,7 @@ import { FlagsStore } from "../src/control-center/flags.ts";
 import { AppearancePreviews } from "../src/settings-app/panes/appearance.tsx";
 import { WallpaperPane } from "../src/settings-app/panes/wallpaper.tsx";
 import { SettingsStore } from "../src/settings-app/store.ts";
+import { settle } from "./support/time.ts";
 
 // The controls the VM review found Tab skipping (KB-1): Appearance's Light,
 // Dark and Auto, Wallpaper's tiles, Calendar's Today.
@@ -41,7 +42,7 @@ async function mount(element: ReactElement) {
   const trees: string[] = [];
   const transport: NativeTransport = { send: (tree) => trees.push(tree), onEvent() {}, onClose() {}, simulate() {}, close() {} };
   const root = render(element, transport);
-  await new Promise((done) => setTimeout(done, 20));
+  await settle();
   return { root, tree: (): Node => JSON.parse(trees.at(-1) ?? "{}") as Node, id: (testID: string) => root.nodeId(testID) ?? "" };
 }
 

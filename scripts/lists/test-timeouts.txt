@@ -1,2 +1,1 @@
 # H11: tests given their own time limit over bunfig.toml's 2 s (count = tests). May only shrink.
-4	packages/shell/test/recorder.test.ts

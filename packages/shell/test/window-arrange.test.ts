@@ -3,7 +3,7 @@ import { Arranger } from "../src/arrange.ts";
 import { type Compositor, type CompositorEvent, type CompositorWindow, parseEvent } from "../src/compositor.ts";
 import { carryFrame, centerFrame, dragZones, frameUnderPointer, keepLeast, type Rect, TILES, tileFrame } from "../src/layout.ts";
 import { arrowStep, screenToward } from "../src/tiling.ts";
-import { settle } from "./support/time.ts";
+import { flush, settle } from "./support/time.ts";
 
 /** The VM's screen: 1646 × 937 points, the menu bar (28) and the Dock (65 + 6) leaving 838 between them. */
 const SCREEN: Rect = { x: 0, y: 0, width: 1646, height: 937 };
@@ -150,7 +150,7 @@ function fake(
   const frames = () => requests.filter(([method]) => method === "frame" || method === "fullscreen");
   const emit = async (event: CompositorEvent) => {
     listener?.(event);
-    for (let tick = 0; tick < 5; tick++) await new Promise((done) => setTimeout(done, 0));
+    await flush();
   };
   /** The apps draw at the sizes they were asked for. */
   const catchUp = () => {

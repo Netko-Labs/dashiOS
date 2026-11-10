@@ -8,6 +8,7 @@
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { until } from "./support/time.ts";
 
 export interface PrivateBus {
   address: string;
@@ -37,7 +38,7 @@ export async function startPrivateBus(prefix: string): Promise<PrivateBus | null
 `,
   );
   const bus = Bun.spawn([daemon, "--config-file", config, "--nofork"], { stdout: "ignore", stderr: "inherit" });
-  for (let tries = 0; tries < 100 && !existsSync(socket); tries++) await Bun.sleep(20);
+  await until(() => existsSync(socket), "the bus socket");
   return {
     address,
     stop() {
@@ -45,14 +46,4 @@ export async function startPrivateBus(prefix: string): Promise<PrivateBus | null
       rmSync(dir, { recursive: true, force: true });
     },
   };
-}
-
-export async function until<T>(read: () => T | undefined | null | false, what: string, timeoutMs = 3000): Promise<T> {
-  const end = Date.now() + timeoutMs;
-  for (;;) {
-    const value = read();
-    if (value) return value;
-    if (Date.now() > end) throw new Error(`timed out waiting for ${what}`);
-    await Bun.sleep(10);
-  }
 }

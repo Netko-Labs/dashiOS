@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { FillPrompts, PROMPT_MS } from "../src/agents/fill-prompts.ts";
 import type { CompositorWindow } from "../src/compositor.ts";
+import { flush } from "./support/time.ts";
 
 const win = (id: number, pid: number | null): CompositorWindow => ({ id, pid }) as CompositorWindow;
 
@@ -14,7 +15,7 @@ describe("what an app shows back after a fill", () => {
     );
     expect(prompts.blank(windows)).toEqual({ popups: [], windows: [] });
     prompts.touched(3);
-    await Bun.sleep(0);
+    await flush();
     // Firefox opens a window of its own (6); another app's (7) is no prompt of it; 4 was there before.
     windows = [...windows, win(6, 100), win(7, 200)];
     expect(prompts.blank(windows)).toEqual({ popups: [3], windows: [6] });

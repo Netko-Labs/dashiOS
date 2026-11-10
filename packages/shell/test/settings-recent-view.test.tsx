@@ -225,7 +225,7 @@ test("Revoke All on an agent that isn't connected keeps its card, its rows and t
   expect(view.has("agent-scope:/usr/bin/vm-agent:see")).toBe(true);
   expect(view.has("agents-none")).toBe(false);
   // Still there long after five seconds.
-  await new Promise((done) => setTimeout(done, 60));
+  await settle();
   expect(view.has("agent-revoked:/usr/bin/vm-agent")).toBe(true);
   await view.press("agent-revoked-undo:/usr/bin/vm-agent");
   expect(grants.get("/usr/bin/vm-agent")).toEqual(new Set(["see", "screen"]));

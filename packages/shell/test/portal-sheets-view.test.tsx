@@ -16,7 +16,7 @@ import { fakeClockEachTest, flush, settle, until } from "./support/time.ts";
 
 fakeClockEachTest();
 /** Until the chooser is in `folder` and has drawn it (a folder lists on the file system, outside the event loop's turns). */
-const folderIs = (model: ChooserModel, folder: string) => until(() => model.folder() === folder && !model.store.getSnapshot().loading, folder).then(flush);
+const folderIs = (m: ChooserModel, folder: string) => until(() => m.folder() === folder && !m.store.getSnapshot().loading, folder).then(() => flush());
 
 /** A key the window got, as Metal hands it to a KeySink (`onWindowKeyDown`). */
 const windowKey = (nodeId: string, key: string): NativeEvent => ({

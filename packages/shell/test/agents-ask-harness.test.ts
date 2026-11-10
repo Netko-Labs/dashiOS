@@ -425,7 +425,7 @@ describe("a harness answering, end to end with a fake CLI", () => {
     ]);
     const stop = new AbortController();
     const stopped = failure(answer.turn([], { text: "@hang", results: [] }, TOOLS, stop.signal));
-    setTimeout(() => stop.abort(), 50);
+    stop.abort();
     expect(await stopped).toContain("AbortError");
     const missing = harnessAnswerer({
       spec: HARNESSES.codex,

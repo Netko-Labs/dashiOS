@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import type { Clipboard } from "../apps/kit/index.ts";
 import { TerminalWindow } from "../apps/terminal/view.tsx";
+import { settle, until } from "./support/time.ts";
 
 // A stand-in for dashi-term with the shell integration: on its first resize
 // it says the folder, a prompt, a failed command, and a frame with a wide
@@ -73,15 +74,6 @@ function fakeHost() {
 }
 
 const clipboard: Clipboard = { canWrite: true, writeText: async () => true, readText: async () => "" } as unknown as Clipboard;
-const wait = (ms: number): Promise<void> => new Promise((done) => setTimeout(done, ms));
-
-async function until(check: () => boolean, ms = 3000): Promise<void> {
-  const end = Date.now() + ms;
-  while (!check()) {
-    if (Date.now() > end) throw new Error("timed out");
-    await wait(20);
-  }
-}
 
 test("one chrome row: the tab is named by its folder, the failed command is marked, and a second tab puts the tabs in the title bar", async () => {
   const host = fakeHost();
@@ -91,7 +83,7 @@ test("one chrome row: the tab is named by its folder, the failed command is mark
     host.transport,
   );
   host.emit({ type: "chrome", nodeId: "root", titleBar: "unified", controls: { x: 8, y: 8, width: 60, height: 22 } });
-  await wait(20);
+  await settle();
   const node = (id: string): string => {
     const found = root.nodeId(id);
     if (!found) throw new Error(`no ${id}`);

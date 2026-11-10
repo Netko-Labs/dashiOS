@@ -112,13 +112,13 @@
 325	packages/shell/test/agents-ask-tasks.test.ts
 365	packages/shell/test/applet-catalogs.test.ts
 325	packages/shell/test/editor-model.test.ts
-337	packages/shell/test/editor-view.test.tsx
+330	packages/shell/test/editor-view.test.tsx
 314	packages/shell/test/graphics-notice.test.ts
 345	packages/shell/test/handoff-questions.test.ts
 492	packages/shell/test/handoff-service.test.ts
 459	packages/shell/test/launcher-model.test.ts
 449	packages/shell/test/launcher-sources.test.ts
-383	packages/shell/test/portal-file-chooser.test.ts
+378	packages/shell/test/portal-file-chooser.test.ts
 308	packages/shell/test/portal-interfaces.test.ts
 307	packages/shell/test/portal-sheets-view.test.tsx
 306	packages/shell/test/ranking.test.ts

@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { LOST_CODE, McpRelay } from "../src/agents/mcp-relay.ts";
+import { until } from "./support/time.ts";
 
 const json = (value: unknown) => JSON.stringify(value);
 
@@ -91,12 +92,11 @@ describe("dashi-mcp --reconnect", () => {
     expect(await next()).toEqual({ jsonrpc: "2.0", id: 1, result: { server: "one" } });
     write({ jsonrpc: "2.0", method: "notifications/initialized" });
     write({ jsonrpc: "2.0", id: 2, method: "slow", params: {} });
-    while (!seen.includes("one:slow")) await Bun.sleep(10);
+    await until(() => seen.includes("one:slow"), "the slow call");
 
     // The shell restarts: its socket goes, and a new one comes up a moment later.
     server.stop(true);
     expect(await next()).toMatchObject({ id: 2, error: { code: LOST_CODE } });
-    await Bun.sleep(400);
     server = fakeDashi(path, "two", seen);
 
     write({ jsonrpc: "2.0", id: 3, method: "tools/call", params: {} });

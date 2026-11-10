@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startEngine } from "../apps/terminal/engine.ts";
 import type { EngineMessage } from "../apps/terminal/screen.ts";
+import { fakeClock, until } from "./support/time.ts";
 
 // A stand-in for dashi-term: it answers `running` with what it is told to,
 // stays silent when told "mute", and echoes `colors` back as a title.
@@ -31,8 +32,6 @@ beforeAll(() => {
 });
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
-const wait = (ms: number): Promise<void> => new Promise((done) => setTimeout(done, ms));
-
 test("running answers in order: null at the prompt, the program's name past it; colors go to the engine", async () => {
   const heard: EngineMessage[] = [];
   const engine = startEngine(binary, { cols: 80, rows: 24 }, (message) => heard.push(message));
@@ -48,12 +47,17 @@ test("running answers in order: null at the prompt, the program's name past it; 
 });
 
 test("an engine that does not answer in time counts as nothing running", async () => {
-  const engine = startEngine(binary, { cols: 80, rows: 24 }, () => {});
+  const heard: EngineMessage[] = [];
+  const engine = startEngine(binary, { cols: 80, rows: 24 }, (message) => heard.push(message));
+  engine.send({ t: "colors", fg: "#1d1d1f", bg: "#fbfaf7", palette: [] });
+  await until(() => heard.length > 0, "the engine to start");
   engine.send({ t: "paste", text: "vim" });
   engine.send({ t: "paste", text: "mute" });
-  const started = Date.now();
-  expect(await engine.running()).toBeNull();
-  expect(Date.now() - started).toBeLessThan(2000);
+  const clock = fakeClock();
+  const asked = engine.running();
+  // The engine never answers: the wait ends on its own, with the clock moved past it.
+  await clock.advance(1000);
+  expect(await asked).toBeNull();
+  clock.restore();
   engine.stop();
-  await wait(10);
 });

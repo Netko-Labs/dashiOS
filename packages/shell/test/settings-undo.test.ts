@@ -6,6 +6,7 @@ import type { AppMenu } from "../src/app-menus/protocol.ts";
 import { AppMenuStore, type MenuOwner } from "../src/app-menus/store.ts";
 import { publishEditMenu } from "../src/settings-app/edit-menu.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
+import { flush } from "./support/time.ts";
 
 let root = "";
 let store: SettingsStore;
@@ -55,8 +56,8 @@ test("the Edit menu is published as the window's process and its rows undo", asy
     async () => (++looks >= 2 ? 4242 : null),
     async () => {},
   );
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await flush();
+  await flush();
   expect(published.at(-1)?.pid).toBe(4242);
   expect(published.at(-1)?.menus[0]?.items[0]).toMatchObject({ id: "undo", label: "Undo", enabled: false });
 
@@ -65,7 +66,7 @@ test("the Edit menu is published as the window's process and its rows undo", asy
   // No search to go to: no Find.
   expect(published.at(-1)?.menus[0]?.items.some((item) => item.kind === "item" && item.id === "find")).toBe(false);
   (owner as MenuOwner | null)?.send({ type: "select", id: "undo" });
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await flush();
   expect(store.getSnapshot().data.clock.showDate).toBeUndefined();
   menu.stop();
   expect(withdrawn).toBe(1);
@@ -79,7 +80,7 @@ test("while a field in Settings has the keyboard, ❖Z and ❖A are the field's,
     async () => 4343,
     async () => {},
   );
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await flush();
   store.patch("clock", { showDate: false });
   expect(menus.menusFor([4343])?.typing).toBeUndefined();
 
@@ -92,7 +93,7 @@ test("while a field in Settings has the keyboard, ❖Z and ❖A are the field's,
 
   menu.setTyping(false);
   expect(menus.shortcut([4343], "❖Z")).toBe(true);
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await flush();
   expect(store.getSnapshot().data.clock.showDate).toBeUndefined();
   menu.stop();
 });

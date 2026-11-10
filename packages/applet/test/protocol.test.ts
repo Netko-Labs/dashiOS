@@ -187,22 +187,26 @@ test("the shell's socket gone for a while (a session restarting): the client kee
   expect(shell.later).toHaveLength(0);
 });
 
-/** Whether a process with a client waiting for a shell that isn't there is still running after a while. */
+/** Whether a process with a client waiting for a shell that isn't there has a timer that keeps it running (the process says so itself). */
 async function stillRunning(keepAlive: boolean): Promise<boolean> {
   const client = new URL("../src/client.ts", import.meta.url).pathname;
   const manifest = JSON.stringify(ASUS);
   const code = `
     import { AppletsClient } from ${JSON.stringify(client)};
     import { parseManifest } from ${JSON.stringify(new URL("../src/manifest.ts", import.meta.url).pathname)};
+    const timers = [];
+    const real = globalThis.setTimeout;
+    globalThis.setTimeout = (...args) => timers.push(real(...args)) && timers.at(-1);
     const manifest = parseManifest(${manifest});
     const client = new AppletsClient({ path: "/nonexistent/dashi-applets.sock", manifest, keepAlive: ${keepAlive} });
     client.show({ id: "asus", title: "ASUS Control", label: "54°" });
+    console.log(JSON.stringify(timers.length > 0 && timers.some((timer) => timer.hasRef())));
+    process.exit(0);
   `;
-  const proc = Bun.spawn([process.execPath, "-e", code], { stdout: "ignore", stderr: "ignore" });
-  const ended = await Promise.race([proc.exited.then(() => true), new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 1500))]);
-  proc.kill();
+  const proc = Bun.spawn([process.execPath, "-e", code], { stdout: "pipe", stderr: "ignore" });
+  const said = await new Response(proc.stdout).text();
   await proc.exited;
-  return !ended;
+  return JSON.parse(said) as boolean;
 }
 
 test("an applet's process waits for the shell to come back; an app's client never holds its process up", async () => {

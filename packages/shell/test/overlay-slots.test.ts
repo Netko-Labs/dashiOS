@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 import { OverlaySlots } from "../src/overlay-slots.ts";
+import { flush } from "./support/time.ts";
 
 test("closing and waiting resolves once the host has exited, and at once for a host that stays up", async () => {
   const slots = new OverlaySlots<"launcher" | "sheet">();
@@ -21,7 +22,7 @@ test("closing and waiting resolves once the host has exited, and at once for a h
   });
   expect(closed).toEqual(["launcher"]);
   expect(slots.has("launcher")).toBe(false);
-  await Bun.sleep(1);
+  await flush();
   expect(gone).toBe(false);
   exit();
   await waiting;

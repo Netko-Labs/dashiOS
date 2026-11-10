@@ -16,6 +16,7 @@ import { SandboxProxy, type TokenSource } from "../src/agents/tokens/proxy.ts";
 import { parseOpen, serveTokens } from "../src/agents/tokens/server.ts";
 import { authorized, forwardHeaders, hostListed, parseConnect, parseHeaderSpec, proxyCredentials, swapHeaders, wanted } from "../src/agents/tokens/swap.ts";
 import { issueLeaf, makeAuthority } from "../src/agents/tokens/x509.ts";
+import { until } from "./support/time.ts";
 
 describe("certificates", () => {
   test("a sandbox's CA signs a leaf for one host, which TLS clients accept for that host only", async () => {
@@ -347,8 +348,7 @@ describe("the shell's socket for dashi-agent", () => {
       expect(readFileSync(grant.bundle, "utf8").endsWith(readFileSync(grant.ca, "utf8"))).toBe(true);
       expect(grant.key.length).toBeGreaterThan(20);
       close();
-      for (let i = 0; i < 50 && existsSync(grant.socket); i++) await Bun.sleep(10);
-      expect(existsSync(grant.socket)).toBe(false);
+      await until(() => !existsSync(grant.socket), "the grant's socket to go");
     } finally {
       stop();
       rmSync(runtime, { recursive: true, force: true });

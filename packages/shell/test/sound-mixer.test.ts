@@ -1,8 +1,7 @@
 /**
- * The volume mixer (sound/apps/): PipeWire's dump as app rows (grouping,
- * naming, a browser's tabs, several streams, a Flatpak), the monitor's
- * updates, the commands that set, mute and move, the store's order, linger
- * and held changes, and the microphone indicator.
+ * The volume mixer (sound/apps/): PipeWire's dump as app rows (grouping, naming, a browser's tabs,
+ * several streams, a Flatpak), the monitor's updates, the commands that set, mute and move, the store's
+ * order, linger and held changes, and the microphone indicator.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -31,11 +30,13 @@ import {
 } from "../src/sound/apps/index.ts";
 import { parseDump } from "../src/sound/parse-dump.ts";
 import { client, link, node, vmGraph } from "./fixtures/pw-graph.ts";
+import { fakeClockEachTest, flush, settle } from "./support/time.ts";
+
+fakeClockEachTest();
 
 const HELIUM = { id: "helium", name: "Helium", icon: "/icons/helium.png", exec: ["/opt/helium/helium", "%U"] };
 const LOLLYPOP = { id: "org.gnome.Lollypop", name: "Lollypop", icon: "/icons/lollypop.png", exec: ["flatpak", "run", "org.gnome.Lollypop"] };
-const SIGNAL = { id: "signal", name: "Signal", icon: "/icons/signal.png", exec: ["/usr/bin/signal-desktop"] };
-const catalog = catalogFrom([HELIUM, LOLLYPOP, SIGNAL], []);
+const catalog = catalogFrom([HELIUM, LOLLYPOP, { id: "signal", name: "Signal", icon: "/icons/signal.png", exec: ["/usr/bin/signal-desktop"] }], []);
 
 /** The processes of the proof: Helium's audio service under its browser, Signal, a sandboxed pid that must not be read. */
 const PROCESSES = new Map<number, ProcessLook>([
@@ -47,8 +48,7 @@ const PROCESSES = new Map<number, ProcessLook>([
   [2, { comm: "kthreadd", ppid: 0, argv: [], cgroup: "" }],
   [4242, { comm: "lollypop", ppid: 1, argv: ["/app/bin/lollypop"], cgroup: "0::/user.slice/app-flatpak-org.gnome.Lollypop-4242.scope\n" }],
 ]);
-const read = (pid: number) => PROCESSES.get(pid) ?? null;
-const owner = (stream: Stream) => streamApp(stream, { catalog, read });
+const owner = (stream: Stream) => streamApp(stream, { catalog, read: (pid: number) => PROCESSES.get(pid) ?? null });
 
 describe("parseGraph: pw-dump as streams", () => {
   const graph = parseGraph(vmGraph());
@@ -192,7 +192,7 @@ describe("app rows", () => {
       node(2, { "media.class": "Stream/Output/Audio", "client.id": 1 }),
     ]).streams;
     expect(owners(stream as Stream)?.name).toBe("ALSA plug-in [audio]");
-    await Bun.sleep(0);
+    await flush();
     expect(changed).toBe(1);
     expect(owners(stream as Stream)?.name).toBe("Odd Player");
   });
@@ -423,7 +423,7 @@ describe("the store", () => {
     const last = mixer.setLevel("helium", 0.3);
     release();
     await first;
-    await Bun.sleep(0);
+    await flush();
     release();
     expect(await Promise.all([skipped, last])).toEqual([true, true]);
     expect(levels).toEqual([0.1, 0.3]);
@@ -461,7 +461,7 @@ describe("the store", () => {
   test("a fixed graph, and no PipeWire", async () => {
     const mixer = new AppMixer({ graph: fixedGraph(parseGraph(vmGraph())), control: heldControl(), owner });
     mixer.start();
-    await Bun.sleep(1);
+    await settle(1);
     expect(mixer.getSnapshot()).toMatchObject({ available: true, outputs: [{ label: "Speakers" }, { label: "Headphones" }] });
     expect(mixer.getSnapshot().recording.map((each) => each.name)).toEqual(["pw-record", "Signal", "OBS"]);
     mixer.stop();

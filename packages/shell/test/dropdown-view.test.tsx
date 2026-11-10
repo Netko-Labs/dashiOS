@@ -3,6 +3,7 @@ import { LIGHT_SURFACE, lightColors, MENU } from "@dashi/ui";
 import { type NativeTransport, render } from "@mirinjs/metal";
 import type { MenuEntry } from "../src/menus/model.ts";
 import { DropdownMenu } from "../src/menus/view.tsx";
+import { settle } from "./support/time.ts";
 
 // 0.6 menus: the menu bar's dropdown drew its own rows (22 tall, 6 in, a 14 gutter) and a white edge that
 // vanished on a light window. It draws every menu's row now, with the menus' edge, and stays on its screen.
@@ -31,7 +32,7 @@ test("the menu bar's dropdown draws every menu's rows and edge, inside the scree
     { kind: "item", label: "Can't", action: null },
   ];
   const root = render(<DropdownMenu entries={entries} x={1250} room={{ width: 1280, height: 772 }} onChoose={() => {}} onClose={() => {}} />, transport);
-  await new Promise((done) => setTimeout(done, 20));
+  await settle();
   const tree = JSON.parse(trees.at(-1) ?? "{}") as Drawn;
   const panel = find(tree, root.nodeId("menu-panel") ?? "");
   // Solid: the card ground under the menu's tint, so the window under it never ghosts through.

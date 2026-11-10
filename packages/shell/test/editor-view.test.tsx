@@ -6,7 +6,9 @@ import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { EditorModel } from "../apps/editor/model.ts";
 import { DEFAULT_PREFS } from "../apps/editor/prefs.ts";
 import { EditorWindow } from "../apps/editor/view.tsx";
-import { settle } from "./support/time.ts";
+import { fakeClockEachTest, settle, shows, until } from "./support/time.ts";
+
+fakeClockEachTest();
 
 // The window mounted on a stand-in for the Metal host: what it sends, and events sent back as the host would.
 let dir = "";
@@ -81,13 +83,11 @@ test("an Untitled document is a draft, counted once typing pauses; the Save shee
   // The chip ends on the toolbar's right edge (paddingRight 12), under Find.
   expect(host.trees.at(-1)).toMatch(new RegExp(`"id":"${root.nodeId("counts")}"[^}]*"absolute":true,"right":12,`));
   expect(host.trees.at(-1)).toContain('"paddingRight":12,"borderBottom":1,"height":38');
-  await new Promise((done) => setTimeout(done, 350));
+  await settle(350);
   expect(host.trees.at(-1)).toContain("1 line · 2 words");
 
   // Save on an Untitled document asks where: Files' chooser, in the home folder, the name ready.
-  const save = root.nodeId("save");
-  if (!save) throw new Error("no save button");
-  host.emit({ type: "press", nodeId: save });
+  host.emit({ type: "press", nodeId: root.nodeId("save") as string });
   await settle(80);
   const field = root.nodeId("chooser:name");
   if (!field) throw new Error("no Save As chooser");
@@ -117,18 +117,15 @@ test("Save As asks before replacing another file, with Replace in ume", async ()
   model.edit("new text");
   await settle();
   host.emit({ type: "press", nodeId: root.nodeId("save") as string });
-  await settle();
-  await settle(50);
-  const field = root.nodeId("chooser:name") as string;
+  const field = await shows(root, "chooser:name");
   host.emit({ type: "change", nodeId: field, value: "taken.txt" });
   await settle();
   host.emit({ type: "submit", nodeId: field, value: "taken.txt" });
-  await settle();
+  const replace = await shows(root, "chooser:replace:ok");
   expect(readFileSync(existing, "utf8")).toBe("keep me");
   expect(host.trees.at(-1)).toContain("already exists");
-  host.emit(press(root.nodeId("chooser:replace:ok") as string));
-  await settle();
-  expect(readFileSync(existing, "utf8")).toBe("new text");
+  host.emit(press(replace));
+  await until(() => readFileSync(existing, "utf8") === "new text", "the file to be replaced");
   root.unmount();
 });
 
@@ -156,17 +153,13 @@ test("Open takes an untouched window's place, and opens another window otherwise
   // Open is Files' chooser: Home in its sidebar, the file's icon, then Open.
   const openWith = async (path: string): Promise<void> => {
     host.emit({ type: "press", nodeId: root.nodeId("open") as string });
-    await settle(60);
-    host.emit(press(root.nodeId("place:home") as string));
-    await settle(60);
-    host.emit(press(root.nodeId(`item:${path}`) as string));
-    await settle();
-    host.emit(press(root.nodeId("chooser:accept") as string));
-    await settle();
+    host.emit(press(await shows(root, "place:home")));
+    host.emit(press(await shows(root, `item:${path}`)));
+    host.emit(press(await shows(root, "chooser:accept")));
+    await until(() => root.nodeId("chooser:accept") === undefined && (model.getSnapshot().path === path || opened.length > 0), "the file to open");
   };
   host.emit({ type: "press", nodeId: root.nodeId("open") as string });
-  await settle(60);
-  host.emit(press(root.nodeId("chooser:cancel") as string));
+  host.emit(press(await shows(root, "chooser:cancel")));
   await settle();
   expect(root.nodeId("chooser:cancel")).toBeUndefined();
 

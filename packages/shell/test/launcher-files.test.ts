@@ -16,6 +16,7 @@ import {
   readToEnd,
 } from "../src/local-search.ts";
 import { type PrivateBus, startPrivateBus } from "./private-bus.ts";
+import { flush } from "./support/time.ts";
 
 /** Rows in TinySPARQL's cursor format, as the endpoint writes them (host byte order; null is unbound). */
 function encodeCursor(rows: readonly (readonly (string | null)[])[]): Uint8Array {
@@ -153,7 +154,7 @@ describe("one question at a time", () => {
     expect(await ter).toBe(SUPERSEDED);
     releases.shift()?.();
     expect(await te).toBe("hits for te");
-    await Bun.sleep(0);
+    await flush();
     releases.shift()?.();
     expect(await term).toBe("hits for term");
     expect(ran).toEqual(["te", "term"]);
@@ -178,7 +179,7 @@ describe("one question at a time", () => {
     expect(await second).toEqual([]);
     release();
     await first;
-    await Bun.sleep(0);
+    await flush();
     release();
     await third;
     expect(asked).toEqual(["te", "term"]);

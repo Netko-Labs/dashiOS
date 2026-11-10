@@ -21,6 +21,7 @@ import {
 import { insights } from "../src/battery/insights.ts";
 import { BatteryMonitor } from "../src/battery/monitor.ts";
 import type { PowerSupply } from "../src/system/battery.ts";
+import { flush } from "./support/time.ts";
 
 const NOW = 1_800_000_000;
 const minute = (minutesAgo: number, fields: Partial<Sample> = {}): Sample => ({
@@ -208,7 +209,7 @@ test("the monitor samples the battery, measures the apps, and publishes insights
   clock += 30;
   // The second look at the apps is a timer's; drive it by hand.
   (monitor as unknown as { look(): void }).look();
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await flush();
   const state = monitor.getSnapshot();
   monitor.stop();
   expect(state.available).toBe(true);
