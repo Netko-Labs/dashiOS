@@ -14,8 +14,7 @@
  */
 
 import type { CompositorWindow, Params } from "../compositor.ts";
-import type { Atspi } from "./atspi/client.ts";
-import { limits, type Placed, passwordFields, type Rect, toWindow } from "./atspi/tree.ts";
+import { type Atspi, limits, type Placed, passwordFields, type Rect, toWindow } from "./atspi/index.ts";
 import { FillPrompts } from "./fill-prompts.ts";
 
 /** The name agents' captures use. */

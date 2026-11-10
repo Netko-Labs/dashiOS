@@ -7,7 +7,7 @@
  * logs, or shows in the menu bar holds a secret.
  */
 
-import type { Placed } from "../atspi/tree.ts";
+import type { Placed } from "../atspi/index.ts";
 import { type ToolResult, text, toolError } from "../context.ts";
 import type { Payload } from "../desktop/index.ts";
 import { checkField, type FieldInfo } from "./field-check.ts";

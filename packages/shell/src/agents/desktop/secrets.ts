@@ -7,7 +7,7 @@
 
 import { closeSync, openSync, readSync } from "node:fs";
 import type { CompositorWindow } from "../../compositor.ts";
-import { fieldAt, focusedField, limits, type Placed, type Rect, toWindow } from "../atspi/tree.ts";
+import { fieldAt, focusedField, limits, type Placed, type Rect, toWindow } from "../atspi/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import { type BrokerContext, fillCode, signIn } from "../secrets/broker.ts";
 import { payWith } from "../secrets/pay.ts";

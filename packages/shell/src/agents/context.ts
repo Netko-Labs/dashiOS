@@ -3,8 +3,7 @@
 import type { BrowserLink } from "../browser/bridge.ts";
 import type { Compositor } from "../compositor.ts";
 import type { Arrange, Tile } from "../layout.ts";
-import type { Atspi } from "./atspi/client.ts";
-import type { Placed, Rect } from "./atspi/tree.ts";
+import type { Atspi, Placed, Rect } from "./atspi/index.ts";
 import type { Question } from "./confirm.ts";
 import type { Desktop, Hands } from "./desktop/index.ts";
 import type { AgentMask } from "./mask.ts";

@@ -6,7 +6,7 @@
  * person presses Done, and blanks that window in agents' pictures meanwhile.
  */
 
-import type { Placed, Rect } from "../atspi/tree.ts";
+import type { Placed, Rect } from "../atspi/index.ts";
 import type { SecretsRun } from "../context.ts";
 import type { AgentUi, Who } from "../presence.ts";
 import type { Call } from "../tools/index.ts";

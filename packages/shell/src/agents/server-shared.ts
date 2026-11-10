@@ -1,7 +1,7 @@
 /** What every connection of the agents server shares: the login sources, the accessibility bus, and the mask over what an agent's pictures must not show. */
 
 import type { Compositor } from "../compositor.ts";
-import { Atspi } from "./atspi/client.ts";
+import { Atspi } from "./atspi/index.ts";
 import { AgentMask } from "./mask.ts";
 import type { SecretsShared } from "./secrets/session-secrets.ts";
 import type { LoginSource } from "./secrets/sources.ts";
