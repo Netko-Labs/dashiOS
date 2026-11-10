@@ -2,14 +2,12 @@
 //! line. The app's side is packages/shell/apps/terminal/engine.ts; the two
 //! change together.
 
-mod color;
 mod output;
 #[cfg(test)]
 mod tests;
 
 use serde::Deserialize;
 
-pub(crate) use color::{hex, parse_hex};
 pub(crate) use output::{Cursor, Frame, Line, Mark, Output, Span};
 
 /// From the app (stdin).
@@ -90,4 +88,19 @@ pub(crate) enum Phase {
     Down,
     Move,
     Up,
+}
+
+/// `#rrggbb`, as the app writes colors.
+pub(crate) fn hex(r: u8, g: u8, b: u8) -> String {
+    format!("#{r:02x}{g:02x}{b:02x}")
+}
+
+/// `#rrggbb` as its three channels; None for anything else.
+pub(crate) fn parse_hex(text: &str) -> Option<(u8, u8, u8)> {
+    let digits = text.strip_prefix('#')?;
+    if digits.len() != 6 || !digits.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    let channel = |at: usize| u8::from_str_radix(&digits[at..at + 2], 16).ok();
+    Some((channel(0)?, channel(2)?, channel(4)?))
 }
