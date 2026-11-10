@@ -3,12 +3,12 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
-import { fitFontSize, textEms } from "../apps/calculator/format.ts";
-import { MIN_SIZE, PAD, TAPE_WIDTH } from "../apps/calculator/layout.ts";
-import { EN_US } from "../apps/calculator/locale.ts";
-import type { Remembered } from "../apps/calculator/store.ts";
-import { CalculatorWindow } from "../apps/calculator/view.tsx";
-import { resultWords } from "../apps/calculator/words.ts";
+import { fitFontSize, textEms } from "../apps/calculator/lib/format.ts";
+import { MIN_SIZE, PAD, TAPE_WIDTH } from "../apps/calculator/lib/layout.ts";
+import { EN_US } from "../apps/calculator/lib/locale.ts";
+import type { Remembered } from "../apps/calculator/lib/store.ts";
+import { CalculatorWindow } from "../apps/calculator/lib/view.tsx";
+import { resultWords } from "../apps/calculator/lib/words.ts";
 import type { Clipboard, Size } from "../apps/kit/index.ts";
 import { fakeClockEachTest, settle } from "./support/time.ts";
 

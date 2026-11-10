@@ -2,11 +2,10 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { lineCount, lineStart } from "../apps/editor/find.ts";
-import { EditorModel } from "../apps/editor/model.ts";
-import { DEFAULT_PREFS, type EditorPrefs } from "../apps/editor/prefs.ts";
-import { countsLine, findHighlights, findPlace, titleDetail } from "../apps/editor/status.ts";
-import { gutterWidth } from "../apps/editor/text-area.tsx";
+import { lineCount, lineStart } from "../apps/editor/lib/find.ts";
+import { EditorModel } from "../apps/editor/lib/model.ts";
+import { DEFAULT_PREFS, type EditorPrefs } from "../apps/editor/lib/prefs.ts";
+import { countsLine, findHighlights, findPlace, titleDetail } from "../apps/editor/lib/status.ts";
 import {
   AUTO_EVERY,
   MAX_VERSIONS,
@@ -17,7 +16,8 @@ import {
   versionKindLabel,
   versionsDir,
   versionWhen,
-} from "../apps/editor/versions.ts";
+} from "../apps/editor/lib/versions.ts";
+import { gutterWidth } from "../apps/editor/lib/views/text-area.tsx";
 
 let dir = "";
 let clock = 0;

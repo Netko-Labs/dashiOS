@@ -2,7 +2,8 @@
 
 import { startFolder, startName } from "../../../src/shared/files/chooser/accept.ts";
 import type { ChooserRequest } from "../../../src/shared/files/chooser/request.ts";
-import { type Env, systemEnv } from "../env.ts";
+import type { Env } from "../env.ts";
+import { systemEnv } from "../env.ts";
 import { ChooserModel, type ChooserOptions } from "./model.ts";
 
 /** A chooser model for `request`, listing at once; the caller stops it when it is answered. */

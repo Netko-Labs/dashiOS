@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { NotesModel } from "../apps/notes/model.ts";
+import { NotesModel } from "../apps/notes/lib/model.ts";
 import { NotesStore } from "../src/shared/notes/store.ts";
 
 let root = "";

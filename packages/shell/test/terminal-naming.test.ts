@@ -2,11 +2,11 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { engineArgs, integrationDir, splitCommand } from "../apps/terminal/engine.ts";
-import { lineHeightFor, stepFontSize } from "../apps/terminal/line.tsx";
-import { commandName, folderName, localFolder, type Naming, renamed, tabName, UNNAMED } from "../apps/terminal/naming.ts";
-import { EMPTY_SCREEN } from "../apps/terminal/screen.ts";
-import { ScreenStore } from "../apps/terminal/store.ts";
+import { engineArgs, integrationDir, splitCommand } from "../apps/terminal/lib/engine.ts";
+import { commandName, folderName, localFolder, type Naming, renamed, tabName, UNNAMED } from "../apps/terminal/lib/naming.ts";
+import { EMPTY_SCREEN } from "../apps/terminal/lib/screen.ts";
+import { ScreenStore } from "../apps/terminal/lib/store.ts";
+import { lineHeightFor, stepFontSize } from "../apps/terminal/lib/views/line.tsx";
 
 const HOME = "/home/alexk";
 
@@ -99,7 +99,7 @@ test("the command reaches the Terminal as Bun runs it (Bun drops a `--` after th
   const script = join(dir, "argv.ts");
   writeFileSync(
     script,
-    `import { splitCommand } from ${JSON.stringify(join(import.meta.dir, "../apps/terminal/engine.ts"))};\nconsole.log(JSON.stringify(splitCommand(Bun.argv.slice(2))));\n`,
+    `import { splitCommand } from ${JSON.stringify(join(import.meta.dir, "../apps/terminal/lib/engine.ts"))};\nconsole.log(JSON.stringify(splitCommand(Bun.argv.slice(2))));\n`,
   );
   try {
     const run = Bun.spawnSync([process.execPath, script, "-e", "/usr/bin/top", "-d", "1"]);

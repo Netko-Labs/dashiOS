@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { parseOpenArgs } from "../apps/activity-monitor/args.ts";
-import { COLUMNS, DEFAULT_SORT } from "../apps/activity-monitor/columns.ts";
-import { appRoots, buildLines, lineForApp } from "../apps/activity-monitor/lines.ts";
-import { monitorMenus } from "../apps/activity-monitor/menus.ts";
-import { quitRefusal } from "../apps/activity-monitor/policy.ts";
-import { lineRefusal, sendQuit } from "../apps/activity-monitor/quit.ts";
-import type { ProcessRow } from "../apps/activity-monitor/sample.ts";
+import { parseOpenArgs } from "../apps/activity-monitor/lib/args.ts";
+import { COLUMNS, DEFAULT_SORT } from "../apps/activity-monitor/lib/columns.ts";
+import { appRoots, buildLines, lineForApp } from "../apps/activity-monitor/lib/lines.ts";
+import { monitorMenus } from "../apps/activity-monitor/lib/menus.ts";
+import { quitRefusal } from "../apps/activity-monitor/lib/policy.ts";
+import { lineRefusal, sendQuit } from "../apps/activity-monitor/lib/quit.ts";
+import type { ProcessRow } from "../apps/activity-monitor/lib/sample.ts";
 import type { CompositorWindow } from "../src/compositor.ts";
 import { energyArgs, openActivityMonitor } from "../src/menus/lib/activity-monitor.ts";
 import { isOpenArgs, parseShellMessage } from "../src/shared/app-menus/protocol.ts";

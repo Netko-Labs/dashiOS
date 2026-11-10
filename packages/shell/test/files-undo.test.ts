@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, w
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { UndoStack } from "@dashi/ui";
-import { copyAction, moveAction, newFolderAction, renameAction, trashAction, type UndoEnv } from "../apps/files/undoable.ts";
+import { copyAction, moveAction, newFolderAction, renameAction, trashAction, type UndoEnv } from "../apps/files/lib/operations/undoable.ts";
 import type { Exec } from "../src/shared/files/exec.ts";
 import { findTrashed } from "../src/shared/files/trashops.ts";
 

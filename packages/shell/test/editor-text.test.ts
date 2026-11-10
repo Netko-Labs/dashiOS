@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { decodeText, detectLineEnding, encodeText, normalizeLineEndings } from "../apps/editor/codec.ts";
-import { findMatches, lineOf, MATCH_LIMIT, matchAtOrAfter, replaceAll, stepMatch } from "../apps/editor/find.ts";
-import { apply, diff, History, invert, JOIN_MS, join } from "../apps/editor/history.ts";
-import { formatStats, textStats } from "../apps/editor/stats.ts";
+import { decodeText, detectLineEnding, encodeText, normalizeLineEndings } from "../apps/editor/lib/codec.ts";
+import { findMatches, lineOf, MATCH_LIMIT, matchAtOrAfter, replaceAll, stepMatch } from "../apps/editor/lib/find.ts";
+import { apply, diff, History, invert, JOIN_MS, join } from "../apps/editor/lib/history.ts";
+import { formatStats, textStats } from "../apps/editor/lib/stats.ts";
 
 const bytes = (...values: number[]): Uint8Array => new Uint8Array(values);
 const utf8 = (text: string): Uint8Array => new TextEncoder().encode(text);

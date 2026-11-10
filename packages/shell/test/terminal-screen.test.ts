@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { applyFrame, cellAt, cellText, EMPTY_SCREEN, type Frame, gridFor, parseEngineLine, type Span, scrolledBack } from "../apps/terminal/screen.ts";
+import { applyFrame, cellAt, cellText, EMPTY_SCREEN, type Frame, gridFor, parseEngineLine, type Span, scrolledBack } from "../apps/terminal/lib/screen.ts";
 
 const frame = (overrides: Partial<Frame>): Frame => ({
   cols: 4,

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { fitMiddle, keepExtension, nameParts, textWidth, tileName } from "../apps/files/tile-name.ts";
+import { fitMiddle, keepExtension, nameParts, textWidth, tileName } from "../apps/files/lib/tile-name.ts";
 
 // Names under Files' icons (review 17: "confidential.p" over "df"): broken at a word or a dot, else cut in the middle.
 const ROOM = 84 / 12;

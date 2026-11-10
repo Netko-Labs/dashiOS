@@ -3,12 +3,12 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
-import { titleWidth } from "../apps/preview/fold.ts";
-import { InfoSheet } from "../apps/preview/sheets.tsx";
-import { EmptyView, RECENT_FOLDER_WIDTH } from "../apps/preview/states.tsx";
-import { STRIP } from "../apps/preview/strip.tsx";
-import { PreviewWindow } from "../apps/preview/view.tsx";
-import { Viewer } from "../apps/preview/viewer.ts";
+import { titleWidth } from "../apps/preview/lib/fold.ts";
+import { Viewer } from "../apps/preview/lib/viewer.ts";
+import { InfoSheet } from "../apps/preview/lib/views/sheets.tsx";
+import { EmptyView, RECENT_FOLDER_WIDTH } from "../apps/preview/lib/views/states.tsx";
+import { STRIP } from "../apps/preview/lib/views/strip.tsx";
+import { PreviewWindow } from "../apps/preview/lib/views/view.tsx";
 import { settle } from "./support/time.ts";
 
 // Preview's chrome as the layout audit found it: the strip gives a narrow window to the picture, the name gives

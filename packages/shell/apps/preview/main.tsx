@@ -9,11 +9,11 @@
 import { resolve } from "node:path";
 import { METAL_HOST } from "../../src/shared/apps/index.ts";
 import { menusClient, runApp } from "../kit/index.ts";
-import { parseArgs } from "./args.ts";
-import { cacheRoot, pruneCache } from "./cache.ts";
-import { handToEmpty, listenWhileEmpty } from "./instance.ts";
-import { PREVIEW_MIN_SIZE, PREVIEW_SIZE, PreviewWindow } from "./view.tsx";
-import { Viewer } from "./viewer.ts";
+import { parseArgs } from "./lib/args.ts";
+import { cacheRoot, pruneCache } from "./lib/cache.ts";
+import { handToEmpty, listenWhileEmpty } from "./lib/instance.ts";
+import { Viewer } from "./lib/viewer.ts";
+import { PREVIEW_MIN_SIZE, PREVIEW_SIZE, PreviewWindow } from "./lib/views/view.tsx";
 
 const args = parseArgs(Bun.argv.slice(2));
 const first = args.files[0];

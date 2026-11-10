@@ -4,9 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as metal from "@mirinjs/metal";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
-import { EN_US } from "../apps/calculator/locale.ts";
-import { FRESH } from "../apps/calculator/store.ts";
-import { CalculatorWindow } from "../apps/calculator/view.tsx";
+import { EN_US } from "../apps/calculator/lib/locale.ts";
+import { FRESH } from "../apps/calculator/lib/store.ts";
+import { CalculatorWindow } from "../apps/calculator/lib/view.tsx";
 import type { Clipboard } from "../apps/kit/index.ts";
 import { settle } from "./support/time.ts";
 

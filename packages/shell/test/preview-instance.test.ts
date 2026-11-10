@@ -2,7 +2,7 @@ import { afterAll, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { handToEmpty, listenWhileEmpty, parseHandoff } from "../apps/preview/instance.ts";
+import { handToEmpty, listenWhileEmpty, parseHandoff } from "../apps/preview/lib/instance.ts";
 import { AppMenuStore } from "../src/app-menus/store.ts";
 import { parseClientMessage } from "../src/shared/app-menus/protocol.ts";
 

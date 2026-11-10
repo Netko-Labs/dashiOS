@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { runTool } from "../apps/preview/tools.ts";
+import { runTool } from "../apps/preview/lib/tools.ts";
 import { type Exec, exec } from "../src/shared/files/exec.ts";
 import { OPEN_TIMEOUT_MS, openDefault, openWithDefault } from "../src/shared/files/open.ts";
 

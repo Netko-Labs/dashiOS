@@ -3,9 +3,9 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
-import { fitLine, LIST_NARROW, LIST_WIDTH, NOTES_MIN_SIZE, notesLayout, noticeWidth, RAIL_WIDTH } from "../apps/notes/layout.ts";
-import { NotesModel } from "../apps/notes/model.ts";
-import { NotesWindow } from "../apps/notes/view.tsx";
+import { fitLine, LIST_NARROW, LIST_WIDTH, NOTES_MIN_SIZE, notesLayout, noticeWidth, RAIL_WIDTH } from "../apps/notes/lib/layout.ts";
+import { NotesModel } from "../apps/notes/lib/model.ts";
+import { NotesWindow } from "../apps/notes/lib/views/view.tsx";
 import { NotesStore } from "../src/shared/notes/store.ts";
 import { settle } from "./support/time.ts";
 

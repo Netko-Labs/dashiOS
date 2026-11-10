@@ -11,13 +11,13 @@ import { METAL_HOST } from "../../src/shared/apps/index.ts";
 import { expandHome, normalizePath, parentOf } from "../../src/shared/files/paths.ts";
 import { parseFileUri } from "../../src/shared/files/uri.ts";
 import { runApp } from "../kit/index.ts";
-import { parseArgs } from "./args.ts";
 import { systemEnv } from "./env.ts";
-import { folderAt, type Location } from "./location.ts";
-import { Operations } from "./operations.ts";
-import { readPrefs, writePrefs } from "./prefs.ts";
-import { FilesStore } from "./store.ts";
-import { FILES_SIZE, FilesWindow } from "./view.tsx";
+import { parseArgs } from "./lib/args.ts";
+import { folderAt, type Location } from "./lib/location.ts";
+import { Operations } from "./lib/operations/operations.ts";
+import { readPrefs, writePrefs } from "./lib/prefs.ts";
+import { FilesStore } from "./lib/store/store.ts";
+import { FILES_SIZE, FilesWindow } from "./lib/views/view.tsx";
 
 /**
  * Where the window opens: the first argument that names something here (a

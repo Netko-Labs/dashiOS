@@ -6,9 +6,9 @@
  */
 
 import { runApp, type Size } from "../kit/index.ts";
-import { leastSize, openingSize } from "./layout.ts";
-import { readRemembered } from "./store.ts";
-import { CalculatorWindow } from "./view.tsx";
+import { leastSize, openingSize } from "./lib/layout.ts";
+import { readRemembered } from "./lib/store.ts";
+import { CalculatorWindow } from "./lib/view.tsx";
 
 const remembered = readRemembered();
 // The window exists once runApp returns; until then a resize has nothing to ask.

@@ -18,9 +18,9 @@ import type { FileItem } from "../../../src/shared/files/items.ts";
 import { freeName, makeFolder, NEW_FOLDER_NAME, renamePath } from "../../../src/shared/files/ops.ts";
 import { parentOf } from "../../../src/shared/files/paths.ts";
 import type { Env } from "../env.ts";
-import { folderAt, type Location } from "../location.ts";
-import { type FilesPrefs, readPrefs } from "../prefs.ts";
-import { FilesStore } from "../store.ts";
+import { folderAt, type Location } from "../lib/location.ts";
+import { type FilesPrefs, readPrefs } from "../lib/prefs.ts";
+import { FilesStore } from "../lib/store/store.ts";
 
 export interface ChooserState {
   filter: Filter | null;
