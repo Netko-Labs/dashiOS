@@ -1,5 +1,5 @@
 /**
- * An app's own menus in Dashi's menu bar (src/app-menus/protocol.ts): one
+ * An app's own menus in Dashi's menu bar (src/shared/app-menus/protocol.ts): one
  * connection per process to `$XDG_RUNTIME_DIR/dashi-menus.sock`, the latest
  * menus sent whenever they change, and the shell's "select" handed to the
  * app. Outside Dashi (no socket) nothing is sent and nothing is chosen. When
@@ -16,10 +16,10 @@
 
 import { existsSync } from "node:fs";
 import { useEffect, useRef } from "react";
-import { type MenuSpec, menusSocketPath, parseMenus, parseShellMessage } from "../../src/app-menus/protocol.ts";
-import { LineBuffer } from "../../src/lines.ts";
+import { type MenuSpec, menusSocketPath, parseMenus, parseShellMessage } from "../../src/shared/app-menus/protocol.ts";
+import { LineBuffer } from "../../src/shared/io/lines.ts";
 
-export type { MenuItemSpec, MenuSpec } from "../../src/app-menus/protocol.ts";
+export type { MenuItemSpec, MenuSpec } from "../../src/shared/app-menus/protocol.ts";
 
 /** What the client needs of a socket. */
 export interface MenuSocket {

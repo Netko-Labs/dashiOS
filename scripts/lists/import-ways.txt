@@ -16,7 +16,6 @@
 1	packages/shell/apps/installer/helper.ts
 2	packages/shell/apps/installer/view.tsx
 1	packages/shell/apps/kit/appearance.ts
-3	packages/shell/apps/kit/menus.ts
 3	packages/shell/apps/kit/run.tsx
 2	packages/shell/apps/portal/access.tsx
 2	packages/shell/apps/portal/account.tsx
@@ -27,15 +26,13 @@
 2	packages/shell/apps/portal/file-chooser/index.tsx
 3	packages/shell/apps/portal/file-chooser/options.ts
 3	packages/shell/apps/portal/look.ts
-3	packages/shell/apps/portal/main.tsx
+2	packages/shell/apps/portal/main.tsx
 2	packages/shell/apps/portal/settings.ts
-1	packages/shell/apps/portal/shell.ts
-4	packages/shell/apps/portal/windows.ts
+3	packages/shell/apps/portal/windows.ts
 2	packages/shell/apps/preview/handlers.ts
 1	packages/shell/apps/preview/main.tsx
 1	packages/shell/apps/software/main.tsx
 1	packages/shell/apps/software/services.ts
-1	packages/shell/apps/terminal/engine.ts
 1	packages/shell/src/actions/copy.ts
 5	packages/shell/src/agents/desktop/files.ts
 1	packages/shell/src/agents/run.ts

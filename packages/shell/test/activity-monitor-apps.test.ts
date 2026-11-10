@@ -7,10 +7,10 @@ import { monitorMenus } from "../apps/activity-monitor/menus.ts";
 import { quitRefusal } from "../apps/activity-monitor/policy.ts";
 import { lineRefusal, sendQuit } from "../apps/activity-monitor/quit.ts";
 import type { ProcessRow } from "../apps/activity-monitor/sample.ts";
-import { isOpenArgs, parseShellMessage } from "../src/app-menus/protocol.ts";
 import type { CompositorWindow } from "../src/compositor.ts";
 import { energyArgs, openActivityMonitor } from "../src/menus/activity-monitor.ts";
 import { type AppIdentity, catalogFrom, flatpakId, identify, ownerOf, parseCmdline, programOf } from "../src/process-apps/index.ts";
+import { isOpenArgs, parseShellMessage } from "../src/shared/app-menus/protocol.ts";
 
 const FIREFOX = { id: "org.mozilla.firefox", name: "Firefox", icon: "/icons/firefox.png", exec: ["/usr/bin/firefox", "%u"] };
 const CODE = {

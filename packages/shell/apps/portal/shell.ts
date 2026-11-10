@@ -1,12 +1,12 @@
 /**
- * What dashi-portal asks the shell (src/portal-host/protocol.ts): holds,
+ * What dashi-portal asks the shell (src/shared/portal-host/protocol.ts): holds,
  * sheets, the Dock. Over its own session-bus connection, opened on first use
  * and again after a shell restart. When the shell is not there, holds fail
  * (the Inhibit request answers so) and dialogs open as ordinary windows.
  */
 
-import { PORTAL_HOST, SHELL_NAME, SHELL_PATH } from "../../src/portal-host/protocol.ts";
 import { DBusConnection } from "../../src/shared/dbus/index.ts";
+import { PORTAL_HOST, SHELL_NAME, SHELL_PATH } from "../../src/shared/portal-host/protocol.ts";
 
 export interface ShellLink {
   inhibit(appId: string, reason: string, flags: number): Promise<number>;

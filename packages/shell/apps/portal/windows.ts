@@ -14,7 +14,7 @@ import { type NativeHostTransport, type NativeWindowOptions, render, spawnNative
 import type { ReactElement } from "react";
 import { METAL_HOST } from "../../src/apps.ts";
 import { shellHostOptions } from "../../src/metal-host.ts";
-import { PORTAL_APP_ID, parseParentWindow, sheetTitle } from "../../src/portal-host/protocol.ts";
+import { PORTAL_APP_ID, parseParentWindow, sheetTitle } from "../../src/shared/portal-host/protocol.ts";
 import { WarmHost } from "../../src/warm-host.ts";
 import type { ShellLink } from "./shell.ts";
 

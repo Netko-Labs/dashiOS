@@ -45,7 +45,7 @@ second is fine).
 | `icon` | | An absolute path to a `.png` or `.svg` file (up to 1 MB), drawn as it is at 16 × 16. A glyph or an icon, not both. |
 | `label` | | Text beside the picture, or alone (24 characters). |
 | `tooltip` | | Up to 160 characters. |
-| `menu` | | Rows, as the app menus' rows (`src/app-menus/protocol.ts`): `{"id","label","enabled"?,"checked"?}` or `{"type":"separator"}`; up to 40. Version 2 adds `{"type":"submenu","label","enabled"?,"items":[…]}`. |
+| `menu` | | Rows, as the app menus' rows (`src/shared/app-menus/protocol.ts`): `{"id","label","enabled"?,"checked"?}` or `{"type":"separator"}`; up to 40. Version 2 adds `{"type":"submenu","label","enabled"?,"items":[…]}`. |
 | `click` | | What a primary click does: `"menu"` opens the menu (the default when there is one), `"activate"` sends `activate`. A right-click always opens the menu. |
 | `attention` | | `true` marks the item with a dot until it is sent again without it. |
 

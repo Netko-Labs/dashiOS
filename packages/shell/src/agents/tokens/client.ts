@@ -7,7 +7,7 @@
  */
 
 import net from "node:net";
-import { LineBuffer } from "../../lines.ts";
+import { LineBuffer } from "../../shared/io/lines.ts";
 import type { ProxyGrant } from "./server.ts";
 
 const ANSWER_MS = 10_000;

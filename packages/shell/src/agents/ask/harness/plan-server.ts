@@ -18,7 +18,7 @@
 
 import { chmodSync, existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
-import { LineBuffer } from "../../../lines.ts";
+import { LineBuffer } from "../../../shared/io/lines.ts";
 import * as mcp from "../../mcp.ts";
 import { peerPid } from "../../peer.ts";
 import type { ModelCall, PlanTool } from "../answerer.ts";

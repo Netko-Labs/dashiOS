@@ -2,7 +2,7 @@
 
 import { fail, parseWindowId, type ToolDef, windowArg, windowProp } from "./define.ts";
 
-/** Longer than any title or label the bar takes (app-menus/protocol.ts). */
+/** Longer than any title or label the bar takes (shared/app-menus/protocol.ts). */
 const MAX_NAME = 200;
 
 const name = (value: unknown): string | null => {

@@ -147,7 +147,7 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
   window as `wayland:HANDLE` (an xdg-foreign export) or `x11:XID`. mirin's
   host can't import a foreign handle itself, so the shell does the
   parenting: before opening the window, dashi-portal tells the shell
-  (`dev.dashi.Shell.Portal1.ExpectSheet`, `src/portal-host/protocol.ts`) the
+  (`dev.dashi.Shell.Portal1.ExpectSheet`, `src/shared/portal-host/protocol.ts`) the
   one-off title it will have; when that window asks to be placed, the shell
   resolves the handle (IPC `window-for-handle`) and attaches the dialog to
   it (IPC `attach`). The compositor keeps a sheet under its parent's title
@@ -265,7 +265,7 @@ separate MIT programs, with structured arguments only; it links nothing.
 | shell ↔ dashi-comp | `$XDG_RUNTIME_DIR/dashi-comp.sock`, newline JSON | `docs/compositor-ipc.md` |
 | shell/apps ↔ Metal host | mirin's element-tree protocol over the host's pipes | `../mirin/docs/metal.md` |
 | Metal host ↔ dashi-comp | Wayland (xdg-shell for windows, layer-shell for shell surfaces) | |
-| app ↔ shell, menus | `$XDG_RUNTIME_DIR/dashi-menus.sock` | `src/app-menus/protocol.ts` |
+| app ↔ shell, menus | `$XDG_RUNTIME_DIR/dashi-menus.sock` | `src/shared/app-menus/protocol.ts` |
 | applet ↔ shell, menu bar extras | `$XDG_RUNTIME_DIR/dashi-applets.sock` (an installed applet: `dashi-applets/<id>/applets.sock`), newline JSON | `docs/applets.md` |
 | tray icon ↔ shell | D-Bus session bus: StatusNotifierWatcher/Item, dbusmenu | `src/tray/` |
 | app ↔ shell, "Show in folder" | D-Bus session bus: `org.freedesktop.FileManager1` (ShowFolders, ShowItems, ShowItemProperties), answered with Files windows | `src/file-manager.ts` |
@@ -283,7 +283,7 @@ separate MIT programs, with structured arguments only; it links nothing.
 | shell ↔ tuned-ppd | D-Bus system bus, the power-profiles API, on the shell's one kept system-bus connection (`src/system/system-bus.ts`) | `src/system/profiles.ts` |
 | kernel log → shell | `journalctl -k -b 0 -f -o json`, followed for a graphics card falling off the bus (Xid 79, pciehp Link Down on its port) | `src/graphics/lost-card.ts` |
 | xdg-desktop-portal → dashi-portal | D-Bus session bus: `org.freedesktop.impl.portal.*` at `/org/freedesktop/portal/desktop` | `apps/portal/` |
-| dashi-portal → shell | D-Bus session bus: `dev.dashi.Shell.Portal1` at `/dev/dashi/Shell` (holds, sheets, the Dock) | `src/portal-host/protocol.ts` |
+| dashi-portal → shell | D-Bus session bus: `dev.dashi.Shell.Portal1` at `/dev/dashi/Shell` (holds, sheets, the Dock) | `src/shared/portal-host/protocol.ts` |
 | app → shell, keep awake | D-Bus session bus: `org.freedesktop.ScreenSaver` (Inhibit, UnInhibit) | `src/inhibit/screensaver.ts` |
 | program → shell, actions | D-Bus session bus: `dev.dashi.Shell.Actions1` at `/dev/dashi/Shell` (List, Describe, Run; a link's consent) | `docs/actions.md`, `src/actions/dbus.ts` |
 | shell → GNOME search providers | D-Bus session bus: `org.gnome.Shell.SearchProvider2`, read as the launcher's slow sources (results only) | `src/search-providers/` |

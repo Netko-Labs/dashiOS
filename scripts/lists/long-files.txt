@@ -75,7 +75,6 @@
 318	packages/shell/src/agents/sandbox.ts
 320	packages/shell/src/agents/secrets/vault.ts
 537	packages/shell/src/agents/session.ts
-313	packages/shell/src/app-menus/protocol.ts
 392	packages/shell/src/applets/connection.ts
 306	packages/shell/src/applets/controls.ts
 340	packages/shell/src/apps.ts
@@ -98,6 +97,7 @@
 355	packages/shell/src/settings-app/sidebar.tsx
 664	packages/shell/src/settings-app/store.ts
 484	packages/shell/src/settings.ts
+313	packages/shell/src/shared/app-menus/protocol.ts
 386	packages/shell/src/shared/calendar/ics.ts
 305	packages/shell/src/shared/calendar/store.ts
 328	packages/shell/src/shared/dbus/connection.ts

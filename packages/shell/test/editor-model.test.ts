@@ -5,11 +5,11 @@ import { join } from "node:path";
 import { editorMenus, type MenuContext } from "../apps/editor/menus.ts";
 import { EditorModel } from "../apps/editor/model.ts";
 import { DEFAULT_PREFS, type EditorPrefs } from "../apps/editor/prefs.ts";
-import { parseMenus } from "../src/app-menus/protocol.ts";
 import { reservedBy } from "../src/app-menus/reserved.ts";
 import { chordFromShortcut } from "../src/app-menus/shortcut.ts";
 import { defaultHandlers } from "../src/default-handlers.ts";
 import { EDITOR_MIME_TYPES, FIRST_PARTY } from "../src/first-party.ts";
+import { parseMenus } from "../src/shared/app-menus/protocol.ts";
 
 let dir = "";
 let clock = 0;

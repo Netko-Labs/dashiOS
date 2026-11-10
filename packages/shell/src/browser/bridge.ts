@@ -11,7 +11,7 @@ import { chmodSync, existsSync, readFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { peerPid } from "../agents/peer.ts";
 import { inAgentScope } from "../agents/sandbox.ts";
-import { LineBuffer } from "../lines.ts";
+import { LineBuffer } from "../shared/io/lines.ts";
 import { EXTENSION_ID } from "./native.ts";
 import { type BrowserMethod, type HostHello, parseFromBrowser } from "./protocol.ts";
 

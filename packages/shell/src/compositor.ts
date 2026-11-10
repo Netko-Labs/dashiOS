@@ -7,7 +7,7 @@
  */
 
 import { join } from "node:path";
-import { LineBuffer } from "./lines.ts";
+import { LineBuffer } from "./shared/io/lines.ts";
 import type { WallpaperRequest } from "./wallpaper/catalog.ts";
 
 export interface Frame {

@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+
 /**
  * dashi-share-picker: xdg-desktop-portal-wlr's `chooser_cmd` (chooser_type
  * simple; session/xdg-desktop-portal-wlr.conf). It asks the running shell
@@ -10,8 +11,8 @@
  * "no such command").
  */
 
-import { LineBuffer } from "../src/lines.ts";
 import { MAX_LINE, parseAnswer, socketPath } from "../src/share-picker/protocol.ts";
+import { LineBuffer } from "../src/shared/io/lines.ts";
 
 const path = socketPath();
 if (!path) {

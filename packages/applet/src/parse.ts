@@ -3,7 +3,7 @@
  * untrusted (another process, a file from the network), so a value is
  * narrowed field by field and anything unexpected is refused with a reason a
  * person can act on. The same rules as the app menus' (shell's
- * src/app-menus/protocol.ts), which applets v1 used.
+ * src/shared/app-menus/protocol.ts), which applets v1 used.
  */
 
 /** A message, or part of one, that was refused, and why. */
