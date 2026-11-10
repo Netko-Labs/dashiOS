@@ -8,6 +8,7 @@ import { type KeyChord, resolveChord } from "../src/keymap-match.ts";
 import type { Tile } from "../src/layout.ts";
 import { buildMenu, isEnabled, type MenuContext, type MenuEntry } from "../src/menus/model.ts";
 import { type Requests, runBinding, type ShellActions } from "../src/shortcuts.ts";
+import { fakeCompositor } from "./support/compositor.ts";
 
 const files: CompositorWindow = {
   id: 7,
@@ -100,7 +101,7 @@ describe("the ⌃❖ keys", () => {
       hardware: { run: async () => true },
       runAddress: async (address: string, window: number | null) => void ran.push([address, window]),
     } as unknown as ShellActions;
-    const compositor = { request: async () => ({}), windows: async () => [] } as unknown as Requests;
+    const compositor: Requests = fakeCompositor(async () => ({}), { windows: async () => [] });
     await runBinding("dashi://window/arrange/left", 7, compositor, actions);
     await runBinding("dashi://window/full-screen", null, compositor, actions);
     // Before the hardware keys, which would have taken anything.

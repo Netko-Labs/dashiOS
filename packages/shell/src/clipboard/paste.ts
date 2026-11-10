@@ -7,6 +7,7 @@
  */
 
 import { readFileSync } from "node:fs";
+import type { Compositor } from "../compositor.ts";
 import { TERMINALS } from "../keymap.ts";
 import type { ClipEntry } from "./history.ts";
 import type { ClipboardIo } from "./io.ts";
@@ -21,8 +22,8 @@ export interface PasteDeps {
   io: ClipboardIo;
   watch: Pick<ClipboardWatch, "expect" | "nextCopy">;
   imagePath(entry: ClipEntry): string | null;
-  /** A compositor request (`send-keys`, `focus`). */
-  request(method: string, params: Record<string, unknown>): Promise<unknown>;
+  /** Keys to a window (the paste chord). */
+  sendKeys: Compositor["sendKeys"];
 }
 
 /** The chord that pastes in an app: terminals keep ⌃V for the program inside. */
@@ -58,7 +59,7 @@ export async function pasteEntry(entry: ClipEntry, window: { id: number; appId: 
   if (!(await copyEntry(entry, deps))) return false;
   await Bun.sleep(FOCUS_MS);
   try {
-    await deps.request("send-keys", { window: window.id, chord: pasteChord(window.appId) });
+    await deps.sendKeys({ window: window.id, chord: pasteChord(window.appId) });
     return true;
   } catch {
     return false;

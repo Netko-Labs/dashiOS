@@ -17,10 +17,10 @@ import type { Battery } from "../../system/battery.ts";
 import type { WallpaperChoice } from "../catalog.ts";
 import type { WallpaperSync } from "../sync.ts";
 import { type LiveChoice, resolveLive } from "./choice.ts";
-import { isCovered, type PauseReason, parseScreenAreas, pauseReason, type ScreenArea } from "./pause.ts";
+import { isCovered, type PauseReason, pauseReason, type ScreenArea, screenAreas } from "./pause.ts";
 
 export interface LiveHost {
-  request: Compositor["request"];
+  outputs: Compositor["outputs"];
   session: Compositor["session"];
   windows(): Promise<CompositorWindow[]>;
   on(listener: (event: CompositorEvent) => void): () => void;
@@ -132,7 +132,7 @@ export class LiveWallpaperController {
 
   private async loadScreens(): Promise<void> {
     try {
-      this.screens = parseScreenAreas(await this.options.compositor.request("outputs"));
+      this.screens = screenAreas(await this.options.compositor.outputs());
     } catch (error) {
       this.log(`could not list the screens for the wallpaper: ${error instanceof Error ? error.message : String(error)}`);
     }

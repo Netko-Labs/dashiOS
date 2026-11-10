@@ -12,7 +12,7 @@
 import type { Compositor } from "../compositor.ts";
 import { leavesRoom } from "../displays.ts";
 import type { LidSource } from "./lid.ts";
-import { type Mode, type Monitor, modeFor, parseMonitors, type Rotation, setKey } from "./monitors.ts";
+import { type Mode, type Monitor, modeFor, monitorsOf, type Rotation, setKey } from "./monitors.ts";
 import { type ConfigRequest, configOf, layoutOf, planRestore, type ScaleFor, toWire } from "./plan.ts";
 import type { DisplayStore } from "./saved.ts";
 
@@ -42,7 +42,7 @@ export interface ApplyResult {
 }
 
 export interface DisplayManagerOptions {
-  compositor: Pick<Compositor, "request" | "on">;
+  compositor: Pick<Compositor, "outputs" | "outputsConfig" | "on">;
   store: DisplayStore;
   scaleFor: ScaleFor;
   lid?: LidSource | null;
@@ -119,7 +119,7 @@ export class DisplayManager {
   }
 
   async monitors(): Promise<Monitor[]> {
-    return parseMonitors(await this.options.compositor.request("outputs"));
+    return monitorsOf(await this.options.compositor.outputs());
   }
 
   /**
@@ -137,7 +137,7 @@ export class DisplayManager {
       const plan = planRestore(monitors, this.options.store.get(key), { lidClosed: this.lidClosed, scaleFor: this.options.scaleFor });
       if (!plan) return;
       try {
-        await this.options.compositor.request("outputs-config", toWire(plan));
+        await this.options.compositor.outputsConfig(toWire(plan));
       } catch (error) {
         console.error("dashi-shell: could not restore the display arrangement:", error instanceof Error ? error.message : error);
         return;
@@ -156,7 +156,7 @@ export class DisplayManager {
     return this.serial(async (): Promise<ApplyResult> => {
       const before = await this.monitors();
       try {
-        await this.options.compositor.request("outputs-config", toWire(request));
+        await this.options.compositor.outputsConfig(toWire(request));
       } catch (error) {
         return { kept: false, reverted: false, error: error instanceof Error ? error.message : String(error) };
       }
@@ -165,7 +165,7 @@ export class DisplayManager {
       if (options.confirm && this.options.ask) {
         const keep = await this.trial(summary);
         if (!keep) {
-          await this.options.compositor.request("outputs-config", toWire(configOf(before))).catch((error) => {
+          await this.options.compositor.outputsConfig(toWire(configOf(before))).catch((error) => {
             console.error("dashi-shell: could not put the displays back:", error instanceof Error ? error.message : error);
           });
           return { kept: false, reverted: true };

@@ -25,7 +25,7 @@ export interface DockControllerDeps {
   pins: Pick<PinStore, "pin" | "unpin">;
   toplevels: Pick<ToplevelStore, "act" | "getSnapshot" | "subscribe">;
   /** Null without dashi-comp: Hide does nothing. */
-  compositor: Pick<Compositor, "request" | "windows"> | null;
+  compositor: Pick<Compositor, "hide" | "close" | "windows"> | null;
   /** Starts the app; its pid, or null when it could not be started. */
   launch(app: App): number | null;
   /** The Dock's settings: its menu changes them. Without it those rows do nothing. */
@@ -124,7 +124,7 @@ export class DockController {
         // Hiding is the compositor's: one window of the app hides them all.
         const windows = await (deps.compositor?.windows() ?? Promise.resolve([]));
         const target = windows.find((window) => window.state === "normal" && appKey(deps.catalog, window) === action.key);
-        if (target) await deps.compositor?.request("hide", { window: target.id });
+        if (target) await deps.compositor?.hide({ window: target.id });
         return;
       }
     }
@@ -151,7 +151,7 @@ export class DockController {
     }
     for (const window of windows) {
       deps.appQuitting?.(window.pid);
-      await deps.compositor?.request("close", { window: window.id }).catch(() => {});
+      await deps.compositor?.close({ window: window.id }).catch(() => {});
     }
   }
 

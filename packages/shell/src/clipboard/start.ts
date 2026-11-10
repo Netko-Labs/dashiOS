@@ -27,7 +27,7 @@ import { ClipboardWatch, fileUris } from "./watch.ts";
 const AGENT_TEXT = 4000;
 
 export interface ClipboardOptions {
-  compositor: Pick<Compositor, "on" | "windows" | "request"> | null;
+  compositor: Pick<Compositor, "on" | "windows" | "sendKeys" | "snippetErase" | "snippets"> | null;
   settings: SettingsStore;
   /** The screen is being shared or recorded, or locked: nothing is kept meanwhile. */
   paused(): boolean;
@@ -78,6 +78,12 @@ export function forAgent(entry: HistorySnapshot["entries"][number]): ClipboardCo
   return { kind: entry.kind, text, app: entry.app, copiedAt: new Date(entry.copiedAt).toISOString(), pinned: entry.pinned === true };
 }
 
+/** The two keyboard calls clipboard makes; they reject without a compositor. */
+function keyCalls(compositor: Pick<Compositor, "sendKeys" | "snippetErase"> | null): Pick<Compositor, "sendKeys" | "snippetErase"> {
+  const none = () => Promise.reject(new Error("no compositor"));
+  return { sendKeys: (params) => compositor?.sendKeys(params) ?? none(), snippetErase: (params) => compositor?.snippetErase(params) ?? none() };
+}
+
 export function startClipboard(options: ClipboardOptions): Clipboard {
   const { compositor, settings } = options;
   const history = options.history ?? new ClipboardHistory();
@@ -102,7 +108,6 @@ export function startClipboard(options: ClipboardOptions): Clipboard {
     changed();
   });
 
-  const request = (method: string, params: Record<string, unknown>) => compositor?.request(method, params) ?? Promise.reject(new Error("no compositor"));
   const watch = compositor
     ? new ClipboardWatch({
         on: (listener) => compositor.on(listener),
@@ -117,17 +122,17 @@ export function startClipboard(options: ClipboardOptions): Clipboard {
         appName: options.appName,
       })
     : null;
-  const pasting: PasteDeps = {
+  const pasting: PasteDeps & Pick<Compositor, "snippetErase"> = {
     io,
     watch: watch ?? { expect: () => {}, nextCopy: async () => false },
     imagePath: (entry) => history.imagePath(entry),
-    request,
+    ...keyCalls(compositor),
   };
 
   // The keywords the compositor watches for, sent again whenever the snippets change.
   const sendKeywords = () =>
     void compositor
-      ?.request("snippets", { keywords: snippets.getSnapshot().map((each) => each.keyword) })
+      ?.snippets({ keywords: snippets.getSnapshot().map((each) => each.keyword) })
       .catch((error) => console.error("dashi-shell: dashi-comp refused the snippets' keywords:", error));
   sendKeywords();
   const stopSnippets = snippets.subscribe(sendKeywords);
@@ -192,8 +197,8 @@ export function startClipboard(options: ClipboardOptions): Clipboard {
       const put = await putSnippet(text);
       if (!put) return false;
       await Bun.sleep(80);
-      await request("send-keys", { window: to.id, chord: pasteChord(to.appId) });
-      for (let step = 0; step < Math.min(put.back, 500); step++) await request("send-keys", { window: to.id, chord: "Left" });
+      await pasting.sendKeys({ window: to.id, chord: pasteChord(to.appId) });
+      for (let step = 0; step < Math.min(put.back, 500); step++) await pasting.sendKeys({ window: to.id, chord: "Left" });
       return true;
     },
     copySnippet: async (text: string) => (await putSnippet(text)) !== null,

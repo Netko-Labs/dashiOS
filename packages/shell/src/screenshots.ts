@@ -43,7 +43,7 @@ export function screenshotName(when: Date, taken: (name: string) => boolean): st
  * error (for example, a window with no surface).
  */
 export async function takeScreenshot(
-  compositor: Pick<Compositor, "request">,
+  compositor: Pick<Compositor, "capture">,
   options: { window?: number; rect?: { x: number; y: number; width: number; height: number } } = {},
 ): Promise<string> {
   const dir = screenshotDirectory();
@@ -56,7 +56,7 @@ export async function takeScreenshot(
   const path = join(dir, screenshotName(new Date(), taken));
   inFlight.add(path);
   try {
-    await compositor.request("capture", {
+    await compositor.capture({
       path,
       ...(options.window === undefined ? {} : { window: options.window }),
       ...(options.rect === undefined ? {} : { rect: options.rect }),

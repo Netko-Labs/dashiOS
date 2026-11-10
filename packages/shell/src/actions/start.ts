@@ -108,7 +108,7 @@ export function startActions(options: ActionsOptions): Actions {
       if (event.event === "window-opened" || event.event === "window-closed") listener();
     }) ?? (() => {});
   const focus = async (window: number): Promise<void> => {
-    await compositor?.request("focus", { window });
+    await compositor?.focus({ window });
   };
 
   registry.add(fixedSource("tools", TOOL_ACTIONS));

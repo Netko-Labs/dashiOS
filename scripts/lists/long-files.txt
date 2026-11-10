@@ -73,15 +73,14 @@
 537	packages/shell/src/agents/session.ts
 392	packages/shell/src/applets/connection.ts
 306	packages/shell/src/applets/controls.ts
-400	packages/shell/src/arrange.ts
+394	packages/shell/src/arrange.ts
 318	packages/shell/src/bluetooth/store.ts
-430	packages/shell/src/compositor.ts
 307	packages/shell/src/display-config/manager.ts
 1189	packages/shell/src/launcher.tsx
 313	packages/shell/src/launcher/extensions.ts
 314	packages/shell/src/launcher/ranking/rank.ts
 353	packages/shell/src/launcher/rows.ts
-1903	packages/shell/src/main.tsx
+1902	packages/shell/src/main.tsx
 415	packages/shell/src/menubar.tsx
 365	packages/shell/src/menus/controller.ts
 352	packages/shell/src/menus/model.ts
@@ -121,5 +120,5 @@
 401	packages/shell/test/software-view.test.tsx
 471	packages/shell/test/sound-mixer.test.ts
 473	packages/shell/test/sound-watch.test.ts
-453	packages/shell/test/spaces-fullscreen.test.ts
-628	packages/shell/test/window-arrange.test.ts
+449	packages/shell/test/spaces-fullscreen.test.ts
+626	packages/shell/test/window-arrange.test.ts

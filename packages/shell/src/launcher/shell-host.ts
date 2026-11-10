@@ -41,8 +41,8 @@ export function describeBinding(bind: string, title: (address: string) => string
 
 export function shellLauncherHost(deps: ShellHostDeps): LauncherHost {
   const { compositor, actions } = deps;
-  const request = async (method: string, params: Record<string, unknown>) => {
-    await compositor?.request(method, params).catch((error) => console.error(`dashi-shell: the launcher's ${method}:`, error));
+  const request = async (method: string, sent: Promise<unknown> | undefined) => {
+    await sent?.catch((error) => console.error(`dashi-shell: the launcher's ${method}:`, error));
   };
   const focus = async (window: { id: number; address: string }) => {
     const action = actions.registry.get(window.address);
@@ -50,7 +50,7 @@ export function shellLauncherHost(deps: ShellHostDeps): LauncherHost {
       const outcome = await actions.run(action);
       if (outcome.ok) return;
     }
-    await request("focus", { window: window.id });
+    await request("focus", compositor?.focus({ window: window.id }));
   };
   return {
     run: (action, args) => actions.run(action, args),
@@ -64,13 +64,13 @@ export function shellLauncherHost(deps: ShellHostDeps): LauncherHost {
     },
     bringHere: async (window) => {
       const space = deps.currentSpace();
-      if (space !== null) await request("space-move", { window: window.id, space });
+      if (space !== null) await request("space-move", compositor?.spaceMove({ window: window.id, space }));
       await focus(window);
     },
-    minimize: (window) => request("minimize", { window: window.id }),
-    close: (window) => request("close", { window: window.id }),
+    minimize: (window) => request("minimize", compositor?.minimize({ window: window.id })),
+    close: (window) => request("close", compositor?.close({ window: window.id })),
     quit: async (windows) => {
-      for (const window of windows) await request("close", { window: window.id });
+      for (const window of windows) await request("close", compositor?.close({ window: window.id }));
     },
     showInFiles: (file) => deps.openFile(pathToFileURL(dirname(file.path)).href),
     trash: async (file) => {

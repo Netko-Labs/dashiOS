@@ -114,7 +114,7 @@ export function startAgents({
   const joinAtspi = async () => (atspi ??= await Atspi.connect());
   const secrets: SecretsShared = { sources, atspi: joinAtspi, handedOver: new Set(), filled: new Map(), vault };
   const mask = new AgentMask({
-    request: (method, params) => compositor.request(method, params),
+    captureMask: (params) => compositor.captureMask(params),
     windows: () => compositor.windows(),
     atspi: joinAtspi,
     handedOver: () => [...secrets.handedOver],

@@ -139,7 +139,7 @@ export async function handOver(call: Extract<Call, { name: "hand_over" }>, ctx: 
   if (!window) return noWindow(call.window);
   ctx.status(`Waiting for you: ${call.reason}`);
   // The window comes forward for the person; the agent can't see it until Done.
-  await ctx.compositor.request("focus", { window: window.id }).catch(() => {});
+  await ctx.compositor.focus({ window: window.id }).catch(() => {});
   const done = await ctx.secrets.handOver(window.id, call.reason);
   if (!done) return toolError(`The person didn't press Done (the turn was taken down). Ask them before going on with ${subject(window, ctx)}.`);
   return text(`The person pressed Done: ${subject(window, ctx)} is yours again. Take a screenshot to see where things are.`);

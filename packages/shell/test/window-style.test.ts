@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { darkColors, lightColors } from "@dashi/ui";
 import { DARK_ALPHA, SHADOWS, WindowStyleSync, windowStyle } from "../src/appearance/window-style.ts";
 import { parseSettings } from "../src/settings.ts";
+import { fakeCompositor } from "./support/compositor.ts";
 import { flush } from "./support/time.ts";
 
 const repo = join(import.meta.dir, "../../..");
@@ -42,12 +43,12 @@ test("the highlight is an accent ring; Reduce Motion stops the fade", () => {
 
 test("the style goes out once both Dark Mode and the settings are known, then only on a change", async () => {
   const sent: [string, unknown][] = [];
-  const sync = new WindowStyleSync({
-    request: async (method, params) => {
+  const sync = new WindowStyleSync(
+    fakeCompositor(async (method, params) => {
       sent.push([method, params]);
       return {};
-    },
-  });
+    }),
+  );
   sync.set({ highlight: false, reduceMotion: false });
   expect(sent).toHaveLength(0);
   sync.set({ dark: false });
@@ -64,13 +65,13 @@ test("the style goes out once both Dark Mode and the settings are known, then on
 test("a refused style is sent again on the next change", async () => {
   let refuse = true;
   const sent: unknown[] = [];
-  const sync = new WindowStyleSync({
-    request: async (_method, params) => {
+  const sync = new WindowStyleSync(
+    fakeCompositor(async (_method, params) => {
       sent.push(params);
       if (refuse) throw new Error("old compositor");
       return {};
-    },
-  });
+    }),
+  );
   sync.set({ dark: false, highlight: false, reduceMotion: false });
   await flush();
   refuse = false;
@@ -89,6 +90,6 @@ test("settings.json keeps the highlight, off unless set", () => {
 test("window-style is handled, documented, and sent", () => {
   const table = readFileSync(join(repo, "crates/dashi-comp/src/ipc/table.rs"), "utf8");
   const doc = readFileSync(join(repo, "docs/compositor-ipc.md"), "utf8");
-  expect(table).toContain(`("window-style", chrome::window_style)`);
+  expect(table).toContain(`("window-style", typed!(chrome::window_style))`);
   expect(doc).toContain("| `window-style` |");
 });

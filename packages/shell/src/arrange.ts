@@ -16,7 +16,7 @@
  * the keys pressed one by one.
  */
 
-import { type Compositor, type CompositorEvent, type CompositorWindow, type Placing, parseFrame } from "./compositor.ts";
+import type { Compositor, CompositorEvent, CompositorWindow, Placing, Output as Screen } from "./compositor.ts";
 import {
   type Arrange,
   carryFrame,
@@ -40,17 +40,11 @@ import { type Arrow, arrowStep, screenToward } from "./tiling.ts";
 /** How long the pointer rests in a drag zone before its preview shows. */
 const DWELL_MS = 150;
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
-
-export function parseOutputs(value: unknown): Output[] {
-  const outputs = isRecord(value) && Array.isArray(value.outputs) ? value.outputs : [];
-  return outputs.flatMap((output) => {
-    if (!isRecord(output)) return [];
-    const frame = parseFrame(output.frame);
-    const usable = parseFrame(output.usable);
-    if (!frame || !usable) return [];
-    return [{ name: String(output.name ?? ""), frame, usable, scale: Number(output.scale) || 1 }];
-  });
+/** The screens that say where they are and what is usable (src/compositor/outputs.ts). */
+export function placedOutputs(screens: readonly Screen[]): Output[] {
+  return screens.flatMap((screen) =>
+    screen.frame && screen.usable ? [{ name: screen.name, frame: screen.frame, usable: screen.usable, scale: screen.scale }] : [],
+  );
 }
 
 /** A window the shell arranged: how, and the frame it had before (what Back gives back). */
@@ -93,7 +87,7 @@ export class Arranger {
   /** A new window someone else places (a portal dialog that is a sheet: portal-host/sheets.ts); true takes it. */
   claim: ((window: Placing) => boolean) | null = null;
 
-  constructor(private readonly compositor: Compositor) {}
+  constructor(private readonly compositor: Pick<Compositor, "on" | "session" | "outputs" | "windows" | "layout" | "place" | "frame" | "fullscreen">) {}
 
   /** Take over placing windows and send the drag zones; returns a stop function. */
   async start(): Promise<() => void> {
@@ -143,7 +137,7 @@ export class Arranger {
 
   private async refresh(): Promise<void> {
     const before = this.outputs;
-    this.outputs = parseOutputs(await this.compositor.request("outputs"));
+    this.outputs = placedOutputs(await this.compositor.outputs());
     // `outputs-changed` also comes when a window enters or leaves full screen;
     // with the screens as they were, nothing needs fitting (and a window just
     // out of full screen still reports its full-screen size).
@@ -152,7 +146,7 @@ export class Arranger {
     this.zones = zones.map(({ tile, frame, usable }) => ({ tile, frame, usable }));
     // Drag-to-tile is the compositor's to offer; without it, windows still fit their screens.
     await this.compositor
-      .request("layout", { zones: zones.map(({ area, frame }) => ({ area, frame })), dwellMs: DWELL_MS })
+      .layout({ zones: zones.map(({ area, frame }) => ({ area, frame })), dwellMs: DWELL_MS })
       .catch((error) => console.error("dashi-shell: drag-to-tile is off:", error instanceof Error ? error.message : error));
     if (changed) await this.fitWindows();
   }
@@ -187,7 +181,7 @@ export class Arranger {
     const fitted = fitFrame({ x, y, width: window.width, height: window.height }, usable);
     // While a full-screen Desktop shows, another app's window opens on the Desktop it came from.
     const space = (await this.desktops?.spaceFor(window).catch(() => null)) ?? null;
-    await this.compositor.request("place", { window: window.id, x: fitted.x, y: fitted.y, ...(space === null ? {} : { space }) });
+    await this.compositor.place({ window: window.id, x: fitted.x, y: fitted.y, ...(space === null ? {} : { space }) });
     if (fitted.width !== window.width || fitted.height !== window.height) await this.frame(window.id, fitted);
     if (space !== null) await this.desktops?.opened(space);
   }
@@ -203,7 +197,7 @@ export class Arranger {
     const least = (await this.compositor.windows()).find((window) => window.id === id)?.minSize;
     const usable = usableFor(frame, this.outputs);
     const kept = usable ? keepLeast(frame, least, usable) : frame;
-    await this.compositor.request("frame", { window: id, ...kept, ...kind });
+    await this.compositor.frame({ window: id, x: kept.x, y: kept.y, width: kept.width, height: kept.height, ...kind });
   }
 
   /** A window's frame as it is about to be: where it is, at the size its app is being asked to take until it has drawn it. */
@@ -372,7 +366,7 @@ export class Arranger {
     // meanwhile takes the full-screen size for its own.
     const back = on ? null : this.frameAfterFullscreen(id);
     const toggle = async () => {
-      await this.compositor.request("fullscreen", { window: id, on });
+      await this.compositor.fullscreen({ window: id, on });
       if (back) await this.frame(id, back.frame, back.tile);
     };
     await (this.desktops ? this.desktops.around(window, on, toggle) : toggle());

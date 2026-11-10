@@ -28,7 +28,7 @@ function harness(extra: Partial<AppletContext> = {}) {
   const extras = new ExtrasStore();
   const requests: unknown[] = [];
   const grants = new AppletGrants({
-    request: async (_method, params) => {
+    appletClients: async (params) => {
       requests.push(params);
       return {};
     },

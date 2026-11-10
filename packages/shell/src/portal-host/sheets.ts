@@ -13,7 +13,7 @@
  * app's toolbar.
  */
 
-import { type CompositorWindow, type Placing, parseWindow } from "../compositor.ts";
+import type { Compositor, CompositorWindow, Placing } from "../compositor.ts";
 import { PORTAL_APP_ID, parseParentWindow } from "../shared/portal-host/protocol.ts";
 
 /** An expectation older than this is forgotten: the portal's window never came. */
@@ -21,7 +21,9 @@ const EXPECT_MS = 15_000;
 const MAX_PENDING = 32;
 
 export interface SheetHost {
-  request(method: string, params?: Record<string, unknown>): Promise<unknown>;
+  windowForHandle: Compositor["windowForHandle"];
+  windows: Compositor["windows"];
+  attach: Compositor["attach"];
 }
 
 /** Where a sheet hangs below the top of a window that draws its own bar, by kind of app (points). */
@@ -46,13 +48,6 @@ export function sheetTop(parent: Pick<CompositorWindow, "appId" | "titleBar">): 
   if (/^dev\.(dashi|mirin)\./.test(parent.appId)) return SHEET_TOPS.dashi;
   if (BROWSERS.test(parent.appId)) return SHEET_TOPS.browser;
   return SHEET_TOPS.other;
-}
-
-/** The window id in a `window-for-handle` answer, or null. */
-export function parseHandleAnswer(answer: unknown): number | null {
-  if (typeof answer !== "object" || answer === null) return null;
-  const { window } = answer as { window?: unknown };
-  return typeof window === "number" && Number.isInteger(window) && window > 0 ? window : null;
 }
 
 export class PortalSheets {
@@ -90,13 +85,12 @@ export class PortalSheets {
   }
 
   private async attach(window: Placing, handle: string): Promise<void> {
-    const parent = parseHandleAnswer(await this.host.request("window-for-handle", { handle }));
+    const parent = await this.host.windowForHandle({ handle });
     if (parent === null) return this.placeNormally(window);
-    const answer = await this.host.request("windows").catch(() => null);
-    const listed = typeof answer === "object" && answer !== null ? (answer as { windows?: unknown }).windows : undefined;
-    const parentWindow = (Array.isArray(listed) ? listed : []).map(parseWindow).find((each) => each?.id === parent);
+    const listed = await this.host.windows().catch(() => []);
+    const parentWindow = listed.find((each) => each.id === parent);
     const top = parentWindow ? sheetTop(parentWindow) : undefined;
-    await this.host.request("attach", { window: window.id, parent, ...(top === undefined ? {} : { top }) });
+    await this.host.attach({ window: window.id, parent, ...(top === undefined ? {} : { top }) });
   }
 
   private forgetOld(): void {

@@ -9,7 +9,8 @@
 
 import { type NativeHostOptions, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { parseScreens } from "./displays.ts";
+import type { Output } from "./compositor.ts";
+import { screensOf } from "./displays.ts";
 import { choosePrimary } from "./menubars.ts";
 import type { OpenOverlay } from "./overlay.tsx";
 
@@ -216,17 +217,8 @@ async function act(choice: Choice, origin: Point, deps: AreaCaptureDeps): Promis
  * first. Nothing usable gives no screen: the compositor places the surface
  * and the origin is (0, 0).
  */
-export function chooseCaptureScreen(answer: unknown, options: { near?: Area | null; prefer?: string | null } = {}): CaptureScreen {
-  const outputs = typeof answer === "object" && answer !== null ? (answer as { outputs?: unknown }).outputs : undefined;
-  const screens = (Array.isArray(outputs) ? outputs : []).flatMap((each: unknown): Array<{ name: string; frame: Area }> => {
-    if (typeof each !== "object" || each === null) return [];
-    const { name, frame } = each as { name?: unknown; frame?: unknown };
-    if (typeof name !== "string" || typeof frame !== "object" || frame === null) return [];
-    const { x, y, width, height } = frame as Record<string, unknown>;
-    return [x, y, width, height].every((value) => typeof value === "number" && Number.isFinite(value))
-      ? [{ name, frame: { x, y, width, height } as Area }]
-      : [];
-  });
+export function chooseCaptureScreen(outputs: readonly Output[], options: { near?: Area | null; prefer?: string | null } = {}): CaptureScreen {
+  const screens = outputs.flatMap((each): Array<{ name: string; frame: Area }> => (each.frame ? [{ name: each.name, frame: each.frame }] : []));
   const near = options.near;
   const holding =
     near &&
@@ -240,6 +232,6 @@ export function chooseCaptureScreen(answer: unknown, options: { near?: Area | nu
 }
 
 /** The screen a capture goes on: the one holding `near` (its window's frame), else the primary. */
-export function captureScreenNear(answer: unknown, near: Area | null): CaptureScreen {
-  return chooseCaptureScreen(answer, { near, prefer: choosePrimary(parseScreens(answer).map((screen) => screen.name)) });
+export function captureScreenNear(outputs: readonly Output[], near: Area | null): CaptureScreen {
+  return chooseCaptureScreen(outputs, { near, prefer: choosePrimary(screensOf(outputs).map((screen) => screen.name)) });
 }

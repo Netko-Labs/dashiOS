@@ -15,7 +15,7 @@
  * once and carry on.
  */
 
-import type { CompositorEvent } from "./compositor.ts";
+import type { Compositor, CompositorEvent } from "./compositor.ts";
 
 /** What apps hold (inhibit/store.ts): the screens may not blank; the computer may not sleep. */
 export interface IdleHolds {
@@ -25,7 +25,8 @@ export interface IdleHolds {
 
 /** The compositor client's side that the policy uses (and a test fakes). */
 export interface IdleHost {
-  request(method: string, params?: Record<string, unknown>): Promise<unknown>;
+  idle: Compositor["idle"];
+  power: Compositor["power"];
   on(listener: (event: CompositorEvent) => void): () => void;
 }
 
@@ -70,7 +71,7 @@ export class IdlePolicy {
   private async register(): Promise<void> {
     const timeouts = [...new Set([this.seconds, this.sleepSeconds].filter((seconds) => seconds > 0))];
     try {
-      await this.host.request("idle", { timeouts });
+      await this.host.idle({ timeouts });
     } catch (error) {
       this.complain("idle", error);
     }
@@ -131,7 +132,7 @@ export class IdlePolicy {
     this.blanked = !on;
     this.onBlanked?.(!on);
     try {
-      await this.host.request("power", { on });
+      await this.host.power({ on });
     } catch (error) {
       // The screens didn't go off, whatever the reason.
       if (!on) {

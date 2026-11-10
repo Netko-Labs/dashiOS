@@ -4,6 +4,7 @@ import type { Answer, Ask, Turn } from "../src/agents/presence.ts";
 import { Session, type SessionContext } from "../src/agents/session.ts";
 import { DENY, type QueuedSheet, SheetQueue } from "../src/agents/sheet-queue.ts";
 import { opaque } from "../src/consent.tsx";
+import { fakeCompositor } from "./support/compositor.ts";
 import { flush } from "./support/time.ts";
 
 const WINDOW = {
@@ -12,7 +13,7 @@ const WINDOW = {
   title: "t",
   pid: 10,
   focused: true,
-  state: "normal",
+  state: "normal" as const,
   frame: { x: 0, y: 0, width: 9, height: 9 },
   titleBar: 0,
 };
@@ -40,7 +41,7 @@ function harness(granted: string[]) {
     whenNoSheet: async () => {},
   };
   const ctx = {
-    compositor: { windows: async () => [WINDOW], request: async () => ({}) },
+    compositor: fakeCompositor(async () => ({}), { windows: async () => [WINDOW] }),
     ui,
     grants: { get: () => new Set(granted), set: () => {} },
     lock: { isLocked: false },

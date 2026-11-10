@@ -11,9 +11,11 @@
  * is in place.
  */
 
+import type { Compositor } from "../compositor.ts";
+
 /** What the grants need of the compositor connection. */
 export interface GrantsCompositor {
-  request(method: "applet-clients", params: { applets: Array<{ pid: number; layerShell: boolean }> }): Promise<unknown>;
+  appletClients: Compositor["appletClients"];
 }
 
 /** The most applet processes the compositor is told of at once. */
@@ -52,6 +54,6 @@ export class AppletGrants {
   private async send(): Promise<void> {
     if (!this.compositor) return;
     const applets = [...this.pids].map(([pid, layerShell]) => ({ pid, layerShell }));
-    await this.compositor.request("applet-clients", { applets });
+    await this.compositor.appletClients({ applets });
   }
 }

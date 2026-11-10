@@ -67,7 +67,7 @@ export function optional<T>(of: Shape<T>): OptionalShape<T> {
 }
 
 /** `fallback` when absent; the field is then always there after parsing. */
-export function withDefault<T>(of: Shape<T>, fallback: T): Shape<T> {
+export function withDefault<T>(of: Shape<T>, fallback: NoInfer<T>): Shape<T> {
   return shape(
     (value, where) => (value === undefined ? accept(fallback) : of.parse(value, where)),
     () => ({ ...of.schema(), default: fallback }),

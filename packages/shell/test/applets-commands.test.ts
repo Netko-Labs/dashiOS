@@ -57,7 +57,7 @@ function harness() {
   const extras = new ExtrasStore();
   const grantsAsked: unknown[] = [];
   const grants = new AppletGrants({
-    request: async (_method, params) => {
+    appletClients: async (params) => {
       grantsAsked.push(params);
       return {};
     },

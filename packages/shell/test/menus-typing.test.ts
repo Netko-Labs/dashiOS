@@ -3,9 +3,11 @@ import type { NativeEvent } from "@mirinjs/metal";
 import { type MenuSocketHandlers, MenusClient } from "../apps/kit/menus.ts";
 import { isTextShortcut } from "../src/app-menus/shortcut.ts";
 import { AppMenuStore } from "../src/app-menus/store.ts";
+import type { CompositorWindow } from "../src/compositor.ts";
 import { type AppMenu, parseClientMessage, parseShellMessage, type ShellMessage } from "../src/shared/app-menus/protocol.ts";
 import { onWindowTyping, typingOf } from "../src/shared/metal/typing.ts";
 import { type Requests, runBinding, type ShellActions } from "../src/shortcuts.ts";
+import { fakeCompositor } from "./support/compositor.ts";
 
 const EDIT: AppMenu[] = [
   {
@@ -48,10 +50,13 @@ test("❖A in a field becomes the field's Ctrl+A: the shell types it into the wi
   const store = new AppMenuStore();
   store.publish(owner(40), EDIT, true);
   const requests: [string, unknown][] = [];
-  const compositor = {
-    request: async (name: string, args: unknown) => void requests.push([name, args]),
-    windows: async () => [],
-  } as unknown as Requests;
+  const compositor: Requests = fakeCompositor(
+    async (name, args) => {
+      requests.push([name, args]);
+      return {};
+    },
+    { windows: async () => [] },
+  );
   const actions = {
     hardware: { run: async () => false },
     appShortcut: async (_window: number, shortcut: string) => store.shortcut([40], shortcut),
@@ -62,14 +67,20 @@ test("❖A in a field becomes the field's Ctrl+A: the shell types it into the wi
 
 test("❖Q tells each window's app it quits before asking the window to close", async () => {
   const order: string[] = [];
-  const compositor = {
-    request: async (name: string, args: { window: number }) => void order.push(`${name} ${args.window}`),
-    windows: async () => [
-      { id: 7, appId: "dev.dashi.terminal", pid: 70 },
-      { id: 8, appId: "dev.dashi.terminal", pid: 80 },
-      { id: 9, appId: "dev.dashi.files", pid: 90 },
-    ],
-  } as unknown as Requests;
+  const compositor = fakeCompositor(
+    async (name, args) => {
+      order.push(`${name} ${args?.window}`);
+      return {};
+    },
+    {
+      windows: async () =>
+        [
+          { id: 7, appId: "dev.dashi.terminal", pid: 70 },
+          { id: 8, appId: "dev.dashi.terminal", pid: 80 },
+          { id: 9, appId: "dev.dashi.files", pid: 90 },
+        ] as CompositorWindow[],
+    },
+  );
   const actions = {
     hardware: { run: async () => false },
     appQuitting: (pid: number | null) => void order.push(`quitting ${pid}`),

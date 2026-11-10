@@ -15,11 +15,6 @@
  * list; the shell sends the list again when the file changes. Nothing
  * hides it: an app's own request is only ever served through the portal,
  * which asks the person first.
- *
- * A shell that starts while something is capturing learns it from `active` in
- * the answer to `screencopy-clients`, so the pill shows at once after a shell
- * restart. (A compositor that predates `active` leaves the default, not shared,
- * until the next event.)
  */
 
 import { readFileSync } from "node:fs";
@@ -90,7 +85,7 @@ export interface ScreenCapture {
 
 /** Give the compositor the list and follow its events into `store`. */
 export function startScreenCapture(
-  compositor: Pick<Compositor, "request" | "on">,
+  compositor: Pick<Compositor, "screencopyClients" | "on">,
   store: ScreenCaptureStore,
   options: { clients?: () => string[] } = {},
 ): ScreenCapture {
@@ -99,18 +94,11 @@ export function startScreenCapture(
   const stop = compositor.on((event) => {
     if (event.event === "screen-capture") store.set(event.active);
   });
-  const send = (): Promise<unknown> => compositor.request("screencopy-clients", { paths: [...new Set([...clients(), ...extra.keys()])].slice(0, MAX_CLIENTS) });
-  // A shell that restarts mid-share would otherwise show nothing until the next change:
-  // the answer says `active`.
-  send()
-    .then((answer) => {
-      const active = typeof answer === "object" && answer !== null ? (answer as Record<string, unknown>).active : undefined;
-      if (typeof active === "boolean") store.set(active);
-    })
-    .catch((error) => {
-      // An older compositor has no screen sharing; there is nothing to indicate either.
-      console.log(`dashi-shell: the compositor won't take a screen sharing list: ${error instanceof Error ? error.message : String(error)}`);
-    });
+  const send = (): Promise<unknown> => compositor.screencopyClients({ paths: [...new Set([...clients(), ...extra.keys()])].slice(0, MAX_CLIENTS) });
+  send().catch((error) => {
+    // An older compositor has no screen sharing; there is nothing to indicate either.
+    console.log(`dashi-shell: the compositor won't take a screen sharing list: ${error instanceof Error ? error.message : String(error)}`);
+  });
   return {
     allow(path) {
       extra.set(path, (extra.get(path) ?? 0) + 1);

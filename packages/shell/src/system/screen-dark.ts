@@ -8,24 +8,21 @@
  * leaves a held one dark; external screens are never touched.
  */
 
+import type { Compositor, Output } from "../compositor.ts";
 import { readBacklight } from "./brightness.ts";
 
 /** The compositor client's side this uses (and a test fakes). */
 export interface ScreenHost {
-  request(method: string, params?: Record<string, unknown>): Promise<unknown>;
+  outputs: Compositor["outputs"];
+  power: Compositor["power"];
 }
 
 /** A laptop's own panel, by its connector name. */
 export const isBuiltin = (name: string): boolean => /^(eDP|LVDS|DSI)-/.test(name);
 
 /** The built-in screens' names in an `outputs` answer. */
-export function builtinScreens(answer: unknown): string[] {
-  const outputs = typeof answer === "object" && answer !== null ? (answer as { outputs?: unknown }).outputs : undefined;
-  if (!Array.isArray(outputs)) return [];
-  return outputs.flatMap((output: unknown): string[] => {
-    const name = typeof output === "object" && output !== null ? (output as { name?: unknown }).name : undefined;
-    return typeof name === "string" && isBuiltin(name) ? [name] : [];
-  });
+export function builtinScreens(outputs: readonly Output[]): string[] {
+  return outputs.flatMap((output) => (isBuiltin(output.name) ? [output.name] : []));
 }
 
 export class ScreenDark {
@@ -57,8 +54,8 @@ export class ScreenDark {
     if (off === this.dark) return;
     this.dark = off;
     try {
-      const names = builtinScreens(await this.host.request("outputs"));
-      for (const output of names) await this.host.request("power", { on: !off, output });
+      const names = builtinScreens(await this.host.outputs());
+      for (const output of names) await this.host.power({ on: !off, output });
     } catch (error) {
       if (!this.warned)
         console.error("dashi-shell: turning the built-in screen", off ? "off" : "on", "failed:", error instanceof Error ? error.message : error);

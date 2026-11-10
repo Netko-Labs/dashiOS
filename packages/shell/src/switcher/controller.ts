@@ -92,7 +92,7 @@ export class SwitcherController {
   private queue: Promise<void> = Promise.resolve();
 
   constructor(
-    private readonly compositor: Pick<Compositor, "request" | "windows">,
+    private readonly compositor: Pick<Compositor, "close" | "hide" | "minimize" | "focus" | "windows">,
     private readonly host: SwitcherHost,
     /** What an app is called (the Dock's name), for typing to find it. */
     private readonly nameOf: (group: AppGroup) => string = (group) => group.appId,
@@ -253,27 +253,27 @@ export class SwitcherController {
     const target = chosenWindow(session.shown, session.selection);
     if (!group || !target) return;
     const whole = session.all.find((each) => each.windows.some((window) => window.id === target.id)) ?? group;
-    const request = (method: string, window: number) => this.compositor.request(method, { window }).catch(() => {});
+    const tell = (method: "close" | "hide" | "minimize", window: number) => this.compositor[method]({ window }).catch(() => {});
     switch (action) {
       case "quit":
         // Every window of the app is asked to close (its own save prompts still show).
-        for (const window of whole.windows) await request("close", window.id);
+        for (const window of whole.windows) await tell("close", window.id);
         this.forget(session, (window) => whole.windows.includes(window));
         break;
       case "hide":
         for (const window of whole.windows.filter((each) => each.state === "normal")) {
-          await request("hide", window.id);
+          await tell("hide", window.id);
           session.putAway.add(window.id);
         }
         this.restate(session, (window) => whole.windows.includes(window) && window.state === "normal", "hidden");
         break;
       case "minimize":
-        await request("minimize", target.id);
+        await tell("minimize", target.id);
         session.putAway.add(target.id);
         this.restate(session, (window) => window.id === target.id, "minimized");
         break;
       case "close":
-        await request("close", target.id);
+        await tell("close", target.id);
         this.forget(session, (window) => window.id === target.id);
         break;
     }
@@ -315,7 +315,7 @@ export class SwitcherController {
     // Focusing a minimized or hidden window brings it back too, unless the person just put it away (H, M).
     if (commit && chosen && !session.putAway.has(chosen.id)) {
       this.opened(chosen);
-      await this.compositor.request("focus", { window: chosen.id });
+      await this.compositor.focus({ window: chosen.id });
     }
   }
 }

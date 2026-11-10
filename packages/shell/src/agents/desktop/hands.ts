@@ -15,7 +15,7 @@
  *    bar), then gives up, saying how long to wait.
  */
 
-import type { Compositor } from "../../compositor.ts";
+import type { Compositor, Params } from "../../compositor.ts";
 import { KEYMAP } from "../../keymap.ts";
 
 /** The person must have left a window (or the desktop, when borrowing) alone this long. */
@@ -81,7 +81,7 @@ export interface Clock {
 const realClock: Clock = { now: () => Date.now(), sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)) };
 
 /** What a tool sends: a pointer action or keys; `window` and the cursor's name are added here. */
-export type Payload = Record<string, unknown>;
+export type Payload = Omit<Params<"agent-input">, "window" | "label" | "borrow" | "release">;
 
 export class Hands {
   /** When the person last used each window (null: the desktop). */
@@ -89,7 +89,7 @@ export class Hands {
   private readonly stop: () => void;
 
   constructor(
-    private readonly compositor: Pick<Compositor, "request" | "on">,
+    private readonly compositor: Pick<Compositor, "agentInput" | "on">,
     private readonly clock: Clock = realClock,
   ) {
     this.stop = compositor.on((event) => {
@@ -120,7 +120,7 @@ export class Hands {
       const busy = borrow ? 0 : this.busyFor(window.id);
       if (busy > 0) throw new PersonBusy(window.id, false, busy);
       try {
-        await this.compositor.request("agent-input", request);
+        await this.compositor.agentInput(request);
         return;
       } catch (error) {
         if (!isBusyAnswer(error)) throw error;
@@ -134,7 +134,7 @@ export class Hands {
   /** Let go of everything the agent holds and hide its cursor (the stop key, an agent leaving). */
   async release(): Promise<void> {
     try {
-      await this.compositor.request("agent-input", { release: true });
+      await this.compositor.agentInput({ release: true });
     } catch {
       // Locked, or the compositor is gone: nothing is held that matters.
     }

@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { Arranger } from "../src/arrange.ts";
-import { type Compositor, type CompositorEvent, type CompositorWindow, parseEvent } from "../src/compositor.ts";
+import { type CompositorEvent, type CompositorWindow, parseEvent } from "../src/compositor.ts";
 import { carryFrame, centerFrame, dragZones, frameUnderPointer, keepLeast, type Rect, TILES, tileFrame } from "../src/layout.ts";
 import { arrowStep, screenToward } from "../src/tiling.ts";
+import { fakeCompositor, listening } from "./support/compositor.ts";
 import { flush, settle } from "./support/time.ts";
 
 /** The VM's screen: 1646 × 937 points, the menu bar (28) and the Dock (65 + 6) leaving 838 between them. */
@@ -115,15 +116,9 @@ function fake(
   lag = false,
 ) {
   const requests: Array<[string, Record<string, unknown>]> = [];
-  let listener: ((event: CompositorEvent) => void) | null = null;
-  const compositor = {
-    on: (each: (event: CompositorEvent) => void) => {
-      listener = each;
-      return () => {
-        listener = null;
-      };
-    },
-    request: async (method: string, params: Record<string, unknown> = {}) => {
+  const events = listening();
+  const compositor = fakeCompositor(
+    async (method, params = {}) => {
       requests.push([method, params]);
       if (method === "outputs") return { outputs: outputs.map((output) => ({ ...output, scale: 1 })) };
       const window = windows.find((candidate) => candidate.id === params.window);
@@ -141,15 +136,18 @@ function fake(
         window.frame = on ? { ...SCREEN } : { x: window.away?.x ?? 0, y: window.away?.y ?? 0, width: SCREEN.width, height: SCREEN.height };
         if (on) delete window.configuring;
         else if (window.away) window.configuring = { width: window.away.width, height: window.away.height };
-        listener?.({ event: "outputs-changed" });
+        events.emit({ event: "outputs-changed" });
       }
       return {};
     },
-    windows: async () => windows.map(({ away: _, ...window }) => ({ ...window })),
-  } as unknown as Compositor;
+    {
+      on: events.on,
+      windows: async () => windows.map(({ away: _, ...window }) => ({ ...window })),
+    },
+  );
   const frames = () => requests.filter(([method]) => method === "frame" || method === "fullscreen");
   const emit = async (event: CompositorEvent) => {
-    listener?.(event);
+    events.emit(event);
     await flush();
   };
   /** The apps draw at the sizes they were asked for. */

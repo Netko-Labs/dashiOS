@@ -40,7 +40,7 @@ export interface StartDockOptions {
   /** Told where the icons are, for the compositor's minimize animation (animation-targets.ts); optional. */
   tiles?: TileStore;
   /** Null without dashi-comp: the Dock then cannot hide itself, it has no way to know where the pointer is. */
-  compositor: Pick<Compositor, "request" | "on"> | null;
+  compositor: Pick<Compositor, "inputRegion" | "edges" | "on"> | null;
   /** A Dock surface's host died by itself (on `output`): the shell decides whether the screen went with it. */
   onLost(output: string | undefined): void;
   /** Reduce Motion is on: the Dock appears and leaves without its entrance and exit. */
@@ -93,7 +93,7 @@ export function startDock(options: StartDockOptions): DockRuntime {
     if (key === region) return;
     region = key;
     options.compositor
-      ?.request("input-region", { namespace: DOCK_NAMESPACE, rects: wire })
+      ?.inputRegion({ namespace: DOCK_NAMESPACE, rects: wire })
       .catch((error) => console.error("dashi-shell: the Dock takes clicks across the screen:", error instanceof Error ? error.message : error));
   };
 

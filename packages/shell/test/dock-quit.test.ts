@@ -12,6 +12,7 @@ import { DockController } from "../src/dock/controller.ts";
 import { dockLayout } from "../src/dock/layout.ts";
 import { buildDockMenu } from "../src/dock/menu.ts";
 import type { Entry } from "../src/entries.ts";
+import { fakeCompositor } from "./support/compositor.ts";
 
 const TERMINAL = { id: "dev.dashi.terminal", name: "Terminal", exec: "dashi-terminal" } as unknown as Entry;
 
@@ -43,12 +44,7 @@ function setup(listed: CompositorWindow[] | null) {
     pins: { pin: () => {}, unpin: () => {} },
     toplevels: { act: (id: number, action: string) => void heard.push(`toplevel ${action} ${id}`), getSnapshot: () => [], subscribe: () => () => {} },
     compositor:
-      listed === null
-        ? null
-        : {
-            windows: async () => listed,
-            request: async (method: string, params: { window: number }) => void heard.push(`${method} ${params.window}`),
-          },
+      listed === null ? null : fakeCompositor(async (method, params) => void heard.push(`${method} ${params?.window}`), { windows: async () => listed }),
     launch: () => null,
     appQuitting: (pid: number | null) => void heard.push(`quitting ${pid}`),
   } as unknown as ConstructorParameters<typeof DockController>[0]);

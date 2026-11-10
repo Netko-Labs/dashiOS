@@ -10,4 +10,4 @@ export {
 } from "../shared/portal-host/protocol.ts";
 export { applicationsDir, newLauncher, pinNextLauncher } from "./launchers.ts";
 export { type PortalHost, type PortalHostDeps, portalHostInterface, startPortalHost } from "./service.ts";
-export { PortalSheets, parseHandleAnswer, SHEET_TOPS, type SheetHost, sheetTop } from "./sheets.ts";
+export { PortalSheets, SHEET_TOPS, type SheetHost, sheetTop } from "./sheets.ts";

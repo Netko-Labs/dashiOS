@@ -14,8 +14,8 @@
  */
 
 import type { Bounds } from "@mirinjs/metal";
-import type { AnimationTarget, Compositor, CompositorWindow, Frame } from "../compositor.ts";
-import { parseScreens } from "../displays.ts";
+import type { AnimationTarget, Compositor, CompositorWindow, Frame, Output } from "../compositor.ts";
+import { screensOf } from "../displays.ts";
 import type { Entry } from "../entries.ts";
 import { pickPrimary } from "../menubars.ts";
 import { DOCK, DOCK_HEIGHT, TASKBAR } from "../theme.ts";
@@ -30,8 +30,8 @@ export interface Placement {
 }
 
 /** The Dock's screen in an IPC `outputs` answer: `home` (the primary bar's) when it is there, else the one a primary is chosen on. */
-export function dockScreen(outputs: unknown, home: string | null | undefined): Frame | null {
-  const screens = parseScreens(outputs);
+export function dockScreen(outputs: readonly Output[], home: string | null | undefined): Frame | null {
+  const screens = screensOf(outputs);
   const name = pickPrimary(
     screens.map((screen) => screen.name),
     home,
@@ -83,7 +83,7 @@ export function changedTargets(
 }
 
 export interface AnimationTargetsDeps {
-  compositor: Pick<Compositor, "windows" | "animationTargets" | "on">;
+  compositor: Pick<Compositor, "windows" | "animationTarget" | "on">;
   catalog: readonly Entry[];
   tiles: TileStore;
   /** Where the Dock is now; null when it is not on screen. */
@@ -149,7 +149,7 @@ export class AnimationTargets {
       const { compositor, catalog, tiles } = this.deps;
       const [windows, placement] = await Promise.all([compositor.windows(), this.deps.placement()]);
       const changes = changedTargets(windows, catalog, tiles, placement, this.sent);
-      if (changes.length > 0) await compositor.animationTargets(changes);
+      if (changes.length > 0) await compositor.animationTarget({ targets: changes });
     } catch (error) {
       // The compositor may be older, or the window gone; the next change tries again from scratch.
       this.sent.clear();

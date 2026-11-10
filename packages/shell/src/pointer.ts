@@ -11,6 +11,7 @@
  */
 
 import type { AppCommand, Gate } from "./appearance/apps.ts";
+import type { Compositor } from "./compositor.ts";
 import type { Run } from "./system/exec.ts";
 
 export const POINTER_SIZES = [24, 32, 40, 48] as const;
@@ -24,7 +25,7 @@ export function pointerCommands(size: number, has: (program: string) => boolean)
 }
 
 export interface PointerDeps {
-  compositor: { request(method: string, params?: Record<string, unknown>): Promise<unknown> };
+  compositor: Pick<Compositor, "cursorSize">;
   /** Whether the shell may change what other apps read (appearance/apps.ts). */
   gate: Gate;
   has: (program: string) => boolean;
@@ -45,7 +46,7 @@ export class PointerSync {
     this.applied = size;
     this.queue = this.queue.then(async () => {
       try {
-        await this.deps.compositor.request("cursor-size", { size });
+        await this.deps.compositor.cursorSize({ size });
       } catch (error) {
         console.error("dashi-shell: dashi-comp refused the pointer size:", error instanceof Error ? error.message : error);
       }

@@ -11,7 +11,14 @@ import { snippetSections } from "../src/clipboard/rows.ts";
 import { expand, keywordProblem, parseAdd, parseSnippets, SnippetStore } from "../src/clipboard/snippets.ts";
 import { ClipboardWatch } from "../src/clipboard/watch.ts";
 import type { CompositorEvent, CompositorWindow } from "../src/compositor.ts";
+import { type FakeRequest, fakeCompositor as typedCompositor } from "./support/compositor.ts";
 import { settle } from "./support/time.ts";
+
+/** The two compositor calls expanding makes, over a fake `request`. */
+const sends = (request: FakeRequest) => {
+  const { sendKeys, snippetErase } = typedCompositor(request);
+  return { sendKeys, snippetErase };
+};
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -111,7 +118,10 @@ test("a typed keyword's text is copied, the keyword erased, the text pasted, and
     io: fakeIo(new Map(), log),
     watch,
     imagePath: () => null,
-    request: async (method: string, params: Record<string, unknown>) => void log.push(`${method} ${JSON.stringify(params)}`),
+    ...sends(async (method, params) => {
+      log.push(`${method} ${JSON.stringify(params)}`);
+      return {};
+    }),
     snippets: { find: (keyword: string) => (keyword === ";hi" ? { keyword, text: "Hello {clipboard}{cursor}." } : undefined) },
     windows: async () => [window()],
     fields: { passwordFocused: async () => false },
@@ -133,10 +143,11 @@ test("a typed keyword's text is copied, the keyword erased, the text pasted, and
   expect(await expandSnippet(";hi", 7, { ...deps, fields: { passwordFocused: async () => true } })).toBe(false);
   const refusing = {
     ...deps,
-    request: async (method: string) => {
+    ...sends(async (method) => {
       log.push(method);
       if (method === "snippet-erase") throw new Error("typed on");
-    },
+      return {};
+    }),
   };
   log.length = 0;
   expect(await expandSnippet(";hi", 7, refusing)).toBe(false);
@@ -152,10 +163,11 @@ test("a typed keyword's text is copied, the keyword erased, the text pasted, and
   log.length = 0;
   const noPaste = {
     ...deps,
-    request: async (method: string) => {
+    ...sends(async (method) => {
       log.push(method);
       if (method === "send-keys") throw new Error("no such window");
-    },
+      return {};
+    }),
   };
   expect(await expandSnippet(";hi", 7, noPaste)).toBe(false);
   expect(log.slice(-2)).toEqual(["expect bump what I copied", "write text/plain;charset=utf-8 what I copied"]);

@@ -8,7 +8,7 @@
  * before put back, whether or not the paste went in.
  */
 
-import type { CompositorWindow } from "../compositor.ts";
+import type { Compositor, CompositorWindow } from "../compositor.ts";
 import { TERMINALS } from "../keymap.ts";
 import type { FieldCheck } from "./fields.ts";
 import type { ClipEntry, HistorySnapshot } from "./history.ts";
@@ -23,6 +23,7 @@ const RESTORE_MS = 400;
 const MAX_BACK = 500;
 
 export interface ExpandDeps extends PasteDeps {
+  snippetErase: Compositor["snippetErase"];
   io: ClipboardIo;
   watch: Pick<ClipboardWatch, "expect" | "nextCopy">;
   snippets: Pick<SnippetStore, "find">;
@@ -71,10 +72,10 @@ export async function expandSnippet(keyword: string, windowId: number, deps: Exp
   // From here every way out puts the copy before back.
   let pasted = false;
   try {
-    await deps.request("snippet-erase", { window: window.id, keyword });
-    await deps.request("send-keys", { window: window.id, chord: pasteChord(window.appId) });
+    await deps.snippetErase({ window: window.id, keyword });
+    await deps.sendKeys({ window: window.id, chord: pasteChord(window.appId) });
     pasted = true;
-    for (let step = 0; step < Math.min(filled.back, MAX_BACK); step++) await deps.request("send-keys", { window: window.id, chord: "Left" });
+    for (let step = 0; step < Math.min(filled.back, MAX_BACK); step++) await deps.sendKeys({ window: window.id, chord: "Left" });
   } catch {
     // Typed on past it, or another window has the keyboard now: leave it.
   }
