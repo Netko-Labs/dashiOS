@@ -2,8 +2,8 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { changeName } from "../apps/calendar/history.ts";
-import { CalendarModel } from "../apps/calendar/model.ts";
+import { changeName } from "../apps/calendar/lib/history.ts";
+import { CalendarModel } from "../apps/calendar/lib/model.ts";
 import { CalendarStore } from "../src/shared/calendar/store.ts";
 import type { CalEvent } from "../src/shared/calendar/types.ts";
 

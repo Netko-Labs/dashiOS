@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import { TodayButton } from "../apps/calendar/view.tsx";
+import { TodayButton } from "../apps/calendar/lib/views/toolbar.tsx";
 import { AppearancePreviews } from "../src/settings-app/panes/appearance.tsx";
 import { WallpaperPane } from "../src/settings-app/panes/wallpaper.tsx";
 import { SettingsStore } from "../src/settings-app/store.ts";

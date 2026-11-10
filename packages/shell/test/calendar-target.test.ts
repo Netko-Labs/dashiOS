@@ -2,8 +2,8 @@ import { expect, test } from "bun:test";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { CalendarModel } from "../apps/calendar/model.ts";
-import { choosableCalendars, newEventTarget } from "../apps/calendar/target.ts";
+import { CalendarModel } from "../apps/calendar/lib/model.ts";
+import { choosableCalendars, newEventTarget } from "../apps/calendar/lib/target.ts";
 import { readSidecar } from "../src/shared/calendar/sidecar.ts";
 import { CalendarStore, PALETTE, paletteColor } from "../src/shared/calendar/store.ts";
 
