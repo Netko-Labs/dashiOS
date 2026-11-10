@@ -3,7 +3,7 @@ import { ActionRegistry } from "../src/actions/registry.ts";
 import { appActions } from "../src/actions/sources/apps.ts";
 import { WindowSource, windowAction } from "../src/actions/sources/windows.ts";
 import type { Entry } from "../src/entries.ts";
-import { KEYMAP } from "../src/keymap.ts";
+import { KEYMAP } from "../src/keymap/keymap.ts";
 import { desktopActions, desktopFields, parseDesktopEntry, parseExec } from "../src/shared/apps/index.ts";
 import { run, window } from "./support/actions-sources.ts";
 import { fakeClockEachTest, flush } from "./support/time.ts";

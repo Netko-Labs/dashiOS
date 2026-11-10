@@ -1,7 +1,7 @@
 /** What a tool call comes to once its arguments are checked. */
 
 import type { Arrange } from "../../layout.ts";
-import type { PageId } from "../../setup/flow.ts";
+import type { PageId } from "../../setup/index.ts";
 import type { ProfileId } from "../../system/profiles.ts";
 import type { Chord } from "./keys.ts";
 

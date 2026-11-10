@@ -6,7 +6,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { type NativeEvent, type NativeTransport, render, View } from "@mirinjs/metal";
-import { AppsCard, RecordingCard } from "../src/settings-app/panes/sound-apps.tsx";
+import { AppsCard, RecordingCard } from "../src/settings-app/lib/panes/sound-apps.tsx";
 import { catalogFrom } from "../src/shared/processes/index.ts";
 import { AppSections, foldApps } from "../src/sound/app-rows.tsx";
 import { AppMixer, type AppSound, fixedGraph, heldControl, parseGraph, streamApp, useMicWords } from "../src/sound/apps/index.ts";

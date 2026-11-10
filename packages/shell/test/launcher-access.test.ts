@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { TEXT_SIZES } from "@dashi/ui";
-import { KEYMAP } from "../src/keymap.ts";
+import { KEYMAP } from "../src/keymap/keymap.ts";
 import { fieldAccess, rowAccess, spokenRow } from "../src/launcher/access.ts";
 import { LauncherKeys, withLauncher } from "../src/launcher/keys.ts";
 import type { LauncherWindow } from "../src/launcher/lib/items.ts";

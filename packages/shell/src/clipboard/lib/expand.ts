@@ -9,7 +9,7 @@
  */
 
 import type { Compositor, CompositorWindow } from "../../compositor.ts";
-import { TERMINALS } from "../../keymap.ts";
+import { TERMINALS } from "../../keymap/keymap.ts";
 import type { ClipEntry, HistorySnapshot } from "../history.ts";
 import type { FieldCheck } from "./fields.ts";
 import type { ClipboardIo } from "./io.ts";

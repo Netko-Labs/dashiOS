@@ -9,9 +9,9 @@ import { appFor, displayName, registerShellApp, SCREENSHOT_APP_ID } from "../app
 import { placedOutputs } from "../arrange/index.ts";
 import type { Compositor, Frame } from "../compositor.ts";
 import type { Entry } from "../entries.ts";
-import { withSwitcher } from "../keymap.ts";
-import { currentKeymap, idleKeymap } from "../keymap-state.ts";
-import type { RankingMemory } from "../launcher/index.ts";
+import { withSwitcher } from "../keymap/keymap.ts";
+import { currentKeymap, idleKeymap } from "../keymap/keymap-state.ts";
+import type { RankingMemory } from "../launcher/ranking/index.ts";
 import type { Menus } from "../menus/index.ts";
 import type { Notifications } from "../notifications/index.ts";
 import { openOverlay } from "../overlay.tsx";

@@ -11,11 +11,11 @@ import { realpathSync } from "node:fs";
 import type { OpenOverlay } from "../overlay.tsx";
 import { iconPath, resolveIcon } from "../shared/apps/index.ts";
 import { DBusConnection, SYSTEM_BUS_PATH, socketPaths } from "../shared/dbus/index.ts";
-import { type LockSignal, PolkitController } from "./controller.ts";
-import { findHelper } from "./helper.ts";
-import { PolkitPrompt } from "./prompt.tsx";
-import { serveAgent } from "./service.ts";
-import { agentLocale, sessionSubject } from "./subject.ts";
+import { type LockSignal, PolkitController } from "./lib/controller.ts";
+import { findHelper } from "./lib/helper.ts";
+import { PolkitPrompt } from "./lib/prompt.tsx";
+import { serveAgent } from "./lib/service.ts";
+import { agentLocale, sessionSubject } from "./lib/subject.ts";
 
 export interface PolkitOptions {
   /** A development run (`system/stand-in.ts`): never the machine's own system bus. */

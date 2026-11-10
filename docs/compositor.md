@@ -290,7 +290,7 @@ Each milestone ends with the shell running on it in the VM.
 - **Window controls:** 0.1.0's "Shapes": a circle closes, a bar minimizes, a
   rounded square zooms (ume #D0596F, broth #E5B13F, kombu #4A9A7E), gray on an
   unfocused window, lit and the hovered one grown 1.18× under the pointer;
-  the same as the shell gives GTK apps (appearance/gtk-css.ts). A unified
+  the same as the shell gives GTK apps (appearance/lib/gtk-css.ts). A unified
   window (dashi-chrome-v1) keeps them in full screen, where they are when
   windowed and working the same (the square, with or without ⌥, leaves full
   screen: the shell's call), since its app keeps their place (`controls`)

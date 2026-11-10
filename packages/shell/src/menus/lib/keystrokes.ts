@@ -6,7 +6,7 @@
  * only types what it is told (IPC `send-keys`, comp/src/ipc/send_keys.rs).
  */
 
-import { KEYMAP } from "../../keymap.ts";
+import { KEYMAP } from "../../keymap/keymap.ts";
 import type { EditCommand } from "../types.ts";
 
 /** The key each command is on, with Shift for the ones that need it. */

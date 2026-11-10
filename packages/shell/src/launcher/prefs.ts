@@ -6,7 +6,7 @@
  * without restarting the shell (boot/keys.ts listens and sends the keymap).
  */
 
-import type { LauncherSettings } from "../settings-app/store.ts";
+import type { LauncherSettings } from "../settings-app/types.ts";
 import { aliasIndex, keyOf, personRules, withAlias, withKey } from "./person-keys.ts";
 
 /** The part of the Settings store this needs (settings-app/store.ts `SettingsStore`). */

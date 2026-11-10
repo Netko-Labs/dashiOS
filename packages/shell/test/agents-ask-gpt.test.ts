@@ -5,7 +5,7 @@ import { isChatModel, rankGptModels } from "../src/agents/ask/gpt-models.ts";
 import { modelKeys } from "../src/agents/ask/keys.ts";
 import { planTools, stepsFrom } from "../src/agents/ask/plan.ts";
 import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
-import { gptModelWords, keyWords } from "../src/settings-app/panes/agents-answer.tsx";
+import { gptModelWords, keyWords } from "../src/settings-app/lib/panes/agents-answer.tsx";
 
 const TOOLS = planTools(TOOL_ACTIONS);
 

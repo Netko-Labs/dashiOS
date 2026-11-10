@@ -8,8 +8,8 @@
 import { AccountsServiceBackend } from "../shared/accounts/backend.ts";
 import type { AccountsBackend, PasswordChanger } from "../shared/accounts/types.ts";
 import { type Nesting, standsIn } from "../system/stand-in.ts";
-import { FakeAccounts } from "./fake.ts";
-import { bunPty, spawnPasswd } from "./passwd.ts";
+import { FakeAccounts } from "./lib/fake.ts";
+import { bunPty, spawnPasswd } from "./lib/passwd.ts";
 
 export interface AccountsSetup {
   backend: AccountsBackend;

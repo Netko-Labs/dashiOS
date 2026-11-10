@@ -14,8 +14,10 @@
 import type { Actions } from "../actions/index.ts";
 import type { PressedChord } from "../app-menus/shortcut.ts";
 import type { Compositor } from "../compositor.ts";
-import { currentKeymap, idleKeymap, setPersonRules } from "../keymap-state.ts";
-import { type LauncherKeys, type LauncherPrefs, TYPE_BINDING, TypeAhead, typedFrom, withLauncher, withTyping } from "../launcher/index.ts";
+import { currentKeymap, idleKeymap, setPersonRules } from "../keymap/keymap-state.ts";
+import { type LauncherKeys, withLauncher } from "../launcher/keys.ts";
+import type { LauncherPrefs } from "../launcher/prefs.ts";
+import { TYPE_BINDING, TypeAhead, typedFrom, withTyping } from "../launcher/type-ahead.ts";
 import type { Menus } from "../menus/index.ts";
 import type { OverlaySlots } from "../overlay-slots.ts";
 import type { SettingsStore } from "../settings-app/index.ts";

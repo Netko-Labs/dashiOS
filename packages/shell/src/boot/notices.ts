@@ -6,7 +6,7 @@
  */
 
 import { activeScreen } from "../active-screen.ts";
-import { startAppearance } from "../appearance/follow.ts";
+import { startAppearance } from "../appearance/index.ts";
 import { launch, ownApp } from "../apps.ts";
 import { type CalendarService, startCalendar } from "../calendar/service.ts";
 import type { Compositor } from "../compositor.ts";

@@ -100,9 +100,6 @@ import { DEFAULT_WALLPAPER_MODE, type WallpaperChoice } from "./wallpaper/catalo
 import { RETIRED_KEYS, RETIRED_KINDS } from "./wallpaper/live/choice.ts";
 import { DEFAULT_X11_SCALING } from "./xwayland-scale.ts";
 
-export { DEFAULT_BLANK_AFTER, defaults, type Loaded, type Settings } from "./settings-defaults.ts";
-export type { KeyboardSettings, MouseSettings, TouchpadSettings } from "./settings-schema.ts";
-
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
 /**

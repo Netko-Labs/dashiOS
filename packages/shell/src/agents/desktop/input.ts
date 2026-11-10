@@ -8,7 +8,7 @@
 import { chordText } from "../../app-menus/shortcut.ts";
 import { SETUP_APP_ID } from "../../apps.ts";
 import type { CompositorWindow } from "../../compositor.ts";
-import { type KeyChord, resolveChord } from "../../keymap-match.ts";
+import { type KeyChord, resolveChord } from "../../keymap/keymap-match.ts";
 import { type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import { named, noWindow, subject } from "../subject.ts";
 import type { Call } from "../tools/index.ts";

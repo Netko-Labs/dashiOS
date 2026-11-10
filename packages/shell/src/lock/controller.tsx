@@ -11,9 +11,9 @@ import { type NativeHostTransport, type NativeRoot, render } from "@mirinjs/meta
 import type { Compositor } from "../compositor.ts";
 import { runPower } from "../menus/index.ts";
 import { spawnShellHost } from "../shared/metal/host.ts";
-import { Attempts, type Verdict } from "./attempts.ts";
-import { accountPicture, checkPassword, displayName, lockedUser } from "./auth.ts";
-import { LockScreen } from "./screen.tsx";
+import { Attempts, type Verdict } from "./lib/attempts.ts";
+import { accountPicture, checkPassword, displayName, lockedUser } from "./lib/auth.ts";
+import { LockScreen } from "./lib/screen.tsx";
 
 /** A lock screen that died comes back after this. */
 const RESPAWN_MS = 1000;

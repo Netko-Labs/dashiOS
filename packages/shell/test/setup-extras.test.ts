@@ -9,7 +9,7 @@ import {
   parseEvent,
   type StepStates,
   waitingStates,
-} from "../src/setup/extras/events.ts";
+} from "../src/setup/lib/extras/events.ts";
 import { LineSplitter } from "../src/shared/io/lines.ts";
 
 describe("parseEvent", () => {

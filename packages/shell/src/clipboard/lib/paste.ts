@@ -8,7 +8,7 @@
 
 import { readFileSync } from "node:fs";
 import type { Compositor } from "../../compositor.ts";
-import { TERMINALS } from "../../keymap.ts";
+import { TERMINALS } from "../../keymap/keymap.ts";
 import type { ClipEntry } from "../history.ts";
 import type { ClipboardIo } from "./io.ts";
 import type { ClipboardWatch } from "./watch.ts";

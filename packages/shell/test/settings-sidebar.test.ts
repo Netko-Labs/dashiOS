@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { SIDEBAR, sidebarListHeight, topBand } from "../src/settings-app/sidebar.tsx";
+import { SIDEBAR, sidebarListHeight, topBand } from "../src/settings-app/lib/sidebar-measures.ts";
 import { SETTINGS_WINDOW } from "../src/settings-app/view.tsx";
 import { GROUP_LABELS, PANES, paneGroups, SIDEBAR_PANES } from "../src/shared/settings/panes.ts";
 

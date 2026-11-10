@@ -45,7 +45,7 @@ import { languagesOf, messageLocales } from "../shared/locale/messages.ts";
 import type { Handoff } from "./agents.ts";
 import type { Catalog } from "./apps.ts";
 import { LauncherKeyboard, TYPE_AHEAD_LIMIT_MS } from "./keys.ts";
-import { type LauncherView, launcherElement, type Opening, surfaceOptions } from "./launcher-view.tsx";
+import { type LauncherView, launcherElement, type Opening, surfaceOptions } from "./lib/launcher-view.tsx";
 import type { Look } from "./look.ts";
 import type { OverlayKind } from "./overlays.tsx";
 import type { LateParts } from "./parts.ts";
