@@ -5,6 +5,9 @@
  * that store.
  *
  *   WAYLAND_DISPLAY=<dashi-comp socket> bun src/main.tsx
+ *
+ * Started by hand (not by dashi-comp's `-c`), the compositor needs `--open-ipc`
+ * to take it for the shell (docs/compositor-ipc.md, "Who may ask").
  */
 
 import { existsSync } from "node:fs";

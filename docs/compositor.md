@@ -53,7 +53,7 @@ shell's client:
   bindings, ❖ phases, the snippets' keywords watched as the person types, Super lent to the window of a ❖-click), `agent_seat/` (a second seat an agent drives, drawn
   with its own pointer), `capture.rs`, `wallpaper/` (`request`, `live`,
   `tick`), `outputs/` (`config`, `apply`, `place`, `report`, `chrome`).
-- **IPC (`ipc/`):** `requests`, `windows`, `outbox`, `dev`.
+- **IPC (`ipc/`):** `server` (the socket), `frame`, `peer` (who connected), `table` (every method, who may ask it, what runs), `methods/` (what each does, by area), `params`, `grants` (`ipc-clients`).
 - Text in the compositor (title bars) with cosmic-text.
 
 ## Module Map
@@ -104,7 +104,8 @@ crates/dashi-comp/src/
   keys/             keymap, bindings, ❖ phases, snippet keywords (snippets.rs), ❖-click (super_click.rs),
                     keys while locked (locked.rs)
   xwayland/         Xwayland and the X11 window manager
-  ipc/              socket, framing, requests
+  ipc/              socket, framing, who connected, the method table (who may ask what), methods/
+  background.rs     blocking work (PNG encoding, file IO) on a thread, back as a calloop event
   outputs/          `outputs`, `output`, `outputs-config`, VRR modes, `mirror` (mirror.rs)
   session/          the session client, trust, lock, idle, agent input
   wallpaper/        pictures, video (GStreamer), live looks

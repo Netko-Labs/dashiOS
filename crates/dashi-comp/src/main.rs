@@ -2,6 +2,7 @@
 //! shell decides (docs/conventions.md, "The Rule"; docs/compositor.md).
 
 mod backend;
+mod background;
 mod cli;
 mod handlers;
 mod input;
@@ -55,7 +56,8 @@ fn run(args: cli::Args) -> Result<(), Box<dyn std::error::Error>> {
     let mut event_loop: EventLoop<'static, Dashi> = EventLoop::try_new()?;
     let handle = event_loop.handle();
 
-    let (ipc, listener) = Ipc::bind(&ipc_path()?)?;
+    let (mut ipc, listener) = Ipc::bind(&ipc_path()?)?;
+    ipc.open = args.open_ipc;
     Ipc::listen(listener, &handle)?;
     let display: Display<Dashi> = Display::new()?;
     let mut state = Dashi::new(

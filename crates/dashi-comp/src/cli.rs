@@ -1,7 +1,8 @@
-//! The command line: `dashi-comp [--backend NAME] [--greeter] [--no-xwayland] [-c COMMAND]`.
+//! The command line: `dashi-comp [--backend NAME] [--greeter] [--no-xwayland] [--open-ipc] [-c COMMAND]`.
 
 pub(crate) const USAGE: &str = "\
-usage: dashi-comp [--backend auto|udev|winit|headless] [--greeter] [--no-xwayland] [-c COMMAND]
+usage: dashi-comp [--backend auto|udev|winit|headless] [--greeter] [--no-xwayland]
+                  [--open-ipc] [-c COMMAND]
 
   -c COMMAND        run COMMAND (a shell command line) as the session's client;
                     the compositor ends when it does
@@ -12,6 +13,8 @@ usage: dashi-comp [--backend auto|udev|winit|headless] [--greeter] [--no-xwaylan
   --greeter         the login screen's compositor: no Xwayland, and no
                     window list or screen copying for anyone
   --no-xwayland     no X11 apps (headless never starts Xwayland)
+  --open-ipc        trust every IPC connection as the shell (tests, a shell
+                    started by hand); never for a session
   -h, --help        this
   -V, --version     the version
 ";
@@ -30,6 +33,7 @@ pub(crate) struct Args {
     pub backend: BackendChoice,
     pub greeter: bool,
     pub xwayland: bool,
+    pub open_ipc: bool,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -45,6 +49,7 @@ pub(crate) fn parse(mut args: impl Iterator<Item = String>) -> Result<Parsed, St
         backend: BackendChoice::Auto,
         greeter: false,
         xwayland: true,
+        open_ipc: false,
     };
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -52,6 +57,7 @@ pub(crate) fn parse(mut args: impl Iterator<Item = String>) -> Result<Parsed, St
             "-V" | "--version" => return Ok(Parsed::Version),
             "--greeter" => parsed.greeter = true,
             "--no-xwayland" => parsed.xwayland = false,
+            "--open-ipc" => parsed.open_ipc = true,
             "-c" | "--command" => parsed.command = Some(args.next().ok_or("-c needs a command")?),
             "--backend" => {
                 parsed.backend = match args.next().as_deref() {
@@ -86,6 +92,7 @@ mod tests {
                 backend: BackendChoice::Headless,
                 greeter: false,
                 xwayland: true,
+                open_ipc: false,
             }))
         );
         assert_eq!(
@@ -95,16 +102,17 @@ mod tests {
                 backend: BackendChoice::Auto,
                 greeter: false,
                 xwayland: true,
+                open_ipc: false,
             }))
         );
     }
 
     #[test]
     fn greeter_and_xwayland_switches() {
-        let Ok(Parsed::Run(args)) = run(&["--greeter", "--no-xwayland"]) else {
+        let Ok(Parsed::Run(args)) = run(&["--greeter", "--no-xwayland", "--open-ipc"]) else {
             panic!("the switches parse");
         };
-        assert!(args.greeter && !args.xwayland);
+        assert!(args.greeter && !args.xwayland && args.open_ipc);
     }
 
     #[test]
