@@ -7,7 +7,7 @@
 
 import type { TextHighlight } from "@mirinjs/metal";
 import { ENCODING_LABELS, type Encoding, LINE_ENDING_LABELS, type LineEnding } from "./codec.ts";
-import type { FindState } from "./model.ts";
+import type { FindState } from "./state.ts";
 
 /** Find's place, short enough for the field it is in: "Not found", "12 matches", "3 of 12"; null without a query. */
 export function findPlace(find: FindState): string | null {

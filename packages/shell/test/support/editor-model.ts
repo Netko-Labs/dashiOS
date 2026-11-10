@@ -1,5 +1,5 @@
-import { EditorModel } from "../../apps/editor/model.ts";
-import { DEFAULT_PREFS, type EditorPrefs } from "../../apps/editor/prefs.ts";
+import { EditorModel } from "../../apps/editor/lib/model.ts";
+import { DEFAULT_PREFS, type EditorPrefs } from "../../apps/editor/lib/prefs.ts";
 
 let clock = 0;
 

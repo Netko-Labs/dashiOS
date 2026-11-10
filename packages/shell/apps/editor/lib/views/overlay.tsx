@@ -6,11 +6,12 @@
 
 import { ConfirmSheet } from "@dashi/ui";
 import type { ReactElement } from "react";
+import type { EditorModel } from "../model.ts";
+import type { EditorState } from "../state.ts";
+import type { EditorSheets } from "../use-editor-sheets.ts";
+import { versionDifference } from "../versions.ts";
 import { EditorChooser } from "./chooser.tsx";
-import type { EditorModel, EditorState } from "./model.ts";
 import { ConflictSheet, GoToLineSheet, ReplaceSheet, VersionsSheet } from "./sheets.tsx";
-import type { EditorSheets } from "./use-editor-sheets.ts";
-import { versionDifference } from "./versions.ts";
 
 export function editorOverlay({
   model,

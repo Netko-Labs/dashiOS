@@ -23,9 +23,6 @@ import type { Recovery } from "./recovery.ts";
 import { type AutosaveResult, isDirty, type ModelOptions, NO_FIND, type Notice, type SaveResult } from "./state.ts";
 import { AUTO_EVERY, type Version, type VersionStore } from "./versions.ts";
 
-// The state and the names the window and the other files use, from state.ts.
-export { type AutosaveResult, type Conflict, type EditorState, type FindState, isDirty, type ModelOptions, type Notice, type SaveResult } from "./state.ts";
-
 export class EditorModel extends EditorDocument {
   private readonly versions: VersionStore | null;
   private readonly now: () => number;

@@ -9,10 +9,11 @@
 
 import { dirname } from "node:path";
 import { type MutableRefObject, useEffect, useRef, useState } from "react";
-import { useCloseRequest, useCloseWithdrawn } from "../kit/index.ts";
-import { type EditorChooserRequest, homeFolder, useChooserRequest } from "./chooser.tsx";
-import type { EditorModel, EditorState } from "./model.ts";
-import type { SheetState } from "./sheets.tsx";
+import { useCloseRequest, useCloseWithdrawn } from "../../kit/index.ts";
+import type { EditorModel } from "./model.ts";
+import type { EditorState } from "./state.ts";
+import { type EditorChooserRequest, homeFolder, useChooserRequest } from "./views/chooser.tsx";
+import type { SheetState } from "./views/sheets.tsx";
 
 export interface EditorSheets {
   sheet: SheetState | null;

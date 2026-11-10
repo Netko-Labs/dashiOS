@@ -9,7 +9,7 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { writeTextAtomic } from "../../src/shared/fs/atomic.ts";
+import { writeTextAtomic } from "../../../src/shared/fs/atomic.ts";
 
 export interface EditorPrefs {
   monospace: boolean;

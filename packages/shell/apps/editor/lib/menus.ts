@@ -13,7 +13,7 @@
  */
 
 import { redoLabel, undoLabel } from "@dashi/ui";
-import { enabledIds, type MenuSpec } from "../kit/index.ts";
+import { enabledIds, type MenuSpec } from "../../kit/index.ts";
 
 export interface MenuContext {
   /** The document has a file (Untitled has none: it is a draft). */

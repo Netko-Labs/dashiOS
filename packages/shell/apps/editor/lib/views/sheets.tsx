@@ -9,8 +9,8 @@
 import { AlertSheet, Button, RESTART, rowLook, SelectionBar, Sheet, TextField, useColors, WARNING } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { Conflict } from "./model.ts";
-import { type Version, versionKindLabel, versionWhen } from "./versions.ts";
+import type { Conflict } from "../state.ts";
+import { type Version, versionKindLabel, versionWhen } from "../versions.ts";
 
 export type SheetState =
   | { kind: "open" }

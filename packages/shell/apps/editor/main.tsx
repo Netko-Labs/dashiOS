@@ -16,12 +16,12 @@
 import { resolve } from "node:path";
 import { METAL_HOST } from "../../src/shared/apps/index.ts";
 import { runApp } from "../kit/index.ts";
-import { parseArgs } from "./args.ts";
-import { EditorModel } from "./model.ts";
-import { moveOldRecovery, RecoveryKeeper, recoveryFiles, recoveryFor, takeRecovery } from "./recovery.ts";
-import { VersionStore } from "./versions.ts";
-import { EDITOR_MIN_SIZE, EDITOR_SIZE, EditorWindow } from "./view.tsx";
-import { type Launch, openWindow, windowCommand } from "./windows.ts";
+import { parseArgs } from "./lib/args.ts";
+import { EditorModel } from "./lib/model.ts";
+import { moveOldRecovery, RecoveryKeeper, recoveryFiles, recoveryFor, takeRecovery } from "./lib/recovery.ts";
+import { VersionStore } from "./lib/versions.ts";
+import { EDITOR_MIN_SIZE, EDITOR_SIZE, EditorWindow } from "./lib/views/view.tsx";
+import { type Launch, openWindow, windowCommand } from "./lib/windows.ts";
 
 const args = parseArgs(Bun.argv.slice(2));
 const launch: Launch = { bun: process.execPath, main: import.meta.path, host: args.host ?? process.env.DASHI_METAL_HOST ?? METAL_HOST };

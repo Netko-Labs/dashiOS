@@ -6,7 +6,8 @@
 import type { TextSelection } from "@mirinjs/metal";
 import { useState } from "react";
 import { lineStart } from "./find.ts";
-import type { EditorModel, EditorState } from "./model.ts";
+import type { EditorModel } from "./model.ts";
+import type { EditorState } from "./state.ts";
 
 export interface Selection {
   selection: TextSelection;

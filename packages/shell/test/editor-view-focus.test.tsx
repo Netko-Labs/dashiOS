@@ -2,9 +2,9 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { render } from "@mirinjs/metal";
-import { EditorModel } from "../apps/editor/model.ts";
-import { DEFAULT_PREFS } from "../apps/editor/prefs.ts";
-import { EditorWindow } from "../apps/editor/view.tsx";
+import { EditorModel } from "../apps/editor/lib/model.ts";
+import { DEFAULT_PREFS } from "../apps/editor/lib/prefs.ts";
+import { EditorWindow } from "../apps/editor/lib/views/view.tsx";
 import { fakeHost, press, scratchHome } from "./support/editor-view.ts";
 import { fakeClockEachTest, settle } from "./support/time.ts";
 

@@ -20,7 +20,7 @@
 import { useColors, useSurface } from "@dashi/ui";
 import { ScrollView, Text, type TextHighlight, TextInput, type TextSelection, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
-import type { EditorPrefs } from "./prefs.ts";
+import type { EditorPrefs } from "../prefs.ts";
 
 const PADDING = 24;
 /** Left of the text with line numbers on: the gutter is room enough. */

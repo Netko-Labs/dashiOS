@@ -21,15 +21,15 @@
 
 import { AppWindow, Notice } from "@dashi/ui";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import type { EditorModel } from "../model.ts";
+import { displayName, folderLabel } from "../names.ts";
+import { titleDetail } from "../status.ts";
+import { useEditorMenus } from "../use-editor-menus.ts";
+import { useEditorSheets } from "../use-editor-sheets.ts";
+import { useSelection } from "../use-selection.ts";
 import { EditorContent, useLineCount } from "./content.tsx";
-import type { EditorModel } from "./model.ts";
-import { displayName, folderLabel } from "./names.ts";
 import { editorOverlay } from "./overlay.tsx";
-import { titleDetail } from "./status.ts";
 import { EditorToolbar } from "./toolbar.tsx";
-import { useEditorMenus } from "./use-editor-menus.ts";
-import { useEditorSheets } from "./use-editor-sheets.ts";
-import { useSelection } from "./use-selection.ts";
 
 export const EDITOR_SIZE = { width: 760, height: 600 } as const;
 /**

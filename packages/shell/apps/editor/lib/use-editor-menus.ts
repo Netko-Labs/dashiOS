@@ -2,9 +2,10 @@
  * The window's menu bar menus (menus.ts) and what each command does here.
  */
 
-import { useAppMenus } from "../kit/index.ts";
+import { useAppMenus } from "../../kit/index.ts";
 import { editorMenus } from "./menus.ts";
-import type { EditorModel, EditorState } from "./model.ts";
+import type { EditorModel } from "./model.ts";
+import type { EditorState } from "./state.ts";
 import type { EditorSheets } from "./use-editor-sheets.ts";
 import type { Selection } from "./use-selection.ts";
 

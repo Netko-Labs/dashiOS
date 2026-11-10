@@ -9,12 +9,13 @@ import { statSync } from "node:fs";
 import { useColors, useSurface } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState } from "react";
-import { lineCount } from "./find.ts";
-import type { EditorModel, EditorState } from "./model.ts";
-import { formatStats, textStats } from "./stats.ts";
-import { countsLine, findHighlights } from "./status.ts";
+import { lineCount } from "../find.ts";
+import type { EditorModel } from "../model.ts";
+import type { EditorState } from "../state.ts";
+import { formatStats, textStats } from "../stats.ts";
+import { countsLine, findHighlights } from "../status.ts";
+import type { Selection } from "../use-selection.ts";
 import { TextArea } from "./text-area.tsx";
-import type { Selection } from "./use-selection.ts";
 
 /** How long the counts wait for typing to pause before counting again. */
 const COUNT_DELAY_MS = 300;

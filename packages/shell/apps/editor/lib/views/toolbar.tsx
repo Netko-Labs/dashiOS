@@ -5,10 +5,11 @@
 
 import { SearchField, ToolbarButton } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
-import { NEW, OPEN, SAVE } from "./glyphs.ts";
-import type { EditorModel, EditorState } from "./model.ts";
-import { findPlace } from "./status.ts";
-import type { EditorSheets } from "./use-editor-sheets.ts";
+import { NEW, OPEN, SAVE } from "../glyphs.ts";
+import type { EditorModel } from "../model.ts";
+import type { EditorState } from "../state.ts";
+import { findPlace } from "../status.ts";
+import type { EditorSheets } from "../use-editor-sheets.ts";
 
 /** Find's field: as wide as this with room, never narrower than FIND_MIN. */
 const FIND_WIDTH = 200;
