@@ -1,6 +1,3 @@
 # H17: system services scoring over 5.0 on systemd-analyze security --offline=true (count = score x 10). May only shrink;
 # the scripts agent hardens them.
-94	spin/dashi-hardware/usr/lib/systemd/system/dashi-hardware-boot.service
-94	spin/dashi-hardware/usr/lib/systemd/system/dashi-hardware-clean.service
-75	spin/dashi-hardware/usr/lib/systemd/system/dashi-hardware.service
 94	spin/dashi-kernel/usr/lib/systemd/system/dashi-default-kernel.service

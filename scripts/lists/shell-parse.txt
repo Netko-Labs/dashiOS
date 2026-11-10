@@ -1,2 +1,1 @@
 # H13: shell scripts that `bash -n` / `sh -n` cannot parse. May only shrink; the scripts agent fixes them.
-1	session/dashi-session

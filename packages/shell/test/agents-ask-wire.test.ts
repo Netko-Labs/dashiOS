@@ -1,26 +1,20 @@
 /**
  * The API answerers' wire: http.ts's tries and timeouts, the request and
  * reply shapes of claude.ts and gpt.ts against fixtures (test/fixtures/ask/,
- * written from the providers' API references: no live call, no real key),
- * a local stub server for the real `fetch` path, and the proof that no AI
- * library is in the shell's boot.
+ * written from the providers' API references: no live call, no real key).
+ * The real `fetch` path against a local stub server is in
+ * agents-ask-stub.test.ts; that no AI library loads at the shell's start is
+ * H16's check (scripts/boot-weight.ts).
  */
 
-import { afterAll, beforeAll, expect, test } from "bun:test";
+import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { AnswerError, type PlanTool } from "../src/agents/ask/answerer.ts";
-import { ANTHROPIC_VERSION, answerFailure, claudeAnswerer, echoed, FALLBACK_BETA, readMessage, readReply } from "../src/agents/ask/claude.ts";
-import { gptAnswerer, gptFailure, listGptModels, readGptReply } from "../src/agents/ask/gpt.ts";
+import { answerFailure, echoed, readMessage, readReply } from "../src/agents/ask/claude.ts";
+import { gptFailure, readGptReply } from "../src/agents/ask/gpt.ts";
 import { HttpError, NoReachError, requestJson, UnreadableError } from "../src/agents/ask/http.ts";
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(import.meta.dir, "fixtures/ask", `${name}.json`), "utf8"));
-const KEY = "sk-test-not-a-real-key";
-const TOOLS: PlanTool[] = [
-  { name: "lock_screen", description: "Lock the screen", schema: { type: "object", properties: {}, required: [], additionalProperties: false } },
-];
-const signal = () => new AbortController().signal;
-const turn = { text: "lock up", results: [] };
 
 // --- http.ts ---------------------------------------------------------------
 
@@ -219,165 +213,3 @@ test("GPT: error bodies as the launcher says them", () => {
   expect(gptFailure(new HttpError(403, {}))).toMatchObject({ failure: "no-key" });
   expect(gptFailure(new NoReachError(false))).toMatchObject({ failure: "no-answer", message: "GPT didn't answer." });
 });
-
-// --- A local stub server: the real fetch, the real wire ----------------------
-
-interface Seen {
-  method: string;
-  path: string;
-  headers: Headers;
-  body: Record<string, unknown> | null;
-}
-const seen: Seen[] = [];
-let answers: Array<() => Response> = [];
-let server: ReturnType<typeof Bun.serve>;
-let hosts: string[] = [];
-
-beforeAll(() => {
-  server = Bun.serve({
-    hostname: "127.0.0.1",
-    port: 0,
-    async fetch(request) {
-      const text = await request.text();
-      seen.push({ method: request.method, path: new URL(request.url).pathname, headers: request.headers, body: text ? JSON.parse(text) : null });
-      return (answers.shift() ?? (() => new Response("no answer left", { status: 500 })))();
-    },
-  });
-});
-afterAll(() => server.stop(true));
-
-/** A fetch that sends what is meant for a provider to the stub, remembering which host it was meant for. */
-const toStub = async (url: string, init: RequestInit): Promise<Response> => {
-  const meant = new URL(url);
-  hosts.push(meant.host);
-  return fetch(`http://127.0.0.1:${server.port}${meant.pathname}`, init);
-};
-const reset = (...next: Array<() => Response>) => {
-  seen.length = 0;
-  hosts = [];
-  answers = next;
-};
-const json = (body: unknown, init?: ResponseInit) => () => Response.json(body, init);
-
-test("stub: Claude over real fetch: POST /v1/messages to api.anthropic.com, the key in Authorization only, a busy answer tried again", async () => {
-  reset(json(fixture("claude-error-overloaded"), { status: 529, headers: { "retry-after-ms": "1" } }), json(fixture("claude-tool-use")));
-  const claude = claudeAnswerer({ key: async () => KEY, fetch: toStub });
-  const { reply, history } = await claude.turn([], turn, TOOLS, signal());
-  expect(reply.calls.map((call) => call.name)).toEqual(["lock_screen", "set_setting"]);
-  expect(hosts).toEqual(["api.anthropic.com", "api.anthropic.com"]);
-  expect(seen.map((each) => [each.method, each.path])).toEqual([
-    ["POST", "/v1/messages"],
-    ["POST", "/v1/messages"],
-  ]);
-  const { headers, body } = seen[1] as Seen;
-  expect([...headers].filter(([, value]) => value.includes(KEY))).toEqual([["authorization", `Bearer ${KEY}`]]);
-  expect(headers.get("anthropic-version")).toBe(ANTHROPIC_VERSION);
-  expect(headers.get("anthropic-beta")).toBe(FALLBACK_BETA);
-  expect(headers.get("content-type")).toBe("application/json");
-  expect(headers.get("x-api-key")).toBeNull();
-  expect(JSON.stringify(body)).not.toContain(KEY);
-  expect(body).toMatchObject({
-    model: "claude-opus-5-5",
-    max_tokens: 16000,
-    output_config: { effort: "low" },
-    fallbacks: "default",
-    tool_choice: { type: "auto" },
-    messages: [{ role: "user", content: [{ type: "text", text: "lock up" }] }],
-  });
-  // Both tries are the same request.
-  expect(seen[0]?.body).toEqual(body);
-  // The next turn is sent what came back, thinking included, after the person's first words.
-  expect(history).toHaveLength(2);
-  expect(history[1]).toMatchObject({ role: "assistant", content: (fixture("claude-tool-use") as { content: unknown }).content });
-});
-
-test("stub: Claude's key refused, and a refusal, are said in Dashi's words", async () => {
-  reset(json({ type: "error", error: { type: "authentication_error", message: "invalid x-api-key" } }, { status: 401 }));
-  const refused = await claudeAnswerer({ key: async () => KEY, fetch: toStub, maxRetries: 0 })
-    .turn([], turn, TOOLS, signal())
-    .catch((caught: unknown) => caught);
-  expect(refused).toBeInstanceOf(AnswerError);
-  expect(refused).toMatchObject({ failure: "no-key", message: "Anthropic didn't accept the key." });
-  reset(json(fixture("claude-refusal")));
-  await expect(claudeAnswerer({ key: async () => KEY, fetch: toStub }).turn([], turn, TOOLS, signal())).rejects.toMatchObject({ failure: "refused" });
-  reset();
-  await expect(claudeAnswerer({ key: async () => null, fetch: toStub }).turn([], turn, TOOLS, signal())).rejects.toMatchObject({
-    failure: "no-key",
-    message: "Add your Anthropic key in Settings › Agents.",
-  });
-  expect(seen).toEqual([]);
-});
-
-test("stub: GPT over real fetch: GET /v1/models once, then POST /v1/chat/completions, both to api.openai.com with a bearer key", async () => {
-  reset(json(fixture("openai-models")), json(fixture("openai-completion-tools")));
-  const gpt = gptAnswerer({ key: async () => KEY, model: () => null, fetch: toStub });
-  const { reply } = await gpt.turn([], turn, TOOLS, signal());
-  expect(reply.calls.map((call) => call.name)).toEqual(["set_setting", "set_volume"]);
-  expect(hosts).toEqual(["api.openai.com", "api.openai.com"]);
-  expect(seen.map((each) => [each.method, each.path])).toEqual([
-    ["GET", "/v1/models"],
-    ["POST", "/v1/chat/completions"],
-  ]);
-  expect(seen.every((each) => each.headers.get("authorization") === `Bearer ${KEY}`)).toBe(true);
-  expect(seen.every((each) => ![...each.headers.keys()].some((name) => ["openai-organization", "openai-project"].includes(name)))).toBe(true);
-  expect(seen[1]?.body).toMatchObject({
-    model: "gpt-5.1",
-    max_completion_tokens: 16000,
-    store: false,
-    tool_choice: "auto",
-    messages: [
-      { role: "developer", content: expect.any(String) },
-      { role: "user", content: "lock up" },
-    ],
-    tools: [{ type: "function", function: { name: "lock_screen", strict: true } }],
-  });
-  expect(JSON.stringify(seen[1]?.body)).not.toContain(KEY);
-});
-
-test("stub: GPT's models are the chat ones, best first; a quota error, an unknown model and an outage say so", async () => {
-  reset(json(fixture("openai-models")));
-  expect(await listGptModels(KEY, { fetch: toStub })).toEqual(["gpt-5.1", "gpt-4o"]);
-  reset(json(fixture("openai-error-quota"), { status: 429, headers: { "x-should-retry": "false" } }));
-  await expect(gptAnswerer({ key: async () => KEY, model: () => "gpt-5.1", fetch: toStub }).turn([], turn, TOOLS, signal())).rejects.toMatchObject({
-    failure: "failed",
-    message: "Your OpenAI account has no credit left.",
-  });
-  reset(json(fixture("openai-error-model"), { status: 404 }));
-  await expect(gptAnswerer({ key: async () => KEY, model: () => "gpt-9", fetch: toStub }).turn([], turn, TOOLS, signal())).rejects.toMatchObject({
-    failure: "no-model",
-  });
-  reset(json({}, { status: 503, headers: { "retry-after-ms": "1" } }), json({}, { status: 503 }));
-  await expect(gptAnswerer({ key: async () => KEY, model: () => "gpt-5.1", fetch: toStub }).turn([], turn, TOOLS, signal())).rejects.toMatchObject({
-    failure: "no-answer",
-  });
-  expect(seen).toHaveLength(2);
-});
-
-test("stub: a stopped turn stops the request, and says nothing of its own", async () => {
-  const stop = new AbortController();
-  answers = [];
-  const slow = (url: string, init: RequestInit) =>
-    new Promise<Response>((_resolve, reject) => {
-      init.signal?.addEventListener("abort", () => reject(init.signal?.reason));
-      void url;
-    });
-  const pending = claudeAnswerer({ key: async () => KEY, fetch: slow }).turn([], turn, TOOLS, stop.signal);
-  setTimeout(() => stop.abort(), 10);
-  await expect(pending).rejects.not.toBeInstanceOf(AnswerError);
-});
-
-// --- The boot ----------------------------------------------------------------
-
-test("boot: no AI library is in the shell's startup graph, and none is a dependency", async () => {
-  const root = join(import.meta.dir, "..");
-  const built = await Bun.build({ entrypoints: [join(root, "src/main.tsx")], target: "bun", metafile: true });
-  expect(built.success).toBe(true);
-  const inputs = Object.keys(built.metafile?.inputs ?? {});
-  expect(inputs.length).toBeGreaterThan(500);
-  // The answerers are in it (they're ours and small); the libraries are not.
-  expect(inputs.some((path) => path.endsWith("agents/ask/claude.ts"))).toBe(true);
-  const libraries = /node_modules\/(openai|@anthropic-ai|ai|@ai-sdk|@opentelemetry|standardwebhooks)\//;
-  expect(inputs.filter((path) => libraries.test(path))).toEqual([]);
-  const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as { dependencies?: Record<string, string> };
-  expect(Object.keys(manifest.dependencies ?? {}).filter((name) => /^(openai|ai|@ai-sdk\/.*|@anthropic-ai\/.*)$/.test(name))).toEqual([]);
-}, 60_000);

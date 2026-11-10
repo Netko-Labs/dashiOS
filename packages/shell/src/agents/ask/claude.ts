@@ -66,12 +66,21 @@ export interface ClaudeOptions {
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
+/** A tool in Claude's request: the API's own field names. */
+export interface ClaudeTool {
+  name: string;
+  description: string;
+  // biome-ignore lint/style/useNamingConvention: the API's field.
+  input_schema: Record<string, unknown>;
+  strict: true;
+}
+
 /** A plan tool as Claude is told of it: strict, so its arguments fit the schema. */
-export const claudeTool = (tool: PlanTool) => ({
+export const claudeTool = (tool: PlanTool): ClaudeTool => ({
   name: tool.name,
   description: tool.description,
   input_schema: strictSchema(tool.schema),
-  strict: true,
+  strict: true as const,
 });
 
 /** Where the model that answered starts: after the last fallback block, if a fallback ran. */
