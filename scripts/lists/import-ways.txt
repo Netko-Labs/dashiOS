@@ -1,9 +1,9 @@
 # H4: imports the wrong way (count = imports): src -> apps, app -> other app, app -> src outside src/shared. May only shrink.
 1	packages/shell/apps/activity-monitor/lib/sampler.ts
-1	packages/shell/apps/dialog/file-selection-view.tsx
+1	packages/shell/apps/dialog/lib/file-selection-view.tsx
 1	packages/shell/apps/editor/lib/views/chooser.tsx
-1	packages/shell/apps/installer/view.tsx
+1	packages/shell/apps/installer/lib/view.tsx
 1	packages/shell/apps/portal/lib/file-chooser/chooser.tsx
 1	packages/shell/apps/portal/lib/look.ts
+1	packages/shell/apps/software/lib/services.ts
 1	packages/shell/apps/software/main.tsx
-1	packages/shell/apps/software/services.ts
