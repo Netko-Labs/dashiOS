@@ -9,6 +9,8 @@
 
 import { type NativeHostOptions, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
+import { parseScreens } from "./displays.ts";
+import { choosePrimary } from "./menubars.ts";
 import type { OpenOverlay } from "./overlay.tsx";
 
 export interface Point {
@@ -235,4 +237,9 @@ export function chooseCaptureScreen(answer: unknown, options: { near?: Area | nu
     });
   const chosen = holding || screens.find(({ name }) => name === options.prefer) || screens[0];
   return chosen ? { output: chosen.name, origin: { x: chosen.frame.x, y: chosen.frame.y } } : { origin: { x: 0, y: 0 } };
+}
+
+/** The screen a capture goes on: the one holding `near` (its window's frame), else the primary. */
+export function captureScreenNear(answer: unknown, near: Area | null): CaptureScreen {
+  return chooseCaptureScreen(answer, { near, prefer: choosePrimary(parseScreens(answer).map((screen) => screen.name)) });
 }

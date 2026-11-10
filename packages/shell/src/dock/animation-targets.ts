@@ -15,7 +15,9 @@
 
 import type { Bounds } from "@mirinjs/metal";
 import type { AnimationTarget, Compositor, CompositorWindow, Frame } from "../compositor.ts";
+import { parseScreens } from "../displays.ts";
 import type { Entry } from "../entries.ts";
+import { pickPrimary } from "../menubars.ts";
 import { DOCK, DOCK_HEIGHT, TASKBAR } from "../theme.ts";
 import { appKey } from "./layout.ts";
 import type { DockSettings } from "./settings.ts";
@@ -25,6 +27,16 @@ import type { TileStore } from "./tiles.ts";
 export interface Placement {
   screen: Frame;
   style: DockSettings["style"];
+}
+
+/** The Dock's screen in an IPC `outputs` answer: `home` (the primary bar's) when it is there, else the one a primary is chosen on. */
+export function dockScreen(outputs: unknown, home: string | null | undefined): Frame | null {
+  const screens = parseScreens(outputs);
+  const name = pickPrimary(
+    screens.map((screen) => screen.name),
+    home,
+  );
+  return screens.find((screen) => screen.name === name)?.frame ?? null;
 }
 
 /** The tile's rectangle on the desktop, whole pixels. The Dock's surface hugs the bottom edge, above its margin. */

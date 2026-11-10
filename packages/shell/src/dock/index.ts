@@ -1,4 +1,4 @@
-export { AnimationTargets } from "./animation-targets.ts";
+export { AnimationTargets, dockScreen } from "./animation-targets.ts";
 export { AttentionStore } from "./attention.ts";
 export { DockController } from "./controller.ts";
 export { matchEntry } from "./layout.ts";

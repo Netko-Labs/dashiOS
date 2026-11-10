@@ -71,6 +71,7 @@ import {
   bottomInset,
   DockController,
   DockPrefs,
+  dockScreen,
   matchEntry,
   PinStore,
   resolveDock,
@@ -116,7 +117,7 @@ import type { Arrange } from "./layout.ts";
 import { findFiles, hasLocalSearch, LocalSearchEndpoint } from "./local-search.ts";
 import { LockController } from "./lock/index.ts";
 import { MenuBar } from "./menubar.tsx";
-import { choosePrimary, MenuBars, pickPrimary } from "./menubars.ts";
+import { MenuBars, pickPrimary } from "./menubars.ts";
 import { startMenus, useMenus } from "./menus/index.ts";
 import { runPower } from "./menus/session.ts";
 import type { StatusMenuAction } from "./menus/status-menu.ts";
@@ -138,7 +139,7 @@ import { startCapture } from "./recorder/start.ts";
 import { regionDesktop } from "./region/desktop.ts";
 import { chooseRegion, startRegion } from "./region/index.ts";
 import { ScreenCaptureStore, startScreenCapture } from "./screen-capture.ts";
-import { type AreaCapture, areaCapture, chooseCaptureScreen } from "./screenshot-area.tsx";
+import { type AreaCapture, areaCapture, captureScreenNear } from "./screenshot-area.tsx";
 import { takeScreenshot } from "./screenshots.ts";
 import { startSettings } from "./settings.ts";
 import { SettingsStore, startSettingsApp } from "./settings-app/index.ts";
@@ -484,8 +485,7 @@ const notifications = startNotifications(undefined, { screen: () => (compositor 
 const screenOf = async (window: number | null) => {
   if (!compositor) return { origin: { x: 0, y: 0 } };
   const [answer, windows] = await Promise.all([compositor.request("outputs"), compositor.windows().catch(() => [])]);
-  const near = windows.find((each) => each.id === window)?.frame ?? null;
-  return chooseCaptureScreen(answer, { near, prefer: choosePrimary(parseScreens(answer).map((screen) => screen.name)) });
+  return captureScreenNear(answer, windows.find((each) => each.id === window)?.frame ?? null);
 };
 const captureTools = compositor
   ? startCapture({
@@ -1021,11 +1021,8 @@ const stopAnimationTargets = compositor
       catalog,
       tiles: dockTiles,
       placement: async () => {
-        const screens = parseScreens(await compositor.request("outputs"));
-        const home = menuBars.primaryName ?? primaryScreen;
-        const screen =
-          screens.find((candidate) => candidate.name === home) ?? screens.find((candidate) => candidate.name === choosePrimary(screens.map((s) => s.name)));
-        return screen?.frame ? { screen: screen.frame, style: dockPrefs.snapshot.style } : null;
+        const screen = dockScreen(await compositor.request("outputs"), menuBars.primaryName ?? primaryScreen);
+        return screen ? { screen, style: dockPrefs.snapshot.style } : null;
       },
     }).start()
   : () => {};
