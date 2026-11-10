@@ -43,7 +43,7 @@ export const notificationTools: readonly ToolDef[] = [
     },
     build: ({ id }) => ({ name: "dismiss_notification", id }),
   }),
-  {
+  tool({
     name: "clear_notifications",
     title: "Clear notifications",
     description: "Take every notification out of the notification center, as Clear All does. Those still showing are closed first.",
@@ -51,7 +51,7 @@ export const notificationTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: true,
     idempotent: true,
-    properties: {},
-    parse: () => ({ name: "clear_notifications" }),
-  },
+    args: {},
+    build: () => ({ name: "clear_notifications" }),
+  }),
 ];

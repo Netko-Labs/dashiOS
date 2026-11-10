@@ -6,9 +6,11 @@
  * Done, blanked in the agent's pictures meanwhile.
  */
 
+import { optional } from "@dashi/shape";
 import { parseAmount } from "../secrets/pay.ts";
+import { custom, tool, windowIdArg } from "./args.ts";
 import { refArg, tabArg } from "./browser.ts";
-import { type Args, fail, type ToolDef, windowArg, windowProp } from "./define.ts";
+import { fail, type ToolDef } from "./define.ts";
 import type { CallError, SecretTarget } from "./types.ts";
 
 /** A site as an agent may name it: a host, or an address whose host is taken. */
@@ -30,49 +32,40 @@ export function parseSite(value: unknown): string | null {
   return valid ? host : null;
 }
 
-function site(args: Args, required: boolean): string | null | CallError {
-  if (args.site === undefined && !required) return null;
-  return parseSite(args.site) ?? fail('`site` must be a site\'s host or address, like "github.com".');
-}
+const SITE_SAYS = '`site` must be a site\'s host or address, like "github.com".';
 
-function account(args: Args): string | null | CallError {
-  if (args.account === undefined) return null;
-  return typeof args.account === "string" && args.account.length > 0 && args.account.length <= 512
-    ? args.account
-    : fail("`account` must be an account name from list_logins.");
-}
+/** The `site` argument: a host, or an address whose host is taken. */
+const site = custom({ type: "string", description: 'The site, as a host ("github.com") or the page\'s address.' }, parseSite, SITE_SAYS);
+
+const account = optional(
+  custom(
+    { type: "string", description: "Which account, when list_logins shows more than one for the site." },
+    (value) => (typeof value === "string" && value.length > 0 && value.length <= 512 ? value : null),
+    "`account` must be an account name from list_logins.",
+  ),
+);
+
+/** Press Return after typing: anything but `true` is false. */
+const submit = optional(custom({ type: "boolean", description: "Press Return after typing (default false)." }, (value) => value === true, ""));
+
+/** Where Dashi types: the field of a browser tab's element, or the focused field of a window. */
+const field = {
+  ref: optional(refArg("In the browser with Dashi's extension: the field's number from read_page (the user name, password, code or card number field).")),
+  tab: tabArg('The tab of `ref` (default: the tab you used last), like "t12".'),
+  window: optional(windowIdArg('Another app or browser: the window whose focused field Dashi fills, like "w3".')),
+};
 
 /** A window (its focused field), or a browser tab's element read_page numbered. */
-function target(args: Args): SecretTarget | CallError {
-  if (args.ref !== undefined) {
-    if (args.window !== undefined) return fail("Give `ref` (an element of a browser tab) or `window`, not both.");
-    const ref = refArg(args);
-    if (ref === null || typeof ref === "object") return ref ?? fail("`ref` is required.");
-    const tab = tabArg(args);
-    return tab !== null && typeof tab === "object" ? tab : { ref, tab };
-  }
-  if (args.tab !== undefined) return fail("`tab` goes with `ref`.");
-  const window = windowArg(args);
-  return typeof window === "number" ? { window } : fail("`ref` (a password, code or card field read_page numbered) or `window` is required.");
+function target({ ref, tab, window }: { ref?: number; tab?: number | null; window?: number }): SecretTarget | CallError {
+  if (ref !== undefined) return window === undefined ? { ref, tab: tab ?? null } : fail("Give `ref` (an element of a browser tab) or `window`, not both.");
+  if (tab !== undefined) return fail("`tab` goes with `ref`.");
+  return window === undefined ? fail("`ref` (a password, code or card field read_page numbered) or `window` is required.") : { window };
 }
 
 const isTarget = (value: SecretTarget | CallError): value is SecretTarget => "window" in value || "ref" in value;
 
-const fieldProps = {
-  ref: {
-    type: "integer",
-    description: "In the browser with Dashi's extension: the field's number from read_page (the user name, password, code or card number field).",
-  },
-  tab: { type: "string", description: 'The tab of `ref` (default: the tab you used last), like "t12".' },
-  window: { ...windowProp, description: 'Another app or browser: the window whose focused field Dashi fills, like "w3".' },
-};
-
-const siteProp = { type: "string", description: 'The site, as a host ("github.com") or the page\'s address.' };
-const accountProp = { type: "string", description: "Which account, when list_logins shows more than one for the site." };
-const submitProp = { type: "boolean", description: "Press Return after typing (default false)." };
-
 export const secretTools: readonly ToolDef[] = [
-  {
+  tool({
     name: "list_logins",
     title: "List saved logins",
     description:
@@ -81,13 +74,10 @@ export const secretTools: readonly ToolDef[] = [
     scope: "signin",
     readOnly: true,
     destructive: false,
-    properties: { site: siteProp },
-    parse: (args) => {
-      const s = site(args, false);
-      return typeof s === "object" && s !== null ? s : { name: "list_logins", site: s };
-    },
-  },
-  {
+    args: { site: optional(site) },
+    build: ({ site }) => ({ name: "list_logins", site: site ?? null }),
+  }),
+  tool({
     name: "sign_in",
     title: "Sign in for the person",
     description:
@@ -99,19 +89,13 @@ export const secretTools: readonly ToolDef[] = [
     scope: "signin",
     readOnly: false,
     destructive: false,
-    properties: { ...fieldProps, site: siteProp, account: accountProp, submit: submitProp },
-    required: ["site"],
-    parse: (args) => {
+    args: { ...field, site, account, submit },
+    build: (args) => {
       const where = target(args);
-      if (!isTarget(where)) return where;
-      const s = site(args, true);
-      if (s === null || typeof s === "object") return s ?? fail("`site` is required.");
-      const a = account(args);
-      if (a !== null && typeof a === "object") return a;
-      return { name: "sign_in", target: where, site: s, account: a, submit: args.submit === true };
+      return isTarget(where) ? { name: "sign_in", target: where, site: args.site, account: args.account ?? null, submit: args.submit === true } : where;
     },
-  },
-  {
+  }),
+  tool({
     name: "fill_code",
     title: "Enter a one-time code",
     description:
@@ -120,19 +104,13 @@ export const secretTools: readonly ToolDef[] = [
     scope: "signin",
     readOnly: false,
     destructive: false,
-    properties: { ...fieldProps, site: siteProp, account: accountProp, submit: submitProp },
-    required: ["site"],
-    parse: (args) => {
+    args: { ...field, site, account, submit },
+    build: (args) => {
       const where = target(args);
-      if (!isTarget(where)) return where;
-      const s = site(args, true);
-      if (s === null || typeof s === "object") return s ?? fail("`site` is required.");
-      const a = account(args);
-      if (a !== null && typeof a === "object") return a;
-      return { name: "fill_code", target: where, site: s, account: a, submit: args.submit === true };
+      return isTarget(where) ? { name: "fill_code", target: where, site: args.site, account: args.account ?? null, submit: args.submit === true } : where;
     },
-  },
-  {
+  }),
+  tool({
     name: "pay",
     title: "Pay for the person",
     description:
@@ -143,26 +121,28 @@ export const secretTools: readonly ToolDef[] = [
     scope: "pay",
     readOnly: false,
     destructive: true,
-    properties: {
-      ...fieldProps,
-      site: siteProp,
-      amount: { type: "string", description: 'The total the page shows, in dollars: "48.90".' },
-      card: { type: "string", description: "Which card, by its last four digits or its name in Settings (default: a single-use card)." },
+    args: {
+      ...field,
+      site,
+      amount: custom(
+        { type: "string", description: 'The total the page shows, in dollars: "48.90".' },
+        (value) => (typeof value === "string" ? parseAmount(value) : null),
+        '`amount` must be the total in dollars, like "48.90".',
+      ),
+      card: optional(
+        custom(
+          { type: "string", description: "Which card, by its last four digits or its name in Settings (default: a single-use card)." },
+          (value) => (typeof value === "string" && value.length <= 100 ? value : null),
+          "`card` must be a card's last four digits or its name.",
+        ),
+      ),
     },
-    required: ["site", "amount"],
-    parse: (args) => {
+    build: (args) => {
       const where = target(args);
-      if (!isTarget(where)) return where;
-      const s = site(args, true);
-      if (s === null || typeof s === "object") return s ?? fail("`site` is required.");
-      const cents = typeof args.amount === "string" ? parseAmount(args.amount) : null;
-      if (cents === null) return fail('`amount` must be the total in dollars, like "48.90".');
-      if (args.card !== undefined && (typeof args.card !== "string" || args.card.length > 100))
-        return fail("`card` must be a card's last four digits or its name.");
-      return { name: "pay", target: where, site: s, cents, card: typeof args.card === "string" ? args.card : null };
+      return isTarget(where) ? { name: "pay", target: where, site: args.site, cents: args.amount, card: args.card ?? null } : where;
     },
-  },
-  {
+  }),
+  tool({
     name: "hand_over",
     title: "Hand a window to the person",
     description:
@@ -171,18 +151,21 @@ export const secretTools: readonly ToolDef[] = [
     scope: "act",
     readOnly: false,
     destructive: false,
-    properties: { window: windowProp, reason: { type: "string", description: 'What the person should do, like "Sign in to your bank".' } },
-    required: ["window", "reason"],
-    parse: (args) => {
-      const window = windowArg(args);
-      if (typeof window !== "number") return window;
-      if (typeof args.reason !== "string" || args.reason.trim() === "") return fail("`reason` is required: what the person should do.");
-      // One line on the banner, without control characters.
-      const reason = args.reason
-        .replace(/\p{Cc}/gu, " ")
-        .trim()
-        .slice(0, 120);
-      return { name: "hand_over", window, reason };
+    args: {
+      window: windowIdArg(),
+      reason: custom(
+        { type: "string", description: 'What the person should do, like "Sign in to your bank".' },
+        // One line on the banner, without control characters.
+        (value) =>
+          typeof value === "string" && value.trim() !== ""
+            ? value
+                .replace(/\p{Cc}/gu, " ")
+                .trim()
+                .slice(0, 120)
+            : null,
+        "`reason` is required: what the person should do.",
+      ),
     },
-  },
+    build: ({ window, reason }) => ({ name: "hand_over", window, reason }),
+  }),
 ];

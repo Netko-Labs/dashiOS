@@ -6,15 +6,12 @@
  * only whether they are filled. Each site is asked about the first time.
  */
 
-import { type Args, fail, type ToolDef } from "./define.ts";
-import { parseKeys } from "./keys.ts";
-import type { CallError } from "./types.ts";
+import { accept, optional, reject, shape } from "@dashi/shape";
+import { custom, tool } from "./args.ts";
+import type { ToolDef } from "./define.ts";
+import { type Chord, parseKeys } from "./keys.ts";
 
-export const tabProp = {
-  type: "string",
-  description: 'A tab id from list_tabs or open_url, like "t12" (default: the tab you used last, else the one in front).',
-};
-export const refProp = { type: "integer", description: "An element's number from read_page, like 12 for [12]." };
+const TAB_HELP = 'A tab id from list_tabs or open_url, like "t12" (default: the tab you used last, else the one in front).';
 
 /** "t12" (or "12", or 12) to 12. */
 export function parseTabId(value: unknown): number | null {
@@ -24,22 +21,28 @@ export function parseTabId(value: unknown): number | null {
   return /^\d{1,10}$/.test(digits) ? Number(digits) : null;
 }
 
-/** The optional `tab` argument. */
-export function tabArg(args: Args): number | null | CallError {
-  if (args.tab === undefined || args.tab === null) return null;
-  return parseTabId(args.tab) ?? fail(`\`${String(args.tab)}\` is not a tab id; ids look like "t12".`);
+/** The optional `tab` argument: left out or null is the tab the agent used last (null here). */
+export const tabArg = (description = TAB_HELP) =>
+  optional(
+    shape<number | null>(
+      (value) => {
+        if (value === null) return accept(null);
+        const tab = parseTabId(value);
+        return tab === null ? reject(`\`${String(value)}\` is not a tab id; ids look like "t12".`) : accept(tab);
+      },
+      () => ({ type: "string", description }),
+    ),
+  );
+
+/** An element's number from read_page: `12`, or `"12"` or `"[12]"`. */
+function readRef(value: unknown): number | null {
+  const number = typeof value === "string" ? Number(value.replace(/^\[|\]$/g, "")) : value;
+  return typeof number === "number" && Number.isInteger(number) && number > 0 && number < 1e9 ? number : null;
 }
 
 /** The `ref` argument: a number read_page showed. */
-export function refArg(args: Args, required = true): number | null | CallError {
-  if (args.ref === undefined && !required) return null;
-  const value = typeof args.ref === "string" ? Number(args.ref.replace(/^\[|\]$/g, "")) : args.ref;
-  return typeof value === "number" && Number.isInteger(value) && value > 0 && value < 1e9
-    ? value
-    : fail("`ref` must be an element's number from read_page, like 12.");
-}
-
-const isError = (value: unknown): value is CallError => typeof value === "object" && value !== null;
+export const refArg = (description = "An element's number from read_page, like 12 for [12].") =>
+  custom({ type: "integer", description }, readRef, "`ref` must be an element's number from read_page, like 12.");
 
 /** An address an agent may open: http or https (a bare host gets https). */
 export function parseUrl(value: unknown): string | null {
@@ -55,7 +58,7 @@ export function parseUrl(value: unknown): string | null {
 }
 
 export const browserTools: readonly ToolDef[] = [
-  {
+  tool({
     name: "open_url",
     title: "Open a web page",
     description:
@@ -65,16 +68,17 @@ export const browserTools: readonly ToolDef[] = [
     scope: "web",
     readOnly: false,
     destructive: false,
-    properties: { url: { type: "string", description: 'The address: "https://example.com/login" (a bare host gets https).' }, tab: tabProp },
-    required: ["url"],
-    parse: (args) => {
-      const url = parseUrl(args.url);
-      if (!url) return fail("`url` must be an http or https address.");
-      const tab = tabArg(args);
-      return isError(tab) ? tab : { name: "open_url", url, tab };
+    args: {
+      url: custom(
+        { type: "string", description: 'The address: "https://example.com/login" (a bare host gets https).' },
+        parseUrl,
+        "`url` must be an http or https address.",
+      ),
+      tab: tabArg(),
     },
-  },
-  {
+    build: ({ url, tab }) => ({ name: "open_url", url, tab: tab ?? null }),
+  }),
+  tool({
     name: "read_page",
     title: "Read a web page",
     description:
@@ -86,13 +90,10 @@ export const browserTools: readonly ToolDef[] = [
     readOnly: true,
     destructive: false,
     idempotent: true,
-    properties: { tab: tabProp },
-    parse: (args) => {
-      const tab = tabArg(args);
-      return isError(tab) ? tab : { name: "read_page", tab };
-    },
-  },
-  {
+    args: { tab: tabArg() },
+    build: ({ tab }) => ({ name: "read_page", tab: tab ?? null }),
+  }),
+  tool({
     name: "click_element",
     title: "Click an element on a web page",
     description:
@@ -100,16 +101,10 @@ export const browserTools: readonly ToolDef[] = [
     scope: "web",
     readOnly: false,
     destructive: false,
-    properties: { ref: refProp, tab: tabProp },
-    required: ["ref"],
-    parse: (args) => {
-      const ref = refArg(args);
-      if (isError(ref) || ref === null) return ref ?? fail("`ref` is required.");
-      const tab = tabArg(args);
-      return isError(tab) ? tab : { name: "click_element", ref, tab };
-    },
-  },
-  {
+    args: { ref: refArg(), tab: tabArg() },
+    build: ({ ref, tab }) => ({ name: "click_element", ref, tab: tab ?? null }),
+  }),
+  tool({
     name: "fill_element",
     title: "Fill in a field on a web page",
     description:
@@ -118,34 +113,36 @@ export const browserTools: readonly ToolDef[] = [
     scope: "web",
     readOnly: false,
     destructive: false,
-    properties: { ref: refProp, text: { type: "string", description: "What the field should hold." }, tab: tabProp },
-    required: ["ref", "text"],
-    parse: (args) => {
-      const ref = refArg(args);
-      if (isError(ref) || ref === null) return ref ?? fail("`ref` is required.");
-      if (typeof args.text !== "string" || args.text.length > 100_000) return fail("`text` must be a string.");
-      const tab = tabArg(args);
-      return isError(tab) ? tab : { name: "fill_element", ref, text: args.text, tab };
+    args: {
+      ref: refArg(),
+      text: custom(
+        { type: "string", description: "What the field should hold." },
+        (value) => (typeof value === "string" && value.length <= 100_000 ? value : null),
+        "`text` must be a string.",
+      ),
+      tab: tabArg(),
     },
-  },
-  {
+    build: ({ ref, text, tab }) => ({ name: "fill_element", ref, text, tab: tab ?? null }),
+  }),
+  tool({
     name: "select_option",
     title: "Choose an option on a web page",
     description: "Choose one of a list's options (a combobox read_page numbered) by its value or its label, as read_page shows them.",
     scope: "web",
     readOnly: false,
     destructive: false,
-    properties: { ref: refProp, value: { type: "string", description: "The option's label or value." }, tab: tabProp },
-    required: ["ref", "value"],
-    parse: (args) => {
-      const ref = refArg(args);
-      if (isError(ref) || ref === null) return ref ?? fail("`ref` is required.");
-      if (typeof args.value !== "string" || args.value.length > 1000) return fail("`value` must be an option's label or value.");
-      const tab = tabArg(args);
-      return isError(tab) ? tab : { name: "select_option", ref, value: args.value, tab };
+    args: {
+      ref: refArg(),
+      value: custom(
+        { type: "string", description: "The option's label or value." },
+        (value) => (typeof value === "string" && value.length <= 1000 ? value : null),
+        "`value` must be an option's label or value.",
+      ),
+      tab: tabArg(),
     },
-  },
-  {
+    build: ({ ref, value, tab }) => ({ name: "select_option", ref, value, tab: tab ?? null }),
+  }),
+  tool({
     name: "press",
     title: "Press keys on a web page",
     description:
@@ -154,17 +151,24 @@ export const browserTools: readonly ToolDef[] = [
     scope: "web",
     readOnly: false,
     destructive: false,
-    properties: { keys: { type: "string", description: 'Keys, in order, separated by spaces: "Tab Return".' }, tab: tabProp },
-    required: ["keys"],
-    parse: (args) => {
-      if (typeof args.keys !== "string" || args.keys.trim() === "") return fail("`keys` is required.");
-      const chords = parseKeys(args.keys);
-      if (typeof chords === "string") return fail(chords);
-      const tab = tabArg(args);
-      return isError(tab) ? tab : { name: "press", keys: args.keys, chords, tab };
+    args: {
+      keys: custom<{ keys: string; chords: Chord[] }>(
+        { type: "string", description: 'Keys, in order, separated by spaces: "Tab Return".' },
+        (value) => {
+          const chords = typeof value === "string" && value.trim() !== "" ? parseKeys(value) : "";
+          return typeof value === "string" && typeof chords !== "string" ? { keys: value, chords } : null;
+        },
+        (given) => {
+          if (typeof given !== "string" || given.trim() === "") return "`keys` is required.";
+          const chords = parseKeys(given);
+          return typeof chords === "string" ? chords : "`keys` is not chords.";
+        },
+      ),
+      tab: tabArg(),
     },
-  },
-  {
+    build: ({ keys, tab }) => ({ name: "press", keys: keys.keys, chords: keys.chords, tab: tab ?? null }),
+  }),
+  tool({
     name: "scroll_page",
     title: "Scroll a web page",
     description:
@@ -173,24 +177,27 @@ export const browserTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     idempotent: false,
-    properties: {
-      direction: { type: "string", enum: ["down", "up", "top", "bottom"], description: "Which way (default down)." },
-      pages: { type: "number", description: "How many screens (default 1, at most 20)." },
-      ref: { ...refProp, description: "An element to bring into view instead." },
-      tab: tabProp,
+    args: {
+      direction: optional(
+        custom(
+          { type: "string", enum: ["down", "up", "top", "bottom"], description: "Which way (default down)." },
+          (value) => (value === "down" || value === "up" || value === "top" || value === "bottom" ? value : null),
+          "`direction` is down, up, top or bottom.",
+        ),
+      ),
+      pages: optional(
+        custom(
+          { type: "number", description: "How many screens (default 1, at most 20)." },
+          (value) => (typeof value === "number" && value > 0 && value <= 20 ? value : null),
+          "`pages` must be a number from 0.1 to 20.",
+        ),
+      ),
+      ref: optional(refArg("An element to bring into view instead.")),
+      tab: tabArg(),
     },
-    parse: (args) => {
-      const direction = args.direction ?? "down";
-      if (direction !== "down" && direction !== "up" && direction !== "top" && direction !== "bottom") return fail("`direction` is down, up, top or bottom.");
-      const pages = args.pages ?? 1;
-      if (typeof pages !== "number" || !(pages > 0 && pages <= 20)) return fail("`pages` must be a number from 0.1 to 20.");
-      const ref = refArg(args, false);
-      if (isError(ref)) return ref;
-      const tab = tabArg(args);
-      return isError(tab) ? tab : { name: "scroll_page", direction, pages, ref, tab };
-    },
-  },
-  {
+    build: ({ direction, pages, ref, tab }) => ({ name: "scroll_page", direction: direction ?? "down", pages: pages ?? 1, ref: ref ?? null, tab: tab ?? null }),
+  }),
+  tool({
     name: "list_tabs",
     title: "List the browser's tabs",
     description:
@@ -199,22 +206,21 @@ export const browserTools: readonly ToolDef[] = [
     readOnly: true,
     destructive: false,
     idempotent: true,
-    properties: {},
-    parse: () => ({ name: "list_tabs" }),
-  },
-  {
+    args: {},
+    build: () => ({ name: "list_tabs" }),
+  }),
+  tool({
     name: "switch_tab",
     title: "Switch to a browser tab",
     description: "Bring a tab to the front of its window; it becomes the tab the website tools use.",
     scope: "web",
     readOnly: false,
     destructive: false,
-    properties: { tab: { ...tabProp, description: 'A tab id from list_tabs, like "t12".' } },
-    required: ["tab"],
-    parse: (args) => {
-      const tab = tabArg(args);
-      if (isError(tab)) return tab;
-      return tab === null ? fail("`tab` is required: an id from list_tabs.") : { name: "switch_tab", tab };
+    args: {
+      tab: custom({ type: "string", description: 'A tab id from list_tabs, like "t12".' }, parseTabId, (given) =>
+        given === undefined || given === null ? "`tab` is required: an id from list_tabs." : `\`${String(given)}\` is not a tab id; ids look like "t12".`,
+      ),
     },
-  },
+    build: ({ tab }) => ({ name: "switch_tab", tab }),
+  }),
 ];

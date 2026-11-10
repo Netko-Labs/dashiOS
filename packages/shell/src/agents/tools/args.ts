@@ -55,10 +55,13 @@ export const wholeArg = (min: number, max: number, says: Says, description?: str
 
 const BAD_WINDOW = (given: unknown): string => `\`${String(given)}\` is not a window id; ids look like "w3".`;
 
-/** The `window` argument: an id from list_windows ("w3"), as the number the compositor knows it by. */
-export const windowId: Shape<number> = custom(windowProp, parseWindowId, (given) =>
-  typeof given === "string" ? BAD_WINDOW(given) : '`window` is required: an id from list_windows, like "w3".',
-);
+/** The `window` argument: an id from list_windows ("w3"), as the number the compositor knows it by; `description` where it is not the usual one. */
+export const windowIdArg = (description?: string): Shape<number> =>
+  custom(description === undefined ? windowProp : { ...windowProp, description }, parseWindowId, (given) =>
+    typeof given === "string" ? BAD_WINDOW(given) : '`window` is required: an id from list_windows, like "w3".',
+  );
+
+export const windowId: Shape<number> = windowIdArg();
 
 /** A window id that may be left out. */
 export const optionalWindowId: Shape<number | undefined> = optional(custom(windowProp, parseWindowId, BAD_WINDOW));
