@@ -7,8 +7,8 @@
 
 import type { SettingsStore } from "../settings-app/store.ts";
 import { clockPrefs, clockPrefsFrom } from "../shared/time/clock.ts";
-import type { RegionBackend } from "./backend.ts";
-import { applyFormats, type FormatsDeps } from "./formats.ts";
+import type { RegionBackend } from "./lib/backend.ts";
+import { applyFormats, type FormatsDeps } from "./lib/formats.ts";
 import { RegionStore } from "./store.ts";
 
 export interface RegionRuntime {

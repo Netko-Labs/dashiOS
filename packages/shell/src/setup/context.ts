@@ -1,5 +1,5 @@
 import type { AnswerStatus } from "../agents/ask/service.ts";
-import type { RegionStore } from "../region/store.ts";
+import type { RegionStore } from "../region/index.ts";
 import type { XkbLayouts } from "../settings-app/layouts.ts";
 import type { SettingsStore } from "../settings-app/store.ts";
 import type { FlagsStore } from "../shared/control-center/flags.ts";

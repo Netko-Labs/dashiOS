@@ -7,10 +7,10 @@
  * needed and made again if it dropped.
  */
 
-import { DBusConnection, DBusError, propertyMap, unwrap } from "../shared/dbus/index.ts";
-import { parseInstalledLocales } from "../shared/locale/locale.ts";
+import { DBusConnection, DBusError, propertyMap, unwrap } from "../../shared/dbus/index.ts";
+import { parseInstalledLocales } from "../../shared/locale/locale.ts";
+import { isTimezoneName } from "../timezones.ts";
 import { type RegionBackend, RegionError, type TimeState } from "./backend.ts";
-import { isTimezoneName } from "./timezones.ts";
 
 export const TIMEDATE = { name: "org.freedesktop.timedate1", path: "/org/freedesktop/timedate1" } as const;
 export const LOCALE = { name: "org.freedesktop.locale1", path: "/org/freedesktop/locale1" } as const;

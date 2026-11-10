@@ -1,7 +1,6 @@
 import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { LocalePickers } from "../../region/pickers.tsx";
-import { describeFailure, useRegion } from "../../region/store.ts";
+import { describeFailure, LocalePickers, useRegion } from "../../region/index.ts";
 import { useSettings } from "../../settings-app/hooks.ts";
 import type { SetupContext } from "../context.ts";
 

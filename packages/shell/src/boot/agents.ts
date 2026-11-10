@@ -23,7 +23,7 @@ import { openFile } from "../file-manager.ts";
 import { ContextSource, type HandoffShell, startHandoffShell } from "../handoff-shell.tsx";
 import { LAUNCHER_MOTION } from "../launcher/resident.tsx";
 import type { Notifications } from "../notifications/service.ts";
-import { regionDesktop } from "../region/desktop.ts";
+import { regionDesktop } from "../region/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import { machineDesktop } from "../settings-app/machine-desktop.ts";
 import { agentRow, type RegistryStores, valueOf } from "../settings-app/registry/index.ts";
