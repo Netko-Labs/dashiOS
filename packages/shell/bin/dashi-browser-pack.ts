@@ -15,6 +15,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
+import { isRecord, must, obj, str } from "@dashi/shape";
 import { crx3, extensionId, idFromManifestKey, publicDer, updateManifest, zip } from "../src/browser/crx.ts";
 
 const { values } = parseArgs({
@@ -32,7 +33,9 @@ if (!values.key || !values.out) {
 }
 
 const source = resolve(import.meta.dir, "../browser-extension");
-const manifest = JSON.parse(readFileSync(join(source, "manifest.json"), "utf8")) as { version: string; key: string };
+const read: unknown = JSON.parse(readFileSync(join(source, "manifest.json"), "utf8"));
+// The whole manifest is written back; only its version and key are read.
+const manifest = { ...(isRecord(read) ? read : {}), ...must(obj({ version: str(), key: str() }, { strict: false }), read, "manifest.json") };
 if (values.version) {
   if (!/^\d+(\.\d+){0,3}$/.test(values.version)) throw new Error("dashi-browser-pack: --version is up to four numbers: 0.5.0.7");
   manifest.version = values.version;

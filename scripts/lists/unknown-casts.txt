@@ -1,14 +1,9 @@
 # H7: `as T` on data typed unknown or any (count = casts). Parse it instead. May only shrink.
-1	packages/applet/src/commands.ts
-1	packages/applet/src/installed.ts
-8	packages/applet/src/protocol.ts
-1	packages/applet/src/warm-host.ts
 1	packages/shell/apps/calendar/import.ts
 3	packages/shell/apps/editor/files.ts
 1	packages/shell/apps/files/mounts.ts
 4	packages/shell/apps/preview/memory.ts
 2	packages/shell/bin/dashi-a11y-again.ts
-3	packages/shell/bin/dashi-applet-run.ts
 3	packages/shell/bin/dashi-settings-preview.tsx
 1	packages/shell/browser-extension/src/content/main.ts
 1	packages/shell/src/actions/links.ts

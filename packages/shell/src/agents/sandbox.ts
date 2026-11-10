@@ -23,6 +23,7 @@
  */
 
 import { basename, dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 
 export interface SandboxEnv {
   home: string;
@@ -182,11 +183,10 @@ const isPathList = (value: unknown): value is string[] => Array.isArray(value) &
 export function parsePlanProfile(text: string | undefined): PlanProfile | null {
   if (!text) return null;
   try {
-    const value = JSON.parse(text) as Record<string, unknown>;
-    const { socket, readOnly, state, cwd, task } = value;
+    const value: unknown = JSON.parse(text);
+    const { socket, readOnly, state, cwd, task } = isRecord(value) ? value : {};
     if (typeof socket !== "string" || !socket.startsWith("/") || typeof cwd !== "string" || !cwd.startsWith("/")) return null;
-    if (!isPathList(readOnly) || !isPathList(state)) return null;
-    if (task !== undefined && typeof task !== "boolean") return null;
+    if (!isPathList(readOnly) || !isPathList(state) || (task !== undefined && typeof task !== "boolean")) return null;
     return { socket, readOnly, state, cwd, ...(task ? { task: true } : {}) };
   } catch {
     return null;

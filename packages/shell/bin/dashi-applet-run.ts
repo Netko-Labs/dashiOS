@@ -9,20 +9,18 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
+import { list, maybe, nullable, obj, str } from "@dashi/shape";
 
 interface Plan {
   proxy: { args: string[]; sockets: string[] } | null;
   bwrap: string[];
 }
 
+const PLAN = obj({ proxy: nullable(obj({ args: list(str()), sockets: list(str()) }, { strict: false })), bwrap: list(str()) }, { strict: false });
+
 function parsePlan(text: string): Plan | null {
   try {
-    const value = JSON.parse(text) as Record<string, unknown>;
-    const strings = (list: unknown): list is string[] => Array.isArray(list) && list.every((each) => typeof each === "string");
-    const proxy = value.proxy as Record<string, unknown> | null;
-    if (!strings(value.bwrap)) return null;
-    if (proxy !== null && (!strings(proxy?.args) || !strings(proxy?.sockets))) return null;
-    return { proxy: proxy === null ? null : { args: proxy.args as string[], sockets: proxy.sockets as string[] }, bwrap: value.bwrap };
+    return maybe(PLAN, JSON.parse(text));
   } catch {
     return null;
   }

@@ -21,7 +21,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { isRefusal, refuse } from "@dashi/shape";
+import { isRecord, isRefusal, refuse } from "@dashi/shape";
 import { isAppletId, type Manifest, readManifest } from "./manifest.ts";
 import type { Unpacked } from "./package.ts";
 import { permissionName } from "./permissions.ts";
@@ -67,14 +67,14 @@ export function parseRecord(text: string): InstallRecord | null {
   } catch {
     return null;
   }
-  if (typeof value !== "object" || value === null) return null;
-  const fields = value as Record<string, unknown>;
+  if (!isRecord(value)) return null;
+  const fields = value;
   const strings = (list: unknown): list is string[] => Array.isArray(list) && list.every((each) => typeof each === "string");
   if (typeof fields.version !== "string" || typeof fields.sha256 !== "string" || !strings(fields.consent)) return null;
   if (fields.authorKey !== null && typeof fields.authorKey !== "string") return null;
   if (fields.source !== "catalog" && fields.source !== "local") return null;
   if (fields.catalog !== undefined && !isCatalogAddress(fields.catalog)) return null;
-  const disabled = fields.disabled as Record<string, unknown> | undefined;
+  const disabled = isRecord(fields.disabled) ? fields.disabled : undefined;
   const reason = disabled?.reason;
   return {
     version: fields.version,
@@ -115,7 +115,8 @@ const readText = (path: string): string | null => {
 /** applet.json's `name`, read as little as can be: for a list's row only. */
 function nameOf(json: string | null): string | null {
   try {
-    const name: unknown = json === null ? null : (JSON.parse(json) as Record<string, unknown> | null)?.name;
+    const parsed: unknown = json === null ? null : JSON.parse(json);
+    const name = isRecord(parsed) ? parsed.name : null;
     return typeof name === "string" && name.trim() !== "" && name.length <= 40 && !/\p{Cc}/u.test(name) ? name.trim() : null;
   } catch {
     return null;

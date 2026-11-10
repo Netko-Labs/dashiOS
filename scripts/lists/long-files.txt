@@ -42,7 +42,7 @@
 466	crates/dashi-term/src/vt.rs
 503	packages/applet/src/client.ts
 364	packages/applet/src/define.ts
-410	packages/applet/src/protocol.ts
+406	packages/applet/src/protocol.ts
 314	packages/dashi-ui/src/controls.tsx
 379	packages/dashi-ui/src/sheet.tsx
 338	packages/dashi-ui/test/controls-view.test.tsx

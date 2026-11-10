@@ -40,6 +40,7 @@
 
 import { existsSync, statSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
+import { maybe, nullable, num, obj, str } from "@dashi/shape";
 import { id, integer, isRefusal, optionalBoolean, type Refusal, record, refuse, text, typedObject } from "@dashi/shape/kit";
 import { COMMAND_LIMITS, type CommandResult, type CommandRow, parseResult, parseRows } from "./commands.ts";
 import { type ControlAction, type ControlUpdate, parseControlAction, parseControlUpdate, parseShown } from "./controls.ts";
@@ -321,6 +322,9 @@ function parseCommandMessage(type: keyof typeof COMMAND_FIELDS, raw: Record<stri
 
 const isNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 
+/** Where a popover or a view goes: a rect on a screen (null: the shell's choice), and its layer's namespace. */
+const AREA = obj({ x: num(), y: num(), width: num(), height: num(), output: nullable(str()), namespace: str() }, { strict: false });
+
 /** One line from the shell (the applet's side); null for anything else, so a newer shell's messages are skipped. */
 export function parseAppletShellMessage(line: string): AppletShellMessage | null {
   const message = typedObject(line);
@@ -345,21 +349,17 @@ export function parseAppletShellMessage(line: string): AppletShellMessage | null
   if (type === "activate" && isNumber(fields.x) && isNumber(fields.y)) return { type: "activate", id: fields.id, x: fields.x, y: fields.y };
   if (type === "select" && typeof fields.item === "string") return { type: "select", id: fields.id, item: fields.item };
   if (type === "dismiss") return { type: "dismiss", id: fields.id };
-  if (
-    type === "popover" &&
-    [fields.x, fields.y, fields.width, fields.height].every(isNumber) &&
-    typeof fields.namespace === "string" &&
-    (fields.output === null || typeof fields.output === "string")
-  ) {
+  const popoverArea = type === "popover" ? maybe(AREA, fields) : null;
+  if (popoverArea) {
     return {
       type: "popover",
       id: fields.id,
-      x: fields.x as number,
-      y: fields.y as number,
-      width: fields.width as number,
-      height: fields.height as number,
-      output: fields.output as string | null,
-      namespace: fields.namespace,
+      x: popoverArea.x,
+      y: popoverArea.y,
+      width: popoverArea.width,
+      height: popoverArea.height,
+      output: popoverArea.output,
+      namespace: popoverArea.namespace,
     };
   }
   return null;
@@ -389,21 +389,17 @@ function parseRunMessage(type: string, fields: Record<string, unknown>, seq: num
       ...(typeof fields.item === "string" ? { item: fields.item } : {}),
     };
   }
-  if (
-    type === "view" &&
-    [fields.x, fields.y, fields.width, fields.height].every(isNumber) &&
-    typeof fields.namespace === "string" &&
-    (fields.output === null || typeof fields.output === "string")
-  ) {
+  const viewArea = type === "view" ? maybe(AREA, fields) : null;
+  if (viewArea) {
     return {
       type: "view",
       seq,
-      x: fields.x as number,
-      y: fields.y as number,
-      width: fields.width as number,
-      height: fields.height as number,
-      output: fields.output as string | null,
-      namespace: fields.namespace,
+      x: viewArea.x,
+      y: viewArea.y,
+      width: viewArea.width,
+      height: viewArea.height,
+      output: viewArea.output,
+      namespace: viewArea.namespace,
     };
   }
   return null;

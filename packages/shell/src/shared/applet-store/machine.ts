@@ -40,7 +40,8 @@ export function parseBusctlString(output: string): unknown {
   const match = /^s\s+(".*")\s*$/s.exec(output.trim());
   if (!match?.[1]) return null;
   try {
-    return JSON.parse(JSON.parse(match[1]) as string);
+    const inner: unknown = JSON.parse(match[1]);
+    return typeof inner === "string" ? JSON.parse(inner) : null;
   } catch {
     return null;
   }
