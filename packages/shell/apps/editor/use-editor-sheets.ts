@@ -7,24 +7,18 @@
  * focused, never mounted again.
  */
 
-import { existsSync } from "node:fs";
-import { homedir } from "node:os";
-import { basename, dirname, join } from "node:path";
-import { type MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
-import { chooserRequest } from "../files/chooser/index.ts";
+import { dirname } from "node:path";
+import { type MutableRefObject, useEffect, useRef, useState } from "react";
 import { useCloseRequest, useCloseWithdrawn } from "../kit/index.ts";
+import { type EditorChooserRequest, homeFolder, useChooserRequest } from "./chooser.tsx";
 import type { EditorModel, EditorState } from "./model.ts";
-import { resolveInput, suggestedSavePath } from "./names.ts";
 import type { SheetState } from "./sheets.tsx";
-
-/** The home folder as the session gives it ($HOME), as Files' chooser takes it. */
-const homeFolder = (): string => process.env.HOME || homedir();
 
 export interface EditorSheets {
   sheet: SheetState | null;
   setSheet: (sheet: SheetState | null) => void;
   /** The chooser's request while an Open or Save As sheet is up. */
-  chooser: ReturnType<typeof chooserRequest> | null;
+  chooser: EditorChooserRequest | null;
   /** The window is closing, held by a conflict. */
   closing: MutableRefObject<boolean>;
   closeSheet: () => void;
@@ -109,19 +103,7 @@ export function useEditorSheets({
     if (model.saveAs(path) && closing.current) return quit(false);
     closeSheet();
   };
-  // biome-ignore lint/correctness/useExhaustiveDependencies: one request per sheet shown
-  const chooser = useMemo(() => {
-    if (sheet?.kind === "open") return chooserRequest("open", { appId: "dev.dashi.editor", title: "Open", currentFolder: base });
-    if (sheet?.kind !== "save-as") return null;
-    const home = homeFolder();
-    const suggested = resolveInput(suggestedSavePath(state.path, home, existsSync(join(home, "Documents")), existsSync), base, home);
-    return chooserRequest("save", {
-      appId: "dev.dashi.editor",
-      title: state.path === null ? `Save “${name}”` : "Save As",
-      currentFolder: suggested ? dirname(suggested) : base,
-      currentName: suggested ? basename(suggested) : `${name}.txt`,
-    });
-  }, [sheet]);
+  const chooser = useChooserRequest(sheet, state.path, name, base);
 
   return { sheet, setSheet, chooser, closing, closeSheet, save, requestClose, afterConflict, openPath, chooseOpen, chooseSaveAs };
 }

@@ -6,7 +6,7 @@
 
 import { ConfirmSheet } from "@dashi/ui";
 import type { ReactElement } from "react";
-import { AppChooser } from "../files/chooser/index.ts";
+import { EditorChooser } from "./chooser.tsx";
 import type { EditorModel, EditorState } from "./model.ts";
 import { ConflictSheet, GoToLineSheet, ReplaceSheet, VersionsSheet } from "./sheets.tsx";
 import type { EditorSheets } from "./use-editor-sheets.ts";
@@ -33,9 +33,9 @@ export function editorOverlay({
   if (!sheet) return undefined;
   switch (sheet.kind) {
     case "open":
-      return chooser && <AppChooser request={chooser} answer={(paths) => (paths?.[0] ? sheets.chooseOpen(paths[0]) : closeSheet())} />;
+      return chooser && <EditorChooser request={chooser} answer={(paths) => (paths?.[0] ? sheets.chooseOpen(paths[0]) : closeSheet())} />;
     case "save-as":
-      return chooser && <AppChooser request={chooser} answer={(paths) => (paths?.[0] ? sheets.chooseSaveAs(paths[0]) : closeSheet())} />;
+      return chooser && <EditorChooser request={chooser} answer={(paths) => (paths?.[0] ? sheets.chooseSaveAs(paths[0]) : closeSheet())} />;
     case "versions":
       return (
         <VersionsSheet
