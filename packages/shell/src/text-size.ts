@@ -12,7 +12,7 @@
  */
 
 import { DEFAULT_TEXT_SIZE, setTextSizeSource } from "@dashi/ui";
-import type { AppCommand, Gate } from "./appearance/apps.ts";
+import type { AppCommand, Gate } from "./appearance/index.ts";
 import type { Run } from "./system/exec.ts";
 
 /** The commands that tell GTK apps the factor, for the tools present (`has`). */

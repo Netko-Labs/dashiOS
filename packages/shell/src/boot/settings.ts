@@ -8,7 +8,7 @@ import { Grants } from "../agents/consent.ts";
 import type { AgentStore } from "../agents/index.ts";
 import type { Passwords } from "../agents/secrets/passwords.ts";
 import type { Agents } from "../agents/server.ts";
-import { AutoAppearance } from "../appearance/auto.ts";
+import { AutoAppearance } from "../appearance/index.ts";
 import type { Compositor } from "../compositor.ts";
 import { type ForceQuit, startForceQuit } from "../force-quit/index.ts";
 import { type SettingsApp, startSettingsApp } from "../settings-app/index.ts";

@@ -10,7 +10,7 @@
  * - X11 apps: `Xcursor.size` in X pixels (xwayland-scale.ts).
  */
 
-import type { AppCommand, Gate } from "./appearance/apps.ts";
+import type { AppCommand, Gate } from "./appearance/index.ts";
 import type { Compositor } from "./compositor.ts";
 import type { Run } from "./system/exec.ts";
 

@@ -4,10 +4,7 @@
  * input method and X11 scaling, all applied from settings.json.
  */
 
-import { ChromeStyle } from "../appearance/chrome.ts";
-import { CornerFeed } from "../appearance/corner-feed.ts";
-import { type AppearanceDeps, sessionDeps } from "../appearance/follow.ts";
-import { WindowStyleSync } from "../appearance/window-style.ts";
+import { type AppearanceDeps, ChromeStyle, CornerFeed, sessionDeps, WindowStyleSync } from "../appearance/index.ts";
 import type { Compositor } from "../compositor.ts";
 import type { DockPrefs } from "../dock/index.ts";
 import { IdlePolicy } from "../idle.ts";

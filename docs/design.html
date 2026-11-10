@@ -283,7 +283,7 @@
       <tr><th>From</th><th>What Dashi takes</th><th>How it becomes Dashi's</th></tr>
       <tr><td>macOS</td><td>A global menu bar, a Dock, translucent glass, window controls at the top left, unified toolbars, a command key for shortcuts, sheets, a launcher</td><td>The Shapes controls (circle, bar, square) instead of three dots; ❖ instead of ⌘; kombu instead of blue; ingredients instead of system colors</td></tr>
       <tr><td>Windows</td><td>Snapping and tiling from the keyboard (⌃❖ + arrows), a taskbar as an alternative to the Dock, a switcher that shows every window, practical defaults</td><td>The taskbar wears Dashi's glass and radius; tiling animates on Dashi's curves</td></tr>
-      <tr><td>Linux</td><td>Freedom to change everything, Flatpak, Fedora's engineering, GTK and Qt apps</td><td>GTK apps get Dashi's controls and colors (appearance/gtk-css.ts), so foreign apps look at home</td></tr>
+      <tr><td>Linux</td><td>Freedom to change everything, Flatpak, Fedora's engineering, GTK and Qt apps</td><td>GTK apps get Dashi's controls and colors (appearance/lib/gtk-css.ts), so foreign apps look at home</td></tr>
     </table>
     <div class="callout warn"><span>⚠︎</span><p><strong>Never ship another company's assets.</strong> No Apple or Microsoft icons, glyphs (⌘, ⊞), fonts (SF, Segoe), wallpapers, sounds, palettes, or product names in the UI. Reinterpret the idea, then draw it fresh. A code comment that says "as on the Mac" is a cue to check that Dashi reinterpreted, not copied.</p></div>
 
@@ -399,7 +399,7 @@
     <p class="small muted">Calendars take them in this order, mizu first; a color an imported calendar brings stays. There is no red among them: red is for deleting.</p>
 
     <h3 id="title-bars">Title bars</h3>
-    <p>Drawn by the compositor for windows it frames (<code>crates/dashi-comp/src/render/titlebar.rs</code>), and given to GTK apps through <code>appearance/gtk-css.ts</code> so both match.</p>
+    <p>Drawn by the compositor for windows it frames (<code>crates/dashi-comp/src/render/titlebar.rs</code>), and given to GTK apps through <code>appearance/lib/gtk-css.ts</code> so both match.</p>
     <table>
       <tr><th></th><th>Light, active</th><th>Light, inactive</th><th>Dark, active</th><th>Dark, inactive</th></tr>
       <tr><td>Bar</td><td><code>#EEEBE4</code></td><td><code>#F6F4EF</code></td><td><code>#141417</code></td><td><code>#0B0B0D</code></td></tr>
