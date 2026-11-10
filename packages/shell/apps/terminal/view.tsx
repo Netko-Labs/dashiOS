@@ -1,37 +1,41 @@
 /**
- * The Terminal's window: one chrome row (VS-1), the unified title bar with
- * the front tab's name, or the tabs themselves once there are two (VS-4,
- * tab-strip.tsx), and a + for a new tab; then the front tab's grid
- * (grid.tsx), in Dashi's terminal colors (palette.ts) or the ones a program
- * set. Each tab is its own dashi-term (sessions.ts) with the shell
+ * The Terminal's window, its layout only: one chrome row (VS-1), the unified
+ * title bar with the front tab's name, or the tabs themselves once there are
+ * two (VS-4, tab-strip.tsx), and a + for a new tab; then the front tab's grid
+ * (terminal-body.tsx), in Dashi's terminal colors (palette.ts) or the ones a
+ * program set. Each tab is its own dashi-term (sessions.ts) with the shell
  * integration, so tabs are named by folder and command (naming.ts), new
  * tabs and windows open where the front tab is, ❖↑ ❖↓ jump between
  * prompts and failed commands are marked in the margin. The grid takes the
  * keyboard raw and sends every key to the engine, which encodes it the way
  * the program asked (libghostty-vt); ⇧PgUp and ⇧PgDn page through the
- * scrollback. Closing a tab or the window while a program runs in it asks
- * first (closing.ts), however the window is closed (a close request, kit/close.ts).
+ * scrollback. The hooks hold the rest: the tabs and their shells
+ * (sessions.ts), the size (use-grid-size.ts), the closing questions
+ * (use-closing.ts), the menus (use-terminal-menus.ts), and the window's
+ * standing effects (use-window-lifecycle.ts).
  */
 
 import { hostname } from "node:os";
-import { AppWindow, ConfirmSheet, EmptyState, MENU_SEPARATOR, PopupMenu, ToolbarButton, useDark } from "@dashi/ui";
-import { type Bounds, type KeyDownInfo, Text, View } from "@mirinjs/metal";
-import { useEffect, useRef, useState } from "react";
-import { type Clipboard, type CloseReason, useAppMenus, useCloseRequest, useCloseWithdrawn } from "../kit/index.ts";
-import { type CloseQuestion, closeCopy, stillRunning } from "./closing.ts";
-import { GRID_INSET, Grid } from "./grid.tsx";
-import { type Cell, FONT_SIZE, lineHeightFor, stepFontSize } from "./line.tsx";
-import { tabLabel, terminalMenus } from "./menus.ts";
+import { AppWindow, EmptyState, ToolbarButton, useDark } from "@dashi/ui";
+import type { KeyDownInfo } from "@mirinjs/metal";
+import { useState } from "react";
+import type { Clipboard } from "../kit/index.ts";
+import { routeKey } from "./key-routing.ts";
+import { FONT_SIZE } from "./line.tsx";
 import { localFolder, tabName } from "./naming.ts";
 import { terminalPalette } from "./palette.ts";
-import { gridFor } from "./screen.ts";
-import { colorsMessage, useSessions } from "./sessions.ts";
 import { useScreenPart } from "./store.ts";
-import { TabStrip } from "./tab-strip.tsx";
-import { activeTab, NO_TABS, selectTab, showIndex, stepTab, type Tabs } from "./tabs.ts";
+import { activeTab, selectTab } from "./tabs.ts";
+import { TerminalBody } from "./terminal-body.tsx";
+import { type Point, terminalOverlay } from "./terminal-overlay.tsx";
+import { titleCenter } from "./title-center.tsx";
+import { useClosing } from "./use-closing.ts";
+import { useGridSize } from "./use-grid-size.ts";
+import { useTabSessions } from "./use-tab-sessions.ts";
+import { useTerminalMenus } from "./use-terminal-menus.ts";
+import { useWindowLifecycle } from "./use-window-lifecycle.ts";
 
 export const TERMINAL_SIZE = { width: 760, height: 480 } as const;
-const PROBE = "M".repeat(10);
 const PLUS = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 3.5v9M3.5 8h9" stroke="#000" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>`;
 
 export interface TerminalWindowProps {
@@ -73,281 +77,81 @@ function Terminal({
   const dark = useDark();
   const palette = terminalPalette(dark);
   const home = process.env.HOME;
-  const [tabs, setTabsState] = useState<Tabs>(NO_TABS);
-  const tabsNow = useRef(tabs);
-  tabsNow.current = tabs;
-  const setTabs = (change: (tabs: Tabs) => Tabs): void => setTabsState(change);
   const [fontSize, setFontSize] = useState(FONT_SIZE);
-  const [cell, setCell] = useState<Cell | null>(null);
-  const [bells, setBells] = useState(0);
-  /** Closing something that still runs a program: the question on screen. */
-  const [asking, setAsking] = useState<CloseQuestion | null>(null);
-  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
+  const [menuAt, setMenuAt] = useState<Point | null>(null);
   /** The tab strip's count was pressed: the menu of every tab, under it. */
-  const [tabsMenuAt, setTabsMenuAt] = useState<{ x: number; y: number } | null>(null);
+  const [tabsMenuAt, setTabsMenuAt] = useState<Point | null>(null);
   /** Bumped when a sheet goes, so the grid (mounted again) takes the keyboard back. */
   const [gridFocus, setGridFocus] = useState(0);
-  const bounds = useRef<Bounds | null>(null);
-  const paletteNow = useRef(palette);
-  paletteNow.current = palette;
-  const sessions = useSessions({
-    binary,
-    clipboard,
-    palette: () => paletteNow.current,
-    setTabs,
-    tabs: () => tabsNow.current,
-    onFrontBell: () => setBells((n) => n + 1),
-  });
+  const refocus = (): void => setGridFocus((n) => n + 1);
+  const { tabs, setTabs, sessions, bells } = useTabSessions({ binary, clipboard, palette });
 
   const front = activeTab(tabs);
   const engine = () => (front ? sessions.engine(front.id) : undefined);
   /** Where a new tab or window opens: the front tab's folder, on this machine. */
   const here = (): string | null => localFolder(front?.naming.folder, hostname());
   const selected = useScreenPart(sessions.store, front?.id ?? -1, (screen) => screen.selected);
-
-  /** A tab's ×, ❖W: at once at the prompt, else after asking. */
-  const requestCloseTab = (id: number): void => {
-    const each = sessions.engine(id);
-    if (!each) {
-      sessions.close(id);
-      return;
-    }
-    void each.running().then((program) => {
-      if (program === null) sessions.close(id);
-      else setAsking({ kind: "tab", id, program });
-    });
-  };
-
-  /** ⇧❖W, Close Window: at once when every tab is at its prompt, else after asking. */
-  const requestCloseWindow = (reason: CloseReason = "close"): void => {
-    void Promise.all(sessions.engines().map((each) => each.running())).then((answers) => {
-      const programs = stillRunning(answers);
-      if (programs.length === 0) onExit();
-      else setAsking({ kind: "window", programs, ...(reason === "quit" ? { quit: true } : {}) });
-    });
-  };
-  // The close control, ❖Q, the Dock's Quit, logging out: as Close Window, asking "Quit Terminal?" when it quits.
-  useCloseRequest(requestCloseWindow);
-  // The log out that asked was cancelled: "Quit Terminal?" goes with it (a tab's own question stays).
-  useCloseWithdrawn(() => {
-    if (asking?.kind !== "window") return;
-    setAsking(null);
-    refocus();
-  });
-
-  const refocus = (): void => setGridFocus((n) => n + 1);
-
-  // Every tab follows the window's grid; the first starts once the cell is measured.
-  const fit = (): void => {
-    const area = bounds.current;
-    if (!cell || !area) return;
-    const { cols, rows } = gridFor(area.width, area.height, cell.width, cell.height);
-    const cw = Math.round(cell.width);
-    const ch = Math.round(cell.height);
-    const was = sessions.size.current;
-    if (was?.cols === cols && was.rows === rows && was.cw === cw && was.ch === ch) return;
-    sessions.size.current = { cols, rows, cw, ch };
-    sessions.broadcast({ t: "resize", cols, rows, cw, ch });
-    if (!sessions.started()) sessions.open(firstFolder, firstCommand);
-  };
-  // biome-ignore lint/correctness/useExhaustiveDependencies: fit reads refs; it runs when the cell is measured again.
-  useEffect(fit, [cell]);
-  // Dark Mode changes every tab's colors; programs' own stay theirs.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: sessions is a facade over refs.
-  useEffect(() => {
-    sessions.broadcast(colorsMessage(palette));
-  }, [palette]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: on unmount only.
-  useEffect(
-    () => () => {
-      for (const each of sessions.engines()) each.stop();
-    },
-    [],
-  );
-  // The last tab closing (its shell exited, or ❖W) closes the window.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: sessions is a facade over refs.
-  useEffect(() => {
-    if (sessions.started() && tabs.list.length === 0) onExit();
-  }, [tabs, onExit]);
-
+  const closing = useClosing({ sessions, onExit, refocus });
+  const grid = useGridSize({ sessions, firstFolder, firstCommand, fontSize });
   const names = tabs.list.map((tab) => tabName(tab.naming, home));
   const windowTitle = front ? tabName(front.naming, home) : "Terminal";
-  useEffect(() => {
-    setWindowTitle(windowTitle);
-  }, [windowTitle, setWindowTitle]);
+  useWindowLifecycle({ sessions, palette, tabs, onExit, title: windowTitle, setWindowTitle });
+  const actions = useTerminalMenus({ clipboard, selected, tabs, names, front, fontSize, setFontSize, setTabs, engine, here, sessions, newWindow, closing });
 
-  const actions = {
-    copy: () => engine()?.send({ t: "copy" }),
-    paste: () => {
-      void clipboard.readText().then((text) => {
-        if (text) engine()?.send({ t: "paste", text });
-      });
-    },
-    selectAll: () => engine()?.send({ t: "select-all" }),
-    clear: () => engine()?.send({ t: "clear" }),
+  const onKeyDown = (key: KeyDownInfo): void =>
+    routeKey(key, {
+      front,
+      send: (input) => engine()?.send(input),
+      restart: () => front && sessions.restart(front.id, here()),
+      pageRows: Math.max(1, (sessions.size.current?.rows ?? 2) - 1),
+    });
+  const closeMenu = (): void => {
+    setMenuAt(null);
+    refocus();
   };
-  const { menus, run } = terminalMenus({
-    canCopy: clipboard.canWrite && selected,
-    tabs: names,
-    active: tabs.list.findIndex((tab) => tab.id === tabs.active),
-    canGrow: stepFontSize(fontSize, 1) !== fontSize,
-    canShrink: stepFontSize(fontSize, -1) !== fontSize,
-    actions: {
-      ...actions,
-      newWindow: () => newWindow(here()),
-      newTab: () => sessions.open(here()),
-      closeTab: () => front && requestCloseTab(front.id),
-      closeWindow: requestCloseWindow,
-      zoom: (step) => setFontSize((size) => (step === 0 ? FONT_SIZE : stepFontSize(size, step))),
-      jump: (prompts) => engine()?.send({ t: "jump", prompts }),
-      stepTab: (delta) => setTabs((current) => stepTab(current, delta)),
-      showIndex: (index) => setTabs((current) => showIndex(current, index)),
-    },
-  });
-  useAppMenus(menus, run);
-
-  const onKeyDown = (key: KeyDownInfo): void => {
-    // ❖ chords are the menu bar's (copy, paste, tabs, prompts, windows), not the program's.
-    if (key.meta) return;
-    if (front?.lost) {
-      if (key.key === "enter") sessions.restart(front.id, here());
-      return;
-    }
-    // ⇧PgUp and ⇧PgDn page through the scrollback, as in every terminal; the program never sees them.
-    if (key.shift && !key.ctrl && !key.alt && (key.key === "pageup" || key.key === "pagedown")) {
-      const page = Math.max(1, (sessions.size.current?.rows ?? 2) - 1);
-      engine()?.send({ t: "scroll", lines: key.key === "pageup" ? page : -page });
-      return;
-    }
-    engine()?.send({ t: "key", ...key });
+  const closeTabsMenu = (): void => {
+    setTabsMenuAt(null);
+    refocus();
   };
-
-  const question = asking && closeCopy(asking);
-  const sheet =
-    asking && question ? (
-      <ConfirmSheet
-        testID="close-running"
-        title={question.title}
-        message={question.message}
-        confirmLabel={question.confirmLabel}
-        danger
-        onCancel={() => {
-          setAsking(null);
-          refocus();
-        }}
-        onConfirm={() => {
-          setAsking(null);
-          if (asking.kind === "window") onExit();
-          else {
-            sessions.close(asking.id);
-            refocus();
-          }
-        }}
-      />
-    ) : undefined;
-  const menu = menuAt ? (
-    <PopupMenu
-      testID="terminal-menu"
-      x={menuAt.x}
-      y={menuAt.y}
-      onClose={() => {
-        setMenuAt(null);
-        refocus();
-      }}
-      items={[
-        { label: "Copy", keys: "❖C", disabled: !selected, onPress: actions.copy },
-        { label: "Paste", keys: "❖V", onPress: actions.paste },
-        { label: "Select All", keys: "❖A", onPress: actions.selectAll },
-        MENU_SEPARATOR,
-        { label: "Clear Scrollback", keys: "❖K", onPress: actions.clear },
-      ]}
-    />
-  ) : undefined;
-  const tabsMenu = tabsMenuAt ? (
-    <PopupMenu
-      testID="terminal-tabs-menu"
-      x={tabsMenuAt.x}
-      y={tabsMenuAt.y}
-      // Under the count, slid back inside the window rather than flipped over the tabs.
-      flip={false}
-      onClose={() => {
-        setTabsMenuAt(null);
-        refocus();
-      }}
-      // The View menu's tab rows, here too: the same names, the same keys.
-      items={tabs.list.map((tab, index) => ({
-        label: tabLabel(names[index] ?? "Terminal"),
-        checked: tab.id === tabs.active,
-        ...(index < 8 ? { keys: `❖${index + 1}` } : index === tabs.list.length - 1 ? { keys: "❖9" } : {}),
-        onPress: () => setTabs((current) => selectTab(current, tab.id)),
-      }))}
-    />
-  ) : undefined;
+  const selectTabId = (id: number): void => setTabs((current) => selectTab(current, id));
 
   return (
     <AppWindow
       title={windowTitle}
-      overlay={sheet ?? menu ?? tabsMenu}
-      center={
-        tabs.list.length > 1 ? (
-          <TabStrip
-            tabs={tabs.list.map((tab, index) => ({ id: tab.id, name: names[index] ?? "Terminal", rang: tab.rang }))}
-            active={tabs.active}
-            onSelect={(id) => setTabs((current) => selectTab(current, id))}
-            onClose={requestCloseTab}
-            onMore={(at) => setTabsMenuAt({ x: at.x, y: at.y + at.height + 4 })}
-          />
-        ) : undefined
-      }
+      overlay={terminalOverlay({
+        closing,
+        menuAt,
+        selected,
+        actions,
+        tabsMenuAt,
+        tabs,
+        names,
+        onSelectTab: selectTabId,
+        onCloseMenu: closeMenu,
+        onCloseTabsMenu: closeTabsMenu,
+      })}
+      center={titleCenter({
+        tabs,
+        names,
+        onSelect: selectTabId,
+        onClose: closing.requestCloseTab,
+        onMore: (at) => setTabsMenuAt({ x: at.x, y: at.y + at.height + 4 }),
+      })}
       toolbar={<ToolbarButton testID="terminal-tab-new" glyph={PLUS} tooltip="New tab" onPress={() => sessions.open(here())} />}
     >
-      {front && cell ? (
-        <Grid
-          key={`grid:${gridFocus}:${front.id}`}
-          store={sessions.store}
-          id={front.id}
-          cell={cell}
-          palette={palette}
-          dark={dark}
-          bells={bells}
-          lost={front.lost}
-          onKeyDown={onKeyDown}
-          onSelect={(phase, x, y, clicks) => engine()?.send({ t: "select", phase, x, y, clicks })}
-          // A wheel's notch is a whole line: three, as everywhere; a touchpad's fractions go as they come.
-          onWheel={(dy) => engine()?.send({ t: "scroll", lines: Number.isInteger(dy) ? dy * 3 : dy })}
-          onMark={(y) => engine()?.send({ t: "select-output", y })}
-          onContextMenu={(x, y) => setMenuAt({ x, y })}
-          onLayout={(area) => {
-            bounds.current = area;
-            fit();
-          }}
-        />
-      ) : (
-        // Before the first tab: the area its grid will have, inside the grid's margins.
-        <View
-          testID="terminal-starting"
-          style={{ flex: 1, backgroundColor: palette.ground }}
-          onLayout={(area) => {
-            bounds.current = { ...area, width: area.width - GRID_INSET.width, height: area.height - GRID_INSET.height };
-            fit();
-          }}
-        />
-      )}
-      {/* Measures one cell of the monospace face, again at each size. */}
-      <View style={{ position: "absolute", left: 0, top: -200, width: 4000, flexDirection: "row", opacity: 0 }}>
-        <View
-          key={fontSize}
-          testID="terminal-probe"
-          style={{ flexShrink: 0 }}
-          onLayout={(area) => {
-            if (area.width <= 0) return;
-            const width = area.width / PROBE.length;
-            setCell((now) => (now?.fontSize === fontSize && now.width === width ? now : { width, height: lineHeightFor(fontSize), fontSize }));
-          }}
-        >
-          <Text style={{ fontFamily: "monospace", fontSize, lineHeight: lineHeightFor(fontSize) }}>{PROBE}</Text>
-        </View>
-      </View>
+      <TerminalBody
+        front={front}
+        store={sessions.store}
+        grid={grid}
+        palette={palette}
+        dark={dark}
+        bells={bells}
+        gridFocus={gridFocus}
+        fontSize={fontSize}
+        onKeyDown={onKeyDown}
+        send={(input) => engine()?.send(input)}
+        onContextMenu={(x, y) => setMenuAt({ x, y })}
+      />
     </AppWindow>
   );
 }
