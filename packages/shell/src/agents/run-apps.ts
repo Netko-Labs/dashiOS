@@ -13,7 +13,7 @@ import type { Handlers } from "./run-types.ts";
 /** How long `launch_app` waits for the app's first window. */
 const LAUNCH_WAIT_MS = 10_000;
 
-export const owns = (entry: Entry, appId: string) =>
+const owns = (entry: Entry, appId: string): boolean =>
   appId !== "" && [entry.id, entry.wmClass].some((id) => id !== undefined && id.toLowerCase() === appId.toLowerCase());
 
 function describe(window: CompositorWindow, entries: readonly Entry[], arrangement: Tile | null) {
