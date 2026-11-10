@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { describeStep, MAX_STEPS, oneLine, planActions, planTools, resultFor, runnable, settingWords, spokenWords, stepsFrom } from "../src/agents/ask/plan.ts";
-import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
+import { TOOL_ACTIONS } from "../src/agents/index.ts";
 
 const call = (name: string, input: unknown, id = name) => ({ id, name, input });
 

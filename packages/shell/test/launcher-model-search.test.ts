@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { commandActions } from "../src/actions/sources/commands.ts";
-import { settingsActions } from "../src/actions/sources/settings.ts";
+import { commandActions } from "../src/actions/lib/sources/commands.ts";
+import { settingsActions } from "../src/actions/lib/sources/settings.ts";
 import { registerShellApp, SCREENSHOT_APP_ID } from "../src/apps.ts";
 import { clipboardActions } from "../src/clipboard/actions.ts";
 import { SNIPPETS_ADDRESS } from "../src/clipboard/scope.ts";

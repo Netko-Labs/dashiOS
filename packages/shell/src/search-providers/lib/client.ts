@@ -8,7 +8,7 @@
  * dropped. D-Bus activation starts a provider that isn't running.
  */
 
-import type { Outcome } from "../../actions/types.ts";
+import type { Outcome } from "../../actions/index.ts";
 import type { SlowSource } from "../../launcher/budget.ts";
 import type { SlowRow } from "../../launcher/extension-rows.ts";
 import { type CallSpec, Variant } from "../../shared/dbus/index.ts";

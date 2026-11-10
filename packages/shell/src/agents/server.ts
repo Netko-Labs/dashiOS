@@ -16,18 +16,15 @@ import type { Arrange, Tile } from "../layout.ts";
 import type { Question } from "./confirm.ts";
 import { Grants } from "./consent.ts";
 import type { ToolResult } from "./context.ts";
-import { frontPage } from "./desktop/browser.ts";
-import { Hands } from "./desktop/hands.ts";
-import type { Desktop } from "./desktop/index.ts";
+import { type Desktop, frontPage, Hands } from "./desktop/index.ts";
+import { personRunner } from "./lib/server-person.ts";
+import { sharedSecrets } from "./lib/server-shared.ts";
+import { listenAgents } from "./lib/server-sockets.ts";
+import type { Session } from "./lib/session/session.ts";
+import type { TaskHooks, TaskPolicy } from "./lib/session/session-types.ts";
 import { LockWatch } from "./lock.ts";
 import type { AgentStore, AgentUi } from "./presence.ts";
-import type { LoginSource } from "./secrets/sources.ts";
-import { Vault } from "./secrets/vault.ts";
-import { personRunner } from "./server-person.ts";
-import { sharedSecrets } from "./server-shared.ts";
-import { listenAgents } from "./server-sockets.ts";
-import type { Session } from "./session.ts";
-import type { TaskHooks, TaskPolicy } from "./session-types.ts";
+import { type LoginSource, Vault } from "./secrets/index.ts";
 import { SiteGrants } from "./sites.ts";
 import type { Call } from "./tools/index.ts";
 
@@ -44,7 +41,7 @@ export interface Agents {
   readonly desktop: Desktop;
   /**
    * Carry out a tool's call for the person (the launcher, a key, a link:
-   * actions/run.ts): the same code an agent's call runs, named as "you",
+   * actions/lib/run.ts): the same code an agent's call runs, named as "you",
    * seeing what the person sees. A tool that asks every time asks `confirm`,
    * the person's own sheet. Nothing runs while the screen is locked.
    */

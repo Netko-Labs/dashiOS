@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /**
  * dashi-open: hands a `dashi://` link to the running Dashi session, which
- * opens it (packages/shell/src/actions/links.ts). It is what the desktop
+ * opens it (packages/shell/src/actions/lib/links.ts). It is what the desktop
  * entry for `x-scheme-handler/dashi` runs, so `xdg-open` and `gio open`
  * reach here; from a terminal:
  *

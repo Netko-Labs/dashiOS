@@ -14,19 +14,17 @@
 
 import type { LauncherAgents } from "../../launcher/agents/rows.ts";
 import { HARNESS_IDS } from "./answerer.ts";
-import type { AnswerStatus, Ask, AskOptions, HarnessHost } from "./ask-types.ts";
-import { chosenAnswerer } from "./chosen-answerer.ts";
-import { listGptModels } from "./gpt.ts";
 import { HARNESSES, harnessStatuses, hostFiles } from "./harness/index.ts";
 import { HistoryLog } from "./history.ts";
 import { keyPlace } from "./keys.ts";
-import { cachedHistory, launcherSnapshot } from "./launcher-snapshot.ts";
+import { chosenAnswerer } from "./lib/chosen-answerer.ts";
+import { listGptModels } from "./lib/gpt.ts";
+import { cachedHistory, launcherSnapshot } from "./lib/launcher-snapshot.ts";
+import { AskTasks } from "./lib/tasks.ts";
 import { localModels } from "./local.ts";
 import type { NowItem } from "./now.ts";
 import type { Undo } from "./plan.ts";
-import { AskTasks } from "./tasks.ts";
-
-export type { AnswerStatus, Ask, AskOptions, AskSettings, HarnessHost } from "./ask-types.ts";
+import type { AnswerStatus, Ask, AskOptions, HarnessHost } from "./types.ts";
 
 export function startAsk(options: AskOptions): Ask {
   const history = options.history ?? new HistoryLog();

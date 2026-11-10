@@ -259,7 +259,7 @@ every 400 ms while an agent's recording runs, `src/agents/mask.ts` sets the
   longer among its parent's children (Chromium keeps the old page's nodes
   answering, as they were, after the tab moved on);
 - what an app shows back after Dashi typed a card or a password into one of
-  its windows (`src/agents/fill-prompts.ts`): Firefox's "Securely save this
+  its windows (`src/agents/lib/fill-prompts.ts`): Firefox's "Securely save this
   card? •••• 4242 12/34" and "Save password?" (with its Show button) are
   xdg_popups of the window. From the fill until a minute after its fields
   were last seen, that window's popups are blanked, and dashi-comp keeps
@@ -328,7 +328,7 @@ just before. An agent that disconnects has all its sheets taken down.
 
 ## Signing in, codes, "Your turn"
 
-Agent tools (`src/agents/tools/secrets.ts`), carried out by
+Agent tools (`src/agents/tools/lib/secrets.ts`), carried out by
 `src/agents/desktop/secrets.ts` and the broker (`src/agents/secrets/broker.ts`):
 
 | Tool | Scope | What it does |
@@ -359,7 +359,7 @@ Before the sheet and again just before typing, the broker checks the field
 
 In Helium with Dashi's extension, the agent names the field by its number
 from `read_page` (`ref`, and `tab`) instead of a window
-(`src/agents/desktop/browser-field.ts`): the extension brings the tab
+(`src/agents/desktop/lib/browser-field.ts`): the extension brings the tab
 forward, focuses that element, and reports what it is now (a password field
 only by `type=password`; for a code or a card, an editable text field), whether
 it has the focus, and the address of its frame and of every frame around it
@@ -394,7 +394,7 @@ Dashi's vault always holds the Secret Service's items (apps' secrets).
 
 ### 1Password
 
-`src/agents/secrets/onepassword.ts`, through the `op` CLI's desktop app
+`src/agents/secrets/lib/onepassword.ts`, through the `op` CLI's desktop app
 integration (1Password › Settings › Developer › "Integrate with 1Password
 CLI"): `op` asks the 1Password app, which asks the person to unlock it.
 The shell is the broker: it runs as the person, outside every agent sandbox

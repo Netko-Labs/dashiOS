@@ -2,7 +2,7 @@ import { afterEach, expect, test } from "bun:test";
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseScriptHeader, type ScriptRun, ScriptSource, scriptOutcome, scriptsDir } from "../src/actions/sources/scripts.ts";
+import { parseScriptHeader, type ScriptRun, ScriptSource, scriptOutcome, scriptsDir } from "../src/actions/scripts.ts";
 
 const HELLO = [
   "#!/bin/sh",

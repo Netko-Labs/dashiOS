@@ -21,7 +21,7 @@ import { ANSWERERS, AnswerError, type Answerer, type PlanTool, SYSTEM_PROMPT, ty
 import { oneLine } from "../plan.ts";
 import type { HarnessSpec } from "./catalog.ts";
 import type { FoundHarness } from "./detect.ts";
-import { PlanRecorder, type PlanServer, servePlan } from "./plan-server.ts";
+import { PlanRecorder, type PlanServer, servePlan } from "./lib/plan-server.ts";
 import { bridgeInside, harnessEnv, type Runner, type ShellPaths } from "./run.ts";
 
 /** What a harness is told, in plan mode: the answerers' words, and that its calls are only recorded. */

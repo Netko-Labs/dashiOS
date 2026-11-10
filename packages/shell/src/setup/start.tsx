@@ -9,7 +9,7 @@
  * person who finished once is not marked as having skipped by looking again.
  */
 
-import type { AnswerStatus } from "../agents/ask/service.ts";
+import type { AnswerStatus } from "../agents/index.ts";
 import { registerShellApp, SETUP_APP_ID } from "../apps.ts";
 import type { Compositor } from "../compositor.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";

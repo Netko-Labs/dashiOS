@@ -31,7 +31,7 @@ export interface SandboxOptions {
  * proxy. It starts in `cwd`, an empty folder of its own.
  */
 export interface PlanProfile {
-  /** This turn's plan-mode socket (agents/ask/harness/plan-server.ts), outside; or Dashi's MCP socket, for a task. */
+  /** This turn's plan-mode socket (agents/ask/harness/lib/plan-server.ts), outside; or Dashi's MCP socket, for a task. */
   socket: string;
   readOnly: string[];
   state: string[];

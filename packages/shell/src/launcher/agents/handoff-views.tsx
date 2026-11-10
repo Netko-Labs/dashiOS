@@ -8,7 +8,7 @@
 
 import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { type TaskContext, taskGrants, windowWords } from "../../agents/handoff/grants.ts";
+import { type TaskContext, taskGrants, windowWords } from "../../agents/index.ts";
 import { useMeasures } from "../measures.ts";
 import { ResultRow } from "../row-view.tsx";
 import type { Row } from "../rows.ts";

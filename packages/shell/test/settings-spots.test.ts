@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { settingsActions } from "../src/actions/sources/settings.ts";
+import { settingsActions } from "../src/actions/lib/sources/settings.ts";
 import type { Entry } from "../src/entries.ts";
 import { launcherIndex } from "../src/launcher/items.ts";
 import { buildSections, selectable } from "../src/launcher/rows.ts";
@@ -17,7 +17,7 @@ const ICONS = { calculator: "/calc.svg", files: "/files.svg", software: "/softwa
 /** The places the other action sources name (radios, clipboard): each is a row of the registry that says so. */
 test("a row another source lists is in the registry, marked as that source's", () => {
   const named: string[] = [];
-  for (const file of ["actions/sources/radios.ts", "clipboard/actions.ts"]) {
+  for (const file of ["actions/radios.ts", "clipboard/actions.ts"]) {
     const text = readFileSync(join(src, file), "utf8");
     for (const match of text.matchAll(/pane: "([^"]+)",\s*row: "([^"]+)"/g)) named.push(`${match[1]}/${match[2]}`);
   }

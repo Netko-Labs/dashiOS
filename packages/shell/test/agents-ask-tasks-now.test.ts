@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { AnswerError } from "../src/agents/ask/answerer.ts";
+import { FAILED_STAYS_MS } from "../src/agents/ask/lib/task-types.ts";
 import { nowItems, TurnWatch } from "../src/agents/ask/now.ts";
-import { FAILED_STAYS_MS } from "../src/agents/ask/tasks.ts";
 import { darkAndDock, fakeAnswerer, harness } from "./support/agents-ask-tasks.ts";
 import { settle } from "./support/time.ts";
 

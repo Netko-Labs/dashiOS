@@ -1,20 +1,18 @@
 /**
  * Carrying out list_logins, sign_in, fill_code, pay and hand_over
- * (tools/secrets.ts): the broker (secrets/broker.ts, secrets/pay.ts) does
+ * (tools/lib/secrets.ts): the broker (secrets/broker.ts, secrets/pay.ts) does
  * the signing in and the paying; this finds the window, checks the agent is
  * in Dashi's sandbox, and gives the broker its hands and eyes.
  */
 
 import { closeSync, openSync, readSync } from "node:fs";
 import type { CompositorWindow } from "../../compositor.ts";
-import { fieldAt, focusedField, limits, type Placed, type Rect, toWindow } from "../atspi/tree.ts";
+import { fieldAt, focusedField, limits, type Placed, type Rect, toWindow } from "../atspi/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
-import { type BrokerContext, fillCode, signIn } from "../secrets/broker.ts";
-import { payWith } from "../secrets/pay.ts";
-import { describeForAgent, findLogins, SOURCE_LABELS } from "../secrets/sources.ts";
-import { named, noWindow, subject } from "../subject.ts";
+import { named, noWindow, subject } from "../lib/subject.ts";
+import { type BrokerContext, describeForAgent, fillCode, findLogins, payWith, SOURCE_LABELS, signIn } from "../secrets/index.ts";
 import type { Call, SecretTarget } from "../tools/index.ts";
-import { browserField } from "./browser-field.ts";
+import { browserField } from "./lib/browser-field.ts";
 
 /** How long a browser just woken (Atspi.wake) takes to publish its page: about a second in the VM's Helium. */
 const WOKEN_MS = 1200;

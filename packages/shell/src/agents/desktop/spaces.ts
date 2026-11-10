@@ -7,7 +7,7 @@
 
 import { parseSpaces, spaceLabel } from "../../spaces/model.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
-import { named, noWindow, subject } from "../subject.ts";
+import { named, noWindow, subject } from "../lib/subject.ts";
 
 async function spaces(ctx: RunContext) {
   return parseSpaces(await ctx.compositor.spaces());

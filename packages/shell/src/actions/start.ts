@@ -11,7 +11,7 @@ import { actingAs } from "../acting.ts";
 import type { Question } from "../agents/confirm.ts";
 import { logActivity } from "../agents/consent.ts";
 import type { Agents } from "../agents/server.ts";
-import { TOOL_ACTIONS } from "../agents/tools/index.ts";
+import { TOOL_ACTIONS } from "../agents/tools/registry.ts";
 import { ownerPids } from "../app-menus/focus.ts";
 import type { AppMenuStore } from "../app-menus/store.ts";
 import type { Compositor, CompositorWindow } from "../compositor.ts";
@@ -25,15 +25,15 @@ import { isPaneId } from "../shared/settings/panes.ts";
 import type { Arrow } from "../tiling.ts";
 import { withArgs } from "./address.ts";
 import { type PersonQuestion, personTitle } from "./confirm-sheet.tsx";
-import { copyAddress } from "./copy.ts";
-import { linksSocketPath, serveLinks } from "./links.ts";
+import { copyAddress } from "./lib/copy.ts";
+import { linksSocketPath, serveLinks } from "./lib/links.ts";
+import { type Origin, type RunDeps, runAction } from "./lib/run.ts";
+import { AppSource } from "./lib/sources/apps.ts";
+import { commandActions, type RunCapture } from "./lib/sources/commands.ts";
+import { MenuSource } from "./lib/sources/menus.ts";
+import { settingsActions } from "./lib/sources/settings.ts";
+import { WindowSource } from "./lib/sources/windows.ts";
 import { ActionRegistry, fixedSource, mayUse } from "./registry.ts";
-import { type Origin, type RunDeps, runAction } from "./run.ts";
-import { AppSource } from "./sources/apps.ts";
-import { commandActions, type RunCapture } from "./sources/commands.ts";
-import { MenuSource } from "./sources/menus.ts";
-import { settingsActions } from "./sources/settings.ts";
-import { WindowSource } from "./sources/windows.ts";
 import { type ActionContext, type ActionDef, type ActionSource, type Args, failed, type Outcome } from "./types.ts";
 
 export interface ActionsOptions {
@@ -42,12 +42,12 @@ export interface ActionsOptions {
   agents: Pick<Agents, "runAsPerson" | "desktop"> | null;
   /** The settings registry's stores: Settings' rows read their state and change through them; null in a session without them. */
   settingsStores?: RegistryStores | null;
-  /** The person's own sheet (agent-sheets.tsx): only their press answers yes. */
+  /** The person's own sheet (agent-sheets/agent-sheets.tsx): only their press answers yes. */
   confirmPerson(question: PersonQuestion): Promise<boolean>;
   /** The installed apps (the shell's catalog). */
   entries(): readonly Entry[];
   launch(entry: Entry): number | null;
-  /** Bring a running app's window forward (sources/apps.ts); whether it did. */
+  /** Bring a running app's window forward (lib/sources/apps.ts); whether it did. */
   activate?(entry: Entry): Promise<boolean>;
   appMenus: Pick<AppMenuStore, "published" | "onPublished" | "select">;
   /** What the menu bar calls a window's app. */
@@ -60,7 +60,7 @@ export interface ActionsOptions {
   } | null;
   /** A Dashi menu row's action (menus/start.tsx `run`). */
   runMenu(action: MenuAction): Promise<void>;
-  /** A screenshot, ⇧❖3 ⇧❖4 ⇧❖5's (sources/commands.ts); none without a compositor. */
+  /** A screenshot, ⇧❖3 ⇧❖4 ⇧❖5's (lib/sources/commands.ts); none without a compositor. */
   capture?: RunCapture;
   openSettings(pane: PaneId, row?: string): void;
   keymap: Keymap;
@@ -82,7 +82,7 @@ export interface Actions {
   copyAddress(action: ActionDef, args?: Args): Promise<boolean>;
   /**
    * A step of an agent's plan the person approved with their own press
-   * (agents/ask/tasks.ts): that press is its Allow Once. Only an agents'
+   * (agents/ask/lib/tasks.ts): that press is its Allow Once. Only an agents'
    * tool runs so; it is logged as `by.agent`'s, in task `by.task`. A tool that
    * asks every time still asks, on the person's sheet.
    */

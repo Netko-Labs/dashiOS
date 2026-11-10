@@ -5,8 +5,7 @@
  * its placeholder and its hints.
  */
 
-import type { HarnessId } from "../agents/ask/answerer.ts";
-import { cut } from "../agents/handoff/words.ts";
+import { cut, type HarnessId } from "../agents/index.ts";
 import { type HandoffSnapshot, handoffHints } from "./agents/handoff-rows.ts";
 import { ASK_PLACEHOLDER, askHint, type LauncherAgentsSnapshot } from "./agents/rows.ts";
 import type { agentField } from "./agents/task-mode.tsx";

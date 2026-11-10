@@ -4,7 +4,7 @@
  * screen sharing, the portal's grants, and polkit's password sheet.
  */
 
-import { LockWatch } from "../agents/lock.ts";
+import { LockWatch } from "../agents/index.ts";
 import { holdingBar } from "../bar-hold.ts";
 import { type BluetoothSetup, chooseBluetooth } from "../bluetooth/index.ts";
 import type { Compositor } from "../compositor.ts";

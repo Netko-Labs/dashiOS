@@ -1,5 +1,5 @@
-import type { TokenSummary } from "../../src/agents/secrets/vault.ts";
-import type { TokenSource } from "../../src/agents/tokens/proxy.ts";
+import type { TokenSummary } from "../../src/agents/secrets/types.ts";
+import type { TokenSource } from "../../src/agents/tokens/lib/proxy.ts";
 
 export const asked: Array<[string, string]> = [];
 export const ANTHROPIC_HEADERS = ["x-api-key: {}", "Authorization: Bearer {}"];

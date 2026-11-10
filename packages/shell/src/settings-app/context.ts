@@ -1,8 +1,4 @@
-import type { AnswerStatus } from "../agents/ask/service.ts";
-import type { Grants } from "../agents/consent.ts";
-import type { AgentStore } from "../agents/presence.ts";
-import type { Passwords } from "../agents/secrets/passwords.ts";
-import type { SiteGrants } from "../agents/sites.ts";
+import type { AgentStore, AnswerStatus, Grants, Passwords, SiteGrants } from "../agents/index.ts";
 import type { ClipboardHistory } from "../clipboard/history.ts";
 import type { PrivacyStore } from "../privacy/store.ts";
 import type { RegionStore } from "../region/store.ts";

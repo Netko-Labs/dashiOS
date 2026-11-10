@@ -13,10 +13,10 @@
  * (agents started through dashi-agent hold `dashi:anthropic` instead).
  */
 
-import type { VaultTokens } from "../secrets/vault.ts";
-import { hostListed } from "../tokens/swap.ts";
-import { ANTHROPIC_HOST } from "./claude.ts";
-import { OPENAI_HOST } from "./gpt.ts";
+import type { VaultTokens } from "../secrets/index.ts";
+import { hostListed } from "../tokens/index.ts";
+import { ANTHROPIC_HOST } from "./lib/claude.ts";
+import { OPENAI_HOST } from "./lib/gpt.ts";
 
 /** The vault item's name for Claude's key (tokens/model-keys.ts `MODEL_KEYS`). */
 export const ANTHROPIC_TOKEN = "anthropic";

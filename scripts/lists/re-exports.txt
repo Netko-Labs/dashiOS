@@ -14,14 +14,6 @@
 2	packages/shell/apps/preview/document.ts
 1	packages/shell/apps/preview/glyphs.ts
 1	packages/shell/apps/preview/viewer.ts
-1	packages/shell/src/agents/ask/claude.ts
-1	packages/shell/src/agents/ask/service.ts
-1	packages/shell/src/agents/ask/tasks.ts
-2	packages/shell/src/agents/handoff/service.ts
-1	packages/shell/src/agents/handoff/store.ts
-1	packages/shell/src/agents/sandbox.ts
-1	packages/shell/src/agents/secrets/vault.ts
-1	packages/shell/src/agents/session.ts
 1	packages/shell/src/applets/connection.ts
 1	packages/shell/src/applets/installed.ts
 1	packages/shell/src/applets/protocol.ts

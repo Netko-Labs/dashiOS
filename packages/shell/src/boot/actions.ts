@@ -5,15 +5,13 @@
  * lists and reaches, dashi:// links shown in the launcher, and the keymap.
  */
 
-import { type Actions, startActions } from "../actions/index.ts";
-import { RadioSource } from "../actions/sources/radios.ts";
-import { isVaultWindow } from "../agents/secrets/vault-view.ts";
-import type { Agents } from "../agents/server.ts";
+import { type Actions, RadioSource, startActions } from "../actions/index.ts";
+import { type Agents, isVaultWindow } from "../agents/index.ts";
 import { appFor } from "../apps.ts";
 import { type Clipboard, startClipboard } from "../clipboard/start.ts";
 import type { Compositor } from "../compositor.ts";
 import { launchEntry } from "../entries.ts";
-import { type Extensions, openTarget, startExtensions } from "../extensions/start.ts";
+import { type Extensions, openTarget, startExtensions } from "../extensions/index.ts";
 import { openFile } from "../file-manager.ts";
 import { windowToFront } from "../front-window.ts";
 import { currentKeymap } from "../keymap/keymap-state.ts";

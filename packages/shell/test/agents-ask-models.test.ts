@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
 import { AnswerError } from "../src/agents/ask/answerer.ts";
-import { ANTHROPIC_HOST, claudeAnswerer, echoed, FALLBACK_BETA, type Fetch, readReply } from "../src/agents/ask/claude.ts";
-import { strictSchema } from "../src/agents/ask/strict.ts";
+import { ANTHROPIC_HOST, claudeAnswerer, echoed, FALLBACK_BETA, readReply } from "../src/agents/ask/lib/claude.ts";
+import type { Fetch } from "../src/agents/ask/lib/http.ts";
+import { strictSchema } from "../src/agents/ask/lib/strict.ts";
 import { signal, TOOLS } from "./support/agents-ask-models.ts";
 
 const KEY = "sk-test-not-a-real-key";

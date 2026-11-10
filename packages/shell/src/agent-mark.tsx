@@ -12,7 +12,7 @@
 import { useColors } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
-import { discGlyph, type MarkState } from "./agents/mark.ts";
+import { discGlyph, type MarkState } from "./agents/index.ts";
 import { opaque } from "./consent.tsx";
 
 /** The mark's measures (docs/design.html, "The agent mark"). */

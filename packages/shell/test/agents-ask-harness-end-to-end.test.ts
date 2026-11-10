@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { AnswerError, type HarnessId } from "../src/agents/ask/answerer.ts";
 import { HARNESSES, harnessAnswerer, hostRunner, type Runner } from "../src/agents/ask/harness/index.ts";
 import { spokenWords, stepsFrom } from "../src/agents/ask/plan.ts";
-import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
+import { TOOL_ACTIONS } from "../src/agents/index.ts";
 import { TOOLS } from "./support/agents-ask-harness.ts";
 
 describe("a harness answering, end to end with a fake CLI", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { eventsOf, stepsPlanned, streamEvents, toolName } from "../src/agents/handoff/stream.ts";
+import { eventsOf, stepsPlanned, streamEvents, toolName } from "../src/agents/handoff/lib/stream.ts";
 import { cut, hostOf, stepWords } from "../src/agents/handoff/words.ts";
 
 const fixture = (name: string) => readFileSync(join(import.meta.dir, "fixtures/handoff", name), "utf8");

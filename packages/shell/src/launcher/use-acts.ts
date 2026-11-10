@@ -5,8 +5,7 @@
  */
 
 import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from "react";
-import type { HarnessId } from "../agents/ask/answerer.ts";
-import { contextPrompt } from "../agents/handoff/grants.ts";
+import { contextPrompt, type HarnessId } from "../agents/index.ts";
 import type { AgentAct } from "./agents/acts.ts";
 import { type AgentHandlers, agentHandlers } from "./agents/handlers.ts";
 import { chosenContext } from "./agents/handoff-views.tsx";

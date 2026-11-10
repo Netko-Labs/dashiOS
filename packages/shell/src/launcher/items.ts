@@ -13,8 +13,7 @@
  * (`foreign`).
  */
 
-import { isSegment } from "../actions/address.ts";
-import type { ActionDef } from "../actions/types.ts";
+import { type ActionDef, isSegment } from "../actions/index.ts";
 import { SETTINGS_APP_ID } from "../apps.ts";
 import type { Entry } from "../entries.ts";
 import { type EntryItem, entryItem } from "./ranking/entries.ts";

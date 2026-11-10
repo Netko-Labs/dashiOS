@@ -19,8 +19,8 @@ import { dirname, join } from "node:path";
 import { logActivity } from "../consent.ts";
 import { peerPid, socketFd } from "../peer.ts";
 import { inAgentScope } from "../sandbox.ts";
-import { SandboxProxy, type TokenSource } from "./proxy.ts";
-import { makeAuthority } from "./x509.ts";
+import { SandboxProxy, type TokenSource } from "./lib/proxy.ts";
+import { makeAuthority } from "./lib/x509.ts";
 
 export const TOKENS_SOCKET = "dashi-tokens.sock";
 const MAX_LINE = 512;

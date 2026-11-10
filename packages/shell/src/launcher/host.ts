@@ -5,7 +5,7 @@
  * Everything here runs as the person, who pressed the key.
  */
 
-import type { ActionDef, Args, Outcome } from "../actions/types.ts";
+import type { ActionDef, Args, Outcome } from "../actions/index.ts";
 import type { Entry } from "../entries.ts";
 import type { Keymap } from "../keymap/keymap.ts";
 import type { LauncherWindow } from "./items.ts";

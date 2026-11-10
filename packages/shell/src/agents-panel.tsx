@@ -13,11 +13,19 @@
 import { useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
-import { harnessGlyph } from "./agents/handoff/harness-icons.ts";
-import { type AgentRuns, CARD_STEPS, isWorking, progressWords, type RunQuestion, type RunView } from "./agents/handoff/store.ts";
-import { cut } from "./agents/handoff/words.ts";
-import type { AgentInfo } from "./agents/index.ts";
-import { type AgentEntry, mergeAgents } from "./agents/mark.ts";
+import {
+  type AgentEntry,
+  type AgentInfo,
+  type AgentRuns,
+  CARD_STEPS,
+  cut,
+  harnessGlyph,
+  isWorking,
+  mergeAgents,
+  progressWords,
+  type RunQuestion,
+  type RunView,
+} from "./agents/index.ts";
 import { AccessChip, ConnectionRow, StopAllFooter, TileDot } from "./agents-rows.tsx";
 import { KeyCatcher } from "./overlay.tsx";
 

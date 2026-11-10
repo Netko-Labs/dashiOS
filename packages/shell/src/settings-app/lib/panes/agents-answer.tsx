@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import { ANSWERERS, type AnswererChoice, isHarnessId } from "../../../agents/ask/answerer.ts";
 import { ago, type HistoryEntry } from "../../../agents/ask/history.ts";
 import type { KeyPlace, Provider } from "../../../agents/ask/keys.ts";
-import type { AnswerStatus } from "../../../agents/ask/service.ts";
+import type { AnswerStatus } from "../../../agents/ask/types.ts";
 import { harnessOrder } from "../../../agents/handoff/order.ts";
 import { AnswererList, useHarnesses } from "../../answerer-list.tsx";
 import { useColors } from "../../colors.ts";

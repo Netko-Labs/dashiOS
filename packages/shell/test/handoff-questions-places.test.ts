@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { QuestionRoute } from "../src/agents/handoff/route.ts";
+import { QuestionRoute } from "../src/agents/handoff/lib/route.ts";
 import type { AgentUi } from "../src/agents/presence.ts";
 import { ask, setUp, who } from "./support/handoff-questions.ts";
 import { settle as tick } from "./support/time.ts";

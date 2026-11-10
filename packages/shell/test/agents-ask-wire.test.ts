@@ -10,9 +10,9 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { answerFailure, echoed, readMessage, readReply } from "../src/agents/ask/claude.ts";
-import { gptFailure, readGptReply } from "../src/agents/ask/gpt.ts";
-import { HttpError, NoReachError, requestJson, UnreadableError } from "../src/agents/ask/http.ts";
+import { answerFailure, echoed, readMessage, readReply } from "../src/agents/ask/lib/claude.ts";
+import { gptFailure, readGptReply } from "../src/agents/ask/lib/gpt.ts";
+import { HttpError, NoReachError, requestJson, UnreadableError } from "../src/agents/ask/lib/http.ts";
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(import.meta.dir, "fixtures/ask", `${name}.json`), "utf8"));
 

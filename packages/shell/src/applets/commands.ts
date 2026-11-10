@@ -31,8 +31,19 @@ import {
   isRefusal,
   type Manifest,
 } from "@dashi/applet";
-import { formatAddress } from "../actions/address.ts";
-import { type ActionDef, type ActionSource, failed, invalid, type Outcome, ok, type PickRow, ready, type Shown, type ViewFrame } from "../actions/types.ts";
+import {
+  type ActionDef,
+  type ActionSource,
+  failed,
+  formatAddress,
+  invalid,
+  type Outcome,
+  ok,
+  type PickRow,
+  ready,
+  type Shown,
+  type ViewFrame,
+} from "../actions/index.ts";
 import { realTimers, type Timers } from "../shared/time/real-timers.ts";
 
 /** How long an instant command, a chosen row, or a view's answer may take before it is given up. */

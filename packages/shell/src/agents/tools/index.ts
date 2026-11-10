@@ -1,5 +1,4 @@
-export { parseWindowId } from "./define.ts";
-export type { Chord } from "./keys.ts";
-export { keySteps, parseKeys } from "./keys.ts";
+export { checkToolArgs, isCallError, parseWindowId, type ToolDef } from "./define.ts";
+export { keySteps } from "./keys.ts";
 export { catalog, INSTRUCTIONS, locksScreen, parseCall, scopeOf, TOOL_ACTIONS, TOOLS } from "./registry.ts";
-export type { Button, Call, CallError, Point, Rect, SecretTarget, ToolName } from "./types.ts";
+export type { Call, Rect, SecretTarget, ToolName } from "./types.ts";

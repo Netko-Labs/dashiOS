@@ -3,10 +3,7 @@
  * a "Now" item, a history entry, and the verbs on them (Stop, Undo).
  */
 
-import type { HarnessId } from "../../agents/ask/answerer.ts";
-import type { HistoryEntry } from "../../agents/ask/history.ts";
-import type { NowItem } from "../../agents/ask/now.ts";
-import type { Undo } from "../../agents/ask/plan.ts";
+import type { HarnessId, HistoryEntry, NowItem, Undo } from "../../agents/index.ts";
 
 export type AgentAct =
   /** Send the words to the answerer: the launcher shows the plan. */

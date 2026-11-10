@@ -15,7 +15,7 @@
 import { chmodSync, existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import type { Manifest } from "@dashi/applet";
-import { peerPid, socketFd } from "../agents/peer.ts";
+import { peerPid, socketFd } from "../agents/index.ts";
 import type { ExtrasStore } from "../extras/index.ts";
 import { AppletConnection, type AppletContext } from "./connection.ts";
 

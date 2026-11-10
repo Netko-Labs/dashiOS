@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { CA_BUNDLE_VARS, type SandboxEnv, tokenProxyArgs } from "../src/agents/sandbox.ts";
-import type { TokenSummary } from "../src/agents/secrets/vault.ts";
+import { CA_BUNDLE_VARS, tokenProxyArgs } from "../src/agents/sandbox.ts";
+import type { SandboxEnv } from "../src/agents/sandbox-types.ts";
+import type { TokenSummary } from "../src/agents/secrets/types.ts";
 import { token } from "../src/agents/tokens/model-keys.ts";
 
 describe("the sandbox's arguments", () => {

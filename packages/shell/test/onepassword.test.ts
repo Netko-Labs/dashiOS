@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { NEVER_TAG, type OpResult, onePasswordSource, parseItems, saveToOnePassword } from "../src/agents/secrets/onepassword.ts";
+import { NEVER_TAG, type OpResult, onePasswordSource, parseItems, saveToOnePassword } from "../src/agents/secrets/lib/onepassword.ts";
 import { findLogins, loginKey } from "../src/agents/secrets/sources.ts";
 
 const PASSWORD = "op-secret-Password!";

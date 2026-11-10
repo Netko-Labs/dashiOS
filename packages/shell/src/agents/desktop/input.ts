@@ -10,9 +10,8 @@ import { SETUP_APP_ID } from "../../apps.ts";
 import type { CompositorWindow } from "../../compositor.ts";
 import { type KeyChord, resolveChord } from "../../keymap/keymap-match.ts";
 import { type RunContext, type ToolResult, text, toolError } from "../context.ts";
-import { named, noWindow, subject } from "../subject.ts";
-import type { Call } from "../tools/index.ts";
-import { keySteps } from "../tools/index.ts";
+import { named, noWindow, subject } from "../lib/subject.ts";
+import { type Call, keySteps } from "../tools/index.ts";
 import { borrowsPersonSeat, type Payload, PersonBusy, QUIET_MS, WAIT_MS } from "./hands.ts";
 
 type InputCall = Extract<Call, { name: "click" | "scroll" | "drag" | "type_text" | "press_keys" }>;
@@ -25,7 +24,7 @@ const DRAG_STEP_MS = 30;
  * A long scroll is played as a wheel spun fast: flicks of at most 120 pixels
  * (8 notches), a frame apart, never one event of hundreds of notches, which
  * no wheel sends (a 2400 pixel one came right before the display froze,
- * review 20). The tool keeps a scroll within 10 000 pixels (tools/input.ts).
+ * review 20). The tool keeps a scroll within 10 000 pixels (tools/lib/input.ts).
  */
 const WHEEL_FLICK_PX = 120;
 const WHEEL_FLICK_MS = 16;

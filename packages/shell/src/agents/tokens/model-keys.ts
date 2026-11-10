@@ -12,7 +12,8 @@
  *   spawn(["dashi-agent", "--", "claude", "-p", ask], { env: { ...process.env, ...key?.env } });
  */
 
-import { type TokenSummary, VaultTokens } from "../secrets/vault.ts";
+import type { TokenSummary } from "../secrets/types.ts";
+import { VaultTokens } from "../secrets/vault.ts";
 import { DEFAULT_HEADER, placeholder } from "./swap.ts";
 
 export interface ModelKey {

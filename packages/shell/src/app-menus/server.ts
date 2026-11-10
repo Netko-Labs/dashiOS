@@ -12,7 +12,7 @@
  */
 
 import { chmodSync, existsSync, unlinkSync } from "node:fs";
-import { peerPid } from "../agents/peer.ts";
+import { peerPid } from "../agents/index.ts";
 import { LIMITS, parseClientMessage, type ShellMessage } from "../shared/app-menus/protocol.ts";
 import { LineBuffer } from "../shared/io/lines.ts";
 import type { AppMenuStore, MenuOwner } from "./store.ts";

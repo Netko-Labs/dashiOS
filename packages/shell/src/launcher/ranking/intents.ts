@@ -9,7 +9,7 @@
  * query, so "Préférences" is "preferences".
  */
 
-import { formatAddress } from "../../actions/address.ts";
+import { formatAddress } from "../../actions/index.ts";
 import { SCREENSHOT_APP_ID, SETTINGS_APP_ID, SETUP_APP_ID } from "../../apps.ts";
 import type { RankKind } from "./item.ts";
 

@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { useConfirm } from "@dashi/ui";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render, View } from "@mirinjs/metal";
-import type { NewToken, TokenChange, TokenSummary } from "../src/agents/secrets/vault.ts";
+import type { NewToken, TokenChange, TokenSummary } from "../src/agents/secrets/types.ts";
 import { parseHeaders, parseHosts, type TokenStore, Tokens, tokenDetail } from "../src/settings-app/lib/panes/tokens.tsx";
 import { settle } from "./support/time.ts";
 

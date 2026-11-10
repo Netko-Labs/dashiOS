@@ -4,8 +4,8 @@
 
 import { describe, expect, test } from "bun:test";
 import { X509Certificate } from "node:crypto";
+import { issueLeaf, makeAuthority } from "../src/agents/tokens/lib/x509.ts";
 import { authorized, forwardHeaders, hostListed, parseConnect, parseHeaderSpec, proxyCredentials, swapHeaders, wanted } from "../src/agents/tokens/swap.ts";
-import { issueLeaf, makeAuthority } from "../src/agents/tokens/x509.ts";
 
 describe("certificates", () => {
   test("a sandbox's CA signs a leaf for one host, which TLS clients accept for that host only", async () => {

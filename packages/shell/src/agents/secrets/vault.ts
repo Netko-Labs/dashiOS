@@ -6,9 +6,8 @@
  */
 
 import { LineBuffer } from "../../shared/io/lines.ts";
-import { headersField, headersOf, type NewToken, parseToken, type TokenChange, type TokenSummary } from "./vault-token-items.ts";
-
-export type { NewToken, TokenChange, TokenSummary } from "./vault-token-items.ts";
+import { headersField, headersOf, parseToken } from "./lib/vault-token-items.ts";
+import type { NewToken, TokenChange, TokenSummary } from "./types.ts";
 
 export const VAULT_SOCKET = process.env.DASHI_SECRETD_SOCKET || "/run/dashi-secretd/socket";
 const TIMEOUT_MS = 10_000;

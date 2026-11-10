@@ -9,7 +9,7 @@ import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import type { AnswererChoice } from "../agents/ask/answerer.ts";
 import { type AnswererRow, answererRows } from "../agents/ask/choices.ts";
-import type { HarnessStatus } from "../agents/ask/harness/detect.ts";
+import type { HarnessStatus } from "../agents/ask/harness/index.ts";
 import { useColors } from "./colors.ts";
 import { CheckSlot } from "./lib/panes/parts.tsx";
 

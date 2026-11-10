@@ -67,7 +67,7 @@ Sources on day one (`actions/start.ts`, in this order):
 | `apps` | `dashi://app/<desktop id>`, `dashi://app/<id>/action/<action>` | starts the app, or its `[Desktop Action]` |
 | `windows` | `dashi://window/w3`; `dashi://window/arrange/<left\|right\|up\|down\|fill\|center\|restore>`, `dashi://window/full-screen` | brings the window forward; arranges the focused window (or `?window=w3`) |
 | `menus` | `dashi://app/<app id>/menu/<item id>` | brings the app's window forward and sends the menu's own `select` |
-| `controls` | `dashi://settings/network/wi-fi`, `dashi://settings/bluetooth/bluetooth` | the radios, read from and switched through Control Center's own store (`actions/sources/radios.ts`); no hardware, no action |
+| `controls` | `dashi://settings/network/wi-fi`, `dashi://settings/bluetooth/bluetooth` | the radios, read from and switched through Control Center's own store (`actions/radios.ts`); no hardware, no action |
 | `applets` | `dashi://applet/<applet id>/<command id>` (`dashi://applet/dev.example.weather/now`) | the applet's command, run in its sandbox over protocol 3 (docs/applets.md, "Version 3: commands", `applets/commands.ts`) |
 | `scripts` | `dashi://script/<file name>` (`dashi://script/hello.sh`) | one of your own scripts, run as you ([below](#your-own-scripts)) |
 
@@ -149,12 +149,12 @@ dashi://window/arrange/left                      tile the focused window left
 dashi://dashi/lock-screen                        lock the screen
 ```
 
-`copyAddress(action, args)` (`actions/copy.ts`) puts an action's address,
+`copyAddress(action, args)` (`actions/lib/copy.ts`) puts an action's address,
 with its arguments filled in, on the clipboard: the launcher's Copy Address.
 
 ## Running an action
 
-Everything the person asks for goes through one runner (`actions/run.ts`),
+Everything the person asks for goes through one runner (`actions/lib/run.ts`),
 whatever asked: the launcher (`actions.run`), a key (`actions.runAddress`),
 or a link (`actions.openLink`).
 
@@ -163,7 +163,7 @@ or a link (`actions.openLink`).
   (`$XDG_STATE_HOME/dashi/agents/activity.jsonl`) with `agent: "you"`, the
   address as the tool, and how it went (`ok`, `error`, `cancelled`,
   `opened`). A key the person pressed (⌃❖←, a key they bound) runs the same
-  way but is not logged (origin `key`, `actions/run.ts`): the log is what
+  way but is not logged (origin `key`, `actions/lib/run.ts`): the log is what
   was done, not a record of typing.
 - **Same consent.** A tool action runs through `Agents.runAsPerson`
   (`agents/server.ts`): the same code an agent's call runs. A tool that asks
@@ -194,7 +194,7 @@ system default names it (`session/dashi-mimeapps.list`), so `xdg-open`,
 
 `dashi-open` hands the link to the shell on
 `$XDG_RUNTIME_DIR/dashi-links.sock` (mode 0600; SO_PEERCRED says who
-connected) and prints the answer (`actions/links.ts`):
+connected) and prints the answer (`actions/lib/links.ts`):
 
 ```
 client → shell  {"open":"dashi://settings/appearance/dark-mode"}
@@ -320,7 +320,7 @@ agent ──MCP──> shell ──dashi-browser.sock──> dashi-browser-host 
   and `EXTENSION_ID` (tested to agree: `browser-pinning.test.ts`). The key
   in the manifest today is a development key generated for 0.5.0.
 
-The tools (`src/agents/tools/browser.ts`, carried out by
+The tools (`src/agents/tools/lib/browser.ts`, carried out by
 `src/agents/desktop/browser.ts`), all under the scope "Use websites":
 
 | Tool | What it does |
@@ -456,7 +456,7 @@ held by row id. Applets and scripts run in units with `CPUQuota=50%`,
 
 Executables in `~/.local/share/dashi/commands/` (`$XDG_DATA_HOME`; made at
 the shell's start) are commands, each at `dashi://script/<file name>`, its
-row marked "Script" (`actions/sources/scripts.ts`). A few header lines,
+row marked "Script" (`actions/scripts.ts`). A few header lines,
 in the first 40, after any comment marker (`#`, `//`, `--`, `;`), say what
 it is:
 
@@ -534,10 +534,10 @@ the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
   mode (below). A local model is Ollama on
   `127.0.0.1:11434` only; Claude is the Messages API on `api.anthropic.com`
   only (the base URL fixed, whatever `ANTHROPIC_BASE_URL` says), over `fetch`
-  with no SDK (`agents/ask/claude.ts` on `agents/ask/http.ts`: a timeout and
+  with no SDK (`agents/ask/lib/claude.ts` on `agents/ask/lib/http.ts`: a timeout and
   one retry; the key as `Authorization: Bearer`, `anthropic-version: 2026-10-21`):
   `claude-opus-5-5` at `output_config.effort: "low"`, thinking left as the
-  model has it, `tool_choice: auto` with strict tools (`agents/ask/strict.ts`;
+  model has it, `tool_choice: auto` with strict tools (`agents/ask/lib/strict.ts`;
   the system prompt asks for the calls), server-side fallbacks on
   (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`), a
   refusal read before anything else and a reply cut off at `max_tokens`
@@ -550,10 +550,10 @@ the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
   logged, shown, sent to the model, or put in a sandbox. Settings learns
   where it is from the token list, without asking for the token. GPT is
   OpenAI's Chat Completions on `api.openai.com/v1` only, over `fetch`
-  with no SDK (`agents/ask/gpt.ts` on `agents/ask/http.ts`; the base URL fixed
+  with no SDK (`agents/ask/lib/gpt.ts` on `agents/ask/lib/http.ts`; the base URL fixed
   whatever `OPENAI_BASE_URL` says, organization and project never sent,
   `store: false`): the model is `agents.gptModel`, else the most
-  capable chat model the key's `/v1/models` lists (`agents/ask/gpt-models.ts`:
+  capable chat model the key's `/v1/models` lists (`agents/ask/lib/gpt-models.ts`:
   by generation, a full model over its mini and nano, an alias over its
   snapshots; audio, realtime, image, search, embedding and Responses-only
   models left out; nothing hard-coded), and Settings offers the first six as

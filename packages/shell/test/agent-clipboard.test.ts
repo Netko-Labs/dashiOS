@@ -1,10 +1,8 @@
 import { expect, test } from "bun:test";
-import type { Question } from "../src/agents/confirm.ts";
 import { kept, NEVER_KEPT } from "../src/agents/consent.ts";
 import type { RunContext } from "../src/agents/context.ts";
 import { readClipboardHistory } from "../src/agents/desktop/clipboard.ts";
-import type { ClipboardCopy } from "../src/agents/desktop/types.ts";
-import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
+import { type ClipboardCopy, type Question, TOOL_ACTIONS } from "../src/agents/index.ts";
 import { parseCall, scopeOf } from "../src/agents/tools/registry.ts";
 import { goAheadLook } from "../src/consent.tsx";
 

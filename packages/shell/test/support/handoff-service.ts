@@ -1,9 +1,9 @@
 import type { Files } from "../../src/agents/ask/harness/index.ts";
 import { GrantsMemory, type TaskContext } from "../../src/agents/handoff/grants.ts";
-import type { RunRecord } from "../../src/agents/handoff/records.ts";
-import type { FoundRun, TaskRunner, TurnRead, TurnStart } from "../../src/agents/handoff/runner.ts";
+import type { RunRecord } from "../../src/agents/handoff/lib/records.ts";
+import type { FoundRun, TaskRunner, TurnRead, TurnStart } from "../../src/agents/handoff/lib/runner.ts";
+import type { RunView } from "../../src/agents/handoff/run-view.ts";
 import { startHandoff } from "../../src/agents/handoff/service.ts";
-import type { RunView } from "../../src/agents/handoff/store.ts";
 
 export const helium: TaskContext = {
   window: { id: 3, app: "Helium", title: "Clases · Bodytech", site: "bodytech.com.co", url: "https://bodytech.com.co/clases" },

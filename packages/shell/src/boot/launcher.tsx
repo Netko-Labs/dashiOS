@@ -6,9 +6,7 @@
  */
 
 import { homedir } from "node:os";
-import { NO_CONTEXT } from "../agents/handoff/grants.ts";
-import type { AgentStore } from "../agents/index.ts";
-import type { Agents } from "../agents/server.ts";
+import { type AgentStore, type Agents, NO_CONTEXT } from "../agents/index.ts";
 import { appFor } from "../apps.ts";
 import { placedOutputs } from "../arrange.ts";
 import type { Compositor } from "../compositor.ts";

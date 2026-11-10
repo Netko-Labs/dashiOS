@@ -12,7 +12,7 @@
  * its app asks about unsaved work itself.
  */
 
-import type { ActionDef, Args } from "../actions/types.ts";
+import type { ActionDef, Args } from "../actions/index.ts";
 import type { Entry } from "../entries.ts";
 import { agentVerbs } from "./agents/rows.ts";
 import { isPane, type LauncherItem, type LauncherWindow, windowsOf } from "./items.ts";

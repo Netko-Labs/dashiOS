@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { appOf, MenuSource, menuActions } from "../src/actions/lib/sources/menus.ts";
 import { ActionRegistry } from "../src/actions/registry.ts";
-import { appOf, MenuSource, menuActions } from "../src/actions/sources/menus.ts";
 import { AppMenuStore } from "../src/app-menus/store.ts";
 import { run, window } from "./support/actions-sources.ts";
 import { fakeClockEachTest, settle } from "./support/time.ts";

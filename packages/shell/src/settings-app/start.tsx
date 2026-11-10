@@ -8,10 +8,7 @@
  */
 
 import { homedir } from "node:os";
-import type { AnswerStatus } from "../agents/ask/service.ts";
-import type { Grants } from "../agents/consent.ts";
-import type { AgentStore } from "../agents/presence.ts";
-import type { Passwords } from "../agents/secrets/passwords.ts";
+import type { AgentStore, AnswerStatus, Grants, Passwords } from "../agents/index.ts";
 import { registerShellApp, SETTINGS_APP_ID } from "../apps.ts";
 import type { ClipboardHistory } from "../clipboard/history.ts";
 import type { Compositor } from "../compositor.ts";

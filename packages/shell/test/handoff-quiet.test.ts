@@ -8,10 +8,11 @@
 import { expect, test } from "bun:test";
 import type { Files } from "../src/agents/ask/harness/index.ts";
 import { GrantsMemory, NO_CONTEXT } from "../src/agents/handoff/grants.ts";
-import { plainFailure, quietQuestion, quietReason } from "../src/agents/handoff/quiet.ts";
-import type { TaskRunner } from "../src/agents/handoff/runner.ts";
-import { startHandoff, usesWords } from "../src/agents/handoff/service.ts";
-import { statusWords } from "../src/agents/handoff/store.ts";
+import { usesWords } from "../src/agents/handoff/lib/harness-list.ts";
+import { plainFailure, quietQuestion, quietReason } from "../src/agents/handoff/lib/quiet.ts";
+import type { TaskRunner } from "../src/agents/handoff/lib/runner.ts";
+import { statusWords } from "../src/agents/handoff/run-view.ts";
+import { startHandoff } from "../src/agents/handoff/service.ts";
 import { fakeClockEachTest, settle } from "./support/time.ts";
 
 fakeClockEachTest();

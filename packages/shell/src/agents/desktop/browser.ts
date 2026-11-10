@@ -1,5 +1,5 @@
 /**
- * Carrying out the website tools (tools/browser.ts) through Dashi's browser
+ * Carrying out the website tools (tools/lib/browser.ts) through Dashi's browser
  * extension (browser/bridge.ts). Every tool names its site in the menu bar
  * ("Reading bodytech.com.co"), and acts on a site only once the person has
  * allowed it for this agent (sites.ts). Nothing here reads a field's secret:

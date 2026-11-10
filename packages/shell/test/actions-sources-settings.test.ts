@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { settingsActions } from "../src/actions/lib/sources/settings.ts";
 import { ActionRegistry, fixedSource } from "../src/actions/registry.ts";
-import { settingsActions } from "../src/actions/sources/settings.ts";
 import type { ActionContext } from "../src/actions/types.ts";
 import type { Call } from "../src/agents/tools/types.ts";
 import { AGENT_ROWS } from "../src/settings-app/registry/index.ts";

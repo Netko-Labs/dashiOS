@@ -13,12 +13,17 @@
  *   ⇥ talks to it, ❖⌫ stops it.
  */
 
-import type { HarnessId } from "../../agents/ask/answerer.ts";
-import type { TaskContext } from "../../agents/handoff/grants.ts";
-import { harnessGlyph } from "../../agents/handoff/harness-icons.ts";
-import type { HandoffHarness } from "../../agents/handoff/service.ts";
-import { isWorking, progressWords, type RunView, statusWords } from "../../agents/handoff/store.ts";
-import { cut } from "../../agents/handoff/words.ts";
+import {
+  cut,
+  type HandoffHarness,
+  type HarnessId,
+  harnessGlyph,
+  isWorking,
+  progressWords,
+  type RunView,
+  statusWords,
+  type TaskContext,
+} from "../../agents/index.ts";
 import type { Store } from "../host.ts";
 import { commandCore } from "../ranking/commands.ts";
 import { fold } from "../ranking/fold.ts";

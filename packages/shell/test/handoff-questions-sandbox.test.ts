@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { type PlanProfile, parsePlanProfile, sandboxArgs } from "../src/agents/sandbox.ts";
+import { parsePlanProfile, sandboxArgs } from "../src/agents/sandbox.ts";
+import type { PlanProfile } from "../src/agents/sandbox-types.ts";
 
 describe("a task's sandbox", () => {
   const task: PlanProfile = {

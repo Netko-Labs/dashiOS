@@ -7,7 +7,7 @@
  * typing. Policy, so tested.
  */
 
-import type { Focused } from "../atspi/tree.ts";
+import type { Focused } from "../atspi/index.ts";
 
 export type Verdict = { ok: true; focused: Focused } | { ok: false; reason: string };
 

@@ -1,8 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { ANSWERER_CHOICES } from "../src/agents/ask/answerer.ts";
 import { answererRows } from "../src/agents/ask/choices.ts";
-import { signInCommand } from "../src/agents/ask/harness/catalog.ts";
-import { type Files, findHarness, HARNESSES, harnessStatuses, installReads, signedIn } from "../src/agents/ask/harness/index.ts";
+import { type Files, findHarness, HARNESSES, harnessStatuses, installReads, signedIn, signInCommand } from "../src/agents/ask/harness/index.ts";
 import { agentHandlers } from "../src/launcher/agents/handlers.ts";
 import { failureLine } from "../src/launcher/agents/plan-view.tsx";
 import { taskSubmit } from "../src/launcher/agents/task-mode.tsx";
