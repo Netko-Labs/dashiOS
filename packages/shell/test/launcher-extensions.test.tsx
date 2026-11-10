@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 import { type ActionDef, type Outcome, type PickRow, ready, type Shown } from "../src/actions/types.ts";
-import { KEYMAP } from "../src/keymap.ts";
+import { KEYMAP } from "../src/keymap/keymap.ts";
 import { slowSections, viewRows } from "../src/launcher/extension-rows.ts";
 import { ExtensionSession, readArg, viewFrame } from "../src/launcher/extensions.ts";
 import type { LauncherHost, LauncherWorldStore } from "../src/launcher/host.ts";

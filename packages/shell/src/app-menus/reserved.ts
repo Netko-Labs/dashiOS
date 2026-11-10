@@ -12,7 +12,7 @@
  * when it has none (shortcuts.ts).
  */
 
-import { KEYMAP, type Keymap, type Rule } from "../keymap.ts";
+import { KEYMAP, type Keymap, type Rule } from "../keymap/keymap.ts";
 import type { PressedChord } from "./shortcut.ts";
 
 /** The rule that gives ❖ chords to the app's menus. */

@@ -6,7 +6,7 @@ import type { GraphicsSnapshot } from "../src/graphics/controller.ts";
 import { HARDWARE, hardwareClient, knobVariant, parseBootGuard, parseTuning } from "../src/hardware/client.ts";
 import { parseDescribe } from "../src/hardware/describe.ts";
 import { detectLaptop, isLaptopChassis } from "../src/hardware/laptop.ts";
-import { withRules } from "../src/keymap.ts";
+import { withRules } from "../src/keymap/keymap.ts";
 import { KERNEL_KEYSYMS, laptopKeyRules, nextLightLevel } from "../src/laptop/hotkeys.ts";
 import { type LaptopAction, laptopEntries } from "../src/laptop/menu.ts";
 import { keyboardLight, type LaptopSnapshot, lightLabel } from "../src/laptop/store.ts";

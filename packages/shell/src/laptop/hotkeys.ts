@@ -12,7 +12,7 @@
  */
 
 import type { Hotkeys } from "../hardware/describe.ts";
-import type { Rule } from "../keymap.ts";
+import type { Rule } from "../keymap/keymap.ts";
 import type { ModeStore } from "../power/modes/store.ts";
 import type { OsdController } from "../system/osd-state.ts";
 import { keyboardLight, type LaptopStore } from "./store.ts";

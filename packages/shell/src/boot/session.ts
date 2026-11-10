@@ -13,7 +13,7 @@ import { installDesktopEntries, shouldWriteEntries } from "../desktop-entries.ts
 import { monitorsOf } from "../display-config/index.ts";
 import { screensOf } from "../displays.ts";
 import { DockPrefs, resolveDock } from "../dock/index.ts";
-import { idleKeymap } from "../keymap-state.ts";
+import { idleKeymap } from "../keymap/keymap-state.ts";
 import { LAUNCHER_MOTION } from "../launcher/resident.tsx";
 import { chooseRegion, type RegionRuntime, startRegion } from "../region/index.ts";
 import { SettingsStore } from "../settings-app/index.ts";

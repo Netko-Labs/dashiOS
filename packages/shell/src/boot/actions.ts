@@ -16,7 +16,7 @@ import { launchEntry } from "../entries.ts";
 import { type Extensions, openTarget, startExtensions } from "../extensions/start.ts";
 import { openFile } from "../file-manager.ts";
 import { windowToFront } from "../front-window.ts";
-import { currentKeymap } from "../keymap-state.ts";
+import { currentKeymap } from "../keymap/keymap-state.ts";
 import { shellLauncherHost } from "../launcher/shell-host.ts";
 import { desktopWord, LauncherWorld } from "../launcher/world.ts";
 import type { Menus } from "../menus/index.ts";

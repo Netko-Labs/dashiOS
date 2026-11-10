@@ -7,7 +7,7 @@
 
 import type { ActionDef, Args, Outcome } from "../actions/types.ts";
 import type { Entry } from "../entries.ts";
-import type { Keymap } from "../keymap.ts";
+import type { Keymap } from "../keymap/keymap.ts";
 import type { LauncherWindow } from "./items.ts";
 import type { LauncherPrefsSnapshot } from "./prefs.ts";
 import type { RankSignals } from "./ranking/item.ts";

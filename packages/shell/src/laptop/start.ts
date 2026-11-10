@@ -17,7 +17,7 @@ import type { LostCardStart } from "../graphics/lost-start.ts";
 import { graphicsNoticePlace } from "../graphics/notice-place.ts";
 import { type HardwareApi, hardwareClient, shadowHardware } from "../hardware/client.ts";
 import { detectLaptop } from "../hardware/laptop.ts";
-import { idleKeymap, setMachineRules } from "../keymap-state.ts";
+import { idleKeymap, setMachineRules } from "../keymap/keymap-state.ts";
 import type { NotificationStore } from "../notifications/store.ts";
 import type { PowerSource } from "../power/modes/automatic.ts";
 import { parseRecipes } from "../power/modes/recipes.ts";

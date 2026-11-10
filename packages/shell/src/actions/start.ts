@@ -16,7 +16,7 @@ import { ownerPids } from "../app-menus/focus.ts";
 import type { AppMenuStore } from "../app-menus/store.ts";
 import type { Compositor, CompositorWindow } from "../compositor.ts";
 import type { Entry } from "../entries.ts";
-import type { Keymap } from "../keymap.ts";
+import type { Keymap } from "../keymap/keymap.ts";
 import type { Arrange } from "../layout.ts";
 import type { MenuAction } from "../menus/index.ts";
 import { type RegistryStores, type RowDef, type SettingValue, valueOf } from "../settings-app/registry/index.ts";

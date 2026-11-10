@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { ok, ready } from "../src/actions/types.ts";
-import { KEYMAP } from "../src/keymap.ts";
+import { KEYMAP } from "../src/keymap/keymap.ts";
 import { aliasRows, aliasToKeep, mayKeep, shortcutRows } from "../src/launcher/editing.ts";
 import { launcherIndex } from "../src/launcher/items.ts";
 import { LAUNCHER_RULES, LauncherKeys, withLauncher } from "../src/launcher/keys.ts";

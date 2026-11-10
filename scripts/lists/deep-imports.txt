@@ -353,7 +353,7 @@
 1	packages/shell/src/graphics/teller.ts
 9	packages/shell/src/handoff-shell.tsx
 1	packages/shell/src/hardware/laptop.ts
-1	packages/shell/src/keymap-state.ts
+1	packages/shell/src/keymap/keymap-state.ts
 3	packages/shell/src/laptop/charge.ts
 1	packages/shell/src/laptop/glyphs.ts
 3	packages/shell/src/laptop/hotkeys.ts

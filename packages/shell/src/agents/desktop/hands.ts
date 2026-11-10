@@ -16,7 +16,7 @@
  */
 
 import type { Compositor, Params } from "../../compositor.ts";
-import { KEYMAP } from "../../keymap.ts";
+import { KEYMAP } from "../../keymap/keymap.ts";
 
 /** The person must have left a window (or the desktop, when borrowing) alone this long. */
 export const QUIET_MS = 2000;

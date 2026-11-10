@@ -7,8 +7,8 @@
  * builds on this one and goes back to it, so these keys survive it.
  */
 
+import { withTypeAheadOnTap } from "../launcher/type-ahead.ts";
 import { KEYMAP, type Keymap, type Rule, withRules } from "./keymap.ts";
-import { withTypeAheadOnTap } from "./launcher/type-ahead.ts";
 
 let machineRules: readonly Rule[] = [];
 let personRules: readonly Rule[] = [];

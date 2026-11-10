@@ -3,7 +3,7 @@ import { commandActions } from "../src/actions/sources/commands.ts";
 import { arrangeActions } from "../src/actions/sources/windows.ts";
 import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
 import { clipboardActions } from "../src/clipboard/actions.ts";
-import { KEYMAP } from "../src/keymap.ts";
+import { KEYMAP } from "../src/keymap/keymap.ts";
 import { ADDRESS_GLYPHS, COMMAND_GLYPHS, commandGlyph } from "../src/launcher/command-glyphs.ts";
 import { launcherItems } from "../src/launcher/items.ts";
 import { actionRow } from "../src/launcher/row-model.ts";
