@@ -3,7 +3,7 @@
  * battery menu's "Using significant energy" and its apps. A running Activity
  * Monitor comes forward and is handed the arguments over its menus channel
  * (app-menus/protocol.ts `open`); otherwise it starts with them on its
- * command line (apps/activity-monitor/args.ts reads both).
+ * command line (apps/activity-monitor/lib/args.ts reads both).
  */
 
 import { type AppMenuStore, ownerPids } from "../../app-menus/index.ts";

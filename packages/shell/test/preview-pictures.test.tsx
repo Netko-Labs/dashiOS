@@ -3,9 +3,10 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
-import { type CommandHooks, copy } from "../apps/preview/commands.ts";
-import { PreviewWindow } from "../apps/preview/view.tsx";
-import { pngSize, Viewer } from "../apps/preview/viewer.ts";
+import { type CommandHooks, copy } from "../apps/preview/lib/commands.ts";
+import { pngSize } from "../apps/preview/lib/image-job.ts";
+import { Viewer } from "../apps/preview/lib/viewer.ts";
+import { PreviewWindow } from "../apps/preview/lib/views/view.tsx";
 import { settle } from "./support/time.ts";
 
 // Pictures in Preview: the folder's filmstrip, a rotation that sticks, the recent files, and Copy.

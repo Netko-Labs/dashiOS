@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
-import { Files, type FilesContext } from "../apps/files/context.ts";
-import { Omnibox } from "../apps/files/omnibox.tsx";
+import { Files, type FilesContext } from "../apps/files/lib/context.ts";
+import { Omnibox } from "../apps/files/lib/omnibox/omnibox.tsx";
 import { settle } from "./support/time.ts";
 
 // Files' path bar is the toolbar's first Tab stop at rest (KB-1): Space or

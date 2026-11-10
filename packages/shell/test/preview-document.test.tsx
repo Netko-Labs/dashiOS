@@ -4,10 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
-import { type DocumentView, useDocument } from "../apps/preview/document.ts";
-import { fitWidthScale, layoutPages, MARGIN } from "../apps/preview/layout.ts";
-import { PreviewWindow } from "../apps/preview/view.tsx";
-import { Viewer } from "../apps/preview/viewer.ts";
+import { type DocumentView, useDocument } from "../apps/preview/lib/document.ts";
+import { fitWidthScale, layoutPages, MARGIN } from "../apps/preview/lib/layout.ts";
+import { Viewer } from "../apps/preview/lib/viewer.ts";
+import { PreviewWindow } from "../apps/preview/lib/views/view.tsx";
 import { settle } from "./support/time.ts";
 
 // A PDF in Preview's window on a stand-in for the Metal host, drawn by the real poppler: one scrolling

@@ -3,8 +3,9 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
-import { Monitor } from "../apps/activity-monitor/monitor.ts";
-import { type MonitorActions, MonitorWindow } from "../apps/activity-monitor/view.tsx";
+import type { MonitorActions } from "../apps/activity-monitor/lib/actions.ts";
+import { Monitor } from "../apps/activity-monitor/lib/monitor.ts";
+import { MonitorWindow } from "../apps/activity-monitor/lib/views/view.tsx";
 import type { ProcessSample, Snapshot } from "../src/shared/processes/read.ts";
 import { settle } from "./support/time.ts";
 

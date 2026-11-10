@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test";
+<<<<<<< HEAD
 import { editorMenus, type MenuContext } from "../apps/editor/menus.ts";
 import type { EditorPrefs } from "../apps/editor/prefs.ts";
 import { reservedBy } from "../src/app-menus/lib/reserved.ts";
+=======
+import { editorMenus, type MenuContext } from "../apps/editor/lib/menus.ts";
+import type { EditorPrefs } from "../apps/editor/lib/prefs.ts";
+import { reservedBy } from "../src/app-menus/reserved.ts";
+>>>>>>> origin/release/0.7.0
 import { chordFromShortcut } from "../src/app-menus/shortcut.ts";
 import { parseMenus } from "../src/shared/app-menus/protocol.ts";
 import { editorModel as model } from "./support/editor-model.ts";

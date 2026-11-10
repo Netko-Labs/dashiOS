@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseArgs, pathFromArg } from "../apps/editor/args.ts";
-import { MAX_BYTES, readDocument, writeDocument } from "../apps/editor/files.ts";
-import { displayName, folderLabel, resolveInput, suggestedSavePath, tildePath } from "../apps/editor/names.ts";
-import { DEFAULT_PREFS, parsePrefs, prefsPath, readPrefs, stepFontSize, writePrefs } from "../apps/editor/prefs.ts";
+import { parseArgs, pathFromArg } from "../apps/editor/lib/args.ts";
+import { MAX_BYTES, readDocument, writeDocument } from "../apps/editor/lib/files.ts";
+import { displayName, folderLabel, resolveInput, suggestedSavePath, tildePath } from "../apps/editor/lib/names.ts";
+import { DEFAULT_PREFS, parsePrefs, prefsPath, readPrefs, stepFontSize, writePrefs } from "../apps/editor/lib/prefs.ts";
 import {
   isOpenWindow,
   keepRecovery,
@@ -17,8 +17,8 @@ import {
   recoveryFiles,
   recoveryFor,
   takeRecovery,
-} from "../apps/editor/recovery.ts";
-import { windowCommand } from "../apps/editor/windows.ts";
+} from "../apps/editor/lib/recovery.ts";
+import { windowCommand } from "../apps/editor/lib/windows.ts";
 import { fakeClockEachTest, settle } from "./support/time.ts";
 
 fakeClockEachTest();

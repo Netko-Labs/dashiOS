@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { submitSelection } from "../apps/activity-monitor/lines.ts";
-import { Monitor } from "../apps/activity-monitor/monitor.ts";
-import { cpuSplit, filterRows, type ProcessRow, processRows, scopeTotals } from "../apps/activity-monitor/sample.ts";
-import { Sampler } from "../apps/activity-monitor/sampling.ts";
+import { submitSelection } from "../apps/activity-monitor/lib/lines.ts";
+import { Monitor } from "../apps/activity-monitor/lib/monitor.ts";
+import { cpuSplit, filterRows, type ProcessRow, processRows, scopeTotals } from "../apps/activity-monitor/lib/sample.ts";
+import { Sampler } from "../apps/activity-monitor/lib/sampling.ts";
 import { isVirtualInterface, parseIo, parseNetDev, parseStatus } from "../src/shared/processes/proc.ts";
 import type { ProcessSample, Snapshot } from "../src/shared/processes/read.ts";
 import { flush } from "./support/time.ts";

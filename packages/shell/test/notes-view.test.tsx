@@ -3,9 +3,9 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
-import { type Row, withDraft } from "../apps/notes/list.ts";
-import { NotesModel } from "../apps/notes/model.ts";
-import { NotesWindow } from "../apps/notes/view.tsx";
+import { type Row, withDraft } from "../apps/notes/lib/list.ts";
+import { NotesModel } from "../apps/notes/lib/model.ts";
+import { NotesWindow } from "../apps/notes/lib/views/view.tsx";
 import { NotesStore } from "../src/shared/notes/store.ts";
 import { settle } from "./support/time.ts";
 

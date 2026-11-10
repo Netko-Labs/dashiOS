@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test";
-import { chromeFor, RAIL_WIDTH } from "../apps/files/chrome.ts";
-import { conflictMessage } from "../apps/files/conflict-sheet.tsx";
-import { columnsFor, gridInset, whereLine } from "../apps/files/grid.tsx";
-import { fitCrumbs } from "../apps/files/omnibox.tsx";
-import { fileColumns, fitColumns, NAME_FLOOR } from "../apps/files/sort.ts";
-import { textWidth } from "../apps/files/tile-name.ts";
+import { chromeFor, RAIL_WIDTH } from "../apps/files/lib/chrome.ts";
+import { fitCrumbs } from "../apps/files/lib/omnibox/crumbs.tsx";
+import { fileColumns, fitColumns, NAME_FLOOR } from "../apps/files/lib/sort.ts";
+import { textWidth } from "../apps/files/lib/tile-name.ts";
+import { conflictMessage } from "../apps/files/lib/views/conflict-sheet.tsx";
+import { columnsFor, gridInset, whereLine } from "../apps/files/lib/views/grid.tsx";
 
 // Review 54: Files in a small, narrow or tiled window.
 

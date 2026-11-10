@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { activeTab, addTab, closeTab, NO_TABS, newTab, ring, selectTab, showIndex, stepTab, type Tabs, updateTab } from "../apps/terminal/tabs.ts";
+import { activeTab, addTab, closeTab, NO_TABS, newTab, ring, selectTab, showIndex, stepTab, type Tabs, updateTab } from "../apps/terminal/lib/tabs.ts";
 
 const ids = (tabs: Tabs): number[] => tabs.list.map((tab) => tab.id);
 const three = (): Tabs => addTab(addTab(addTab(NO_TABS, newTab(1)), newTab(2)), newTab(3));

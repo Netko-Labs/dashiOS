@@ -3,9 +3,9 @@ import { existsSync, mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync }
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Env } from "../apps/files/env.ts";
-import { folderAt } from "../apps/files/location.ts";
-import { Operations } from "../apps/files/operations.ts";
-import { FilesStore } from "../apps/files/store.ts";
+import { folderAt } from "../apps/files/lib/location.ts";
+import { Operations } from "../apps/files/lib/operations/operations.ts";
+import { FilesStore } from "../apps/files/lib/store/store.ts";
 import type { Exec } from "../src/shared/files/exec.ts";
 import type { FileItem } from "../src/shared/files/items.ts";
 import { fakeClockEachTest, settle } from "./support/time.ts";

@@ -1,19 +1,7 @@
 # H19: re-exports (`export … from`) outside an index.ts, keeping an old import path alive (count = re-export statements; a file a package's exports name is exempt). May only shrink.
-2	packages/shell/apps/activity-monitor/view.tsx
-1	packages/shell/apps/editor/model.ts
-2	packages/shell/apps/files/chooser/view.tsx
-2	packages/shell/apps/files/omnibox.tsx
-1	packages/shell/apps/files/operations.ts
-2	packages/shell/apps/files/store.ts
-1	packages/shell/apps/files/thumbnailer.ts
 1	packages/shell/apps/kit/applet.ts
 1	packages/shell/apps/kit/menus.ts
-1	packages/shell/apps/notes/model.ts
-1	packages/shell/apps/notes/view.tsx
 1	packages/shell/apps/portal/file-chooser/options.ts
-2	packages/shell/apps/preview/document.ts
-1	packages/shell/apps/preview/glyphs.ts
-1	packages/shell/apps/preview/viewer.ts
 1	packages/shell/src/shared/app-menus/protocol.ts
 4	packages/shell/src/shared/calendar/ics.ts
 1	packages/shell/src/shared/calendar/store.ts

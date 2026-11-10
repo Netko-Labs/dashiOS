@@ -15,9 +15,10 @@ import { blankDraft } from "../apps/calendar/lib/draft.ts";
 import { EventSheet } from "../apps/calendar/lib/sheets/event-sheet.tsx";
 import { ImportPathSheet } from "../apps/calendar/lib/sheets/file-sheets.tsx";
 import { CalendarSheet } from "../apps/calendar/lib/sheets/sheets.tsx";
-import { ReplaceSheet } from "../apps/editor/sheets.tsx";
-import { ChooserSheet, openChooser } from "../apps/files/chooser/index.ts";
-import { NotesSheet } from "../apps/notes/sheets.tsx";
+import { ReplaceSheet } from "../apps/editor/lib/views/sheets.tsx";
+import { ChooserSheet } from "../apps/files/chooser/view.tsx";
+import { openChooser } from "../apps/files/index.ts";
+import { NotesSheet } from "../apps/notes/lib/views/sheets.tsx";
 import { chooserRequest } from "../src/shared/files/chooser/request.ts";
 import { settle } from "./support/time.ts";
 

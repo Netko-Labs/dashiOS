@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { rangeOf, type Selection } from "../apps/preview/document.ts";
-import { parseBboxLayout, selectedOnPage, selectedText, selectionBoxes, turnBox, unturnPoint, type Word, wordAt } from "../apps/preview/text.ts";
+import { rangeOf, type Selection } from "../apps/preview/lib/pdf/pdf-selection.ts";
+import { parseBboxLayout, selectedOnPage, selectedText, selectionBoxes, turnBox, unturnPoint, type Word, wordAt } from "../apps/preview/lib/text.ts";
 
 // Selecting a PDF's text: poppler's words and boxes (text.ts), and a drag's range (document.ts).
 

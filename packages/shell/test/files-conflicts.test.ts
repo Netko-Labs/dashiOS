@@ -2,11 +2,12 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sideLines } from "../apps/files/conflict-sheet.tsx";
 import type { Env } from "../apps/files/env.ts";
-import { folderAt } from "../apps/files/location.ts";
-import { type Conflict, Operations, type Resolution } from "../apps/files/operations.ts";
-import { FilesStore } from "../apps/files/store.ts";
+import { folderAt } from "../apps/files/lib/location.ts";
+import type { Conflict, Resolution } from "../apps/files/lib/operations/conflicts.ts";
+import { Operations } from "../apps/files/lib/operations/operations.ts";
+import { FilesStore } from "../apps/files/lib/store/store.ts";
+import { sideLines } from "../apps/files/lib/views/conflict-sheet.tsx";
 import type { Exec } from "../src/shared/files/exec.ts";
 import { fakeClockEachTest, settle, until } from "./support/time.ts";
 

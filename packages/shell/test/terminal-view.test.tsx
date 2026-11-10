@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import type { Clipboard } from "../apps/kit/index.ts";
-import { TerminalWindow } from "../apps/terminal/view.tsx";
+import { TerminalWindow } from "../apps/terminal/lib/views/view.tsx";
 import { settle, until } from "./support/time.ts";
 
 // A stand-in for dashi-term with the shell integration: on its first resize

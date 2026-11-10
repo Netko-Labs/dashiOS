@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { shapeOf } from "../apps/preview/folder.ts";
+import { shapeOf } from "../apps/preview/lib/folder.ts";
 import {
   anchorAt,
   anchorY,
@@ -15,10 +15,10 @@ import {
   PAGE_GAP,
   scrollToPage,
   visiblePages,
-} from "../apps/preview/layout.ts";
-import { pageSizes, parsePdfInfo, pdfinfoArgs, pdftotextArgs } from "../apps/preview/pdf.ts";
-import { faded, SHAPE, STRIP, scrollIntoView, stripRows, stripWidth, thumbWidth } from "../apps/preview/strip.tsx";
-import { FIT_MARGIN, fitArea, fitScale } from "../apps/preview/zoom.ts";
+} from "../apps/preview/lib/layout.ts";
+import { pageSizes, parsePdfInfo, pdfinfoArgs, pdftotextArgs } from "../apps/preview/lib/pdf/pdf.ts";
+import { faded, SHAPE, STRIP, scrollIntoView, stripRows, stripWidth, thumbWidth } from "../apps/preview/lib/views/strip.tsx";
+import { FIT_MARGIN, fitArea, fitScale } from "../apps/preview/lib/zoom.ts";
 
 // A PDF as one scrolling surface (layout.ts), the page strip (strip.tsx), and the pages' sizes from pdfinfo (pdf.ts).
 

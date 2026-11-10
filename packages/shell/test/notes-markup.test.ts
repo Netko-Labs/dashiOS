@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { lightColors } from "@dashi/ui";
-import { currentMatch, findMatches, nextMatch } from "../apps/notes/find.ts";
-import { BODY_SIZE, lineSizes, lookOf } from "../apps/notes/look.ts";
-import { markup, type Span, spanAt } from "../apps/notes/markup.ts";
+import { currentMatch, findMatches, nextMatch } from "../apps/notes/lib/find.ts";
+import { BODY_SIZE, lineSizes, lookOf } from "../apps/notes/lib/look.ts";
+import { markup, type Span, spanAt } from "../apps/notes/lib/markup.ts";
 
 /** The spans of `body` as [kind, the text they cover]. */
 const covered = (body: string): Array<[string, string]> => markup(body).map((span: Span) => [span.kind, body.slice(span.start, span.end)]);

@@ -3,10 +3,17 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { UndoStack } from "@dashi/ui";
+<<<<<<< HEAD
 import { plainError } from "../apps/notes/errors.ts";
 import { type MenuContext, notesMenus } from "../apps/notes/menus.ts";
 import { NotesModel } from "../apps/notes/model.ts";
 import { reservedBy } from "../src/app-menus/lib/reserved.ts";
+=======
+import { plainError } from "../apps/notes/lib/errors.ts";
+import { type MenuContext, notesMenus } from "../apps/notes/lib/menus.ts";
+import { NotesModel } from "../apps/notes/lib/model.ts";
+import { reservedBy } from "../src/app-menus/reserved.ts";
+>>>>>>> origin/release/0.7.0
 import { chordFromShortcut } from "../src/app-menus/shortcut.ts";
 import { NotesStore } from "../src/shared/notes/store.ts";
 import { NotesError } from "../src/shared/notes/types.ts";

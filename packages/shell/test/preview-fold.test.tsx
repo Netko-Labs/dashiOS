@@ -3,9 +3,9 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
-import { FOLD_ORDER, foldTools, planToolbar, TITLE_FLOOR, TITLE_MAX, TOOLS, titleWidth, toolbarWidth, toolWidths } from "../apps/preview/fold.ts";
-import { PreviewWindow } from "../apps/preview/view.tsx";
-import { Viewer } from "../apps/preview/viewer.ts";
+import { FOLD_ORDER, foldTools, planToolbar, TITLE_FLOOR, TITLE_MAX, TOOLS, titleWidth, toolbarWidth, toolWidths } from "../apps/preview/lib/fold.ts";
+import { Viewer } from "../apps/preview/lib/viewer.ts";
+import { PreviewWindow } from "../apps/preview/lib/views/view.tsx";
 import { settle } from "./support/time.ts";
 
 // Preview's toolbar in a narrow window: what doesn't fit folds into "…", the least important first, never cut.

@@ -2,9 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { copyNumber, formatResult, parsePasted } from "../apps/calculator/format.ts";
-import { EMPTY_LINE, equals, type Line, paste, relocalized, typeChar } from "../apps/calculator/line.ts";
-import { EN_US, groupDigits, type NumberLocale, numberLocale, numberLocaleTag, readNumberLocale } from "../apps/calculator/locale.ts";
+import { copyNumber, formatResult, parsePasted } from "../apps/calculator/lib/format.ts";
+import { EMPTY_LINE, equals, type Line, paste, relocalized, typeChar } from "../apps/calculator/lib/line.ts";
+import { EN_US, groupDigits, type NumberLocale, numberLocale, numberLocaleTag, readNumberLocale } from "../apps/calculator/lib/locale.ts";
 
 const DE = numberLocale("de-DE");
 const FR = numberLocale("fr-FR");
