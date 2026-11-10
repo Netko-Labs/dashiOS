@@ -69,10 +69,16 @@ while read -r module; do
   mkdir -p "$modules/$(dirname "$module")"
   copy_module "$modules/$module" "$bun_dir/${module//\//+}"@*/node_modules/"$module"
 done < "$src/spin/vendored-modules"
-# Dashi's own packages come from the archive above, never from the working tree.
-mkdir -p "$modules/@dashi/ui" "$modules/@dashi/applet"
-cp -r "$src/packages/dashi-ui/src" "$src/packages/dashi-ui/package.json" "$modules/@dashi/ui/"
-cp -r "$src/packages/applet/src" "$src/packages/applet/package.json" "$src/packages/applet/manifest.schema.json" "$modules/@dashi/applet/"
+# Dashi's own libraries, every @dashi/* in packages/ but the shell and the greeter (installed as
+# themselves), come from the archive above, never from the working tree. A new one ships without
+# a line here (0.7's @dashi/shape was missed by a list of names, and the installed shell would not start).
+for dir in "$src"/packages/*/; do
+  library=$(sed -n 's|^  "name": "@dashi/\([a-z-]*\)",$|\1|p' "$dir/package.json")
+  case $library in "" | shell | greeter) continue ;; esac
+  mkdir -p "$modules/@dashi/$library"
+  cp -r "$dir/src" "$dir/package.json" "$modules/@dashi/$library/"
+  [ ! -f "$dir/manifest.schema.json" ] || cp "$dir/manifest.schema.json" "$modules/@dashi/$library/"
+done
 # mirin's @mirinjs/metal, from mirin's HEAD.
 mirin_sha=$(git -C "$mirin" rev-parse --short=7 HEAD)
 if [ -n "$(git -C "$mirin" status --porcelain)" ]; then

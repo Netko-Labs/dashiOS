@@ -1,8 +1,8 @@
 /**
  * What the packages ship: the privileged helpers' systemd sandboxes
  * (scripts/check-units.ts), the generated license notices (spin/license-dependencies),
- * and a %license in every spec. The first two need systemd-analyze and Cargo's
- * crate sources; they skip where those are missing.
+ * a %license in every spec, and Dashi's own libraries in the shell's node_modules. The first two
+ * need systemd-analyze and Cargo's crate sources; they skip where those are missing.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -65,4 +65,43 @@ describe("licenses", () => {
       expect(code).toBe(0);
     },
   );
+});
+
+describe("Dashi's own libraries", () => {
+  /** The `@dashi/*` packages `names` depend on, and theirs, by the packages' own package.json. */
+  function needed(names: string[], dirs: Map<string, string>): Set<string> {
+    const found = new Set<string>();
+    const queue = [...names];
+    for (let name = queue.pop(); name !== undefined; name = queue.pop()) {
+      const dir = dirs.get(name);
+      if (!dir) throw new Error(`no package is named ${name}`);
+      const manifest: unknown = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+      const dependencies = typeof manifest === "object" && manifest && "dependencies" in manifest ? manifest.dependencies : {};
+      for (const each of Object.keys(dependencies ?? {}).filter((key) => key.startsWith("@dashi/"))) {
+        if (!found.has(each)) queue.push(each);
+        found.add(each);
+      }
+    }
+    return found;
+  }
+
+  test("spin/build-rpms ships every @dashi/* the shell and the greeter import", () => {
+    const script = readFileSync(join(ROOT, "spin/build-rpms"), "utf8");
+    // The rule build-rpms names its libraries by, run as it runs it.
+    const rule = /library=\$\(sed -n '([^']+)' "\$dir\/package\.json"\)/.exec(script)?.[1];
+    expect(rule).toBeDefined();
+    const dirs = new Map<string, string>();
+    const shipped = new Set<string>();
+    for (const entry of readdirSync(join(ROOT, "packages"))) {
+      const dir = join(ROOT, "packages", entry);
+      if (!existsSync(join(dir, "package.json"))) continue;
+      const manifest: unknown = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+      if (typeof manifest === "object" && manifest && "name" in manifest && typeof manifest.name === "string") dirs.set(manifest.name, dir);
+      const library = run(["sed", "-n", rule ?? "", join(dir, "package.json")]).output.trim();
+      if (library && library !== "shell" && library !== "greeter") shipped.add(`@dashi/${library}`);
+    }
+    const wanted = needed(["@dashi/shell", "@dashi/greeter"], dirs);
+    expect(wanted.has("@dashi/shape")).toBe(true);
+    for (const name of wanted) expect([...shipped], name).toContain(name);
+  });
 });
