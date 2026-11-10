@@ -5,9 +5,19 @@
  * Control when it ends. Pure: it says what to do, gestures.ts does it.
  */
 
-// biome-ignore lint/nursery/noImportCycles: H5 offender (scripts/lists/import-cycles.txt)
-import { swipeDirection } from "../gestures.ts";
 import type { SpacesState } from "./model.ts";
+
+/** How far (logical pixels, summed) a swipe must travel to count. */
+export const SWIPE_DISTANCE = 60;
+
+export type SwipeAction = "up" | "down" | "left" | "right" | null;
+
+/** Where a finished swipe went: its main direction, if it went far enough. */
+export function swipeDirection(dx: number, dy: number): SwipeAction {
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_DISTANCE) return null;
+  if (Math.abs(dy) >= Math.abs(dx)) return dy < 0 ? "up" : "down";
+  return dx < 0 ? "left" : "right";
+}
 
 /** How far (logical pixels, summed) a swipe goes before its direction is decided. */
 export const AXIS_LOCK = 12;

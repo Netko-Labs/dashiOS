@@ -20,9 +20,8 @@
  */
 
 import { type AppletCommand, parseCommands } from "./commands.ts";
-// biome-ignore lint/nursery/noImportCycles: H5 offender (scripts/lists/import-cycles.txt)
 import { type AppletControl, needsControlsPermission, parseControls } from "./controls.ts";
-import { isRefusal, list, optionalText, type Refusal, record, refuse, text } from "./parse.ts";
+import { isInsidePath, isRefusal, list, optionalText, type Refusal, record, refuse, text } from "./parse.ts";
 import { type Permission, parsePermission, permissionName } from "./permissions.ts";
 import { parseWhen, type When } from "./when.ts";
 
@@ -71,12 +70,6 @@ const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$/;
 const RANGE = /^(>=|\^|~)?(\d+)(\.\d+)?(\.\d+)?$/;
 const HTTPS = /^https:\/\/[^\s"<>]+$/;
 const EMAIL = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/;
-
-/** A path inside the applet's folder: relative, no `..`, no hidden parts. */
-export function isInsidePath(path: string): boolean {
-  if (path === "" || path.startsWith("/") || path.includes("\\") || path.includes("\0")) return false;
-  return path.split("/").every((part) => part !== "" && part !== "." && part !== ".." && !part.startsWith("."));
-}
 
 function insidePath(value: unknown, what: string, extensions: RegExp): string | Refusal {
   if (typeof value !== "string" || !isInsidePath(value) || value.length > 200) return refuse(`${what} must be a path inside the applet's folder`);

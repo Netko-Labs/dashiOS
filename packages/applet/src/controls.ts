@@ -24,9 +24,7 @@
  * permissions allow.
  */
 
-// biome-ignore lint/nursery/noImportCycles: H5 offender (scripts/lists/import-cycles.txt)
-import { isInsidePath } from "./manifest.ts";
-import { id, integer, isRefusal, list, optionalText, type Refusal, record, refuse, text } from "./parse.ts";
+import { id, integer, isInsidePath, isRefusal, list, optionalText, type Refusal, record, refuse, text } from "./parse.ts";
 
 /** The protocol that brings them. */
 export const CONTROLS_PROTOCOL = 5;

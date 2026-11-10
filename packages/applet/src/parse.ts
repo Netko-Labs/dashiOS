@@ -85,3 +85,9 @@ export function typedObject(line: string): { type: string; fields: Record<string
   const fields = value as Record<string, unknown>;
   return typeof fields.type === "string" ? { type: fields.type, fields } : refuse("the message has no type");
 }
+
+/** A path inside the applet's folder: relative, no `..`, no hidden parts. */
+export function isInsidePath(path: string): boolean {
+  if (path === "" || path.startsWith("/") || path.includes("\\") || path.includes("\0")) return false;
+  return path.split("/").every((part) => part !== "" && part !== "." && part !== ".." && !part.startsWith("."));
+}

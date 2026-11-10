@@ -7,9 +7,8 @@
  * one is known by its connector.
  */
 
+import { isBuiltIn } from "@dashi/ui";
 import { type Frame, parseFrame } from "../compositor.ts";
-// biome-ignore lint/nursery/noImportCycles: H5 offender (scripts/lists/import-cycles.txt)
-import { isBuiltIn } from "../displays.ts";
 
 export type Rotation = 0 | 90 | 180 | 270;
 export const ROTATIONS: readonly Rotation[] = [0, 90, 180, 270];

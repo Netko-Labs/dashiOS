@@ -11,9 +11,7 @@
 
 import { defaultScale, isBuiltIn, SCALES } from "@dashi/ui";
 import { type Compositor, type Frame, parseFrame } from "./compositor.ts";
-// biome-ignore lint/nursery/noImportCycles: H5 offender (scripts/lists/import-cycles.txt)
 import { parseMonitors, type VrrMode } from "./display-config/monitors.ts";
-// biome-ignore lint/nursery/noImportCycles: H5 offender (scripts/lists/import-cycles.txt)
 import { toWire } from "./display-config/plan.ts";
 
 export { defaultScale, isBuiltIn, SCALES };
