@@ -13,7 +13,7 @@ import { withSwitcher } from "../keymap.ts";
 import { currentKeymap, idleKeymap } from "../keymap-state.ts";
 import type { RankingMemory } from "../launcher/ranking/index.ts";
 import type { Menus } from "../menus/index.ts";
-import type { Notifications } from "../notifications/service.ts";
+import type { Notifications } from "../notifications/index.ts";
 import { openOverlay } from "../overlay.tsx";
 import type { OverlaySlots } from "../overlay-slots.ts";
 import { type Capture, startCapture } from "../recorder/index.ts";

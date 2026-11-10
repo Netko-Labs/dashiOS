@@ -42,7 +42,6 @@
 3	packages/shell/src/launcher/rows.ts
 1	packages/shell/src/menubar-status.tsx
 1	packages/shell/src/menubar.tsx
-2	packages/shell/src/notifications/store.ts
 2	packages/shell/src/settings-app/machine-desktop.ts
 1	packages/shell/src/settings-app/registry/look.ts
 2	packages/shell/src/settings-app/sidebar.tsx

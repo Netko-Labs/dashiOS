@@ -4,7 +4,7 @@
  * store (store.ts) holds the list; these return the next version of it.
  */
 
-import type { HistoryEntry, Notification } from "./types.ts";
+import type { HistoryEntry, Notification } from "../types.ts";
 
 export const MAX_HISTORY = 200;
 

@@ -5,9 +5,9 @@
  */
 
 import { existsSync } from "node:fs";
-import { type Entry, loadEntries } from "../entries.ts";
-import { iconPath, resolveIcon } from "../shared/apps/index.ts";
-import type { Notification } from "./types.ts";
+import { type Entry, loadEntries } from "../../entries.ts";
+import { iconPath, resolveIcon } from "../../shared/apps/index.ts";
+import type { Notification } from "../types.ts";
 
 let entries: Entry[] | null = null;
 const lookedFor = new Set<string>();

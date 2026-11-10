@@ -22,7 +22,7 @@ import { AgentsPanel, type PanelActions } from "./agents-panel.tsx";
 import type { HandoffSnapshot, LauncherHandoff } from "./launcher/agents/handoff-rows.ts";
 import type { Store } from "./launcher/host.ts";
 import type { MenuController } from "./menus/index.ts";
-import { type NotificationStore, SHELL_SENDER } from "./notifications/store.ts";
+import { type NotificationStore, SHELL_SENDER } from "./notifications/index.ts";
 
 /** The popover's layer: a yes in the panel counts only if the person pressed it there (agents/person.ts). */
 export const PANEL_LAYER = "dashi.popover";

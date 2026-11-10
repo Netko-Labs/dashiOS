@@ -28,7 +28,7 @@ import { FILE_ROWS } from "../launcher/rows.ts";
 import { logTiming, markOpen, sinceOpen } from "../launcher/timing.ts";
 import { LAUNCHER, type LauncherFiles } from "../launcher.tsx";
 import { findFiles, hasLocalSearch, LocalSearchEndpoint } from "../local-search.ts";
-import type { Notifications } from "../notifications/service.ts";
+import type { Notifications } from "../notifications/index.ts";
 import { type OpenOverlay, openOverlay } from "../overlay.tsx";
 import type { OverlaySlots } from "../overlay-slots.ts";
 import { RecentApps } from "../recents.ts";

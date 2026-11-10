@@ -204,7 +204,7 @@
 3	packages/shell/bin/dashi-agent.ts
 1	packages/shell/bin/dashi-browser-host.ts
 1	packages/shell/bin/dashi-browser-pack.ts
-9	packages/shell/bin/dashi-graphics-preview.tsx
+8	packages/shell/bin/dashi-graphics-preview.tsx
 1	packages/shell/bin/dashi-mcp.ts
 1	packages/shell/bin/dashi-open.ts
 17	packages/shell/bin/dashi-settings-preview.tsx
@@ -241,11 +241,9 @@
 2	packages/shell/src/agents/desktop/browser-field.ts
 2	packages/shell/src/agents/desktop/browser.ts
 6	packages/shell/src/agents/desktop/calendar.ts
-6	packages/shell/src/agents/desktop/files.ts
+5	packages/shell/src/agents/desktop/files.ts
 1	packages/shell/src/agents/desktop/machine.ts
 4	packages/shell/src/agents/desktop/notes.ts
-1	packages/shell/src/agents/desktop/notifications.ts
-1	packages/shell/src/agents/desktop/quit.ts
 1	packages/shell/src/agents/desktop/settings.ts
 7	packages/shell/src/agents/desktop/software.ts
 4	packages/shell/src/agents/desktop/types.ts
@@ -404,7 +402,7 @@
 1	packages/shell/src/menus/types.ts
 1	packages/shell/src/network/source.ts
 2	packages/shell/src/notifications/center.tsx
-3	packages/shell/src/notifications/month-card.tsx
+3	packages/shell/src/notifications/lib/month-card.tsx
 2	packages/shell/src/notifications/service.ts
 1	packages/shell/src/overlay.tsx
 1	packages/shell/src/overview/controller.ts
@@ -544,8 +542,6 @@
 1	packages/shell/src/system/start.ts
 1	packages/shell/src/text-size.ts
 1	packages/shell/src/toplevels.ts
-1	packages/shell/src/tray/dbusmenu.ts
-1	packages/shell/src/tray/props.ts
 1	packages/shell/src/wallpaper/catalog.ts
 3	packages/shell/src/wallpaper/chooser.ts
 1	packages/shell/src/wallpaper/live/controller.ts
@@ -799,7 +795,7 @@
 4	packages/shell/test/software-recommended.test.ts
 9	packages/shell/test/software-trust.test.ts
 3	packages/shell/test/software-update-check.test.ts
-3	packages/shell/test/software-update-notice.test.tsx
+2	packages/shell/test/software-update-notice.test.tsx
 1	packages/shell/test/sound-mixer-apps.test.ts
 1	packages/shell/test/sound-mixer-control.test.ts
 4	packages/shell/test/sound-mixer-view.test.tsx

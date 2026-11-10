@@ -7,10 +7,10 @@
 import { useColors } from "@dashi/ui";
 import { Image, Svg, Text, View } from "@mirinjs/metal";
 import { useMemo, useState } from "react";
+import { ellipsize } from "../text.ts";
+import type { HistoryEntry } from "../types.ts";
 import { relativeTime } from "./group.ts";
 import { notificationIcon } from "./icon.ts";
-import { ellipsize } from "./text.ts";
-import type { HistoryEntry } from "./types.ts";
 
 const CLOSE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4.5 4.5L11.5 11.5M11.5 4.5L4.5 11.5" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
 

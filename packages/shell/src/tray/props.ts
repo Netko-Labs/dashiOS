@@ -6,7 +6,7 @@
  */
 
 import type { ExtraIcon, MenuBarExtra } from "../extras/types.ts";
-import { clean, plainBody } from "../notifications/text.ts";
+import { clean, plainBody } from "../notifications/index.ts";
 import { propertyMap } from "../shared/dbus/index.ts";
 import { type Pixmap, parsePixmaps } from "./png.ts";
 

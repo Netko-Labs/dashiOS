@@ -24,7 +24,7 @@ import { openFile } from "../file-manager.ts";
 import { InhibitFlag, keepAwake } from "../inhibit/index.ts";
 import { RankingMemory } from "../launcher/ranking/index.ts";
 import { LAUNCHER } from "../launcher.tsx";
-import type { Notifications } from "../notifications/service.ts";
+import type { Notifications } from "../notifications/index.ts";
 import { openOverlay } from "../overlay.tsx";
 import { PortalSheets, pinNextLauncher, startPortalHost } from "../portal-host/index.ts";
 import { startSharePicker } from "../share-picker/index.ts";

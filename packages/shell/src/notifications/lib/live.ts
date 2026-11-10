@@ -4,7 +4,7 @@
  * person having seen it in the center). The store (store.ts) changes these.
  */
 
-import type { Notification } from "./types.ts";
+import type { Notification } from "../types.ts";
 
 export interface Live {
   notification: Notification;

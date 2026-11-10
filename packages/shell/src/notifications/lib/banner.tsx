@@ -8,10 +8,10 @@
 
 import { useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
+import { type NotificationStore, useNotifications } from "../store.ts";
+import { ellipsize } from "../text.ts";
+import type { Notification, NotificationAction } from "../types.ts";
 import { notificationIcon } from "./icon.ts";
-import { type NotificationStore, useNotifications } from "./store.ts";
-import { ellipsize } from "./text.ts";
-import type { Notification, NotificationAction } from "./types.ts";
 
 export const BANNER = {
   /** The panel's width. */

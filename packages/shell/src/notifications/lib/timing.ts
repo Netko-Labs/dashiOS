@@ -1,6 +1,6 @@
 /** How long banners stay, and the clock the store counts them with. */
 
-import type { NotifyInput } from "./types.ts";
+import type { NotifyInput } from "../types.ts";
 
 /** How long a banner stays when the app doesn't say. */
 export const DEFAULT_TIMEOUT_MS = 5_000;

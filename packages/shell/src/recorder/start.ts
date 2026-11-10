@@ -7,8 +7,7 @@
 
 import { basename } from "node:path";
 import type { Compositor } from "../compositor.ts";
-import type { NotificationStore } from "../notifications/index.ts";
-import { SHELL_SENDER } from "../notifications/store.ts";
+import { type NotificationStore, SHELL_SENDER } from "../notifications/index.ts";
 import type { OpenOverlay } from "../overlay.tsx";
 import { type AreaCapture, areaCapture, type CaptureScreen } from "../screenshot-area.tsx";
 import { takeScreenshot } from "../screenshots.ts";

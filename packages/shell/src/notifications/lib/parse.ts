@@ -4,9 +4,9 @@
  * for the type the spec gives it and ignored if it doesn't match.
  */
 
-import type { Variant } from "../shared/dbus/index.ts";
-import { clean, LIMITS, plainBody } from "./text.ts";
-import type { NotificationAction, NotifyInput, Urgency } from "./types.ts";
+import type { Variant } from "../../shared/dbus/index.ts";
+import { clean, LIMITS, plainBody } from "../text.ts";
+import type { NotificationAction, NotifyInput, Urgency } from "../types.ts";
 
 export interface NotifyCall {
   /** 0 for a new notification, else the one to replace. */

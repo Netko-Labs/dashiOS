@@ -15,7 +15,7 @@ import { keepAwake, keepAwakeEntries } from "../inhibit/index.ts";
 import { laptopEntries } from "../laptop/menu.ts";
 import { type Laptop, startLaptop } from "../laptop/start.ts";
 import { extraEntries, type Menus, type StatusMenuAction, startMenus, useMenus } from "../menus/index.ts";
-import type { Notifications } from "../notifications/service.ts";
+import type { Notifications } from "../notifications/index.ts";
 import { chargeTarget } from "../power/battery-health.ts";
 import { powerOffReason } from "../power/nested.ts";
 import type { App } from "../shared/apps/index.ts";

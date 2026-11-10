@@ -3,7 +3,7 @@
  * app, newest first, and the short times beside each notification.
  */
 
-import type { HistoryEntry, Notification } from "./types.ts";
+import type { HistoryEntry, Notification } from "../types.ts";
 
 export interface NotificationGroup {
   /** Stable across renders: what the center remembers an expanded group by. */

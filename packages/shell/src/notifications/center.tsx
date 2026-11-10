@@ -15,9 +15,9 @@ import { calendarBridge } from "../calendar/bridge.ts";
 import { MOON } from "../control-center/glyphs.ts";
 import { KeyCatcher } from "../overlay.tsx";
 import { useMinuteClock } from "../shared/time/clock.ts";
-import { Card, GroupHeader, hasDefaultAction, TextButton } from "./center-parts.tsx";
-import { dateHeading, groupByApp } from "./group.ts";
-import { MonthCard } from "./month-card.tsx";
+import { Card, GroupHeader, hasDefaultAction, TextButton } from "./lib/center-parts.tsx";
+import { dateHeading, groupByApp } from "./lib/group.ts";
+import { MonthCard } from "./lib/month-card.tsx";
 import { type NotificationStore, useNotifications } from "./store.ts";
 import type { HistoryEntry } from "./types.ts";
 

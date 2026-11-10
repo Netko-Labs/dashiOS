@@ -10,7 +10,7 @@
  */
 
 import type { ExtraMenuRow } from "../extras/types.ts";
-import { clean } from "../notifications/text.ts";
+import { clean } from "../notifications/index.ts";
 import { type DBusConnection, propertyMap, Variant } from "../shared/dbus/index.ts";
 
 export const DBUSMENU = "com.canonical.dbusmenu";

@@ -22,7 +22,7 @@ import type { Compositor } from "../compositor.ts";
 import { openFile } from "../file-manager.ts";
 import { ContextSource, type HandoffShell, startHandoffShell } from "../handoff-shell.tsx";
 import { LAUNCHER_MOTION } from "../launcher/resident.tsx";
-import type { Notifications } from "../notifications/service.ts";
+import type { Notifications } from "../notifications/index.ts";
 import { regionDesktop } from "../region/desktop.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import { machineDesktop } from "../settings-app/machine-desktop.ts";

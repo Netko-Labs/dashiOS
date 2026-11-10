@@ -4,7 +4,7 @@
  * went up while the agents' panel was closed. Pure: main.tsx posts them.
  */
 
-import type { NotifyInput } from "../../notifications/types.ts";
+import type { NotifyInput } from "../../notifications/index.ts";
 import { iconPath } from "../../shared/apps/index.ts";
 import { harnessIconName } from "./harness-icons.ts";
 import { type RunQuestion, type RunView, summaryLines } from "./store.ts";

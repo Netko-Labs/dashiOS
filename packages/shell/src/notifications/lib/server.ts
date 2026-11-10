@@ -10,10 +10,10 @@
  */
 
 import { int, maybe } from "@dashi/shape";
-import { type ConnectOptions, DBusConnection, type InterfaceSpec, NameFlags, nameHasOwner, requestName } from "../shared/dbus/index.ts";
+import { type ConnectOptions, DBusConnection, type InterfaceSpec, NameFlags, nameHasOwner, requestName } from "../../shared/dbus/index.ts";
+import type { NotificationStore } from "../store.ts";
+import { CloseReason } from "../types.ts";
 import { parseNotify } from "./parse.ts";
-import type { NotificationStore } from "./store.ts";
-import { CloseReason } from "./types.ts";
 
 export const SERVICE = "org.freedesktop.Notifications";
 export const OBJECT_PATH = "/org/freedesktop/Notifications";
