@@ -77,8 +77,19 @@ export function mayShow(path: string, policy: AgentPolicy): boolean {
   return !OFF_LIMITS.some((part) => isInside(`${policy.home}/${part}`, clean));
 }
 
+/** An item as an agent is told it. */
+export interface ItemView {
+  name: string;
+  kind: string;
+  size?: number;
+  modified: string;
+  hidden?: boolean;
+  mime: string;
+  folder: string;
+}
+
 /** How an item is told to the agent. Names are other people's text: the tool descriptions say so. */
-export function describeItem(item: FileItem, home: string) {
+export function describeItem(item: FileItem, home: string): ItemView {
   return {
     name: item.name,
     kind: item.broken ? "broken_link" : item.isLink ? `link_to_${item.kind}` : item.kind,
