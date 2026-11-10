@@ -56,8 +56,9 @@ pub(crate) struct Entry {
     pub decor: Decor,
     /// The app asked for the unified style (dashi-chrome-v1).
     pub unified: bool,
-    /// The title bar (or a unified window's lights) as last drawn.
-    pub title_image: Option<titlebar::Image>,
+    /// The title bar (or a unified window's lights) as last drawn, at each
+    /// scale a screen draws it at (`Dashi::decor_scale` is the one drawing).
+    pub title_images: super::by_scale::ByScale<titlebar::Image>,
     /// Full screen on this output, and the outer frame to go back to.
     pub fullscreen: Option<(String, Rectangle<i32, Logical>)>,
     /// The Space it is on.
@@ -122,7 +123,7 @@ impl Windows {
             tiled: false,
             decor: Decor::None,
             unified: false,
-            title_image: None,
+            title_images: Default::default(),
             fullscreen: None,
             space: 0,
             away_at: None,

@@ -48,8 +48,8 @@ fn title_of(state: &Dashi, window: &Window, bar: i32) -> Option<Title> {
     let image = state
         .windows
         .by_window(window)?
-        .title_image
-        .as_ref()
+        .title_images
+        .get(state.decor_scale)
         .filter(|image| image.shows(f64::from(bar)))?;
     Some(Title {
         buffer: image.buffer.clone(),

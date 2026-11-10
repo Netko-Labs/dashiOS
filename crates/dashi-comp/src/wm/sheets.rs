@@ -42,7 +42,7 @@ impl Dashi {
         };
         entry.sheet_of = parent;
         entry.sheet_top = top.filter(|_| parent.is_some());
-        entry.title_image = None;
+        entry.title_images.clear();
         let unplaced = !entry.placed;
         if let Some(surface) = toplevel_surface(&entry.window) {
             self.update_decor(&surface);
@@ -103,7 +103,7 @@ impl Dashi {
             let Some(parent_entry) = self.windows.get(parent) else {
                 if let Some(entry) = self.windows.get_mut(child) {
                     entry.sheet_of = None;
-                    entry.title_image = None;
+                    entry.title_images.clear();
                 }
                 if let Some(surface) = self
                     .windows

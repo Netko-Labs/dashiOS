@@ -45,6 +45,10 @@ use crate::{
 
 pub(crate) struct Dashi {
     pub start_time: Instant,
+    /// What woke the event loop lately: whether idle screens may sleep (wakes.rs).
+    pub wakes: crate::wakes::Wakes,
+    /// The scale title bars are drawn at for the view being built (wm/decor.rs).
+    pub decor_scale: i32,
     pub socket_name: OsString,
     pub display_handle: DisplayHandle,
     pub loop_handle: LoopHandle<'static, Dashi>,
@@ -262,6 +266,8 @@ impl Dashi {
 
         Ok(Self {
             start_time: Instant::now(),
+            wakes: crate::wakes::Wakes::new(Instant::now()),
+            decor_scale: 1,
             socket_name,
             display_handle: dh,
             loop_handle,
@@ -488,6 +494,10 @@ impl Dashi {
             tracing::warn!(%error, "flushing Wayland clients");
         }
         self.ipc.flush();
+        // Anything but a screen's frame timer: sleeping screens look again (wakes.rs).
+        if self.wakes.turn_ended(Instant::now()) {
+            crate::backend::udev::wake_screens(self);
+        }
     }
 }
 
@@ -517,6 +527,7 @@ fn listen(
             unsafe {
                 display.get_mut().dispatch_clients(state)?;
             }
+            state.wakes.poke();
             Ok(PostAction::Continue)
         },
     )?;

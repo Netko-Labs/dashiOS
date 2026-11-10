@@ -97,6 +97,7 @@ crates/dashi-comp/src/
                     depth between windows (depth/: `window-style`), live pictures the shell places
                     (thumbnails/: `space-previews`, `window-thumbnails`), a screen showing
                     another's picture (mirror.rs: `mirror`)
+  wakes.rs          what woke the event loop: whether idle screens may sleep
   wm/               windows, placement mechanics, frames, fullscreen, spaces, overview,
                     grabs (a move grab survives a Space change), edge holds (edge_hold.rs),
                     sheets (a window attached under another's title bar: IPC `attach`)
@@ -237,6 +238,21 @@ Each milestone ends with the shell running on it in the VM.
   lets the frame go, and the screen draws again; a vblank that turns up later
   is ignored, or recognized by its timestamp as the old frame's. The nested
   (winit) backend has no such wait: each redraw asks for the next.
+- **Idle screens sleep (done, 0.7.0):** a lit screen that has nothing new to
+  draw used to look again every refresh, rebuilding its scene to learn that
+  nothing changed (every window's title bar walked, the elements diffed),
+  forever. Now, once nothing but the screens' own frame timers and vblanks has
+  woken the event loop for a second (`wakes.rs`), a screen with nothing new
+  sleeps: it looks once a second (and paces its clients' frame callbacks so)
+  until anything else wakes the loop (a client's request, input, IPC, a video
+  frame, any other timer or channel), and then draws at once
+  (`udev/frame.rs`, `wake_screens`). What moves by itself (a fade, a slide, a
+  flight) draws something new each frame, so its screen stays awake while it
+  runs. The nested (winit) backend is unchanged.
+- **Title bars per scale (done, 0.7.0):** each window keeps its title bar
+  image per screen scale (`wm/by_scale.rs`, up to four), so two screens at
+  1× and 2× (or a capture at another scale) don't draw each other's out every
+  frame.
 - **Keyboard lights (done):** Caps, Num, and Scroll Lock on every keyboard.
 - **Rounded corners (done):** windows Dashi frames are rounded at the
   Appearance radius (`chrome {radius}`): the bottom corners under Dashi's title

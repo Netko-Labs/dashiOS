@@ -130,6 +130,7 @@ fn connector_connected(
                 global,
                 flip: flip::Flip::default(),
                 scheduled: None,
+                asleep: false,
                 powered: true,
                 held: false,
                 modes: connector.modes().to_vec(),

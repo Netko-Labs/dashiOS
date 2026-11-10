@@ -13,6 +13,7 @@ mod protocols;
 mod render;
 mod session;
 mod state;
+mod wakes;
 mod wallpaper;
 mod wm;
 mod xwayland;

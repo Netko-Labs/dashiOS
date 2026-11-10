@@ -261,7 +261,10 @@ fn a_connection_dropped_for_falling_behind_runs_nothing_more() {
         lines.push_str(&format!("{{\"id\":{id},\"method\":\"outputs\"}}\n"));
     }
     for id in 0..5 {
-        lines.push_str(&format!("{{\"id\":{},\"method\":\"space-add\"}}\n", 300_000 + id));
+        lines.push_str(&format!(
+            "{{\"id\":{},\"method\":\"space-add\"}}\n",
+            300_000 + id
+        ));
     }
     let mut writer = flooded.stream.try_clone().unwrap();
     let wrote = std::thread::spawn(move || writer.write_all(lines.as_bytes()).is_ok());

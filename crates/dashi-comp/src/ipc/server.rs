@@ -280,6 +280,7 @@ impl Dashi {
         if !self.ipc.is_open(id) {
             return;
         }
+        self.wakes.poke();
         match frame::parse_request(line) {
             Ok(request) => {
                 let ask = Ask {

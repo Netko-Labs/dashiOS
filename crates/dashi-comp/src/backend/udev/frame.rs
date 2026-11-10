@@ -27,7 +27,8 @@ pub(super) fn render_device(state: &mut Dashi, node: DrmNode) {
 enum Turn {
     /// A frame is queued: its vblank draws the next.
     Queued,
-    /// Nothing new, or it failed: look again in about a frame.
+    /// Nothing new, or it failed: look again in about a frame, or sleep
+    /// (wakes.rs) until something wakes it, a second at most.
     Idle,
     /// No renderer: try again in a second.
     Later,
@@ -38,6 +39,7 @@ enum Turn {
 /// Draw a screen if anything on it changed; else look again in about a frame.
 pub(super) fn render_screen(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle) {
     unschedule(state, node, crtc);
+    set_asleep(state, node, crtc, false);
     let outcome = with_udev(state, |state, data| -> Option<(Output, Turn)> {
         let primary_gpu = data.primary_gpu;
         let device = data.devices.get_mut(&node)?;
@@ -112,7 +114,12 @@ pub(super) fn render_screen(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle
         Turn::Queued => state.send_frames(&output),
         Turn::Idle => {
             state.send_frames(&output);
-            schedule(state, node, crtc, frame_time(&output));
+            if state.wakes.may_sleep(std::time::Instant::now()) {
+                set_asleep(state, node, crtc, true);
+                schedule(state, node, crtc, ASLEEP_LOOK);
+            } else {
+                schedule(state, node, crtc, frame_time(&output));
+            }
         }
         Turn::Later => {
             state.send_frames(&output);
@@ -134,6 +141,7 @@ pub(super) fn frame_finished(
     crtc: crtc::Handle,
     metadata: Option<DrmEventMetadata>,
 ) {
+    state.wakes.frame_turn();
     let output = with_udev(state, |_, data| {
         let screen = data.devices.get_mut(&node)?.screens.get_mut(&crtc)?;
         let (time, seq) = vblank_time(metadata);
@@ -158,6 +166,42 @@ pub(super) fn frame_finished(
     let Some(output) = output else { return };
     // Leave the clients most of the frame to draw, then compose.
     schedule(state, node, crtc, frame_time(&output).mul_f64(0.6));
+}
+
+/// How often a sleeping screen still looks (and paces its clients' frame callbacks).
+const ASLEEP_LOOK: Duration = Duration::from_secs(1);
+
+fn set_asleep(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle, asleep: bool) {
+    with_udev(state, |_, data| {
+        if let Some(screen) = data
+            .devices
+            .get_mut(&node)
+            .and_then(|d| d.screens.get_mut(&crtc))
+        {
+            screen.asleep = asleep;
+        }
+    });
+}
+
+/// Something woke the event loop (wakes.rs): sleeping screens draw at once.
+pub(crate) fn wake_screens(state: &mut Dashi) {
+    let asleep = with_udev(state, |_, data| {
+        data.devices
+            .iter()
+            .flat_map(|(node, device)| {
+                device
+                    .screens
+                    .iter()
+                    .filter(|(_, screen)| screen.asleep)
+                    .map(|(crtc, _)| (*node, *crtc))
+            })
+            .collect::<Vec<_>>()
+    })
+    .unwrap_or_default();
+    for (node, crtc) in asleep {
+        set_asleep(state, node, crtc, false);
+        schedule(state, node, crtc, Duration::ZERO);
+    }
 }
 
 pub(super) fn monotonic_now() -> Duration {

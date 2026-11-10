@@ -23,6 +23,7 @@ mod screens;
 mod sleep;
 mod start;
 
+pub(crate) use frame::wake_screens;
 pub(crate) use holds::describe_gpus;
 pub(crate) use imports::import_dmabuf;
 pub(crate) use pace::agent_acted;
@@ -185,6 +186,9 @@ struct Screen {
     flip: flip::Flip,
     /// The timer set to draw it next, when it fires, and which it is (pace.rs).
     scheduled: Option<(RegistrationToken, Instant, u64)>,
+    /// Nothing new to draw and nothing woke the loop for a while: only the
+    /// watchdog's second until something does (wakes.rs, frame.rs).
+    asleep: bool,
     /// The screen is lit (`power`, and on in Displays).
     powered: bool,
     /// Held dark by `power {on: false, output}` (brightness at 0 on a panel
