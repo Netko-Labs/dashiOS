@@ -121,10 +121,9 @@ test("Save As asks before replacing another file, with Replace in ume", async ()
   host.emit({ type: "change", nodeId: field, value: "taken.txt" });
   await settle();
   host.emit({ type: "submit", nodeId: field, value: "taken.txt" });
-  const replace = await shows(root, "chooser:replace:ok");
+  await until(() => host.trees.at(-1)?.includes("already exists") ?? false, "the replace question");
   expect(readFileSync(existing, "utf8")).toBe("keep me");
-  expect(host.trees.at(-1)).toContain("already exists");
-  host.emit(press(replace));
+  host.emit(press(root.nodeId("chooser:replace:ok") as string));
   await until(() => readFileSync(existing, "utf8") === "new text", "the file to be replaced");
   root.unmount();
 });
