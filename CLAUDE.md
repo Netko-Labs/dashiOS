@@ -79,6 +79,13 @@ only shrink, so fix offenders, never add them, and trim the list
 - H15: every dependency's licence is on the allowed list, or listed with its reason.
 - H16: heavy libraries (the AI SDKs) never load at shell start; the count of library modules at start has a ceiling (Dashi's own modules don't count: splitting files adds them).
 - H17: a system service scores 5.0 or better on `systemd-analyze security`.
+- H18: only a module's own files import its `lib/`; `lib/` is never in a package's `exports` and holds no entry point.
+- H19: from outside a module, import its `index.ts` (or a file its `index.ts` re-exports), never a file inside it.
+- H20: `shared/` code is used by two sibling modules or more, in a folder named for its concern.
+
+A module is a folder under `packages/shell/src/`, a concern under `src/shared/`, an app,
+or a folder under a package's `src/`: `index.ts` (re-exports only), `types.ts`, its public
+pieces, and `lib/` for everything private (`docs/conventions.md`, "`lib/` And `shared/`").
 
 Keep `CLAUDE.md` and `AGENTS.md` equivalent. If one changes, update the other in
 the same change.
