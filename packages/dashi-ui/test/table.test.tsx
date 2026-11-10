@@ -3,8 +3,7 @@ import { render } from "@mirinjs/metal";
 import { useState } from "react";
 import { STEADY_MS, Table } from "../src/table.tsx";
 import { holdOrder } from "../src/table-sort.ts";
-import { fakeHost, settle } from "./host.ts";
-import { fakeClockEachTest } from "./support/time.ts";
+import { fakeClockEachTest, fakeHost, settle } from "./host.ts";
 
 fakeClockEachTest();
 

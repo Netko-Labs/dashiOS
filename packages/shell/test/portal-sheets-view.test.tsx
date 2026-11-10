@@ -15,11 +15,8 @@ import type { ShowDialog } from "../apps/portal/windows.ts";
 import { fakeClockEachTest, flush, settle, until } from "./support/time.ts";
 
 fakeClockEachTest();
-/** The chooser is in `folder` and has drawn it (a folder lists on the file system, outside the event loop's turns). */
-async function folderIs(model: ChooserModel, folder: string): Promise<void> {
-  await until(() => model.folder() === folder && !model.store.getSnapshot().loading, `the chooser to open ${folder}`);
-  await flush();
-}
+/** Until the chooser is in `folder` and has drawn it (a folder lists on the file system, outside the event loop's turns). */
+const folderIs = (model: ChooserModel, folder: string) => until(() => model.folder() === folder && !model.store.getSnapshot().loading, folder).then(flush);
 
 /** A key the window got, as Metal hands it to a KeySink (`onWindowKeyDown`). */
 const windowKey = (nodeId: string, key: string): NativeEvent => ({
@@ -122,20 +119,16 @@ test("the chooser is Files: a slow second click only selects, a double-click ope
   press(`item:${taxes}`);
   press(`item:${taxes}`);
   await folderIs(model, taxes);
-  expect(model.folder()).toBe(taxes);
   press("chooser:up");
   await folderIs(model, docs);
-  expect(model.folder()).toBe(docs);
   press("chooser:back");
   await folderIs(model, taxes);
-  expect(model.folder()).toBe(taxes);
 
   // The folder pop-up lists the folders it is in; choosing one goes there.
   send({ type: "press", nodeId: node("chooser:folder"), bounds: { x: 300, y: 6, width: 120, height: 28 } });
   await settle();
   send({ type: "press", nodeId: node("chooser:folder:menu:Home") });
   await folderIs(model, home);
-  expect(model.folder()).toBe(home);
   // Esc, with nothing typed, cancels.
   send({ type: "windowkey", nodeId: node("keys"), key: "escape", ctrl: false, alt: false, shift: false, meta: false, repeat: false });
   expect(answers.at(-1)).toBeNull();
@@ -293,7 +286,6 @@ test("the chooser's search takes a typed path: Return goes there; one that leads
   model.start();
   const { root: mounted, node, send } = mount(<ChooserView model={model} title="Open" exists={() => false} answer={() => {}} />);
   await folderIs(model, home);
-  expect(model.folder()).toBe(home);
   const field = node("chooser:search");
   // A path is not a name to look for: no search runs while it is typed.
   send({ type: "change", nodeId: field, value: "~/Docs/Tax" });

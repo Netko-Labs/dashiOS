@@ -120,7 +120,7 @@
 449	packages/shell/test/launcher-sources.test.ts
 383	packages/shell/test/portal-file-chooser.test.ts
 308	packages/shell/test/portal-interfaces.test.ts
-309	packages/shell/test/portal-sheets-view.test.tsx
+307	packages/shell/test/portal-sheets-view.test.tsx
 306	packages/shell/test/ranking.test.ts
 310	packages/shell/test/refresh-rate.test.ts
 303	packages/shell/test/settings-polish-rules.test.tsx

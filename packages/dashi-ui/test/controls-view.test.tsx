@@ -12,8 +12,7 @@ import { Slider } from "../src/slider.tsx";
 import { Appearance, setAppearanceSource, useColors } from "../src/theme/appearance.ts";
 import { darkColors, lightColors } from "../src/theme/palette.ts";
 import { AppWindow } from "../src/window.tsx";
-import { fakeHost, settle } from "./host.ts";
-import { fakeClockEachTest } from "./support/time.ts";
+import { fakeClockEachTest, fakeHost, settle } from "./host.ts";
 
 fakeClockEachTest();
 
@@ -293,14 +292,12 @@ test("the arrows step a slider, each press a move and a commit; the click that e
   host.emit({ type: "press", nodeId: root.nodeId("s:key:3") as string });
   await settle();
   expect(commits).toEqual([75]);
-  // Space on the shown value's stop does nothing.
-  host.emit({ type: "press", nodeId: root.nodeId("s:key:3") as string });
+  host.emit({ type: "press", nodeId: root.nodeId("s:key:3") as string }); // Space on the shown value's stop does nothing.
   await settle();
   expect(commits).toEqual([75]);
   // A drag, then the click it ends with lands on a stop: not a step.
   const bar = root.nodeId("s") as string;
-  host.emit({ type: "pointer", nodeId: bar, phase: "down", x: 11, y: 10, bounds: { x: 0, y: 0, width: 220, height: 22 } });
-  host.emit({ type: "pointer", nodeId: bar, phase: "up", x: 11, y: 10, bounds: { x: 0, y: 0, width: 220, height: 22 } });
+  for (const phase of ["down", "up"] as const) host.emit({ type: "pointer", nodeId: bar, phase, x: 11, y: 10, bounds: { x: 0, y: 0, width: 220, height: 22 } });
   host.emit({ type: "press", nodeId: root.nodeId("s:key:4") as string });
   await settle();
   expect(commits).toEqual([75, 0]);

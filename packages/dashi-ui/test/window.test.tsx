@@ -3,8 +3,7 @@ import { render } from "@mirinjs/metal";
 import { Notice } from "../src/notice.tsx";
 import { TOOLTIP_DELAY_MS, tooltipOrigin } from "../src/tooltip.tsx";
 import { AppWindow, ToolbarButton, toolbarInset } from "../src/window.tsx";
-import { fakeHost, settle } from "./host.ts";
-import { fakeClockEachTest } from "./support/time.ts";
+import { fakeClockEachTest, fakeHost, settle } from "./host.ts";
 
 fakeClockEachTest();
 
