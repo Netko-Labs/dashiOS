@@ -60,7 +60,7 @@
 435	packages/shell/apps/files/operations.ts
 652	packages/shell/apps/files/store.ts
 308	packages/shell/apps/files/thumbnailer.ts
-376	packages/shell/apps/installer/view.tsx
+375	packages/shell/apps/installer/view.tsx
 350	packages/shell/apps/notes/editor.tsx
 592	packages/shell/apps/notes/model.ts
 398	packages/shell/apps/notes/view.tsx
@@ -87,7 +87,7 @@
 314	packages/shell/src/launcher/ranking/rank.ts
 353	packages/shell/src/launcher/rows.ts
 1903	packages/shell/src/main.tsx
-416	packages/shell/src/menubar.tsx
+415	packages/shell/src/menubar.tsx
 365	packages/shell/src/menus/controller.ts
 352	packages/shell/src/menus/model.ts
 420	packages/shell/src/menus/start.tsx

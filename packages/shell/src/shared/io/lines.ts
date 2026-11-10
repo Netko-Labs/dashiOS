@@ -2,7 +2,8 @@
  * Lines out of a socket that delivers bytes in chunks. A chunk can end in
  * the middle of a multibyte character; one streaming decoder per connection
  * holds the cut-off bytes until the rest arrives, where decoding each chunk
- * on its own would turn them into U+FFFD.
+ * on its own would turn them into U+FFFD. LineSplitter cuts text already
+ * decoded (a helper's output: setup's extras, the installer).
  */
 
 export class LineBuffer {
@@ -25,5 +26,22 @@ export class LineBuffer {
   /** How much of an unfinished line is held (a runaway sender never ends one). */
   get pending(): number {
     return this.rest.length;
+  }
+}
+
+/** Cuts a stream into lines: `push` gives the lines a chunk completes, `end` whatever is left. */
+export class LineSplitter {
+  private rest = "";
+
+  push(chunk: string): string[] {
+    const lines = (this.rest + chunk).split("\n");
+    this.rest = lines.pop() ?? "";
+    return lines.filter((line) => line.trim() !== "");
+  }
+
+  end(): string[] {
+    const last = this.rest;
+    this.rest = "";
+    return last.trim() === "" ? [] : [last];
   }
 }

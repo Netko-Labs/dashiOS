@@ -28,6 +28,7 @@ export {
   CLOSE,
   INFO,
   LOCK,
+  LOGO,
   MORE,
   RESTART,
   SEARCH,

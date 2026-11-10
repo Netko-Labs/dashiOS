@@ -5,10 +5,9 @@
  * install itself and Restart. model.ts holds the rules; helper.ts runs it.
  */
 
-import { CHECK, ProgressBar, Row, Switch, TextField, useColors, WARNING } from "@dashi/ui";
+import { CHECK, LOGO, ProgressBar, Row, Switch, TextField, useColors, WARNING } from "@dashi/ui";
 import { ScrollView, Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { LOGO } from "../../src/glyphs.ts";
 import { Button, Caption, Group, Note, useSurface } from "../../src/settings-app/ui.tsx";
 import { type InstallChoice, isDryRun, runInstall, STEPS } from "./helper.ts";
 import {

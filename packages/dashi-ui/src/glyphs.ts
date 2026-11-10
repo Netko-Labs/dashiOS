@@ -4,6 +4,8 @@ const svg = (body: string): string => `<svg xmlns="http://www.w3.org/2000/svg" v
 const stroke = (d: string, width = 1.5): string =>
   `<path d="${d}" stroke="#000" stroke-width="${width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
 
+/** Dashi's mark: a bowl of dashi with steam (the menu bar's Dashi menu, About, Setup, the installer). */
+export const LOGO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M1.5 8.25h13a6.5 6 0 0 1-13 0z" fill="#000"/><path d="M5 1.75c-.9 1 .9 1.9 0 2.9M8 1.25c-.9 1 .9 1.9 0 2.9M11 1.75c-.9 1 .9 1.9 0 2.9" stroke="#000" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>`;
 /** A circle with an x: a field's clear button (outlines only: the Svg tints every fill one color). */
 export const CLEAR = svg(`<circle cx="8" cy="8" r="6.2" stroke="#000" stroke-width="1.3" fill="none"/>${stroke("M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2", 1.4)}`);
 /** An x: dismiss a notice. */

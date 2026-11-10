@@ -13,7 +13,7 @@
  * (menubar-status.tsx), never the menus.
  */
 
-import { useColors } from "@dashi/ui";
+import { LOGO, useColors } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AgentMark } from "./agent-mark.tsx";
@@ -27,7 +27,6 @@ import { barHold, useBarHeld } from "./bar-hold.ts";
 import { type BarName, barName, DESKTOP } from "./bar-name.ts";
 import { type ExtrasStore, type MenuBarExtra, useExtras } from "./extras/index.ts";
 import { ExtraItem } from "./extras/view.tsx";
-import { LOGO } from "./glyphs.ts";
 import { extraGoes, statusRoom } from "./menubar-fit.ts";
 import { systemSlots } from "./menubar-slots.tsx";
 import { BarRing, StatusSide, type StatusSlot } from "./menubar-status.tsx";

@@ -14,7 +14,8 @@
 
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { type ExtraStep, type ExtrasEvent, isExtraStep, LineSplitter, parseEvent } from "./events.ts";
+import { LineSplitter } from "../../shared/io/lines.ts";
+import { type ExtraStep, type ExtrasEvent, isExtraStep, parseEvent } from "./events.ts";
 
 export const HELPER_PATH = "/usr/libexec/dashi/dashi-extras";
 /** session/dashi-extras in a checkout, from src/setup/extras. */

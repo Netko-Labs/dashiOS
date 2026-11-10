@@ -5,11 +5,10 @@
  * app that holds a log out while it asks its own question.
  */
 
-import { Notice, Button as UiButton, useColors } from "@dashi/ui";
+import { LOGO, Notice, Button as UiButton, useColors } from "@dashi/ui";
 import { Image, Svg, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { holdingCopy } from "../closing-apps.ts";
-import { LOGO } from "../glyphs.ts";
 import { KeyCatcher } from "../overlay.tsx";
 import { HOLDING, type HoldingPlace } from "./holding-place.ts";
 import type { PowerKind } from "./model.ts";

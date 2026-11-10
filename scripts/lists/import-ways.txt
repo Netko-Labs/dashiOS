@@ -10,8 +10,7 @@
 1	packages/shell/apps/files/icons.ts
 1	packages/shell/apps/files/open.ts
 1	packages/shell/apps/files/search.ts
-1	packages/shell/apps/installer/helper.ts
-2	packages/shell/apps/installer/view.tsx
+1	packages/shell/apps/installer/view.tsx
 2	packages/shell/apps/portal/access.tsx
 2	packages/shell/apps/portal/account.tsx
 1	packages/shell/apps/portal/app-chooser/choices.ts

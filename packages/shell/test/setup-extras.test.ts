@@ -6,7 +6,6 @@ import {
   endOfRun,
   failedSteps,
   isOffline,
-  LineSplitter,
   parseEvent,
   type StepStates,
   waitingStates,
@@ -17,6 +16,7 @@ import { appsFor, defaultChoices, type ExtrasHardware, stepsFor } from "../src/s
 import { type AppInstaller, ExtrasStore } from "../src/setup/extras/store.ts";
 import { installingContinueLabel, OFFLINE_NOTICE, runNotice, runSummary, stepLine } from "../src/setup/extras/words.ts";
 import { Flow, type Machine, pagesFor } from "../src/setup/flow.ts";
+import { LineSplitter } from "../src/shared/io/lines.ts";
 import type { InstalledApp } from "../src/shared/software/flatpak-parse.ts";
 import type { OnProgress, Outcome } from "../src/shared/software/manager.ts";
 import { RECOMMENDED_APPS } from "../src/shared/software/recommended.ts";
