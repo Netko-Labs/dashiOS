@@ -2,7 +2,8 @@ import { expect, test } from "bun:test";
 import { PROPERTIES } from "../src/shared/dbus/properties.ts";
 import { Variant, variant } from "../src/shared/dbus/variant.ts";
 import { applyChange, type Profiles, parseProfiles, powerProfiles, shadowProfiles } from "../src/system/profiles.ts";
-import { FakeBus, settle } from "./fake-bus.ts";
+import { FakeBus } from "./fake-bus.ts";
+import { settle } from "./support/time.ts";
 
 const HADESS = "/net/hadess/PowerProfiles";
 const UPOWER = "/org/freedesktop/UPower/PowerProfiles";

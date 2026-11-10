@@ -13,7 +13,8 @@ import { GraphicsController } from "../src/graphics/controller.ts";
 import { AWAKE_WATTS, groupHolders, holdingProcesses, type ProcessFds } from "../src/graphics/holders.ts";
 import { decideGraphics, type GraphicsInputs } from "../src/graphics/policy.ts";
 import type { GraphicsChoice } from "../src/power/modes/settings.ts";
-import { FakeBus, settle } from "./fake-bus.ts";
+import { FakeBus } from "./fake-bus.ts";
+import { settle } from "./support/time.ts";
 
 const base: GraphicsInputs = { choice: "automatic", plugged: false, cardScreens: [], holders: [], current: "hybrid", lost: false };
 
