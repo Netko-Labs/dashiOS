@@ -54,5 +54,4 @@
 1	packages/shell/src/shared/calendar/store.ts
 1	packages/shell/src/shared/notes/store.ts
 1	packages/shell/src/spaces/controller.ts
-1	packages/shell/src/switcher/controller.ts
 1	packages/shell/src/wallpaper/chooser.ts
