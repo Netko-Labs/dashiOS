@@ -20,6 +20,7 @@ mod imports;
 mod input_devices;
 mod lifecycle;
 mod pace;
+mod planes;
 mod probe;
 mod screens;
 mod sleep;
@@ -62,7 +63,6 @@ use smithay::{
         },
         drm::{
             DrmDevice, DrmDeviceFd, DrmEvent, DrmEventMetadata, DrmEventTime, DrmNode, NodeType,
-            compositor::FrameFlags,
             exporter::gbm::GbmFramebufferExporter,
             output::{DrmOutputManager, DrmOutputRenderElements},
         },

@@ -54,6 +54,7 @@ impl UdevData {
             )
             .map_err(|error| format!("the mode did not take: {error:?}"))?;
         screen.flip.clear();
+        screen.planes.clear();
         Ok(())
     }
 

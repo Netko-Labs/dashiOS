@@ -33,7 +33,7 @@ use smithay::{
 };
 use smithay_drm_extras::drm_scanner::DrmScanner;
 
-use super::{feedback, flip, input_devices, probe, sleep};
+use super::{feedback, flip, input_devices, planes, probe, sleep};
 use crate::{backend::Backend, render, state::Dashi};
 
 pub(super) type Gpus = GpuManager<GbmGlesBackend<GlesRenderer, DrmDeviceFd>>;
@@ -125,6 +125,8 @@ pub(super) struct Screen {
     pub(super) global: GlobalId,
     /// A frame queued and its vblank, watched (flip.rs).
     pub(super) flip: flip::Flip,
+    /// The planes its frames may use, fewer after the display refuses one (planes.rs).
+    pub(super) planes: planes::Planes,
     /// The timer set to draw it next, when it fires, and which it is (pace.rs).
     pub(super) scheduled: Option<(RegistrationToken, Instant, u64)>,
     /// Nothing new to draw and nothing woke the loop for a while: only the

@@ -130,6 +130,7 @@ fn connector_connected(
                 scanout,
                 global,
                 flip: flip::Flip::default(),
+                planes: Default::default(),
                 scheduled: None,
                 asleep: false,
                 quiet: Default::default(),
