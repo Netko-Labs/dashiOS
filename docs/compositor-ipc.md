@@ -2,7 +2,12 @@
 
 How the shell (TypeScript, `packages/shell/src/compositor.ts`) and the
 compositor (Rust, `crates/dashi-comp/src/ipc/`) talk. Both sides and this doc
-change in the same commit.
+change in the same commit, and a test holds them to it (H9): `cargo test`
+writes one request, reply and event per method from the Rust types to
+`test/fixtures/ipc/`, and the shell's `test/ipc-contract.test.ts` parses
+each with its shapes (`src/compositor/`) and checks that the compositor's
+table, this doc's tables and the shell's methods name the same methods, each
+with the same "Who", and the same events.
 
 Recovered from the 0.1.0 shell, which is the client this protocol must keep
 working with; the 0.1.0 compositor side (`comp/src/ipc/requests.rs`) was lost.

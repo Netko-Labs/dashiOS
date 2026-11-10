@@ -70,7 +70,7 @@ only shrink, so fix offenders, never add them, and trim the list
 - H6: an `index.ts` only re-exports; entry points are `main.ts`.
 - H7: outside data is parsed, never cast: no `JSON.parse(…) as T`, no `as T` on `unknown`.
 - H8: the compositor is asked only through `src/compositor.ts`'s typed methods.
-- H9: the IPC has one definition in both languages and the doc (checked from 0.7's typed IPC on).
+- H9: the IPC has one definition in both languages and the doc (golden fixtures from the Rust types, parsed by the shell's shapes).
 - H10: exported functions in `.ts` have return types (`.tsx` components exempt).
 - H11: tests never wait on real time; 2 s per test.
 - H12: Rust: no `unwrap()` outside tests, every `unsafe` documented, no blocking file or PNG work on dashi-comp's loop.

@@ -1,5 +1,7 @@
 //! IPC with the shell: docs/compositor-ipc.md.
 
+#[cfg(test)]
+mod fixtures;
 mod frame;
 mod grants;
 mod incoming;

@@ -3,17 +3,20 @@
  * (crates/dashi-comp/src/ipc/table.rs), the doc (docs/compositor-ipc.md) and
  * the shell's typed methods (src/compositor/table.ts) name the same methods
  * with the same "who may ask"; the compositor's events, the doc's and the
- * shell's are the same set.
+ * shell's are the same set; and every golden fixture `cargo test` writes from
+ * the Rust types (test/fixtures/ipc/) parses with the shell's shapes.
  */
 
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { EVENT_NAMES } from "../src/compositor/events.ts";
+import { isRecord, must } from "@dashi/shape";
+import { EVENT_NAMES, EventShape } from "../src/compositor/events.ts";
 import { METHODS } from "../src/compositor/table.ts";
 
 const repo = join(import.meta.dir, "../../..");
 const read = (path: string): string => readFileSync(join(repo, path), "utf8");
+const fixture = (name: string): unknown => JSON.parse(read(`test/fixtures/ipc/${name}`));
 const sorted = (names: Iterable<string>): string[] => [...names].sort();
 
 /** The compositor's table: method → who. */
@@ -65,6 +68,27 @@ test("the compositor, the doc and the shell name the same events", () => {
   expect(compositor.size).toBeGreaterThan(30);
   expect(sorted(documented)).toEqual(sorted(compositor));
   expect(sorted(EVENT_NAMES)).toEqual(sorted(compositor));
+});
+
+test("every method's fixture params and reply parse with the shell's shapes", () => {
+  const methods = fixture("methods.json");
+  if (!isRecord(methods)) throw new Error("test/fixtures/ipc/methods.json is not an object");
+  expect(sorted(Object.keys(methods))).toEqual(sorted(Object.keys(METHODS)));
+  for (const [name, spec] of Object.entries(METHODS)) {
+    const example = methods[name];
+    if (!isRecord(example)) throw new Error(`no fixture for ${name}`);
+    expect(`${name}: ${example.who}`).toBe(`${name}: ${spec.who}`);
+    must(spec.params, example.params, `${name} params`);
+    must(spec.reply, example.reply, `${name} reply`);
+  }
+});
+
+test("every event's fixture parses with the shell's shape, one of each", () => {
+  const events = fixture("events.json");
+  if (!Array.isArray(events)) throw new Error("test/fixtures/ipc/events.json is not a list");
+  const seen = new Set<string>();
+  for (const event of events) seen.add(must(EventShape, event, "event").event);
+  expect(sorted(seen)).toEqual(sorted(compositorEvents()));
 });
 
 // Secrets for agents (0.4.0): every agent capture names its mask.
