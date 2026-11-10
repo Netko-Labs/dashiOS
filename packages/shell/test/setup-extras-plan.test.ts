@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { hasNvidiaGpu } from "../src/setup/extras/hardware.ts";
-import { appsFor, defaultChoices, type ExtrasHardware, stepsFor } from "../src/setup/extras/plan.ts";
 import { Flow, type Machine, pagesFor } from "../src/setup/flow.ts";
+import { hasNvidiaGpu } from "../src/setup/lib/extras/hardware.ts";
+import { appsFor, defaultChoices, type ExtrasHardware, stepsFor } from "../src/setup/lib/extras/plan.ts";
 import { RECOMMENDED_APPS } from "../src/shared/software/recommended.ts";
 
 describe("plan", () => {

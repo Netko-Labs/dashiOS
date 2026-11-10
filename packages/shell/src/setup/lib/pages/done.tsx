@@ -1,12 +1,12 @@
 import { Button, Group, Row, Shortcut, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
-import { useRegion } from "../../region/index.ts";
-import { useSettings } from "../../settings-app/hooks.ts";
-import { describeLayout } from "../../settings-app/layouts.ts";
-import { useFlags } from "../../shared/control-center/flags.ts";
-import { useClockPrefs, usesHour24 } from "../../shared/time/clock.ts";
-import { useWifi } from "../../wifi/store.ts";
+import { useRegion } from "../../../region/index.ts";
+import { useSettings } from "../../../settings-app/hooks.ts";
+import { describeLayout } from "../../../settings-app/layouts.ts";
+import { useFlags } from "../../../shared/control-center/flags.ts";
+import { useClockPrefs, usesHour24 } from "../../../shared/time/clock.ts";
+import { useWifi } from "../../../wifi/store.ts";
 import type { SetupContext } from "../context.ts";
 import { runSummary } from "../extras/words.ts";
 

@@ -1,12 +1,12 @@
-import type { AnswerStatus } from "../agents/ask/service.ts";
-import type { RegionStore } from "../region/index.ts";
-import type { XkbLayouts } from "../settings-app/layouts.ts";
-import type { SettingsStore } from "../settings-app/store.ts";
-import type { FlagsStore } from "../shared/control-center/flags.ts";
-import type { WifiStore } from "../wifi/store.ts";
-import type { WifiNetwork } from "../wifi/types.ts";
+import type { AnswerStatus } from "../../agents/ask/service.ts";
+import type { RegionStore } from "../../region/index.ts";
+import type { XkbLayouts } from "../../settings-app/layouts.ts";
+import type { SettingsStore } from "../../settings-app/store.ts";
+import type { FlagsStore } from "../../shared/control-center/flags.ts";
+import type { WifiStore } from "../../wifi/store.ts";
+import type { WifiNetwork } from "../../wifi/types.ts";
+import type { Flow } from "../flow.ts";
 import type { ExtrasStore } from "./extras/store.ts";
-import type { Flow } from "./flow.ts";
 
 /** What the assistant's pages read and change: the same stores System Settings uses, so a choice made here is the one Settings shows. */
 export interface SetupContext {

@@ -7,15 +7,15 @@
 
 import { CHECK, ConfirmSheet, lightColors, TINTS } from "@dashi/ui";
 import { useState, useSyncExternalStore } from "react";
-import { CONTRAST } from "../control-center/glyphs.ts";
-import { wifiGlyph } from "../glyphs.ts";
-import { CLOCK, GLOBE, KEYBOARD, SPARKLE } from "../settings-app/glyphs.ts";
-import { paneTitle } from "../shared/settings/panes.ts";
-import { useWifi } from "../wifi/store.ts";
+import { CONTRAST } from "../../control-center/glyphs.ts";
+import { wifiGlyph } from "../../glyphs.ts";
+import { CLOCK, GLOBE, KEYBOARD, SPARKLE } from "../../settings-app/glyphs.ts";
+import { paneTitle } from "../../shared/settings/panes.ts";
+import { useWifi } from "../../wifi/store.ts";
+import { PAGE_INFO, type PageId } from "../flow.ts";
 import type { SetupContext } from "./context.ts";
 import { DOWNLOAD, PACKAGE } from "./extras/glyphs.ts";
 import { installingContinueLabel } from "./extras/words.ts";
-import { PAGE_INFO, type PageId } from "./flow.ts";
 import { Frame } from "./frame.tsx";
 import { AgentsPage } from "./pages/agents.tsx";
 import { AppearancePage } from "./pages/appearance.tsx";

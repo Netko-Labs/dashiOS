@@ -23,14 +23,14 @@ import { isDevelopmentRun } from "../system/stand-in.ts";
 import type { SystemStore } from "../system/store.ts";
 import { PasswordPrompt } from "../wifi/prompt.tsx";
 import type { WifiStore } from "../wifi/store.ts";
-import type { SetupContext } from "./context.ts";
-import { detectHardware } from "./extras/hardware.ts";
-import { hasHelper, helperRunner, isDryRun } from "./extras/helper.ts";
-import { ExtrasStore } from "./extras/store.ts";
 import { Flow, type Machine, type PageId } from "./flow.ts";
-import { isLiveBoot } from "./live.ts";
-import { readSetupRecord, type SetupOutcome, setupStatePath, shouldOpenAtLogin, writeSetupRecord } from "./state.ts";
-import { SETUP_WINDOW, SetupWindow } from "./view.tsx";
+import type { SetupContext } from "./lib/context.ts";
+import { detectHardware } from "./lib/extras/hardware.ts";
+import { hasHelper, helperRunner, isDryRun } from "./lib/extras/helper.ts";
+import { ExtrasStore } from "./lib/extras/store.ts";
+import { isLiveBoot } from "./lib/live.ts";
+import { readSetupRecord, type SetupOutcome, setupStatePath, shouldOpenAtLogin, writeSetupRecord } from "./lib/state.ts";
+import { SETUP_WINDOW, SetupWindow } from "./lib/view.tsx";
 
 export const SETUP_TITLE = "Setup Assistant";
 

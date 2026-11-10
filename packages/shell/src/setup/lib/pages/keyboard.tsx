@@ -1,7 +1,7 @@
 import { Group, Note, useColors, useSurface } from "@dashi/ui";
 import { TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { LayoutPicker } from "../../settings-app/panes/keyboard.tsx";
+import { LayoutPicker } from "../../../settings-app/panes/keyboard.tsx";
 import type { SetupContext } from "../context.ts";
 
 /** The layout list Settings has, and a field to type in: the compositor applies a new layout in a moment, to every app. */

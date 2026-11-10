@@ -7,7 +7,7 @@
 import { Button, Tile, useColors, useSurface } from "@dashi/ui";
 import { ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import type { FlowView, PageInfo } from "./flow.ts";
+import type { FlowView, PageInfo } from "../flow.ts";
 
 export interface FrameProps {
   info: PageInfo;

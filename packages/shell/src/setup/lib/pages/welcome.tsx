@@ -1,7 +1,7 @@
 import { Button, LOGO, useColors } from "@dashi/ui";
 import { Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
 import { useMemo } from "react";
-import { PAGE_INFO } from "../flow.ts";
+import { PAGE_INFO } from "../../flow.ts";
 import { startInstaller, systemLiveInstaller } from "../live.ts";
 
 /** The first page: Dashi's bowl, its name, and what is coming. Laid out by hand, so the frame draws no heading for it. */

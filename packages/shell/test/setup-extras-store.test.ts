@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import type { ExtraStep, ExtrasEvent } from "../src/setup/extras/events.ts";
-import type { HelperRun, RunHelper } from "../src/setup/extras/helper.ts";
-import type { ExtrasHardware } from "../src/setup/extras/plan.ts";
-import { type AppInstaller, ExtrasStore } from "../src/setup/extras/store.ts";
-import { installingContinueLabel, OFFLINE_NOTICE, runNotice, runSummary, stepLine } from "../src/setup/extras/words.ts";
+import type { ExtraStep, ExtrasEvent } from "../src/setup/lib/extras/events.ts";
+import type { HelperRun, RunHelper } from "../src/setup/lib/extras/helper.ts";
+import type { ExtrasHardware } from "../src/setup/lib/extras/plan.ts";
+import { type AppInstaller, ExtrasStore } from "../src/setup/lib/extras/store.ts";
+import { installingContinueLabel, OFFLINE_NOTICE, runNotice, runSummary, stepLine } from "../src/setup/lib/extras/words.ts";
 import type { InstalledApp } from "../src/shared/software/flatpak-parse.ts";
 import type { OnProgress, Outcome } from "../src/shared/software/manager.ts";
 

@@ -25,7 +25,7 @@ import type { OverlaySlots } from "../overlay-slots.ts";
 import type { OverviewController } from "../overview/index.ts";
 import type { SettingsApp } from "../settings-app/index.ts";
 import type { ControlCenterEditor } from "../settings-app/panes/control-center.tsx";
-import type { SetupAssistant } from "../setup/start.tsx";
+import type { SetupAssistant } from "../setup/index.ts";
 import type { Clipboard as SystemClipboard } from "../shared/clipboard/clipboard.ts";
 import type { LauncherOpener } from "./launcher.tsx";
 import type { OverlayKind } from "./overlays.tsx";

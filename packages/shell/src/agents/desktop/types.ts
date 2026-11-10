@@ -15,7 +15,7 @@ import type { ScreenRecorder } from "../../recorder/recorder.ts";
 import type { RegionDesktop } from "../../region/index.ts";
 import type { MachineDesktop } from "../../settings-app/machine-desktop.ts";
 import type { SettingsStore } from "../../settings-app/store.ts";
-import type { PageId } from "../../setup/flow.ts";
+import type { PageId } from "../../setup/index.ts";
 import type { FlagsStore } from "../../shared/control-center/flags.ts";
 import type { WifiStore } from "../../wifi/store.ts";
 import type { SoftwareBackend } from "./software.ts";

@@ -2,7 +2,7 @@
 
 import { accept, bool, optional, reject, shape } from "@dashi/shape";
 import { isTimezoneName } from "../../region/index.ts";
-import { PAGES } from "../../setup/flow.ts";
+import { PAGES } from "../../setup/index.ts";
 import { isFormatsLocale } from "../../shared/locale/locale.ts";
 import { arg, custom, tool } from "./args.ts";
 import type { ToolDef } from "./define.ts";
