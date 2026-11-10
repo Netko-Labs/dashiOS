@@ -6,7 +6,7 @@
  */
 
 import { optional } from "@dashi/shape";
-import { isNoteId } from "../../../shared/notes/names.ts";
+import { isNoteId } from "../../../shared/notes/index.ts";
 import type { ToolDef } from "../define.ts";
 import { custom, tool, wholeArg } from "./args.ts";
 

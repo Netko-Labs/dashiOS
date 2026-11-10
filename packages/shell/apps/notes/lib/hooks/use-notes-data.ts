@@ -5,8 +5,7 @@
  */
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { DEFAULT_FOLDER_NAME } from "../../../../src/shared/notes/names.ts";
-import { wordCount } from "../../../../src/shared/notes/text.ts";
+import { DEFAULT_FOLDER_NAME, wordCount } from "../../../../src/shared/notes/index.ts";
 import { findMatches } from "../find.ts";
 import { type Row, withDraft } from "../list.ts";
 import type { NotesModel } from "../model.ts";

@@ -19,7 +19,7 @@
 import { AppWindow } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useState } from "react";
-import { noteCount } from "../../../../src/shared/notes/text.ts";
+import { noteCount } from "../../../../src/shared/notes/index.ts";
 import { useFocus } from "../hooks/use-focus.ts";
 import { useNoteActions } from "../hooks/use-note-actions.ts";
 import { useNotesData } from "../hooks/use-notes-data.ts";

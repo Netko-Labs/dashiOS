@@ -4,10 +4,10 @@
  */
 
 import { type Dirent, readFileSync, statSync } from "node:fs";
-import { isRegularFile } from "../fs/index.ts";
-import { noteId } from "./names.ts";
-import { parseNote } from "./text.ts";
-import { MAX_NOTE_BYTES, type Note } from "./types.ts";
+import { isRegularFile } from "../../fs/index.ts";
+import { noteId } from "../names.ts";
+import { parseNote } from "../text.ts";
+import { MAX_NOTE_BYTES, type Note } from "../types.ts";
 
 export const isNoteFile = (entry: Dirent): boolean => entry.isFile() && !entry.name.startsWith(".") && /\.md$/i.test(entry.name);
 

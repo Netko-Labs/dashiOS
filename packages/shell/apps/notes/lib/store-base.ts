@@ -4,8 +4,7 @@
  * to the files that says why in the window when it fails.
  */
 
-import type { NotesStore } from "../../../src/shared/notes/store.ts";
-import type { Note } from "../../../src/shared/notes/types.ts";
+import type { Note, NotesStore } from "../../../src/shared/notes/index.ts";
 import { plainError } from "./errors.ts";
 import { type Row, visibleRows } from "./list.ts";
 import type { NotesState } from "./state.ts";

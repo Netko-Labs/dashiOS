@@ -8,7 +8,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { lenientList, maybe, num, obj, record, refine, str, unknown } from "@dashi/shape";
-import { writeAtomic } from "../fs/index.ts";
+import { writeAtomic } from "../../fs/index.ts";
 
 export const SIDECAR_FILE = ".dashi-notes.json";
 

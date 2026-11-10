@@ -3,8 +3,7 @@
  * use for it.
  */
 
-import { serializeNote } from "../../../src/shared/notes/text.ts";
-import type { DeletedNote, Note } from "../../../src/shared/notes/types.ts";
+import { type DeletedNote, type Note, serializeNote } from "../../../src/shared/notes/index.ts";
 import type { Selection } from "./format.ts";
 import type { Source } from "./list.ts";
 

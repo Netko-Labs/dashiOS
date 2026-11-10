@@ -5,10 +5,10 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { parseNote } from "../text.ts";
+import { type DeletedNote, MAX_NOTE_BYTES } from "../types.ts";
 import { isNoteFile } from "./read-note.ts";
 import type { Sidecar } from "./sidecar.ts";
-import { parseNote } from "./text.ts";
-import { type DeletedNote, MAX_NOTE_BYTES } from "./types.ts";
 
 export const TRASH_DIR = ".Recently Deleted";
 

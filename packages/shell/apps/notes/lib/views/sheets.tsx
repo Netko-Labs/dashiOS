@@ -7,7 +7,7 @@
 
 import { AlertSheet, ConfirmSheet, TextField } from "@dashi/ui";
 import { useState } from "react";
-import { untitled } from "../../../../src/shared/notes/names.ts";
+import { untitled } from "../../../../src/shared/notes/index.ts";
 import { FOLDER, FOLDER_PLUS } from "../glyphs.ts";
 
 export type SheetState =

@@ -6,7 +6,7 @@
 
 import { rowLook, SelectionBar, SIDEBAR_ROW_HEIGHT, SidebarItem, SidebarSection, useColors, useTooltip } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import { DEFAULT_FOLDER_NAME } from "../../../../src/shared/notes/names.ts";
+import { DEFAULT_FOLDER_NAME } from "../../../../src/shared/notes/index.ts";
 import { FOLDER, FOLDER_PLUS, NOTES, TRASH } from "../glyphs.ts";
 import type { Source } from "../list.ts";
 

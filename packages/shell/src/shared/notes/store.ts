@@ -13,15 +13,14 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { isErrno } from "../files/errno.ts";
 import { isRegularFile, moveNoClobber, writeAtomic, writeNew } from "../fs/index.ts";
-import { createFolder, ensureFolder, renameFolder, requireFolder } from "./folders.ts";
+import { createFolder, ensureFolder, renameFolder, requireFolder } from "./lib/folders.ts";
+import { isNoteFile, NoteCache } from "./lib/read-note.ts";
+import { listDeleted, TRASH_DIR } from "./lib/recently-deleted.ts";
+import { readSidecar, type Sidecar, updateSidecar } from "./lib/sidecar.ts";
 import { inside, isNoteId, noteId, sanitizeName, splitId, uniqueName } from "./names.ts";
-import { isNoteFile, NoteCache } from "./read-note.ts";
-import { listDeleted, TRASH_DIR } from "./recently-deleted.ts";
-import { readSidecar, type Sidecar, updateSidecar } from "./sidecar.ts";
 import { parseNote, serializeNote } from "./text.ts";
 import { type Note, NotesError, type Snapshot } from "./types.ts";
 
-export { TRASH_DIR } from "./recently-deleted.ts";
 /** How long a deleted note stays in Recently Deleted. */
 export const KEEP_DAYS = 30;
 const DAY_MS = 86_400_000;

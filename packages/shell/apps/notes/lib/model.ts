@@ -25,7 +25,7 @@
  * put the caret where it belongs.
  */
 
-import type { NotesStore } from "../../../src/shared/notes/store.ts";
+import type { NotesStore } from "../../../src/shared/notes/index.ts";
 import { plainError } from "./errors.ts";
 import { neighbor, type Source, step } from "./list.ts";
 import { NotesSaving } from "./saving.ts";

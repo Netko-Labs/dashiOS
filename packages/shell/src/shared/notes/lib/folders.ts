@@ -6,11 +6,11 @@
 
 import { mkdirSync, readdirSync, renameSync } from "node:fs";
 import { join } from "node:path";
-import { isRealDirectory } from "../fs/index.ts";
-import { DEFAULT_FOLDER_NAME, sanitizeName, uniqueName } from "./names.ts";
+import { isRealDirectory } from "../../fs/index.ts";
+import { DEFAULT_FOLDER_NAME, sanitizeName, uniqueName } from "../names.ts";
+import { NotesError } from "../types.ts";
 import { TRASH_DIR } from "./recently-deleted.ts";
 import { updateSidecar } from "./sidecar.ts";
-import { NotesError } from "./types.ts";
 
 /** Names a new folder must not take: the folders there are, and the default folder's own name. */
 function folderNames(root: string): string[] {

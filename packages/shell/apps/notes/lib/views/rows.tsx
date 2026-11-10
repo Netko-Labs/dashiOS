@@ -2,9 +2,7 @@
 
 import { rowLook, SelectionBar, useColors, useSurface } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
-import { untitled } from "../../../../src/shared/notes/names.ts";
-import { KEEP_DAYS } from "../../../../src/shared/notes/store.ts";
-import { daysLeft, listDate, preview } from "../../../../src/shared/notes/text.ts";
+import { daysLeft, KEEP_DAYS, listDate, preview, untitled } from "../../../../src/shared/notes/index.ts";
 import { FOLDER, PIN_FILLED } from "../glyphs.ts";
 import type { Row } from "../list.ts";
 

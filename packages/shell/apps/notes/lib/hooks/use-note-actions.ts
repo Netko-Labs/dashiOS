@@ -5,7 +5,7 @@
  */
 
 import type { MenuItem } from "@dashi/ui";
-import { DEFAULT_FOLDER_NAME } from "../../../../src/shared/notes/names.ts";
+import { DEFAULT_FOLDER_NAME } from "../../../../src/shared/notes/index.ts";
 import type { FormatCommand } from "../formats.ts";
 import type { Row } from "../list.ts";
 import type { NotesModel } from "../model.ts";
