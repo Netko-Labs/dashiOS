@@ -15,7 +15,7 @@ import { TextSelectionLook } from "@dashi/ui";
 import { type NativeHostTransport, type NativeRoot, render, spawnNativeHost, type TitleBarStyle } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { METAL_HOST } from "../../src/shared/apps/index.ts";
-import { connectDarkMode } from "../../src/shared/control-center/dark-mode.ts";
+import { connectDarkMode } from "../../src/shared/control-center/flags.ts";
 import { appNameEnv } from "../../src/shared/metal/host.ts";
 import { onWindowTyping } from "../../src/shared/metal/typing.ts";
 import { followDarkMode } from "./appearance.ts";

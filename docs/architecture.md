@@ -181,7 +181,7 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
   Security lists the grants per app with the agents' kept answers and
   `screenSharing.clients`, each taken back on its own (`DeletePermission`).
   The Access sheet's button opens it there, over the links socket
-  (`src/actions/open-link.ts`).
+  (`src/shared/links/open-link.ts`).
 
 ## Screens and the power source
 

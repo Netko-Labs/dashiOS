@@ -10,6 +10,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { setAppearanceSource } from "@dashi/ui";
 import { useSyncExternalStore } from "react";
 
 export interface Flags {
@@ -109,4 +110,14 @@ export function controlFlags(): FlagsStore {
 
 export function useFlags(store: FlagsStore): Flags {
   return useSyncExternalStore(store.subscribe, store.getSnapshot);
+}
+
+/**
+ * Control Center's Dark Mode switch is what @dashi/ui paints by: each process
+ * that renders (the shell, every first-party app) connects it once, before
+ * its first render.
+ */
+export function connectDarkMode(): void {
+  const flags = controlFlags();
+  setAppearanceSource({ subscribe: flags.subscribe, isDark: () => flags.getSnapshot().dark });
 }

@@ -146,7 +146,7 @@ import { startSetupAssistant } from "./setup/start.tsx";
 import { startSharePicker } from "./share-picker/index.ts";
 import { dockDefaults, iconPath, installedSpecs, METAL_HOST, resolvePinned, shellDir } from "./shared/apps/index.ts";
 import { systemClipboard } from "./shared/clipboard/clipboard.ts";
-import { connectDarkMode } from "./shared/control-center/dark-mode.ts";
+import { connectDarkMode } from "./shared/control-center/flags.ts";
 import { Software } from "./shared/software/manager.ts";
 import { standIn } from "./shared/software/stand-in.ts";
 import { SHEET, ShortcutSheet } from "./sheet.tsx";

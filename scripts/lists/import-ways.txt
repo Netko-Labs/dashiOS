@@ -11,9 +11,8 @@
 1	packages/shell/apps/files/open.ts
 1	packages/shell/apps/files/search.ts
 1	packages/shell/apps/installer/view.tsx
-2	packages/shell/apps/portal/access.tsx
+1	packages/shell/apps/portal/access.tsx
 2	packages/shell/apps/portal/account.tsx
-1	packages/shell/apps/portal/app-chooser/choices.ts
 1	packages/shell/apps/portal/app-chooser/index.tsx
 1	packages/shell/apps/portal/apps.ts
 2	packages/shell/apps/portal/email.ts
