@@ -25,14 +25,11 @@
  * put the caret where it belongs.
  */
 
-import type { NotesStore } from "../../src/shared/notes/store.ts";
+import type { NotesStore } from "../../../src/shared/notes/store.ts";
 import { plainError } from "./errors.ts";
 import { neighbor, type Source, step } from "./list.ts";
 import { NotesSaving } from "./saving.ts";
 import { fingerprint, SAVE_MS } from "./state.ts";
-
-// The state and the names the window and the other files use, from state.ts.
-export { type Draft, type NotesState, SAVE_MS } from "./state.ts";
 
 export class NotesModel extends NotesSaving {
   constructor(store: NotesStore, saveMs: number = SAVE_MS) {

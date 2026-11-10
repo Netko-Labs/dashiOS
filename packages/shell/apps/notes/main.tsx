@@ -6,10 +6,11 @@
 
 import { defaultRoot, NotesStore } from "../../src/shared/notes/store.ts";
 import { runApp } from "../kit/index.ts";
-import { NOTES_MIN_SIZE } from "./layout.ts";
-import { NotesModel } from "./model.ts";
-import { NOTES_SIZE, type NotesHost, NotesWindow } from "./view.tsx";
-import { watchNotes } from "./watch.ts";
+import { NOTES_MIN_SIZE } from "./lib/layout.ts";
+import { NotesModel } from "./lib/model.ts";
+import type { NotesHost } from "./lib/views/content.tsx";
+import { NOTES_SIZE, NotesWindow } from "./lib/views/view.tsx";
+import { watchNotes } from "./lib/watch.ts";
 
 const store = new NotesStore(defaultRoot());
 store.purgeExpired();

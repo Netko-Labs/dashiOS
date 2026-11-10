@@ -4,8 +4,8 @@
  * (conflict.ts): the file's version stays and the typing is kept beside it.
  */
 
-import type { NotesStore } from "../../src/shared/notes/store.ts";
-import type { Note } from "../../src/shared/notes/types.ts";
+import type { NotesStore } from "../../../src/shared/notes/store.ts";
+import type { Note } from "../../../src/shared/notes/types.ts";
 import { conflictNotice, conflictTitle, saveOutcome } from "./conflict.ts";
 import { plainError } from "./errors.ts";
 import { type Draft, fingerprint, SAVE_MS } from "./state.ts";

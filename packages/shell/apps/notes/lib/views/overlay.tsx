@@ -5,9 +5,9 @@
 
 import { PopupMenu } from "@dashi/ui";
 import type { ReactElement } from "react";
-import type { NotesModel } from "./model.ts";
+import type { Overlays } from "../hooks/use-overlays.ts";
+import type { NotesModel } from "../model.ts";
 import { NotesSheet } from "./sheets.tsx";
-import type { Overlays } from "./use-overlays.ts";
 
 /** The widest a menu gets: a long folder's name ends in an ellipsis (PA-9). */
 const MENU_MAX_WIDTH = 280;

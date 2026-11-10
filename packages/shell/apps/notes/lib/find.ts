@@ -4,7 +4,7 @@
  * Edit › Find Next and Find Previous step the selection through them. Pure.
  */
 
-import { fold } from "../../src/shared/notes/text.ts";
+import { fold } from "../../../src/shared/notes/text.ts";
 import type { Selection } from "./format.ts";
 
 /** Each place in `body` that holds one of the query's words, in order, never overlapping. */

@@ -1,7 +1,7 @@
 /** What the note list shows for a source (All Notes, a folder, Recently Deleted) and a search. */
 
-import { listOrder, searchNotes } from "../../src/shared/notes/text.ts";
-import type { DeletedNote, Note } from "../../src/shared/notes/types.ts";
+import { listOrder, searchNotes } from "../../../src/shared/notes/text.ts";
+import type { DeletedNote, Note } from "../../../src/shared/notes/types.ts";
 
 export type Source = { kind: "all" } | { kind: "folder"; name: string } | { kind: "trash" };
 

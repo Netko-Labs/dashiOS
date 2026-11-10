@@ -6,7 +6,7 @@
 
 import type { MenuItem } from "@dashi/ui";
 import { useState } from "react";
-import type { SheetState } from "./sheets.tsx";
+import type { SheetState } from "../views/sheets.tsx";
 
 /** A menu at a point; "end" hangs it by its right edge (the toolbar's Move, under its button). */
 export type Menu = { x: number; y: number; items: MenuItem[]; anchor?: "start" | "end" };

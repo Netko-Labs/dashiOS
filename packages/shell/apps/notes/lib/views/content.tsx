@@ -6,15 +6,15 @@
 import { KeySink, Notice } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import type { ReactElement } from "react";
+import type { Focus } from "../hooks/use-focus.ts";
+import type { NoteActions } from "../hooks/use-note-actions.ts";
+import { folderLabel, type NotesData } from "../hooks/use-notes-data.ts";
+import type { Overlays } from "../hooks/use-overlays.ts";
+import { type DateForm, noticeWidth } from "../layout.ts";
+import type { Source } from "../list.ts";
+import type { NotesModel } from "../model.ts";
 import { Editor } from "./editor.tsx";
-import { type DateForm, noticeWidth } from "./layout.ts";
-import type { Source } from "./list.ts";
-import type { NotesModel } from "./model.ts";
 import { NoteList } from "./rows.tsx";
-import type { Focus } from "./use-focus.ts";
-import type { NoteActions } from "./use-note-actions.ts";
-import { folderLabel, type NotesData } from "./use-notes-data.ts";
-import type { Overlays } from "./use-overlays.ts";
 
 const DATE_FORMS: Record<DateForm, Intl.DateTimeFormatOptions> = {
   long: { dateStyle: "long", timeStyle: "short" },

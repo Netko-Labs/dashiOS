@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { continueList, insertLink, setHeading, toggleCheck, toggleChecklist, toggleWrap } from "../apps/notes/format.ts";
-import { caretAfter, formatted } from "../apps/notes/formats.ts";
+import { continueList, insertLink, setHeading, toggleCheck, toggleChecklist, toggleWrap } from "../apps/notes/lib/format.ts";
+import { caretAfter, formatted } from "../apps/notes/lib/formats.ts";
 
 const at = (start: number, end = start) => ({ start, end });
 

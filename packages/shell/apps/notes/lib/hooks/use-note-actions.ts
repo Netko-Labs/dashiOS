@@ -5,10 +5,10 @@
  */
 
 import type { MenuItem } from "@dashi/ui";
-import { DEFAULT_FOLDER_NAME } from "../../src/shared/notes/names.ts";
-import type { FormatCommand } from "./formats.ts";
-import type { Row } from "./list.ts";
-import type { NotesModel } from "./model.ts";
+import { DEFAULT_FOLDER_NAME } from "../../../../src/shared/notes/names.ts";
+import type { FormatCommand } from "../formats.ts";
+import type { Row } from "../list.ts";
+import type { NotesModel } from "../model.ts";
 import type { NotesData } from "./use-notes-data.ts";
 import type { Overlays } from "./use-overlays.ts";
 

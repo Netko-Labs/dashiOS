@@ -5,11 +5,12 @@
  */
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { DEFAULT_FOLDER_NAME } from "../../src/shared/notes/names.ts";
-import { wordCount } from "../../src/shared/notes/text.ts";
-import { findMatches } from "./find.ts";
-import { type Row, withDraft } from "./list.ts";
-import type { NotesModel, NotesState } from "./model.ts";
+import { DEFAULT_FOLDER_NAME } from "../../../../src/shared/notes/names.ts";
+import { wordCount } from "../../../../src/shared/notes/text.ts";
+import { findMatches } from "../find.ts";
+import { type Row, withDraft } from "../list.ts";
+import type { NotesModel } from "../model.ts";
+import type { NotesState } from "../state.ts";
 
 export const folderLabel = (folder: string): string => (folder === "" ? DEFAULT_FOLDER_NAME : folder);
 

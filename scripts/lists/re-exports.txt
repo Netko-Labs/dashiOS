@@ -6,8 +6,6 @@
 1	packages/shell/apps/files/thumbnailer.ts
 1	packages/shell/apps/kit/applet.ts
 1	packages/shell/apps/kit/menus.ts
-1	packages/shell/apps/notes/model.ts
-1	packages/shell/apps/notes/view.tsx
 1	packages/shell/apps/portal/file-chooser/options.ts
 2	packages/shell/apps/preview/document.ts
 1	packages/shell/apps/preview/glyphs.ts

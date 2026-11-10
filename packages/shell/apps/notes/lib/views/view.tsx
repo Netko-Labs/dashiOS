@@ -19,21 +19,18 @@
 import { AppWindow } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useState } from "react";
-import { noteCount } from "../../src/shared/notes/text.ts";
+import { noteCount } from "../../../../src/shared/notes/text.ts";
+import { useFocus } from "../hooks/use-focus.ts";
+import { useNoteActions } from "../hooks/use-note-actions.ts";
+import { useNotesData } from "../hooks/use-notes-data.ts";
+import { useNotesMenus } from "../hooks/use-notes-menus.ts";
+import { useOverlays } from "../hooks/use-overlays.ts";
+import { notesLayout, RAIL_WIDTH } from "../layout.ts";
+import type { NotesModel } from "../model.ts";
 import { NotesContent, type NotesHost, noticeFor } from "./content.tsx";
-import { notesLayout, RAIL_WIDTH } from "./layout.ts";
-import type { NotesModel } from "./model.ts";
 import { notesOverlay } from "./overlay.tsx";
 import { Sidebar } from "./sidebar.tsx";
 import { NotesToolbar } from "./toolbar.tsx";
-import { useFocus } from "./use-focus.ts";
-import { useNoteActions } from "./use-note-actions.ts";
-import { useNotesData } from "./use-notes-data.ts";
-import { useNotesMenus } from "./use-notes-menus.ts";
-import { useOverlays } from "./use-overlays.ts";
-
-// Where the notes' tests and the app's entry look for them.
-export type { NotesHost } from "./content.tsx";
 
 export const NOTES_SIZE = { width: 980, height: 640 } as const;
 

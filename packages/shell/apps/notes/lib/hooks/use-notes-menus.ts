@@ -5,9 +5,9 @@
  */
 
 import { useUndo } from "@dashi/ui";
-import { useAppMenus } from "../kit/index.ts";
-import { notesMenus } from "./menus.ts";
-import type { NotesModel } from "./model.ts";
+import { useAppMenus } from "../../../kit/index.ts";
+import { notesMenus } from "../menus.ts";
+import type { NotesModel } from "../model.ts";
 import type { Focus } from "./use-focus.ts";
 import type { NoteActions } from "./use-note-actions.ts";
 import type { NotesData } from "./use-notes-data.ts";

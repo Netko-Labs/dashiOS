@@ -19,15 +19,15 @@
 import { Button, EmptyState, useColors, useSurface } from "@dashi/ui";
 import { ScrollView, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
-import { untitled } from "../../src/shared/notes/names.ts";
-import { KEEP_DAYS } from "../../src/shared/notes/store.ts";
-import { daysLeft, editedLine } from "../../src/shared/notes/text.ts";
-import type { Selection } from "./format.ts";
-import { NOTE } from "./glyphs.ts";
-import { type DateForm, fitLine } from "./layout.ts";
-import type { Row } from "./list.ts";
-import type { Pressable } from "./look.ts";
-import type { Draft } from "./model.ts";
+import { untitled } from "../../../../src/shared/notes/names.ts";
+import { KEEP_DAYS } from "../../../../src/shared/notes/store.ts";
+import { daysLeft, editedLine } from "../../../../src/shared/notes/text.ts";
+import type { Selection } from "../format.ts";
+import { NOTE } from "../glyphs.ts";
+import { type DateForm, fitLine } from "../layout.ts";
+import type { Row } from "../list.ts";
+import type { Pressable } from "../look.ts";
+import type { Draft } from "../state.ts";
 import { GUTTER, MetaLine, Page, Title } from "./note-page.tsx";
 
 export interface EditorProps {

@@ -6,13 +6,13 @@
 
 import { SearchField, ToolbarButton } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
-import { CHECKLIST, COMPOSE, FOLDER_MOVE, PIN, PIN_FILLED, RESTORE, TRASH } from "./glyphs.ts";
-import { SEARCH_MIN } from "./layout.ts";
-import type { NotesModel } from "./model.ts";
-import type { Focus } from "./use-focus.ts";
-import type { NoteActions } from "./use-note-actions.ts";
-import type { NotesData } from "./use-notes-data.ts";
-import type { Overlays } from "./use-overlays.ts";
+import { CHECKLIST, COMPOSE, FOLDER_MOVE, PIN, PIN_FILLED, RESTORE, TRASH } from "../glyphs.ts";
+import type { Focus } from "../hooks/use-focus.ts";
+import type { NoteActions } from "../hooks/use-note-actions.ts";
+import type { NotesData } from "../hooks/use-notes-data.ts";
+import type { Overlays } from "../hooks/use-overlays.ts";
+import { SEARCH_MIN } from "../layout.ts";
+import type { NotesModel } from "../model.ts";
 
 function NotesSearch({ model, data, focus, takeKeys }: { model: NotesModel; data: NotesData; focus: Focus; takeKeys: () => void }) {
   return (

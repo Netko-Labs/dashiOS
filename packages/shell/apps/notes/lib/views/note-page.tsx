@@ -6,10 +6,10 @@
 import { type Palette, useColors } from "@dashi/ui";
 import { Text, TextInput, View } from "@mirinjs/metal";
 import { useMemo, useState } from "react";
-import { findMatches } from "./find.ts";
-import type { Selection } from "./format.ts";
-import { BODY_SIZE, lineSizes, lookOf, type Pressable, TITLE_SIZE } from "./look.ts";
-import { markup } from "./markup.ts";
+import { findMatches } from "../find.ts";
+import type { Selection } from "../format.ts";
+import { BODY_SIZE, lineSizes, lookOf, type Pressable, TITLE_SIZE } from "../look.ts";
+import { markup } from "../markup.ts";
 
 /** The page's inset: the note's words, its title and the line over it share one left edge. */
 export const GUTTER = 28;
