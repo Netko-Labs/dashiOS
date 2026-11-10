@@ -11,29 +11,25 @@
  * opens another window, and Open (or files dropped on the window) opens in
  * this one only while it is an untouched Untitled.
  *
+ * This file is the layout: the jobs are hooks (use-selection.ts, use-editor-sheets.ts,
+ * use-editor-menus.ts) and the parts are toolbar.tsx, overlay.tsx and content.tsx.
+ *
  * Nothing asks before closing: the document saves on its own (main.tsx), and
  * an Untitled one is kept as a draft. The one question is when the file was
  * changed by another app while there were changes here.
  */
 
-import { existsSync, statSync } from "node:fs";
-import { homedir } from "node:os";
-import { basename, dirname, join } from "node:path";
-import { AppWindow, ConfirmSheet, Notice, SearchField, ToolbarButton, useColors, useSurface } from "@dashi/ui";
-import { Text, type TextSelection, View } from "@mirinjs/metal";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { AppChooser, chooserRequest } from "../files/chooser/index.ts";
-import { useAppMenus, useCloseRequest, useCloseWithdrawn } from "../kit/index.ts";
-import { lineCount, lineStart } from "./find.ts";
-import { NEW, OPEN, SAVE } from "./glyphs.ts";
-import { editorMenus } from "./menus.ts";
+import { AppWindow, Notice } from "@dashi/ui";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { EditorContent, useLineCount } from "./content.tsx";
 import type { EditorModel } from "./model.ts";
-import { displayName, folderLabel, resolveInput, suggestedSavePath } from "./names.ts";
-import { ConflictSheet, GoToLineSheet, ReplaceSheet, type SheetState, VersionsSheet } from "./sheets.tsx";
-import { formatStats, textStats } from "./stats.ts";
-import { countsLine, findHighlights, findPlace, titleDetail } from "./status.ts";
-import { TextArea } from "./text-area.tsx";
-import { versionDifference } from "./versions.ts";
+import { displayName, folderLabel } from "./names.ts";
+import { editorOverlay } from "./overlay.tsx";
+import { titleDetail } from "./status.ts";
+import { EditorToolbar } from "./toolbar.tsx";
+import { useEditorMenus } from "./use-editor-menus.ts";
+import { useEditorSheets } from "./use-editor-sheets.ts";
+import { useSelection } from "./use-selection.ts";
 
 export const EDITOR_SIZE = { width: 760, height: 600 } as const;
 /**
@@ -42,13 +38,6 @@ export const EDITOR_SIZE = { width: 760, height: 600 } as const;
  * fit it. A half-screen tile on the smallest screen is wider.
  */
 export const EDITOR_MIN_SIZE = { width: 480, height: 320 } as const;
-/** Find's field: as wide as this with room, never narrower than FIND_MIN. */
-const FIND_WIDTH = 200;
-const FIND_MIN = 120;
-
-/** How long the counts wait for typing to pause before counting again. */
-const COUNT_DELAY_MS = 300;
-
 export interface EditorWindowProps {
   model: EditorModel;
   /** Closes the window; `discard` deletes its draft instead of keeping it (recovery.ts). */
@@ -64,337 +53,42 @@ export interface EditorWindowProps {
   setTitle: (title: string) => void;
 }
 
-/** The home folder as the session gives it ($HOME), as Files' chooser takes it. */
-const homeFolder = (): string => process.env.HOME || homedir();
-
-/** Whether a dropped path is a regular file that can be opened. */
-function isOpenable(path: string): boolean {
-  try {
-    return statSync(path).isFile();
-  } catch {
-    return false;
-  }
-}
-
-/** `value`, once it has stayed the same for `ms`. */
-function useSettled<T>(value: T, ms: number): T {
-  const [settled, setSettled] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setSettled(value), ms);
-    return () => clearTimeout(timer);
-  }, [value, ms]);
-  return settled;
-}
-
 export function EditorWindow({ model, quit, newWindow, press, scroll, focusText, setTitle }: EditorWindowProps) {
-  const colors = useColors();
   const state = useSyncExternalStore(model.subscribe, model.getSnapshot);
-  const [sheet, setSheet] = useState<SheetState | null>(null);
-  // The caret and selection, per document: as the input reported it, or where Find or Go to Line moved it.
-  const [selected, setSelected] = useState<TextSelection & { session: number }>({ session: state.session, start: 0, end: 0 });
-  const selection = selected.session === state.session ? selected : { start: state.text.length, end: state.text.length };
-  const select = (start: number, end: number): void => setSelected({ session: state.session, start, end });
   // Bumped to give the keyboard to the Find field (it is mounted again).
   const [findFocus, setFindFocus] = useState(0);
-  const closing = useRef(false);
-
   const name = displayName(state.path);
-  const base = state.path !== null ? dirname(state.path) : homeFolder();
-  const counted = useSettled(state.text, COUNT_DELAY_MS);
-  const stats = useMemo(() => formatStats(textStats(counted)), [counted]);
-  const lines = useMemo(() => lineCount(state.text), [state.text]);
-  const { find } = state;
-  const highlights = useMemo(() => findHighlights(find, colors.findWash, colors.findCurrent), [find, colors.findWash, colors.findCurrent]);
+  const lines = useLineCount(state.text);
+  const selection = useSelection(model, state);
+  const sheets = useEditorSheets({ model, state, name, quit, newWindow, focusText });
   useEffect(() => {
     setTitle(name);
   }, [name, setTitle]);
-  // A change on disk while there were changes here asks which text wins.
-  useEffect(() => {
-    if (state.conflict && !sheet) setSheet({ kind: "conflict", after: null });
-  }, [state.conflict, sheet]);
-
-  // The text keeps its input (and its caret) through all of these: it is focused, never mounted again.
-  const closeSheet = (): void => {
-    setSheet(null);
-    focusText();
-  };
-  const save = (): void => {
-    const result = model.save();
-    if (result === "needs-path") setSheet({ kind: "save-as" });
-    else if (result === "conflict") setSheet({ kind: "conflict", after: null });
-    else closeSheet();
-  };
-  // File › Close, ❖W, the close control, ❖Q, the Dock's Quit, logging out: the document saves (or stays a
-  // draft) as the process ends (main.tsx); only a conflict holds the window to ask.
-  const requestClose = (): void => {
-    if (model.autosave() === "conflict") {
-      closing.current = true;
-      setSheet({ kind: "conflict", after: "close" });
-    } else quit(false);
-  };
-  useCloseRequest(requestClose);
-  // The log out that asked was cancelled: the window no longer closes after the conflict is settled.
-  // The conflict itself is still a question (which text wins), so its sheet stays, as one that doesn't close.
-  useCloseWithdrawn(() => {
-    if (!closing.current) return;
-    closing.current = false;
-    setSheet((shown) => (shown?.kind === "conflict" && shown.after === "close" ? { kind: "conflict", after: null } : shown));
-  });
-  const afterConflict = (): void => {
-    if (closing.current && !model.getSnapshot().conflict) quit(false);
-    else closeSheet();
-  };
-
-  /** Opens `path` here while this window is an untouched Untitled, else in a window of its own. */
-  const openPath = (path: string): string | null => {
-    if (path === state.path) return null;
-    if (!model.isPristine) newWindow([path]);
-    else if (!model.open(path)) return model.getSnapshot().notice?.text ?? "It couldn't be opened.";
-    return null;
-  };
-  // Open and Save As are Files' own chooser over the window (apps/files/chooser/), never a typed path (PA-12).
-  const chooseOpen = (path: string): void => {
-    // A failed open says why in the notice.
-    openPath(path);
-    closeSheet();
-  };
-  const chooseSaveAs = (path: string): void => {
-    // The chooser already asked before replacing a file; a failed save says why in the notice.
-    if (model.saveAs(path) && closing.current) return quit(false);
-    closeSheet();
-  };
-  // biome-ignore lint/correctness/useExhaustiveDependencies: one request per sheet shown
-  const chooser = useMemo(() => {
-    if (sheet?.kind === "open") return chooserRequest("open", { appId: "dev.dashi.editor", title: "Open", currentFolder: base });
-    if (sheet?.kind !== "save-as") return null;
-    const home = homeFolder();
-    const suggested = resolveInput(suggestedSavePath(state.path, home, existsSync(join(home, "Documents")), existsSync), base, home);
-    return chooserRequest("save", {
-      appId: "dev.dashi.editor",
-      title: state.path === null ? `Save “${name}”` : "Save As",
-      currentFolder: suggested ? dirname(suggested) : base,
-      currentName: suggested ? basename(suggested) : `${name}.txt`,
-    });
-  }, [sheet]);
-
-  /** Find's next or previous match: shown, scrolled to, and selected (the caret goes there). */
-  const jump = (step: 1 | -1): void => {
-    if (!model.findNext(step)) return;
-    const { find: now } = model.getSnapshot();
-    const start = now.matches[now.current] ?? 0;
-    select(start, start + now.query.length);
-  };
-  const goToLine = (line: number): void => {
-    const offset = lineStart(state.text, line);
-    select(offset, offset);
-    model.reveal(offset);
-    closeSheet();
-  };
-
-  const versions = sheet?.kind === "versions" ? model.listVersions() : [];
-  const { menus, run } = editorMenus({
-    hasFile: state.path !== null,
-    pristine: model.isPristine,
-    hasVersions: state.path !== null,
-    canUndo: state.canUndo,
-    canRedo: state.canRedo,
-    hasSelection: selection.start !== selection.end,
-    undoName: state.undoName,
-    redoName: state.redoName,
-    hasMatches: find.matches.length > 0,
-    monospace: state.prefs.monospace,
-    lineNumbers: state.prefs.lineNumbers,
-    caseSensitive: find.caseSensitive,
-    actions: {
-      newWindow: () => newWindow([]),
-      open: () => setSheet({ kind: "open" }),
-      close: requestClose,
-      save,
-      saveAs: () => setSheet({ kind: "save-as" }),
-      revertTo: () => setSheet({ kind: "versions" }),
-      deleteDraft: () => setSheet({ kind: "delete-draft" }),
-      undo: () => model.undo(),
-      redo: () => model.redo(),
-      cut: () => press("ctrl-x"),
-      copy: () => press("ctrl-c"),
-      paste: () => press("ctrl-v"),
-      selectAll: () => press("ctrl-a"),
-      find: () => setFindFocus((n) => n + 1),
-      findNext: jump,
-      replace: () => setSheet({ kind: "replace" }),
-      goToLine: () => setSheet({ kind: "go-to-line" }),
-      toggleCase: () => model.setCaseSensitive(!find.caseSensitive),
-      toggleLineNumbers: () => model.setLineNumbers(!state.prefs.lineNumbers),
-      toggleMonospace: () => model.setMonospace(!state.prefs.monospace),
-      fontSize: (step) => model.stepFontSize(step),
-    },
-  });
-  useAppMenus(menus, run);
-
-  const toolbar = (
-    <>
-      <ToolbarButton testID="new" glyph={NEW} tooltip="New document" onPress={() => newWindow([])} />
-      <ToolbarButton testID="open" glyph={OPEN} tooltip="Open" onPress={() => setSheet({ kind: "open" })} />
-      <ToolbarButton testID="save" glyph={SAVE} tooltip={state.path === null ? "Save" : "Save a version"} disabled={model.isPristine} onPress={save} />
-      {/* Find shares the row with the title: from FIND_MIN, growing to FIND_WIDTH as the row allows. */}
-      <View testID="find-box" style={{ flex: 1, minWidth: FIND_MIN, maxWidth: FIND_WIDTH, flexDirection: "row" }}>
-        <SearchField
-          key={`find:${findFocus}`}
-          testID="find"
-          placeholder="Find"
-          value={find.query}
-          status={findPlace(find)}
-          width={FIND_WIDTH}
-          minWidth={FIND_MIN}
-          autoFocus={findFocus > 0}
-          onChangeText={(query) => model.setQuery(query)}
-          onSubmit={() => jump(1)}
-          // One Esc leaves Find: the query stays (❖G goes on), the text takes the keyboard on the current match.
-          variant="find"
-          onKeyPress={(key) => {
-            if (key !== "Escape") return jump(key === "ArrowUp" ? -1 : 1);
-            if (find.current < 0) jump(1);
-            focusText();
-          }}
-        />
-      </View>
-    </>
-  );
-
-  const overlay = (() => {
-    if (!sheet) return undefined;
-    switch (sheet.kind) {
-      case "open":
-        return chooser && <AppChooser request={chooser} answer={(paths) => (paths?.[0] ? chooseOpen(paths[0]) : closeSheet())} />;
-      case "save-as":
-        return chooser && <AppChooser request={chooser} answer={(paths) => (paths?.[0] ? chooseSaveAs(paths[0]) : closeSheet())} />;
-      case "versions":
-        return (
-          <VersionsSheet
-            name={name}
-            versions={versions}
-            now={Date.now()}
-            describe={(version) => versionDifference(model.versionText(version) ?? "", state.text)}
-            onRevert={(version) => {
-              model.revertTo(version);
-              closeSheet();
-            }}
-            onCancel={closeSheet}
-          />
-        );
-      case "conflict":
-        return state.conflict ? (
-          <ConflictSheet
-            name={name}
-            conflict={state.conflict}
-            closing={sheet.after === "close"}
-            onKeepMine={() => {
-              model.keepMine();
-              afterConflict();
-            }}
-            onUseDisk={() => {
-              model.revert("Use the One on Disk");
-              afterConflict();
-            }}
-            onSaveAs={() => setSheet({ kind: "save-as" })}
-            onCancel={() => {
-              closing.current = false;
-              closeSheet();
-            }}
-          />
-        ) : undefined;
-      case "delete-draft":
-        return (
-          <ConfirmSheet
-            testID="delete-draft"
-            title={`Delete the draft “${name}”?`}
-            // Two sentences, two lines: broken by hand, so no word is left alone on the second.
-            message={"The window closes and its text is gone.\nYou can't undo this."}
-            confirmLabel="Delete"
-            danger
-            onConfirm={() => quit(true)}
-            onCancel={closeSheet}
-          />
-        );
-      case "go-to-line":
-        return <GoToLineSheet lines={lines} onGo={goToLine} onCancel={closeSheet} />;
-      case "replace":
-        return (
-          <ReplaceSheet
-            query={find.query}
-            matches={find.matches.length}
-            onQuery={(query) => model.setQuery(query)}
-            onReplaceAll={(replacement) => model.replaceAll(replacement)}
-            onCancel={closeSheet}
-          />
-        );
-    }
-  })();
+  useEditorMenus({ model, state, selection, sheets, newWindow, press, focusFind: () => setFindFocus((n) => n + 1) });
 
   // One chrome row: the folder is the muted words after the title, and Find's place is in its field. The counts
   // wait in a chip at the text's foot; a notice floats over the text until dismissed, and the chip makes way for it.
-  const detail = titleDetail(folderLabel(state.path));
-  const counts = countsLine({ counts: stats, encoding: state.encoding, lineEnding: state.lineEnding });
   const notice = state.notice ? <Notice tone={state.notice.tone} text={state.notice.text} onDismiss={() => model.dismissNotice()} /> : undefined;
-
   return (
-    <AppWindow title={name} detail={detail} toolbar={toolbar} overlay={overlay} notice={notice}>
-      <View
-        style={{ flex: 1, flexDirection: "column", position: "relative" }}
-        onDrop={(drop) => {
-          if (drop.phase !== "drop" || drop.paths.length === 0) return;
-          const [first, ...rest] = drop.paths;
-          if (first !== undefined && isOpenable(first)) openPath(first);
-          if (rest.length > 0) newWindow(rest);
-        }}
-      >
-        <TextArea
-          text={state.text}
-          prefs={state.prefs}
-          lines={lines}
-          session={state.session}
-          selection={selection}
-          onSelectionChange={(next) => select(next.start, next.end)}
-          highlights={highlights}
-          onChange={(text) => model.edit(text)}
-          onEscape={() => find.query !== "" && model.setQuery("")}
-          scroll={scroll}
-          reveal={state.reveal}
-        />
-        {notice === undefined && <CountsChip text={counts} />}
-      </View>
-    </AppWindow>
-  );
-}
-
-/**
- * The counts at the text's foot, at its right: a quiet pill, as a toolbar's state chip is (VS-5), but on the
- * window's own ground with a hairline edge, since it floats over text that must not show through it.
- */
-function CountsChip({ text }: { text: string }) {
-  const colors = useColors();
-  const surface = useSurface();
-  return (
-    <View
-      testID="counts"
-      style={{
-        position: "absolute",
-        // On the toolbar's right edge (its 12 of padding), so the chip ends under the Find field.
-        right: 12,
-        bottom: 12,
-        height: 24,
-        paddingHorizontal: 10,
-        borderRadius: 12,
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: surface.window,
-        borderWidth: 1,
-        borderColor: colors.separator,
-      }}
+    <AppWindow
+      title={name}
+      detail={titleDetail(folderLabel(state.path))}
+      toolbar={
+        <EditorToolbar model={model} state={state} sheets={sheets} newWindow={newWindow} findFocus={findFocus} jump={selection.jump} focusText={focusText} />
+      }
+      overlay={editorOverlay({ model, state, name, lines, sheets, goToLine: selection.goToLine, quit })}
+      notice={notice}
     >
-      <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
-        {text}
-      </Text>
-    </View>
+      <EditorContent
+        model={model}
+        state={state}
+        lines={lines}
+        selection={selection}
+        hasNotice={notice !== undefined}
+        openPath={sheets.openPath}
+        newWindow={newWindow}
+        scroll={scroll}
+      />
+    </AppWindow>
   );
 }
