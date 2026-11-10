@@ -7,10 +7,10 @@
  * looks come in, rows and numbers go out.
  */
 
-import { type AppIdentity, ownerOf } from "../../src/process-apps/index.ts";
-import { energyImpact, gpuPercent } from "./energy-proc.ts";
-import type { Counters, CpuTimes, NetCounters } from "./proc.ts";
-import type { ProcessSample, Snapshot } from "./read.ts";
+import { energyImpact, gpuPercent } from "../../src/shared/processes/energy-proc.ts";
+import { type AppIdentity, ownerOf } from "../../src/shared/processes/index.ts";
+import type { Counters, CpuTimes, NetCounters } from "../../src/shared/processes/proc.ts";
+import type { ProcessSample, Snapshot } from "../../src/shared/processes/read.ts";
 
 /** Looks a process's % CPU is averaged over (with the newest): about six seconds at the two-second interval. */
 export const SMOOTHING = 3;
@@ -25,7 +25,7 @@ export interface ProcessRow {
   command: string;
   /** The kernel's state letter: R running, S sleeping, D waiting on a disk, T stopped, Z a zombie. */
   state: string;
-  /** The app it belongs to (process-apps/owners.ts); null for a process no app started. */
+  /** The app it belongs to (src/shared/processes/owners.ts); null for a process no app started. */
   app: AppIdentity | null;
   user: string;
   uid: number;

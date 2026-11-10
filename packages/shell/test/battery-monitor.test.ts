@@ -2,7 +2,6 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ProcessSample } from "../apps/activity-monitor/read.ts";
 import { averageUse, ownerOf, significant, usageBetween } from "../src/battery/apps.ts";
 import { chargingBand, drawChart, drawMax, levelChart } from "../src/battery/chart.ts";
 import { HistoryFile } from "../src/battery/file.ts";
@@ -20,6 +19,7 @@ import {
 } from "../src/battery/history.ts";
 import { insights } from "../src/battery/insights.ts";
 import { BatteryMonitor } from "../src/battery/monitor.ts";
+import type { ProcessSample } from "../src/shared/processes/read.ts";
 import type { PowerSupply } from "../src/system/battery.ts";
 
 const NOW = 1_800_000_000;

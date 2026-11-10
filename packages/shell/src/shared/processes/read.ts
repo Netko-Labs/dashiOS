@@ -11,9 +11,9 @@
  */
 
 import { readdirSync, readFileSync } from "node:fs";
-import { type AppCatalog, type AppIdentity, identify, parseCmdline } from "../../src/process-apps/index.ts";
-import { FIRST_PARTY } from "../../src/shared/apps/index.ts";
+import { FIRST_PARTY } from "../apps/index.ts";
 import type { GpuCounters } from "./energy-proc.ts";
+import { type AppCatalog, type AppIdentity, identify, parseCmdline } from "./index.ts";
 import {
   type Counters,
   isKernelThread,
@@ -53,7 +53,7 @@ export interface ProcessSample {
   sockets: number | null;
   /** Its command line, the arguments joined by spaces ("" for a kernel thread). */
   command: string;
-  /** The app it is by itself (process-apps/); null for a helper, or when the reader has no catalog. */
+  /** The app it is by itself (identity.ts); null for a helper, or when the reader has no catalog. */
   app: AppIdentity | null;
   /** Voluntary context switches over all its threads; own processes, and only when asked (the Energy tab). */
   wakeups: number | null;

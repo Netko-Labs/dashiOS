@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { submitSelection } from "../apps/activity-monitor/lines.ts";
 import { Monitor } from "../apps/activity-monitor/monitor.ts";
-import { isVirtualInterface, parseIo, parseNetDev, parseStatus } from "../apps/activity-monitor/proc.ts";
-import type { ProcessSample, Snapshot } from "../apps/activity-monitor/read.ts";
 import { cpuSplit, filterRows, type ProcessRow, processRows, scopeTotals } from "../apps/activity-monitor/sample.ts";
 import { Sampler } from "../apps/activity-monitor/sampling.ts";
+import { isVirtualInterface, parseIo, parseNetDev, parseStatus } from "../src/shared/processes/proc.ts";
+import type { ProcessSample, Snapshot } from "../src/shared/processes/read.ts";
 
 const CONTEXT = { users: new Map([[1000, "alexk"]]), ownUid: 1000, clockTicks: 100 };
 

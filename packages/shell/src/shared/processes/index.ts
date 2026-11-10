@@ -1,4 +1,4 @@
-export { catalogFrom, DASHI_KEY, loadAppCatalog } from "./catalog.ts";
+export { catalogFrom, DASHI_KEY } from "./catalog.ts";
 export {
   type AppCatalog,
   type AppIdentity,

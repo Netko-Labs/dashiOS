@@ -23,6 +23,7 @@
 import { readFileSync } from "node:fs";
 import type { MachineAction } from "../power/machine.ts";
 import { spawnDetached } from "../shared/apps/list.ts";
+import { parseStat } from "../shared/processes/kernel.ts";
 import { powerAfterApps } from "../shutdown.ts";
 import type { PowerKind } from "./model.ts";
 
@@ -30,19 +31,6 @@ export const COMPOSITOR = "dashi-comp";
 
 /** Parents followed before giving up; a session's ancestry is a handful deep. */
 const MAX_DEPTH = 16;
-
-/** `pid (comm) S ppid …` from /proc/<pid>/stat; comm may hold spaces and parentheses. */
-export function parseStat(text: string): { comm: string; ppid: number } | null {
-  const open = text.indexOf("(");
-  const close = text.lastIndexOf(")");
-  if (open < 0 || close < open) return null;
-  const rest = text
-    .slice(close + 1)
-    .trim()
-    .split(" ");
-  const ppid = Number(rest[1]);
-  return Number.isInteger(ppid) && ppid >= 0 ? { comm: text.slice(open + 1, close), ppid } : null;
-}
 
 /** The nearest ancestor of `start` (itself excluded) whose command is `comm`, or null. */
 export function findAncestor(comm: string, start: number, readStat: (pid: number) => string | null): number | null {

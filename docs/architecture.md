@@ -242,7 +242,7 @@ separate MIT programs, with structured arguments only; it links nothing.
   listed, that object is read again with `pw-dump <id>`) and parses streams from it
   (`streams.ts`: a stream's client, its links to a device, its Props, the
   "default" metadata's `target.object`). Streams are named as the Dock
-  names apps (`identity.ts`, on `src/process-apps/`): a Flatpak by its portal
+  names apps (`identity.ts`, on `src/shared/processes/`): a Flatpak by its portal
   id, else the client's process (the socket's pid for a native client, the
   claimed pid for a Pulse one) and its parents, by itself or by its window;
   else its `application.name`. An app no desktop entry names gets the icon

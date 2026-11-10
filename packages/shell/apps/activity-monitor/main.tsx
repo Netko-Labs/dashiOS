@@ -8,14 +8,13 @@
  * `onOpen` (args.ts).
  */
 
-import { readProcStat, sendSignal } from "../../src/force-quit/kernel.ts";
-import { protectedPids } from "../../src/force-quit/model.ts";
+import { protectedPids, readProcStat, sendSignal } from "../../src/shared/processes/kernel.ts";
+import { parseStat } from "../../src/shared/processes/proc.ts";
+import { readUsers, sysconf } from "../../src/shared/processes/read.ts";
 import { menusClient, onWindowVisibility, runApp, systemClipboard } from "../kit/index.ts";
 import { parseOpenArgs } from "./args.ts";
 import { Monitor } from "./monitor.ts";
 import type { Target } from "./policy.ts";
-import { parseStat } from "./proc.ts";
-import { readUsers, sysconf } from "./read.ts";
 import { Sampler } from "./sampling.ts";
 import { MONITOR_MIN_SIZE, MONITOR_SIZE, MonitorWindow } from "./view.tsx";
 

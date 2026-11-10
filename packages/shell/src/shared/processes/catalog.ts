@@ -2,22 +2,21 @@
  * The installed apps as identity.ts matches processes against them: Dashi's
  * own apps by their folder, every desktop entry (hidden ones too: they name
  * apps that keep a second entry) by its id, its window class, and the
- * program it runs. `catalogFrom` is pure; `loadAppCatalog` reads the entries
- * (entries.ts), which takes a moment: Activity Monitor does it on its reader
- * thread.
+ * program it runs. `catalogFrom` is pure; entries.ts's `loadAppCatalog`
+ * reads the entries, which takes a moment: Activity Monitor does it on its
+ * reader thread.
  */
 
-import { type Entry, loadEntries } from "../entries.ts";
-import { FIRST_PARTY, type FirstPartySpec, iconPath } from "../shared/apps/index.ts";
+import { type App, FIRST_PARTY, type FirstPartySpec, iconPath } from "../apps/index.ts";
 import { type AppCatalog, type AppIdentity, programOf } from "./identity.ts";
 
 /** Dashi itself, as a row: the compositor, the session, the shell. */
 export const DASHI_KEY = "dev.dashi.shell";
 
-export function catalogFrom(
-  entries: readonly Pick<Entry, "id" | "name" | "icon" | "exec" | "wmClass" | "hidden">[],
-  firstParty: readonly FirstPartySpec[] = FIRST_PARTY,
-): AppCatalog {
+/** What the catalog reads of an installed app's entry (entries.ts `Entry`). */
+type CatalogEntry = Pick<App, "id" | "name" | "icon" | "exec"> & { wmClass?: string; hidden?: true };
+
+export function catalogFrom(entries: readonly CatalogEntry[], firstParty: readonly FirstPartySpec[] = FIRST_PARTY): AppCatalog {
   const byProgram = new Map<string, AppIdentity>();
   const byId = new Map<string, AppIdentity>();
   const own = new Set(firstParty.map((spec) => spec.id));
@@ -44,9 +43,4 @@ export function catalogFrom(
     dashi: { key: DASHI_KEY, name: "Dashi", icon: iconPath("setup") },
     genericIcon: iconPath("generic"),
   };
-}
-
-/** The catalog of what is installed now. */
-export function loadAppCatalog(): AppCatalog {
-  return catalogFrom(loadEntries({ withHidden: true }));
 }

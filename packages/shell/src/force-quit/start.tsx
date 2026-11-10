@@ -11,10 +11,10 @@ import { type Entry, loadEntries } from "../entries.ts";
 import { findEntry } from "../menus/launch.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
 import { iconPath } from "../shared/apps/index.ts";
+import { isAlive, protectedPids, readProcStat, sendSignal } from "../shared/processes/kernel.ts";
+import { type Outcome, terminate } from "../shared/processes/policy.ts";
 import { ForceQuitController } from "./controller.ts";
-import { isAlive, readProcStat, sendSignal } from "./kernel.ts";
-import { type AppGroup, appGroups, type Identity, protectedPids } from "./model.ts";
-import { type Outcome, terminate } from "./policy.ts";
+import { type AppGroup, appGroups, type Identity } from "./model.ts";
 import { FORCE_QUIT, ForceQuitWindow } from "./view.tsx";
 
 export interface ForceQuit {

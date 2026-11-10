@@ -23,6 +23,7 @@ import {
   resolvePinned,
 } from "./shared/apps/index.ts";
 import type { Localized } from "./shared/locale/messages.ts";
+import { type AppCatalog, catalogFrom } from "./shared/processes/index.ts";
 
 export { calculate } from "./launcher-math.ts";
 
@@ -161,4 +162,9 @@ export function loadEntries(options: { withHidden?: boolean } = {}): Entry[] {
 /** Start `entry`; `watch` hears whether it quit as it started (apps.ts). */
 export function launchEntry(entry: Entry, watch?: LaunchWatch): number | null {
   return launch({ ...entry, cwd: entry.cwd ?? homedir() }, watch);
+}
+
+/** The installed apps as processes are matched against them (shared/processes/catalog.ts), hidden entries too. */
+export function loadAppCatalog(): AppCatalog {
+  return catalogFrom(loadEntries({ withHidden: true }));
 }

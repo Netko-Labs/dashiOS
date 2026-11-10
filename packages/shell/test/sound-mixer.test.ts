@@ -7,7 +7,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { catalogFrom, DASHI_KEY } from "../src/process-apps/index.ts";
+import { catalogFrom, DASHI_KEY } from "../src/shared/processes/index.ts";
 import {
   AppMixer,
   fixedGraph,

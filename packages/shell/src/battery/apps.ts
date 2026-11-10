@@ -1,7 +1,7 @@
 /**
  * Which apps use the energy: each process's processor time between two looks
  * at /proc, credited to the app it or one of its ancestors is (the same
- * apps, by the same keys, as Activity Monitor's: process-apps/) or whose
+ * apps, by the same keys, as Activity Monitor's: shared/processes/) or whose
  * window it owns (a browser's helper processes count as the browser), else
  * to the process's own name. Processor time is what Linux tells per process, and on a laptop
  * it is most of what an app costs the battery: the "energy impact" here is
@@ -11,8 +11,8 @@
  * could quit.
  */
 
-import type { ProcessSample } from "../../apps/activity-monitor/read.ts";
-import { type AppIdentity, ownerOf as ownerOfProcess } from "../process-apps/index.ts";
+import { type AppIdentity, ownerOf as ownerOfProcess } from "../shared/processes/index.ts";
+import type { ProcessSample } from "../shared/processes/read.ts";
 
 export interface AppUse {
   /** The app's id when a window owns it, else `process:<name>`. */
@@ -34,7 +34,7 @@ export const SIGNIFICANT_CORES = 0.15;
 
 /**
  * How the processes of one look belong to apps, as Activity Monitor groups
- * them (process-apps/owners.ts): walking up from each to the first that is an
+ * them (shared/processes/owners.ts): walking up from each to the first that is an
  * app by itself (the reader's `app`) or owns a window; else the process's own
  * name.
  */

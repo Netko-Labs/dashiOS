@@ -5,12 +5,13 @@
  * `LookRequest` and gets the `Snapshot` back under the same id
  * (sampling.ts). What is known about each process (its name, command line
  * and app) is kept here between looks, and so are the installed apps the
- * processes are matched against (process-apps/), read again every few
+ * processes are matched against (src/shared/processes/), read again every few
  * minutes so an app installed meanwhile is named.
  */
 
-import { type AppCatalog, loadAppCatalog } from "../../src/process-apps/index.ts";
-import { type ReadOptions, readerMemory, readSnapshot, type Snapshot, sysconf } from "./read.ts";
+import { loadAppCatalog } from "../../src/entries.ts";
+import type { AppCatalog } from "../../src/shared/processes/index.ts";
+import { type ReadOptions, readerMemory, readSnapshot, type Snapshot, sysconf } from "../../src/shared/processes/read.ts";
 
 /** What a look reads beyond what the reader knows by itself. */
 export type LookWants = Pick<ReadOptions, "io" | "sockets" | "kernel" | "energy">;

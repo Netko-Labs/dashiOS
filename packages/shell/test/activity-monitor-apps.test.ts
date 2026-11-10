@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { parseOpenArgs } from "../apps/activity-monitor/args.ts";
 import { COLUMNS, DEFAULT_SORT } from "../apps/activity-monitor/columns.ts";
-import { energyImpact, gpuPercent, parseDrmFdinfo, parseWakeups, sumGpu } from "../apps/activity-monitor/energy-proc.ts";
 import { appRoots, buildLines, lineForApp } from "../apps/activity-monitor/lines.ts";
 import { monitorMenus } from "../apps/activity-monitor/menus.ts";
 import { quitRefusal } from "../apps/activity-monitor/policy.ts";
@@ -9,8 +8,9 @@ import { lineRefusal, sendQuit } from "../apps/activity-monitor/quit.ts";
 import type { ProcessRow } from "../apps/activity-monitor/sample.ts";
 import type { CompositorWindow } from "../src/compositor.ts";
 import { energyArgs, openActivityMonitor } from "../src/menus/activity-monitor.ts";
-import { type AppIdentity, catalogFrom, flatpakId, identify, ownerOf, parseCmdline, programOf } from "../src/process-apps/index.ts";
 import { isOpenArgs, parseShellMessage } from "../src/shared/app-menus/protocol.ts";
+import { energyImpact, gpuPercent, parseDrmFdinfo, parseWakeups, sumGpu } from "../src/shared/processes/energy-proc.ts";
+import { type AppIdentity, catalogFrom, flatpakId, identify, ownerOf, parseCmdline, programOf } from "../src/shared/processes/index.ts";
 
 const FIREFOX = { id: "org.mozilla.firefox", name: "Firefox", icon: "/icons/firefox.png", exec: ["/usr/bin/firefox", "%u"] };
 const CODE = {

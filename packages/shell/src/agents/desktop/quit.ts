@@ -3,7 +3,7 @@
  * the person can't take back by looking. Force quit therefore asks on
  * screen every time (`ctx.confirm`), whatever the agent was allowed before,
  * and the policy Force Quit Applications uses decides what may be ended
- * (force-quit/policy.ts): never the shell or the session, never a process
+ * (shared/processes/policy.ts): never the shell or the session, never a process
  * with no window.
  */
 
