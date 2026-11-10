@@ -210,12 +210,12 @@
 17	packages/shell/bin/dashi-settings-preview.tsx
 1	packages/shell/bin/dashi-share-picker.ts
 1	packages/shell/bin/default-handlers.ts
-2	packages/shell/src/accounts/fake.ts
-3	packages/shell/src/accounts/index.ts
-2	packages/shell/src/accounts/passwd.ts
+2	packages/shell/src/accounts/index.ts
+2	packages/shell/src/accounts/lib/fake.ts
+2	packages/shell/src/accounts/lib/passwd.ts
+1	packages/shell/src/accounts/lib/sheet.tsx
 1	packages/shell/src/accounts/prompt.tsx
 3	packages/shell/src/accounts/select.ts
-1	packages/shell/src/accounts/sheet.tsx
 1	packages/shell/src/accounts/store.ts
 1	packages/shell/src/actions/copy.ts
 2	packages/shell/src/actions/links.ts
