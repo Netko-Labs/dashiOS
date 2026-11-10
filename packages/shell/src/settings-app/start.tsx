@@ -8,7 +8,6 @@
  */
 
 import { homedir } from "node:os";
-import { onWindowTyping } from "../../apps/kit/typing.ts";
 import type { AnswerStatus } from "../agents/ask/service.ts";
 import type { Grants } from "../agents/consent.ts";
 import type { AgentStore } from "../agents/presence.ts";
@@ -16,10 +15,11 @@ import type { Passwords } from "../agents/secrets/passwords.ts";
 import { registerShellApp, SETTINGS_APP_ID } from "../apps.ts";
 import type { ClipboardHistory } from "../clipboard/history.ts";
 import type { Compositor } from "../compositor.ts";
-import type { Flags, FlagsStore } from "../control-center/flags.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
 import type { PrivacyStore } from "../privacy/store.ts";
 import type { RegionStore } from "../region/store.ts";
+import type { Flags, FlagsStore } from "../shared/control-center/flags.ts";
+import { onWindowTyping } from "../shared/metal/typing.ts";
 import { portalChooser } from "../wallpaper/chooser.ts";
 import { readAbout } from "./about.ts";
 import type { AheadSites, PaneContext } from "./context.ts";

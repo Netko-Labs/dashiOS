@@ -5,10 +5,10 @@ import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { enabledIds } from "../apps/kit/index.ts";
 import { droppedFile } from "../apps/preview/drop.ts";
-import { otherMime } from "../apps/preview/kinds.ts";
 import { previewMenus } from "../apps/preview/menus.ts";
 import { PreviewWindow } from "../apps/preview/view.tsx";
 import { Viewer } from "../apps/preview/viewer.ts";
+import { otherMime } from "../src/shared/files/kinds.ts";
 
 // Preview's empty window on a stand-in for the Metal host: what it offers, and a file dropped on it.
 let dir = "";

@@ -14,15 +14,15 @@ import { existsSync } from "node:fs";
 import { TextSelectionLook } from "@dashi/ui";
 import { type NativeHostTransport, type NativeRoot, render, spawnNativeHost, type TitleBarStyle } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import { connectDarkMode } from "../../src/control-center/dark-mode.ts";
 import { METAL_HOST } from "../../src/shared/apps/index.ts";
+import { connectDarkMode } from "../../src/shared/control-center/dark-mode.ts";
 import { appNameEnv } from "../../src/shared/metal/host.ts";
+import { onWindowTyping } from "../../src/shared/metal/typing.ts";
 import { followDarkMode } from "./appearance.ts";
 import { closeRequests } from "./close.ts";
 import { serveControl } from "./control.ts";
 import { menusClient } from "./menus.ts";
 import { setProcessName } from "./name.ts";
-import { onWindowTyping } from "./typing.ts";
 
 export interface Size {
   width: number;
@@ -53,7 +53,7 @@ export interface AppOptions {
   closeCode?: number;
   /**
    * While a text field has the keyboard, its text chords (❖A, ❖C, ❖X, ❖V,
-   * ❖Z, ⇧❖Z) go to it before the app's rows that show them (typing.ts); on
+   * ❖Z, ⇧❖Z) go to it before the app's rows that show them (src/shared/metal/typing.ts); on
    * by default. Text Editor turns it off: its rows already act on the field
    * with the keyboard, and its Undo is the document's.
    */
@@ -122,7 +122,7 @@ export function runApp(options: AppOptions, element: ReactElement): RunningApp {
     process.exit(code);
   };
   host.onClose(() => finish(closeCode));
-  // A field with the keyboard answers the text chords itself (typing.ts).
+  // A field with the keyboard answers the text chords itself (src/shared/metal/typing.ts).
   if (options.textChordsToFields !== false) onWindowTyping(host, (typing) => menusClient().setTyping(typing));
   // ❖Q, Quit, logging out: the shell says so first, and the close request after is a quit.
   menusClient().onQuit(() => closeRequests.quitting());

@@ -10,7 +10,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { isSegment } from "../src/actions/address.ts";
 import { parseCall } from "../src/agents/tools/registry.ts";
-import { FlagsStore } from "../src/control-center/flags.ts";
 import { DockPrefs } from "../src/dock/prefs.ts";
 import { isPaneId } from "../src/settings-app/panes.ts";
 import {
@@ -29,6 +28,7 @@ import {
   wrongValue,
 } from "../src/settings-app/registry/index.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
+import { FlagsStore } from "../src/shared/control-center/flags.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "dashi-registry-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));

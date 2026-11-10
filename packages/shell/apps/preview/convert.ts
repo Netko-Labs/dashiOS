@@ -11,7 +11,7 @@
  * and the PNGs of ours it reads back, are names Preview made.
  */
 
-import { FORMATS, type Format } from "./kinds.ts";
+import { FORMATS, type Format } from "../../src/shared/files/kinds.ts";
 
 /** The most pixels Metal is handed as they are; larger pictures are reduced first. */
 export const MAX_NATIVE_PIXELS = 48_000_000;

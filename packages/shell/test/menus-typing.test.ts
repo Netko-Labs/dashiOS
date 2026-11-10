@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test";
 import type { NativeEvent } from "@mirinjs/metal";
 import { type MenuSocketHandlers, MenusClient } from "../apps/kit/menus.ts";
-import { onWindowTyping, typingOf } from "../apps/kit/typing.ts";
 import { isTextShortcut } from "../src/app-menus/shortcut.ts";
 import { AppMenuStore } from "../src/app-menus/store.ts";
 import { type AppMenu, parseClientMessage, parseShellMessage, type ShellMessage } from "../src/shared/app-menus/protocol.ts";
+import { onWindowTyping, typingOf } from "../src/shared/metal/typing.ts";
 import { type Requests, runBinding, type ShellActions } from "../src/shortcuts.ts";
 
 const EDIT: AppMenu[] = [

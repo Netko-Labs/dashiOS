@@ -5,8 +5,8 @@
  * what such a value is checked against and said as, for agents and links.
  */
 
-import type { Flags } from "../../control-center/flags.ts";
 import { DOCK_DEFAULTS, type DockSettings } from "../../dock/settings.ts";
+import type { Flags } from "../../shared/control-center/flags.ts";
 import type { Change, SectionName, SettingsData } from "../store.ts";
 import type { Binding, ChoiceOption, RegistryStores, RowDef, SettingValue, ValueSchema } from "./types.ts";
 

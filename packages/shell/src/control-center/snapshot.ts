@@ -1,7 +1,7 @@
 /**
  * The machine as Control Center's tiles see it (catalog.ts `ControlSnapshot`),
  * read from the stores the panel is given: the radios and sliders
- * (devices.ts), the switches (flags.ts), the network and the battery
+ * (devices.ts), the switches (shared/control-center/flags.ts), the network and the battery
  * (system/store.ts), Bluetooth's devices, and the laptop's power modes,
  * keyboard light and graphics card, and whether the screens mirror.
  */
@@ -15,10 +15,10 @@ import { GRAPHICS_LABEL } from "../graphics/policy.ts";
 import type { Laptop } from "../laptop/start.ts";
 import { keyboardLight, type LaptopSnapshot, lightLabel } from "../laptop/store.ts";
 import type { ModeSnapshot } from "../power/modes/store.ts";
+import { type FlagsStore, useFlags } from "../shared/control-center/flags.ts";
 import { type SystemStore, useSystem } from "../system/store.ts";
 import type { ControlSnapshot } from "./catalog.ts";
 import { type DeviceStore, useDevices } from "./devices.ts";
-import { type FlagsStore, useFlags } from "./flags.ts";
 
 const NONE = { subscribe: () => () => {}, getSnapshot: () => null };
 

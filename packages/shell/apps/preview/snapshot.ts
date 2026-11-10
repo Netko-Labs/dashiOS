@@ -4,10 +4,10 @@
  * open starts from.
  */
 
+import type { Format, Kind } from "../../src/shared/files/kinds.ts";
 import type { Stamp } from "./cache.ts";
 import type { Size } from "./dimensions.ts";
 import type { FileFacts } from "./info.ts";
-import type { Format, Kind } from "./kinds.ts";
 import type { Recent } from "./memory.ts";
 import type { PdfPagesState } from "./pdf-doc.ts";
 import type { Neighbours } from "./siblings.ts";

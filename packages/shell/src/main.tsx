@@ -9,7 +9,6 @@
 
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
-import { systemClipboard } from "../apps/kit/clipboard.ts";
 import { formatAddress } from "./actions/address.ts";
 import { linksEntry, startActions } from "./actions/index.ts";
 import type { CaptureKind } from "./actions/sources/commands.ts";
@@ -54,7 +53,6 @@ import { chooseBluetooth } from "./bluetooth/index.ts";
 import { startCalendar } from "./calendar/index.ts";
 import { type Clipboard, startClipboard } from "./clipboard/start.ts";
 import { Compositor, type CompositorWindow, type Frame } from "./compositor.ts";
-import { connectDarkMode } from "./control-center/dark-mode.ts";
 import { controlFlags, LayoutStore, setControlMotion } from "./control-center/index.ts";
 import { installDesktopEntries, shouldWriteEntries } from "./desktop-entries.ts";
 import { AutoRefresh, rateOnPower } from "./display-config/auto-refresh.ts";
@@ -147,6 +145,8 @@ import { createPaneServices, type PaneServices } from "./settings-app/services.t
 import { startSetupAssistant } from "./setup/start.tsx";
 import { startSharePicker } from "./share-picker/index.ts";
 import { dockDefaults, iconPath, installedSpecs, METAL_HOST, resolvePinned, shellDir } from "./shared/apps/index.ts";
+import { systemClipboard } from "./shared/clipboard/clipboard.ts";
+import { connectDarkMode } from "./shared/control-center/dark-mode.ts";
 import { Software } from "./shared/software/manager.ts";
 import { standIn } from "./shared/software/stand-in.ts";
 import { SHEET, ShortcutSheet } from "./sheet.tsx";

@@ -6,7 +6,6 @@
  */
 
 import type { CompositorWindow } from "../../compositor.ts";
-import type { FlagsStore } from "../../control-center/flags.ts";
 import type { DisplayManager } from "../../display-config/manager.ts";
 import type { DockPrefs } from "../../dock/prefs.ts";
 import type { ForceQuit } from "../../force-quit/start.tsx";
@@ -17,6 +16,7 @@ import type { RegionDesktop } from "../../region/desktop.ts";
 import type { MachineDesktop } from "../../settings-app/machine-desktop.ts";
 import type { SettingsStore } from "../../settings-app/store.ts";
 import type { PageId } from "../../setup/flow.ts";
+import type { FlagsStore } from "../../shared/control-center/flags.ts";
 import type { WifiStore } from "../../wifi/store.ts";
 import type { SoftwareBackend } from "./software.ts";
 

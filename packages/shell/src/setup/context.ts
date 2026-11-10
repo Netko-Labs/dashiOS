@@ -1,8 +1,8 @@
 import type { AnswerStatus } from "../agents/ask/service.ts";
-import type { FlagsStore } from "../control-center/flags.ts";
 import type { RegionStore } from "../region/store.ts";
 import type { XkbLayouts } from "../settings-app/layouts.ts";
 import type { SettingsStore } from "../settings-app/store.ts";
+import type { FlagsStore } from "../shared/control-center/flags.ts";
 import type { WifiStore } from "../wifi/store.ts";
 import type { WifiNetwork } from "../wifi/types.ts";
 import type { ExtrasStore } from "./extras/store.ts";

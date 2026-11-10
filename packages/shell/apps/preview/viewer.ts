@@ -14,12 +14,12 @@
 
 import { stat } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
+import { FORMATS, type Format, formatFromName, otherMime, sniff } from "../../src/shared/files/kinds.ts";
 import { cacheFile, cacheKey, cacheRoot, ensureCache, partialName, publish, type Stamp } from "./cache.ts";
 import { CONVERT_MEMORY_MIB, CONVERT_TIMEOUT_MS, convertible, MAX_NATIVE_PIXELS, magickArgs, REDUCED_PIXELS } from "./convert.ts";
 import { HEADER_BYTES, jpegOrientation, readSize, type Size, swapsSides } from "./dimensions.ts";
 import { Folder } from "./folder.ts";
 import { factsFrom } from "./info.ts";
-import { FORMATS, type Format, formatFromName, otherMime, sniff } from "./kinds.ts";
 import { MemoryStore } from "./memory.ts";
 import { MESSAGES } from "./messages.ts";
 import { parsePdfInfo, pdfinfoArgs, plainTextArgs, wantsPassword } from "./pdf.ts";

@@ -4,11 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { actingAs, actor } from "../src/acting.ts";
 import { AppMenuStore } from "../src/app-menus/store.ts";
-import { FlagsStore } from "../src/control-center/flags.ts";
 import { changeLine, describeChanges, parseEntries } from "../src/settings-app/changes/index.ts";
 import { publishEditMenu } from "../src/settings-app/edit-menu.ts";
 import { settingRow } from "../src/settings-app/registry/index.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
+import { FlagsStore } from "../src/shared/control-center/flags.ts";
 
 let root = "";
 let store: SettingsStore;

@@ -5,7 +5,7 @@
  */
 
 import { join } from "node:path";
-import { type Kind, kindOf } from "./kinds.ts";
+import { type Kind, kindOf } from "../../src/shared/files/kinds.ts";
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 

@@ -6,7 +6,7 @@
 
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import type { FlagsStore } from "../control-center/flags.ts";
+import type { FlagsStore } from "../shared/control-center/flags.ts";
 import { hasProgram, type Run, run } from "../system/exec.ts";
 import { type AppCommand, type AppLook, appThemeCommands, appThemeGate, type Gate, readCompositorEnviron } from "./apps.ts";
 import type { CornerSource } from "./corner-feed.ts";

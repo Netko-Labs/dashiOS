@@ -12,7 +12,7 @@
  */
 
 import { AccountsServiceBackend } from "../../src/accounts/backend.ts";
-import { connectDarkMode } from "../../src/control-center/dark-mode.ts";
+import { connectDarkMode } from "../../src/shared/control-center/dark-mode.ts";
 import { DBusConnection, FdService, type InterfaceSpec, type Variant } from "../../src/shared/dbus/index.ts";
 import { PORTAL_BACKEND } from "../../src/shared/portal-host/protocol.ts";
 import { setProcessName } from "../kit/name.ts";

@@ -4,7 +4,7 @@
  * `text/uri-list` (RFC 2483, CRLF lines of `file://` URIs) when wl-clipboard
  * is installed, and paste reads what other file managers left there:
  * `x-special/gnome-copied-files` (Nautilus: "copy" or "cut", then URIs) or
- * `text/uri-list`. Metal has no clipboard API yet (kit/clipboard.ts).
+ * `text/uri-list`. Metal has no clipboard API yet (src/shared/clipboard/clipboard.ts).
  */
 
 import { type Exec, exec } from "./exec.ts";

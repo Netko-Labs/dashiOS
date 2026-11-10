@@ -5,7 +5,6 @@ import { join } from "node:path";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { type GrantEntry, Grants } from "../src/agents/consent.ts";
-import { FlagsStore } from "../src/control-center/flags.ts";
 import type { AppGrants } from "../src/privacy/store.ts";
 import { AppearancePane } from "../src/settings-app/panes/appearance.tsx";
 import { DesktopDockPane } from "../src/settings-app/panes/desktop-dock.tsx";
@@ -15,6 +14,7 @@ import { TrackpadPane } from "../src/settings-app/panes/trackpad.tsx";
 import { rowPlace, SETTINGS_ROWS } from "../src/settings-app/registry/index.ts";
 import { PaneStoresContext } from "../src/settings-app/setting.tsx";
 import { SettingsStore } from "../src/settings-app/store.ts";
+import { FlagsStore } from "../src/shared/control-center/flags.ts";
 
 // Panes drawn from the registry, on a stand-in for the Metal host: every row is there, at its address, and its control works.
 

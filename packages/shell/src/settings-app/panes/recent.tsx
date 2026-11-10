@@ -7,7 +7,7 @@
  */
 
 import { useState, useSyncExternalStore } from "react";
-import { type FlagsStore, useFlags } from "../../control-center/flags.ts";
+import { type FlagsStore, useFlags } from "../../shared/control-center/flags.ts";
 import { type ChangeEntry, type ChangeLog, changeLine } from "../changes/index.ts";
 import type { PaneContext } from "../context.ts";
 import { useSettings } from "../hooks.ts";

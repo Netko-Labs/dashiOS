@@ -5,11 +5,11 @@
  * so the window (view.tsx) only wires them to menus, buttons and keys.
  */
 
+import { FORMATS } from "../../src/shared/files/kinds.ts";
 import { chooseFile, chooseSaveFile } from "../../src/shared/portal/file-chooser.ts";
 import type { Clipboard } from "../kit/index.ts";
 import { EXPORT_FORMATS, type ExportFormat } from "./convert.ts";
 import { type Handler, handlersFor, moveToTrash, openWith, showInFiles } from "./handlers.ts";
-import { FORMATS } from "./kinds.ts";
 import { MESSAGES } from "./messages.ts";
 import { exportFile, exportName, type OutputTools, PAGE_DPI, pagePng, pictureMime, printablePdf, type Source } from "./output.ts";
 import { defaultPrinter, printWithCups, printWithPortal } from "./print.ts";

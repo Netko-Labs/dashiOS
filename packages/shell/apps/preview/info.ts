@@ -6,7 +6,7 @@
  */
 
 import { basename, dirname } from "node:path";
-import { FORMATS, type Format } from "./kinds.ts";
+import { FORMATS, type Format } from "../../src/shared/files/kinds.ts";
 
 /** 1,234 bytes as "1.2 KB": decimal units, as the Files app and most file managers write them. */
 export function formatBytes(bytes: number, locale?: string): string {

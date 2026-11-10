@@ -8,7 +8,7 @@
  */
 
 import { createContext, type ReactNode, useCallback, useContext, useSyncExternalStore } from "react";
-import type { FlagsStore } from "../control-center/flags.ts";
+import type { FlagsStore } from "../shared/control-center/flags.ts";
 import { FoldedChoices } from "../shared/controls/folded.tsx";
 import { ControlSwitch } from "../shared/controls/inputs.tsx";
 import { type RowDef, type SettingId, type SettingValue, settingRow, valueOf } from "./registry/index.ts";

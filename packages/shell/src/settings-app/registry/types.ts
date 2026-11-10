@@ -6,8 +6,8 @@
  * so a row added to a pane is found everywhere.
  */
 
-import type { FlagsStore } from "../../control-center/flags.ts";
 import type { DockPrefs } from "../../dock/prefs.ts";
+import type { FlagsStore } from "../../shared/control-center/flags.ts";
 import type { PaneId } from "../panes.ts";
 import type { SettingsStore } from "../store.ts";
 

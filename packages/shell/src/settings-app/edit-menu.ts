@@ -6,7 +6,7 @@
  * Metal host that draws it, found by the window's app id. The shell's ❖
  * chords then choose these rows as they would an app's (app-menus/). While a
  * field in the window has the keyboard (the host's `typing`, as the app kit
- * hands it on: apps/kit/typing.ts) the menu says so, and ❖Z and ⇧❖Z are the
+ * hands it on: src/shared/metal/typing.ts) the menu says so, and ❖Z and ⇧❖Z are the
  * field's, as ❖A ❖C ❖X ❖V are (KB-6).
  */
 
