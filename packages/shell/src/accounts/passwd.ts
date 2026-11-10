@@ -12,8 +12,8 @@
  * recognised.
  */
 
-import { cleanText } from "../system/text.ts";
-import type { PasswordFailure, PasswordResult } from "./types.ts";
+import type { PasswordFailure, PasswordResult } from "../shared/accounts/types.ts";
+import { cleanText } from "../shared/io/text.ts";
 
 /** A running tool on a terminal. */
 export interface PtyProcess {

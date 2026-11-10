@@ -49,10 +49,10 @@ import { isPointerSize } from "../pointer.ts";
 import { GRAPHICS_FIELDS, type GraphicsSettings, POWER_FIELDS, type PowerSection } from "../power/modes/settings.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../scroll-speed.ts";
 import { type CatalogSetting, isCatalogList } from "../shared/applet-store/catalogs.ts";
-import { type Check, dig, isBoolean, isRaw, numberIn, oneOf, type Raw, readFields, settingsPath } from "../shared/settings/file.ts";
+import { type Check, dig, isBoolean, isPhotoPath, isRaw, numberIn, oneOf, type Raw, readFields, settingsPath } from "../shared/settings/file.ts";
 import { CLOCK_SECTION, type ClockSettings, REGION_SECTION, type RegionSettings } from "../shared/time/clock.ts";
 import { parseSpaceNames, type SpaceNames } from "../spaces/names.ts";
-import { isPhotoPath, isWallpaperRef, WALLPAPER_MODES, type WallpaperMode } from "../wallpaper/catalog.ts";
+import { isWallpaperRef, WALLPAPER_MODES, type WallpaperMode } from "../wallpaper/catalog.ts";
 import {
   FRAME_RATES,
   type FrameRate,

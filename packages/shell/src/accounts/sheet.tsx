@@ -10,7 +10,7 @@ import { useColors } from "@dashi/ui";
 import { Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { Button, Panel } from "../menus/sheets.tsx";
-import type { PasswordChanger, PasswordFailure } from "./types.ts";
+import type { PasswordChanger, PasswordFailure } from "../shared/accounts/types.ts";
 
 const FAILURE: Record<PasswordFailure, string> = {
   "wrong-current": "The current password is incorrect.",

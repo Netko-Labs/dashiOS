@@ -6,7 +6,7 @@
  */
 
 import { propertyMap } from "../shared/dbus/properties.ts";
-import { cleanText } from "../system/text.ts";
+import { cleanText } from "../shared/io/text.ts";
 import type { AdapterReading, BluetoothReading, DeviceKind, RawDevice } from "./types.ts";
 
 export const ADAPTER_PATH = /^\/org\/bluez\/hci(\d{1,3})$/;

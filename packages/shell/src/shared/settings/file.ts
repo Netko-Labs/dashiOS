@@ -6,7 +6,7 @@
  */
 
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 
 export type Raw = Record<string, unknown>;
 export type Check = (value: unknown) => boolean;
@@ -22,6 +22,11 @@ export const oneOf =
   (...options: string[]): Check =>
   (value) =>
     typeof value === "string" && options.includes(value);
+
+/** Where photos may live (an added wallpaper, an account's picture): absolute, no control characters, a sane length. */
+const PHOTO_PATH = /^\/[^\0-\x1f\x7f]{1,4095}$/;
+
+export const isPhotoPath = (value: unknown): value is string => typeof value === "string" && PHOTO_PATH.test(value) && isAbsolute(value);
 
 /** The object at `path` inside `root`, or undefined. */
 export function dig(root: Raw, path: readonly string[]): Raw | undefined {

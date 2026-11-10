@@ -7,7 +7,7 @@
  */
 
 import { useSyncExternalStore } from "react";
-import type { Account, AccountsBackend, ChangeResult } from "./types.ts";
+import type { Account, AccountsBackend, ChangeResult } from "../shared/accounts/types.ts";
 
 export type AccountChange = "name" | "picture" | "login";
 

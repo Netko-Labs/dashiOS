@@ -7,7 +7,7 @@
 
 import type { DBusConnection } from "../shared/dbus/index.ts";
 import { chooseFile, pathFromUri as fileFromUri, pickedPath as pickedFile } from "../shared/portal/file-chooser.ts";
-import { isPhotoPath } from "./catalog.ts";
+import { isPhotoPath } from "../shared/settings/file.ts";
 
 export { requestPath } from "../shared/portal/file-chooser.ts";
 

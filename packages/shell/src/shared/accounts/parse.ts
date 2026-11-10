@@ -4,8 +4,8 @@
  * what goes the other way, a full name and a picture.
  */
 
-import { cleanText } from "../system/text.ts";
-import { isPhotoPath } from "../wallpaper/catalog.ts";
+import { cleanText } from "../io/text.ts";
+import { isPhotoPath } from "../settings/file.ts";
 import type { Account } from "./types.ts";
 
 /** `PasswordMode`: 0 regular, 1 set at next login, 2 none. */
