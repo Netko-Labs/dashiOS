@@ -55,7 +55,14 @@ export const shellPaths = (): ShellPaths => {
 };
 
 /** The bridge as the harness starts it inside the sandbox: Bun, dashi-mcp, and the plan socket where the sandbox has it. */
-export const bridgeInside = (paths: ShellPaths, runtime: string) => ({
+/** The bridge as a harness's sandbox starts it: its command, arguments and environment. */
+export interface BridgeInside {
+  command: string;
+  args: string[];
+  env: { DASHI_MCP_SOCKET: string };
+}
+
+export const bridgeInside = (paths: ShellPaths, runtime: string): BridgeInside => ({
   command: paths.bun,
   args: [paths.bridge],
   env: { DASHI_MCP_SOCKET: planSocketInside(runtime) },

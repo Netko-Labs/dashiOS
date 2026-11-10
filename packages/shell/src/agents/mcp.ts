@@ -56,8 +56,22 @@ export function cancelledRequest(incoming: Incoming): Id | null {
   return isId(requestId) ? requestId : null;
 }
 
-export const result = (id: Id | null, value: unknown) => ({ jsonrpc: "2.0", id, result: value });
-export const error = (id: Id | null, code: number, message: string) => ({ jsonrpc: "2.0", id, error: { code, message } });
+/** A success reply. */
+export interface ResultReply {
+  jsonrpc: "2.0";
+  id: Id | null;
+  result: unknown;
+}
+
+/** An error reply. */
+export interface ErrorReply {
+  jsonrpc: "2.0";
+  id: Id | null;
+  error: { code: number; message: string };
+}
+
+export const result = (id: Id | null, value: unknown): ResultReply => ({ jsonrpc: "2.0", id, result: value });
+export const error = (id: Id | null, code: number, message: string): ErrorReply => ({ jsonrpc: "2.0", id, error: { code, message } });
 
 /** The revision to answer `initialize` with: the client's if spoken here,
  * otherwise the newest (the client then decides whether to go on). */
