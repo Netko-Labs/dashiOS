@@ -9,7 +9,7 @@ import { TextSelectionLook } from "@dashi/ui";
 import { type NativeHostOptions, type NativeHostTransport, render, TextInput, View } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { METAL_HOST } from "./shared/apps/index.ts";
-import { hostTakesLeast, spawnShellHost, WarmHost, windowFor } from "./shared/metal/host.ts";
+import { hostTakesLeast, spawnShellHost, WarmHost, windowFor } from "./shared/metal/index.ts";
 
 /** The spare host overlays open on (shared/metal/host.ts). */
 const warmHost = new WarmHost(METAL_HOST);

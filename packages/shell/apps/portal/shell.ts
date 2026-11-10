@@ -6,7 +6,7 @@
  */
 
 import { DBusConnection } from "../../src/shared/dbus/index.ts";
-import { PORTAL_HOST, SHELL_NAME, SHELL_PATH } from "../../src/shared/portal-host/protocol.ts";
+import { PORTAL_HOST, SHELL_NAME, SHELL_PATH } from "../../src/shared/portal-host/index.ts";
 
 export interface ShellLink {
   inhibit(appId: string, reason: string, flags: number): Promise<number>;

@@ -9,7 +9,7 @@
 
 import type { NativeHostTransport, Toplevel, ToplevelAction } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
-import { PORTAL_APP_ID } from "./shared/portal-host/protocol.ts";
+import { PORTAL_APP_ID } from "./shared/portal-host/index.ts";
 
 export class ToplevelStore {
   private readonly windows = new Map<number, Toplevel>();

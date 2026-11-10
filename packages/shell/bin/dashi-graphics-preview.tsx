@@ -30,7 +30,7 @@ import type { ProcessFds } from "../src/graphics/holders.ts";
 import { graphicsNoticePlace } from "../src/graphics/notice-place.ts";
 import { BannerStack } from "../src/notifications/stack.tsx";
 import { NotificationStore } from "../src/notifications/store.ts";
-import { spawnShellHost } from "../src/shared/metal/host.ts";
+import { spawnShellHost } from "../src/shared/metal/index.ts";
 
 const args = process.argv.slice(2);
 const scene = args.find((arg) => !arg.startsWith("--") && Number.isNaN(Number(arg))) ?? "unplug";

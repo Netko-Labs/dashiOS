@@ -19,7 +19,7 @@ import { TextSelectionLook } from "@dashi/ui";
 import { type NativeHostOptions, type NativeHostTransport, type NativeRoot, type NativeWindowOptions, render, spawnNativeHost } from "@mirinjs/metal";
 import { type ReactElement, useEffect, useSyncExternalStore } from "react";
 import type { OverlayHandle } from "../overlay.tsx";
-import { shellHostOptions } from "../shared/metal/host.ts";
+import { shellHostOptions } from "../shared/metal/index.ts";
 
 type Spawn = (binary: string, options: NativeHostOptions) => NativeHostTransport;
 

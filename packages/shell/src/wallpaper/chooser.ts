@@ -6,7 +6,7 @@
  */
 
 import type { DBusConnection } from "../shared/dbus/index.ts";
-import { chooseFile, pathFromUri as fileFromUri, pickedPath as pickedFile } from "../shared/portal/file-chooser.ts";
+import { chooseFile, pathFromUri as fileFromUri, pickedPath as pickedFile } from "../shared/portal/index.ts";
 import { isPhotoPath } from "../shared/settings/file.ts";
 
 /** Picks a photo (or a video for a live wallpaper); null when the person cancelled. */

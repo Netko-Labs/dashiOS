@@ -8,7 +8,7 @@ import { useColors } from "@dashi/ui";
 import { render, Svg, Text, View } from "@mirinjs/metal";
 import { batteryGlyph, micGlyph, SUN, speakerGlyph } from "../../glyphs.ts";
 import { keyboardLightGlyph, modeGlyph } from "../../laptop/index.ts";
-import { spawnShellHost } from "../../shared/metal/host.ts";
+import { spawnShellHost } from "../../shared/metal/index.ts";
 import { litSegments, type OpenOsd, OSD, type OsdState, type OsdStore, useOsd } from "../osd-state.ts";
 
 const SEGMENT = { width: 8, height: 6, gap: 2 } as const;

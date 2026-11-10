@@ -7,7 +7,7 @@
 import { type NativeHostTransport, type NativeRoot, render } from "@mirinjs/metal";
 import { personAnswered, type Turn } from "../../agents/index.ts";
 import { STOPPED, StoppedNote } from "../../consent.tsx";
-import { spawnShellHost } from "../../shared/metal/host.ts";
+import { spawnShellHost } from "../../shared/metal/index.ts";
 import { TURN, TurnBanner } from "./turn-banner.tsx";
 
 /** The "Your turn" banner's layer. */

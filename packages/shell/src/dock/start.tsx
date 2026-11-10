@@ -12,7 +12,7 @@ import type { Compositor } from "../compositor/index.ts";
 import type { Entry } from "../entries.ts";
 import type { MenuController } from "../menus/index.ts";
 import type { App } from "../shared/apps/index.ts";
-import { spawnShellHost } from "../shared/metal/host.ts";
+import { spawnShellHost } from "../shared/metal/index.ts";
 import { DOCK, DOCK_HEIGHT, TASKBAR } from "../theme.ts";
 import type { ToplevelStore } from "../toplevels.ts";
 import type { AttentionStore } from "./attention.ts";

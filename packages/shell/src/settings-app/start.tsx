@@ -16,7 +16,7 @@ import { type OverlayHandle, openOverlay } from "../overlay.tsx";
 import type { PrivacyStore } from "../privacy/index.ts";
 import type { RegionStore } from "../region/index.ts";
 import type { Flags, FlagsStore } from "../shared/control-center/flags.ts";
-import { onWindowTyping } from "../shared/metal/typing.ts";
+import { onWindowTyping } from "../shared/metal/index.ts";
 import { Nav, type PaneId } from "../shared/settings/panes.ts";
 import { portalChooser } from "../wallpaper/chooser.ts";
 import type { AheadSites, PaneContext } from "./context.ts";

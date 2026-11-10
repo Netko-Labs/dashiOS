@@ -25,7 +25,7 @@ import type { OverviewController } from "../overview/index.ts";
 import type { ControlCenterEditor } from "../settings-app/control-center.tsx";
 import type { SettingsApp } from "../settings-app/index.ts";
 import type { SetupAssistant } from "../setup/index.ts";
-import type { Clipboard as SystemClipboard } from "../shared/clipboard/clipboard.ts";
+import type { Clipboard as SystemClipboard } from "../shared/clipboard/index.ts";
 import type { LauncherOpener } from "./launcher.tsx";
 import type { OverlayKind } from "./overlays.tsx";
 

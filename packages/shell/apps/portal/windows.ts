@@ -13,8 +13,8 @@ import { existsSync } from "node:fs";
 import { type NativeHostTransport, type NativeWindowOptions, render, spawnNativeHost } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { METAL_HOST } from "../../src/shared/apps/index.ts";
-import { shellHostOptions, WarmHost } from "../../src/shared/metal/host.ts";
-import { PORTAL_APP_ID, parseParentWindow, sheetTitle } from "../../src/shared/portal-host/protocol.ts";
+import { shellHostOptions, WarmHost } from "../../src/shared/metal/index.ts";
+import { PORTAL_APP_ID, parseParentWindow, sheetTitle } from "../../src/shared/portal-host/index.ts";
 import type { ShellLink } from "./shell.ts";
 
 /** How long a sheet keeps its one-off title: the shell has placed it by then. */

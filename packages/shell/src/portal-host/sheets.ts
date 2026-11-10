@@ -14,7 +14,7 @@
  */
 
 import type { Compositor, CompositorWindow, Placing } from "../compositor/index.ts";
-import { PORTAL_APP_ID, parseParentWindow } from "../shared/portal-host/protocol.ts";
+import { PORTAL_APP_ID, parseParentWindow } from "../shared/portal-host/index.ts";
 
 /** An expectation older than this is forgotten: the portal's window never came. */
 const EXPECT_MS = 15_000;

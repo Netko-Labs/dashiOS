@@ -14,7 +14,7 @@
 import { randomBytes } from "node:crypto";
 import { closeSync, openSync } from "node:fs";
 import { FdConnection, MessageType, type Received, variant } from "../../../src/shared/dbus/index.ts";
-import { requestPath } from "../../../src/shared/portal/file-chooser.ts";
+import { requestPath } from "../../../src/shared/portal/index.ts";
 import { runTool } from "./tools.ts";
 
 const PORTAL = "org.freedesktop.portal.Desktop";

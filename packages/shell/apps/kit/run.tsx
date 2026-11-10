@@ -16,8 +16,7 @@ import { type NativeHostTransport, type NativeRoot, render, spawnNativeHost, typ
 import type { ReactElement } from "react";
 import { METAL_HOST } from "../../src/shared/apps/index.ts";
 import { connectDarkMode } from "../../src/shared/control-center/flags.ts";
-import { appNameEnv } from "../../src/shared/metal/host.ts";
-import { onWindowTyping } from "../../src/shared/metal/typing.ts";
+import { appNameEnv, onWindowTyping } from "../../src/shared/metal/index.ts";
 import { followDarkMode } from "./appearance.ts";
 import { closeRequests } from "./close.ts";
 import { serveControl } from "./control.ts";

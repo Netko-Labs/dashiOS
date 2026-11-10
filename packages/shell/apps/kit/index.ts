@@ -1,8 +1,8 @@
 // Dashi's app kit: the runtime a first-party Metal app runs on (README "First-party apps").
 // Its components are @dashi/ui's.
 
-export { type Clipboard, systemClipboard } from "../../src/shared/clipboard/clipboard.ts";
-export { onWindowTyping, typingOf } from "../../src/shared/metal/typing.ts";
+export { type Clipboard, systemClipboard } from "../../src/shared/clipboard/index.ts";
+export { onWindowTyping, typingOf } from "../../src/shared/metal/index.ts";
 export { followDarkMode } from "./appearance.ts";
 export { type AppletHandlers, type AppletSpec, AppletsClient, appletsClient } from "./applet.ts";
 export { type CloseAnswer, type CloseReason, CloseRequests, closeRequests, useCloseRequest, useCloseWithdrawn } from "./close.ts";

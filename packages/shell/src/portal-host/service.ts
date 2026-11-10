@@ -19,7 +19,7 @@ import {
   NameFlags,
   requestName,
 } from "../shared/dbus/index.ts";
-import { PORTAL_BACKEND, PORTAL_HOST, SHELL_NAME, SHELL_PATH } from "../shared/portal-host/protocol.ts";
+import { PORTAL_BACKEND, PORTAL_HOST, SHELL_NAME, SHELL_PATH } from "../shared/portal-host/index.ts";
 
 export interface PortalHostDeps {
   store: InhibitStore;
