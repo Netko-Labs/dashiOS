@@ -112,7 +112,7 @@
 325	packages/shell/test/agents-ask-tasks.test.ts
 365	packages/shell/test/applet-catalogs.test.ts
 325	packages/shell/test/editor-model.test.ts
-330	packages/shell/test/editor-view.test.tsx
+329	packages/shell/test/editor-view.test.tsx
 314	packages/shell/test/graphics-notice.test.ts
 345	packages/shell/test/handoff-questions.test.ts
 492	packages/shell/test/handoff-service.test.ts
