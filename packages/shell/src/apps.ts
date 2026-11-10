@@ -11,7 +11,6 @@ import { type GpuEnvs, gpuEnvs, launchEnvFor } from "./gpu-env.ts";
 import { type App, firstPartyApps, iconPath } from "./shared/apps/index.ts";
 
 /** The shell launches and names `App`s, drawn with the shared app list's icons: the type and `iconPath` come with it. */
-export { type App, iconPath } from "./shared/apps/index.ts";
 
 /** The app id System Settings' window reports. */
 export const SETTINGS_APP_ID = "dev.dashi.settings";

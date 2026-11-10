@@ -4,7 +4,8 @@
  */
 
 import { useRef } from "react";
-import { type App, appFor } from "../../apps.ts";
+import { appFor } from "../../apps.ts";
+import type { App } from "../../shared/apps/index.ts";
 import { type ToplevelStore, usePortalDialogs, useToplevels } from "../../toplevels.ts";
 import { barHold, useBarHeld } from "../bar-hold.ts";
 import { type BarName, barName, DESKTOP } from "./bar-name.ts";

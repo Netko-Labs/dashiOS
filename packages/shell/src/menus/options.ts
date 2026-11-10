@@ -2,7 +2,6 @@
 
 import type { ReactElement } from "react";
 import type { AppMenuStore } from "../app-menus/index.ts";
-import type { App } from "../apps.ts";
 import type { Arranger } from "../arrange/index.ts";
 import type { BatteryPopoverSources } from "../battery/index.ts";
 import type { BluetoothSetup } from "../bluetooth/index.ts";
@@ -14,6 +13,7 @@ import type { Entry } from "../entries.ts";
 import type { Laptop } from "../laptop/index.ts";
 import type { NotificationStore } from "../notifications/index.ts";
 import type { SharedStores } from "../settings-app/services.ts";
+import type { App } from "../shared/apps/index.ts";
 import type { AppMixer, PipeWireWatch } from "../sound/index.ts";
 import type { SystemStore } from "../system/store.ts";
 import type { WifiSetup, WifiStore } from "../wifi/index.ts";

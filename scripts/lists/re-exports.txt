@@ -14,7 +14,6 @@
 2	packages/shell/apps/preview/document.ts
 1	packages/shell/apps/preview/glyphs.ts
 1	packages/shell/apps/preview/viewer.ts
-1	packages/shell/src/apps.ts
 1	packages/shell/src/shared/app-menus/protocol.ts
 4	packages/shell/src/shared/calendar/ics.ts
 1	packages/shell/src/shared/calendar/store.ts
