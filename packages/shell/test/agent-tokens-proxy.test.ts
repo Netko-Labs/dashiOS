@@ -4,9 +4,9 @@ import net from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { relay } from "../src/agents/tokens/client.ts";
-import { SandboxProxy } from "../src/agents/tokens/proxy.ts";
+import { SandboxProxy } from "../src/agents/tokens/lib/proxy.ts";
+import { issueLeaf, makeAuthority } from "../src/agents/tokens/lib/x509.ts";
 import { proxyCredentials } from "../src/agents/tokens/swap.ts";
-import { issueLeaf, makeAuthority } from "../src/agents/tokens/x509.ts";
 import { asked, source } from "./support/agent-tokens.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "dashi-tokens-"));

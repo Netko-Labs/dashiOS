@@ -4,7 +4,7 @@
  * shared by the agents' broker and Settings › Passwords.
  */
 
-import { type TokenRef, token } from "../tokens/model-keys.ts";
+import { type TokenRef, token } from "../tokens/index.ts";
 import { dashiSource } from "./dashi-source.ts";
 import { type OpRunner, onePasswordSource, opRunner, saveToOnePassword } from "./onepassword.ts";
 import { PasswordPrefsStore } from "./preferences.ts";

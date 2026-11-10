@@ -14,7 +14,7 @@
  */
 
 import type { VaultTokens } from "../secrets/vault.ts";
-import { hostListed } from "../tokens/swap.ts";
+import { hostListed } from "../tokens/index.ts";
 import { ANTHROPIC_HOST } from "./claude.ts";
 import { OPENAI_HOST } from "./gpt.ts";
 
