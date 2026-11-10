@@ -5,57 +5,11 @@ use smithay::{
     utils::Transform,
 };
 
-use super::{CONTROLS, Decor, FIRST_LIGHT_X, HOVER_SCALE, LIGHT_STEP, Look, Part};
-use crate::render::{
-    canvas::{Canvas, Rgba},
-    text::Text,
+use super::{
+    CLOSE, CONTROLS, Decor, FIRST_LIGHT_X, HOVER_SCALE, LIGHT_STEP, Look, MINIMIZE, Part, ZOOM,
+    palette,
 };
-
-struct Palette {
-    bar: Rgba,
-    line: Rgba,
-    text: Rgba,
-    idle_light: Rgba,
-}
-
-fn palette(dark: bool, active: bool) -> Palette {
-    match (dark, active) {
-        (false, true) => Palette {
-            bar: Rgba::hex(0xeeebe4),
-            line: Rgba::hex(0xd9d5cc),
-            text: Rgba::hex(0x262b28),
-            idle_light: INACTIVE_LIGHT,
-        },
-        (false, false) => Palette {
-            bar: Rgba::hex(0xf6f4ef),
-            line: Rgba::hex(0xe4e0d8),
-            text: Rgba::hex(0x9b9890),
-            idle_light: INACTIVE_LIGHT,
-        },
-        // True black (the shell's TRUE_BLACK, @dashi/ui palette.ts): the
-        // raised step when focused, the first lift when not, over a black
-        // seam; the window under it is the black ground.
-        (true, true) => Palette {
-            bar: Rgba::hex(0x141417),
-            line: Rgba::hex(0x000000),
-            text: Rgba::hex(0xececee),
-            idle_light: INACTIVE_DARK,
-        },
-        (true, false) => Palette {
-            bar: Rgba::hex(0x0b0b0d),
-            line: Rgba::hex(0x000000),
-            text: Rgba::hex(0x8a8a8f),
-            idle_light: INACTIVE_DARK,
-        },
-    }
-}
-
-/// ume, broth, and kombu: close, minimize, zoom.
-const CLOSE: Rgba = Rgba::hex(0xd0596f);
-const MINIMIZE: Rgba = Rgba::hex(0xe5b13f);
-const ZOOM: Rgba = Rgba::hex(0x4a9a7e);
-const INACTIVE_LIGHT: Rgba = Rgba::hex(0xcecbc6);
-const INACTIVE_DARK: Rgba = Rgba::hex(0x525256);
+use crate::render::{canvas::Canvas, text::Text};
 
 /// A control's shape: width, height, corner radius (logical px).
 pub(super) fn shape(part: Part) -> (f32, f32, f32) {
