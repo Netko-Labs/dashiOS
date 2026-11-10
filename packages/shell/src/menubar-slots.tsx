@@ -13,7 +13,7 @@ import { MOON } from "./control-center/glyphs.ts";
 import { batteryGlyph, CONTROL_CENTER, networkGlyph, speakerGlyph } from "./glyphs.ts";
 import { GOES } from "./menubar-fit.ts";
 import { StatusItem, type StatusSlot } from "./menubar-status.tsx";
-import type { Popover } from "./menus/controller.ts";
+import type { Popover } from "./menus/index.ts";
 import type { SystemSnapshot } from "./system/store.ts";
 
 export interface SystemSlotsInput extends Pick<SystemSnapshot, "battery" | "network" | "volume"> {

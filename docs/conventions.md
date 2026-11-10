@@ -52,6 +52,9 @@ below, the same command CI runs (`.github/workflows/check.yml`);
 | H15 | Every dependency's licence is on the allowed list ("Licenses"), or listed with its reason. | `scripts/check-licenses.ts` (`license-exceptions`) | `bun scripts/check-licenses.ts` |
 | H16 | Heavy libraries never load at shell start (the AI SDKs are banned there); the count of library modules at start has a ceiling (Dashi's own modules don't count: splitting files adds them). | `scripts/boot-weight.ts` (`boot-weight`) | `bun scripts/boot-weight.ts` |
 | H17 | A system service Dashi ships scores 5.0 or better on `systemd-analyze security`. | `scripts/check-units.ts` (`unit-exposure`) | `bun scripts/check-units.ts` |
+| H18 | Only a module's own files import its `lib/` (a test may, to test a private helper). `lib/` is never in a package's `exports` or `bin`, and holds no `main.ts`. | `scripts/check-modules.ts` (`lib-imports`) | `bun scripts/check-modules.ts` |
+| H19 | From outside a module, import its `index.ts`, or a file its `index.ts` re-exports; never another file inside it. A test may also import the module's `lib/`. Only an `index.ts` (or a file a package's `exports` names) re-exports: no file keeps an old import path alive. | `scripts/check-modules.ts` (`deep-imports`, `re-exports`) | `bun scripts/check-modules.ts` |
+| H20 | A `shared/` concern is used by two sibling modules or more, and sits in a folder named for its concern: no loose files in `shared/`, no `utils/` or `helpers/`. | `scripts/check-modules.ts` (`shared-use`) | `bun scripts/check-modules.ts` |
 
 ### The lists
 
@@ -112,9 +115,12 @@ scripts/check-biome.ts --shrink`, which also follows the file.
 | session | `session/`: the login entry point (`dashi-session`), the systemd user target, session files. |
 | spin | `spin/`: packaging and image files, by package. |
 | VM | `vm/`: the development VM. |
-| module | A folder or file with a clear public surface and private implementation details. Folder modules expose that surface through `index.ts` (re-exports only) or `mod.rs`. |
-| `shared/` | A package-local reuse area for code sibling modules need. |
-| public surface | A package's `exports`, the compositor's IPC (`docs/compositor-ipc.md`), and the Wayland protocols it serves. |
+| module | A folder with a clear public surface and private implementation details: a folder under `packages/shell/src/`, a concern under `src/shared/`, an app under `packages/shell/apps/`, or a folder under another package's `src/`. It exposes its surface through `index.ts` (re-exports only). A file outside every module folder is a module of one file; in Rust, a `mod.rs` and its files. |
+| `lib/` | A module's private implementation area: the helpers, parsers, adapters, hooks, internal types, constants and values only that module uses. |
+| `shared/` | A package-local reuse area: code that sibling modules in the same package use, by concern (`shared/dbus`, `shared/time`), never a place to drop unrelated helpers. |
+| public file | A file at a module's top level that its `index.ts` re-exports: `types.ts` and the public pieces. |
+| barrel/facade | An `index.ts` (or `mod.rs`) that declares a module's intentional public surface by re-exporting it, and does nothing else. |
+| public surface | A package's `exports`, the compositor's IPC (`docs/compositor-ipc.md`), and the Wayland protocols it serves; inside a package, each module's `index.ts`. |
 
 ## Project Folder Structure
 
@@ -154,6 +160,51 @@ tools/              tools/check-repo
 tasks/              todo.md and lessons.md
 ```
 
+Target TypeScript package layout (each folder of `src/` and `apps/` is a module,
+"`lib/` And `shared/`"):
+
+```txt
+packages/shell/
+  src/
+    main.tsx          the shell's entry point
+    session.ts        the session supervisor's entry point
+    menus/            a shell module (worked example below)
+      index.ts        re-exports only: the module's public surface
+      types.ts        its public types
+      start.tsx       its public pieces, named for what they do
+      controller.ts
+      lib/            private: helpers, hooks, views, stores, internal types
+    agents/           a large module: nested modules, each its own index.ts
+      index.ts
+      ask/
+        index.ts
+        lib/
+      lib/
+    shared/           what src modules and the apps both use, by concern
+      dbus/
+        index.ts
+        types.ts
+        connection.ts
+        lib/          the wire: marshal, unmarshal, auth, signals, …
+      time/
+  apps/
+    kit/              the app kit: index.ts, its public pieces, lib/
+    calendar/         an app: its entry point, and everything else private
+      main.tsx
+      lib/
+        model.ts
+        grid/
+        sheets/
+        views/
+        hooks/
+packages/applet/src/  a library package: its `exports` are its public surface
+  index.ts
+  manifest.ts
+  signing/            a folder module, as in the shell
+    index.ts
+    lib/
+```
+
 `../mirin` is a sibling checkout: `@mirinjs/metal`, `@mirinjs/metal-ui`, and
 `mirin-metal-host` come from it. Use the mirin branch that goes with Dashi's
 (for a release, the one `.mirin-branch` names; CI picks it the same way, see
@@ -184,27 +235,131 @@ through a small interface the host connects (`setAppearanceSource`).
 Existing `@dashi/ui` components that duplicate a shadcn one move to metal-ui
 over time; see `tasks/todo.md`.
 
-## Import Direction And `shared/`
+## `lib/` And `shared/`
 
-In `@dashi/shell`, imports go one way (H4): an app → `apps/kit` →
-`src/shared`.
+A module is a folder with one public surface: a folder under
+`packages/shell/src/`, each concern under `src/shared/`, each app under
+`packages/shell/apps/` (`kit` too), and each folder under another package's
+`src/`. A file outside every module folder (`src/apps.ts`) is a module of one
+file. `scripts/modules.ts` says the same in code. A module looks like this:
 
-- `src/` never imports `apps/`. What both need lives in `src/shared/`.
-- An app imports its own folder, `apps/kit`, `src/shared`, and other packages
-  by name. It never imports another app; what two apps need moves to
-  `apps/kit` (runtime) or `src/shared` (logic), or to `@dashi/ui` (components).
-- No import cycles anywhere (H5).
+```txt
+<module>/
+  index.ts        re-exports only: the module's public surface (H6)
+  types.ts        its public types
+  <name>.ts(x)    the public pieces, named for what they do
+  lib/            private: helpers, parsers, adapters, hooks, internal types, constants, values
+```
 
-Use `shared/` for reuse by sibling modules inside the same package.
+- A module of one or two files needs no `lib/` and no `index.ts`.
+- What is public is what other modules use: everything else goes in `lib/`.
+  A public piece is at the module's top level and its `index.ts` re-exports
+  it. A public type lives in `types.ts`, not in `lib/`.
+- `lib/` may hold `types.ts`, `constants.ts`, `values.ts`, `parsers.ts`, and
+  further folders when a category grows (`lib/grid/`, `lib/sheets/`).
+- A module may hold nested modules: a folder inside it with its own
+  `index.ts` is a module of its own, with its own `lib/`
+  (`agents/ask/`). From outside the outer module, go through the outer
+  module's `index.ts`.
+- An app's public surface is its entry point, `main.tsx`: nothing imports an
+  app (H4), so it has no `index.ts`, and its other files are in `lib/`.
+- No file re-exports another's names to keep an old import path alive (H19).
+  When a name moves, its importers move with it; only `index.ts` re-exports,
+  and a file a package's `exports` names (`@dashi/applet/protocol`).
 
-- Put code in `shared/` only after at least two sibling modules need it.
-- Keep `shared/` organized by concern (`shared/fs`, `shared/dbus`), not one
-  catch-all helper file.
+Rules for `lib/` (H18):
+
+- Only the module's own files import from its `lib/`: files in the folder
+  that holds the `lib/`, at any depth.
+- Never import another module's `lib/`. Code two modules need is promoted:
+  to the module's public surface, to `shared/`, or to a package.
+- `lib/` is never in a package's `exports` or `bin`, and holds no entry point
+  (`main.ts`), no side-effectful start-up code and no public API declarations.
+
+Imports between modules (H19):
+
+- From outside a module, import its `index.ts`. Never a file inside it.
+- A module may expose more than one public file, each re-exported by its
+  `index.ts`. Name a public file instead of the index only when the index
+  would load more than the importer needs, which `index.ts` does since Bun
+  loads every file a barrel re-exports:
+  - the importer runs in another process (an app, a program under `bin/`) or
+    off the shell's start-up path, and the index would load the module's
+    start-up (`apps/software` names `menus/session.ts`; the sheet pieces'
+    users name `menus/sheets.tsx`);
+  - the index would close an import cycle (H5): the module's start-up imports
+    the importer.
+  `bun scripts/entry-weight.ts --compare <base>` fails when a change makes an
+  entry point load a module it did not load before; `--why ENTRY FILE` prints
+  the imports that load a file.
+- A type-only import may name `types.ts` directly; it loads nothing.
+- Tests (in `test/`) import a module's public surface like any other file,
+  and may also import its `lib/` files, so a private parser or hook gets its
+  own unit test. A test imports nothing else inside a module.
+
+Rules for `shared/` (H20):
+
+- Put code in `shared/` only after at least two sibling modules use it (the
+  modules of `src/` and the apps, for `src/shared/`). Code that one module
+  uses moves into that module's `lib/`.
+- Keep `shared/` organized by concern (`shared/dbus`, `shared/time`,
+  `shared/files`): every file in a concern's folder, never loose in
+  `shared/`, never a catch-all (`utils/`, `helpers/`, `common/`).
+- A concern is a module like any other: `index.ts`, `types.ts`, its public
+  pieces, `lib/`.
+- Shared code still has an owner and tests when it handles paths, D-Bus,
+  processes, or files.
 - Cross-package reuse graduates to an explicit package export or a small
   dedicated package; never reach into another package's `src/`.
 
+The import direction (H4) is unchanged, and the module rules sit on it: an
+app → `apps/kit` → `src/shared`. An app's own module boundary keeps its `lib/`
+to itself; an app imports `apps/kit` and each `src/shared/<concern>` through
+their `index.ts` (or a public file, to stay small: an app is its own
+process). `src/` never imports `apps/`, and an app never imports another app.
+No import cycles anywhere (H5).
+
 Rust uses named modules instead of `lib/` or `shared/`: `state.rs`,
-`events.rs`, `outbox.rs`, `hotplug.rs`, not `util.rs`.
+`events.rs`, `outbox.rs`, `hotplug.rs`, not `util.rs`. `mod.rs` is the facade.
+
+Example, the menu bar's menus (`packages/shell/src/menus/`):
+
+```txt
+packages/shell/src/menus/
+  index.ts          re-exports the public surface below
+  types.ts          MenuAction, MenuEntry, MenuContext, Popover, MenuState, …
+  options.ts        what startMenus is given, and the Menus it gives back
+  start.tsx         startMenus: the popover surface, the sheets, the actions, wired
+  controller.ts     MenuController, useMenus: which popover is open
+  model.ts          what each menu holds, as data (buildMenu, barMenus)
+  bar-keys.ts       the bar's keyboard ring (⌃F2)
+  sheets.tsx        Panel, Button, SHEET_SIZE: the pieces other modules' sheets use
+  session.ts        power and log out (runPower), also used by Software
+  status-menu.ts    a status item's rows
+  launch.ts         findEntry, Help
+  lib/
+    actions.ts        carrying out a chosen row
+    popover.tsx       the popover surface's tree
+    popover-host.ts   the popover's state machine
+    view.tsx          the dropdown
+    place.ts          where a dropdown goes
+    dialogs.tsx       the Restart, About and holding sheets on screen
+    power-sheets.tsx  those sheets' views
+    holding-place.ts  where the holding notice floats
+    keystrokes.ts     the Edit menu's chords
+    stores.ts         the stores Control Center runs
+    wiring.tsx        start.tsx's wiring
+    activity-monitor.ts
+```
+
+Avoid:
+
+```txt
+packages/shell/src/menus/
+  model.ts          export type { MenuEntry } from "./model-types.ts";   kept for old paths
+  start.tsx         export { aboutInfo } from "./wiring.tsx";            a second barrel
+  view.tsx          private, but beside the public pieces, imported by other modules
+```
 
 ## TypeScript
 
@@ -238,9 +393,10 @@ Rust uses named modules instead of `lib/` or `shared/`: `state.rs`,
   (`@dashi/ui`), never by a relative path into them.
 - One concern per file or folder.
 - `index.ts` barrels re-export only: no declarations, setup work, or side
-  effects (H6). An entry point is `main.ts`.
-- Keep helpers private to their module unless another module genuinely needs
-  them.
+  effects (H6). An entry point is `main.ts`. Only `index.ts` re-exports.
+- Keep helpers private to their module, in its `lib/` (H18), unless another
+  module genuinely needs them; import other modules through their `index.ts`
+  (H19). See "`lib/` And `shared/`".
 - Prefer structured command arguments (`Bun.spawn([cmd, ...args])`) over shell
   strings. If shell text is unavoidable, quote it with a dedicated helper.
 
@@ -347,8 +503,9 @@ Dashi is MIT (`LICENSE`), and stays MIT. Nothing may change that.
 Files are 300 lines or less (H2) and functions 80 lines or less (H3); both are
 machine rules now, with today's longer ones on shrink-only lists. When a file
 nears the limit, split by concern before adding more behavior, name the
-extracted module by responsibility, and keep public imports stable through a
-facade. Don't split into ten-line files with one importer either: a module
+extracted module by responsibility, and keep public imports stable through the
+module's `index.ts`: a split moves the private half to `lib/` and updates its
+importers, and never leaves a file re-exporting what moved. Don't split into ten-line files with one importer either: a module
 earns its own file by having a concern of its own.
 
 ## Tests
@@ -412,6 +569,7 @@ tools/check-repo
 bun run fmt-lint
 bun scripts/check-biome.ts
 bun scripts/check-structure.ts
+bun scripts/check-modules.ts
 bun scripts/check-boundaries.ts
 bun scripts/check-shell.ts
 bun scripts/boot-weight.ts

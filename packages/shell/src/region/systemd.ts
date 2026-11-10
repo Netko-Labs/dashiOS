@@ -7,8 +7,7 @@
  * needed and made again if it dropped.
  */
 
-import { DBusConnection, DBusError } from "../shared/dbus/index.ts";
-import { propertyMap, unwrap } from "../shared/dbus/properties.ts";
+import { DBusConnection, DBusError, propertyMap, unwrap } from "../shared/dbus/index.ts";
 import { parseInstalledLocales } from "../shared/locale/locale.ts";
 import { type RegionBackend, RegionError, type TimeState } from "./backend.ts";
 import { isTimezoneName } from "./timezones.ts";

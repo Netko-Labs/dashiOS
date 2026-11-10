@@ -7,7 +7,7 @@
 
 import type { ExtraIcon, MenuBarExtra } from "../extras/types.ts";
 import { clean, plainBody } from "../notifications/text.ts";
-import { propertyMap } from "../shared/dbus/properties.ts";
+import { propertyMap } from "../shared/dbus/index.ts";
 import { type Pixmap, parsePixmaps } from "./png.ts";
 
 export type ItemStatus = "Passive" | "Active" | "NeedsAttention";

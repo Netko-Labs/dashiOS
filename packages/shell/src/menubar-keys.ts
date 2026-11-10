@@ -6,8 +6,7 @@
 
 import type { Bounds } from "@mirinjs/metal";
 import { useEffect, useRef } from "react";
-import { type BarStop, titleStop } from "./menus/bar-keys.ts";
-import type { BarMenuId, MenuController } from "./menus/index.ts";
+import { type BarMenuId, type BarStop, type MenuController, titleStop } from "./menus/index.ts";
 
 /** A title's words, for a screen reader and the keyboard's ring. */
 export function titleLabel(id: BarMenuId, appName: string, titles: readonly { id: BarMenuId; title: string }[]): string {

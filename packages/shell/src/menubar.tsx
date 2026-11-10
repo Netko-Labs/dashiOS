@@ -24,8 +24,7 @@ import { titleLabel, useBarStops } from "./menubar-keys.ts";
 import { useBarName } from "./menubar-name.ts";
 import { type StatusSources, useStatusSlots } from "./menubar-program-slots.tsx";
 import { StatusSide } from "./menubar-status.tsx";
-import { titleStop } from "./menus/bar-keys.ts";
-import { type BarMenuId, barMenus, useMenus } from "./menus/index.ts";
+import { type BarMenuId, barMenus, titleStop, useMenus } from "./menus/index.ts";
 import { formatClock } from "./shared/time/clock.ts";
 import type { ToplevelStore } from "./toplevels.ts";
 

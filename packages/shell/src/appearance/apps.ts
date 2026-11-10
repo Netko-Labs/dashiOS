@@ -7,7 +7,7 @@
  * them; nothing here touches the system.
  */
 
-import { COMPOSITOR, findAncestor, isNested } from "../menus/session.ts";
+import { COMPOSITOR, findAncestor, isNested } from "../menus/index.ts";
 import { type AppLook, gtkThemeName, INTERFACE_FONT, WINDOW_BUTTONS } from "../shared/appearance/look.ts";
 
 /** One program and its arguments; never a shell string. */

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { CalendarModel } from "../apps/calendar/model.ts";
+import { CalendarModel } from "../apps/calendar/lib/model.ts";
 import { CalendarStore } from "../src/shared/calendar/store.ts";
 import { fakeClockEachTest, settle } from "./support/time.ts";
 

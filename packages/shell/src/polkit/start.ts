@@ -10,8 +10,7 @@
 import { realpathSync } from "node:fs";
 import type { OpenOverlay } from "../overlay.tsx";
 import { iconPath, resolveIcon } from "../shared/apps/index.ts";
-import { SYSTEM_BUS_PATH, socketPaths } from "../shared/dbus/address.ts";
-import { DBusConnection } from "../shared/dbus/index.ts";
+import { DBusConnection, SYSTEM_BUS_PATH, socketPaths } from "../shared/dbus/index.ts";
 import { type LockSignal, PolkitController } from "./controller.ts";
 import { findHelper } from "./helper.ts";
 import { PolkitPrompt } from "./prompt.tsx";

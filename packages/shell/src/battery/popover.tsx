@@ -1,5 +1,5 @@
 /**
- * The battery panel on the popover surface (menus/popover.tsx): under the
+ * The battery panel on the popover surface (menus/lib/popover.tsx): under the
  * menu bar's battery item, or where Control Center was when its battery row
  * opened it. It reads the battery and the monitor as they change, takes a
  * fresh sample when it opens (so a plug-in shows at once), and Esc closes it.
@@ -7,8 +7,7 @@
 
 import { View } from "@mirinjs/metal";
 import { useEffect } from "react";
-import type { MenuEntry } from "../menus/model.ts";
-import type { StatusMenuAction } from "../menus/status-menu.ts";
+import type { MenuEntry, StatusMenuAction } from "../menus/index.ts";
 import { type SystemStore, useSystem } from "../system/store.ts";
 import { type BatteryMonitor, useBatteryMonitor } from "./monitor.ts";
 import { BATTERY_PANEL, BatteryPanel } from "./panel.tsx";

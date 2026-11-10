@@ -10,8 +10,7 @@
  * state, the bar (menubar.tsx) says what its stops are.
  */
 
-import type { Popover } from "./controller.ts";
-import type { BarMenuId } from "./model.ts";
+import type { BarMenuId, Popover } from "./types.ts";
 
 /**
  * What a stop does when opened: `menu` drops its title's menu, `panel`

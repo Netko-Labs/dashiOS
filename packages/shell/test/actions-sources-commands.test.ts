@@ -5,7 +5,7 @@ import { linkDecision } from "../src/actions/run.ts";
 import { type CaptureKind, commandActions } from "../src/actions/sources/commands.ts";
 import type { ActionDef } from "../src/actions/types.ts";
 import { KEYMAP } from "../src/keymap.ts";
-import type { MenuAction } from "../src/menus/model.ts";
+import type { MenuAction } from "../src/menus/types.ts";
 import { desktopFields } from "../src/shared/apps/index.ts";
 import { type Requests, runBinding, type ShellActions } from "../src/shortcuts.ts";
 import { run } from "./support/actions-sources.ts";

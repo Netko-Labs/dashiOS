@@ -7,10 +7,10 @@
  */
 
 import { ProtocolError } from "./errors.ts";
-import { MAX_MESSAGE, marshal, Writer } from "./marshal.ts";
+import { MAX_MESSAGE, marshal, Writer } from "./lib/marshal.ts";
+import { parseSingle } from "./lib/signature.ts";
+import { Reader, unmarshal } from "./lib/unmarshal.ts";
 import { isBusName, isErrorName, isInterfaceName, isMemberName, isObjectPath } from "./names.ts";
-import { parseSingle } from "./signature.ts";
-import { Reader, unmarshal } from "./unmarshal.ts";
 import { Variant } from "./variant.ts";
 
 export const MessageType = { MethodCall: 1, MethodReturn: 2, Error: 3, Signal: 4 } as const;

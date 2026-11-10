@@ -9,18 +9,15 @@ import { AppMenuStore } from "../app-menus/store.ts";
 import type { Compositor } from "../compositor.ts";
 import { type Entry, loadEntries } from "../entries.ts";
 import { openOverlay } from "../overlay.tsx";
-import { runMenuAction } from "./actions.ts";
-import { energyOpener } from "./activity-monitor.ts";
 import { MenuController } from "./controller.ts";
 import { findEntry } from "./launch.ts";
-import type { MenuAction, PowerKind } from "./model.ts";
+import { runMenuAction } from "./lib/actions.ts";
+import { energyOpener } from "./lib/activity-monitor.ts";
+import { popoverSurface } from "./lib/popover.tsx";
+import { menuStores, powerDialogs } from "./lib/stores.ts";
+import { actionDeps, controlCenterProps, menuContexts, popoverElement } from "./lib/wiring.tsx";
 import type { Menus, MenusOptions } from "./options.ts";
-import { popoverSurface } from "./popover.tsx";
-import { menuStores, powerDialogs } from "./stores.ts";
-import { actionDeps, controlCenterProps, menuContexts, popoverElement } from "./wiring.tsx";
-
-export type { Menus, MenusOptions } from "./options.ts";
-export { aboutInfo } from "./wiring.tsx";
+import type { MenuAction, PowerKind } from "./types.ts";
 
 /** An app's window that took a second start's file (Preview's empty one) comes forward, as a new window would have. */
 function raiseOnSecondStart(compositor: Compositor | null, appMenus: AppMenuStore): void {

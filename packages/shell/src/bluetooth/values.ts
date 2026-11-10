@@ -5,7 +5,7 @@
  * the devices themselves, so they are cleaned before anything draws them.
  */
 
-import { propertyMap } from "../shared/dbus/properties.ts";
+import { propertyMap } from "../shared/dbus/index.ts";
 import { cleanText } from "../shared/io/text.ts";
 import type { AdapterReading, BluetoothReading, DeviceKind, RawDevice } from "./types.ts";
 

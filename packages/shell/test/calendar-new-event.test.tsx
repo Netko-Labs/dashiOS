@@ -3,9 +3,9 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
-import { HOUR_HEIGHT, revealOffset } from "../apps/calendar/layout.ts";
-import { CalendarModel } from "../apps/calendar/model.ts";
-import { CalendarWindow } from "../apps/calendar/view.tsx";
+import { HOUR_HEIGHT, revealOffset } from "../apps/calendar/lib/layout.ts";
+import { CalendarModel } from "../apps/calendar/lib/model.ts";
+import { CalendarWindow } from "../apps/calendar/lib/views/view.tsx";
 import { CalendarStore } from "../src/shared/calendar/store.ts";
 import { settle } from "./support/time.ts";
 

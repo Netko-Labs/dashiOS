@@ -18,12 +18,9 @@ import { useSyncExternalStore } from "react";
 import type { ControlPage } from "../control-center/index.ts";
 import type { DockMenuAction } from "../dock/menu.ts";
 import { type BarStop, barCommand, sideStep, stepStop, stopOfPopover, titleStop } from "./bar-keys.ts";
-import type { BarInfo, MenuState } from "./controller-types.ts";
-import type { BarMenuId, MenuEntry } from "./model.ts";
-import { PopoverHost } from "./popover-host.ts";
+import { PopoverHost } from "./lib/popover-host.ts";
 import type { StatusMenuAction } from "./status-menu.ts";
-
-export type { BarInfo, ControllerDeps, MenuState, Popover } from "./controller-types.ts";
+import type { BarInfo, BarMenuId, MenuEntry, MenuState } from "./types.ts";
 
 export class MenuController extends PopoverHost {
   /** Each bar's stops and name, by its screen ("" for a bar placed by the compositor). */

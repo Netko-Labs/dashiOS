@@ -9,7 +9,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import { compositorAbove, isRealSession } from "../menus/session.ts";
+import { compositorAbove, isRealSession } from "../menus/index.ts";
 
 const readText = (path: string): string | null => {
   try {

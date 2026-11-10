@@ -12,7 +12,7 @@ import { type Bounds, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { fitStatus, MORE_WIDTH, STATUS_GAP, statusRow, UNMEASURED } from "./menubar-fit.ts";
 import { BarRing, MORE_LABEL, More } from "./menubar-items.tsx";
-import { type BarStop, MORE_STOP, type StopKind } from "./menus/bar-keys.ts";
+import { type BarStop, MORE_STOP, type StopKind } from "./menus/index.ts";
 
 export { BarRing, StatusItem } from "./menubar-items.tsx";
 

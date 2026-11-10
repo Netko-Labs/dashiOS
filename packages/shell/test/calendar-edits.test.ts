@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { changeOccurrence, deleteOccurrence } from "../apps/calendar/edits.ts";
+import { changeOccurrence, deleteOccurrence } from "../apps/calendar/lib/edits.ts";
 import { makeEvent } from "../src/shared/calendar/event.ts";
 import { countBefore, isStartOf, monthDays, occurrencesOf } from "../src/shared/calendar/recurrence.ts";
 import type { CalEvent, Repeat } from "../src/shared/calendar/types.ts";

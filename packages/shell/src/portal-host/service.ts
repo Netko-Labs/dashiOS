@@ -7,9 +7,9 @@
  */
 
 import { type InhibitStore, SCREENSAVER, SCREENSAVER_PATHS, type ScreenSaverHost, screenSaverInterface } from "../inhibit/index.ts";
-import { BUS_PATH } from "../shared/dbus/bus.ts";
 import {
   BUS_NAME,
+  BUS_PATH,
   type ConnectOptions,
   DBusConnection,
   DBusError,

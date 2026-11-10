@@ -11,10 +11,10 @@
 import { afterAll, expect, test } from "bun:test";
 import { type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import { blankDraft } from "../apps/calendar/draft.ts";
-import { EventSheet } from "../apps/calendar/event-sheet.tsx";
-import { ImportPathSheet } from "../apps/calendar/file-sheets.tsx";
-import { CalendarSheet } from "../apps/calendar/sheets.tsx";
+import { blankDraft } from "../apps/calendar/lib/draft.ts";
+import { EventSheet } from "../apps/calendar/lib/sheets/event-sheet.tsx";
+import { ImportPathSheet } from "../apps/calendar/lib/sheets/file-sheets.tsx";
+import { CalendarSheet } from "../apps/calendar/lib/sheets/sheets.tsx";
 import { ReplaceSheet } from "../apps/editor/sheets.tsx";
 import { ChooserSheet, openChooser } from "../apps/files/chooser/index.ts";
 import { NotesSheet } from "../apps/notes/sheets.tsx";

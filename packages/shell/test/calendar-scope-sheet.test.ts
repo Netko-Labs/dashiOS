@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { alertButtonsWidth } from "@dashi/ui";
-import { scopeSheetWidth } from "../apps/calendar/sheets.tsx";
+import { scopeSheetWidth } from "../apps/calendar/lib/sheets/sheets.tsx";
 
 test("the repeat question is wide enough for its buttons on one row", () => {
   const four = ["Cancel", "This event", "This and following", "All events"];

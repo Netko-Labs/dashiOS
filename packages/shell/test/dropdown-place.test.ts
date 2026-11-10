@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { MENU } from "@dashi/ui";
-import { DROPDOWN, placeDropdown } from "../src/menus/place.ts";
+import { DROPDOWN, placeDropdown } from "../src/menus/lib/place.ts";
 
 // 0.6 menus: the menu bar's dropdown was drawn at its title with nothing keeping it on the screen; near
 // the right edge of a narrow screen it ran off, and a menu taller than the screen ran past the foot.

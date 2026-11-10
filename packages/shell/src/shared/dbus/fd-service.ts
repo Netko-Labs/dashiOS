@@ -13,19 +13,18 @@
  */
 
 import { type BusKind, busAddress, socketPaths } from "./address.ts";
-import { AuthError, ClientAuth } from "./auth.ts";
 import { BUS_NAME, BUS_PATH } from "./bus.ts";
-import { callMessage, signalMessage } from "./calls.ts";
 import { DBusError, ERRORS, ProtocolError } from "./errors.ts";
-import { exportedObject, replyMessage } from "./exported.ts";
-import type { ReaderChunk, ReaderStart } from "./fd-reader.ts";
-import type { InterfaceSpec } from "./introspect.ts";
+import { AuthError, ClientAuth } from "./lib/auth.ts";
+import { callMessage, signalMessage } from "./lib/calls.ts";
+import { exportedObject, replyMessage } from "./lib/exported.ts";
+import type { ReaderChunk, ReaderStart } from "./lib/fd-reader.ts";
+import { MAX_MESSAGE } from "./lib/marshal.ts";
+import { ObjectRegistry } from "./lib/object.ts";
+import { PendingCalls } from "./lib/pending.ts";
 import { closeFd, connectUnix, POLLERR, POLLHUP, POLLIN, POLLNVAL, pollNow, receiveWithFds, sendWithFds } from "./libc.ts";
-import { MAX_MESSAGE } from "./marshal.ts";
 import { decodeMessage, encodeMessage, Flags, FrameBuffer, type Message, MessageType } from "./message.ts";
-import { ObjectRegistry } from "./object.ts";
-import { PendingCalls } from "./pending.ts";
-import type { CallSpec, ExportedObject, SignalSpec } from "./types.ts";
+import type { CallSpec, ExportedObject, InterfaceSpec, SignalSpec } from "./types.ts";
 
 const HANDSHAKE_MS = 10_000;
 const CALL_TIMEOUT_MS = 25_000;
@@ -121,7 +120,7 @@ export class FdService {
   private startReading(): void {
     const socket = this.socket;
     if (socket === null) return;
-    const worker = new Worker(new URL("./fd-reader.ts", import.meta.url));
+    const worker = new Worker(new URL("./lib/fd-reader.ts", import.meta.url));
     this.worker = worker;
     worker.onmessage = (event: MessageEvent<ReaderChunk>) => this.receive(event.data);
     worker.onerror = (event) => this.shutdown(new Error(`the bus reader failed: ${event.message}`));

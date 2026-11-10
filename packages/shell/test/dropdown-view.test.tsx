@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
 import { LIGHT_SURFACE, lightColors, MENU } from "@dashi/ui";
 import { type NativeTransport, render } from "@mirinjs/metal";
-import type { MenuEntry } from "../src/menus/model.ts";
-import { DropdownMenu } from "../src/menus/view.tsx";
+import { DropdownMenu } from "../src/menus/lib/view.tsx";
+import type { MenuEntry } from "../src/menus/types.ts";
 import { settle } from "./support/time.ts";
 
 // 0.6 menus: the menu bar's dropdown drew its own rows (22 tall, 6 in, a 14 gutter) and a white edge that

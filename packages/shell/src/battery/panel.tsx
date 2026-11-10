@@ -12,8 +12,7 @@
 import { tintFor } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import type { MenuEntry } from "../menus/model.ts";
-import type { StatusMenuAction } from "../menus/status-menu.ts";
+import type { MenuEntry, StatusMenuAction } from "../menus/index.ts";
 import { useControlColors, usePanelEdge } from "../shared/controls/palette.ts";
 import { LimitBar } from "../shared/controls/parts.tsx";
 import { formatTime, useClockPrefs } from "../shared/time/clock.ts";

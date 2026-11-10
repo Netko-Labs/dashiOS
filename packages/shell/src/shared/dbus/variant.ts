@@ -1,6 +1,6 @@
 /** A value tagged with its own signature: D-Bus's `v`. */
 
-import { parseSingle } from "./signature.ts";
+import { parseSingle } from "./lib/signature.ts";
 
 export class Variant {
   constructor(

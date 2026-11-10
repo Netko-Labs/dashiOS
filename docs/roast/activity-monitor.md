@@ -4,7 +4,7 @@
 
 The big idea is in: the list is apps, each with its icon and name and its processes folded under it, and the battery menu, Activity Monitor and the battery monitor name apps the same way, by the same keys (`src/process-apps/`). Per finding:
 
-- [x] 1. An Energy tab (energy impact, % CPU, % GPU, wakeups/s); the battery menu's "Using Significant Energy…" opens it, and each app there opens it with that app selected, also when Activity Monitor is already running (`src/menus/activity-monitor.ts`, the menus channel's `open`).
+- [x] 1. An Energy tab (energy impact, % CPU, % GPU, wakeups/s); the battery menu's "Using Significant Energy…" opens it, and each app there opens it with that app selected, also when Activity Monitor is already running (`src/menus/lib/activity-monitor.ts`, the menus channel's `open`).
 - [x] 2. Apps by their folder (Dashi's), their Flatpak scope, or their desktop entry; a helper belongs to its nearest app above it (`process-apps/owners.ts`, lifted from the battery's `ownerOf`, which now uses it). View › Group by App switches to every process on its own line, each with its app's icon.
 - [x] 3. Return only selects; the quit sheet has no Return default (0.4); a quit app still running after 3 s is offered Force quit; a process already gone is said to be gone, not quit.
 - [x] 4. Reads on a worker, nothing while hidden (0.4, wave 1); kernel threads skipped unless shown; sockets counted every third look and GPU descriptors looked for every fifth; View › Update Every 1/2/5 Seconds or Pause Updates. A look is about 10 ms for 130 processes (the Energy tab's about 25 ms). Moved on: `status` is still read per process (uid and memory), which the roast's `fstat` idea would save; not worth it at these numbers.

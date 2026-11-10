@@ -6,7 +6,8 @@ import type { CompositorWindow } from "../src/compositor.ts";
 import { KEYMAP } from "../src/keymap.ts";
 import { type KeyChord, resolveChord } from "../src/keymap-match.ts";
 import type { Tile } from "../src/layout.ts";
-import { buildMenu, isEnabled, type MenuContext, type MenuEntry } from "../src/menus/model.ts";
+import { buildMenu, isEnabled } from "../src/menus/model.ts";
+import type { MenuContext, MenuEntry } from "../src/menus/types.ts";
 import { type Requests, runBinding, type ShellActions } from "../src/shortcuts.ts";
 import { fakeCompositor } from "./support/compositor.ts";
 

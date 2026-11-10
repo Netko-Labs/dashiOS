@@ -2,7 +2,7 @@
  * What Activity Monitor is asked to show, from its command line or from a
  * second start while it runs (the kit's `onOpen`): `--tab energy` opens a
  * tab, `--app <key> [--app-name <name>]` selects an app (the battery menu,
- * src/menus/activity-monitor.ts). Anything else is ignored (the Metal host's
+ * src/menus/lib/activity-monitor.ts). Anything else is ignored (the Metal host's
  * path is read by the kit).
  */
 

@@ -14,10 +14,10 @@ import { SIDECAR_FILE } from "../../src/shared/calendar/sidecar.ts";
 import { CalendarStore, defaultRoot } from "../../src/shared/calendar/store.ts";
 import { watchCalendars } from "../../src/shared/calendar/watch.ts";
 import { runApp } from "../kit/index.ts";
-import { CALENDAR_LEAST } from "./chrome.ts";
-import { portalIcsChooser } from "./import.ts";
-import { CalendarModel } from "./model.ts";
-import { CALENDAR_SIZE, CalendarWindow } from "./view.tsx";
+import { CALENDAR_LEAST } from "./lib/chrome.ts";
+import { portalIcsChooser } from "./lib/import.ts";
+import { CalendarModel } from "./lib/model.ts";
+import { CALENDAR_SIZE, CalendarWindow } from "./lib/views/view.tsx";
 
 const day = dayFromArgs();
 

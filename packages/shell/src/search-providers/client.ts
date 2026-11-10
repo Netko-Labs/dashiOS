@@ -11,8 +11,7 @@
 import type { Outcome } from "../actions/types.ts";
 import type { SlowSource } from "../launcher/budget.ts";
 import type { SlowRow } from "../launcher/extension-rows.ts";
-import type { CallSpec } from "../shared/dbus/index.ts";
-import { Variant } from "../shared/dbus/index.ts";
+import { type CallSpec, Variant } from "../shared/dbus/index.ts";
 import type { ProviderInfo } from "./ini.ts";
 
 export const SEARCH_PROVIDER = "org.gnome.Shell.SearchProvider2";

@@ -6,7 +6,7 @@
  * here touches the bus, so the bookkeeping is tested on its own.
  */
 
-import { isBusName, isObjectPath } from "../shared/dbus/names.ts";
+import { isBusName, isObjectPath } from "../shared/dbus/index.ts";
 
 /** Where an item that registers by bus name alone puts its object. */
 export const DEFAULT_ITEM_PATH = "/StatusNotifierItem";

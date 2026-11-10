@@ -7,8 +7,8 @@ import { NOTICE_QUIET_MS, NOTICE_SETTLE_MS } from "../src/graphics/notice.ts";
 import { graphicsNoticePlace } from "../src/graphics/notice-place.ts";
 import { NotificationStore } from "../src/notifications/store.ts";
 import type { GraphicsChoice } from "../src/power/modes/settings.ts";
-import { settle } from "./fake-bus.ts";
 import { fakeTime } from "./support/graphics-notice.ts";
+import { settle } from "./support/time.ts";
 
 const CARD: GraphicsCard = { name: "card0", driver: "nvidia", pci: "0000:64:00.0", port: "0000:00:03.1", nodes: ["/dev/nvidia0"], screens: [] };
 

@@ -23,6 +23,7 @@ export const STEPS: Step[] = [
   { name: "H3 H5 lint and format (biome)", command: ["bun", "run", "fmt-lint"], fast: true },
   { name: "H3 H5 lists (check-biome)", command: ["bun", "scripts/check-biome.ts"], fast: true },
   { name: "H2 H4 H6 H11 structure", command: ["bun", "scripts/check-structure.ts"], fast: true },
+  { name: "H18 H19 H20 modules", command: ["bun", "scripts/check-modules.ts"], fast: true },
   { name: "H7 H8 H10 boundaries", command: ["bun", "scripts/check-boundaries.ts"], fast: true },
   { name: "H13 shell scripts", command: ["bun", "scripts/check-shell.ts"], fast: true },
   { name: "H16 boot weight", command: ["bun", "scripts/boot-weight.ts"], fast: true },

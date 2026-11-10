@@ -11,8 +11,7 @@
  * `net.hadess.PowerProfiles`.
  */
 
-import { type BusLike, getAllProperties, onPropertiesChanged, type PropertyTarget, setProperty, unwrap } from "../shared/dbus/properties.ts";
-import { variant } from "../shared/dbus/variant.ts";
+import { type BusLike, getAllProperties, onPropertiesChanged, type PropertyTarget, setProperty, unwrap, variant } from "../shared/dbus/index.ts";
 
 export const PROFILE_IDS = ["power-saver", "balanced", "performance"] as const;
 export type ProfileId = (typeof PROFILE_IDS)[number];

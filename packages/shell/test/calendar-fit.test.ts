@@ -1,12 +1,12 @@
 import { expect, test } from "bun:test";
 import { sheetBodyRoom, sheetWidth } from "@dashi/ui";
-import { CALENDAR_LEAST, CONTROLS_COMPACT, chromeFor, RAIL_WIDTH, SIDEBAR_FULL, toolbarRoom } from "../apps/calendar/chrome.ts";
-import { over } from "../apps/calendar/colors.ts";
-import { blockParts, TIME_BESIDE_FROM } from "../apps/calendar/event-block.tsx";
-import { shortViewTitle, viewTitle } from "../apps/calendar/format.ts";
-import { placeDay, weekDays } from "../apps/calendar/layout.ts";
-import { popoverOrigin } from "../apps/calendar/popover.tsx";
-import { RESULTS_WIDTH, resultsPlace } from "../apps/calendar/search-results.tsx";
+import { CALENDAR_LEAST, CONTROLS_COMPACT, chromeFor, RAIL_WIDTH, SIDEBAR_FULL, toolbarRoom } from "../apps/calendar/lib/chrome.ts";
+import { over } from "../apps/calendar/lib/colors.ts";
+import { shortViewTitle, viewTitle } from "../apps/calendar/lib/format.ts";
+import { blockParts, TIME_BESIDE_FROM } from "../apps/calendar/lib/grid/event-block.tsx";
+import { placeDay, weekDays } from "../apps/calendar/lib/layout.ts";
+import { popoverOrigin } from "../apps/calendar/lib/views/popover.tsx";
+import { RESULTS_WIDTH, resultsPlace } from "../apps/calendar/lib/views/search-results.tsx";
 import type { Occurrence } from "../src/shared/calendar/types.ts";
 
 // Review 54: Calendar in a small, narrow or tiled window, and the week's overlapping events.

@@ -8,7 +8,7 @@
  *
  * While a popover is open (`hold`), the keyboard is on the popover and no
  * window is focused; the bar keeps showing the menus it had, as it keeps the
- * app's name (menus/popover.tsx). An app can still change its rows then.
+ * app's name (menus/lib/popover.tsx). An app can still change its rows then.
  */
 
 import { useSyncExternalStore } from "react";

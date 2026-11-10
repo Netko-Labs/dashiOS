@@ -11,8 +11,8 @@ import { describe, expect, test } from "bun:test";
 import { statusRow } from "../src/menubar-fit.ts";
 import { type BarStop, barCommand, barOrder, MORE_STOP, sideStep, stepStop, stopOfPopover } from "../src/menus/bar-keys.ts";
 import { MenuController } from "../src/menus/controller.ts";
-import type { MenuContext } from "../src/menus/model.ts";
-import { dropdownKey } from "../src/menus/view.tsx";
+import { dropdownKey } from "../src/menus/lib/view.tsx";
+import type { MenuContext } from "../src/menus/types.ts";
 
 describe("the bar's order", () => {
   test("the titles left to right, then the status side's row", () => {
