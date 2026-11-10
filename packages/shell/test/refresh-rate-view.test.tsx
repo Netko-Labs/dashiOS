@@ -4,9 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactNode } from "react";
+import { outputsOf } from "../src/compositor/outputs.ts";
 import { AutoRefresh } from "../src/display-config/auto-refresh.ts";
 import type { ApplyResult } from "../src/display-config/manager.ts";
-import { parseMonitors } from "../src/display-config/monitors.ts";
+import { monitorsOf } from "../src/display-config/monitors.ts";
 import { DisplaysPane } from "../src/settings-app/panes/displays.tsx";
 import { OnBatteryRow } from "../src/settings-app/panes/on-battery.tsx";
 import { type Arranger, ScreensStore } from "../src/settings-app/screens.ts";
@@ -15,6 +16,7 @@ import { SettingsStore } from "../src/settings-app/store.ts";
 import { Page } from "../src/settings-app/ui.tsx";
 import { FlagsStore } from "../src/shared/control-center/flags.ts";
 import type { PaneId } from "../src/shared/settings/panes.ts";
+import { fakeCompositor } from "./support/compositor.ts";
 import { settle } from "./support/time.ts";
 
 // Displays' refresh rate row with Automatic, and Battery & Power's "On battery", on a stand-in for the Metal host.
@@ -61,13 +63,13 @@ const answer = (refreshMhz: number) => ({
 
 function machine() {
   let refreshMhz = 120_000;
-  const compositor = { request: async (method: string) => (method === "outputs" ? answer(refreshMhz) : {}), on: () => () => {} };
+  const compositor = fakeCompositor(async (method) => (method === "outputs" ? answer(refreshMhz) : {}), { on: () => () => {} });
   const setMode = async (_name: string, mode: { refreshMhz?: number }): Promise<ApplyResult> => {
     refreshMhz = mode.refreshMhz ?? refreshMhz;
     return { kept: true, reverted: false };
   };
   const arranger = { setMode, onPending: () => () => {}, pending: false } as unknown as Arranger;
-  const displays = { monitors: async () => parseMonitors(answer(refreshMhz)), setMode, onModeChange: () => () => {} };
+  const displays = { monitors: async () => monitorsOf(outputsOf(answer(refreshMhz))), setMode, onModeChange: () => () => {} };
   return { compositor, arranger, displays, rate: () => refreshMhz };
 }
 

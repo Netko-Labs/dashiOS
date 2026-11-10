@@ -1,16 +1,7 @@
 import { expect, test } from "bun:test";
 import type { Placing } from "../src/compositor.ts";
-import {
-  isSheetTitle,
-  newLauncher,
-  PORTAL_APP_ID,
-  PortalSheets,
-  parseHandleAnswer,
-  parseParentWindow,
-  SHEET_TOPS,
-  sheetTitle,
-  sheetTop,
-} from "../src/portal-host/index.ts";
+import { isSheetTitle, newLauncher, PORTAL_APP_ID, PortalSheets, parseParentWindow, SHEET_TOPS, sheetTitle, sheetTop } from "../src/portal-host/index.ts";
+import { fakeCompositor } from "./support/compositor.ts";
 import { flush } from "./support/time.ts";
 
 test("parent windows: wayland and x11 handles, nothing else", () => {
@@ -23,9 +14,6 @@ test("parent windows: wayland and x11 handles, nothing else", () => {
   expect(parseParentWindow("wayland:a b")).toBeNull();
   expect(isSheetTitle(sheetTitle("r12"))).toBe(true);
   expect(isSheetTitle("Open")).toBe(false);
-  expect(parseHandleAnswer({ window: 7 })).toBe(7);
-  expect(parseHandleAnswer({ window: null })).toBeNull();
-  expect(parseHandleAnswer({ window: -1 })).toBeNull();
 });
 
 const placing = (id: number, title: string, appId = PORTAL_APP_ID): Placing => ({ id, appId, title, width: 600, height: 400 });
@@ -34,13 +22,11 @@ test("an expected portal window becomes a sheet of the window its handle names",
   const sent: Array<[string, unknown]> = [];
   const placed: number[] = [];
   const sheets = new PortalSheets(
-    {
-      request: async (method, params) => {
-        sent.push([method, params]);
-        if (method === "window-for-handle") return { window: params?.handle === "wayland:known" ? 3 : null };
-        return {};
-      },
-    },
+    fakeCompositor(async (method, params) => {
+      sent.push([method, params]);
+      if (method === "window-for-handle") return { window: params?.handle === "wayland:known" ? 3 : null };
+      return {};
+    }),
     async (window) => void placed.push(window.id),
   );
   expect(sheets.expect(sheetTitle("a"), "wayland:known")).toBe(true);
@@ -68,14 +54,12 @@ test("a sheet hangs below an app's own title bar and toolbar, guessed by the kin
   const sent: Array<[string, unknown]> = [];
   const helium = { id: 3, appId: "net.imput.helium", title: "Helium", pid: 1, focused: true, state: "normal", frame: null, titleBar: 0 };
   const sheets = new PortalSheets(
-    {
-      request: async (method, params) => {
-        sent.push([method, params]);
-        if (method === "window-for-handle") return { window: 3 };
-        if (method === "windows") return { windows: [helium] };
-        return {};
-      },
-    },
+    fakeCompositor(async (method, params) => {
+      sent.push([method, params]);
+      if (method === "window-for-handle") return { window: 3 };
+      if (method === "windows") return { windows: [helium] };
+      return {};
+    }),
     async () => {},
   );
   sheets.expect(sheetTitle("a"), "wayland:helium");
@@ -87,7 +71,7 @@ test("a sheet hangs below an app's own title bar and toolbar, guessed by the kin
 test("expectations are forgotten after a while", () => {
   let now = 0;
   const sheets = new PortalSheets(
-    { request: async () => ({}) },
+    fakeCompositor(async () => ({})),
     async () => {},
     () => now,
   );

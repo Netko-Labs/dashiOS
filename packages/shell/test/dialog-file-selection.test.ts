@@ -6,6 +6,7 @@ import { specFrom } from "../apps/dialog/spec.ts";
 import { reservedBy } from "../src/app-menus/reserved.ts";
 import { isTextShortcut } from "../src/app-menus/shortcut.ts";
 import { type Requests, runBinding, type ShellActions } from "../src/shortcuts.ts";
+import { fakeCompositor } from "./support/compositor.ts";
 
 // `dashi-dialog --file-selection` is Files' chooser (PA-12), and ❖⌫ reaches Files' Move to Trash.
 
@@ -65,7 +66,13 @@ test("❖⌫ is the app's Move to Trash when it shows one, else it erases to the
   expect(reservedBy({ key: "BackSpace", shift: false, ctrl: false, alt: false })).toBeNull();
   expect(isTextShortcut("❖⌫")).toBe(true);
   const requests: [string, unknown][] = [];
-  const compositor = { request: async (name: string, args: unknown) => void requests.push([name, args]), windows: async () => [] } as unknown as Requests;
+  const compositor: Requests = fakeCompositor(
+    async (name: string, args: unknown) => {
+      requests.push([name, args]);
+      return {};
+    },
+    { windows: async () => [] },
+  );
   let taken = true;
   const actions = {
     hardware: { run: async () => false },

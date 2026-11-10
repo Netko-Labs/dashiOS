@@ -6,7 +6,7 @@
  * absolute path, or `..` refuses the whole archive.
  */
 
-import { isInsidePath } from "./parse.ts";
+import { isInsidePath } from "@dashi/shape/kit";
 
 const BLOCK = 512;
 

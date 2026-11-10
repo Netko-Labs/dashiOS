@@ -1,36 +1,19 @@
 //! Variable refresh rate as the shell chooses it per screen (`outputs-config`
 //! `vrr`); the udev backend carries it out (backend/udev/vrr.rs).
 
+use serde::{Deserialize, Serialize};
 use smithay::output::Output;
 
 use crate::state::Dashi;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub(crate) enum VrrMode {
     #[default]
     Off,
     On,
     /// Only while a window is full screen on that screen (games, video).
     Fullscreen,
-}
-
-impl VrrMode {
-    pub(crate) fn parse(name: &str) -> Option<Self> {
-        match name {
-            "off" => Some(Self::Off),
-            "on" => Some(Self::On),
-            "fullscreen" => Some(Self::Fullscreen),
-            _ => None,
-        }
-    }
-
-    pub(crate) fn name(self) -> &'static str {
-        match self {
-            Self::Off => "off",
-            Self::On => "on",
-            Self::Fullscreen => "fullscreen",
-        }
-    }
 }
 
 impl Dashi {
@@ -48,9 +31,17 @@ mod tests {
 
     #[test]
     fn modes_by_name() {
-        for mode in [VrrMode::Off, VrrMode::On, VrrMode::Fullscreen] {
-            assert_eq!(VrrMode::parse(mode.name()), Some(mode));
+        for (mode, name) in [
+            (VrrMode::Off, "off"),
+            (VrrMode::On, "on"),
+            (VrrMode::Fullscreen, "fullscreen"),
+        ] {
+            assert_eq!(serde_json::to_value(mode).unwrap(), serde_json::json!(name));
+            assert_eq!(
+                serde_json::from_value::<VrrMode>(serde_json::json!(name)).unwrap(),
+                mode
+            );
         }
-        assert_eq!(VrrMode::parse("adaptive"), None);
+        assert!(serde_json::from_value::<VrrMode>(serde_json::json!("adaptive")).is_err());
     }
 }

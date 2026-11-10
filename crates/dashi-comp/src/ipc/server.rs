@@ -15,7 +15,7 @@ use std::{
 use serde_json::Value;
 use smithay::reexports::calloop::{Interest, LoopHandle, Mode, PostAction, generic::Generic};
 
-use super::{frame, grants::Grants, peer::Peer, table::Who};
+use super::{frame, grants::Grants, peer::Peer, protocol::Event, table::Who};
 use crate::state::Dashi;
 
 /// A client that falls this far behind on reading is dropped instead of buffered forever.
@@ -172,8 +172,11 @@ impl Ipc {
     }
 
     /// Tell every subscribed connection.
-    pub(crate) fn emit(&mut self, name: &str, fields: serde_json::Value) {
-        let line = frame::event(name, fields);
+    pub(crate) fn emit(&mut self, event: Event) {
+        let Some(line) = frame::event(&event) else {
+            tracing::warn!(?event, "IPC: an event that does not serialize");
+            return;
+        };
         let subscribed: Vec<ConnectionId> = self
             .connections
             .iter()

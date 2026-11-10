@@ -164,7 +164,7 @@ export function startLaptop(options: LaptopOptions): Laptop {
     const light = keyboardLight(store.getSnapshot());
     const rules = laptopKeyRules(machine?.hotkeys ?? {}, light !== null);
     setMachineRules(rules);
-    if (compositor && rules.length > 0) compositor.request("keymap", idleKeymap()).catch(() => {});
+    if (compositor && rules.length > 0) compositor.keymap(idleKeymap()).catch(() => {});
     void charge.check();
   };
   const stopChanged = hardware.onChanged((knob, value) => {

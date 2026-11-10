@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@dashi/applet": "workspace:*",
+    "@dashi/shape": "workspace:*",
     "@dashi/ui": "workspace:*",
     "@mirinjs/metal": "file:../../../mirin/packages/mirin-metal",
     "react": "^19.2.0"

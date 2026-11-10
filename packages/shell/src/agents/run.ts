@@ -214,8 +214,8 @@ export async function runCall(call: Call, ctx: RunContext): Promise<ToolResult> 
       if (call.name === "tile_window") {
         await ctx.tile(window.id, call.tile);
       } else {
-        const method = { focus_window: "focus", minimize_window: "minimize", close_window: "close" }[call.name];
-        await compositor.request(method, { window: window.id });
+        const method = { focus_window: "focus", minimize_window: "minimize", close_window: "close" } as const;
+        await compositor[method[call.name]]({ window: window.id });
       }
       const done = {
         focus_window: "is in front and focused",
@@ -247,12 +247,12 @@ async function screenshot(id: number | null, rect: Rect | undefined, ctx: RunCon
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const path = join(dir, `${crypto.randomUUID()}.png`);
   try {
-    const answer = (await ctx.compositor.request("capture", {
+    const answer = await ctx.compositor.capture({
       path,
       mask: AGENT_MASK,
       ...(id !== null ? { window: id } : {}),
       ...(rect ? { rect } : {}),
-    })) as Record<string, unknown>;
+    });
     const data = Buffer.from(await Bun.file(path).arrayBuffer()).toString("base64");
     const scale = Number(answer.scale) || 1;
     return {
@@ -275,7 +275,7 @@ async function launchApp(wanted: string, ctx: RunContext): Promise<ToolResult> {
   const front = windowToFront((await ctx.compositor.windows()).filter((window) => owns(entry, window.appId)));
   if (front) {
     ctx.status(`Bringing ${entry.name} forward`);
-    await ctx.compositor.request("focus", { window: front.id });
+    await ctx.compositor.focus({ window: front.id });
     const shown: CompositorWindow = { ...front, focused: true, state: "normal" };
     const described = ctx.mayName() ? describe(shown, entries, ctx.arrangement(front.id)) : { id: `w${front.id}`, app: entry.name };
     return text(`${entry.name} was already open; its window is in front: ${JSON.stringify(described)}`, { window: described });

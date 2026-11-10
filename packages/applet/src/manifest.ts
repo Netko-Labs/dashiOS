@@ -19,9 +19,9 @@
  *   }
  */
 
+import { isInsidePath, isRefusal, list, optionalText, type Refusal, record, refuse, text } from "@dashi/shape/kit";
 import { type AppletCommand, parseCommands } from "./commands.ts";
 import { type AppletControl, needsControlsPermission, parseControls } from "./controls.ts";
-import { isInsidePath, isRefusal, list, optionalText, type Refusal, record, refuse, text } from "./parse.ts";
 import { type Permission, parsePermission, permissionName } from "./permissions.ts";
 import { parseWhen, type When } from "./when.ts";
 

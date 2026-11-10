@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { outputsOf } from "../src/compositor/outputs.ts";
 import { CODECS, recorderArgs, recordingName, WF_RECORDER } from "../src/recorder/command.ts";
 import { type RecorderProcess, ScreenRecorder } from "../src/recorder/recorder.ts";
 import { stopsRecording } from "../src/recorder/start.ts";
@@ -177,17 +178,17 @@ describe("record_screen's helpers", () => {
   test("the named screen, else the main display, else the first", async () => {
     const { displayOf } = await import("../src/agents/desktop/record.ts");
     const frame = { x: 0, y: 0, width: 1280, height: 800 };
-    const answer = {
+    const answer = outputsOf({
       outputs: [
         { name: "DP-1", frame: { ...frame, x: 1280 } },
         { name: "eDP-1", primary: true, frame },
         { name: "HDMI-A-1", enabled: false, frame },
       ],
-    };
+    });
     expect(displayOf(answer, null)?.name).toBe("eDP-1");
     expect(displayOf(answer, "DP-1")?.frame.x).toBe(1280);
     expect(displayOf(answer, "HDMI-A-1")).toBeNull();
-    expect(displayOf({ outputs: [{ name: "X", frame }] }, null)?.name).toBe("X");
-    expect(displayOf(null, null)).toBeNull();
+    expect(displayOf(outputsOf({ outputs: [{ name: "X", frame }] }), null)?.name).toBe("X");
+    expect(displayOf([], null)).toBeNull();
   });
 });

@@ -14,9 +14,9 @@
 //! unlock the keyboard goes back to a shell sheet that takes it, else to the
 //! window in front.
 
+use crate::ipc::protocol::Event;
 use std::collections::HashMap;
 
-use serde_json::json;
 use smithay::{
     delegate_session_lock,
     desktop::layer_map_for_output,
@@ -53,14 +53,14 @@ impl SessionLockHandler for Dashi {
         self.drop_input_method_grab();
         self.point_at_lock();
         self.overview = None;
-        self.ipc.emit("overview", json!({ "active": false }));
-        self.ipc.emit("lock", json!({ "locked": true }));
+        self.ipc.emit(Event::Overview { active: false });
+        self.ipc.emit(Event::Lock { locked: true });
     }
 
     fn unlock(&mut self) {
         self.lock.locked = false;
         self.lock.surfaces.clear();
-        self.ipc.emit("lock", json!({ "locked": false }));
+        self.ipc.emit(Event::Lock { locked: false });
         self.focus_after_unlock();
     }
 

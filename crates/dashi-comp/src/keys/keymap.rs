@@ -21,7 +21,9 @@
 
 use std::collections::HashMap;
 
-use serde_json::{Map, Value};
+use serde::{Deserialize, Serialize};
+
+use crate::ipc::protocol::Millis;
 
 /// Modifiers as the keymap names them.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -147,59 +149,24 @@ impl Default for Keymap {
 }
 
 impl Keymap {
-    pub(crate) fn parse(params: &Map<String, Value>) -> Result<Self, String> {
-        let apps = match params.get("apps") {
-            None => HashMap::new(),
-            Some(Value::Object(apps)) => apps
-                .iter()
-                .map(|(class, patterns)| {
-                    let patterns = patterns
-                        .as_array()
-                        .ok_or_else(|| format!("apps.{class} must be a list"))?
-                        .iter()
-                        .map(|p| {
-                            p.as_str()
-                                .map(str::to_owned)
-                                .ok_or_else(|| format!("apps.{class} must list strings"))
-                        })
-                        .collect::<Result<Vec<_>, _>>()?;
-                    Ok((class.clone(), patterns))
-                })
-                .collect::<Result<_, String>>()?,
-            Some(_) => return Err("apps must be an object".into()),
-        };
-        let millis = |key: &str, default: u64| match params.get(key) {
-            None => Ok(default),
-            Some(v) => v
-                .as_u64()
-                .filter(|ms| *ms <= 10_000)
-                .ok_or_else(|| format!("{key} must be milliseconds")),
-        };
-        // `name` for the list, `each` for a rule in it ("rules", "rule 3: …").
-        let list = |name: &str, each: &str, rules: &Value| {
+    pub(crate) fn parse(params: &KeymapParams) -> Result<Self, String> {
+        let apps = &params.apps;
+        let list = |each: &str, rules: &[RuleParams]| {
             rules
-                .as_array()
-                .ok_or_else(|| format!("{name} must be a list"))?
                 .iter()
                 .enumerate()
                 .map(|(index, rule)| {
-                    parse_rule(rule, &apps).map_err(|error| format!("{each} {index}: {error}"))
+                    parse_rule(rule, apps).map_err(|error| format!("{each} {index}: {error}"))
                 })
                 .collect::<Result<Vec<_>, _>>()
         };
-        let rules = list(
-            "rules",
-            "rule",
-            params.get("rules").ok_or("rules must be a list")?,
-        )?;
+        let rules = list("rule", &params.rules)?;
         let after_tap = params
-            .get("afterTap")
-            .map(|rules| list("afterTap", "afterTap", rules))
+            .after_tap
+            .as_deref()
+            .map(|rules| list("afterTap", rules))
             .transpose()?;
-        let locked = match params.get("locked") {
-            None => Vec::new(),
-            Some(rules) => list("locked", "locked", rules)?,
-        };
+        let locked = list("locked", &params.locked)?;
         if let Some(index) = locked
             .iter()
             .position(|rule| matches!(rule.action, Action::Bind(_)))
@@ -212,9 +179,9 @@ impl Keymap {
             return Err(format!("locked {index}: the lock screen is no app's"));
         }
         Ok(Self {
-            apps,
-            tap_ms: millis("tapMs", 350)?,
-            hold_ms: millis("holdMs", 800)?,
+            apps: apps.clone(),
+            tap_ms: params.tap_ms.map_or(350, |ms| ms.to::<u64>()),
+            hold_ms: params.hold_ms.map_or(800, |ms| ms.to::<u64>()),
             rules,
             after_tap,
             locked,
@@ -290,49 +257,65 @@ impl Keymap {
     }
 }
 
-fn parse_rule(rule: &Value, apps: &HashMap<String, Vec<String>>) -> Result<Rule, String> {
-    let rule = rule.as_object().ok_or("a rule is an object")?;
-    let when = parse_when(
-        rule.get("when")
-            .and_then(Value::as_str)
-            .ok_or("when is required")?,
-    )?;
-    let app = match rule.get("app") {
+/// `keymap`'s params: the bindings (docs/compositor-ipc.md; the shell's
+/// src/keymap.ts `Keymap`).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct KeymapParams {
+    #[serde(default)]
+    pub apps: HashMap<String, Vec<String>>,
+    pub tap_ms: Option<Millis<10_000>>,
+    pub hold_ms: Option<Millis<10_000>>,
+    pub rules: Vec<RuleParams>,
+    pub after_tap: Option<Vec<RuleParams>>,
+    #[serde(default)]
+    pub locked: Vec<RuleParams>,
+}
+
+/// One rule: `when` a chord matches (in `app`'s windows), `bind`, `send`,
+/// `tap` or `swallow` (the first given wins).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct RuleParams {
+    pub when: String,
+    pub app: Option<String>,
+    pub bind: Option<String>,
+    pub send: Option<String>,
+    pub tap: Option<Vec<String>>,
+    pub swallow: Option<bool>,
+    pub arms_after_tap: Option<bool>,
+}
+
+fn parse_rule(rule: &RuleParams, apps: &HashMap<String, Vec<String>>) -> Result<Rule, String> {
+    let when = parse_when(&rule.when)?;
+    let app = match &rule.app {
         None => None,
-        Some(Value::String(class)) if apps.contains_key(class) => Some(class.clone()),
+        Some(class) if apps.contains_key(class) => Some(class.clone()),
         Some(_) => return Err("app must name a class in apps".into()),
     };
-    let action = if let Some(name) = rule.get("bind") {
-        Action::Bind(
-            name.as_str()
-                .filter(|n| !n.is_empty())
-                .ok_or("bind must be a name")?
-                .to_owned(),
-        )
-    } else if let Some(chord) = rule.get("send") {
-        Action::Send(Chord::parse(chord.as_str().ok_or("send must be a chord")?)?)
-    } else if let Some(chords) = rule.get("tap") {
-        let chords = chords.as_array().ok_or("tap must be a list of chords")?;
+    let action = if let Some(name) = &rule.bind {
+        if name.is_empty() {
+            return Err("bind must be a name".into());
+        }
+        Action::Bind(name.clone())
+    } else if let Some(chord) = &rule.send {
+        Action::Send(Chord::parse(chord)?)
+    } else if let Some(chords) = &rule.tap {
         Action::Tap(
             chords
                 .iter()
-                .map(|c| {
-                    c.as_str()
-                        .ok_or_else(|| "tap must list chords".to_string())
-                        .and_then(Chord::parse)
-                })
+                .map(|chord| Chord::parse(chord))
                 .collect::<Result<_, _>>()?,
         )
-    } else if rule.get("swallow") == Some(&Value::Bool(true)) {
+    } else if rule.swallow == Some(true) {
         Action::Swallow
     } else {
         return Err("a rule needs bind, send, tap, or swallow".into());
     };
-    let arms_after_tap = match rule.get("armsAfterTap") {
-        None | Some(Value::Bool(false)) => false,
-        Some(Value::Bool(true)) if matches!(action, Action::Bind(_)) => true,
-        Some(Value::Bool(true)) => return Err("only a bind rule arms afterTap".into()),
-        Some(_) => return Err("armsAfterTap must be true or false".into()),
+    let arms_after_tap = match rule.arms_after_tap {
+        None | Some(false) => false,
+        Some(true) if matches!(action, Action::Bind(_)) => true,
+        Some(true) => return Err("only a bind rule arms afterTap".into()),
     };
     Ok(Rule {
         when,
@@ -371,7 +354,11 @@ fn parse_when(text: &str) -> Result<When, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
+    use serde_json::{Map, Value, json};
+
+    fn parse(params: &Map<String, Value>) -> Result<Keymap, String> {
+        Keymap::parse(&crate::ipc::protocol::read(Value::Object(params.clone()))?)
+    }
 
     fn keymap() -> Keymap {
         let params = json!({
@@ -392,7 +379,7 @@ mod tests {
                 { "when": "super+*", "send": "ctrl+key" }
             ]
         });
-        Keymap::parse(params.as_object().unwrap()).unwrap()
+        parse(params.as_object().unwrap()).unwrap()
     }
 
     fn action(map: &Keymap, names: &[&str], mods: Mods, app_id: &str) -> Option<Action> {
@@ -531,28 +518,24 @@ mod tests {
 
     #[test]
     fn mistakes_are_refused_with_where() {
-        let bad = |rules: Value| {
-            Keymap::parse(json!({ "rules": rules }).as_object().unwrap()).unwrap_err()
-        };
+        let bad = |rules: Value| parse(json!({ "rules": rules }).as_object().unwrap()).unwrap_err();
         assert!(bad(json!([{ "when": "super+q" }])).starts_with("rule 0:"));
         assert!(bad(json!([{ "when": "meta+q", "bind": "x" }])).contains("meta"));
         assert!(bad(json!([{ "when": "q", "app": "nope", "bind": "x" }])).contains("class"));
-        assert!(Keymap::parse(json!({}).as_object().unwrap()).is_err());
-        let after = Keymap::parse(
+        assert!(parse(json!({}).as_object().unwrap()).is_err());
+        let after = parse(
             json!({ "rules": [], "afterTap": [{ "when": "q" }] })
                 .as_object()
                 .unwrap(),
         )
         .unwrap_err();
         assert!(after.starts_with("afterTap 0:"), "{after}");
-        assert!(
-            Keymap::parse(json!({ "rules": [], "afterTap": {} }).as_object().unwrap()).is_err()
-        );
+        assert!(parse(json!({ "rules": [], "afterTap": {} }).as_object().unwrap()).is_err());
     }
 
     #[test]
     fn while_locked_only_the_locked_rules_apply_and_none_binds() {
-        let map = Keymap::parse(
+        let map = parse(
             json!({
                 "apps": { "metal": ["dev.dashi.*"] },
                 "rules": [
@@ -599,7 +582,7 @@ mod tests {
             Some(Action::Bind("app-chord".into()))
         );
         // A keymap without `locked` has none: keys go to the lock screen as they are.
-        let plain = Keymap::parse(json!({ "rules": [] }).as_object().unwrap()).unwrap();
+        let plain = parse(json!({ "rules": [] }).as_object().unwrap()).unwrap();
         let names = vec!["a".to_string()];
         let pressed = Pressed {
             names: &names,
@@ -612,7 +595,7 @@ mod tests {
     #[test]
     fn a_locked_rule_never_binds_and_names_no_app() {
         let refused = |locked: Value| {
-            Keymap::parse(
+            parse(
                 json!({ "apps": { "metal": ["dev.dashi.*"] }, "rules": [], "locked": locked })
                     .as_object()
                     .unwrap(),
@@ -626,13 +609,14 @@ mod tests {
         assert!(bind.starts_with("locked 1:"), "{bind}");
         let app = refused(json!([{ "when": "super+a", "app": "metal", "send": "ctrl+a" }]));
         assert!(app.starts_with("locked 0:"), "{app}");
-        assert!(refused(json!({})).contains("locked must be a list"));
+        let not_a_list = refused(json!({}));
+        assert!(not_a_list.starts_with("`locked`"), "{not_a_list}");
         assert!(refused(json!([{ "when": "super+a" }])).starts_with("locked 0:"));
     }
 
     #[test]
     fn after_a_tap_the_after_tap_rules_hold_until_the_next_keymap() {
-        let mut map = Keymap::parse(
+        let mut map = parse(
             json!({
                 "rules": [{ "when": "XF86AudioMute", "bind": "volume-mute" }],
                 "afterTap": [
@@ -682,7 +666,7 @@ mod tests {
         );
         // Once: a second tap keeps what the first switched to.
         assert!(!map.arm_after_tap());
-        let mut none = Keymap::parse(json!({ "rules": [] }).as_object().unwrap()).unwrap();
+        let mut none = parse(json!({ "rules": [] }).as_object().unwrap()).unwrap();
         assert!(!none.arm_after_tap());
     }
 
@@ -703,7 +687,7 @@ mod tests {
 
     #[test]
     fn a_binding_that_arms_after_tap_hands_the_next_keys_to_the_shell_at_once() {
-        let mut map = Keymap::parse(
+        let mut map = parse(
             json!({
                 "rules": [{ "when": "super+space", "bind": "launcher", "armsAfterTap": true }],
                 "afterTap": [
@@ -758,7 +742,7 @@ mod tests {
                 ]
             }),
         };
-        Keymap::parse(params.as_object().unwrap()).unwrap()
+        parse(params.as_object().unwrap()).unwrap()
     }
 
     #[test]
@@ -792,19 +776,18 @@ mod tests {
 
     #[test]
     fn only_a_bind_arms_after_tap() {
-        let refused = |rule: Value| {
-            Keymap::parse(json!({ "rules": [rule] }).as_object().unwrap()).unwrap_err()
-        };
+        let refused =
+            |rule: Value| parse(json!({ "rules": [rule] }).as_object().unwrap()).unwrap_err();
         assert!(
             refused(json!({ "when": "super+space", "send": "ctrl+space", "armsAfterTap": true }))
                 .contains("only a bind")
         );
         assert!(
             refused(json!({ "when": "super+space", "bind": "launcher", "armsAfterTap": 1 }))
-                .contains("true or false")
+                .contains("expected a boolean")
         );
         // Without afterTap rules there is nothing to arm: the binding is all it does.
-        let mut map = Keymap::parse(
+        let mut map = parse(
             json!({ "rules": [{ "when": "super+space", "bind": "launcher", "armsAfterTap": true }] })
                 .as_object()
                 .unwrap(),

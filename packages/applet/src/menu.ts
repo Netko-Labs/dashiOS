@@ -5,7 +5,7 @@
  * the limits count every row at every level.
  */
 
-import { id, isRefusal, optionalBoolean, type Refusal, record, refuse, text } from "./parse.ts";
+import { id, isRefusal, optionalBoolean, type Refusal, record, refuse, text } from "@dashi/shape/kit";
 
 export const MENU_LIMITS = {
   /** Rows at every level together, separators included. */

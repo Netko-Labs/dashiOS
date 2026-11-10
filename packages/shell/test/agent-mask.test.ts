@@ -97,7 +97,7 @@ describe("the accessibility walk", () => {
     const forgotten: string[] = [];
     const rect = { x: 10, y: 40, width: 100, height: 20 };
     const mask = new AgentMask({
-      request: async (_method, params) => sent.push(params),
+      captureMask: async (params) => sent.push(params),
       windows: async () => [window(3, null)],
       atspi: async () => null,
       handedOver: () => [],
@@ -154,8 +154,7 @@ describe("what agents' pictures blank", () => {
   test("an update finds password fields in each window's app and tells the compositor", async () => {
     const sent: Array<Record<string, unknown>> = [];
     const mask = new AgentMask({
-      request: async (method, params) => {
-        expect(method).toBe("capture-mask");
+      captureMask: async (params) => {
         sent.push(params);
         return {};
       },
@@ -182,11 +181,11 @@ describe("what agents' pictures blank", () => {
       handedOver: () => [3],
       isVault: () => false,
     };
-    await new AgentMask({ ...deps, request: async (_m, p) => sent.push(p) }).update();
+    await new AgentMask({ ...deps, captureMask: async (p) => sent.push(p) }).update();
     expect(sent[0]).toMatchObject({ windows: [3], rects: [], layers: ["dashi.agent-consent"] });
     const refusing = new AgentMask({
       ...deps,
-      request: async () => {
+      captureMask: async () => {
         throw new Error("unknown method: capture-mask");
       },
     });
@@ -206,7 +205,7 @@ describe("fields Dashi filled", () => {
       forget: () => forgotten.push(name),
     });
     const mask = new AgentMask({
-      request: async (_method, params) => sent.push(params),
+      captureMask: async (params) => sent.push(params),
       windows: async () => [window(3, null)],
       atspi: async () => null,
       handedOver: () => [],
@@ -238,13 +237,13 @@ describe("consent from the person only", () => {
     expect(answeredByPerson({ person: null, agent: 40 })).toBe(false);
     // The person's press was long ago.
     expect(answeredByPerson({ person: PERSON_PRESS_MS + 1, agent: null })).toBe(false);
-    for (const nonsense of [null, "yes", {}, { person: "120" }, { person: -1, agent: null }]) expect(answeredByPerson(nonsense)).toBe(false);
+    expect(answeredByPerson({ person: -1, agent: null })).toBe(false);
   });
 
   test("it asks about the sheet's layer, and an error is a no", async () => {
     const asked: unknown[] = [];
-    const ask = async (method: string, params: Record<string, unknown>) => {
-      asked.push([method, params]);
+    const ask = async (params: { namespace: string }) => {
+      asked.push(["input-origin", params]);
       return { person: 10, agent: null };
     };
     expect(await personAnswered(ask, "dashi.agent-consent")).toBe(true);

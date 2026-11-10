@@ -5,9 +5,9 @@
 //! client and what runs under it, as for `capture`). Maximize and full screen
 //! asked through it go to the shell as `zoom` and `fullscreen`: its decision.
 
+use crate::ipc::protocol::Event;
 use std::collections::HashMap;
 
-use serde_json::json;
 use smithay::reexports::{
     wayland_protocols_wlr::foreign_toplevel::v1::server::{
         zwlr_foreign_toplevel_handle_v1::{self as handle_v1, ZwlrForeignToplevelHandleV1},
@@ -113,23 +113,31 @@ impl Dispatch<ZwlrForeignToplevelHandleV1, WindowId> for Dashi {
             handle_v1::Request::Close => state.close_window(id),
             handle_v1::Request::SetMinimized => state.park_window(id, Shown::Minimized),
             handle_v1::Request::SetMaximized => {
-                state.ipc.emit("zoom", json!({ "window": id, "on": true }));
+                state.ipc.emit(Event::Zoom {
+                    window: id,
+                    on: true,
+                });
                 Ok(())
             }
             handle_v1::Request::UnsetMaximized => {
-                state.ipc.emit("zoom", json!({ "window": id, "on": false }));
+                state.ipc.emit(Event::Zoom {
+                    window: id,
+                    on: false,
+                });
                 Ok(())
             }
             handle_v1::Request::SetFullscreen { .. } => {
-                state
-                    .ipc
-                    .emit("fullscreen", json!({ "window": id, "on": true }));
+                state.ipc.emit(Event::Fullscreen {
+                    window: id,
+                    on: true,
+                });
                 Ok(())
             }
             handle_v1::Request::UnsetFullscreen => {
-                state
-                    .ipc
-                    .emit("fullscreen", json!({ "window": id, "on": false }));
+                state.ipc.emit(Event::Fullscreen {
+                    window: id,
+                    on: false,
+                });
                 Ok(())
             }
             _ => Ok(()),

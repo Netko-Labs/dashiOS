@@ -65,7 +65,7 @@ const LAUNCHER = "launcher";
 const ADDRESS = "dashi://";
 
 /** The compositor client's requests the actions use. */
-export type Requests = Pick<Compositor, "request" | "windows">;
+export type Requests = Pick<Compositor, "sendKeys" | "close" | "minimize" | "hide" | "focus" | "capture" | "windows">;
 
 /**
  * Windows of one app: the same app id, so separate processes of one app
@@ -96,7 +96,7 @@ export async function runBinding(name: string, window: number | null, compositor
       if (window === null || !chord) return;
       const shortcut = chordText(chord);
       if (shortcut && (await actions.appShortcut?.(window, shortcut))) return;
-      await compositor.request("send-keys", { window, chord: `ctrl+${chord.shift ? "shift+" : ""}${chord.key}` });
+      await compositor.sendKeys({ window, chord: `ctrl+${chord.shift ? "shift+" : ""}${chord.key}` });
       return;
     }
     case "app-erase": {
@@ -105,8 +105,8 @@ export async function runBinding(name: string, window: number | null, compositor
       // erasing to the line's start (keymap.ts).
       if (window === null) return;
       if (await actions.appShortcut?.(window, "❖⌫")) return;
-      await compositor.request("send-keys", { window, chord: "shift+Home" });
-      await compositor.request("send-keys", { window, chord: "BackSpace" });
+      await compositor.sendKeys({ window, chord: "shift+Home" });
+      await compositor.sendKeys({ window, chord: "BackSpace" });
       return;
     }
     case LAUNCHER:
@@ -140,13 +140,13 @@ export async function runBinding(name: string, window: number | null, compositor
       // Close Tab, Text Editor's Close), as any other ❖ chord there; ⇧❖W its
       // ⇧❖W row (Terminal's Close Window). The window closes when it has none.
       if (await actions.appShortcut?.(window, chord?.shift ? "⇧❖W" : "❖W")) return;
-      await compositor.request("close", { window });
+      await compositor.close({ window });
       return;
     case "minimize-window":
-      await compositor.request("minimize", { window });
+      await compositor.minimize({ window });
       return;
     case "hide-app":
-      await compositor.request("hide", { window });
+      await compositor.hide({ window });
       return;
     case "screenshot-window":
       await takeScreenshot(compositor, { window });
@@ -159,7 +159,7 @@ export async function runBinding(name: string, window: number | null, compositor
       for (const each of windows.filter((candidate) => sameApp(candidate, focused))) {
         // A question it asks names quitting ("Quit Terminal?"), not closing a window.
         actions.appQuitting?.(each.pid);
-        await compositor.request("close", { window: each.id });
+        await compositor.close({ window: each.id });
       }
       return;
     }
@@ -169,7 +169,7 @@ export async function runBinding(name: string, window: number | null, compositor
       const focused = windows.find((candidate) => candidate.id === window);
       if (!focused) return;
       const back = windows.filter((candidate) => candidate.id !== window && candidate.state === "normal" && sameApp(candidate, focused)).at(-1);
-      if (back) await compositor.request("focus", { window: back.id });
+      if (back) await compositor.focus({ window: back.id });
       return;
     }
     default:
@@ -196,7 +196,7 @@ function switcherBinding(name: string, key: string | undefined, switcher: Switch
   }
 }
 
-export function startShortcuts(compositor: Compositor, actions: ShellActions): () => void {
+export function startShortcuts(compositor: Requests & Pick<Compositor, "on">, actions: ShellActions): () => void {
   return compositor.on((event) => {
     if (event.event === "super") {
       // Locked: a tap or a hold shows nothing; a chord or ❖ coming up still takes the sheet down.

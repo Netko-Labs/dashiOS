@@ -2,11 +2,11 @@
 //! (docs/compositor-ipc.md, "Who may ask"). A method not here is unknown; a
 //! caller not allowed is refused before anything is read or changed.
 
-use serde_json::{Value, json};
+use serde_json::Value;
 
 use super::{
     methods::{agents, capture, chrome, screens, spaces, windows},
-    params::Params,
+    protocol::{Done, read, write},
     server::ConnectionId,
 };
 use crate::state::Dashi;
@@ -35,21 +35,23 @@ impl Who {
     }
 }
 
-/// One request as a method sees it.
+/// One request as a method sees it (its params are its own argument, typed).
 pub(crate) struct Ask {
     pub connection: ConnectionId,
     pub id: u64,
-    pub params: Params,
 }
+
+/// A method's raw runner: the params as they came, the reply as it goes.
+pub(crate) type Raw<T> = fn(&mut Dashi, &Ask, Value) -> Result<T, String>;
 
 /// What runs for a method.
 #[derive(Clone, Copy)]
 pub(crate) enum Run {
     /// Answers at once.
-    Now(fn(&mut Dashi, &Ask) -> Result<Value, String>),
+    Now(Raw<Value>),
     /// Answers later, itself, once its work is done off the event loop; an
     /// error now is answered now.
-    Later(fn(&mut Dashi, &Ask) -> Result<(), String>),
+    Later(Raw<()>),
 }
 
 pub(crate) struct Method {
@@ -58,7 +60,29 @@ pub(crate) struct Method {
     pub run: Run,
 }
 
-const fn shell(name: &'static str, run: fn(&mut Dashi, &Ask) -> Result<Value, String>) -> Method {
+/// A method run as `fn(&mut Dashi, &Ask, Params) -> Result<Reply, String>`:
+/// its params are read into their type (unknown fields refused) and its reply
+/// written from one (docs/compositor-ipc.md has both).
+macro_rules! typed {
+    ($run:path) => {{
+        fn run(state: &mut Dashi, ask: &Ask, params: Value) -> Result<Value, String> {
+            write(&$run(state, ask, read(params)?)?)
+        }
+        run
+    }};
+}
+
+/// As `typed!`, for a method that answers later itself.
+macro_rules! later {
+    ($run:path) => {{
+        fn run(state: &mut Dashi, ask: &Ask, params: Value) -> Result<(), String> {
+            $run(state, ask, read(params)?)
+        }
+        Run::Later(run)
+    }};
+}
+
+const fn shell(name: &'static str, run: Raw<Value>) -> Method {
     Method {
         name,
         who: Who::Shell,
@@ -66,7 +90,7 @@ const fn shell(name: &'static str, run: fn(&mut Dashi, &Ask) -> Result<Value, St
     }
 }
 
-const fn granted(name: &'static str, run: fn(&mut Dashi, &Ask) -> Result<Value, String>) -> Method {
+const fn granted(name: &'static str, run: Raw<Value>) -> Method {
     Method {
         name,
         who: Who::Granted,
@@ -74,7 +98,7 @@ const fn granted(name: &'static str, run: fn(&mut Dashi, &Ask) -> Result<Value, 
     }
 }
 
-const fn anyone(name: &'static str, run: fn(&mut Dashi, &Ask) -> Result<Value, String>) -> Method {
+const fn anyone(name: &'static str, run: Raw<Value>) -> Method {
     Method {
         name,
         who: Who::Anyone,
@@ -88,68 +112,68 @@ const fn anyone(name: &'static str, run: fn(&mut Dashi, &Ask) -> Result<Value, S
 #[rustfmt::skip]
 pub(crate) const METHODS: &[Method] = &[
     // Session and windows
-    shell("subscribe", windows::subscribe),
-    anyone("session", windows::session),
-    granted("windows", windows::windows),
-    granted("focus", windows::focus),
-    granted("close", windows::close),
-    granted("minimize", windows::minimize),
-    granted("hide", windows::hide),
-    shell("suspend", windows::suspend),
-    granted("frame", windows::frame),
-    shell("place", windows::place),
-    granted("fullscreen", windows::fullscreen),
-    shell("send-keys", windows::send_keys),
-    shell("animation-target", windows::animation_target),
-    shell("layer-motion", windows::layer_motion),
-    granted("window-for-handle", windows::window_for_handle),
-    shell("attach", windows::attach),
+    shell("subscribe", typed!(windows::subscribe)),
+    anyone("session", typed!(windows::session)),
+    granted("windows", typed!(windows::windows)),
+    granted("focus", typed!(windows::focus)),
+    granted("close", typed!(windows::close)),
+    granted("minimize", typed!(windows::minimize)),
+    granted("hide", typed!(windows::hide)),
+    shell("suspend", typed!(windows::suspend)),
+    granted("frame", typed!(windows::frame)),
+    shell("place", typed!(windows::place)),
+    granted("fullscreen", typed!(windows::fullscreen)),
+    shell("send-keys", typed!(windows::send_keys)),
+    shell("animation-target", typed!(windows::animation_target)),
+    shell("layer-motion", typed!(windows::layer_motion)),
+    granted("window-for-handle", typed!(windows::window_for_handle)),
+    shell("attach", typed!(windows::attach)),
     // Screens
-    anyone("outputs", screens::outputs),
-    shell("mirror", screens::mirror),
-    granted("output", screens::output),
-    shell("xwayland-scale", screens::xwayland_scale),
-    shell("cursor-size", screens::cursor_size),
-    shell("input-region", screens::input_region),
-    granted("outputs-config", screens::outputs_config),
-    shell("power", screens::power),
-    shell("gamma", screens::gamma),
-    anyone("gpus", screens::gpus),
-    shell("gpu-keep", screens::gpu_keep),
-    shell("wallpaper", screens::wallpaper),
+    anyone("outputs", typed!(screens::outputs)),
+    shell("mirror", typed!(screens::mirror)),
+    granted("output", typed!(screens::output)),
+    shell("xwayland-scale", typed!(screens::xwayland_scale)),
+    shell("cursor-size", typed!(screens::cursor_size)),
+    shell("input-region", typed!(screens::input_region)),
+    granted("outputs-config", typed!(screens::outputs_config)),
+    shell("power", typed!(screens::power)),
+    shell("gamma", typed!(screens::gamma)),
+    anyone("gpus", typed!(screens::gpus)),
+    shell("gpu-keep", typed!(screens::gpu_keep)),
+    shell("wallpaper", typed!(screens::wallpaper)),
     // Shell chrome and input claims
-    shell("chrome", chrome::chrome),
-    shell("window-style", chrome::window_style),
-    shell("keymap", chrome::keymap),
-    shell("bars", chrome::bars),
-    shell("edges", chrome::edges),
-    shell("layout", chrome::layout),
-    shell("gestures", chrome::gestures),
-    shell("idle", chrome::idle),
-    shell("keyboard", chrome::keyboard),
-    shell("input", chrome::input),
+    shell("chrome", typed!(chrome::chrome)),
+    shell("window-style", typed!(chrome::window_style)),
+    shell("keymap", typed!(chrome::keymap)),
+    shell("bars", typed!(chrome::bars)),
+    shell("edges", typed!(chrome::edges)),
+    shell("layout", typed!(chrome::layout)),
+    shell("gestures", typed!(chrome::gestures)),
+    shell("idle", typed!(chrome::idle)),
+    shell("keyboard", typed!(chrome::keyboard)),
+    shell("input", typed!(chrome::input)),
     // Spaces and overview
-    shell("spaces", spaces::spaces),
-    shell("space-add", spaces::space_add),
-    shell("space-remove", spaces::space_remove),
-    granted("space-switch", spaces::space_switch),
-    granted("space-move", spaces::space_move),
-    shell("overview", spaces::overview),
+    shell("spaces", typed!(spaces::spaces)),
+    shell("space-add", typed!(spaces::space_add)),
+    shell("space-remove", typed!(spaces::space_remove)),
+    granted("space-switch", typed!(spaces::space_switch)),
+    granted("space-move", typed!(spaces::space_move)),
+    shell("overview", typed!(spaces::overview)),
     // Live pictures
-    shell("space-previews", spaces::space_previews),
-    shell("window-thumbnails", spaces::window_thumbnails),
+    shell("space-previews", typed!(spaces::space_previews)),
+    shell("window-thumbnails", typed!(spaces::window_thumbnails)),
     // Capture and agents
-    Method { name: "capture", who: Who::Shell, run: Run::Later(capture::capture) },
-    shell("screencopy-clients", agents::screencopy_clients),
-    shell("applet-clients", agents::applet_clients),
-    shell("ipc-clients", agents::ipc_clients),
-    shell("agent-input", agents::agent_input),
+    Method { name: "capture", who: Who::Shell, run: later!(capture::capture) },
+    shell("screencopy-clients", typed!(agents::screencopy_clients)),
+    shell("applet-clients", typed!(agents::applet_clients)),
+    shell("ipc-clients", typed!(agents::ipc_clients)),
+    shell("agent-input", typed!(agents::agent_input)),
     // Secrets for agents
-    shell("capture-mask", agents::capture_mask),
-    shell("input-origin", agents::input_origin),
+    shell("capture-mask", typed!(agents::capture_mask)),
+    shell("input-origin", typed!(agents::input_origin)),
     // Clipboard history and snippets
-    shell("snippets", agents::snippets),
-    shell("snippet-erase", agents::snippet_erase),
+    shell("snippets", typed!(agents::snippets)),
+    shell("snippet-erase", typed!(agents::snippet_erase)),
 ];
 
 /// The method called `name`.
@@ -158,8 +182,8 @@ pub(crate) fn find(name: &str) -> Option<&'static Method> {
 }
 
 /// `{}` once done, else the reason.
-pub(crate) fn done(result: Result<(), String>) -> Result<Value, String> {
-    result.map(|()| json!({}))
+pub(crate) fn done(result: Result<(), String>) -> Result<Done, String> {
+    result.map(|()| Done {})
 }
 
 /// Why a caller was refused a method that is `who`'s (never `Anyone`'s).

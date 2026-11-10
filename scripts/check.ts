@@ -31,10 +31,10 @@ export const STEPS: Step[] = [
   { name: "cargo fmt (dashi-term)", command: ["cargo", "fmt", "--check"], cwd: TERM, fast: true },
   { name: "H15 licences", command: ["bun", "scripts/check-licenses.ts"] },
   { name: "H17 system units", command: ["bun", "scripts/check-units.ts"] },
-  { name: "tests (bun)", command: ["bun", "run", "test"] },
+  { name: "tests (bun; H9 contract)", command: ["bun", "run", "test"] },
   { name: "H12 clippy", command: ["cargo", "clippy", "--workspace", "--all-targets", "--locked", "--", "-D", "warnings"] },
   { name: "H12 clippy (dashi-term)", command: ["cargo", "clippy", "--all-targets", "--locked", "--", "-D", "warnings"], cwd: TERM },
-  { name: "cargo test", command: ["cargo", "test", "--workspace", "--locked"] },
+  { name: "cargo test (H9 fixtures)", command: ["cargo", "test", "--workspace", "--locked"] },
   { name: "cargo test (dashi-term)", command: ["cargo", "test", "--locked"], cwd: TERM },
 ];
 

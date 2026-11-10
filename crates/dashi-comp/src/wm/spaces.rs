@@ -5,13 +5,13 @@
 
 use std::time::{Duration, Instant};
 
-use serde_json::{Value, json};
 use smithay::{
     reexports::calloop::timer::{TimeoutAction, Timer},
     utils::{Logical, Point},
 };
 
 use super::windows::{Shown, WindowId};
+use crate::ipc::protocol::{Event, SpacesAnswer};
 use crate::state::Dashi;
 
 pub(crate) const MAX_SPACES: usize = 16;
@@ -46,8 +46,8 @@ impl Default for Spaces {
 }
 
 impl Spaces {
-    pub(crate) fn answer(&self) -> Value {
-        json!({ "count": self.count, "current": self.current })
+    pub(crate) fn answer(&self) -> SpacesAnswer {
+        SpacesAnswer::new(self.count, self.current)
     }
 }
 
@@ -75,7 +75,7 @@ impl Dashi {
         &mut self,
         count: Option<usize>,
         follow: Option<bool>,
-    ) -> Result<Value, String> {
+    ) -> Result<SpacesAnswer, String> {
         if let Some(follow) = follow {
             self.spaces.follow = follow;
         }
@@ -108,7 +108,7 @@ impl Dashi {
         target: usize,
         progress: Option<f64>,
         carry: Option<WindowId>,
-    ) -> Result<Value, String> {
+    ) -> Result<SpacesAnswer, String> {
         if target >= self.spaces.count {
             return Err(format!("no Space {target}"));
         }
@@ -255,8 +255,7 @@ impl Dashi {
         if was_focused && space != self.spaces.current {
             self.focus_topmost();
         }
-        self.ipc
-            .emit("window-space", json!({ "window": id, "space": space }));
+        self.ipc.emit(Event::WindowSpace { window: id, space });
         Ok(())
     }
 
@@ -287,8 +286,7 @@ impl Dashi {
                 continue;
             }
             entry.space = target;
-            self.ipc
-                .emit("window-space", json!({ "window": id, "space": target }));
+            self.ipc.emit(Event::window_space(id, target));
         }
     }
 
@@ -329,8 +327,8 @@ impl Dashi {
     }
 
     pub(super) fn emit_space(&mut self, previous: usize) {
-        let event = json!({ "current": self.spaces.current, "previous": previous, "count": self.spaces.count });
-        self.ipc.emit("space", event);
+        let (current, count) = (self.spaces.current, self.spaces.count);
+        self.ipc.emit(Event::space(current, previous, count));
     }
 
     /// Where a window on Space `space` is drawn during a slide, by the slide's offset (logical, x).

@@ -2,10 +2,10 @@
 //! (`ipc-clients`, docs/compositor-ipc.md "Who may ask"). Only methods the
 //! table marks `Granted` can be; whom to grant is the shell's decision.
 
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
 
 use super::{
-    params::Params,
+    protocol::Pid,
     table::{self, Who},
 };
 use crate::session::trust::descends_from;
@@ -24,40 +24,43 @@ pub(crate) struct Grants {
     list: Vec<Grant>,
 }
 
+/// `ipc-clients`'s params: the processes granted `granted` methods.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct IpcClients {
+    pub clients: Vec<IpcClient>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct IpcClient {
+    pub pid: Pid,
+    pub methods: Vec<String>,
+}
+
 impl Grants {
-    /// `{clients: [{pid, methods: string[]}]}`, the whole list each time; all or nothing.
-    pub(crate) fn parse(params: &Params) -> Result<Self, String> {
-        let clients = params
-            .get("clients")
-            .and_then(Value::as_array)
-            .ok_or("`clients` must be a list")?;
-        if clients.len() > MAX_CLIENTS {
+    /// The whole list each time; all or nothing.
+    pub(crate) fn parse(params: &IpcClients) -> Result<Self, String> {
+        if params.clients.len() > MAX_CLIENTS {
             return Err(format!("`clients` names more than {MAX_CLIENTS} processes"));
         }
-        let list = clients
+        let list = params
+            .clients
             .iter()
-            .map(|entry| {
-                let pid = entry
-                    .get("pid")
-                    .and_then(Value::as_i64)
-                    .and_then(|pid| i32::try_from(pid).ok())
-                    .filter(|pid| *pid > 1)
-                    .ok_or("each client needs a `pid`, a process id above 1")?;
-                let methods = entry
-                    .get("methods")
-                    .and_then(Value::as_array)
-                    .ok_or("each client needs `methods`, a list of method names")?
+            .map(|client| {
+                let methods = client
+                    .methods
                     .iter()
-                    .map(|name| {
-                        let name = name.as_str().ok_or("`methods` must be method names")?;
-                        match table::find(name) {
-                            Some(method) if method.who == Who::Granted => Ok(method.name),
-                            Some(_) => Err(format!("{name} can't be granted")),
-                            None => Err(format!("unknown method: {name}")),
-                        }
+                    .map(|name| match table::find(name) {
+                        Some(method) if method.who == Who::Granted => Ok(method.name),
+                        Some(_) => Err(format!("{name} can't be granted")),
+                        None => Err(format!("unknown method: {name}")),
                     })
                     .collect::<Result<_, String>>()?;
-                Ok(Grant { pid, methods })
+                Ok(Grant {
+                    pid: client.pid.to::<i32>(),
+                    methods,
+                })
             })
             .collect::<Result<_, String>>()?;
         Ok(Self { list })
@@ -78,11 +81,8 @@ mod tests {
 
     use super::*;
 
-    fn parse(value: Value) -> Result<Grants, String> {
-        match value {
-            Value::Object(params) => Grants::parse(&params),
-            _ => unreachable!("tests pass objects"),
-        }
+    fn parse(value: serde_json::Value) -> Result<Grants, String> {
+        Grants::parse(&crate::ipc::protocol::read(value)?)
     }
 
     #[test]

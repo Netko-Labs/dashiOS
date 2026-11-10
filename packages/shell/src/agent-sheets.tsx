@@ -46,8 +46,8 @@ interface Sheet extends QueuedSheet {
 }
 
 export interface AgentUiOptions {
-  /** A compositor request: `input-origin` says whose press answered a sheet. */
-  request(method: string, params: Record<string, unknown>): Promise<unknown>;
+  /** The compositor's `input-origin`: it says whose press answered a sheet. */
+  inputOrigin(params: { namespace: string }): Promise<{ person: number | null; agent: number | null }>;
 }
 
 /** The sheet queue's id for the person's own questions (agents' connections count from 1). */
@@ -76,7 +76,7 @@ export function createAgentUi(options: AgentUiOptions): AgentUi & PersonSheets &
       // A no always counts; a yes only if the person's own hands gave it.
       const answer = (reply: Answer) => {
         if (reply.allow === "deny") return given(reply);
-        void personAnswered(options.request, CONSENT_LAYER).then((person) => {
+        void personAnswered(options.inputOrigin, CONSENT_LAYER).then((person) => {
           if (person) given(reply);
           else console.error("dashi-shell: a consent sheet's answer did not come from the person; it was ignored");
         });
@@ -213,7 +213,7 @@ export function createAgentUi(options: AgentUiOptions): AgentUi & PersonSheets &
         });
         // Done counts only when the person pressed it, not an agent.
         const done = () =>
-          void personAnswered(options.request, TURN_LAYER).then((person) => {
+          void personAnswered(options.inputOrigin, TURN_LAYER).then((person) => {
             if (person) endTurn(turn.agent, true);
           });
         const root = render(<TurnBanner turn={turn} onDone={done} />, host);

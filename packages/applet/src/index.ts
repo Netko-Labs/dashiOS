@@ -1,5 +1,8 @@
 // @dashi/applet: the applet SDK (docs/applets.md). The client and defineApplet for an applet's
 // code; the manifest, permissions, packages, signatures, and the catalog for the store and the shell.
+
+export { isRefusal, type Refusal } from "@dashi/shape";
+export { isInsidePath } from "@dashi/shape/kit";
 export { type Appearance, appearance, appearancePath, darkFrom } from "./appearance.ts";
 export {
   type CatalogIndex,
@@ -104,7 +107,6 @@ export {
 } from "./manifest.ts";
 export { type AppletMenuRow, choosable, MENU_LIMITS, type MenuRowSpec, parseMenu } from "./menu.ts";
 export { PACKAGE_EXTENSION, type Packed, pack, packageName, SDK_VERSION, sha256, type Unpacked, unpack } from "./package.ts";
-export { isInsidePath, isRefusal, type Refusal } from "./parse.ts";
 export {
   asksForPassword,
   CONTROLS_PERMISSION,

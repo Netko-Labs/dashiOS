@@ -5,18 +5,20 @@
 //! later; a key left out is the device's own default. The scroll factor is
 //! the compositor's: it scales what a touchpad's or a wheel's scroll moves.
 
-use serde_json::{Map, Value};
+use serde::{Deserialize, Serialize};
 use smithay::backend::input::AxisSource;
 
-use crate::state::Dashi;
+use crate::{ipc::protocol::Real, state::Dashi};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) enum AccelProfile {
     Flat,
     Adaptive,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) enum ClickMethod {
     ButtonAreas,
     Clickfinger,
@@ -40,80 +42,69 @@ pub(crate) struct InputSettings {
     pub mouse: PointerSettings,
 }
 
-fn parse_pointer(
-    value: Option<&Value>,
-    what: &str,
-    touchpad: bool,
-) -> Result<PointerSettings, String> {
-    let Some(value) = value else {
-        return Ok(PointerSettings::default());
-    };
-    let map = value
-        .as_object()
-        .ok_or_else(|| format!("`{what}` must be an object"))?;
-    let flag = |key: &str| -> Result<Option<bool>, String> {
-        match map.get(key) {
-            None => Ok(None),
-            Some(v) => v
-                .as_bool()
-                .map(Some)
-                .ok_or_else(|| format!("`{what}.{key}` must be true or false")),
-        }
-    };
-    let number = |key: &str, low: f64, high: f64| -> Result<Option<f64>, String> {
-        match map.get(key) {
-            None => Ok(None),
-            Some(v) => v
-                .as_f64()
-                .filter(|n| (low..=high).contains(n))
-                .map(Some)
-                .ok_or_else(|| format!("`{what}.{key}` must be from {low} to {high}")),
-        }
-    };
-    let accel_profile = match map.get("accelProfile").map(Value::as_str) {
-        None => None,
-        Some(Some("flat")) => Some(AccelProfile::Flat),
-        Some(Some("adaptive")) => Some(AccelProfile::Adaptive),
-        Some(_) => return Err(format!("`{what}.accelProfile` must be flat or adaptive")),
-    };
-    let click_method = match map.get("clickMethod").map(Value::as_str) {
-        None => None,
-        Some(Some("buttonAreas")) if touchpad => Some(ClickMethod::ButtonAreas),
-        Some(Some("clickfinger")) if touchpad => Some(ClickMethod::Clickfinger),
-        Some(_) => {
-            return Err(format!(
-                "`{what}.clickMethod` must be buttonAreas or clickfinger"
-            ));
-        }
-    };
-    let only_touchpad = |value: Option<bool>, key: &str| -> Result<Option<bool>, String> {
-        if value.is_some() && !touchpad {
-            return Err(format!("`{what}.{key}` is for touchpads"));
-        }
-        Ok(value)
-    };
-    Ok(PointerSettings {
-        tap: only_touchpad(flag("tap")?, "tap")?,
-        natural_scroll: flag("naturalScroll")?,
-        accel_speed: number("accelSpeed", -1.0, 1.0)?,
-        accel_profile,
-        disable_while_typing: only_touchpad(flag("disableWhileTyping")?, "disableWhileTyping")?,
-        click_method,
-        scroll_speed: number("scrollSpeed", 0.25, 4.0)?,
-    })
+/// `input`'s params (docs/compositor-ipc.md): a key left out is the device's default.
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct InputParams {
+    #[serde(default)]
+    pub touchpad: TouchpadParams,
+    #[serde(default)]
+    pub mouse: MouseParams,
 }
 
-/// `input {touchpad?, mouse?}`, checked whole before anything changes.
-pub(crate) fn parse(params: &Map<String, Value>) -> Result<InputSettings, String> {
-    Ok(InputSettings {
-        touchpad: parse_pointer(params.get("touchpad"), "touchpad", true)?,
-        mouse: parse_pointer(params.get("mouse"), "mouse", false)?,
-    })
+/// Pointer speed, -1 to 1.
+type Speed = Real<-1000, 1000>;
+/// How far a scroll goes, 0.25 to 4 times.
+type ScrollSpeed = Real<250, 4000>;
+
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct TouchpadParams {
+    pub tap: Option<bool>,
+    pub natural_scroll: Option<bool>,
+    pub accel_speed: Option<Speed>,
+    pub accel_profile: Option<AccelProfile>,
+    pub disable_while_typing: Option<bool>,
+    pub click_method: Option<ClickMethod>,
+    pub scroll_speed: Option<ScrollSpeed>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct MouseParams {
+    pub natural_scroll: Option<bool>,
+    pub accel_speed: Option<Speed>,
+    pub accel_profile: Option<AccelProfile>,
+    pub scroll_speed: Option<ScrollSpeed>,
+}
+
+impl From<&InputParams> for InputSettings {
+    fn from(params: &InputParams) -> Self {
+        let (touchpad, mouse) = (&params.touchpad, &params.mouse);
+        Self {
+            touchpad: PointerSettings {
+                tap: touchpad.tap,
+                natural_scroll: touchpad.natural_scroll,
+                accel_speed: touchpad.accel_speed.map(Speed::get),
+                accel_profile: touchpad.accel_profile,
+                disable_while_typing: touchpad.disable_while_typing,
+                click_method: touchpad.click_method,
+                scroll_speed: touchpad.scroll_speed.map(ScrollSpeed::get),
+            },
+            mouse: PointerSettings {
+                natural_scroll: mouse.natural_scroll,
+                accel_speed: mouse.accel_speed.map(Speed::get),
+                accel_profile: mouse.accel_profile,
+                scroll_speed: mouse.scroll_speed.map(ScrollSpeed::get),
+                ..PointerSettings::default()
+            },
+        }
+    }
 }
 
 impl Dashi {
-    pub(crate) fn set_input(&mut self, params: &Map<String, Value>) -> Result<(), String> {
-        let settings = parse(params)?;
+    pub(crate) fn set_input(&mut self, params: &InputParams) -> Result<(), String> {
+        let settings = InputSettings::from(params);
         self.backend.apply_input(&settings);
         self.input_settings = settings;
         Ok(())
@@ -132,10 +123,10 @@ impl Dashi {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
+    use serde_json::{Value, json};
 
     fn of(value: Value) -> Result<InputSettings, String> {
-        parse(value.as_object().expect("an object"))
+        crate::ipc::protocol::read::<InputParams>(value).map(|params| InputSettings::from(&params))
     }
 
     #[test]
@@ -168,7 +159,7 @@ mod tests {
         assert!(
             of(json!({ "mouse": { "tap": true } }))
                 .unwrap_err()
-                .contains("touchpads")
+                .contains("unknown field `tap`")
         );
         assert!(of(json!({ "touchpad": { "clickMethod": "both" } })).is_err());
         assert!(of(json!({ "mouse": "fast" })).is_err());

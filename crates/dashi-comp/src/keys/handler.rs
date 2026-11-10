@@ -13,9 +13,9 @@
 //! to the keymap's `afterTap` rules at once, before the shell has heard of it
 //! (so does a `bind` rule that `armsAfterTap`: ❖Space).
 
+use crate::ipc::protocol::{Event, SuperPhase};
 use std::{collections::HashMap, time::Instant};
 
-use serde_json::json;
 use smithay::{
     backend::input::KeyState,
     input::keyboard::{Keycode, KeysymHandle, ModifiersState, keysyms, xkb},
@@ -158,11 +158,9 @@ impl Dashi {
                 self.keys.taken.insert(keycode, Taken::Swallowed);
                 let window = self.focused_window_id();
                 let key = info.names.first().cloned().unwrap_or_default();
-                let mut event = json!({ "name": name, "window": window, "key": key, "shift": mods.shift, "ctrl": mods.ctrl, "alt": mods.alt });
-                if let Some(text) = &info.text {
-                    event["text"] = json!(text);
-                }
-                self.ipc.emit("binding", event);
+                let held = [mods.shift, mods.ctrl, mods.alt];
+                let event = Event::binding(name.clone(), window, key, held, info.text.clone());
+                self.ipc.emit(event);
                 // As a ❖ tap does: the keys after this one are the shell's from now (keymap.rs).
                 if arms_after_tap {
                     self.keys.keymap.arm_after_tap();
@@ -275,7 +273,8 @@ impl Dashi {
             }
         }
         if mods.ctrl && mods.super_ && !mods.alt && name == "Escape" {
-            self.ipc.emit("shortcut", json!({ "name": "stop-agents" }));
+            let name = "stop-agents".into();
+            self.ipc.emit(Event::Shortcut { name });
             return true;
         }
         false
@@ -306,7 +305,7 @@ impl Dashi {
                                 .as_ref()
                                 .is_some_and(|press| !press.chorded);
                         if still {
-                            state.ipc.emit("super", json!({ "phase": "hold" }));
+                            state.ipc.emit(SuperPhase::Hold.event());
                         }
                         TimeoutAction::Drop
                     },
@@ -323,9 +322,9 @@ impl Dashi {
                 if tapped {
                     // The shell's rules for after a tap hold from now, not from when it hears of the tap.
                     self.keys.keymap.arm_after_tap();
-                    self.ipc.emit("super", json!({ "phase": "tap" }));
+                    self.ipc.emit(SuperPhase::Tap.event());
                 }
-                self.ipc.emit("super", json!({ "phase": "up" }));
+                self.ipc.emit(SuperPhase::Up.event());
             }
         }
     }
@@ -338,7 +337,7 @@ impl Dashi {
         };
         if !press.chorded {
             press.chorded = true;
-            self.ipc.emit("super", json!({ "phase": "chord" }));
+            self.ipc.emit(SuperPhase::Chord.event());
         }
         true
     }
@@ -356,8 +355,8 @@ impl Dashi {
         match (&info.text, plain) {
             (Some(text), true) => {
                 if let Some(keyword) = self.keys.snippets.typed(window, text) {
-                    self.ipc
-                        .emit("snippet", json!({ "keyword": keyword, "window": window }));
+                    let keyword = keyword.clone();
+                    self.ipc.emit(Event::Snippet { keyword, window });
                 }
             }
             (None, true) if name == "BackSpace" => self.keys.snippets.erased(window),

@@ -18,7 +18,7 @@ import type { MenuAction, PowerKind } from "./model.ts";
 /** What the actions reach beyond the compositor. */
 export interface ActionDeps {
   /** Null without dashi-comp: window rows do nothing. */
-  compositor: Pick<Compositor, "request" | "windows"> | null;
+  compositor: Pick<Compositor, "focus" | "hide" | "close" | "minimize" | "sendKeys" | "windows"> | null;
   arranger: {
     arrange(window: number, to: Arrange): Promise<void>;
     toggleFullscreen?(window: number): Promise<void>;
@@ -61,8 +61,8 @@ export function onePerApp(windows: readonly CompositorWindow[]): CompositorWindo
 
 export async function runMenuAction(action: MenuAction, deps: ActionDeps): Promise<void> {
   const { compositor } = deps;
-  const request = async (method: string, window: number) => {
-    await compositor?.request(method, { window });
+  const toWindow = async (method: "hide" | "close" | "minimize" | "focus", window: number) => {
+    await compositor?.[method]({ window });
   };
   switch (action.kind) {
     case "about-dashi":
@@ -91,13 +91,13 @@ export async function runMenuAction(action: MenuAction, deps: ActionDeps): Promi
       deps.launchApp(action.appId);
       return;
     case "hide-app":
-      return request("hide", action.window);
+      return toWindow("hide", action.window);
     case "close-window":
-      return request("close", action.window);
+      return toWindow("close", action.window);
     case "minimize":
-      return request("minimize", action.window);
+      return toWindow("minimize", action.window);
     case "focus":
-      return request("focus", action.window);
+      return toWindow("focus", action.window);
     case "tile":
       await deps.arranger?.arrange(action.window, action.tile);
       return;
@@ -113,7 +113,7 @@ export async function runMenuAction(action: MenuAction, deps: ActionDeps): Promi
       return forEachWindowOfApp(compositor, action.window, (window) => {
         // A question it asks names quitting ("Quit Terminal?"), not closing a window.
         deps.appQuitting?.(window.pid);
-        return request("close", window.id);
+        return toWindow("close", window.id);
       });
     case "hide-others":
       return hideOthers(compositor, action.window);
@@ -133,9 +133,9 @@ async function typeEdit(deps: ActionDeps, window: number, command: EditCommand):
   if (!compositor) return;
   const target = (await compositor.windows()).find((candidate) => candidate.id === window);
   if (!target || target.state !== "normal") return;
-  await compositor.request("focus", { window });
+  await compositor.focus({ window });
   await (deps.settle ?? (() => Bun.sleep(SETTLE_MS)))();
-  await compositor.request("send-keys", { window, chord: editChord(command, target.appId) });
+  await compositor.sendKeys({ window, chord: editChord(command, target.appId) });
 }
 
 async function forEachWindowOfApp(compositor: ActionDeps["compositor"], window: number, each: (window: CompositorWindow) => Promise<void>): Promise<void> {
@@ -153,8 +153,8 @@ async function hideOthers(compositor: ActionDeps["compositor"], window: number):
   const keep = windows.find((candidate) => candidate.id === window);
   if (!keep) return;
   const others = onePerApp(windows.filter((candidate) => candidate.state === "normal" && !sameApp(candidate, keep)));
-  for (const other of others) await compositor.request("hide", { window: other.id });
-  await compositor.request("focus", { window });
+  for (const other of others) await compositor.hide({ window: other.id });
+  await compositor.focus({ window });
 }
 
 /** Unhides every hidden app (focusing one of its windows does), then gives the focus back. */
@@ -162,9 +162,9 @@ async function showAll(compositor: ActionDeps["compositor"], window: number | nu
   if (!compositor) return;
   const windows = await compositor.windows();
   for (const hidden of onePerApp(windows.filter((candidate) => candidate.state === "hidden"))) {
-    await compositor.request("focus", { window: hidden.id });
+    await compositor.focus({ window: hidden.id });
   }
-  if (window !== null && windows.some((candidate) => candidate.id === window)) await compositor.request("focus", { window });
+  if (window !== null && windows.some((candidate) => candidate.id === window)) await compositor.focus({ window });
 }
 
 /** Raises the app's windows that are on screen (back to front) and ends on `window`. */
@@ -175,6 +175,6 @@ async function bringToFront(compositor: ActionDeps["compositor"], window: number
   if (!focused) return;
   // `windows` is front to back; raising from the back keeps their order.
   const mine = windows.filter((candidate) => candidate.state === "normal" && sameApp(candidate, focused)).reverse();
-  for (const each of mine) if (each.id !== window) await compositor.request("focus", { window: each.id });
-  await compositor.request("focus", { window });
+  for (const each of mine) if (each.id !== window) await compositor.focus({ window: each.id });
+  await compositor.focus({ window });
 }

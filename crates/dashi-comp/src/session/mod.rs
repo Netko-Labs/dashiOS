@@ -2,6 +2,7 @@
 //! idle, power, and the agent seat.
 
 pub(crate) mod agent;
+pub(crate) mod agent_input;
 mod agent_keys;
 pub(crate) mod applets;
 mod child;

@@ -8,7 +8,7 @@
  * screen's side (edge.ts, from the compositor's `edge-hold`).
  */
 
-import { parseOutputs } from "../arrange.ts";
+import { placedOutputs } from "../arrange.ts";
 import type { Compositor, CompositorEvent, CompositorWindow } from "../compositor.ts";
 import type { Output } from "../layout.ts";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
@@ -82,7 +82,7 @@ export function startSpaces(deps: SpacesDeps): SpacesRuntime {
     const message = JSON.stringify({ output: output.name, rects });
     if (message === sent) return;
     sent = message;
-    void compositor.request("space-previews", { output: output.name, rects }).catch(report("no Desktop pictures"));
+    void compositor.spacePreviews({ output: output.name, rects }).catch(report("no Desktop pictures"));
   };
 
   /** The row takes the pointer only where it shows: the line of names, or all of it opened. */
@@ -90,7 +90,7 @@ export function startSpaces(deps: SpacesDeps): SpacesRuntime {
     if (!placed) return;
     const height = view.getSnapshot().open ? SHELF_HEIGHT : ROW.height;
     void compositor
-      .request("input-region", { namespace: NAMESPACE, rects: [{ x: 0, y: 0, width: placed.frame.width, height }] })
+      .inputRegion({ namespace: NAMESPACE, rects: [{ x: 0, y: 0, width: placed.frame.width, height }] })
       .catch(report("the Desktops row's input region"));
   };
 
@@ -103,7 +103,7 @@ export function startSpaces(deps: SpacesDeps): SpacesRuntime {
 
   const closeRow = () => {
     generation++;
-    if (placed && sent !== "") void compositor.request("space-previews", { output: placed.output.name, rects: [] }).catch(() => {});
+    if (placed && sent !== "") void compositor.spacePreviews({ output: placed.output.name, rects: [] }).catch(() => {});
     sent = "";
     row?.close();
     row = null;
@@ -113,8 +113,8 @@ export function startSpaces(deps: SpacesDeps): SpacesRuntime {
 
   const openRow = async () => {
     const mine = ++generation;
-    const [name, answer] = await Promise.all([deps.screen(), compositor.request("outputs")]);
-    const outputs = parseOutputs(answer);
+    const [name, answer] = await Promise.all([deps.screen(), compositor.outputs()]);
+    const outputs = placedOutputs(answer);
     const output = outputs.find((candidate) => candidate.name === name) ?? outputs[0];
     if (!output || mine !== generation) return;
     const frame = { ...rowFrame(output.usable), height: SHELF_HEIGHT };
@@ -168,7 +168,7 @@ export function startSpaces(deps: SpacesDeps): SpacesRuntime {
 
   /** A window held against a screen's side: the next Desktop, if the policy says so (edge.ts). */
   const held = async (event: Extract<CompositorEvent, { event: "edge-hold" }>) => {
-    const outputs = parseOutputs(await compositor.request("outputs"));
+    const outputs = placedOutputs(await compositor.outputs());
     const target = edgeHoldTarget(event, outputs, controller.getSnapshot(), controller.getSnapshot().fullscreen);
     if (target !== null) await controller.switchTo(target);
   };

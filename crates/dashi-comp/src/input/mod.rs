@@ -13,6 +13,7 @@ pub(crate) mod settings;
 mod under;
 
 pub(crate) use claims::Claims;
+pub(crate) use settings::InputParams;
 
 use smithay::{
     backend::input::{

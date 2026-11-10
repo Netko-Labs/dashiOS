@@ -26,7 +26,7 @@ export interface SpacesSettings {
   fullscreenDesktop?: boolean;
 }
 
-export type SpacesCompositor = Pick<Compositor, "request" | "on" | "windows">;
+export type SpacesCompositor = Pick<Compositor, "on" | "windows" | "spaces" | "spaceAdd" | "spaceRemove" | "spaceSwitch" | "spaceMove">;
 
 /** The Desktops as people see them: the Spaces, their given names, and what each is called now. */
 export interface Desktops extends SpacesState {
@@ -104,14 +104,14 @@ export class SpacesController {
     if (count !== undefined) this.saved = count;
     if (!followChanged && count === undefined) return;
     const spaces = count === undefined ? {} : { count: Math.min(MAX_SPACES, count + this.slots.length - desktopCount(this.slots)) };
-    await this.ask("spaces", { follow: settings.switchOnActivate, ...spaces });
+    await this.ask("spaces", () => this.compositor.spaces({ follow: settings.switchOnActivate, ...spaces }));
   }
 
   /** The full-screen Desktops from before a restart: a Space whose one window is full screen (slots.ts). */
   private async recover(settings: SpacesSettings): Promise<void> {
     if (settings.fullscreenDesktop === false) return;
     try {
-      const [answer, windows] = await Promise.all([this.compositor.request("spaces", {}), this.compositor.windows()]);
+      const [answer, windows] = await Promise.all([this.compositor.spaces(), this.compositor.windows()]);
       const state = parseSpaces(answer);
       if (!state) return;
       // settings.json counts the Desktops only: the Spaces beyond that were full-screen ones.
@@ -126,14 +126,14 @@ export class SpacesController {
 
   /** Ask the compositor how things are. */
   async refresh(): Promise<void> {
-    await this.ask("spaces", {});
+    await this.ask("spaces", () => this.compositor.spaces());
   }
 
   /** Show Space `index` (the windows slide unless Reduce motion is on). */
   /** Show Space `index`; `carry`, a window on the Space that shows, stays on screen and goes along (`space-switch {carry}`). */
   async switchTo(index: number, carry?: number): Promise<void> {
     if (index === this.state.current || index < 0 || index >= this.state.count) return;
-    await this.ask("space-switch", { space: index, ...(carry === undefined ? {} : { carry }) });
+    await this.ask("space-switch", () => this.compositor.spaceSwitch({ space: index, ...(carry === undefined ? {} : { carry }) }));
   }
 
   /** A Spaces key (keymap.ts); false when `name` is not one. */
@@ -148,11 +148,11 @@ export class SpacesController {
   /** A new Space at the end; resolves to its index, or null at the limit. */
   async add(): Promise<number | null> {
     if (this.state.count >= MAX_SPACES) return null;
-    const answer = await this.compositor.request("space-add", {}).catch((error) => {
+    const answer = await this.compositor.spaceAdd().catch((error) => {
       console.error("dashi-shell: no new Space:", error);
       return null;
     });
-    const index = (answer as { space?: unknown } | null)?.space;
+    const index = answer?.space;
     await this.refresh();
     return typeof index === "number" ? index : null;
   }
@@ -173,13 +173,13 @@ export class SpacesController {
     if (slots[index === 0 ? 1 : index - 1] !== null) {
       const windows = await this.compositor.windows().catch(() => []);
       for (const window of windows.filter((each) => (each.space ?? 0) === index)) {
-        await this.compositor.request("space-move", { window: window.id, space: into }).catch(() => {});
+        await this.compositor.spaceMove({ window: window.id, space: into }).catch(() => {});
       }
     }
     const ordinal = desktopOrdinal(slots, index);
     const count = this.state.count;
     this.slots = slots.filter((_, at) => at !== index);
-    await this.ask("space-remove", { space: index });
+    await this.ask("space-remove", () => this.compositor.spaceRemove({ space: index }));
     if (this.state.count === count) {
       this.slots = [...slots];
       return;
@@ -204,7 +204,7 @@ export class SpacesController {
     // Known before the compositor says the count changed, so the count saved stays the Desktops'.
     this.slots = [...before.slice(0, at), window, ...before.slice(at)];
     try {
-      const state = parseSpaces(await this.compositor.request("space-add", { at }));
+      const state = parseSpaces(await this.compositor.spaceAdd({ at }));
       if (state) this.set(state);
       return true;
     } catch (error) {
@@ -222,7 +222,7 @@ export class SpacesController {
     const before = this.slots;
     const count = this.state.count;
     this.slots = before.filter((_, at) => at !== index);
-    await this.ask("space-remove", { space: index });
+    await this.ask("space-remove", () => this.compositor.spaceRemove({ space: index }));
     if (this.state.count === count) this.slots = [...before];
     this.publish({});
   }
@@ -232,7 +232,7 @@ export class SpacesController {
     if (this.slots.includes(window) || (index !== "new" && (this.slots[index] ?? null) !== null)) return;
     const space = index === "new" ? await this.add() : index;
     if (space === null) return;
-    await this.compositor.request("space-move", { window, space }).catch((error) => console.error("dashi-shell: the window did not move:", error));
+    await this.compositor.spaceMove({ window, space }).catch((error) => console.error("dashi-shell: the window did not move:", error));
   }
 
   /** Call Desktop `index` `text` (nothing: after its apps again), and remember it. A full-screen Desktop keeps its app's name. */
@@ -252,7 +252,7 @@ export class SpacesController {
       while (this.nextHold) {
         const { target: space, progress: at } = this.nextHold;
         this.nextHold = null;
-        await this.compositor.request("space-switch", { space, progress: at }).catch(() => {});
+        await this.compositor.spaceSwitch({ space, progress: at }).catch(() => {});
       }
       this.holdBusy = false;
     })();
@@ -262,13 +262,13 @@ export class SpacesController {
   async release(space: number): Promise<void> {
     this.nextHold = null;
     await this.holding;
-    await this.ask("space-switch", { space });
+    await this.ask("space-switch", () => this.compositor.spaceSwitch({ space }));
   }
 
   /** A request whose answer is the Spaces as they are; failures are logged. */
-  private async ask(method: string, params: Record<string, unknown>): Promise<void> {
+  private async ask(method: string, call: () => Promise<unknown>): Promise<void> {
     try {
-      const answer = await this.compositor.request(method, params);
+      const answer = await call();
       const state = parseSpaces(answer);
       if (state) this.set(state);
     } catch (error) {

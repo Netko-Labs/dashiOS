@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { busyWait, type Clock, Hands, PersonBusy, QUIET_MS, WAIT_MS } from "../src/agents/desktop/hands.ts";
 import { describePerson } from "../src/agents/desktop/input.ts";
 import type { CompositorEvent } from "../src/compositor.ts";
+import { fakeCompositor } from "./support/compositor.ts";
 
 /**
  * A fake dashi-comp that borrows the person's seat by its rule (session/idle.rs):
@@ -19,12 +20,8 @@ function desktop() {
       now += ms;
     },
   };
-  const compositor = {
-    on(listener: (event: CompositorEvent) => void) {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    async request(method: string, params?: Record<string, unknown>): Promise<unknown> {
+  const compositor = fakeCompositor(
+    async (method, params) => {
       expect(method).toBe("agent-input");
       const borrow = params?.borrow as { idleMs: number } | undefined;
       const away = now - personAt;
@@ -32,7 +29,13 @@ function desktop() {
       sent.push(params ?? {});
       return {};
     },
-  };
+    {
+      on(listener: (event: CompositorEvent) => void) {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+    },
+  );
   return {
     clock,
     compositor,
@@ -50,7 +53,7 @@ function desktop() {
 
 const HELIUM = { id: 2, appId: "helium" };
 const EDITOR = { id: 3, appId: "org.gnome.TextEditor" };
-const click = { pointer: { x: 10, y: 10 }, action: "click" };
+const click = { pointer: { x: 10, y: 10 }, action: "click" } as const;
 
 test("unattended, an agent's clicks and keys into a borrowing app go through every time", async () => {
   const vm = desktop();

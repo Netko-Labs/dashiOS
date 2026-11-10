@@ -3,6 +3,7 @@ import type { CompositorEvent } from "../src/compositor.ts";
 import { IdlePolicy } from "../src/idle.ts";
 import { awakeLines, InhibitFlag, InhibitStore, keepAwakeEntries, screenSaverInterface } from "../src/inhibit/index.ts";
 import { portalHostInterface } from "../src/portal-host/index.ts";
+import { fakeCompositor as over } from "./support/compositor.ts";
 import { type FakeClock, fakeClock } from "./support/time.ts";
 
 let clock: FakeClock | null = null;
@@ -74,16 +75,18 @@ function fakeCompositor() {
     emit: (event: CompositorEvent) => {
       for (const listener of listeners) listener(event);
     },
-    host: {
-      request: async (method: string, params?: Record<string, unknown>) => {
+    host: over(
+      async (method, params) => {
         sent.push([method, params]);
         return {};
       },
-      on: (listener: (event: CompositorEvent) => void) => {
-        listeners.add(listener);
-        return () => listeners.delete(listener);
+      {
+        on: (listener: (event: CompositorEvent) => void) => {
+          listeners.add(listener);
+          return () => listeners.delete(listener);
+        },
       },
-    },
+    ),
   };
 }
 

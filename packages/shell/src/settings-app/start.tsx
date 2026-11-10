@@ -126,7 +126,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
   const raise = async (): Promise<void> => {
     try {
       const window = (await compositor?.windows())?.find((candidate) => candidate.appId === SETTINGS_APP_ID);
-      if (window) await compositor?.request("focus", { window: window.id });
+      if (window) await compositor?.focus({ window: window.id });
     } catch (error) {
       console.error("dashi-shell: could not bring System Settings forward:", error);
     }

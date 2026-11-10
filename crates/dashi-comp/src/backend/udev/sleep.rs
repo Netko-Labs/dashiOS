@@ -15,6 +15,7 @@
 //! laptop's card falls off the bus, and then every call on it hangs in the
 //! driver. The rules are lifecycle.rs's; this file carries them out.
 
+use crate::ipc::protocol::Event;
 use std::{
     path::{Path, PathBuf},
     time::Instant,
@@ -58,7 +59,7 @@ pub(super) fn gpu_found(
     }
     if draws {
         device_added(state, node, path)?;
-        state.ipc.emit("gpus-changed", json!({}));
+        state.ipc.emit(Event::GpusChanged);
         return Ok(());
     }
     let wanted = with_udev(state, |_, data| {
@@ -84,7 +85,7 @@ pub(super) fn gpu_found(
             "a GPU with no screen: left asleep until one is connected"
         );
     }
-    state.ipc.emit("gpus-changed", json!({}));
+    state.ipc.emit(Event::GpusChanged);
     Ok(())
 }
 
@@ -123,7 +124,7 @@ pub(super) fn gpu_gone(state: &mut Dashi, node: DrmNode) {
         (None, true) => device_removed(state, node),
         (Some(card), false) => {
             tracing::info!(card = card.name, "a sleeping GPU is gone");
-            state.ipc.emit("gpus-changed", json!({}));
+            state.ipc.emit(Event::GpusChanged);
         }
         (None, false) => {}
     }
@@ -229,7 +230,7 @@ fn release(state: &mut Dashi, node: DrmNode) {
             Err(_) => tracing::warn!("a GPU's fd is still held; it closes when that lets go"),
         }
     });
-    state.ipc.emit("gpus-changed", json!({}));
+    state.ipc.emit(Event::GpusChanged);
 }
 
 /// `gpu-keep {card, on}`: hold a GPU open with nothing on it (warm for a
@@ -251,6 +252,6 @@ pub(crate) fn keep_gpu(state: &mut Dashi, card: &str, on: bool) -> Result<(), St
     } else {
         settle(state, node);
     }
-    state.ipc.emit("gpus-changed", json!({}));
+    state.ipc.emit(Event::GpusChanged);
     Ok(())
 }

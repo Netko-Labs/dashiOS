@@ -8,9 +8,9 @@
 import type { Compositor } from "../compositor.ts";
 import type { ApplyResult, DisplayManager } from "../display-config/manager.ts";
 import { mirrorRequests } from "../display-config/mirror.ts";
-import { type Mode, type Monitor, parseMonitors, type Rotation, type VrrMode } from "../display-config/monitors.ts";
+import { type Mode, type Monitor, monitorsOf, type Rotation, type VrrMode } from "../display-config/monitors.ts";
 import { toWire } from "../display-config/plan.ts";
-import { parseScreens, SCALES, type ScreenInfo } from "../displays.ts";
+import { SCALES, type ScreenInfo, screensOf } from "../displays.ts";
 import type { SettingsStore } from "./store.ts";
 
 /** A scaled screen keeps at least this much room, so Settings never offers a scale that leaves nothing to click on. */
@@ -58,7 +58,7 @@ export class ScreensStore {
 
   /** `compositor` null is a run without dashi-comp: no screens. */
   constructor(
-    private readonly compositor: Pick<Compositor, "request" | "on"> | null,
+    private readonly compositor: Pick<Compositor, "outputs" | "output" | "outputsConfig" | "mirror" | "on"> | null,
     private readonly settings: Pick<SettingsStore, "setDisplayScale" | "setDisplayVrr" | "setDisplayRefresh">,
     /** Null without the arrangement service: the pane shows the screens and their scales only. */
     private readonly displays: Arranger | null = null,
@@ -85,8 +85,8 @@ export class ScreensStore {
   async refresh(): Promise<void> {
     if (!this.compositor) return this.set({ ...this.snapshot, loaded: true });
     try {
-      const answer = await this.compositor.request("outputs");
-      this.set({ ...this.snapshot, screens: parseScreens(answer), monitors: parseMonitors(answer), loaded: true });
+      const answer = await this.compositor.outputs();
+      this.set({ ...this.snapshot, screens: screensOf(answer), monitors: monitorsOf(answer), loaded: true });
     } catch (error) {
       this.set({ ...this.snapshot, loaded: true, error: message(error) });
     }
@@ -96,7 +96,7 @@ export class ScreensStore {
   async setScale(name: string, scale: number): Promise<void> {
     if (!this.compositor) return;
     try {
-      await this.compositor.request("output", { name, scale });
+      await this.compositor.output({ name, scale });
     } catch (error) {
       this.set({ ...this.snapshot, error: message(error) });
       return;
@@ -110,7 +110,7 @@ export class ScreensStore {
   async setVrr(name: string, vrr: VrrMode): Promise<void> {
     if (!this.compositor) return;
     try {
-      await this.compositor.request("outputs-config", toWire({ outputs: [{ name, vrr }] }));
+      await this.compositor.outputsConfig(toWire({ outputs: [{ name, vrr }] }));
     } catch (error) {
       this.set({ ...this.snapshot, error: message(error) });
       return;
@@ -163,7 +163,7 @@ export class ScreensStore {
   async setMirroring(on: boolean): Promise<void> {
     if (!this.compositor) return;
     try {
-      for (const request of mirrorRequests(this.snapshot.monitors, on)) await this.compositor.request("mirror", request);
+      for (const request of mirrorRequests(this.snapshot.monitors, on)) await this.compositor.mirror(request);
       this.set({ ...this.snapshot, error: null });
     } catch (error) {
       this.set({ ...this.snapshot, error: message(error) });

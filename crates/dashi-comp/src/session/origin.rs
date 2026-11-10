@@ -10,7 +10,9 @@ use std::{
     time::{Duration, Instant},
 };
 
-use serde_json::{Map, Value, json};
+use serde::{Deserialize, Serialize};
+
+use crate::ipc::protocol::Int;
 use smithay::{
     desktop::WindowSurfaceType, reexports::wayland_server::protocol::wl_surface::WlSurface,
 };
@@ -47,26 +49,45 @@ impl Origins {
     }
 
     /// How long ago each last pressed `target`, in ms (null: not in the last minute).
-    pub(crate) fn describe(&self, target: &Target, now: Instant) -> Value {
+    pub(crate) fn describe(&self, target: &Target, now: Instant) -> Origin {
         let ago = |map: &HashMap<Target, Instant>| {
             map.get(target)
                 .map(|at| now.duration_since(*at))
                 .filter(|d| *d < KEEP)
-                .map(|d| d.as_millis() as u64)
+                .map(|d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
         };
-        json!({ "person": ago(&self.person), "agent": ago(&self.agent) })
+        Origin {
+            person: ago(&self.person),
+            agent: ago(&self.agent),
+        }
     }
 }
 
 /// `{namespace}` or `{window}`, what `input-origin` asks about.
-pub(crate) fn parse_target(params: &Map<String, Value>) -> Result<Target, String> {
-    if let Some(namespace) = params.get("namespace").and_then(Value::as_str) {
-        return Ok(Target::Layer(namespace.to_owned()));
+/// `input-origin`'s params: a shell layer by `namespace`, or a `window`.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct OriginParams {
+    pub namespace: Option<String>,
+    pub window: Option<Int<0, { i64::MAX }>>,
+}
+
+/// How long ago (ms, within the last minute) the person's own hands and an
+/// agent last pressed there.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Origin {
+    pub person: Option<u64>,
+    pub agent: Option<u64>,
+}
+
+pub(crate) fn parse_target(params: &OriginParams) -> Result<Target, String> {
+    if let Some(namespace) = &params.namespace {
+        return Ok(Target::Layer(namespace.clone()));
     }
     params
-        .get("window")
-        .and_then(Value::as_u64)
-        .map(Target::Window)
+        .window
+        .map(|window| Target::Window(window.to::<u64>()))
         .ok_or_else(|| "input-origin needs a `namespace` or a `window`".into())
 }
 
@@ -109,22 +130,33 @@ mod tests {
         let later = start + Duration::from_millis(250);
         assert_eq!(
             origins.describe(&sheet, later),
-            json!({ "person": 250, "agent": null })
+            Origin {
+                person: Some(250),
+                agent: None
+            }
         );
         assert_eq!(
             origins.describe(&Target::Window(3), later),
-            json!({ "person": null, "agent": 250 })
+            Origin {
+                person: None,
+                agent: Some(250)
+            }
         );
         // A minute on, nothing is remembered.
         assert_eq!(
             origins.describe(&sheet, start + KEEP),
-            json!({ "person": null, "agent": null })
+            Origin {
+                person: None,
+                agent: None
+            }
         );
     }
 
+    use serde_json::json;
+
     #[test]
     fn targets_parse() {
-        let params = |v: Value| v.as_object().cloned().unwrap();
+        let params = |v: serde_json::Value| crate::ipc::protocol::read::<OriginParams>(v).unwrap();
         assert_eq!(
             parse_target(&params(json!({ "namespace": "dashi.agent-consent" }))),
             Ok(Target::Layer("dashi.agent-consent".into()))

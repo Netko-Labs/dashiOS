@@ -40,6 +40,8 @@
  */
 
 import { join } from "node:path";
+import { isRefusal, type Refusal, refuse } from "@dashi/shape";
+import { id as kitId, optionalBoolean, record, text } from "@dashi/shape/kit";
 
 export const MENUS_SOCKET = "dashi-menus.sock";
 
@@ -131,41 +133,10 @@ export const STANDARD_TITLES: Readonly<Record<string, string>> = { file: "File",
 /** Menus that stay the shell's. */
 export const RESERVED_MENUS: ReadonlySet<string> = new Set(["dashi", "window", "help"]);
 
-const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
-// Control characters, and the bidi overrides that could make a label read as another.
-const UNSAFE = /[\p{Cc}‪-‮⁦-⁩]/u;
-
 /** A message, or part of one, that was refused, and why (shared with applets/protocol.ts). */
-export type Refusal = { error: string };
-export const refuse = (error: string): Refusal => ({ error });
-export const isRefusal = (value: unknown): value is Refusal => typeof value === "object" && value !== null && "error" in value;
+export { isRefusal, type Refusal, refuse } from "@dashi/shape";
 
-export function record(value: unknown, what: string, allowed: readonly string[]): Record<string, unknown> | Refusal {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return refuse(`${what} must be an object`);
-  const stray = Object.keys(value).find((key) => !allowed.includes(key));
-  return stray === undefined ? (value as Record<string, unknown>) : refuse(`${what} has an unknown field “${stray}”`);
-}
-
-const length = (text: string): number => [...text].length;
-
-export function text(value: unknown, what: string, max: number): string | Refusal {
-  if (typeof value !== "string") return refuse(`${what} must be a string`);
-  const trimmed = value.trim();
-  if (trimmed === "") return refuse(`${what} is empty`);
-  if (length(trimmed) > max) return refuse(`${what} is longer than ${max} characters`);
-  if (UNSAFE.test(trimmed)) return refuse(`${what} has control characters`);
-  return trimmed;
-}
-
-export function id(value: unknown, what: string): string | Refusal {
-  if (typeof value !== "string" || !ID.test(value)) return refuse(`${what} must be letters, digits, and . _ : -, starting with a letter or digit`);
-  return value.length > LIMITS.id ? refuse(`${what} is longer than ${LIMITS.id} characters`) : value;
-}
-
-export function optionalBoolean(value: unknown, what: string): boolean | undefined | Refusal {
-  if (value === undefined || typeof value === "boolean") return value;
-  return refuse(`${what} must be true or false`);
-}
+const id = (value: unknown, what: string): string | Refusal => kitId(value, what, LIMITS.id);
 
 export function parseRow(value: unknown, where: string): AppMenuRow | Refusal {
   if (typeof value === "object" && value !== null && (value as Record<string, unknown>).type === "separator") {

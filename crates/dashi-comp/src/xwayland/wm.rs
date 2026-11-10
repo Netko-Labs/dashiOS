@@ -1,9 +1,9 @@
 //! dashi-comp as Xwayland's window manager: X11 windows into the registry and
 //! onto the screen, their requests to the shell, and the selections both ways.
 
+use crate::ipc::protocol::Asked;
 use std::os::fd::OwnedFd;
 
-use serde_json::json;
 use smithay::{
     desktop::Window,
     reexports::wayland_server::protocol::wl_surface::WlSurface,
@@ -156,11 +156,11 @@ impl XwmHandler for Dashi {
     }
 
     fn maximize_request(&mut self, _xwm: XwmId, surface: X11Surface) {
-        self.ask_shell_x11(&surface, "zoom", true);
+        self.ask_shell_x11(&surface, Asked::Zoom, true);
     }
 
     fn unmaximize_request(&mut self, _xwm: XwmId, surface: X11Surface) {
-        self.ask_shell_x11(&surface, "zoom", false);
+        self.ask_shell_x11(&surface, Asked::Zoom, false);
     }
 
     /// An X11 app's own minimize button (`WM_CHANGE_STATE` to iconic): what the
@@ -185,11 +185,11 @@ impl XwmHandler for Dashi {
     }
 
     fn fullscreen_request(&mut self, _xwm: XwmId, surface: X11Surface) {
-        self.ask_shell_x11(&surface, "fullscreen", true);
+        self.ask_shell_x11(&surface, Asked::Fullscreen, true);
     }
 
     fn unfullscreen_request(&mut self, _xwm: XwmId, surface: X11Surface) {
-        self.ask_shell_x11(&surface, "fullscreen", false);
+        self.ask_shell_x11(&surface, Asked::Fullscreen, false);
     }
 
     fn resize_request(
@@ -309,10 +309,10 @@ impl Dashi {
             .filter(|id| self.windows.get(*id).is_some_and(|e| e.announced))
     }
 
-    fn ask_shell_x11(&mut self, surface: &X11Surface, event: &str, on: bool) {
+    fn ask_shell_x11(&mut self, surface: &X11Surface, asked: Asked, on: bool) {
         let Some(id) = self.x11_announced(surface) else {
             return;
         };
-        self.ipc.emit(event, json!({ "window": id, "on": on }));
+        self.ipc.emit(asked.event(id, on));
     }
 }

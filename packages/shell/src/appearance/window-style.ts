@@ -16,7 +16,7 @@
  */
 
 import { darkColors, lightColors } from "@dashi/ui";
-import type { Requester } from "../settings.ts";
+import type { Compositor } from "../compositor.ts";
 
 /** One shadow, in logical pixels, as CSS `box-shadow` has it: black at `alpha`. */
 export interface ShadowLayer {
@@ -90,7 +90,7 @@ export class WindowStyleSync {
   private inputs: Partial<WindowStyleInputs> = {};
   private sent: string | null = null;
 
-  constructor(private readonly compositor: Requester) {}
+  constructor(private readonly compositor: Pick<Compositor, "windowStyle">) {}
 
   set(change: Partial<WindowStyleInputs>): void {
     this.inputs = { ...this.inputs, ...change };
@@ -101,7 +101,7 @@ export class WindowStyleSync {
     const key = JSON.stringify(style);
     if (key === this.sent) return;
     this.sent = key;
-    this.compositor.request("window-style", { ...style }).catch((error) => {
+    this.compositor.windowStyle(style).catch((error) => {
       this.sent = null;
       console.error("dashi-shell: windows keep their old depth:", error);
     });

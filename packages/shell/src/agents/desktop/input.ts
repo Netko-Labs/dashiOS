@@ -13,7 +13,7 @@ import { type RunContext, type ToolResult, text, toolError } from "../context.ts
 import { named, noWindow, subject } from "../subject.ts";
 import type { Call } from "../tools/index.ts";
 import { keySteps } from "../tools/index.ts";
-import { borrowsPersonSeat, PersonBusy, QUIET_MS, WAIT_MS } from "./hands.ts";
+import { borrowsPersonSeat, type Payload, PersonBusy, QUIET_MS, WAIT_MS } from "./hands.ts";
 
 type InputCall = Extract<Call, { name: "click" | "scroll" | "drag" | "type_text" | "press_keys" }>;
 
@@ -106,7 +106,7 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
   if (isResult(size)) return size;
   const where = subject(window, ctx);
   const say = (words: string) => ctx.status(words);
-  const send = (payload: Record<string, unknown>) => ctx.hands.send(window, payload, ctx.agent, say);
+  const send = (payload: Payload) => ctx.hands.send(window, payload, ctx.agent, say);
   try {
     switch (call.name) {
       case "click": {
@@ -177,12 +177,7 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
   }
 }
 
-async function drag(
-  call: Extract<InputCall, { name: "drag" }>,
-  id: number,
-  send: (payload: Record<string, unknown>) => Promise<void>,
-  ctx: RunContext,
-): Promise<ToolResult> {
+async function drag(call: Extract<InputCall, { name: "drag" }>, id: number, send: (payload: Payload) => Promise<void>, ctx: RunContext): Promise<ToolResult> {
   const { from, to } = call;
   const move = (x: number, y: number, action: "move" | "press" | "release") => send({ pointer: { x, y }, action });
   try {

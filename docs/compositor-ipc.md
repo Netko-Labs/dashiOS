@@ -2,7 +2,12 @@
 
 How the shell (TypeScript, `packages/shell/src/compositor.ts`) and the
 compositor (Rust, `crates/dashi-comp/src/ipc/`) talk. Both sides and this doc
-change in the same commit.
+change in the same commit, and a test holds them to it (H9): `cargo test`
+writes one request, reply and event per method from the Rust types to
+`test/fixtures/ipc/`, and the shell's `test/ipc-contract.test.ts` parses
+each with its shapes (`src/compositor/`) and checks that the compositor's
+table, this doc's tables and the shell's methods name the same methods, each
+with the same "Who", and the same events.
 
 Recovered from the 0.1.0 shell, which is the client this protocol must keep
 working with; the 0.1.0 compositor side (`comp/src/ipc/requests.rs`) was lost.
@@ -20,7 +25,15 @@ them until the compositor side pins them down here.
 - Request: `{"id": <int>, "method": "<name>", "params": {...}}`.
 - Reply, exactly one per request: `{"id": <int>, "result": <any>}` or
   `{"id": <int>, "error": "<message>"}`. Unknown methods and invalid params
-  get an `error`, never a dropped connection. A reply may come after replies
+  get an `error`, never a dropped connection.
+- Each method's params and reply are one Rust type each (serde, beside the
+  method in `ipc/methods/` or the module whose they are; the shared ones in
+  `ipc/protocol/`), and every event a variant of `protocol::Event`. Params
+  are read strictly: a field the method does not name is refused (``unknown
+  field `x` ``), and so is a number out of its range (a window id is a
+  positive whole number; a finger count, a pid, a Space's index, a
+  millisecond count each have theirs), never wrapped or truncated. A refusal
+  names the path to what was wrong (`` `rules[3].when`: … ``). A reply may come after replies
   to later requests: `capture` answers once its file is written, which runs
   off the compositor's event loop. Correlate by `id`.
 - A client that falls 8 MiB behind on reading is dropped: its socket is shut
@@ -202,8 +215,10 @@ surfaces and keys an agent or a `send-keys` typed are not watched.
   `{video, mode}`, played by the compositor. Unknown methods are answered
   with an error.
 - **The shell's own Wayland protocols:** wlr-foreign-toplevel, ext- and
-  wlr-data-control (clipboard without focus), ext-session-lock, and
-  `capture` are for the session client and the processes under it only;
+  wlr-data-control (clipboard without focus), ext-session-lock, the input
+  method, and `capture` are for the shell's own processes only, by the same
+  rule as "Who may ask" (`session/trust.rs`): an app the shell launches runs
+  under it but in a session of its own, and is not the shell;
   screencopy, ext-image-copy-capture (screens, and windows named through
   ext-foreign-toplevel-list) also for the executables in
   `screencopy-clients`. None of them exist in greeter mode.

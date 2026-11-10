@@ -7,9 +7,9 @@
 //! at the desktop (`Activity`), which is what an agent borrowing their seat
 //! waits on (session/agent.rs).
 
+use crate::ipc::protocol::Event;
 use std::time::{Duration, Instant};
 
-use serde_json::json;
 use smithay::reexports::calloop::timer::{TimeoutAction, Timer};
 
 use crate::state::Dashi;
@@ -131,7 +131,7 @@ impl Dashi {
                     .collect();
                 for seconds in due {
                     state.idle.fired.push(seconds);
-                    state.ipc.emit("idle", json!({ "seconds": seconds }));
+                    state.ipc.emit(Event::Idle { seconds });
                 }
                 TimeoutAction::ToDuration(every)
             });
@@ -147,7 +147,7 @@ impl Dashi {
         self.idle.activity.stir(Stir::Person, Instant::now());
         if !self.idle.fired.is_empty() {
             self.idle.fired.clear();
-            self.ipc.emit("active", json!({}));
+            self.ipc.emit(Event::Active);
         }
         if !deliberate {
             return;
@@ -163,7 +163,7 @@ impl Dashi {
             .is_some_and(|(last, at)| last == window && at.elapsed() < PERSON_INPUT_EVERY);
         if !recent {
             self.idle.last_person = Some((window, Instant::now()));
-            self.ipc.emit("person-input", json!({ "window": window }));
+            self.ipc.emit(Event::PersonInput { window });
         }
     }
 }

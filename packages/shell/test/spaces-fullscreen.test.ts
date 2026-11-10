@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { Arranger } from "../src/arrange.ts";
-import type { Compositor, CompositorEvent, CompositorWindow } from "../src/compositor.ts";
+import type { Compositor, CompositorWindow } from "../src/compositor.ts";
 import type { Rect } from "../src/layout.ts";
 import { buildMenu, type MenuContext } from "../src/menus/model.ts";
 import { parseSettings } from "../src/settings.ts";
@@ -9,6 +9,7 @@ import { edgeHoldTarget } from "../src/spaces/edge.ts";
 import { FullscreenDesktops } from "../src/spaces/fullscreen.ts";
 import { spaceLabels } from "../src/spaces/names.ts";
 import { desktopCount, desktopOrdinal, fitSlots, insertionPoint, nearestDesktop, originOf, recoverSlots, type Slots } from "../src/spaces/slots.ts";
+import { listening, fakeCompositor as over } from "./support/compositor.ts";
 import { fakeClock, settle } from "./support/time.ts";
 
 const SCREEN: Rect = { x: 0, y: 0, width: 1646, height: 937 };
@@ -122,85 +123,80 @@ type Window = CompositorWindow;
  * placed on a Space. Every request is kept, in order.
  */
 function fakeCompositor(windows: Window[], count = 1) {
-  const listeners = new Set<(event: CompositorEvent) => void>();
+  const events = listening();
   const requests: Array<[string, Record<string, unknown>]> = [];
   const state = { count, current: 0, windows };
-  const emit = (event: CompositorEvent) => {
-    for (const listener of [...listeners]) listener(event);
-  };
+  const emit = events.emit;
   const moved = (window: Window, space: number) => {
     window.space = space;
     emit({ event: "window-space", window: window.id, space });
   };
   const answer = () => ({ count: state.count, current: state.current });
   const spaceEvent = (previous: number) => emit({ event: "space", current: state.current, previous, count: state.count });
-  const compositor = {
-    on(listener: (event: CompositorEvent) => void) {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    windows: async () => state.windows.map((window) => ({ ...window })),
-    async request(method: string, params: Record<string, unknown> = {}): Promise<unknown> {
-      requests.push([method, params]);
-      const id = params.window as number;
-      const window = state.windows.find((each) => each.id === id);
-      switch (method) {
-        case "spaces":
-          if (typeof params.count === "number") {
-            state.count = params.count;
-            for (const each of state.windows) if ((each.space ?? 0) >= state.count) moved(each, state.count - 1);
-            state.current = Math.min(state.current, state.count - 1);
-            spaceEvent(state.current);
-          }
-          return answer();
-        case "space-add": {
-          const at = typeof params.at === "number" ? params.at : state.count;
-          for (const each of state.windows) if ((each.space ?? 0) >= at) moved(each, (each.space ?? 0) + 1);
-          if (state.current >= at) state.current++;
-          state.count++;
+  const request = async (method: string, params: Record<string, unknown> = {}): Promise<unknown> => {
+    requests.push([method, params]);
+    const id = params.window as number;
+    const window = state.windows.find((each) => each.id === id);
+    switch (method) {
+      case "spaces":
+        if (typeof params.count === "number") {
+          state.count = params.count;
+          for (const each of state.windows) if ((each.space ?? 0) >= state.count) moved(each, state.count - 1);
+          state.current = Math.min(state.current, state.count - 1);
           spaceEvent(state.current);
-          return { ...answer(), space: at };
         }
-        case "space-remove": {
-          const space = params.space as number;
-          if (state.count <= 1) throw new Error("the last Space stays");
-          const into = space === 0 ? 1 : space - 1;
-          if (state.current === space) state.current = into;
-          for (const each of state.windows) if ((each.space ?? 0) === space) moved(each, into);
-          for (const each of state.windows) if ((each.space ?? 0) > space) moved(each, (each.space ?? 0) - 1);
-          if (state.current > space) state.current--;
-          state.count--;
-          spaceEvent(state.current);
-          return answer();
-        }
-        case "space-move":
-          if (window) moved(window, params.space as number);
-          return {};
-        case "space-switch": {
-          const previous = state.current;
-          const carried = state.windows.find((each) => each.id === params.carry);
-          if (params.carry !== undefined && (carried?.space ?? -1) !== state.current) throw new Error("not on the Space that shows");
-          // The slide ends a little later; a carried window lands on the new Space then.
-          setImmediate(() => {
-            state.current = params.space as number;
-            if (carried) moved(carried, state.current);
-            spaceEvent(previous);
-          });
-          return answer();
-        }
-        case "fullscreen":
-          if (window) window.fullscreen = params.on === true ? true : undefined;
-          return {};
-        case "outputs":
-          return { outputs: [{ name: "Virtual-1", frame: SCREEN, usable: USABLE, scale: 1 }] };
-        case "place":
-          if (window) window.space = typeof params.space === "number" ? params.space : state.current;
-          return {};
-        default:
-          return {};
+        return answer();
+      case "space-add": {
+        const at = typeof params.at === "number" ? params.at : state.count;
+        for (const each of state.windows) if ((each.space ?? 0) >= at) moved(each, (each.space ?? 0) + 1);
+        if (state.current >= at) state.current++;
+        state.count++;
+        spaceEvent(state.current);
+        return { ...answer(), space: at };
       }
-    },
+      case "space-remove": {
+        const space = params.space as number;
+        if (state.count <= 1) throw new Error("the last Space stays");
+        const into = space === 0 ? 1 : space - 1;
+        if (state.current === space) state.current = into;
+        for (const each of state.windows) if ((each.space ?? 0) === space) moved(each, into);
+        for (const each of state.windows) if ((each.space ?? 0) > space) moved(each, (each.space ?? 0) - 1);
+        if (state.current > space) state.current--;
+        state.count--;
+        spaceEvent(state.current);
+        return answer();
+      }
+      case "space-move":
+        if (window) moved(window, params.space as number);
+        return {};
+      case "space-switch": {
+        const previous = state.current;
+        const carried = state.windows.find((each) => each.id === params.carry);
+        if (params.carry !== undefined && (carried?.space ?? -1) !== state.current) throw new Error("not on the Space that shows");
+        // The slide ends a little later; a carried window lands on the new Space then.
+        setImmediate(() => {
+          state.current = params.space as number;
+          if (carried) moved(carried, state.current);
+          spaceEvent(previous);
+        });
+        return answer();
+      }
+      case "fullscreen":
+        if (window) window.fullscreen = params.on === true ? true : undefined;
+        return {};
+      case "outputs":
+        return { outputs: [{ name: "Virtual-1", frame: SCREEN, usable: USABLE, scale: 1 }] };
+      case "place":
+        if (window) window.space = typeof params.space === "number" ? params.space : state.current;
+        return {};
+      default:
+        return {};
+    }
   };
+  const compositor = over(request, {
+    on: events.on,
+    windows: async () => state.windows.map((window) => ({ ...window })),
+  });
   return {
     compositor,
     state,
@@ -216,12 +212,12 @@ const SETTINGS: SpacesSettings = { count: 2, switchOnActivate: true, fullscreenD
 async function desk(windows: Window[], count = 2, settings: SpacesSettings = SETTINGS) {
   const fake = fakeCompositor(windows, count);
   const saved: number[] = [];
-  const desktops = new SpacesController(fake.compositor as unknown as Compositor, (each) => saved.push(each), {
+  const desktops = new SpacesController(fake.compositor, (each) => saved.push(each), {
     appName: (window) => `App ${window.id}`,
   });
   desktops.start();
   await desktops.apply(settings);
-  const fullscreen = new FullscreenDesktops({ compositor: fake.compositor as unknown as Compositor, desktops, slideWaitMs: 200 });
+  const fullscreen = new FullscreenDesktops({ compositor: fake.compositor, desktops, slideWaitMs: 200 });
   fullscreen.enabled = settings.fullscreenDesktop !== false;
   fullscreen.start();
   await settle();
@@ -398,10 +394,10 @@ describe("a full-screen window's own Desktop", () => {
   test("renaming skips it: names are by Desktop", async () => {
     const names: Array<(string | null)[]> = [];
     const fake = fakeCompositor([win(1, 0)], 2);
-    const desktops = new SpacesController(fake.compositor as unknown as Compositor, () => {}, { saveNames: (each) => names.push(each) });
+    const desktops = new SpacesController(fake.compositor, () => {}, { saveNames: (each) => names.push(each) });
     desktops.start();
     await desktops.apply(SETTINGS);
-    const fullscreen = new FullscreenDesktops({ compositor: fake.compositor as unknown as Compositor, desktops, slideWaitMs: 200 });
+    const fullscreen = new FullscreenDesktops({ compositor: fake.compositor, desktops, slideWaitMs: 200 });
     fullscreen.start();
     await fullscreen.around(win(1, 0), true, () => fake.compositor.request("fullscreen", { window: 1, on: true }).then(() => {}));
     desktops.rename(1, "Nope");

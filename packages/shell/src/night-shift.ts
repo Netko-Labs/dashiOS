@@ -97,7 +97,7 @@ function readNightSettings(env: Record<string, string | undefined> = process.env
 
 /** Follows the switch and the schedule; returns a stop function. */
 export function startNightShift(
-  compositor: Pick<Compositor, "request">,
+  compositor: Pick<Compositor, "gamma">,
   flags: FlagsStore,
   options: { settings?: () => NightSettings; now?: () => Date } = {},
 ): () => void {
@@ -110,7 +110,7 @@ export function startNightShift(
   /** Whether the screens took it. */
   const send = async (kelvin: number): Promise<boolean> => {
     try {
-      await compositor.request("gamma", { ...tintFor(kelvin) });
+      await compositor.gamma(tintFor(kelvin));
       quiet = false;
       return true;
     } catch (error) {

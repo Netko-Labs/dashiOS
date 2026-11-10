@@ -5,10 +5,10 @@
 //! (what `localectl set-x11-keymap` writes), read once at startup; so the
 //! login screen types in the system's layout too.
 
-use serde_json::{Map, Value};
+use serde::{Deserialize, Serialize};
 use smithay::input::keyboard::XkbConfig;
 
-use crate::state::Dashi;
+use crate::{ipc::protocol::Int, state::Dashi};
 
 /// localed's keyboard file.
 const LOCALED: &str = "/etc/X11/xorg.conf.d/00-keyboard.conf";
@@ -86,6 +86,18 @@ impl KeyboardLayout {
     }
 }
 
+/// `keyboard`'s params: xkb name lists ("" is the system's own), and the
+/// repeat in characters a second (0 to 100) and ms (100 to 2000).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct KeyboardParams {
+    pub layout: Option<String>,
+    pub variant: Option<String>,
+    pub options: Option<String>,
+    pub repeat_rate: Option<Int<0, 100>>,
+    pub repeat_delay: Option<Int<100, 2000>>,
+}
+
 /// An xkb name list as the shell's settings check it.
 fn valid_names(value: &str) -> bool {
     value.len() <= 256
@@ -127,32 +139,22 @@ impl Dashi {
     }
 
     /// `keyboard {layout?, variant?, options?, repeatRate?, repeatDelay?}`.
-    pub(crate) fn set_keyboard(&mut self, params: &Map<String, Value>) -> Result<(), String> {
-        let text = |key: &str| -> Result<Option<String>, String> {
-            match params.get(key) {
-                None => Ok(None),
-                Some(Value::String(v)) if valid_names(v) => Ok(Some(v.clone())),
-                Some(_) => Err(format!("`{key}` must be an xkb name list such as us,de")),
+    pub(crate) fn set_keyboard(&mut self, params: &KeyboardParams) -> Result<(), String> {
+        let text = |key: &str, value: &Option<String>| -> Result<Option<String>, String> {
+            match value {
+                Some(v) if !valid_names(v) => {
+                    Err(format!("`{key}` must be an xkb name list such as us,de"))
+                }
+                other => Ok(other.clone()),
             }
         };
-        let number =
-            |key: &str, range: std::ops::RangeInclusive<i64>| -> Result<Option<i32>, String> {
-                match params.get(key) {
-                    None => Ok(None),
-                    Some(v) => v
-                        .as_i64()
-                        .filter(|n| range.contains(n))
-                        .map(|n| Some(n as i32))
-                        .ok_or_else(|| {
-                            format!("`{key}` must be from {} to {}", range.start(), range.end())
-                        }),
-                }
-            };
-        let (layout, variant, options) = (text("layout")?, text("variant")?, text("options")?);
-        let (rate, delay) = (
-            number("repeatRate", 0..=100)?,
-            number("repeatDelay", 100..=2000)?,
+        let (layout, variant, options) = (
+            text("layout", &params.layout)?,
+            text("variant", &params.variant)?,
+            text("options", &params.options)?,
         );
+        let rate = params.repeat_rate.map(|rate| rate.to::<i32>());
+        let delay = params.repeat_delay.map(|delay| delay.to::<i32>());
 
         let before = self.keys.layout.clone();
         let chosen = &mut self.keys.layout.chosen;

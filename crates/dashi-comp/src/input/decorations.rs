@@ -4,9 +4,9 @@
 //! own size again, full screen) is the shell's to decide: the compositor only
 //! reports them, with ⌥ (`window-control`).
 
+use crate::ipc::protocol::{Control, Event};
 use std::time::{Duration, Instant};
 
-use serde_json::json;
 use smithay::{
     desktop::{Window, layer_map_for_output},
     input::pointer::GrabStartData,
@@ -82,8 +82,12 @@ impl Dashi {
             .seat
             .get_keyboard()
             .is_some_and(|keyboard| keyboard.modifier_state().alt);
-        let control =
-            |double: bool| json!({ "window": id, "control": "zoom", "alt": alt, "double": double });
+        let control = |double: bool| Event::WindowControl {
+            window: id,
+            control: Control::Zoom,
+            alt,
+            double,
+        };
         let result = match part {
             Part::Close | Part::Minimize | Part::Zoom => self.press_light(id, part),
             Part::Bar => {
@@ -93,7 +97,7 @@ impl Dashi {
                     .is_some_and(|(last, at)| last == id && at.elapsed() < DOUBLE_CLICK);
                 let focused = self.focus_window(id);
                 if double {
-                    self.ipc.emit("window-control", control(true));
+                    self.ipc.emit(control(true));
                 } else {
                     self.last_bar_press = Some((id, Instant::now()));
                     self.start_move(window, pos, button, serial);
@@ -118,9 +122,13 @@ impl Dashi {
                     .seat
                     .get_keyboard()
                     .is_some_and(|keyboard| keyboard.modifier_state().alt);
-                let control =
-                    json!({ "window": id, "control": "zoom", "alt": alt, "double": false });
-                self.ipc.emit("window-control", control);
+                let control = Event::WindowControl {
+                    window: id,
+                    control: Control::Zoom,
+                    alt,
+                    double: false,
+                };
+                self.ipc.emit(control);
                 Ok(())
             }
             Part::Bar => Ok(()),

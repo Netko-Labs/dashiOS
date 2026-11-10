@@ -1,5 +1,6 @@
 //! wl_seat, the clipboard and drag-and-drop (wl_data_device), and wl_output.
 
+use crate::ipc::protocol::Event;
 use smithay::{
     delegate_data_device, delegate_output, delegate_primary_selection, delegate_seat,
     input::{Seat, SeatHandler, SeatState, pointer::CursorImageStatus},
@@ -128,22 +129,22 @@ impl Dashi {
     /// copy); its types, and the window that had the keyboard. The shell reads
     /// it (data-control) and decides whether to keep it (clipboard history).
     pub(crate) fn report_selection(&mut self, mime_types: &[String], x11: bool) {
-        let types: Vec<&str> = mime_types
+        let types: Vec<String> = mime_types
             .iter()
             .filter(|mime| mime.len() <= MAX_TYPE_LEN)
             .take(MAX_REPORTED_TYPES)
-            .map(String::as_str)
+            .cloned()
             .collect();
         let window = self
             .seat
             .get_keyboard()
             .and_then(|keyboard| keyboard.current_focus())
             .and_then(|focus| crate::wm::window_id_for_surface(self, &focus));
-        let mut event = serde_json::json!({ "mimeTypes": types, "window": window });
-        if x11 {
-            event["x11"] = serde_json::json!(true);
-        }
-        self.ipc.emit("selection", event);
+        self.ipc.emit(Event::Selection {
+            mime_types: types,
+            window,
+            x11,
+        });
     }
 }
 

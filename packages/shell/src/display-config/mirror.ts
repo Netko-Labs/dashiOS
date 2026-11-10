@@ -9,7 +9,7 @@
 
 import { useSyncExternalStore } from "react";
 import type { Compositor } from "../compositor.ts";
-import { type Monitor, parseMonitors } from "./monitors.ts";
+import { type Monitor, monitorsOf } from "./monitors.ts";
 
 export interface MirrorState {
   /** Screens that are on, mirroring ones included. */
@@ -47,7 +47,7 @@ export class MirrorStore {
   private readonly listeners = new Set<() => void>();
   private stop: (() => void) | null = null;
 
-  constructor(private readonly compositor: Pick<Compositor, "request" | "on">) {}
+  constructor(private readonly compositor: Pick<Compositor, "outputs" | "mirror" | "on">) {}
 
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
@@ -70,7 +70,7 @@ export class MirrorStore {
 
   async refresh(): Promise<void> {
     try {
-      this.publish(mirrorStateOf(parseMonitors(await this.compositor.request("outputs"))));
+      this.publish(mirrorStateOf(monitorsOf(await this.compositor.outputs())));
     } catch (error) {
       console.error("dashi-shell: couldn't read the screens for mirroring:", error);
     }
@@ -79,8 +79,8 @@ export class MirrorStore {
   /** Mirror the screens, or give each its own desktop again. */
   async set(on: boolean): Promise<void> {
     try {
-      const monitors = parseMonitors(await this.compositor.request("outputs"));
-      for (const request of mirrorRequests(monitors, on)) await this.compositor.request("mirror", request);
+      const monitors = monitorsOf(await this.compositor.outputs());
+      for (const request of mirrorRequests(monitors, on)) await this.compositor.mirror(request);
     } catch (error) {
       console.error(`dashi-shell: couldn't turn mirroring ${on ? "on" : "off"}:`, error);
     }

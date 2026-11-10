@@ -8,7 +8,7 @@
  * capture ended.
  */
 
-import { parseOutputs } from "../arrange.ts";
+import { placedOutputs } from "../arrange.ts";
 import type { Compositor, CompositorWindow } from "../compositor.ts";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 import { centeredOn } from "../switcher/index.ts";
@@ -63,8 +63,8 @@ export function startSharePicker(deps: SharePickerDeps): () => void {
   };
 
   const ask = async (abort: AbortSignal): Promise<ShareChoice | null> => {
-    const [name, answer, windows] = await Promise.all([deps.screen(), compositor.request("outputs"), compositor.windows()]);
-    const outputs = parseOutputs(answer);
+    const [name, answer, windows] = await Promise.all([deps.screen(), compositor.outputs(), compositor.windows()]);
+    const outputs = placedOutputs(answer);
     const output = outputs.find((each) => each.name === name) ?? outputs[0];
     if (!output || abort.aborted) return null;
     const shareable = windows
@@ -79,7 +79,7 @@ export function startSharePicker(deps: SharePickerDeps): () => void {
     const space = deps.currentSpace();
     const pictures = (on: boolean) =>
       Promise.all([
-        compositor.request("space-previews", {
+        compositor.spacePreviews({
           output: output.name,
           rects: on
             ? outputs.flatMap((screen, index) => {
@@ -88,7 +88,7 @@ export function startSharePicker(deps: SharePickerDeps): () => void {
               })
             : [],
         }),
-        compositor.request("window-thumbnails", {
+        compositor.windowThumbnails({
           rects: on
             ? shareable.flatMap((window, index) => {
                 const rect = layout.windows[index];

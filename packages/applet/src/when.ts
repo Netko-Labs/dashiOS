@@ -12,7 +12,7 @@
  * `fan-curves`, `slash`, `aura`, `keyboard-light`, `curve-optimizer`).
  */
 
-import { isRefusal, list, optionalBoolean, type Refusal, record, refuse, text } from "./parse.ts";
+import { isRefusal, list, optionalBoolean, type Refusal, record, refuse, text } from "@dashi/shape/kit";
 
 export interface When {
   vendor?: string[];

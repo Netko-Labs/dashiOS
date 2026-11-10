@@ -1,24 +1,24 @@
 import { expect, test } from "bun:test";
+import { outputsOf } from "../src/compositor/outputs.ts";
 import { builtinScreens, isBuiltin, ScreenDark } from "../src/system/screen-dark.ts";
+import { fakeCompositor } from "./support/compositor.ts";
 
 const OUTPUTS = { outputs: [{ name: "eDP-1" }, { name: "DP-3" }, { name: "HDMI-A-1" }, { nope: 1 }] };
 
 function host() {
   const calls: unknown[] = [];
-  return {
-    calls,
-    async request(method: string, params?: Record<string, unknown>): Promise<unknown> {
-      if (method === "outputs") return OUTPUTS;
-      calls.push({ method, ...params });
-      return {};
-    },
-  };
+  const compositor = fakeCompositor(async (method, params) => {
+    if (method === "outputs") return OUTPUTS;
+    calls.push({ method, ...params });
+    return {};
+  });
+  return Object.assign(compositor, { calls });
 }
 
 test("the built-in panels by connector name", () => {
   expect(["eDP-1", "LVDS-1", "DSI-2", "DP-1", "HDMI-A-1", "Virtual-1"].map(isBuiltin)).toEqual([true, true, true, false, false, false]);
-  expect(builtinScreens(OUTPUTS)).toEqual(["eDP-1"]);
-  expect(builtinScreens(null)).toEqual([]);
+  expect(builtinScreens(outputsOf(OUTPUTS))).toEqual(["eDP-1"]);
+  expect(builtinScreens(outputsOf(null))).toEqual([]);
 });
 
 test("brightness 0 holds the built-in screen dark; the first rise lights it, once", async () => {

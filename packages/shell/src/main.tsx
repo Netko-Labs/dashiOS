@@ -46,7 +46,7 @@ import { AppletPower } from "./applets/power.ts";
 import { popoverScreen, startApplets } from "./applets/start.tsx";
 import { createApprovalUi } from "./approval-sheet.tsx";
 import { appFor, displayName, launch, ownApp, registerShellApp, SCREENSHOT_APP_ID } from "./apps.ts";
-import { Arranger, parseOutputs } from "./arrange.ts";
+import { Arranger, placedOutputs } from "./arrange.ts";
 import { startAutostart } from "./autostart.ts";
 import { barHold, holdingBar } from "./bar-hold.ts";
 import { OverflowRow } from "./bar-overflow.tsx";
@@ -59,10 +59,10 @@ import { Compositor, type CompositorWindow, type Frame } from "./compositor.ts";
 import { controlFlags, LayoutStore, setControlMotion } from "./control-center/index.ts";
 import { installDesktopEntries, shouldWriteEntries } from "./desktop-entries.ts";
 import { AutoRefresh, rateOnPower } from "./display-config/auto-refresh.ts";
-import { DisplayManager, DisplayStore, keepSheet, parseMonitors, watchLid } from "./display-config/index.ts";
+import { DisplayManager, DisplayStore, keepSheet, monitorsOf, watchLid } from "./display-config/index.ts";
 import { MirrorStore } from "./display-config/mirror.ts";
 import { scaleForMonitor } from "./display-config/scale.ts";
-import { parseScreens, startDisplays } from "./displays.ts";
+import { screensOf, startDisplays } from "./displays.ts";
 import {
   AnimationTargets,
   AttentionStore,
@@ -201,10 +201,10 @@ compositor?.onClosed(() => {
 // Windows off screen (minimized, hidden, on a Desktop not shown) are told no one sees them, so they can stop polling (suspend.ts).
 if (compositor) followSuspension(compositor);
 // Idle, the keymap also says what keys do from a ❖ tap on: they type into the launcher (launcher/type-ahead.ts).
-compositor?.request("keymap", idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error));
+compositor?.keymap(idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error));
 // The launcher fades in from a little smaller (launcher/resident.tsx); with Reduce Motion the compositor skips it.
 compositor
-  ?.request("layer-motion", { namespace: LAUNCHER_MOTION.namespace, ms: LAUNCHER_MOTION.openMs, scale: LAUNCHER_MOTION.fromScale })
+  ?.layerMotion({ namespace: LAUNCHER_MOTION.namespace, ms: LAUNCHER_MOTION.openMs, scale: LAUNCHER_MOTION.fromScale })
   .catch((error) => console.error("dashi-shell: dashi-comp refused the launcher's motion:", error));
 
 // A menu bar goes on every screen, the Dock on the primary one (menubars.ts).
@@ -214,9 +214,9 @@ let mainDisplay: string | null = null;
 const screenNames = async (): Promise<string[] | null> => {
   if (!compositor) return [];
   try {
-    const answer = await compositor.request("outputs");
-    mainDisplay = parseMonitors(answer).find((monitor) => monitor.enabled && monitor.primary)?.name ?? null;
-    return parseScreens(answer).map((screen) => screen.name);
+    const outputs = await compositor.outputs();
+    mainDisplay = monitorsOf(outputs).find((monitor) => monitor.enabled && monitor.primary)?.name ?? null;
+    return screensOf(outputs).map((screen) => screen.name);
   } catch {
     return null;
   }
@@ -458,7 +458,7 @@ const stopTokens = serveTokens({ path: tokensSocketPath(), tokens: passwords.vau
 const approvalUi = createApprovalUi();
 watchApprovals(approvalUi);
 // A sheet's yes counts only if the person pressed it (agents/person.ts).
-const agentUi = createAgentUi({ request: (method, params) => (compositor ? compositor.request(method, params) : Promise.reject(new Error("no compositor"))) });
+const agentUi = createAgentUi({ inputOrigin: (params) => (compositor ? compositor.inputOrigin(params) : Promise.reject(new Error("no compositor"))) });
 // A "Your turn" is in the launcher's Now too while its banner is up (agents/ask/now.ts).
 const turnWatch = new TurnWatch();
 const showTurn = agentUi.turn;
@@ -484,8 +484,8 @@ const notifications = startNotifications(undefined, { screen: () => (compositor 
 // The screen recorder and ⇧❖5's toolbar (recorder/).
 const screenOf = async (window: number | null) => {
   if (!compositor) return { origin: { x: 0, y: 0 } };
-  const [answer, windows] = await Promise.all([compositor.request("outputs"), compositor.windows().catch(() => [])]);
-  return captureScreenNear(answer, windows.find((each) => each.id === window)?.frame ?? null);
+  const [outputs, windows] = await Promise.all([compositor.outputs(), compositor.windows().catch(() => [])]);
+  return captureScreenNear(outputs, windows.find((each) => each.id === window)?.frame ?? null);
 };
 const captureTools = compositor
   ? startCapture({
@@ -564,7 +564,7 @@ const handoffShell = startHandoffShell({
   stopAgents: () => agents?.stopAll(),
   notifications: notifications.store,
   menus: () => menus.controller,
-  personPressed: (layer) => (compositor ? personAnswered((method, params) => compositor.request(method, params), layer) : Promise.resolve(false)),
+  personPressed: (layer) => (compositor ? personAnswered((params) => compositor.inputOrigin(params), layer) : Promise.resolve(false)),
   titleOf: (tool) => TOOLS.find((each) => each.name === tool)?.title,
   settingNow: (name) => {
     const row = agentRow(name);
@@ -1021,7 +1021,7 @@ const stopAnimationTargets = compositor
       catalog,
       tiles: dockTiles,
       placement: async () => {
-        const screen = dockScreen(await compositor.request("outputs"), menuBars.primaryName ?? primaryScreen);
+        const screen = dockScreen(await compositor.outputs(), menuBars.primaryName ?? primaryScreen);
         return screen ? { screen, style: dockPrefs.snapshot.style } : null;
       },
     }).start()
@@ -1139,12 +1139,12 @@ const launchFailures = new LaunchFailures(notifications.store);
 let handedOff = false;
 let handoff: ReturnType<typeof setTimeout> | null = null;
 const launcherKeymap = {
-  typing: () => void compositor?.request("keymap", withTyping(currentKeymap())).catch((error) => console.error("dashi-shell: the launcher's keys:", error)),
+  typing: () => void compositor?.keymap(withTyping(currentKeymap())).catch((error) => console.error("dashi-shell: the launcher's keys:", error)),
   begin: () =>
     void compositor
-      ?.request("keymap", withLauncher(currentKeymap(), launcherKeys.recording, launcherKeys.arrowsWanted, launcherKeys.extrasWanted))
+      ?.keymap(withLauncher(currentKeymap(), launcherKeys.recording, launcherKeys.arrowsWanted, launcherKeys.extrasWanted))
       .catch((error) => console.error("dashi-shell: the launcher's keys:", error)),
-  end: () => void compositor?.request("keymap", idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error)),
+  end: () => void compositor?.keymap(idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error)),
 };
 /** The open launcher's keys again (a key set, recording a shortcut): the field's, or still typing ahead. */
 const launcherKeysAgain = () => (handedOff ? launcherKeymap.begin() : launcherKeymap.typing());
@@ -1175,11 +1175,11 @@ function launcherPictures(rects: PictureRect[]): void {
   launcherPicturesQueue = launcherPicturesQueue
     .then(async () => {
       if (wait > 0) await Bun.sleep(wait);
-      if (rects.length === 0) return void (await compositor.request("window-thumbnails", { rects: [] }));
-      const outputs = parseOutputs(await compositor.request("outputs"));
+      if (rects.length === 0) return void (await compositor.windowThumbnails({ rects: [] }));
+      const outputs = placedOutputs(await compositor.outputs());
       const screen = outputs.find((each) => each.name === launcherOutput) ?? outputs[0];
       if (!screen) return;
-      await compositor.request("window-thumbnails", { rects: picturesOnScreen(rects, launcherOrigin(screen.usable, LAUNCHER.width, LAUNCHER.top)) });
+      await compositor.windowThumbnails({ rects: picturesOnScreen(rects, launcherOrigin(screen.usable, LAUNCHER.width, LAUNCHER.top)) });
     })
     .catch((error) => console.error("dashi-shell: the launcher's window pictures:", error));
 }
@@ -1200,7 +1200,7 @@ const followPersonKeys = () => {
   setPersonRules(rules);
   if (overlays.has("launcher")) launcherKeysAgain();
   else if (!overlays.has("switcher"))
-    void compositor?.request("keymap", idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error));
+    void compositor?.keymap(idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error));
 };
 followPersonKeys();
 const stopFollowingPersonKeys = settingsStore.subscribe(followPersonKeys);
@@ -1455,9 +1455,9 @@ function showSwitcher(state: SwitcherState): void {
   const { width, height } = state.size;
   void overlays.showOn("switcher", whereIsPerson, (onClosed, output) => {
     // Layer-shell centers it in what the menu bar and the Dock leave free (switcher/layout.ts).
-    switcherOrigin = (compositor?.request("outputs") ?? Promise.resolve(null))
+    switcherOrigin = (compositor?.outputs() ?? Promise.resolve([]))
       .then((answer) => {
-        const outputs = parseOutputs(answer);
+        const outputs = placedOutputs(answer);
         const screen = outputs.find((each) => each.name === output) ?? outputs[0];
         return screen ? centeredOn(screen.usable, state.size) : null;
       })
@@ -1481,15 +1481,15 @@ function switcherPictures(rects: ReadonlyArray<{ window: number; rect: Frame }>)
   void switcherOrigin
     .then((origin) => {
       const placed = origin ? rects.map(({ window, rect }) => ({ window, x: origin.x + rect.x, y: origin.y + rect.y, w: rect.width, h: rect.height })) : [];
-      return compositor.request("window-thumbnails", { rects: placed });
+      return compositor.windowThumbnails({ rects: placed });
     })
     .catch((error) => console.error("dashi-shell: the switcher's pictures:", error));
 }
 
 /** The switcher session's own keys come and go with it (keymap.ts `withSwitcher`). */
 const switcherKeys = {
-  begin: () => void compositor?.request("keymap", withSwitcher(currentKeymap())).catch((error) => console.error("dashi-shell: the switcher's keys:", error)),
-  end: () => void compositor?.request("keymap", idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error)),
+  begin: () => void compositor?.keymap(withSwitcher(currentKeymap())).catch((error) => console.error("dashi-shell: the switcher's keys:", error)),
+  end: () => void compositor?.keymap(idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error)),
 };
 
 const switcherController = compositor
@@ -1570,7 +1570,7 @@ const actions = startActions({
     const own = windows.filter((window) => installedApp(window.appId)?.id === entry.id);
     const target = windowToFront(own);
     if (!target || !compositor) return false;
-    await compositor.request("focus", { window: target.id });
+    await compositor.focus({ window: target.id });
     return true;
   },
   appMenus: appMenus.store,
@@ -1673,14 +1673,13 @@ askAgents = startAsk({
     const action = actions.registry.get(address);
     return action ? actions.run(action, args) : Promise.resolve({ ok: false, error: `Nothing is at ${address}.` });
   },
-  personPressed: () =>
-    compositor ? personAnswered((method, params) => compositor.request(method, params), LAUNCHER_MOTION.namespace) : Promise.resolve(false),
+  personPressed: () => (compositor ? personAnswered((params) => compositor.inputOrigin(params), LAUNCHER_MOTION.namespace) : Promise.resolve(false)),
   settingNow: (name) => {
     const row = agentRow(name);
     return row ? valueOf(row, registryStores) : null;
   },
   focus: async (window) => {
-    await compositor?.request("focus", { window });
+    await compositor?.focus({ window });
   },
   stopAgent: (id) => agents?.stop(id),
   openSettings: () => settingsApp.open("agents"),

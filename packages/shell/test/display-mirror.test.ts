@@ -6,11 +6,14 @@
  */
 
 import { expect, test } from "bun:test";
+import { outputsOf } from "../src/compositor/outputs.ts";
+import type { CompositorEvent } from "../src/compositor.ts";
 import { type ControlSnapshot, isThere, tileState } from "../src/control-center/catalog.ts";
 import { MirrorStore, mirrorRequests, mirrorSource, mirrorStateOf } from "../src/display-config/mirror.ts";
-import { parseMonitors } from "../src/display-config/monitors.ts";
+import { monitorsOf } from "../src/display-config/monitors.ts";
 import { configOf, layoutOf, planRestore } from "../src/display-config/plan.ts";
-import { parseScreens } from "../src/displays.ts";
+import { screensOf } from "../src/displays.ts";
+import { fakeCompositor } from "./support/compositor.ts";
 
 const output = (name: string, x: number, extra: Record<string, unknown> = {}) => ({
   name,
@@ -34,33 +37,35 @@ const apart = { outputs: [output("eDP-1", 0), output("HDMI-A-1", 1920)] };
 const mirrored = { outputs: [output("eDP-1", 0), output("HDMI-A-1", 1920, { frame: null, usable: null, mirrorOf: "eDP-1" })] };
 
 test("the others show the built-in screen, else the main one; one screen has nothing to mirror", () => {
-  expect(mirrorSource(parseMonitors(apart))).toBe("eDP-1");
+  expect(mirrorSource(monitorsOf(outputsOf(apart)))).toBe("eDP-1");
   const desk = { outputs: [output("DP-1", 0), output("DP-2", 1920, { primary: true })] };
-  expect(mirrorSource(parseMonitors(desk))).toBe("DP-2");
-  expect(mirrorSource(parseMonitors({ outputs: [output("eDP-1", 0)] }))).toBeNull();
+  expect(mirrorSource(monitorsOf(outputsOf(desk)))).toBe("DP-2");
+  expect(mirrorSource(monitorsOf(outputsOf({ outputs: [output("eDP-1", 0)] })))).toBeNull();
   // A screen turned off is not one of them.
-  expect(mirrorSource(parseMonitors({ outputs: [output("eDP-1", 0), output("HDMI-A-1", 1920, { enabled: false, mode: null, frame: null })] }))).toBeNull();
+  expect(
+    mirrorSource(monitorsOf(outputsOf({ outputs: [output("eDP-1", 0), output("HDMI-A-1", 1920, { enabled: false, mode: null, frame: null })] }))),
+  ).toBeNull();
 });
 
 test("on asks each other screen to show the source; off gives each its own desktop back", () => {
-  expect(mirrorRequests(parseMonitors(apart), true)).toEqual([{ output: "HDMI-A-1", source: "eDP-1" }]);
-  expect(mirrorRequests(parseMonitors(apart), false)).toEqual([]);
-  expect(mirrorRequests(parseMonitors(mirrored), false)).toEqual([{ output: "HDMI-A-1", source: null }]);
+  expect(mirrorRequests(monitorsOf(outputsOf(apart)), true)).toEqual([{ output: "HDMI-A-1", source: "eDP-1" }]);
+  expect(mirrorRequests(monitorsOf(outputsOf(apart)), false)).toEqual([]);
+  expect(mirrorRequests(monitorsOf(outputsOf(mirrored)), false)).toEqual([{ output: "HDMI-A-1", source: null }]);
   // Already on: nothing more to ask.
-  expect(mirrorRequests(parseMonitors(mirrored), true)).toEqual([]);
+  expect(mirrorRequests(monitorsOf(outputsOf(mirrored)), true)).toEqual([]);
   const three = { outputs: [output("eDP-1", 0), output("HDMI-A-1", 1920), output("DP-1", 3840)] };
-  expect(mirrorRequests(parseMonitors(three), true).map((request) => request.output)).toEqual(["HDMI-A-1", "DP-1"]);
+  expect(mirrorRequests(monitorsOf(outputsOf(three)), true).map((request) => request.output)).toEqual(["HDMI-A-1", "DP-1"]);
 });
 
 test("a mirroring screen is a monitor that is on, but not a screen of its own, and the arrangement leaves it be", () => {
-  const monitors = parseMonitors(mirrored);
+  const monitors = monitorsOf(outputsOf(mirrored));
   expect(monitors[1]?.mirrorOf).toBe("eDP-1");
   expect(monitors[0]?.mirrorOf).toBeUndefined();
   expect(mirrorStateOf(monitors)).toEqual({ screens: 2, on: true });
-  expect(mirrorStateOf(parseMonitors(apart))).toEqual({ screens: 2, on: false });
-  expect(parseScreens(mirrored).map((screen) => screen.name)).toEqual(["eDP-1"]);
+  expect(mirrorStateOf(monitorsOf(outputsOf(apart)))).toEqual({ screens: 2, on: false });
+  expect(screensOf(outputsOf(mirrored)).map((screen) => screen.name)).toEqual(["eDP-1"]);
   // A saved arrangement would move it (and end its mirroring): it isn't planned.
-  const saved = layoutOf(parseMonitors(apart), undefined, false);
+  const saved = layoutOf(monitorsOf(outputsOf(apart)), undefined, false);
   const moved = { ...saved, monitors: { ...saved.monitors } };
   const key = Object.keys(moved.monitors).find((identity) => identity.includes("Dell")) ?? "";
   moved.monitors[key] = { enabled: true, x: 0, y: 1080, rotation: 0, flipped: false };
@@ -74,19 +79,21 @@ test("a mirroring screen is a monitor that is on, but not a screen of its own, a
 test("the store follows the screens and turns mirroring on and off", async () => {
   let answer: unknown = apart;
   const sent: Array<[string, unknown]> = [];
-  const listeners = new Set<(event: { event: string }) => void>();
-  const compositor = {
-    request: async (method: string, params?: unknown) => {
+  const listeners = new Set<(event: CompositorEvent) => void>();
+  const compositor = fakeCompositor(
+    async (method, params) => {
       sent.push([method, params]);
-      if (method === "mirror") answer = (params as { source: string | null }).source ? mirrored : apart;
+      if (method === "mirror") answer = params?.source ? mirrored : apart;
       return method === "outputs" ? answer : {};
     },
-    on: (listener: (event: { event: string }) => void) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
+    {
+      on: (listener: (event: CompositorEvent) => void) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
     },
-  };
-  const store = new MirrorStore(compositor as never);
+  );
+  const store = new MirrorStore(compositor);
   const stop = store.start();
   await store.refresh();
   expect(store.getSnapshot()).toEqual({ screens: 2, on: false });

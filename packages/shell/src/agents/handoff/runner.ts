@@ -13,6 +13,7 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { lastErrors } from "./quiet.ts";
 import { isRunId, parseRecord, type RunRecord, runningUnits } from "./records.ts";
 
@@ -80,8 +81,8 @@ export const streamOf = (runtime: string, run: string, turn: number): string => 
 export function exitLine(line: string): { code: number | null } | null {
   if (!line.startsWith('{"dashi":')) return null;
   try {
-    const value = JSON.parse(line) as { dashi?: unknown; code?: unknown };
-    if (value.dashi !== "exit") return null;
+    const value: unknown = JSON.parse(line);
+    if (!isRecord(value) || value.dashi !== "exit") return null;
     return { code: typeof value.code === "number" ? value.code : null };
   } catch {
     return null;

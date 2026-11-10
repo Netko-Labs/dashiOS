@@ -11,7 +11,7 @@ import { SDK_VERSION } from "@dashi/applet";
 import { View } from "@mirinjs/metal";
 import { watchKillSwitch } from "../applet-store/kill-switch.ts";
 import type { Compositor } from "../compositor.ts";
-import { parseScreens } from "../displays.ts";
+import { screensOf } from "../displays.ts";
 import type { ExtrasStore } from "../extras/index.ts";
 import type { OpenOverlay } from "../overlay.tsx";
 import { APPLET_CONSENT, AppletConsentCard } from "../shared/applet-store/consent-sheet.tsx";
@@ -48,7 +48,7 @@ export interface StartAppletsOptions {
 /** The screen a popover goes on, in points, from the compositor's `outputs`. */
 export async function popoverScreen(compositor: Compositor | null, output: string | null, primary: string | null): Promise<PopoverScreen | null> {
   if (!compositor) return { name: null, width: 1280, height: 800, barHeight: MENU_BAR_HEIGHT };
-  const screens = parseScreens(await compositor.request("outputs"));
+  const screens = screensOf(await compositor.outputs());
   const screen = screens.find((each) => each.name === output) ?? screens.find((each) => each.name === primary) ?? screens[0];
   if (!screen) return null;
   const width = screen.frame?.width ?? Math.round(screen.width / screen.scale);

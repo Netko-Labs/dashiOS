@@ -32,7 +32,7 @@ import { SLEEP_LOCK, SleepGuard } from "./sleep.ts";
 
 export interface PowerOptions {
   /** For the lock state; without it nothing can be locked or waited for. */
-  compositor: Pick<Compositor, "on" | "request" | "session"> | null;
+  compositor: Pick<Compositor, "on" | "power" | "session"> | null;
   /** Raises the lock screen; null without a compositor. */
   lock: (() => void) | null;
   /** Opens the shut down sheet (the power key). */
@@ -100,7 +100,7 @@ export function startPower(options: PowerOptions): Power {
       take: () => takeLock(SLEEP_LOCK),
       screen,
       // After a suspend KMS state may have changed: always reset the screens, whether or not they were on.
-      woke: async () => void (await options.compositor?.request("power", { on: true, reset: true })),
+      woke: async () => void (await options.compositor?.power({ on: true, reset: true })),
     });
     guard = sleepGuard;
     // Listen first, so a sleep that starts while the lock is being taken is not missed.

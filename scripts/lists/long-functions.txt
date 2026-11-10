@@ -29,8 +29,7 @@
 171	packages/shell/src/agents/run.ts
 169	packages/shell/src/agents/server.ts
 81	packages/shell/src/bluetooth/agent.ts
-129	packages/shell/src/clipboard/start.ts
-130	packages/shell/src/compositor.ts
+128	packages/shell/src/clipboard/start.ts
 146	packages/shell/src/control-center/controls.tsx
 104	packages/shell/src/control-center/panel.tsx
 103	packages/shell/src/dock/view.tsx
@@ -48,7 +47,6 @@
 132	packages/shell/src/settings-app/machine-desktop.ts
 81	packages/shell/src/settings-app/panes/arrangement.tsx
 99	packages/shell/src/settings-app/start.tsx
-122	packages/shell/src/settings.ts
 98	packages/shell/src/setup/start.tsx
 88	packages/shell/src/share-picker/start.tsx
 89	packages/shell/src/shortcuts.ts

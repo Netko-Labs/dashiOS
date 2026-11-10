@@ -14,6 +14,8 @@ use super::{
     server::ConnectionId,
     table::{self, Ask, Run},
 };
+use serde_json::Value;
+
 use crate::state::Dashi;
 
 impl Dashi {
@@ -76,16 +78,16 @@ impl Dashi {
                 let ask = Ask {
                     connection: id,
                     id: request.id,
-                    params: request.params,
                 };
+                let params = Value::Object(request.params);
                 let outcome = match table::find(&request.method) {
                     None => Err(format!("unknown method: {}", request.method)),
                     Some(method) if !self.ipc.may(id, method.name, method.who) => {
                         Err(table::refusal(method.name, method.who))
                     }
                     Some(method) => match method.run {
-                        Run::Now(run) => run(self, &ask),
-                        Run::Later(run) => match run(self, &ask) {
+                        Run::Now(run) => run(self, &ask, params),
+                        Run::Later(run) => match run(self, &ask, params) {
                             Ok(()) => return,
                             Err(error) => Err(error),
                         },

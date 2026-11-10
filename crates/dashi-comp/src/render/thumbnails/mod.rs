@@ -13,7 +13,6 @@ mod element;
 
 use std::collections::HashMap;
 
-use serde_json::{Map, Value};
 use smithay::{
     backend::renderer::element::Id,
     utils::{Logical, Point, Rectangle, Size},
@@ -22,7 +21,11 @@ use smithay::{
 pub(crate) use draw::thumbnail_elements;
 pub(crate) use element::Thumb;
 
-use crate::{state::Dashi, wm::WindowId};
+use crate::{
+    ipc::protocol::{Coord, SpacePreviews, WindowThumbnails},
+    state::Dashi,
+    wm::WindowId,
+};
 
 /// More pictures than any panel of the shell's shows.
 const MOST: usize = 64;
@@ -98,35 +101,31 @@ impl Thumbnails {
     }
 }
 
-/// A rect as the requests send it: `{x, y, w, h}`, a positive size, in range.
-fn rect(value: &Map<String, Value>) -> Option<Rectangle<i32, Logical>> {
-    let get = |key: &str| {
-        value
-            .get(key)
-            .and_then(Value::as_f64)
-            .filter(|v| v.is_finite() && v.abs() < f64::from(1 << 16))
-            .map(|v| v.round() as i32)
-    };
-    let (x, y, w, h) = (get("x")?, get("y")?, get("w")?, get("h")?);
-    (w > 0 && h > 0).then(|| Rectangle::new((x, y).into(), (w, h).into()))
+/// A rect as the requests send it: `{x, y, w, h}`, a positive size.
+fn sized(x: Coord, y: Coord, w: Coord, h: Coord) -> Option<Rect> {
+    (w.get() > 0 && h.get() > 0)
+        .then(|| Rectangle::new((x.i32(), y.i32()).into(), (w.i32(), h.i32()).into()))
 }
 
-/// The `rects` list of a request: each entry's `key` (a non-negative integer) and rect.
-fn rects(params: &Map<String, Value>, key: &str) -> Result<Vec<(u64, Rect)>, String> {
-    let list = params
-        .get("rects")
-        .and_then(Value::as_array)
-        .ok_or("`rects` must be a list")?;
+/// At most `MOST` rects, each a positive size.
+fn checked<T>(
+    list: &[T],
+    key: &str,
+    each: impl Fn(&T) -> Option<(u64, Rect)>,
+) -> Result<Vec<(u64, Rect)>, String> {
     if list.len() > MOST {
         return Err(format!("at most {MOST} rects"));
     }
     list.iter()
-        .map(|entry| {
-            let entry = entry.as_object()?;
-            Some((entry.get(key)?.as_u64()?, rect(entry)?))
-        })
+        .map(each)
         .collect::<Option<Vec<_>>>()
         .ok_or_else(|| format!("each rect needs `{key}`, x, y, and a positive w and h"))
+}
+
+fn window_rects(params: &WindowThumbnails) -> Result<Vec<(u64, Rect)>, String> {
+    checked(&params.rects, "window", |r| {
+        Some((r.window.to::<u64>(), sized(r.x, r.y, r.w, r.h)?))
+    })
 }
 
 /// Where a window's outer frame of `size` goes in a picture `rect`: as large
@@ -166,38 +165,23 @@ impl Dashi {
     /// `space-previews {output, rects: [{space, x, y, w, h, screen?}]}`: drawn on
     /// `output`, each a picture of Space `space` as screen `screen` shows it
     /// (`output` itself when left out); empty rects clear that screen's.
-    pub(crate) fn set_space_previews(&mut self, params: &Map<String, Value>) -> Result<(), String> {
-        let output = params
-            .get("output")
-            .and_then(Value::as_str)
-            .ok_or("`output` must be a screen's name")?;
+    pub(crate) fn set_space_previews(&mut self, params: &SpacePreviews) -> Result<(), String> {
+        let output = params.output.as_str();
         if !self.space.outputs().any(|o| o.name() == output) {
             return Err(format!("no screen {output:?}"));
         }
-        let list = rects(params, "space")?;
-        if list
-            .iter()
-            .any(|(space, _)| *space >= crate::wm::MAX_SPACES as u64)
-        {
-            return Err("`space` must be a Space's index".into());
-        }
-        let entries = params
-            .get("rects")
-            .and_then(Value::as_array)
-            .cloned()
-            .unwrap_or_default();
+        let list = checked(&params.rects, "space", |r| {
+            Some((r.space.to::<u64>(), sized(r.x, r.y, r.w, r.h)?))
+        })?;
         let mut previews = Vec::with_capacity(list.len());
-        for ((space, rect), entry) in list.into_iter().zip(entries) {
-            let screen = match entry.get("screen") {
+        for ((space, rect), entry) in list.into_iter().zip(&params.rects) {
+            let screen = match &entry.screen {
                 None => output.to_owned(),
-                Some(name) => name
-                    .as_str()
-                    .filter(|name| self.space.outputs().any(|o| o.name() == *name))
-                    .ok_or("`screen` must be a screen's name")?
-                    .to_owned(),
+                Some(name) if self.space.outputs().any(|o| o.name() == *name) => name.clone(),
+                Some(_) => return Err("`screen` must be a screen's name".into()),
             };
             previews.push(Preview {
-                space: space as usize,
+                space: usize::try_from(space).unwrap_or_default(),
                 rect,
                 screen,
             });
@@ -215,9 +199,9 @@ impl Dashi {
     /// Windows that are gone (closed since the shell looked) are left out.
     pub(crate) fn set_window_thumbnails(
         &mut self,
-        params: &Map<String, Value>,
+        params: &WindowThumbnails,
     ) -> Result<(), String> {
-        let list = rects(params, "window")?;
+        let list = window_rects(params)?;
         self.thumbnails.windows = list
             .into_iter()
             .filter(|(id, _)| self.windows.get(*id).is_some_and(|e| e.announced))
@@ -254,19 +238,15 @@ mod tests {
 
     use super::*;
 
-    fn params(value: Value) -> Map<String, Value> {
-        match value {
-            Value::Object(map) => map,
-            _ => Map::new(),
-        }
+    fn rects(value: serde_json::Value) -> Result<Vec<(u64, Rect)>, String> {
+        window_rects(&crate::ipc::protocol::read(value)?)
     }
 
     #[test]
     fn rects_are_checked() {
-        let ok =
-            params(json!({ "rects": [{ "window": 3, "x": 10, "y": 20.4, "w": 160, "h": 90 }] }));
+        let ok = json!({ "rects": [{ "window": 3, "x": 10, "y": 20.4, "w": 160, "h": 90 }] });
         assert_eq!(
-            rects(&ok, "window"),
+            rects(ok),
             Ok(vec![(3, Rectangle::new((10, 20).into(), (160, 90).into()))])
         );
         for bad in [
@@ -277,9 +257,9 @@ mod tests {
             json!({ "rects": 4 }),
             json!({}),
         ] {
-            assert!(rects(&params(bad.clone()), "window").is_err(), "{bad}");
+            assert!(rects(bad.clone()).is_err(), "{bad}");
         }
-        assert_eq!(rects(&params(json!({ "rects": [] })), "space"), Ok(vec![]));
+        assert_eq!(rects(json!({ "rects": [] })), Ok(vec![]));
     }
 
     #[test]

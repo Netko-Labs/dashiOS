@@ -4,6 +4,7 @@
 //! GPU that does not draw is opened at all is sleep.rs's.
 
 use super::*;
+use crate::ipc::protocol::Event;
 
 /// linux-drm-syncobj, on the drawing GPU's device, if it can wait on syncobjs.
 pub(super) fn offer_explicit_sync(state: &mut Dashi) {
@@ -178,6 +179,6 @@ pub(super) fn device_removed(state: &mut Dashi, node: DrmNode) {
     if let Some(token) = token {
         state.loop_handle.remove(token);
     }
-    state.ipc.emit("outputs-changed", json!({}));
-    state.ipc.emit("gpus-changed", json!({}));
+    state.ipc.emit(Event::OutputsChanged);
+    state.ipc.emit(Event::GpusChanged);
 }

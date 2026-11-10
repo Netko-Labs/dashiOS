@@ -36,61 +36,44 @@
 
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, watch, writeSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import { isTextSize, UndoStack } from "@dashi/ui";
+import { UndoStack } from "@dashi/ui";
 import { type AnswererChoice, type HarnessId, isAnswererChoice, isHarnessId } from "../agents/ask/answerer.ts";
 import { isModelName } from "../agents/ask/local.ts";
 import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { isRefreshChoice, type RefreshChoice } from "../display-config/refresh-policy.ts";
-import { DOCK_STYLES, type DockSettings } from "../dock/settings.ts";
-import { INPUT_METHODS, type InputMethodName } from "../input-method.ts";
+import type { DockSettings } from "../dock/settings.ts";
+import type { InputMethodName } from "../input-method.ts";
 import { isAliasMap, isKeyMap } from "../launcher/person-keys.ts";
-import { isPointerSize } from "../pointer.ts";
 import { GRAPHICS_FIELDS, type GraphicsSettings, POWER_FIELDS, type PowerSection } from "../power/modes/settings.ts";
-import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../scroll-speed.ts";
-import { CORNER_NAMES, type CornerName } from "../shared/appearance/corners.ts";
-import { type CatalogSetting, isCatalogList } from "../shared/applet-store/catalogs.ts";
-import { type Check, dig, isBoolean, isPhotoPath, isRaw, numberIn, oneOf, type Raw, readFields, settingsPath } from "../shared/settings/file.ts";
-import { CLOCK_SECTION, type ClockSettings, REGION_SECTION, type RegionSettings } from "../shared/time/clock.ts";
-import { parseSpaceNames, type SpaceNames } from "../spaces/names.ts";
-import { isWallpaperRef, WALLPAPER_MODES, type WallpaperMode } from "../wallpaper/catalog.ts";
 import {
-  FRAME_RATES,
-  type FrameRate,
-  isVideoList,
-  isVideoPath,
-  LIVE_SHADERS,
-  type LiveShader,
-  WALLPAPER_KINDS,
-  type WallpaperKind,
-} from "../wallpaper/live/choice.ts";
-import { X11_SCALINGS, type X11Scaling } from "../xwayland-scale.ts";
+  APPEARANCE,
+  checksOf,
+  DOCK,
+  IDLE,
+  INPUT_METHOD,
+  KEYBOARD,
+  type KeyboardSettings,
+  MENU_BAR,
+  MOUSE,
+  type MouseSettings,
+  SPACES,
+  TOUCHPAD,
+  type TouchpadSettings,
+  WALLPAPER,
+} from "../settings-schema.ts";
+import type { CornerName } from "../shared/appearance/corners.ts";
+import { type CatalogSetting, isCatalogList } from "../shared/applet-store/catalogs.ts";
+import { type Check, dig, isBoolean, isPhotoPath, isRaw, numberIn, type Raw, readFields, settingsPath } from "../shared/settings/file.ts";
+import { CLOCK_SECTION, type ClockSettings, REGION_SECTION, type RegionSettings } from "../shared/time/clock.ts";
+import type { SpaceNames } from "../spaces/names.ts";
+import type { WallpaperMode } from "../wallpaper/catalog.ts";
+import type { FrameRate, LiveShader, WallpaperKind } from "../wallpaper/live/choice.ts";
+import type { X11Scaling } from "../xwayland-scale.ts";
 import { changesPath } from "./changes/file.ts";
 import { ChangeLog, type Change as LoggedChange } from "./changes/log.ts";
 import { describeChanges } from "./changes/words.ts";
 
-export interface TouchpadSettings {
-  tap?: boolean;
-  naturalScroll?: boolean;
-  accelSpeed?: number;
-  disableWhileTyping?: boolean;
-  clickMethod?: "buttonAreas" | "clickfinger";
-  scrollSpeed?: number;
-}
-
-export interface MouseSettings {
-  naturalScroll?: boolean;
-  accelSpeed?: number;
-  accelProfile?: "flat" | "adaptive";
-  scrollSpeed?: number;
-}
-
-export interface KeyboardSettings {
-  layout?: string;
-  variant?: string;
-  options?: string;
-  repeatRate?: number;
-  repeatDelay?: number;
-}
+export type { KeyboardSettings, MouseSettings, TouchpadSettings } from "../settings-schema.ts";
 
 export interface IdleSettings {
   /** 0 never blanks the screens. */
@@ -261,80 +244,32 @@ export interface SettingsData {
 export { DEFAULT_BLANK_AFTER } from "./controls.ts";
 
 /** A week, the compositor's limit for an idle threshold. */
-const MAX_BLANK_AFTER = 7 * 24 * 3600;
+const _MAX_BLANK_AFTER = 7 * 24 * 3600;
 
 /** How many added photos the file keeps. */
 export const MAX_PHOTOS = 24;
-const isPhotoList: Check = (value) => Array.isArray(value) && value.length <= MAX_PHOTOS && value.every(isPhotoPath);
+const _isPhotoList: Check = (value) => Array.isArray(value) && value.length <= MAX_PHOTOS && value.every(isPhotoPath);
 
 /** A time of day the way night-shift.ts reads it: `21:00`, or `9:00`. */
 const isClock: Check = (value) => typeof value === "string" && /^([01]?\d|2[0-3]):[0-5]\d$/.test(value);
 /** An xkb name list such as `us,de`: what the compositor's own check accepts. */
-const isXkbList: Check = (value) => typeof value === "string" && /^[A-Za-z0-9_,:+.()-]{0,256}$/.test(value);
+const _isXkbList: Check = (value) => typeof value === "string" && /^[A-Za-z0-9_,:+.()-]{0,256}$/.test(value);
 
 /** Where each section lives in the file, and what each of its keys may hold. */
 const SECTIONS = {
-  touchpad: {
-    path: ["input", "touchpad"],
-    fields: {
-      tap: isBoolean,
-      naturalScroll: isBoolean,
-      accelSpeed: numberIn(-1, 1),
-      disableWhileTyping: isBoolean,
-      clickMethod: oneOf("buttonAreas", "clickfinger"),
-      scrollSpeed: numberIn(SCROLL_SPEED_MIN, SCROLL_SPEED_MAX),
-    },
-  },
-  mouse: {
-    path: ["input", "mouse"],
-    fields: {
-      naturalScroll: isBoolean,
-      accelSpeed: numberIn(-1, 1),
-      accelProfile: oneOf("flat", "adaptive"),
-      scrollSpeed: numberIn(SCROLL_SPEED_MIN, SCROLL_SPEED_MAX),
-    },
-  },
-  keyboard: {
-    path: ["keyboard"],
-    fields: { layout: isXkbList, variant: isXkbList, options: isXkbList, repeatRate: numberIn(0, 1000, true), repeatDelay: numberIn(0, 10_000, true) },
-  },
-  idle: { path: ["idle"], fields: { blankAfterSeconds: numberIn(0, MAX_BLANK_AFTER), sleepAfterSeconds: numberIn(0, MAX_BLANK_AFTER) } },
-  menuBar: { path: ["menuBar"], fields: { batteryPercent: isBoolean, sound: isBoolean } },
-  inputMethod: { path: ["inputMethod"], fields: { engine: oneOf(...INPUT_METHODS) } },
-  appearance: {
-    path: ["appearance"],
-    fields: {
-      cornerRadius: oneOf(...CORNER_NAMES),
-      reduceMotion: isBoolean,
-      highlightActiveWindow: isBoolean,
-      auto: isBoolean,
-      pointerSize: isPointerSize,
-      textSize: isTextSize,
-      x11Apps: oneOf(...X11_SCALINGS),
-    },
-  },
-  wallpaper: {
-    path: ["appearance", "wallpaper"],
-    fields: {
-      path: isWallpaperRef,
-      mode: oneOf(...WALLPAPER_MODES),
-      photos: isPhotoList,
-      kind: oneOf(...WALLPAPER_KINDS),
-      shader: oneOf(...LIVE_SHADERS.map((shader) => shader.id)),
-      video: isVideoPath,
-      videos: isVideoList,
-      fps: (value) => FRAME_RATES.some((rate) => rate === value),
-      pauseOnBattery: isBoolean,
-    },
-  },
+  touchpad: { path: ["input", "touchpad"], fields: checksOf(TOUCHPAD) },
+  mouse: { path: ["input", "mouse"], fields: checksOf(MOUSE) },
+  keyboard: { path: ["keyboard"], fields: checksOf(KEYBOARD) },
+  idle: { path: ["idle"], fields: checksOf(IDLE) },
+  menuBar: { path: ["menuBar"], fields: checksOf(MENU_BAR) },
+  inputMethod: { path: ["inputMethod"], fields: checksOf(INPUT_METHOD) },
+  appearance: { path: ["appearance"], fields: checksOf(APPEARANCE) },
+  wallpaper: { path: ["appearance", "wallpaper"], fields: checksOf(WALLPAPER) },
   nightShift: { path: ["nightShift"], fields: { from: isClock, to: isClock, kelvin: numberIn(1900, 6500, true) } },
-  dock: { path: ["dock"], fields: { style: oneOf(...DOCK_STYLES), autohide: isBoolean, visible: isBoolean } },
+  dock: { path: ["dock"], fields: checksOf(DOCK) },
   clock: CLOCK_SECTION,
   region: REGION_SECTION,
-  spaces: {
-    path: ["spaces"],
-    fields: { count: numberIn(1, 16, true), names: (value) => parseSpaceNames(value) !== null, switchOnActivate: isBoolean, fullscreenDesktop: isBoolean },
-  },
+  spaces: { path: ["spaces"], fields: checksOf(SPACES) },
   power: { path: ["power"], fields: POWER_FIELDS },
   graphics: { path: ["graphics"], fields: GRAPHICS_FIELDS },
   launcher: { path: ["launcher"], fields: { aliases: isAliasMap, keys: isKeyMap } },

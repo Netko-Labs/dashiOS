@@ -16,8 +16,8 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
+import { isInsidePath } from "@dashi/shape/kit";
 import { type Manifest, readManifest } from "./manifest.ts";
-import { isInsidePath } from "./parse.ts";
 import { singletons } from "./singletons.ts";
 import { readTar, writeTar } from "./tar.ts";
 

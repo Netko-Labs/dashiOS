@@ -17,7 +17,7 @@ import ts from "typescript";
 import { type Counts, isTest, type Outcome, ROOT, ratchet, read, report } from "./ratchet.ts";
 
 /** The projects `bun run typecheck` checks. */
-const PROJECTS = ["packages/dashi-ui", "packages/applet", "packages/greeter", "packages/shell", "packages/shell/browser-extension"];
+const PROJECTS = ["packages/shape", "packages/dashi-ui", "packages/applet", "packages/greeter", "packages/shell", "packages/shell/browser-extension"];
 const COMPOSITOR = "packages/shell/src/compositor.ts";
 
 /** The request methods in docs/compositor-ipc.md's tables ("## Requests" up to "## Events"). */

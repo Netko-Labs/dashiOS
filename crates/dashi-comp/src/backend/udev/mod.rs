@@ -50,7 +50,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use serde_json::{Value, json};
 use smithay::desktop::utils::OutputPresentationFeedback;
 use smithay::{
     backend::{

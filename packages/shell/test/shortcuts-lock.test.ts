@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
-import type { Compositor, CompositorEvent } from "../src/compositor.ts";
+import type { CompositorEvent } from "../src/compositor.ts";
 import { type ShellActions, startShortcuts } from "../src/shortcuts.ts";
+import { fakeCompositor } from "./support/compositor.ts";
 import { settle } from "./support/time.ts";
 
 /** The shortcuts on a fake compositor: `emit` plays its events, `done` lists what the shell did. */
@@ -8,17 +9,19 @@ function setup() {
   let listener: ((event: CompositorEvent) => void) | null = null;
   const done: string[] = [];
   let locked = false;
-  const compositor = {
-    on: (heard: (event: CompositorEvent) => void) => {
-      listener = heard;
-      return () => {};
-    },
-    request: async (method: string, params: unknown) => {
+  const compositor = fakeCompositor(
+    async (method, params) => {
       done.push(`${method} ${JSON.stringify(params)}`);
       return {};
     },
-    windows: async () => [],
-  } as unknown as Compositor;
+    {
+      on: (heard: (event: CompositorEvent) => void) => {
+        listener = heard;
+        return () => {};
+      },
+      windows: async () => [],
+    },
+  );
   const actions = {
     toggleLauncher: () => done.push("launcher"),
     showSheet: () => done.push("sheet"),

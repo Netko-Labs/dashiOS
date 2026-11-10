@@ -1,5 +1,7 @@
-//! Who is the shell: the session's client (`-c`) and the processes under it.
-//! Some requests (capture) are only theirs, as in 0.1.0.
+//! Who is the shell: the session's client (`-c`), its process group, and the
+//! sessions it started. One rule for the IPC (ipc/peer.rs) and the
+//! privileged Wayland protocols (screencopy, data-control,
+//! foreign-toplevel, session-lock, the input method).
 
 /// The parent of `pid`, from /proc/<pid>/stat (the field after the command,
 /// which may itself hold spaces and parentheses).
@@ -72,7 +74,13 @@ pub(crate) fn descends_from(pid: i32, ancestor: i32) -> bool {
     false
 }
 
-/// Whether a Wayland client runs under the session client (`shell`: its pid, 0 before it starts).
+/// Whether a Wayland client is one of the shell's own processes, by the same
+/// rule as the IPC's (`is_shell_process`): the session client (`shell`: its
+/// pid, 0 before it starts) and its group, and the sessions it started (the
+/// shell, and what the shell runs in its own session: its Metal hosts, the
+/// clipboard's wl-paste, the input method). An app the shell launches has a
+/// session of its own and is not the shell, though it runs under it; it gets
+/// a privileged protocol only as the shell grants it (`screencopy-clients`).
 pub(crate) fn is_shell_client(
     client: &smithay::reexports::wayland_server::Client,
     shell: &std::sync::atomic::AtomicI32,
@@ -82,7 +90,7 @@ pub(crate) fn is_shell_client(
         return false;
     };
     // A sandboxed app runs under the shell too, but is never trusted as it.
-    data.sandbox.is_none() && shell > 0 && data.pid.is_some_and(|pid| descends_from(pid, shell))
+    data.sandbox.is_none() && shell > 0 && data.pid.is_some_and(|pid| is_shell_process(pid, shell))
 }
 
 #[cfg(test)]

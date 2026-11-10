@@ -10,18 +10,19 @@
 export const PERSON_PRESS_MS = 2_000;
 
 /** Whether an `input-origin` answer says the person, not an agent, just answered. */
-export function answeredByPerson(origin: unknown): boolean {
-  if (typeof origin !== "object" || origin === null) return false;
-  const { person, agent } = origin as Record<string, unknown>;
-  if (typeof person !== "number" || person < 0 || person > PERSON_PRESS_MS) return false;
+export function answeredByPerson({ person, agent }: { person: number | null; agent: number | null }): boolean {
+  if (person === null || person < 0 || person > PERSON_PRESS_MS) return false;
   // An agent's press on the sheet more recently than the person's: not theirs.
-  return agent === null || agent === undefined || (typeof agent === "number" && agent > person);
+  return agent === null || agent > person;
 }
 
 /** Ask dashi-comp about `namespace`'s last presses; anything but a clear "the person" is no. */
-export async function personAnswered(request: (method: string, params: Record<string, unknown>) => Promise<unknown>, namespace: string): Promise<boolean> {
+export async function personAnswered(
+  inputOrigin: (params: { namespace: string }) => Promise<{ person: number | null; agent: number | null }>,
+  namespace: string,
+): Promise<boolean> {
   try {
-    return answeredByPerson(await request("input-origin", { namespace }));
+    return answeredByPerson(await inputOrigin({ namespace }));
   } catch {
     return false;
   }

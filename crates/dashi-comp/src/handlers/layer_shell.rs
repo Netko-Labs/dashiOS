@@ -8,6 +8,7 @@
 //! session/applets.rs); a client whose process is unknown (a security-context
 //! sandbox's) never; other clients as in C1, any (C3: per-client grants).
 
+use crate::ipc::protocol::Event;
 use smithay::{
     delegate_layer_shell,
     desktop::{LayerSurface, WindowSurfaceType, layer_map_for_output},
@@ -115,7 +116,7 @@ impl WlrLayerShellHandler for Dashi {
                 let changed = map.non_exclusive_zone() != before;
                 drop(map);
                 if changed {
-                    self.ipc.emit("outputs-changed", serde_json::json!({}));
+                    self.ipc.emit(Event::OutputsChanged);
                 }
             }
         }
@@ -158,7 +159,7 @@ pub(crate) fn handle_commit(state: &mut Dashi, surface: &WlSurface) {
         layer.layer_surface().send_configure();
     }
     if zone_changed {
-        state.ipc.emit("outputs-changed", serde_json::json!({}));
+        state.ipc.emit(Event::OutputsChanged);
     }
     // While locked a sheet that takes the keyboard waits: the keyboard is the
     // lock screen's (session/lock.rs), and it gets it after the unlock.

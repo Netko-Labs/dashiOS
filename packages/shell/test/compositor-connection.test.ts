@@ -108,7 +108,7 @@ test("the session says whether the screen is locked", async () => {
 
 test("a session answer without the lock state is not understood", async () => {
   const { compositor } = await connected(() => session);
-  expect(await compositor.session()).toBeNull();
+  expect(compositor.session()).rejects.toThrow("locked");
 });
 
 test("agents stay locked out until the compositor says the screen is unlocked", async () => {
@@ -116,7 +116,7 @@ test("agents stay locked out until the compositor says the screen is unlocked", 
   const unsure = new LockWatch(unknown.compositor);
   expect(unsure.isLocked).toBe(true);
   // Replies come in order: once this one is in, the watch has had its answer.
-  await unknown.compositor.session();
+  await unknown.compositor.session().catch(() => null);
   expect(unsure.isLocked).toBe(true);
 
   const open = await connected(() => ({ ...session, locked: false }));

@@ -6,7 +6,7 @@
  * shader or video.
  */
 
-import type { CompositorWindow, Frame } from "../../compositor.ts";
+import type { CompositorWindow, Frame, Output } from "../../compositor.ts";
 
 export type PauseReason = "locked" | "off" | "covered" | "battery";
 
@@ -40,24 +40,8 @@ export interface ScreenArea {
 }
 
 /** The screens in an IPC `outputs` answer that say where they are; the usable area falls back to the whole frame. */
-export function parseScreenAreas(answer: unknown): ScreenArea[] {
-  const outputs = typeof answer === "object" && answer !== null ? (answer as { outputs?: unknown }).outputs : undefined;
-  if (!Array.isArray(outputs)) return [];
-  return outputs.flatMap((output: unknown): ScreenArea[] => {
-    if (typeof output !== "object" || output === null) return [];
-    const { name, frame, usable } = output as Record<string, unknown>;
-    const whole = asFrame(frame);
-    if (typeof name !== "string" || whole === null) return [];
-    return [{ name, frame: whole, usable: asFrame(usable) ?? whole }];
-  });
-}
-
-function asFrame(value: unknown): Frame | null {
-  if (typeof value !== "object" || value === null) return null;
-  const { x, y, width, height } = value as Record<string, unknown>;
-  const numbers = [x, y, width, height];
-  if (!numbers.every((n) => typeof n === "number" && Number.isFinite(n))) return null;
-  return (width as number) > 0 && (height as number) > 0 ? ({ x, y, width, height } as Frame) : null;
+export function screenAreas(outputs: readonly Output[]): ScreenArea[] {
+  return outputs.flatMap((output): ScreenArea[] => (output.frame ? [{ name: output.name, frame: output.frame, usable: output.usable ?? output.frame }] : []));
 }
 
 /** How much of the usable area windows must hide before the wallpaper counts as hidden. */

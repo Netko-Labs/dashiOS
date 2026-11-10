@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import type { CompositorEvent, CompositorWindow } from "../src/compositor.ts";
 import { followSuspension, suspendChanges } from "../src/suspend.ts";
+import { fakeCompositor } from "./support/compositor.ts";
 import { flush } from "./support/time.ts";
 
 const frame = { x: 0, y: 0, width: 800, height: 600 };
@@ -28,17 +29,18 @@ test("the shell tells windows as they go off screen and come back", async () => 
   let windows = [win(1, true), win(2, true)];
   const sent: unknown[] = [];
   const listeners: ((event: CompositorEvent) => void)[] = [];
-  const stop = followSuspension({
+  const request = async (method: string, params?: Record<string, unknown>) => {
+    sent.push([method, params]);
+    return {};
+  };
+  const extra = {
     windows: async () => windows,
-    request: async (method, params) => {
-      sent.push([method, params]);
-      return {};
-    },
-    on: (listener) => {
+    on: (listener: (event: CompositorEvent) => void) => {
       listeners.push(listener);
       return () => listeners.splice(listeners.indexOf(listener), 1);
     },
-  });
+  };
+  const stop = followSuspension(fakeCompositor(request, extra));
   const emit = async (event: CompositorEvent): Promise<void> => {
     for (const listener of listeners) listener(event);
     await flush();

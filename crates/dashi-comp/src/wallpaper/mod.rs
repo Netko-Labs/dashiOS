@@ -13,7 +13,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use serde_json::{Map, Value, json};
 use smithay::{
     backend::{
         allocator::Fourcc,
@@ -32,7 +31,10 @@ use smithay::{
     utils::{Logical, Physical, Point, Rectangle, Scale, Size, Transform},
 };
 
-use crate::state::Dashi;
+use crate::{
+    ipc::protocol::{Event, WallpaperParams},
+    state::Dashi,
+};
 pub(crate) use fit::Mode;
 use procedural::Look;
 
@@ -87,12 +89,11 @@ fn procedural_shown(look: Look, t: f32) -> Shown {
 }
 
 /// A picture or video path from a request: absolute, and a file that is there.
-fn existing_file(value: &Value, key: &str) -> Result<PathBuf, String> {
-    let path = value
-        .as_str()
-        .filter(|p| !p.contains('\0'))
-        .map(PathBuf::from)
-        .ok_or_else(|| format!("`{key}` must be a path"))?;
+fn existing_file(value: &str, key: &str) -> Result<PathBuf, String> {
+    if value.contains('\0') {
+        return Err(format!("`{key}` must be a path"));
+    }
+    let path = PathBuf::from(value);
     if !path.is_absolute() {
         return Err(format!("`{key}` must be absolute"));
     }
@@ -150,45 +151,35 @@ impl Wallpaper {
 
 impl Dashi {
     /// `wallpaper {path, mode} | {gradient, mode} | {shader, fps, mode} | {video, mode} | {paused}`.
-    pub(crate) fn set_wallpaper(&mut self, params: &Map<String, Value>) -> Result<Value, String> {
-        if let Some(paused) = params.get("paused") {
-            let paused = paused.as_bool().ok_or("`paused` must be true or false")?;
+    pub(crate) fn set_wallpaper(&mut self, params: &WallpaperParams) -> Result<(), String> {
+        if let Some(paused) = params.paused {
             self.wallpaper.paused = paused;
             if let Some(player) = &self.wallpaper.player {
                 player.set_paused(paused);
             }
-            return Ok(json!({}));
+            return Ok(());
         }
-        let mode = match params.get("mode") {
-            None => Mode::Fill,
-            Some(value) => value
-                .as_str()
-                .and_then(Mode::parse)
-                .ok_or("`mode` must be fill, fit, or center")?,
-        };
-        if params.get("gradient") == Some(&Value::Bool(true)) {
+        let mode = params.mode.unwrap_or(Mode::Fill);
+        if params.gradient == Some(true) {
             self.show_procedural(Look::Gradient, 0, mode);
-        } else if let Some(shader) = params.get("shader") {
-            let look = shader
-                .as_str()
-                .and_then(Look::shader)
-                .ok_or("`shader` must be aurora, drift, or tide")?;
+        } else if let Some(shader) = &params.shader {
+            let look = Look::shader(shader).ok_or("`shader` must be aurora, drift, or tide")?;
             let fps = params
-                .get("fps")
-                .and_then(Value::as_u64)
+                .fps
+                .map(|fps| fps.to::<u32>())
                 .filter(|f| [15, 30, 60].contains(f))
                 .unwrap_or(30);
-            self.show_procedural(look, fps as u32, mode);
-        } else if let Some(path) = params.get("path") {
+            self.show_procedural(look, fps, mode);
+        } else if let Some(path) = &params.path {
             let path = existing_file(path, "path")?;
             self.load_picture(path, mode);
-        } else if let Some(path) = params.get("video") {
+        } else if let Some(path) = &params.video {
             let path = existing_file(path, "video")?;
             self.play_video(path, mode)?;
         } else {
             return Err("wallpaper needs path, video, gradient, shader, or paused".into());
         }
-        Ok(json!({}))
+        Ok(())
     }
 
     /// Drop whatever drove the old wallpaper (a video, a live look's timer).
@@ -205,8 +196,11 @@ impl Dashi {
         self.replace_wallpaper();
         self.wallpaper.mode = mode;
         self.wallpaper.shown = procedural_shown(look, 0.0);
-        self.ipc
-            .emit("wallpaper", json!({ "path": null, "ok": true }));
+        self.ipc.emit(Event::Wallpaper {
+            path: None,
+            ok: true,
+            error: None,
+        });
         if !look.animated() || fps == 0 {
             return;
         }
@@ -279,9 +273,11 @@ impl Dashi {
                             follows_mode: true,
                         };
                         state.wallpaper.mode = mode;
-                        state
-                            .ipc
-                            .emit("wallpaper", json!({ "path": path, "ok": true }));
+                        state.ipc.emit(Event::Wallpaper {
+                            path: Some(path.to_string_lossy().into_owned()),
+                            ok: true,
+                            error: None,
+                        });
                     }
                     Err(error) => state.wallpaper_failed(&path, &error),
                 }
@@ -323,9 +319,11 @@ impl Dashi {
                     return;
                 }
                 match status {
-                    video::Status::Playing => state
-                        .ipc
-                        .emit("wallpaper", json!({ "path": shown, "ok": true })),
+                    video::Status::Playing => state.ipc.emit(Event::Wallpaper {
+                        path: Some(shown.to_string_lossy().into_owned()),
+                        ok: true,
+                        error: None,
+                    }),
                     video::Status::Failed(error) => {
                         state.wallpaper.player = None;
                         state.wallpaper_failed(&shown, &error);
@@ -339,10 +337,11 @@ impl Dashi {
 
     fn wallpaper_failed(&mut self, path: &Path, error: &str) {
         tracing::warn!(path = %path.display(), error, "the wallpaper could not be shown");
-        self.ipc.emit(
-            "wallpaper",
-            json!({ "path": path, "ok": false, "error": error }),
-        );
+        self.ipc.emit(Event::Wallpaper {
+            path: Some(path.to_string_lossy().into_owned()),
+            ok: false,
+            error: Some(error.to_string()),
+        });
     }
 }
 

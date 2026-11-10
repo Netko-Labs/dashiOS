@@ -24,8 +24,8 @@ export interface GestureActions {
 }
 
 /** Claims three-finger swipes and carries them out; returns a stop function. */
-export function startGestures(compositor: Pick<Compositor, "request" | "on">, actions: GestureActions): () => void {
-  compositor.request("gestures", { swipe: [3] }).catch((error) => console.error("dashi-shell: touchpad gestures are off:", error));
+export function startGestures(compositor: Pick<Compositor, "gestures" | "on">, actions: GestureActions): () => void {
+  compositor.gestures({ swipe: [3] }).catch((error) => console.error("dashi-shell: touchpad gestures are off:", error));
   const tracker = new SwipeTracker();
   const stop = compositor.on((event: CompositorEvent) => {
     if (event.event !== "gesture") return;
@@ -51,6 +51,6 @@ export function startGestures(compositor: Pick<Compositor, "request" | "on">, ac
   });
   return () => {
     stop();
-    compositor.request("gestures", { swipe: [] }).catch(() => {});
+    compositor.gestures({ swipe: [] }).catch(() => {});
   };
 }

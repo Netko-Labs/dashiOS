@@ -6,6 +6,7 @@
  * mechanism (it keeps screens apart and touching); everything chosen is here.
  */
 
+import type { Params } from "../compositor.ts";
 import { choosePrimary } from "../menubars.ts";
 import { identityOf, type Mode, type Monitor, modeFor, type Rotation, type VrrMode } from "./monitors.ts";
 import type { SavedLayout, SavedMonitor } from "./saved.ts";
@@ -147,7 +148,7 @@ export function layoutOf(monitors: readonly Monitor[], previous: SavedLayout | u
 }
 
 /** The wire form of a request: what `outputs-config` takes. */
-export function toWire(request: ConfigRequest): Record<string, unknown> {
+export function toWire(request: ConfigRequest): Params<"outputs-config"> {
   return {
     outputs: request.outputs.map((config) => ({
       name: config.name,

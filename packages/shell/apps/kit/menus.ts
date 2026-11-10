@@ -256,12 +256,16 @@ export function menusClient(): MenusClient {
 export function useAppMenus(menus: readonly MenuSpec[], onSelect: (id: string) => void, client: MenusClient = menusClient()): void {
   const latest = useRef(onSelect);
   latest.current = onSelect;
+  // The menus change only when what they say does: published again then, not on every render.
+  const shown = useRef(menus);
+  shown.current = menus;
   const key = JSON.stringify(menus);
   useEffect(() => {
     client.onSelect((id) => latest.current(id));
   }, [client]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `key` is what the menus say; `shown` holds them.
   useEffect(() => {
-    client.publish(JSON.parse(key) as MenuSpec[]);
+    client.publish(shown.current);
   }, [client, key]);
   useEffect(() => () => client.publish([]), [client]);
 }

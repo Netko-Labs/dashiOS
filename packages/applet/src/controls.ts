@@ -24,7 +24,7 @@
  * permissions allow.
  */
 
-import { id, integer, isInsidePath, isRefusal, list, optionalText, type Refusal, record, refuse, text } from "./parse.ts";
+import { id, integer, isInsidePath, isRefusal, list, optionalText, type Refusal, record, refuse, text } from "@dashi/shape/kit";
 
 /** The protocol that brings them. */
 export const CONTROLS_PROTOCOL = 5;

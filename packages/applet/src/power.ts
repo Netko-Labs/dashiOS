@@ -15,7 +15,7 @@
  * `available` is empty on a machine without modes.
  */
 
-import { isRefusal, type Refusal, record, refuse } from "./parse.ts";
+import { isRefusal, type Refusal, record, refuse } from "@dashi/shape/kit";
 
 /** The protocol that brings it. */
 export const POWER_PROTOCOL = 4;

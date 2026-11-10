@@ -8,14 +8,14 @@
 //! where it was when mirroring stops, and by itself when the screen it
 //! shows goes away.
 
-use serde_json::{Map, Value};
+use serde::{Deserialize, Serialize};
 use smithay::{
     backend::renderer::element::solid::SolidColorBuffer,
     output::{Output, Scale},
     utils::{Logical, Physical, Point, Rectangle, Size},
 };
 
-use crate::state::Dashi;
+use crate::{ipc::protocol::Event, state::Dashi};
 
 /// The bars around the picture.
 pub(crate) const BAR: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
@@ -111,22 +111,20 @@ pub(crate) fn drawn_size(output: &Output) -> Option<Size<i32, Physical>> {
     Some(output.current_transform().transform_size(mode.size))
 }
 
+/// `mirror`'s params: `output` shows `source`'s picture (null: its own desktop again).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct MirrorParams {
+    pub output: String,
+    pub source: Option<String>,
+}
+
 impl Dashi {
     /// `mirror {output, source}`: `output` shows `source` (a screen's name),
     /// or its own desktop again (`source: null`).
-    pub(crate) fn set_mirror(&mut self, params: &Map<String, Value>) -> Result<(), String> {
-        let name = params
-            .get("output")
-            .and_then(Value::as_str)
-            .ok_or("`output` must be a screen's name")?;
-        let source = match params.get("source") {
-            None | Some(Value::Null) => None,
-            Some(value) => Some(
-                value
-                    .as_str()
-                    .ok_or("`source` must be a screen's name or null")?,
-            ),
-        };
+    pub(crate) fn set_mirror(&mut self, params: &MirrorParams) -> Result<(), String> {
+        let name = params.output.as_str();
+        let source = params.source.as_deref();
         let mirrored = self.mirrors.targets().find(|o| o.name() == name).cloned();
         let target = mirrored
             .clone()
@@ -216,7 +214,7 @@ impl Dashi {
         for output in self.space.outputs().cloned().collect::<Vec<_>>() {
             smithay::desktop::layer_map_for_output(&output).arrange();
         }
-        self.ipc.emit("outputs-changed", serde_json::json!({}));
+        self.ipc.emit(Event::OutputsChanged);
     }
 }
 

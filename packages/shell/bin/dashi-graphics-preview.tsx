@@ -19,9 +19,10 @@
  */
 
 import { setAppearanceSource } from "@dashi/ui";
+import { outputsOf } from "../src/compositor/outputs.ts";
 import { AutoRefresh, rateOnPower } from "../src/display-config/auto-refresh.ts";
 import type { ApplyResult } from "../src/display-config/manager.ts";
-import { parseMonitors } from "../src/display-config/monitors.ts";
+import { monitorsOf } from "../src/display-config/monitors.ts";
 import type { GraphicsCard } from "../src/graphics/card.ts";
 import type { CardwireGpu, CardwireMode, GraphicsBackend } from "../src/graphics/cardwire.ts";
 import { GraphicsController } from "../src/graphics/controller.ts";
@@ -74,7 +75,7 @@ const outputs = () => ({
 });
 const refresh = new AutoRefresh({
   displays: {
-    monitors: async () => parseMonitors(outputs()),
+    monitors: async () => monitorsOf(outputsOf(outputs())),
     setMode: async (_name, mode): Promise<ApplyResult> => {
       refreshMhz = mode.refreshMhz ?? refreshMhz;
       log(`screen: ${refreshMhz / 1000} Hz`);

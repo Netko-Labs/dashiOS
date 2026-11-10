@@ -143,6 +143,7 @@
       "!**/.next",
       "!**/.output",
       "!**/generated",
+      "!test/fixtures/ipc",
       "!**/*.generated.ts",
       "!**/routeTree.gen.ts",
       "!bun.lock",
@@ -260,11 +261,7 @@
     },
     {
       "includes": ["packages/shell/src/clipboard/start.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 129 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/compositor.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 130 } } } } }
+      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 128 } } } } }
     },
     {
       "includes": ["packages/shell/src/control-center/controls.tsx"],
@@ -330,10 +327,6 @@
     {
       "includes": ["packages/shell/src/settings-app/start.tsx"],
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 99 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/settings.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 122 } } } } }
     },
     {
       "includes": ["packages/shell/src/setup/start.tsx"],

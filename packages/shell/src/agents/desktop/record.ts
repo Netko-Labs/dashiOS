@@ -7,6 +7,7 @@
 
 import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import type { Output } from "../../compositor.ts";
 import type { RecordTarget } from "../../recorder/command.ts";
 import { type RunContext, type ToolResult, toolError } from "../context.ts";
 import { AGENT_MASK } from "../mask.ts";
@@ -42,16 +43,8 @@ export interface Display {
 }
 
 /** The screen named `name` (else the main display, else the first) from the compositor's `outputs` answer. */
-export function displayOf(answer: unknown, name: string | null): Display | null {
-  const outputs = typeof answer === "object" && answer !== null ? (answer as { outputs?: unknown }).outputs : undefined;
-  const screens = (Array.isArray(outputs) ? outputs : []).flatMap((output: unknown) => {
-    if (typeof output !== "object" || output === null) return [];
-    const { name, primary, enabled, frame } = output as Record<string, unknown>;
-    if (typeof name !== "string" || enabled === false || typeof frame !== "object" || frame === null) return [];
-    const { x, y, width, height } = frame as Record<string, unknown>;
-    if (![x, y, width, height].every((value) => typeof value === "number" && Number.isFinite(value))) return [];
-    return [{ name, primary: primary === true, frame: { x, y, width, height } as Display["frame"] }];
-  });
+export function displayOf(outputs: readonly Output[], name: string | null): Display | null {
+  const screens = outputs.flatMap((output) => (output.enabled && output.frame ? [{ name: output.name, primary: output.primary, frame: output.frame }] : []));
   const chosen = name === null ? (screens.find((screen) => screen.primary) ?? screens[0]) : screens.find((screen) => screen.name === name);
   return chosen ? { name: chosen.name, frame: chosen.frame } : null;
 }
@@ -64,7 +57,7 @@ export async function recordScreen(call: RecordCall, ctx: RunContext): Promise<T
   let area = call.rect;
   if (call.rect) target = { kind: "area", ...call.rect };
   else {
-    const display = displayOf(await ctx.compositor.request("outputs"), call.display);
+    const display = displayOf(await ctx.compositor.outputs(), call.display);
     if (!display) return toolError(call.display ? `There is no screen called ${call.display}; list_displays names them.` : "There is no screen to record.");
     target = { kind: "screen", output: display.name };
     area = display.frame;
@@ -102,7 +95,7 @@ export async function recordScreen(call: RecordCall, ctx: RunContext): Promise<T
     try {
       await ctx.mask.update();
       // With the pointer, so a still shows what is being dragged; with the agent's blanks.
-      await ctx.compositor.request("capture", { path, rect: area, cursor: true, mask: AGENT_MASK });
+      await ctx.compositor.capture({ path, rect: area, cursor: true, mask: AGENT_MASK });
       stills.push(
         { type: "image", data: Buffer.from(await Bun.file(path).arrayBuffer()).toString("base64"), mimeType: "image/png" },
         { type: "text", text: `The still above is at ${(at / 1000).toFixed(1)} s.` },

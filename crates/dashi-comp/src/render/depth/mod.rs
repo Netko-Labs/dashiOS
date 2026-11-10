@@ -13,4 +13,4 @@ pub(crate) mod style;
 
 pub(crate) use cast::{Cache, Placement, Sides, window_depth};
 pub(crate) use element::DepthElement;
-pub(crate) use style::Style;
+pub(crate) use style::{Style, WindowStyle};

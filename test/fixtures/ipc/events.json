@@ -1,0 +1,252 @@
+[
+  {
+    "event": "window-opened",
+    "window": {
+      "appId": "dev.dashi.notes",
+      "attention": false,
+      "configuring": null,
+      "focused": true,
+      "frame": {
+        "height": 600,
+        "width": 800,
+        "x": 100,
+        "y": 80
+      },
+      "fullscreen": false,
+      "icon": {
+        "name": "accessories-text-editor",
+        "path": null
+      },
+      "id": 7,
+      "minSize": {
+        "height": 200,
+        "width": 300
+      },
+      "parent": null,
+      "pid": 4242,
+      "sheetOf": null,
+      "space": 0,
+      "state": "normal",
+      "title": "Notes",
+      "titleBar": 38,
+      "toplevel": "a1b2c3",
+      "x11": false
+    }
+  },
+  {
+    "event": "window-closed",
+    "id": 7
+  },
+  {
+    "event": "window-placing",
+    "window": {
+      "appId": "dev.dashi.notes",
+      "height": 638,
+      "id": 7,
+      "position": {
+        "x": 100,
+        "y": 80
+      },
+      "title": "Notes",
+      "width": 800
+    }
+  },
+  {
+    "event": "window-attention",
+    "window": 7
+  },
+  {
+    "event": "window-space",
+    "space": 1,
+    "window": 7
+  },
+  {
+    "event": "window-state",
+    "state": "minimized",
+    "window": 7
+  },
+  {
+    "event": "zoom",
+    "on": true,
+    "window": 7
+  },
+  {
+    "alt": false,
+    "control": "zoom",
+    "double": true,
+    "event": "window-control",
+    "window": 7
+  },
+  {
+    "event": "window-grab",
+    "frame": {
+      "height": 884,
+      "width": 731,
+      "x": 0,
+      "y": 30
+    },
+    "kind": "move",
+    "pointer": {
+      "x": 300.0,
+      "y": 95.0
+    },
+    "window": 7
+  },
+  {
+    "event": "window-drop",
+    "frame": {
+      "height": 884,
+      "width": 731,
+      "x": 0,
+      "y": 30
+    },
+    "window": 7,
+    "zone": 0
+  },
+  {
+    "event": "fullscreen",
+    "on": true,
+    "window": 7
+  },
+  {
+    "event": "shortcut",
+    "name": "stop-agents"
+  },
+  {
+    "alt": false,
+    "ctrl": false,
+    "event": "binding",
+    "key": "space",
+    "name": "launcher",
+    "shift": false,
+    "text": " ",
+    "window": 7
+  },
+  {
+    "event": "super",
+    "phase": "tap"
+  },
+  {
+    "event": "bars-edge",
+    "inside": true,
+    "output": "eDP-1"
+  },
+  {
+    "edge": "bottom",
+    "event": "edge",
+    "inside": true
+  },
+  {
+    "event": "outputs-changed"
+  },
+  {
+    "event": "gpus-changed"
+  },
+  {
+    "event": "session-changed"
+  },
+  {
+    "event": "lock",
+    "locked": true
+  },
+  {
+    "active": true,
+    "event": "screen-capture"
+  },
+  {
+    "event": "person-input",
+    "window": null
+  },
+  {
+    "active": true,
+    "event": "overview"
+  },
+  {
+    "event": "overview-pick",
+    "window": 7
+  },
+  {
+    "event": "overview-key",
+    "key": "Escape"
+  },
+  {
+    "event": "overview-drag",
+    "window": 7,
+    "x": 300.0,
+    "y": 200.0
+  },
+  {
+    "event": "overview-drop",
+    "window": 7,
+    "x": 320.0,
+    "y": 210.0
+  },
+  {
+    "count": 3,
+    "current": 1,
+    "event": "space",
+    "previous": 0
+  },
+  {
+    "count": 1,
+    "edge": "left",
+    "event": "edge-hold",
+    "output": "eDP-1",
+    "preview": true,
+    "window": 7
+  },
+  {
+    "event": "gesture",
+    "fingers": 3,
+    "kind": "swipe",
+    "phase": "begin"
+  },
+  {
+    "dx": -12.5,
+    "dy": 0.0,
+    "event": "gesture",
+    "kind": "swipe",
+    "phase": "update"
+  },
+  {
+    "cancelled": false,
+    "event": "gesture",
+    "kind": "swipe",
+    "phase": "end"
+  },
+  {
+    "event": "idle",
+    "seconds": 300
+  },
+  {
+    "event": "active"
+  },
+  {
+    "error": "no such file",
+    "event": "wallpaper",
+    "ok": false,
+    "path": "/usr/share/dashi/wallpapers/dusk.png"
+  },
+  {
+    "event": "window-icon",
+    "name": "accessories-text-editor",
+    "path": null,
+    "window": 7
+  },
+  {
+    "event": "bell",
+    "window": 7
+  },
+  {
+    "event": "selection",
+    "mimeTypes": [
+      "text/plain;charset=utf-8"
+    ],
+    "window": 7
+  },
+  {
+    "event": "snippet",
+    "keyword": ";sig",
+    "window": 7
+  }
+]

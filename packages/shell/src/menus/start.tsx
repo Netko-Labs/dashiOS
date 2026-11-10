@@ -9,7 +9,7 @@ import pkg from "../../package.json" with { type: "json" };
 import { ownerPids } from "../app-menus/focus.ts";
 import { AppMenuStore } from "../app-menus/store.ts";
 import { type App, appFor, iconPath } from "../apps.ts";
-import { type Arranger, parseOutputs } from "../arrange.ts";
+import { type Arranger, placedOutputs } from "../arrange.ts";
 import { holdingBar } from "../bar-hold.ts";
 import type { BatteryPopoverSources } from "../battery/popover.tsx";
 import { PairingPrompt } from "../bluetooth/prompt.tsx";
@@ -173,7 +173,7 @@ export function startMenus(options: MenusOptions): Menus {
             // The app quits with the session: a question it asks says so ("Quit Terminal?").
             const pid = (await compositor.windows().catch(() => [])).find((each) => each.id === window)?.pid ?? null;
             appMenus.quitting(ownerPids(pid));
-            await compositor.request("close", { window });
+            await compositor.close({ window });
           },
           // The log out was cancelled: the app's "Quit Terminal?" or its sheet goes with it.
           withdraw: (window) =>
@@ -181,10 +181,10 @@ export function startMenus(options: MenusOptions): Menus {
               .windows()
               .then((windows) => appMenus.stay(ownerPids(windows.find((each) => each.id === window)?.pid ?? null)))
               .catch(() => {}),
-          focus: (window) => void compositor.request("focus", { window }).catch(() => {}),
+          focus: (window) => void compositor.focus({ window }).catch(() => {}),
           place: async (window) => {
             const frame = (await compositor.windows()).find((each) => each.id === window)?.frame ?? null;
-            return holdingPlace(frame, parseOutputs(await compositor.request("outputs")));
+            return holdingPlace(frame, placedOutputs(await compositor.outputs()));
           },
         }
       : undefined,
@@ -338,7 +338,7 @@ export function startMenus(options: MenusOptions): Menus {
   const showEnergy = (app?: EnergyApp): Promise<boolean> =>
     openActivityMonitor(energyArgs(app), {
       windows: () => compositor?.windows() ?? Promise.resolve([]),
-      focus: (window) => compositor?.request("focus", { window }) ?? Promise.resolve(),
+      focus: (window) => compositor?.focus({ window }) ?? Promise.resolve(),
       handOver: (pid, args) => appMenus.open(ownerPids(pid), args),
       launch: (args) => {
         const entry = entryFor(ACTIVITY_MONITOR);
@@ -353,7 +353,7 @@ export function startMenus(options: MenusOptions): Menus {
       .windows()
       .then((windows) => {
         const window = windows.find((each) => ownerPids(each.pid).includes(pid));
-        return window ? compositor.request("focus", { window: window.id }) : undefined;
+        return window ? compositor.focus({ window: window.id }) : undefined;
       })
       .catch(() => {});
   });

@@ -53,7 +53,7 @@ shell's client:
   bindings, ❖ phases, the snippets' keywords watched as the person types, Super lent to the window of a ❖-click), `agent_seat/` (a second seat an agent drives, drawn
   with its own pointer), `capture.rs`, `wallpaper/` (`request`, `live`,
   `tick`), `outputs/` (`config`, `apply`, `place`, `report`, `chrome`).
-- **IPC (`ipc/`):** `server` (the socket and replies), `incoming` (each connection's requests, read and run), `frame`, `peer` (who connected), `table` (every method, who may ask it, what runs), `methods/` (what each does, by area), `params`, `grants` (`ipc-clients`).
+- **IPC (`ipc/`):** `server` (the socket and replies), `incoming` (each connection's requests, read and run), `frame`, `peer` (who connected), `table` (every method, who may ask it, what runs), `methods/` (what each does, by area, with its params and reply as serde types), `protocol/` (the IPC's one Rust definition: `Event`, `Window`, the `outputs` reply, ids and numbers that refuse what is out of range), `grants` (`ipc-clients`).
 - Text in the compositor (title bars) with cosmic-text.
 
 ## Module Map

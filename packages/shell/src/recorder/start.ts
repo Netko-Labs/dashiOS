@@ -16,7 +16,7 @@ import { type RecorderState, ScreenRecorder } from "./recorder.ts";
 import { type CaptureToolbar, captureToolbar } from "./toolbar.tsx";
 
 export interface CaptureDeps {
-  compositor: Pick<Compositor, "request" | "windows">;
+  compositor: Pick<Compositor, "capture" | "windows">;
   open: OpenOverlay;
   /** Let a program capture the screen for a while (screen-capture.ts). */
   allow(path: string): () => void;

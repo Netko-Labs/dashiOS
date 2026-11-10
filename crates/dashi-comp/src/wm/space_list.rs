@@ -3,16 +3,17 @@
 //! Space can be added at an index (the shell puts a full-screen window's
 //! Desktop beside the one it came from): the Spaces from there move up one.
 
-use serde_json::{Value, json};
-
 use super::{spaces::MAX_SPACES, windows::WindowId};
-use crate::state::Dashi;
+use crate::{
+    ipc::protocol::{Event, SpacesAnswer},
+    state::Dashi,
+};
 
 impl Dashi {
     /// `space-add {at?}`: a new Space at the end, or at index `at`; the
     /// Spaces from `at` on move up one (their windows with them, and what
     /// shows, and a slide under way).
-    pub(crate) fn add_space(&mut self, at: Option<usize>) -> Result<Value, String> {
+    pub(crate) fn add_space(&mut self, at: Option<usize>) -> Result<SpacesAnswer, String> {
         if self.spaces.count >= MAX_SPACES {
             return Err(format!("there are already {MAX_SPACES} Spaces"));
         }
@@ -29,8 +30,7 @@ impl Dashi {
                 entry.space += 1;
                 if entry.announced {
                     let space = entry.space;
-                    self.ipc
-                        .emit("window-space", json!({ "window": id, "space": space }));
+                    self.ipc.emit(Event::WindowSpace { window: *id, space });
                 }
             }
         }
@@ -47,15 +47,16 @@ impl Dashi {
         }
         self.spaces.count += 1;
         self.emit_space(previous);
-        let mut answer = self.spaces.answer();
-        answer["space"] = json!(at);
-        Ok(answer)
+        Ok(SpacesAnswer {
+            space: Some(at),
+            ..self.spaces.answer()
+        })
     }
 
     /// `space-remove {space}`: its windows go to the Space on its left (the
     /// first's to the second), and the Spaces after it move down one. Shown,
     /// it gives way to the Space that takes its windows first.
-    pub(crate) fn remove_space(&mut self, space: usize) -> Result<Value, String> {
+    pub(crate) fn remove_space(&mut self, space: usize) -> Result<SpacesAnswer, String> {
         if space >= self.spaces.count {
             return Err(format!("no Space {space}"));
         }
@@ -85,8 +86,7 @@ impl Dashi {
             {
                 entry.space -= 1;
                 let space = entry.space;
-                self.ipc
-                    .emit("window-space", json!({ "window": id, "space": space }));
+                self.ipc.emit(Event::WindowSpace { window: *id, space });
             }
         }
         if self.spaces.current > space {

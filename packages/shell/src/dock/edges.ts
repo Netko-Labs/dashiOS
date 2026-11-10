@@ -20,16 +20,11 @@ export interface EdgeClaim {
   claim(band: number, output: string | undefined): Promise<boolean>;
 }
 
-/** What the compositor answers an `edges` request with: whether the pointer is in the band. */
-export function parseClaimAnswer(answer: unknown): boolean {
-  return typeof answer === "object" && answer !== null && (answer as { inside?: unknown }).inside === true;
-}
-
-export function compositorEdges(compositor: Pick<Compositor, "request">): EdgeClaim {
+export function compositorEdges(compositor: Pick<Compositor, "edges">): EdgeClaim {
   return {
     async claim(band, output) {
       try {
-        return parseClaimAnswer(await compositor.request("edges", { bottom: band, ...(output === undefined ? {} : { output }) }));
+        return await compositor.edges({ bottom: band, ...(output === undefined ? {} : { output }) });
       } catch (error) {
         console.error("dashi-shell: dashi-comp refused the Dock's edge claim:", error instanceof Error ? error.message : error);
         return false;

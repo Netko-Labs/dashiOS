@@ -8,12 +8,12 @@
  * when it shows again.
  */
 
-import type { CompositorEvent, CompositorWindow } from "./compositor.ts";
+import type { Compositor, CompositorEvent, CompositorWindow } from "./compositor.ts";
 
 /** What the shell asks of the compositor here. */
 export interface SuspendTarget {
   windows(): Promise<CompositorWindow[]>;
-  request(method: string, params: Record<string, unknown>): Promise<unknown>;
+  suspend: Compositor["suspend"];
   on(listener: (event: CompositorEvent) => void): () => void;
 }
 
@@ -48,7 +48,7 @@ export function followSuspension(compositor: SuspendTarget): () => void {
     for (const change of suspendChanges(windows, told)) {
       told.set(change.window, change.on);
       // A window that closed meanwhile is an error to ignore.
-      compositor.request("suspend", { ...change }).catch(() => told.delete(change.window));
+      compositor.suspend(change).catch(() => told.delete(change.window));
     }
   };
   // One look at a time, so an older answer never lands after a newer one; changes meanwhile look again.

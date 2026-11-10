@@ -1,0 +1,761 @@
+{
+  "agent-input": {
+    "params": {
+      "action": "click",
+      "borrow": {
+        "idleMs": 3000
+      },
+      "button": "left",
+      "keys": [
+        {
+          "text": "hi"
+        },
+        {
+          "name": "Return"
+        }
+      ],
+      "label": "Claude",
+      "pointer": {
+        "x": 120.0,
+        "y": 40.0
+      },
+      "release": false,
+      "window": 7
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "animation-target": {
+    "params": {
+      "targets": [
+        {
+          "rect": {
+            "height": 48,
+            "width": 48,
+            "x": 600,
+            "y": 860
+          },
+          "window": 7
+        },
+        {
+          "window": 8
+        }
+      ]
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "applet-clients": {
+    "params": {
+      "applets": [
+        {
+          "layerShell": true,
+          "pid": 4300
+        }
+      ]
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "attach": {
+    "params": {
+      "parent": 7,
+      "top": 52,
+      "window": 9
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "bars": {
+    "params": {
+      "output": "eDP-1",
+      "show": true
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "capture": {
+    "params": {
+      "cursor": false,
+      "mask": "agent",
+      "path": "/run/user/1000/dashi-agent/shot.png",
+      "window": 7
+    },
+    "reply": {
+      "height": 1050,
+      "scale": 1.75,
+      "width": 1400
+    },
+    "who": "shell"
+  },
+  "capture-mask": {
+    "params": {
+      "client": "agent",
+      "layers": [
+        "dashi.agent-consent"
+      ],
+      "pids": [
+        4500
+      ],
+      "popups": [
+        7
+      ],
+      "rects": [
+        {
+          "height": 30,
+          "width": 200,
+          "window": 7,
+          "x": 10,
+          "y": 20
+        }
+      ],
+      "windows": [
+        9
+      ]
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "chrome": {
+    "params": {
+      "dark": true,
+      "radius": 12,
+      "reduceMotion": false
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "close": {
+    "params": {
+      "window": 7
+    },
+    "reply": {},
+    "who": "granted"
+  },
+  "cursor-size": {
+    "params": {
+      "size": 32
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "edges": {
+    "params": {
+      "bottom": 4,
+      "output": "eDP-1"
+    },
+    "reply": {
+      "inside": false
+    },
+    "who": "shell"
+  },
+  "focus": {
+    "params": {
+      "window": 7
+    },
+    "reply": {},
+    "who": "granted"
+  },
+  "frame": {
+    "params": {
+      "height": 884,
+      "maximized": false,
+      "tiled": true,
+      "width": 731,
+      "window": 7,
+      "x": 0,
+      "y": 30
+    },
+    "reply": {},
+    "who": "granted"
+  },
+  "fullscreen": {
+    "params": {
+      "on": true,
+      "window": 7
+    },
+    "reply": {},
+    "who": "granted"
+  },
+  "gamma": {
+    "params": {
+      "blue": 0.6,
+      "green": 0.8,
+      "red": 1.0
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "gestures": {
+    "params": {
+      "swipe": [
+        3
+      ]
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "gpu-keep": {
+    "params": {
+      "card": "card0",
+      "on": true
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "gpus": {
+    "params": {},
+    "reply": {
+      "gpus": [
+        {
+          "answering": true,
+          "buffers": 0,
+          "card": "card1",
+          "draws": true,
+          "kept": false,
+          "open": true,
+          "screens": [
+            "eDP-1"
+          ]
+        }
+      ]
+    },
+    "who": "anyone"
+  },
+  "hide": {
+    "params": {
+      "window": 7
+    },
+    "reply": {},
+    "who": "granted"
+  },
+  "idle": {
+    "params": {
+      "timeouts": [
+        120,
+        300
+      ]
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "input": {
+    "params": {
+      "mouse": {
+        "accelProfile": "flat"
+      },
+      "touchpad": {
+        "accelSpeed": 0.3,
+        "clickMethod": "clickfinger",
+        "naturalScroll": true,
+        "scrollSpeed": 1.5,
+        "tap": true
+      }
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "input-origin": {
+    "params": {
+      "namespace": "dashi.agent-consent"
+    },
+    "reply": {
+      "agent": null,
+      "person": 250
+    },
+    "who": "shell"
+  },
+  "input-region": {
+    "params": {
+      "namespace": "dashi.dock",
+      "rects": [
+        {
+          "height": 72.0,
+          "width": 660.0,
+          "x": 400.0,
+          "y": 0.0
+        }
+      ]
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "ipc-clients": {
+    "params": {
+      "clients": [
+        {
+          "methods": [
+            "windows",
+            "focus"
+          ],
+          "pid": 4400
+        }
+      ]
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "keyboard": {
+    "params": {
+      "layout": "us,de",
+      "options": "",
+      "repeatDelay": 400,
+      "repeatRate": 30,
+      "variant": ""
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "keymap": {
+    "params": {
+      "afterTap": [
+        {
+          "bind": "type",
+          "when": "letter"
+        }
+      ],
+      "apps": {
+        "terminal": [
+          "foot"
+        ]
+      },
+      "holdMs": 700,
+      "locked": [
+        {
+          "send": "ctrl+a",
+          "when": "super+a"
+        },
+        {
+          "swallow": true,
+          "when": "super+*"
+        }
+      ],
+      "rules": [
+        {
+          "armsAfterTap": true,
+          "bind": "launcher",
+          "when": "super+space"
+        },
+        {
+          "app": "terminal",
+          "send": "ctrl+shift+c",
+          "when": "super+c"
+        }
+      ],
+      "tapMs": 300
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "layer-motion": {
+    "params": {
+      "ms": 160,
+      "namespace": "dashi.launcher",
+      "scale": 0.96
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "layout": {
+    "params": {
+      "dwellMs": 150,
+      "zones": [
+        {
+          "area": {
+            "height": 884,
+            "width": 8,
+            "x": 0,
+            "y": 30
+          },
+          "frame": {
+            "height": 884,
+            "width": 731,
+            "x": 0,
+            "y": 30
+          }
+        }
+      ]
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "minimize": {
+    "params": {
+      "window": 7
+    },
+    "reply": {},
+    "who": "granted"
+  },
+  "mirror": {
+    "params": {
+      "output": "HDMI-A-1",
+      "source": "eDP-1"
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "output": {
+    "params": {
+      "name": "eDP-1",
+      "scale": 1.5
+    },
+    "reply": {},
+    "who": "granted"
+  },
+  "outputs": {
+    "params": {},
+    "reply": {
+      "outputs": [
+        {
+          "enabled": true,
+          "frame": {
+            "height": 914,
+            "width": 1463,
+            "x": 0,
+            "y": 0
+          },
+          "lit": true,
+          "make": "BOE",
+          "mirrorOf": null,
+          "mode": {
+            "height": 1600,
+            "refreshMhz": 165000,
+            "width": 2560
+          },
+          "model": "NE160QDM",
+          "modes": [
+            {
+              "current": true,
+              "height": 1600,
+              "preferred": true,
+              "refreshMhz": 165000,
+              "width": 2560
+            }
+          ],
+          "name": "eDP-1",
+          "physicalMm": {
+            "height": 220,
+            "width": 340
+          },
+          "primary": true,
+          "scale": 1.75,
+          "serial": "",
+          "transform": {
+            "flipped": false,
+            "rotation": 0
+          },
+          "usable": {
+            "height": 884,
+            "width": 1463,
+            "x": 0,
+            "y": 30
+          },
+          "vrr": {
+            "active": false,
+            "mode": "fullscreen",
+            "supported": true
+          }
+        }
+      ]
+    },
+    "who": "anyone"
+  },
+  "outputs-config": {
+    "params": {
+      "outputs": [
+        {
+          "enabled": true,
+          "mode": {
+            "height": 1600,
+            "refreshMhz": 165000,
+            "width": 2560
+          },
+          "name": "eDP-1",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "scale": 1.75,
+          "transform": {
+            "flipped": false,
+            "rotation": 0
+          },
+          "vrr": "fullscreen"
+        }
+      ],
+      "primary": "eDP-1"
+    },
+    "reply": {},
+    "who": "granted"
+  },
+  "overview": {
+    "params": {
+      "windows": [
+        {
+          "id": 7,
+          "rect": {
+            "height": 300,
+            "width": 400,
+            "x": 80,
+            "y": 120
+          }
+        }
+      ]
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "place": {
+    "params": {
+      "space": 1,
+      "window": 7,
+      "x": 100,
+      "y": 80
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "power": {
+    "params": {
+      "on": false,
+      "output": "eDP-1",
+      "reset": false
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "screencopy-clients": {
+    "params": {
+      "paths": [
+        "/usr/bin/wf-recorder"
+      ]
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "send-keys": {
+    "params": {
+      "chord": "ctrl+shift+z",
+      "window": 7
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "session": {
+    "params": {},
+    "reply": {
+      "display": ":1",
+      "locked": false,
+      "pointer": {
+        "x": 640.5,
+        "y": 400.0
+      },
+      "waylandDisplay": "wayland-1",
+      "xwayland": "ready"
+    },
+    "who": "anyone"
+  },
+  "snippet-erase": {
+    "params": {
+      "keyword": ";sig",
+      "window": 7
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "snippets": {
+    "params": {
+      "keywords": [
+        ";sig",
+        ";addr"
+      ]
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "space-add": {
+    "params": {
+      "at": 1
+    },
+    "reply": {
+      "count": 4,
+      "current": 2,
+      "space": 1
+    },
+    "who": "shell"
+  },
+  "space-move": {
+    "params": {
+      "space": 2,
+      "window": 7
+    },
+    "reply": {},
+    "who": "granted"
+  },
+  "space-previews": {
+    "params": {
+      "output": "eDP-1",
+      "rects": [
+        {
+          "h": 100,
+          "screen": "eDP-1",
+          "space": 0,
+          "w": 160,
+          "x": 20,
+          "y": 40
+        }
+      ]
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "space-remove": {
+    "params": {
+      "space": 2
+    },
+    "reply": {
+      "count": 2,
+      "current": 1
+    },
+    "who": "shell"
+  },
+  "space-switch": {
+    "params": {
+      "progress": 0.4,
+      "space": 1
+    },
+    "reply": {
+      "count": 3,
+      "current": 1
+    },
+    "who": "granted"
+  },
+  "spaces": {
+    "params": {
+      "count": 3,
+      "follow": true
+    },
+    "reply": {
+      "count": 3,
+      "current": 1
+    },
+    "who": "shell"
+  },
+  "subscribe": {
+    "params": {},
+    "reply": {},
+    "who": "shell"
+  },
+  "suspend": {
+    "params": {
+      "on": true,
+      "window": 7
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "wallpaper": {
+    "params": {
+      "fps": 30,
+      "mode": "fill",
+      "shader": "aurora"
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "window-for-handle": {
+    "params": {
+      "handle": "wayland:ab12"
+    },
+    "reply": {
+      "window": 7
+    },
+    "who": "granted"
+  },
+  "window-style": {
+    "params": {
+      "edge": {
+        "color": "#0000002b",
+        "filled": false,
+        "width": 1.0
+      },
+      "fade": 150,
+      "ring": {
+        "on": false
+      },
+      "shadow": {
+        "focused": [
+          {
+            "alpha": 0.38,
+            "blur": 40.0,
+            "spread": -8.0,
+            "y": 18.0
+          }
+        ]
+      }
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "window-thumbnails": {
+    "params": {
+      "rects": [
+        {
+          "h": 180,
+          "w": 240,
+          "window": 7,
+          "x": 300,
+          "y": 200
+        }
+      ]
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "windows": {
+    "params": {},
+    "reply": {
+      "windows": [
+        {
+          "appId": "dev.dashi.notes",
+          "attention": false,
+          "configuring": null,
+          "focused": true,
+          "frame": {
+            "height": 600,
+            "width": 800,
+            "x": 100,
+            "y": 80
+          },
+          "fullscreen": false,
+          "icon": {
+            "name": "accessories-text-editor",
+            "path": null
+          },
+          "id": 7,
+          "minSize": {
+            "height": 200,
+            "width": 300
+          },
+          "parent": null,
+          "pid": 4242,
+          "sheetOf": null,
+          "space": 0,
+          "state": "normal",
+          "title": "Notes",
+          "titleBar": 38,
+          "toplevel": "a1b2c3",
+          "x11": false
+        }
+      ]
+    },
+    "who": "granted"
+  },
+  "xwayland-scale": {
+    "params": {
+      "scale": 2.0
+    },
+    "reply": {},
+    "who": "shell"
+  }
+}

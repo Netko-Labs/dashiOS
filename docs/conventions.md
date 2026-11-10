@@ -43,7 +43,7 @@ below, the same command CI runs (`.github/workflows/check.yml`);
 | H6 | An `index.ts` only re-exports (`export … from`). An entry point is named `main.ts`, not `index.ts`. | `scripts/check-structure.ts` (`barrels`) | `bun scripts/check-structure.ts` |
 | H7 | Data from outside is parsed, never cast: no `JSON.parse(…) as T`, no `as T` on a value typed `unknown` or `any` (IPC, D-Bus, files, subprocesses). | `scripts/check-boundaries.ts` (`json-casts`, `unknown-casts`) | `bun scripts/check-boundaries.ts` |
 | H8 | The compositor is asked only through `src/compositor.ts`'s typed methods: no raw `request("…")` with an IPC method anywhere else. | `scripts/check-boundaries.ts` (`raw-requests`) | `bun scripts/check-boundaries.ts` |
-| H9 | The IPC has one definition: every method is in `docs/compositor-ipc.md`, has a type in both languages, and says whether only the shell may call it. | not yet: the contract test with shared fixtures comes with 0.7's typed IPC (step 3) | |
+| H9 | The IPC has one definition: every method is in `docs/compositor-ipc.md`, has a type in both languages, and says whether only the shell may call it. | `cargo test` (`ipc::fixtures`: one request, reply and event per method, written from the Rust types to `test/fixtures/ipc/`, failing until they are committed) and `bun test` (`packages/shell/test/ipc-contract.test.ts`: every fixture parses with the shell's shapes; the method table, the doc and `src/compositor/table.ts` name the same methods with the same who, and the same events) | `cargo test -p dashi-comp ipc::fixtures && bun test packages/shell/test/ipc-contract.test.ts` |
 | H10 | Exported functions in `.ts` files have explicit return types. Components in `.tsx` are exempt. | `scripts/check-boundaries.ts` (`return-types`) | `bun scripts/check-boundaries.ts` |
 | H11 | Tests never wait on real time: a fake clock, and 2 s per test at most (`bunfig.toml`). | `bunfig.toml` `timeout`; `scripts/check-structure.ts` (`test-sleeps`, `test-timeouts`) | `bun run test`, `bun scripts/check-structure.ts` |
 | H12 | Rust: no `unwrap()` outside tests; every `unsafe` block and `unsafe fn` documented; no blocking file or PNG work on dashi-comp's event loop. | `[workspace.lints]` in `Cargo.toml` (and `crates/dashi-term/Cargo.toml`), `clippy.toml`, `crates/dashi-comp/clippy.toml` | `cargo clippy --workspace --all-targets -- -D warnings` (and in `crates/dashi-term`) |
@@ -131,6 +131,7 @@ packages/
   greeter/          @dashi/greeter: the login screen (greetd's greeter)
   dashi-ui/         @dashi/ui: Dashi's own components and palettes
   applet/           @dashi/applet: the applet SDK and the dashi-applet CLI (docs/applets.md)
+  shape/            @dashi/shape: the one parser for outside data (shapes: parser, type, JSON Schema)
 data/
   models/           the hardware model database (data/models/*.json, schema.json)
   fixtures/         captured hardware for tests (a laptop's sysfs, the capture script)
@@ -208,8 +209,13 @@ Rust uses named modules instead of `lib/` or `shared/`: `state.rs`,
 - Prefer `??`, `??=`, spread, `.map`/`.filter`, `Set`, and `Map` over sentinel
   logic and lookup loops. Prefer positive predicates (`isReady`, `hasWindow`).
 - Parse JSON, IPC frames, D-Bus replies, config, and subprocess output with
-  structured parsers; avoid ad hoc string manipulation. `JSON.parse(…) as T` is
-  a cast, not a parse (H7).
+  `@dashi/shape` (`packages/shape`), the one parser for outside data: a shape
+  gives the parser (a typed value, or a refusal naming the field), the type
+  (`Infer<typeof S>`, never written by hand beside it) and a JSON Schema.
+  Avoid ad hoc string manipulation, and private `isRecord`s: use the shape's.
+  Lists refuse at the first bad entry (`list`) unless losing one is harmless
+  (`lenientList`, things on screen). `JSON.parse(…) as T` is a cast, not a
+  parse (H7).
 - Ask the compositor through `src/compositor.ts`'s typed methods, never a raw
   `request("…")` (H8).
 - Account for out-of-order async resolution: IPC requests, D-Bus calls, and

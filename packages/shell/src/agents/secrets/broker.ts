@@ -9,6 +9,7 @@
 
 import type { Placed } from "../atspi/tree.ts";
 import { type ToolResult, text, toolError } from "../context.ts";
+import type { Payload } from "../desktop/hands.ts";
 import { checkField, type FieldInfo } from "./field-check.ts";
 import { findLogins, type Login, type LoginSource, loginKey, SOURCE_LABELS } from "./sources.ts";
 
@@ -43,7 +44,7 @@ export interface BrokerContext {
   /** The focused field in the target window, and its browser's command line, now. */
   inspect(): Promise<FieldInfo>;
   /** Type into the target window with the agent's hands. */
-  type(payload: Record<string, unknown>): Promise<void>;
+  type(payload: Payload): Promise<void>;
   /** Ask the person; "<agent> wants to <summary>". */
   ask(summary: string, logins: readonly SheetLogin[]): Promise<SignInAnswer>;
   /** This connection's approvals, by login key. */
