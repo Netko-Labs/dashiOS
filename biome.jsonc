@@ -164,69 +164,6 @@
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 82 } } } } }
     },
     {
-      "includes": ["packages/shell/apps/activity-monitor/view.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 233 } } } } }
-    },
-    {
-      "includes": ["packages/shell/apps/calculator/view.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 162 } } } } }
-    },
-    {
-      "includes": ["packages/shell/apps/calendar/event-sheet.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 126 } } } } }
-    },
-    {
-      "includes": ["packages/shell/apps/calendar/month-view.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 94 } } } } }
-    },
-    {
-      "includes": ["packages/shell/apps/calendar/use-grid.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 148 } } } } }
-    },
-    { "includes": ["packages/shell/apps/calendar/view.tsx"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } },
-    {
-      "includes": ["packages/shell/apps/editor/view.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 240 } } } } }
-    },
-    {
-      "includes": ["packages/shell/apps/files/chooser/view.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 164 } } } } }
-    },
-    {
-      "includes": ["packages/shell/apps/files/view.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 202 } } } } }
-    },
-    {
-      "includes": ["packages/shell/apps/installer/view.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 126 } } } } }
-    },
-    {
-      "includes": ["packages/shell/apps/notes/editor.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 102 } } } } }
-    },
-    {
-      "includes": ["packages/shell/apps/notes/menus.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 93 } } } } }
-    },
-    { "includes": ["packages/shell/apps/notes/view.tsx"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } },
-    {
-      "includes": ["packages/shell/apps/preview/document.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 129 } } } } }
-    },
-    {
-      "includes": ["packages/shell/apps/preview/surface.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 95 } } } } }
-    },
-    { "includes": ["packages/shell/apps/preview/view.tsx"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } },
-    {
-      "includes": ["packages/shell/apps/software/view.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 206 } } } } }
-    },
-    {
-      "includes": ["packages/shell/apps/terminal/view.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 238 } } } } }
-    },
-    {
       "includes": ["packages/shell/src/actions/start.ts"],
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 109 } } } } }
     },

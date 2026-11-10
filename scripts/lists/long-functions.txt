@@ -2,24 +2,6 @@
 # Each also has a biome.jsonc override at its longest function (bun scripts/check-biome.ts --shrink writes them).
 99	packages/applet/src/define.ts
 82	packages/dashi-ui/src/slider.tsx
-233	packages/shell/apps/activity-monitor/view.tsx
-162	packages/shell/apps/calculator/view.tsx
-126	packages/shell/apps/calendar/event-sheet.tsx
-94	packages/shell/apps/calendar/month-view.tsx
-148	packages/shell/apps/calendar/use-grid.ts
-367	packages/shell/apps/calendar/view.tsx
-240	packages/shell/apps/editor/view.tsx
-164	packages/shell/apps/files/chooser/view.tsx
-202	packages/shell/apps/files/view.tsx
-126	packages/shell/apps/installer/view.tsx
-102	packages/shell/apps/notes/editor.tsx
-93	packages/shell/apps/notes/menus.ts
-277	packages/shell/apps/notes/view.tsx
-129	packages/shell/apps/preview/document.ts
-95	packages/shell/apps/preview/surface.tsx
-285	packages/shell/apps/preview/view.tsx
-206	packages/shell/apps/software/view.tsx
-238	packages/shell/apps/terminal/view.tsx
 109	packages/shell/src/actions/start.ts
 158	packages/shell/src/agent-sheets.tsx
 121	packages/shell/src/agents/ask/service.ts
