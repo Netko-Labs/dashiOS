@@ -215,8 +215,10 @@ surfaces and keys an agent or a `send-keys` typed are not watched.
   `{video, mode}`, played by the compositor. Unknown methods are answered
   with an error.
 - **The shell's own Wayland protocols:** wlr-foreign-toplevel, ext- and
-  wlr-data-control (clipboard without focus), ext-session-lock, and
-  `capture` are for the session client and the processes under it only;
+  wlr-data-control (clipboard without focus), ext-session-lock, the input
+  method, and `capture` are for the shell's own processes only, by the same
+  rule as "Who may ask" (`session/trust.rs`): an app the shell launches runs
+  under it but in a session of its own, and is not the shell;
   screencopy, ext-image-copy-capture (screens, and windows named through
   ext-foreign-toplevel-list) also for the executables in
   `screencopy-clients`. None of them exist in greeter mode.
