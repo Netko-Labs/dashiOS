@@ -1,32 +1,34 @@
 /**
  * What each tile does and how it is drawn, for the panel (panel.tsx) and
- * Settings › Control Center: Dashi's own controls from the machine's
- * snapshot (catalog.ts, snapshot.ts), applets' from their source
- * (applet-tiles.ts). One place decides what a press, Space, Return, and a
- * slider's drag do, so the pointer and the keyboard agree.
+ * Settings › Control Center: the tiles, from the machine's snapshot and
+ * applets' sources. The decisions are control-actions.ts's, so the pointer
+ * and the keyboard agree; this file draws what they act on.
  */
 
 import type { ReactNode } from "react";
 import { useSyncExternalStore } from "react";
-import { type AppletTile, type AppletTileSource, levelOf, nextChoice, valueAt } from "./applet-tiles.ts";
-import { type ControlPage, type ControlSnapshot, controlInfo, isThere, lightToggle, powerToggle, SYSTEM_CONTROLS, tileState } from "./catalog.ts";
+import type { AppletTile } from "./applet-tiles.ts";
+import { type ControlPage, type ControlSnapshot, controlInfo, isThere, SYSTEM_CONTROLS, tileState } from "./catalog.ts";
+import {
+  type ControlActions,
+  type ControlScope,
+  levelOfControl,
+  lookOf,
+  openControl,
+  presentationOf,
+  pressControl,
+  setControlLevel,
+} from "./control-actions.ts";
 import type { AddEntry } from "./edit.tsx";
 import { PUZZLE } from "./glyphs.ts";
 import type { Layout, Placed, TileSize } from "./layout.ts";
-import { type SnapshotSources, useControlSnapshot } from "./snapshot.ts";
-import { BatteryRow, RoundTile, SliderTile, type TileLook, type TilePress, WideTile } from "./tiles.tsx";
+import { useControlSnapshot } from "./snapshot.ts";
+import { BatteryRow, RoundTile, SliderTile, type TileLook, WideTile } from "./tiles.tsx";
 
-/** The keyboard light's level before the knob turned it off, so on brings it back. */
-let lastLight: number | null = null;
+export type { ControlActions } from "./control-actions.ts";
 
 const EMPTY: readonly AppletTile[] = [];
 const NO_APPLETS = { subscribe: () => () => {}, getSnapshot: () => EMPTY };
-
-export interface ControlActions extends SnapshotSources {
-  applets?: AppletTileSource;
-  onLock: () => void;
-  onBattery?: () => void;
-}
 
 export interface Controls {
   snapshot: ControlSnapshot;
@@ -47,150 +49,55 @@ export interface Controls {
   render(tile: Placed, frame: { width: number; height: number }, editing: boolean, openPage: (page: ControlPage) => void): ReactNode;
 }
 
+/** A tile as the panel draws it: a slider, the battery row, or a round or wide tile with its presses. */
+function renderTile(
+  scope: ControlScope,
+  tile: Placed,
+  frame: { width: number; height: number },
+  editing: boolean,
+  openPage: (page: ControlPage) => void,
+): ReactNode {
+  const shown = lookOf(scope, tile.id);
+  if (!shown) return null;
+  const handlers = editing ? {} : presentationOf(scope, tile.id, openPage);
+  const level = levelOfControl(scope, tile.id);
+  if (level !== null && (tile.size === "tall" || tile.size === "flat")) {
+    const appletTile = scope.applet(tile.id);
+    return (
+      <SliderTile
+        look={{
+          testID: shown.testID,
+          title: shown.title,
+          glyph: shown.glyph,
+          level,
+          value: appletTile ? (shown.detail ?? String(appletTile.value ?? "")) : (shown.detail ?? ""),
+          width: frame.width,
+          height: frame.height,
+        }}
+        standing={tile.size === "tall"}
+        onLevel={(next) => (editing ? undefined : setControlLevel(scope, tile.id, next))}
+      />
+    );
+  }
+  const { snapshot, actions } = scope;
+  if (tile.id === "battery" && snapshot.battery) {
+    const battery = snapshot.battery;
+    return (
+      <BatteryRow
+        look={{ percent: battery.percent, charging: battery.charging, limit: battery.limit, time: battery.time, glyph: shown.glyph }}
+        onOpen={() => (editing ? undefined : actions.onBattery?.())}
+      />
+    );
+  }
+  return tile.size === "round" ? <RoundTile look={shown} {...handlers} /> : <WideTile look={shown} {...handlers} />;
+}
+
 export function useControls(actions: ControlActions): Controls {
   const snapshot = useControlSnapshot(actions);
   const source = actions.applets ?? NO_APPLETS;
   const appletTiles = useSyncExternalStore(source.subscribe, source.getSnapshot);
   const applet = (id: string): AppletTile | undefined => appletTiles.find((tile) => tile.key === id);
-
-  const toggle = (id: string): void => {
-    const { devices, flags, laptop } = actions;
-    switch (id) {
-      case "wifi":
-        return void devices.setWifi(snapshot.wifi !== true);
-      case "bluetooth":
-        return void devices.setBluetooth(snapshot.bluetooth !== true);
-      case "focus":
-        return flags.toggle("dnd");
-      case "dark":
-        return flags.toggle("dark");
-      case "night":
-        return flags.toggle("night");
-      case "hotspot":
-        return void devices.setHotspot(snapshot.hotspot !== true);
-      case "mirror":
-        return void actions.mirror?.set(snapshot.mirroring !== true);
-      case "power":
-        if (snapshot.power) laptop?.modes.choose(powerToggle(snapshot.power));
-        return;
-      case "keyboard": {
-        const light = snapshot.light;
-        if (!light) return;
-        if (light.level > 0) lastLight = light.level;
-        laptop?.setLight(lightToggle(light, lastLight));
-        return;
-      }
-      case "lock":
-        return actions.onLock();
-    }
-  };
-
-  const appletPress = (tile: AppletTile): void => {
-    switch (tile.kind) {
-      case "toggle":
-        return actions.applets?.act(tile.key, { kind: "toggle", on: !tile.on });
-      case "button":
-        return actions.applets?.act(tile.key, { kind: "press" });
-      case "choice": {
-        const choice = nextChoice(tile);
-        if (choice !== null) actions.applets?.act(tile.key, { kind: "choose", choice });
-        return;
-      }
-      default:
-        return actions.applets?.act(tile.key, { kind: "open" });
-    }
-  };
-
-  const press = (id: string, openPage: (page: ControlPage) => void): void => {
-    const tile = applet(id);
-    if (tile) return appletPress(tile);
-    const info = controlInfo(id);
-    if (!info) return;
-    if (info.kind === "toggle" || info.kind === "button") return toggle(id);
-    if (info.kind === "battery") return actions.onBattery?.();
-    if (info.page) openPage(info.page);
-  };
-
-  const open = (id: string, openPage: (page: ControlPage) => void): void => {
-    const tile = applet(id);
-    if (tile) {
-      // A choice's page lists its choices; it is the tile's own key.
-      if (tile.kind === "choice") return openPage(tile.key as ControlPage);
-      return actions.applets?.act(tile.key, tile.kind === "button" ? { kind: "press" } : { kind: "open" });
-    }
-    const info = controlInfo(id);
-    if (info?.page) return openPage(info.page);
-    press(id, openPage);
-  };
-
-  const levelOfControl = (id: string): number | null => {
-    if (id === "brightness") return snapshot.brightness;
-    if (id === "volume") return snapshot.volume ? (snapshot.volume.muted ? 0 : snapshot.volume.level) : null;
-    const tile = applet(id);
-    return tile?.kind === "slider" ? levelOf(tile) : null;
-  };
-
-  const setLevel = (id: string, level: number): void => {
-    if (id === "brightness") return actions.devices.setBrightnessLevel(level);
-    if (id === "volume") return actions.devices.setVolumeLevel(level);
-    const tile = applet(id);
-    if (tile?.kind === "slider") actions.applets?.act(id, { kind: "set", value: valueAt(tile, level) });
-  };
-
-  const look = (id: string): TileLook | null => {
-    const tile = applet(id);
-    if (tile) return { testID: `cc-${id}`, title: tile.title, detail: tile.detail, glyph: tile.glyph, on: tile.on, dim: !tile.running };
-    const state = tileState(id, snapshot);
-    return state ? { testID: `cc-${id}`, title: state.title, detail: state.detail, glyph: state.glyph, on: state.on } : null;
-  };
-
-  /** A wide tile's knob and label, a round tile's press. */
-  const presses = (id: string, openPage: (page: ControlPage) => void): TilePress => {
-    const tile = applet(id);
-    if (tile) {
-      if (tile.kind === "status") return { onOpen: () => open(id, openPage) };
-      return { onToggle: () => press(id, openPage), onOpen: () => open(id, openPage) };
-    }
-    const info = controlInfo(id);
-    if (!info || info.kind === "status") return {};
-    const knob = info.kind === "toggle" || info.kind === "button" ? { onToggle: () => press(id, openPage) } : {};
-    return { ...knob, ...(info.page ? { onOpen: () => openPage(info.page as ControlPage) } : {}) };
-  };
-
-  const render = (tile: Placed, frame: { width: number; height: number }, editing: boolean, openPage: (page: ControlPage) => void): ReactNode => {
-    const shown = look(tile.id);
-    if (!shown) return null;
-    const handlers = editing ? {} : presses(tile.id, openPage);
-    const level = levelOfControl(tile.id);
-    if (level !== null && (tile.size === "tall" || tile.size === "flat")) {
-      const appletTile = applet(tile.id);
-      return (
-        <SliderTile
-          look={{
-            testID: shown.testID,
-            title: shown.title,
-            glyph: shown.glyph,
-            level,
-            value: appletTile ? (shown.detail ?? String(appletTile.value ?? "")) : (shown.detail ?? ""),
-            width: frame.width,
-            height: frame.height,
-          }}
-          standing={tile.size === "tall"}
-          onLevel={(next) => (editing ? undefined : setLevel(tile.id, next))}
-        />
-      );
-    }
-    if (tile.id === "battery" && snapshot.battery) {
-      const battery = snapshot.battery;
-      return (
-        <BatteryRow
-          look={{ percent: battery.percent, charging: battery.charging, limit: battery.limit, time: battery.time, glyph: shown.glyph }}
-          onOpen={() => (editing ? undefined : actions.onBattery?.())}
-        />
-      );
-    }
-    return tile.size === "round" ? <RoundTile look={shown} {...handlers} /> : <WideTile look={shown} {...handlers} />;
-  };
+  const scope: ControlScope = { actions, snapshot, applet };
 
   return {
     snapshot,
@@ -206,12 +113,12 @@ export function useControls(actions: ControlActions): Controls {
         .map((tile): AddEntry => ({ id: tile.key, title: tile.title, from: tile.appletName, glyph: tile.glyph }));
       return [...own, ...theirs];
     },
-    isOn: (id) => look(id)?.on ?? false,
-    lookOf: look,
-    levelOf: levelOfControl,
-    setLevel,
-    press,
-    open,
-    render,
+    isOn: (id) => lookOf(scope, id)?.on ?? false,
+    lookOf: (id) => lookOf(scope, id),
+    levelOf: (id) => levelOfControl(scope, id),
+    setLevel: (id, level) => setControlLevel(scope, id, level),
+    press: (id, openPage) => pressControl(scope, id, openPage),
+    open: (id, openPage) => openControl(scope, id, openPage),
+    render: (tile, frame, editing, openPage) => renderTile(scope, tile, frame, editing, openPage),
   };
 }

@@ -17,22 +17,22 @@ import type { BluetoothStore } from "../bluetooth/store.ts";
 import type { Laptop } from "../laptop/start.ts";
 import type { FlagsStore } from "../shared/control-center/flags.ts";
 import { useControlColors, usePanelEdge } from "../shared/controls/palette.ts";
-import { stepLevel } from "../shared/controls/slider-math.ts";
 import type { AppMixer } from "../sound/apps/index.ts";
 import type { SoundStore } from "../sound/store.ts";
 import type { SystemStore } from "../system/store.ts";
 import type { WifiStore } from "../wifi/store.ts";
 import type { WifiNetwork } from "../wifi/types.ts";
 import { type AppletTileSource, isAppletTile } from "./applet-tiles.ts";
-import { type ControlPage, DEFAULT_LAYOUT, isThere } from "./catalog.ts";
+import { type ControlPage, isThere } from "./catalog.ts";
 import { useControls } from "./controls.tsx";
 import type { DeviceStore } from "./devices.ts";
-import { AddList, EditFooter } from "./edit.tsx";
+import { PanelEditor } from "./edit.tsx";
 import { ControlGrid } from "./grid.tsx";
-import { addItem, type Direction, frameOf, GRID, type Layout, moveItem, moveToward, neighbor, nextSize, pack, removeItem, shown } from "./layout.ts";
+import { frameOf, GRID, type Layout, moveItem, nextSize, pack, removeItem, shown } from "./layout.ts";
 import { type LayoutStore, useLayout } from "./layout-store.ts";
 import { PageKeysContext, PageOrigin, usePageKeys } from "./page-parts.tsx";
 import { PageView } from "./pages.tsx";
+import { panelKey } from "./panel-keys.ts";
 import { TILE_RADIUS } from "./tiles.tsx";
 
 export const CONTROL_CENTER_PANEL = { width: GRID.width, padding: GRID.padding, gap: GRID.gap } as const;
@@ -75,8 +75,6 @@ export interface ControlCenterProps {
   embedded?: boolean;
 }
 
-const ARROWS: Readonly<Record<string, Direction>> = { left: "left", right: "right", up: "up", down: "down" };
-
 export function ControlCenterPanel(props: ControlCenterProps) {
   const { page, onPage, onClose, embedded = false } = props;
   const colors = useControlColors();
@@ -118,41 +116,8 @@ export function ControlCenterPanel(props: ControlCenterProps) {
       }
     : null;
 
-  const addable = editing ? controls.addable(layout) : [];
-
-  const key = (event: KeyDownInfo): void => {
-    const name = event.key;
-    if (name === "escape") {
-      if (page !== "main") return onPage("main");
-      // Embedded, Esc is Cancel: the edits go and the editor closes.
-      if (embedded) {
-        setDraft(null);
-        return onClose();
-      }
-      if (draft) return setDraft(null);
-      return onClose();
-    }
-    if (page !== "main") return pageKey(name);
-    const direction = ARROWS[name];
-    if (direction) {
-      if (focus === null) return setFocus(placed[0]?.id ?? null);
-      if (draft && event.alt) return setDraft(moveToward(draft, placed, focus, direction));
-      if (event.shift && !draft) {
-        const level = controls.levelOf(focus);
-        if (level !== null) return controls.setLevel(focus, stepLevel(level, direction));
-      }
-      setFocus(neighbor(placed, focus, direction) ?? focus);
-      return;
-    }
-    if (focus === null) return;
-    if (draft) {
-      if (name === "space" || name === "enter") setDraft(nextSize(draft, focus, controls.sizesOf(focus)));
-      if (name === "backspace" || name === "delete") setDraft(removeItem(draft, focus));
-      return;
-    }
-    if (name === "space") controls.press(focus, (next) => openPage(focus, next));
-    if (name === "enter") controls.open(focus, (next) => openPage(focus, next));
-  };
+  const key = (event: KeyDownInfo): void =>
+    panelKey({ page, embedded, draft, focus, placed, controls, pageKey, onPage, onClose, setDraft, setFocus, openPage }, event);
 
   return (
     <View
@@ -186,23 +151,7 @@ export function ControlCenterPanel(props: ControlCenterProps) {
             radiusOf={(id) => (controls.isOn(id) ? TILE_RADIUS.on : TILE_RADIUS.off)}
             renderTile={(tile, frame) => controls.render(tile, frame, editing, (next) => openPage(tile.id, next))}
           />
-          {draft && (
-            <>
-              <AddList entries={addable} onAdd={(id) => setDraft(addItem(draft, id, controls.sizesOf(id)[0] ?? "round"))} />
-              <EditFooter
-                onReset={() => setDraft(DEFAULT_LAYOUT)}
-                onCancel={() => {
-                  setDraft(null);
-                  if (embedded) onClose();
-                }}
-                onDone={() => {
-                  props.layout.set(draft);
-                  setDraft(null);
-                  if (embedded) onClose();
-                }}
-              />
-            </>
-          )}
+          {draft && <PanelEditor draft={draft} layout={props.layout} controls={controls} embedded={embedded} setDraft={setDraft} onClose={onClose} />}
         </>
       )}
     </View>
