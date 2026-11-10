@@ -9,7 +9,7 @@ use smithay::{desktop::Window, reexports::wayland_server::protocol::wl_surface::
 
 pub(crate) use self::{
     entry::Entry,
-    helper::{pid_of, window_for_helper},
+    helper::{pid_of, window_for_copy},
     lookup::{names, parent_of, toplevel_surface, window_id_for_surface},
 };
 pub(crate) use super::describe::describe;

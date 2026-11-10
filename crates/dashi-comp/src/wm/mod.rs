@@ -30,5 +30,5 @@ mod windows;
 pub(crate) use actions::valid_frame;
 pub(crate) use geometry::{frame_of, frame_to_be};
 pub(crate) use windows::{
-    Shown, WindowId, Windows, names, toplevel_surface, window_for_helper, window_id_for_surface,
+    Shown, WindowId, Windows, names, toplevel_surface, window_for_copy, window_id_for_surface,
 };
