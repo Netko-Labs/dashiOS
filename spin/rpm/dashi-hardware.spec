@@ -39,6 +39,11 @@ shell does. See docs/hardware.md.
 export CARGO_TARGET_DIR=%{cargo_target}
 cargo build --release --locked -p dashi-hardware
 
+%check
+# The tests read and write copies of the captured G14 tree (data/fixtures), never /sys.
+export CARGO_TARGET_DIR=%{cargo_target}
+cargo test --release --locked -p dashi-hardware
+
 %install
 export CARGO_TARGET_DIR=%{cargo_target}
 install -Dm0755 %{cargo_target}/release/dashi-hardware %{buildroot}%{_libexecdir}/dashi/dashi-hardware
