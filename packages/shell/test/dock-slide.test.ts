@@ -1,5 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
-import { DOCK_MOTION, iconRise, panelOpacity, Slide, springOut } from "../src/dock/slide.tsx";
+import { DOCK_MOTION, iconRise, panelOpacity, Slide } from "../src/dock/slide.tsx";
+import { springOut } from "../src/shared/controls/motion.ts";
 
 const slides: Slide[] = [];
 const make = (reduce = false): Slide => {
