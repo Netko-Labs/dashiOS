@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
-import { MENU_SEPARATOR, PopupMenu } from "../src/sheet.tsx";
+import { MENU_SEPARATOR, PopupMenu } from "../src/popup-menu.tsx";
 import { fakeHost, settle } from "./host.ts";
 
 // A menu hung from a toolbar's "…" at the window's right: its right edge under the button, at the width it is

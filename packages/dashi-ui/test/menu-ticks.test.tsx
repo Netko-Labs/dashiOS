@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
-import { MenuList } from "../src/sheet.tsx";
+import { MenuList } from "../src/popup-menu.tsx";
 import { fakeHost, settle } from "./host.ts";
 
 // Review 54 (Files 14, 15): a ticked row's label sat 3 px right of its siblings, since an empty

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
-import { PopupMenu } from "../src/sheet.tsx";
+import { PopupMenu } from "../src/popup-menu.tsx";
 import { fakeHost, settle } from "./host.ts";
 
 // Review 54 (Notes 12): the Move menu took a long folder's whole name, 490 pt, and was pushed far

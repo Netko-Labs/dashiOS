@@ -13,10 +13,13 @@ export {
   toneColors,
 } from "./alert.tsx";
 export { ALERT_WINDOW, type AlertContent, alertButtonsWidth, alertWindowHeight, alertWordsWidth, wrappedLines } from "./alert-size.ts";
+export { Button } from "./button.tsx";
 export { type ButtonKind, type ButtonLook, buttonLook } from "./button-look.ts";
+export { type Choice, Choices } from "./choices.tsx";
 export { type Confirm, type ConfirmRequest, ConfirmSheet, type ConfirmSheetProps, confirmKeyAction, useConfirm } from "./confirm.tsx";
 export { type ControlState, DISABLED_OPACITY, isHeld, type ShownStates, ShowStates, useControlState } from "./control-state.tsx";
-export { Button, Caption, type Choice, Choices, Group, Note, ROW_INSET, Row, TILE_SIZE, Tile } from "./controls.tsx";
+export { Caption, Group, Note, ROW_INSET, Row } from "./controls.tsx";
+export { EmptyState } from "./empty-state.tsx";
 export { SearchField, Segmented, TextField, type TextFieldProps } from "./fields.tsx";
 export * as glyphs from "./glyphs.ts";
 export {
@@ -45,28 +48,12 @@ export { type MenuHighlight, MenuHighlightContext, MenuLine, MenuRow, type MenuR
 export { MORE_BUTTON, MoreButton } from "./more.tsx";
 export { Notice, type NoticeProps } from "./notice.tsx";
 export { PopUpButton, type PopUpButtonProps, type PopUpOption, popUpMenuWidth, popUpOrigin } from "./popup-button.tsx";
+export { isSeparator, MENU_SEPARATOR, type MenuEntry, type MenuItem, MenuList, type MenuSeparator, PopupMenu, tidyEntries } from "./popup-menu.tsx";
 export { LOADING_DELAY_MS, Loading, ProgressBar, type ProgressBarProps, Spinner, useShownAfter } from "./progress.tsx";
 export { clampFraction, spinnerMarkup, spokeOpacities, sweepOffset } from "./progress-math.ts";
 export { defaultScale, isBuiltIn, SCALES, type ScreenSize } from "./scale.ts";
 export { type RowLook, rowLook, SELECTION_BAR, SelectionBar, selectionBarHeight, TextSelectionLook } from "./selection.tsx";
-export {
-  EmptyState,
-  isSeparator,
-  MENU_SEPARATOR,
-  type MenuEntry,
-  type MenuItem,
-  MenuList,
-  type MenuSeparator,
-  PopupMenu,
-  SCRIM,
-  SHEET_MARGIN,
-  Sheet,
-  SheetCard,
-  type SheetProps,
-  sheetBodyRoom,
-  sheetWidth,
-  tidyEntries,
-} from "./sheet.tsx";
+export { SCRIM, SHEET_MARGIN, Sheet, SheetCard, type SheetProps, sheetBodyRoom, sheetWidth } from "./sheet.tsx";
 export { KEY_GLYPHS, Shortcut, shortcutParts } from "./shortcut.tsx";
 export { SIDEBAR_ROW_HEIGHT, SidebarItem, type SidebarItemProps } from "./sidebar.tsx";
 export { Slider, type SliderProps } from "./slider.tsx";
@@ -105,6 +92,7 @@ export {
   useSurface,
   useTextSize,
 } from "./theme/index.ts";
+export { TILE_SIZE, Tile } from "./tile.tsx";
 export { TOOLTIP_DELAY_MS, type Tooltip, TooltipLayer, tooltipOrigin, useTooltip, useWindowLayer } from "./tooltip.tsx";
 export { JOIN_MS as UNDO_JOIN_MS, redoLabel, UNDO_LIMIT, type UndoAction, UndoStack, type UndoState, undoLabel, undoMenuItems, useUndo } from "./undo.ts";
 export {

@@ -11,11 +11,11 @@
 import { type Bounds, createPortal, Svg, Text, View } from "@mirinjs/metal";
 import { useRef, useState } from "react";
 import { buttonLook } from "./button-look.ts";
+import type { Choice } from "./choices.tsx";
 import { useControlState } from "./control-state.tsx";
-import type { Choice } from "./controls.tsx";
 import { CHEVRON_UP_DOWN } from "./glyphs.ts";
 import { MENU, type MenuRowKind, menuLabelLeft, rowTop } from "./menu-place.ts";
-import { isSeparator, type MenuEntry, type MenuSeparator, PopupMenu } from "./sheet.tsx";
+import { isSeparator, type MenuEntry, type MenuSeparator, PopupMenu } from "./popup-menu.tsx";
 import { StepKeys } from "./step-keys.tsx";
 import { useColors } from "./theme/index.ts";
 import { useWindowLayer } from "./tooltip.tsx";
