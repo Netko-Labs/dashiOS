@@ -16,7 +16,7 @@ import { registerShellApp, SETTINGS_APP_ID } from "../apps.ts";
 import type { ClipboardHistory } from "../clipboard/history.ts";
 import type { Compositor } from "../compositor.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
-import type { PrivacyStore } from "../privacy/store.ts";
+import type { PrivacyStore } from "../privacy/index.ts";
 import type { RegionStore } from "../region/store.ts";
 import type { Flags, FlagsStore } from "../shared/control-center/flags.ts";
 import { onWindowTyping } from "../shared/metal/typing.ts";
