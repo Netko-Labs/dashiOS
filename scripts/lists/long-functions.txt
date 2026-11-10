@@ -24,7 +24,6 @@
 121	packages/shell/src/agents/ask/service.ts
 144	packages/shell/src/agents/handoff/questions.ts
 90	packages/shell/src/agents/handoff/runner.ts
-280	packages/shell/src/agents/handoff/service.ts
 171	packages/shell/src/agents/run.ts
 169	packages/shell/src/agents/server.ts
 81	packages/shell/src/bluetooth/agent.ts

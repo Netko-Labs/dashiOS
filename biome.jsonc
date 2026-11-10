@@ -242,7 +242,6 @@
       "includes": ["packages/shell/src/agents/handoff/runner.ts"],
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 90 } } } } }
     },
-    { "includes": ["packages/shell/src/agents/handoff/service.ts"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } },
     {
       "includes": ["packages/shell/src/agents/run.ts"],
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 171 } } } } }
