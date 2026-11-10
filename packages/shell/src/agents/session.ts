@@ -17,7 +17,7 @@ import * as mcp from "./mcp.ts";
 import { grantKey, type Peer } from "./peer.ts";
 import type { AgentInfo, Who } from "./presence.ts";
 import { runCall } from "./run.ts";
-import { SessionSecrets } from "./secrets/session-secrets.ts";
+import { SessionSecrets } from "./secrets/index.ts";
 import { SessionBrowser } from "./session-browser.ts";
 import { type ScopeHost, Scopes } from "./session-scopes.ts";
 import type { Connection, SessionContext, SessionTask } from "./session-types.ts";

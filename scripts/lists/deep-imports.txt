@@ -560,7 +560,7 @@
 3	packages/shell/test/agent-mask.test.ts
 5	packages/shell/test/agent-pay.test.ts
 1	packages/shell/test/agent-sandbox.test.ts
-7	packages/shell/test/agent-secrets-session.test.ts
+6	packages/shell/test/agent-secrets-session.test.ts
 4	packages/shell/test/agent-sign-in.test.ts
 2	packages/shell/test/agent-tokens-proxy.test.ts
 3	packages/shell/test/agent-tokens-sandbox.test.ts
@@ -722,7 +722,7 @@
 3	packages/shell/test/notes-markup.test.ts
 2	packages/shell/test/notes-undo.test.ts
 4	packages/shell/test/notes-view.test.tsx
-2	packages/shell/test/onepassword.test.ts
+1	packages/shell/test/onepassword.test.ts
 1	packages/shell/test/passwords-late-op.test.ts
 6	packages/shell/test/portal-bus.test.ts
 2	packages/shell/test/portal-file-chooser-accept.test.ts
@@ -825,7 +825,7 @@
 1	packages/shell/test/tints.test.ts
 4	packages/shell/test/true-black.test.ts
 1	packages/shell/test/vault-approvals.test.ts
-2	packages/shell/test/vault-client.test.ts
+1	packages/shell/test/vault-client.test.ts
 1	packages/shell/test/warm-host.test.ts
 1	packages/shell/test/window-style.test.ts
 1	packages/shell/test/xwayland-scale.test.ts

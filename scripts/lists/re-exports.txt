@@ -20,7 +20,6 @@
 2	packages/shell/src/agents/handoff/service.ts
 1	packages/shell/src/agents/handoff/store.ts
 1	packages/shell/src/agents/sandbox.ts
-1	packages/shell/src/agents/secrets/vault.ts
 1	packages/shell/src/agents/session.ts
 1	packages/shell/src/applets/connection.ts
 1	packages/shell/src/applets/installed.ts

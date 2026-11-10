@@ -5,7 +5,7 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import { existsSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { dashiSource } from "../src/agents/secrets/dashi-source.ts";
+import { dashiSource } from "../src/agents/secrets/lib/dashi-source.ts";
 import { Vault, vaultCall } from "../src/agents/secrets/vault.ts";
 import { TEST_LOGIN } from "./fixtures/sign-in-site/server.ts";
 import { base32, totp } from "./fixtures/sign-in-site/totp.ts";

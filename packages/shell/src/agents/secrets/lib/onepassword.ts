@@ -8,7 +8,7 @@
  * it and drops it. A secret never goes on a command line.
  */
 
-import { type Login, type LoginSource, sortLogins } from "./sources.ts";
+import { type Login, type LoginSource, sortLogins } from "../sources.ts";
 
 export interface OpResult {
   code: number;

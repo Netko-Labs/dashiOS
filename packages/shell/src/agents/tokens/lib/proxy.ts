@@ -18,7 +18,7 @@
 import { existsSync, unlinkSync } from "node:fs";
 import net from "node:net";
 import { join } from "node:path";
-import type { TokenSummary } from "../../secrets/vault.ts";
+import type { TokenSummary } from "../../secrets/types.ts";
 import { authorized, type Candidate, forwardHeaders, hostListed, isHostName, MAX_HEAD, parseConnect, swapHeaders, wanted } from "../swap.ts";
 import { type Authority, type Issued, issueLeaf } from "./x509.ts";
 

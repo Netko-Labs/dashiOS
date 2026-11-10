@@ -10,7 +10,7 @@
 import type { Confirm } from "@dashi/ui";
 import { Text, TextInput, View } from "@mirinjs/metal";
 import { useCallback, useEffect, useState } from "react";
-import type { TokenSummary, VaultTokens } from "../../agents/secrets/vault.ts";
+import type { TokenSummary, VaultTokens } from "../../agents/secrets/index.ts";
 import { MODEL_KEYS, modelKey } from "../../agents/tokens/model-keys.ts";
 import { DEFAULT_HEADER, placeholder } from "../../agents/tokens/swap.ts";
 import { useColors } from "../colors.ts";

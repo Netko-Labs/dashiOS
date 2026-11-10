@@ -14,7 +14,7 @@ import type { CompositorWindow } from "../../../compositor.ts";
 import type { Focused, Placed, Rect } from "../../atspi/index.ts";
 import type { RunContext, ToolResult } from "../../context.ts";
 import { toolError } from "../../context.ts";
-import type { FieldInfo } from "../../secrets/field-check.ts";
+import type { FieldInfo } from "../../secrets/index.ts";
 import { chooseTab, NO_EXTENSION } from "../browser.ts";
 
 /** The browser's window that shows `tab`: its process's, by the tab's title when it has several. */

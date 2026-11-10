@@ -10,7 +10,7 @@ import { LOCKED, type LockWatch } from "./lock.ts";
 import type { AgentMask } from "./mask.ts";
 import type { AgentUi } from "./presence.ts";
 import { runCall } from "./run.ts";
-import { type SecretsShared, SessionSecrets } from "./secrets/session-secrets.ts";
+import { type SecretsShared, SessionSecrets } from "./secrets/index.ts";
 import type { Call } from "./tools/index.ts";
 
 export interface PersonParts {

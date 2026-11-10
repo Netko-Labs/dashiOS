@@ -1,7 +1,7 @@
 /** Dashi's vault as a login source (sources.ts). */
 
-import type { Login, LoginSource } from "./sources.ts";
-import type { Vault } from "./vault.ts";
+import type { Login, LoginSource } from "../sources.ts";
+import type { Vault } from "../vault.ts";
 
 export function dashiSource(vault: Pick<Vault, "logins" | "password" | "code">): LoginSource {
   const id = (login: Login): number => {

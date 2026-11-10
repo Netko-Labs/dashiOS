@@ -3,10 +3,7 @@
 import type { Compositor } from "../compositor.ts";
 import { Atspi } from "./atspi/index.ts";
 import { AgentMask } from "./mask.ts";
-import type { SecretsShared } from "./secrets/session-secrets.ts";
-import type { LoginSource } from "./secrets/sources.ts";
-import type { Vault } from "./secrets/vault.ts";
-import { isVaultWindow } from "./secrets/vault-view.ts";
+import { isVaultWindow, type LoginSource, type SecretsShared, type Vault } from "./secrets/index.ts";
 
 export interface SharedSecrets {
   secrets: SecretsShared;

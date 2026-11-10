@@ -5,11 +5,11 @@
  */
 
 import { type TokenRef, token } from "../tokens/index.ts";
-import { dashiSource } from "./dashi-source.ts";
-import { type OpRunner, onePasswordSource, opRunner, saveToOnePassword } from "./onepassword.ts";
-import { PasswordPrefsStore } from "./preferences.ts";
+import { dashiSource } from "./lib/dashi-source.ts";
+import { type OpRunner, onePasswordSource, opRunner, saveToOnePassword } from "./lib/onepassword.ts";
+import { PasswordPrefsStore } from "./lib/preferences.ts";
+import { fileUsedStore } from "./lib/used.ts";
 import type { LoginSource, SourceId } from "./sources.ts";
-import { fileUsedStore } from "./used.ts";
 import { type NewLogin, Vault } from "./vault.ts";
 
 export interface Passwords {

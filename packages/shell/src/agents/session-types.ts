@@ -8,7 +8,7 @@ import type { Grants, Scope } from "./consent.ts";
 import type { Desktop, Hands } from "./desktop/index.ts";
 import type { AgentMask } from "./mask.ts";
 import type { AgentUi } from "./presence.ts";
-import type { SecretsShared } from "./secrets/session-secrets.ts";
+import type { SecretsShared } from "./secrets/index.ts";
 import type { SiteGrants } from "./sites.ts";
 import type { Call } from "./tools/index.ts";
 

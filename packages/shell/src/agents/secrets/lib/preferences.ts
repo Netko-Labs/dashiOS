@@ -8,7 +8,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import type { SourceId } from "./sources.ts";
+import type { SourceId } from "../sources.ts";
 
 export interface PasswordPrefs {
   sources: Record<SourceId, boolean>;

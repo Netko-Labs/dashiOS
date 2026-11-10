@@ -8,9 +8,7 @@ import type { Question } from "./confirm.ts";
 import type { Desktop, Hands } from "./desktop/index.ts";
 import type { AgentMask } from "./mask.ts";
 import type { AgentUi } from "./presence.ts";
-import type { Approval, SheetLogin, SignInAnswer } from "./secrets/broker.ts";
-import type { LoginSource } from "./secrets/sources.ts";
-import type { Vault } from "./secrets/vault.ts";
+import type { Approval, LoginSource, SheetLogin, SignInAnswer, Vault } from "./secrets/index.ts";
 
 /** What the secrets tools need from the connection (desktop/secrets.ts). */
 export interface SecretsRun {

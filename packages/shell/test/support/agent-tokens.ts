@@ -1,4 +1,4 @@
-import type { TokenSummary } from "../../src/agents/secrets/vault.ts";
+import type { TokenSummary } from "../../src/agents/secrets/types.ts";
 import type { TokenSource } from "../../src/agents/tokens/lib/proxy.ts";
 
 export const asked: Array<[string, string]> = [];
