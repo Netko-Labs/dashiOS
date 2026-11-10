@@ -33,7 +33,7 @@ export interface HandoffSnapshot {
   runs: readonly RunView[];
 }
 
-/** What the launcher does with agents from the launcher (main.tsx makes it from agents/handoff/service.ts). */
+/** What the launcher does with agents from the launcher (boot/agents.ts makes it from agents/handoff/service.ts). */
 export interface LauncherHandoff extends Store<HandoffSnapshot> {
   /** Whether the grants card shows before a task with this context starts (once per kind). */
   needsCard(context: TaskContext): boolean;

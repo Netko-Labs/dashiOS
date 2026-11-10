@@ -16,67 +16,38 @@
  * the keys pressed one by one.
  */
 
-import type { Compositor, CompositorEvent, CompositorWindow, Placing, Output as Screen } from "./compositor.ts";
 import {
-  type Arrange,
-  carryFrame,
-  centerFrame,
-  dragZones,
-  fitFrame,
-  frameUnderPointer,
-  keepLeast,
-  type Output,
-  placeNew,
-  type Rect,
-  sameOutputs,
-  sameRect,
-  screenFor,
-  type Tile,
-  tileFrame,
-  usableFor,
-} from "./layout.ts";
-import { type Arrow, arrowStep, screenToward } from "./tiling.ts";
+  type ArrangeContext,
+  type Arranged,
+  arrowPlan,
+  askFrame,
+  configuredFrame,
+  DragTiling,
+  DWELL_MS,
+  type EventOf,
+  type FullscreenDesktopsHook,
+  fitWindows,
+  fullscreenWindow,
+  placedOutputs,
+  placeWindow,
+  zonesOf,
+} from "./arrange-frames.ts";
+import type { Compositor, Placing } from "./compositor.ts";
+import { type Arrange, centerFrame, fitFrame, type Output, type Rect, sameOutputs, type Tile, tileFrame, usableFor } from "./layout.ts";
+import type { Arrow } from "./tiling.ts";
 
-/** How long the pointer rests in a drag zone before its preview shows. */
-const DWELL_MS = 150;
-
-/** The screens that say where they are and what is usable (src/compositor/outputs.ts). */
-export function placedOutputs(screens: readonly Screen[]): Output[] {
-  return screens.flatMap((screen) =>
-    screen.frame && screen.usable ? [{ name: screen.name, frame: screen.frame, usable: screen.usable, scale: screen.scale }] : [],
-  );
-}
-
-/** A window the shell arranged: how, and the frame it had before (what Back gives back). */
-interface Arranged {
-  tile: Tile;
-  own: Rect;
-}
-
-type EventOf<Name extends CompositorEvent["event"]> = Extract<CompositorEvent, { event: Name }>;
-
-/** Full-screen windows' own Desktops (spaces/fullscreen.ts). */
-export interface FullscreenDesktopsHook {
-  /** Enter or leave full screen around the window's own Desktop; `toggle` is the request and the frame after. */
-  around(window: CompositorWindow, on: boolean, toggle: () => Promise<void>): Promise<void>;
-  /** The Space a new window opens on; null for the one that shows. */
-  spaceFor(window: Placing): Promise<number | null>;
-  /** A new window opened on that Space (not the one that shows). */
-  opened(space: number): Promise<void>;
-}
+export { type FullscreenDesktopsHook, placedOutputs } from "./arrange-frames.ts";
 
 export class Arranger {
   private outputs: Output[] = [];
   private opened = 0;
   private readonly arranged = new Map<number, Arranged>();
-  /** Where each dragged window was as its drag began: its own frame, if the drag ends in a tile. */
-  private readonly dragFrom = new Map<number, Rect>();
+  /** The drag-to-tile zones and where each dragged window was as its drag began. */
+  private readonly drags = new DragTiling();
   /** The frame each full-screen window had before: given back when it leaves. */
   private readonly beforeFullscreen = new Map<number, Rect>();
   /** The arranging under way, the next waits for. */
   private queue: Promise<unknown> = Promise.resolve();
-  /** The drag-to-tile zones last sent, in order: which tile each is, on which screen. */
-  private zones: Array<{ tile: Tile; frame: Rect; usable: Rect }> = [];
   /** The first refresh; placing and arranging wait for it, since they need the screens. */
   private ready: Promise<void> = Promise.resolve();
 
@@ -114,27 +85,6 @@ export class Arranger {
     return stop;
   }
 
-  /**
-   * The usable area of the screen a new window opens on: the screen with the
-   * pointer (`session` says where it is), else the screen of the window that
-   * has the keyboard; with one screen, or nothing known, the first.
-   */
-  private async usableForNew(placing: number): Promise<Rect | null> {
-    const first = this.outputs[0]?.usable ?? null;
-    if (this.outputs.length < 2) return first;
-    const pointer = (await this.compositor.session().catch(() => null))?.pointer ?? null;
-    // A zero-size frame at the pointer: the screen holding that point.
-    if (pointer) return usableFor({ ...pointer, width: 0, height: 0 }, this.outputs);
-    try {
-      const windows = await this.compositor.windows();
-      const target = windows.find((candidate) => candidate.focused && candidate.id !== placing && candidate.state === "normal");
-      return target?.frame ? usableFor(target.frame, this.outputs) : first;
-    } catch {
-      // The session is locked: the first screen is still a place.
-      return first;
-    }
-  }
-
   private async refresh(): Promise<void> {
     const before = this.outputs;
     this.outputs = placedOutputs(await this.compositor.outputs());
@@ -142,8 +92,8 @@ export class Arranger {
     // with the screens as they were, nothing needs fitting (and a window just
     // out of full screen still reports its full-screen size).
     const changed = !sameOutputs(before, this.outputs);
-    const zones = this.outputs.flatMap((output) => dragZones(output).map((zone) => ({ ...zone, usable: output.usable })));
-    this.zones = zones.map(({ tile, frame, usable }) => ({ tile, frame, usable }));
+    const zones = zonesOf(this.outputs);
+    this.drags.zones = zones.map(({ tile, frame, usable }) => ({ tile, frame, usable }));
     // Drag-to-tile is the compositor's to offer; without it, windows still fit their screens.
     await this.compositor
       .layout({ zones: zones.map(({ area, frame }) => ({ area, frame })), dwellMs: DWELL_MS })
@@ -157,33 +107,13 @@ export class Arranger {
    * filled window takes its tile on the screen as it is now.
    */
   private async fitWindows(): Promise<void> {
-    for (const window of await this.compositor.windows()) {
-      // A full-screen window fills its screen, whatever the bars leave free.
-      const frame = this.current(window);
-      if (window.state !== "normal" || !frame || window.fullscreen) continue;
-      const usable = usableFor(frame, this.outputs);
-      if (!usable) continue;
-      const tile = this.arranged.get(window.id)?.tile ?? null;
-      const fitted = keepLeast(tile ? tileFrame(tile, usable) : fitFrame(frame, usable), window.minSize, usable);
-      if (!sameRect(fitted, frame)) await this.frame(window.id, fitted, tile);
-    }
+    await fitWindows(this.context());
   }
 
   /** Where a new window goes, as any other (also for a claimed one that could not be placed its own way). */
   async place(window: Placing): Promise<void> {
     await this.ready;
-    const usable = await this.usableForNew(window.id);
-    if (!usable) return;
-    // Where new windows go, kept inside the usable area: a window taller or
-    // wider than it is shrunk to fit once placed (not left under the Dock).
-    // An app that asked for a spot (X11 apps do) gets it; the rest cascade.
-    const { x, y } = window.position ?? placeNew(window, usable, this.opened++);
-    const fitted = fitFrame({ x, y, width: window.width, height: window.height }, usable);
-    // While a full-screen Desktop shows, another app's window opens on the Desktop it came from.
-    const space = (await this.desktops?.spaceFor(window).catch(() => null)) ?? null;
-    await this.compositor.place({ window: window.id, x: fitted.x, y: fitted.y, ...(space === null ? {} : { space }) });
-    if (fitted.width !== window.width || fitted.height !== window.height) await this.frame(window.id, fitted);
-    if (space !== null) await this.desktops?.opened(space);
+    await placeWindow(this.context(), window, () => this.opened++);
   }
 
   /**
@@ -193,16 +123,7 @@ export class Arranger {
    * takes its least width, grown away from the screen's edge.
    */
   private async frame(id: number, frame: Rect, tile: Tile | null = null): Promise<void> {
-    const kind = tile === "fill" ? { maximized: true } : tile ? { tiled: true } : {};
-    const least = (await this.compositor.windows()).find((window) => window.id === id)?.minSize;
-    const usable = usableFor(frame, this.outputs);
-    const kept = usable ? keepLeast(frame, least, usable) : frame;
-    await this.compositor.frame({ window: id, x: kept.x, y: kept.y, width: kept.width, height: kept.height, ...kind });
-  }
-
-  /** A window's frame as it is about to be: where it is, at the size its app is being asked to take until it has drawn it. */
-  private current(window: CompositorWindow): Rect | null {
-    return window.frame ? { ...window.frame, ...window.configuring } : null;
+    await askFrame(this.compositor, this.outputs, id, frame, tile);
   }
 
   /** Run `work` after the arranging before it: one at a time, in the order asked. */
@@ -210,6 +131,18 @@ export class Arranger {
     const next = this.queue.then(work, work);
     this.queue = next.catch(() => {});
     return next;
+  }
+
+  /** What the placing and full-screen steps (arrange-frames.ts) need of this arranger, as it is now. */
+  private context(): ArrangeContext {
+    return {
+      compositor: this.compositor,
+      desktops: this.desktops,
+      outputs: this.outputs,
+      arranged: this.arranged,
+      beforeFullscreen: this.beforeFullscreen,
+      frame: (id, frame, tile) => this.frame(id, frame, tile),
+    };
   }
 
   /** How the shell arranged a window: a tile, Fill, or null at its own frame (the menus, agents). */
@@ -221,7 +154,7 @@ export class Arranger {
   private async frameOf(id: number): Promise<Rect | null> {
     await this.ready;
     const window = (await this.compositor.windows()).find((candidate) => candidate.id === id);
-    return window && window.state === "normal" && !window.fullscreen ? this.current(window) : null;
+    return window && window.state === "normal" && !window.fullscreen ? configuredFrame(window) : null;
   }
 
   /** Tile it, fill, center it at its own size, or give it its own frame back (the Window menu, ⌃❖↩ ⌃❖C ⌃❖R, agents). */
@@ -249,16 +182,9 @@ export class Arranger {
   private async arrowNow(id: number, arrow: Arrow): Promise<void> {
     const frame = await this.frameOf(id);
     if (!frame) return;
-    const arranged = this.arranged.get(id);
-    const step = arrowStep(arranged?.tile ?? null, arrow);
-    if (step.kind === "restore") return this.back(id);
-    const screen = screenFor(frame, this.outputs);
-    if (!screen) return;
-    const own = arranged?.own ?? frame;
-    if (step.kind === "tile") return this.tileIn(id, step.tile, screen.usable, own);
-    const next = screenToward(screen.frame, this.outputs, arrow);
-    // The last screen that way: nothing happens.
-    if (next) await this.tileIn(id, step.tile, next.usable, carryFrame(own, screen.usable, next.usable));
+    const plan = arrowPlan(frame, this.arranged.get(id), arrow, this.outputs);
+    if (plan === "back") return this.back(id);
+    if (plan) await this.tileIn(id, plan.tile, plan.usable, plan.own);
   }
 
   /** Frame a window as `tile` in `usable`, remembering `own` to go back to. */
@@ -278,7 +204,7 @@ export class Arranger {
 
   private forget(id: number): void {
     this.arranged.delete(id);
-    this.dragFrom.delete(id);
+    this.drags.forget(id);
   }
 
   private closed(id: number): void {
@@ -324,25 +250,16 @@ export class Arranger {
     this.forget(event.window);
     if (event.kind === "resize") return;
     // At the size it is being asked to take, if its app has not drawn that yet (the compositor says so).
-    const from = event.frame;
-    if (!arranged) {
-      this.dragFrom.set(event.window, from);
-      return;
-    }
-    const frame = frameUnderPointer(from, arranged.own, event.pointer);
-    this.dragFrom.set(event.window, frame);
-    await this.frame(event.window, frame);
+    const frame = this.drags.grabbed(event.window, event.frame, arranged?.own, event.pointer);
+    if (frame) await this.frame(event.window, frame);
   }
 
   /** A drag let go in a drag-to-tile zone: that tile, going back to where the drag began. */
   private async dropped(event: EventOf<"window-drop">): Promise<void> {
-    const zone = this.zones[event.zone];
-    const from = this.dragFrom.get(event.window);
-    this.dragFrom.delete(event.window);
-    // Zones sent again since the drag began (a screen changed): this one may be gone.
-    if (!zone || !sameRect(zone.frame, event.frame)) return;
+    const drop = this.drags.dropped(event);
+    if (!drop) return;
     const frame = await this.frameOf(event.window);
-    if (frame) await this.tileIn(event.window, zone.tile, zone.usable, from ?? frame);
+    if (frame) await this.tileIn(event.window, drop.tile, drop.usable, drop.from ?? frame);
   }
 
   /**
@@ -358,29 +275,8 @@ export class Arranger {
 
   private async fullscreenNow(id: number, on: boolean): Promise<void> {
     await this.ready;
-    const window = (await this.compositor.windows()).find((candidate) => candidate.id === id);
-    if (!window || window.state !== "normal" || (window.fullscreen ?? false) === on) return;
-    const before = on ? this.current(window) : null;
-    if (before) this.beforeFullscreen.set(id, before);
-    // Leaving: the frame it goes back to is asked for at once, so nothing
-    // meanwhile takes the full-screen size for its own.
-    const back = on ? null : this.frameAfterFullscreen(id);
-    const toggle = async () => {
-      await this.compositor.fullscreen({ window: id, on });
-      if (back) await this.frame(id, back.frame, back.tile);
-    };
-    await (this.desktops ? this.desktops.around(window, on, toggle) : toggle());
-    this.afterFullscreen?.();
-  }
-
-  /** Out of full screen: the frame from before, or its tile there; nothing known (the shell restarted meanwhile), the compositor's own. */
-  private frameAfterFullscreen(id: number): { frame: Rect; tile: Tile | null } | null {
-    const before = this.beforeFullscreen.get(id);
-    this.beforeFullscreen.delete(id);
-    if (!before) return null;
-    const tile = this.arranged.get(id)?.tile ?? null;
-    const usable = usableFor(before, this.outputs);
-    return tile && usable ? { frame: tileFrame(tile, usable), tile } : { frame: before, tile: null };
+    const changed = await fullscreenWindow(this.context(), id, on);
+    if (changed) this.afterFullscreen?.();
   }
 
   /** Enter full screen, or leave it (⌃❖F, the View menu). */

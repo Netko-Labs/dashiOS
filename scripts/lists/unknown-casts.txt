@@ -24,6 +24,4 @@
 1	packages/shell/src/applets/commands.ts
 1	packages/shell/src/applets/controls.ts
 1	packages/shell/src/applets/server.ts
-1	packages/shell/src/autostart.ts
 1	packages/shell/src/browser/bridge.ts
-1	packages/shell/src/launcher/budget.ts

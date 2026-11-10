@@ -16,17 +16,16 @@
  * - Nothing found is a way forward, never an empty panel.
  */
 
-import { INFO } from "@dashi/ui";
 import { calculate, type Entry } from "../entries.ts";
 import { iconPath } from "../shared/apps/index.ts";
-import { MIN_QUERY } from "../shared/files/file-search.ts";
 import { type Answer, type AnswerContext, answerFor } from "./answers/index.ts";
 import { isPane, type LauncherItem, type LauncherWindow, launcherIndex, windowsOf } from "./items.ts";
 import { commandCore } from "./ranking/commands.ts";
 import { fold } from "./ranking/fold.ts";
 import type { RankSignals } from "./ranking/item.ts";
 import { type RankIndex, type RankResult, rank } from "./ranking/rank.ts";
-import { actionRow, entryRow, type FileRow, fileNameMatches, fileRow, type Row, type RowGroup, shownName, windowRow } from "./row-model.ts";
+import { actionRow, entryRow, type Row, type RowGroup, shownName, windowRow } from "./row-model.ts";
+import { type FilesState, filesSection, type Section } from "./sections.ts";
 
 export {
   entryRow,
@@ -40,55 +39,10 @@ export {
   type RowIcon,
   shortFolder,
 } from "./row-model.ts";
+export { FILE_ROWS, type FilesState, filesStateFor, type Section } from "./sections.ts";
 
 /** A 2 × 2 grid (All apps), drawn in ink like the panes' glyphs. */
 const GRID = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1.2" fill="#000"/><rect x="9" y="2" width="5" height="5" rx="1.2" fill="#000"/><rect x="2" y="9" width="5" height="5" rx="1.2" fill="#000"/><rect x="9" y="9" width="5" height="5" rx="1.2" fill="#000"/></svg>`;
-
-export interface Section {
-  id: string;
-  title?: string;
-  /** Muted words at the head's right end. */
-  aside?: string;
-  rows: Row[];
-  /** Blank slots held for rows still coming (files): drawn empty, never selected. */
-  reserved?: number;
-  /** Draw this many rows at once, scrolled with the selection (a scope's long list: scope.ts; All apps). */
-  window?: number;
-}
-
-/** Where file rows stand for the query being shown. */
-export type FilesState =
-  /** Not asked: file search isn't offered here, the query is short, or it is a sum. */
-  | { kind: "none" }
-  /** File search is off (no LocalSearch). */
-  | { kind: "off" }
-  /** Asked; the answer hasn't come. `reserved` slots are held for it. */
-  | { kind: "waiting"; reserved: number }
-  | { kind: "found"; files: readonly FileRow[] };
-
-/**
- * Where file rows stand: none for a short query or a sum (pure math never
- * asks), off when file search is, found when the last answer is for this
- * query, else waiting with as many slots held as the last answer filled.
- */
-export function filesStateFor(state: {
-  query: string;
-  /** File search is offered here at all. */
-  offered: boolean;
-  /** It said it is off (no LocalSearch). */
-  off: boolean;
-  /** The last answer, null files meaning it could not look. */
-  answer: { query: string; files: readonly FileRow[] | null } | null;
-  /** Rows the last answer filled. */
-  lastCount: number;
-}): FilesState {
-  const query = state.query.trim();
-  if (!state.offered || query.length < MIN_QUERY || answerFor(query) !== null) return { kind: "none" };
-  if (state.off) return { kind: "off" };
-  if (state.answer?.query !== query) return { kind: "waiting", reserved: Math.min(state.lastCount, FILE_ROWS) };
-  // Only names that answer the words as a name would (row-model.ts `fileNameMatches`): LocalSearch matches inside words.
-  return state.answer.files === null ? { kind: "off" } : { kind: "found", files: state.answer.files.filter((file) => fileNameMatches(file.name, query)) };
-}
 
 export interface ListInput {
   query: string;
@@ -117,9 +71,8 @@ export interface ListInput {
   limits?: { local: number; files: number; allApps?: number };
 }
 
-/** Instant rows the panel has room for (the answer included), and file rows below them. */
+/** Instant rows the panel has room for (the answer included); file rows below them are FILE_ROWS (sections.ts). */
 export const LOCAL_ROWS = 5;
-export const FILE_ROWS = 3;
 /** All apps drawn at once, scrolled with the selection (measures.ts `allAppsRows`). */
 export const ALL_APPS_ROWS = 8;
 
@@ -252,32 +205,6 @@ function grouped(rows: Row[]): Section[] {
     if (ofKind.length > 0) sections.push({ id: group === "app" ? "App" : group === "settings" ? "Settings" : group, title, rows: ofKind });
   }
   return sections;
-}
-
-function filesSection(state: FilesState, query: string, most = FILE_ROWS): Section | null {
-  switch (state.kind) {
-    case "found":
-      return state.files.length > 0 ? { id: "files", title: "Files", rows: state.files.slice(0, most).map(fileRow) } : null;
-    case "waiting":
-      return state.reserved > 0 ? { id: "files", title: "Files", rows: [], reserved: Math.min(state.reserved, most) } : null;
-    case "off":
-      return {
-        id: "files",
-        title: "Files",
-        rows: [
-          {
-            id: "files-off",
-            title: "File search is off",
-            detail: "look in Files instead",
-            kind: "",
-            icon: { glyph: INFO },
-            action: { kind: "search-files", query },
-          },
-        ],
-      };
-    case "none":
-      return null;
-  }
 }
 
 /** Nothing matched: say so, and offer what can still be done with the words. */

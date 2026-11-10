@@ -26,11 +26,3 @@
 537	packages/shell/src/agents/session.ts
 392	packages/shell/src/applets/connection.ts
 306	packages/shell/src/applets/controls.ts
-394	packages/shell/src/arrange.ts
-1189	packages/shell/src/launcher.tsx
-313	packages/shell/src/launcher/extensions.ts
-314	packages/shell/src/launcher/ranking/rank.ts
-353	packages/shell/src/launcher/rows.ts
-1902	packages/shell/src/main.tsx
-415	packages/shell/src/menubar.tsx
-329	packages/shell/src/settings.ts

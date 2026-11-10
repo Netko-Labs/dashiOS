@@ -1,7 +1,7 @@
 /**
  * What the launcher reaches beyond its own rows: the registry's runner, the
  * windows, the Dock, the Trash, the ranking's history, the person's aliases
- * and keys. The shell wires each (main.tsx); a test passes what it checks.
+ * and keys. The shell wires each (boot/launcher.tsx, boot/actions.ts); a test passes what it checks.
  * Everything here runs as the person, who pressed the key.
  */
 

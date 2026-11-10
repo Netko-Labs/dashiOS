@@ -79,7 +79,7 @@ neutral puzzle piece (never one of Dashi's glyphs), is ranked as `foreign`
 titled like a first-party row reads "Weather › System Settings"
 (`launcher/items.ts`).
 
-Added later by the shell (`main.tsx`, `registry.add`):
+Added later by the shell (`boot/actions.ts`, `registry.add`):
 
 | Source | Addresses | What choosing does |
 | --- | --- | --- |
@@ -889,7 +889,7 @@ Screen), ⇧❖4 `…/screenshot-area` (Screenshot of an Area…), ⇧❖5
 `…/capture` (Screenshot…, the toolbar that also records), on the window
 focused when they were pressed; the launcher finds them by "screenshot",
 "print screen", "snip" and the like. Chosen in the launcher, the shell
-takes it down first and waits until it is gone (`main.tsx` `runCapture`),
+takes it down first and waits until it is gone (`boot/overlays.tsx` `Screenshots.run`),
 so it isn't in the picture.
 
 The other bind names move the same way, one kind at a time: give the

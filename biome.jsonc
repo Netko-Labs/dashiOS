@@ -223,10 +223,6 @@
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 109 } } } } }
     },
     {
-      "includes": ["packages/shell/src/agent-sheets.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 158 } } } } }
-    },
-    {
       "includes": ["packages/shell/src/agents/ask/service.ts"],
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 121 } } } } }
     },
@@ -246,35 +242,6 @@
     {
       "includes": ["packages/shell/src/agents/server.ts"],
       "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 169 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/handoff-shell.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 92 } } } } }
-    },
-    { "includes": ["packages/shell/src/launcher.tsx"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } },
-    {
-      "includes": ["packages/shell/src/launcher/extensions.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 137 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/main.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 120 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/menubar-slots.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 90 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/menubar-status.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 98 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/menubar.tsx"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 212 } } } } }
-    },
-    {
-      "includes": ["packages/shell/src/shortcuts.ts"],
-      "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": { "level": "error", "options": { "maxLines": 89 } } } } }
     }
     // H3 overrides end.
   ]

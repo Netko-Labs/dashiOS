@@ -155,11 +155,11 @@ export class LauncherKeys {
   private recordingNow = false;
   private arrowsNow: ArrowsWanted = "none";
   private extrasNow: ExtraKeys = NO_EXTRA_KEYS;
-  /** Told when the extra keys the launcher wants change, for the same (main.tsx). */
+  /** Told when the extra keys the launcher wants change, for the same (boot/keys.ts). */
   onExtras: ((extras: ExtraKeys) => void) | null = null;
-  /** Told when recording starts or stops, to send the keymap that goes with it (main.tsx). */
+  /** Told when recording starts or stops, to send the keymap that goes with it (boot/keys.ts). */
   onRecording: ((recording: boolean) => void) | null = null;
-  /** Told when ← and → become the launcher's or the field's again, for the same (main.tsx). */
+  /** Told when ← and → become the launcher's or the field's again, for the same (boot/keys.ts). */
   onArrows: ((arrows: ArrowsWanted) => void) | null = null;
 
   subscribe = (listener: (move: Move) => void): (() => void) => {

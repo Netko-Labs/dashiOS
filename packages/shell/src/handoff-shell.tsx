@@ -1,5 +1,5 @@
 /**
- * Agents from the launcher, wired to the shell (main.tsx starts it): the
+ * Agents from the launcher, wired to the shell (boot/agents.ts starts it): the
  * service (agents/handoff/service.ts), its questions in the agents' panel
  * (agents/handoff/questions.ts), the panel itself (agents-panel.tsx), the
  * notifications, the launcher's side (launcher/agents/handoff-rows.ts), and
@@ -77,33 +77,9 @@ function snapshotStore(service: Handoff): Store<HandoffSnapshot> {
   };
 }
 
-export function startHandoffShell(deps: HandoffShellDeps): HandoffShell {
-  /** Notification id → its run. */
-  const notices = new Map<number, string>();
-  const service = startHandoff({
-    ...deps,
-    // A run stuck signed out offers Sign In…, which opens Terminal as the launcher's does.
-    signIn: deps.openTerminal,
-    ended(run) {
-      const notice = endedNotice(run);
-      if (notice) notices.set(deps.notifications.notify(notice, 0, SHELL_SENDER), run.id);
-    },
-  });
-  const offNotices = deps.notifications.onEvent((event) => {
-    if (event.type !== "action") return;
-    const run = notices.get(event.id);
-    if (!run) return;
-    if (event.key === SHOW || event.key === "default") open(run);
-    if (event.key === FOLLOW_UP) deps.talkTo(run);
-  });
-
-  const panelOpen = () => deps.menus()?.getSnapshot().popover?.kind === "agents";
-  function open(run: string | null): void {
-    // Under the menu bar's right end when the mark didn't say where it is.
-    void deps.menus()?.toggleAgents("Desktop", 0, run);
-  }
-
-  const actions: PanelActions = {
+/** The agents' panel's buttons: answers, Stop, Show, Undo, and the Stop all of ⌃❖Esc. */
+function panelActions(service: Handoff, deps: HandoffShellDeps): PanelActions {
+  return {
     answer(run, question, choice) {
       // Answered, the panel goes as a sheet does: what Dashi types next (a login, a code) goes to the person's
       // seat, so the keyboard must be back on their window, not on this popover. The answer is recorded
@@ -145,10 +121,12 @@ export function startHandoffShell(deps: HandoffShellDeps): HandoffShell {
       deps.menus()?.close();
     },
   };
+}
 
-  const store = snapshotStore(service);
-  const launcher: LauncherHandoff = {
-    ...store,
+/** The launcher's side: its snapshot and the buttons that start, open, tell and stop a run. */
+function launcherHandoff(service: Handoff, deps: HandoffShellDeps, open: (run: string | null) => void): LauncherHandoff {
+  return {
+    ...snapshotStore(service),
     needsCard: (context) => service.needsCard(context),
     start(input, watch) {
       void service.start(input).then((id) => {
@@ -161,29 +139,61 @@ export function startHandoffShell(deps: HandoffShellDeps): HandoffShell {
     settings: deps.openSettings,
     signIn: deps.openTerminal,
   };
+}
 
+/** The agents server's UI: a run's questions go to the panel while it is open, else to the sheets. */
+function questionsUi(sheets: AgentUi, service: Handoff, deps: HandoffShellDeps, notices: Map<number, string>): AgentUi {
+  const panelOpen = () => deps.menus()?.getSnapshot().popover?.kind === "agents";
+  return routedUi(sheets, {
+    taskOf: (agent) => deps.agents.getSnapshot().find((each) => each.id === agent)?.task ?? null,
+    runs: service.runs,
+    panelOpen,
+    onPanel(listener) {
+      let was = panelOpen();
+      return (
+        deps.menus()?.subscribe(() => {
+          const now = panelOpen();
+          if (was !== now) listener(now);
+          was = now;
+        }) ?? (() => {})
+      );
+    },
+    attention(run, question) {
+      notices.set(deps.notifications.notify(attentionNotice(run, question), 0, SHELL_SENDER), run.id);
+    },
+  });
+}
+
+export function startHandoffShell(deps: HandoffShellDeps): HandoffShell {
+  /** Notification id → its run. */
+  const notices = new Map<number, string>();
+  const service = startHandoff({
+    ...deps,
+    // A run stuck signed out offers Sign In…, which opens Terminal as the launcher's does.
+    signIn: deps.openTerminal,
+    ended(run) {
+      const notice = endedNotice(run);
+      if (notice) notices.set(deps.notifications.notify(notice, 0, SHELL_SENDER), run.id);
+    },
+  });
+  const offNotices = deps.notifications.onEvent((event) => {
+    if (event.type !== "action") return;
+    const run = notices.get(event.id);
+    if (!run) return;
+    if (event.key === SHOW || event.key === "default") open(run);
+    if (event.key === FOLLOW_UP) deps.talkTo(run);
+  });
+
+  function open(run: string | null): void {
+    // Under the menu bar's right end when the mark didn't say where it is.
+    void deps.menus()?.toggleAgents("Desktop", 0, run);
+  }
+
+  const actions = panelActions(service, deps);
   return {
     service,
-    ui: (sheets) =>
-      routedUi(sheets, {
-        taskOf: (agent) => deps.agents.getSnapshot().find((each) => each.id === agent)?.task ?? null,
-        runs: service.runs,
-        panelOpen,
-        onPanel(listener) {
-          let was = panelOpen();
-          return (
-            deps.menus()?.subscribe(() => {
-              const now = panelOpen();
-              if (was !== now) listener(now);
-              was = now;
-            }) ?? (() => {})
-          );
-        },
-        attention(run, question) {
-          notices.set(deps.notifications.notify(attentionNotice(run, question), 0, SHELL_SENDER), run.id);
-        },
-      }),
-    launcher,
+    ui: (sheets) => questionsUi(sheets, service, deps, notices),
+    launcher: launcherHandoff(service, deps, open),
     panel: ({ right, focus, close }) => <AgentsPanel runs={service.runs} agents={deps.agents} right={right} focus={focus} actions={actions} onClose={close} />,
     open,
     close() {
