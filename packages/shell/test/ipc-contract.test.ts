@@ -93,7 +93,7 @@ test("every event's fixture parses with the shell's shape, one of each", () => {
 
 // Secrets for agents (0.4.0): every agent capture names its mask.
 test("agent captures are masked", () => {
-  for (const file of ["packages/shell/src/agents/run.ts", "packages/shell/src/agents/desktop/record.ts"]) {
+  for (const file of ["packages/shell/src/agents/run-screen.ts", "packages/shell/src/agents/desktop/record.ts"]) {
     expect(read(file)).toContain("mask: AGENT_MASK");
   }
 });

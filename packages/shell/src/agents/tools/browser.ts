@@ -6,7 +6,7 @@
  * only whether they are filled. Each site is asked about the first time.
  */
 
-import { accept, optional, reject, shape } from "@dashi/shape";
+import { accept, type OptionalShape, optional, reject, type Shape, shape } from "@dashi/shape";
 import { custom, tool } from "./args.ts";
 import type { ToolDef } from "./define.ts";
 import { type Chord, parseKeys } from "./keys.ts";
@@ -22,7 +22,7 @@ export function parseTabId(value: unknown): number | null {
 }
 
 /** The optional `tab` argument: left out or null is the tab the agent used last (null here). */
-export const tabArg = (description = TAB_HELP) =>
+export const tabArg = (description = TAB_HELP): OptionalShape<number | null> =>
   optional(
     shape<number | null>(
       (value) => {
@@ -41,7 +41,7 @@ function readRef(value: unknown): number | null {
 }
 
 /** The `ref` argument: a number read_page showed. */
-export const refArg = (description = "An element's number from read_page, like 12 for [12].") =>
+export const refArg = (description = "An element's number from read_page, like 12 for [12]."): Shape<number> =>
   custom({ type: "integer", description }, readRef, "`ref` must be an element's number from read_page, like 12.");
 
 /** An address an agent may open: http or https (a bare host gets https). */
