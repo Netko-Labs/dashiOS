@@ -8,9 +8,7 @@
  */
 
 import { join } from "node:path";
-import { ANSWERERS } from "../ask/answerer.ts";
-import { hostFiles, shellPaths } from "../ask/harness/index.ts";
-import { settingWords } from "../ask/plan.ts";
+import { ANSWERERS, hostFiles, settingWords, shellPaths } from "../ask/index.ts";
 import { contextPrompt, GrantsMemory, grantsKind, TASK_GRANTED, TASK_REFUSED, taskGrants } from "./grants.ts";
 import { HarnessList } from "./lib/harness-list.ts";
 import { RunKeeper } from "./lib/keeper.ts";

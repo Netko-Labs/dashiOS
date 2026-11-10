@@ -3,7 +3,7 @@
 import type { BrowserBridge } from "../browser/bridge.ts";
 import type { Compositor } from "../compositor.ts";
 import type { Arrange, Tile } from "../layout.ts";
-import type { Undo } from "./ask/plan.ts";
+import type { Undo } from "./ask/index.ts";
 import type { Grants, Scope } from "./consent.ts";
 import type { Desktop, Hands } from "./desktop/index.ts";
 import type { AgentMask } from "./mask.ts";

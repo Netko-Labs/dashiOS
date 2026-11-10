@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { PlanTool } from "../src/agents/ask/answerer.ts";
-import { PlanRecorder, parsedArguments, plannedWords, servePlan } from "../src/agents/ask/harness/index.ts";
+import { PlanRecorder, parsedArguments, plannedWords, servePlan } from "../src/agents/ask/harness/lib/plan-server.ts";
 import { TOOLS } from "./support/agents-ask-harness.ts";
 
 const line = (method: string, params: Record<string, unknown> = {}, id: number | null = 1) =>

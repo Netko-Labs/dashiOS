@@ -1,7 +1,8 @@
 import type { ActionDef, Args, Outcome } from "../../src/actions/types.ts";
 import { ANSWERERS, AnswerError, type Answerer, type ModelCall, type Turn } from "../../src/agents/ask/answerer.ts";
 import type { TaskRecord } from "../../src/agents/ask/history.ts";
-import { AskTasks, type TaskDeps } from "../../src/agents/ask/tasks.ts";
+import type { TaskDeps } from "../../src/agents/ask/lib/task-types.ts";
+import { AskTasks } from "../../src/agents/ask/lib/tasks.ts";
 import { TOOL_ACTIONS } from "../../src/agents/tools/index.ts";
 
 /** An answerer that replies with `calls` (or fails), and remembers each turn it was given. */

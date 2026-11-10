@@ -5,8 +5,7 @@
  */
 
 import { join } from "node:path";
-import { ANSWERERS, type HarnessId } from "../../ask/answerer.ts";
-import { findHarness, HARNESSES, harnessEnv } from "../../ask/harness/index.ts";
+import { ANSWERERS, findHarness, HARNESSES, type HarnessId, harnessEnv } from "../../ask/index.ts";
 import { taskSocket } from "../../sandbox.ts";
 import type { HandoffDeps } from "../types.ts";
 import { TASK_PROMPT, taskCommand } from "./commands.ts";

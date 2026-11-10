@@ -18,14 +18,13 @@
  *   went, then the new words, and plans again.
  */
 
-import type { Outcome } from "../../actions/types.ts";
-import { realTimers } from "../../shared/time/real-timers.ts";
-import { AnswerError } from "./answerer.ts";
-import type { HistoryStep } from "./history.ts";
-import { oneLine, planTools, resultFor, runnable, type Step, settingWords, spokenWords, stepsFrom, type Undo } from "./plan.ts";
-import { FAILED_STAYS_MS, outcomeOf, type Task, type TaskDeps, type TaskView } from "./task-types.ts";
-
-export { FAILED_STAYS_MS, isActive, type TaskDeps, type TaskPhase, type TaskView } from "./task-types.ts";
+import type { Outcome } from "../../../actions/types.ts";
+import { realTimers } from "../../../shared/time/real-timers.ts";
+import { AnswerError } from "../answerer.ts";
+import type { HistoryStep } from "../history.ts";
+import { oneLine, planTools, resultFor, runnable, type Step, settingWords, spokenWords, stepsFrom, type Undo } from "../plan.ts";
+import type { TaskView } from "../types.ts";
+import { FAILED_STAYS_MS, outcomeOf, type Task, type TaskDeps } from "./task-types.ts";
 
 /** Tasks kept in memory (the history keeps the rest). */
 const KEEP = 20;

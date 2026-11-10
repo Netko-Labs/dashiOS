@@ -1,25 +1,10 @@
-/** What a launcher Ask task shows (`TaskView`), what it needs (`TaskDeps`), and when it still counts as "Now". */
+/** What a launcher Ask task needs (`TaskDeps`), and when it still counts as "Now" (`TaskView` is in types.ts). */
 
-import type { ActionDef, ActionState, Args, Outcome } from "../../actions/types.ts";
-import type { Answerer, AnswererInfo, AnswerFailure, Turn } from "./answerer.ts";
-import type { HistoryLog, StepOutcome } from "./history.ts";
-import type { Step, StepState, Undo } from "./plan.ts";
-
-export type TaskPhase = "asking" | "planned" | "running" | "done" | "failed" | "stopped";
-
-export interface TaskView {
-  id: string;
-  answerer: AnswererInfo;
-  /** The words this plan answers (the latest follow-up's). */
-  request: string;
-  phase: TaskPhase;
-  steps: readonly Step[];
-  /** What the model said besides its calls, on one line. */
-  said: string;
-  failure: { kind: AnswerFailure; text: string } | null;
-  /** A failed ask that has left "Now" (a while after, or once the launcher closed); still Retry-able from its plan, and in the history. */
-  leftNow?: true;
-}
+import type { ActionDef, ActionState, Args, Outcome } from "../../../actions/types.ts";
+import type { Answerer, Turn } from "../answerer.ts";
+import type { HistoryLog, StepOutcome } from "../history.ts";
+import type { Step, StepState, Undo } from "../plan.ts";
+import type { TaskPhase, TaskView } from "../types.ts";
 
 export interface TaskDeps {
   /** The answerer Settings names now; null for none. */

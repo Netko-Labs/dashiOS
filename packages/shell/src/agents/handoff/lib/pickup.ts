@@ -8,7 +8,7 @@
  * the run's policy and what it was told.
  */
 
-import type { HarnessId } from "../../ask/answerer.ts";
+import type { HarnessId } from "../../ask/index.ts";
 import { RETAIN_MS } from "../run-view.ts";
 import type { AgentRuns } from "../store.ts";
 import { harnessOfStream, type RunRecord, requestOfPrompt } from "./records.ts";

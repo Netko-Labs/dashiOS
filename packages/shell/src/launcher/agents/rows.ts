@@ -18,7 +18,7 @@ import type { Outcome } from "../../actions/index.ts";
 import type { AnswererInfo } from "../../agents/ask/answerer.ts";
 import { ago, type HistoryEntry } from "../../agents/ask/history.ts";
 import type { NowItem } from "../../agents/ask/now.ts";
-import type { TaskView } from "../../agents/ask/tasks.ts";
+import type { TaskView } from "../../agents/ask/types.ts";
 import { SPARKLE } from "../../settings-app/glyphs.ts";
 import type { Store } from "../host.ts";
 import { fold } from "../ranking/fold.ts";

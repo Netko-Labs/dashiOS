@@ -21,11 +21,9 @@
  * the session can't send the key elsewhere.
  */
 
-import { ANSWERERS, AnswerError, type Answerer, type ModelCall, type PlanTool, SYSTEM_PROMPT, type Turn } from "./answerer.ts";
+import { ANSWERERS, AnswerError, type Answerer, type ModelCall, type PlanTool, SYSTEM_PROMPT, type Turn } from "../answerer.ts";
 import { errorWords, type Fetch, HttpError, requestJson, UnreadableError } from "./http.ts";
 import { strictSchema } from "./strict.ts";
-
-export type { Fetch } from "./http.ts";
 
 export const ANTHROPIC_HOST = "api.anthropic.com";
 const ENDPOINT = `https://${ANTHROPIC_HOST}/v1/messages`;

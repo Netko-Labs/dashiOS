@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import type { PlanTool } from "../src/agents/ask/answerer.ts";
-import type { Fetch } from "../src/agents/ask/claude.ts";
+import type { Fetch } from "../src/agents/ask/lib/http.ts";
 import { isModelName, LOCAL_TOOLS, LOCAL_URL, localAnswerer, localModels, readLocalReply, toolsForRequest } from "../src/agents/ask/local.ts";
 import { signal, TOOLS } from "./support/agents-ask-models.ts";
 

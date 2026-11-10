@@ -30,7 +30,7 @@
 
 import { join } from "node:path";
 import type { HarnessId } from "../answerer.ts";
-import { isRaw, jsonLines, lastJson, str, toml } from "./harness-text.ts";
+import { isRaw, jsonLines, lastJson, str, toml } from "./lib/harness-text.ts";
 
 /** What a turn's command line is built from. */
 export interface HarnessTurn {

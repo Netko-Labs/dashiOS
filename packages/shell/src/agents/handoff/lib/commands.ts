@@ -24,8 +24,7 @@
  *   `dashi_*` tools; edits, shell and fetches denied); `--session <id>`.
  */
 
-import type { HarnessId } from "../../ask/answerer.ts";
-import { type HarnessCommand, type HarnessTurn, PLAN_SERVER } from "../../ask/harness/catalog.ts";
+import { type HarnessCommand, type HarnessId, type HarnessTurn, PLAN_SERVER } from "../../ask/index.ts";
 
 /** What every harness running a task is told, after its own system prompt. */
 export const TASK_PROMPT = [

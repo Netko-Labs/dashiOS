@@ -8,7 +8,7 @@
  */
 
 import { homedir } from "node:os";
-import type { AnswerStatus } from "../agents/ask/service.ts";
+import type { AnswerStatus } from "../agents/ask/types.ts";
 import type { Grants } from "../agents/consent.ts";
 import type { AgentStore } from "../agents/presence.ts";
 import type { Passwords } from "../agents/secrets/passwords.ts";

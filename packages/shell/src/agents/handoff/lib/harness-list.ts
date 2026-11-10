@@ -1,7 +1,6 @@
 /** The installed harnesses on the "Hand it off" rows: which come first (Settings › Agents), and whether each is signed in. */
 
-import { ANSWERERS, HARNESS_IDS, type HarnessId } from "../../ask/answerer.ts";
-import { findHarness, HARNESSES, signedIn } from "../../ask/harness/index.ts";
+import { ANSWERERS, findHarness, HARNESS_IDS, HARNESSES, type HarnessId, signedIn } from "../../ask/index.ts";
 import { harnessOrder } from "../order.ts";
 import type { HandoffDeps, HandoffHarness } from "../types.ts";
 

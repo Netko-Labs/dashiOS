@@ -8,8 +8,8 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { AnswerError, type PlanTool } from "../src/agents/ask/answerer.ts";
-import { ANTHROPIC_VERSION, claudeAnswerer, FALLBACK_BETA } from "../src/agents/ask/claude.ts";
-import { gptAnswerer, listGptModels } from "../src/agents/ask/gpt.ts";
+import { ANTHROPIC_VERSION, claudeAnswerer, FALLBACK_BETA } from "../src/agents/ask/lib/claude.ts";
+import { gptAnswerer, listGptModels } from "../src/agents/ask/lib/gpt.ts";
 
 const fixture = (name: string): unknown => JSON.parse(readFileSync(join(import.meta.dir, "fixtures/ask", `${name}.json`), "utf8"));
 const KEY = "sk-test-not-a-real-key";

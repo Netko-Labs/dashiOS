@@ -6,9 +6,7 @@
 
 import { formatAddress, type startActions } from "../actions/index.ts";
 import { createAgentUi } from "../agent-sheets.tsx";
-import { modelKeys, vaultTokenSource } from "../agents/ask/keys.ts";
-import { TurnWatch } from "../agents/ask/now.ts";
-import { type Ask, startAsk } from "../agents/ask/service.ts";
+import { type Ask, modelKeys, startAsk, TurnWatch, vaultTokenSource } from "../agents/ask/index.ts";
 import { AgentStore, startAgents } from "../agents/index.ts";
 import { personAnswered } from "../agents/person.ts";
 import { watchApprovals } from "../agents/secrets/approvals.ts";

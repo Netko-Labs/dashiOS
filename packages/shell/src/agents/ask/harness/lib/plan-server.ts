@@ -18,11 +18,11 @@
 
 import { chmodSync, existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
-import { LineBuffer } from "../../../shared/io/lines.ts";
-import * as mcp from "../../mcp.ts";
-import { peerPid, socketFd } from "../../peer.ts";
-import type { ModelCall, PlanTool } from "../answerer.ts";
-import { MAX_STEPS, oneLine } from "../plan.ts";
+import { LineBuffer } from "../../../../shared/io/lines.ts";
+import * as mcp from "../../../mcp.ts";
+import { peerPid, socketFd } from "../../../peer.ts";
+import type { ModelCall, PlanTool } from "../../answerer.ts";
+import { MAX_STEPS, oneLine } from "../../plan.ts";
 
 /** What the harness is told about this server, in `initialize`. */
 export const PLAN_INSTRUCTIONS = [

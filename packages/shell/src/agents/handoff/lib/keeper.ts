@@ -4,7 +4,7 @@
  * old, and, when a shell starts, the runs it picks up again.
  */
 
-import { ANSWERERS, type HarnessId } from "../../ask/answerer.ts";
+import { ANSWERERS, type HarnessId } from "../../ask/index.ts";
 import { TASK_GRANTED, TASK_REFUSED } from "../grants.ts";
 import type { HandoffDeps } from "../types.ts";
 import { replayRun, runsToPickUp } from "./pickup.ts";

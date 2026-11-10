@@ -7,7 +7,7 @@
  * when the row is opened. The launcher's "history" reads the same rows.
  */
 
-import type { HistoryEntry } from "./history.ts";
+import type { HistoryEntry } from "../history.ts";
 
 /** Connections of one agent this close (seconds from one's last call to the next one's first) are one row. */
 export const SESSION_GAP_S = 10 * 60;

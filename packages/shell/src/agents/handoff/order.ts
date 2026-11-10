@@ -4,7 +4,7 @@
  * the one answering Ask, else the first installed in the catalog's order.
  */
 
-import { type HarnessId, isHarnessId } from "../ask/answerer.ts";
+import { type HarnessId, isHarnessId } from "../ask/index.ts";
 
 export function harnessOrder(installed: readonly HarnessId[], handOff: unknown, answerer: unknown): HarnessId[] {
   const first = [handOff, answerer].find((id): id is HarnessId => isHarnessId(id) && installed.includes(id));

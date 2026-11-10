@@ -26,7 +26,7 @@
  *   card asks instead (quiet.ts).
  */
 
-import type { HarnessId } from "../../ask/answerer.ts";
+import type { HarnessId } from "../../ask/index.ts";
 
 /** Dashi's tools reach a harness under its MCP server's name: `mcp__dashi__open_url`, `dashi_open_url`. */
 export const MCP_SERVER = "dashi";

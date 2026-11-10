@@ -14,8 +14,7 @@
  * a stream when there is no record (a run an older shell started).
  */
 
-import { HARNESS_IDS, type HarnessId, isHarnessId } from "../../ask/answerer.ts";
-import type { Undo } from "../../ask/plan.ts";
+import { HARNESS_IDS, type HarnessId, isHarnessId, type Undo } from "../../ask/index.ts";
 import type { RunMessage, RunView } from "../run-view.ts";
 import { streamEvents } from "./stream.ts";
 

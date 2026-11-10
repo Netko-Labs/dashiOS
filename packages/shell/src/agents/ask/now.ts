@@ -8,7 +8,8 @@
  */
 
 import type { AgentInfo, Turn } from "../presence.ts";
-import { isActive, type TaskView } from "./tasks.ts";
+import { isActive } from "./lib/task-types.ts";
+import type { TaskView } from "./types.ts";
 
 export type NowItem =
   /** An agent handed a window to the person (hand_over): Return brings it forward. */

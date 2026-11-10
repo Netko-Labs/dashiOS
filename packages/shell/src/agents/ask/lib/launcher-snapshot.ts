@@ -1,11 +1,11 @@
 /** The launcher's one snapshot of its agents, made again only when something under it changed; and its history, read at most every few seconds. */
 
-import type { LauncherAgentsSnapshot } from "../../launcher/agents/rows.ts";
-import type { Turn } from "../presence.ts";
-import { type AnswererChoice, answererOf } from "./answerer.ts";
-import type { AskOptions } from "./ask-types.ts";
-import type { HistoryEntry, HistoryLog } from "./history.ts";
-import { nowItems } from "./now.ts";
+import type { LauncherAgentsSnapshot } from "../../../launcher/agents/rows.ts";
+import type { Turn } from "../../presence.ts";
+import { type AnswererChoice, answererOf } from "../answerer.ts";
+import type { HistoryEntry, HistoryLog } from "../history.ts";
+import { nowItems } from "../now.ts";
+import type { AskOptions } from "../types.ts";
 import type { AskTasks } from "./tasks.ts";
 
 /** How long a read of the history stands for the launcher's keystrokes ("history" re-renders on each). */

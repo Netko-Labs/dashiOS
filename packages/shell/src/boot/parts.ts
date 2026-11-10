@@ -6,7 +6,7 @@
  */
 
 import type { Actions } from "../actions/index.ts";
-import type { Ask } from "../agents/ask/service.ts";
+import type { Ask } from "../agents/ask/types.ts";
 import type { Agents } from "../agents/server.ts";
 import type { AppMenus } from "../app-menus/index.ts";
 import type { BatteryMonitor } from "../battery/monitor.ts";

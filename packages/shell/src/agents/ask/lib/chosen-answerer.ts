@@ -1,13 +1,13 @@
 /** The answerer Settings names, made from its parts and kept while the choice stays the same. */
 
 import { readFileSync } from "node:fs";
-import { unitName } from "../sandbox.ts";
-import { type Answerer, type AnswererChoice, answererOf, type HarnessId, isHarnessId } from "./answerer.ts";
-import type { AskOptions, HarnessHost } from "./ask-types.ts";
+import { unitName } from "../../sandbox.ts";
+import { type Answerer, type AnswererChoice, answererOf, type HarnessId, isHarnessId } from "../answerer.ts";
+import { findHarness, HARNESSES, harnessAnswerer, hostFiles, hostRunner, shellPaths } from "../harness/index.ts";
+import { localAnswerer } from "../local.ts";
+import type { AskOptions, HarnessHost } from "../types.ts";
 import { claudeAnswerer } from "./claude.ts";
 import { gptAnswerer } from "./gpt.ts";
-import { findHarness, HARNESSES, harnessAnswerer, hostFiles, hostRunner, shellPaths } from "./harness/index.ts";
-import { localAnswerer } from "./local.ts";
 
 /** The scope a harness's turn runs in: dashi-agent names it after itself (sandbox.ts `unitName`). */
 const planUnit = (id: HarnessId, pid: number): string => unitName(`plan-${id}`, pid);

@@ -4,8 +4,7 @@
  * where it is. Pure.
  */
 
-import type { HarnessId } from "../ask/answerer.ts";
-import type { Undo } from "../ask/plan.ts";
+import type { HarnessId, Undo } from "../ask/index.ts";
 import { cut } from "./words.ts";
 
 /** How long a finished run stays in the panel and the launcher. */

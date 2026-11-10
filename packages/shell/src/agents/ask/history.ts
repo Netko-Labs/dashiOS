@@ -18,8 +18,8 @@
 import { appendFileSync, closeSync, fstatSync, mkdirSync, openSync, readSync } from "node:fs";
 import { join } from "node:path";
 import { stateDir } from "../consent.ts";
+import { callsSummary, groupSessions } from "./lib/sessions.ts";
 import type { Undo } from "./plan.ts";
-import { callsSummary, groupSessions } from "./sessions.ts";
 
 export type StepOutcome = "done" | "not-allowed" | "failed" | "invalid" | "skipped";
 

@@ -3,14 +3,14 @@
 import type { ActionDef, ActionState, Args, Outcome } from "../../actions/types.ts";
 import type { LauncherAgents } from "../../launcher/agents/rows.ts";
 import type { AgentStore } from "../presence.ts";
-import type { AnswererChoice } from "./answerer.ts";
-import type { Fetch } from "./claude.ts";
+import type { AnswererChoice, AnswererInfo, AnswerFailure } from "./answerer.ts";
 import type { Files, HarnessStatus, Probe, Runner, ShellPaths } from "./harness/index.ts";
 import type { HistoryEntry, HistoryLog } from "./history.ts";
 import type { KeyPlace, ModelKeys, Provider } from "./keys.ts";
+import type { Fetch } from "./lib/http.ts";
+import type { AskTasks } from "./lib/tasks.ts";
 import type { TurnWatch } from "./now.ts";
-import type { Undo } from "./plan.ts";
-import type { AskTasks } from "./tasks.ts";
+import type { Step, Undo } from "./plan.ts";
 
 /** The part of settings.json this reads (settings-app/store.ts `agents`). */
 export interface AskSettings {
@@ -78,4 +78,21 @@ export interface Ask {
   status: AnswerStatus;
   tasks: AskTasks;
   close(): void;
+}
+
+/** What a launcher Ask task shows. */
+export type TaskPhase = "asking" | "planned" | "running" | "done" | "failed" | "stopped";
+
+export interface TaskView {
+  id: string;
+  answerer: AnswererInfo;
+  /** The words this plan answers (the latest follow-up's). */
+  request: string;
+  phase: TaskPhase;
+  steps: readonly Step[];
+  /** What the model said besides its calls, on one line. */
+  said: string;
+  failure: { kind: AnswerFailure; text: string } | null;
+  /** A failed ask that has left "Now" (a while after, or once the launcher closed); still Retry-able from its plan, and in the history. */
+  leftNow?: true;
 }

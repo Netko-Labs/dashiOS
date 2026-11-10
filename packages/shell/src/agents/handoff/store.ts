@@ -10,7 +10,7 @@
  * that can be put back.
  */
 
-import type { Undo } from "../ask/plan.ts";
+import type { Undo } from "../ask/index.ts";
 import { type RunEvent, stepsPlanned } from "./lib/stream.ts";
 import { RETAIN_MS, type RunMessage, type RunQuestion, type RunStep, type RunView, type StartRun } from "./run-view.ts";
 import { stepWords } from "./words.ts";

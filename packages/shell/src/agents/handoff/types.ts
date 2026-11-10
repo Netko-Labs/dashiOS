@@ -1,8 +1,6 @@
 /** What the launcher's agents are put together from: the settings it reads, its options, the policy of a run's connection, and what it offers. */
 
-import type { HarnessId } from "../ask/answerer.ts";
-import type { Files, Probe, ShellPaths } from "../ask/harness/index.ts";
-import type { Undo } from "../ask/plan.ts";
+import type { Files, HarnessId, Probe, ShellPaths, Undo } from "../ask/index.ts";
 import type { Scope } from "../consent.ts";
 import type { Call } from "../tools/index.ts";
 import type { GrantsMemory, TaskContext } from "./grants.ts";

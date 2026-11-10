@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { ANTHROPIC_HOST } from "../src/agents/ask/claude.ts";
 import { ANTHROPIC_TOKEN, keyPlace, modelKeys, vaultTokenSource } from "../src/agents/ask/keys.ts";
+import { ANTHROPIC_HOST } from "../src/agents/ask/lib/claude.ts";
 
 test("Claude's key: the vault's token item for api.anthropic.com first, else ANTHROPIC_API_KEY, else none", async () => {
   const asked: Array<[string, string]> = [];
