@@ -21,7 +21,6 @@
 206	packages/shell/apps/software/view.tsx
 238	packages/shell/apps/terminal/view.tsx
 158	packages/shell/src/agent-sheets.tsx
-121	packages/shell/src/agents/ask/service.ts
 169	packages/shell/src/agents/server.ts
 81	packages/shell/src/bluetooth/agent.ts
 128	packages/shell/src/clipboard/start.ts
