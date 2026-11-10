@@ -8,7 +8,7 @@
  * fallback.
  */
 
-import type { FirstPartySpec } from "./index.ts";
+import type { FirstPartySpec } from "./first-party.ts";
 
 const GROUP = "[Default Applications]";
 

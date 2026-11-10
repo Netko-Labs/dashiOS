@@ -13,7 +13,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { FIRST_PARTY } from "../apps/index.ts";
 import type { GpuCounters } from "./energy-proc.ts";
-import { type AppCatalog, type AppIdentity, identify, parseCmdline } from "./index.ts";
+import { type AppCatalog, type AppIdentity, identify, parseCmdline } from "./identity.ts";
 import {
   type Counters,
   isKernelThread,
