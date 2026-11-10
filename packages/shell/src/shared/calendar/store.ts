@@ -11,22 +11,16 @@
 import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, unlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { TINT_VALUES } from "@dashi/ui";
+import { isErrno } from "../files/errno.ts";
 import { isRegularFile, writeAtomic, writeNew } from "../fs/atomic.ts";
 import { type EventInput, makeEvent } from "./event.ts";
 import { cleanName, isColor, MAX_ICS_BYTES, parseIcs, writeIcs } from "./ics.ts";
+import { addTimezoneBlocks } from "./ics-write.ts";
+import { EXTENSION, idFor, isCalendarId, paletteColor } from "./ids.ts";
 import { type CalEvent, type Calendar, CalendarError, type IcsFile } from "./types.ts";
 
-export const EXTENSION = ".ics";
-/**
- * The colors new calendars take in turn, and the ones the calendar sheet
- * offers: Dashi's tints (@dashi/ui), lowercase as the files keep them. No
- * red among them, since red is for deleting; a color a file brings stays.
- */
-export const PALETTE: readonly string[] = TINT_VALUES.map((value) => value.toLowerCase());
+export { EXTENSION, idFor, isCalendarId, PALETTE, paletteColor } from "./ids.ts";
 
-/** The color the `count`-th new calendar takes. */
-export const paletteColor = (count: number): string => PALETTE[count % PALETTE.length] ?? (PALETTE[0] as string);
 export const DEFAULT_CALENDAR_NAME = "Home";
 /** The most calendars one folder lists, and the most events one file may grow to by adding. */
 export const MAX_CALENDARS = 100;
@@ -35,23 +29,6 @@ export const MAX_EVENTS_PER_CALENDAR = 20_000;
 export function defaultRoot(env: Readonly<Record<string, string | undefined>> = process.env, home: string = homedir()): string {
   if (env.DASHI_CALENDAR_DIR) return env.DASHI_CALENDAR_DIR;
   return join(env.XDG_DATA_HOME || join(home, ".local", "share"), "dashi", "calendars");
-}
-
-/** A calendar's id is its file name without ".ics": letters, digits, and `space . _ -` after a first letter or digit. */
-export const isCalendarId = (value: unknown): value is string =>
-  typeof value === "string" && /^[\p{L}\p{N}][\p{L}\p{N} ._-]{0,79}$/u.test(value) && !value.includes("..") && !/[ .]$/.test(value);
-
-/** A file-name-safe id for a calendar called `name`. */
-export function idFor(name: string): string {
-  const base = cleanName(name)
-    .replace(/[^\p{L}\p{N} ._-]/gu, "")
-    .replace(/ {2,}/g, " ")
-    .replace(/^[^\p{L}\p{N}]+/u, "")
-    .replace(/\.{2,}/g, ".")
-    .replace(/[ .]+$/, "")
-    .slice(0, 60)
-    .replace(/[ .]+$/, "");
-  return base === "" ? "Calendar" : base;
 }
 
 export interface ImportResult {
@@ -124,7 +101,7 @@ export class CalendarStore {
       try {
         writeNew(this.pathOf(calendar.id), text);
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === "EEXIST") throw new CalendarError(`There is already a calendar called “${calendar.id}”.`);
+        if (isErrno(error) && error.code === "EEXIST") throw new CalendarError(`There is already a calendar called “${calendar.id}”.`);
         throw error;
       }
     } else writeAtomic(this.pathOf(calendar.id), text);
@@ -264,17 +241,7 @@ export class CalendarStore {
         const fresh = file.events.filter((event) => !known.has(event.uid));
         if (calendar.events.length + fresh.length > MAX_EVENTS_PER_CALENDAR) throw new CalendarError("That calendar has too many events.");
         calendar.events.push(...fresh);
-        const zones = new Set(calendar.timezones.filter((line) => line.startsWith("TZID")));
-        // Each VTIMEZONE the file brings that the calendar has no zone of that name for.
-        let block: string[] = [];
-        for (const line of file.timezones) {
-          block.push(line);
-          if (line.toUpperCase() !== "END:VTIMEZONE") continue;
-          const id = block.find((each) => each.startsWith("TZID"));
-          if (id === undefined || !zones.has(id)) calendar.timezones.push(...block);
-          if (id !== undefined) zones.add(id);
-          block = [];
-        }
+        addTimezoneBlocks(calendar.timezones, file.timezones);
         calendar.preserved.push(...file.preserved);
         return { calendar, imported: fresh.length, duplicates: file.events.length - fresh.length, skipped: file.problems.length };
       });

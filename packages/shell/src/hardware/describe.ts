@@ -5,6 +5,8 @@
  * field of the wrong kind is left out, never trusted.
  */
 
+import { bool, maybe, num, str, union } from "@dashi/shape";
+
 export type KnobValue = string | number | boolean;
 
 export interface Knob {
@@ -39,6 +41,8 @@ export interface Machine {
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
+/** A knob's value: text, a switch or a finite number; anything else reads as no value. */
+const KNOB_VALUE = union(str(), bool(), num());
 const text = (value: unknown): string | null => (typeof value === "string" && value.length > 0 && value.length <= 256 ? value : null);
 const finite = (value: unknown): number | undefined => (typeof value === "number" && Number.isFinite(value) ? value : undefined);
 const KNOB_NAME = /^[a-z][a-z0-9-]{0,63}$/;
@@ -46,8 +50,7 @@ const KEY_NAME = /^KEY_[A-Z0-9_]{1,32}$/;
 
 function parseKnob(raw: unknown): Knob | null {
   if (!isRecord(raw)) return null;
-  const value = raw.value;
-  const knob: Knob = { value: typeof value === "string" || typeof value === "boolean" || finite(value) !== undefined ? (value as KnobValue) : null };
+  const knob: Knob = { value: maybe(KNOB_VALUE, raw.value) };
   const min = finite(raw.min);
   const max = finite(raw.max);
   if (min !== undefined) knob.min = min;

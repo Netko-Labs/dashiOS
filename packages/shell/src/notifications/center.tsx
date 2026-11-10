@@ -119,39 +119,67 @@ export function NotificationCenterPanel({ store, onClose, onEscape = onClose, do
         ) : (
           <ScrollView testID="nc-list" style={{ flex: 1 }}>
             <View style={{ flexDirection: "column", gap: 14 }}>
-              {groups.map((group) => {
-                const [latest, ...older] = group.entries as [HistoryEntry, ...HistoryEntry[]];
-                const isOpen = expanded.has(group.key);
-                const shown = isOpen ? group.entries : [latest];
-                return (
-                  <View key={group.key} testID={`nc-group:${group.key}`} style={{ flexDirection: "column", gap: 6 }}>
-                    <GroupHeader
-                      name={group.name}
-                      groupKey={group.key}
-                      latest={latest}
-                      clear={older.length > 0 ? () => store.remove(group.entries.map((entry) => entry.id)) : undefined}
-                    />
-                    {shown.map((entry) => (
-                      <Card
-                        key={entry.id}
-                        entry={entry}
-                        now={now.getTime()}
-                        onOpen={hasDefaultAction(entry) ? () => activate(entry) : undefined}
-                        onRemove={() => store.remove([entry.id])}
-                      />
-                    ))}
-                    {older.length > 0 && (
-                      <View style={{ flexDirection: "row", justifyContent: "center" }}>
-                        <TextButton testID={`nc-more:${group.key}`} label={isOpen ? "Show Less" : `${older.length} more`} onPress={() => toggle(group.key)} />
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
+              {groups.map((group) => (
+                <CenterGroup
+                  key={group.key}
+                  group={group}
+                  open={expanded.has(group.key)}
+                  now={now}
+                  store={store}
+                  onToggle={() => toggle(group.key)}
+                  onActivate={activate}
+                />
+              ))}
             </View>
           </ScrollView>
         )}
       </View>
     </>
+  );
+}
+
+type Group = ReturnType<typeof groupByApp>[number];
+
+/** One app's notifications: its latest, and the rest behind "N more" until it opens. */
+function CenterGroup({
+  group,
+  open,
+  now,
+  store,
+  onToggle,
+  onActivate,
+}: {
+  group: Group;
+  open: boolean;
+  now: Date;
+  store: NotificationStore;
+  onToggle: () => void;
+  onActivate: (entry: HistoryEntry) => void;
+}) {
+  const [latest, ...older] = group.entries as [HistoryEntry, ...HistoryEntry[]];
+  const shown = open ? group.entries : [latest];
+  return (
+    <View testID={`nc-group:${group.key}`} style={{ flexDirection: "column", gap: 6 }}>
+      <GroupHeader
+        name={group.name}
+        groupKey={group.key}
+        latest={latest}
+        clear={older.length > 0 ? () => store.remove(group.entries.map((entry) => entry.id)) : undefined}
+      />
+      {shown.map((entry) => (
+        <Card
+          key={entry.id}
+          entry={entry}
+          now={now.getTime()}
+          onOpen={hasDefaultAction(entry) ? () => onActivate(entry) : undefined}
+          onRemove={() => store.remove([entry.id])}
+        />
+      ))}
+      {older.length > 0 && (
+        <View style={{ flexDirection: "row", justifyContent: "center" }}>
+          <TextButton testID={`nc-more:${group.key}`} label={open ? "Show Less" : `${older.length} more`} onPress={onToggle} />
+        </View>
+      )}
+    </View>
   );
 }

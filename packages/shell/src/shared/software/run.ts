@@ -79,7 +79,7 @@ export const run: Runner = async (command, options = {}) => {
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
-          take(decoder.decode(value as Uint8Array, { stream: true }));
+          if (value instanceof Uint8Array) take(decoder.decode(value, { stream: true }));
         }
       };
       await Promise.all([read(process_.stdout), read(process_.stderr)]);

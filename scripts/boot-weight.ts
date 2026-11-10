@@ -1,13 +1,17 @@
 #!/usr/bin/env bun
 // H16 (docs/conventions.md, "Hard rules"): heavy libraries never load at shell
-// start, and the start-up module count has a ceiling.
+// start, and the libraries' module count at start has a ceiling.
+//
+// Only modules from node_modules count. Dashi's own modules don't: H2 splits
+// long files, which adds modules without adding code, so a ceiling on them
+// fought the rule beside it (the count is printed, for the curious).
 //
 // Bun bundles the shell's entry (packages/shell/src/main.tsx) with code
 // splitting; the start-up graph is the entry chunk and every chunk it imports
 // statically. A dynamic `import()` is not start-up.
 //
 // scripts/lists/boot-weight.txt holds:
-//   <n>  startup-modules       the ceiling: fail above it, and fail when the
+//   <n>  library-modules       the ceiling: fail above it, and fail when the
 //                              count is more than SLACK under it (lower it)
 //   <n>  banned:<package>      a banned package's modules at start, a ratchet
 //                              (scripts/ratchet.ts): may only shrink to gone
@@ -21,9 +25,12 @@ import { type Counts, type Outcome, ROOT, ratchet, readList, report } from "./ra
 const ENTRY = "packages/shell/src/main.tsx";
 /** Packages that must never load at start: the AI answerers' SDKs. */
 export const BANNED = ["openai", "@anthropic-ai/sdk"];
-const CEILING_KEY = "startup-modules";
+const CEILING_KEY = "library-modules";
 /** How far under the ceiling the count may fall before the ceiling must come down. */
-export const SLACK = 50;
+export const SLACK = 10;
+
+/** The start-up modules that come from a library, not from Dashi's own source. */
+export const libraryModules = (modules: string[]): string[] => modules.filter((module) => module.includes("node_modules/"));
 
 interface Output {
   entryPoint?: string;
@@ -78,21 +85,25 @@ export function bannedCounts(modules: string[]): Counts {
 }
 
 export async function checkBootWeight(): Promise<Outcome[]> {
-  const modules = await startupModules();
+  const all = await startupModules();
+  const modules = libraryModules(all);
   const ceiling = readList("boot-weight").entries.get(CEILING_KEY);
   const problems: string[] = [];
   let kept = ceiling ?? 0;
   if (ceiling === undefined) problems.push(`scripts/lists/boot-weight.txt has no ${CEILING_KEY} line`);
-  else if (modules.length > ceiling) problems.push(`the shell loads ${modules.length} modules at start, over the ceiling of ${ceiling}`);
+  else if (modules.length > ceiling) problems.push(`the shell loads ${modules.length} library modules at start, over the ceiling of ${ceiling}`);
   else if (modules.length < ceiling - SLACK) {
     if (process.argv.includes("--shrink")) kept = modules.length;
-    else problems.push(`the shell loads ${modules.length} modules at start, ${ceiling - modules.length} under the ceiling: lower it (or run with --shrink)`);
+    else
+      problems.push(
+        `the shell loads ${modules.length} library modules at start, ${ceiling - modules.length} under the ceiling: lower it (or run with --shrink)`,
+      );
   }
   // The ceiling rides in the list as one more key, so the ratchet keeps (or lowers) it.
-  const found = bannedCounts(modules);
+  const found = bannedCounts(all);
   if (ceiling !== undefined) found.set(CEILING_KEY, kept);
   const banned = ratchet("boot-weight", found, "modules at shell start");
-  return [{ name: `startup modules ${modules.length}, ceiling ${ceiling}`, problems, listed: 1 }, banned];
+  return [{ name: `library modules at start ${modules.length} of ${all.length}, ceiling ${ceiling}`, problems, listed: 1 }, banned];
 }
 
 if (import.meta.main) report("boot-weight", await checkBootWeight());

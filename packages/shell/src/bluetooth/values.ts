@@ -118,8 +118,9 @@ export function parseManagedObjects(reply: unknown): BluetoothReading {
     if (typeof path !== "string" || !(interfaces instanceof Map)) continue;
     const read = new Map<string, Map<string, unknown>>();
     for (const [name, properties] of interfaces) {
-      const map = typeof name === "string" ? propertyMap(properties) : null;
-      if (map) read.set(name as string, map);
+      if (typeof name !== "string") continue;
+      const map = propertyMap(properties);
+      if (map) read.set(name, map);
     }
     const adapterProperties = read.get(IFACE.adapter);
     if (adapterProperties) {

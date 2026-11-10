@@ -29,7 +29,8 @@ export async function subscribeTo(
         router,
         { type: "signal", sender: BUS_NAME, interface: BUS_NAME, member: "NameOwnerChanged", path: BUS_PATH, args: { 0: rule.sender } },
         (changed) => {
-          subscription.senderOwner = (changed.body[2] as string) || null;
+          const owner = changed.body[2];
+          subscription.senderOwner = typeof owner === "string" && owner !== "" ? owner : null;
         },
       );
       subscription.senderOwner = await getNameOwner(connection, rule.sender).catch(() => null);

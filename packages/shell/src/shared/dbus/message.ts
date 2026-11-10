@@ -91,8 +91,18 @@ type Fields = Partial<Record<number, unknown>>;
 
 const FIELDS_TYPE = parseSingle("a(yv)");
 
+/** The `a(yv)` the reader decoded, as (code, variant) pairs. */
+function fieldEntries(value: unknown): Array<[number, Variant]> {
+  if (!Array.isArray(value)) throw new ProtocolError("header fields are not a list");
+  return value.map((entry): [number, Variant] => {
+    const [code, held] = Array.isArray(entry) ? entry : [];
+    if (typeof code !== "number" || !(held instanceof Variant)) throw new ProtocolError("a header field is not a (byte, variant)");
+    return [code, held];
+  });
+}
+
 function readFields(reader: Reader): Fields {
-  const entries = reader.value(FIELDS_TYPE) as Array<[number, Variant]>;
+  const entries = fieldEntries(reader.value(FIELDS_TYPE));
   const fields: Fields = {};
   for (const [code, held] of entries) {
     const expected = FIELD_TYPES[code];
@@ -105,8 +115,22 @@ function readFields(reader: Reader): Fields {
   return fields;
 }
 
+/** A header field that the variant's signature has already made text (`o`, `s`, `g`). */
+const stringField = (fields: Fields, code: Field): string | undefined => {
+  const value = fields[code];
+  if (value !== undefined && typeof value !== "string") throw new ProtocolError(`header field ${code} is not text`);
+  return value;
+};
+
+/** A header field that the variant's signature has already made a number (`u`). */
+const numberField = (fields: Fields, code: Field): number | undefined => {
+  const value = fields[code];
+  if (value !== undefined && typeof value !== "number") throw new ProtocolError(`header field ${code} is not a number`);
+  return value;
+};
+
 const text = (fields: Fields, code: Field, valid: (value: string) => boolean, what: string): string | undefined => {
-  const value = fields[code] as string | undefined;
+  const value = stringField(fields, code);
   if (value !== undefined && !valid(value)) throw new ProtocolError(`${what} "${value}" is not valid`);
   return value;
 };
@@ -140,9 +164,11 @@ export function decodeMessage(frame: Uint8Array): Message {
   if (errorName !== undefined) message.errorName = errorName;
   if (destination !== undefined) message.destination = destination;
   if (sender !== undefined) message.sender = sender;
-  if (fields[Field.ReplySerial] !== undefined) message.replySerial = fields[Field.ReplySerial] as number;
-  message.signature = (fields[Field.Signature] as string | undefined) ?? "";
-  if (fields[Field.UnixFds] !== undefined) message.unixFds = fields[Field.UnixFds] as number;
+  const replySerial = numberField(fields, Field.ReplySerial);
+  if (replySerial !== undefined) message.replySerial = replySerial;
+  message.signature = stringField(fields, Field.Signature) ?? "";
+  const unixFds = numberField(fields, Field.UnixFds);
+  if (unixFds !== undefined) message.unixFds = unixFds;
 
   const required =
     type === MessageType.MethodCall

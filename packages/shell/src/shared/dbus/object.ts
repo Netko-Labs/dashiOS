@@ -143,7 +143,9 @@ export class ObjectRegistry {
     const out = method.out ?? "";
     const count = parseSignature(out).length;
     if (count === 0) return ok();
-    return ok(out, count === 1 ? [result] : (result as unknown[]));
+    if (count === 1) return ok(out, [result]);
+    if (!Array.isArray(result)) throw new TypeError(`${context.member} must return a list of ${count} values`);
+    return ok(out, result);
   }
 
   private async properties(object: Map<string, InterfaceSpec>, member: string, call: Message): Promise<Reply> {

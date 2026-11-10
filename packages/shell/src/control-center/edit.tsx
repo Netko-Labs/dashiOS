@@ -8,8 +8,10 @@
 
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useControlColors } from "../shared/controls/palette.ts";
+import { DEFAULT_LAYOUT } from "./catalog.ts";
 import { PLUS } from "./glyphs.ts";
-import { COLUMN, GRID } from "./layout.ts";
+import { addItem, COLUMN, GRID, type Layout, type TileSize } from "./layout.ts";
+import type { LayoutStore } from "./layout-store.ts";
 
 export interface AddEntry {
   id: string;
@@ -111,5 +113,38 @@ export function EditFooter({ onReset, onCancel, onDone }: { onReset: () => void;
       <Pill testID="cc-edit-cancel" label="Cancel" onPress={onCancel} />
       <Pill testID="cc-edit-done" label="Done" primary onPress={onDone} />
     </View>
+  );
+}
+
+/**
+ * Edit mode's footer under the Control Center's grid (panel.tsx): the Add
+ * list of tiles not yet here, then Reset, Cancel, and Done. Done saves the
+ * draft; Cancel throws it away; an embedded editor closes after either.
+ */
+export function PanelEditor(props: {
+  draft: Layout;
+  layout: LayoutStore;
+  controls: { addable(layout: Layout): AddEntry[]; sizesOf(id: string): readonly TileSize[] };
+  embedded: boolean;
+  setDraft(layout: Layout | null): void;
+  onClose(): void;
+}) {
+  const { draft, controls, setDraft } = props;
+  return (
+    <>
+      <AddList entries={controls.addable(draft)} onAdd={(id) => setDraft(addItem(draft, id, controls.sizesOf(id)[0] ?? "round"))} />
+      <EditFooter
+        onReset={() => setDraft(DEFAULT_LAYOUT)}
+        onCancel={() => {
+          setDraft(null);
+          if (props.embedded) props.onClose();
+        }}
+        onDone={() => {
+          props.layout.set(draft);
+          setDraft(null);
+          if (props.embedded) props.onClose();
+        }}
+      />
+    </>
   );
 }

@@ -9,6 +9,7 @@
 import type { Dirent, Stats } from "node:fs";
 import { lstat, readdir, readFile, readlink, stat } from "node:fs/promises";
 import { join } from "node:path";
+import { isErrno } from "./errno.ts";
 import { categoryOf, INODE_DIRECTORY, kindOf, type MimeIndex, mimeOf, UNKNOWN_TYPE } from "./mime.ts";
 import { checkName, splitName } from "./paths.ts";
 import { SNIFF_LIMIT, sniffType } from "./sniff.ts";
@@ -143,7 +144,7 @@ export interface Listing {
 
 /** Read errors, said the way a person reads them. */
 export function describeError(error: unknown, path: string): string {
-  const code = (error as { code?: string } | null)?.code;
+  const code = isErrno(error) ? error.code : undefined;
   const name = path.split("/").pop() || path;
   switch (code) {
     case "ENOENT":

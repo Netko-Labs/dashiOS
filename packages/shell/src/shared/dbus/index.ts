@@ -9,6 +9,7 @@ export type { CallContext, InterfaceSpec, MethodSpec, PropertySpec } from "./int
 export { closeFd, pipePair } from "./libc.ts";
 export { marshal, Writer } from "./marshal.ts";
 export { decodeMessage, encodeMessage, FrameBuffer, type Message, MessageType } from "./message.ts";
+export { readReply, value, values, variantOf } from "./reply.ts";
 export type { MatchRule } from "./signals.ts";
 export { parseSignature } from "./signature.ts";
 export type { CallSpec, ExportedObject, SignalSpec } from "./types.ts";

@@ -17,68 +17,17 @@
 import { useSyncExternalStore } from "react";
 import type { ControlPage } from "../control-center/index.ts";
 import type { DockMenuAction } from "../dock/menu.ts";
-import type { OverlayHandle } from "../overlay.tsx";
 import { type BarStop, barCommand, sideStep, stepStop, stopOfPopover, titleStop } from "./bar-keys.ts";
-import type { BarMenuId, MenuContext, MenuEntry } from "./model.ts";
+import type { BarInfo, MenuState } from "./controller-types.ts";
+import type { BarMenuId, MenuEntry } from "./model.ts";
+import { PopoverHost } from "./popover-host.ts";
 import type { StatusMenuAction } from "./status-menu.ts";
 
-export type Popover =
-  | { kind: "menu"; id: BarMenuId; x: number }
-  /** An app's menu in the Dock: its rows were built when it opened; `x` is the icon's center. */
-  | { kind: "dock-menu"; x: number; entries: readonly MenuEntry<DockMenuAction>[]; above?: number }
-  | { kind: "control-center"; page: ControlPage }
-  /** The battery panel (battery/panel.tsx), its right edge at `right` (screen pixels), or where Control Center is when null. */
-  | { kind: "battery"; right: number | null }
-  | { kind: "notification-center" }
-  /** The agents' panel under their mark (agents-panel.tsx), its right edge at `right`; `focus` is the run it opened on. */
-  | { kind: "agents"; right: number; focus: string | null }
-  /** A status item's menu (an extra's or the battery's), its right edge at `right` (screen pixels); `key` says whose. */
-  | { kind: "status-menu"; key: string; right: number; entries: readonly MenuEntry<StatusMenuAction>[] }
-  /** "…": the status items that didn't fit, in a row under it (bar-overflow.tsx), its right edge at `right`. */
-  | { kind: "overflow"; right: number; keys: readonly string[] };
+export type { BarInfo, ControllerDeps, MenuState, Popover } from "./controller-types.ts";
 
-export interface MenuState {
-  popover: Popover | null;
-  /** The app name the bar showed when the popover opened; null while closed. */
-  appName: string | null;
-  context: MenuContext | null;
-  /** The screen the popover is on (an output name); absent when the bar did not say, which is the compositor's choice. */
-  output?: string;
-  /**
-   * The keyboard is in that screen's bar (bar-keys.ts, ⌃F2): the stop the
-   * ring is on, while the popover surface holds the keys, with or without a
-   * popover open. Absent otherwise.
-   */
-  bar?: string;
-}
-
-/** What a bar tells the controller about itself (menubar.tsx): its stops in order, and the app name it shows. */
-export interface BarInfo {
-  appName: string;
-  stops: readonly BarStop[];
-}
-
-const CLOSED: MenuState = { popover: null, appName: null, context: null };
-
-export interface ControllerDeps {
-  /** Reads the desktop for the menus (before the surface takes the keyboard). */
-  context(appName: string): Promise<MenuContext>;
-  /** Opens the popover surface on that screen; `onClosed` runs when it goes, however it went. */
-  openSurface(onClosed: () => void, output?: string): OverlayHandle;
-}
-
-export class MenuController {
-  private state: MenuState = CLOSED;
-  private surface: OverlayHandle | null = null;
-  /** Bumped by every open and close, so a slow `context` cannot reopen what was closed. */
-  private generation = 0;
-  private readonly listeners = new Set<() => void>();
+export class MenuController extends PopoverHost {
   /** Each bar's stops and name, by its screen ("" for a bar placed by the compositor). */
   private readonly bars = new Map<string, BarInfo & { output: string | undefined }>();
-  /** The stop being opened from the keyboard, so what opens keeps the ring on it. */
-  private opening: string | null = null;
-
-  constructor(private readonly deps: ControllerDeps) {}
 
   /** A bar says what its stops are now (every time it draws). */
   setBar(output: string | undefined, info: BarInfo): void {
@@ -181,13 +130,6 @@ export class MenuController {
   private stopsHere(): readonly BarStop[] {
     return (this.bars.get(this.state.output ?? "") ?? this.bars.values().next().value)?.stops ?? [];
   }
-
-  subscribe = (listener: () => void): (() => void) => {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  };
-
-  getSnapshot = (): MenuState => this.state;
 
   /** A click on a title: opens its menu, or closes it if it is the open one. */
   toggleMenu(id: BarMenuId, x: number, appName: string, output?: string): Promise<void> {
@@ -298,65 +240,6 @@ export class MenuController {
       return Promise.resolve();
     }
     return this.show({ kind: "notification-center" }, appName, output);
-  }
-
-  close(): void {
-    this.generation++;
-    const surface = this.surface;
-    this.surface = null;
-    this.set(CLOSED);
-    surface?.close();
-  }
-
-  private async show(popover: Popover, appName: string, output?: string): Promise<void> {
-    if (this.surface) {
-      if (!this.isOn(output)) return this.relocate(popover, output);
-      // With the keyboard in the bar, the ring goes to what opened (a click elsewhere in the bar moves it too).
-      const bar = this.state.bar === undefined ? {} : { bar: this.opening ?? stopOfPopover(popover) ?? this.state.bar };
-      this.set({ ...this.state, popover, ...bar });
-      return;
-    }
-    const generation = ++this.generation;
-    const context = await this.deps.context(appName);
-    if (generation !== this.generation) return;
-    this.set({ popover, appName, context, ...(output === undefined ? {} : { output }) });
-    this.surface = this.open(generation, output);
-  }
-
-  /**
-   * Moves the open popover to another screen: its surface closes and a new
-   * one opens there. What the menus read about the desktop stays as it was
-   * when the popover first opened; the old surface still holds the keyboard,
-   * so reading it again would find no window focused.
-   */
-  private relocate(popover: Popover, output: string | undefined): void {
-    const { appName, context } = this.state;
-    const generation = ++this.generation;
-    const old = this.surface;
-    this.surface = null;
-    this.set({ popover, appName, context, ...(output === undefined ? {} : { output }) });
-    // The old surface's `onClosed` is stale by now and does nothing.
-    old?.close();
-    this.surface = this.open(generation, output);
-  }
-
-  private open(generation: number, output: string | undefined): OverlayHandle {
-    return this.deps.openSurface(() => {
-      // The surface went by itself (its host died): forget it, do not close it again.
-      if (generation !== this.generation) return;
-      this.surface = null;
-      this.set(CLOSED);
-    }, output);
-  }
-
-  /** Whether the popover is, or would open, on this screen. */
-  private isOn(output: string | undefined): boolean {
-    return this.state.output === output;
-  }
-
-  private set(state: MenuState): void {
-    this.state = state;
-    for (const listener of this.listeners) listener();
   }
 }
 

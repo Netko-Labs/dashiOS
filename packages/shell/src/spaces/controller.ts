@@ -8,60 +8,24 @@
  * each one is called meanwhile (names.ts) are kept here too, and which
  * Spaces are full-screen windows' own Desktops (slots.ts; what goes on them
  * is fullscreen.ts's): those are left out of the count and the names.
+ * The Desktops as they are, and what listeners hear, are state.ts's.
  */
 
-import type { Compositor, CompositorEvent, CompositorWindow } from "../compositor.ts";
-import { bindingTarget, MAX_SPACES, ONE_SPACE, parseSpaceBinding, parseSpaces, type SpacesState } from "./model.ts";
-import { renamed, type SpaceNames, spaceLabels, withoutSpace } from "./names.ts";
-import { desktopCount, desktopOrdinal, fitSlots, nearestDesktop, recoverSlots, type Slots, slotOf } from "./slots.ts";
+import type { CompositorEvent } from "../compositor.ts";
+import { bindingTarget, MAX_SPACES, parseSpaceBinding, parseSpaces } from "./model.ts";
+import { renamed, withoutSpace } from "./names.ts";
+import { desktopCount, desktopOrdinal, nearestDesktop, recoverSlots, type Slots, slotOf } from "./slots.ts";
+import { DesktopsState, type Naming, type SpacesCompositor, type SpacesSettings } from "./state.ts";
 
-/** What settings.json says about Spaces (settings.ts). */
-export interface SpacesSettings {
-  /** How many Desktops to have, full-screen ones left out; none says leave them as they are. */
-  count?: number;
-  /** What each is called (null: after its apps). */
-  names?: SpaceNames;
-  switchOnActivate: boolean;
-  /** A full-screen window gets a Desktop of its own (fullscreen.ts); on when unset. */
-  fullscreenDesktop?: boolean;
-}
+export type { Desktops, Naming, SpacesCompositor, SpacesSettings } from "./state.ts";
 
-export type SpacesCompositor = Pick<Compositor, "on" | "windows" | "spaces" | "spaceAdd" | "spaceRemove" | "spaceSwitch" | "spaceMove">;
-
-/** The Desktops as people see them: the Spaces, their given names, and what each is called now. */
-export interface Desktops extends SpacesState {
-  names: SpaceNames;
-  /** One per Desktop: its name, else after its apps, else "Desktop N" (names.ts). */
-  labels: string[];
-  /** One per Space: the window whose full-screen Desktop it is, or null (slots.ts). */
-  fullscreen: Slots;
-}
-
-/** How Desktops get their names: what an app is called, and where names are kept. */
-export interface Naming {
-  /** What the Dock calls a window's app. */
-  appName?(window: CompositorWindow): string;
-  /** Remember the names (settings.json `spaces.names`). */
-  saveNames?(names: SpaceNames): void;
-}
-
-const same = <T>(a: readonly T[], b: readonly T[]) => a.length === b.length && a.every((each, index) => each === b[index]);
-
-export class SpacesController {
-  private state: Desktops = { ...ONE_SPACE, names: [], labels: ["Desktop 1"], fullscreen: [null] };
-  /** Which Spaces are full-screen Desktops, kept with every add and remove this makes. */
-  private slots: (number | null)[] = [null];
+export class SpacesController extends DesktopsState {
   /** The full-screen Desktops found at the first settings (a restart of the shell). */
   private recovery: Promise<void> | null = null;
-  private windows: readonly CompositorWindow[] = [];
   private relabeling = false;
   private relabelAgain = false;
-  private readonly listeners = new Set<() => void>();
   /** The ×, or a remove, on a full-screen Desktop: its window leaves full screen (fullscreen.ts). */
   leaveFullscreen: ((window: number) => void) | null = null;
-  /** The count (Desktops only) last read from or written to settings.json, so a change is saved once. */
-  private saved: number | undefined;
-  private applied: SpacesSettings | null = null;
   /** Held switches go one at a time; only the newest waiting one is sent. */
   private holding: Promise<void> = Promise.resolve();
   private nextHold: { target: number; progress: number } | null = null;
@@ -69,10 +33,11 @@ export class SpacesController {
 
   constructor(
     private readonly compositor: SpacesCompositor,
-    /** Remember how many Spaces there are (settings.json). */
-    private readonly saveCount: (count: number) => void,
-    private readonly naming: Naming = {},
-  ) {}
+    saveCount: (count: number) => void,
+    naming: Naming = {},
+  ) {
+    super(saveCount, naming);
+  }
 
   /** Follow the compositor; returns a function that stops. */
   start(): () => void {
@@ -81,13 +46,6 @@ export class SpacesController {
     void this.relabel();
     return stop;
   }
-
-  getSnapshot = (): Desktops => this.state;
-
-  subscribe = (listener: () => void): (() => void) => {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  };
 
   /**
    * settings.json changed (or was read at startup). Its count is applied only
@@ -129,7 +87,6 @@ export class SpacesController {
     await this.ask("spaces", () => this.compositor.spaces());
   }
 
-  /** Show Space `index` (the windows slide unless Reduce motion is on). */
   /** Show Space `index`; `carry`, a window on the Space that shows, stays on screen and goes along (`space-switch {carry}`). */
   async switchTo(index: number, carry?: number): Promise<void> {
     if (index === this.state.current || index < 0 || index >= this.state.count) return;
@@ -265,34 +222,6 @@ export class SpacesController {
     await this.ask("space-switch", () => this.compositor.spaceSwitch({ space }));
   }
 
-  /** A request whose answer is the Spaces as they are; failures are logged. */
-  private async ask(method: string, call: () => Promise<unknown>): Promise<void> {
-    try {
-      const answer = await call();
-      const state = parseSpaces(answer);
-      if (state) this.set(state);
-    } catch (error) {
-      console.error(`dashi-shell: ${method} failed:`, error instanceof Error ? error.message : error);
-    }
-  }
-
-  /** A new snapshot from what changed, the labels worked out again; listeners hear only a real change. */
-  private publish(change: Partial<Desktops>): void {
-    const next = { ...this.state, ...change };
-    const appName = this.naming.appName ?? ((window: CompositorWindow) => window.appId);
-    const fullscreen = [...this.slots];
-    const labels = spaceLabels(next.count, next.names, this.windows, appName, fullscreen);
-    const unchanged =
-      next.count === this.state.count &&
-      next.current === this.state.current &&
-      same(labels, this.state.labels) &&
-      same(next.names, this.state.names) &&
-      same(fullscreen, this.state.fullscreen);
-    if (unchanged) return;
-    this.state = { ...next, labels, fullscreen };
-    for (const listener of this.listeners) listener();
-  }
-
   /** Read the windows again for the automatic names; one read at a time, the last change wins. */
   async relabel(): Promise<void> {
     if (this.relabeling) {
@@ -310,18 +239,6 @@ export class SpacesController {
       console.error("dashi-shell: naming Desktops:", error instanceof Error ? error.message : error);
     } finally {
       this.relabeling = false;
-    }
-  }
-
-  private set(state: SpacesState): void {
-    // More or fewer than this made (settings.json edited by hand): new ones at the end are Desktops.
-    if (state.count !== this.slots.length) this.slots = fitSlots(this.slots, state.count);
-    this.publish({ count: state.count, current: state.current });
-    // The compositor is the truth while it runs; the file follows it, counting the Desktops only.
-    const desktops = desktopCount(this.slots);
-    if (this.applied && desktops !== (this.saved ?? 1)) {
-      this.saved = desktops;
-      this.saveCount(desktops);
     }
   }
 

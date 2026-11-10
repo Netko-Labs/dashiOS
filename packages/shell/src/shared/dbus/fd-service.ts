@@ -15,6 +15,7 @@
 import { type BusKind, busAddress, socketPaths } from "./address.ts";
 import { AuthError, ClientAuth } from "./auth.ts";
 import { BUS_NAME, BUS_PATH } from "./bus.ts";
+import { callMessage, signalMessage } from "./calls.ts";
 import { DBusError, ERRORS, ProtocolError } from "./errors.ts";
 import { exportedObject, replyMessage } from "./exported.ts";
 import type { ReaderChunk, ReaderStart } from "./fd-reader.ts";
@@ -23,6 +24,7 @@ import { closeFd, connectUnix, POLLERR, POLLHUP, POLLIN, POLLNVAL, pollNow, rece
 import { MAX_MESSAGE } from "./marshal.ts";
 import { decodeMessage, encodeMessage, Flags, FrameBuffer, type Message, MessageType } from "./message.ts";
 import { ObjectRegistry } from "./object.ts";
+import { PendingCalls } from "./pending.ts";
 import type { CallSpec, ExportedObject, SignalSpec } from "./types.ts";
 
 const HANDSHAKE_MS = 10_000;
@@ -31,12 +33,6 @@ const CALL_TIMEOUT_MS = 25_000;
 const MAX_PARKED_FDS = 64;
 /** A peer that doesn't read can't make us queue more than this. */
 const MAX_QUEUED_BYTES = 1 << 26;
-
-interface Pending {
-  resolve(body: unknown[]): void;
-  reject(error: Error): void;
-  timer: ReturnType<typeof setTimeout>;
-}
 
 /** Bytes waiting to be written, with descriptors for their first byte; `owned` ones are closed once sent. */
 interface Outgoing {
@@ -56,8 +52,7 @@ export class FdService {
   private worker: Worker | null = null;
   private readonly frames = new FrameBuffer(MAX_MESSAGE);
   private parked: number[] = [];
-  private serial = 0;
-  private readonly pending = new Map<number, Pending>();
+  private readonly pending = new PendingCalls();
   private readonly registry = new ObjectRegistry();
   private readonly closeListeners = new Set<(error?: Error) => void>();
   private outgoing: Outgoing[] = [];
@@ -167,7 +162,7 @@ export class FdService {
       case MessageType.MethodReturn:
       case MessageType.Error:
         for (const fd of fds) closeFd(fd);
-        return this.settle(message);
+        return this.pending.settle(message);
       case MessageType.MethodCall:
         void this.serve(message, fds);
         return;
@@ -177,25 +172,16 @@ export class FdService {
     }
   }
 
-  private settle(message: Message): void {
-    const pending = this.pending.get(message.replySerial as number);
-    if (!pending) return;
-    this.pending.delete(message.replySerial as number);
-    clearTimeout(pending.timer);
-    if (message.type === MessageType.MethodReturn) pending.resolve(message.body);
-    else pending.reject(new DBusError(message.errorName as string, typeof message.body[0] === "string" ? message.body[0] : "", message.body));
-  }
-
   private async serve(call: Message, fds: number[]): Promise<void> {
     try {
       const reply = await this.registry.handle(call, fds);
       if (call.flags & Flags.NoReplyExpected || this.closed) return;
       try {
-        this.write(encodeMessage(replyMessage(call, reply, this.nextSerial())));
+        this.write(encodeMessage(replyMessage(call, reply, this.pending.nextSerial())));
       } catch (error) {
         if (this.closed) return;
         const failure = { type: "error" as const, name: ERRORS.failed, message: error instanceof Error ? error.message : "bad reply" };
-        this.write(encodeMessage(replyMessage(call, failure, this.nextSerial())));
+        this.write(encodeMessage(replyMessage(call, failure, this.pending.nextSerial())));
       }
     } catch {
       // The connection is going away.
@@ -204,28 +190,17 @@ export class FdService {
     }
   }
 
-  private nextSerial(): number {
-    this.serial = this.serial >= 0xffffffff ? 1 : this.serial + 1;
-    return this.serial;
-  }
-
   /**
    * Call a method and resolve with the reply's values (descriptors in replies are closed).
    * `fds` go with the call (an `h` in the body is an index into them); they become the
    * connection's, closed here once they are sent, or when it closes first.
    */
   call(spec: CallSpec, timeoutMs = CALL_TIMEOUT_MS, fds: readonly number[] = []): Promise<unknown[]> {
-    const serial = this.nextSerial();
+    const serial = this.pending.nextSerial();
+    // Only the Fd connection's own flags: no interactive authorization, and the descriptors' count.
     const message: Message = {
-      type: MessageType.MethodCall,
+      ...callMessage(spec, serial),
       flags: spec.noReply ? Flags.NoReplyExpected : 0,
-      serial,
-      path: spec.path,
-      member: spec.member,
-      signature: spec.signature ?? "",
-      body: [...(spec.body ?? [])],
-      ...(spec.interface === undefined ? {} : { interface: spec.interface }),
-      ...(spec.destination === undefined ? {} : { destination: spec.destination }),
       ...(fds.length > 0 ? { unixFds: fds.length } : {}),
     };
     let frame: Uint8Array;
@@ -239,35 +214,11 @@ export class FdService {
       this.write(frame, fds, true);
       return Promise.resolve([]);
     }
-    return new Promise<unknown[]>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.pending.delete(serial);
-        reject(new DBusError(ERRORS.noReply, `no reply to ${spec.member} within ${timeoutMs} ms`));
-      }, timeoutMs);
-      this.pending.set(serial, { resolve, reject, timer });
-      try {
-        this.write(frame, fds, true);
-      } catch (error) {
-        clearTimeout(timer);
-        this.pending.delete(serial);
-        reject(error instanceof Error ? error : new Error(String(error)));
-      }
-    });
+    return this.pending.wait(serial, spec.member, timeoutMs, () => this.write(frame, fds, true));
   }
 
   emitSignal(spec: SignalSpec): void {
-    const message: Message = {
-      type: MessageType.Signal,
-      flags: Flags.NoReplyExpected,
-      serial: this.nextSerial(),
-      path: spec.path,
-      interface: spec.interface,
-      member: spec.member,
-      signature: spec.signature ?? "",
-      body: [...(spec.body ?? [])],
-      ...(spec.destination === undefined ? {} : { destination: spec.destination }),
-    };
-    this.write(encodeMessage(message));
+    this.write(encodeMessage(signalMessage(spec, this.pending.nextSerial())));
   }
 
   export(path: string, interfaces: readonly InterfaceSpec[]): ExportedObject {
@@ -333,11 +284,7 @@ export class FdService {
     for (const fd of this.parked.splice(0)) closeFd(fd);
     for (const { fds, owned } of this.outgoing.splice(0)) if (owned) for (const fd of fds) closeFd(fd);
     this.queued = 0;
-    for (const [serial, pending] of this.pending) {
-      clearTimeout(pending.timer);
-      pending.reject(new DBusError(ERRORS.disconnected, error?.message ?? "the connection closed"));
-      this.pending.delete(serial);
-    }
+    this.pending.rejectAll(error);
     for (const listener of this.closeListeners) {
       try {
         listener(error);

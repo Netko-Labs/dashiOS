@@ -8,7 +8,7 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { type Bounds, Image, type PointerInfo, View } from "@mirinjs/metal";
+import { type Bounds, type PointerInfo, View } from "@mirinjs/metal";
 import { useRef } from "react";
 import { appFor } from "../apps.ts";
 import type { Entry } from "../entries.ts";
@@ -20,12 +20,13 @@ import { type AttentionStore, useAttention } from "./attention.ts";
 import type { Autohide } from "./autohide.ts";
 import { type DockController, useStarting } from "./controller.ts";
 import { reorderIndex } from "./gesture.ts";
-import { type DockEntry, dockLayout, matchEntry } from "./layout.ts";
+import { Divider, DockIcon } from "./icon.tsx";
+import { type DockEntry, dockLayout, type MinimizedEntry, matchEntry } from "./layout.ts";
 import { buildDockMenu, buildDockOptionsMenu } from "./menu.ts";
 import { type PinStore, usePins } from "./pins.ts";
 import type { DockPrefs } from "./prefs.ts";
 import { inPreviewOrder, usePress } from "./press.ts";
-import { iconRise, Painted, panelOpacity, Slide, useSlide } from "./slide.tsx";
+import { iconRise, Painted, panelOpacity, Slide, type SlideState, useSlide } from "./slide.tsx";
 import type { TileStore } from "./tiles.ts";
 
 /** Distance between neighboring icons' left edges. */
@@ -71,7 +72,6 @@ export function Dock({
   /** Told where the panel is on the surface: only there does the Dock take clicks (start.tsx). */
   onPanel?: (bounds: Bounds) => void;
 }) {
-  const colors = useColors();
   const windows = useToplevels(toplevels);
   const starting = useStarting(controller);
   const wanting = useAttention(attention);
@@ -109,7 +109,7 @@ export function Dock({
 
   // While an icon is dragged the others make room for it.
   const pinned = inPreviewOrder(layout.pinned, preview);
-  const { running, minimized } = layout;
+  const opacityOf = (key: string) => (preview?.dragging === key ? (preview.pulledOut ? 0.3 : 0.6) : 1);
 
   return (
     <View
@@ -124,166 +124,109 @@ export function Dock({
       }}
     >
       <Painted slide={slide} />
-      <View
-        testID="dock-panel"
-        onContextMenu={(event) => openOptions(event.x)}
-        onLayout={onPanel}
-        // Past the Dock's edge Metal reports nothing more, not even the release.
-        style={{
-          opacity: panelOpacity(slid),
-          flexDirection: "row",
-          alignItems: "flex-start",
-          gap: DOCK.gap,
-          paddingLeft: DOCK.paddingX,
-          paddingRight: DOCK.paddingX,
-          paddingTop: DOCK.paddingTop,
-          paddingBottom: DOCK.paddingBottom,
-          borderRadius: DOCK.radius,
-          backgroundColor: colors.dock,
-          borderWidth: 1,
-          borderColor: colors.dockBorder,
-        }}
-      >
-        {pinned.map((entry, index) => (
-          <DockIcon
-            key={entry.key}
-            icon={entry.app.icon}
-            running={entry.windows.length > 0 || starting.has(entry.key)}
-            attention={wanting.has(entry.key)}
-            opacity={preview?.dragging === entry.key ? (preview.pulledOut ? 0.3 : 0.6) : 1}
-            onPress={() => click(entry)}
-            onPointer={(event, centerX) => pointer(entry, index, centerX, event)}
-            onMenu={(centerX) => openMenu(entry.key, centerX)}
-            onTile={(bounds) => tiles?.set(entry.key, bounds)}
-            rise={iconRise(slid.rise, index)}
-            testID={`dock-${entry.app.name}`}
-          />
-        ))}
-        {running.length > 0 && <Divider />}
-        {running.map((entry, index) => (
-          <DockIcon
-            key={entry.key}
-            icon={entry.app.icon}
-            running
-            attention={wanting.has(entry.key)}
-            onPress={() => click(entry)}
-            onPointer={(event, centerX) => pointer(entry, null, centerX, event)}
-            onMenu={(centerX) => openMenu(entry.key, centerX)}
-            onTile={(bounds) => tiles?.set(entry.key, bounds)}
-            rise={iconRise(slid.rise, pinned.length + index)}
-            testID={`dock-${entry.app.name}`}
-          />
-        ))}
-        {minimized.length > 0 && <Divider />}
-        {minimized.map(({ window, app }, index) => (
-          <DockIcon
-            key={`minimized:${window.id}`}
-            icon={app.icon}
-            running={false}
-            opacity={0.82}
-            onPress={() => toplevels.act(window.id, "activate")}
-            rise={iconRise(slid.rise, pinned.length + running.length + index)}
-            testID={`dock-minimized-${window.id}`}
-          />
-        ))}
-      </View>
+      <DockPanel
+        pinned={pinned}
+        running={layout.running}
+        minimized={layout.minimized}
+        slid={slid}
+        starting={starting}
+        wanting={wanting}
+        opacityOf={opacityOf}
+        tiles={tiles}
+        onPanel={onPanel}
+        onPress={click}
+        onPointer={pointer}
+        onMenu={openMenu}
+        onOptions={openOptions}
+        onRestore={(id) => toplevels.act(id, "activate")}
+      />
     </View>
   );
 }
 
-const SETTLED = { offset: 0, opacity: 1 } as const;
-
-function Divider() {
-  const colors = useColors();
-  return (
-    <View
-      style={{
-        width: 1,
-        height: DOCK.icon - 4,
-        marginTop: 2,
-        marginLeft: 2,
-        marginRight: 2,
-        backgroundColor: colors.separator,
-      }}
-    />
-  );
-}
-
-function DockIcon({
-  icon,
-  running,
-  attention = false,
-  opacity = 1,
-  onPress,
-  onPointer,
-  onMenu,
-  onTile,
-  rise = SETTLED,
-  testID,
-}: {
-  icon: string;
-  running: boolean;
-  /** A window of this app wants attention. */
-  attention?: boolean;
-  opacity?: number;
-  onPress: () => void;
-  /** The pointer's phases on the icon, with the icon's center. */
-  onPointer?: (event: PointerInfo, centerX: number) => void;
-  /** A right-click, with the icon's center. */
-  onMenu?: (centerX: number) => void;
-  /** Where the icon was laid out (on the Dock's surface). */
-  onTile?: (bounds: Bounds) => void;
-  /** Its part of the Dock's entrance (slide.tsx `iconRise`): below its place, and how opaque. */
-  rise?: { offset: number; opacity: number };
-  testID: string;
+/** The Dock's icons in their three groups, on the panel the Dock draws. */
+function DockPanel(props: {
+  /** The kept apps, in the order they show now (a dragged one moved). */
+  pinned: readonly DockEntry[];
+  running: readonly DockEntry[];
+  minimized: readonly MinimizedEntry[];
+  slid: SlideState;
+  starting: ReadonlySet<string>;
+  wanting: ReadonlySet<string>;
+  opacityOf(key: string): number;
+  tiles: Pick<TileStore, "set"> | null;
+  onPanel?: (bounds: Bounds) => void;
+  onPress(entry: DockEntry): void;
+  onPointer(entry: DockEntry, place: number | null, centerX: number, event: PointerInfo): void;
+  onMenu(key: string, centerX: number): void;
+  onOptions(x: number): void;
+  onRestore(id: number): void;
 }) {
   const colors = useColors();
-  // Events carry the icon's bounds when they can; the last layout stands in for the rest.
-  const laid = useRef<Bounds | null>(null);
-  const centerOf = (bounds?: Bounds) => {
-    const box = bounds ?? laid.current;
-    return box ? box.x + box.width / 2 : 0;
-  };
+  const { pinned, running, minimized, slid, tiles } = props;
   return (
     <View
-      style={{ flexDirection: "column", alignItems: "center", gap: 3 }}
-      onLayout={(bounds) => {
-        laid.current = bounds;
-        onTile?.(bounds);
+      testID="dock-panel"
+      onContextMenu={(event) => props.onOptions(event.x)}
+      onLayout={props.onPanel}
+      // Past the Dock's edge Metal reports nothing more, not even the release.
+      style={{
+        opacity: panelOpacity(slid),
+        flexDirection: "row",
+        alignItems: "flex-start",
+        gap: DOCK.gap,
+        paddingLeft: DOCK.paddingX,
+        paddingRight: DOCK.paddingX,
+        paddingTop: DOCK.paddingTop,
+        paddingBottom: DOCK.paddingBottom,
+        borderRadius: DOCK.radius,
+        backgroundColor: colors.dock,
+        borderWidth: 1,
+        borderColor: colors.dockBorder,
       }}
-      onPress={onPress}
-      onPointer={onPointer && ((event) => onPointer(event, centerOf(event.bounds)))}
-      onContextMenu={onMenu && (() => onMenu(centerOf()))}
-      testID={testID}
     >
-      {/* The entrance moves the picture, not the icon's box: the minimize animation aims at the box. */}
-      <View style={{ width: DOCK.icon, height: DOCK.icon, position: "relative", top: rise.offset, opacity: rise.opacity }}>
-        <Image source={icon} style={{ width: DOCK.icon, height: DOCK.icon, opacity }} />
-        {attention && (
-          <View
-            testID={`${testID}-attention`}
-            style={{
-              position: "absolute",
-              top: -3,
-              right: -3,
-              width: 14,
-              height: 14,
-              borderRadius: 7,
-              borderWidth: 2,
-              borderColor: colors.dock,
-              backgroundColor: colors.critical,
-            }}
-          />
-        )}
-      </View>
-      <View
-        style={{
-          width: DOCK.dot,
-          height: DOCK.dot,
-          borderRadius: DOCK.dot / 2,
-          backgroundColor: running ? colors.dot : "#00000000",
-        }}
-      />
+      {pinned.map((entry, index) => (
+        <DockIcon
+          key={entry.key}
+          icon={entry.app.icon}
+          running={entry.windows.length > 0 || props.starting.has(entry.key)}
+          attention={props.wanting.has(entry.key)}
+          opacity={props.opacityOf(entry.key)}
+          onPress={() => props.onPress(entry)}
+          onPointer={(event, centerX) => props.onPointer(entry, index, centerX, event)}
+          onMenu={(centerX) => props.onMenu(entry.key, centerX)}
+          onTile={(bounds) => tiles?.set(entry.key, bounds)}
+          rise={iconRise(slid.rise, index)}
+          testID={`dock-${entry.app.name}`}
+        />
+      ))}
+      {running.length > 0 && <Divider />}
+      {running.map((entry, index) => (
+        <DockIcon
+          key={entry.key}
+          icon={entry.app.icon}
+          running
+          attention={props.wanting.has(entry.key)}
+          onPress={() => props.onPress(entry)}
+          onPointer={(event, centerX) => props.onPointer(entry, null, centerX, event)}
+          onMenu={(centerX) => props.onMenu(entry.key, centerX)}
+          onTile={(bounds) => tiles?.set(entry.key, bounds)}
+          rise={iconRise(slid.rise, pinned.length + index)}
+          testID={`dock-${entry.app.name}`}
+        />
+      ))}
+      {minimized.length > 0 && <Divider />}
+      {minimized.map(({ window, app }, index) => (
+        <DockIcon
+          key={`minimized:${window.id}`}
+          icon={app.icon}
+          running={false}
+          opacity={0.82}
+          onPress={() => props.onRestore(window.id)}
+          rise={iconRise(slid.rise, pinned.length + running.length + index)}
+          testID={`dock-minimized-${window.id}`}
+        />
+      ))}
     </View>
   );
 }

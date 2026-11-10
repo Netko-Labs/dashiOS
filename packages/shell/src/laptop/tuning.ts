@@ -9,8 +9,11 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import type { GraphicsController } from "../graphics/controller.ts";
 import type { HardwareApi } from "../hardware/client.ts";
 import type { NotificationStore } from "../notifications/store.ts";
+import { Logind } from "../power/logind.ts";
+import type { ModeStore } from "../power/modes/store.ts";
 import { writeJsonAtomic } from "../settings-app/store.ts";
 
 export const RESET_NOTICE = {
@@ -81,4 +84,31 @@ export async function applyTuning(deps: TuningDeps, atLogin: boolean): Promise<v
     transient: false,
     resident: false,
   });
+}
+
+/**
+ * Saved tuning at login and after waking, and the recipe again after waking
+ * (firmware forgets). Returns the way to stop listening.
+ */
+export function followWake(
+  options: { realSession: boolean; developmentRun: boolean },
+  parts: { hardware: HardwareApi; notifications: NotificationStore; modes: ModeStore; graphics: GraphicsController },
+): () => void {
+  const { hardware, notifications, modes, graphics } = parts;
+  let logind: Logind | null = null;
+  if (options.realSession && !options.developmentRun) {
+    void applyTuning({ hardware, notifications }, true).catch(() => {});
+    void Logind.connect()
+      .then(async (connected) => {
+        logind = connected;
+        await connected.onPrepareForSleep((sleeping) => {
+          if (sleeping) return;
+          void applyTuning({ hardware, notifications }, false).catch(() => {});
+          void modes.reapply();
+          void graphics.refresh();
+        });
+      })
+      .catch(() => {});
+  }
+  return () => logind?.close();
 }

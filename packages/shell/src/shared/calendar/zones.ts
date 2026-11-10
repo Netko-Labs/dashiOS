@@ -111,7 +111,7 @@ export function zoneCity(zone: string): string {
 
 /** Every zone this computer knows, for the event sheet's field (UTC first). */
 export function knownZones(): string[] {
-  const list = (Intl as unknown as { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf?.("timeZone") ?? [];
+  const list = typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : [];
   return [UTC, ...list.filter((zone) => zone !== UTC)];
 }
 

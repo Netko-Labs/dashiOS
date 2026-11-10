@@ -13,6 +13,7 @@
 
 import { randomBytes } from "node:crypto";
 import { isAbsolute } from "node:path";
+import { maybe, obj, unknown } from "@dashi/shape";
 import { DBusConnection, type Variant, variant } from "../dbus/index.ts";
 
 const PORTAL = "org.freedesktop.portal.Desktop";
@@ -54,7 +55,7 @@ export function requestPath(uniqueName: string, token: string): string {
 /** The first usable path of a `Response`'s results, or null (cancelled, or nothing we can use). */
 export function pickedPath(code: unknown, results: unknown, accept: (path: string) => boolean = () => true): string | null {
   if (code !== 0 || !(results instanceof Map)) return null;
-  const uris: unknown = results.get("uris") && (results.get("uris") as { value?: unknown }).value;
+  const uris = maybe(obj({ value: unknown() }, { strict: false }), results.get("uris"))?.value;
   return Array.isArray(uris) ? (uris.map((uri) => pathFromUri(uri, accept)).find((path) => path !== null) ?? null) : null;
 }
 

@@ -50,7 +50,7 @@ below, the same command CI runs (`.github/workflows/check.yml`);
 | H13 | Every shell script passes `bash -n` and shellcheck (every severity). | `scripts/check-shell.ts` (`shell-parse`, `shellcheck`) | `bun scripts/check-shell.ts` |
 | H14 | Nothing generated is committed (bytecode, build output); `CLAUDE.md` and `AGENTS.md` match; every version matches. | `tools/check-repo` | `tools/check-repo` |
 | H15 | Every dependency's licence is on the allowed list ("Licenses"), or listed with its reason. | `scripts/check-licenses.ts` (`license-exceptions`) | `bun scripts/check-licenses.ts` |
-| H16 | Heavy libraries never load at shell start (the AI SDKs are banned there); the start-up module count has a ceiling. | `scripts/boot-weight.ts` (`boot-weight`) | `bun scripts/boot-weight.ts` |
+| H16 | Heavy libraries never load at shell start (the AI SDKs are banned there); the count of library modules at start has a ceiling (Dashi's own modules don't count: splitting files adds them). | `scripts/boot-weight.ts` (`boot-weight`) | `bun scripts/boot-weight.ts` |
 | H17 | A system service Dashi ships scores 5.0 or better on `systemd-analyze security`. | `scripts/check-units.ts` (`unit-exposure`) | `bun scripts/check-units.ts` |
 
 ### The lists

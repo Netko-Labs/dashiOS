@@ -84,6 +84,114 @@ function keyCalls(compositor: Pick<Compositor, "sendKeys" | "snippetErase"> | nu
   return { sendKeys: (params) => compositor?.sendKeys(params) ?? none(), snippetErase: (params) => compositor?.snippetErase(params) ?? none() };
 }
 
+/** The clipboard watch on the compositor's copies; none without a compositor. */
+function startWatch(
+  options: ClipboardOptions,
+  compositor: NonNullable<ClipboardOptions["compositor"]>,
+  parts: { history: ClipboardHistory; io: ClipboardIo; fields: FieldCheck; enabled: () => boolean; leftOut: () => readonly string[] },
+): ClipboardWatch {
+  return new ClipboardWatch({
+    on: (listener) => compositor.on(listener),
+    windows: () => compositor.windows(),
+    history: parts.history,
+    io: parts.io,
+    fields: parts.fields,
+    enabled: parts.enabled,
+    leftOut: parts.leftOut,
+    paused: options.paused,
+    isVault: options.isVault,
+    appName: options.appName,
+  });
+}
+
+/** Turned off, from here or Settings or by hand: what was kept goes. Returns the way to stop. */
+function followHistorySwitch(settings: SettingsStore, history: ClipboardHistory, enabled: () => boolean, changed: () => void): () => void {
+  let wasOn = enabled();
+  return settings.subscribe(() => {
+    const on = enabled();
+    if (wasOn && !on) history.clear();
+    wasOn = on;
+    changed();
+  });
+}
+
+/** The keywords the compositor watches for, sent now and again whenever the snippets change. */
+function followKeywords(compositor: ClipboardOptions["compositor"], snippets: SnippetStore): () => void {
+  const send = () =>
+    void compositor
+      ?.snippets({ keywords: snippets.getSnapshot().map((each) => each.keyword) })
+      .catch((error) => console.error("dashi-shell: dashi-comp refused the snippets' keywords:", error));
+  send();
+  return snippets.subscribe(send);
+}
+
+/** A snippet the compositor reports typed is expanded where it was typed. */
+function expandOnCompositor(compositor: ClipboardOptions["compositor"], deps: Parameters<typeof expandSnippet>[2]): () => void {
+  return (
+    compositor?.on((event) => {
+      if (event.event === "snippet") void expandSnippet(event.keyword, event.window, deps).catch((error) => console.error("dashi-shell: a snippet:", error));
+    }) ?? (() => {})
+  );
+}
+
+/** A snippet's text, its placeholders filled in, on the clipboard (never kept). Resolves to its cursor step back, or null. */
+async function putSnippet(
+  history: ClipboardHistory,
+  io: ClipboardIo,
+  pasting: PasteDeps & Pick<Compositor, "snippetErase">,
+  locale: string | undefined,
+  text: string,
+): Promise<{ back: number } | null> {
+  const top = history.getSnapshot().entries[0];
+  const filled = expand(text, {
+    now: new Date(),
+    ...(locale ? { locale } : {}),
+    clipboard: top?.kind === "text" ? (top.text ?? null) : null,
+  });
+  pasting.watch.expect("text", filled.text, "skip");
+  const there = pasting.watch.nextCopy(500);
+  if (!(await io.write("text/plain;charset=utf-8", filled.text))) return null;
+  await there;
+  return { back: filled.back };
+}
+
+/** What the two launcher scopes need from the rest of clipboard. */
+function scopeDepsOf(parts: {
+  history: ClipboardHistory;
+  snippets: SnippetStore;
+  enabled: () => boolean;
+  target: () => PasteTarget | null;
+  changes: Set<() => void>;
+  pasting: PasteDeps & Pick<Compositor, "snippetErase">;
+  put(text: string): Promise<{ back: number } | null>;
+  openSettings(): void;
+}) {
+  const { history, snippets, pasting, put } = parts;
+  return {
+    history,
+    snippets,
+    enabled: parts.enabled,
+    target: parts.target,
+    onChange: (listener: () => void) => {
+      parts.changes.add(listener);
+      return () => parts.changes.delete(listener);
+    },
+    imagePath: (entry: Parameters<ClipboardHistory["imagePath"]>[0]) => history.imagePath(entry),
+    paste: (entry: Parameters<typeof pasteEntry>[0], to: PasteTarget) => pasteEntry(entry, to, pasting),
+    copy: (entry: Parameters<typeof copyEntry>[0]) => copyEntry(entry, pasting),
+    pasteSnippet: async (text: string, to: PasteTarget) => {
+      const placed = await put(text);
+      if (!placed) return false;
+      await Bun.sleep(80);
+      await pasting.sendKeys({ window: to.id, chord: pasteChord(to.appId) });
+      for (let step = 0; step < Math.min(placed.back, 500); step++) await pasting.sendKeys({ window: to.id, chord: "Left" });
+      return true;
+    },
+    copySnippet: async (text: string) => (await put(text)) !== null,
+    openSettings: parts.openSettings,
+  };
+}
+
 export function startClipboard(options: ClipboardOptions): Clipboard {
   const { compositor, settings } = options;
   const history = options.history ?? new ClipboardHistory();
@@ -99,29 +207,9 @@ export function startClipboard(options: ClipboardOptions): Clipboard {
   const changed = () => {
     for (const listener of changes) listener();
   };
-  // Turned off, from here or Settings or by hand: what was kept goes.
-  let wasOn = enabled();
-  const stopSettings = settings.subscribe(() => {
-    const on = enabled();
-    if (wasOn && !on) history.clear();
-    wasOn = on;
-    changed();
-  });
+  const stopSettings = followHistorySwitch(settings, history, enabled, changed);
 
-  const watch = compositor
-    ? new ClipboardWatch({
-        on: (listener) => compositor.on(listener),
-        windows: () => compositor.windows(),
-        history,
-        io,
-        fields,
-        enabled,
-        leftOut,
-        paused: options.paused,
-        isVault: options.isVault,
-        appName: options.appName,
-      })
-    : null;
+  const watch = compositor ? startWatch(options, compositor, { history, io, fields, enabled, leftOut }) : null;
   const pasting: PasteDeps & Pick<Compositor, "snippetErase"> = {
     io,
     watch: watch ?? { expect: () => {}, nextCopy: async () => false },
@@ -129,14 +217,8 @@ export function startClipboard(options: ClipboardOptions): Clipboard {
     ...keyCalls(compositor),
   };
 
-  // The keywords the compositor watches for, sent again whenever the snippets change.
-  const sendKeywords = () =>
-    void compositor
-      ?.snippets({ keywords: snippets.getSnapshot().map((each) => each.keyword) })
-      .catch((error) => console.error("dashi-shell: dashi-comp refused the snippets' keywords:", error));
-  sendKeywords();
-  const stopSnippets = snippets.subscribe(sendKeywords);
-  const expandDeps = {
+  const stopSnippets = followKeywords(compositor, snippets);
+  const stopExpanding = expandOnCompositor(compositor, {
     ...pasting,
     snippets,
     windows: () => compositor?.windows() ?? Promise.resolve([]),
@@ -144,12 +226,7 @@ export function startClipboard(options: ClipboardOptions): Clipboard {
     inTerminals: () => section().snippetsInTerminals === true,
     history: () => history.getSnapshot(),
     ...(options.locale ? { locale: options.locale } : {}),
-  };
-  const stopExpanding =
-    compositor?.on((event) => {
-      if (event.event === "snippet")
-        void expandSnippet(event.keyword, event.window, expandDeps).catch((error) => console.error("dashi-shell: a snippet:", error));
-    }) ?? (() => {});
+  });
 
   let target: PasteTarget | null = null;
   const opening = (window: number | null) => {
@@ -166,44 +243,16 @@ export function startClipboard(options: ClipboardOptions): Clipboard {
       .catch(() => {});
   };
 
-  /** A snippet's text, its placeholders filled in, on the clipboard (never kept). */
-  const putSnippet = async (text: string): Promise<{ back: number } | null> => {
-    const top = history.getSnapshot().entries[0];
-    const filled = expand(text, {
-      now: new Date(),
-      ...(options.locale ? { locale: options.locale } : {}),
-      clipboard: top?.kind === "text" ? (top.text ?? null) : null,
-    });
-    pasting.watch.expect("text", filled.text, "skip");
-    const there = pasting.watch.nextCopy(500);
-    if (!(await io.write("text/plain;charset=utf-8", filled.text))) return null;
-    await there;
-    return { back: filled.back };
-  };
-
-  const scopeDeps = {
+  const scopes = scopeDepsOf({
     history,
     snippets,
     enabled,
     target: () => target,
-    onChange: (listener: () => void) => {
-      changes.add(listener);
-      return () => changes.delete(listener);
-    },
-    imagePath: (entry: Parameters<ClipboardHistory["imagePath"]>[0]) => history.imagePath(entry),
-    paste: (entry: Parameters<typeof pasteEntry>[0], to: PasteTarget) => pasteEntry(entry, to, pasting),
-    copy: (entry: Parameters<typeof copyEntry>[0]) => copyEntry(entry, pasting),
-    pasteSnippet: async (text: string, to: PasteTarget) => {
-      const put = await putSnippet(text);
-      if (!put) return false;
-      await Bun.sleep(80);
-      await pasting.sendKeys({ window: to.id, chord: pasteChord(to.appId) });
-      for (let step = 0; step < Math.min(put.back, 500); step++) await pasting.sendKeys({ window: to.id, chord: "Left" });
-      return true;
-    },
-    copySnippet: async (text: string) => (await putSnippet(text)) !== null,
+    changes,
+    pasting,
+    put: (text) => putSnippet(history, io, pasting, options.locale, text),
     openSettings: options.openSettings,
-  };
+  });
 
   const source = clipboardSource({
     open: (scope, ctx: ActionContext) => options.openLauncher(scope, ctx.window),
@@ -217,7 +266,7 @@ export function startClipboard(options: ClipboardOptions): Clipboard {
   return {
     history,
     snippets,
-    scopes: [historyScope(scopeDeps), snippetsScope(scopeDeps)],
+    scopes: [historyScope(scopes), snippetsScope(scopes)],
     source,
     opening,
     recent: (limit) => (enabled() ? history.getSnapshot().entries.slice(0, limit).map(forAgent) : []),

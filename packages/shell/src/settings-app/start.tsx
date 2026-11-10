@@ -98,18 +98,54 @@ function answersOf(options: SettingsAppOptions): { answers?: AnswerStatus } {
 const FLAG_NAMES: readonly (keyof Flags)[] = ["dark", "dnd", "night"];
 const isFlag = (field: string): field is keyof Flags => FLAG_NAMES.some((name) => name === field);
 
-export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
-  const { compositor } = options;
-  const nav = new Nav();
-  const focus = new RowFocus();
-  const find = new FindFocus();
-  // A switch an agent or a pane turned through the registry is undone through the same store (changes/).
+/** A switch an agent or a pane turned through the registry is undone through the same store (changes/). */
+function attachFlagUndo(options: SettingsAppOptions): void {
   options.settings.changes.attach("flags", {
     read: (field) => (isFlag(field) ? options.flags.getSnapshot()[field] : undefined),
     write: (field, value) => {
       if (isFlag(field)) options.flags.set({ [field]: value === true });
     },
   });
+}
+
+/** What the panes are given when the window opens: the stores, and the late-bound parts asked for now. */
+function paneContext(
+  options: SettingsAppOptions,
+  screens: ScreensStore,
+  clipboard: ReturnType<NonNullable<SettingsAppOptions["clipboard"]>>,
+  open: (pane?: PaneId, row?: string) => void,
+): PaneContext {
+  return {
+    settings: options.settings,
+    region: options.region,
+    flags: options.flags,
+    screens,
+    grants: options.grants,
+    ...(options.sites ? { sites: options.sites } : {}),
+    ...(options.privacy ? { privacy: options.privacy } : {}),
+    ...(options.passwords ? { passwords: options.passwords } : {}),
+    ...answersOf(options),
+    ...(clipboard ? { clipboard } : {}),
+    ...(options.installedApp ? { installedApp: options.installedApp } : {}),
+    layouts: loadLayouts(),
+    chooser: portalChooser(),
+    services: options.services(),
+    ...(options.controlCenter ? { controlCenter: options.controlCenter } : {}),
+    about: readAbout,
+    ...(options.agents ? { agents: options.agents } : {}),
+    lock: options.lock,
+    openSetup: options.openSetup,
+    show: (pane, row) => open(pane, row),
+    home: homedir(),
+  };
+}
+
+export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
+  const { compositor } = options;
+  const nav = new Nav();
+  const focus = new RowFocus();
+  const find = new FindFocus();
+  attachFlagUndo(options);
   let session: Session | null = null;
   // The page scrolls to a row through the window's host (spot.tsx).
   const spots: SpotHost = { focus, scroll: (testID, dy) => session?.surface?.scroll?.(testID, dy) };
@@ -142,29 +178,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
     }
     const screens = new ScreensStore(compositor, options.settings, options.displays ?? null);
     const clipboard = options.clipboard?.() ?? null;
-    const ctx: PaneContext = {
-      settings: options.settings,
-      region: options.region,
-      flags: options.flags,
-      screens,
-      grants: options.grants,
-      ...(options.sites ? { sites: options.sites } : {}),
-      ...(options.privacy ? { privacy: options.privacy } : {}),
-      ...(options.passwords ? { passwords: options.passwords } : {}),
-      ...answersOf(options),
-      ...(clipboard ? { clipboard } : {}),
-      ...(options.installedApp ? { installedApp: options.installedApp } : {}),
-      layouts: loadLayouts(),
-      chooser: portalChooser(),
-      services: options.services(),
-      ...(options.controlCenter ? { controlCenter: options.controlCenter } : {}),
-      about: readAbout,
-      ...(options.agents ? { agents: options.agents } : {}),
-      lock: options.lock,
-      openSetup: options.openSetup,
-      show: (pane, row) => open(pane, row),
-      home: homedir(),
-    };
+    const ctx = paneContext(options, screens, clipboard, open);
     const stopScreens = screens.start();
     const stopWatching = options.settings.watch();
     const menus = options.menus?.();

@@ -11,15 +11,19 @@
  * that must return a descriptor uses `FdConnection` (fds.ts) instead.
  */
 
+import type { Shape } from "@dashi/shape";
 import { type BusKind, busAddress, socketPaths } from "./address.ts";
 import { AuthError, ClientAuth } from "./auth.ts";
 import { BUS_NAME, BUS_PATH } from "./bus.ts";
+import { callMessage, signalMessage } from "./calls.ts";
 import { DBusError, ERRORS, ProtocolError } from "./errors.ts";
 import { exportedObject, replyMessage } from "./exported.ts";
 import type { InterfaceSpec } from "./introspect.ts";
 import { MAX_MESSAGE } from "./marshal.ts";
 import { decodeMessage, encodeMessage, Flags, FrameBuffer, type Message, MessageType } from "./message.ts";
 import { ObjectRegistry, type Reply } from "./object.ts";
+import { PendingCalls } from "./pending.ts";
+import { readReply } from "./reply.ts";
 import { type MatchRule, SignalRouter } from "./signals.ts";
 import { subscribeTo } from "./subscribe.ts";
 import type { CallSpec, ExportedObject, SignalSpec } from "./types.ts";
@@ -35,12 +39,6 @@ export interface ConnectOptions {
   maxMessage?: number;
 }
 
-interface Pending {
-  resolve(body: unknown[]): void;
-  reject(error: Error): void;
-  timer: ReturnType<typeof setTimeout>;
-}
-
 const DEFAULT_CALL_TIMEOUT_MS = 25_000;
 const DEFAULT_CONNECT_TIMEOUT_MS = 10_000;
 /** A peer that doesn't read can't make us queue more than this. */
@@ -54,8 +52,7 @@ export class DBusConnection {
   private readonly auth = new ClientAuth(process.getuid?.() ?? 0);
   private onAuth: { done(): void; fail(error: Error): void } | null = null;
   private readonly frames: FrameBuffer;
-  private serial = 0;
-  private readonly pending = new Map<number, Pending>();
+  private readonly pending = new PendingCalls();
   private readonly router = new SignalRouter();
   private readonly registry = new ObjectRegistry();
   private readonly closeListeners = new Set<(error?: Error) => void>();
@@ -143,11 +140,7 @@ export class DBusConnection {
     } catch {
       // Already gone.
     }
-    for (const [serial, pending] of this.pending) {
-      clearTimeout(pending.timer);
-      pending.reject(new DBusError(ERRORS.disconnected, error?.message ?? "the connection closed"));
-      this.pending.delete(serial);
-    }
+    this.pending.rejectAll(error);
     for (const listener of this.closeListeners) {
       try {
         listener(error);
@@ -212,7 +205,7 @@ export class DBusConnection {
     switch (message.type) {
       case MessageType.MethodReturn:
       case MessageType.Error:
-        return this.settle(message);
+        return this.pending.settle(message);
       case MessageType.Signal:
         return this.router.dispatch(message);
       case MessageType.MethodCall:
@@ -220,75 +213,26 @@ export class DBusConnection {
     }
   }
 
-  private settle(message: Message): void {
-    const serial = message.replySerial as number;
-    const pending = this.pending.get(serial);
-    if (!pending) return;
-    this.pending.delete(serial);
-    clearTimeout(pending.timer);
-    if (message.type === MessageType.MethodReturn) {
-      pending.resolve(message.body);
-    } else {
-      const text = typeof message.body[0] === "string" ? message.body[0] : "";
-      pending.reject(new DBusError(message.errorName as string, text, message.body));
-    }
-  }
-
   // Calls out.
-
-  private nextSerial(): number {
-    this.serial = this.serial >= 0xffffffff ? 1 : this.serial + 1;
-    return this.serial;
-  }
 
   /** Call a method and resolve with the reply's values. Rejects with a `DBusError` for error replies, timeouts, and a closed connection. */
   async call(spec: CallSpec, timeoutMs = DEFAULT_CALL_TIMEOUT_MS): Promise<unknown[]> {
-    const serial = this.nextSerial();
-    const message: Message = {
-      type: MessageType.MethodCall,
-      flags: (spec.noReply ? Flags.NoReplyExpected : 0) | (spec.interactive ? Flags.AllowInteractiveAuthorization : 0),
-      serial,
-      path: spec.path,
-      member: spec.member,
-      signature: spec.signature ?? "",
-      body: [...(spec.body ?? [])],
-    };
-    if (spec.interface !== undefined) message.interface = spec.interface;
-    if (spec.destination !== undefined) message.destination = spec.destination;
-    const frame = encodeMessage(message);
+    const serial = this.pending.nextSerial();
+    const frame = encodeMessage(callMessage(spec, serial));
     if (spec.noReply) {
       this.write(frame);
       return [];
     }
-    return new Promise<unknown[]>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.pending.delete(serial);
-        reject(new DBusError(ERRORS.noReply, `no reply to ${spec.member} within ${timeoutMs} ms`));
-      }, timeoutMs);
-      this.pending.set(serial, { resolve, reject, timer });
-      try {
-        this.write(frame);
-      } catch (error) {
-        clearTimeout(timer);
-        this.pending.delete(serial);
-        reject(error instanceof Error ? error : new Error(String(error)));
-      }
-    });
+    return this.pending.wait(serial, spec.member, timeoutMs, () => this.write(frame));
+  }
+
+  /** Call a method and read the reply with `of` (reply.ts: `value`, `values`). Rejects with a `ProtocolError` when the reply is not what `of` says. */
+  async read<T>(spec: CallSpec, of: Shape<T>, timeoutMs?: number): Promise<T> {
+    return readReply(spec.member, await this.call(spec, timeoutMs), of);
   }
 
   emitSignal(spec: SignalSpec): void {
-    const message: Message = {
-      type: MessageType.Signal,
-      flags: Flags.NoReplyExpected,
-      serial: this.nextSerial(),
-      path: spec.path,
-      interface: spec.interface,
-      member: spec.member,
-      signature: spec.signature ?? "",
-      body: [...(spec.body ?? [])],
-    };
-    if (spec.destination !== undefined) message.destination = spec.destination;
-    this.write(encodeMessage(message));
+    this.write(encodeMessage(signalMessage(spec, this.pending.nextSerial())));
   }
 
   // Signals in.
@@ -313,13 +257,13 @@ export class DBusConnection {
     const reply = await this.registry.handle(call);
     if (call.flags & Flags.NoReplyExpected || this.closed) return;
     try {
-      this.write(encodeMessage(replyMessage(call, reply, this.nextSerial())));
+      this.write(encodeMessage(replyMessage(call, reply, this.pending.nextSerial())));
     } catch (error) {
       if (this.closed) return;
       // The result didn't fit its declared type; fail the call rather than leave the caller to time out.
       const failure: Reply = { type: "error", name: ERRORS.failed, message: error instanceof Error ? error.message : "bad reply" };
       try {
-        this.write(encodeMessage(replyMessage(call, failure, this.nextSerial())));
+        this.write(encodeMessage(replyMessage(call, failure, this.pending.nextSerial())));
       } catch {
         // The connection is going away.
       }

@@ -7,7 +7,7 @@
 
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
-import { type Box, beginDrag, type Drag, dropSpot, fitView, moveDrag, type Spot } from "../../display-config/layout.ts";
+import { type Box, beginDrag, type Drag, dropSpot, type View as FitView, fitView, moveDrag, type Spot } from "../../display-config/layout.ts";
 import { type Monitor, monitorLabel } from "../../display-config/monitors.ts";
 import { useControlColors } from "../../shared/controls/palette.ts";
 
@@ -25,6 +25,34 @@ export function boxesOf(monitors: readonly Monitor[]): Box[] {
 
 /** The view's size: inside Displays' hero at the Settings window's opening size. */
 export const ARRANGEMENT_WIDTH = 560;
+
+/** One screen in the arrangement, drawn to scale at where it sits (or where it is being dragged to). */
+function ArrangementBox({ box, monitor, view, lifted }: { box: Box; monitor: Monitor | undefined; view: FitView; lifted: boolean }) {
+  const colors = useControlColors();
+  return (
+    <View
+      testID={`arrangement:${box.name}`}
+      style={{
+        position: "absolute",
+        left: view.originX + box.x * view.scale,
+        top: view.originY + box.y * view.scale,
+        width: box.width * view.scale,
+        height: box.height * view.scale,
+        borderRadius: 8,
+        borderWidth: lifted ? 3 : 2,
+        borderColor: lifted ? colors.text : colors.muted,
+        backgroundColor: colors.surface,
+        overflow: "hidden",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {monitor?.primary && <View style={{ position: "absolute", left: 0, top: 0, width: box.width * view.scale, height: 5, backgroundColor: colors.text }} />}
+      <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.offInk }}>{monitor ? monitorLabel(monitor) : box.name}</Text>
+      <Text style={{ fontSize: 10, color: colors.muted }}>{box.name}</Text>
+    </View>
+  );
+}
 
 export function ArrangementView({ monitors, onMove }: { monitors: readonly Monitor[]; onMove: (name: string, spot: Spot) => void }) {
   const colors = useControlColors();
@@ -94,37 +122,15 @@ export function ArrangementView({ monitors, onMove }: { monitors: readonly Monit
           backgroundColor: colors.line,
         }}
       >
-        {boxes.map((box) => {
-          const shown = place(box);
-          const monitor = monitors.find((candidate) => candidate.name === box.name);
-          const lifted = drag?.name === box.name;
-          return (
-            <View
-              key={box.name}
-              testID={`arrangement:${box.name}`}
-              style={{
-                position: "absolute",
-                left: view.originX + shown.x * view.scale,
-                top: view.originY + shown.y * view.scale,
-                width: shown.width * view.scale,
-                height: shown.height * view.scale,
-                borderRadius: 8,
-                borderWidth: lifted ? 3 : 2,
-                borderColor: lifted ? colors.text : colors.muted,
-                backgroundColor: colors.surface,
-                overflow: "hidden",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              {monitor?.primary && (
-                <View style={{ position: "absolute", left: 0, top: 0, width: shown.width * view.scale, height: 5, backgroundColor: colors.text }} />
-              )}
-              <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.offInk }}>{monitor ? monitorLabel(monitor) : box.name}</Text>
-              <Text style={{ fontSize: 10, color: colors.muted }}>{box.name}</Text>
-            </View>
-          );
-        })}
+        {boxes.map((box) => (
+          <ArrangementBox
+            key={box.name}
+            box={place(box)}
+            monitor={monitors.find((candidate) => candidate.name === box.name)}
+            view={view}
+            lifted={drag?.name === box.name}
+          />
+        ))}
       </View>
     </View>
   );

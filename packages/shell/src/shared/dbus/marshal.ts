@@ -131,10 +131,10 @@ function wide(value: unknown, signed: boolean, what: string): bigint {
   return big;
 }
 
-function text(value: unknown, what: string): Uint8Array {
+function text(value: unknown, what: string): string {
   if (typeof value !== "string") throw new TypeError(`${what} must be a string`);
   if (value.includes("\0")) throw new TypeError(`${what} must not contain NUL`);
-  return encoder.encode(value);
+  return value;
 }
 
 function writeBasic(w: Writer, code: BasicCode, value: unknown): void {
@@ -162,15 +162,17 @@ function writeBasic(w: Writer, code: BasicCode, value: unknown): void {
       return w.f64(value);
     case "s":
     case "o": {
-      const bytes = text(value, code === "s" ? "string" : "object path");
-      if (code === "o" && !isObjectPath(value as string)) throw new TypeError(`"${value}" is not an object path`);
+      const chars = text(value, code === "s" ? "string" : "object path");
+      if (code === "o" && !isObjectPath(chars)) throw new TypeError(`"${chars}" is not an object path`);
+      const bytes = encoder.encode(chars);
       w.u32(bytes.length);
       w.raw(bytes);
       return w.u8(0);
     }
     case "g": {
-      const bytes = text(value, "signature");
-      parseSignature(value as string);
+      const chars = text(value, "signature");
+      parseSignature(chars);
+      const bytes = encoder.encode(chars);
       w.u8(bytes.length);
       w.raw(bytes);
       return w.u8(0);

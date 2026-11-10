@@ -15,6 +15,7 @@
 import { constants, lstatSync } from "node:fs";
 import { chmod, copyFile, lstat, mkdir, open, readdir, readlink, rm, stat, symlink, utimes } from "node:fs/promises";
 import { join } from "node:path";
+import { isErrno } from "./errno.ts";
 import { describeError } from "./items.ts";
 import { renameNoReplace } from "./noreplace.ts";
 import { baseName, checkName, copyName, isInside, normalizePath, parentOf, uniqueName } from "./paths.ts";
@@ -45,7 +46,7 @@ const exists = (path: string): Promise<boolean> =>
     () => true,
     () => false,
   );
-const codeOf = (error: unknown): string | undefined => (error as { code?: string } | null)?.code;
+const codeOf = (error: unknown): string | undefined => (isErrno(error) ? error.code : undefined);
 
 /** Files at least this big are copied in chunks (cancellable, no symlink on open); smaller ones by the kernel's copy (reflinks where the disk can). */
 const CHUNKED_FROM = 64 * 1024 * 1024;

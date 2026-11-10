@@ -3,8 +3,10 @@
  * asking who owns them.
  */
 
+import { list, str } from "@dashi/shape";
 import type { DBusConnection } from "./connection.ts";
 import { DBusError, ERRORS } from "./errors.ts";
+import { value } from "./reply.ts";
 
 export const BUS_NAME = "org.freedesktop.DBus";
 export const BUS_PATH = "/org/freedesktop/DBus";
@@ -34,8 +36,7 @@ export async function releaseName(connection: DBusConnection, name: string): Pro
 
 /** The unique name that owns `name`; rejects with `NameHasNoOwner` if nobody does. */
 export async function getNameOwner(connection: DBusConnection, name: string): Promise<string> {
-  const [owner] = await connection.call({ ...BUS, member: "GetNameOwner", signature: "s", body: [name] });
-  return owner as string;
+  return connection.read({ ...BUS, member: "GetNameOwner", signature: "s", body: [name] }, value(str()));
 }
 
 /** Whether anyone owns `name` right now; a unique name (`:1.42`) is owned while its connection lives. */
@@ -45,6 +46,5 @@ export async function nameHasOwner(connection: DBusConnection, name: string): Pr
 }
 
 export async function listNames(connection: DBusConnection): Promise<string[]> {
-  const [names] = await connection.call({ ...BUS, member: "ListNames" });
-  return names as string[];
+  return connection.read({ ...BUS, member: "ListNames" }, value(list(str())));
 }
