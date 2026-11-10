@@ -15,16 +15,7 @@ import { isAlive, type Outcome, protectedPids, readProcStat, sendSignal, termina
 import { ForceQuitController } from "./lib/controller.ts";
 import { appGroups, type Identity } from "./lib/model.ts";
 import { FORCE_QUIT, ForceQuitWindow } from "./lib/view.tsx";
-import type { AppGroup } from "./types.ts";
-
-export interface ForceQuit {
-  open(): void;
-  close(): void;
-  /** The apps the window would list for these windows: one per process, the shell's own left out. */
-  apps(windows: readonly CompositorWindow[]): AppGroup[];
-  /** Ends `pid` as the window's button does; nothing is sent for a process the window would not list. */
-  end(pid: number, windows: readonly CompositorWindow[]): Outcome;
-}
+import type { AppGroup, ForceQuit } from "./types.ts";
 
 /** A window's name and icon: the installed app's, else the app id's name and a stand-in icon. */
 export function identifierFor(entries: readonly Entry[]): (window: CompositorWindow) => Identity {
