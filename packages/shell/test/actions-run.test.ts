@@ -7,7 +7,7 @@ import { addressText, copyAddress } from "../src/actions/lib/copy.ts";
 import { parseLinkRequest, replyLine, serveLinks } from "../src/actions/lib/links.ts";
 import { linkDecision, type RunDeps, runAction } from "../src/actions/lib/run.ts";
 import { type ActionDef, ok, ready } from "../src/actions/types.ts";
-import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
+import { TOOL_ACTIONS } from "../src/agents/index.ts";
 
 function action(extra: Partial<ActionDef> = {}): ActionDef & { ran: number } {
   const made = {

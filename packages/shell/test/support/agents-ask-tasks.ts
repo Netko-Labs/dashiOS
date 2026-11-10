@@ -3,7 +3,7 @@ import { ANSWERERS, AnswerError, type Answerer, type ModelCall, type Turn } from
 import type { TaskRecord } from "../../src/agents/ask/history.ts";
 import type { TaskDeps } from "../../src/agents/ask/lib/task-types.ts";
 import { AskTasks } from "../../src/agents/ask/lib/tasks.ts";
-import { TOOL_ACTIONS } from "../../src/agents/tools/index.ts";
+import { TOOL_ACTIONS } from "../../src/agents/index.ts";
 
 /** An answerer that replies with `calls` (or fails), and remembers each turn it was given. */
 export function fakeAnswerer(replies: Array<ModelCall[] | AnswerError>): Answerer & { turns: Turn[]; histories: unknown[][] } {

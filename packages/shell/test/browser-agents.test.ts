@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { defaultAction, domKey } from "../browser-extension/src/page/keys.ts";
 import { browserWindowFor, viewportToWindow } from "../src/agents/desktop/lib/browser-field.ts";
+import { parseCall } from "../src/agents/index.ts";
 import { DENIED_SOCKETS, sandboxArgs } from "../src/agents/sandbox.ts";
 import type { SandboxEnv } from "../src/agents/sandbox-types.ts";
 import { checkField } from "../src/agents/secrets/field-check.ts";
 import { covers, parseSiteGrants, type SiteAnswer, SiteConsent, SiteGrants, siteOf } from "../src/agents/sites.ts";
-import { parseCall } from "../src/agents/tools/index.ts";
 import { isBrowserHost } from "../src/browser/bridge.ts";
 import { parseField, parseFromBrowser } from "../src/browser/protocol.ts";
 import type { CompositorWindow } from "../src/compositor.ts";

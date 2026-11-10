@@ -4,7 +4,7 @@ import { modelKeys } from "../src/agents/ask/keys.ts";
 import { gptAnswerer, gptSchema, gptTool, readGptReply, withoutNulls } from "../src/agents/ask/lib/gpt.ts";
 import { isChatModel, rankGptModels } from "../src/agents/ask/lib/gpt-models.ts";
 import { planTools, stepsFrom } from "../src/agents/ask/plan.ts";
-import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
+import { TOOL_ACTIONS } from "../src/agents/index.ts";
 import { gptModelWords, keyWords } from "../src/settings-app/panes/agents-answer.tsx";
 
 const TOOLS = planTools(TOOL_ACTIONS);

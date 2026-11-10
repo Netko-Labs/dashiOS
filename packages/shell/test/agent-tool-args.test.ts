@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { parseCall, TOOLS } from "../src/agents/tools/index.ts";
+import { parseCall, TOOLS } from "../src/agents/index.ts";
 import { wholeArg } from "../src/agents/tools/lib/args.ts";
 
 describe("tool arguments", () => {

@@ -5,7 +5,7 @@ import type { HistoryEntry } from "../src/agents/ask/history.ts";
 import type { NowItem } from "../src/agents/ask/now.ts";
 import { stepsFrom } from "../src/agents/ask/plan.ts";
 import type { TaskView } from "../src/agents/ask/types.ts";
-import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
+import { TOOL_ACTIONS } from "../src/agents/index.ts";
 import {
   ASK_ROW,
   agentVerbs,
