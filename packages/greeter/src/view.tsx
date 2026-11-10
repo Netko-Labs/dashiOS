@@ -8,7 +8,7 @@ import { Avatar, LOGIN_FOCUS_RING, LOGIN_GROUND, LOGIN_INK, LOGIN_MUTED, LoginSc
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useState, useSyncExternalStore } from "react";
 import { formatDay, formatTime } from "./clock.ts";
-import type { LoginState } from "./greetd/login.ts";
+import type { LoginState } from "./greetd/index.ts";
 import type { Session } from "./sessions.ts";
 import type { User } from "./users.ts";
 

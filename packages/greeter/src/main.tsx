@@ -11,8 +11,7 @@
 import { TextSelectionLook } from "@dashi/ui";
 import { type NativeHostTransport, render, spawnNativeHost } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import { connectGreetd } from "./greetd/client.ts";
-import { Login, type LoginState } from "./greetd/login.ts";
+import { connectGreetd, Login, type LoginState } from "./greetd/index.ts";
 import { recall, remember } from "./memory.ts";
 import { metalHost } from "./paths.ts";
 import { power } from "./power.ts";

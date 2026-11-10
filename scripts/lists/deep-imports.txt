@@ -1,8 +1,4 @@
 # H19: imports from outside a module past its public files, its index.ts and what it re-exports (count = imports; tests may also import its lib/). May only shrink.
-2	packages/greeter/src/main.tsx
-1	packages/greeter/src/sessions.ts
-1	packages/greeter/src/view.tsx
-3	packages/greeter/test/greetd.test.ts
 1	packages/shell/test/actions-tools.test.ts
 1	packages/shell/test/agent-clipboard.test.ts
 1	packages/shell/test/agent-pay.test.ts

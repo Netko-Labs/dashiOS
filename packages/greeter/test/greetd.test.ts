@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { Greetd } from "../src/greetd/client.ts";
+import { encode, FrameReader, parseResponse, type Request, type Response } from "../src/greetd/lib/protocol.ts";
 import { Login, type LoginState, promptText } from "../src/greetd/login.ts";
-import { encode, FrameReader, parseResponse, type Request, type Response } from "../src/greetd/protocol.ts";
 
 describe("framing", () => {
   test("a frame is its length then its JSON, and reads back across chunk boundaries", () => {
