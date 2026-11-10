@@ -8,7 +8,7 @@
  */
 
 import type { CompositorWindow } from "../../compositor.ts";
-import type { AppGroup } from "../../force-quit/model.ts";
+import type { AppGroup } from "../../force-quit/index.ts";
 import { clean } from "../../notifications/text.ts";
 import { type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import type { Call } from "../tools/index.ts";

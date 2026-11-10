@@ -5,9 +5,10 @@
  * list again, so the list follows windows opening and closing.
  */
 
-import type { CompositorWindow } from "../compositor.ts";
-import { type Outcome, type Signal, type SignalResult, terminate } from "../shared/processes/policy.ts";
-import { type AppGroup, appGroups, type Identity, indexOfPid, keepSelection, moveSelection, revealTop } from "./model.ts";
+import type { CompositorWindow } from "../../compositor.ts";
+import { type Outcome, type Signal, type SignalResult, terminate } from "../../shared/processes/policy.ts";
+import type { AppGroup } from "../types.ts";
+import { appGroups, type Identity, indexOfPid, keepSelection, moveSelection, revealTop } from "./model.ts";
 
 export interface ForceQuitState {
   /** False until the first list arrives, so the window is blank rather than "no apps" meanwhile. */

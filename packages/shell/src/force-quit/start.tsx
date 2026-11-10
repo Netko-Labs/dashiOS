@@ -13,18 +13,10 @@ import { type OverlayHandle, openOverlay } from "../overlay.tsx";
 import { iconPath } from "../shared/apps/index.ts";
 import { isAlive, protectedPids, readProcStat, sendSignal } from "../shared/processes/kernel.ts";
 import { type Outcome, terminate } from "../shared/processes/policy.ts";
-import { ForceQuitController } from "./controller.ts";
-import { type AppGroup, appGroups, type Identity } from "./model.ts";
-import { FORCE_QUIT, ForceQuitWindow } from "./view.tsx";
-
-export interface ForceQuit {
-  open(): void;
-  close(): void;
-  /** The apps the window would list for these windows: one per process, the shell's own left out. */
-  apps(windows: readonly CompositorWindow[]): AppGroup[];
-  /** Ends `pid` as the window's button does; nothing is sent for a process the window would not list. */
-  end(pid: number, windows: readonly CompositorWindow[]): Outcome;
-}
+import { ForceQuitController } from "./lib/controller.ts";
+import { appGroups, type Identity } from "./lib/model.ts";
+import { FORCE_QUIT, ForceQuitWindow } from "./lib/view.tsx";
+import type { AppGroup, ForceQuit } from "./types.ts";
 
 /** A window's name and icon: the installed app's, else the app id's name and a stand-in icon. */
 export function identifierFor(entries: readonly Entry[]): (window: CompositorWindow) => Identity {

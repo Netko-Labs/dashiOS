@@ -347,8 +347,7 @@
 1	packages/shell/src/dock/start.tsx
 1	packages/shell/src/entries.ts
 4	packages/shell/src/extensions/start.ts
-1	packages/shell/src/force-quit/controller.ts
-2	packages/shell/src/force-quit/index.ts
+1	packages/shell/src/force-quit/lib/controller.ts
 2	packages/shell/src/force-quit/start.tsx
 1	packages/shell/src/glyphs.ts
 2	packages/shell/src/graphics/controller.ts

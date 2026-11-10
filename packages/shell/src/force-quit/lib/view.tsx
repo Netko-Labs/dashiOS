@@ -8,9 +8,10 @@
 import { rowLook, SelectionBar, useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
-import { KeyCatcher, type NavigationKey } from "../overlay.tsx";
+import { KeyCatcher, type NavigationKey } from "../../overlay.tsx";
+import type { AppGroup } from "../types.ts";
 import type { ForceQuitController, ForceQuitState } from "./controller.ts";
-import { type AppGroup, VISIBLE_ROWS } from "./model.ts";
+import { VISIBLE_ROWS } from "./model.ts";
 
 /** The window's size; the panel is inset by a margin for its shadow. */
 export const FORCE_QUIT = { width: 400, height: 404, margin: 24 } as const;

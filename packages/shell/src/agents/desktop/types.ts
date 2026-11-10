@@ -8,7 +8,7 @@
 import type { CompositorWindow } from "../../compositor.ts";
 import type { DisplayManager } from "../../display-config/manager.ts";
 import type { DockPrefs } from "../../dock/prefs.ts";
-import type { ForceQuit } from "../../force-quit/start.tsx";
+import type { ForceQuit } from "../../force-quit/index.ts";
 import type { MenuAction, WindowMenu } from "../../menus/index.ts";
 import type { NotificationStore } from "../../notifications/store.ts";
 import type { ScreenRecorder } from "../../recorder/recorder.ts";
