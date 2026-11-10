@@ -4,10 +4,17 @@
  * and whether a change asks which times of a repeat it is for. Pure.
  */
 
-import { addDays, addMinutes, at, type Day, dayPart, minutesBetween } from "../../../../src/shared/calendar/dates.ts";
-import type { EventInput } from "../../../../src/shared/calendar/event.ts";
-import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
-import { fromHere } from "../../../../src/shared/calendar/zones.ts";
+import {
+  addDays,
+  addMinutes,
+  at,
+  type Day,
+  dayPart,
+  type EventInput,
+  fromHere,
+  minutesBetween,
+  type Occurrence,
+} from "../../../../src/shared/calendar/index.ts";
 import { parseQuickAdd } from "../quickadd.ts";
 import type { OccurrenceRef } from "../state.ts";
 import type { Preview } from "./drag.ts";

@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
-import { parseIcs, writeIcs } from "../src/shared/calendar/ics.ts";
+import { parseIcs } from "../src/shared/calendar/ics.ts";
+import { writeIcs } from "../src/shared/calendar/lib/ics-write.ts";
 import { occurrencesOf } from "../src/shared/calendar/recurrence.ts";
 import { formatRule, parseRule } from "../src/shared/calendar/rules.ts";
 import type { CalEvent } from "../src/shared/calendar/types.ts";

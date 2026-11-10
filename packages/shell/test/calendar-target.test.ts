@@ -4,8 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CalendarModel } from "../apps/calendar/lib/model.ts";
 import { choosableCalendars, newEventTarget } from "../apps/calendar/lib/target.ts";
+import { PALETTE, paletteColor } from "../src/shared/calendar/ids.ts";
 import { readSidecar } from "../src/shared/calendar/sidecar.ts";
-import { CalendarStore, PALETTE, paletteColor } from "../src/shared/calendar/store.ts";
+import { CalendarStore } from "../src/shared/calendar/store.ts";
 
 const home = { id: "Home", name: "Home" };
 const work = { id: "Work", name: "Work" };

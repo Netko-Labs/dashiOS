@@ -4,7 +4,7 @@
  */
 
 import { useMemo } from "react";
-import type { Day } from "../../../../src/shared/calendar/dates.ts";
+import type { Day } from "../../../../src/shared/calendar/index.ts";
 import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
 import type { CalendarChrome } from "../chrome.ts";
 import type { CalendarFiles } from "../hooks/use-calendar-files.ts";

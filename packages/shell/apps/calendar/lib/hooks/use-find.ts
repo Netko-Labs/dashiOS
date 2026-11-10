@@ -5,8 +5,7 @@
 
 import type { Bounds } from "@mirinjs/metal";
 import { useMemo, useState } from "react";
-import { dayPart } from "../../../../src/shared/calendar/dates.ts";
-import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
+import { dayPart, type Occurrence } from "../../../../src/shared/calendar/index.ts";
 import type { CalendarModel } from "../model.ts";
 import { searchEvents } from "../search.ts";
 import type { CalendarState } from "../state.ts";

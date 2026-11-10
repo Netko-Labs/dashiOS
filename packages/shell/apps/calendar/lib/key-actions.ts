@@ -5,7 +5,7 @@
  */
 
 import type { WindowKeyInfo } from "@mirinjs/metal";
-import type { Occurrence } from "../../../src/shared/calendar/types.ts";
+import type { Occurrence } from "../../../src/shared/calendar/index.ts";
 import type { View } from "./layout.ts";
 import type { CalendarModel } from "./model.ts";
 import { keyAction } from "./window-keys.ts";

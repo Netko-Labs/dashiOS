@@ -10,7 +10,7 @@
 import { Choices, Sheet, Switch, sheetBodyRoom, TextField, useColors, useTitleBarInset } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { Calendar } from "../../../../src/shared/calendar/types.ts";
+import type { Calendar } from "../../../../src/shared/calendar/index.ts";
 import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
 import { type Draft, moveStart, problemWith, type RepeatChoice, setAllDay } from "../draft.ts";
 import { alertChoicesFor, CalendarChoice, NotesField, SheetButtons } from "./event-choices.tsx";

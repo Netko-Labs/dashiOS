@@ -4,9 +4,7 @@
  * then the past ones (latest first). Pure.
  */
 
-import { addDays, type Day, dayPart } from "../../../src/shared/calendar/dates.ts";
-import { occurrencesOf } from "../../../src/shared/calendar/recurrence.ts";
-import type { CalEvent, Calendar, Occurrence } from "../../../src/shared/calendar/types.ts";
+import { addDays, type CalEvent, type Calendar, type Day, dayPart, type Occurrence, occurrencesOf } from "../../../src/shared/calendar/index.ts";
 
 export const SEARCH_LIMIT = 40;
 const REACH_DAYS = 366;

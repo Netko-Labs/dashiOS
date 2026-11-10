@@ -8,7 +8,8 @@
  */
 
 import { addDays, addMinutes, dayPart, daysBetween, isDay, isLocal, type Local, minuteOfDay } from "./dates.ts";
-import { newUid, stampNow } from "./ics.ts";
+import { newUid } from "./ics.ts";
+import { stampNow } from "./lib/ics-time.ts";
 import { type CalEvent, CalendarError, type EventBody, FREQUENCIES, type Override, type Repeat } from "./types.ts";
 import { hereZone, isZone } from "./zones.ts";
 

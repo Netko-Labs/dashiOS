@@ -1,6 +1,6 @@
 /** Times and days as people type them: the event sheet's fields and quick add (quickadd.ts). */
 
-import { type Day, isDay } from "../../../src/shared/calendar/dates.ts";
+import { type Day, isDay } from "../../../src/shared/calendar/index.ts";
 
 /**
  * A time typed as people write it: "14:30", "2:30 pm", "2pm", "930", "9.30 a.m.", "noon" → minutes after midnight, or null.

@@ -10,8 +10,7 @@
 import { useColors, useSurface } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
-import type { Day } from "../../../../src/shared/calendar/dates.ts";
-import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
+import type { Day, Occurrence } from "../../../../src/shared/calendar/index.ts";
 import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
 import { dayNumber, hourLabel, weekdayShort } from "../format.ts";
 import { firstHour, GRID_HEIGHT, HOUR_HEIGHT, revealOffset } from "../layout.ts";

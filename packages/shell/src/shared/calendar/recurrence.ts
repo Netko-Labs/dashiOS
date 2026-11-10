@@ -26,7 +26,7 @@ import {
   startOfWeek,
   weekday,
 } from "./dates.ts";
-import { isCancelled } from "./ics.ts";
+import { isCancelled } from "./lib/ics-read.ts";
 import type { CalEvent, Calendar, Occurrence, Override, Repeat } from "./types.ts";
 import { fromHere, hereZone, toHere } from "./zones.ts";
 

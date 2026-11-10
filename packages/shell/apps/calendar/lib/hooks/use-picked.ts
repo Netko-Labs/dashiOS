@@ -4,7 +4,7 @@
  */
 
 import { useState } from "react";
-import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
+import type { Occurrence } from "../../../../src/shared/calendar/index.ts";
 import { occurrenceKey } from "../grid/event-block.tsx";
 
 export interface Picked {

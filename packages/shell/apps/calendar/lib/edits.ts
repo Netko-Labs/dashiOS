@@ -11,11 +11,21 @@
  *   deleted and changed occurrences move along.
  */
 
-import { addDays, addMinutes, dayPart, type Local, minutesBetween } from "../../../src/shared/calendar/dates.ts";
-import { type EventInput, makeEvent, makeOverride } from "../../../src/shared/calendar/event.ts";
-import { newUid } from "../../../src/shared/calendar/ics.ts";
-import { countBefore } from "../../../src/shared/calendar/recurrence.ts";
-import type { CalEvent, Override, Repeat } from "../../../src/shared/calendar/types.ts";
+import {
+  addDays,
+  addMinutes,
+  type CalEvent,
+  countBefore,
+  dayPart,
+  type EventInput,
+  type Local,
+  makeEvent,
+  makeOverride,
+  minutesBetween,
+  newUid,
+  type Override,
+  type Repeat,
+} from "../../../src/shared/calendar/index.ts";
 
 export type Scope = "this" | "following" | "all";
 

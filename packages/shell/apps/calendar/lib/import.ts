@@ -8,8 +8,7 @@
 
 import { readFileSync, statSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute } from "node:path";
-import { MAX_ICS_BYTES } from "../../../src/shared/calendar/ics.ts";
-import { CalendarError } from "../../../src/shared/calendar/types.ts";
+import { CalendarError, MAX_ICS_BYTES } from "../../../src/shared/calendar/index.ts";
 import type { DBusConnection } from "../../../src/shared/dbus/index.ts";
 import { isRealDirectory, writeNew } from "../../../src/shared/fs/index.ts";
 import { chooseFile } from "../../../src/shared/portal/index.ts";

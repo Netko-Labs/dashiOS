@@ -2,5 +2,3 @@
 1	packages/shell/apps/kit/applet.ts
 1	packages/shell/apps/kit/menus.ts
 1	packages/shell/apps/portal/file-chooser/options.ts
-4	packages/shell/src/shared/calendar/ics.ts
-1	packages/shell/src/shared/calendar/store.ts

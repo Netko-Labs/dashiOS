@@ -9,10 +9,7 @@
  * window closed.
  */
 
-import { dayFromArgs, listenForOpen, openInRunning } from "../../src/shared/calendar/instance.ts";
-import { SIDECAR_FILE } from "../../src/shared/calendar/sidecar.ts";
-import { CalendarStore, defaultRoot } from "../../src/shared/calendar/store.ts";
-import { watchCalendars } from "../../src/shared/calendar/watch.ts";
+import { CalendarStore, dayFromArgs, defaultRoot, listenForOpen, openInRunning, SIDECAR_FILE, watchCalendars } from "../../src/shared/calendar/index.ts";
 import { runApp } from "../kit/index.ts";
 import { CALENDAR_LEAST } from "./lib/chrome.ts";
 import { portalIcsChooser } from "./lib/import.ts";

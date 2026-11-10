@@ -4,7 +4,7 @@
  */
 
 import { useRef } from "react";
-import type { Day } from "../../../../src/shared/calendar/dates.ts";
+import type { Day } from "../../../../src/shared/calendar/index.ts";
 
 /** How soon a second click on the same day or half hour makes an event there. */
 export const DOUBLE_CLICK_MS = 450;

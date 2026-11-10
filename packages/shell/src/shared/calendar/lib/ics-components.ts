@@ -3,8 +3,8 @@
  * the lines of each, with BEGIN and END checked to match and nesting capped.
  */
 
-import { type ContentLine, parseLine } from "./ics-lines.ts";
-import { CalendarError } from "./types.ts";
+import { type ContentLine, parseLine } from "../ics-lines.ts";
+import { CalendarError } from "../types.ts";
 
 export interface Component {
   name: string;

@@ -9,7 +9,7 @@
 import { existsSync, lstatSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { writeAtomic } from "../fs/index.ts";
-import { isCalendarId } from "./store.ts";
+import { isCalendarId } from "./ids.ts";
 
 export const SIDECAR_FILE = ".dashi-calendar.json";
 

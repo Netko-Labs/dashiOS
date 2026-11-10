@@ -8,8 +8,7 @@
  * window decides what the result does (Esc cancels it before the release).
  */
 
-import { addDays, addMinutes, at, type Day, dayPart, type Local, minuteOfDay, minutesBetween } from "../../../../src/shared/calendar/dates.ts";
-import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
+import { addDays, addMinutes, at, type Day, dayPart, type Local, minuteOfDay, minutesBetween, type Occurrence } from "../../../../src/shared/calendar/index.ts";
 import { HOUR_HEIGHT } from "../layout.ts";
 
 export const SNAP_MINUTES = 15;

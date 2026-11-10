@@ -6,7 +6,7 @@
 
 import { Button, useColors, useSurface } from "@dashi/ui";
 import { Text, TextInput, View } from "@mirinjs/metal";
-import type { Calendar } from "../../../../src/shared/calendar/types.ts";
+import type { Calendar } from "../../../../src/shared/calendar/index.ts";
 import type { Draft } from "../draft.ts";
 import { ALL_DAY_ALERTS, alertLabel, TIMED_ALERTS } from "../format.ts";
 import { FormRow } from "./form-fields.tsx";

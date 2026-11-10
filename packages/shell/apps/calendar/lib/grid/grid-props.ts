@@ -1,8 +1,7 @@
 /** What the day, week, and month views are told by the window, and tell it back: the drag, the event being named, what is picked. */
 
 import type { Bounds, PointerInfo } from "@mirinjs/metal";
-import type { Day } from "../../../../src/shared/calendar/dates.ts";
-import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
+import type { Day, Occurrence } from "../../../../src/shared/calendar/index.ts";
 import type { DragStart, Geometry } from "./drag.ts";
 import type { Drag } from "./gesture.ts";
 import type { Pending } from "./inline-title.tsx";

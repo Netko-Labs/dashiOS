@@ -6,7 +6,7 @@
 
 import { PopUpButton, SEARCH, SearchField, Segmented, ToolbarButton, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import type { Day } from "../../../../src/shared/calendar/dates.ts";
+import type { Day } from "../../../../src/shared/calendar/index.ts";
 import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
 import { type CalendarChrome, VIEW_POPUP_WIDTH } from "../chrome.ts";
 import { shortViewTitle, viewTitle } from "../format.ts";

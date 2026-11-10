@@ -11,12 +11,19 @@
 
 import { UndoStack } from "@dashi/ui";
 
-import type { Day } from "../../../src/shared/calendar/dates.ts";
-import type { EventInput } from "../../../src/shared/calendar/event.ts";
-import { busyDays, occurrencesIn } from "../../../src/shared/calendar/recurrence.ts";
-import { readSidecar, writeSidecar } from "../../../src/shared/calendar/sidecar.ts";
-import type { CalendarStore } from "../../../src/shared/calendar/store.ts";
-import { type CalEvent, type Calendar, CalendarError, type Occurrence } from "../../../src/shared/calendar/types.ts";
+import {
+  busyDays,
+  type CalEvent,
+  type Calendar,
+  CalendarError,
+  type CalendarStore,
+  type Day,
+  type EventInput,
+  type Occurrence,
+  occurrencesIn,
+  readSidecar,
+  writeSidecar,
+} from "../../../src/shared/calendar/index.ts";
 import { changeOccurrence, deleteOccurrence, duplicateOf, type EditResult, type Scope } from "./edits.ts";
 import { rememberChanges, writeChange } from "./event-changes.ts";
 import type { EventChange } from "./history.ts";

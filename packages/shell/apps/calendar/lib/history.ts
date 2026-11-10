@@ -7,8 +7,7 @@
  */
 
 import type { UndoAction } from "@dashi/ui";
-import type { CalendarStore } from "../../../src/shared/calendar/store.ts";
-import type { CalEvent } from "../../../src/shared/calendar/types.ts";
+import type { CalEvent, CalendarStore } from "../../../src/shared/calendar/index.ts";
 
 /** Where an event was and is, and how it looked each time; null where it did not exist. */
 export interface EventChange {

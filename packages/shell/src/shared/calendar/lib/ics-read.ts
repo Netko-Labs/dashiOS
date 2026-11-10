@@ -6,12 +6,12 @@
  * repeat by ics.ts.
  */
 
-import { addMinutes } from "./dates.ts";
+import { addMinutes } from "../dates.ts";
+import { type ContentLine, parseDuration, unescapeText } from "../ics-lines.ts";
+import { parseRule } from "../rules.ts";
+import type { CalEvent, EventBody } from "../types.ts";
 import type { Component } from "./ics-components.ts";
-import { type ContentLine, parseDuration, unescapeText } from "./ics-lines.ts";
 import { inEventZone, type ParsedTime, parseTime, stampNow } from "./ics-time.ts";
-import { parseRule } from "./rules.ts";
-import type { CalEvent, EventBody } from "./types.ts";
 
 function alarmOf(children: readonly Component[]): { alert: number | null; rawAlarms: string[] } {
   let alert: number | null = null;

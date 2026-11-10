@@ -7,8 +7,7 @@
 
 import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { type Day, dayPart } from "../../../../src/shared/calendar/dates.ts";
-import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
+import { type Day, dayPart, type Occurrence } from "../../../../src/shared/calendar/index.ts";
 import { inkOn, tint } from "../colors.ts";
 import { titleOf } from "../format.ts";
 import { allDayOn, MONTH_CHIP_HEIGHT } from "../layout.ts";

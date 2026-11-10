@@ -4,10 +4,10 @@
  * and DTSTAMP's "now". Writing a time back is in ics-write.ts.
  */
 
-import { dayPart, fromBasicDay, fromBasicLocal, type Local, toBasicDay } from "./dates.ts";
-import type { ContentLine } from "./ics-lines.ts";
-import type { EventBody } from "./types.ts";
-import { convertWall, hereZone, UTC } from "./zones.ts";
+import { dayPart, fromBasicDay, fromBasicLocal, type Local, toBasicDay } from "../dates.ts";
+import type { ContentLine } from "../ics-lines.ts";
+import type { EventBody } from "../types.ts";
+import { convertWall, hereZone, UTC } from "../zones.ts";
 
 export interface ParsedTime {
   /** The wall clock in `zone`. */

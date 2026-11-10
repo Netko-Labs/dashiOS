@@ -3,8 +3,7 @@
  * typed or dropped) and exporting a calendar to a path.
  */
 
-import { parseIcs } from "../../../../src/shared/calendar/ics.ts";
-import { type Calendar, CalendarError } from "../../../../src/shared/calendar/types.ts";
+import { type Calendar, CalendarError, parseIcs } from "../../../../src/shared/calendar/index.ts";
 import { type IcsChooser, readIcsFile, writeIcsFile } from "../import.ts";
 import type { CalendarModel } from "../model.ts";
 import type { Overlays } from "./use-overlays.ts";

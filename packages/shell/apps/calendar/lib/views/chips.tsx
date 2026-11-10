@@ -6,8 +6,7 @@
 
 import { useColors } from "@dashi/ui";
 import { type Bounds, type PointerInfo, Text, View } from "@mirinjs/metal";
-import { dayPart } from "../../../../src/shared/calendar/dates.ts";
-import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
+import { dayPart, type Occurrence } from "../../../../src/shared/calendar/index.ts";
 import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
 import { inkOn, tint } from "../colors.ts";
 import { clockShort, titleOf } from "../format.ts";

@@ -8,8 +8,7 @@
 import { useColors } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { type Day, monthOf } from "../../../../src/shared/calendar/dates.ts";
-import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
+import { type Day, monthOf, type Occurrence } from "../../../../src/shared/calendar/index.ts";
 import { type ClockPrefs, weekdayNames } from "../../../../src/shared/time/index.ts";
 import { monthDayAt } from "../grid/drag.ts";
 import type { GridHandlers, GridState } from "../grid/grid-props.ts";

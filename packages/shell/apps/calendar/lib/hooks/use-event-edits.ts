@@ -3,7 +3,7 @@
  * a change to one time of a repeat asks (which times it is for).
  */
 
-import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
+import type { Occurrence } from "../../../../src/shared/calendar/index.ts";
 import { type Draft, draftOf, inputOf, repeatChanged } from "../draft.ts";
 import { asksScope, refOf, zonedTimes } from "../grid/grid-edits.ts";
 import type { CalendarModel } from "../model.ts";

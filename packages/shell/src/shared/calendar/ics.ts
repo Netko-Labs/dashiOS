@@ -22,17 +22,12 @@
  * alarms Calendar does not edit are kept as written and written back.
  */
 
-import { type Component, parseComponents } from "./ics-components.ts";
 import { unescapeText, unfold } from "./ics-lines.ts";
-import { eventOf, type ReadEvent, readEvent } from "./ics-read.ts";
-import { inEventZone } from "./ics-time.ts";
-import { cleanName } from "./ics-write.ts";
+import { type Component, parseComponents } from "./lib/ics-components.ts";
+import { eventOf, type ReadEvent, readEvent } from "./lib/ics-read.ts";
+import { inEventZone } from "./lib/ics-time.ts";
+import { cleanName } from "./lib/ics-write.ts";
 import { type CalEvent, CalendarError, type IcsFile } from "./types.ts";
-
-export { type ContentLine, escapeText, fold, formatDuration, parseDuration, parseLine, unescapeText, unfold } from "./ics-lines.ts";
-export { isCancelled } from "./ics-read.ts";
-export { type ParsedTime, parseTime, stampNow } from "./ics-time.ts";
-export { cleanName, writeIcs } from "./ics-write.ts";
 
 export const MAX_ICS_BYTES = 4 * 1024 * 1024;
 export const MAX_EVENTS = 20_000;

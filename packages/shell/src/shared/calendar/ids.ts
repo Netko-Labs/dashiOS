@@ -5,7 +5,7 @@
  */
 
 import { TINT_VALUES } from "@dashi/ui";
-import { cleanName } from "./ics.ts";
+import { cleanName } from "./lib/ics-write.ts";
 
 export const EXTENSION = ".ics";
 

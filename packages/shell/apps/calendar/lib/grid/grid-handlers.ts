@@ -5,8 +5,7 @@
  */
 
 import type { Bounds } from "@mirinjs/metal";
-import { type Day, dayPart } from "../../../../src/shared/calendar/dates.ts";
-import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
+import { type Day, dayPart, type Occurrence } from "../../../../src/shared/calendar/index.ts";
 import type { PendingEvent } from "../hooks/use-pending.ts";
 import type { CalendarModel } from "../model.ts";
 import type { useGesture } from "./gesture.ts";

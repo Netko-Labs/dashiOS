@@ -1,7 +1,6 @@
 /** Which of Calendar's smaller sheets is open (sheets.tsx, file-sheets.tsx), and what its answers do. */
 
-import { paletteColor } from "../../../../src/shared/calendar/store.ts";
-import type { Calendar } from "../../../../src/shared/calendar/types.ts";
+import { type Calendar, paletteColor } from "../../../../src/shared/calendar/index.ts";
 import type { Scope } from "../edits.ts";
 import type { CalendarModel } from "../model.ts";
 import { ExportSheet, ImportPathSheet, ImportTargetSheet, ProblemsSheet } from "./file-sheets.tsx";

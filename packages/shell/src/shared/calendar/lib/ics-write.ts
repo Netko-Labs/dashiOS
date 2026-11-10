@@ -4,11 +4,11 @@
  * text folded at 75 octets with CRLF line ends.
  */
 
-import { dayPart, toBasicDay, toBasicLocal } from "./dates.ts";
-import { escapeText, fold, formatDuration, paramValue } from "./ics-lines.ts";
-import { formatRule } from "./rules.ts";
-import type { CalEvent, EventBody, IcsFile, Override } from "./types.ts";
-import { UTC } from "./zones.ts";
+import { dayPart, toBasicDay, toBasicLocal } from "../dates.ts";
+import { escapeText, fold, formatDuration, paramValue } from "../ics-lines.ts";
+import { formatRule } from "../rules.ts";
+import type { CalEvent, EventBody, IcsFile, Override } from "../types.ts";
+import { UTC } from "../zones.ts";
 
 const MAX_NAME = 100;
 const PRODID = "-//Dashi//Calendar//EN";

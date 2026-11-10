@@ -8,7 +8,7 @@
 
 import { useColors, useSurface } from "@dashi/ui";
 import { type Bounds, type PointerInfo, Text, View } from "@mirinjs/metal";
-import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
+import type { Occurrence } from "../../../../src/shared/calendar/index.ts";
 import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
 import { over, tint } from "../colors.ts";
 import { clock, titleOf } from "../format.ts";

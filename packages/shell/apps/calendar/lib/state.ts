@@ -2,8 +2,7 @@
  * What the calendar model holds, and the names the window uses for it.
  */
 
-import type { Day, Local } from "../../../src/shared/calendar/dates.ts";
-import type { Calendar } from "../../../src/shared/calendar/types.ts";
+import type { Calendar, Day, Local } from "../../../src/shared/calendar/index.ts";
 import type { View } from "./layout.ts";
 
 export interface CalendarState {

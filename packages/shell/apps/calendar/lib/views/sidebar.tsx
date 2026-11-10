@@ -11,7 +11,7 @@
 import { CHECK, rowLook, SelectionBar, SidebarSection, useColors, useTooltip } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { Calendar } from "../../../../src/shared/calendar/types.ts";
+import type { Calendar } from "../../../../src/shared/calendar/index.ts";
 import { ELLIPSIS, IMPORT, PLUS } from "../glyphs.ts";
 import { MiniMonth, type MiniMonthProps } from "./mini-month.tsx";
 

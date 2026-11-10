@@ -14,10 +14,10 @@ import {
   firstOfMonth,
   minuteOfDay,
   monthOf,
+  type Occurrence,
   startOfWeek,
   weekday,
-} from "../../../src/shared/calendar/dates.ts";
-import type { Occurrence } from "../../../src/shared/calendar/types.ts";
+} from "../../../src/shared/calendar/index.ts";
 
 export const VIEWS = ["day", "week", "month"] as const;
 export type View = (typeof VIEWS)[number];

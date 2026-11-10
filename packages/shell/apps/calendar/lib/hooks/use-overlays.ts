@@ -7,7 +7,7 @@
 
 import type { MenuItem } from "@dashi/ui";
 import { useState } from "react";
-import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
+import type { Occurrence } from "../../../../src/shared/calendar/index.ts";
 import type { Draft } from "../draft.ts";
 import type { SheetState } from "../sheets/sheets.tsx";
 

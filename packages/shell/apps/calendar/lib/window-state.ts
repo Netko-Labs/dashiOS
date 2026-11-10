@@ -5,7 +5,7 @@
  * the calendars and their events to it.
  */
 
-import { addDays, type Day, dayOf } from "../../../src/shared/calendar/dates.ts";
+import { addDays, type Day, dayOf } from "../../../src/shared/calendar/index.ts";
 import { step, type View, viewDays } from "./layout.ts";
 import { type CalendarState, NOTICE_FADE_MS } from "./state.ts";
 

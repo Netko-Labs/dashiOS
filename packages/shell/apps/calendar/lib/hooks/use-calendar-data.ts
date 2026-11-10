@@ -6,7 +6,7 @@
 
 import { useColors, useUndo } from "@dashi/ui";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
+import type { Occurrence } from "../../../../src/shared/calendar/index.ts";
 import { viewDays } from "../layout.ts";
 import type { CalendarModel } from "../model.ts";
 import type { CalendarState } from "../state.ts";

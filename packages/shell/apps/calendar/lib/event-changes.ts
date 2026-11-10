@@ -6,8 +6,7 @@
  */
 
 import type { UndoStack } from "@dashi/ui";
-import type { CalendarStore } from "../../../src/shared/calendar/store.ts";
-import type { CalEvent } from "../../../src/shared/calendar/types.ts";
+import type { CalEvent, CalendarStore } from "../../../src/shared/calendar/index.ts";
 import type { EditResult, Scope } from "./edits.ts";
 import { type EventChange, eventStep } from "./history.ts";
 import type { OccurrenceRef } from "./state.ts";

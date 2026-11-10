@@ -4,8 +4,7 @@
  * time of a repeat asks first).
  */
 
-import { dayPart } from "../../../../src/shared/calendar/dates.ts";
-import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
+import { dayPart, type Occurrence } from "../../../../src/shared/calendar/index.ts";
 import type { CalendarModel } from "../model.ts";
 import type { SheetState } from "../sheets/sheets.tsx";
 import type { Target } from "../target.ts";

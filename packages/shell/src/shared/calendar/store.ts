@@ -14,12 +14,10 @@ import { join } from "node:path";
 import { isErrno } from "../files/errno.ts";
 import { isRegularFile, writeAtomic, writeNew } from "../fs/index.ts";
 import { type EventInput, makeEvent } from "./event.ts";
-import { cleanName, isColor, MAX_ICS_BYTES, parseIcs, writeIcs } from "./ics.ts";
-import { addTimezoneBlocks } from "./ics-write.ts";
+import { isColor, MAX_ICS_BYTES, parseIcs } from "./ics.ts";
 import { EXTENSION, idFor, isCalendarId, paletteColor } from "./ids.ts";
+import { addTimezoneBlocks, cleanName, writeIcs } from "./lib/ics-write.ts";
 import { type CalEvent, type Calendar, CalendarError, type IcsFile } from "./types.ts";
-
-export { EXTENSION, idFor, isCalendarId, PALETTE, paletteColor } from "./ids.ts";
 
 export const DEFAULT_CALENDAR_NAME = "Home";
 /** The most calendars one folder lists, and the most events one file may grow to by adding. */

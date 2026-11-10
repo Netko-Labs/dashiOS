@@ -7,12 +7,20 @@
  * done.
  */
 
-import { addDays, addMinutes, dayPart, type Local } from "../../shared/calendar/dates.ts";
-import { formatDuration } from "../../shared/calendar/ics.ts";
-import { occurrencesIn } from "../../shared/calendar/recurrence.ts";
-import { readSidecar } from "../../shared/calendar/sidecar.ts";
-import { CalendarStore, defaultRoot } from "../../shared/calendar/store.ts";
-import { type Calendar, CalendarError, type Occurrence } from "../../shared/calendar/types.ts";
+import {
+  addDays,
+  addMinutes,
+  type Calendar,
+  CalendarError,
+  CalendarStore,
+  dayPart,
+  defaultRoot,
+  formatDuration,
+  type Local,
+  type Occurrence,
+  occurrencesIn,
+  readSidecar,
+} from "../../shared/calendar/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 
 /** The most of an event's notes one listing returns. */
