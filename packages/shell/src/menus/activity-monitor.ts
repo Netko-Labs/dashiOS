@@ -6,8 +6,12 @@
  * command line (apps/activity-monitor/args.ts reads both).
  */
 
-import type { CompositorWindow } from "../compositor.ts";
+import { ownerPids } from "../app-menus/focus.ts";
+import type { AppMenuStore } from "../app-menus/store.ts";
+import type { Compositor, CompositorWindow } from "../compositor.ts";
+import { launchEntry } from "../entries.ts";
 import { windowToFront } from "../front-window.ts";
+import type { EntryFor } from "./options.ts";
 
 export const ACTIVITY_MONITOR = "dev.dashi.activity-monitor";
 
@@ -40,4 +44,18 @@ export async function openActivityMonitor(args: readonly string[], deps: OpenDep
     return true;
   }
   return deps.launch(args);
+}
+
+/** Opens the Energy tab for an app (the battery menu's rows), through the compositor and the app-menus channel. */
+export function energyOpener(compositor: Compositor | null, appMenus: AppMenuStore, entryFor: EntryFor): (app?: EnergyApp) => Promise<boolean> {
+  return (app) =>
+    openActivityMonitor(energyArgs(app), {
+      windows: () => compositor?.windows() ?? Promise.resolve([]),
+      focus: (window) => compositor?.focus({ window }) ?? Promise.resolve(),
+      handOver: (pid, args) => appMenus.open(ownerPids(pid), args),
+      launch: (args) => {
+        const entry = entryFor(ACTIVITY_MONITOR);
+        return entry?.exec ? launchEntry({ ...entry, exec: [...entry.exec, ...args] }) !== null : false;
+      },
+    });
 }
