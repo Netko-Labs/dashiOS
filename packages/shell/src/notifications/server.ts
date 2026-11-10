@@ -9,6 +9,7 @@
  * is not claimed; sounds, persistence, and image data are not either.
  */
 
+import { int, maybe } from "@dashi/shape";
 import { type ConnectOptions, DBusConnection, type InterfaceSpec, NameFlags, nameHasOwner, requestName } from "../shared/dbus/index.ts";
 import { parseNotify } from "./parse.ts";
 import type { NotificationStore } from "./store.ts";
@@ -18,6 +19,8 @@ export const SERVICE = "org.freedesktop.Notifications";
 export const OBJECT_PATH = "/org/freedesktop/Notifications";
 
 export const CAPABILITIES = ["body", "actions", "icon-static"] as const;
+/** A notification id on the wire (`u`). */
+const UINT32 = int({ min: 0, max: 4_294_967_295 });
 /** name, vendor, version, spec version */
 export const SERVER_INFORMATION = ["Dashi", "Dashi", "0.1", "1.2"] as const;
 
@@ -38,7 +41,8 @@ export function notificationsInterface(store: NotificationStore): InterfaceSpec 
       CloseNotification: {
         in: "u",
         handler: ([id]) => {
-          store.close(id as number, CloseReason.closedByApp);
+          const closed = maybe(UINT32, id);
+          if (closed !== null) store.close(closed, CloseReason.closedByApp);
         },
       },
       GetServerInformation: { out: "ssss", handler: () => [...SERVER_INFORMATION] },

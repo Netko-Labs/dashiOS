@@ -126,8 +126,7 @@ export function serveMenus({ path, store, peer = peerPid }: ServeOptions): () =>
     unix: path,
     socket: {
       open(socket) {
-        const fd = (socket as unknown as { fd?: number }).fd;
-        const pid = typeof fd === "number" ? peer(fd) : null;
+        const pid = "fd" in socket && typeof socket.fd === "number" ? peer(socket.fd) : null;
         if (pid === null || connections.size >= MAX_CONNECTIONS) {
           socket.terminate();
           return;

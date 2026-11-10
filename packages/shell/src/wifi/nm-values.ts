@@ -37,8 +37,8 @@ export function parseSettings(reply: unknown): Map<string, Map<string, unknown>>
   const sections = new Map<string, Map<string, unknown>>();
   for (const [name, section] of reply) {
     const properties = typeof name === "string" ? propertyMap(section) : null;
-    if (!properties) return null;
-    sections.set(name as string, properties);
+    if (typeof name !== "string" || !properties) return null;
+    sections.set(name, properties);
   }
   return sections;
 }

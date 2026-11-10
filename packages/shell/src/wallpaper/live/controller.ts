@@ -26,14 +26,17 @@ export interface LiveHost {
   on(listener: (event: CompositorEvent) => void): () => void;
 }
 
+/** What `setTimeout` hands back, and what `clearTimeout` takes. */
+export type TimerHandle = ReturnType<typeof setTimeout>;
+
 export interface Clock {
-  setTimeout(run: () => void, ms: number): unknown;
-  clearTimeout(handle: unknown): void;
+  setTimeout(run: () => void, ms: number): TimerHandle;
+  clearTimeout(handle: TimerHandle): void;
 }
 
 const realClock: Clock = {
   setTimeout: (run, ms) => setTimeout(run, ms),
-  clearTimeout: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+  clearTimeout: (handle) => clearTimeout(handle),
 };
 
 export interface LiveOptions {
@@ -60,8 +63,8 @@ export class LiveWallpaperController {
   private locked = false;
   private wasOnBattery = false;
   private screensOff = false;
-  private timer: unknown = null;
-  private followUp: unknown = null;
+  private timer: TimerHandle | null = null;
+  private followUp: TimerHandle | null = null;
   private looks = 0;
   private stopListening: (() => void) | null = null;
 
