@@ -250,8 +250,7 @@
 1	packages/shell/src/appearance/lib/gtk-css.ts
 7	packages/shell/src/applet-store/kill-switch.ts
 1	packages/shell/src/applets/commands.ts
-1	packages/shell/src/applets/connection.ts
-1	packages/shell/src/applets/index.ts
+1	packages/shell/src/applets/lib/connection.ts
 2	packages/shell/src/applets/power.ts
 1	packages/shell/src/applets/start.tsx
 1	packages/shell/src/approval-sheet.tsx
@@ -265,7 +264,7 @@
 5	packages/shell/src/battery/start.ts
 1	packages/shell/src/bluetooth/lib/values.ts
 2	packages/shell/src/bluetooth/select.ts
-3	packages/shell/src/boot/apps.ts
+1	packages/shell/src/boot/apps.ts
 3	packages/shell/src/boot/launcher.tsx
 1	packages/shell/src/boot/look.ts
 2	packages/shell/src/boot/menus.tsx
@@ -456,9 +455,7 @@
 2	packages/shell/test/applet-catalogs.test.ts
 4	packages/shell/test/applet-store.test.ts
 1	packages/shell/test/applets-commands.test.ts
-1	packages/shell/test/applets-controls.test.ts
 4	packages/shell/test/applets-power.test.ts
-1	packages/shell/test/applets-sandbox.test.ts
 1	packages/shell/test/bar-name.test.ts
 2	packages/shell/test/battery-monitor.test.ts
 1	packages/shell/test/battery-panel.test.ts

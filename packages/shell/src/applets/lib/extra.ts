@@ -1,8 +1,8 @@
 /** What an applet looks like in the menu bar, and what its hello may claim. */
 
-import { type Manifest, permissionName } from "@dashi/applet";
-import type { ExtraMenuRow, MenuBarExtra } from "../extras/index.ts";
-import { type Applet, flattenRows } from "./protocol.ts";
+import { type Applet, type Manifest, permissionName } from "@dashi/applet";
+import type { ExtraMenuRow, MenuBarExtra } from "../../extras/index.ts";
+import { flattenRows } from "./protocol.ts";
 
 /** What the bar draws for an applet. */
 export function appletExtra(key: string, applet: Applet, dev = false): MenuBarExtra {

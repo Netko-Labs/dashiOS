@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
 import { type Manifest, parseManifest } from "@dashi/applet";
-import type { AppletContext } from "../src/applets/connection.ts";
+import { AppletConnection } from "../src/applets/lib/connection.ts";
+import type { AppletContext } from "../src/applets/lib/connection-context.ts";
 import { AppletPower, mayChoosePower, powerState } from "../src/applets/power.ts";
-import { AppletConnection } from "../src/applets/server.ts";
 import { ExtrasStore } from "../src/extras/index.ts";
 import type { PowerSection } from "../src/power/modes/settings.ts";
 import { ModeStore } from "../src/power/modes/store.ts";

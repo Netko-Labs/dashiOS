@@ -1,11 +1,11 @@
 import { expect, test } from "bun:test";
 import { parseManifest } from "@dashi/applet";
-import type { AppletContext } from "../src/applets/connection.ts";
-import { AppletGrants } from "../src/applets/grants.ts";
-import { EDGE_MARGIN, placePopover } from "../src/applets/placement.ts";
+import { AppletConnection } from "../src/applets/lib/connection.ts";
+import type { AppletContext } from "../src/applets/lib/connection-context.ts";
+import { AppletGrants } from "../src/applets/lib/grants.ts";
+import { EDGE_MARGIN, placePopover } from "../src/applets/lib/placement.ts";
+import { flattenRows } from "../src/applets/lib/protocol.ts";
 import { AppletPopovers } from "../src/applets/popovers.ts";
-import { flattenRows } from "../src/applets/protocol.ts";
-import { AppletConnection } from "../src/applets/server.ts";
 import { ExtrasStore } from "../src/extras/index.ts";
 import { settle } from "./support/time.ts";
 

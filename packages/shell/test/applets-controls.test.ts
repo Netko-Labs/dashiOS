@@ -12,9 +12,9 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type InstalledApplet, type Manifest, parseManifest } from "@dashi/applet";
-import type { AppletContext } from "../src/applets/connection.ts";
 import { AppletControls, parseStates } from "../src/applets/controls.ts";
-import { AppletConnection } from "../src/applets/server.ts";
+import { AppletConnection } from "../src/applets/lib/connection.ts";
+import type { AppletContext } from "../src/applets/lib/connection-context.ts";
 import type { Layout } from "../src/control-center/layout.ts";
 import { ExtrasStore } from "../src/extras/index.ts";
 

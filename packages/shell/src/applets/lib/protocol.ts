@@ -4,8 +4,8 @@
  * Newline-delimited JSON, one message per line.
  *
  * The protocol (both versions, the parsers, the limits) lives in
- * @dashi/applet, so an applet's client refuses what the shell would; this is
- * the shell's facade for it, plus what only the shell decides: how a
+ * @dashi/applet, so an applet's client refuses what the shell would; the
+ * shell imports it from there. This is what only the shell decides: how a
  * menu with submenus reads in the bar's one-level dropdown.
  *
  *   applet → shell  hello (v2, first), applet, remove, popover (v2), dismiss (v2), result/items/view (v3), power (v4)
@@ -17,23 +17,7 @@
  */
 
 import type { AppletMenuRow } from "@dashi/applet";
-import type { ExtraMenuRow } from "../extras/index.ts";
-
-export {
-  APPLET_LIMITS,
-  APPLETS_SOCKET,
-  type Applet,
-  type AppletMenuRow,
-  type AppletMessage,
-  type AppletShellMessage,
-  appletsSocketPath,
-  type Placement,
-  PROTOCOL,
-  parseApplet,
-  parseAppletMessage,
-  parseAppletShellMessage,
-  wireMessage,
-} from "@dashi/applet";
+import type { ExtraMenuRow } from "../../extras/index.ts";
 
 /**
  * An applet's rows as the bar's dropdown takes them: a submenu becomes a

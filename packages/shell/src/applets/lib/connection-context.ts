@@ -1,14 +1,13 @@
 /** What an applet connection (connection.ts) is given: its socket and the shell's side. */
 
-import type { Manifest } from "@dashi/applet";
-import type { ExtrasStore } from "../extras/index.ts";
-import type { AppletCommands } from "./commands.ts";
-import type { AppletControls } from "./controls.ts";
+import type { Manifest, Placement, parseAppletMessage } from "@dashi/applet";
+import type { ExtrasStore } from "../../extras/index.ts";
+import type { AppletCommands } from "../commands.ts";
+import type { AppletControls } from "../controls.ts";
+import type { AppletPopovers } from "../popovers.ts";
+import type { AppletPower } from "../power.ts";
 import type { AppletGrants } from "./grants.ts";
 import type { PopoverScreen } from "./placement.ts";
-import type { AppletPopovers } from "./popovers.ts";
-import type { AppletPower } from "./power.ts";
-import type { Placement, parseAppletMessage } from "./protocol.ts";
 
 /** What a Bun socket offers a connection. */
 export interface Wire {

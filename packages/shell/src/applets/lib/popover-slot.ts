@@ -5,9 +5,9 @@
  * shell menu opens (popovers.ts).
  */
 
+import type { AppletShellMessage } from "@dashi/applet";
 import type { AppletContext } from "./connection-context.ts";
 import { placePopover } from "./placement.ts";
-import type { AppletShellMessage } from "./protocol.ts";
 
 interface OpenPopover {
   id: string;

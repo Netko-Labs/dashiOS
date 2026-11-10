@@ -14,20 +14,16 @@
  * connection; a refused message otherwise leaves its applets as they were.
  */
 
-import type { Manifest } from "@dashi/applet";
-import { nameApplet } from "../apps.ts";
-import type { ExtraActions, ExtraMenuRow, ExtrasStore } from "../extras/index.ts";
-import { LineBuffer } from "../shared/io/lines.ts";
-import type { AppletCommands, CommandMessage } from "./commands.ts";
+import { APPLET_LIMITS, type Applet, type AppletShellMessage, type Manifest, PROTOCOL, parseAppletMessage, wireMessage } from "@dashi/applet";
+import { nameApplet } from "../../apps.ts";
+import type { ExtraActions, ExtraMenuRow, ExtrasStore } from "../../extras/index.ts";
+import { LineBuffer } from "../../shared/io/lines.ts";
+import type { AppletCommands, CommandMessage } from "../commands.ts";
+import type { AppletControls } from "../controls.ts";
+import { type AppletPower, attachPower, mayChoosePower } from "../power.ts";
 import type { AppletContext, Wire } from "./connection-context.ts";
-import type { AppletControls } from "./controls.ts";
 import { appletExtra, appletRows, chosen, sameManifest } from "./extra.ts";
 import { PopoverSlot } from "./popover-slot.ts";
-import { type AppletPower, attachPower, mayChoosePower } from "./power.ts";
-import { APPLET_LIMITS, type Applet, type AppletShellMessage, PROTOCOL, parseAppletMessage, wireMessage } from "./protocol.ts";
-
-export type { AppletContext, Wire } from "./connection-context.ts";
-export { appletExtra, appletRows, sameManifest };
 
 /** Messages a connection may send in one second before it is cut off (a clock ticking once a second is far fewer). */
 export const MAX_RATE = 30;

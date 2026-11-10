@@ -7,11 +7,7 @@
 
 import { AppCatalog } from "../app-catalog.ts";
 import { type AppMenus, startAppMenus } from "../app-menus/index.ts";
-import { AppletCommands } from "../applets/commands.ts";
-import { AppletControls } from "../applets/controls.ts";
-import { AppletPopovers } from "../applets/popovers.ts";
-import { AppletPower } from "../applets/power.ts";
-import { popoverScreen, startApplets } from "../applets/start.tsx";
+import { AppletCommands, AppletControls, AppletPopovers, AppletPower, popoverScreen, startApplets } from "../applets/index.ts";
 import { appFor, launch } from "../apps.ts";
 import { startBatteryMonitor } from "../battery/index.ts";
 import type { Compositor, CompositorWindow } from "../compositor/index.ts";

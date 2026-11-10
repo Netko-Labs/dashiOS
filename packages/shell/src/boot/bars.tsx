@@ -4,7 +4,7 @@
  * keeps the bar's menus up, and what Restart and Shut Down say while they wait.
  */
 
-import { joinShellMenus } from "../applets/popovers.ts";
+import { joinShellMenus } from "../applets/index.ts";
 import { appFor } from "../apps.ts";
 import type { Compositor } from "../compositor/index.ts";
 import { AnimationTargets, dockScreen, startDock, TileStore } from "../dock/index.ts";

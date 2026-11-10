@@ -15,11 +15,10 @@
 import { chmodSync, existsSync, mkdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import type { Manifest } from "@dashi/applet";
-import { peerPid, socketFd } from "../agents/index.ts";
-import type { ExtrasStore } from "../extras/index.ts";
-import { AppletConnection, type AppletContext } from "./connection.ts";
-
-export { AppletConnection, appletExtra, appletRows, MAX_RATE, MAX_REFUSED, sameManifest, type Wire } from "./connection.ts";
+import { peerPid, socketFd } from "../../agents/index.ts";
+import type { ExtrasStore } from "../../extras/index.ts";
+import { AppletConnection } from "./connection.ts";
+import type { AppletContext } from "./connection-context.ts";
 
 /** Connections at once, on each socket. */
 export const MAX_CONNECTIONS = 32;

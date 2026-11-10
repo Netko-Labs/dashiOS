@@ -90,7 +90,7 @@ either way      {"type":"dismiss","id":"weather"}
 
 An applet asks for a popover under its item (usually when it hears
 `activate`), 120 to 720 points wide and 48 to 900 tall. The shell places it
-(`src/applets/placement.ts`): under the menu bar, centered on the item that
+(`src/applets/lib/placement.ts`): under the menu bar, centered on the item that
 was clicked, kept 8 points inside the screen's left, right, and bottom edges,
 and no wider or taller than the screen allows (the answer says the size it
 got). `x` and `y` are the top-left corner in that screen's own points;
@@ -412,7 +412,7 @@ and `Nice=10` (`UNIT_LIMITS`), so one that runs away while it answers the
 launcher can't starve the shell or the compositor.
 The unit runs `bin/dashi-applet-run.ts`, which starts the D-Bus proxy if the
 permissions need one, then bubblewrap with the arguments
-`src/applets/sandbox.ts` plans:
+`src/applets/lib/sandbox.ts` plans:
 
 - `--unshare-all` (and `--share-net` only for `network`), `--clearenv`,
   `--die-with-parent`, `--new-session`;

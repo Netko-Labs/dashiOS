@@ -1,3 +1,4 @@
+import type { Placement } from "@dashi/applet";
 /**
  * Where an applet's popover goes: under the menu bar, centered on the item
  * that was clicked, kept inside the screen. A popover asked for wider or
@@ -5,8 +6,6 @@
  * the size it is given). All in the screen's own points: layer-shell
  * margins are per screen.
  */
-
-import type { Placement } from "./protocol.ts";
 
 /** Room kept between a popover and the screen's left, right, and bottom edges. */
 export const EDGE_MARGIN = 8;

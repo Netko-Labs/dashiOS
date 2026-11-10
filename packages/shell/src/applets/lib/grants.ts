@@ -11,7 +11,7 @@
  * is in place.
  */
 
-import type { Compositor } from "../compositor/index.ts";
+import type { Compositor } from "../../compositor/index.ts";
 
 /** What the grants need of the compositor connection. */
 export interface GrantsCompositor {
