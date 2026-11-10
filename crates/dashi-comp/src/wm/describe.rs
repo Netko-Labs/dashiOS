@@ -1,11 +1,9 @@
 //! A window as the IPC says it (`Window`, docs/compositor-ipc.md): in the
 //! `windows` reply and the `window-opened` event.
 
-use smithay::reexports::wayland_server::Resource;
-
 use super::{
     geometry::{configuring, frame_of, min_frame},
-    windows::{Entry, names, parent_of, toplevel_surface},
+    windows::{Entry, names, parent_of, pid_of, toplevel_surface},
 };
 use crate::{
     ipc::protocol::{self, Extent, Frame, Icon},
@@ -16,15 +14,7 @@ use crate::{
 pub(crate) fn describe(entry: &Entry, state: &Dashi) -> protocol::Window {
     let surface = toplevel_surface(&entry.window);
     let (app_id, title) = names(&entry.window);
-    // Xwayland is one client for every X11 app: an X11 window says its own (_NET_WM_PID).
-    let pid = match entry.window.x11_surface() {
-        Some(x11) => x11.pid().map(|pid| pid as i32),
-        None => surface
-            .as_ref()
-            .and_then(|surface| state.display_handle.get_client(surface.id()).ok())
-            .and_then(|client| client.get_credentials(&state.display_handle).ok())
-            .map(|credentials| credentials.pid),
-    };
+    let pid = pid_of(entry, state);
     let focused = state
         .seat
         .get_keyboard()

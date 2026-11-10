@@ -135,11 +135,16 @@ impl Dashi {
             .take(MAX_REPORTED_TYPES)
             .cloned()
             .collect();
+        // The window that had the keyboard; or, when an app's helper (wl-copy) took it to set
+        // the clipboard, the app's window (wm/windows/helper.rs).
         let window = self
             .seat
             .get_keyboard()
             .and_then(|keyboard| keyboard.current_focus())
-            .and_then(|focus| crate::wm::window_id_for_surface(self, &focus));
+            .and_then(|focus| {
+                crate::wm::window_id_for_surface(self, &focus)
+                    .or_else(|| crate::wm::window_for_helper(self, &focus))
+            });
         self.ipc.emit(Event::Selection {
             mime_types: types,
             window,

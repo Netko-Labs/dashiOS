@@ -2,12 +2,14 @@
 //! positive integer, never reused in a session (docs/compositor-ipc.md).
 
 mod entry;
+mod helper;
 mod lookup;
 
 use smithay::{desktop::Window, reexports::wayland_server::protocol::wl_surface::WlSurface};
 
 pub(crate) use self::{
     entry::Entry,
+    helper::{pid_of, window_for_helper},
     lookup::{names, parent_of, toplevel_surface, window_id_for_surface},
 };
 pub(crate) use super::describe::describe;

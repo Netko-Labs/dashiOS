@@ -38,6 +38,11 @@ fn parse_stat(stat: &str) -> Option<Stat> {
     })
 }
 
+/// The session `pid` runs in (`setsid`'s), from /proc/<pid>/stat.
+pub(crate) fn session_of(pid: i32) -> Option<i32> {
+    stat_of(pid).map(|stat| stat.session)
+}
+
 /// Whether `pid` is one of the shell's own processes, for the session client
 /// `client` (which leads its own process group): in that group and under it,
 /// or in a session whose leader that group started.
