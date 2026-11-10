@@ -72,8 +72,7 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, watch } from "node:fs";
-import { homedir } from "node:os";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname } from "node:path";
 import { DEFAULT_TEXT_SIZE, TEXT_SIZES } from "@dashi/ui";
 import { parseCatalogs } from "./applet-store/catalogs.ts";
 import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "./corners.ts";
@@ -81,6 +80,7 @@ import { DOCK_DEFAULTS, DOCK_KEYS, DOCK_STYLES, type DockSettings, resolveDock }
 import { DEFAULT_INPUT_METHOD, INPUT_METHODS, type InputMethodName } from "./input-method.ts";
 import { DEFAULT_POINTER_SIZE, POINTER_SIZES } from "./pointer.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "./scroll-speed.ts";
+import { settingsPath } from "./shared/settings/path.ts";
 import { parseSpaceNames, type SpaceNames } from "./spaces/names.ts";
 import { DEFAULT_WALLPAPER_MODE, isWallpaperRef, WALLPAPER_MODES, type WallpaperChoice } from "./wallpaper/catalog.ts";
 import { FRAME_RATES, isVideoPath, LIVE_SHADERS, RETIRED_KEYS, RETIRED_KINDS, WALLPAPER_KINDS } from "./wallpaper/live/choice.ts";
@@ -382,10 +382,6 @@ export function parseSettings(value: unknown): Loaded {
   const applets = new Section("applets", value.applets, problems).only(["catalogs"]);
   problems.push(...parseCatalogs(applets.get("catalogs")).problems);
   return { settings, problems };
-}
-
-export function settingsPath(env: Record<string, string | undefined> = process.env, home: string = homedir()): string {
-  return join(env.XDG_CONFIG_HOME || join(home, ".config"), "dashi", "settings.json");
 }
 
 /** Read the file: missing means defaults, quietly; unreadable or bad JSON, defaults and a problem. */

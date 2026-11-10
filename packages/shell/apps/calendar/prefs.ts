@@ -8,7 +8,8 @@
 
 import { readFileSync, statSync } from "node:fs";
 import { useEffect, useState } from "react";
-import { readSettings, settingsPath } from "../../src/settings-app/store.ts";
+import { settingsPath } from "../../src/shared/settings/path.ts";
+import { readRegionSettings } from "../../src/shared/settings/region.ts";
 import { type ClockPrefs, clockPrefsFrom, DEFAULT_CLOCK_PREFS } from "../../src/shared/time/clock.ts";
 import { firstDayIndex } from "../../src/shared/time/week.ts";
 
@@ -23,7 +24,7 @@ export const DEFAULT_PREFS: RegionPrefs = { clock: DEFAULT_CLOCK_PREFS, firstDay
 /** The preferences in a settings file; the defaults when it is missing or unreadable. */
 export function readPrefs(path: string = settingsPath(), env: Readonly<Record<string, string | undefined>> = process.env): RegionPrefs {
   try {
-    const data = readSettings(JSON.parse(readFileSync(path, "utf8")));
+    const data = readRegionSettings(JSON.parse(readFileSync(path, "utf8")));
     const clock = clockPrefsFrom(data, env);
     return { clock, firstDay: firstDayIndex(clock.locale, clock.firstWeekday) };
   } catch {

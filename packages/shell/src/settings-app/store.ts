@@ -35,7 +35,6 @@
  */
 
 import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, watch, writeSync } from "node:fs";
-import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { isTextSize, UndoStack } from "@dashi/ui";
 import { type AnswererChoice, type HarnessId, isAnswererChoice, isHarnessId } from "../agents/ask/answerer.ts";
@@ -50,7 +49,9 @@ import { isAliasMap, isKeyMap } from "../launcher/person-keys.ts";
 import { isPointerSize } from "../pointer.ts";
 import { GRAPHICS_FIELDS, type GraphicsSettings, POWER_FIELDS, type PowerSection } from "../power/modes/settings.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../scroll-speed.ts";
-import { isFormatsLocale } from "../shared/locale/locale.ts";
+import { type Check, dig, isBoolean, isRaw, numberIn, oneOf, type Raw, readFields } from "../shared/settings/fields.ts";
+import { settingsPath } from "../shared/settings/path.ts";
+import { CLOCK_SECTION, type ClockSettings, REGION_SECTION, type RegionSettings } from "../shared/settings/region.ts";
 import { parseSpaceNames, type SpaceNames } from "../spaces/names.ts";
 import { isPhotoPath, isWallpaperRef, WALLPAPER_MODES, type WallpaperMode } from "../wallpaper/catalog.ts";
 import {
@@ -153,25 +154,6 @@ export interface NightShiftSettings {
   to?: string;
   /** How warm, 1900 (candle) to 6500 (daylight). */
   kelvin?: number;
-}
-
-/** `clock`: how the menu bar, the lock screen, and the notification center write the time. */
-export interface ClockSettings {
-  /** 24-hour time on or off; the region's own habit when not set. */
-  hour24?: boolean;
-  /** The date in the menu bar; on when not set. */
-  showDate?: boolean;
-}
-
-export const WEEKDAYS = ["sunday", "monday", "saturday"] as const;
-export type FirstWeekday = (typeof WEEKDAYS)[number];
-
-/** `region`: this person's formats, apart from the system language. */
-export interface RegionSettings {
-  /** The locale dates, times, numbers, and money follow (`de_DE.UTF-8`); the language's own when not set. */
-  formats?: string;
-  /** The first day of the week; the region's own when not set. */
-  firstWeekday?: FirstWeekday;
 }
 
 /** Spaces (spaces/): how many there are, kept as they change, and whether activating an app's window on another Space goes there. */
@@ -282,21 +264,10 @@ export { DEFAULT_BLANK_AFTER } from "./controls.ts";
 /** A week, the compositor's limit for an idle threshold. */
 const MAX_BLANK_AFTER = 7 * 24 * 3600;
 
-type Check = (value: unknown) => boolean;
-
 /** How many added photos the file keeps. */
 export const MAX_PHOTOS = 24;
 const isPhotoList: Check = (value) => Array.isArray(value) && value.length <= MAX_PHOTOS && value.every(isPhotoPath);
 
-const isBoolean: Check = (value) => typeof value === "boolean";
-const numberIn =
-  (min: number, max: number, whole = false): Check =>
-  (value) =>
-    typeof value === "number" && Number.isFinite(value) && value >= min && value <= max && (!whole || Number.isInteger(value));
-const oneOf =
-  (...options: string[]): Check =>
-  (value) =>
-    typeof value === "string" && options.includes(value);
 /** A time of day the way night-shift.ts reads it: `21:00`, or `9:00`. */
 const isClock: Check = (value) => typeof value === "string" && /^([01]?\d|2[0-3]):[0-5]\d$/.test(value);
 /** An xkb name list such as `us,de`: what the compositor's own check accepts. */
@@ -359,8 +330,8 @@ const SECTIONS = {
   },
   nightShift: { path: ["nightShift"], fields: { from: isClock, to: isClock, kelvin: numberIn(1900, 6500, true) } },
   dock: { path: ["dock"], fields: { style: oneOf(...DOCK_STYLES), autohide: isBoolean, visible: isBoolean } },
-  clock: { path: ["clock"], fields: { hour24: isBoolean, showDate: isBoolean } },
-  region: { path: ["region"], fields: { formats: isFormatsLocale, firstWeekday: oneOf(...WEEKDAYS) } },
+  clock: CLOCK_SECTION,
+  region: REGION_SECTION,
   spaces: {
     path: ["spaces"],
     fields: { count: numberIn(1, 16, true), names: (value) => parseSpaceNames(value) !== null, switchOnActivate: isBoolean, fullscreenDesktop: isBoolean },
@@ -389,23 +360,6 @@ export type Change<S extends SectionName> = { [K in keyof Sections[S]]?: Section
 const isScale = numberIn(0.5, 4);
 /** Connector names ("eDP-1", "HDMI-A-1"); anything odder is not written as a key. */
 const isOutputName = (name: string): boolean => /^[A-Za-z][A-Za-z0-9_.:-]{0,63}$/.test(name);
-
-type Raw = Record<string, unknown>;
-const isRaw = (value: unknown): value is Raw => typeof value === "object" && value !== null && !Array.isArray(value);
-
-export function settingsPath(env: Record<string, string | undefined> = process.env, home: string = homedir()): string {
-  return join(env.XDG_CONFIG_HOME || join(home, ".config"), "dashi", "settings.json");
-}
-
-/** The object at `path` inside `root`, or undefined. */
-function dig(root: Raw, path: readonly string[]): Raw | undefined {
-  let at: unknown = root;
-  for (const key of path) {
-    if (!isRaw(at)) return undefined;
-    at = at[key];
-  }
-  return isRaw(at) ? at : undefined;
-}
 
 /** The object at `path`, made (replacing anything that is not an object) when it is not there. */
 function ensure(root: Raw, path: readonly string[]): Raw {
@@ -437,14 +391,7 @@ function prune(root: Raw, path: readonly string[]): void {
 
 /** Only the keys of a section that hold a value of the right kind. */
 function readSection(raw: Raw, name: SectionName): Raw {
-  const found = dig(raw, SECTIONS[name].path);
-  const fields: Record<string, Check> = SECTIONS[name].fields;
-  const out: Raw = {};
-  if (!found) return out;
-  for (const [key, check] of Object.entries(fields)) {
-    if (Object.hasOwn(found, key) && check(found[key])) out[key] = found[key];
-  }
-  return out;
+  return readFields(raw, SECTIONS[name].path, SECTIONS[name].fields);
 }
 
 /** Everything Settings reads from a decoded file. Never throws. */

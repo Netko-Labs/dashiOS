@@ -3,8 +3,6 @@
 2	packages/shell/apps/activity-monitor/read.ts
 1	packages/shell/apps/activity-monitor/sample.ts
 1	packages/shell/apps/activity-monitor/sampler.ts
-1	packages/shell/apps/calculator/locale.ts
-1	packages/shell/apps/calendar/prefs.ts
 3	packages/shell/apps/dialog/file-selection-view.tsx
 1	packages/shell/apps/dialog/file-selection.ts
 1	packages/shell/apps/dialog/main.tsx

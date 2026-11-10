@@ -9,7 +9,7 @@
  */
 
 import { appletDataRoot, appletsRoot, SDK_VERSION } from "@dashi/applet";
-import { settingsPath } from "../settings.ts";
+import { settingsPath } from "../shared/settings/path.ts";
 import type { Catalog } from "./catalog.ts";
 import { keyFrom, storeCacheDir } from "./catalog.ts";
 import { CatalogSet, readSavedCatalogs } from "./catalog-set.ts";
