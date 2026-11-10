@@ -30,10 +30,13 @@ export interface Levels {
   follow?(onLevels: (levels: SideVolumes) => void): () => void;
 }
 
+/** Hears the default output's volume each time it changes; returns the stop. */
+export type FollowVolume = (onVolume: (volume: Volume | null) => void) => () => void;
+
 /** The default output's volume as PipeWire changes it: for the menu bar's speaker and Control Center's slider. */
 export const followOutputVolume =
-  (watch: PipeWireWatch) =>
-  (onVolume: (volume: Volume | null) => void): (() => void) =>
+  (watch: PipeWireWatch): FollowVolume =>
+  (onVolume) =>
     watch.subscribe((objects) => onVolume(defaultVolume(objects, "output")));
 
 /** Both volumes from PipeWire's objects, as `wpctl get-volume` reads them. */

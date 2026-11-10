@@ -9,7 +9,7 @@
  * person's launcher, keys, and links reach are one list.
  */
 
-import { mcpListing, toolAction } from "../../actions/tools.ts";
+import { type McpTool, mcpListing, toolAction } from "../../actions/tools.ts";
 import type { ActionDef } from "../../actions/types.ts";
 import type { Scope } from "../consent.ts";
 import { browserTools } from "./browser.ts";
@@ -84,7 +84,7 @@ const byName = new Map<string, ToolDef>(TOOLS.map((tool) => [tool.name, tool]));
 export const TOOL_ACTIONS: readonly ActionDef[] = TOOLS.map(toolAction);
 
 /** `tools/list`, written from the actions. */
-export const catalog = () => mcpListing(TOOL_ACTIONS);
+export const catalog = (): McpTool[] => mcpListing(TOOL_ACTIONS);
 
 /** What the person must have allowed before `call` runs. */
 export function scopeOf(call: Call): Scope {
