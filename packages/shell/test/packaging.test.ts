@@ -1,6 +1,6 @@
 /**
  * What the packages ship: the privileged helpers' systemd sandboxes
- * (spin/check-units), the generated license notices (spin/license-dependencies),
+ * (scripts/check-units.ts), the generated license notices (spin/license-dependencies),
  * and a %license in every spec. The first two need systemd-analyze and Cargo's
  * crate sources; they skip where those are missing.
  */
@@ -17,9 +17,9 @@ function run(command: string[]): { code: number; output: string } {
 }
 
 describe("systemd units", () => {
-  test.skipIf(!Bun.which("systemd-analyze"))("every system unit scores 5.0 or better (spin/check-units)", () => {
-    const { code, output } = run([join(ROOT, "spin/check-units")]);
-    expect(output).not.toContain("FAIL");
+  test.skipIf(!Bun.which("systemd-analyze"))("every system unit scores 5.0 or better (scripts/check-units.ts)", () => {
+    const { code, output } = run(["bun", join(ROOT, "scripts/check-units.ts")]);
+    expect(output).not.toContain("FAILED");
     expect(code).toBe(0);
   });
 

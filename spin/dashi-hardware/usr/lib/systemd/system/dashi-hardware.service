@@ -10,7 +10,7 @@ ExecStart=/usr/libexec/dashi/dashi-hardware serve
 # space (the SMU), so it stays root; it is otherwise confined. Everything it
 # writes is under /sys (sysfs, the SMU's PCI config), plus /dev/hidraw* (the
 # Slash bar) and its state directory; everything else is read-only or hidden.
-# This unit scores 1.4 on `systemd-analyze security` (spin/check-units holds it
+# This unit scores 1.4 on `systemd-analyze security` (scripts/check-units.ts holds it
 # at 5.0 or better). ProtectKernelTunables makes /sys read-only, and
 # ReadWritePaths opens again only the subtrees below. The two capabilities
 # kept are the part only the real laptop can settle (docs/hardware.md, "The
