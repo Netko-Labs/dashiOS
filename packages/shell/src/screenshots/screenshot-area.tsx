@@ -9,10 +9,10 @@
 
 import { type NativeHostOptions, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { Output } from "./compositor.ts";
-import { screensOf } from "./displays.ts";
-import { choosePrimary } from "./menubar/menubars.ts";
-import type { OpenOverlay } from "./overlay.tsx";
+import type { Output } from "../compositor.ts";
+import { screensOf } from "../displays.ts";
+import { choosePrimary } from "../menubar/menubars.ts";
+import type { OpenOverlay } from "../overlay.tsx";
 
 export interface Point {
   x: number;

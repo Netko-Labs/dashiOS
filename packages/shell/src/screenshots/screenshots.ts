@@ -8,7 +8,7 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { Compositor } from "./compositor.ts";
+import type { Compositor } from "../compositor.ts";
 
 /** Paths of captures still being written: a second press in the same second must not reuse one. */
 const inFlight = new Set<string>();

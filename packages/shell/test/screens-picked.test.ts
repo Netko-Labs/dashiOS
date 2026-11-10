@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { outputsOf } from "../src/compositor/outputs.ts";
 import { dockScreen } from "../src/dock/animation-targets.ts";
-import { captureScreenNear } from "../src/screenshot-area.tsx";
+import { captureScreenNear } from "../src/screenshots/screenshot-area.tsx";
 
 const output = (name: string, x: number) => {
   const frame = { x, y: 0, width: 1920, height: 1080 };
