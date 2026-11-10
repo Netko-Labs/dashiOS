@@ -633,8 +633,8 @@ falls back to its own configuration.
 The launcher's own answerer (docs/actions.md, "Agents in the launcher") is
 not an agent in a sandbox: the shell itself calls the Messages API, so it
 asks `token {name: "anthropic", host: "api.anthropic.com"}` like the proxy
-does (`agents/ask/keys.ts`), hands the key to the Anthropic SDK client for
-that one request, and wipes the bytes. Without the item it uses the
+does (`agents/ask/keys.ts`), puts the key in the headers of
+that one request (`fetch`; there is no provider SDK in Dashi), and wipes the bytes. Without the item it uses the
 session's `ANTHROPIC_API_KEY`. GPT, the other API answerer, does the same
 with `token {name: "openai", host: "api.openai.com"}` and
 `OPENAI_API_KEY`. Settings › Agents says where the key is from the `tokens`

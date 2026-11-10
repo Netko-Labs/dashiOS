@@ -1,6 +1,6 @@
 /**
  * GPT as the launcher's answerer: one Chat Completions request per turn,
- * through OpenAI's official SDK (`openai`), to api.openai.com only, with the
+ * over `fetch` (http.ts, no SDK), to api.openai.com only, with the
  * person's key (keys.ts: the vault's token item `openai` when there is one,
  * else OPENAI_API_KEY). The request carries the person's words and the
  * plan's tools as strict function tools; the reply's tool calls are the
@@ -11,25 +11,43 @@
  * asked for again every ten minutes. Strict function tools take every
  * property as required: an optional one is sent as nullable, and a null
  * that comes back is dropped before the action's check (`gptSchema`,
- * `withoutNulls`). The SDK's typed errors say what went wrong; a refusal, a
+ * `withoutNulls`). The status of an error says what went wrong; a refusal, a
  * content filter, or a reply cut off at its length is never a plan.
  *
- * The key goes to a client made for that request, in the shell's own
- * process, and nowhere else: never logged (the SDK's logging is off),
- * never in an error, never shown. The base URL is fixed (OPENAI_BASE_URL in
+ * The key goes in the headers of that request, from the shell's own
+ * process, and nowhere else: never logged, never in an error, never shown. The base URL is fixed (OPENAI_BASE_URL in
  * the session can't send the key elsewhere), and the organization and
- * project are never read from the session.
+ * project are never sent.
  */
 
-import OpenAI from "openai";
-import type { ChatCompletion, ChatCompletionFunctionTool, ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { ANSWERERS, AnswerError, type Answerer, type ModelCall, type PlanTool, SYSTEM_PROMPT, type Turn } from "./answerer.ts";
-import type { Fetch } from "./claude.ts";
 import { rankGptModels } from "./gpt-models.ts";
+import { errorWords, type Fetch, HttpError, requestJson, UnreadableError } from "./http.ts";
 import { strictSchema } from "./strict.ts";
 
 export const OPENAI_HOST = "api.openai.com";
 const BASE_URL = `https://${OPENAI_HOST}/v1`;
+
+/** A function call the model made, as it goes back next turn. */
+interface ToolCall {
+  id: string;
+  type: "function";
+  function: { name: string; arguments: string };
+}
+/** A chat message, as it is sent. */
+interface ChatMessage {
+  role: "developer" | "user" | "assistant" | "tool";
+  content: string | null;
+  // biome-ignore lint/style/useNamingConvention: the API's field name
+  tool_call_id?: string;
+  // biome-ignore lint/style/useNamingConvention: the API's field name
+  tool_calls?: ToolCall[];
+}
+
+export interface GptFunctionTool {
+  type: "function";
+  function: { name: string; description: string; parameters: Schema; strict: true };
+}
 const TIMEOUT_MS = 60_000;
 const MAX_TOKENS = 16_000;
 /** How long a list of the key's models stands. */
@@ -84,40 +102,45 @@ export function withoutNulls(value: unknown): unknown {
   return Object.fromEntries(Object.entries(value).flatMap(([key, each]) => (each === null ? [] : [[key, withoutNulls(each)]])));
 }
 
-export const gptTool = (tool: PlanTool): ChatCompletionFunctionTool => ({
+export const gptTool = (tool: PlanTool): GptFunctionTool => ({
   type: "function",
   function: { name: tool.name, description: tool.description, parameters: gptSchema(tool.schema), strict: true },
 });
 
+/** The answer's first choice's message and why it ended; anything else is an answer that can't be read. */
+function readChoice(completion: unknown): { message: Schema; finish: unknown } {
+  const choice = isSchema(completion) && Array.isArray(completion.choices) ? completion.choices[0] : undefined;
+  if (!isSchema(choice) || !isSchema(choice.message)) throw new AnswerError("failed", "GPT's answer couldn't be read.");
+  return { message: choice.message, finish: choice.finish_reason };
+}
+
 /** The reply's words and calls; a refusal, a filtered or a cut-off reply is a failure, never guessed at. */
-export function readGptReply(completion: Pick<ChatCompletion, "choices">): { text: string; calls: ModelCall[]; message: ChatCompletionMessageParam } {
-  const choice = completion.choices[0];
-  if (!choice) throw new AnswerError("failed", "GPT's answer couldn't be read.");
-  const { message, finish_reason: finish } = choice;
-  if (message.refusal) throw new AnswerError("refused", "GPT declined this request.");
+export function readGptReply(completion: unknown): { text: string; calls: ModelCall[]; message: ChatMessage } {
+  const { message, finish } = readChoice(completion);
+  if (typeof message.refusal === "string" && message.refusal !== "") throw new AnswerError("refused", "GPT declined this request.");
   if (finish === "content_filter") throw new AnswerError("refused", "GPT declined this request.");
   if (finish === "length") throw new AnswerError("failed", "GPT's answer was cut off.");
   const calls: ModelCall[] = [];
-  for (const call of message.tool_calls ?? []) {
-    if (call.type !== "function") continue;
+  const sent: ToolCall[] = [];
+  for (const call of Array.isArray(message.tool_calls) ? message.tool_calls : []) {
+    if (!isSchema(call) || call.type !== "function" || typeof call.id !== "string" || !isSchema(call.function)) continue;
+    const { name, arguments: args } = call.function;
+    if (typeof name !== "string" || typeof args !== "string") continue;
     let input: unknown = null;
     try {
-      input = withoutNulls(JSON.parse(call.function.arguments));
+      input = withoutNulls(JSON.parse(args));
     } catch {
       // Arguments that don't parse: the step can't run, and says so (plan.ts).
     }
-    calls.push({ id: call.id, name: call.function.name, input });
+    calls.push({ id: call.id, name, input });
+    sent.push({ id: call.id, type: "function", function: { name, arguments: args } });
   }
-  const text = (message.content ?? "").trim();
-  return {
-    text,
-    calls,
-    message: { role: "assistant", content: message.content ?? null, ...(message.tool_calls?.length ? { tool_calls: message.tool_calls } : {}) },
-  };
+  const content = typeof message.content === "string" ? message.content : null;
+  return { text: (content ?? "").trim(), calls, message: { role: "assistant", content, ...(sent.length > 0 ? { tool_calls: sent } : {}) } };
 }
 
 /** The messages for a turn: how the last calls went, then the words. */
-export function gptMessages(history: readonly ChatCompletionMessageParam[], turn: Turn): ChatCompletionMessageParam[] {
+export function gptMessages(history: readonly ChatMessage[], turn: Turn): ChatMessage[] {
   return [
     ...(history.length === 0 ? [{ role: "developer" as const, content: SYSTEM_PROMPT }] : history),
     ...turn.results.map((result) => ({ role: "tool" as const, tool_call_id: result.id, content: result.error ? `Error: ${result.text}` : result.text })),
@@ -125,27 +148,20 @@ export function gptMessages(history: readonly ChatCompletionMessageParam[], turn
   ];
 }
 
-/** The provider's error words, short and on one line. */
-const errorWords = (error: InstanceType<typeof OpenAI.APIError>): string => {
-  const message = typeof error.error === "object" && error.error !== null ? (error.error as { message?: unknown }).message : undefined;
-  return typeof message === "string" ? message.replace(/\s+/g, " ").slice(0, 160) : "";
-};
-
-/** The SDK's errors as the launcher says them; never with the key. */
+/** What went wrong with a request, as the launcher says it; never with the key. */
 export function gptFailure(error: unknown, model: string | null = null): AnswerError {
   if (error instanceof AnswerError) return error;
-  if (error instanceof OpenAI.AuthenticationError || error instanceof OpenAI.PermissionDeniedError)
-    return new AnswerError("no-key", "OpenAI didn't accept the key.");
-  if (error instanceof OpenAI.NotFoundError && model) return new AnswerError("no-model", `The model “${model}” isn't available to your key.`);
-  if (error instanceof OpenAI.RateLimitError) {
-    return error.code === "insufficient_quota"
-      ? new AnswerError("failed", "Your OpenAI account has no credit left.")
-      : new AnswerError("no-answer", "GPT is busy; try again in a moment.");
+  if (error instanceof HttpError) {
+    if (error.status === 401 || error.status === 403) return new AnswerError("no-key", "OpenAI didn't accept the key.");
+    if (error.status === 404 && model) return new AnswerError("no-model", `The model “${model}” isn't available to your key.`);
+    if (error.status === 429)
+      return error.code === "insufficient_quota"
+        ? new AnswerError("failed", "Your OpenAI account has no credit left.")
+        : new AnswerError("no-answer", "GPT is busy; try again in a moment.");
+    if (error.status >= 500) return new AnswerError("no-answer", "GPT is busy; try again in a moment.");
+    return new AnswerError("failed", errorWords(error.body) || `OpenAI answered ${error.status}.`);
   }
-  if (error instanceof OpenAI.InternalServerError) return new AnswerError("no-answer", "GPT is busy; try again in a moment.");
-  if (error instanceof OpenAI.APIConnectionError) return new AnswerError("no-answer", "GPT didn't answer.");
-  if (error instanceof OpenAI.APIError)
-    return new AnswerError("failed", errorWords(error) || (error.status ? `OpenAI answered ${error.status}.` : "GPT didn't answer."));
+  if (error instanceof UnreadableError) return new AnswerError("failed", "GPT's answer couldn't be read.");
   return new AnswerError("no-answer", "GPT didn't answer.");
 }
 
@@ -159,26 +175,24 @@ export interface GptOptions {
   now?(): number;
 }
 
-/** A client for one request, with the key, the fixed base URL, and nothing from the session. */
-function client(key: string, options: Pick<GptOptions, "fetch" | "maxRetries">): OpenAI {
-  const send = options.fetch;
-  return new OpenAI({
-    apiKey: key,
-    baseURL: BASE_URL,
-    organization: null,
-    project: null,
-    timeout: TIMEOUT_MS,
-    maxRetries: options.maxRetries ?? 1,
-    logLevel: "off",
-    ...(send ? { fetch: (url: string | URL | Request, init?: RequestInit) => send(url instanceof Request ? url.url : String(url), init ?? {}) } : {}),
+/** One request to api.openai.com: the key in the header, the fixed base URL, and nothing from the session. */
+function call(key: string, path: string, body: unknown, options: Pick<GptOptions, "fetch" | "maxRetries">, signal?: AbortSignal): Promise<unknown> {
+  return requestJson({
+    url: `${BASE_URL}${path}`,
+    headers: { authorization: `Bearer ${key}` },
+    ...(body === undefined ? {} : { body }),
+    ...(signal ? { signal } : {}),
+    timeoutMs: TIMEOUT_MS,
+    retries: options.maxRetries ?? 1,
+    ...(options.fetch ? { fetch: options.fetch } : {}),
   });
 }
 
 /** The chat models the key lists, the most capable first. */
 export async function listGptModels(key: string, options: Pick<GptOptions, "fetch" | "maxRetries"> = {}, signal?: AbortSignal): Promise<string[]> {
-  const ids: string[] = [];
-  for await (const model of client(key, options).models.list(signal ? { signal } : undefined)) ids.push(model.id);
-  return rankGptModels(ids);
+  const listed = await call(key, "/models", undefined, options, signal);
+  const data = isSchema(listed) && Array.isArray(listed.data) ? listed.data : [];
+  return rankGptModels(data.flatMap((model) => (isSchema(model) && typeof model.id === "string" ? [model.id] : [])));
 }
 
 export function gptAnswerer(options: GptOptions): Answerer {
@@ -197,16 +211,19 @@ export function gptAnswerer(options: GptOptions): Answerer {
           model = listed.models[0] ?? null;
           if (!model) throw new AnswerError("no-model", "Your OpenAI key lists no chat model.");
         }
-        const messages = gptMessages(history as readonly ChatCompletionMessageParam[], turn);
-        const completion = await client(key, options).chat.completions.create(
+        const messages = gptMessages(history as readonly ChatMessage[], turn);
+        const completion = await call(
+          key,
+          "/chat/completions",
           {
             model,
             messages,
-            ...(tools.length > 0 ? { tools: tools.map(gptTool), tool_choice: "auto" as const } : {}),
+            ...(tools.length > 0 ? { tools: tools.map(gptTool), tool_choice: "auto" } : {}),
             max_completion_tokens: MAX_TOKENS,
             store: false,
           },
-          { signal },
+          options,
+          signal,
         );
         const reply = readGptReply(completion);
         return { reply: { text: reply.text, calls: reply.calls }, history: [...messages, reply.message] };

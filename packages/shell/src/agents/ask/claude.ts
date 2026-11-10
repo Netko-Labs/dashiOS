@@ -1,6 +1,6 @@
 /**
  * Claude as the launcher's answerer: one Messages API request per turn,
- * through the official SDK (`@anthropic-ai/sdk`), to api.anthropic.com only,
+ * over `fetch` (http.ts, no SDK), to api.anthropic.com only,
  * with the person's key (keys.ts: the vault's token item when there is one).
  * The request carries the person's words and the plan's tools; the reply's
  * `tool_use` blocks are the plan, checked against the registry before any
@@ -15,53 +15,62 @@
  * answered by the model Anthropic picks for it. A refusal is read before
  * anything else in the reply.
  *
- * The key goes to a client made for this one request, in the shell's own
- * process, and nowhere else: never logged (the SDK's logging is off), never
+ * The key goes in the headers of this one request, from the shell's own
+ * process, and nowhere else: never logged, never
  * in an error, never shown. The base URL is fixed, so ANTHROPIC_BASE_URL in
  * the session can't send the key elsewhere.
  */
 
-import Anthropic from "@anthropic-ai/sdk";
 import { ANSWERERS, AnswerError, type Answerer, type ModelCall, type PlanTool, SYSTEM_PROMPT, type Turn } from "./answerer.ts";
+import { errorWords, type Fetch, HttpError, requestJson, UnreadableError } from "./http.ts";
 import { strictSchema } from "./strict.ts";
 
+export type { Fetch } from "./http.ts";
+
 export const ANTHROPIC_HOST = "api.anthropic.com";
-const BASE_URL = `https://${ANTHROPIC_HOST}`;
+const ENDPOINT = `https://${ANTHROPIC_HOST}/v1/messages`;
 export const CLAUDE_MODEL = "claude-opus-5-5";
+/** The API version the requests are written for (platform.claude.com, "API overview"). */
+export const ANTHROPIC_VERSION = "2026-10-21";
 /** `fallbacks: "default"` (the scalar form) goes with this header, and only this one. */
 export const FALLBACK_BETA = "server-side-fallback-2026-07-01";
 const TIMEOUT_MS = 60_000;
 /** Room for the model's thinking as well as the plan. */
 const MAX_TOKENS = 16_000;
 
-export type Fetch = (url: string, init: RequestInit) => Promise<Response>;
-
-type MessageParam = Anthropic.Beta.BetaMessageParam;
-type ContentBlock = Anthropic.Beta.BetaContentBlock;
-type Message = Anthropic.Beta.BetaMessage;
+/** A content block of a message; the fields a type has beyond `type` are read where they're used. */
+export interface ContentBlock {
+  type: string;
+  [field: string]: unknown;
+}
+interface MessageParam {
+  role: "user" | "assistant";
+  content: string | readonly unknown[];
+}
+/** The parts of a reply that are read. */
+interface Message {
+  content: readonly ContentBlock[];
+  // biome-ignore lint/style/useNamingConvention: the API's field name
+  stop_reason?: string | null;
+}
 
 export interface ClaudeOptions {
   /** The key, looked up for each request (it can be added while the shell runs); null when there is none. */
   key(): Promise<string | null>;
   model?: string;
-  /** For tests: what the SDK sends its requests with. */
+  /** For tests: what the requests are sent with. */
   fetch?: Fetch;
-  /** How often the SDK tries again after a rate limit, an overload or a dropped connection. */
+  /** How often to try again after a rate limit, an overload or a dropped connection. */
   maxRetries?: number;
 }
 
-/** The provider's error words, short and on one line. */
-function errorWords(body: unknown): string {
-  const outer = typeof body === "object" && body !== null ? (body as { error?: unknown }).error : undefined;
-  const message = typeof outer === "object" && outer !== null ? (outer as { message?: unknown }).message : undefined;
-  return typeof message === "string" ? message.replace(/\s+/g, " ").slice(0, 160) : "";
-}
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
 /** A plan tool as Claude is told of it: strict, so its arguments fit the schema. */
-export const claudeTool = (tool: PlanTool): Anthropic.Beta.BetaTool => ({
+export const claudeTool = (tool: PlanTool) => ({
   name: tool.name,
   description: tool.description,
-  input_schema: strictSchema(tool.schema) as Anthropic.Beta.BetaTool.InputSchema,
+  input_schema: strictSchema(tool.schema),
   strict: true,
 });
 
@@ -78,18 +87,25 @@ export function echoed(content: readonly ContentBlock[]): ContentBlock[] {
   return content.filter((block, at) => at >= start || !(block.type === "thinking" || block.type === "redacted_thinking" || block.type === "tool_use"));
 }
 
+/** The answer body as a message; anything else is an answer that can't be read. */
+export function readMessage(body: unknown): Message {
+  if (!isRecord(body) || !Array.isArray(body.content) || !body.content.every((block) => isRecord(block) && typeof block.type === "string"))
+    throw new AnswerError("failed", "Claude's answer couldn't be read.");
+  return { content: body.content as ContentBlock[], stop_reason: typeof body.stop_reason === "string" ? body.stop_reason : null };
+}
+
 /** The reply's text and calls; a refusal or a cut-off reply is a failure, never guessed at. */
-export function readReply(message: Pick<Message, "content" | "stop_reason">): { text: string; calls: ModelCall[] } {
+export function readReply(message: Message): { text: string; calls: ModelCall[] } {
   // A refusal comes first: its content may be empty or cut off mid-call.
   if (message.stop_reason === "refusal") throw new AnswerError("refused", "Claude declined this request.");
-  if (!Array.isArray(message.content)) throw new AnswerError("failed", "Claude's answer couldn't be read.");
   // A call cut off at max_tokens can still parse; never plan from it.
   if (message.stop_reason === "max_tokens") throw new AnswerError("failed", "Claude's answer was cut off.");
   const text: string[] = [];
   const calls: ModelCall[] = [];
   for (const block of message.content.slice(servedFrom(message.content))) {
-    if (block.type === "text") text.push(block.text);
-    if (block.type === "tool_use") calls.push({ id: block.id, name: block.name, input: block.input });
+    if (block.type === "text" && typeof block.text === "string") text.push(block.text);
+    if (block.type === "tool_use" && typeof block.id === "string" && typeof block.name === "string")
+      calls.push({ id: block.id, name: block.name, input: block.input });
   }
   return { text: text.join("\n").trim(), calls };
 }
@@ -110,50 +126,47 @@ export function userMessage(turn: Turn): MessageParam {
   };
 }
 
-/** The SDK's errors as the launcher says them; never with the key. */
+/** What went wrong with a request, as the launcher says it; never with the key. */
 export function answerFailure(error: unknown): AnswerError {
   if (error instanceof AnswerError) return error;
-  if (error instanceof Anthropic.AuthenticationError || error instanceof Anthropic.PermissionDeniedError)
-    return new AnswerError("no-key", "Anthropic didn't accept the key.");
-  if (error instanceof Anthropic.RateLimitError || error instanceof Anthropic.InternalServerError)
-    return new AnswerError("no-answer", "Claude is busy; try again in a moment.");
-  if (error instanceof Anthropic.APIConnectionError) return new AnswerError("no-answer", "Claude didn't answer.");
-  if (error instanceof Anthropic.APIError)
-    return new AnswerError("failed", errorWords(error.error) || (error.status ? `Claude answered ${error.status}.` : "Claude didn't answer."));
+  if (error instanceof HttpError) {
+    if (error.status === 401 || error.status === 403) return new AnswerError("no-key", "Anthropic didn't accept the key.");
+    // 429 is a rate limit, 5xx an outage; 529 is Anthropic's "overloaded".
+    if (error.status === 429 || error.status >= 500) return new AnswerError("no-answer", "Claude is busy; try again in a moment.");
+    return new AnswerError("failed", errorWords(error.body) || `Claude answered ${error.status}.`);
+  }
+  if (error instanceof UnreadableError) return new AnswerError("failed", "Claude's answer couldn't be read.");
   return new AnswerError("no-answer", "Claude didn't answer.");
 }
 
 export function claudeAnswerer(options: ClaudeOptions): Answerer {
-  const send = options.fetch;
   return {
     info: ANSWERERS.claude,
     async turn(history, turn, tools: readonly PlanTool[], signal) {
       const key = await options.key();
       if (!key) throw new AnswerError("no-key", "Add your Anthropic key in Settings › Agents.");
-      const client = new Anthropic({
-        apiKey: key,
-        baseURL: BASE_URL,
-        timeout: TIMEOUT_MS,
-        maxRetries: options.maxRetries ?? 1,
-        logLevel: "off",
-        ...(send ? { fetch: (url: string | URL | Request, init?: RequestInit) => send(url instanceof Request ? url.url : String(url), init ?? {}) } : {}),
-      });
       const messages: MessageParam[] = [...(history as readonly MessageParam[]), userMessage(turn)];
       let message: Message;
       try {
-        message = await client.beta.messages.create(
-          {
-            model: options.model ?? CLAUDE_MODEL,
-            max_tokens: MAX_TOKENS,
-            system: SYSTEM_PROMPT,
-            messages,
-            tools: tools.map(claudeTool),
-            tool_choice: { type: "auto" },
-            output_config: { effort: "low" },
-            fallbacks: "default",
-            betas: [FALLBACK_BETA],
-          },
-          { signal },
+        message = readMessage(
+          await requestJson({
+            url: ENDPOINT,
+            headers: { authorization: `Bearer ${key}`, "anthropic-version": ANTHROPIC_VERSION, "anthropic-beta": FALLBACK_BETA },
+            body: {
+              model: options.model ?? CLAUDE_MODEL,
+              max_tokens: MAX_TOKENS,
+              system: SYSTEM_PROMPT,
+              messages,
+              tools: tools.map(claudeTool),
+              tool_choice: { type: "auto" },
+              output_config: { effort: "low" },
+              fallbacks: "default",
+            },
+            signal,
+            timeoutMs: TIMEOUT_MS,
+            retries: options.maxRetries ?? 1,
+            ...(options.fetch ? { fetch: options.fetch } : {}),
+          }),
         );
       } catch (error) {
         if (signal.aborted) throw error;

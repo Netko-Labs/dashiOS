@@ -1,0 +1,17 @@
+{
+  "id": "msg_01FallbackExample",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-opus-5",
+  "content": [
+    { "type": "thinking", "thinking": "", "signature": "sig-declined" },
+    { "type": "tool_use", "id": "toolu_declined", "name": "lock_screen", "input": {} },
+    { "type": "fallback", "from": { "model": "claude-opus-5-5" }, "to": { "model": "claude-opus-5" } },
+    { "type": "thinking", "thinking": "", "signature": "sig-served" },
+    { "type": "text", "text": "Done." },
+    { "type": "tool_use", "id": "toolu_served", "name": "lock_screen", "input": {} }
+  ],
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "usage": { "input_tokens": 612, "output_tokens": 90 }
+}
