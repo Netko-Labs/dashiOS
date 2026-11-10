@@ -9,7 +9,7 @@
 import { describe, expect, test } from "bun:test";
 import { mayUse } from "../src/actions/registry.ts";
 import { ASKS_EVERY_TIME, mcpListing, PERSON_TOOLS, toolAddress } from "../src/actions/tools.ts";
-import { catalog, INSTRUCTIONS, parseCall, scopeOf, TOOL_ACTIONS, TOOLS } from "../src/agents/tools/index.ts";
+import { catalog, INSTRUCTIONS, parseCall, scopeOf, TOOL_ACTIONS, TOOLS } from "../src/agents/tools/registry.ts";
 import fixture from "./fixtures/mcp-tools-list.json";
 
 describe("tools/list from the registry", () => {
