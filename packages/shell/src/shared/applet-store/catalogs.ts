@@ -12,6 +12,7 @@
  */
 
 import { isCatalogAddress, parsePublicKey, publicKeyLine } from "@dashi/applet";
+import { isRecord } from "@dashi/shape";
 import { httpsUrl } from "../software/parse-values.ts";
 import { DEFAULT_INDEX, hostsFor } from "./catalog.ts";
 import { DASHI_INDEX_KEY } from "./keys.ts";
@@ -115,7 +116,13 @@ export function parseCatalogs(value: unknown, dashiUrl: string = DEFAULT_INDEX):
 export function isCatalogList(value: unknown): value is CatalogSetting[] {
   if (!Array.isArray(value) || value.length > MAX_CATALOGS) return false;
   const { catalogs, problems } = parseCatalogs(value, "");
-  return problems.length === 0 && catalogs.every((each, index) => each.key === (value[index] as CatalogSetting).key);
+  return (
+    problems.length === 0 &&
+    catalogs.every((each, index) => {
+      const raw: unknown = value[index];
+      return isRecord(raw) && raw.key === each.key;
+    })
+  );
 }
 
 /** Every catalog the store reads: Dashi's first, then the added ones in the order they were added. */

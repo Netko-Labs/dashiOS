@@ -10,7 +10,8 @@
 export function localeKeys(locale: string): string[] {
   const match = /^([a-z]{2,3})(?:_([A-Z]{2}))?(?:\.[A-Za-z0-9-]+)?(?:@([A-Za-z0-9]+))?$/.exec(locale.trim());
   if (!match) return [];
-  const [, language, country, modifier] = match as unknown as [string, string, string | undefined, string | undefined];
+  const [, language, country, modifier] = match;
+  if (language === undefined) return [];
   const keys: string[] = [];
   if (country && modifier) keys.push(`${language}_${country}@${modifier}`);
   if (country) keys.push(`${language}_${country}`);
@@ -77,7 +78,8 @@ export function localizedDesktop(text: string, locales: readonly string[] = mess
       if (eq <= 0) continue;
       const key = LOCALIZED_KEY.exec(line.slice(0, eq).trim());
       if (!key) continue;
-      const [, field, locale] = key as unknown as [string, string, string];
+      const [, field, locale] = key;
+      if (field === undefined || locale === undefined) continue;
       const values = found.get(field) ?? new Map<string, string>();
       if (!values.has(locale)) values.set(locale, unescape(line.slice(eq + 1).trim()));
       found.set(field, values);

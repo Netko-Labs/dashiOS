@@ -7,6 +7,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Machine } from "@dashi/applet";
+import { lenientList, literal, map, maybe, obj, record, type Shape, unknown } from "@dashi/shape";
 
 /** DMI chassis types that are portable (SMBIOS 3.x: laptop, notebook, sub-notebook, convertible, detachable, tablet…). */
 const PORTABLE = new Set([8, 9, 10, 11, 14, 30, 31, 32]);
@@ -20,18 +21,30 @@ function read(dir: string, name: string): string | undefined {
   }
 }
 
+const LOOSE = { strict: false } as const;
+
+/** A part of Describe that reads as absent (null) when it is not the shape asked for, so one bad part never costs the others. */
+const orAbsent = <T>(of: Shape<T>): Shape<T | null> => map(unknown(), (value) => maybe(of, value));
+
+/** The parts of dashi-hardware's Describe that `when.hardware` names (docs/hardware.md). */
+const DescribeShape = obj(
+  {
+    knobs: orAbsent(record(unknown())),
+    fans: orAbsent(lenientList(obj({ curve: literal(true) }, LOOSE))),
+    lighting: orAbsent(obj({ slash: orAbsent(literal(true)), aura: orAbsent(literal(true)), keyboard: orAbsent(record(unknown())) }, LOOSE)),
+  },
+  LOOSE,
+);
+
 /** The names `when.hardware` can ask for, from dashi-hardware's Describe (docs/hardware.md). */
 export function hardwareNames(describe: unknown): string[] {
-  if (typeof describe !== "object" || describe === null) return [];
-  const fields = describe as Record<string, unknown>;
-  const names = new Set<string>();
-  if (typeof fields.knobs === "object" && fields.knobs !== null) for (const knob of Object.keys(fields.knobs)) names.add(knob);
-  if (Array.isArray(fields.fans) && fields.fans.some((fan) => typeof fan === "object" && fan !== null && (fan as Record<string, unknown>).curve === true))
-    names.add("fan-curves");
-  const lighting = fields.lighting as Record<string, unknown> | undefined;
-  if (lighting?.slash === true) names.add("slash");
-  if (lighting?.aura === true) names.add("aura");
-  if (typeof lighting?.keyboard === "object" && lighting.keyboard !== null) names.add("keyboard-light");
+  const reported = maybe(DescribeShape, describe);
+  if (!reported) return [];
+  const names = new Set<string>(Object.keys(reported.knobs ?? {}));
+  if (reported.fans?.length) names.add("fan-curves");
+  if (reported.lighting?.slash) names.add("slash");
+  if (reported.lighting?.aura) names.add("aura");
+  if (reported.lighting?.keyboard) names.add("keyboard-light");
   return [...names].sort();
 }
 
