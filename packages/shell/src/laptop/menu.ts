@@ -1,5 +1,5 @@
 /**
- * What the laptop adds to the battery panel (battery/panel.tsx): the charge
+ * What the laptop adds to the battery panel (battery/lib/panel.tsx): the charge
  * limit with a one-time full charge, and "Using the graphics card", each
  * holder with its estimated draw and Quit (or the card's lost state, with
  * Restart…). The power mode isn't here any more: it is Control Center's

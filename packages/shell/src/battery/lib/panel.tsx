@@ -12,14 +12,14 @@
 import { tintFor } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import type { MenuEntry, StatusMenuAction } from "../menus/index.ts";
-import { useControlColors, usePanelEdge } from "../shared/controls/palette.ts";
-import { LimitBar } from "../shared/controls/parts.tsx";
-import { formatTime, useClockPrefs } from "../shared/time/clock.ts";
-import type { Battery } from "../system/battery.ts";
-import { chargeLine } from "./chart.ts";
-import type { BatteryMonitorState } from "./monitor.ts";
-import { formatWatts, idleFloor, type PowerRow, statusLine, wattRows } from "./panel-numbers.ts";
+import type { MenuEntry, StatusMenuAction } from "../../menus/index.ts";
+import { useControlColors, usePanelEdge } from "../../shared/controls/palette.ts";
+import { LimitBar } from "../../shared/controls/parts.tsx";
+import { formatTime, useClockPrefs } from "../../shared/time/clock.ts";
+import type { Battery } from "../../system/battery.ts";
+import { chargeLine } from "../chart.ts";
+import type { BatteryMonitorState } from "../monitor.ts";
+import { formatWatts, idleFloor, type PowerRow, statusLine, wattRows } from "../panel-numbers.ts";
 
 /** 300 wide, radius 26, 12 in. */
 export const BATTERY_PANEL = { width: 300, radius: 26, padding: 12 } as const;

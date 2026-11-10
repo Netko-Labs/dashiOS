@@ -6,16 +6,10 @@
  * everything comes in, the insights go out, warnings first.
  */
 
-import type { BatteryState } from "../system/battery.ts";
+import type { BatteryState } from "../../system/battery.ts";
+import { averageWatts, currentDischarge, formatSpan, type Sample, typicalWatts } from "../history.ts";
+import type { Insight } from "../types.ts";
 import type { AppUse } from "./apps.ts";
-import { averageWatts, currentDischarge, formatSpan, type Sample, typicalWatts } from "./history.ts";
-
-export interface Insight {
-  id: "faster" | "apps" | "discharge" | "charging" | "health" | "kept-full" | "low-power";
-  tone: "warning" | "tip" | "info";
-  title: string;
-  detail: string;
-}
 
 export interface InsightInput {
   now: number;

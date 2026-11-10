@@ -18,8 +18,8 @@
  */
 
 import type { Battery, PowerSupply } from "../system/battery.ts";
-import type { AppUse } from "./apps.ts";
 import { formatSpan, type Sample } from "./history.ts";
+import type { AppUse } from "./lib/apps.ts";
 
 /** The time until the battery reaches `limit` while charging, in minutes; null when it can't be timed or is past it. */
 export function minutesToLimit(battery: Battery, limit: number | null): number | null {

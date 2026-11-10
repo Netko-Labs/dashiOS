@@ -4,7 +4,7 @@
  * one pane, on stand-ins where the machine has nothing to show. For review
  * in the VM, which has no battery: `DASHI_POWER_SUPPLY` points the battery
  * at a fixture directory (system/battery.ts), `XDG_STATE_HOME` the battery
- * monitor at a fixture history (battery/file.ts), and `DASHI_HARDWARE_BUS=
+ * monitor at a fixture history (battery/lib/file.ts), and `DASHI_HARDWARE_BUS=
  * session` the laptop at a fake dashi-hardware (`dashi-hardware --sysfs-root
  * data/fixtures/ga403wr serve`). Writes to the hardware and the power
  * profiles stay in memory (system/stand-in.ts); the settings are a file of
@@ -19,7 +19,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setAppearanceSource } from "@dashi/ui";
 import { SETTINGS_APP_ID } from "../src/apps.ts";
-import { startBatteryMonitor } from "../src/battery/index.ts";
+import { startBatteryMonitor } from "../src/battery/start.ts";
 import type { GraphicsController, GraphicsSnapshot } from "../src/graphics/controller.ts";
 import { hardwareClient, shadowHardware } from "../src/hardware/client.ts";
 import type { Laptop } from "../src/laptop/start.ts";

@@ -7,18 +7,10 @@
 
 import { INFO, WARNING } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import {
-  averageWatts,
-  type BatteryMonitor,
-  chargingBand,
-  currentDischarge,
-  drawChart,
-  drawMax,
-  formatSpan,
-  type Insight,
-  levelChart,
-  useBatteryMonitor,
-} from "../../../battery/index.ts";
+import { chargingBand, drawChart, drawMax, levelChart } from "../../../battery/chart.ts";
+import { averageWatts, currentDischarge, formatSpan } from "../../../battery/history.ts";
+import { type BatteryMonitor, useBatteryMonitor } from "../../../battery/monitor.ts";
+import type { Insight } from "../../../battery/types.ts";
 import { useColors } from "../../colors.ts";
 import { Caption, Group } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";

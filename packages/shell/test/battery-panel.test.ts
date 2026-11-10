@@ -6,9 +6,9 @@
  */
 
 import { expect, test } from "bun:test";
-import type { AppUse } from "../src/battery/apps.ts";
 import { chargeLine } from "../src/battery/chart.ts";
 import type { Sample } from "../src/battery/history.ts";
+import type { AppUse } from "../src/battery/lib/apps.ts";
 import { adapterOf, batteryTime, formatWatts, idleFloor, minutesToLimit, statusLine, wattRows } from "../src/battery/panel-numbers.ts";
 import type { PowerSupply } from "../src/system/battery.ts";
 

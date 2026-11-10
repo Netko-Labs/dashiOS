@@ -8,7 +8,7 @@ import { type NativeHostOptions, Text, View } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
 import { type AppMenuStore, useAppMenus } from "../../app-menus/index.ts";
-import { BatteryPopover, type BatteryPopoverSources } from "../../battery/popover.tsx";
+import { BatteryPopover, type BatteryPopoverSources } from "../../battery/index.ts";
 import { ControlCenterPanel, type ControlCenterProps } from "../../control-center/index.ts";
 import type { DockMenuAction } from "../../dock/types.ts";
 import { NotificationCenterPanel, type NotificationStore } from "../../notifications/index.ts";

@@ -9,7 +9,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { parseSample, prune, type Sample } from "./history.ts";
+import { parseSample, prune, type Sample } from "../history.ts";
 
 export function historyPath(env: Record<string, string | undefined> = process.env): string {
   const state = env.XDG_STATE_HOME || join(env.HOME || homedir(), ".local", "state");

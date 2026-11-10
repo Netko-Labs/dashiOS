@@ -11,8 +11,8 @@
  * could quit.
  */
 
-import { type AppIdentity, ownerOf as ownerOfProcess } from "../shared/processes/index.ts";
-import type { ProcessSample } from "../shared/processes/read.ts";
+import { type AppIdentity, ownerOf as ownerOfProcess } from "../../shared/processes/index.ts";
+import type { ProcessSample } from "../../shared/processes/read.ts";
 
 export interface AppUse {
   /** The app's id when a window owns it, else `process:<name>`. */

@@ -255,12 +255,12 @@
 2	packages/shell/src/applets/power.ts
 1	packages/shell/src/applets/start.tsx
 1	packages/shell/src/approval-sheet.tsx
-1	packages/shell/src/battery/apps.ts
 1	packages/shell/src/battery/history.ts
-1	packages/shell/src/battery/insights.ts
+1	packages/shell/src/battery/lib/apps.ts
+1	packages/shell/src/battery/lib/insights.ts
+2	packages/shell/src/battery/lib/panel.tsx
 2	packages/shell/src/battery/monitor.ts
 1	packages/shell/src/battery/panel-numbers.ts
-2	packages/shell/src/battery/panel.tsx
 1	packages/shell/src/battery/popover.tsx
 5	packages/shell/src/battery/start.ts
 2	packages/shell/src/bluetooth/select.ts
@@ -285,7 +285,7 @@
 1	packages/shell/src/control-center/index.ts
 5	packages/shell/src/control-center/lib/laptop-pages.tsx
 2	packages/shell/src/control-center/lib/pages.tsx
-7	packages/shell/src/control-center/lib/snapshot.ts
+6	packages/shell/src/control-center/lib/snapshot.ts
 3	packages/shell/src/control-center/panel.tsx
 1	packages/shell/src/control-center/radios.ts
 1	packages/shell/src/display-config/lid.ts
@@ -322,11 +322,10 @@
 5	packages/shell/src/menubar/lib/menubar-program-slots.tsx
 1	packages/shell/src/menubar/lib/menubar-slots.tsx
 1	packages/shell/src/menubar/menubar.tsx
-1	packages/shell/src/menus/lib/popover.tsx
 3	packages/shell/src/menus/lib/stores.ts
 1	packages/shell/src/menus/lib/wiring.tsx
 1	packages/shell/src/menus/model.ts
-4	packages/shell/src/menus/options.ts
+3	packages/shell/src/menus/options.ts
 2	packages/shell/src/menus/session.ts
 1	packages/shell/src/menus/types.ts
 1	packages/shell/src/network/source.ts
@@ -357,7 +356,7 @@
 1	packages/shell/src/settings-app/lib/changes/words.ts
 1	packages/shell/src/settings-app/lib/edit-menu.ts
 1	packages/shell/src/settings-app/lib/find.ts
-2	packages/shell/src/settings-app/lib/heroes.ts
+1	packages/shell/src/settings-app/lib/heroes.ts
 1	packages/shell/src/settings-app/lib/machine-sound.ts
 2	packages/shell/src/settings-app/lib/panes/agents-consent.tsx
 1	packages/shell/src/settings-app/lib/panes/arrangement.tsx
@@ -474,8 +473,8 @@
 4	packages/shell/test/applets-power.test.ts
 1	packages/shell/test/applets-sandbox.test.ts
 1	packages/shell/test/bar-name.test.ts
-3	packages/shell/test/battery-monitor.test.ts
-2	packages/shell/test/battery-panel.test.ts
+2	packages/shell/test/battery-monitor.test.ts
+1	packages/shell/test/battery-panel.test.ts
 2	packages/shell/test/battery-status.test.ts
 1	packages/shell/test/brightness.test.ts
 1	packages/shell/test/browser-agents.test.ts
@@ -623,5 +622,5 @@
 1	packages/shell/test/terminal-tabs.test.ts
 1	packages/shell/test/terminal-view.test.tsx
 1	packages/shell/test/tints.test.ts
-3	packages/shell/test/true-black.test.ts
+2	packages/shell/test/true-black.test.ts
 1	packages/shell/test/warm-host.test.ts

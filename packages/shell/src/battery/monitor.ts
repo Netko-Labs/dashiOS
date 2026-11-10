@@ -10,11 +10,12 @@
 import { useSyncExternalStore } from "react";
 import type { ProcessSample } from "../shared/processes/read.ts";
 import { type Battery, type readPowerSupplies, summarizeBattery } from "../system/battery.ts";
-import { type AppUse, averageUse, ownerOf, significant, usageBetween, type WindowOwner } from "./apps.ts";
-import type { HistoryFile } from "./file.ts";
 import { drawWatts, prune, type Sample } from "./history.ts";
-import { type Insight, insights } from "./insights.ts";
+import { type AppUse, averageUse, ownerOf, significant, usageBetween, type WindowOwner } from "./lib/apps.ts";
+import type { HistoryFile } from "./lib/file.ts";
+import { insights } from "./lib/insights.ts";
 import { type Adapter, adapterOf } from "./panel-numbers.ts";
+import type { Insight } from "./types.ts";
 
 export const MONITOR = {
   /** A history sample. */
