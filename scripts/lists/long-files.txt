@@ -81,7 +81,6 @@
 314	packages/shell/src/launcher/ranking/rank.ts
 353	packages/shell/src/launcher/rows.ts
 1902	packages/shell/src/main.tsx
-415	packages/shell/src/menubar.tsx
 365	packages/shell/src/menus/controller.ts
 352	packages/shell/src/menus/model.ts
 420	packages/shell/src/menus/start.tsx
