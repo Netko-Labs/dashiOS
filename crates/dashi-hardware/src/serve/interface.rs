@@ -2,16 +2,15 @@
 
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Duration;
 
 use zbus::object_server::SignalEmitter;
 use zbus::zvariant::{OwnedValue, Value};
 use zbus::{fdo, interface, message::Header};
 
-use super::{INTERFACE, OBJECT_PATH, Pending, Shared, countdown, polkit};
+use super::convert::{self, to_fdo};
+use super::{Shared, curve, polkit};
 use crate::knobs::{Action, Knob, Value as KnobValue};
 use crate::machine::{Machine, OpError};
-use crate::slash::{Change, Input};
 
 pub(crate) struct Hardware1 {
     shared: Arc<Shared>,
@@ -50,16 +49,6 @@ impl Hardware1 {
             ))),
             Err(e) => Err(fdo::Error::Failed(format!("polkit: {e}"))),
         }
-    }
-}
-
-fn to_fdo(error: OpError) -> fdo::Error {
-    match error {
-        OpError::NotFound(s) => fdo::Error::InvalidArgs(format!("{s} is not on this machine")),
-        OpError::Invalid(s) => fdo::Error::InvalidArgs(s),
-        OpError::Io(s) => fdo::Error::Failed(s),
-        OpError::Unavailable(s) => fdo::Error::NotSupported(s),
-        OpError::NoDevice(s) => fdo::Error::NotSupported(s),
     }
 }
 
@@ -108,14 +97,7 @@ impl Hardware1 {
         #[zbus(header)] header: Header<'_>,
         #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
     ) -> fdo::Result<HashMap<String, OwnedValue>> {
-        let mut parsed = Vec::new();
-        for knob in Knob::ALL {
-            if let Some(raw) = values.get(knob.name()) {
-                let value =
-                    KnobValue::from_variant(knob.kind(), raw).map_err(fdo::Error::InvalidArgs)?;
-                parsed.push((knob, value));
-            }
-        }
+        let parsed = convert::knob_values(&values)?;
         // A mode switch to the model's own recipe needs no password.
         let needed = self.machine().action_for_many(&parsed);
         self.authorize(connection, &header, needed).await?;
@@ -148,15 +130,7 @@ impl Hardware1 {
         #[zbus(connection)] connection: &zbus::Connection,
         #[zbus(header)] header: Header<'_>,
     ) -> fdo::Result<String> {
-        let mut change = Change::default();
-        let mut keys: Vec<&String> = values.keys().collect();
-        keys.sort();
-        for key in keys {
-            let input = slash_input(&values[key]).ok_or_else(|| {
-                fdo::Error::InvalidArgs(format!("{key}: expected a boolean, number or string"))
-            })?;
-            change.put(key, input).map_err(fdo::Error::InvalidArgs)?;
-        }
+        let change = convert::slash_change(&values)?;
         self.authorize(connection, &header, Action::Everyday)
             .await?;
         let machine = self.machine();
@@ -207,46 +181,12 @@ impl Hardware1 {
         #[zbus(header)] header: Header<'_>,
     ) -> fdo::Result<String> {
         self.authorize(connection, &header, Action::Tune).await?;
-        let pairs: Vec<(u32, i32)> = per_core
-            .iter()
-            .enumerate()
-            .map(|(core, offset)| (core as u32, *offset))
-            .collect();
-        self.machine()
-            .apply_curve_optimizer(if pairs.is_empty() { all_core } else { 0 }, &pairs)
-            .map_err(to_fdo)?;
-        let token = countdown::new_token();
-        let all_core = (pairs.is_empty()).then_some(all_core);
-        if let Ok(mut pending) = self.shared.pending.lock() {
-            pending.insert(
-                token.clone(),
-                Pending {
-                    all_core,
-                    per_core: pairs,
-                },
-            );
-        }
-        countdown::arm(Arc::clone(&self.shared), token.clone(), confirm_within);
-        Ok(token)
+        curve::apply_pending(&self.shared, all_core, &per_core, confirm_within)
     }
 
     /// Keep a pending Curve Optimizer change, and save it for the boot guard.
     async fn confirm_tuning(&self, token: String) -> fdo::Result<()> {
-        let pending = self
-            .shared
-            .pending
-            .lock()
-            .ok()
-            .and_then(|mut p| p.remove(&token))
-            .ok_or_else(|| {
-                fdo::Error::InvalidArgs("no such token (it may have timed out)".into())
-            })?;
-        let machine = self.machine();
-        let tuning = machine.tuning_snapshot(pending.all_core, &pending.per_core);
-        machine
-            .state()
-            .save_tuning(&tuning)
-            .map_err(|e| fdo::Error::Failed(e.to_string()))
+        curve::confirm(&self.shared, &token)
     }
 
     async fn apply_saved_tuning(&self) -> String {
@@ -277,72 +217,4 @@ impl Hardware1 {
         knob: &str,
         value: Value<'_>,
     ) -> zbus::Result<()>;
-}
-
-/// One `SetSlash` value: a boolean, an integer of any width, or a string.
-fn slash_input(value: &Value<'_>) -> Option<Input> {
-    let value = match value {
-        Value::Value(inner) => inner.as_ref(),
-        other => other,
-    };
-    Some(match value {
-        Value::Bool(b) => Input::Bool(*b),
-        Value::Str(s) => Input::Str(s.as_str().to_owned()),
-        Value::U8(n) => Input::Int(i64::from(*n)),
-        Value::U16(n) => Input::Int(i64::from(*n)),
-        Value::U32(n) => Input::Int(i64::from(*n)),
-        Value::U64(n) => Input::Int(i64::try_from(*n).unwrap_or(i64::MAX)),
-        Value::I16(n) => Input::Int(i64::from(*n)),
-        Value::I32(n) => Input::Int(i64::from(*n)),
-        Value::I64(n) => Input::Int(*n),
-        _ => return None,
-    })
-}
-
-/// Poll the sysfs files the knobs live in (platform_profile notifies, Fn F5
-/// and Fn F4 raise the `*_hw_changed` markers); emit `Changed` for a knob
-/// whose files moved, by Dashi or anything else. Contents are compared as
-/// read.
-pub(crate) fn spawn_poll(connection: zbus::blocking::Connection, shared: Arc<Shared>) {
-    std::thread::spawn(move || {
-        let watched = shared
-            .machine
-            .lock()
-            .map(|m| m.watched_files())
-            .unwrap_or_default();
-        let mut seen: HashMap<String, Option<String>> = HashMap::new();
-        let mut first_pass = true;
-        loop {
-            std::thread::sleep(Duration::from_millis(700));
-            let mut touched: Vec<&'static str> = Vec::new();
-            {
-                let machine = match shared.machine.lock() {
-                    Ok(machine) => machine,
-                    Err(_) => continue,
-                };
-                for (file, knob) in &watched {
-                    let now = machine.sysfs.read(file);
-                    if seen.get(file) != Some(&now) {
-                        seen.insert(file.clone(), now);
-                        if !first_pass && !touched.contains(knob) {
-                            touched.push(knob);
-                        }
-                    }
-                }
-            }
-            first_pass = false;
-            for knob in touched {
-                let value = shared.machine.lock().ok().and_then(|m| m.get(knob).ok());
-                if let Some(value) = value {
-                    let _ = connection.emit_signal(
-                        None::<&str>,
-                        OBJECT_PATH,
-                        INTERFACE,
-                        "Changed",
-                        &(knob, value.variant()),
-                    );
-                }
-            }
-        }
-    });
 }

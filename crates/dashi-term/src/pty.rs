@@ -1,11 +1,14 @@
 //! The pseudo-terminal: the person's shell on the PTY's far end, its size,
 //! and a thread that reads what it prints.
 
-use std::ffi::{CStr, CString, OsString};
+mod launch;
+
+use std::ffi::CString;
 use std::io;
 use std::os::fd::{AsRawFd, FromRawFd, OwnedFd, RawFd};
-use std::os::unix::ffi::OsStringExt;
 use std::sync::mpsc::Sender;
+
+use launch::{environment, exec_line, logical_pwd, shell};
 
 use crate::Message;
 use crate::integration;
@@ -13,100 +16,6 @@ use crate::integration;
 pub(crate) struct Pty {
     master: OwnedFd,
     pub(crate) child: libc::pid_t,
-}
-
-/// The shell to run: `$SHELL`, else the account's shell, else zsh (Dashi's default).
-fn shell() -> CString {
-    if let Some(shell) = std::env::var_os("SHELL")
-        .filter(|s| !s.is_empty())
-        .and_then(|s| CString::new(s.into_vec()).ok())
-    {
-        return shell;
-    }
-    // SAFETY: getpwuid returns a pointer into static storage or null; it is read at once, before any other call.
-    unsafe {
-        let entry = libc::getpwuid(libc::getuid());
-        if !entry.is_null() && !(*entry).pw_shell.is_null() {
-            return std::ffi::CStr::from_ptr((*entry).pw_shell).to_owned();
-        }
-    }
-    CString::from(c"/bin/zsh")
-}
-
-/// The child's environment: ours, with the terminal's identity, and what the
-/// shell integration sets (it wins over an inherited value of the same name).
-fn environment(extra: &[(String, String)]) -> Vec<CString> {
-    let mut vars: Vec<(OsString, OsString)> = std::env::vars_os()
-        .filter(|(key, _)| {
-            !matches!(key.to_str(), Some("TERM" | "COLORTERM" | "TERM_PROGRAM"))
-                && !extra
-                    .iter()
-                    .any(|(name, _)| key.as_os_str() == name.as_str())
-        })
-        .collect();
-    vars.push(("TERM".into(), "xterm-256color".into()));
-    vars.push(("COLORTERM".into(), "truecolor".into()));
-    vars.push(("TERM_PROGRAM".into(), "dashi-term".into()));
-    vars.extend(extra.iter().map(|(key, value)| (key.into(), value.into())));
-    vars.into_iter()
-        .filter_map(|(key, value)| {
-            let mut entry = key.into_vec();
-            entry.push(b'=');
-            entry.extend(value.into_vec());
-            CString::new(entry).ok()
-        })
-        .collect()
-}
-
-/// `PWD` for a shell started in `cwd`: the folder as given, links and all, so
-/// a tab opened in `~/Developer` (a link) stays there rather than in where it
-/// points. Shells keep an inherited `PWD` when it is absolute, has no `.` or
-/// `..`, and names their working directory; else they take `getcwd()`'s.
-fn logical_pwd(cwd: &str) -> Option<String> {
-    // Checked on the text itself: `Path::components` drops a `.` in the middle
-    // ("/tmp/./x" reads as "/tmp/x"), so it would let one through.
-    let plain = cwd == "/"
-        || cwd.strip_prefix('/').is_some_and(|rest| {
-            rest.split('/')
-                .all(|part| !part.is_empty() && part != "." && part != "..")
-        });
-    (plain && std::fs::metadata(cwd).is_ok_and(|meta| meta.is_dir())).then(|| cwd.to_string())
-}
-
-/// What the PTY's child runs, as the program's path and its argv: the
-/// shell as a login shell (`-zsh`) with the integration's arguments, or a
-/// command (`dashi-term -- htop`, an app whose desktop entry says
-/// `Terminal=true`) through `/bin/sh`, which finds it on `PATH`: the child
-/// can't search for it itself after the fork. The command's arguments are
-/// passed to `exec "$@"` as they are, never parsed by the shell.
-fn exec_line(shell: &CStr, args: &[String], command: &[String]) -> (CString, Vec<CString>) {
-    let owned = |words: &[String]| -> Vec<CString> {
-        words
-            .iter()
-            .filter_map(|word| CString::new(word.as_str()).ok())
-            .collect()
-    };
-    if !command.is_empty() {
-        let mut argv = vec![
-            CString::from(c"sh"),
-            CString::from(c"-c"),
-            CString::from(c"exec \"$@\""),
-            CString::from(c"sh"),
-        ];
-        argv.extend(owned(command));
-        return (CString::from(c"/bin/sh"), argv);
-    }
-    let name = shell
-        .to_bytes()
-        .rsplit(|b| *b == b'/')
-        .next()
-        .unwrap_or(b"sh");
-    let mut login = b"-".to_vec();
-    login.extend_from_slice(name);
-    let argv0 = CString::new(login).unwrap_or_else(|_| CString::from(c"-sh"));
-    let mut argv = vec![argv0];
-    argv.extend(owned(args));
-    (shell.to_owned(), argv)
 }
 
 impl Pty {
@@ -273,83 +182,4 @@ pub(crate) fn exit_code(child: libc::pid_t) -> i32 {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{environment, exec_line, logical_pwd, running_program};
-    use std::ffi::CString;
-
-    #[test]
-    fn a_shell_started_through_a_link_keeps_the_links_path() {
-        let root = std::env::temp_dir().join(format!("dashi-term-pwd-{}", std::process::id()));
-        let real = root.join("developer");
-        let link = root.join("Developer");
-        std::fs::create_dir_all(&real).unwrap();
-        let _ = std::fs::remove_file(&link);
-        std::os::unix::fs::symlink(&real, &link).unwrap();
-        let link = link.to_str().unwrap().to_string();
-        assert_eq!(logical_pwd(&link), Some(link.clone()));
-        // The shell's environment carries it, in place of the terminal's own PWD.
-        let env = environment(&[("PWD".into(), link.clone())]);
-        let pwds: Vec<_> = env
-            .iter()
-            .filter_map(|entry| entry.to_str().ok()?.strip_prefix("PWD="))
-            .collect();
-        assert_eq!(pwds, [link.as_str()]);
-        std::fs::remove_dir_all(&root).unwrap();
-    }
-
-    #[test]
-    fn a_pwd_shells_would_not_trust_is_left_out() {
-        assert_eq!(logical_pwd("Developer"), None);
-        assert_eq!(logical_pwd("/tmp/../tmp"), None);
-        assert_eq!(logical_pwd("/tmp/./x"), None);
-        assert_eq!(logical_pwd("/tmp/."), None);
-        assert_eq!(logical_pwd("/tmp//x"), None);
-        assert_eq!(logical_pwd("/tmp/"), None);
-        assert_eq!(logical_pwd("/no/such/folder/here"), None);
-        assert_eq!(logical_pwd("/"), Some("/".into()));
-    }
-
-    #[test]
-    fn the_shell_at_its_prompt_is_not_running_anything() {
-        let named = |_| Some("sleep\n".to_string());
-        assert_eq!(running_program(100, 100, named), None);
-        assert_eq!(running_program(-1, 100, named), None);
-        assert_eq!(running_program(0, 100, named), None);
-    }
-
-    #[test]
-    fn another_group_in_front_is_a_running_program() {
-        assert_eq!(
-            running_program(120, 100, |pid| (pid == 120).then(|| "sleep\n".to_string())),
-            Some("sleep".to_string())
-        );
-        assert_eq!(running_program(120, 100, |_| None), Some(String::new()));
-    }
-
-    #[test]
-    fn a_command_runs_in_place_of_the_shell_its_words_untouched() {
-        let words = |argv: Vec<CString>| -> Vec<String> {
-            argv.into_iter()
-                .map(|arg| arg.into_string().unwrap())
-                .collect()
-        };
-        let (program, argv) = exec_line(c"/bin/zsh", &["-i".into()], &[]);
-        assert_eq!(program.to_str().unwrap(), "/bin/zsh");
-        assert_eq!(words(argv), ["-zsh", "-i"]);
-        let command = ["htop".to_string(), "--tree".into(), "a b; rm -rf ~".into()];
-        let (program, argv) = exec_line(c"/bin/zsh", &["-i".into()], &command);
-        assert_eq!(program.to_str().unwrap(), "/bin/sh");
-        assert_eq!(
-            words(argv),
-            [
-                "sh",
-                "-c",
-                "exec \"$@\"",
-                "sh",
-                "htop",
-                "--tree",
-                "a b; rm -rf ~"
-            ]
-        );
-    }
-}
+mod tests;

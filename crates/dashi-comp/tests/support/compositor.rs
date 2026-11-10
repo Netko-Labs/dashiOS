@@ -86,12 +86,14 @@ impl Drop for Compositor {
     }
 }
 
+/// Waits until the socket answers. Its file appears at `bind`, a moment
+/// before `listen`: on a busy machine a connection made in between is refused.
 pub fn wait_for(path: &Path) {
     let start = Instant::now();
-    while !path.exists() {
+    while UnixStream::connect(path).is_err() {
         assert!(
             start.elapsed() < Duration::from_secs(10),
-            "no IPC socket at {}",
+            "no IPC socket answers at {}",
             path.display()
         );
         sleep(Duration::from_millis(20));

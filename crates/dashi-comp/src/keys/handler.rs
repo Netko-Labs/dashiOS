@@ -13,30 +13,29 @@
 //! to the keymap's `afterTap` rules at once, before the shell has heard of it
 //! (so does a `bind` rule that `armsAfterTap`: ❖Space).
 
-use crate::ipc::protocol::{Event, SuperPhase};
-use std::{collections::HashMap, time::Instant};
+use std::collections::HashMap;
 
 use smithay::{
     backend::input::KeyState,
-    input::keyboard::{Keycode, KeysymHandle, ModifiersState, keysyms, xkb},
-    reexports::calloop::timer::{TimeoutAction, Timer},
-    utils::SERIAL_COUNTER,
+    input::keyboard::{KeyboardHandle, Keycode},
+    utils::{SERIAL_COUNTER, Serial},
 };
 
-use super::keymap::{Action, Chord, KeyRef, Keymap, Mods, Pressed};
-use crate::{state::Dashi, wm::window_id_for_surface};
-
-/// The xkb keycodes of the Super keys (evdev KEY_LEFTMETA/KEY_RIGHTMETA + 8).
-const SUPER_KEYCODES: [u32; 2] = [133, 134];
+use super::{
+    keymap::{Action, Chord, Keymap, Mods, Pressed},
+    keysyms::{KeyInfo, key_info},
+    super_key::{SUPER_KEYCODES, SuperPress},
+};
+use crate::{ipc::protocol::Event, state::Dashi, wm::window_id_for_surface};
 
 #[derive(Default)]
 pub(crate) struct Keys {
     pub keymap: Keymap,
     /// The xkb layout and key repeat (layout.rs).
     pub layout: super::layout::KeyboardLayout,
-    super_down: Option<SuperPress>,
+    pub(super) super_down: Option<SuperPress>,
     /// Bumped on every ❖ press, so a hold timer knows whether its press is still the one held.
-    super_generation: u64,
+    pub(super) super_generation: u64,
     /// Presses the compositor took, and what their release does.
     pub(super) taken: HashMap<Keycode, Taken>,
     /// The snippets' keywords, and what was just typed (snippets.rs).
@@ -45,33 +44,10 @@ pub(crate) struct Keys {
     pub(super) lent_super: Option<u32>,
 }
 
-impl Keys {
-    /// ❖ is held.
-    pub(super) fn super_is_down(&self) -> bool {
-        self.super_down.is_some()
-    }
-}
-
-struct SuperPress {
-    since: Instant,
-    chorded: bool,
-}
-
 pub(super) enum Taken {
     Swallowed,
     /// Replayed as another chord, held until this key is released (replay.rs).
     Translated(super::replay::Held),
-}
-
-/// What a key is, read from xkb as it is pressed.
-pub(super) struct KeyInfo {
-    /// Unshifted keysym names first, then the keysym as typed.
-    pub(super) names: Vec<String>,
-    /// What the key types with these modifiers ("a", "A", "é"), if it types anything.
-    text: Option<String>,
-    mods: ModifiersState,
-    is_modifier: bool,
-    function_key: Option<u32>,
 }
 
 impl Dashi {
@@ -88,14 +64,7 @@ impl Dashi {
         self.keep_keyboard_on_lock();
 
         if state == KeyState::Released {
-            let (_, mods_changed) =
-                keyboard.input_intercept::<(), _>(self, keycode, state, |_, _, _| ());
-            match self.keys.taken.remove(&keycode) {
-                None => keyboard.input_forward(self, keycode, state, serial, time, mods_changed),
-                Some(Taken::Swallowed) => {}
-                Some(Taken::Translated(held)) => self.replay_release(held, time),
-            }
-            return;
+            return self.on_key_released(&keyboard, keycode, serial, time);
         }
 
         let (info, mods_changed) =
@@ -156,17 +125,40 @@ impl Dashi {
             }
             Some(Action::Bind(name)) => {
                 self.keys.taken.insert(keycode, Taken::Swallowed);
-                let window = self.focused_window_id();
-                let key = info.names.first().cloned().unwrap_or_default();
-                let held = [mods.shift, mods.ctrl, mods.alt];
-                let event = Event::binding(name.clone(), window, key, held, info.text.clone());
-                self.ipc.emit(event);
-                // As a ❖ tap does: the keys after this one are the shell's from now (keymap.rs).
-                if arms_after_tap {
-                    self.keys.keymap.arm_after_tap();
-                }
+                self.emit_binding(name, &info, mods, arms_after_tap);
             }
             Some(action) => self.replay_action(keycode, &action, info.mods.shift, time),
+        }
+    }
+
+    /// A key came up: to the client, if the press went there; else what its press left held.
+    fn on_key_released(
+        &mut self,
+        keyboard: &KeyboardHandle<Dashi>,
+        keycode: Keycode,
+        serial: Serial,
+        time: u32,
+    ) {
+        let state = KeyState::Released;
+        let (_, mods_changed) =
+            keyboard.input_intercept::<(), _>(self, keycode, state, |_, _, _| ());
+        match self.keys.taken.remove(&keycode) {
+            None => keyboard.input_forward(self, keycode, state, serial, time, mods_changed),
+            Some(Taken::Swallowed) => {}
+            Some(Taken::Translated(held)) => self.replay_release(held, time),
+        }
+    }
+
+    /// A `bind` rule matched: the shell hears the binding, with the key and its text.
+    fn emit_binding(&mut self, name: String, info: &KeyInfo, mods: Mods, arms_after_tap: bool) {
+        let window = self.focused_window_id();
+        let key = info.names.first().cloned().unwrap_or_default();
+        let held = [mods.shift, mods.ctrl, mods.alt];
+        let event = Event::binding(name, window, key, held, info.text.clone());
+        self.ipc.emit(event);
+        // As a ❖ tap does: the keys after this one are the shell's from now (keymap.rs).
+        if arms_after_tap {
+            self.keys.keymap.arm_after_tap();
         }
     }
 
@@ -222,42 +214,6 @@ impl Dashi {
         true
     }
 
-    /// The keycode and modifiers that type `chord` in the current layout.
-    fn resolve(
-        &mut self,
-        chord: &Chord,
-        pressed: Keycode,
-        shift_held: bool,
-    ) -> Option<(Keycode, ModifiersState)> {
-        let keyboard = self.seat.get_keyboard()?;
-        let (target, needs_shift) = match &chord.key {
-            KeyRef::Pressed => (pressed, false),
-            KeyRef::Named(name) => keyboard.with_xkb_state(self, |context| {
-                let xkb = context.xkb().lock().ok()?;
-                // SAFETY: the keymap and state are only read while the Xkb lock is held.
-                let (keymap, state) = unsafe { (xkb.keymap(), xkb.state()) };
-                keycode_for(keymap, state, name)
-            })?,
-        };
-        let mut mods = keyboard.modifier_state();
-        mods.ctrl = chord.mods.ctrl;
-        mods.alt = chord.mods.alt;
-        mods.shift = chord.mods.shift || needs_shift || shift_held;
-        mods.logo = false;
-        Some((target, mods))
-    }
-
-    /// The key (and whether it needs Shift) that types keysym `name` in the person's layout.
-    pub(crate) fn keycode_named(&mut self, name: &str) -> Option<(Keycode, bool)> {
-        let keyboard = self.seat.get_keyboard()?;
-        keyboard.with_xkb_state(self, |context| {
-            let xkb = context.xkb().lock().ok()?;
-            // SAFETY: the keymap and state are only read while the Xkb lock is held.
-            let (keymap, state) = unsafe { (xkb.keymap(), xkb.state()) };
-            keycode_for(keymap, state, name)
-        })
-    }
-
     /// Keys the compositor keeps whatever the keymap says.
     fn built_in(&mut self, info: &KeyInfo, mods: Mods) -> bool {
         let name = info.names.first().map(String::as_str).unwrap_or_default();
@@ -280,112 +236,7 @@ impl Dashi {
         false
     }
 
-    fn on_super(&mut self, state: KeyState) {
-        match state {
-            KeyState::Pressed => {
-                if self.keys.super_down.is_some() {
-                    return;
-                }
-                self.keys.super_generation += 1;
-                let generation = self.keys.super_generation;
-                self.keys.super_down = Some(SuperPress {
-                    since: Instant::now(),
-                    chorded: false,
-                });
-                let hold = std::time::Duration::from_millis(self.keys.keymap.hold_ms);
-                let _ = self.loop_handle.insert_source(
-                    Timer::from_duration(hold),
-                    move |_, _, state| {
-                        // While locked a hold shows nothing: no shell binding fires (session/lock.rs).
-                        let still = state.keys.super_generation == generation
-                            && !state.lock.locked
-                            && state
-                                .keys
-                                .super_down
-                                .as_ref()
-                                .is_some_and(|press| !press.chorded);
-                        if still {
-                            state.ipc.emit(SuperPhase::Hold.event());
-                        }
-                        TimeoutAction::Drop
-                    },
-                );
-            }
-            KeyState::Released => {
-                let Some(press) = self.keys.super_down.take() else {
-                    return;
-                };
-                // While locked a tap opens nothing and switches no rules.
-                let tapped = !press.chorded
-                    && !self.lock.locked
-                    && press.since.elapsed().as_millis() < u128::from(self.keys.keymap.tap_ms);
-                if tapped {
-                    // The shell's rules for after a tap hold from now, not from when it hears of the tap.
-                    self.keys.keymap.arm_after_tap();
-                    self.ipc.emit(SuperPhase::Tap.event());
-                }
-                self.ipc.emit(SuperPhase::Up.event());
-            }
-        }
-    }
-
-    /// Something else happened while ❖ is held (a key, a click): it is a chord, not a tap.
-    /// Returns whether ❖ is held.
-    pub(crate) fn note_chord(&mut self) -> bool {
-        let Some(press) = self.keys.super_down.as_mut() else {
-            return false;
-        };
-        if !press.chorded {
-            press.chorded = true;
-            self.ipc.emit(SuperPhase::Chord.event());
-        }
-        true
-    }
-
-    /// A key that reached a window as it is: what it typed, for the snippets' keywords.
-    fn watch_snippets(&mut self, info: &KeyInfo, mods: Mods) {
-        if !self.keys.snippets.is_watching() {
-            return;
-        }
-        let Some(window) = self.focused_window_id() else {
-            return self.keys.snippets.reset();
-        };
-        let plain = !mods.super_ && !mods.ctrl && !mods.alt;
-        let name = info.names.first().map(String::as_str).unwrap_or_default();
-        match (&info.text, plain) {
-            (Some(text), true) => {
-                if let Some(keyword) = self.keys.snippets.typed(window, text) {
-                    let keyword = keyword.clone();
-                    self.ipc.emit(Event::Snippet { keyword, window });
-                }
-            }
-            (None, true) if name == "BackSpace" => self.keys.snippets.erased(window),
-            _ => self.keys.snippets.reset(),
-        }
-    }
-
-    /// `snippet-erase`: delete `keyword` from `window`, if it is still the last thing typed there.
-    pub(crate) fn erase_snippet(&mut self, window: u64, keyword: &str) -> Result<(), String> {
-        if self.lock.locked {
-            return Err("the screen is locked".into());
-        }
-        if self.focused_window_id() != Some(window)
-            || !self.keys.snippets.ends_with_in(window, keyword)
-        {
-            return Err("the keyword is no longer the last thing typed there".into());
-        }
-        let backspace = Chord::parse("BackSpace")?;
-        let time = self.start_time.elapsed().as_millis() as u32;
-        for _ in keyword.chars() {
-            if !self.tap(&backspace, None, false, time) {
-                return Err("BackSpace cannot be typed on this keyboard".into());
-            }
-        }
-        self.keys.snippets.reset();
-        Ok(())
-    }
-
-    fn focused_window_id(&self) -> Option<u64> {
+    pub(super) fn focused_window_id(&self) -> Option<u64> {
         let focus = self.seat.get_keyboard()?.current_focus()?;
         window_id_for_surface(self, &focus)
     }
@@ -400,96 +251,5 @@ impl Dashi {
                     .map(|entry| crate::wm::names(&entry.window).0)
             })
             .unwrap_or_default()
-    }
-}
-
-fn key_info(mods: &ModifiersState, handle: &KeysymHandle<'_>) -> KeyInfo {
-    let mut names: Vec<String> = handle
-        .raw_syms()
-        .iter()
-        .map(|sym| xkb::keysym_get_name(*sym))
-        .collect();
-    let typed = handle.modified_sym();
-    let typed_name = xkb::keysym_get_name(typed);
-    if !names.contains(&typed_name) {
-        names.push(typed_name);
-    }
-    let raw = handle.raw_syms().first().copied().unwrap_or(typed);
-    let is_modifier = raw.is_modifier_key()
-        || raw.raw() == keysyms::KEY_Caps_Lock
-        || raw.raw() == keysyms::KEY_Num_Lock;
-    let function_key = (keysyms::KEY_F1..=keysyms::KEY_F12)
-        .contains(&raw.raw())
-        .then(|| raw.raw() - keysyms::KEY_F1 + 1)
-        .or_else(|| {
-            (keysyms::KEY_XF86Switch_VT_1..=keysyms::KEY_XF86Switch_VT_12)
-                .contains(&typed.raw())
-                .then(|| typed.raw() - keysyms::KEY_XF86Switch_VT_1 + 1)
-        });
-    KeyInfo {
-        names,
-        text: typed_text(typed),
-        mods: *mods,
-        is_modifier,
-        function_key,
-    }
-}
-
-/// The key, and whether it needs Shift, that types keysym `name` in the active layout.
-fn keycode_for(keymap: &xkb::Keymap, state: &xkb::State, name: &str) -> Option<(Keycode, bool)> {
-    let sym = match xkb::keysym_from_name(name, xkb::KEYSYM_NO_FLAGS) {
-        sym if sym.raw() != keysyms::KEY_NoSymbol => sym,
-        _ => xkb::keysym_from_name(name, xkb::KEYSYM_CASE_INSENSITIVE),
-    };
-    if sym.raw() == keysyms::KEY_NoSymbol {
-        return None;
-    }
-    let layout = state.serialize_layout(xkb::STATE_LAYOUT_EFFECTIVE);
-    (keymap.min_keycode().raw()..=keymap.max_keycode().raw()).find_map(|raw| {
-        let code = Keycode::new(raw);
-        (0..keymap.num_levels_for_key(code, layout).min(2))
-            .find(|level| {
-                keymap
-                    .key_get_syms_by_level(code, layout, *level)
-                    .contains(&sym)
-            })
-            .map(|level| (code, level == 1))
-    })
-}
-
-/// The text a keysym types: a printable character, never a control one (Return, Tab, Esc).
-fn typed_text(sym: xkb::Keysym) -> Option<String> {
-    sym.key_char()
-        .filter(|char| !char.is_control())
-        .map(String::from)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::typed_text;
-    use smithay::input::keyboard::{keysyms, xkb::Keysym};
-
-    #[test]
-    fn keys_type_their_characters_and_nothing_for_control_keys() {
-        assert_eq!(
-            typed_text(Keysym::new(keysyms::KEY_a)).as_deref(),
-            Some("a")
-        );
-        assert_eq!(
-            typed_text(Keysym::new(keysyms::KEY_A)).as_deref(),
-            Some("A")
-        );
-        assert_eq!(
-            typed_text(Keysym::new(keysyms::KEY_eacute)).as_deref(),
-            Some("é")
-        );
-        assert_eq!(
-            typed_text(Keysym::new(keysyms::KEY_space)).as_deref(),
-            Some(" ")
-        );
-        assert_eq!(typed_text(Keysym::new(keysyms::KEY_Return)), None);
-        assert_eq!(typed_text(Keysym::new(keysyms::KEY_BackSpace)), None);
-        assert_eq!(typed_text(Keysym::new(keysyms::KEY_Escape)), None);
-        assert_eq!(typed_text(Keysym::new(keysyms::KEY_Left)), None);
     }
 }

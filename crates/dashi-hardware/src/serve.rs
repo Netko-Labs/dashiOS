@@ -3,9 +3,12 @@
 //! what it is asked, clamped; it decides no policy. `Changed` is emitted from
 //! a thread that polls the sysfs files the knobs live in.
 
+mod convert;
 mod countdown;
+mod curve;
 mod interface;
 mod polkit;
+mod poll;
 
 use std::collections::HashMap;
 use std::process::ExitCode;
@@ -67,7 +70,7 @@ pub(crate) fn run(args: &Args) -> ExitCode {
         }
     };
 
-    interface::spawn_poll(connection.clone(), Arc::clone(&shared));
+    poll::spawn_poll(connection.clone(), Arc::clone(&shared));
     eprintln!("dashi-hardware: serving {BUS_NAME}");
     loop {
         std::thread::sleep(Duration::from_secs(3600));
