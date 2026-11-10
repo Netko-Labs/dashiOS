@@ -8,7 +8,7 @@ Name:           dashi-secretd
 Version:        %{dashi_snapshot}
 Release:        1%{?dist}
 Summary:        Dashi's vault: secrets agents can use but never read
-License:        MIT
+License:        Apache-2.0 AND BSD-3-Clause AND MIT AND Unicode-3.0
 URL:            https://github.com/Netko-Labs/dashiOS
 Source0:        %{dashi_source}.tar.gz
 ExclusiveArch:  x86_64 aarch64
@@ -85,6 +85,8 @@ if [ $1 -eq 0 ] && command -v selinuxenabled >/dev/null && selinuxenabled; then
 fi
 
 %files
+%license LICENSE
+%license spin/dashi-secretd/usr/share/licenses/dashi-secretd/LICENSE.dependencies
 %dir %{_libexecdir}/dashi
 %{_libexecdir}/dashi/dashi-secretd
 %{_libexecdir}/dashi/dashi-secretd-pam

@@ -9,7 +9,7 @@ Name:           dashi-hardware
 Version:        %{dashi_snapshot}
 Release:        1%{?dist}
 Summary:        Dashi's privileged hardware helper
-License:        MIT
+License:        MIT AND Unicode-3.0
 URL:            https://github.com/Netko-Labs/dashiOS
 Source0:        %{dashi_source}.tar.gz
 ExclusiveArch:  x86_64 aarch64
@@ -98,6 +98,8 @@ if [ $1 -eq 0 ] && [ -f %{_sysconfdir}/tuned/ppd.conf.dashi-orig ]; then
 fi
 
 %files
+%license LICENSE
+%license spin/dashi-hardware/usr/share/licenses/dashi-hardware/LICENSE.dependencies
 %{_libexecdir}/dashi/dashi-hardware
 %dir %{_datadir}/dashi/models
 %{_datadir}/dashi/models/*.json

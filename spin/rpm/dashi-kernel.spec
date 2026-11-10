@@ -39,6 +39,7 @@ cp -a spin/dashi-kernel/etc spin/dashi-kernel/usr %{buildroot}/
 %systemd_preun dashi-default-kernel.service
 
 %files
+%license LICENSE
 %dir %{_sysconfdir}/dashi
 %config(noreplace) %{_sysconfdir}/dashi/kernel.conf
 %config(noreplace) %{_sysconfdir}/yum.repos.d/_copr:copr.fedorainfracloud.org:bieszczaders:kernel-cachyos.repo

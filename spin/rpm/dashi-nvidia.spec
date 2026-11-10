@@ -29,6 +29,7 @@ the modules in the initramfs.
 cp -a spin/dashi-nvidia/usr %{buildroot}/
 
 %files
+%license LICENSE
 %{_prefix}/lib/dracut/dracut.conf.d/90-dashi-nvidia.conf
 %{_prefix}/lib/modprobe.d/dashi-nvidia.conf
 

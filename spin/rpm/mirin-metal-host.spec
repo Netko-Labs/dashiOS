@@ -8,7 +8,7 @@ Name:           mirin-metal-host
 Version:        %{mirin_snapshot}
 Release:        1%{?dist}
 Summary:        mirin's Metal host: React UI drawn natively with GPUI
-License:        MIT AND Apache-2.0 AND (MIT OR Apache-2.0) AND BSD-2-Clause AND BSD-3-Clause AND ISC AND Zlib AND Unicode-3.0 AND MPL-2.0 AND OFL-1.1
+License:        Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND CC0-1.0 AND ISC AND MIT AND MPL-2.0 AND NCSA AND Unicode-3.0 AND Zlib
 URL:            https://github.com/Netko-Labs/mirin
 Source0:        %{mirin_source}.tar.gz
 Source1:        %{dashi_source}.tar.gz
@@ -47,13 +47,12 @@ cargo build --release --locked --bin mirin-metal-host
 
 %install
 install -Dm0755 %{cargo_target}-mirin/release/mirin-metal-host %{buildroot}%{_libexecdir}/dashi/mirin-metal-host
-install -d %{buildroot}%{_datadir}/licenses/%{name}
-cp -a %{dashi_source}/spin/mirin-metal-host/usr/share/licenses/mirin-metal-host/. %{buildroot}%{_datadir}/licenses/%{name}/
 
 %files
+%license %{dashi_source}/spin/mirin-metal-host/usr/share/licenses/mirin-metal-host/LICENSE
+%license %{dashi_source}/spin/mirin-metal-host/usr/share/licenses/mirin-metal-host/LICENSE.dependencies
 %dir %{_libexecdir}/dashi
 %{_libexecdir}/dashi/mirin-metal-host
-%{_datadir}/licenses/%{name}
 
 %changelog
 * Sun Nov 01 2026 PejeDev <hi@peje.dev> - 0.1.0

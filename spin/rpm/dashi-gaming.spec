@@ -43,6 +43,7 @@ cp -a spin/dashi-gaming/usr %{buildroot}/
 %sysctl_apply 80-dashi-gaming.conf
 
 %files
+%license LICENSE
 %{_prefix}/lib/sysctl.d/80-dashi-gaming.conf
 
 %changelog

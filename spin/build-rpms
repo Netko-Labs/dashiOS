@@ -60,19 +60,14 @@ copy_module() {
   cp -rL "$2" "$1"
 }
 bun_dir="$repo/node_modules/.bun"
-copy_module "$modules/react" "$bun_dir"/react@*/node_modules/react
-copy_module "$modules/react-reconciler" "$bun_dir"/react-reconciler@*/node_modules/react-reconciler
-copy_module "$modules/scheduler" "$bun_dir"/scheduler@*/node_modules/scheduler
-# The Anthropic SDK (the launcher's Claude answerer) and what it loads at run time; json-schema-to-ts is types only.
-mkdir -p "$modules/@anthropic-ai" "$modules/@opentelemetry" "$modules/@stablelib"
-copy_module "$modules/@anthropic-ai/sdk" "$bun_dir"/@anthropic-ai+sdk@*/node_modules/@anthropic-ai/sdk
-copy_module "$modules/@opentelemetry/api" "$bun_dir"/@opentelemetry+api@*/node_modules/@opentelemetry/api
-copy_module "$modules/standardwebhooks" "$bun_dir"/standardwebhooks@*/node_modules/standardwebhooks
-copy_module "$modules/@stablelib/base64" "$bun_dir"/@stablelib+base64@*/node_modules/@stablelib/base64
-copy_module "$modules/fast-sha256" "$bun_dir"/fast-sha256@*/node_modules/fast-sha256
-# OpenAI's SDK (the launcher's GPT answerer): the client needs nothing else at run time; ws, zod and undici are
-# optional peers for its realtime and helper subpaths, which Dashi doesn't load.
-copy_module "$modules/openai" "$bun_dir"/openai@*/node_modules/openai
+# The packages in spin/vendored-modules, from Bun's install (licenses: spin/license-dependencies).
+while read -r module; do
+  module=${module%%#*}
+  module=${module// /}
+  [ -n "$module" ] || continue
+  mkdir -p "$modules/$(dirname "$module")"
+  copy_module "$modules/$module" "$bun_dir/${module//\//+}"@*/node_modules/"$module"
+done < "$src/spin/vendored-modules"
 # Dashi's own packages come from the archive above, never from the working tree.
 mkdir -p "$modules/@dashi/ui" "$modules/@dashi/applet"
 cp -r "$src/packages/dashi-ui/src" "$src/packages/dashi-ui/package.json" "$modules/@dashi/ui/"
