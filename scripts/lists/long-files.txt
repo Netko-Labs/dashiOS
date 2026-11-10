@@ -23,7 +23,7 @@
 363	crates/dashi-comp/src/wm/spaces.rs
 349	crates/dashi-comp/src/wm/windows.rs
 318	crates/dashi-comp/src/xwayland/wm.rs
-1794	crates/dashi-comp/tests/headless.rs
+1758	crates/dashi-comp/tests/headless.rs
 427	crates/dashi-comp/tests/lock.rs
 498	crates/dashi-comp/tests/support/shell_client.rs
 415	crates/dashi-hardware/src/machine.rs
@@ -81,7 +81,7 @@
 340	packages/shell/src/apps.ts
 400	packages/shell/src/arrange.ts
 318	packages/shell/src/bluetooth/store.ts
-576	packages/shell/src/compositor.ts
+430	packages/shell/src/compositor.ts
 328	packages/shell/src/dbus/connection.ts
 349	packages/shell/src/dbus/fd-service.ts
 307	packages/shell/src/display-config/manager.ts
