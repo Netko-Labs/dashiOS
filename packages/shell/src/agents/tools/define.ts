@@ -1,8 +1,9 @@
 /**
  * How a tool is written down: its arguments for `tools/list`, the scope it
- * needs, and the function that checks its arguments into a `Call`. The
- * schema and the check live side by side, so a tool can't take an argument
- * the check forgets (the check is only given names the schema declares).
+ * needs, and the function that checks its arguments into a `Call`. Tools are
+ * written with `tool()` (args.ts), whose arguments are shapes: the schema and
+ * the check are one value, so a tool can't list what the check refuses (the
+ * check is only given names the schema declares).
  * Each tool becomes an action (actions/tools.ts), and `tools/list` is
  * written from the actions (`mcpListing`).
  *
@@ -69,10 +70,4 @@ export function parseWindowId(id: unknown): number | null {
   if (typeof id !== "string") return null;
   const digits = id.startsWith("w") ? id.slice(1) : id;
   return /^\d{1,9}$/.test(digits) ? Number(digits) : null;
-}
-
-/** The `window` argument: an id from list_windows. */
-export function windowArg(args: Args): number | CallError {
-  if (typeof args.window !== "string") return fail('`window` is required: an id from list_windows, like "w3".');
-  return parseWindowId(args.window) ?? fail(`\`${args.window}\` is not a window id; ids look like "w3".`);
 }
