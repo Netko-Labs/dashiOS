@@ -4,7 +4,7 @@ import { IdlePolicy } from "../src/idle.ts";
 import { awakeLines, keepAwakeEntries } from "../src/inhibit/menu.ts";
 import { screenSaverInterface } from "../src/inhibit/screensaver.ts";
 import { InhibitFlag, InhibitStore } from "../src/inhibit/store.ts";
-import { portalHostInterface } from "../src/portal-host/index.ts";
+import { portalHostInterface } from "../src/portal-host/service.ts";
 import { fakeCompositor as over } from "./support/compositor.ts";
 import { type FakeClock, fakeClock } from "./support/time.ts";
 
