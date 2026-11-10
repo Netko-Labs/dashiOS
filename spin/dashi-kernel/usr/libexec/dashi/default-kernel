@@ -30,9 +30,12 @@ conf=/etc/dashi/kernel.conf
 except=
 dry_run=0
 check=0
+# An option that takes a value must have one: without this, `shift 2` fails
+# on the last argument and the loop never ends (as root, at every boot).
+needs_value() { [[ $# -ge 2 ]] || { echo "default-kernel: $1 needs a value" >&2; exit 2; }; }
 while (($#)); do
   case $1 in
-    --except) except=${2:-}; shift 2 ;;
+    --except) needs_value "$@"; except=$2; shift 2 ;;
     --dry-run) dry_run=1; shift ;;
     --check) check=1; shift ;;
     *) echo "default-kernel: unknown argument: $1" >&2; exit 2 ;;

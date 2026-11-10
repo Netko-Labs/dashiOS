@@ -17,13 +17,14 @@
 #   vm/vm checkout-session on|off   log the VM in to the session from the
 #                         shared checkout (vm/dev-session), or back to Dashi's
 #   vm/vm checkout-greeter on|off   greetd with the checkout's login screen
-#                         (session/dashi-greeter), or back to SDDM; it offers
-#                         "Dashi (new compositor)": the session on the
-#                         checkout's dashi-comp (target/debug)
+#                         (session/dashi-greeter), or back to SDDM; its menu has
+#                         "Dashi (checkout)" and "Dashi (new compositor)": the
+#                         session on the checkout's dashi-comp (target/debug)
 #
 # The VM gets KVM, UEFI, and a virtio GPU with Venus, so the guest's Vulkan
 # (GPUI, mirin-metal-host) runs on the host's GPU. `desktop` also shares the
-# directory that holds this checkout and ../mirin (normally ~/Developer) over
+# directory that holds this checkout and ../mirin (~/Developer when the checkout
+# is under it, else the checkout's parent; DASHI_VM_SHARE says another) over
 # virtiofs, tag "developer"; in the guest:
 #
 #   sudo mount -t virtiofs developer /mnt/developer
@@ -33,12 +34,22 @@
 # DASHI_VM_GPU (venus | virgl | none), DASHI_VM_HOST_GPU (mesa | any: which host
 # drivers the VM's 3D may use; mesa keeps it off an NVIDIA card), DASHI_VM_USER (dashi),
 # DASHI_VM_PASSWORD (for sudo in the guest; checkout-session), DASHI_VM_EXTRA_DISK
-# (a qcow2 image `desktop` attaches as a second disk, for the installer: vm/images/install-test.qcow2).
+# (a qcow2 image `desktop` attaches as a second disk, for the installer: vm/images/install-test.qcow2),
+# DASHI_VM_SHARE (the host folder `desktop` shares; checkout-* run the checkout
+# they are called from, at its path under it, and refuse one outside it).
 set -euo pipefail
 
 here=$(cd -- "$(dirname -- "$(readlink -f -- "$0")")" && pwd)
 repo=$(dirname -- "$here")
-share=$(dirname -- "$repo")
+# The folder the VM shares (guest: /home/$DASHI_VM_USER/Developer): ~/Developer when this checkout
+# is under it, so a worktree and the main checkout reach the same running VM.
+share=${DASHI_VM_SHARE:-}
+if [ -z "$share" ]; then
+  case $repo in
+    "$HOME"/Developer/*) share=$HOME/Developer ;;
+    *) share=$(dirname -- "$repo") ;;
+  esac
+fi
 images=$here/images
 disk=$images/dashi.qcow2
 vars=$images/OVMF_VARS.fd
@@ -56,9 +67,17 @@ heads=${DASHI_VM_HEADS:-1}
 
 die() { echo "vm: $*" >&2; exit 1; }
 
+# This checkout as the guest sees it, or die saying why it can't be reached.
+guest_checkout() {
+  case $repo in
+    "$share"/*) echo "/home/${DASHI_VM_USER:-dashi}/Developer/${repo#"$share"/}" ;;
+    *) die "this checkout ($repo) is outside the folder the VM shares ($share); run the VM from a checkout under it, or set DASHI_VM_SHARE" ;;
+  esac
+}
+
 default_iso() {
   local iso
-  iso=$(ls -t "$images"/*.iso 2>/dev/null | head -1 || true)
+  iso=$(find "$images" -maxdepth 1 -name '*.iso' -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2- || true)
   [ -n "$iso" ] || die "no ISO in $images; pass one: vm/vm install path/to/dashi.iso"
   echo "$iso"
 }
@@ -140,6 +159,7 @@ case $cmd in
     extra=()
     if [ -n "${DASHI_VM_EXTRA_DISK:-}" ]; then
       [ -f "$DASHI_VM_EXTRA_DISK" ] || qemu-img create -q -f qcow2 "$DASHI_VM_EXTRA_DISK" 40G
+      # shellcheck disable=SC2054 # QEMU's key=value,key=value syntax, not an array of words
       extra=(-drive file="$DASHI_VM_EXTRA_DISK",if=virtio,format=qcow2)
     fi
     qemu -drive file="$disk",if=virtio,format=qcow2 "${extra[@]}" \
@@ -175,6 +195,7 @@ case $cmd in
     # Venus scanouts are GPU memory QEMU cannot read, and the compositor
     # captures only for the shell: press the shell's ⇧❖3 and copy its newest
     # screenshot out (needs a running Dashi session in the VM).
+    # shellcheck disable=SC2016 # $HOME is the guest's: it expands over ssh, not here
     shots='$HOME/Pictures/Screenshots'
     before=$("$0" ssh -o BatchMode=yes "ls -t $shots 2>/dev/null | head -1" || true)
     python3 "$here/qmp.py" "$qmp_sock" key meta_l-shift-3
@@ -197,11 +218,13 @@ case $cmd in
     pass=${DASHI_VM_PASSWORD:?set DASHI_VM_PASSWORD to the VM user password, for sudo in the guest}
     case ${1:-} in
       on) script='
-        printf "[Desktop Entry]\nName=Dashi (checkout)\nExec=/home/dashi/Developer/dashiOS/vm/dev-session\nType=Application\nDesktopNames=Dashi\n" > /usr/share/wayland-sessions/dashi-checkout.desktop
+        printf "[Desktop Entry]\nName=Dashi (checkout)\nExec=@CHECKOUT@/vm/dev-session\nType=Application\nDesktopNames=Dashi\n" > /usr/share/wayland-sessions/dashi-checkout.desktop
         printf "[Autologin]\nUser=dashi\nSession=dashi-checkout\n" > /etc/sddm.conf.d/zz-dashi-checkout.conf' ;;
       off) script='rm -f /usr/share/wayland-sessions/dashi-checkout.desktop /etc/sddm.conf.d/zz-dashi-checkout.conf' ;;
       *) die "usage: vm/vm checkout-session on|off" ;;
     esac
+    guest=$(guest_checkout)
+    script=${script//@CHECKOUT@/$guest}
     printf '%s\n' "$pass" | "$0" ssh "sudo -S -p '' sh -c '$script && systemctl restart sddm'"
     ;;
   checkout-greeter)
@@ -212,19 +235,22 @@ case $cmd in
       on) script='
         semanage permissive -a xdm_t 2>/dev/null || true
         rm -f /etc/sddm.conf.d/zz-dashi-checkout.conf
-        printf "[Desktop Entry]\nName=Dashi (checkout)\nExec=/home/dashi/Developer/dashiOS/vm/dev-session\nType=Application\nDesktopNames=Dashi\n" > /usr/share/wayland-sessions/dashi-checkout.desktop
-        printf "[Desktop Entry]\nName=Dashi (new compositor)\nExec=env DASHI_COMP=/home/dashi/Developer/dashiOS/target/debug/dashi-comp /home/dashi/Developer/dashiOS/vm/dev-session\nType=Application\nDesktopNames=Dashi\n" > /usr/share/wayland-sessions/dashi-checkout-comp.desktop
-        printf "[terminal]\nvt = 1\n\n[default_session]\ncommand = \"/home/dashi/Developer/dashiOS/vm/dev-greeter\"\nuser = \"dashi\"\n" > /etc/greetd/config.toml
+        printf "[Desktop Entry]\nName=Dashi (checkout)\nExec=@CHECKOUT@/vm/dev-session\nType=Application\nDesktopNames=Dashi\n" > /usr/share/wayland-sessions/dashi-checkout.desktop
+        printf "[Desktop Entry]\nName=Dashi (new compositor)\nExec=env DASHI_COMP=@CHECKOUT@/target/debug/dashi-comp @CHECKOUT@/vm/dev-session\nType=Application\nDesktopNames=Dashi\n" > /usr/share/wayland-sessions/dashi-checkout-comp.desktop
+        printf "[terminal]\nvt = 1\n\n[default_session]\ncommand = \"@CHECKOUT@/vm/dev-greeter\"\nuser = \"dashi\"\n" > /etc/greetd/config.toml
         systemctl disable sddm && systemctl enable --force greetd && systemctl stop sddm; systemctl restart greetd' ;;
       off) script='
         semanage permissive -d xdm_t 2>/dev/null || true
         systemctl disable greetd && systemctl enable --force sddm && systemctl stop greetd; systemctl restart sddm' ;;
       *) die "usage: vm/vm checkout-greeter on|off" ;;
     esac
+    guest=$(guest_checkout)
+    script=${script//@CHECKOUT@/$guest}
     printf '%s\n' "$pass" | "$0" ssh "sudo -S -p '' sh -c '$script'"
     ;;
   *)
-    sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'
+    # The header comment: from line 2 to the first line that isn't one.
+    sed -n '2,/^[^#]/{/^#/p}' "$0" | sed 's/^# \{0,1\}//'
     [ -z "$cmd" ] || exit 2
     ;;
 esac

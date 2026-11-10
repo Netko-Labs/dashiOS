@@ -25,5 +25,5 @@ fi
 if [ -z "${DASHI_TERM:-}" ] && [ -x "$repo/crates/dashi-term/target/release/dashi-term" ]; then
   export DASHI_TERM="$repo/crates/dashi-term/target/release/dashi-term"
 fi
-export DASHI_BUN=${DASHI_BUN:-/usr/libexec/dashi/bin/bun}
+export DASHI_BUN="${DASHI_BUN:-/usr/libexec/dashi/bin/bun}"
 exec "$repo/session/dashi-session" "$@"

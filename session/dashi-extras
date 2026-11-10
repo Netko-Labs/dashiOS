@@ -263,13 +263,14 @@ for step in "${steps[@]}"; do
   fi
   fail_reason=""
   done_message=""
+  step_ok=0
   if [ "$dry_run" = 1 ] && [[ $failing == *",$step,"* ]]; then
     fail_reason="A package could not be installed (a dry run's pretend failure)."
-    false
+    step_ok=1
   else
-    "step_$step"
+    "step_$step" || step_ok=1
   fi
-  if [ $? = 0 ]; then
+  if [ "$step_ok" = 0 ]; then
     emit_done "$step" "$done_message"
   else
     ok=0
