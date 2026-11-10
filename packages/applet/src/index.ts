@@ -65,17 +65,8 @@ export {
   parseShown,
 } from "./controls.ts";
 export { type ControlsApi, controlsApi } from "./controls-api.ts";
-export {
-  type AppletDefinition,
-  type AppletHandle,
-  type CommandAnswer,
-  type CommandDefinition,
-  defineApplet,
-  findManifest,
-  manifestPath,
-  type PopoverProps,
-  type ViewProps,
-} from "./define.ts";
+export { defineApplet } from "./define.ts";
+export type { AppletDefinition, AppletHandle, CommandAnswer, CommandDefinition, PopoverProps, ViewProps } from "./define-types.ts";
 export {
   appletDataRoot,
   appletsRoot,
@@ -105,6 +96,7 @@ export {
   parseManifest,
   readManifest,
 } from "./manifest.ts";
+export { findManifest, manifestPath } from "./manifest-file.ts";
 export { type AppletMenuRow, choosable, MENU_LIMITS, type MenuRowSpec, parseMenu } from "./menu.ts";
 export { PACKAGE_EXTENSION, type Packed, pack, packageName, SDK_VERSION, sha256, type Unpacked, unpack } from "./package.ts";
 export {
