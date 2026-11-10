@@ -291,7 +291,12 @@ Imports between modules (H19):
     the importer.
   `bun scripts/entry-weight.ts --compare <base>` fails when a change makes an
   entry point load a module it did not load before; `--why ENTRY FILE` prints
-  the imports that load a file.
+  the imports that load a file. `bun run check` holds every entry point to
+  `scripts/lists/entry-weight.txt`, the modules each loads at start
+  (`--check`): a module not listed for its entry fails, and so does a listed
+  one it no longer loads (`--shrink` trims). A module an entry is meant to
+  load from now on is added with `--update`, saying why in the commit. Both
+  follow moves: a file regrouped into a module folder is not a new module.
 - A type-only import may name `types.ts` directly; it loads nothing.
 - Tests (in `test/`) import a module's public surface like any other file,
   and may also import its `lib/` files, so a private parser or hook gets its
@@ -394,6 +399,10 @@ packages/shell/src/menus/
 - One concern per file or folder.
 - `index.ts` barrels re-export only: no declarations, setup work, or side
   effects (H6). An entry point is `main.ts`. Only `index.ts` re-exports.
+  A type is re-exported with `export type` (or `type` on the name): Bun
+  loads each file alone and fails at run time on a type re-exported as a
+  value. Every tsconfig sets `isolatedModules`, so `bun run typecheck` fails
+  first.
 - Keep helpers private to their module, in its `lib/` (H18), unless another
   module genuinely needs them; import other modules through their `index.ts`
   (H19). See "`lib/` And `shared/`".
@@ -573,6 +582,7 @@ bun scripts/check-modules.ts
 bun scripts/check-boundaries.ts
 bun scripts/check-shell.ts
 bun scripts/boot-weight.ts
+bun scripts/entry-weight.ts --check
 bun run typecheck
 cargo fmt --all --check
 (cd crates/dashi-term && cargo fmt --check)

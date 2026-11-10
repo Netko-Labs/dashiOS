@@ -1,7 +1,7 @@
 // H18 to H20 (scripts/check-modules.ts) on a small made-up tree, and the move tool's rewrite.
 import { describe, expect, test } from "bun:test";
 import { deepImports, entryPaths, libImports, reExportCount, sharedUse } from "../check-modules.ts";
-import { compare, runtimeSpecifiers } from "../entry-weight.ts";
+import { againstBaseline, compare, formatBaseline, movedModule, parseBaseline, runtimeSpecifiers } from "../entry-weight.ts";
 import type { Graph } from "../modules.ts";
 import { crossedModule, libOwner, moduleChain, topModule } from "../modules.ts";
 import { literalFor, parsePairs, rewrite } from "../move.ts";
@@ -134,5 +134,39 @@ describe("entry weight", () => {
     const before = new Map([["main.tsx", weight("menus", "dock")]]);
     expect([...compare(new Map([["main.tsx", weight("menus", "dock")]]), before)]).toEqual([]);
     expect([...compare(new Map([["main.tsx", weight("menus", "dock", "agents")]]), before)]).toEqual([["main.tsx", ["agents"]]]);
+  });
+});
+
+describe("entry weight follows moves", () => {
+  const exists = (path: string) => ["src/menubar/menubar.tsx", "src/menus", "src/dock"].includes(path);
+  const moved = new Map([
+    ["src/menubar.tsx", "src/menubar/menubar.tsx"],
+    ["src/menu/model.ts", "src/menus/model.ts"],
+  ]);
+  test("a file moved into a folder, or a folder renamed, is the module it is in now", () => {
+    expect(movedModule("src/dock", moved, exists)).toBe("src/dock");
+    expect(movedModule("packages/shell/src/x.ts", new Map(), () => false)).toBe("packages/shell/src/x.ts");
+    expect(
+      movedModule(
+        "packages/shell/src/menubar.tsx",
+        new Map([["packages/shell/src/menubar.tsx", "packages/shell/src/menubar/menubar.tsx"]]),
+        (p) => p === "packages/shell/src/menubar/menubar.tsx",
+      ),
+    ).toBe("packages/shell/src/menubar");
+  });
+  test("a regrouped module is not a new one, against a ref or the baseline", () => {
+    const weight = (...modules: string[]) => ({ files: modules.length, modules: new Set(modules) });
+    const rename = (module: string) => (module === "loose.tsx" ? "folder" : module);
+    expect([...compare(new Map([["main.tsx", weight("folder", "dock")]]), new Map([["main.tsx", weight("loose.tsx", "dock")]]), rename)]).toEqual([]);
+    const base = parseBaseline("# header\nmain.tsx\tloose.tsx\nmain.tsx\tdock\nold.ts\tdock\n");
+    expect(againstBaseline(new Map([["main.tsx", weight("folder", "dock", "agents")]]), base, rename)).toEqual({
+      grown: ["main.tsx loads agents"],
+      stale: ["old.ts is no entry point now"],
+    });
+    expect(
+      formatBaseline(new Map([["b", new Set(["y", "x"])]]))
+        .split("\n")
+        .slice(1),
+    ).toEqual(["b\tx", "b\ty", ""]);
   });
 });

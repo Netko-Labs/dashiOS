@@ -1,5 +1,6 @@
 // The hard-rule checks' pure parts: what each counts as an offence.
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { ipcMethods } from "../check-boundaries.ts";
 import { allowed } from "../check-licenses.ts";
 import { barrelExtras, lineCount, specifiers, wrongWay } from "../check-structure.ts";
@@ -62,5 +63,18 @@ describe("H15 licences", () => {
     expect(allowed("LGPL-2.1-or-later")).toBe(false);
     expect(allowed("NONE")).toBe(false);
     expect(allowed("")).toBe(false);
+  });
+});
+
+describe("typecheck", () => {
+  test("every project `bun run typecheck` checks has isolatedModules, so a type re-exported as a value fails", () => {
+    const root = `${import.meta.dir}/../..`;
+    const script = readFileSync(`${root}/package.json`, "utf8").match(/"typecheck": "([^"]*)"/)?.[1] ?? "";
+    const projects = [...script.matchAll(/-p (\S+)/g)].map((match) => match[1]);
+    expect(projects.length).toBeGreaterThan(5);
+    for (const project of projects) {
+      const config: unknown = Bun.JSONC.parse(readFileSync(`${root}/${project}/tsconfig.json`, "utf8"));
+      expect([project, JSON.stringify(config).includes('"isolatedModules":true')]).toEqual([project, true]);
+    }
   });
 });
