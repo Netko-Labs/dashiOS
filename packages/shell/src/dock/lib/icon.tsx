@@ -7,7 +7,7 @@
 import { useColors } from "@dashi/ui";
 import { type Bounds, Image, type PointerInfo, View } from "@mirinjs/metal";
 import { useRef } from "react";
-import { DOCK } from "../theme.ts";
+import { DOCK } from "../../theme.ts";
 
 const SETTLED = { offset: 0, opacity: 1 } as const;
 

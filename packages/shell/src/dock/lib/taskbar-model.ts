@@ -9,8 +9,8 @@
  */
 
 import type { Toplevel } from "@mirinjs/metal";
-import { canLaunch } from "../apps.ts";
-import type { DockEntry, DockLayout } from "./layout.ts";
+import { canLaunch } from "../../apps.ts";
+import type { DockEntry, DockLayout } from "../layout.ts";
 
 export interface TaskbarButton {
   /** Stable while the window (or the launcher) stays: React's key. */

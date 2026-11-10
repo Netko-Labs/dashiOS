@@ -10,24 +10,24 @@
 import { useColors } from "@dashi/ui";
 import { type Bounds, type PointerInfo, View } from "@mirinjs/metal";
 import { useRef } from "react";
-import { appFor } from "../apps.ts";
-import type { Entry } from "../entries.ts";
-import type { MenuController } from "../menus/index.ts";
-import type { App } from "../shared/apps/index.ts";
-import { DOCK, DOCK_HEIGHT } from "../theme.ts";
-import { type ToplevelStore, useToplevels } from "../toplevels.ts";
-import { type AttentionStore, useAttention } from "./attention.ts";
+import { appFor } from "../../apps.ts";
+import type { Entry } from "../../entries.ts";
+import type { MenuController } from "../../menus/index.ts";
+import type { App } from "../../shared/apps/index.ts";
+import { DOCK, DOCK_HEIGHT } from "../../theme.ts";
+import { type ToplevelStore, useToplevels } from "../../toplevels.ts";
+import { type AttentionStore, useAttention } from "../attention.ts";
+import { type DockController, useStarting } from "../controller.ts";
+import { type DockEntry, dockLayout, type MinimizedEntry, matchEntry } from "../layout.ts";
+import { type PinStore, usePins } from "../pins.ts";
+import type { DockPrefs } from "../prefs.ts";
+import type { TileStore } from "../tiles.ts";
 import type { Autohide } from "./autohide.ts";
-import { type DockController, useStarting } from "./controller.ts";
 import { reorderIndex } from "./gesture.ts";
 import { Divider, DockIcon } from "./icon.tsx";
-import { type DockEntry, dockLayout, type MinimizedEntry, matchEntry } from "./layout.ts";
 import { buildDockMenu, buildDockOptionsMenu } from "./menu.ts";
-import { type PinStore, usePins } from "./pins.ts";
-import type { DockPrefs } from "./prefs.ts";
 import { inPreviewOrder, usePress } from "./press.ts";
 import { iconRise, Painted, panelOpacity, Slide, type SlideState, useSlide } from "./slide.tsx";
-import type { TileStore } from "./tiles.ts";
 
 /** Distance between neighboring icons' left edges. */
 const SLOT = DOCK.icon + DOCK.gap;

@@ -15,7 +15,7 @@
 
 import { View } from "@mirinjs/metal";
 import { type ReactElement, useSyncExternalStore } from "react";
-import { springOut } from "../shared/controls/motion.ts";
+import { springOut } from "../../shared/controls/motion.ts";
 
 const FRAME_MS = 16;
 

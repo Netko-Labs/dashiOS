@@ -645,7 +645,6 @@
 7	packages/shell/test/dialog-view.test.tsx
 2	packages/shell/test/display-config.test.ts
 3	packages/shell/test/display-mirror.test.ts
-1	packages/shell/test/dock-slide.test.ts
 6	packages/shell/test/editor-autosave.test.ts
 6	packages/shell/test/editor-files.test.ts
 3	packages/shell/test/editor-model-menus.test.ts

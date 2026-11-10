@@ -10,10 +10,10 @@
 
 import type { PointerInfo } from "@mirinjs/metal";
 import { useRef, useState } from "react";
+import type { DockEntry } from "../layout.ts";
+import type { PinStore } from "../pins.ts";
 import type { Autohide } from "./autohide.ts";
 import { dropOf, GESTURE, holdPress, moveItem, movePressBy, type Press, startPress, swallowsClick } from "./gesture.ts";
-import type { DockEntry } from "./layout.ts";
-import type { PinStore } from "./pins.ts";
 
 /** What a press needs of its view, read when the button goes down. */
 export interface PressSetup {

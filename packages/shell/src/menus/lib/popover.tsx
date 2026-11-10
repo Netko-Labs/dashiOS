@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { type AppMenuStore, useAppMenus } from "../../app-menus/store.ts";
 import { BatteryPopover, type BatteryPopoverSources } from "../../battery/popover.tsx";
 import { ControlCenterPanel, type ControlCenterProps } from "../../control-center/index.ts";
-import type { DockMenuAction } from "../../dock/menu.ts";
+import type { DockMenuAction } from "../../dock/types.ts";
 import { NotificationCenterPanel, type NotificationStore } from "../../notifications/index.ts";
 import { DOCK, DOCK_HEIGHT, MENU_BAR_HEIGHT } from "../../theme.ts";
 import { type MenuController, useMenus } from "../controller.ts";

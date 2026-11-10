@@ -16,7 +16,7 @@
 
 import { useSyncExternalStore } from "react";
 import type { ControlPage } from "../control-center/index.ts";
-import type { DockMenuAction } from "../dock/menu.ts";
+import type { DockMenuAction } from "../dock/types.ts";
 import { type BarStop, barCommand, sideStep, stepStop, stopOfPopover, titleStop } from "./bar-keys.ts";
 import { PopoverHost } from "./lib/popover-host.ts";
 import type { StatusMenuAction } from "./status-menu.ts";

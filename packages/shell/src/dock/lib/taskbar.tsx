@@ -13,24 +13,24 @@
 import { useColors } from "@dashi/ui";
 import { type Bounds, Image, type PointerInfo, Text, View } from "@mirinjs/metal";
 import { useRef } from "react";
-import { appFor } from "../apps.ts";
-import type { Entry } from "../entries.ts";
-import type { MenuController } from "../menus/index.ts";
-import type { App } from "../shared/apps/index.ts";
-import { TASKBAR } from "../theme.ts";
-import { type ToplevelStore, useToplevels } from "../toplevels.ts";
-import { type AttentionStore, useAttention } from "./attention.ts";
+import { appFor } from "../../apps.ts";
+import type { Entry } from "../../entries.ts";
+import type { MenuController } from "../../menus/index.ts";
+import type { App } from "../../shared/apps/index.ts";
+import { TASKBAR } from "../../theme.ts";
+import { type ToplevelStore, useToplevels } from "../../toplevels.ts";
+import { type AttentionStore, useAttention } from "../attention.ts";
+import { type DockController, useStarting } from "../controller.ts";
+import { dockLayout, matchEntry } from "../layout.ts";
+import { type PinStore, usePins } from "../pins.ts";
+import type { DockPrefs } from "../prefs.ts";
+import type { TileStore } from "../tiles.ts";
 import type { Autohide } from "./autohide.ts";
-import { type DockController, useStarting } from "./controller.ts";
 import { reorderByCenters, reorderIndex } from "./gesture.ts";
-import { dockLayout, matchEntry } from "./layout.ts";
 import { buildDockMenu, buildDockOptionsMenu } from "./menu.ts";
-import { type PinStore, usePins } from "./pins.ts";
-import type { DockPrefs } from "./prefs.ts";
 import { inPreviewOrder, type PressSetup, usePress } from "./press.ts";
 import { iconRise, Painted, panelOpacity, Slide, useSlide } from "./slide.tsx";
 import { type TaskbarButton, taskbarButtons, taskbarCenters } from "./taskbar-model.ts";
-import type { TileStore } from "./tiles.ts";
 
 /** The distance a drag must cover to pass a neighbor when the buttons have not been measured. */
 const UNMEASURED_SLOT = 100;

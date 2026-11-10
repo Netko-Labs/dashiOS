@@ -6,7 +6,7 @@
 
 import type { CompositorWindow } from "../compositor.ts";
 import type { ControlPage } from "../control-center/index.ts";
-import type { DockMenuAction } from "../dock/menu.ts";
+import type { DockMenuAction } from "../dock/types.ts";
 import type { Arrange, Tile } from "../layout.ts";
 import type { OverlayHandle } from "../overlay.tsx";
 import type { PublishedMenus } from "../shared/app-menus/protocol.ts";
