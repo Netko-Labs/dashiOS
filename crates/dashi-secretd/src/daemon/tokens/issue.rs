@@ -2,7 +2,7 @@
 
 use serde_json::json;
 
-use super::{hosts::host_listed, name::normalize_name};
+use super::{fields::normalize_name, hosts::host_listed};
 use crate::{daemon::reply::Reply, vault::Vault};
 
 /// A token's last use is written at most this often (the proxy asks per request).

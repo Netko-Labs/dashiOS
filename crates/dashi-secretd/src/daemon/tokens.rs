@@ -3,17 +3,15 @@
 //! handed out only for a request to one of those hosts. The shell's token
 //! proxy asks (`token {name, host}`); agents never reach this at all.
 
+mod edit;
+mod fields;
 mod headers;
 mod hosts;
 mod issue;
-mod name;
-mod save;
-mod secret;
-mod update;
 
+pub use fields::normalize_name;
 pub use headers::{headers_of, normalize_header};
 pub use hosts::{host_listed, normalize_host};
-pub use name::normalize_name;
 
 use serde_json::json;
 
@@ -45,14 +43,14 @@ pub fn handle(vault: &mut Vault, request: Request, now: u64) -> Result<(Reply, b
             header,
             headers,
             token,
-        } => save::save(vault, name, hosts, (header, headers), token, now),
+        } => edit::save(vault, name, hosts, (header, headers), token, now),
         Request::UpdateToken {
             id,
             hosts,
             header,
             headers,
             token,
-        } => update::update(vault, id, hosts, (header, headers), token, now),
+        } => edit::update(vault, id, hosts, (header, headers), token, now),
         Request::DeleteToken { id } => {
             let before = vault.data.tokens.len();
             vault.data.tokens.retain(|t| t.id != id);
