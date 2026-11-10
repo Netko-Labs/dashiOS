@@ -1,0 +1,148 @@
+/**
+ * The month's day cells and what they need: the grid's shape and the drag
+ * and the name being typed, shared by all of them.
+ */
+
+import { TRUE_BLACK, useColors, useDark, useSurface } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
+import { addMinutes, type Day, dayPart, monthOf } from "../../src/shared/calendar/dates.ts";
+import type { Occurrence } from "../../src/shared/calendar/types.ts";
+import type { ClockPrefs } from "../../src/shared/time/clock.ts";
+import { EventChip, MoreChip } from "./chips.tsx";
+import { tint } from "./colors.ts";
+import { occurrenceKey } from "./event-block.tsx";
+import { dayNumber, monthDay } from "./format.ts";
+import type { GridHandlers, GridState } from "./grid-props.ts";
+import { InlineTitle } from "./inline-title.tsx";
+import { fitChips, MONTH_CHIP_HEIGHT, onDay } from "./layout.ts";
+
+/**
+ * Days outside the month (design.html CO-8): sunk below the window's ground
+ * in Light. Dark's ground is true black, with nothing below it, so there they
+ * take the first lift instead: told apart, without a gray wash.
+ */
+export const OUTSIDE_WASH = { light: "#0000000a", dark: TRUE_BLACK.lift } as const;
+
+/** Whether a dragged event's new times cover `day`. */
+function covers(preview: { start: string; end: string; allDay: boolean }, day: Day): boolean {
+  const last = preview.end > preview.start ? dayPart(addMinutes(preview.end, -1)) : dayPart(preview.start);
+  return dayPart(preview.start) <= day && day <= last;
+}
+
+/** What every cell of the month shares. */
+export interface MonthShared {
+  today: Day;
+  /** The month shown (1 to 12). */
+  month: number;
+  prefs: ClockPrefs;
+  occurrences: readonly Occurrence[];
+  colorOf: (calendarId: string) => string;
+  state: GridState;
+  handlers: GridHandlers;
+  /** How many chips a cell holds. */
+  capacity: number;
+  /** A narrow cell gives its chips' room to their titles: the time goes first. */
+  timed: boolean;
+  weeks: number;
+  geometry: Parameters<GridHandlers["begin"]>[1];
+}
+
+export function DayCell({ day, row, column, shared }: { day: Day; row: number; column: number; shared: MonthShared }) {
+  const colors = useColors();
+  const surface = useSurface();
+  const dark = useDark();
+  const { today, month, prefs, occurrences, colorOf, state, handlers, capacity, timed, weeks, geometry } = shared;
+  const { drag, pending, selected, selectedEvent } = state;
+  const preview = drag?.moved && drag.preview && drag.occurrence ? drag.preview : null;
+  const draggedKey = preview && drag?.occurrence ? occurrenceKey(drag.occurrence) : null;
+  const here = onDay(occurrences, day);
+  const naming = pending !== null && dayPart(pending.start) === day;
+  const { shown, more } = fitChips(here, Math.max(0, capacity - (naming ? 1 : 0)));
+  const isToday = day === today;
+  const inMonth = monthOf(day).month === month;
+  const target = preview && drag?.occurrence && covers(preview, day) ? tint(colorOf(drag.occurrence.calendarId), 0.2) : null;
+  return (
+    <View
+      key={day}
+      testID={`day:${day}`}
+      onPress={() => handlers.clickDay(day, null)}
+      style={{
+        flex: 1,
+        minWidth: 0,
+        minHeight: 0,
+        flexDirection: "column",
+        gap: 1,
+        padding: 3,
+        borderRightWidth: column === 6 ? 0 : 1,
+        borderBottomWidth: row === weeks - 1 ? 0 : 1,
+        borderColor: colors.separator,
+        backgroundColor: target ?? (inMonth ? "#00000000" : dark ? OUTSIDE_WASH.dark : OUTSIDE_WASH.light),
+        overflow: "hidden",
+      }}
+    >
+      <View style={{ height: 20, flexShrink: 0, flexDirection: "row", justifyContent: "flex-end" }}>
+        <View
+          testID={`day-number:${day}`}
+          onPress={() => handlers.showDay(day)}
+          style={{
+            minWidth: 20,
+            height: 20,
+            paddingHorizontal: 4,
+            borderRadius: 10,
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            // Today is an ink mark: green means "on".
+            backgroundColor: isToday ? colors.text : day === selected ? colors.button : "#00000000",
+            borderWidth: day === selected && !isToday ? 1 : 0,
+            borderColor: colors.selection,
+            hoverBackgroundColor: isToday ? colors.text : colors.button,
+          }}
+        >
+          <Text
+            numberOfLines={1}
+            style={{
+              fontSize: 12,
+              fontWeight: isToday ? "bold" : "normal",
+              color: isToday ? surface.window : inMonth ? colors.text : colors.textMuted,
+            }}
+          >
+            {day.endsWith("-01") ? monthDay(day, prefs) : dayNumber(day)}
+          </Text>
+        </View>
+      </View>
+      {naming && pending && (
+        <View style={{ height: MONTH_CHIP_HEIGHT - 1, flexShrink: 0 }}>
+          <InlineTitle
+            pending={pending}
+            chip
+            color={colorOf(pending.calendarId)}
+            onChange={handlers.pendingTitle}
+            onDone={handlers.savePending}
+            onCancel={handlers.dropPending}
+          />
+        </View>
+      )}
+      {shown.map((occurrence) => {
+        const key = occurrenceKey(occurrence);
+        return (
+          <EventChip
+            key={key}
+            occurrence={occurrence}
+            color={colorOf(occurrence.calendarId)}
+            day={day}
+            prefs={prefs}
+            timed={timed}
+            selected={selectedEvent === key}
+            dragged={draggedKey === key}
+            onPress={(bounds) => handlers.open(occurrence, bounds)}
+            onPointer={(info) =>
+              info.phase === "down" ? handlers.begin({ kind: "move-days", x: info.x, y: info.y, day, occurrence }, geometry) : handlers.track(info)
+            }
+          />
+        );
+      })}
+      {more > 0 && <MoreChip testID={`more:${day}`} count={more} onPress={() => handlers.showDay(day)} />}
+    </View>
+  );
+}

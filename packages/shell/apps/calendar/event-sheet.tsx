@@ -7,15 +7,15 @@
  * need it: they are drawn, named, moved, and stretched on the grid.
  */
 
-import { Button, Choices, Sheet, Switch, sheetBodyRoom, TextField, useColors, useSurface, useTitleBarInset } from "@dashi/ui";
-import { ScrollView, Text, TextInput, View } from "@mirinjs/metal";
+import { Choices, Sheet, Switch, sheetBodyRoom, TextField, useColors, useTitleBarInset } from "@dashi/ui";
+import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Calendar } from "../../src/shared/calendar/types.ts";
 import type { ClockPrefs } from "../../src/shared/time/clock.ts";
-import { weekdayNames } from "../../src/shared/time/clock.ts";
-import { type Draft, type EndsChoice, type MonthlyBy, moveStart, nthOf, problemWith, type RepeatChoice, setAllDay } from "./draft.ts";
-import { DayField, FIELD_LINE, FormRow, LineText, Stepper, TimeField, ZoneField } from "./form-fields.tsx";
-import { ALL_DAY_ALERTS, alertLabel, nthName, TIMED_ALERTS } from "./format.ts";
+import { type Draft, moveStart, problemWith, type RepeatChoice, setAllDay } from "./draft.ts";
+import { alertChoicesFor, CalendarChoice, NotesField, SheetButtons } from "./event-choices.tsx";
+import { RepeatFields } from "./event-repeat.tsx";
+import { DayField, FIELD_LINE, FormRow, TimeField, ZoneField } from "./form-fields.tsx";
 
 export interface EventSheetProps {
   draft: Draft;
@@ -45,16 +45,9 @@ const REPEATS: ReadonlyArray<{ value: RepeatChoice; label: string }> = [
   { value: "monthly", label: "Monthly" },
   { value: "yearly", label: "Yearly" },
 ];
-const ENDS: ReadonlyArray<{ value: EndsChoice; label: string }> = [
-  { value: "never", label: "Never" },
-  { value: "count", label: "After" },
-  { value: "until", label: "On date" },
-];
-const UNITS = { daily: "day", weekly: "week", monthly: "month", yearly: "year" } as const;
 
 export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, editing, onSave, onDelete, onCancel, windowHeight = 0 }: EventSheetProps) {
   const colors = useColors();
-  const surface = useSurface();
   const inset = useTitleBarInset();
   const [draft, setDraft] = useState(initial);
   const change = (patch: Partial<Draft>): void => setDraft((current) => ({ ...current, ...patch }));
@@ -62,19 +55,8 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
   const save = (): void => {
     if (problem === null) onSave(draft);
   };
-  const alerts = draft.allDay ? ALL_DAY_ALERTS : TIMED_ALERTS;
-  const alertChoices = alerts.map(([value, label]) => ({ value: value === null ? "none" : String(value), label }));
-  if (draft.alert !== null && !alerts.some(([value]) => value === draft.alert))
-    alertChoices.push({ value: String(draft.alert), label: alertLabel(draft.alert, draft.allDay) });
   const repeatChoices = initial.repeat === "custom" ? [...REPEATS, { value: "custom" as RepeatChoice, label: "Custom" }] : REPEATS;
   const repeats = draft.repeat !== "none" && draft.repeat !== "custom";
-  // The weekday buttons start on the region's first day and say its letters.
-  const names = weekdayNames(prefs.locale, 0);
-  const order = Array.from({ length: 7 }, (_, offset) => (firstDay + offset) % 7);
-  const monthly: ReadonlyArray<{ value: MonthlyBy; label: string }> = [
-    { value: "date", label: `On day ${Number(draft.startDay.slice(8, 10))}` },
-    { value: "weekday", label: `On ${nthName(nthOf(draft.startDay), prefs)}` },
-  ];
   const fields = { prefs, firstDay };
   const formMax = windowHeight > 0 ? Math.min(FORM_MAX, sheetBodyRoom(windowHeight, inset.top, FOOTER + (problem !== null ? PROBLEM : 0))) : FORM_MAX;
 
@@ -94,51 +76,7 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
               onKeyPress={(key) => key === "Escape" && onCancel()}
             />
           </FormRow>
-          <FormRow label="Calendar" pills>
-            <View testID="event-calendar" focusGroup style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-              {calendars.map((calendar) => {
-                const chosen = calendar.id === draft.calendarId;
-                return (
-                  <View
-                    key={calendar.id}
-                    testID={`event-calendar:${calendar.id}`}
-                    focusable
-                    accessibilityRole="option"
-                    onPress={() => change({ calendarId: calendar.id })}
-                    style={{
-                      height: 26,
-                      flexShrink: 1,
-                      minWidth: 0,
-                      paddingHorizontal: 10,
-                      borderRadius: 13,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 6,
-                      backgroundColor: chosen ? colors.selection : colors.button,
-                      focusRingColor: colors.focusRing,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 9,
-                        height: 9,
-                        flexShrink: 0,
-                        borderRadius: 5,
-                        backgroundColor: calendar.color,
-                        borderWidth: chosen ? 1 : 0,
-                        borderColor: "#ffffff",
-                      }}
-                    />
-                    <View style={{ flexShrink: 1, minWidth: 0 }}>
-                      <Text numberOfLines={1} style={{ fontSize: 12, color: chosen ? "#ffffff" : colors.text }}>
-                        {calendar.name}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          </FormRow>
+          <CalendarChoice calendars={calendars} chosenId={draft.calendarId} onChoose={(calendarId) => change({ calendarId })} />
           <FormRow label="All-day">
             <View style={{ height: FIELD_LINE, justifyContent: "center" }}>
               <Switch on={draft.allDay} testID="event-all-day" onChange={(allDay) => setDraft(setAllDay(draft, allDay))} />
@@ -172,91 +110,16 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
           <FormRow label="Repeat" pills>
             <Choices testID="event-repeat" options={repeatChoices} value={draft.repeat} onChange={(repeat) => change({ repeat })} />
           </FormRow>
-          {repeats && (
-            <>
-              <FormRow label="Every">
-                <Stepper id="event-every" value={draft.every} min={1} max={99} onChange={(every) => change({ every })} />
-                <LineText>{`${UNITS[draft.repeat as keyof typeof UNITS]}${draft.every === 1 ? "" : "s"}`}</LineText>
-              </FormRow>
-              {draft.repeat === "weekly" && (
-                <FormRow label="On" pills>
-                  <View testID="event-weekdays" style={{ flexDirection: "row", gap: 4 }}>
-                    {order.map((index) => {
-                      const on = draft.weekdays.includes(index);
-                      return (
-                        <View
-                          key={index}
-                          testID={`event-weekday:${index}`}
-                          focusable
-                          accessibilityRole="checkbox"
-                          accessibilityLabel={names[index]}
-                          onPress={() => change({ weekdays: on ? draft.weekdays.filter((each) => each !== index) : [...draft.weekdays, index] })}
-                          style={{
-                            width: 26,
-                            height: 26,
-                            borderRadius: 13,
-                            alignItems: "center",
-                            justifyContent: "center",
-                            backgroundColor: on ? colors.selection : colors.button,
-                            focusRingColor: colors.focusRing,
-                          }}
-                        >
-                          <Text style={{ fontSize: 11, fontWeight: "semibold", color: on ? "#ffffff" : colors.text }}>
-                            {(names[index] ?? "").slice(0, 1).toUpperCase()}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                </FormRow>
-              )}
-              {draft.repeat === "monthly" && (
-                <FormRow label="On" pills>
-                  <Choices testID="event-monthly" options={monthly} value={draft.monthlyBy} onChange={(monthlyBy) => change({ monthlyBy })} />
-                </FormRow>
-              )}
-              <FormRow label="Ends" pills>
-                <Choices testID="event-ends" options={ENDS} value={draft.ends} onChange={(ends) => change({ ends })} />
-                {draft.ends === "count" && (
-                  <>
-                    <Stepper id="event-count" value={draft.count} min={1} max={999} onChange={(count) => change({ count })} />
-                    <LineText>times</LineText>
-                  </>
-                )}
-                {draft.ends === "until" && <DayField id="until" value={draft.until} {...fields} onChange={(until) => change({ until })} />}
-              </FormRow>
-            </>
-          )}
+          {repeats && <RepeatFields draft={draft} prefs={prefs} firstDay={firstDay} change={change} />}
           <FormRow label="Alert" pills>
             <Choices
               testID="event-alert"
-              options={alertChoices}
+              options={alertChoicesFor(draft)}
               value={draft.alert === null ? "none" : String(draft.alert)}
               onChange={(value) => change({ alert: value === "none" ? null : Number(value) })}
             />
           </FormRow>
-          <FormRow label="Notes">
-            <TextInput
-              testID="event-notes"
-              multiline
-              value={draft.notes}
-              placeholder="Add notes"
-              onChangeText={(notes) => change({ notes })}
-              onKeyPress={(key) => key === "Escape" && onCancel()}
-              style={{
-                width: "100%",
-                height: 64,
-                padding: 6,
-                fontSize: 13,
-                borderRadius: 7,
-                color: colors.text,
-                placeholderColor: colors.textDisabled,
-                backgroundColor: surface.card,
-                borderColor: colors.separator,
-                focusBorderColor: colors.selection,
-              }}
-            />
-          </FormRow>
+          <NotesField value={draft.notes} onChange={(notes) => change({ notes })} onCancel={onCancel} />
         </View>
       </ScrollView>
       {problem !== null && (
@@ -264,12 +127,7 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
           <Text style={{ fontSize: 12, color: colors.ume }}>{problem}</Text>
         </View>
       )}
-      <View style={{ flexDirection: "row", flexShrink: 0, gap: 8, marginTop: 2 }}>
-        {editing !== null && <Button label="Delete" testID="event-delete" danger onPress={onDelete} />}
-        <View style={{ flex: 1 }} />
-        <Button label="Cancel" testID="event-cancel" onPress={onCancel} />
-        <Button label={editing === null ? "Add" : "Save"} testID="event-save" primary disabled={problem !== null} onPress={save} />
-      </View>
+      <SheetButtons editing={editing !== null} problem={problem !== null} onDelete={onDelete} onCancel={onCancel} onSave={save} />
     </Sheet>
   );
 }
