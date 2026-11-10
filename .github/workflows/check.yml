@@ -29,11 +29,12 @@ jobs:
       - name: Install the tools and the crates' libraries
         run: |
           dnf -y install --setopt=install_weak_deps=False \
-            git unzip jq ShellCheck systemd dnf-plugins-core \
+            git unzip jq diffutils ShellCheck systemd dnf-plugins-core flatpak \
             rust cargo clippy rustfmt gcc pkgconf-pkg-config \
             mesa-libEGL-devel mesa-libgbm-devel libinput-devel libseat-devel \
             systemd-devel libxkbcommon-devel \
             gstreamer1-devel gstreamer1-plugins-base-devel
+          # flatpak: session/dashi-extras's dry-run test expects it, as Dashi has it.
           # dashi-term links libghostty-vt, which Dashi's COPR builds.
           dnf -y copr enable pejedev/dashi
           dnf -y install libghostty-vt-devel
