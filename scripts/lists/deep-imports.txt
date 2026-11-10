@@ -202,8 +202,6 @@
 2	packages/shell/bin/dashi-a11y-again.ts
 2	packages/shell/bin/dashi-a11y-probe.ts
 3	packages/shell/bin/dashi-agent.ts
-1	packages/shell/bin/dashi-browser-host.ts
-1	packages/shell/bin/dashi-browser-pack.ts
 9	packages/shell/bin/dashi-graphics-preview.tsx
 1	packages/shell/bin/dashi-mcp.ts
 1	packages/shell/bin/dashi-open.ts
@@ -237,9 +235,7 @@
 1	packages/shell/src/agents/ask/plan.ts
 1	packages/shell/src/agents/ask/service.ts
 1	packages/shell/src/agents/ask/tasks.ts
-2	packages/shell/src/agents/context.ts
-2	packages/shell/src/agents/desktop/browser-field.ts
-2	packages/shell/src/agents/desktop/browser.ts
+1	packages/shell/src/agents/context.ts
 6	packages/shell/src/agents/desktop/calendar.ts
 6	packages/shell/src/agents/desktop/files.ts
 1	packages/shell/src/agents/desktop/machine.ts
@@ -258,10 +254,9 @@
 1	packages/shell/src/agents/secrets/approvals.ts
 1	packages/shell/src/agents/secrets/broker.ts
 1	packages/shell/src/agents/secrets/vault.ts
-2	packages/shell/src/agents/server-person.ts
-3	packages/shell/src/agents/server.ts
-1	packages/shell/src/agents/session-browser.ts
-2	packages/shell/src/agents/session-types.ts
+1	packages/shell/src/agents/server-person.ts
+2	packages/shell/src/agents/server.ts
+1	packages/shell/src/agents/session-types.ts
 1	packages/shell/src/agents/session-wire.ts
 1	packages/shell/src/agents/tokens/client.ts
 2	packages/shell/src/agents/tools/calendar.ts
@@ -623,8 +618,7 @@
 8	packages/shell/test/boot-pieces.test.ts
 1	packages/shell/test/boot-services.test.ts
 1	packages/shell/test/brightness.test.ts
-7	packages/shell/test/browser-agents.test.ts
-2	packages/shell/test/browser-pinning.test.ts
+5	packages/shell/test/browser-agents.test.ts
 3	packages/shell/test/calculator-field.test.tsx
 10	packages/shell/test/calculator-line.test.ts
 3	packages/shell/test/calculator-locale.test.ts
