@@ -1,16 +1,16 @@
 /** What a connection is given and what it gives back: its context, a launcher run's policy and hooks, and the socket. */
 
-import type { BrowserBridge } from "../browser/bridge.ts";
-import type { Compositor } from "../compositor.ts";
-import type { Arrange, Tile } from "../layout.ts";
-import type { Undo } from "./ask/index.ts";
-import type { Grants, Scope } from "./consent.ts";
-import type { Desktop, Hands } from "./desktop/index.ts";
-import type { AgentMask } from "./mask.ts";
-import type { AgentUi } from "./presence.ts";
-import type { SecretsShared } from "./secrets/index.ts";
-import type { SiteGrants } from "./sites.ts";
-import type { Call } from "./tools/index.ts";
+import type { BrowserBridge } from "../../../browser/bridge.ts";
+import type { Compositor } from "../../../compositor.ts";
+import type { Arrange, Tile } from "../../../layout.ts";
+import type { Undo } from "../../ask/index.ts";
+import type { Grants, Scope } from "../../consent.ts";
+import type { Desktop, Hands } from "../../desktop/index.ts";
+import type { AgentMask } from "../../mask.ts";
+import type { AgentUi } from "../../presence.ts";
+import type { SecretsShared } from "../../secrets/index.ts";
+import type { SiteGrants } from "../../sites.ts";
+import type { Call } from "../../tools/index.ts";
 
 export interface SessionContext {
   compositor: Compositor;

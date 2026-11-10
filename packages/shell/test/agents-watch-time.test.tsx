@@ -9,8 +9,8 @@ import { describe, expect, test } from "bun:test";
 import { type NativeTransport, render } from "@mirinjs/metal";
 import { AgentRuns } from "../src/agents/handoff/store.ts";
 import type { AgentInfo } from "../src/agents/index.ts";
+import { WatchClock } from "../src/agents/lib/watch-clock.ts";
 import { mergeAgents, watchTime } from "../src/agents/mark.ts";
-import { WatchClock } from "../src/agents/watch-clock.ts";
 import { AccessChip } from "../src/agents-rows.tsx";
 import { fakeClock, flush } from "./support/time.ts";
 

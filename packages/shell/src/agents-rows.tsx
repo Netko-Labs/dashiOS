@@ -10,7 +10,7 @@
 import { Shortcut, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
-import { type AgentEntry, accessWords, discGlyph, watchTime } from "./agents/mark.ts";
+import { type AgentEntry, accessWords, discGlyph, watchTime } from "./agents/index.ts";
 
 /** A connected agent's row: its glyph on a round shiso tile. */
 const TILE = 32;

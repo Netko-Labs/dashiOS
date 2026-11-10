@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { FillPrompts, PROMPT_MS } from "../src/agents/fill-prompts.ts";
+import { FillPrompts, PROMPT_MS } from "../src/agents/lib/fill-prompts.ts";
 import type { CompositorWindow } from "../src/compositor.ts";
 import { flush } from "./support/time.ts";
 

@@ -3,7 +3,7 @@
  * programs add to the launcher and what they can reach of it.
  *
  * - Applets' commands (applets/commands.ts): a source in the action registry.
- * - Your own scripts (actions/sources/scripts.ts): another.
+ * - Your own scripts (actions/scripts.ts): another.
  * - GNOME's search providers (search-providers/): read as the launcher's slow
  *   sources, results only, behind the registry.
  * - `dev.dashi.Shell.Actions1` (actions/dbus.ts): the registry, listed and run

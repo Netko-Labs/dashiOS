@@ -1,6 +1,6 @@
 /** The person's files, notes, calendar and clipboard history. */
 
-import * as desktop from "./desktop/index.ts";
+import * as desktop from "../../desktop/index.ts";
 import type { Handlers } from "./run-types.ts";
 
 export const documentHandlers = {

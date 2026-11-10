@@ -5,8 +5,7 @@
  */
 
 import { type NativeHostTransport, type NativeRoot, render } from "@mirinjs/metal";
-import { personAnswered } from "./agents/person.ts";
-import type { Turn } from "./agents/presence.ts";
+import { personAnswered, type Turn } from "./agents/index.ts";
 import { STOPPED, StoppedNote } from "./consent.tsx";
 import { spawnShellHost } from "./shared/metal/host.ts";
 import { TURN, TurnBanner } from "./turn-banner.tsx";

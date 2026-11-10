@@ -13,9 +13,7 @@
 
 import { CHECK, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import { signInCommand } from "../../agents/ask/harness/catalog.ts";
-import type { Step } from "../../agents/ask/plan.ts";
-import type { TaskView } from "../../agents/ask/types.ts";
+import { type Step, signInCommand, type TaskView } from "../../agents/index.ts";
 import { ROW_HEIGHT, SectionHead } from "../row-view.tsx";
 
 export const STEP = { number: 20, chip: 20, chipText: 11 } as const;

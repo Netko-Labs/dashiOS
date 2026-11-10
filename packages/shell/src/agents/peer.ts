@@ -15,7 +15,7 @@
 import { dlopen, FFIType, ptr } from "bun:ffi";
 import { closeSync, openSync, readFileSync, readlinkSync, readSync } from "node:fs";
 import { basename } from "node:path";
-import { findInvocation, type Interpreter, interpreterOf, invocationKey, invocationLabel, MAX_CMDLINE, parseCmdline } from "./invocation.ts";
+import { findInvocation, type Interpreter, interpreterOf, invocationKey, invocationLabel, MAX_CMDLINE, parseCmdline } from "./lib/invocation.ts";
 
 const SOL_SOCKET = 1;
 const SO_PEERCRED = 17;

@@ -1,8 +1,8 @@
 /** A window asked to come forward, minimize, close or take a tile. */
 
-import { type RunContext, type ToolResult, text } from "./context.ts";
+import { type RunContext, type ToolResult, text } from "../../context.ts";
+import { named, noWindow, subject } from "../subject.ts";
 import type { CallOf, Handlers } from "./run-types.ts";
-import { named, noWindow, subject } from "./subject.ts";
 
 type WindowVerb = "focus_window" | "minimize_window" | "close_window" | "tile_window";
 

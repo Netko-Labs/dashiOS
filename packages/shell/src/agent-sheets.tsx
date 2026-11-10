@@ -11,10 +11,7 @@ import { render } from "@mirinjs/metal";
 import type { PersonQuestion } from "./actions/index.ts";
 import { closeOverlay, createStoppedNotes, createTurns } from "./agent-overlays.tsx";
 import { allowSiteSheet, askSheet, confirmSheet, personSheet, type Sheet, signInSheet } from "./agent-sheet-views.tsx";
-import type { AgentUi, Answer } from "./agents/index.ts";
-import { SHEET_LAYERS } from "./agents/mask.ts";
-import { personAnswered } from "./agents/person.ts";
-import { DENY, SheetQueue } from "./agents/sheet-queue.ts";
+import { type AgentUi, type Answer, DENY, personAnswered, SHEET_LAYERS, SheetQueue } from "./agents/index.ts";
 import { CONSENT } from "./consent.tsx";
 import { spawnShellHost } from "./shared/metal/host.ts";
 

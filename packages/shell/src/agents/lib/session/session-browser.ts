@@ -1,8 +1,8 @@
 /** The website tools' side of one connection: the extension, its sites, its tab. */
 
-import type { BrowserBridge } from "../browser/bridge.ts";
-import type { RunContext } from "./context.ts";
-import type { SiteConsent } from "./sites.ts";
+import type { BrowserBridge } from "../../../browser/bridge.ts";
+import type { RunContext } from "../../context.ts";
+import type { SiteConsent } from "../../sites.ts";
 
 export class SessionBrowser {
   /** The browser tab the website tools use when none is named: the agent's last. */

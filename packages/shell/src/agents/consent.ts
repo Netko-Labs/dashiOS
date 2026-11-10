@@ -238,7 +238,7 @@ export interface Activity {
   claims: string | null;
   tool: string | null;
   outcome: string;
-  /** The launcher's Ask a call was a step of (agents/ask/tasks.ts), so the history groups them. */
+  /** The launcher's Ask a call was a step of (agents/ask/lib/tasks.ts), so the history groups them. */
   task?: string;
 }
 

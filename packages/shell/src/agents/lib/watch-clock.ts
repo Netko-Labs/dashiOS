@@ -9,8 +9,8 @@
  * time it is.
  */
 
-import { strongest } from "./mark.ts";
-import type { Watching } from "./presence.ts";
+import { strongest } from "../mark.ts";
+import type { Watching } from "../presence.ts";
 
 export interface Watched {
   kind: Watching;

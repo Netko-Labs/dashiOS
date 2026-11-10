@@ -4,10 +4,7 @@
  * time of day.
  */
 
-import { Grants } from "../agents/consent.ts";
-import type { AgentStore } from "../agents/index.ts";
-import type { Passwords } from "../agents/secrets/passwords.ts";
-import type { Agents } from "../agents/server.ts";
+import { type AgentStore, type Agents, Grants, type Passwords } from "../agents/index.ts";
 import { AutoAppearance } from "../appearance/auto.ts";
 import type { Compositor } from "../compositor.ts";
 import { type ForceQuit, startForceQuit } from "../force-quit/index.ts";

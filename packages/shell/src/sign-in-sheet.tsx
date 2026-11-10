@@ -9,7 +9,7 @@
 import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { SignInAsk, SignInChoice } from "./agents/presence.ts";
+import type { SignInAsk, SignInChoice } from "./agents/index.ts";
 import { AgentMark, Button, opaque } from "./consent.tsx";
 
 /** The sheet's surface, room for its shadow and five logins. */

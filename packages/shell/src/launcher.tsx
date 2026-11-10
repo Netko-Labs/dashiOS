@@ -29,7 +29,7 @@
 
 import { useColors } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
-import { harnessGlyph } from "./agents/handoff/harness-icons.ts";
+import { harnessGlyph } from "./agents/index.ts";
 import { fieldAccess } from "./launcher/access.ts";
 import { ContextChips } from "./launcher/agents/handoff-views.tsx";
 import { agentField } from "./launcher/agents/task-mode.tsx";

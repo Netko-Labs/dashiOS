@@ -8,25 +8,23 @@
  */
 
 import { isRecord } from "@dashi/shape";
-import { type Actor, actingAs } from "../acting.ts";
-import { logActivity, type Scope } from "./consent.ts";
-import { type ToolResult, toolError } from "./context.ts";
-import { LOCKED_WHILE_RUNNING } from "./lock.ts";
-import { connectionHarness, watchingOf } from "./mark.ts";
-import * as mcp from "./mcp.ts";
-import { grantKey, type Peer } from "./peer.ts";
-import type { AgentInfo, Who } from "./presence.ts";
-import { runCall } from "./run.ts";
-import { SessionSecrets } from "./secrets/index.ts";
+import { type Actor, actingAs } from "../../../acting.ts";
+import { logActivity, type Scope } from "../../consent.ts";
+import { type ToolResult, toolError } from "../../context.ts";
+import { LOCKED_WHILE_RUNNING } from "../../lock.ts";
+import { connectionHarness, watchingOf } from "../../mark.ts";
+import { grantKey, type Peer } from "../../peer.ts";
+import type { AgentInfo, Who } from "../../presence.ts";
+import { SessionSecrets } from "../../secrets/index.ts";
+import { SiteConsent } from "../../sites.ts";
+import { type Call, catalog, INSTRUCTIONS, locksScreen, parseCall } from "../../tools/index.ts";
+import * as mcp from "../mcp.ts";
+import { runCall } from "../run/run.ts";
 import { SessionBrowser } from "./session-browser.ts";
 import { type ScopeHost, Scopes } from "./session-scopes.ts";
 import type { Connection, SessionContext, SessionTask } from "./session-types.ts";
 import { SETTLE_MS, SessionWatch } from "./session-watch.ts";
 import { Wire } from "./session-wire.ts";
-import { SiteConsent } from "./sites.ts";
-import { type Call, catalog, INSTRUCTIONS, locksScreen, parseCall } from "./tools/index.ts";
-
-export type { Connection, SessionContext, SessionTask, TaskHooks, TaskPolicy } from "./session-types.ts";
 
 export class Session {
   private claims: string | null = null;

@@ -1,7 +1,7 @@
 /** React's view of the stores Settings reads. */
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import type { Grants } from "../agents/consent.ts";
+import type { Grants } from "../agents/index.ts";
 import type { ScreensState, ScreensStore } from "./screens.ts";
 import type { SettingsSnapshot, SettingsStore } from "./store.ts";
 

@@ -6,7 +6,7 @@
  * Types only: nothing here loads at start.
  */
 
-import type { TaskContext } from "../agents/handoff/grants.ts";
+import type { TaskContext } from "../agents/index.ts";
 import type { Entry } from "../entries.ts";
 import type { LauncherHandoff } from "./agents/handoff-rows.ts";
 import type { LauncherAgents } from "./agents/rows.ts";

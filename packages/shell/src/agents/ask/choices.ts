@@ -7,8 +7,7 @@
  */
 
 import { ANSWERER_CHOICES, ANSWERERS, type AnswererChoice, isHarnessId } from "./answerer.ts";
-import { HARNESSES, signInCommand } from "./harness/catalog.ts";
-import type { HarnessStatus } from "./harness/detect.ts";
+import { HARNESSES, type HarnessStatus, signInCommand } from "./harness/index.ts";
 
 export interface AnswererRow {
   value: AnswererChoice;

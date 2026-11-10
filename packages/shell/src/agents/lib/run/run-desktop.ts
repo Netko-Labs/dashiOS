@@ -1,6 +1,6 @@
 /** The desktop itself: Force Quit and the lock, Spaces, notifications, menus, and the software the person can ask for. */
 
-import * as desktop from "./desktop/index.ts";
+import * as desktop from "../../desktop/index.ts";
 import type { Handlers } from "./run-types.ts";
 
 export const desktopHandlers = {

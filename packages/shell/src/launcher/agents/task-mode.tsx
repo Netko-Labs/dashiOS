@@ -10,8 +10,7 @@
  *   a key or a model is missing.
  */
 
-import { oneLine } from "../../agents/ask/plan.ts";
-import type { TaskView } from "../../agents/ask/types.ts";
+import { oneLine, type TaskView } from "../../agents/index.ts";
 import { SPARKLE } from "../../settings-app/glyphs.ts";
 import type { Hint } from "../verbs.ts";
 import { failureKey, needsSettings, needsSignIn, stepAct } from "./plan-view.tsx";

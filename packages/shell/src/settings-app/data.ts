@@ -5,7 +5,7 @@
  * store.ts.
  */
 
-import type { AnswererChoice, HarnessId } from "../agents/ask/answerer.ts";
+import type { AnswererChoice, HarnessId } from "../agents/index.ts";
 import type { VrrMode } from "../display-config/monitors.ts";
 import type { RefreshChoice } from "../display-config/refresh-policy.ts";
 import type { DockSettings } from "../dock/settings.ts";

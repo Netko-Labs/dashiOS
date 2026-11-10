@@ -10,13 +10,15 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ReactElement } from "react";
-import type { HarnessId } from "./agents/ask/answerer.ts";
 import {
+  type AgentStore,
+  type AgentUi,
   attentionNotice,
   endedNotice,
   FOLLOW_UP,
   type Handoff,
   type HandoffOptions,
+  type HarnessId,
   hostOf,
   isWorking,
   logText,
@@ -25,8 +27,7 @@ import {
   SHOW,
   startHandoff,
   type TaskContext,
-} from "./agents/handoff/index.ts";
-import type { AgentStore, AgentUi } from "./agents/presence.ts";
+} from "./agents/index.ts";
 import { AgentsPanel, type PanelActions } from "./agents-panel.tsx";
 import type { HandoffSnapshot, LauncherHandoff } from "./launcher/agents/handoff-rows.ts";
 import type { Store } from "./launcher/host.ts";

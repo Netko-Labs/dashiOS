@@ -11,7 +11,7 @@ import { actingAs } from "../acting.ts";
 import type { Question } from "../agents/confirm.ts";
 import { logActivity } from "../agents/consent.ts";
 import type { Agents } from "../agents/server.ts";
-import { TOOL_ACTIONS } from "../agents/tools/index.ts";
+import { TOOL_ACTIONS } from "../agents/tools/registry.ts";
 import { ownerPids } from "../app-menus/focus.ts";
 import type { AppMenuStore } from "../app-menus/store.ts";
 import type { Compositor, CompositorWindow } from "../compositor.ts";
@@ -82,7 +82,7 @@ export interface Actions {
   copyAddress(action: ActionDef, args?: Args): Promise<boolean>;
   /**
    * A step of an agent's plan the person approved with their own press
-   * (agents/ask/tasks.ts): that press is its Allow Once. Only an agents'
+   * (agents/ask/lib/tasks.ts): that press is its Allow Once. Only an agents'
    * tool runs so; it is logged as `by.agent`'s, in task `by.task`. A tool that
    * asks every time still asks, on the person's sheet.
    */

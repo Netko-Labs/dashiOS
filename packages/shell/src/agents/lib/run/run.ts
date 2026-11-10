@@ -7,9 +7,10 @@
  * and the compiler checks that every tool has one.
  */
 
-import type { RunContext, ToolResult } from "./context.ts";
-import * as desktop from "./desktop/index.ts";
-import { browserCall, handOver, listLogins, payCall, signInCall } from "./desktop/index.ts";
+import type { RunContext, ToolResult } from "../../context.ts";
+import * as desktop from "../../desktop/index.ts";
+import { browserCall, handOver, listLogins, payCall, signInCall } from "../../desktop/index.ts";
+import type { Call, ToolName } from "../../tools/index.ts";
 import { appHandlers } from "./run-apps.ts";
 import { desktopHandlers } from "./run-desktop.ts";
 import { documentHandlers } from "./run-documents.ts";
@@ -17,7 +18,6 @@ import { screenHandlers } from "./run-screen.ts";
 import { systemHandlers } from "./run-system.ts";
 import type { Handlers } from "./run-types.ts";
 import { windowHandlers } from "./run-windows.ts";
-import type { Call, ToolName } from "./tools/index.ts";
 
 /** Signing in and paying, the websites, and the agent's own pointer and keyboard. */
 const personalHandlers = {

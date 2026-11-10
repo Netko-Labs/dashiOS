@@ -1,7 +1,7 @@
 /** What a connection shows the menu bar's red dot for (watch-clock.ts keeps the time), and when the dot is published. */
 
-import type { AgentInfo, Watching } from "./presence.ts";
-import { WatchClock } from "./watch-clock.ts";
+import type { AgentInfo, Watching } from "../../presence.ts";
+import { WatchClock } from "../watch-clock.ts";
 
 /** How long a finished action stays in the menu bar before "Idle". */
 export const SETTLE_MS = 3_000;

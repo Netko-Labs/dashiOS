@@ -23,7 +23,8 @@
 import { existsSync, mkdirSync, rmSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
 import { maybe, obj, str } from "@dashi/shape";
-import { type Exists, type PlanProfile, parsePlanProfile, proxyArgs, type SandboxEnv, sandboxArgs, tokenProxyArgs, unitName } from "../src/agents/sandbox.ts";
+import { parsePlanProfile, proxyArgs, sandboxArgs, tokenProxyArgs, unitName } from "../src/agents/sandbox.ts";
+import type { Exists, PlanProfile, SandboxEnv } from "../src/agents/sandbox-types.ts";
 import { relay, requestProxy } from "../src/agents/tokens/client.ts";
 import { type ProxyGrant, tokensSocketPath } from "../src/agents/tokens/server.ts";
 

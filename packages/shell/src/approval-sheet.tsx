@@ -9,7 +9,7 @@
 import { TextSelectionLook, useColors } from "@dashi/ui";
 import { type NativeHostTransport, type NativeRoot, render, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { SHEET_LAYERS } from "./agents/mask.ts";
+import { SHEET_LAYERS } from "./agents/index.ts";
 import { type ApprovalsUi, describe, type Question } from "./agents/secrets/approvals.ts";
 import { Button, opaque } from "./consent.tsx";
 import { spawnShellHost } from "./shared/metal/host.ts";

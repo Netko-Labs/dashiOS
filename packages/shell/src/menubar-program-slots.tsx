@@ -10,9 +10,17 @@ import { useColors } from "@dashi/ui";
 import type { Bounds } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import { AgentMark } from "./agent-mark.tsx";
-import type { AgentRuns } from "./agents/handoff/store.ts";
-import { type AgentStore, useAgents } from "./agents/index.ts";
-import { agentRecording, type MarkState, markState, mergeAgents, type Recording, recordingPill } from "./agents/mark.ts";
+import {
+  type AgentRuns,
+  type AgentStore,
+  agentRecording,
+  type MarkState,
+  markState,
+  mergeAgents,
+  type Recording,
+  recordingPill,
+  useAgents,
+} from "./agents/index.ts";
 import { useRuns } from "./agents-panel.tsx";
 import { type ExtrasStore, type MenuBarExtra, useExtras } from "./extras/index.ts";
 import { ExtraItem } from "./extras/view.tsx";

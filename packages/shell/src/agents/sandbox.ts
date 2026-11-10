@@ -26,8 +26,6 @@ import { basename, dirname, join } from "node:path";
 import { isRecord } from "@dashi/shape";
 import type { Exists, PlanProfile, SandboxEnv, SandboxOptions, TokenProxy } from "./sandbox-types.ts";
 
-export type { Exists, PlanProfile, SandboxEnv, SandboxOptions, TokenProxy } from "./sandbox-types.ts";
-
 /** What the filtered bus lets an agent reach: notifications and the portals. */
 export const BUS_TALK = ["org.freedesktop.Notifications", "org.freedesktop.portal.*"] as const;
 

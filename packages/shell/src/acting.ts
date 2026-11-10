@@ -1,6 +1,6 @@
 /**
  * Who is acting: the person, or an agent on their behalf. An agent's tool
- * call runs inside `actingAs` (agents/session.ts, and a launcher Ask's
+ * call runs inside `actingAs` (agents/lib/session/session.ts, and a launcher Ask's
  * approved step: actions/start.ts), and whatever it changes reads `actor()`
  * through every await in between, so Settings can say who changed a setting
  * (settings-app/changes/). Outside of `actingAs` it is the person.

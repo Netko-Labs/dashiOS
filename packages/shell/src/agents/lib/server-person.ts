@@ -1,17 +1,17 @@
 /** The person's own tool calls (the launcher, a key, a link): the code an agent's call runs, named "You", seeing what the person sees. */
 
-import type { BrowserBridge } from "../browser/bridge.ts";
-import type { Compositor } from "../compositor.ts";
-import type { Arrange, Tile } from "../layout.ts";
-import type { Question } from "./confirm.ts";
-import { type ToolResult, toolError } from "./context.ts";
-import type { Desktop, Hands } from "./desktop/index.ts";
-import { LOCKED, type LockWatch } from "./lock.ts";
-import type { AgentMask } from "./mask.ts";
-import type { AgentUi } from "./presence.ts";
-import { runCall } from "./run.ts";
-import { type SecretsShared, SessionSecrets } from "./secrets/index.ts";
-import type { Call } from "./tools/index.ts";
+import type { BrowserBridge } from "../../browser/bridge.ts";
+import type { Compositor } from "../../compositor.ts";
+import type { Arrange, Tile } from "../../layout.ts";
+import type { Question } from "../confirm.ts";
+import { type ToolResult, toolError } from "../context.ts";
+import type { Desktop, Hands } from "../desktop/index.ts";
+import { LOCKED, type LockWatch } from "../lock.ts";
+import type { AgentMask } from "../mask.ts";
+import type { AgentUi } from "../presence.ts";
+import { type SecretsShared, SessionSecrets } from "../secrets/index.ts";
+import type { Call } from "../tools/index.ts";
+import { runCall } from "./run/run.ts";
 
 export interface PersonParts {
   compositor: Compositor;

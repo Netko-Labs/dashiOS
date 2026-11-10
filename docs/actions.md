@@ -320,7 +320,7 @@ agent ──MCP──> shell ──dashi-browser.sock──> dashi-browser-host 
   and `EXTENSION_ID` (tested to agree: `browser-pinning.test.ts`). The key
   in the manifest today is a development key generated for 0.5.0.
 
-The tools (`src/agents/tools/browser.ts`, carried out by
+The tools (`src/agents/tools/lib/browser.ts`, carried out by
 `src/agents/desktop/browser.ts`), all under the scope "Use websites":
 
 | Tool | What it does |
@@ -534,10 +534,10 @@ the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
   mode (below). A local model is Ollama on
   `127.0.0.1:11434` only; Claude is the Messages API on `api.anthropic.com`
   only (the base URL fixed, whatever `ANTHROPIC_BASE_URL` says), over `fetch`
-  with no SDK (`agents/ask/claude.ts` on `agents/ask/http.ts`: a timeout and
+  with no SDK (`agents/ask/lib/claude.ts` on `agents/ask/lib/http.ts`: a timeout and
   one retry; the key as `Authorization: Bearer`, `anthropic-version: 2026-10-21`):
   `claude-opus-5-5` at `output_config.effort: "low"`, thinking left as the
-  model has it, `tool_choice: auto` with strict tools (`agents/ask/strict.ts`;
+  model has it, `tool_choice: auto` with strict tools (`agents/ask/lib/strict.ts`;
   the system prompt asks for the calls), server-side fallbacks on
   (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`), a
   refusal read before anything else and a reply cut off at `max_tokens`
@@ -550,10 +550,10 @@ the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
   logged, shown, sent to the model, or put in a sandbox. Settings learns
   where it is from the token list, without asking for the token. GPT is
   OpenAI's Chat Completions on `api.openai.com/v1` only, over `fetch`
-  with no SDK (`agents/ask/gpt.ts` on `agents/ask/http.ts`; the base URL fixed
+  with no SDK (`agents/ask/lib/gpt.ts` on `agents/ask/lib/http.ts`; the base URL fixed
   whatever `OPENAI_BASE_URL` says, organization and project never sent,
   `store: false`): the model is `agents.gptModel`, else the most
-  capable chat model the key's `/v1/models` lists (`agents/ask/gpt-models.ts`:
+  capable chat model the key's `/v1/models` lists (`agents/ask/lib/gpt-models.ts`:
   by generation, a full model over its mini and nano, an alias over its
   snapshots; audio, realtime, image, search, embedding and Responses-only
   models left out; nothing hard-coded), and Settings offers the first six as

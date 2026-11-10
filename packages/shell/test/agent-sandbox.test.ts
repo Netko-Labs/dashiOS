@@ -1,14 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import {
-  inAgentScope,
-  type PlanProfile,
-  parsePlanProfile,
-  planSocketInside,
-  proxyArgs,
-  type SandboxEnv,
-  sandboxArgs,
-  unitName,
-} from "../src/agents/sandbox.ts";
+import { inAgentScope, parsePlanProfile, planSocketInside, proxyArgs, sandboxArgs, unitName } from "../src/agents/sandbox.ts";
+import type { PlanProfile, SandboxEnv } from "../src/agents/sandbox-types.ts";
 
 const env: SandboxEnv = { home: "/home/alex", runtime: "/run/user/1000", state: "/home/alex/.local/state", config: "/home/alex/.config" };
 const present = new Map<string, "dir" | "file">([

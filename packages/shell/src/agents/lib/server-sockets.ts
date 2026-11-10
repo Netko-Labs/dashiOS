@@ -2,10 +2,10 @@
 
 import { chmodSync, existsSync, mkdirSync, readFileSync, unlinkSync } from "node:fs";
 import { dirname } from "node:path";
-import { identify, peerPid, socketFd } from "./peer.ts";
-import { isConfined, taskOfCgroup, taskSocket } from "./sandbox.ts";
-import { Session } from "./session.ts";
-import type { SessionContext, SessionTask, TaskHooks, TaskPolicy } from "./session-types.ts";
+import { identify, peerPid, socketFd } from "../peer.ts";
+import { isConfined, taskOfCgroup, taskSocket } from "../sandbox.ts";
+import { Session } from "./session/session.ts";
+import type { SessionContext, SessionTask, TaskHooks, TaskPolicy } from "./session/session-types.ts";
 
 /** A file's text, or null. */
 const readText = (path: string): string | null => {

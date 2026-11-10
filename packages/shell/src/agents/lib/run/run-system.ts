@@ -1,6 +1,6 @@
 /** The machine's settings and hardware: settings, region, sound, power, account, displays, Bluetooth and Wi-Fi. */
 
-import * as desktop from "./desktop/index.ts";
+import * as desktop from "../../desktop/index.ts";
 import type { Handlers } from "./run-types.ts";
 
 export const systemHandlers = {

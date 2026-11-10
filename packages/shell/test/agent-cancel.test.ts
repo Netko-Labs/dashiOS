@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { cancelledRequest, parse } from "../src/agents/mcp.ts";
+import { cancelledRequest, parse } from "../src/agents/lib/mcp.ts";
+import { Session } from "../src/agents/lib/session/session.ts";
+import type { SessionContext } from "../src/agents/lib/session/session-types.ts";
 import type { Answer, Ask, Turn } from "../src/agents/presence.ts";
-import { Session, type SessionContext } from "../src/agents/session.ts";
 import { DENY, type QueuedSheet, SheetQueue } from "../src/agents/sheet-queue.ts";
 import { opaque } from "../src/consent.tsx";
 import { fakeCompositor } from "./support/compositor.ts";

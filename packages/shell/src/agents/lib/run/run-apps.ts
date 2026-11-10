@@ -1,13 +1,13 @@
 /** Apps and their windows: what is open, what is installed, and starting one (waiting for its first new window). */
 
 import { statSync } from "node:fs";
-import type { CompositorWindow } from "../compositor.ts";
-import { type Entry, launchEntry, loadEntries } from "../entries.ts";
-import { windowToFront } from "../front-window.ts";
-import type { Tile } from "../layout.ts";
-import { kindOf } from "../shared/files/kinds.ts";
-import { json, type RunContext, type ToolResult, text, toolError } from "./context.ts";
-import { descendsFrom } from "./peer.ts";
+import type { CompositorWindow } from "../../../compositor.ts";
+import { type Entry, launchEntry, loadEntries } from "../../../entries.ts";
+import { windowToFront } from "../../../front-window.ts";
+import type { Tile } from "../../../layout.ts";
+import { kindOf } from "../../../shared/files/kinds.ts";
+import { json, type RunContext, type ToolResult, text, toolError } from "../../context.ts";
+import { descendsFrom } from "../../peer.ts";
 import type { Handlers } from "./run-types.ts";
 
 /** How long `launch_app` waits for the app's first window. */

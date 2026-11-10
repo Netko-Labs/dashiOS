@@ -2,12 +2,12 @@
 
 import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { type RunContext, type ToolResult, toolError } from "./context.ts";
-import { recordScreen } from "./desktop/index.ts";
-import { AGENT_MASK } from "./mask.ts";
+import { type RunContext, type ToolResult, toolError } from "../../context.ts";
+import { recordScreen } from "../../desktop/index.ts";
+import { AGENT_MASK } from "../../mask.ts";
+import type { Rect } from "../../tools/index.ts";
+import { named, noWindow, subject } from "../subject.ts";
 import type { Handlers } from "./run-types.ts";
-import { named, noWindow, subject } from "./subject.ts";
-import type { Rect } from "./tools/index.ts";
 
 async function screenshot(id: number | null, rect: Rect | undefined, ctx: RunContext): Promise<ToolResult> {
   if (id !== null) {

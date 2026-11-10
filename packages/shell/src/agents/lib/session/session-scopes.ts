@@ -5,15 +5,15 @@
  * the agent is told so it can adapt. Locked, nothing runs and nobody is asked.
  */
 
-import type { Question } from "./confirm.ts";
-import { choices, isScope, kept, label, type Scope } from "./consent.ts";
-import { type ToolResult, toolError } from "./context.ts";
-import { LOCKED } from "./lock.ts";
-import type * as mcp from "./mcp.ts";
-import { WAITING_STATUS, type Who } from "./presence.ts";
+import type { Question } from "../../confirm.ts";
+import { choices, isScope, kept, label, type Scope } from "../../consent.ts";
+import { type ToolResult, toolError } from "../../context.ts";
+import { LOCKED } from "../../lock.ts";
+import { WAITING_STATUS, type Who } from "../../presence.ts";
+import type { SiteAnswer } from "../../sites.ts";
+import { type Call, scopeOf } from "../../tools/index.ts";
+import type * as mcp from "../mcp.ts";
 import type { SessionContext, SessionTask } from "./session-types.ts";
-import type { SiteAnswer } from "./sites.ts";
-import { type Call, scopeOf } from "./tools/index.ts";
 
 /** What the scopes need of the connection they are for. */
 export interface ScopeHost {

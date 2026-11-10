@@ -6,14 +6,23 @@
 
 import { formatAddress, type startActions } from "../actions/index.ts";
 import { createAgentUi } from "../agent-sheets.tsx";
-import { type Ask, modelKeys, startAsk, TurnWatch, vaultTokenSource } from "../agents/ask/index.ts";
-import { AgentStore, startAgents } from "../agents/index.ts";
-import { personAnswered } from "../agents/person.ts";
-import { watchApprovals } from "../agents/secrets/approvals.ts";
-import { type Passwords, startPasswords } from "../agents/secrets/passwords.ts";
-import type { Agents } from "../agents/server.ts";
-import { serveTokens, tokensSocketPath } from "../agents/tokens/index.ts";
-import { TOOLS } from "../agents/tools/index.ts";
+import type { Ask } from "../agents/ask/types.ts";
+import {
+  AgentStore,
+  type Agents,
+  modelKeys,
+  type Passwords,
+  personAnswered,
+  serveTokens,
+  startAgents,
+  startAsk,
+  startPasswords,
+  TOOLS,
+  TurnWatch,
+  tokensSocketPath,
+  vaultTokenSource,
+  watchApprovals,
+} from "../agents/index.ts";
 import { createApprovalUi } from "../approval-sheet.tsx";
 import type { Compositor } from "../compositor.ts";
 import { openFile } from "../file-manager.ts";
