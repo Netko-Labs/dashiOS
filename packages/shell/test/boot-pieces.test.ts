@@ -105,7 +105,13 @@ test("Show in folder starts Files on the paths, with the caller's token when the
   const files = { id: "dev.dashi.files", name: "Files", icon: "", exec: ["bun", "files.tsx"], env: { A: "1" } } as never;
   expect(filesLaunch(undefined, ["/home/alexk"], "")).toBeNull();
   expect(filesLaunch({ id: "x", name: "X", icon: "" } as never, ["/"], "")).toBeNull();
-  expect(filesLaunch(files, ["/home/alexk"], "")).toEqual({ id: "dev.dashi.files", name: "Files", icon: "", exec: ["bun", "files.tsx", "/home/alexk"], env: { A: "1" } });
+  expect(filesLaunch(files, ["/home/alexk"], "")).toEqual({
+    id: "dev.dashi.files",
+    name: "Files",
+    icon: "",
+    exec: ["bun", "files.tsx", "/home/alexk"],
+    env: { A: "1" },
+  });
   expect(filesLaunch(files, ["--info", "/tmp/a"], "tok")).toMatchObject({
     exec: ["bun", "files.tsx", "--info", "/tmp/a"],
     env: { A: "1", XDG_ACTIVATION_TOKEN: "tok", DESKTOP_STARTUP_ID: "tok" },
