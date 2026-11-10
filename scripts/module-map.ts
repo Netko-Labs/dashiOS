@@ -2,11 +2,12 @@
 // Print every module (scripts/modules.ts) with its size and who imports it from outside, for
 // planning a conversion to the module shape (docs/conventions.md, "`lib/` And `shared/`").
 //   bun scripts/module-map.ts                 every module: files, lines, outside importers
-//   bun scripts/module-map.ts FOLDER          one module: each outside import, file by file
+//   bun scripts/module-map.ts FOLDER          one module: each outside import, file by file:
+//                                             public, test-lib (a test reaching lib/, allowed) or DEEP
 // Columns: files and lines inside; files outside that import it and their imports; distinct
 // modules among those (tests left out); deep imports (past its public files).
 
-import { buildGraph, crossedModule, inside, publicFiles, topModule, userOf } from "./modules.ts";
+import { buildGraph, crossedModule, inside, libOwner, publicFiles, topModule, userOf } from "./modules.ts";
 import { isTest, read, repoFiles } from "./ratchet.ts";
 
 const graph = buildGraph(repoFiles());
@@ -18,7 +19,7 @@ if (folder) {
   for (const [file, targets] of [...graph.imports].sort()) {
     if (inside(file, folder)) continue;
     for (const target of targets.filter((t) => inside(t, folder))) {
-      const how = publics.has(target) ? "public" : "DEEP";
+      const how = publics.has(target) ? "public" : isTest(file) && libOwner(target) !== null ? "test-lib" : "DEEP";
       console.log(`${how}\t${userOf(file)}\t${file} -> ${target.slice(folder.length + 1)}`);
     }
   }
@@ -43,7 +44,9 @@ if (folder) {
       importers++;
       imports += hits.length;
       if (!isTest(file)) users.add(userOf(file));
-      deep += hits.filter((target) => crossedModule(file, target, known) !== null && !publics.has(target)).length;
+      deep += hits.filter(
+        (target) => crossedModule(file, target, known) !== null && !publics.has(target) && !(isTest(file) && libOwner(target) !== null),
+      ).length;
     }
     console.log(`${top}\t${files.length}\t${lines}\t${importers}\t${imports}\t${users.size}\t${deep}`);
   }

@@ -1,6 +1,7 @@
 // H18 to H20 (scripts/check-modules.ts) on a small made-up tree, and the move tool's rewrite.
 import { describe, expect, test } from "bun:test";
 import { deepImports, entryPaths, libImports, sharedUse } from "../check-modules.ts";
+import { compare, runtimeSpecifiers } from "../entry-weight.ts";
 import type { Graph } from "../modules.ts";
 import { crossedModule, libOwner, moduleChain, topModule } from "../modules.ts";
 import { literalFor, parsePairs, rewrite } from "../move.ts";
@@ -112,5 +113,19 @@ describe("move", () => {
     );
     const moved = 'import { b } from "./model.ts";\n';
     expect(rewrite(moved, `${S}/menus/view.tsx`, `${S}/menus/lib/view.tsx`, moves, exists)).toBe('import { b } from "../model.ts";\n');
+  });
+});
+
+describe("entry weight", () => {
+  test("follows what a file loads when it runs: no type-only or dynamic imports", () => {
+    const text =
+      'import type { A } from "./a.ts";\nimport { type B } from "./b.ts";\nimport { c, type C } from "./c.ts";\nexport type { D } from "./d.ts";\nexport { e } from "./e.ts";\nconst f = await import("./f.ts");\n';
+    expect(runtimeSpecifiers("x.ts", text)).toEqual(["./c.ts", "./e.ts"]);
+  });
+  test("an entry that loads a module it did not load before grew", () => {
+    const weight = (...modules: string[]) => ({ files: modules.length, modules: new Set(modules) });
+    const before = new Map([["main.tsx", weight("menus", "dock")]]);
+    expect([...compare(new Map([["main.tsx", weight("menus", "dock")]]), before)]).toEqual([]);
+    expect([...compare(new Map([["main.tsx", weight("menus", "dock", "agents")]]), before)]).toEqual([["main.tsx", ["agents"]]]);
   });
 });
