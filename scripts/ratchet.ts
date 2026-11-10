@@ -7,10 +7,12 @@
 //   - a listed key's count went up (it grew),
 //   - a listed key no longer offends, or its count went down (trim the list).
 // So the lists can only shrink. `--shrink` rewrites them to today's counts, but
-// never adds a key or raises a count.
+// never adds a key or raises a count. A listed file moved with `git mv` keeps its entry: `--shrink`
+// (and scripts/list-rename.ts) carries the key to the file's new path, at the same count.
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { follow, gitRenames } from "./renames.ts";
 
 export const ROOT: string = join(import.meta.dir, "..");
 const LISTS = join(ROOT, "scripts", "lists");
@@ -57,16 +59,35 @@ export function writeList(name: string, header: string[], entries: Counts): void
   writeFileSync(listPath(name), `${[...header, ...body].join("\n")}\n`);
 }
 
+/**
+ * Move the keys of files git saw renamed to their new paths, at the same count. A key moves only
+ * when its old path is gone and the new one is not already listed; `wanted` limits it to keys
+ * that still offend when given. Returns the moves, old -> new.
+ */
+export function carryRenames(entries: Counts, wanted?: Counts, moved: Map<string, string> = gitRenames()): Map<string, string> {
+  const carried = new Map<string, string>();
+  for (const [key, count] of [...entries]) {
+    const now = follow(key, moved);
+    if (now === key || entries.has(now) || (wanted !== undefined && !wanted.has(now))) continue;
+    entries.delete(key);
+    entries.set(now, count);
+    carried.set(key, now);
+  }
+  return carried;
+}
+
 /** Compare today's offences with the list; with --shrink, tighten the list first. */
 export function ratchet(name: string, found: Counts, what: string): Outcome {
   const { header, entries } = readList(name);
   if (shrinking()) {
+    const carried = carryRenames(entries, found);
+    for (const [from, to] of carried) console.log(`${name}: ${from} moved to ${to}`);
     const tightened: Counts = new Map();
     for (const [key, count] of entries) {
       const now = found.get(key);
       if (now !== undefined) tightened.set(key, Math.min(count, now));
     }
-    if (tightened.size !== entries.size || [...tightened].some(([key, count]) => entries.get(key) !== count)) {
+    if (carried.size > 0 || tightened.size !== entries.size || [...tightened].some(([key, count]) => entries.get(key) !== count)) {
       writeList(name, header, tightened);
     }
     entries.clear();
@@ -80,8 +101,13 @@ export function ratchet(name: string, found: Counts, what: string): Outcome {
   }
   for (const [key, listed] of entries) {
     const now = found.get(key);
-    if (now === undefined) problems.push(`${key}: no longer offends; remove it from scripts/lists/${name}.txt (or run with --shrink)`);
-    else if (now < listed) problems.push(`${key}: down from ${listed} to ${now}; lower it in scripts/lists/${name}.txt (or run with --shrink)`);
+    if (now === undefined) {
+      const moved = follow(key, gitRenames());
+      const where = moved === key ? "" : ` (the file moved to ${moved}; --shrink carries the entry there)`;
+      problems.push(`${key}: no longer offends${where}; remove it from scripts/lists/${name}.txt (or run with --shrink)`);
+    } else if (now < listed) {
+      problems.push(`${key}: down from ${listed} to ${now}; lower it in scripts/lists/${name}.txt (or run with --shrink)`);
+    }
   }
   return { name, problems, listed: entries.size };
 }
