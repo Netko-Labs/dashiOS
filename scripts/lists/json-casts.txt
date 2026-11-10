@@ -1,0 +1,9 @@
+# H7: `JSON.parse(…) as T` casts (count = casts). May only shrink; see scripts/ratchet.ts.
+1	packages/applet/src/installed.ts
+1	packages/shell/apps/kit/menus.ts
+1	packages/shell/bin/dashi-agent.ts
+1	packages/shell/bin/dashi-applet-run.ts
+1	packages/shell/bin/dashi-browser-pack.ts
+1	packages/shell/src/agents/handoff/runner.ts
+1	packages/shell/src/agents/sandbox.ts
+1	packages/shell/src/applet-store/machine.ts

@@ -1,0 +1,9 @@
+# H10: exported functions in .ts files without a return type (count = functions). May only shrink.
+1	packages/shell/apps/files/agent.ts
+1	packages/shell/src/actions/tools.ts
+1	packages/shell/src/agents/ask/harness/run.ts
+1	packages/shell/src/agents/desktop/notifications.ts
+2	packages/shell/src/agents/mcp.ts
+2	packages/shell/src/agents/subject.ts
+1	packages/shell/src/agents/tools/registry.ts
+1	packages/shell/src/sound/levels.ts

@@ -238,6 +238,10 @@ impl Dashi {
         let spawned = std::thread::Builder::new()
             .name("wallpaper-picture".into())
             .spawn(move || {
+                #[expect(
+                    clippy::disallowed_methods,
+                    reason = "runs on the wallpaper-picture thread, off the loop"
+                )]
                 let decoded =
                     image::open(&source)
                         .map_err(|error| error.to_string())

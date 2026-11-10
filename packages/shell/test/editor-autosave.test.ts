@@ -97,6 +97,9 @@ describe("saving on its own", () => {
     expect(listed.map((version) => version.kind)).toEqual(["saved", "opened"]);
     expect(editor.versionText(listed[0] as Version)).toBe("draft two");
 
+    // A tick later, so the version Revert keeps is the newest: two versions from one
+    // millisecond list in the folder's order, which differs between file systems.
+    clock += 1;
     expect(editor.revertTo(listed[1] as Version)).toBe(true);
     expect(editor.getSnapshot()).toMatchObject({ text: "draft one", undoName: "Revert" });
     editor.autosave();

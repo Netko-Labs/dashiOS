@@ -136,6 +136,7 @@ pub(crate) fn describe_gpus(state: &mut Dashi) -> Value {
 }
 
 #[cfg(test)]
+#[allow(clippy::disallowed_methods, reason = "tests write sysfs fixtures")]
 mod tests {
     use super::*;
 

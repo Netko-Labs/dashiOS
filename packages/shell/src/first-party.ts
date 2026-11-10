@@ -7,6 +7,7 @@
  */
 
 import { existsSync } from "node:fs";
+// biome-ignore lint/nursery/noImportCycles: H5 offender (scripts/lists/import-cycles.txt)
 import { type App, iconPath } from "./apps.ts";
 
 export interface FirstPartySpec {

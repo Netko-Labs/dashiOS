@@ -1,0 +1,3 @@
+# H11: tests given their own time limit over bunfig.toml's 2 s (count = tests). May only shrink.
+2	packages/dashi-ui/test/table.test.tsx
+4	packages/shell/test/recorder.test.ts

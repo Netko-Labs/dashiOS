@@ -1,0 +1,10 @@
+# H13: shellcheck findings per script, every severity (count = findings). May only shrink.
+1	session/dashi-extras
+2	session/dashi-greeter
+5	session/dashi-session
+10	spin/build-rpms
+3	spin/dashi-live/usr/libexec/dashi/dashi-install
+1	spin/dashi-live/usr/libexec/dashi/finish-install
+1	vm/dev-session
+8	vm/nested-session
+3	vm/vm

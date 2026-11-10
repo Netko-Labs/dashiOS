@@ -5,6 +5,7 @@
  * Control when it ends. Pure: it says what to do, gestures.ts does it.
  */
 
+// biome-ignore lint/nursery/noImportCycles: H5 offender (scripts/lists/import-cycles.txt)
 import { swipeDirection } from "../gestures.ts";
 import type { SpacesState } from "./model.ts";
 

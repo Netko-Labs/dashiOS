@@ -20,6 +20,7 @@
  */
 
 import { type AppletCommand, parseCommands } from "./commands.ts";
+// biome-ignore lint/nursery/noImportCycles: H5 offender (scripts/lists/import-cycles.txt)
 import { type AppletControl, needsControlsPermission, parseControls } from "./controls.ts";
 import { isRefusal, list, optionalText, type Refusal, record, refuse, text } from "./parse.ts";
 import { type Permission, parsePermission, permissionName } from "./permissions.ts";
