@@ -36,7 +36,7 @@ export interface EventInput {
   alert?: number | null;
 }
 
-const isWeekday = (day: unknown): boolean => Number.isInteger(day) && (day as number) >= 0 && (day as number) <= 6;
+const isWeekday = (day: unknown): boolean => typeof day === "number" && Number.isInteger(day) && day >= 0 && day <= 6;
 
 /** The repeat as it is kept, or a CalendarError saying what is wrong. */
 export function checkRepeat(repeat: Repeat, start: Local): Repeat {
