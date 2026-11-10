@@ -1,11 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { type ActionDef, ok, ready } from "../src/actions/types.ts";
 import type { Entry } from "../src/entries.ts";
-import { type HandoffSnapshot, withHandoff } from "../src/launcher/handoff-rows.ts";
+import { withHandoff } from "../src/launcher/handoff-rows.ts";
 import { launcherIndex } from "../src/launcher/lib/items.ts";
 import { buildSections, type ListInput } from "../src/launcher/lib/rows.ts";
 import { commandCore, startsWithCommand } from "../src/launcher/ranking/index.ts";
 import type { Section } from "../src/launcher/sections.ts";
+import type { HandoffSnapshot } from "../src/launcher/types.ts";
 import { spaceFlips } from "../src/launcher/verbs.ts";
 import { ENTRIES } from "./ranking-fixture.ts";
 

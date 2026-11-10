@@ -6,8 +6,8 @@
 
 import type { Outcome } from "../../../actions/index.ts";
 import type { TaskView } from "../../../agents/index.ts";
-import type { LauncherAgents, LauncherAgentsSnapshot } from "../../agent-rows.ts";
 import type { Row } from "../../row-model.ts";
+import type { LauncherAgents, LauncherAgentsSnapshot } from "../../types.ts";
 import type { AgentAct } from "./acts.ts";
 import { taskSubmit } from "./task-mode.tsx";
 

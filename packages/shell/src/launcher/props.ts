@@ -8,16 +8,14 @@
 
 import type { TaskContext } from "../agents/index.ts";
 import type { Entry } from "../entries.ts";
-import type { LauncherAgents } from "./agent-rows.ts";
 import type { ExtensionSession } from "./extension-state.ts";
-import type { LauncherHandoff } from "./handoff-rows.ts";
 import type { LauncherHost, LauncherPrefsStore, LauncherRanking, LauncherWorldStore, Presented, Store } from "./host.ts";
 import type { ExtraKeys, LauncherCommand } from "./keys.ts";
 import type { Move } from "./lib/selection.ts";
 import type { TypeAheadSource } from "./lib/use-type-ahead.ts";
 import type { ArrowsWanted, PictureRect } from "./pictures.ts";
 import type { FileRow } from "./row-model.ts";
-import type { LauncherScope } from "./types.ts";
+import type { LauncherAgents, LauncherHandoff, LauncherScope } from "./types.ts";
 
 /** Files for the launcher: whether it can look now (the placeholder says), and the looking; null when it couldn't. */
 export interface LauncherFiles {

@@ -14,51 +14,14 @@
  * - "history" lists what agents did, grouped by task.
  */
 
-import type { Outcome } from "../actions/index.ts";
-import { type AnswererInfo, ago, type HistoryEntry, type NowItem, type TaskView } from "../agents/index.ts";
+import { type AnswererInfo, ago, type HistoryEntry, type NowItem } from "../agents/index.ts";
 import { SPARKLE } from "../settings-app/glyphs.ts";
-import type { Store } from "./host.ts";
 import type { AgentAct } from "./lib/agents/acts.ts";
 import { fold } from "./ranking/fold.ts";
 import type { Row } from "./row-model.ts";
 import type { Section } from "./sections.ts";
+import type { LauncherAgentsSnapshot } from "./types.ts";
 import type { Hint, Verb } from "./verbs.ts";
-
-/** What the launcher reads about agents. */
-export interface LauncherAgentsSnapshot {
-  /** Who answers an Ask; null when none is (none chosen, or not yet). */
-  answerer: AnswererInfo | null;
-  /** Nothing picked yet: ⇥ offers to set one up. */
-  unset: boolean;
-  now: readonly NowItem[];
-  tasks: readonly TaskView[];
-}
-
-/** What the launcher does with agents (agents/ask/service.ts makes it). */
-export interface LauncherAgents extends Store<LauncherAgentsSnapshot> {
-  /** Ask about `request` (with what the context chips left on, in words): the new task's id, or null with no answerer. */
-  ask(request: string, context?: string): string | null;
-  followUp(task: string, text: string): boolean;
-  /** Return on a plan: runs it if the person's own press did it (input-origin). */
-  run(task: string): void;
-  allowOnce(task: string, step: number): void;
-  retry(task: string): void;
-  /** Put a settings change back; `entry` is the plan's history id (`entryOf`). */
-  undo(entry: string, step: number, undo: AgentUndo): Promise<Outcome>;
-  entryOf(task: string): string | null;
-  stop(item: NowItem): void;
-  /** A "Your turn": bring its window forward. */
-  goTo(item: NowItem): Promise<void>;
-  /** Settings › Agents. */
-  setUp(): void;
-  /** Terminal, to sign a harness in (a "not signed in" failure). */
-  signIn(): void;
-  history(): readonly HistoryEntry[];
-  /** The launcher closed: a failed ask leaves "Now" (agents/ask/tasks.ts). */
-  closed?(): void;
-}
-
-type AgentUndo = Extract<AgentAct, { kind: "undo" }>["undo"];
 
 /** Words that start a request rather than name a thing. */
 const VERBS = new Set(

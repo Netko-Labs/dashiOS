@@ -6,13 +6,13 @@
  */
 
 import { cut, type HarnessId } from "../../agents/index.ts";
-import { ASK_PLACEHOLDER, askHint, type LauncherAgentsSnapshot } from "../agent-rows.ts";
-import { type HandoffSnapshot, handoffHints } from "../handoff-rows.ts";
+import { ASK_PLACEHOLDER, askHint } from "../agent-rows.ts";
+import { handoffHints } from "../handoff-rows.ts";
 import type { LauncherHost, Presented } from "../host.ts";
 import { collision } from "../person-keys.ts";
 import type { LauncherPrefsSnapshot } from "../prefs.ts";
 import type { Row, RowIcon } from "../row-model.ts";
-import type { LauncherScope } from "../types.ts";
+import type { HandoffSnapshot, LauncherAgentsSnapshot, LauncherScope } from "../types.ts";
 import { filterVerbs, hintFor, KEYS, presentedVerbs, type Verb, type VerbContext, verbRow } from "../verbs.ts";
 import type { agentField } from "./agents/task-mode.tsx";
 import { aliasRows, shortcutRows } from "./editing.ts";

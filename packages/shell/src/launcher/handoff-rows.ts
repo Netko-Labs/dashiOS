@@ -13,47 +13,14 @@
  *   ⇥ talks to it, ❖⌫ stops it.
  */
 
-import {
-  cut,
-  type HandoffHarness,
-  type HarnessId,
-  harnessGlyph,
-  isWorking,
-  progressWords,
-  type RunView,
-  statusWords,
-  type TaskContext,
-} from "../agents/index.ts";
+import { cut, type HandoffHarness, type HarnessId, harnessGlyph, isWorking, progressWords, type RunView, statusWords } from "../agents/index.ts";
 import { ASK_ROW, readsLikeSentence } from "./agent-rows.ts";
-import type { Store } from "./host.ts";
 import { commandCore } from "./ranking/commands.ts";
 import { fold } from "./ranking/fold.ts";
 import type { Row } from "./row-model.ts";
 import type { Section } from "./sections.ts";
+import type { HandoffSnapshot } from "./types.ts";
 import type { Hint } from "./verbs.ts";
-
-/** What the launcher reads about handing off: the harnesses installed (the first is Return's) and the runs. */
-export interface HandoffSnapshot {
-  harnesses: readonly HandoffHarness[];
-  runs: readonly RunView[];
-}
-
-/** What the launcher does with agents from the launcher (boot/agents.ts makes it from agents/handoff/service.ts). */
-export interface LauncherHandoff extends Store<HandoffSnapshot> {
-  /** Whether the grants card shows before a task with this context starts (once per kind). */
-  needsCard(context: TaskContext): boolean;
-  /** Start it in the background; `watch` opens its card in the menu bar's panel too. */
-  start(input: { harness: HarnessId; request: string; context: TaskContext }, watch: boolean): void;
-  /** The menu bar's panel, on this run's card. */
-  open(run: string | null): void;
-  /** Words to a run: false when there's no such run. */
-  tell(run: string, text: string): boolean;
-  stop(run: string): void;
-  /** Settings › Agents. */
-  settings(): void;
-  /** Terminal, to sign a harness in. */
-  signIn(harness: HarnessId): void;
-}
 
 /** Verbs a task starts with, beyond the request verbs Ask knows (rows.ts). */
 const TASK_VERBS = new Set(
