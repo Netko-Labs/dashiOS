@@ -73,43 +73,36 @@
 
 import { existsSync, mkdirSync, readFileSync, watch } from "node:fs";
 import { basename, dirname } from "node:path";
-import { DEFAULT_TEXT_SIZE, TEXT_SIZES } from "@dashi/ui";
-import { DOCK_DEFAULTS, DOCK_KEYS, DOCK_STYLES, type DockSettings, resolveDock } from "./dock/settings.ts";
-import { DEFAULT_INPUT_METHOD, INPUT_METHODS, type InputMethodName } from "./input-method.ts";
-import { DEFAULT_POINTER_SIZE, POINTER_SIZES } from "./pointer.ts";
-import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "./scroll-speed.ts";
-import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS } from "./shared/appearance/corners.ts";
+import { DEFAULT_TEXT_SIZE } from "@dashi/ui";
+import type { Compositor } from "./compositor.ts";
+import { DOCK_DEFAULTS, type DockSettings, resolveDock } from "./dock/settings.ts";
+import { DEFAULT_INPUT_METHOD, type InputMethodName } from "./input-method.ts";
+import { DEFAULT_POINTER_SIZE } from "./pointer.ts";
+import {
+  APPEARANCE,
+  DOCK,
+  IDLE,
+  INPUT_METHOD,
+  KEYBOARD,
+  type KeyboardSettings,
+  MENU_BAR,
+  MOUSE,
+  type MouseSettings,
+  readSection,
+  SPACES,
+  TOUCHPAD,
+  type TouchpadSettings,
+  WALLPAPER,
+} from "./settings-schema.ts";
+import { type CornerName, DEFAULT_CORNERS } from "./shared/appearance/corners.ts";
 import { parseCatalogs } from "./shared/applet-store/catalogs.ts";
 import { settingsPath } from "./shared/settings/file.ts";
-import { parseSpaceNames, type SpaceNames } from "./spaces/names.ts";
-import { DEFAULT_WALLPAPER_MODE, isWallpaperRef, WALLPAPER_MODES, type WallpaperChoice } from "./wallpaper/catalog.ts";
-import { FRAME_RATES, isVideoPath, LIVE_SHADERS, RETIRED_KEYS, RETIRED_KINDS, WALLPAPER_KINDS } from "./wallpaper/live/choice.ts";
-import { DEFAULT_X11_SCALING, X11_SCALINGS, type X11Scaling } from "./xwayland-scale.ts";
+import type { SpaceNames } from "./spaces/names.ts";
+import { DEFAULT_WALLPAPER_MODE, type WallpaperChoice } from "./wallpaper/catalog.ts";
+import { RETIRED_KEYS, RETIRED_KINDS } from "./wallpaper/live/choice.ts";
+import { DEFAULT_X11_SCALING, type X11Scaling } from "./xwayland-scale.ts";
 
-export interface TouchpadSettings {
-  tap?: boolean;
-  naturalScroll?: boolean;
-  accelSpeed?: number;
-  disableWhileTyping?: boolean;
-  clickMethod?: "buttonAreas" | "clickfinger";
-  /** A factor on how far a scroll goes, 0.25 to 4 (scroll-speed.ts); 1 with none. */
-  scrollSpeed?: number;
-}
-
-export interface MouseSettings {
-  naturalScroll?: boolean;
-  accelSpeed?: number;
-  accelProfile?: "flat" | "adaptive";
-  scrollSpeed?: number;
-}
-
-export interface KeyboardSettings {
-  layout?: string;
-  variant?: string;
-  options?: string;
-  repeatRate?: number;
-  repeatDelay?: number;
-}
+export type { KeyboardSettings, MouseSettings, TouchpadSettings } from "./settings-schema.ts";
 
 export interface Settings {
   input: { touchpad: TouchpadSettings; mouse: MouseSettings };
@@ -142,8 +135,6 @@ export interface Loaded {
 }
 
 export const DEFAULT_BLANK_AFTER = 300;
-/** A week, the compositor's limit for an idle threshold. */
-const MAX_BLANK_AFTER = 7 * 24 * 3600;
 
 export function defaults(): Settings {
   return {
@@ -168,87 +159,16 @@ export function defaults(): Settings {
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
-/** Reads one section's keys, reporting what it can't use. */
-class Section {
-  constructor(
-    private readonly name: string,
-    private readonly value: unknown,
-    private readonly problems: string[],
-  ) {
-    if (value !== undefined && !isRecord(value)) {
-      problems.push(`${name} must be an object`);
-      this.value = undefined;
-    }
-  }
-
-  get(key: string): unknown {
-    return isRecord(this.value) ? this.value[key] : undefined;
-  }
-
-  private bad(key: string, wanted: string): undefined {
-    this.problems.push(`${this.name}.${key} must be ${wanted}`);
-    return undefined;
-  }
-
-  /** Report keys that mean nothing here. */
-  only(known: string[]): this {
-    if (isRecord(this.value)) {
-      for (const key of Object.keys(this.value)) if (!known.includes(key)) this.problems.push(`unknown setting ${this.name}.${key}`);
-    }
-    return this;
-  }
-
-  boolean(key: string): boolean | undefined {
-    const value = this.get(key);
-    if (value === undefined) return undefined;
-    return typeof value === "boolean" ? value : this.bad(key, "true or false");
-  }
-
-  number(key: string, min: number, max: number, whole = false): number | undefined {
-    const value = this.get(key);
-    if (value === undefined) return undefined;
-    const fits = typeof value === "number" && Number.isFinite(value) && value >= min && value <= max && (!whole || Number.isInteger(value));
-    return fits ? value : this.bad(key, `${whole ? "a whole number" : "a number"} from ${min} to ${max}`);
-  }
-
-  choice<T extends string>(key: string, options: readonly T[]): T | undefined {
-    const value = this.get(key);
-    if (value === undefined) return undefined;
-    return options.find((option) => option === value) ?? this.bad(key, `one of ${options.join(", ")}`);
-  }
-
-  /** One of these numbers. */
-  numberChoice<T extends number>(key: string, options: readonly T[]): T | undefined {
-    const value = this.get(key);
-    if (value === undefined) return undefined;
-    return options.find((option) => option === value) ?? this.bad(key, `one of ${options.join(", ")}`);
-  }
-
-  /** A wallpaper id or an absolute photo path (wallpaper/catalog.ts). */
-  ref(key: string): string | undefined {
-    const value = this.get(key);
-    if (value === undefined) return undefined;
-    return isWallpaperRef(value) ? value : this.bad(key, "a wallpaper name or an absolute path");
-  }
-
-  /** A string that passes `check`, which says in `wanted` what it takes. */
-  text(key: string, check: (value: unknown) => boolean, wanted: string): string | undefined {
-    const value = this.get(key);
-    if (value === undefined) return undefined;
-    return typeof value === "string" && check(value) ? value : this.bad(key, wanted);
-  }
-
-  /** An xkb name list: what the compositor's own check accepts. */
-  xkb(key: string): string | undefined {
-    const value = this.get(key);
-    if (value === undefined) return undefined;
-    return typeof value === "string" && /^[A-Za-z0-9_,:+.()-]{0,256}$/.test(value) ? value : this.bad(key, "an xkb name list such as us,de");
-  }
-}
-
-/** Keep only the keys that have a value. */
-function defined<T extends object>(value: T): T {
-  return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined)) as T;
+/**
+ * The wallpaper the person chose: a file from before live wallpapers has none
+ * of the live keys, and means a picture (wallpaper/live/choice.ts); a retired
+ * kind is a picture, quietly, its still `path` kept.
+ */
+function wallpaperOf(value: unknown, problems: string[]): WallpaperChoice {
+  const retired = isRecord(value) && RETIRED_KINDS.some((kind) => kind === value.kind);
+  const fields = retired && isRecord(value) ? { ...value, kind: undefined } : value;
+  const { photos: _photos, videos: _videos, ...read } = readSection("appearance.wallpaper", fields, WALLPAPER, problems, RETIRED_KEYS);
+  return { ...read, mode: read.mode ?? DEFAULT_WALLPAPER_MODE, ...(retired ? { kind: "picture" as const } : {}) };
 }
 
 /** Parse settings from JSON already decoded: strict, defaulting per key. */
@@ -279,108 +199,35 @@ export function parseSettings(value: unknown): Loaded {
   ];
   for (const key of Object.keys(value)) if (!sections.includes(key)) problems.push(`unknown section ${key}`);
 
-  const input = new Section("input", value.input, problems).only(["touchpad", "mouse"]);
-  const touchpad = new Section("input.touchpad", input.get("touchpad"), problems).only([
-    "tap",
-    "naturalScroll",
-    "accelSpeed",
-    "disableWhileTyping",
-    "clickMethod",
-    "scrollSpeed",
-  ]);
-  settings.input.touchpad = defined({
-    tap: touchpad.boolean("tap"),
-    naturalScroll: touchpad.boolean("naturalScroll"),
-    accelSpeed: touchpad.number("accelSpeed", -1, 1),
-    disableWhileTyping: touchpad.boolean("disableWhileTyping"),
-    clickMethod: touchpad.choice("clickMethod", ["buttonAreas", "clickfinger"] as const),
-    scrollSpeed: touchpad.number("scrollSpeed", SCROLL_SPEED_MIN, SCROLL_SPEED_MAX),
-  });
-  const mouse = new Section("input.mouse", input.get("mouse"), problems).only(["naturalScroll", "accelSpeed", "accelProfile", "scrollSpeed"]);
-  settings.input.mouse = defined({
-    naturalScroll: mouse.boolean("naturalScroll"),
-    accelSpeed: mouse.number("accelSpeed", -1, 1),
-    accelProfile: mouse.choice("accelProfile", ["flat", "adaptive"] as const),
-    scrollSpeed: mouse.number("scrollSpeed", SCROLL_SPEED_MIN, SCROLL_SPEED_MAX),
-  });
-
-  const keyboard = new Section("keyboard", value.keyboard, problems).only(["layout", "variant", "options", "repeatRate", "repeatDelay"]);
-  settings.keyboard = defined({
-    layout: keyboard.xkb("layout"),
-    variant: keyboard.xkb("variant"),
-    options: keyboard.xkb("options"),
-    repeatRate: keyboard.number("repeatRate", 0, 1000, true),
-    repeatDelay: keyboard.number("repeatDelay", 0, 10_000, true),
-  });
-
-  const idle = new Section("idle", value.idle, problems).only(["blankAfterSeconds", "sleepAfterSeconds"]);
-  settings.idle.blankAfterSeconds = idle.number("blankAfterSeconds", 0, MAX_BLANK_AFTER) ?? DEFAULT_BLANK_AFTER;
-  settings.idle.sleepAfterSeconds = idle.number("sleepAfterSeconds", 0, MAX_BLANK_AFTER) ?? 0;
-  const menuBar = new Section("menuBar", value.menuBar, problems).only(["batteryPercent", "sound"]);
-  settings.menuBar = { batteryPercent: menuBar.boolean("batteryPercent") ?? false, sound: menuBar.boolean("sound") ?? true };
-  const inputMethod = new Section("inputMethod", value.inputMethod, problems).only(["engine"]);
-  settings.inputMethod = { engine: inputMethod.choice("engine", INPUT_METHODS) ?? DEFAULT_INPUT_METHOD };
-
-  const dock = new Section("dock", value.dock, problems).only([...DOCK_KEYS]);
-  settings.dock = resolveDock({
-    style: dock.choice("style", DOCK_STYLES),
-    autohide: dock.boolean("autohide"),
-    visible: dock.boolean("visible"),
-  });
-  const spaces = new Section("spaces", value.spaces, problems).only(["count", "names", "switchOnActivate", "fullscreenDesktop"]);
-  const names = spaces.get("names") === undefined ? undefined : parseSpaceNames(spaces.get("names"));
-  if (names === null) problems.push("spaces.names must be a list of up to 16 names (or null)");
-  settings.spaces = defined({
-    count: spaces.number("count", 1, 16, true),
-    names: names ?? undefined,
-    switchOnActivate: spaces.boolean("switchOnActivate") ?? true,
-    fullscreenDesktop: spaces.boolean("fullscreenDesktop") ?? true,
-  });
-  const appearance = new Section("appearance", value.appearance, problems).only([
-    "cornerRadius",
-    "reduceMotion",
-    "highlightActiveWindow",
-    "pointerSize",
-    "textSize",
-    "x11Apps",
-    "auto",
-    "wallpaper",
-  ]);
-  settings.appearance.cornerRadius = appearance.choice("cornerRadius", CORNER_NAMES) ?? DEFAULT_CORNERS;
-  settings.appearance.reduceMotion = appearance.boolean("reduceMotion") ?? false;
-  settings.appearance.highlightActiveWindow = appearance.boolean("highlightActiveWindow") ?? false;
-  settings.appearance.pointerSize = appearance.numberChoice("pointerSize", POINTER_SIZES) ?? DEFAULT_POINTER_SIZE;
-  settings.appearance.textSize = appearance.numberChoice("textSize", TEXT_SIZES) ?? DEFAULT_TEXT_SIZE;
-  settings.appearance.x11Apps = appearance.choice("x11Apps", X11_SCALINGS) ?? DEFAULT_X11_SCALING;
-  const wallpaper = new Section("appearance.wallpaper", appearance.get("wallpaper"), problems).only([
-    "path",
-    "mode",
-    "photos",
-    "kind",
-    "shader",
-    "video",
-    "videos",
-    "fps",
-    "pauseOnBattery",
-    ...RETIRED_KEYS,
-  ]);
-  // A file from before live wallpapers has none of the live keys, and means a picture (wallpaper/live/choice.ts).
-  settings.appearance.wallpaper = defined({
-    path: wallpaper.ref("path"),
-    mode: wallpaper.choice("mode", WALLPAPER_MODES) ?? DEFAULT_WALLPAPER_MODE,
-    // A retired kind is a picture, quietly: the still `path` beside it stays.
-    kind: RETIRED_KINDS.some((kind) => kind === wallpaper.get("kind")) ? "picture" : wallpaper.choice("kind", WALLPAPER_KINDS),
-    shader: wallpaper.choice(
-      "shader",
-      LIVE_SHADERS.map((shader) => shader.id),
-    ),
-    video: wallpaper.text("video", isVideoPath, "an absolute path to an MP4, WebM, MKV, or MOV file"),
-    fps: wallpaper.numberChoice("fps", FRAME_RATES),
-    pauseOnBattery: wallpaper.boolean("pauseOnBattery"),
-  }) as WallpaperChoice;
+  readSection("input", value.input, {}, problems, ["touchpad", "mouse"]);
+  const inputs = isRecord(value.input) ? value.input : {};
+  settings.input.touchpad = readSection("input.touchpad", inputs.touchpad, TOUCHPAD, problems);
+  settings.input.mouse = readSection("input.mouse", inputs.mouse, MOUSE, problems);
+  settings.keyboard = readSection("keyboard", value.keyboard, KEYBOARD, problems);
+  const idle = readSection("idle", value.idle, IDLE, problems);
+  settings.idle = { blankAfterSeconds: idle.blankAfterSeconds ?? DEFAULT_BLANK_AFTER, sleepAfterSeconds: idle.sleepAfterSeconds ?? 0 };
+  const menuBar = readSection("menuBar", value.menuBar, MENU_BAR, problems);
+  settings.menuBar = { batteryPercent: menuBar.batteryPercent ?? false, sound: menuBar.sound ?? true };
+  settings.inputMethod = { engine: readSection("inputMethod", value.inputMethod, INPUT_METHOD, problems).engine ?? DEFAULT_INPUT_METHOD };
+  settings.dock = resolveDock(readSection("dock", value.dock, DOCK, problems));
+  const spaces = readSection("spaces", value.spaces, SPACES, problems);
+  settings.spaces = {
+    ...(spaces.count !== undefined ? { count: spaces.count } : {}),
+    ...(spaces.names ? { names: spaces.names } : {}),
+    switchOnActivate: spaces.switchOnActivate ?? true,
+    fullscreenDesktop: spaces.fullscreenDesktop ?? true,
+  };
+  const appearance = readSection("appearance", value.appearance, APPEARANCE, problems, ["wallpaper"]);
+  settings.appearance.cornerRadius = appearance.cornerRadius ?? DEFAULT_CORNERS;
+  settings.appearance.reduceMotion = appearance.reduceMotion ?? false;
+  settings.appearance.highlightActiveWindow = appearance.highlightActiveWindow ?? false;
+  settings.appearance.pointerSize = appearance.pointerSize ?? DEFAULT_POINTER_SIZE;
+  settings.appearance.textSize = appearance.textSize ?? DEFAULT_TEXT_SIZE;
+  settings.appearance.x11Apps = appearance.x11Apps ?? DEFAULT_X11_SCALING;
+  settings.appearance.wallpaper = wallpaperOf(isRecord(value.appearance) ? value.appearance.wallpaper : undefined, problems);
   // Software and the kill switch read the catalogs themselves (shared/applet-store/); here only what is wrong with them is said.
-  const applets = new Section("applets", value.applets, problems).only(["catalogs"]);
-  problems.push(...parseCatalogs(applets.get("catalogs")).problems);
+  readSection("applets", value.applets, {}, problems, ["catalogs"]);
+  problems.push(...parseCatalogs(isRecord(value.applets) ? value.applets.catalogs : undefined).problems);
   return { settings, problems };
 }
 
@@ -398,10 +245,8 @@ export function loadSettings(path: string = settingsPath()): Loaded {
   return parseSettings(decoded);
 }
 
-/** The compositor client's request, which is all applying settings needs. */
-export interface Requester {
-  request(method: string, params?: Record<string, unknown>): Promise<unknown>;
-}
+/** What applying settings asks of the compositor. */
+export type Requester = Pick<Compositor, "input" | "keyboard">;
 
 const hasKeys = (value: object): boolean => Object.keys(value).length > 0;
 const hasInput = (settings: Settings): boolean => hasKeys(settings.input.touchpad) || hasKeys(settings.input.mouse);
@@ -423,16 +268,16 @@ export function keyboardRequest(settings: Settings, previous?: Settings): Keyboa
  * the rest still goes.
  */
 export async function applySettings(compositor: Requester, settings: Settings, previous?: Settings): Promise<void> {
-  const send = async (method: string, params: Record<string, unknown>) => {
+  const send = async (method: string, ask: () => Promise<unknown>) => {
     try {
-      await compositor.request(method, params);
+      await ask();
     } catch (error) {
       console.error(`dashi-shell: dashi-comp refused ${method}:`, error instanceof Error ? error.message : error);
     }
   };
-  if (hasInput(settings) || (previous && hasInput(previous))) await send("input", settings.input);
+  if (hasInput(settings) || (previous && hasInput(previous))) await send("input", () => compositor.input(settings.input));
   const keyboard = keyboardRequest(settings, previous);
-  if (hasKeys(keyboard)) await send("keyboard", { ...keyboard });
+  if (hasKeys(keyboard)) await send("keyboard", () => compositor.keyboard(keyboard));
 }
 
 /** Editors save by writing, renaming, or replacing; wait for the dust to settle. */
