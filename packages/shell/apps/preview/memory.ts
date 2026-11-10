@@ -15,6 +15,7 @@
 import { type FSWatcher, mkdirSync, readFileSync, renameSync, watch, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import { int, isRecord, lenientList, maybe, num, obj, refine, str } from "@dashi/shape";
 
 /** How many recent files are kept, and how many rotations. */
 export const MAX_RECENTS = 10;
@@ -44,10 +45,13 @@ export function memoryPath(env: Record<string, string | undefined> = process.env
   return join(env.XDG_STATE_HOME || join(home, ".local", "state"), "dashi", "preview", "memory.json");
 }
 
-const isPath = (value: unknown): value is string => typeof value === "string" && value.startsWith("/") && !value.includes("\0") && value.length < 4096;
-const isCount = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0;
+const PathShape = refine(str(), (value) => (value.startsWith("/") && !value.includes("\0") && value.length < 4096 ? null : "is not a path"));
+const CountShape = num({ min: 0 });
+const RecentShape = obj({ path: PathShape, openedMs: CountShape }, { strict: false });
+const KeptTurnShape = obj({ turns: int({ min: 1, max: 3 }), size: CountShape, mtimeMs: CountShape }, { strict: false });
+const RecentsShape = lenientList(RecentShape);
 
-/** The memory a file holds; anything odd in it is left out, and a file that isn't one is empty. */
+/** The memory a file holds; anything odd in it is left out (a recent file or a rotation that doesn't fit is dropped), and a file that isn't one is empty. */
 export function parseMemory(text: string): Memory {
   let value: unknown;
   try {
@@ -56,23 +60,16 @@ export function parseMemory(text: string): Memory {
     return { recents: [], turns: {} };
   }
   if (typeof value !== "object" || value === null) return { recents: [], turns: {} };
-  const fields = value as Record<string, unknown>;
+  const fields: Record<string, unknown> = isRecord(value) ? value : {};
   const recents: Recent[] = [];
-  if (Array.isArray(fields.recents)) {
-    for (const entry of fields.recents) {
-      if (typeof entry !== "object" || entry === null) continue;
-      const { path, openedMs } = entry as Record<string, unknown>;
-      if (isPath(path) && isCount(openedMs) && !recents.some((recent) => recent.path === path)) recents.push({ path, openedMs });
-    }
+  for (const recent of maybe(RecentsShape, fields.recents) ?? []) {
+    if (!recents.some((each) => each.path === recent.path)) recents.push(recent);
   }
   const turns: Record<string, KeptTurn> = {};
-  if (typeof fields.turns === "object" && fields.turns !== null && !Array.isArray(fields.turns)) {
-    for (const [path, entry] of Object.entries(fields.turns as Record<string, unknown>)) {
-      if (!isPath(path) || typeof entry !== "object" || entry === null) continue;
-      const kept = entry as Record<string, unknown>;
-      if (Number.isInteger(kept.turns) && (kept.turns as number) >= 1 && (kept.turns as number) <= 3 && isCount(kept.size) && isCount(kept.mtimeMs)) {
-        turns[path] = { turns: kept.turns as number, size: kept.size as number, mtimeMs: kept.mtimeMs as number };
-      }
+  if (isRecord(fields.turns)) {
+    for (const [path, entry] of Object.entries(fields.turns)) {
+      const kept = maybe(KeptTurnShape, entry);
+      if (maybe(PathShape, path) !== null && kept !== null) turns[path] = kept;
     }
   }
   return { recents: recents.slice(0, MAX_RECENTS), turns };

@@ -10,6 +10,7 @@
 
 import { chmodSync, closeSync, fsyncSync, openSync, readFileSync, realpathSync, renameSync, statSync, unlinkSync, writeSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { type Decoded, decodeText } from "./codec.ts";
 
 /** Larger files are refused: the input lays out its whole text on every change. */
@@ -35,8 +36,11 @@ export function stampOf(path: string): Stamp | null {
 
 export const sameStamp = (a: Stamp | null, b: Stamp | null): boolean => a === b || (a !== null && b !== null && a.mtimeMs === b.mtimeMs && a.size === b.size);
 
+/** The code an error from the file system carries (ENOENT…), if it has one. */
+const errorCode = (error: unknown): unknown => (isRecord(error) ? error.code : undefined);
+
 const reason = (error: unknown): string => {
-  const code = (error as { code?: unknown } | null)?.code;
+  const code = errorCode(error);
   if (code === "ENOENT") return "There is no such file.";
   if (code === "EACCES" || code === "EPERM") return "You don't have permission to open it.";
   if (code === "EISDIR") return "It is a folder.";
@@ -91,7 +95,7 @@ export function writeDocument(path: string, bytes: Uint8Array): string | null {
     } catch {
       // Never made.
     }
-    const code = (error as { code?: unknown } | null)?.code;
+    const code = errorCode(error);
     if (code === "ENOENT" || code === "ENOTDIR") return "That folder doesn't exist.";
     if (code !== "EACCES" && code !== "EPERM" && code !== "EROFS") return reason(error);
   }
@@ -105,7 +109,7 @@ export function writeDocument(path: string, bytes: Uint8Array): string | null {
     }
     return null;
   } catch (error) {
-    const code = (error as { code?: unknown } | null)?.code;
+    const code = errorCode(error);
     return code === "EACCES" || code === "EPERM" ? "You don't have permission to save it there." : code === "EROFS" ? "That disk is read-only." : reason(error);
   }
 }
