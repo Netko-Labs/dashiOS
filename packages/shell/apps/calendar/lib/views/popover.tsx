@@ -10,7 +10,7 @@ import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Calendar, Occurrence } from "../../../../src/shared/calendar/types.ts";
 import { fromHere, hereZone, isZone, zoneCity } from "../../../../src/shared/calendar/zones.ts";
-import type { ClockPrefs } from "../../../../src/shared/time/clock.ts";
+import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
 import { alertLabel, repeatSummary, timeSpan, titleOf } from "../format.ts";
 
 export const POPOVER_WIDTH = 270;

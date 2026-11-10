@@ -9,7 +9,7 @@ import { type Bounds, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Day } from "../../../../src/shared/calendar/dates.ts";
 import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
-import type { ClockPrefs } from "../../../../src/shared/time/clock.ts";
+import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
 import { TimeGrid } from "../grid/time-grid.tsx";
 import type { Grid } from "../hooks/use-grid.ts";
 import { isIcsPath } from "../import.ts";

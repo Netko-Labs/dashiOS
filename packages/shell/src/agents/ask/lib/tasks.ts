@@ -19,7 +19,7 @@
  */
 
 import type { Outcome } from "../../../actions/types.ts";
-import { realTimers } from "../../../shared/time/real-timers.ts";
+import { realTimers } from "../../../shared/time/index.ts";
 import { AnswerError } from "../answerer.ts";
 import type { HistoryStep } from "../history.ts";
 import { oneLine, planTools, resultFor, runnable, type Step, settingWords, spokenWords, stepsFrom, type Undo } from "../plan.ts";

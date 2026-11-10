@@ -5,7 +5,7 @@ import { useRegion } from "../../../region/index.ts";
 import { useSettings } from "../../../settings-app/hooks.ts";
 import { describeLayout } from "../../../settings-app/layouts.ts";
 import { useFlags } from "../../../shared/control-center/flags.ts";
-import { useClockPrefs, usesHour24 } from "../../../shared/time/clock.ts";
+import { useClockPrefs, usesHour24 } from "../../../shared/time/index.ts";
 import { useWifi } from "../../../wifi/index.ts";
 import type { SetupContext } from "../context.ts";
 import { runSummary } from "../extras/words.ts";

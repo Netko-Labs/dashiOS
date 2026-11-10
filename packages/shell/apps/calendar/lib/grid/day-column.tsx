@@ -9,7 +9,7 @@ import { useColors } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { addDays, type Day, dayPart, type Local, minuteOfDay } from "../../../../src/shared/calendar/dates.ts";
 import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
-import type { ClockPrefs } from "../../../../src/shared/time/clock.ts";
+import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
 import { tint } from "../colors.ts";
 import { timeSpan, titleOf } from "../format.ts";
 import { GRID_HEIGHT, HOUR_HEIGHT, placeDay, yAtMinutes } from "../layout.ts";

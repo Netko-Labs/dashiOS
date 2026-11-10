@@ -6,8 +6,7 @@
 
 import { Choices, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import type { ClockPrefs } from "../../../../src/shared/time/clock.ts";
-import { weekdayNames } from "../../../../src/shared/time/clock.ts";
+import { type ClockPrefs, weekdayNames } from "../../../../src/shared/time/index.ts";
 import { type Draft, type EndsChoice, type MonthlyBy, nthOf } from "../draft.ts";
 import { nthName } from "../format.ts";
 import { DayField, FormRow, LineText, Stepper } from "./form-fields.tsx";

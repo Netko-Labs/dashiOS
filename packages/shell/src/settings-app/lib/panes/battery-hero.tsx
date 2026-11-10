@@ -13,7 +13,7 @@ import { chargeLine } from "../../../battery/chart.ts";
 import type { Sample } from "../../../battery/history.ts";
 import { useControlColors } from "../../../shared/controls/palette.ts";
 import { LimitBar } from "../../../shared/controls/parts.tsx";
-import { formatTime, useClockPrefs } from "../../../shared/time/clock.ts";
+import { formatTime, useClockPrefs } from "../../../shared/time/index.ts";
 import type { Battery } from "../../../system/battery.ts";
 import { batteryHero, chargeScale } from "../heroes.ts";
 

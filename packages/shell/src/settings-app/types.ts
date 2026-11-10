@@ -13,7 +13,7 @@ import type { GraphicsSettings, PowerSection } from "../power/index.ts";
 import type { KeyboardSettings, MouseSettings, TouchpadSettings } from "../settings-schema.ts";
 import type { CornerName } from "../shared/appearance/corners.ts";
 import type { CatalogSetting } from "../shared/applet-store/catalogs.ts";
-import type { ClockSettings, RegionSettings } from "../shared/time/clock.ts";
+import type { ClockSettings, RegionSettings } from "../shared/time/index.ts";
 import type { SpaceNames } from "../spaces/types.ts";
 import type { WallpaperMode } from "../wallpaper/catalog.ts";
 import type { FrameRate, LiveShader, WallpaperKind } from "../wallpaper/live/choice.ts";

@@ -14,7 +14,7 @@ import { useMemo, useState } from "react";
 import { calendarBridge } from "../calendar/bridge.ts";
 import { MOON } from "../control-center/index.ts";
 import { KeyCatcher } from "../overlay.tsx";
-import { useMinuteClock } from "../shared/time/clock.ts";
+import { useMinuteClock } from "../shared/time/index.ts";
 import { Card, GroupHeader, hasDefaultAction, TextButton } from "./lib/center-parts.tsx";
 import { dateHeading, groupByApp } from "./lib/group.ts";
 import { MonthCard } from "./lib/month-card.tsx";

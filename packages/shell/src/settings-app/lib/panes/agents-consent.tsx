@@ -16,7 +16,7 @@ import { ago, type HistoryEntry } from "../../../agents/ask/history.ts";
 import type { GrantEntry, Scope } from "../../../agents/consent.ts";
 import type { AgentInfo } from "../../../agents/presence.ts";
 import { isPaneId } from "../../../shared/settings/panes.ts";
-import { useClockPrefs } from "../../../shared/time/clock.ts";
+import { useClockPrefs } from "../../../shared/time/index.ts";
 import { useColors } from "../../colors.ts";
 import type { PaneContext } from "../../context.ts";
 import { useGrantEntries, useSettings } from "../../hooks.ts";

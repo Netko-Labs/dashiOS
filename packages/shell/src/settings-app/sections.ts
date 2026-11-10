@@ -28,7 +28,7 @@ import {
 } from "../settings-schema.ts";
 import { isCatalogList } from "../shared/applet-store/catalogs.ts";
 import { type Check, dig, isBoolean, isPhotoPath, isRaw, numberIn, type Raw, readFields } from "../shared/settings/file.ts";
-import { CLOCK_SECTION, type ClockSettings, REGION_SECTION, type RegionSettings } from "../shared/time/clock.ts";
+import { CLOCK_SECTION, type ClockSettings, REGION_SECTION, type RegionSettings } from "../shared/time/index.ts";
 import type {
   AgentsSettings,
   AppearanceSettings,

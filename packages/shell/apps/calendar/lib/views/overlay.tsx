@@ -7,7 +7,7 @@
 import { PopupMenu } from "@dashi/ui";
 import type { Bounds } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import type { ClockPrefs } from "../../../../src/shared/time/clock.ts";
+import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
 import { asksScope } from "../grid/grid-edits.ts";
 import type { CalendarFiles } from "../hooks/use-calendar-files.ts";
 import type { EventEdits } from "../hooks/use-event-edits.ts";

@@ -7,7 +7,7 @@
 import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
-import { elapsedText } from "../shared/time/elapsed.ts";
+import { elapsedText } from "../shared/time/index.ts";
 import { type ScreenRecorder, useRecorder } from "./recorder.ts";
 
 export function RecordingButton({ recorder }: { recorder: ScreenRecorder }) {

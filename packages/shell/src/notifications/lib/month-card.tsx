@@ -11,7 +11,7 @@ import { useState } from "react";
 import { calendarBridge, useBusyDays } from "../../calendar/bridge.ts";
 import { CHEVRON_LEFT, CHEVRON_RIGHT } from "../../control-center/index.ts";
 import { addDays, firstOfMonth, startOfWeek } from "../../shared/calendar/dates.ts";
-import { firstDayIndex, useClockPrefs, weekdayNames } from "../../shared/time/clock.ts";
+import { firstDayIndex, useClockPrefs, weekdayNames } from "../../shared/time/index.ts";
 import { type MonthView, monthGrid, monthTitle, shiftMonth } from "./month.ts";
 
 const CELL = { height: 26, dot: 24 } as const;

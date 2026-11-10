@@ -7,7 +7,7 @@ import { TRUE_BLACK, useColors, useDark, useSurface } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { addMinutes, type Day, dayPart, monthOf } from "../../../../src/shared/calendar/dates.ts";
 import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
-import type { ClockPrefs } from "../../../../src/shared/time/clock.ts";
+import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
 import { tint } from "../colors.ts";
 import { dayNumber, monthDay } from "../format.ts";
 import { occurrenceKey } from "../grid/event-block.tsx";

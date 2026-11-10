@@ -11,7 +11,7 @@
  * entry while it is connected, whatever its run did. Pure.
  */
 
-import { elapsedText } from "../shared/time/elapsed.ts";
+import { elapsedText } from "../shared/time/index.ts";
 import { currentStep, harnessGlyph, isWorking, type RunView } from "./handoff/index.ts";
 import type { AgentInfo, Watching } from "./presence.ts";
 

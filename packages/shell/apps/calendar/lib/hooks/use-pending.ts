@@ -5,7 +5,7 @@
 
 import { useRef, useState } from "react";
 import { type Day, dayPart } from "../../../../src/shared/calendar/dates.ts";
-import { type ClockPrefs, usesHour24 } from "../../../../src/shared/time/clock.ts";
+import { type ClockPrefs, usesHour24 } from "../../../../src/shared/time/index.ts";
 import { pendingAt, pendingInput } from "../grid/grid-edits.ts";
 import type { Pending } from "../grid/inline-title.tsx";
 import type { CalendarModel } from "../model.ts";

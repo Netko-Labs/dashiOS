@@ -6,7 +6,7 @@
  */
 
 import type { SettingsStore } from "../settings-app/store.ts";
-import { clockPrefs, clockPrefsFrom } from "../shared/time/clock.ts";
+import { clockPrefs, clockPrefsFrom } from "../shared/time/index.ts";
 import type { RegionBackend } from "./lib/backend.ts";
 import { applyFormats, type FormatsDeps } from "./lib/formats.ts";
 import { RegionStore } from "./store.ts";

@@ -9,7 +9,7 @@
 import { readFileSync, statSync } from "node:fs";
 import { useEffect, useState } from "react";
 import { settingsPath } from "../../../src/shared/settings/file.ts";
-import { type ClockPrefs, clockPrefsFrom, DEFAULT_CLOCK_PREFS, firstDayIndex, readRegionSettings } from "../../../src/shared/time/clock.ts";
+import { type ClockPrefs, clockPrefsFrom, DEFAULT_CLOCK_PREFS, firstDayIndex, readRegionSettings } from "../../../src/shared/time/index.ts";
 
 export interface RegionPrefs {
   clock: ClockPrefs;

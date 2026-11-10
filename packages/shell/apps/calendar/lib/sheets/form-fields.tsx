@@ -10,7 +10,7 @@ import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { addDays, type Day } from "../../../../src/shared/calendar/dates.ts";
 import { hereZone, parseZone, zoneCity } from "../../../../src/shared/calendar/zones.ts";
-import { type ClockPrefs, usesHour24 } from "../../../../src/shared/time/clock.ts";
+import { type ClockPrefs, usesHour24 } from "../../../../src/shared/time/index.ts";
 import { clock, weekdayShort } from "../format.ts";
 import { CALENDAR } from "../glyphs.ts";
 import { dateOrder, formatDayText, parseDayText, parseTimeText } from "../timetext.ts";

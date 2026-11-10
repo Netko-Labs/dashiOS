@@ -44,7 +44,7 @@ import {
   type Shown,
   type ViewFrame,
 } from "../actions/index.ts";
-import { realTimers, type Timers } from "../shared/time/real-timers.ts";
+import { realTimers, type Timers } from "../shared/time/index.ts";
 
 /** How long an instant command, a chosen row, or a view's answer may take before it is given up. */
 export const COMMAND_TIMEOUT_MS = 10_000;

@@ -10,7 +10,7 @@ import type { Bounds, WindowKeyInfo } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Day } from "../../../../src/shared/calendar/dates.ts";
 import type { Occurrence } from "../../../../src/shared/calendar/types.ts";
-import type { ClockPrefs } from "../../../../src/shared/time/clock.ts";
+import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
 import { useDoubleClick } from "../grid/double-click.ts";
 import { type Drag, useGesture } from "../grid/gesture.ts";
 import { finishDrag } from "../grid/grid-drop.ts";

@@ -9,7 +9,7 @@
 import { Text, View } from "@mirinjs/metal";
 import { LocalePickers } from "../../../region/pickers.tsx";
 import { describeFailure, type RegionStore, useRegion } from "../../../region/store.ts";
-import { firstDayIndex, previewFormats, useClockPrefs, useMinuteClock, weekdayNames } from "../../../shared/time/clock.ts";
+import { firstDayIndex, previewFormats, useClockPrefs, useMinuteClock, weekdayNames } from "../../../shared/time/index.ts";
 import { useColors } from "../../colors.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";

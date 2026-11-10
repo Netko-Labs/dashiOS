@@ -29,7 +29,7 @@ import { CapturePill, type ScreenCaptureStore, useScreenCapture } from "../../sc
 import { useSettings } from "../../settings-app/hooks.ts";
 import type { SettingsStore } from "../../settings-app/store.ts";
 import { controlFlags, useFlags } from "../../shared/control-center/flags.ts";
-import { formatClock, useClockPrefs, useMinuteClock } from "../../shared/time/clock.ts";
+import { formatClock, useClockPrefs, useMinuteClock } from "../../shared/time/index.ts";
 import { type AppMixer, MicPill, useMicWords } from "../../sound/index.ts";
 import { type SystemStore, useSystem } from "../../system/store.ts";
 import { extraGoes } from "./menubar-fit.ts";

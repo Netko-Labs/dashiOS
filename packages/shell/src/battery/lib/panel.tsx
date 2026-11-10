@@ -15,7 +15,7 @@ import type { ReactNode } from "react";
 import type { MenuEntry, StatusMenuAction } from "../../menus/index.ts";
 import { useControlColors, usePanelEdge } from "../../shared/controls/palette.ts";
 import { LimitBar } from "../../shared/controls/parts.tsx";
-import { formatTime, useClockPrefs } from "../../shared/time/clock.ts";
+import { formatTime, useClockPrefs } from "../../shared/time/index.ts";
 import type { Battery } from "../../system/battery.ts";
 import { chargeLine } from "../chart.ts";
 import type { BatteryMonitorState } from "../monitor.ts";
