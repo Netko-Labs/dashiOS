@@ -6,9 +6,9 @@ import { useControlState } from "./control-state.tsx";
 import { useColors } from "./theme/index.ts";
 
 /**
- * A push button: kombu for the one that goes ahead, ume (`danger`) for one
+ * A push button: ink for the one that goes ahead, ume (`danger`) for one
  * that can't be taken back. A secondary button has an edge, so it reads
- * against any ground; `isDefault` rings it in kombu: it is what Enter presses
+ * against any ground; `isDefault` edges it 2 px in ink: it is what Enter presses
  * (a destructive sheet's Cancel). It deepens under the pointer and more while
  * held; disabled, the whole button is dimmed (UI-4, button-look.ts).
  */

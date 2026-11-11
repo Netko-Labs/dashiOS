@@ -91,7 +91,7 @@ export function TextInfoDialog({ spec, answer }: { spec: TextInfoSpec; answer: A
             padding: 8,
             fontSize: 12,
             color: colors.text,
-            focusBorderColor: colors.selection,
+            focusBorderColor: colors.focusRing,
           }}
         />
       ) : (

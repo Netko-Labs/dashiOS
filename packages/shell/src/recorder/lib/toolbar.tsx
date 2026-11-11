@@ -10,7 +10,7 @@
  * recording the screen" in the toolbar instead of closing it on nothing.
  */
 
-import { useColors } from "@dashi/ui";
+import { buttonLook, useColors } from "@dashi/ui";
 import { Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { OpenOverlay, OverlayHandle } from "../../overlay.tsx";
@@ -55,6 +55,7 @@ function Toolbar({
   refuse?: (choice: ToolbarChoice) => string | null;
 }) {
   const colors = useColors();
+  const goLook = buttonLook(colors, "primary");
   const [mode, setMode] = useState(initial.mode);
   const [microphone, setMicrophone] = useState(initial.microphone);
   const [notice, setNotice] = useState<string | null>(null);
@@ -131,9 +132,16 @@ function Toolbar({
       <View
         testID="capture-toolbar:go"
         onPress={go}
-        style={{ height: 30, paddingHorizontal: 14, borderRadius: 7, justifyContent: "center", backgroundColor: colors.selection }}
+        style={{
+          height: 30,
+          paddingHorizontal: 14,
+          borderRadius: 7,
+          justifyContent: "center",
+          backgroundColor: goLook.fill,
+          hoverBackgroundColor: goLook.hover,
+        }}
       >
-        <Text style={{ fontSize: 13, fontWeight: "semibold", color: "#ffffff" }}>{ACTION[mode]}</Text>
+        <Text style={{ fontSize: 13, fontWeight: "semibold", color: goLook.ink }}>{ACTION[mode]}</Text>
       </View>
     </View>
   );

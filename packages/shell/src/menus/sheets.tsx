@@ -4,7 +4,7 @@
  * modules' (Wi-Fi, Bluetooth, accounts, polkit) use them.
  */
 
-import { useColors } from "@dashi/ui";
+import { buttonLook, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 
@@ -51,6 +51,7 @@ export function Button({
   onPress: () => void;
 }) {
   const colors = useColors();
+  const look = buttonLook(colors, "primary");
   return (
     <View
       testID={testID}
@@ -61,11 +62,12 @@ export function Button({
         alignItems: "center",
         justifyContent: "center",
         borderRadius: 7,
-        backgroundColor: primary ? colors.selection : colors.button,
+        backgroundColor: primary ? look.fill : colors.button,
+        hoverBackgroundColor: primary && !disabled ? look.hover : primary ? look.fill : colors.button,
         opacity: disabled ? 0.45 : 1,
       }}
     >
-      <Text style={{ fontSize: 13, fontWeight: primary ? "semibold" : "normal", color: primary ? "#ffffff" : colors.text }}>{label}</Text>
+      <Text style={{ fontSize: 13, fontWeight: primary ? "semibold" : "normal", color: primary ? look.ink : colors.text }}>{label}</Text>
     </View>
   );
 }

@@ -54,7 +54,7 @@ export function Choices<T extends string | number>({
 function Pill({ label, chosen, testID, onPress }: { label: string; chosen: boolean; testID: string; onPress?: () => void }) {
   const colors = useColors();
   const state = useControlState({ disabled: onPress === undefined });
-  const look = buttonLook(colors, chosen ? "primary" : "secondary", { pressed: state.pressed });
+  const look = buttonLook(colors, chosen ? "chosen" : "secondary", { pressed: state.pressed });
   return (
     <View
       testID={testID}

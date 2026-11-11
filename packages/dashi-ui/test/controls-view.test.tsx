@@ -26,9 +26,10 @@ test("a disabled button is the whole button dimmed, and a shown press deepens it
   );
   await settle();
   expect(host.last()).toContain('"opacity":0.4');
-  // Still kombu, not gray: a disabled primary reads as primary.
-  expect(host.last()).toContain(lightColors.selection);
-  expect(host.last()).toContain(lightColors.selectionPressed);
+  // Still ink, not gray and not kombu: a disabled primary reads as primary.
+  expect(host.last()).toContain(lightColors.primary);
+  expect(host.last()).toContain(lightColors.primaryPressed);
+  expect(host.last()).not.toContain(lightColors.selection);
   root.unmount();
 });
 

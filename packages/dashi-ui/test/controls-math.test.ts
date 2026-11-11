@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buttonLook } from "../src/button-look.ts";
-import { isHeld } from "../src/control-state.tsx";
+import { DISABLED_OPACITY, isHeld } from "../src/control-state.tsx";
 import { litAfter, MENU, menuFits, menuHeight, placeMenu, rowTop } from "../src/menu-place.ts";
 import { popUpMenuWidth, popUpOrigin } from "../src/popup-button.tsx";
 import { isSeparator, MENU_SEPARATOR, type MenuEntry, tidyEntries } from "../src/popup-menu.tsx";
@@ -8,6 +8,7 @@ import { clampFraction, SPOKES, SWEEP_TICKS, spinnerMarkup, spokeOpacities, swee
 import { fractionAt, fractionOf, keyValues, knobLeft, nearestIndex, UNIT_RANGE, valueAt } from "../src/slider-math.ts";
 import { contrastRatio } from "../src/theme/contrast.ts";
 import { darkColors, lightColors } from "../src/theme/palette.ts";
+import { DARK_SURFACE, LIGHT_SURFACE } from "../src/theme/surface.ts";
 
 describe("the slider's arithmetic", () => {
   const range = { min: -1, max: 1, step: 0.05 };
@@ -155,17 +156,40 @@ describe("states", () => {
     ["light", lightColors],
     ["dark", darkColors],
   ] as const) {
-    test(`${mode}: buttons deepen under the pointer and more when held, white staying AA`, () => {
-      for (const kind of ["primary", "danger"] as const) {
+    test(`${mode}: buttons deepen under the pointer and more when held, their words staying AA`, () => {
+      for (const kind of ["primary", "danger", "chosen"] as const) {
         const rest = buttonLook(colors, kind);
         const held = buttonLook(colors, kind, { pressed: true });
-        expect(held.fill).not.toBe(rest.fill);
-        for (const fill of [rest.fill, rest.hover, held.fill]) expect(contrastRatio("#ffffff", fill)).toBeGreaterThanOrEqual(4.5);
+        const fills = [rest.fill, rest.hover, held.fill];
+        // Deeper each step (darker, in Dark's light primary too), the words AA on every one.
+        const [atRest = 0, over = 0, down = 0] = fills.map((fill) => contrastRatio(fill, "#000000"));
+        expect(over).toBeLessThan(atRest);
+        expect(down).toBeLessThan(over);
+        for (const fill of fills) expect(contrastRatio(rest.ink, fill)).toBeGreaterThanOrEqual(4.5);
+        expect(held.ink).toBe(rest.ink);
       }
       const secondary = buttonLook(colors, "secondary");
       expect(buttonLook(colors, "secondary", { pressed: true }).fill).toBe(colors.pressed);
       expect(secondary.edge).toBe(colors.controlEdge);
-      expect(buttonLook(colors, "secondary", { isDefault: true })).toMatchObject({ edge: colors.selection, edgeWidth: 2 });
+      expect(buttonLook(colors, "secondary", { isDefault: true })).toMatchObject({ edge: colors.primary, edgeWidth: 2 });
+    });
+    test(`${mode}: the primary button is ink, never kombu, and a chosen pill is kombu, never ink`, () => {
+      const primary = buttonLook(colors, "primary");
+      expect(primary).toMatchObject({ fill: colors.text, ink: colors.onPrimary, edge: colors.text });
+      expect([primary.fill, primary.hover, buttonLook(colors, "primary", { pressed: true }).fill]).not.toContain(colors.selection);
+      expect(buttonLook(colors, "chosen")).toMatchObject({ fill: colors.selection, ink: "#ffffff" });
+      // Danger stays ume.
+      expect(buttonLook(colors, "danger").fill).toBe(colors.umeFill);
+    });
+    test(`${mode}: disabled at 40% a primary still reads as primary, and a default button's ink edge is 3:1`, () => {
+      const surface = mode === "light" ? LIGHT_SURFACE : DARK_SURFACE;
+      const dimmed = `${colors.primary}${Math.round(DISABLED_OPACITY * 255).toString(16)}`;
+      for (const ground of [surface.window, surface.sidebar, surface.card]) {
+        // The dimmed fill still stands off its ground further than a secondary button's quiet fill does.
+        expect(contrastRatio(dimmed, ground)).toBeGreaterThanOrEqual(2);
+        expect(contrastRatio(dimmed, ground)).toBeGreaterThan(contrastRatio(colors.button, ground) + 0.5);
+        expect(contrastRatio(colors.primary, ground)).toBeGreaterThanOrEqual(3);
+      }
     });
   }
 });

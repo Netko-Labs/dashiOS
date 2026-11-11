@@ -1,7 +1,8 @@
 /**
  * The state chip on every card, row and page, apps and applets alike: Get,
- * Open, or Update as a pill (kombu words, `accentInk`); "Installed" or "Needs
- * a newer Dashi" as plain words, since a pill that does nothing shouldn't
+ * Open, or Update as a quiet pill with bold ink words (green means on, and
+ * nothing here is on; the page's own Get is the ink primary button);
+ * "Installed" or "Needs a newer Dashi" as plain words, since a pill that does nothing shouldn't
  * look like a button; and while a change runs or waits, its progress with a
  * × that stops it (the queue can take back any change, from anywhere).
  */
@@ -78,7 +79,7 @@ export function StateChip({ chip, onPress, onCancel, testID, wide }: StateChipPr
         hoverBackgroundColor: colors.separator,
       }}
     >
-      <Text style={{ fontSize: 12, fontWeight: "bold", color: colors.accentInk }}>{chipLabel(chip)}</Text>
+      <Text style={{ fontSize: 12, fontWeight: "bold", color: colors.text }}>{chipLabel(chip)}</Text>
     </View>
   );
 }

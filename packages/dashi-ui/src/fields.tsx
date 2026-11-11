@@ -122,7 +122,7 @@ export function TextField({ value, onChangeText, testID, placeholder, width, aut
         placeholderColor: colors.textDisabled,
         backgroundColor: surface.card,
         borderColor: colors.separator,
-        focusBorderColor: colors.selection,
+        focusBorderColor: colors.focusRing,
       }}
     />
   );

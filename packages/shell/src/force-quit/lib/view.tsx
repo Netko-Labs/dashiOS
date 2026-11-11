@@ -5,7 +5,7 @@
  * asks in the same panel. Esc closes (or backs out of the question).
  */
 
-import { rowLook, SelectionBar, useColors } from "@dashi/ui";
+import { buttonLook, rowLook, SelectionBar, useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import { KeyCatcher, type NavigationKey } from "../../overlay.tsx";
@@ -22,6 +22,7 @@ const ROW_HEIGHT = 32;
 
 function Button({ label, primary, disabled, testID, onPress }: { label: string; primary?: boolean; disabled?: boolean; testID: string; onPress: () => void }) {
   const colors = useColors();
+  const look = buttonLook(colors, "primary");
   return (
     <View
       testID={testID}
@@ -33,14 +34,15 @@ function Button({ label, primary, disabled, testID, onPress }: { label: string; 
         alignItems: "center",
         justifyContent: "center",
         borderRadius: 7,
-        backgroundColor: primary && !disabled ? colors.selection : colors.button,
+        backgroundColor: primary && !disabled ? look.fill : colors.button,
+        hoverBackgroundColor: primary && !disabled ? look.hover : colors.button,
       }}
     >
       <Text
         style={{
           fontSize: 13,
           fontWeight: primary && !disabled ? "semibold" : "normal",
-          color: disabled ? colors.textDisabled : primary ? "#ffffff" : colors.text,
+          color: disabled ? colors.textDisabled : primary ? look.ink : colors.text,
         }}
       >
         {label}

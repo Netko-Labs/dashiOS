@@ -42,7 +42,7 @@ export function ButtonsPage() {
           )}
         </States>
       </Exhibit>
-      <Exhibit title="Default button" note="A secondary button Enter presses wears the kombu ring: a destructive sheet's Cancel.">
+      <Exhibit title="Default button" note="A secondary button Enter presses wears a 2 px ink edge: a destructive sheet's Cancel.">
         <States states={["enabled", "pressed", "disabled"]}>
           {({ state, disabled }) => <Button testID={`button:${state}:default`} label="Cancel" isDefault disabled={disabled} onPress={noop} />}
         </States>

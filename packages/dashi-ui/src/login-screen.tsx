@@ -21,7 +21,7 @@ import { darkColors, TRUE_BLACK } from "./theme/palette.ts";
  * Mode is: the greeter runs before anyone's setting is known.
  */
 export const LOGIN_GROUND = `${TRUE_BLACK.ground}b8`;
-/** The focus ring on the login screen's dark ground, whatever Dark Mode is (KB-2): the dark palette's kombu. */
+/** The focus ring on the login screen's dark ground, whatever Dark Mode is (KB-2): the dark palette's purple. */
 export const LOGIN_FOCUS_RING = darkColors.focusRing;
 /** Its words: Dark's ink, and 70% of it for the day and the hints. */
 export const LOGIN_INK = TRUE_BLACK.ink;

@@ -52,9 +52,10 @@ test("Enter on a destructive sheet cancels, and only the ume button deletes", as
   expect(answers).toEqual(["cancel", "cancel"]);
   host.emit({ type: "press", nodeId: root.nodeId("ask:ok") as string });
   expect(answers).toEqual(["cancel", "cancel", "confirm"]);
-  // The destructive button is ume's fill, and Cancel wears the default ring in kombu.
+  // The destructive button is ume's fill, and Cancel wears the default's 2 px ink edge (no kombu: nothing is on).
   expect(host.last()).toContain("#B8475C");
-  expect(host.last()).toContain("#357A64");
+  expect(host.last()).toContain('"borderWidth":2,"borderColor":"#1d1d1f"');
+  expect(host.last()).not.toContain("#357A64");
   root.unmount();
 });
 
