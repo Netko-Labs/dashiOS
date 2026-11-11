@@ -9,12 +9,13 @@
  * Menu bar applets are a section of it: the Applet Store folded in here.
  */
 
-import { runPower } from "../../src/menus/session.ts";
+import { powerMachine } from "../../src/shared/logind/index.ts";
+import { powerAction } from "../../src/shared/session-power/index.ts";
 import { runApp } from "../kit/index.ts";
 import { createServices, ServicesContext } from "./lib/services.ts";
 import { SOFTWARE_SIZE, SoftwareWindow } from "./lib/view.tsx";
 
-const services = createServices(() => runPower("restart"));
+const services = createServices(() => powerAction("restart", undefined, powerMachine));
 
 runApp(
   { id: "dev.dashi.software", title: "Software", size: SOFTWARE_SIZE },

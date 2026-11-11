@@ -7,8 +7,8 @@
  * them; nothing here touches the system.
  */
 
-import { COMPOSITOR, findAncestor, isNested } from "../menus/index.ts";
 import { type AppLook, gtkThemeName, INTERFACE_FONT, WINDOW_BUTTONS } from "../shared/appearance/index.ts";
+import { COMPOSITOR, findAncestor, isNested } from "../shared/session-power/index.ts";
 
 /** One program and its arguments; never a shell string. */
 export type AppCommand = readonly string[];

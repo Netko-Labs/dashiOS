@@ -1,6 +1,4 @@
 export { chargeTarget, fullChargeDone } from "./battery-health.ts";
-export { LOGIND, Logind, MANAGER, MANAGER_PATH } from "./logind.ts";
-export { type MachineAction, powerMachine } from "./machine.ts";
 export type { PowerSource } from "./modes/automatic.ts";
 export { parseRecipes } from "./modes/recipes.ts";
 export {

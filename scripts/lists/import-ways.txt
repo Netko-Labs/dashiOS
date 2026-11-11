@@ -2,4 +2,3 @@
 1	packages/shell/apps/installer/lib/view.tsx
 1	packages/shell/apps/portal/lib/look.ts
 1	packages/shell/apps/software/lib/services.ts
-1	packages/shell/apps/software/main.tsx

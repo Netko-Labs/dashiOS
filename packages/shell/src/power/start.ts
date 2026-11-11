@@ -16,8 +16,9 @@
  */
 
 import type { Compositor } from "../compositor/index.ts";
-import { compositorAbove, isRealSession } from "../menus/index.ts";
 import type { ConnectOptions } from "../shared/dbus/index.ts";
+import { Logind } from "../shared/logind/index.ts";
+import { compositorAbove, isRealSession } from "../shared/session-power/index.ts";
 import { type Clock, systemClock } from "./lib/clock.ts";
 import { logindLocks, type TakeLock } from "./lib/inhibit.ts";
 import { LockWatch } from "./lib/lockwatch.ts";
@@ -27,7 +28,6 @@ import { ScreenLock } from "./lib/screenlock.ts";
 import { watchSession } from "./lib/session.ts";
 import { DEFAULT_POWER_SETTINGS, type PowerSettings } from "./lib/settings.ts";
 import { SLEEP_LOCK, SleepGuard } from "./lib/sleep.ts";
-import { Logind } from "./logind.ts";
 import { powerOffReason } from "./nested.ts";
 
 export interface PowerOptions {

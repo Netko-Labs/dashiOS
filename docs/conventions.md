@@ -285,8 +285,8 @@ Imports between modules (H19):
   loads every file a barrel re-exports:
   - the importer runs in another process (an app, a program under `bin/`) or
     off the shell's start-up path, and the index would load the module's
-    start-up (`apps/software` names `menus/session.ts`; the sheet pieces'
-    users name `menus/sheets.tsx`);
+    start-up (the choosers name `shared/file-browser/chooser-view.tsx`; the
+    sheet pieces' users name `menus/sheets.tsx`);
   - the index would close an import cycle (H5): the module's start-up imports
     the importer.
   `bun scripts/entry-weight.ts --compare <base>` fails when a change makes an
@@ -354,7 +354,6 @@ packages/shell/src/menus/
   model.ts          what each menu holds, as data (buildMenu, barMenus)
   bar-keys.ts       the bar's keyboard ring (⌃F2)
   sheets.tsx        Panel, Button, SHEET_SIZE: the pieces other modules' sheets use
-  session.ts        power and log out (runPower), also used by Software
   status-menu.ts    a status item's rows
   launch.ts         findEntry, Help
   lib/

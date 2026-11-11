@@ -7,7 +7,7 @@
  * stays with the password on the lock screen; nothing else may open it.
  */
 
-import type { Logind } from "../logind.ts";
+import type { Logind } from "../../shared/logind/index.ts";
 import type { LockWatch } from "./lockwatch.ts";
 import { sayOnce } from "./log.ts";
 

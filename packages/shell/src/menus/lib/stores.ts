@@ -7,11 +7,11 @@ import { BluetoothStore, PairingPrompt } from "../../bluetooth/index.ts";
 import { DeviceStore, radiosFor } from "../../control-center/index.ts";
 import { holdingBar } from "../../menubar/bar-hold.ts";
 import { openOverlay } from "../../overlay.tsx";
+import { runPower } from "../../shutdown.ts";
 import { followOutputVolume, SoundStore, soundBackendFor } from "../../sound/index.ts";
 import { run as runCommand } from "../../system/exec.ts";
 import { PasswordPrompt, type WifiStore } from "../../wifi/index.ts";
 import type { EntryFor, MenusOptions } from "../options.ts";
-import { runPower } from "../session.ts";
 import { Dialogs } from "./dialogs.tsx";
 import { holdingPlace } from "./holding-place.ts";
 

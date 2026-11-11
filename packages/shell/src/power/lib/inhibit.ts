@@ -10,7 +10,7 @@
  */
 
 import { closeFd, FdConnection, type FdConnectOptions } from "../../shared/dbus/index.ts";
-import { LOGIND, MANAGER, MANAGER_PATH } from "../logind.ts";
+import { LOGIND, MANAGER, MANAGER_PATH } from "../../shared/logind/index.ts";
 
 export interface InhibitRequest {
   /** What is inhibited: `sleep`, `handle-power-key`, and the other logind names, joined with colons. */

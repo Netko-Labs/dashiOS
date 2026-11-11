@@ -9,8 +9,8 @@
  * (`isRealSession`) serves every power path, and it fails closed.
  *
  * Suspend, restart, and power off are logind's (`Manager.Suspend`, `Reboot`,
- * `PowerOff` on the system bus, power/machine.ts), not `systemctl`'s; restart
- * and power off give the apps 10 s first, then go regardless (shutdown.ts).
+ * `PowerOff` on the system bus, shared/logind/machine.ts), not `systemctl`'s; restart
+ * and power off give the apps 10 s first, then go regardless (src/shutdown.ts).
  *
  * Logging out has no compositor IPC yet. On the real display (dashi-comp
  * owns DRM/KMS, started from a login) it ends the login session with
@@ -21,13 +21,14 @@
  */
 
 import { readFileSync } from "node:fs";
-import type { MachineAction } from "../power/machine.ts";
-import { spawnDetached } from "../shared/apps/index.ts";
-import { statParent } from "../shared/processes/kernel.ts";
-import { powerAfterApps } from "../shutdown.ts";
-import type { PowerKind } from "./types.ts";
+import { spawnDetached } from "../apps/index.ts";
+import type { MachineAction } from "../logind/index.ts";
+import { statParent } from "../processes/kernel.ts";
 
 export const COMPOSITOR = "dashi-comp";
+
+/** What a person can ask of the session or the machine. */
+export type PowerAction = "sleep" | "restart" | "shutdown" | "logout";
 
 /** Parents followed before giving up; a session's ancestry is a handful deep. */
 const MAX_DEPTH = 16;
@@ -83,18 +84,20 @@ const readText = (path: string): string | null => {
 };
 
 /** What a power action does: the machine's command (a real session only), refused otherwise, or log out. */
-export function planPower(what: "sleep" | PowerKind, real: boolean): "machine" | "refuse" | "logout" {
+export function planPower(what: PowerAction, real: boolean): "machine" | "refuse" | "logout" {
   if (what === "logout") return "logout";
   return real ? "machine" : "refuse";
 }
 
 /**
- * Runs a power action now (the sheet already asked). `machine` asks logind;
- * it is only called for a real session.
+ * Runs a power action now (the sheet already asked). `machine` asks logind
+ * (the shell's `runPower` closes the apps first, shutdown.ts; another program
+ * asks logind at once, `powerMachine`); it is only called for a real session.
  */
-export function runPower(what: "sleep" | PowerKind, above: Above = compositorAbove(), machine: (what: MachineAction) => Promise<void> = powerAfterApps): void {
-  const { compositor, nested } = above;
-  switch (planPower(what, isRealSession(above))) {
+export function powerAction(what: PowerAction, above: Above | undefined, machine: (what: MachineAction) => Promise<void>): void {
+  const here = above ?? compositorAbove();
+  const { compositor, nested } = here;
+  switch (planPower(what, isRealSession(here))) {
     case "refuse":
       console.error(
         `dashi-shell: not asking logind to ${what}: this is not a Dashi session of its own (nested, run by hand, or dashi-comp unreadable), so this machine is someone's desktop`,
