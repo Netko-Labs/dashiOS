@@ -41,6 +41,9 @@ the same change.
   callers change with it.
 - `docs/conventions.md` - shared code-style, structure, safety, and verification
   rules.
+- `docs/decisions.md` - the decision log: how to decide a dilemma, and the calls
+  already made (why, cost, how to undo). Read it before asking the owner; add an
+  entry in the commit that makes a new call.
 - `RECOVERY.md` - what was recovered from 0.1.0 and what was lost.
 - `docs/*.html` - the illustrated guides (open `docs/index.html`): the distro
   spec and the design guidelines (`docs/design.html`: the brand, voice, the

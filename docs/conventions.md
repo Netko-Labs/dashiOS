@@ -90,6 +90,8 @@ scripts/check-biome.ts --shrink`, which also follows the file.
 - `docs/compositor-ipc.md`: the IPC protocol between dashi-comp and the shell.
   Both sides change in the same commit as this doc.
 - `docs/conventions.md`: this rulebook.
+- `docs/decisions.md`: the decision log: how to decide a dilemma, and the
+  calls already made, each with why, its cost and how to undo it.
 - `RECOVERY.md`: what was recovered from 0.1.0 and what was lost.
 - `docs/*.html` (start at `docs/index.html`): the distro spec and the design
   guidelines (`docs/design.html`: brand, voice, the mascot, and the rules
@@ -628,6 +630,9 @@ If a check cannot be run, state why and name the residual risk.
 
 - Prefer the smallest safe change that solves the problem; follow existing
   patterns before introducing new abstractions; fix root causes.
+- Facing a dilemma, read `docs/decisions.md` first: decide as it says, and
+  add an entry in the commit when the call is new. Ask the owner only for what
+  can't be undone (its Part A says which).
 - Do not add dependencies unless the current stack cannot solve the problem
   cleanly.
 - Keep changes scoped. Update docs, packaging, and version notes with the
