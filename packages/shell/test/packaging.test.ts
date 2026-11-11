@@ -7,7 +7,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 const ROOT = join(import.meta.dir, "../../..");
 
@@ -103,5 +103,31 @@ describe("Dashi's own libraries", () => {
     const wanted = needed(["@dashi/shell", "@dashi/greeter"], dirs);
     expect(wanted.has("@dashi/shape")).toBe(true);
     for (const name of wanted) expect([...shipped], name).toContain(name);
+  });
+
+  test("installed, every file: dependency of a library is a package beside it", () => {
+    const script = readFileSync(join(ROOT, "spin/build-rpms"), "utf8");
+    // The rewrite build-rpms makes in each library's package.json, run as it runs it.
+    const rewrite = /sed -i '([^']+)' "\$modules\/@dashi\/\$library\/package\.json"/.exec(script)?.[1];
+    expect(rewrite).toBeDefined();
+    const modules = "/usr/share/dashi/node_modules";
+    const libraries = readdirSync(join(ROOT, "packages")).filter((entry) => !["shell", "greeter"].includes(entry));
+    const shipped = new Set([`${modules}/@mirinjs/metal`]);
+    const names = new Map<string, string>();
+    for (const entry of libraries) {
+      const manifest: unknown = JSON.parse(readFileSync(join(ROOT, "packages", entry, "package.json"), "utf8"));
+      const name = typeof manifest === "object" && manifest && "name" in manifest ? String(manifest.name) : entry;
+      names.set(entry, name);
+      shipped.add(`${modules}/${name}`);
+    }
+    for (const entry of libraries) {
+      const text = run(["sed", rewrite ?? "", join(ROOT, "packages", entry, "package.json")]).output;
+      const manifest: unknown = JSON.parse(text);
+      const dependencies = typeof manifest === "object" && manifest && "dependencies" in manifest ? manifest.dependencies : {};
+      for (const [dependency, spec] of Object.entries(dependencies ?? {})) {
+        if (typeof spec !== "string" || !spec.startsWith("file:")) continue;
+        expect([...shipped], `${entry}: ${dependency}`).toContain(resolve(`${modules}/${names.get(entry)}`, spec.slice(5)));
+      }
+    }
   });
 });
