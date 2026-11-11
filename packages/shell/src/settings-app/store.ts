@@ -28,57 +28,29 @@
  * Writes are read-modify-write on the file as it is now, so keys this module
  * does not know (another section, a setting from a newer shell) survive, and
  * atomic: a temp file in the same directory, flushed, then renamed over the
- * file, so a crash never leaves half a file for the shell's watcher to read.
+ * file, so a crash never leaves half a file for the shell's watcher to read
+ * (shared/settings/write.ts).
  * Every value is checked before it is written and again when it is read; a
  * value of the wrong kind is ignored on read (and kept in the file until the
  * person changes that setting).
  */
 
-import { closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync, watch, writeSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { existsSync, readFileSync, watch } from "node:fs";
+import { basename, dirname } from "node:path";
 import { UndoStack } from "@dashi/ui";
 import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { isRefreshChoice, type RefreshChoice } from "../display-config/refresh-policy.ts";
-import { type Check, isRaw, type Raw, settingsPath } from "../shared/settings/index.ts";
+import { type Check, ensure, isRaw, prune, type Raw, settingsPath, updateSettingsFile } from "../shared/settings/index.ts";
 import { changesPath } from "./lib/changes/file.ts";
 import { ChangeLog, type Change as LoggedChange } from "./lib/changes/log.ts";
 import { describeChanges } from "./lib/changes/words.ts";
-import { type Change, ensure, isOutputName, isScale, prune, readSettings, SECTIONS, type SectionName } from "./sections.ts";
+import { type Change, isOutputName, isScale, readSettings, SECTIONS, type SectionName } from "./sections.ts";
 import type { SettingsData } from "./types.ts";
 
 /** What a view of the store sees: the settings, and why the last save failed (null when it did not). */
 export interface SettingsSnapshot {
   data: SettingsData;
   error: string | null;
-}
-
-let temporaries = 0;
-
-/**
- * Write `value` as `path` atomically: a temp file next to it, flushed, then
- * renamed over it. A failure leaves the old file as it was.
- */
-export function writeJsonAtomic(path: string, value: unknown): void {
-  const dir = dirname(path);
-  mkdirSync(dir, { recursive: true });
-  const temp = join(dir, `.${basename(path)}.${process.pid}.${++temporaries}.tmp`);
-  try {
-    const fd = openSync(temp, "w", 0o600);
-    try {
-      writeSync(fd, `${JSON.stringify(value, null, 2)}\n`);
-      fsyncSync(fd);
-    } finally {
-      closeSync(fd);
-    }
-    renameSync(temp, path);
-  } catch (error) {
-    try {
-      unlinkSync(temp);
-    } catch {
-      // Never made, or already gone.
-    }
-    throw error;
-  }
 }
 
 export class SettingsStore {
@@ -240,9 +212,7 @@ export class SettingsStore {
   /** Apply `edit` to the file as it is now and save the result. */
   private update(edit: (root: Raw) => void): void {
     try {
-      const root = this.rootForWrite();
-      edit(root);
-      writeJsonAtomic(this.path, root);
+      const root = updateSettingsFile(this.path, edit);
       this.snapshot = { data: readSettings(root), error: null };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -250,25 +220,6 @@ export class SettingsStore {
       this.snapshot = { ...this.snapshot, error: message };
     }
     this.notify();
-  }
-
-  /**
-   * The object to edit. A file that is not valid JSON (or not an object) is
-   * moved to `settings.json.invalid` before it is replaced, so hand-written
-   * content is never silently thrown away.
-   */
-  private rootForWrite(): Raw {
-    if (!existsSync(this.path)) return {};
-    const text = readFileSync(this.path, "utf8");
-    try {
-      const value: unknown = JSON.parse(text);
-      if (isRaw(value)) return value;
-    } catch {
-      // Handled below.
-    }
-    renameSync(this.path, `${this.path}.invalid`);
-    console.error(`dashi-shell: ${this.path} was not a JSON object; kept as ${basename(this.path)}.invalid`);
-    return {};
   }
 
   private notify(): void {

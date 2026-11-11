@@ -31,7 +31,7 @@ export { MAX_PHOTOS } from "./sections.ts";
 export { createPaneServices, type PaneServices, type SharedStores } from "./services.ts";
 export { RowFocus } from "./spot.tsx";
 export { type SettingsApp, startSettingsApp } from "./start.tsx";
-export { SettingsStore, writeJsonAtomic } from "./store.ts";
+export { SettingsStore } from "./store.ts";
 export type { LauncherSettings } from "./types.ts";
 export { Button, Caption, Choices, Group, Note, useSurface } from "./ui.tsx";
 export { SETTINGS_WINDOW, SettingsWindow } from "./view.tsx";

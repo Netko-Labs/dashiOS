@@ -62,3 +62,4 @@ export {
 } from "./knob-glyphs.ts";
 export type { PaneId, PaneInfo } from "./panes.ts";
 export { isPaneId, Nav, PANES, paneGroups, paneTitle, SIDEBAR_PANES } from "./panes.ts";
+export { ensure, prune, updateSettingsFile, writeJsonAtomic } from "./write.ts";

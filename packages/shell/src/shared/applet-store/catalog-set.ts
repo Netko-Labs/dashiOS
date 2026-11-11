@@ -7,9 +7,19 @@
  */
 
 import { existsSync, readFileSync, rmSync } from "node:fs";
+import { ensure, prune, updateSettingsFile } from "../settings/index.ts";
 import type { FetchLike } from "../software/index.ts";
 import { Catalog, CatalogError, catalogCacheDir } from "./catalog.ts";
-import { type CatalogDraft, type CatalogSetting, type CatalogSource, catalogProblemWords, catalogSources, checkDraft, parseCatalogs } from "./catalogs.ts";
+import {
+  type CatalogDraft,
+  type CatalogSetting,
+  type CatalogSource,
+  catalogProblemWords,
+  catalogSources,
+  checkDraft,
+  isCatalogList,
+  parseCatalogs,
+} from "./catalogs.ts";
 import type { CatalogLoad } from "./merge.ts";
 
 /** Where the added catalogs are kept: read every time (the file may change), written by the person's own action. */
@@ -29,6 +39,28 @@ export function readSavedCatalogs(path: string, dashiUrl: string): { catalogs: C
     return parseCatalogs(catalogs, dashiUrl);
   } catch {
     return { catalogs: [], problems: [] };
+  }
+}
+
+/**
+ * Saves `applets.catalogs` in the settings file at `path` (none: the key goes), as System Settings'
+ * store does (shared/settings/write.ts); why not, in words, when it couldn't be.
+ */
+export function writeSavedCatalogs(path: string, catalogs: readonly CatalogSetting[]): string | null {
+  const value = catalogs.length > 0 ? [...catalogs] : undefined;
+  if (value !== undefined && !isCatalogList(value)) throw new TypeError(`bad value for applets.catalogs: ${JSON.stringify(value)}`);
+  try {
+    updateSettingsFile(path, (root) => {
+      const applets = ensure(root, ["applets"]);
+      if (value === undefined) delete applets.catalogs;
+      else applets.catalogs = value;
+      prune(root, ["applets"]);
+    });
+    return null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`dashi-shell: could not save ${path}:`, message);
+    return message;
   }
 }
 

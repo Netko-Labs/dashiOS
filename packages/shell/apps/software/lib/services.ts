@@ -9,7 +9,6 @@
 
 import { appletDataRoot, appletsRoot, SDK_VERSION } from "@dashi/applet";
 import { createContext, useContext } from "react";
-import { SettingsStore } from "../../../src/settings-app/store.ts";
 import {
   AppletInstaller,
   CatalogSet,
@@ -21,6 +20,7 @@ import {
   readSavedCatalogs,
   StoreImages,
   storeCacheDir,
+  writeSavedCatalogs,
 } from "../../../src/shared/applet-store/index.ts";
 import { spawnDetached } from "../../../src/shared/apps/index.ts";
 import { settingsPath } from "../../../src/shared/settings/index.ts";
@@ -52,17 +52,13 @@ export function createServices(restart: () => void, env: Readonly<Record<string,
   const appletCache = storeCacheDir(env);
   const dashi = dashiCatalog(env, keyFrom(env.DASHI_APPLETS_KEY) ?? DASHI_INDEX_KEY);
   const path = settingsPath(env);
-  // The added catalogs are read from the file each time, and written through the settings store (read-modify-write, atomic); no change-log entry.
-  const settings = new SettingsStore(path, null);
+  // The added catalogs are read from the file each time, and written as the settings store writes (read-modify-write, atomic); no change-log entry.
   const appletCatalogs = new CatalogSet({
     dashi,
     cacheDir: appletCache,
     saved: {
       read: () => readSavedCatalogs(path, dashi.url).catalogs,
-      write: (catalogs) => {
-        settings.patch("applets", { catalogs: catalogs.length > 0 ? [...catalogs] : undefined });
-        return settings.getSnapshot().error;
-      },
+      write: (catalogs) => writeSavedCatalogs(path, catalogs),
     },
   });
   const installer = new AppletInstaller({

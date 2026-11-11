@@ -105,34 +105,6 @@ export const isScale = numberIn(0.5, 4);
 /** Connector names ("eDP-1", "HDMI-A-1"); anything odder is not written as a key. */
 export const isOutputName = (name: string): boolean => /^[A-Za-z][A-Za-z0-9_.:-]{0,63}$/.test(name);
 
-/** The object at `path`, made (replacing anything that is not an object) when it is not there. */
-export function ensure(root: Raw, path: readonly string[]): Raw {
-  let at = root;
-  for (const key of path) {
-    const next = at[key];
-    if (isRaw(next)) {
-      at = next;
-    } else {
-      const made: Raw = {};
-      at[key] = made;
-      at = made;
-    }
-  }
-  return at;
-}
-
-/** Remove `path`'s object if it ended up empty, and then its emptied parents. */
-export function prune(root: Raw, path: readonly string[]): void {
-  for (let depth = path.length; depth > 0; depth--) {
-    const parent = dig(root, path.slice(0, depth - 1));
-    if (!parent) return;
-    const key = path[depth - 1] as string;
-    const child = parent[key];
-    if (isRaw(child) && Object.keys(child).length === 0) delete parent[key];
-    else return;
-  }
-}
-
 /** Only the keys of a section that hold a value of the right kind. */
 function readSection(raw: Raw, name: SectionName): Raw {
   return readFields(raw, SECTIONS[name].path, SECTIONS[name].fields);

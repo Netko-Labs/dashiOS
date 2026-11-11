@@ -13,8 +13,8 @@ import type { GraphicsController } from "../../graphics/index.ts";
 import type { HardwareApi } from "../../hardware/index.ts";
 import type { NotificationStore } from "../../notifications/index.ts";
 import type { ModeStore } from "../../power/index.ts";
-import { writeJsonAtomic } from "../../settings-app/store.ts";
 import { Logind } from "../../shared/logind/index.ts";
+import { writeJsonAtomic } from "../../shared/settings/index.ts";
 
 export const RESET_NOTICE = {
   summary: "Tuning was reset",

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseSettings } from "../src/settings/settings.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
-import { readSavedCatalogs } from "../src/shared/applet-store/catalog-set.ts";
+import { readSavedCatalogs, writeSavedCatalogs } from "../src/shared/applet-store/catalog-set.ts";
 import { type CatalogSetting, catalogSources, checkDraft, isCatalogList, keyLineOf, parseCatalogs } from "../src/shared/applet-store/catalogs.ts";
 import { DASHI, dashiSource, line, TEAM, teamKey } from "./support/applet-catalogs.ts";
 
@@ -58,6 +58,23 @@ test("the settings store writes the list, keeps the rest of the file, and the st
   expect(JSON.parse(readFileSync(path, "utf8"))).toEqual({ dock: { autohide: true } });
   writeFileSync(path, "{ not json");
   expect(readSavedCatalogs(path, DASHI)).toEqual({ catalogs: [], problems: [] });
+});
+
+test("Software's writer saves the list as the settings store does, and says why when it can't", () => {
+  const dir = mkdtempSync(join(tmpdir(), "dashi-settings-"));
+  const path = join(dir, "settings.json");
+  writeFileSync(path, JSON.stringify({ dock: { autohide: true }, applets: { other: 1 } }));
+  const list: CatalogSetting[] = [{ name: "Team", url: TEAM, key: line(teamKey) }];
+  expect(writeSavedCatalogs(path, list)).toBeNull();
+  expect(JSON.parse(readFileSync(path, "utf8"))).toEqual({ dock: { autohide: true }, applets: { other: 1, catalogs: list } });
+  expect(readSavedCatalogs(path, DASHI).catalogs).toEqual(list);
+  expect(() => writeSavedCatalogs(path, [{ name: "Team", url: "http://x/index.json", key: "k" }])).toThrow(TypeError);
+  writeFileSync(path, JSON.stringify({ dock: { autohide: true }, applets: { catalogs: list } }));
+  expect(writeSavedCatalogs(path, [])).toBeNull();
+  expect(JSON.parse(readFileSync(path, "utf8"))).toEqual({ dock: { autohide: true } });
+  const blocked = join(dir, "not-a-folder");
+  writeFileSync(blocked, "");
+  expect(writeSavedCatalogs(join(blocked, "settings.json"), list)).toEqual(expect.any(String));
 });
 
 test("Dashi's catalog is first and can't be added again; what is typed is checked in people's words", () => {

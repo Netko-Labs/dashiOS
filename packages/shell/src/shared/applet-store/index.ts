@@ -1,6 +1,6 @@
 export type { Catalog } from "./catalog.ts";
 export { hostsFor, keyFrom, storeCacheDir } from "./catalog.ts";
-export { CatalogSet, readSavedCatalogs } from "./catalog-set.ts";
+export { CatalogSet, readSavedCatalogs, writeSavedCatalogs } from "./catalog-set.ts";
 export type { CatalogDraft, CatalogSetting, CatalogSource } from "./catalogs.ts";
 export { dashiCatalog, isCatalogList, parseCatalogs } from "./catalogs.ts";
 export { APPLET_CONSENT, AppletConsentCard, AppletConsentSheet, abilityLines, commandsLine } from "./consent-sheet.tsx";

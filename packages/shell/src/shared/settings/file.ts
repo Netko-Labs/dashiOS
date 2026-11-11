@@ -3,6 +3,7 @@
  * section is read (the object at its path, and only the keys that hold a
  * value of the right kind). System Settings' store (settings-app/store.ts)
  * reads every section this way; the clock reads its two (time/clock.ts).
+ * Writing it: write.ts.
  */
 
 import { homedir } from "node:os";
