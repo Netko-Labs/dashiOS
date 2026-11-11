@@ -6,7 +6,7 @@
 import { useRef } from "react";
 import { appFor } from "../../apps.ts";
 import type { App } from "../../shared/apps/index.ts";
-import { type ToplevelStore, usePortalDialogs, useToplevels } from "../../toplevels.ts";
+import { type ToplevelStore, useClipboardHelperActive, usePortalDialogs, useToplevels } from "../../toplevels.ts";
 import { barHold, useBarHeld } from "../bar-hold.ts";
 import { type BarName, barName, DESKTOP } from "./bar-name.ts";
 
@@ -24,8 +24,10 @@ export function useBarName(
   // An open menu holds the keyboard, which leaves no window active: the name stays as it was.
   // So does a shell sheet that took the keyboard for the app in front (bar-hold.ts).
   const sheetUp = useBarHeld(barHold);
+  // wl-copy's window has the keyboard for a moment while an app copies or pastes: the app is still in front.
+  const copying = useClipboardHelperActive(toplevels);
   const kept = useRef<BarName>({ name: DESKTOP });
-  if (!sheetUp && frozenName === null) {
+  if (!sheetUp && !copying && frozenName === null) {
     const focus = { ...(active ? { app: appFor(apps, active, installed).name } : {}), ...(dialog ? { dialog: dialog.title } : {}) };
     kept.current = barName(focus, kept.current, Date.now());
   }

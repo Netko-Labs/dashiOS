@@ -10,7 +10,16 @@ import { spawnDetached } from "../apps/list.ts";
 import { type Installation, isAppId } from "./ids.ts";
 import * as cmd from "./lib/flatpak-cmd.ts";
 import { failureMessage, parseList, parseProgress, parseUpdates } from "./lib/flatpak-parse.ts";
-import { parseSystemProgress, parseUpdateList, pkconError, restartCauses, restartNeeded, type SystemUpdate, systemFailure } from "./lib/pkcon.ts";
+import {
+  parseSystemProgress,
+  parseUpdateList,
+  pkconError,
+  pkconNothingToDo,
+  restartCauses,
+  restartNeeded,
+  type SystemUpdate,
+  systemFailure,
+} from "./lib/pkcon.ts";
 import { run as defaultRun, type Runner, type RunResult } from "./lib/run.ts";
 import type { FlatpakUpdate, InstalledApp } from "./types.ts";
 
@@ -102,6 +111,7 @@ export class Software {
     this.need("pkcon");
     if (refresh) await this.run(cmd.pkconRefresh(), { timeoutMs: 180_000 });
     const result = await this.run(cmd.pkconGetUpdates(), { timeoutMs: 180_000 });
+    if (pkconNothingToDo(result.code, result.output)) return { updates: [], restartCauses: [] };
     if (result.code !== 0 || pkconError(result.output) !== null) throw new Error(systemFailure(result.output));
     const updates = parseUpdateList(result.output);
     return { updates, restartCauses: restartCauses(updates) };
@@ -156,6 +166,7 @@ export class Software {
         if (progress) onProgress(progress);
       },
     });
+    if (pkconNothingToDo(result.code, result.output)) return { ok: true, message: "" };
     // pkcon can fail and still exit 0 (no PackageKit daemon).
     return this.outcome(pkconError(result.output) !== null && result.code === 0 ? { ...result, code: 1 } : result, signal, systemFailure(result.output));
   }

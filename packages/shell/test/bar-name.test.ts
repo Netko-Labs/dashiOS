@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import type { NativeHostTransport, ToplevelEvent } from "@mirinjs/metal";
 import { type BarName, barName, DESKTOP, HANDOVER_MS } from "../src/menubar/lib/bar-name.ts";
 import { PORTAL_APP_ID, sheetTitle } from "../src/shared/portal-host/protocol.ts";
-import { ToplevelStore } from "../src/toplevels.ts";
+import { CLIPBOARD_HELPER_APP_ID, ToplevelStore } from "../src/toplevels.ts";
 
 // The menu bar names the app in front; a portal dialog (an Access question)
 // is no app's window, and used to leave it saying "Desktop".
@@ -43,4 +43,20 @@ test("the portal's windows are kept apart from the apps' windows", () => {
   expect(store.getDialogs().map((window) => window.title)).toEqual(["Allow access?"]);
   listener({ type: "closed", id: 2 });
   expect(store.getDialogs()).toEqual([]);
+});
+
+test("wl-copy's window is no app: it is never listed, and says only that a copy holds the keyboard", () => {
+  const heard: Array<(event: ToplevelEvent) => void> = [];
+  const transport = { onToplevel: (each: (event: ToplevelEvent) => void) => void heard.push(each) } as unknown as NativeHostTransport;
+  const store = new ToplevelStore(transport);
+  const tell = (event: ToplevelEvent): void => {
+    for (const each of heard) each(event);
+  };
+  const base = { minimized: false, maximized: false, fullscreen: false };
+  tell({ type: "changed", toplevel: { id: 1, title: "Files", appId: "dev.dashi.files", activated: false, ...base } });
+  tell({ type: "changed", toplevel: { id: 2, title: "wl-clipboard", appId: CLIPBOARD_HELPER_APP_ID, activated: true, ...base } });
+  expect(store.getSnapshot().map((window) => window.id)).toEqual([1]);
+  expect(store.getHelperActive()).toBe(true);
+  tell({ type: "closed", id: 2 });
+  expect(store.getHelperActive()).toBe(false);
 });

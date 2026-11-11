@@ -107,6 +107,14 @@ export function pkconError(output: string): string | null {
   return line === undefined ? null : tidy(line, 300);
 }
 
+/**
+ * pkcon exits 5 ("nothing useful was done") when there is nothing to update,
+ * with this sentence: that is an answer, not a failure.
+ */
+export function pkconNothingToDo(code: number | null, output: string): boolean {
+  return code === 5 && /there are no updates available|no packages require updating/i.test(output);
+}
+
 /** The first `Command failed:` or error line of pkcon's output, else its last lines. */
 export function systemFailure(output: string): string {
   const lines = output
