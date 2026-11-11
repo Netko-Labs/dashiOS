@@ -77,6 +77,9 @@ for dir in "$src"/packages/*/; do
   case $library in "" | shell | greeter) continue ;; esac
   mkdir -p "$modules/@dashi/$library"
   cp -r "$dir/src" "$dir/package.json" "$modules/@dashi/$library/"
+  # A library names mirin by a checkout's path; installed, @mirinjs/metal is beside it in node_modules
+  # (an applet that `dashi-applet new` made from /usr/share/dashi installs @dashi/ui with it).
+  sed -i 's|"file:\.\./\.\./\.\./mirin/packages/mirin-metal"|"file:../../@mirinjs/metal"|' "$modules/@dashi/$library/package.json"
   [ ! -f "$dir/manifest.schema.json" ] || cp "$dir/manifest.schema.json" "$modules/@dashi/$library/"
 done
 # mirin's @mirinjs/metal, from mirin's HEAD.

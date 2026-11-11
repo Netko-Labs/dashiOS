@@ -5,17 +5,27 @@
  * or /usr/share/dashi), by path, until they are published.
  */
 
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
-/** The SDK's folder (packages/applet), and the UI packages beside it. */
-export function sdkPaths(): { applet: string; ui: string; metal: string } {
-  const applet = join(import.meta.dir, "../../..");
+/** Where the SDK and the packages an applet builds on are. */
+export interface SdkPaths {
+  applet: string;
+  ui: string;
+  metal: string;
+  /** @dashi/shape, which the SDK itself uses. */
+  shape: string;
+}
+
+/**
+ * The SDK's folder, and the packages beside it: in a checkout packages/applet, packages/dashi-ui,
+ * packages/shape and ../mirin's packages/mirin-metal; installed, node_modules/@dashi/applet,
+ * @dashi/ui, @dashi/shape and @mirinjs/metal.
+ */
+export function sdkPaths(applet: string = join(import.meta.dir, "../../..")): SdkPaths {
   const packages = dirname(applet);
-  return {
-    applet,
-    ui: join(packages, "dashi-ui"),
-    metal: join(dirname(dirname(packages)), "mirin/packages/mirin-metal"),
-  };
+  const shape = join(packages, "shape");
+  if (basename(packages) === "@dashi") return { applet, ui: join(packages, "ui"), metal: join(dirname(packages), "@mirinjs/metal"), shape };
+  return { applet, ui: join(packages, "dashi-ui"), metal: join(dirname(dirname(packages)), "mirin/packages/mirin-metal"), shape };
 }
 
 const title = (name: string): string =>
@@ -58,6 +68,9 @@ export function templateFiles(name: string, paths = sdkPaths()): Record<string, 
       react: "^19.2.0",
     },
     devDependencies: { "@types/bun": "latest", "@types/react": "^19.2.0", typescript: "^5.9.0" },
+    // The SDK names @dashi/shape as Dashi's workspace does (`workspace:*`), which nothing outside it
+    // resolves: the applet says where it is, by path.
+    overrides: { "@dashi/shape": `file:${paths.shape}` },
   };
   const tsconfig = {
     compilerOptions: {
