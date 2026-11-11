@@ -14,6 +14,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { FIRST_PARTY } from "../apps/index.ts";
 import type { GpuCounters } from "./energy-proc.ts";
 import { type AppCatalog, type AppIdentity, identify, parseCmdline } from "./identity.ts";
+import { countSockets, GPU_FDS_EVERY, gpuDescriptors, readGpu, readWakeups, SOCKETS_EVERY } from "./lib/read-fds.ts";
 import {
   type Counters,
   isKernelThread,
@@ -32,7 +33,6 @@ import {
   processName,
   type SystemStat,
 } from "./proc.ts";
-import { countSockets, GPU_FDS_EVERY, gpuDescriptors, readGpu, readWakeups, SOCKETS_EVERY } from "./read-fds.ts";
 
 export interface ProcessSample {
   pid: number;

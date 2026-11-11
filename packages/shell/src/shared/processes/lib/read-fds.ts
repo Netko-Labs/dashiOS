@@ -7,7 +7,7 @@
  */
 
 import { readdirSync, readFileSync, readlinkSync } from "node:fs";
-import { type GpuCounters, parseDrmFdinfo, parseWakeups, sumGpu } from "./energy-proc.ts";
+import { type GpuCounters, parseDrmFdinfo, parseWakeups, sumGpu } from "../energy-proc.ts";
 
 const PROC = "/proc";
 /** Looks between two counts of a process's sockets. */
