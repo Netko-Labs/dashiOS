@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Outcome } from "../../actions/index.ts";
 import { NO_CONTEXT, type TaskContext } from "../../agents/index.ts";
-import type { Entry } from "../../entries.ts";
+import type { Entry } from "../../shared/app-entries/index.ts";
 import { iconPath } from "../../shared/apps/index.ts";
 import { useClockPrefs, usesHour24 } from "../../shared/time/index.ts";
 import { BUDGET } from "../budget.ts";

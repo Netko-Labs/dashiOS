@@ -9,7 +9,7 @@
 import type { Toplevel } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import type { Compositor, CompositorEvent } from "../compositor/index.ts";
-import type { Entry } from "../entries.ts";
+import type { Entry } from "../shared/app-entries/index.ts";
 import { appKey } from "./layout.ts";
 
 const NONE: ReadonlySet<string> = new Set();

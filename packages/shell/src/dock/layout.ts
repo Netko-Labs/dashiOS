@@ -10,8 +10,8 @@
 import { basename } from "node:path";
 import type { Toplevel } from "@mirinjs/metal";
 import { type DockItem, displayName, ownApp } from "../apps.ts";
-import type { Entry } from "../entries.ts";
 import { findEntry } from "../menus/index.ts";
+import type { Entry } from "../shared/app-entries/index.ts";
 import { type App, iconPath } from "../shared/apps/index.ts";
 
 /** Programs that start other programs: their name says nothing about the app. */

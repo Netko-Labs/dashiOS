@@ -16,7 +16,7 @@
  * - Nothing found is a way forward, never an empty panel.
  */
 
-import type { Entry } from "../../entries.ts";
+import type { Entry } from "../../shared/app-entries/index.ts";
 import { iconPath } from "../../shared/apps/index.ts";
 import { commandCore } from "../ranking/commands.ts";
 import { fold } from "../ranking/fold.ts";

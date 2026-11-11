@@ -1,9 +1,9 @@
 /** The launcher's entries as the shell builds them (entries.ts loadEntries), for the ranking tests. */
 
 import { SETTINGS_APP_ID, SETUP_APP_ID } from "../src/apps.ts";
-import type { Entry } from "../src/entries.ts";
 import { entryIndex, entryItem, type RankItem } from "../src/launcher/ranking/index.ts";
 import { paneEntry, paneKeywords } from "../src/settings-app/search.ts";
+import type { Entry } from "../src/shared/app-entries/index.ts";
 import { PANES } from "../src/shared/settings/panes.ts";
 
 const app = (id: string, name: string, keywords: string[] = [], extra: Partial<Entry> = {}): Entry => ({ id, name, icon: "", keywords, ...extra });

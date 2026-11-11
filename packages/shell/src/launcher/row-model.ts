@@ -7,7 +7,7 @@
  */
 
 import type { ActionState } from "../actions/index.ts";
-import type { Entry } from "../entries.ts";
+import type { Entry } from "../shared/app-entries/index.ts";
 import type { FileHit } from "../shared/files/index.ts";
 import { PANES } from "../shared/settings/index.ts";
 import type { AgentAct } from "./lib/agents/acts.ts";

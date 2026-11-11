@@ -2,9 +2,10 @@
 
 import { statSync } from "node:fs";
 import type { CompositorWindow } from "../../../compositor/index.ts";
-import { type Entry, launchEntry, loadEntries } from "../../../entries.ts";
+import { launchEntry, loadEntries } from "../../../entries.ts";
 import { windowToFront } from "../../../front-window.ts";
 import type { Tile } from "../../../layout.ts";
+import type { Entry } from "../../../shared/app-entries/index.ts";
 import { kindOf } from "../../../shared/files/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../../context.ts";
 import { descendsFrom } from "../../peer.ts";

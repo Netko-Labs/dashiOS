@@ -1,8 +1,9 @@
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { registerShellApp, SETTINGS_APP_ID, SETUP_APP_ID } from "../src/apps.ts";
-import { type Entry, shellEntries } from "../src/entries.ts";
+import { shellEntries } from "../src/entries.ts";
 import { entryIndex, rankEntries } from "../src/launcher/ranking/index.ts";
 import { registerPaneEntries } from "../src/settings-app/search.ts";
+import type { Entry } from "../src/shared/app-entries/index.ts";
 import { parseDesktopEntry } from "../src/shared/apps/index.ts";
 import { PANES } from "../src/shared/settings/panes.ts";
 

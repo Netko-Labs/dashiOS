@@ -11,7 +11,7 @@ import type { CompositorWindow } from "../src/compositor/wire.ts";
 import { DockController } from "../src/dock/controller.ts";
 import { dockLayout } from "../src/dock/layout.ts";
 import { buildDockMenu } from "../src/dock/lib/menu.ts";
-import type { Entry } from "../src/entries.ts";
+import type { Entry } from "../src/shared/app-entries/index.ts";
 import { fakeCompositor } from "./support/compositor.ts";
 
 const TERMINAL = { id: "dev.dashi.terminal", name: "Terminal", exec: "dashi-terminal" } as unknown as Entry;

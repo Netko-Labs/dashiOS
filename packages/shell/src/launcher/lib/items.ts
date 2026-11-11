@@ -15,7 +15,7 @@
 
 import { type ActionDef, isSegment } from "../../actions/index.ts";
 import { SETTINGS_APP_ID } from "../../apps.ts";
-import type { Entry } from "../../entries.ts";
+import type { Entry } from "../../shared/app-entries/index.ts";
 import { type EntryItem, entryItem } from "../ranking/entries.ts";
 import { fold } from "../ranking/fold.ts";
 import type { RankItem, RankKind } from "../ranking/item.ts";

@@ -2,9 +2,8 @@
  * The installed apps as identity.ts matches processes against them: Dashi's
  * own apps by their folder, every desktop entry (hidden ones too: they name
  * apps that keep a second entry) by its id, its window class, and the
- * program it runs. `catalogFrom` is pure; entries.ts's `loadAppCatalog`
- * reads the entries, which takes a moment: Activity Monitor does it on its
- * reader thread.
+ * program it runs. `catalogFrom` is pure; reading the entries (app-entries'
+ * `readEntries`) takes a moment: Activity Monitor does it on its reader thread.
  */
 
 import { type App, FIRST_PARTY, type FirstPartySpec, iconPath } from "../apps/index.ts";

@@ -4,7 +4,7 @@
  */
 
 import { existsSync } from "node:fs";
-import type { Entry } from "../entries.ts";
+import type { Entry } from "../shared/app-entries/index.ts";
 import { spawnDetached } from "../shared/apps/index.ts";
 
 /** The launcher entry for the app whose windows report `appId`, if one is installed. */

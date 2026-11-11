@@ -6,10 +6,10 @@
 
 import { lightColors } from "@dashi/ui";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
-import type { Entry } from "../src/entries.ts";
 import { Launcher } from "../src/launcher/launcher.tsx";
 import type { LauncherFiles, LauncherProps } from "../src/launcher/props.ts";
 import type { FileRow } from "../src/launcher/row-model.ts";
+import type { Entry } from "../src/shared/app-entries/index.ts";
 import { settle } from "./support/time.ts";
 
 export { settle };

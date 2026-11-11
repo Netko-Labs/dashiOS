@@ -7,9 +7,10 @@
 
 import { displayName } from "../apps.ts";
 import type { Compositor, CompositorEvent, CompositorWindow } from "../compositor/index.ts";
-import { type Entry, loadEntries } from "../entries.ts";
+import { loadEntries } from "../entries.ts";
 import { findEntry } from "../menus/index.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
+import type { Entry } from "../shared/app-entries/index.ts";
 import { iconPath } from "../shared/apps/index.ts";
 import { isAlive, type Outcome, protectedPids, readProcStat, sendSignal, terminate } from "../shared/processes/index.ts";
 import { ForceQuitController } from "./lib/controller.ts";

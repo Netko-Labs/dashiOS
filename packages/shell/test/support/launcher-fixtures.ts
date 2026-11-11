@@ -1,8 +1,8 @@
 import { type ActionDef, ok, ready } from "../../src/actions/types.ts";
-import type { Entry } from "../../src/entries.ts";
 import type { LauncherWindow } from "../../src/launcher/lib/items.ts";
 import type { ListInput } from "../../src/launcher/lib/rows.ts";
 import type { FileRow } from "../../src/launcher/row-model.ts";
+import type { Entry } from "../../src/shared/app-entries/index.ts";
 
 export const app = (name: string, extra: Partial<Entry> = {}): Entry => ({
   id: `app.${name.toLowerCase()}`,

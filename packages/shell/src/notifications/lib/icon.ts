@@ -5,7 +5,8 @@
  */
 
 import { existsSync } from "node:fs";
-import { type Entry, loadEntries } from "../../entries.ts";
+import { loadEntries } from "../../entries.ts";
+import type { Entry } from "../../shared/app-entries/index.ts";
 import { iconPath, resolveIcon } from "../../shared/apps/index.ts";
 import type { Notification } from "../types.ts";
 

@@ -7,7 +7,7 @@
  */
 
 import type { TaskContext } from "../agents/index.ts";
-import type { Entry } from "../entries.ts";
+import type { Entry } from "../shared/app-entries/index.ts";
 import type { ExtensionSession } from "./extension-state.ts";
 import type { LauncherHost, LauncherPrefsStore, LauncherRanking, LauncherWorldStore, Presented, Store } from "./host.ts";
 import type { ExtraKeys, LauncherCommand } from "./keys.ts";

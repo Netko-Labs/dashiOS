@@ -226,10 +226,10 @@ packages/shell/bin/dashi-graphics-preview.tsx	packages/shell/src/entries.ts
 packages/shell/bin/dashi-graphics-preview.tsx	packages/shell/src/gpu
 packages/shell/bin/dashi-graphics-preview.tsx	packages/shell/src/graphics
 packages/shell/bin/dashi-graphics-preview.tsx	packages/shell/src/notifications
+packages/shell/bin/dashi-graphics-preview.tsx	packages/shell/src/shared/app-entries
 packages/shell/bin/dashi-graphics-preview.tsx	packages/shell/src/shared/apps
 packages/shell/bin/dashi-graphics-preview.tsx	packages/shell/src/shared/locale
 packages/shell/bin/dashi-graphics-preview.tsx	packages/shell/src/shared/metal
-packages/shell/bin/dashi-graphics-preview.tsx	packages/shell/src/shared/processes
 packages/shell/bin/dashi-graphics-preview.tsx	packages/shell/src/shared/settings
 packages/shell/bin/dashi-mcp.ts	packages/shell/bin/dashi-mcp.ts
 packages/shell/bin/dashi-mcp.ts	packages/shell/src/agents
@@ -270,6 +270,7 @@ packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/scroll-speed.ts
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/settings
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/settings-app
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/accounts
+packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/app-entries
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/appearance
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/applet-store
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/apps
@@ -377,6 +378,7 @@ packages/shell/src/main.tsx	packages/shell/src/settings-app
 packages/shell/src/main.tsx	packages/shell/src/setup
 packages/shell/src/main.tsx	packages/shell/src/share-picker
 packages/shell/src/main.tsx	packages/shell/src/shared/accounts
+packages/shell/src/main.tsx	packages/shell/src/shared/app-entries
 packages/shell/src/main.tsx	packages/shell/src/shared/app-menus
 packages/shell/src/main.tsx	packages/shell/src/shared/appearance
 packages/shell/src/main.tsx	packages/shell/src/shared/applet-store

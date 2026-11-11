@@ -7,6 +7,7 @@
 import { homedir } from "node:os";
 import type { Toplevel } from "@mirinjs/metal";
 import { chooseGpu, type GpuEnvs, gpuEnvs, launchEnvFor, readCards } from "./gpu/index.ts";
+import { appIdName } from "./shared/app-entries/index.ts";
 import { type App, firstPartyApps, iconPath } from "./shared/apps/index.ts";
 
 /** The shell launches and names `App`s, drawn with the shared app list's icons: the type and `iconPath` come with it. */
@@ -92,11 +93,7 @@ export function nameApplet(id: string, name: string): void {
 
 /** "org.kde.konsole" → "Konsole" (an applet by its own name); falls back to the window title. */
 export function displayName(appId: string, title: string): string {
-  const applet = appletNames.get(appId);
-  if (applet) return applet;
-  const last = appId.split(".").filter(Boolean).at(-1);
-  if (!last) return title || "Untitled";
-  return last.charAt(0).toUpperCase() + last.slice(1);
+  return appletNames.get(appId) ?? appIdName(appId, title);
 }
 
 /**

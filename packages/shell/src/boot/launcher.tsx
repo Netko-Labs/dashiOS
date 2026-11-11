@@ -10,7 +10,7 @@ import { type AgentStore, type Agents, NO_CONTEXT } from "../agents/index.ts";
 import { appFor } from "../apps.ts";
 import { placedOutputs } from "../arrange/index.ts";
 import type { Compositor } from "../compositor/index.ts";
-import { type Entry, launchEntry } from "../entries.ts";
+import { launchEntry } from "../entries.ts";
 import { primarySelection, readContext } from "../handoff-shell.tsx";
 import type { LauncherFiles, PictureRect, Presented } from "../launcher/index.ts";
 import {
@@ -36,6 +36,7 @@ import { type OpenOverlay, openOverlay } from "../overlay.tsx";
 import type { OverlaySlots } from "../overlay-slots.ts";
 import { RecentApps } from "../recents.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
+import type { Entry } from "../shared/app-entries/index.ts";
 import { type App, fileIcon, METAL_HOST } from "../shared/apps/index.ts";
 import { systemClipboard } from "../shared/clipboard/index.ts";
 import { FileSearch, iconNamesFor } from "../shared/files/index.ts";

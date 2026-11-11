@@ -9,8 +9,8 @@
 import { type Bounds, type NativeHostOptions, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import type { Compositor } from "../compositor/index.ts";
-import type { Entry } from "../entries.ts";
 import type { MenuController } from "../menus/index.ts";
+import type { Entry } from "../shared/app-entries/index.ts";
 import type { App } from "../shared/apps/index.ts";
 import { spawnShellHost } from "../shared/metal/index.ts";
 import { DOCK, DOCK_HEIGHT, TASKBAR } from "../theme.ts";

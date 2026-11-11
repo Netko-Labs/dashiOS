@@ -6,7 +6,7 @@
  */
 
 import { SETTINGS_APP_ID } from "../../apps.ts";
-import type { Entry } from "../../entries.ts";
+import type { Entry } from "../../shared/app-entries/index.ts";
 import { languagesOf, messageLocales } from "../../shared/locale/index.ts";
 import type { RankItem, RankSignals } from "./item.ts";
 import { dashiWords } from "./lib/words.ts";

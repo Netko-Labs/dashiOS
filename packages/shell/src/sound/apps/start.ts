@@ -6,7 +6,7 @@
 
 import { appFor } from "../../apps.ts";
 import type { Compositor } from "../../compositor/index.ts";
-import type { Entry } from "../../entries.ts";
+import type { Entry } from "../../shared/app-entries/index.ts";
 import { type App, cachedIcon, iconPath } from "../../shared/apps/index.ts";
 import { type AppIdentity, catalogFrom } from "../../shared/processes/index.ts";
 import { heldControl, pipewireControl } from "./lib/commands.ts";

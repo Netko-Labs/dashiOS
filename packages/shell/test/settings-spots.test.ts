@@ -2,11 +2,11 @@ import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { settingsActions } from "../src/actions/lib/sources/settings.ts";
-import type { Entry } from "../src/entries.ts";
 import { launcherIndex } from "../src/launcher/lib/items.ts";
 import { buildSections, selectable } from "../src/launcher/lib/rows.ts";
 import { findRow, rowPlace, SETTINGS_ROWS } from "../src/settings-app/registry/index.ts";
 import { paneEntry, paneKeywords, paneLook } from "../src/settings-app/search.ts";
+import type { Entry } from "../src/shared/app-entries/index.ts";
 import { PANES } from "../src/shared/settings/panes.ts";
 
 // A search that names a row of Settings lands on the row: Settings opens scrolled to it and lights it, as a link does.

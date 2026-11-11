@@ -4,12 +4,12 @@
  * agents, the run to talk to).
  */
 
-import type { Entry } from "../../entries.ts";
 import { openFile } from "../../file-manager.ts";
 import { LAUNCHER, Launcher, type LauncherFiles, type LauncherPrefs, type PictureRect, type Presented, type RankingMemory } from "../../launcher/index.ts";
 import type { OpenOverlay } from "../../overlay.tsx";
 import type { RecentApps } from "../../recents.ts";
 import { recentEntries } from "../../recents.ts";
+import type { Entry } from "../../shared/app-entries/index.ts";
 import type { Handoff } from "../agents.ts";
 import type { LauncherKeyboard } from "../keys.ts";
 import type { LateParts } from "../parts.ts";

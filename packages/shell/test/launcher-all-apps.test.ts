@@ -10,10 +10,11 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { type Entry, launchable, loadEntries } from "../src/entries.ts";
+import { loadEntries } from "../src/entries.ts";
 import { fitToRoom, listHeight } from "../src/launcher/lib/fit.ts";
 import { measuresFor } from "../src/launcher/lib/measures.ts";
 import { ALL_APPS_ROWS, allApps, buildSections, type ListInput } from "../src/launcher/lib/rows.ts";
+import { type Entry, launchable } from "../src/shared/app-entries/index.ts";
 import { desktopFiles, inTerminal, parseDesktopEntry } from "../src/shared/apps/index.ts";
 
 const desktop = (name: string, lines: string[] = []): string =>

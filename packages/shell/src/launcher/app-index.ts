@@ -11,7 +11,8 @@
 
 import { existsSync, type FSWatcher, watch as fsWatch } from "node:fs";
 import { dirname, join } from "node:path";
-import { type Entry, loadEntries } from "../entries.ts";
+import { loadEntries } from "../entries.ts";
+import type { Entry } from "../shared/app-entries/index.ts";
 import { dataDirs } from "../shared/apps/index.ts";
 
 /** Changes come in bursts (a package installs a dozen files); one rebuild after the burst. */

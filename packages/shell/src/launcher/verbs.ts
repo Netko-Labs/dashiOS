@@ -13,7 +13,7 @@
  */
 
 import type { ActionDef, Args } from "../actions/index.ts";
-import type { Entry } from "../entries.ts";
+import type { Entry } from "../shared/app-entries/index.ts";
 import { agentVerbs } from "./lib/agents/agent-rows.ts";
 import { isPane, type LauncherItem, type LauncherWindow, windowsOf } from "./lib/items.ts";
 import { startsWithCommand } from "./ranking/commands.ts";

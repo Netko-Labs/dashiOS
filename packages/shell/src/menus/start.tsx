@@ -6,8 +6,9 @@
 
 import { AppMenuStore, ownerPids } from "../app-menus/index.ts";
 import type { Compositor } from "../compositor/index.ts";
-import { type Entry, loadEntries } from "../entries.ts";
+import { loadEntries } from "../entries.ts";
 import { openOverlay } from "../overlay.tsx";
+import type { Entry } from "../shared/app-entries/index.ts";
 import { MenuController } from "./controller.ts";
 import { findEntry } from "./launch.ts";
 import { runMenuAction } from "./lib/actions.ts";

@@ -9,8 +9,8 @@
  * minutes so an app installed meanwhile is named.
  */
 
-import { loadAppCatalog } from "../../../src/entries.ts";
-import { type AppCatalog, type ReadOptions, readerMemory, readSnapshot, type Snapshot, sysconf } from "../../../src/shared/processes/index.ts";
+import { readEntries } from "../../../src/shared/app-entries/index.ts";
+import { type AppCatalog, catalogFrom, type ReadOptions, readerMemory, readSnapshot, type Snapshot, sysconf } from "../../../src/shared/processes/index.ts";
 
 /** What a look reads beyond what the reader knows by itself. */
 export type LookWants = Pick<ReadOptions, "io" | "sockets" | "kernel" | "energy">;
@@ -39,7 +39,7 @@ let catalog: { apps: AppCatalog; at: number } | null = null;
 function apps(): AppCatalog | undefined {
   if (!catalog || Date.now() - catalog.at > CATALOG_MS) {
     try {
-      catalog = { apps: loadAppCatalog(), at: Date.now() };
+      catalog = { apps: catalogFrom(readEntries({ withHidden: true })), at: Date.now() };
       // Processes are matched again against what is installed now.
       base.memory.known.clear();
     } catch {

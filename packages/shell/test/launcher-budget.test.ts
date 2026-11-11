@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import type { Entry } from "../src/entries.ts";
 import { BUDGET, type SlowSnapshot, type SlowSource, SlowSources, type Timers, timed } from "../src/launcher/budget.ts";
 import { buildSections } from "../src/launcher/lib/rows.ts";
 import { isTiming, timingLine } from "../src/launcher/timing.ts";
+import type { Entry } from "../src/shared/app-entries/index.ts";
 import { flush } from "./support/time.ts";
 
 /** Timers the test moves by hand. */

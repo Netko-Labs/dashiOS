@@ -7,7 +7,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { Outcome } from "../../actions/index.ts";
 import type { TaskContext } from "../../agents/index.ts";
-import type { Entry } from "../../entries.ts";
+import type { Entry } from "../../shared/app-entries/index.ts";
 import type { LauncherPrefsSnapshot } from "../prefs.ts";
 import type { FileRow, Row } from "../row-model.ts";
 import type { Section } from "../sections.ts";
