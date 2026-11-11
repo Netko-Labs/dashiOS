@@ -244,6 +244,27 @@ Numbered in the order they were written down; a new one goes at the end.
 - **Cost:** a mirin branch to keep for each Dashi branch that needs one.
 - **Undo:** none wanted.
 
+### D14. 0.7 ships on the mirin it was built on, not on mirin's `main` yet
+
+- **Date:** 2026-11-10 (`.mirin-branch`).
+- **Question:** Metal reached mirin's `main` on 2026-11-10 (mirin #22), with 15
+  commits Dashi had never run on. One of them rebuilt a window's whole
+  accessibility tree on every frame of a scroll or resize: Files' host used
+  about 30% of a core scrolling a long list, against about 20% before. The
+  fix (mirin #23) sits in the same files as performance work another agent has
+  in progress, so it waits for that work. Build 0.7 against `main` now, or
+  against `wave4-0.7`, the mirin 0.7 was developed and smoke-tested on?
+- **Choice:** `wave4-0.7` (4b6ebea). `.mirin-branch` names it again. Dashi moves
+  to `main` when the performance work and #23 have landed there.
+- **Why:** a release doesn't take a known slowdown to follow a branch name; and
+  a fix isn't merged over someone's work in progress in the same files.
+- **Cost:** 0.7 misses `main`'s other fixes for now (a screen reader's focus
+  no longer presses a button; a dialog that can't start answers as a cancel).
+  The chooser's move and the sheet fix were smoke-tested with `main`'s host;
+  with this host they have the checks and the earlier smoke tests, not a VM
+  pass of their own.
+- **Undo:** write `main` in `.mirin-branch` and rebuild the Metal host.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its
