@@ -163,5 +163,13 @@ fn pictures_are_checked_and_cleared() {
     let clear = json!({ "output": "HEADLESS-1", "rects": [] });
     assert_eq!(ipc.request("space-previews", clear)["result"], json!({}));
     // Windows name their entry in ext-foreign-toplevel-list (what the share picker answers with).
-    assert!(window_named(&mut ipc, id)["toplevel"].is_string());
+    // The entry is made once the window is mapped, a turn of the loop after it is listed: wait for it.
+    let start = std::time::Instant::now();
+    while !window_named(&mut ipc, id)["toplevel"].is_string() {
+        assert!(
+            start.elapsed() < std::time::Duration::from_secs(5),
+            "the window never named its toplevel entry"
+        );
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
 }
