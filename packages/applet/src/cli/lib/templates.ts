@@ -5,17 +5,16 @@
  * or /usr/share/dashi), by path, until they are published.
  */
 
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
-/** The SDK's folder (packages/applet), and the UI packages beside it. */
-export function sdkPaths(): { applet: string; ui: string; metal: string } {
-  const applet = join(import.meta.dir, "../../..");
+/**
+ * The SDK's folder, and the UI packages beside it: in a checkout packages/applet, packages/dashi-ui
+ * and ../mirin's packages/mirin-metal; installed, node_modules/@dashi/applet, @dashi/ui and @mirinjs/metal.
+ */
+export function sdkPaths(applet: string = join(import.meta.dir, "../../..")): { applet: string; ui: string; metal: string } {
   const packages = dirname(applet);
-  return {
-    applet,
-    ui: join(packages, "dashi-ui"),
-    metal: join(dirname(dirname(packages)), "mirin/packages/mirin-metal"),
-  };
+  if (basename(packages) === "@dashi") return { applet, ui: join(packages, "ui"), metal: join(dirname(packages), "@mirinjs/metal") };
+  return { applet, ui: join(packages, "dashi-ui"), metal: join(dirname(dirname(packages)), "mirin/packages/mirin-metal") };
 }
 
 const title = (name: string): string =>
