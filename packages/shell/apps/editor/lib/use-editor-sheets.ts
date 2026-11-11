@@ -93,7 +93,7 @@ export function useEditorSheets({
     else if (!model.open(path)) return model.getSnapshot().notice?.text ?? "It couldn't be opened.";
     return null;
   };
-  // Open and Save As are Files' own chooser over the window (apps/files/chooser/), never a typed path (PA-12).
+  // Open and Save As are Files' own chooser over the window (src/shared/file-browser/), never a typed path (PA-12).
   const chooseOpen = (path: string): void => {
     // A failed open says why in the notice.
     openPath(path);

@@ -3,10 +3,10 @@
 import { Button, Group, Sheet, useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
+import { formatCount, formatDate, formatSize } from "../../../../src/shared/file-browser/format.ts";
+import { measure } from "../../../../src/shared/file-browser/size.ts";
 import type { FileItem, OpenWithApp } from "../../../../src/shared/files/index.ts";
-import { formatCount, formatDate, formatSize } from "../format.ts";
 import { type ItemInfo, loadInfo } from "../info.ts";
-import { measure } from "../size.ts";
 
 /** "4.2 MB (4,201,337 bytes)": the rounded size and the exact one. */
 const exactSize = (bytes: number): string => (bytes >= 1000 ? `${formatSize(bytes)} (${bytes.toLocaleString("en-US")} bytes)` : formatSize(bytes));

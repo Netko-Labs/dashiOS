@@ -8,11 +8,11 @@
 import { SEARCH, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { useFiles, useFilesState } from "../context.ts";
-import { useDropTarget } from "../drop.ts";
-import { CHEVRON } from "../glyphs.ts";
-import { type Location, pathSegments } from "../location.ts";
-import { textWidth } from "../tile-name.ts";
+import { useFiles, useFilesState } from "../../../../src/shared/file-browser/context.ts";
+import { useDropTarget } from "../../../../src/shared/file-browser/drop.ts";
+import { CHEVRON } from "../../../../src/shared/file-browser/glyphs.ts";
+import { type Location, pathSegments } from "../../../../src/shared/file-browser/location.ts";
+import { textWidth } from "../../../../src/shared/file-browser/tile-name.ts";
 import { statusLine } from "../views/footer.tsx";
 import { Field, HEIGHT } from "./omnibox-field.tsx";
 

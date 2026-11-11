@@ -1,10 +1,10 @@
 /** The context menus' contents, decided from the selection and where the window is looking, in groups (PA-9). */
 
 import { MENU_SEPARATOR, type MenuEntry } from "@dashi/ui";
+import type { WindowActions } from "../../../src/shared/file-browser/context.ts";
+import type { Operations } from "../../../src/shared/file-browser/operations.ts";
+import type { FilesStore } from "../../../src/shared/file-browser/store.ts";
 import { type FileItem, mayOpen } from "../../../src/shared/files/index.ts";
-import type { WindowActions } from "./context.ts";
-import type { Operations } from "./operations/operations.ts";
-import type { FilesStore } from "./store/store.ts";
 
 interface Deps {
   store: FilesStore;

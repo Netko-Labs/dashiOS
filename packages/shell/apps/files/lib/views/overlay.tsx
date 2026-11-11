@@ -5,18 +5,18 @@
 
 import { ConfirmSheet, type MenuEntry, PopupMenu } from "@dashi/ui";
 import type { ReactElement } from "react";
+import type { WindowActions } from "../../../../src/shared/file-browser/context.ts";
+import { formatCount } from "../../../../src/shared/file-browser/format.ts";
+import type { Operations } from "../../../../src/shared/file-browser/operations.ts";
+import { Peek } from "../../../../src/shared/file-browser/peek.tsx";
+import type { FilesStore } from "../../../../src/shared/file-browser/store.ts";
+import type { FilesState } from "../../../../src/shared/file-browser/store-state.ts";
 import { baseName } from "../../../../src/shared/files/index.ts";
-import type { WindowActions } from "../context.ts";
-import { formatCount } from "../format.ts";
 import { actionMenu, backgroundMenu, itemMenu } from "../menus.ts";
 import { SuggestionList } from "../omnibox/omnibox.tsx";
 import type { Suggestions } from "../omnibox/omnibox-props.ts";
-import type { Operations } from "../operations/operations.ts";
-import type { FilesStore } from "../store/store.ts";
-import type { FilesState } from "../store/store-state.ts";
 import type { MenuState, Overlays } from "../use-overlays.ts";
 import { ConflictSheet } from "./conflict-sheet.tsx";
-import { Peek } from "./peek.tsx";
 import { InfoSheet, OpenWithSheet } from "./sheets.tsx";
 
 export function filesOverlay({

@@ -2,10 +2,10 @@
 
 import { Button, Notice, ProgressBar, useColors, useUndo } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import { useFiles, useFilesOps, useFilesState, useJobs } from "../context.ts";
-import { formatCount, formatSize } from "../format.ts";
-import { CLOSE } from "../glyphs.ts";
-import type { Job } from "../operations/jobs.ts";
+import { useFiles, useFilesOps, useFilesState, useJobs } from "../../../../src/shared/file-browser/context.ts";
+import { formatCount, formatSize } from "../../../../src/shared/file-browser/format.ts";
+import { CLOSE } from "../../../../src/shared/file-browser/glyphs.ts";
+import type { Job } from "../../../../src/shared/file-browser/jobs.ts";
 
 function JobRow({ job }: { job: Job }) {
   const colors = useColors();

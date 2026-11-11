@@ -3,7 +3,7 @@
  * versions.ts), the question when the file changed on disk meanwhile, Go to
  * Line, and Find and Replace. Drawn inside the window by the kit's Sheet; the
  * questions in the one alert frame (UI-5). Open and Save As are Files'
- * chooser (apps/files/chooser/).
+ * chooser (src/shared/file-browser/).
  */
 
 import { AlertSheet, Button, RESTART, rowLook, SelectionBar, Sheet, TextField, useColors, WARNING } from "@dashi/ui";

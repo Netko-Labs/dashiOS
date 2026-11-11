@@ -2,9 +2,9 @@ import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadThumbnailers, sandboxed, withThumbInfo } from "../apps/files/lib/thumbnailer.ts";
-import { parseThumbnailer, splitExec, thumbnailerArgv } from "../apps/files/lib/thumbnailer-spec.ts";
-import { thumbMtime } from "../apps/files/lib/thumbs.ts";
+import { loadThumbnailers, sandboxed, withThumbInfo } from "../src/shared/file-browser/lib/thumbnailer.ts";
+import { parseThumbnailer, splitExec, thumbnailerArgv } from "../src/shared/file-browser/lib/thumbnailer-spec.ts";
+import { thumbMtime } from "../src/shared/file-browser/lib/thumbs.ts";
 
 const GLYCIN = `[Thumbnailer Entry]
 TryExec=/usr/bin/glycin-thumbnailer

@@ -97,7 +97,7 @@ systemd --user
   (`dev.dashi.dialog`), one process per dialog, not in the launcher. It draws
   the message dialogs, `--progress`, `--entry`, `--password`, `--list`,
   `--text-info`, `--scale`, `--calendar`, and `--file-selection` (Files'
-  own chooser, `apps/files/chooser/`, as the portal's is); `--forms`,
+  own chooser, `src/shared/file-browser/`, as the portal's is); `--forms`,
   `--color-selection`, and `--notification` exit 255 for now.
 - **dashi-hardware** (`crates/dashi-hardware`) is Dashi's one privileged
   helper for what a laptop's kernel exposes: firmware attributes, platform

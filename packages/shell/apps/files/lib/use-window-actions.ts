@@ -7,14 +7,14 @@
 
 import { useUndo } from "@dashi/ui";
 import { useEffect, useMemo, useRef } from "react";
+import type { WindowActions } from "../../../src/shared/file-browser/context.ts";
+import type { Operations } from "../../../src/shared/file-browser/operations.ts";
+import type { FilesStore } from "../../../src/shared/file-browser/store.ts";
+import type { FilesState } from "../../../src/shared/file-browser/store-state.ts";
 import type { FileItem } from "../../../src/shared/files/index.ts";
 import { useAppMenus } from "../../kit/index.ts";
 import { chooseMenu, menuSpecs } from "./appmenus.ts";
-import type { WindowActions } from "./context.ts";
 import { editText } from "./omnibox/omnibox.tsx";
-import type { Operations } from "./operations/operations.ts";
-import type { FilesStore } from "./store/store.ts";
-import type { FilesState } from "./store/store-state.ts";
 import type { Overlays } from "./use-overlays.ts";
 
 export function useWindowActions({

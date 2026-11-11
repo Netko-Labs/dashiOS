@@ -1,8 +1,8 @@
 /** What Get Info shows for one item, read in one go (a folder's size is measured separately, in the background). */
 
 import { lstat, readlink, stat } from "node:fs/promises";
+import { octal, permissionString } from "../../../src/shared/file-browser/format.ts";
 import { describeError, type FileItem, kindText, tilde } from "../../../src/shared/files/index.ts";
-import { octal, permissionString } from "./format.ts";
 import { groupName, userName } from "./ids.ts";
 
 export interface ItemInfo {

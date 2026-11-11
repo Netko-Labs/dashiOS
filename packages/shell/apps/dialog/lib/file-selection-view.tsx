@@ -2,7 +2,9 @@
 
 import { existsSync } from "node:fs";
 import { useEffect, useMemo } from "react";
-import { ChooserView, type Env, openChooser } from "../../files/index.ts";
+import { openChooser } from "../../../src/shared/file-browser/chooser.ts";
+import { ChooserView } from "../../../src/shared/file-browser/chooser-view.tsx";
+import type { Env } from "../../../src/shared/file-browser/index.ts";
 import { selectionOutput, selectionRequest } from "./file-selection.ts";
 import type { Answer } from "./frame.tsx";
 import type { FileSelectionSpec } from "./spec.ts";

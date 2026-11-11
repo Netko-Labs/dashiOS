@@ -10,8 +10,8 @@
 import { afterAll, expect, test } from "bun:test";
 import { type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import { CHOOSER_SHEET, ChooserSheet } from "../apps/files/chooser/view.tsx";
-import { openChooser } from "../apps/files/index.ts";
+import { CHOOSER_SHEET, ChooserSheet } from "../src/shared/file-browser/chooser-view.tsx";
+import { openChooser } from "../src/shared/file-browser/index.ts";
 import { chooserRequest } from "../src/shared/files/chooser/request.ts";
 import { settle } from "./support/time.ts";
 

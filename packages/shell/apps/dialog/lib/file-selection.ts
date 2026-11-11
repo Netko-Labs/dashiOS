@@ -1,6 +1,6 @@
 /**
  * `--file-selection`, Zenity's most used dialog, on Files' chooser
- * (apps/files/chooser/): `--save`, `--directory`, `--multiple`,
+ * (src/shared/file-browser/): `--save`, `--directory`, `--multiple`,
  * `--filename` (a folder ending in "/" to start in, or a file: its folder,
  * and its name to save as), `--file-filter` ("Pictures | *.png *.jpg", or
  * just the patterns; several make a menu), `--separator` between the paths

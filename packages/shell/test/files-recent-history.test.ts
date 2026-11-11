@@ -2,8 +2,8 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseRecentlyUsed, withRecent } from "../apps/files/lib/recent.ts";
-import { readRecents, recordRecents } from "../apps/files/lib/recent-file.ts";
+import { parseRecentlyUsed, withRecent } from "../src/shared/file-browser/lib/recent.ts";
+import { readRecents, recordRecents } from "../src/shared/file-browser/lib/recent-file.ts";
 
 const AT = new Date("2026-11-07T01:30:00Z");
 const ICS = { path: "/home/alexk/Downloads/google & co.ics", mime: "text/calendar", app: "dev.dashi.calendar", exec: "'dev.dashi.calendar' %u" };

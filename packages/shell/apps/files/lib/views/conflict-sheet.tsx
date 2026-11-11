@@ -10,11 +10,11 @@
 import { AlertSheet, Switch, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
+import type { Answer, Conflict, Side } from "../../../../src/shared/file-browser/conflicts.ts";
+import { FileIcon } from "../../../../src/shared/file-browser/file-icon.tsx";
+import { formatDate, formatSize } from "../../../../src/shared/file-browser/format.ts";
+import { FOLDER_PLUS } from "../../../../src/shared/file-browser/glyphs.ts";
 import { baseName } from "../../../../src/shared/files/index.ts";
-import { formatDate, formatSize } from "../format.ts";
-import { FOLDER_PLUS } from "../glyphs.ts";
-import type { Answer, Conflict, Side } from "../operations/conflicts.ts";
-import { FileIcon } from "./file-icon.tsx";
 
 /** The question's first line. */
 export function conflictQuestion(conflict: Conflict, folderName: string): string {

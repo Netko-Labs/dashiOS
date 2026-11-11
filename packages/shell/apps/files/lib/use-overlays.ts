@@ -6,9 +6,9 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import type { Answer, Conflict } from "../../../src/shared/file-browser/conflicts.ts";
+import type { Operations } from "../../../src/shared/file-browser/operations.ts";
 import type { FileItem, OpenWithApp } from "../../../src/shared/files/index.ts";
-import type { Answer, Conflict } from "./operations/conflicts.ts";
-import type { Operations } from "./operations/operations.ts";
 
 export type Sheet =
   | { kind: "info"; item: FileItem }

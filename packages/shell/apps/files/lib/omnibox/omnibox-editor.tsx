@@ -8,9 +8,9 @@
 import { SEARCH, Segmented, useColors } from "@dashi/ui";
 import { type Bounds, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState } from "react";
-import { useFiles, useFilesState } from "../context.ts";
-import { CLOSE, sidebarGlyph } from "../glyphs.ts";
-import { completions, intentOf } from "./omnibox.ts";
+import { useFiles, useFilesState } from "../../../../src/shared/file-browser/context.ts";
+import { CLOSE, sidebarGlyph } from "../../../../src/shared/file-browser/glyphs.ts";
+import { completions, intentOf } from "../../../../src/shared/file-browser/omnibox.ts";
 import { Field } from "./omnibox-field.tsx";
 import type { OmniboxProps } from "./omnibox-props.ts";
 

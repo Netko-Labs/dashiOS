@@ -1,6 +1,6 @@
 /**
  * Open and Save As are Files' own chooser over the window
- * (apps/files/chooser/), never a typed path (PA-12): the request for the
+ * (src/shared/file-browser/), never a typed path (PA-12): the request for the
  * sheet that is up, and the chooser drawn from it. This is the one file of
  * the editor that reaches into Files' chooser.
  */
@@ -9,8 +9,8 @@ import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { useMemo } from "react";
+import { AppChooser } from "../../../../src/shared/file-browser/chooser-view.tsx";
 import { chooserRequest } from "../../../../src/shared/files/index.ts";
-import { AppChooser } from "../../../files/index.ts";
 import { resolveInput, suggestedSavePath } from "../names.ts";
 import type { SheetState } from "./sheets.tsx";
 

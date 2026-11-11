@@ -1,11 +1,11 @@
 import { expect, test } from "bun:test";
 import type { WindowKeyInfo } from "@mirinjs/metal";
-import { CATEGORY_TINTS, DARK_INK, iconKind, iconMarkup, LIGHT_INK } from "../apps/files/lib/file-icons.ts";
-import { browserKey } from "../apps/files/lib/keys.ts";
 import { foldCrumbs } from "../apps/files/lib/omnibox/crumbs.tsx";
-import { DEFAULT_PREFS, parsePrefs } from "../apps/files/lib/prefs.ts";
-import { navigate } from "../apps/files/lib/selection.ts";
-import { extensionLabel } from "../apps/files/lib/views/file-icon.tsx";
+import { extensionLabel } from "../src/shared/file-browser/file-icon.tsx";
+import { browserKey } from "../src/shared/file-browser/keys.ts";
+import { CATEGORY_TINTS, DARK_INK, iconKind, iconMarkup, LIGHT_INK } from "../src/shared/file-browser/lib/file-icons.ts";
+import { navigate } from "../src/shared/file-browser/lib/selection.ts";
+import { DEFAULT_PREFS, parsePrefs } from "../src/shared/file-browser/prefs.ts";
 import { looksLikeText } from "../src/shared/files/sniff.ts";
 
 // The file browser Files and every chooser share: its keys, two-way arrows, icons, and memory.

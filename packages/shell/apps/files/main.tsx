@@ -8,13 +8,13 @@
 
 import { statSync } from "node:fs";
 import { METAL_HOST } from "../../src/shared/apps/index.ts";
+import { systemEnv } from "../../src/shared/file-browser/env.ts";
+import { Operations } from "../../src/shared/file-browser/operations.ts";
+import { readPrefs, writePrefs } from "../../src/shared/file-browser/prefs.ts";
+import { FilesStore } from "../../src/shared/file-browser/store.ts";
 import { runApp } from "../kit/index.ts";
-import { systemEnv } from "./env.ts";
 import { parseArgs } from "./lib/args.ts";
-import { Operations } from "./lib/operations/operations.ts";
-import { readPrefs, writePrefs } from "./lib/prefs.ts";
 import { startFrom } from "./lib/start-from.ts";
-import { FilesStore } from "./lib/store/store.ts";
 import { FILES_SIZE, FilesWindow } from "./lib/views/view.tsx";
 
 const kind = (path: string): boolean | null => {

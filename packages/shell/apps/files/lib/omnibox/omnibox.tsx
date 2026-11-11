@@ -13,11 +13,11 @@
 
 import { rowLook, SelectionBar, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import { useFilesState } from "../context.ts";
-import { sidebarGlyph } from "../glyphs.ts";
-import type { Location } from "../location.ts";
+import { useFilesState } from "../../../../src/shared/file-browser/context.ts";
+import { sidebarGlyph } from "../../../../src/shared/file-browser/glyphs.ts";
+import type { Location } from "../../../../src/shared/file-browser/location.ts";
+import { displayPath } from "../../../../src/shared/file-browser/omnibox.ts";
 import { Crumbs } from "./crumbs.tsx";
-import { displayPath } from "./omnibox.ts";
 import { Editor } from "./omnibox-editor.tsx";
 import type { OmniboxProps, Suggestions } from "./omnibox-props.ts";
 

@@ -1,15 +1,17 @@
 /**
  * org.freedesktop.impl.portal.FileChooser: OpenFile, SaveFile, SaveFiles.
  * The calls are read (options.ts), the sheet asks (Files' chooser,
- * apps/files/chooser/: Files' sidebar, icons and keys), and the answer goes
+ * src/shared/file-browser/: Files' sidebar, icons and keys), and the answer goes
  * back as file URIs; xdg-desktop-portal hands a sandboxed app the files
  * through the document portal.
  */
 
 import { existsSync } from "node:fs";
 import type { InterfaceSpec } from "../../../../src/shared/dbus/index.ts";
+import { openChooser } from "../../../../src/shared/file-browser/chooser.ts";
+import { ChooserView } from "../../../../src/shared/file-browser/chooser-view.tsx";
+import type { Env } from "../../../../src/shared/file-browser/index.ts";
 import type { ChooserAnswer, ChooserMode, ChooserRequest } from "../../../../src/shared/files/index.ts";
-import { ChooserView, type Env, openChooser } from "../../../files/index.ts";
 import type { Requests } from "../request.ts";
 import type { ShowDialog } from "../windows.ts";
 import { chooserReply, parseChooser } from "./options.ts";

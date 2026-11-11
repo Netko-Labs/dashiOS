@@ -11,21 +11,21 @@
 import { AppWindow } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useCallback, useState, useSyncExternalStore } from "react";
+import { BrowserKeys, Listing } from "../../../../src/shared/file-browser/browser.tsx";
+import { Files } from "../../../../src/shared/file-browser/context.ts";
+import { locationTitle } from "../../../../src/shared/file-browser/location.ts";
+import type { Operations } from "../../../../src/shared/file-browser/operations.ts";
+import { Sidebar } from "../../../../src/shared/file-browser/sidebar.tsx";
+import type { FilesStore } from "../../../../src/shared/file-browser/store.ts";
+import { Controls, Leading } from "../../../../src/shared/file-browser/toolbar.tsx";
 import { chromeFor, RAIL_WIDTH } from "../chrome.ts";
-import { Files } from "../context.ts";
-import { locationTitle } from "../location.ts";
 import { Omnibox } from "../omnibox/omnibox.tsx";
 import type { Suggestions } from "../omnibox/omnibox-props.ts";
-import type { Operations } from "../operations/operations.ts";
-import type { FilesStore } from "../store/store.ts";
 import { useOverlays } from "../use-overlays.ts";
 import { useWindowActions } from "../use-window-actions.ts";
 import { runBrowserKey } from "../window-keys.ts";
-import { BrowserKeys, Listing } from "./browser.tsx";
 import { Footer } from "./footer.tsx";
 import { filesOverlay } from "./overlay.tsx";
-import { Sidebar } from "./sidebar.tsx";
-import { Controls, Leading } from "./toolbar.tsx";
 
 export const FILES_SIZE = { width: 1000, height: 660 } as const;
 

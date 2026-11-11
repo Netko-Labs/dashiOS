@@ -1,5 +1,5 @@
+import { folderAt, type Location } from "../../../src/shared/file-browser/location.ts";
 import { expandHome, normalizePath, parentOf, parseFileUri } from "../../../src/shared/files/index.ts";
-import { folderAt, type Location } from "./location.ts";
 
 /**
  * Where the window opens: the first argument that names something here (a

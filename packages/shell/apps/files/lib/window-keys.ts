@@ -4,12 +4,12 @@
  * selection; and text that is a list of files pasted, or a name to jump to.
  */
 
+import { looksLikeUriList, parseUriList } from "../../../src/shared/file-browser/clipboard.ts";
+import type { WindowActions } from "../../../src/shared/file-browser/context.ts";
+import type { BrowserKey } from "../../../src/shared/file-browser/keys.ts";
+import type { Operations } from "../../../src/shared/file-browser/operations.ts";
+import type { FilesStore } from "../../../src/shared/file-browser/store.ts";
 import type { FileItem } from "../../../src/shared/files/index.ts";
-import { looksLikeUriList, parseUriList } from "./clipboard.ts";
-import type { WindowActions } from "./context.ts";
-import type { BrowserKey } from "./keys.ts";
-import type { Operations } from "./operations/operations.ts";
-import type { FilesStore } from "./store/store.ts";
 
 export function runBrowserKey(
   key: BrowserKey,

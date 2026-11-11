@@ -8,13 +8,13 @@
  */
 
 import { type UndoState, undoMenuItems } from "@dashi/ui";
+import type { WindowActions } from "../../../src/shared/file-browser/context.ts";
+import { favorites } from "../../../src/shared/file-browser/location.ts";
+import type { Operations } from "../../../src/shared/file-browser/operations.ts";
+import type { FilesStore } from "../../../src/shared/file-browser/store.ts";
+import type { FilesState } from "../../../src/shared/file-browser/store-state.ts";
 import { mayOpen } from "../../../src/shared/files/index.ts";
 import type { MenuSpec } from "../../kit/index.ts";
-import type { WindowActions } from "./context.ts";
-import { favorites } from "./location.ts";
-import type { Operations } from "./operations/operations.ts";
-import type { FilesStore } from "./store/store.ts";
-import type { FilesState } from "./store/store-state.ts";
 
 const SEPARATOR = { type: "separator" } as const;
 const SORTS = [
