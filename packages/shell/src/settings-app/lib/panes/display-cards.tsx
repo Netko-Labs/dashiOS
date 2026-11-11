@@ -18,7 +18,8 @@ import {
   VRR_MODES,
   type VrrMode,
 } from "../../../display-config/monitors.ts";
-import { Button, Caption, Choices, Group } from "../../ui.tsx";
+import { Button, Caption, Group } from "../../../shared/cards/index.ts";
+import { Choices } from "../../ui.tsx";
 import { displayHero } from "../heroes.ts";
 import type { ScreensStore } from "../screens.ts";
 import { Setting } from "../setting.tsx";

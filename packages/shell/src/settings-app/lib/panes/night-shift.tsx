@@ -6,10 +6,11 @@
  * a schedule the shell flips the switch at its edges.
  */
 
+import { Caption, Group } from "../../../shared/cards/index.ts";
 import { NIGHT_SHIFT } from "../../../shared/settings/index.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
-import { Caption, Choices, Group, Slider } from "../../ui.tsx";
+import { Choices, Slider } from "../../ui.tsx";
 import { clockLabel, clockText, DEFAULT_SCHEDULE, DEFAULT_WARMTH, describeWarmth, FROM_HOURS, scheduleOf, TO_HOURS, timeChoices, WARMTH } from "../night.ts";
 import { Setting } from "../setting.tsx";
 

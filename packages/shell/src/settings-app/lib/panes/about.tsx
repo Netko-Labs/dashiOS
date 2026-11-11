@@ -3,9 +3,10 @@
 import { LOGO } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useMemo } from "react";
+import { Button, Group } from "../../../shared/cards/index.ts";
 import { useColors } from "../../colors.ts";
 import type { PaneContext } from "../../context.ts";
-import { Button, Group, Hero, Page } from "../../ui.tsx";
+import { Hero, Page } from "../../ui.tsx";
 import { formatMemory, formatStorage, versionLine } from "../about.ts";
 import { Setting } from "../setting.tsx";
 

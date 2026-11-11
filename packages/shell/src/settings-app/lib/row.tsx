@@ -9,10 +9,10 @@
 
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useContext, useLayoutEffect, useRef, useState } from "react";
+import { CARD_RADIUS, CardRowsContext } from "../../shared/cards/index.ts";
 import { type PillsLaid, PillsWrapped } from "../../shared/controls/inputs.tsx";
 import { useControlColors } from "../../shared/controls/palette.ts";
 import { Knob } from "../../shared/controls/parts.tsx";
-import { CardRowsContext } from "./edge.ts";
 
 /** Tell the card this row is in whether it starts with a knob (edge.ts: one left edge per card). */
 export function useCardRow(knob: boolean): void {
@@ -27,7 +27,7 @@ export function useCardRow(knob: boolean): void {
  * control (in a narrow window the control's pills wrap first, so the words
  * never break letter by letter).
  */
-export const PAGE = { title: 56, margin: 22, cardRadius: 24, heroRadius: 28, row: 56, knob: 40, words: 120, inset: 16, knobInset: 8 } as const;
+export const PAGE = { title: 56, margin: 22, cardRadius: CARD_RADIUS, heroRadius: 28, row: 56, knob: 40, words: 120, inset: 16, knobInset: 8 } as const;
 
 export interface RowProps {
   label: string;

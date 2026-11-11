@@ -10,13 +10,14 @@
 
 import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
+import { Button, Caption, Group, useSurface } from "../../../shared/cards/index.ts";
 import { DEFAULT_WALLPAPER_MODE, selectedRef } from "../../../wallpaper/catalog.ts";
 import type { PhotoChooser } from "../../../wallpaper/chooser.ts";
 import { pathFor, photoProblem, type WallpaperTile, wallpaperTiles, withPhoto } from "../../../wallpaper/tiles.ts";
 import { useColors } from "../../colors.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
-import { Button, Caption, Group, Page, useSurface } from "../../ui.tsx";
+import { Page } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";
 import { LiveSection } from "./wallpaper-live.tsx";
 

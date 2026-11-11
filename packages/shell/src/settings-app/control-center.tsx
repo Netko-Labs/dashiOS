@@ -21,6 +21,7 @@ import { type Controls, useControls } from "../control-center/controls.tsx";
 import { PUZZLE } from "../control-center/glyphs.ts";
 import { ControlCenterPanel, type ControlCenterProps, useLayout } from "../control-center/index.ts";
 import { type Layout, type Placed, pack, shown } from "../control-center/layout.ts";
+import { Caption, Group } from "../shared/cards/index.ts";
 import { PillButton } from "../shared/controls/inputs.tsx";
 import { useControlColors } from "../shared/controls/palette.ts";
 import { InkFill } from "../shared/controls/parts.tsx";
@@ -28,7 +29,7 @@ import { appletOffers, MINIATURE, miniatureFrame, miniatureHeight } from "./lib/
 import { Row as Item } from "./lib/row.tsx";
 import { Setting } from "./lib/setting.tsx";
 import { Spot } from "./spot.tsx";
-import { Caption, Choices, Group, Hero, Page } from "./ui.tsx";
+import { Choices, Hero, Page } from "./ui.tsx";
 
 export type ControlCenterEditor = Omit<ControlCenterProps, "page" | "onPage" | "onClose" | "embedded">;
 

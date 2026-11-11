@@ -11,11 +11,11 @@
 import { PopupMenu, useColors as usePalette, useWindowLayer } from "@dashi/ui";
 import { type Bounds, createPortal, Image, Text, View } from "@mirinjs/metal";
 import { useRef, useState } from "react";
+import { Caption, Group, Note } from "../../../shared/cards/index.ts";
 import { InkSlider } from "../../../shared/controls/ink-slider.tsx";
 import { useControlColors } from "../../../shared/controls/palette.ts";
 import { type AppMixer, type AppRecording, type AppSound, type MixerOutput, MuteKnob, playOnLabel, useMixer } from "../../../sound/index.ts";
 import { Spot } from "../../spot.tsx";
-import { Caption, Group, Note } from "../../ui.tsx";
 import { appSpot } from "../find.ts";
 import { PAGE, useCardRow } from "../row.tsx";
 

@@ -13,6 +13,7 @@ import { MenuHighlightContext, TooltipLayer } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { waitingCount } from "../agents/presence.ts";
+import { Group, Note } from "../shared/cards/index.ts";
 import { INK_SLIDER } from "../shared/controls/ink-slider.tsx";
 import { controlMenuHighlight, useControlColors } from "../shared/controls/palette.ts";
 import type { Nav, PaneId } from "../shared/settings/index.ts";
@@ -48,7 +49,7 @@ import { PaneStoresContext } from "./lib/setting.tsx";
 import { Sidebar } from "./lib/sidebar.tsx";
 import { SIDEBAR } from "./lib/sidebar-measures.ts";
 import { SpotContext, type SpotHost } from "./spot.tsx";
-import { Group, Note, Page, SaveError } from "./ui.tsx";
+import { Page, SaveError } from "./ui.tsx";
 
 /**
  * The widest row that can't fold: a knob, its words at their least

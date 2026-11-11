@@ -33,5 +33,5 @@ export { RowFocus } from "./spot.tsx";
 export { type SettingsApp, startSettingsApp } from "./start.tsx";
 export { SettingsStore } from "./store.ts";
 export type { LauncherSettings } from "./types.ts";
-export { Button, Caption, Choices, Group, Note, useSurface } from "./ui.tsx";
+export { Choices } from "./ui.tsx";
 export { SETTINGS_WINDOW, SettingsWindow } from "./view.tsx";

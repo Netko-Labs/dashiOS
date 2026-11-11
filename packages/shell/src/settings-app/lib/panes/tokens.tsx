@@ -14,9 +14,10 @@ import type { TokenSummary } from "../../../agents/secrets/types.ts";
 import type { VaultTokens } from "../../../agents/secrets/vault.ts";
 import { MODEL_KEYS, modelKey } from "../../../agents/tokens/model-keys.ts";
 import { DEFAULT_HEADER, placeholder } from "../../../agents/tokens/swap.ts";
+import { Button, Caption, Group, Note, useSurface } from "../../../shared/cards/index.ts";
 import { useColors } from "../../colors.ts";
 import { Spot } from "../../spot.tsx";
-import { Button, Caption, Choices, Group, Note, useSurface } from "../../ui.tsx";
+import { Choices } from "../../ui.tsx";
 import { Row as FormRow, Row as Item } from "../row.tsx";
 import { Failure, MiniButton, VAULT_TROUBLE } from "./parts.tsx";
 

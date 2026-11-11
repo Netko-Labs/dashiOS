@@ -8,7 +8,7 @@ import { rowLook, SEARCH, SelectionBar } from "@dashi/ui";
 import { ScrollView, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { useColors } from "../../settings-app/colors.ts";
-import { useSurface } from "../../settings-app/ui.tsx";
+import { useSurface } from "../../shared/cards/index.ts";
 
 export function SearchField({
   value,

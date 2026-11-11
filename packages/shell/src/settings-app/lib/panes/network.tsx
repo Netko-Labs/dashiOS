@@ -15,13 +15,14 @@ import { LOCK } from "../../../control-center/glyphs.ts";
 import { useDevices } from "../../../control-center/index.ts";
 import { wifiGlyph } from "../../../glyphs.ts";
 import { type EthernetInfo, useNetInfo, type VpnConnection } from "../../../network/index.ts";
+import { Caption, Group, Note } from "../../../shared/cards/index.ts";
 import { chooseNetwork } from "../../../wifi/flow.ts";
 import { joinMessage } from "../../../wifi/networks.ts";
 import { useWifi, type WifiState } from "../../../wifi/store.ts";
 import type { SavedNetwork, WifiNetwork } from "../../../wifi/types.ts";
 import { useColors } from "../../colors.ts";
 import type { PaneServices } from "../../services.ts";
-import { Caption, Group, Note, Page, Switch } from "../../ui.tsx";
+import { Page, Switch } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";
 import { Failure, KindMark, ListRow, MiniButton, Value } from "./parts.tsx";
 

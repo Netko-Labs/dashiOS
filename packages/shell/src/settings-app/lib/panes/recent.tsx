@@ -7,6 +7,7 @@
  */
 
 import { useState, useSyncExternalStore } from "react";
+import { Caption, Group, Note } from "../../../shared/cards/index.ts";
 import { type FlagsStore, useFlags } from "../../../shared/control-center/index.ts";
 import { isPaneId } from "../../../shared/settings/index.ts";
 import type { PaneContext } from "../../context.ts";
@@ -14,7 +15,7 @@ import { useSettings } from "../../hooks.ts";
 import { findRow, rowPlace } from "../../registry/index.ts";
 import { Spot } from "../../spot.tsx";
 import type { SettingsStore } from "../../store.ts";
-import { Caption, Group, Note, Page } from "../../ui.tsx";
+import { Page } from "../../ui.tsx";
 import type { ChangeEntry, ChangeLog } from "../changes/log.ts";
 import { changeLine } from "../changes/words.ts";
 import { ChangeRow } from "./change-row.tsx";

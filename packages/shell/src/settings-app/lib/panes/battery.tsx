@@ -21,13 +21,14 @@ import type { BatteryMonitor, BatteryMonitorState } from "../../../battery/monit
 import type { Laptop } from "../../../laptop/start.ts";
 import { useLaptop } from "../../../laptop/store.ts";
 import { describeAction } from "../../../power/policy.ts";
+import { Caption, Group } from "../../../shared/cards/index.ts";
 import { useEnergy } from "../../../system/energy.ts";
 import { isProfileId, PROFILE_LABEL } from "../../../system/profiles.ts";
 import { useSettings } from "../../hooks.ts";
 import type { PaneServices } from "../../services.ts";
 import { Spot } from "../../spot.tsx";
 import type { SettingsStore } from "../../store.ts";
-import { Caption, Choices, Group, Hero, Page } from "../../ui.tsx";
+import { Choices, Hero, Page } from "../../ui.tsx";
 import { BLANK_CHOICES, BLANK_COMMON, blankChoice, DEFAULT_BLANK_AFTER, SLEEP_CHOICES, SLEEP_COMMON, sleepChoice, timePills } from "../controls.ts";
 import { Setting } from "../setting.tsx";
 import { BatteryHeroView } from "./battery-hero.tsx";

@@ -4,15 +4,14 @@
  * disk, the account, the options (NVIDIA's driver), a last look, then the
  * install itself and Restart. model.ts holds the rules; helper.ts runs it;
  * use-installer.ts is the wizard's state; rows.tsx and headings.ts are the
- * parts the pages use. The pages live here because they and the frame use the
- * Settings kit (src/settings-app/ui.tsx), which only this file may import
- * (import-ways).
+ * parts the pages use. The pages and the frame draw with Settings' cards
+ * (src/shared/cards).
  */
 
 import { LOGO, ProgressBar, Row, Switch, TextField, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { Button, Caption, Group, Note, useSurface } from "../../../src/settings-app/ui.tsx";
+import { Button, Caption, Group, Note, useSurface } from "../../../src/shared/cards/index.ts";
 import { HEADINGS } from "./headings.ts";
 import { STEPS } from "./helper.ts";
 import { accountProblem, type FormPage, nextPage, overall, type Page, type Progress, previousPage, STEP_LABELS } from "./model.ts";

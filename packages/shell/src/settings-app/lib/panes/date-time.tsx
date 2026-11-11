@@ -10,11 +10,12 @@ import { Text, View } from "@mirinjs/metal";
 import { TimezonePicker } from "../../../region/pickers.tsx";
 import { describeFailure, type RegionStore, useRegion } from "../../../region/store.ts";
 import { describeZone } from "../../../region/timezones.ts";
+import { Caption, Group, TUCK } from "../../../shared/cards/index.ts";
 import { formatClock, useClockPrefs, useMinuteClock, usesHour24 } from "../../../shared/time/index.ts";
 import { useColors } from "../../colors.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
-import { Caption, Group, Page, Switch, TUCK } from "../../ui.tsx";
+import { Page, Switch } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";
 
 export function DateTimePane({ region, settings }: { region: RegionStore; settings: SettingsStore }) {

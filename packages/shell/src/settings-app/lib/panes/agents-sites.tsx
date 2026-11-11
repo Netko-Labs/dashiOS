@@ -9,9 +9,9 @@
 import { Text, TextInput, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import { siteFromInput } from "../../../agents/sites.ts";
+import { Button, Caption, Group, useSurface } from "../../../shared/cards/index.ts";
 import { useColors } from "../../colors.ts";
 import type { AheadSites } from "../../context.ts";
-import { Button, Caption, Group, useSurface } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";
 
 const NOTHING: readonly string[] = [];

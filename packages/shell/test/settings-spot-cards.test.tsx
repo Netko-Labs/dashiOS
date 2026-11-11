@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import { RowFocus, Spot, SpotContext } from "../src/settings-app/spot.tsx";
-import { Caption, Group, Note } from "../src/settings-app/ui.tsx";
+import { Caption, Group, Note } from "../src/shared/cards/index.ts";
 import { LIGHT_CONTROLS } from "../src/shared/controls/palette.ts";
 import { settle } from "./support/time.ts";
 

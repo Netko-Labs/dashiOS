@@ -10,10 +10,10 @@ import { useState, useSyncExternalStore } from "react";
 import type { ClipboardHistory, HistorySnapshot } from "../../../clipboard/history.ts";
 import { DEFAULT_LEFT_OUT, leftOutApps, withoutApp } from "../../../clipboard/left-out.ts";
 import { iconPath } from "../../../shared/apps/index.ts";
+import { Button, Caption, Group, useSurface } from "../../../shared/cards/index.ts";
 import { useColors } from "../../colors.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
-import { Button, Caption, Group, useSurface } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";
 
 /** What Settings reaches of the history: how much it holds, and clearing it. */

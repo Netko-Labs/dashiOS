@@ -13,6 +13,7 @@ import { rowLook, SEARCH, SelectionBar } from "@dashi/ui";
 import { ScrollView, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import type { Laptop } from "../laptop/start.ts";
+import { Caption, Group, Note, useSurface } from "../shared/cards/index.ts";
 import { KEYBOARD as KEYBOARD_KNOB, REPEAT } from "../shared/settings/index.ts";
 import { useColors } from "./colors.ts";
 import { useSettings } from "./hooks.ts";
@@ -23,7 +24,7 @@ import { KeyboardLightSection } from "./lib/panes/laptop-parts.tsx";
 import { Setting } from "./lib/setting.tsx";
 import { Spot } from "./spot.tsx";
 import type { SettingsStore } from "./store.ts";
-import { Caption, Group, Note, Page, Slider, useSurface } from "./ui.tsx";
+import { Page, Slider } from "./ui.tsx";
 
 const LIST_HEIGHT = 196;
 

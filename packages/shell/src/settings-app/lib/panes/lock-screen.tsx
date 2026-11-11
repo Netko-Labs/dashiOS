@@ -4,10 +4,11 @@
  * what it is and goes there).
  */
 
+import { Button, Caption, Group } from "../../../shared/cards/index.ts";
 import { paneTitle } from "../../../shared/settings/index.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
-import { Button, Caption, Group, Page } from "../../ui.tsx";
+import { Page } from "../../ui.tsx";
 import { BLANK_CHOICES, blankChoice, DEFAULT_BLANK_AFTER } from "../controls.ts";
 import { Setting } from "../setting.tsx";
 

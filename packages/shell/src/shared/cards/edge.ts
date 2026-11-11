@@ -3,7 +3,7 @@
  * every row has its knob glyph or none does, so the titles of a card start
  * at one place. Main settings rows have glyphs; plain lists (devices,
  * networks, a history) and cards of plain facts have none. Each card
- * (ui.tsx `Group`) hears which of its rows have a knob (row.tsx) and tells
+ * (cards.tsx `Group`) hears which of its rows have a knob (row.tsx) and tells
  * `onMixedCard`'s listeners when they disagree: the test that draws the
  * panes listens, and nothing is drawn differently.
  */

@@ -1,8 +1,9 @@
 /** Mouse: natural scrolling, tracking and scrolling speed, and the acceleration curve. Written to settings.json `input.mouse`. */
 
+import { Caption, Group } from "../../../shared/cards/index.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
-import { Caption, Group, Page } from "../../ui.tsx";
+import { Page } from "../../ui.tsx";
 import { DEFAULTS } from "../controls.ts";
 import { Setting } from "../setting.tsx";
 import { ScrollSpeedRow, SpeedRow } from "./speed-row.tsx";

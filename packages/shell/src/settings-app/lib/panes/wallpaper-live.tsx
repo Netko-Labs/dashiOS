@@ -8,13 +8,13 @@
 import { statSync } from "node:fs";
 import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
+import { Button, Caption, Group, useSurface } from "../../../shared/cards/index.ts";
 import type { PhotoChooser } from "../../../wallpaper/chooser.ts";
 import { isVideoPath } from "../../../wallpaper/live/choice.ts";
 import { chosenRef, type LiveTile, patchFor, shaderTiles, videoTiles, withVideo } from "../../../wallpaper/live/tiles.ts";
 import { useColors } from "../../colors.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
-import { Button, Caption, Group, useSurface } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";
 
 const TILE = { width: 148, height: 83 };

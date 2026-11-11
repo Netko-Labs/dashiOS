@@ -7,7 +7,6 @@ import type { ReactNode } from "react";
 import { AppearancePane } from "../src/settings-app/appearance.tsx";
 import { ControlCenterPane } from "../src/settings-app/control-center.tsx";
 import { KeyboardPane } from "../src/settings-app/keyboard.tsx";
-import { oneLeftEdge, onMixedCard } from "../src/settings-app/lib/edge.ts";
 import { AboutPane } from "../src/settings-app/lib/panes/about.tsx";
 import { DesktopDockPane } from "../src/settings-app/lib/panes/desktop-dock.tsx";
 import { LockScreenPane } from "../src/settings-app/lib/panes/lock-screen.tsx";
@@ -18,6 +17,7 @@ import { TrackpadPane } from "../src/settings-app/lib/panes/trackpad.tsx";
 import { PaneStoresContext } from "../src/settings-app/lib/setting.tsx";
 import type { PaneServices } from "../src/settings-app/services.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
+import { oneLeftEdge, onMixedCard } from "../src/shared/cards/edge.ts";
 import { FlagsStore } from "../src/shared/control-center/flags.ts";
 import { LevelsStore } from "../src/sound/levels-store.ts";
 import { fakeMeter } from "../src/sound/meter.ts";
@@ -149,7 +149,7 @@ test("every pane drawn here keeps one left edge in each of its cards", async () 
 });
 
 test("the rule hears a card that mixes its edges", async () => {
-  const { Group } = await import("../src/settings-app/ui.tsx");
+  const { Group } = await import("../src/shared/cards/index.ts");
   const { Row: Item } = await import("../src/settings-app/lib/row.tsx");
   const mixed: string[] = [];
   const stop = onMixedCard((card) => mixed.push(card));

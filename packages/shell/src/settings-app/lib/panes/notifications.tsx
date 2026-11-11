@@ -1,6 +1,7 @@
 /** Notifications: Do Not Disturb, the same switch as in Control Center. */
 
-import { Caption, Group, Page } from "../../ui.tsx";
+import { Caption, Group } from "../../../shared/cards/index.ts";
+import { Page } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";
 
 export function NotificationsPane() {

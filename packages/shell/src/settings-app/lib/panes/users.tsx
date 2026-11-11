@@ -12,10 +12,11 @@ import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { useAccount } from "../../../accounts/index.ts";
 import { type Account, initialsOf, nameProblem } from "../../../shared/accounts/index.ts";
+import { Button, Caption, Group, Note, useSurface } from "../../../shared/cards/index.ts";
 import type { PhotoChooser } from "../../../wallpaper/chooser.ts";
 import { useColors } from "../../colors.ts";
 import type { PaneServices } from "../../services.ts";
-import { Button, Caption, Group, Hero, Note, Page, Switch, useSurface } from "../../ui.tsx";
+import { Hero, Page, Switch } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";
 import { Failure, Value } from "./parts.tsx";
 

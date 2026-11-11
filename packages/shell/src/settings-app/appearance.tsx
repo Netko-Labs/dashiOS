@@ -16,6 +16,7 @@ import { Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { AUTO_DARK_FROM, AUTO_DARK_TO } from "../appearance/auto.ts";
 import { DEFAULT_CORNERS, isCornerName } from "../shared/appearance/index.ts";
+import { Caption, Group } from "../shared/cards/index.ts";
 import { type FlagsStore, useFlags } from "../shared/control-center/index.ts";
 import { DARK_CONTROLS, LIGHT_CONTROLS, useControlColors } from "../shared/controls/palette.ts";
 import { useSettings } from "./hooks.ts";
@@ -24,7 +25,7 @@ import { Setting } from "./lib/setting.tsx";
 import { CORNER_OPTIONS } from "./registry/appearance.ts";
 import { Spot } from "./spot.tsx";
 import type { SettingsStore } from "./store.ts";
-import { Caption, Choices, Group, Hero, Page } from "./ui.tsx";
+import { Choices, Hero, Page } from "./ui.tsx";
 
 /** A theme's picture: its surface, a bar, and a card, in that theme's own tokens. Dark's bar is a hairline's white on the black, as the menu bar's edge reads there. */
 const THEME = {

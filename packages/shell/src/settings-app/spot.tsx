@@ -15,6 +15,7 @@
 
 import { type Bounds, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useSyncExternalStore } from "react";
+import { CardLit } from "../shared/cards/index.ts";
 import { useControlColors } from "../shared/controls/palette.ts";
 import type { AppSpotId } from "./lib/find.ts";
 import { rowPlace, type SettingId } from "./registry/index.ts";
@@ -87,9 +88,6 @@ const NO_FOCUS = { subscribe: () => () => {}, getSnapshot: (): RowTarget | null 
 /** The page's gap between its parts (ui.tsx `Page`), kept inside a Spot that holds several. */
 export const PAGE_GAP = 10;
 
-/** Whether the cards here are lit: a `cards` Spot was asked for (ui.tsx's `Group` reads it). */
-export const SpotLit = createContext(false);
-
 /**
  * A row with an address: scrolled to and lit when it is asked for. A
  * section's Spot (`cards`: its heading and its cards) lights its cards, not
@@ -140,7 +138,7 @@ export function Spot({ id, cards = false, children }: { id: SettingId | AppSpotI
       }}
       style={cards ? { flexDirection: "column", gap: PAGE_GAP } : { flexDirection: "column", backgroundColor: lit ? colors.lit : "#00000000" }}
     >
-      {cards ? <SpotLit.Provider value={lit !== null}>{children}</SpotLit.Provider> : children}
+      {cards ? <CardLit.Provider value={lit !== null}>{children}</CardLit.Provider> : children}
     </View>
   );
 }

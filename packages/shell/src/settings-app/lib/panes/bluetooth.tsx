@@ -14,9 +14,10 @@ import { useBluetooth } from "../../../bluetooth/store.ts";
 import type { BluetoothDevice, BluetoothState } from "../../../bluetooth/types.ts";
 import { useDevices } from "../../../control-center/index.ts";
 import { batteryGlyph } from "../../../glyphs.ts";
+import { Caption, Group, Note } from "../../../shared/cards/index.ts";
 import { useColors } from "../../colors.ts";
 import type { PaneServices } from "../../services.ts";
-import { Caption, Group, Note, Page, Switch } from "../../ui.tsx";
+import { Page, Switch } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";
 import { Failure, KindMark, ListRow, MiniButton } from "./parts.tsx";
 

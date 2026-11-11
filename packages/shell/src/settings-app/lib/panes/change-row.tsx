@@ -10,8 +10,8 @@
 import { Text, View } from "@mirinjs/metal";
 import type { Actor } from "../../../acting.ts";
 import { ago } from "../../../agents/ask/history.ts";
+import { Button } from "../../../shared/cards/index.ts";
 import { useColors } from "../../colors.ts";
-import { Button } from "../../ui.tsx";
 import type { ChangeEntry } from "../changes/log.ts";
 import { changeLine } from "../changes/words.ts";
 import { PAGE } from "../row.tsx";

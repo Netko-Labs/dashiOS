@@ -5,9 +5,10 @@
  * default (libinput's), which is what the switches show until then.
  */
 
+import { Caption, Group } from "../../../shared/cards/index.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
-import { Caption, Group, Page } from "../../ui.tsx";
+import { Page } from "../../ui.tsx";
 import { DEFAULTS } from "../controls.ts";
 import { Setting } from "../setting.tsx";
 import { ScrollSpeedRow, SpeedRow } from "./speed-row.tsx";

@@ -9,9 +9,10 @@ import { Text, TextInput, View } from "@mirinjs/metal";
 import { useCallback, useEffect, useState } from "react";
 import { dollars, parseAmount } from "../../../agents/secrets/pay.ts";
 import type { CardSummary, Vault } from "../../../agents/secrets/vault.ts";
+import { Button, Caption, Group, Note, useSurface } from "../../../shared/cards/index.ts";
 import { useColors } from "../../colors.ts";
 import { Spot } from "../../spot.tsx";
-import { Button, Caption, Group, Note, Switch, useSurface } from "../../ui.tsx";
+import { Switch } from "../../ui.tsx";
 import { Row as FormRow, Row as Item } from "../row.tsx";
 import { ConfirmDelete, Failure, VAULT_TROUBLE } from "./parts.tsx";
 

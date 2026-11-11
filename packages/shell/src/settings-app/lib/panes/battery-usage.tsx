@@ -11,8 +11,8 @@ import { chargingBand, drawChart, drawMax, levelChart } from "../../../battery/c
 import { averageWatts, currentDischarge, formatSpan } from "../../../battery/history.ts";
 import { type BatteryMonitor, useBatteryMonitor } from "../../../battery/monitor.ts";
 import type { Insight } from "../../../battery/types.ts";
+import { Caption, Group } from "../../../shared/cards/index.ts";
 import { useColors } from "../../colors.ts";
-import { Caption, Group } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";
 import { Value } from "./parts.tsx";
 
