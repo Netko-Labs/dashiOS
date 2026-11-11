@@ -1,11 +1,11 @@
 NAME="Dashi"
-VERSION="0.4 beta"
+VERSION="@DASHI_VERSION@"
 ID=dashi
 ID_LIKE=fedora
 VERSION_ID=44
 VERSION_CODENAME=""
 PLATFORM_ID="platform:f44"
-PRETTY_NAME="Dashi 0.4 beta"
+PRETTY_NAME="Dashi @DASHI_VERSION@"
 ANSI_COLOR="0;38;2;95;174;149"
 LOGO=dashi-logo-icon
 CPE_NAME="cpe:/o:dashi:dashi:44"

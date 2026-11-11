@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# spin/dashi-release/fill-version SNAPSHOT ROOT: write Dashi's release into
+# ROOT's os-release and dashi-release (dashi-release.spec's %install, and
+# packaging.test.ts). The files hold placeholders, never a version of their
+# own: 0.7's package once shipped them saying 0.4. SNAPSHOT is build-rpms'
+# (0.7.0~beta.20261111.015155.6c1d6fa: "0.7 beta"; 0.7.0: "0.7").
+set -euo pipefail
+snapshot=$1
+root=$2
+version=$(sed -E 's/^([0-9]+\.[0-9]+)\..*$/\1/' <<< "$snapshot")
+stage=$(sed -nE 's/^[^~]*~([a-z]+).*$/\1/p' <<< "$snapshot")
+[[ $version =~ ^[0-9]+\.[0-9]+$ ]] || { echo "fill-version: no version in $snapshot" >&2; exit 1; }
+sed -i -e "s/@DASHI_VERSION@/$version${stage:+ $stage}/g" -e "s/@DASHI_BUILD@/$snapshot/g" "$root/usr/lib/os-release"
+sed -i -e "s/@DASHI_RELEASE@/$version${stage:+ ($stage)}/g" "$root/usr/lib/dashi-release"
