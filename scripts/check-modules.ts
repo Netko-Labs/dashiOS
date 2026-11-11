@@ -5,7 +5,8 @@
 //   H18 lib-imports    only a module's own files import its lib/ (tests may, to test a private
 //                      helper); lib/ is never in a package's exports or bin; lib/ holds no main.ts
 //   H19 deep-imports   from outside a module, import its index.ts or a file its index.ts
-//                      re-exports (tests may also import its lib/)
+//                      re-exports (tests may also import its lib/, and a nested module's
+//                      public files)
 //   H19 re-exports     only an index.ts (or a file a package's exports name) re-exports: no file
 //                      keeps an old import path alive
 //   H20 shared-use     a shared/ concern is used by two sibling modules or more (count: how many
@@ -14,7 +15,7 @@
 
 import { join, normalize } from "node:path";
 import ts from "typescript";
-import { buildGraph, crossedModule, type Graph, inside, libOwner, outsideUsers, publicFiles } from "./modules.ts";
+import { buildGraph, crossedModule, type Graph, inside, libOwner, moduleChain, outsideUsers, publicFiles } from "./modules.ts";
 import { type Counts, isTest, type Outcome, ratchet, read, repoFiles, report } from "./ratchet.ts";
 
 /** Folder names that say nothing about their concern. */
@@ -65,18 +66,25 @@ export function libEntries(all: string[]): Counts {
   return found;
 }
 
-/** H19: imports from outside a module that skip its public files. */
+/**
+ * H19: imports from outside a module that skip its public files. A test may also import any lib/,
+ * and the public files of a nested module (docs/decisions.md D7), as it may a top-level one's.
+ */
 export function deepImports(graph: Graph): Counts {
   const known = new Set(graph.files);
   const publics = new Map<string, Set<string>>();
+  const publicOf = (folder: string): Set<string> => {
+    if (!publics.has(folder)) publics.set(folder, publicFiles(folder, graph));
+    return publics.get(folder) ?? new Set();
+  };
   const found: Counts = new Map();
   for (const [file, targets] of graph.imports) {
     for (const target of targets) {
       const folder = crossedModule(file, target, known);
       if (folder === null) continue;
-      if (!publics.has(folder)) publics.set(folder, publicFiles(folder, graph));
-      if (publics.get(folder)?.has(target)) continue;
+      if (publicOf(folder).has(target)) continue;
       if (isTest(file) && libOwner(target) !== null) continue;
+      if (isTest(file) && moduleChain(target, known).some((module) => publicOf(module).has(target))) continue;
       bump(found, file);
     }
   }

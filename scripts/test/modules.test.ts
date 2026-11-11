@@ -79,6 +79,25 @@ describe("H19 deep imports", () => {
     );
     expect(Object.fromEntries(found)).toEqual({ "packages/shell/test/a.test.ts": 1, [`${S}/dock/a.ts`]: 2 });
   });
+  test("a test may import a nested module's public files; other files may not, nor a test its private ones", () => {
+    const found = deepImports(
+      graph({
+        [`${S}/agents/index.ts`]: [`${S}/agents/start.ts`],
+        [`${S}/agents/start.ts`]: [`${S}/agents/desktop/index.ts`],
+        [`${S}/agents/desktop/index.ts`]: [`${S}/agents/desktop/hands.ts`, `${S}/agents/desktop/lib/keys.ts`],
+        [`${S}/agents/desktop/hands.ts`]: [`${S}/agents/desktop/lib/keys.ts`],
+        [`${S}/agents/desktop/private.ts`]: [],
+        "packages/shell/test/hands.test.ts": [
+          `${S}/agents/desktop/index.ts`,
+          `${S}/agents/desktop/hands.ts`,
+          `${S}/agents/desktop/lib/keys.ts`,
+          `${S}/agents/desktop/private.ts`,
+        ],
+        [`${S}/dock/a.ts`]: [`${S}/agents/desktop/hands.ts`, `${S}/agents/desktop/index.ts`],
+      }),
+    );
+    expect(Object.fromEntries(found)).toEqual({ "packages/shell/test/hands.test.ts": 1, [`${S}/dock/a.ts`]: 2 });
+  });
 });
 
 describe("H19 re-exports", () => {

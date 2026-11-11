@@ -53,7 +53,7 @@ below, the same command CI runs (`.github/workflows/check.yml`);
 | H16 | Heavy libraries never load at shell start (the AI SDKs are banned there); the count of library modules at start has a ceiling (Dashi's own modules don't count: splitting files adds them). | `scripts/boot-weight.ts` (`boot-weight`) | `bun scripts/boot-weight.ts` |
 | H17 | A system service Dashi ships scores 5.0 or better on `systemd-analyze security`. | `scripts/check-units.ts` (`unit-exposure`) | `bun scripts/check-units.ts` |
 | H18 | Only a module's own files import its `lib/` (a test may, to test a private helper). `lib/` is never in a package's `exports` or `bin`, and holds no `main.ts`. | `scripts/check-modules.ts` (`lib-imports`) | `bun scripts/check-modules.ts` |
-| H19 | From outside a module, import its `index.ts`, or a file its `index.ts` re-exports; never another file inside it. A test may also import the module's `lib/`. Only an `index.ts` (or a file a package's `exports` names) re-exports: no file keeps an old import path alive. | `scripts/check-modules.ts` (`deep-imports`, `re-exports`) | `bun scripts/check-modules.ts` |
+| H19 | From outside a module, import its `index.ts`, or a file its `index.ts` re-exports; never another file inside it. A test may also import the module's `lib/`, and a nested module's public files. Only an `index.ts` (or a file a package's `exports` names) re-exports: no file keeps an old import path alive. | `scripts/check-modules.ts` (`deep-imports`, `re-exports`) | `bun scripts/check-modules.ts` |
 | H20 | A `shared/` concern is used by two sibling modules or more, and sits in a folder named for its concern: no loose files in `shared/`, no `utils/` or `helpers/`. | `scripts/check-modules.ts` (`shared-use`) | `bun scripts/check-modules.ts` |
 
 ### The lists
@@ -260,7 +260,8 @@ file. `scripts/modules.ts` says the same in code. A module looks like this:
 - A module may hold nested modules: a folder inside it with its own
   `index.ts` is a module of its own, with its own `lib/`
   (`agents/ask/`). From outside the outer module, go through the outer
-  module's `index.ts`.
+  module's `index.ts`; a test may also name the nested module's public
+  files.
 - An app's public surface is its entry point, `main.tsx`: nothing imports an
   app (H4), so it has no `index.ts`, and its other files are in `lib/`.
 - No file re-exports another's names to keep an old import path alive (H19).
@@ -303,15 +304,17 @@ Imports between modules (H19):
   own unit test. A test imports nothing else inside a module. Exactly, as
   `scripts/check-modules.ts` counts it, a test may import:
   - a module's `index.ts`, and any file that `index.ts` re-exports by a
-    relative path outside `lib/` (its public files; for a nested module seen
-    from outside, the outer module's index decides);
+    relative path outside `lib/` (its public files), a nested module's
+    included: a test of `agents/desktop`'s `Hands` names `hands.ts`, which
+    `agents/desktop/index.ts` re-exports, even when `agents/index.ts` does
+    not (decisions.md D7);
   - any file under any `lib/` of any module, nested modules' included (H18
     leaves tests out too);
   - a module of one file (a file outside every module folder).
 
   It may not import a file at a module's top level that the index does not
-  re-export (an app's `main.tsx` included: an app has no index), nor a nested
-  module's public file the outer index does not re-export. These count:
+  re-export (an app's `main.tsx` included: an app has no index), at any
+  depth of nesting. These count:
   static imports, `export … from`, type-only imports and `import("…")`.
   `mock.module("…")` paths do not: a test may mock any file. The fix for a
   test that needs a private helper of a public file is to move the helper to
