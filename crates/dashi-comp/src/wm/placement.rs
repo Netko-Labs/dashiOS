@@ -180,13 +180,19 @@ impl Dashi {
     /// The area the menu bar and Dock leave free on the screen under the pointer (global logical).
     pub(crate) fn usable_under_pointer(&self) -> Option<Rectangle<i32, Logical>> {
         let pointer = self.seat.get_pointer()?.current_location().to_i32_round();
+        self.usable_at(pointer)
+    }
+
+    /// The area the menu bar and Dock leave free on the screen holding `point`
+    /// (else the first screen), in global logical coordinates.
+    pub(crate) fn usable_at(&self, point: Point<i32, Logical>) -> Option<Rectangle<i32, Logical>> {
         let output = self
             .space
             .outputs()
             .find(|output| {
                 self.space
                     .output_geometry(output)
-                    .is_some_and(|g| g.contains(pointer))
+                    .is_some_and(|g| g.contains(point))
             })
             .or_else(|| self.space.outputs().next())?;
         let origin = self.space.output_geometry(output)?.loc;

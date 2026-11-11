@@ -6,8 +6,9 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 
 const ROOT = join(import.meta.dir, "../../..");
 
@@ -129,5 +130,47 @@ describe("Dashi's own libraries", () => {
         expect([...shipped], `${entry}: ${dependency}`).toContain(resolve(`${modules}/${names.get(entry)}`, spec.slice(5)));
       }
     }
+  });
+});
+
+describe("dashi-release", () => {
+  const files = ["usr/lib/os-release", "usr/lib/dashi-release"];
+
+  /** fill-version run on a copy of the package's files, as the spec runs it; the files filled. */
+  function filled(snapshot: string): Record<string, string> {
+    const root = mkdtempSync(join(tmpdir(), "dashi-release-"));
+    try {
+      for (const file of files) {
+        mkdirSync(dirname(join(root, file)), { recursive: true });
+        copyFileSync(join(ROOT, "spin/dashi-release", file), join(root, file));
+      }
+      const { code, output } = run([join(ROOT, "spin/dashi-release/fill-version"), snapshot, root]);
+      expect(output).toBe("");
+      expect(code).toBe(0);
+      return Object.fromEntries(files.map((file) => [file, readFileSync(join(root, file), "utf8")]));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+
+  test("the files hold no version of their own (0.7's package said 0.4)", () => {
+    for (const file of files) expect(readFileSync(join(ROOT, "spin/dashi-release", file), "utf8")).not.toMatch(/\b\d+\.\d+ (beta|\(beta\))/);
+    expect(readFileSync(join(ROOT, "spin/rpm/dashi-release.spec"), "utf8")).toContain("./fill-version '%{dashi_snapshot}' %{buildroot}");
+  });
+
+  test("a beta build names its version and stage", () => {
+    const out = filled("0.7.0~beta.20261111.015155.6c1d6fa");
+    const osRelease = out["usr/lib/os-release"] ?? "";
+    expect(osRelease).toContain('VERSION="0.7 beta"\n');
+    expect(osRelease).toContain('PRETTY_NAME="Dashi 0.7 beta"\n');
+    expect(osRelease).toContain('DASHI_BUILD="0.7.0~beta.20261111.015155.6c1d6fa"\n');
+    expect(out["usr/lib/dashi-release"]).toBe("Dashi release 0.7 (beta)\n");
+    for (const text of Object.values(out)) expect(text).not.toContain("@DASHI_");
+  });
+
+  test("a release build names its version alone", () => {
+    const out = filled("0.8.0");
+    expect(out["usr/lib/os-release"]).toContain('VERSION="0.8"\n');
+    expect(out["usr/lib/dashi-release"]).toBe("Dashi release 0.8\n");
   });
 });

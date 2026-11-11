@@ -59,7 +59,8 @@ package repositories; and zsh as the shell new accounts get, with Dashi's defaul
 %install
 cd spin/dashi-release
 cp -a usr etc %{buildroot}/
-sed -i 's/@DASHI_BUILD@/%{dashi_snapshot}/' %{buildroot}%{_prefix}/lib/os-release
+# The release's version comes from the build (fill-version), never from the files.
+./fill-version '%{dashi_snapshot}' %{buildroot}
 ln -s ../usr/lib/os-release %{buildroot}%{_sysconfdir}/os-release
 ln -s ../usr/lib/dashi-release %{buildroot}%{_sysconfdir}/dashi-release
 ln -s ../usr/lib/fedora-release %{buildroot}%{_sysconfdir}/fedora-release
@@ -123,6 +124,9 @@ fi
 %{_datadir}/dashi/zsh/dashi.zshrc
 
 %changelog
+* Wed Nov 11 2026 PejeDev <hi@peje.dev> - 44-0.7.0
+- os-release and dashi-release take Dashi's version from the build: 0.7's said 0.4.
+
 * Thu Nov 05 2026 PejeDev <hi@peje.dev> - 44-0.4.0
 - Dashi 0.4 beta.
 - tuned-ppd for power modes, in place of power-profiles-daemon.
