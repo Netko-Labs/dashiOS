@@ -17,7 +17,7 @@
  */
 
 import type { Compositor, Output } from "./compositor/index.ts";
-import { DEFAULT_POINTER_SIZE } from "./pointer.ts";
+import { DEFAULT_POINTER_SIZE } from "./shared/appearance/index.ts";
 
 /** How X11 apps meet a scaled screen: drawn at its pixels, or drawn at 1 and stretched. */
 export const X11_SCALINGS = ["sharp", "stretched"] as const;

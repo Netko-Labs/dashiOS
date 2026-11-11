@@ -116,14 +116,8 @@ packages/shell/apps/notes/main.tsx	packages/shell/src/shared/metal
 packages/shell/apps/notes/main.tsx	packages/shell/src/shared/notes
 packages/shell/apps/portal/main.tsx	packages/shell/apps/kit
 packages/shell/apps/portal/main.tsx	packages/shell/apps/portal
-packages/shell/apps/portal/main.tsx	packages/shell/src/dock
-packages/shell/apps/portal/main.tsx	packages/shell/src/input-method.ts
-packages/shell/apps/portal/main.tsx	packages/shell/src/pointer.ts
-packages/shell/apps/portal/main.tsx	packages/shell/src/scroll-speed.ts
-packages/shell/apps/portal/main.tsx	packages/shell/src/settings
 packages/shell/apps/portal/main.tsx	packages/shell/src/shared/accounts
 packages/shell/apps/portal/main.tsx	packages/shell/src/shared/appearance
-packages/shell/apps/portal/main.tsx	packages/shell/src/shared/applet-store
 packages/shell/apps/portal/main.tsx	packages/shell/src/shared/apps
 packages/shell/apps/portal/main.tsx	packages/shell/src/shared/control-center
 packages/shell/apps/portal/main.tsx	packages/shell/src/shared/dbus
@@ -136,10 +130,6 @@ packages/shell/apps/portal/main.tsx	packages/shell/src/shared/locale
 packages/shell/apps/portal/main.tsx	packages/shell/src/shared/metal
 packages/shell/apps/portal/main.tsx	packages/shell/src/shared/portal-host
 packages/shell/apps/portal/main.tsx	packages/shell/src/shared/settings
-packages/shell/apps/portal/main.tsx	packages/shell/src/shared/software
-packages/shell/apps/portal/main.tsx	packages/shell/src/spaces
-packages/shell/apps/portal/main.tsx	packages/shell/src/wallpaper
-packages/shell/apps/portal/main.tsx	packages/shell/src/xwayland-scale.ts
 packages/shell/apps/preview/main.tsx	packages/shell/apps/kit
 packages/shell/apps/preview/main.tsx	packages/shell/apps/preview
 packages/shell/apps/preview/main.tsx	packages/shell/src/shared/app-menus
@@ -237,7 +227,6 @@ packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/menus
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/network
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/night-shift.ts
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/overlay.tsx
-packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/pointer.ts
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/power
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/privacy
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/region

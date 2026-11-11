@@ -6,8 +6,7 @@
 import { DEFAULT_TEXT_SIZE } from "@dashi/ui";
 import { DOCK_DEFAULTS, type DockSettings } from "../dock/settings.ts";
 import { DEFAULT_INPUT_METHOD, type InputMethodName } from "../input-method.ts";
-import { DEFAULT_POINTER_SIZE } from "../pointer.ts";
-import { type CornerName, DEFAULT_CORNERS } from "../shared/appearance/index.ts";
+import { type CornerName, DEFAULT_CORNERS, DEFAULT_POINTER_SIZE } from "../shared/appearance/index.ts";
 import type { SpaceNames } from "../spaces/types.ts";
 import { DEFAULT_WALLPAPER_MODE, type WallpaperChoice } from "../wallpaper/catalog.ts";
 import { DEFAULT_X11_SCALING, type X11Scaling } from "../xwayland-scale.ts";

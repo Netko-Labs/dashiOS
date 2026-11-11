@@ -14,11 +14,6 @@ import type { AppCommand, Gate } from "./appearance/index.ts";
 import type { Compositor } from "./compositor/index.ts";
 import type { Run } from "./system/exec.ts";
 
-export const POINTER_SIZES = [24, 32, 40, 48] as const;
-export const DEFAULT_POINTER_SIZE = 24;
-
-export const isPointerSize = (value: unknown): value is number => typeof value === "number" && (POINTER_SIZES as readonly number[]).includes(value);
-
 /** The commands that tell GTK apps the size, for the tools present (`has`). */
 export function pointerCommands(size: number, has: (program: string) => boolean): AppCommand[] {
   return has("gsettings") ? [["gsettings", "set", "org.gnome.desktop.interface", "cursor-size", String(size)]] : [];

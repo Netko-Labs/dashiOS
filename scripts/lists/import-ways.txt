@@ -1,2 +1,1 @@
 # H4: imports the wrong way (count = imports): src -> apps, app -> other app, app -> src outside src/shared. May only shrink.
-1	packages/shell/apps/portal/lib/look.ts

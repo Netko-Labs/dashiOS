@@ -71,16 +71,14 @@
  * except a missing touchpad or mouse setting, which is the device's default.
  */
 
-import { existsSync, mkdirSync, readFileSync, watch } from "node:fs";
-import { basename, dirname } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 import { DEFAULT_TEXT_SIZE } from "@dashi/ui";
 import type { Compositor } from "../compositor/index.ts";
 import { resolveDock } from "../dock/settings.ts";
 import { DEFAULT_INPUT_METHOD } from "../input-method.ts";
-import { DEFAULT_POINTER_SIZE } from "../pointer.ts";
-import { DEFAULT_CORNERS } from "../shared/appearance/index.ts";
+import { DEFAULT_CORNERS, DEFAULT_POINTER_SIZE } from "../shared/appearance/index.ts";
 import { parseCatalogs } from "../shared/applet-store/catalogs.ts";
-import { settingsPath } from "../shared/settings/index.ts";
+import { settingsPath, watchSettings } from "../shared/settings/index.ts";
 import { DEFAULT_WALLPAPER_MODE, type WallpaperChoice } from "../wallpaper/catalog.ts";
 import { RETIRED_KEYS, RETIRED_KINDS } from "../wallpaper/live/choice.ts";
 import { DEFAULT_X11_SCALING } from "../xwayland-scale.ts";
@@ -221,36 +219,6 @@ export async function applySettings(compositor: Requester, settings: Settings, p
   if (hasInput(settings) || (previous && hasInput(previous))) await send("input", () => compositor.input(settings.input));
   const keyboard = keyboardRequest(settings, previous);
   if (hasKeys(keyboard)) await send("keyboard", () => compositor.keyboard(keyboard));
-}
-
-/** Editors save by writing, renaming, or replacing; wait for the dust to settle. */
-const SETTLE_MS = 150;
-
-/**
- * Call `onChange` when the file changes. Watches the directory, since the
- * file may be replaced or not exist yet. On a fresh install the directory
- * does not exist either, and watching it would fail: it is created first, so
- * the first write (System Settings') is applied without a restart. If it
- * cannot be created there is nothing to watch and the settings are read at
- * startup only.
- */
-export function watchSettings(path: string, onChange: () => void): () => void {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    mkdirSync(dirname(path), { recursive: true });
-    const watcher = watch(dirname(path), (_event, name) => {
-      if (name && name !== basename(path)) return;
-      clearTimeout(timer);
-      timer = setTimeout(onChange, SETTLE_MS);
-    });
-    watcher.on("error", () => {});
-    return () => {
-      clearTimeout(timer);
-      watcher.close();
-    };
-  } catch {
-    return () => {};
-  }
 }
 
 /**

@@ -10,9 +10,8 @@ import { accept, bool, type Infer, int, literal, num, reject, type Shape, shape,
 import { TEXT_SIZES } from "@dashi/ui";
 import { DOCK_STYLES } from "../dock/settings.ts";
 import { INPUT_METHODS } from "../input-method.ts";
-import { POINTER_SIZES } from "../pointer.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../scroll-speed.ts";
-import { CORNER_NAMES } from "../shared/appearance/index.ts";
+import { CORNER_NAMES, POINTER_SIZE, REDUCE_MOTION } from "../shared/appearance/index.ts";
 import { isPhotoPath } from "../shared/settings/index.ts";
 import { parseSpaceNames } from "../spaces/names.ts";
 import type { SpaceNames } from "../spaces/types.ts";
@@ -67,10 +66,10 @@ export const INPUT_METHOD = { engine: literal(...INPUT_METHODS) };
 
 export const APPEARANCE = {
   cornerRadius: literal(...CORNER_NAMES),
-  reduceMotion: bool(),
+  reduceMotion: REDUCE_MOTION,
   highlightActiveWindow: bool(),
   auto: bool(),
-  pointerSize: literal(...POINTER_SIZES),
+  pointerSize: POINTER_SIZE,
   textSize: literal(...TEXT_SIZES),
   x11Apps: literal(...X11_SCALINGS),
 };
