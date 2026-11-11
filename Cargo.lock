@@ -697,7 +697,7 @@ checksum = "f27ae1dd37df86211c42e150270f82743308803d90a6f6e6651cd730d5e1732f"
 
 [[package]]
 name = "dashi-comp"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bitflags 2.13.2",
  "calloop 0.14.5",
@@ -730,7 +730,7 @@ dependencies = [
 
 [[package]]
 name = "dashi-hardware"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "libc",
  "serde",
@@ -740,7 +740,7 @@ dependencies = [
 
 [[package]]
 name = "dashi-secretd"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "aes",
  "argon2",

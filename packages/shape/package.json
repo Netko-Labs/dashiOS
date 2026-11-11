@@ -1,6 +1,6 @@
 {
   "name": "@dashi/shape",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "description": "Dashi's one parser for outside data: a shape gives the parser (unknown in, a typed value or a refusal that names the path out), the TypeScript type, and a JSON Schema. No dependencies.",
   "license": "MIT",

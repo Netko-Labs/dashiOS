@@ -22,7 +22,7 @@ set -euo pipefail
 
 repo=$(cd -- "$(dirname -- "$(readlink -f -- "$0")")/.." && pwd)
 mirin=$(cd -- "$repo/../mirin" && pwd)
-version=0.7.0
+version=0.8.0
 cd "$repo"
 
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
