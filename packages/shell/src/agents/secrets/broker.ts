@@ -10,8 +10,9 @@
 import type { Placed } from "../atspi/index.ts";
 import { type ToolResult, text, toolError } from "../context.ts";
 import type { Payload } from "../desktop/index.ts";
-import { checkField, type FieldInfo } from "./field-check.ts";
+import { checkField } from "./lib/field-check.ts";
 import { findLogins, type Login, type LoginSource, loginKey, SOURCE_LABELS } from "./sources.ts";
+import type { FieldInfo } from "./types.ts";
 
 /** An "Allow Once" covers the sign-in it was for, and that login's code, this long. */
 export const ONCE_MS = 120_000;

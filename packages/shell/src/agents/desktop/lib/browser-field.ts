@@ -2,7 +2,7 @@
  * sign_in, fill_code and pay on an element of a browser tab (`ref`), through
  * Dashi's extension: the extension focuses the field and says what it is now
  * (a real password field by its type, or an editable text field) and the
- * addresses of every document around it; field-check.ts decides as it does
+ * addresses of every document around it; secrets/lib/field-check.ts decides as it does
  * for accessibility's answer; Dashi then types the secret itself with the
  * agent's hands into the browser's window, as it does elsewhere. The secret
  * never goes through the extension, and read_page says the field is filled.

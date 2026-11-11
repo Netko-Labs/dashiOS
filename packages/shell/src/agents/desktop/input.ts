@@ -12,7 +12,8 @@ import { type KeyChord, resolveChord } from "../../keymap/keymap-match.ts";
 import { type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import { named, noWindow, subject } from "../lib/subject.ts";
 import { type Call, keySteps } from "../tools/index.ts";
-import { borrowsPersonSeat, type Payload, PersonBusy, QUIET_MS, WAIT_MS } from "./hands.ts";
+import { borrowsPersonSeat, type Payload, PersonBusy } from "./hands.ts";
+import { describePerson, desktopChordRefusal, wheelFlicks } from "./lib/input-words.ts";
 
 type InputCall = Extract<Call, { name: "click" | "scroll" | "drag" | "type_text" | "press_keys" }>;
 
@@ -20,13 +21,7 @@ type InputCall = Extract<Call, { name: "click" | "scroll" | "drag" | "type_text"
 const CLICK_GAP_MS = 60;
 const DRAG_STEPS = 8;
 const DRAG_STEP_MS = 30;
-/**
- * A long scroll is played as a wheel spun fast: flicks of at most 120 pixels
- * (8 notches), a frame apart, never one event of hundreds of notches, which
- * no wheel sends (a 2400 pixel one came right before the display froze,
- * review 20). The tool keeps a scroll within 10 000 pixels (tools/lib/input.ts).
- */
-const WHEEL_FLICK_PX = 120;
+/** A frame between flicks (the flicks themselves: lib/input-words.ts). */
 const WHEEL_FLICK_MS = 16;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -41,13 +36,6 @@ function content(window: CompositorWindow): { width: number; height: number } | 
   return { width: window.frame.width, height: window.frame.height - window.titleBar };
 }
 
-/** A scroll of (dx, dy) as the wheel flicks that play it, in order; none for (0, 0). */
-export function wheelFlicks(dx: number, dy: number): Array<{ dx: number; dy: number }> {
-  const count = Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) / WHEEL_FLICK_PX);
-  // Even shares, so the last flick isn't a stub.
-  return Array.from({ length: count }, () => ({ dx: dx / count, dy: dy / count }));
-}
-
 const isResult = (value: object): value is ToolResult => "content" in value;
 
 /** The keymap's binding that hands ❖ chords to a Dashi app's menus (keymap.ts). */
@@ -59,19 +47,6 @@ const shortcutOf = (chord: KeyChord): string =>
   chordText({ key: chord.key, shift: chord.mods.includes("shift"), ctrl: chord.mods.includes("ctrl"), alt: chord.mods.includes("alt") }) ??
   [...chord.mods, chord.key].join("+");
 
-/**
- * Why press_keys refused a chord the desktop keeps, and what does it instead:
- * ❖Q is the shell's Quit (keymap.ts `quit-app`), which an agent reaches
- * through the app's menu.
- */
-export function desktopChordRefusal(shortcut: string, binding: string | null): string {
-  const instead =
-    binding === "quit-app"
-      ? "to quit the app, choose_menu_item its app menu's Quit (list_menus names it), or close_window"
-      : "use the window tools (focus_window, close_window, …) instead";
-  return `${shortcut} is the desktop's own shortcut, not the window's; ${instead}.`;
-}
-
 /** ❖ played as the app's own Ctrl, Shift kept. */
 const asCtrl = (chord: KeyChord): KeyChord => ({ mods: ["ctrl", ...chord.mods.filter((mod) => mod === "shift")], key: chord.key });
 
@@ -81,18 +56,6 @@ function inside(window: CompositorWindow, size: { width: number; height: number 
   return out
     ? toolError(`${at(out.x, out.y)} is outside w${window.id}, whose content is ${size.width}×${size.height} points; coordinates start at its top left.`)
     : null;
-}
-
-const seconds = (ms: number) => `${Math.max(1, Math.ceil(ms / 1000))} s`;
-
-/** Why nothing was done, and how long to wait: the agent may act QUIET_MS after the person's last input. */
-export function describePerson(error: PersonBusy): ToolResult {
-  const rule = `an agent may act once the person has left it alone for ${seconds(QUIET_MS)}`;
-  return toolError(
-    error.desktop
-      ? `The person is using the desktop and didn't pause within ${seconds(WAIT_MS)}, so nothing was done; ${rule}. Wait at least ${seconds(error.waitMs)} and try again.`
-      : `The person is using w${error.window}, so nothing was done; ${rule}. Wait at least ${seconds(error.waitMs)} and try again, or work in another window.`,
-  );
 }
 
 export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolResult> {

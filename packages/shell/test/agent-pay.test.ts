@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import type { Focused, Rect } from "../src/agents/atspi/tree.ts";
 import { kept, NEVER_KEPT, type Scope } from "../src/agents/consent.ts";
-import type { FieldInfo } from "../src/agents/secrets/field-check.ts";
 import { chooseCard, dollars, type PayContext, parseAmount, payWith } from "../src/agents/secrets/pay.ts";
+import type { FieldInfo } from "../src/agents/secrets/types.ts";
 import type { CardSummary } from "../src/agents/secrets/vault.ts";
 
 const NUMBER = "4242424242424242";

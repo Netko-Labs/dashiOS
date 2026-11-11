@@ -1,11 +1,6 @@
 # H19: imports from outside a module past its public files, its index.ts and what it re-exports (count = imports; tests may also import its lib/). May only shrink.
 1	packages/shell/test/agent-clipboard.test.ts
-1	packages/shell/test/agent-pay.test.ts
 2	packages/shell/test/agent-secrets-session.test.ts
-3	packages/shell/test/agent-sign-in.test.ts
-1	packages/shell/test/agents-desktop-chords.test.ts
-2	packages/shell/test/agents-desktop-hands.test.ts
-1	packages/shell/test/agents-desktop-scroll.test.ts
-1	packages/shell/test/browser-agents.test.ts
+2	packages/shell/test/agent-sign-in.test.ts
+1	packages/shell/test/agents-desktop-hands.test.ts
 1	packages/shell/test/onepassword.test.ts
-3	packages/shell/test/recorder.test.ts

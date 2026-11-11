@@ -7,7 +7,8 @@
  * typing. Policy, so tested.
  */
 
-import type { Focused } from "../atspi/index.ts";
+import type { Focused } from "../../atspi/index.ts";
+import type { FieldInfo } from "../types.ts";
 
 export type Verdict = { ok: true; focused: Focused } | { ok: false; reason: string };
 
@@ -44,12 +45,6 @@ const DEVTOOLS = [
 
 export function devtoolsOpen(cmdline: readonly string[]): boolean {
   return cmdline.some((arg) => DEVTOOLS.some((flag) => arg === flag || arg.startsWith(`${flag}=`)));
-}
-
-export interface FieldInfo {
-  focused: Focused | null;
-  /** The browser's command line, when it can be read. */
-  cmdline: readonly string[] | null;
 }
 
 /** Whether a secret for `site` may be typed into the field now focused. */

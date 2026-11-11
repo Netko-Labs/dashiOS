@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { wheelFlicks } from "../src/agents/desktop/input.ts";
+import { wheelFlicks } from "../src/agents/desktop/lib/input-words.ts";
 
 const sum = (flicks: Array<{ dx: number; dy: number }>) =>
   flicks.reduce((total, flick) => ({ dx: total.dx + flick.dx, dy: total.dy + flick.dy }), { dx: 0, dy: 0 });

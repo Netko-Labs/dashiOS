@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { desktopChordRefusal } from "../src/agents/desktop/input.ts";
+import { desktopChordRefusal } from "../src/agents/desktop/lib/input-words.ts";
 import { resolveChord } from "../src/keymap/keymap-match.ts";
 
 test("an agent's ❖Q is the desktop's Quit: the refusal names the menu's Quit instead", () => {

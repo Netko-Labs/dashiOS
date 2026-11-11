@@ -4,7 +4,7 @@ import { browserWindowFor, viewportToWindow } from "../src/agents/desktop/lib/br
 import { parseCall } from "../src/agents/index.ts";
 import { DENIED_SOCKETS, sandboxArgs } from "../src/agents/sandbox.ts";
 import type { SandboxEnv } from "../src/agents/sandbox-types.ts";
-import { checkField } from "../src/agents/secrets/field-check.ts";
+import { checkField } from "../src/agents/secrets/lib/field-check.ts";
 import { covers, parseSiteGrants, type SiteAnswer, SiteConsent, SiteGrants, siteOf } from "../src/agents/sites.ts";
 import { isBrowserHost } from "../src/browser/bridge.ts";
 import { parseField, parseFromBrowser } from "../src/browser/protocol.ts";

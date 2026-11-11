@@ -157,7 +157,7 @@ describe("ScreenRecorder", () => {
     expect(recorder.lengthOf(file)).toBe(6.4);
     expect(recorder.lengthOf("/elsewhere.mp4")).toBeNull();
     // record_screen says that, not the time it waited; without it, the wait.
-    const { recordedLength } = await import("../src/agents/desktop/record.ts");
+    const { recordedLength } = await import("../src/agents/desktop/lib/record-times.ts");
     expect(recordedLength(6.4, 0, 40_000)).toBe(6.4);
     expect(recordedLength(null, 0, 40_000)).toBe(40);
   });
@@ -170,13 +170,13 @@ describe("ScreenRecorder", () => {
 
 describe("record_screen's helpers", () => {
   test("stills sit in the middles of equal slices", async () => {
-    const { stillTimes } = await import("../src/agents/desktop/record.ts");
+    const { stillTimes } = await import("../src/agents/desktop/lib/record-times.ts");
     expect(stillTimes(6, 3)).toEqual([1000, 3000, 5000]);
     expect(stillTimes(5, 0)).toEqual([]);
   });
 
   test("the named screen, else the main display, else the first", async () => {
-    const { displayOf } = await import("../src/agents/desktop/record.ts");
+    const { displayOf } = await import("../src/agents/desktop/lib/record-times.ts");
     const frame = { x: 0, y: 0, width: 1280, height: 800 };
     const answer = outputsOf({
       outputs: [

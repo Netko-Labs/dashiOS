@@ -79,7 +79,7 @@ export function parseTab(value: unknown): TabInfo | null {
   };
 }
 
-/** A field as the extension found it (sign-in's check, field-check.ts). */
+/** A field as the extension found it (sign-in's check, agents/secrets/lib/field-check.ts). */
 export interface FieldReport {
   /** The frame it is in (0: the page itself). */
   frameId: number;
