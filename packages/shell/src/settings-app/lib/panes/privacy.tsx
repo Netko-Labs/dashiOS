@@ -93,6 +93,19 @@ function AppGroup({
   );
 }
 
+/** Programs the person let capture the screen without asking. */
+function ScreenClients({ clients, installed, onRemove }: { clients: readonly string[]; installed: Installed; onRemove: (path: string) => void }) {
+  return (
+    <Group testID="privacy-screen-clients">
+      {clients.map((path) => (
+        <Item key={path} testID={`privacy-screen-client:${path}`} label={programTitle(path, installed)} detail={`Captures the screen without asking · ${path}`}>
+          <Revoke testID={`privacy-screen-client-remove:${path}`} label="Remove" onPress={() => onRemove(path)} />
+        </Item>
+      ))}
+    </Group>
+  );
+}
+
 export function PrivacyPane({
   grants,
   home,
@@ -158,20 +171,7 @@ export function PrivacyPane({
           </Group>
         ) : (
           <>
-            {clients.length > 0 && (
-              <Group testID="privacy-screen-clients">
-                {clients.map((path) => (
-                  <Item
-                    key={path}
-                    testID={`privacy-screen-client:${path}`}
-                    label={programTitle(path, installed)}
-                    detail={`Captures the screen without asking · ${path}`}
-                  >
-                    <Revoke testID={`privacy-screen-client-remove:${path}`} label="Remove" onPress={() => removeClient(path)} />
-                  </Item>
-                ))}
-              </Group>
-            )}
+            {clients.length > 0 && <ScreenClients clients={clients} installed={installed} onRemove={removeClient} />}
             {shares.map((group) => (
               <AppGroup key={group.app} testID="privacy-share" {...group} onRevoke={revokeApp("screen")} />
             ))}

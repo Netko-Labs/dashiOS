@@ -75,9 +75,28 @@ export function videoProblem(typed: string, exists: (path: string) => boolean = 
   return exists(path) ? null : "There is no such file.";
 }
 
-export function LiveSection({ settings, chooser }: { settings: SettingsStore; chooser: PhotoChooser }) {
+/** A video's path, typed where there is no file chooser; it empties once the path is taken. */
+function VideoPathField({ onSubmit }: { onSubmit: (path: string) => boolean }) {
   const colors = useColors();
   const surface = useSurface();
+  const [typed, setTyped] = useState("");
+  return (
+    <TextInput
+      testID="live-video-path"
+      value={typed}
+      placeholder="/home/you/Videos/loop.mp4"
+      autoFocus
+      onChangeText={setTyped}
+      onSubmitEditing={(text) => {
+        if (onSubmit(text)) setTyped("");
+      }}
+      style={{ width: "100%", fontSize: 13, padding: 8, borderRadius: 7, color: colors.text, backgroundColor: surface.field }}
+    />
+  );
+}
+
+export function LiveSection({ settings, chooser }: { settings: SettingsStore; chooser: PhotoChooser }) {
+  const colors = useColors();
   const { wallpaper } = useSettings(settings).data;
   const chosen = chosenRef(wallpaper);
   const videos = wallpaper.videos ?? [];
@@ -85,7 +104,6 @@ export function LiveSection({ settings, chooser }: { settings: SettingsStore; ch
   const saved = videos.join("\n");
   const clips = useMemo(() => videoTiles(saved === "" ? [] : saved.split("\n"), isFile), [saved]);
   const [typing, setTyping] = useState(false);
-  const [typed, setTyped] = useState("");
   const [note, setNote] = useState<string | null>(null);
 
   const choose = (ref: string) => {
@@ -140,17 +158,7 @@ export function LiveSection({ settings, chooser }: { settings: SettingsStore; ch
         </Setting>
         {typing && (
           <Setting id="wallpaper/video-path">
-            <TextInput
-              testID="live-video-path"
-              value={typed}
-              placeholder="/home/you/Videos/loop.mp4"
-              autoFocus
-              onChangeText={setTyped}
-              onSubmitEditing={(text) => {
-                if (adopt(text)) setTyped("");
-              }}
-              style={{ width: "100%", fontSize: 13, padding: 8, borderRadius: 7, color: colors.text, backgroundColor: surface.field }}
-            />
+            <VideoPathField onSubmit={adopt} />
           </Setting>
         )}
         <Setting id="wallpaper/pause-on-battery" control="live-pause-battery" />

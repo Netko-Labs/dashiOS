@@ -76,6 +76,16 @@ export const SETTINGS_WINDOW = {
   minHeight: 300,
 } as const;
 
+function NoVault() {
+  return (
+    <Page title="Passwords">
+      <Group testID="passwords-none">
+        <Note>Dashi's vault isn't running in this session, so there are no passwords to show. Log out and in again to start it.</Note>
+      </Group>
+    </Page>
+  );
+}
+
 function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
   switch (id) {
     case "appearance":
@@ -119,15 +129,7 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "notifications":
       return <NotificationsPane />;
     case "passwords":
-      return ctx.passwords ? (
-        <PasswordsPane passwords={ctx.passwords} />
-      ) : (
-        <Page title="Passwords">
-          <Group testID="passwords-none">
-            <Note>Dashi's vault isn't running in this session, so there are no passwords to show. Log out and in again to start it.</Note>
-          </Group>
-        </Page>
-      );
+      return ctx.passwords ? <PasswordsPane passwords={ctx.passwords} /> : <NoVault />;
     case "agents":
       return <AgentsPane ctx={ctx} />;
     case "privacy":

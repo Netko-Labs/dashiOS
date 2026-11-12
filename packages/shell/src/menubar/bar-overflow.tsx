@@ -37,16 +37,7 @@ function GlyphTile({ testID, markup, onPress }: { testID: string; markup: string
   );
 }
 
-export function OverflowRow({
-  keys,
-  right,
-  extras,
-  system,
-  openKey,
-  actions,
-  onClose,
-  onEscape = onClose,
-}: {
+interface OverflowRowProps {
   /** The hidden items' keys (menubar.tsx's slots: `extra:<key>`, "network", "sound", "dnd"). */
   keys: readonly string[];
   right: number;
@@ -58,7 +49,9 @@ export function OverflowRow({
   onClose: () => void;
   /** Esc: closed, or back to the menu bar when the keyboard came from it (menus/bar-keys.ts). */
   onEscape?: () => void;
-}) {
+}
+
+export function OverflowRow({ keys, right, extras, system, openKey, actions, onClose, onEscape = onClose }: OverflowRowProps) {
   const colors = useColors();
   const all = useExtras(extras);
   const { network, volume } = useSystem(system);
