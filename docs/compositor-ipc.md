@@ -218,7 +218,10 @@ surfaces and keys an agent or a `send-keys` typed are not watched.
   wlr-data-control (clipboard without focus), ext-session-lock, the input
   method, and `capture` are for the shell's own processes only, by the same
   rule as "Who may ask" (`session/trust.rs`): an app the shell launches runs
-  under it but in a session of its own, and is not the shell;
+  under it but in a session of its own, and is not the shell. A Wayland
+  client is asked each time one of them looks at it, long after it connected,
+  so its process is held by a pidfd from the start (`session/process.rs`):
+  once that process is gone the client is nobody's, whoever has its pid now;
   screencopy, ext-image-copy-capture (screens, and windows named through
   ext-foreign-toplevel-list) also for the executables in
   `screencopy-clients`. None of them exist in greeter mode.

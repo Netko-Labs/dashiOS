@@ -60,20 +60,23 @@ pub(crate) fn may_copy(client: &Client, grants: &Grants) -> bool {
     if trust::is_shell_client(client, &grants.shell) {
         return true;
     }
-    let Some(pid) = client
+    let Some(process) = client
         .get_data::<crate::state::ClientState>()
         .filter(|data| data.sandbox.is_none())
-        .and_then(|data| data.pid)
+        .and_then(|data| data.process.as_ref())
     else {
         return false;
     };
-    let Ok(exe) = std::fs::read_link(format!("/proc/{pid}/exe")) else {
-        return false;
-    };
-    grants
-        .paths
-        .lock()
-        .is_ok_and(|paths| paths.iter().any(|allowed| allowed == &exe))
+    // The program of the process that connected, not of one that got its pid since.
+    process.is(|pid| {
+        let Ok(exe) = std::fs::read_link(format!("/proc/{pid}/exe")) else {
+            return false;
+        };
+        grants
+            .paths
+            .lock()
+            .is_ok_and(|paths| paths.iter().any(|allowed| allowed == &exe))
+    })
 }
 
 impl GlobalDispatch<ZwlrScreencopyManagerV1, Grants> for Dashi {

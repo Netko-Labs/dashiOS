@@ -95,7 +95,14 @@ pub(crate) fn is_shell_client(
         return false;
     };
     // A sandboxed app runs under the shell too, but is never trusted as it.
-    data.sandbox.is_none() && shell > 0 && data.pid.is_some_and(|pid| is_shell_process(pid, shell))
+    // Asked of its pid in /proc, then of its pidfd: the process that connected, not one
+    // that got its pid since (session/process.rs).
+    data.sandbox.is_none()
+        && shell > 0
+        && data
+            .process
+            .as_ref()
+            .is_some_and(|process| process.is(|pid| is_shell_process(pid, shell)))
 }
 
 #[cfg(test)]

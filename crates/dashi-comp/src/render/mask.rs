@@ -110,7 +110,7 @@ impl Dashi {
         let pid = client
             .as_ref()
             .and_then(|c| c.get_data::<crate::state::ClientState>())
-            .and_then(|data| data.pid)
+            .and_then(|data| data.pid())
             .and_then(|pid| u32::try_from(pid).ok());
         if let Some(mask) = pid.and_then(|pid| self.capture_masks.for_pid(pid)) {
             self.apply_mask(Some(mask), area, scale, picture);

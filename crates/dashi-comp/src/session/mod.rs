@@ -11,6 +11,7 @@ pub(crate) mod idle;
 pub(crate) mod lock;
 // Agents (0.4.0, secrets): whose presses were whose.
 pub(crate) mod origin;
+pub(crate) mod process;
 pub(crate) mod trust;
 
 pub(crate) use child::{end_session, spawn};

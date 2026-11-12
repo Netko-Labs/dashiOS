@@ -110,7 +110,7 @@ crates/dashi-comp/src/
   ipc/              socket, framing, who connected, the method table (who may ask what), methods/
   background.rs     blocking work (PNG encoding, file IO) on a thread, back as a calloop event
   outputs/          `outputs`, `output`, `outputs-config`, VRR modes, `mirror` (mirror.rs)
-  session/          the session client, trust, lock, idle, agent input
+  session/          the session client, trust, a socket's peer held by a pidfd (process.rs), lock, idle, agent input
   wallpaper/        pictures, video (GStreamer), live looks
 ```
 
