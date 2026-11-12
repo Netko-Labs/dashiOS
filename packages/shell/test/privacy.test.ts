@@ -159,6 +159,29 @@ describe("the portal's permission store", () => {
     await store.refresh();
     expect(store.getSnapshot()).toEqual({ state: "unavailable" });
   });
+
+  test("stopped before the bus has subscribed, the watch still ends", async () => {
+    let subscribed: (stop: () => void) => void = () => {};
+    let watching = 0;
+    const store = new PrivacyStore(
+      {
+        list: async () => [],
+        revoke: async () => {},
+        watch: () =>
+          new Promise((resolve) => {
+            subscribed = resolve;
+          }),
+      },
+      new SeenTimes(null),
+    );
+    const stop = store.start();
+    stop();
+    // The subscription lands after the stop: nothing is left listening.
+    watching += 1;
+    subscribed(() => void (watching -= 1));
+    await store.refresh();
+    expect(watching).toBe(0);
+  });
 });
 
 describe("since when", () => {
