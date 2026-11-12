@@ -19,9 +19,9 @@ import { appletsRoot, installFiles } from "../installed.ts";
 import { readManifest } from "../manifest.ts";
 import { sha256, unpack } from "../package.ts";
 import { generateKeys } from "../signing/minisign.ts";
-import { dev } from "./dev.ts";
-import { packTo, publish } from "./publish.ts";
-import { templateFiles } from "./templates.ts";
+import { dev } from "./lib/dev.ts";
+import { packTo, publish, signatureNote } from "./lib/publish.ts";
+import { templateFiles } from "./lib/templates.ts";
 
 const USAGE = "dashi-applet new NAME | dev [--vm] | pack [--sign KEY] | publish [--catalog DIR] [--sign KEY] | keygen | install FILE | check";
 
@@ -107,7 +107,7 @@ async function main(argv: readonly string[]): Promise<number> {
       case "pack": {
         const at = args.indexOf("--sign");
         const { packed, path, signature } = await packTo(here, at >= 0 ? args[at + 1] : undefined);
-        console.log(`  ✓ ${path} (${Math.round(packed.bytes.byteLength / 1024)} KB, sha256 ${packed.sha256})${signature ? ", signed" : ""}`);
+        console.log(`  ✓ ${path} (${Math.round(packed.bytes.byteLength / 1024)} KB, sha256 ${packed.sha256})${signatureNote(here, packed.bytes, signature)}`);
         return 0;
       }
       case "publish":

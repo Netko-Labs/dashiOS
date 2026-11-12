@@ -9,28 +9,26 @@
  * person who finished once is not marked as having skipped by looking again.
  */
 
-import type { AnswerStatus } from "../agents/ask/service.ts";
+import type { AnswerStatus } from "../agents/index.ts";
 import { registerShellApp, SETUP_APP_ID } from "../apps.ts";
-import type { Compositor } from "../compositor.ts";
-import type { FlagsStore } from "../control-center/flags.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
-import type { RegionStore } from "../region/store.ts";
+import type { RegionStore } from "../region/index.ts";
 import { loadLayouts } from "../settings-app/layouts.ts";
 import type { SettingsStore } from "../settings-app/store.ts";
-import { Software } from "../software/manager.ts";
-import { standIn } from "../software/stand-in.ts";
+import type { FlagsStore } from "../shared/control-center/index.ts";
+import { Software, standIn } from "../shared/software/index.ts";
 import { isDevelopmentRun } from "../system/stand-in.ts";
 import type { SystemStore } from "../system/store.ts";
-import { PasswordPrompt } from "../wifi/prompt.tsx";
-import type { WifiStore } from "../wifi/store.ts";
-import type { SetupContext } from "./context.ts";
-import { detectHardware } from "./extras/hardware.ts";
-import { hasHelper, helperRunner, isDryRun } from "./extras/helper.ts";
-import { ExtrasStore } from "./extras/store.ts";
+import { PasswordPrompt, type WifiStore } from "../wifi/index.ts";
 import { Flow, type Machine, type PageId } from "./flow.ts";
-import { isLiveBoot } from "./live.ts";
-import { readSetupRecord, type SetupOutcome, setupStatePath, shouldOpenAtLogin, writeSetupRecord } from "./state.ts";
-import { SETUP_WINDOW, SetupWindow } from "./view.tsx";
+import type { SetupContext } from "./lib/context.ts";
+import { detectHardware } from "./lib/extras/hardware.ts";
+import { hasHelper, helperRunner, isDryRun } from "./lib/extras/helper.ts";
+import { ExtrasStore } from "./lib/extras/store.ts";
+import { isLiveBoot } from "./lib/live.ts";
+import { readSetupRecord, type SetupOutcome, setupStatePath, shouldOpenAtLogin, writeSetupRecord } from "./lib/state.ts";
+import { SETUP_WINDOW, SetupWindow } from "./lib/view.tsx";
 
 export const SETUP_TITLE = "Setup Assistant";
 
@@ -78,6 +76,45 @@ export function machineOf(wifi: Pick<WifiStore, "getSnapshot">, system: Pick<Sys
   return { wifi: wifi.getSnapshot().available !== false, wired: system.getSnapshot().network?.kind === "wired", extras };
 }
 
+/** Raises the window: the compositor lists it by app id, and `focus` brings a minimized one back too. */
+async function raiseSetupWindow(compositor: Compositor | null): Promise<void> {
+  try {
+    const window = (await compositor?.windows())?.find((candidate) => candidate.appId === SETUP_APP_ID);
+    if (window) await compositor?.focus({ window: window.id });
+  } catch (error) {
+    console.error("dashi-shell: could not bring the Setup Assistant forward:", error);
+  }
+}
+
+/** Finishing is always written; skipping never replaces an earlier record. */
+function rememberOutcome(outcome: SetupOutcome, statePath: string): void {
+  if (outcome === "finished" || readSetupRecord(statePath) === null) writeSetupRecord(outcome, statePath);
+}
+
+/** The context the pages read: the stores, the flow, the extras, the password prompt, and what Done and Skip Setup do. */
+function setupContextOf(parts: {
+  options: SetupOptions;
+  flow: Flow;
+  extras: ExtrasStore;
+  passwords: PasswordPrompt;
+  finish(how: SetupOutcome): void;
+}): SetupContext {
+  const { options } = parts;
+  return {
+    settings: options.settings,
+    region: options.region,
+    flags: options.flags,
+    wifi: options.wifi,
+    layouts: loadLayouts(),
+    flow: parts.flow,
+    extras: parts.extras,
+    askPassword: (network) => parts.passwords.ask(network),
+    finish: parts.finish,
+    ...(options.openLauncher ? { openLauncher: options.openLauncher } : {}),
+    ...answersOf(options),
+  };
+}
+
 export function startSetupAssistant(options: SetupOptions): SetupAssistant {
   const { compositor } = options;
   const statePath = options.statePath ?? setupStatePath();
@@ -105,25 +142,10 @@ export function startSetupAssistant(options: SetupOptions): SetupAssistant {
     current.surface?.close();
   };
 
-  /** Raises the window: the compositor lists it by app id, and `focus` brings a minimized one back too. */
-  const raise = async (): Promise<void> => {
-    try {
-      const window = (await compositor?.windows())?.find((candidate) => candidate.appId === SETUP_APP_ID);
-      if (window) await compositor?.request("focus", { window: window.id });
-    } catch (error) {
-      console.error("dashi-shell: could not bring the Setup Assistant forward:", error);
-    }
-  };
-
-  const remember = (outcome: SetupOutcome): void => {
-    // Finishing is always written; skipping never replaces an earlier record.
-    if (outcome === "finished" || readSetupRecord(statePath) === null) writeSetupRecord(outcome, statePath);
-  };
-
   const open = (page?: PageId): void => {
     if (session) {
       if (page) session.flow.goto(page);
-      void raise();
+      void raiseSetupWindow(compositor);
       return;
     }
     const flow = new Flow(machineOf(options.wifi, options.system, offersExtras), page ?? "welcome");
@@ -146,24 +168,17 @@ export function startSetupAssistant(options: SetupOptions): SetupAssistant {
       },
     };
     session = current;
-    const ctx: SetupContext = {
-      settings: options.settings,
-      region: options.region,
-      flags: options.flags,
-      wifi: options.wifi,
-      layouts: loadLayouts(),
+    const ctx = setupContextOf({
+      options,
       flow,
       extras: extrasStore(),
-      askPassword: (network) => passwords.ask(network),
+      passwords,
       finish: (how) => {
         outcome = how;
         close();
       },
-      ...(options.openLauncher ? { openLauncher: options.openLauncher } : {}),
-      ...answersOf(options),
-    };
-    const stopWatching = options.settings.watch();
-    stops.push(stopWatching);
+    });
+    stops.push(options.settings.watch());
     current.surface = openOverlay(
       { title: SETUP_TITLE, appId: SETUP_APP_ID, width: SETUP_WINDOW.width, height: SETUP_WINDOW.height, titleBar: "unified" },
       <SetupWindow ctx={ctx} />,
@@ -171,7 +186,7 @@ export function startSetupAssistant(options: SetupOptions): SetupAssistant {
         // The window went (Done, Skip Setup, its close button, or its host died).
         // Only Done and Skip Setup are the person's word; a closed window
         // remembers nothing, so setup is offered again at the next login.
-        if (outcome && !shuttingDown) remember(outcome);
+        if (outcome && !shuttingDown) rememberOutcome(outcome, statePath);
         if (session === current) session = null;
         current.stop();
       },

@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readdirSync, rmSync, statSync, writeFileSync }
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ClipboardHistory, type ClipEntry, MAX_AGE_MS, parseEntry, prune } from "../src/clipboard/history.ts";
-import { age, entryTitle, historySections, oneLine, skippedSummary } from "../src/clipboard/rows.ts";
+import { age, entryTitle, historySections, oneLine, skippedSummary } from "../src/clipboard/lib/rows.ts";
 import { forAgent } from "../src/clipboard/start.ts";
 
 // The history: 200 copies or 7 days, pinned ones kept, a copy already there

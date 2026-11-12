@@ -26,6 +26,9 @@ export interface WarmTimers {
   clear(timer: unknown): void;
 }
 
+/** What `set` gave back: a timer of setTimeout's. */
+const isTimer = (value: unknown): value is ReturnType<typeof setTimeout> => typeof value === "number" || (typeof value === "object" && value !== null);
+
 const realTimers: WarmTimers = {
   set: (run, ms) => {
     const timer = setTimeout(run, ms);
@@ -33,7 +36,9 @@ const realTimers: WarmTimers = {
     timer.unref?.();
     return timer;
   },
-  clear: (timer) => clearTimeout(timer as ReturnType<typeof setTimeout>),
+  clear: (timer) => {
+    if (isTimer(timer)) clearTimeout(timer);
+  },
 };
 
 export interface WarmHostOptions {

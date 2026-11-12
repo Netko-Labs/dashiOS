@@ -27,25 +27,15 @@
  */
 
 import { useSyncExternalStore } from "react";
-import { displayTime, HOVER_GRACE_MS, type Scheduler, timeoutScheduler } from "./timing.ts";
+import { markClosed, recordInHistory } from "./lib/history.ts";
+import { freeId, type Live } from "./lib/live.ts";
+import { displayTime, HOVER_GRACE_MS, type Scheduler, timeoutScheduler } from "./lib/timing.ts";
 import { CloseReason, type HistoryEntry, type Notification, type NotifyInput, type StoreEvent, type StoreSnapshot } from "./types.ts";
 
 export const MAX_BANNERS = 3;
 /** The `sender` of a notification the shell posts itself (no app on the bus to ask): a click in the center always runs its action. */
 export const SHELL_SENDER = "dashi:shell";
 const MAX_LIVE = 64;
-export const MAX_HISTORY = 200;
-
-export { DEFAULT_TIMEOUT_MS, displayTime, HOVER_GRACE_MS, type Scheduler } from "./timing.ts";
-
-interface Live {
-  notification: Notification;
-  cancel: (() => void) | null;
-  /** The pointer is on its banner: no countdown. */
-  held: boolean;
-  /** The person has it in front of them in the center: it never shows as a banner. */
-  seen: boolean;
-}
 
 export interface StoreOptions {
   schedule?: Scheduler;
@@ -104,7 +94,7 @@ export class NotificationStore {
     };
     existing?.cancel?.();
     this.live.set(id, { notification, cancel: null, held: false, seen: this.centerOpen });
-    this.record(notification);
+    this.history = recordInHistory(this.history, notification);
     this.trim();
     this.settle();
     return id;
@@ -220,28 +210,14 @@ export class NotificationStore {
     if (!entry) return false;
     entry.cancel?.();
     this.live.delete(id);
-    const found = this.history.findIndex((past) => past.id === id && !past.closed);
-    if (found >= 0) this.history[found] = { ...(this.history[found] as HistoryEntry), closed: { reason, time: this.now() } };
+    this.history = markClosed(this.history, id, { reason, time: this.now() });
     this.emit({ type: "closed", id, reason });
     return true;
   }
 
   private takeId(): number {
-    // Ids are u32 and never 0; skip any a replacing app has claimed.
-    while (this.live.has(this.nextId) || this.nextId === 0 || this.nextId > 0xffffffff) {
-      this.nextId = this.nextId >= 0xffffffff ? 1 : this.nextId + 1;
-    }
+    this.nextId = freeId(this.nextId, this.live);
     return this.nextId;
-  }
-
-  private record(notification: Notification): void {
-    this.history = this.history.filter((entry) => entry.id !== notification.id);
-    if (notification.transient) return;
-    this.history.push({ ...notification });
-    if (this.history.length > MAX_HISTORY) {
-      const closed = this.history.findIndex((entry) => entry.closed);
-      this.history.splice(closed >= 0 ? closed : 0, 1);
-    }
   }
 
   /**

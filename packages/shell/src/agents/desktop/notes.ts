@@ -6,10 +6,7 @@
  * line names only what is being done.
  */
 
-import { DEFAULT_FOLDER_NAME } from "../../../apps/notes/names.ts";
-import { defaultRoot, NotesStore } from "../../../apps/notes/store.ts";
-import { fold, listOrder, searchNotes, wordCount } from "../../../apps/notes/text.ts";
-import { type Note, NotesError } from "../../../apps/notes/types.ts";
+import { DEFAULT_FOLDER_NAME, defaultRoot, fold, listOrder, type Note, NotesError, NotesStore, searchNotes, wordCount } from "../../shared/notes/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 
 /** The longest note text one read returns. */

@@ -9,5 +9,16 @@ edition = "2024"
 license = "MIT"
 repository = "https://github.com/Netko-Labs/dashiOS"
 
+# H12 (docs/conventions.md, "Hard rules"): no unwrap() outside tests (clippy.toml
+# allows it there), every unsafe block and unsafe fn documented. Each crate opts in
+# with `[lints] workspace = true`; dashi-term, a workspace of its own, repeats them.
+# A known offender carries `#[expect(clippy::…, reason = "…")]`, which fails once
+# the offence is gone, so the list only shrinks.
+[workspace.lints.clippy]
+unwrap_used = "deny"
+undocumented_unsafe_blocks = "deny"
+missing_safety_doc = "deny"
+disallowed_methods = "deny"
+
 [profile.release]
 debug = "line-tables-only"

@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { signatureNote } from "../src/cli/lib/publish.ts";
 import {
   type CatalogIndex,
   generateKeys,
@@ -107,8 +108,9 @@ test("the store's checks: Dashi's signature on the index, then the package's siz
     ]),
   );
   const entry = catalogEntry(packageBytes);
-  const index: CatalogIndex = { format: 1, generated: "2026-11-05T00:00:00Z", applets: [entry] };
-  const indexBytes = bytes(JSON.stringify({ ...index, applets: index.applets.map((applet) => ({ ...applet, manifest: ASUS })) }));
+  const index: CatalogIndex = { format: 1, generated: "2026-11-05T00:00:00Z", applets: [entry], skipped: [] };
+  const { skipped: _none, ...wire } = index;
+  const indexBytes = bytes(JSON.stringify({ ...wire, applets: index.applets.map((applet) => ({ ...applet, manifest: ASUS })) }));
   const indexSignature = sign(indexBytes, dashi.secretKey, "timestamp:1 file:index.json");
   const verified = verifyIndex(indexBytes, indexSignature, dashi.publicKey);
   if ("error" in verified) throw new Error(verified.error);
@@ -150,7 +152,11 @@ test("pack builds an applet into a package that unpacks to its manifest, the sam
   writeFileSync(join(dir, "src/glyph.ts"), 'export const glyph = "<svg/>";\n');
   writeFileSync(join(dir, "assets/fan.svg"), "<svg/>");
   const first = await pack(dir);
-  const second = await pack(dir);
+  // Packed from another folder (CI's, not the author's): the bundle's module names don't change.
+  const from = process.cwd();
+  process.chdir(tmpdir());
+  const second = await pack(dir).finally(() => process.chdir(from));
+  expect(process.cwd()).toBe(from);
   expect(first.name).toBe("dev.netko.asus-control-0.1.0.dashi-applet");
   expect(first.sha256).toBe(second.sha256);
   const unpacked = unpack(first.bytes);
@@ -170,4 +176,16 @@ test("pack builds an applet into a package that unpacks to its manifest, the sam
       ),
     ),
   ).toHaveProperty("error");
+});
+
+test("pack says “signed” only when the .minisig beside the package is this build's", () => {
+  const dir = mkdtempSync(join(tmpdir(), "dashi-pack-"));
+  writeFileSync(join(dir, "author.pub"), author.publicKey);
+  const before = bytes("the package as it was built yesterday");
+  const now = bytes("the package as it was built today");
+  const yesterday = sign(before, author.secretKey, "yesterday");
+  expect(signatureNote(dir, before, yesterday)).toBe(", signed");
+  // Packed again without --sign: the old signature is still there, but not for these bytes.
+  expect(signatureNote(dir, now, yesterday)).toContain("from another build");
+  expect(signatureNote(dir, now, null)).toBe("");
 });

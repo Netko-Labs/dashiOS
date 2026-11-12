@@ -1,6 +1,6 @@
 /**
  * What `appearance.wallpaper` may say about live wallpapers, checked the same
- * way wherever the file is read (settings.ts for the shell, settings-app/
+ * way wherever the file is read (settings/settings.ts for the shell, settings-app/
  * store.ts for System Settings). The keys beside the existing `path`, `mode`,
  * and `photos`:
  *

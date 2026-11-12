@@ -6,11 +6,12 @@
  */
 
 import { SETTINGS_APP_ID } from "../../apps.ts";
-import type { Entry } from "../../entries.ts";
+import type { Entry } from "../../shared/app-entries/index.ts";
+import { languagesOf, messageLocales } from "../../shared/locale/index.ts";
 import type { RankItem, RankSignals } from "./item.ts";
-import { languagesOf, messageLocales } from "./locale.ts";
-import { buildIndex, type RankIndex, rank } from "./rank.ts";
-import { dashiWords } from "./words.ts";
+import { dashiWords } from "./lib/words.ts";
+import { rank } from "./rank.ts";
+import { buildIndex, type RankIndex } from "./rank-index.ts";
 
 export interface EntryItem extends RankItem {
   entry: Entry;

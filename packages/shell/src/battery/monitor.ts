@@ -8,12 +8,14 @@
  */
 
 import { useSyncExternalStore } from "react";
-import type { ProcessSample } from "../../apps/activity-monitor/read.ts";
+import type { ProcessSample } from "../shared/processes/index.ts";
 import { type Battery, type readPowerSupplies, summarizeBattery } from "../system/battery.ts";
-import { type AppUse, averageUse, ownerOf, significant, usageBetween, type WindowOwner } from "./apps.ts";
-import type { HistoryFile } from "./file.ts";
 import { drawWatts, prune, type Sample } from "./history.ts";
-import { type Insight, insights } from "./insights.ts";
+import { type AppUse, averageUse, ownerOf, significant, usageBetween, type WindowOwner } from "./lib/apps.ts";
+import type { HistoryFile } from "./lib/file.ts";
+import { insights } from "./lib/insights.ts";
+import { type Adapter, adapterOf } from "./panel-numbers.ts";
+import type { Insight } from "./types.ts";
 
 export const MONITOR = {
   /** A history sample. */
@@ -37,9 +39,13 @@ export interface BatteryMonitorState {
   /** The ones of `apps` using significant energy. */
   significant: readonly AppUse[];
   insights: readonly Insight[];
+  /** The charger's rating and draw as its power_supply entry says (the battery panel). */
+  adapter: Adapter;
 }
 
-const EMPTY: BatteryMonitorState = { available: false, battery: null, watts: null, samples: [], apps: [], significant: [], insights: [] };
+const NO_ADAPTER: Adapter = { rating: null, input: null };
+
+const EMPTY: BatteryMonitorState = { available: false, battery: null, watts: null, samples: [], apps: [], significant: [], insights: [], adapter: NO_ADAPTER };
 
 export interface MonitorSources {
   supplies: typeof readPowerSupplies;
@@ -67,6 +73,7 @@ export class BatteryMonitor {
   private last: { at: number; processes: ReadonlyMap<number, ProcessSample> } | null = null;
   private health: number | null = null;
   private lowPower: boolean | null = null;
+  private adapter: Adapter = NO_ADAPTER;
   private stopped = false;
 
   constructor(private readonly sources: MonitorSources) {}
@@ -109,6 +116,7 @@ export class BatteryMonitor {
     const now = this.sources.now();
     const sample: Sample = { t: Math.round(now), percent: battery.percent, state: battery.state, watts: drawWatts(supplies) };
     this.samples = prune([...this.samples, sample], now);
+    this.adapter = adapterOf(supplies);
     this.sources.file.append(sample);
     this.publish(battery, sample.watts);
   }
@@ -150,6 +158,7 @@ export class BatteryMonitor {
       apps,
       significant: heavy,
       insights: insights({ now: this.sources.now(), battery, health: this.health, watts, samples: this.samples, apps: heavy, lowPower: this.lowPower }),
+      adapter: this.adapter,
     };
     for (const listener of this.listeners) listener();
   }

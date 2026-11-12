@@ -1,9 +1,6 @@
 /** A system bus in memory for the clients' tests: method handlers by path and member, and signals sent by hand. */
 
-import type { Message } from "../src/dbus/message.ts";
-import type { BusLike } from "../src/dbus/properties.ts";
-import type { MatchRule } from "../src/dbus/signals.ts";
-import type { CallSpec } from "../src/dbus/types.ts";
+import type { BusLike, CallSpec, MatchRule, Message } from "../src/shared/dbus/index.ts";
 
 type Handler = (body: readonly unknown[]) => unknown[] | Promise<unknown[]>;
 
@@ -60,4 +57,3 @@ export class FakeBus implements BusLike {
 }
 
 /** Lets the promises queued so far settle. */
-export const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { activeTab, addTab, closeTab, NO_TABS, newTab, selectTab, showIndex, stepTab, type Tabs, updateTab } from "../apps/terminal/tabs.ts";
+import { activeTab, addTab, closeTab, NO_TABS, newTab, ring, selectTab, showIndex, stepTab, type Tabs, updateTab } from "../apps/terminal/lib/tabs.ts";
 
 const ids = (tabs: Tabs): number[] => tabs.list.map((tab) => tab.id);
 const three = (): Tabs => addTab(addTab(addTab(NO_TABS, newTab(1)), newTab(2)), newTab(3));
@@ -30,11 +30,22 @@ test("a View menu row brings its tab forward", () => {
   expect(showIndex(three(), 7)).toEqual(three());
 });
 
-test("updating one tab keeps the others' identity", () => {
+test("updating one tab keeps the others' identity, and the list's when nothing changed", () => {
   const tabs = three();
-  const updated = updateTab(tabs, 2, (tab) => ({ ...tab, title: "vim" }));
-  expect(updated.list[1]?.title).toBe("vim");
+  const updated = updateTab(tabs, 2, (tab) => ({ ...tab, lost: true }));
+  expect(updated.list[1]?.lost).toBe(true);
   expect(updated.list[0]).toBe(tabs.list[0] as never);
   expect(activeTab(updated)?.id).toBe(3);
   expect(updateTab(tabs, 9, (tab) => tab)).toBe(tabs);
+  expect(updateTab(tabs, 2, (tab) => tab)).toBe(tabs);
+});
+
+test("the bell marks a tab behind the front one, until it comes forward", () => {
+  const tabs = three();
+  expect(ring(tabs, 3)).toBe(tabs);
+  const rang = ring(tabs, 1);
+  expect(rang.list[0]?.rang).toBe(true);
+  expect(ring(rang, 1)).toBe(rang);
+  expect(selectTab(rang, 1).list[0]?.rang).toBe(false);
+  expect(stepTab(rang, 1).list[0]?.rang).toBe(false);
 });

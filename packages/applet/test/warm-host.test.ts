@@ -4,6 +4,7 @@ import { View } from "@mirinjs/metal";
 import { createElement } from "react";
 import { openPopoverWindow } from "../src/popover.tsx";
 import { REWARM_MS, WARM_AFTER_MS, WarmHost, type WarmTimers } from "../src/warm-host.ts";
+import { flush } from "./support/time.ts";
 
 function fakeHosts() {
   const spawned: { options: NativeHostOptions; opened: NativeWindowOptions[]; die: () => void }[] = [];
@@ -28,6 +29,8 @@ function fakeHosts() {
       toplevel() {},
       unlock() {},
       setTitle() {},
+      setSize() {},
+      setMinSize() {},
       open: (window) => record.opened.push(window),
     };
   };
@@ -53,7 +56,7 @@ function fakeTimers() {
       timer.run();
       return timer.ms;
     });
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await flush();
     return ran;
   };
   return { due, timers, pass };
@@ -144,4 +147,37 @@ test("a popover or view opens on the warm host when one is ready, else on a new 
   expect(cold[0]?.env).toEqual({ MIRIN_METAL_APP_NAME: "Weather" });
   second.close();
   warm.stop();
+});
+
+test("an applet's popover draws on a solid ground, clipped to its corners, whatever its own tint", async () => {
+  const sent: string[] = [];
+  const host = {
+    send: (frame: string) => sent.push(frame),
+    hide() {},
+    onEvent() {},
+    onClose() {},
+    simulate() {},
+    close() {},
+    onToplevel() {},
+    toplevel() {},
+    unlock() {},
+    setTitle() {},
+    setSize() {},
+    setMinSize() {},
+    open() {},
+  } as unknown as NativeHostTransport;
+  const popover = openPopoverWindow({
+    appId: "dev.example.weather",
+    title: "Weather",
+    placement: { x: 10, y: 20, width: 400, height: 160, namespace: "dashi.applet", output: null },
+    element: createElement(View, { testID: "glass", style: { flex: 1, backgroundColor: "#f5f5f7f5" } }),
+    onClosed() {},
+    spawn: () => host,
+  });
+  await flush();
+  const tree = JSON.parse(sent.at(-1) ?? "{}") as { props: Record<string, unknown>; children: { props: Record<string, unknown> }[] };
+  // The ground (solid card, the popover's radius, clipping), then the applet's own glass on it.
+  expect(tree.props).toMatchObject({ background: "#ffffff", cornerRadius: 12, clip: true });
+  expect(tree.children[0]?.props.background).toBe("#f5f5f7f5");
+  popover.close();
 });

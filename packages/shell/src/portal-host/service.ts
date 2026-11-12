@@ -6,10 +6,20 @@
  * computer awake. Without a session bus, it says so and the shell goes on.
  */
 
-import { BUS_PATH } from "../dbus/bus.ts";
-import { BUS_NAME, type ConnectOptions, DBusConnection, DBusError, ERRORS, getNameOwner, type InterfaceSpec, NameFlags, requestName } from "../dbus/index.ts";
 import { type InhibitStore, SCREENSAVER, SCREENSAVER_PATHS, type ScreenSaverHost, screenSaverInterface } from "../inhibit/index.ts";
-import { PORTAL_BACKEND, PORTAL_HOST, SHELL_NAME, SHELL_PATH } from "./protocol.ts";
+import {
+  BUS_NAME,
+  BUS_PATH,
+  type ConnectOptions,
+  DBusConnection,
+  DBusError,
+  ERRORS,
+  getNameOwner,
+  type InterfaceSpec,
+  NameFlags,
+  requestName,
+} from "../shared/dbus/index.ts";
+import { PORTAL_BACKEND, PORTAL_HOST, SHELL_NAME, SHELL_PATH } from "../shared/portal-host/index.ts";
 
 export interface PortalHostDeps {
   store: InhibitStore;

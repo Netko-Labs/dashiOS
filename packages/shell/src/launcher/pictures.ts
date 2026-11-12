@@ -7,13 +7,13 @@
  * `STRIP.shown` at once, and only the ones on screen; the compositor blanks
  * a picture whole when an agent's capture mask covers its window. The rects
  * are sent again only when they change. Pure: the panel (window-strip.tsx)
- * draws the frames, and main.tsx puts the rects on the screen.
+ * draws the frames, and boot/launcher.tsx puts the rects on the screen.
  */
 
-import type { LauncherWindow } from "./items.ts";
-import { windowsOf } from "./items.ts";
+import type { LauncherWindow } from "./lib/items.ts";
+import { windowsOf } from "./lib/items.ts";
+import { keepInView } from "./lib/selection.ts";
 import type { Row } from "./row-model.ts";
-import { keepInView } from "./selection.ts";
 
 /** A picture's frame (16:10), the gap between frames, and the strip's height with its padding. */
 export const STRIP = { width: 112, height: 70, gap: 8, padTop: 4, padBottom: 8, shown: 4, inset: 3 } as const;

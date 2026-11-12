@@ -1,0 +1,7 @@
+{
+  "name": "dev.dashi.browser",
+  "description": "Dashi's browser extension's host: it relays between the extension and the Dashi session.",
+  "path": "/usr/libexec/dashi/dashi-browser-host",
+  "type": "stdio",
+  "allowed_origins": ["chrome-extension://mngbphpldanjlpbagnkmfalmglolgkmb/"]
+}

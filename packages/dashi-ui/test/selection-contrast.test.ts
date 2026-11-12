@@ -96,6 +96,39 @@ describe.each(Object.entries(MODES))("a selected row in a window in %s mode", (m
   });
 });
 
+// Selected text in a field (CO-9) has no bar to mark it, so its wash alone must
+// show: at least 1.3:1 from the ground the field sits on, under ink that still
+// reads at 4.5:1. The rows' wash is fainter than that in Dark Mode.
+describe.each(Object.entries(MODES))("selected text in a field in %s mode", (mode, colors) => {
+  const surface = SURFACES[mode] as Surface;
+  const sheet = (wallpaper: Rgb): Rgb => over(colors.tile, over(colors.menu, wallpaper));
+  const grounds: Record<string, Rgb> = {
+    window: rgba(surface.window),
+    sidebar: rgba(surface.sidebar),
+    card: rgba(surface.card),
+    field: rgba(surface.field),
+    "tile on a card": over(colors.tile, rgba(surface.card)),
+    "sheet's field over a white wallpaper": sheet(WALLPAPERS.white as Rgb),
+    "sheet's field over a black wallpaper": sheet(WALLPAPERS.black as Rgb),
+  };
+
+  test.each(Object.entries(grounds))("the wash stands out at 1.3:1 or more on the %s, under ink at 4.5:1", (_ground, ground) => {
+    const washed = over(colors.textSelection, ground);
+    expect(contrast(washed, ground)).toBeGreaterThanOrEqual(1.3);
+    expect(contrast(over(colors.text, washed), washed)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test("it is at least as strong as a row's wash", () => {
+    expect(rgba(colors.textSelection).a).toBeGreaterThanOrEqual(rgba(colors.selectionWash).a);
+  });
+});
+
+test("Dark Mode's rows' wash is too faint for selected text on its own", () => {
+  // The review that added `textSelection`: #3E8A7238 on Text Editor's card is 1.29:1.
+  const card = rgba(DARK_SURFACE.card);
+  expect(contrast(over(darkColors.selectionWash, card), card)).toBeLessThan(1.3);
+});
+
 describe("rowLook and the bar", () => {
   test("a selected row is the wash, with every word and glyph in ink; at rest, glyphs are muted", () => {
     expect(rowLook(lightColors, true)).toEqual({
@@ -123,5 +156,20 @@ describe("rowLook and the bar", () => {
     expect(selectionBarHeight(28)).toBe(16);
     expect(selectionBarHeight(24)).toBe(12);
     expect(selectionBarHeight(8)).toBe(0);
+  });
+});
+
+// Find's matches in a document (Text Editor): the text's own ink stays AA on
+// both washes, and the match Find is on stands apart from the others.
+describe.each(Object.entries(MODES))("find's matches in %s mode", (mode, colors) => {
+  const card = rgba((SURFACES[mode] as Surface).card);
+  test("ink reads at 4.5:1 or more on every match and on the current one", () => {
+    for (const wash of [colors.findWash, colors.findCurrent]) {
+      const ground = over(wash, card);
+      expect(contrast(rgba(colors.text), ground)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+  test("the current match is deeper than the others", () => {
+    expect(contrast(over(colors.findCurrent, card), over(colors.findWash, card))).toBeGreaterThan(1.2);
   });
 });

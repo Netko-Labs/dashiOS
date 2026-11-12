@@ -2,8 +2,10 @@ import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
 import { Notice } from "../src/notice.tsx";
 import { TOOLTIP_DELAY_MS, tooltipOrigin } from "../src/tooltip.tsx";
-import { AppWindow, ToolbarButton } from "../src/window.tsx";
-import { fakeHost, settle } from "./host.ts";
+import { AppWindow, ToolbarButton, toolbarInset } from "../src/window.tsx";
+import { fakeClockEachTest, fakeHost, settle } from "./host.ts";
+
+fakeClockEachTest();
 
 const unified = { type: "chrome", nodeId: "root", titleBar: "unified", controls: { x: 8, y: 8, width: 60, height: 22 } } as const;
 
@@ -46,14 +48,24 @@ test("a glyph button shows its name after the pointer rests on it, and hides it 
   host.emit(unified);
   await settle();
   const button = root.nodeId("new") as string;
-  expect(host.last()).not.toContain("New note");
+  // The name is the button's accessible name from the start; the tooltip's words come after a rest.
+  const tip = '["New note"]';
+  expect(host.last()).toContain('"label":"New note"');
+  expect(host.last()).not.toContain(tip);
   host.emit({ type: "hover", nodeId: button, hovered: true, bounds: { x: 300, y: 5, width: 32, height: 28 } });
   await settle(TOOLTIP_DELAY_MS / 2);
-  expect(host.last()).not.toContain("New note");
+  expect(host.last()).not.toContain(tip);
   await settle(TOOLTIP_DELAY_MS);
-  expect(host.last()).toContain("New note");
+  expect(host.last()).toContain(tip);
   host.emit({ type: "hover", nodeId: button, hovered: false });
   await settle();
-  expect(host.last()).not.toContain("New note");
+  expect(host.last()).not.toContain(tip);
   root.unmount();
+});
+
+test("a toolbar beside a rail narrower than the window controls still clears them", () => {
+  expect(toolbarInset(0, 200)).toBe(18);
+  expect(toolbarInset(70, 200)).toBe(18);
+  expect(toolbarInset(70, 0)).toBe(84);
+  expect(toolbarInset(70, 56)).toBe(28);
 });

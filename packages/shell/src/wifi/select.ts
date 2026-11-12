@@ -8,8 +8,8 @@
 
 import type { Network } from "../system/network.ts";
 import { type Nesting, standsIn } from "../system/stand-in.ts";
-import { type FakeOptions, FakeWifi } from "./fake.ts";
-import { NetworkManagerBackend } from "./nm-dbus.ts";
+import { type FakeOptions, FakeWifi } from "./lib/fake.ts";
+import { NetworkManagerBackend } from "./lib/nm-dbus.ts";
 import type { WifiBackend, WifiRadio } from "./types.ts";
 
 /** What the shell is wired to. */

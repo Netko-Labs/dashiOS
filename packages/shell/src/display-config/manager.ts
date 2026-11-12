@@ -9,28 +9,13 @@
  * places screens, keeps them apart and touching, and runs the modes.
  */
 
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 import { leavesRoom } from "../displays.ts";
+import { type AskToKeep, askToKeep, later } from "./lib/trial.ts";
 import type { LidSource } from "./lid.ts";
-import { type Mode, type Monitor, modeFor, parseMonitors, type Rotation, setKey } from "./monitors.ts";
+import { type Mode, type Monitor, modeFor, monitorsOf, type Rotation, setKey } from "./monitors.ts";
 import { type ConfigRequest, configOf, layoutOf, planRestore, type ScaleFor, toWire } from "./plan.ts";
 import type { DisplayStore } from "./saved.ts";
-
-/** How long a trial lasts before the old arrangement returns. */
-export const KEEP_SECONDS = 15;
-
-/** The question put to the person. */
-export interface KeepAsk {
-  /** What changed, in a few words: "Resolution of Dell U2720Q". */
-  summary: string;
-  /** When the trial ends (ms since the epoch), so the sheet's countdown matches. */
-  deadline: number;
-  /** The person's answer: true keeps the change. */
-  answer(keep: boolean): void;
-}
-
-/** Shows the question; returns the way to take it away. */
-export type AskToKeep = (ask: KeepAsk) => () => void;
 
 export interface ApplyResult {
   /** The change stands. False: it was refused, or the person did not keep it. */
@@ -42,7 +27,7 @@ export interface ApplyResult {
 }
 
 export interface DisplayManagerOptions {
-  compositor: Pick<Compositor, "request" | "on">;
+  compositor: Pick<Compositor, "outputs" | "outputsConfig" | "on">;
   store: DisplayStore;
   scaleFor: ScaleFor;
   lid?: LidSource | null;
@@ -55,18 +40,27 @@ export interface DisplayManagerOptions {
 export interface ChangeOptions {
   /** Ask the person to keep it (default for resolution, rotation, and turning a screen off). */
   confirm?: boolean;
+  /** Who made it: Automatic refresh rate (auto-refresh.ts), or a person or an agent (the default). */
+  by?: "automatic";
 }
 
-const later = (fn: () => void, ms: number): (() => void) => {
-  const timer = setTimeout(fn, ms);
-  return () => clearTimeout(timer);
-};
+/**
+ * A mode the screens run changed: put back from what was saved (`restore`:
+ * login, a monitor plugged, the lid), set by Automatic refresh rate, or set
+ * by a person or an agent (`manual`).
+ */
+export interface ModeChange {
+  cause: "restore" | "automatic" | "manual";
+  /** The screens whose mode was set. */
+  names: readonly string[];
+}
 
 export class DisplayManager {
   private queue: Promise<unknown> = Promise.resolve();
   /** The set of monitors the last restore was for: a change of state alone does not restore again. */
   private restoredFor: string | null = null;
   private readonly listeners = new Set<() => void>();
+  private readonly modeListeners = new Set<(change: ModeChange) => void>();
   private busy = 0;
 
   constructor(private readonly options: DisplayManagerOptions) {}
@@ -80,6 +74,12 @@ export class DisplayManager {
   onPending(listener: () => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  /** Runs after a mode was set and kept (auto-refresh.ts tells its own changes from others'). */
+  onModeChange(listener: (change: ModeChange) => void): () => void {
+    this.modeListeners.add(listener);
+    return () => this.modeListeners.delete(listener);
   }
 
   get lidClosed(): boolean {
@@ -99,7 +99,7 @@ export class DisplayManager {
   }
 
   async monitors(): Promise<Monitor[]> {
-    return parseMonitors(await this.options.compositor.request("outputs"));
+    return monitorsOf(await this.options.compositor.outputs());
   }
 
   /**
@@ -117,10 +117,13 @@ export class DisplayManager {
       const plan = planRestore(monitors, this.options.store.get(key), { lidClosed: this.lidClosed, scaleFor: this.options.scaleFor });
       if (!plan) return;
       try {
-        await this.options.compositor.request("outputs-config", toWire(plan));
+        await this.options.compositor.outputsConfig(toWire(plan));
       } catch (error) {
         console.error("dashi-shell: could not restore the display arrangement:", error instanceof Error ? error.message : error);
+        return;
       }
+      const names = plan.outputs.filter((output) => output.mode !== undefined || output.enabled === true).map((output) => output.name);
+      if (names.length > 0) this.tellMode({ cause: "restore", names });
     }).catch((error) => console.error("dashi-shell: displays:", error instanceof Error ? error.message : error));
   }
 
@@ -133,7 +136,7 @@ export class DisplayManager {
     return this.serial(async (): Promise<ApplyResult> => {
       const before = await this.monitors();
       try {
-        await this.options.compositor.request("outputs-config", toWire(request));
+        await this.options.compositor.outputsConfig(toWire(request));
       } catch (error) {
         return { kept: false, reverted: false, error: error instanceof Error ? error.message : String(error) };
       }
@@ -142,7 +145,7 @@ export class DisplayManager {
       if (options.confirm && this.options.ask) {
         const keep = await this.trial(summary);
         if (!keep) {
-          await this.options.compositor.request("outputs-config", toWire(configOf(before))).catch((error) => {
+          await this.options.compositor.outputsConfig(toWire(configOf(before))).catch((error) => {
             console.error("dashi-shell: could not put the displays back:", error instanceof Error ? error.message : error);
           });
           return { kept: false, reverted: true };
@@ -167,7 +170,7 @@ export class DisplayManager {
     const offered = modeFor(monitor.modes, mode, mode.refreshMhz);
     if (!offered) return refused(`${monitor.name} has no ${mode.width} × ${mode.height} mode`);
     const scale = this.scaleAfter(monitor, offered, monitor.rotation);
-    return this.apply(
+    const result = await this.apply(
       {
         outputs: [
           {
@@ -180,6 +183,8 @@ export class DisplayManager {
       `Resolution of ${monitor.name}`,
       options,
     );
+    if (result.kept) this.tellMode({ cause: options.by === "automatic" ? "automatic" : "manual", names: [monitor.name] });
+    return result;
   }
 
   /** Turn a screen (0, 90, 180, 270 degrees counter-clockwise); the scale is kept if the turned screen still has room at it. */
@@ -231,6 +236,10 @@ export class DisplayManager {
     return leavesRoom(upright, monitor.scale) ? monitor.scale : this.options.scaleFor(monitor, mode, rotation);
   }
 
+  private tellMode(change: ModeChange): void {
+    for (const listener of [...this.modeListeners]) listener(change);
+  }
+
   private remember(monitors: readonly Monitor[]): void {
     const key = setKey(monitors);
     this.options.store.set(key, layoutOf(monitors, this.options.store.get(key), this.lidClosed));
@@ -240,25 +249,7 @@ export class DisplayManager {
   private trial(summary: string): Promise<boolean> {
     const ask = this.options.ask;
     if (!ask) return Promise.resolve(true);
-    const now = this.options.now ?? Date.now;
-    const schedule = this.options.later ?? later;
-    return new Promise<boolean>((resolve) => {
-      let take = (): void => {};
-      let cancel = (): void => {};
-      let settled = false;
-      const finish = (keep: boolean): void => {
-        console.error("KEEP finish", keep, new Error().stack?.split("\n").slice(2, 5).join("|"));
-        if (settled) return;
-        settled = true;
-        cancel();
-        take();
-        resolve(keep);
-      };
-      take = ask({ summary, deadline: now() + KEEP_SECONDS * 1000, answer: finish });
-      // The sheet may have answered while it opened.
-      if (settled) take();
-      else cancel = schedule(() => finish(false), KEEP_SECONDS * 1000);
-    });
+    return askToKeep(ask, summary, this.options.now ?? Date.now, this.options.later ?? later);
   }
 
   private serial<T>(job: () => Promise<T>): Promise<T> {

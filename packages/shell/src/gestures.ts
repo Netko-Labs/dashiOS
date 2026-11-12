@@ -8,26 +8,13 @@
  * under the pointer.
  */
 
-import type { Compositor, CompositorEvent } from "./compositor.ts";
-import type { SpacesState } from "./spaces/model.ts";
-import { type SwipeStep, SwipeTracker } from "./spaces/swipe.ts";
-
-/** How far (logical pixels, summed) a swipe must travel to count. */
-export const SWIPE_DISTANCE = 60;
-
-export type SwipeAction = "up" | "down" | "left" | "right" | null;
-
-/** Where a finished swipe went: its main direction, if it went far enough. */
-export function swipeDirection(dx: number, dy: number): SwipeAction {
-  if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_DISTANCE) return null;
-  if (Math.abs(dy) >= Math.abs(dx)) return dy < 0 ? "up" : "down";
-  return dx < 0 ? "left" : "right";
-}
+import type { Compositor, CompositorEvent } from "./compositor/index.ts";
+import { type SpacesState, type SwipeStep, SwipeTracker } from "./spaces/index.ts";
 
 export interface GestureActions {
   /** Mission Control: open it (up) or close it (down). */
   overview(open: boolean): void;
-  /** Spaces (spaces/controller.ts): a sideways swipe holds the switch where the fingers are, then lets it finish or go back. */
+  /** Spaces (spaces/lib/controller.ts): a sideways swipe holds the switch where the fingers are, then lets it finish or go back. */
   spaces?: {
     getSnapshot(): SpacesState;
     hold(target: number, progress: number): void;
@@ -36,8 +23,8 @@ export interface GestureActions {
 }
 
 /** Claims three-finger swipes and carries them out; returns a stop function. */
-export function startGestures(compositor: Pick<Compositor, "request" | "on">, actions: GestureActions): () => void {
-  compositor.request("gestures", { swipe: [3] }).catch((error) => console.error("dashi-shell: touchpad gestures are off:", error));
+export function startGestures(compositor: Pick<Compositor, "gestures" | "on">, actions: GestureActions): () => void {
+  compositor.gestures({ swipe: [3] }).catch((error) => console.error("dashi-shell: touchpad gestures are off:", error));
   const tracker = new SwipeTracker();
   const stop = compositor.on((event: CompositorEvent) => {
     if (event.event !== "gesture") return;
@@ -63,6 +50,6 @@ export function startGestures(compositor: Pick<Compositor, "request" | "on">, ac
   });
   return () => {
     stop();
-    compositor.request("gestures", { swipe: [] }).catch(() => {});
+    compositor.gestures({ swipe: [] }).catch(() => {});
   };
 }

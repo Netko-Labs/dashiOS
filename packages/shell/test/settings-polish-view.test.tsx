@@ -5,17 +5,16 @@ import { join } from "node:path";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { readHistory } from "../src/agents/ask/history.ts";
-import { DEFAULT_LEFT_OUT } from "../src/clipboard/privacy.ts";
-import { HistoryRow } from "../src/settings-app/panes/agents-answer.tsx";
-import { ClipboardSection } from "../src/settings-app/panes/clipboard-parts.tsx";
+import { DEFAULT_LEFT_OUT } from "../src/clipboard/left-out.ts";
+import { HistoryRow } from "../src/settings-app/lib/panes/agents-answer.tsx";
+import { ClipboardSection } from "../src/settings-app/lib/panes/clipboard-parts.tsx";
 import { SettingsStore } from "../src/settings-app/store.ts";
+import { settle } from "./support/time.ts";
 
 // Settings' clipboard list and the agents' history on a stand-in for the Metal host.
 
 const dir = mkdtempSync(join(tmpdir(), "dashi-settings-polish-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
-
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 20));
 
 async function mount(tree: ReactNode) {
   const listeners: ((event: NativeEvent) => void)[] = [];

@@ -1,0 +1,139 @@
+/**
+ * The desktop's own file chooser, through xdg-desktop-portal
+ * (`org.freedesktop.portal.FileChooser.OpenFile`, and `SaveFile` for a file
+ * to write, on the session bus), so
+ * Dashi draws no file browser of its own and the dialog is the one the
+ * person's apps use. The chosen file comes back as a `file://` URI. Where
+ * there is no session bus or no portal (a development run), `chooseFile`
+ * rejects and the caller offers something else.
+ *
+ * Used by System Settings' "Add Photo…" (wallpaper/chooser.ts), Calendar's
+ * import, and Preview's File > Open… and Export….
+ */
+
+import { randomBytes } from "node:crypto";
+import { isAbsolute } from "node:path";
+import { maybe, obj, unknown } from "@dashi/shape";
+import { DBusConnection, type Variant, variant } from "../dbus/index.ts";
+
+const PORTAL = "org.freedesktop.portal.Desktop";
+const PORTAL_PATH = "/org/freedesktop/portal/desktop";
+const CHOOSER = "org.freedesktop.portal.FileChooser";
+const REQUEST = "org.freedesktop.portal.Request";
+/** A person may take their time in a dialog, but not forever. */
+const DIALOG_TIMEOUT_MS = 10 * 60 * 1000;
+
+/** What the dialog shows: its title, and the kinds of file it lists (a name and MIME types). */
+export interface FileDialog {
+  title: string;
+  filter: { name: string; types: readonly string[] };
+  /** Whether a chosen path is one the caller takes; the first that is wins. */
+  accept: (path: string) => boolean;
+}
+
+/** An absolute path with no control characters: what a chosen file may be. */
+export const isPlainPath = (path: string): boolean => isAbsolute(path) && !/[\u0000-\u001f\u007f]/.test(path);
+
+/** The absolute path a `file://` URI names (percent-decoded), or null for anything else. */
+export function pathFromUri(uri: unknown, accept: (path: string) => boolean = () => true): string | null {
+  if (typeof uri !== "string" || !uri.startsWith("file://")) return null;
+  try {
+    const url = new URL(uri);
+    if (url.protocol !== "file:" || (url.hostname !== "" && url.hostname !== "localhost")) return null;
+    const path = decodeURIComponent(url.pathname);
+    return isPlainPath(path) && accept(path) ? path : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The path a portal Request object has: it is derived from our unique name and the token we give. */
+export function requestPath(uniqueName: string, token: string): string {
+  return `/org/freedesktop/portal/desktop/request/${uniqueName.replace(/^:/, "").replaceAll(".", "_")}/${token}`;
+}
+
+/** The first usable path of a `Response`'s results, or null (cancelled, or nothing we can use). */
+export function pickedPath(code: unknown, results: unknown, accept: (path: string) => boolean = () => true): string | null {
+  if (code !== 0 || !(results instanceof Map)) return null;
+  const uris = maybe(obj({ value: unknown() }, { strict: false }), results.get("uris"))?.value;
+  return Array.isArray(uris) ? (uris.map((uri) => pathFromUri(uri, accept)).find((path) => path !== null) ?? null) : null;
+}
+
+/** Asks the portal for one file; null when the person cancelled, rejects when there is no portal. */
+export function chooseFile(
+  dialog: FileDialog,
+  connect: () => Promise<DBusConnection> = () => DBusConnection.connect({ bus: "session" }),
+): Promise<string | null> {
+  return ask(
+    "OpenFile",
+    dialog.title,
+    [["filters", variant("a(sa(us))", [[dialog.filter.name, dialog.filter.types.map((type) => [1, type])]])]],
+    dialog.accept,
+    connect,
+  );
+}
+
+/** What a save dialog suggests: its title, the name it starts with, and the kind of file written. */
+export interface SaveDialog {
+  title: string;
+  name: string;
+  filter: { name: string; types: readonly string[] };
+}
+
+/**
+ * Asks the portal where to save a file: the path, or null when the person
+ * cancelled. The dialog has already asked about replacing a file that is
+ * there. Rejects when there is no portal.
+ */
+export function chooseSaveFile(
+  dialog: SaveDialog,
+  connect: () => Promise<DBusConnection> = () => DBusConnection.connect({ bus: "session" }),
+): Promise<string | null> {
+  const filter = [dialog.filter.name, dialog.filter.types.map((type) => [1, type])];
+  const options: Array<[string, Variant]> = [
+    ["current_name", variant("s", dialog.name)],
+    ["filters", variant("a(sa(us))", [filter])],
+    ["current_filter", variant("(sa(us))", filter)],
+  ];
+  return ask("SaveFile", dialog.title, options, () => true, connect);
+}
+
+async function ask(
+  member: "OpenFile" | "SaveFile",
+  title: string,
+  options: Array<[string, Variant]>,
+  accept: (path: string) => boolean,
+  connect: () => Promise<DBusConnection>,
+): Promise<string | null> {
+  const connection = await connect();
+  try {
+    const token = `dashi_${randomBytes(8).toString("hex")}`;
+    const handle = requestPath(connection.uniqueName, token);
+    return await new Promise<string | null>((resolve, reject) => {
+      const timer = setTimeout(() => resolve(null), DIALOG_TIMEOUT_MS);
+      const stop = (error: unknown) => {
+        clearTimeout(timer);
+        reject(error instanceof Error ? error : new Error("the file chooser portal is not available"));
+      };
+      // Subscribed before asking, so the answer cannot slip past.
+      connection
+        .subscribe({ type: "signal", sender: PORTAL, interface: REQUEST, member: "Response", path: handle }, (message) => {
+          clearTimeout(timer);
+          resolve(pickedPath(message.body[0], message.body[1], accept));
+        })
+        .then(() =>
+          connection.call({
+            destination: PORTAL,
+            path: PORTAL_PATH,
+            interface: CHOOSER,
+            member,
+            signature: "ssa{sv}",
+            body: ["", title, new Map<string, Variant>([["handle_token", variant("s", token)], ["modal", variant("b", true)], ...options])],
+          }),
+        )
+        .catch(stop);
+    });
+  } finally {
+    connection.close();
+  }
+}

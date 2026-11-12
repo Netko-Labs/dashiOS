@@ -18,7 +18,7 @@
 
 import { parseAddress } from "../actions/address.ts";
 import { chordGlyphs } from "../actions/keys.ts";
-import type { Keymap, Rule } from "../keymap.ts";
+import type { Keymap, Rule } from "../keymap/keymap.ts";
 import { fold } from "./ranking/fold.ts";
 
 /** The most aliases and keys the file keeps; more is not a person's list. */

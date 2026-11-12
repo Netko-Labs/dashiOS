@@ -3,26 +3,24 @@
  * launcher (src/applets/launcher.ts) starts this as a systemd user unit,
  * outside the shell's own processes (so the compositor never takes the
  * applet for the shell), with a plan it wrote: the xdg-dbus-proxy to start
- * first, if any, and bubblewrap's arguments (src/applets/sandbox.ts). It
+ * first, if any, and bubblewrap's arguments (src/applets/lib/sandbox.ts). It
  * waits for the proxy's sockets, runs bubblewrap, and ends with it; the
  * proxy goes too.
  */
 
 import { existsSync, readFileSync } from "node:fs";
+import { list, maybe, nullable, obj, str } from "@dashi/shape";
 
 interface Plan {
   proxy: { args: string[]; sockets: string[] } | null;
   bwrap: string[];
 }
 
+const PLAN = obj({ proxy: nullable(obj({ args: list(str()), sockets: list(str()) }, { strict: false })), bwrap: list(str()) }, { strict: false });
+
 function parsePlan(text: string): Plan | null {
   try {
-    const value = JSON.parse(text) as Record<string, unknown>;
-    const strings = (list: unknown): list is string[] => Array.isArray(list) && list.every((each) => typeof each === "string");
-    const proxy = value.proxy as Record<string, unknown> | null;
-    if (!strings(value.bwrap)) return null;
-    if (proxy !== null && (!strings(proxy?.args) || !strings(proxy?.sockets))) return null;
-    return { proxy: proxy === null ? null : { args: proxy.args as string[], sockets: proxy.sockets as string[] }, bwrap: value.bwrap };
+    return maybe(PLAN, JSON.parse(text));
   } catch {
     return null;
   }

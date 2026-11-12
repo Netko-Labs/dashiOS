@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { conflictNotice, conflictTitle, saveOutcome } from "../apps/notes/conflict.ts";
-import { NotesModel } from "../apps/notes/model.ts";
-import { NotesStore } from "../apps/notes/store.ts";
+import { conflictNotice, conflictTitle, saveOutcome } from "../apps/notes/lib/conflict.ts";
+import { NotesModel } from "../apps/notes/lib/model.ts";
+import { NotesStore } from "../src/shared/notes/store.ts";
 
 describe("which version a save keeps", () => {
   test("only one side changed: that side", () => {

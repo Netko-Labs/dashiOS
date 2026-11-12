@@ -1,0 +1,7 @@
+# The npm packages spin/build-rpms copies from node_modules into the shell
+# (vendor/node_modules, installed under /usr/share/dashi/node_modules): the
+# runtime. spin/license-dependencies lists their licenses from
+# this file, so a package added here is in the notices.
+react
+react-reconciler
+scheduler

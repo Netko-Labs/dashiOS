@@ -1,0 +1,1 @@
+# H5: imports in a cycle, let through with a biome-ignore (count = ignores). May only shrink.

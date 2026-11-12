@@ -9,8 +9,7 @@
  * before its step.
  */
 
-import type { Compositor, CompositorWindow } from "../compositor.ts";
-import type { Rect } from "../layout.ts";
+import type { Compositor, CompositorWindow } from "../compositor/index.ts";
 import { switcherLayout, switcherSize } from "./layout.ts";
 import {
   type AppGroup,
@@ -26,47 +25,7 @@ import {
   switcherKey,
   visibleWindows,
 } from "./model.ts";
-
-export interface SwitcherApp {
-  appId: string;
-  title: string;
-  /** How many windows it has (the badge, past one). */
-  count: number;
-  /** All its windows are minimized or hidden: drawn dimmed. */
-  away: boolean;
-}
-
-export interface SwitcherWindow {
-  id: number;
-  title: string;
-  state: CompositorWindow["state"];
-}
-
-export interface SwitcherState {
-  apps: SwitcherApp[];
-  selected: number;
-  /** The chosen app's windows, when its row shows (the ones in view), and which is chosen. */
-  windows: SwitcherWindow[] | null;
-  /** Which of the app's windows the first one shown is (the row slides past ROW_WINDOWS). */
-  windowStart: number;
-  selectedWindow: number | null;
-  query: string;
-  /** The surface's size for the whole session (switcherSize): the panel grows inside it. */
-  size: { width: number; height: number };
-}
-
-/** Where the shell shows the session. `pictures` gets each shown window's rect in the surface (empty: none). */
-export interface SwitcherHost {
-  show(state: SwitcherState): void;
-  hide(): void;
-  pictures?(rects: ReadonlyArray<{ window: number; rect: Rect }>): void;
-}
-
-/** The session's own keys: bound while it is open (keymap.ts `withSwitcher`). */
-export interface SwitcherKeys {
-  begin(): void;
-  end(): void;
-}
+import type { SwitcherHost, SwitcherKeys, SwitcherState } from "./types.ts";
 
 /** A ❖Tab held this long shows the panel. */
 const SHOW_AFTER_MS = 150;
@@ -92,7 +51,7 @@ export class SwitcherController {
   private queue: Promise<void> = Promise.resolve();
 
   constructor(
-    private readonly compositor: Pick<Compositor, "request" | "windows">,
+    private readonly compositor: Pick<Compositor, "close" | "hide" | "minimize" | "focus" | "windows">,
     private readonly host: SwitcherHost,
     /** What an app is called (the Dock's name), for typing to find it. */
     private readonly nameOf: (group: AppGroup) => string = (group) => group.appId,
@@ -253,27 +212,27 @@ export class SwitcherController {
     const target = chosenWindow(session.shown, session.selection);
     if (!group || !target) return;
     const whole = session.all.find((each) => each.windows.some((window) => window.id === target.id)) ?? group;
-    const request = (method: string, window: number) => this.compositor.request(method, { window }).catch(() => {});
+    const tell = (method: "close" | "hide" | "minimize", window: number) => this.compositor[method]({ window }).catch(() => {});
     switch (action) {
       case "quit":
         // Every window of the app is asked to close (its own save prompts still show).
-        for (const window of whole.windows) await request("close", window.id);
+        for (const window of whole.windows) await tell("close", window.id);
         this.forget(session, (window) => whole.windows.includes(window));
         break;
       case "hide":
         for (const window of whole.windows.filter((each) => each.state === "normal")) {
-          await request("hide", window.id);
+          await tell("hide", window.id);
           session.putAway.add(window.id);
         }
         this.restate(session, (window) => whole.windows.includes(window) && window.state === "normal", "hidden");
         break;
       case "minimize":
-        await request("minimize", target.id);
+        await tell("minimize", target.id);
         session.putAway.add(target.id);
         this.restate(session, (window) => window.id === target.id, "minimized");
         break;
       case "close":
-        await request("close", target.id);
+        await tell("close", target.id);
         this.forget(session, (window) => window.id === target.id);
         break;
     }
@@ -315,7 +274,7 @@ export class SwitcherController {
     // Focusing a minimized or hidden window brings it back too, unless the person just put it away (H, M).
     if (commit && chosen && !session.putAway.has(chosen.id)) {
       this.opened(chosen);
-      await this.compositor.request("focus", { window: chosen.id });
+      await this.compositor.focus({ window: chosen.id });
     }
   }
 }

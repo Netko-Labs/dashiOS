@@ -4,10 +4,13 @@
  * `install.json`, what Dashi keeps about it:
  *
  *   {"version": "0.1.0", "sha256": "…", "authorKey": "RWQ…", "source": "catalog",
+ *    "catalog": "https://…/index.json",
  *    "consent": ["hardware.power", "notifications"], "disabled": {"reason": "pulled", "detail": "…"}}
  *
  * `authorKey` is the key the installed version was signed with: an update
- * must be signed by the same one (catalog.ts). `consent` is what the person
+ * must be signed by the same one (catalog.ts). `catalog` is the index it came
+ * from: updates and the kill switch come from that catalog alone. A record
+ * from before there was more than one catalog has none, and means Dashi's. `consent` is what the person
  * allowed; an applet runs only when it covers every permission it asks for.
  * The store (and `dashi-applet install`) installs and removes; the shell's
  * launcher (shell's src/applets/launcher.ts) runs
@@ -18,7 +21,8 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { type Manifest, readManifest } from "./manifest.ts";
+import { isRecord, isRefusal, refuse } from "@dashi/shape";
+import { isAppletId, type Manifest, readManifest } from "./manifest.ts";
 import type { Unpacked } from "./package.ts";
 import { permissionName } from "./permissions.ts";
 
@@ -28,6 +32,8 @@ export interface InstallRecord {
   /** The author key it was verified with; null for one installed from a local file (`dashi-applet install`). */
   authorKey: string | null;
   source: "catalog" | "local";
+  /** The index.json address of the catalog it was installed from; absent means Dashi's own (or a local file). */
+  catalog?: string;
   /** Permission names the person allowed. */
   consent: string[];
   disabled?: { reason: "pulled" | "off"; detail?: string };
@@ -49,6 +55,10 @@ export const appletsRoot = (env: Record<string, string | undefined> = process.en
 export const appletDataRoot = (env: Record<string, string | undefined> = process.env, home: string = homedir()): string =>
   join(dataHome(env, home), "dashi/applet-data");
 
+/** A catalog's index.json address as a record keeps it: https, or file:// (a test catalog). */
+export const isCatalogAddress = (value: unknown): value is string =>
+  typeof value === "string" && value.length <= 2048 && /^(https:\/\/|file:\/\/\/)[^\s"<>]+$/.test(value);
+
 /** install.json's text → the record, or null when it isn't one. */
 export function parseRecord(text: string): InstallRecord | null {
   let value: unknown;
@@ -57,44 +67,105 @@ export function parseRecord(text: string): InstallRecord | null {
   } catch {
     return null;
   }
-  if (typeof value !== "object" || value === null) return null;
-  const fields = value as Record<string, unknown>;
+  if (!isRecord(value)) return null;
+  const fields = value;
   const strings = (list: unknown): list is string[] => Array.isArray(list) && list.every((each) => typeof each === "string");
   if (typeof fields.version !== "string" || typeof fields.sha256 !== "string" || !strings(fields.consent)) return null;
   if (fields.authorKey !== null && typeof fields.authorKey !== "string") return null;
   if (fields.source !== "catalog" && fields.source !== "local") return null;
-  const disabled = fields.disabled as Record<string, unknown> | undefined;
+  if (fields.catalog !== undefined && !isCatalogAddress(fields.catalog)) return null;
+  const disabled = isRecord(fields.disabled) ? fields.disabled : undefined;
   const reason = disabled?.reason;
   return {
     version: fields.version,
     sha256: fields.sha256,
     authorKey: fields.authorKey,
     source: fields.source,
+    ...(typeof fields.catalog === "string" ? { catalog: fields.catalog } : {}),
     consent: fields.consent,
     ...(reason === "pulled" || reason === "off" ? { disabled: { reason, ...(typeof disabled?.detail === "string" ? { detail: disabled.detail } : {}) } } : {}),
   };
 }
 
-/** Every applet installed under `root`; folders that aren't one are skipped (and said so). */
-export function readInstalled(root: string = appletsRoot()): InstalledApplet[] {
-  if (!existsSync(root)) return [];
-  const out: InstalledApplet[] = [];
-  for (const name of readdirSync(root).sort()) {
+/**
+ * An installed applet whose files no longer read (its manifest names a
+ * permission or a field this Dashi doesn't know, or a file is damaged): it
+ * never runs, and Software lists it as needing an update, with Remove….
+ */
+export interface UnreadableApplet {
+  /** Its folder's name, which is its id. */
+  id: string;
+  dir: string;
+  /** The name applet.json gives, when that much reads. */
+  name: string | null;
+  /** install.json, when it reads: the catalog and the key an update must match. */
+  record: InstallRecord | null;
+  /** Why, in the parser's words (for the log). */
+  reason: string;
+}
+
+const readText = (path: string): string | null => {
+  try {
+    return readFileSync(path, "utf8");
+  } catch {
+    return null;
+  }
+};
+
+/** applet.json's `name`, read as little as can be: for a list's row only. */
+function nameOf(json: string | null): string | null {
+  try {
+    const parsed: unknown = json === null ? null : JSON.parse(json);
+    const name = isRecord(parsed) ? parsed.name : null;
+    return typeof name === "string" && name.trim() !== "" && name.length <= 40 && !/\p{Cc}/u.test(name) ? name.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+/** One folder under the applets root: an applet, one that no longer reads, or null when it isn't one at all. */
+function readFolder(root: string, name: string): InstalledApplet | UnreadableApplet | null {
+  const dir = join(root, name);
+  const manifestText = readText(join(dir, "applet.json"));
+  const recordText = readText(join(dir, "install.json"));
+  // Not an applet's folder: no id for a name, or neither file.
+  if (!isAppletId(name) || (manifestText === null && recordText === null)) return null;
+  const record = recordText === null ? null : parseRecord(recordText);
+  const manifest = manifestText === null ? refuse("there is no applet.json") : readManifest(manifestText);
+  const unreadable = (reason: string): UnreadableApplet => ({ id: name, dir, name: nameOf(manifestText), record, reason });
+  if (isRefusal(manifest)) return unreadable(manifest.error);
+  if (manifest.id !== name) return unreadable(`applet.json says it is ${manifest.id}`);
+  if (!record) return unreadable("install.json is missing or damaged");
+  if (record.version !== manifest.version) return unreadable(`install.json says ${record.version}, applet.json ${manifest.version}`);
+  return { manifest, record, dir };
+}
+
+/** Every folder under `root`: the applets, and the ones that no longer read (said so in the log). */
+export function scanInstalled(root: string = appletsRoot()): { applets: InstalledApplet[]; unreadable: UnreadableApplet[] } {
+  const applets: InstalledApplet[] = [];
+  const unreadable: UnreadableApplet[] = [];
+  let names: string[];
+  try {
+    names = existsSync(root) ? readdirSync(root).sort() : [];
+  } catch {
+    names = [];
+  }
+  for (const name of names) {
     if (name.startsWith(".") || name.endsWith(".partial") || name.endsWith(".old")) continue;
-    const dir = join(root, name);
-    try {
-      const manifest = readManifest(readFileSync(join(dir, "applet.json"), "utf8"));
-      const record = parseRecord(readFileSync(join(dir, "install.json"), "utf8"));
-      if ("error" in manifest || manifest.id !== name || !record || record.version !== manifest.version) {
-        console.error(`dashi-shell: ${dir} is not an installed applet`);
-        continue;
-      }
-      out.push({ manifest, record, dir });
-    } catch {
-      console.error(`dashi-shell: ${dir} is not an installed applet`);
+    const read = readFolder(root, name);
+    if (read === null) console.error(`dashi-shell: ${join(root, name)} is not an installed applet`);
+    else if ("manifest" in read) applets.push(read);
+    else {
+      console.error(`dashi-shell: ${read.dir} no longer reads, so it doesn't run: ${read.reason}`);
+      unreadable.push(read);
     }
   }
-  return out;
+  return { applets, unreadable };
+}
+
+/** Every applet installed under `root` that reads; the rest are left out (and said so). */
+export function readInstalled(root: string = appletsRoot()): InstalledApplet[] {
+  return scanInstalled(root).applets;
 }
 
 /** What the consent sheet asks for, by name: its permissions, and its commands in the launcher (one name for all of them). */

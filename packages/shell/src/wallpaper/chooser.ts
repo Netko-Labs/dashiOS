@@ -5,11 +5,9 @@
  * run), `choose` rejects and System Settings offers a path field instead.
  */
 
-import type { DBusConnection } from "../dbus/index.ts";
-import { chooseFile, pathFromUri as fileFromUri, pickedPath as pickedFile } from "../portal/file-chooser.ts";
-import { isPhotoPath } from "./catalog.ts";
-
-export { requestPath } from "../portal/file-chooser.ts";
+import type { DBusConnection } from "../shared/dbus/index.ts";
+import { chooseFile, pathFromUri as fileFromUri, pickedPath as pickedFile } from "../shared/portal/index.ts";
+import { isPhotoPath } from "../shared/settings/index.ts";
 
 /** Picks a photo (or a video for a live wallpaper); null when the person cancelled. */
 export interface PhotoChooser {

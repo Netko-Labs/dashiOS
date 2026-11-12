@@ -7,15 +7,8 @@
 import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
+import { elapsedText } from "../shared/time/index.ts";
 import { type ScreenRecorder, useRecorder } from "./recorder.ts";
-
-/** "0:07", "12:34", "1:02:03". */
-export function elapsedText(ms: number): string {
-  const seconds = Math.max(0, Math.floor(ms / 1000));
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const [h, m, s] = [Math.floor(seconds / 3600), Math.floor((seconds % 3600) / 60), seconds % 60];
-  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
-}
 
 export function RecordingButton({ recorder }: { recorder: ScreenRecorder }) {
   const colors = useColors();

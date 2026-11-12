@@ -6,7 +6,7 @@
  */
 
 import { useMemo, useSyncExternalStore } from "react";
-import type { Day } from "../../apps/calendar/dates.ts";
+import type { Day } from "../shared/calendar/index.ts";
 
 export interface CalendarBridge {
   busyDays(from: Day, to: Day): Set<Day>;

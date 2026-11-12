@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import type { Entry } from "../src/entries.ts";
 import { BUDGET, type SlowSnapshot, type SlowSource, SlowSources, type Timers, timed } from "../src/launcher/budget.ts";
-import { buildSections } from "../src/launcher/rows.ts";
+import { buildSections } from "../src/launcher/lib/rows.ts";
 import { isTiming, timingLine } from "../src/launcher/timing.ts";
+import type { Entry } from "../src/shared/app-entries/index.ts";
+import { flush } from "./support/time.ts";
 
 /** Timers the test moves by hand. */
 function fakeTimers(): Timers & { advance(ms: number): void } {
@@ -69,14 +70,14 @@ describe("slow sources", () => {
     ]);
     timers.advance(30);
     notes.answer(["Lisbon trip"]);
-    await Bun.sleep(0);
+    await flush();
     timers.advance(BUDGET.slowMs);
     expect(states(seen.at(-1))).toEqual([
       ["weather", "slow"],
       ["notes", "answered"],
     ]);
     weather.answer(["Lisbon 21°"]);
-    await Bun.sleep(0);
+    await flush();
     // On-time answers first (in the sources' order), then late ones: nothing above moves.
     const last = seen.at(-1);
     expect(last?.sources.map((each) => each.id)).toEqual(["notes", "weather"]);
@@ -93,12 +94,12 @@ describe("slow sources", () => {
     sources.start("lis");
     const count = seen.length;
     weather.answer(["for lis"]);
-    await Bun.sleep(0);
+    await flush();
     expect(seen.length).toBe(count + 1);
     expect(seen.at(-1)?.query).toBe("lis");
     sources.stop();
     weather.answer(["after close"]);
-    await Bun.sleep(0);
+    await flush();
     expect(seen.length).toBe(count + 1);
   });
 
@@ -110,7 +111,7 @@ describe("slow sources", () => {
       kept.start(`smile${query}`);
       timers.advance(BUDGET.slowMs + 400);
       characters.answer(["😊"]);
-      await Bun.sleep(0);
+      await flush();
     }
     expect(kept.isDropped("characters")).toBe(false);
   });
@@ -135,7 +136,7 @@ describe("slow sources", () => {
     for (let round = 0; round < 5; round++) {
       others.start(`r${round}`);
       flaky.fail();
-      await Bun.sleep(0);
+      await flush();
       timers.advance(BUDGET.slowMs + 1);
     }
     expect(others.isDropped("flaky")).toBe(false);
@@ -155,7 +156,7 @@ describe("slow sources", () => {
     const sources = new SlowSources([throwing, notes], () => {}, timers);
     sources.start("lis");
     expect(notes.asked).toEqual(["lis"]);
-    await Bun.sleep(0);
+    await flush();
     expect(states(sources.snapshot())).toEqual([
       ["broken", "failed"],
       ["notes", "waiting"],

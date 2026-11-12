@@ -42,7 +42,7 @@ install -Dm0644 %{SOURCE2} %{buildroot}%{_datadir}/licenses/%{name}/LICENSE.md
 %dir %{_libexecdir}/dashi/bin
 %{_libexecdir}/dashi/bin/bun
 %{_libexecdir}/dashi/bin/bunx
-%{_datadir}/licenses/%{name}
+%license %{_datadir}/licenses/%{name}/LICENSE.md
 
 %changelog
 * Sun Nov 01 2026 PejeDev <hi@peje.dev> - 1.4.4-1

@@ -2,8 +2,9 @@
  * What an agent may do (scopes), answers kept for next time ("Always
  * Allow"), and the activity log. Both files live in
  * `$XDG_STATE_HOME/dashi/agents/`: grants.json, keyed by the agent's
- * executable (or `ssh:<name>` over SSH), and activity.jsonl, one line per
- * call without its arguments, text, or images.
+ * executable (or `ssh:<name>` over SSH), each scope with since when (taken
+ * back one by one in Settings › Privacy & Security), and activity.jsonl, one
+ * line per call without its arguments, text, or images.
  */
 
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -19,6 +20,12 @@ export const SCOPES = [
     label: "Manage windows and apps",
     detail:
       "Open apps; bring forward, arrange, minimize, or close windows; choose items in their menus; click and type in them with its own pointer and keyboard; lock the screen. Force quitting an app always asks you first",
+  },
+  {
+    id: "web",
+    label: "Use websites",
+    detail:
+      "Open pages in your browser, read them as text, and click, fill in and choose things on them, through Dashi's browser extension. You are asked about each site the first time. It never reads a password, card or code field",
   },
   { id: "notifications", label: "See notifications", detail: "Read your recent notifications, and dismiss them" },
   {
@@ -53,7 +60,7 @@ export const SCOPES = [
     id: "settings",
     label: "Change settings",
     detail:
-      "Dark Mode, Do Not Disturb, window corners, screen scaling, Wi-Fi, the time zone, 24-hour time, region formats, the sound output and volume, the power mode, and the menu bar's battery percentage and speaker: it can read them (with your network, Bluetooth, power, and account details), join networks and connect Bluetooth devices you have used before. It never gets a password",
+      "Dark Mode, Do Not Disturb, Night Shift, window corners, text and pointer size, motion, the Dock, the trackpad and mouse, screen scaling, Wi-Fi, the time zone, 24-hour time, region formats, the sound output and volume, the power mode, and what the menu bar shows: it can read them (with your network, Bluetooth, power, and account details), join networks and connect Bluetooth devices you have used before. It never gets a password",
   },
 ] as const;
 
@@ -97,44 +104,75 @@ export function stateDir(): string {
   return join(base, "dashi/agents");
 }
 
-/** Something changed in the kept answers: an agent's were replaced, or forgotten. */
+/** Something changed in the kept answers: an agent's were replaced, one was taken back (`revoked`), or all were forgotten (`removed`). */
 export interface GrantChange {
   key: string;
   removed: boolean;
+  /** The scopes taken back one by one (Settings › Privacy & Security). */
+  revoked?: readonly Scope[];
+}
+
+/** An agent's kept answers, each with since when (seconds; null when kept before Dashi wrote dates down). */
+export interface GrantEntry {
+  key: string;
+  scopes: Scope[];
+  since: Partial<Record<Scope, number | null>>;
+}
+
+/**
+ * grants.json read: `{version: 2, agents: {key: {scope: since}}}`, or
+ * version 1's `{agents: {key: [scope…]}}` (no dates). A kept "pay" or
+ * "clipboard" (a file edited by hand) is not honored.
+ */
+export function parseGrants(value: unknown): Map<string, Map<Scope, number | null>> {
+  const out = new Map<string, Map<Scope, number | null>>();
+  const agents = typeof value === "object" && value !== null ? (value as Record<string, unknown>).agents : null;
+  if (typeof agents !== "object" || agents === null) return out;
+  for (const [key, kept] of Object.entries(agents)) {
+    const scopes = new Map<Scope, number | null>();
+    if (Array.isArray(kept)) {
+      for (const scope of kept) if (isScope(scope) && !NEVER_KEPT.has(scope)) scopes.set(scope, null);
+    } else if (typeof kept === "object" && kept !== null) {
+      for (const [scope, since] of Object.entries(kept)) {
+        if (isScope(scope) && !NEVER_KEPT.has(scope)) scopes.set(scope, typeof since === "number" && Number.isInteger(since) && since > 0 ? since : null);
+      }
+    } else continue;
+    out.set(key, scopes);
+  }
+  return out;
 }
 
 /** Answers kept across connections. */
 export class Grants {
-  private readonly path = join(stateDir(), "grants.json");
-  private readonly byAgent = new Map<string, Set<Scope>>();
+  private readonly path: string;
+  private readonly byAgent: Map<string, Map<Scope, number | null>>;
   private readonly listeners = new Set<(change: GrantChange) => void>();
 
-  constructor() {
+  /** `path` null keeps them in memory only (tests). */
+  constructor(path: string | null = join(stateDir(), "grants.json")) {
+    this.path = path ?? "";
+    let read: unknown = null;
     try {
-      const value: unknown = JSON.parse(readFileSync(this.path, "utf8"));
-      const agents = typeof value === "object" && value !== null ? (value as Record<string, unknown>).agents : null;
-      if (typeof agents === "object" && agents !== null) {
-        for (const [key, scopes] of Object.entries(agents)) {
-          // A kept "pay" (a file edited by hand) is not honored.
-          if (Array.isArray(scopes)) this.byAgent.set(key, new Set(scopes.filter(isScope).filter((scope) => !NEVER_KEPT.has(scope))));
-        }
-      }
+      if (path) read = JSON.parse(readFileSync(path, "utf8"));
     } catch {
       // No grants yet (or an unreadable file): everyone is asked.
     }
+    this.byAgent = parseGrants(read);
   }
 
   get(key: string): Set<Scope> {
-    return new Set(this.byAgent.get(key));
+    return new Set(this.byAgent.get(key)?.keys());
   }
 
   /** Every agent with kept answers, for System Settings. */
-  entries(): Array<{ key: string; scopes: Scope[] }> {
-    return [...this.byAgent].map(([key, scopes]) => ({ key, scopes: [...scopes] }));
+  entries(): GrantEntry[] {
+    return [...this.byAgent].map(([key, scopes]) => ({ key, scopes: [...scopes.keys()], since: Object.fromEntries(scopes) }));
   }
 
-  set(key: string, scopes: ReadonlySet<Scope>): void {
-    this.byAgent.set(key, new Set(scopes));
+  /** What an agent may do from now on; a scope it had keeps its date, a new one is dated now. */
+  set(key: string, scopes: ReadonlySet<Scope>, now: number = Math.floor(Date.now() / 1000)): void {
+    const before = this.byAgent.get(key);
+    this.byAgent.set(key, new Map([...scopes].map((scope) => [scope, before?.has(scope) ? (before.get(scope) ?? null) : now])));
     this.save();
     this.notify({ key, removed: false });
   }
@@ -150,6 +188,30 @@ export class Grants {
     return true;
   }
 
+  /** Take back one thing an agent was allowed; the rest stays. A connection that is up stops holding it too. */
+  revoke(key: string, scope: Scope): boolean {
+    const scopes = this.byAgent.get(key);
+    if (!scopes?.delete(scope)) return false;
+    if (scopes.size === 0) this.byAgent.delete(key);
+    this.save();
+    this.notify({ key, removed: false, revoked: [scope] });
+    return true;
+  }
+
+  /**
+   * Put back what was taken (Undo after Revoke in Settings › Agents): the
+   * scopes `entry` held, with their dates, beside any given since. A
+   * connection that is up now asks again; the next one has them.
+   */
+  restore(entry: GrantEntry): void {
+    const scopes = new Map(this.byAgent.get(entry.key));
+    for (const scope of entry.scopes) if (!NEVER_KEPT.has(scope)) scopes.set(scope, entry.since[scope] ?? null);
+    if (scopes.size === 0) return;
+    this.byAgent.set(entry.key, scopes);
+    this.save();
+    this.notify({ key: entry.key, removed: false });
+  }
+
   onChange(listener: (change: GrantChange) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
@@ -160,10 +222,11 @@ export class Grants {
   }
 
   private save(): void {
-    const agents = Object.fromEntries([...this.byAgent].map(([agent, granted]) => [agent, [...granted]]));
+    if (!this.path) return;
+    const agents = Object.fromEntries([...this.byAgent].map(([agent, granted]) => [agent, Object.fromEntries(granted)]));
     try {
       mkdirSync(dirname(this.path), { recursive: true });
-      writeFileSync(this.path, JSON.stringify({ version: 1, agents }));
+      writeFileSync(this.path, JSON.stringify({ version: 2, agents }));
     } catch (error) {
       console.error("dashi-shell: could not save agent grants:", error);
     }
@@ -175,7 +238,7 @@ export interface Activity {
   claims: string | null;
   tool: string | null;
   outcome: string;
-  /** The launcher's Ask a call was a step of (agents/ask/tasks.ts), so the history groups them. */
+  /** The launcher's Ask a call was a step of (agents/ask/lib/tasks.ts), so the history groups them. */
   task?: string;
 }
 

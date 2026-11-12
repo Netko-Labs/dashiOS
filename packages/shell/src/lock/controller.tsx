@@ -6,13 +6,14 @@
  * new one takes over, and a restarted shell does the same at startup.
  */
 
+import { TextSelectionLook } from "@dashi/ui";
 import { type NativeHostTransport, type NativeRoot, render } from "@mirinjs/metal";
-import type { Compositor } from "../compositor.ts";
-import { runPower } from "../menus/session.ts";
-import { spawnShellHost } from "../metal-host.ts";
-import { Attempts, type Verdict } from "./attempts.ts";
-import { accountPicture, checkPassword, displayName, lockedUser } from "./auth.ts";
-import { LockScreen } from "./screen.tsx";
+import type { Compositor } from "../compositor/index.ts";
+import { spawnShellHost } from "../shared/metal/index.ts";
+import { runPower } from "../shutdown.ts";
+import { Attempts, type Verdict } from "./lib/attempts.ts";
+import { accountPicture, checkPassword, displayName, lockedUser } from "./lib/auth.ts";
+import { LockScreen } from "./lib/screen.tsx";
 
 /** A lock screen that died comes back after this. */
 const RESPAWN_MS = 1000;
@@ -35,9 +36,8 @@ export class LockController {
 
   /** Startup: a session left locked (the shell restarted) gets its lock screen back. */
   async resume(): Promise<void> {
-    const session = await this.compositor.request("session").catch(() => null);
-    const locked = typeof session === "object" && session !== null && (session as { locked?: unknown }).locked === true;
-    if (locked) this.lock();
+    const session = await this.compositor.session().catch(() => null);
+    if (session?.locked) this.lock();
   }
 
   get isLocked(): boolean {
@@ -56,14 +56,16 @@ export class LockController {
     });
     this.host = host;
     this.root = render(
-      <LockScreen
-        name={this.name}
-        picture={accountPicture(this.user)}
-        onSubmit={(password) => this.submit(password)}
-        waitMs={() => this.attempts.waitMs()}
-        // The Dashi menu's own path: logind on a real session, refused anywhere else.
-        onPower={(what) => runPower(what)}
-      />,
+      <TextSelectionLook>
+        <LockScreen
+          name={this.name}
+          picture={accountPicture(this.user)}
+          onSubmit={(password) => this.submit(password)}
+          waitMs={() => this.attempts.waitMs()}
+          // The Dashi menu's own path: logind on a real session, refused anywhere else.
+          onPower={(what) => runPower(what)}
+        />
+      </TextSelectionLook>,
       host,
     );
     host.onClose(() => {

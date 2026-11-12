@@ -1,11 +1,11 @@
 /** The screens, through the compositor's `outputs` and `output` (displays.ts has the rules). */
 
 import type { ApplyResult } from "../../display-config/manager.ts";
-import { type Monitor, parseMonitors, type Rotation, refreshLabel } from "../../display-config/monitors.ts";
-import { isBuiltIn, leavesRoom, parseScreens, type ScreenInfo, scalesFor } from "../../displays.ts";
+import { type Monitor, monitorsOf, type Rotation, refreshLabel } from "../../display-config/monitors.ts";
+import { isBuiltIn, leavesRoom, type ScreenInfo, scalesFor, screensOf } from "../../displays.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 
-const screens = async (ctx: RunContext): Promise<ScreenInfo[]> => parseScreens(await ctx.compositor.request("outputs"));
+const screens = async (ctx: RunContext): Promise<ScreenInfo[]> => screensOf(await ctx.compositor.outputs());
 
 /** "2560x1440@59.95": a mode as list_displays writes it. */
 const modeText = (mode: { width: number; height: number; refreshMhz: number }): string =>
@@ -38,12 +38,12 @@ function describeScreen(screen: ScreenInfo, monitor?: Monitor) {
 
 export async function listDisplays(ctx: RunContext): Promise<ToolResult> {
   ctx.status("Looking at your screens");
-  const answer = await ctx.compositor.request("outputs");
-  const monitors = parseMonitors(answer);
+  const answer = await ctx.compositor.outputs();
+  const monitors = monitorsOf(answer);
   const off = monitors
     .filter((monitor) => !monitor.enabled)
     .map((monitor) => ({ name: monitor.name, enabled: false, builtIn: monitor.builtIn, ...describeMonitor(monitor) }));
-  const displays = parseScreens(answer).map((screen) =>
+  const displays = screensOf(answer).map((screen) =>
     describeScreen(
       screen,
       monitors.find((monitor) => monitor.name === screen.name),
@@ -62,7 +62,7 @@ export async function setDisplayScale(name: string, scale: number, ctx: RunConte
   }
   // The name is the compositor's now, not the agent's string.
   ctx.status(`Setting ${screen.name} to scale ${scale}`);
-  await ctx.compositor.request("output", { name: screen.name, scale });
+  await ctx.compositor.output({ name: screen.name, scale });
   // Settings keeps the scale a person chose; one an agent set is kept the same way, or the next start would undo it.
   try {
     ctx.desktop.rememberScale(screen.name, scale);
@@ -84,7 +84,7 @@ function outcome(result: ApplyResult, done: string): ToolResult {
 
 /** The compositor's own name for the screen, or why there is none. */
 async function named(name: string, ctx: RunContext): Promise<Monitor | ToolResult> {
-  const monitor = parseMonitors(await ctx.compositor.request("outputs")).find((candidate) => candidate.name === name);
+  const monitor = monitorsOf(await ctx.compositor.outputs()).find((candidate) => candidate.name === name);
   return monitor ?? toolError(`There is no screen called “${name}”; list_displays shows the names.`);
 }
 
@@ -128,7 +128,7 @@ export async function arrangeDisplay(name: string, x: number, y: number, ctx: Ru
   ctx.status(`Moving ${monitor.name} in the arrangement`);
   const result = await displays.arrange({ [monitor.name]: { x, y } });
   if (result.error !== undefined) return toolError(result.error);
-  const landed = parseMonitors(await ctx.compositor.request("outputs")).find((candidate) => candidate.name === monitor.name)?.frame;
+  const landed = monitorsOf(await ctx.compositor.outputs()).find((candidate) => candidate.name === monitor.name)?.frame;
   return text(
     landed ? `${monitor.name} is at ${landed.x}, ${landed.y} now.` : `${monitor.name} was moved.`,
     landed ? { name: monitor.name, x: landed.x, y: landed.y } : { name: monitor.name },

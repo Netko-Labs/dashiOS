@@ -9,12 +9,14 @@
  *  - Apps that listen only to the person's seat (Metal apps today, and
  *    probably Chromium's family) can't hear the agent seat. For those, one
  *    action borrows the person's seat, and the compositor refuses unless the
- *    person has been idle QUIET_MS; the call waits up to WAIT_MS for a pause
- *    ("Waiting for you to pause" in the menu bar), then gives up.
+ *    person's own input is QUIET_MS old (a page keeping the screen awake,
+ *    and the agent's own actions, don't count: session/idle.rs); the call
+ *    waits up to WAIT_MS for a pause ("Waiting for you to pause" in the menu
+ *    bar), then gives up, saying how long to wait.
  */
 
-import type { Compositor } from "../../compositor.ts";
-import { KEYMAP } from "../../keymap.ts";
+import type { Compositor, Params } from "../../compositor/index.ts";
+import { KEYMAP } from "../../keymap/keymap.ts";
 
 /** The person must have left a window (or the desktop, when borrowing) alone this long. */
 export const QUIET_MS = 2000;
@@ -55,13 +57,21 @@ export class PersonBusy extends Error {
     readonly window: number,
     /** The person's seat was borrowed, so it is the whole desktop that was busy. */
     readonly desktop: boolean,
+    /** How long until the agent may act, if the person stops now. */
+    readonly waitMs: number = QUIET_MS,
   ) {
     super(desktop ? "the person is using the desktop" : `the person is using w${window}`);
   }
 }
 
 /** The compositor's refusal to borrow the person's seat while they are active. */
-const isBusyAnswer = (error: unknown) => error instanceof Error && error.message.startsWith("the person is using the desktop");
+const isBusyAnswer = (error: unknown): error is Error => error instanceof Error && error.message.startsWith("the person is using the desktop");
+
+/** The wait the compositor's refusal names ("… (free in 1200 ms)"), else a whole QUIET_MS. */
+export function busyWait(message: string): number {
+  const ms = Number(/\(free in (\d+) ms\)/.exec(message)?.[1]);
+  return Number.isFinite(ms) ? Math.min(ms, QUIET_MS) : QUIET_MS;
+}
 
 export interface Clock {
   now(): number;
@@ -71,7 +81,7 @@ export interface Clock {
 const realClock: Clock = { now: () => Date.now(), sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)) };
 
 /** What a tool sends: a pointer action or keys; `window` and the cursor's name are added here. */
-export type Payload = Record<string, unknown>;
+export type Payload = Omit<Params<"agent-input">, "window" | "label" | "borrow" | "release">;
 
 export class Hands {
   /** When the person last used each window (null: the desktop). */
@@ -79,7 +89,7 @@ export class Hands {
   private readonly stop: () => void;
 
   constructor(
-    private readonly compositor: Pick<Compositor, "request" | "on">,
+    private readonly compositor: Pick<Compositor, "agentInput" | "on">,
     private readonly clock: Clock = realClock,
   ) {
     this.stop = compositor.on((event) => {
@@ -107,13 +117,14 @@ export class Hands {
     const give = this.clock.now() + WAIT_MS;
     const request = { window: window.id, label: agent, ...payload, ...(borrow ? { borrow: { idleMs: QUIET_MS } } : {}) };
     for (;;) {
-      if (!borrow && this.busyFor(window.id) > 0) throw new PersonBusy(window.id, false);
+      const busy = borrow ? 0 : this.busyFor(window.id);
+      if (busy > 0) throw new PersonBusy(window.id, false, busy);
       try {
-        await this.compositor.request("agent-input", request);
+        await this.compositor.agentInput(request);
         return;
       } catch (error) {
         if (!isBusyAnswer(error)) throw error;
-        if (this.clock.now() >= give) throw new PersonBusy(window.id, true);
+        if (this.clock.now() >= give) throw new PersonBusy(window.id, true, busyWait(error.message));
         say("Waiting for you to pause");
         await this.clock.sleep(POLL_MS);
       }
@@ -123,7 +134,7 @@ export class Hands {
   /** Let go of everything the agent holds and hide its cursor (the stop key, an agent leaving). */
   async release(): Promise<void> {
     try {
-      await this.compositor.request("agent-input", { release: true });
+      await this.compositor.agentInput({ release: true });
     } catch {
       // Locked, or the compositor is gone: nothing is held that matters.
     }

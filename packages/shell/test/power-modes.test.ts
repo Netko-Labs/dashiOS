@@ -1,13 +1,14 @@
 import { expect, test } from "bun:test";
 import type { HardwareApi } from "../src/hardware/client.ts";
 import type { Knob, KnobValue } from "../src/hardware/describe.ts";
+import { EchoGuard } from "../src/power/lib/guard.ts";
 import { automaticMode, effectiveMode } from "../src/power/modes/automatic.ts";
-import { EchoGuard } from "../src/power/modes/guard.ts";
 import { DEFAULT_RECIPES, parseRecipes, resolveRecipe } from "../src/power/modes/recipes.ts";
 import type { PowerSection } from "../src/power/modes/settings.ts";
 import { ModeStore } from "../src/power/modes/store.ts";
 import type { ModeChoice } from "../src/power/modes/types.ts";
 import type { ProfileId, ProfileSource } from "../src/system/profiles.ts";
+import { settle as flush } from "./support/time.ts";
 
 /** The G14's knobs, as dashi-hardware describes them. */
 const G14_KNOBS = new Map<string, Knob>([
@@ -36,13 +37,12 @@ const GA403WR = parseRecipes({
 });
 
 test("recipe resolution per column: the cable switches columns, not modes", () => {
+  // An older model file's "screen-rate" is left out: the rate is Displays' Automatic now, and it is no knob.
   expect(resolveRecipe(GA403WR, "performance", "plugged", G14_KNOBS)).toEqual({
     knobs: { "platform-profile": "performance", epp: "performance", "ppt-spl": 80 },
-    screenRate: "max",
   });
   expect(resolveRecipe(GA403WR, "performance", "battery", G14_KNOBS)).toEqual({
     knobs: { "platform-profile": "balanced", epp: "balance_performance", "ppt-spl": 45 },
-    screenRate: 60,
   });
   expect(resolveRecipe(GA403WR, "low-power", "battery", G14_KNOBS).knobs.boost).toBe(false);
 });
@@ -168,8 +168,6 @@ function fakeProfiles(active: ProfileId) {
   };
   return { source, sets, state };
 }
-
-const flush = () => new Promise((resolve) => setTimeout(resolve, 5));
 
 async function laptop(choice: ModeChoice = "automatic") {
   const hardware = fakeHardware(new Map(G14_KNOBS));

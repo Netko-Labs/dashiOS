@@ -1,17 +1,30 @@
 /**
  * Dashi's controls, in the way the Mac's look: grouped cards of rows (a label,
- * then the control), choices as pills, buttons, and glyph tiles. They paint
- * with the shell's live palette, so Dark Mode repaints them. System Settings
- * builds its panes from them (settings-app/ui.tsx adds the page and the
- * slider), and so do the first-party apps (apps/kit).
+ * then the control). Choices (choices.tsx), buttons (button.tsx) and glyph
+ * tiles (tile.tsx) go in them. They paint with the shell's live palette, so
+ * Dark Mode repaints them. System Settings builds its panes from them
+ * (settings-app/ui.tsx adds the page and the slider), and so do the
+ * first-party apps (apps/kit).
  */
 
-import { Svg, Text, View } from "@mirinjs/metal";
+import { Text, View } from "@mirinjs/metal";
 import { Children, Fragment, type ReactNode } from "react";
 import { Shortcut } from "./shortcut.tsx";
 import { useColors, useSurface } from "./theme/index.ts";
 
-/** A heading over a group, or a sentence under it; `keys` draws a shortcut after it ("⌃❖Q"). */
+/**
+ * A sentence pulled 8 closer to the group above it. It keeps the default
+ * `flexShrink`: mirin's layout (its vendored taffy 0.9) makes a column
+ * shorter by the margin times the child's height when a child with
+ * `flexShrink: 0` has a negative margin, and a scroll view that holds the
+ * column loses its range. A column as tall as its content never shrinks it.
+ */
+const TUCK = { marginTop: -8 } as const;
+
+/** A row's inset at both ends, its separators' at the left, and a caption's: one edge for a card's words and its captions'. */
+export const ROW_INSET = 12;
+
+/** A heading over a group, or a sentence under it (`TUCK`); `keys` draws a shortcut after it ("⌃❖Q"). */
 export function Caption({ children, above, keys }: { children: string; above?: boolean; keys?: string }) {
   const colors = useColors();
   const text = <Text style={{ fontSize: above ? 12 : 11, fontWeight: above ? "semibold" : "normal", color: colors.textMuted }}>{children}</Text>;
@@ -20,9 +33,9 @@ export function Caption({ children, above, keys }: { children: string; above?: b
     // With keys, a row the width of its content, so the shortcut sits right after the text (keep such captions to one line).
     <View
       style={{
-        flexShrink: 0,
-        paddingHorizontal: 4,
-        marginTop: above ? 4 : -8,
+        ...(above ? { flexShrink: 0, marginTop: 4 } : TUCK),
+        // The rows' inset: a caption's words start where its card's rows' words do.
+        paddingHorizontal: ROW_INSET,
         ...(keys ? { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", gap: 4 } : {}),
       }}
     >
@@ -33,7 +46,15 @@ export function Caption({ children, above, keys }: { children: string; above?: b
 }
 
 /** A card of rows, a hairline between them. */
-export function Group({ children, testID }: { children: ReactNode; testID?: string }) {
+export function Group({
+  children,
+  testID,
+  wash,
+}: {
+  children: ReactNode;
+  testID?: string /** A color laid over the whole card (Settings lights a card a link lands on). */;
+  wash?: string;
+}) {
   const colors = useColors();
   const surface = useSurface();
   const rows = Children.toArray(children);
@@ -50,19 +71,45 @@ export function Group({ children, testID }: { children: ReactNode; testID?: stri
         overflow: "hidden",
       }}
     >
-      {rows.map((row, index) => (
-        // The rows of a group never reorder.
-        <Fragment key={index}>
-          {index > 0 && <View style={{ height: 1, marginLeft: 12, backgroundColor: colors.separator }} />}
-          {row}
-        </Fragment>
-      ))}
+      {/* Always there, so lighting the card never remounts its rows. */}
+      <View style={{ flexDirection: "column", backgroundColor: wash ?? "#00000000" }}>
+        {rows.map((row, index) => (
+          // The rows of a group never reorder.
+          <Fragment key={index}>
+            {index > 0 && <View style={{ height: 1, marginLeft: ROW_INSET, backgroundColor: colors.separator }} />}
+            {row}
+          </Fragment>
+        ))}
+      </View>
     </View>
   );
 }
 
-/** A label (and a quieter line under it) with a control at the end; `stack` puts the control under the label. */
-export function Row({ label, detail, children, stack, testID }: { label: string; detail?: string; children?: ReactNode; stack?: boolean; testID?: string }) {
+/** One line of 13 px text: GPUI's line height is φ times the size (vendor/gpui style.rs). */
+const LINE_13 = 21;
+/** A row's least height (LA-1). */
+const ROW_MIN = 44;
+
+/**
+ * A label (and a quieter line under it) with a control at the end; `stack` puts the control under the label.
+ * `wraps`: the end is 13 px text that may wrap (a long value in an Info card), so the label sits on its first
+ * line, not on the middle of all of them. One line still sits on the row's middle.
+ */
+export function Row({
+  label,
+  detail,
+  children,
+  stack,
+  wraps,
+  testID,
+}: {
+  label: string;
+  detail?: string;
+  children?: ReactNode;
+  stack?: boolean;
+  wraps?: boolean;
+  testID?: string;
+}) {
   const colors = useColors();
   const labels = (
     <View style={{ flex: 1, flexDirection: "column", gap: 1, minWidth: 0 }}>
@@ -72,14 +119,35 @@ export function Row({ label, detail, children, stack, testID }: { label: string;
   );
   if (stack) {
     return (
-      <View testID={testID} style={{ flexDirection: "column", gap: 10, padding: 12 }}>
+      <View testID={testID} style={{ flexDirection: "column", gap: 10, padding: ROW_INSET }}>
+        {labels}
+        {children}
+      </View>
+    );
+  }
+  if (wraps) {
+    // Top-aligned, with the padding that puts one line on the middle of a least-height row: 11 over, 12 under.
+    const over = Math.floor((ROW_MIN - LINE_13) / 2);
+    return (
+      <View
+        testID={testID}
+        style={{
+          flexDirection: "row",
+          alignItems: "flex-start",
+          gap: 12,
+          minHeight: ROW_MIN,
+          paddingHorizontal: ROW_INSET,
+          paddingTop: over,
+          paddingBottom: ROW_MIN - LINE_13 - over,
+        }}
+      >
         {labels}
         {children}
       </View>
     );
   }
   return (
-    <View testID={testID} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44, paddingHorizontal: 12, paddingVertical: 8 }}>
+    <View testID={testID} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: ROW_MIN, paddingHorizontal: ROW_INSET, paddingVertical: 8 }}>
       {labels}
       {children}
     </View>
@@ -92,111 +160,6 @@ export function Note({ children, testID }: { children: string; testID?: string }
   return (
     <View testID={testID} style={{ padding: 16, alignItems: "center" }}>
       <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>{children}</Text>
-    </View>
-  );
-}
-
-export interface Choice<T> {
-  value: T;
-  label: string;
-}
-
-/** Choices as pills in a row that wraps; the chosen one takes the accent. */
-export function Choices<T extends string | number>({
-  options,
-  value,
-  onChange,
-  testID,
-}: {
-  options: ReadonlyArray<Choice<T>>;
-  value: T;
-  onChange: (value: T) => void;
-  testID: string;
-}) {
-  const colors = useColors();
-  return (
-    <View testID={testID} style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-      {options.map((option) => {
-        const chosen = option.value === value;
-        return (
-          <View
-            key={String(option.value)}
-            testID={`${testID}:${option.value}`}
-            onPress={() => onChange(option.value)}
-            style={{
-              height: 26,
-              paddingHorizontal: 12,
-              borderRadius: 13,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: chosen ? colors.selection : colors.button,
-              hoverBackgroundColor: chosen ? colors.selection : colors.separator,
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: chosen ? "semibold" : "normal", color: chosen ? "#ffffff" : colors.text }}>{option.label}</Text>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
-/**
- * A push button: kombu for the one that goes ahead, ume (`danger`) for one
- * that can't be taken back. A secondary button has an edge, so it reads
- * against any ground; `isDefault` rings it in kombu: it is what Enter presses
- * (a destructive sheet's Cancel).
- */
-export function Button({
-  label,
-  onPress,
-  testID,
-  primary,
-  danger,
-  disabled,
-  isDefault,
-}: {
-  label: string;
-  onPress: () => void;
-  testID: string;
-  primary?: boolean;
-  danger?: boolean;
-  disabled?: boolean;
-  isDefault?: boolean;
-}) {
-  const colors = useColors();
-  const fill = disabled ? colors.button : danger ? colors.umeFill : primary ? colors.selection : colors.button;
-  const strong = !disabled && (primary || danger);
-  const edge = strong ? fill : disabled ? colors.separator : isDefault ? colors.selection : colors.controlEdge;
-  return (
-    <View
-      testID={testID}
-      onPress={disabled ? undefined : onPress}
-      style={{
-        minWidth: 84,
-        height: 28,
-        paddingHorizontal: 14,
-        borderRadius: 7,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: fill,
-        borderWidth: isDefault && !strong && !disabled ? 2 : 1,
-        borderColor: edge,
-        hoverBackgroundColor: strong || disabled ? fill : colors.separator,
-      }}
-    >
-      <Text style={{ fontSize: 13, fontWeight: strong ? "semibold" : "normal", color: disabled ? colors.textDisabled : strong ? "#ffffff" : colors.text }}>
-        {label}
-      </Text>
-    </View>
-  );
-}
-
-/** A glyph on a rounded tile of its color: the sidebar's icons and the About logo. */
-export function Tile({ glyph, tint, size = 22 }: { glyph: string; tint: string; size?: number }) {
-  return (
-    <View style={{ width: size, height: size, borderRadius: size * 0.27, alignItems: "center", justifyContent: "center", backgroundColor: tint }}>
-      <Svg markup={glyph} size={Math.round(size * 0.64)} color="#ffffff" />
     </View>
   );
 }

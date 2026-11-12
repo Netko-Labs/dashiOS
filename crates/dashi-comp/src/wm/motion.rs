@@ -7,14 +7,13 @@ use std::{
     time::{Duration, Instant},
 };
 
-use serde_json::{Map, Value};
 use smithay::{
     reexports::calloop::timer::{TimeoutAction, Timer},
     utils::{Logical, Rectangle},
 };
 
 use super::windows::WindowId;
-use crate::state::Dashi;
+use crate::{ipc::methods::windows::AnimationTarget, state::Dashi};
 
 const FLIGHT: Duration = Duration::from_millis(300);
 
@@ -57,32 +56,14 @@ pub(crate) struct Motion {
 
 impl Dashi {
     /// `animation-target {targets: [{window, rect}]}`; a null rect forgets it.
-    pub(crate) fn set_animation_targets(
-        &mut self,
-        params: &Map<String, Value>,
-    ) -> Result<(), String> {
-        let targets = params
-            .get("targets")
-            .and_then(Value::as_array)
-            .ok_or("`targets` must be a list")?;
+    pub(crate) fn set_animation_targets(&mut self, targets: &[AnimationTarget]) {
         for target in targets {
-            let id = target
-                .get("window")
-                .and_then(Value::as_u64)
-                .ok_or("each target needs a window")?;
-            let rect = target.get("rect").filter(|r| !r.is_null()).and_then(|r| {
-                let get = |k: &str| r.get(k).and_then(Value::as_f64).map(|v| v.round() as i32);
-                Some(Rectangle::new(
-                    (get("x")?, get("y")?).into(),
-                    (get("width")?.max(1), get("height")?.max(1)).into(),
-                ))
-            });
-            match rect {
-                Some(rect) => self.motion.targets.insert(id, rect),
+            let id = target.window.0;
+            match target.rect {
+                Some(rect) => self.motion.targets.insert(id, rect.at_least(1)),
                 None => self.motion.targets.remove(&id),
             };
         }
-        Ok(())
     }
 
     /// Fly `id` between `from` and its tile (`into` true: into it). False when it just goes.

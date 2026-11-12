@@ -1,8 +1,7 @@
 import { expect, test } from "bun:test";
-import { parseSettings } from "../src/settings.ts";
+import { parseSettings } from "../src/settings/settings.ts";
 import { TextSize } from "../src/text-size.ts";
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
+import { settle } from "./support/time.ts";
 
 test("settings: the text size, 1 when it is missing or not one offered", () => {
   expect(parseSettings({}).settings.appearance.textSize).toBe(1);

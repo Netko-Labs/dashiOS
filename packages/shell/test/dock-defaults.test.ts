@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { dockDefaults, resolvePinned } from "../src/apps.ts";
+import { dockDefaults, resolvePinned } from "../src/shared/apps/index.ts";
 
 test("a new Dock leaves out the Components gallery, and keeps the rest in order", () => {
   expect(dockDefaults([{ id: "dev.dashi.files" }, { id: "dev.dashi.components" }, { id: "dev.dashi.terminal" }])).toEqual([

@@ -31,12 +31,15 @@ root=
 nvidia=auto
 kernel=auto
 graphics=auto
+# An option that takes a value must have one: without this, `shift 2` fails
+# on the last argument and the loop never ends (as root).
+needs_value() { [[ $# -ge 2 ]] || { echo "finish-install: $1 needs a value" >&2; exit 2; }; }
 while (($#)); do
   case $1 in
-    --root) root=${2:?--root needs a directory}; shift 2 ;;
-    --nvidia) nvidia=${2:-}; shift 2 ;;
-    --kernel) kernel=${2:-}; shift 2 ;;
-    --graphics) graphics=${2:-}; shift 2 ;;
+    --root) needs_value "$@"; root=$2; shift 2 ;;
+    --nvidia) needs_value "$@"; nvidia=$2; shift 2 ;;
+    --kernel) needs_value "$@"; kernel=$2; shift 2 ;;
+    --graphics) needs_value "$@"; graphics=$2; shift 2 ;;
     *) echo "finish-install: unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -92,6 +95,7 @@ if [[ -n $root ]]; then
   say "NVIDIA's driver: $nvidia; kernels: $kernel; graphics switching: $graphics"
   # The installer usually has these mounted for its own chroot; mount what it hasn't.
   mounted=()
+  # shellcheck disable=SC2329 # run by the EXIT trap below
   cleanup() {
     local i
     for ((i = ${#mounted[@]} - 1; i >= 0; i--)); do umount -l "${mounted[i]}" || true; done

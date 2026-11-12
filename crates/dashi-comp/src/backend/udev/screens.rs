@@ -3,6 +3,7 @@
 //! others), its gamma and identity (EDID).
 
 use super::*;
+use crate::ipc::protocol::Event;
 
 pub(super) fn scan_connectors(state: &mut Dashi, node: DrmNode) {
     let events = with_udev(state, |_, data| {
@@ -35,7 +36,7 @@ pub(super) fn scan_connectors(state: &mut Dashi, node: DrmNode) {
         }
     }
     if changed {
-        state.ipc.emit("outputs-changed", json!({}));
+        state.ipc.emit(Event::OutputsChanged);
     }
 }
 
@@ -128,8 +129,11 @@ fn connector_connected(
                 output: output.clone(),
                 scanout,
                 global,
-                queued: false,
-                scheduled: false,
+                flip: flip::Flip::default(),
+                planes: Default::default(),
+                scheduled: None,
+                asleep: false,
+                quiet: Default::default(),
                 powered: true,
                 held: false,
                 modes: connector.modes().to_vec(),
@@ -163,6 +167,7 @@ pub(super) fn connector_disconnected(state: &mut Dashi, node: DrmNode, crtc: crt
     let Some(screen) = removed else { return false };
     tracing::info!(name = screen.output.name(), "screen removed");
     state.space.unmap_output(&screen.output);
+    state.mirror_output_gone(&screen.output);
     dh.remove_global::<Dashi>(screen.global);
     true
 }

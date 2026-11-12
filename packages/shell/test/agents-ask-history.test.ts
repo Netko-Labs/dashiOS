@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ago, HistoryLog, readHistory, taskSummary } from "../src/agents/ask/history.ts";
-import { callsSummary, groupSessions, spanWords } from "../src/agents/ask/sessions.ts";
+import { callsSummary, groupSessions, spanWords } from "../src/agents/ask/lib/sessions.ts";
 
 const lines = (...values: unknown[]) => values.map((value) => JSON.stringify(value)).join("\n");
 

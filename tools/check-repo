@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# H14 (docs/conventions.md, "Hard rules"): the repository holds only source.
+#   - nothing generated is tracked (bytecode, build output, images);
+#   - CLAUDE.md and AGENTS.md are the same file but for their title line, and
+#     AGENTS.md names every hard rule (H1 to H20);
+#   - every version agrees: the Rust crates, the packages, the browser
+#     extension and spin/build-rpms;
+#   - no tracked file holds a merge's conflict markers.
+# Run: tools/check-repo
+set -euo pipefail
+cd -- "$(dirname -- "$(readlink -f -- "$0")")/.."
+
+failed=0
+fail() {
+	echo "check-repo: $*" >&2
+	failed=1
+}
+
+# Generated files.
+generated=$(git ls-files | grep -E '(^|/)(__pycache__|node_modules|target|dist)/|\.(pyc|pyo|o|so|a|rpm|qcow2|iso)$' || true)
+if [ -n "$generated" ]; then
+	fail "generated files are tracked (git rm --cached them, and ignore them):"
+	while read -r file; do echo "  $file" >&2; done <<<"$generated"
+fi
+
+# Conflict markers a merge left (git writes <<<<<<<, ||||||| and >>>>>>> at a
+# line's start, each followed by a space and a name, or alone).
+markers=$(git grep -nIE '^(<{7}|\|{7}|>{7})( |$)' || true)
+if [ -n "$markers" ]; then
+	fail "conflict markers in tracked files (finish the merge):"
+	while read -r line; do echo "  $line" >&2; done <<<"$markers"
+fi
+
+# The two entry files.
+if ! diff <(tail -n +2 CLAUDE.md) <(tail -n +2 AGENTS.md) >/dev/null; then
+	fail "CLAUDE.md and AGENTS.md differ (beyond their first line); keep them equivalent"
+fi
+for n in $(seq 1 20); do
+	grep -q "\bH$n\b" AGENTS.md || fail "AGENTS.md does not name hard rule H$n"
+done
+
+# One version everywhere.
+# The first `version =` in a Cargo.toml is the package's.
+crate_version() { grep -m1 -E '^version = ' "$1" | sed -E 's/^version = "(.*)"/\1/'; }
+version=$(crate_version crates/dashi-comp/Cargo.toml)
+check_version() { # FILE FOUND
+	[ "$2" = "$version" ] || fail "$1 says version ${2:-(none)}, dashi-comp says $version"
+}
+for crate in crates/*/Cargo.toml; do
+	check_version "$crate" "$(crate_version "$crate")"
+done
+for manifest in packages/*/package.json packages/shell/browser-extension/manifest.json; do
+	check_version "$manifest" "$(jq -r .version "$manifest")"
+done
+check_version spin/build-rpms "$(sed -nE 's/^version=([0-9.]+)$/\1/p' spin/build-rpms)"
+
+if [ "$failed" = 0 ]; then
+	echo "check-repo: ok (version $version)"
+fi
+exit "$failed"

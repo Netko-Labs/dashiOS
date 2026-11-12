@@ -5,25 +5,18 @@
  * answers for agents (`apps`, `end`), so one place owns what may be signalled.
  */
 
-import { displayName, iconPath } from "../apps.ts";
-import type { Compositor, CompositorEvent, CompositorWindow } from "../compositor.ts";
-import { type Entry, loadEntries } from "../entries.ts";
-import { findEntry } from "../menus/launch.ts";
+import { displayName } from "../apps.ts";
+import type { Compositor, CompositorEvent, CompositorWindow } from "../compositor/index.ts";
+import { loadEntries } from "../entries.ts";
+import { findEntry } from "../menus/index.ts";
 import { type OverlayHandle, openOverlay } from "../overlay.tsx";
-import { ForceQuitController } from "./controller.ts";
-import { isAlive, readProcStat, sendSignal } from "./kernel.ts";
-import { type AppGroup, appGroups, type Identity, protectedPids } from "./model.ts";
-import { type Outcome, terminate } from "./policy.ts";
-import { FORCE_QUIT, ForceQuitWindow } from "./view.tsx";
-
-export interface ForceQuit {
-  open(): void;
-  close(): void;
-  /** The apps the window would list for these windows: one per process, the shell's own left out. */
-  apps(windows: readonly CompositorWindow[]): AppGroup[];
-  /** Ends `pid` as the window's button does; nothing is sent for a process the window would not list. */
-  end(pid: number, windows: readonly CompositorWindow[]): Outcome;
-}
+import type { Entry } from "../shared/app-entries/index.ts";
+import { iconPath } from "../shared/apps/index.ts";
+import { isAlive, type Outcome, protectedPids, readProcStat, sendSignal, terminate } from "../shared/processes/index.ts";
+import { ForceQuitController } from "./lib/controller.ts";
+import { appGroups, type Identity } from "./lib/model.ts";
+import { FORCE_QUIT, ForceQuitWindow } from "./lib/view.tsx";
+import type { AppGroup, ForceQuit } from "./types.ts";
 
 /** A window's name and icon: the installed app's, else the app id's name and a stand-in icon. */
 export function identifierFor(entries: readonly Entry[]): (window: CompositorWindow) => Identity {

@@ -13,6 +13,7 @@ import {
   wireMessage,
 } from "../src/index.ts";
 import { ASUS } from "./fixtures.ts";
+import { settle } from "./support/time.ts";
 
 const noFiles = (): null => null;
 const line = (value: unknown): string => JSON.stringify(value);
@@ -141,8 +142,6 @@ function fakeShell() {
   const reply = (message: unknown): void => handlers?.data(new TextEncoder().encode(`${JSON.stringify(message)}\n`));
   return { sent, connect, reply };
 }
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
 
 test("defineApplet answers the launcher's commands: a line, rows, a chosen row, and a view asked for", async () => {
   const shell = fakeShell();

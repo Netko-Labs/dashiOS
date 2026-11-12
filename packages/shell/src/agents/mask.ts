@@ -13,10 +13,9 @@
  * blanked"); a mask that can't be set means no picture at all.
  */
 
-import type { CompositorWindow } from "../compositor.ts";
-import type { Atspi } from "./atspi/client.ts";
-import { limits, type Placed, passwordFields, type Rect, toWindow } from "./atspi/tree.ts";
-import { FillPrompts } from "./fill-prompts.ts";
+import type { CompositorWindow, Params } from "../compositor/index.ts";
+import { type Atspi, limits, type Placed, passwordFields, type Rect, toWindow } from "./atspi/index.ts";
+import { FillPrompts } from "./lib/fill-prompts.ts";
 
 /** The name agents' captures use. */
 export const AGENT_MASK = "agent";
@@ -59,7 +58,7 @@ export interface MaskInputs {
 }
 
 /** The `capture-mask` request for `inputs`. */
-export function maskRequest(inputs: MaskInputs): Record<string, unknown> {
+export function maskRequest(inputs: MaskInputs): Params<"capture-mask"> {
   return {
     client: AGENT_MASK,
     windows: [...new Set([...inputs.handedOver, ...inputs.vault, ...(inputs.opened ?? [])])],
@@ -77,7 +76,7 @@ export function maskRequest(inputs: MaskInputs): Record<string, unknown> {
 }
 
 export interface MaskDeps {
-  request(method: string, params: Record<string, unknown>): Promise<unknown>;
+  captureMask(params: Params<"capture-mask">): Promise<unknown>;
   windows(): Promise<CompositorWindow[]>;
   /** The accessibility bus, joined on first use; null where there is none. */
   atspi(): Promise<(Pick<Atspi, "appFor"> & Partial<Pick<Atspi, "wake">>) | null>;
@@ -118,7 +117,7 @@ export class AgentMask {
       popups: prompts.popups,
       opened: prompts.windows,
     });
-    await this.deps.request("capture-mask", request);
+    await this.deps.captureMask(request);
   }
 
   /**

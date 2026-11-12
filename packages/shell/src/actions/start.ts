@@ -7,43 +7,45 @@
  * from outside (links.ts) all come through `run`.
  */
 
+import { actingAs } from "../acting.ts";
 import type { Question } from "../agents/confirm.ts";
 import { logActivity } from "../agents/consent.ts";
 import type { Agents } from "../agents/server.ts";
-import { TOOL_ACTIONS } from "../agents/tools/index.ts";
-import { ownerPids } from "../app-menus/focus.ts";
-import type { AppMenuStore } from "../app-menus/store.ts";
-import type { Compositor, CompositorWindow } from "../compositor.ts";
-import type { Entry } from "../entries.ts";
-import type { Keymap } from "../keymap.ts";
+import { TOOL_ACTIONS } from "../agents/tools/registry.ts";
+import { type AppMenuStore, ownerPids } from "../app-menus/index.ts";
+import type { Arrow } from "../arrange/index.ts";
+import type { Compositor, CompositorWindow } from "../compositor/index.ts";
+import type { Keymap } from "../keymap/keymap.ts";
 import type { Arrange } from "../layout.ts";
-import type { MenuAction } from "../menus/model.ts";
-import type { PaneId } from "../settings-app/panes.ts";
-import { isPaneId } from "../settings-app/panes.ts";
-import type { Arrow } from "../tiling.ts";
+import type { MenuAction } from "../menus/index.ts";
+import { type RegistryStores, type RowDef, type SettingValue, valueOf } from "../settings-app/registry/index.ts";
+import type { Entry } from "../shared/app-entries/index.ts";
+import { isPaneId, type PaneId } from "../shared/settings/index.ts";
 import { withArgs } from "./address.ts";
 import { type PersonQuestion, personTitle } from "./confirm-sheet.tsx";
-import { copyAddress } from "./copy.ts";
-import { linksSocketPath, serveLinks } from "./links.ts";
+import { copyAddress } from "./lib/copy.ts";
+import { linksSocketPath, serveLinks } from "./lib/links.ts";
+import { type Origin, type RunDeps, runAction } from "./lib/run.ts";
+import { AppSource } from "./lib/sources/apps.ts";
+import { commandActions, type RunCapture } from "./lib/sources/commands.ts";
+import { MenuSource } from "./lib/sources/menus.ts";
+import { settingsActions } from "./lib/sources/settings.ts";
+import { WindowSource } from "./lib/sources/windows.ts";
 import { ActionRegistry, fixedSource, mayUse } from "./registry.ts";
-import { type Origin, type RunDeps, runAction } from "./run.ts";
-import { AppSource } from "./sources/apps.ts";
-import { commandActions } from "./sources/commands.ts";
-import { MenuSource } from "./sources/menus.ts";
-import { type SettingKey, settingState, settingsActions } from "./sources/settings.ts";
-import { WindowSource } from "./sources/windows.ts";
-import { type ActionContext, type ActionDef, type Args, failed, type Outcome } from "./types.ts";
+import { type ActionContext, type ActionDef, type ActionSource, type Args, failed, type Outcome } from "./types.ts";
 
 export interface ActionsOptions {
   compositor: Compositor | null;
-  /** The agents' server: the tools run as the person through it, and Settings is read through its desktop. */
+  /** The agents' server: the tools run as the person through it. */
   agents: Pick<Agents, "runAsPerson" | "desktop"> | null;
-  /** The person's own sheet (agent-sheets.tsx): only their press answers yes. */
+  /** The settings registry's stores: Settings' rows read their state and change through them; null in a session without them. */
+  settingsStores?: RegistryStores | null;
+  /** The person's own sheet (agent-sheets/agent-sheets.tsx): only their press answers yes. */
   confirmPerson(question: PersonQuestion): Promise<boolean>;
   /** The installed apps (the shell's catalog). */
   entries(): readonly Entry[];
   launch(entry: Entry): number | null;
-  /** Bring a running app's window forward (sources/apps.ts); whether it did. */
+  /** Bring a running app's window forward (lib/sources/apps.ts); whether it did. */
   activate?(entry: Entry): Promise<boolean>;
   appMenus: Pick<AppMenuStore, "published" | "onPublished" | "select">;
   /** What the menu bar calls a window's app. */
@@ -56,6 +58,8 @@ export interface ActionsOptions {
   } | null;
   /** A Dashi menu row's action (menus/start.tsx `run`). */
   runMenu(action: MenuAction): Promise<void>;
+  /** A screenshot, ⇧❖3 ⇧❖4 ⇧❖5's (lib/sources/commands.ts); none without a compositor. */
+  capture?: RunCapture;
   openSettings(pane: PaneId, row?: string): void;
   keymap: Keymap;
   /** Listen for dashi:// links on the links socket; off in tests. */
@@ -76,7 +80,7 @@ export interface Actions {
   copyAddress(action: ActionDef, args?: Args): Promise<boolean>;
   /**
    * A step of an agent's plan the person approved with their own press
-   * (agents/ask/tasks.ts): that press is its Allow Once. Only an agents'
+   * (agents/ask/lib/tasks.ts): that press is its Allow Once. Only an agents'
    * tool runs so; it is logged as `by.agent`'s, in task `by.task`. A tool that
    * asks every time still asks, on the person's sheet.
    */
@@ -93,34 +97,42 @@ const fromTool = (question: Question): PersonQuestion => ({
   danger: question.danger === true,
 });
 
-export function startActions(options: ActionsOptions): Actions {
-  const { compositor, agents } = options;
-  const registry = new ActionRegistry();
-  const windows = async (): Promise<readonly CompositorWindow[]> => (compositor ? compositor.windows().catch(() => []) : []);
-  const onWindows = (listener: () => void): (() => void) =>
-    compositor?.on((event) => {
-      if (event.event === "window-opened" || event.event === "window-closed") listener();
-    }) ?? (() => {});
-  const focus = async (window: number): Promise<void> => {
-    await compositor?.request("focus", { window });
+/** What the sources read of the compositor: the windows open, when they change, and focus. */
+function windowView(compositor: Compositor | null) {
+  return {
+    windows: async (): Promise<readonly CompositorWindow[]> => (compositor ? compositor.windows().catch(() => []) : []),
+    onWindows: (listener: () => void): (() => void) =>
+      compositor?.on((event) => {
+        if (event.event === "window-opened" || event.event === "window-closed") listener();
+      }) ?? (() => {}),
+    focus: async (window: number): Promise<void> => {
+      await compositor?.focus({ window });
+    },
   };
+}
 
-  registry.add(fixedSource("tools", TOOL_ACTIONS));
-  registry.add(fixedSource("dashi", commandActions(options.runMenu, options.keymap)));
-  const desktop = agents?.desktop;
-  registry.add(
-    fixedSource(
-      "settings",
-      settingsActions({
-        state: (setting: SettingKey) => (desktop ? settingState(desktop, setting) : null),
-        open: (pane, row) => {
-          if (isPaneId(pane)) options.openSettings(pane, row);
-        },
-      }),
-    ),
+/** The settings source: its rows read and change through the registry's stores. */
+function settingsSource(options: ActionsOptions): ActionSource {
+  const stores = options.settingsStores;
+  return fixedSource(
+    "settings",
+    settingsActions({
+      state: (row) => (stores ? valueOf(row, stores) : null),
+      ...(stores ? { set: (row: RowDef, value: SettingValue) => row.value?.set(stores, value) } : {}),
+      open: (pane, row) => {
+        if (isPaneId(pane)) options.openSettings(pane, row);
+      },
+    }),
   );
-  const apps = new AppSource({ entries: options.entries, launch: options.launch, ...(options.activate ? { activate: options.activate } : {}) });
-  registry.add(apps);
+}
+
+/** Every source the registry is filled from; the two that watch (windows, menus) come back to be closed. */
+function addSources(registry: ActionRegistry, options: ActionsOptions): { windowSource: WindowSource; menuSource: MenuSource } {
+  const { windows, onWindows, focus } = windowView(options.compositor);
+  registry.add(fixedSource("tools", TOOL_ACTIONS));
+  registry.add(fixedSource("dashi", commandActions(options.runMenu, options.keymap, options.capture)));
+  registry.add(settingsSource(options));
+  registry.add(new AppSource({ entries: options.entries, launch: options.launch, ...(options.activate ? { activate: options.activate } : {}) }));
   const arrange = options.arrange;
   const windowSource = new WindowSource({
     windows,
@@ -135,19 +147,19 @@ export function startActions(options: ActionsOptions): Actions {
   registry.add(windowSource);
   const menuSource = new MenuSource({ store: options.appMenus, windows, onWindows, owners: (pid) => ownerPids(pid), appName: options.appName, focus });
   registry.add(menuSource);
-  void registry.refresh();
+  return { windowSource, menuSource };
+}
 
-  let present: ((action: ActionDef, args: Args) => boolean) | null = null;
-
-  /** The tools as the person: a question an agent would be asked is the person's sheet, and No is "Cancelled." */
-  const context = (window: number | null): ActionContext => ({
+/** The tools as the person: a question an agent would be asked is the person's sheet, and No is "Cancelled." */
+function toolContext({ agents, confirmPerson }: ActionsOptions): (window: number | null) => ActionContext {
+  return (window) => ({
     window,
     ...(agents
       ? {
           tool: async (call) => {
             let declined = false;
             const result = await agents.runAsPerson(call, async (question) => {
-              const yes = await options.confirmPerson(fromTool(question));
+              const yes = await confirmPerson(fromTool(question));
               declined = !yes;
               return yes;
             });
@@ -156,6 +168,33 @@ export function startActions(options: ActionsOptions): Actions {
         }
       : {}),
   });
+}
+
+/** A step of an agent's plan the person approved: run as the tool, logged as the agent's. */
+async function runApprovedStep(action: ActionDef, args: Args, by: { agent: string; task: string }, context: ActionContext): Promise<Outcome> {
+  if (action.tool === undefined || !mayUse(action, "agents")) return failed("Agents can't use this.");
+  const checked = action.check(args);
+  if (!checked.ok) return failed(checked.error);
+  let outcome: Outcome;
+  try {
+    // The person approved it, but the answerer chose it: what it changes is listed as the answerer's (acting.ts).
+    outcome = await actingAs({ agent: by.agent }, () => checked.run(context));
+  } catch (error) {
+    outcome = failed(`${action.title} failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  const word = outcome.ok ? "ok" : outcome.error === "Cancelled." ? "cancelled" : "error";
+  logActivity({ agent: by.agent, claims: null, tool: action.address, outcome: word, task: by.task });
+  return outcome;
+}
+
+export function startActions(options: ActionsOptions): Actions {
+  const registry = new ActionRegistry();
+  const { windowSource, menuSource } = addSources(registry, options);
+  void registry.refresh();
+
+  let present: ((action: ActionDef, args: Args) => boolean) | null = null;
+
+  const context = toolContext(options);
 
   const deps: RunDeps = {
     context,
@@ -201,20 +240,7 @@ export function startActions(options: ActionsOptions): Actions {
       present = next;
     },
     copyAddress: (action, args = {}) => copyAddress(action, args),
-    async runApproved(action, args, by) {
-      if (action.tool === undefined || !mayUse(action, "agents")) return failed("Agents can't use this.");
-      const checked = action.check(args);
-      if (!checked.ok) return failed(checked.error);
-      let outcome: Outcome;
-      try {
-        outcome = await checked.run(context(null));
-      } catch (error) {
-        outcome = failed(`${action.title} failed: ${error instanceof Error ? error.message : String(error)}`);
-      }
-      const word = outcome.ok ? "ok" : outcome.error === "Cancelled." ? "cancelled" : "error";
-      logActivity({ agent: by.agent, claims: null, tool: action.address, outcome: word, task: by.task });
-      return outcome;
-    },
+    runApproved: (action, args, by) => runApprovedStep(action, args, by, context(null)),
     close() {
       stopLinks();
       windowSource.close();

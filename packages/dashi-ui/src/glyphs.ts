@@ -4,12 +4,20 @@ const svg = (body: string): string => `<svg xmlns="http://www.w3.org/2000/svg" v
 const stroke = (d: string, width = 1.5): string =>
   `<path d="${d}" stroke="#000" stroke-width="${width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
 
+/** Dashi's mark: a bowl of dashi with steam (the menu bar's Dashi menu, About, Setup, the installer). */
+export const LOGO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M1.5 8.25h13a6.5 6 0 0 1-13 0z" fill="#000"/><path d="M5 1.75c-.9 1 .9 1.9 0 2.9M8 1.25c-.9 1 .9 1.9 0 2.9M11 1.75c-.9 1 .9 1.9 0 2.9" stroke="#000" stroke-width="1.3" fill="none" stroke-linecap="round"/></svg>`;
 /** A circle with an x: a field's clear button (outlines only: the Svg tints every fill one color). */
 export const CLEAR = svg(`<circle cx="8" cy="8" r="6.2" stroke="#000" stroke-width="1.3" fill="none"/>${stroke("M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2", 1.4)}`);
 /** An x: dismiss a notice. */
 export const CLOSE = svg(stroke("M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6", 1.6));
 export const CHEVRON_UP = svg(stroke("M4.5 10l3.5-3.5 3.5 3.5", 1.6));
 export const CHEVRON_DOWN = svg(stroke("M4.5 6.5l3.5 3.5 3.5-3.5", 1.6));
+/** Three dots: "More" where there is no room for the word (a toolbar's, the menu bar's, a row's). One glyph everywhere. */
+export const MORE = svg(
+  '<circle cx="3.5" cy="8" r="1.3" fill="#000"/><circle cx="8" cy="8" r="1.3" fill="#000"/><circle cx="12.5" cy="8" r="1.3" fill="#000"/>',
+);
+/** A chevron up over a chevron down: a pop-up button, whose menu opens over it. */
+export const CHEVRON_UP_DOWN = svg(stroke("M5.2 6.2L8 3.4l2.8 2.8", 1.5) + stroke("M5.2 9.8L8 12.6l2.8-2.8", 1.5));
 /** An octagon with an x: stop (quit) a process. */
 export const STOP = svg(`${stroke("M5.5 1.8h5l3.7 3.7v5l-3.7 3.7h-5l-3.7-3.7v-5z", 1.4)}${stroke("M6 6l4 4M10 6l-4 4", 1.5)}`);
 export const WARNING = svg(`${stroke("M8 2.2l6.2 11H1.8z", 1.4)}${stroke("M8 6.4v3.2", 1.6)}<circle cx="8" cy="11.5" r=".9" fill="#000"/>`);

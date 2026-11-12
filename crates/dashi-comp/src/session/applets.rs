@@ -5,12 +5,27 @@
 //! layer surfaces close when the grant goes. Who gets one is the shell's
 //! decision; this only carries it out. Clients under no applet are as before.
 
-use serde_json::{Map, Value};
+use serde::{Deserialize, Serialize};
 
 use super::trust::descends_from;
+use crate::ipc::protocol::Pid;
 
 /// The most processes one request may name.
 pub(crate) const MAX_APPLETS: usize = 64;
+
+/// `applet-clients`'s params: the processes that run applets, the whole list each time.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct AppletClientsParams {
+    pub applets: Vec<AppletParams>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct AppletParams {
+    pub pid: Pid,
+    pub layer_shell: bool,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct AppletClient {
@@ -25,32 +40,18 @@ pub(crate) struct AppletClients {
 
 impl AppletClients {
     /// `{applets: [{pid, layerShell}]}`, all of it or nothing.
-    pub(crate) fn parse(params: &Map<String, Value>) -> Result<Vec<AppletClient>, String> {
-        let applets = params
-            .get("applets")
-            .and_then(Value::as_array)
-            .ok_or("`applets` must be a list")?;
-        if applets.len() > MAX_APPLETS {
+    pub(crate) fn parse(params: &AppletClientsParams) -> Result<Vec<AppletClient>, String> {
+        if params.applets.len() > MAX_APPLETS {
             return Err(format!("`applets` names more than {MAX_APPLETS} processes"));
         }
-        applets
+        Ok(params
+            .applets
             .iter()
-            .map(|entry| {
-                let pid = entry
-                    .get("pid")
-                    .and_then(Value::as_i64)
-                    .filter(|pid| (2..=i64::from(i32::MAX)).contains(pid))
-                    .ok_or("each applet needs a `pid`, a process id above 1")?;
-                let layer_shell = entry
-                    .get("layerShell")
-                    .and_then(Value::as_bool)
-                    .ok_or("each applet needs `layerShell`: true or false")?;
-                Ok(AppletClient {
-                    pid: pid as i32,
-                    layer_shell,
-                })
+            .map(|applet| AppletClient {
+                pid: applet.pid.to::<i32>(),
+                layer_shell: applet.layer_shell,
             })
-            .collect()
+            .collect())
     }
 
     pub(crate) fn set(&mut self, list: Vec<AppletClient>) {
@@ -80,10 +81,16 @@ impl AppletClients {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
+    use serde_json::{Value, json};
 
-    fn params(value: Value) -> Map<String, Value> {
-        value.as_object().cloned().unwrap_or_default()
+    fn params(value: Value) -> Value {
+        value
+    }
+
+    impl AppletClients {
+        fn parse_json(value: &Value) -> Result<Vec<AppletClient>, String> {
+            AppletClients::parse(&crate::ipc::protocol::read(value.clone())?)
+        }
     }
 
     #[test]
@@ -92,7 +99,7 @@ mod tests {
             json!({"applets": [{"pid": 4242, "layerShell": true}, {"pid": 4300, "layerShell": false}]}),
         );
         assert_eq!(
-            AppletClients::parse(&good),
+            AppletClients::parse_json(&good),
             Ok(vec![
                 AppletClient {
                     pid: 4242,
@@ -111,12 +118,12 @@ mod tests {
             json!({"applets": [{"pid": 4242}]}),
             json!({"applets": [{"pid": "4242", "layerShell": true}]}),
         ] {
-            assert!(AppletClients::parse(&params(bad)).is_err());
+            assert!(AppletClients::parse_json(&params(bad)).is_err());
         }
         let many: Vec<Value> = (0..=MAX_APPLETS)
             .map(|n| json!({"pid": 1000 + n, "layerShell": false}))
             .collect();
-        assert!(AppletClients::parse(&params(json!({ "applets": many }))).is_err());
+        assert!(AppletClients::parse_json(&params(json!({ "applets": many }))).is_err());
     }
 
     #[test]

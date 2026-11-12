@@ -1,17 +1,14 @@
 /**
- * Things that come over a window's content: a sheet (a card hung from the
- * top of the window that holds the window until it is answered; the confirm
- * sheet in confirm.tsx is built on it), a popup menu, and an empty state.
- * Metal has no child windows, so all of them are drawn inside the window,
- * over everything (pass them as `AppWindow`'s `overlay`).
+ * A sheet: a card hung from the top of the window that holds the window until
+ * it is answered (the confirm sheet in confirm.tsx is built on it). Metal has
+ * no child windows, so it is drawn inside the window, over everything (pass it
+ * as `AppWindow`'s `overlay`; popup-menu.tsx's menus are drawn the same way).
  */
 
-import { Svg, Text, View } from "@mirinjs/metal";
+import { View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { CHECK } from "./glyphs.ts";
 import { KeySink } from "./key-sink.tsx";
-import { Shortcut } from "./shortcut.tsx";
-import { useColors, useSurface } from "./theme/index.ts";
+import { useColors, useDark, useSurface } from "./theme/index.ts";
 import { useTitleBarInset } from "./window.tsx";
 
 export interface SheetProps {
@@ -24,15 +21,89 @@ export interface SheetProps {
   onConfirm?: () => void;
 }
 
-export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: SheetProps) {
+/**
+ * What a sheet's scrim lays over the window: black, deeper in Dark, where the
+ * ground is near black or black and a light wash would show nothing.
+ */
+export const SCRIM = { light: "#00000026", dark: "#0000008c" } as const;
+/** The least room a sheet keeps from the window's sides and foot. */
+export const SHEET_MARGIN = 16;
+
+/**
+ * The most a sheet's scrolling body may take in a window `windowHeight`
+ * tall, besides `rest` (its buttons, gaps and other rows): the sheet hangs 8
+ * under the toolbar (`top`, the title bar's inset), keeps SHEET_MARGIN from
+ * the foot, and has 20 of padding and 1 of edge above and below. Taffy can't
+ * size a scroll view by shrinking it, so a sheet caps its body with this.
+ */
+export function sheetBodyRoom(windowHeight: number, top: number, rest: number): number {
+  return Math.max(96, Math.floor(windowHeight - (top + 8) - SHEET_MARGIN - 2 * 21 - rest));
+}
+
+/**
+ * A sheet's card alone (radius 12, padding 20, the card ground, the `xl`
+ * shadow): `Sheet` hangs one from a window; a surface of its own (the
+ * shell's applet consent) shows one with no window to hang from.
+ */
+export function SheetCard({ children, testID, width = 380, marginTop = 0 }: { children: ReactNode; testID: string; width?: number; marginTop?: number }) {
   const colors = useColors();
   const surface = useSurface();
-  const inset = useTitleBarInset();
   return (
+    <View
+      testID={testID}
+      occlude
+      // Tab stays in the sheet while it is open; the window behind can't take the keyboard.
+      focusTrap
+      accessibilityRole="dialog"
+      style={{
+        width,
+        marginTop,
+        flexDirection: "column",
+        gap: 10,
+        padding: 20,
+        borderRadius: 12,
+        backgroundColor: surface.card,
+        borderWidth: 1,
+        borderColor: colors.separator,
+        shadow: "xl",
+      }}
+    >
+      {children}
+    </View>
+  );
+}
+
+/** A sheet's width in a window `room` wide (0: not laid out yet): its own, or the window's less SHEET_MARGIN a side. */
+export function sheetWidth(width: number, room: number): number {
+  return room > 0 ? Math.max(0, Math.min(width, room - 2 * SHEET_MARGIN)) : width;
+}
+
+export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: SheetProps) {
+  const colors = useColors();
+  const dark = useDark();
+  const inset = useTitleBarInset();
+  // The window's width, so a narrow one gets a narrower card: a number, so its content is measured at it.
+  const [room, setRoom] = useState(0);
+  return (
+    // The card hangs under the toolbar, SHEET_MARGIN in from a narrow window's sides. A sheet that can
+    // outgrow a short window caps its scrolling body (`sheetBodyRoom`), so its buttons stay in reach.
     <View
       occlude
       testID={`${testID}:scrim`}
-      style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, alignItems: "center", backgroundColor: "#00000026" }}
+      onLayout={(bounds) => {
+        if (Math.round(bounds.width) !== room) setRoom(Math.round(bounds.width));
+      }}
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        flexDirection: "column",
+        alignItems: "center",
+        backgroundColor: dark ? SCRIM.dark : SCRIM.light,
+        focusRingColor: colors.focusRing,
+      }}
     >
       {(onCancel || onConfirm) && (
         <KeySink
@@ -43,134 +114,9 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: Sh
           }}
         />
       )}
-      <View
-        testID={testID}
-        occlude
-        style={{
-          width,
-          marginTop: Math.max(inset.top, 0) + 8,
-          flexDirection: "column",
-          gap: 10,
-          padding: 20,
-          borderRadius: 12,
-          backgroundColor: surface.card,
-          borderWidth: 1,
-          borderColor: colors.separator,
-          shadow: "xl",
-        }}
-      >
+      <SheetCard testID={testID} width={sheetWidth(width, room)} marginTop={Math.max(inset.top, 0) + 8}>
         {children}
-      </View>
-    </View>
-  );
-}
-
-export interface MenuItem {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  /** The shortcut, only shown, drawn by the shell's Shortcut (never typed into text: fonts lack ❖): "⌃C". */
-  keys?: string;
-  /** A tick before it (a view option that is on); `false` keeps the room for one. */
-  checked?: boolean;
-}
-
-/** A menu at a point (a right-click): a click on a row or anywhere else closes it. */
-export function PopupMenu({
-  x,
-  y,
-  items,
-  onClose,
-  testID = "menu",
-}: {
-  x: number;
-  y: number;
-  items: readonly MenuItem[];
-  onClose: () => void;
-  testID?: string;
-}) {
-  const colors = useColors();
-  const ticks = items.some((item) => item.checked !== undefined);
-  const [hovered, setHovered] = useState<number | null>(null);
-  return (
-    <View occlude testID={`${testID}:away`} onPress={onClose} style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}>
-      <KeySink testID={`${testID}:keys`} onKey={(key) => key.kind === "escape" && onClose()} />
-      <View
-        occlude
-        testID={testID}
-        style={{
-          position: "absolute",
-          left: x,
-          top: y,
-          minWidth: 160,
-          flexDirection: "column",
-          padding: 5,
-          borderRadius: 9,
-          backgroundColor: colors.menu,
-          borderWidth: 1,
-          borderColor: colors.separator,
-          shadow: "lg",
-        }}
-      >
-        {items.map((item, index) => {
-          const lit = !item.disabled && index === hovered;
-          const ink = item.disabled ? colors.textDisabled : lit ? "#ffffff" : colors.text;
-          return (
-            <View
-              key={item.label}
-              testID={`${testID}:${item.label}`}
-              onHoverChange={(over) => setHovered((now) => (over ? index : now === index ? null : now))}
-              onPress={() => {
-                onClose();
-                if (!item.disabled) item.onPress();
-              }}
-              style={{
-                height: 24,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 18,
-                paddingHorizontal: 8,
-                borderRadius: 5,
-                backgroundColor: lit ? colors.selection : "#00000000",
-              }}
-            >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                {ticks && <View style={{ width: 12 }}>{item.checked && <Svg markup={CHECK} size={12} color={ink} />}</View>}
-                <Text style={{ fontSize: 13, color: ink }}>{item.label}</Text>
-              </View>
-              {item.keys !== undefined && (
-                <Shortcut keys={item.keys} size={12} color={item.disabled ? colors.textDisabled : lit ? "#ffffffcc" : colors.textMuted} />
-              )}
-            </View>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
-/** Nothing to show: a glyph, a line, a quieter line, maybe a way out. */
-export function EmptyState({
-  title,
-  message,
-  glyph,
-  action,
-  testID = "empty",
-}: {
-  title: string;
-  message?: string;
-  glyph?: string;
-  action?: ReactNode;
-  testID?: string;
-}) {
-  const colors = useColors();
-  return (
-    <View testID={testID} style={{ flex: 1, flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: 24 }}>
-      {glyph !== undefined && <Svg markup={glyph} size={36} color={colors.textDisabled} />}
-      <Text style={{ fontSize: 15, fontWeight: "semibold", color: colors.textMuted, textAlign: "center" }}>{title}</Text>
-      {message !== undefined && <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>{message}</Text>}
-      {action !== undefined && <View style={{ marginTop: 8 }}>{action}</View>}
+      </SheetCard>
     </View>
   );
 }

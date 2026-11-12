@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
-import type { Entry } from "../src/entries.ts";
-import { KEYMAP } from "../src/keymap.ts";
-import { idleKeymap } from "../src/keymap-state.ts";
+import { KEYMAP } from "../src/keymap/keymap.ts";
+import { idleKeymap } from "../src/keymap/keymap-state.ts";
 import { LAUNCHER_RULES } from "../src/launcher/keys.ts";
+import { Launcher } from "../src/launcher/launcher.tsx";
 import { applyEdits, TYPE_BINDING, TypeAhead, type Typed, typedFrom, withTypeAheadOnTap, withTyping } from "../src/launcher/type-ahead.ts";
-import { Launcher } from "../src/launcher.tsx";
+import type { Entry } from "../src/shared/app-entries/index.ts";
+import { settle } from "./support/time.ts";
 
 const text = (value: string): Typed => ({ kind: "text", text: value });
 const key = (value: "BackSpace" | "Return" | "Escape" | "Up" | "Down"): Typed => ({ kind: "key", key: value });
@@ -32,12 +33,17 @@ describe("typing ahead: the keys", () => {
 
   test("the idle keymap types into the launcher from a tap; the keys of the session still come first", () => {
     const idle = withTypeAheadOnTap(KEYMAP);
-    expect(idle.rules).toEqual(KEYMAP.rules);
+    // The rules are Dashi's, the launcher's key arming the typing as a tap does.
+    expect(idle.rules.map(({ armsAfterTap: _, ...rule }) => rule)).toEqual(KEYMAP.rules);
+    expect(idle.rules.filter((rule) => rule.armsAfterTap).map((rule) => rule.bind)).toEqual(["launcher"]);
+    expect(idle.rules.find((rule) => rule.when === "super+space")).toEqual({ when: "super+space", bind: "launcher", armsAfterTap: true });
     const after = idle.afterTap ?? [];
     expect(after.slice(0, LAUNCHER_RULES.length)).toEqual(LAUNCHER_RULES);
     expect(after.slice(LAUNCHER_RULES.length, -1)).toEqual(KEYMAP.rules);
     expect(after.at(-1)).toEqual({ when: "*", bind: TYPE_BINDING });
     expect(withTyping(KEYMAP).afterTap).toBeUndefined();
+    // Only the idle keymap arms: open, its rules have no afterTap to switch to, so ❖Space just closes it.
+    expect(after.some((rule) => rule.armsAfterTap)).toBe(false);
     expect(withTyping(KEYMAP).rules).toEqual(after);
     expect(idleKeymap().afterTap).toBeDefined();
   });
@@ -141,7 +147,6 @@ describe("typing ahead: the buffer", () => {
 });
 
 describe("typing ahead: the launcher plays the keys in", () => {
-  const settle = (ms = 10): Promise<void> => new Promise((done) => setTimeout(done, ms));
   const app = (name: string): Entry => ({ id: `app.${name.toLowerCase()}`, name, icon: "/icon.svg", keywords: [], exec: ["true"] });
   let mounted: NativeRoot | null = null;
   afterEach(() => {

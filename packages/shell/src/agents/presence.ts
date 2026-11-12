@@ -48,6 +48,13 @@ export interface Confirm {
   danger?: boolean;
 }
 
+/** "<agent> wants to use bodytech.com.co": a site the website tools touch for the first time (sites.ts). */
+export interface SiteAsk {
+  agent: number;
+  who: Who;
+  site: string;
+}
+
 /** "<agent> wants to sign in to github.com": which saved login, and for how long (secrets/broker.ts). */
 export interface SignInAsk {
   agent: number;
@@ -80,11 +87,33 @@ export interface Answer {
   scopes: string[];
 }
 
+/** What an agent's call does that the person must always see (the mark's red dot): records or sees the screen, or uses its own pointer and keys. */
+export type Watching = "recording" | "screen" | "pointer";
+
 export interface AgentInfo {
   id: number;
   name: string;
+  /** Its key in the kept answers (consent.ts), so Settings › Agents can say it is connected now. */
+  key?: string;
   status: string;
   scopes: string[];
+  /** A run started from the launcher (agents/handoff/): its card speaks for it, not a row of its own. */
+  task?: string;
+  /** Where it runs from (a path, "connected over SSH"), for its row in the agents' panel. */
+  detail?: string;
+  /** What it says it is (MCP's clientInfo); unverified. */
+  claims?: string | null;
+  remote?: boolean;
+  /** The harness its glyph is (agents/mark.ts `connectionHarness`), or none: the sparkle. */
+  harness?: string | null;
+  /** When it connected (ms). */
+  since?: number;
+  /** A call of it is waiting on the person (a sheet). */
+  waiting?: boolean;
+  /** It records or sees the screen, or uses its pointer and keys, now or a moment ago. */
+  watching?: Watching | null;
+  /** Since when it has been doing what `watching` says (ms), for its row's time (agents-panel/lib/agents-rows.tsx). */
+  watchingSince?: number;
 }
 
 /** What the agents server needs from the shell's UI. */
@@ -93,6 +122,8 @@ export interface AgentUi {
   ask(ask: Ask, signal?: AbortSignal): Promise<Answer>;
   /** Ask about one action, in the same queue; resolves true only if the person goes ahead. */
   confirm(confirm: Confirm, signal?: AbortSignal): Promise<boolean>;
+  /** Ask whether an agent may use a website: once, always, or not (sites.ts). */
+  allowSite(ask: SiteAsk, signal?: AbortSignal): Promise<Allow>;
   /** Ask which login an agent may use, in the same queue; only the person's own press answers yes. */
   signIn(ask: SignInAsk, signal?: AbortSignal): Promise<SignInChoice>;
   /** Show "Your turn" until the person presses Done (true) or it is taken down (false). */
@@ -103,6 +134,14 @@ export interface AgentUi {
   stopped(names: readonly string[]): void;
   /** Resolves once no consent sheet is on screen (screenshots wait for it). */
   whenNoSheet(): Promise<void>;
+}
+
+/** An agent's status while a sheet of its asks the person something (session.ts): it waits for you. */
+export const WAITING_STATUS = "Waiting for you";
+
+/** How many agents wait for the person now (Settings' sidebar counts them on Agents). */
+export function waitingCount(agents: readonly Pick<AgentInfo, "status">[]): number {
+  return agents.filter((agent) => agent.status === WAITING_STATUS).length;
 }
 
 /** Who is connected, for the menu bar. */

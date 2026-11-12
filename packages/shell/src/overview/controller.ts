@@ -4,19 +4,19 @@
  * sends it a rectangle per window (plan.ts); a click on a window focuses it
  * and leaves, a press on the background, Esc, or ⌃↑ again just leaves, and
  * windows opening or closing meanwhile send a fresh layout. The Spaces row
- * (spaces/row.tsx) sits at the top: ⌃← ⌃→ and ⌃1…⌃9 change Space without
+ * (spaces/lib/row.tsx) sits at the top: ⌃← ⌃→ and ⌃1…⌃9 change Space without
  * leaving, and a window dragged onto a Space moves there (`extras`). Anything else the
  * person does (a shortcut, the launcher) leaves first, so it never acts under
  * a dimmed desktop. The hardware keys do not: volume is not a window action.
  */
 
-import { parseOutputs } from "../arrange.ts";
-import type { Compositor, CompositorEvent } from "../compositor.ts";
+import { placedOutputs } from "../arrange/index.ts";
+import type { Compositor, CompositorEvent } from "../compositor/index.ts";
 import { HARDWARE_BINDINGS } from "../system/keys.ts";
-import { planOverview } from "./plan.ts";
+import { planOverview } from "./lib/plan.ts";
 
 /** What the controller asks of the compositor. */
-export type OverviewCompositor = Pick<Compositor, "request" | "windows" | "on">;
+export type OverviewCompositor = Pick<Compositor, "overview" | "focus" | "outputs" | "windows" | "on">;
 
 /** What the overview shows besides the windows: the Spaces row (spaces/). */
 export interface OverviewExtras {
@@ -80,7 +80,7 @@ export class OverviewController {
     this.setOpen(false);
     this.generation++;
     try {
-      await this.compositor.request("overview", duration === undefined ? {} : { duration });
+      await this.compositor.overview(duration === undefined ? {} : { duration });
     } catch (error) {
       console.error("dashi-shell: leaving the overview failed:", error);
     }
@@ -90,7 +90,7 @@ export class OverviewController {
   async pick(window: number | null): Promise<void> {
     if (window !== null) {
       // The window may have closed meanwhile; leaving still has to happen.
-      await this.compositor.request("focus", { window }).catch(() => {});
+      await this.compositor.focus({ window }).catch(() => {});
     }
     await this.leave();
   }
@@ -115,15 +115,15 @@ export class OverviewController {
   private async send(): Promise<void> {
     const generation = this.generation;
     try {
-      const [windows, outputs] = await Promise.all([this.compositor.windows(), this.compositor.request("outputs")]);
+      const [windows, outputs] = await Promise.all([this.compositor.windows(), this.compositor.outputs()]);
       // Closed (or closed and opened again) while this was being read.
       if (!this.open || generation !== this.generation) return;
       const inset = this.extras.topInset ?? 0;
-      const screens = parseOutputs(outputs).map((output) =>
+      const screens = placedOutputs(outputs).map((output) =>
         inset > 0 ? { ...output, usable: { ...output.usable, y: output.usable.y + inset, height: Math.max(1, output.usable.height - inset) } } : output,
       );
       // A sheet goes with its window (portal-host/sheets.ts), not as one of its own.
-      await this.compositor.request("overview", {
+      await this.compositor.overview({
         windows: planOverview(
           windows.filter((window) => window.sheetOf === undefined),
           screens,

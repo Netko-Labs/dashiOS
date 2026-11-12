@@ -1,0 +1,1 @@
+# H7: `JSON.parse(…) as T` casts (count = casts). May only shrink; see scripts/ratchet.ts.

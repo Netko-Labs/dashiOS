@@ -12,6 +12,12 @@
 
 use std::collections::VecDeque;
 
+use super::{
+    keymap::{Chord, Mods},
+    keysyms::KeyInfo,
+};
+use crate::{ipc::protocol::Event, state::Dashi};
+
 /// At most this many keywords.
 pub(crate) const MAX_KEYWORDS: usize = 256;
 /// A keyword is this many characters, at most.
@@ -111,6 +117,51 @@ impl Snippets {
                 .rev()
                 .zip(keyword.iter().rev())
                 .all(|(a, b)| a == b)
+    }
+}
+
+impl Dashi {
+    /// A key that reached a window as it is: what it typed, for the snippets' keywords.
+    pub(super) fn watch_snippets(&mut self, info: &KeyInfo, mods: Mods) {
+        if !self.keys.snippets.is_watching() {
+            return;
+        }
+        let Some(window) = self.focused_window_id() else {
+            return self.keys.snippets.reset();
+        };
+        let plain = !mods.super_ && !mods.ctrl && !mods.alt;
+        let name = info.names.first().map(String::as_str).unwrap_or_default();
+        match (&info.text, plain) {
+            (Some(text), true) => {
+                if let Some(keyword) = self.keys.snippets.typed(window, text) {
+                    let keyword = keyword.clone();
+                    self.ipc.emit(Event::Snippet { keyword, window });
+                }
+            }
+            (None, true) if name == "BackSpace" => self.keys.snippets.erased(window),
+            _ => self.keys.snippets.reset(),
+        }
+    }
+
+    /// `snippet-erase`: delete `keyword` from `window`, if it is still the last thing typed there.
+    pub(crate) fn erase_snippet(&mut self, window: u64, keyword: &str) -> Result<(), String> {
+        if self.lock.locked {
+            return Err("the screen is locked".into());
+        }
+        if self.focused_window_id() != Some(window)
+            || !self.keys.snippets.ends_with_in(window, keyword)
+        {
+            return Err("the keyword is no longer the last thing typed there".into());
+        }
+        let backspace = Chord::parse("BackSpace")?;
+        let time = self.start_time.elapsed().as_millis() as u32;
+        for _ in keyword.chars() {
+            if !self.tap(&backspace, None, false, time) {
+                return Err("BackSpace cannot be typed on this keyboard".into());
+            }
+        }
+        self.keys.snippets.reset();
+        Ok(())
     }
 }
 

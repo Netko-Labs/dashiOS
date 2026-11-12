@@ -7,7 +7,7 @@
  */
 
 import type { Greetd } from "./client.ts";
-import type { Response } from "./protocol.ts";
+import type { Response } from "./lib/protocol.ts";
 
 export type LoginState =
   /** Nobody chosen yet, or between attempts. */

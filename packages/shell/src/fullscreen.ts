@@ -12,10 +12,10 @@
  *     band, and the bar must not vanish under it).
  */
 
-import type { Compositor, CompositorEvent } from "./compositor.ts";
+import type { Compositor, CompositorEvent } from "./compositor/index.ts";
 
 /** What the bars need of the compositor. */
-export type BarsCompositor = Pick<Compositor, "request" | "windows" | "on">;
+export type BarsCompositor = Pick<Compositor, "bars" | "windows" | "on">;
 
 /** How far the pointer pushes to reach the bar: the top row of pixels. */
 export const EDGE_BAND = 1;
@@ -92,7 +92,7 @@ export class FullscreenBars {
   }
 
   private ask(params: Record<string, unknown>): Promise<unknown> {
-    return this.compositor.request("bars", params).catch((error) => {
+    return this.compositor.bars(params).catch((error) => {
       console.error("dashi-shell: dashi-comp refused a menu bar request:", error instanceof Error ? error.message : error);
     });
   }

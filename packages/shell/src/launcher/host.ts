@@ -1,14 +1,14 @@
 /**
  * What the launcher reaches beyond its own rows: the registry's runner, the
  * windows, the Dock, the Trash, the ranking's history, the person's aliases
- * and keys. The shell wires each (main.tsx); a test passes what it checks.
+ * and keys. The shell wires each (boot/launcher.tsx, boot/actions.ts); a test passes what it checks.
  * Everything here runs as the person, who pressed the key.
  */
 
-import type { ActionDef, Args, Outcome } from "../actions/types.ts";
-import type { Entry } from "../entries.ts";
-import type { Keymap } from "../keymap.ts";
-import type { LauncherWindow } from "./items.ts";
+import type { ActionDef, Args, Outcome } from "../actions/index.ts";
+import type { Keymap } from "../keymap/keymap.ts";
+import type { Entry } from "../shared/app-entries/index.ts";
+import type { LauncherWindow } from "./lib/items.ts";
 import type { LauncherPrefsSnapshot } from "./prefs.ts";
 import type { RankSignals } from "./ranking/item.ts";
 import type { FileRow } from "./row-model.ts";
@@ -62,7 +62,7 @@ export interface LauncherPrefsStore extends Store<LauncherPrefsSnapshot> {
 
 export type LauncherWorldStore = Store<WorldSnapshot>;
 
-/** A `dashi://` link the launcher shows with its arguments filled in, waiting for Return (actions/run.ts `present`). */
+/** A `dashi://` link the launcher shows with its arguments filled in, waiting for Return (actions/lib/run.ts `present`). */
 export interface Presented {
   action: ActionDef;
   args: Args;

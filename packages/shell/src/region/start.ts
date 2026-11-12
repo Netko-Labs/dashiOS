@@ -5,10 +5,10 @@
  * the clocks' preferences and the formats of programs started from now on.
  */
 
-import { clockPrefs, clockPrefsFrom } from "../clock.ts";
 import type { SettingsStore } from "../settings-app/store.ts";
-import type { RegionBackend } from "./backend.ts";
-import { applyFormats, type FormatsDeps } from "./formats.ts";
+import { clockPrefs, clockPrefsFrom } from "../shared/time/index.ts";
+import type { RegionBackend } from "./lib/backend.ts";
+import { applyFormats, type FormatsDeps } from "./lib/formats.ts";
 import { RegionStore } from "./store.ts";
 
 export interface RegionRuntime {

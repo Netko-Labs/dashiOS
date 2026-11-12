@@ -1,0 +1,1 @@
+# H18: a module's lib/ imported from outside the folder that owns it (count = imports; tests exempt), or a lib/ path in a package's exports or bin, or a main.ts in a lib/. May only shrink.

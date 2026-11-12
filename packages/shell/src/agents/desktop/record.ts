@@ -7,42 +7,20 @@
 
 import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import type { RecordTarget } from "../../recorder/command.ts";
+import type { RecordTarget } from "../../recorder/index.ts";
 import { type RunContext, type ToolResult, toolError } from "../context.ts";
 import { AGENT_MASK } from "../mask.ts";
 import type { Call } from "../tools/index.ts";
+import { displayOf, recordedLength, stillTimes } from "./lib/record-times.ts";
 
 type RecordCall = Extract<Call, { name: "record_screen" }>;
 
 /** How often the blanks follow the screen while an agent's recording runs. */
 const MASK_EVERY_MS = 400;
+/** How often the wait looks for a recording the person stopped early. */
+const STOPPED_POLL_MS = 100;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-
-/** When each still is taken, in ms from the start: the middles of `frames` equal slices. */
-export function stillTimes(seconds: number, frames: number): number[] {
-  return Array.from({ length: frames }, (_, index) => Math.round(((index + 0.5) * seconds * 1000) / frames));
-}
-
-export interface Display {
-  name: string;
-  frame: { x: number; y: number; width: number; height: number };
-}
-
-/** The screen named `name` (else the main display, else the first) from the compositor's `outputs` answer. */
-export function displayOf(answer: unknown, name: string | null): Display | null {
-  const outputs = typeof answer === "object" && answer !== null ? (answer as { outputs?: unknown }).outputs : undefined;
-  const screens = (Array.isArray(outputs) ? outputs : []).flatMap((output: unknown) => {
-    if (typeof output !== "object" || output === null) return [];
-    const { name, primary, enabled, frame } = output as Record<string, unknown>;
-    if (typeof name !== "string" || enabled === false || typeof frame !== "object" || frame === null) return [];
-    const { x, y, width, height } = frame as Record<string, unknown>;
-    if (![x, y, width, height].every((value) => typeof value === "number" && Number.isFinite(value))) return [];
-    return [{ name, primary: primary === true, frame: { x, y, width, height } as Display["frame"] }];
-  });
-  const chosen = name === null ? (screens.find((screen) => screen.primary) ?? screens[0]) : screens.find((screen) => screen.name === name);
-  return chosen ? { name: chosen.name, frame: chosen.frame } : null;
-}
 
 export async function recordScreen(call: RecordCall, ctx: RunContext): Promise<ToolResult> {
   const recorder = ctx.desktop.recorder;
@@ -52,7 +30,7 @@ export async function recordScreen(call: RecordCall, ctx: RunContext): Promise<T
   let area = call.rect;
   if (call.rect) target = { kind: "area", ...call.rect };
   else {
-    const display = displayOf(await ctx.compositor.request("outputs"), call.display);
+    const display = displayOf(await ctx.compositor.outputs(), call.display);
     if (!display) return toolError(call.display ? `There is no screen called ${call.display}; list_displays names them.` : "There is no screen to record.");
     target = { kind: "screen", output: display.name };
     area = display.frame;
@@ -67,7 +45,7 @@ export async function recordScreen(call: RecordCall, ctx: RunContext): Promise<T
     await ctx.mask.update();
   };
   try {
-    file = await recorder.start(target, { beforeCapture });
+    file = await recorder.start(target, { beforeCapture, by: "agent" });
   } catch (error) {
     ctx.mask.recording(null);
     return toolError(error instanceof Error ? error.message : String(error));
@@ -75,17 +53,22 @@ export async function recordScreen(call: RecordCall, ctx: RunContext): Promise<T
   // A mask that can't follow ends the recording.
   const following = setInterval(() => void ctx.mask.update().catch(() => recorder.stop()), MASK_EVERY_MS);
   const started = Date.now();
+  // Until `until`, or until the person stops it (the menu bar's stop button): a stopped recording isn't waited out.
+  const whileRecording = async (until: number): Promise<void> => {
+    // A stopped agent's recording stops with it: the menu bar showed it as the agent's, and the agent is gone.
+    while (Date.now() < until && recorder.getSnapshot().kind === "recording" && !ctx.signal.aborted) await sleep(Math.min(STOPPED_POLL_MS, until - Date.now()));
+  };
   const dir = join(process.env.XDG_RUNTIME_DIR || "/tmp", "dashi-agents");
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const stills: ToolResult["content"] = [];
   for (const at of stillTimes(call.seconds, call.frames)) {
-    await sleep(Math.max(0, started + at - Date.now()));
-    if (recorder.getSnapshot().kind !== "recording") break;
+    await whileRecording(started + at);
+    if (recorder.getSnapshot().kind !== "recording" || ctx.signal.aborted) break;
     const path = join(dir, `${crypto.randomUUID()}.png`);
     try {
       await ctx.mask.update();
       // With the pointer, so a still shows what is being dragged; with the agent's blanks.
-      await ctx.compositor.request("capture", { path, rect: area, cursor: true, mask: AGENT_MASK });
+      await ctx.compositor.capture({ path, rect: area, cursor: true, mask: AGENT_MASK });
       stills.push(
         { type: "image", data: Buffer.from(await Bun.file(path).arrayBuffer()).toString("base64"), mimeType: "image/png" },
         { type: "text", text: `The still above is at ${(at / 1000).toFixed(1)} s.` },
@@ -96,13 +79,13 @@ export async function recordScreen(call: RecordCall, ctx: RunContext): Promise<T
       rmSync(path, { force: true });
     }
   }
-  await sleep(Math.max(0, started + call.seconds * 1000 - Date.now()));
+  await whileRecording(started + call.seconds * 1000);
   const early = recorder.getSnapshot().kind !== "recording";
   await recorder.stop();
   clearInterval(following);
   ctx.mask.recording(null);
   await ctx.mask.update().catch(() => {});
-  const length = ((Date.now() - started) / 1000).toFixed(1);
+  const length = recordedLength(recorder.lengthOf(file), started, Date.now()).toFixed(1);
   return {
     content: [{ type: "text", text: `${early ? "The person stopped the recording early. " : ""}Recorded about ${length} s to ${file}.` }, ...stills],
   };

@@ -5,9 +5,7 @@
  * process that owns it. tree.ts walks what this returns.
  */
 
-import { DBusConnection } from "../../dbus/index.ts";
-import { unwrap } from "../../dbus/properties.ts";
-import { variant } from "../../dbus/variant.ts";
+import { DBusConnection, unwrap, variant } from "../../shared/dbus/index.ts";
 import { type A11yNode, documents, limits, type Rect } from "./tree.ts";
 
 const PROPERTIES = "org.freedesktop.DBus.Properties";
@@ -163,7 +161,8 @@ export class Atspi {
         CALL_MS,
       )
       .catch(() => [null]);
-    const value = typeof unwrap(pid) === "number" ? (pid as number) : null;
+    const raw = unwrap(pid);
+    const value = typeof raw === "number" ? raw : null;
     this.pids.set(name, value);
     return value;
   }

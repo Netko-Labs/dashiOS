@@ -2,27 +2,30 @@
  * Applets in the shell: everyone's socket (`dashi-applets.sock`), the
  * installed applets in their sandboxes (launcher.ts), the layer-shell grants
  * for popovers (grants.ts), the sheet that catches a click outside an open
- * popover, and the consent sheet. main.tsx starts this once.
+ * popover, the consent sheet, and the power mode for applets that ask
+ * for it (power.ts). main.tsx starts this once.
  */
 
-import { SDK_VERSION } from "@dashi/applet";
+import { join } from "node:path";
+import { appletDataRoot, appletsRoot, appletsSocketPath, type InstalledApplet, type Placement, SDK_VERSION } from "@dashi/applet";
 import { View } from "@mirinjs/metal";
-import { watchKillSwitch } from "../applet-store/kill-switch.ts";
-import { METAL_HOST } from "../apps.ts";
-import type { Compositor } from "../compositor.ts";
-import { parseScreens } from "../displays.ts";
+import { watchKillSwitch } from "../applet-store/index.ts";
+import type { Compositor } from "../compositor/index.ts";
+import { screensOf } from "../displays.ts";
 import type { ExtrasStore } from "../extras/index.ts";
 import type { OpenOverlay } from "../overlay.tsx";
+import { APPLET_CONSENT, AppletConsentCard } from "../shared/applet-store/index.ts";
+import { METAL_HOST } from "../shared/apps/index.ts";
 import { MENU_BAR_HEIGHT } from "../theme.ts";
 import type { AppletCommands } from "./commands.ts";
-import type { AppletContext } from "./connection.ts";
-import { APPLET_CONSENT, AppletConsentSheet } from "./consent-sheet.tsx";
-import { AppletGrants } from "./grants.ts";
-import { appletDataRoot, appletsRoot, type InstalledApplet } from "./installed.ts";
+import type { AppletControls } from "./controls.ts";
 import { AppletLauncher } from "./launcher.ts";
-import type { PopoverScreen } from "./placement.ts";
-import { appletsSocketPath, type Placement } from "./protocol.ts";
-import { serveApplets } from "./server.ts";
+import type { AppletContext } from "./lib/connection-context.ts";
+import { AppletGrants } from "./lib/grants.ts";
+import type { PopoverScreen } from "./lib/placement.ts";
+import { serveApplets } from "./lib/server.ts";
+import type { AppletPopovers } from "./popovers.ts";
+import type { AppletPower } from "./power.ts";
 
 export interface StartAppletsOptions {
   compositor: Compositor | null;
@@ -32,12 +35,18 @@ export interface StartAppletsOptions {
   primary(): string | null;
   /** The applets' commands in the launcher (commands.ts): fed the installed ones, answered on their connections. */
   commands?: AppletCommands;
+  /** Dashi's power mode for applets with `power.mode` (power.ts); connected to the mode store once the laptop starts. */
+  power?: AppletPower;
+  /** Applets' controls in Control Center (controls.ts): fed the installed ones, their state from their connections. */
+  controls?: AppletControls;
+  /** One popover at a time with the shell's menus (popovers.ts). */
+  popovers?: AppletPopovers;
 }
 
 /** The screen a popover goes on, in points, from the compositor's `outputs`. */
 export async function popoverScreen(compositor: Compositor | null, output: string | null, primary: string | null): Promise<PopoverScreen | null> {
   if (!compositor) return { name: null, width: 1280, height: 800, barHeight: MENU_BAR_HEIGHT };
-  const screens = parseScreens(await compositor.request("outputs"));
+  const screens = screensOf(await compositor.outputs());
   const screen = screens.find((each) => each.name === output) ?? screens.find((each) => each.name === primary) ?? screens[0];
   if (!screen) return null;
   const width = screen.frame?.width ?? Math.round(screen.width / screen.scale);
@@ -45,12 +54,15 @@ export async function popoverScreen(compositor: Compositor | null, output: strin
   return { name: screen.name, width, height, barHeight: MENU_BAR_HEIGHT };
 }
 
-export function startApplets({ compositor, extras, openOverlay, primary, commands }: StartAppletsOptions): () => void {
+export function startApplets({ compositor, extras, openOverlay, primary, commands, power, controls, popovers }: StartAppletsOptions): () => void {
   const grants = new AppletGrants(compositor);
   const context: Omit<AppletContext, "installed"> = {
     extras,
     grants,
     ...(commands ? { commands } : {}),
+    ...(power ? { power } : {}),
+    ...(controls ? { controls } : {}),
+    ...(popovers ? { popovers } : {}),
     screen: (output) => popoverScreen(compositor, output, primary()),
     // Under the popover, over everything else below the bar: a click on it closes the popover.
     // The bar stays clickable, so the item again also closes it (connection.ts).
@@ -94,7 +106,14 @@ export function startApplets({ compositor, extras, openOverlay, primary, command
           // Never the keyboard by itself: a stray Enter typed elsewhere must not answer it.
           surface: { layer: "overlay", keyboard: "on-demand", namespace: "dashi.applet-consent" },
         },
-        <AppletConsentSheet manifest={applet.manifest} update={update} onAnswer={answer} />,
+        <AppletConsentCard
+          manifest={applet.manifest}
+          kind={update ? "update" : "allow"}
+          granted={applet.record.consent}
+          signed={applet.record.source === "catalog"}
+          icon={applet.manifest.icon ? join(applet.dir, applet.manifest.icon) : null}
+          onAnswer={answer}
+        />,
         () => answer(false),
       );
     });
@@ -111,11 +130,16 @@ export function startApplets({ compositor, extras, openOverlay, primary, command
         runScript: new URL("../../bin/dashi-applet-run.ts", import.meta.url).pathname,
         dashiVersion: SDK_VERSION,
         askConsent,
-        ...(commands ? { onInstalled: (applets: readonly InstalledApplet[]) => commands.setInstalled(applets) } : {}),
+        onInstalled: (applets: readonly InstalledApplet[]) => {
+          commands?.setInstalled(applets);
+          controls?.setInstalled(applets);
+        },
       })
     : null;
+  // A press on the tile of an applet that isn't running starts it.
+  if (launcher) controls?.setWake((id) => launcher.wake(id));
   launcher?.start();
-  // Pulled versions are turned off even when the Applet Store isn't opened.
+  // Pulled versions are turned off even when Software isn't opened.
   const stopKillSwitch = watchKillSwitch();
   return () => {
     stopKillSwitch();

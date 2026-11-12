@@ -1,13 +1,25 @@
 /** Notifications as agents see them: cut short and cleaned, newest first. */
 
-import { clean, plainBody } from "../../notifications/text.ts";
-import type { HistoryEntry } from "../../notifications/types.ts";
+import { clean, type HistoryEntry, plainBody, type Urgency } from "../../notifications/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 
 /** How much of a body an agent gets; the store keeps up to a thousand characters. */
 export const BODY_CHARS = 300;
 
-export function describeNotification(entry: HistoryEntry, now: number) {
+/** A notification as an agent is told it. */
+export interface NotificationView {
+  id: number;
+  app: string;
+  summary: string;
+  body: string;
+  time: string;
+  secondsAgo: number;
+  urgency: Urgency;
+  /** Not yet expired or dismissed. */
+  open: boolean;
+}
+
+export function describeNotification(entry: HistoryEntry, now: number): NotificationView {
   return {
     id: entry.id,
     app: entry.appName,

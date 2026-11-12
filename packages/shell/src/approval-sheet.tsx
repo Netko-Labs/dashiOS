@@ -6,13 +6,13 @@
  * layer, so agents' pictures blank it.
  */
 
-import { useColors } from "@dashi/ui";
+import { TextSelectionLook, useColors } from "@dashi/ui";
 import { type NativeHostTransport, type NativeRoot, render, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { SHEET_LAYERS } from "./agents/mask.ts";
+import { SHEET_LAYERS } from "./agents/index.ts";
 import { type ApprovalsUi, describe, type Question } from "./agents/secrets/approvals.ts";
 import { Button, opaque } from "./consent.tsx";
-import { spawnShellHost } from "./metal-host.ts";
+import { spawnShellHost } from "./shared/metal/index.ts";
 
 export const APPROVAL = { width: 460, height: 300 } as const;
 
@@ -92,14 +92,16 @@ export function createApprovalUi(): ApprovalsUi & { close(): void } {
         surface: { layer: "overlay", keyboard: "exclusive", namespace: SHEET_LAYERS[0] },
       });
       const root = render(
-        <ApprovalSheet
-          question={question}
-          onApprove={answer.approve}
-          onDeny={() => {
-            answer.deny();
-            hide(question.id);
-          }}
-        />,
+        <TextSelectionLook>
+          <ApprovalSheet
+            question={question}
+            onApprove={answer.approve}
+            onDeny={() => {
+              answer.deny();
+              hide(question.id);
+            }}
+          />
+        </TextSelectionLook>,
         host,
       );
       open.set(question.id, { host, root });

@@ -1,8 +1,7 @@
 import { expect, test } from "bun:test";
 import { type Child, InputMethodRunner, inputMethodCommand } from "../src/input-method.ts";
-import { parseSettings } from "../src/settings.ts";
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
+import { parseSettings } from "../src/settings/settings.ts";
+import { settle } from "./support/time.ts";
 
 /** A child that exits when the test says, or when killed. */
 function fakeChild(log: string[], command: readonly string[]): Child & { exit(code: number): void } {

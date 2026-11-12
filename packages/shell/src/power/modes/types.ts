@@ -4,7 +4,7 @@
  * columns: plugged in and on battery (the cable switches columns, not modes).
  */
 
-import type { KnobValue } from "../../hardware/describe.ts";
+import type { KnobValue } from "../../hardware/index.ts";
 import type { ProfileId } from "../../system/profiles.ts";
 
 export const MODES = ["low-power", "balanced", "performance"] as const;
@@ -23,11 +23,9 @@ export const MODE_SHORT: Readonly<Record<Mode, string>> = { "low-power": "Low", 
 export const MODE_PROFILE: Readonly<Record<Mode, ProfileId>> = { "low-power": "power-saver", balanced: "balanced", performance: "performance" };
 export const modeOfProfile = (profile: ProfileId): Mode => (profile === "power-saver" ? "low-power" : profile);
 
-/** One column of a recipe: knob values (docs/hardware.md, Knobs), and optionally the built-in screen's refresh rate. */
+/** One column of a recipe: knob values (docs/hardware.md, Knobs). The screen's refresh rate is Displays' (display-config/auto-refresh.ts). */
 export interface Recipe {
   knobs: Readonly<Record<string, KnobValue>>;
-  /** Hz, or "max"; absent leaves the screen alone. */
-  screenRate?: number | "max";
 }
 
 export type Recipes = Readonly<Record<Mode, Readonly<Record<Column, Recipe>>>>;

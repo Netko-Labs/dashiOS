@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
-import { fitToRoom, listHeight } from "../src/launcher/fit.ts";
-import type { Row, Section } from "../src/launcher/rows.ts";
+import { fitToRoom, listHeight } from "../src/launcher/lib/fit.ts";
+import type { Row } from "../src/launcher/row-model.ts";
+import type { Section } from "../src/launcher/sections.ts";
 
 const row = (id: string): Row => ({ id, title: id, kind: "", icon: { glyph: "" }, action: { kind: "all-apps" } }) as Row;
 const section = (id: string, ids: string[], extra: Partial<Section> = {}): Section => ({ id, title: id, rows: ids.map(row), ...extra });

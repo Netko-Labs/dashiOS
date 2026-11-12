@@ -1,5 +1,8 @@
 // @dashi/applet: the applet SDK (docs/applets.md). The client and defineApplet for an applet's
 // code; the manifest, permissions, packages, signatures, and the catalog for the store and the shell.
+
+export { isRefusal, type Refusal } from "@dashi/shape";
+export { isInsidePath } from "@dashi/shape/kit";
 export { type Appearance, appearance, appearancePath, darkFrom } from "./appearance.ts";
 export {
   type CatalogIndex,
@@ -8,22 +11,26 @@ export {
   type IndexVersion,
   installable,
   isPulled,
+  type PulledVersion,
   parseIndex,
+  type SkippedApplet,
   trustedComment,
   verifyIndex,
   verifyPackage,
 } from "./catalog.ts";
+export { AppletsClient } from "./client.ts";
 export {
   type AppletHandlers,
   type AppletSpec,
-  AppletsClient,
   type AppletsClientOptions,
   type ClientSocket,
+  CONTROL_SPACING_MS,
   type CommandHandlers,
   type CommandRun,
+  type ControlHandlers,
   type PopoverPlacement,
   type SocketHandlers,
-} from "./client.ts";
+} from "./client-types.ts";
 export {
   type AppletCommand,
   ARG_TYPES,
@@ -41,15 +48,25 @@ export {
   parseRows,
 } from "./commands.ts";
 export {
-  type AppletDefinition,
-  type AppletHandle,
-  type CommandAnswer,
-  type CommandDefinition,
-  defineApplet,
-  findManifest,
-  type PopoverProps,
-  type ViewProps,
-} from "./define.ts";
+  type AppletControl,
+  CONTROL_KINDS,
+  CONTROL_LIMITS,
+  CONTROL_SIZES,
+  CONTROLS_PROTOCOL,
+  type ControlAction,
+  type ControlKind,
+  type ControlSize,
+  type ControlUpdate,
+  checkUpdate,
+  KIND_SIZES,
+  parseControlAction,
+  parseControls,
+  parseControlUpdate,
+  parseShown,
+} from "./controls.ts";
+export { type ControlsApi, controlsApi } from "./controls-api.ts";
+export { defineApplet } from "./define.ts";
+export type { AppletDefinition, AppletHandle, CommandAnswer, CommandDefinition, PopoverProps, ViewProps } from "./define-types.ts";
 export {
   appletDataRoot,
   appletsRoot,
@@ -59,10 +76,13 @@ export {
   type InstallRecord,
   installFiles,
   isAllowed,
+  isCatalogAddress,
   parseRecord,
   readInstalled,
   removeInstalled,
+  scanInstalled,
   shouldRun,
+  type UnreadableApplet,
   writeRecord,
 } from "./installed.ts";
 export {
@@ -71,30 +91,44 @@ export {
   type Category,
   compareVersions,
   dashiSatisfies,
-  isInsidePath,
   type Manifest,
   manifestJson,
   parseManifest,
   readManifest,
 } from "./manifest.ts";
+export { findManifest, manifestPath } from "./manifest-file.ts";
 export { type AppletMenuRow, choosable, MENU_LIMITS, type MenuRowSpec, parseMenu } from "./menu.ts";
 export { PACKAGE_EXTENSION, type Packed, pack, packageName, SDK_VERSION, sha256, type Unpacked, unpack } from "./package.ts";
-export { isRefusal, type Refusal } from "./parse.ts";
 export {
   asksForPassword,
+  CONTROLS_PERMISSION,
   cannotDo,
   consentLines,
   describePermission,
   FOLDERS,
   type Folder,
+  folderLine,
   HARDWARE,
   type HardwareScope,
   type Permission,
+  POWER_MODE_PERMISSION,
   parsePermission,
   permissionName,
+  REACH,
   widens,
 } from "./permissions.ts";
-export { metalHost, type OpenPopover, openPopoverWindow, popoverSurface } from "./popover.tsx";
+export { metalHost, type OpenPopover, openPopoverWindow, POPOVER_RADIUS, PopoverGround, type PopoverKeyboard, popoverSurface } from "./popover.tsx";
+export {
+  isPowerChoice,
+  isPowerMode,
+  POWER_MODES,
+  POWER_PROTOCOL,
+  type PowerChoice,
+  type PowerMode,
+  type PowerState,
+  parsePowerAsk,
+  parsePowerState,
+} from "./power.ts";
 export {
   APPLET_LIMITS,
   APPLETS_SOCKET,
@@ -108,6 +142,7 @@ export {
   parseApplet,
   parseAppletMessage,
   parseAppletShellMessage,
+  parseGlyph,
   type Stat,
   wireMessage,
 } from "./protocol.ts";

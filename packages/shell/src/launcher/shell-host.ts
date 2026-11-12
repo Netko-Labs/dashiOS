@@ -7,13 +7,13 @@
 
 import { dirname } from "node:path";
 import { pathToFileURL } from "node:url";
-import type { Actions } from "../actions/start.ts";
-import type { Compositor } from "../compositor.ts";
-import type { Entry } from "../entries.ts";
-import type { Keymap } from "../keymap.ts";
-import { isPaneId, type PaneId } from "../settings-app/panes.ts";
+import type { Actions } from "../actions/index.ts";
+import type { Compositor } from "../compositor/index.ts";
+import type { Keymap } from "../keymap/keymap.ts";
+import type { Entry } from "../shared/app-entries/index.ts";
+import { isPaneId, type PaneId } from "../shared/settings/index.ts";
 import type { LauncherHost } from "./host.ts";
-import { isPane } from "./items.ts";
+import { isPane } from "./lib/items.ts";
 
 export interface ShellHostDeps {
   compositor: Compositor | null;
@@ -41,8 +41,8 @@ export function describeBinding(bind: string, title: (address: string) => string
 
 export function shellLauncherHost(deps: ShellHostDeps): LauncherHost {
   const { compositor, actions } = deps;
-  const request = async (method: string, params: Record<string, unknown>) => {
-    await compositor?.request(method, params).catch((error) => console.error(`dashi-shell: the launcher's ${method}:`, error));
+  const logged = async (method: string, sent: Promise<unknown> | undefined) => {
+    await sent?.catch((error) => console.error(`dashi-shell: the launcher's ${method}:`, error));
   };
   const focus = async (window: { id: number; address: string }) => {
     const action = actions.registry.get(window.address);
@@ -50,7 +50,7 @@ export function shellLauncherHost(deps: ShellHostDeps): LauncherHost {
       const outcome = await actions.run(action);
       if (outcome.ok) return;
     }
-    await request("focus", { window: window.id });
+    await logged("focus", compositor?.focus({ window: window.id }));
   };
   return {
     run: (action, args) => actions.run(action, args),
@@ -64,13 +64,13 @@ export function shellLauncherHost(deps: ShellHostDeps): LauncherHost {
     },
     bringHere: async (window) => {
       const space = deps.currentSpace();
-      if (space !== null) await request("space-move", { window: window.id, space });
+      if (space !== null) await logged("space-move", compositor?.spaceMove({ window: window.id, space }));
       await focus(window);
     },
-    minimize: (window) => request("minimize", { window: window.id }),
-    close: (window) => request("close", { window: window.id }),
+    minimize: (window) => logged("minimize", compositor?.minimize({ window: window.id })),
+    close: (window) => logged("close", compositor?.close({ window: window.id })),
     quit: async (windows) => {
-      for (const window of windows) await request("close", { window: window.id });
+      for (const window of windows) await logged("close", compositor?.close({ window: window.id }));
     },
     showInFiles: (file) => deps.openFile(pathToFileURL(dirname(file.path)).href),
     trash: async (file) => {

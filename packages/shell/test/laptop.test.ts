@@ -2,18 +2,16 @@ import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Monitor } from "../src/display-config/monitors.ts";
 import type { GraphicsSnapshot } from "../src/graphics/controller.ts";
 import { HARDWARE, hardwareClient, knobVariant, parseBootGuard, parseTuning } from "../src/hardware/client.ts";
 import { parseDescribe } from "../src/hardware/describe.ts";
 import { detectLaptop, isLaptopChassis } from "../src/hardware/laptop.ts";
-import { withRules } from "../src/keymap.ts";
-import { KERNEL_KEYSYMS, laptopKeyRules, nextLightLevel } from "../src/laptop/hotkeys.ts";
+import { withRules } from "../src/keymap/keymap.ts";
+import { KERNEL_KEYSYMS, laptopKeyRules, nextLightLevel } from "../src/laptop/lib/hotkeys.ts";
+import { resetSaidFor } from "../src/laptop/lib/tuning.ts";
 import { type LaptopAction, laptopEntries } from "../src/laptop/menu.ts";
 import { keyboardLight, type LaptopSnapshot, lightLabel } from "../src/laptop/store.ts";
-import { resetSaidFor } from "../src/laptop/tuning.ts";
 import { chargeTarget, fullChargeDone, inScheduleWindow } from "../src/power/battery-health.ts";
-import { rateMode } from "../src/power/modes/screen-rate.ts";
 import type { ModeSnapshot } from "../src/power/modes/store.ts";
 import { FakeBus } from "./fake-bus.ts";
 
@@ -131,25 +129,6 @@ test("battery health: the limit, a full charge once, and the schedule's window",
   expect(fullChargeDone({ plugged: true, percent: 90 }, true)).toBe(false);
 });
 
-const panel = (current: number): Monitor =>
-  ({
-    name: "eDP-1",
-    builtIn: true,
-    enabled: true,
-    mode: { width: 2880, height: 1800, refreshMhz: current },
-    modes: [
-      { width: 2880, height: 1800, refreshMhz: 120_000, preferred: true, current: current === 120_000 },
-      { width: 2880, height: 1800, refreshMhz: 60_000, preferred: false, current: current === 60_000 },
-      { width: 1920, height: 1200, refreshMhz: 144_000, preferred: false, current: false },
-    ],
-  }) as unknown as Monitor;
-
-test("the recipe's screen line: the panel's rate at its size, nothing when it is already there", () => {
-  expect(rateMode(panel(120_000), 60)).toEqual({ width: 2880, height: 1800, refreshMhz: 60_000 });
-  expect(rateMode(panel(60_000), "max")).toEqual({ width: 2880, height: 1800, refreshMhz: 120_000 });
-  expect(rateMode(panel(120_000), "max")).toBeNull();
-});
-
 const laptopSnapshot: LaptopSnapshot = {
   laptop: true,
   helper: true,
@@ -164,7 +143,7 @@ const modes: ModeSnapshot = {
   failed: false,
 };
 
-test("the battery menu as the hub: the mode and why, the charge, the card's holders with Quit", () => {
+test("the battery panel's laptop rows: the charge and the card's holders with Quit; no power modes (Control Center has them)", () => {
   const graphics = {
     hasCard: true,
     switchable: true,
@@ -186,13 +165,6 @@ test("the battery menu as the hub: the mode and why, the charge, the card's hold
   );
   const labels = entries.map((entry) => (entry.kind === "item" ? `${entry.checked ? "✓ " : ""}${entry.label}${entry.keys ? ` [${entry.keys}]` : ""}` : "—"));
   expect(labels).toEqual([
-    "—",
-    "Power Mode",
-    "✓ Automatic · Balanced now",
-    "Low Power",
-    "Balanced",
-    "High Performance",
-    "Automatic chose Balanced: on battery.",
     "—",
     "Charging stops at 80%",
     "Charge to Full Once",

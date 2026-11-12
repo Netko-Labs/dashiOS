@@ -2,15 +2,24 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { currentCopy, expandSnippet, refusal } from "../src/clipboard/expand.ts";
 import { ClipboardHistory } from "../src/clipboard/history.ts";
-import type { ClipboardIo } from "../src/clipboard/io.ts";
-import { pasteChord } from "../src/clipboard/paste.ts";
-import { DEFAULT_LEFT_OUT } from "../src/clipboard/privacy.ts";
-import { snippetSections } from "../src/clipboard/rows.ts";
-import { expand, keywordProblem, parseAdd, parseSnippets, SnippetStore } from "../src/clipboard/snippets.ts";
-import { ClipboardWatch } from "../src/clipboard/watch.ts";
-import type { CompositorEvent, CompositorWindow } from "../src/compositor.ts";
+import { DEFAULT_LEFT_OUT } from "../src/clipboard/left-out.ts";
+import { currentCopy, expandSnippet, refusal } from "../src/clipboard/lib/expand.ts";
+import type { ClipboardIo } from "../src/clipboard/lib/io.ts";
+import { pasteChord } from "../src/clipboard/lib/paste.ts";
+import { snippetSections } from "../src/clipboard/lib/rows.ts";
+import { expand, keywordProblem, parseAdd, parseSnippets, SnippetStore } from "../src/clipboard/lib/snippets.ts";
+import { ClipboardWatch } from "../src/clipboard/lib/watch.ts";
+import type { CompositorEvent } from "../src/compositor/events.ts";
+import type { CompositorWindow } from "../src/compositor/wire.ts";
+import { type FakeRequest, fakeCompositor as typedCompositor } from "./support/compositor.ts";
+import { settle } from "./support/time.ts";
+
+/** The two compositor calls expanding makes, over a fake `request`. */
+const sends = (request: FakeRequest) => {
+  const { sendKeys, snippetErase } = typedCompositor(request);
+  return { sendKeys, snippetErase };
+};
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -110,7 +119,10 @@ test("a typed keyword's text is copied, the keyword erased, the text pasted, and
     io: fakeIo(new Map(), log),
     watch,
     imagePath: () => null,
-    request: async (method: string, params: Record<string, unknown>) => void log.push(`${method} ${JSON.stringify(params)}`),
+    ...sends(async (method, params) => {
+      log.push(`${method} ${JSON.stringify(params)}`);
+      return {};
+    }),
     snippets: { find: (keyword: string) => (keyword === ";hi" ? { keyword, text: "Hello {clipboard}{cursor}." } : undefined) },
     windows: async () => [window()],
     fields: { passwordFocused: async () => false },
@@ -132,10 +144,11 @@ test("a typed keyword's text is copied, the keyword erased, the text pasted, and
   expect(await expandSnippet(";hi", 7, { ...deps, fields: { passwordFocused: async () => true } })).toBe(false);
   const refusing = {
     ...deps,
-    request: async (method: string) => {
+    ...sends(async (method) => {
       log.push(method);
       if (method === "snippet-erase") throw new Error("typed on");
-    },
+      return {};
+    }),
   };
   log.length = 0;
   expect(await expandSnippet(";hi", 7, refusing)).toBe(false);
@@ -151,10 +164,11 @@ test("a typed keyword's text is copied, the keyword erased, the text pasted, and
   log.length = 0;
   const noPaste = {
     ...deps,
-    request: async (method: string) => {
+    ...sends(async (method) => {
       log.push(method);
       if (method === "send-keys") throw new Error("no such window");
-    },
+      return {};
+    }),
   };
   expect(await expandSnippet(";hi", 7, noPaste)).toBe(false);
   expect(log.slice(-2)).toEqual(["expect bump what I copied", "write text/plain;charset=utf-8 what I copied"]);
@@ -182,8 +196,6 @@ function fakeCompositor(windows: CompositorWindow[]) {
     },
   };
 }
-
-const settle = () => new Promise((done) => setTimeout(done, 5));
 
 test("the watch keeps what the rules allow, reads KDE's hint first, and counts what it left out", async () => {
   const history = new ClipboardHistory({ dir: tempDir(), sync: true });

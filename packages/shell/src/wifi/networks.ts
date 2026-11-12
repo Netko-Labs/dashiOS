@@ -5,8 +5,8 @@
  * set apart. Pure, because the order is what the menu promises.
  */
 
+import { cleanText } from "../shared/io/index.ts";
 import { barsFor } from "../system/network.ts";
-import { cleanText } from "../system/text.ts";
 import type { AccessPoint, JoinFailure, SavedNetwork, Security, WifiNetwork, WifiReading } from "./types.ts";
 
 /** NM80211ApFlags and NM80211ApSecurityFlags, the bits that say how a network is protected. */

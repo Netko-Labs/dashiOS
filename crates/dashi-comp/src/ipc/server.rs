@@ -4,7 +4,7 @@
 
 use std::{
     collections::HashMap,
-    io::{self, ErrorKind, Read, Write},
+    io::{self, ErrorKind, Write},
     os::unix::{
         fs::PermissionsExt,
         net::{UnixListener, UnixStream},
@@ -12,12 +12,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use serde_json::Value;
 use smithay::reexports::calloop::{Interest, LoopHandle, Mode, PostAction, generic::Generic};
 
-use super::{
-    frame::{self, LineBuffer},
-    requests,
-};
+use super::{frame, grants::Grants, peer::Peer, protocol::Event, table::Who};
 use crate::state::Dashi;
 
 /// A client that falls this far behind on reading is dropped instead of buffered forever.
@@ -27,8 +25,8 @@ pub(crate) type ConnectionId = u64;
 
 struct Connection {
     writer: UnixStream,
-    /// The process on the other end (SO_PEERCRED), when the kernel says.
-    pid: Option<i32>,
+    /// Who is on the other end, told when it connected.
+    peer: Peer,
     subscribed: bool,
     backlog: Vec<u8>,
 }
@@ -38,6 +36,10 @@ pub(crate) struct Ipc {
     path: PathBuf,
     connections: HashMap<ConnectionId, Connection>,
     next_id: ConnectionId,
+    /// Every connection is the shell's (`--open-ipc`: tests, a shell started by hand).
+    pub open: bool,
+    /// The methods the shell granted to other processes (`ipc-clients`).
+    pub grants: Grants,
 }
 
 impl Ipc {
@@ -64,6 +66,8 @@ impl Ipc {
                 path: path.to_owned(),
                 connections: HashMap::new(),
                 next_id: 1,
+                open: false,
+                grants: Grants::default(),
             },
             listener,
         ))
@@ -99,17 +103,14 @@ impl Ipc {
         Ok(())
     }
 
-    fn add(&mut self, writer: UnixStream) -> ConnectionId {
+    pub(super) fn add(&mut self, writer: UnixStream, peer: Peer) -> ConnectionId {
         let id = self.next_id;
         self.next_id += 1;
-        let pid = rustix::net::sockopt::socket_peercred(&writer)
-            .ok()
-            .map(|cred| cred.pid.as_raw_nonzero().get());
         self.connections.insert(
             id,
             Connection {
                 writer,
-                pid,
+                peer,
                 subscribed: false,
                 backlog: Vec::new(),
             },
@@ -117,13 +118,34 @@ impl Ipc {
         id
     }
 
+    /// Drop `id`: the peer hears the end of the stream, and nothing it sent
+    /// after is run (its reader stops at the next line).
     pub(crate) fn remove(&mut self, id: ConnectionId) {
-        self.connections.remove(&id);
+        if let Some(connection) = self.connections.remove(&id) {
+            let _ = connection.writer.shutdown(std::net::Shutdown::Both);
+        }
     }
 
-    /// The process on the other end of `id`.
-    pub(crate) fn peer_pid(&self, id: ConnectionId) -> Option<i32> {
-        self.connections.get(&id).and_then(|c| c.pid)
+    /// Whether `id` is still connected (not dropped).
+    pub(crate) fn is_open(&self, id: ConnectionId) -> bool {
+        self.connections.contains_key(&id)
+    }
+
+    /// Whether the peer on `id` may ask a method that is `who`'s.
+    pub(super) fn may(&self, id: ConnectionId, name: &str, who: Who) -> bool {
+        let Some(peer) = self.connections.get(&id).map(|c| c.peer) else {
+            return who == Who::Anyone;
+        };
+        match who {
+            Who::Anyone => true,
+            Who::Shell => peer.shell,
+            Who::Granted => peer.shell || peer.pid.is_some_and(|pid| self.grants.allows(pid, name)),
+        }
+    }
+
+    /// Answer request `request` on `id` (a method that answers later, once done).
+    pub(crate) fn reply(&mut self, id: ConnectionId, request: u64, outcome: Result<Value, String>) {
+        self.send(id, &frame::reply(request, outcome));
     }
 
     /// Someone hears events (the shell is there to decide).
@@ -150,8 +172,11 @@ impl Ipc {
     }
 
     /// Tell every subscribed connection.
-    pub(crate) fn emit(&mut self, name: &str, fields: serde_json::Value) {
-        let line = frame::event(name, fields);
+    pub(crate) fn emit(&mut self, event: Event) {
+        let Some(line) = frame::event(&event) else {
+            tracing::warn!(?event, "IPC: an event that does not serialize");
+            return;
+        };
         let subscribed: Vec<ConnectionId> = self
             .connections
             .iter()
@@ -197,67 +222,4 @@ fn write_some(connection: &mut Connection) -> bool {
         }
     }
     connection.backlog.len() <= MAX_BACKLOG
-}
-
-impl Dashi {
-    fn ipc_accept(&mut self, stream: UnixStream) {
-        let writer = match stream
-            .set_nonblocking(true)
-            .and_then(|()| stream.try_clone())
-        {
-            Ok(writer) => writer,
-            Err(error) => return tracing::warn!(%error, "IPC connection"),
-        };
-        let id = self.ipc.add(writer);
-        let mut lines = LineBuffer::default();
-        let inserted = self.loop_handle.insert_source(
-            Generic::new(stream, Interest::READ, Mode::Level),
-            move |_, stream, state| {
-                let mut chunk = [0u8; 16 * 1024];
-                loop {
-                    // SAFETY: reading does not move or close the stream the source owns.
-                    let read = unsafe { stream.get_mut() }.read(&mut chunk);
-                    match read {
-                        Ok(0) => break,
-                        Ok(n) => match lines.push(&chunk[..n]) {
-                            Ok(complete) => {
-                                for line in complete.iter().filter(|l| !l.trim().is_empty()) {
-                                    state.ipc_line(id, line);
-                                }
-                            }
-                            Err(frame::TooLong) => break,
-                        },
-                        Err(error) if error.kind() == ErrorKind::WouldBlock => {
-                            return Ok(PostAction::Continue);
-                        }
-                        Err(error) if error.kind() == ErrorKind::Interrupted => continue,
-                        Err(_) => break,
-                    }
-                }
-                state.ipc.remove(id);
-                Ok(PostAction::Remove)
-            },
-        );
-        if let Err(error) = inserted {
-            tracing::warn!(%error, "IPC connection");
-            self.ipc.remove(id);
-        }
-    }
-
-    fn ipc_line(&mut self, id: ConnectionId, line: &str) {
-        match frame::parse_request(line) {
-            Ok(request) => {
-                let request_id = request.id;
-                let outcome = requests::handle(self, id, request);
-                self.ipc.send(id, &frame::reply(request_id, outcome));
-            }
-            Err(frame::Malformed {
-                id: Some(request_id),
-                error,
-            }) => self.ipc.send(id, &frame::reply(request_id, Err(error))),
-            Err(frame::Malformed { id: None, error }) => {
-                tracing::debug!(%error, "IPC: dropped a line that is not a request")
-            }
-        }
-    }
 }

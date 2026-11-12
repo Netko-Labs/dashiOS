@@ -19,8 +19,9 @@
  *   }
  */
 
+import { isInsidePath, isRefusal, list, optionalText, type Refusal, record, refuse, text } from "@dashi/shape/kit";
 import { type AppletCommand, parseCommands } from "./commands.ts";
-import { isRefusal, list, optionalText, type Refusal, record, refuse, text } from "./parse.ts";
+import { type AppletControl, needsControlsPermission, parseControls } from "./controls.ts";
 import { type Permission, parsePermission, permissionName } from "./permissions.ts";
 import { parseWhen, type When } from "./when.ts";
 
@@ -56,20 +57,19 @@ export interface Manifest {
   icon?: string;
   /** What it adds to the launcher (commands.ts); none is the default. */
   commands: AppletCommand[];
+  /** What it adds to Control Center (controls.ts); none is the default. */
+  controls: AppletControl[];
 }
 
 /** Reverse-DNS, lowercase: `dev.netko.asus-control`. Also a folder name and a systemd unit's. */
 const APPLET_ID = /^[a-z0-9]+(\.[a-z0-9][a-z0-9-]*){2,}$/;
+
+/** Whether `value` is an applet id. */
+export const isAppletId = (value: unknown): value is string => typeof value === "string" && value.length <= 64 && APPLET_ID.test(value);
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$/;
 const RANGE = /^(>=|\^|~)?(\d+)(\.\d+)?(\.\d+)?$/;
 const HTTPS = /^https:\/\/[^\s"<>]+$/;
 const EMAIL = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/;
-
-/** A path inside the applet's folder: relative, no `..`, no hidden parts. */
-export function isInsidePath(path: string): boolean {
-  if (path === "" || path.startsWith("/") || path.includes("\\") || path.includes("\0")) return false;
-  return path.split("/").every((part) => part !== "" && part !== "." && part !== ".." && !part.startsWith("."));
-}
 
 function insidePath(value: unknown, what: string, extensions: RegExp): string | Refusal {
   if (typeof value !== "string" || !isInsidePath(value) || value.length > 200) return refuse(`${what} must be a path inside the applet's folder`);
@@ -104,13 +104,13 @@ const FIELDS = [
   "screenshots",
   "icon",
   "commands",
+  "controls",
 ] as const;
 
 export function parseManifest(value: unknown): Manifest | Refusal {
   const fields = record(value, "applet.json", FIELDS);
   if (isRefusal(fields)) return fields;
-  if (typeof fields.id !== "string" || fields.id.length > 64 || !APPLET_ID.test(fields.id))
-    return refuse("id must be reverse-DNS in lowercase, such as dev.example.weather (64 characters at most)");
+  if (!isAppletId(fields.id)) return refuse("id must be reverse-DNS in lowercase, such as dev.example.weather (64 characters at most)");
   const name = text(fields.name, "name", 40);
   if (isRefusal(name)) return name;
   if (typeof fields.version !== "string" || !SEMVER.test(fields.version)) return refuse("version must be a semantic version, such as 0.1.0");
@@ -152,6 +152,10 @@ export function parseManifest(value: unknown): Manifest | Refusal {
   if (isRefusal(icon)) return icon;
   const commands = fields.commands === undefined ? [] : parseCommands(fields.commands);
   if (isRefusal(commands)) return commands;
+  const controls = fields.controls === undefined ? [] : parseControls(fields.controls);
+  if (isRefusal(controls)) return controls;
+  const unpermitted = needsControlsPermission(controls, names);
+  if (unpermitted) return refuse(unpermitted);
   return {
     id: fields.id,
     name,
@@ -169,6 +173,7 @@ export function parseManifest(value: unknown): Manifest | Refusal {
     screenshots,
     ...(icon === undefined ? {} : { icon }),
     commands,
+    controls,
   };
 }
 
@@ -181,10 +186,21 @@ export function readManifest(json: string): Manifest | Refusal {
   }
 }
 
-/** The manifest as applet.json writes it (permissions by name; no `commands` when it has none). */
+/** The manifest as applet.json writes it (permissions by name; no `commands` or `controls` when it has none). */
 export function manifestJson(manifest: Manifest): Record<string, unknown> {
-  const { commands, ...rest } = manifest;
-  return { ...rest, permissions: manifest.permissions.map(permissionName), ...(commands.length > 0 ? { commands } : {}) };
+  const { commands, controls, ...rest } = manifest;
+  return {
+    ...rest,
+    permissions: manifest.permissions.map(permissionName),
+    ...(commands.length > 0 ? { commands } : {}),
+    ...(controls.length > 0 ? { controls: controls.map(controlJson) } : {}),
+  };
+}
+
+/** A control as applet.json writes it: a choice's choices and a slider's range only where they belong. */
+function controlJson(control: AppletControl): Record<string, unknown> {
+  const { choices, min, max, ...rest } = control;
+  return { ...rest, ...(control.kind === "choice" ? { choices } : {}), ...(control.kind === "slider" ? { min, max } : {}) };
 }
 
 /** -1, 0, 1 as semantic versions order (a pre-release before its release). */
@@ -205,7 +221,7 @@ export function compareVersions(a: string, b: string): number {
   return leftPre < rightPre ? -1 : 1;
 }
 
-/** Whether Dashi `version` (0.4.0) is in `range` (">=0.4", "^0.4", "~0.4.1", "0.4"). */
+/** Whether Dashi `version` (0.5.0) is in `range` (">=0.4", "^0.4", "~0.4.1", "0.4"). */
 export function dashiSatisfies(range: string, version: string): boolean {
   const match = RANGE.exec(range);
   if (!match) return false;

@@ -46,6 +46,9 @@ export interface PowerSupply {
   currentNow?: string | null;
   /** µV: with the current, the draw of a battery that reports no power. */
   voltageNow?: string | null;
+  /** µV and µA: a charger's rating (a USB-C source's contract), for the battery panel. */
+  voltageMax?: string | null;
+  currentMax?: string | null;
 }
 
 /** Longer than this is a rate too small to mean anything (a battery at rest). */
@@ -149,9 +152,26 @@ export async function readPowerSupplies(root: string = POWER_SUPPLY): Promise<Po
         "charge_full",
         "current_now",
         "voltage_now",
+        "voltage_max",
+        "current_max",
       ];
-      const [type, status, capacity, online, present, scope, energyNow, energyFull, powerNow, chargeNow, chargeFull, currentNow, voltageNow] =
-        await Promise.all(files.map(read));
+      const [
+        type,
+        status,
+        capacity,
+        online,
+        present,
+        scope,
+        energyNow,
+        energyFull,
+        powerNow,
+        chargeNow,
+        chargeFull,
+        currentNow,
+        voltageNow,
+        voltageMax,
+        currentMax,
+      ] = await Promise.all(files.map(read));
       return {
         name,
         type: type ?? null,
@@ -167,6 +187,8 @@ export async function readPowerSupplies(root: string = POWER_SUPPLY): Promise<Po
         chargeFull: chargeFull ?? null,
         currentNow: currentNow ?? null,
         voltageNow: voltageNow ?? null,
+        voltageMax: voltageMax ?? null,
+        currentMax: currentMax ?? null,
       };
     }),
   );

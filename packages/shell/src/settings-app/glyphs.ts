@@ -27,6 +27,14 @@ export const BELL = svg(
 /** Passwords: a key (Lock Screen has the padlock). */
 export const KEY = svg(`<circle cx="5.2" cy="8" r="3" stroke="#000" stroke-width="1.5" fill="none"/>${stroke("M8.2 8h6.2M12.2 8v2.4M14.2 8v1.8", 1.5)}`);
 
+/** Privacy & Security: a hand held up, palm out. */
+export const HAND = svg(
+  stroke(
+    "M5.4 8.6V4.2a.9.9 0 0 1 1.8 0v3.4M7.2 7.6V3a.9.9 0 0 1 1.8 0v4.6M9 7.6V3.6a.9.9 0 0 1 1.8 0v4.8M10.8 8.4V5.4a.9.9 0 0 1 1.8 0v4.2c0 2.6-1.8 4.6-4.4 4.6-1.8 0-2.9-.9-3.8-2.3L2.8 9.2a.9.9 0 0 1 1.4-1.1l1.2 1.4",
+    1.3,
+  ),
+);
+
 /** Agents: a four-point sparkle and a small one. */
 export const SPARKLE = svg(
   `<path d="M7 1.8l1.3 3.9 3.9 1.3-3.9 1.3L7 12.2 5.7 8.3 1.8 7l3.9-1.3z" fill="#000"/><path d="M12.4 9.6l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z" fill="#000"/>`,
@@ -46,6 +54,9 @@ export const PICTURE = svg(
 
 /** Date & Time: a clock face. */
 export const CLOCK = svg(`<circle cx="8" cy="8" r="6.2" stroke="#000" stroke-width="1.4" fill="none"/>${stroke("M8 4.4V8l2.4 1.6", 1.4)}`);
+
+/** Recently changed: a clock whose rim turns back, an arrowhead where it starts. */
+export const HISTORY = svg(`${stroke("M2.6 6.2A5.8 5.8 0 1 1 2.2 8.6", 1.4)}${stroke("M1.8 3.4l.8 2.8 2.8-.8", 1.4)}${stroke("M8 5v3l2 1.4", 1.4)}`);
 
 /** Language & Region: a globe. */
 export const GLOBE = svg(

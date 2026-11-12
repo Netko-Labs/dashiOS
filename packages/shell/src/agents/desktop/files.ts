@@ -1,16 +1,23 @@
 /**
- * The Files app's folders as agents see them (apps/files/agent.ts has the
+ * The Files app's folders as agents see them (shared/files/agent.ts has the
  * rules: where an agent may look, and what it may do). A status line names
  * what is being done, never a file or folder: names are the person's.
  */
 
 import { homedir, userInfo } from "node:os";
-import { type AgentPolicy, listFolder as list, openForAgent, planTrash, searchFor, trashForAgent } from "../../../apps/files/agent.ts";
-import { systemMimeIndex } from "../../../apps/files/mime.ts";
-import { OPEN_TIMEOUT_MS } from "../../../apps/files/open.ts";
-import { quietContext } from "../../../apps/files/ops.ts";
-import { userDirs } from "../../../apps/files/xdg.ts";
-import { clean } from "../../notifications/text.ts";
+import { clean } from "../../notifications/index.ts";
+import {
+  type AgentPolicy,
+  listFolder as list,
+  OPEN_TIMEOUT_MS,
+  openForAgent,
+  planTrash,
+  quietContext,
+  searchFor,
+  systemMimeIndex,
+  trashForAgent,
+  userDirs,
+} from "../../shared/files/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 
 function currentPolicy(): AgentPolicy {

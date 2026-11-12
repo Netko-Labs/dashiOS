@@ -28,10 +28,10 @@
  * windows and slides (`space-add {at}`, `space-move`, `place {space}`).
  */
 
-import type { Compositor, CompositorEvent, CompositorWindow, Placing } from "../compositor.ts";
-import type { SpacesController } from "./controller.ts";
+import type { Compositor, CompositorEvent, CompositorWindow, Placing } from "../compositor/index.ts";
+import type { SpacesController } from "./lib/controller.ts";
+import { belongsTo, insertionPoint, nearestDesktop, originOf, slotOf } from "./lib/slots.ts";
 import { MAX_SPACES } from "./model.ts";
-import { belongsTo, insertionPoint, nearestDesktop, originOf, slotOf } from "./slots.ts";
 
 /** A slide takes 250 ms (comp/src/wm/spaces.rs); a Desktop left is removed at the latest this long after. */
 const SLIDE_WAIT_MS = 1000;
@@ -40,7 +40,7 @@ const DRAW_WAIT_MS = 500;
 /** How often to look whether it has. */
 const DRAW_POLL_MS = 16;
 
-export type FullscreenCompositor = Pick<Compositor, "request" | "on" | "windows">;
+export type FullscreenCompositor = Pick<Compositor, "on" | "windows" | "fullscreen" | "spaceMove">;
 export type FullscreenSpaces = Pick<SpacesController, "fullscreenSlots" | "getSnapshot" | "insertFullscreen" | "removeFullscreen" | "switchTo">;
 
 export interface FullscreenDesktopsDeps {
@@ -152,7 +152,7 @@ export class FullscreenDesktops {
     if (index === null || origin === null) return;
     await this.gather(index, origin);
     // Off screen, it waits at its own frame where it comes back.
-    if (!closed) await this.deps.compositor.request("fullscreen", { window: id, on: false }).catch(report("leaving full screen"));
+    if (!closed) await this.deps.compositor.fullscreen({ window: id, on: false }).catch(report("leaving full screen"));
     if (this.deps.desktops.getSnapshot().current === index) await this.slideTo(origin);
     await this.deps.desktops.removeFullscreen(id);
     this.deps.changed?.();
@@ -207,7 +207,7 @@ export class FullscreenDesktops {
   }
 
   private move(window: number, space: number): Promise<unknown> {
-    return this.deps.compositor.request("space-move", { window, space }).catch(report("moving a window between Desktops"));
+    return this.deps.compositor.spaceMove({ window, space }).catch(report("moving a window between Desktops"));
   }
 
   private windows(): Promise<CompositorWindow[]> {

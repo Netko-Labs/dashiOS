@@ -8,10 +8,9 @@
  * is no lid and the panel stays as it is.
  */
 
-import { type ConnectOptions, DBusConnection, getNameOwner } from "../dbus/index.ts";
-import { unwrap } from "../dbus/properties.ts";
-import { LOGIND, MANAGER, MANAGER_PATH } from "../power/logind.ts";
-import { powerOffReason } from "../power/nested.ts";
+import { powerOffReason } from "../power/index.ts";
+import { type ConnectOptions, DBusConnection, getNameOwner, unwrap } from "../shared/dbus/index.ts";
+import { LOGIND, MANAGER, MANAGER_PATH } from "../shared/logind/index.ts";
 
 const PROPERTIES = "org.freedesktop.DBus.Properties";
 

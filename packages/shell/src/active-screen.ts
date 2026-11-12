@@ -9,8 +9,8 @@
  * `outputs` (displays.ts), in the same space.
  */
 
-import { type Compositor, type Frame, type Point, parsePointer } from "./compositor.ts";
-import { parseScreens } from "./displays.ts";
+import type { Compositor, Frame, Output, Point } from "./compositor/index.ts";
+import { screensOf } from "./displays.ts";
 
 /** A screen's name and where it sits, in the space the pointer is reported in. */
 export interface Placed {
@@ -19,8 +19,8 @@ export interface Placed {
 }
 
 /** The screens that say where they are. */
-export function placedScreens(answer: unknown): Placed[] {
-  return parseScreens(answer).flatMap((screen) => (screen.frame ? [{ name: screen.name, frame: screen.frame }] : []));
+export function placedScreens(outputs: readonly Output[]): Placed[] {
+  return screensOf(outputs).flatMap((screen) => (screen.frame ? [{ name: screen.name, frame: screen.frame }] : []));
 }
 
 /** The screen holding `point` (its left and top edges belong to it, its right and bottom do not); null when none does. */
@@ -45,11 +45,11 @@ export function chooseScreen(screens: readonly Placed[], pointer: Point | null, 
 }
 
 /** The screen the person is on now (see `chooseScreen`); `undefined` when the compositor can't say. */
-export async function activeScreen(compositor: Pick<Compositor, "request" | "windows">): Promise<string | undefined> {
+export async function activeScreen(compositor: Pick<Compositor, "outputs" | "session" | "windows">): Promise<string | undefined> {
   try {
-    const [outputs, session] = await Promise.all([compositor.request("outputs"), compositor.request("session").catch(() => null)]);
+    const [outputs, session] = await Promise.all([compositor.outputs(), compositor.session().catch(() => null)]);
     const screens = placedScreens(outputs);
-    const pointer = parsePointer(session);
+    const pointer = session?.pointer ?? null;
     // The windows are only asked when the pointer didn't say, and fail while locked.
     const focused =
       pointer && screenAt(pointer, screens) !== null

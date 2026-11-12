@@ -4,9 +4,14 @@
  * process connects its source once, before it renders anything
  * (`setAppearanceSource`), and every component repaints when it changes.
  * Unconnected, everything paints light.
+ *
+ * `Appearance` paints one part of a window in a mode of its own, whatever
+ * Dark Mode says: the Components gallery shows each control in Light and
+ * Dark side by side with it. Apps don't use it (every window follows Dark
+ * Mode, CO-8); it is for showing both.
  */
 
-import { useSyncExternalStore } from "react";
+import { createContext, createElement, type ReactNode, useContext, useSyncExternalStore } from "react";
 import { type Palette, paletteFor } from "./palette.ts";
 
 export interface AppearanceSource {
@@ -23,9 +28,19 @@ export function setAppearanceSource(next: AppearanceSource): void {
   source = next;
 }
 
-/** Dark Mode, right now; repaints the caller when it flips. */
+/** A mode fixed for part of the tree (`Appearance`), or null to follow Dark Mode. */
+const Fixed = createContext<boolean | null>(null);
+
+/** Everything under it paints in `dark` (true) or light (false), whatever Dark Mode is. */
+export function Appearance({ dark, children }: { dark: boolean; children?: ReactNode }): ReactNode {
+  return createElement(Fixed.Provider, { value: dark }, children);
+}
+
+/** Dark Mode, right now (or the mode an `Appearance` above fixed); repaints the caller when it flips. */
 export function useDark(): boolean {
-  return useSyncExternalStore(source.subscribe, source.isDark);
+  const fixed = useContext(Fixed);
+  const live = useSyncExternalStore(source.subscribe, source.isDark);
+  return fixed ?? live;
 }
 
 /** The palette to paint with right now. */

@@ -5,7 +5,10 @@
 //! (packages/shell/apps/terminal, Bun + Metal) draws it and sends input back
 //! on stdin. Rust keeps the terminal; TypeScript draws it.
 //!
-//! Usage: `dashi-term [--cols N] [--rows N] [--cwd DIR]`
+//! Usage: `dashi-term [--cols N] [--rows N] [--cwd DIR] [--integration DIR] [-- COMMAND...]`
+//! (`--integration`: the shell integration's scripts, integration.rs; after
+//! `--`, a command to run in place of the shell: an app whose desktop entry
+//! says `Terminal=true`).
 
 #[allow(
     non_upper_case_globals,
@@ -18,7 +21,10 @@
 )]
 mod ffi_generated;
 mod frame;
+mod hooks;
+mod integration;
 mod keys;
+mod marks;
 mod protocol;
 mod pty;
 mod selection;
@@ -47,6 +53,9 @@ struct Options {
     cols: u16,
     rows: u16,
     cwd: Option<String>,
+    integration: Option<String>,
+    /// What runs in place of the shell (after `--`); empty for the shell.
+    command: Vec<String>,
 }
 
 fn options() -> Options {
@@ -54,6 +63,8 @@ fn options() -> Options {
         cols: 80,
         rows: 24,
         cwd: None,
+        integration: None,
+        command: Vec::new(),
     };
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -61,6 +72,11 @@ fn options() -> Options {
             "--cols" => options.cols = args.next().and_then(|v| v.parse().ok()).unwrap_or(80),
             "--rows" => options.rows = args.next().and_then(|v| v.parse().ok()).unwrap_or(24),
             "--cwd" => options.cwd = args.next(),
+            "--integration" => options.integration = args.next(),
+            "--" => {
+                options.command = args.collect();
+                break;
+            }
             _ => {}
         }
     }
@@ -77,7 +93,13 @@ fn send(out: &mut impl Write, message: &Output) {
 fn main() {
     let options = options();
     // The PTY first, while this is the only thread (fork).
-    let pty = match pty::Pty::spawn(options.cols, options.rows, options.cwd.as_deref()) {
+    let pty = match pty::Pty::spawn(
+        options.cols,
+        options.rows,
+        options.cwd.as_deref(),
+        options.integration.as_deref(),
+        &options.command,
+    ) {
         Ok(pty) => pty,
         Err(error) => {
             eprintln!("dashi-term: could not start the shell: {error}");
@@ -124,6 +146,10 @@ fn main() {
         match rx.recv_timeout(wait) {
             Ok(Message::Output(bytes)) => {
                 vt.feed(&bytes);
+                // The folder and the command's steps go at once, ahead of the frame that shows them.
+                for message in vt.take_outbox() {
+                    send(&mut out, &message);
+                }
                 pending = true;
             }
             Ok(Message::Input(input)) => {
@@ -163,6 +189,12 @@ fn main() {
                             program: pty.foreground(),
                         },
                     ),
+                    Input::Jump { prompts } => vt.jump(prompts),
+                    Input::SelectOutput { y } => vt.select_output(y),
+                    Input::Clear => {
+                        vt.clear();
+                        force = true;
+                    }
                 }
             }
             Ok(Message::Closed) => {

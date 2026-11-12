@@ -2,7 +2,10 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { choiceLine, isPickRequest, PICKER, parseAnswer, pickerLayout, type ShareChoice, serveSharePicker, socketPath } from "../src/share-picker/index.ts";
+import { PICKER, pickerLayout } from "../src/share-picker/lib/layout.ts";
+import { serveSharePicker } from "../src/share-picker/lib/server.ts";
+import { choiceLine, isPickRequest, parseAnswer, type ShareChoice, socketPath } from "../src/share-picker/protocol.ts";
+import { until } from "./support/time.ts";
 
 describe("what the wlr portal reads", () => {
   test("a screen by its output, a window by its toplevel identifier", () => {
@@ -96,10 +99,12 @@ describe("asking the shell", () => {
     const path = socket();
     let release: (choice: ShareChoice | null) => void = () => {};
     let aborted = false;
+    let asked = 0;
     const stop = serveSharePicker(
       path,
       (abort) =>
         new Promise((resolve) => {
+          asked++;
           release = resolve;
           abort.addEventListener("abort", () => {
             aborted = true;
@@ -108,7 +113,7 @@ describe("asking the shell", () => {
     );
     try {
       const first = runPicker(path);
-      await Bun.sleep(300);
+      await until(() => asked === 1, "the first picker to open");
       // A second while the first is up is declined at once.
       expect(await runPicker(path)).toEqual({ out: "", code: 1 });
       release({ kind: "window", toplevel: "abc123" });
@@ -117,14 +122,13 @@ describe("asking the shell", () => {
       const lines: string[] = [];
       const hangUp = await Bun.connect({ unix: path, socket: { data: (_socket, chunk) => void lines.push(new TextDecoder().decode(chunk)) } });
       hangUp.write('{"pick":{}}\n');
-      await Bun.sleep(100);
+      await until(() => asked === 2, "the second picker to open");
       hangUp.end();
-      await Bun.sleep(100);
-      expect(aborted).toBe(true);
+      await until(() => aborted, "the hang-up to close the picker");
       expect(lines).toEqual([]);
       // The next one may open.
       const next = runPicker(path);
-      await Bun.sleep(300);
+      await until(() => asked === 3, "the next picker to open");
       release({ kind: "screen", output: "DP-2" });
       expect(await next).toEqual({ out: "Monitor: DP-2\n", code: 0 });
     } finally {

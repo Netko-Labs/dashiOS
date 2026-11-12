@@ -1,7 +1,7 @@
 /**
  * The screen you sign in on: the lock screen and the login screen (greeter)
- * are both this. The time and day over the wallpaper darkened to a deep
- * evening color, who is signing in, one field, a line under it saying how it
+ * are both this. The time and day over the wallpaper darkened toward true
+ * black, who is signing in, one field, a line under it saying how it
  * went, and along the bottom Sleep, Restart, and Shut Down, as a Mac's login
  * window has them. Each power button asks for a second click, so a stray one
  * cannot turn the machine off.
@@ -13,11 +13,22 @@
 import { Image, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useState } from "react";
 import { RESTART, SHUT_DOWN, SLEEP } from "./glyphs.ts";
+import { darkColors, TRUE_BLACK } from "./theme/palette.ts";
 
-/** The wallpaper shows through, darkened (the compositor draws it behind). */
-const BACKGROUND = "#140e22b8";
-const TEXT = "#f5f5f7";
-const MUTED = "#f5f5f7b3";
+/**
+ * The wallpaper shows through, darkened toward true black (the compositor
+ * draws it behind). The login screen has one look, Dark's, whatever Dark
+ * Mode is: the greeter runs before anyone's setting is known.
+ */
+export const LOGIN_GROUND = `${TRUE_BLACK.ground}b8`;
+/** The focus ring on the login screen's dark ground, whatever Dark Mode is (KB-2): the dark palette's kombu. */
+export const LOGIN_FOCUS_RING = darkColors.focusRing;
+/** Its words: Dark's ink, and 70% of it for the day and the hints. */
+export const LOGIN_INK = TRUE_BLACK.ink;
+export const LOGIN_MUTED = `${TRUE_BLACK.ink}b3`;
+const BACKGROUND = LOGIN_GROUND;
+const TEXT = LOGIN_INK;
+const MUTED = LOGIN_MUTED;
 const WRONG = "#ffb4b4";
 
 export type PowerAction = "sleep" | "restart" | "shutdown";
@@ -72,7 +83,7 @@ export function LoginScreen(props: LoginScreenProps): ReactNode {
   };
 
   return (
-    <View style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: BACKGROUND }}>
+    <View style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: BACKGROUND, focusRingColor: LOGIN_FOCUS_RING }}>
       <View style={{ marginTop: 90, flexDirection: "column", alignItems: "center", gap: 4 }}>
         <Text style={{ fontSize: 20, fontWeight: "semibold", color: MUTED }}>{day}</Text>
         <Text style={{ fontSize: 88, fontWeight: "bold", color: TEXT }}>{time}</Text>

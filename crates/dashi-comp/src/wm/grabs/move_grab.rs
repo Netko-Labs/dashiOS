@@ -7,11 +7,11 @@
 //! shell hears the drag began (`window-grab`) and may frame the window anew
 //! (a tiled one gets its own size back), and the grab holds it from there.
 
+use crate::ipc::protocol::{At, Event, Grab};
 use crate::{
     state::Dashi,
-    wm::{Shown, frame_to_be, rect_json},
+    wm::{Shown, frame_to_be},
 };
-use serde_json::json;
 use smithay::{
     desktop::Window,
     input::pointer::{
@@ -71,7 +71,7 @@ impl Dashi {
     pub(crate) fn report_grab(
         &mut self,
         window: &Window,
-        kind: &str,
+        kind: Grab,
         pointer: Point<f64, Logical>,
     ) {
         let (Some(id), Some(frame)) = (
@@ -84,15 +84,15 @@ impl Dashi {
         if let Some(entry) = self.windows.get_mut(id) {
             entry.tiled = false;
         }
-        self.ipc.emit(
-            "window-grab",
-            json!({
-                "window": id,
-                "kind": kind,
-                "frame": rect_json(frame),
-                "pointer": { "x": pointer.x, "y": pointer.y },
-            }),
-        );
+        self.ipc.emit(Event::WindowGrab {
+            window: id,
+            kind,
+            frame: frame.into(),
+            pointer: At {
+                x: pointer.x,
+                y: pointer.y,
+            },
+        });
     }
 
     /// Whether the held window can still be moved: on screen, on the Space that shows.
@@ -125,7 +125,7 @@ impl PointerGrab<Dashi> for MoveSurfaceGrab {
                 return;
             }
             self.moving = true;
-            data.report_grab(&self.window, "move", self.start_data.location);
+            data.report_grab(&self.window, Grab::Move, self.start_data.location);
         }
         // The shell framed it meanwhile (its own size back, placed for the
         // pointer at the press): held from that frame on.

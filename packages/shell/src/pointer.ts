@@ -10,13 +10,9 @@
  * - X11 apps: `Xcursor.size` in X pixels (xwayland-scale.ts).
  */
 
-import type { AppCommand, Gate } from "./appearance/apps.ts";
+import type { AppCommand, Gate } from "./appearance/index.ts";
+import type { Compositor } from "./compositor/index.ts";
 import type { Run } from "./system/exec.ts";
-
-export const POINTER_SIZES = [24, 32, 40, 48] as const;
-export const DEFAULT_POINTER_SIZE = 24;
-
-export const isPointerSize = (value: unknown): value is number => typeof value === "number" && (POINTER_SIZES as readonly number[]).includes(value);
 
 /** The commands that tell GTK apps the size, for the tools present (`has`). */
 export function pointerCommands(size: number, has: (program: string) => boolean): AppCommand[] {
@@ -24,7 +20,7 @@ export function pointerCommands(size: number, has: (program: string) => boolean)
 }
 
 export interface PointerDeps {
-  compositor: { request(method: string, params?: Record<string, unknown>): Promise<unknown> };
+  compositor: Pick<Compositor, "cursorSize">;
   /** Whether the shell may change what other apps read (appearance/apps.ts). */
   gate: Gate;
   has: (program: string) => boolean;
@@ -45,7 +41,7 @@ export class PointerSync {
     this.applied = size;
     this.queue = this.queue.then(async () => {
       try {
-        await this.deps.compositor.request("cursor-size", { size });
+        await this.deps.compositor.cursorSize({ size });
       } catch (error) {
         console.error("dashi-shell: dashi-comp refused the pointer size:", error instanceof Error ? error.message : error);
       }

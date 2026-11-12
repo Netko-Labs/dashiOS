@@ -9,14 +9,27 @@
 
 import { AccountStore, type AccountsSetup, chooseAccounts, PasswordChangePrompt } from "../accounts/index.ts";
 import type { BatteryMonitor } from "../battery/index.ts";
-import type { BluetoothStore } from "../bluetooth/store.ts";
-import type { DeviceStore } from "../control-center/devices.ts";
-import type { Laptop } from "../laptop/start.ts";
+import type { BluetoothStore } from "../bluetooth/index.ts";
+import type { DeviceStore } from "../control-center/index.ts";
+import type { AutoRefresh } from "../display-config/index.ts";
+import type { Laptop } from "../laptop/index.ts";
+import { holdingBar } from "../menubar/bar-hold.ts";
 import { fakeNetInfo, NetInfoStore, nmcliNetInfo } from "../network/index.ts";
 import { openOverlay } from "../overlay.tsx";
-import { fakeLid, logindLid } from "../power/policy.ts";
-import { fakeMeter, inputsOf, type LevelMeter, LevelsStore, pipewireMeter, SoundStore, shadowLevels, wpctlLevels } from "../sound/index.ts";
-import type { AudioBackend } from "../sound/types.ts";
+import { fakeLid, logindLid } from "../power/index.ts";
+import {
+  type AppMixer,
+  type AudioBackend,
+  fakeMeter,
+  inputsOf,
+  type LevelMeter,
+  LevelsStore,
+  type PipeWireWatch,
+  pipewireMeter,
+  SoundStore,
+  shadowLevels,
+  wpctlLevels,
+} from "../sound/index.ts";
 import { readBatteryDetails } from "../system/battery-details.ts";
 import { EnergyStore } from "../system/energy.ts";
 import { run } from "../system/exec.ts";
@@ -24,8 +37,7 @@ import { powerProfiles, shadowProfiles } from "../system/profiles.ts";
 import { type Nesting, standsIn } from "../system/stand-in.ts";
 import type { SystemStore } from "../system/store.ts";
 import { systemBus } from "../system/system-bus.ts";
-import type { WifiStore } from "../wifi/store.ts";
-import type { WifiNetwork } from "../wifi/types.ts";
+import type { WifiNetwork, WifiStore } from "../wifi/index.ts";
 
 /** The stores Control Center runs, which the panes share (menus/start.tsx hands them over). */
 export interface SharedStores {
@@ -35,6 +47,10 @@ export interface SharedStores {
   /** The outputs, as Control Center's Sound page lists them. */
   sound: SoundStore;
   audio: AudioBackend;
+  /** The apps' sound: Settings › Sound's Apps card and who uses the microphone. */
+  mixer?: AppMixer;
+  /** The session's PipeWire watcher, which the levels follow (sound/apps/watch.ts). */
+  pipewire?: PipeWireWatch;
   /** Asks for a Wi-Fi network's password on its own sheet. */
   askWifiPassword(network: WifiNetwork): void;
 }
@@ -49,6 +65,8 @@ export interface PaneServices extends SharedStores {
   battery: BatteryMonitor | null;
   /** The power modes, the charge limit, the keyboard light, the graphics card (laptop/); null in tests. */
   laptop: Laptop | null;
+  /** Automatic refresh rate for the built-in screen (display-config/auto-refresh.ts); null without the display manager. */
+  refresh: AutoRefresh | null;
   account: AccountStore;
   /** Opens the password sheet; `needsCurrent` asks for the current password first. */
   changePassword(needsCurrent: boolean): void;
@@ -66,23 +84,27 @@ export interface ServicesOptions {
   battery?: BatteryMonitor | null;
   /** The shell's laptop (laptop/start.ts). */
   laptop?: Laptop | null;
+  /** The shell's Automatic refresh rate. */
+  refresh?: AutoRefresh | null;
 }
 
 export function createPaneServices(options: ServicesOptions): PaneServices {
   const { shared, system } = options;
   const fake = standsIn(options.env ?? process.env, options.nesting);
   const accounts = options.accounts ?? chooseAccounts(options.env ?? process.env, options.nesting);
-  const real = wpctlLevels(run);
+  const real = wpctlLevels(run, shared.pipewire);
   const energy = new EnergyStore({
     battery: () => readBatteryDetails(),
     profiles: fake ? shadowProfiles(powerProfiles(systemBus())) : powerProfiles(systemBus()),
     lid: fake ? fakeLid() : logindLid(),
   });
-  const prompt = new PasswordChangePrompt(openOverlay, accounts.passwords);
+  // Settings' sheet: while it has the keyboard the bar still says System Settings (bar-hold.ts).
+  const prompt = new PasswordChangePrompt(holdingBar(openOverlay), accounts.passwords);
   return {
     ...shared,
     battery: options.battery ?? null,
     laptop: options.laptop ?? null,
+    refresh: options.refresh ?? null,
     netinfo: new NetInfoStore(fake ? fakeNetInfo() : nmcliNetInfo(run)),
     inputs: new SoundStore(inputsOf(shared.audio)),
     levels: new LevelsStore(fake ? shadowLevels(real) : real, (volume) => system.publish("volume", volume)),

@@ -7,10 +7,10 @@
  * accepted.
  */
 
-import { clockPrefsFrom, usesHour24 } from "../clock.ts";
 import type { SettingsStore } from "../settings-app/store.ts";
-import type { RegionFailure } from "./backend.ts";
-import { isFormatsLocale } from "./locale.ts";
+import { isFormatsLocale } from "../shared/locale/index.ts";
+import { clockPrefsFrom, usesHour24 } from "../shared/time/index.ts";
+import type { RegionFailure } from "./lib/backend.ts";
 import type { RegionStore } from "./store.ts";
 import { isTimezoneName } from "./timezones.ts";
 

@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
-import { parseApplet, parseAppletMessage, parseAppletShellMessage } from "../src/applets/protocol.ts";
-import { AppletConnection, appletExtra } from "../src/applets/server.ts";
+import { parseApplet, parseAppletMessage, parseAppletShellMessage } from "@dashi/applet";
+import { AppletConnection } from "../src/applets/lib/connection.ts";
+import { appletExtra } from "../src/applets/lib/extra.ts";
 import { ExtrasStore } from "../src/extras/index.ts";
 
 const GLYPH = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="#000"/></svg>';

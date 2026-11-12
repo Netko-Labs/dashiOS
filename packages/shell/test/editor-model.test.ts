@@ -2,28 +2,13 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { editorMenus, type MenuContext } from "../apps/editor/menus.ts";
-import { EditorModel } from "../apps/editor/model.ts";
-import { DEFAULT_PREFS, type EditorPrefs } from "../apps/editor/prefs.ts";
-import { parseMenus } from "../src/app-menus/protocol.ts";
-import { reservedBy } from "../src/app-menus/reserved.ts";
-import { chordFromShortcut } from "../src/app-menus/shortcut.ts";
-import { defaultHandlers } from "../src/default-handlers.ts";
-import { EDITOR_MIME_TYPES, FIRST_PARTY } from "../src/first-party.ts";
+import { defaultHandlers } from "../src/shared/apps/default-handlers.ts";
+import { EDITOR_MIME_TYPES, FIRST_PARTY } from "../src/shared/apps/index.ts";
+import { editorModel as model } from "./support/editor-model.ts";
 
 let dir = "";
-let clock = 0;
-let savedPrefs: EditorPrefs[] = [];
-const model = (): EditorModel =>
-  new EditorModel({
-    loadPrefs: () => DEFAULT_PREFS,
-    savePrefs: (prefs) => savedPrefs.push(prefs),
-    now: () => (clock += 10_000),
-  });
-
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "dashi-editor-model-"));
-  savedPrefs = [];
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -58,10 +43,10 @@ describe("the document", () => {
     writeFileSync(path, new Uint8Array([0x63, 0xe9]));
     const editor = model();
     editor.open(path);
-    expect(editor.getSnapshot().encoding).toBe("latin-1");
-    editor.edit("cé€");
+    expect(editor.getSnapshot().encoding).toBe("windows-1252");
+    editor.edit("cé✓");
     expect(editor.save()).toBe("saved");
-    expect(readFileSync(path, "utf8")).toBe("cé€");
+    expect(readFileSync(path, "utf8")).toBe("cé✓");
     expect(editor.getSnapshot().encoding).toBe("utf-8");
     expect(editor.getSnapshot().notice?.tone).toBe("info");
   });
@@ -171,94 +156,6 @@ describe("find", () => {
     expect(editor.getSnapshot().find.matches).toHaveLength(2);
     editor.setCaseSensitive(true);
     expect(editor.getSnapshot().find.matches).toEqual([2]);
-  });
-});
-
-describe("view settings", () => {
-  test("are kept when they change", () => {
-    const editor = model();
-    editor.setMonospace(true);
-    editor.stepFontSize(1);
-    editor.stepFontSize(0);
-    expect(savedPrefs).toEqual([
-      { monospace: true, fontSize: 13 },
-      { monospace: true, fontSize: 14 },
-      { monospace: true, fontSize: 13 },
-    ]);
-    editor.setMonospace(true);
-    expect(savedPrefs).toHaveLength(3);
-  });
-});
-
-describe("menus", () => {
-  const ran: string[] = [];
-  const record = (name: string) => () => {
-    ran.push(name);
-  };
-  const context = (change: Partial<MenuContext> = {}): MenuContext => ({
-    dirty: false,
-    hasFile: true,
-    canUndo: false,
-    canRedo: false,
-    canCopy: true,
-    hasMatches: false,
-    monospace: false,
-    caseSensitive: false,
-    actions: {
-      newWindow: record("new"),
-      open: record("open"),
-      close: record("close"),
-      save: record("save"),
-      saveAs: record("save-as"),
-      revert: record("revert"),
-      undo: record("undo"),
-      redo: record("redo"),
-      paste: record("paste"),
-      selectAll: record("select-all"),
-      copyAll: record("copy-all"),
-      find: record("find"),
-      findNext: (step) => ran.push(`find:${step}`),
-      replace: record("replace"),
-      toggleCase: record("case"),
-      toggleMonospace: record("monospace"),
-      fontSize: (step) => ran.push(`size:${step}`),
-    },
-    ...change,
-  });
-
-  test("the shell takes them, and no shortcut is one the shell keeps", () => {
-    const { menus } = editorMenus(context());
-    expect("error" in parseMenus(menus)).toBe(false);
-    const shortcuts = menus.flatMap((menu) => menu.items.flatMap((row) => ("shortcut" in row && row.shortcut ? [row.shortcut] : [])));
-    expect(shortcuts.length).toBeGreaterThan(10);
-    for (const shortcut of shortcuts) {
-      const chord = chordFromShortcut(shortcut);
-      expect(chord).not.toBeNull();
-      if (chord) expect(reservedBy(chord)).toBeNull();
-    }
-  });
-
-  test("❖W is Close, the path that asks, and Revert says it will ask", () => {
-    const { menus } = editorMenus(context());
-    const rows = menus.flatMap((menu) => menu.items);
-    expect(rows.find((row) => "id" in row && row.id === "close")).toMatchObject({ label: "Close", shortcut: "❖W" });
-    expect(rows.find((row) => "id" in row && row.id === "revert")).toMatchObject({ label: "Revert to Saved…" });
-  });
-
-  test("only enabled rows run", () => {
-    ran.length = 0;
-    const clean = editorMenus(context());
-    clean.run("save");
-    clean.run("undo");
-    clean.run("find-next");
-    clean.run("bigger");
-    clean.run("nonsense");
-    expect(ran).toEqual(["size:1"]);
-    const edited = editorMenus(context({ dirty: true, canUndo: true, hasMatches: true }));
-    edited.run("save");
-    edited.run("undo");
-    edited.run("find-previous");
-    expect(ran).toEqual(["size:1", "save", "undo", "find:-1"]);
   });
 });
 

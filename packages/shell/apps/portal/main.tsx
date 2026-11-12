@@ -11,31 +11,28 @@
  *   bun apps/portal/main.tsx      (session/dashi-portal runs this)
  */
 
-import { AccountsServiceBackend } from "../../src/accounts/backend.ts";
-import { connectDarkMode } from "../../src/control-center/dark-mode.ts";
-import { DBusConnection, FdService, type InterfaceSpec, type Variant } from "../../src/dbus/index.ts";
-import { PORTAL_BACKEND } from "../../src/portal-host/protocol.ts";
-import { appletsClient } from "../kit/applet.ts";
+import { AccountsServiceBackend } from "../../src/shared/accounts/index.ts";
+import { connectDarkMode } from "../../src/shared/control-center/index.ts";
+import { DBusConnection, FdService, type InterfaceSpec, type Variant } from "../../src/shared/dbus/index.ts";
+import { PORTAL_BACKEND } from "../../src/shared/portal-host/index.ts";
 import { setProcessName } from "../kit/name.ts";
-import { type AskAccess, accessInterface, askOnScreen as askAccessOnScreen } from "./access.tsx";
-import { accountInterface, askShareOnScreen } from "./account.tsx";
-import { appChooserInterface, chooseOnScreen as chooseAppOnScreen, gioDefault } from "./app-chooser/index.tsx";
-import { appInfo } from "./apps.ts";
-import { askInstallOnScreen, dynamicLauncherInterface } from "./dynamic-launcher.tsx";
-import { emailInterface } from "./email.ts";
-import { chooseOnScreen as chooseFilesOnScreen, fileChooserInterface } from "./file-chooser/index.tsx";
-import { INHIBIT, InhibitBackend } from "./inhibit.ts";
-import { followLook } from "./look.ts";
-import { NOTIFICATION, NotificationBackend } from "./notification.ts";
-import { followServer, freedesktopServer } from "./notify-server.ts";
-import { PrintBackend } from "./print/index.ts";
-import { printOnScreen } from "./print/sheet.tsx";
-import { Requests } from "./request.ts";
-import { changedSettings, SETTINGS, settingsInterface, settingsTable } from "./settings.ts";
-import { ShellClient } from "./shell.ts";
-import { askFromMenuBar } from "./ui/background.ts";
-import { CAMERA, PERSON } from "./ui/glyphs.ts";
-import { dialogWindows } from "./windows.ts";
+import { accessInterface, askOnScreen as askAccessOnScreen } from "./lib/access.tsx";
+import { accountInterface, askShareOnScreen } from "./lib/account.tsx";
+import { appChooserInterface, chooseOnScreen as chooseAppOnScreen, gioDefault } from "./lib/app-chooser/chooser.tsx";
+import { appInfo } from "./lib/apps.ts";
+import { askInstallOnScreen, dynamicLauncherInterface } from "./lib/dynamic-launcher.tsx";
+import { emailInterface } from "./lib/email.ts";
+import { chooseOnScreen as chooseFilesOnScreen, fileChooserInterface } from "./lib/file-chooser/chooser.tsx";
+import { INHIBIT, InhibitBackend } from "./lib/inhibit.ts";
+import { followLook } from "./lib/look.ts";
+import { NOTIFICATION, NotificationBackend } from "./lib/notification.ts";
+import { followServer, freedesktopServer } from "./lib/notify-server.ts";
+import { PrintBackend } from "./lib/print/backend.ts";
+import { printOnScreen } from "./lib/print/sheet.tsx";
+import { Requests } from "./lib/request.ts";
+import { changedSettings, SETTINGS, settingsInterface, settingsTable } from "./lib/settings.ts";
+import { ShellClient } from "./lib/shell.ts";
+import { dialogWindows } from "./lib/windows.ts";
 
 export const PORTAL_PATH = "/org/freedesktop/portal/desktop";
 
@@ -65,23 +62,13 @@ const session = (): Promise<DBusConnection> => {
 const shell = new ShellClient();
 const show = dialogWindows(shell);
 const requests = new Requests(service);
-const applets = appletsClient();
 let object: ReturnType<FdService["export"]> | null = null;
 const emit = (iface: string, signal: string, ...args: unknown[]) => object?.emit(iface, signal, ...args);
 
-// An app with no window waits in the menu bar instead (ui/background.ts).
-const askAccessOnSheet = askAccessOnScreen(show);
-const askAccess: AskAccess = (request, signal) =>
-  request.parent === ""
-    ? askFromMenuBar(
-        applets,
-        { id: `access-${Date.now()}`, label: appInfo(request.appId).name, title: request.title, glyph: CAMERA },
-        () => askAccessOnSheet(request, signal),
-        signal,
-        null,
-      )
-    : askAccessOnSheet(request, signal);
-const askShareOnSheet = askShareOnScreen(show);
+// A question from an app with no window opens at once too, as a window of its own (windows.ts):
+// an item waiting in the menu bar was easy to miss while the app waited on the answer.
+const askAccess = askAccessOnScreen(show);
+const askShare = askShareOnScreen(show);
 
 const chooseFiles = chooseFilesOnScreen(show);
 const inhibit = new InhibitBackend({ bus: service, shell, stateChanged: (path, state) => emit(INHIBIT, "StateChanged", path, state) });
@@ -109,20 +96,7 @@ const interfaces: InterfaceSpec[] = [
   inhibit.spec(),
   accessInterface(requests, askAccess),
   appChooserInterface(requests, chooseAppOnScreen(show), gioDefault),
-  accountInterface(
-    requests,
-    () => accounts.read(),
-    (request, account, signal) =>
-      request.parent === ""
-        ? askFromMenuBar(
-            applets,
-            { id: `account-${Date.now()}`, label: appInfo(request.appId).name, title: `${appInfo(request.appId).name} asks for your name`, glyph: PERSON },
-            () => askShareOnSheet(request, account, signal),
-            signal,
-            false,
-          )
-        : askShareOnSheet(request, account, signal),
-  ),
+  accountInterface(requests, () => accounts.read(), askShare),
   emailInterface(requests),
   notifications.spec(),
   dynamicLauncherInterface(requests, askInstallOnScreen(show), (appId, name) => void shell.addToDock(appId, name).catch(() => {})),

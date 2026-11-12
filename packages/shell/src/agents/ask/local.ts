@@ -6,7 +6,7 @@
  */
 
 import { ANSWERERS, AnswerError, type Answerer, type ModelCall, type PlanTool, SYSTEM_PROMPT } from "./answerer.ts";
-import type { Fetch } from "./claude.ts";
+import type { Fetch } from "./lib/http.ts";
 
 export const LOCAL_URL = "http://127.0.0.1:11434";
 const TIMEOUT_MS = 120_000;

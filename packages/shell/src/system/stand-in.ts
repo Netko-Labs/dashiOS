@@ -5,13 +5,13 @@
  * desktop, belongs to a machine the developer is using: joining a network, a
  * scan, switching Wi-Fi or Bluetooth off, or claiming
  * `org.freedesktop.Notifications` on their bus would reach them. Wi-Fi and
- * Bluetooth each get an in-memory stand-in (`wifi/fake.ts`,
- * `bluetooth/fake.ts`) that touches nothing of the machine;
+ * Bluetooth each get an in-memory stand-in (`wifi/lib/fake.ts`,
+ * `bluetooth/lib/fake.ts`) that touches nothing of the machine;
  * `control-center/radios.ts` keeps its switches off the machine too.
  *
  * A run is the session's own only when it is positively so: started by a
  * dashi-comp that drives the display itself (the same walk up to dashi-comp
- * that Log Out uses, `isRealSession` in `menus/session.ts`). Everything else
+ * that Log Out uses, `isRealSession` in `shared/session-power/session.ts`). Everything else
  * is a development run, including a doubt.
  *
  * The overrides, each narrow:
@@ -28,7 +28,7 @@
  *  - Power has its own: `DASHI_POWER` (`power/nested.ts`).
  */
 
-import { type Above, compositorAbove, isRealSession } from "../menus/session.ts";
+import { type Above, compositorAbove, isRealSession } from "../shared/session-power/index.ts";
 
 export type Nesting = () => Above;
 type Env = Record<string, string | undefined>;

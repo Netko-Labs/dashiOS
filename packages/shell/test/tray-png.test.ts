@@ -3,8 +3,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { inflateSync } from "node:zlib";
-import { iconFile, PixmapFiles } from "../src/tray/icon.ts";
-import { argbToRgba, encodePng, type Pixmap, parsePixmaps, pickPixmap } from "../src/tray/png.ts";
+import { iconFile, PixmapFiles } from "../src/tray/lib/icon.ts";
+import { argbToRgba, encodePng, type Pixmap, parsePixmaps, pickPixmap } from "../src/tray/lib/png.ts";
 
 const pixmap = (width: number, height = width): Pixmap => ({ width, height, data: new Uint8Array(width * height * 4) });
 

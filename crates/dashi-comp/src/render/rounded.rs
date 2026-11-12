@@ -1,6 +1,10 @@
 //! Windows Dashi frames get rounded corners at the Appearance radius: under
 //! Dashi's title bar the bottom ones (the bar rounds the top), on a unified
-//! window all four. The window's main surface is drawn through a texture
+//! window all four. So does a window that draws its own frame while it is
+//! maximized (the shell's Fill), all four: it drops its own corners then.
+//! The corners are the window's, not a surface's: every surface of the window
+//! that reaches a corner (Chromium draws its page and toolbar on subsurfaces)
+//! is drawn through the shader with the window's box in its own pixels. The window's main surface is drawn through a texture
 //! shader that fades the pixels outside each corner's arc (antialiased).
 //! The GLES frame is reached through `GlesAccess`, for the nested renderer
 //! and the multi-GPU one alike. A rounded surface is never scanned out
@@ -40,8 +44,14 @@ varying vec2 v_coords;
 #if defined(DEBUG_FLAGS)
 uniform float tint;
 #endif
-// The surface's size and the corner radius, in the frame's pixels.
+// The surface's size, the window's box (x, y, width, height) from the surface's top-left,
+// and the corner radius, in the frame's pixels.
 uniform vec2 size;
+uniform vec4 box;
+// The part of the buffer drawn (x, y, width, height, as fractions of it): a client may show a
+// crop of a bigger buffer (the viewporter, Chromium at a fractional scale), and the texture
+// coordinates span the whole buffer, not the quad.
+uniform vec4 crop;
 uniform float radius;
 // 1.0: the top corners are cut too (a unified window has no bar above it).
 uniform float top;
@@ -53,11 +63,12 @@ void main() {
 #else
     color = color * alpha;
 #endif
-    vec2 p = v_coords * size;
-    bool bottom = p.y > size.y - radius;
+    vec2 p = (v_coords - crop.xy) / crop.zw * size - box.xy;
+    vec2 s = box.zw;
+    bool bottom = p.y > s.y - radius;
     bool upper = top > 0.5 && p.y < radius;
-    if ((bottom || upper) && (p.x < radius || p.x > size.x - radius)) {
-        vec2 center = vec2(p.x < radius ? radius : size.x - radius, bottom ? size.y - radius : radius);
+    if ((bottom || upper) && (p.x < radius || p.x > s.x - radius)) {
+        vec2 center = vec2(p.x < radius ? radius : s.x - radius, bottom ? s.y - radius : radius);
         color *= clamp(radius - distance(p, center) + 0.5, 0.0, 1.0);
     }
 #if defined(DEBUG_FLAGS)
@@ -107,6 +118,8 @@ pub(crate) fn program(renderer: &mut GlesRenderer) -> Option<GlesTexProgram> {
             SHADER,
             &[
                 UniformName::new("size", UniformType::_2f),
+                UniformName::new("box", UniformType::_4f),
+                UniformName::new("crop", UniformType::_4f),
                 UniformName::new("radius", UniformType::_1f),
                 UniformName::new("top", UniformType::_1f),
             ],
@@ -122,14 +135,17 @@ pub(crate) fn program(renderer: &mut GlesRenderer) -> Option<GlesTexProgram> {
     compiled
 }
 
-/// A window's main surface, drawn with rounded bottom corners.
+/// A surface of a window that reaches one of the window's corners, drawn with them cut.
 pub(crate) struct RoundedElement<R: Renderer> {
     inner: WaylandSurfaceRenderElement<R>,
     program: GlesTexProgram,
-    /// The radius in physical pixels.
+    /// The radius in physical pixels, where it is drawn.
     radius: f32,
-    /// The top corners too (a unified window).
+    /// The top corners too (no Dashi title bar above it).
     top: bool,
+    /// The window's box from this surface's top-left, as fractions of the surface's size
+    /// (x, y, width, height): the same wherever the surface is drawn, shrunk or not.
+    window: [f32; 4],
 }
 
 impl<R: Renderer> RoundedElement<R> {
@@ -138,12 +154,14 @@ impl<R: Renderer> RoundedElement<R> {
         program: GlesTexProgram,
         radius: f32,
         top: bool,
+        window: [f32; 4],
     ) -> Self {
         Self {
             inner,
             program,
             radius,
             top,
+            window,
         }
     }
 }
@@ -208,8 +226,24 @@ where
         damage: &[Rectangle<i32, Physical>],
         opaque_regions: &[Rectangle<i32, Physical>],
     ) -> Result<(), R::Error> {
+        let (w, h) = (dst.size.w as f32, dst.size.h as f32);
+        let [x, y, bw, bh] = self.window;
+        // The shown part of the buffer, both in the surface's logical size.
+        let (view, buffer) = (self.inner.view().src, self.inner.buffer_size().to_f64());
+        let crop = if buffer.w > 0.0 && buffer.h > 0.0 && view.size.w > 0.0 && view.size.h > 0.0 {
+            (
+                (view.loc.x / buffer.w) as f32,
+                (view.loc.y / buffer.h) as f32,
+                (view.size.w / buffer.w) as f32,
+                (view.size.h / buffer.h) as f32,
+            )
+        } else {
+            (0.0, 0.0, 1.0, 1.0)
+        };
         let uniforms = vec![
-            Uniform::new("size", (dst.size.w as f32, dst.size.h as f32)),
+            Uniform::new("size", (w, h)),
+            Uniform::new("box", (x * w, y * h, bw * w, bh * h)),
+            Uniform::new("crop", crop),
             Uniform::new("radius", self.radius),
             Uniform::new("top", if self.top { 1.0f32 } else { 0.0 }),
         ];

@@ -37,8 +37,8 @@
 import { accessSync, closeSync, constants, openSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { isAbsolute, join } from "node:path";
-import { type App, iconPath, launch as launchApp } from "./apps.ts";
-import { desktopFields, parseExec, splitList } from "./entries.ts";
+import { launch as launchApp } from "./apps.ts";
+import { type App, desktopFields, iconPath, parseExec, splitList } from "./shared/apps/index.ts";
 
 /** The desktop name `OnlyShowIn` and `NotShowIn` are matched against. */
 export const DESKTOP = "Dashi";
@@ -180,7 +180,8 @@ export function claimSession(runtimeDir: string, session?: string): boolean {
     closeSync(openSync(join(runtimeDir, markerName(session)), "wx", 0o600));
     return true;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
+    const code = typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
+    if (code !== "EEXIST") {
       console.error("dashi-shell: autostart: could not write its marker, so nothing starts:", error instanceof Error ? error.message : error);
     }
     return false;

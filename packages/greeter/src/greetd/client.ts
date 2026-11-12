@@ -3,7 +3,7 @@
  * response, which is all greetd's protocol allows.
  */
 
-import { encode, FrameReader, parseResponse, type Request, type Response } from "./protocol.ts";
+import { encode, FrameReader, parseResponse, type Request, type Response } from "./lib/protocol.ts";
 
 export interface Greetd {
   send(request: Request): Promise<Response>;

@@ -1,0 +1,1 @@
+# H2: files over 300 lines (count = lines). May only shrink; see scripts/ratchet.ts.

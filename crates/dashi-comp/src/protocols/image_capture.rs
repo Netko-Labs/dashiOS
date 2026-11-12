@@ -5,25 +5,16 @@
 //! may use it (protocols/screencopy.rs grants); none in greeter mode. Cursor
 //! sessions are refused (stopped): ask for `paint_cursors` instead.
 
-use std::{
-    sync::Mutex,
-    time::{Duration, SystemTime, UNIX_EPOCH},
-};
+use std::{sync::Mutex, time::Duration};
 
 use smithay::{
-    output::{Output, WeakOutput},
+    output::WeakOutput,
     reexports::{
         calloop::timer::{TimeoutAction, Timer},
         wayland_protocols::ext::{
-            foreign_toplevel_list::v1::server::ext_foreign_toplevel_handle_v1::ExtForeignToplevelHandleV1,
             image_capture_source::v1::server::{
-                ext_foreign_toplevel_image_capture_source_manager_v1::{
-                    self as toplevel_sources, ExtForeignToplevelImageCaptureSourceManagerV1,
-                },
-                ext_image_capture_source_v1::{self as source_v1, ExtImageCaptureSourceV1},
-                ext_output_image_capture_source_manager_v1::{
-                    self as output_sources, ExtOutputImageCaptureSourceManagerV1,
-                },
+                ext_foreign_toplevel_image_capture_source_manager_v1::ExtForeignToplevelImageCaptureSourceManagerV1,
+                ext_output_image_capture_source_manager_v1::ExtOutputImageCaptureSourceManagerV1,
             },
             image_copy_capture::v1::server::{
                 ext_image_copy_capture_cursor_session_v1::{
@@ -40,20 +31,19 @@ use smithay::{
         },
         wayland_server::{
             Client, DataInit, Dispatch, DisplayHandle, GlobalDispatch, New, Resource,
-            protocol::{wl_buffer::WlBuffer, wl_output, wl_shm},
+            protocol::wl_buffer::WlBuffer,
         },
     },
-    utils::{Logical, Rectangle},
-    wayland::foreign_toplevel_list::ForeignToplevelHandle,
 };
 
 use crate::{
-    backend,
     protocols::screencopy::{Grants, may_copy},
-    render::{View, capture::window_area},
     state::Dashi,
     wm::WindowId,
 };
+
+mod frames;
+mod sources;
 
 /// The shortest time between two frames of one session.
 const FRAME_EVERY: Duration = Duration::from_millis(16);
@@ -68,21 +58,21 @@ pub(crate) enum Source {
 }
 
 pub(crate) struct SessionData {
-    source: Source,
-    cursor: bool,
+    pub(super) source: Source,
+    pub(super) cursor: bool,
     /// The buffer size last announced, in pixels.
-    size: Mutex<(i32, i32)>,
+    pub(super) size: Mutex<(i32, i32)>,
 }
 
 #[derive(Default)]
 pub(crate) struct FrameState {
-    buffer: Option<WlBuffer>,
-    captured: bool,
+    pub(super) buffer: Option<WlBuffer>,
+    pub(super) captured: bool,
 }
 
 pub(crate) struct FrameData {
-    session: ExtImageCopyCaptureSessionV1,
-    state: Mutex<FrameState>,
+    pub(super) session: ExtImageCopyCaptureSessionV1,
+    pub(super) state: Mutex<FrameState>,
 }
 
 pub(crate) fn create_globals(dh: &DisplayHandle, grants: &Grants) {
@@ -118,68 +108,6 @@ macro_rules! granted_global {
 granted_global!(ExtOutputImageCaptureSourceManagerV1);
 granted_global!(ExtForeignToplevelImageCaptureSourceManagerV1);
 granted_global!(ExtImageCopyCaptureManagerV1);
-
-impl Dispatch<ExtOutputImageCaptureSourceManagerV1, ()> for Dashi {
-    fn request(
-        _state: &mut Self,
-        _client: &Client,
-        _manager: &ExtOutputImageCaptureSourceManagerV1,
-        request: output_sources::Request,
-        _data: &(),
-        _dh: &DisplayHandle,
-        data_init: &mut DataInit<'_, Self>,
-    ) {
-        if let output_sources::Request::CreateSource { source, output } = request {
-            let source_of = Output::from_resource(&output)
-                .map_or(Source::Nothing, |o| Source::Output(o.downgrade()));
-            data_init.init(source, source_of);
-        }
-    }
-}
-
-impl Dispatch<ExtForeignToplevelImageCaptureSourceManagerV1, ()> for Dashi {
-    fn request(
-        state: &mut Self,
-        _client: &Client,
-        _manager: &ExtForeignToplevelImageCaptureSourceManagerV1,
-        request: toplevel_sources::Request,
-        _data: &(),
-        _dh: &DisplayHandle,
-        data_init: &mut DataInit<'_, Self>,
-    ) {
-        if let toplevel_sources::Request::CreateSource {
-            source,
-            toplevel_handle,
-        } = request
-        {
-            data_init.init(source, source_for_toplevel(state, &toplevel_handle));
-        }
-    }
-}
-
-fn source_for_toplevel(state: &Dashi, handle: &ExtForeignToplevelHandleV1) -> Source {
-    let Some(handle) = ForeignToplevelHandle::from_resource(handle) else {
-        return Source::Nothing;
-    };
-    state
-        .toplevel_list
-        .as_ref()
-        .and_then(|list| list.window_of(&handle))
-        .map_or(Source::Nothing, Source::Window)
-}
-
-impl Dispatch<ExtImageCaptureSourceV1, Source> for Dashi {
-    fn request(
-        _state: &mut Self,
-        _client: &Client,
-        _source: &ExtImageCaptureSourceV1,
-        _request: source_v1::Request,
-        _data: &Source,
-        _dh: &DisplayHandle,
-        _data_init: &mut DataInit<'_, Self>,
-    ) {
-    }
-}
 
 impl Dispatch<ExtImageCopyCaptureManagerV1, ()> for Dashi {
     fn request(
@@ -304,124 +232,4 @@ impl Dispatch<ExtImageCopyCaptureFrameV1, FrameData> for Dashi {
             _ => {}
         }
     }
-}
-
-impl Dashi {
-    /// What a session's source shows now: the area, the screen, and the window alone if any.
-    fn source_view(
-        &self,
-        source: &Source,
-    ) -> Option<(
-        Rectangle<i32, Logical>,
-        Output,
-        Option<smithay::desktop::Window>,
-    )> {
-        match source {
-            Source::Output(weak) => {
-                let output = weak.upgrade()?;
-                let area = self.space.output_geometry(&output)?;
-                Some((area, output, None))
-            }
-            Source::Window(id) => {
-                let window = self
-                    .windows
-                    .get(*id)
-                    .filter(|e| e.announced)?
-                    .window
-                    .clone();
-                let (area, output) = window_area(self, &window).ok()?;
-                Some((area, output, Some(window)))
-            }
-            Source::Nothing => None,
-        }
-    }
-
-    /// Tell a session the buffer it needs, or that it has nothing to capture.
-    fn announce_constraints(&self, session: &ExtImageCopyCaptureSessionV1) {
-        let Some(data) = session.data::<SessionData>() else {
-            return;
-        };
-        let Some((area, output, _)) = self.source_view(&data.source) else {
-            session.stopped();
-            return;
-        };
-        let size = pixel_size(area, &output);
-        if let Ok(mut last) = data.size.lock() {
-            *last = size;
-        }
-        session.buffer_size(size.0 as u32, size.1 as u32);
-        session.shm_format(wl_shm::Format::Xrgb8888);
-        session.shm_format(wl_shm::Format::Argb8888);
-        session.done();
-    }
-
-    fn capture_frame(&mut self, frame: &ExtImageCopyCaptureFrameV1, buffer: &WlBuffer) {
-        if !frame.is_alive() {
-            return;
-        }
-        let Some(data) = frame.data::<FrameData>() else {
-            return;
-        };
-        let session = data.session.clone();
-        let Some(session_data) = session.data::<SessionData>() else {
-            return;
-        };
-        let Some((area, output, only)) = self.source_view(&session_data.source) else {
-            frame.failed(frame_v1::FailureReason::Stopped);
-            session.stopped();
-            return;
-        };
-        let size = pixel_size(area, &output);
-        let announced = session_data.size.lock().map(|s| *s).unwrap_or_default();
-        if size != announced {
-            // The source changed size: the client hears the new constraints.
-            frame.failed(frame_v1::FailureReason::BufferConstraints);
-            self.announce_constraints(&session);
-            return;
-        }
-        let view = View {
-            area,
-            scale: output.current_scale().fractional_scale().into(),
-            output: &output,
-            cursor: session_data.cursor,
-            only,
-        };
-        let mut picture = match backend::capture(self, &view) {
-            Ok(picture) => picture,
-            Err(error) => {
-                tracing::debug!(%error, "an image-copy-capture frame");
-                frame.failed(frame_v1::FailureReason::Unknown);
-                return;
-            }
-        };
-        // A client the shell masked (a recorder for an agent) gets its blanks.
-        let scale = output.current_scale().fractional_scale();
-        self.mask_for_client(frame.client(), area, scale, &mut picture);
-        if !crate::render::capture::copy_to_shm(&picture, buffer) {
-            frame.failed(frame_v1::FailureReason::BufferConstraints);
-            return;
-        }
-        frame.transform(wl_output::Transform::Normal);
-        frame.damage(0, 0, size.0, size.1);
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default();
-        frame.presentation_time(
-            (now.as_secs() >> 32) as u32,
-            now.as_secs() as u32,
-            now.subsec_nanos(),
-        );
-        frame.ready();
-        self.note_capture();
-    }
-}
-
-/// An area's size in pixels at its screen's scale.
-fn pixel_size(area: Rectangle<i32, Logical>, output: &Output) -> (i32, i32) {
-    let size = area
-        .size
-        .to_f64()
-        .to_physical(output.current_scale().fractional_scale())
-        .to_i32_round::<i32>();
-    (size.w.max(1), size.h.max(1))
 }

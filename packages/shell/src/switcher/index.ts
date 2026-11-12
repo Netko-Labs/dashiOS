@@ -1,4 +1,5 @@
-export { type SwitcherApp, SwitcherController, type SwitcherHost, type SwitcherKeys, type SwitcherState, type SwitcherWindow } from "./controller.ts";
-export { centeredOn, switcherLayout, switcherSize } from "./layout.ts";
-export { type AppGroup, filterApps, groupByApp, type Selection, type Step, stepSelection, switcherKey } from "./model.ts";
+export { SwitcherController } from "./controller.ts";
+export { centeredOn } from "./layout.ts";
+export { groupByApp } from "./model.ts";
 export { SwitcherPanel, SwitcherStore } from "./panel.tsx";
+export type { SwitcherApp, SwitcherHost, SwitcherKeys, SwitcherState, SwitcherWindow } from "./types.ts";

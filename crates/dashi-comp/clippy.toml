@@ -1,0 +1,18 @@
+# Clippy for dashi-comp. Clippy reads the nearest clippy.toml only, so this
+# repeats the root one (../../clippy.toml) and adds the compositor's own rule.
+allow-unwrap-in-tests = true
+
+# H12: no blocking file or PNG work on the compositor's event loop. Work that
+# blocks goes to a thread and comes back as a calloop event
+# (docs/conventions.md, "Rust"). A call that already runs on a thread, or only
+# at startup or in tests, says so in an `#[expect(clippy::disallowed_methods,
+# reason = "…")]`.
+disallowed-methods = [
+  { path = "std::fs::write", reason = "blocking file work: do it on a thread (H12)" },
+  { path = "std::fs::create_dir_all", reason = "blocking file work: do it on a thread (H12)" },
+  { path = "std::fs::copy", reason = "blocking file work: do it on a thread (H12)" },
+  { path = "std::fs::File::create", reason = "blocking file work: do it on a thread (H12)" },
+  { path = "png::Encoder::new", reason = "PNG encoding blocks the loop: do it on a thread (H12)" },
+  { path = "image::open", reason = "image decoding blocks the loop: do it on a thread (H12)" },
+  { path = "dashi_comp::render::capture_file::save_png", reason = "encodes and writes a PNG: call it on a thread (H12)" },
+]

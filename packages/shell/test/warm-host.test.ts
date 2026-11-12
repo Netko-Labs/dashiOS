@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import type { NativeHostOptions, NativeHostTransport, NativeWindowOptions } from "@mirinjs/metal";
 
-import { WarmHost } from "../src/warm-host.ts";
+import { WarmHost, windowFor } from "../src/shared/metal/host.ts";
 
 function fakeHosts() {
   const spawned: {
@@ -30,6 +30,8 @@ function fakeHosts() {
       toplevel() {},
       unlock() {},
       setTitle() {},
+      setSize() {},
+      setMinSize() {},
       open: (window) => record.opened.push(window),
     };
   };
@@ -65,4 +67,22 @@ test("a warm host that dies is not handed out", async () => {
   spawned[0]?.close();
   expect(warm.take({ title: "Launcher" })).toBeNull();
   warm.stop();
+});
+
+test("a warm host's window takes the least size only when the host's open takes one", () => {
+  const settings = {
+    title: "System Settings",
+    appId: "dev.dashi.settings",
+    width: 920,
+    height: 640,
+    minWidth: 744,
+    minHeight: 300,
+    titleBar: "unified" as const,
+  };
+  expect(windowFor(settings, true)).toMatchObject({ minWidth: 744, minHeight: 300, width: 920, height: 640 });
+  // A host from before refuses an open line with minWidth in it: no window at all.
+  expect(windowFor(settings, false)).not.toHaveProperty("minWidth");
+  expect(windowFor(settings, false)).not.toHaveProperty("minHeight");
+  // Only both, never one.
+  expect(windowFor({ ...settings, minHeight: undefined }, true)).not.toHaveProperty("minWidth");
 });

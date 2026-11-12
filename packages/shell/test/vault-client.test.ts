@@ -5,10 +5,11 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import { existsSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { dashiSource } from "../src/agents/secrets/dashi-source.ts";
+import { dashiSource } from "../src/agents/secrets/lib/dashi-source.ts";
 import { Vault, vaultCall } from "../src/agents/secrets/vault.ts";
 import { TEST_LOGIN } from "./fixtures/sign-in-site/server.ts";
 import { base32, totp } from "./fixtures/sign-in-site/totp.ts";
+import { until } from "./support/time.ts";
 
 const binary = join(import.meta.dir, "../../../target/debug/dashi-secretd");
 const dir = mkdtempSync(join(tmpdir(), "dashi-vault-"));
@@ -18,7 +19,7 @@ let daemon: ReturnType<typeof Bun.spawn> | null = null;
 beforeAll(async () => {
   if (!existsSync(binary)) return;
   daemon = Bun.spawn([binary, "--dev", "--state", join(dir, "state"), "--socket", socket], { stderr: "ignore" });
-  for (let i = 0; i < 50 && !existsSync(socket); i++) await Bun.sleep(20);
+  await until(() => existsSync(socket), "the vault socket");
   await vaultCall({ op: "unlock", user: process.getuid?.() ?? 0, password: btoa("test password") }, socket);
 });
 afterAll(() => daemon?.kill());

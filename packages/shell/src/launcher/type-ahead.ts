@@ -1,5 +1,5 @@
 /**
- * No key typed after a ❖ tap is lost. From the tap until the launcher's
+ * No key typed after a ❖ tap (or ❖Space) is lost. From the tap until the launcher's
  * field has the keyboard (its surface drew its first frame), what is typed
  * is the shell's: the compositor switches to the idle keymap's `afterTap`
  * rules the instant ❖ is tapped (docs/compositor-ipc.md, `keymap`), whose
@@ -12,7 +12,7 @@
  * the session's own rules (the volume keys), which come before the catch-all.
  */
 
-import type { Keymap, Rule } from "../keymap.ts";
+import type { Keymap, Rule } from "../keymap/keymap.ts";
 import { LAUNCHER_RULES } from "./keys.ts";
 
 export const TYPE_BINDING = "launcher-type";
@@ -47,8 +47,22 @@ export function typedFrom(binding: { key: string; text?: string }): Typed | null
 /** While the launcher waits for its surface: its keys, the session's, then every other plain key is typing. */
 export const withTyping = (keymap: Keymap): Keymap => ({ ...keymap, rules: [...LAUNCHER_RULES, ...keymap.rules, TYPE_RULE] });
 
-/** The keymap while the launcher is closed: as it is, and typing from the instant of a ❖ tap. */
-export const withTypeAheadOnTap = (keymap: Keymap): Keymap => ({ ...keymap, afterTap: withTyping(keymap).rules });
+/** The binding that opens (and closes) the launcher (keymap.ts: ❖Space, or the person's own key for it). */
+const LAUNCHER_BINDING = "launcher";
+
+/**
+ * The keymap while the launcher is closed: as it is, and typing from the
+ * instant of a ❖ tap, or of the launcher's own key. That key arms the typing
+ * rules in the compositor (`armsAfterTap`), so what is typed right after it
+ * is the launcher's even when the compositor was busy (a screenshot being
+ * saved) and plays the queued keys at once, before the shell could say so:
+ * they used to reach the window under it.
+ */
+export const withTypeAheadOnTap = (keymap: Keymap): Keymap => ({
+  ...keymap,
+  rules: keymap.rules.map((rule) => (rule.bind === LAUNCHER_BINDING ? { ...rule, armsAfterTap: true as const } : rule)),
+  afterTap: withTyping(keymap).rules,
+});
 
 /** `query` after text and BackSpaces typed ahead, in order (BackSpace takes the last character). */
 export function applyEdits(query: string, edits: readonly Typed[]): string {

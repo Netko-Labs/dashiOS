@@ -1,70 +1,57 @@
 //! The pseudo-terminal: the person's shell on the PTY's far end, its size,
 //! and a thread that reads what it prints.
 
-use std::ffi::{CString, OsString};
+mod launch;
+
+use std::ffi::CString;
 use std::io;
 use std::os::fd::{AsRawFd, FromRawFd, OwnedFd, RawFd};
-use std::os::unix::ffi::OsStringExt;
 use std::sync::mpsc::Sender;
 
+use launch::{environment, exec_line, logical_pwd, shell};
+
 use crate::Message;
+use crate::integration;
 
 pub(crate) struct Pty {
     master: OwnedFd,
     pub(crate) child: libc::pid_t,
 }
 
-/// The shell to run: `$SHELL`, else the account's shell, else zsh (Dashi's default).
-fn shell() -> CString {
-    if let Some(shell) = std::env::var_os("SHELL")
-        .filter(|s| !s.is_empty())
-        .and_then(|s| CString::new(s.into_vec()).ok())
-    {
-        return shell;
-    }
-    // SAFETY: getpwuid returns a pointer into static storage or null; it is read at once, before any other call.
-    unsafe {
-        let entry = libc::getpwuid(libc::getuid());
-        if !entry.is_null() && !(*entry).pw_shell.is_null() {
-            return std::ffi::CStr::from_ptr((*entry).pw_shell).to_owned();
-        }
-    }
-    CString::from(c"/bin/zsh")
-}
-
-/// The child's environment: ours, with the terminal's identity.
-fn environment() -> Vec<CString> {
-    let mut vars: Vec<(OsString, OsString)> = std::env::vars_os()
-        .filter(|(key, _)| !matches!(key.to_str(), Some("TERM" | "COLORTERM" | "TERM_PROGRAM")))
-        .collect();
-    vars.push(("TERM".into(), "xterm-256color".into()));
-    vars.push(("COLORTERM".into(), "truecolor".into()));
-    vars.push(("TERM_PROGRAM".into(), "dashi-term".into()));
-    vars.into_iter()
-        .filter_map(|(key, value)| {
-            let mut entry = key.into_vec();
-            entry.push(b'=');
-            entry.extend(value.into_vec());
-            CString::new(entry).ok()
-        })
-        .collect()
-}
-
 impl Pty {
-    /// Start the shell (a login shell, `-zsh`) on a new PTY of this size.
+    /// Start the shell (a login shell, `-zsh`) on a new PTY of this size,
+    /// with the shell integration in `integration` (a folder) when given;
+    /// or, when `command` isn't empty, that command in place of the shell
+    /// (without the integration), whose exit ends the terminal.
     /// Called before any thread starts: the child only calls async-signal-safe functions.
-    pub(crate) fn spawn(cols: u16, rows: u16, cwd: Option<&str>) -> io::Result<Pty> {
+    pub(crate) fn spawn(
+        cols: u16,
+        rows: u16,
+        cwd: Option<&str>,
+        integration: Option<&str>,
+        command: &[String],
+    ) -> io::Result<Pty> {
         let shell = shell();
         let name = shell
             .to_bytes()
             .rsplit(|b| *b == b'/')
             .next()
             .unwrap_or(b"sh");
-        let mut login = b"-".to_vec();
-        login.extend_from_slice(name);
-        let argv0 = CString::new(login).map_err(io::Error::other)?;
-        let argv = [argv0.as_ptr(), std::ptr::null()];
-        let env = environment();
+        let mut launch = integration
+            .filter(|_| command.is_empty())
+            .map(|dir| {
+                integration::launch(&String::from_utf8_lossy(name), dir, |key| {
+                    std::env::var(key).ok()
+                })
+            })
+            .unwrap_or_default();
+        if let Some(pwd) = cwd.and_then(logical_pwd) {
+            launch.env.push(("PWD".into(), pwd));
+        }
+        let (program, args) = exec_line(&shell, &launch.args, command);
+        let mut argv: Vec<*const libc::c_char> = args.iter().map(|arg| arg.as_ptr()).collect();
+        argv.push(std::ptr::null());
+        let env = environment(&launch.env);
         let mut envp: Vec<*const libc::c_char> = env.iter().map(|e| e.as_ptr()).collect();
         envp.push(std::ptr::null());
         let cwd = cwd.and_then(|dir| CString::new(dir).ok());
@@ -88,7 +75,7 @@ impl Pty {
                 if let Some(dir) = &cwd {
                     libc::chdir(dir.as_ptr());
                 }
-                libc::execve(shell.as_ptr(), argv.as_ptr(), envp.as_ptr());
+                libc::execve(program.as_ptr(), argv.as_ptr(), envp.as_ptr());
                 libc::_exit(127);
             }
         }
@@ -195,23 +182,4 @@ pub(crate) fn exit_code(child: libc::pid_t) -> i32 {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::running_program;
-
-    #[test]
-    fn the_shell_at_its_prompt_is_not_running_anything() {
-        let named = |_| Some("sleep\n".to_string());
-        assert_eq!(running_program(100, 100, named), None);
-        assert_eq!(running_program(-1, 100, named), None);
-        assert_eq!(running_program(0, 100, named), None);
-    }
-
-    #[test]
-    fn another_group_in_front_is_a_running_program() {
-        assert_eq!(
-            running_program(120, 100, |pid| (pid == 120).then(|| "sleep\n".to_string())),
-            Some("sleep".to_string())
-        );
-        assert_eq!(running_program(120, 100, |_| None), Some(String::new()));
-    }
-}
+mod tests;

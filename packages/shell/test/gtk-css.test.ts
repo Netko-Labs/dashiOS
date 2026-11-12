@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { BEGIN, END, withBlock } from "../src/appearance/gtk-css.ts";
+import { BEGIN, END, withBlock } from "../src/appearance/lib/gtk-css.ts";
 
 test("a file a crash zero-filled gets its NUL bytes dropped, not kept forever", () => {
   const broken = `${"\0".repeat(64)}\n\n${BEGIN}\nold\n${END}\n`;

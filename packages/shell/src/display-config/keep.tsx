@@ -11,7 +11,7 @@ import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { Button } from "../consent.tsx";
 import type { OpenOverlay } from "../overlay.tsx";
-import type { AskToKeep, KeepAsk } from "./manager.ts";
+import type { AskToKeep, KeepAsk } from "./lib/trial.ts";
 
 export const KEEP_SHEET = { width: 440, height: 190 } as const;
 

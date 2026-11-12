@@ -15,10 +15,11 @@
  * close.
  */
 
+import { TextSelectionLook } from "@dashi/ui";
 import { type NativeHostOptions, type NativeHostTransport, type NativeRoot, type NativeWindowOptions, render, spawnNativeHost } from "@mirinjs/metal";
 import { type ReactElement, useEffect, useSyncExternalStore } from "react";
-import { shellHostOptions } from "../metal-host.ts";
 import type { OverlayHandle } from "../overlay.tsx";
+import { shellHostOptions } from "../shared/metal/index.ts";
 
 type Spawn = (binary: string, options: NativeHostOptions) => NativeHostTransport;
 
@@ -192,7 +193,12 @@ export class ResidentHost {
     if (this.host || this.stopped) return;
     const host = (this.options.spawn ?? spawnNativeHost)(this.binary, shellHostOptions({ appId: "dev.dashi.shell", deferred: true }));
     this.host = host;
-    this.root = render(<SlotView slot={this.slot} />, host);
+    this.root = render(
+      <TextSelectionLook>
+        <SlotView slot={this.slot} />
+      </TextSelectionLook>,
+      host,
+    );
     host.onEvent((event) => {
       const kind: string = event.type;
       const shown = this.shown;

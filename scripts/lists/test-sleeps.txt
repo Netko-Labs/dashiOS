@@ -1,0 +1,2 @@
+# H11: tests waiting on real time (count = Bun.sleep/setTimeout calls). May only shrink.
+1	packages/shell/test/fixtures/handoff/stand-in-codex.ts

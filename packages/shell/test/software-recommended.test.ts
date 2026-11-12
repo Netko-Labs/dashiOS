@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
-import { loadRecommended, summaryOf } from "../apps/software/recommended.tsx";
-import { CatalogError } from "../src/software/flathub.ts";
-import type { AppDetails } from "../src/software/flathub-types.ts";
-import { RECOMMENDED_APPS } from "../src/software/recommended.ts";
+import { loadRecommended, summaryOf } from "../apps/software/lib/recommended.tsx";
+import { CatalogError } from "../src/shared/software/flathub.ts";
+import { RECOMMENDED_APPS } from "../src/shared/software/recommended.ts";
+import type { AppDetails } from "../src/shared/software/types.ts";
 
 const details = (id: string): AppDetails => ({
   ...summaryOf({ id, name: `${id} from Flathub`, summary: "From the catalog" }),
@@ -18,6 +18,8 @@ const details = (id: string): AppDetails => ({
   downloadSize: null,
   installedSize: null,
   categories: [],
+  releases: [],
+  permissions: null,
 });
 
 test("the shelf keeps Dashi's name and line, and takes the catalog's icon and verified mark where it answers", async () => {

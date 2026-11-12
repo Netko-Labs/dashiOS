@@ -95,8 +95,17 @@ export function toolAction(def: ToolDef): ActionDef {
   };
 }
 
+/** One entry of `tools/list`, in the shape MCP clients see. */
+export interface McpTool {
+  name: ToolName;
+  title: string;
+  description: string;
+  inputSchema: { type: "object"; properties: Record<string, unknown>; required: string[]; additionalProperties: false };
+  annotations: { title: string; readOnlyHint: boolean; destructiveHint: boolean; idempotentHint: boolean; openWorldHint: false };
+}
+
 /** `tools/list` for one action: exactly what MCP clients saw from agents/tools/define.ts's `listing`. */
-export function mcpTool(action: ActionDef & { tool: ToolName }) {
+export function mcpTool(action: ActionDef & { tool: ToolName }): McpTool {
   return {
     name: action.tool,
     title: action.title,

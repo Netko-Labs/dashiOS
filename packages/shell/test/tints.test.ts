@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { darkColors, lightColors, TINT_VALUES, TINTS, tintFor } from "@dashi/ui";
-import { PANES } from "../src/settings-app/panes.ts";
+import { PANES } from "../src/shared/settings/panes.ts";
 
 // The job colors: kombu (selected), ume (destroy), broth (warning), moss (success), shiso (agents), and the shell's red.
 const JOBS = ["#3E8A72", "#D0596F", "#E5B13F", "#4F9A3E", lightColors.agent, darkColors.agent, lightColors.critical, darkColors.critical].map((hex) =>
@@ -29,11 +29,8 @@ test("a letter tile's tint is the same for the same name", () => {
   expect(TINT_VALUES).toContain(tintFor(""));
 });
 
-test("Settings' tiles: Dashi's tints, shiso only on Agents, no ume, and Passwords isn't Lock Screen's padlock", () => {
-  for (const pane of PANES) {
-    if (pane.id === "agents") expect(pane.tint).toBe(lightColors.agent);
-    else expect(TINT_VALUES).toContain(pane.tint);
-  }
+test("Settings' glyphs: Passwords isn't Lock Screen's padlock, and every pane has its own", () => {
   const glyph = (id: string) => PANES.find((pane) => pane.id === id)?.glyph;
   expect(glyph("passwords")).not.toBe(glyph("lock-screen"));
+  expect(new Set(PANES.map((pane) => pane.glyph)).size).toBe(PANES.length);
 });

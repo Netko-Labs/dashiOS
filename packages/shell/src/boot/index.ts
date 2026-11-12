@@ -1,0 +1,16 @@
+export { startRegistry } from "./actions.ts";
+export { startAgentBasics, startAgentServer, startAskAgents, startHandoff } from "./agents.ts";
+export { appQuitting, appShortcut, startCatalog, startKeepingAwake, startPickerAndTray, startPrograms } from "./apps.ts";
+export { startBarHolds, startBars } from "./bars.tsx";
+export { startArranging, startDesktops, startOverview } from "./desktop.ts";
+export { startKeys } from "./keys.ts";
+export { startLauncher } from "./launcher.tsx";
+export { startLook } from "./look.ts";
+export { startBarMenus, startMachine } from "./menus.tsx";
+export { startNotices, startSpoken, startSwitches } from "./notices.ts";
+export { closeOnLock, type OverlayKind, Screenshots, sheetOpener, startSwitcher } from "./overlays.tsx";
+export type { LateParts } from "./parts.ts";
+export { Late, Services } from "./services.ts";
+export { connectCompositor, guardProcess, Screens, startLogin, startStores } from "./session.ts";
+export { startSettingsApps, startSettingsWindows } from "./settings.ts";
+export { chooseRadios, startGuards, startSystemStores } from "./system.ts";

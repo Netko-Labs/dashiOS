@@ -1,149 +1,23 @@
 /**
- * Dashi's own app list (the first installed choice of each), which the Dock
- * starts with, starting an app, and how a click on an icon maps to an action. What the Dock shows and
- * keeps lives in dock/.
+ * Starting an app, the apps the shell itself opens, and how a click on an
+ * icon maps to an action. Dashi's own app list is shared/apps/list.ts; what
+ * the Dock shows and keeps lives in dock/.
  */
 
-import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import type { Toplevel } from "@mirinjs/metal";
-import { firstPartyApps } from "./first-party.ts";
-import { chooseGpu, readCards } from "./gpu.ts";
-import { type GpuEnvs, gpuEnvs, launchEnvFor } from "./gpu-env.ts";
+import { chooseGpu, type GpuEnvs, gpuEnvs, launchEnvFor, readCards } from "./gpu/index.ts";
+import { appIdName } from "./shared/app-entries/index.ts";
+import { type App, firstPartyApps, iconPath } from "./shared/apps/index.ts";
 
-export interface App {
-  /** The app id its windows report (xdg-toplevel app_id). */
-  id: string;
-  name: string;
-  /** Full-color SVG or PNG path. */
-  icon: string;
-  /** Command line; absent for running apps the Dock cannot relaunch. */
-  exec?: readonly string[];
-  env?: Readonly<Record<string, string>>;
-  /** Working directory; Bun apps read their tsconfig and bunfig from it. */
-  cwd?: string;
-  /** Its desktop entry asks for the discrete GPU (`PrefersNonDefaultGPU`; gpu-env.ts). */
-  gpu?: "discrete";
-}
-
-const icons = new URL("../icons/", import.meta.url).pathname;
-const mirin = new URL("../../../../mirin/", import.meta.url).pathname;
-
-export function iconPath(name: string): string {
-  return `${icons}${name}.svg`;
-}
-
-/** The Metal host binary every Metal app (and the shell) runs on. */
-export const METAL_HOST = process.env.DASHI_METAL_HOST ?? `${mirin}crates/mirin-metal/target/release/mirin-metal-host`;
-
-interface Choice {
-  id: string;
-  exec: readonly string[];
-  env?: Readonly<Record<string, string>>;
-  cwd?: string;
-}
-
-interface PinnedSpec {
-  name: string;
-  icon: string;
-  /** Alternatives in preference order; the first installed one is pinned. */
-  choices: readonly Choice[];
-  /** In the launcher, but not in a new Dock: a developer's tool. */
-  inDock?: false;
-}
-
-const metalUi = `${mirin}packages/mirin-metal-ui/`;
-const shellRoot = new URL("../", import.meta.url).pathname;
-
-const PINNED: readonly PinnedSpec[] = [
-  {
-    name: "Files",
-    icon: "files",
-    choices: [
-      // Dashi's own Files (apps/files) is the file manager: it replaces Nautilus.
-      { id: "dev.dashi.files", exec: [process.execPath, `${shellRoot}apps/files/main.tsx`], cwd: shellRoot },
-    ],
-  },
-  {
-    // A Metal app: mirin's metal-ui component browser. A developer's tool, so it is in the launcher, not the Dock.
-    name: "Components",
-    icon: "components",
-    inDock: false,
-    choices: [
-      {
-        id: "dev.dashi.components",
-        // metal-ui's JSX source and production React come from its package
-        // config, so it runs from there.
-        exec: [process.execPath, `${metalUi}demo/browser.tsx`, METAL_HOST],
-        env: { MIRIN_METAL_APP_ID: "dev.dashi.components", MIRIN_METAL_SIZE: "1040x660" },
-        cwd: metalUi,
-      },
-    ],
-  },
-  {
-    name: "Terminal",
-    icon: "terminal",
-    choices: [
-      // Dashi's own (apps/terminal, on dashi-term and Ghostty's libghostty-vt); the others are fallbacks.
-      { id: "dev.dashi.terminal", exec: [process.execPath, `${shellRoot}apps/terminal/main.tsx`], cwd: shellRoot },
-      { id: "foot", exec: ["foot"] },
-      { id: "org.kde.konsole", exec: ["konsole"] },
-      { id: "Alacritty", exec: ["alacritty"] },
-    ],
-  },
-  {
-    name: "Text Editor",
-    icon: "editor",
-    choices: [
-      // Dashi's own Text Editor (apps/editor); the others only where it isn't here.
-      { id: "dev.dashi.editor", exec: [process.execPath, `${shellRoot}apps/editor/main.tsx`], cwd: shellRoot },
-      { id: "org.gnome.TextEditor", exec: ["gnome-text-editor"] },
-      { id: "org.kde.kate", exec: ["kate"] },
-    ],
-  },
-  {
-    name: "Browser",
-    icon: "browser",
-    // Helium (helium.computer, Chromium-based) is Dashi's browser.
-    choices: [{ id: "helium", exec: ["helium", "--ozone-platform=wayland"] }],
-  },
-];
-
-const NOT_IN_DOCK: ReadonlySet<string> = new Set(PINNED.filter((spec) => spec.inDock === false).flatMap((spec) => spec.choices.map((choice) => choice.id)));
-
-/** The app ids a Dock starts with, before the person keeps or removes any: Dashi's own list, less the developer tools. */
-export function dockDefaults(apps: readonly Pick<App, "id">[]): string[] {
-  return apps.filter((app) => !NOT_IN_DOCK.has(app.id)).map((app) => app.id);
-}
-
-/** Whether a command's program (and, for scripts, the script) is installed. */
-function isInstalled(exec: readonly string[], which: (program: string) => string | null): boolean {
-  const [program, script] = exec;
-  if (!program || !which(program)) return false;
-  return !script?.endsWith(".tsx") || existsSync(script);
-}
-
-export function resolvePinned(which: (program: string) => string | null = (program) => Bun.which(program)): App[] {
-  return PINNED.flatMap((spec) => {
-    const choice = spec.choices.find((candidate) => isInstalled(candidate.exec, which));
-    if (!choice) return [];
-    return [
-      {
-        id: choice.id,
-        name: spec.name,
-        icon: iconPath(spec.icon),
-        exec: choice.exec,
-        env: choice.env,
-        cwd: choice.cwd,
-      },
-    ];
-  });
-}
+/** The shell launches and names `App`s, drawn with the shared app list's icons: the type and `iconPath` come with it. */
 
 /** The app id System Settings' window reports. */
 export const SETTINGS_APP_ID = "dev.dashi.settings";
 /** The app id the Setup Assistant's window reports. */
 export const SETUP_APP_ID = "dev.dashi.setup";
+/** Screenshot, an app the shell opens: ⇧❖5's toolbar, listed with the apps so it can be found and kept in the Dock. */
+export const SCREENSHOT_APP_ID = "dev.dashi.screenshot";
 /** The app id of a nested Dashi's window: dashi-comp inside another desktop (comp/src/winit.rs). */
 export const NESTED_APP_ID = "dev.dashi.nested";
 
@@ -156,6 +30,7 @@ export const NESTED_APP_ID = "dev.dashi.nested";
 const SHELL_APPS: readonly App[] = [
   { id: SETTINGS_APP_ID, name: "System Settings", icon: iconPath("settings") },
   { id: SETUP_APP_ID, name: "Setup Assistant", icon: iconPath("setup") },
+  { id: SCREENSHOT_APP_ID, name: "Screenshot", icon: iconPath("screenshot") },
   // Never registered, so never in the launcher; named and drawn with the bowl in the Dock and menu bar.
   { id: NESTED_APP_ID, name: "Dashi (nested)", icon: iconPath("setup") },
 ];
@@ -208,7 +83,7 @@ export function shellApps(): App[] {
   return SHELL_APPS.filter((app) => shellOpeners.has(app.id)).map((app) => ({ ...app }));
 }
 
-/** Applets' own names, by their id (an applet's window has its id as app id): from its hello (applets/connection.ts). */
+/** Applets' own names, by their id (an applet's window has its id as app id): from its hello (applets/lib/connection.ts). */
 const appletNames = new Map<string, string>();
 
 /** An applet said who it is: its windows are called by its manifest's name. */
@@ -218,11 +93,7 @@ export function nameApplet(id: string, name: string): void {
 
 /** "org.kde.konsole" → "Konsole" (an applet by its own name); falls back to the window title. */
 export function displayName(appId: string, title: string): string {
-  const applet = appletNames.get(appId);
-  if (applet) return applet;
-  const last = appId.split(".").filter(Boolean).at(-1);
-  if (!last) return title || "Untitled";
-  return last.charAt(0).toUpperCase() + last.slice(1);
+  return appletNames.get(appId) ?? appIdName(appId, title);
 }
 
 /**
@@ -275,7 +146,7 @@ export function canLaunch(app: App): boolean {
  */
 let gpuEnvsHere: GpuEnvs | null = null;
 
-/** This machine's GPU environments for apps (gpu-env.ts), read on the first launch. */
+/** This machine's GPU environments for apps (gpu/gpu-env.ts), read on the first launch. */
 function machineGpuEnvs(): GpuEnvs {
   if (!gpuEnvsHere) {
     const cards = readCards();

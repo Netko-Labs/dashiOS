@@ -33,21 +33,24 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
 readonly TARGET=/run/dashi-install/target
 readonly MIN_BYTES=$((20 * 1024 * 1024 * 1024))
 
-dry_run=0 disk= user= full_name= hostname=dashi nvidia=no kernel=auto source=
+dry_run=0 disk='' user='' full_name='' hostname=dashi nvidia=no kernel=auto source=''
 usage() {
   echo "usage: dashi-install [--dry-run] --disk DEV --user NAME [--full-name TEXT] [--hostname NAME] [--nvidia yes|no] [--kernel auto|cachyos|both] [--source DIR]" >&2
   exit 2
 }
+# An option that takes a value must have one: without this, `shift 2` fails
+# on the last argument and the loop never ends (as root, from pkexec).
+needs_value() { [[ $# -ge 2 ]] || { echo "dashi-install: $1 needs a value" >&2; exit 2; }; }
 while (($#)); do
   case $1 in
     --dry-run) dry_run=1; shift ;;
-    --disk) disk=${2:-}; shift 2 ;;
-    --user) user=${2:-}; shift 2 ;;
-    --full-name) full_name=${2:-}; shift 2 ;;
-    --hostname) hostname=${2:-}; shift 2 ;;
-    --nvidia) nvidia=${2:-}; shift 2 ;;
-    --kernel) kernel=${2:-}; shift 2 ;;
-    --source) source=${2:-}; shift 2 ;;
+    --disk) needs_value "$@"; disk=$2; shift 2 ;;
+    --user) needs_value "$@"; user=$2; shift 2 ;;
+    --full-name) needs_value "$@"; full_name=$2; shift 2 ;;
+    --hostname) needs_value "$@"; hostname=$2; shift 2 ;;
+    --nvidia) needs_value "$@"; nvidia=$2; shift 2 ;;
+    --kernel) needs_value "$@"; kernel=$2; shift 2 ;;
+    --source) needs_value "$@"; source=$2; shift 2 ;;
     *) usage ;;
   esac
 done

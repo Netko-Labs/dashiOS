@@ -1,5 +1,5 @@
 /**
- * An app's own menus in Dashi's menu bar (src/app-menus/protocol.ts): one
+ * An app's own menus in Dashi's menu bar (src/shared/app-menus/protocol.ts): one
  * connection per process to `$XDG_RUNTIME_DIR/dashi-menus.sock`, the latest
  * menus sent whenever they change, and the shell's "select" handed to the
  * app. Outside Dashi (no socket) nothing is sent and nothing is chosen. When
@@ -16,10 +16,8 @@
 
 import { existsSync } from "node:fs";
 import { useEffect, useRef } from "react";
-import { type MenuSpec, menusSocketPath, parseMenus, parseShellMessage } from "../../src/app-menus/protocol.ts";
-import { LineBuffer } from "../../src/lines.ts";
-
-export type { MenuItemSpec, MenuSpec } from "../../src/app-menus/protocol.ts";
+import { type MenuSpec, menusSocketPath, parseMenus, parseShellMessage } from "../../src/shared/app-menus/index.ts";
+import { LineBuffer } from "../../src/shared/io/index.ts";
 
 /** What the client needs of a socket. */
 export interface MenuSocket {
@@ -75,6 +73,13 @@ export class MenusClient {
   /** Bytes the socket did not take yet. */
   private unsent = new Uint8Array();
   private handler: (id: string) => void = () => {};
+  private quitHandler: () => void = () => {};
+  private stayHandler: () => void = () => {};
+  private openHandler: (args: string[]) => void = () => {};
+  /** The menus last published (null: none), sent again when `typing` changes. */
+  private menus: readonly MenuSpec[] | null = null;
+  /** A text field has the keyboard (protocol.ts `typing`). */
+  private typing = false;
   private retries = 0;
   private cancelRetry: (() => void) | null = null;
   private closed = false;
@@ -100,19 +105,55 @@ export class MenusClient {
       console.error(`dashi menus: not sent: ${parsed.error}`);
       return;
     }
+    this.menus = menus.length === 0 ? null : menus;
     if (menus.length === 0 && !this.socket) {
       // Nothing was shown, so nothing needs taking down.
       this.line = null;
       return;
     }
-    this.line = `${JSON.stringify({ type: "menus", menus })}\n`;
-    if (this.socket) this.write(this.line);
-    else this.start();
+    this.send(menus);
+  }
+
+  /**
+   * Whether a text field in the window has the keyboard (the Metal host's
+   * `typing`): while one does, the shell gives it the text chords (❖A, ❖C,
+   * ❖Z…) instead of choosing the rows that show them. Sent with the menus.
+   */
+  setTyping(typing: boolean): void {
+    if (typing === this.typing) return;
+    this.typing = typing;
+    if (this.menus) this.send(this.menus);
+  }
+
+  /** Asks the shell to bring this app's window forward (protocol.ts `front`); nothing outside Dashi. */
+  front(): void {
+    if (this.socket) this.write(`${JSON.stringify({ type: "front" })}\n`);
   }
 
   /** Who hears a chosen item (the latest one set). */
   onSelect(handler: (id: string) => void): void {
     this.handler = handler;
+  }
+
+  /** Who hears that the app is quitting, just before its window is asked to close (the latest one set). */
+  onQuit(handler: () => void): void {
+    this.quitHandler = handler;
+  }
+
+  /** Who hears that the quit it was told of is called off (a log out cancelled; the latest one set). */
+  onStay(handler: () => void): void {
+    this.stayHandler = handler;
+  }
+
+  /** Who hears the arguments of a second start while this app runs (protocol.ts `open`; the latest one set). */
+  onOpen(handler: (args: string[]) => void): void {
+    this.openHandler = handler;
+  }
+
+  private send(menus: readonly MenuSpec[]): void {
+    this.line = `${JSON.stringify({ type: "menus", menus, ...(this.typing ? { typing: true } : {}) })}\n`;
+    if (this.socket) this.write(this.line);
+    else this.start();
   }
 
   close(): void {
@@ -143,6 +184,9 @@ export class MenusClient {
           for (const line of lines.push(chunk)) {
             const message = parseShellMessage(line);
             if (message?.type === "select") this.handler(message.id);
+            else if (message?.type === "quit") this.quitHandler();
+            else if (message?.type === "stay") this.stayHandler();
+            else if (message?.type === "open") this.openHandler(message.args);
             else if (message?.type === "error") console.error(`dashi menus: the shell refused the menus: ${message.message}`);
           }
         },
@@ -210,12 +254,16 @@ export function menusClient(): MenusClient {
 export function useAppMenus(menus: readonly MenuSpec[], onSelect: (id: string) => void, client: MenusClient = menusClient()): void {
   const latest = useRef(onSelect);
   latest.current = onSelect;
+  // The menus change only when what they say does: published again then, not on every render.
+  const shown = useRef(menus);
+  shown.current = menus;
   const key = JSON.stringify(menus);
   useEffect(() => {
     client.onSelect((id) => latest.current(id));
   }, [client]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `key` is what the menus say; `shown` holds them.
   useEffect(() => {
-    client.publish(JSON.parse(key) as MenuSpec[]);
+    client.publish(shown.current);
   }, [client, key]);
   useEffect(() => () => client.publish([]), [client]);
 }

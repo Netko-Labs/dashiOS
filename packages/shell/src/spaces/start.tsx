@@ -8,18 +8,18 @@
  * screen's side (edge.ts, from the compositor's `edge-hold`).
  */
 
-import { parseOutputs } from "../arrange.ts";
-import type { Compositor, CompositorEvent, CompositorWindow } from "../compositor.ts";
+import { placedOutputs } from "../arrange/index.ts";
+import type { Compositor, CompositorEvent, CompositorWindow } from "../compositor/index.ts";
 import type { Output } from "../layout.ts";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 import type { OverviewExtras } from "../overview/index.ts";
-import { SpacesController } from "./controller.ts";
-import { edgeHoldTarget } from "./edge.ts";
-import { type Rect, ROW, rowFrame, rowLayout, rowTarget } from "./model.ts";
-import type { SpaceNames } from "./names.ts";
-import { SpacesRow } from "./row.tsx";
-import { lifted, SHELF_HEIGHT, shelfLayout, shelfTarget } from "./shelf.ts";
-import { RowViewStore } from "./view.ts";
+import { SpacesController } from "./lib/controller.ts";
+import { edgeHoldTarget } from "./lib/edge.ts";
+import { SpacesRow } from "./lib/row.tsx";
+import { type Rect, ROW, rowFrame, rowLayout, rowTarget } from "./lib/row-layout.ts";
+import { lifted, SHELF_HEIGHT, shelfLayout, shelfTarget } from "./lib/shelf.ts";
+import { RowViewStore } from "./lib/view.ts";
+import type { SpaceNames } from "./types.ts";
 
 /** The row's surface namespace (its input region is limited to what shows). */
 const NAMESPACE = "dashi.spaces";
@@ -55,24 +55,32 @@ interface Placed {
 const aspectOf = (output: Output) => output.frame.width / Math.max(1, output.frame.height);
 const report = (what: string) => (error: unknown) => console.error(`dashi-shell: ${what}:`, error instanceof Error ? error.message : error);
 
-export function startSpaces(deps: SpacesDeps): SpacesRuntime {
-  const { compositor } = deps;
-  const controller = new SpacesController(compositor, deps.saveCount, { appName: deps.appName, saveNames: deps.saveNames });
-  const stopController = controller.start();
-  const view = new RowViewStore();
-  let row: OverlayHandle | null = null;
-  let placed: Placed | null = null;
+/**
+ * The row on screen: opened over the screen the person is on, its pictures
+ * and input region sent to the compositor, and closed again. Each method is
+ * one of the row's own steps; start.tsx wires them to the Spaces' events.
+ */
+class RowSurface {
+  private row: OverlayHandle | null = null;
+  /** Where the row is now, or null while it is closed. */
+  placed: Placed | null = null;
   /** Bumped on each open and close, so a slow open that lost the race closes itself. */
-  let generation = 0;
+  private generation = 0;
   /** The pictures as last sent, so the same ones are not sent again. */
-  let sent = "";
+  private sent = "";
+
+  constructor(
+    private readonly deps: SpacesDeps,
+    private readonly controller: SpacesController,
+    private readonly view: RowViewStore,
+  ) {}
 
   /** The pictures where the opened row shows them, or none. */
-  const sendPreviews = () => {
-    if (!placed) return;
-    const { output, frame } = placed;
-    const { open, lifted: over } = view.getSnapshot();
-    const layout = shelfLayout(frame.width, controller.getSnapshot().count, aspectOf(output));
+  sendPreviews = (): void => {
+    if (!this.placed) return;
+    const { output, frame } = this.placed;
+    const { open, lifted: over } = this.view.getSnapshot();
+    const layout = shelfLayout(frame.width, this.controller.getSnapshot().count, aspectOf(output));
     const rects = open
       ? layout.pictures.map((picture, space) => {
           const rect = over === space ? lifted(picture) : picture;
@@ -80,48 +88,42 @@ export function startSpaces(deps: SpacesDeps): SpacesRuntime {
         })
       : [];
     const message = JSON.stringify({ output: output.name, rects });
-    if (message === sent) return;
-    sent = message;
-    void compositor.request("space-previews", { output: output.name, rects }).catch(report("no Desktop pictures"));
+    if (message === this.sent) return;
+    this.sent = message;
+    void this.deps.compositor.spacePreviews({ output: output.name, rects }).catch(report("no Desktop pictures"));
   };
 
   /** The row takes the pointer only where it shows: the line of names, or all of it opened. */
-  const sendRegion = () => {
-    if (!placed) return;
-    const height = view.getSnapshot().open ? SHELF_HEIGHT : ROW.height;
-    void compositor
-      .request("input-region", { namespace: NAMESPACE, rects: [{ x: 0, y: 0, width: placed.frame.width, height }] })
+  sendRegion = (): void => {
+    if (!this.placed) return;
+    const height = this.view.getSnapshot().open ? SHELF_HEIGHT : ROW.height;
+    void this.deps.compositor
+      .inputRegion({ namespace: NAMESPACE, rects: [{ x: 0, y: 0, width: this.placed.frame.width, height }] })
       .catch(report("the Desktops row's input region"));
   };
 
-  const stopView = view.subscribe(() => {
-    sendRegion();
-    sendPreviews();
-  });
-  // Another Desktop, or a name: the pictures follow.
-  const stopDesktops = controller.subscribe(sendPreviews);
-
-  const closeRow = () => {
-    generation++;
-    if (placed && sent !== "") void compositor.request("space-previews", { output: placed.output.name, rects: [] }).catch(() => {});
-    sent = "";
-    row?.close();
-    row = null;
-    placed = null;
-    view.reset();
+  close = (): void => {
+    this.generation++;
+    if (this.placed && this.sent !== "") void this.deps.compositor.spacePreviews({ output: this.placed.output.name, rects: [] }).catch(() => {});
+    this.sent = "";
+    this.row?.close();
+    this.row = null;
+    this.placed = null;
+    this.view.reset();
   };
 
-  const openRow = async () => {
-    const mine = ++generation;
-    const [name, answer] = await Promise.all([deps.screen(), compositor.request("outputs")]);
-    const outputs = parseOutputs(answer);
+  open = async (): Promise<void> => {
+    const { compositor } = this.deps;
+    const mine = ++this.generation;
+    const [name, answer] = await Promise.all([this.deps.screen(), compositor.outputs()]);
+    const outputs = placedOutputs(answer);
     const output = outputs.find((candidate) => candidate.name === name) ?? outputs[0];
-    if (!output || mine !== generation) return;
+    if (!output || mine !== this.generation) return;
     const frame = { ...rowFrame(output.usable), height: SHELF_HEIGHT };
-    placed = { output, frame };
-    sendRegion();
-    void controller.relabel();
-    row = deps.open(
+    this.placed = { output, frame };
+    this.sendRegion();
+    void this.controller.relabel();
+    this.row = this.deps.open(
       {
         title: "Spaces",
         width: 1,
@@ -137,46 +139,60 @@ export function startSpaces(deps: SpacesDeps): SpacesRuntime {
         },
       },
       <SpacesRow
-        desktops={controller}
-        view={view}
+        desktops={this.controller}
+        view={this.view}
         width={frame.width}
         aspect={aspectOf(output)}
-        onSwitch={(index) => void deps.leaveOverview().then(() => controller.switchTo(index))}
-        onAdd={() => void controller.add()}
-        onRemove={(index) => void controller.remove(index)}
-        onRename={(index, text) => controller.rename(index, text)}
-        onHover={(hovered, part) => view.hover(hovered, part)}
+        onSwitch={(index) => void this.deps.leaveOverview().then(() => this.controller.switchTo(index))}
+        onAdd={() => void this.controller.add()}
+        onRemove={(index) => void this.controller.remove(index)}
+        onRename={(index, text) => this.controller.rename(index, text)}
+        onHover={(hovered, part) => this.view.hover(hovered, part)}
         // A dragged window can't go onto a full-screen Desktop: its picture doesn't lift.
-        onOverSpace={(index, over) => view.overSpace(index, over && (controller.getSnapshot().fullscreen[index] ?? null) === null)}
-        onEscape={() => void deps.leaveOverview()}
+        onOverSpace={(index, over) => this.view.overSpace(index, over && (this.controller.getSnapshot().fullscreen[index] ?? null) === null)}
+        onEscape={() => void this.deps.leaveOverview()}
       />,
     );
   };
 
   /** A window let go over the row: onto a Desktop's picture or name, or the + (a new Desktop). */
-  const dropped = async (window: number, x: number, y: number) => {
-    view.drag(null);
-    if (!placed) return;
-    const { frame, output } = placed;
-    const count = controller.getSnapshot().count;
+  drop = async (window: number, x: number, y: number): Promise<void> => {
+    this.view.drag(null);
+    if (!this.placed) return;
+    const { frame, output } = this.placed;
+    const count = this.controller.getSnapshot().count;
     const [rx, ry] = [x - frame.x, y - frame.y];
-    const target = view.getSnapshot().open
+    const target = this.view.getSnapshot().open
       ? shelfTarget(shelfLayout(frame.width, count, aspectOf(output)), rx, ry)
       : rowTarget(rowLayout(frame.width, count), rx, ry);
-    if (target) await controller.move(window, target.kind === "add" ? "new" : target.index);
+    if (target) await this.controller.move(window, target.kind === "add" ? "new" : target.index);
   };
+}
 
-  /** A window held against a screen's side: the next Desktop, if the policy says so (edge.ts). */
-  const held = async (event: Extract<CompositorEvent, { event: "edge-hold" }>) => {
-    const outputs = parseOutputs(await compositor.request("outputs"));
-    const target = edgeHoldTarget(event, outputs, controller.getSnapshot(), controller.getSnapshot().fullscreen);
-    if (target !== null) await controller.switchTo(target);
-  };
+/** A window held against a screen's side: the next Desktop, if the policy says so (edge.ts). */
+async function pushedAgainstEdge(compositor: Compositor, controller: SpacesController, event: Extract<CompositorEvent, { event: "edge-hold" }>): Promise<void> {
+  const outputs = placedOutputs(await compositor.outputs());
+  const target = edgeHoldTarget(event, outputs, controller.getSnapshot(), controller.getSnapshot().fullscreen);
+  if (target !== null) await controller.switchTo(target);
+}
+
+export function startSpaces(deps: SpacesDeps): SpacesRuntime {
+  const { compositor } = deps;
+  const controller = new SpacesController(compositor, deps.saveCount, { appName: deps.appName, saveNames: deps.saveNames });
+  const stopController = controller.start();
+  const view = new RowViewStore();
+  const row = new RowSurface(deps, controller, view);
+  const stopView = view.subscribe(() => {
+    row.sendRegion();
+    row.sendPreviews();
+  });
+  // Another Desktop, or a name: the pictures follow.
+  const stopDesktops = controller.subscribe(row.sendPreviews);
 
   const stopEvents = compositor.on((event) => {
     if (event.event === "overview-drag") view.drag(event.window);
     else if (event.event === "overview-pick") view.drag(null);
-    else if (event.event === "edge-hold") void held(event).catch(report("the edge hold"));
+    else if (event.event === "edge-hold") void pushedAgainstEdge(compositor, controller, event).catch(report("the edge hold"));
   });
 
   return {
@@ -184,13 +200,13 @@ export function startSpaces(deps: SpacesDeps): SpacesRuntime {
     overviewExtras: {
       topInset: ROW.height,
       onActive: (active) => {
-        if (active) void openRow().catch(report("no Spaces row"));
-        else closeRow();
+        if (active) void row.open().catch(report("no Spaces row"));
+        else row.close();
       },
-      onDrop: (window, x, y) => void dropped(window, x, y).catch(report("the drop failed")),
+      onDrop: (window, x, y) => void row.drop(window, x, y).catch(report("the drop failed")),
     },
     close: () => {
-      closeRow();
+      row.close();
       stopEvents();
       stopView();
       stopDesktops();

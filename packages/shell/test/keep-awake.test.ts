@@ -1,8 +1,15 @@
-import { expect, test } from "bun:test";
-import type { CompositorEvent } from "../src/compositor.ts";
+import { afterEach, expect, test } from "bun:test";
+import type { CompositorEvent } from "../src/compositor/events.ts";
 import { IdlePolicy } from "../src/idle.ts";
-import { awakeLines, InhibitFlag, InhibitStore, keepAwakeEntries, screenSaverInterface } from "../src/inhibit/index.ts";
-import { portalHostInterface } from "../src/portal-host/index.ts";
+import { awakeLines, keepAwakeEntries } from "../src/inhibit/menu.ts";
+import { screenSaverInterface } from "../src/inhibit/screensaver.ts";
+import { InhibitFlag, InhibitStore } from "../src/inhibit/store.ts";
+import { portalHostInterface } from "../src/portal-host/service.ts";
+import { fakeCompositor as over } from "./support/compositor.ts";
+import { type FakeClock, fakeClock } from "./support/time.ts";
+
+let clock: FakeClock | null = null;
+afterEach(() => clock?.restore());
 
 const call = (sender: string) => ({ sender, path: "/", interface: undefined, member: "" });
 
@@ -70,20 +77,23 @@ function fakeCompositor() {
     emit: (event: CompositorEvent) => {
       for (const listener of listeners) listener(event);
     },
-    host: {
-      request: async (method: string, params?: Record<string, unknown>) => {
+    host: over(
+      async (method, params) => {
         sent.push([method, params]);
         return {};
       },
-      on: (listener: (event: CompositorEvent) => void) => {
-        listeners.add(listener);
-        return () => listeners.delete(listener);
+      {
+        on: (listener: (event: CompositorEvent) => void) => {
+          listeners.add(listener);
+          return () => listeners.delete(listener);
+        },
       },
-    },
+    ),
   };
 }
 
 test("idle: a hold keeps the screens on and the computer up; once it goes, the wait starts again", async () => {
+  clock = fakeClock();
   const fake = fakeCompositor();
   const idle = new IdlePolicy(fake.host);
   let held = true;
@@ -94,21 +104,22 @@ test("idle: a hold keeps the screens on and the computer up; once it goes, the w
   await idle.sleepAfter(0.04);
   fake.emit({ event: "idle", seconds: 0.02 });
   fake.emit({ event: "idle", seconds: 0.04 });
-  await Bun.sleep(5);
+  await clock.advance(5);
   expect(fake.sent.filter(([method]) => method === "power")).toEqual([]);
   expect(slept).toBe(0);
   held = false;
   idle.holdsChanged();
   // Not at once: after the full wait, counted from the release.
-  await Bun.sleep(5);
+  await clock.advance(5);
   expect(fake.sent.filter(([method]) => method === "power")).toEqual([]);
-  await Bun.sleep(60);
+  await clock.advance(60);
   expect(fake.sent.filter(([method]) => method === "power")).toEqual([["power", { on: false }]]);
   expect(slept).toBe(1);
   idle.stop();
 });
 
 test("idle: coming back cancels a wait counted after a release", async () => {
+  clock = fakeClock();
   const fake = fakeCompositor();
   const idle = new IdlePolicy(fake.host);
   let held = true;
@@ -118,7 +129,7 @@ test("idle: coming back cancels a wait counted after a release", async () => {
   held = false;
   idle.holdsChanged();
   fake.emit({ event: "active" });
-  await Bun.sleep(40);
+  await clock.advance(40);
   expect(fake.sent.filter(([method]) => method === "power")).toEqual([]);
   idle.stop();
 });

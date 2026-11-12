@@ -10,13 +10,17 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { useSyncExternalStore } from "react";
-import { CODECS, type RecordTarget, recorderArgs, recordingDirectory, recordingName, WF_RECORDER } from "./command.ts";
+import { CODECS, recorderArgs, recordingDirectory, recordingName, WF_RECORDER } from "./lib/command.ts";
+import type { RecordTarget } from "./types.ts";
+
+/** Who started a recording: the person (⇧❖5's toolbar), or an agent (record_screen). */
+export type RecordedBy = "person" | "agent";
 
 export type RecorderState =
   | { kind: "idle" }
-  | { kind: "starting" }
-  | { kind: "recording"; since: number; file: string; target: RecordTarget }
-  | { kind: "saving"; file: string };
+  | { kind: "starting"; by: RecordedBy }
+  | { kind: "recording"; since: number; file: string; target: RecordTarget; by: RecordedBy }
+  | { kind: "saving"; file: string; by: RecordedBy };
 
 /** A running wf-recorder, as far as the recorder needs it. */
 export interface RecorderProcess {
@@ -77,6 +81,10 @@ export class ScreenRecorder {
   private revoke: (() => void) | null = null;
   private stopping = false;
   private endedAt = Number.NEGATIVE_INFINITY;
+  /** When the running wf-recorder began capturing (it starts before it is known to have started). */
+  private began = 0;
+  /** The last recording that ended: its file and how long it is, by the recorder's own clock. */
+  private last: { file: string; seconds: number } | null = null;
 
   constructor(private readonly deps: RecorderDeps) {}
 
@@ -103,10 +111,11 @@ export class ScreenRecorder {
   }
 
   /** Start recording `target`; resolves with the file it is writing, rejects with why it couldn't. */
-  async start(target: RecordTarget, options: { microphone?: boolean; beforeCapture?: (pid: number) => Promise<void> } = {}): Promise<string> {
+  async start(target: RecordTarget, options: { microphone?: boolean; beforeCapture?: (pid: number) => Promise<void>; by?: RecordedBy } = {}): Promise<string> {
+    const now = this.deps.now ?? Date.now;
     if (this.state.kind !== "idle") throw new Error("A recording is already running.");
     if (!this.available()) throw new Error("Screen recording needs wf-recorder (dnf install wf-recorder).");
-    this.set({ kind: "starting" });
+    this.set({ kind: "starting", by: options.by ?? "person" });
     const directory = (this.deps.directory ?? recordingDirectory)();
     mkdirSync(directory, { recursive: true });
     const exists = this.deps.exists ?? existsSync;
@@ -120,6 +129,7 @@ export class ScreenRecorder {
       );
       const argv = [WF_RECORDER, ...recorderArgs({ target, file, codec, microphone: options.microphone ?? false })];
       const process = (this.deps.spawn ?? spawnRecorder)(argv, options.beforeCapture !== undefined);
+      let began = now();
       if (options.beforeCapture) {
         // An agent's recording: its blanks reach the compositor before wf-recorder copies a frame.
         try {
@@ -132,6 +142,7 @@ export class ScreenRecorder {
           throw new Error("The recording was not started: Dashi couldn't blank what agents must not see.");
         }
         process.go();
+        began = now();
       }
       const early = await Promise.race([process.exited, sleep(STARTUP_MS)]);
       if (early !== "timeout") {
@@ -139,7 +150,8 @@ export class ScreenRecorder {
         continue;
       }
       this.process = process;
-      this.set({ kind: "recording", since: (this.deps.now ?? Date.now)(), file, target });
+      this.began = began;
+      this.set({ kind: "recording", since: now(), file, target, by: options.by ?? "person" });
       void process.exited.then(() => this.ended(file));
       return file;
     }
@@ -151,10 +163,10 @@ export class ScreenRecorder {
   /** Stop and save; resolves with the file, or null when nothing was recording. */
   async stop(): Promise<string | null> {
     if (this.state.kind !== "recording" || !this.process) return null;
-    const { file } = this.state;
+    const { file, by } = this.state;
     const process = this.process;
     this.stopping = true;
-    this.set({ kind: "saving", file });
+    this.set({ kind: "saving", file, by });
     process.kill("SIGINT");
     if ((await Promise.race([process.exited, sleep(FINISH_MS)])) === "timeout") process.kill("SIGKILL");
     await process.exited;
@@ -168,9 +180,15 @@ export class ScreenRecorder {
     this.process = null;
     this.release();
     this.endedAt = (this.deps.now ?? Date.now)();
+    this.last = { file, seconds: Math.max(0, this.endedAt - this.began) / 1000 };
     this.set({ kind: "idle" });
     if (!asked) this.deps.failed?.("The screen recording stopped on its own.");
     if ((this.deps.exists ?? existsSync)(file)) this.deps.saved?.(file);
+  }
+
+  /** How long the recording saved to `file` is, in seconds, if it was the last one to end. */
+  lengthOf(file: string): number | null {
+    return this.last?.file === file ? this.last.seconds : null;
   }
 
   private release(): void {

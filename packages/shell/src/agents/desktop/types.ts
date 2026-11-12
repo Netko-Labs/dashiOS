@@ -5,19 +5,19 @@
  * what the person would have made, and they see it happen.
  */
 
-import type { CompositorWindow } from "../../compositor.ts";
-import type { FlagsStore } from "../../control-center/flags.ts";
-import type { CornerName } from "../../corners.ts";
-import type { DisplayManager } from "../../display-config/manager.ts";
+import type { CompositorWindow } from "../../compositor/index.ts";
+import type { DisplayManager } from "../../display-config/index.ts";
 import type { DockPrefs } from "../../dock/prefs.ts";
-import type { ForceQuit } from "../../force-quit/start.tsx";
-import type { MenuAction, WindowMenu } from "../../menus/model.ts";
+import type { ForceQuit } from "../../force-quit/index.ts";
+import type { MenuAction, WindowMenu } from "../../menus/index.ts";
 import type { NotificationStore } from "../../notifications/store.ts";
 import type { ScreenRecorder } from "../../recorder/recorder.ts";
-import type { RegionDesktop } from "../../region/desktop.ts";
-import type { MachineDesktop } from "../../settings-app/machine-desktop.ts";
-import type { PageId } from "../../setup/flow.ts";
-import type { WifiStore } from "../../wifi/store.ts";
+import type { RegionDesktop } from "../../region/index.ts";
+import type { MachineDesktop } from "../../settings-app/machine-reading.ts";
+import type { SettingsStore } from "../../settings-app/store.ts";
+import type { PageId } from "../../setup/index.ts";
+import type { FlagsStore } from "../../shared/control-center/index.ts";
+import type { WifiStore } from "../../wifi/index.ts";
 import type { SoftwareBackend } from "./software.ts";
 
 /** One copy as an agent reads it: the text, or what a picture or files were. */
@@ -48,19 +48,15 @@ export interface Desktop {
   displays?: Pick<DisplayManager, "monitors" | "setMode" | "setRotation" | "setPrimary" | "arrange">;
   /** Remember a screen's scale as Settings does, so the next start keeps what was set. */
   rememberScale(name: string, scale: number): void;
-  /** How round windows are, as Settings' Appearance pane has it; setting it saves to settings.json, and the shell follows the file. */
-  corners: { get(): CornerName; set(name: CornerName): void };
-  /** Scrolling speed per kind of device (scroll-speed.ts), as Settings' Trackpad and Mouse panes have it; 1 with none saved. */
-  scrollSpeed: { get(device: "trackpad" | "mouse"): number; set(device: "trackpad" | "mouse", factor: number): void };
-  /** What the menu bar shows (settings.json `menuBar`), as Settings' Battery & Power and Sound panes have it. */
-  menuBar: { get(): { batteryPercent: boolean; sound: boolean }; set(change: { batteryPercent?: boolean; sound?: boolean }): void };
+  /** settings.json, as System Settings writes it: the registry's rows agents may change (get_settings, set_setting) read and write it; the shell follows the file. */
+  settings: Pick<SettingsStore, "getSnapshot" | "patch">;
   /** Network, Bluetooth, sound, power, and the account: the machine panes' stores (settings-app/machine-desktop.ts). */
   machine: MachineDesktop;
   /** Time zone, 24-hour time, and region formats, as Settings' Date & Time and Language & Region panes have them. */
   region: RegionDesktop;
   /** The Setup Assistant: showing it is all an agent can do with it. */
   setup: { open(page?: PageId): void };
-  /** The app catalog and the package tools; absent means the real ones (software/). */
+  /** The app catalog and the package tools; absent means the real ones (shared/software/). */
   software?: SoftwareBackend;
   /** Show the lock screen. */
   lock(): void;

@@ -1,9 +1,7 @@
 //! `capture`: a screen, a rectangle of it, or one window, rendered offscreen
 //! the way it is shown and saved as a PNG for the shell (⇧❖3, ⇧❖4, an agent's
 //! look at the screen). Only the session's own client may ask
-//! (ipc/requests.rs); the file must be new, absolute, and end in `.png`.
-
-use std::{fs::OpenOptions, io::BufWriter, path::Path};
+//! (ipc/table.rs); the file must be new, absolute, and end in `.png`.
 
 use smithay::{
     backend::{
@@ -51,6 +49,64 @@ where
         .to_f64()
         .to_physical(view.scale)
         .to_i32_round();
+    let elements = view_elements(state, renderer, view);
+    let clear = if view.only.is_some() {
+        [0.0; 4]
+    } else {
+        crate::backend::BACKGROUND
+    };
+    render_offscreen(renderer, size, view.scale, &elements, clear)
+}
+
+/// A screen that mirrors another, as it shows now (its source's picture and
+/// the bars), at its own pixels.
+pub(crate) fn render_mirror<R>(
+    state: &mut Dashi,
+    renderer: &mut R,
+    output: &smithay::output::Output,
+    cursor: bool,
+) -> Result<Picture, String>
+where
+    R: Renderer
+        + ImportAll
+        + ImportMem
+        + GlesAccess
+        + ExportMem
+        + Offscreen<GlesTexture>
+        + Bind<GlesTexture>,
+    R::TextureId: Clone + Send + 'static,
+{
+    let size = crate::outputs::drawn_size(output).ok_or("that screen has no mode")?;
+    let elements = super::output_elements(state, renderer, output, cursor);
+    // Its scale is the picture's while it mirrors (render/mirror.rs).
+    let scale = output.current_scale().fractional_scale();
+    render_offscreen(
+        renderer,
+        size,
+        scale.into(),
+        &elements,
+        crate::backend::BACKGROUND,
+    )
+}
+
+/// Draw `elements` into a new texture `size` pixels across and read it back.
+fn render_offscreen<R>(
+    renderer: &mut R,
+    size: smithay::utils::Size<i32, smithay::utils::Physical>,
+    scale: smithay::utils::Scale<f64>,
+    elements: &[super::DashiElement<R>],
+    clear: [f32; 4],
+) -> Result<Picture, String>
+where
+    R: Renderer
+        + ImportAll
+        + ImportMem
+        + GlesAccess
+        + ExportMem
+        + Offscreen<GlesTexture>
+        + Bind<GlesTexture>,
+    R::TextureId: Clone + Send + 'static,
+{
     if size.w <= 0 || size.h <= 0 || size.w > 16384 || size.h > 16384 {
         return Err("nothing to capture there".into());
     }
@@ -58,18 +114,12 @@ where
     let mut texture: GlesTexture = renderer
         .create_buffer(Fourcc::Abgr8888, buffer_size)
         .map_err(|error| format!("no offscreen buffer: {error:?}"))?;
-    let elements = view_elements(state, renderer, view);
-    let clear = if view.only.is_some() {
-        [0.0; 4]
-    } else {
-        crate::backend::BACKGROUND
-    };
     let mut framebuffer = renderer
         .bind(&mut texture)
         .map_err(|error| format!("{error:?}"))?;
-    let mut damage = OutputDamageTracker::new(size, view.scale, Transform::Normal);
+    let mut damage = OutputDamageTracker::new(size, scale, Transform::Normal);
     damage
-        .render_output(renderer, &mut framebuffer, 0, &elements, clear)
+        .render_output(renderer, &mut framebuffer, 0, elements, clear)
         .map_err(|error| format!("rendering the capture: {error:?}"))?;
     let mapping = renderer
         .copy_framebuffer(
@@ -115,43 +165,6 @@ fn straighten(bytes: &[u8], width: usize, flipped: bool) -> Vec<u8> {
         }
     }
     out
-}
-
-/// Where a capture may go: an absolute `.png` path whose folder exists, not a file already there.
-pub(crate) fn check_path(path: &str) -> Result<&Path, String> {
-    let path = Path::new(path);
-    if !path.is_absolute() || path.extension().and_then(|e| e.to_str()) != Some("png") {
-        return Err("`path` must be an absolute .png path".into());
-    }
-    if path
-        .components()
-        .any(|c| matches!(c, std::path::Component::ParentDir))
-    {
-        return Err("`path` must not climb with ..".into());
-    }
-    if !path.parent().is_some_and(Path::is_dir) {
-        return Err("the folder for `path` does not exist".into());
-    }
-    Ok(path)
-}
-
-pub(crate) fn save_png(path: &Path, picture: &Picture) -> Result<(), String> {
-    let file = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)
-        .map_err(|error| format!("{}: {error}", path.display()))?;
-    let mut encoder = png::Encoder::new(
-        BufWriter::new(file),
-        picture.width as u32,
-        picture.height as u32,
-    );
-    encoder.set_color(png::ColorType::Rgba);
-    encoder.set_depth(png::BitDepth::Eight);
-    let mut writer = encoder.write_header().map_err(|error| error.to_string())?;
-    writer
-        .write_image_data(&picture.rgba)
-        .map_err(|error| error.to_string())
 }
 
 /// Copy `picture` into a client's shm buffer (Xrgb8888 or Argb8888, which is
@@ -230,14 +243,5 @@ mod tests {
             vec![255, 0, 0, 255, 255, 255, 255, 128]
         );
         assert_eq!(straighten(&bottom_up, 1, false)[..4], [255, 255, 255, 128]);
-    }
-
-    #[test]
-    fn capture_paths_are_checked() {
-        assert!(check_path("relative.png").is_err());
-        assert!(check_path("/tmp/shot.jpg").is_err());
-        assert!(check_path("/tmp/../etc/shot.png").is_err());
-        assert!(check_path("/no/such/folder/shot.png").is_err());
-        assert!(check_path("/tmp/shot.png").is_ok());
     }
 }

@@ -6,14 +6,14 @@
  * its kind, or the key that does it, or its control.
  */
 
-import type { ActionState } from "../actions/types.ts";
-import type { Entry } from "../entries.ts";
-import type { FileHit } from "../file-search.ts";
-import { PANES } from "../settings-app/panes.ts";
-import type { AgentAct } from "./agents/acts.ts";
-import { commandGlyph } from "./command-glyphs.ts";
-import { outsideIcon } from "./extension-rows.ts";
-import { isPane, type LauncherItem, type LauncherWindow } from "./items.ts";
+import type { ActionState } from "../actions/index.ts";
+import type { Entry } from "../shared/app-entries/index.ts";
+import type { FileHit } from "../shared/files/index.ts";
+import { PANES } from "../shared/settings/index.ts";
+import type { AgentAct } from "./lib/agents/acts.ts";
+import { commandGlyph } from "./lib/command-glyphs.ts";
+import { outsideIcon } from "./lib/extension-rows.ts";
+import { isPane, type LauncherItem, type LauncherWindow } from "./lib/items.ts";
 import { prepare } from "./ranking/fold.ts";
 
 /** A file row: its hit and the icon resolved for it. */
@@ -40,7 +40,7 @@ export type RowAction =
   | { kind: "search-files"; query: string }
   | { kind: "find-software"; query: string }
   | { kind: "all-apps" }
-  /** Agents' rows: Ask, Now, history (agents/rows.ts). */
+  /** Agents' rows: Ask, Now, history (lib/agents/agent-rows.ts). */
   | { kind: "agent"; act: AgentAct }
   /** One of a launcher scope's verbs (scope.ts): the scope runs it. */
   | { kind: "scope"; verb: string };
@@ -84,6 +84,8 @@ export interface Row {
   agent?: "ask" | "dot";
   /** A stop square at the right end (a running agent or task). */
   stop?: true;
+  /** It waits on the person (an agent's question): its detail is broth, the warning's ink. */
+  attention?: true;
 }
 
 const kindOf = (entry: Entry): string => (isPane(entry) ? "Settings" : "App");

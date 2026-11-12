@@ -1,0 +1,1 @@
+# H19: imports from outside a module past its public files, its index.ts and what it re-exports (count = imports; tests may also import its lib/ and a nested module's public files). May only shrink.

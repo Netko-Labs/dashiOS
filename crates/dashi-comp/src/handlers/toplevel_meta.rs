@@ -4,16 +4,15 @@
 //! bell (xdg-system-bell). The shell hears `window-icon` and `bell`; what
 //! they look or sound like is its decision.
 
+use crate::ipc::protocol::Event;
 use std::{
     hash::{Hash, Hasher},
     path::PathBuf,
 };
 
-use serde_json::json;
 use smithay::{
     delegate_xdg_system_bell, delegate_xdg_toplevel_icon,
     reexports::{
-        calloop::channel,
         wayland_protocols::xdg::shell::server::xdg_toplevel::XdgToplevel,
         wayland_server::{DisplayHandle, Resource, protocol::wl_surface::WlSurface},
     },
@@ -66,7 +65,7 @@ impl XdgToplevelIconHandler for Dashi {
 impl XdgSystemBellHandler for Dashi {
     fn ring(&mut self, surface: Option<WlSurface>) {
         let window = surface.and_then(|surface| crate::wm::window_id_for_surface(self, &surface));
-        self.ipc.emit("bell", json!({ "window": window }));
+        self.ipc.emit(Event::Bell { window });
     }
 }
 
@@ -129,33 +128,27 @@ impl Dashi {
         let path = PathBuf::from(runtime)
             .join("dashi-comp-icons")
             .join(format!("{id}-{key:016x}.png"));
-        let (sender, receiver) = channel::channel::<Option<PathBuf>>();
-        let inserted = self
-            .loop_handle
-            .insert_source(receiver, move |event, _, state| {
-                if let channel::Event::Msg(saved) = event {
-                    let current = state.windows.get(id).is_some_and(|e| e.icon.key == key);
-                    if current {
-                        if let Some(entry) = state.windows.get_mut(id) {
-                            entry.icon.path = saved;
-                        }
-                        state.emit_icon(id);
-                    }
-                }
-            });
-        if inserted.is_err() {
-            return;
-        }
-        let spawned = std::thread::Builder::new()
-            .name("window-icon".into())
-            .spawn(move || {
+        let saved = crate::background::run(
+            &self.loop_handle,
+            "window-icon",
+            move || {
                 let saved = write_png(&path, &picture).map(|()| path);
                 if let Err(error) = &saved {
                     tracing::debug!(%error, "saving a window's icon");
                 }
-                let _ = sender.send(saved.ok());
-            });
-        if let Err(error) = spawned {
+                saved.ok()
+            },
+            move |state: &mut Dashi, saved| {
+                let current = state.windows.get(id).is_some_and(|e| e.icon.key == key);
+                if current {
+                    if let Some(entry) = state.windows.get_mut(id) {
+                        entry.icon.path = saved;
+                    }
+                    state.emit_icon(id);
+                }
+            },
+        );
+        if let Err(error) = saved {
             tracing::debug!(%error, "no thread to save a window's icon");
         }
     }
@@ -164,8 +157,16 @@ impl Dashi {
         let Some(entry) = self.windows.get(id).filter(|e| e.announced) else {
             return;
         };
-        let event = json!({ "window": id, "name": entry.icon.name, "path": entry.icon.path });
-        self.ipc.emit("window-icon", event);
+        let event = Event::WindowIcon {
+            window: id,
+            name: entry.icon.name.clone(),
+            path: entry
+                .icon
+                .path
+                .as_ref()
+                .map(|path| path.to_string_lossy().into_owned()),
+        };
+        self.ipc.emit(event);
     }
 }
 
@@ -218,6 +219,10 @@ fn copy_picture(
     .flatten()
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "runs on the window-icon thread (save_icon), off the loop"
+)]
 fn write_png(path: &std::path::Path, picture: &Picture) -> std::io::Result<()> {
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir)?;

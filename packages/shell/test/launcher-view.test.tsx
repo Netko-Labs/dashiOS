@@ -1,8 +1,11 @@
 import { afterEach, expect, test } from "bun:test";
 import { LauncherKeys } from "../src/launcher/keys.ts";
-import type { LauncherProps } from "../src/launcher.tsx";
-import { FILE_DELAY_MS } from "../src/launcher.tsx";
+import { FILE_DELAY_MS } from "../src/launcher/lib/use-search.ts";
+import type { LauncherProps } from "../src/launcher/props.ts";
 import { app, deferredFiles, file, mount as mountWith, settle, unmountLauncher } from "./launcher-harness.tsx";
+import { fakeClockEachTest } from "./support/time.ts";
+
+fakeClockEachTest();
 
 // The launcher's wave 1 behavior, mounted on a stand-in for the Metal host (launcher-harness.tsx).
 
@@ -198,4 +201,39 @@ test("the first file answer of an open finds its slots held: the panel doesn't g
   files.answer([file("tea-notes.md"), file("teapot.txt"), file("tea.csv")]);
   await settle();
   expect(launcher.rows().ids.filter((id) => id.startsWith("file:"))).toHaveLength(3);
+});
+
+test("All apps reaches its last app: ↑ wraps to it, ↓ walks every one, the wheel scrolls, and typing still filters", async () => {
+  // More apps than the panel has rows (it was cut after the 12th, so WhatsApp Web and the rest never showed).
+  const names = [
+    ...["1Password", "Activity Monitor", "Browser", "Calculator", "Calendar", "Components", "Deadlock", "Fedora Media Writer", "Files", "Htop"],
+    ...["Notes", "NVIDIA X Server Settings", "Preview", "Screenshot", "Setup Assistant", "Software", "Steam", "System Settings"],
+    ...["T3 Code (Nightly)", "Terminal", "Text Editor", "WhatsApp Web", "Wuthering Waves", "Zotero"],
+  ];
+  const entries = names.map(app);
+  const ids = entries.map((entry) => `entry:${entry.id}`);
+  const launcher = await mountWith({ entries }, [...ids, "all-apps", "try:files"]);
+  await launcher.key("ArrowUp");
+  await launcher.enter();
+  expect(launcher.has("launcher:section:all")).toBe(true);
+  // A window of eight is drawn, from the top.
+  expect(launcher.rows().ids).toEqual(ids.slice(0, 8));
+  // ↑ from the first wraps to the last: it is drawn, and selected.
+  await launcher.key("ArrowUp");
+  expect(launcher.rows()).toEqual({ ids: ids.slice(-8), selected: "entry:app.zotero" });
+  // ↓ from the top visits every app once, in order.
+  await launcher.key("ArrowDown");
+  const visited: string[] = [];
+  for (let step = 0; step < ids.length; step++) {
+    visited.push(launcher.rows().selected as string);
+    await launcher.key("ArrowDown");
+  }
+  expect(visited).toEqual(ids);
+  // Back at the first, the wheel scrolls down to the end too, a row a line.
+  expect(launcher.rows().selected).toBe(ids[0] ?? null);
+  await launcher.emit({ type: "wheel", nodeId: launcher.node("launcher:list"), dx: 0, dy: -(ids.length - 1) });
+  expect(launcher.rows()).toEqual({ ids: ids.slice(-8), selected: "entry:app.zotero" });
+  // Typing still filters, past the window.
+  await launcher.type("whats");
+  expect(launcher.rows().ids[0]).toBe("entry:app.whatsapp-web");
 });

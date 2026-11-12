@@ -5,8 +5,8 @@
  * odd message that carries the real reason (`br-connection-page-timeout`).
  */
 
-import { DBusError, ERRORS } from "../dbus/index.ts";
-import type { Failure, Reason } from "./types.ts";
+import { DBusError, ERRORS } from "../shared/dbus/index.ts";
+import type { Action, Failure, Reason } from "./types.ts";
 
 const BLUEZ = "org.bluez.Error.";
 
@@ -77,8 +77,6 @@ const MESSAGES: Record<Failure, string> = {
 };
 
 export const failureMessage = (reason: Failure): string => MESSAGES[reason];
-
-export type Action = "connect" | "disconnect" | "pair" | "forget";
 
 const VERBS: Record<Action, string> = {
   connect: "Couldn't connect.",

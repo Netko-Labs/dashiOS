@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { closeCopy, stillRunning } from "../apps/terminal/closing.ts";
-import { lookFor } from "../apps/terminal/line.tsx";
-import { terminalMenus } from "../apps/terminal/menus.ts";
-import { ANSI_NAMES, contrast, DARK_TERMINAL, groundSide, LIGHT_TERMINAL, terminalPalette } from "../apps/terminal/palette.ts";
-import { reservedBy } from "../src/app-menus/reserved.ts";
+import { closeCopy, stillRunning } from "../apps/terminal/lib/closing.ts";
+import { terminalMenus } from "../apps/terminal/lib/menus.ts";
+import { ANSI_NAMES, contrast, DARK_TERMINAL, groundSide, LIGHT_TERMINAL, terminalPalette } from "../apps/terminal/lib/palette.ts";
+import { lookFor } from "../apps/terminal/lib/views/line.tsx";
+import { reservedBy } from "../src/app-menus/lib/reserved.ts";
 import { chordFromShortcut } from "../src/app-menus/shortcut.ts";
+import { KEYMAP } from "../src/keymap/keymap.ts";
 
 const AA = 4.5;
 
@@ -49,14 +50,21 @@ describe("the terminal palette", () => {
   });
 });
 
-test("the grid paints with the palette until a program sets its own ink and ground", () => {
+test("the grid paints with the palette until a program sets its own ink and ground; the cursor is kombu", () => {
   expect(lookFor(LIGHT_TERMINAL, false, "#3E8A72", undefined, undefined)).toEqual({
     ground: LIGHT_TERMINAL.ground,
     ink: LIGHT_TERMINAL.ink,
     selection: "#3E8A7240",
-    cursor: `${LIGHT_TERMINAL.ink}b3`,
+    cursor: LIGHT_TERMINAL.cursor,
   });
-  expect(lookFor(DARK_TERMINAL, true, "#3E8A72", "#ffffff", "#102030")).toMatchObject({ ground: "#102030", ink: "#ffffff", cursor: "#ffffffcc" });
+  expect(lookFor(DARK_TERMINAL, true, "#3E8A72", "#ffffff", "#102030")).toMatchObject({ ground: "#102030", ink: "#ffffff", cursor: DARK_TERMINAL.cursor });
+});
+
+test("the letter under a block cursor (the ground's color on the cursor) is AA in both modes, and the cursor stands 3:1 on the ground", () => {
+  for (const dark of [false, true]) {
+    const palette = terminalPalette(dark);
+    expect(contrast(palette.ground, palette.cursor)).toBeGreaterThanOrEqual(AA);
+  }
 });
 
 describe("closing a tab that runs something", () => {
@@ -81,37 +89,67 @@ describe("closing a tab that runs something", () => {
     expect(closeCopy({ kind: "window", programs: ["sleep", "sleep"] }).message).toBe("Closing it stops 2 running programs.");
     expect(closeCopy({ kind: "window", programs: ["vim"] }).confirmLabel).toBe("Close window");
   });
+
+  test("quitting asks to quit Terminal, naming what still runs", () => {
+    expect(closeCopy({ kind: "window", programs: ["sleep"], quit: true })).toEqual({
+      title: "Quit Terminal?",
+      message: "Quitting stops “sleep”.",
+      confirmLabel: "Quit",
+    });
+    expect(closeCopy({ kind: "window", programs: ["vim", "ssh", "make"], quit: true }).message).toBe("Quitting stops 3 running programs.");
+  });
 });
 
 describe("the Terminal's menus", () => {
   const noop = (): void => {};
-  const menus = (tabs: string[]) =>
+  const heard: string[] = [];
+  const terminal = (tabs: string[], canCopy = true) =>
     terminalMenus({
-      canCopy: true,
+      canCopy,
       tabs,
       active: 0,
+      canGrow: true,
+      canShrink: false,
       actions: {
         copy: noop,
         paste: noop,
         selectAll: noop,
+        clear: () => heard.push("clear"),
         newWindow: noop,
         newTab: noop,
         closeTab: noop,
         closeWindow: noop,
+        zoom: (step) => heard.push(`zoom ${step}`),
+        jump: (prompts) => heard.push(`jump ${prompts}`),
         stepTab: noop,
         showIndex: noop,
       },
-    }).menus;
+    });
+  const menus = (tabs: string[]) => terminal(tabs).menus;
 
-  test("every shortcut reaches the app: ❖W closes the tab and ⇧❖W the window", () => {
+  test("every shortcut reaches the app: ❖W closes the tab and ⇧❖W the window, ❖↑ and ❖↓ jump between prompts", () => {
     const rows = menus(["zsh", "vim"]).flatMap((menu) => menu.items.flatMap((row) => ("shortcut" in row && row.shortcut ? [row] : [])));
     for (const row of rows) {
       const chord = chordFromShortcut(row.shortcut as string);
       expect(chord).not.toBeNull();
-      if (chord) expect(reservedBy(chord)).toBeNull();
+      if (chord) expect(reservedBy(chord, KEYMAP, ["metal", "dashiTerminal"])).toBeNull();
     }
     const byKey = new Map(rows.map((row) => [row.shortcut, "id" in row ? row.id : ""]));
     expect(byKey.get("❖W")).toBe("close-tab");
     expect(byKey.get("⇧❖W")).toBe("close-window");
+    expect(byKey.get("❖↑")).toBe("previous-prompt");
+    expect(byKey.get("❖↓")).toBe("next-prompt");
+    expect(byKey.get("❖K")).toBe("clear");
+    // Any other Dashi app's ❖↑ is still the move to the top, never its menus'.
+    expect(reservedBy({ key: "Up", shift: false, ctrl: false, alt: false })).toBe("super+Up");
+  });
+
+  test("the rows do what they say; Copy waits for a selection, and the face's size stops at its ends", () => {
+    heard.length = 0;
+    const { run, menus: rows } = terminal(["zsh"], false);
+    for (const id of ["previous-prompt", "next-prompt", "bigger", "smaller", "actual-size", "clear"]) run(id);
+    expect(heard).toEqual(["jump -1", "jump 1", "zoom 1", "zoom 0", "clear"]);
+    const copy = rows.flatMap((menu) => menu.items).find((row) => "id" in row && row.id === "copy");
+    expect(copy && "enabled" in copy && copy.enabled).toBe(false);
   });
 });

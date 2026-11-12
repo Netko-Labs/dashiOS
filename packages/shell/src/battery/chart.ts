@@ -105,3 +105,31 @@ export function drawMax(samples: readonly Sample[]): number {
   const largest = Math.max(10, ...samples.flatMap((sample) => (sample.watts === null ? [] : [sample.watts])));
   return Math.ceil(largest / 5) * 5;
 }
+
+/**
+ * The battery panel's "Charge, last 24 h": the charge as a line on a 0–100%
+ * scale, the charge limit as a dashed line under a faint ink, gaps (asleep,
+ * off) left empty. One color, tinted by the Svg element.
+ */
+export function chargeLine(samples: readonly Sample[], box: ChartBox, limit: number | null): string {
+  const points = series(samples, box.now, box.span, box.bucket);
+  const { x, y } = geometry(box, points.length);
+  const dashed =
+    limit !== null && limit < 100
+      ? `<line x1="0" y1="${round(y(limit / 100))}" x2="${box.width}" y2="${round(y(limit / 100))}" stroke="#000" stroke-opacity="0.3" stroke-width="1" stroke-dasharray="2 3"/>`
+      : "";
+  const lines = runs(
+    points,
+    () => true,
+    (sample) => sample.percent / 100,
+  )
+    .map((run) => {
+      if (run.length === 1) {
+        const [index, value] = run[0] as [number, number];
+        return `<circle cx="${round(x(index))}" cy="${round(y(value))}" r="1.5" fill="#000"/>`;
+      }
+      return `<path d="M${run.map(([index, value]) => `${round(x(index))},${round(y(value))}`).join(" L")}" fill="none" stroke="#000" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    })
+    .join("");
+  return frame(box, dashed + lines);
+}

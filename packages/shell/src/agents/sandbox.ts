@@ -10,8 +10,11 @@
  * - the cgroup tree read-only, so it can't leave its scope;
  * - its own process namespace: no other process to see, signal or read;
  * - of $XDG_RUNTIME_DIR, only Dashi's MCP socket and a filtered session bus
- *   (notifications and portals): no compositor socket, no Wayland or X11
+ *   (notifications and portals): no compositor socket, no browser socket
+ *   (the extension's, which only the shell may drive), no Wayland or X11
  *   display, no systemd, Secret Service, Flatpak or 1Password sockets;
+ * - no Helium profile (the person's sessions and saved passwords, and where
+ *   the browser looks for native hosts), and Chromium's native hosts read-only;
  * - no 1Password CLI configuration or app data;
  * - API tokens only through the shell's token proxy (tokenProxyArgs), with
  *   a CA trusted inside this sandbox alone.
@@ -19,16 +22,9 @@
  * Pure: the paths that exist come in, the arguments go out (tested).
  */
 
-import { join } from "node:path";
-
-export interface SandboxEnv {
-  home: string;
-  runtime: string;
-  state: string;
-  config: string;
-}
-
-export type Exists = (path: string) => "dir" | "file" | null;
+import { basename, dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
+import type { Exists, PlanProfile, SandboxEnv, SandboxOptions, TokenProxy } from "./sandbox-types.ts";
 
 /** What the filtered bus lets an agent reach: notifications and the portals. */
 export const BUS_TALK = ["org.freedesktop.Notifications", "org.freedesktop.portal.*"] as const;
@@ -37,6 +33,19 @@ export const BUS_TALK = ["org.freedesktop.Notifications", "org.freedesktop.porta
 export function unitName(name: string, n: number): string {
   const safe = (name.replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 32) || "agent").replace(/^-/, "_");
   return `dashi-agent-${safe}-${n}.scope`;
+}
+
+/** The prefix of a task's sandbox name (agents/handoff/): `dashi-agent-task-<id>-<n>.scope`. */
+export const TASK_PREFIX = "task-";
+
+/** The task a cgroup file (from /proc/<pid>/cgroup) is in, by its scope's name; null when it isn't one's. */
+export function taskOfCgroup(cgroupFile: string): string | null {
+  const line = cgroupFile.split("\n").find((entry) => entry.startsWith("0::"));
+  for (const part of line?.slice(3).split("/") ?? []) {
+    const found = /^dashi-agent-task-([a-z0-9]{4,24})-\d+\.scope$/.exec(part);
+    if (found?.[1]) return found[1];
+  }
+  return null;
 }
 
 /** Whether a cgroup path (from /proc/<pid>/cgroup) is in an agent's sandbox. */
@@ -68,9 +77,24 @@ export function isConfined(read: (path: string) => string | null, pid: number, r
   return inAgentScope(read(`/proc/${pid}/cgroup`) ?? "");
 }
 
+/**
+ * Sockets in $XDG_RUNTIME_DIR an agent must never reach: the runtime
+ * directory is emptied inside the sandbox and only the MCP socket (or a plan's)
+ * and the filtered bus come back, never these (tested).
+ */
+export const DENIED_SOCKETS = ["dashi-comp.sock", "dashi-browser.sock", "dashi-links.sock", "dashi-tokens.sock", "wayland-1"] as const;
+
 /** Directories hidden from agents (tmpfs over them). */
 function hidden(env: SandboxEnv): string[] {
-  return ["/run/dashi-secretd", join(env.config, "op"), join(env.home, ".op"), join(env.home, ".1password"), join(env.config, "1Password")];
+  return [
+    "/run/dashi-secretd",
+    join(env.config, "op"),
+    join(env.home, ".op"),
+    join(env.home, ".1password"),
+    join(env.config, "1Password"),
+    // Helium's profile: cookies, saved passwords, and NativeMessagingHosts/ (a host there would run outside the sandbox).
+    join(env.config, "net.imput.helium"),
+  ];
 }
 
 /** What agents may read but not change. */
@@ -83,6 +107,9 @@ function readOnly(env: SandboxEnv): string[] {
     join(env.config, "environment.d"),
     join(env.config, "fish/config.fish"),
     join(env.home, ".local/share/applications"),
+    // Native hosts the browsers start, outside the sandbox.
+    join(env.config, "chromium/NativeMessagingHosts"),
+    join(env.config, "google-chrome/NativeMessagingHosts"),
     ...[".bashrc", ".bash_profile", ".profile", ".zshrc", ".zprofile", ".zshenv"].map((file) => join(env.home, file)),
   ];
 }
@@ -92,34 +119,15 @@ export function proxyArgs(proxy: string, busAddress: string, socket: string): st
   return [proxy, busAddress, socket, "--filter", ...BUS_TALK.map((name) => `--talk=${name}`)];
 }
 
-export interface SandboxOptions {
-  env: SandboxEnv;
-  exists: Exists;
-  bwrap: string;
-  unit: string;
-  /** The filtered bus's socket, when there is one. */
-  bus: string | null;
-  /** More arguments for bubblewrap before the command (the token proxy's). */
-  extra?: readonly string[];
-  /** A harness answering the launcher in plan mode (planProfile): a private home folder, and only the plan's socket. */
-  plan?: PlanProfile;
-}
-
 /**
- * A harness answering the launcher (docs/actions.md, "Plan mode";
- * docs/secrets.md, "A harness in plan mode"): least access. Its home folder
- * is an empty one, with only what it needs bound back: its login and
- * sessions read-write (`state`), its install read-only (`readOnly`). No
- * Dashi MCP socket but this turn's plan socket, no session bus, no token
- * proxy. It starts in `cwd`, an empty folder of its own.
+ * The folder of the MCP socket tasks connect to (agents/server.ts listens
+ * there too): a task's sandbox binds the folder, not the socket, so the
+ * socket a restarted shell makes shows inside it.
  */
-export interface PlanProfile {
-  /** This turn's plan-mode socket (agents/ask/harness/plan-server.ts), outside. */
-  socket: string;
-  readOnly: string[];
-  state: string[];
-  cwd: string;
-}
+export const TASK_SOCKET_DIR = "dashi-mcp.d";
+
+/** The MCP socket tasks connect to, in `runtime`. */
+export const taskSocket = (runtime: string): string => join(runtime, TASK_SOCKET_DIR, "dashi-mcp.sock");
 
 /** Where the plan socket is inside the sandbox. */
 export const planSocketInside = (runtime: string): string => join(runtime, "dashi-plan.sock");
@@ -130,11 +138,11 @@ const isPathList = (value: unknown): value is string[] => Array.isArray(value) &
 export function parsePlanProfile(text: string | undefined): PlanProfile | null {
   if (!text) return null;
   try {
-    const value = JSON.parse(text) as Record<string, unknown>;
-    const { socket, readOnly, state, cwd } = value;
+    const value: unknown = JSON.parse(text);
+    const { socket, readOnly, state, cwd, task } = isRecord(value) ? value : {};
     if (typeof socket !== "string" || !socket.startsWith("/") || typeof cwd !== "string" || !cwd.startsWith("/")) return null;
-    if (!isPathList(readOnly) || !isPathList(state)) return null;
-    return { socket, readOnly, state, cwd };
+    if (!isPathList(readOnly) || !isPathList(state) || (task !== undefined && typeof task !== "boolean")) return null;
+    return { socket, readOnly, state, cwd, ...(task ? { task: true } : {}) };
   } catch {
     return null;
   }
@@ -145,17 +153,13 @@ function planArgs(env: SandboxEnv, exists: Exists, plan: PlanProfile): string[] 
   const args: string[] = [];
   for (const path of plan.readOnly) if (exists(path)) args.push("--ro-bind", path, path);
   for (const path of plan.state) if (exists(path)) args.push("--bind", path, path);
-  args.push("--bind", plan.socket, planSocketInside(env.runtime), "--dir", plan.cwd, "--chdir", plan.cwd);
+  if (plan.task) {
+    // The socket's folder, and `dashi-mcp.sock` where the bridge looks, a link into it: a restarted shell's socket shows.
+    const folder = join(env.runtime, TASK_SOCKET_DIR);
+    args.push("--bind", dirname(plan.socket), folder, "--symlink", join(TASK_SOCKET_DIR, basename(plan.socket)), join(env.runtime, "dashi-mcp.sock"));
+  } else args.push("--bind", plan.socket, planSocketInside(env.runtime));
+  args.push("--dir", plan.cwd, "--chdir", plan.cwd);
   return args;
-}
-
-/** The token proxy as dashi-agent got it from the shell, and the loopback port it relays to it. */
-export interface TokenProxy {
-  socket: string;
-  ca: string;
-  bundle: string;
-  key: string;
-  port: number;
 }
 
 /** Where the token proxy's files appear inside the sandbox (its runtime directory is its own). */

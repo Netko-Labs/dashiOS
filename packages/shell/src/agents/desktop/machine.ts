@@ -53,6 +53,8 @@ export async function getSound(ctx: RunContext): Promise<ToolResult> {
     output_volume: volume(sound.outputVolume),
     input_volume: volume(sound.inputVolume),
     show_sound_in_menu_bar: sound.showInMenuBar,
+    apps: sound.apps,
+    recording: sound.recording,
   });
 }
 
@@ -75,6 +77,34 @@ export async function setVolume(call: Extract<Call, { name: "set_volume" }>, ctx
   if (volume === null) return toolError(call.target === "output" ? "There is no sound output to set." : "There is no microphone to set.");
   const level = Math.round(volume.level * 100) / 100;
   return text(`The ${call.target} volume is ${level}${volume.muted ? " and muted" : ""}.`, { target: call.target, level, muted: volume.muted });
+}
+
+export async function setAppVolume(call: Extract<Call, { name: "set_app_volume" }>, ctx: RunContext): Promise<ToolResult> {
+  ctx.status(
+    call.level !== undefined ? "Setting an app's volume" : call.muted !== undefined ? `${call.muted ? "Muting" : "Unmuting"} an app` : "Moving an app's sound",
+  );
+  const result = await ctx.desktop.machine.setAppVolume(call.app, {
+    ...(call.level === undefined ? {} : { level: call.level }),
+    ...(call.muted === undefined ? {} : { muted: call.muted }),
+    ...(call.output === undefined ? {} : { output: call.output }),
+  });
+  if (result.ok) {
+    const { app } = result;
+    const where = app.output === "default" ? "the default output" : `“${app.output}”`;
+    return text(`“${app.name}” is at ${app.level}${app.muted ? " and muted" : ""}, on ${where}.`, { ...app });
+  }
+  switch (result.reason) {
+    case "unavailable":
+      return toolError("App volumes aren't available on this computer.");
+    case "none":
+      return toolError(`No app called “${call.app}” is playing sound; get_sound lists the apps that are.`);
+    case "many":
+      return toolError(`More than one app is called “${call.app}”; the person can choose in Settings > Sound.`);
+    case "no-output":
+      return toolError(`No output is called “${call.output ?? ""}”; get_sound shows them, or use "default".`);
+    case "failed":
+      return toolError(`Couldn't change “${call.app}”. It may have stopped playing.`);
+  }
 }
 
 export async function getPower(ctx: RunContext): Promise<ToolResult> {

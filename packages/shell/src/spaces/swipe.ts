@@ -5,8 +5,19 @@
  * Control when it ends. Pure: it says what to do, gestures.ts does it.
  */
 
-import { swipeDirection } from "../gestures.ts";
-import type { SpacesState } from "./model.ts";
+import type { SpacesState, SwipeStep } from "./types.ts";
+
+/** How far (logical pixels, summed) a swipe must travel to count. */
+export const SWIPE_DISTANCE = 60;
+
+export type SwipeAction = "up" | "down" | "left" | "right" | null;
+
+/** Where a finished swipe went: its main direction, if it went far enough. */
+export function swipeDirection(dx: number, dy: number): SwipeAction {
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_DISTANCE) return null;
+  if (Math.abs(dy) >= Math.abs(dx)) return dy < 0 ? "up" : "down";
+  return dx < 0 ? "left" : "right";
+}
 
 /** How far (logical pixels, summed) a swipe goes before its direction is decided. */
 export const AXIS_LOCK = 12;
@@ -14,17 +25,6 @@ export const AXIS_LOCK = 12;
 export const SPACE_SWIPE = 360;
 /** Let go past this much of the way, the switch completes; short of it, it goes back. */
 export const COMMIT_AT = 0.3;
-
-export type SwipeStep =
-  | { kind: "none" }
-  /** Mission Control opens (up) or closes (down). */
-  | { kind: "overview"; open: boolean }
-  /** Hold the switch to `target` this far along. */
-  | { kind: "space-hold"; target: number; progress: number }
-  /** Let the switch to `target` finish. */
-  | { kind: "space-finish"; target: number }
-  /** Go back to `origin` from wherever the switch got to. */
-  | { kind: "space-back"; origin: number };
 
 const NONE: SwipeStep = { kind: "none" };
 

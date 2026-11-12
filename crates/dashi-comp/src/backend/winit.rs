@@ -75,6 +75,14 @@ pub(crate) fn init(
         .insert_if_missing(|| ShownTransform(Transform::Normal));
     state.space.map_output(&output, (0, 0));
 
+    if let Some(size) = std::env::var("DASHI_NESTED_SCREEN")
+        .ok()
+        .as_deref()
+        .and_then(virtual_size)
+    {
+        add_virtual_screen(handle, state, size, backend.window_size().w)?;
+    }
+
     advertise_dmabuf(state, &mut backend);
     let damage_tracker = OutputDamageTracker::from_output(&output);
     state.backend = Backend::Winit(Box::new(WinitData {
@@ -170,4 +178,75 @@ fn redraw(state: &mut Dashi) {
     data.backend.window().request_redraw();
     state.backend = Backend::Winit(data);
     state.send_frames(&output);
+}
+
+/// `DASHI_NESTED_SCREEN=1920x1080`: a size for the nested session's second screen.
+fn virtual_size(text: &str) -> Option<smithay::utils::Size<i32, smithay::utils::Physical>> {
+    let (w, h) = text.trim().split_once('x')?;
+    let (w, h) = (w.parse::<i32>().ok()?, h.parse::<i32>().ok()?);
+    ((320..=7680).contains(&w) && (240..=4320).contains(&h)).then(|| (w, h).into())
+}
+
+/// A second screen for the nested session, beside the window (`DASHI_NESTED_SCREEN`):
+/// never drawn on its own, its clients paced by a timer as headless's are. It
+/// is there for what needs two screens (mirroring, the arrangement), seen
+/// through `capture {output}` or by mirroring it into the window.
+fn add_virtual_screen(
+    handle: &LoopHandle<'static, Dashi>,
+    state: &mut Dashi,
+    size: smithay::utils::Size<i32, smithay::utils::Physical>,
+    beside: i32,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use smithay::reexports::calloop::timer::{TimeoutAction, Timer};
+    let output = Output::new(
+        "Virtual-1".to_string(),
+        PhysicalProperties {
+            size: (0, 0).into(),
+            subpixel: Subpixel::Unknown,
+            make: "Dashi".into(),
+            model: "Virtual".into(),
+        },
+    );
+    let mode = Mode {
+        size,
+        refresh: 60_000,
+    };
+    let _global = output.create_global::<Dashi>(&state.display_handle);
+    output.change_current_state(
+        Some(mode),
+        Some(Transform::Normal),
+        None,
+        Some((beside, 0).into()),
+    );
+    output.set_preferred(mode);
+    state.space.map_output(&output, (beside, 0));
+    let frame = Duration::from_millis(16);
+    handle.insert_source(Timer::from_duration(frame), move |_, _, state| {
+        state.send_frames(&output);
+        TimeoutAction::ToDuration(frame)
+    })?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_nested_second_screen_is_a_size_in_range() {
+        assert_eq!(virtual_size("1920x1080"), Some((1920, 1080).into()));
+        assert_eq!(virtual_size(" 1280x1024 "), Some((1280, 1024).into()));
+        for bad in [
+            "",
+            "1920",
+            "1920x",
+            "x1080",
+            "0x0",
+            "99999x1080",
+            "1920*1080",
+            "-1x5",
+        ] {
+            assert_eq!(virtual_size(bad), None, "{bad}");
+        }
+    }
 }

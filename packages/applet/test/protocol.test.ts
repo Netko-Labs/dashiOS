@@ -120,7 +120,7 @@ test("the client says hello first, sends each applet whole, and does it all agai
       onDismiss: () => events.push("dismiss"),
     },
   );
-  expect(shell.sent[0]).toMatchObject({ type: "hello", protocol: 3, manifest: { permissions: ASUS.permissions } });
+  expect(shell.sent[0]).toMatchObject({ type: "hello", protocol: 5, manifest: { permissions: ASUS.permissions } });
   expect(shell.sent[1]).toMatchObject({ type: "applet", applet: { id: "asus", label: "54°" } });
   // The same applet again sends nothing; a change sends it whole.
   client.show({ id: "asus", title: "ASUS Control", label: "54°" });
@@ -151,4 +151,65 @@ test("a version 1 client (no manifest) never says hello and can't ask for popove
   expect(shell.sent).toEqual([{ type: "applet", applet: { id: "timer", title: "Timer", label: "4:59" } }]);
   expect(client.requestPopover("timer", { width: 200, height: 100 })).toBe(false);
   expect(client.show({ id: "t2", title: "T", label: "x", menu: [{ type: "submenu", label: "S", items: [{ id: "a", label: "A" }] }] })).toBe(false);
+});
+
+test("the shell's socket gone for a while (a session restarting): the client keeps trying until it is back", () => {
+  const manifest = parseManifest(ASUS);
+  if ("error" in manifest) throw new Error(manifest.error);
+  const shell = fakeShell();
+  let listening = true;
+  const client = new AppletsClient({
+    path: "/run/x.sock",
+    manifest,
+    connect: shell.connect,
+    exists: () => listening,
+    later: (fn) => {
+      shell.later.push(fn);
+      return () => {};
+    },
+  });
+  client.show({ id: "asus", title: "ASUS Control", label: "54°" });
+  listening = false;
+  shell.drop();
+  shell.sent.length = 0;
+  // Twice no socket: it waits again each time, never gives up.
+  shell.retry();
+  expect(shell.later).toHaveLength(1);
+  shell.retry();
+  expect(shell.later).toHaveLength(1);
+  expect(shell.sent).toEqual([]);
+  listening = true;
+  shell.retry();
+  expect(shell.sent.map((message) => (message as { type: string }).type)).toEqual(["hello", "applet"]);
+  // Closed: no more tries.
+  client.close();
+  shell.drop();
+  expect(shell.later).toHaveLength(0);
+});
+
+/** Whether a process with a client waiting for a shell that isn't there has a timer that keeps it running (the process says so itself). */
+async function stillRunning(keepAlive: boolean): Promise<boolean> {
+  const client = new URL("../src/client.ts", import.meta.url).pathname;
+  const manifest = JSON.stringify(ASUS);
+  const code = `
+    import { AppletsClient } from ${JSON.stringify(client)};
+    import { parseManifest } from ${JSON.stringify(new URL("../src/manifest.ts", import.meta.url).pathname)};
+    const timers = [];
+    const real = globalThis.setTimeout;
+    globalThis.setTimeout = (...args) => timers.push(real(...args)) && timers.at(-1);
+    const manifest = parseManifest(${manifest});
+    const client = new AppletsClient({ path: "/nonexistent/dashi-applets.sock", manifest, keepAlive: ${keepAlive} });
+    client.show({ id: "asus", title: "ASUS Control", label: "54°" });
+    console.log(JSON.stringify(timers.length > 0 && timers.some((timer) => timer.hasRef())));
+    process.exit(0);
+  `;
+  const proc = Bun.spawn([process.execPath, "-e", code], { stdout: "pipe", stderr: "ignore" });
+  const said = await new Response(proc.stdout).text();
+  await proc.exited;
+  return JSON.parse(said) as boolean;
+}
+
+test("an applet's process waits for the shell to come back; an app's client never holds its process up", async () => {
+  expect(await stillRunning(true)).toBe(true);
+  expect(await stillRunning(false)).toBe(false);
 });

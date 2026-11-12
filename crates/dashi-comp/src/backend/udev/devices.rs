@@ -1,8 +1,10 @@
 //! GPUs coming and going: a DRM device opened through the session, its
 //! output manager and render node, the formats offered to clients from the
-//! drawing GPU, and explicit sync when it can wait on syncobjs.
+//! drawing GPU, and explicit sync when it can wait on syncobjs. Whether a
+//! GPU that does not draw is opened at all is sleep.rs's.
 
 use super::*;
+use crate::ipc::protocol::Event;
 
 /// linux-drm-syncobj, on the drawing GPU's device, if it can wait on syncobjs.
 pub(super) fn offer_explicit_sync(state: &mut Dashi) {
@@ -56,7 +58,8 @@ pub(super) fn device_added(
             path,
             OFlags::RDWR | OFlags::CLOEXEC | OFlags::NOCTTY | OFlags::NONBLOCK,
         )?;
-        let fd = DrmDeviceFd::new(DeviceFd::from(fd));
+        let seat_fd = DeviceFd::from(fd);
+        let fd = DrmDeviceFd::new(seat_fd.clone());
         let (drm, notifier) = DrmDevice::new(fd.clone(), true)?;
         let gbm = GbmDevice::new(fd)?;
 
@@ -134,6 +137,12 @@ pub(super) fn device_added(
                 render_node,
                 screens: HashMap::new(),
                 token,
+                card: path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .map_or_else(|| node.to_string(), str::to_owned),
+                fd: seat_fd,
+                buffers: Vec::new(),
             },
         );
         Ok(())
@@ -144,7 +153,7 @@ pub(super) fn device_added(
 }
 
 /// Whether `node` is the GPU chosen to draw (`primary`, by its render node or itself).
-fn is_drawing_gpu(node: DrmNode, primary: DrmNode) -> bool {
+pub(super) fn is_drawing_gpu(node: DrmNode, primary: DrmNode) -> bool {
     node == primary || node.node_with_type(NodeType::Render).and_then(Result::ok) == Some(primary)
 }
 
@@ -170,5 +179,6 @@ pub(super) fn device_removed(state: &mut Dashi, node: DrmNode) {
     if let Some(token) = token {
         state.loop_handle.remove(token);
     }
-    state.ipc.emit("outputs-changed", json!({}));
+    state.ipc.emit(Event::OutputsChanged);
+    state.ipc.emit(Event::GpusChanged);
 }

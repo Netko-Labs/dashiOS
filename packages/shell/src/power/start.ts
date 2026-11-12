@@ -15,24 +15,24 @@
  * window, it says so once and the rest of the shell goes on.
  */
 
-import type { Compositor } from "../compositor.ts";
-import type { ConnectOptions } from "../dbus/index.ts";
-import { compositorAbove, isRealSession } from "../menus/session.ts";
-import { type Clock, systemClock } from "./clock.ts";
-import { logindLocks, type TakeLock } from "./inhibit.ts";
-import { LockWatch } from "./lockwatch.ts";
-import { sayOnce } from "./log.ts";
-import { Logind } from "./logind.ts";
+import type { Compositor } from "../compositor/index.ts";
+import type { ConnectOptions } from "../shared/dbus/index.ts";
+import { Logind } from "../shared/logind/index.ts";
+import { compositorAbove, isRealSession } from "../shared/session-power/index.ts";
+import { type Clock, systemClock } from "./lib/clock.ts";
+import { logindLocks, type TakeLock } from "./lib/inhibit.ts";
+import { LockWatch } from "./lib/lockwatch.ts";
+import { sayOnce } from "./lib/log.ts";
+import { POWER_KEY_LOCK, PowerKey } from "./lib/powerkey.ts";
+import { ScreenLock } from "./lib/screenlock.ts";
+import { watchSession } from "./lib/session.ts";
+import { DEFAULT_POWER_SETTINGS, type PowerSettings } from "./lib/settings.ts";
+import { SLEEP_LOCK, SleepGuard } from "./lib/sleep.ts";
 import { powerOffReason } from "./nested.ts";
-import { POWER_KEY_LOCK, PowerKey } from "./powerkey.ts";
-import { ScreenLock } from "./screenlock.ts";
-import { watchSession } from "./session.ts";
-import { DEFAULT_POWER_SETTINGS, type PowerSettings } from "./settings.ts";
-import { SLEEP_LOCK, SleepGuard } from "./sleep.ts";
 
 export interface PowerOptions {
   /** For the lock state; without it nothing can be locked or waited for. */
-  compositor: Pick<Compositor, "on" | "request"> | null;
+  compositor: Pick<Compositor, "on" | "power" | "session"> | null;
   /** Raises the lock screen; null without a compositor. */
   lock: (() => void) | null;
   /** Opens the shut down sheet (the power key). */
@@ -100,7 +100,7 @@ export function startPower(options: PowerOptions): Power {
       take: () => takeLock(SLEEP_LOCK),
       screen,
       // After a suspend KMS state may have changed: always reset the screens, whether or not they were on.
-      woke: async () => void (await options.compositor?.request("power", { on: true, reset: true })),
+      woke: async () => void (await options.compositor?.power({ on: true, reset: true })),
     });
     guard = sleepGuard;
     // Listen first, so a sleep that starts while the lock is being taken is not missed.

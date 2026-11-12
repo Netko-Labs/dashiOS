@@ -7,13 +7,13 @@
 
 import { chordText } from "../../app-menus/shortcut.ts";
 import { SETUP_APP_ID } from "../../apps.ts";
-import type { CompositorWindow } from "../../compositor.ts";
-import { type KeyChord, resolveChord } from "../../keymap-match.ts";
+import type { CompositorWindow } from "../../compositor/index.ts";
+import { type KeyChord, resolveChord } from "../../keymap/keymap-match.ts";
 import { type RunContext, type ToolResult, text, toolError } from "../context.ts";
-import { named, noWindow, subject } from "../subject.ts";
-import type { Call } from "../tools/index.ts";
-import { keySteps } from "../tools/index.ts";
-import { borrowsPersonSeat, PersonBusy } from "./hands.ts";
+import { named, noWindow, subject } from "../lib/subject.ts";
+import { type Call, keySteps } from "../tools/index.ts";
+import { borrowsPersonSeat, type Payload, PersonBusy } from "./hands.ts";
+import { describePerson, desktopChordRefusal, wheelFlicks } from "./lib/input-words.ts";
 
 type InputCall = Extract<Call, { name: "click" | "scroll" | "drag" | "type_text" | "press_keys" }>;
 
@@ -21,6 +21,8 @@ type InputCall = Extract<Call, { name: "click" | "scroll" | "drag" | "type_text"
 const CLICK_GAP_MS = 60;
 const DRAG_STEPS = 8;
 const DRAG_STEP_MS = 30;
+/** A frame between flicks (the flicks themselves: lib/input-words.ts). */
+const WHEEL_FLICK_MS = 16;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -38,6 +40,8 @@ const isResult = (value: object): value is ToolResult => "content" in value;
 
 /** The keymap's binding that hands ❖ chords to a Dashi app's menus (keymap.ts). */
 const APP_CHORD = "app-chord";
+/** ❖⌫ in a Dashi app: its menu row first, else erasing to the line's start (keymap.ts). */
+const APP_ERASE = "app-erase";
 
 const shortcutOf = (chord: KeyChord): string =>
   chordText({ key: chord.key, shift: chord.mods.includes("shift"), ctrl: chord.mods.includes("ctrl"), alt: chord.mods.includes("alt") }) ??
@@ -54,14 +58,6 @@ function inside(window: CompositorWindow, size: { width: number; height: number 
     : null;
 }
 
-function describePerson(error: PersonBusy): ToolResult {
-  return toolError(
-    error.desktop
-      ? "The person is using the desktop and didn't pause in time, so nothing was done. Try again in a moment."
-      : `The person is using w${error.window}, so nothing was done. Wait a couple of seconds and try again, or work in another window.`,
-  );
-}
-
 export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolResult> {
   const window = await named(ctx.compositor, call.window);
   if (!window) return noWindow(call.window);
@@ -72,7 +68,7 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
   if (isResult(size)) return size;
   const where = subject(window, ctx);
   const say = (words: string) => ctx.status(words);
-  const send = (payload: Record<string, unknown>) => ctx.hands.send(window, payload, ctx.agent, say);
+  const send = (payload: Payload) => ctx.hands.send(window, payload, ctx.agent, say);
   try {
     switch (call.name) {
       case "click": {
@@ -89,7 +85,10 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
         const problem = inside(window, size, [call]);
         if (problem) return problem;
         say(`Scrolling ${where}`);
-        await send({ pointer: { x: call.x, y: call.y }, action: "scroll", scroll: { dx: call.dx, dy: call.dy } });
+        for (const [n, flick] of wheelFlicks(call.dx, call.dy).entries()) {
+          if (n > 0) await sleep(WHEEL_FLICK_MS);
+          await send({ pointer: { x: call.x, y: call.y }, action: "scroll", scroll: flick });
+        }
         return text(`Scrolled w${window.id} by (${call.dx}, ${call.dy}) at ${at(call.x, call.y)}.`);
       }
       case "drag": {
@@ -112,14 +111,22 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
         // The person's keys pass the keymap in the compositor; an agent's are
         // resolved here, so ⌥← and ❖S mean the same for both (keymap-match.ts).
         const plan = call.chords.map((chord) => ({ chord, resolved: resolveChord(chord, window.appId) }));
-        const kept = plan.find(({ resolved }) => resolved.kind === "swallow" || (resolved.kind === "bind" && resolved.name !== APP_CHORD));
-        if (kept)
-          return toolError(
-            `${shortcutOf(kept.chord)} is the desktop's own shortcut, not the window's; use the window tools (focus_window, close_window, …) instead.`,
-          );
+        const kept = plan.find(
+          ({ resolved }) => resolved.kind === "swallow" || (resolved.kind === "bind" && resolved.name !== APP_CHORD && resolved.name !== APP_ERASE),
+        );
+        if (kept) return toolError(desktopChordRefusal(shortcutOf(kept.chord), kept.resolved.kind === "bind" ? kept.resolved.name : null));
         say(`Pressing keys in ${where}`);
         for (const { chord, resolved } of plan) {
           if (resolved.kind === "keys") await send({ keys: keySteps(resolved.chords) });
+          else if (resolved.kind === "bind" && resolved.name === APP_ERASE) {
+            if (!(await ctx.desktop.appShortcut?.(window.id, "❖⌫")))
+              await send({
+                keys: keySteps([
+                  { mods: ["shift"], key: "Home" },
+                  { mods: [], key: "BackSpace" },
+                ]),
+              });
+          }
           // A ❖ chord in one of Dashi's apps: its menu item with that shortcut, else the app's Ctrl chord (shortcuts.ts).
           else if (!(await ctx.desktop.appShortcut?.(window.id, shortcutOf(chord)))) await send({ keys: keySteps([asCtrl(chord)]) });
         }
@@ -132,12 +139,7 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
   }
 }
 
-async function drag(
-  call: Extract<InputCall, { name: "drag" }>,
-  id: number,
-  send: (payload: Record<string, unknown>) => Promise<void>,
-  ctx: RunContext,
-): Promise<ToolResult> {
+async function drag(call: Extract<InputCall, { name: "drag" }>, id: number, send: (payload: Payload) => Promise<void>, ctx: RunContext): Promise<ToolResult> {
   const { from, to } = call;
   const move = (x: number, y: number, action: "move" | "press" | "release") => send({ pointer: { x, y }, action });
   try {

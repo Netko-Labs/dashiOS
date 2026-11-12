@@ -9,13 +9,20 @@
  * the holders still are (the card stays awake for them in any mode). On a
  * one-GPU machine there is nothing at all, and every surface leaves its
  * graphics part out.
+ *
+ * A switch Dashi makes on its own is said once (notice.ts, teller.ts): the
+ * controller knows why the mode moved (the cable, a screen on the card's
+ * port, the apps it waited for, or the person's pick) and tells the teller.
  */
 
 import { useSyncExternalStore } from "react";
+import type { Later } from "../display-config/steady.ts";
 import type { GraphicsChoice } from "../power/modes/settings.ts";
 import { type CardPower, type GraphicsCard, readCardPower, readCardScreens } from "./card.ts";
 import type { AppPolicy, CardwireGpu, CardwireMode, GraphicsBackend } from "./cardwire.ts";
 import { groupHolders, type Holder, holdingProcesses, type ProcessFds, readCardWatts, readProcessFds } from "./holders.ts";
+import type { GraphicsNotice, GraphicsWhy } from "./lib/notice.ts";
+import { GraphicsTeller } from "./lib/teller.ts";
 import type { Loss } from "./lost-card.ts";
 import { decideGraphics, type GraphicsDecision, type GraphicsMode, listNames } from "./policy.ts";
 
@@ -45,12 +52,20 @@ export interface GraphicsDeps {
   appOf?(pid: number): string | null;
   /** Says once that switching waits for apps: their names, and how to quit them. */
   sayWaiting?(names: readonly string[], quit: () => void, keepHybrid: () => void): void;
+  /** Says a switch Dashi made on its own, in the same place as the waiting notice (it replaces it). */
+  sayChanged?(notice: GraphicsNotice): void;
+  /** Takes the waiting notice down: the wait ended without a switch. */
+  withdrawWaiting?(): void;
+  /** The built-in screen's rate for this power source, when Automatic moves it with the cable ("60 Hz"); else null. */
+  rate?(plugged: boolean): string | null;
   /** For tests. */
   processes?(): ProcessFds[];
   screens?(): string[];
   power?(): CardPower;
   cardWatts?(): number | null;
   signal?(pid: number): void;
+  now?(): number;
+  later?: Later;
 }
 
 export class GraphicsController {
@@ -60,6 +75,13 @@ export class GraphicsController {
   /** "Keep Hybrid" from the waiting notice: held until the cable changes. */
   private keep = false;
   private saidWaiting = false;
+  /** What moved the mode last, for its notice: the cable, a screen on the card, or the person. */
+  private cause: GraphicsWhy = "chosen";
+  /** The card's screens at the last decision; null before the first. */
+  private lastScreens: string | null = null;
+  /** The apps the last decision waited for. */
+  private waitedFor: readonly string[] = [];
+  private readonly teller: GraphicsTeller;
   private timer: ReturnType<typeof setInterval> | undefined;
   private stopMode: (() => void) | null = null;
 
@@ -76,6 +98,13 @@ export class GraphicsController {
       cards: [],
       allowed: [],
     };
+    this.teller = new GraphicsTeller(deps.card !== null, {
+      say: (notice) => deps.sayChanged?.(notice),
+      withdraw: () => deps.withdrawWaiting?.(),
+      rate: deps.rate,
+      now: deps.now,
+      later: deps.later,
+    });
   }
 
   subscribe = (listener: () => void): (() => void) => {
@@ -99,16 +128,19 @@ export class GraphicsController {
     }
     this.timer = setInterval(() => void this.refresh(), GRAPHICS_REFRESH_MS);
     await this.refresh();
+    this.teller.started(dashiMode(this.snapshot.mode));
   }
 
   close(): void {
     clearInterval(this.timer);
+    this.teller.close();
     this.stopMode?.();
   }
 
   setPlugged(plugged: boolean): void {
     if (plugged === this.plugged) return;
     this.plugged = plugged;
+    this.cause = plugged ? "plugged" : "unplugged";
     this.keep = false;
     this.saidWaiting = false;
     void this.decide();
@@ -117,12 +149,14 @@ export class GraphicsController {
   settingsChanged(): void {
     const choice = this.deps.choice();
     if (choice === this.snapshot.choice) return;
+    this.cause = "chosen";
     this.publish({ choice });
     void this.decide();
   }
 
   choose(choice: GraphicsChoice): void {
     this.keep = false;
+    this.cause = "chosen";
     this.deps.saveChoice(choice);
     this.publish({ choice });
     void this.decide();
@@ -131,6 +165,7 @@ export class GraphicsController {
   /** The waiting notice's "Keep Hybrid". */
   keepHybrid(): void {
     this.keep = true;
+    this.cause = "chosen";
     void this.decide();
   }
 
@@ -189,26 +224,39 @@ export class GraphicsController {
     if (!this.deps.card) return;
     const choice: GraphicsChoice = this.keep && this.snapshot.choice === "automatic" ? "hybrid" : this.snapshot.choice;
     const current = this.snapshot.mode;
+    const cardScreens = this.deps.screens?.() ?? readCardScreens(this.deps.card);
+    const screens = cardScreens.join("\n");
+    if (this.lastScreens !== null && screens !== this.lastScreens) this.cause = cardScreens.length > 0 ? "screen" : "screen-gone";
+    this.lastScreens = screens;
     const decision = decideGraphics({
       choice,
       plugged: this.plugged,
-      cardScreens: this.deps.screens?.() ?? readCardScreens(this.deps.card),
+      cardScreens,
       holders: this.snapshot.holders.map((holder) => holder.name),
       current: current === null ? null : current,
       lost: this.snapshot.lost !== null,
     });
     this.publish({ decision });
+    const waitedFor = this.waitedFor;
+    this.waitedFor = decision.waitingFor;
     if (decision.waitingFor.length > 0 && !this.saidWaiting && this.snapshot.switchable) {
       this.saidWaiting = true;
+      this.teller.waitingSaid(decision.waitingFor);
       this.deps.sayWaiting?.(
         decision.waitingFor,
         () => this.quit(),
         () => this.keepHybrid(),
       );
     }
+    // A switch that waited for apps is said as such even when the person picked Automatic before it.
+    const why: GraphicsWhy = choice !== "automatic" ? "chosen" : waitedFor.length > 0 ? "waited" : this.cause;
     if (decision.set && this.snapshot.switchable && this.deps.backend) {
       const ok = await this.deps.backend.setMode(decision.set);
       if (ok) this.publish({ mode: decision.set });
+      this.teller.changed(ok ? decision.set : null, ok ? why : "failed", why === "waited" ? waitedFor : []);
+    } else if (waitedFor.length > 0 && decision.waitingFor.length === 0) {
+      // The wait ended without a switch (plugged back in, a screen on the card, Keep Hybrid).
+      this.teller.changed(dashiMode(this.snapshot.mode), why);
     }
   }
 
@@ -218,6 +266,11 @@ export class GraphicsController {
     this.snapshot = next;
     for (const listener of [...this.listeners]) listener();
   }
+}
+
+/** cardwire's mode as one of Dashi's; its own Manual is none. */
+function dashiMode(mode: CardwireMode | null): GraphicsMode | null {
+  return mode === "integrated" || mode === "hybrid" || mode === "smart" ? mode : null;
 }
 
 export function useGraphics(controller: GraphicsController): GraphicsSnapshot {
@@ -235,7 +288,5 @@ export function cardState(snapshot: GraphicsSnapshot): string {
 
 /** The mode the tile shows: cardwire's, else what was wanted. */
 export function shownMode(snapshot: GraphicsSnapshot): GraphicsMode | null {
-  const mode = snapshot.mode;
-  if (mode === "integrated" || mode === "hybrid" || mode === "smart") return mode;
-  return snapshot.decision?.wanted ?? null;
+  return dashiMode(snapshot.mode) ?? snapshot.decision?.wanted ?? null;
 }

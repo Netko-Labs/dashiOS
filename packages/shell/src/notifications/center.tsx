@@ -12,12 +12,12 @@ import { useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useMemo, useState } from "react";
 import { calendarBridge } from "../calendar/bridge.ts";
-import { useMinuteClock } from "../clock.ts";
-import { MOON } from "../control-center/glyphs.ts";
+import { MOON } from "../control-center/index.ts";
 import { KeyCatcher } from "../overlay.tsx";
-import { Card, GroupHeader, hasDefaultAction, TextButton } from "./center-parts.tsx";
-import { dateHeading, groupByApp } from "./group.ts";
-import { MonthCard } from "./month-card.tsx";
+import { useMinuteClock } from "../shared/time/index.ts";
+import { Card, GroupHeader, hasDefaultAction, TextButton } from "./lib/center-parts.tsx";
+import { dateHeading, groupByApp } from "./lib/group.ts";
+import { MonthCard } from "./lib/month-card.tsx";
 import { type NotificationStore, useNotifications } from "./store.ts";
 import type { HistoryEntry } from "./types.ts";
 
@@ -32,11 +32,13 @@ export const centerBottom = (dockInset: number): number => Math.max(0, dockInset
 export interface NotificationCenterProps {
   store: NotificationStore;
   onClose: () => void;
+  /** Esc: closed, or back to the menu bar when the keyboard came from it (menus/bar-keys.ts). */
+  onEscape?: () => void;
   /** How tall the Dock's zone at the screen's bottom is now (dock/presenter.ts `bottomInset`); 0 when it is hidden or autohides. */
   dockInset: number;
 }
 
-export function NotificationCenterPanel({ store, onClose, dockInset }: NotificationCenterProps) {
+export function NotificationCenterPanel({ store, onClose, onEscape = onClose, dockInset }: NotificationCenterProps) {
   const colors = useColors();
   const { history, doNotDisturb } = useNotifications(store);
   const now = useMinuteClock();
@@ -59,7 +61,7 @@ export function NotificationCenterPanel({ store, onClose, dockInset }: Notificat
 
   return (
     <>
-      <KeyCatcher onKey={(key) => key === "Escape" && onClose()} />
+      <KeyCatcher onKey={(key) => key === "Escape" && onEscape()} />
       <View
         occlude
         testID="notification-center"
@@ -74,9 +76,10 @@ export function NotificationCenterPanel({ store, onClose, dockInset }: Notificat
           gap: NOTIFICATION_CENTER.gap,
           padding: NOTIFICATION_CENTER.padding,
           borderRadius: NOTIFICATION_CENTER.radius,
-          backgroundColor: colors.menu,
+          // Solid, as the menus are: the menu's tint without its alpha, so a window under the empty half never ghosts through.
+          backgroundColor: colors.menu.slice(0, 7),
           borderWidth: 1,
-          borderColor: colors.dockBorder,
+          borderColor: colors.menuEdge,
           shadow: "xl",
         }}
       >
@@ -116,39 +119,67 @@ export function NotificationCenterPanel({ store, onClose, dockInset }: Notificat
         ) : (
           <ScrollView testID="nc-list" style={{ flex: 1 }}>
             <View style={{ flexDirection: "column", gap: 14 }}>
-              {groups.map((group) => {
-                const [latest, ...older] = group.entries as [HistoryEntry, ...HistoryEntry[]];
-                const isOpen = expanded.has(group.key);
-                const shown = isOpen ? group.entries : [latest];
-                return (
-                  <View key={group.key} testID={`nc-group:${group.key}`} style={{ flexDirection: "column", gap: 6 }}>
-                    <GroupHeader
-                      name={group.name}
-                      groupKey={group.key}
-                      latest={latest}
-                      clear={older.length > 0 ? () => store.remove(group.entries.map((entry) => entry.id)) : undefined}
-                    />
-                    {shown.map((entry) => (
-                      <Card
-                        key={entry.id}
-                        entry={entry}
-                        now={now.getTime()}
-                        onOpen={hasDefaultAction(entry) ? () => activate(entry) : undefined}
-                        onRemove={() => store.remove([entry.id])}
-                      />
-                    ))}
-                    {older.length > 0 && (
-                      <View style={{ flexDirection: "row", justifyContent: "center" }}>
-                        <TextButton testID={`nc-more:${group.key}`} label={isOpen ? "Show Less" : `${older.length} more`} onPress={() => toggle(group.key)} />
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
+              {groups.map((group) => (
+                <CenterGroup
+                  key={group.key}
+                  group={group}
+                  open={expanded.has(group.key)}
+                  now={now}
+                  store={store}
+                  onToggle={() => toggle(group.key)}
+                  onActivate={activate}
+                />
+              ))}
             </View>
           </ScrollView>
         )}
       </View>
     </>
+  );
+}
+
+type Group = ReturnType<typeof groupByApp>[number];
+
+/** One app's notifications: its latest, and the rest behind "N more" until it opens. */
+function CenterGroup({
+  group,
+  open,
+  now,
+  store,
+  onToggle,
+  onActivate,
+}: {
+  group: Group;
+  open: boolean;
+  now: Date;
+  store: NotificationStore;
+  onToggle: () => void;
+  onActivate: (entry: HistoryEntry) => void;
+}) {
+  const [latest, ...older] = group.entries as [HistoryEntry, ...HistoryEntry[]];
+  const shown = open ? group.entries : [latest];
+  return (
+    <View testID={`nc-group:${group.key}`} style={{ flexDirection: "column", gap: 6 }}>
+      <GroupHeader
+        name={group.name}
+        groupKey={group.key}
+        latest={latest}
+        clear={older.length > 0 ? () => store.remove(group.entries.map((entry) => entry.id)) : undefined}
+      />
+      {shown.map((entry) => (
+        <Card
+          key={entry.id}
+          entry={entry}
+          now={now.getTime()}
+          onOpen={hasDefaultAction(entry) ? () => onActivate(entry) : undefined}
+          onRemove={() => store.remove([entry.id])}
+        />
+      ))}
+      {older.length > 0 && (
+        <View style={{ flexDirection: "row", justifyContent: "center" }}>
+          <TextButton testID={`nc-more:${group.key}`} label={open ? "Show Less" : `${older.length} more`} onPress={onToggle} />
+        </View>
+      )}
+    </View>
   );
 }

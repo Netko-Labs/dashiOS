@@ -5,11 +5,10 @@
  * either way, as for Wi-Fi and Bluetooth).
  */
 
+import { type AccountsBackend, AccountsServiceBackend, type PasswordChanger } from "../shared/accounts/index.ts";
 import { type Nesting, standsIn } from "../system/stand-in.ts";
-import { AccountsServiceBackend } from "./backend.ts";
-import { FakeAccounts } from "./fake.ts";
-import { bunPty, spawnPasswd } from "./passwd.ts";
-import type { AccountsBackend, PasswordChanger } from "./types.ts";
+import { FakeAccounts } from "./lib/fake.ts";
+import { bunPty, spawnPasswd } from "./lib/passwd.ts";
 
 export interface AccountsSetup {
   backend: AccountsBackend;

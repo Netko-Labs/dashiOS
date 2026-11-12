@@ -8,10 +8,10 @@
  *   GREETD_SOCK=… WAYLAND_DISPLAY=… bun src/main.tsx
  */
 
+import { TextSelectionLook } from "@dashi/ui";
 import { type NativeHostTransport, render, spawnNativeHost } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import { connectGreetd } from "./greetd/client.ts";
-import { Login, type LoginState } from "./greetd/login.ts";
+import { connectGreetd, Login, type LoginState } from "./greetd/index.ts";
 import { recall, remember } from "./memory.ts";
 import { metalHost } from "./paths.ts";
 import { power } from "./power.ts";
@@ -85,7 +85,7 @@ interface Shown {
 }
 function show(element: ReactElement, output: string | undefined, keyboard: boolean): Shown {
   const host = surfaceOn(output, keyboard);
-  const root = render(element, host);
+  const root = render(<TextSelectionLook>{element}</TextSelectionLook>, host);
   return {
     output,
     close: () => {

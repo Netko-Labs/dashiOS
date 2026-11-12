@@ -5,14 +5,21 @@
  * host that dies by itself is the same close.
  */
 
-import { type NativeHostOptions, type NativeHostTransport, type NativeWindowOptions, render, TextInput, View } from "@mirinjs/metal";
+import { TextSelectionLook } from "@dashi/ui";
+import { type NativeHostOptions, type NativeHostTransport, render, TextInput, View } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import { METAL_HOST } from "./apps.ts";
-import { spawnShellHost } from "./metal-host.ts";
-import { WarmHost } from "./warm-host.ts";
+import { METAL_HOST } from "./shared/apps/index.ts";
+import { hostTakesLeast, spawnShellHost, WarmHost, windowFor } from "./shared/metal/index.ts";
 
-/** The spare host overlays open on (warm-host.ts). */
+/** The spare host overlays open on (shared/metal/host.ts). */
 const warmHost = new WarmHost(METAL_HOST);
+/** Whether its `open` takes a least size; until that is known, it isn't sent. */
+let takesLeast = false;
+void hostTakesLeast(METAL_HOST)
+  .then((ok) => {
+    takesLeast = ok;
+  })
+  .catch(() => {});
 
 export interface OverlayHandle {
   /** Idempotent; also runs `onClosed`. */
@@ -42,10 +49,10 @@ export type OpenOverlay = (
 export const openOverlay: OpenOverlay = (options, element, onClosed, onHost) => {
   // Plain overlays take the warm host; one that needs more of a host gets its own.
   const plain = options.capabilities === undefined && options.env === undefined && options.onStderr === undefined;
-  const window = { appId: "dev.dashi.shell", ...pick(options) };
+  const window = { appId: "dev.dashi.shell", ...windowFor(options, takesLeast) };
   const host = (plain ? warmHost.take(window) : null) ?? spawnShellHost({ appId: "dev.dashi.shell", ...options });
   onHost?.(host);
-  const root = render(element, host);
+  const root = render(<TextSelectionLook>{element}</TextSelectionLook>, host);
   let open = true;
   const finish = () => {
     if (!open) return;
@@ -68,11 +75,6 @@ export const openOverlay: OpenOverlay = (options, element, onClosed, onHost) => 
     },
   };
 };
-
-/** The window part of a host's options. */
-function pick({ title, appId, width, height, surface, titleBar }: NativeHostOptions): NativeWindowOptions {
-  return { title, appId, width, height, surface, titleBar };
-}
 
 export type NavigationKey = "Escape" | "ArrowUp" | "ArrowDown";
 

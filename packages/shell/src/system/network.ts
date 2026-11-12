@@ -5,7 +5,7 @@
  */
 
 import type { Run } from "./exec.ts";
-import { parseTerse } from "./terse.ts";
+import { parseTerse } from "./lib/terse.ts";
 
 /** Wi-Fi arcs lit, 0 (just the dot) to 3. */
 export type Bars = 0 | 1 | 2 | 3;

@@ -4,8 +4,7 @@
  * be started at all is a row in the launcher instead: launcher.tsx.)
  */
 
-import type { NotificationStore } from "../notifications/store.ts";
-import type { NotifyInput } from "../notifications/types.ts";
+import type { NotificationStore, NotifyInput } from "../notifications/index.ts";
 
 export const RETRY = "retry";
 

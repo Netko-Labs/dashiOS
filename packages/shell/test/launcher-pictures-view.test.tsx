@@ -1,13 +1,16 @@
 import { afterEach, expect, test } from "bun:test";
 import { setTextSizeSource } from "@dashi/ui";
-import { KEYMAP } from "../src/keymap.ts";
+import { KEYMAP } from "../src/keymap/keymap.ts";
 import type { LauncherHost, LauncherWorldStore } from "../src/launcher/host.ts";
-import type { LauncherWindow } from "../src/launcher/items.ts";
 import { LauncherKeys } from "../src/launcher/keys.ts";
-import { PICTURES_SETTLE_MS, PictureSender } from "../src/launcher/picture-sender.ts";
+import type { LauncherWindow } from "../src/launcher/lib/items.ts";
+import { PICTURES_SETTLE_MS, PictureSender } from "../src/launcher/lib/picture-sender.ts";
 import type { PictureRect } from "../src/launcher/pictures.ts";
 import type { WorldSnapshot } from "../src/launcher/world.ts";
 import { app, mount, settle, unmountLauncher } from "./launcher-harness.tsx";
+import { fakeClockEachTest } from "./support/time.ts";
+
+fakeClockEachTest();
 
 // The windows' live pictures under a row, and the rows at a bigger text size.
 

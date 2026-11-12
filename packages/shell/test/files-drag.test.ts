@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { dragPaths, dropChoice } from "../apps/files/drag.ts";
+import { dragPaths, dropChoice } from "../src/shared/file-browser/lib/drag.ts";
 
 const none = { ctrl: false, alt: false, shift: false };
 const oneDisk = () => true;

@@ -8,9 +8,9 @@
 //! is not resting: a tile zone there waits again (zones.rs), so a push
 //! carries the window on and a rest tiles it.
 
+use crate::ipc::protocol::{Event, ScreenEdge};
 use std::time::{Duration, Instant};
 
-use serde_json::json;
 use smithay::{
     reexports::calloop::timer::{TimeoutAction, Timer},
     utils::{Logical, Point, Rectangle},
@@ -32,12 +32,12 @@ pub(crate) enum Edge {
 }
 
 impl Edge {
-    pub(crate) fn name(self) -> &'static str {
+    pub(crate) fn wire(self) -> ScreenEdge {
         match self {
-            Edge::Left => "left",
-            Edge::Right => "right",
-            Edge::Top => "top",
-            Edge::Bottom => "bottom",
+            Edge::Left => ScreenEdge::Left,
+            Edge::Right => ScreenEdge::Right,
+            Edge::Top => ScreenEdge::Top,
+            Edge::Bottom => ScreenEdge::Bottom,
         }
     }
 
@@ -139,10 +139,13 @@ impl Dashi {
                     return TimeoutAction::Drop;
                 };
                 let preview = state.zones.preview.is_some();
-                state.ipc.emit(
-                    "edge-hold",
-                    json!({ "edge": edge.name(), "output": output, "window": window, "count": count, "preview": preview }),
-                );
+                state.ipc.emit(Event::EdgeHold {
+                    edge: edge.wire(),
+                    output,
+                    window,
+                    count,
+                    preview,
+                });
                 TimeoutAction::ToDuration(HOLD)
             });
     }

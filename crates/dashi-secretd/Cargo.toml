@@ -1,6 +1,6 @@
 [package]
 name = "dashi-secretd"
-version = "0.4.1"
+version = "0.7.0"
 description = "Dashi's vault: secrets agents can use but never read"
 edition.workspace = true
 license.workspace = true
@@ -20,6 +20,9 @@ path = "src/bin/dashi-secretd-pam.rs"
 [[bin]]
 name = "dashi-secret-bridge"
 path = "src/bin/dashi-secret-bridge.rs"
+
+[lints]
+workspace = true
 
 [dependencies]
 # Well-reviewed RustCrypto crates only: no cryptography of our own.

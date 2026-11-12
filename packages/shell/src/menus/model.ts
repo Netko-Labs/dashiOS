@@ -6,17 +6,11 @@
  * row without an action is disabled.
  */
 
-import type { AppMenu, PublishedMenus } from "../app-menus/protocol.ts";
-import type { CompositorWindow } from "../compositor.ts";
+import type { CompositorWindow } from "../compositor/index.ts";
 import type { Arrange, Tile } from "../layout.ts";
+import type { AppMenu, PublishedMenus } from "../shared/app-menus/index.ts";
 import { sameApp } from "../shortcuts.ts";
-import type { EditCommand } from "./keystrokes.ts";
-
-export type MenuId = "dashi" | "app" | "file" | "edit" | "view" | "window" | "help";
-/** A menu an app published (app-menus/), by its id: "app:file". */
-export type AppMenuKey = `app:${string}`;
-/** Any title in the bar. */
-export type BarMenuId = MenuId | AppMenuKey;
+import type { AppMenuKey, BarMenuId, EditCommand, MenuAction, MenuContext, MenuEntry, MenuId, WindowMenu } from "./types.ts";
 
 /** The titles after the Dashi menu and the app's name, left to right. */
 export const BAR_MENUS: ReadonlyArray<{ id: BarMenuId; title: string }> = [
@@ -26,74 +20,6 @@ export const BAR_MENUS: ReadonlyArray<{ id: BarMenuId; title: string }> = [
   { id: "window", title: "Window" },
   { id: "help", title: "Help" },
 ];
-
-/** What asks first, then ends the session or the machine. */
-export type PowerKind = "restart" | "shutdown" | "logout";
-
-export type MenuAction =
-  | { kind: "about-dashi" }
-  | { kind: "about-app"; appId: string; name: string; pid: number | null }
-  | { kind: "sleep" }
-  | { kind: "power"; what: PowerKind }
-  | { kind: "lock" }
-  | { kind: "force-quit" }
-  /** Open the launcher (launcher.tsx). */
-  | { kind: "search" }
-  | { kind: "settings" }
-  | { kind: "hide-app"; window: number }
-  | { kind: "hide-others"; window: number }
-  /** Unhide every hidden app; `window` gets the focus back. */
-  | { kind: "show-all"; window: number | null }
-  | { kind: "quit-app"; window: number }
-  | { kind: "new-window"; appId: string }
-  | { kind: "close-window"; window: number }
-  | { kind: "minimize"; window: number }
-  /** Enter full screen, or leave it. */
-  | { kind: "fullscreen"; window: number }
-  /** Type the app's chord for an Edit row into the window (keystrokes.ts). */
-  | { kind: "edit"; window: number; command: EditCommand }
-  /** Tile, fill, center, or back to its own frame (arrange.ts). */
-  | { kind: "tile"; window: number; tile: Arrange }
-  /** Put the window on Desktop `space` (from 0), or on a new one. */
-  | { kind: "move-to-space"; window: number; space: number | "new" }
-  | { kind: "bring-to-front"; window: number }
-  | { kind: "focus"; window: number }
-  | { kind: "help" }
-  | { kind: "shortcuts" }
-  /** An app's own row: the app is told (app-menus/). */
-  | { kind: "app-item"; pid: number; id: string; personOnly?: true };
-
-/** A row; `A` is what choosing it does (the Dock's menu has its own actions). */
-export type MenuEntry<A = MenuAction> =
-  | { kind: "separator" }
-  | {
-      kind: "item";
-      label: string;
-      /** Written the Mac way ("⇧❖Z"); only shown, never bound here. */
-      keys?: string;
-      checked?: boolean;
-      action: A | null;
-    };
-
-/** What the menus are built from; read when one opens, kept while it is open. */
-export interface MenuContext {
-  /** The focused app's name as the menu bar shows it ("Desktop" with none). */
-  appName: string;
-  /** Every window, front to back. */
-  windows: readonly CompositorWindow[];
-  /** The window that had the keyboard, null with none. */
-  focused: CompositorWindow | null;
-  /** The app can be started again (a launcher entry exists for it). */
-  canLaunch: boolean;
-  /** Help can be opened (xdg-open and the README exist). */
-  canOpenHelp: boolean;
-  /** The menus the focused app published (app-menus/); absent or null with none. */
-  app?: PublishedMenus | null;
-  /** The Desktops, by what each is called (spaces/names.ts), and the one that shows; absent without them. `fullscreen` says which are full-screen windows' own (spaces/slots.ts). */
-  desktops?: { labels: readonly string[]; current: number; fullscreen?: readonly (number | null)[] };
-  /** How the focused window is arranged (arrange.ts): a tile or Fill; absent or null at its own frame. */
-  arrangement?: Tile | null;
-}
 
 const SEPARATOR: MenuEntry = { kind: "separator" };
 
@@ -293,13 +219,6 @@ export function barMenus(app: PublishedMenus | null | undefined): ReadonlyArray<
   if (!app) return BAR_MENUS;
   const own = app.menus.filter((menu) => menu.id !== "app" && menu.items.length > 0).map((menu) => ({ id: appKey(menu), title: menu.title }));
   return [...own, ...BAR_MENUS.filter((menu) => menu.id === "window" || menu.id === "help")];
-}
-
-/** One title of the bar and its rows, as built for a window. */
-export interface WindowMenu {
-  id: BarMenuId;
-  title: string;
-  entries: MenuEntry[];
 }
 
 export function buildMenu(id: BarMenuId, ctx: MenuContext): MenuEntry[] {

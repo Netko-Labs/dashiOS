@@ -4,7 +4,7 @@
 //! nor pressed, unless the shell brings them out (`bars {show}`). The edge
 //! band (`bars {top}`) tells the shell when the pointer reaches the top.
 
-use serde_json::json;
+use crate::ipc::protocol::Event;
 use smithay::{
     desktop::Window,
     output::Output,
@@ -13,7 +13,7 @@ use smithay::{
     utils::{Logical, Point, Rectangle, Size},
 };
 
-use super::windows::{Shown, WindowId, frame_of};
+use super::{Shown, WindowId, frame_of};
 use crate::state::Dashi;
 
 /// The shell's claim on the top edge, and where it brought the bars out.
@@ -62,7 +62,7 @@ impl Dashi {
                 entry.fullscreen = Some((output.name(), frame));
                 // Its title bar goes; a unified window's lights stay (wm/decor.rs).
                 if !entry.decor.drawn(true) {
-                    entry.title_image = None;
+                    entry.title_images.clear();
                 }
                 entry.tiled = false;
             }
@@ -98,7 +98,7 @@ impl Dashi {
                 }
             }
         }
-        self.ipc.emit("outputs-changed", json!({}));
+        self.ipc.emit(Event::OutputsChanged);
         Ok(())
     }
 
@@ -175,12 +175,12 @@ impl Dashi {
         if inside == self.bars.inside {
             return;
         }
-        let event = match &inside {
-            Some(name) => json!({ "inside": true, "output": name }),
-            None => json!({ "inside": false }),
+        let event = Event::BarsEdge {
+            inside: inside.is_some(),
+            output: inside.clone(),
         };
         self.bars.inside = inside;
-        self.ipc.emit("bars-edge", event);
+        self.ipc.emit(event);
     }
 }
 

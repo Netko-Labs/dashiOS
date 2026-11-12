@@ -2,10 +2,9 @@ import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type Manifest, parseManifest, permissionName } from "@dashi/applet";
-import { readInstalled } from "../src/applets/installed.ts";
+import { type Manifest, parseManifest, permissionName, readInstalled } from "@dashi/applet";
 import { AppletLauncher, type Units, userFolders } from "../src/applets/launcher.ts";
-import { busRules, HARDWARE_BUS_NAME, INSIDE, type SandboxPaths, sandboxPlan, unitName } from "../src/applets/sandbox.ts";
+import { busRules, HARDWARE_BUS_NAME, INSIDE, type SandboxPaths, sandboxPlan, unitName } from "../src/applets/lib/sandbox.ts";
 import { ExtrasStore } from "../src/extras/index.ts";
 
 const HOME = "/home/alex";
@@ -99,11 +98,17 @@ test("hardware: the system bus through the proxy, dashi-hardware's methods for t
   expect(sensors).toContain(call("Describe"));
   expect(sensors).toContain(call("Get"));
   expect(sensors).not.toContain(call("Set"));
+  expect(sensors).toContain(call("Slash"));
+  expect(sensors).not.toContain(call("SetSlash"));
+  const lighting = busRules(manifest(["hardware.lighting"]).permissions).system;
+  expect(lighting).toContain(call("SetSlash"));
+  expect(lighting).not.toContain(call("SetMany"));
   expect(sensors).toContain(`--broadcast=${HARDWARE_BUS_NAME}=${HARDWARE_BUS_NAME}.Changed@/dev/dashi/Hardware1`);
   const power = busRules(manifest(["hardware.power"]).permissions).system;
   expect(power).toContain(call("SetMany"));
   expect(power).not.toContain(call("SetFanCurve"));
   expect(power).not.toContain(call("SetCurveOptimizer"));
+  expect(power).not.toContain(call("SetSlash"));
   const fans = busRules(manifest(["hardware.fans"]).permissions).system;
   expect(fans).toContain(call("SetFanCurve"));
   expect(fans).not.toContain(call("Set"));
@@ -224,4 +229,22 @@ test("the launcher runs an allowed applet in its unit, asks once about one that 
   await off.reconcile();
   expect(off.runningIds()).toEqual([]);
   expect(third.log).toEqual([]);
+});
+
+test("the same version installed again from new bytes (a rebuild) runs the new files: the old process stops", async () => {
+  const root = installedTree(["network"]);
+  const { log, units } = fakeUnits();
+  const running = launcher(root, units);
+  await running.reconcile();
+  const unit = unitName("dev.example.weather");
+  log.length = 0;
+  // Nothing changed: it keeps running.
+  await running.reconcile();
+  expect(log).toEqual([]);
+  // `dashi-applet install` of a rebuilt 0.1.0: another package, the same version.
+  const record = join(root, "dev.example.weather", "install.json");
+  writeFileSync(record, JSON.stringify({ version: "0.1.0", sha256: "y", authorKey: null, source: "local", consent: ["network"] }));
+  await running.reconcile();
+  expect(log).toEqual([`stop ${unit}`, `stop ${unit}`, `start ${unit} dev.example.weather.json`]);
+  await running.stop();
 });

@@ -5,13 +5,19 @@
 # (libghostty-vt-devel), which the rest of the tree must not need.
 [package]
 name = "dashi-term"
-version = "0.2.0"
+version = "0.7.0"
 description = "Dashi's terminal engine: a PTY and Ghostty's terminal core"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/Netko-Labs/dashiOS"
 
 [workspace]
+
+# The workspace's H12 lints (../../Cargo.toml), repeated: this is a workspace of its own.
+[lints.clippy]
+unwrap_used = "deny"
+undocumented_unsafe_blocks = "deny"
+missing_safety_doc = "deny"
 
 [dependencies]
 libc = "0.2"

@@ -7,10 +7,12 @@
  * logs, or shows in the menu bar holds a secret.
  */
 
-import type { Placed } from "../atspi/tree.ts";
+import type { Placed } from "../atspi/index.ts";
 import { type ToolResult, text, toolError } from "../context.ts";
-import { checkField, type FieldInfo } from "./field-check.ts";
+import type { Payload } from "../desktop/index.ts";
+import { checkField } from "./lib/field-check.ts";
 import { findLogins, type Login, type LoginSource, loginKey, SOURCE_LABELS } from "./sources.ts";
+import type { FieldInfo } from "./types.ts";
 
 /** An "Allow Once" covers the sign-in it was for, and that login's code, this long. */
 export const ONCE_MS = 120_000;
@@ -43,7 +45,7 @@ export interface BrokerContext {
   /** The focused field in the target window, and its browser's command line, now. */
   inspect(): Promise<FieldInfo>;
   /** Type into the target window with the agent's hands. */
-  type(payload: Record<string, unknown>): Promise<void>;
+  type(payload: Payload): Promise<void>;
   /** Ask the person; "<agent> wants to <summary>". */
   ask(summary: string, logins: readonly SheetLogin[]): Promise<SignInAnswer>;
   /** This connection's approvals, by login key. */

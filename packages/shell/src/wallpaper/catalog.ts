@@ -7,7 +7,8 @@
  * it cannot (comp/src/wallpaper/).
  */
 
-import { isAbsolute, join } from "node:path";
+import { join } from "node:path";
+import { isPhotoPath } from "../shared/settings/index.ts";
 import { type FrameRate, type LiveKeys, type LiveShader, resolveLive } from "./live/choice.ts";
 
 export const WALLPAPER_MODES = ["fill", "fit", "center"] as const;
@@ -36,10 +37,6 @@ export const DEFAULT_WALLPAPER = "dusk";
 export const WALLPAPER_DIR: string = join(import.meta.dir, "..", "..", "wallpapers");
 
 const BUNDLED_ID = /^[a-z][a-z0-9-]{0,31}$/;
-/** Where photos may live: absolute, no control characters, a sane length. */
-const PHOTO_PATH = /^\/[^\0-\x1f\x7f]{1,4095}$/;
-
-export const isPhotoPath = (value: unknown): value is string => typeof value === "string" && PHOTO_PATH.test(value) && isAbsolute(value);
 /** What `appearance.wallpaper.path` may hold. */
 export const isWallpaperRef = (value: unknown): value is string => isPhotoPath(value) || (typeof value === "string" && BUNDLED_ID.test(value));
 

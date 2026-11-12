@@ -9,11 +9,27 @@ use std::{
     time::{Duration, Instant},
 };
 
-use serde_json::{Map, Value};
+use serde::{Deserialize, Serialize};
 use smithay::reexports::wayland_server::backend::ObjectId;
+
+use crate::ipc::protocol::{Millis, Real};
 
 /// MO-1: nothing on the way to what the person asked for takes longer.
 const MAX_MS: u64 = 300;
+
+/// How long an entrance takes: 0 (none) to 300 ms.
+type Ms = Millis<{ MAX_MS as i64 }>;
+/// The size an entrance starts at, 0.5 to 1 of its own.
+type Scale = Real<500, 1000>;
+
+/// `layer-motion`'s params.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct LayerMotionParams {
+    pub namespace: String,
+    pub ms: Ms,
+    pub scale: Option<Scale>,
+}
 
 /// How a namespace's surfaces come in.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -39,24 +55,13 @@ pub(crate) struct LayerMotion {
 
 impl LayerMotion {
     /// `layer-motion {namespace, ms, scale}`; `ms` 0 stops it for that namespace.
-    pub(crate) fn set(&mut self, params: &Map<String, Value>) -> Result<(), String> {
-        let namespace = params
-            .get("namespace")
-            .and_then(Value::as_str)
-            .filter(|name| !name.is_empty() && name.len() <= 64)
-            .ok_or("`namespace` must be a name")?;
-        let ms = params
-            .get("ms")
-            .and_then(Value::as_u64)
-            .filter(|ms| *ms <= MAX_MS)
-            .ok_or("`ms` must be 0 to 300")?;
-        let from_scale = match params.get("scale") {
-            None => 1.0,
-            Some(value) => value
-                .as_f64()
-                .filter(|scale| (0.5..=1.0).contains(scale))
-                .ok_or("`scale` must be 0.5 to 1")?,
-        };
+    pub(crate) fn set(&mut self, params: &LayerMotionParams) -> Result<(), String> {
+        let namespace = params.namespace.as_str();
+        if namespace.is_empty() || namespace.len() > 64 {
+            return Err("`namespace` must be a name".into());
+        }
+        let ms = params.ms.to::<u64>();
+        let from_scale = params.scale.map_or(1.0, Scale::get);
         if ms == 0 {
             self.by_namespace.remove(namespace);
         } else {
@@ -126,10 +131,16 @@ impl Appear {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
+    use serde_json::{Value, json};
 
-    fn params(value: Value) -> Map<String, Value> {
-        value.as_object().cloned().unwrap()
+    fn params(value: Value) -> Value {
+        value
+    }
+
+    impl LayerMotion {
+        fn set_json(&mut self, value: &Value) -> Result<(), String> {
+            self.set(&crate::ipc::protocol::read(value.clone())?)
+        }
     }
 
     #[test]
@@ -152,7 +163,7 @@ mod tests {
     fn only_named_namespaces_move_and_only_from_their_first_frame() {
         let mut motion = LayerMotion::default();
         motion
-            .set(&params(
+            .set_json(&params(
                 json!({ "namespace": "dashi.launcher", "ms": 160, "scale": 0.96 }),
             ))
             .unwrap();
@@ -185,7 +196,7 @@ mod tests {
     fn reduce_motion_and_a_stop_leave_surfaces_be() {
         let mut motion = LayerMotion::default();
         motion
-            .set(&params(
+            .set_json(&params(
                 json!({ "namespace": "dashi.launcher", "ms": 160, "scale": 0.96 }),
             ))
             .unwrap();
@@ -193,7 +204,7 @@ mod tests {
         motion.made(id.clone(), "dashi.launcher");
         assert_eq!(motion.step(&id, true, true, Instant::now()), None);
         motion
-            .set(&params(json!({ "namespace": "dashi.launcher", "ms": 0 })))
+            .set_json(&params(json!({ "namespace": "dashi.launcher", "ms": 0 })))
             .unwrap();
         motion.made(id.clone(), "dashi.launcher");
         assert_eq!(motion.step(&id, true, false, Instant::now()), None);
@@ -202,22 +213,22 @@ mod tests {
     #[test]
     fn bad_requests_are_refused() {
         let mut motion = LayerMotion::default();
-        assert!(motion.set(&params(json!({ "ms": 160 }))).is_err());
+        assert!(motion.set_json(&params(json!({ "ms": 160 }))).is_err());
         assert!(
             motion
-                .set(&params(json!({ "namespace": "x", "ms": 301 })))
+                .set_json(&params(json!({ "namespace": "x", "ms": 301 })))
                 .is_err()
         );
         assert!(
             motion
-                .set(&params(
+                .set_json(&params(
                     json!({ "namespace": "x", "ms": 100, "scale": 0.2 })
                 ))
                 .is_err()
         );
         assert!(
             motion
-                .set(&params(json!({ "namespace": "", "ms": 100 })))
+                .set_json(&params(json!({ "namespace": "", "ms": 100 })))
                 .is_err()
         );
     }

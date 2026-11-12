@@ -7,10 +7,10 @@
  * other (Tab), has them blanked in agents' pictures, and drops them.
  */
 
-import type { Placed } from "../atspi/tree.ts";
+import type { Placed } from "../atspi/index.ts";
 import { type ToolResult, text, toolError } from "../context.ts";
 import { type BrokerContext, GAVE_UP } from "./broker.ts";
-import { checkField } from "./field-check.ts";
+import { checkField } from "./lib/field-check.ts";
 import type { CardSummary } from "./vault.ts";
 
 export interface PayContext extends Pick<BrokerContext, "inspect" | "type" | "status" | "sleep" | "cancelled" | "exclusive"> {

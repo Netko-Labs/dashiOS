@@ -4,9 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { startActions } from "../src/actions/start.ts";
 import type { Call } from "../src/agents/tools/types.ts";
-import { KEYMAP } from "../src/keymap.ts";
+import { KEYMAP } from "../src/keymap/keymap.ts";
 
-// A plan's step the person approved (agents/ask/tasks.ts): run as that press's Allow Once, logged as the agent's, in its task.
+// A plan's step the person approved (agents/ask/lib/tasks.ts): run as that press's Allow Once, logged as the agent's, in its task.
 
 let state: string;
 const before = process.env.XDG_STATE_HOME;

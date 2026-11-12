@@ -3,12 +3,15 @@
 
 pub(crate) mod canvas;
 pub(crate) mod capture;
+pub(crate) mod capture_file;
 pub(crate) mod cursor;
 pub(crate) mod depth;
 mod drawn;
 // Agents (0.4.0, secrets): what their pictures blank.
 pub(crate) mod mask;
 mod mask_cover;
+mod mask_params;
+mod mirror;
 pub(crate) mod present;
 pub(crate) mod rounded;
 mod scene;

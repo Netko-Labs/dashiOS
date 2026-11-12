@@ -3,9 +3,9 @@
 //! answers; with no shell listening, or no answer in time, it cascades inside
 //! the usable area of the screen under the pointer.
 
+use crate::ipc::protocol::{Event, Placing, Position};
 use std::time::Duration;
 
-use serde_json::json;
 use smithay::{
     backend::renderer::utils::with_renderer_surface_state,
     desktop::layer_map_for_output,
@@ -59,21 +59,19 @@ impl Dashi {
             .map(|x11| x11.geometry().loc)
             .filter(|at| at.x != 0 || at.y != 0);
         let mut size = window.geometry().size;
-        size.h += super::windows::bar_of(self, &window);
+        size.h += super::geometry::bar_of(self, &window);
         let parent = super::windows::parent_of(self, &window);
-        self.ipc.emit(
-            "window-placing",
-            {
-                let mut placing = json!({ "id": id, "appId": app_id, "title": title, "width": size.w, "height": size.h });
-                if let Some(at) = asked {
-                    placing["position"] = json!({ "x": at.x, "y": at.y });
-                }
-                if let Some(parent) = parent {
-                    placing["parent"] = json!(parent);
-                }
-                json!({ "window": placing })
+        self.ipc.emit(Event::WindowPlacing {
+            window: Placing {
+                id,
+                app_id,
+                title,
+                width: size.w,
+                height: size.h,
+                position: asked.map(|at| Position { x: at.x, y: at.y }),
+                parent,
             },
-        );
+        });
         let waited = self.loop_handle.insert_source(
             Timer::from_duration(PLACING_WAIT),
             move |_, _, state| {
@@ -125,7 +123,7 @@ impl Dashi {
         };
         let window = entry.window.clone();
         let mut size = window.geometry().size;
-        size.h += super::windows::bar_of(self, &window);
+        size.h += super::geometry::bar_of(self, &window);
         let area = self
             .usable_under_pointer()
             .unwrap_or_else(|| Rectangle::from_size((1280, 800).into()));
@@ -152,7 +150,7 @@ impl Dashi {
             self.map_frame_at(&window, at, !locked);
         } else {
             // Waiting on its Space, where the slide there draws it.
-            let bar = super::windows::bar_of(self, &window);
+            let bar = super::geometry::bar_of(self, &window);
             if let Some(entry) = self.windows.get_mut(id) {
                 entry.away_at = Some((at.x, at.y + bar).into());
             }
@@ -174,7 +172,7 @@ impl Dashi {
         }
         if let Some(entry) = self.windows.get(id) {
             let window = describe(entry, self);
-            self.ipc.emit("window-opened", json!({ "window": window }));
+            self.ipc.emit(Event::WindowOpened { window });
             self.foreign_opened(id);
         }
     }
@@ -182,13 +180,19 @@ impl Dashi {
     /// The area the menu bar and Dock leave free on the screen under the pointer (global logical).
     pub(crate) fn usable_under_pointer(&self) -> Option<Rectangle<i32, Logical>> {
         let pointer = self.seat.get_pointer()?.current_location().to_i32_round();
+        self.usable_at(pointer)
+    }
+
+    /// The area the menu bar and Dock leave free on the screen holding `point`
+    /// (else the first screen), in global logical coordinates.
+    pub(crate) fn usable_at(&self, point: Point<i32, Logical>) -> Option<Rectangle<i32, Logical>> {
         let output = self
             .space
             .outputs()
             .find(|output| {
                 self.space
                     .output_geometry(output)
-                    .is_some_and(|g| g.contains(pointer))
+                    .is_some_and(|g| g.contains(point))
             })
             .or_else(|| self.space.outputs().next())?;
         let origin = self.space.output_geometry(output)?.loc;

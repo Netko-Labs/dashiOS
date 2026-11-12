@@ -8,14 +8,14 @@
  * capture ended.
  */
 
-import { parseOutputs } from "../arrange.ts";
-import type { Compositor, CompositorWindow } from "../compositor.ts";
+import { placedOutputs } from "../arrange/index.ts";
+import type { Compositor, CompositorWindow } from "../compositor/index.ts";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 import { centeredOn } from "../switcher/index.ts";
-import { PICKER, pickerLayout } from "./layout.ts";
-import { PickerStore, SharePicker } from "./panel.tsx";
+import { PICKER, pickerLayout } from "./lib/layout.ts";
+import { PickerStore, SharePicker } from "./lib/panel.tsx";
+import { serveSharePicker } from "./lib/server.ts";
 import { type ShareChoice, socketPath } from "./protocol.ts";
-import { serveSharePicker } from "./server.ts";
 
 export interface SharePickerDeps {
   compositor: Compositor;
@@ -32,23 +32,56 @@ export interface SharePickerDeps {
 /** If the capture never starts (the portal failed), notifications come back after this long. */
 const QUIET_UNTIL_CAPTURE_MS = 30_000;
 
-export function startSharePicker(deps: SharePickerDeps): () => void {
-  const { compositor } = deps;
-  const path = socketPath();
-  if (!path) {
-    console.error("dashi-shell: no XDG_RUNTIME_DIR; the share picker is off");
-    return () => {};
-  }
-  let stopQuiet: (() => void) | null = null;
+/** Where the picker's pictures go: the screens and windows it shows, on the screen it is on. */
+interface PicturePlan {
+  output: string;
+  screens: readonly { name: string }[];
+  windows: readonly { id: number }[];
+  layout: ReturnType<typeof pickerLayout>;
+  origin: { x: number; y: number };
+  space: number;
+}
 
-  /** Do Not Disturb until the capture that follows the choice ends. */
-  const quietWhileSharing = () => {
-    if (deps.notifications.doNotDisturb) return;
-    stopQuiet?.();
-    deps.notifications.setDoNotDisturb(true);
+/** The pictures of the screens and windows, drawn where the picker shows them (on), or cleared (off). */
+function sendPictures(compositor: Compositor, plan: PicturePlan, on: boolean): Promise<unknown> {
+  const { layout, origin } = plan;
+  return Promise.all([
+    compositor.spacePreviews({
+      output: plan.output,
+      rects: on
+        ? plan.screens.flatMap((screen, index) => {
+            const rect = layout.screens[index];
+            return rect ? [{ space: plan.space, screen: screen.name, x: origin.x + rect.x, y: origin.y + rect.y, w: rect.width, h: rect.height }] : [];
+          })
+        : [],
+    }),
+    compositor.windowThumbnails({
+      rects: on
+        ? plan.windows.flatMap((window, index) => {
+            const rect = layout.windows[index];
+            return rect ? [{ window: window.id, x: origin.x + rect.x, y: origin.y + rect.y, w: rect.width, h: rect.height }] : [];
+          })
+        : [],
+    }),
+  ]).catch((error) => console.error("dashi-shell: the share picker's pictures:", error));
+}
+
+/** Do Not Disturb while a share is on: from the choice until the capture that follows it ends. */
+class SharingQuiet {
+  private stopQuiet: (() => void) | null = null;
+
+  constructor(
+    private readonly compositor: Compositor,
+    private readonly notifications: SharePickerDeps["notifications"],
+  ) {}
+
+  start(): void {
+    if (this.notifications.doNotDisturb) return;
+    this.stopQuiet?.();
+    this.notifications.setDoNotDisturb(true);
     let started = false;
     const giveUp = setTimeout(() => !started && end(), QUIET_UNTIL_CAPTURE_MS);
-    const off = compositor.on((event) => {
+    const off = this.compositor.on((event) => {
       if (event.event !== "screen-capture") return;
       if (event.active) started = true;
       else if (started) end();
@@ -56,15 +89,30 @@ export function startSharePicker(deps: SharePickerDeps): () => void {
     const end = () => {
       clearTimeout(giveUp);
       off();
-      stopQuiet = null;
-      deps.notifications.setDoNotDisturb(false);
+      this.stopQuiet = null;
+      this.notifications.setDoNotDisturb(false);
     };
-    stopQuiet = end;
-  };
+    this.stopQuiet = end;
+  }
+
+  /** Ends the quiet early (the picker was closed by the shell going away). */
+  stop(): void {
+    this.stopQuiet?.();
+  }
+}
+
+export function startSharePicker(deps: SharePickerDeps): () => void {
+  const { compositor } = deps;
+  const path = socketPath();
+  if (!path) {
+    console.error("dashi-shell: no XDG_RUNTIME_DIR; the share picker is off");
+    return () => {};
+  }
+  const quiet = new SharingQuiet(compositor, deps.notifications);
 
   const ask = async (abort: AbortSignal): Promise<ShareChoice | null> => {
-    const [name, answer, windows] = await Promise.all([deps.screen(), compositor.request("outputs"), compositor.windows()]);
-    const outputs = parseOutputs(answer);
+    const [name, answer, windows] = await Promise.all([deps.screen(), compositor.outputs(), compositor.windows()]);
+    const outputs = placedOutputs(answer);
     const output = outputs.find((each) => each.name === name) ?? outputs[0];
     if (!output || abort.aborted) return null;
     const shareable = windows
@@ -76,27 +124,8 @@ export function startSharePicker(deps: SharePickerDeps): () => void {
     );
     const origin = centeredOn(output.usable, layout.size);
     const store = new PickerStore();
-    const space = deps.currentSpace();
-    const pictures = (on: boolean) =>
-      Promise.all([
-        compositor.request("space-previews", {
-          output: output.name,
-          rects: on
-            ? outputs.flatMap((screen, index) => {
-                const rect = layout.screens[index];
-                return rect ? [{ space, screen: screen.name, x: origin.x + rect.x, y: origin.y + rect.y, w: rect.width, h: rect.height }] : [];
-              })
-            : [],
-        }),
-        compositor.request("window-thumbnails", {
-          rects: on
-            ? shareable.flatMap((window, index) => {
-                const rect = layout.windows[index];
-                return rect ? [{ window: window.id, x: origin.x + rect.x, y: origin.y + rect.y, w: rect.width, h: rect.height }] : [];
-              })
-            : [],
-        }),
-      ]).catch((error) => console.error("dashi-shell: the share picker's pictures:", error));
+    const plan: PicturePlan = { output: output.name, screens: outputs, windows: shareable, layout, origin, space: deps.currentSpace() };
+    const pictures = (on: boolean) => sendPictures(compositor, plan, on);
 
     return new Promise<ShareChoice | null>((resolve) => {
       let done = false;
@@ -106,7 +135,7 @@ export function startSharePicker(deps: SharePickerDeps): () => void {
         done = true;
         void pictures(false);
         handle?.close();
-        if (choice && store.getSnapshot().quiet) quietWhileSharing();
+        if (choice && store.getSnapshot().quiet) quiet.start();
         resolve(choice);
       };
       handle = deps.open(
@@ -133,6 +162,6 @@ export function startSharePicker(deps: SharePickerDeps): () => void {
   const stop = serveSharePicker(path, ask);
   return () => {
     stop();
-    stopQuiet?.();
+    quiet.stop();
   };
 }

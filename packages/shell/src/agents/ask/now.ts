@@ -8,7 +8,8 @@
  */
 
 import type { AgentInfo, Turn } from "../presence.ts";
-import { isActive, type TaskView } from "./tasks.ts";
+import { isActive } from "./lib/task-types.ts";
+import type { TaskView } from "./types.ts";
 
 export type NowItem =
   /** An agent handed a window to the person (hand_over): Return brings it forward. */
@@ -53,8 +54,9 @@ export function nowItems(input: { turns: readonly Turn[]; tasks: readonly TaskVi
     phase: task.phase,
   }));
   const handing = new Set(input.turns.map((turn) => turn.agent));
+  // A run started from the launcher is listed as itself ("Agents"), not as its connection.
   const agents: NowItem[] = input.agents
-    .filter((agent) => !handing.has(agent.id))
+    .filter((agent) => !handing.has(agent.id) && agent.task === undefined)
     .map((agent) => ({ kind: "agent", id: agent.id, name: agent.name, status: agent.status }));
   return [...turns, ...tasks, ...agents];
 }

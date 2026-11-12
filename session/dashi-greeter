@@ -19,7 +19,7 @@ quote() { printf "'%s'" "$(printf %s "$1" | sed "s/'/'\\\\''/g")"; }
 if [ -f "$base/share/dashi/greeter/src/main.tsx" ]; then
   greeter=$base/share/dashi/greeter
   comp=${DASHI_COMP:-$base/bin/dashi-comp}
-  export DASHI_METAL_HOST=${DASHI_METAL_HOST:-$base/libexec/dashi/mirin-metal-host}
+  export DASHI_METAL_HOST="${DASHI_METAL_HOST:-$base/libexec/dashi/mirin-metal-host}"
   bun=${DASHI_BUN:-$base/libexec/dashi/bin/bun}
 elif [ -f "$base/packages/greeter/src/main.tsx" ]; then
   greeter=$base/packages/greeter
@@ -47,7 +47,7 @@ exec >>"$log" 2>&1
 
 export XDG_SESSION_TYPE=wayland
 export XDG_CURRENT_DESKTOP=Dashi
-export LANG=${LANG:-C.UTF-8}
+export LANG="${LANG:-C.UTF-8}"
 # The greeter ends this compositor once the session is chosen (exec keeps the pid).
 export DASHI_GREETER_COMPOSITOR=$$
 

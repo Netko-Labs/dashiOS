@@ -1,13 +1,13 @@
 import { expect, test } from "bun:test";
 import { writeSync } from "node:fs";
-import { jobAttributes, listPrinters, printerOf, printPdf } from "../apps/portal/print/cups.ts";
-import { PrintBackend, type PrintDeps } from "../apps/portal/print/index.ts";
-import { attr, decodeResponse, encodeRequest, Operation, Tag, ValueTag } from "../apps/portal/print/ipp.ts";
-import { choiceFrom, everydayMedia, gtkSettings, mediaLabel, PrintTokens, parseRanges, pdfPageCount } from "../apps/portal/print/settings.ts";
-import type { Exporter } from "../apps/portal/request.ts";
-import { Requests } from "../apps/portal/request.ts";
-import { type Variant, variant } from "../src/dbus/index.ts";
-import { closeFd, pipePair } from "../src/dbus/libc.ts";
+import { PrintBackend, type PrintDeps } from "../apps/portal/lib/print/backend.ts";
+import { jobAttributes, listPrinters, printerOf, printPdf } from "../apps/portal/lib/print/cups.ts";
+import { attr, decodeResponse, encodeRequest, Operation, Tag, ValueTag } from "../apps/portal/lib/print/ipp.ts";
+import { choiceFrom, everydayMedia, gtkSettings, mediaLabel, PrintTokens, parseRanges, pdfPageCount } from "../apps/portal/lib/print/settings.ts";
+import type { Exporter } from "../apps/portal/lib/request.ts";
+import { Requests } from "../apps/portal/lib/request.ts";
+import { type Variant, variant } from "../src/shared/dbus/index.ts";
+import { closeFd, pipePair } from "../src/shared/dbus/libc.ts";
 
 /** An IPP response as CUPS would send it: printers, with a collection in the middle to read past. */
 function printersResponse(): Uint8Array {

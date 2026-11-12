@@ -1,6 +1,6 @@
 /**
  * The Dock's settings as the shell uses them: the latest of what the file
- * says (settings.ts hears every change to it) and what was just asked for
+ * says (settings/settings.ts hears every change to it) and what was just asked for
  * here (the shortcut, the Dock's menu, an agent), so a toggle takes effect
  * at once and not when the file watcher gets to it. Changes are written
  * through to settings.json, which stays the one source of truth: a hand edit

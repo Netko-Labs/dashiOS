@@ -4,215 +4,67 @@
  * compositor, the arranger, the lock screen, and the system.
  */
 
-import pkg from "../../package.json" with { type: "json" };
-import { ownerPids } from "../app-menus/focus.ts";
-import { AppMenuStore } from "../app-menus/store.ts";
-import { type App, appFor, iconPath } from "../apps.ts";
-import type { Arranger } from "../arrange.ts";
-import { PairingPrompt } from "../bluetooth/prompt.tsx";
-import type { BluetoothSetup } from "../bluetooth/select.ts";
-import { BluetoothStore } from "../bluetooth/store.ts";
-import type { Compositor, CompositorWindow } from "../compositor.ts";
-import { controlFlags, DeviceStore, radiosFor } from "../control-center/index.ts";
-import type { DockMenuAction } from "../dock/menu.ts";
-import { type Entry, launchEntry, loadEntries } from "../entries.ts";
-import type { Laptop } from "../laptop/start.ts";
-import type { NotificationStore } from "../notifications/index.ts";
+import { AppMenuStore, ownerPids } from "../app-menus/index.ts";
+import type { Compositor } from "../compositor/index.ts";
+import { loadEntries } from "../entries.ts";
 import { openOverlay } from "../overlay.tsx";
-import type { SharedStores } from "../settings-app/services.ts";
-import { SoundStore, soundBackendFor } from "../sound/index.ts";
-import { run as runCommand } from "../system/exec.ts";
-import type { SystemStore } from "../system/store.ts";
-import { chooseNetwork } from "../wifi/flow.ts";
-import { PasswordPrompt } from "../wifi/prompt.tsx";
-import type { WifiSetup } from "../wifi/select.ts";
-import type { WifiStore } from "../wifi/store.ts";
-import { type AboutTarget, type ActionDeps, runMenuAction } from "./actions.ts";
+import type { Entry } from "../shared/app-entries/index.ts";
 import { MenuController } from "./controller.ts";
-import { Dialogs } from "./dialogs.tsx";
-import { findEntry, helpCommand, spawnDetached } from "./launch.ts";
-import { type MenuAction, type MenuContext, type PowerKind, type WindowMenu, windowMenus } from "./model.ts";
-import { PopoverRoot, popoverSurface } from "./popover.tsx";
-import { runPower } from "./session.ts";
-import type { AboutInfo } from "./sheets.tsx";
-import type { StatusMenuAction } from "./status-menu.ts";
+import { findEntry } from "./launch.ts";
+import { runMenuAction } from "./lib/actions.ts";
+import { energyOpener } from "./lib/activity-monitor.ts";
+import { popoverSurface } from "./lib/popover.tsx";
+import { menuStores, powerDialogs } from "./lib/stores.ts";
+import { actionDeps, controlCenterProps, menuContexts, popoverElement } from "./lib/wiring.tsx";
+import type { Menus, MenusOptions } from "./options.ts";
+import type { MenuAction, PowerKind } from "./types.ts";
 
-/** The popover is gone this long before the lock screen or a sleep starts, so neither shows it. */
-const SETTLE_MS = 150;
-
-export interface MenusOptions {
-  apps: readonly App[];
-  /** The installed apps, shared with the Dock and kept current (app-catalog.ts); read once here when absent. */
-  catalog?: readonly Entry[];
-  compositor: Compositor | null;
-  arranger: Arranger | null;
-  /** The Desktops, for the Window menu's "Move to" rows (spaces/). */
-  desktops?: {
-    getSnapshot(): { labels: readonly string[]; current: number; fullscreen?: readonly (number | null)[] };
-    move(window: number, space: number | "new"): Promise<void>;
-  };
-  system: SystemStore;
-  /** Control Center's slider set the brightness to `level` (0..1): at 0 the built-in screen goes off. */
-  brightnessChanged?: (level: number) => void;
-  /** What the notification center lists; it also hears when the center opens (banners go away then). */
-  notifications: NotificationStore;
-  /** What Wi-Fi is wired to: NetworkManager, or the stand-in of a development run. */
-  wifi: WifiSetup;
-  /** The Wi-Fi list and joins; agents use the same store (agents/desktop/). */
-  wifiStore: WifiStore;
-  /** What Bluetooth is wired to: BlueZ, or the stand-in of a development run. */
-  bluetooth: BluetoothSetup;
-  lock(): void;
-  /** The Sleep row: locks the screen, then suspends (power/). */
-  sleep(): void;
-  /** Shows the shortcut sheet for the app with this name. */
-  showShortcuts(appName: string): void;
-  /** Opens Force Quit Applications. */
-  openForceQuit(): void;
-  /** Opens System Settings. */
-  openSettings?(): void;
-  /** Opens the launcher (Search… in the Dashi menu). */
-  openSearch?(): void;
-  /** Carries out a chosen row of a Dock icon's menu (dock/). */
-  runDock(action: DockMenuAction): void;
-  /** Carries out a chosen row of a status item's menu (an extra's or the battery's). */
-  runStatus(action: StatusMenuAction): void;
-  /** A status item's menu closed. */
-  statusClosed?(key: string): void;
-  /** How much of that screen's bottom the Dock takes now (dock/presenter.ts `bottomInset`); the notification center stops above it. */
-  dockInset?(output?: string): number;
-  /** The menus apps published (app-menus/); without it the bar has only Dashi's. */
-  appMenus?: AppMenuStore;
-  /** The laptop's stores, for Control Center's laptop row (laptop/). */
-  laptop?: Laptop;
-}
-
-export interface Menus {
-  controller: MenuController;
-  /** The stores Control Center runs, which System Settings' machine panes share. */
-  shared: SharedStores;
-  /** Asks first, in the menus' sheet, then restarts, shuts down, or logs out. */
-  confirmPower(what: PowerKind): void;
-  /** Takes down whatever the menus have on screen (the screen locked); nothing the sheets asked is carried out. */
-  dismissAll(): void;
-  /**
-   * The menus the bar shows while `window` is focused, the Dashi menu aside:
-   * the app menu, then the app's own or Dashi's generic ones, Window, Help
-   * (for agents, agents/desktop/menus.ts).
-   */
-  menusOf(window: CompositorWindow): Promise<WindowMenu[]>;
-  /** Carries out a row of `menusOf`, as choosing it in the bar does. */
-  run(action: MenuAction, appName: string): Promise<void>;
-  close(): void;
-}
-
-export function aboutInfo(target: AboutTarget, icon: string | undefined): AboutInfo {
-  if (target.kind === "dashi") {
-    return {
-      title: "Dashi",
-      lines: [`Version ${pkg.version}`, "A Linux desktop on mirin metal:", "a Rust compositor and a TypeScript shell."],
-    };
-  }
-  return {
-    title: target.name,
-    icon: icon ?? iconPath("generic"),
-    lines: [target.appId || "No app id", ...(target.pid === null ? [] : [`Process ${target.pid}`])],
-  };
+/** An app's window that took a second start's file (Preview's empty one) comes forward, as a new window would have. */
+function raiseOnSecondStart(compositor: Compositor | null, appMenus: AppMenuStore): void {
+  appMenus.onFront((pid) => {
+    if (!compositor) return;
+    void compositor
+      .windows()
+      .then((windows) => {
+        const window = windows.find((each) => ownerPids(each.pid).includes(pid));
+        return window ? compositor.focus({ window: window.id }) : undefined;
+      })
+      .catch(() => {});
+  });
 }
 
 export function startMenus(options: MenusOptions): Menus {
-  const { compositor } = options;
+  const { compositor, pipewire } = options;
   const appMenus = options.appMenus ?? new AppMenuStore();
   let entries: readonly Entry[] | null = options.catalog ?? null;
   const entryFor = (appId: string) => findEntry((entries ??= loadEntries()), appId);
 
   // The sheet names the app the menu was opened over, which no longer has the keyboard.
   let lastAppName = "Desktop";
-  const dialogs = new Dialogs(openOverlay, runPower);
-  // On a development run the radios' switches write to memory, never to the developer's machine.
-  const radios = radiosFor({
-    standIn: options.wifi.fake || options.bluetooth.fake,
-    run: runCommand,
-    wifi: options.wifi.radio,
-    bluetooth: options.bluetooth.radio,
-  });
-  const devices = new DeviceStore({
-    volumeChanged: (volume) => options.system.publish("volume", volume),
-    ...(options.brightnessChanged ? { brightnessChanged: options.brightnessChanged } : {}),
-    wifiRadio: radios.wifi,
-    bluetoothRadio: radios.bluetooth,
-    // The Bluetooth radio asks BlueZ itself (and falls back to bluetoothctl, which may be missing).
-    hasBluetoothctl: true,
-  });
-  const wifi = options.wifiStore;
-  // On a development run the output switch is remembered in memory, never made the default on the developer's machine.
-  const audio = soundBackendFor({ standIn: options.wifi.fake, run: runCommand });
-  const sound = new SoundStore(audio);
-  const passwords = new PasswordPrompt(openOverlay, wifi);
-  const bluetooth = new BluetoothStore(options.bluetooth.backend);
-  // BlueZ's pairing questions (compare a code, type a PIN) come to the store and show on a sheet.
-  options.bluetooth.backend.setPairingHandler(bluetooth);
-  const pairing = new PairingPrompt(openOverlay, bluetooth, () => controller.close());
-  pairing.start();
-
-  const desktopsNow = (): Pick<MenuContext, "desktops"> => {
-    const desktops = options.desktops?.getSnapshot();
-    return desktops
-      ? { desktops: { labels: desktops.labels, current: desktops.current, ...(desktops.fullscreen ? { fullscreen: desktops.fullscreen } : {}) } }
-      : {};
-  };
-
-  const context = async (appName: string): Promise<MenuContext> => {
-    const windows = await (compositor?.windows() ?? Promise.resolve([])).catch(() => []);
-    const focused = windows.find((window) => window.focused) ?? null;
-    return {
-      appName,
-      windows,
-      focused,
-      canLaunch: focused !== null && entryFor(focused.appId) !== undefined,
-      canOpenHelp: helpCommand() !== null,
-      arrangement: focused ? (options.arranger?.arrangement(focused.id) ?? null) : null,
-      ...desktopsNow(),
-    };
-  };
-
+  // A confirmed restart, shut down, or log out asks the apps to close first (closing-apps.ts).
+  const dialogs = powerDialogs(options, appMenus, entryFor);
+  const closeMenus = (): void => controller.close();
+  const stores = menuStores(options, closeMenus);
+  const { context, menusOf } = menuContexts(options, appMenus, entryFor);
+  const chargeLimit = options.chargeLimit ?? (() => null);
+  const controlCenter = controlCenterProps(options, stores, closeMenus, chargeLimit);
   const controller: MenuController = new MenuController({
     context,
     openSurface: (onClosed, output) =>
       openOverlay(
         { title: "Menu", width: 1, height: 1, surface: popoverSurface(output) },
-        <PopoverRoot
-          controller={controller}
-          appMenus={appMenus}
-          controlCenter={{
-            flags: controlFlags(),
-            devices,
-            system: options.system,
-            wifi,
-            sound,
-            bluetooth,
-            ...(options.laptop ? { laptop: options.laptop } : {}),
-            onJoin: (network) =>
-              void chooseNetwork(wifi, network, (secured) => {
-                // The sheet takes the keyboard; the popover would only sit in its way.
-                controller.close();
-                passwords.ask(secured);
-              }),
-            onLock: () => {
-              controller.close();
-              setTimeout(options.lock, SETTLE_MS);
-            },
-          }}
-          notifications={options.notifications}
-          dockInset={(output) => options.dockInset?.(output) ?? 0}
-          onChoose={(action, appName) => {
+        popoverElement({
+          options,
+          controller,
+          appMenus,
+          controlCenter,
+          chargeLimit,
+          showEnergy,
+          onChoose: (action, appName) => {
             lastAppName = appName;
             run(action);
-          }}
-          onDockChoose={options.runDock}
-          onStatusChoose={(action) => (action.kind === "activity-monitor" ? void deps.launchApp("dev.dashi.activity-monitor") : options.runStatus(action))}
-          onStatusClosed={(key) => options.statusClosed?.(key)}
-        />,
+          },
+        }),
         onClosed,
       ),
   });
@@ -222,60 +74,30 @@ export function startMenus(options: MenusOptions): Menus {
   const syncCenter = () => options.notifications.setCenterOpen(controller.getSnapshot().popover?.kind === "notification-center");
   const stopSyncingCenter = controller.subscribe(syncCenter);
 
-  const deps: ActionDeps = {
-    compositor,
-    arranger: options.arranger,
-    lock: () => void setTimeout(options.lock, SETTLE_MS),
-    launchApp: (appId) => {
-      const entry = entryFor(appId);
-      return entry ? launchEntry(entry) !== null : false;
-    },
-    showAbout: (target) => dialogs.about(aboutInfo(target, target.kind === "app" ? entryFor(target.appId)?.icon : undefined)),
-    confirmPower,
-    suspend: () => void setTimeout(options.sleep, SETTLE_MS),
-    openHelp: () => {
-      const command = helpCommand();
-      if (command) spawnDetached(command);
-    },
-    showShortcuts: () => options.showShortcuts(lastAppName),
-    openForceQuit: () => options.openForceQuit(),
-    openSettings: () => options.openSettings?.(),
-    openSearch: () => options.openSearch?.(),
-    selectAppItem: (pid, id) => void appMenus.select(pid, id),
-    moveToSpace: (window, space) => options.desktops?.move(window, space) ?? Promise.resolve(),
-  };
+  const deps = actionDeps({ options, appMenus, entryFor, dialogs, lastAppName: () => lastAppName });
+
+  // The battery menu's apps: Activity Monitor's Energy tab, with the app chosen selected.
+  const showEnergy = energyOpener(compositor, appMenus, entryFor);
+
+  raiseOnSecondStart(compositor, appMenus);
 
   const run = (action: MenuAction): void => {
     runMenuAction(action, deps).catch((error) => console.error(`dashi-shell: menu action “${action.kind}” failed:`, error));
   };
 
-  const menusOf = async (window: CompositorWindow): Promise<WindowMenu[]> => {
-    const windows = await (compositor?.windows() ?? Promise.resolve([])).catch(() => []);
-    const appName = appFor(options.apps, window, entryFor).name;
-    const app = appMenus.menusFor(ownerPids(window.pid));
-    const ctx: MenuContext = {
-      appName,
-      windows,
-      focused: window,
-      canLaunch: entryFor(window.appId) !== undefined,
-      canOpenHelp: helpCommand() !== null,
-      app,
-      arrangement: options.arranger?.arrangement(window.id) ?? null,
-      ...desktopsNow(),
-    };
-    return windowMenus(ctx);
-  };
-
   return {
     controller,
+    controlCenter,
     shared: {
-      wifi,
-      devices,
-      bluetooth,
-      sound,
-      audio,
+      wifi: stores.wifi,
+      devices: stores.devices,
+      bluetooth: stores.bluetooth,
+      sound: stores.sound,
+      audio: stores.audio,
+      ...(options.mixer ? { mixer: options.mixer } : {}),
+      ...(pipewire ? { pipewire } : {}),
       // The popover is not up when Settings asks, so there is nothing to close first.
-      askWifiPassword: (network) => passwords.ask(network),
+      askWifiPassword: (network) => stores.passwords.ask(network),
     },
     confirmPower,
     menusOf,
@@ -286,16 +108,17 @@ export function startMenus(options: MenusOptions): Menus {
     dismissAll() {
       controller.close();
       dialogs.close();
-      passwords.close();
-      pairing.dismiss();
+      stores.passwords.close();
+      stores.pairing.dismiss();
     },
     close() {
       controller.close();
       stopSyncingCenter();
       dialogs.close();
-      passwords.close();
-      sound.close();
-      pairing.close();
+      stores.passwords.close();
+      stores.sound.close();
+      stores.stopDevices();
+      stores.pairing.close();
       options.wifi.backend.close();
       options.bluetooth.backend.close();
     },

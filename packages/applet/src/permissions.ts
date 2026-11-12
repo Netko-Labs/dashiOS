@@ -1,7 +1,7 @@
 /**
  * What an applet may touch, as applet.json names it, and what each name means
  * in plain words (the consent sheet, the store's page). The sandbox
- * (shell's src/applets/sandbox.ts) gives an applet exactly these and nothing
+ * (shell's src/applets/lib/sandbox.ts) gives an applet exactly these and nothing
  * else: no permission, no network, no files, no buses beyond the applets
  * socket and its own Wayland surfaces.
  *
@@ -9,13 +9,21 @@
  *   notifications             org.freedesktop.Notifications on the session bus
  *   hardware.sensors          dashi-hardware: read the machine (Describe, Get, the Changed signal)
  *   hardware.power            dashi-hardware: everyday knobs (mode, charge limit, boost, EPP)
- *   hardware.lighting         dashi-hardware: the keyboard light
+ *   hardware.lighting         dashi-hardware: the keyboard light and the lid's Slash bar
  *   hardware.fans             dashi-hardware: fan curves (asks for the password: polkit `tune`)
  *   hardware.tuning           dashi-hardware: power limits, the Curve Optimizer, the graphics card's limits (`tune`)
+ *   power.mode                Dashi's power mode on the applets channel: read the choice, ask for another (power.ts)
+ *   controls                  its controls in Control Center (controls.ts); nothing else
  *   dbus.system:NAME          talk to NAME on the system bus
  *   dbus.session:NAME         talk to NAME on the session bus
  *   files.DIR, files.DIR:read one of the person's folders (downloads, documents, pictures, music, videos, desktop)
  */
+
+/** The permission for Dashi's power mode on the applets channel. */
+export const POWER_MODE_PERMISSION = "power.mode";
+
+/** The permission for controls in Control Center (controls.ts). */
+export const CONTROLS_PERMISSION = "controls";
 
 export const FOLDERS = ["downloads", "documents", "pictures", "music", "videos", "desktop"] as const;
 export type Folder = (typeof FOLDERS)[number];
@@ -27,6 +35,10 @@ export type Permission =
   | { kind: "network" }
   | { kind: "notifications" }
   | { kind: "hardware"; scope: HardwareScope }
+  /** Dashi's own power mode, Automatic included (power.ts): the shell checks it; the sandbox gives nothing more. */
+  | { kind: "power-mode" }
+  /** Tiles in Control Center (controls.ts): drawn by Dashi; grants nothing else. */
+  | { kind: "controls" }
   | { kind: "dbus"; bus: "system" | "session"; name: string }
   | { kind: "files"; folder: Folder; write: boolean };
 
@@ -40,6 +52,8 @@ export function parsePermission(value: unknown): Permission | { error: string } 
   if (typeof value !== "string") return { error: "a permission must be a string" };
   if (value === "network") return { kind: "network" };
   if (value === "notifications") return { kind: "notifications" };
+  if (value === POWER_MODE_PERMISSION) return { kind: "power-mode" };
+  if (value === CONTROLS_PERMISSION) return { kind: "controls" };
   const hardware = /^hardware\.([a-z]+)$/.exec(value);
   if (hardware) {
     const scope = HARDWARE.find((each) => each === hardware[1]);
@@ -71,12 +85,37 @@ export function permissionName(permission: Permission): string {
       return permission.kind;
     case "hardware":
       return `hardware.${permission.scope}`;
+    case "power-mode":
+      return POWER_MODE_PERMISSION;
+    case "controls":
+      return CONTROLS_PERMISSION;
     case "dbus":
       return `dbus.${permission.bus}:${permission.name}`;
     case "files":
       return `files.${permission.folder}${permission.write ? "" : ":read"}`;
   }
 }
+
+/**
+ * The one set of lines for what a program may reach, in plain words: an
+ * applet's permissions (here), a Flatpak app's sandbox (Software's trust
+ * card), and what apps were allowed through the portal (Settings › Privacy &
+ * Security). One thing, one sentence, wherever it is shown.
+ */
+export const REACH = {
+  network: "Use the network",
+  notifications: "Show notifications",
+  camera: "Use the camera",
+  microphone: "Use the microphone",
+  sound: "Play sound",
+  location: "See your location",
+  background: "Run in the background",
+  screenshot: "Take screenshots",
+  wallpaper: "Change the wallpaper",
+} as const;
+
+/** "Read and change files in Downloads", "Read files in Pictures": a folder, by the name a person knows. */
+export const folderLine = (name: string, write: boolean): string => `${write ? "Read and change" : "Read"} files in ${name}`;
 
 const FOLDER_NAMES: Record<Folder, string> = {
   downloads: "Downloads",
@@ -99,7 +138,7 @@ const KNOWN_SERVICES: Readonly<Record<string, string>> = {
 const HARDWARE_WORDS: Record<HardwareScope, string> = {
   sensors: "Read temperatures, fan speeds and power draw",
   power: "Change the power mode, battery charge limit and processor boost",
-  lighting: "Change the keyboard light",
+  lighting: "Change the keyboard and lid lights",
   fans: "Change fan curves",
   tuning: "Change power limits and undervolt the processor",
 };
@@ -108,15 +147,19 @@ const HARDWARE_WORDS: Record<HardwareScope, string> = {
 export function describePermission(permission: Permission): string {
   switch (permission.kind) {
     case "network":
-      return "Use the network";
+      return REACH.network;
     case "notifications":
-      return "Show notifications";
+      return REACH.notifications;
     case "hardware":
       return HARDWARE_WORDS[permission.scope];
+    case "power-mode":
+      return "See and choose the power mode, Automatic included";
+    case "controls":
+      return "Add controls to Control Center";
     case "dbus":
       return `Talk to ${KNOWN_SERVICES[permission.name] ?? permission.name}${permission.bus === "system" ? " on the system" : ""}`;
     case "files":
-      return `${permission.write ? "Read and change" : "Read"} files in ${FOLDER_NAMES[permission.folder]}`;
+      return folderLine(FOLDER_NAMES[permission.folder], permission.write);
   }
 }
 

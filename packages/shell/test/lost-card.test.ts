@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { Card } from "../src/gpu.ts";
+import type { Card } from "../src/gpu/gpu.ts";
 import { discreteOf, pciPlace, screensOn } from "../src/graphics/card.ts";
 import { type CardPlace, LostCardWatch, lossIn, parseJournalLine } from "../src/graphics/lost-card.ts";
 

@@ -5,12 +5,12 @@
  * nothing else goes onto it, and its window stays there until it leaves full screen.
  */
 
-import { parseSpaces, spaceLabel } from "../../spaces/model.ts";
+import { parseSpaces, spaceLabel } from "../../spaces/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
-import { named, noWindow, subject } from "../subject.ts";
+import { named, noWindow, subject } from "../lib/subject.ts";
 
 async function spaces(ctx: RunContext) {
-  return parseSpaces(await ctx.compositor.request("spaces"));
+  return parseSpaces(await ctx.compositor.spaces());
 }
 
 /** What the shell calls Space `index` (a full-screen Desktop after its app), else "Desktop N". */
@@ -39,7 +39,7 @@ export async function switchSpace(space: number, ctx: RunContext): Promise<ToolR
   const state = await spaces(ctx);
   if (!state || space >= state.count) return toolError(`There is no Space ${space + 1}; list_spaces shows the ${state?.count ?? 1} there are.`);
   ctx.status(`Switching to ${nameOf(space, ctx)}`);
-  await ctx.compositor.request("space-switch", { space });
+  await ctx.compositor.spaceSwitch({ space });
   return text(`${nameOf(space, ctx)} shows now.`);
 }
 
@@ -52,7 +52,7 @@ export async function moveWindowToSpace(id: number, space: number, ctx: RunConte
   if (fullscreen.includes(id)) return toolError(`w${id} is full screen on its own Desktop; take it out of full screen first.`);
   if ((fullscreen[space] ?? null) !== null) return toolError(`Space ${space + 1} is a full-screen window's own Desktop; nothing else goes there.`);
   ctx.status(`Moving ${subject(window, ctx)} to ${spaceLabel(space)}`);
-  await ctx.compositor.request("space-move", { window: id, space });
+  await ctx.compositor.spaceMove({ window: id, space });
   return text(
     `w${id}${ctx.mayName() ? ` (“${window.title}”)` : ""} is on ${spaceLabel(space)}${space === state.current ? "" : ", off screen until that Space shows"}.`,
   );

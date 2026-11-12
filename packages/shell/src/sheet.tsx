@@ -8,8 +8,8 @@
 
 import { Shortcut, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import type { PublishedMenus } from "./app-menus/protocol.ts";
 import { KeyCatcher } from "./overlay.tsx";
+import type { PublishedMenus } from "./shared/app-menus/index.ts";
 
 /** The card's size: five columns; its height fits the longest (MAX_ROWS rows). The surface adds a margin for the corners and shadow. */
 export const SHEET = { width: 860, height: 380 } as const;
@@ -89,6 +89,7 @@ const GROUPS: ReadonlyArray<[string, Rows]> = [
       ["Lock screen", "⌃❖Q"],
       ["Force Quit", "⌥❖Esc"],
       ["Dock hiding", "⌥❖D"],
+      ["Menu bar", "⌃F2"],
     ],
   ],
   [

@@ -13,7 +13,8 @@ import { GraphicsController } from "../src/graphics/controller.ts";
 import { AWAKE_WATTS, groupHolders, holdingProcesses, type ProcessFds } from "../src/graphics/holders.ts";
 import { decideGraphics, type GraphicsInputs } from "../src/graphics/policy.ts";
 import type { GraphicsChoice } from "../src/power/modes/settings.ts";
-import { FakeBus, settle } from "./fake-bus.ts";
+import { FakeBus } from "./fake-bus.ts";
+import { settle } from "./support/time.ts";
 
 const base: GraphicsInputs = { choice: "automatic", plugged: false, cardScreens: [], holders: [], current: "hybrid", lost: false };
 
@@ -73,6 +74,9 @@ test("holders: the processes with the card's own nodes open, never the built-in 
   expect(holdingProcesses(procs, CARD.nodes, 4242).map((proc) => proc.pid)).toEqual([5964, 5900, 7100]);
   // nvidiactl alone isn't the card.
   expect(holdingProcesses([{ pid: 1, comm: "x", links: ["/dev/nvidiactl"] }], CARD.nodes, 0)).toEqual([]);
+  // The compositor holds it only for a screen, a client, or the shell: never a holder to quit.
+  expect(holdingProcesses([{ pid: 2, comm: "dashi-comp", links: [...CARD.nodes] }], CARD.nodes, 0)).toEqual([]);
+  expect(groupHolders([], (_pid, comm) => comm, ["dashi-comp"], null)).toEqual([]);
 });
 
 test("holders by app, with the draw shared out; names only cardwire saw are listed without Quit", () => {

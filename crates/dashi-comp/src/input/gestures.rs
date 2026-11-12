@@ -2,7 +2,7 @@
 //! `gesture` events; every other swipe, and every pinch and hold, goes to the
 //! client under the pointer (pointer-gestures).
 
-use serde_json::json;
+use crate::ipc::protocol::{Event as IpcEvent, Swipe, SwipePhase};
 use smithay::{
     backend::input::{
         Event, GestureBeginEvent, GestureEndEvent, GesturePinchUpdateEvent as _,
@@ -22,10 +22,12 @@ impl Dashi {
     pub(super) fn on_swipe_begin<I: InputBackend>(&mut self, event: &I::GestureSwipeBeginEvent) {
         if self.claims_swipe(event.fingers()) {
             self.claims.swiping = true;
-            self.ipc.emit(
-                "gesture",
-                json!({ "kind": "swipe", "phase": "begin", "fingers": event.fingers() }),
-            );
+            self.ipc.emit(IpcEvent::Gesture {
+                kind: Swipe::Swipe,
+                phase: SwipePhase::Begin {
+                    fingers: event.fingers(),
+                },
+            });
         } else if let Some(pointer) = self.seat.get_pointer() {
             let swipe = GestureSwipeBeginEvent {
                 serial: SERIAL_COUNTER.next_serial(),
@@ -39,10 +41,13 @@ impl Dashi {
     pub(super) fn on_swipe_update<I: InputBackend>(&mut self, event: &I::GestureSwipeUpdateEvent) {
         if self.claims.swiping {
             let delta = event.delta();
-            self.ipc.emit(
-                "gesture",
-                json!({ "kind": "swipe", "phase": "update", "dx": delta.x, "dy": delta.y }),
-            );
+            self.ipc.emit(IpcEvent::Gesture {
+                kind: Swipe::Swipe,
+                phase: SwipePhase::Update {
+                    dx: delta.x,
+                    dy: delta.y,
+                },
+            });
         } else if let Some(pointer) = self.seat.get_pointer() {
             let update = GestureSwipeUpdateEvent {
                 time: event.time_msec(),
@@ -54,10 +59,12 @@ impl Dashi {
 
     pub(super) fn on_swipe_end<I: InputBackend>(&mut self, event: &I::GestureSwipeEndEvent) {
         if std::mem::take(&mut self.claims.swiping) {
-            self.ipc.emit(
-                "gesture",
-                json!({ "kind": "swipe", "phase": "end", "cancelled": event.cancelled() }),
-            );
+            self.ipc.emit(IpcEvent::Gesture {
+                kind: Swipe::Swipe,
+                phase: SwipePhase::End {
+                    cancelled: event.cancelled(),
+                },
+            });
         } else if let Some(pointer) = self.seat.get_pointer() {
             let end = GestureSwipeEndEvent {
                 serial: SERIAL_COUNTER.next_serial(),

@@ -3,19 +3,13 @@
  * for installs and updates. An install or update always goes through
  * `ctx.confirm`, the shell's own sheet, every time and whatever the agent was
  * allowed before; the person's answer is never kept. The work itself is the
- * Software app's (software/manager.ts), so an agent's install is the one the
+ * Software app's (shared/software/manager.ts), so an agent's install is the one the
  * person would have made. Only user installs of Flathub apps are requested
  * here; system updates go through PackageKit and polkit, which asks for the
  * person's password on screen.
  */
 
-import { JsonCache } from "../../software/cache.ts";
-import { CatalogError, Flathub } from "../../software/flathub.ts";
-import type { AppDetails } from "../../software/flathub-types.ts";
-import { Software } from "../../software/manager.ts";
-import { cacheRoot } from "../../software/paths.ts";
-import { standIn } from "../../software/stand-in.ts";
-import { formatBytes, tidy } from "../../software/text.ts";
+import { type AppDetails, CatalogError, cacheRoot, Flathub, formatBytes, JsonCache, Software, standIn, tidy } from "../../shared/software/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import type { Call } from "../tools/index.ts";
 

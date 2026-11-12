@@ -1,12 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import type { RunContext } from "../src/agents/context.ts";
 import { signInCall, UNCONFINED } from "../src/agents/desktop/secrets.ts";
+import type { Call } from "../src/agents/index.ts";
 import type { SignInAsk, Turn } from "../src/agents/presence.ts";
 import { fromAnotherMachine, isConfined } from "../src/agents/sandbox.ts";
-import { DEFAULT_PREFS, parsePrefs } from "../src/agents/secrets/preferences.ts";
+import { DEFAULT_PREFS, parsePrefs } from "../src/agents/secrets/lib/preferences.ts";
 import { SessionSecrets } from "../src/agents/secrets/session-secrets.ts";
 import { isVaultWindow, vaultShown } from "../src/agents/secrets/vault-view.ts";
-import type { Call } from "../src/agents/tools/index.ts";
+import { flush } from "./support/time.ts";
 
 describe("Settings › Passwords", () => {
   test("the sources and where new logins go: Dashi on, 1Password off, until chosen; nonsense is the default", () => {
@@ -62,14 +63,14 @@ describe("one connection's secrets", () => {
     );
     const run = secrets.run(1, who);
     const handing = secrets.around(call("hand_over"), () => run.handOver(3, "Sign in to your bank"));
-    await Bun.sleep(0);
+    await flush();
     expect(handedOver.has(3)).toBe(true);
     expect(turns[0]?.reason).toBe("Sign in to your bank");
     let screenshot = false;
     const later = secrets.around(call("screenshot"), async () => {
       screenshot = true;
     });
-    await Bun.sleep(5);
+    await flush();
     expect(screenshot).toBe(false);
     turn.resolve(true);
     expect(await handing).toBe(true);
@@ -102,7 +103,7 @@ describe("one connection's secrets", () => {
         }),
     );
     const click = secrets.around(call("click"), async () => void order.push("clicked"));
-    await Bun.sleep(5);
+    await flush();
     expect(order).toEqual(["screenshot"]);
     finish();
     answer();

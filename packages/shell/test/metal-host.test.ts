@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { appNameEnv, SHELL_APP_NAME, shellHostOptions } from "../src/metal-host.ts";
+import { appNameEnv, SHELL_APP_NAME, shellHostOptions } from "../src/shared/metal/host.ts";
 
 test("the shell's hosts are Dashi to a screen reader", () => {
   expect(SHELL_APP_NAME).toBe("Dashi");

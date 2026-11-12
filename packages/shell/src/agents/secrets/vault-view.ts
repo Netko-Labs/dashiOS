@@ -4,7 +4,7 @@
  */
 
 import { SETTINGS_APP_ID } from "../../apps.ts";
-import type { CompositorWindow } from "../../compositor.ts";
+import type { CompositorWindow } from "../../compositor/index.ts";
 
 let showing = 0;
 

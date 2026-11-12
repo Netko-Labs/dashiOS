@@ -59,3 +59,29 @@
 - **Hard-coded grounds and identity theme checks** (`preview/canvas.tsx:26`, `calculator/view.tsx:48`, `dashi-ui/src/theme/surface.ts:26`). Add a `canvas` (content-behind-media) surface token and a `dark` flag on the palette.
 - **Error copy that names packages** (poppler-utils, ImageMagick, wl-clipboard) shows up in Preview and probably elsewhere. Guideline: a missing dependency is packaging's bug, and the person sees what they can't do, not what to install.
 - **Locale.** `toLocaleString("en-US")` in `preview/info.ts:27` and `sheets.tsx:18`. One shared number and byte formatter in `@dashi/ui` should follow the system locale.
+
+## Where it stands (0.5.0, wave 2: Preview's page strip)
+
+The big idea is built for PDFs and for a folder of pictures: one scrolling surface for a PDF's pages, rendered as they come near the screen, and one page strip in the sidebar for both kinds. Rotation is a view of the file Preview remembers (`apps/preview/memory.ts`), not a re-encode; Export writes a rotated copy.
+
+Findings:
+
+- [x] 1. A PDF is one surface: wheel and touchpad scroll (both ways once a page is wider), it opens fitted to the width (View › Zoom to Width; ❖9 fits a page), ↑ ↓ scroll and ← → page, Page Up/Down, Space and Home/End, only the pages near the screen are rendered (`layout.ts`, `document.ts`, `surface.tsx`, `pdf-doc.ts`). A drag selects text from poppler's word boxes (`text.ts`), Edit › Copy copies it and Select All selects the document. Find, links and the outline moved to `tasks/todo.md` (Preview, later).
+- [x] 2. One line: no subtitle; the size and place sit on the toolbar row (`detail.ts`, done in 0.4.x) and Info.
+- [x] 3. Drops open a file anywhere on the window; Open… is primary; the empty window lists up to five recent files (`states.tsx`), and File lists them under Open… (the menu bar has no submenus yet, so Open Recent is a run of rows).
+- [x] 4. No toolbar with nothing open; Open With… and Show in Files are disabled without a file.
+- [x] 5. A spinner shows in the toolbar after 200 ms of work (opening, pages in view, rotating, an export); opening says the file's name.
+- [x] 6. Rotation sticks per file (kept with its size and date; forgotten if the file changes), PDFs rotate too, "Rotate" everywhere. Save Turned Copy is gone: Export writes the rotated copy. Writing the rotation into the file itself (lossless JPEG) moved to `tasks/todo.md`.
+- [x] 7. Copy (the selected text, else the picture or the page in view), Export (PNG, JPEG with a quality, PDF; a PDF whole or a page as a picture), Print (the portal's print dialog, else CUPS's default printer after asking). Password PDFs, markup, crop, a slideshow and animated GIFs moved to `tasks/todo.md`.
+- [x] 8. Bare keys only move around (`keys.ts`), each shown in a menu (← →, ⌫); ❖0 Actual Size, ❖9 Zoom to Fit; no bare letters (no `f` to Files, no `0`/`1`).
+- [x] 9. Errors say what happened and what to do, never a package (`messages.ts`); the packages are the dashi RPM's dependencies (`spin/rpm/dashi.spec`).
+- [x] 10. No footer and no floating note: how a picture is shown is a row in Info.
+- [x] 11. The strip is a real navigator: only visible rows drawn, each at its page's shape, scrolled to the open one, a themed placeholder, 200 wide, 300 px thumbnails for 150 px rows, and a filmstrip of the folder's pictures (`strip.tsx`, `folder.ts`).
+- [x] 12. No synchronous I/O on the render path: the file's facts come from the open's stat; the folder is listed once, asynchronously, and watched.
+- [ ] 13. The device scale is still assumed 2: Metal doesn't report the window's scale yet (moved to `tasks/todo.md`). Thumbnails are now 300 px for a 150 px row.
+- [x] 14. The canvas ground is `surface.canvas` and the empty window sits on it too; Open With hovers in a wash, shows each app's icon, and its list is one Tab stop the arrows move through.
+- [x] 15. Info's heading is the file's name over `@dashi/ui`'s Group and Row; numbers, sizes and dates follow the system's locale.
+- [x] 16. Every toolbar glyph has a tooltip and an accessible name; Actual Size is a "1:1"; "…" hangs from its own right edge.
+- [ ] 17. One process and one window per file, as before; tabs and Open in New Window moved to `tasks/todo.md`.
+
+Improvements 1–9 are in, but for ⌃-wheel and pinch zoom (Metal's wheel event carries no modifiers yet) and the device scale; 10 (markup) is later.

@@ -1,47 +1,80 @@
 /**
- * The System Settings window: the sidebar of panes on the left, the chosen
- * pane on the right, and a line at the bottom when the settings file could
- * not be written. Everything paints with the live palette.
- *
- * The window has a unified title bar (as System Settings on the Mac): the
- * sidebar runs to the top edge with the compositor's window controls over it,
- * and the pane's title sits in a toolbar over the pane, which is also where
- * the window is grabbed. Where there is no such compositor the window keeps
- * an ordinary title bar and each page shows its own heading (ui.tsx).
+ * The System Settings window (docs/design.html, "Settings"): the sidebar of
+ * panes on the left, the chosen pane on the right, in Control Center's
+ * tokens. One chrome row: the compositor's window lights and the search
+ * field sit on the sidebar's top row, and the pane's title is the content's
+ * own top row; no toolbar, no second bar. Typing in the search lists the
+ * panes and rows found in the sidebar's place (find.ts); ↑ ↓ choose, Return
+ * opens the pane at the row and lights it, Esc clears; ❖F (Edit › Find)
+ * comes back to it.
  */
 
-import { useColors } from "@dashi/ui";
-import { Text, useWindowChrome, View } from "@mirinjs/metal";
-import { useSyncExternalStore } from "react";
+import { MenuHighlightContext, TooltipLayer } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
+import { useMemo, useState, useSyncExternalStore } from "react";
+import { waitingCount } from "../agents/presence.ts";
+import { Group, Note } from "../shared/cards/index.ts";
+import { INK_SLIDER } from "../shared/controls/ink-slider.tsx";
+import { controlMenuHighlight, useControlColors } from "../shared/controls/palette.ts";
+import type { Nav, PaneId } from "../shared/settings/index.ts";
+import { type AppMixer, useAppNames } from "../sound/index.ts";
+import { AppearancePane } from "./appearance.tsx";
 import type { PaneContext } from "./context.ts";
+import { ControlCenterPane } from "./control-center.tsx";
 import { useSettings } from "./hooks.ts";
-import { AboutPane } from "./panes/about.tsx";
-import { AgentsPane } from "./panes/agents.tsx";
-import { AppearancePane } from "./panes/appearance.tsx";
-import { BatteryPane } from "./panes/battery.tsx";
-import { BluetoothPane } from "./panes/bluetooth.tsx";
-import { DateTimePane } from "./panes/date-time.tsx";
-import { DesktopDockPane } from "./panes/desktop-dock.tsx";
-import { DisplaysPane } from "./panes/displays.tsx";
-import { GraphicsPane } from "./panes/graphics.tsx";
-import { KeyboardPane } from "./panes/keyboard.tsx";
-import { LanguageRegionPane } from "./panes/language-region.tsx";
-import { LockScreenPane } from "./panes/lock-screen.tsx";
-import { MousePane } from "./panes/mouse.tsx";
-import { NetworkPane } from "./panes/network.tsx";
-import { NotificationsPane } from "./panes/notifications.tsx";
-import { PasswordsPane } from "./panes/passwords.tsx";
-import { SoundPane } from "./panes/sound.tsx";
-import { TrackpadPane } from "./panes/trackpad.tsx";
-import { UsersPane } from "./panes/users.tsx";
-import { WallpaperPane } from "./panes/wallpaper.tsx";
-import { type Nav, type PaneId, paneTitle } from "./panes.ts";
-import { Sidebar } from "./sidebar.tsx";
+import { KeyboardPane } from "./keyboard.tsx";
+import { appRows, type FindFocus, type Found, findSettings, moveFound } from "./lib/find.ts";
+import { AboutPane } from "./lib/panes/about.tsx";
+import { AgentsPane } from "./lib/panes/agents.tsx";
+import { BatteryPane } from "./lib/panes/battery.tsx";
+import { BluetoothPane } from "./lib/panes/bluetooth.tsx";
+import { DateTimePane } from "./lib/panes/date-time.tsx";
+import { DesktopDockPane } from "./lib/panes/desktop-dock.tsx";
+import { DisplaysPane } from "./lib/panes/displays.tsx";
+import { GraphicsPane } from "./lib/panes/graphics.tsx";
+import { LanguageRegionPane } from "./lib/panes/language-region.tsx";
+import { LockScreenPane } from "./lib/panes/lock-screen.tsx";
+import { MousePane } from "./lib/panes/mouse.tsx";
+import { NetworkPane } from "./lib/panes/network.tsx";
+import { NotificationsPane } from "./lib/panes/notifications.tsx";
+import { PasswordsPane } from "./lib/panes/passwords.tsx";
+import { PrivacyPane } from "./lib/panes/privacy.tsx";
+import { RecentPane } from "./lib/panes/recent.tsx";
+import { SoundPane } from "./lib/panes/sound.tsx";
+import { TrackpadPane } from "./lib/panes/trackpad.tsx";
+import { UsersPane } from "./lib/panes/users.tsx";
+import { WallpaperPane } from "./lib/panes/wallpaper.tsx";
+import { PAGE } from "./lib/row.tsx";
+import { PaneStoresContext } from "./lib/setting.tsx";
+import { Sidebar } from "./lib/sidebar.tsx";
+import { SIDEBAR } from "./lib/sidebar-measures.ts";
 import { SpotContext, type SpotHost } from "./spot.tsx";
-import { useSurface } from "./ui.tsx";
+import { Page, SaveError } from "./ui.tsx";
 
-/** The window's size (the Mac's System Settings opens about this big). */
-export const SETTINGS_WINDOW = { width: 760, height: 640 } as const;
+/**
+ * The widest row that can't fold: a knob, its words at their least
+ * (`PAGE.words`) and a slider beside them (Mouse's and Trackpad's speeds,
+ * Keyboard's repeat). Pills wrap and stacked controls sit under the words,
+ * so every other row fits in it.
+ */
+const WIDEST_ROW = 8 + PAGE.knob + 12 + PAGE.words + 12 + INK_SLIDER.width + 16;
+
+/**
+ * The window's size: the design's height (640), and wide enough for its
+ * rows (a knob, the words, and four pills of the power mode) beside the
+ * 232 sidebar. The sidebar scrolls in it, with the chosen pane kept in view.
+ *
+ * Its least size is where the sidebar and every pane still work: across,
+ * the sidebar, the page's margins and the widest row (744); down, the title row,
+ * the tallest hero (Displays', 207) and the page's bottom margin (285),
+ * rounded up to 300. A page taller than the window scrolls.
+ */
+export const SETTINGS_WINDOW = {
+  width: 920,
+  height: 640,
+  minWidth: SIDEBAR.width + 2 * PAGE.margin + WIDEST_ROW,
+  minHeight: 300,
+} as const;
 
 function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
   switch (id) {
@@ -50,9 +83,19 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "wallpaper":
       return <WallpaperPane settings={ctx.settings} chooser={ctx.chooser} />;
     case "displays":
-      return <DisplaysPane screens={ctx.screens} settings={ctx.settings} flags={ctx.flags} laptop={ctx.services.laptop} />;
+      return (
+        <DisplaysPane
+          screens={ctx.screens}
+          settings={ctx.settings}
+          laptop={ctx.services.laptop}
+          refresh={ctx.services.refresh}
+          devices={ctx.services.devices}
+        />
+      );
+    case "control-center":
+      return <ControlCenterPane editor={ctx.controlCenter?.() ?? null} />;
     case "desktop-dock":
-      return <DesktopDockPane settings={ctx.settings} />;
+      return <DesktopDockPane />;
     case "keyboard":
       return (
         <KeyboardPane
@@ -72,13 +115,32 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "language-region":
       return <LanguageRegionPane region={ctx.region} settings={ctx.settings} />;
     case "lock-screen":
-      return <LockScreenPane settings={ctx.settings} lock={ctx.lock} />;
+      return <LockScreenPane settings={ctx.settings} lock={ctx.lock} show={ctx.show} />;
     case "notifications":
-      return <NotificationsPane flags={ctx.flags} />;
+      return <NotificationsPane />;
     case "passwords":
-      return ctx.passwords ? <PasswordsPane passwords={ctx.passwords} /> : null;
+      return ctx.passwords ? (
+        <PasswordsPane passwords={ctx.passwords} />
+      ) : (
+        <Page title="Passwords">
+          <Group testID="passwords-none">
+            <Note>Dashi's vault isn't running in this session, so there are no passwords to show. Log out and in again to start it.</Note>
+          </Group>
+        </Page>
+      );
     case "agents":
-      return <AgentsPane grants={ctx.grants} home={ctx.home} settings={ctx.settings} {...(ctx.answers ? { answers: ctx.answers } : {})} />;
+      return <AgentsPane ctx={ctx} />;
+    case "privacy":
+      return (
+        <PrivacyPane
+          grants={ctx.grants}
+          home={ctx.home}
+          settings={ctx.settings}
+          show={ctx.show}
+          {...(ctx.privacy ? { privacy: ctx.privacy } : {})}
+          {...(ctx.installedApp ? { installedApp: ctx.installedApp } : {})}
+        />
+      );
     case "about":
       return <AboutPane about={ctx.about} openSetup={ctx.openSetup} />;
     case "network":
@@ -86,26 +148,16 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "bluetooth":
       return <BluetoothPane services={ctx.services} />;
     case "sound":
-      return <SoundPane services={ctx.services} settings={ctx.settings} />;
+      return <SoundPane services={ctx.services} />;
     case "battery":
-      return <BatteryPane services={ctx.services} settings={ctx.settings} />;
+      return <BatteryPane services={ctx.services} settings={ctx.settings} show={ctx.show} />;
     case "graphics":
       return <GraphicsPane laptop={ctx.services.laptop} />;
     case "users":
       return <UsersPane services={ctx.services} chooser={ctx.chooser} />;
+    case "recent":
+      return <RecentPane changes={ctx.settings.changes} settings={ctx.settings} flags={ctx.flags} show={ctx.show} />;
   }
-}
-
-/** The pane's title in the strip the window controls are centered on, which moves the window. */
-function Toolbar({ title, height }: { title: string; height: number }) {
-  const colors = useColors();
-  return (
-    <View testID="settings-toolbar" dragRegion style={{ height, flexShrink: 0, flexDirection: "row", alignItems: "center", paddingHorizontal: 24 }}>
-      <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: "bold", color: colors.text }}>
-        {title}
-      </Text>
-    </View>
-  );
 }
 
 const NO_GRAPHICS = { subscribe: () => () => {}, getSnapshot: () => false };
@@ -119,31 +171,94 @@ function useOptionalPanes(ctx: PaneContext): ReadonlySet<PaneId> {
 }
 const GRAPHICS_PANES: ReadonlySet<PaneId> = new Set(["graphics"]);
 const NONE: ReadonlySet<PaneId> = new Set();
+const NO_FIND = { subscribe: () => () => {}, getSnapshot: () => 0 };
+const NO_AGENT_LIST: readonly { status: string }[] = [];
+const NO_AGENTS = { subscribe: () => () => {}, getSnapshot: () => NO_AGENT_LIST };
 
-export function SettingsWindow({ ctx, nav, spots }: { ctx: PaneContext; nav: Nav; spots?: SpotHost }) {
-  const colors = useColors();
-  const surface = useSurface();
+/** The sidebar's search: what was typed, what it found, and which result ↑ and ↓ are on. */
+function useSearch(shown: ReadonlySet<PaneId>, open: (found: Found) => void, mixer: AppMixer | undefined) {
+  const [query, setQuery] = useState("");
+  const [chosen, setChosen] = useState(0);
+  // The apps playing sound are found by name, at their rows in Sound's Apps card.
+  const apps = useAppNames(mixer);
+  const found = useMemo(() => findSettings(query, (pane) => !pane.optional || shown.has(pane.id), appRows(apps)), [query, shown, apps]);
+  const at = Math.min(chosen, found.length - 1);
+  return {
+    query,
+    found,
+    chosen: at,
+    onQuery: (next: string) => {
+      setQuery(next);
+      setChosen(0);
+    },
+    onKey: (key: "Escape" | "ArrowUp" | "ArrowDown") => {
+      if (key === "Escape") setQuery("");
+      else setChosen(moveFound(at, key === "ArrowUp" ? -1 : 1, found.length));
+    },
+    onSubmit: () => {
+      const pick = found[at];
+      if (pick) open(pick);
+    },
+    choose: (index: number) => {
+      setChosen(index);
+      const pick = found[index];
+      if (pick) open(pick);
+    },
+  };
+}
+
+export function SettingsWindow({ ctx, nav, spots, find }: { ctx: PaneContext; nav: Nav; spots?: SpotHost; find?: FindFocus }) {
+  const colors = useControlColors();
   const current = useSyncExternalStore(nav.subscribe, nav.getSnapshot);
   const { error } = useSettings(ctx.settings);
-  const { controls } = useWindowChrome();
   const shown = useOptionalPanes(ctx);
+  const focusSerial = useSyncExternalStore(find?.subscribe ?? NO_FIND.subscribe, find?.getSnapshot ?? NO_FIND.getSnapshot);
+  const agents = useSyncExternalStore(ctx.agents?.subscribe ?? NO_AGENTS.subscribe, ctx.agents?.getSnapshot ?? NO_AGENTS.getSnapshot);
+  // A result opens its pane at its row, lit (spot.tsx).
+  const search = useSearch(
+    shown,
+    (found) => {
+      nav.select(found.pane);
+      if (found.row) spots?.focus.request(found.pane, found.row);
+    },
+    ctx.services.mixer,
+  );
+  // The registry's rows read and write these (setting.tsx).
+  const stores = useMemo(() => ({ settings: ctx.settings, flags: ctx.flags }), [ctx.settings, ctx.flags]);
+  const results = search.query.trim() === "" ? null : { query: search.query, found: search.found, chosen: search.chosen, onChoose: search.choose };
+  const highlight = useMemo(() => controlMenuHighlight(colors), [colors]);
   return (
-    <SpotContext.Provider value={spots ?? null}>
-      <View style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window }}>
-        <Sidebar current={current} onSelect={(pane) => nav.select(pane)} shown={shown} />
-        <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
-          {controls && <Toolbar title={paneTitle(current)} height={Math.ceil(controls.y + controls.height)} />}
-          {/* A pane's state is its own: switching panes starts the next one fresh. */}
-          <Pane key={current} id={current} ctx={ctx} />
-          {error !== null && (
-            <View testID="settings-error" style={{ padding: 10, borderTopWidth: 1, borderColor: colors.separator }}>
-              <Text numberOfLines={1} style={{ fontSize: 11, color: colors.critical }}>
-                {`Could not save settings: ${error}`}
-              </Text>
+    <PaneStoresContext.Provider value={stores}>
+      <MenuHighlightContext.Provider value={highlight}>
+        <SpotContext.Provider value={spots ?? null}>
+          <SaveError.Provider value={error !== null}>
+            {/* The focus ring is Control Center's purple in every control inside. Esc that no control took clears the search. */}
+            <View
+              testID="settings-window"
+              onWindowKeyDown={(event) => {
+                if (event.key === "escape" && search.query !== "") search.onQuery("");
+              }}
+              style={{ flex: 1, flexDirection: "row", position: "relative", backgroundColor: colors.window, focusRingColor: colors.focus }}
+            >
+              {/* The window's top layer (as AppWindow's): a row's "More" menu draws there, over the cards (shared/controls/folded.tsx). */}
+              <TooltipLayer>
+                <Sidebar
+                  current={current}
+                  onSelect={(pane) => nav.select(pane)}
+                  shown={shown}
+                  search={{ ...search, focusSerial }}
+                  waiting={waitingCount(agents)}
+                  {...(results ? { results } : {})}
+                />
+                <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
+                  {/* A pane's state is its own: switching panes starts the next one fresh. */}
+                  <Pane key={current} id={current} ctx={ctx} />
+                </View>
+              </TooltipLayer>
             </View>
-          )}
-        </View>
-      </View>
-    </SpotContext.Provider>
+          </SaveError.Provider>
+        </SpotContext.Provider>
+      </MenuHighlightContext.Provider>
+    </PaneStoresContext.Provider>
   );
 }

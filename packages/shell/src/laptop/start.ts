@@ -10,34 +10,24 @@
  */
 
 import { readFileSync } from "node:fs";
-import type { Compositor, CompositorWindow } from "../compositor.ts";
-import { cardwireClient, type GraphicsBackend, shadowGraphics } from "../graphics/cardwire.ts";
-import { GraphicsController } from "../graphics/controller.ts";
-import type { LostCardStart } from "../graphics/lost-start.ts";
-import { listNames } from "../graphics/policy.ts";
-import { type HardwareApi, hardwareClient, shadowHardware } from "../hardware/client.ts";
-import { detectLaptop } from "../hardware/laptop.ts";
-import { idleKeymap, setMachineRules } from "../keymap-state.ts";
-import { parseStat } from "../menus/session.ts";
+import type { Compositor, CompositorWindow } from "../compositor/index.ts";
+import { cardwireClient, type GraphicsBackend, GraphicsController, graphicsNoticePlace, type LostCardStart, shadowGraphics } from "../graphics/index.ts";
+import { detectLaptop, type HardwareApi, hardwareClient, shadowHardware } from "../hardware/index.ts";
+import { idleKeymap, setMachineRules } from "../keymap/keymap-state.ts";
 import type { NotificationStore } from "../notifications/store.ts";
-import { Logind } from "../power/logind.ts";
-import type { PowerSource } from "../power/modes/automatic.ts";
-import { parseRecipes } from "../power/modes/recipes.ts";
-import { screenRateApplier } from "../power/modes/screen-rate.ts";
-import type { GraphicsChoice, PowerSection } from "../power/modes/settings.ts";
-import { ModeStore } from "../power/modes/store.ts";
-import { MODE_LABEL } from "../power/modes/types.ts";
+import { type GraphicsChoice, MODE_LABEL, ModeStore, type PowerSection, type PowerSource, parseRecipes } from "../power/index.ts";
 import type { SettingsStore } from "../settings-app/store.ts";
+import { statParent } from "../shared/processes/index.ts";
 import type { Battery } from "../system/battery.ts";
 import type { OsdController } from "../system/osd-state.ts";
 import { powerProfiles, shadowProfiles } from "../system/profiles.ts";
 import type { SystemStore } from "../system/store.ts";
 import { hardwareBus, systemBus } from "../system/system-bus.ts";
-import { ChargeKeeper } from "./charge.ts";
-import { LAPTOP_BINDING_NAMES, LAPTOP_BINDINGS, LIGHT_STEP_BINDINGS, laptopKeyRules, nextLightLevel } from "./hotkeys.ts";
+import { ChargeKeeper } from "./lib/charge.ts";
+import { keyboardLights, laptopKeyRules, machineKeyHandler } from "./lib/hotkeys.ts";
+import { followWake } from "./lib/tuning.ts";
 import type { LaptopAction } from "./menu.ts";
 import { keyboardLight, LaptopStore } from "./store.ts";
-import { applyTuning } from "./tuning.ts";
 
 export interface LaptopOptions {
   compositor: Compositor | null;
@@ -51,8 +41,10 @@ export interface LaptopOptions {
   lostCard: LostCardStart;
   /** What the person calls a window's app (the Dock's names). */
   nameOf(window: CompositorWindow): string;
-  /** Opens a Settings pane (the ROG key). */
-  openSettings(pane: "battery"): void;
+  /** Opens a Settings pane (the ROG key, a graphics notice's Graphics Settings…). */
+  openSettings(pane: "battery" | "graphics"): void;
+  /** The built-in screen's rate for this power source, when Automatic moves it with the cable ("60 Hz"); else null. */
+  refreshRate?(plugged: boolean): string | null;
   confirmRestart(): void;
 }
 
@@ -69,6 +61,153 @@ export interface Laptop {
 const powerSourceOf = (battery: Battery | null): PowerSource =>
   battery ? { plugged: battery.state !== "discharging", percent: battery.percent } : { plugged: true, percent: null };
 
+/**
+ * Which apps hold the graphics card, by process: a window's app, or the
+ * app a helper process belongs to (its parent's window). Refreshed on a
+ * timer and before the card is read.
+ */
+function cardHolders(
+  compositor: Compositor | null,
+  nameOf: (window: CompositorWindow) => string,
+): { refresh(): Promise<void>; appOf(pid: number): string | null } {
+  let windowApps = new Map<number, string>();
+  const refresh = async () => {
+    const windows = compositor ? await compositor.windows().catch(() => []) : [];
+    windowApps = new Map(windows.flatMap((window) => (window.pid === null ? [] : [[window.pid, nameOf(window)] as const])));
+  };
+  const appOf = (pid: number): string | null => {
+    let at = pid;
+    for (let depth = 0; depth < 8 && at > 1; depth++) {
+      const name = windowApps.get(at);
+      if (name) return name;
+      let stat: string;
+      try {
+        stat = readFileSync(`/proc/${at}/stat`, "utf8");
+      } catch {
+        return null;
+      }
+      const parsed = statParent(stat);
+      if (!parsed) return null;
+      at = parsed.ppid;
+    }
+    return null;
+  };
+  return { refresh, appOf };
+}
+
+/**
+ * The graphics card: its controller, the notices about it, and the two
+ * subscriptions (a lost card, the compositor's card events) it needs. The
+ * caller starts the controller once the holders are known.
+ */
+function startGraphics(
+  options: LaptopOptions,
+  parts: {
+    settings: SettingsStore;
+    notifications: NotificationStore;
+    compositor: Compositor | null;
+    choice: () => GraphicsChoice;
+    appOf(pid: number): string | null;
+  },
+) {
+  const { settings, compositor } = parts;
+  const backendReal: GraphicsBackend | null = options.lostCard.card ? cardwireClient(systemBus()) : null;
+  const backend = backendReal && options.developmentRun ? shadowGraphics(backendReal) : backendReal;
+  // Graphics notices have one place: the waiting notice, then the switch's, each replacing the last (graphics/notice-place.ts).
+  const noticePlace = graphicsNoticePlace(parts.notifications, {
+    keepHybrid: () => graphics.keepHybrid(),
+    openSettings: () => options.openSettings("graphics"),
+  });
+  const graphics = new GraphicsController({
+    card: options.lostCard.card,
+    backend,
+    choice: parts.choice,
+    saveChoice: (choice) => settings.patch("graphics", { mode: choice === "automatic" ? undefined : choice }),
+    appOf: parts.appOf,
+    ...noticePlace.deps,
+    rate: (plugged) => options.refreshRate?.(plugged) ?? null,
+  });
+  const stopLost = options.lostCard.watch?.onLost((loss) => graphics.setLost(loss)) ?? (() => {});
+  // dashi-comp opened the card or let it sleep: who holds it, and whether it is awake, changed.
+  const stopGpus =
+    compositor?.on((event) => {
+      if (event.event === "gpus-changed") void graphics.refresh();
+    }) ?? (() => {});
+  if (options.lostCard.watch?.lost) graphics.setLost(options.lostCard.watch.lost);
+  return { graphics, noticePlace, stopLost, stopGpus };
+}
+
+/** dashi-hardware's machine: what the laptop is, its knobs and hotkeys, read again on each change. */
+async function describeMachine(parts: {
+  hardware: HardwareApi;
+  store: LaptopStore;
+  modes: ModeStore;
+  charge: ChargeKeeper;
+  compositor: Compositor | null;
+}): Promise<void> {
+  const { hardware, store, modes, charge, compositor } = parts;
+  const machine = await hardware.describe().catch(() => null);
+  store.setMachine(machine, detectLaptop());
+  modes.setMachine(machine ? { knobs: machine.knobs, recipes: parseRecipes(machine.recipes) } : null);
+  const light = keyboardLight(store.getSnapshot());
+  const rules = laptopKeyRules(machine?.hotkeys ?? {}, light !== null);
+  setMachineRules(rules);
+  if (compositor && rules.length > 0) compositor.keymap(idleKeymap()).catch(() => {});
+  void charge.check();
+}
+
+/** The power source drives Automatic, the columns, the charge, and the graphics policy; the settings are followed too. Returns the way to stop. */
+function followPower(parts: {
+  system: LaptopOptions["system"];
+  settings: SettingsStore;
+  modes: ModeStore;
+  charge: ChargeKeeper;
+  graphics: GraphicsController;
+}): () => void {
+  const { system, settings, modes, charge, graphics } = parts;
+  const followSource = () => {
+    const source = powerSourceOf(system.store.getSnapshot().battery);
+    modes.setPowerSource(source);
+    charge.setPowerSource(source);
+    graphics.setPlugged(source.plugged);
+  };
+  const stopPower = system.store.subscribe(followSource);
+  followSource();
+  const stopSettings = settings.subscribe(() => {
+    modes.settingsChanged();
+    graphics.settingsChanged();
+    void charge.check();
+  });
+  return () => {
+    stopPower();
+    stopSettings();
+  };
+}
+
+/** tuned-ppd's modes, now and as they change. Returns the way to stop. */
+function followProfiles(profiles: ReturnType<typeof powerProfiles>, modes: ModeStore): () => void {
+  void profiles.read().then((read) => modes.setProfiles(read?.available ?? null, read?.active ?? null));
+  return profiles.watch((read) => modes.setProfiles(read?.available ?? null, read?.active ?? null));
+}
+
+/** What the laptop's menus ask of it (menu.ts): a mode, a full charge, a holder to quit, a restart. */
+function carryOut(action: LaptopAction, parts: { modes: ModeStore; settings: SettingsStore; graphics: GraphicsController; confirmRestart(): void }): void {
+  switch (action.kind) {
+    case "mode":
+      parts.modes.choose(action.choice);
+      return;
+    case "full-charge":
+      parts.settings.patch("power", { fullChargeOnce: true });
+      return;
+    case "quit-holder":
+      parts.graphics.quit(action.name);
+      return;
+    case "restart":
+      parts.confirmRestart();
+      return;
+  }
+}
+
 export function startLaptop(options: LaptopOptions): Laptop {
   const { settings, system, notifications, compositor } = options;
   const real: HardwareApi = hardwareClient(hardwareBus());
@@ -82,109 +221,26 @@ export function startLaptop(options: LaptopOptions): Laptop {
   const modes = new ModeStore({
     profiles,
     hardware,
-    ...(compositor && !options.developmentRun ? { screenRate: screenRateApplier(compositor) } : {}),
     settings: power,
     saveChoice: (choice) => settings.patch("power", { mode: choice === "automatic" ? undefined : choice }),
     announce: (mode) => system.osd.show({ kind: "mode", mode, label: MODE_LABEL[mode] }),
   });
   const charge = new ChargeKeeper({ laptop: store, settings: power, endFullCharge: () => settings.patch("power", { fullChargeOnce: undefined }) });
 
-  // The apps' windows by process, for naming the card's holders (a helper process goes by its parent's window).
-  let windowApps = new Map<number, string>();
-  const refreshWindows = async () => {
-    const windows = compositor ? await compositor.windows().catch(() => []) : [];
-    windowApps = new Map(windows.flatMap((window) => (window.pid === null ? [] : [[window.pid, options.nameOf(window)] as const])));
-  };
-  const appOf = (pid: number): string | null => {
-    let at = pid;
-    for (let depth = 0; depth < 8 && at > 1; depth++) {
-      const name = windowApps.get(at);
-      if (name) return name;
-      let stat: string;
-      try {
-        stat = readFileSync(`/proc/${at}/stat`, "utf8");
-      } catch {
-        return null;
-      }
-      const parsed = parseStat(stat);
-      if (!parsed) return null;
-      at = parsed.ppid;
-    }
-    return null;
-  };
-
-  const backendReal: GraphicsBackend | null = options.lostCard.card ? cardwireClient(systemBus()) : null;
-  const backend = backendReal && options.developmentRun ? shadowGraphics(backendReal) : backendReal;
-  let waitingId = 0;
-  let waitingQuit: (() => void) | null = null;
-  let waitingKeep: (() => void) | null = null;
-  const graphics = new GraphicsController({
-    card: options.lostCard.card,
-    backend,
+  const holders = cardHolders(compositor, options.nameOf);
+  const { graphics, noticePlace, stopLost, stopGpus } = startGraphics(options, {
+    settings,
+    notifications,
+    compositor,
     choice: graphicsChoice,
-    saveChoice: (choice) => settings.patch("graphics", { mode: choice === "automatic" ? undefined : choice }),
-    appOf,
-    sayWaiting: (names, quit, keep) => {
-      waitingQuit = quit;
-      waitingKeep = keep;
-      const who = listNames(names);
-      waitingId = notifications.notify({
-        appName: "Graphics",
-        appIcon: "",
-        summary: "Switching to built-in graphics",
-        body: `You’re on battery. ${who} ${names.length === 1 ? "is" : "are"} still using the graphics card; it switches when ${names.length === 1 ? "it quits" : "they quit"}.`,
-        actions: [
-          { key: "quit", label: names.length === 1 ? `Quit ${who}` : "Quit Them" },
-          { key: "keep", label: "Keep Hybrid" },
-        ],
-        urgency: "normal",
-        expireTimeout: -1,
-        imagePath: "",
-        desktopEntry: "",
-        category: "device",
-        transient: false,
-        resident: false,
-      });
-    },
-  });
-  const stopNoticeActions = notifications.onEvent((event) => {
-    if (event.type !== "action" || event.id !== waitingId) return;
-    if (event.key === "quit") waitingQuit?.();
-    if (event.key === "keep") waitingKeep?.();
-  });
-  const stopLost = options.lostCard.watch?.onLost((loss) => graphics.setLost(loss)) ?? (() => {});
-  if (options.lostCard.watch?.lost) graphics.setLost(options.lostCard.watch.lost);
-
-  // The power source drives Automatic, the columns, the charge, and the graphics policy.
-  const followPower = () => {
-    const source = powerSourceOf(system.store.getSnapshot().battery);
-    modes.setPowerSource(source);
-    charge.setPowerSource(source);
-    graphics.setPlugged(source.plugged);
-  };
-  const stopPower = system.store.subscribe(followPower);
-  followPower();
-  const stopSettings = settings.subscribe(() => {
-    modes.settingsChanged();
-    graphics.settingsChanged();
-    void charge.check();
+    appOf: holders.appOf,
   });
 
-  // tuned-ppd's modes, and its changes.
-  void profiles.read().then((read) => modes.setProfiles(read?.available ?? null, read?.active ?? null));
-  const stopProfiles = profiles.watch((read) => modes.setProfiles(read?.available ?? null, read?.active ?? null));
+  const stopPower = followPower({ system, settings, modes, charge, graphics });
+  const stopProfiles = followProfiles(profiles, modes);
 
   // dashi-hardware: describe, then follow its changes.
-  const describe = async () => {
-    const machine = await hardware.describe().catch(() => null);
-    store.setMachine(machine, detectLaptop());
-    modes.setMachine(machine ? { knobs: machine.knobs, recipes: parseRecipes(machine.recipes) } : null);
-    const light = keyboardLight(store.getSnapshot());
-    const rules = laptopKeyRules(machine?.hotkeys ?? {}, light !== null);
-    setMachineRules(rules);
-    if (compositor && rules.length > 0) compositor.request("keymap", idleKeymap()).catch(() => {});
-    void charge.check();
-  };
+  const describe = () => describeMachine({ hardware, store, modes, charge, compositor });
   const stopChanged = hardware.onChanged((knob, value) => {
     if (knob === "") {
       void describe();
@@ -197,48 +253,13 @@ export function startLaptop(options: LaptopOptions): Laptop {
   void describe();
   const stopCharge = charge.start();
 
-  const setLight = (level: number) => {
-    const light = keyboardLight(store.getSnapshot());
-    if (!light) return;
-    const next = Math.max(0, Math.min(light.max, Math.round(level)));
-    void store.set("kbd-backlight", next);
-  };
-  const stepLight = (step: "cycle" | "up" | "down") => {
-    const light = keyboardLight(store.getSnapshot());
-    if (!light) return;
-    const next = nextLightLevel(light.level, light.max, step);
-    setLight(next);
-    system.osd.show({ kind: "keyboard-light", level: next, max: light.max });
-  };
-  system.hardware.setMachineKeys(async (name) => {
-    if (!LAPTOP_BINDING_NAMES.has(name)) return false;
-    if (name === LAPTOP_BINDINGS.mode) modes.cycle();
-    else if (name === LAPTOP_BINDINGS.lighting) stepLight("cycle");
-    else if (name === LIGHT_STEP_BINDINGS.up) stepLight("up");
-    else if (name === LIGHT_STEP_BINDINGS.down) stepLight("down");
-    else if (name === LAPTOP_BINDINGS.rog) options.openSettings("battery");
-    return true;
-  });
+  const { setLight, stepLight } = keyboardLights(store, system.osd);
+  system.hardware.setMachineKeys(machineKeyHandler({ modes, stepLight, openSettings: options.openSettings }));
 
-  // Saved tuning at login and after waking, and the recipe again after waking (firmware forgets).
-  let logind: Logind | null = null;
-  if (options.realSession && !options.developmentRun) {
-    void applyTuning({ hardware, notifications }, true).catch(() => {});
-    void Logind.connect()
-      .then(async (connected) => {
-        logind = connected;
-        await connected.onPrepareForSleep((sleeping) => {
-          if (sleeping) return;
-          void applyTuning({ hardware, notifications }, false).catch(() => {});
-          void modes.reapply();
-          void graphics.refresh();
-        });
-      })
-      .catch(() => {});
-  }
+  const stopWake = followWake(options, { hardware, notifications, modes, graphics });
 
-  void refreshWindows().then(() => graphics.start());
-  const windowsTimer = setInterval(() => void refreshWindows(), 15_000);
+  void holders.refresh().then(() => graphics.start());
+  const windowsTimer = setInterval(() => void holders.refresh(), 15_000);
 
   return {
     store,
@@ -246,33 +267,20 @@ export function startLaptop(options: LaptopOptions): Laptop {
     graphics,
     setLight,
     run(action) {
-      switch (action.kind) {
-        case "mode":
-          modes.choose(action.choice);
-          return;
-        case "full-charge":
-          settings.patch("power", { fullChargeOnce: true });
-          return;
-        case "quit-holder":
-          graphics.quit(action.name);
-          return;
-        case "restart":
-          options.confirmRestart();
-          return;
-      }
+      carryOut(action, { modes, settings, graphics, confirmRestart: () => options.confirmRestart() });
     },
     close() {
       clearInterval(windowsTimer);
-      stopNoticeActions();
+      noticePlace.close();
       stopLost();
+      stopGpus();
       stopPower();
-      stopSettings();
       stopProfiles();
       stopChanged();
       stopCharge();
       system.hardware.setMachineKeys(null);
       graphics.close();
-      logind?.close();
+      stopWake();
     },
   };
 }

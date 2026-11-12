@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { parseArgs } from "../apps/dialog/args.ts";
-import { prepare, ZENITY_VERSION } from "../apps/dialog/cli.ts";
-import { dialogSize, lineCount } from "../apps/dialog/size.ts";
-import { type DialogSpec, specFrom } from "../apps/dialog/spec.ts";
+import { parseArgs } from "../apps/dialog/lib/args.ts";
+import { prepare, ZENITY_VERSION } from "../apps/dialog/lib/cli.ts";
+import { dialogSize, lineCount } from "../apps/dialog/lib/size.ts";
+import { type DialogSpec, specFrom } from "../apps/dialog/lib/spec.ts";
 
 const NOW = new Date(2026, 10, 3);
 
@@ -144,7 +144,7 @@ describe("specFrom", () => {
     expect(specFrom(parseArgs(["--info", "--error"]), NOW)).toEqual({ error: "Two or more dialog options specified" });
     expect(specFrom(parseArgs(["--list"]), NOW)).toEqual({ error: "No column titles specified for List dialog." });
     expect(specFrom(parseArgs(["--info", "--width=wide"]), NOW)).toEqual({ error: "Cannot parse integer value 'wide' for --width" });
-    expect(specFrom(parseArgs(["--file-selection"]), NOW)).toEqual({ unsupported: "file-selection" });
+    expect(specFrom(parseArgs(["--forms"]), NOW)).toEqual({ unsupported: "forms" });
   });
 });
 
@@ -174,6 +174,12 @@ describe("dialogSize", () => {
     expect(long.width).toBe(short.width);
     expect(long.height).toBeGreaterThan(short.height);
     expect(dialogSize(spec("--info", `--text=${"word ".repeat(5000)}`)).height).toBe(640);
+  });
+
+  test("a message's window is as tall as its alert, nothing to spare", () => {
+    // The controls' strip and 6, the 40 px tile beside two short lines, 10 and 6, the 28 px buttons, 18.
+    expect(dialogSize(spec("--question", "--text=Delete it?\\nYou can't undo this.")).height).toBe(146);
+    expect(dialogSize(spec("--info", "--text=Saved.")).height).toBe(146);
   });
 
   test("--no-wrap widens the window to the longest line", () => {

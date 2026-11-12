@@ -31,8 +31,20 @@ import {
   isRefusal,
   type Manifest,
 } from "@dashi/applet";
-import { formatAddress } from "../actions/address.ts";
-import { type ActionDef, type ActionSource, failed, invalid, type Outcome, ok, type PickRow, ready, type Shown, type ViewFrame } from "../actions/types.ts";
+import {
+  type ActionDef,
+  type ActionSource,
+  failed,
+  formatAddress,
+  invalid,
+  type Outcome,
+  ok,
+  type PickRow,
+  ready,
+  type Shown,
+  type ViewFrame,
+} from "../actions/index.ts";
+import { realTimers, type Timers } from "../shared/time/index.ts";
 
 /** How long an instant command, a chosen row, or a view's answer may take before it is given up. */
 export const COMMAND_TIMEOUT_MS = 10_000;
@@ -55,20 +67,12 @@ type Answer = { kind: "result"; result: CommandResult } | { kind: "items"; rows:
 /** The messages about a run, from the applet. */
 export type CommandMessage = Extract<AppletMessage, { type: "result" | "items" | "view" | "dismiss-view" }>;
 
-export interface CommandTimers {
-  set(callback: () => void, ms: number): unknown;
-  clear(handle: unknown): void;
-}
-
-const realTimers: CommandTimers = {
-  set: (callback, ms) => setTimeout(callback, ms),
-  clear: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
-};
+export type CommandTimers = Timers;
 
 export interface AppletCommandsOptions {
   /** Put a result's `copy` on the clipboard; whether it went. */
   copy(text: string): Promise<boolean>;
-  /** Open a result's `open`: a web page, or a `dashi://` address (as a link from outside: actions/run.ts). */
+  /** Open a result's `open`: a web page, or a `dashi://` address (as a link from outside: actions/lib/run.ts). */
   open(target: string): Promise<Outcome>;
   /** Where the launcher's surface is: its screen, and its top-left corner in that screen's points. */
   launcherOrigin(): Promise<{ output: string | null; x: number; y: number } | null>;

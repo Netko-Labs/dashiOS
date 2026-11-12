@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Dashi",
+  "description": "Lets the agents you allow in Dashi read and use web pages here. Dashi asks you first, site by site.",
+  "version": "0.7.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAx1PE91fSGLtFUHEPDMG7fTtYnpLCFIULruIRsliOsELv6SCGwR9MYRgkL3tnswEdEZVCW4ZVe8H+IwWhlPbk/GfsXaC6W8lbFsTMvceRXKRaX/6ekmhT4WB78n8NMOXXTGr18tzdQ7EzG5yAxYhkJhkr+I5Xvup9yqnT0lG4L/8ObLTCrhbqAGEF/U39pGifKdyQe8hm+4bx7xedXqQXm44+sUZhcM9/Tg92d3X1SFZE2qVtnwEhaAWvPfm+yczEhv03FFmR9H3nWrjssCnSmNhlpsA2oUvJPsFCHCQpv4weC8EpYFB295dOplnLYoHVOoLiQveWHwYGHKc8lawXCQIDAQAB",
+  "minimum_chrome_version": "120",
+  "permissions": ["nativeMessaging", "tabs", "scripting", "webNavigation", "alarms"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "all_frames": true,
+      "match_about_blank": true,
+      "run_at": "document_start"
+    }
+  ]
+}

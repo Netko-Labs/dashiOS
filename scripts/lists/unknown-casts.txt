@@ -1,0 +1,1 @@
+# H7: `as T` on data typed unknown or any (count = casts). Parse it instead. May only shrink.

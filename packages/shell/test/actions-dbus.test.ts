@@ -2,8 +2,8 @@ import { expect, test } from "bun:test";
 import { ACTIONS_INTERFACE, actionsInterface, argsFromVariants } from "../src/actions/dbus.ts";
 import { ActionRegistry, fixedSource } from "../src/actions/registry.ts";
 import { type ActionDef, ok, ready } from "../src/actions/types.ts";
-import { DBusError, Variant } from "../src/dbus/index.ts";
 import { openTarget } from "../src/extensions/start.ts";
+import { DBusError, Variant } from "../src/shared/dbus/index.ts";
 
 const action = (address: string, extra: Partial<ActionDef> = {}): ActionDef => ({
   address,

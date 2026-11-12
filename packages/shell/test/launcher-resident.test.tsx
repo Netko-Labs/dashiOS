@@ -3,8 +3,9 @@ import type { NativeEvent, NativeHostOptions, NativeHostTransport, NativeWindowO
 import { Text } from "@mirinjs/metal";
 import { useState } from "react";
 import { ResidentHost } from "../src/launcher/resident.tsx";
+import { fakeClockEachTest, settle } from "./support/time.ts";
 
-const settle = (ms = 10): Promise<void> => new Promise((done) => setTimeout(done, ms));
+fakeClockEachTest();
 
 /** Hosts that record what the shell asks of them, in order. */
 function fakeHosts() {
@@ -39,6 +40,8 @@ function fakeHosts() {
       toplevel() {},
       unlock() {},
       setTitle() {},
+      setSize() {},
+      setMinSize() {},
       open: (window: NativeWindowOptions) => lines.push(`open ${window.title}`),
     };
     return host as NativeHostTransport;

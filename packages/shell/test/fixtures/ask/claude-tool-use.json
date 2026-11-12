@@ -1,0 +1,15 @@
+{
+  "id": "msg_01XFDUDYJgAACzvnptvVoYEL",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-opus-5-5",
+  "content": [
+    { "type": "thinking", "thinking": "", "signature": "EqQBCgIYAhIM1gbcDa9GJwZA2b3hGgxBdjrkzLoky3dl1pkiMOYds" },
+    { "type": "text", "text": "Locking the screen and turning on dark mode." },
+    { "type": "tool_use", "id": "toolu_01A09q90qw90lq917835lq9", "name": "lock_screen", "input": {} },
+    { "type": "tool_use", "id": "toolu_01B1xk2s3dd44e5ff6g7h8j", "name": "set_setting", "input": { "name": "dark_mode", "value": true } }
+  ],
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "usage": { "input_tokens": 612, "output_tokens": 148 }
+}

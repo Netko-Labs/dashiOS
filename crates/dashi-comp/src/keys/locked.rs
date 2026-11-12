@@ -13,8 +13,8 @@ use smithay::{
 };
 
 use super::{
-    handler::KeyInfo,
     keymap::{Mods, Pressed},
+    keysyms::KeyInfo,
 };
 use crate::state::Dashi;
 

@@ -1,11 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import type { CompositorWindow } from "../src/compositor.ts";
-import { KEYMAP, SWITCHER_RULES, withSwitcher } from "../src/keymap.ts";
-import { ruleFor } from "../src/keymap-match.ts";
+import type { CompositorWindow } from "../src/compositor/wire.ts";
+import { KEYMAP, SWITCHER_RULES, withSwitcher } from "../src/keymap/keymap.ts";
+import { ruleFor } from "../src/keymap/keymap-match.ts";
 import { SwitcherController } from "../src/switcher/controller.ts";
-import { type SwitcherState, switcherLayout, switcherSize } from "../src/switcher/index.ts";
-import { THUMB } from "../src/switcher/layout.ts";
+import { switcherLayout, switcherSize, THUMB } from "../src/switcher/layout.ts";
 import { type AppGroup, chosenWindow, filterApps, groupByApp, isAway, stepSelection, switcherKey, visibleWindows } from "../src/switcher/model.ts";
+import type { SwitcherState } from "../src/switcher/types.ts";
+import { fakeCompositor as over } from "./support/compositor.ts";
+import { settle } from "./support/time.ts";
 
 let nextId = 1;
 const win = (appId: string, title: string, state: CompositorWindow["state"] = "normal", pid: number | null = null): CompositorWindow => ({
@@ -173,17 +175,12 @@ describe("the panel's size", () => {
 /** A compositor that lists windows and remembers what was asked of it. */
 function fakeCompositor(windows: CompositorWindow[]) {
   const asked: Array<[string, unknown]> = [];
-  return {
-    asked,
-    windows: async () => windows,
-    request: async (method: string, params: Record<string, unknown> = {}) => {
-      asked.push([method, params.window]);
-      return {};
-    },
+  const request = async (method: string, params: Record<string, unknown> = {}) => {
+    asked.push([method, params.window]);
+    return {};
   };
+  return Object.assign(over(request, { windows: async () => windows }), { asked });
 }
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe("a session", () => {
   test("Tab, typing, an action, and letting go, in order", async () => {

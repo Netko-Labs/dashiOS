@@ -2,10 +2,7 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ProcessSample } from "../apps/activity-monitor/read.ts";
-import { averageUse, ownerOf, significant, usageBetween } from "../src/battery/apps.ts";
 import { chargingBand, drawChart, drawMax, levelChart } from "../src/battery/chart.ts";
-import { HistoryFile } from "../src/battery/file.ts";
 import {
   awakeSeconds,
   currentDischarge,
@@ -18,10 +15,13 @@ import {
   sinceUnplugged,
   typicalWatts,
 } from "../src/battery/history.ts";
-import { insights } from "../src/battery/insights.ts";
+import { averageUse, ownerOf, significant, usageBetween } from "../src/battery/lib/apps.ts";
+import { HistoryFile } from "../src/battery/lib/file.ts";
+import { insights } from "../src/battery/lib/insights.ts";
 import { BatteryMonitor } from "../src/battery/monitor.ts";
-import { batteryEntries } from "../src/menus/status-menu.ts";
+import type { ProcessSample } from "../src/shared/processes/read.ts";
 import type { PowerSupply } from "../src/system/battery.ts";
+import { flush } from "./support/time.ts";
 
 const NOW = 1_800_000_000;
 const minute = (minutesAgo: number, fields: Partial<Sample> = {}): Sample => ({
@@ -96,6 +96,10 @@ const proc = (pid: number, ppid: number, name: string, cpuTicks: number, uid = 1
   kernel: false,
   io: null,
   sockets: null,
+  command: name,
+  app: null,
+  wakeups: null,
+  gpu: null,
 });
 
 test("processor time goes to the app whose window it or an ancestor owns, else to its own name", () => {
@@ -205,7 +209,7 @@ test("the monitor samples the battery, measures the apps, and publishes insights
   clock += 30;
   // The second look at the apps is a timer's; drive it by hand.
   (monitor as unknown as { look(): void }).look();
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await flush();
   const state = monitor.getSnapshot();
   monitor.stop();
   expect(state.available).toBe(true);
@@ -214,20 +218,4 @@ test("the monitor samples the battery, measures the apps, and publishes insights
   expect(state.samples).toHaveLength(2);
   expect(state.significant.map((app) => app.name)).toEqual(["Helium"]);
   expect(state.insights.map((insight) => insight.id)).toContain("apps");
-});
-
-test("the battery's menu adds the draw and the apps using significant energy", () => {
-  const entries = batteryEntries({ percent: 40, state: "discharging", minutesLeft: 120 }, { watts: 9.4, apps: [{ name: "Helium" }] });
-  expect(entries.map((entry) => (entry.kind === "item" ? entry.label : "—"))).toEqual([
-    "Battery  40%",
-    "Power Source: Battery",
-    "2:00 remaining",
-    "Power Draw: 9.4 W",
-    "—",
-    "Using Significant Energy",
-    "Helium",
-    "—",
-    "Battery Settings…",
-  ]);
-  expect(entries[6]).toMatchObject({ action: { kind: "activity-monitor" } });
 });

@@ -1,8 +1,20 @@
 import { expect, test } from "bun:test";
-import { render, View } from "@mirinjs/metal";
+import { type NativeEvent, render, View } from "@mirinjs/metal";
 import { useEffect } from "react";
 import { type Confirm, ConfirmSheet, confirmKeyAction, useConfirm } from "../src/confirm.tsx";
 import { fakeHost, settle } from "./host.ts";
+
+/** A key the window got, as Metal hands it to a KeySink (`onWindowKeyDown`). */
+const windowKey = (nodeId: string, key: string): NativeEvent => ({
+  type: "windowkey",
+  nodeId,
+  key,
+  ctrl: false,
+  alt: false,
+  shift: false,
+  meta: false,
+  repeat: false,
+});
 
 test("Esc cancels; Enter goes ahead only when nothing is destroyed", () => {
   expect(confirmKeyAction({ kind: "escape" }, false)).toBe("cancel");
@@ -35,8 +47,8 @@ async function mount(danger: boolean) {
 
 test("Enter on a destructive sheet cancels, and only the ume button deletes", async () => {
   const { host, answers, root, keys } = await mount(true);
-  host.emit({ type: "submit", nodeId: keys, value: "" });
-  host.emit({ type: "key", nodeId: keys, value: "Escape" });
+  host.emit(windowKey(keys, "enter"));
+  host.emit(windowKey(keys, "escape"));
   expect(answers).toEqual(["cancel", "cancel"]);
   host.emit({ type: "press", nodeId: root.nodeId("ask:ok") as string });
   expect(answers).toEqual(["cancel", "cancel", "confirm"]);
@@ -48,7 +60,7 @@ test("Enter on a destructive sheet cancels, and only the ume button deletes", as
 
 test("Enter on a safe sheet goes ahead", async () => {
   const { host, answers, root, keys } = await mount(false);
-  host.emit({ type: "submit", nodeId: keys, value: "" });
+  host.emit(windowKey(keys, "enter"));
   expect(answers).toEqual(["confirm"]);
   root.unmount();
 });

@@ -8,19 +8,20 @@
 
 import { existsSync, writeSync } from "node:fs";
 import type { ReactElement } from "react";
-import { METAL_HOST } from "../../src/apps.ts";
+import { METAL_HOST } from "../../src/shared/apps/index.ts";
 import { type RunningApp, runApp } from "../kit/index.ts";
-import { CalendarDialog } from "./calendar.tsx";
-import { prepare } from "./cli.ts";
-import { EntryDialog, PasswordDialog } from "./entry.tsx";
-import type { Answer } from "./frame.tsx";
-import { ListDialog } from "./list-view.tsx";
-import { MessageDialog } from "./message.tsx";
-import { ProgressDialog } from "./progress-view.tsx";
-import { ScaleDialog } from "./scale.tsx";
-import { dialogSize, type Size } from "./size.ts";
-import type { DialogSpec } from "./spec.ts";
-import { TextInfoDialog } from "./text-info.tsx";
+import { CalendarDialog } from "./lib/calendar.tsx";
+import { prepare } from "./lib/cli.ts";
+import { EntryDialog, PasswordDialog } from "./lib/entry.tsx";
+import { FileSelectionDialog } from "./lib/file-selection-view.tsx";
+import type { Answer } from "./lib/frame.tsx";
+import { ListDialog } from "./lib/list-view.tsx";
+import { MessageDialog } from "./lib/message.tsx";
+import { ProgressDialog } from "./lib/progress-view.tsx";
+import { ScaleDialog } from "./lib/scale.tsx";
+import { dialogSize, type Size } from "./lib/size.ts";
+import type { DialogSpec } from "./lib/spec.ts";
+import { TextInfoDialog } from "./lib/text-info.tsx";
 
 /** Zenity's status when the dialog's `--timeout` runs out. */
 const TIMED_OUT = 5;
@@ -55,6 +56,8 @@ function dialogFor(spec: DialogSpec, answer: Answer, size: Size): ReactElement {
       return <ScaleDialog spec={spec} answer={answer} width={size.width} print={print} />;
     case "calendar":
       return <CalendarDialog spec={spec} answer={answer} />;
+    case "file-selection":
+      return <FileSelectionDialog spec={spec} answer={answer} />;
   }
 }
 

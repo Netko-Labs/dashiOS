@@ -1,0 +1,7 @@
+# H15: dependencies whose licence is not on the allowed list in docs/conventions.md ("Licenses").
+# Each was checked by a person; the line is "1<TAB>bun:|cargo:<name> <licence>". May only shrink;
+# a new one goes here only with its reason below and in the commit that adds it.
+#   fast-sha256 (Unlicense): public-domain dedication, permissive; via standardwebhooks (the AI SDKs).
+#   unicode-ident, unicode-properties (Unicode-3.0 for their data tables): permissive, notice kept.
+1	cargo:unicode-ident (MIT OR Apache-2.0) AND Unicode-3.0
+1	cargo:unicode-properties (MIT OR Apache-2.0) AND Unicode-3.0

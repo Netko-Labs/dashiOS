@@ -1,6 +1,6 @@
 {
   "name": "@dashi/applet",
-  "version": "0.4.1",
+  "version": "0.7.0",
   "type": "module",
   "description": "Dashi's applet SDK: the client for the menu bar's applets channel, popovers drawn with Metal, applet.json (the manifest), packages and their signatures, and the dashi-applet CLI.",
   "license": "MIT",
@@ -9,6 +9,7 @@
     "./manifest": "./src/manifest.ts",
     "./permissions": "./src/permissions.ts",
     "./protocol": "./src/protocol.ts",
+    "./power": "./src/power.ts",
     "./package": "./src/package.ts",
     "./signing": "./src/signing/index.ts",
     "./catalog": "./src/catalog.ts",
@@ -31,5 +32,8 @@
     "@types/bun": "latest",
     "@types/react": "^19.2.0",
     "typescript": "^5.9.0"
+  },
+  "dependencies": {
+    "@dashi/shape": "workspace:*"
   }
 }

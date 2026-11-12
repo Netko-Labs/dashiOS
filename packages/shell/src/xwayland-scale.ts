@@ -16,8 +16,8 @@
  * pointer size (pointer.ts).
  */
 
-import type { Compositor } from "./compositor.ts";
-import { DEFAULT_POINTER_SIZE } from "./pointer.ts";
+import type { Compositor, Output } from "./compositor/index.ts";
+import { DEFAULT_POINTER_SIZE } from "./shared/appearance/index.ts";
 
 /** How X11 apps meet a scaled screen: drawn at its pixels, or drawn at 1 and stretched. */
 export const X11_SCALINGS = ["sharp", "stretched"] as const;
@@ -45,17 +45,12 @@ export function xResources(scale: number, pointerSize: number = DEFAULT_POINTER_
 }
 
 /** The screens' scales from IPC `outputs`. */
-export function outputScales(value: unknown): number[] {
-  if (typeof value !== "object" || value === null || !("outputs" in value) || !Array.isArray(value.outputs)) return [];
-  return value.outputs.flatMap((output: unknown) => {
-    if (typeof output !== "object" || output === null || !("scale" in output)) return [];
-    if ("enabled" in output && output.enabled === false) return [];
-    return typeof output.scale === "number" ? [output.scale] : [];
-  });
+export function outputScales(outputs: readonly Output[]): number[] {
+  return outputs.flatMap((output) => (output.enabled ? [output.scale] : []));
 }
 
 export interface XwaylandScalingDeps {
-  compositor: Pick<Compositor, "request" | "session" | "on">;
+  compositor: Pick<Compositor, "outputs" | "xwaylandScale" | "session" | "on">;
   /** Merge X resources into the X server on `display` (xrdb); false if it couldn't. */
   mergeResources?: (display: string, resources: string) => Promise<boolean>;
   /** The person's choice now (settings); absent, sharp with the standard pointer. */
@@ -90,9 +85,9 @@ export function startXwaylandScaling({
   let running: Promise<void> = Promise.resolve();
   const apply = async (): Promise<void> => {
     const { scaling, pointerSize } = choice();
-    const scale = scaling === "stretched" ? 1 : xwaylandScale(outputScales(await compositor.request("outputs")));
+    const scale = scaling === "stretched" ? 1 : xwaylandScale(outputScales(await compositor.outputs()));
     // Sent even before Xwayland is up: the compositor keeps it for the start.
-    await compositor.request("xwayland-scale", { scale });
+    await compositor.xwaylandScale({ scale });
     const session = await compositor.session();
     if (session?.xwayland !== "ready" || !session.display) return;
     const resources = xResources(scale, pointerSize);

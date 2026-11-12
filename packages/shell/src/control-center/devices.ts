@@ -5,14 +5,17 @@
  * error: a desktop with no Bluetooth still has a Control Center.
  *
  * Switches and sliders update the store at once and write behind: the
- * radios are read back afterwards, the sliders' writes coalesce.
+ * radios are read back afterwards, the sliders' writes coalesce. The volume
+ * also follows PipeWire as it changes (the session's `pw-dump --monitor`),
+ * so a change made elsewhere (a key, `wpctl`, another output) shows at once.
  */
 
 import { useSyncExternalStore } from "react";
 import { type Backlight, levelOf, readBacklight, setBrightness } from "../system/brightness.ts";
 import { run as defaultRun, hasProgram, type Run } from "../system/exec.ts";
 import { readVolume, setVolume, type Volume } from "../system/volume.ts";
-import { latestWins } from "./coalesce.ts";
+import { VolumeFollow } from "../system/volume-follow.ts";
+import { latestWins } from "./lib/coalesce.ts";
 import { bluetoothRadio, nmcliRadio, type Radio } from "./radios.ts";
 
 export interface Devices {
@@ -24,6 +27,8 @@ export interface Devices {
   brightness: number | null;
   /** The output volume; null without PipeWire. */
   volume: Volume | null;
+  /** Personal Hotspot; null without Wi-Fi. */
+  hotspot: boolean | null;
 }
 
 export interface DeviceDeps {
@@ -32,18 +37,22 @@ export interface DeviceDeps {
   wifiRadio?: Radio;
   /** The Bluetooth adapter; `bluetoothctl` by default. */
   bluetoothRadio?: Radio;
+  /** Personal Hotspot; none by default (it is read as missing). */
+  hotspotRadio?: Radio;
   /** Where the backlights are (tests). */
   backlightRoot?: string;
   hasBluetoothctl?: boolean;
   hasBrightnessctl?: boolean;
-  /** The brightness level (0..1) after the slider set it: at 0 the built-in screen goes off (system/screen-dark.ts). */
+  /** The brightness level (0..1) after the slider set it: at 0 the built-in screen goes off (system/lib/screen-dark.ts). */
   brightnessChanged?: (level: number) => void;
   /** The volume after a slider change, for the menu bar's glyph. */
   volumeChanged?: (volume: Volume) => void;
+  /** Tells the output volume each time PipeWire changes (sound/apps/watch.ts). Returns the stop. */
+  followVolume?: (onVolume: (volume: Volume | null) => void) => () => void;
 }
 
 export class DeviceStore {
-  private snapshot: Devices = { wifi: null, bluetooth: null, brightness: null, volume: null };
+  private snapshot: Devices = { wifi: null, bluetooth: null, brightness: null, volume: null, hotspot: null };
   private light: Backlight | null = null;
   /** The sink was muted when the slider moved up: the next write unmutes it. */
   private pendingUnmute = false;
@@ -53,6 +62,9 @@ export class DeviceStore {
   private readonly adapter: Radio;
   private readonly writeBrightness = latestWins((level: number) => this.setBacklight(level));
   private readonly writeVolume = latestWins((level: number) => this.setSink(level));
+  /** PipeWire's word on the volume, held a moment after the slider set it. */
+  private readonly volumeFollow = new VolumeFollow((volume) => this.publish({ volume }));
+  private stopFollow: (() => void) | null = null;
 
   constructor(private readonly deps: DeviceDeps = {}) {
     this.run = deps.run ?? defaultRun;
@@ -67,15 +79,26 @@ export class DeviceStore {
 
   getSnapshot = (): Devices => this.snapshot;
 
+  /** Follows the volume until the returned stop (with `followVolume`). */
+  start(): () => void {
+    this.stopFollow ??= this.deps.followVolume?.((volume) => this.volumeFollow.heard(volume)) ?? null;
+    return () => {
+      this.stopFollow?.();
+      this.stopFollow = null;
+      this.volumeFollow.stop();
+    };
+  }
+
   /** Reads everything again (Control Center just opened). */
   async refresh(): Promise<void> {
     const bluetooth = this.deps.hasBluetoothctl ?? hasProgram("bluetoothctl");
     const brightnessctl = this.deps.hasBrightnessctl ?? hasProgram("brightnessctl");
-    const [wifi, bluetoothPower, light, volume] = await Promise.all([
+    const [wifi, bluetoothPower, light, volume, hotspot] = await Promise.all([
       this.radio.read(),
       bluetooth ? this.adapter.read() : Promise.resolve(null),
       brightnessctl ? readBacklight(this.deps.backlightRoot) : Promise.resolve(null),
       readVolume(this.run),
+      this.deps.hotspotRadio?.read() ?? Promise.resolve(null),
     ]);
     this.light = light;
     this.publish({
@@ -83,7 +106,16 @@ export class DeviceStore {
       bluetooth: bluetoothPower,
       brightness: light ? levelOf(light) : null,
       volume,
+      hotspot,
     });
+  }
+
+  async setHotspot(on: boolean): Promise<void> {
+    const radio = this.deps.hotspotRadio;
+    if (!radio) return;
+    this.publish({ hotspot: on });
+    await radio.set(on);
+    this.publish({ hotspot: await radio.read() });
   }
 
   async setWifi(on: boolean): Promise<void> {
@@ -108,7 +140,9 @@ export class DeviceStore {
     const volume = this.snapshot.volume;
     if (!volume) return;
     if (volume.muted && level > 0) this.pendingUnmute = true;
-    this.publish({ volume: { level: Math.min(Math.max(level, 0), 1), muted: volume.muted && level <= 0 } });
+    const shown = { level: Math.min(Math.max(level, 0), 1), muted: volume.muted && level <= 0 };
+    this.volumeFollow.set(shown);
+    this.publish({ volume: shown });
     this.writeVolume(level);
   }
 

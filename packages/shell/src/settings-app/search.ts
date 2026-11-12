@@ -6,11 +6,13 @@
  * only when nothing else answers to it: that word means System Settings.
  */
 
-import { type App, iconPath, registerShellEntry, SETTINGS_APP_ID, type ShellEntryLook } from "../apps.ts";
-import { PANES, type PaneId, type PaneInfo } from "./panes.ts";
+import { registerShellEntry, SETTINGS_APP_ID, type ShellEntryLook } from "../apps.ts";
+import { type App, iconPath } from "../shared/apps/index.ts";
+import { PANES, type PaneId, type PaneInfo } from "../shared/settings/index.ts";
 
 /** Other words for each pane, lowercase; panes not listed answer to their title only. */
 export const PANE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
+  recent: ["undo", "history", "changes", "changed", "who changed"],
   appearance: [
     "dark mode",
     "light mode",
@@ -29,29 +31,33 @@ export const PANE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
   wallpaper: ["background", "desktop picture", "live wallpaper"],
   displays: ["display", "monitor", "screen", "resolution", "scale", "refresh rate", "rotation", "arrangement"],
   "desktop-dock": ["dock", "taskbar", "autohide", "spaces", "desktops", "full screen", "fullscreen", "full-screen apps", "games"],
+  "control-center": ["tiles", "toggles", "edit controls", "applet controls"],
   keyboard: ["layout", "input source", "key repeat", "shortcuts", "input method", "ime", "fcitx", "chinese", "japanese", "korean", "pinyin"],
   trackpad: ["touchpad", "tap to click", "natural scrolling", "gestures", "scrolling speed"],
   mouse: ["pointer", "tracking speed", "scrolling speed"],
   "date-time": ["clock", "time zone", "timezone", "24-hour", "ntp"],
   "language-region": ["language", "locale", "region", "formats", "first day of week"],
   "lock-screen": ["lock", "screen saver", "display off", "sleep"],
-  notifications: ["do not disturb", "banners", "alerts"],
+  notifications: ["focus", "do not disturb", "banners", "alerts"],
   passwords: ["vault", "passkeys", "api keys", "tokens", "1password"],
-  agents: ["ai", "mcp", "permissions", "privacy"],
+  agents: ["ai", "mcp"],
+  privacy: ["privacy & security", "permissions", "security", "consent", "camera", "microphone", "location", "screen sharing", "revoke", "always allow"],
   about: ["version", "system information", "hardware"],
-  network: ["wifi", "wi-fi", "ethernet", "internet", "vpn", "ip address"],
+  network: ["network", "wifi", "wi-fi", "ethernet", "internet", "vpn", "ip address"],
   bluetooth: ["headphones", "pairing", "devices"],
   sound: ["volume", "audio", "speakers", "microphone", "output", "input"],
   battery: ["power", "energy", "low power mode", "battery percentage"],
-  users: ["account", "password", "avatar", "login", "automatic login"],
+  users: ["users & accounts", "accounts", "account", "password", "avatar", "login", "automatic login"],
 };
 
 /** What each pane holds, in a few words after its name on the launcher's row (VS-2: the same line). */
 export const PANE_DETAILS: Readonly<Record<PaneId, string>> = {
+  recent: "what changed and who changed it",
   appearance: "Dark Mode, corners, text size",
   wallpaper: "desktop picture",
   displays: "resolution, scale, arrangement",
   "desktop-dock": "Dock, Desktops, full screen",
+  "control-center": "its tiles, their sizes and order",
   keyboard: "layout, key repeat, input method",
   trackpad: "tap to click, gestures",
   mouse: "tracking and scrolling speed",
@@ -60,7 +66,8 @@ export const PANE_DETAILS: Readonly<Record<PaneId, string>> = {
   "lock-screen": "screen saver, sleep",
   notifications: "Do Not Disturb, banners",
   passwords: "saved passwords and codes",
-  agents: "what agents may do",
+  agents: "who answers, what agents did",
+  privacy: "permissions you gave",
   about: "version and hardware",
   network: "Wi-Fi, Ethernet, VPN",
   bluetooth: "devices, pairing",

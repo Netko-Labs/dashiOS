@@ -3,13 +3,13 @@
  * the person can't take back by looking. Force quit therefore asks on
  * screen every time (`ctx.confirm`), whatever the agent was allowed before,
  * and the policy Force Quit Applications uses decides what may be ended
- * (force-quit/policy.ts): never the shell or the session, never a process
+ * (shared/processes/policy.ts): never the shell or the session, never a process
  * with no window.
  */
 
-import type { CompositorWindow } from "../../compositor.ts";
-import type { AppGroup } from "../../force-quit/model.ts";
-import { clean } from "../../notifications/text.ts";
+import type { CompositorWindow } from "../../compositor/index.ts";
+import type { AppGroup } from "../../force-quit/index.ts";
+import { clean } from "../../notifications/index.ts";
 import { type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import type { Call } from "../tools/index.ts";
 

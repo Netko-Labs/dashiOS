@@ -9,9 +9,9 @@
  * (volume, brightness, media) are system/keys.ts's.
  */
 
-import { chordText, type PressedChord } from "./app-menus/shortcut.ts";
-import type { Compositor, CompositorWindow } from "./compositor.ts";
-import { takeScreenshot } from "./screenshots.ts";
+import { chordText, type PressedChord } from "./app-menus/index.ts";
+import type { Compositor, CompositorWindow } from "./compositor/index.ts";
+import { takeScreenshot } from "./screenshots/index.ts";
 import type { SwitcherController } from "./switcher/index.ts";
 import type { HardwareKeys } from "./system/keys.ts";
 
@@ -28,20 +28,20 @@ export interface ShellActions {
   lock(): void;
   /** The power key was pressed (power/). */
   powerKey(): void;
-  /** Drag out an area to capture; Space there takes `window` (screenshot-area.tsx). */
-  screenshotArea(window: number | null): void;
-  /** ⇧❖5: the screenshot and recording toolbar, or stop the recording (recorder/). */
-  captureToolbar?(window: number | null): void;
   /** Opens Force Quit Applications (force-quit/). */
   forceQuit(): void;
   /** Opens System Settings (settings-app/), on ❖, as on the Mac. */
   settings?(): void;
   /** Turns Dock autohide on or off (dock/prefs.ts), on ⌥❖D, as on the Mac. */
   toggleAutohide?(): void;
+  /** ⌃F2: the keyboard to the menu bar, or back from it (menus/bar-keys.ts). */
+  menuBar?(): void;
   /** Mission Control: all windows at once (overview/). */
   overview: { toggle(): void };
   /** Chooses the item of `window`'s app menus that shows `shortcut` ("⇧❖N", app-menus/); false when none does. */
   appShortcut?(window: number, shortcut: string): Promise<boolean>;
+  /** Tells the app of the window owned by `pid` that it is quitting, before its close request (app-menus/, kit/close.ts). */
+  appQuitting?(pid: number | null): void;
   /** Spaces: ⌃← ⌃→ and ⌃1…⌃9 (spaces/); says whether the binding was one of its keys. */
   spaces?: { binding(name: string): boolean };
   /**
@@ -58,11 +58,14 @@ export interface ShellActions {
   isLocked?(): boolean;
 }
 
+/** The binding that opens and closes the launcher (keymap.ts). */
+const LAUNCHER = "launcher";
+
 /** What a binding that is an action's address starts with (actions/address.ts `SCHEME`). */
 const ADDRESS = "dashi://";
 
 /** The compositor client's requests the actions use. */
-export type Requests = Pick<Compositor, "request" | "windows">;
+export type Requests = Pick<Compositor, "sendKeys" | "close" | "minimize" | "hide" | "focus" | "capture" | "windows">;
 
 /**
  * Windows of one app: the same app id, so separate processes of one app
@@ -72,6 +75,75 @@ export type Requests = Pick<Compositor, "request" | "windows">;
 export function sameApp(a: CompositorWindow, b: CompositorWindow): boolean {
   if (a.appId && b.appId) return a.appId === b.appId;
   return a.pid !== null && a.pid === b.pid;
+}
+
+/** ❖ and a chord in one of Dashi's own apps: its menu item with that shortcut, as on a Mac; else the app's Ctrl chord, as ❖ chords go everywhere else (keymap.ts). */
+async function appChord(window: number | null, compositor: Requests, actions: ShellActions, chord?: PressedChord): Promise<void> {
+  if (window === null || !chord) return;
+  const shortcut = chordText(chord);
+  if (shortcut && (await actions.appShortcut?.(window, shortcut))) return;
+  await compositor.sendKeys({ window, chord: `ctrl+${chord.shift ? "shift+" : ""}${chord.key}` });
+}
+
+/**
+ * ❖⌫ in one of Dashi's own apps: its row that shows ❖⌫ (Files' Move to
+ * Trash) unless a field is typing; else what ❖⌫ does in text anywhere,
+ * erasing to the line's start (keymap.ts).
+ */
+async function appErase(window: number | null, compositor: Requests, actions: ShellActions): Promise<void> {
+  if (window === null) return;
+  if (await actions.appShortcut?.(window, "❖⌫")) return;
+  await compositor.sendKeys({ window, chord: "shift+Home" });
+  await compositor.sendKeys({ window, chord: "BackSpace" });
+}
+
+/** ❖Q: every window of the app is asked to close. */
+async function quitApp(window: number, compositor: Requests, actions: ShellActions): Promise<void> {
+  const windows = await compositor.windows();
+  const focused = windows.find((candidate) => candidate.id === window);
+  if (!focused) return;
+  for (const each of windows.filter((candidate) => sameApp(candidate, focused))) {
+    // A question it asks names quitting ("Quit Terminal?"), not closing a window.
+    actions.appQuitting?.(each.pid);
+    await compositor.close({ window: each.id });
+  }
+}
+
+/** ❖`: the app's back-most other window comes forward. */
+async function nextWindow(window: number, compositor: Requests): Promise<void> {
+  const windows = await compositor.windows();
+  const focused = windows.find((candidate) => candidate.id === window);
+  if (!focused) return;
+  const back = windows.filter((candidate) => candidate.id !== window && candidate.state === "normal" && sameApp(candidate, focused)).at(-1);
+  if (back) await compositor.focus({ window: back.id });
+}
+
+/** The bindings that act on the focused window. */
+async function windowBinding(name: string, window: number, compositor: Requests, actions: ShellActions, chord?: PressedChord): Promise<void> {
+  switch (name) {
+    case "close-window":
+      // ❖W in one of Dashi's own apps: its own ❖W row first (Terminal's
+      // Close Tab, Text Editor's Close), as any other ❖ chord there; ⇧❖W its
+      // ⇧❖W row (Terminal's Close Window). The window closes when it has none.
+      if (await actions.appShortcut?.(window, chord?.shift ? "⇧❖W" : "❖W")) return;
+      await compositor.close({ window });
+      return;
+    case "minimize-window":
+      await compositor.minimize({ window });
+      return;
+    case "hide-app":
+      await compositor.hide({ window });
+      return;
+    case "screenshot-window":
+      await takeScreenshot(compositor, { window });
+      return;
+    case "quit-app":
+      return quitApp(window, compositor, actions);
+    case "next-window":
+      return nextWindow(window, compositor);
+    default:
+      console.error(`dashi-shell: the keymap binds “${name}”, but no action has that name`);
+  }
 }
 
 /** Run a binding; `window` is the window focused when it was pressed. */
@@ -86,17 +158,11 @@ export async function runBinding(name: string, window: number | null, compositor
   // Bound only while the switcher is open (keymap.ts SWITCHER_RULES).
   if (name.startsWith("switcher-")) return switcherBinding(name, chord?.key, actions.switcher);
   switch (name) {
-    case "app-chord": {
-      // A ❖ chord in one of Dashi's own apps: its menu item with that
-      // shortcut, as on a Mac; else the app's Ctrl chord, as ❖ chords go
-      // everywhere else (keymap.ts).
-      if (window === null || !chord) return;
-      const shortcut = chordText(chord);
-      if (shortcut && (await actions.appShortcut?.(window, shortcut))) return;
-      await compositor.request("send-keys", { window, chord: `ctrl+${chord.shift ? "shift+" : ""}${chord.key}` });
-      return;
-    }
-    case "launcher":
+    case "app-chord":
+      return appChord(window, compositor, actions, chord);
+    case "app-erase":
+      return appErase(window, compositor, actions);
+    case LAUNCHER:
       return actions.toggleLauncher();
     case "switch-next":
       return actions.switcher.step("next");
@@ -104,17 +170,10 @@ export async function runBinding(name: string, window: number | null, compositor
       return actions.switcher.step("previous");
     case "switch-cancel":
       return actions.switcher.cancel();
-    case "screenshot-screen":
-      await takeScreenshot(compositor);
-      return;
     case "lock-screen":
       return actions.lock();
     case "power-key":
       return actions.powerKey();
-    case "screenshot-area":
-      return actions.screenshotArea(window);
-    case "capture-toolbar":
-      return actions.captureToolbar?.(window);
     case "force-quit":
       return actions.forceQuit();
     case "settings":
@@ -123,48 +182,12 @@ export async function runBinding(name: string, window: number | null, compositor
       return actions.toggleAutohide?.();
     case "overview":
       return actions.overview.toggle();
+    case "menu-bar":
+      return actions.menuBar?.();
   }
   // The rest act on the focused window, if there is one.
   if (window === null) return;
-  switch (name) {
-    case "close-window":
-      // ❖W in one of Dashi's own apps: its own ❖W row first (Terminal's
-      // Close Tab, Text Editor's Close), as any other ❖ chord there; ⇧❖W its
-      // ⇧❖W row (Terminal's Close Window). The window closes when it has none.
-      if (await actions.appShortcut?.(window, chord?.shift ? "⇧❖W" : "❖W")) return;
-      await compositor.request("close", { window });
-      return;
-    case "minimize-window":
-      await compositor.request("minimize", { window });
-      return;
-    case "hide-app":
-      await compositor.request("hide", { window });
-      return;
-    case "screenshot-window":
-      await takeScreenshot(compositor, { window });
-      return;
-    case "quit-app": {
-      // ❖Q: every window of the app is asked to close.
-      const windows = await compositor.windows();
-      const focused = windows.find((candidate) => candidate.id === window);
-      if (!focused) return;
-      for (const each of windows.filter((candidate) => sameApp(candidate, focused))) {
-        await compositor.request("close", { window: each.id });
-      }
-      return;
-    }
-    case "next-window": {
-      // ❖`: the app's back-most other window comes forward.
-      const windows = await compositor.windows();
-      const focused = windows.find((candidate) => candidate.id === window);
-      if (!focused) return;
-      const back = windows.filter((candidate) => candidate.id !== window && candidate.state === "normal" && sameApp(candidate, focused)).at(-1);
-      if (back) await compositor.request("focus", { window: back.id });
-      return;
-    }
-    default:
-      console.error(`dashi-shell: the keymap binds “${name}”, but no action has that name`);
-  }
+  return windowBinding(name, window, compositor, actions, chord);
 }
 
 /** A switcher session's key: a step, ⌫, or a key typed (or acted on). */
@@ -186,30 +209,38 @@ function switcherBinding(name: string, key: string | undefined, switcher: Switch
   }
 }
 
-export function startShortcuts(compositor: Compositor, actions: ShellActions): () => void {
+/** ❖ alone: a tap, a hold, a chord begun or its release. */
+function superPhase(phase: "tap" | "hold" | "chord" | "up", actions: ShellActions): void {
+  switch (phase) {
+    case "tap":
+      actions.toggleLauncher();
+      break;
+    case "hold":
+      actions.showSheet();
+      break;
+    case "chord":
+      actions.hideSheet();
+      break;
+    case "up":
+      actions.hideSheet();
+      actions.switcher.commit();
+      break;
+  }
+}
+
+export function startShortcuts(compositor: Requests & Pick<Compositor, "on">, actions: ShellActions): () => void {
   return compositor.on((event) => {
     if (event.event === "super") {
       // Locked: a tap or a hold shows nothing; a chord or ❖ coming up still takes the sheet down.
       if (actions.isLocked?.() && (event.phase === "tap" || event.phase === "hold")) return;
-      switch (event.phase) {
-        case "tap":
-          actions.toggleLauncher();
-          break;
-        case "hold":
-          actions.showSheet();
-          break;
-        case "chord":
-          actions.hideSheet();
-          break;
-        case "up":
-          actions.hideSheet();
-          actions.switcher.commit();
-          break;
-      }
+      superPhase(event.phase, actions);
     } else if (event.event === "binding") {
       if (actions.isLocked?.()) return;
       // The launcher's keys are taken here, in the order they came: typing must not be reordered.
       if (event.name.startsWith("launcher-") && actions.launcher?.binding(event.name, event.chord, event.text)) return;
+      // ❖Space opens it here too, before the next event: the keys typed after it (armsAfterTap,
+      // launcher/type-ahead.ts) can come in the same breath, and must find it opening.
+      if (event.name === LAUNCHER) return actions.toggleLauncher();
       runBinding(event.name, event.window, compositor, actions, event.chord).catch((error) => console.error(`dashi-shell: “${event.name}” failed:`, error));
     }
   });

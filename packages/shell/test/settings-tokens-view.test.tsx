@@ -1,12 +1,11 @@
 import { expect, test } from "bun:test";
 import { useConfirm } from "@dashi/ui";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render, View } from "@mirinjs/metal";
-import type { NewToken, TokenChange, TokenSummary } from "../src/agents/secrets/vault.ts";
-import { parseHeaders, parseHosts, type TokenStore, Tokens, tokenDetail } from "../src/settings-app/panes/tokens.tsx";
+import type { NewToken, TokenChange, TokenSummary } from "../src/agents/secrets/types.ts";
+import { parseHeaders, parseHosts, type TokenStore, Tokens, tokenDetail } from "../src/settings-app/lib/panes/tokens.tsx";
+import { settle } from "./support/time.ts";
 
 // Settings › Passwords' tokens on a stand-in for the Metal host: a vault of the test's, presses and typing as the host sends them.
-
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 20));
 
 function fakeVault(items: TokenSummary[]) {
   const calls: { saved: NewToken[]; updated: [number, TokenChange][]; removed: number[] } = { saved: [], updated: [], removed: [] };

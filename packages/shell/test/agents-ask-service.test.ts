@@ -8,10 +8,11 @@ import { HistoryLog } from "../src/agents/ask/history.ts";
 import { modelKeys } from "../src/agents/ask/keys.ts";
 import { TurnWatch } from "../src/agents/ask/now.ts";
 import { startAsk } from "../src/agents/ask/service.ts";
+import { TOOL_ACTIONS } from "../src/agents/index.ts";
 import { AgentStore } from "../src/agents/presence.ts";
-import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
-import { keyWords, modelWords } from "../src/settings-app/panes/agents-answer.tsx";
-import { readSettings } from "../src/settings-app/store.ts";
+import { keyWords, modelWords } from "../src/settings-app/lib/panes/agents-answer.tsx";
+import { readSettings } from "../src/settings-app/sections.ts";
+import { flush, until } from "./support/time.ts";
 
 test("Settings › Agents says where Claude's key is and what model runs here", () => {
   expect(keyWords("vault")).toBe("In your vault. Claude never sees it.");
@@ -103,7 +104,7 @@ test("Claude with no key: the Ask fails with where the key goes, and nothing is 
     return Response.json({});
   });
   const id = ask.launcher.ask("dark mode and hide the dock");
-  await new Promise((resolve) => setTimeout(resolve, 5));
+  await flush();
   const task = ask.launcher.getSnapshot().tasks.find((each) => each.id === id);
   expect(task?.phase).toBe("failed");
   expect(task?.failure?.kind).toBe("no-key");
@@ -154,7 +155,7 @@ test("a harness answers through plan mode: Settings sees it installed, and an As
     { id: "opencode", installed: false, signedIn: null },
   ]);
   const id = ask.launcher.ask("dark mode and open notes") as string;
-  for (let i = 0; i < 200 && ask.tasks.get(id)?.phase === "asking"; i++) await new Promise((resolve) => setTimeout(resolve, 20));
+  await until(() => ask.tasks.get(id)?.phase !== "asking", "the answer");
   const task = ask.tasks.get(id);
   expect(task?.answerer.name).toBe("Claude Code");
   expect(task?.phase).toBe("planned");

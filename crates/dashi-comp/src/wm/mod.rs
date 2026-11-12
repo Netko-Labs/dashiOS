@@ -2,14 +2,17 @@
 //! to do with a window is the shell's decision; this carries it out.
 
 mod actions;
+mod by_scale;
 mod decor;
+mod describe;
 mod edge_hold;
 mod fullscreen;
+mod geometry;
 mod layer_motion;
 mod motion;
 mod overview;
 mod zones;
-pub(crate) use layer_motion::LayerMotion;
+pub(crate) use layer_motion::{LayerMotion, LayerMotionParams};
 pub(crate) use motion::Motion;
 pub(crate) use zones::Zones;
 mod space_list;
@@ -25,7 +28,7 @@ mod sheets;
 mod windows;
 
 pub(crate) use actions::valid_frame;
+pub(crate) use geometry::{frame_of, frame_to_be};
 pub(crate) use windows::{
-    Shown, WindowId, Windows, frame_of, frame_to_be, names, rect_json, toplevel_surface,
-    window_id_for_surface,
+    Shown, WindowId, Windows, names, toplevel_surface, window_for_copy, window_id_for_surface,
 };

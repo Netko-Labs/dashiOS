@@ -6,7 +6,7 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import type { SessionCommand } from "./greetd/login.ts";
+import type { SessionCommand } from "./greetd/index.ts";
 
 export interface Session {
   /** The entry's file name without `.desktop`: "dashi". */

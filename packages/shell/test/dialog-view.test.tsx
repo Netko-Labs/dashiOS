@@ -1,17 +1,28 @@
 import { expect, test } from "bun:test";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
-import { parseArgs } from "../apps/dialog/args.ts";
-import { CalendarDialog } from "../apps/dialog/calendar.tsx";
-import { EntryDialog, PasswordDialog } from "../apps/dialog/entry.tsx";
-import type { Answer } from "../apps/dialog/frame.tsx";
-import { ListDialog } from "../apps/dialog/list-view.tsx";
-import { MessageDialog } from "../apps/dialog/message.tsx";
-import { type DialogSpec, specFrom } from "../apps/dialog/spec.ts";
+import { parseArgs } from "../apps/dialog/lib/args.ts";
+import { CalendarDialog } from "../apps/dialog/lib/calendar.tsx";
+import { EntryDialog, PasswordDialog } from "../apps/dialog/lib/entry.tsx";
+import type { Answer } from "../apps/dialog/lib/frame.tsx";
+import { ListDialog } from "../apps/dialog/lib/list-view.tsx";
+import { MessageDialog } from "../apps/dialog/lib/message.tsx";
+import { type DialogSpec, specFrom } from "../apps/dialog/lib/spec.ts";
+import { settle } from "./support/time.ts";
+
+/** A key the window got, as Metal hands it to a KeySink (`onWindowKeyDown`). */
+const windowKey = (nodeId: string, key: string): NativeEvent => ({
+  type: "windowkey",
+  nodeId,
+  key,
+  ctrl: false,
+  alt: false,
+  shift: false,
+  meta: false,
+  repeat: false,
+});
 
 // The dialogs mounted on a stand-in for the Metal host: presses and keys sent as the host would, answers recorded.
-
-const settle = (): Promise<void> => new Promise((done) => setTimeout(done, 20));
 
 function spec<K extends DialogSpec["kind"]>(kind: K, ...argv: string[]): Extract<DialogSpec, { kind: K }> {
   const result = specFrom(parseArgs([`--${kind}`, ...argv]), new Date(2026, 10, 3));
@@ -49,7 +60,7 @@ test("a question: Yes, No, Esc, and an extra button", async () => {
 
   const no = await mount((answer) => <MessageDialog spec={question} answer={answer} />);
   await no.press("dialog:cancel");
-  await no.emit({ type: "key", nodeId: no.node("dialog:keys"), value: "Escape" });
+  await no.emit(windowKey(no.node("dialog:keys"), "escape"));
   expect(no.answers).toEqual([
     [1, undefined],
     [1, undefined],
@@ -62,10 +73,10 @@ test("a question: Yes, No, Esc, and an extra button", async () => {
 
 test("Enter presses the default button; --default-cancel makes it No", async () => {
   const plain = await mount((answer) => <MessageDialog spec={spec("question")} answer={answer} />);
-  await plain.emit({ type: "submit", nodeId: plain.node("dialog:keys"), value: "" });
+  await plain.emit(windowKey(plain.node("dialog:keys"), "enter"));
   expect(plain.answers).toEqual([[0, undefined]]);
   const cautious = await mount((answer) => <MessageDialog spec={spec("question", "--default-cancel")} answer={answer} />);
-  await cautious.emit({ type: "submit", nodeId: cautious.node("dialog:keys"), value: "" });
+  await cautious.emit(windowKey(cautious.node("dialog:keys"), "enter"));
   expect(cautious.answers).toEqual([[1, undefined]]);
 });
 

@@ -14,7 +14,7 @@
  * `notice` that floats over the content's foot and takes no room from it.
  */
 
-import { Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
+import { type PressInfo, Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { useColors, useSurface } from "./theme/index.ts";
 import { TooltipLayer, useTooltip } from "./tooltip.tsx";
@@ -39,15 +39,27 @@ export function useTitleBarInset(): TitleBarInset {
   return { unified: true, top: Math.ceil(controls.y + controls.height), leading: Math.ceil(controls.x + controls.width) };
 }
 
+/**
+ * The toolbar's left inset: 18 after a sidebar, else clear of the window
+ * controls by 14. A sidebar narrower than the controls (a rail) leaves the
+ * toolbar to clear what they still cover.
+ */
+export function toolbarInset(leading: number, sidebarWidth: number): number {
+  if (leading <= 0) return 18;
+  return Math.max(18, leading + 14 - sidebarWidth);
+}
+
 /** The widest a window's title gets in its toolbar before it is cut. */
 const TITLE_MAX = 320;
+/** The room the title keeps before the toolbar's controls give any of theirs (a field that shrinks). */
+const TITLE_MIN = 96;
 
 export interface AppWindowProps {
   /** The window's name, on one line. */
   title: string;
   /**
    * A short word about it, after the title on the same line, muted ("All Notes — 3 notes").
-   * Never a second line: short of room, both are cut with an ellipsis.
+   * Never a second line: short of room, it is cut with an ellipsis first, then the title.
    */
   detail?: string;
   /** Controls at the toolbar's start, before the title (back and forward). */
@@ -75,7 +87,8 @@ export function AppWindow({ title, detail, leading, toolbar, center, sidebar, si
   const inset = useTitleBarInset();
   const height = Math.max(inset.top, TOOLBAR_HEIGHT);
   return (
-    <View style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window, position: "relative" }}>
+    // The focus ring is kombu in every control inside (KB-2).
+    <View style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window, position: "relative", focusRingColor: colors.focusRing }}>
       <TooltipLayer>
         {sidebar !== undefined && (
           <View
@@ -107,7 +120,7 @@ export function AppWindow({ title, detail, leading, toolbar, center, sidebar, si
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 10,
-                paddingLeft: sidebar === undefined && inset.leading > 0 ? inset.leading + 14 : 18,
+                paddingLeft: toolbarInset(inset.leading, sidebar === undefined ? 0 : sidebarWidth),
                 paddingRight: 12,
                 borderBottomWidth: 1,
                 borderColor: colors.separator,
@@ -115,25 +128,27 @@ export function AppWindow({ title, detail, leading, toolbar, center, sidebar, si
             >
               {leading}
               {center}
-              {center === undefined && inset.unified && (
-                // The title keeps its width (up to TITLE_MAX, then an ellipsis): the detail and the
-                // toolbar's own words give way first.
-                <View style={{ flexShrink: 1, flexDirection: "row", alignItems: "center" }}>
-                  <View style={{ flexShrink: 0, maxWidth: TITLE_MAX }}>
+              {center === undefined && inset.unified ? (
+                // The title takes the room the controls leave, and the controls never move. The detail has
+                // only what the title leaves (it grows from nothing), so it is cut first; then the title,
+                // each with an ellipsis. Below TITLE_MIN a field that shrinks gives up its room instead.
+                <View testID="window-title" style={{ flex: 1, minWidth: TITLE_MIN, flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ flexShrink: 1, minWidth: 0, maxWidth: TITLE_MAX }}>
                     <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
                       {title}
                     </Text>
                   </View>
                   {detail ? (
-                    <View testID="window-title-detail" style={{ flexShrink: 1, minWidth: 0 }}>
+                    <View testID="window-title-detail" style={{ flex: 1 }}>
                       <Text numberOfLines={1} style={{ fontSize: 13, color: colors.textMuted }}>
                         {` — ${detail}`}
                       </Text>
                     </View>
                   ) : null}
                 </View>
+              ) : (
+                center === undefined && <View style={{ flex: 1 }} />
               )}
-              {center === undefined && <View style={{ flex: 1 }} />}
               {toolbar}
             </View>
           )}
@@ -152,11 +167,14 @@ export function AppWindow({ title, detail, leading, toolbar, center, sidebar, si
   );
 }
 
-/** A heading over a run of sidebar rows. */
+/**
+ * A heading over a run of sidebar rows: one Tab stop, where ↑ and ↓ move the
+ * selection, as on the Mac (KB-1).
+ */
 export function SidebarSection({ title, children }: { title?: string; children: ReactNode }) {
   const colors = useColors();
   return (
-    <View style={{ flexDirection: "column", gap: 2, flexShrink: 0, marginBottom: 10 }}>
+    <View focusGroup selectsOnFocus style={{ flexDirection: "column", gap: 2, flexShrink: 0, marginBottom: 10 }}>
       {title !== undefined && (
         <View style={{ paddingHorizontal: 8, paddingBottom: 2 }}>
           <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>{title}</Text>
@@ -170,7 +188,10 @@ export function SidebarSection({ title, children }: { title?: string; children: 
 /**
  * A glyph button in a toolbar: square, quiet until hovered. A glyph-only
  * button names itself with `tooltip`, shown under it when the pointer rests
- * on it (UI-3); one with a `label` shows its words instead.
+ * on it (UI-3); one with a `label` shows its words instead. A toolbar's
+ * "More" is one of these: the `MORE` glyph, the tooltip "More", `active`
+ * while its menu is open, the menu hung by its right edge under the
+ * button's (`PopupMenu`'s `anchor` "end").
  */
 export function ToolbarButton({
   glyph,
@@ -179,43 +200,58 @@ export function ToolbarButton({
   disabled,
   label,
   tooltip,
+  active = false,
 }: {
   glyph: string;
-  onPress: () => void;
+  /** With the press: the button's bounds, for a menu that opens under it (PA-9). */
+  onPress: (event: PressInfo) => void;
   testID: string;
   disabled?: boolean;
   label?: string;
   /** The button's name, in sentence case ("New note"); shown after a rest. */
   tooltip?: string;
+  /** Held lit, as under the pointer: the menu it opened is open ("…"'s). */
+  active?: boolean;
 }) {
   const colors = useColors();
   const tip = useTooltip(tooltip);
   return (
     <View
       testID={testID}
+      focusable={!disabled}
+      accessibilityRole="button"
+      {...(tooltip !== undefined || label !== undefined ? { accessibilityLabel: tooltip ?? label } : {})}
       onPress={
         disabled
           ? undefined
-          : () => {
+          : (event) => {
               tip.hide();
-              onPress();
+              onPress(event);
             }
       }
       onHoverChange={tip.onHoverChange}
       style={{
         height: 28,
         minWidth: 32,
+        // Its words never wrap and it never shrinks: a toolbar's one row gives way elsewhere.
+        flexShrink: 0,
         paddingHorizontal: label ? 10 : 0,
         flexDirection: "row",
         gap: 6,
         borderRadius: 7,
         alignItems: "center",
         justifyContent: "center",
+        backgroundColor: active && !disabled ? colors.button : "#00000000",
         hoverBackgroundColor: disabled ? "#00000000" : colors.button,
+        focusRingColor: colors.focusRing,
       }}
     >
       <Svg markup={glyph} size={16} color={disabled ? colors.textDisabled : colors.textMuted} />
-      {label !== undefined && <Text style={{ fontSize: 12, color: disabled ? colors.textDisabled : colors.text }}>{label}</Text>}
+      {label !== undefined && (
+        <Text numberOfLines={1} style={{ fontSize: 12, color: disabled ? colors.textDisabled : colors.text }}>
+          {label}
+        </Text>
+      )}
       {tip.node}
     </View>
   );

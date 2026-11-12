@@ -5,8 +5,9 @@
 
 import { statSync } from "node:fs";
 import { basename, extname } from "node:path";
-import { MAX_PHOTOS } from "../settings-app/store.ts";
-import { BUNDLED, DEFAULT_WALLPAPER, isPhotoPath, thumbnailPath } from "./catalog.ts";
+import { MAX_PHOTOS } from "../settings-app/sections.ts";
+import { isPhotoPath } from "../shared/settings/index.ts";
+import { BUNDLED, DEFAULT_WALLPAPER, thumbnailPath } from "./catalog.ts";
 
 export interface WallpaperTile {
   /** What goes in settings.json: a bundled name, or a photo's path. */

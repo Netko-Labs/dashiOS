@@ -2,14 +2,14 @@
  * A shell inside a development window must not act on the developer's own
  * login session: it would lock their real desktop on `loginctl lock-session`,
  * hold their power key, and set their session's lock hint. The same rule as
- * Log Out (menus/session.ts): the compositor above us runs inside another
+ * Log Out (shared/session-power/session.ts): the compositor above us runs inside another
  * display server, there is none above us, or its environment cannot be read
  * (only a positive answer turns power on). `DASHI_POWER=1` or `0` overrides it, for trying power
  * against a private bus (DBUS_SYSTEM_BUS_ADDRESS).
  */
 
 import { readFileSync } from "node:fs";
-import { compositorAbove, isRealSession } from "../menus/session.ts";
+import { compositorAbove, isRealSession } from "../shared/session-power/index.ts";
 
 const readText = (path: string): string | null => {
   try {

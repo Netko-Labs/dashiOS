@@ -32,13 +32,24 @@ Requires:       wl-clipboard
 # the wlroots one shares the screen. GTK's is not needed.
 Requires:       xdg-desktop-portal
 Requires:       xdg-desktop-portal-wlr
-# The print sheet sends jobs to CUPS (apps/portal/print/).
+# The print sheet sends jobs to CUPS (apps/portal/lib/print/).
 Recommends:     cups
+# Preview: PDFs' pages, thumbnails and words (poppler), pictures Metal can't
+# draw as they are, rotation, export and print (ImageMagick); HEIC and AVIF
+# pictures; a rotated PDF exported or printed whole (qpdf).
+Requires:       poppler-utils
+Requires:       ImageMagick
+Recommends:     ImageMagick-heic
+Recommends:     qpdf
 Requires:       adwaita-cursor-theme
 Requires:       rsms-inter-fonts
 Requires:       google-noto-sans-fonts
 Requires:       google-noto-sans-mono-fonts
 Requires:       google-noto-sans-symbols-2-fonts
+# Emoji the Metal host can draw: Twemoji is a bitmap font (CBDT); Noto Color
+# Emoji, Fedora's default, is COLRv1, which the host doesn't draw yet. The
+# host picks it once mirin names it in its fallbacks (tasks/todo.md, "Emoji in Metal").
+Recommends:     twitter-twemoji-fonts
 # X11 apps (dashi-comp starts Xwayland) and video wallpapers (GStreamer).
 Requires:       xorg-x11-server-Xwayland
 # X11 apps' dpi and cursor size (X resources), set when Xwayland draws at the screens' scale.
@@ -81,10 +92,8 @@ cp -a packages/shell %{buildroot}%{_datadir}/dashi/shell
 rm -rf %{buildroot}%{_datadir}/dashi/shell/node_modules %{buildroot}%{_datadir}/dashi/shell/test
 # Shared with the greeter: Bun finds them walking up from either.
 cp -a vendor/node_modules %{buildroot}%{_datadir}/dashi/node_modules
-# The Anthropic SDK ships a Node migration CLI Dashi never runs; its shebang
-# would make rpm require /usr/bin/node. Dashi runs on Bun: no file here may
-# want Node, or the package would pull it in.
-rm -rf %{buildroot}%{_datadir}/dashi/node_modules/@anthropic-ai/sdk/bin
+# Dashi runs on Bun: no file here may want Node (a shebang would make rpm
+# require /usr/bin/node), or the package would pull it in.
 if grep -rlE '^#!.*\bnode\b' %{buildroot}%{_datadir}/dashi/node_modules; then
   echo "dashi.spec: files above have a Node shebang; drop them (Dashi runs on Bun)" >&2
   exit 1
@@ -93,6 +102,8 @@ install -Dm0755 session/dashi-session %{buildroot}%{_bindir}/dashi-session
 install -Dm0755 session/dashi-mcp %{buildroot}%{_bindir}/dashi-mcp
 # Agents in a sandbox that can use secrets through Dashi but never read them.
 install -Dm0755 session/dashi-agent %{buildroot}%{_bindir}/dashi-agent
+# The native messaging host of Dashi's browser extension (dashi-helium installs the extension and the host's manifest).
+install -Dm0755 session/dashi-browser-host %{buildroot}%{_libexecdir}/dashi/dashi-browser-host
 # The applet SDK's CLI (@dashi/applet, in node_modules): new, dev, pack, publish.
 install -Dm0755 session/dashi-applet %{buildroot}%{_bindir}/dashi-applet
 # Dialogs for shell scripts, on Zenity's command line (apps/dialog).
@@ -117,6 +128,9 @@ install -Dm0644 session/dashi-mimeapps.list %{buildroot}%{_datadir}/applications
 install -Dm0644 vendor/MIRIN_COMMIT %{buildroot}%{_datadir}/dashi/MIRIN_COMMIT
 
 %files
+%license LICENSE
+%license THIRD-PARTY-NOTICES.md
+%license spin/dashi/usr/share/licenses/dashi/LICENSE.dependencies
 %doc README.md
 %{_bindir}/dashi-session
 %{_bindir}/dashi-mcp
@@ -133,6 +147,7 @@ install -Dm0644 vendor/MIRIN_COMMIT %{buildroot}%{_datadir}/dashi/MIRIN_COMMIT
 %{_userunitdir}/dashi-portal.service
 %dir %{_libexecdir}/dashi
 %{_libexecdir}/dashi/dashi-extras
+%{_libexecdir}/dashi/dashi-browser-host
 %{_datadir}/polkit-1/actions/dev.dashi.extras.policy
 %{_userunitdir}/dashi-session.target
 %{_datadir}/wayland-sessions/dashi.desktop
@@ -144,10 +159,6 @@ install -Dm0644 vendor/MIRIN_COMMIT %{buildroot}%{_datadir}/dashi/MIRIN_COMMIT
 %{_datadir}/dashi/MIRIN_COMMIT
 
 %changelog
-* Fri Nov 06 2026 PejeDev <hi@peje.dev> - 0.4.1
-- Security: no ❖ shortcut acts and the launcher doesn't open while locked;
-  the lock screen's ❖A ❖C ❖X ❖V ❖Z reach its field as Ctrl chords.
-
 * Sun Nov 01 2026 PejeDev <hi@peje.dev> - 0.2.0
 - 0.2.0: the rewritten compositor, Dashi's own login screen, native video
   wallpapers, @dashi/ui.

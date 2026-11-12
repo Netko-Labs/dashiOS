@@ -1,19 +1,18 @@
 /**
  * Carrying out list_logins, sign_in, fill_code, pay and hand_over
- * (tools/secrets.ts): the broker (secrets/broker.ts, secrets/pay.ts) does
+ * (tools/lib/secrets.ts): the broker (secrets/broker.ts, secrets/pay.ts) does
  * the signing in and the paying; this finds the window, checks the agent is
  * in Dashi's sandbox, and gives the broker its hands and eyes.
  */
 
 import { closeSync, openSync, readSync } from "node:fs";
-import type { CompositorWindow } from "../../compositor.ts";
-import { fieldAt, focusedField, limits, type Placed, type Rect, toWindow } from "../atspi/tree.ts";
+import type { CompositorWindow } from "../../compositor/index.ts";
+import { fieldAt, focusedField, limits, type Placed, type Rect, toWindow } from "../atspi/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
-import { type BrokerContext, fillCode, signIn } from "../secrets/broker.ts";
-import { payWith } from "../secrets/pay.ts";
-import { describeForAgent, findLogins, SOURCE_LABELS } from "../secrets/sources.ts";
-import { named, noWindow, subject } from "../subject.ts";
-import type { Call } from "../tools/index.ts";
+import { named, noWindow, subject } from "../lib/subject.ts";
+import { type BrokerContext, describeForAgent, fillCode, findLogins, payWith, SOURCE_LABELS, signIn } from "../secrets/index.ts";
+import type { Call, SecretTarget } from "../tools/index.ts";
+import { browserField } from "./lib/browser-field.ts";
 
 /** How long a browser just woken (Atspi.wake) takes to publish its page: about a second in the VM's Helium. */
 const WOKEN_MS = 1200;
@@ -49,10 +48,14 @@ export function cmdlineOf(pid: number): string[] | null {
   }
 }
 
+/** No source can be asked: none is turned on, or 1Password is but its command-line tool isn't there. */
+const NO_SOURCE =
+  "No password source can be used: turn one on in Settings › Passwords. 1Password also needs its command-line tool (op) installed, with CLI integration on in the 1Password app.";
+
 export async function listLogins(call: Extract<Call, { name: "list_logins" }>, ctx: RunContext): Promise<ToolResult> {
   ctx.status(call.site ? `Looking for logins for ${call.site}` : "Looking at saved logins");
   const sources = ctx.secrets.sources();
-  if (sources.length === 0) return toolError("No password source is turned on (Settings › Passwords).");
+  if (sources.length === 0) return toolError(NO_SOURCE);
   const { logins, failed } = await findLogins(sources, call.site ?? "");
   const note = failed.length > 0 ? `${failed.map((id) => SOURCE_LABELS[id]).join(" and ")} couldn't be asked.` : null;
   return json({ logins: logins.map(describeForAgent), ...(note ? { note } : {}) });
@@ -93,13 +96,39 @@ function brokerFor(window: CompositorWindow, ctx: RunContext): BrokerContext {
   };
 }
 
+/**
+ * The broker for a call's target: a window's focused field (accessibility
+ * checks it), or a browser tab's element (Dashi's extension checks it, and
+ * Dashi's keys go to the browser's window showing it).
+ */
+async function brokerAt(target: SecretTarget, ctx: RunContext): Promise<{ broker: BrokerContext; window: CompositorWindow } | ToolResult> {
+  if ("window" in target) {
+    const window = await named(ctx.compositor, target.window);
+    if (!window) return noWindow(target.window);
+    if (window.pid === null) return toolError("Dashi can't tell which app that window belongs to, so it won't fill anything into it.");
+    return { broker: brokerFor(window, ctx), window };
+  }
+  const field = await browserField(target.ref, target.tab, ctx, cmdlineOf);
+  if ("content" in field) return field;
+  const { window } = field;
+  const broker: BrokerContext = {
+    ...brokerFor(window, ctx),
+    inspect: field.inspect,
+    type: async (payload) => {
+      await ctx.hands.send(window, payload, ctx.agent, ctx.status);
+      field.typed();
+    },
+    filled: field.filled,
+  };
+  return { broker, window };
+}
+
 export async function signInCall(call: Extract<Call, { name: "sign_in" | "fill_code" }>, ctx: RunContext): Promise<ToolResult> {
   if (!ctx.secrets.confined) return toolError(UNCONFINED);
-  const window = await named(ctx.compositor, call.window);
-  if (!window) return noWindow(call.window);
-  if (window.pid === null) return toolError("Dashi can't tell which app that window belongs to, so it won't fill anything into it.");
-  const broker = brokerFor(window, ctx);
-  if (broker.sources.length === 0) return toolError("No password source is turned on (Settings › Passwords).");
+  const at = await brokerAt(call.target, ctx);
+  if ("content" in at) return at;
+  const { broker } = at;
+  if (broker.sources.length === 0) return toolError(NO_SOURCE);
   return call.name === "sign_in" ? signIn(broker, call.site, call.account, call.submit) : fillCode(broker, call.site, call.account, call.submit);
 }
 
@@ -108,7 +137,7 @@ export async function handOver(call: Extract<Call, { name: "hand_over" }>, ctx: 
   if (!window) return noWindow(call.window);
   ctx.status(`Waiting for you: ${call.reason}`);
   // The window comes forward for the person; the agent can't see it until Done.
-  await ctx.compositor.request("focus", { window: window.id }).catch(() => {});
+  await ctx.compositor.focus({ window: window.id }).catch(() => {});
   const done = await ctx.secrets.handOver(window.id, call.reason);
   if (!done) return toolError(`The person didn't press Done (the turn was taken down). Ask them before going on with ${subject(window, ctx)}.`);
   return text(`The person pressed Done: ${subject(window, ctx)} is yours again. Take a screenshot to see where things are.`);
@@ -116,15 +145,14 @@ export async function handOver(call: Extract<Call, { name: "hand_over" }>, ctx: 
 
 export async function payCall(call: Extract<Call, { name: "pay" }>, ctx: RunContext): Promise<ToolResult> {
   if (!ctx.secrets.confined) return toolError(UNCONFINED);
-  const window = await named(ctx.compositor, call.window);
-  if (!window) return noWindow(call.window);
-  if (window.pid === null) return toolError("Dashi can't tell which app that window belongs to, so it won't fill anything into it.");
-  const broker = brokerFor(window, ctx);
+  const at = await brokerAt(call.target, ctx);
+  if ("content" in at) return at;
+  const { broker } = at;
   const pay = {
     ...broker,
     cards: () => ctx.secrets.vault.cards(),
     pay: (merchant: string, cents: number, card: number) => ctx.secrets.vault.pay(merchant, cents, card),
-    filled: (field: Placed) => ctx.secrets.filled(window.id, placeIn(window, field), field.again),
+    filled: (field: Placed) => broker.filled?.(field),
   };
   return payWith(pay, call.site, call.cents, call.card);
 }

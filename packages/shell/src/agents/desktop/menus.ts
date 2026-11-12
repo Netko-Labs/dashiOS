@@ -10,10 +10,10 @@
  * learn titles by guessing.
  */
 
-import type { CompositorWindow } from "../../compositor.ts";
-import type { MenuAction, MenuEntry } from "../../menus/model.ts";
+import type { CompositorWindow } from "../../compositor/index.ts";
+import type { MenuAction, MenuEntry } from "../../menus/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
-import { named, noWindow, subject } from "../subject.ts";
+import { named, noWindow, subject } from "../lib/subject.ts";
 
 type Item = Extract<MenuEntry, { kind: "item" }>;
 

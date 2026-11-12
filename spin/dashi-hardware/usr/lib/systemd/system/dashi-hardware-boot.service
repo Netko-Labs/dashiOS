@@ -1,6 +1,6 @@
 [Unit]
 Description=Dashi hardware boot guard (count this boot)
-Documentation=https://github.com/Netko-Labs/dashiOS/blob/release/0.4.0/docs/hardware.md
+Documentation=https://github.com/Netko-Labs/dashiOS/blob/main/docs/hardware.md
 DefaultDependencies=no
 After=local-fs.target
 Before=basic.target shutdown.target
@@ -14,6 +14,32 @@ RemainAfterExit=yes
 ExecStart=/usr/libexec/dashi/dashi-hardware boot
 StateDirectory=dashi-hardware
 StateDirectoryMode=0700
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateNetwork=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectControlGroups=yes
+ProtectProc=invisible
+ProcSubset=pid
+UMask=0077
+LimitCORE=0
+# It reads sysfs and writes its state file, nothing more.
+RestrictAddressFamilies=none
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+CapabilityBoundingSet=
 
 [Install]
 WantedBy=basic.target

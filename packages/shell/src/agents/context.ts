@@ -1,17 +1,14 @@
 /** What running a tool needs, and the shape of what it answers. */
 
-import type { Compositor } from "../compositor.ts";
+import type { BrowserLink } from "../browser/bridge.ts";
+import type { Compositor } from "../compositor/index.ts";
 import type { Arrange, Tile } from "../layout.ts";
-import type { Atspi } from "./atspi/client.ts";
-import type { Placed, Rect } from "./atspi/tree.ts";
+import type { Atspi, Placed, Rect } from "./atspi/index.ts";
 import type { Question } from "./confirm.ts";
-import type { Hands } from "./desktop/hands.ts";
-import type { Desktop } from "./desktop/types.ts";
+import type { Desktop, Hands } from "./desktop/index.ts";
 import type { AgentMask } from "./mask.ts";
 import type { AgentUi } from "./presence.ts";
-import type { Approval, SheetLogin, SignInAnswer } from "./secrets/broker.ts";
-import type { LoginSource } from "./secrets/sources.ts";
-import type { Vault } from "./secrets/vault.ts";
+import type { Approval, LoginSource, SheetLogin, SignInAnswer, Vault } from "./secrets/index.ts";
 
 /** What the secrets tools need from the connection (desktop/secrets.ts). */
 export interface SecretsRun {
@@ -33,6 +30,20 @@ export interface SecretsRun {
   exclusive<T>(work: () => Promise<T>): Promise<T>;
   /** Give the window to the person until they press Done (true), pausing this agent. */
   handOver(window: number, reason: string): Promise<boolean>;
+}
+
+/** What the website tools need from the connection (desktop/browser.ts). */
+export interface BrowserRun {
+  /** Dashi's extension in the browser, when one is connected. */
+  link(): BrowserLink | null;
+  /** Until an extension connects (a browser just started), at most `ms`. */
+  whenConnected(ms: number): Promise<BrowserLink | null>;
+  /** Whether this agent may use `site`: allowed already, or the person says so now (sites.ts). */
+  allowSite(site: string): Promise<boolean>;
+  /** Whether it may, without asking. */
+  mayUse(site: string): boolean;
+  /** The tab this agent used last: the website tools' tab when none is named. */
+  tab: number | null;
 }
 
 export interface ToolResult {
@@ -62,6 +73,8 @@ export interface RunContext {
   mask: AgentMask;
   /** Signing in and handing over (desktop/secrets.ts). */
   secrets: SecretsRun;
+  /** Websites, through Dashi's browser extension (desktop/browser.ts). */
+  browser: BrowserRun;
   /** What the agent's cursor is called on screen: its process name. */
   agent: string;
   /** What the menu bar says the agent is doing. Nothing the agent could not read itself goes in it. */

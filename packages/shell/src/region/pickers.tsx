@@ -5,12 +5,12 @@
  * caller decides what a pick does.
  */
 
-import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
+import { useColors } from "../settings-app/colors.ts";
 import { Choices } from "../settings-app/ui.tsx";
-import { formatsForRegion, isRegionOf, type LocaleEntry, regionRows, searchLocales } from "./locale.ts";
-import { PickList, PickNote, PickRow, SearchField } from "./pick.tsx";
+import { formatsForRegion, isRegionOf, type LocaleEntry, regionRows, searchLocales } from "../shared/locale/index.ts";
+import { PickList, PickNote, PickRow, SearchField } from "./lib/pick.tsx";
 import { describeZone, searchZones, type Zone, zoneAreas } from "./timezones.ts";
 
 /** A typed search shows at most this many zones; "Type more" says there are others. */
@@ -39,7 +39,7 @@ export function TimezonePicker({
   const rows = found.filter((zone) => searching || zone.id !== current);
   const shown = rows.slice(0, MAX_ROWS);
   return (
-    <View testID="timezone-picker" style={{ flexDirection: "column", gap: 8 }}>
+    <View testID="timezone-picker" style={{ alignSelf: "stretch", flexDirection: "column", gap: 8 }}>
       <SearchField testID="timezone-search" value={query} onChange={setQuery} placeholder="Search for a city or country" />
       {!searching && areas.length > 0 && (
         <Choices testID="timezone-area" value={area ?? ""} options={areas.map((each) => ({ value: each, label: each }))} onChange={setArea} />
@@ -102,7 +102,7 @@ export function LocalePickers({
   const regions = currentRegion ? allRegions.filter((entry) => entry !== currentRegion) : allRegions;
   const heading = (text: string) => <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>{text}</Text>;
   return (
-    <View testID="locale-pickers" style={{ flexDirection: "column", gap: 8 }}>
+    <View testID="locale-pickers" style={{ alignSelf: "stretch", flexDirection: "column", gap: 8 }}>
       <SearchField testID="locale-search" value={query} onChange={setQuery} placeholder="Search languages and regions" />
       <View style={{ flexDirection: "row", gap: 10 }}>
         <View style={{ flex: 1, flexDirection: "column", gap: 4, minWidth: 0 }}>

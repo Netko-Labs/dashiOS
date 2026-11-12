@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
-import { Field } from "../src/launcher/field.tsx";
-import { fitWords, leastRoom, PLACEHOLDER_SLACK, unmeasured } from "../src/launcher/fit-words.ts";
+import { Field } from "../src/launcher/lib/field.tsx";
+import { fitWords, leastRoom, PLACEHOLDER_SLACK, unmeasured } from "../src/launcher/lib/fit-words.ts";
+import { settle } from "./support/time.ts";
 
 const CHOICES = ["Reply to Claude Code", "Follow up…"];
-const settle = (ms = 5): Promise<void> => new Promise((done) => setTimeout(done, ms));
 
 test("the fullest placeholder that fits whole, measured; the short one until both sides are known", () => {
   const widths = new Map([["Reply to Claude Code", 160]]);

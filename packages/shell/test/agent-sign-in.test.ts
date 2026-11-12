@@ -1,9 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import type { Focused } from "../src/agents/atspi/tree.ts";
 import { type Approval, type BrokerContext, fillCode, ONCE_MS, type SignInAnswer, signIn } from "../src/agents/secrets/broker.ts";
-import { checkField, devtoolsOpen, type FieldInfo, pageHost, siteMatches } from "../src/agents/secrets/field-check.ts";
+import { checkField, devtoolsOpen, pageHost, siteMatches } from "../src/agents/secrets/lib/field-check.ts";
 import { describeForAgent, findLogins, type Login, type LoginSource, sortLogins } from "../src/agents/secrets/sources.ts";
-import { parseSite } from "../src/agents/tools/secrets.ts";
+import type { FieldInfo } from "../src/agents/secrets/types.ts";
+import { parseSite } from "../src/agents/tools/lib/secrets.ts";
 
 const PASSWORD = "hunter2-Secret!";
 const CODE = "492039";

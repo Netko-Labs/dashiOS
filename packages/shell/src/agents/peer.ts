@@ -15,7 +15,7 @@
 import { dlopen, FFIType, ptr } from "bun:ffi";
 import { closeSync, openSync, readFileSync, readlinkSync, readSync } from "node:fs";
 import { basename } from "node:path";
-import { findInvocation, type Interpreter, interpreterOf, invocationKey, invocationLabel, MAX_CMDLINE, parseCmdline } from "./invocation.ts";
+import { findInvocation, type Interpreter, interpreterOf, invocationKey, invocationLabel, MAX_CMDLINE, parseCmdline } from "./lib/invocation.ts";
 
 const SOL_SOCKET = 1;
 const SO_PEERCRED = 17;
@@ -25,14 +25,22 @@ const MAX_DEPTH = 16;
 /** Processes between an agent and the socket, skipped when naming it. */
 const GO_BETWEENS = new Set(["dashi-mcp", "sh", "bash", "zsh", "dash", "fish", "env", "socat", "nc", "ncat", "timeout"]);
 
-let libc: { symbols: { getsockopt: (...args: unknown[]) => number } } | null = null;
+/** A Bun socket's file descriptor, which its type leaves out. */
+export function socketFd(socket: object): number | null {
+  return "fd" in socket && typeof socket.fd === "number" ? socket.fd : null;
+}
+
+const openLibc = () =>
+  dlopen("libc.so.6", {
+    getsockopt: { args: [FFIType.i32, FFIType.i32, FFIType.i32, FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
+  });
+
+let libc: ReturnType<typeof openLibc> | null = null;
 
 /** The connecting process, if it runs as this user. */
 export function peerPid(fd: number): number | null {
   try {
-    libc ??= dlopen("libc.so.6", {
-      getsockopt: { args: [FFIType.i32, FFIType.i32, FFIType.i32, FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
-    }) as unknown as typeof libc;
+    libc ??= openLibc();
   } catch {
     return null;
   }

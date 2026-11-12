@@ -1,18 +1,19 @@
 import { expect, test } from "bun:test";
-import { reservedBy } from "../src/app-menus/reserved.ts";
-import { resolveChord } from "../src/keymap-match.ts";
+import { reservedBy } from "../src/app-menus/lib/reserved.ts";
+import { resolveChord } from "../src/keymap/keymap-match.ts";
 import { type Requests, runBinding, type ShellActions } from "../src/shortcuts.ts";
+import { fakeCompositor } from "./support/compositor.ts";
 
 function setup(handled: boolean) {
   const requests: [string, unknown][] = [];
   const asked: [number, string][] = [];
-  const compositor = {
-    request: async (name: string, args: unknown) => {
+  const compositor: Requests = fakeCompositor(
+    async (name, args) => {
       requests.push([name, args]);
       return {};
     },
-    windows: async () => [],
-  } as unknown as Requests;
+    { windows: async () => [] },
+  );
   const actions = {
     hardware: { run: async () => false },
     appShortcut: async (window: number, shortcut: string) => {

@@ -3,10 +3,10 @@
  * (`launcher.aliases`, `launcher.keys`; person-keys.ts) through the Settings
  * store, which follows the file: an edit by hand, or Set alias… in another
  * launcher, shows up here at once, and the keys reach the compositor
- * without restarting the shell (main.tsx listens and sends the keymap).
+ * without restarting the shell (boot/keys.ts listens and sends the keymap).
  */
 
-import type { LauncherSettings } from "../settings-app/store.ts";
+import type { LauncherSettings } from "../settings-app/types.ts";
 import { aliasIndex, keyOf, personRules, withAlias, withKey } from "./person-keys.ts";
 
 /** The part of the Settings store this needs (settings-app/store.ts `SettingsStore`). */

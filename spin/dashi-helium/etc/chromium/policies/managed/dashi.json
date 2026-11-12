@@ -1,0 +1,9 @@
+{
+  "ExtensionSettings": {
+    "mngbphpldanjlpbagnkmfalmglolgkmb": {
+      "installation_mode": "force_installed",
+      "update_url": "file:///usr/share/dashi/browser/updates.xml",
+      "toolbar_pin": "default_unpinned"
+    }
+  }
+}

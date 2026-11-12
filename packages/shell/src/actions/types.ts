@@ -29,10 +29,13 @@ export type Args = Record<string, unknown>;
 /** What a toggle or a pick is now: shown on its row. */
 export type ActionState = boolean | string | number | null;
 
+/** A screenshot: the whole screen (⇧❖3), an area dragged out (⇧❖4), or the toolbar that also records (⇧❖5). */
+export type CaptureKind = "screen" | "area" | "toolbar";
+
 /**
  * How it went: a line to show (or copy), or why not. A command from outside
  * Dashi (an applet's, a script's) may ask the launcher to keep going: `show`
- * (launcher/extensions.ts): its answer as a row, rows to pick from, or a view
+ * (launcher/lib/extensions.ts): its answer as a row, rows to pick from, or a view
  * it draws itself. Anyone else reads `text`.
  */
 export type Outcome = { ok: true; text: string; show?: Shown } | { ok: false; error: string };
@@ -90,6 +93,8 @@ export interface ActionDef {
   readOnly: boolean;
   /** It can lose work or can't be taken back: a link only opens it, never runs it (links.ts). */
   destructive: boolean;
+  /** Neither destructive nor an agent's tool, but a link still only opens it: running it hands a program something private (a picture of the screen). */
+  linkOpens?: true;
   idempotent?: boolean;
   /** It asks on a sheet every time, the person included (force quitting, moving to the Trash). */
   asksEveryTime?: true;
@@ -100,7 +105,7 @@ export interface ActionDef {
    * Who outside Dashi supplied it, as its row says ("Weather", "Your scripts"):
    * an applet, a script, a search provider. Such a row never outranks an
    * exact app or setting match, never wears Dashi's glyphs, and never takes
-   * a first-party name (launcher/items.ts).
+   * a first-party name (launcher/lib/items.ts).
    */
   from?: string;
   /** The MCP tool it is for agents; only these are in `tools/list`. */

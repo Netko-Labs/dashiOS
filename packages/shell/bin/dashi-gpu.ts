@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * dashi-gpu: the GPU the display should run on (src/gpu.ts), for the
+ * dashi-gpu: the GPU the display should run on (src/gpu/gpu.ts), for the
  * programs that open one before the shell runs: dashi-session passes it to
  * dashi-comp as DASHI_DRM_DEVICE, and the login screen's Weston gets it as
  * --drm-device.
@@ -11,7 +11,7 @@
  * Exits 1, printing nothing on stdout, when there is no GPU.
  */
 
-import { chooseGpu, readCards } from "../src/gpu.ts";
+import { chooseGpu, readCards } from "../src/gpu/index.ts";
 
 const cards = readCards();
 const choice = chooseGpu(cards);

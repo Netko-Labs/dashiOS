@@ -22,7 +22,9 @@
 
 import { existsSync, mkdirSync, rmSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
-import { type Exists, type PlanProfile, parsePlanProfile, proxyArgs, type SandboxEnv, sandboxArgs, tokenProxyArgs, unitName } from "../src/agents/sandbox.ts";
+import { maybe, obj, str } from "@dashi/shape";
+import { parsePlanProfile, proxyArgs, sandboxArgs, tokenProxyArgs, unitName } from "../src/agents/sandbox.ts";
+import type { Exists, PlanProfile, SandboxEnv } from "../src/agents/sandbox-types.ts";
 import { relay, requestProxy } from "../src/agents/tokens/client.ts";
 import { type ProxyGrant, tokensSocketPath } from "../src/agents/tokens/server.ts";
 
@@ -114,8 +116,7 @@ const printedPlan = (env: SandboxEnv): PlanProfile => ({
 function parseGrant(text: string | undefined): ProxyGrant | null {
   if (!text) return null;
   try {
-    const { socket, ca, bundle, key } = JSON.parse(text) as Record<string, unknown>;
-    return typeof socket === "string" && typeof ca === "string" && typeof bundle === "string" && typeof key === "string" ? { socket, ca, bundle, key } : null;
+    return maybe(obj({ socket: str(), ca: str(), bundle: str(), key: str() }, { strict: false }), JSON.parse(text));
   } catch {
     return null;
   }

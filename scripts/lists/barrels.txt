@@ -1,0 +1,1 @@
+# H6: index.ts(x) files doing more than re-export (count = other statements). May only shrink.

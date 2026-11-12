@@ -7,7 +7,7 @@
  * callers look. The screen saver itself is the lock screen; `Lock` locks.
  */
 
-import { DBusError, ERRORS, type InterfaceSpec } from "../dbus/index.ts";
+import { DBusError, ERRORS, type InterfaceSpec } from "../shared/dbus/index.ts";
 import { InhibitFlag, type InhibitStore } from "./store.ts";
 
 export const SCREENSAVER = "org.freedesktop.ScreenSaver";

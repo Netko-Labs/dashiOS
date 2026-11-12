@@ -1,11 +1,13 @@
 import { expect, test } from "bun:test";
 import { parseManifest } from "@dashi/applet";
-import type { AppletContext } from "../src/applets/connection.ts";
-import { AppletGrants } from "../src/applets/grants.ts";
-import { EDGE_MARGIN, placePopover } from "../src/applets/placement.ts";
-import { flattenRows } from "../src/applets/protocol.ts";
-import { AppletConnection } from "../src/applets/server.ts";
+import { AppletConnection } from "../src/applets/lib/connection.ts";
+import type { AppletContext } from "../src/applets/lib/connection-context.ts";
+import { AppletGrants } from "../src/applets/lib/grants.ts";
+import { EDGE_MARGIN, placePopover } from "../src/applets/lib/placement.ts";
+import { flattenRows } from "../src/applets/lib/protocol.ts";
+import { AppletPopovers } from "../src/applets/popovers.ts";
 import { ExtrasStore } from "../src/extras/index.ts";
+import { settle } from "./support/time.ts";
 
 const MANIFEST = {
   id: "dev.example.weather",
@@ -26,7 +28,7 @@ function harness(extra: Partial<AppletContext> = {}) {
   const extras = new ExtrasStore();
   const requests: unknown[] = [];
   const grants = new AppletGrants({
-    request: async (_method, params) => {
+    appletClients: async (params) => {
       requests.push(params);
       return {};
     },
@@ -55,7 +57,6 @@ function harness(extra: Partial<AppletContext> = {}) {
   };
   const conn = new AppletConnection(4242, wire, context);
   const send = (message: unknown) => conn.receive(new TextEncoder().encode(`${JSON.stringify(message)}\n`));
-  const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
   return { conn, extras, written, send, requests, grants, outside, catchers, settle, terminated: () => terminated };
 }
 
@@ -152,6 +153,50 @@ test("a popover: placed under the click, granted before the applet hears where, 
   h.conn.closedBySocket();
   await h.settle();
   expect(h.requests.at(-1)).toEqual({ applets: [] });
+});
+
+test("one popover at a time: another applet's, or a shell menu, closes the open one, as the shell's menus do", async () => {
+  const popovers = new AppletPopovers();
+  let shellMenusClosed = 0;
+  popovers.closeShellMenusWith(() => shellMenusClosed++);
+  const open = async (h: ReturnType<typeof harness>, id: string) => {
+    h.send({ type: "hello", protocol: 2, manifest: { ...MANIFEST, id: `dev.example.${id}` } });
+    h.send({ type: "applet", applet: { id, title: id, label: id, click: "activate" } });
+    h.send({ type: "popover", id, width: 280, height: 190 });
+    await h.settle();
+  };
+  const weather = harness({ popovers });
+  const timer = harness({ popovers });
+
+  // Weather's opens: the shell's menu (if one was open) closes.
+  await open(weather, "weather");
+  expect(weather.written.at(-1)).toMatchObject({ type: "popover", id: "weather" });
+  expect(shellMenusClosed).toBe(1);
+  expect(popovers.isOpen()).toBe(true);
+
+  // The timer's opens: weather's is dismissed, its grant and its sheet go.
+  await open(timer, "timer");
+  expect(timer.written.at(-1)).toMatchObject({ type: "popover", id: "timer" });
+  expect(weather.written.at(-1)).toEqual({ type: "dismiss", id: "weather" });
+  expect(weather.grants.granted(4242)).toBe(false);
+  expect(weather.catchers.closed).toBe(1);
+  expect(shellMenusClosed).toBe(2);
+
+  // A shell menu opens (Control Center, an app's menu): the timer's goes too.
+  popovers.dismiss();
+  await timer.settle();
+  expect(timer.written.at(-1)).toEqual({ type: "dismiss", id: "timer" });
+  expect(timer.catchers.closed).toBe(1);
+  expect(popovers.isOpen()).toBe(false);
+
+  // One the applet closes itself (Esc in it) is no longer the open one: a shell menu then dismisses nothing.
+  const clock = harness({ popovers });
+  await open(clock, "clock");
+  clock.send({ type: "dismiss", id: "clock" });
+  expect(popovers.isOpen()).toBe(false);
+  const said = clock.written.length;
+  popovers.dismiss();
+  expect(clock.written.length).toBe(said);
 });
 
 test("popover placement at each screen edge", () => {

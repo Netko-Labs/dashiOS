@@ -149,8 +149,14 @@ and bubblewrap inside it (`src/agents/sandbox.ts`):
 - `$XDG_RUNTIME_DIR` replaced by an empty one with only Dashi's MCP socket
   and a filtered session bus (`xdg-dbus-proxy`: notifications and portals;
   not systemd, so no `systemd-run` out of the scope, not the Secret Service,
-  not Flatpak): no compositor socket (so no raw `agent-input`), no Wayland or
-  X11 display (so no screencopy of its own), no 1Password sockets;
+  not Flatpak): no compositor socket (so no raw `agent-input`), no browser
+  socket (`dashi-browser.sock`, Dashi's extension's: only the shell drives
+  it; `DENIED_SOCKETS`, tested), no Wayland or X11 display (so no screencopy
+  of its own), no 1Password sockets;
+- Helium's profile (`~/.config/net.imput.helium`: the person's cookies and
+  saved passwords, and the `NativeMessagingHosts/` the browser would start
+  outside the sandbox) hidden, and Chromium's and Chrome's
+  `NativeMessagingHosts/` read-only;
 - `/run/dashi-secretd`, the 1Password CLI's configuration and the app's data
   hidden;
 - API tokens only through the token proxy: `HTTPS_PROXY` points at it, and
@@ -195,6 +201,42 @@ It does reach the network, as any agent does: its provider, with its own
 login. `dashi-agent --print` with `DASHI_AGENT_PLAN` set shows the
 command line.
 
+### A task from the launcher
+
+An agent the person hands a task to from the launcher (docs/actions.md,
+"Agents from the launcher") runs through `dashi-agent` with the same
+profile, marked a task (`DASHI_AGENT_PLAN` with `task: true`), in a scope
+named for its run (`dashi-agent-task-<run>-<n>.scope`):
+
+- **its home folder is an empty one**, as in plan mode: only the harness's
+  own login and sessions bound back (a follow-up resumes its session), its
+  install and Bun and `dashi-mcp` read-only; no documents, keys or Dashi
+  settings. Its environment is the session's basics, no model keys;
+- **its only Dashi socket is Dashi's MCP socket**, the one for tasks
+  (`$XDG_RUNTIME_DIR/dashi-mcp.d/dashi-mcp.sock`, the same server): its
+  folder is bound and `dashi-mcp.sock` inside links to it, where the bridge
+  looks, so the socket of a shell that restarted shows and the bridge
+  (`--reconnect`) connects again. Not a plan socket: its calls run.
+  No session bus, no token proxy, no compositor or browser socket;
+- **its connection's grants are the run's, not the agent's stored ones.**
+  The agents server knows a run's connection by its scope's name
+  (`sandbox.ts` `taskOfCgroup`) and asks the shell for its policy: granted
+  for the task, "Use websites", "Sign in for you" and "Pay for you", each
+  still asking per site, per login and per payment; refused whatever it
+  asks, "See windows and apps", "See the screen", "Manage windows and apps",
+  "Browse your files" and the clipboard history; any other (notes, the
+  calendar, settings) is asked about as for any agent, on the run's card.
+  Its stored grants aren't read. The one window the context
+  chip named may be handed to the person (`hand_over`). This is what the
+  grants card says, struck through what it can't. Sheets and the activity
+  call the connection by its harness's name ("Codex wants to use …"); the
+  sheet's detail still shows the process;
+- the sites the person allowed for the task (not always) hold for every
+  turn of the run, and no longer;
+- Stop (the panel, ❖⌫ on its row) is `systemctl --user stop` of the turn's
+  service: SIGTERM reaches `dashi-agent`, which stops the harness and its
+  scope.
+
 ## Blanked captures
 
 The shell decides what agents' pictures blank; dashi-comp paints it
@@ -217,7 +259,7 @@ every 400 ms while an agent's recording runs, `src/agents/mask.ts` sets the
   longer among its parent's children (Chromium keeps the old page's nodes
   answering, as they were, after the tab moved on);
 - what an app shows back after Dashi typed a card or a password into one of
-  its windows (`src/agents/fill-prompts.ts`): Firefox's "Securely save this
+  its windows (`src/agents/lib/fill-prompts.ts`): Firefox's "Securely save this
   card? •••• 4242 12/34" and "Save password?" (with its Show button) are
   xdg_popups of the window. From the fill until a minute after its fields
   were last seen, that window's popups are blanked, and dashi-comp keeps
@@ -286,15 +328,15 @@ just before. An agent that disconnects has all its sheets taken down.
 
 ## Signing in, codes, "Your turn"
 
-Agent tools (`src/agents/tools/secrets.ts`), carried out by
+Agent tools (`src/agents/tools/lib/secrets.ts`), carried out by
 `src/agents/desktop/secrets.ts` and the broker (`src/agents/secrets/broker.ts`):
 
 | Tool | Scope | What it does |
 | --- | --- | --- |
 | `list_logins {site?}` | Sign in for you | Each saved login's site, account, source, whether it has a code, and whether agents may ask (`ask`/`never`). Never a secret |
-| `pay {window, site, amount, card?}` | Pay for you | Fills a saved card after dashi-secretd asked the person (finger or password), within the limits (below) |
-| `sign_in {window, site, account?, submit?}` | Sign in for you | Asks the person which login (the sheet lists every enabled source's, most recently used first, with where each is saved), then types the account (if the user name field is focused), Tab, and the password |
-| `fill_code {window, site, account?, submit?}` | Sign in for you | Types the login's current TOTP code |
+| `pay {ref \| window, site, amount, card?}` | Pay for you | Fills a saved card after dashi-secretd asked the person (finger or password), within the limits (below) |
+| `sign_in {ref \| window, site, account?, submit?}` | Sign in for you | Asks the person which login (the sheet lists every enabled source's, most recently used first, with where each is saved), then types the account (if the user name field is focused), Tab, and the password |
+| `fill_code {ref \| window, site, account?, submit?}` | Sign in for you | Types the login's current TOTP code |
 | `hand_over {window, reason}` | Manage windows and apps | "Your turn: <reason>", Done; the agent waits, the window is blank in its pictures |
 
 "Sign in for you" is a scope like the others, but every login is asked about
@@ -314,6 +356,21 @@ Before the sheet and again just before typing, the broker checks the field
   site (the same host or one under it), over https (http only on
   `*.localhost`), by the documents' `DocURL`;
 - the browser wasn't started with remote debugging (CDP, Marionette).
+
+In Helium with Dashi's extension, the agent names the field by its number
+from `read_page` (`ref`, and `tab`) instead of a window
+(`src/agents/desktop/lib/browser-field.ts`): the extension brings the tab
+forward, focuses that element, and reports what it is now (a password field
+only by `type=password`; for a code or a card, an editable text field), whether
+it has the focus, and the address of its frame and of every frame around it
+(`webNavigation`); the browser's process is the host's parent, so its command
+line is checked for remote debugging the same way. The same check
+(`checkField`) decides. Dashi then types the secret itself, with the agent's
+hands, into the browser's window that shows the tab (its process's, by the
+tab's title): the secret never goes through the extension or its host. The
+extension marks the field filled by Dashi, so `read_page` says
+`(filled: yes, by Dashi)` and never reads it, and agents' pictures blank it
+where the extension placed it.
 
 The secret is fetched only then, typed through the agent's hands (one
 `agent-input` request), and dropped; the typing runs alone, so the agent's own
@@ -337,7 +394,7 @@ Dashi's vault always holds the Secret Service's items (apps' secrets).
 
 ### 1Password
 
-`src/agents/secrets/onepassword.ts`, through the `op` CLI's desktop app
+`src/agents/secrets/lib/onepassword.ts`, through the `op` CLI's desktop app
 integration (1Password › Settings › Developer › "Integrate with 1Password
 CLI"): `op` asks the 1Password app, which asks the person to unlock it.
 The shell is the broker: it runs as the person, outside every agent sandbox
@@ -505,7 +562,7 @@ Authorization"), adds one (Anthropic key and OpenAI key fill in the host
 and every header their SDKs send the key in; Other: name, hosts, headers
 with commas between, token), changes one (Edit…: hosts, headers, a new
 token), and deletes one
-after a confirm sheet (`settings-app/panes/tokens.tsx`). The token is never
+after a confirm sheet (`settings-app/lib/panes/tokens.tsx`). The token is never
 shown again. Agents' pictures blank the pane like the rest of Passwords.
 
 ### The proxy
@@ -576,8 +633,8 @@ falls back to its own configuration.
 The launcher's own answerer (docs/actions.md, "Agents in the launcher") is
 not an agent in a sandbox: the shell itself calls the Messages API, so it
 asks `token {name: "anthropic", host: "api.anthropic.com"}` like the proxy
-does (`agents/ask/keys.ts`), hands the key to the Anthropic SDK client for
-that one request, and wipes the bytes. Without the item it uses the
+does (`agents/ask/keys.ts`), puts the key in the headers of
+that one request (`fetch`; there is no provider SDK in Dashi), and wipes the bytes. Without the item it uses the
 session's `ANTHROPIC_API_KEY`. GPT, the other API answerer, does the same
 with `token {name: "openai", host: "api.openai.com"}` and
 `OPENAI_API_KEY`. Settings › Agents says where the key is from the `tokens`
@@ -627,7 +684,12 @@ setup key.
   (`agent-tokens.test.ts`: the certificates, host matching, the swap, and
   the proxy end to end, an unlisted host getting nothing), Settings' tokens
   (`settings-tokens-view.test.tsx`), and the shell's vault client against a
-  development dashi-secretd (`vault-client.test.ts`, token items included).
+  development dashi-secretd (`vault-client.test.ts`, token items included),
+  and Dashi's browser extension (`browser-page.test.ts`: the page's text and
+  that password, card and code fields never give their value;
+  `browser-pinning.test.ts`: the extension's id, the host's and the policy's;
+  `browser-agents.test.ts`: consent per site, the sandbox's denial of the
+  browser socket, the field check by `ref`).
 
 In the VM (with the `dashi-secretd` package installed, greetd's login so
 PAM opens the vault, and the test site served from the checkout:
@@ -645,6 +707,8 @@ you navigate the page (what the mask does for a filled field).
 
 - Once signed in, the agent acts as the person on that site until the
   session ends.
+- A website's own scripts see what is typed into their page, as they
+  would the person's typing; Dashi checks it is that site's page.
 - An agent with DevTools access to a browser (CDP, `--remote-debugging-port`)
   can read field values and cookies; Dashi refuses to fill into a browser
   started that way, but filling is safe only in a browser the agent drives

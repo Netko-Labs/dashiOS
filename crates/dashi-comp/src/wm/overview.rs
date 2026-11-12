@@ -7,19 +7,23 @@
 //! shell surface holds the keyboard: those are its own). The shell decides
 //! what each means; closing flies the windows back.
 
+mod pointer;
+
 use std::{
     collections::HashMap,
     time::{Duration, Instant},
 };
 
-use serde_json::{Map, Value, json};
 use smithay::{
     reexports::calloop::timer::{TimeoutAction, Timer},
     utils::{Logical, Point, Rectangle},
 };
 
-use super::windows::{WindowId, frame_of};
-use crate::state::Dashi;
+use super::{geometry::frame_of, windows::WindowId};
+use crate::{
+    ipc::protocol::{Event, OverviewParams},
+    state::Dashi,
+};
 
 const OPENING: Duration = Duration::from_millis(220);
 const CLOSING: Duration = Duration::from_millis(250);
@@ -65,52 +69,28 @@ fn lerp(a: Rectangle<i32, Logical>, b: Rectangle<i32, Logical>, t: f64) -> Recta
     )
 }
 
-fn parse_rect(value: &Value) -> Option<Rectangle<i32, Logical>> {
-    let rect = value.as_object()?;
-    let get = |key: &str| {
-        rect.get(key)
-            .and_then(Value::as_f64)
-            .filter(|v| v.is_finite())
-            .map(|v| v.round() as i32)
-    };
-    let (x, y, w, h) = (get("x")?, get("y")?, get("width")?, get("height")?);
-    (w > 0 && h > 0 && x.abs() < 1 << 16 && y.abs() < 1 << 16)
-        .then(|| Rectangle::new((x, y).into(), (w, h).into()))
-}
-
 impl Dashi {
     pub(crate) fn overview_open(&self) -> bool {
         self.overview.as_ref().is_some_and(|o| !o.closing)
     }
 
     /// `overview {windows}` opens it or lays it out again; `overview {duration?}` closes it.
-    pub(crate) fn overview_request(
-        &mut self,
-        params: &Map<String, Value>,
-    ) -> Result<Value, String> {
-        let Some(windows) = params.get("windows") else {
+    pub(crate) fn overview_request(&mut self, params: &OverviewParams) -> Result<(), String> {
+        let Some(plan) = &params.windows else {
             let duration = params
-                .get("duration")
-                .and_then(Value::as_u64)
-                .map(Duration::from_millis);
+                .duration
+                .map(|ms| Duration::from_millis(ms.to::<u64>()));
             self.close_overview(duration.unwrap_or(CLOSING).min(Duration::from_secs(2)));
-            return Ok(json!({}));
+            return Ok(());
         };
         // It would take presses on the lock screen (session/lock.rs).
         if self.lock.locked {
             return Err("the screen is locked".into());
         }
-        let plan = windows.as_array().ok_or("`windows` must be a list")?;
         let mut targets = HashMap::new();
         for placed in plan {
-            let id = placed
-                .get("id")
-                .and_then(Value::as_u64)
-                .ok_or("each window needs an id")?;
-            let rect = placed
-                .get("rect")
-                .and_then(parse_rect)
-                .ok_or("each window needs a rect")?;
+            let id = placed.id.to::<u64>();
+            let rect = placed.rect.positive().ok_or("each window needs a rect")?;
             if self.windows.get(id).is_some_and(|e| e.announced) {
                 targets.insert(id, rect);
             }
@@ -138,10 +118,10 @@ impl Dashi {
             press: None,
         });
         if opening {
-            self.ipc.emit("overview", json!({ "active": true }));
+            self.ipc.emit(Event::Overview { active: true });
             self.animate_overview(OPENING, false);
         }
-        Ok(json!({}))
+        Ok(())
     }
 
     fn close_overview(&mut self, duration: Duration) {
@@ -153,7 +133,7 @@ impl Dashi {
         }
         overview.closing = true;
         overview.press = None;
-        self.ipc.emit("overview", json!({ "active": false }));
+        self.ipc.emit(Event::Overview { active: false });
         if duration.is_zero() || self.chrome_style.reduce_motion {
             self.overview = None;
         } else {
@@ -195,114 +175,6 @@ impl Dashi {
                 TimeoutAction::Drop
             });
     }
-
-    /// Where `id` is drawn now: between its frame and its place, or under the pointer while dragged.
-    pub(crate) fn overview_rect(&self, id: WindowId) -> Option<Rectangle<f64, Logical>> {
-        let overview = self.overview.as_ref()?;
-        let (from, to) = (*overview.from.get(&id)?, *overview.targets.get(&id)?);
-        let mut rect = lerp(from, to, overview.progress);
-        if let Some(press) = overview
-            .press
-            .as_ref()
-            .filter(|p| p.dragging && p.window == Some(id))
-            && let Some(pointer) = self.seat.get_pointer()
-        {
-            rect.loc += pointer.current_location() - press.at;
-        }
-        Some(rect)
-    }
-
-    /// The window the overview shows at `at`, front first.
-    fn overview_window_at(&self, at: Point<f64, Logical>) -> Option<WindowId> {
-        let overview = self.overview.as_ref()?;
-        self.space
-            .elements()
-            .rev()
-            .filter_map(|window| self.windows.by_window(window).map(|e| e.id))
-            .find(|id| {
-                overview.targets.contains_key(id)
-                    && self.overview_rect(*id).is_some_and(|r| r.contains(at))
-            })
-    }
-
-    /// A press while the overview is open.
-    pub(crate) fn overview_press(&mut self, at: Point<f64, Logical>) {
-        let window = self.overview_window_at(at);
-        if let Some(overview) = self.overview.as_mut() {
-            overview.press = Some(Press {
-                window,
-                at,
-                dragging: false,
-            });
-        }
-    }
-
-    /// The pointer moved while the overview is open: past a few pixels, a
-    /// press on a window drags it, and the shell hears so once (`overview-drag`).
-    pub(crate) fn overview_motion(&mut self, at: Point<f64, Logical>) {
-        let Some(press) = self.overview.as_mut().and_then(|o| o.press.as_mut()) else {
-            return;
-        };
-        let Some(window) = press.window.filter(|_| !press.dragging) else {
-            return;
-        };
-        let moved = ((at.x - press.at.x).powi(2) + (at.y - press.at.y).powi(2)).sqrt();
-        press.dragging = moved > DRAG_START;
-        if press.dragging {
-            self.ipc.emit(
-                "overview-drag",
-                json!({ "window": window, "x": at.x, "y": at.y }),
-            );
-        }
-    }
-
-    /// A press in the overview is held: its release is the overview's, wherever it is (over the shell's row too).
-    pub(crate) fn overview_pressed(&self) -> bool {
-        self.overview.as_ref().is_some_and(|o| o.press.is_some())
-    }
-
-    /// The window being dragged in the overview, if one is: drawn in front
-    /// of everything but the pointer, over the shell's row and its pictures
-    /// (render/scene.rs), so the person sees what they carry onto a Desktop.
-    pub(crate) fn overview_dragged(&self) -> Option<WindowId> {
-        self.overview.as_ref().and_then(Overview::dragged)
-    }
-
-    /// The release: a pick (a window or the background), or a drop.
-    pub(crate) fn overview_release(&mut self, at: Point<f64, Logical>) {
-        let Some(press) = self.overview.as_mut().and_then(|o| o.press.take()) else {
-            return;
-        };
-        match (press.window, press.dragging) {
-            (Some(window), true) => self.ipc.emit(
-                "overview-drop",
-                json!({ "window": window, "x": at.x, "y": at.y }),
-            ),
-            (window, false) => self.ipc.emit("overview-pick", json!({ "window": window })),
-            (None, true) => {}
-        }
-    }
-
-    /// Whether the keyboard is on a layer surface (the shell's, given it by a press there).
-    pub(crate) fn keyboard_on_layer(&self) -> bool {
-        let Some(focus) = self
-            .seat
-            .get_keyboard()
-            .and_then(|keyboard| keyboard.current_focus())
-        else {
-            return false;
-        };
-        self.space.outputs().any(|output| {
-            smithay::desktop::layer_map_for_output(output)
-                .layer_for_surface(&focus, smithay::desktop::WindowSurfaceType::TOPLEVEL)
-                .is_some()
-        })
-    }
-
-    /// A key while the overview is open, unless the keymap bound it.
-    pub(crate) fn overview_key(&mut self, key: &str) {
-        self.ipc.emit("overview-key", json!({ "key": key }));
-    }
 }
 
 #[cfg(test)]
@@ -339,11 +211,23 @@ mod tests {
         );
     }
 
+    fn parse_rect(value: &serde_json::Value) -> Option<Rectangle<i32, Logical>> {
+        crate::ipc::protocol::read::<crate::ipc::protocol::Rect>(value.clone())
+            .ok()?
+            .positive()
+    }
+
     #[test]
     fn rects_are_checked() {
-        assert!(parse_rect(&json!({ "x": 10, "y": 20, "width": 300, "height": 200 })).is_some());
-        assert!(parse_rect(&json!({ "x": 10, "y": 20, "width": 0, "height": 200 })).is_none());
-        assert!(parse_rect(&json!({ "x": 10, "y": 20 })).is_none());
+        assert!(
+            parse_rect(&serde_json::json!({ "x": 10, "y": 20, "width": 300, "height": 200 }))
+                .is_some()
+        );
+        assert!(
+            parse_rect(&serde_json::json!({ "x": 10, "y": 20, "width": 0, "height": 200 }))
+                .is_none()
+        );
+        assert!(parse_rect(&serde_json::json!({ "x": 10, "y": 20 })).is_none());
     }
 
     #[test]

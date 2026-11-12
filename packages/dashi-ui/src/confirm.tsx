@@ -10,13 +10,10 @@
  * and `confirm.sheet` in the window's `overlay`.
  */
 
-import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { Button } from "./controls.tsx";
+import { AlertSheet } from "./alert.tsx";
 import { WARNING } from "./glyphs.ts";
 import type { KeyInput } from "./keys.ts";
-import { Sheet } from "./sheet.tsx";
-import { useColors } from "./theme/index.ts";
 
 export interface ConfirmSheetProps {
   /** The question, naming the thing: "Delete “Groceries”?" */
@@ -42,38 +39,21 @@ export function confirmKeyAction(key: KeyInput, danger: boolean): "confirm" | "c
 }
 
 /** A question with Cancel and one button that goes ahead; see the module comment for the keys. */
+/** A question with Cancel and one button that goes ahead, in the one alert frame (alert.tsx); see the module comment for the keys. */
 export function ConfirmSheet({ title, message, confirmLabel, danger = false, onConfirm, onCancel, testID = "confirm", glyph = WARNING }: ConfirmSheetProps) {
-  const colors = useColors();
-  const onKey = (key: KeyInput): void => {
-    const action = confirmKeyAction(key, danger);
-    if (action === "cancel") onCancel();
-    else if (action === "confirm") onConfirm();
-  };
   return (
-    <Sheet testID={testID} onCancel={() => onKey({ kind: "escape" })} onConfirm={() => onKey({ kind: "enter" })}>
-      <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start" }}>
-        <View
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 10,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: danger ? colors.umeWash : colors.button,
-          }}
-        >
-          <Svg markup={glyph} size={22} color={danger ? colors.ume : colors.textMuted} />
-        </View>
-        <View style={{ flex: 1, flexDirection: "column", gap: 4, minWidth: 0 }}>
-          <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{title}</Text>
-          <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>{message}</Text>
-        </View>
-      </View>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 6 }}>
-        <Button label="Cancel" testID={`${testID}:cancel`} onPress={onCancel} isDefault={danger} />
-        <Button label={confirmLabel} testID={`${testID}:ok`} onPress={onConfirm} primary={!danger} danger={danger} />
-      </View>
-    </Sheet>
+    <AlertSheet
+      testID={testID}
+      question={title}
+      message={message}
+      glyph={glyph}
+      tone={danger ? "danger" : "neutral"}
+      buttons={[
+        // Danger: Cancel is what Enter presses too, so only a click on the ume button goes ahead.
+        { label: "Cancel", testID: `${testID}:cancel`, onPress: onCancel, cancel: true, isDefault: danger },
+        { label: confirmLabel, testID: `${testID}:ok`, onPress: onConfirm, kind: danger ? "danger" : "primary" },
+      ]}
+    />
   );
 }
 

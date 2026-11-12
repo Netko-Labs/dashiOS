@@ -12,27 +12,31 @@
  * A burst of them is one look at the windows.
  */
 
-import type { Compositor, CompositorEvent, CompositorWindow } from "../../compositor.ts";
+import type { Compositor, CompositorEvent, CompositorWindow } from "../../compositor/index.ts";
 import type { Battery } from "../../system/battery.ts";
 import type { WallpaperChoice } from "../catalog.ts";
+import { isCovered, type PauseReason, pauseReason, type ScreenArea, screenAreas } from "../lib/pause.ts";
 import type { WallpaperSync } from "../sync.ts";
 import { type LiveChoice, resolveLive } from "./choice.ts";
-import { isCovered, type PauseReason, parseScreenAreas, pauseReason, type ScreenArea } from "./pause.ts";
 
 export interface LiveHost {
-  request: Compositor["request"];
+  outputs: Compositor["outputs"];
+  session: Compositor["session"];
   windows(): Promise<CompositorWindow[]>;
   on(listener: (event: CompositorEvent) => void): () => void;
 }
 
+/** What `setTimeout` hands back, and what `clearTimeout` takes. */
+export type TimerHandle = ReturnType<typeof setTimeout>;
+
 export interface Clock {
-  setTimeout(run: () => void, ms: number): unknown;
-  clearTimeout(handle: unknown): void;
+  setTimeout(run: () => void, ms: number): TimerHandle;
+  clearTimeout(handle: TimerHandle): void;
 }
 
 const realClock: Clock = {
   setTimeout: (run, ms) => setTimeout(run, ms),
-  clearTimeout: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+  clearTimeout: (handle) => clearTimeout(handle),
 };
 
 export interface LiveOptions {
@@ -59,8 +63,8 @@ export class LiveWallpaperController {
   private locked = false;
   private wasOnBattery = false;
   private screensOff = false;
-  private timer: unknown = null;
-  private followUp: unknown = null;
+  private timer: TimerHandle | null = null;
+  private followUp: TimerHandle | null = null;
   private looks = 0;
   private stopListening: (() => void) | null = null;
 
@@ -73,12 +77,9 @@ export class LiveWallpaperController {
   async start(): Promise<void> {
     this.stopListening = this.options.compositor.on((event) => this.heard(event));
     await this.loadScreens();
-    try {
-      const session = await this.options.compositor.request("session");
-      this.locked = typeof session === "object" && session !== null && (session as { locked?: unknown }).locked === true;
-    } catch {
-      // An older compositor: not locked as far as we know; the `lock` event will say.
-    }
+    // Not known (no answer): not locked as far as we know; the `lock` event will say.
+    const session = await this.options.compositor.session().catch(() => null);
+    this.locked = session?.locked ?? false;
     this.settle();
   }
 
@@ -134,7 +135,7 @@ export class LiveWallpaperController {
 
   private async loadScreens(): Promise<void> {
     try {
-      this.screens = parseScreenAreas(await this.options.compositor.request("outputs"));
+      this.screens = screenAreas(await this.options.compositor.outputs());
     } catch (error) {
       this.log(`could not list the screens for the wallpaper: ${error instanceof Error ? error.message : String(error)}`);
     }

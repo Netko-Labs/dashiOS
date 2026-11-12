@@ -5,14 +5,15 @@
  */
 
 import { afterAll, beforeAll, expect, test } from "bun:test";
-import { accessInterface } from "../apps/portal/access.tsx";
-import { appChooserInterface } from "../apps/portal/app-chooser/index.tsx";
-import { fileChooserInterface } from "../apps/portal/file-chooser/index.tsx";
-import { InhibitBackend } from "../apps/portal/inhibit.ts";
-import { Requests } from "../apps/portal/request.ts";
-import { settingsInterface, settingsTable } from "../apps/portal/settings.ts";
-import { DBusConnection, FdService, Variant, variant } from "../src/dbus/index.ts";
+import { accessInterface } from "../apps/portal/lib/access.tsx";
+import { appChooserInterface } from "../apps/portal/lib/app-chooser/chooser.tsx";
+import { fileChooserInterface } from "../apps/portal/lib/file-chooser/chooser.tsx";
+import { InhibitBackend } from "../apps/portal/lib/inhibit.ts";
+import { Requests } from "../apps/portal/lib/request.ts";
+import { settingsInterface, settingsTable } from "../apps/portal/lib/settings.ts";
+import { DBusConnection, FdService, Variant, variant } from "../src/shared/dbus/index.ts";
 import { type PrivateBus, startPrivateBus } from "./private-bus.ts";
+import { until } from "./support/time.ts";
 
 const NAME = "org.freedesktop.impl.portal.desktop.dashi";
 const PATH = "/org/freedesktop/portal/desktop";
@@ -21,6 +22,7 @@ let service: FdService | null = null;
 let client: DBusConnection | null = null;
 const holds: string[] = [];
 let release: (() => void) | null = null;
+let waiting = false;
 
 beforeAll(async () => {
   bus = await startPrivateBus("dashi-portal-bus");
@@ -42,7 +44,10 @@ beforeAll(async () => {
   });
   service.export(PATH, [
     fileChooserInterface(requests, (request, signal) => {
-      if (request.title === "Wait") return new Promise((resolve) => signal.addEventListener("abort", () => resolve(null)));
+      if (request.title === "Wait") {
+        waiting = true;
+        return new Promise((resolve) => signal.addEventListener("abort", () => resolve(null)));
+      }
       return Promise.resolve({ paths: [`/home/alex/${request.mode}.pdf`], choices: [], filter: request.currentFilter });
     }),
     settingsInterface(() => settingsTable({ dark: true, reduceMotion: true, pointerSize: 32, look: {} })),
@@ -99,7 +104,7 @@ test("a Request's Close ends its dialog: the call answers, cancelled", async () 
   if (!client) return;
   const handle = "/org/freedesktop/portal/desktop/request/1_9/c";
   const answer = call("FileChooser", "OpenFile", "osssa{sv}", [handle, "app", "", "Wait", new Map()]);
-  await Bun.sleep(20);
+  await until(() => waiting, "the dialog to open");
   await (client as DBusConnection).call({ destination: NAME, path: handle, interface: "org.freedesktop.impl.portal.Request", member: "Close" });
   const [code] = await answer;
   expect(code).toBe(1);

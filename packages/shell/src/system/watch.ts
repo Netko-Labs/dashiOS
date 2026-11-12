@@ -10,6 +10,8 @@ export interface WatchOptions {
   maxDelayMs?: number;
   /** A run at least this long starts the delay over. */
   healthyMs?: number;
+  /** Each time the command starts (again): what it prints next starts afresh. */
+  onStart?: () => void;
   /** For tests. */
   spawn?: (command: string[]) => { stdout: ReadableStream<Uint8Array>; exited: Promise<number>; kill(): void };
   which?: (program: string) => string | null;
@@ -41,6 +43,7 @@ export function watchLines(command: readonly string[], onLine: (line: string) =>
       const started = Date.now();
       try {
         child = spawn([...command]);
+        options.onStart?.();
         await readLines(child.stdout, (line) => !stopped && onLine(line));
         await child.exited;
       } catch {

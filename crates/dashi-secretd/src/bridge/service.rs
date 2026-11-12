@@ -4,80 +4,26 @@
 
 use std::{collections::HashMap, sync::Arc, sync::atomic::Ordering};
 
-use base64::{Engine, engine::general_purpose::STANDARD};
 use serde_json::json;
 use zbus::{
     Connection, ObjectServer, fdo, interface,
     message::Header,
-    zvariant::{ObjectPath, OwnedObjectPath, OwnedValue, Value},
+    zvariant::{OwnedObjectPath, OwnedValue, Value},
 };
 
 use super::{
     SERVICE_PATH, Shared, no_such_object, objects, peer,
     session::{self, Algorithm, Session},
 };
-use crate::vault::bytes::Secret;
 
-/// A secret on the wire: (session, parameters, value, content type).
-pub type WireSecret = (OwnedObjectPath, Vec<u8>, Vec<u8>, String);
+pub use super::{
+    session_object::SessionObject,
+    wire::{WireSecret, label_of, secret_for, secret_from},
+};
 
+/// The Secret Service object: sessions are opened here, collections found through it.
 pub struct Service {
     pub shared: Arc<Shared>,
-}
-
-/// An item's secret, encrypted for `session`, which must be the caller's.
-pub fn secret_for(
-    shared: &Shared,
-    id: u64,
-    session: &ObjectPath<'_>,
-    sender: &str,
-) -> fdo::Result<WireSecret> {
-    let reply = shared.call(&json!({ "op": "get-secret", "id": id }))?;
-    let secret = STANDARD
-        .decode(reply["secret"].as_str().unwrap_or_default())
-        .map(Secret::new)
-        .map_err(|_| fdo::Error::Failed("a damaged secret".into()))?;
-    let sessions = shared
-        .sessions
-        .lock()
-        .map_err(|_| fdo::Error::Failed("sessions".into()))?;
-    let open = sessions
-        .get(session.as_str())
-        .filter(|s| s.owner == sender)
-        .ok_or_else(|| fdo::Error::Failed(format!("{}.Error.NoSession", super::PREFIX)))?;
-    let (parameters, value) = open.algorithm.encrypt(&secret);
-    let content = reply["contentType"]
-        .as_str()
-        .unwrap_or("text/plain")
-        .to_string();
-    Ok((
-        OwnedObjectPath::from(session.to_owned()),
-        parameters,
-        value,
-        content,
-    ))
-}
-
-/// A secret from the wire, decrypted with its session, which must be the caller's.
-pub fn secret_from(shared: &Shared, wire: &WireSecret, sender: &str) -> fdo::Result<Secret> {
-    let sessions = shared
-        .sessions
-        .lock()
-        .map_err(|_| fdo::Error::Failed("sessions".into()))?;
-    let open = sessions
-        .get(wire.0.as_str())
-        .filter(|s| s.owner == sender)
-        .ok_or_else(|| fdo::Error::Failed(format!("{}.Error.NoSession", super::PREFIX)))?;
-    open.algorithm
-        .decrypt(&wire.1, &wire.2)
-        .map_err(fdo::Error::InvalidArgs)
-}
-
-pub fn label_of(properties: &HashMap<String, OwnedValue>, key: &str) -> String {
-    properties
-        .get(key)
-        .and_then(|v| String::try_from(v.clone()).ok())
-        .unwrap_or_default()
 }
 
 #[interface(name = "org.freedesktop.Secret.Service")]
@@ -272,70 +218,5 @@ impl Service {
             .iter()
             .filter_map(|c| c["id"].as_str().map(objects::collection_path))
             .collect())
-    }
-}
-
-/// org.freedesktop.Secret.Session: closing it forgets its key.
-pub struct SessionObject {
-    shared: Arc<Shared>,
-    path: String,
-}
-
-/// Forget the session at `path` if it is `sender`'s; another caller is refused.
-fn forget(shared: &Shared, path: &str, sender: &str) -> fdo::Result<()> {
-    let mut sessions = shared
-        .sessions
-        .lock()
-        .map_err(|_| fdo::Error::Failed("sessions".into()))?;
-    if sessions.get(path).is_some_and(|s| s.owner != sender) {
-        return Err(fdo::Error::AccessDenied(
-            "that session belongs to another app".into(),
-        ));
-    }
-    sessions.remove(path);
-    Ok(())
-}
-
-#[interface(name = "org.freedesktop.Secret.Session")]
-impl SessionObject {
-    async fn close(
-        &self,
-        #[zbus(header)] header: Header<'_>,
-        #[zbus(connection)] connection: &Connection,
-        #[zbus(object_server)] server: &ObjectServer,
-    ) -> fdo::Result<()> {
-        let peer = peer::check(connection, &header).await?;
-        forget(&self.shared, &self.path, &peer.sender)?;
-        let path = ObjectPath::try_from(self.path.as_str())
-            .map_err(|e| fdo::Error::Failed(e.to_string()))?;
-        server.remove::<SessionObject, _>(&path).await?;
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn only_the_owner_closes_a_session() {
-        let shared = Shared::new("/nonexistent".into());
-        let path = "/org/freedesktop/secrets/session/s1";
-        shared.sessions.lock().unwrap().insert(
-            path.into(),
-            Session {
-                owner: ":1.10".into(),
-                algorithm: Algorithm::Plain,
-            },
-        );
-        assert!(matches!(
-            forget(&shared, path, ":1.11"),
-            Err(fdo::Error::AccessDenied(_))
-        ));
-        assert!(shared.sessions.lock().unwrap().contains_key(path));
-        forget(&shared, path, ":1.10").unwrap();
-        assert!(shared.sessions.lock().unwrap().is_empty());
-        // Already gone: nothing left to protect, so its object may go.
-        forget(&shared, path, ":1.11").unwrap();
     }
 }

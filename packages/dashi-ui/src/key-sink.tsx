@@ -1,46 +1,34 @@
 /**
- * The invisible, focused input that gives a window its keys (keys.ts says
- * how). Put one in a window that has nothing else to type into; a window
- * with a text field gets its keys from that field instead.
+ * Where a window's keys go when nothing takes them (keys.ts says which):
+ * a view with no size that hears Metal's window keys. Put one in a window
+ * that has nothing else to type into; while a text field has the keyboard
+ * the field gets the keys instead.
  */
 
-import { TextInput, View } from "@mirinjs/metal";
-import { useReducer, useRef } from "react";
-import { KeyBuffer, type KeyInput } from "./keys.ts";
+import { View } from "@mirinjs/metal";
+import { type KeyInput, keyInputFor } from "./keys.ts";
 
 export interface KeySinkProps {
   onKey: (key: KeyInput) => void;
   /**
-   * Change it to take the keyboard back (the sink is mounted again, and a new
-   * input asks for focus): after a sheet that had its own keys closes, say.
+   * Change it to take the keyboard back from a text field (a new sink
+   * appearing gives the keyboard to the window): after a sheet that had its
+   * own field closes, say.
    */
   focusKey?: string | number;
   testID?: string;
 }
 
 export function KeySink({ onKey, focusKey = 0, testID = "keys" }: KeySinkProps) {
-  const buffer = useRef<KeyBuffer | null>(null);
-  buffer.current ??= new KeyBuffer();
-  const [, rerender] = useReducer((n: number) => n + 1, 0);
-  const deliver = (keys: KeyInput[]): void => {
-    for (const key of keys) onKey(key);
-  };
   return (
-    <View style={{ position: "absolute", left: 0, top: 0, width: 1, height: 1, opacity: 0, overflow: "hidden" }}>
-      <TextInput
-        key={String(focusKey)}
-        testID={testID}
-        value={buffer.current.value}
-        autoFocus
-        onChangeText={(text) => {
-          const keys = buffer.current?.change(text) ?? [];
-          rerender();
-          deliver(keys);
-        }}
-        onSubmitEditing={() => deliver([{ kind: "enter" }])}
-        onKeyPress={(key) => deliver([{ kind: key === "Escape" ? "escape" : key === "ArrowUp" ? "up" : "down" }])}
-        style={{ width: 1, height: 1, color: "#00000000", backgroundColor: "#00000000" }}
-      />
-    </View>
+    <View
+      key={String(focusKey)}
+      testID={testID}
+      onWindowKeyDown={(key) => {
+        const input = keyInputFor(key);
+        if (input) onKey(input);
+      }}
+      style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }}
+    />
   );
 }

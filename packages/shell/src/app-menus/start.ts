@@ -3,10 +3,10 @@
  * publish on, the store the bar reads, and the focus it follows.
  */
 
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
+import { menusSocketPath } from "../shared/app-menus/index.ts";
 import { FocusFollower, ownerPids } from "./focus.ts";
-import { menusSocketPath } from "./protocol.ts";
-import { serveMenus } from "./server.ts";
+import { serveMenus } from "./lib/server.ts";
 import { AppMenuStore } from "./store.ts";
 
 /** After a popover closes, how long the window is given to get the keyboard back before focus is asked again. */

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { startFrom } from "../apps/files/main.tsx";
+import { startFrom } from "../apps/files/lib/start-from.ts";
 import { fileManagerInterface, filesRequests, MAX_WINDOWS, pathOfUri } from "../src/file-manager.ts";
 
 test("file URIs become paths; other schemes, hosts, and junk do not", () => {

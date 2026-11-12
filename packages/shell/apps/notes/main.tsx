@@ -4,27 +4,42 @@
  * them. `DASHI_NOTES_DIR` points it somewhere else.
  */
 
+import { defaultRoot, NotesStore } from "../../src/shared/notes/index.ts";
 import { runApp } from "../kit/index.ts";
-import { NotesModel } from "./model.ts";
-import { defaultRoot, NotesStore } from "./store.ts";
-import { NOTES_SIZE, NotesWindow } from "./view.tsx";
-import { watchNotes } from "./watch.ts";
+import { NOTES_MIN_SIZE } from "./lib/layout.ts";
+import { NotesModel } from "./lib/model.ts";
+import type { NotesHost } from "./lib/views/content.tsx";
+import { NOTES_SIZE, NotesWindow } from "./lib/views/view.tsx";
+import { watchNotes } from "./lib/watch.ts";
 
 const store = new NotesStore(defaultRoot());
 store.purgeExpired();
 const model = new NotesModel(store);
 
-// The view scrolls the editor through the app once the window exists.
-const handle: { scroll: (testID: string, dy: number) => void } = { scroll: () => {} };
+/** A link from a note opens in its app when it is a web or mail address; nothing else is opened. */
+function openLink(url: string): void {
+  if (!/^(?:https?:\/\/|mailto:)\S+$/i.test(url)) return;
+  const opener = Bun.which("gio") ? ["gio", "open", url] : ["xdg-open", url];
+  try {
+    Bun.spawn(opener, { stdout: "ignore", stderr: "ignore" });
+  } catch {
+    // Nothing to open it with: the link stays text.
+  }
+}
+
+// The view reaches the window through the app once it exists.
+const host: NotesHost = { scroll: () => {}, press: () => {}, openLink };
 
 const app = runApp(
-  { id: "dev.dashi.notes", title: "Notes", size: NOTES_SIZE },
-  <NotesWindow model={model} scroll={(testID, dy) => handle.scroll(testID, dy)} />,
+  // Edit's rows act on the field with the keyboard themselves (Cut, Copy, Paste, Select All as its keys), and its Undo is the note's.
+  { id: "dev.dashi.notes", title: "Notes", size: NOTES_SIZE, minSize: NOTES_MIN_SIZE, textChordsToFields: false },
+  <NotesWindow model={model} host={host} />,
 );
-handle.scroll = (testID, dy) => {
+host.scroll = (testID, dy) => {
   const id = app.root.nodeId(testID);
   if (id) app.host.simulate({ kind: "scroll", id, dy });
 };
+host.press = (keystroke) => app.host.simulate({ kind: "key", keystroke });
 
 const stopWatching = watchNotes(store.root, () => model.reload());
 const purge = setInterval(() => {

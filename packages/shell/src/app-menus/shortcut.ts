@@ -7,7 +7,7 @@
  * "❖n" or "❖ N".
  */
 
-import type { AppMenu } from "./protocol.ts";
+import type { AppMenu } from "../shared/app-menus/index.ts";
 
 export interface PressedChord {
   /** The unshifted key's xkb keysym name: "n", "comma", "BackSpace". */
@@ -90,6 +90,18 @@ export function chordFromShortcut(text: string): PressedChord | null {
   const name = /^[A-Z0-9]$/.test(key) ? key.toLowerCase() : (KEYSYMS.get(key) ?? (/^F\d{1,2}$/.test(key) ? key : null));
   if (name === null) return null;
   return { key: name, shift: shortcut.includes("⇧"), ctrl: shortcut.includes("⌃"), alt: shortcut.includes("⌥") };
+}
+
+/**
+ * The chords a text field answers itself: Select All, Copy, Cut, Paste, Undo,
+ * Redo, and ❖⌫ (erase to the line's start). While a field has the keyboard (protocol.ts `typing`) they go to
+ * it, not to the app's rows that show them.
+ */
+export const TEXT_SHORTCUTS: ReadonlySet<string> = new Set(["❖A", "❖C", "❖X", "❖V", "❖Z", "⇧❖Z", "❖⌫"]);
+
+/** Whether `shortcut` is one a focused text field answers itself. */
+export function isTextShortcut(shortcut: string): boolean {
+  return TEXT_SHORTCUTS.has(normalizeShortcut(shortcut));
 }
 
 /** The enabled item of `menus` that shows `shortcut`, if any. */

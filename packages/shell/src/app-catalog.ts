@@ -14,7 +14,8 @@
  */
 
 import { matchEntry } from "./dock/layout.ts";
-import { type Entry, loadEntries } from "./entries.ts";
+import { loadEntries } from "./entries.ts";
+import type { Entry } from "./shared/app-entries/index.ts";
 
 export class AppCatalog {
   readonly entries: Entry[];

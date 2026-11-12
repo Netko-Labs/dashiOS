@@ -63,3 +63,30 @@ Make the grid the editor. Drag across the hours and a block appears with its tit
 - `surface.field` is lighter than `surface.window` in dark mode (`surface.ts:23`). Anything that uses it as a "recessed" wash reads as raised in dark mode.
 - `ToolbarButton` has no tooltip (`window.tsx:141-175`). Calendar's "+" and chevrons carry no name.
 - Menu copy: commands that open a sheet need "…", and button labels follow sentence case, which Calendar, Notes and the shared `ConfirmSheet` callers all break.
+
+**Where this went (0.5.0, wave 2: "Calendar's grid as the editor")**
+
+The big idea, whole: draw on empty time in Day or Week and the new block is named in place (`inline-title.tsx`), with quick add read from the words ("Dentist Tue 3pm every 6 months", `quickadd.ts`); drag a block to move it, across days in a week; drag its foot to stretch it; drag a chip to another day in the month or the all-day strip; 15-minute snaps, Esc cancels, ❖Z takes it back (`drag.ts`, `gesture.ts`, `use-grid.ts`). Pressing an event shows its popover (`popover.tsx`) with Edit… for the full sheet.
+
+- [x] 1. Drag to create, move, and resize (and move across days in the month).
+- [x] 2. The sheet opens on the occurrence that was clicked; a change or a delete asks "This event / This and following / All events" (`edits.ts`: RECURRENCE-ID overrides, a split with UNTIL or a shared-out COUNT, a whole-series edit that moves every occurrence by the clicked one's change and carries deleted and changed occurrences along).
+- [x] 3. Time zones are kept (`zones.ts`): a time keeps its TZID (or Z), the grid shows this computer's clock, VTIMEZONE is kept as read, a zoned UNTIL is written in UTC, and the sheet has a Time zone field. Not done: a VTIMEZONE is not made for a zone Calendar writes that the file had none for (IANA names are what other calendars read); moved to tasks/todo.md "Later".
+- [x] 4. Overrides (RECURRENCE-ID) show where they were moved, cancelled ones not at all; monthly and yearly rules with nth weekdays, days of the month, months, and BYSETPOS expand (`rules.ts`, `recurrence.ts`). An override whose repeat isn't in the file is kept and said.
+- [x] 5. Hidden calendars (0.4: `target.ts`, the checkbox alone hides). A single click on an empty day or half hour picks it; a double click or a drag makes an event.
+- [x] 6. Problems are a dismissable notice, "N events couldn't be shown." with Show (a sheet listing them).
+- [x] 7. Days are typed as the region writes them or picked from a small month under the field; a bare "3" in a 12-hour region is 3 PM; the weekday letters are the region's, from its first day. The date picker is Calendar's own (`form-fields.tsx`) until a second app needs one in `@dashi/ui`.
+- [x] 8. A click picks; events are made on the grid and named in place, the sheet only when wanted.
+- [x] 9. Keyboard (`window-keys.ts`): ← → a day, ↑ ↓ a week, Tab through events, Return opens one (or names a new one on the picked day), ⌫ deletes it, Esc cancels a drag or lets go.
+- [x] 10. Edit (Undo, Redo, Delete, Find) and Event (Edit Event…, Duplicate) menus; a delete is undone from Edit › Undo or the notice's Undo.
+- [x] 11. Colors are Dashi's tints (0.4).
+- [x] 12. Import into a chosen calendar (the same-named one first), skipping events it has already by UID; an .ics dropped on the window imports; File › Export… writes a calendar as a new file. Subscribe to a URL: moved to tasks/todo.md "Later".
+- [x] 13. Find (❖F): every word, in titles, places, and notes, a year either side, coming events first.
+- [x] 14. A second start sends no day (`{}`) and the running Calendar stays as it is; a day given is the local day.
+- [x] 15. The time now runs across every day shown in kombu, with the dot on today's.
+- [x] 16. Days outside the month sink under a black wash, darker than the window in both modes.
+- [ ] 17. A second alert and travel time: moved to tasks/todo.md "Later".
+- [x] 18. Copy: View › Day / Week / Month; "Custom"; "This event", "This and following", "All events"; "All-day" in both places; "New calendar…" in the sidebar.
+- [x] 19. The mini month's dots are held until the calendars change; hiding a calendar reads no calendar again (the watcher tells a sidecar-only change apart). Settings are still looked at with a `stat` every 3 s, which costs nothing worth more code.
+- [x] 20. The "⋯" shows on the row under the pointer (or the picked one). A custom color: moved to tasks/todo.md "Later".
+
+Cross-app notes still open: `KeySink` still reports only a few keys (Calendar reads `onWindowKeyDown` itself); the drag helper and the date picker stay in Calendar until a second app needs them; Calendar still writes through `../notes/files.ts` (UI-1). The chevrons are Calendar's own now.

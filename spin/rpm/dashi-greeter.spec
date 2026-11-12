@@ -52,6 +52,7 @@ fi
 %systemd_preun greetd.service
 
 %files
+%license LICENSE
 %{_bindir}/dashi-greeter
 %{_datadir}/dashi/greeter
 %dir %{_datadir}/dashi/greetd

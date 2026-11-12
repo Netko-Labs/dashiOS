@@ -7,15 +7,15 @@
  * contents costs the compositor nothing.
  */
 
-import { CORNER_RADIUS, type CornerName } from "../corners.ts";
-import type { Requester } from "../settings.ts";
+import type { Compositor } from "../compositor/index.ts";
+import { CORNER_RADIUS, type CornerName } from "../shared/appearance/index.ts";
 
 export class ChromeStyle {
   private dark: boolean | null = null;
   private radius: number | null = null;
   private reduceMotion: boolean | null = null;
 
-  constructor(private readonly compositor: Requester) {}
+  constructor(private readonly compositor: Pick<Compositor, "chrome">) {}
 
   setDark(dark: boolean): void {
     if (dark === this.dark) return;
@@ -37,6 +37,6 @@ export class ChromeStyle {
   }
 
   private send(params: { dark: boolean } | { radius: number } | { reduceMotion: boolean }, consequence: string): void {
-    this.compositor.request("chrome", params).catch((error) => console.error(`dashi-shell: ${consequence}:`, error));
+    this.compositor.chrome(params).catch((error) => console.error(`dashi-shell: ${consequence}:`, error));
   }
 }

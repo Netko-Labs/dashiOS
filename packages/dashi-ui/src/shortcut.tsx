@@ -42,18 +42,31 @@ export function shortcutParts(keys: string): string[] {
   return parts;
 }
 
-export function Shortcut({ keys, color, size = 13 }: { keys: string; color: string; size?: number }) {
+/**
+ * The keys as one run: no gap between the parts, since each glyph's drawing
+ * already keeps a little room at its sides, so "❖I" reads as one token.
+ * With `keyColumn` (a menu's), the last key sits at the left of a column at
+ * least that wide, so in a column of shortcuts the modifiers end on one edge
+ * and the keys start on one, as on the Mac ("❖W" over "⇧❖I").
+ */
+export function Shortcut({ keys, color, size = 13, keyColumn }: { keys: string; color: string; size?: number; keyColumn?: number }) {
+  const parts = shortcutParts(keys);
+  const draw = (part: string, index: number) =>
+    KEY_GLYPHS[part] ? (
+      <Svg key={index} markup={KEY_GLYPHS[part] as string} size={size} color={color} />
+    ) : (
+      <Text key={index} style={{ fontSize: size, color }}>
+        {part}
+      </Text>
+    );
+  if (keyColumn === undefined || parts.length === 0) {
+    return <View style={{ flexDirection: "row", alignItems: "center", gap: 0 }}>{parts.map(draw)}</View>;
+  }
+  const last = parts.length - 1;
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
-      {shortcutParts(keys).map((part, index) =>
-        KEY_GLYPHS[part] ? (
-          <Svg key={index} markup={KEY_GLYPHS[part] as string} size={size} color={color} />
-        ) : (
-          <Text key={index} style={{ fontSize: size, color }}>
-            {part}
-          </Text>
-        ),
-      )}
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 0 }}>
+      {parts.slice(0, last).map(draw)}
+      <View style={{ minWidth: keyColumn, flexDirection: "row", alignItems: "center", justifyContent: "flex-start" }}>{draw(parts[last] as string, last)}</View>
     </View>
   );
 }

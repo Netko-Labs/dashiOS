@@ -11,25 +11,47 @@ there once ("Always Allow") and later calls go straight through.
     vm/agent screenshot [PNG] [JSON]  the screen (or JSON's window / rect)
     vm/agent windows                  list_windows, shortly
     vm/agent batch FILE|-             several calls in one session: one
-                                      `TOOL JSON` per line (# comments)
+                                      `TOOL JSON` per line (# comments), or
+                                      `pointer X Y [BUTTON]`, `key COMBO`, `sleep S`
+    vm/agent pointer X Y [BUTTON]     the VM's real pointer (QMP) at a screenshot's
+                                      pixel X, Y: left (default), right, or move
+
+The menu bar has the agents' mark in it only while an agent is connected,
+and every vm/agent run connects one, so its screenshots show the mark and
+the status items one place to the left of where they are with no agent
+connected. A QMP click made after the run ends (qmp.py click) lands one
+item off (aimed at the newest applet's item, the leftmost, it hits empty
+bar and nothing happens). The mark shows a moment after an agent's first
+call, so a run's very first screenshot may not have it yet. `pointer`
+clicks inside the session, once the mark is there, and saves the screen
+as the click met it (vm/images/pointer.png): aim from a screenshot taken
+the same way (a batch: `screenshot {}`, `sleep 1.5`, `screenshot {}`).
 
 Images go to PNG (screenshot) or vm/images/agent-N.png, one path per line.
 Env: DASHI_AGENT_CMD overrides the server command (default: vm/vm mcp), so
-`DASHI_AGENT_CMD=dashi-mcp vm/agent ...` drives this machine's own session.
+`DASHI_AGENT_CMD=dashi-mcp vm/agent ...` drives this machine's own session;
+DASHI_AGENT_QMP the VM's QMP socket (default: vm/images/qmp.sock).
 """
 
 import base64
 import json
 import os
 import shlex
+import struct
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 IMAGES = HERE / "images"
+# qmp.py is imported from here; no __pycache__ beside the checkout's files.
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(HERE))
 CLIENT = {"name": "dashi-vm-agent", "title": "vm/agent (Dashi development)", "version": "0.1.0"}
 TIMEOUT_S = 120
+# How long the menu bar takes to show the agents' mark once an agent has called a tool.
+MARK_SETTLES_S = 1.5
 
 
 class Session:
@@ -101,6 +123,83 @@ def call(session: Session, tool: str, arguments: dict, image_out: Path | None = 
     return show(session.request("tools/call", {"name": tool, "arguments": arguments}), image_out)
 
 
+def png_size(data: bytes) -> tuple[int, int]:
+    """A PNG's width and height, from its header."""
+    if data[:8] != b"\x89PNG\r\n\x1a\n" or data[12:16] != b"IHDR":
+        raise SystemExit("vm/agent: the screenshot isn't a PNG")
+    return struct.unpack(">II", data[16:24])
+
+
+class Pointer:
+    """The VM's real pointer and keyboard over QMP, used while a session is open."""
+
+    def __init__(self, session: Session) -> None:
+        self.session = session
+        self.qmp = None
+        self.size: tuple[int, int] | None = None
+
+    def ready(self) -> None:
+        if self.size is None:
+            # A call first brings the agents' mark into the bar (it shows a moment after an
+            # agent connects); then the screen as the click will meet it, saved, whose size
+            # is the scale the coordinates are in.
+            self.session.request("tools/call", {"name": "screenshot", "arguments": {}})
+            time.sleep(MARK_SETTLES_S)
+            result = self.session.request("tools/call", {"name": "screenshot", "arguments": {}})
+            image = next((item for item in result.get("content", []) if item.get("type") == "image"), None)
+            if image is None:
+                raise SystemExit("vm/agent: pointer: the screenshot came back without a picture")
+            data = base64.b64decode(image["data"])
+            self.size = png_size(data)
+            IMAGES.mkdir(exist_ok=True)
+            (IMAGES / "pointer.png").write_bytes(data)
+            print(IMAGES / "pointer.png")
+        if self.qmp is None:
+            from qmp import Qmp
+
+            self.qmp = Qmp(os.environ.get("DASHI_AGENT_QMP") or str(IMAGES / "qmp.sock"))
+
+    def click(self, x: float, y: float, button: str = "left") -> None:
+        if button not in ("left", "right", "middle", "move"):
+            raise SystemExit(f"vm/agent: pointer: {button!r} is not left, right, middle or move")
+        self.ready()
+        width, height = self.size
+        self.qmp.call(
+            "input-send-event",
+            events=[
+                {"type": "abs", "data": {"axis": "x", "value": int(x / width * 32767)}},
+                {"type": "abs", "data": {"axis": "y", "value": int(y / height * 32767)}},
+            ],
+        )
+        time.sleep(0.1)
+        if button != "move":
+            for down in (True, False):
+                self.qmp.call("input-send-event", events=[{"type": "btn", "data": {"down": down, "button": button}}])
+                time.sleep(0.05)
+
+    def key(self, combo: str) -> None:
+        from qmp import ALIASES
+
+        self.ready()
+        self.qmp.keys([ALIASES.get(part, part) for part in combo.split("-")])
+
+
+def step(session: Session, pointer: Pointer, line: str) -> bool:
+    """One batch line: a tool call, or `pointer X Y [BUTTON]`, `key COMBO`, `sleep S`."""
+    word, _, rest = line.partition(" ")
+    args = rest.split()
+    if word == "pointer" and len(args) in (2, 3):
+        pointer.click(float(args[0]), float(args[1]), *args[2:])
+        return True
+    if word == "key" and len(args) == 1:
+        pointer.key(args[0])
+        return True
+    if word == "sleep" and len(args) == 1:
+        time.sleep(float(args[0]))
+        return True
+    return call(session, word, parse_json(rest.strip() or None))
+
+
 def parse_json(text: str | None) -> dict:
     if not text:
         return {}
@@ -132,14 +231,17 @@ def main(argv: list[str]) -> int:
         if command == "batch" and rest:
             text = sys.stdin.read() if rest[0] == "-" else Path(rest[0]).read_text()
             ok = True
+            pointer = Pointer(session)
             for line in text.splitlines():
                 line = line.strip()
                 if not line or line.startswith("#"):
                     continue
-                tool, _, arguments = line.partition(" ")
-                print(f"> {tool}", file=sys.stderr)
-                ok = call(session, tool, parse_json(arguments.strip() or None)) and ok
+                print(f"> {line.partition(' ')[0]}", file=sys.stderr)
+                ok = step(session, pointer, line) and ok
             return 0 if ok else 1
+        if command == "pointer" and len(rest) in (2, 3):
+            Pointer(session).click(float(rest[0]), float(rest[1]), *rest[2:])
+            return 0
         print(__doc__.strip(), file=sys.stderr)
         return 2
     finally:

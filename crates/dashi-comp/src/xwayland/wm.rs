@@ -1,25 +1,15 @@
 //! dashi-comp as Xwayland's window manager: X11 windows into the registry and
 //! onto the screen, their requests to the shell, and the selections both ways.
 
+use crate::ipc::protocol::Asked;
 use std::os::fd::OwnedFd;
 
-use serde_json::json;
 use smithay::{
     desktop::Window,
     reexports::wayland_server::protocol::wl_surface::WlSurface,
     utils::{Logical, Rectangle, SERIAL_COUNTER},
     wayland::{
-        selection::{
-            SelectionTarget,
-            data_device::{
-                clear_data_device_selection, current_data_device_selection_userdata,
-                request_data_device_client_selection, set_data_device_selection,
-            },
-            primary_selection::{
-                clear_primary_selection, current_primary_selection_userdata,
-                request_primary_client_selection, set_primary_selection,
-            },
-        },
+        selection::SelectionTarget,
         xwayland_shell::{XWaylandShellHandler, XWaylandShellState},
     },
     xwayland::{
@@ -156,11 +146,11 @@ impl XwmHandler for Dashi {
     }
 
     fn maximize_request(&mut self, _xwm: XwmId, surface: X11Surface) {
-        self.ask_shell_x11(&surface, "zoom", true);
+        self.ask_shell_x11(&surface, Asked::Zoom, true);
     }
 
     fn unmaximize_request(&mut self, _xwm: XwmId, surface: X11Surface) {
-        self.ask_shell_x11(&surface, "zoom", false);
+        self.ask_shell_x11(&surface, Asked::Zoom, false);
     }
 
     /// An X11 app's own minimize button (`WM_CHANGE_STATE` to iconic): what the
@@ -185,11 +175,11 @@ impl XwmHandler for Dashi {
     }
 
     fn fullscreen_request(&mut self, _xwm: XwmId, surface: X11Surface) {
-        self.ask_shell_x11(&surface, "fullscreen", true);
+        self.ask_shell_x11(&surface, Asked::Fullscreen, true);
     }
 
     fn unfullscreen_request(&mut self, _xwm: XwmId, surface: X11Surface) {
-        self.ask_shell_x11(&surface, "fullscreen", false);
+        self.ask_shell_x11(&surface, Asked::Fullscreen, false);
     }
 
     fn resize_request(
@@ -242,15 +232,7 @@ impl XwmHandler for Dashi {
     }
 
     fn allow_selection_access(&mut self, _xwm: XwmId, _selection: SelectionTarget) -> bool {
-        // Only an X11 app with the keyboard reads the clipboard.
-        self.seat
-            .get_keyboard()
-            .and_then(|keyboard| keyboard.current_focus())
-            .is_some_and(|focus| {
-                self.windows
-                    .by_surface(&focus)
-                    .is_some_and(|e| e.window.x11_surface().is_some())
-            })
+        self.x11_may_read_selection()
     }
 
     fn send_selection(
@@ -260,45 +242,15 @@ impl XwmHandler for Dashi {
         mime_type: String,
         fd: OwnedFd,
     ) {
-        let result = match selection {
-            SelectionTarget::Clipboard => {
-                request_data_device_client_selection(&self.seat, mime_type, fd)
-                    .map_err(|e| format!("{e:?}"))
-            }
-            SelectionTarget::Primary => request_primary_client_selection(&self.seat, mime_type, fd)
-                .map_err(|e| format!("{e:?}")),
-        };
-        if let Err(error) = result {
-            tracing::debug!(error, "handing the Wayland selection to an X11 app");
-        }
+        self.send_selection_to_x11(selection, mime_type, fd);
     }
 
     fn new_selection(&mut self, _xwm: XwmId, selection: SelectionTarget, mime_types: Vec<String>) {
-        match selection {
-            SelectionTarget::Clipboard => {
-                self.report_selection(&mime_types, true);
-                set_data_device_selection(&self.display_handle, &self.seat, mime_types, ())
-            }
-            SelectionTarget::Primary => {
-                set_primary_selection(&self.display_handle, &self.seat, mime_types, ())
-            }
-        }
+        self.x11_selection_set(selection, mime_types);
     }
 
     fn cleared_selection(&mut self, _xwm: XwmId, selection: SelectionTarget) {
-        match selection {
-            SelectionTarget::Clipboard
-                if current_data_device_selection_userdata(&self.seat).is_some() =>
-            {
-                clear_data_device_selection(&self.display_handle, &self.seat)
-            }
-            SelectionTarget::Primary
-                if current_primary_selection_userdata(&self.seat).is_some() =>
-            {
-                clear_primary_selection(&self.display_handle, &self.seat)
-            }
-            _ => {}
-        }
+        self.x11_selection_cleared(selection);
     }
 }
 
@@ -309,10 +261,10 @@ impl Dashi {
             .filter(|id| self.windows.get(*id).is_some_and(|e| e.announced))
     }
 
-    fn ask_shell_x11(&mut self, surface: &X11Surface, event: &str, on: bool) {
+    fn ask_shell_x11(&mut self, surface: &X11Surface, asked: Asked, on: bool) {
         let Some(id) = self.x11_announced(surface) else {
             return;
         };
-        self.ipc.emit(event, json!({ "window": id, "on": on }));
+        self.ipc.emit(asked.event(id, on));
     }
 }

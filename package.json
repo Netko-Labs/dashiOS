@@ -7,9 +7,11 @@
   "scripts": {
     "fmt-lint": "biome check .",
     "fmt-lint:fix": "biome check --fix .",
-    "typecheck": "tsc --noEmit -p packages/dashi-ui && tsc --noEmit -p packages/applet && tsc --noEmit -p packages/greeter && tsc --noEmit -p packages/shell",
-    "test": "bun test packages/dashi-ui packages/applet packages/greeter packages/shell",
-    "shell": "bun run --cwd packages/shell start"
+    "typecheck": "tsc --noEmit -p packages/shape && tsc --noEmit -p packages/dashi-ui && tsc --noEmit -p packages/applet && tsc --noEmit -p packages/greeter && tsc --noEmit -p packages/shell && tsc --noEmit -p packages/shell/browser-extension && tsc --noEmit -p scripts",
+    "test": "bun test packages/shape packages/dashi-ui packages/applet packages/greeter packages/shell ./scripts",
+    "shell": "bun run --cwd packages/shell start",
+    "check": "bun scripts/check.ts",
+    "check:fast": "bun scripts/check.ts --fast"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",

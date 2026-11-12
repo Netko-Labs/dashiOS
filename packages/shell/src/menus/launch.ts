@@ -4,7 +4,8 @@
  */
 
 import { existsSync } from "node:fs";
-import type { Entry } from "../entries.ts";
+import type { Entry } from "../shared/app-entries/index.ts";
+import { spawnDetached } from "../shared/apps/index.ts";
 
 /** The launcher entry for the app whose windows report `appId`, if one is installed. */
 export function findEntry(entries: readonly Entry[], appId: string): Entry | undefined {
@@ -29,11 +30,8 @@ export function helpCommand(
   return opener && exists(README) ? [opener, README] : null;
 }
 
-/** Runs a command detached from the shell's input and output. */
-export function spawnDetached(command: readonly string[]): void {
-  try {
-    Bun.spawn([...command], { stdin: "ignore", stdout: "ignore", stderr: "ignore" }).unref();
-  } catch (error) {
-    console.error(`dashi-shell: could not run ${command[0]}:`, error);
-  }
+/** Help › Dashi Help: opens the README, when it and xdg-open are there. */
+export function openHelp(): void {
+  const command = helpCommand();
+  if (command) spawnDetached(command);
 }

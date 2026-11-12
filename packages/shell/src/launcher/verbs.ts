@@ -12,10 +12,11 @@
  * its app asks about unsaved work itself.
  */
 
-import type { ActionDef, Args } from "../actions/types.ts";
-import type { Entry } from "../entries.ts";
-import { agentVerbs } from "./agents/rows.ts";
-import { isPane, type LauncherItem, type LauncherWindow, windowsOf } from "./items.ts";
+import type { ActionDef, Args } from "../actions/index.ts";
+import type { Entry } from "../shared/app-entries/index.ts";
+import { agentVerbs } from "./lib/agents/agent-rows.ts";
+import { isPane, type LauncherItem, type LauncherWindow, windowsOf } from "./lib/items.ts";
+import { startsWithCommand } from "./ranking/commands.ts";
 import { type FileRow, type Row, type RowAction, shownName } from "./row-model.ts";
 
 /** The keys, as rows show them. */
@@ -206,7 +207,7 @@ export function verbsFor(row: Row, ctx: VerbContext): Verb[] {
   return [verb("do", row.title, action, { key: KEYS.primary })];
 }
 
-/** A link's action, shown with its arguments filled in: Return runs it, nothing else does (actions/run.ts). */
+/** A link's action, shown with its arguments filled in: Return runs it, nothing else does (actions/lib/run.ts). */
 export function presentedVerbs(action: ActionDef, args: Args, ctx: VerbContext): Verb[] {
   const checked = action.check(args);
   return [
@@ -235,10 +236,13 @@ export function verbRow(each: Verb, asking: boolean): Row {
  * Whether Space flips the selected row's switch rather than typing a space:
  * when the row has a switch and a space can't be the next letter of its
  * name or words ("wif" then Space flips Wi-Fi; "dark" then Space types on
- * to "dark mode"; "dark mode" then Space flips it).
+ * to "dark mode"; "dark mode" then Space flips it). Never in words that
+ * start with a command's verb ("turn on dark", "turn on dark mode", which
+ * may go on "and email alexk"): that is a sentence being typed, and Return
+ * flips it (ranking/commands.ts).
  */
 export function spaceFlips(row: Row | undefined, query: string): boolean {
-  if (row?.control?.kind !== "switch" || query.trim() === "") return false;
+  if (row?.control?.kind !== "switch" || query.trim() === "" || startsWithCommand(query)) return false;
   const typed = `${query.toLowerCase()} `;
   const words = [row.title, ...(row.item?.keywords ?? [])].map((word) => word.toLowerCase());
   return !words.some((word) => word.startsWith(typed));

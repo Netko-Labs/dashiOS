@@ -18,10 +18,10 @@
  * of the time both move the caret in the field.
  */
 
-import type { Keymap, Rule } from "../keymap.ts";
+import type { Keymap, Rule } from "../keymap/keymap.ts";
+import type { Move } from "./lib/selection.ts";
 import { RECORD_BINDING, RECORD_RULES, type ReportedChord } from "./person-keys.ts";
 import type { ArrowsWanted } from "./pictures.ts";
-import type { Move } from "./selection.ts";
 
 /** Binding name → how it moves the selection. */
 export const LAUNCHER_BINDINGS: Readonly<Record<string, Move>> = {
@@ -50,10 +50,18 @@ export type LauncherCommand =
   | { kind: "digits"; shown: boolean }
   /** A chord pressed while Set shortcut… records. */
   | { kind: "record"; chord: ReportedChord }
-  /** ⇥: Ask about the words (agents/rows.ts); on a plan, back to the words. */
+  /** ⇥: Ask about the words (lib/agents/agent-rows.ts); on a plan, back to the words. */
   | { kind: "tab" }
   /** ← or →, while they are the launcher's (the windows' live pictures). */
-  | { kind: "arrow"; to: "left" | "right" };
+  | { kind: "arrow"; to: "left" | "right" }
+  /** ⌥1–9: another harness for the words ("Hand it off"; launcher/lib/agents/handoff-rows.ts). */
+  | { kind: "option-pick"; digit: number }
+  /** ❖⌫ on a run's row: stop it. */
+  | { kind: "stop" }
+  /** ⌫ in an empty field with a context chip on: drop the chip. */
+  | { kind: "backspace" }
+  /** ❖, on the grants card: what it may use, in Settings. */
+  | { kind: "settings" };
 
 const COMMANDS: Readonly<Record<string, LauncherCommand>> = {
   "launcher-actions": { kind: "actions" },
@@ -67,7 +75,37 @@ const COMMANDS: Readonly<Record<string, LauncherCommand>> = {
   "launcher-tab": { kind: "tab" },
   "launcher-right": { kind: "arrow", to: "right" },
   "launcher-left": { kind: "arrow", to: "left" },
+  "launcher-stop": { kind: "stop" },
+  "launcher-backspace": { kind: "backspace" },
+  "launcher-settings": { kind: "settings" },
 };
+
+/** Keys the launcher takes only while they mean something there: elsewhere they are the field's (agents' rows, the grants card). */
+export interface ExtraKeys {
+  /** ⌥1–9, while "Hand it off" lists more than one harness. */
+  option: boolean;
+  /** ❖⌫, while a run's row is selected. */
+  stop: boolean;
+  /** ⌫, while the field is empty and a context chip is on. */
+  backspace: boolean;
+  /** ❖,, on the grants card. */
+  settings: boolean;
+}
+
+export const NO_EXTRA_KEYS: ExtraKeys = { option: false, stop: false, backspace: false, settings: false };
+
+/** The rules for the extra keys wanted now. */
+export function extraRules(want: ExtraKeys): Rule[] {
+  return [
+    ...(want.option ? Array.from({ length: 9 }, (_, index) => ({ when: `alt+${index + 1}`, bind: `launcher-option-${index + 1}` })) : []),
+    ...(want.stop ? [{ when: "super+BackSpace", bind: "launcher-stop" }] : []),
+    ...(want.backspace ? [{ when: "BackSpace", bind: "launcher-backspace" }] : []),
+    ...(want.settings ? [{ when: "super+comma", bind: "launcher-settings" }] : []),
+  ];
+}
+
+const sameKeys = (a: ExtraKeys, b: ExtraKeys): boolean =>
+  a.option === b.option && a.stop === b.stop && a.backspace === b.backspace && a.settings === b.settings;
 
 /** ← and → while the pictures want them (pictures.ts `arrowsWanted`). */
 export const ARROW_RULES: Readonly<Record<ArrowsWanted, Rule[]>> = {
@@ -105,9 +143,9 @@ export const LAUNCHER_RULES: Rule[] = [
 ];
 
 /** The keymap while the launcher is open: its keys first, and every ❖ chord while it records one. */
-export const withLauncher = (keymap: Keymap, recording = false, arrows: ArrowsWanted = "none"): Keymap => ({
+export const withLauncher = (keymap: Keymap, recording = false, arrows: ArrowsWanted = "none", extras: ExtraKeys = NO_EXTRA_KEYS): Keymap => ({
   ...keymap,
-  rules: [...(recording ? RECORD_RULES : []), ...ARROW_RULES[arrows], ...LAUNCHER_RULES, ...keymap.rules],
+  rules: [...(recording ? RECORD_RULES : []), ...ARROW_RULES[arrows], ...extraRules(extras), ...LAUNCHER_RULES, ...keymap.rules],
 });
 
 /** Where the open launcher hears those keys. */
@@ -116,9 +154,12 @@ export class LauncherKeys {
   private readonly commandListeners = new Set<(command: LauncherCommand) => void>();
   private recordingNow = false;
   private arrowsNow: ArrowsWanted = "none";
-  /** Told when recording starts or stops, to send the keymap that goes with it (main.tsx). */
+  private extrasNow: ExtraKeys = NO_EXTRA_KEYS;
+  /** Told when the extra keys the launcher wants change, for the same (boot/keys.ts). */
+  onExtras: ((extras: ExtraKeys) => void) | null = null;
+  /** Told when recording starts or stops, to send the keymap that goes with it (boot/keys.ts). */
   onRecording: ((recording: boolean) => void) | null = null;
-  /** Told when ← and → become the launcher's or the field's again, for the same (main.tsx). */
+  /** Told when ← and → become the launcher's or the field's again, for the same (boot/keys.ts). */
   onArrows: ((arrows: ArrowsWanted) => void) | null = null;
 
   subscribe = (listener: (move: Move) => void): (() => void) => {
@@ -137,6 +178,17 @@ export class LauncherKeys {
 
   get arrowsWanted(): ArrowsWanted {
     return this.arrowsNow;
+  }
+
+  get extrasWanted(): ExtraKeys {
+    return this.extrasNow;
+  }
+
+  /** Which extra keys the open launcher wants now (it says, as its rows and field change). */
+  extras(want: ExtraKeys): void {
+    if (sameKeys(this.extrasNow, want)) return;
+    this.extrasNow = want;
+    this.onExtras?.(want);
   }
 
   /** What ← and → should do now (the open launcher says, as its selection moves). */
@@ -173,6 +225,11 @@ export class LauncherKeys {
     const pick = /^launcher-pick-([1-9])$/.exec(name);
     if (pick) {
       this.command({ kind: "pick", digit: Number(pick[1]) });
+      return true;
+    }
+    const option = /^launcher-option-([1-9])$/.exec(name);
+    if (option) {
+      this.command({ kind: "option-pick", digit: Number(option[1]) });
       return true;
     }
     const command = COMMANDS[name];

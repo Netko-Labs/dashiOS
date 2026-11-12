@@ -2,12 +2,13 @@ import { expect, test } from "bun:test";
 import { type Manifest, parseManifest } from "@dashi/applet";
 import type { Outcome, Shown } from "../src/actions/types.ts";
 import { AppletCommands, type CommandTimers, commandAddress } from "../src/applets/commands.ts";
-import { abilityLines, commandsLine } from "../src/applets/consent-sheet.tsx";
-import { AppletGrants } from "../src/applets/grants.ts";
-import { sameManifest } from "../src/applets/index.ts";
 import { systemdUnits, UNIT_LIMITS } from "../src/applets/launcher.ts";
-import { AppletConnection } from "../src/applets/server.ts";
+import { AppletConnection } from "../src/applets/lib/connection.ts";
+import { sameManifest } from "../src/applets/lib/extra.ts";
+import { AppletGrants } from "../src/applets/lib/grants.ts";
 import { ExtrasStore } from "../src/extras/index.ts";
+import { abilityLines, commandsLine } from "../src/shared/applet-store/consent-sheet.tsx";
+import { settle } from "./support/time.ts";
 
 const MANIFEST = {
   id: "dev.example.weather",
@@ -56,7 +57,7 @@ function harness() {
   const extras = new ExtrasStore();
   const grantsAsked: unknown[] = [];
   const grants = new AppletGrants({
-    request: async (_method, params) => {
+    appletClients: async (params) => {
       grantsAsked.push(params);
       return {};
     },
@@ -85,7 +86,6 @@ function harness() {
   };
   const conn = new AppletConnection(4242, wire, { extras, grants, commands });
   const send = (message: unknown) => conn.receive(new TextEncoder().encode(`${JSON.stringify(message)}\n`));
-  const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
   const runs = () => written.filter((message) => message.type === "run");
   const action = (id: string) => {
     const found = commands.actions().find((each) => each.address === commandAddress("dev.example.weather", id));
@@ -128,7 +128,7 @@ test("an applet in development shows its own commands, even when an older copy w
 test("a newer applet gets the shell's version; an older one stays at 2 and can't send version 3's messages", () => {
   const newer = harness();
   newer.send({ type: "hello", protocol: 7, manifest: MANIFEST });
-  expect(newer.written[0]).toEqual({ type: "welcome", protocol: 3 });
+  expect(newer.written[0]).toEqual({ type: "welcome", protocol: 5 });
   const older = harness();
   older.send({ type: "hello", protocol: 2, manifest: MANIFEST });
   expect(older.written[0]).toEqual({ type: "welcome", protocol: 2 });

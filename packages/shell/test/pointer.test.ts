@@ -1,19 +1,17 @@
 import { expect, test } from "bun:test";
 import { PointerSync, pointerCommands } from "../src/pointer.ts";
-import { parseSettings } from "../src/settings.ts";
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
+import { parseSettings } from "../src/settings/settings.ts";
+import { fakeCompositor } from "./support/compositor.ts";
+import { settle } from "./support/time.ts";
 
 function sync(gateOn: boolean) {
   const requests: [string, unknown][] = [];
   const commands: string[] = [];
   const pointer = new PointerSync({
-    compositor: {
-      request: async (method, params) => {
-        requests.push([method, params]);
-        return {};
-      },
-    },
+    compositor: fakeCompositor(async (method, params) => {
+      requests.push([method, params]);
+      return {};
+    }),
     gate: gateOn ? { on: true } : { on: false, why: "test" },
     has: (program) => program === "gsettings",
     run: async (command) => {

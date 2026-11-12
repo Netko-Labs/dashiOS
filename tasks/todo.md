@@ -5,22 +5,23 @@ verification track. Nothing starts until the owner makes the picks at the
 page's end. Each area is its own branch, reviewed in the VM on video, as in
 0.4.0.
 
-## Picks to make
-- [ ] The order of the waves (recommended: as written)
-- [ ] Where the text model lives (recommended: mirin's TextInput, a document view on top)
-- [ ] How a close asks (recommended: a close request mirin hands to the app)
-- [ ] One file browser (recommended: Files' core as a component)
-- [ ] The Applet Store (recommended: a section of Software)
-- [ ] Text size (recommended: every Dashi window, through @dashi/ui's type scale)
-- [ ] KDE runners (recommended: Wave 3, read-only behind the registry)
-- [ ] D3cold for the graphics card (the owner's call)
+## Picks (made 2026-11-06)
+- [x] The order of the waves: as written
+- [x] Where the text model lives: mirin's TextInput, a document view on top
+- [x] How a close asks: a close request mirin hands to the app
+- [x] One file browser: Files' core as a component
+- [x] The Applet Store: a section of Software
+- [x] Text size: every Dashi window, through @dashi/ui's type scale
+- [x] KDE runners: left out until someone asks
+- [x] D3cold: off until the next reboot (2026-11-06); the drops came with the card busy, so it isn't the cause
 
 ## Wave 1 · Platform foundations
 - [ ] mirin text model: caret placement, drag and ⇧ selection, Cut and Copy (L)
 - [ ] Focus model: Tab, arrows in groups, a focus ring; KeySink on onKeyDown (L; KB-1, KB-2)
+- [x] The graphics card sleeps: dashi-comp opens the NVIDIA card only while a screen or a buffer needs it (M; found 2026-11-06; `feat/0.5-card-sleeps`: every opening probed off the event loop, a card gone while open let go off the event loop; VM: the single-GPU session only; the laptop check (D3cold on battery, a screen on the card's port) waits for a reboot)
 - [ ] Modifiers on onPress (S; PA-10)
-- [ ] A close that asks: ❖Q and the close control on a busy Terminal (M; PA-4)
-- [ ] An undo stack in @dashi/ui (M; PA-2)
+- [x] A close that asks: ❖Q and the close control on a busy Terminal (M; PA-4)
+- [x] An undo stack in @dashi/ui (M; PA-2)
 - [ ] A visibility signal; Activity Monitor stops sampling while hidden (S; PA-15)
 - [ ] A settings registry behind every row (M; today `SPOT_ROWS`)
 - [ ] Privacy & Security pane: review and revoke (M)
@@ -28,38 +29,119 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] The missing controls: pop-up button, progress, one Slider, one alert frame, menu separators (L; UI-1, UI-2, UI-4, UI-5, PA-5, PA-9)
 
 ## Wave 2 · The apps' big ideas
-- [ ] One file browser everywhere, with Files' keyboard, selection, Replace / Keep Both / Skip, free names, one icon family (L; PA-3, IC-2)
-- [ ] Settings entries with Undo and "Recently changed"; search in the header; Agents as a consent dashboard (M)
-- [ ] Software as a trust card, applets folded in; permissions block, daily update check, one queue, the state chip (L; VS-5)
-- [ ] Activity Monitor app-first: rows by app, an Energy tab (M; CP-6)
-- [ ] Calendar's grid as the editor: drag, the clicked occurrence, time zones (L; PA-11)
-- [ ] Notes as a live page; an Edit menu, ❖B and ❖I (L; PA-8)
-- [ ] Editor's document surface with versioned autosave (L)
-- [ ] Terminal shell integration; tabs in the title bar; a fixed cell grid (M; VS-1, VS-4)
-- [ ] Preview's page strip; progress, rotation, Copy, Export, Print, recent files (L; PA-6)
-- [ ] Calculator's expression line and tape; a window size that behaves (M; LA-3)
+- [x] One file browser everywhere, with Files' keyboard, selection, Replace / Keep Both / Skip, free names, one icon family (L; PA-3, IC-2; `feat/0.5-files`, VM: not yet)
+- [ ] Left from the Files and portal roasts: a drag-out selection box (needs mirin to report a scroll view's offset), scrolling the selection into view from the keyboard (the same), Peek through Preview's renderers, a slow second click to rename, per-folder view settings and the window size, shortcuts drawn in `PopupMenu`, a copy's counts and time left, async thumbnails and completions, mount watching instead of `lsblk`, other disks' Trash, editable Favorites, New Window, Extract, Open in Terminal, Copy Path, column widths, a collapsible sidebar; region-aware dates and drops from Files in the chooser; `dashi-dialog`'s `--forms`, `--color-selection`, `--notification`, `--icon`; the portal's other dialogs (print, access, frames, copy, checkboxes, calendar, progress); Calendar's and Settings' typed-path fallback with no portal (M)
+- [x] Settings entries with Undo and "Recently changed"; search in the header; Agents as a consent dashboard (M; `feat/0.5-settings-undo`, VM: not yet)
+  - Settings: left for later (docs/roast/settings.md, "Where it went"): Appearance's previews over your wallpaper and Auto's times; a "Let agents connect" switch and denied agents; Passwords split from Payments with reveal, copy, edit and search; one `Failure` in @dashi/ui; a View menu of panes, Back and Forward (❖[ ❖]); Setup's Return and Esc; a Dashi name for Night Shift; one "Menu bar" group; slider values, headings and button copies; the rest of the Title Case pass; per-app Notifications, password delay, shortcuts, manual time, renaming the computer; Battery & Power's live value, Charge Now's reason, the lid summary; settings.json written off the shell's thread and an error boundary; Setup's dots, Install as primary, a shorter Agents page
+- [x] Software as a trust card, applets folded in; permissions block, daily update check, one queue, the state chip (L; VS-5)
+- [x] More than one applet catalog: Catalogs… in Menu bar applets adds a team's or your own (checked with its key before it is saved), merged with Dashi's ("From <name>", never reviewed), updates and the kill switch per catalog (M; `feat/0.5-catalogs`, VM: 24-catalogs)
+- [x] Activity Monitor app-first: rows by app, an Energy tab (M; CP-6; `feat/0.5-activity`, VM: not yet). Apps by their folder, Flatpak scope or desktop entry (`src/process-apps/`, shared with the battery monitor), helpers folded under them; Energy (% CPU, % GPU from DRM fdinfo, wakeups); the battery menu opens it at the app (`open` on the menus channel); the roast's rest in `docs/roast/activity-monitor.md`
+- [x] Calendar's grid as the editor: drag, the clicked occurrence, time zones (L; PA-11; `feat/0.5-calendar`, VM: not yet)
+- [x] Notes as a live page; an Edit menu, ❖B and ❖I (L; PA-8; `feat/0.5-notes`, needs mirin's styled-runs patch, VM: not yet)
+- [x] Editor's document surface with versioned autosave (L; `feat/0.5-editor`, mirin patch `mirin-editor.patch`: `TextInput` `highlights` and `lineNumbers`; VM: not yet)
+  - Left from the Editor roast (docs/roast/editor.md): per-keystroke O(n) passes and the 4 MB cap, the view following the caret, Reopen with Encoding, Replace one at a time and a find row, wrap/tabs/auto-indent/Print/syntax, tabs, a Settings pane
+- [x] Terminal shell integration; tabs in the title bar; a fixed cell grid (M; VS-1, VS-4; `feat/0.5-terminal`, VM: not yet)
+- [x] Preview's page strip; progress, rotation, Copy, Export, Print, recent files (L; PA-6; `feat/0.5-preview`, VM: not yet)
+  - Later, from the roast: find, links and the outline in a PDF; password PDFs (poppler takes the password only on its command line); markup and crop; a slideshow; animated GIFs; writing a rotation into the file (lossless JPEG); tabs or Open in New Window; ⌃-wheel and pinch zoom (mirin: modifiers on `wheel`); the window's real device scale (mirin: the host reports it); File › Open Recent as a submenu (the menus channel has no submenus)
+- [x] Calculator's expression line and tape; a window size that behaves (M; LA-3; `feat/0.5-calculator`, mirin: `mirin-calculator.patch` (minSize, setSize), VM: not yet)
+- [x] Automatic refresh rate: the built-in screen at its top rate plugged in, about 60 Hz on battery (Settings › Displays; a picked rate turns it off; a rate set another way holds until the power source changes); Battery & Power's "On battery" names the graphics card and the refresh rate (S; `feat/0.5-refresh-on-battery`, screens in review 28, the switch itself: laptop)
+- [x] Say it when the graphics mode changes (S; PA-16; `feat/0.5-gpu-notice`): Automatic's switch on unplug or plug (or a screen on the card's port) is said once, after it has held 6 s and at most once in 30 s, with the refresh rate when it moved too ("Unplugged, so the graphics card sleeps and the screen runs at 60 Hz to save battery.", Use Hybrid; "Plugged in, …", Graphics Settings…); a switch that waited for apps replaces the waiting notice, and a wait that ends without one takes it down; the person's own pick, a failure, a one-GPU machine: nothing. Graphics notices have one place (`graphics/notice-place.ts`). VM: review 51-gpu-notice, through `bin/dashi-graphics-preview.tsx` (a made-up two-GPU laptop; the VM has one GPU)
+- [x] Wave 1's nits from the VM reviews (11–14): the bar names an Access dialog; log-out asks one app at a time; no stray kombu cell in Terminal; PopUpButton and Slider take the keyboard; the Dock's Quit asks the app's question; "snip" is Screenshot… and the screenshots stay together; ⇧❖5 leaves an agent's recording running; record_screen's real length (S; `fix/0.5-wave1-nits`, VM: not yet)
+
+- [ ] Emoji in Metal (review 20, A1): every emoji draws blank (Terminal's grid) or as a placeholder (plain Metal text). Fedora's only colour emoji font in a default install, `google-noto-color-emoji-fonts`, is `Noto-COLRv1.ttf` (COLRv1), and the host's rasterizer (swash, via GPUI and cosmic-text 0.14.2) draws COLRv0 and bitmaps (CBDT, sbix) but not COLRv1. Fedora does ship a bitmap one: `twitter-twemoji-fonts` (`Twemoji.ttf`, Twemoji 14.0.2, CBDT; family "Twemoji"), now a Recommends of `dashi`. It doesn't help on its own: the host never asks fontconfig for a fallback; cosmic-text's own list names "Noto Color Emoji" and takes it whenever it is installed (and `default-fonts-core-emoji` installs it), so a fontconfig order would only change GTK and Qt apps, which draw COLRv1 already. In mirin, either: (a) real COLRv1 drawing (skrifa's COLR painter into the glyph atlas), or (b) meanwhile, the host's font fallbacks name "Twemoji" before cosmic-text's list when it is installed (M; mirin)
 
 ## Wave 3 · Launcher and agents
 - [ ] Agent tools that take arguments, as rows (M)
-- [ ] Context chips: "+ this window", "+ selection" (M)
+- [x] The screenshots as rows: Screenshot… (⇧❖5), Screenshot of the Screen (⇧❖3), Screenshot of an Area… (⇧❖4); the keys bind their `dashi://dashi/` addresses (S; `feat/0.5-launcher-screenshot`, VM: not yet)
+- [x] Context chips: "+ this window", "+ selection" (M; `feat/0.5-launcher-agents`: under the field for a hand-off and Ask, the window in front on until dropped, Helium's page by its address; VM: review 26)
+- [x] Agents from the launcher (L; `feat/0.5-launcher-agents`, docs/actions.md "Agents from the launcher"): "Hand it off" first for a task, one row per harness; the grants card once per kind; runs as user services through `dashi-agent`; the menu bar chip and its panel with each run's card and its questions; the empty launcher lists runs (⇥ follow-up, ❖⌫ stop); the done notification; Settings › Agents "Hand off to". VM: review 26, with a stand-in Codex (no harness signed in there). Review fixes: a question shows in one place at a time (the card with the panel open, the sheet with it closed, answered once), each harness its own mark (rows, card, chip, notification); VM: review 26/fixes
+- [x] The menu bar's agent mark and its "…" (M; `feat/0.5-menu-bar`, the approved design 46-menu-bar.html option A, docs/design.html "The menu bar"): one mark for every agent (launcher runs and connections; harness glyphs on discs, up to three then "+N"; the ring while one works; the red dot while one records, sees the screen or uses its pointer; "Waiting for you" only when it needs the person; the tooltip), an agent's recording folded into the red dot and the person's own keeping its timer; connected agents as rows in the agents' panel with Stop and Stop all; the status side giving way into "…" (extras newest first, then Sound, then Wi-Fi), never the menus, never cut in half (the stray "°" of a clipped applet). VM: review 45-menu-bar
+- [x] Agents from the launcher, leftovers (M; `fix/0.5-agents-leftovers`): a shell that restarts picks its runs up again (each run's `run.json` record beside its streams, the `dashi-task-*` units still running, the streams read again; the bridge connects again through the tasks' socket folder, `dashi-mcp.d/`); "turn on dark mode" and "set volume to 30" find the setting before Hand it off (`launcher/ranking/commands.ts`), and Space types on in such words; Codex 0.167.0 and OpenCode 1.19.5 take the flags Dashi gives (`--help`, and a run started signed out); Codex's "Reconnecting…" errors no longer end a run. VM: review 31
+- [ ] Agents from the launcher, left: a real harness signed in (none is in the VM); a question waiting when the shell restarts is lost with its call (the harness hears an error) (S)
+- [x] OpenCode with no account printed no event and never exited, so its card waited at "starting": a turn silent for 30 s now asks on its card ("OpenCode isn't signed in", Sign In…, Keep Waiting, Stop; `agents/handoff/quiet.ts`), and a sign-in or limit error reads plainly (`night/0.5-leftovers`)
+- [x] Sites allowed ahead of time, for an unattended demo (review 50): Settings › Agents' "Sites agents may use" (Add…, Remove; `person` in `sites.json`); every agent opens them with no sheet; no agent adds to it (`night/0.5-leftovers`)
 - [ ] The close fade, 120 ms (S)
 - [ ] A result's flight to the Dock (M)
-- [ ] KDE runners (S)
 - [ ] Tab, Home and End reaching the input method mid-composition (S)
+- [ ] A snippet erases its keyword and pastes in one compositor request, so a paste that can't be sent leaves the keyword as typed (S; PR #2 review, expand.ts)
 - [ ] Orca's first announcement is the field, not the selected row (S)
 - [ ] An applet view's first draw well under 0.7 s (M)
 - [ ] Left from 0.4.0: the green control's press-and-hold menu (M), the bottom edge as a drag zone (S), a title-bar menu with Move to (M), Dashi's apps parent their dialogs (M), late prompts blanked for agents (M), errors in people's words (S)
+- [x] Agents drive Helium through Dashi's extension (L; `feat/0.5-browser-extension`, docs/actions.md "Websites"): open_url, read_page (text with numbered elements; password, card and code fields say only whether they are filled), click_element, fill_element, select_option, press, scroll_page, list_tabs, switch_tab; "Use websites" and consent per site; sign_in, fill_code and pay by `ref`; the native host and its socket (denied to the sandbox); dashi-helium installs the CRX by policy. VM: review 25 (read_page 0.16–0.3 s, a click and its load 0.6–1.1 s, against 2–4 s per screenshot step)
+- [ ] The extension's release key: generate it offline, put its public half in the manifest and the id in the host's manifest, the policy and `EXTENSION_ID` (today's is a development key) (S)
+- [ ] `pay` by `ref` checked in the VM with a test card (S; sign_in and fill_code by `ref` are)
+- [ ] Frames in read_page are listed after the page, not where they sit; a field in a cross-origin frame isn't placed for the mask (it is still never read) (M)
+- [ ] Firefox: the same extension as a WebExtension, its native host manifest under `~/.mozilla/native-messaging-hosts` (M)
+
+## Control Center, the battery panel, applets' controls (`feat/0.5-control-center`; design: `expressive-final.html`, approved)
+- [x] The panel: 344 wide, radius 28, rows 56, no header; wide tiles with a knob (knob toggles, name opens), round tiles with a word, ink sliders standing or lying, the battery row; Dashi green for on with corners 28 → 18 on a 220 ms spring; Light and Dark tokens of its own (`src/control-center/`)
+- [x] The layout per machine (`$XDG_STATE_HOME/dashi/control-center-layout.json` by machine id), packed with no gaps; missing hardware leaves no tile and comes back where it was; the default: Wi-Fi (Ethernet without it), the sliders, Bluetooth, Focus, Dark, Power, Keyboard, the battery; Lock, Night Shift, Graphics, Hotspot, Mirroring and applets' controls in Add
+- [x] Edit mode in the panel (right-click) and Settings › Control Center (a 22nd pane; the window then 760 × 733, now 920 × 640): "−", click to resize, drag and ⌥-arrows to move, Add, Reset · Cancel · Done
+- [x] The keyboard: arrows, Space, Return, ⇧-arrows on a slider, Esc; a purple ring after the keyboard
+- [x] Pages grow out of their tile: Wi-Fi (Wi-Fi Settings…), Bluetooth, Sound, the power mode, the keyboard light, graphics, an applet's choice; restyled, same behaviour
+- [x] The battery panel replaces the battery menu (from the item and the battery row): status, gauge with the limit, "Charge, last 24 h", watts that add up (the apps' share an estimate, rows left out when unknown), the laptop's rows (full charge once, the card's holders, keep-awake), Battery Settings; no power modes there any more
+- [x] Applets' controls: protocol 5, the `controls` permission, `controls.update / on / onOpen`, ≤ 8 controls, ≤ 4 updates a second, last state dimmed and a press starts the applet (docs/applets.md, Version 5)
+- [x] ASUS Control 0.3.0 (`asus-control` `feat/controls`): Lid light, Fans, CPU
+- [x] VM: `dashi-0.5.0-review/41-control-center/` (fake Wi-Fi and Bluetooth, a fixture battery, a virtual sink, the fake G14)
+- [x] Mirroring: dashi-comp shows one screen's picture on another, scaled to fit with black bars (IPC `mirror`, outputs/mirror.rs, render/mirror.rs); the tile (in Add, there only with two screens) and Settings › Displays' "Mirror displays" show the built-in screen (the main one without it) on the others (`display-config/mirror.ts`). VM: nested (`DASHI_NESTED_SCREEN`), review 59; two real heads not yet
+- [x] The rows of a page by the keyboard: ↑ ↓ from the header's switch down the rows, Space and Return press, the tiles' ring (`page-keys.ts`; `night/0.5-menubar`); a page's slider (Sound's volume) and Bluetooth's Search Again are not reached yet
+- [ ] A slider's or a status's 30-minute line on a large tile (`spark`, controls.html § 4) (S)
+- [ ] Per-app watts measured, not estimated, where the machine can say (RAPL through dashi-hardware) (M)
+- [ ] Hotspot on a machine with Wi-Fi: checked in code (nmcli), not on hardware (S; laptop)
+
+## Settings in Control Center's language (`feat/0.5-settings-redesign`; design: `settings-final.html`, approved)
+- [x] One chrome row: the lights and search on the sidebar's top row, the pane's title as the content's 56-tall row with "· detail"; the header strip gone (Recently changed is a pane, under You)
+- [x] Control Center's parts shared (`src/shared/controls/`: tokens, spring, slider math, knob, chip, ink fill, limit bar, ring, switch, segmented pills, ink slider, pill buttons); Control Center, the battery panel and the pages draw with them
+- [x] The sidebar: knob pills, the look group then Connect, This laptop, You; the chosen pane green; Agents' count of agents waiting; it scrolls and keeps the chosen pane in view; Wi-Fi, Users, Privacy named as drawn (the old names search words)
+- [x] Heroes: Appearance's themes, Displays' display at its shape (several: each, press to choose; Arrange: the arrangement), Battery & Power's charge, gauge and 24 h line (unknown figures left out), Control Center's miniature with the editor behind Edit; About's and Users' pictures
+- [x] Every other pane restyled on the same parts; every setting kept and in the registry, found by the search, lit where it lands
+- [x] Keyboard: Tab, arrows in the sidebar, pills, themes and sliders, the purple ring, Esc (the search; the Control Center editor's Cancel), ❖F; the editor takes the window's keys as the panel does
+- [x] The window: 920 × 640 (was 760 × 733)
+- [x] VM: `dashi-0.5.0-review/44-settings/` (every pane Light, the drawn four Dark, search, keyboard, the editor; Battery & Power on a fixture in the preview harness `bin/dashi-settings-preview.tsx`, the VM has no battery)
+- [ ] Seen only in unit tests, not in the VM: Agents' count (no agent waiting), Displays' Brightness and Refresh rows (no backlight, one rate), Battery & Power's "On battery" row, the applets card (no applet running) (S; laptop)
+- [ ] Accent and Reduce transparency are drawn in Appearance but Dashi has neither; left out until they exist (M; owner's call)
+- [ ] Display brightness shows only where there is a backlight (none in the VM): check it on the laptop (S; laptop)
+- [ ] The Keyboard and region pickers' lists still wear @dashi/ui's selection look, not a green pill (S)
+
+## Settings polish from the critics' review (`feat/0.5-settings-polish`; review 47-settings-roast, the owner's picks)
+- [x] Bugs: Sound with no microphone is one row and no input controls; the editor's "−" stays on top after a resize (its own layer, panel and Settings); the charge limit is one control whose title follows its slider; keyboard layout names wrap; the layout has one name (row, picker)
+- [x] Pill rows past five fold: four + "More…" in Dashi's menu, a hidden value in use as the fourth pill (`shared/controls/fold.ts`); the timers, Displays' scale and resolution, Night Shift's hours
+- [x] Automatic once (the themes; its hours a row while chosen); one left edge per card (`settings-app/lib/edge.ts`'s rule, checked by each card; row glyphs in the registry); Done, Cancel and Reset in ink; search one result per setting with its glyph and pane, lit in ink; Displays' facts once and "native" on the native size; distinct Desktop & Dock, Trackpad, Keyboard glyphs; the miniature's glyphs and words with room; Recently changed's "by you · was on, 10 min ago"
+- [ ] After Esc the editor's words came back off-centre in review 44's stills (taken before `02337a5`); not seen at the release head or after, in the panel or in Settings (review 48)
+- [ ] Not taken (the owner's call): R1, R5, R6, T8, K3, D8
+- [ ] The region picker's eleven continents are a picker's filter, not a setting's pill row: left as they are (S)
+
+## Settings' scroll in a small window (`fix/0.5-settings-scroll`; review 52-settings-scroll)
+- [x] A page scrolls to its last line: a line pulled up under a card (`TUCK`: Settings' Caption, Date & Time's line, @dashi/ui's Caption) no longer keeps its size, which made mirin's taffy size the page's column short by the margin times the line's height; a page's content column never shrinks (a row of wrapped pills was guessed short); Setup's frame holds its page the same way (`test/settings-scroll.test.tsx`)
+- [x] Nothing cut off sideways: a row's words keep 120 beside their control, so pills wrap first; the least window is 744 × 300 (`SETTINGS_WINDOW`: the sidebar, the margins and a knob, words and slider across; the title and Displays' hero down)
+- [x] "More…" and any `PopupMenu` taller than the window fits it and scrolls its rows (`menuFits`)
+- [x] mirin: the taffy fix for a negative margin on an item that doesn't shrink (`52-settings-scroll/mirin-a-taffy-negative-margin.diff`); then `TUCK` can keep `flexShrink: 0` again (the owner's call)
+- [x] mirin: `minWidth`/`minHeight` on a warm host's `open` (`52-settings-scroll/mirin-b-open-min-size.diff`); then `overlay.tsx`'s `pick` passes them to a host that knows them, and Settings' least size holds (today only a host started for it holds it)
+- [x] A slider's row exactly at its words' least width grew tall in mirin's layout: taffy's cache handed a flex container clamped to its `min-width` the height its words had wrapped word by word (mirin's taffy fork, `compute_flexbox_layout`); the least window is 744 again, nothing to spare (`night/0.5-leftovers`)
+- [ ] At exactly 744 (scale 1.75) Mouse's card keeps about 75 points empty under its last row, though every row keeps its height; at 760 it doesn't (review 59, `01-slider-row-mouse-744.png`): another height from a pass at another width, likely the same family in mirin's taffy (S)
+- [x] The wheel over an open menu also scrolls the page under it: mirin's `occlude` now takes the wheel too (`night-menubar` in mirin; `night/0.5-menubar`)
+
+## The menu bar by the keyboard, and leftovers (`night/0.5-menubar`; review 58-menu-bar-keys)
+- [x] ⌃F2 moves the keyboard to the menu bar: ← → across the menus and the status items as drawn, Return/Space/↓ open, ← → in a menu go to the next title, Esc back to the bar then out, the purple ring inside each item; a screen reader hears each item (`menus/bar-keys.ts`, the controller's `focusBar`)
+- [x] The agents' panel: a connected agent's row says how long it has recorded or seen the screen, live (`agents/watch-clock.ts`)
+- [x] The wheel over an open menu (mirin's `occlude`), and Control Center's page rows by the keyboard (above)
+- [ ] Inside a bar menu, a screen reader hears the menu (role menu, rows menuitem) but not each row as ↑ ↓ light it: the highlight is not focus (S)
+- [ ] An arrow pressed at once after ⌃F2 (or a click on a title) can reach the window under the bar before the popover's surface has the keyboard (seen twice in review 58, on a session's first popover) (S)
 
 ## Wave 4 · The open design rules
 - [ ] CO-6: 3:1 control edges (S)
 - [ ] UI-6: Enter on a bare Sheet follows the risk (S)
-- [ ] PA-12: the chooser's drives and real icons; dashi-dialog --file-selection (M)
+- [x] PA-12: the chooser's drives and real icons; dashi-dialog --file-selection (M; with the file browser, `feat/0.5-files`)
 - [ ] CP-7: pane names from the pane list (S)
 - [ ] Text size beyond the launcher (M; TY-1)
-- [ ] The rest of the tagged rules: CO-2, CO-5, CO-8, TY-1, LA-1, LA-2, RA-1, DE-1, MO-3, UI-3, KB-4, PA-14, CP-1, CP-3, CP-5 (M)
+- [ ] The rest of the tagged rules: CO-2, CO-5, CO-8, TY-1, LA-1, RA-1, DE-1, MO-3, UI-3, KB-4, PA-14, CP-1, CP-3, CP-5 (M)
 
 ## Verification (alongside)
+- [x] Before 0.5 ships: the Applet Store skips an applet whose manifest it can't read (a permission it doesn't know) instead of refusing the whole index ("1 applet needs a newer Dashi" under the list; the kill switch still reads its pulled list), and an installed applet whose manifest no longer reads is listed as "Needs an update", not left out (`night/0.5-store`, VM: 57-applet-store)
+- [ ] ASUS Control 0.3.0 (Netko-Labs/dashi-applets#3, now 0.3.0 in place of the unreleased 0.2.0; `power.mode` and `controls`) stays a draft until 0.5 is on main: the catalog's CI checks with dashiOS `main`, which doesn't know those permissions, and Dashi 0.4 refuses an index that lists them, whole. Then: the catalog's `build-index.ts` should refuse an index with `skipped` entries, and keep each version's own `dashi` range (it gives every version the newest one's, so 0.1.0 would read `>=0.5`)
 - [ ] Real hardware: each mode, charge limit 80 across a reboot, Curve Optimizer under load, fan curves, Integrated on battery, Steam through Xwayland, ASUS Control's panes
+- [ ] The G14: unplug, one notice about 6 s later ("Using the built-in graphics", with 60 Hz); plug in, "The graphics card is on"; a wiggled cable says nothing or one thing; Steam on the card: the waiting notice, then "Steam quit, …" in its place
+- [ ] The G14: unplugged, eDP-1 goes to 60 Hz about 5 s later at 2880 × 1800 and 175%; plugged in, back to 120 Hz; a loose cable doesn't flicker; a rate picked in Displays stays
 - [ ] Live Claude and GPT APIs, with the owner's keys as tokens
 - [ ] Codex and OpenCode for real (the 0.4.0 video's OpenCode was a stand-in)
 - [ ] Claude Code in the VM (verified only on the laptop)
@@ -449,7 +531,7 @@ it in the VM.
       and apps) through dashi-extras and pkexec
 - [x] Anaconda profile for Dashi (the installer creates the account)
 - [ ] mirin: a clipboard API (wl-copy shows up as an app for a moment)
-- [ ] mirin: a way to hold a window open to ask (the Editor's unsaved changes)
+- [x] mirin: a way to hold a window open to ask (the Editor's unsaved changes; `MIRIN_METAL_CLOSE=ask`)
 - [x] mirin: dynamic window titles (`setTitle`; Terminal uses them on the standard bar)
 - [ ] mirin: text selection in TextInput
 - [x] Menu bar extras: the tray (StatusNotifierItem host + dbusmenu, src/tray/), the applets
@@ -468,8 +550,13 @@ it in the VM.
 - [ ] Terminal and Text Editor: the close control and ❖Q ask too (needs the mirin item above)
 - [x] Text Editor: ❖W asks like File › Close, unsaved text kept as it is typed, a window title
       per document, Revert asks (and is one Undo step), the caret stays put on ❖S and after sheets
-- [ ] Terminal: wide-character width check, mouse reporting to programs,
-      Kitty graphics, cursor blink, URL detection, preferences
+- [ ] Terminal: mouse reporting to programs (the wheel is ↑ ↓ in full-screen programs already),
+      Find in the scrollback, Kitty graphics, cursor blink, URL detection, a preferences pane, split panes
+      (docs/roast/terminal.md, "Where it stands")
+- [ ] Terminal: a notice when a long command ends in a window behind; the Dock's attention dot
+      for the bell; a hollow cursor in a window without focus (mirin reports no window focus yet);
+      middle-click paste, ⇧-click, a tab's middle-click close (PointerInfo has no button);
+      tabs dragged to reorder or out to a window, renamed; PTY writes off the main loop
 - [ ] A Dashi-native installer front end over Anaconda
 
 ## Later
@@ -479,6 +566,9 @@ it in the VM.
       Switch) to `@mirinjs/metal-ui`, styled with Dashi's theme
 - [ ] Theme tokens: Dashi's palettes as a metal-ui theme, so metal-ui
       components and `@dashi/ui` paint from the same colors
+- [ ] Calendar, after 0.5.0's grid: a VTIMEZONE written for a zone a file had none for;
+      Subscribe to a URL; a second alert and travel time; a custom calendar color
+      (docs/roast/calendar.md, "Where this went")
 
 ### Screen recording and dogfooding the agent integration
 
@@ -497,6 +587,5 @@ it in the VM.
       the debug compositor uses a whole core at 60 copies a second
 - [ ] The consent sheet doesn't fit small screens (640×480: its buttons are
       off screen) and Return doesn't answer it
-- [ ] The menu bar's agent pill wraps "Waiting for you" onto two lines
 - [ ] After a shell restart in the VM, new Metal windows sometimes don't draw
       (black, or stale until a real key press); a reboot fixes it

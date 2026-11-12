@@ -1,13 +1,16 @@
 import { expect, test } from "bun:test";
-import type { CompositorEvent } from "../src/compositor.ts";
+import type { CompositorEvent } from "../src/compositor/events.ts";
+import { outputsOf } from "../src/compositor/outputs.ts";
 import { outputScales, startXwaylandScaling, type XwaylandChoice, xResources, xwaylandScale } from "../src/xwayland-scale.ts";
+import { fakeCompositor } from "./support/compositor.ts";
+import { settle } from "./support/time.ts";
 
 test("Xwayland takes the largest screen scale, never below 1", () => {
   expect(xwaylandScale([1, 1.75])).toBe(1.75);
   expect(xwaylandScale([])).toBe(1);
   expect(xwaylandScale([0.5, Number.NaN])).toBe(1);
-  expect(outputScales({ outputs: [{ scale: 2 }, { scale: 3, enabled: false }, { name: "x" }] })).toEqual([2]);
-  expect(outputScales(null)).toEqual([]);
+  expect(outputScales(outputsOf({ outputs: [{ name: "a", scale: 2 }, { name: "b", scale: 3, enabled: false }, { scale: 4 }, { name: "x" }] }))).toEqual([2, 1]);
+  expect(outputScales([])).toEqual([]);
 });
 
 test("X resources say the dpi and cursor size for the scale", () => {
@@ -21,21 +24,22 @@ test("the scale goes to the compositor, and the resources once Xwayland is ready
   const merged: string[] = [];
   const events: { send?: (event: CompositorEvent) => void } = {};
   let xwayland: "starting" | "ready" = "starting";
-  const compositor = {
-    request: async (method: string, params?: unknown) => {
+  const compositor = fakeCompositor(
+    async (method, params) => {
       requests.push([method, params]);
-      return method === "outputs" ? { outputs: [{ scale: 1.5 }] } : {};
+      if (method === "session") return { waylandDisplay: "wayland-1", display: ":0", xwayland, pointer: null, locked: false };
+      return method === "outputs" ? { outputs: [{ name: "eDP-1", scale: 1.5 }] } : {};
     },
-    session: async () => ({ waylandDisplay: "wayland-1", display: ":0", xwayland, pointer: null }),
-    on: (handler: (event: CompositorEvent) => void) => {
-      events.send = handler;
-      return () => {};
+    {
+      on: (handler: (event: CompositorEvent) => void) => {
+        events.send = handler;
+        return () => {};
+      },
     },
-  };
-  const settle = () => new Promise((resolve) => setTimeout(resolve, 5));
+  );
   const choice: XwaylandChoice = { scaling: "sharp", pointerSize: 24 };
   const scaling = startXwaylandScaling({
-    compositor: compositor as never,
+    compositor,
     mergeResources: async (display, resources) => {
       merged.push(`${display} ${resources}`);
       return true;
@@ -66,7 +70,7 @@ test("the scale goes to the compositor, and the resources once Xwayland is ready
   choice.scaling = "stretched";
   scaling.refresh();
   await settle();
-  expect(requests.at(-1)).toEqual(["xwayland-scale", { scale: 1 }]);
+  expect(requests.filter(([method]) => method === "xwayland-scale").at(-1)).toEqual(["xwayland-scale", { scale: 1 }]);
   expect(merged.at(-1)).toBe(":0 Xft.dpi:\t96\nXcursor.size:\t32\n");
   scaling.stop();
 });

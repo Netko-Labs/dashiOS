@@ -1,120 +1,170 @@
 /**
- * What the panes are built from, in the way System Settings on the Mac
- * looks: a page with a title, then grouped cards of rows, choices as pills,
- * sliders, and buttons. The cards, rows, pills, and buttons are Dashi's
- * shared controls (../ui/, which the first-party apps use too); the page and
- * the slider are Settings' own. Everything paints with the shell's live
- * palette, so Dark Mode repaints Settings too.
+ * What the panes are built from, in Control Center's language (the approved
+ * design, docs/design.html "Settings"): a page whose title is the content's
+ * one 56-tall row ("Displays · Built-in"), an optional hero (a picture of
+ * what the pane controls), then cards (radius 24, the off tile's color) of
+ * 56-tall rows, a row's glyph on a round knob, hairlines between them.
+ * Choices are segmented pills, sliders the ink flat slider, switches show
+ * their track when off, and a button that goes ahead is ink: green only ever
+ * means "on". Everything paints with the live Dark Mode.
  */
 
-import { useColors } from "@dashi/ui";
+import { Tile, useColors } from "@dashi/ui";
 import { type Bounds, ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { fractionAt, fractionOf, type Range, valueAt } from "./controls.ts";
-import { PageContext } from "./spot.tsx";
+import { createContext, type ReactNode, useContext, useMemo, useRef } from "react";
+import { FoldedChoices } from "../shared/controls/folded.tsx";
+import { InkSlider } from "../shared/controls/ink-slider.tsx";
+import { ControlSwitch } from "../shared/controls/inputs.tsx";
+import { useControlColors } from "../shared/controls/palette.ts";
+import { PAGE } from "./lib/row.tsx";
+import { PAGE_GAP, PageContext } from "./spot.tsx";
 
-export { Button, Caption, type Choice, Choices, Group, Note, Row, type Surface, Tile, useSurface } from "@dashi/ui";
-export { Spot } from "./spot.tsx";
+export { Tile };
+
+/** A page's content is at most this wide, centered in a wider window (LA-2). */
+export const PAGE_MAX_WIDTH = 720;
+
+/** A hero: a picture of what the pane controls (the themes, the display, the battery, the panel), on a card with rounder corners. */
+export function Hero({ children, testID, padding = 14 }: { children: ReactNode; testID?: string; padding?: number }) {
+  const colors = useControlColors();
+  return (
+    <View
+      {...(testID !== undefined ? { testID } : {})}
+      style={{ flexShrink: 0, flexDirection: "row", alignItems: "stretch", gap: 12, padding, borderRadius: PAGE.heroRadius, backgroundColor: colors.off }}
+    >
+      {children}
+    </View>
+  );
+}
+
+export interface Choice<T> {
+  value: T;
+  label: string;
+}
 
 /**
- * A pane: its title, then its content scrolling under it when it is taller than the window. With
- * the unified title bar the title lives in the window's toolbar (view.tsx), so the page starts
- * with its content.
+ * Choices as segmented pills, the chosen one green with the tighter corner;
+ * past five, the four commonest (`common`, else the first four) and "More"
+ * for the rest, the one in use always among the pills (shared/controls/fold.ts).
  */
-export function Page({ title, children }: { title: string; children: ReactNode }) {
-  const colors = useColors();
-  const unified = useWindowChrome().titleBar === "unified";
+export function Choices<T extends string | number>(props: {
+  options: ReadonlyArray<Choice<T>>;
+  value: T;
+  onChange: (value: T) => void;
+  testID: string;
+  disabled?: boolean;
+  common?: readonly T[];
+}) {
+  return <FoldedChoices {...props} />;
+}
+
+/** A setting's slider: Control Center's flat ink slider, its glyph on a chip and its value at the right. */
+export function Slider(props: {
+  value: number;
+  range?: { min: number; max: number; step: number };
+  width?: number;
+  testID: string;
+  onChange?: (value: number) => void;
+  onCommit?: (value: number) => void;
+  glyph?: string;
+  format?: (value: number) => string;
+  disabled?: boolean;
+}) {
+  return <InkSlider {...props} />;
+}
+
+/** An on/off switch: its track shows when off, Dashi green when on. */
+export function Switch({ on, testID, onChange, disabled }: { on: boolean; testID: string; onChange?: (on: boolean) => void; disabled?: boolean }) {
+  return <ControlSwitch on={on} testID={testID} {...(onChange ? { onChange } : {})} {...(disabled ? { disabled } : {})} />;
+}
+
+/** The settings file couldn't be written just now (view.tsx provides it; the page says so at its top). */
+export const SaveError = createContext(false);
+
+/**
+ * Where the title's line sits in its 56 row: on the window lights' centre,
+ * so the lights, the sidebar's search and the title share one line (one
+ * chrome row); without lights, the row's middle.
+ */
+export function titleLine(controls: Bounds | null): number {
+  if (!controls) return PAGE.title / 2;
+  return Math.min(Math.round(controls.y + controls.height / 2), PAGE.title / 2);
+}
+
+/** The title row: the pane's name, 18 SemiBold, and an optional "· detail"; where the window is grabbed on this side. */
+function TitleRow({ title, detail }: { title: string; detail?: string | undefined }) {
+  const colors = useControlColors();
+  const { controls } = useWindowChrome();
+  const line = titleLine(controls);
+  return (
+    <View
+      testID="settings-title"
+      dragRegion
+      style={{
+        height: PAGE.title,
+        flexShrink: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        paddingLeft: PAGE.margin,
+        paddingRight: PAGE.margin,
+        // Centred on `line`: the row's middle moved up by what is left below it.
+        paddingBottom: PAGE.title - 2 * line,
+      }}
+    >
+      <View style={{ flexShrink: 0 }}>
+        <Text style={{ fontSize: 18, fontWeight: "semibold", color: colors.text }}>{title}</Text>
+      </View>
+      {detail !== undefined && detail !== "" && (
+        <View testID="settings-title-detail" style={{ flexShrink: 0 }}>
+          <Text style={{ fontSize: 12.5, color: colors.muted }}>{`· ${detail}`}</Text>
+        </View>
+      )}
+      <View style={{ flex: 1 }} />
+    </View>
+  );
+}
+
+/**
+ * A pane: its title row, then its hero and cards, scrolling under the title
+ * when taller than the window, at most `PAGE_MAX_WIDTH` wide. When the last
+ * change couldn't be saved, the page says so first, in plain words (PA-6).
+ */
+export function Page({ title, detail, children }: { title: string; detail?: string; children: ReactNode }) {
+  const { critical } = useColors();
+  const unsaved = useContext(SaveError);
   const testID = `pane:${title}`;
   // Where the page is, so a row asked for by its address can be scrolled to (spot.tsx).
   const bounds = useRef<Bounds | null>(null);
   const page = useMemo(() => ({ testID, bounds }), [testID]);
   return (
     <PageContext.Provider value={page}>
-      <ScrollView
-        testID={testID}
-        onLayout={(laid) => {
-          bounds.current = laid;
-        }}
-        style={{ flex: 1, flexDirection: "column", gap: 16, padding: 24, paddingTop: unified ? 8 : 20 }}
-      >
-        {!unified && <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text }}>{title}</Text>}
-        {children}
-      </ScrollView>
+      <View style={{ flex: 1, flexDirection: "column", minHeight: 0 }}>
+        <TitleRow title={title} detail={detail} />
+        <ScrollView
+          testID={testID}
+          onLayout={(laid) => {
+            bounds.current = laid;
+          }}
+          style={{ flex: 1, flexDirection: "column", paddingLeft: PAGE.margin, paddingRight: PAGE.margin, paddingBottom: PAGE.margin }}
+        >
+          {/* Never shorter than its content: the scroll range is this column's height, and in a narrow window
+              mirin's layout guesses a row of wrapped pills shorter than it is, so a shrinking column lost its last lines. */}
+          <View
+            testID={`${testID}:content`}
+            style={{ width: "100%", maxWidth: PAGE_MAX_WIDTH, alignSelf: "center", flexShrink: 0, flexDirection: "column", gap: PAGE_GAP }}
+          >
+            {unsaved && (
+              <View testID="settings-error" style={{ paddingLeft: 10, paddingRight: 10 }}>
+                <Text style={{ fontSize: 12, color: critical }}>
+                  Your last change couldn't be saved. Check that your home folder has free space, then try again.
+                </Text>
+              </View>
+            )}
+            {children}
+          </View>
+        </ScrollView>
+      </View>
     </PageContext.Provider>
-  );
-}
-
-const KNOB = 18;
-const TRACK = 4;
-/** A drag that stops moving for this long is saved, in case the release never arrives. */
-const SETTLE_MS = 300;
-
-/**
- * A slider: press or drag on the bar. While dragging it shows the pointer's
- * value; the value is handed to `onCommit` when the button lifts (or the
- * pointer rests), not on every move, so a drag is one write to the file.
- */
-export function Slider({
-  value,
-  range,
-  width = 220,
-  testID,
-  onCommit,
-}: {
-  value: number;
-  range: Range;
-  width?: number;
-  testID: string;
-  onCommit: (value: number) => void;
-}) {
-  const colors = useColors();
-  const [dragging, setDragging] = useState<number | null>(null);
-  // Pointer events carry the bar's bounds; the last layout stands in for one that does not.
-  const laid = useRef<Bounds | null>(null);
-  const pending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(pending.current), []);
-
-  const commit = (next: number) => {
-    clearTimeout(pending.current);
-    setDragging(null);
-    onCommit(next);
-  };
-  const shown = dragging ?? value;
-  const knobLeft = fractionOf(shown, range) * (width - KNOB);
-  return (
-    <View
-      testID={testID}
-      onLayout={(bounds) => {
-        laid.current = bounds;
-      }}
-      onPointer={(event) => {
-        const bar = event.bounds ?? laid.current;
-        if (!bar) return;
-        const next = valueAt(fractionAt(event.x, bar, KNOB), range);
-        setDragging(next);
-        clearTimeout(pending.current);
-        if (event.phase === "up") commit(next);
-        else pending.current = setTimeout(() => commit(next), SETTLE_MS);
-      }}
-      style={{ width, height: KNOB + 4, position: "relative" }}
-    >
-      <View
-        style={{ position: "absolute", left: 0, top: (KNOB + 4 - TRACK) / 2, width, height: TRACK, borderRadius: TRACK / 2, backgroundColor: colors.track }}
-      />
-      <View
-        style={{
-          position: "absolute",
-          left: 0,
-          top: (KNOB + 4 - TRACK) / 2,
-          width: knobLeft + KNOB / 2,
-          height: TRACK,
-          borderRadius: TRACK / 2,
-          backgroundColor: colors.selection,
-        }}
-      />
-      <View
-        style={{ position: "absolute", left: knobLeft, top: 2, width: KNOB, height: KNOB, borderRadius: KNOB / 2, backgroundColor: "#ffffff", shadow: "sm" }}
-      />
-    </View>
   );
 }

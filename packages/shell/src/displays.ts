@@ -10,8 +10,9 @@
  */
 
 import { defaultScale, isBuiltIn, SCALES } from "@dashi/ui";
-import { type Compositor, type Frame, parseFrame } from "./compositor.ts";
-import { parseMonitors, type VrrMode } from "./display-config/monitors.ts";
+import type { Compositor, Frame, Output } from "./compositor/index.ts";
+import { seenSize } from "./compositor/outputs.ts";
+import { monitorsOf, type VrrMode } from "./display-config/monitors.ts";
 import { toWire } from "./display-config/plan.ts";
 
 export { defaultScale, isBuiltIn, SCALES };
@@ -50,29 +51,14 @@ export function scalesFor(screen: Pick<ScreenInfo, "width" | "height">): number[
   return SCALES.filter((scale) => leavesRoom(screen, scale));
 }
 
-/** The screens in an IPC `outputs` answer; malformed entries are skipped. */
-export function parseScreens(answer: unknown): ScreenInfo[] {
-  const outputs = typeof answer === "object" && answer !== null ? (answer as { outputs?: unknown }).outputs : undefined;
-  if (!Array.isArray(outputs)) return [];
-  const number = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
-  return outputs.flatMap((output: unknown): ScreenInfo[] => {
-    if (typeof output !== "object" || output === null) return [];
-    const { name, mode, physicalMm, scale, transform, enabled } = output as Record<string, unknown>;
-    // A monitor that is plugged in but off shows nothing: not a screen.
-    if (enabled === false) return [];
-    const pixels = typeof mode === "object" && mode !== null ? (mode as Record<string, unknown>) : {};
-    const size = typeof physicalMm === "object" && physicalMm !== null ? (physicalMm as Record<string, unknown>) : {};
-    const width = number(pixels.width);
-    const height = number(pixels.height);
-    const current = number(scale);
-    if (typeof name !== "string" || width === null || height === null || current === null) return [];
-    const frame = parseFrame((output as Record<string, unknown>).frame);
-    // A screen on its side is as tall as it is wide: sizes are as a person sees them.
-    const turn = typeof transform === "object" && transform !== null ? (transform as Record<string, unknown>).rotation : 0;
-    const sideways = turn === 90 || turn === 270;
-    const [seenWidth, seenHeight] = sideways ? [height, width] : [width, height];
-    const [seenWidthMm, seenHeightMm] = sideways ? [number(size.height) ?? 0, number(size.width) ?? 0] : [number(size.width) ?? 0, number(size.height) ?? 0];
-    return [{ name, width: seenWidth, height: seenHeight, widthMm: seenWidthMm, heightMm: seenHeightMm, scale: current, ...(frame ? { frame } : {}) }];
+/** The screens with a desktop of their own, as a person sees them. */
+export function screensOf(outputs: readonly Output[]): ScreenInfo[] {
+  return outputs.flatMap((output): ScreenInfo[] => {
+    // A monitor that is plugged in but off shows nothing, and one that mirrors another shows that one: not a screen of its own.
+    if (!output.enabled || output.mirrorOf !== null) return [];
+    const seen = seenSize(output);
+    if (!seen) return [];
+    return [{ name: output.name, ...seen, scale: output.scale, ...(output.frame ? { frame: output.frame } : {}) }];
   });
 }
 
@@ -92,27 +78,27 @@ export function initialScale(screen: ScreenInfo, saved: (name: string) => number
  * screens change. Returns a stop function.
  */
 export function startDisplays(
-  compositor: Pick<Compositor, "request" | "on">,
+  compositor: Pick<Compositor, "outputs" | "outputsConfig" | "output" | "on">,
   saved: (name: string) => number | undefined = () => undefined,
   savedVrr: (name: string) => VrrMode | undefined = () => undefined,
 ): () => void {
   const seen = new Set<string>();
   const apply = async () => {
-    const answer = await compositor.request("outputs");
-    const screens = parseScreens(answer);
-    const monitors = parseMonitors(answer);
+    const outputs = await compositor.outputs();
+    const screens = screensOf(outputs);
+    const monitors = monitorsOf(outputs);
     for (const screen of screens) {
       if (seen.has(screen.name)) continue;
       seen.add(screen.name);
       const vrr = savedVrr(screen.name);
       const monitor = monitors.find((candidate) => candidate.name === screen.name);
       if (vrr && monitor?.vrr.supported && monitor.vrr.mode !== vrr) {
-        await compositor.request("outputs-config", toWire({ outputs: [{ name: screen.name, vrr }] }));
+        await compositor.outputsConfig(toWire({ outputs: [{ name: screen.name, vrr }] }));
         console.log(`dashi-shell: ${screen.name} variable refresh rate ${vrr}`);
       }
       const scale = initialScale(screen, saved);
       if (scale === screen.scale) continue;
-      await compositor.request("output", { name: screen.name, scale });
+      await compositor.output({ name: screen.name, scale });
       console.log(`dashi-shell: ${screen.name} at scale ${scale}`);
     }
   };

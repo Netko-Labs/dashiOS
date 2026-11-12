@@ -7,16 +7,15 @@
  * first two by name, and how many more. Pure, so the rules are tested.
  */
 
-import type { CompositorWindow } from "../compositor.ts";
+import type { CompositorWindow } from "../compositor/index.ts";
+import { desktopOrdinal, type Slots } from "./lib/slots.ts";
 import { MAX_SPACES, spaceLabel } from "./model.ts";
-import { desktopOrdinal, type Slots } from "./slots.ts";
+import type { SpaceNames } from "./types.ts";
 
 /** The longest name kept, in characters. */
 export const MAX_NAME = 32;
 /** Apps named in an automatic name; the rest are counted. */
 const NAMED_APPS = 2;
-
-export type SpaceNames = (string | null)[];
 
 /** A name as typed, tidied: spaces collapsed, cut to MAX_NAME; null when nothing is left. */
 export function cleanName(text: string): string | null {

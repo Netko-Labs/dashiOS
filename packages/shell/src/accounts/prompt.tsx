@@ -5,8 +5,8 @@
 
 import { SHEET_SIZE } from "../menus/sheets.tsx";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
-import { PasswordChangeSheet } from "./sheet.tsx";
-import type { PasswordChanger } from "./types.ts";
+import type { PasswordChanger } from "../shared/accounts/index.ts";
+import { PasswordChangeSheet } from "./lib/sheet.tsx";
 
 export class PasswordChangePrompt {
   private current: OverlayHandle | null = null;

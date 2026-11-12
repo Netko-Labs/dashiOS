@@ -1,8 +1,9 @@
 import { expect, test } from "bun:test";
-import { imageSize } from "../src/clipboard/images.ts";
-import { chooseType, concealedByType, DEFAULT_LEFT_OUT, hintIsSecret, isLeftOut, leftOutApps, verdict, withoutApp } from "../src/clipboard/privacy.ts";
-import { copyFrom, fileUris } from "../src/clipboard/watch.ts";
-import { parseEvent } from "../src/compositor.ts";
+import { DEFAULT_LEFT_OUT, isLeftOut, leftOutApps, withoutApp } from "../src/clipboard/left-out.ts";
+import { imageSize } from "../src/clipboard/lib/images.ts";
+import { chooseType, concealedByType, hintIsSecret, verdict } from "../src/clipboard/lib/privacy.ts";
+import { copyFrom, fileUris } from "../src/clipboard/lib/watch.ts";
+import { parseEvent } from "../src/compositor/client.ts";
 
 // Clipboard history's privacy rules (docs/betterments.html, "Clipboard
 // history and snippets"): what is never kept, and what is kept as what.

@@ -15,7 +15,8 @@
  */
 
 import { readFileSync } from "node:fs";
-import { type MachineAction, powerMachine } from "./power/machine.ts";
+import { type MachineAction, powerMachine } from "./shared/logind/index.ts";
+import { type PowerAction, powerAction } from "./shared/session-power/index.ts";
 
 export type Closer = readonly [name: string, close: () => void];
 
@@ -115,4 +116,12 @@ export async function powerAfterApps(what: MachineAction): Promise<void> {
     isAlive,
     machine: (action) => powerMachine(action),
   });
+}
+
+/**
+ * The shell's power action, run now (the sheet already asked): restart and shut down give the
+ * apps their time first (`powerAfterApps`); what may be done is shared/session-power's.
+ */
+export function runPower(what: PowerAction): void {
+  powerAction(what, undefined, powerAfterApps);
 }

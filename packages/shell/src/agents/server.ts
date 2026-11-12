@@ -2,34 +2,37 @@
  * The agents' MCP server, `$XDG_RUNTIME_DIR/dashi-mcp.sock`: one session per
  * connection (bin/dashi-mcp bridges an agent's stdio to it). ⌃❖Esc reaches
  * here as a compositor shortcut event; Stop in the menu bar calls `stop`.
+ * The same server answers at `$XDG_RUNTIME_DIR/dashi-mcp.d/dashi-mcp.sock`,
+ * in a folder a task's sandbox binds whole (sandbox.ts `TASK_SOCKET_DIR`):
+ * a socket bound alone stays the old one when the shell restarts, a folder
+ * shows the new one, so a run's bridge connects again (docs/actions.md,
+ * "Agents from the launcher").
  */
 
-import { chmodSync, existsSync, readFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
-import type { Compositor } from "../compositor.ts";
+import { type BrowserBridge, startBrowserBridge } from "../browser/bridge.ts";
+import type { Compositor } from "../compositor/index.ts";
 import type { Arrange, Tile } from "../layout.ts";
-import { Atspi } from "./atspi/client.ts";
 import type { Question } from "./confirm.ts";
 import { Grants } from "./consent.ts";
-import { type ToolResult, toolError } from "./context.ts";
-import { Hands } from "./desktop/hands.ts";
-import type { Desktop } from "./desktop/index.ts";
-import { LOCKED, LockWatch } from "./lock.ts";
-import { AgentMask } from "./mask.ts";
-import { identify, peerPid } from "./peer.ts";
+import type { ToolResult } from "./context.ts";
+import { type Desktop, frontPage, Hands } from "./desktop/index.ts";
+import { personRunner } from "./lib/server-person.ts";
+import { sharedSecrets } from "./lib/server-shared.ts";
+import { listenAgents } from "./lib/server-sockets.ts";
+import type { Session } from "./lib/session/session.ts";
+import type { TaskHooks, TaskPolicy } from "./lib/session/session-types.ts";
+import { LockWatch } from "./lock.ts";
 import type { AgentStore, AgentUi } from "./presence.ts";
-import { runCall } from "./run.ts";
-import { isConfined } from "./sandbox.ts";
-import { type SecretsShared, SessionSecrets } from "./secrets/session-secrets.ts";
-import type { LoginSource } from "./secrets/sources.ts";
-import { Vault } from "./secrets/vault.ts";
-import { isVaultWindow } from "./secrets/vault-view.ts";
-import { Session } from "./session.ts";
+import { type LoginSource, Vault } from "./secrets/index.ts";
+import { SiteGrants } from "./sites.ts";
 import type { Call } from "./tools/index.ts";
 
 export interface Agents {
   /** The kept answers; System Settings lists and revokes them through this one. */
   readonly grants: Grants;
+  /** The sites agents may use without asking; Settings › Agents edits the person's list through this one. */
+  readonly sites: SiteGrants;
   /** Cut one agent off (the pill's stop square). */
   stop(id: number): void;
   /** Cut every agent off (⌃❖Esc). */
@@ -38,11 +41,13 @@ export interface Agents {
   readonly desktop: Desktop;
   /**
    * Carry out a tool's call for the person (the launcher, a key, a link:
-   * actions/run.ts): the same code an agent's call runs, named as "you",
+   * actions/lib/run.ts): the same code an agent's call runs, named as "you",
    * seeing what the person sees. A tool that asks every time asks `confirm`,
    * the person's own sheet. Nothing runs while the screen is locked.
    */
   runAsPerson(call: Call, confirm: (question: Question) => Promise<boolean>): Promise<ToolResult>;
+  /** The page in front in Helium, through Dashi's extension (the launcher's context chip); null without one. */
+  frontPage(): Promise<{ url: string; title: string } | null>;
   close(): void;
 }
 
@@ -65,16 +70,9 @@ export interface AgentsOptions {
   sources?: () => readonly LoginSource[];
   /** Dashi's vault, for cards and payments. */
   vault?: Pick<Vault, "cards" | "pay">;
+  /** Runs started from the launcher (agents/handoff/): a connection from one's sandbox gets its policy. */
+  tasks?: TaskHooks & { policy(task: string): TaskPolicy | null };
 }
-
-/** A file's text, or null. */
-const readText = (path: string): string | null => {
-  try {
-    return readFileSync(path, "utf8");
-  } catch {
-    return null;
-  }
-};
 
 export function startAgents({
   compositor,
@@ -85,63 +83,19 @@ export function startAgents({
   desktop,
   sources = () => [],
   vault = new Vault(),
+  tasks,
 }: AgentsOptions): Agents {
   const sessions = new Map<number, Session>();
   const publish = () => store.set([...sessions.values()].map((session) => session.info()));
   const lock = new LockWatch(compositor);
   const grants = new Grants();
   const hands = new Hands(compositor);
-  // The accessibility bus, joined when a picture first needs it; a failure is tried again next time.
-  let atspi: Atspi | null = null;
-  const joinAtspi = async () => (atspi ??= await Atspi.connect());
-  const secrets: SecretsShared = { sources, atspi: joinAtspi, handedOver: new Set(), filled: new Map(), vault };
-  const mask = new AgentMask({
-    request: (method, params) => compositor.request(method, params),
-    windows: () => compositor.windows(),
-    atspi: joinAtspi,
-    handedOver: () => [...secrets.handedOver],
-    filled: () =>
-      [...secrets.filled].flatMap(([window, fields]) =>
-        fields
-          .filter((f) => f.until > Date.now())
-          .map((field) => ({
-            window,
-            rect: field.rect,
-            again: field.again,
-            forget: () =>
-              secrets.filled.set(
-                window,
-                (secrets.filled.get(window) ?? []).filter((f) => f !== field),
-              ),
-          })),
-      ),
-    isVault: isVaultWindow,
-  });
-  secrets.touched = (window) => mask.prompts.touched(window);
-  const context = { compositor, ui, desktop, hands, mask, grants, lock, publish, tile, arrangement, secrets };
-  let nextId = 0;
-  // The person's calls: never confined (no sign-in for them), named "You" where a sheet would name an agent.
-  const personSecrets = new SessionSecrets(secrets, ui, false);
-  const you = () => ({ name: "You", detail: "", claims: null, remote: false });
-  const runAsPerson = async (call: Call, confirm: (question: Question) => Promise<boolean>): Promise<ToolResult> => {
-    if (lock.isLocked) return toolError(LOCKED);
-    const signal = new AbortController().signal;
-    return runCall(call, {
-      compositor,
-      ui,
-      desktop,
-      hands,
-      mask,
-      secrets: personSecrets.run(0, you, signal),
-      agent: "You",
-      status: () => {},
-      tile,
-      arrangement,
-      mayName: () => true,
-      confirm,
-      signal,
-    });
-  };
+  const sites = new SiteGrants();
+  // Dashi's browser extension joins here through its host (docs/actions.md, "Websites").
+  const browser: BrowserBridge = startBrowserBridge();
+  const { secrets, mask, close: closeAtspi } = sharedSecrets(compositor, sources, vault);
+  const context = { compositor, ui, desktop, hands, mask, grants, lock, publish, tile, arrangement, secrets, browser, sites, ...(tasks ? { tasks } : {}) };
+  const runAsPerson = personRunner({ compositor, ui, desktop, hands, mask, secrets, lock, browser, tile, arrangement });
 
   const stopSessions = (stopping: Session[]) => {
     const names = stopping.map((session) => session.peer.name);
@@ -156,8 +110,10 @@ export function startAgents({
   });
   // A revoked answer is gone from the connections that hold it too.
   const offGrants = grants.onChange((change) => {
-    if (!change.removed) return;
-    for (const session of sessions.values()) session.revoke(change.key);
+    if (!change.removed && !change.revoked) return;
+    // Its websites go with it, and with "Use websites".
+    if (change.removed || change.revoked?.includes("web")) sites.remove(change.key);
+    for (const session of sessions.values()) session.revoke(change.key, change.revoked);
     publish();
   });
   // Locking takes down any sheet that is up; calls fail while it lasts.
@@ -166,87 +122,30 @@ export function startAgents({
   });
 
   const path = socketPath();
-  if (!path) {
-    console.error("dashi-shell: no XDG_RUNTIME_DIR; agents can't connect");
-    return {
-      grants,
-      desktop,
-      runAsPerson,
-      stop() {},
-      stopAll() {},
-      close() {
-        offShortcuts();
-        offGrants();
-        lock.close();
-        hands.close();
-      },
-    };
-  }
-  if (existsSync(path)) unlinkSync(path);
-  const server = Bun.listen<{ session?: Session }>({
-    unix: path,
-    socket: {
-      open(socket) {
-        // Bun sockets carry their fd; SO_PEERCRED says who is on the other end.
-        const fd = (socket as unknown as { fd?: number }).fd;
-        const pid = typeof fd === "number" ? peerPid(fd) : null;
-        if (pid === null) {
-          socket.terminate();
-          return;
-        }
-        const peer = identify(pid);
-        const confined = isConfined(readText, pid, peer.remote);
-        const session = new Session(
-          ++nextId,
-          peer,
-          socket,
-          context,
-          (gone) => {
-            sessions.delete(gone.id);
-            publish();
-          },
-          confined,
-        );
-        socket.data = { session };
-        sessions.set(session.id, session);
-        publish();
-      },
-      data(socket, data) {
-        socket.data?.session?.receive(data);
-      },
-      drain(socket) {
-        socket.data?.session?.drain();
-      },
-      close(socket) {
-        socket.data?.session?.stop("disconnected");
-      },
-      error(socket) {
-        socket.data?.session?.stop("disconnected");
-      },
-    },
-  });
-  chmodSync(path, 0o600);
+  if (!path) console.error("dashi-shell: no XDG_RUNTIME_DIR; agents can't connect");
+  const listening = path ? listenAgents(path, { sessions, context, tasks, publish }) : null;
 
   return {
     grants,
+    sites,
     desktop,
     runAsPerson,
+    frontPage: () => frontPage(browser.current()),
     stop(id) {
       const session = sessions.get(id);
       if (session) stopSessions([session]);
     },
     stopAll() {
-      stopSessions([...sessions.values()]);
+      if (listening) stopSessions([...sessions.values()]);
     },
     close() {
       offShortcuts();
       offGrants();
       lock.close();
       hands.close();
-      for (const session of sessions.values()) session.stop("disconnected");
-      server.stop(true);
-      atspi?.close();
-      if (existsSync(path)) unlinkSync(path);
+      listening?.close();
+      browser.close();
+      closeAtspi();
     },
   };
 }

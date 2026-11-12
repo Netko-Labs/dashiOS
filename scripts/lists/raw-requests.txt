@@ -1,0 +1,1 @@
+# H8: raw compositor request("…") calls outside src/compositor/client.ts (count = calls). May only shrink.

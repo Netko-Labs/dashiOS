@@ -13,6 +13,21 @@
     "enabled": true,
     "rules": {
       "recommended": true,
+      // H5 (docs/conventions.md, "Hard rules"): no import cycles. Today's are let
+      // through by a suppression comment scripts/check-biome.ts counts (scripts/lists/import-cycles.txt).
+      "nursery": {
+        "noImportCycles": "error"
+      },
+      "complexity": {
+        // H3: no function over 80 lines. Today's longer ones are in the overrides
+        // below, each file held at its longest (scripts/lists/long-functions.txt).
+        "noExcessiveLinesPerFunction": {
+          "level": "error",
+          "options": {
+            "maxLines": 80
+          }
+        }
+      },
       "correctness": {
         "noUnusedImports": "error",
         "useUniqueElementIds": "off",
@@ -128,11 +143,19 @@
       "!**/.next",
       "!**/.output",
       "!**/generated",
+      "!test/fixtures/ipc",
       "!**/*.generated.ts",
       "!**/routeTree.gen.ts",
       "!bun.lock",
       "!Cargo.lock",
       "!comp"
     ]
-  }
+  },
+  "overrides": [
+    // A test's describe block is not a function to split (H3).
+    { "includes": ["**/test/**"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } }
+    // H3 overrides: written by `bun scripts/check-biome.ts --shrink`; do not edit by hand.
+
+    // H3 overrides end.
+  ]
 }

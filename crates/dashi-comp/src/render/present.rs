@@ -36,6 +36,11 @@ impl Dashi {
         states: &RenderElementStates,
         dmabuf: Option<(&DmabufFeedback, &DmabufFeedback)>,
     ) -> OutputPresentationFeedback {
+        // A screen showing another's picture: the surfaces are the source's,
+        // which paces them and picks their scale and formats.
+        if self.mirrors.of(output).is_some() {
+            return OutputPresentationFeedback::new(output);
+        }
         let layers = layer_map_for_output(output);
         for window in self.space.elements() {
             window.with_surfaces(|surface, data| {

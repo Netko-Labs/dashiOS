@@ -1,5 +1,25 @@
 # Activity Monitor
 
+**Where it stands (0.5.0, `feat/0.5-activity`)**
+
+The big idea is in: the list is apps, each with its icon and name and its processes folded under it, and the battery menu, Activity Monitor and the battery monitor name apps the same way, by the same keys (`src/process-apps/`). Per finding:
+
+- [x] 1. An Energy tab (energy impact, % CPU, % GPU, wakeups/s); the battery menu's "Using Significant Energy…" opens it, and each app there opens it with that app selected, also when Activity Monitor is already running (`src/menus/lib/activity-monitor.ts`, the menus channel's `open`).
+- [x] 2. Apps by their folder (Dashi's), their Flatpak scope, or their desktop entry; a helper belongs to its nearest app above it (`process-apps/owners.ts`, lifted from the battery's `ownerOf`, which now uses it). View › Group by App switches to every process on its own line, each with its app's icon.
+- [x] 3. Return only selects; the quit sheet has no Return default (0.4); a quit app still running after 3 s is offered Force quit; a process already gone is said to be gone, not quit.
+- [x] 4. Reads on a worker, nothing while hidden (0.4, wave 1); kernel threads skipped unless shown; sockets counted every third look and GPU descriptors looked for every fifth; View › Update Every 1/2/5 Seconds or Pause Updates. A look is about 10 ms for 130 processes (the Energy tab's about 25 ms). Moved on: `status` is still read per process (uid and memory), which the roast's `fstat` idea would save; not worth it at these numbers.
+- [x] 5, 19. One chrome row (0.4); Quit… is disabled for a line it can't quit, with the reason as its tooltip.
+- [x] 6, 7, 8, 10, 14. Right memory, disk per second, smoothed % CPU, steal left out, kernel threads out of the totals, series from the tints (0.4).
+- [ ] 9. The "% of one core" hint needs a column-header tooltip, which `@dashi/ui`'s Table doesn't have (the @dashi/ui roast's finding 17): left for Wave 4's sweep. The summary now says "Cores", and the CPU graph is the machine's.
+- [x] 11. Totals leave out virtual interfaces (0.4). Moved on: per-process traffic isn't in /proc (it needs eBPF or netlink accounting); the Network tab keeps the socket count.
+- [x] 12, 13. Activity Monitor's own line says "Use ❖Q to quit Activity Monitor."; the pid and its start time are checked again just before a signal.
+- [x] 15. Copy pass: sentence case columns and figures, no colons, "CPU load", "Memory used", "Energy impact", "Disk activity", "Network activity", "Quit “Files”?" with no signal names, "No matches".
+- [x] 16. Search matches the name, the app, the command line or the pid, and a user name (from its start) only when nothing else does; the field says "Search processes".
+- [x] 17. Inspect (❖I, Return, a double click), a right-click menu (Inspect…, Quit…, Show/Hide Processes, Copy PID, Copy Command Line), a State column, Edit › Copy (the line's columns). Moved on: multi-select, a process tree view, and quitting another user's process as administrator (polkit) are left for a later release.
+- [x] 18. The arrows move the selection from the window too, ← and → close and open an app. Moved on: the selection isn't scrolled into view (mirin can't scroll a node into view yet, `docs/metal.md` "Not yet"), and the search field is still remounted to take the keyboard back (mirin can't move focus yet).
+- [x] 20. View › Show Summary hides the strip; values follow their labels; autoscaled graphs say their scale ("2 MB/s").
+- [x] Improvement 10, in part: % GPU per app from DRM fdinfo (amdgpu, i915, nouveau in ns; xe in cycles), on the Energy tab; a VM's virtual GPU says nothing, so it reads "—" there.
+
 **The roast**
 
 - On an idle VM, Activity Monitor is the second-busiest thing on the machine at 3.5% CPU and 23 threads, beaten only by the compositor (screenshot). It doesn't so much observe the system as join it.

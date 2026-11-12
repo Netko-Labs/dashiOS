@@ -4,7 +4,7 @@
  * (server.ts) and checks its hello against. An applet runs when the person
  * allowed what it asks for (asked once, on the consent sheet), it isn't
  * disabled (pulled from the catalog, or turned off), and it is for this
- * Dashi. The folder is watched: what the Applet Store installs, updates,
+ * Dashi. The folder is watched: what Software installs, updates,
  * disables, or removes is started, restarted, or stopped here.
  *
  * Each runs as a systemd user unit (`dashi-applet-<id>.service`), so it is
@@ -15,11 +15,10 @@
 import { existsSync, mkdirSync, readFileSync, watch, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { consentNames, dashiSatisfies, FOLDERS, type Folder } from "@dashi/applet";
-import type { AppletContext } from "./connection.ts";
-import { type InstalledApplet, isAllowed, readInstalled, shouldRun, writeRecord } from "./installed.ts";
-import { type SandboxPaths, sandboxPlan, unitName } from "./sandbox.ts";
-import { appletSocketDir, ensureSocketDir, serveApplets } from "./server.ts";
+import { consentNames, dashiSatisfies, FOLDERS, type Folder, type InstalledApplet, isAllowed, readInstalled, shouldRun, writeRecord } from "@dashi/applet";
+import type { AppletContext } from "./lib/connection-context.ts";
+import { type SandboxPaths, sandboxPlan, unitName } from "./lib/sandbox.ts";
+import { appletSocketDir, ensureSocketDir, serveApplets } from "./lib/server.ts";
 
 /** What the launcher asks of systemd (`systemd-run --user`, `systemctl --user`). */
 export interface Units {
@@ -108,6 +107,8 @@ export interface LauncherOptions {
 
 interface Running {
   version: string;
+  /** The package it runs from: the same version installed again from new bytes (a rebuild) is another. */
+  sha256: string;
   stopSocket: () => void;
 }
 
@@ -165,7 +166,8 @@ export class AppletLauncher {
         if (current) await this.halt(id);
         continue;
       }
-      if (current?.version === version) continue;
+      // Installed again (an update, or the same version rebuilt): the new files run, not the old process.
+      if (current?.version === version && current.sha256 === applet.record.sha256) continue;
       if (current) await this.halt(id);
       await this.launch(applet);
     }
@@ -207,7 +209,7 @@ export class AppletLauncher {
     ensureSocketDir(this.options.runtimeDir);
     mkdirSync(paths.socketDir, { recursive: true, mode: 0o700 });
     const stopSocket = serveApplets({ ...this.options.context, path: join(paths.socketDir, "applets.sock"), installed: applet.manifest, maxConnections: 1 });
-    this.running.set(id, { version, stopSocket });
+    this.running.set(id, { version, sha256: applet.record.sha256, stopSocket });
     const plans = join(appletSocketDir(this.options.runtimeDir), "plans");
     mkdirSync(plans, { recursive: true, mode: 0o700 });
     const planPath = join(plans, `${id}.json`);
@@ -223,6 +225,22 @@ export class AppletLauncher {
     this.running.delete(id);
     current?.stopSocket();
     await this.units.stop(unitName(id));
+  }
+
+  /**
+   * Starts an installed applet again that isn't connected (its tile in
+   * Control Center was pressed): only one that may run here.
+   */
+  wake(id: string): void {
+    if (this.stopped) return;
+    this.busy = this.busy
+      .then(async () => {
+        const applet = readInstalled(this.options.root).find((each) => each.manifest.id === id);
+        if (!applet || !shouldRun(applet) || !dashiSatisfies(applet.manifest.dashi, this.options.dashiVersion)) return;
+        await this.halt(id);
+        await this.launch(applet);
+      })
+      .catch((error) => console.error(`dashi-shell: applet ${id}:`, error));
   }
 
   /** The shell is going: every applet stops with it. */

@@ -7,16 +7,20 @@ use smithay::{
     backend::renderer::{
         ImportAll, ImportMem, Renderer,
         element::{
-            AsRenderElements, Element, Id, Kind,
-            memory::{MemoryRenderBuffer, MemoryRenderBufferRenderElement},
+            AsRenderElements, Kind,
             surface::{WaylandSurfaceRenderElement, render_elements_from_surface_tree},
             utils::RescaleRenderElement,
         },
     },
     desktop::{PopupManager, Window},
     utils::{Logical, Physical, Point, Rectangle, Scale, Size},
-    wayland::seat::WaylandFocus,
 };
+
+mod memory;
+mod rounding;
+
+pub(crate) use memory::push_memory;
+use rounding::rounding;
 
 use super::{
     DashiElement,
@@ -127,7 +131,7 @@ pub(crate) fn framed_window<R>(
     let sides = depth_of(state, renderer, window, placed, spot);
     let entry = state.windows.by_window(window);
     let decor = entry.map(|entry| entry.decor).unwrap_or(Decor::None);
-    let image = entry.and_then(|entry| entry.title_image.as_ref());
+    let image = entry.and_then(|entry| entry.title_images.get(state.decor_scale));
     let on_view = |at: Point<i32, Logical>| -> Point<i32, Physical> {
         (at - spot.origin).to_physical_precise_round(scale)
     };
@@ -144,10 +148,11 @@ pub(crate) fn framed_window<R>(
             elements,
         );
     }
-    // Dashi's frame rounds the corners: the bottom ones under its bar, all four on a unified window.
-    let rounding = rounding(state, renderer, window, decor == Decor::Unified, scale.x);
+    // Dashi's frame rounds the corners: the bottom ones under its bar, all four on a unified window
+    // (and on a maximized one that draws its own), on every surface that reaches them.
+    let rounding = rounding(state, renderer, window, on_view(at), scale, 1.0);
     elements.extend(tree.into_iter().map(|element| match &rounding {
-        Some(rounding) if element.id() == &rounding.root => {
+        Some(rounding) if rounding.reaches(&element) => {
             DashiElement::Rounded(rounding.element(element))
         }
         _ => DashiElement::Surface(element),
@@ -199,12 +204,12 @@ pub(crate) fn overview_window<R>(
         .windows
         .by_window(window)
         .is_some_and(|entry| entry.decor == Decor::Unified);
-    let rounding = rounding(state, renderer, window, unified, scale.x * s);
+    let rounding = rounding(state, renderer, window, about, scale, s);
     // Its title bar or lights, the whole image shrunk with it at the same spot.
     let title = state
         .windows
         .by_window(window)
-        .and_then(|entry| entry.title_image.as_ref())
+        .and_then(|entry| entry.title_images.get(state.decor_scale))
         .filter(|image| image.shows(bar))
         .map(|image| {
             let own = image.size().to_f64();
@@ -223,7 +228,7 @@ pub(crate) fn overview_window<R>(
             .render_elements::<WaylandSurfaceRenderElement<R>>(renderer, surface_at, scale, 1.0)
             .into_iter()
             .map(|element| match &rounding {
-                Some(rounding) if element.id() == &rounding.root => DashiElement::ScaledRounded(
+                Some(rounding) if rounding.reaches(&element) => DashiElement::ScaledRounded(
                     RescaleRenderElement::from_element(rounding.element(element), about, s),
                 ),
                 _ => DashiElement::Scaled(RescaleRenderElement::from_element(element, about, s)),
@@ -233,77 +238,4 @@ pub(crate) fn overview_window<R>(
         push_memory(renderer, at, buffer, Some((*own, *size)), elements);
     }
     elements.extend(sides.back.map(DashiElement::Depth));
-}
-
-/// How a framed window's main surface is rounded: which surface, the shader, and the corners.
-struct Rounding {
-    root: Id,
-    program: smithay::backend::renderer::gles::GlesTexProgram,
-    /// In the pixels it is drawn at.
-    radius: f32,
-    top: bool,
-}
-
-impl Rounding {
-    fn element<R: Renderer>(
-        &self,
-        element: WaylandSurfaceRenderElement<R>,
-    ) -> super::rounded::RoundedElement<R> {
-        super::rounded::RoundedElement::new(element, self.program.clone(), self.radius, self.top)
-    }
-}
-
-/// The rounding for a window Dashi frames (none for others, full screen, or with square corners chosen);
-/// `pixels`: physical pixels per logical one where it is drawn (its scale, times how small).
-fn rounding<R>(
-    state: &Dashi,
-    renderer: &mut R,
-    window: &Window,
-    top: bool,
-    pixels: f64,
-) -> Option<Rounding>
-where
-    R: Renderer + GlesAccess,
-{
-    let entry = state.windows.by_window(window)?;
-    let framed = matches!(entry.decor, Decor::Standard | Decor::Unified);
-    // Full screen, it is square to the screen's edges.
-    if !framed || entry.fullscreen.is_some() || state.chrome_style.radius <= 0 {
-        return None;
-    }
-    let program = super::rounded::program(renderer.gles())?;
-    let root = window
-        .wl_surface()
-        .map(|surface| Id::from_wayland_resource(&*surface))?;
-    Some(Rounding {
-        root,
-        program,
-        radius: (f64::from(state.chrome_style.radius) * pixels) as f32,
-        top,
-    })
-}
-
-pub(crate) fn push_memory<R>(
-    renderer: &mut R,
-    at: Point<f64, Physical>,
-    buffer: &MemoryRenderBuffer,
-    // Drawn at another size: (its own, the one to draw it at).
-    fit: Option<(Size<f64, Logical>, Size<i32, Logical>)>,
-    elements: &mut Vec<DashiElement<R>>,
-) where
-    R: Renderer + ImportAll + ImportMem + GlesAccess,
-    R::TextureId: Clone + Send + 'static,
-{
-    match MemoryRenderBufferRenderElement::from_buffer(
-        renderer,
-        at,
-        buffer,
-        None,
-        fit.map(|(own, _)| Rectangle::from_size(own)),
-        fit.map(|(_, size)| size),
-        Kind::Unspecified,
-    ) {
-        Ok(element) => elements.push(DashiElement::Memory(element)),
-        Err(error) => tracing::warn!(?error, "drawing the compositor's own image"),
-    }
 }

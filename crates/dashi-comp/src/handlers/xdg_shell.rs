@@ -2,11 +2,10 @@
 //! (MIT, github.com/Smithay/smithay, v0.7.0): windows join the registry,
 //! and the shell hears when they close.
 
+use crate::ipc::protocol::Asked;
 use smithay::{
     delegate_xdg_shell,
-    desktop::{
-        PopupKind, PopupManager, Window, find_popup_root_surface, get_popup_toplevel_coords,
-    },
+    desktop::{PopupKind, Window},
     input::{
         Seat,
         pointer::{Focus, GrabStartData as PointerGrabStartData},
@@ -19,16 +18,12 @@ use smithay::{
         },
     },
     utils::{Rectangle, Serial},
-    wayland::{
-        compositor::with_states,
-        shell::xdg::{
-            PopupSurface, PositionerState, ToplevelSurface, XdgShellHandler, XdgShellState,
-            XdgToplevelSurfaceData,
-        },
+    wayland::shell::xdg::{
+        PopupSurface, PositionerState, ToplevelSurface, XdgShellHandler, XdgShellState,
     },
 };
 
-use crate::{state::Dashi, wm::Windows, wm::grabs::ResizeSurfaceGrab};
+use crate::{state::Dashi, wm::grabs::ResizeSurfaceGrab};
 
 impl XdgShellHandler for Dashi {
     fn xdg_shell_state(&mut self) -> &mut XdgShellState {
@@ -152,21 +147,21 @@ impl XdgShellHandler for Dashi {
         surface: ToplevelSurface,
         _output: Option<wl_output::WlOutput>,
     ) {
-        self.ask_shell(&surface, "fullscreen", true);
+        self.ask_shell(&surface, Asked::Fullscreen, true);
     }
 
     fn unfullscreen_request(&mut self, surface: ToplevelSurface) {
-        self.ask_shell(&surface, "fullscreen", false);
+        self.ask_shell(&surface, Asked::Fullscreen, false);
     }
 
     fn maximize_request(&mut self, surface: ToplevelSurface) {
-        self.ask_shell(&surface, "zoom", true);
+        self.ask_shell(&surface, Asked::Zoom, true);
         // The protocol wants a configure in answer, whatever the shell does.
         surface.send_configure();
     }
 
     fn unmaximize_request(&mut self, surface: ToplevelSurface) {
-        self.ask_shell(&surface, "zoom", false);
+        self.ask_shell(&surface, Asked::Zoom, false);
         surface.send_configure();
     }
 
@@ -195,7 +190,7 @@ impl XdgShellHandler for Dashi {
 delegate_xdg_shell!(Dashi);
 
 impl Dashi {
-    fn ask_shell(&mut self, surface: &ToplevelSurface, event: &str, on: bool) {
+    fn ask_shell(&mut self, surface: &ToplevelSurface, asked: Asked, on: bool) {
         let Some(id) = self
             .windows
             .by_surface(surface.wl_surface())
@@ -204,8 +199,7 @@ impl Dashi {
         else {
             return;
         };
-        self.ipc
-            .emit(event, serde_json::json!({ "window": id, "on": on }));
+        self.ipc.emit(asked.event(id, on));
     }
 }
 
@@ -230,78 +224,4 @@ fn check_grab(
     }
 
     Some(start_data)
-}
-
-/// Should be called on `WlSurface::commit`
-/// Should be called on `WlSurface::commit`. New windows are not in the space
-/// until the shell places them, so toplevels are found in the registry.
-pub(crate) fn handle_commit(popups: &mut PopupManager, windows: &Windows, surface: &WlSurface) {
-    // Handle toplevel commits: the first configure, which lets the client draw.
-    if let Some(entry) = windows.by_surface(surface) {
-        let initial_configure_sent = with_states(surface, |states| {
-            states
-                .data_map
-                .get::<XdgToplevelSurfaceData>()
-                .and_then(|data| data.lock().ok())
-                .is_some_and(|data| data.initial_configure_sent)
-        });
-
-        if let Some(toplevel) = entry.window.toplevel().filter(|_| !initial_configure_sent) {
-            toplevel.send_configure();
-        }
-    }
-
-    // Handle popup commits.
-    popups.commit(surface);
-    if let Some(popup) = popups.find_popup(surface) {
-        match popup {
-            PopupKind::Xdg(ref xdg) => {
-                if !xdg.is_initial_configure_sent() {
-                    // NOTE: This should never fail as the initial configure is always
-                    // allowed.
-                    if let Err(error) = xdg.send_configure() {
-                        tracing::warn!(?error, "initial popup configure");
-                    }
-                }
-            }
-            PopupKind::InputMethod(ref _input_method) => {}
-        }
-    }
-}
-
-impl Dashi {
-    fn unconstrain_popup(&self, popup: &PopupSurface) {
-        let Ok(root) = find_popup_root_surface(&PopupKind::Xdg(popup.clone())) else {
-            return;
-        };
-        let Some(window) = self
-            .space
-            .elements()
-            .find(|w| w.toplevel().is_some_and(|t| t.wl_surface() == &root))
-        else {
-            return;
-        };
-
-        let Some(output_geo) = self
-            .space
-            .outputs()
-            .next()
-            .and_then(|output| self.space.output_geometry(output))
-        else {
-            return;
-        };
-        let Some(window_geo) = self.space.element_geometry(window) else {
-            return;
-        };
-
-        // The target geometry for the positioner should be relative to its parent's geometry, so
-        // we will compute that here.
-        let mut target = output_geo;
-        target.loc -= get_popup_toplevel_coords(&PopupKind::Xdg(popup.clone()));
-        target.loc -= window_geo.loc;
-
-        popup.with_pending_state(|state| {
-            state.geometry = state.positioner.get_unconstrained_geometry(target);
-        });
-    }
 }

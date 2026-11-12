@@ -5,19 +5,12 @@
  * and nobody is asked anything (docs/agents.html, "Locked means stopped").
  */
 
-import type { Compositor } from "../compositor.ts";
+import type { Compositor } from "../compositor/index.ts";
 
 /** What a tool call is told while the screen is locked. */
 export const LOCKED = "The screen is locked. Nothing on the desktop can be seen or done until the person unlocks it.";
 /** …and one that was already running when the screen locked. */
 export const LOCKED_WHILE_RUNNING = "The screen locked while this ran, so what it did or saw is not reported. Check again once the person has unlocked it.";
-
-/** The answer to `session`: `{locked}`. */
-export function parseSession(value: unknown): boolean | null {
-  if (typeof value !== "object" || value === null) return null;
-  const { locked } = value as { locked?: unknown };
-  return typeof locked === "boolean" ? locked : null;
-}
 
 export class LockWatch {
   /** Locked until the compositor says otherwise: unknown is not a reason to let agents in. */
@@ -25,17 +18,16 @@ export class LockWatch {
   private readonly listeners = new Set<(locked: boolean) => void>();
   private readonly stop: () => void;
 
-  constructor(compositor: Pick<Compositor, "on" | "request">) {
+  constructor(compositor: Pick<Compositor, "on" | "session">) {
     // Events and replies share one ordered stream, so applying both as they
     // arrive leaves the newest state, whichever of them comes first.
     this.stop = compositor.on((event) => {
       if (event.event === "lock") this.set(event.locked);
     });
     compositor
-      .request("session")
+      .session()
       .then((session) => {
-        const locked = parseSession(session);
-        if (locked !== null) this.set(locked);
+        if (session) this.set(session.locked);
         else console.error("dashi-shell: dashi-comp's session answer was not understood; agents stay locked out");
       })
       .catch((error) => console.error("dashi-shell: could not ask whether the screen is locked:", error));

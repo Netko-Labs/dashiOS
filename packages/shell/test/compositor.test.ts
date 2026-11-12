@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { parseEvent, parseWindow, parseWindowIcon } from "../src/compositor.ts";
+import { parseEvent, parseGpus, parseWindow, parseWindowIcon } from "../src/compositor/client.ts";
 
 const window = {
   id: 3,
@@ -84,4 +84,22 @@ test("a window's ext-foreign-toplevel-list identifier comes along", () => {
   expect(parseWindow({ ...window, toplevel: "a1b2" })?.toplevel).toBe("a1b2");
   expect(parseWindow({ ...window, toplevel: "" })).not.toHaveProperty("toplevel");
   expect(parseWindow({ ...window, toplevel: 7 })).not.toHaveProperty("toplevel");
+});
+
+test("GPUs say whether dashi-comp holds them open, and for what", () => {
+  expect(parseEvent({ event: "gpus-changed" })).toEqual({ event: "gpus-changed" });
+  expect(
+    parseGpus({
+      gpus: [
+        { card: "card0", open: false, draws: false, kept: false, screens: [], buffers: 0 },
+        { card: "card1", open: true, draws: true, kept: false, screens: ["eDP-1", 3], buffers: 0 },
+        { open: true },
+      ],
+    }),
+  ).toEqual([
+    { card: "card0", open: false, draws: false, kept: false, screens: [], buffers: 0 },
+    { card: "card1", open: true, draws: true, kept: false, screens: ["eDP-1"], buffers: 0 },
+  ]);
+  expect(parseGpus({ gpus: "no" })).toEqual([]);
+  expect(parseGpus(null)).toEqual([]);
 });

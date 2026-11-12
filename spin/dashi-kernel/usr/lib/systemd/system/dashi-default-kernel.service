@@ -14,6 +14,8 @@ ConditionKernelCommandLine=!rd.live.image
 [Service]
 Type=oneshot
 ExecStart=/usr/libexec/dashi/default-kernel
+# A hung boot-loader tool must not hold the boot (or a root process) for ever.
+TimeoutStartSec=2min
 
 [Install]
 WantedBy=multi-user.target

@@ -6,17 +6,15 @@
  */
 
 import { basename } from "node:path";
-import type { Compositor } from "../compositor.ts";
-import type { NotificationStore } from "../notifications/index.ts";
-import { SHELL_SENDER } from "../notifications/store.ts";
+import type { Compositor } from "../compositor/index.ts";
+import { type NotificationStore, SHELL_SENDER } from "../notifications/index.ts";
 import type { OpenOverlay } from "../overlay.tsx";
-import { type AreaCapture, areaCapture, type CaptureScreen } from "../screenshot-area.tsx";
-import { takeScreenshot } from "../screenshots.ts";
-import { ScreenRecorder } from "./recorder.ts";
-import { type CaptureToolbar, captureToolbar } from "./toolbar.tsx";
+import { type AreaCapture, areaCapture, type CaptureScreen, takeScreenshot } from "../screenshots/index.ts";
+import { type CaptureToolbar, captureToolbar } from "./lib/toolbar.tsx";
+import { type RecorderState, ScreenRecorder } from "./recorder.ts";
 
 export interface CaptureDeps {
-  compositor: Pick<Compositor, "request" | "windows">;
+  compositor: Pick<Compositor, "capture" | "windows">;
   open: OpenOverlay;
   /** Let a program capture the screen for a while (screen-capture.ts). */
   allow(path: string): () => void;
@@ -29,7 +27,7 @@ export interface CaptureDeps {
 
 export interface Capture {
   recorder: ScreenRecorder;
-  /** ⇧❖5: the toolbar, or stop the recording that runs. */
+  /** ⇧❖5 (and Screenshot…): the toolbar, or stop the recording the person started. */
   toolbar(window: number | null): void;
   close(): void;
 }
@@ -49,6 +47,20 @@ function savedNotice(file: string) {
     transient: false,
     resident: false,
   };
+}
+
+/** What the toolbar says when Record is pressed while another recording runs (an agent's: the person's own is stopped by ⇧❖5). */
+export function recordRefusal(mode: string, state: RecorderState): string | null {
+  if (mode !== "record-screen" && mode !== "record-area") return null;
+  if (state.kind === "idle") return null;
+  return (state.kind === "recording" || state.kind === "starting") && state.by === "agent"
+    ? "An agent is recording the screen"
+    : "The screen is already being recorded";
+}
+
+/** Whether ⇧❖5 stops the recording now instead of opening the toolbar: the person's own is running. */
+export function stopsRecording(state: RecorderState): boolean {
+  return state.kind === "recording" && state.by === "person";
 }
 
 export function startCapture(deps: CaptureDeps): Capture {
@@ -81,6 +93,8 @@ export function startCapture(deps: CaptureDeps): Capture {
   });
   const bar: CaptureToolbar = captureToolbar({
     open: deps.open,
+    // Record while an agent records: said in the toolbar, which stays, instead of closing on nothing.
+    refuse: (choice) => recordRefusal(choice.mode, recorder.getSnapshot()),
     output: async () => (await deps.screen(front)).output,
     act: async (choice, output) => {
       switch (choice.mode) {
@@ -107,7 +121,9 @@ export function startCapture(deps: CaptureDeps): Capture {
   return {
     recorder,
     toolbar(window) {
-      if (recorder.getSnapshot().kind === "recording") {
+      // Only the person's own recording: an agent's record_screen runs on, and the toolbar opens as ever
+      // (the menu bar's stop button still ends an agent's).
+      if (stopsRecording(recorder.getSnapshot())) {
         void recorder.stop();
         return;
       }

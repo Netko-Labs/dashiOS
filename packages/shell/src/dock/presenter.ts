@@ -10,7 +10,7 @@
  * kept here, which would sit over a window's bottom resize edge.
  *
  * For an autohiding Dock it also claims the band along the screen's bottom
- * edge in the compositor (dock/edges.ts): one pixel while the Dock is away,
+ * edge in the compositor (dock/lib/edges.ts): one pixel while the Dock is away,
  * the Dock's own height while it is out, so the pointer leaving the Dock is
  * heard too.
  *
@@ -18,12 +18,12 @@
  */
 
 import { DOCK, DOCK_HEIGHT, TASKBAR } from "../theme.ts";
-import type { Autohide } from "./autohide.ts";
-import type { EdgeClaim } from "./edges.ts";
+import type { Autohide } from "./lib/autohide.ts";
+import type { EdgeClaim } from "./lib/edges.ts";
+import { DOCK_MOTION, type Slide } from "./lib/slide.tsx";
+import type { DockSurface } from "./lib/surface.ts";
 import type { DockPrefs } from "./prefs.ts";
 import type { DockSettings, DockStyle } from "./settings.ts";
-import { DOCK_MOTION, type Slide } from "./slide.tsx";
-import type { DockSurface } from "./surface.ts";
 
 export interface ViewSpec {
   style: DockStyle;

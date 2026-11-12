@@ -9,7 +9,7 @@ Name:           dashi-hardware
 Version:        %{dashi_snapshot}
 Release:        1%{?dist}
 Summary:        Dashi's privileged hardware helper
-License:        MIT
+License:        MIT AND Unicode-3.0
 URL:            https://github.com/Netko-Labs/dashiOS
 Source0:        %{dashi_source}.tar.gz
 ExclusiveArch:  x86_64 aarch64
@@ -38,6 +38,11 @@ shell does. See docs/hardware.md.
 # Network is needed for the crates (no vendored sources); a local rpmbuild has it.
 export CARGO_TARGET_DIR=%{cargo_target}
 cargo build --release --locked -p dashi-hardware
+
+%check
+# The tests read and write copies of the captured G14 tree (data/fixtures), never /sys.
+export CARGO_TARGET_DIR=%{cargo_target}
+cargo test --release --locked -p dashi-hardware
 
 %install
 export CARGO_TARGET_DIR=%{cargo_target}
@@ -98,6 +103,8 @@ if [ $1 -eq 0 ] && [ -f %{_sysconfdir}/tuned/ppd.conf.dashi-orig ]; then
 fi
 
 %files
+%license LICENSE
+%license spin/dashi-hardware/usr/share/licenses/dashi-hardware/LICENSE.dependencies
 %{_libexecdir}/dashi/dashi-hardware
 %dir %{_datadir}/dashi/models
 %{_datadir}/dashi/models/*.json

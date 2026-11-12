@@ -7,14 +7,15 @@
  */
 
 import net from "node:net";
-import { LineBuffer } from "../../lines.ts";
+import { isRecord } from "@dashi/shape";
+import { LineBuffer } from "../../shared/io/index.ts";
 import type { ProxyGrant } from "./server.ts";
 
 const ANSWER_MS = 10_000;
 
 function parseGrant(value: unknown): ProxyGrant | null {
-  if (typeof value !== "object" || value === null) return null;
-  const { ok, socket, ca, bundle, key } = value as Record<string, unknown>;
+  if (!isRecord(value)) return null;
+  const { ok, socket, ca, bundle, key } = value;
   if (ok !== true || typeof socket !== "string" || typeof ca !== "string" || typeof bundle !== "string" || typeof key !== "string") return null;
   return { socket, ca, bundle, key };
 }
@@ -45,7 +46,7 @@ export function requestProxy(path: string, unit: string): Promise<{ grant: Proxy
         const grant = parseGrant(reply);
         if (grant) finish({ grant, close: () => socket.destroy() });
         else {
-          const error = (reply as { error?: unknown } | null)?.error;
+          const error = isRecord(reply) ? reply.error : undefined;
           finish({ error: typeof error === "string" ? error : "the shell refused" });
         }
         return;

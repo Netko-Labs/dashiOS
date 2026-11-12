@@ -11,7 +11,7 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { mkdir, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import type { Entry } from "./entries.ts";
+import type { Entry } from "./shared/app-entries/index.ts";
 
 /** How many apps the history keeps; the launcher shows up to `SHOWN`. */
 export const MAX_RECENTS = 12;

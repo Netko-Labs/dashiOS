@@ -64,3 +64,26 @@ Shape it without breaking the one-row rule: the sidebar becomes Discover · Apps
 - Shell-level consent sheets (`src/applets/consent-sheet.tsx`) should be built on `@dashi/ui`'s `Sheet` so that radius, padding, type and material follow the spec in docs/design.html.
 - Define one category taxonomy and tint map for every Dashi store surface, with no shiso.
 - "Dashi", never "this Dashi" or "the Dashi": a copy lint for UI strings would catch `rows.tsx:68` and `catalog.ts:79`.
+
+**Where it went (0.5.0, wave 2: folded into Software)**
+
+The big idea is done: applets are Software's "Menu bar applets" (`apps/software/applets/`), with one search, one Installed, one Updates and one queue. `apps/applet-store/` and its launcher entry are gone; Software answers to "applets", "menu bar", "extensions".
+
+- [x] 1. No dead store: without a catalog key the applets' place isn't in the sidebar; Installed lists the ones added by hand.
+- [x] 2. No error screen for a missing key; offline and a catalog that doesn't check are said plainly, with Try again.
+- [x] 3. Software's menus cover applets: Get…, Update…, Remove…, Go ❖1–4, Check for Updates ❖R.
+- [x] 4. An update's sheet lists what is new first; what was allowed folds away ("Already allowed (2)").
+- [x] 5. The consent sheet is on @dashi/ui's `Sheet` (and `SheetCard` on the shell's own surface): radius 12, padding 20, the applet's own 40 px icon, "By Netko Labs · Reviewed by Dashi · Signed by its author".
+- [x] 6. Dashi's reviewed seal (the bowl, in ink) is its own mark, apart from Flathub's blue check; the signature is on the page; what it can do is the trust card's second fact, at the top.
+- [x] 7. Manage on its page: on or off in the menu bar, what it was allowed, Remove… with "Also delete what it saved". A switch per permission and a Settings pane: moved to Settings (Privacy & Security), since taking one back makes the shell ask again.
+- [x] 8. Installs run on Software's queue with progress and a ×; failures are plain ("Its signature doesn't match. Dashi didn't install it, to keep you safe.") with Details.
+- [x] 9. "Made for this computer" first, then each category. New and Popular need dates and counts the index doesn't carry yet: moved to the catalog's format.
+- [x] 10. One verb: Get, Update, "Installed" as words, "Needs a newer Dashi" as a detail.
+- [x] 11. Back restores the search (Software's nav); no unlabelled Refresh.
+- [x] 12. One toolbar row; Update all is in the section's heading.
+- [x] 13. "This computer" is moss with a check glyph; the Developer tile isn't shiso.
+- [x] 14. Status has its own glyph; one tint map for both kinds of category.
+- [x] 15. Updates are looked for when Software opens and on ❖R; the shell's daily look tells about apps and the system, and the kill switch still looks at the index daily. "Update all…" says a sheet follows; one consent sheet per applet that asks for more (an "allow all" is not done).
+- [x] 16. The same gallery as apps.
+- [x] 17. Source opens the browser.
+- [x] 18. `updates()` is worked out once per catalog and folder. Reading the folder is still synchronous, but only after a change.

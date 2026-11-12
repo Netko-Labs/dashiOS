@@ -17,7 +17,7 @@
  * - `view`: the applet's own Metal host draws its answer where the launcher's rows were.
  */
 
-import { id, isRefusal, list, type Refusal, record, refuse, text } from "./parse.ts";
+import { id, isRefusal, list, type Refusal, record, refuse, text } from "@dashi/shape/kit";
 
 export const COMMAND_MODES = ["instant", "pick", "view"] as const;
 export type CommandMode = (typeof COMMAND_MODES)[number];
@@ -126,7 +126,9 @@ export function checkArgs(
     if (arg.type === "string" && (typeof value !== "string" || value.length > 1000)) return refuse(`“${arg.title ?? name}” must be text.`);
     if (arg.type === "number" && (typeof value !== "number" || !Number.isFinite(value))) return refuse(`“${arg.title ?? name}” must be a number.`);
     if (arg.type === "boolean" && typeof value !== "boolean") return refuse(`“${arg.title ?? name}” must be true or false.`);
-    out[name] = value as string | number | boolean;
+    if (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean")
+      return refuse(`“${arg.title ?? name}” must be text, a number, or true or false.`);
+    out[name] = value;
   }
   const missing = command.args.find((arg) => arg.required && !(arg.name in out));
   return missing ? refuse(`It needs “${missing.title ?? missing.name}”.`) : { values: out };

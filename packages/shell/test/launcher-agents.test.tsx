@@ -4,22 +4,15 @@ import { ANSWERERS } from "../src/agents/ask/answerer.ts";
 import type { HistoryEntry } from "../src/agents/ask/history.ts";
 import type { NowItem } from "../src/agents/ask/now.ts";
 import { stepsFrom } from "../src/agents/ask/plan.ts";
-import type { TaskView } from "../src/agents/ask/tasks.ts";
-import { TOOL_ACTIONS } from "../src/agents/tools/index.ts";
-import {
-  ASK_ROW,
-  agentVerbs,
-  firstChoice,
-  type LauncherAgents,
-  type LauncherAgentsSnapshot,
-  readsLikeSentence,
-  SET_UP_ROW,
-  withAgents,
-} from "../src/launcher/agents/rows.ts";
-import { agentField, taskSubmit } from "../src/launcher/agents/task-mode.tsx";
+import type { TaskView } from "../src/agents/ask/types.ts";
+import { TOOL_ACTIONS } from "../src/agents/index.ts";
 import { LAUNCHER_RULES, LauncherKeys } from "../src/launcher/keys.ts";
-import type { Section } from "../src/launcher/rows.ts";
+import { ASK_ROW, agentVerbs, firstChoice, readsLikeSentence, SET_UP_ROW, withAgents } from "../src/launcher/lib/agents/agent-rows.ts";
+import { agentField, taskSubmit } from "../src/launcher/lib/agents/task-mode.tsx";
+import type { Section } from "../src/launcher/sections.ts";
+import type { LauncherAgents, LauncherAgentsSnapshot } from "../src/launcher/types.ts";
 import { app, mount, unmountLauncher } from "./launcher-harness.tsx";
+import { settle } from "./support/time.ts";
 
 afterEach(unmountLauncher);
 
@@ -201,10 +194,10 @@ test("view: ⇥ asks, the plan shows its steps under the spark, and Return runs 
   expect(launcher.rows().ids).toEqual([ASK_ROW]);
   expect(launcher.rows().selected).toBeNull();
   keys.binding("launcher-tab");
-  await new Promise((done) => setTimeout(done, 10));
+  await settle();
   expect(agents.asked).toEqual(["dark mode and hide the dock"]);
   agents.set(snap({ tasks: [planned()] }));
-  await new Promise((done) => setTimeout(done, 10));
+  await settle();
   expect(launcher.has("launcher:section:plan")).toBe(true);
   expect(launcher.has("launcher:step:0")).toBe(true);
   expect(launcher.has("launcher:chip:1")).toBe(true);
@@ -224,9 +217,9 @@ test("view: after a plan ran, the field takes the next words alone; the plan's n
   const value = (): string | undefined => /"value":"([^"]*)"/.exec(launcher.tree())?.[1];
   await launcher.type("dark mode and hide the dock");
   keys.binding("launcher-tab");
-  await new Promise((done) => setTimeout(done, 10));
+  await settle();
   agents.set(snap({ tasks: [{ ...planned(), phase: "done" }] }));
-  await new Promise((done) => setTimeout(done, 10));
+  await settle();
   // On the plan the words are its chip; the field is empty for a follow-up.
   expect(value()).toBe("");
   await launcher.key("Escape");
@@ -239,8 +232,8 @@ test("view: after a plan ran, the field takes the next words alone; the plan's n
   await launcher.type("");
   await launcher.type("dark mode and hide the dock");
   keys.binding("launcher-tab");
-  await new Promise((done) => setTimeout(done, 10));
+  await settle();
   keys.binding("launcher-tab");
-  await new Promise((done) => setTimeout(done, 10));
+  await settle();
   expect(value()).toBe("dark mode and hide the dock");
 });

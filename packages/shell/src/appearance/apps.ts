@@ -7,36 +7,11 @@
  * them; nothing here touches the system.
  */
 
-import { COMPOSITOR, findAncestor, isNested } from "../menus/session.ts";
+import { type AppLook, gtkThemeName, INTERFACE_FONT, WINDOW_BUTTONS } from "../shared/appearance/index.ts";
+import { COMPOSITOR, findAncestor, isNested } from "../shared/session-power/index.ts";
 
 /** One program and its arguments; never a shell string. */
 export type AppCommand = readonly string[];
-
-/** The window buttons of apps that draw their own: left, as Dashi's title bars. */
-export const WINDOW_BUTTONS = "close,minimize,maximize:";
-
-/** The UI font of GTK apps when Dashi's own (Inter, what the shell and Metal draw with) is installed. */
-export const INTERFACE_FONT = "Inter 11";
-
-/**
- * What this machine has that GTK apps can be dressed with, found once at
- * startup (look.ts). Everything is off by default, so a missing piece is a
- * command that is simply not run.
- */
-export interface AppLook {
-  /** adw-gtk3 is installed: GTK 3 apps then look like libadwaita; otherwise they keep Adwaita. */
-  adwGtk3?: boolean;
-  /** The GNOME accent nearest Dashi's (gtk-colors.ts `nearestAccent`), for apps that read the portal's accent-color. */
-  accent?: string;
-  /** Inter is installed: GTK apps get it as their interface and document font. */
-  interFont?: boolean;
-}
-
-/** GTK 3's theme name: adw-gtk3 (and its dark twin) when installed, else the Adwaita pair that ships with GTK. */
-export function gtkThemeName(dark: boolean, adwGtk3: boolean): string {
-  if (adwGtk3) return dark ? "adw-gtk3-dark" : "adw-gtk3";
-  return dark ? "Adwaita-dark" : "Adwaita";
-}
 
 /**
  * The commands that make installed apps follow `dark`, for the tools that are

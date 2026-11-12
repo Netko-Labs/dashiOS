@@ -1,14 +1,14 @@
 /**
  * The monitors dashi-comp reports (IPC `outputs`): who they are, what they
  * run, what they could run. Includes the ones that are plugged in but turned
- * off, which `parseScreens` (displays.ts) leaves out because they show
+ * off, which `screensOf` (displays.ts) leaves out because they show
  * nothing. The identity of a monitor is its EDID (make, model, serial), so a
  * saved arrangement follows the monitor to another port; a monitor without
  * one is known by its connector.
  */
 
-import { type Frame, parseFrame } from "../compositor.ts";
-import { isBuiltIn } from "../displays.ts";
+import { isBuiltIn } from "@dashi/ui";
+import type { Frame, Output } from "../compositor/index.ts";
 
 export type Rotation = 0 | 90 | 180 | 270;
 export const ROTATIONS: readonly Rotation[] = [0, 90, 180, 270];
@@ -50,6 +50,8 @@ export interface Monitor {
   flipped: boolean;
   /** Variable refresh rate: whether the screen can, whether it does now, and the person's choice. */
   vrr: MonitorVrr;
+  /** The screen whose picture it shows (IPC `mirror`); absent while it shows its own desktop. It has no frame then. */
+  mirrorOf?: string;
 }
 
 /** Variable refresh rate: off, on, or only while a window is full screen there. */
@@ -63,66 +65,40 @@ export interface MonitorVrr {
   mode: VrrMode;
 }
 
-function parseVrr(value: unknown): MonitorVrr {
-  const vrr = record(value);
-  return { supported: vrr?.supported === true, active: vrr?.active === true, mode: isVrrMode(vrr?.mode) ? vrr.mode : "off" };
-}
-
-const record = (value: unknown): Record<string, unknown> | null =>
-  typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
-const finite = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
-const text = (value: unknown): string => (typeof value === "string" ? value : "");
-
-function parseMode(value: unknown): Mode | null {
-  const mode = record(value);
-  const width = finite(mode?.width);
-  const height = finite(mode?.height);
-  const refreshMhz = finite(mode?.refreshMhz);
-  return mode && width !== null && height !== null && refreshMhz !== null && width > 0 && height > 0 ? { width, height, refreshMhz } : null;
-}
-
 const isRotation = (value: unknown): value is Rotation => ROTATIONS.some((rotation) => rotation === value);
 
-/** The monitors in an `outputs` answer, malformed entries skipped. */
-export function parseMonitors(answer: unknown): Monitor[] {
-  const outputs = record(answer)?.outputs;
-  if (!Array.isArray(outputs)) return [];
-  return outputs.flatMap((entry: unknown): Monitor[] => {
-    const output = record(entry);
-    if (!output || typeof output.name !== "string" || output.name === "") return [];
-    const size = record(output.physicalMm);
-    const transform = record(output.transform);
-    const frame = parseFrame(output.frame);
-    const mode = parseMode(output.mode);
-    const enabled = output.enabled !== false;
-    // A monitor that is on but shows no mode is not one to work with.
-    if (enabled && !mode) return [];
-    const modes = Array.isArray(output.modes)
-      ? output.modes.flatMap((offered: unknown): OfferedMode[] => {
-          const parsed = parseMode(offered);
-          const flags = record(offered);
-          return parsed ? [{ ...parsed, preferred: flags?.preferred === true, current: flags?.current === true }] : [];
-        })
-      : [];
+const realMode = (mode: Mode | null): Mode | null => (mode && mode.width > 0 && mode.height > 0 ? mode : null);
+
+/** The monitors among the screens (`outputs`, src/compositor/outputs.ts): one that is on but shows no mode is not one to work with. */
+export function monitorsOf(outputs: readonly Output[]): Monitor[] {
+  return outputs.flatMap((output): Monitor[] => {
+    const mode = realMode(output.mode);
+    if (output.enabled && !mode) return [];
+    const modes = output.modes.flatMap((offered): OfferedMode[] => {
+      const real = realMode(offered);
+      return real ? [{ ...real, preferred: offered.preferred, current: offered.current }] : [];
+    });
+    const { rotation, flipped } = output.transform;
     return [
       {
         name: output.name,
-        make: text(output.make),
-        model: text(output.model),
-        serial: text(output.serial),
+        make: output.make,
+        model: output.model,
+        serial: output.serial,
         builtIn: isBuiltIn(output.name),
-        enabled,
-        lit: output.lit !== false,
-        primary: output.primary === true,
-        widthMm: finite(size?.width) ?? 0,
-        heightMm: finite(size?.height) ?? 0,
-        scale: finite(output.scale) ?? 1,
-        ...(frame ? { frame } : {}),
-        ...(mode ? { mode } : {}),
+        enabled: output.enabled,
+        lit: output.lit,
+        primary: output.primary,
+        widthMm: output.physicalMm.width,
+        heightMm: output.physicalMm.height,
+        scale: output.scale,
+        ...(output.frame ? { frame: output.frame } : {}),
+        ...(mode ? { mode: { width: mode.width, height: mode.height, refreshMhz: mode.refreshMhz } } : {}),
         modes,
-        rotation: isRotation(transform?.rotation) ? transform.rotation : 0,
-        flipped: transform?.flipped === true,
-        vrr: parseVrr(output.vrr),
+        rotation: isRotation(rotation) ? rotation : 0,
+        flipped,
+        vrr: output.vrr,
+        ...(output.mirrorOf ? { mirrorOf: output.mirrorOf } : {}),
       },
     ];
   });
@@ -178,6 +154,21 @@ export function sizesOf(modes: readonly Mode[]): Array<{ width: number; height: 
 }
 
 /**
+ * The panel's native size: the mode its EDID prefers, as long as nothing it
+ * offers is larger both ways (a panel can't show more pixels than it has).
+ * A screen that prefers a smaller mode than it offers has no native size
+ * Dashi can name (QEMU's monitor prefers 640 × 480 and offers up to
+ * 5120 × 2160), so no choice is called native. A 4K screen that prefers
+ * 3840 × 2160 and also takes the cinema 4096 × 2160 keeps its own.
+ */
+export function nativeSize(modes: readonly OfferedMode[]): { width: number; height: number } | null {
+  const preferred = sizesOf(modes.filter((mode) => mode.preferred))[0];
+  if (!preferred) return null;
+  const larger = sizesOf(modes).some((size) => size.width > preferred.width && size.height > preferred.height);
+  return larger ? null : preferred;
+}
+
+/**
  * The sizes worth offering first, largest first: the native one, the current
  * one, and up to `limit` others of the native shape (within 2%) that are no
  * larger than it. A monitor's EDID lists dozens, most of them odd shapes or
@@ -185,7 +176,8 @@ export function sizesOf(modes: readonly Mode[]): Array<{ width: number; height: 
  */
 export function commonSizes(modes: readonly OfferedMode[], current: { width: number; height: number }, limit = 6): Array<{ width: number; height: number }> {
   const all = sizesOf(modes);
-  const native = modes.find((mode) => mode.preferred) ?? all[0];
+  // Without a native size, the size in use stands for the screen's shape and limit.
+  const native = nativeSize(modes) ?? current;
   if (!native) return [];
   const shape = native.width / native.height;
   const same = (size: { width: number; height: number }) => size.width === current.width && size.height === current.height;

@@ -1,0 +1,1 @@
+# H13: shellcheck findings per script, every severity (count = findings). May only shrink.
