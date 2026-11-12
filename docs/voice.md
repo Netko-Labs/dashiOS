@@ -431,11 +431,11 @@ Through the service in the VM (8 cores, PipeWire, a null source and sink;
 
 | What | Measured |
 | --- | --- |
-| Key let go → the words (`listen.stop` → its reply), 7 s of speech | 0.31 s, of which 0.13 s is the last eighth of a second heard |
+| Key let go → the words (`listen.stop` → its reply), 7 s of speech | 0.31 s to 0.34 s, of which 0.13 s is the last eighth of a second heard |
 | Speech begins → first `partial` | about 1 s; then one about every 0.8 s |
-| `speak` → first sound (`sentence`), models warm | 0.37 s to 0.43 s |
+| `speak` → first sound (`sentence`), models warm | 0.37 s to 0.42 s |
 | `speak.stop` → silence at the speakers | under 20 ms |
-| Fetching both basic sets (1 GB) | 62 s on the VM's connection |
+| Fetching both basic sets (1 GB), with a cancel and a resume on the way | 23 s on the VM's connection |
 
 The 8-bit Kokoro file is a third of the size and three times slower on a
 CPU (0.57 of real time); the 16-bit one gives silence on some sentences.
