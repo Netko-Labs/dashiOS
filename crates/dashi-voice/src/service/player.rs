@@ -28,6 +28,8 @@ pub(super) struct Player<'a> {
     pub(super) id: u64,
     pub(super) generation: u64,
     pub(super) speaker: Option<Box<dyn Speaker>>,
+    /// Sound has been written: the state is `speaking`.
+    pub(super) sounding: bool,
     /// When the first sample played, on the service's clock.
     start: Option<Duration>,
     /// Samples written so far.
@@ -43,6 +45,7 @@ impl<'a> Player<'a> {
             id,
             generation,
             speaker: None,
+            sounding: false,
             start: None,
             written: 0,
             due: VecDeque::new(),
@@ -59,6 +62,7 @@ impl Player<'_> {
                 return Ok(false);
             }
             self.open()?;
+            self.sound();
             let ms = samples_time(spoken.samples.len()).as_millis() as u64;
             let words = spoken.words.iter().map(WordTime::from).collect();
             self.due.push_back((
@@ -94,8 +98,21 @@ impl Player<'_> {
         Ok(true)
     }
 
-    /// Open the speakers for the first sound, and let a stop close them.
-    fn open(&mut self) -> Result<(), String> {
+    /// The first sound is here: the state goes from `thinking` to `speaking`.
+    fn sound(&mut self) {
+        if self.sounding || self.speaker.is_none() {
+            return;
+        }
+        self.sounding = true;
+        self.service.act(|activity| {
+            activity.thinking -= 1;
+            activity.speaking = true;
+        });
+    }
+
+    /// Open the speakers, and let a stop close them. Asked for before the first
+    /// sentence is made, so they are ready when its sound is.
+    pub(super) fn open(&mut self) -> Result<(), String> {
         if self.speaker.is_some() {
             return Ok(());
         }
@@ -104,10 +121,6 @@ impl Player<'_> {
             return Ok(());
         }
         self.speaker = Some(speaker);
-        self.service.act(|activity| {
-            activity.thinking -= 1;
-            activity.speaking = true;
-        });
         Ok(())
     }
 

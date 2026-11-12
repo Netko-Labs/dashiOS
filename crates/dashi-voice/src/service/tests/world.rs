@@ -42,6 +42,7 @@ pub(super) fn world_with(here: bool, fetcher: &[&str]) -> World {
         here: AtomicBool::new(here),
         counter: counter.clone(),
         forgotten: Mutex::new(Vec::new()),
+        played: played.clone(),
     };
     let service = Service::new(Parts {
         store: Store::new(folder.path()),

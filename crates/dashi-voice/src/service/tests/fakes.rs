@@ -39,11 +39,14 @@ impl Recognizer for Counter {
     }
 }
 
-/// A tenth of a second of sound for each word; "fail" can't be said.
-struct Tenths;
+/// A tenth of a second of sound for each word; "fail" can't be said. It notes
+/// how many speakers were open each time it was asked for a sentence.
+struct Tenths(Arc<Played>);
 
 impl Synthesizer for Tenths {
     fn speak(&mut self, sentence: &str, _voice: &str, _speed: f32) -> Result<Spoken, String> {
+        let opened = self.0.opened.load(Ordering::SeqCst);
+        self.0.opened_when_made.lock().unwrap().push(opened);
         if sentence.contains("fail") {
             return Err("That can't be said.".into());
         }
@@ -67,6 +70,7 @@ pub(super) struct FakeEngines {
     pub(super) here: AtomicBool,
     pub(super) counter: Arc<Mutex<Counter>>,
     pub(super) forgotten: Mutex<Vec<String>>,
+    pub(super) played: Arc<Played>,
 }
 
 impl Engines for FakeEngines {
@@ -93,7 +97,7 @@ impl Engines for FakeEngines {
         (voice == "nobody").then(|| "There is no voice named nobody.".into())
     }
     fn synthesizer(&self) -> Result<Shared<dyn Synthesizer>, String> {
-        Ok(Arc::new(Mutex::new(Tenths)))
+        Ok(Arc::new(Mutex::new(Tenths(self.played.clone()))))
     }
     fn forget(&self, set: &str) {
         self.forgotten.lock().unwrap().push(set.to_owned());
@@ -135,6 +139,9 @@ type Hook = Box<dyn Fn() + Send + Sync>;
 #[derive(Default)]
 pub(super) struct Played {
     pub(super) samples: AtomicUsize,
+    /// Speakers opened so far, and how many were open each time a sentence was asked for.
+    pub(super) opened: AtomicUsize,
+    pub(super) opened_when_made: Mutex<Vec<usize>>,
     pub(super) closed: AtomicBool,
     pub(super) finished: AtomicBool,
     /// Called once this many samples were written.
@@ -179,6 +186,7 @@ impl Sound for FakeSound {
             .ok_or_else(|| "The microphone can't be opened.".into())
     }
     fn speaker(&self) -> Result<Box<dyn Speaker>, String> {
+        self.played.opened.fetch_add(1, Ordering::SeqCst);
         Ok(Box::new(KeptSpeaker(self.played.clone())))
     }
 }

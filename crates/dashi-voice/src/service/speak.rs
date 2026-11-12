@@ -148,7 +148,9 @@ impl Service {
     /// Say one utterance to its end, or until it is stopped.
     fn say(self: &Arc<Self>, utterance: &Utterance, generation: u64) {
         self.act(|activity| activity.thinking += 1);
-        let sentences = crate::text::sentences(&utterance.text);
+        // The first sentence in two parts when it is long: the first sound waits for less.
+        let sentences = crate::text::pieces(&utterance.text);
+        let any = !sentences.is_empty();
         let (made, sound) = sync_channel::<Made>(1);
         let maker = self.clone();
         let (voice, speed) = (utterance.voice.clone(), utterance.speed);
@@ -179,8 +181,10 @@ impl Service {
             }
         });
         let mut player = Player::new(self, utterance.id, generation);
-        let result = player.play(&sound);
-        let spoke = player.speaker.is_some();
+        // The speakers open now, while the first sentence is made: opening them takes a
+        // while of its own (a program starts, PipeWire links it), and the sound waited for it.
+        let result = if any { player.open() } else { Ok(()) }.and_then(|()| player.play(&sound));
+        let spoke = player.sounding;
         match (&result, player.speaker.take()) {
             (Ok(true), Some(speaker)) => speaker.finish(),
             (_, speaker) => drop(speaker),

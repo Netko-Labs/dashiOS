@@ -41,17 +41,39 @@ pub(crate) fn primary(language: &str) -> String {
         .to_lowercase()
 }
 
+/// The models in memory, each behind its own lock: loading one (a second or
+/// two) never keeps another from being used or loaded meanwhile, so the
+/// speaking model can load while the listening one hears.
 #[derive(Default)]
 struct Held {
-    parakeet: Option<Shared<dyn Recognizer>>,
-    whisper: Option<Shared<dyn Recognizer>>,
-    kokoro: Option<Shared<dyn Synthesizer>>,
-    used: Duration,
+    parakeet: Mutex<Option<Shared<dyn Recognizer>>>,
+    whisper: Mutex<Option<Shared<dyn Recognizer>>>,
+    kokoro: Mutex<Option<Shared<dyn Synthesizer>>>,
+    used: Mutex<Duration>,
 }
 
 pub(crate) struct Loaded {
     store: Store,
-    held: Mutex<Held>,
+    held: Held,
+}
+
+/// The model in `slot`, opened first if it is not in memory.
+fn held_or_open<T: ?Sized>(
+    slot: &Mutex<Option<Shared<T>>>,
+    open: impl FnOnce() -> Result<Shared<T>, String>,
+) -> Result<Shared<T>, String> {
+    let mut slot = slot.lock().map_err(|_| "Voice is not well.")?;
+    if let Some(model) = slot.as_ref() {
+        return Ok(model.clone());
+    }
+    let model = open()?;
+    *slot = Some(model.clone());
+    Ok(model)
+}
+
+/// Let go of the model in `slot`; whether there was one.
+fn let_go<T: ?Sized>(slot: &Mutex<Option<Shared<T>>>) -> bool {
+    slot.lock().is_ok_and(|mut slot| slot.take().is_some())
 }
 
 const NOT_HERE_LISTEN: &str =
@@ -62,7 +84,7 @@ impl Loaded {
     pub(crate) fn new(store: Store) -> Self {
         Self {
             store,
-            held: Mutex::new(Held::default()),
+            held: Held::default(),
         }
     }
 
@@ -103,25 +125,18 @@ impl Engines for Loaded {
         if let Some(why) = self.deaf_to(language) {
             return Err(why);
         }
-        let mut held = self.held.lock().map_err(|_| "Voice is not well.")?;
         if Self::wants_whisper(language) {
-            if held.whisper.is_none() {
-                held.whisper = Some(Arc::new(Mutex::new(Whisper::open(
-                    &self.folder(WHISPER_SET),
-                )?)));
-            }
-            return held
-                .whisper
-                .clone()
-                .ok_or_else(|| "Voice is not well.".into());
+            return held_or_open(&self.held.whisper, || {
+                let whisper: Shared<dyn Recognizer> =
+                    Arc::new(Mutex::new(Whisper::open(&self.folder(WHISPER_SET))?));
+                Ok(whisper)
+            });
         }
-        if held.parakeet.is_none() {
+        held_or_open(&self.held.parakeet, || {
             let folder = self.folder(LISTEN_SET).join("parakeet");
-            held.parakeet = Some(Arc::new(Mutex::new(Parakeet::open(&folder)?)));
-        }
-        held.parakeet
-            .clone()
-            .ok_or_else(|| "Voice is not well.".into())
+            let parakeet: Shared<dyn Recognizer> = Arc::new(Mutex::new(Parakeet::open(&folder)?));
+            Ok(parakeet)
+        })
     }
 
     fn mute_in(&self, voice: &str) -> Option<String> {
@@ -137,48 +152,47 @@ impl Engines for Loaded {
         if !self.store.installed_id(SPEAK_SET) {
             return Err(NOT_HERE_SPEAK.into());
         }
-        let mut held = self.held.lock().map_err(|_| "Voice is not well.")?;
-        if held.kokoro.is_none() {
+        held_or_open(&self.held.kokoro, || {
             let folder = self.folder(SPEAK_SET);
             let kokoro = Kokoro::open(&folder.join("kokoro.onnx"), &folder.join("voices"))?;
-            held.kokoro = Some(Arc::new(Mutex::new(kokoro)));
-        }
-        held.kokoro
-            .clone()
-            .ok_or_else(|| "Voice is not well.".into())
+            let kokoro: Shared<dyn Synthesizer> = Arc::new(Mutex::new(kokoro));
+            Ok(kokoro)
+        })
     }
 
     fn forget(&self, set: &str) {
-        if let Ok(mut held) = self.held.lock() {
-            match set {
-                LISTEN_SET => held.parakeet = None,
-                WHISPER_SET => held.whisper = None,
-                SPEAK_SET => held.kokoro = None,
-                _ => {}
+        match set {
+            LISTEN_SET => {
+                let_go(&self.held.parakeet);
             }
+            WHISPER_SET => {
+                let_go(&self.held.whisper);
+            }
+            SPEAK_SET => {
+                let_go(&self.held.kokoro);
+            }
+            _ => {}
         }
     }
 
     fn rest(&self, now: Duration, idle: Duration) {
-        if let Ok(mut held) = self.held.lock()
-            && now.saturating_sub(held.used) >= idle
-        {
-            let had = held.parakeet.is_some() || held.whisper.is_some() || held.kokoro.is_some();
-            *held = Held {
-                used: held.used,
-                ..Held::default()
-            };
-            if had {
-                // SAFETY: malloc_trim takes a pad size and touches no memory of ours;
-                // it hands the freed models' pages back to the system.
-                unsafe { libc::malloc_trim(0) };
-            }
+        let used = self.held.used.lock().map_or(now, |used| *used);
+        if now.saturating_sub(used) < idle {
+            return;
+        }
+        // Every slot is asked: `|` and not `||`, so none is skipped once one had a model.
+        let had =
+            let_go(&self.held.parakeet) | let_go(&self.held.whisper) | let_go(&self.held.kokoro);
+        if had {
+            // SAFETY: malloc_trim takes a pad size and touches no memory of ours;
+            // it hands the freed models' pages back to the system.
+            unsafe { libc::malloc_trim(0) };
         }
     }
 
     fn touch(&self, now: Duration) {
-        if let Ok(mut held) = self.held.lock() {
-            held.used = now;
+        if let Ok(mut used) = self.held.used.lock() {
+            *used = now;
         }
     }
 }

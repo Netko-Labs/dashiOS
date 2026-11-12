@@ -56,6 +56,57 @@ fn sentences_are_said_in_order_with_their_words() {
 }
 
 #[test]
+fn the_speakers_open_while_the_first_sentence_is_made_not_after() {
+    let world = world();
+    world.ask(say("Hello there. How are you today?")).unwrap();
+    world.until("it is said", |world| spoken(world, 1));
+    // One pair of speakers for the utterance, open before any sentence was asked for.
+    assert_eq!(world.played.opened.load(Ordering::SeqCst), 1);
+    assert_eq!(*world.played.opened_when_made.lock().unwrap(), vec![1, 1]);
+    world.until("it is idle", |world| {
+        world.states().last().map(String::as_str) == Some("idle")
+    });
+    // Open speakers are not sound: the state is `speaking` only once the first sentence plays.
+    assert_eq!(world.states(), vec!["thinking", "speaking", "idle"]);
+}
+
+#[test]
+fn a_long_first_sentence_is_heard_in_two_parts_so_its_first_sound_comes_sooner() {
+    let world = world();
+    world
+        .ask(say(
+            "I can't see the weather from this computer, but I can remind you. You asked to call Alex.",
+        ))
+        .unwrap();
+    world.until("it is said", |world| spoken(world, 1));
+    let said: Vec<(u64, String, u64)> = world
+        .events_named("sentence")
+        .iter()
+        .map(|event| {
+            (
+                event["index"].as_u64().unwrap(),
+                event["text"].as_str().unwrap().to_owned(),
+                event["ms"].as_u64().unwrap(),
+            )
+        })
+        .collect();
+    // The first piece is eight words (0.8 s of this fake's sound), not the sentence's thirteen.
+    assert_eq!(
+        said,
+        vec![
+            (
+                0,
+                "I can't see the weather from this computer,".to_owned(),
+                800
+            ),
+            (1, "but I can remind you.".to_owned(), 500),
+            (2, "You asked to call Alex.".to_owned(), 500),
+        ]
+    );
+    assert_eq!(world.played.samples.load(Ordering::SeqCst), 18 * 2400);
+}
+
+#[test]
 fn a_stop_is_at_once() {
     let world = world();
     // Half a second in, the person presses Esc.
@@ -157,10 +208,17 @@ fn what_cannot_be_said_fails_in_words() {
     world.until("it is idle", |world| {
         world.states().last().map(String::as_str) == Some("idle")
     });
-    // Nothing to say is said at once, and is not an error.
+    // The speakers opened for it are closed, not left open: nothing was written to them.
+    assert_eq!(world.played.opened.load(Ordering::SeqCst), 1);
+    assert_eq!(world.played.samples.load(Ordering::SeqCst), 0);
+    assert!(!world.played.finished.load(Ordering::SeqCst));
+    // It was never `speaking`.
+    assert!(!world.states().contains(&"speaking".to_owned()));
+    // Nothing to say is said at once, is not an error, and opens no speakers.
     world.ask(say("  ")).unwrap();
     world.until("nothing was said", |world| spoken(world, 2));
     assert_eq!(world.events_named("spoken")[1]["reason"], "done");
+    assert_eq!(world.played.opened.load(Ordering::SeqCst), 1);
 }
 
 #[test]
