@@ -14,7 +14,7 @@ import { startKeyring } from "./lib/keyring.ts";
 import { watchCompositor } from "./lib/parent.ts";
 import { Service, type ServiceDeps, type ServiceSpec } from "./lib/service.ts";
 import { log, systemDeps } from "./lib/system.ts";
-import { startSessionTarget, stopSessionTarget } from "./lib/target.ts";
+import { startSessionTarget, stopSessionTarget, stopSessionTargetNow } from "./lib/target.ts";
 
 const shellDir = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -30,13 +30,23 @@ export function sessionServices(): ServiceSpec[] {
   ];
 }
 
+/** Start a command and let it run: nothing here waits for it. */
+function spawnAndForget(command: readonly string[]): void {
+  try {
+    Bun.spawn([...command], { stdin: "ignore", stdout: "ignore", stderr: "ignore" }).unref();
+  } catch (error) {
+    log(`could not run ${command[0]}: ${String(error)}`);
+  }
+}
+
 /** Run the session to its end; resolves with the exit code. */
 export async function runSession(specs: readonly ServiceSpec[] = sessionServices(), deps: ServiceDeps = systemDeps): Promise<number> {
   log(`session starting (pid ${process.pid}, WAYLAND_DISPLAY=${process.env.WAYLAND_DISPLAY ?? "unset"})`);
+  const ownsDisplay = process.env.DASHI_IMPORT_ENVIRONMENT === "1";
   // Only a session that owns the display may publish it or start its keyring:
   // a nested one would point the host desktop's portals and D-Bus-activated
   // apps at itself.
-  if (process.env.DASHI_IMPORT_ENVIRONMENT === "1") {
+  if (ownsDisplay) {
     // First, so its socket is part of what gets published.
     Object.assign(process.env, await startKeyring({ which: Bun.which, run: captureWithTimeout, log, exists: existsSync }));
     await importSessionEnvironment({ env: process.env, which: Bun.which, run: runWithTimeout, log });
@@ -52,6 +62,8 @@ export async function runSession(specs: readonly ServiceSpec[] = sessionServices
     if (ending) return;
     ending = true;
     log(`session ending: ${reason}`);
+    // First, and without waiting: a logout kills what is left of the session before the shell has stopped.
+    if (ownsDisplay) stopSessionTargetNow({ which: Bun.which, spawn: spawnAndForget });
     void Promise.all(services.map((service) => service.stop()));
   };
 
@@ -70,7 +82,7 @@ export async function runSession(specs: readonly ServiceSpec[] = sessionServices
     }),
   );
   stopWatching();
-  if (process.env.DASHI_IMPORT_ENVIRONMENT === "1") await stopSessionTarget({ which: Bun.which, run: runWithTimeout });
+  if (ownsDisplay) await stopSessionTarget({ which: Bun.which, run: runWithTimeout });
   log(`session over (exit ${code})`);
   return code;
 }

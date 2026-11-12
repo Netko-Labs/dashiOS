@@ -80,3 +80,24 @@ export async function stopSessionTarget(deps: Pick<TargetDeps, "which" | "run">)
   await deps.run(["systemctl", "--user", "stop", TARGET]);
   await stopPortal(deps);
 }
+
+/**
+ * `systemctl`'s arguments to stop the target and the portal backend without waiting for them
+ * (docs/architecture.md, "Processes", the supervisor).
+ */
+export function stopNowCommand(): string[] {
+  return ["systemctl", "--user", "stop", "--no-block", TARGET, ...STALE_UNITS];
+}
+
+/**
+ * Ask systemd to take the target down and return at once: the first thing a session does when it
+ * is told to end. Logging out ends the login's scope, and what is left of the session is killed
+ * with it a moment later, before the shell has stopped and `stopSessionTarget` could run: the
+ * target stayed up, so Voice (its models in memory) and the portal backend ran on at the login
+ * screen, where the backend's window host found no compositor and panicked every second and a
+ * half. The user manager is outside the scope, so once it has been asked it finishes the job.
+ */
+export function stopSessionTargetNow(deps: Pick<TargetDeps, "which"> & { spawn(command: readonly string[]): void }): void {
+  if (!deps.which("systemctl")) return;
+  deps.spawn(stopNowCommand());
+}

@@ -44,7 +44,11 @@ systemd --user
 - **The supervisor** (`src/session.ts`, `src/session/`) tells systemd and D-Bus
   the display, starts `dashi-session.target` (and with it
   `graphical-session.target`, which portals need), and restarts the shell when
-  it crashes.
+  it crashes. When the session is told to end, the first thing it does is ask
+  systemd to stop that target, without waiting (`stopSessionTargetNow`): a
+  logout ends the login's scope and kills what is left of the session before
+  the shell has stopped, and a target left up kept Voice and the portal
+  backend running at the login screen.
 - **The shell** (`src/main.tsx`) is the desktop's logic: window placement,
   shortcuts, Spaces, the overview's plan, displays, power, network, Bluetooth,
   sound, notifications, accounts, polkit, Flathub, agents. Its UI is React,

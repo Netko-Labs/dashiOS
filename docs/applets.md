@@ -420,7 +420,9 @@ The unit is part of the session's target (`PartOf=dashi-session.target`,
 `src/applets/units.ts`): the shell stops its applets as it exits (it asks
 systemd without waiting, `systemctl --user stop --no-block`, since nothing
 awaited runs once the shell is told to go), and systemd stops any that are
-left when the session ends, so none outlives a logout.
+left when the session ends, so none outlives a logout. Being stopped is
+not a failure (`SuccessExitStatus=143`, the runner's exit on SIGTERM), so
+a logout leaves no failed unit in the journal.
 The unit runs `bin/dashi-applet-run.ts`, which starts the D-Bus proxy if the
 permissions need one, then bubblewrap with the arguments
 `src/applets/lib/sandbox.ts` plans:

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -12,7 +12,7 @@ import {
   STALE_UNITS,
   stopsOnlyLoaded,
 } from "../src/session/lib/portal-files.ts";
-import { startSessionTarget, stopSessionTarget, TARGET } from "../src/session/lib/target.ts";
+import { startSessionTarget, stopNowCommand, stopSessionTarget, stopSessionTargetNow, TARGET } from "../src/session/lib/target.ts";
 
 /** A scratch home with a checkout's session dir; removed after `body`. */
 async function withCheckout(body: (paths: { session: string; data: string; config: string }) => void | Promise<void>): Promise<void> {
@@ -103,4 +103,37 @@ test("the backend's units are stopped by pattern: no unit is loaded to be stoppe
   const both = new Bun.Glob("dashi-portal*.service");
   expect(STALE_UNITS).toContain("dashi-portal*.service");
   expect(both.match("dashi-portal.service") && both.match(CHECKOUT_UNIT)).toBe(true);
+});
+
+test("a session told to end asks systemd to stop its target and its portal backend at once, without waiting", () => {
+  // A logout kills what is left of the session before the shell has stopped: the ask is one command that returns.
+  const asked: string[][] = [];
+  stopSessionTargetNow({ which: () => "/usr/bin/systemctl", spawn: (command) => asked.push([...command]) });
+  expect(asked).toEqual([["systemctl", "--user", "stop", "--no-block", TARGET, ...STALE_UNITS]]);
+  expect(stopNowCommand()).toContain("--no-block");
+  // The portal's units are named by pattern, so one that is not loaded is left alone.
+  expect(STALE_UNITS.every(stopsOnlyLoaded)).toBe(true);
+  // No systemd, nothing asked.
+  stopSessionTargetNow({ which: () => null, spawn: (command) => asked.push([...command]) });
+  expect(asked).toHaveLength(1);
+});
+
+test("an installed session removes the session target a checkout linked, and leaves a file the person wrote", async () => {
+  await withCheckout(({ session, data, config }) => {
+    const env = { XDG_DATA_HOME: data, XDG_CONFIG_HOME: config };
+    const units = join(config, "systemd", "user");
+    const target = join(units, TARGET);
+    mkdirSync(units, { recursive: true });
+    writeFileSync(join(session, TARGET), "[Unit]\nDescription=a checkout's\n");
+    // `systemctl --user link` leaves a link, which wins over the installed unit.
+    symlinkSync(join(session, TARGET), target);
+    expect(forgetCheckoutPortal(env)).toEqual({ unit: true, service: false });
+    expect(lstatSync(target, { throwIfNoEntry: false })).toBeUndefined();
+    // Nothing left to remove: nothing to reload.
+    expect(forgetCheckoutPortal(env).unit).toBe(false);
+    // A unit the person wrote there is not a link, and stays.
+    writeFileSync(target, "[Unit]\nDescription=mine\n");
+    expect(forgetCheckoutPortal(env).unit).toBe(false);
+    expect(readFileSync(target, "utf8")).toContain("mine");
+  });
 });
