@@ -120,6 +120,11 @@ export class SiteGrants {
     for (const listener of this.listeners) listener();
   }
 
+  /** Every site some agent was always allowed, for Work alone's first picks (alone/rules.ts). */
+  everyAgents(): string[] {
+    return [...new Set([...this.byAgent.values()].flatMap((sites) => [...sites.keys()]))];
+  }
+
   sites(key: string): string[] {
     return [...(this.byAgent.get(key)?.keys() ?? [])];
   }
@@ -168,11 +173,13 @@ export class SiteConsent {
     private readonly ask: (site: string) => Promise<SiteAnswer | null>,
     /** The sites allowed for a while: this connection's, or a launcher run's for all its turns (shared). */
     private readonly allowed: Set<string> = new Set(),
+    /** Sites used without asking for a while, whoever the agent is (Work alone, alone/): nothing is kept. */
+    private readonly free: (site: string) => boolean = () => false,
   ) {}
 
   /** Whether the agent may use `site` without asking. */
   has(site: string): boolean {
-    return [...this.allowed].some((allowed) => covers(allowed, site)) || this.grants.has(this.key(), site);
+    return [...this.allowed].some((allowed) => covers(allowed, site)) || this.grants.has(this.key(), site) || this.free(site);
   }
 
   /** Whether the person refused `site` on this connection. */

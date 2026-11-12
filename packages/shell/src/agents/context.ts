@@ -3,6 +3,7 @@
 import type { BrowserLink } from "../browser/bridge.ts";
 import type { Compositor } from "../compositor/index.ts";
 import type { Arrange, Tile } from "../layout.ts";
+import type { AloneStatus } from "./alone/index.ts";
 import type { Atspi, Placed, Rect } from "./atspi/index.ts";
 import type { Question } from "./confirm.ts";
 import type { Desktop, Hands } from "./desktop/index.ts";
@@ -96,6 +97,8 @@ export interface RunContext {
    * locking all come back false. The answer is never kept.
    */
   confirm(question: Question): Promise<boolean>;
+  /** Whether agents work alone now, and for how long (alone/): what `get_work_alone` answers. */
+  alone(): AloneStatus;
   /** Aborted when the agent gives up on this call, or leaves: sheets come down, nothing more is typed. */
   signal: AbortSignal;
 }

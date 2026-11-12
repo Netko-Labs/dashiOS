@@ -1,3 +1,21 @@
+export {
+  ALONE_MAX_MINUTES,
+  ALONE_MINUTES,
+  ALONE_SCOPES,
+  type AloneConfig,
+  type AloneRecord,
+  AloneRecords,
+  type AloneState,
+  aloneDefaults,
+  aloneNotice,
+  cleanConfig,
+  customMinutes,
+  minutesWords,
+  recordSummary,
+  recordText,
+  SHOW_RECORD,
+  WorkAlone,
+} from "./alone/index.ts";
 export { ANSWERERS, type AnswererChoice, type AnswererInfo, type HarnessId, isAnswererChoice, isHarnessId } from "./ask/answerer.ts";
 export { type AnswererRow, answererRows } from "./ask/choices.ts";
 export { type HarnessStatus, signInCommand } from "./ask/harness/index.ts";
@@ -11,7 +29,7 @@ export type { AnswerStatus, TaskView } from "./ask/types.ts";
 export { Atspi } from "./atspi/client.ts";
 export { type A11yNode, documents, fieldAt, focusedField, hasState, limits, passwordFields, placeAgain, ROLE, STATE } from "./atspi/tree.ts";
 export type { Question } from "./confirm.ts";
-export { type GrantEntry, Grants, label, logActivity, SCOPES, type Scope } from "./consent.ts";
+export { type GrantEntry, Grants, label, logActivity, SCOPES, type Scope, stateDir } from "./consent.ts";
 export type { ToolResult } from "./context.ts";
 export type { ClipboardCopy } from "./desktop/types.ts";
 export { contextPrompt, NO_CONTEXT, type TaskContext, taskGrants, windowWords } from "./handoff/grants.ts";
@@ -40,7 +58,7 @@ export {
 export { SHEET_LAYERS } from "./mask.ts";
 export { McpRelay } from "./mcp-relay.ts";
 export { parseStat, peerPid, socketFd } from "./peer.ts";
-export { personAnswered } from "./person.ts";
+export { personAnswered, personPressedWindow } from "./person.ts";
 export {
   type AgentInfo,
   AgentStore,

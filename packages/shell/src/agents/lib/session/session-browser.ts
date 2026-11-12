@@ -13,12 +13,17 @@ export class SessionBrowser {
     private readonly sites: SiteConsent,
   ) {}
 
-  run(): RunContext["browser"] {
+  /** `touched` hears each site the call was let use. */
+  run(touched: (site: string) => void = () => {}): RunContext["browser"] {
     const session = this;
     return {
       link: () => this.bridge.current(),
       whenConnected: (ms) => this.bridge.whenConnected(ms),
-      allowSite: (site) => this.sites.allow(site),
+      allowSite: async (site) => {
+        const allowed = await this.sites.allow(site);
+        if (allowed) touched(site);
+        return allowed;
+      },
       mayUse: (site) => this.sites.has(site),
       get tab() {
         return session.tab;
