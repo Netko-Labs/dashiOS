@@ -128,15 +128,18 @@ impl Dashi {
                 if text.chars().count() > MAX_TEXT {
                     return Err("too much text at once".into());
                 }
-                for ch in text.chars() {
-                    let name = xkb::keysym_get_name(xkb::utf32_to_keysym(ch as u32));
-                    let Some((code, shift)) = self.keycode_named(&name) else {
-                        continue;
-                    };
-                    let shift_code = shift
-                        .then(|| self.keycode_named("Shift_L"))
-                        .flatten()
-                        .map(|(c, _)| c);
+                // Every key is found before the first is pressed: text the layout can't type is
+                // refused whole, never typed with holes in it.
+                let mut keys = Vec::new();
+                for (name, ch) in typed_key_names(text).into_iter().zip(typed_chars(text)) {
+                    let key = self.keycode_named(&name).ok_or_else(|| {
+                        format!("this keyboard's layout can't type {ch:?}; nothing was typed")
+                    })?;
+                    keys.push(key);
+                }
+                let shift_code = self.keycode_named("Shift_L").map(|(code, _)| code);
+                for (code, shift) in keys {
+                    let shift_code = shift_code.filter(|_| shift);
                     if let Some(shift) = shift_code {
                         send(self, shift, true);
                     }
@@ -174,9 +177,37 @@ impl Dashi {
     }
 }
 
+/// The characters of `text` that are keys of their own: "\r\n" is one line's end, so one key.
+fn typed_chars(text: &str) -> impl Iterator<Item = char> {
+    let mut after_return = false;
+    text.chars().filter(move |ch| {
+        let line_feed_of_a_pair = *ch == '\n' && after_return;
+        after_return = *ch == '\r';
+        !line_feed_of_a_pair
+    })
+}
+
+/// The keysym name of the key that types each character of `text`. A line's end is Return: xkb
+/// names a newline Linefeed, a key no layout has, so `type_text` dropped it.
+fn typed_key_names(text: &str) -> Vec<String> {
+    typed_chars(text)
+        .map(|ch| match ch {
+            '\n' | '\r' => "Return".to_owned(),
+            _ => xkb::keysym_get_name(xkb::utf32_to_keysym(ch as u32)),
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_newline_is_the_return_key() {
+        assert_eq!(typed_key_names("a\nB"), ["a", "Return", "B"]);
+        assert_eq!(typed_key_names("\r\n\n\r"), ["Return", "Return", "Return"]);
+        assert_eq!(typed_key_names("\t "), ["Tab", "space"]);
+    }
 
     #[test]
     fn an_input_methods_grab_is_passed_by() {
