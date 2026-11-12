@@ -161,7 +161,7 @@ export class Voice {
       this.notice(`You said: ${tail(text, 80)}`, undefined, 2500);
       return question(text);
     }
-    this.show({ kind: "thinking", text: tail(text) });
+    this.show({ kind: "thinking", text });
     const asking = new AbortController();
     this.asking = asking;
     const answer = await this.deps.asker.ask(text, asking.signal).catch((): Answer => ({ say: "Something went wrong, and I couldn't ask.", failed: {} }));
@@ -197,7 +197,7 @@ export class Voice {
       case "level":
         return this.level.set(event.level);
       case "partial":
-        if (this.chip?.kind === "listening") this.show({ ...this.chip, text: tail(event.text) });
+        if (this.chip?.kind === "listening") this.show({ ...this.chip, text: event.text });
         return;
       case "sentence":
         // A failed ask's words stay in the chip while they are said.

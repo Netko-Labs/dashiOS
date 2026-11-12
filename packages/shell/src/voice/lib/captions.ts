@@ -6,8 +6,8 @@
  * here, by characters, never by the row growing or wrapping.
  */
 
-/** The most characters one line holds, at the chip's widest. */
-export const CAPTION_CHARS = 52;
+/** The most characters one line holds, at the chip's widest; a narrower chip holds fewer (chip.tsx `chipChars`). */
+export const CAPTION_CHARS = 56;
 
 export interface CaptionLine {
   /** The words of this line, in order. */

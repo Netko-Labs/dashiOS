@@ -7,7 +7,7 @@
 
 import { expect, test } from "bun:test";
 import { launcherAsker, type SpokenTasks } from "../src/voice/asker.ts";
-import { barHeights, chipLabel, chipPlace, VOICE_CHIP } from "../src/voice/chip.tsx";
+import { barHeights, chipChars, chipLabel, chipPlace, VOICE_CHIP } from "../src/voice/chip.tsx";
 import { heldKeys, isTalkKeyId, isVoiceId, TALK_KEYS, talkKey } from "../src/voice/keys.ts";
 import { answerOf, planWords, SPOKEN_CONTEXT, type SpokenTask } from "../src/voice/lib/answer.ts";
 import { CAPTION_CHARS, captionLines, head, lineAt, listenLanguage, tail } from "../src/voice/lib/captions.ts";
@@ -22,6 +22,9 @@ test("a sentence is cut into lines at word ends, and the line that holds the wor
   expect(lines.every((line) => line.words.join(" ").length <= CAPTION_CHARS)).toBe(true);
   expect(lines.flatMap((line) => line.words)).toEqual(words);
   expect(lines.length).toBe(2);
+  // A narrower chip holds fewer characters, so more lines: never a wider row.
+  expect(captionLines(words, 30).length).toBeGreaterThan(2);
+  expect(captionLines(words, 30).every((line) => line.words.join(" ").length <= 30)).toBe(true);
   expect(lineAt(lines, -1)).toEqual({ line: lines[0], said: 0 } as ReturnType<typeof lineAt>);
   expect(lineAt(lines, 0)?.said).toBe(1);
   const second = lines[1]?.first ?? 0;
@@ -92,7 +95,12 @@ test("the meter's bars rise with the level, and the chip is named for a screen r
   expect(barHeights(0)).toEqual([3, 3, 3, 3, 3]);
   expect(barHeights(1)).toEqual([8, 12, 14, 12, 8]);
   expect(barHeights(7)).toEqual(barHeights(1));
-  expect(chipLabel({ kind: "speaking", words: ["Here"], said: 1, full: "Here it is." })).toBe("Dashi says: Here it is. Stop");
+  expect(chipLabel({ kind: "speaking", words: ["Here"], at: 0, full: "Here it is." })).toBe("Dashi says: Here it is. Stop");
+  // The line's length follows the chip's width: all 56 at its widest, fewer in less room, never under 12.
+  expect(chipChars(VOICE_CHIP.maxWidth)).toBe(CAPTION_CHARS);
+  expect(chipChars(313)).toBe(44);
+  expect(chipChars(VOICE_CHIP.minWidth)).toBe(18);
+  expect(chipChars(40)).toBe(12);
   expect(chipLabel({ kind: "listening", text: "", question: false })).toBe("Dashi is listening");
   expect(chipLabel({ kind: "notice", text: "Voice needs its models." })).toBe("Voice needs its models.");
 });

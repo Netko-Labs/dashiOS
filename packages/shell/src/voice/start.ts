@@ -9,7 +9,7 @@
 import type { VoiceLink } from "./client.ts";
 import { type heldKeys, isTalkKeyId, talkKey } from "./keys.ts";
 import { voiceConnector } from "./lib/launch.ts";
-import { NOT_RUNNING, VoiceService } from "./lib/service.ts";
+import { VoiceService } from "./lib/service.ts";
 import { basicsHere, VoiceModels } from "./models.ts";
 import type { Asker, ChipGo, Trouble, VoiceSettings } from "./types.ts";
 import { Voice } from "./voice.ts";
@@ -52,8 +52,9 @@ export const sampleWords = (language: string): string => SAMPLES[language.split(
 export function troubleOf(models: VoiceModels): Trouble {
   const view = models.getSnapshot();
   if (view.service === "looking") return { text: "Voice is starting. Try again in a moment." };
-  if (view.service === "missing") return { text: NOT_RUNNING, go: "voice" };
-  if (!basicsHere(view.sets)) return { text: "Voice needs its models. Fetch them in Settings › Voice.", go: "voice" };
+  // Short enough for the chip's one line; Settings › Voice says the rest.
+  if (view.service === "missing") return { text: "Voice isn't running. Log out and in again.", go: "voice" };
+  if (!basicsHere(view.sets)) return { text: "Voice needs its models. See Settings › Voice.", go: "voice" };
   return null;
 }
 

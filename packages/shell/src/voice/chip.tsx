@@ -13,6 +13,7 @@ import { useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { MIC, SPARK, VOLUME } from "../shared/settings/index.ts";
+import { CAPTION_CHARS, captionLines, head, lineAt, tail } from "./lib/captions.ts";
 import type { LevelStore } from "./lib/speech.ts";
 import type { Chip, ChipGo } from "./types.ts";
 
@@ -41,6 +42,18 @@ export function chipPlace(bar: number, menus: number, status: number): { left: n
   const width = Math.min(VOICE_CHIP.maxWidth, Math.max(VOICE_CHIP.minWidth, to - from));
   const left = (from + to) / 2 - width / 2;
   return { left: Math.max(6, Math.min(left, bar - 6 - width)), width };
+}
+
+/** A 12-point character's width as lines of words come out (measured in the VM: 5.4 for SemiBold sentences), with a little to spare; and the meter's or the dots' room in characters. */
+const CHAR = 6.2;
+const METER_CHARS = 6;
+/** What the chip says while an agent's question waits and nothing is heard yet, where it fits; else "Listening". */
+const ANSWER_LABEL = "Listening for your answer";
+
+/** How many characters one line of a chip `width` wide holds beside its glyph: 56 at its widest, fewer when the room is less. */
+export function chipChars(width: number): number {
+  const room = width - 2 * VOICE_CHIP.padding - 2 - VOICE_CHIP.glyph - VOICE_CHIP.gap;
+  return Math.max(12, Math.min(CAPTION_CHARS, Math.floor(room / CHAR)));
 }
 
 /** What a screen reader says for the chip. */
@@ -92,18 +105,33 @@ function Dots({ still }: { still: boolean }) {
   );
 }
 
-function Words({ chip, still, level }: { chip: Chip; still: boolean; level: ChipSource["level"] }) {
+/** One line of the chip's words. Each is laid out at its own width (`key`: a new text is a new node), never squeezed by its neighbour. */
+function Line({ children, bold, faint }: { children: string; bold?: boolean; faint?: boolean }) {
   const colors = useColors();
-  const text = { fontSize: VOICE_CHIP.fontSize, color: colors.agentInk } as const;
+  return (
+    <View style={{ flexShrink: 0 }}>
+      <Text
+        numberOfLines={1}
+        style={{ fontSize: VOICE_CHIP.fontSize, color: colors.agentInk, fontWeight: bold ? "semibold" : "normal", ...(faint ? { opacity: 0.6 } : {}) }}
+      >
+        {children}
+      </Text>
+    </View>
+  );
+}
+
+function Words({ chip, chars, still, level }: { chip: Chip; chars: number; still: boolean; level: ChipSource["level"] }) {
+  const colors = useColors();
   const glyph = (markup: string) => <Svg markup={markup} size={VOICE_CHIP.glyph} color={colors.agent} />;
   if (chip.kind === "listening") {
+    const heard = tail(chip.text, chars - METER_CHARS);
     return (
       <>
         {glyph(MIC)}
         <Meter level={level} />
-        <Text numberOfLines={1} style={{ ...text, fontWeight: chip.text ? "normal" : "semibold" }}>
-          {chip.text || (chip.question ? "Listening for your answer" : "Listening")}
-        </Text>
+        <Line key={heard} bold={heard === ""}>
+          {heard || (chip.question && chars - METER_CHARS >= ANSWER_LABEL.length ? ANSWER_LABEL : "Listening")}
+        </Line>
       </>
     );
   }
@@ -111,37 +139,32 @@ function Words({ chip, still, level }: { chip: Chip; still: boolean; level: Chip
     return (
       <>
         {glyph(SPARK)}
-        <Text numberOfLines={1} style={text}>
-          {chip.text || "Thinking"}
-        </Text>
+        <Line>{tail(chip.text, chars - METER_CHARS) || "Thinking"}</Line>
         <Dots still={still} />
       </>
     );
   }
   if (chip.kind === "speaking") {
-    const said = chip.words.slice(0, chip.said).join(" ");
-    const coming = chip.words.slice(chip.said).join(" ");
+    const shown = lineAt(captionLines(chip.words, chars), chip.at);
+    const said = shown?.line.words.slice(0, shown.said).join(" ") ?? "";
+    const coming = shown?.line.words.slice(shown.said).join(" ") ?? "";
     return (
       <>
         {glyph(VOLUME)}
         {said !== "" && (
-          <Text numberOfLines={1} style={{ ...text, fontWeight: "semibold" }}>
+          <Line key={`said:${said}`} bold>
             {said}
-          </Text>
+          </Line>
         )}
         {coming !== "" && (
-          <Text numberOfLines={1} style={{ ...text, opacity: 0.6 }}>
+          <Line key={`coming:${coming}`} faint>
             {coming}
-          </Text>
+          </Line>
         )}
       </>
     );
   }
-  return (
-    <Text numberOfLines={1} style={{ ...text, fontWeight: "semibold" }}>
-      {chip.text}
-    </Text>
-  );
+  return <Line bold>{head(chip.text, chars + 4)}</Line>;
 }
 
 export interface VoiceChipProps {
@@ -200,7 +223,7 @@ export function VoiceChip({ voice, bar, menus, status, reduceMotion = () => fals
             backgroundColor: colors.agentWash,
           }}
         >
-          <Words chip={chip} still={reduceMotion()} level={voice.level} />
+          <Words chip={chip} chars={chipChars(place.width)} still={reduceMotion()} level={voice.level} />
         </View>
       </View>
     </View>

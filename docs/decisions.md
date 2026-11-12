@@ -631,8 +631,9 @@ Numbered in the order they were written down; a new one goes at the end.
   anything, and what happens to a long sentence?
 - **Choice:** it is not in the row. It is laid over the bar, centred in the
   room between the app's menus and the status side, up to 440 wide. A spoken
-  sentence is cut into lines of 52 characters at word ends and the line
-  being said shows; what the person says shows its newest words with "…" in
+  sentence is cut into lines at word ends, as many characters as the chip's
+  width holds (56 at its widest; `chipChars`), and the line being said
+  shows; what the person says shows its newest words with "…" in
   front; a notice shows its first 90 characters. With under 150 of room it
   keeps 150 and covers its neighbours' edges while it shows.
 - **Why:** an item in the row would send Sound and Wi-Fi into "…" every time

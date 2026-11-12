@@ -53,7 +53,7 @@ test("nothing is here until fetched: the sets, their sizes, and what is missing 
   expect(view.service).toBe("ready");
   expect(store.ready).toBe(false);
   expect(basicsHere(view.sets)).toBe(false);
-  expect(troubleOf(store)).toEqual({ text: "Voice needs its models. Fetch them in Settings › Voice.", go: "voice" });
+  expect(troubleOf(store)).toEqual({ text: "Voice needs its models. See Settings › Voice.", go: "voice" });
   expect(voice.calls).toEqual(["models", "voices"]);
   expect(
     setsWords(
@@ -132,5 +132,5 @@ test("the service gone says so, with the one thing to do", async () => {
   voice.drop();
   expect(store.getSnapshot().service).toBe("missing");
   expect(store.ready).toBe(false);
-  expect(troubleOf(store)).toEqual({ text: "Voice isn't running in this session. Log out and in again to start it.", go: "voice" });
+  expect(troubleOf(store)).toEqual({ text: "Voice isn't running. Log out and in again.", go: "voice" });
 });

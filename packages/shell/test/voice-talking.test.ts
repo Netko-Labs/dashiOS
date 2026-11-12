@@ -92,11 +92,11 @@ test("held, Dashi listens and shows the words as they are heard; let go, the age
   expect(asked).toEqual(["Open the calendar."]);
   expect(chip()).toEqual({ kind: "thinking", text: "Open the calendar." });
   voice.emit(SENTENCE);
-  expect(chip()).toEqual({ kind: "speaking", words: ["Here", "it", "is."], said: 0, full: "Here it is." });
+  expect(chip()).toEqual({ kind: "speaking", words: ["Here", "it", "is."], at: -1, full: "Here it is." });
   timers.advance(100);
-  expect(chip()).toMatchObject({ kind: "speaking", said: 1 });
+  expect(chip()).toMatchObject({ kind: "speaking", at: 0 });
   timers.advance(350);
-  expect(chip()).toMatchObject({ kind: "speaking", said: 3 });
+  expect(chip()).toMatchObject({ kind: "speaking", at: 2 });
   voice.emit({ event: "spoken", id: 7, reason: "done" });
   expect(chip()).toBeNull();
 });
@@ -105,7 +105,7 @@ test("a tap listens to nothing and says how to talk; silence is not turned into 
   const { voice, asked, chip, hold, timers } = talking();
   await hold(120);
   expect(voice.calls).toEqual(["listen", "listen.cancel"]);
-  expect(chip()).toEqual({ kind: "notice", text: "Hold the right ❖ key, or the Copilot key to talk." });
+  expect(chip()).toEqual({ kind: "notice", text: "Hold the right ❖ or the Copilot key to talk." });
   timers.advance(2500);
   expect(chip()).toBeNull();
   voice.replies["listen.stop"] = { text: "", speech_ms: 0 };
@@ -149,10 +149,10 @@ test("Esc while the agent thinks gives the ask up, and its late answer is not sa
 });
 
 test("what is missing is said where the person looks, and nothing listens", async () => {
-  const { voice, chip, hold } = talking({ trouble: "Voice needs its models. Fetch them in Settings › Voice." });
+  const { voice, chip, hold } = talking({ trouble: "Voice needs its models. See Settings › Voice." });
   await hold(1500);
   expect(voice.calls).toEqual([]);
-  expect(chip()).toEqual({ kind: "notice", text: "Voice needs its models. Fetch them in Settings › Voice.", go: "voice" });
+  expect(chip()).toEqual({ kind: "notice", text: "Voice needs its models. See Settings › Voice.", go: "voice" });
 });
 
 test("no microphone: the service's own words show, and go to Settings › Voice", async () => {
@@ -189,7 +189,7 @@ test("an agent's question is said, and the next words heard are its answer, not 
   const end = talk.ask("Claude asks: Which calendar?", (text) => heard.push(text));
   await settle();
   expect(voice.calls).toEqual(["speak:Claude asks: Which calendar?"]);
-  expect(talk.talkKey()).toBe("the right ❖ key, or the Copilot key");
+  expect(talk.talkKey()).toBe("the right ❖ or the Copilot key");
   talk.key(TALK, true);
   await settle();
   expect(chip()).toEqual({ kind: "listening", text: "", question: true });

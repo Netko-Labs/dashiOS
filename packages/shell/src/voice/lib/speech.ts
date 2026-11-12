@@ -1,8 +1,7 @@
-/** Captions in step with the speech: a sentence's line shows as its first sound plays, and each word lights at its own time, by the shell's clock. */
+/** Captions in step with the speech: a sentence shows as its first sound plays, and each word is said at its own time, by the shell's clock. */
 
 import type { Timers } from "../../shared/time/index.ts";
 import type { Chip } from "../types.ts";
-import { captionLines, lineAt } from "./captions.ts";
 import type { SpokenWord } from "./wire.ts";
 
 export class Captions {
@@ -17,11 +16,7 @@ export class Captions {
   sentence(text: string, words: readonly SpokenWord[]): void {
     this.clear();
     const said = words.length > 0 ? words.map((word) => word.text) : text.split(/\s+/).filter(Boolean);
-    const lines = captionLines(said);
-    const at = (index: number): void => {
-      const found = lineAt(lines, index);
-      if (found) this.show({ kind: "speaking", words: found.line.words, said: found.said, full: text });
-    };
+    const at = (index: number): void => this.show({ kind: "speaking", words: said, at: index, full: text });
     at(-1);
     words.forEach((word, index) => {
       this.pending.push(this.timers.set(() => at(index), Math.max(0, word.start)));

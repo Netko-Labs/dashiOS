@@ -9,12 +9,12 @@ export type ChipGo = "voice" | "agents" | "launcher";
 
 /** The menu bar's voice chip (chip.tsx): one line, in the agents' purple. */
 export type Chip =
-  /** The key is held: the words heard so far (their end), none yet at first. `question` while an agent's question waits. */
+  /** The key is held: everything heard so far (the chip shows its end), none yet at first. `question` while an agent's question waits. */
   | { kind: "listening"; text: string; question: boolean }
   /** The key came up: what was heard, while the agent thinks or the first sound is made. */
   | { kind: "thinking"; text: string }
-  /** Dashi speaks: the line being said, and how many of its words are said. `full` is the whole sentence, for a screen reader. */
-  | { kind: "speaking"; words: readonly string[]; said: number; full: string }
+  /** Dashi speaks: the sentence's words, and the one being said (`at`, -1 before the first). `full` is the sentence, for a screen reader. */
+  | { kind: "speaking"; words: readonly string[]; at: number; full: string }
   /** Something to tell the person where they look: what is missing and the one thing to do. */
   | { kind: "notice"; text: string; go?: ChipGo };
 

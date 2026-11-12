@@ -33,7 +33,7 @@ const KEY_ESC = 1;
 const DEFAULT_KEY: TalkKey = {
   id: "default",
   label: "Right ❖ or Copilot",
-  hold: "the right ❖ key, or the Copilot key",
+  hold: "the right ❖ or the Copilot key",
   codes: [KEY_RIGHTMETA, KEY_F23],
   cost: "The right ❖ no longer opens the launcher or makes shortcuts; the left ❖ does.",
 };
