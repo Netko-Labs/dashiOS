@@ -87,6 +87,13 @@ systemd --user
   agent's cgroup. **dashi-secret-bridge** (a user unit the supervisor starts)
   serves it to apps as the Secret Service and the portal's Secret; without
   the vault, the supervisor starts gnome-keyring as before.
+- **dashi-voice** (`crates/dashi-voice`, `docs/voice.md`) is Dashi's voice:
+  a user service, socket-activated on `$XDG_RUNTIME_DIR/dashi-voice.sock`
+  (`dashi-voice.socket`, wanted by `dashi-session.target`). It hears the
+  microphone only while the shell asks it to (Silero VAD, Parakeet, Whisper)
+  and speaks what the shell gives it (Kokoro), on ONNX Runtime, all on the
+  machine. It has no network: a unit of its own fetches the models when the
+  person turns Voice on. It refuses every caller in an agent's cgroup.
 - **dashi-agent** (`session/dashi-agent`, `src/agents/sandbox.ts`) runs an
   agent in the agent sandbox, a `dashi-agent-*.scope` with bubblewrap, so it
   can use secrets through Dashi but never read them.
@@ -301,6 +308,7 @@ separate MIT programs, with structured arguments only; it links nothing.
 | shell → permission store | D-Bus session bus: `org.freedesktop.impl.portal.PermissionStore` (Lookup, List, DeletePermission; `Changed`) | `src/privacy/` |
 | shell → screen recorder | wf-recorder, spawned while recording (⇧❖5, `record_screen`); allowed screencopy only then (`screencopy-clients`) | `src/recorder/` |
 | PAM, bridge, shell ↔ vault | `/run/dashi-secretd/socket`, newline JSON; callers checked by uid and cgroup | `docs/secrets.md` |
+| shell ↔ voice | `$XDG_RUNTIME_DIR/dashi-voice.sock`, newline JSON (requests, replies, events); callers checked by uid and cgroup | `docs/voice.md` |
 | app ↔ vault | D-Bus session bus: `org.freedesktop.secrets`, `org.freedesktop.impl.portal.Secret` (dashi-secret-bridge) | `docs/secrets.md` |
 | dashi-agent ↔ shell, token proxy | `$XDG_RUNTIME_DIR/dashi-tokens.sock`, one JSON line each way, held while the agent runs; then the sandbox's CONNECTs on its own `proxy.sock` | `docs/secrets.md` |
 | shell ↔ system | D-Bus (NetworkManager, BlueZ, logind, UPower, polkit, portals) | `src/shared/dbus/` |
@@ -323,6 +331,7 @@ separate MIT programs, with structured arguments only; it links nothing.
 | `/usr/share/xdg-desktop-portal/portals/dashi.portal`, `/usr/share/xdg-desktop-portal/dashi-portals.conf` | `session/` |
 | `/usr/share/dbus-1/services/org.freedesktop.impl.portal.desktop.dashi.service`, `/usr/lib/systemd/user/dashi-portal.service` | `session/` |
 | `/usr/libexec/dashi/dashi-secretd`, `dashi-secretd-pam`, `dashi-secret-bridge` | `crates/dashi-secretd` |
+| `/usr/libexec/dashi/dashi-voice`, `/usr/lib/systemd/user/dashi-voice.socket`, `dashi-voice.service` | `crates/dashi-voice`, `spin/dashi-voice/` |
 | `/usr/share/dashi/greeter/` | `packages/greeter` (with its `node_modules`) |
 | `/etc/greetd/config.toml` | `spin/dashi-greeter/` |
 | `/usr/bin/dashi-comp` | `crates/dashi-comp` |

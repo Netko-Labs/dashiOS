@@ -525,6 +525,81 @@ Numbered in the order they were written down; a new one goes at the end.
   sheet or a banner: one chrome row, and a person who comes back to a locked
   screen finds it in the notification center.
 
+### D27. Voice runs on Fedora's ONNX Runtime, loaded at run time; its models are fetched, not shipped
+
+- **Date:** 2026-11-11 (`crates/dashi-voice`, `docs/voice.md`).
+- **Question:** which engine hears and speaks, and how does it build on COPR,
+  where a build script that downloads a prebuilt library fails? sherpa-onnx
+  (Apache-2.0) runs all the models but builds its own ONNX Runtime, or fetches
+  one; Handy's crates do the same.
+- **Choice:** the models are run directly on ONNX Runtime (MIT) through the
+  `ort` crate (MIT OR Apache-2.0) with `load-dynamic`: the library is Fedora's
+  `onnxruntime` package, found when a model is first loaded. Nothing is linked
+  or downloaded at build time. The pipelines are Dashi's own, a few hundred
+  lines each (`src/engine/`): Silero VAD (MIT); Parakeet TDT 0.6B v3
+  (weights CC-BY-4.0, credited in the notices and in `models`' `credit`);
+  Whisper large-v3-turbo (weights MIT) for the languages Parakeet lacks;
+  Kokoro 82M (Apache-2.0) with token lengths for word times. The models are
+  fetched to the person's data folder when Voice is turned on, each file
+  pinned by commit and SHA-256 (`models/manifest.rs`).
+- **Why:** one runtime for four models, from the distribution, with no build
+  dependency at all: the crate builds and its tests run on a machine without
+  the library, in CI and on COPR. A newer ONNX Runtime keeps the older API, so
+  a Fedora update does not break it. sherpa-onnx would have been less code of
+  ours and a C++ build with its own downloads.
+- **Cost:** the decoding loops, Whisper's spectrogram and the phoneme table
+  are ours to keep. `ort` is a release candidate, pinned (`=2.0.0-rc.15`), and
+  asks ONNX Runtime for API 21: `api-22` crashes Fedora's 1.22.2 in its device
+  listing. Kokoro's full-precision file is used (325 MB): the 16-bit one gives
+  silence on some sentences and the 8-bit one is three times slower on a CPU.
+  About 1.9 GB of memory while the listening and speaking models are loaded;
+  they are let go of after ten minutes unused.
+- **Undo:** put sherpa-onnx behind `engine::Recognizer` and
+  `engine::Synthesizer`; the service and the protocol don't change.
+
+### D28. eSpeak NG, PipeWire's tools and curl are programs Voice runs, not libraries it links
+
+- **Date:** 2026-11-11 (`engine/kokoro/phonemes.rs`, `audio/pipewire.rs`,
+  `models/fetch.rs`).
+- **Question:** Kokoro needs phonemes, and eSpeak NG, which gives them, is
+  GPL-3.0-or-later. The microphone and speakers need PipeWire; the models
+  need HTTPS. Link libraries, or run programs?
+- **Choice:** run programs: `espeak-ng` for a phrase's phonemes (the licence
+  rule's "a separate program Dashi only runs"), `pw-record` and `pw-play` for
+  sound on a pipe, `curl` for fetching (it resumes a stopped file by itself).
+- **Why:** nothing GPL is linked, so Dashi stays MIT. No bindgen, no libclang
+  and no `-devel` package at build time; no `unsafe` for audio; stopping a
+  program closes the microphone and silences speech at once, whatever state
+  it was in. A Rust HTTPS client would have brought a TLS stack and a root
+  store whose licences need a look each.
+- **Cost:** a process start for each phrase said (about 5 ms) and each listen
+  (about 30 ms); the streams' latency is `pw-cat`'s (20 ms asked). Kokoro was
+  trained on misaki's phonemes, and eSpeak's are close, not the same: a few
+  words sound flatter than they could.
+- **Undo:** a phonemizer of our own behind `kokoro::Phonemizer`; the
+  `pipewire` crate behind `audio::pipewire::Sound`.
+
+### D29. The service that hears has no network; a process of its own fetches
+
+- **Date:** 2026-11-11 (`spin/dashi-voice/usr/lib/systemd/user/`,
+  `service/fetching.rs`).
+- **Question:** the service must fetch models, and must promise that no sound
+  leaves the machine. One process with both the microphone and the network?
+- **Choice:** two. `dashi-voice.service` may use Unix sockets only
+  (`RestrictAddressFamilies=AF_UNIX`). A fetch is `dashi-voice fetch`, started
+  with `systemd-run --user` as a unit of its own, which has the network, runs
+  `curl`, and never sees sound; the service reads its progress from a pipe.
+  The socket refuses agents by cgroup, as the vault does.
+- **Why:** "nothing leaves the machine" should be what the kernel enforces,
+  not what the code intends. Narrowing who may do something is worth a little
+  machinery (Part A, D8).
+- **Cost:** a fetch needs the session's systemd; from a checkout, without the
+  unit, the service runs the fetcher as its own child, with the network it
+  then has. Filesystem sandboxing (`ProtectHome`) is not used: a user unit
+  needs user namespaces for it, and the data folder may not exist yet.
+- **Undo:** drop `DASHI_VOICE_FETCH_VIA` and the address-family line from the
+  unit; the service then fetches as its own child everywhere.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its
