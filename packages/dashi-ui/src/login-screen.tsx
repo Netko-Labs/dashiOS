@@ -40,6 +40,10 @@ const POWER: readonly { what: PowerAction; label: string; confirm: string; glyph
   { what: "shutdown", label: "Shut Down", confirm: "Click to Shut Down", glyph: SHUT_DOWN },
 ];
 
+/** A power button's width: room for "Click to Shut Down" on one line. The buttons stay 132 apart, center to center. */
+const POWER_WIDTH = 116;
+const POWER_GAP = 16;
+
 /** How long a power button waits for its second click. */
 const CONFIRM_MS = 3000;
 
@@ -111,7 +115,7 @@ export function LoginScreen(props: LoginScreenProps): ReactNode {
       {/* In the flow, not pinned: on a short screen the buttons move down instead of over the field. */}
       <View style={{ flex: 0.6, minHeight: 24 }} />
       {onPower && (
-        <View testID="login-power" style={{ marginBottom: 24, flexDirection: "row", justifyContent: "center", gap: 36 }}>
+        <View testID="login-power" style={{ marginBottom: 24, flexDirection: "row", justifyContent: "center", gap: POWER_GAP }}>
           {POWER.map(({ what, label, confirm, glyph }) => (
             // Tab reaches each after the field, and Space or Return presses it: the first press arms it, as a click does.
             <View
@@ -121,7 +125,7 @@ export function LoginScreen(props: LoginScreenProps): ReactNode {
               accessibilityRole="button"
               accessibilityLabel={arming === what ? confirm : label}
               onPress={() => press(what)}
-              style={{ flexDirection: "column", alignItems: "center", gap: 6, width: 96, paddingVertical: 4, borderRadius: 12 }}
+              style={{ flexDirection: "column", alignItems: "center", gap: 6, width: POWER_WIDTH, paddingVertical: 4, borderRadius: 12 }}
             >
               <View
                 style={{
