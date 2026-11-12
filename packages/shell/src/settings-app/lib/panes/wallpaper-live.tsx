@@ -7,7 +7,7 @@
 
 import { statSync } from "node:fs";
 import { Image, Text, TextInput, View } from "@mirinjs/metal";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button, Caption, Group, useSurface } from "../../../shared/cards/index.ts";
 import type { PhotoChooser } from "../../../wallpaper/chooser.ts";
 import { isVideoPath } from "../../../wallpaper/live/choice.ts";
@@ -81,6 +81,9 @@ export function LiveSection({ settings, chooser }: { settings: SettingsStore; ch
   const { wallpaper } = useSettings(settings).data;
   const chosen = chosenRef(wallpaper);
   const videos = wallpaper.videos ?? [];
+  // Which saved videos are still there is looked up when the list changes, not on every draw (a look at the disk each).
+  const saved = videos.join("\n");
+  const clips = useMemo(() => videoTiles(saved === "" ? [] : saved.split("\n"), isFile), [saved]);
   const [typing, setTyping] = useState(false);
   const [typed, setTyped] = useState("");
   const [note, setNote] = useState<string | null>(null);
@@ -110,7 +113,6 @@ export function LiveSection({ settings, chooser }: { settings: SettingsStore; ch
   };
 
   const shaders = shaderTiles();
-  const clips = videoTiles(videos, isFile);
   const grid = (tiles: LiveTile[], testID: string) => (
     <Group testID={testID}>
       {/* One Tab stop, entered at the chosen tile; the arrows move between tiles, Space or Return picks one (KB-1). */}
