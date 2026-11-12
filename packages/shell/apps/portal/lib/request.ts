@@ -40,17 +40,19 @@ export class Requests {
     if (this.open.has(path)) throw new DBusError(ERRORS.invalidArgs, "that request is already open");
     const controller = new AbortController();
     this.open.set(path, controller);
-    const object = this.bus.export(path, [
-      {
-        name: REQUEST,
-        methods: { Close: { handler: () => controller.abort() } },
-      },
-    ]);
+    let object: { unexport(): void } | null = null;
     try {
+      // Inside the try: a handle the bus won't export is not left marked open.
+      object = this.bus.export(path, [
+        {
+          name: REQUEST,
+          methods: { Close: { handler: () => controller.abort() } },
+        },
+      ]);
       return await work(controller.signal);
     } finally {
       this.open.delete(path);
-      object.unexport();
+      object?.unexport();
     }
   }
 
