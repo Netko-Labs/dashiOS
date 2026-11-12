@@ -18,6 +18,7 @@ export function ago(at: number | null, now: number): string {
   return days === 1 ? "yesterday" : `${days} days ago`;
 }
 
+/** In the order they are tried: what a card and a page draw first (128, or 256 for a dense screen), then what is left, the heavy 512 after the small 64. */
 const SIZES = ["128x128", "256x256", "64x64", "512x512", "48x48"];
 
 /** The folders flatpak exports an installation's icons to. */
@@ -27,7 +28,7 @@ export function exportRoots(env: Readonly<Record<string, string | undefined>> = 
 }
 
 /**
- * The PNG icon an installed app exported, the largest reasonable one; null
+ * The PNG icon an installed app exported, the first of `SIZES` it has; null
  * when it has none (the id is already checked, so it can't climb out of the
  * folder). Looked for off the render path, so a row never blocks a frame.
  */

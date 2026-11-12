@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { REACH } from "@dashi/applet";
 import { appletChip } from "../apps/software/lib/applets/words.ts";
-import { appChip, chipLabel, type Operation, queueLine } from "../apps/software/lib/model.ts";
+import { appAsks, appChip, chipLabel, type Operation, queueLine } from "../apps/software/lib/model.ts";
 import { failureOf } from "../apps/software/lib/store.ts";
 import { appTrust, askReasons, installsWords, isProprietary, licenseWords } from "../apps/software/lib/trust-words.ts";
 import { PORTAL_TABLES } from "../src/privacy/portal-grants.ts";
@@ -129,6 +129,11 @@ test("a failure in plain words, the tool's text kept as details", () => {
     details: "error: Failed to install: No space left on device",
   });
   expect(plainFailure("Could not resolve host: dl.flathub.org").message).toContain("network");
+  // "lock" as a word is another update running; "blocked" and "clock" are not.
+  expect(plainFailure("error: Failed to lock repo").message).toContain("Another update is running");
+  expect(plainFailure("The repository is locked by another process").message).toContain("Another update is running");
+  expect(plainFailure("error: the download was blocked by the firewall").message).not.toContain("Another update");
+  expect(plainFailure("error: clock skew detected").message).not.toContain("Another update");
   expect(plainFailure("the package is x 1.0, not what the index lists").message).toContain("to keep you safe");
   expect(plainFailure("").details).toBeNull();
   expect(failureOf({ kind: "install", name: "VLC" }, "boom").title).toBe("“VLC” wasn’t installed");
@@ -149,6 +154,12 @@ const op = (over: Partial<Operation> = {}): Operation => ({
 test("the state chip: one word per action, “…” when a sheet comes first, progress while busy", () => {
   expect(chipLabel(appChip({ kind: "get" }))).toBe("Get");
   expect(chipLabel(appChip({ kind: "get" }, true))).toBe("Get…");
+  // Only Get asks first: an update is one click, on the chip and in the menu alike.
+  expect(appAsks({ kind: "get" }, true)).toBe(true);
+  expect(appAsks({ kind: "get" }, false)).toBe(false);
+  const installed = { id: "org.videolan.VLC", installation: "user" } as never;
+  expect(appAsks({ kind: "update", installed, update: installed }, true)).toBe(false);
+  expect(chipLabel(appChip({ kind: "update", installed, update: installed }, true))).toBe("Update");
   expect(chipLabel(appChip({ kind: "busy", operation: op() }))).toBe("Installing 42%");
   expect(chipLabel(appChip({ kind: "busy", operation: op({ status: "queued" }) }))).toBe("Waiting");
   expect(queueLine([])).toBeNull();

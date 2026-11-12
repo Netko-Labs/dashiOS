@@ -108,11 +108,18 @@ export function chipLabel(chip: Chip): string {
   }
 }
 
+/**
+ * Whether an app's one action asks first, for the "…" on its chip and its
+ * menu row: only Get does (the trust card, for an app that reaches far). An
+ * app's update is one click.
+ */
+export const appAsks = (state: AppState, reachesFar: boolean): boolean => state.kind === "get" && reachesFar;
+
 /** An app's chip from its state; `asks`: getting it shows the trust card as a sheet first. */
 export function appChip(state: AppState, asks = false): Chip {
   if (state.kind === "busy") return { kind: "busy", operation: state.operation };
   if (state.kind === "get") return { kind: "get", asks };
-  return state.kind === "open" ? { kind: "open" } : { kind: "update", asks: false };
+  return state.kind === "open" ? { kind: "open" } : { kind: "update", asks: appAsks(state, asks) };
 }
 
 /** Where an app is installed, in words. */
