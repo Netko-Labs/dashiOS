@@ -62,8 +62,7 @@ function AppRow({
             parts={app.parts}
             playing={app.playing}
             muted={app.muted}
-            // Open, each stream has its own meter: the app's would only say the same again.
-            meters={open && folds ? undefined : meters}
+            meters={meters}
             {...(folds ? { fold: { open, onPress: onFold } } : {})}
           />
         </View>

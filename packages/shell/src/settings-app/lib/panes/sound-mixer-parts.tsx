@@ -92,7 +92,7 @@ export const meterNodes = (parts: readonly StreamSound[]): number[] => [
   ...new Set(parts.flatMap((part) => (part.playing && part.meter !== null ? [part.meter] : []))),
 ];
 
-/** The line under a row's name: the fold (an app with several streams), then the meter while sound moves, else "Paused". */
+/** The line under a row's name: the fold (an app with several streams), then the meter while sound moves, else "Paused". An open app shows no meter of its own: each stream's says it. */
 export function StatusLine({
   testID,
   parts,
@@ -109,14 +109,12 @@ export function StatusLine({
   fold?: { open: boolean; onPress: () => void };
 }) {
   const colors = useControlColors();
+  const open = fold?.open === true;
   return (
     <View style={{ height: APPS_CARD.line, flexDirection: "row", alignItems: "center", gap: 8 }}>
       {fold && <MoreButton testID={`${testID}:fold`} open={fold.open} onPress={fold.onPress} more={`${parts.length} streams`} less="Hide streams" />}
-      {playing ? (
-        <LiveMeter testID={`${testID}:meter`} meters={meters} serials={meterNodes(parts)} muted={muted} />
-      ) : (
-        <Text style={{ fontSize: 11.5, color: colors.muted }}>Paused</Text>
-      )}
+      {!playing && <Text style={{ fontSize: 11.5, color: colors.muted }}>Paused</Text>}
+      {playing && !open && <LiveMeter testID={`${testID}:meter`} meters={meters} serials={meterNodes(parts)} muted={muted} />}
     </View>
   );
 }
