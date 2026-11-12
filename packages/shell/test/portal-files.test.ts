@@ -12,7 +12,7 @@ import {
   STALE_UNITS,
   stopsOnlyLoaded,
 } from "../src/session/lib/portal-files.ts";
-import { startSessionTarget, stopSessionTarget, TARGET } from "../src/session/lib/target.ts";
+import { startSessionTarget, stopNowCommand, stopSessionTarget, stopSessionTargetNow, TARGET } from "../src/session/lib/target.ts";
 
 /** A scratch home with a checkout's session dir; removed after `body`. */
 async function withCheckout(body: (paths: { session: string; data: string; config: string }) => void | Promise<void>): Promise<void> {
@@ -103,4 +103,17 @@ test("the backend's units are stopped by pattern: no unit is loaded to be stoppe
   const both = new Bun.Glob("dashi-portal*.service");
   expect(STALE_UNITS).toContain("dashi-portal*.service");
   expect(both.match("dashi-portal.service") && both.match(CHECKOUT_UNIT)).toBe(true);
+});
+
+test("a session told to end asks systemd to stop its target and its portal backend at once, without waiting", () => {
+  // A logout kills what is left of the session before the shell has stopped: the ask is one command that returns.
+  const asked: string[][] = [];
+  stopSessionTargetNow({ which: () => "/usr/bin/systemctl", spawn: (command) => asked.push([...command]) });
+  expect(asked).toEqual([["systemctl", "--user", "stop", "--no-block", TARGET, ...STALE_UNITS]]);
+  expect(stopNowCommand()).toContain("--no-block");
+  // The portal's units are named by pattern, so one that is not loaded is left alone.
+  expect(STALE_UNITS.every(stopsOnlyLoaded)).toBe(true);
+  // No systemd, nothing asked.
+  stopSessionTargetNow({ which: () => null, spawn: (command) => asked.push([...command]) });
+  expect(asked).toHaveLength(1);
 });
