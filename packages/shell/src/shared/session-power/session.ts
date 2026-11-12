@@ -14,14 +14,17 @@
  *
  * Logging out has no compositor IPC yet. On the real display (dashi-comp
  * owns DRM/KMS, started from a login) it ends the login session with
- * `loginctl terminate-session`. When dashi-comp runs inside another desktop
+ * `loginctl terminate-session`, after it has had systemd stop the session's
+ * own units (`SESSION_UNITS`): ending the login kills everything in it at
+ * once, so nothing the session does on its way out is sure to run, and the
+ * units outside it (Voice, the portal backend, applets) stayed up at the
+ * login screen. When dashi-comp runs inside another desktop
  * (a development window), that session is the developer's own and must not
  * end: only the compositor is stopped, with SIGTERM, found by walking up the
  * shell's parents (the shell is its child, maybe through `sh -c`).
  */
 
 import { readFileSync } from "node:fs";
-import { spawnDetached } from "../apps/index.ts";
 import type { MachineAction } from "../logind/index.ts";
 import { statParent } from "../processes/kernel.ts";
 
@@ -48,6 +51,42 @@ export function findAncestor(comm: string, start: number, readStat: (pid: number
 /** Whether a process's environment (NUL-separated, /proc/<pid>/environ) says it runs inside another display server. */
 export function isNested(environ: string): boolean {
   return environ.split("\0").some((entry) => /^(WAYLAND_DISPLAY|DISPLAY)=./.test(entry));
+}
+
+/**
+ * What the session started in the person's systemd and a logout must stop: the session's target
+ * (Voice and the applets are part of it) and Dashi's portal backend, in whichever unit it runs
+ * (by pattern, so one that is not loaded is left alone). The same units the session's supervisor
+ * stops (session/lib/target.ts); a test holds the two lists equal.
+ */
+export const SESSION_UNITS: readonly string[] = ["dashi-session.target", "dashi-portal*.service", "dbus-*-org.freedesktop.impl.portal.desktop.dashi@*.service"];
+
+/** How long stopping the session's units may take before the logout goes on without it. */
+export const STOP_UNITS_MS = 3000;
+
+/** What logging out of login session `session` runs, in order: each waits for the one before. */
+export function logoutCommands(session: string): string[][] {
+  return [
+    ["systemctl", "--user", "stop", ...SESSION_UNITS],
+    ["loginctl", "terminate-session", session],
+  ];
+}
+
+/** Run `command` to its end, or for `timeoutMs` at most; never throws. */
+async function runToEnd(command: readonly string[], timeoutMs: number): Promise<void> {
+  try {
+    const child = Bun.spawn([...command], { stdin: "ignore", stdout: "ignore", stderr: "ignore" });
+    const timer = setTimeout(() => child.kill(), timeoutMs);
+    await child.exited;
+    clearTimeout(timer);
+  } catch (error) {
+    console.error(`dashi-shell: could not run ${command[0]}:`, error);
+  }
+}
+
+/** End login session `session`: its units first, then the login. The logout goes ahead whatever the first step did. */
+export async function endLogin(session: string, run: (command: readonly string[], timeoutMs: number) => Promise<void> = runToEnd): Promise<void> {
+  for (const command of logoutCommands(session)) await run(command, STOP_UNITS_MS);
 }
 
 export type LogoutPlan = { kind: "loginctl"; session: string } | { kind: "signal"; pid: number } | { kind: "none" };
@@ -114,7 +153,8 @@ export function powerAction(what: PowerAction, above: Above | undefined, machine
   const plan = planLogout({ session: process.env.XDG_SESSION_ID, compositor, nested });
   switch (plan.kind) {
     case "loginctl":
-      return spawnDetached(["loginctl", "terminate-session", plan.session]);
+      void endLogin(plan.session);
+      return;
     case "signal":
       try {
         process.kill(plan.pid, "SIGTERM");
