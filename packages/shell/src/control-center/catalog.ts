@@ -158,7 +158,8 @@ export function tileState(id: string, snap: ControlSnapshot): TileState | null {
     case "wifi": {
       const on = snap.wifi === true;
       const ssid = snap.network?.kind === "wifi" ? snap.network.ssid : null;
-      const bars = snap.network?.kind === "wifi" ? snap.network.bars : 3;
+      // On with no network joined: no bar lit. The struck-through glyph is for Wi-Fi off.
+      const bars = snap.network?.kind === "wifi" ? snap.network.bars : 0;
       return { title, detail: on ? (ssid ?? "Not Connected") : "Off", glyph: wifiGlyph(on ? bars : "offline"), on };
     }
     case "ethernet":

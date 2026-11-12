@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { levelOf, nextChoice, valueAt } from "../src/control-center/applet-tiles.ts";
 import { type ControlSnapshot, DEFAULT_LAYOUT, isThere, lightToggle, powerToggle, SYSTEM_CONTROLS, tileState } from "../src/control-center/catalog.ts";
 import { LayoutStore, machineId, parseLayouts } from "../src/control-center/layout-store.ts";
+import { wifiGlyph } from "../src/glyphs.ts";
 import { fillLength, levelAt, stepLevel } from "../src/shared/controls/slider-math.ts";
 
 const laptop: ControlSnapshot = {
@@ -60,6 +61,11 @@ test("the tiles say what the design shows: the network, the device, Auto and the
   expect(say("volume")).toBe("Sound · 42% · off");
   expect(tileState("power", { ...laptop, power: { choice: "performance", mode: "performance" } })?.detail).toBe("High Performance");
   expect(tileState("wifi", { ...laptop, wifi: false })?.detail).toBe("Off");
+  // On with nothing joined: it says so, and no bar is lit (not the three of a full signal).
+  const alone = tileState("wifi", { ...laptop, network: { kind: "offline" } });
+  expect(alone).toMatchObject({ detail: "Not Connected", on: true, glyph: wifiGlyph(0) });
+  expect(tileState("wifi", laptop)?.glyph).toBe(wifiGlyph(3));
+  expect(tileState("wifi", { ...laptop, wifi: false })?.glyph).toBe(wifiGlyph("offline"));
   expect(tileState("volume", { ...laptop, volume: { level: 0.4, muted: true } })?.detail).toBe("Muted");
 });
 
