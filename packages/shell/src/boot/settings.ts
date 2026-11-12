@@ -15,6 +15,7 @@ import { type SettingsApp, startSettingsApp } from "../settings-app/index.ts";
 import { registerPaneEntries } from "../settings-app/search.ts";
 import { createPaneServices, type PaneServices } from "../settings-app/services.ts";
 import { type SetupAssistant, startSetupAssistant } from "../setup/index.ts";
+import type { VoiceParts } from "../voice/index.ts";
 import type { Desktops } from "./desktop.ts";
 import type { Switches } from "./notices.ts";
 import type { LateParts } from "./parts.ts";
@@ -61,6 +62,8 @@ interface SettingsWindowNeeds {
   /** Work alone (agents/alone/), for Settings › Agents. */
   alone: WorkAlone;
   agents: Agents | null;
+  /** Talking to Dashi (voice/), for Settings › Voice. */
+  talking: VoiceParts;
   settingsApps: SettingsApps;
   services: Services;
   late: Late<LateParts>;
@@ -117,6 +120,7 @@ export function startSettingsWindows(needs: SettingsWindowNeeds): SettingsWindow
     menus: () => late.get("appMenus").store,
     // Who is connected now, for Settings › Agents.
     agents: needs.agentStore,
+    voice: needs.talking,
   });
   late.set("settingsApp", settingsApp);
   services.add("settings app", () => settingsApp.close());

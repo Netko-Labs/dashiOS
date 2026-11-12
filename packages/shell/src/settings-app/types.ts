@@ -15,6 +15,7 @@ import type { CornerName } from "../shared/appearance/index.ts";
 import type { CatalogSetting } from "../shared/applet-store/index.ts";
 import type { ClockSettings, RegionSettings } from "../shared/time/index.ts";
 import type { SpaceNames } from "../spaces/types.ts";
+import type { VoiceSettings } from "../voice/types.ts";
 import type { WallpaperMode } from "../wallpaper/catalog.ts";
 import type { FrameRate, LiveShader, WallpaperKind } from "../wallpaper/live/choice.ts";
 import type { X11Scaling } from "../xwayland-scale.ts";
@@ -176,4 +177,6 @@ export interface SettingsData {
   screenSharing: ScreenSharingSettings;
   /** The applet catalogs added in Software. */
   applets: AppletsSettings;
+  /** Talking to Dashi: whether it is on, its key and its voice (voice/; Settings › Voice). */
+  voice: VoiceSettings;
 }

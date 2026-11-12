@@ -12,7 +12,7 @@
 //                      (Array.isArray), and what `isRecord` or a parse
 //                      leaves, `Record<string, unknown>`: its keys are known
 //                      to be strings and nothing else. A shape narrows
-//                      without a cast (decisions.md D31, D37).
+//                      without a cast (decisions.md D31, D42).
 //   H8  raw-requests   `request("method")` with a compositor IPC method
 //                      (docs/compositor-ipc.md) outside packages/shell/src/compositor/client.ts
 //   H10 return-types   an exported function in a .ts file without a return type

@@ -22,7 +22,8 @@
  *     "graphics": { "mode": "automatic" },
  *     "clipboard": { "history": true, "leftOut": ["org.keepassxc.KeePassXC"], "snippetsInTerminals": false },
  *     "screenSharing": { "clients": ["/usr/bin/grim"] },
- *     "applets": { "catalogs": [{ "name": "Team", "url": "https://example.com/index.json", "key": "RWQ…" }] }
+ *     "applets": { "catalogs": [{ "name": "Team", "url": "https://example.com/index.json", "key": "RWQ…" }] },
+ *     "voice": { "on": true, "key": "right-option", "voice": "bf_emma" }
  *   }
  *
  * Writes are read-modify-write on the file as it is now, so keys this module

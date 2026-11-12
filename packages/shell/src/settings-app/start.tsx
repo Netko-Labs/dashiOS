@@ -63,6 +63,8 @@ export interface SettingsAppOptions {
   privacy?: Pick<PrivacyStore, "subscribe" | "getSnapshot" | "revoke" | "refresh">;
   /** Dashi's vault and the login sources (Settings › Passwords). */
   passwords?: Passwords;
+  /** Talking to Dashi (Settings › Voice). */
+  voice?: PaneContext["voice"];
   /** The launcher's Ask, for Settings › Agents; late-bound (it starts after Settings), so asked for when the window opens. */
   answers?: () => AnswerStatus | null;
   /** The clipboard history (Settings › Keyboard); asked for when the window opens, since it starts after Settings. */
@@ -135,6 +137,7 @@ function paneContext(
     ...(options.controlCenter ? { controlCenter: options.controlCenter } : {}),
     about: readAbout,
     ...(options.agents ? { agents: options.agents } : {}),
+    ...(options.voice ? { voice: options.voice } : {}),
     lock: options.lock,
     openSetup: options.openSetup,
     show: (pane, row) => open(pane, row),

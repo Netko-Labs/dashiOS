@@ -14,6 +14,7 @@ import { APPEARANCE, DOCK, guarded, IDLE, INPUT_METHOD, KEYBOARD, MENU_BAR, MOUS
 import { isCatalogList } from "../shared/applet-store/catalogs.ts";
 import { dig, type Fields, isRaw, type Raw, readFields, type SectionOf } from "../shared/settings/index.ts";
 import { CLOCK_SECTION, REGION_SECTION } from "../shared/time/index.ts";
+import { isTalkKeyId, isVoiceId } from "../voice/index.ts";
 import type { DisplaySettings, SettingsData } from "./types.ts";
 
 /** A program `screenSharing.clients` may name: an absolute path, no NUL. */
@@ -63,6 +64,7 @@ export const SECTIONS = {
   clipboard: { path: ["clipboard"], fields: { history: bool(), leftOut: list(appName, { max: 64 }), snippetsInTerminals: bool() } },
   screenSharing: { path: ["screenSharing"], fields: { clients: list(guarded(isProgramPath, "an absolute path"), { max: 64 }) } },
   applets: { path: ["applets"], fields: { catalogs: guarded(isCatalogList, "a list of catalogs") } },
+  voice: { path: ["voice"], fields: { on: bool(), key: guarded(isTalkKeyId, "a talk key"), voice: guarded(isVoiceId, "a voice's id") } },
 } as const satisfies Record<string, { path: readonly string[]; fields: Fields }>;
 
 export type Sections = Omit<SettingsData, "displays">;
@@ -112,5 +114,6 @@ export function readSettings(raw: unknown): SettingsData {
     clipboard: section(SECTIONS.clipboard),
     screenSharing: section(SECTIONS.screenSharing),
     applets: section(SECTIONS.applets),
+    voice: section(SECTIONS.voice),
   };
 }

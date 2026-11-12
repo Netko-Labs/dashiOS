@@ -40,11 +40,12 @@ Voice are the shell's.
    milliseconds from that moment: show the sentence as the caption and move
    the highlight by the shell's own clock. `spoken` ends it. Esc, or the
    person talking: `speak.stop`.
-6. **`ask_person`:** `speak` the question, wait for its `spoken` (`done`),
-   then `listen` with `"until": "silence"`: the listen ends by itself when
-   the person has spoken and gone quiet, and the `heard` event carries the
-   answer. Give the wait a limit of the shell's own, and `listen.cancel` at
-   the limit.
+6. **`ask_person`:** `speak` the question as its sheet comes up. The person
+   answers as they ask: holding the talk key (`listen`, then `listen.stop`),
+   and the words heard are the answer instead of an ask. The microphone
+   opens only on the person's own press, never because an agent asked.
+   (`"until": "silence"` is there for a listen that ends by itself; the
+   shell does not use it in 0.8.)
 7. **Keep it warm:** when Voice is on and the session starts (or when the
    key's sheet opens), send `warm` so the first hold answers at once. Models
    unused for ten minutes are let go of, and loaded again when next needed
@@ -54,6 +55,46 @@ Voice are the shell's.
 Nothing listens unless the shell asked, and a listen ends when the connection
 that asked for it closes, when the microphone gives nothing for three
 seconds, and after five minutes whatever happens.
+
+## The shell's side
+
+`packages/shell/src/voice/` (started by `boot/voice.ts`; tests
+`packages/shell/test/voice-*.test.ts`):
+
+| File | What |
+| --- | --- |
+| `client.ts`, `lib/wire.ts` | the socket's client; every reply and event parsed with shapes |
+| `lib/launch.ts`, `lib/service.ts` | connecting when first needed and again after the service goes; from a checkout, starting it as the unit `dashi-voice` |
+| `keys.ts` | the talk key: which evdev codes the compositor holds (`held-keys`, docs/compositor-ipc.md), and what each choice costs |
+| `voice.ts` | the key held and let go, the ask, the answer said, captions, Esc, an agent's question |
+| `asker.ts`, `lib/answer.ts` | what was said becomes a launcher Ask task; its answer or its plan in words |
+| `chip.tsx`, `lib/captions.ts`, `lib/speech.ts` | the menu bar's chip, how long words are cut, each word lit at its time |
+| `models.ts` | the sets, a fetch's progress, Pause and Resume, removing (Settings › Voice) |
+
+- **The key.** While Voice is on (`voice.on` in settings.json) the shell
+  asks the compositor to hold the talk key: the right ❖ (evdev 126) and the
+  Copilot key (F23, 193: taken whether it comes alone or as ⇧❖F23), or the
+  one key the person picked in Settings › Voice (right ⌥, right ⌃, Caps
+  Lock, Menu). A held key reaches no app and is no modifier. With Voice off
+  no key is held: the right ❖ is a ❖ like the left.
+- **A hold** shorter than 300 ms is a tap: nothing is heard; it stops Dashi
+  if it was speaking, and otherwise the chip says "Hold … to talk." A
+  Copilot key that can't be held (some laptops send its press and release
+  together) is therefore a tap: pick another key in Settings › Voice.
+- **Stopping.** Esc (held by the shell only while Dashi listens, thinks or
+  speaks, and only alone: ⌃❖Esc still stops agents), the talk key again, a
+  press on the chip, and the screen locking each stop it at once.
+- **The chip** is laid over the menu bar in the room between the app's menus
+  and the status side, so it moves neither (docs/design.html, "The voice
+  chip"). Listening: the microphone's level and the end of what was heard so
+  far. Thinking: what was heard. Speaking: the line being said, each word
+  lighting at its `start`. Its words are a screen reader's too.
+- **Settings › Voice** (`settings-app/lib/panes/voice.tsx`): the switch;
+  turning it on with no models says what will come and how big, and only
+  "Fetch" fetches; progress with Pause, and Resume from what came; the talk
+  key and what it costs; Dashi's voice with "Play a sample"; "More
+  languages" (Whisper) as its own fetch; Remove. Each set's `credit` shows
+  under the page.
 
 ## The socket
 
@@ -464,6 +505,9 @@ It needs `onnxruntime`, `espeak-ng`, `pipewire-utils` and `curl` installed.
   the script, the WAVs, the transcript and the timings.
 
 ## What it can't do yet
+
+- No dictation into a text field: what is said goes to Dashi's agent only.
+- The talk key is one of a short list, not any key pressed to choose it.
 
 - No words while Whisper listens are streamed token by token: partials are
   the whole speech so far, worked out again about every 0.8 s, which is

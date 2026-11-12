@@ -5,7 +5,7 @@
  */
 
 import { formatAddress, type startActions } from "../actions/index.ts";
-import { createAgentUi } from "../agent-sheets/index.ts";
+import { createAgentUi, type QuestionVoice } from "../agent-sheets/index.ts";
 import type { Ask } from "../agents/ask/types.ts";
 import {
   AgentStore,
@@ -61,7 +61,7 @@ export interface AgentBasics {
 }
 
 /** Who is connected, passwords and the vault, the token proxy, and the sheets agents ask through. */
-export function startAgentBasics(compositor: Compositor | null, services: Services): AgentBasics {
+export function startAgentBasics(compositor: Compositor | null, services: Services, voice: QuestionVoice): AgentBasics {
   // Agents (MCP) run here too; they start below, once what they reach exists.
   const agentStore = new AgentStore();
   // Passwords: Dashi's vault and the sources agents sign in from (agents/secrets/).
@@ -72,7 +72,11 @@ export function startAgentBasics(compositor: Compositor | null, services: Servic
   const approvalUi = createApprovalUi();
   watchApprovals(approvalUi);
   // A sheet's yes counts only if the person pressed it (agents/person.ts).
-  const agentUi = createAgentUi({ inputOrigin: (params) => (compositor ? compositor.inputOrigin(params) : Promise.reject(new Error("no compositor"))) });
+  // An agent's question (`ask_person`) is said in Dashi's voice and answered by the talk key, or typed.
+  const agentUi = createAgentUi({
+    inputOrigin: (params) => (compositor ? compositor.inputOrigin(params) : Promise.reject(new Error("no compositor"))),
+    voice: () => voice,
+  });
   services.add("agent sheets", () => agentUi.close());
   // A "Your turn" is in the launcher's Now too while its banner is up (agents/ask/now.ts).
   const turnWatch = new TurnWatch();

@@ -24,6 +24,7 @@ const RISK: readonly Scope[] = [
   "notes",
   "calendar",
   "notifications",
+  "ask",
 ];
 
 const riskOf = (scope: Scope): number => {
@@ -87,6 +88,7 @@ export const CONSEQUENCES: Readonly<Record<Scope, string>> = {
   notes: "Reads your notes.",
   calendar: "Reads your calendar.",
   notifications: "Reads and dismisses your notifications.",
+  ask: "Asks you questions, out loud and on screen.",
 };
 
 /** One agent in Settings › Agents: what it may do for good, and whether it is connected now. */

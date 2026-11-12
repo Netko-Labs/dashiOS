@@ -23,6 +23,8 @@ export const desktopHandlers = {
   request_software_update: (call, ctx) => desktop.requestUpdate(call, ctx),
   // Read-only: whether agents work alone now, the seconds left, and what it covers (alone/).
   get_work_alone: (_call, ctx) => json({ ...ctx.alone() }),
+  // A question in words for the person, said and shown (desktop/ask-person.ts).
+  ask_person: (call, ctx) => desktop.askPerson(call, ctx),
 } satisfies Handlers<
   | "force_quit_app"
   | "lock_screen"
@@ -41,4 +43,5 @@ export const desktopHandlers = {
   | "request_software_install"
   | "request_software_update"
   | "get_work_alone"
+  | "ask_person"
 >;

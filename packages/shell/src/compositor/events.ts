@@ -112,6 +112,7 @@ const EVENTS = {
     ...(x11 === true ? { x11: true as const } : {}),
   })),
   snippet: loose({ keyword: str(), window: num() }),
+  "held-key": loose({ name: str(), down: bool() }),
 };
 
 /** One event, by its name. */

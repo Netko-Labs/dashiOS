@@ -219,7 +219,7 @@ export class Session {
             mayName: () => this.scopes.holds("see"),
             browser: this.browser.run((site) => sites.add(site)),
             alone: () => this.ctx.alone?.status() ?? NOT_ALONE,
-            confirm: (question) => this.scopes.confirm(question, signal),
+            ...this.scopes.asks(signal),
             signal,
           }),
         ),

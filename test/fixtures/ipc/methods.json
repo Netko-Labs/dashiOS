@@ -222,6 +222,23 @@
     },
     "who": "anyone"
   },
+  "held-keys": {
+    "params": {
+      "keys": [
+        {
+          "code": 126,
+          "name": "talk"
+        },
+        {
+          "bare": true,
+          "code": 1,
+          "name": "stop"
+        }
+      ]
+    },
+    "reply": {},
+    "who": "shell"
+  },
   "hide": {
     "params": {
       "window": 7

@@ -70,6 +70,18 @@ export interface SignInChoice {
   login: string | null;
 }
 
+/** "<agent> asks": a question for the person to answer in words (`ask_person`). */
+export interface PersonAsk {
+  agent: number;
+  who: Who;
+  question: string;
+  /** How long it waits once it shows, in seconds. */
+  seconds: number;
+}
+
+/** The person's own words and how they gave them, or why there are none: they said no, or the time ran out. */
+export type PersonAnswer = { text: string; by: "voice" | "typing" } | { none: "declined" | "no-answer" };
+
 /** "Your turn": the person does something in a window, then presses Done. */
 export interface Turn {
   agent: number;
@@ -126,6 +138,8 @@ export interface AgentUi {
   allowSite(ask: SiteAsk, signal?: AbortSignal): Promise<Allow>;
   /** Ask which login an agent may use, in the same queue; only the person's own press answers yes. */
   signIn(ask: SignInAsk, signal?: AbortSignal): Promise<SignInChoice>;
+  /** Ask the person a question in words, said out loud and shown, in the same queue; never an invented answer. */
+  question(ask: PersonAsk, signal?: AbortSignal): Promise<PersonAnswer>;
   /** Show "Your turn" until the person presses Done (true) or it is taken down (false). */
   turn(turn: Turn, signal?: AbortSignal): Promise<boolean>;
   /** Take down this agent's sheets (it left, the screen locked, or nobody answered). */

@@ -58,6 +58,12 @@ export const SCOPES = [
       "Read what you copied in the last 7 days, never the copies Dashi left out (password fields, password managers). You are asked every time, and Always Allow doesn't cover it",
   },
   {
+    id: "ask",
+    label: "Ask you questions",
+    detail:
+      "Ask you a question in words: Dashi says it out loud when Voice is on and shows it, and you answer by holding the talk key and speaking, or by typing. It gets your answer as text, and nothing when you don't answer. It never stands in for your fingerprint or password",
+  },
+  {
     id: "settings",
     label: "Change settings",
     detail:

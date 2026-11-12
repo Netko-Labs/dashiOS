@@ -1,3 +1,4 @@
+export { askPerson } from "./ask-person.ts";
 export { browserCall, frontPage } from "./browser.ts";
 export { createEvent, listCalendars, listEvents } from "./calendar.ts";
 export { readClipboardHistory } from "./clipboard.ts";

@@ -145,6 +145,7 @@ pub(crate) const METHODS: &[Method] = &[
     shell("chrome", typed!(chrome::chrome)),
     shell("window-style", typed!(chrome::window_style)),
     shell("keymap", typed!(chrome::keymap)),
+    shell("held-keys", typed!(chrome::held_keys)),
     shell("bars", typed!(chrome::bars)),
     shell("edges", typed!(chrome::edges)),
     shell("layout", typed!(chrome::layout)),
@@ -270,6 +271,7 @@ mod tests {
         for name in [
             "subscribe",
             "keymap",
+            "held-keys",
             "send-keys",
             "agent-input",
             "capture",

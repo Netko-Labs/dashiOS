@@ -115,7 +115,8 @@ export type Call =
   | { name: "list_tabs" }
   | { name: "switch_tab"; tab: number }
   | { name: "read_clipboard_history"; limit: number }
-  | { name: "get_work_alone" };
+  | { name: "get_work_alone" }
+  | { name: "ask_person"; question: string; seconds: number };
 
 /** Where Dashi types a secret: the focused field of a window, or an element of a browser tab. */
 export type SecretTarget = { window: number } | { ref: number; tab: number | null };

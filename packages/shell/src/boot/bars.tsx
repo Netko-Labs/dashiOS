@@ -15,6 +15,7 @@ import { openOverlay } from "../overlay.tsx";
 import type { App } from "../shared/apps/index.ts";
 import { configureMachineEnd } from "../shutdown.ts";
 import { MENU_BAR_HEIGHT } from "../theme.ts";
+import type { ChipSource, VoiceParts } from "../voice/index.ts";
 import { startXwaylandScaling } from "../xwayland-scale.ts";
 import type { AgentBasics, Handoff } from "./agents.ts";
 import type { Catalog, KeepingAwake, Programs } from "./apps.ts";
@@ -117,6 +118,8 @@ interface BarsNeeds {
   handoff: Handoff;
   screenshots: Screenshots;
   barTips: ReturnType<typeof startBarTips>;
+  /** Talking to Dashi: the chip in every bar (voice/). */
+  talking: VoiceParts;
   services: Services;
   late: Late<LateParts>;
 }
@@ -201,6 +204,17 @@ export function startBars(needs: BarsNeeds): MenuBars {
   return menuBars;
 }
 
+/** What the bars' chip reads of the voice: the one object for every bar. */
+const chipSources = new WeakMap<VoiceParts, ChipSource>();
+function chipSource(talking: VoiceParts): ChipSource {
+  const made = chipSources.get(talking);
+  if (made) return made;
+  const { voice } = talking;
+  const source: ChipSource = { subscribe: voice.subscribe, getSnapshot: voice.getSnapshot, level: voice.level, stop: () => voice.stop(), go: talking.go };
+  chipSources.set(talking, source);
+  return source;
+}
+
 /** One screen's menu bar; the primary's host also reports the windows. */
 function openMenuBar(needs: BarsNeeds, output: string | undefined, onClosed: () => void, primary: boolean) {
   const { stores, programs, late } = needs;
@@ -235,6 +249,7 @@ function openMenuBar(needs: BarsNeeds, output: string | undefined, onClosed: () 
       runs={needs.handoff.handoffShell.service.runs}
       installed={needs.catalog.installedApp}
       mixer={needs.mixer}
+      voice={chipSource(needs.talking)}
       onTip={(tip) => needs.barTips.show(tip)}
       reduceMotion={() => needs.look.state.reduceMotion}
       accessible={() => late.get("launcherAccess").accessible}

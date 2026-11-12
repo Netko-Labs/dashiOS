@@ -43,6 +43,7 @@ import { RecentPane } from "./lib/panes/recent.tsx";
 import { SoundPane } from "./lib/panes/sound.tsx";
 import { TrackpadPane } from "./lib/panes/trackpad.tsx";
 import { UsersPane } from "./lib/panes/users.tsx";
+import { VoicePane } from "./lib/panes/voice.tsx";
 import { WallpaperPane } from "./lib/panes/wallpaper.tsx";
 import { PAGE } from "./lib/row.tsx";
 import { PaneStoresContext } from "./lib/setting.tsx";
@@ -86,6 +87,31 @@ function NoVault() {
   );
 }
 
+function Keyboard({ ctx }: { ctx: PaneContext }) {
+  return (
+    <KeyboardPane
+      settings={ctx.settings}
+      layouts={ctx.layouts}
+      laptop={ctx.services.laptop}
+      clipboard={ctx.clipboard ?? null}
+      {...(ctx.installedApp ? { installed: ctx.installedApp } : {})}
+    />
+  );
+}
+
+function Privacy({ ctx }: { ctx: PaneContext }) {
+  return (
+    <PrivacyPane
+      grants={ctx.grants}
+      home={ctx.home}
+      settings={ctx.settings}
+      show={ctx.show}
+      {...(ctx.privacy ? { privacy: ctx.privacy } : {})}
+      {...(ctx.installedApp ? { installedApp: ctx.installedApp } : {})}
+    />
+  );
+}
+
 function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
   switch (id) {
     case "appearance":
@@ -107,15 +133,7 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "desktop-dock":
       return <DesktopDockPane />;
     case "keyboard":
-      return (
-        <KeyboardPane
-          settings={ctx.settings}
-          layouts={ctx.layouts}
-          laptop={ctx.services.laptop}
-          clipboard={ctx.clipboard ?? null}
-          {...(ctx.installedApp ? { installed: ctx.installedApp } : {})}
-        />
-      );
+      return <Keyboard ctx={ctx} />;
     case "trackpad":
       return <TrackpadPane settings={ctx.settings} />;
     case "mouse":
@@ -132,17 +150,18 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
       return ctx.passwords ? <PasswordsPane passwords={ctx.passwords} /> : <NoVault />;
     case "agents":
       return <AgentsPane ctx={ctx} />;
-    case "privacy":
-      return (
-        <PrivacyPane
-          grants={ctx.grants}
-          home={ctx.home}
-          settings={ctx.settings}
-          show={ctx.show}
-          {...(ctx.privacy ? { privacy: ctx.privacy } : {})}
-          {...(ctx.installedApp ? { installedApp: ctx.installedApp } : {})}
-        />
+    case "voice":
+      return ctx.voice ? (
+        <VoicePane settings={ctx.settings} voice={ctx.voice} />
+      ) : (
+        <Page title="Voice">
+          <Group testID="voice-none">
+            <Note>Voice isn't running in this session. Log out and in again to start it.</Note>
+          </Group>
+        </Page>
       );
+    case "privacy":
+      return <Privacy ctx={ctx} />;
     case "about":
       return <AboutPane about={ctx.about} openSetup={ctx.openSetup} />;
     case "network":

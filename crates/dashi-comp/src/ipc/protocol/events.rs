@@ -234,4 +234,8 @@ pub(crate) enum Event {
         keyword: String,
         window: u64,
     },
+    HeldKey {
+        name: String,
+        down: bool,
+    },
 }

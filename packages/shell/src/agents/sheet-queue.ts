@@ -13,6 +13,8 @@ import type { Answer } from "./presence.ts";
 export interface QueuedSheet {
   agent: number;
   resolve(answer: Answer): void;
+  /** How long it waits once shown, when not the queue's own time (a question says how long it waits). */
+  timeoutMs?: number;
 }
 
 export const DENY: Answer = { allow: "deny", scopes: [] };
@@ -78,7 +80,7 @@ export class SheetQueue<E extends QueuedSheet> {
     const shown: { entry: E; handle: { close(): void } | null; cancel: () => void } = { entry, handle: null, cancel: () => {} };
     this.showing = shown;
     // The clock starts now that the person can see it.
-    shown.cancel = (this.options.later ?? timeout)(() => this.finish(entry, DENY), this.options.timeoutMs ?? ASK_TIMEOUT_MS);
+    shown.cancel = (this.options.later ?? timeout)(() => this.finish(entry, DENY), entry.timeoutMs ?? this.options.timeoutMs ?? ASK_TIMEOUT_MS);
     shown.handle = this.options.open(
       entry,
       (answer) => this.finish(entry, answer),

@@ -1,6 +1,6 @@
 /** The shell's chrome, its input claims, and its settings (docs/compositor-ipc.md, "Shell chrome and input claims"). */
 
-import { bool, list, map, num, obj, optional, record, str } from "@dashi/shape";
+import { bool, int, list, map, num, obj, optional, record, str } from "@dashi/shape";
 import { FrameShape } from "../../wire.ts";
 import { Done, method } from "./spec.ts";
 
@@ -59,6 +59,7 @@ export const CHROME = {
   chrome: method("shell", obj({ dark: optional(bool()), radius: optional(num()), reduceMotion: optional(bool()) }), Done),
   "window-style": method("shell", WindowStyle, Done),
   keymap: method("shell", Keymap, Done),
+  "held-keys": method("shell", obj({ keys: list(obj({ name: str(), code: int({ min: 1, max: 767 }), bare: optional(bool()) }), { max: 16 }) }), Done),
   bars: method("shell", obj({ top: optional(num()), show: optional(bool()), output: optional(str()) }), Done),
   edges: method(
     "shell",

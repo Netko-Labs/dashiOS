@@ -67,6 +67,8 @@ export {
   type Answer,
   type Ask,
   type Confirm,
+  type PersonAnswer,
+  type PersonAsk,
   type ScopeChoice,
   type SignInAsk,
   type SignInChoice,
