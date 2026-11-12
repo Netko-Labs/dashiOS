@@ -53,7 +53,13 @@ export function startSystemStores(compositor: Compositor | null, wifi: WifiSetup
   // levels, Control Center's slider and the bar's speaker all follow (sound/apps/watch.ts). It only reads.
   const pipewire = pipewireWatch();
   // Battery, network, and volume for the menu bar; the volume and brightness keys.
-  const system = startSystem({ compositor, pipewire, ...(wifi.status ? { network: wifi.status, ...(wifi.monitor ? { monitor: wifi.monitor } : {}) } : {}) });
+  // On a development run the volume keys write nothing, as Control Center's slider and the mixer don't (the same switch).
+  const system = startSystem({
+    compositor,
+    pipewire,
+    standIn: wifi.fake,
+    ...(wifi.status ? { network: wifi.status, ...(wifi.monitor ? { monitor: wifi.monitor } : {}) } : {}),
+  });
   services.add("system", () => system.close());
   startLiveWallpaper(look, compositor, system);
   // The Wi-Fi list and joins: the menu and Control Center read it, and so do agents.
