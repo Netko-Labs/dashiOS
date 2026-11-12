@@ -30,7 +30,7 @@ export function ButtonsPage() {
     <PageBody>
       <Exhibit
         title="Button"
-        note="Kombu goes ahead, ume destroys, the rest are secondary with a 3:1 edge. Each deepens under the pointer (point at one) and more while held. Disabled is the whole button at 40%. Tab to one for its focus ring. The Focused row only marks the state."
+        note="Ink goes ahead, ume destroys, the rest are secondary with a 3:1 edge. Each deepens under the pointer (point at one) and more while held. Disabled is the whole button at 40%. Tab to one for its focus ring. The Focused row only marks the state."
       >
         <States>
           {({ state, disabled }) => (
@@ -159,7 +159,7 @@ export function FieldsPage() {
   const [query, setQuery] = useState("");
   return (
     <PageBody>
-      <Exhibit title="Text field" note="The ring is kombu while it has the keyboard.">
+      <Exhibit title="Text field" note="Its edge is the focus ring's purple while it has the keyboard.">
         <TextField testID="field:text" value={text} onChangeText={setText} width={220} />
         <TextField testID="field:empty" value="" placeholder="Name" onChangeText={noop} width={220} />
       </Exhibit>
