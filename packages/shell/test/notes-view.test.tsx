@@ -48,7 +48,7 @@ function fakeHost() {
   return { transport, trees, emit };
 }
 
-type Props = { id?: string; autofocus?: boolean; selection?: { start: number; end: number } };
+type Props = { id?: string; insertTab?: boolean; autofocus?: boolean; selection?: { start: number; end: number } };
 type Node = { type: string; props: Props; children?: unknown[] };
 
 /** The props of input `id` in the latest tree. */
@@ -70,6 +70,18 @@ function mount(model: NotesModel) {
   host.emit({ type: "chrome", nodeId: "root", titleBar: "unified", controls: { x: 8, y: 8, width: 60, height: 28 } });
   return { host, window, body: (): Props | null => inputProps(host.trees.at(-1), window.nodeId("body")) };
 }
+
+test("Tab types a tab in a note's body; in its title it moves the keyboard on", async () => {
+  store.create({ title: "Groceries", body: "eggs" });
+  const model = new NotesModel(store, 60_000);
+  model.select("Groceries.md");
+  const { host, window, body } = mount(model);
+  await settle();
+  expect(body()?.insertTab).toBe(true);
+  expect(inputProps(host.trees.at(-1), window.nodeId("title"))?.insertTab).toBeUndefined();
+  window.unmount();
+  model.dispose();
+});
 
 test("one Esc in Find keeps the words and hands the keyboard to the note, on the match", async () => {
   store.create({ title: "Groceries", body: "eggs, then milk" });

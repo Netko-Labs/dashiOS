@@ -1,9 +1,12 @@
 import { expect, test } from "bun:test";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { NativeHostOptions, NativeHostTransport, NativeWindowOptions } from "@mirinjs/metal";
 import { View } from "@mirinjs/metal";
 import { createElement } from "react";
 import { openPopoverWindow } from "../src/popover.tsx";
-import { REWARM_MS, WARM_AFTER_MS, WarmHost, type WarmTimers } from "../src/warm-host.ts";
+import { compositorIsThere, REWARM_MAX_MS, REWARM_MS, rewarmDelay, WARM_AFTER_MS, WarmHost, type WarmTimers } from "../src/warm-host.ts";
 import { flush } from "./support/time.ts";
 
 function fakeHosts() {
@@ -67,7 +70,7 @@ const window = { title: "Weather", appId: "dev.example.weather", width: 400, hei
 test("an applet's host starts a moment after the applet, named for screen readers, and opens on demand", async () => {
   const { spawned, spawn } = fakeHosts();
   const { due, timers, pass } = fakeTimers();
-  const warm = new WarmHost({ binary: "/host", appName: "Weather", supports: async () => true, spawn, timers });
+  const warm = new WarmHost({ binary: "/host", appName: "Weather", supports: async () => true, reachable: async () => true, spawn, timers });
   warm.start();
   expect(spawned).toHaveLength(0);
   expect(await pass()).toEqual([WARM_AFTER_MS]);
@@ -89,7 +92,7 @@ test("an applet's host starts a moment after the applet, named for screen reader
 test("a host binary from before deferred hosts is never kept warm", async () => {
   const { spawned, spawn } = fakeHosts();
   const { timers, pass } = fakeTimers();
-  const warm = new WarmHost({ binary: "/old-host", appName: "Weather", supports: async () => false, spawn, timers });
+  const warm = new WarmHost({ binary: "/old-host", appName: "Weather", supports: async () => false, reachable: async () => true, spawn, timers });
   warm.start();
   await pass();
   expect(spawned).toHaveLength(0);
@@ -99,7 +102,7 @@ test("a host binary from before deferred hosts is never kept warm", async () => 
 test("a warm host that dies is replaced, never handed out", async () => {
   const { spawned, spawn } = fakeHosts();
   const { due, timers, pass } = fakeTimers();
-  const warm = new WarmHost({ binary: "/host", appName: "Weather", supports: async () => true, spawn, timers });
+  const warm = new WarmHost({ binary: "/host", appName: "Weather", supports: async () => true, reachable: async () => true, spawn, timers });
   warm.start();
   await pass();
   spawned[0]?.die();
@@ -109,10 +112,61 @@ test("a warm host that dies is replaced, never handed out", async () => {
   expect(warm.isReady()).toBe(true);
 });
 
+test("no host starts while the compositor is gone: it looks again later, each time after longer", async () => {
+  const { spawned, spawn } = fakeHosts();
+  const { timers, pass } = fakeTimers();
+  let there = false;
+  const warm = new WarmHost({ binary: "/host", appName: "Weather", supports: async () => true, reachable: async () => there, spawn, timers });
+  warm.start();
+  expect(await pass()).toEqual([WARM_AFTER_MS]);
+  // The journal had a host's panic every 1.5 s (NoCompositor) until the shell started the applet again.
+  expect(await pass()).toEqual([REWARM_MS * 2]);
+  expect(await pass()).toEqual([REWARM_MS * 4]);
+  expect(spawned).toHaveLength(0);
+  there = true;
+  await pass();
+  expect(spawned).toHaveLength(1);
+  expect(warm.isReady()).toBe(true);
+  warm.stop();
+});
+
+test("hosts that keep dying before they are taken are tried less and less often; one that is taken puts the wait back", async () => {
+  const { spawned, spawn } = fakeHosts();
+  const { due, timers, pass } = fakeTimers();
+  const warm = new WarmHost({ binary: "/host", appName: "Weather", supports: async () => true, reachable: async () => true, spawn, timers });
+  warm.start();
+  await pass();
+  spawned[0]?.die();
+  expect(await pass()).toEqual([REWARM_MS]);
+  spawned[1]?.die();
+  expect(await pass()).toEqual([REWARM_MS * 2]);
+  spawned[2]?.die();
+  expect(await pass()).toEqual([REWARM_MS * 4]);
+  expect(warm.take(window)).not.toBeNull();
+  expect(due.map((timer) => timer.ms)).toEqual([REWARM_MS]);
+  await pass();
+  spawned[4]?.die();
+  expect(due.map((timer) => timer.ms)).toEqual([REWARM_MS]);
+  expect(rewarmDelay(40)).toBe(REWARM_MAX_MS);
+  warm.stop();
+});
+
+test("the compositor is there when its socket answers, and gone when the file is left with nobody behind it", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "dashi-warm-"));
+  const env = { XDG_RUNTIME_DIR: dir, WAYLAND_DISPLAY: "wayland-9" };
+  expect(await compositorIsThere(env)).toBe(false);
+  const server = Bun.listen({ unix: join(dir, "wayland-9"), socket: { data() {} } });
+  expect(await compositorIsThere(env)).toBe(true);
+  // Bun leaves the socket's file when a listener stops: a compositor that went.
+  server.stop(true);
+  expect(await compositorIsThere(env)).toBe(false);
+  expect(await compositorIsThere({})).toBe(true);
+});
+
 test("a popover or view opens on the warm host when one is ready, else on a new one", async () => {
   const { spawned, spawn } = fakeHosts();
   const { timers, pass } = fakeTimers();
-  const warm = new WarmHost({ binary: "/host", appName: "Weather", supports: async () => true, spawn, timers });
+  const warm = new WarmHost({ binary: "/host", appName: "Weather", supports: async () => true, reachable: async () => true, spawn, timers });
   warm.start();
   await pass();
   const placement = { x: 10, y: 20, width: 400, height: 160, namespace: "dashi.applet.weather.view", output: null };

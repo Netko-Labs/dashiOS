@@ -651,6 +651,70 @@ Numbered in the order they were written down; a new one goes at the end.
 - **Undo:** take `isNarrowedCast` out of `scripts/check-boundaries.ts`; the
   code stays stricter than the check.
 
+### D32. Esc closes an applet's popover from the shell, not from the applet
+
+- **Date:** 2026-11-11.
+- **Question:** Esc didn't close an applet's popover while an app had the
+  keyboard. The SDK closes it on Esc, but a package bundles the SDK it was
+  built with, and a popover from before 0.5 never takes the keyboard. Fix
+  the SDK again, make the shell's catcher take the keyboard, or bind the key?
+- **Choice:** while a popover is open, Esc is a rule of the keymap, ahead of
+  the others (`POPOVER_RULES`, `setOpenRules`); the shell sends `dismiss`.
+- **Why:** it works for every applet, old or new, and wherever the keyboard
+  is. A catcher that takes the keyboard would fight a new popover for it (the
+  compositor gives an exclusive layer the keyboard at each commit).
+- **Cost:** Esc never reaches the focused app or the popover itself while one
+  is open; a popover that wanted Esc for its own use can't have it.
+- **Undo:** drop the `onOpenChange` listener in `boot/keys.ts`.
+
+### D33. Tab types a tab in Text Editor and in a note's body
+
+- **Date:** 2026-11-11.
+- **Question:** Tab moved the keyboard out of the document to the toolbar
+  (KB-1: Tab reaches every control). A text editor needs to type one.
+- **Choice:** mirin's multiline field takes `tabBehavior="insert"`; Text
+  Editor's text and a note's body ask for it. Shift+Tab still moves the
+  keyboard back, and Ctrl+Tab on. Other multiline fields (an event's notes, a
+  dialog's text) keep Tab for focus: they are fields of a form.
+- **Why:** a document is where Tab is a character, as in every editor; the
+  keyboard can still leave both ways.
+- **Cost:** Tab alone no longer walks out of a document.
+- **Undo:** drop the prop in `apps/editor/lib/views/text-area.tsx` and
+  `apps/notes/lib/views/note-page.tsx`.
+
+### D34. A window title's detail is whole, cut to a useful length, or not shown
+
+- **Date:** 2026-11-11.
+- **Question:** in a narrow window "All Notes — 1 note" became "All Notes —
+  …", and `dashi-dialog --directory` cut "Choose a folder" while its search
+  field still had room to give.
+- **Choice:** the detail keeps a place as wide as its words, up to 120: with
+  less room it is not drawn at all; a longer one is still cut with an
+  ellipsis, never below 120. The title keeps its own width, up to 128
+  (`TITLE_KEEP`; at least 96 as before), before a field in the toolbar that
+  shrinks gives any (`dashi-ui/src/window-title.tsx`).
+- **Why:** a bare "…" says nothing, and a short title is worth more than the
+  last 30 points of a search field.
+- **Cost:** a short detail disappears a little earlier than it would be cut;
+  a toolbar with no field that shrinks needs up to 32 more points.
+- **Undo:** `TITLE_KEEP` back to `TITLE_MIN`; `DETAIL_KEEP` to 0.
+
+### D35. Text of two sizes shares a baseline where a row asks for it
+
+- **Date:** 2026-11-11.
+- **Question:** 11 to 12 pt text sat up to 1 pt high beside 13 pt text: a
+  row centers boxes, and mirin's layout had no baselines. Correct the
+  metrics so centered boxes line up, or add baseline alignment?
+- **Choice:** baseline alignment, in mirin: GPUI's text names its first
+  line's baseline to taffy, and a view takes `alignItems: "baseline"`. The
+  sidebar's name and count use it first.
+- **Why:** centered boxes of two sizes can't share a baseline whatever the
+  metrics; this is what CSS has, and each row opts in.
+- **Cost:** rows are fixed one at a time; a glyph has no baseline, so words
+  that share one sit in a row of their own beside it. An older Metal host
+  refuses a tree that asks for it.
+- **Undo:** `alignItems: "center"` in `dashi-ui/src/sidebar.tsx`.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its

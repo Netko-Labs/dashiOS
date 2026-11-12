@@ -145,6 +145,6 @@ export function startApplets({ compositor, extras, openOverlay, primary, command
   return () => {
     stopKillSwitch();
     stopEveryone();
-    void launcher?.stop();
+    launcher?.stop();
   };
 }

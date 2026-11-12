@@ -8,7 +8,7 @@
 
 import { existsSync, readFileSync, watch } from "node:fs";
 import { homedir } from "node:os";
-import { join, relative } from "node:path";
+import { basename, dirname, join, relative } from "node:path";
 import { LOG_MARK } from "../../define.ts";
 import { readManifest } from "../../manifest.ts";
 import { appletsSocketPath } from "../../protocol.ts";
@@ -25,16 +25,41 @@ export function vmPath(path: string, home = homedir()): string | null {
   return inside.startsWith("..") || inside.startsWith("/") ? null : join("/mnt/developer", inside);
 }
 
+/**
+ * The Metal host of the checkout the SDK is in: mirin is beside Dashi's
+ * checkout (`../mirin`), the host under its `crates/mirin-metal`. Null for
+ * an installed SDK, which has the installed host beside it.
+ */
+export function checkoutMetalHost(sdkDir: string): string | null {
+  const packages = dirname(sdkDir);
+  if (basename(packages) !== "packages") return null;
+  return join(dirname(dirname(packages)), "mirin/crates/mirin-metal/target/release/mirin-metal-host");
+}
+
+/**
+ * Shell text that names `host` as the Metal host (`DASHI_METAL_HOST`) once it
+ * is built, as the checkout's session takes it (vm/dev-session): the popover
+ * is drawn by the mirin the applet was written against, not by the VM's
+ * installed host, which may be older. One already named is kept.
+ */
+export function metalHostLine(host: string): string {
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: the remote shell expands it.
+  const unset = '[ -z "${DASHI_METAL_HOST:-}" ]';
+  return `{ ! { ${unset} && [ -x ${shellQuote(host)} ]; } || export DASHI_METAL_HOST=${shellQuote(host)}; }`;
+}
+
 /** The command `--vm` runs in the VM's session. */
 export function vmCommand(appletDir: string, sdkDir: string, home = homedir()): string | null {
   const dir = vmPath(appletDir, home);
   const sdk = vmPath(sdkDir, home);
   if (!dir || !sdk) return null;
+  const host = checkoutMetalHost(sdk);
   return [
     `cd ${shellQuote(dir)}`,
     // ssh has no Wayland display of its own: the session's, for popovers. Shell text, not a template.
     // biome-ignore lint/suspicious/noTemplateCurlyInString: the remote shell expands it.
     'export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-$(basename "$(ls -d "$XDG_RUNTIME_DIR"/wayland-[0-9] 2>/dev/null | head -1)")}"',
+    ...(host ? [metalHostLine(host)] : []),
     `exec /usr/libexec/dashi/bin/bun ${shellQuote(join(sdk, "src/cli/main.ts"))} dev`,
   ].join(" && ");
 }
