@@ -94,10 +94,22 @@ const PAPER: ReadonlyArray<PopUpOption<string>> = [
   { value: "envelope", label: "Envelope #10" },
 ];
 
+/** A list put together from groups, the first of them empty: lines first, twice in a row and last. */
+const GROUPED: ReadonlyArray<PopUpOption<string>> = [
+  { type: "separator" },
+  { value: "a4", label: "A4" },
+  { value: "letter", label: "US Letter" },
+  { type: "separator" },
+  { type: "separator" },
+  { value: "a5", label: "A5" },
+  { type: "separator" },
+];
+
 export function PickersPage() {
   const [segment, setSegment] = useState("m");
   const [pill, setPill] = useState("m");
   const [paper, setPaper] = useState("a4");
+  const [grouped, setGrouped] = useState("a5");
   return (
     <PageBody>
       <Exhibit title="Segmented control" note="Two to four short options.">
@@ -117,6 +129,12 @@ export function PickersPage() {
         <States>
           {({ state, disabled }) => <PopUpButton testID={`popup:${state}`} options={PAPER} value={paper} onChange={setPaper} width={170} disabled={disabled} />}
         </States>
+      </Exhibit>
+      <Exhibit
+        title="Pop-up button, a list made of groups"
+        note="A group with nothing in it leaves a line first, last or twice in a row. The menu draws none of them, and the chosen option still opens on the button."
+      >
+        <PopUpButton testID="popup:grouped" options={GROUPED} value={grouped} onChange={setGrouped} width={170} />
       </Exhibit>
     </PageBody>
   );
