@@ -3,8 +3,9 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type Manifest, parseManifest, permissionName, readInstalled } from "@dashi/applet";
-import { AppletLauncher, type Units, userFolders } from "../src/applets/launcher.ts";
+import { AppletLauncher, userFolders } from "../src/applets/launcher.ts";
 import { busRules, HARDWARE_BUS_NAME, INSIDE, type SandboxPaths, sandboxPlan, unitName } from "../src/applets/lib/sandbox.ts";
+import { SESSION_TARGET, startCommand, stopNowCommand, type Units } from "../src/applets/units.ts";
 import { ExtrasStore } from "../src/extras/index.ts";
 
 const HOME = "/home/alex";
@@ -173,6 +174,9 @@ function fakeUnits() {
     stop: async (unit) => {
       log.push(`stop ${unit}`);
     },
+    stopNow: (names) => {
+      log.push(`stop now ${names.join(" ")}`);
+    },
   };
   return { log, units };
 }
@@ -202,8 +206,10 @@ test("the launcher runs an allowed applet in its unit, asks once about one that 
   await running.reconcile();
   expect(log).toEqual([`stop ${unitName("dev.example.weather")}`, `start ${unitName("dev.example.weather")} dev.example.weather.json`]);
   expect(running.runningIds()).toEqual(["dev.example.weather"]);
-  await running.stop();
-  expect(log.at(-1)).toBe(`stop ${unitName("dev.example.weather")}`);
+  // The shell exits in the same turn (main.tsx `quit`): systemd is asked before stop() returns, with nothing awaited.
+  running.stop();
+  expect(log.at(-1)).toBe(`stop now ${unitName("dev.example.weather")}`);
+  expect(running.runningIds()).toEqual([]);
 
   const unasked = installedTree(null);
   const second = fakeUnits();
@@ -221,7 +227,7 @@ test("the launcher runs an allowed applet in its unit, asks once about one that 
   await askingYes.reconcile();
   expect(readInstalled(unasked)[0]?.record.consent).toEqual(["network"]);
   expect(askingYes.runningIds()).toEqual(["dev.example.weather"]);
-  await askingYes.stop();
+  askingYes.stop();
 
   const pulled = installedTree(["network"], { reason: "pulled", detail: "drains the battery" });
   const third = fakeUnits();
@@ -246,5 +252,22 @@ test("the same version installed again from new bytes (a rebuild) runs the new f
   writeFileSync(record, JSON.stringify({ version: "0.1.0", sha256: "y", authorKey: null, source: "local", consent: ["network"] }));
   await running.reconcile();
   expect(log).toEqual([`stop ${unit}`, `stop ${unit}`, `start ${unit} dev.example.weather.json`]);
-  await running.stop();
+  running.stop();
+});
+
+test("an applet's unit is part of the session's target, and is stopped without waiting as the shell exits", () => {
+  const command = startCommand("dashi-applet-dev.example.weather.service", ["/usr/bin/bun", "run.ts", "plan.json"]);
+  expect(command).toContain(`PartOf=${SESSION_TARGET}`);
+  expect(command.slice(-4)).toEqual(["--", "/usr/bin/bun", "run.ts", "plan.json"]);
+  expect(stopNowCommand(["a.service", "b.service"])).toEqual(["systemctl", "--user", "stop", "--no-block", "a.service", "b.service"]);
+});
+
+test("a look that was under way when the shell went starts nothing", async () => {
+  const root = installedTree(["network"]);
+  const { log, units } = fakeUnits();
+  const running = launcher(root, units);
+  const looking = running.reconcile();
+  running.stop();
+  await looking;
+  expect(log.filter((line) => line.startsWith("start"))).toEqual([]);
 });

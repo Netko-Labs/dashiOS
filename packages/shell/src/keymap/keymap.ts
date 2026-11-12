@@ -231,6 +231,18 @@ export function withRules(keymap: Keymap, rules: readonly Rule[]): Keymap {
   return rules.length === 0 ? keymap : { ...keymap, rules: [...rules, ...keymap.rules] };
 }
 
+/** The binding of Esc while an applet's popover is open: the shell closes the popover. */
+export const POPOVER_DISMISS = "applet-popover-dismiss";
+
+/**
+ * The key bound only while an applet's popover is open (applets/popovers.ts),
+ * ahead of every other rule: Esc closes it from wherever the keyboard is.
+ * The popover is the applet's own surface, and whether it takes the keyboard
+ * is up to the SDK the applet was built with (one from before 0.5 never
+ * does), so Esc typed in the focused app went to the app.
+ */
+export const POPOVER_RULES: Rule[] = [{ when: "Escape", bind: POPOVER_DISMISS }];
+
 /**
  * Keys bound only while the app switcher is open (switcher/), ahead of every
  * other rule: ↓ and ` into the chosen app's windows, ↑ back, ← → along the

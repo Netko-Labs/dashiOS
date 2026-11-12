@@ -4,7 +4,8 @@
  * black, who is signing in, one field, a line under it saying how it
  * went, and along the bottom Sleep, Restart, and Shut Down, as a Mac's login
  * window has them. Each power button asks for a second click, so a stray one
- * cannot turn the machine off.
+ * cannot turn the machine off. Tab goes from the field to each of them (and
+ * to what the host puts above and below the field), in the purple ring.
  *
  * It only shows: what the field means, checking it, and what power does are
  * the host's (the shell's lock controller, the greeter's greetd login).
@@ -38,6 +39,10 @@ const POWER: readonly { what: PowerAction; label: string; confirm: string; glyph
   { what: "restart", label: "Restart", confirm: "Click to Restart", glyph: RESTART },
   { what: "shutdown", label: "Shut Down", confirm: "Click to Shut Down", glyph: SHUT_DOWN },
 ];
+
+/** A power button's width: room for "Click to Shut Down" on one line. The buttons stay 132 apart, center to center. */
+const POWER_WIDTH = 116;
+const POWER_GAP = 16;
 
 /** How long a power button waits for its second click. */
 const CONFIRM_MS = 3000;
@@ -110,9 +115,18 @@ export function LoginScreen(props: LoginScreenProps): ReactNode {
       {/* In the flow, not pinned: on a short screen the buttons move down instead of over the field. */}
       <View style={{ flex: 0.6, minHeight: 24 }} />
       {onPower && (
-        <View testID="login-power" style={{ marginBottom: 28, flexDirection: "row", justifyContent: "center", gap: 36 }}>
+        <View testID="login-power" style={{ marginBottom: 24, flexDirection: "row", justifyContent: "center", gap: POWER_GAP }}>
           {POWER.map(({ what, label, confirm, glyph }) => (
-            <View key={what} testID={`login-${what}`} onPress={() => press(what)} style={{ flexDirection: "column", alignItems: "center", gap: 6, width: 96 }}>
+            // Tab reaches each after the field, and Space or Return presses it: the first press arms it, as a click does.
+            <View
+              key={what}
+              testID={`login-${what}`}
+              focusable
+              accessibilityRole="button"
+              accessibilityLabel={arming === what ? confirm : label}
+              onPress={() => press(what)}
+              style={{ flexDirection: "column", alignItems: "center", gap: 6, width: POWER_WIDTH, paddingVertical: 4, borderRadius: 12 }}
+            >
               <View
                 style={{
                   width: 40,

@@ -26,7 +26,7 @@
 import { type Dirent, mkdirSync, readdirSync, readFileSync, statSync, watch } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { UNIT_LIMITS } from "../applets/launcher.ts";
+import { UNIT_LIMITS } from "../applets/units.ts";
 import { formatAddress, isSegment } from "./address.ts";
 import { type ActionDef, type ActionSource, type Args, failed, invalid, type Outcome, ok, ready } from "./types.ts";
 

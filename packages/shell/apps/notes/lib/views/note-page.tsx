@@ -137,6 +137,8 @@ export function Page({
         key={fieldKey}
         testID="body"
         multiline
+        // Tab types a tab in a note's words; Shift+Tab still leaves for the title.
+        tabBehavior="insert"
         value={body}
         valueRevision={refused}
         placeholder={readOnly ? "" : "Start writing…"}

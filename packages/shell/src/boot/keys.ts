@@ -14,7 +14,8 @@
 import type { Actions } from "../actions/index.ts";
 import type { PressedChord } from "../app-menus/index.ts";
 import type { Compositor } from "../compositor/index.ts";
-import { currentKeymap, idleKeymap, setPersonRules } from "../keymap/keymap-state.ts";
+import { POPOVER_RULES } from "../keymap/keymap.ts";
+import { currentKeymap, idleKeymap, setOpenRules, setPersonRules } from "../keymap/keymap-state.ts";
 import { type LauncherKeys, withLauncher } from "../launcher/keys.ts";
 import type { LauncherPrefs } from "../launcher/prefs.ts";
 import { TYPE_BINDING, TypeAhead, typedFrom, withTyping } from "../launcher/type-ahead.ts";
@@ -86,6 +87,12 @@ export class LauncherKeyboard {
     else this.typingKeys();
   }
 
+  /** The keymap changed under whatever holds the keys now: the launcher's again, or the idle one (the switcher sends its own as it ends). */
+  refresh(): void {
+    if (this.overlays.has("launcher")) this.again();
+    else if (!this.overlays.has("switcher")) this.idleKeys();
+  }
+
   /**
    * The person's aliases and keys (settings.json `launcher`; launcher/person-keys.ts): a key they set
    * reaches the compositor at once, and an edit of the file by hand too.
@@ -97,8 +104,7 @@ export class LauncherKeyboard {
       if (text === this.personKeys) return;
       this.personKeys = text;
       setPersonRules(rules);
-      if (this.overlays.has("launcher")) this.again();
-      else if (!this.overlays.has("switcher")) this.idleKeys();
+      this.refresh();
     };
     follow();
     services.add("person keys", settingsStore.subscribe(follow));
@@ -222,8 +228,17 @@ export function startKeys(needs: KeysNeeds): void {
         lock: () => needs.guards.lockScreen?.lock(),
         powerKey: () => needs.guards.power.powerKey(),
         launcher: { binding: keyboard.binding },
+        dismissPopover: () => needs.programs.appletPopovers.dismiss(),
         isLocked: needs.guards.screenLocked,
       })
     : () => {};
   services.add("shortcuts", stopShortcuts);
+  // While an applet's popover is open Esc is the shell's, and closes it (keymap.ts POPOVER_RULES).
+  services.add(
+    "applet popover keys",
+    needs.programs.appletPopovers.onOpenChange((open) => {
+      setOpenRules(open ? POPOVER_RULES : []);
+      keyboard.refresh();
+    }),
+  );
 }

@@ -28,6 +28,8 @@ export const CardLit = createContext(false);
  * whose height is its content's, nothing shrinks anyway.
  */
 export const TUCK = { marginTop: -4 } as const;
+/** A space between two words of a caption at 11.5. */
+const CAPTION_SPACE = 3;
 
 /** Settings' surfaces, from Control Center's tokens: a text field or a sunk list sits on the window's color. */
 export function useSurface(): Surface {
@@ -73,21 +75,40 @@ export function Group({ children, testID }: { children: ReactNode; testID?: stri
 
 /**
  * A heading over cards, or a sentence under them (tucked 4 closer to the
- * card, `TUCK`); `keys` draws a shortcut after it ("⌥❖D").
+ * card, `TUCK`); `keys` draws a shortcut after it ("⌥❖D"). With keys the
+ * sentence is laid out a word at a time in a row that wraps, the last word
+ * and the keys as one piece: in a narrow window the keys stay after the last
+ * word, on its line, where a wrapped block of text left them floating at its
+ * right, half way up.
  */
 export function Caption({ children, above, keys }: { children: string; above?: boolean; keys?: string }) {
   const colors = useControlColors();
+  const text = { fontSize: 11.5, fontWeight: above ? "semibold" : "normal", color: colors.muted } as const;
+  const place = { ...(above ? ({ flexShrink: 0, marginTop: 6 } as const) : TUCK), paddingLeft: 10, paddingRight: 10 };
+  if (!keys) {
+    return (
+      <View style={place}>
+        <Text style={text}>{children}</Text>
+      </View>
+    );
+  }
+  const words = children.split(" ").filter(Boolean);
+  const last = words.pop() ?? "";
   return (
     <View
-      style={{
-        ...(above ? { flexShrink: 0, marginTop: 6 } : TUCK),
-        paddingLeft: 10,
-        paddingRight: 10,
-        ...(keys ? { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", gap: 4 } : {}),
-      }}
+      accessibilityLabel={`${children} ${keys}`}
+      style={{ ...place, flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: CAPTION_SPACE, rowGap: 0 }}
     >
-      <Text style={{ fontSize: 11.5, fontWeight: above ? "semibold" : "normal", color: colors.muted }}>{children}</Text>
-      {keys ? <Shortcut keys={keys} color={colors.muted} size={11} /> : null}
+      {words.map((word, index) => (
+        // Words have no identity beyond their place in the sentence.
+        <Text key={index} style={text}>
+          {word}
+        </Text>
+      ))}
+      <View testID="caption-keys" style={{ flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 0 }}>
+        <Text style={text}>{last}</Text>
+        <Shortcut keys={keys} color={colors.muted} size={11} />
+      </View>
     </View>
   );
 }

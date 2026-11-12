@@ -18,6 +18,7 @@ import { type PressInfo, Svg, Text, useWindowChrome, View } from "@mirinjs/metal
 import type { ReactNode } from "react";
 import { useColors, useSurface } from "./theme/index.ts";
 import { TooltipLayer, useTooltip } from "./tooltip.tsx";
+import { WindowTitle } from "./window-title.tsx";
 
 /** The toolbar's height when the compositor reports no window controls to line up with. */
 const TOOLBAR_HEIGHT = 38;
@@ -49,17 +50,14 @@ export function toolbarInset(leading: number, sidebarWidth: number): number {
   return Math.max(18, leading + 14 - sidebarWidth);
 }
 
-/** The widest a window's title gets in its toolbar before it is cut. */
-const TITLE_MAX = 320;
-/** The room the title keeps before the toolbar's controls give any of theirs (a field that shrinks). */
-const TITLE_MIN = 96;
-
 export interface AppWindowProps {
   /** The window's name, on one line. */
   title: string;
   /**
    * A short word about it, after the title on the same line, muted ("All Notes — 3 notes").
-   * Never a second line: short of room, it is cut with an ellipsis first, then the title.
+   * Never a second line: short of room it gives way first, then the title. A long one is cut
+   * with an ellipsis down to `DETAIL_KEEP`; with less room than that (or than a short one
+   * needs whole) it is not shown, never a bare "…".
    */
   detail?: string;
   /** Controls at the toolbar's start, before the title (back and forward). */
@@ -79,31 +77,6 @@ export interface AppWindowProps {
   /** Above everything: a sheet or a popup menu. */
   overlay?: ReactNode;
   children: ReactNode;
-}
-
-/**
- * The title takes the room the controls leave, and the controls never move. The detail has
- * only what the title leaves (it grows from nothing), so it is cut first; then the title,
- * each with an ellipsis. Below TITLE_MIN a field that shrinks gives up its room instead.
- */
-function WindowTitle({ title, detail }: { title: string; detail: string | undefined }) {
-  const colors = useColors();
-  return (
-    <View testID="window-title" style={{ flex: 1, minWidth: TITLE_MIN, flexDirection: "row", alignItems: "center" }}>
-      <View style={{ flexShrink: 1, minWidth: 0, maxWidth: TITLE_MAX }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
-          {title}
-        </Text>
-      </View>
-      {detail ? (
-        <View testID="window-title-detail" style={{ flex: 1 }}>
-          <Text numberOfLines={1} style={{ fontSize: 13, color: colors.textMuted }}>
-            {` — ${detail}`}
-          </Text>
-        </View>
-      ) : null}
-    </View>
-  );
 }
 
 export function AppWindow({ title, detail, leading, toolbar, center, sidebar, sidebarWidth = SIDEBAR_WIDTH, notice, overlay, children }: AppWindowProps) {
@@ -153,7 +126,11 @@ export function AppWindow({ title, detail, leading, toolbar, center, sidebar, si
             >
               {leading}
               {center}
-              {center === undefined && (inset.unified ? <WindowTitle title={title} detail={detail} /> : <View style={{ flex: 1 }} />)}
+              {center === undefined && inset.unified ? (
+                <WindowTitle title={title} {...(detail ? { detail } : {})} />
+              ) : (
+                center === undefined && <View style={{ flex: 1 }} />
+              )}
               {toolbar}
             </View>
           )}
