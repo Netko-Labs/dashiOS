@@ -12,8 +12,6 @@ import type { FileRow } from "../src/launcher/row-model.ts";
 import type { Entry } from "../src/shared/app-entries/index.ts";
 import { settle } from "./support/time.ts";
 
-export { settle };
-
 export const app = (name: string): Entry => ({ id: `app.${name.toLowerCase().replaceAll(" ", "-")}`, name, icon: "/icon.svg", keywords: [], exec: ["true"] });
 export const file = (name: string): FileRow => ({
   url: `file:///home/alexk/${name}`,

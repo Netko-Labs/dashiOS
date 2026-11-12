@@ -1,7 +1,5 @@
 /** Sidebar glyphs for the machine panes, on the same 16-unit grid as glyphs.ts. */
 
-import { BLUETOOTH } from "../control-center/index.ts";
-
 const svg = (body: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">${body}</svg>`;
 const stroke = (d: string, width = 1.4) => `<path d="${d}" stroke="#000" stroke-width="${width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
 
@@ -9,8 +7,6 @@ const stroke = (d: string, width = 1.4) => `<path d="${d}" stroke="#000" stroke-
 export const NETWORK = svg(
   `${stroke("M1.8 6.2a8.4 8.4 0 0 1 12.4 0", 1.5)}${stroke("M3.9 8.7a5.4 5.4 0 0 1 8.2 0", 1.5)}${stroke("M6 11.1a2.4 2.4 0 0 1 4 0", 1.5)}<circle cx="8" cy="13" r="1.1" fill="#000"/>`,
 );
-
-export { BLUETOOTH };
 
 /** Sound: a speaker with two waves. */
 export const SPEAKER = svg(

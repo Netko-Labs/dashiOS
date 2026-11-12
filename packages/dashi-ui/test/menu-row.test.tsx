@@ -3,7 +3,8 @@ import { render } from "@mirinjs/metal";
 import { HUNG_ROWS, hungHeight, MENU, menuFits, menuLabelLeft, menuMaxWidth } from "../src/menu-place.ts";
 import { MenuHighlightContext, MenuRow } from "../src/menu-row.tsx";
 import { Shortcut } from "../src/shortcut.tsx";
-import { fakeHost, settle } from "./host.ts";
+import { fakeHost } from "./host.ts";
+import { settle } from "./support/time.ts";
 
 // 0.6 menus: the menu bar's menus drew 22 rows 6 in with a 14 tick gutter and 28 before the keys, a
 // window's 24 rows 8 in with a 12 column; the same app's menu bar menu and right-click menu didn't line

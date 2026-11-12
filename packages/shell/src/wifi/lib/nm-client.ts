@@ -5,7 +5,7 @@
  */
 
 import type { DBusConnection } from "../../shared/dbus/index.ts";
-import { propertyMap, unwrap } from "./nm-values.ts";
+import { propertyMap, unwrap } from "../../shared/dbus/index.ts";
 
 export const NM = "org.freedesktop.NetworkManager";
 export const NM_PATH = "/org/freedesktop/NetworkManager";

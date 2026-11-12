@@ -9,13 +9,11 @@
  * over the computed one; `saved` says which, by screen name.
  */
 
-import { defaultScale, isBuiltIn, SCALES } from "@dashi/ui";
+import { defaultScale, SCALES } from "@dashi/ui";
 import type { Compositor, Frame, Output } from "./compositor/index.ts";
 import { seenSize } from "./compositor/outputs.ts";
 import { monitorsOf, type VrrMode } from "./display-config/monitors.ts";
 import { toWire } from "./display-config/plan.ts";
-
-export { defaultScale, isBuiltIn, SCALES };
 
 export interface ScreenInfo {
   name: string;

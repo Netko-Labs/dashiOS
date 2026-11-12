@@ -5,12 +5,13 @@
  * it (displays.ts reads it back).
  */
 
+import { SCALES } from "@dashi/ui";
 import type { Compositor } from "../../compositor/index.ts";
 import type { ApplyResult, DisplayManager } from "../../display-config/manager.ts";
 import { mirrorRequests } from "../../display-config/mirror.ts";
 import { type Mode, type Monitor, monitorsOf, type Rotation, type VrrMode } from "../../display-config/monitors.ts";
 import { toWire } from "../../display-config/plan.ts";
-import { SCALES, type ScreenInfo, screensOf } from "../../displays.ts";
+import { type ScreenInfo, screensOf } from "../../displays.ts";
 import type { SettingsStore } from "../store.ts";
 
 /** A scaled screen keeps at least this much room, so Settings never offers a scale that leaves nothing to click on. */

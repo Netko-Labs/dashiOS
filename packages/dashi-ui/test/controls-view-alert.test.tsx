@@ -2,8 +2,9 @@ import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
 import { type AlertButton, AlertSheet, AlertWindow, alertKeyTarget } from "../src/alert.tsx";
 import { WARNING } from "../src/glyphs.ts";
-import { fakeClockEachTest, fakeHost, settle } from "./host.ts";
+import { fakeHost } from "./host.ts";
 import { noop, windowKey } from "./support/controls-view.ts";
+import { fakeClockEachTest, settle } from "./support/time.ts";
 
 fakeClockEachTest();
 

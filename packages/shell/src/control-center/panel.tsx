@@ -37,8 +37,6 @@ import { TILE_RADIUS } from "./tiles.tsx";
 
 export const CONTROL_CENTER_PANEL = { width: GRID.width, padding: GRID.padding, gap: GRID.gap } as const;
 
-export type { ControlPage };
-
 export interface ControlCenterProps {
   flags: FlagsStore;
   devices: DeviceStore;

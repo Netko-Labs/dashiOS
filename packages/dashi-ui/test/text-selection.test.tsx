@@ -3,7 +3,8 @@ import { render, TextInput, View } from "@mirinjs/metal";
 import { TextSelectionLook } from "../src/selection.tsx";
 import { setAppearanceSource } from "../src/theme/appearance.ts";
 import { darkColors, lightColors } from "../src/theme/palette.ts";
-import { fakeHost, settle } from "./host.ts";
+import { fakeHost } from "./host.ts";
+import { settle } from "./support/time.ts";
 
 /** The `selectionColor` each field in the last tree was sent with. */
 function selectionColors(tree: string): unknown[] {

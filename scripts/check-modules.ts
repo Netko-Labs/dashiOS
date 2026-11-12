@@ -131,7 +131,7 @@ function exportedFiles(all: string[]): Set<string> {
   return files;
 }
 
-/** H19: re-exports (`export … from`) outside an index.ts and a package's facades: old paths kept alive. */
+/** H19: re-exports (`export … from`, or an imported name exported again) outside an index.ts and a package's facades: old paths kept alive. */
 export function reExports(graph: Graph, facades: Set<string>): Counts {
   const found: Counts = new Map();
   for (const file of graph.files) {
@@ -142,9 +142,23 @@ export function reExports(graph: Graph, facades: Set<string>): Counts {
   return found;
 }
 
+/** How many statements re-export: `export … from`, and `export { a }` of a name this file imported (the same thing in two lines). */
 export function reExportCount(file: string, text: string): number {
   const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, false, file.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
-  return source.statements.filter((statement) => ts.isExportDeclaration(statement) && statement.moduleSpecifier !== undefined).length;
+  const imported = new Set<string>();
+  for (const statement of source.statements) {
+    if (!ts.isImportDeclaration(statement) || !statement.importClause) continue;
+    const { name, namedBindings } = statement.importClause;
+    if (name) imported.add(name.text);
+    if (namedBindings && ts.isNamespaceImport(namedBindings)) imported.add(namedBindings.name.text);
+    if (namedBindings && ts.isNamedImports(namedBindings)) for (const each of namedBindings.elements) imported.add(each.name.text);
+  }
+  return source.statements.filter((statement) => {
+    if (!ts.isExportDeclaration(statement)) return false;
+    if (statement.moduleSpecifier !== undefined) return true;
+    const names = statement.exportClause && ts.isNamedExports(statement.exportClause) ? statement.exportClause.elements : [];
+    return names.some((each) => imported.has((each.propertyName ?? each.name).text));
+  }).length;
 }
 
 export function checkModules(all: string[]): Outcome[] {

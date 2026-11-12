@@ -1,8 +1,9 @@
 /** The screens, through the compositor's `outputs` and `output` (displays.ts has the rules). */
 
+import { isBuiltIn } from "@dashi/ui";
 import type { ApplyResult } from "../../display-config/manager.ts";
 import { type Monitor, monitorsOf, type Rotation, refreshLabel } from "../../display-config/monitors.ts";
-import { isBuiltIn, leavesRoom, type ScreenInfo, scalesFor, screensOf } from "../../displays.ts";
+import { leavesRoom, type ScreenInfo, scalesFor, screensOf } from "../../displays.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 
 const screens = async (ctx: RunContext): Promise<ScreenInfo[]> => screensOf(await ctx.compositor.outputs());

@@ -2,8 +2,8 @@ import { afterEach, expect, test } from "bun:test";
 import { LauncherKeys } from "../src/launcher/keys.ts";
 import { FILE_DELAY_MS } from "../src/launcher/lib/use-search.ts";
 import type { LauncherProps } from "../src/launcher/props.ts";
-import { app, deferredFiles, file, mount as mountWith, settle, unmountLauncher } from "./launcher-harness.tsx";
-import { fakeClockEachTest } from "./support/time.ts";
+import { app, deferredFiles, file, mount as mountWith, unmountLauncher } from "./launcher-harness.tsx";
+import { fakeClockEachTest, settle } from "./support/time.ts";
 
 fakeClockEachTest();
 

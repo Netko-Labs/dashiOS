@@ -9,7 +9,7 @@
  * means "on". Everything paints with the live Dark Mode.
  */
 
-import { Tile, useColors } from "@dashi/ui";
+import { useColors } from "@dashi/ui";
 import { type Bounds, ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext, useMemo, useRef } from "react";
 import { FoldedChoices } from "../shared/controls/folded.tsx";
@@ -18,8 +18,6 @@ import { ControlSwitch } from "../shared/controls/inputs.tsx";
 import { useControlColors } from "../shared/controls/palette.ts";
 import { PAGE } from "./lib/row.tsx";
 import { PAGE_GAP, PageContext } from "./spot.tsx";
-
-export { Tile };
 
 /** A page's content is at most this wide, centered in a wider window (LA-2). */
 export const PAGE_MAX_WIDTH = 720;

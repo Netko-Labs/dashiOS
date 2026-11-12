@@ -7,8 +7,8 @@ import type { LauncherWindow } from "../src/launcher/lib/items.ts";
 import { PICTURES_SETTLE_MS, PictureSender } from "../src/launcher/lib/picture-sender.ts";
 import type { PictureRect } from "../src/launcher/pictures.ts";
 import type { WorldSnapshot } from "../src/launcher/world.ts";
-import { app, mount, settle, unmountLauncher } from "./launcher-harness.tsx";
-import { fakeClockEachTest } from "./support/time.ts";
+import { app, mount, unmountLauncher } from "./launcher-harness.tsx";
+import { fakeClockEachTest, settle } from "./support/time.ts";
 
 fakeClockEachTest();
 

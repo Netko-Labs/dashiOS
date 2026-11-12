@@ -7,7 +7,8 @@ import type { LauncherWindow } from "../src/launcher/lib/items.ts";
 import { aliasIndex, withAlias, withKey } from "../src/launcher/person-keys.ts";
 import type { LauncherPrefsSnapshot } from "../src/launcher/prefs.ts";
 import type { WorldSnapshot } from "../src/launcher/world.ts";
-import { app, mount, settle, unmountLauncher } from "./launcher-harness.tsx";
+import { app, mount, unmountLauncher } from "./launcher-harness.tsx";
+import { settle } from "./support/time.ts";
 
 // Wave 2 in the panel: the registry and the windows as sources, the action
 // list in place (❖K, right-click), controls in the row, aliases and keys,

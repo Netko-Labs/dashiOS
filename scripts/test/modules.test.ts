@@ -105,6 +105,10 @@ describe("H19 re-exports", () => {
     const text = 'export { a } from "./a.ts";\nexport type { B } from "./b.ts";\nexport * from "./c.ts";\nexport const d = 1;\nexport { d as e };\n';
     expect(reExportCount("x.ts", text)).toBe(3);
   });
+  test("counts an imported name exported again: the same re-export in two lines", () => {
+    const text = 'import { a, type B } from "./a.ts";\nimport c from "./c.ts";\nconst d = a;\nexport { a, type B };\nexport { c as see };\nexport { d };\n';
+    expect(reExportCount("x.ts", text)).toBe(2);
+  });
 });
 
 describe("H20 shared use", () => {

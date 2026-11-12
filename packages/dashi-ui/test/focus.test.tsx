@@ -9,7 +9,8 @@ import { Switch } from "../src/switch.tsx";
 import { contrastRatio } from "../src/theme/contrast.ts";
 import { darkColors, lightColors } from "../src/theme/palette.ts";
 import { DARK_SURFACE, LIGHT_SURFACE } from "../src/theme/surface.ts";
-import { fakeHost, settle } from "./host.ts";
+import { fakeHost } from "./host.ts";
+import { settle } from "./support/time.ts";
 
 const key = (name: string, more: Partial<WindowKeyInfo> = {}): WindowKeyInfo => ({
   key: name,

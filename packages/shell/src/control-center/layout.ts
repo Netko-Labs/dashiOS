@@ -133,8 +133,6 @@ export function moveItem(layout: Layout, id: string, before: string): Layout {
   return [...rest.slice(0, at), moving, ...rest.slice(at)];
 }
 
-export type { Direction };
-
 /**
  * The tile the arrow keys go to from `from`: the nearest one whose frame
  * lies that way, nearest along the arrow first, then across it. Null at the

@@ -5,8 +5,9 @@ import { PopUpButton } from "../src/popup-button.tsx";
 import { MENU_SEPARATOR, PopupMenu } from "../src/popup-menu.tsx";
 import { Slider } from "../src/slider.tsx";
 import { AppWindow } from "../src/window.tsx";
-import { fakeClockEachTest, fakeHost, settle } from "./host.ts";
+import { fakeHost } from "./host.ts";
 import { noop, windowKey } from "./support/controls-view.ts";
+import { fakeClockEachTest, settle } from "./support/time.ts";
 
 fakeClockEachTest();
 

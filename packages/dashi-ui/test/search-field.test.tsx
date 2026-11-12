@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
 import { SearchField } from "../src/fields.tsx";
-import { fakeHost, settle } from "./host.ts";
+import { fakeHost } from "./host.ts";
+import { settle } from "./support/time.ts";
 
 /** One Esc in a SearchField of `variant` holding "milk": what was typed after, and the keys passed on. */
 async function escape(variant?: "search" | "find"): Promise<{ texts: string[]; keys: string[] }> {

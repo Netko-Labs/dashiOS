@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
 import { AppWindow, ToolbarButton } from "../src/window.tsx";
-import { fakeHost, settle } from "./host.ts";
+import { fakeHost } from "./host.ts";
+import { settle } from "./support/time.ts";
 
 const unified = { type: "chrome", nodeId: "root", titleBar: "unified", controls: { x: 8, y: 8, width: 60, height: 22 } } as const;
 

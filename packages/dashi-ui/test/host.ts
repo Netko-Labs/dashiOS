@@ -1,8 +1,4 @@
 import type { NativeEvent, NativeTransport } from "@mirinjs/metal";
-import { fakeClockEachTest, settle } from "./support/time.ts";
-
-export { fakeClockEachTest, settle };
-
 /** A stand-in for the Metal host: the trees it was sent, and events sent back as the host would. */
 export function fakeHost(): { transport: NativeTransport; trees: string[]; emit: (event: NativeEvent) => void; last: () => string } {
   const trees: string[] = [];

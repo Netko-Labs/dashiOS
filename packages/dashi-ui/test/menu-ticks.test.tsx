@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
 import { MenuList } from "../src/popup-menu.tsx";
-import { fakeHost, settle } from "./host.ts";
+import { fakeHost } from "./host.ts";
+import { settle } from "./support/time.ts";
 
 // Review 54 (Files 14, 15): a ticked row's label sat 3 px right of its siblings, since an empty
 // tick column could shrink and one with a tick could not. Every row keeps the column whole.

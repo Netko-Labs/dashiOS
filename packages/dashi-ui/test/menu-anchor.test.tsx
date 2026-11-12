@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
 import { MENU_SEPARATOR, PopupMenu } from "../src/popup-menu.tsx";
-import { fakeHost, settle } from "./host.ts";
+import { fakeHost } from "./host.ts";
+import { settle } from "./support/time.ts";
 
 // A menu hung from a toolbar's "…" at the window's right: its right edge under the button, at the width it is
 // drawn (not a guess at it); its ticks' column keeps its width in every row; what it covers never shows through.
