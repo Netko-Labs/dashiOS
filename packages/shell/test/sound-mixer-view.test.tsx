@@ -192,7 +192,7 @@ describe("Settings' Apps card", () => {
     expect(root.nodeId("sound-recording-row:sound:Signal")).toBeDefined();
     expect(root.nodeId("sound-recording-dot:sound:Signal")).toBeDefined();
     expect(root.nodeId("sound-recording-dot:sound:OBS")).toBeUndefined();
-    expect(tree).toContain("This computer’s sound");
+    expect(tree).toContain("System sound");
     press(root.nodeId("sound-app:sound:paplay-mute"));
     await settle();
     expect(mixer.getSnapshot().apps.find((each) => each.key === "sound:paplay")?.muted).toBe(false);

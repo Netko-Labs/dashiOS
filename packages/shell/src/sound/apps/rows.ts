@@ -72,9 +72,16 @@ export interface MixerRows {
 /** Who a stream belongs to; null hides it (Dashi's own). */
 export type Owner = (stream: Stream) => AppIdentity | null;
 
+/** What a stream is called: its media.name; a file's path (what a player gives) as the file's name; "Sound" for one that names nothing. */
+export function streamTitle(mediaName: string | null): string {
+  const name = mediaName?.trim() ?? "";
+  if (name === "") return "Sound";
+  return name.startsWith("/") ? (name.split("/").filter(Boolean).at(-1) ?? name) : name;
+}
+
 function partOf(stream: Stream): StreamSound {
   const meter = stream.direction === "play" ? stream.serial : (stream.device?.serial ?? null);
-  return { id: stream.id, title: stream.mediaName ?? "Sound", level: stream.level, muted: stream.muted, playing: stream.running, meter };
+  return { id: stream.id, title: streamTitle(stream.mediaName), level: stream.level, muted: stream.muted, playing: stream.running, meter };
 }
 
 /** Parts that share a title are numbered from the second: "Playback", "Playback 2". */

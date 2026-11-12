@@ -334,7 +334,7 @@ Numbered in the order they were written down; a new one goes at the end.
   recorder, which records a sink's monitor?
 - **Choice:** it is listed, without the orange dot (it is not the
   microphone, and the menu bar's pill stays off), with its level and mute;
-  its "Record from" reads "This computer’s sound" and is dimmed. Agents get
+  its "Record from" reads "System sound" and is dimmed. Agents get
   the same refusal (`set_app_input`: `own-sound`).
 - **Why:** moving a screen recorder onto a microphone is never what a
   person meant by a pop-up of microphones.

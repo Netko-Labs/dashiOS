@@ -8,6 +8,7 @@ import { DASHI_KEY } from "../src/shared/processes/index.ts";
 import { micIndicator, parseGraph, rowsFrom, type Stream } from "../src/sound/apps/index.ts";
 import type { ProcessLook } from "../src/sound/apps/lib/identity.ts";
 import { streamOwners } from "../src/sound/apps/lib/owners.ts";
+import { streamTitle } from "../src/sound/apps/rows.ts";
 import { client, link, node, vmGraph } from "./fixtures/pw-graph.ts";
 import { catalog, owner } from "./support/sound-mixer.ts";
 import { fakeClockEachTest, flush } from "./support/time.ts";
@@ -69,6 +70,9 @@ describe("app rows", () => {
       { id: 66, title: "Playback 2", level: 0.7, muted: false, playing: false, meter: 1066 },
     ]);
     expect(app("pw-play")?.parts.map((part) => part.title)).toEqual(["tone-a.wav"]);
+    // A player names its stream by the file's path: the file's name is enough.
+    expect(streamTitle("/home/alexk/Music/Night drive.flac")).toBe("Night drive.flac");
+    expect(streamTitle("  ")).toBe("Sound");
     // A stream that names nothing is "Sound".
     const bare = [
       client(1, { "application.name": "Game", "application.process.id": 10, "pipewire.sec.pid": 10 }),

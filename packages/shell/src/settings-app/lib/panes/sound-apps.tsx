@@ -21,7 +21,7 @@ import { type AppMixer, type AppSound, type MixerOutput, type StreamMeters, useM
 import { Spot } from "../../spot.tsx";
 import { appSpot } from "../find.ts";
 import { PAGE, useCardRow } from "../row.tsx";
-import { DevicePopUp, Fader, IconKnob, StatusLine, StreamRow } from "./sound-mixer-parts.tsx";
+import { Controls, DevicePopUp, Fader, IconKnob, StatusLine, StreamRow } from "./sound-mixer-parts.tsx";
 
 function AppRow({
   app,
@@ -66,21 +66,23 @@ function AppRow({
             {...(folds ? { fold: { open, onPress: onFold } } : {})}
           />
         </View>
-        <Fader
-          testID={`sound-app:${app.key}`}
-          what={app.name}
-          level={app.level}
-          muted={app.muted}
-          onLevel={(level) => void mixer.setLevel(app.key, level)}
-          onMute={(muted) => void mixer.setMuted(app.key, muted)}
-        />
-        <DevicePopUp
-          testID={`sound-play-on:${app.key}`}
-          name={`Play ${app.name} on`}
-          target={app.target}
-          devices={outputs}
-          onChoose={(output) => void mixer.setOutput(app.key, output)}
-        />
+        <Controls>
+          <Fader
+            testID={`sound-app:${app.key}`}
+            what={app.name}
+            level={app.level}
+            muted={app.muted}
+            onLevel={(level) => void mixer.setLevel(app.key, level)}
+            onMute={(muted) => void mixer.setMuted(app.key, muted)}
+          />
+          <DevicePopUp
+            testID={`sound-play-on:${app.key}`}
+            name={`Play ${app.name} on`}
+            target={app.target}
+            devices={outputs}
+            onChoose={(output) => void mixer.setOutput(app.key, output)}
+          />
+        </Controls>
       </View>
       {open &&
         folds &&

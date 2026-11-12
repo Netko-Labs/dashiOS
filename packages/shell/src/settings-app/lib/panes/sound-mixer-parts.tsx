@@ -9,6 +9,7 @@
 
 import { MoreButton, PopUpButton, type PopUpOption } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
+import type { ReactNode } from "react";
 import { InkSlider } from "../../../shared/controls/ink-slider.tsx";
 import { useControlColors } from "../../../shared/controls/palette.ts";
 import { type MixerOutput, MuteKnob, type StreamMeters, type StreamSound, useMeterLevel } from "../../../sound/index.ts";
@@ -16,11 +17,11 @@ import { PAGE } from "../row.tsx";
 
 /**
  * The rows' measures: the slider 210 wide, the mute button 36, the device's
- * pop-up 128 wide (so the sliders line up), the icon 24 on the knob; the
+ * pop-up 144 wide (so the sliders line up), the icon 24 on the knob; the
  * line under the name 20 tall, the meter on it 64 by 4; a stream's row 44,
  * its words starting where its app's do.
  */
-export const APPS_CARD = { slider: 210, mute: 36, popUp: 128, icon: 24, line: 20, meter: { width: 64, height: 4 }, stream: 44 } as const;
+export const APPS_CARD = { slider: 210, mute: 36, popUp: 144, icon: 24, line: 20, meter: { width: 64, height: 4 }, stream: 44 } as const;
 
 const VOLUME = { min: 0, max: 1, step: 0.01 } as const;
 
@@ -119,6 +120,11 @@ export function StatusLine({
   );
 }
 
+/** A row's controls, kept together: in a narrow window they go under the words as one line, never one of them alone. */
+export function Controls({ children }: { children: ReactNode }) {
+  return <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 12 }}>{children}</View>;
+}
+
 /** A level's slider and its mute button, named for `what` ("Helium", "Helium, Playback 2"). */
 export function Fader({
   testID,
@@ -169,7 +175,7 @@ const NO_OPTION = " ";
  * The device an app plays on or records from: Dashi's pop-up button,
  * "Default" (it follows the device chosen above) over each device, the one
  * chosen ticked. A choice that is none of them reads as itself: a device
- * that is gone by its name, this computer's own sound as `fixed`, which
+ * that is gone by its name, this computer's own sound as `fixed` ("System sound"), which
  * can't be changed here.
  */
 export function DevicePopUp({
@@ -187,7 +193,7 @@ export function DevicePopUp({
   target: string | null;
   devices: readonly MixerOutput[];
   onChoose: (device: string | null) => void;
-  /** What it records that is no device to choose ("This computer’s sound"): shown, and not changed. */
+  /** What it records that is no device to choose ("System sound"): shown, and not changed. */
   fixed?: string;
 }) {
   const gone = target !== null && !devices.some((device) => device.name === target);
@@ -241,20 +247,24 @@ export function StreamRow({
         alignItems: "center",
         rowGap: 6,
         columnGap: 12,
-        paddingLeft: PAGE.knobInset + PAGE.knob + 12,
+        paddingLeft: PAGE.knobInset,
         paddingRight: PAGE.inset,
         paddingBottom: 6,
       }}
     >
+      {/* The knob's room, so the title starts where the app's name does and wrapped controls sit under the app's. */}
+      <View style={{ width: PAGE.knob, height: 1, flexShrink: 0 }} />
       <View style={{ flex: 1, flexDirection: "column", minWidth: PAGE.words }}>
         <Text numberOfLines={1} style={{ fontSize: 12.5, color: colors.offInk }}>
           {part.title}
         </Text>
         <StatusLine testID={testID} parts={[part]} playing={part.playing} muted={part.muted} meters={meters} />
       </View>
-      <Fader testID={testID} what={`${app}, ${part.title}`} level={part.level} muted={part.muted} onLevel={onLevel} onMute={onMute} />
-      {/* The room the app's pop-up takes, so a stream's slider sits under its app's. */}
-      <View style={{ width: APPS_CARD.popUp, height: 1, flexShrink: 0 }} />
+      <Controls>
+        <Fader testID={testID} what={`${app}, ${part.title}`} level={part.level} muted={part.muted} onLevel={onLevel} onMute={onMute} />
+        {/* The room the app's pop-up takes, so a stream's slider sits under its app's. */}
+        <View style={{ width: APPS_CARD.popUp, height: 1, flexShrink: 0 }} />
+      </Controls>
     </View>
   );
 }
