@@ -2,6 +2,7 @@
  * The window's menu bar menus (menus.ts) and what each command does here.
  */
 
+import { useMemo } from "react";
 import { useAppMenus } from "../../kit/index.ts";
 import { editorMenus } from "./menus.ts";
 import type { EditorModel } from "./model.ts";
@@ -30,10 +31,13 @@ export function useEditorMenus({
 }): void {
   const { find } = state;
   const { setSheet } = sheets;
+  // Versions are kept as the file is written over, which changes `saved`: looked up then, not on every keystroke.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `saved` stands for "a version may have been kept".
+  const hasVersions = useMemo(() => model.hasVersions, [model, state.path, state.saved]);
   const { menus, run } = editorMenus({
     hasFile: state.path !== null,
     pristine: model.isPristine,
-    hasVersions: state.path !== null,
+    hasVersions,
     canUndo: state.canUndo,
     canRedo: state.canRedo,
     hasSelection: selection.selection.start !== selection.selection.end,

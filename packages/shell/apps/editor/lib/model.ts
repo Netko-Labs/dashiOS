@@ -167,10 +167,14 @@ export class EditorModel extends EditorDocument {
     return this.writeTo(path, "save-as");
   }
 
-  /** The conflict's "Keep Mine": the text here is written over the file as it is on disk (or where it was). */
+  /** The conflict's "Keep Mine": the text here is written over the file as it is on disk (or where it was), which stays as a version. */
   keepMine(): boolean {
     const { path } = this.state;
     if (path === null) return false;
+    // What is about to be written over is kept first: the text this window read, then what the other app wrote since.
+    this.keepVersion(path, "save");
+    const theirs = readDocument(path);
+    if (theirs.ok) this.versions?.add(path, theirs.decoded.text, "auto", theirs.stamp.mtimeMs, this.now());
     this.stamp = stampOf(path);
     this.set({ conflict: null });
     return this.writeTo(path, "save");
@@ -218,6 +222,11 @@ export class EditorModel extends EditorDocument {
   listVersions(): Version[] {
     const { path } = this.state;
     return path !== null && this.versions ? this.versions.list(path) : [];
+  }
+
+  /** Whether Revert To… has anything to show: a file never written over has no versions yet. */
+  get hasVersions(): boolean {
+    return this.listVersions().length > 0;
   }
 
   /** A version's text, or null when it is gone. */
