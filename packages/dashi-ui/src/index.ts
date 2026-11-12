@@ -60,7 +60,8 @@ export { Slider, type SliderProps } from "./slider.tsx";
 export { fractionAt, fractionOf, keyValues, knobLeft, nearestIndex, type SliderRange, UNIT_RANGE, valueAt } from "./slider-math.ts";
 export { StepKeys, type StepKeysProps } from "./step-keys.tsx";
 export { Switch, type SwitchProps } from "./switch.tsx";
-export { type Column, Table, type TableProps } from "./table.tsx";
+export { Table, type TableProps } from "./table.tsx";
+export type { Column } from "./table-parts.tsx";
 export { holdOrder, moveSelection, nextSort, type SortableColumn, type SortState, sortRows } from "./table-sort.ts";
 export {
   Appearance,

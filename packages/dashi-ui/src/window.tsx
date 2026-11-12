@@ -81,6 +81,31 @@ export interface AppWindowProps {
   children: ReactNode;
 }
 
+/**
+ * The title takes the room the controls leave, and the controls never move. The detail has
+ * only what the title leaves (it grows from nothing), so it is cut first; then the title,
+ * each with an ellipsis. Below TITLE_MIN a field that shrinks gives up its room instead.
+ */
+function WindowTitle({ title, detail }: { title: string; detail: string | undefined }) {
+  const colors = useColors();
+  return (
+    <View testID="window-title" style={{ flex: 1, minWidth: TITLE_MIN, flexDirection: "row", alignItems: "center" }}>
+      <View style={{ flexShrink: 1, minWidth: 0, maxWidth: TITLE_MAX }}>
+        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
+          {title}
+        </Text>
+      </View>
+      {detail ? (
+        <View testID="window-title-detail" style={{ flex: 1 }}>
+          <Text numberOfLines={1} style={{ fontSize: 13, color: colors.textMuted }}>
+            {` — ${detail}`}
+          </Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 export function AppWindow({ title, detail, leading, toolbar, center, sidebar, sidebarWidth = SIDEBAR_WIDTH, notice, overlay, children }: AppWindowProps) {
   const colors = useColors();
   const surface = useSurface();
@@ -128,27 +153,7 @@ export function AppWindow({ title, detail, leading, toolbar, center, sidebar, si
             >
               {leading}
               {center}
-              {center === undefined && inset.unified ? (
-                // The title takes the room the controls leave, and the controls never move. The detail has
-                // only what the title leaves (it grows from nothing), so it is cut first; then the title,
-                // each with an ellipsis. Below TITLE_MIN a field that shrinks gives up its room instead.
-                <View testID="window-title" style={{ flex: 1, minWidth: TITLE_MIN, flexDirection: "row", alignItems: "center" }}>
-                  <View style={{ flexShrink: 1, minWidth: 0, maxWidth: TITLE_MAX }}>
-                    <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
-                      {title}
-                    </Text>
-                  </View>
-                  {detail ? (
-                    <View testID="window-title-detail" style={{ flex: 1 }}>
-                      <Text numberOfLines={1} style={{ fontSize: 13, color: colors.textMuted }}>
-                        {` — ${detail}`}
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-              ) : (
-                center === undefined && <View style={{ flex: 1 }} />
-              )}
+              {center === undefined && (inset.unified ? <WindowTitle title={title} detail={detail} /> : <View style={{ flex: 1 }} />)}
               {toolbar}
             </View>
           )}
