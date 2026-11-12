@@ -74,22 +74,28 @@ async function askPerson(env: AgentEnv, build: (name: string) => AskRequest, pat
   return answer;
 }
 
+/** Takes the question down; only bluetoothd may. */
+function dismissMethod(env: AgentEnv): MethodSpec {
+  return {
+    handler: (_args, call) => {
+      if (!env.fromBluez(call.sender)) throw denied();
+      env.handler()?.dismiss();
+    },
+  };
+}
+
 export function agentInterface(env: AgentEnv): InterfaceSpec {
   const check = (call: CallContext, path: unknown): string => checkDevice(env, call, path);
   const ask = (build: (name: string) => AskRequest, path: string): Promise<Extract<Answer, { ok: true }>> => askPerson(env, build, path);
 
   const method = (spec: MethodSpec): MethodSpec => spec;
+  const dismiss = dismissMethod(env);
 
   return {
     name: AGENT_INTERFACE,
     methods: {
       // bluetoothd drops the agent (it is shutting down, or we unregistered): nothing is pending any more.
-      Release: method({
-        handler: (_args, call) => {
-          if (!env.fromBluez(call.sender)) throw denied();
-          env.handler()?.dismiss();
-        },
-      }),
+      Release: dismiss,
       RequestPinCode: method({
         in: "o",
         out: "s",
@@ -151,12 +157,7 @@ export function agentInterface(env: AgentEnv): InterfaceSpec {
           if (!(await env.isPaired(path))) throw rejected("not paired");
         },
       }),
-      Cancel: method({
-        handler: (_args, call) => {
-          if (!env.fromBluez(call.sender)) throw denied();
-          env.handler()?.dismiss();
-        },
-      }),
+      Cancel: dismiss,
     },
   };
 }

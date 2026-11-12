@@ -55,42 +55,36 @@ export async function popoverScreen(compositor: Compositor | null, output: strin
   return { name: screen.name, width, height, barHeight: MENU_BAR_HEIGHT };
 }
 
-export function startApplets({ compositor, extras, openOverlay, primary, commands, power, controls, popovers }: StartAppletsOptions): () => void {
-  const grants = new AppletGrants(compositor);
-  const context: Omit<AppletContext, "installed"> = {
-    extras,
-    grants,
-    ...(commands ? { commands } : {}),
-    ...(power ? { power } : {}),
-    ...(controls ? { controls } : {}),
-    ...(popovers ? { popovers } : {}),
-    screen: (output) => popoverScreen(compositor, output, primary()),
-    // Under the popover, over everything else below the bar: a click on it closes the popover.
-    // The bar stays clickable, so the item again also closes it (connection.ts).
-    catcher: (placement: Placement, onOutside: () => void) => {
-      const handle = openOverlay(
-        {
-          title: "Applet popover",
-          width: 1,
-          height: 1,
-          surface: {
-            layer: "top",
-            anchor: ["top", "bottom", "left", "right"],
-            exclusiveZone: -1,
-            margin: { top: MENU_BAR_HEIGHT },
-            keyboard: "none",
-            namespace: "dashi.applet-catcher",
-            ...(placement.output === null ? {} : { output: placement.output }),
-          },
+/**
+ * Under the popover, over everything else below the bar: a click on it closes the popover.
+ * The bar stays clickable, so the item again also closes it (connection.ts).
+ */
+function popoverCatcher(openOverlay: OpenOverlay): AppletContext["catcher"] {
+  return (placement: Placement, onOutside: () => void) => {
+    const handle = openOverlay(
+      {
+        title: "Applet popover",
+        width: 1,
+        height: 1,
+        surface: {
+          layer: "top",
+          anchor: ["top", "bottom", "left", "right"],
+          exclusiveZone: -1,
+          margin: { top: MENU_BAR_HEIGHT },
+          keyboard: "none",
+          namespace: "dashi.applet-catcher",
+          ...(placement.output === null ? {} : { output: placement.output }),
         },
-        <View testID="applet-catcher" style={{ flex: 1, backgroundColor: "#00000000" }} onPress={onOutside} />,
-      );
-      return () => handle.close();
-    },
+      },
+      <View testID="applet-catcher" style={{ flex: 1, backgroundColor: "#00000000" }} onPress={onOutside} />,
+    );
+    return () => handle.close();
   };
-  const stopEveryone = serveApplets({ ...context, path: appletsSocketPath() });
+}
 
-  const askConsent = (applet: InstalledApplet, update: boolean): Promise<boolean> =>
+/** Asks the person before an applet is added, or updated to ask for more. */
+function consentAsker(openOverlay: OpenOverlay): (applet: InstalledApplet, update: boolean) => Promise<boolean> {
+  return (applet: InstalledApplet, update: boolean): Promise<boolean> =>
     new Promise((resolve) => {
       let answered = false;
       const answer = (yes: boolean): void => {
@@ -118,6 +112,23 @@ export function startApplets({ compositor, extras, openOverlay, primary, command
         () => answer(false),
       );
     });
+}
+
+export function startApplets({ compositor, extras, openOverlay, primary, commands, power, controls, popovers }: StartAppletsOptions): () => void {
+  const grants = new AppletGrants(compositor);
+  const context: Omit<AppletContext, "installed"> = {
+    extras,
+    grants,
+    ...(commands ? { commands } : {}),
+    ...(power ? { power } : {}),
+    ...(controls ? { controls } : {}),
+    ...(popovers ? { popovers } : {}),
+    screen: (output) => popoverScreen(compositor, output, primary()),
+    catcher: popoverCatcher(openOverlay),
+  };
+  const stopEveryone = serveApplets({ ...context, path: appletsSocketPath() });
+
+  const askConsent = consentAsker(openOverlay);
 
   const runtime = process.env.XDG_RUNTIME_DIR;
   const launcher = runtime

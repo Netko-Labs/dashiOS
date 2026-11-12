@@ -192,6 +192,25 @@ function scopeDepsOf(parts: {
   };
 }
 
+/** The window a paste goes to: the one the launcher opened over. */
+function pasteTargetOf(options: ClipboardOptions, changed: () => void): { target: () => PasteTarget | null; opening: (window: number | null) => void } {
+  let target: PasteTarget | null = null;
+  const opening = (window: number | null): void => {
+    target = null;
+    changed();
+    void options.compositor
+      ?.windows()
+      .then((windows) => {
+        // The windows come most recently given the keyboard first: the launcher opened over the first that shows.
+        const found = windows.find((each) => each.id === window) ?? windows.find((each) => each.state === "normal");
+        target = found ? { id: found.id, appId: found.appId, appName: options.appName(found) } : null;
+        changed();
+      })
+      .catch(() => {});
+  };
+  return { target: () => target, opening };
+}
+
 export function startClipboard(options: ClipboardOptions): Clipboard {
   const { compositor, settings } = options;
   const history = options.history ?? new ClipboardHistory();
@@ -228,26 +247,13 @@ export function startClipboard(options: ClipboardOptions): Clipboard {
     ...(options.locale ? { locale: options.locale } : {}),
   });
 
-  let target: PasteTarget | null = null;
-  const opening = (window: number | null) => {
-    target = null;
-    changed();
-    void compositor
-      ?.windows()
-      .then((windows) => {
-        // The windows come most recently given the keyboard first: the launcher opened over the first that shows.
-        const found = windows.find((each) => each.id === window) ?? windows.find((each) => each.state === "normal");
-        target = found ? { id: found.id, appId: found.appId, appName: options.appName(found) } : null;
-        changed();
-      })
-      .catch(() => {});
-  };
+  const front = pasteTargetOf(options, changed);
 
   const scopes = scopeDepsOf({
     history,
     snippets,
     enabled,
-    target: () => target,
+    target: front.target,
     changes,
     pasting,
     put: (text) => putSnippet(history, io, pasting, options.locale, text),
@@ -268,7 +274,7 @@ export function startClipboard(options: ClipboardOptions): Clipboard {
     snippets,
     scopes: [historyScope(scopes), snippetsScope(scopes)],
     source,
-    opening,
+    opening: front.opening,
     recent: (limit) => (enabled() ? history.getSnapshot().entries.slice(0, limit).map(forAgent) : []),
     close() {
       watch?.close();
