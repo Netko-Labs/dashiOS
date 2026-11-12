@@ -98,6 +98,8 @@ test("Keep Both makes “name 2”; Skip leaves both where they are", async () =
   expect(existsSync(join(from, "a.txt"))).toBe(true);
   expect(readFileSync(join(to, "a.txt"), "utf8")).toBe("old");
   expect(store.getSnapshot().notice?.text).toBe("Skipped “a.txt”.");
+  // A move counts its items, a skipped one too.
+  expect(ops.jobs.getSnapshot().at(-1)).toMatchObject({ state: "done", done: 1 });
   store.stop();
 });
 
@@ -117,6 +119,8 @@ test("an answer for all stands for the rest of the copy; nothing taken is never 
   );
   expect(asked).toEqual([3]);
   expect(readdirSync(to).sort()).toEqual(["a.txt", "b.txt", "c.txt", "d.txt"]);
+  // The three skipped are no part of the job: its bar ends full, on the one file copied.
+  expect(ops.jobs.getSnapshot().at(-1)).toMatchObject({ state: "done", done: 3, total: 3 });
   expect(readFileSync(join(to, "d.txt"), "utf8")).toBe("new");
   expect(readFileSync(join(to, "a.txt"), "utf8")).toBe("old");
   // A copy into its own folder never asks: it is a copy beside it.

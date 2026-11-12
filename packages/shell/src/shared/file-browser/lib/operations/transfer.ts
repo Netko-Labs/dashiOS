@@ -28,11 +28,17 @@ export async function runTransfer(host: JobHost, paths: readonly string[], dest:
   const verb = mode === "copy" ? "Copying" : "Moving";
   // An answer with "Apply to all" stands for the rest of this copy or move.
   let standing: Answer | null = null;
+  /** Each item's bytes, for a copy: one that is skipped comes off the job's total. */
+  const sizes = new Map<string, number>();
   await host.jobs
     .run(`${verb} ${what(paths)}`, null, async (ctx, job) => {
       if (mode === "copy") {
         let total = 0;
-        for (const path of paths) total += (await measure(path, ctx.signal)).bytes;
+        for (const path of paths) {
+          const { bytes } = await measure(path, ctx.signal);
+          sizes.set(path, bytes);
+          total += bytes;
+        }
         job.total = total;
       }
       const failures: string[] = [];
@@ -48,7 +54,11 @@ export async function runTransfer(host: JobHost, paths: readonly string[], dest:
               resolution = standing.resolution;
             }
           }
-          if (resolution === "skip") continue;
+          if (resolution === "skip") {
+            // Nothing of it will be copied: the bar's whole is what is left.
+            if (job.total !== null) job.total -= sizes.get(path) ?? 0;
+            continue;
+          }
           if (resolution === "replace") {
             const target = join(dest, baseName(path));
             if (isInside(target, path)) throw new OpError(`${quote(baseName(target))} can’t be replaced by something inside it.`);
@@ -63,8 +73,10 @@ export async function runTransfer(host: JobHost, paths: readonly string[], dest:
         } catch (error) {
           if (!(error instanceof OpError)) throw error;
           failures.push(`${quote(baseName(path))}: ${error.message}`);
+        } finally {
+          // A move counts items, done or skipped.
+          if (mode === "move") ctx.advance(1);
         }
-        if (mode === "move") ctx.advance(1);
       }
       if (failures.length > 0) throw new OpError(failures.length === 1 ? (failures[0] as string) : `${failures.length} items failed. ${failures[0]}`);
       const went = mode === "copy" ? created : moves.map((move) => move.from);
