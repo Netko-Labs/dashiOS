@@ -13,6 +13,39 @@ import { versionDifference } from "../versions.ts";
 import { EditorChooser } from "./chooser.tsx";
 import { ConflictSheet, GoToLineSheet, ReplaceSheet, VersionsSheet } from "./sheets.tsx";
 
+interface ConflictProps {
+  name: string;
+  conflict: NonNullable<EditorState["conflict"]>;
+  /** The window is closing: answering goes on to close it. */
+  closing: boolean;
+  model: EditorModel;
+  sheets: EditorSheets;
+}
+
+/** The file changed on disk under unsaved edits: keep mine, use the disk's, or save elsewhere. */
+function Conflict({ name, conflict, closing, model, sheets }: ConflictProps) {
+  return (
+    <ConflictSheet
+      name={name}
+      conflict={conflict}
+      closing={closing}
+      onKeepMine={() => {
+        model.keepMine();
+        sheets.afterConflict();
+      }}
+      onUseDisk={() => {
+        model.revert("Use the One on Disk");
+        sheets.afterConflict();
+      }}
+      onSaveAs={() => sheets.setSheet({ kind: "save-as" })}
+      onCancel={() => {
+        sheets.closing.current = false;
+        sheets.closeSheet();
+      }}
+    />
+  );
+}
+
 export function editorOverlay({
   model,
   state,
@@ -52,26 +85,7 @@ export function editorOverlay({
         />
       );
     case "conflict":
-      return state.conflict ? (
-        <ConflictSheet
-          name={name}
-          conflict={state.conflict}
-          closing={sheet.after === "close"}
-          onKeepMine={() => {
-            model.keepMine();
-            sheets.afterConflict();
-          }}
-          onUseDisk={() => {
-            model.revert("Use the One on Disk");
-            sheets.afterConflict();
-          }}
-          onSaveAs={() => sheets.setSheet({ kind: "save-as" })}
-          onCancel={() => {
-            sheets.closing.current = false;
-            closeSheet();
-          }}
-        />
-      ) : undefined;
+      return state.conflict ? <Conflict name={name} conflict={state.conflict} closing={sheet.after === "close"} model={model} sheets={sheets} /> : undefined;
     case "delete-draft":
       return (
         <ConfirmSheet

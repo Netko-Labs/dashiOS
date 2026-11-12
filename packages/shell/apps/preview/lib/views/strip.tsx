@@ -157,7 +157,6 @@ export function Strip({
   width?: number;
   testID?: string;
 }) {
-  const colors = useColors();
   const surface = useSurface();
   const [height, setHeight] = useState(0);
   const [scroll, setScroll] = useState(0);

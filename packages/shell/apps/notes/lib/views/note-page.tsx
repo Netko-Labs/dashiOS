@@ -83,6 +83,25 @@ export function Title({
 }
 
 /** The body: the live Markdown field, with the copy that measures it. */
+/** The body laid out unseen, line by line at each line's size, to learn how tall the field must be. */
+function BodyMeasure({ body, onHeight }: { body: string; onHeight: (height: number) => void }) {
+  const lines = useMemo(() => lineSizes(body), [body]);
+  return (
+    <View
+      testID="body-measure"
+      onLayout={(bounds) => onHeight(bounds.height)}
+      style={{ position: "absolute", left: 0, top: 0, right: 0, opacity: 0, flexDirection: "column" }}
+    >
+      {lines.map((line, index) => (
+        // Lines have no identity beyond their place; the copy is laid out whole on every change.
+        <Text key={index} style={{ fontSize: line.size, fontWeight: line.size === BODY_SIZE ? "normal" : "bold" }}>
+          {line.text === "" ? " " : line.text}
+        </Text>
+      ))}
+    </View>
+  );
+}
+
 export function Page({
   body,
   selection,
@@ -115,24 +134,15 @@ export function Page({
   // A read-only page takes no typing: the field is given its text back.
   const [refused, setRefused] = useState(0);
   const look = useMemo(() => lookOf(markup(body), colors, findMatches(body, query)), [body, colors, query]);
-  const lines = useMemo(() => lineSizes(body), [body]);
   return (
     <View style={{ position: "relative", flexDirection: "column", flexShrink: 0, width: "100%" }}>
-      <View
-        testID="body-measure"
-        onLayout={(bounds) => {
-          setMeasured(bounds.height);
+      <BodyMeasure
+        body={body}
+        onHeight={(height) => {
+          setMeasured(height);
           onMeasured();
         }}
-        style={{ position: "absolute", left: 0, top: 0, right: 0, opacity: 0, flexDirection: "column" }}
-      >
-        {lines.map((line, index) => (
-          // Lines have no identity beyond their place; the copy is laid out whole on every change.
-          <Text key={index} style={{ fontSize: line.size, fontWeight: line.size === BODY_SIZE ? "normal" : "bold" }}>
-            {line.text === "" ? " " : line.text}
-          </Text>
-        ))}
-      </View>
+      />
       <TextInput
         key={fieldKey}
         testID="body"

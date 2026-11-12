@@ -3,7 +3,7 @@
  * note itself as one live page with the notice about it floating at its foot.
  */
 
-import { KeySink, Notice } from "@dashi/ui";
+import { type KeyInput, KeySink, Notice } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import type { Focus } from "../hooks/use-focus.ts";
@@ -43,6 +43,26 @@ function emptyFor(data: NotesData): { title: string; message: string; canCreate:
   return { title: "No notes here yet", message: "Make one, or move one here from the Note menu.", canCreate: true };
 }
 
+/** A key while the list has the keyboard: ↑↓ move, ⌫ deletes, Return goes to the note, and N, P, / and F are shortcuts. */
+function listKey(key: KeyInput, { model, data, focus, setSheet }: { model: NotesModel; data: NotesData; focus: Focus; setSheet: Overlays["setSheet"] }): void {
+  const { row, inTrash } = data;
+  if (key.kind === "up" || key.kind === "down") return model.moveSelection(key.kind === "up" ? -1 : 1);
+  if (key.kind === "backspace") {
+    if (!inTrash) model.trashSelected();
+    else if (row) setSheet({ kind: "purge", title: row.title });
+    return;
+  }
+  if (key.kind === "enter") {
+    if (row && !inTrash) focus.focusBody();
+    return;
+  }
+  if (key.kind !== "text") return;
+  const letter = key.text.toLowerCase();
+  if (letter === "n" && !inTrash) model.newNote();
+  else if (letter === "p" && !inTrash) model.togglePin();
+  else if (letter === "/" || letter === "f") focus.search();
+}
+
 export function NotesContent({
   model,
   host,
@@ -68,24 +88,7 @@ export function NotesContent({
   const { sheet, menu, takeKeys, setSheet } = overlays;
   return (
     <>
-      {sheet === null && menu === null && (
-        <KeySink
-          focusKey={overlays.keys}
-          onKey={(key) => {
-            if (key.kind === "up" || key.kind === "down") return model.moveSelection(key.kind === "up" ? -1 : 1);
-            if (key.kind === "backspace") return inTrash ? row && setSheet({ kind: "purge", title: row.title }) : model.trashSelected();
-            if (key.kind === "enter") {
-              if (row && !inTrash) focus.focusBody();
-              return;
-            }
-            if (key.kind !== "text") return;
-            const letter = key.text.toLowerCase();
-            if (letter === "n" && !inTrash) model.newNote();
-            else if (letter === "p" && !inTrash) model.togglePin();
-            else if (letter === "/" || letter === "f") focus.search();
-          }}
-        />
-      )}
+      {sheet === null && menu === null && <KeySink focusKey={overlays.keys} onKey={(key) => listKey(key, { model, data, focus, setSheet })} />}
       <View style={{ flex: 1, flexDirection: "row", minHeight: 0 }}>
         <NoteList
           // A new source starts at the top of its list, where its first note, the one it opens, is.

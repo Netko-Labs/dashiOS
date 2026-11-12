@@ -36,6 +36,39 @@ function NotesSearch({ model, data, focus, takeKeys }: { model: NotesModel; data
   );
 }
 
+/** Recently Deleted's buttons: Restore, Delete, and Delete All while there is room. */
+function TrashButtons({ model, data, setSheet, compact }: { model: NotesModel; data: NotesData; setSheet: Overlays["setSheet"]; compact: boolean }) {
+  const { row, state } = data;
+  return (
+    <>
+      {/* Narrow, the words go and Delete All leaves for File's "Delete All Recently Deleted…", so two trash glyphs never sit side by side. */}
+      <ToolbarButton
+        testID="restore"
+        glyph={RESTORE}
+        {...(compact ? { tooltip: "Restore" } : { label: "Restore" })}
+        disabled={!row}
+        onPress={() => model.restoreSelected()}
+      />
+      <ToolbarButton
+        testID="purge"
+        glyph={TRASH}
+        {...(compact ? { tooltip: "Delete forever" } : { label: "Delete" })}
+        disabled={!row}
+        onPress={() => row && setSheet({ kind: "purge", title: row.title })}
+      />
+      {!compact && (
+        <ToolbarButton
+          testID="empty-trash"
+          glyph={TRASH}
+          label="Delete All"
+          disabled={state.deleted.length === 0}
+          onPress={() => setSheet({ kind: "empty-trash", count: state.deleted.length })}
+        />
+      )}
+    </>
+  );
+}
+
 export function NotesToolbar({
   model,
   data,
@@ -52,36 +85,13 @@ export function NotesToolbar({
   /** A narrow window: the toolbar's words go. */
   compact: boolean;
 }) {
-  const { row, openNote, inTrash, state } = data;
+  const { row, openNote, inTrash } = data;
   const { setSheet, setMenu } = overlays;
   const search = <NotesSearch model={model} data={data} focus={focus} takeKeys={overlays.takeKeys} />;
   if (inTrash) {
     return (
       <>
-        {/* Narrow, the words go and Delete All leaves for File's "Delete All Recently Deleted…", so two trash glyphs never sit side by side. */}
-        <ToolbarButton
-          testID="restore"
-          glyph={RESTORE}
-          {...(compact ? { tooltip: "Restore" } : { label: "Restore" })}
-          disabled={!row}
-          onPress={() => model.restoreSelected()}
-        />
-        <ToolbarButton
-          testID="purge"
-          glyph={TRASH}
-          {...(compact ? { tooltip: "Delete forever" } : { label: "Delete" })}
-          disabled={!row}
-          onPress={() => row && setSheet({ kind: "purge", title: row.title })}
-        />
-        {!compact && (
-          <ToolbarButton
-            testID="empty-trash"
-            glyph={TRASH}
-            label="Delete All"
-            disabled={state.deleted.length === 0}
-            onPress={() => setSheet({ kind: "empty-trash", count: state.deleted.length })}
-          />
-        )}
+        <TrashButtons model={model} data={data} setSheet={setSheet} compact={compact} />
         <View style={{ width: 8 }} />
         {search}
       </>

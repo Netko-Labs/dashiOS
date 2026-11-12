@@ -69,6 +69,38 @@ function Place({
   );
 }
 
+function NewFolderRow({ rail, onPress }: { rail: boolean; onPress: () => void }) {
+  const colors = useColors();
+  const tip = useTooltip(rail ? "New folder" : undefined);
+  return (
+    <View
+      testID="new-folder"
+      accessibilityRole="button"
+      accessibilityLabel="New folder"
+      onPress={() => {
+        tip.hide();
+        onPress();
+      }}
+      onHoverChange={tip.onHoverChange}
+      style={{
+        height: SIDEBAR_ROW_HEIGHT,
+        flexShrink: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: rail ? "center" : "flex-start",
+        gap: 9,
+        paddingHorizontal: rail ? 0 : 8,
+        borderRadius: 7,
+        hoverBackgroundColor: colors.button,
+      }}
+    >
+      <Svg markup={FOLDER_PLUS} size={16} color={colors.textMuted} />
+      {!rail && <Text style={{ fontSize: 13, color: colors.textMuted }}>New folder</Text>}
+      {tip.node}
+    </View>
+  );
+}
+
 export function Sidebar({
   folders,
   counts,
@@ -87,8 +119,6 @@ export function Sidebar({
   /** Only the glyphs, each named by its tooltip. */
   rail?: boolean;
 }) {
-  const colors = useColors();
-  const newFolderTip = useTooltip(rail ? "New folder" : undefined);
   const folder = (name: string, label: string, menu: boolean) => (
     <View key={`folder:${name}`} testID={`folder-row:${name || "default"}`} onContextMenu={menu ? (event) => onFolderMenu(name, event.x, event.y) : undefined}>
       <Place
@@ -129,31 +159,7 @@ export function Sidebar({
         onPress={() => onSource({ kind: "trash" })}
         rail={rail}
       />
-      <View
-        testID="new-folder"
-        accessibilityRole="button"
-        accessibilityLabel="New folder"
-        onPress={() => {
-          newFolderTip.hide();
-          onNewFolder();
-        }}
-        onHoverChange={newFolderTip.onHoverChange}
-        style={{
-          height: SIDEBAR_ROW_HEIGHT,
-          flexShrink: 0,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: rail ? "center" : "flex-start",
-          gap: 9,
-          paddingHorizontal: rail ? 0 : 8,
-          borderRadius: 7,
-          hoverBackgroundColor: colors.button,
-        }}
-      >
-        <Svg markup={FOLDER_PLUS} size={16} color={colors.textMuted} />
-        {!rail && <Text style={{ fontSize: 13, color: colors.textMuted }}>New folder</Text>}
-        {newFolderTip.node}
-      </View>
+      <NewFolderRow rail={rail} onPress={onNewFolder} />
     </>
   );
 }
