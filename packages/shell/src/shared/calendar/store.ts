@@ -117,6 +117,13 @@ export class CalendarStore {
 
   /** Makes a calendar; a name already taken gets a number ("Work 2"). */
   create(name: string, color?: string): Calendar {
+    const calendar = this.named(name, color);
+    this.write(calendar, true);
+    return calendar;
+  }
+
+  /** An empty calendar under a name nothing has yet, not written. */
+  private named(name: string, color?: string): Calendar {
     const clean = cleanName(name);
     if (clean === "") throw new CalendarError("A calendar needs a name.");
     const taken = new Set(this.ids().map((id) => id.toLowerCase()));
@@ -124,7 +131,7 @@ export class CalendarStore {
     const base = idFor(clean);
     let id = base;
     for (let n = 2; taken.has(id.toLowerCase()); n++) id = `${base.slice(0, 70)} ${n}`;
-    const calendar: Calendar = {
+    return {
       id,
       name: clean,
       color: color !== undefined && isColor(color) ? color.toLowerCase() : paletteColor(taken.size),
@@ -134,8 +141,6 @@ export class CalendarStore {
       preserved: [],
       problems: [],
     };
-    this.write(calendar, true);
-    return calendar;
   }
 
   /** The calendars, making "Home" first when there are none. */
@@ -244,16 +249,16 @@ export class CalendarStore {
         return { calendar, imported: fresh.length, duplicates: file.events.length - fresh.length, skipped: file.problems.length };
       });
     }
-    const created = this.create(file.name ?? (cleanName(fallbackName) || "Imported"), file.color ?? undefined);
+    // Written once, whole: a file too large to save leaves no empty calendar behind.
     const calendar: Calendar = {
-      ...created,
+      ...this.named(file.name ?? (cleanName(fallbackName) || "Imported"), file.color ?? undefined),
       events: file.events,
       headerExtra: file.headerExtra,
       timezones: file.timezones,
       preserved: file.preserved,
       problems: file.problems,
     };
-    this.write(calendar);
+    this.write(calendar, true);
     return { calendar, imported: file.events.length, duplicates: 0, skipped: file.problems.length };
   }
 

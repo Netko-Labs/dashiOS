@@ -75,6 +75,19 @@ guest_checkout() {
   esac
 }
 
+# A guest script with this checkout's path where it names one (@CHECKOUT@). One that names none
+# (turning the checkout's session off) runs from any checkout, in the share or not.
+for_checkout() {
+  local guest
+  case $1 in
+    *@CHECKOUT@*)
+      guest=$(guest_checkout) || exit 1
+      printf '%s' "${1//@CHECKOUT@/$guest}"
+      ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
+
 default_iso() {
   local iso
   iso=$(find "$images" -maxdepth 1 -name '*.iso' -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2- || true)
@@ -223,8 +236,7 @@ case $cmd in
       off) script='rm -f /usr/share/wayland-sessions/dashi-checkout.desktop /etc/sddm.conf.d/zz-dashi-checkout.conf' ;;
       *) die "usage: vm/vm checkout-session on|off" ;;
     esac
-    guest=$(guest_checkout)
-    script=${script//@CHECKOUT@/$guest}
+    script=$(for_checkout "$script")
     printf '%s\n' "$pass" | "$0" ssh "sudo -S -p '' sh -c '$script && systemctl restart sddm'"
     ;;
   checkout-greeter)
@@ -244,8 +256,7 @@ case $cmd in
         systemctl disable greetd && systemctl enable --force sddm && systemctl stop greetd; systemctl restart sddm' ;;
       *) die "usage: vm/vm checkout-greeter on|off" ;;
     esac
-    guest=$(guest_checkout)
-    script=${script//@CHECKOUT@/$guest}
+    script=$(for_checkout "$script")
     printf '%s\n' "$pass" | "$0" ssh "sudo -S -p '' sh -c '$script'"
     ;;
   *)

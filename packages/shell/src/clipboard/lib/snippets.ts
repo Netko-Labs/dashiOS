@@ -16,6 +16,7 @@
 import { chmodSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 
 export interface Snippet {
   keyword: string;
@@ -57,12 +58,11 @@ export function parseAdd(query: string): Snippet | null {
 }
 
 export function parseSnippets(value: unknown): Snippet[] {
-  const list =
-    typeof value === "object" && value !== null && Array.isArray((value as { snippets?: unknown }).snippets) ? (value as { snippets: unknown[] }).snippets : [];
+  const list = isRecord(value) && Array.isArray(value.snippets) ? value.snippets : [];
   const kept: Snippet[] = [];
   for (const item of list) {
-    if (typeof item !== "object" || item === null) continue;
-    const { keyword, text } = item as Record<string, unknown>;
+    if (!isRecord(item)) continue;
+    const { keyword, text } = item;
     if (typeof keyword !== "string" || typeof text !== "string" || text.length > MAX_TEXT) continue;
     if (keywordProblem(keyword, kept) !== null) continue;
     kept.push({ keyword, text });

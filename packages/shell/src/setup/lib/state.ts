@@ -13,6 +13,7 @@
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { writeTextAtomic } from "../../shared/fs/index.ts";
 
 export type SetupOutcome = "finished" | "skipped";
@@ -33,8 +34,8 @@ export function setupStatePath(env: Env = process.env, home: string = homedir())
 
 /** The record in a decoded file, or null for anything else. */
 export function parseSetupRecord(value: unknown): SetupRecord | null {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
-  const { version, outcome, at } = value as Record<string, unknown>;
+  if (!isRecord(value)) return null;
+  const { version, outcome, at } = value;
   if (version !== SETUP_VERSION || (outcome !== "finished" && outcome !== "skipped")) return null;
   if (typeof at !== "string" || Number.isNaN(Date.parse(at))) return null;
   return { outcome, at };

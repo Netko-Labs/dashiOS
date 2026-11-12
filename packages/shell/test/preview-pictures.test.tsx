@@ -7,7 +7,7 @@ import { type CommandHooks, copy } from "../apps/preview/lib/commands.ts";
 import { pngSize } from "../apps/preview/lib/image-job.ts";
 import { Viewer } from "../apps/preview/lib/viewer.ts";
 import { PreviewWindow } from "../apps/preview/lib/views/view.tsx";
-import { settle } from "./support/time.ts";
+import { settle, until } from "./support/time.ts";
 
 // Pictures in Preview: the folder's filmstrip, a rotation that sticks, the recent files, and Copy.
 
@@ -27,14 +27,6 @@ afterAll(() => {
   else process.env.XDG_RUNTIME_DIR = runtime;
   rmSync(dir, { recursive: true, force: true });
 });
-async function until(what: () => boolean, ms = 4_000): Promise<void> {
-  const end = Date.now() + ms;
-  while (!what()) {
-    if (Date.now() > end) throw new Error(`timed out: ${what}`);
-    await settle(20);
-  }
-}
-
 function mount(memoryFile: string | null) {
   const listeners: ((event: NativeEvent) => void)[] = [];
   const transport: NativeTransport = { send() {}, onEvent: (listener) => listeners.push(listener), onClose() {}, simulate() {}, close() {} };

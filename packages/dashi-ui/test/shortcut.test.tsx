@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
 import { Shortcut } from "../src/shortcut.tsx";
-import { fakeHost, settle } from "./host.ts";
+import { fakeHost } from "./host.ts";
+import { settle } from "./support/time.ts";
 
 // Review 54 (Activity Monitor 18): a menu's "❖I" read as "❖ I", the glyph's own side room plus a gap.
 // The parts of a shortcut sit with no gap between them.

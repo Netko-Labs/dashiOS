@@ -39,7 +39,8 @@ Requires:       xdg-desktop-portal-wlr
 Recommends:     cups
 # Preview: PDFs' pages, thumbnails and words (poppler), pictures Metal can't
 # draw as they are, rotation, export and print (ImageMagick); HEIC and AVIF
-# pictures; a rotated PDF exported or printed whole (qpdf).
+# pictures; a rotated PDF exported or printed whole (qpdf). The print sheet
+# cuts a PDF saved with a page range with qpdf too (apps/portal/lib/print/cut.ts).
 Requires:       poppler-utils
 Requires:       ImageMagick
 Recommends:     ImageMagick-heic

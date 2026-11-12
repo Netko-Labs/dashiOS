@@ -2,13 +2,18 @@
  * The hardware keys' actions: volume, mute, brightness, and media. keymap.ts
  * binds the XF86 keys to these names; shortcuts.ts hands them here. Each
  * press changes the system through its tool and shows the on-screen display.
+ *
+ * On a development run (`standIn`) the volume and mute keys read the host's
+ * sound and write nothing to it: what a key set is kept here and shown, as
+ * Control Center's slider does (control-center/devices.ts). The sound on the
+ * machine the developer is using stays as it was.
  */
 
 import { levelOf, stepBrightness } from "./brightness.ts";
 import { run as defaultRun, type Run } from "./exec.ts";
 import { isMediaKey, pressMedia } from "./lib/media.ts";
 import type { OsdState } from "./osd-state.ts";
-import { SOURCE, stepVolume, toggleMute, type Volume } from "./volume.ts";
+import { readVolume, SINK, SOURCE, stepped, stepVolume, toggleMute, type Volume } from "./volume.ts";
 
 /** Every binding name this module runs (the media ones are media.ts's). */
 export const HARDWARE_BINDINGS: readonly string[] = [
@@ -25,6 +30,8 @@ export const HARDWARE_BINDINGS: readonly string[] = [
   "media-previous",
 ];
 
+const flipped = (before: Volume): Volume => ({ ...before, muted: !before.muted });
+
 export interface HardwareDeps {
   run?: Run;
   osd: { show(state: OsdState): void };
@@ -35,12 +42,16 @@ export interface HardwareDeps {
   /** The brightness level (0..1) after a key changed it: at 0 the built-in screen goes off (screen-dark.ts). */
   brightnessChanged?: (level: number) => void;
   hasPlayerctl?: boolean;
+  /** A development run: the volume and mute keys write nothing to the machine. */
+  standIn?: boolean;
 }
 
 export class HardwareKeys {
   private queue: Promise<unknown> = Promise.resolve();
   /** The laptop's own keys (laptop/lib/hotkeys.ts), handed in once the machine is known. */
   private machineKeys: ((name: string) => Promise<boolean>) | null = null;
+  /** A development run's output and microphone, once a key set them: shown over the host's from then on. */
+  private readonly told = new Map<string, Volume>();
 
   constructor(private readonly deps: HardwareDeps) {}
 
@@ -70,17 +81,18 @@ export class HardwareKeys {
     switch (name) {
       case "volume-up":
       case "volume-down": {
-        const volume = await stepVolume(run, name === "volume-up" ? "up" : "down");
+        const direction = name === "volume-up" ? "up" : "down";
+        const volume = this.deps.standIn ? await this.pretend(run, SINK, (before) => stepped(before, direction)) : await stepVolume(run, direction);
         if (volume) this.volume(volume);
         return;
       }
       case "volume-mute": {
-        const volume = await toggleMute(run);
+        const volume = this.deps.standIn ? await this.pretend(run, SINK, flipped) : await toggleMute(run);
         if (volume) this.volume(volume);
         return;
       }
       case "mic-mute": {
-        const mic = await toggleMute(run, SOURCE);
+        const mic = this.deps.standIn ? await this.pretend(run, SOURCE, flipped) : await toggleMute(run, SOURCE);
         if (mic) this.deps.osd.show({ kind: "mic", muted: mic.muted });
         return;
       }
@@ -93,6 +105,15 @@ export class HardwareKeys {
         return;
       }
     }
+  }
+
+  /** A development run's key: `change` made to what was last told (the host's volume, read, the first time), and nothing written. */
+  private async pretend(run: Run, target: string, change: (before: Volume) => Volume): Promise<Volume | null> {
+    const before = this.told.get(target) ?? (await readVolume(run, target));
+    if (before === null) return null;
+    const next = change(before);
+    this.told.set(target, next);
+    return next;
   }
 
   private volume(volume: Volume): void {

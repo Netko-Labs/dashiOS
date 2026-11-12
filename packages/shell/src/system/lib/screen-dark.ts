@@ -57,6 +57,8 @@ export class ScreenDark {
       const names = builtinScreens(await this.host.outputs());
       for (const output of names) await this.host.power({ on: !off, output });
     } catch (error) {
+      // Not done: the next word at this level asks again, where "already dark" would leave the screen as it is.
+      this.dark = !off;
       if (!this.warned)
         console.error("dashi-shell: turning the built-in screen", off ? "off" : "on", "failed:", error instanceof Error ? error.message : error);
       this.warned = true;

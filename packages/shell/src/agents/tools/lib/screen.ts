@@ -1,7 +1,7 @@
 /** The screens: pictures of them, and their size and scale. */
 
 import { isRecord, obj, optional } from "@dashi/shape";
-import { SCALES } from "../../../displays.ts";
+import { SCALES } from "@dashi/ui";
 import { fail, type ToolDef, whole } from "../define.ts";
 import { arg, custom, tool, wholeArg, windowId } from "./args.ts";
 

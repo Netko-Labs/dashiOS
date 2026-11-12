@@ -8,8 +8,9 @@ import { ProgressBar } from "../src/progress.tsx";
 import { Slider } from "../src/slider.tsx";
 import { Appearance, setAppearanceSource, useColors } from "../src/theme/appearance.ts";
 import { darkColors, lightColors } from "../src/theme/palette.ts";
-import { fakeClockEachTest, fakeHost, settle } from "./host.ts";
+import { fakeHost } from "./host.ts";
 import { noop } from "./support/controls-view.ts";
+import { fakeClockEachTest, settle } from "./support/time.ts";
 
 fakeClockEachTest();
 

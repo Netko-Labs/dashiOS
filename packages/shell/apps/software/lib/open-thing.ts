@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { useAppletState } from "./applets/rows.tsx";
 import { useAppState } from "./hooks.ts";
 import type { OpenThing } from "./menus.ts";
+import { appAsks } from "./model.ts";
 import type { Page } from "./nav.ts";
 import type { Actions } from "./parts.tsx";
 import { useServices } from "./services.ts";
@@ -49,7 +50,13 @@ export function useOpenThing(page: Page, actions: Actions): OpenThingHandle | nu
   if (appId !== null && facts) {
     const installed = app.kind === "open" || app.kind === "update" ? app.installed : null;
     return {
-      can: { canOpen: installed !== null, canGet: app.kind === "get", canUpdate: app.kind === "update", canRemove: installed !== null, asks: facts.asks },
+      can: {
+        canOpen: installed !== null,
+        canGet: app.kind === "get",
+        canUpdate: app.kind === "update",
+        canRemove: installed !== null,
+        asks: appAsks(app, facts.asks),
+      },
       open: () => installed && actions.launch(appId),
       get: () => app.kind === "get" && actions.install(appId, facts.name),
       update: () => app.kind === "update" && actions.update(app.installed, facts.name),

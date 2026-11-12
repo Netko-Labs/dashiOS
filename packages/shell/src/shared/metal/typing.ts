@@ -7,12 +7,13 @@
  * event never sends it: the app's rows keep the chords, as before.
  */
 
+import { isRecord } from "@dashi/shape";
 import type { NativeTransport } from "@mirinjs/metal";
 
 /** `typing` from one of the host's events, or null for any other event. */
 export function typingOf(event: unknown): boolean | null {
-  if (typeof event !== "object" || event === null) return null;
-  const fields = event as Record<string, unknown>;
+  if (!isRecord(event)) return null;
+  const fields = event;
   if (fields.type !== "typing" || fields.nodeId !== "root" || typeof fields.typing !== "boolean") return null;
   return fields.typing;
 }

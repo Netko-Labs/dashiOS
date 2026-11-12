@@ -13,6 +13,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { int, list, maybe, nullable, num, obj, orElse, str } from "@dashi/shape";
 import { type NotificationStore, type NotifyInput, SHELL_SENDER } from "../notifications/index.ts";
 import { iconPath } from "../shared/apps/index.ts";
 import type { FlatpakUpdate, Software } from "../shared/software/index.ts";
@@ -34,17 +35,16 @@ export function checkPath(env: Readonly<Record<string, string | undefined>> = pr
   return join(env.XDG_STATE_HOME || join(home, ".local", "state"), "dashi", "software-check.json");
 }
 
+const NO_STATE: CheckState = { checkedAt: null, told: null };
+/** One field of the wrong shape is no state for that field; the other is kept. */
+const CheckStateShape = obj({ checkedAt: orElse(nullable(num()), null), told: orElse(nullable(str({ max: 20_000 })), null) }, { strict: false });
+
 /** The state file read; anything of the wrong shape is no state. */
 export function parseCheckState(text: string): CheckState {
   try {
-    const value = JSON.parse(text) as unknown;
-    if (typeof value !== "object" || value === null) return { checkedAt: null, told: null };
-    const fields = value as Record<string, unknown>;
-    const checkedAt = typeof fields.checkedAt === "number" && Number.isFinite(fields.checkedAt) ? fields.checkedAt : null;
-    const told = typeof fields.told === "string" && fields.told.length < 20_000 ? fields.told : null;
-    return { checkedAt, told };
+    return maybe(CheckStateShape, JSON.parse(text)) ?? NO_STATE;
   } catch {
-    return { checkedAt: null, told: null };
+    return NO_STATE;
   }
 }
 
@@ -56,7 +56,21 @@ export function dueIn(checkedAt: number | null, now: number): number {
 
 /** What was found, as one string to compare with what was told. */
 export function updatesKey(apps: readonly Pick<FlatpakUpdate, "id" | "version">[], system: number): string {
-  return JSON.stringify({ apps: apps.map((app) => `${app.id}@${app.version ?? ""}`).sort(), system });
+  return keyOf(apps.map(appKey), system);
+}
+
+const appKey = (app: Pick<FlatpakUpdate, "id" | "version">): string => `${app.id}@${app.version ?? ""}`;
+const keyOf = (apps: readonly string[], system: number): string => JSON.stringify({ apps: [...apps].sort(), system });
+
+const ToldShape = obj({ apps: list(str(), { max: 2000 }), system: int({ min: 0 }) });
+
+/** What a told set held: its apps and how many system updates; nothing for none (or one that doesn't read). */
+export function toldParts(told: string | null): { apps: string[]; system: number } {
+  try {
+    return (told === null ? null : maybe(ToldShape, JSON.parse(told))) ?? { apps: [], system: 0 };
+  } catch {
+    return { apps: [], system: 0 };
+  }
 }
 
 /** "3 app updates and a system update"; null when there is nothing. */
@@ -180,14 +194,18 @@ export class UpdateCheck {
     ]);
     // Neither answered: try again in a while rather than wait a whole day.
     if (apps.status === "rejected" && system.status === "rejected") return this.schedule(RETRY_MS);
-    const appList = apps.status === "fulfilled" ? apps.value : [];
-    const systemCount = system.status === "fulfilled" ? system.value.updates.length : 0;
-    const key = updatesKey(appList, systemCount);
-    const notice = updatesNotice(appList.length, systemCount);
+    // A source that failed is taken as it was last told: half an answer is never written down as "nothing waits"
+    // there, which would tell the same updates again as new on the next look.
+    const last = toldParts(this.state.told);
+    const appKeys = apps.status === "fulfilled" ? apps.value.map(appKey) : last.apps;
+    const systemCount = system.status === "fulfilled" ? system.value.updates.length : last.system;
+    const key = keyOf(appKeys, systemCount);
+    const notice = updatesNotice(appKeys.length, systemCount);
     if (notice && key !== this.state.told) this.noticeId = this.options.notifications.notify(notice, 0, SHELL_SENDER);
     this.state = { checkedAt: this.now(), told: notice ? key : null };
     this.write();
-    this.schedule(DAY_MS);
+    // The half that failed is asked again in a while, not in a day.
+    this.schedule(apps.status === "fulfilled" && system.status === "fulfilled" ? DAY_MS : RETRY_MS);
   }
 
   private schedule(ms: number): void {
@@ -197,11 +215,11 @@ export class UpdateCheck {
 
   private read(): CheckState {
     const path = this.options.statePath;
-    if (!path) return { checkedAt: null, told: null };
+    if (!path) return NO_STATE;
     try {
       return parseCheckState(readFileSync(path, "utf8"));
     } catch {
-      return { checkedAt: null, told: null };
+      return NO_STATE;
     }
   }
 

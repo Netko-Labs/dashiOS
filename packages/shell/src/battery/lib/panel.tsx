@@ -81,10 +81,67 @@ function Line({ row, last, onApp }: { row: PowerRow; last: boolean; onApp: (app:
   );
 }
 
+/** The last 24 hours of charge as a line, named and scaled, the limit dashed. */
+function ChargeLine({ battery, samples, limit, now }: { battery: Battery; samples: BatteryMonitorState["samples"]; limit: number | null; now: number }) {
+  const colors = useControlColors();
+  const clock = useClockPrefs();
+  return (
+    <View
+      testID="battery-line"
+      style={{ marginTop: 10, borderRadius: 20, backgroundColor: colors.off, paddingLeft: 12, paddingRight: 12, paddingTop: 10, paddingBottom: 10 }}
+    >
+      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+        <Text style={{ fontSize: 11, color: colors.muted }}>Charge, last 24 h</Text>
+        <Text style={{ fontSize: 11, color: colors.muted }}>{`${battery.percent}%`}</Text>
+      </View>
+      <Svg markup={chargeLine(samples, { ...CHART, now }, limit)} width={CHART.width} height={CHART.height} color={colors.offInk} />
+      <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 2 }}>
+        <Text style={{ fontSize: 10, color: colors.muted }}>{`yesterday ${formatTime(new Date((now - 24 * 3600) * 1000), clock)}`}</Text>
+        <Text style={{ fontSize: 10, color: colors.muted }}>{limit !== null && limit < 100 ? "0–100%, limit dashed" : "0–100%"}</Text>
+        <Text style={{ fontSize: 10, color: colors.muted }}>now</Text>
+      </View>
+    </View>
+  );
+}
+
+type ExtraItem = Extract<MenuEntry<StatusMenuAction>, { kind: "item" }>;
+
+/** What the laptop adds, as rows: one with an action is pressed, one without only says. */
+function Extras({ items, onAction }: { items: readonly ExtraItem[]; onAction: (action: StatusMenuAction) => void }) {
+  const colors = useControlColors();
+  return (
+    <Rows testID="battery-extras">
+      {items.map((item, at) => {
+        const action = item.action;
+        return (
+          <View
+            // The rows never reorder while the panel is open.
+            key={at}
+            testID={`battery-extra:${at}`}
+            {...(action ? { onPress: () => onAction(action) } : {})}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 9,
+              minHeight: 34,
+              borderBottomWidth: at === items.length - 1 ? 0 : 1,
+              borderColor: colors.line,
+            }}
+          >
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={{ fontSize: 12.5, color: action ? colors.offInk : colors.muted }}>{item.label.trim()}</Text>
+            </View>
+            {item.keys && <Text style={{ fontSize: 11.5, fontWeight: "semibold", color: colors.offInk }}>{item.keys}</Text>}
+          </View>
+        );
+      })}
+    </Rows>
+  );
+}
+
 export function BatteryPanel({ battery, use, limit, extras, now, onApp, onAction, onSettings }: BatteryPanelProps) {
   const colors = useControlColors();
   const edge = usePanelEdge(BATTERY_PANEL.padding);
-  const clock = useClockPrefs();
   const rows = use
     ? wattRows({ battery, watts: use.watts, floor: idleFloor(use.samples), apps: use.apps, significant: use.significant, adapter: use.adapter })
     : [];
@@ -111,23 +168,7 @@ export function BatteryPanel({ battery, use, limit, extras, now, onApp, onAction
       <View testID="battery-gauge" style={{ flexDirection: "row", marginTop: 14, marginLeft: 6, marginRight: 6 }}>
         <LimitBar percent={battery.percent} limit={limit} height={12} label />
       </View>
-      {samples.length > 0 && (
-        <View
-          testID="battery-line"
-          style={{ marginTop: 10, borderRadius: 20, backgroundColor: colors.off, paddingLeft: 12, paddingRight: 12, paddingTop: 10, paddingBottom: 10 }}
-        >
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-            <Text style={{ fontSize: 11, color: colors.muted }}>Charge, last 24 h</Text>
-            <Text style={{ fontSize: 11, color: colors.muted }}>{`${battery.percent}%`}</Text>
-          </View>
-          <Svg markup={chargeLine(samples, { ...CHART, now }, limit)} width={CHART.width} height={CHART.height} color={colors.offInk} />
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 2 }}>
-            <Text style={{ fontSize: 10, color: colors.muted }}>{`yesterday ${formatTime(new Date((now - 24 * 3600) * 1000), clock)}`}</Text>
-            <Text style={{ fontSize: 10, color: colors.muted }}>{limit !== null && limit < 100 ? "0–100%, limit dashed" : "0–100%"}</Text>
-            <Text style={{ fontSize: 10, color: colors.muted }}>now</Text>
-          </View>
-        </View>
-      )}
+      {samples.length > 0 && <ChargeLine battery={battery} samples={samples} limit={limit} now={now} />}
       {rows.length > 0 && (
         <Rows testID="battery-watts">
           {rows.map((row, at) => (
@@ -135,34 +176,7 @@ export function BatteryPanel({ battery, use, limit, extras, now, onApp, onAction
           ))}
         </Rows>
       )}
-      {items.length > 0 && (
-        <Rows testID="battery-extras">
-          {items.map((item, at) => {
-            const action = item.action;
-            return (
-              <View
-                // The rows never reorder while the panel is open.
-                key={at}
-                testID={`battery-extra:${at}`}
-                {...(action ? { onPress: () => onAction(action) } : {})}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 9,
-                  minHeight: 34,
-                  borderBottomWidth: at === items.length - 1 ? 0 : 1,
-                  borderColor: colors.line,
-                }}
-              >
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={{ fontSize: 12.5, color: action ? colors.offInk : colors.muted }}>{item.label.trim()}</Text>
-                </View>
-                {item.keys && <Text style={{ fontSize: 11.5, fontWeight: "semibold", color: colors.offInk }}>{item.keys}</Text>}
-              </View>
-            );
-          })}
-        </Rows>
-      )}
+      {items.length > 0 && <Extras items={items} onAction={onAction} />}
       <View
         testID="battery-settings"
         onPress={onSettings}

@@ -1,11 +1,12 @@
 /** What an agent sees of the screen: a picture of it, a window or a part (never what mask.ts blanks), and a recording. */
 
-import { mkdirSync, rmSync } from "node:fs";
+import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { type RunContext, type ToolResult, toolError } from "../../context.ts";
 import { recordScreen } from "../../desktop/index.ts";
 import { AGENT_MASK } from "../../mask.ts";
 import type { Rect } from "../../tools/index.ts";
+import { scratchDir } from "../scratch.ts";
 import { named, noWindow, subject } from "../subject.ts";
 import type { Handlers } from "./run-types.ts";
 
@@ -24,8 +25,7 @@ async function screenshot(id: number | null, rect: Rect | undefined, ctx: RunCon
   } catch {
     return toolError("The screenshot was not taken: Dashi couldn't blank what agents must not see.");
   }
-  const dir = join(process.env.XDG_RUNTIME_DIR || "/tmp", "dashi-agents");
-  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const dir = scratchDir();
   const path = join(dir, `${crypto.randomUUID()}.png`);
   try {
     const answer = await ctx.compositor.capture({

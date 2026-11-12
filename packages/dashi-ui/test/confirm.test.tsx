@@ -2,7 +2,8 @@ import { expect, test } from "bun:test";
 import { type NativeEvent, render, View } from "@mirinjs/metal";
 import { useEffect } from "react";
 import { type Confirm, ConfirmSheet, confirmKeyAction, useConfirm } from "../src/confirm.tsx";
-import { fakeHost, settle } from "./host.ts";
+import { fakeHost } from "./host.ts";
+import { settle } from "./support/time.ts";
 
 /** A key the window got, as Metal hands it to a KeySink (`onWindowKeyDown`). */
 const windowKey = (nodeId: string, key: string): NativeEvent => ({

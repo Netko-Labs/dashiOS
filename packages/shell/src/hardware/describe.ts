@@ -5,7 +5,7 @@
  * field of the wrong kind is left out, never trusted.
  */
 
-import { bool, maybe, num, str, union } from "@dashi/shape";
+import { bool, isRecord, maybe, num, str, union } from "@dashi/shape";
 
 export type KnobValue = string | number | boolean;
 
@@ -40,7 +40,6 @@ export interface Machine {
   recipes: unknown;
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 /** A knob's value: text, a switch or a finite number; anything else reads as no value. */
 const KNOB_VALUE = union(str(), bool(), num());
 const text = (value: unknown): string | null => (typeof value === "string" && value.length > 0 && value.length <= 256 ? value : null);

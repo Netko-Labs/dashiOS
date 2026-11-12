@@ -189,3 +189,20 @@ test("pack says “signed” only when the .minisig beside the package is this b
   expect(signatureNote(dir, now, yesterday)).toContain("from another build");
   expect(signatureNote(dir, now, null)).toBe("");
 });
+
+test("two packs at once build each applet in its own folder", async () => {
+  const applet = (word: string): string => {
+    const dir = mkdtempSync(join(tmpdir(), "dashi-applet-pack-"));
+    mkdirSync(join(dir, "src"));
+    writeFileSync(join(dir, "applet.json"), JSON.stringify({ ...ASUS, entry: "src/main.ts" }));
+    writeFileSync(join(dir, "src/main.ts"), 'import { word } from "./word.ts";\nconsole.log(word);\n');
+    writeFileSync(join(dir, "src/word.ts"), `export const word = "${word}";\n`);
+    return dir;
+  };
+  const [one, two] = [applet("one"), applet("two")];
+  const from = process.cwd();
+  const alone = [await pack(one), await pack(two)];
+  const together = await Promise.all([pack(one), pack(two)]);
+  expect(together.map((packed) => packed.sha256)).toEqual(alone.map((packed) => packed.sha256));
+  expect(process.cwd()).toBe(from);
+});

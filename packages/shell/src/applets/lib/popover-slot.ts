@@ -53,9 +53,14 @@ export class PopoverSlot {
     const placement = placePopover(size, click?.x ?? null, screen);
     let removeCatcher: (() => void) | null = null;
     let release: (() => void) | null = null;
+    let closed = false;
     const open: OpenPopover = {
       id,
+      // Once: a popover another one took the place of is closed then, and again when its own grant lands;
+      // the second time would take the layer shell from the popover that replaced it.
       close: () => {
+        if (closed) return;
+        closed = true;
         removeCatcher?.();
         removeCatcher = null;
         release?.();

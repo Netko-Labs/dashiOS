@@ -11,6 +11,7 @@
  * that says neither as destructive.
  */
 
+import { isRecord } from "@dashi/shape";
 import type { Scope } from "../consent.ts";
 import type { Call, CallError, ToolName } from "./types.ts";
 
@@ -48,8 +49,8 @@ export const stray = (args: Args, allowed: Record<string, unknown>): string | un
  * `parse`. The agents' `tools/call` and a person's command go through this one.
  */
 export function checkToolArgs(tool: ToolDef, given: unknown): Call | CallError {
-  if (given !== undefined && given !== null && (typeof given !== "object" || Array.isArray(given))) return fail("`arguments` must be an object.");
-  const args = (given ?? {}) as Args;
+  if (given !== undefined && given !== null && !isRecord(given)) return fail("`arguments` must be an object.");
+  const args: Args = isRecord(given) ? given : {};
   const extra = stray(args, tool.properties);
   if (extra !== undefined) {
     const takes = Object.keys(tool.properties);

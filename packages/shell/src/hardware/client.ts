@@ -10,6 +10,7 @@
  * (`shadowHardware`): what it sets is kept in memory.
  */
 
+import { isRecord } from "@dashi/shape";
 import { type BusLike, unwrap, type Variant, variant } from "../shared/dbus/index.ts";
 import { type KnobValue, type Machine, parseDescribe } from "./describe.ts";
 
@@ -70,7 +71,7 @@ const jsonObject = (raw: unknown): Record<string, unknown> | null => {
   if (typeof raw !== "string") return null;
   try {
     const parsed: unknown = JSON.parse(raw);
-    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
+    return isRecord(parsed) ? parsed : null;
   } catch {
     return null;
   }

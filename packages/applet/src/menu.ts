@@ -5,6 +5,7 @@
  * the limits count every row at every level.
  */
 
+import { isRecord } from "@dashi/shape";
 import { id, isRefusal, optionalBoolean, type Refusal, record, refuse, text } from "@dashi/shape/kit";
 
 export const MENU_LIMITS = {
@@ -34,7 +35,7 @@ interface Count {
 
 function parseRow(value: unknown, where: string, depth: number, count: Count): AppletMenuRow | Refusal {
   if (++count.rows > MENU_LIMITS.rows) return refuse(`the menu has more than ${MENU_LIMITS.rows} rows`);
-  const type = typeof value === "object" && value !== null ? (value as Record<string, unknown>).type : undefined;
+  const type = isRecord(value) ? value.type : undefined;
   if (type === "separator") {
     const fields = record(value, where, ["type"]);
     return isRefusal(fields) ? fields : { kind: "separator" };

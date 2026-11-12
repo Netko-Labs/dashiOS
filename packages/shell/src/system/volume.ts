@@ -40,6 +40,12 @@ export async function stepVolume(run: Run, direction: "up" | "down"): Promise<Vo
   return readVolume(run);
 }
 
+/** What a step makes of `before`, without asking PipeWire: a development run's keys (keys.ts). */
+export function stepped(before: Volume, direction: "up" | "down"): Volume {
+  const level = Math.min(Math.max(before.level + (direction === "up" ? STEP_PERCENT : -STEP_PERCENT) / 100, 0), 1);
+  return { level, muted: direction === "up" ? false : before.muted };
+}
+
 export async function toggleMute(run: Run, target: string = SINK): Promise<Volume | null> {
   if ((await run(["wpctl", "set-mute", target, "toggle"])) === null) return null;
   return readVolume(run, target);

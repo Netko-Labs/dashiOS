@@ -12,6 +12,15 @@ export interface SharedSecrets {
   close(): void;
 }
 
+/** Forgets the filled fields whose time is up, and a window left with none: the map holds only what is still blanked. */
+export function dropExpired<F extends { until: number }>(filled: Map<number, F[]>, now: number): void {
+  for (const [window, fields] of filled) {
+    const live = fields.filter((field) => field.until > now);
+    if (live.length === 0) filled.delete(window);
+    else if (live.length !== fields.length) filled.set(window, live);
+  }
+}
+
 export function sharedSecrets(compositor: Compositor, sources: () => readonly LoginSource[], vault: Pick<Vault, "cards" | "pay">): SharedSecrets {
   // The accessibility bus, joined when a picture first needs it; a failure is tried again next time.
   let atspi: Atspi | null = null;
@@ -22,21 +31,21 @@ export function sharedSecrets(compositor: Compositor, sources: () => readonly Lo
     windows: () => compositor.windows(),
     atspi: joinAtspi,
     handedOver: () => [...secrets.handedOver],
-    filled: () =>
-      [...secrets.filled].flatMap(([window, fields]) =>
-        fields
-          .filter((f) => f.until > Date.now())
-          .map((field) => ({
-            window,
-            rect: field.rect,
-            again: field.again,
-            forget: () =>
-              secrets.filled.set(
-                window,
-                (secrets.filled.get(window) ?? []).filter((f) => f !== field),
-              ),
-          })),
-      ),
+    filled: () => {
+      dropExpired(secrets.filled, Date.now());
+      return [...secrets.filled].flatMap(([window, fields]) =>
+        fields.map((field) => ({
+          window,
+          rect: field.rect,
+          again: field.again,
+          forget: () =>
+            secrets.filled.set(
+              window,
+              (secrets.filled.get(window) ?? []).filter((f) => f !== field),
+            ),
+        })),
+      );
+    },
     isVault: isVaultWindow,
   });
   secrets.touched = (window) => mask.prompts.touched(window);

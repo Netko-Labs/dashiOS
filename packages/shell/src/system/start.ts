@@ -33,6 +33,8 @@ export interface SystemOptions {
   compositor?: ScreenHost | null;
   /** The session's PipeWire watcher: the bar's speaker follows it instead of polling. */
   pipewire?: PipeWireWatch;
+  /** A development run: the volume and mute keys write nothing to the machine (keys.ts). */
+  standIn?: boolean;
 }
 
 export function startSystem(options: SystemOptions = {}): System {
@@ -46,7 +48,12 @@ export function startSystem(options: SystemOptions = {}): System {
   const osd = new OsdController(openOsdSurface);
   const dark = options.compositor ? startScreenDark(options.compositor) : null;
   const brightnessChanged = (level: number): void => void dark?.then((screen) => screen.follow(level));
-  const hardware = new HardwareKeys({ osd, volumeChanged: (volume) => store.publish("volume", volume), brightnessChanged });
+  const hardware = new HardwareKeys({
+    osd,
+    volumeChanged: (volume) => store.publish("volume", volume),
+    brightnessChanged,
+    ...(options.standIn ? { standIn: true } : {}),
+  });
   const stopCharger = watchCharger(store, osd);
   store.start();
   return {

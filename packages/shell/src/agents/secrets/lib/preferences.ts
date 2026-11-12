@@ -8,6 +8,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import type { SourceId } from "../sources.ts";
 
 export interface PasswordPrefs {
@@ -19,9 +20,9 @@ export const DEFAULT_PREFS: PasswordPrefs = { sources: { dashi: true, "1password
 
 /** The file's contents to preferences; anything unknown or malformed is the default. */
 export function parsePrefs(value: unknown): PasswordPrefs {
-  if (typeof value !== "object" || value === null) return structuredClone(DEFAULT_PREFS);
-  const record = value as Record<string, unknown>;
-  const sources = typeof record.sources === "object" && record.sources !== null ? (record.sources as Record<string, unknown>) : {};
+  if (!isRecord(value)) return structuredClone(DEFAULT_PREFS);
+  const record = value;
+  const sources = isRecord(record.sources) ? record.sources : {};
   const flag = (id: SourceId) => (typeof sources[id] === "boolean" ? (sources[id] as boolean) : DEFAULT_PREFS.sources[id]);
   return {
     sources: { dashi: flag("dashi"), "1password": flag("1password") },

@@ -13,6 +13,7 @@
 import { chmodSync, mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 
 /** Bytes one connection may send. */
 const MAX_LINE = 8192;
@@ -25,8 +26,8 @@ export function handoffDir(env: Readonly<Record<string, string | undefined>> = p
 export function parseHandoff(line: string): string | null {
   try {
     const value: unknown = JSON.parse(line);
-    if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
-    const { open } = value as Record<string, unknown>;
+    if (!isRecord(value)) return null;
+    const { open } = value;
     return typeof open === "string" && open.startsWith("/") && !open.includes("\0") && open.length < 4096 ? open : null;
   } catch {
     return null;
@@ -87,7 +88,7 @@ function offer(socketPath: string, path: string, timeoutMs: number): Promise<boo
 function parseAnswer(text: string): boolean {
   try {
     const value: unknown = JSON.parse(text.split("\n")[0] ?? "");
-    return typeof value === "object" && value !== null && (value as Record<string, unknown>).ok === true;
+    return isRecord(value) && value.ok === true;
   } catch {
     return false;
   }

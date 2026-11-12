@@ -9,6 +9,7 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import type { GraphicsController } from "../../graphics/index.ts";
 import type { HardwareApi } from "../../hardware/index.ts";
 import type { NotificationStore } from "../../notifications/index.ts";
@@ -36,7 +37,7 @@ export function resetSaidFor(raw: string | null, boot: string): boolean {
   if (raw === null) return false;
   try {
     const parsed: unknown = JSON.parse(raw);
-    return typeof parsed === "object" && parsed !== null && (parsed as Record<string, unknown>).resetNoticeBoot === boot;
+    return isRecord(parsed) && parsed.resetNoticeBoot === boot;
   } catch {
     return false;
   }

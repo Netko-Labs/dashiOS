@@ -29,9 +29,18 @@ export function connectHost(handle: Handler): void {
       if (!isRecord(message) || typeof message.id !== "number" || typeof message.method !== "string") return;
       const { id, method } = message;
       const params = isRecord(message.params) ? message.params : {};
+      // The host may have gone while this ran (the session restarted): nobody waits for the answer then, and a
+      // dropped port throws when posted to.
+      const reply = (answer: Record<string, unknown>): void => {
+        try {
+          opened.postMessage(answer);
+        } catch {
+          // Gone.
+        }
+      };
       handle(method, params).then(
-        (result) => opened.postMessage({ id, ok: true, result }),
-        (error: unknown) => opened.postMessage({ id, ok: false, error: error instanceof Error ? error.message : String(error) }),
+        (result) => reply({ id, ok: true, result }),
+        (error: unknown) => reply({ id, ok: false, error: error instanceof Error ? error.message : String(error) }),
       );
     });
     opened.onDisconnect.addListener(() => {

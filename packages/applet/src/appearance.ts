@@ -8,6 +8,7 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 
 export function appearancePath(env: Record<string, string | undefined> = process.env): string {
   const state = env.XDG_STATE_HOME || join(env.HOME || homedir(), ".local", "state");
@@ -18,7 +19,7 @@ export function appearancePath(env: Record<string, string | undefined> = process
 export function darkFrom(text: string): boolean {
   try {
     const value: unknown = JSON.parse(text);
-    return typeof value === "object" && value !== null && (value as Record<string, unknown>).dark === true;
+    return isRecord(value) && value.dark === true;
   } catch {
     return false;
   }

@@ -8,6 +8,7 @@
 
 import { existsSync, lstatSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { writeAtomic } from "../fs/index.ts";
 import { isCalendarId } from "./ids.ts";
 
@@ -23,8 +24,8 @@ export const emptySidecar = (): Sidecar => ({ version: 1, hidden: [] });
 
 export function parseSidecar(value: unknown): Sidecar {
   const out = emptySidecar();
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return out;
-  const { hidden } = value as Record<string, unknown>;
+  if (!isRecord(value)) return out;
+  const { hidden } = value;
   if (Array.isArray(hidden)) out.hidden = [...new Set(hidden.filter((id): id is string => isCalendarId(id)))].slice(0, 200);
   return out;
 }

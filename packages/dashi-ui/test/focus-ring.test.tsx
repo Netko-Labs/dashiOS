@@ -14,7 +14,8 @@ import { Appearance } from "../src/theme/appearance.ts";
 import { contrastRatio } from "../src/theme/contrast.ts";
 import { darkColors, lightColors } from "../src/theme/palette.ts";
 import { ToolbarButton } from "../src/window.tsx";
-import { fakeHost, settle } from "./host.ts";
+import { fakeHost } from "./host.ts";
+import { settle } from "./support/time.ts";
 
 // The focus ring is purple (KB-2) in every Dashi window, whatever root it is
 // in: Metal draws the nearest `focusRingColor` on the way up, and without one

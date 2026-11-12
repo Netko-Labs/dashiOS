@@ -1,11 +1,13 @@
-import { expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { helperCommand, installArgs, isLiveBoot, parseEvent } from "../apps/installer/lib/helper.ts";
 import { type Account, accountProblem, advance, nextPage, overall, previousPage, START, suggestHostname, suggestUser } from "../apps/installer/lib/model.ts";
 import { hasNvidia, parseDisks, sizeLabel } from "../apps/installer/lib/probe.ts";
+import { startInstall } from "../apps/installer/lib/use-installer.ts";
 import { liveInstaller } from "../src/setup/lib/live.ts";
+import { settle } from "./support/time.ts";
 
 const LSBLK = {
   blockdevices: [
@@ -153,4 +155,35 @@ test("pages in order, and the install's progress from its events", () => {
   const finished = advance(advance(progress, { event: "step", step: "finish" }), { event: "finished", ok: true });
   expect(finished.done).toContain("finish");
   expect(finished.ok).toBe(true);
+});
+
+describe("the install's end", () => {
+  const disk = { path: "/dev/vda", name: "disk", bytes: 64e9, transport: "virtio", removable: false };
+  const account = { fullName: "Alex Kim", user: "alexk", password: "secret1", confirm: "secret1", hostname: "dashi" };
+  const watch = () => {
+    const seen: { pages: string[]; failed: string | null; cleared: boolean } = { pages: [], failed: null, cleared: false };
+    const ops = {
+      setPage: (page: string) => void seen.pages.push(page),
+      setProgress: (progress: { failed?: { message: string } | null }) => void (seen.failed = progress.failed?.message ?? null),
+      clearPassword: () => void (seen.cleared = true),
+    };
+    return { seen, ops };
+  };
+
+  test("a helper that can't be talked to is a failed install, not a page left installing", async () => {
+    const { seen, ops } = watch();
+    startInstall(disk, account, false, true, ops, () => Promise.reject(new Error("write EPIPE")));
+    await settle();
+    expect(seen).toEqual({ pages: ["failed"], failed: "The installer stopped without saying why.", cleared: true });
+  });
+
+  test("a helper that finishes is done", async () => {
+    const { seen, ops } = watch();
+    startInstall(disk, account, false, true, ops, async (_choice, _password, _dry, onEvent) => {
+      onEvent({ event: "finished", ok: true });
+      return 0;
+    });
+    await settle();
+    expect(seen.pages).toEqual(["done"]);
+  });
 });

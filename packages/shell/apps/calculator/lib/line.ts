@@ -11,6 +11,8 @@
  * - = works the line out: the sum goes to the tape and its result stands in
  *   the line, selected. A digit then starts a new sum; an operator goes on
  *   from the result. = again repeats the last step (2 + 3 = 5, = 8).
+ * - A number holds 15 digits: a digit typed into one that is full is refused,
+ *   wherever the caret is, and so is any edit that would make a longer one.
  * - A paste is one number, or a sum of numbers, operators and brackets; text
  *   with anything else in it (letters, a date) is refused, never typed in key
  *   by key, and numbers whose marks the locale would not write are refused
@@ -18,7 +20,8 @@
  */
 
 import type { TextSelection } from "@mirinjs/metal";
-import { evaluate, hasOperation, isQuiet, type Outcome, operatorFor, render, repeatOf, settled, type Token, tokenize } from "./expression.ts";
+import { evaluate, hasOperation, type Outcome, repeatOf, settled } from "./evaluate.ts";
+import { isQuiet, operatorFor, overflows, render, type Token, tokenize } from "./expression.ts";
 import { formatResult, numberTokens, parsePasted, readNumber } from "./format.ts";
 import { EN_US, type NumberLocale, numberMarks } from "./locale.ts";
 
@@ -70,8 +73,13 @@ export function tidy(raw: string, caret: number, locale: NumberLocale): { text: 
   return { text, caret: at };
 }
 
-/** `raw` tidied into a line with the caret at `caret`; the carry stays only while the text is still the result. */
+/**
+ * `raw` tidied into a line with the caret at `caret`; the carry stays only
+ * while the text is still the result. An edit that would give a number a
+ * sixteenth digit is refused: the line stays as it was.
+ */
 export function settle(line: Line, raw: string, caret: number, locale: NumberLocale): Line {
+  if (overflows(raw, locale)) return line;
   const tidied = tidy(raw, caret, locale);
   const carry = line.carry && tidied.text.startsWith(line.carry.text) ? line.carry : null;
   return { text: tidied.text, selection: caretAt(tidied.caret), carry };

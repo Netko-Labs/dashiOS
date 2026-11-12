@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseRecentlyUsed, withRecent } from "../src/shared/file-browser/lib/recent.ts";
-import { readRecents, recordRecents } from "../src/shared/file-browser/lib/recent-file.ts";
+import { readRecents, recentExec, recordRecents } from "../src/shared/file-browser/lib/recent-file.ts";
 
 const AT = new Date("2026-11-07T01:30:00Z");
 const ICS = { path: "/home/alexk/Downloads/google & co.ics", mime: "text/calendar", app: "dev.dashi.calendar", exec: "'dev.dashi.calendar' %u" };
@@ -41,4 +41,14 @@ test("a pick in the chooser is in Recents next time", async () => {
   await recordRecents(["/home/alexk/b.txt"], "dev.dashi.editor", env);
   expect((await readRecents(env)).map((file) => file.path)).toEqual(["/home/alexk/b.txt", "/home/alexk/a.txt"]);
   expect(readFileSync(join(dir, "recently-used.xbel"), "utf8")).toContain('name="dev.dashi.editor"');
+});
+
+test("an app's name is one quoted word in the history's exec, whatever it holds", async () => {
+  expect(recentExec("dev.dashi.calendar")).toBe("'dev.dashi.calendar' %u");
+  // A quote in a window's title stays inside the word; a line break is a space.
+  expect(recentExec("Alex's' ; rm -rf ~ '")).toBe(String.raw`'Alex'\''s'\'' ; rm -rf ~ '\''' %u`);
+  expect(recentExec("two\nlines")).toBe("'two lines' %u");
+  const env = { XDG_DATA_HOME: dir, XDG_DATA_DIRS: dir };
+  await recordRecents(["/home/alexk/a.txt"], `It's "quoted"`, env);
+  expect(readFileSync(join(dir, "recently-used.xbel"), "utf8")).toContain(String.raw`exec="&apos;It&apos;\&apos;&apos;s &quot;quoted&quot;&apos; %u"`);
 });

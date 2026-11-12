@@ -9,7 +9,8 @@ import { SnippetStore } from "../src/clipboard/lib/snippets.ts";
 import type { LauncherWorldStore } from "../src/launcher/host.ts";
 import { LauncherKeys } from "../src/launcher/keys.ts";
 import type { WorldSnapshot } from "../src/launcher/world.ts";
-import { mount, settle, unmountLauncher } from "./launcher-harness.tsx";
+import { mount, unmountLauncher } from "./launcher-harness.tsx";
+import { settle } from "./support/time.ts";
 
 // The clipboard history and the snippets as launcher scopes: the same panel
 // behind a chip, ↩ pastes into the window under the launcher, ❖K has Pin,

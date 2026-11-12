@@ -9,6 +9,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { useSyncExternalStore } from "react";
 import { DEFAULT_LAYOUT } from "./catalog.ts";
 import { type Layout, parseLayout } from "./layout.ts";
@@ -37,8 +38,8 @@ export function parseLayouts(text: string): Map<string, Layout> {
   } catch {
     return out;
   }
-  const machines = typeof value === "object" && value !== null ? (value as { machines?: unknown }).machines : null;
-  if (typeof machines !== "object" || machines === null) return out;
+  const machines = isRecord(value) ? value.machines : null;
+  if (!isRecord(machines)) return out;
   for (const [id, entry] of Object.entries(machines)) {
     const layout = parseLayout(entry);
     if (layout && /^[0-9a-z]{1,64}$/.test(id)) out.set(id, layout);

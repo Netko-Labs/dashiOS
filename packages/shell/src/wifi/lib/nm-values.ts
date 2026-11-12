@@ -6,11 +6,9 @@
  * one a new password.
  */
 
-import { propertyMap, unwrap, Variant, variant } from "../../shared/dbus/index.ts";
+import { propertyMap, Variant, variant } from "../../shared/dbus/index.ts";
 import { securityOf } from "../networks.ts";
 import type { AccessPoint, KnownProfile, Security } from "../types.ts";
-
-export { propertyMap, unwrap };
 
 const isCount = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value) && value >= 0;
 

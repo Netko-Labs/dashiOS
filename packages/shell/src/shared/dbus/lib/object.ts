@@ -153,7 +153,9 @@ export class ObjectRegistry {
     const expected = { Get: "ss", GetAll: "s", Set: "ssv" }[member];
     if (expected === undefined) return fail(ERRORS.unknownMethod, `no method ${member} on ${PROPERTIES}`);
     if (call.signature !== expected) return fail(ERRORS.invalidArgs, `${member} takes "${expected}", got "${call.signature}"`);
-    const [name, property, value] = call.body as [string, string, Variant];
+    // The signature says what the body holds; each value is still looked at, never taken on its word.
+    const [name, property = "", value] = call.body;
+    if (typeof name !== "string" || typeof property !== "string") return fail(ERRORS.invalidArgs, `${member} takes "${expected}"`);
     const spec = object.get(name);
     if (!spec) return fail(ERRORS.unknownInterface, `no interface ${name}`);
     const properties = spec.properties ?? {};
@@ -173,6 +175,7 @@ export class ObjectRegistry {
     if (entry.access === undefined || entry.access === "read" || !entry.set) {
       return fail(ERRORS.propertyReadOnly, `${property} is read-only`);
     }
+    if (!(value instanceof Variant)) return fail(ERRORS.invalidArgs, `${property} takes a variant`);
     if (value.signature !== entry.type) return fail(ERRORS.invalidArgs, `${property} is "${entry.type}", got "${value.signature}"`);
     await entry.set(value.value);
     return ok();

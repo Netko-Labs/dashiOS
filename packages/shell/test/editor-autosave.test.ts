@@ -148,7 +148,7 @@ describe("changes made elsewhere", () => {
   test("are never written over: the conflict asks, and either side can win", () => {
     const path = join(dir, "shared.txt");
     writeFileSync(path, "start");
-    const { editor } = setup();
+    const { editor, versions } = setup();
     editor.open(path);
     editor.edit("start, mine");
     writeElsewhere(path, "start, theirs");
@@ -162,6 +162,10 @@ describe("changes made elsewhere", () => {
     expect(editor.keepMine()).toBe(true);
     expect(readFileSync(path, "utf8")).toBe("start, mine");
     expect(editor.getSnapshot().conflict).toBeNull();
+    // What the other app wrote was written over, so Revert To still has it, beside the file as it was opened.
+    const kept = versions.list(path).map((version) => versions.read(path, version));
+    expect(kept).toContain("start, theirs");
+    expect(kept).toContain("start");
 
     editor.edit("start, mine again");
     writeElsewhere(path, "theirs again");

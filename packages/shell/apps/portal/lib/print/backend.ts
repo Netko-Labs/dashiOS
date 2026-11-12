@@ -16,7 +16,8 @@ import { DBusError, ERRORS, type InterfaceSpec, Variant } from "../../../../src/
 import { type Requests, Response, type ResponseCode } from "../request.ts";
 import { cleanString, u32, vardict } from "../vardict.ts";
 import type { Printer } from "./cups.ts";
-import { choiceFrom, gtkSettings, type PrintChoice, PrintTokens, pdfPageCount } from "./settings.ts";
+import { cutPages } from "./cut.ts";
+import { choiceFrom, gtkSettings, type PrintChoice, PrintTokens, parseRanges, pdfPageCount } from "./settings.ts";
 
 export const PRINT = "org.freedesktop.impl.portal.Print";
 
@@ -44,30 +45,68 @@ export interface PrintDeps {
   /** Where to save a PDF; null when the person cancelled. */
   savePath(request: Pick<SheetRequest, "appId" | "parent" | "title">, signal: AbortSignal): Promise<string | null>;
   writeFile?(path: string, data: Uint8Array): void;
+  /** The document with only these pages (1-based, inclusive ranges), for a PDF saved with a range (cut.ts). */
+  cutPages?(pdf: Uint8Array, ranges: Array<[number, number]>): Promise<Uint8Array>;
 }
 
-/**
- * The document a descriptor holds, read whole. A file is read from its start
- * whatever its offset (the app may have just written it); a pipe, as it comes.
- */
-export function readDocument(fd: number): Uint8Array {
-  const stat = fstatSync(fd);
-  const seekable = stat.isFile();
-  if (stat.size > MAX_PDF) throw new DBusError(ERRORS.limitsExceeded, "the document is too big to print");
-  let out = new Uint8Array(Math.max(stat.size, 64 * 1024));
+/** A pipe that sends nothing for this long is given up on. */
+export const DOCUMENT_WAIT_MS = 30_000;
+
+const tooBig = (): DBusError => new DBusError(ERRORS.limitsExceeded, "the document is too big to print");
+
+/** A file, read from its start whatever its offset (the app may have just written it). */
+function readFile(fd: number, size: number): Uint8Array {
+  const out = new Uint8Array(size);
   let at = 0;
-  for (;;) {
-    if (at === out.length) {
-      if (out.length >= MAX_PDF) throw new DBusError(ERRORS.limitsExceeded, "the document is too big to print");
-      const grown = new Uint8Array(Math.min(out.length * 2, MAX_PDF));
-      grown.set(out);
-      out = grown;
-    }
-    const got = readSync(fd, out, at, out.length - at, seekable ? at : null);
+  while (at < size) {
+    const got = readSync(fd, out, at, size - at, at);
     if (got <= 0) break;
     at += got;
   }
   return out.subarray(0, at);
+}
+
+/**
+ * A pipe, read as it comes and never by waiting on it: an app that keeps its
+ * end open (it is waiting for this very answer) would stop every other sheet
+ * and request the portal has. One that sends nothing for `DOCUMENT_WAIT_MS`
+ * is given up on.
+ */
+async function readPipe(fd: number): Promise<Uint8Array> {
+  const reader = Bun.file(fd).stream().getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    for (;;) {
+      let waiting: ReturnType<typeof setTimeout> | undefined;
+      const late = new Promise<null>((resolve) => {
+        waiting = setTimeout(() => resolve(null), DOCUMENT_WAIT_MS);
+      });
+      const read = await Promise.race([reader.read(), late]);
+      clearTimeout(waiting);
+      if (read === null) throw new DBusError(ERRORS.failed, "the document never finished arriving");
+      if (read.done) break;
+      size += read.value.length;
+      if (size > MAX_PDF) throw tooBig();
+      chunks.push(read.value);
+    }
+  } finally {
+    void reader.cancel().catch(() => {});
+  }
+  const out = new Uint8Array(size);
+  let at = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, at);
+    at += chunk.length;
+  }
+  return out;
+}
+
+/** The document a descriptor holds, read whole. */
+export async function readDocument(fd: number): Promise<Uint8Array> {
+  const stat = fstatSync(fd);
+  if (stat.size > MAX_PDF) throw tooBig();
+  return stat.isFile() ? readFile(fd, stat.size) : readPipe(fd);
 }
 
 const text = (value: unknown, max = 512): string => (typeof value === "string" ? cleanString(value, max) : "");
@@ -114,7 +153,7 @@ export class PrintBackend {
     const [handle, appId, parent, title, fdIndex, options] = args;
     const fd = typeof fdIndex === "number" ? fds?.[fdIndex] : undefined;
     if (fd === undefined) throw new DBusError(ERRORS.invalidArgs, "Print needs the document as a file descriptor");
-    const pdf = readDocument(fd);
+    const pdf = await readDocument(fd);
     const name = text(title) || "Document";
     return this.requests.run(handle, async (signal) => {
       const app = text(appId, 256);
@@ -129,7 +168,10 @@ export class PrintBackend {
       }
       try {
         if (choice.pdfPath) {
-          (this.deps.writeFile ?? writeFileSync)(choice.pdfPath, pdf);
+          // A printer cuts the pages itself; a file has only what is written to it.
+          const ranges = parseRanges(choice.pages) ?? [];
+          const pages = ranges.length > 0 ? await (this.deps.cutPages ?? cutPages)(pdf, ranges) : pdf;
+          (this.deps.writeFile ?? writeFileSync)(choice.pdfPath, pages);
           return [Response.success, new Map()];
         }
         if (printers.length === 0) printers = await this.deps.printers();

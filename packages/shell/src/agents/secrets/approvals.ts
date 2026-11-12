@@ -7,6 +7,7 @@
  * simply answered, and its sheet comes down.
  */
 
+import { isRecord } from "@dashi/shape";
 import { LineBuffer } from "../../shared/io/index.ts";
 import { VAULT_SOCKET, vaultCall } from "./vault.ts";
 
@@ -30,8 +31,8 @@ export function parseEvent(line: string): Event | null {
   } catch {
     return null;
   }
-  if (typeof value !== "object" || value === null) return null;
-  const record = value as Record<string, unknown>;
+  if (!isRecord(value)) return null;
+  const record = value;
   if (typeof record.id !== "number") return null;
   if (record.event === "answered") return { event: "answered", id: record.id };
   if (record.event !== "approve") return null;

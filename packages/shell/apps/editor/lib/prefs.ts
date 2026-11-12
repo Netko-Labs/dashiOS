@@ -9,6 +9,7 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { writeTextAtomic } from "../../../src/shared/fs/index.ts";
 
 export interface EditorPrefs {
@@ -37,8 +38,8 @@ export function parsePrefs(text: string): EditorPrefs {
   } catch {
     return DEFAULT_PREFS;
   }
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return DEFAULT_PREFS;
-  const record = value as Record<string, unknown>;
+  if (!isRecord(value)) return DEFAULT_PREFS;
+  const record = value;
   const size = record.fontSize;
   return {
     monospace: typeof record.monospace === "boolean" ? record.monospace : DEFAULT_PREFS.monospace,

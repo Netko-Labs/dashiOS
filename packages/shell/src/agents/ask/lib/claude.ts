@@ -21,6 +21,7 @@
  * the session can't send the key elsewhere.
  */
 
+import { isRecord } from "@dashi/shape";
 import { ANSWERERS, AnswerError, type Answerer, type ModelCall, type PlanTool, SYSTEM_PROMPT, type Turn } from "../answerer.ts";
 import { errorWords, type Fetch, HttpError, requestJson, UnreadableError } from "./http.ts";
 import { strictSchema } from "./strict.ts";
@@ -62,8 +63,6 @@ export interface ClaudeOptions {
   maxRetries?: number;
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
-
 /** A tool in Claude's request: the API's own field names. */
 export interface ClaudeTool {
   name: string;
@@ -94,11 +93,16 @@ export function echoed(content: readonly ContentBlock[]): ContentBlock[] {
   return content.filter((block, at) => at >= start || !(block.type === "thinking" || block.type === "redacted_thinking" || block.type === "tool_use"));
 }
 
+const isBlock = (block: unknown): block is ContentBlock => isRecord(block) && typeof block.type === "string";
+/** A message of the history this answerer handed back last time: read again, not taken on its word. */
+const isMessageParam = (value: unknown): value is MessageParam =>
+  isRecord(value) && (value.role === "user" || value.role === "assistant") && (typeof value.content === "string" || Array.isArray(value.content));
+
 /** The answer body as a message; anything else is an answer that can't be read. */
 export function readMessage(body: unknown): Message {
-  if (!isRecord(body) || !Array.isArray(body.content) || !body.content.every((block) => isRecord(block) && typeof block.type === "string"))
-    throw new AnswerError("failed", "Claude's answer couldn't be read.");
-  return { content: body.content as ContentBlock[], stop_reason: typeof body.stop_reason === "string" ? body.stop_reason : null };
+  const content = isRecord(body) && Array.isArray(body.content) ? body.content : null;
+  if (!isRecord(body) || content === null || !content.every(isBlock)) throw new AnswerError("failed", "Claude's answer couldn't be read.");
+  return { content, stop_reason: typeof body.stop_reason === "string" ? body.stop_reason : null };
 }
 
 /** The reply's text and calls; a refusal or a cut-off reply is a failure, never guessed at. */
@@ -152,7 +156,7 @@ export function claudeAnswerer(options: ClaudeOptions): Answerer {
     async turn(history, turn, tools: readonly PlanTool[], signal) {
       const key = await options.key();
       if (!key) throw new AnswerError("no-key", "Add your Anthropic key in Settings › Agents.");
-      const messages: MessageParam[] = [...(history as readonly MessageParam[]), userMessage(turn)];
+      const messages: MessageParam[] = [...history.filter(isMessageParam), userMessage(turn)];
       let message: Message;
       try {
         message = readMessage(

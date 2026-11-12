@@ -5,7 +5,12 @@
 //   H7  json-casts     `JSON.parse(…) as T`
 //   H7  unknown-casts  `x as T` where x is `unknown` or `any` (outside data a
 //                      cast pretends to check): IPC replies, D-Bus, files,
-//                      subprocesses. Parse it with a parser instead.
+//                      subprocesses. Parse it with a parser instead. Also
+//                      what a hand-written check leaves of them, cast the
+//                      rest of the way: `object` (typeof x === "object"),
+//                      `{}` (x != null) and a list of unknown
+//                      (Array.isArray). `isRecord` and a shape narrow
+//                      without a cast (decisions.md D31).
 //   H8  raw-requests   `request("method")` with a compositor IPC method
 //                      (docs/compositor-ipc.md) outside packages/shell/src/compositor/client.ts
 //   H10 return-types   an exported function in a .ts file without a return type
@@ -39,8 +44,50 @@ function isJsonParse(node: ts.Expression): boolean {
   return ts.isCallExpression(call) && call.expression.getText() === "JSON.parse";
 }
 
-function isLoose(type: ts.Type): boolean {
+function isUnchecked(type: ts.Type): boolean {
   return (type.flags & (ts.TypeFlags.Unknown | ts.TypeFlags.Any)) !== 0;
+}
+
+/**
+ * `unknown` or `any`, or what a typeof / null / Array.isArray check narrows
+ * them to: `object`, `{}`, a list or tuple of unknown (null and undefined
+ * beside them don't count). Nothing is known of such a value's fields, so a
+ * cast from it checks nothing either.
+ */
+export function isLoose(type: ts.Type, checker: ts.TypeChecker): boolean {
+  if (isUnchecked(type) || (type.flags & ts.TypeFlags.NonPrimitive) !== 0) return true;
+  if (type.isUnion()) {
+    const rest = type.types.filter((each) => (each.flags & (ts.TypeFlags.Null | ts.TypeFlags.Undefined)) === 0);
+    return rest.length > 0 && rest.every((each) => isLoose(each, checker));
+  }
+  if (checker.isArrayType(type) || checker.isTupleType(type)) {
+    const entries = checker.getTypeArguments(type as ts.TypeReference);
+    return entries.length > 0 && entries.every(isUnchecked);
+  }
+  return checker.typeToString(type) === "{}";
+}
+
+/** A literal written here (`{} as T`, `[] as T[]`): not outside data, whatever its type. */
+function isLiteral(node: ts.Expression): boolean {
+  const at = strip(node);
+  return ts.isObjectLiteralExpression(at) || ts.isArrayLiteralExpression(at);
+}
+
+/** A cast to a type that says no more than the value's own (`as unknown[]`), or to a type parameter's (a generic parser's result, typed by its schema). */
+function claimsNothing(target: ts.Type, checker: ts.TypeChecker): boolean {
+  return isLoose(target, checker) || containsTypeParameter(target, checker);
+}
+
+function containsTypeParameter(type: ts.Type, checker: ts.TypeChecker, depth = 0): boolean {
+  if (depth > 4) return false;
+  if ((type.flags & (ts.TypeFlags.TypeParameter | ts.TypeFlags.IndexedAccess | ts.TypeFlags.Conditional)) !== 0) return true;
+  if (type.isUnionOrIntersection()) return type.types.some((each) => containsTypeParameter(each, checker, depth + 1));
+  const args = type.aliasTypeArguments ?? ((type.flags & ts.TypeFlags.Object) !== 0 ? checker.getTypeArguments(type as ts.TypeReference) : []);
+  if (args.some((each) => containsTypeParameter(each, checker, depth + 1))) return true;
+  // A mapped type over a type parameter ({ [K in keyof S]: … }).
+  return (
+    (type.flags & ts.TypeFlags.Object) !== 0 && ((type as ts.ObjectType).objectFlags & ts.ObjectFlags.Mapped) !== 0 && /\bin\b/.test(checker.typeToString(type))
+  );
 }
 
 function isConst(type: ts.TypeNode): boolean {
@@ -63,6 +110,12 @@ function untypedExport(node: ts.Node): boolean {
   });
 }
 
+/** A cast of a value a hand-written check narrowed from unknown (`isLoose`) to a type that claims more. */
+function isNarrowedCast(node: ts.AsExpression | ts.TypeAssertion, checker: ts.TypeChecker): boolean {
+  if (isLiteral(node.expression) || !isLoose(checker.getTypeAtLocation(node.expression), checker)) return false;
+  return !claimsNothing(checker.getTypeFromTypeNode(node.type), checker);
+}
+
 export interface Findings {
   json: Counts;
   unknown: Counts;
@@ -78,7 +131,8 @@ function scan(file: string, source: ts.SourceFile, checker: ts.TypeChecker, meth
   const visit = (node: ts.Node): void => {
     if ((ts.isAsExpression(node) || ts.isTypeAssertionExpression(node)) && !isConst(node.type) && !isLooseNode(node.type)) {
       if (isJsonParse(node.expression)) bump(into.json, file);
-      else if (isLoose(checker.getTypeAtLocation(node.expression))) bump(into.unknown, file);
+      else if (isUnchecked(checker.getTypeAtLocation(node.expression))) bump(into.unknown, file);
+      else if (isNarrowedCast(node, checker)) bump(into.unknown, file);
     }
     if (file !== COMPOSITOR && ts.isCallExpression(node)) {
       const callee = node.expression;
@@ -90,6 +144,29 @@ function scan(file: string, source: ts.SourceFile, checker: ts.TypeChecker, meth
   };
   visit(source);
   if (file.endsWith(".ts")) for (const statement of source.statements) if (untypedExport(statement)) bump(into.returns, file);
+}
+
+const libraries = new Map<string, ts.SourceFile | undefined>();
+
+/** The casts one file's text holds (a program of that file alone): what the tests ask. */
+export function castsIn(text: string): { json: number; unknown: number } {
+  const name = "/probe.ts";
+  const options: ts.CompilerOptions = { strict: true, target: ts.ScriptTarget.ESNext, types: [] };
+  const host = ts.createCompilerHost(options);
+  const fromDisk = host.getSourceFile.bind(host);
+  host.getSourceFile = (file, ...rest) => {
+    if (file === name) return ts.createSourceFile(name, text, ts.ScriptTarget.ESNext, true);
+    // TypeScript's own library files, read once however many texts are asked about.
+    if (!libraries.has(file)) libraries.set(file, fromDisk(file, ...rest));
+    return libraries.get(file);
+  };
+  const onDisk = host.fileExists.bind(host);
+  host.fileExists = (file) => file === name || onDisk(file);
+  const program = ts.createProgram({ rootNames: [name], options, host });
+  const source = program.getSourceFile(name);
+  const into: Findings = { json: new Map(), unknown: new Map(), requests: new Map(), returns: new Map() };
+  if (source) scan(name, source, program.getTypeChecker(), new Set(), into);
+  return { json: into.json.get(name) ?? 0, unknown: into.unknown.get(name) ?? 0 };
 }
 
 export function findBoundaries(): Findings {

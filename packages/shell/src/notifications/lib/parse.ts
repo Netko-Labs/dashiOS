@@ -57,17 +57,20 @@ export function uriToPath(value: string): string {
   }
 }
 
+const text = (value: unknown): string => (typeof value === "string" ? value : "");
+const whole = (value: unknown, fallback: number): number => (typeof value === "number" && Number.isInteger(value) ? value : fallback);
+const NO_HINTS: Hints = new Map();
+
+/** Notify's arguments (`susssasa{sv}i`). The bus checked the signature; each value is still read, never taken on its word. */
 export function parseNotify(args: readonly unknown[]): NotifyCall {
-  const [appName, replacesId, appIcon, summary, body, actions, hints, expireTimeout] = args as [
-    string,
-    number,
-    string,
-    string,
-    string,
-    string[],
-    Hints,
-    number,
-  ];
+  const appName = text(args[0]);
+  const replacesId = whole(args[1], 0);
+  const appIcon = text(args[2]);
+  const summary = text(args[3]);
+  const body = text(args[4]);
+  const actions: readonly unknown[] = Array.isArray(args[5]) ? args[5] : [];
+  const hints: Hints = args[6] instanceof Map ? args[6] : NO_HINTS;
+  const expireTimeout = whole(args[7], -1);
   return {
     replacesId,
     input: {

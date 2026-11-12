@@ -19,7 +19,7 @@ const KNOWN: ReadonlyArray<[RegExp, string]> = [
     "The network isn't answering. Check the connection, then try again.",
   ],
   [/not authori[sz]ed|authentication|polkit|dismissed|permission denied/i, "Your password wasn't given, so nothing changed."],
-  [/lock(ed)?\b|another (transaction|update|instance)|is busy|already running/i, "Another update is running. Try again when it finishes."],
+  [/\block(ed)?\b|another (transaction|update|instance)|is busy|already running/i, "Another update is running. Try again when it finishes."],
   [/already installed/i, "It's already installed."],
   [/not installed/i, "It isn't installed any more."],
   [/no remote refs|nothing matches|no such ref|not found in remote/i, "Flathub doesn't offer it any more."],

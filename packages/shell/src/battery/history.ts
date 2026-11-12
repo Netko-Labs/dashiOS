@@ -5,6 +5,7 @@
  * pure functions here; file.ts keeps them on disk.
  */
 
+import { isRecord } from "@dashi/shape";
 import type { BatteryState, PowerSupply } from "../system/battery.ts";
 
 export interface Sample {
@@ -138,8 +139,8 @@ export function parseSample(line: string): Sample | null {
   } catch {
     return null;
   }
-  if (typeof value !== "object" || value === null) return null;
-  const { t, percent, state, watts } = value as Record<string, unknown>;
+  if (!isRecord(value)) return null;
+  const { t, percent, state, watts } = value;
   if (typeof t !== "number" || !Number.isFinite(t) || typeof percent !== "number" || percent < 0 || percent > 100) return null;
   if (state !== "charging" && state !== "discharging" && state !== "full" && state !== "plugged") return null;
   if (watts !== null && (typeof watts !== "number" || !Number.isFinite(watts) || watts < 0 || watts > 500)) return null;

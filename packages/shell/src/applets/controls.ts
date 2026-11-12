@@ -27,8 +27,6 @@ import {
 import { type AppletTile, type AppletTileSource, appletTileKey, type Layout, PUZZLE, type TileAction } from "../control-center/index.ts";
 import { type ControlState, controlStatePath, parseStates } from "./lib/control-states.ts";
 
-export { type ControlState, controlStatePath, parseStates };
-
 interface Declared {
   appletId: string;
   appletName: string;

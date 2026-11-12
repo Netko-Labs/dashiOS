@@ -40,7 +40,7 @@
  */
 
 import { join } from "node:path";
-import { isRefusal, type Refusal, refuse } from "@dashi/shape";
+import { isRecord, isRefusal, type Refusal, refuse } from "@dashi/shape";
 import { id as kitId, optionalBoolean, record, text } from "@dashi/shape/kit";
 
 export const MENUS_SOCKET = "dashi-menus.sock";
@@ -136,7 +136,7 @@ export const RESERVED_MENUS: ReadonlySet<string> = new Set(["dashi", "window", "
 const id = (value: unknown, what: string): string | Refusal => kitId(value, what, LIMITS.id);
 
 export function parseRow(value: unknown, where: string): AppMenuRow | Refusal {
-  if (typeof value === "object" && value !== null && (value as Record<string, unknown>).type === "separator") {
+  if (isRecord(value) && value.type === "separator") {
     const separator = record(value, where, ["type"]);
     return isRefusal(separator) ? separator : { kind: "separator" };
   }
@@ -262,8 +262,8 @@ export function parseShellMessage(line: string): ShellMessage | null {
   } catch {
     return null;
   }
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
-  const fields = value as Record<string, unknown>;
+  if (!isRecord(value)) return null;
+  const fields = value;
   if (fields.type === "select" && typeof fields.id === "string") return { type: "select", id: fields.id };
   if (fields.type === "quit") return { type: "quit" };
   if (fields.type === "stay") return { type: "stay" };

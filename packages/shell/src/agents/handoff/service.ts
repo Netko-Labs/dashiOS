@@ -74,8 +74,9 @@ export function startHandoff(options: HandoffOptions): Handoff {
       if (!policies.has(task) || call.name !== "set_setting") return null;
       const address = options.setSettingAddress?.() ?? null;
       const was = options.settingNow?.(call.setting);
-      if (!address || was === undefined || was === null || was === call.value) return null;
-      return { address, args: { name: call.setting, value: was as string | number | boolean }, title: settingWords(call.setting, was) };
+      // Only a plain value can be put back by set_setting.
+      if (!address || (typeof was !== "string" && typeof was !== "number" && typeof was !== "boolean") || was === call.value) return null;
+      return { address, args: { name: call.setting, value: was }, title: settingWords(call.setting, was) };
     },
     after(task, undo, ok) {
       if (undo && ok) runs.changed(task, undo);

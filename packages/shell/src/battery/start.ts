@@ -26,15 +26,16 @@ export function startBatteryMonitor(options: BatteryMonitorOptions): BatteryMoni
   // Kept between looks, so a process's command line and app are read once.
   const memory = readerMemory();
   let catalog: AppCatalog | undefined;
-  let counted = -1;
+  let listed = "";
   const monitor = new BatteryMonitor({
     supplies: readPowerSupplies,
     processes: () => {
       const entries = options.entries?.();
-      // An app installed meanwhile (the list grew): processes are matched again.
-      if (entries && entries.length !== counted) {
+      // An app installed or removed meanwhile (the list's ids changed, even at the same length): processes are matched again.
+      const ids = entries?.map((entry) => entry.id).join("\n") ?? "";
+      if (entries && ids !== listed) {
         catalog = catalogFrom(entries);
-        counted = entries.length;
+        listed = ids;
         memory.known.clear();
       }
       return readSnapshot({ io: false, sockets: false, ownUid: uid, pageSize, memory, ...(catalog ? { apps: catalog } : {}) }).processes;

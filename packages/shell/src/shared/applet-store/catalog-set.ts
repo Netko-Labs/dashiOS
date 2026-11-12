@@ -7,6 +7,7 @@
  */
 
 import { existsSync, readFileSync, rmSync } from "node:fs";
+import { isRecord } from "@dashi/shape";
 import { ensure, prune, updateSettingsFile } from "../settings/index.ts";
 import type { FetchLike } from "../software/index.ts";
 import { Catalog, CatalogError, catalogCacheDir } from "./catalog.ts";
@@ -34,8 +35,8 @@ export function readSavedCatalogs(path: string, dashiUrl: string): { catalogs: C
   if (!existsSync(path)) return { catalogs: [], problems: [] };
   try {
     const root: unknown = JSON.parse(readFileSync(path, "utf8"));
-    const applets = typeof root === "object" && root !== null && !Array.isArray(root) ? (root as Record<string, unknown>).applets : undefined;
-    const catalogs = typeof applets === "object" && applets !== null && !Array.isArray(applets) ? (applets as Record<string, unknown>).catalogs : undefined;
+    const applets = isRecord(root) ? root.applets : undefined;
+    const catalogs = isRecord(applets) ? applets.catalogs : undefined;
     return parseCatalogs(catalogs, dashiUrl);
   } catch {
     return { catalogs: [], problems: [] };

@@ -1,6 +1,6 @@
 /** The shell → applet direction of the applets channel (protocol.ts): each message the shell sends, and its commands. */
 
-import { maybe, nullable, num, obj, str } from "@dashi/shape";
+import { isRecord, maybe, nullable, num, obj, str } from "@dashi/shape";
 import { isRefusal, typedObject } from "@dashi/shape/kit";
 import { parseControlAction, parseShown } from "./controls.ts";
 import { parsePowerState } from "./power.ts";
@@ -64,7 +64,7 @@ function parseRunMessage(type: string, fields: Record<string, unknown>, seq: num
   if (type === "dismiss") return { type: "dismiss-view", seq };
   if (type === "run") {
     if (typeof fields.command !== "string") return null;
-    const args = typeof fields.args === "object" && fields.args !== null && !Array.isArray(fields.args) ? (fields.args as Record<string, unknown>) : {};
+    const args = isRecord(fields.args) ? fields.args : {};
     if (!Object.values(args).every(isArgValue)) return null;
     return {
       type: "run",

@@ -4,6 +4,8 @@
 
 mod error;
 mod slash;
+#[cfg(test)]
+mod tests;
 mod tuning;
 
 use serde_json::{Map, Value, json};
@@ -73,17 +75,26 @@ impl Machine {
     }
 
     /// The polkit action a `SetMany` of `values` needs: the strongest any
-    /// knob needs, except that `tune` knobs set to one of the model's own
-    /// recipe columns are a mode switch, an everyday change
-    /// (docs/hardware.md, "Knobs").
+    /// knob needs. Only a result of `Tune` is ever lowered, and only to
+    /// `Everyday`: `tune` knobs set to one of the model's own recipe columns
+    /// are a mode switch, an everyday change (docs/hardware.md, "Knobs"). A
+    /// knob that needs more than `Tune` keeps what it needs.
     pub(crate) fn action_for_many(&self, values: &[(Knob, KnobValue)]) -> knobs::Action {
+        let strongest = values
+            .iter()
+            .map(|(knob, _)| knob.action())
+            .max()
+            .unwrap_or(knobs::Action::Everyday);
+        if strongest != knobs::Action::Tune {
+            return strongest;
+        }
         let tuned: Vec<(&str, Value)> = values
             .iter()
             .filter(|(knob, _)| knob.action() == knobs::Action::Tune)
             .map(|(knob, value)| (knob.name(), value.json()))
             .collect();
         let shipped = self.model.as_ref().is_some_and(|m| m.recipe_gives(&tuned));
-        if tuned.is_empty() || shipped {
+        if shipped {
             knobs::Action::Everyday
         } else {
             knobs::Action::Tune

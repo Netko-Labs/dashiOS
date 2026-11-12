@@ -72,6 +72,7 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
+import { isRecord } from "@dashi/shape";
 import { DEFAULT_TEXT_SIZE } from "@dashi/ui";
 import type { Compositor } from "../compositor/index.ts";
 import { resolveDock } from "../dock/settings.ts";
@@ -97,8 +98,6 @@ import {
   TOUCHPAD,
   WALLPAPER,
 } from "./settings-schema.ts";
-
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
 /**
  * The wallpaper the person chose: a file from before live wallpapers has none

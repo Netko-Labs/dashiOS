@@ -5,6 +5,7 @@
  * errors carry dashi-secretd's words, which never hold one.
  */
 
+import { isRecord } from "@dashi/shape";
 import { LineBuffer } from "../../shared/io/index.ts";
 import { headersField, headersOf, parseToken } from "./lib/vault-token-items.ts";
 import type { NewToken, TokenChange, TokenSummary } from "./types.ts";
@@ -61,7 +62,7 @@ export async function vaultCall(request: Record<string, unknown>, path = VAULT_S
               socket.end();
               return;
             }
-            const record = typeof reply === "object" && reply !== null ? (reply as Record<string, unknown>) : {};
+            const record = isRecord(reply) ? reply : {};
             if (record.ok === true) finish(null, record);
             else finish(new Error(typeof record.error === "string" ? record.error : "dashi-secretd refused"));
             socket.end();
@@ -80,8 +81,8 @@ export async function vaultCall(request: Record<string, unknown>, path = VAULT_S
 }
 
 function parseLogin(value: unknown): LoginSummary | null {
-  if (typeof value !== "object" || value === null) return null;
-  const { id, site, account, agents, hasCode, lastUsed } = value as Record<string, unknown>;
+  if (!isRecord(value)) return null;
+  const { id, site, account, agents, hasCode, lastUsed } = value;
   if (typeof id !== "number" || typeof site !== "string" || typeof account !== "string") return null;
   return {
     id,
@@ -159,8 +160,8 @@ export class Vault {
   async cards(): Promise<CardSummary[]> {
     const reply = await this.call({ op: "cards" });
     return (Array.isArray(reply.cards) ? reply.cards : []).flatMap((value: unknown) => {
-      if (typeof value !== "object" || value === null) return [];
-      const { id, label, last4, expiry, singleUse, used } = value as Record<string, unknown>;
+      if (!isRecord(value)) return [];
+      const { id, label, last4, expiry, singleUse, used } = value;
       if (typeof id !== "number" || typeof last4 !== "string") return [];
       return [
         {

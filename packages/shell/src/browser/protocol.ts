@@ -9,6 +9,8 @@
  * broken extension might send. Pure, so tested.
  */
 
+import { isRecord } from "@dashi/shape";
+
 export type BrowserMethod = "tabs" | "activate" | "open" | "read" | "click" | "fill" | "select" | "press" | "scroll" | "field" | "filled";
 
 export interface BrowserRequest {
@@ -30,8 +32,6 @@ export interface HostHello {
 }
 
 export type FromBrowser = { kind: "reply"; reply: BrowserReply } | { kind: "hello"; hello: HostHello } | { kind: "invalid"; why: string };
-
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
 /** One line from the host. */
 export function parseFromBrowser(line: string): FromBrowser {
@@ -99,16 +99,17 @@ export function parseField(value: Record<string, unknown>): FieldReport | null {
   const { kind, documents, focused, rect, viewport, frameId } = value;
   const tab = parseTab(value.tab);
   if (!tab || (kind !== "password" && kind !== "text" && kind !== "other")) return null;
-  if (!Array.isArray(documents) || !documents.every((url) => typeof url === "string")) return null;
-  const box = (input: unknown) =>
-    isRecord(input) && ["x", "y", "width", "height"].every((key) => typeof input[key] === "number")
-      ? (input as { x: number; y: number; width: number; height: number })
-      : null;
+  if (!Array.isArray(documents) || !documents.every((url): url is string => typeof url === "string")) return null;
+  const box = (input: unknown): FieldReport["rect"] => {
+    if (!isRecord(input)) return null;
+    const { x, y, width, height } = input;
+    return typeof x === "number" && typeof y === "number" && typeof width === "number" && typeof height === "number" ? { x, y, width, height } : null;
+  };
   const size = isRecord(viewport) && typeof viewport.width === "number" && typeof viewport.height === "number" ? viewport : { width: 0, height: 0 };
   return {
     frameId: typeof frameId === "number" && Number.isInteger(frameId) ? frameId : 0,
     kind,
-    documents: documents as string[],
+    documents,
     focused: focused === true,
     rect: box(rect),
     viewport: { width: Number(size.width), height: Number(size.height) },

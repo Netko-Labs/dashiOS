@@ -10,6 +10,7 @@
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import type { ScopeChoice } from "./presence.ts";
 
 export const SCOPES = [
@@ -126,13 +127,13 @@ export interface GrantEntry {
  */
 export function parseGrants(value: unknown): Map<string, Map<Scope, number | null>> {
   const out = new Map<string, Map<Scope, number | null>>();
-  const agents = typeof value === "object" && value !== null ? (value as Record<string, unknown>).agents : null;
-  if (typeof agents !== "object" || agents === null) return out;
+  const agents = isRecord(value) ? value.agents : null;
+  if (!isRecord(agents)) return out;
   for (const [key, kept] of Object.entries(agents)) {
     const scopes = new Map<Scope, number | null>();
     if (Array.isArray(kept)) {
       for (const scope of kept) if (isScope(scope) && !NEVER_KEPT.has(scope)) scopes.set(scope, null);
-    } else if (typeof kept === "object" && kept !== null) {
+    } else if (isRecord(kept)) {
       for (const [scope, since] of Object.entries(kept)) {
         if (isScope(scope) && !NEVER_KEPT.has(scope)) scopes.set(scope, typeof since === "number" && Number.isInteger(since) && since > 0 ? since : null);
       }

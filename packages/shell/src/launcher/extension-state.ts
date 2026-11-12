@@ -6,6 +6,7 @@
  * opened (its pick, its view, its words) and the steps in and out of it.
  */
 
+import { isRecord } from "@dashi/shape";
 import type { ActionDef, Args, Outcome, PickRow, Shown } from "../actions/index.ts";
 import { realTimers, type SlowSnapshot, type SlowSource, SlowSources, type Timers } from "./budget.ts";
 import { outsideIcon } from "./lib/extension-rows.ts";
@@ -87,7 +88,7 @@ export type Scope =
 
 /** One argument's words as its schema wants them; null when they can't be. */
 export function readArg(text: string, schema: unknown): string | number | boolean | null {
-  const type = typeof schema === "object" && schema !== null ? (schema as { type?: unknown }).type : undefined;
+  const type = isRecord(schema) ? schema.type : undefined;
   const trimmed = text.trim();
   if (type === "number" || type === "integer") return /^-?\d+(\.\d+)?$/.test(trimmed) ? Number(trimmed) : null;
   if (type === "boolean") return /^(true|yes|on)$/i.test(trimmed) ? true : /^(false|no|off)$/i.test(trimmed) ? false : null;
@@ -96,7 +97,7 @@ export function readArg(text: string, schema: unknown): string | number | boolea
 
 export const argTitle = (action: ActionDef, name: string): string => {
   const schema = action.properties[name];
-  const description = typeof schema === "object" && schema !== null ? (schema as { description?: unknown }).description : undefined;
+  const description = isRecord(schema) ? schema.description : undefined;
   return typeof description === "string" && description !== "" ? description : name;
 };
 

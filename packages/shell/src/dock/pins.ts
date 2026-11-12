@@ -8,6 +8,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { useSyncExternalStore } from "react";
 
 /** More pins than any Dock could show; a file with more is not one of ours. */
@@ -34,8 +35,8 @@ export function parsePins(text: string): string[] | null {
   } catch {
     return null;
   }
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
-  const { pinned } = value as Record<string, unknown>;
+  if (!isRecord(value)) return null;
+  const { pinned } = value;
   if (!Array.isArray(pinned) || pinned.length > MAX_PINS || !pinned.every(isAppId)) return null;
   return [...new Set<string>(pinned)];
 }

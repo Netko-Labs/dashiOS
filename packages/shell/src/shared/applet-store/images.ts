@@ -5,7 +5,7 @@
  * 4 MB, kept in the store's cache under a hash of the URL.
  */
 
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { digest, type FetchLike, getBytes } from "../software/index.ts";
 import { CATALOG_HOSTS } from "./catalog.ts";
@@ -43,7 +43,10 @@ export class StoreImages {
     const job = getBytes(url, { hosts: this.hosts(), maxBytes: MAX_IMAGE, ...(this.fetch ? { fetch: this.fetch } : {}) })
       .then((bytes) => {
         mkdirSync(this.dir, { recursive: true });
-        writeFileSync(path, bytes);
+        // Beside it, then renamed in place: a file at `path` is always a whole picture, which `cached` takes it for.
+        const partial = `${path}.${process.pid}.partial`;
+        writeFileSync(partial, bytes);
+        renameSync(partial, path);
         return path;
       })
       .catch(() => null)

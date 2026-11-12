@@ -15,7 +15,7 @@ import type { Choice } from "./choices.tsx";
 import { useControlState } from "./control-state.tsx";
 import { CHEVRON_UP_DOWN } from "./glyphs.ts";
 import { MENU, type MenuRowKind, menuLabelLeft, rowTop } from "./menu-place.ts";
-import { isSeparator, type MenuEntry, type MenuSeparator, PopupMenu } from "./popup-menu.tsx";
+import { isSeparator, type MenuEntry, type MenuSeparator, PopupMenu, tidyEntries } from "./popup-menu.tsx";
 import { StepKeys } from "./step-keys.tsx";
 import { useColors } from "./theme/index.ts";
 import { useWindowLayer } from "./tooltip.tsx";
@@ -31,6 +31,18 @@ const MENU_INSET = menuLabelLeft(true) - 10;
 /** The menu's top-left for a button at `anchor`: the chosen row over the button. */
 export function popUpOrigin(anchor: Bounds, rows: readonly MenuRowKind[], chosen: number): { x: number; y: number } {
   return { x: Math.round(anchor.x - MENU_INSET), y: Math.round(anchor.y + (anchor.height - MENU.row) / 2 - rowTop(rows, Math.max(chosen, 0))) };
+}
+
+/**
+ * The menu for a button at `anchor`: its rows as the menu draws them (a
+ * separator first, last or doubled is not a row), and its top-left, worked
+ * out from those same rows so the chosen one lands on the button.
+ */
+export function popUpMenuAt(anchor: Bounds, entries: readonly MenuEntry[]): { items: MenuEntry[]; x: number; y: number } {
+  const items = tidyEntries(entries);
+  const rows = items.map((entry): MenuRowKind => (isSeparator(entry) ? "separator" : "item"));
+  const chosen = items.findIndex((entry) => !isSeparator(entry) && entry.checked === true);
+  return { items, ...popUpOrigin(anchor, rows, chosen) };
 }
 
 /** The menu's least width for a button at `anchor`: from the button's left, less the ticks' room, to its right edge. */
@@ -77,22 +89,17 @@ export function PopUpButton<T extends string | number>({
   const entries: MenuEntry[] = options.map((option) =>
     isOption(option) ? { label: option.label, checked: option.value === value, onPress: () => option.value !== value && onChange(option.value) } : option,
   );
-  const rows = entries.map((entry): MenuRowKind => (isSeparator(entry) ? "separator" : "item"));
   const menu =
     open === null
       ? null
       : (() => {
-          const at = popUpOrigin(
-            open,
-            rows,
-            entries.findIndex((entry) => !isSeparator(entry) && entry.checked === true),
-          );
+          const at = popUpMenuAt(open, entries);
           const node = (
             <PopupMenu
               testID={`${testID}:menu`}
               x={at.x}
               y={at.y}
-              items={entries}
+              items={at.items}
               flip={false}
               // Its right edge on the button's (wider only by the ticks' column it opens to the left), unless its rows need more.
               minWidth={popUpMenuWidth(open)}

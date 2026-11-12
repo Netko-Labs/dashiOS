@@ -9,6 +9,8 @@
  * Nothing here logs, and no error carries a header or the request.
  */
 
+import { isRecord } from "@dashi/shape";
+
 export type Fetch = (url: string, init: RequestInit) => Promise<Response>;
 
 /** The provider answered with an error status. */
@@ -41,8 +43,6 @@ export class UnreadableError extends Error {
     super("The answer isn't JSON.");
   }
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
 /** `{ error: { … } }`, as both providers send it. */
 const errorOf = (body: unknown): Record<string, unknown> | null => {

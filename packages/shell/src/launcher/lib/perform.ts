@@ -88,7 +88,9 @@ function performOpen(
       return;
     case "focus":
       learn(row);
-      void host?.focus(effect.window).then(() => search.finish(stay));
+      // With nothing to focus through, the launcher still closes: the row was chosen.
+      if (host) void host.focus(effect.window).then(() => search.finish(stay));
+      else search.finish(stay);
       return;
     case "run": {
       learn(row);

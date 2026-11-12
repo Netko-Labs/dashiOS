@@ -195,14 +195,14 @@ export class SandboxProxy {
     if (existsSync(path)) unlinkSync(path);
     // A model's answer can stream slowly; the client decides when a connection is done. Bun
     // applies its 10 s idle timeout to unix sockets too, though its types leave the option out there.
-    const options: object = {
+    // @ts-expect-error Bun's types take no idleTimeout with `unix`; Bun applies it there all the same (comment above).
+    const server = Bun.serve({
       unix: path,
       tls: { key: leaf.key, cert: leaf.cert },
       idleTimeout: 0,
       fetch: (request: Request) => this.forward(host, request),
       error: () => new Response("Dashi's token proxy failed\n", { status: 502 }),
-    };
-    const server = Bun.serve(options as Parameters<typeof Bun.serve>[0]);
+    });
     return { path, server, notAfter: leaf.notAfter };
   }
 

@@ -5,10 +5,11 @@
  * agent can see pictures but not watch a video.
  */
 
-import { mkdirSync, rmSync } from "node:fs";
+import { rmSync } from "node:fs";
 import { join } from "node:path";
 import type { RecordTarget } from "../../recorder/index.ts";
 import { type RunContext, type ToolResult, toolError } from "../context.ts";
+import { scratchDir } from "../lib/scratch.ts";
 import { AGENT_MASK } from "../mask.ts";
 import type { Call } from "../tools/index.ts";
 import { displayOf, recordedLength, stillTimes } from "./lib/record-times.ts";
@@ -58,8 +59,7 @@ export async function recordScreen(call: RecordCall, ctx: RunContext): Promise<T
     // A stopped agent's recording stops with it: the menu bar showed it as the agent's, and the agent is gone.
     while (Date.now() < until && recorder.getSnapshot().kind === "recording" && !ctx.signal.aborted) await sleep(Math.min(STOPPED_POLL_MS, until - Date.now()));
   };
-  const dir = join(process.env.XDG_RUNTIME_DIR || "/tmp", "dashi-agents");
-  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const dir = scratchDir();
   const stills: ToolResult["content"] = [];
   for (const at of stillTimes(call.seconds, call.frames)) {
     await whileRecording(started + at);

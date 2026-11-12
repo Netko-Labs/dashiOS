@@ -6,6 +6,7 @@
  */
 
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 
 /** The links socket's name in the runtime folder. */
 export const LINKS_SOCKET = "dashi-links.sock";
@@ -26,7 +27,7 @@ export function parseLinkAnswer(text: string): LinkAnswer {
   } catch {
     // Below: no answer.
   }
-  const fields = typeof reply === "object" && reply !== null ? (reply as Record<string, unknown>) : {};
+  const fields = isRecord(reply) ? reply : {};
   if (fields.ok === true) return { ok: true, text: typeof fields.text === "string" ? fields.text : "" };
   return { ok: false, error: typeof fields.error === "string" ? fields.error : "Dashi gave no answer." };
 }
@@ -34,13 +35,15 @@ export function parseLinkAnswer(text: string): LinkAnswer {
 /** Open `url` in the running session. Never throws: a session that isn't there is an answer too. */
 export async function openLink(url: string, path: string = linksSocketFor()): Promise<LinkAnswer> {
   let answer = "";
+  // One decoder for the connection: a character cut between two chunks is held until the rest arrives.
+  const decoder = new TextDecoder();
   const done = Promise.withResolvers<void>();
   try {
     const socket = await Bun.connect({
       unix: path,
       socket: {
         data(_socket, data) {
-          answer += new TextDecoder().decode(data);
+          answer += decoder.decode(data, { stream: true });
         },
         close() {
           done.resolve();

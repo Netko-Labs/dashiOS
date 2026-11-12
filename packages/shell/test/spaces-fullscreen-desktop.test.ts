@@ -158,7 +158,7 @@ describe("a full-screen window's own Desktop", () => {
     await desktops.move(2, 1);
     expect(fake.requests.some(([method, params]) => method === "space-move" && params.window === 2)).toBe(false);
     // Activation brought it here (switchOnActivate off), or an agent did.
-    await fake.compositor.request("space-move", { window: 2, space: 1 });
+    await fake.compositor.spaceMove({ window: 2, space: 1 });
     await settle();
     expect(fake.state.windows.find((each) => each.id === 2)?.space).toBe(0);
     expect(desktops.getSnapshot().current).toBe(0);

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createHash, generateKeyPairSync, verify } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { HOST } from "../browser-extension/src/host-name.ts";
 import { crc32, crx3, extensionId, idFromManifestKey, isExtensionId, publicDer, updateManifest, zip } from "../src/browser/crx.ts";
@@ -46,7 +46,15 @@ describe("the extension's id is pinned", () => {
   });
 
   test("no private key is in the extension's folder", () => {
-    for (const file of ["manifest.json"]) expect(readFileSync(join(repo, "packages/shell/browser-extension", file), "utf8")).not.toContain("PRIVATE KEY");
+    const folder = join(repo, "packages/shell/browser-extension");
+    const files = readdirSync(folder, { recursive: true, encoding: "utf8" }).filter((file) => !file.split("/").includes("node_modules"));
+    expect(files).toContain("manifest.json");
+    for (const file of files) {
+      const path = join(folder, file);
+      if (!statSync(path).isFile()) continue;
+      expect(file).not.toMatch(/\.(pem|key)$/);
+      expect(readFileSync(path, "utf8"), file).not.toContain("PRIVATE KEY");
+    }
   });
 });
 

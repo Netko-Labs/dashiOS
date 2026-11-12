@@ -8,6 +8,7 @@
  * it and drops it. A secret never goes on a command line.
  */
 
+import { isRecord } from "@dashi/shape";
 import { type Login, type LoginSource, sortLogins } from "../sources.ts";
 
 export interface OpResult {
@@ -60,13 +61,13 @@ function hostOf(href: string): string | null {
 export function parseItems(value: unknown): OpItem[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((entry: unknown) => {
-    if (typeof entry !== "object" || entry === null) return [];
-    const item = entry as Record<string, unknown>;
-    const vault = typeof item.vault === "object" && item.vault !== null ? (item.vault as Record<string, unknown>).id : null;
+    if (!isRecord(entry)) return [];
+    const item = entry;
+    const vault = isRecord(item.vault) ? item.vault.id : null;
     if (typeof item.id !== "string" || typeof vault !== "string" || !/^[A-Za-z0-9]+$/.test(item.id) || !/^[A-Za-z0-9]+$/.test(vault)) return [];
     const urls = Array.isArray(item.urls) ? item.urls : [];
     const hosts = urls.flatMap((url: unknown) => {
-      const href = typeof url === "object" && url !== null ? (url as Record<string, unknown>).href : null;
+      const href = isRecord(url) ? url.href : null;
       const host = typeof href === "string" ? hostOf(href) : null;
       return host ? [host] : [];
     });

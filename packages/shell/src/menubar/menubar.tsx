@@ -19,7 +19,6 @@ import { type ReactNode, useState } from "react";
 import { type AppMenuStore, useAppMenus } from "../app-menus/index.ts";
 import { type BarMenuId, barMenus, titleStop, useMenus } from "../menus/index.ts";
 import type { App } from "../shared/apps/index.ts";
-import { formatClock } from "../shared/time/index.ts";
 import type { ToplevelStore } from "../toplevels.ts";
 import { statusRoom } from "./lib/menubar-fit.ts";
 import { Title } from "./lib/menubar-items.tsx";
@@ -27,8 +26,6 @@ import { titleLabel, useBarStops } from "./lib/menubar-keys.ts";
 import { useBarName } from "./lib/menubar-name.ts";
 import { type StatusSources, useStatusSlots } from "./lib/menubar-program-slots.tsx";
 import { StatusSide } from "./lib/menubar-status.tsx";
-
-export { formatClock };
 
 export interface MenuBarProps extends StatusSources {
   apps: readonly App[];

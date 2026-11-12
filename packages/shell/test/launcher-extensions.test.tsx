@@ -9,7 +9,8 @@ import { viewFrame } from "../src/launcher/lib/extensions.ts";
 import { launcherIndex, launcherItems, outsideName } from "../src/launcher/lib/items.ts";
 import { found } from "../src/launcher/lib/rows.ts";
 import type { WorldSnapshot } from "../src/launcher/world.ts";
-import { app, mount, settle, unmountLauncher } from "./launcher-harness.tsx";
+import { app, mount, unmountLauncher } from "./launcher-harness.tsx";
+import { settle } from "./support/time.ts";
 
 // Wave 3 in the panel: rows from outside Dashi (applets' commands, your scripts, GNOME's search providers),
 // marked as theirs, below Dashi's own, and what a command asks to show after it ran.

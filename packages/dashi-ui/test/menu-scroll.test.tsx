@@ -2,7 +2,8 @@ import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
 import { MENU, menuHeight } from "../src/menu-place.ts";
 import { PopupMenu } from "../src/popup-menu.tsx";
-import { fakeHost, settle } from "./host.ts";
+import { fakeHost } from "./host.ts";
+import { settle } from "./support/time.ts";
 
 // A menu with more choices than the window has room for (Settings' "More…" in a short window)
 // is as tall as the window allows and scrolls its rows, so every choice can be reached.

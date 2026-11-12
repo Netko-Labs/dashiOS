@@ -4,6 +4,8 @@
  * can throw out of here.
  */
 
+import { isRecord } from "@dashi/shape";
+
 /** MCP revisions spoken here, newest first. Clients on 2026-07-28 probe
  * `server/discover` first; "method not found" makes them fall back to
  * `initialize` with one of these. */
@@ -33,14 +35,13 @@ export function parse(line: string): Incoming {
   }
   const invalid = (id: Id | null): Incoming => ({ kind: "invalid", id, code: INVALID_REQUEST, message: "Invalid request" });
   // Arrays (batches) left MCP in 2025-06-18.
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return invalid(null);
-  const message = value as Record<string, unknown>;
+  if (!isRecord(value)) return invalid(null);
+  const message = value;
   const id = isId(message.id) ? message.id : null;
   if (message.jsonrpc !== "2.0") return invalid(id);
   const hasId = "id" in message;
   if (typeof message.method === "string") {
-    const params =
-      typeof message.params === "object" && message.params !== null && !Array.isArray(message.params) ? (message.params as Record<string, unknown>) : {};
+    const params = isRecord(message.params) ? message.params : {};
     if (!hasId) return { kind: "notification", method: message.method, params };
     if (id === null) return invalid(null);
     return { kind: "request", id, method: message.method, params };

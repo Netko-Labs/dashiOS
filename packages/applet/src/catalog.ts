@@ -19,6 +19,7 @@
  * fetching and files are the store's and the shell's.
  */
 
+import { isRecord } from "@dashi/shape";
 import { isRefusal, list, optionalBoolean, optionalText, type Refusal, record, refuse, text } from "@dashi/shape/kit";
 import { compareVersions, dashiSatisfies, isAppletId, type Manifest, parseManifest } from "./manifest.ts";
 import { sha256 } from "./package.ts";
@@ -128,9 +129,9 @@ function parsePulled(value: unknown, where: string): PulledVersion[] | Refusal {
 
 /** What can be read of an entry that doesn't parse: the id its manifest names, and its pulled list. */
 function skippedApplet(value: unknown, reason: string): SkippedApplet {
-  const fields = typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+  const fields = isRecord(value) ? value : {};
   const manifest = fields.manifest;
-  const raw = typeof manifest === "object" && manifest !== null ? (manifest as Record<string, unknown>).id : undefined;
+  const raw = isRecord(manifest) ? manifest.id : undefined;
   const pulled = parsePulled(fields.pulled, "pulled");
   return { id: isAppletId(raw) ? raw : null, reason, pulled: isRefusal(pulled) ? [] : pulled };
 }

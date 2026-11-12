@@ -41,7 +41,7 @@ below, the same command CI runs (`.github/workflows/check.yml`);
 | H4 | Imports go one way: apps → `apps/kit` → `src/shared`. `src` never imports `apps`; an app never imports another app; apps reach `src` only through `src/shared`. | `scripts/check-structure.ts` (`import-ways`) | `bun scripts/check-structure.ts` |
 | H5 | No import cycles. | Biome `noImportCycles`; `scripts/check-biome.ts` (`import-cycles`) | `bun run fmt-lint`, `bun scripts/check-biome.ts` |
 | H6 | An `index.ts` only re-exports (`export … from`). An entry point is named `main.ts`, not `index.ts`. | `scripts/check-structure.ts` (`barrels`) | `bun scripts/check-structure.ts` |
-| H7 | Data from outside is parsed, never cast: no `JSON.parse(…) as T`, no `as T` on a value typed `unknown` or `any` (IPC, D-Bus, files, subprocesses). | `scripts/check-boundaries.ts` (`json-casts`, `unknown-casts`) | `bun scripts/check-boundaries.ts` |
+| H7 | Data from outside is parsed, never cast: no `JSON.parse(…) as T`, no `as T` on a value typed `unknown` or `any` (IPC, D-Bus, files, subprocesses), nor on what a hand-written check leaves of one (`object`, `{}`, a list of unknown; decisions.md D31). | `scripts/check-boundaries.ts` (`json-casts`, `unknown-casts`) | `bun scripts/check-boundaries.ts` |
 | H8 | The compositor is asked only through `src/compositor/client.ts`'s typed methods: no raw `request("…")` with an IPC method anywhere else. | `scripts/check-boundaries.ts` (`raw-requests`) | `bun scripts/check-boundaries.ts` |
 | H9 | The IPC has one definition: every method is in `docs/compositor-ipc.md`, has a type in both languages, and says whether only the shell may call it. | `cargo test` (`ipc::fixtures`: one request, reply and event per method, written from the Rust types to `test/fixtures/ipc/`, failing until they are committed) and `bun test` (`packages/shell/test/ipc-contract.test.ts`: every fixture parses with the shell's shapes; the method table, the doc and `src/compositor/table.ts` name the same methods with the same who, and the same events) | `cargo test -p dashi-comp ipc::fixtures && bun test packages/shell/test/ipc-contract.test.ts` |
 | H10 | Exported functions in `.ts` files have explicit return types. Components in `.tsx` are exempt. | `scripts/check-boundaries.ts` (`return-types`) | `bun scripts/check-boundaries.ts` |
@@ -400,7 +400,9 @@ packages/shell/src/menus/
   `@dashi/shape` (`packages/shape`), the one parser for outside data: a shape
   gives the parser (a typed value, or a refusal naming the field), the type
   (`Infer<typeof S>`, never written by hand beside it) and a JSON Schema.
-  Avoid ad hoc string manipulation, and private `isRecord`s: use the shape's.
+  Avoid ad hoc string manipulation, and private `isRecord`s: use the shape's
+  (`typeof x === "object"` followed by a cast is the same cast, and H7's
+  check counts it).
   Lists refuse at the first bad entry (`list`) unless losing one is harmless
   (`lenientList`, things on screen). `JSON.parse(…) as T` is a cast, not a
   parse (H7).

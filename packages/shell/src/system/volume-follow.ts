@@ -45,7 +45,10 @@ export class VolumeFollow {
       if (sameVolume(volume, this.target)) this.apply(volume);
       return;
     }
+    // The moment is over: this word is the newest, and nothing heard during the hold may come after it.
     this.target = null;
+    this.latest = undefined;
+    clearTimeout(this.timer);
     this.apply(volume);
   }
 

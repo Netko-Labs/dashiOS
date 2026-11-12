@@ -77,8 +77,8 @@ export function allowedFor(indexUrl: string, url: string): boolean {
 
 /** One saved entry → the catalog, or why not. */
 function parseEntry(value: unknown, at: string): CatalogSetting | string {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return `${at} must be an object`;
-  const fields = value as Record<string, unknown>;
+  if (!isRecord(value)) return `${at} must be an object`;
+  const fields = value;
   for (const key of Object.keys(fields)) if (!["name", "url", "key"].includes(key)) return `${at}.${key} means nothing`;
   if (!isName(fields.name)) return `${at}.name must be a name of 1 to ${MAX_CATALOG_NAME} characters`;
   if (typeof fields.url !== "string" || !isIndexAddress(fields.url)) return `${at}.url must be an https (or file://) address`;

@@ -151,7 +151,11 @@ export class DockController {
     }
     for (const window of windows) {
       deps.appQuitting?.(window.pid);
-      await deps.compositor?.close({ window: window.id }).catch(() => {});
+      await deps.compositor
+        ?.close({ window: window.id })
+        .catch((error) =>
+          console.error(`dashi-shell: the Dock couldn't close window ${window.id} to quit ${key}:`, error instanceof Error ? error.message : error),
+        );
     }
   }
 

@@ -42,16 +42,20 @@ export class PrivacyStore {
 
   /** Read the grants now and follow the store's changes; returns what stops it. */
   start(): () => void {
+    let stopped = false;
     void this.refresh();
     void this.store
       .watch(() => void this.refresh())
       .then((stop) => {
-        this.stopWatch = stop;
+        // Stopped while the bus was still subscribing: the watch ends as it starts.
+        if (stopped) stop();
+        else this.stopWatch = stop;
       })
       .catch(() => {
         // No store to hear: refresh() said so already.
       });
     return () => {
+      stopped = true;
       this.stopWatch?.();
       this.stopWatch = null;
     };
