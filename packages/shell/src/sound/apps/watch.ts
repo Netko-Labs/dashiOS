@@ -61,14 +61,47 @@ export interface PipeWireWatchOptions {
   readObject?: ReadObject;
 }
 
+/**
+ * Reads a metadata object again, whole, after each update to it. Updates are counted: a read that
+ * started before the latest is read again, and one from before pw-dump restarted is dropped.
+ */
+function metadataReader(
+  readObject: ReadObject,
+  watch: { generation(): number; following(): boolean; apply(text: string): void },
+): { updated(id: number): void } {
+  const updates = new Map<number, number>();
+  const reading = new Set<number>();
+  const reread = (id: number): void => {
+    if (reading.has(id)) return;
+    reading.add(id);
+    const seen = updates.get(id) ?? 0;
+    const started = watch.generation();
+    void readObject(id)
+      .catch(() => null)
+      .then((text) => {
+        reading.delete(id);
+        if (started !== watch.generation() || !watch.following()) return;
+        // An update came while reading: what was read may be older than it.
+        if ((updates.get(id) ?? 0) !== seen) {
+          reread(id);
+          return;
+        }
+        if (text !== null) watch.apply(text);
+      });
+  };
+  return {
+    updated(id) {
+      updates.set(id, (updates.get(id) ?? 0) + 1);
+      reread(id);
+    },
+  };
+}
+
 /** The session's one watcher: pw-dump runs from the first listener to the last one's stop. */
 export function pipewireWatch(options: PipeWireWatchOptions = {}): PipeWireWatch {
   const available = options.available ?? Bun.which("pw-dump") !== null;
   const follow = options.follow ?? followPipeWire();
   const readObject = options.readObject ?? readPipeWireObject;
-  /** Each metadata object's updates, counted: a read that started before the latest is read again. */
-  const updates = new Map<number, number>();
-  const reading = new Set<number>();
   /** Counts pw-dump's starts: a read from before a restart is dropped. */
   let generation = 0;
   const listeners = new Set<(objects: PipeWireObjects) => void>();
@@ -87,33 +120,19 @@ export function pipewireWatch(options: PipeWireWatchOptions = {}): PipeWireWatch
       for (const listener of [...listeners]) listener(objects);
     }, SETTLE_MS);
   };
-  const reread = (id: number): void => {
-    if (reading.has(id)) return;
-    reading.add(id);
-    const seen = updates.get(id) ?? 0;
-    const started = generation;
-    void readObject(id)
-      .catch(() => null)
-      .then((text) => {
-        reading.delete(id);
-        if (started !== generation || stopFollow === null) return;
-        // An update came while reading: what was read may be older than it.
-        if ((updates.get(id) ?? 0) !== seen) {
-          reread(id);
-          return;
-        }
-        if (text !== null && map.apply(text, { whole: true })) tell();
-      });
-  };
+  const metadata = metadataReader(readObject, {
+    generation: () => generation,
+    following: () => stopFollow !== null,
+    apply: (text) => {
+      if (map.apply(text, { whole: true })) tell();
+    },
+  });
   const begin = () => {
     stopFollow = follow(
       (line) => {
         let changed = false;
         for (const array of arrays.push(line)) changed = map.apply(array) || changed;
-        for (const id of map.takeMetadata()) {
-          updates.set(id, (updates.get(id) ?? 0) + 1);
-          reread(id);
-        }
+        for (const id of map.takeMetadata()) metadata.updated(id);
         if (changed) tell();
       },
       () => {

@@ -115,6 +115,55 @@ function setupContextOf(parts: {
   };
 }
 
+interface SessionParts {
+  options: SetupOptions;
+  page: PageId | undefined;
+  offersExtras: boolean;
+  extras: ExtrasStore;
+  /** Closes the session (Done, Skip Setup). */
+  close(): void;
+  /** The window went, with the person's answer if they gave one. */
+  onGone(session: Session, outcome: SetupOutcome | null): void;
+}
+
+/** One showing of the assistant: its flow, what it follows, and its window. */
+function newSession({ options, page, offersExtras, extras, close, onGone }: SessionParts): Session {
+  const flow = new Flow(machineOf(options.wifi, options.system, offersExtras), page ?? "welcome");
+  const follow = (): void => flow.setMachine(machineOf(options.wifi, options.system, offersExtras));
+  // Opened again while (or after) it installed: the Installing page is still there to see.
+  if (extras.getSnapshot().run.phase !== "idle") flow.setInstalling(true);
+  const stops = [options.wifi.subscribe(follow), options.system.subscribe(follow)];
+  // The Wi-Fi page needs to know whether there is a radio before it comes up.
+  void options.wifi.refresh();
+  const passwords = new PasswordPrompt(openOverlay, options.wifi);
+  // Set by Done or Skip Setup; a window that just went (its close button, or
+  // its host gone with the session) has none.
+  let outcome: SetupOutcome | null = null;
+  const current: Session = {
+    surface: null,
+    flow,
+    stop: () => {
+      for (const stop of stops) stop();
+      passwords.close();
+    },
+  };
+  const finish = (how: SetupOutcome): void => {
+    outcome = how;
+    close();
+  };
+  const ctx = setupContextOf({ options, flow, extras, passwords, finish });
+  stops.push(options.settings.watch());
+  current.surface = openOverlay(
+    { title: SETUP_TITLE, appId: SETUP_APP_ID, width: SETUP_WINDOW.width, height: SETUP_WINDOW.height, titleBar: "unified" },
+    <SetupWindow ctx={ctx} />,
+    () => {
+      onGone(current, outcome);
+      current.stop();
+    },
+  );
+  return current;
+}
+
 export function startSetupAssistant(options: SetupOptions): SetupAssistant {
   const { compositor } = options;
   const statePath = options.statePath ?? setupStatePath();
@@ -148,49 +197,20 @@ export function startSetupAssistant(options: SetupOptions): SetupAssistant {
       void raiseSetupWindow(compositor);
       return;
     }
-    const flow = new Flow(machineOf(options.wifi, options.system, offersExtras), page ?? "welcome");
-    const follow = (): void => flow.setMachine(machineOf(options.wifi, options.system, offersExtras));
-    // Opened again while (or after) it installed: the Installing page is still there to see.
-    if (extrasStore().getSnapshot().run.phase !== "idle") flow.setInstalling(true);
-    const stops = [options.wifi.subscribe(follow), options.system.subscribe(follow)];
-    // The Wi-Fi page needs to know whether there is a radio before it comes up.
-    void options.wifi.refresh();
-    const passwords = new PasswordPrompt(openOverlay, options.wifi);
-    // Set by Done or Skip Setup; a window that just went (its close button, or
-    // its host gone with the session) has none.
-    let outcome: SetupOutcome | null = null;
-    const current: Session = {
-      surface: null,
-      flow,
-      stop: () => {
-        for (const stop of stops) stop();
-        passwords.close();
-      },
-    };
-    session = current;
-    const ctx = setupContextOf({
+    session = newSession({
       options,
-      flow,
+      page,
+      offersExtras,
       extras: extrasStore(),
-      passwords,
-      finish: (how) => {
-        outcome = how;
-        close();
+      close,
+      // The window went (Done, Skip Setup, its close button, or its host died).
+      // Only Done and Skip Setup are the person's word; a closed window
+      // remembers nothing, so setup is offered again at the next login.
+      onGone: (gone, outcome) => {
+        if (outcome && !shuttingDown) rememberOutcome(outcome, statePath);
+        if (session === gone) session = null;
       },
     });
-    stops.push(options.settings.watch());
-    current.surface = openOverlay(
-      { title: SETUP_TITLE, appId: SETUP_APP_ID, width: SETUP_WINDOW.width, height: SETUP_WINDOW.height, titleBar: "unified" },
-      <SetupWindow ctx={ctx} />,
-      () => {
-        // The window went (Done, Skip Setup, its close button, or its host died).
-        // Only Done and Skip Setup are the person's word; a closed window
-        // remembers nothing, so setup is offered again at the next login.
-        if (outcome && !shuttingDown) rememberOutcome(outcome, statePath);
-        if (session === current) session = null;
-        current.stop();
-      },
-    );
   };
 
   const unregister = registerShellApp(SETUP_APP_ID, () => open());

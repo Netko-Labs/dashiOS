@@ -13,6 +13,43 @@ import { RenameField } from "./rename-field.tsx";
 
 const ROW = 26;
 
+interface NameCellProps {
+  item: FileItem;
+  selected: boolean;
+  /** It was cut: drawn faint until it is pasted. */
+  faded: boolean;
+  renaming: boolean;
+  emblems: React.ComponentProps<typeof FileIcon>["emblems"];
+}
+
+/** The Name column: the file's icon and its name, or the field it is renamed in. */
+function NameCell({ item, selected, faded, renaming, emblems }: NameCellProps) {
+  const colors = useColors();
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 7,
+        minWidth: 0,
+        flex: 1,
+        opacity: faded ? 0.45 : item.hidden ? 0.65 : 1,
+      }}
+    >
+      <FileIcon item={item} size={16} emblems={emblems} />
+      {renaming ? (
+        <RenameField item={item} />
+      ) : (
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text numberOfLines={1} style={{ fontSize: 12, color: selected ? colors.onSelection : colors.text }}>
+            {item.name}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
 export function ListView({ items, empty }: { items: readonly FileItem[]; empty: React.ReactNode }) {
   const { store, actions, ops } = useFiles();
   const state = useFilesState();
@@ -31,27 +68,7 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
           ? {
               ...column,
               cell: (item, selected) => (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 7,
-                    minWidth: 0,
-                    flex: 1,
-                    opacity: cut.has(item.path) ? 0.45 : item.hidden ? 0.65 : 1,
-                  }}
-                >
-                  <FileIcon item={item} size={16} emblems={store.emblems} />
-                  {state.renaming === item.path ? (
-                    <RenameField item={item} />
-                  ) : (
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text numberOfLines={1} style={{ fontSize: 12, color: selected ? colors.onSelection : colors.text }}>
-                        {item.name}
-                      </Text>
-                    </View>
-                  )}
-                </View>
+                <NameCell item={item} selected={selected} faded={cut.has(item.path)} renaming={state.renaming === item.path} emblems={store.emblems} />
               ),
             }
           : column,

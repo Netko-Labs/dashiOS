@@ -42,6 +42,30 @@ export const gridInset = (width: number): number =>
 /** A search result's folder, its middle taken out once to fit under the tile (never cut again at its end). */
 export const whereLine = (where: string): string => fitMiddle(where, WHERE_ROOM);
 
+/** The arrow on a link's picture. */
+function LinkBadge() {
+  const colors = useColors();
+  return (
+    <View
+      style={{
+        position: "absolute",
+        left: 0,
+        bottom: 0,
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: colors.menu,
+        borderWidth: 1,
+        borderColor: colors.separator,
+      }}
+    >
+      <Svg markup={LINK_BADGE} size={11} color={colors.text} />
+    </View>
+  );
+}
+
 function Tile({
   item,
   selected,
@@ -98,25 +122,7 @@ function Tile({
         ) : (
           <FileIcon item={item} size={PICTURE} emblems={store.emblems} />
         )}
-        {item.isLink && (
-          <View
-            style={{
-              position: "absolute",
-              left: 0,
-              bottom: 0,
-              width: 18,
-              height: 18,
-              borderRadius: 9,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: colors.menu,
-              borderWidth: 1,
-              borderColor: colors.separator,
-            }}
-          >
-            <Svg markup={LINK_BADGE} size={11} color={colors.text} />
-          </View>
-        )}
+        {item.isLink && <LinkBadge />}
       </View>
       <View style={{ width: TILE_WIDTH - 10, alignItems: "center" }}>
         {renaming ? (
