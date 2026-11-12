@@ -3,7 +3,7 @@ import { useConfirm } from "@dashi/ui";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render, View } from "@mirinjs/metal";
 import type { NewToken, TokenChange, TokenSummary } from "../src/agents/secrets/types.ts";
 import { parseHeaders, parseHosts, type TokenStore, Tokens, tokenDetail } from "../src/settings-app/lib/panes/tokens.tsx";
-import { settle } from "./support/time.ts";
+import { settle, shows, until } from "./support/time.ts";
 
 // Settings › Passwords' tokens on a stand-in for the Metal host: a vault of the test's, presses and typing as the host sends them.
 
@@ -35,6 +35,11 @@ function Harness({ tokens }: { tokens: TokenStore }) {
   );
 }
 
+/**
+ * The view, with every step waiting on the thing itself: a press or typing waits for its node to
+ * show, and a test waits for the sheet or the vault's call it expects. A fixed number of turns of
+ * the loop was not always enough for the list to load and the view to draw again, under load.
+ */
 async function mount(tokens: TokenStore) {
   const listeners: ((event: NativeEvent) => void)[] = [];
   const transport: NativeTransport = { send() {}, onEvent: (listener) => listeners.push(listener), onClose() {}, simulate() {}, close() {} };
@@ -43,16 +48,11 @@ async function mount(tokens: TokenStore) {
     for (const listener of listeners) listener(event);
     await settle();
   };
-  const node = (testID: string): string => {
-    const id = root.nodeId(testID);
-    if (!id) throw new Error(`no node ${testID}`);
-    return id;
-  };
-  await settle();
   return {
-    has: (testID: string) => root.nodeId(testID) !== null && root.nodeId(testID) !== undefined,
-    press: (testID: string) => emit({ type: "press", nodeId: node(testID) }),
-    type: (testID: string, value: string) => emit({ type: "change", nodeId: node(testID), value }),
+    shows: (testID: string) => shows(root, testID),
+    gone: (testID: string) => until(() => !root.nodeId(testID), `${testID} to go`),
+    press: async (testID: string) => emit({ type: "press", nodeId: await shows(root, testID) }),
+    type: async (testID: string, value: string) => emit({ type: "change", nodeId: await shows(root, testID), value }),
   };
 }
 
@@ -81,10 +81,11 @@ test("a token's line says where it goes and what agents hold; a model key says i
 test("a model key is added with its host and both of its SDKs' headers filled in", async () => {
   const { store, calls } = fakeVault([]);
   const view = await mount(store);
-  expect(view.has("tokens-none")).toBe(true);
+  await view.shows("tokens-none");
   await view.press("tokens-add-kind:anthropic");
   await view.type("tokens-add-token", "  sk-ant-test  ");
   await view.press("tokens-add-save");
+  await until(() => calls.saved.length > 0, "the token to be saved");
   expect(calls.saved).toEqual([
     { name: "anthropic", hosts: ["api.anthropic.com"], headers: ["x-api-key: {}", "Authorization: Bearer {}"], token: "sk-ant-test" },
   ]);
@@ -94,9 +95,10 @@ test("editing keeps the token unless a new one is typed", async () => {
   const { store, calls } = fakeVault([GITHUB]);
   const view = await mount(store);
   await view.press("token-edit:1");
-  expect(view.has("tokens-edit")).toBe(true);
+  await view.shows("tokens-edit");
   await view.type("tokens-edit-hosts", "api.github.com, uploads.github.com");
   await view.press("tokens-edit-save");
+  await until(() => calls.updated.length > 0, "the token to be updated");
   expect(calls.updated).toEqual([[1, { hosts: ["api.github.com", "uploads.github.com"], headers: ["Authorization: Bearer {}"] }]]);
 });
 
@@ -104,11 +106,12 @@ test("deleting asks on a sheet first, and Cancel keeps it", async () => {
   const { store, calls } = fakeVault([GITHUB]);
   const view = await mount(store);
   await view.press("token-delete:1");
-  expect(view.has("tokens-delete-sheet")).toBe(true);
+  await view.shows("tokens-delete-sheet");
   await view.press("tokens-delete-sheet:cancel");
+  await view.gone("tokens-delete-sheet");
   expect(calls.removed).toEqual([]);
-  expect(view.has("tokens-delete-sheet")).toBe(false);
   await view.press("token-delete:1");
   await view.press("tokens-delete-sheet:ok");
+  await until(() => calls.removed.length > 0, "the token to be removed");
   expect(calls.removed).toEqual([1]);
 });

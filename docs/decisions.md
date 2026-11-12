@@ -421,6 +421,45 @@ Numbered in the order they were written down; a new one goes at the end.
 - **Cost:** one more tool in `tools/list` (the fixture changed with it).
 - **Undo:** fold it into `set_app_volume` with a `side` argument.
 
+### D23. dashi-comp's renderer makes no fence per texture it draws
+
+- **Date:** 2026-11-11 (`dashi-0.8.0-review/03-bugs/cpu`).
+- **Question:** smithay's GLES renderer, when the card can (`Capability::Fencing`,
+  every GLES 3 card), waits on a fence and makes a new one after each quad it
+  draws from a texture. A fence flushes the GL context, so each frame flushed
+  once per surface, title bar and wallpaper piece drawn: about a seventh of
+  dashi-comp's time while a window scrolled. Keep them, patch smithay, or ask
+  for a renderer without that capability?
+- **Choice:** dashi-comp makes its renderers itself (`backend/udev/renderer.rs`)
+  with every capability the card has but `Fencing`. The frame's own fence for
+  the display (`ExportFence`) stays.
+- **Why:** the fences order reads and writes of one texture between EGL
+  contexts that share it. Dashi's share nothing: one context per card, used
+  only on the event loop, where GL runs in the order it is called. smithay
+  offers the choice (`GlesRenderer::with_capabilities`), so nothing is patched.
+- **Cost:** if dashi-comp ever draws from a second thread or shares a context
+  between cards, the fences must come back for those textures.
+- **Undo:** `GpuManager::new(GbmGlesBackend::default())` in
+  `backend/udev/start.rs`.
+
+### D24. Return goes ahead on the Log Out, Restart and Shut Down sheets
+
+- **Date:** 2026-11-11.
+- **Question:** those sheets took Esc only, "so a stray key cannot shut the
+  machine down", though their go-ahead button is drawn as the default one.
+  Design rule UI-6 lets Enter go ahead only when that is safe. Is it, here?
+- **Choice:** Return presses the default button (Log Out, Restart, Shut Down);
+  Esc cancels.
+- **Why:** going ahead loses nothing: every app is asked to close first, one
+  with unsaved changes asks the person, and the holding notice still has
+  Cancel. A sheet that draws a default button and ignores Return is a broken
+  promise. The stray key the old rule feared, the Return that chose the menu's
+  row, can't arrive: a held key doesn't repeat into a surface that got the
+  keyboard after it went down (GPUI stops its repeat when the keyboard leaves).
+- **Cost:** a Return pressed twice by mistake on "Restart…" restarts.
+- **Undo:** drop `onSubmit` on `ConfirmSheet`'s `KeyCatcher`
+  (`menus/lib/power-sheets.tsx`).
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its

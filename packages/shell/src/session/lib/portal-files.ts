@@ -25,10 +25,18 @@ export const CHECKOUT_UNIT = "dashi-portal-checkout.service";
 const MARKER = "# Written by Dashi's session for a checkout (packages/shell/src/session/portal-files.ts).";
 
 /**
- * The units a backend from an earlier session may still run in: the installed one, a checkout's, and the
- * transient unit the bus made when a service file named no unit (before this one did).
+ * The units a backend from an earlier session may still run in, as patterns: the installed one and a
+ * checkout's (`dashi-portal*.service`), and the transient unit the bus made when a service file named no
+ * unit (before this one did). Patterns, never plain names: `systemctl stop` of a name loads that unit
+ * first, a pattern only matches units systemd has loaded. The installed unit and a checkout's both claim
+ * the backend's bus name, and systemd holds a name for one loaded unit only, so stopping both by name
+ * loaded both and it refused the second ("Two services allocated for the same bus name", every time a
+ * checkout's session started on a machine with Dashi installed).
  */
-export const STALE_UNITS: readonly string[] = ["dashi-portal.service", CHECKOUT_UNIT, "dbus-*-org.freedesktop.impl.portal.desktop.dashi@*.service"];
+export const STALE_UNITS: readonly string[] = ["dashi-portal*.service", "dbus-*-org.freedesktop.impl.portal.desktop.dashi@*.service"];
+
+/** Whether stopping `unit` leaves a unit that is not loaded alone (a pattern; systemd.unit(7), systemctl(1)). */
+export const stopsOnlyLoaded = (unit: string): boolean => /[*?[]/.test(unit);
 
 type Env = Readonly<Record<string, string | undefined>>;
 

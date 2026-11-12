@@ -33,7 +33,7 @@ use crate::state::{ClientState, Dashi};
 fn client_pid(surface: &WlSurface) -> Option<i32> {
     surface
         .client()
-        .and_then(|client| client.get_data::<ClientState>().and_then(|data| data.pid))
+        .and_then(|client| client.get_data::<ClientState>().and_then(ClientState::pid))
 }
 
 impl Dashi {

@@ -1,6 +1,7 @@
 // The hard-rule checks' pure parts: what each counts as an offence.
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
+import { STEPS } from "../check.ts";
 import { ipcMethods } from "../check-boundaries.ts";
 import { allowed } from "../check-licenses.ts";
 import { barrelExtras, lineCount, specifiers, wrongWay } from "../check-structure.ts";
@@ -76,5 +77,14 @@ describe("typecheck", () => {
       const config: unknown = Bun.JSONC.parse(readFileSync(`${root}/${project}/tsconfig.json`, "utf8"));
       expect([project, JSON.stringify(config).includes('"isolatedModules":true')]).toEqual([project, true]);
     }
+  });
+});
+
+describe("bun run check", () => {
+  test("the licence notices are a step of their own (as a test they had 2 s, too few under load)", () => {
+    const step = STEPS.find((each) => each.command.join(" ") === "bun spin/license-dependencies --check");
+    expect(step).toBeDefined();
+    // Not in check:fast: it asks Cargo about five trees.
+    expect(step?.fast).toBeUndefined();
   });
 });

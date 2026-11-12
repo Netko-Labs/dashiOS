@@ -1,5 +1,7 @@
 import { expect, test } from "bun:test";
-import { busyWait, type Clock, Hands, PersonBusy, QUIET_MS, WAIT_MS } from "../src/agents/desktop/hands.ts";
+import type { RunContext } from "../src/agents/context.ts";
+import { busyWait, type Clock, Hands, PersonBusy, QUIET_MS, readsOnePersonSeat, WAIT_MS } from "../src/agents/desktop/hands.ts";
+import { handsCall } from "../src/agents/desktop/input.ts";
 import { describePerson } from "../src/agents/desktop/lib/input-words.ts";
 import type { CompositorEvent } from "../src/compositor/events.ts";
 import { fakeCompositor } from "./support/compositor.ts";
@@ -139,4 +141,48 @@ test("the compositor's refusal names the wait; an older one without it means a w
   expect(busyWait("the person is using the desktop (free in 1200 ms)")).toBe(1200);
   expect(busyWait("the person is using the desktop")).toBe(QUIET_MS);
   expect(busyWait("the person is using the desktop (free in 99999 ms)")).toBe(QUIET_MS);
+});
+
+// Files, a Metal window: it hears only the person's seat, so every step of a drag borrows it.
+const FILES = { id: 5, appId: "dev.dashi.files", title: "Home", state: "normal", frame: { x: 0, y: 0, width: 400, height: 300 }, titleBar: 0 };
+
+/** What `drag` needs of a run: the window, the hands, and nothing said. */
+const run = (hands: Hands): RunContext =>
+  ({ compositor: { windows: async () => [FILES] }, hands, agent: "Claude", status: () => {}, mayName: () => false }) as unknown as RunContext;
+
+const dragCall = { name: "drag", window: FILES.id, from: { x: 10, y: 10 }, to: { x: 90, y: 50 } } as const;
+
+test("an agent drags in a Metal window: press, moves and release on the person's seat, borrowed", async () => {
+  expect(readsOnePersonSeat(FILES.appId)).toBe(true);
+  const vm = desktop();
+  vm.advance(10_000);
+  const result = await handsCall(dragCall, run(new Hands(vm.compositor, vm.clock)));
+  expect(result.isError).toBeUndefined();
+  expect(result.content[0]).toEqual({ type: "text", text: "Dragged in w5 from (10, 10) to (90, 50)." });
+  expect(vm.sent.map((sent) => sent.action)).toEqual(["press", "move", "move", "move", "move", "move", "move", "move", "release"]);
+  expect(vm.sent.every((sent) => (sent.borrow as { idleMs: number }).idleMs === QUIET_MS)).toBe(true);
+  expect(vm.sent[0]?.pointer).toEqual({ x: 10, y: 10 });
+  expect(vm.sent.at(-1)?.pointer).toEqual({ x: 90, y: 50 });
+});
+
+test("the person coming back mid-drag ends it at once: the button is let go, and the result says where", async () => {
+  const vm = desktop();
+  vm.advance(10_000);
+  let gaps = 0;
+  // The person presses a key during the third gap between steps.
+  const clock: Clock = {
+    now: vm.clock.now,
+    sleep: async (ms) => {
+      await vm.clock.sleep(ms);
+      if (++gaps === 3) vm.press(null);
+    },
+  };
+  const start = vm.clock.now();
+  const result = await handsCall(dragCall, run(new Hands(vm.compositor, clock)));
+  expect(result.isError).toBe(true);
+  const words = result.content[0];
+  expect(words?.type === "text" && words.text).toContain("The person started using the desktop midway, so the drag was let go at (30, 20)");
+  // Two moves got through; the third was refused and not waited out; then everything is let go.
+  expect(vm.sent.map((sent) => sent.action ?? (sent.release ? "let go" : null))).toEqual(["press", "move", "move", "let go"]);
+  expect(vm.clock.now() - start).toBeLessThan(WAIT_MS / 10);
 });

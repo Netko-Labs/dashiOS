@@ -25,7 +25,9 @@ const MINUTE = 60_000;
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "dashi-editor-autosave-"));
   // Just after the files the tests write: a version of a file as opened is from when it was written.
-  clock = Date.now() + MINUTE;
+  // The disk's own time, not `Date.now()`: the files' times are the disk's whatever clock a test
+  // before this one stopped and left stopped.
+  clock = statSync(dir).mtimeMs + MINUTE;
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -97,9 +99,7 @@ describe("saving on its own", () => {
     expect(listed.map((version) => version.kind)).toEqual(["saved", "opened"]);
     expect(editor.versionText(listed[0] as Version)).toBe("draft two");
 
-    // A tick later, so the version Revert keeps is the newest: two versions from one
-    // millisecond list in the folder's order, which differs between file systems.
-    clock += 1;
+    // Within the same millisecond as ❖S: what Revert keeps is still the newest.
     expect(editor.revertTo(listed[1] as Version)).toBe(true);
     expect(editor.getSnapshot()).toMatchObject({ text: "draft one", undoName: "Revert" });
     editor.autosave();
@@ -215,6 +215,12 @@ describe("versions", () => {
     expect(statSync(join(dir, "v", folder as string, "1800-saved.txt")).mode & 0o777).toBe(0o600);
     expect(readFileSync(join(dir, "v", folder as string, "path"), "utf8")).toBe("/home/a/x.txt");
     expect(versionsDir({ XDG_STATE_HOME: "/s" })).toBe("/s/dashi/editor/versions");
+    // Kept within one millisecond, they still list newest first, whatever order the folder holds them in.
+    const quick = new VersionStore(join(dir, "quick"));
+    for (const kind of ["opened", "auto", "saved", "auto"] as const)
+      quick.add("/home/a/z.txt", `${kind} ${quick.list("/home/a/z.txt").length}`, kind, 5000, 6000);
+    expect(quick.list("/home/a/z.txt").map((version) => `${version.time} ${version.kind}`)).toEqual(["5003 auto", "5002 saved", "5001 auto", "5000 opened"]);
+    expect(quick.read("/home/a/z.txt", { time: 5003, kind: "auto" })).toBe("auto 3");
   });
 
   test("thin out: all of the last hour, one an hour for a day, one a day for a month", () => {

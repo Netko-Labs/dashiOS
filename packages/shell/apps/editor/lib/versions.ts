@@ -105,13 +105,17 @@ export class VersionStore {
   /**
    * Keeps `text` as a version of `path` from `time`, unless it is what the
    * newest already holds; then thins the old ones. Whether it was kept.
+   * A version kept later is never listed before an earlier one: its time is
+   * at least a millisecond after the newest's. A quick save writes the file
+   * twice within one millisecond, and versions from the same one listed in
+   * the folder's order, which differs between file systems.
    */
   add(path: string, text: string, kind: VersionKind, time: number, now: number = Date.now()): boolean {
     const folder = this.folder(path);
     const versions = this.list(path);
     const newest = versions[0];
     if (newest && this.read(path, newest) === text) return false;
-    const version = { time: Math.round(time), kind };
+    const version = { time: Math.max(Math.round(time), (newest?.time ?? Number.NEGATIVE_INFINITY) + 1), kind };
     const file = join(folder, fileName(version));
     const partial = `${file}.writing`;
     try {

@@ -74,7 +74,8 @@ crates/dashi-comp/src/
                     EDID, keyboard lights (keyboards.rs), VRR (vrr.rs), the
                     graphics card let go while nothing needs it (sleep.rs; its
                     state machine lifecycle.rs, probes probe.rs, buffers
-                    imports.rs, a card gone while open gone.rs)
+                    imports.rs, a card gone while open gone.rs), each card's
+                    GLES renderer, with no fence per texture drawn (renderer.rs)
     winit.rs        nested in another compositor's window (a second, virtual
                     screen beside it with DASHI_NESTED_SCREEN=WxH)
     headless.rs     no screens drawn: IPC and protocol tests (more than one
@@ -109,7 +110,7 @@ crates/dashi-comp/src/
   ipc/              socket, framing, who connected, the method table (who may ask what), methods/
   background.rs     blocking work (PNG encoding, file IO) on a thread, back as a calloop event
   outputs/          `outputs`, `output`, `outputs-config`, VRR modes, `mirror` (mirror.rs)
-  session/          the session client, trust, lock, idle, agent input
+  session/          the session client, trust, a socket's peer held by a pidfd (process.rs), lock, idle, agent input
   wallpaper/        pictures, video (GStreamer), live looks
 ```
 
@@ -278,7 +279,9 @@ Each milestone ends with the shell running on it in the VM.
   bar, all four on a unified window, and all four on a window that draws its
   own frame while it is maximized (Fill: its own corners and shadow go then);
   a texture shader on the main surface (render/rounded.rs), so such a surface
-  is never scanned out directly.
+  is never scanned out directly. It is opaque where its client says, less the
+  cut corners (render/rounded/corners.rs), so a frame of the window in front
+  draws nothing of what is behind it but through those corners.
 - **Depth between windows (done, 0.4.0):** the shell's `window-style` look:
   a shadow under each window (deeper on the focused one, cross-faded), a
   hairline just inside its frame, an optional ring outside the focused one's;

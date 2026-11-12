@@ -1,21 +1,23 @@
 //! A minimal Wayland client for the tests: one xdg toplevel that draws a
 //! solid shm buffer once it is configured; a movable one asks to be moved
 //! (xdg_toplevel.move) when a button is pressed in it, as apps that draw
-//! their own title bars do. It can open dialogs too: more toplevels whose
-//! xdg parent is the first.
+//! their own title bars do; a listening one only notes what its pointer hears
+//! (client/pointer.rs). It can open dialogs too: more toplevels whose xdg
+//! parent is the first.
+
+mod pointer;
 
 use std::{io::Write, os::fd::AsFd, path::Path};
 
 use wayland_client::{
     Connection, Dispatch, EventQueue, QueueHandle, delegate_noop,
     globals::{GlobalListContents, registry_queue_init},
-    protocol::{
-        wl_buffer, wl_compositor, wl_pointer, wl_registry, wl_seat, wl_shm, wl_shm_pool, wl_surface,
-    },
+    protocol::{wl_buffer, wl_compositor, wl_registry, wl_seat, wl_shm, wl_shm_pool, wl_surface},
 };
 use wayland_protocols::xdg::shell::client::{xdg_surface, xdg_toplevel, xdg_wm_base};
 
 pub struct Client {
+    globals: wayland_client::globals::GlobalList,
     queue: EventQueue<State>,
     pub state: State,
     compositor: wl_compositor::WlCompositor,
@@ -41,8 +43,13 @@ pub struct State {
     mover: Option<(wl_seat::WlSeat, xdg_toplevel::XdgToplevel)>,
     /// Moves asked for.
     pub moves: usize,
-    /// The pointer is over the window (entered and not left; a movable window's).
+    /// The pointer is over the window (entered and not left; a movable or listening window's).
     pub pointer_in: bool,
+    /// What the pointer heard, in order: its buttons (pressed or let go) and how often it moved.
+    pub buttons: Vec<bool>,
+    pub motions: usize,
+    /// A listening window's seat, kept so its pointer lives.
+    listens: Option<wl_seat::WlSeat>,
     /// Dialogs opened (`open_dialog`), by their xdg_surface's number (1 on).
     dialogs: Vec<Dialog>,
 }
@@ -56,6 +63,22 @@ impl Client {
     /// A window that asks to be moved when a button is pressed in it.
     pub fn open_movable(runtime_dir: &Path, display: &str, app_id: &str, title: &str) -> Self {
         Self::open_with(runtime_dir, display, app_id, title, true)
+    }
+
+    /// A window that hears the pointer (`state.buttons`, `state.motions`) and does nothing with it.
+    pub fn open_listening(runtime_dir: &Path, display: &str, app_id: &str, title: &str) -> Self {
+        let mut client = Self::open(runtime_dir, display, app_id, title);
+        let stream = client.queue.handle();
+        let seat: wl_seat::WlSeat = client.globals.bind(&stream, 1..=7, ()).expect("wl_seat");
+        seat.get_pointer(&stream, ());
+        client.state.listens = Some(seat);
+        client.roundtrip();
+        client
+    }
+
+    /// Hear everything the compositor has sent so far.
+    pub fn roundtrip(&mut self) {
+        self.queue.roundtrip(&mut self.state).expect("a roundtrip");
     }
 
     fn open_with(
@@ -93,6 +116,7 @@ impl Client {
         };
         queue.roundtrip(&mut state).expect("a roundtrip");
         Self {
+            globals,
             queue,
             state,
             compositor,
@@ -243,35 +267,6 @@ impl Dispatch<xdg_toplevel::XdgToplevel, ()> for State {
     ) {
         if let xdg_toplevel::Event::Close = event {
             state.closed = true;
-        }
-    }
-}
-
-impl Dispatch<wl_pointer::WlPointer, ()> for State {
-    fn event(
-        state: &mut Self,
-        _: &wl_pointer::WlPointer,
-        event: wl_pointer::Event,
-        _: &(),
-        _: &Connection,
-        _: &QueueHandle<Self>,
-    ) {
-        match event {
-            wl_pointer::Event::Enter { .. } => state.pointer_in = true,
-            wl_pointer::Event::Leave { .. } => state.pointer_in = false,
-            _ => {}
-        }
-        let wl_pointer::Event::Button {
-            serial,
-            state: wayland_client::WEnum::Value(wl_pointer::ButtonState::Pressed),
-            ..
-        } = event
-        else {
-            return;
-        };
-        if let Some((seat, toplevel)) = &state.mover {
-            toplevel._move(seat, serial);
-            state.moves += 1;
         }
     }
 }

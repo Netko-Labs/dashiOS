@@ -1,8 +1,9 @@
 /**
  * What the packages ship: the privileged helpers' systemd sandboxes
- * (scripts/check-units.ts), the generated license notices (spin/license-dependencies),
- * a %license in every spec, and Dashi's own libraries in the shell's node_modules. The first two
- * need systemd-analyze and Cargo's crate sources; they skip where those are missing.
+ * (scripts/check-units.ts), a %license in every spec, and Dashi's own libraries in the shell's
+ * node_modules. The first needs systemd-analyze and skips where it is missing. The generated
+ * license notices (spin/license-dependencies --check) are a step of `bun run check`, not a test:
+ * it reads five crates' trees, which no test's 2 s can promise.
  */
 
 import { describe, expect, test } from "bun:test";

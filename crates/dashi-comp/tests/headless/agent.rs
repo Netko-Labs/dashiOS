@@ -139,3 +139,46 @@ fn without_its_own_seat_an_agent_waits_for_the_person() {
         "{refused}"
     );
 }
+
+/// A drag in a window that hears only the person's seat (Metal's, Chromium's): press, moves and
+/// release are separate requests on the borrowed seat, and `release` lets go there too.
+#[test]
+fn an_agent_drags_on_the_persons_seat_and_lets_go_of_it() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut client =
+        Client::open_listening(compositor.dir.path(), &display, "dev.dashi.test", "Drag");
+    let id = wait_event(&mut ipc, &mut client, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request("place", json!({ "window": id, "x": 100, "y": 50 }));
+    wait_event(&mut ipc, &mut client, "window-opened");
+    let mut step = |x: i64, action: &str| {
+        let input = json!({
+            "window": id, "label": "Claude", "borrow": { "idleMs": 0 },
+            "pointer": { "x": x, "y": 30 }, "action": action,
+        });
+        assert_eq!(ipc.request("agent-input", input)["result"], json!({}));
+    };
+    step(20, "press");
+    step(40, "move");
+    step(60, "move");
+    step(80, "release");
+    client.roundtrip();
+    assert_eq!(client.state.buttons, [true, false], "pressed, then let go");
+    assert!(client.state.motions >= 3, "it moved between them");
+
+    // A drag cut short (the stop key, the person back): the button is let go on the seat it is held on.
+    step(20, "press");
+    assert_eq!(
+        ipc.request("agent-input", json!({ "release": true }))["result"],
+        json!({})
+    );
+    client.roundtrip();
+    assert_eq!(client.state.buttons, [true, false, true, false]);
+}

@@ -64,6 +64,7 @@ impl Rounding {
             self.radius,
             self.top,
             window,
+            self.reach,
         )
     }
 }

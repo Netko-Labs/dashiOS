@@ -31,13 +31,18 @@ const COPY: Record<PowerKind, { question: string; detail: string; button: string
   },
 };
 
-/** Esc cancels; Enter does not confirm, so a stray key cannot shut the machine down. */
+/**
+ * Esc cancels and Return presses the default button, the one that goes ahead (decisions.md D24):
+ * going ahead loses nothing, since an app with unsaved changes asks first and the person can
+ * still cancel there. The Return that chose the menu's row can't reach it: a held key does not
+ * repeat into a surface that got the keyboard after it went down.
+ */
 export function ConfirmSheet({ what, onConfirm, onCancel }: { what: PowerKind; onConfirm: () => void; onCancel: () => void }) {
   const colors = useColors();
   const copy = COPY[what];
   return (
     <Panel>
-      <KeyCatcher onKey={(key) => key === "Escape" && onCancel()} />
+      <KeyCatcher testID="sheet-keys" onKey={(key) => key === "Escape" && onCancel()} onSubmit={onConfirm} />
       <Svg markup={LOGO} size={34} color={colors.text} />
       <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{copy.question}</Text>
       <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>{copy.detail}</Text>
