@@ -46,6 +46,34 @@ export interface Packed {
   sha256: string;
 }
 
+/** The build in flight: a build changes the process's folder while it runs, so one runs at a time. */
+let building: Promise<unknown> = Promise.resolve();
+
+/** `Bun.build` of `entry`, run in `dir` (the header says why): after any build before it, so two never swap folders under each other. */
+function buildIn(dir: string, entry: string): Promise<Awaited<ReturnType<typeof Bun.build>>> {
+  const run = async (): Promise<Awaited<ReturnType<typeof Bun.build>>> => {
+    const from = process.cwd();
+    process.chdir(dir);
+    try {
+      return await Bun.build({
+        entrypoints: [resolve(dir, entry)],
+        target: "bun",
+        format: "esm",
+        minify: false,
+        sourcemap: "none",
+        // React and friends in their production builds, whatever the shell running pack has set.
+        define: { "process.env.NODE_ENV": JSON.stringify("production") },
+        plugins: [singletons(dir)],
+      });
+    } finally {
+      process.chdir(from);
+    }
+  };
+  const built = building.then(run, run);
+  building = built.catch(() => {});
+  return built;
+}
+
 /** Builds the applet in `dir` (its applet.json, its entry) into a package. */
 export async function pack(dir: string): Promise<Packed> {
   const manifestPath = join(dir, "applet.json");
@@ -53,23 +81,7 @@ export async function pack(dir: string): Promise<Packed> {
   const manifestText = readFileSync(manifestPath, "utf8");
   const manifest = readManifest(manifestText);
   if ("error" in manifest) throw new Error(`applet.json: ${manifest.error}`);
-  // React and friends in their production builds, whatever the shell running pack has set.
-  const from = process.cwd();
-  process.chdir(resolve(dir));
-  let built: Awaited<ReturnType<typeof Bun.build>>;
-  try {
-    built = await Bun.build({
-      entrypoints: [resolve(dir, manifest.entry)],
-      target: "bun",
-      format: "esm",
-      minify: false,
-      sourcemap: "none",
-      define: { "process.env.NODE_ENV": JSON.stringify("production") },
-      plugins: [singletons(resolve(dir))],
-    });
-  } finally {
-    process.chdir(from);
-  }
+  const built = await buildIn(resolve(dir), manifest.entry);
   if (!built.success) throw new Error(`the build failed:\n${built.logs.map((log) => String(log)).join("\n")}`);
   const output = built.outputs.find((each) => each.kind === "entry-point");
   if (!output) throw new Error("the build made no entry point");
