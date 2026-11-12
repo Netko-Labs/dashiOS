@@ -554,7 +554,10 @@ bun run publish                 # the pull request to the catalog, prepared in a
 ```
 
 `dev` runs the applet from source, not sandboxed (it is the developer's own
-code). The log reads like this:
+code). `--vm` draws its popover with the checkout's Metal host once it is
+built (`../mirin/crates/mirin-metal/target/release/mirin-metal-host`, as
+`vm/dev-session` takes it), else with the VM's installed one; a
+`DASHI_METAL_HOST` already set is kept. The log reads like this:
 
 ```
   18:40:01 hello as dev.example.weather 0.1.0
