@@ -8,6 +8,7 @@
  */
 
 import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { captureWithTimeout, importSessionEnvironment, runWithTimeout } from "./lib/environment.ts";
 import { startKeyring } from "./lib/keyring.ts";
 import { watchCompositor } from "./lib/parent.ts";
@@ -15,7 +16,7 @@ import { Service, type ServiceDeps, type ServiceSpec } from "./lib/service.ts";
 import { log, systemDeps } from "./lib/system.ts";
 import { startSessionTarget, stopSessionTarget } from "./lib/target.ts";
 
-const shellDir = new URL("../../", import.meta.url).pathname;
+const shellDir = fileURLToPath(new URL("../../", import.meta.url));
 
 /** The services of a session; add the ones that should outlive the shell here. */
 export function sessionServices(): ServiceSpec[] {

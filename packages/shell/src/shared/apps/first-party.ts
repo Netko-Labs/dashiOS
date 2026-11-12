@@ -7,6 +7,7 @@
  */
 
 import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { type App, iconPath } from "./list.ts";
 
 export interface FirstPartySpec {
@@ -159,7 +160,7 @@ export const FIRST_PARTY: readonly FirstPartySpec[] = [
 ];
 
 /** The shell's folder, with a trailing slash. */
-export const shellDir = new URL("../../../", import.meta.url).pathname;
+export const shellDir = fileURLToPath(new URL("../../../", import.meta.url));
 
 /** The command that starts `spec`: this Bun on its main.tsx, from the shell's folder (its tsconfig and node_modules). */
 export function firstPartyApp(spec: FirstPartySpec, bun: string = process.execPath, root: string = shellDir): App {

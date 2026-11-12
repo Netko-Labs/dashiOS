@@ -4,6 +4,7 @@
  */
 
 import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import type { Entry } from "../shared/app-entries/index.ts";
 import { spawnDetached } from "../shared/apps/index.ts";
 
@@ -19,7 +20,7 @@ export function findEntry(entries: readonly Entry[], appId: string): Entry | und
 }
 
 /** Dashi's README, which is the help until there is a manual. */
-export const README = new URL("../../../../README.md", import.meta.url).pathname;
+export const README = fileURLToPath(new URL("../../../../README.md", import.meta.url));
 
 /** `xdg-open <readme>`, or null where either is missing (the row is then disabled). */
 export function helpCommand(

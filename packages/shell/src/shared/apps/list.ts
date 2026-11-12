@@ -6,6 +6,7 @@
  */
 
 import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 /** An app as the Dock, the launcher and the apps that open others see it. */
 export interface App {
@@ -23,8 +24,8 @@ export interface App {
   gpu?: "discrete";
 }
 
-const icons = new URL("../../../icons/", import.meta.url).pathname;
-const mirin = new URL("../../../../../../mirin/", import.meta.url).pathname;
+const icons = fileURLToPath(new URL("../../../icons/", import.meta.url));
+const mirin = fileURLToPath(new URL("../../../../../../mirin/", import.meta.url));
 
 export function iconPath(name: string): string {
   return `${icons}${name}.svg`;
@@ -60,7 +61,7 @@ interface PinnedSpec {
   inDock?: false;
 }
 
-const shellRoot = new URL("../../../", import.meta.url).pathname;
+const shellRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 const PINNED: readonly PinnedSpec[] = [
   {

@@ -7,6 +7,7 @@
  */
 
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { appletDataRoot, appletsRoot, appletsSocketPath, type InstalledApplet, type Placement, SDK_VERSION } from "@dashi/applet";
 import { View } from "@mirinjs/metal";
 import { watchKillSwitch } from "../applet-store/index.ts";
@@ -127,7 +128,7 @@ export function startApplets({ compositor, extras, openOverlay, primary, command
         context,
         bun: process.execPath,
         metalHost: METAL_HOST,
-        runScript: new URL("../../bin/dashi-applet-run.ts", import.meta.url).pathname,
+        runScript: fileURLToPath(new URL("../../bin/dashi-applet-run.ts", import.meta.url)),
         dashiVersion: SDK_VERSION,
         askConsent,
         onInstalled: (applets: readonly InstalledApplet[]) => {
