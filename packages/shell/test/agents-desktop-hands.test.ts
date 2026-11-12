@@ -186,3 +186,26 @@ test("the person coming back mid-drag ends it at once: the button is let go, and
   expect(vm.sent.map((sent) => sent.action ?? (sent.release ? "let go" : null))).toEqual(["press", "move", "move", "let go"]);
   expect(vm.clock.now() - start).toBeLessThan(WAIT_MS / 10);
 });
+
+test("the person coming back mid-scroll: what was scrolled stays, and the result says how far it got", async () => {
+  const vm = desktop();
+  vm.advance(10_000);
+  let gaps = 0;
+  // The person comes back in the gap after the second of five flicks, and keeps at it past the wait.
+  const clock: Clock = {
+    now: vm.clock.now,
+    sleep: async (ms) => {
+      await vm.clock.sleep(ms);
+      if (++gaps >= 2) vm.press(null);
+    },
+  };
+  const call = { name: "scroll", window: FILES.id, x: 40, y: 40, dx: 0, dy: 600 } as const;
+  const result = await handsCall(call, run(new Hands(vm.compositor, clock)));
+  expect(vm.sent.map((sent) => sent.scroll)).toEqual([
+    { dx: 0, dy: 120 },
+    { dx: 0, dy: 120 },
+  ]);
+  expect(result.isError).toBe(true);
+  const words = result.content[0];
+  expect(words?.type === "text" && words.text).toContain("so the scroll stopped after (0, 240) of (0, 600)");
+});

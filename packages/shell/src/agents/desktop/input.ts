@@ -13,7 +13,7 @@ import { type RunContext, type ToolResult, text, toolError } from "../context.ts
 import { named, noWindow, subject } from "../lib/subject.ts";
 import { type Call, keySteps } from "../tools/index.ts";
 import { type Patience, type Payload, PersonBusy } from "./hands.ts";
-import { describeCutDrag, describePerson, desktopChordRefusal, wheelFlicks } from "./lib/input-words.ts";
+import { describeCutDrag, describeCutScroll, describePerson, desktopChordRefusal, wheelFlicks } from "./lib/input-words.ts";
 
 type InputCall = Extract<Call, { name: "click" | "scroll" | "drag" | "type_text" | "press_keys" }>;
 
@@ -85,11 +85,7 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
         const problem = inside(window, size, [call]);
         if (problem) return problem;
         say(`Scrolling ${where}`);
-        for (const [n, flick] of wheelFlicks(call.dx, call.dy).entries()) {
-          if (n > 0) await sleep(WHEEL_FLICK_MS);
-          await send({ pointer: { x: call.x, y: call.y }, action: "scroll", scroll: flick });
-        }
-        return text(`Scrolled w${window.id} by (${call.dx}, ${call.dy}) at ${at(call.x, call.y)}.`);
+        return await scroll(call, window.id, send, ctx);
       }
       case "drag": {
         const problem = inside(window, size, [call.from, call.to]);
@@ -132,6 +128,32 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
     if (error instanceof PersonBusy) return describePerson(error);
     return toolError(error instanceof Error ? error.message : String(error));
   }
+}
+
+/**
+ * A scroll, as flicks a frame apart. The first waits for the person to pause, as a click does; if
+ * they come back before the last, the result says how far it got: the flicks sent stay scrolled.
+ */
+async function scroll(
+  call: Extract<InputCall, { name: "scroll" }>,
+  id: number,
+  send: (payload: Payload, patience?: Patience) => Promise<void>,
+  ctx: RunContext,
+): Promise<ToolResult> {
+  const flicks = wheelFlicks(call.dx, call.dy);
+  let sent = 0;
+  try {
+    for (const flick of flicks) {
+      if (sent > 0) await ctx.hands.pause(WHEEL_FLICK_MS);
+      await send({ pointer: { x: call.x, y: call.y }, action: "scroll", scroll: flick });
+      sent++;
+    }
+  } catch (error) {
+    if (!(error instanceof PersonBusy) || sent === 0) throw error;
+    const part = sent / flicks.length;
+    return describeCutScroll(error, { dx: Math.round(call.dx * part), dy: Math.round(call.dy * part) }, call);
+  }
+  return text(`Scrolled w${id} by (${call.dx}, ${call.dy}) at ${at(call.x, call.y)}.`);
 }
 
 /**
