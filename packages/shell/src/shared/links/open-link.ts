@@ -34,13 +34,15 @@ export function parseLinkAnswer(text: string): LinkAnswer {
 /** Open `url` in the running session. Never throws: a session that isn't there is an answer too. */
 export async function openLink(url: string, path: string = linksSocketFor()): Promise<LinkAnswer> {
   let answer = "";
+  // One decoder for the connection: a character cut between two chunks is held until the rest arrives.
+  const decoder = new TextDecoder();
   const done = Promise.withResolvers<void>();
   try {
     const socket = await Bun.connect({
       unix: path,
       socket: {
         data(_socket, data) {
-          answer += new TextDecoder().decode(data);
+          answer += decoder.decode(data, { stream: true });
         },
         close() {
           done.resolve();
