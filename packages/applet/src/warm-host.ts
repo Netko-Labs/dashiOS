@@ -9,8 +9,16 @@
  * megabytes of its own (the rest is the shared binary and libraries). A host
  * binary from before deferred hosts (`MIRIN_METAL_DEFERRED`) is never kept
  * warm: it would open a stray window.
+ *
+ * No host is started while the compositor isn't there (its socket refuses:
+ * the session ended, or the compositor went and the sandbox still shows the
+ * old socket): a host with no compositor panics, and one every 1.5 s filled
+ * the journal. It looks again later instead, each time twice as long after
+ * (up to `REWARM_MAX_MS`), and so does one whose host died before it was
+ * taken; a host that is taken puts the wait back.
  */
 
+import { join } from "node:path";
 import { type NativeHostOptions, type NativeHostTransport, type NativeWindowOptions, spawnNativeHost } from "@mirinjs/metal";
 
 export type Spawn = (binary: string, options: NativeHostOptions) => NativeHostTransport;
@@ -19,6 +27,13 @@ export type Spawn = (binary: string, options: NativeHostOptions) => NativeHostTr
 export const WARM_AFTER_MS = 3000;
 /** How long after one is taken (or dies) the next starts, so the two don't compete. */
 export const REWARM_MS = 1500;
+/** The longest wait between tries while hosts fail to start (no compositor, a GPU that is gone). */
+export const REWARM_MAX_MS = 5 * 60_000;
+
+/** How long to wait after `failures` hosts in a row didn't last until they were taken. */
+export function rewarmDelay(failures: number): number {
+  return Math.min(REWARM_MS * 2 ** Math.min(failures, 16), REWARM_MAX_MS);
+}
 
 /** Timers, for tests. */
 export interface WarmTimers {
@@ -48,6 +63,8 @@ export interface WarmHostOptions {
   appName: string;
   /** Whether the binary knows deferred hosts (`hostSupportsDeferred`). */
   supports?: (binary: string) => Promise<boolean>;
+  /** Whether the compositor answers (`compositorIsThere`). */
+  reachable?: () => Promise<boolean>;
   spawn?: Spawn;
   timers?: WarmTimers;
 }
@@ -56,6 +73,8 @@ export class WarmHost {
   private spare: NativeHostTransport | null = null;
   private timer: unknown = null;
   private stopped = false;
+  /** Hosts in a row that didn't start, or died before they were taken. */
+  private failures = 0;
   private supported: Promise<boolean> | null = null;
   private readonly spawn: Spawn;
   private readonly timers: WarmTimers;
@@ -75,6 +94,7 @@ export class WarmHost {
     const host = this.spare;
     if (!host || this.stopped) return null;
     this.spare = null;
+    this.failures = 0;
     host.open(window);
     this.later(REWARM_MS);
     return host;
@@ -104,6 +124,11 @@ export class WarmHost {
   private async warm(): Promise<void> {
     this.supported ??= (this.options.supports ?? hostSupportsDeferred)(this.options.binary).catch(() => false);
     if (!(await this.supported) || this.spare || this.stopped) return;
+    if (!(await (this.options.reachable ?? compositorIsThere)().catch(() => false))) {
+      if (!this.stopped) this.later(rewarmDelay(++this.failures));
+      return;
+    }
+    if (this.spare || this.stopped) return;
     const host = this.spawn(this.options.binary, {
       deferred: true,
       env: { MIRIN_METAL_APP_NAME: this.options.appName },
@@ -113,7 +138,7 @@ export class WarmHost {
     host.onClose(() => {
       if (this.spare !== host) return;
       this.spare = null;
-      this.later(REWARM_MS);
+      this.later(rewarmDelay(this.failures++));
     });
   }
 }
@@ -123,6 +148,24 @@ export async function hostSupportsDeferred(binary: string): Promise<boolean> {
   try {
     const grep = Bun.spawn(["grep", "-aqF", "MIRIN_METAL_DEFERRED", binary], { stdout: "ignore", stderr: "ignore" });
     return (await grep.exited) === 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether the compositor answers on its Wayland socket. A socket file whose
+ * compositor is gone refuses the connection. With no display named, the host
+ * is left to find one.
+ */
+export async function compositorIsThere(env: Readonly<Record<string, string | undefined>> = process.env): Promise<boolean> {
+  const display = env.WAYLAND_DISPLAY;
+  if (!display) return true;
+  const path = display.startsWith("/") ? display : join(env.XDG_RUNTIME_DIR ?? "/run/user/0", display);
+  try {
+    const socket = await Bun.connect({ unix: path, socket: { data() {} } });
+    socket.end();
+    return true;
   } catch {
     return false;
   }
