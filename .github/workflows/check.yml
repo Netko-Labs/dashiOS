@@ -33,7 +33,9 @@ jobs:
             rust cargo clippy rustfmt gcc pkgconf-pkg-config \
             mesa-libEGL-devel mesa-libgbm-devel libinput-devel libseat-devel \
             systemd-devel libxkbcommon-devel \
-            gstreamer1-devel gstreamer1-plugins-base-devel
+            gstreamer1-devel gstreamer1-plugins-base-devel \
+            gstreamer1-plugins-base gstreamer1-plugins-good
+          # gstreamer1-plugins-good: dashi-comp's tests play a WebM clip as the wallpaper.
           # flatpak: session/dashi-extras's dry-run test expects it, as Dashi has it.
           # dashi-term links libghostty-vt, which Dashi's COPR builds.
           dnf -y copr enable pejedev/dashi
