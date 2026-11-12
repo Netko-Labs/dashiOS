@@ -349,7 +349,9 @@ Settings forgets its sites. The person can allow sites ahead of time, for
 every agent: Settings › Agents, "Sites agents may use" (Add… and Remove;
 `person` in the same `sites.json`), so an agent left alone (an unattended
 demo) opens and reads them with no sheet. Only Settings adds to that list:
-an agent's Always Allow is kept for that agent alone.
+an agent's Always Allow is kept for that agent alone. For a set time only,
+the person can also let agents use picked sites and kinds of tools with no
+sheet ([Working alone](#working-alone)).
 
 **Nothing secret leaves the page.** The reader (`page/node.ts`,
 `page/read.ts`, pure and tested with made-up trees) never reads the value
@@ -364,6 +366,64 @@ Dashi)`. `fill_element` and typed characters (`press`) are refused there.
 
 When no extension is connected (another browser), these tools say so, and
 the screenshot tools work as before.
+
+## Working alone
+
+Agents stall on consent sheets when nobody is at the screen. **Let agents
+work alone** (Settings › Agents) lets the person say, before they leave: for
+this long, agents may do these things and use these sites without asking.
+Code: `agents/alone/` (`rules.ts`, `work-alone.ts`, `records.ts`),
+`alone-chip.tsx`, `settings-app/lib/panes/agents-alone.tsx`. Tests:
+`test/agents-alone*.test.ts*`. The decisions behind it are D23 and D24.
+
+- **What the person picks.** How long (15 minutes, 1 hour, 4 hours, or a
+  custom time from 1 minute to 8 hours); what agents may do, by the same
+  kinds the consent sheet asks about ("See the screen", "Manage windows and
+  apps"…); which sites, once "Use websites" is ticked; and whether it stays
+  on when the screen locks. The picks start from what was already allowed:
+  every kind some agent has for good, the person's own list of sites and the
+  ones agents were always allowed, one hour, ending at the lock.
+- **While it runs.** A call whose kind was picked runs with no sheet, for
+  every agent, connected then or later, and a picked site (and its
+  subdomains) is used with no sheet. Nothing is kept: the agent's own grants
+  don't grow, and when it ends the next call asks. Everything else asks as it
+  always does, and what a launcher run's grants card refused stays refused.
+- **Never, whatever is picked** (`rules.ts`, `NEVER_ALONE_SCOPES` and
+  `NEVER_ALONE_TOOLS`): paying, signing in and one-time codes, the list of
+  logins (anything that needs the fingerprint or password, or reads the
+  vault), the clipboard history, force quit, the Trash, and installing or
+  updating software. Those kinds are not offered, are dropped from what is
+  picked, and are checked again on every call; the tools that ask every time
+  keep their own sheet, since Work alone never touches `confirm`. No row of
+  Settings › Agents, Privacy & Security, Passwords, Lock Screen or Users is
+  an agent's to set, so `set_setting` can't reach consent either.
+- **Only the person turns it on.** `WorkAlone.start` asks the compositor
+  whose press it was (`input-origin` on System Settings' window,
+  `agents/person.ts` `personPressedWindow`): the person's own hands, in the
+  last 2 s, and no agent's press there since. An agent's pointer or keys, a
+  link, a key binding, the launcher and D-Bus can't: its rows have no value
+  to set, so their addresses only open Settings. While it runs, `start` is
+  refused, so nothing lengthens or widens it; to change it the person stops
+  it and starts again. Anyone may stop it: stopping only narrows.
+- **In the menu bar** the whole time, beside the agent mark: a chip in the
+  agents' purple with a stop square and the time left, counting down
+  (`alone-chip.tsx`). One click stops it. It never goes into "…".
+- **It ends** when the time is up, when the person stops it (the chip, the
+  switch, ⌃❖Esc or the panel's Stop all), when the screen locks unless the
+  person chose to keep it, and at logout: what runs is kept in memory only,
+  so a shell that restarts starts with it off. While the screen is locked
+  agents do nothing, kept or not ("Locked means stopped").
+- **The record.** Every call an agent made while it ran: when, which agent,
+  which tool, the sites it touched, how it went, and whether it ran without
+  asking; never arguments, text or pictures. A notification says why it
+  ended and what was done ("Agents ask again · The time was up. 14 actions on
+  2 sites, 9 without asking in 1:00:00.") with Show; Settings › Agents lists
+  the last three times, each with Show, which opens the whole record as text.
+  The last ten are kept in `$XDG_STATE_HOME/dashi/agents/alone.json`.
+- **Agents can ask.** `get_work_alone` answers `{on, secondsLeft, scopes,
+  sites}`, read-only, with no sheet and no permission, so an agent left
+  alone can plan. It takes no argument; nothing an agent can call turns
+  Work alone on.
 
 ## In the launcher
 

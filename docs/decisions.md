@@ -330,6 +330,65 @@ Numbered in the order they were written down; a new one goes at the end.
   tile behind an alert's glyph, and GTK apps, whose suggested buttons and
   focus outlines follow GTK's accent, which is kombu.
 
+### D23. "Demo mode" is called "Let agents work alone"
+
+- **Date:** 2026-11-11. The `demo` agent's, reversible.
+- **Question:** the brief called the switch "Demo mode" and asked for a
+  better plain name if there was one.
+- **Choice:** the switch is **Let agents work alone**; the feature is "Work
+  alone" in code (`agents/alone/`, `get_work_alone`) and "Working alone" in
+  the docs. "demo", "demo mode" and "unattended" find it in the launcher and
+  in Settings' search.
+- **Why:** the name says what happens, to a person who has never seen it.
+  "Demo" names one use of it (it is as much for a long task while the person
+  is at lunch), and on phones and in shops "demo mode" means a display unit
+  with made-up data. "Unattended" is a long word for "alone".
+- **Cost:** the plan and the review folder say "Demo mode"; this entry and
+  the keywords are the bridge.
+- **Undo:** the title in `settings-app/registry/lib/you.ts`, and the words in
+  `alone-chip.tsx`, `agents-alone.tsx` and `record-words.ts`.
+
+### D24. The calls that came with working alone
+
+- **Date:** 2026-11-11. The `demo` agent's, each reversible.
+- **It ends when the screen locks, unless the person chose to keep it.** A
+  lock means the person left the desk closed, or the computer was left idle
+  long enough to lock itself; whoever unlocks it should find agents asking
+  again. Turning it back on is one press. Kept through a lock, its time
+  still runs, and agents still do nothing while it is locked. Undo: the
+  default of `throughLock`.
+- **What runs is kept in memory only.** Logging out, a restart, or the shell
+  crashing ends it; nothing on disk can bring it back or be edited to turn
+  it on. Cost: a shell that crashes mid-demo ends it. Undo: not wanted.
+- **The person picks kinds of tools, not single tools.** They are the kinds
+  the consent sheet already asks about, so the picks start from what was
+  allowed, and eleven ticks fit where ninety would not. Cost: no "only
+  `screenshot`". Undo: a list of tools beside the kinds in `rules.ts`.
+- **It covers every agent,** connected then or later, local or over SSH:
+  the person is away, and can't say which agent will ask. What a launcher
+  run's card refused stays refused. Undo: a key check in `Scopes.worksAlone`.
+- **Signing in is never covered,** though its sheet is a per-login one and
+  not the fingerprint: it uses the vault's secrets, and the brief says
+  "anything needing the fingerprint or password, reading secrets". An
+  unattended agent that needs a login waits, or the person hands it over.
+- **The longest time is 8 hours.** Longer than a working day is a standing
+  permission, which Always Allow already is, by agent. Undo:
+  `ALONE_MAX_MINUTES`.
+- **One click on the chip stops it, with no "are you sure".** Stopping only
+  narrows, and a mistaken click costs one press in Settings. ⌃❖Esc and the
+  panel's Stop all end it too: "stop the agents" should leave nothing they
+  may do by themselves.
+- **`get_work_alone` never asks.** Whether it is on is no secret, and an
+  agent that must first get a sheet answered to learn it can work alone
+  would stall, which is the problem this solves. It is the one tool with no
+  permission. Undo: the line in `Scopes.call`.
+- **The record lists every call made while it ran,** not only the ones that
+  ran without asking: "what agents did" is the question the person comes
+  back with. Each says whether it asked.
+- **It is shown by a notification and kept in Settings › Agents,** not on a
+  sheet or a banner: one chrome row, and a person who comes back to a locked
+  screen finds it in the notification center.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its

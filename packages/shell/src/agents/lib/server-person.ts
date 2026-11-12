@@ -3,6 +3,7 @@
 import type { BrowserBridge } from "../../browser/bridge.ts";
 import type { Compositor } from "../../compositor/index.ts";
 import type { Arrange, Tile } from "../../layout.ts";
+import type { AloneStatus } from "../alone/index.ts";
 import type { Question } from "../confirm.ts";
 import { type ToolResult, toolError } from "../context.ts";
 import type { Desktop, Hands } from "../desktop/index.ts";
@@ -24,6 +25,8 @@ export interface PersonParts {
   browser: BrowserBridge;
   tile(window: number, to: Arrange): Promise<void>;
   arrangement(window: number): Tile | null;
+  /** Whether agents work alone now (alone/). */
+  alone(): AloneStatus;
 }
 
 export function personRunner(parts: PersonParts): (call: Call, confirm: (question: Question) => Promise<boolean>) => Promise<ToolResult> {
@@ -48,6 +51,7 @@ export function personRunner(parts: PersonParts): (call: Call, confirm: (questio
       mayName: () => true,
       // The person's own calls use any site, in the tab in front.
       browser: { link: () => browser.current(), whenConnected: (ms) => browser.whenConnected(ms), allowSite: async () => true, mayUse: () => true, tab: null },
+      alone: parts.alone,
       confirm,
       signal,
     });

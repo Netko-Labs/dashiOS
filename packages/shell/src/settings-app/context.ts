@@ -1,4 +1,4 @@
-import type { AgentStore, AnswerStatus, Grants, Passwords, SiteGrants } from "../agents/index.ts";
+import type { AgentStore, AloneRecord, AnswerStatus, Grants, Passwords, SiteGrants, WorkAlone } from "../agents/index.ts";
 import type { ClipboardHistory } from "../clipboard/history.ts";
 import type { PrivacyStore } from "../privacy/store.ts";
 import type { RegionStore } from "../region/store.ts";
@@ -14,7 +14,7 @@ import type { SettingsStore } from "./store.ts";
 
 /** What the panes read and change; the shell hands these in once (start.tsx). */
 /** The person's list of sites agents may use, as Settings edits it. */
-export type AheadSites = Pick<SiteGrants, "subscribe" | "ahead" | "allowAhead" | "forgetAhead">;
+export type AheadSites = Pick<SiteGrants, "subscribe" | "ahead" | "allowAhead" | "forgetAhead" | "everyAgents">;
 
 export interface PaneContext {
   /** settings.json. */
@@ -28,6 +28,10 @@ export interface PaneContext {
   grants: Pick<Grants, "entries" | "remove" | "revoke" | "restore" | "onChange">;
   /** The sites agents may use without asking, the person's list (Settings › Agents). */
   sites?: AheadSites;
+  /** Work alone (agents/alone/): Settings › Agents turns it on and stops it, and lists its records. */
+  alone?: Pick<WorkAlone, "subscribe" | "getSnapshot" | "start" | "stop" | "records">;
+  /** Opens one record of Work alone, whole, as text. */
+  showAloneRecord?: (record: AloneRecord) => void;
   /** The apps' permissions the portal keeps (Privacy & Security); absent where the shell runs none. */
   privacy?: Pick<PrivacyStore, "subscribe" | "getSnapshot" | "revoke" | "refresh">;
   /** Dashi's vault and the login sources (Settings › Passwords). */

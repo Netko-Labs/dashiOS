@@ -4,9 +4,12 @@
  * time of day.
  */
 
-import { type AgentStore, type Agents, Grants, type Passwords } from "../agents/index.ts";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { type AgentStore, type Agents, type AloneRecord, Grants, type Passwords, recordText, stateDir, type WorkAlone } from "../agents/index.ts";
 import { AutoAppearance } from "../appearance/index.ts";
 import type { Compositor } from "../compositor/index.ts";
+import { openFile } from "../file-manager.ts";
 import { type ForceQuit, startForceQuit } from "../force-quit/index.ts";
 import { type SettingsApp, startSettingsApp } from "../settings-app/index.ts";
 import { registerPaneEntries } from "../settings-app/search.ts";
@@ -55,10 +58,24 @@ interface SettingsWindowNeeds {
   switches: Switches;
   passwords: Passwords;
   agentStore: AgentStore;
+  /** Work alone (agents/alone/), for Settings › Agents. */
+  alone: WorkAlone;
   agents: Agents | null;
   settingsApps: SettingsApps;
   services: Services;
   late: Late<LateParts>;
+}
+
+/** One record of Work alone, whole, as a text file beside the agents' other files, opened in its app (Text Editor). */
+function showAloneRecord(record: AloneRecord): void {
+  const path = join(stateDir(), "work-alone-record.txt");
+  try {
+    mkdirSync(stateDir(), { recursive: true });
+    writeFileSync(path, recordText(record), { mode: 0o600 });
+    openFile(`file://${path}`);
+  } catch (error) {
+    console.error("dashi-shell: could not show the record of agents working alone:", error);
+  }
 }
 
 export interface SettingsWindows {
@@ -90,6 +107,8 @@ export function startSettingsWindows(needs: SettingsWindowNeeds): SettingsWindow
     grants: agents?.grants ?? new Grants(),
     // The person's own list of sites agents may use (Settings › Agents); without the agents' server, none to keep.
     ...(agents ? { sites: agents.sites } : {}),
+    // Work alone needs the agents' server: without it nothing asks, and nothing is there to switch.
+    ...(agents ? { alone: needs.alone, showAloneRecord } : {}),
     ...(guards.privacy ? { privacy: guards.privacy.store } : {}),
     answers: () => late.peek("askAgents")?.status ?? null,
     lock: () => guards.lockScreen?.lock(),

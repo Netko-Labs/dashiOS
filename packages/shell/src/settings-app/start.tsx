@@ -56,6 +56,9 @@ export interface SettingsAppOptions {
   grants: Pick<Grants, "entries" | "remove" | "revoke" | "restore" | "onChange">;
   /** The sites agents may use without asking (Settings › Agents). */
   sites?: AheadSites;
+  /** Work alone (Settings › Agents), and opening one of its records as text. */
+  alone?: PaneContext["alone"];
+  showAloneRecord?: PaneContext["showAloneRecord"];
   /** The apps' permissions (Privacy & Security), followed from login (privacy/). */
   privacy?: Pick<PrivacyStore, "subscribe" | "getSnapshot" | "revoke" | "refresh">;
   /** Dashi's vault and the login sources (Settings › Passwords). */
@@ -119,6 +122,8 @@ function paneContext(
     screens,
     grants: options.grants,
     ...(options.sites ? { sites: options.sites } : {}),
+    ...(options.alone ? { alone: options.alone } : {}),
+    ...(options.showAloneRecord ? { showAloneRecord: options.showAloneRecord } : {}),
     ...(options.privacy ? { privacy: options.privacy } : {}),
     ...(options.passwords ? { passwords: options.passwords } : {}),
     ...answersOf(options),

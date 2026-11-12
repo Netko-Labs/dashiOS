@@ -113,7 +113,8 @@ export type Call =
   | { name: "scroll_page"; direction: "down" | "up" | "top" | "bottom"; pages: number; ref: number | null; tab: number | null }
   | { name: "list_tabs" }
   | { name: "switch_tab"; tab: number }
-  | { name: "read_clipboard_history"; limit: number };
+  | { name: "read_clipboard_history"; limit: number }
+  | { name: "get_work_alone" };
 
 /** Where Dashi types a secret: the focused field of a window, or an element of a browser tab. */
 export type SecretTarget = { window: number } | { ref: number; tab: number | null };

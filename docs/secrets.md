@@ -477,6 +477,10 @@ The clipboard history's scope, "See your clipboard history"
 and each call asks the person; copies from password fields, password
 managers and the vault were never kept in the history to begin with.
 
+Letting agents work alone for a set time (docs/actions.md, "Working alone")
+never covers any of this: signing in, codes, the list of logins, paying and
+the clipboard history ask exactly as they do without it.
+
 - **Cards** live in the vault (`save-card`: a Luhn-valid number, MM/YY, a 3
   or 4 digit code, "single use" or not; `cards` lists them by their last
   four digits only). A single-use virtual card (from the issuer's app) is

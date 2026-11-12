@@ -223,6 +223,7 @@ function openMenuBar(needs: BarsNeeds, output: string | undefined, onClosed: () 
       apps={needs.apps}
       toplevels={stores.toplevels}
       agents={needs.agents.agentStore}
+      alone={needs.agents.alone}
       capture={needs.guards.screenCapture}
       {...(needs.screenshots.tools ? { recorder: needs.screenshots.tools.recorder } : {})}
       system={needs.system.system.store}
