@@ -30,7 +30,7 @@ export function ButtonsPage() {
     <PageBody>
       <Exhibit
         title="Button"
-        note="Ink goes ahead, ume destroys, the rest are secondary with a 3:1 edge. Each deepens under the pointer (point at one) and more while held. Disabled is the whole button at 40%. Tab to one for its focus ring. The Focused row only marks the state."
+        note="Ink goes ahead, ume destroys, the rest are secondary with a 3:1 edge. Each changes under the pointer (point at one) and more while held: ink steps toward the page, ume deepens. Disabled is the whole button at 40%. Tab to one for its focus ring. The Focused row only marks the state."
       >
         <States>
           {({ state, disabled }) => (

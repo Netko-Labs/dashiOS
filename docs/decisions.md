@@ -824,6 +824,26 @@ Numbered in the order they were written down; a new one goes at the end.
   the design drew stay first. No agent can set its rows.
 - **The chip shows on every screen's bar,** as the agent mark does.
 
+### D41. In Light, an ink button lightens under the pointer and while held
+
+- **Date:** 2026-11-11. The `polish` agent's, reversible. It changes one
+  line of D16 ("It deepens under the pointer").
+- **Question:** in Light the primary button went from ink to black
+  (`#1D1D1F`, `#0E0E10`, `#000000`): steps of 1.15 and 1.09 to 1, which
+  nobody sees. UI-4 says every control shows hover and pressed.
+- **Choice:** the ink button steps toward the page. In Light it lightens:
+  `#1D1D1F`, `#3A3A3E` under the pointer, `#55555B` held (white words at
+  16.8, 11.3 and 7.4 to 1, each step 1.49 and 1.53 to 1 from the one
+  before). In Dark it was already so (the light ink dims toward black) and
+  is unchanged. Ume and a chosen pill still deepen: they have room to.
+- **Why:** there is nothing deeper than ink to go to. A step must be seen,
+  and the words must stay AA; lighter is the only way to both. "Toward the
+  page" is one rule for both modes.
+- **Cost:** in Light "pressed is darker" no longer holds for this one
+  button. A test holds each step to 1.2 to 1 or more.
+- **Undo:** `primaryHover` and `primaryPressed` in `palette.ts`, and the
+  test's 1.2.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its
