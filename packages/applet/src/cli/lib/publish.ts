@@ -65,68 +65,57 @@ export function signatureNote(dir: string, bytes: Uint8Array, signature: string 
   return "; its .minisig is from another build, so it isn't signed now (sign it again: --sign KEY)";
 }
 
-export async function publish(dir: string, args: readonly string[]): Promise<number> {
+const fail = (message: string): number => {
+  console.error(`dashi-applet publish: ${message}`);
+  return 1;
+};
+
+interface Source {
+  catalog: string;
+  pub: NonNullable<ReturnType<typeof parsePublicKey>>;
+  remote: string;
+  commit: string;
+}
+
+/** Where the applet is published from and to, or why it can't be yet. */
+function sourceOf(dir: string, args: readonly string[]): Source | string {
   const catalog = resolve(flag(args, "--catalog") ?? process.env.DASHI_APPLETS_CATALOG ?? join(dirname(dir), "dashi-applets"));
   if (!existsSync(join(catalog, "applets")) || !git(catalog, "rev-parse", "--git-dir").ok) {
-    console.error(`dashi-applet publish: no catalog checkout at ${catalog} (clone Netko-Labs/dashi-applets there, or give --catalog DIR)`);
-    return 1;
+    return `no catalog checkout at ${catalog} (clone Netko-Labs/dashi-applets there, or give --catalog DIR)`;
   }
   const pubPath = join(dir, "author.pub");
   const pub = existsSync(pubPath) ? parsePublicKey(readFileSync(pubPath, "utf8")) : null;
   if (!pub) {
-    console.error(
-      "dashi-applet publish: no author.pub here: make your key with `minisign -G` (or `dashi-applet keygen` for a throwaway one) and put its public half in author.pub",
-    );
-    return 1;
+    return "no author.pub here: make your key with `minisign -G` (or `dashi-applet keygen` for a throwaway one) and put its public half in author.pub";
   }
-  if (git(dir, "status", "--porcelain").out !== "") {
-    console.error("dashi-applet publish: commit your changes first: the catalog builds the package from a commit");
-    return 1;
-  }
+  if (git(dir, "status", "--porcelain").out !== "") return "commit your changes first: the catalog builds the package from a commit";
   const remote = httpsRemote(git(dir, "remote", "get-url", "origin").out);
   const commit = git(dir, "rev-parse", "HEAD").out;
-  if (!remote || !/^[0-9a-f]{40}$/.test(commit)) {
-    console.error("dashi-applet publish: the applet's folder needs a git repository with an `origin` remote (CI builds from it)");
-    return 1;
-  }
+  if (!remote || !/^[0-9a-f]{40}$/.test(commit)) return "the applet's folder needs a git repository with an `origin` remote (CI builds from it)";
+  return { catalog, pub, remote, commit };
+}
 
-  const { packed, path, signature } = await packTo(dir, flag(args, "--sign"));
-  if (!signature) {
-    console.error(
-      `dashi-applet publish: sign the package first:\n  minisign -S -s YOUR.key -m ${path} -t ${JSON.stringify(trustedComment(packed.manifest, packed.sha256))}`,
-    );
-    return 1;
-  }
-  const checked = verify(packed.bytes, signature, pub);
-  if (!checked.ok) {
-    console.error(`dashi-applet publish: the signature doesn't check against author.pub: ${checked.reason}`);
-    return 1;
-  }
-  const { manifest } = packed;
-  const target = join(catalog, "applets", manifest.id);
+/** Why the catalog can't take this version, or null: another key's applet, or a version it has. */
+function refusal(target: string, manifest: Packed["manifest"], pub: Source["pub"]): string | null {
   const catalogKey = join(target, "author.pub");
   if (existsSync(catalogKey)) {
     const listed = parsePublicKey(readFileSync(catalogKey, "utf8"));
     if (!listed || publicKeyLine(listed) !== publicKeyLine(pub)) {
-      console.error(`dashi-applet publish: ${manifest.id} is published with another key; an update must be signed by the same key`);
-      return 1;
+      return `${manifest.id} is published with another key; an update must be signed by the same key`;
     }
   }
-  if (existsSync(join(target, "versions", `${manifest.version}.json`))) {
-    console.error(`dashi-applet publish: ${manifest.id} ${manifest.version} is in the catalog already; raise the version`);
-    return 1;
-  }
+  if (existsSync(join(target, "versions", `${manifest.version}.json`)))
+    return `${manifest.id} ${manifest.version} is in the catalog already; raise the version`;
+  return null;
+}
 
-  const branch = `publish/${manifest.id}-${manifest.version}`;
-  const switched = git(catalog, "switch", "-c", branch);
-  if (!switched.ok) {
-    console.error(`dashi-applet publish: ${switched.out}`);
-    return 1;
-  }
+/** The applet's entry in the catalog (the files the header lists). */
+function writeEntry(dir: string, target: string, source: Source, packed: Packed, signature: string): void {
+  const { manifest } = packed;
   mkdirSync(join(target, "versions"), { recursive: true });
   copyFileSync(join(dir, "applet.json"), join(target, "applet.json"));
-  writeFileSync(join(target, "source.json"), `${JSON.stringify({ url: remote, commit }, null, 2)}\n`);
-  writeFileSync(catalogKey, `untrusted comment: ${manifest.author.name}'s key for ${manifest.id}\n${publicKeyLine(pub)}\n`);
+  writeFileSync(join(target, "source.json"), `${JSON.stringify({ url: source.remote, commit: source.commit }, null, 2)}\n`);
+  writeFileSync(join(target, "author.pub"), `untrusted comment: ${manifest.author.name}'s key for ${manifest.id}\n${publicKeyLine(source.pub)}\n`);
   const released = new Date().toISOString().slice(0, 10);
   writeFileSync(
     join(target, "versions", `${manifest.version}.json`),
@@ -139,12 +128,31 @@ export async function publish(dir: string, args: readonly string[]): Promise<num
     mkdirSync(dirname(join(target, shot)), { recursive: true });
     copyFileSync(from, join(target, shot));
   }
+}
+
+export async function publish(dir: string, args: readonly string[]): Promise<number> {
+  const source = sourceOf(dir, args);
+  if (typeof source === "string") return fail(source);
+  const { catalog, pub } = source;
+
+  const { packed, path, signature } = await packTo(dir, flag(args, "--sign"));
+  if (!signature) {
+    return fail(`sign the package first:\n  minisign -S -s YOUR.key -m ${path} -t ${JSON.stringify(trustedComment(packed.manifest, packed.sha256))}`);
+  }
+  const checked = verify(packed.bytes, signature, pub);
+  if (!checked.ok) return fail(`the signature doesn't check against author.pub: ${checked.reason}`);
+  const { manifest } = packed;
+  const target = join(catalog, "applets", manifest.id);
+  const refused = refusal(target, manifest, pub);
+  if (refused) return fail(refused);
+
+  const branch = `publish/${manifest.id}-${manifest.version}`;
+  const switched = git(catalog, "switch", "-c", branch);
+  if (!switched.ok) return fail(switched.out);
+  writeEntry(dir, target, source, packed, signature);
   git(catalog, "add", join("applets", manifest.id));
   const committed = git(catalog, "commit", "-m", `applet: ${manifest.id} ${manifest.version}`);
-  if (!committed.ok) {
-    console.error(`dashi-applet publish: the commit failed: ${committed.out}`);
-    return 1;
-  }
+  if (!committed.ok) return fail(`the commit failed: ${committed.out}`);
   console.log(`  ✓ ${packed.name} (${Math.round(packed.bytes.byteLength / 1024)} KB, sha256 ${packed.sha256.slice(0, 8)}…), signed by ${checked.keyId}`);
   console.log(`  ✓ ${catalog}: branch ${branch}, one commit`);
   console.log("  Next: push the branch to your fork and open the pull request:");
