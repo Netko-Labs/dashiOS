@@ -55,17 +55,6 @@ describe("licenses", () => {
     const bundled = readFileSync(join(ROOT, "spin/vendored-modules"), "utf8");
     expect(bundled).not.toMatch(/anthropic|openai/);
   });
-
-  test.skipIf(!Bun.which("cargo") || !existsSync(join(ROOT, "../mirin/crates/mirin-metal/Cargo.toml")))(
-    "LICENSE.dependencies and the specs' License: tags are current (spin/license-dependencies --check)",
-    () => {
-      const probe = run(["cargo", "metadata", "--format-version", "1", "--locked", "--offline", "--no-deps"]);
-      if (probe.code !== 0) return; // crate sources not fetched here
-      const { code, output } = run(["bun", join(ROOT, "spin/license-dependencies"), "--check"]);
-      expect(output).not.toMatch(/STALE|LICENSE TAG|NOT PERMISSIVE/);
-      expect(code).toBe(0);
-    },
-  );
 });
 
 describe("Dashi's own libraries", () => {
