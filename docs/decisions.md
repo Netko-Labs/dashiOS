@@ -1023,21 +1023,27 @@ Numbered in the order they were written down; a new one goes at the end.
   on, as the brief suggested?
 - **Measured** in the VM, from the key coming up to sound at the speakers,
   with a stub agent that answers in 2 ms (`dashi-0.8.0-review/10-polish`):
-  0.19 s for the words, 0.73 s to make the first sentence (3.9 s of
-  speech) whole, 0.36 s for the speakers to open after that, and 0.76 s
-  more to load the speaking model when it had been let go of.
-- **Choice:** three cuts, none of which costs memory. The speakers open as
-  the utterance starts, while the first sentence is made. A long first
-  sentence is said in two pieces, cut at its first pause, so less is made
-  before the first sound. And the shell sends `warm` for the speaking
-  model as the talk key goes down, so it loads while the person talks; each
-  model has its own lock, so that never holds up the listening one. The
-  model is **not** kept in memory: ten idle minutes still bring the service
-  down to 33 MB.
+  1.28 s in all. 0.19 s for the words, 0.73 s to make the first sentence
+  (3.9 s of speech) whole, and 0.36 s more before anything was heard, which
+  turned out to be the third of a second of hush the model starts every
+  piece with. With the speaking model let go of (ten idle minutes), 0.76 s
+  more to load it: 2.03 s.
+- **Choice:** four cuts, none of which costs memory. A long first sentence
+  is said in two pieces, cut at its first pause, so less is made before the
+  first sound. The hush before the first sound is cut. The speakers open as
+  the utterance starts, while the first piece is made. And the shell sends
+  `warm` for the speaking model as the talk key goes down, so it loads
+  while the person talks; each model has its own lock, so that never holds
+  up the listening one. The model is **not** kept in memory: ten idle
+  minutes still bring the service down to 33 MB.
+- **After:** 0.63 s warm, 0.68 s with the models let go of; under a screen
+  recording 0.82 s to 0.97 s, where it was 1.50 s to 1.61 s. The caption
+  now starts with the sound, where it was a third of a second ahead.
 - **Why:** 0.48 GB held for as long as Voice is on, to save a load that
   now happens behind the person's own words, is a poor trade on a laptop.
 - **Cost:** a first sentence said in two pieces has a comma's pause where
-  it was cut, and two captions. An ask shorter than the model's load (under
+  it was cut (the model's own hush there is cut to 150 ms), and two
+  captions. An ask shorter than the model's load (under
   a second, after ten idle minutes) still waits for the rest of it.
 - **Undo:** `text::pieces` back to `text::sentences` in `speak.rs`;
   `player.open()` back into `play`; the `warm` in `Voice.keyDown`.

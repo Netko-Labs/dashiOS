@@ -92,13 +92,20 @@ fn first_pause(sentence: &str) -> Option<usize> {
 /// in two parts when it is long and has a pause to cut at. The first sound
 /// waits for the first piece to be made whole, so a long opening sentence is
 /// not made whole before any of it is heard.
+#[cfg(test)]
 pub(crate) fn pieces(text: &str) -> Vec<String> {
+    pieces_cut(text).0
+}
+
+/// `pieces`, and whether its first two are one sentence said in two parts.
+pub(crate) fn pieces_cut(text: &str) -> (Vec<String>, bool) {
     let mut pieces = sentences(text);
-    if let Some(cut) = pieces.first().and_then(|first| first_pause(first)) {
+    let cut = pieces.first().and_then(|first| first_pause(first));
+    if let Some(cut) = cut {
         let rest = pieces[0].split_off(cut);
         pieces.insert(1, rest.trim().to_owned());
     }
-    pieces
+    (pieces, cut.is_some())
 }
 
 fn push(sentences: &mut Vec<String>, piece: &str) {

@@ -319,7 +319,12 @@ event, no words worked out.
   said in two pieces, cut after its first comma, semicolon, colon or dash
   that leaves both 20 characters or more: each piece has a `sentence` event
   of its own. The speakers are opened as the utterance starts, while the
-  first piece is made, not after.
+  first piece is made, not after. The model starts every piece with about a
+  third of a second of hush and ends it with half a second: the hush before
+  an utterance's first sound is cut to 30 ms, and at the join of a sentence
+  said in two pieces to a comma's pause (120 ms, then 30 ms), with the
+  words' times moved to match. Between sentences it is left as the model
+  made it.
 - `voice`: a voice's id. Without it, `language`'s first voice (`"en-GB"` →
   `bf_emma`, `"es"` → `ef_dora`); without both, Dashi's own (`af_heart`).
 - `speed`: 0.5 to 2; 1 is the voice's own pace.
@@ -513,7 +518,10 @@ Through the service in the VM (8 cores, PipeWire, a null source and sink;
 | --- | --- |
 | Key let go → the words (`listen.stop` → its reply), 7 s of speech | 0.31 s to 0.34 s, of which 0.13 s is the last eighth of a second heard |
 | Speech begins → first `partial` | about 1 s; then one about every 0.8 s |
-| `speak` → first sound (`sentence`), models warm | 0.37 s to 0.42 s |
+| `speak` → first sound (`sentence`), models warm | 0.37 s to 0.42 s for a short sentence |
+| Key let go → Dashi heard at the speakers, a 7 s question, a stub agent that answers in 2 ms, a first sentence of 3.9 s (`dashi-0.8.0-review/10-polish/`) | 0.62 s to 0.65 s (before 0.8's cuts: 1.27 s to 1.30 s) |
+| The same after ten idle minutes (the models let go of) | 0.68 s (before: 2.03 s) |
+| The same under a screen recording | 0.82 s to 0.97 s (before: 1.50 s to 1.61 s) |
 | `speak.stop` → silence at the speakers | under 20 ms |
 | Fetching both basic sets (1 GB), with a cancel and a resume on the way | 23 s on the VM's connection |
 
