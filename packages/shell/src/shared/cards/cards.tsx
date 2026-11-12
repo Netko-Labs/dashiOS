@@ -84,7 +84,7 @@ export function Group({ children, testID }: { children: ReactNode; testID?: stri
 export function Caption({ children, above, keys }: { children: string; above?: boolean; keys?: string }) {
   const colors = useControlColors();
   const text = { fontSize: 11.5, fontWeight: above ? "semibold" : "normal", color: colors.muted } as const;
-  const place = { ...(above ? { flexShrink: 0, marginTop: 6 } : TUCK), paddingLeft: 10, paddingRight: 10 };
+  const place = { ...(above ? ({ flexShrink: 0, marginTop: 6 } as const) : TUCK), paddingLeft: 10, paddingRight: 10 };
   if (!keys) {
     return (
       <View style={place}>
