@@ -410,6 +410,11 @@ new files, once it is allowed.
 The unit is held to `CPUQuota=50%`, `MemoryMax=768M` (with its Metal host),
 and `Nice=10` (`UNIT_LIMITS`), so one that runs away while it answers the
 launcher can't starve the shell or the compositor.
+The unit is part of the session's target (`PartOf=dashi-session.target`,
+`src/applets/units.ts`): the shell stops its applets as it exits (it asks
+systemd without waiting, `systemctl --user stop --no-block`, since nothing
+awaited runs once the shell is told to go), and systemd stops any that are
+left when the session ends, so none outlives a logout.
 The unit runs `bin/dashi-applet-run.ts`, which starts the D-Bus proxy if the
 permissions need one, then bubblewrap with the arguments
 `src/applets/lib/sandbox.ts` plans:

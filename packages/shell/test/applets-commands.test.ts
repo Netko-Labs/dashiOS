@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { type Manifest, parseManifest } from "@dashi/applet";
 import type { Outcome, Shown } from "../src/actions/types.ts";
 import { AppletCommands, type CommandTimers, commandAddress } from "../src/applets/commands.ts";
-import { systemdUnits, UNIT_LIMITS } from "../src/applets/launcher.ts";
+import { systemdUnits, UNIT_LIMITS } from "../src/applets/units.ts";
 import { AppletConnection } from "../src/applets/lib/connection.ts";
 import { sameManifest } from "../src/applets/lib/extra.ts";
 import { AppletGrants } from "../src/applets/lib/grants.ts";

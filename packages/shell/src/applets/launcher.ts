@@ -19,54 +19,7 @@ import { consentNames, dashiSatisfies, FOLDERS, type Folder, type InstalledApple
 import type { AppletContext } from "./lib/connection-context.ts";
 import { type SandboxPaths, sandboxPlan, unitName } from "./lib/sandbox.ts";
 import { appletSocketDir, ensureSocketDir, serveApplets } from "./lib/server.ts";
-
-/** What the launcher asks of systemd (`systemd-run --user`, `systemctl --user`). */
-export interface Units {
-  start(unit: string, argv: readonly string[]): Promise<boolean>;
-  stop(unit: string): Promise<void>;
-}
-
-async function run(argv: readonly string[]): Promise<boolean> {
-  try {
-    const child = Bun.spawn([...argv], { stdout: "ignore", stderr: "pipe" });
-    const code = await child.exited;
-    if (code !== 0) console.error(`dashi-shell: ${argv.slice(0, 3).join(" ")}: ${(await new Response(child.stderr).text()).trim()}`);
-    return code === 0;
-  } catch (error) {
-    console.error(`dashi-shell: ${argv[0]}:`, error);
-    return false;
-  }
-}
-
-/**
- * What an applet's unit may take (docs/applets.md, "The sandbox"): half of
- * one core, 768 MB with its Metal host, and a lower priority than the
- * person's apps, so one that runs away while it answers the launcher can't
- * starve the shell or the compositor.
- */
-export const UNIT_LIMITS = ["CPUQuota=50%", "MemoryMax=768M", "Nice=10"] as const;
-
-export const systemdUnits: Units = {
-  start: (unit, argv) =>
-    run([
-      "systemd-run",
-      "--user",
-      "--quiet",
-      "--collect",
-      `--unit=${unit}`,
-      "-p",
-      "Restart=on-failure",
-      "-p",
-      "RestartSec=3",
-      ...UNIT_LIMITS.flatMap((limit) => ["-p", limit]),
-      "--",
-      ...argv,
-    ]),
-  stop: async (unit) => {
-    await run(["systemctl", "--user", "stop", unit]);
-    await run(["systemctl", "--user", "reset-failed", unit]);
-  },
-};
+import { systemdUnits, type Units } from "./units.ts";
 
 /** The person's folders from `~/.config/user-dirs.dirs`, else the usual names. */
 export function userFolders(home: string, text: string | null): Record<Folder, string> {
@@ -152,6 +105,7 @@ export class AppletLauncher {
     const ids = new Set(installed.map((applet) => applet.manifest.id));
     for (const id of [...this.running.keys()]) if (!ids.has(id)) await this.halt(id);
     for (const applet of installed) {
+      if (this.stopped) return;
       const { id, version } = applet.manifest;
       if (!isAllowed(applet) && applet.record.disabled === undefined && !this.asked.has(`${id}@${version}`)) {
         this.asked.add(`${id}@${version}`);
@@ -216,6 +170,8 @@ export class AppletLauncher {
     writeFileSync(planPath, JSON.stringify(sandboxPlan(applet.manifest, paths)), { mode: 0o600 });
     // One left from a shell that didn't stop it (a crash) goes first.
     await this.units.stop(unitName(id));
+    // The shell went meanwhile: what it stopped stays stopped.
+    if (this.stopped) return;
     const started = await this.units.start(unitName(id), [this.options.bun, this.options.runScript, planPath]);
     if (!started) console.error(`dashi-shell: applet ${id} didn't start`);
   }
@@ -243,13 +199,19 @@ export class AppletLauncher {
       .catch((error) => console.error(`dashi-shell: applet ${id}:`, error));
   }
 
-  /** The shell is going: every applet stops with it. */
-  async stop(): Promise<void> {
+  /**
+   * The shell is going: every applet stops with it. Nothing here is awaited:
+   * the shell's closers run in one turn and the process exits after them
+   * (main.tsx `quit`), so systemd is asked before this returns.
+   */
+  stop(): void {
     this.stopped = true;
     if (this.timer) clearTimeout(this.timer);
     this.watcher?.close();
-    await this.busy;
-    for (const id of [...this.running.keys()]) await this.halt(id);
+    const ids = [...this.running.keys()];
+    for (const id of ids) this.running.get(id)?.stopSocket();
+    this.running.clear();
+    this.units.stopNow(ids.map(unitName));
   }
 
   /** What runs now, for Settings and tests. */
