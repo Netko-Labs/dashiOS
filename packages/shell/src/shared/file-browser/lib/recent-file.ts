@@ -15,6 +15,21 @@ export async function readRecents(env: Record<string, string | undefined> = proc
   }
 }
 
+/** The app's name without what a line of the history can't carry (control characters), at a length a name has. */
+const appName = (app: string): string =>
+  app
+    .replace(/[\0-\x1f\x7f]+/g, " ")
+    .trim()
+    .slice(0, 128) || "dashi";
+
+/**
+ * The history's `exec` for an app: its name as one quoted word, then the
+ * file. The name is whatever the asking app called itself (a window title
+ * when it gave no id), and launchers read this line the shell's way, so a
+ * quote in it is written `'\''`: it stays inside the word and never ends it.
+ */
+export const recentExec = (app: string): string => `'${appName(app).replaceAll("'", "'\\''")}' %u`;
+
 /**
  * Files an app opened or saved through the chooser, into the history (written
  * beside it, then renamed in place), so Recents lists them next time. A
@@ -26,7 +41,7 @@ export async function recordRecents(paths: readonly string[], app: string, env: 
   try {
     const before = await readFile(path, "utf8").catch(() => null);
     const index = systemMimeIndex(env);
-    const uses = paths.map((file) => ({ path: file, mime: mimeOf(index, basename(file)), app, exec: `'${app}' %u` }));
+    const uses = paths.map((file) => ({ path: file, mime: mimeOf(index, basename(file)), app: appName(app), exec: recentExec(app) }));
     await mkdir(dataHome(env), { recursive: true });
     const partial = `${path}.${process.pid}.partial`;
     await writeFile(partial, withRecent(before, uses, new Date()), { mode: 0o600 });
