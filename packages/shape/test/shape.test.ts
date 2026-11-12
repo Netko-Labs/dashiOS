@@ -13,6 +13,7 @@ import {
   num,
   obj,
   optional,
+  orElse,
   record,
   refine,
   ShapeError,
@@ -80,6 +81,10 @@ describe("objects", () => {
 
   test("defaults are decided by the shape", () => {
     expect(must(obj({ on: withDefault(bool(), false) }), {})).toEqual({ on: false });
+    // A settings file: one bad field falls back, the rest is kept.
+    const prefs = obj({ size: orElse(int({ min: 8 }), 13), wrap: orElse(bool(), true) });
+    expect(must(prefs, { size: "big", wrap: false })).toEqual({ size: 13, wrap: false });
+    expect(must(prefs, {})).toEqual({ size: 13, wrap: true });
   });
 
   test("must throws, maybe answers null", () => {

@@ -6,7 +6,7 @@ import { enabledIds } from "../apps/kit/index.ts";
 import { type SoftwareMenuContext, softwareMenus } from "../apps/software/lib/menus.ts";
 import type { NotifyInput } from "../src/notifications/types.ts";
 import type { FlatpakUpdate } from "../src/shared/software/types.ts";
-import { DAY_MS, dueIn, FIRST_LOOK_MS, parseCheckState, RETRY_MS, UpdateCheck, updatesNotice, updatesWords } from "../src/software/update-check.ts";
+import { DAY_MS, dueIn, FIRST_LOOK_MS, parseCheckState, RETRY_MS, toldParts, UpdateCheck, updatesNotice, updatesWords } from "../src/software/update-check.ts";
 
 test("the daily look's words: a short title, the counts in the body, and a Show button", () => {
   expect(updatesWords(0, 0)).toBeNull();
@@ -28,12 +28,15 @@ test("when the next look is due; a clock set back counts as due; a bad state fil
   expect(dueIn(5000, 1000)).toBe(0);
   expect(parseCheckState("{bad")).toEqual({ checkedAt: null, told: null });
   expect(parseCheckState('{"checkedAt": 5, "told": "x"}')).toEqual({ checkedAt: 5, told: "x" });
+  // One field of the wrong shape loses only itself; a file that is no object is no state.
+  expect(parseCheckState('{"checkedAt": "soon", "told": "x"}')).toEqual({ checkedAt: null, told: "x" });
+  expect(parseCheckState("[1]")).toEqual({ checkedAt: null, told: null });
 });
 
 const update = (id: string, version = "2"): FlatpakUpdate =>
   ({ id, name: id, version, branch: "stable", arch: "x86_64", origin: "flathub", installation: "user", downloadSize: null }) as FlatpakUpdate;
 
-function rig(apps: FlatpakUpdate[], options: { canLook?: () => boolean; statePath?: string | null } = {}) {
+function rig(apps: FlatpakUpdate[], options: { canLook?: () => boolean; statePath?: string | null; flatpak?: () => Promise<FlatpakUpdate[]> } = {}) {
   const posted: NotifyInput[] = [];
   const senders: string[] = [];
   const timers: Array<{ run: () => void; ms: number }> = [];
@@ -44,7 +47,7 @@ function rig(apps: FlatpakUpdate[], options: { canLook?: () => boolean; statePat
     software: {
       hasFlatpak: true,
       hasPackageKit: true,
-      flatpakUpdates: async () => apps,
+      flatpakUpdates: options.flatpak ?? (async () => apps),
       systemUpdates: async () => ({ updates: [{ name: "kernel" }] as never, restartCauses: [] }),
     },
     notifications: {
@@ -95,6 +98,32 @@ test("on battery or offline it waits an hour instead, and asks nothing", async (
   await check.look();
   expect(posted).toEqual([]);
   expect(timers.at(-1)?.ms).toBe(RETRY_MS);
+});
+
+test("a look where flatpak fails is not written down as no app updates: the same ones aren't told again", async () => {
+  let failing = false;
+  const flatpak = async (): Promise<FlatpakUpdate[]> => {
+    if (failing) throw new Error("flatpak: no network");
+    return [update("org.videolan.VLC")];
+  };
+  const { check, posted, timers, advance } = rig([], { flatpak });
+  await check.look();
+  expect(posted.length).toBe(1);
+  expect(timers.at(-1)?.ms).toBe(DAY_MS);
+  // The next day flatpak fails and PackageKit answers: nothing new to tell, and the failed half is asked again soon.
+  failing = true;
+  advance(DAY_MS);
+  await check.look();
+  expect(posted.length).toBe(1);
+  expect(timers.at(-1)?.ms).toBe(RETRY_MS);
+  // It answers again with the same app update: still told once.
+  failing = false;
+  advance(RETRY_MS);
+  await check.look();
+  expect(posted.length).toBe(1);
+  expect(timers.at(-1)?.ms).toBe(DAY_MS);
+  expect(toldParts('{"apps":["a@1"],"system":2}')).toEqual({ apps: ["a@1"], system: 2 });
+  expect(toldParts("nonsense")).toEqual({ apps: [], system: 0 });
 });
 
 const context = (over: Partial<SoftwareMenuContext> = {}): SoftwareMenuContext => ({

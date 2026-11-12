@@ -74,6 +74,21 @@ export function withDefault<T>(of: Shape<T>, fallback: NoInfer<T>): Shape<T> {
   );
 }
 
+/**
+ * `fallback` when absent, and when it does not have the shape: for a file of
+ * the person's own settings or state, where one bad field must not lose the
+ * rest. Never for a request: what asks for something is refused, not guessed.
+ */
+export function orElse<T>(of: Shape<T>, fallback: NoInfer<T>): Shape<T> {
+  return shape(
+    (value, where) => {
+      const parsed = of.parse(value, where);
+      return parsed.ok ? parsed : accept(fallback);
+    },
+    () => ({ ...of.schema(), default: fallback }),
+  );
+}
+
 export function nullable<T>(of: Shape<T>): Shape<T | null> {
   return shape(
     (value, where) => (value === null ? accept(null) : of.parse(value, where)),

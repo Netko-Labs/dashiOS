@@ -8,6 +8,7 @@ export {
   type ObjOptions,
   obj,
   optional,
+  orElse,
   type RecordOptions,
   record,
   refine,
