@@ -68,12 +68,15 @@ export function SidebarItem({ label, selected, onPress, testID, tile, glyph, til
         ) : (
           <Svg markup={glyph} size={16} color={look.glyph} />
         ))}
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: selected ? "semibold" : "normal", color: look.ink }}>
-          {label}
-        </Text>
+      {/* The count is smaller than the name: the two share a baseline (centered boxes left the count high). */}
+      <View testID={`${testID}:words`} style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "baseline", gap: 9 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: selected ? "semibold" : "normal", color: look.ink }}>
+            {label}
+          </Text>
+        </View>
+        {badge !== undefined && <Text style={{ fontSize: 12, color: look.quiet }}>{badge}</Text>}
       </View>
-      {badge !== undefined && <Text style={{ fontSize: 12, color: look.quiet }}>{badge}</Text>}
     </View>
   );
 }
