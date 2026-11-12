@@ -161,11 +161,13 @@ impl Dashi {
             match step.state {
                 Some(KeyMove::Down) => {
                     send(self, code, true);
-                    self.agent.pressed_keys.push(code);
+                    self.agent.pressed_keys.push((seat.clone(), code));
                 }
                 Some(KeyMove::Up) => {
                     send(self, code, false);
-                    self.agent.pressed_keys.retain(|c| *c != code);
+                    self.agent
+                        .pressed_keys
+                        .retain(|(held, c)| !(held == seat && *c == code));
                 }
                 None => {
                     send(self, code, true);

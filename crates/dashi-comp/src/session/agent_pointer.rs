@@ -90,11 +90,13 @@ impl Dashi {
             }
             PointerAction::Press => {
                 press(self, true);
-                self.agent.pressed_buttons.push(button);
+                self.agent.pressed_buttons.push((seat.clone(), button));
             }
             PointerAction::Release => {
                 press(self, false);
-                self.agent.pressed_buttons.retain(|b| *b != button);
+                self.agent
+                    .pressed_buttons
+                    .retain(|(held, b)| !(held == seat && *b == button));
             }
             PointerAction::Scroll => {
                 let scroll = params.scroll.ok_or("scroll needs `scroll {dx, dy}`")?;

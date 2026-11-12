@@ -12,8 +12,8 @@ import { type KeyChord, resolveChord } from "../../keymap/keymap-match.ts";
 import { type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import { named, noWindow, subject } from "../lib/subject.ts";
 import { type Call, keySteps } from "../tools/index.ts";
-import { borrowsPersonSeat, type Payload, PersonBusy } from "./hands.ts";
-import { describePerson, desktopChordRefusal, wheelFlicks } from "./lib/input-words.ts";
+import { type Patience, type Payload, PersonBusy } from "./hands.ts";
+import { describeCutDrag, describePerson, desktopChordRefusal, wheelFlicks } from "./lib/input-words.ts";
 
 type InputCall = Extract<Call, { name: "click" | "scroll" | "drag" | "type_text" | "press_keys" }>;
 
@@ -68,7 +68,7 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
   if (isResult(size)) return size;
   const where = subject(window, ctx);
   const say = (words: string) => ctx.status(words);
-  const send = (payload: Payload) => ctx.hands.send(window, payload, ctx.agent, say);
+  const send = (payload: Payload, patience?: Patience) => ctx.hands.send(window, payload, ctx.agent, say, patience);
   try {
     switch (call.name) {
       case "click": {
@@ -94,11 +94,6 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
       case "drag": {
         const problem = inside(window, size, [call.from, call.to]);
         if (problem) return problem;
-        if (borrowsPersonSeat(window)) {
-          return toolError(
-            `w${window.id} only listens to the person's pointer, so it can't be dragged without taking it over; use click, type_text, or press_keys there.`,
-          );
-        }
         say(`Dragging in ${where}`);
         return await drag(call, window.id, send, ctx);
       }
@@ -139,21 +134,32 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
   }
 }
 
-async function drag(call: Extract<InputCall, { name: "drag" }>, id: number, send: (payload: Payload) => Promise<void>, ctx: RunContext): Promise<ToolResult> {
+/**
+ * Press at `from`, move to `to` in steps, let go. In a window that hears only the person's seat
+ * (Metal's, Chromium's) the seat is borrowed for the whole drag: the press waits for the person to
+ * pause, as a click does; after it, a step is tried once, and the person coming back ends the drag.
+ */
+async function drag(
+  call: Extract<InputCall, { name: "drag" }>,
+  id: number,
+  send: (payload: Payload, patience?: Patience) => Promise<void>,
+  ctx: RunContext,
+): Promise<ToolResult> {
   const { from, to } = call;
-  const move = (x: number, y: number, action: "move" | "press" | "release") => send({ pointer: { x, y }, action });
+  await send({ pointer: from, action: "press" });
+  let reached = from;
   try {
-    await move(from.x, from.y, "press");
     for (let step = 1; step <= DRAG_STEPS; step++) {
-      await sleep(DRAG_STEP_MS);
+      await ctx.hands.pause(DRAG_STEP_MS);
       const t = step / DRAG_STEPS;
-      const x = from.x + (to.x - from.x) * t;
-      const y = from.y + (to.y - from.y) * t;
-      await (step === DRAG_STEPS ? move(x, y, "release") : move(x, y, "move"));
+      const point = { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t };
+      await send({ pointer: point, action: step === DRAG_STEPS ? "release" : "move" }, "once");
+      reached = point;
     }
   } catch (error) {
     // The person came back, or something refused: don't leave the button down.
     await ctx.hands.release();
+    if (error instanceof PersonBusy) return describeCutDrag(error, at(reached.x, reached.y));
     throw error;
   }
   return text(`Dragged in w${id} from ${at(from.x, from.y)} to ${at(to.x, to.y)}.`);
