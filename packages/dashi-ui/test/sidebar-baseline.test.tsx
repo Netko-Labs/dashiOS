@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
 import { SidebarItem } from "../src/sidebar.tsx";
-import { fakeHost, settle } from "./host.ts";
+import { fakeHost } from "./host.ts";
+import { settle } from "./support/time.ts";
 
 interface Node {
   type: string;

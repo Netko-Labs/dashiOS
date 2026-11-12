@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
 import { LoginScreen, type PowerAction } from "../src/login-screen.tsx";
-import { fakeHost, settle } from "./host.ts";
+import { fakeHost } from "./host.ts";
+import { settle } from "./support/time.ts";
 
 interface Node {
   type: string;
