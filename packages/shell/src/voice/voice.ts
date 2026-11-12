@@ -3,20 +3,24 @@
  * is a listen, let go it is the words, which go to the launcher's agent
  * (`Asker`) and come back said in Dashi's voice with captions. Esc, or the
  * key again, stops Dashi at once. A tap listens to nothing: it stops Dashi
- * if it was speaking, and otherwise says how to talk. An agent's question
- * (`ask_person`) is said the same way, and the next thing heard is its
- * answer instead of an ask.
+ * if it was speaking, and otherwise says how to talk. The Copilot key is the
+ * one whose tap talks (many laptops can't hold it: keys.ts): the listen its
+ * press opened goes on, and ends when the person stops talking or taps
+ * again. An agent's question (`ask_person`) is said the same way, and the
+ * next thing heard is its answer instead of an ask.
  *
  * The chip (chip.tsx) shows `getSnapshot()`; nothing here draws.
  */
 
 import { maybe } from "@dashi/shape";
 import { realTimers, type Timers } from "../shared/time/index.ts";
-import { heldKeys, STOP, TALK, TAP_MS, type TalkKey } from "./keys.ts";
+import { heldKeys, STOP, TALK_TAP, TAP_MS, type TalkKey, talks } from "./keys.ts";
 import { head, listenLanguage, tail } from "./lib/captions.ts";
+import { Saying } from "./lib/saying.ts";
 import type { VoiceService } from "./lib/service.ts";
 import { Captions, LevelStore } from "./lib/speech.ts";
-import { HeardReply, SpeakReply, type VoiceEvent } from "./lib/wire.ts";
+import { TapListen } from "./lib/tap-listen.ts";
+import { HeardReply, type VoiceEvent } from "./lib/wire.ts";
 import type { Answer, Asker, Chip, ChipGo, Trouble } from "./types.ts";
 
 /** How long a notice stays. */
@@ -46,12 +50,12 @@ export class Voice {
   private readonly captions: Captions;
   /** Bumped by every press and stop: what an older press was waiting for is no longer wanted. */
   private turn = 0;
-  private holding: { since: number; stopped: boolean; opened: Promise<boolean> | null } | null = null;
+  private holding: { since: number; stopped: boolean; opened: Promise<boolean> | null; tap: boolean } | null = null;
+  /** A listen a tap of the Copilot key began, which ends by itself (lib/tap-listen.ts). */
+  private readonly tapped: TapListen;
   private asking: AbortController | null = null;
-  /** The utterance being said (`speak`'s id); `pending` from the ask until the service names it. */
-  private utterance: number | "pending" | null = null;
-  /** A notice that outlasts the speech said with it (a failed ask). */
-  private lasting: Chip | null = null;
+  /** What is being said, and a failed ask's words that outlast it (lib/saying.ts). */
+  private readonly saying: Saying;
   private noticeTimer: unknown = null;
   private question: ((text: string) => void) | null = null;
   private held = "";
@@ -60,6 +64,16 @@ export class Voice {
   constructor(private readonly deps: VoiceDeps) {
     this.timers = deps.timers ?? realTimers;
     this.captions = new Captions(this.timers, (chip) => this.show(chip));
+    this.tapped = new TapListen(deps.service, this.timers);
+    this.saying = new Saying({
+      service: deps.service,
+      captions: this.captions,
+      voice: () => deps.prefs().voice,
+      turn: () => this.turn,
+      show: (chip) => this.show(chip),
+      notice: (text, go, ms) => this.notice(text, go, ms),
+      sync: () => this.sync(),
+    });
     this.off = deps.service.on((event) => this.event(event));
     this.sync();
   }
@@ -88,7 +102,7 @@ export class Voice {
   /** The keys held follow the settings and what there is to stop (the pane's switch, the key's choice). */
   sync(): void {
     const { on, key } = this.deps.prefs();
-    const busy = this.utterance !== null || this.asking !== null || this.chip?.kind === "listening" || this.chip?.kind === "thinking";
+    const busy = this.saying.busy || this.asking !== null || this.chip?.kind === "listening" || this.chip?.kind === "thinking";
     const keys = heldKeys(on ? key : null, busy);
     const text = JSON.stringify(keys);
     if (text === this.held) return;
@@ -99,20 +113,22 @@ export class Voice {
   /** A `held-key` event of the compositor's. */
   key(name: string, down: boolean): void {
     if (name === STOP && down) this.stop();
-    if (name === TALK) void (down ? this.keyDown() : this.keyUp());
+    if (talks(name)) void (down ? this.keyDown(name === TALK_TAP) : this.keyUp());
   }
 
   private now(): number {
     return this.deps.now?.() ?? Date.now();
   }
 
-  private keyDown(): void {
+  private keyDown(tap: boolean): void {
     if (this.holding) return;
+    // The tap after the one that began a listen ends it, as letting go of a held key does.
+    if (this.tapped.end()) return void this.words(this.turn);
     // Holding the key again stops Dashi at once, whatever else the press comes to.
     const stopped = this.halt();
     const turn = this.turn;
     const trouble = this.deps.trouble();
-    this.holding = { since: this.now(), stopped, opened: null };
+    this.holding = { since: this.now(), stopped, opened: null, tap };
     if (trouble) return this.notice(trouble.text, trouble.go);
     this.level.set(0);
     this.show({ kind: "listening", text: "", question: this.question !== null });
@@ -124,6 +140,8 @@ export class Voice {
         return false;
       },
     );
+    // The speaking model loads while the person talks, so the answer never waits for it (docs/voice.md, "Keep it warm").
+    if (this.question === null) void this.deps.service.call("warm", { speak: true }).catch(() => {});
   }
 
   private async keyUp(): Promise<void> {
@@ -134,12 +152,29 @@ export class Voice {
     const short = this.now() - held.since < TAP_MS;
     if (!(await held.opened) || turn !== this.turn) return;
     if (short) {
+      // The Copilot key's tap talks, unless it was the tap that stopped Dashi.
+      if (held.tap && !held.stopped) return this.tap(turn);
       await this.deps.service.call("listen.cancel").catch(() => {});
       if (turn !== this.turn) return;
       if (held.stopped) this.show(null);
       else this.notice(`Hold ${this.deps.prefs().key.hold} to talk.`, undefined, 2500);
       return;
     }
+    await this.words(turn);
+  }
+
+  /** A tap of the Copilot key: the listen goes on, and ends by itself once the person has talked and gone quiet. */
+  private async tap(turn: number): Promise<void> {
+    const nothing = (): void => {
+      if (this.chip?.kind === "listening" && this.chip.text !== "") return;
+      this.stop();
+      this.notice("I didn't hear anything.", undefined, 2500);
+    };
+    await this.tapped.begin(() => turn === this.turn, nothing).catch((error) => turn === this.turn && this.notice(message(error), "voice"));
+  }
+
+  /** The listen ends here: its words, then what they are for. */
+  private async words(turn: number): Promise<void> {
     this.show({ kind: "thinking", text: this.chip?.kind === "listening" ? this.chip.text : "" });
     let text: string;
     try {
@@ -169,27 +204,13 @@ export class Voice {
     this.asking = null;
     // A stopped ask says nothing.
     if (answer.say.trim() === "") return this.show(null);
-    if (answer.failed) this.lasting = { kind: "notice", text: head(answer.say, 90), ...(answer.failed.go ? { go: answer.failed.go } : {}) };
+    if (answer.failed) this.saying.keep({ kind: "notice", text: head(answer.say, 90), ...(answer.failed.go ? { go: answer.failed.go } : {}) });
     await this.say(answer.say);
   }
 
   /** Say `text` in Dashi's voice (or `voice`), with captions. What can't be said is shown instead. */
-  async say(text: string, voice?: string): Promise<void> {
-    const turn = this.turn;
-    const chosen = voice ?? this.deps.prefs().voice;
-    this.utterance = "pending";
-    if (this.lasting) this.show(this.lasting);
-    else this.sync();
-    try {
-      const reply = maybe(SpeakReply, await this.deps.service.call("speak", { text, ...(chosen ? { voice: chosen } : {}) }));
-      if (turn === this.turn && this.utterance === "pending") this.utterance = reply?.id ?? null;
-    } catch {
-      if (turn !== this.turn) return;
-      this.utterance = null;
-      const lasting = this.lasting;
-      this.lasting = null;
-      this.notice(lasting?.kind === "notice" ? lasting.text : text, lasting?.kind === "notice" ? lasting.go : undefined, 8000);
-    }
+  say(text: string, voice?: string): Promise<void> {
+    return this.saying.say(text, voice);
   }
 
   private event(event: VoiceEvent): void {
@@ -199,13 +220,15 @@ export class Voice {
       case "partial":
         if (this.chip?.kind === "listening") this.show({ ...this.chip, text: event.text });
         return;
+      case "heard":
+        // A listen a tap began ended by itself: these are its words. (A held key's come in `listen.stop`'s reply.)
+        if (!this.tapped.end()) return;
+        if (event.text.trim() === "") return this.notice("I didn't hear anything.", undefined, 2500);
+        return void this.heard(event.text.trim(), this.turn);
       case "sentence":
-        // A failed ask's words stay in the chip while they are said.
-        if (event.id === this.utterance && !this.lasting) this.captions.sentence(event.text, event.words);
-        return;
+        return this.saying.sentence(event.id, event.text, event.words);
       case "spoken":
-        if (event.id === this.utterance) this.ended();
-        return;
+        return this.saying.spoken(event.id);
       case "error":
         if (this.chip?.kind === "listening" || this.chip?.kind === "thinking") this.notice(event.message, "voice");
         return;
@@ -214,33 +237,20 @@ export class Voice {
     }
   }
 
-  /** The utterance ended by itself: the chip goes, or a failed ask's words stay a while longer. */
-  private ended(): void {
-    this.captions.clear();
-    this.utterance = null;
-    const lasting = this.lasting;
-    this.lasting = null;
-    if (lasting?.kind === "notice") this.notice(lasting.text, lasting.go);
-    else this.show(null);
-  }
-
   /** Stop what is under way without touching the chip; whether there was anything. */
   private halt(): boolean {
     this.turn++;
-    const speaking = this.utterance !== null;
+    this.tapped.end();
     const asking = this.asking !== null;
     this.asking?.abort();
     this.asking = null;
-    this.captions.clear();
-    this.utterance = null;
-    this.lasting = null;
-    if (speaking) void this.deps.service.call("speak.stop").catch(() => {});
-    return speaking || asking;
+    return this.saying.halt() || asking;
   }
 
   /** Esc, or a press on the chip: Dashi stops speaking, thinking or listening, at once. */
   stop(): void {
-    const listening = this.holding?.opened ?? (this.chip?.kind === "thinking" ? Promise.resolve(true) : null);
+    const open = this.tapped.running || this.chip?.kind === "thinking";
+    const listening = this.holding?.opened ?? (open ? Promise.resolve(true) : null);
     this.holding = null;
     this.halt();
     if (listening) void listening.then((opened) => opened && this.deps.service.call("listen.cancel").catch(() => {}));
@@ -262,7 +272,7 @@ export class Voice {
     return () => {
       if (this.question !== heard) return;
       this.question = null;
-      if (spoken && this.utterance !== null) this.stop();
+      if (spoken && this.saying.busy) this.stop();
     };
   }
 

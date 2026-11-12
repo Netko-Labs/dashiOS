@@ -17,14 +17,14 @@ import { AgentSitesSection } from "./agents-sites.tsx";
 export function AgentsPane({
   ctx,
 }: {
-  ctx: Pick<PaneContext, "grants" | "sites" | "alone" | "showAloneRecord" | "settings" | "flags" | "agents" | "answers" | "home" | "show">;
+  ctx: Pick<PaneContext, "grants" | "sites" | "alone" | "showAloneRecord" | "byPerson" | "settings" | "flags" | "agents" | "answers" | "home" | "show">;
 }) {
   return (
     <Page title="Agents">
       <ConsentDashboard ctx={ctx} />
-      <AgentSitesSection sites={ctx.sites} />
+      <AgentSitesSection sites={ctx.sites} {...(ctx.byPerson ? { byPerson: ctx.byPerson } : {})} />
       <WorkAloneSection ctx={ctx} />
-      {ctx.answers && <AnswerSettings settings={ctx.settings} answers={ctx.answers} />}
+      {ctx.answers && <AnswerSettings settings={ctx.settings} answers={ctx.answers} {...(ctx.byPerson ? { byPerson: ctx.byPerson } : {})} />}
     </Page>
   );
 }

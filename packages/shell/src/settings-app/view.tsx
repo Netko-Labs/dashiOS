@@ -152,7 +152,7 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
       return <AgentsPane ctx={ctx} />;
     case "voice":
       return ctx.voice ? (
-        <VoicePane settings={ctx.settings} voice={ctx.voice} />
+        <VoicePane settings={ctx.settings} voice={ctx.voice} {...(ctx.byPerson ? { byPerson: ctx.byPerson } : {})} />
       ) : (
         <Page title="Voice">
           <Group testID="voice-none">

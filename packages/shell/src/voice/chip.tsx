@@ -105,7 +105,13 @@ function Dots({ still }: { still: boolean }) {
   );
 }
 
-/** One line of the chip's words. Each is laid out at its own width (`key`: a new text is a new node), never squeezed by its neighbour. */
+/**
+ * One line of the chip's words, in a box that keeps its own width. A one-line
+ * text is as wide as its box (mirin's `one_line`), so two side by side each
+ * asked for the whole chip and got half of it, whatever their words: "can r…"
+ * beside a short line with room to spare. The box is what stops that; mirin
+ * keeps nothing from the words before (its `render::one_line_tests`).
+ */
 function Line({ children, bold, faint }: { children: string; bold?: boolean; faint?: boolean }) {
   const colors = useColors();
   return (
@@ -129,9 +135,7 @@ function Words({ chip, chars, still, level }: { chip: Chip; chars: number; still
       <>
         {glyph(MIC)}
         <Meter level={level} />
-        <Line key={heard} bold={heard === ""}>
-          {heard || (chip.question && chars - METER_CHARS >= ANSWER_LABEL.length ? ANSWER_LABEL : "Listening")}
-        </Line>
+        <Line bold={heard === ""}>{heard || (chip.question && chars - METER_CHARS >= ANSWER_LABEL.length ? ANSWER_LABEL : "Listening")}</Line>
       </>
     );
   }
@@ -151,16 +155,8 @@ function Words({ chip, chars, still, level }: { chip: Chip; chars: number; still
     return (
       <>
         {glyph(VOLUME)}
-        {said !== "" && (
-          <Line key={`said:${said}`} bold>
-            {said}
-          </Line>
-        )}
-        {coming !== "" && (
-          <Line key={`coming:${coming}`} faint>
-            {coming}
-          </Line>
-        )}
+        {said !== "" && <Line bold>{said}</Line>}
+        {coming !== "" && <Line faint>{coming}</Line>}
       </>
     );
   }

@@ -82,6 +82,16 @@ function useWrapFit(knob: boolean): { under: boolean; onWidth: (width: number) =
   };
 }
 
+/**
+ * Whether a row's first line holds its words and nothing else: a stacked
+ * row without a knob. That line is then as tall as the words, so the
+ * control under them sits one gap below (a one-line title kept the full
+ * line's height, and left a blank band under itself: "For").
+ */
+export function wordsOnly(stack: boolean, knob: boolean): boolean {
+  return stack && !knob;
+}
+
 /** A row: its knob, its name and a quieter line under it, then the control at the end (or under, `stack`). */
 export function Row({ label, detail, glyph, children, stack: asked, below, testID }: RowProps) {
   const colors = useControlColors();
@@ -96,7 +106,7 @@ export function Row({ label, detail, glyph, children, stack: asked, below, testI
   );
   const knob = glyph !== undefined ? <Knob glyph={glyph} size={PAGE.knob} /> : null;
   const top = (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: PAGE.row - 16 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, ...(wordsOnly(stack, glyph !== undefined) ? {} : { minHeight: PAGE.row - 16 }) }}>
       {knob}
       {words}
       {!stack && <PillsWrapped.Provider value={fit.report}>{children}</PillsWrapped.Provider>}

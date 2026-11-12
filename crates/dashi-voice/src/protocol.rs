@@ -56,6 +56,15 @@ pub(crate) struct Listen {
     pub(crate) partials: Option<bool>,
 }
 
+/// `listen.quiet`: the listen under way ends by itself from now on.
+#[derive(Debug, Default, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Quiet {
+    /// How long a quiet ends the listen, 300 to 10000 ms; 1200 unless given.
+    #[serde(default)]
+    pub(crate) quiet_ms: Option<u64>,
+}
+
 #[derive(Debug, Default, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Speak {
@@ -96,6 +105,7 @@ pub(crate) enum Request {
     Warm(Warm),
     Listen(Listen),
     ListenStop,
+    ListenQuiet(Quiet),
     ListenCancel,
     Speak(Speak),
     SpeakStop,
@@ -103,7 +113,7 @@ pub(crate) enum Request {
 
 /// Every method: docs/voice.md names each (protocol_tests.rs holds it to that).
 #[cfg(test)]
-pub(crate) const METHODS: [&str; 13] = [
+pub(crate) const METHODS: [&str; 14] = [
     "status",
     "subscribe",
     "models",
@@ -114,6 +124,7 @@ pub(crate) const METHODS: [&str; 13] = [
     "warm",
     "listen",
     "listen.stop",
+    "listen.quiet",
     "listen.cancel",
     "speak",
     "speak.stop",
@@ -157,6 +168,7 @@ pub(crate) fn parse(line: &[u8]) -> (Option<u64>, Result<Request, String>) {
         "warm" => params(method, given).map(Request::Warm),
         "listen" => params(method, given).map(Request::Listen),
         "listen.stop" => none(method, given, Request::ListenStop),
+        "listen.quiet" => params(method, given).map(Request::ListenQuiet),
         "listen.cancel" => none(method, given, Request::ListenCancel),
         "speak" => params(method, given).map(Request::Speak),
         "speak.stop" => none(method, given, Request::SpeakStop),

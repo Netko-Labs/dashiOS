@@ -1,7 +1,7 @@
 /**
  * Text Editor's View settings, kept across windows in
  * `$XDG_CONFIG_HOME/dashi/editor.json`: the monospaced font, the text size,
- * and line numbers. Read when a window opens and again when another window
+ * line numbers, and how far apart the tab stops are. Read when a window opens and again when another window
  * changes them (main.tsx), so every open window follows; written when one
  * changes.
  */
@@ -17,13 +17,19 @@ export interface EditorPrefs {
   fontSize: number;
   /** The line-number gutter at the text's left. */
   lineNumbers: boolean;
+  /** How far apart the tab stops are, in characters of the font (its "0": mirin's `tabSize`). */
+  tabWidth: TabWidth;
 }
 
+export const TAB_WIDTHS = [2, 4, 8] as const;
+export type TabWidth = (typeof TAB_WIDTHS)[number];
+export const isTabWidth = (value: unknown): value is TabWidth => (TAB_WIDTHS as readonly unknown[]).includes(value);
+
 export const FONT_SIZES = [10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32] as const;
-export const DEFAULT_PREFS: EditorPrefs = { monospace: false, fontSize: 13, lineNumbers: true };
+export const DEFAULT_PREFS: EditorPrefs = { monospace: false, fontSize: 13, lineNumbers: true, tabWidth: 4 };
 
 export const samePrefs = (a: EditorPrefs, b: EditorPrefs): boolean =>
-  a.monospace === b.monospace && a.fontSize === b.fontSize && a.lineNumbers === b.lineNumbers;
+  a.monospace === b.monospace && a.fontSize === b.fontSize && a.lineNumbers === b.lineNumbers && a.tabWidth === b.tabWidth;
 
 export function prefsPath(env: Record<string, string | undefined> = process.env): string {
   const config = env.XDG_CONFIG_HOME || join(env.HOME || homedir(), ".config");
@@ -45,6 +51,7 @@ export function parsePrefs(text: string): EditorPrefs {
     monospace: typeof record.monospace === "boolean" ? record.monospace : DEFAULT_PREFS.monospace,
     fontSize: typeof size === "number" && (FONT_SIZES as readonly number[]).includes(size) ? size : DEFAULT_PREFS.fontSize,
     lineNumbers: typeof record.lineNumbers === "boolean" ? record.lineNumbers : DEFAULT_PREFS.lineNumbers,
+    tabWidth: isTabWidth(record.tabWidth) ? record.tabWidth : DEFAULT_PREFS.tabWidth,
   };
 }
 

@@ -3,7 +3,7 @@ use std::sync::atomic::Ordering;
 use serde_json::json;
 
 use super::world::{world, world_with};
-use crate::protocol::{Listen, Request, Until};
+use crate::protocol::{Listen, Quiet, Request, Until};
 
 #[test]
 fn a_held_key_is_heard_when_it_is_let_go() {
@@ -77,6 +77,58 @@ fn a_listen_can_end_itself_when_the_person_goes_quiet() {
         "Voice is not listening."
     );
     assert!(world.events_named("partial").is_empty());
+}
+
+#[test]
+fn a_listen_under_way_can_be_told_to_end_itself_on_a_quiet() {
+    // A key that was tapped, not held: the listen it opened has no key coming up to end it.
+    let world = world();
+    assert_eq!(
+        world
+            .ask(Request::ListenQuiet(Quiet::default()))
+            .unwrap_err(),
+        "Voice is not listening."
+    );
+    world
+        .ask(Request::Listen(Listen {
+            partials: Some(false),
+            ..Listen::default()
+        }))
+        .unwrap();
+    // Held, a quiet after speech ends nothing.
+    world.feed(10, true);
+    world.feed(20, false);
+    world.until("the frames are read", |world| {
+        world.events_named("level").len() >= 30
+    });
+    assert!(world.events_named("heard").is_empty());
+    assert_eq!(
+        world
+            .ask(Request::ListenQuiet(Quiet {
+                quiet_ms: Some(320)
+            }))
+            .unwrap(),
+        json!({})
+    );
+    // More speech, then the quiet that ends it: everything said since the listen opened is heard.
+    world.feed(10, true);
+    world.feed(10, false);
+    world.until("it is heard", |world| {
+        !world.events_named("heard").is_empty()
+    });
+    let heard = world.events_named("heard")[0]["text"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let frames: usize = heard.split(' ').next().unwrap().parse().unwrap();
+    assert!(frames >= 20, "{heard}");
+    world.until("it is idle", |world| {
+        world.states().last().map(String::as_str) == Some("idle")
+    });
+    assert_eq!(
+        world.ask(Request::ListenStop).unwrap_err(),
+        "Voice is not listening."
+    );
 }
 
 #[test]

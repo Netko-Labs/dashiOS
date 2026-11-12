@@ -6,8 +6,19 @@
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { type AgentStore, type Agents, type AloneRecord, Grants, type Passwords, recordText, stateDir, type WorkAlone } from "../agents/index.ts";
+import {
+  type AgentStore,
+  type Agents,
+  type AloneRecord,
+  Grants,
+  type Passwords,
+  personPressedWindow,
+  recordText,
+  stateDir,
+  type WorkAlone,
+} from "../agents/index.ts";
 import { AutoAppearance } from "../appearance/index.ts";
+import { SETTINGS_APP_ID } from "../apps.ts";
 import type { Compositor } from "../compositor/index.ts";
 import { openFile } from "../file-manager.ts";
 import { type ForceQuit, startForceQuit } from "../force-quit/index.ts";
@@ -112,6 +123,8 @@ export function startSettingsWindows(needs: SettingsWindowNeeds): SettingsWindow
     ...(agents ? { sites: agents.sites } : {}),
     // Work alone needs the agents' server: without it nothing asks, and nothing is there to switch.
     ...(agents ? { alone: needs.alone, showAloneRecord } : {}),
+    // Whose press it was in Settings' window (`input-origin`): an agent that may click changes nothing a wrong press pays for.
+    ...(compositor ? { byPerson: () => personPressedWindow(compositor, SETTINGS_APP_ID) } : {}),
     ...(guards.privacy ? { privacy: guards.privacy.store } : {}),
     answers: () => late.peek("askAgents")?.status ?? null,
     lock: () => guards.lockScreen?.lock(),

@@ -3,33 +3,25 @@
 //! asked goes away, or after five minutes whatever happens. The gate keeps
 //! the speech; when the listen ends, the model turns it into words.
 
-use std::sync::atomic::{AtomicU8, AtomicUsize, Ordering};
-use std::sync::mpsc::{Receiver, SyncSender, sync_channel};
+use std::sync::atomic::{AtomicU8, AtomicU64, AtomicUsize, Ordering};
+use std::sync::mpsc::{Receiver, sync_channel};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
 
 use serde_json::{Value, json};
 
 use super::Service;
+use super::capture::{TAIL, capture, quiet_of};
 use crate::audio::LISTEN_RATE;
-use crate::audio::level::level;
 use crate::audio::pipewire::{Closer, Microphone};
 use crate::engine::gate::Gate;
-use crate::engine::vad::{FRAME, SpeechDetector};
-use crate::protocol::{Event, Listen, Until};
+use crate::engine::vad::SpeechDetector;
+use crate::protocol::{Event, Listen, Quiet, Until};
 
-const RUNNING: u8 = 0;
-const STOPPING: u8 = 1;
-const CANCELLED: u8 = 2;
+pub(super) const RUNNING: u8 = 0;
+pub(super) const STOPPING: u8 = 1;
+pub(super) const CANCELLED: u8 = 2;
 
-/// Frames still heard after `listen.stop` (128 ms): the key is let go as the last word ends.
-const TAIL: usize = 4;
-/// The longest listen: five minutes of frames.
-const MOST: usize = 5 * 60 * LISTEN_RATE as usize / FRAME;
-/// Frames between partial words (0.8 s).
-const PARTIAL_EVERY: usize = 25;
-/// How long a quiet ends a listen that ends by itself, unless told.
-const QUIET_MS: u64 = 1200;
 /// How long `listen.stop` waits for the microphone before closing it by force.
 const PATIENCE: Duration = Duration::from_millis(600);
 /// How long a microphone may give no sound at all before the listen gives up.
@@ -43,10 +35,12 @@ struct Heard {
     speech_ms: u64,
 }
 
-struct Run {
+pub(super) struct Run {
     owner: u64,
-    mode: AtomicU8,
-    frames: AtomicUsize,
+    pub(super) mode: AtomicU8,
+    /// How long a quiet ends the listen, in ms; 0 while only `listen.stop` ends it.
+    pub(super) quiet: AtomicU64,
+    pub(super) frames: AtomicUsize,
     close: Closer,
     done: Mutex<Option<Result<Heard, String>>>,
     told: Condvar,
@@ -87,6 +81,10 @@ impl Service {
         let run = Arc::new(Run {
             owner: connection,
             mode: AtomicU8::new(RUNNING),
+            quiet: AtomicU64::new(match params.until {
+                Until::Silence => quiet_of(params.quiet_ms),
+                Until::Stop => 0,
+            }),
             frames: AtomicUsize::new(0),
             close: microphone.closer(),
             done: Mutex::new(None),
@@ -126,7 +124,7 @@ impl Service {
                 (watched.close)();
             }
         });
-        let captured = capture(self, run, microphone, detector, params, &partials);
+        let captured = capture(self, run, microphone, detector, &partials);
         drop(partials);
         if let Some(worker) = worker {
             let _ = worker.join();
@@ -230,6 +228,14 @@ impl Service {
         }
     }
 
+    /// From now on the listen under way ends by itself, once the person has spoken and
+    /// then been quiet: a key that was tapped, not held, has no coming up to end it.
+    pub(super) fn listen_quiet(&self, quiet: &Quiet) -> Result<Value, String> {
+        let run = self.listening.current().ok_or("Voice is not listening.")?;
+        run.quiet.store(quiet_of(quiet.quiet_ms), Ordering::SeqCst);
+        Ok(json!({}))
+    }
+
     /// Drop a listen and what it heard; with a connection, only that connection's.
     pub(super) fn listen_cancel(&self, owner: Option<u64>) {
         let Some(run) = self.listening.current() else {
@@ -240,51 +246,4 @@ impl Service {
             (run.close)();
         }
     }
-}
-
-/// Read the microphone until the listen ends; what the gate kept, or why there is nothing.
-fn capture(
-    service: &Service,
-    run: &Run,
-    mut microphone: Box<dyn Microphone>,
-    mut detector: Box<dyn SpeechDetector>,
-    params: &Listen,
-    partials: &SyncSender<Vec<f32>>,
-) -> Result<Gate, String> {
-    let quiet = params.quiet_ms.unwrap_or(QUIET_MS).clamp(300, 10_000);
-    let mut gate = Gate::default();
-    let mut frame = vec![0.0; FRAME];
-    let (mut frames, mut tail, mut sent) = (0, TAIL, 0);
-    while frames < MOST && microphone.read(&mut frame)? {
-        frames += 1;
-        run.frames.store(frames, Ordering::SeqCst);
-        let mode = run.mode.load(Ordering::SeqCst);
-        if mode == CANCELLED {
-            break;
-        }
-        gate.push(&frame, detector.probability(&frame)?);
-        if mode == STOPPING {
-            tail -= 1;
-            if tail == 0 {
-                break;
-            }
-            continue;
-        }
-        service.hub.emit(&Event::Level {
-            level: level(&frame),
-        });
-        if params.until == Until::Silence && gate.quiet_ms() >= quiet {
-            break;
-        }
-        if frames % PARTIAL_EVERY == 0
-            && gate.speech().len() > sent
-            && partials.try_send(gate.speech().to_vec()).is_ok()
-        {
-            sent = gate.speech().len();
-        }
-    }
-    if frames == 0 && run.mode.load(Ordering::SeqCst) != CANCELLED {
-        return Err("The microphone gave no sound. Check the input in Sound settings.".into());
-    }
-    Ok(gate)
 }

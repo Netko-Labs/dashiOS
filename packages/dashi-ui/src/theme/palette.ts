@@ -39,8 +39,10 @@ export interface Palette {
   /**
    * The one primary button (button-look.ts): ink. The ink itself under
    * `onPrimary` words in Light, the light ink under black words in Dark. It
-   * deepens under the pointer and more while held, and `onPrimary` is AA on
-   * all three. A default secondary button's 2 px edge is `primary` too.
+   * steps toward the page under the pointer and more while held (lighter in
+   * Light, where ink to black can't be seen; dimmer in Dark), each step 1.2
+   * to 1 or more from the one before, and `onPrimary` is AA on all three
+   * (decisions.md D44). A default secondary button's 2 px edge is `primary` too.
    */
   primary: string;
   primaryHover: string;
@@ -164,8 +166,8 @@ export const lightColors: Palette = {
   selectionHover: "#2F6E5A",
   selectionPressed: "#29614F",
   primary: "#1d1d1f",
-  primaryHover: "#0e0e10",
-  primaryPressed: "#000000",
+  primaryHover: "#3a3a3e",
+  primaryPressed: "#55555b",
   onPrimary: "#ffffff",
   selectionWash: "#3E8A7224",
   textSelection: "#3E8A7240",

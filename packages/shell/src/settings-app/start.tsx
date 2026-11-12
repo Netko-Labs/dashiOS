@@ -59,6 +59,8 @@ export interface SettingsAppOptions {
   /** Work alone (Settings › Agents), and opening one of its records as text. */
   alone?: PaneContext["alone"];
   showAloneRecord?: PaneContext["showAloneRecord"];
+  /** Whose press it was in this window, for the changes only the person makes (lib/person-only.ts). */
+  byPerson?: PaneContext["byPerson"];
   /** The apps' permissions (Privacy & Security), followed from login (privacy/). */
   privacy?: Pick<PrivacyStore, "subscribe" | "getSnapshot" | "revoke" | "refresh">;
   /** Dashi's vault and the login sources (Settings › Passwords). */
@@ -126,6 +128,7 @@ function paneContext(
     ...(options.sites ? { sites: options.sites } : {}),
     ...(options.alone ? { alone: options.alone } : {}),
     ...(options.showAloneRecord ? { showAloneRecord: options.showAloneRecord } : {}),
+    ...(options.byPerson ? { byPerson: options.byPerson } : {}),
     ...(options.privacy ? { privacy: options.privacy } : {}),
     ...(options.passwords ? { passwords: options.passwords } : {}),
     ...answersOf(options),

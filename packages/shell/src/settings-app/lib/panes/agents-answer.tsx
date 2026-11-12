@@ -21,6 +21,7 @@ import { useSettings } from "../../hooks.ts";
 import { Spot } from "../../spot.tsx";
 import type { SettingsStore } from "../../store.ts";
 import { Choices, Switch } from "../../ui.tsx";
+import { type ByPerson, ONLY_YOU, usePersonOnly } from "../person-only.ts";
 import { Row as Item } from "../row.tsx";
 import { Setting } from "../setting.tsx";
 import { ListRow } from "./parts.tsx";
@@ -172,8 +173,9 @@ function AnswererDetail({ choice, settings, answers }: { choice: AnswererChoice;
 }
 
 /** "Hand off to": the harness a plan goes to, and whether its steps skip the asking. */
-function HandOffGroup({ installed, settings }: { installed: ReturnType<typeof harnessOrder>; settings: SettingsStore }) {
+function HandOffGroup({ installed, settings, byPerson }: { installed: ReturnType<typeof harnessOrder>; settings: SettingsStore; byPerson?: ByPerson }) {
   const { data } = useSettings(settings);
+  const guard = usePersonOnly(byPerson);
   const handOff = installed[0] ?? "claude-code";
   return (
     <Group testID="agents-hand-off">
@@ -189,14 +191,21 @@ function HandOffGroup({ installed, settings }: { installed: ReturnType<typeof ha
           <Note>{ANSWERERS[handOff].name}</Note>
         )}
       </Setting>
-      <Setting id="agents/skip-grants">
-        <Switch testID="agents-skip-grants" on={data.agents.skipGrants === true} onChange={(on) => settings.patch("agents", { skipGrants: on || undefined })} />
+      <Setting id="agents/skip-grants" {...(guard.refused === "agents/skip-grants" ? { detail: ONLY_YOU } : {})}>
+        <Switch
+          testID="agents-skip-grants"
+          on={data.agents.skipGrants === true}
+          // On, a task starts without showing what its agent may use: the person's alone. Off only narrows.
+          onChange={(on) =>
+            on ? guard.mine("agents/skip-grants", () => settings.patch("agents", { skipGrants: true })) : settings.patch("agents", { skipGrants: undefined })
+          }
+        />
       </Setting>
     </Group>
   );
 }
 
-export function AnswerSettings({ settings, answers }: { settings: SettingsStore; answers: AnswerStatus }) {
+export function AnswerSettings({ settings, answers, byPerson }: { settings: SettingsStore; answers: AnswerStatus; byPerson?: ByPerson }) {
   const { data } = useSettings(settings);
   const choice = data.agents.answerer;
   const [entries, setEntries] = useState<readonly HistoryEntry[]>(() => answers.history());
@@ -226,7 +235,7 @@ export function AnswerSettings({ settings, answers }: { settings: SettingsStore;
         <AnswererList testID="agents-answerer-choice" chosen={choice} harnesses={harnesses} onChoose={choose} />
       </Group>
       {(choice === "claude" || choice === "gpt" || choice === "local") && <AnswererDetail choice={choice} settings={settings} answers={answers} />}
-      {installed.length > 0 && <HandOffGroup installed={installed} settings={settings} />}
+      {installed.length > 0 && <HandOffGroup installed={installed} settings={settings} {...(byPerson ? { byPerson } : {})} />}
       {harnessName !== null && (
         <Caption>{`${harnessName} runs in Dashi's agent sandbox with only its own sign-in, and its own tools are off: it can only plan.`}</Caption>
       )}

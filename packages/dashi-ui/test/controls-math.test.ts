@@ -167,12 +167,12 @@ describe("states", () => {
     ["light", lightColors],
     ["dark", darkColors],
   ] as const) {
-    test(`${mode}: buttons deepen under the pointer and more when held, their words staying AA`, () => {
-      for (const kind of ["primary", "danger", "chosen"] as const) {
+    test(`${mode}: ume and chosen buttons deepen under the pointer and more when held, their words staying AA`, () => {
+      for (const kind of ["danger", "chosen"] as const) {
         const rest = buttonLook(colors, kind);
         const held = buttonLook(colors, kind, { pressed: true });
         const fills = [rest.fill, rest.hover, held.fill];
-        // Deeper each step (darker, in Dark's light primary too), the words AA on every one.
+        // Deeper each step, the words AA on every one.
         const [atRest = 0, over = 0, down = 0] = fills.map((fill) => contrastRatio(fill, "#000000"));
         expect(over).toBeLessThan(atRest);
         expect(down).toBeLessThan(over);
@@ -183,6 +183,20 @@ describe("states", () => {
       expect(buttonLook(colors, "secondary", { pressed: true }).fill).toBe(colors.pressed);
       expect(secondary.edge).toBe(colors.controlEdge);
       expect(buttonLook(colors, "secondary", { isDefault: true })).toMatchObject({ edge: colors.primary, edgeWidth: 2 });
+    });
+    test(`${mode}: a primary button's steps can be seen, each toward the page, its words staying AA (D44)`, () => {
+      const rest = buttonLook(colors, "primary");
+      const held = buttonLook(colors, "primary", { pressed: true });
+      const fills = [rest.fill, rest.hover, held.fill];
+      // Each step is 1.2 to 1 or more from the one before: ink to black (1.15, then 1.09) was not.
+      expect(contrastRatio(rest.fill, rest.hover)).toBeGreaterThanOrEqual(1.2);
+      expect(contrastRatio(rest.hover, held.fill)).toBeGreaterThanOrEqual(1.2);
+      // Toward the page: nearer the window's ground each time, lighter in Light and dimmer in Dark.
+      const [atRest = 0, over = 0, down = 0] = fills.map((fill) => contrastRatio(fill, mode === "light" ? "#ffffff" : "#000000"));
+      expect(over).toBeLessThan(atRest);
+      expect(down).toBeLessThan(over);
+      for (const fill of fills) expect(contrastRatio(rest.ink, fill)).toBeGreaterThanOrEqual(4.5);
+      expect(held.ink).toBe(rest.ink);
     });
     test(`${mode}: the primary button is ink, never kombu, and a chosen pill is kombu, never ink`, () => {
       const primary = buttonLook(colors, "primary");

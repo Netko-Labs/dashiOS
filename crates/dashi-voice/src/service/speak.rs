@@ -45,6 +45,25 @@ pub(super) struct Speech {
 /// A sentence, made: its place, its words, its sound.
 pub(super) type Made = Result<(usize, String, Spoken), String>;
 
+/// The hush kept before the first sound of an utterance, and at each side of
+/// the join of a sentence said in two pieces (a comma's pause in all).
+const LEAD_MS: u64 = 30;
+const JOIN_MS: u64 = 120;
+
+/// A piece without the hush that only delays: the model starts each piece
+/// with a third of a second of it, which the first sound of an utterance
+/// waited through, and ends each with half a second, which would make a
+/// sentence said in two pieces stop for most of a second at its comma.
+fn unhushed(mut spoken: Spoken, index: usize, cut: bool) -> Spoken {
+    if index == 0 || (cut && index == 1) {
+        spoken.trim_start(LEAD_MS);
+    }
+    if cut && index == 0 {
+        spoken.trim_end(JOIN_MS);
+    }
+    spoken
+}
+
 /// The speaking thread.
 pub(super) fn start(service: &Arc<Service>) {
     let service = Arc::downgrade(service);
@@ -148,7 +167,9 @@ impl Service {
     /// Say one utterance to its end, or until it is stopped.
     fn say(self: &Arc<Self>, utterance: &Utterance, generation: u64) {
         self.act(|activity| activity.thinking += 1);
-        let sentences = crate::text::sentences(&utterance.text);
+        // The first sentence in two parts when it is long: the first sound waits for less.
+        let (sentences, cut) = crate::text::pieces_cut(&utterance.text);
+        let any = !sentences.is_empty();
         let (made, sound) = sync_channel::<Made>(1);
         let maker = self.clone();
         let (voice, speed) = (utterance.voice.clone(), utterance.speed);
@@ -167,7 +188,8 @@ impl Service {
                 let spoken = match synthesizer.lock() {
                     Ok(mut synthesizer) => synthesizer.speak(&sentence, &voice, speed),
                     Err(_) => Err("Voice is not well.".to_owned()),
-                };
+                }
+                .map(|spoken| unhushed(spoken, index, cut));
                 let failed = spoken.is_err();
                 if made
                     .send(spoken.map(|spoken| (index, sentence, spoken)))
@@ -179,8 +201,10 @@ impl Service {
             }
         });
         let mut player = Player::new(self, utterance.id, generation);
-        let result = player.play(&sound);
-        let spoke = player.speaker.is_some();
+        // The speakers open now, while the first sentence is made: opening them takes a
+        // while of its own (a program starts, PipeWire links it), and the sound waited for it.
+        let result = if any { player.open() } else { Ok(()) }.and_then(|()| player.play(&sound));
+        let spoke = player.sounding;
         match (&result, player.speaker.take()) {
             (Ok(true), Some(speaker)) => speaker.finish(),
             (_, speaker) => drop(speaker),

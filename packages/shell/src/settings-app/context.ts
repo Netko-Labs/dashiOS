@@ -9,6 +9,7 @@ import type { ControlCenterEditor } from "./control-center.tsx";
 import type { XkbLayouts } from "./layouts.ts";
 import type { AboutInfo } from "./lib/about.ts";
 import type { VoicePaneSource } from "./lib/panes/voice.tsx";
+import type { ByPerson } from "./lib/person-only.ts";
 import type { ScreensStore } from "./lib/screens.ts";
 import type { PaneServices } from "./services.ts";
 import type { SettingsStore } from "./store.ts";
@@ -31,6 +32,12 @@ export interface PaneContext {
   sites?: AheadSites;
   /** Work alone (agents/alone/): Settings › Agents turns it on and stops it, and lists its records. */
   alone?: Pick<WorkAlone, "subscribe" | "getSnapshot" | "start" | "stop" | "byPerson" | "records">;
+  /**
+   * Whether the person's own hands, not an agent's, just pressed in this window (the compositor's
+   * `input-origin`): asked before a change only the person makes (lib/person-only.ts). Absent where
+   * no compositor runs, and so no agent's pointer.
+   */
+  byPerson?: ByPerson;
   /** Opens one record of Work alone, whole, as text. */
   showAloneRecord?: (record: AloneRecord) => void;
   /** The apps' permissions the portal keeps (Privacy & Security); absent where the shell runs none. */

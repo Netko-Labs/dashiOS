@@ -5,6 +5,11 @@
  * talk. Many laptops send the Copilot key as ⇧❖F23, some as F23 alone: the
  * key is taken at its F23 either way. The person may pick another key; one
  * that does something else too says what it stops doing while it talks.
+ *
+ * A key that can be held is held to talk. The Copilot key often can't be:
+ * many laptops send its press and release together, whatever the finger
+ * does. So a tap of it starts a listen that ends by itself when the person
+ * stops talking, or at the next tap; held, it is a hold like any other.
  */
 
 export type TalkKeyId = "default" | "right-option" | "right-control" | "caps-lock" | "menu";
@@ -19,6 +24,8 @@ export interface TalkKey {
   codes: readonly number[];
   /** What the key no longer does while it is the talk key; none for a key with no other use. */
   cost?: string;
+  /** How a tap talks, for a key whose tap does (the Copilot key); Settings › Voice says it beside the key. */
+  tap?: string;
 }
 
 const KEY_RIGHTMETA = 126;
@@ -36,6 +43,7 @@ const DEFAULT_KEY: TalkKey = {
   hold: "the right ❖ or the Copilot key",
   codes: [KEY_RIGHTMETA, KEY_F23],
   cost: "The right ❖ no longer opens the launcher or makes shortcuts; the left ❖ does.",
+  tap: "A Copilot key that can't be held: tap it, talk, then stop talking or tap it again.",
 };
 
 export const TALK_KEYS: readonly TalkKey[] = [
@@ -64,14 +72,23 @@ export function talkKey(id: TalkKeyId | undefined): TalkKey {
   return TALK_KEYS.find((key) => key.id === id) ?? DEFAULT_KEY;
 }
 
-/** The names the compositor's `held-key` events carry. */
+/** The names the compositor's `held-key` events carry: a key held to talk, the Copilot key (a tap of it talks too), and Esc. */
 export const TALK = "talk";
+export const TALK_TAP = "talk-tap";
 export const STOP = "stop";
 
-/** What `held-keys` is sent: the talk key while Voice is on, and Esc (alone, never a chord) while there is something to stop. */
+/** Whether a `held-key` name is a talk key's. */
+export const talks = (name: string): boolean => name === TALK || name === TALK_TAP;
+
+/** What `held-keys` is sent: the talk key while Voice is on (the Copilot key under its own name), and Esc (alone, never a chord) while there is something to stop. */
 export function heldKeys(key: TalkKey | null, stoppable: boolean): Array<{ name: string; code: number; bare?: boolean }> {
-  return [...(key ? key.codes.map((code) => ({ name: TALK, code })) : []), ...(stoppable ? [{ name: STOP, code: KEY_ESC, bare: true }] : [])];
+  const talk = key ? key.codes.map((code) => ({ name: code === KEY_F23 ? TALK_TAP : TALK, code })) : [];
+  return [...talk, ...(stoppable ? [{ name: STOP, code: KEY_ESC, bare: true }] : [])];
 }
+
+/** After a tap of the Copilot key: a quiet this long ends the listen, and with nothing heard at all it gives up after this long. */
+export const TAP_QUIET_MS = 1500;
+export const TAP_WAIT_MS = 8000;
 
 /** A press shorter than this is a tap: it stops Dashi if it was speaking, and otherwise says how to talk. */
 export const TAP_MS = 300;

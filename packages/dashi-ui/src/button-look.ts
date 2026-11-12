@@ -3,7 +3,9 @@
  * the pointer, and held down; its edge; its ink. Ink goes ahead (`primary`:
  * the ink under light words in Light, the light ink under black words in
  * Dark), ume destroys, and a secondary button is the quiet fill with a 3:1
- * edge. Kombu is no button's: green means on.
+ * edge. Kombu is no button's: green means on. Ume and a chosen pill deepen
+ * under the pointer and while held; ink steps toward the page (lighter in
+ * Light, dimmer in Dark), since ink to black can't be seen.
  * Disabled changes nothing here: the whole button is drawn at 40%
  * (`DISABLED_OPACITY`), so a disabled primary still reads as primary.
  */

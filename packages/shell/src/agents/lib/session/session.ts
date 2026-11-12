@@ -8,36 +8,34 @@
  */
 
 import { isRecord } from "@dashi/shape";
-import { type Actor, actingAs } from "../../../acting.ts";
-import { NOT_ALONE, noteCall } from "../../alone/index.ts";
+import type { Actor } from "../../../acting.ts";
 import { logActivity, type Scope } from "../../consent.ts";
 import { type ToolResult, toolError } from "../../context.ts";
-import { LOCKED_WHILE_RUNNING } from "../../lock.ts";
-import { connectionHarness, watchingOf } from "../../mark.ts";
+import { connectionHarness } from "../../mark.ts";
 import { grantKey, type Peer } from "../../peer.ts";
 import type { AgentInfo, Who } from "../../presence.ts";
 import { SessionSecrets } from "../../secrets/index.ts";
 import { SiteConsent } from "../../sites.ts";
-import { type Call, catalog, INSTRUCTIONS, locksScreen, parseCall } from "../../tools/index.ts";
+import { catalog, INSTRUCTIONS, parseCall } from "../../tools/index.ts";
 import * as mcp from "../mcp.ts";
-import { runCall } from "../run/run.ts";
 import { SessionBrowser } from "./session-browser.ts";
+import { type CallHost, SessionCalls } from "./session-calls.ts";
 import { type ScopeHost, Scopes } from "./session-scopes.ts";
+import { SessionStatus } from "./session-status.ts";
 import type { Connection, SessionContext, SessionTask } from "./session-types.ts";
-import { SETTLE_MS, SessionWatch } from "./session-watch.ts";
+import { SessionWatch } from "./session-watch.ts";
 import { Wire } from "./session-wire.ts";
 
 export class Session {
   private claims: string | null = null;
   /** What this connection may do, and the calls waiting on the person's answer. */
   private readonly scopes: Scopes;
-  private status = "Connected";
-  private statusSerial = 0;
+  private readonly state: SessionStatus;
   private readonly wire: Wire;
   private closed = false;
   private readonly secrets: SessionSecrets;
-  /** Calls running now, each to be given up on when the agent cancels it (`notifications/cancelled`). */
-  private readonly inFlight = new Map<mcp.Id, AbortController>();
+  /** The calls running now (session-calls.ts). */
+  private readonly calls: SessionCalls;
   /** The websites this connection may use, asked one by one (sites.ts). */
   private readonly sites: SiteConsent;
   private readonly browser: SessionBrowser;
@@ -56,6 +54,10 @@ export class Session {
     /** A run started from the launcher: its card's grants, for this connection only, and nothing kept. */
     private readonly task: SessionTask | null = null,
   ) {
+    this.state = new SessionStatus(
+      () => ctx.publish(),
+      () => this.closed || this.scopes.asking,
+    );
     const granted: Set<Scope> = peer.remote ? new Set() : task ? new Set(task.policy.granted) : ctx.grants.get(peer.key);
     this.wire = new Wire(
       connection,
@@ -79,6 +81,7 @@ export class Session {
       () => ctx.publish(),
       () => this.closed,
     );
+    this.calls = new SessionCalls(this.callHost());
   }
 
   info(): AgentInfo {
@@ -86,7 +89,7 @@ export class Session {
       id: this.id,
       name: this.peer.name,
       key: grantKey(this.peer, this.claims),
-      status: this.status,
+      status: this.state.text,
       scopes: [...this.scopes.granted],
       ...(this.task ? { task: this.task.id } : {}),
       detail: this.peer.detail,
@@ -182,65 +185,30 @@ export class Session {
    * comes down and nothing it would still have typed is typed. No reply is sent.
    */
   private cancel(id: mcp.Id): void {
-    const running = this.inFlight.get(id);
-    if (running) {
-      running.abort();
-      return;
-    }
+    if (this.calls.cancel(id)) return;
     if (this.scopes.drop(id)) this.log(null, "cancelled");
   }
 
-  private async run(id: mcp.Id, call: Call, free = false): Promise<void> {
-    const sites = new Set<string>();
-    const controller = new AbortController();
-    this.inFlight.set(id, controller);
-    const { signal } = controller;
-    let result: ToolResult;
-    const task = this.task;
-    const undo = task ? (this.ctx.tasks?.before(task.id, call) ?? null) : null;
-    const watch = watchingOf(call.name);
-    this.watch.start(watch);
-    try {
-      // A sign-in runs alone; a hand-over holds the rest until Done (secrets/session-secrets.ts).
-      // What it changes is this agent's (Settings › Recently changed: acting.ts).
-      result = await this.secrets.around(call, () =>
-        actingAs(this.actor(), () =>
-          runCall(call, {
-            compositor: this.ctx.compositor,
-            ui: this.ctx.ui,
-            desktop: this.ctx.desktop,
-            hands: this.ctx.hands,
-            mask: this.ctx.mask,
-            secrets: this.secrets.run(this.id, () => this.who, signal),
-            agent: this.peer.name.replace(/\p{Cc}/gu, "").slice(0, 32) || "Agent",
-            status: (text) => this.setStatus(text),
-            tile: this.ctx.tile,
-            arrangement: this.ctx.arrangement,
-            mayName: () => this.scopes.holds("see"),
-            browser: this.browser.run((site) => sites.add(site)),
-            alone: () => this.ctx.alone?.status() ?? NOT_ALONE,
-            ...this.scopes.asks(signal),
-            signal,
-          }),
-        ),
-      );
-    } catch (error) {
-      result = toolError(`${call.name} failed: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      this.inFlight.delete(id);
-      this.watch.end(watch);
-    }
-    // Work alone's record: who called what, on which sites, and whether it ran without asking.
-    noteCall(this.ctx.alone, { agent: this.actor().agent, tool: call.name, sites, free }, signal.aborted, result.isError === true);
-    if (signal.aborted) {
-      this.log(call.name, "cancelled");
-      this.settle();
-      return;
-    }
-    // Locked meanwhile: whatever it saw or did stays between it and the lock screen.
-    if (this.ctx.lock.isLocked && !locksScreen(call.name)) result = toolError(LOCKED_WHILE_RUNNING);
-    if (task) this.ctx.tasks?.after(task.id, undo, result.isError !== true);
-    this.reply(id, call.name, result);
+  /** What a running call uses of this connection. */
+  private callHost(): CallHost {
+    return {
+      id: this.id,
+      agent: this.peer.name.replace(/\p{Cc}/gu, "").slice(0, 32) || "Agent",
+      ctx: this.ctx,
+      task: this.task,
+      actor: () => this.actor(),
+      who: () => this.who,
+      secrets: this.secrets,
+      scopes: this.scopes,
+      browser: this.browser,
+      watch: this.watch,
+      setStatus: (text) => this.state.set(text),
+      ended: (tool, outcome) => {
+        this.log(tool, outcome);
+        this.state.settle();
+      },
+      reply: (id, tool, result) => this.reply(id, tool, result),
+    };
   }
 
   /** What the scopes call on this connection. */
@@ -250,11 +218,9 @@ export class Session {
       who: () => this.who,
       grantKey: () => grantKey(this.peer, this.claims),
       closed: () => this.closed,
-      setStatus: (text) => this.setStatus(text),
-      resetStatus: () => {
-        this.status = "Connected";
-      },
-      run: (id, call, free) => void this.run(id, call, free),
+      setStatus: (text) => this.state.set(text),
+      resetStatus: () => this.state.reset(),
+      run: (id, call, free) => void this.calls.run(id, call, free),
       reply: (id, tool, result) => this.reply(id, tool, result),
     };
   }
@@ -263,23 +229,7 @@ export class Session {
     if (this.closed) return;
     this.log(tool, result.isError ? "error" : "ok");
     this.send(mcp.result(id, result));
-    this.settle();
-  }
-
-  private setStatus(text: string): void {
-    this.status = text;
-    this.statusSerial++;
-    this.ctx.publish();
-  }
-
-  /** An action finished: its words stay a moment, then the pill says "Idle". */
-  private settle(): void {
-    const serial = this.statusSerial;
-    setTimeout(() => {
-      if (this.closed || this.statusSerial !== serial || this.scopes.asking) return;
-      this.status = "Idle";
-      this.ctx.publish();
-    }, SETTLE_MS);
+    this.state.settle();
   }
 
   private log(tool: string | null, outcome: string): void {
@@ -292,7 +242,7 @@ export class Session {
     this.closed = true;
     this.log(null, why);
     // What it was doing stops (nothing more is typed), and its sheets, and a "Your turn" it left up, come down.
-    for (const running of this.inFlight.values()) running.abort();
+    this.calls.stop();
     this.ctx.ui.dismiss(this.id);
     this.connection.terminate();
     this.onGone(this);

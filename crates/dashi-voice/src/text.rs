@@ -56,6 +56,58 @@ pub(crate) fn sentences(text: &str) -> Vec<String> {
     sentences
 }
 
+/// A first sentence at least this long (in characters) is said in two parts.
+const LONG: usize = 60;
+/// The least each part keeps.
+const PART: usize = 20;
+
+fn pauses(character: char) -> bool {
+    matches!(character, ',' | ';' | ':' | '—' | '–')
+}
+
+/// Where a long sentence may be said in two parts: after its first pause (a
+/// comma, a semicolon, a colon, a dash, each followed by a space) that leaves
+/// both parts `PART` characters or more. None for a short sentence, or one
+/// with no such pause: "1,000" and "3:15" are not pauses.
+fn first_pause(sentence: &str) -> Option<usize> {
+    let length = sentence.chars().count();
+    if length < LONG {
+        return None;
+    }
+    let mut characters = sentence.char_indices().enumerate().peekable();
+    while let Some((count, (at, character))) = characters.next() {
+        let spaced = characters
+            .peek()
+            .is_some_and(|(_, (_, next))| next.is_whitespace());
+        // `before` characters up to and with the mark, the rest after it.
+        let before = count + 1;
+        if pauses(character) && spaced && before >= PART && length - before >= PART {
+            return Some(at + character.len_utf8());
+        }
+    }
+    None
+}
+
+/// What is said, piece by piece: the sentences of `text`, the first of them
+/// in two parts when it is long and has a pause to cut at. The first sound
+/// waits for the first piece to be made whole, so a long opening sentence is
+/// not made whole before any of it is heard.
+#[cfg(test)]
+pub(crate) fn pieces(text: &str) -> Vec<String> {
+    pieces_cut(text).0
+}
+
+/// `pieces`, and whether its first two are one sentence said in two parts.
+pub(crate) fn pieces_cut(text: &str) -> (Vec<String>, bool) {
+    let mut pieces = sentences(text);
+    let cut = pieces.first().and_then(|first| first_pause(first));
+    if let Some(cut) = cut {
+        let rest = pieces[0].split_off(cut);
+        pieces.insert(1, rest.trim().to_owned());
+    }
+    (pieces, cut.is_some())
+}
+
 fn push(sentences: &mut Vec<String>, piece: &str) {
     let piece = piece.split_whitespace().collect::<Vec<_>>().join(" ");
     if piece.chars().any(char::is_alphanumeric) {
@@ -89,6 +141,38 @@ mod tests {
             sentences("Dr. Kim met Alex J. Kim, e.g. at noon."),
             vec!["Dr. Kim met Alex J. Kim, e.g. at noon."]
         );
+    }
+
+    #[test]
+    fn a_long_first_sentence_is_said_in_two_parts_at_its_first_pause() {
+        assert_eq!(
+            pieces(
+                "I can't see the weather from this computer, but I can remind you. You asked to call Alex at noon."
+            ),
+            vec![
+                "I can't see the weather from this computer,",
+                "but I can remind you.",
+                "You asked to call Alex at noon."
+            ]
+        );
+        // Only the first: the others are made while something plays.
+        let later = "Okay. Tomorrow morning in Bogota looks cool and cloudy, with a chance of rain after ten.";
+        assert_eq!(pieces(later), sentences(later));
+    }
+
+    #[test]
+    fn a_short_sentence_or_one_without_a_pause_is_said_whole() {
+        for whole in [
+            "Well, that is all.",
+            "Dashi is a desktop that you can talk to and that answers you out loud every time.",
+            // A pause too near either end leaves a part too short to be worth it.
+            "Yes, the meeting with Alex Kim moved to tomorrow at a quarter past three in the afternoon.",
+            // A number's comma and a time's colon are no pause.
+            "The total for this month comes to 12,500 pesos and it is due at 3:15 tomorrow afternoon.",
+        ] {
+            assert_eq!(pieces(whole), vec![whole], "{whole}");
+        }
+        assert!(pieces("").is_empty());
     }
 
     #[test]

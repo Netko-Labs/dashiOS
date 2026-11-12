@@ -901,6 +901,153 @@ Numbered in the order they were written down; a new one goes at the end.
   `crates/dashi-comp/src/session/agent_pointer.rs`, and `pixel_scroll_factor`
   back to 3 in mirin's `vendor/gpui`.
 
+### D44. In Light, an ink button lightens under the pointer and while held
+
+- **Date:** 2026-11-11. The `polish` agent's, reversible. It changes one
+  line of D16 ("It deepens under the pointer").
+- **Question:** in Light the primary button went from ink to black
+  (`#1D1D1F`, `#0E0E10`, `#000000`): steps of 1.15 and 1.09 to 1, which
+  nobody sees. UI-4 says every control shows hover and pressed.
+- **Choice:** the ink button steps toward the page. In Light it lightens:
+  `#1D1D1F`, `#3A3A3E` under the pointer, `#55555B` held (white words at
+  16.8, 11.3 and 7.4 to 1, each step 1.49 and 1.53 to 1 from the one
+  before). In Dark it was already so (the light ink dims toward black) and
+  is unchanged. Ume and a chosen pill still deepen: they have room to.
+- **Why:** there is nothing deeper than ink to go to. A step must be seen,
+  and the words must stay AA; lighter is the only way to both. "Toward the
+  page" is one rule for both modes.
+- **Cost:** in Light "pressed is darker" no longer holds for this one
+  button. A test holds each step to 1.2 to 1 or more.
+- **Undo:** `primaryHover` and `primaryPressed` in `palette.ts`, and the
+  test's 1.2.
+
+### D45. Tab stops are every 4 widths of the font's 0, and Text Editor's View menu sets them
+
+- **Date:** 2026-11-11. The `polish` agent's, reversible (mirin `1332472`,
+  `d873e0e`; `apps/editor/lib/prefs.ts`).
+- **Question:** a typed tab looked like a space. It was in fact a stop every
+  four *spaces* of the font, which Linux's shaper set by itself: in a
+  proportional font four spaces are about one em, so "name" and "city" ended
+  on different stops and nothing lined up. What is a tab stop's width, and
+  who sets it?
+- **Choice:** mirin sets the stops itself, on every platform, every
+  `tabSize` widths of the font's **0** (CSS's `ch`), 4 by default. In a
+  fixed-pitch font that is exactly four spaces, as asked; in a proportional
+  one it is about twice as far, wide enough for short words to share a stop.
+  Text Editor has View › Tab Width: 2, 4, 8, kept with its other View
+  settings; a note's body keeps 4.
+- **Why:** "four spaces" only means a column in a fixed-pitch font. The 0 is
+  what CSS and every editor count columns in, and it gives the same answer
+  there.
+- **Cost:** three more rows in Text Editor's View menu (it has no
+  submenus). On a line that soft-wraps, the stops of its later rows are
+  still counted from the paragraph's start. Words longer than a stop still
+  need a second tab, as in any editor.
+- **Undo:** `tab_interval` in mirin's `line_layout.rs` (count the space
+  instead of the 0); `TAB_WIDTHS` and the rows in `apps/editor/lib/menus.ts`.
+
+### D46. Where a wrong press in Settings costs something, only the person's press counts
+
+- **Date:** 2026-11-11. The `polish` agent's, reversible
+  (`settings-app/lib/person-only.ts`).
+- **Question:** an agent that may click in windows can press what Settings
+  shows. D26 closed that for "Let agents work alone". Settings › Voice was
+  open (an agent could turn it on and start a 1 GB fetch), and so were
+  others. Which presses are asked about?
+- **Choice:** the ones that widen what agents may do, or that cost the
+  person something they did not ask for. The pane asks the compositor whose
+  press it was (`input-origin`), and an agent's changes nothing and the row
+  says "Only you can change this. Press it yourself, here.":
+  - Voice: turning it on, Fetch and Resume, Remove, the talk key, the voice.
+  - Agents: adding a site agents may use, Undo of a revoke, turning on
+    "Don't ask for these again".
+  A press that only narrows is never asked about: turning Voice off, Pause,
+  Revoke, removing a site.
+- **Not changed, for the lead:** an app's or the system's sound devices
+  (agents have a tool for it, with its own permission; a click costs
+  little and is undone by one), a login's "Ask / Never" in Passwords, an
+  API token's hosts, and every other row. The general answer would be the
+  compositor refusing an agent's input to Settings' window, or a list of
+  rows agents may press; this entry closes the plain cases only.
+- **Why:** consent is the person's hands (D26, D38). Part A: narrow who may
+  do something.
+- **Cost:** one `input-origin` round trip for each such press. A press held
+  longer than two seconds, or made while no compositor answers, is refused:
+  the person presses again.
+- **Undo:** drop `byPerson` from `PaneContext` (`boot/settings.ts`); each
+  pane then changes at any press.
+
+### D47. The Voice switch reads on only when Voice is on
+
+- **Date:** 2026-11-11. The `polish` agent's, reversible.
+- **Question:** the switch went green as soon as it was pressed, while the
+  pane only offered the fetch, and stayed green with the models removed.
+- **Choice:** on means asked for and usable. While it offers the fetch,
+  fetches, or waits with the models gone, it reads off and its row says "It
+  turns on once its models are here." A press then takes the ask back.
+- **Why:** green means on and nothing else (CO-1).
+- **Cost:** pressing the switch with no models shows no change in the
+  switch itself; the Models row appearing under it is the answer.
+- **Undo:** `on` in `VoicePane`.
+
+### D48. A tap of the Copilot key talks; every other key is still held
+
+- **Date:** 2026-11-11. The `polish` agent's, reversible. It replaces one
+  line of D40 ("A Copilot key whose firmware releases it at once is a tap:
+  the person picks another key").
+- **Question:** many laptops send the Copilot key's press and release
+  together, so holding it hears nothing. How does such a key talk, without
+  changing what a held key does?
+- **Choice:** the Copilot key (F23) has its own name among the held keys.
+  A tap of it, under 300 ms, keeps the listen its press opened and asks the
+  service to end it on a quiet of 1.5 s (`listen.quiet`, new); the next tap
+  ends it sooner, Esc cancels it, and with nothing heard in 8 s it is given
+  up on. Held, it is a hold. The right ❖ and the keys a person picks are
+  only ever held: their tap still says "Hold … to talk."
+- **Why:** nobody can tell from the key's events whether its firmware can
+  hold it, but a tap is a tap on both kinds, so the rule needs no guess. A
+  key that can be held keeps the surer way: the microphone is open exactly
+  while the finger is down.
+- **Cost:** after a tap the microphone stays open until the person stops
+  talking; a tap by mistake is 8 s of open microphone, shown by the chip
+  and the orange pill, and ended by Esc or a second tap. A pause longer
+  than 1.5 s ends the ask.
+- **Undo:** `TALK_TAP` in `voice/keys.ts` (name F23 `talk` again).
+
+### D49. Dashi's first sound: what was cut, and the speaking model is not kept in memory
+
+- **Date:** 2026-11-11. The `polish` agent's, reversible
+  (`crates/dashi-voice/src/service/`, `voice/voice.ts`).
+- **Question:** the first sound came long after the key came up. Where did
+  the time go, and should the speaking model stay in memory while Voice is
+  on, as the brief suggested?
+- **Measured** in the VM, from the key coming up to sound at the speakers,
+  with a stub agent that answers in 2 ms (`dashi-0.8.0-review/10-polish`):
+  1.28 s in all. 0.19 s for the words, 0.73 s to make the first sentence
+  (3.9 s of speech) whole, and 0.36 s more before anything was heard, which
+  turned out to be the third of a second of hush the model starts every
+  piece with. With the speaking model let go of (ten idle minutes), 0.76 s
+  more to load it: 2.03 s.
+- **Choice:** four cuts, none of which costs memory. A long first sentence
+  is said in two pieces, cut at its first pause, so less is made before the
+  first sound. The hush before the first sound is cut. The speakers open as
+  the utterance starts, while the first piece is made. And the shell sends
+  `warm` for the speaking model as the talk key goes down, so it loads
+  while the person talks; each model has its own lock, so that never holds
+  up the listening one. The model is **not** kept in memory: ten idle
+  minutes still bring the service down to 33 MB.
+- **After:** 0.63 s warm, 0.68 s with the models let go of; under a screen
+  recording 0.82 s to 0.97 s, where it was 1.50 s to 1.61 s. The caption
+  now starts with the sound, where it was a third of a second ahead.
+- **Why:** 0.48 GB held for as long as Voice is on, to save a load that
+  now happens behind the person's own words, is a poor trade on a laptop.
+- **Cost:** a first sentence said in two pieces has a comma's pause where
+  it was cut (the model's own hush there is cut to 150 ms), and two
+  captions. An ask shorter than the model's load (under
+  a second, after ten idle minutes) still waits for the rest of it.
+- **Undo:** `text::pieces` back to `text::sentences` in `speak.rs`;
+  `player.open()` back into `play`; the `warm` in `Voice.keyDown`.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its

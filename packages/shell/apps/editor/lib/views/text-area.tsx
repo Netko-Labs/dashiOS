@@ -94,7 +94,8 @@ export function TextArea({ text, prefs, lines, session, selection, onSelectionCh
     if (reveal) setRevealing(reveal);
   }, [reveal]);
 
-  const textStyle = { fontSize: prefs.fontSize, fontFamily: font };
+  // The mirrors wrap as the field does: its size, its font and its tab stops.
+  const textStyle = { fontSize: prefs.fontSize, fontFamily: font, tabSize: prefs.tabWidth };
   const gutter = prefs.lineNumbers ? gutterWidth(lines, prefs.fontSize) : 0;
   const left = prefs.lineNumbers ? GUTTER_PADDING : PADDING;
   return (
@@ -131,6 +132,8 @@ export function TextArea({ text, prefs, lines, session, selection, onSelectionCh
             multiline
             // Tab types a tab here, as in any text editor; Shift+Tab still leaves for the toolbar.
             tabBehavior="insert"
+            // What follows a tab starts at the next stop, so columns line up (View › Tab Width).
+            tabSize={prefs.tabWidth}
             value={text}
             placeholder="Start typing…"
             autoFocus

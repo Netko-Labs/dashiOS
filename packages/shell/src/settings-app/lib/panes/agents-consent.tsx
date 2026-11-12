@@ -23,6 +23,7 @@ import type { PaneContext } from "../../context.ts";
 import { useGrantEntries, useSettings } from "../../hooks.ts";
 import { Spot } from "../../spot.tsx";
 import type { ChangeEntry } from "../changes/log.ts";
+import { type ByPerson, ONLY_YOU, usePersonOnly } from "../person-only.ts";
 import { type AgentCard, agentCards, CONSEQUENCES, sinceWords } from "../privacy-words.ts";
 import { Row as Item, PAGE } from "../row.tsx";
 import { ChangeRow } from "./change-row.tsx";
@@ -128,21 +129,22 @@ function AgentHead({ agent, onRevokeAll }: { agent: ShownCard; onRevokeAll: (() 
 
 interface AgentGroupProps {
   agent: ShownCard;
-  ctx: Pick<PaneContext, "grants" | "settings" | "show">;
+  ctx: Pick<PaneContext, "grants" | "settings" | "show" | "byPerson">;
   changes: readonly ChangeEntry[];
   history: readonly HistoryEntry[];
   revoked: Revoked | null;
   onRevoked: (revoked: Revoked) => void;
 }
 
-/** What was just revoked, with its Undo. */
-function RevokedNote({ agent, revoked }: { agent: string; revoked: Revoked }) {
+/** What was just revoked, with its Undo: the person's alone, or an agent would press back what it just lost. */
+function RevokedNote({ agent, revoked, byPerson }: { agent: string; revoked: Revoked; byPerson?: ByPerson }) {
+  const guard = usePersonOnly(byPerson);
   return (
     <View testID={`agent-revoked:${agent}`} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4, marginTop: -8 }}>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Caption>{revoked.words}</Caption>
+        <Caption>{guard.refused === agent ? ONLY_YOU : revoked.words}</Caption>
       </View>
-      <Button testID={`agent-revoked-undo:${agent}`} label="Undo" onPress={revoked.undo} />
+      <Button testID={`agent-revoked-undo:${agent}`} label="Undo" onPress={() => guard.mine(agent, revoked.undo)} />
     </View>
   );
 }
@@ -206,12 +208,16 @@ function AgentGroup({ agent, ctx, changes, history, revoked, onRevoked }: AgentG
         })}
         {last && <Item testID={`agent-last:${agent.key}`} label={last.summary} detail={`Last connected ${ago(last.time, Math.floor(Date.now() / 1000))}`} />}
       </Group>
-      {revoked?.key === agent.key ? <RevokedNote agent={agent.key} revoked={revoked} /> : notice !== null && <Caption>{notice}</Caption>}
+      {revoked?.key === agent.key ? (
+        <RevokedNote agent={agent.key} revoked={revoked} {...(ctx.byPerson ? { byPerson: ctx.byPerson } : {})} />
+      ) : (
+        notice !== null && <Caption>{notice}</Caption>
+      )}
     </>
   );
 }
 
-export function ConsentDashboard({ ctx }: { ctx: Pick<PaneContext, "grants" | "settings" | "flags" | "agents" | "answers" | "home" | "show"> }) {
+export function ConsentDashboard({ ctx }: { ctx: Pick<PaneContext, "grants" | "settings" | "flags" | "agents" | "answers" | "home" | "show" | "byPerson"> }) {
   const entries = useGrantEntries(ctx.grants);
   const connected = useSyncExternalStore(ctx.agents?.subscribe ?? NO_AGENTS.subscribe, ctx.agents?.getSnapshot ?? NO_AGENTS.getSnapshot);
   const changes = useSyncExternalStore(ctx.settings.changes.subscribe, ctx.settings.changes.getSnapshot);

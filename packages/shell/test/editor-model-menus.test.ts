@@ -14,12 +14,17 @@ describe("view settings", () => {
     editor.stepFontSize(1);
     editor.stepFontSize(0);
     expect(saved).toEqual([
-      { monospace: true, fontSize: 13, lineNumbers: true },
-      { monospace: true, fontSize: 14, lineNumbers: true },
-      { monospace: true, fontSize: 13, lineNumbers: true },
+      { monospace: true, fontSize: 13, lineNumbers: true, tabWidth: 4 },
+      { monospace: true, fontSize: 14, lineNumbers: true, tabWidth: 4 },
+      { monospace: true, fontSize: 13, lineNumbers: true, tabWidth: 4 },
     ]);
     editor.setMonospace(true);
     expect(saved).toHaveLength(3);
+    // The tab stops' width is a View setting like the others; the one in use is not saved again.
+    editor.setTabWidth(8);
+    expect(saved.at(-1)).toEqual({ monospace: true, fontSize: 13, lineNumbers: true, tabWidth: 8 });
+    editor.setTabWidth(8);
+    expect(saved).toHaveLength(4);
   });
 });
 
@@ -38,6 +43,7 @@ describe("menus", () => {
     hasMatches: false,
     monospace: false,
     lineNumbers: true,
+    tabWidth: 4,
     caseSensitive: false,
     actions: {
       newWindow: record("new"),
@@ -61,6 +67,7 @@ describe("menus", () => {
       toggleLineNumbers: record("line-numbers"),
       toggleMonospace: record("monospace"),
       fontSize: (step) => ran.push(`size:${step}`),
+      tabWidth: (width) => ran.push(`tab:${width}`),
     },
     ...change,
   });
@@ -90,6 +97,19 @@ describe("menus", () => {
     expect(row({ hasFile: false, pristine: true }, "delete-draft")).toMatchObject({ enabled: false });
     expect(row({}, "go-to-line")).toMatchObject({ label: "Go to Line…", shortcut: "❖L" });
     expect(row({ lineNumbers: true }, "line-numbers")).toMatchObject({ checked: true });
+  });
+
+  test("View has the tab stops' width, the one in use ticked, and a press sets it", () => {
+    const row = (change: Partial<MenuContext>, id: string) =>
+      editorMenus(context(change))
+        .menus.flatMap((menu) => menu.items)
+        .find((each) => "id" in each && each.id === id);
+    expect(row({}, "tab-width-4")).toMatchObject({ label: "Tab Width: 4", checked: true });
+    expect(row({}, "tab-width-8")).toMatchObject({ label: "Tab Width: 8", checked: false });
+    expect(row({ tabWidth: 2 }, "tab-width-2")).toMatchObject({ checked: true });
+    ran.length = 0;
+    editorMenus(context()).run("tab-width-8");
+    expect(ran).toEqual(["tab:8"]);
   });
 
   test("only enabled rows run", () => {
