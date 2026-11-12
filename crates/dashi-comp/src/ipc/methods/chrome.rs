@@ -7,7 +7,7 @@ use super::{Ask, done};
 use crate::{
     input::InputParams,
     ipc::protocol::{Coord, Count, Done, Int, Millis, Rect},
-    keys::{KeyboardParams, Keymap, KeymapParams},
+    keys::{HeldKeysParams, KeyboardParams, Keymap, KeymapParams},
     render::{self, depth::WindowStyle},
     state::Dashi,
 };
@@ -99,6 +99,14 @@ pub(crate) fn window_style(
 pub(crate) fn keymap(state: &mut Dashi, _: &Ask, params: KeymapParams) -> Result<Done, String> {
     state.keys.keymap = Keymap::parse(&params)?;
     Ok(Done {})
+}
+
+pub(crate) fn held_keys(
+    state: &mut Dashi,
+    _: &Ask,
+    params: HeldKeysParams,
+) -> Result<Done, String> {
+    done(state.keys.held.set(&params))
 }
 
 pub(crate) fn bars(state: &mut Dashi, _: &Ask, params: Bars) -> Result<Done, String> {

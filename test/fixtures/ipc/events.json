@@ -248,5 +248,10 @@
     "event": "snippet",
     "keyword": ";sig",
     "window": 7
+  },
+  {
+    "down": true,
+    "event": "held-key",
+    "name": "talk"
   }
 ]
