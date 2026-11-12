@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { buttonLook } from "../src/button-look.ts";
 import { DISABLED_OPACITY, isHeld } from "../src/control-state.tsx";
 import { litAfter, MENU, menuFits, menuHeight, placeMenu, rowTop } from "../src/menu-place.ts";
-import { popUpMenuWidth, popUpOrigin } from "../src/popup-button.tsx";
+import { popUpMenuAt, popUpMenuWidth, popUpOrigin } from "../src/popup-button.tsx";
 import { isSeparator, MENU_SEPARATOR, type MenuEntry, tidyEntries } from "../src/popup-menu.tsx";
 import { clampFraction, SPOKES, SWEEP_TICKS, spinnerMarkup, spokeOpacities, sweepOffset } from "../src/progress-math.ts";
 import { fractionAt, fractionOf, keyValues, knobLeft, nearestIndex, UNIT_RANGE, valueAt } from "../src/slider-math.ts";
@@ -138,6 +138,17 @@ describe("menus", () => {
     expect(at.x).toBeLessThan(button.x);
     // Its right edge is the button's: it is wider only by the ticks' room to the left.
     expect(at.x + popUpMenuWidth(button)).toBe(button.x + button.width);
+  });
+  test("a pop-up's menu is placed by the rows it draws: a separator that isn't drawn moves nothing", () => {
+    const button = { x: 300, y: 100, width: 120, height: 28 };
+    const line = { type: "separator" } as const;
+    const pick = (label: string, checked = false) => ({ label, checked, onPress: () => {} });
+    const tidy = popUpMenuAt(button, [pick("A4"), line, pick("A5", true)]);
+    // An empty group first, a doubled line, a line last: the menu drops them, and the chosen row is still on the button.
+    const loose = popUpMenuAt(button, [line, pick("A4"), line, line, pick("A5", true), line]);
+    expect(loose.items.map((entry) => ("label" in entry ? entry.label : "-"))).toEqual(["A4", "-", "A5"]);
+    expect({ x: loose.x, y: loose.y }).toEqual({ x: tidy.x, y: tidy.y });
+    expect(loose.y + rowTop(["item", "separator", "item"], 2) + MENU.row / 2).toBe(button.y + button.height / 2);
   });
   test("a menu hung by its right edge ends where it was hung, slid in when it would run off the left", () => {
     const room = { width: 800, height: 600 };
