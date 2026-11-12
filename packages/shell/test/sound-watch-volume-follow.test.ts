@@ -28,6 +28,24 @@ describe("VolumeFollow", () => {
     follow.stop();
   });
 
+  test("a word after the hold is the last word: an older one heard during it never comes after", async () => {
+    let now = 0;
+    const shown: Array<number | null> = [];
+    const follow = new VolumeFollow(
+      (volume) => shown.push(volume?.level ?? null),
+      1000,
+      () => now,
+    );
+    follow.set({ level: 0.8, muted: false });
+    follow.heard({ level: 0.6, muted: false });
+    // The hold is over by the clock, and its timer has not run yet (it runs late under load).
+    now = 1001;
+    follow.heard({ level: 0.3, muted: false });
+    await clock.advance(2000);
+    expect(shown).toEqual([0.3]);
+    follow.stop();
+  });
+
   test("nothing heard since the set: what was set stays", async () => {
     const shown: Array<number | null> = [];
     const follow = new VolumeFollow((volume) => shown.push(volume?.level ?? null), 10);
