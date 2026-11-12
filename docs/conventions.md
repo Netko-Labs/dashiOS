@@ -37,7 +37,7 @@ below, the same command CI runs (`.github/workflows/check.yml`);
 | --- | --- | --- | --- |
 | H1 | Every check runs on every push: lint, typecheck, tests, `cargo fmt`, clippy, `cargo test`, `dashi-term` included. | CI (`.github/workflows/check.yml`); `.githooks/pre-push` for the fast ones | `bun run check` |
 | H2 | No file over 300 lines. A listed file may not grow. Generated code (`ffi_generated.rs`) is exempt. | `scripts/check-structure.ts` (`long-files`) | `bun scripts/check-structure.ts` |
-| H3 | No function over 80 lines (tests exempt). | Biome `noExcessiveLinesPerFunction`; `scripts/check-biome.ts` (`long-functions`) | `bun run fmt-lint`, `bun scripts/check-biome.ts` |
+| H3 | No function over 80 lines (tests exempt), counted as written: from the line it starts on to the line its body ends on, JSX, comments and blank lines included. | `scripts/check-structure.ts` (`long-functions`; the measure is `scripts/function-lines.ts`). Biome's `noExcessiveLinesPerFunction` stays on as an early warning, but its count is short (decisions.md D32). | `bun scripts/check-structure.ts` |
 | H4 | Imports go one way: apps → `apps/kit` → `src/shared`. `src` never imports `apps`; an app never imports another app; apps reach `src` only through `src/shared`. | `scripts/check-structure.ts` (`import-ways`) | `bun scripts/check-structure.ts` |
 | H5 | No import cycles. | Biome `noImportCycles`; `scripts/check-biome.ts` (`import-cycles`) | `bun run fmt-lint`, `bun scripts/check-biome.ts` |
 | H6 | An `index.ts` only re-exports (`export … from`). An entry point is named `main.ts`, not `index.ts`. | `scripts/check-structure.ts` (`barrels`) | `bun scripts/check-structure.ts` |
@@ -78,9 +78,7 @@ A listed file you move with `git mv` keeps its entry without a hand edit: the
 check names the new path, and `--shrink` (or `bun scripts/list-rename.ts`, for
 every list at once) carries the entry there at the same count. It reads git's
 rename detection, staged or committed; for a move git did not see, give the
-pair: `bun scripts/list-rename.ts OLD NEW`. It never adds an entry. Biome's
-per-function overrides for H3 (`biome.jsonc`) are written by `bun
-scripts/check-biome.ts --shrink`, which also follows the file.
+pair: `bun scripts/list-rename.ts OLD NEW`. It never adds an entry.
 
 ## Source Of Truth
 

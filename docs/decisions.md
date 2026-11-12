@@ -651,6 +651,31 @@ Numbered in the order they were written down; a new one goes at the end.
 - **Undo:** take `isNarrowedCast` out of `scripts/check-boundaries.ts`; the
   code stays stricter than the check.
 
+### D32. H3 counts a function's lines as written, with a check of our own
+
+- **Date:** 2026-11-11 (0.8, the `rules` branch).
+- **Question:** H3 says no function over 80 lines, and Biome's
+  `noExcessiveLinesPerFunction` held it. Biome counts the line breaks between
+  a body's tokens: a break inside one token is not counted, and both the
+  whitespace between JSX children and a template string are one token. A
+  97-line component counted 51. The rule has three options (`maxLines`,
+  `skipBlankLines`, `skipIifes`) and none changes that. By lines as written,
+  92 functions were over 80 and passed.
+- **Choice:** `scripts/function-lines.ts` counts a function from the line it
+  starts on to the line its body ends on, everything between included, and
+  `scripts/check-structure.ts` holds it on the `long-functions` list, which
+  starts empty: all 92 were split, none listed. Biome's rule stays on, as an
+  early warning in the editor; its per-file overrides in `biome.jsonc` are
+  gone with the list entries they were written for.
+- **Why:** the rule says lines, and a reader scrolls lines, not tokens. A
+  count that differs by kind of code would keep long views and split short
+  logic.
+- **Cost:** two lines stricter than Biome on plain code (it left out the
+  signature's line and the closing one). A nested function counts in its
+  outer function's lines too, as in Biome.
+- **Undo:** take `checkFunctions` out of `scripts/check-structure.ts`; the
+  code stays shorter than the check.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its

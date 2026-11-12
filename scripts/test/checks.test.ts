@@ -5,12 +5,35 @@ import { STEPS } from "../check.ts";
 import { castsIn, ipcMethods } from "../check-boundaries.ts";
 import { allowed } from "../check-licenses.ts";
 import { barrelExtras, lineCount, specifiers, wrongWay } from "../check-structure.ts";
+import { longFunctionsIn } from "../function-lines.ts";
 
 describe("H2 line count", () => {
   test("counts lines with or without a final newline", () => {
     expect(lineCount("")).toBe(0);
     expect(lineCount("a\nb\n")).toBe(2);
     expect(lineCount("a\nb")).toBe(2);
+  });
+});
+
+describe("H3 function lines", () => {
+  const rows = (count: number, row: string): string => Array.from({ length: count }, () => row).join("\n");
+  test("counts a function from its first line to its last, as written", () => {
+    const text = "export function five(): number {\n  // a comment\n\n  return 1;\n}\n";
+    expect(longFunctionsIn("x.ts", text, 4)).toEqual([{ name: "five", line: 1, lines: 5 }]);
+    expect(longFunctionsIn("x.ts", text, 5)).toEqual([]);
+  });
+  test("counts the lines of JSX children and of a template string, which Biome's rule skips", () => {
+    const view = `export function View() {\n  return (\n    <div>\n${rows(80, "      <span>row</span>")}\n    </div>\n  );\n}\n`;
+    expect(longFunctionsIn("x.tsx", view)).toEqual([{ name: "View", line: 1, lines: 86 }]);
+    const text = `export const help = (): string => {\n  return \`\n${rows(80, "line")}\n\`;\n};\n`;
+    expect(longFunctionsIn("x.ts", text)).toEqual([{ name: "help", line: 1, lines: 84 }]);
+  });
+  test("names methods, and counts a nested function as its own as well", () => {
+    const text = `class Box {\n  open(): void {\n    const inner = () => {\n${rows(3, "      step();")}\n    };\n    inner();\n  }\n}\n`;
+    expect(longFunctionsIn("x.ts", text, 4)).toEqual([
+      { name: "open", line: 2, lines: 8 },
+      { name: "inner", line: 3, lines: 5 },
+    ]);
   });
 });
 

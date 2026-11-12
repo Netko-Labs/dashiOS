@@ -2,6 +2,8 @@
 // Structure hard rules (docs/conventions.md, "Hard rules"), each a ratchet on a
 // list in scripts/lists/ (see scripts/ratchet.ts):
 //   H2  long-files     no file over 300 lines; a listed file may not grow
+//   H3  long-functions no function over 80 lines as written (tests exempt); the
+//                      measure, and why it is not Biome's, is scripts/function-lines.ts
 //   H4  import-ways    apps -> apps/kit -> src/shared: src never imports apps,
 //                      an app never imports another app, and apps reach src
 //                      only through src/shared
@@ -12,6 +14,7 @@
 
 import { dirname, join, normalize } from "node:path";
 import ts from "typescript";
+import { type LongFunction, longFunctionsIn, MAX_FUNCTION_LINES } from "./function-lines.ts";
 import { type Counts, isTest, type Outcome, ratchet, read, repoFiles, report } from "./ratchet.ts";
 
 const MAX_LINES = 300;
@@ -33,6 +36,29 @@ export function longFiles(files: string[]): Counts {
     if (lines > MAX_LINES) found.set(file, lines);
   }
   return found;
+}
+
+/** Every function over the limit, by file (tests exempt). */
+export function longFunctions(files: string[]): Map<string, LongFunction[]> {
+  const found = new Map<string, LongFunction[]>();
+  for (const file of files) {
+    if (!/\.tsx?$/.test(file) || GENERATED.test(file) || isTest(file)) continue;
+    const long = longFunctionsIn(file, read(file));
+    if (long.length > 0) found.set(file, long);
+  }
+  return found;
+}
+
+/** The list holds each file's over-long functions' lines, summed; a failure names the functions. */
+function checkFunctions(files: string[]): Outcome {
+  const found = longFunctions(files);
+  const sums: Counts = new Map([...found].map(([file, long]) => [file, long.reduce((sum, each) => sum + each.lines, 0)]));
+  const outcome = ratchet("long-functions", sums, `lines in functions over ${MAX_FUNCTION_LINES}`);
+  const named = (problem: string): string => {
+    const long = found.get(problem.slice(0, problem.indexOf(": ")));
+    return long ? `${problem}: ${long.map((each) => `${each.name} (line ${each.line}, ${each.lines} lines)`).join(", ")}` : problem;
+  };
+  return { ...outcome, problems: outcome.problems.map(named) };
 }
 
 /** The module specifiers a file imports or re-exports, static and dynamic. */
@@ -130,6 +156,7 @@ export function testTimeouts(files: string[]): Counts {
 export function checkStructure(files: string[]): Outcome[] {
   return [
     ratchet("long-files", longFiles(files), `over ${MAX_LINES} lines`),
+    checkFunctions(files),
     ratchet("import-ways", importWays(files), "wrong-way imports"),
     ratchet("barrels", barrels(files), "statements besides `export … from`"),
     ratchet("test-sleeps", testSleeps(files), "real-time waits"),
