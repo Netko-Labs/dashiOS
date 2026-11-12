@@ -121,6 +121,12 @@ A popover behaves as the shell's own menus do:
   a field in it types. The SDK closes it on Esc (`PopoverGround`) and sends
   `dismiss`. A launcher view leaves the keyboard to the launcher, which
   closes it on Esc.
+- **Esc closes it from anywhere.** While a popover is open Esc is the
+  shell's key (`POPOVER_RULES` in `src/keymap/keymap.ts`, put first in the
+  keymap by `src/applets/popovers.ts`'s `onOpenChange`): the shell sends
+  `dismiss`, whatever has the keyboard. It doesn't depend on the applet: a
+  package bundles the SDK it was built with, and a popover from an SDK
+  before 0.5 never takes the keyboard, so Esc used to go to the focused app.
 - **One at a time**, with the shell's menus (`src/applets/popovers.ts`): an
   applet's popover opening dismisses the one another applet had open and
   closes a shell menu or panel; a shell menu opening (a title, Control

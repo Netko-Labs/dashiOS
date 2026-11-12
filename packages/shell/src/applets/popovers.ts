@@ -4,12 +4,15 @@
  * opening closes the one another applet had open and the shell's menu or
  * panel; a shell menu opening closes the applet's popover. Each connection
  * (connection.ts) says when its popover opens and how to close it; the
- * shell says when one of its own opens (main.tsx).
+ * shell says when one of its own opens (main.tsx). While one is open Esc
+ * is the shell's (`onOpenChange`, boot/keys.ts): it closes the popover from
+ * wherever the keyboard is.
  */
 
 export class AppletPopovers {
   private open: { dismiss: () => void } | null = null;
   private shellMenus: () => void = () => {};
+  private readonly listeners = new Set<(open: boolean) => void>();
 
   /** What closes the shell's own menus and panels when an applet's popover opens. */
   closeShellMenusWith(close: () => void): void {
@@ -27,16 +30,31 @@ export class AppletPopovers {
     this.open = entry;
     before?.dismiss();
     this.shellMenus();
+    if (!before) this.tell();
     return () => {
-      if (this.open === entry) this.open = null;
+      if (this.open !== entry) return;
+      this.open = null;
+      this.tell();
     };
   }
 
-  /** A shell menu or panel opened: the applet's popover closes. */
+  /** A shell menu or panel opened, or Esc was pressed: the applet's popover closes. */
   dismiss(): void {
     const open = this.open;
+    if (!open) return;
     this.open = null;
-    open?.dismiss();
+    open.dismiss();
+    this.tell();
+  }
+
+  /** Hears when a popover opens (true) and when none is open any more (false). Returns what stops it. */
+  onOpenChange(listener: (open: boolean) => void): () => void {
+    this.listeners.add(listener);
+    return () => void this.listeners.delete(listener);
+  }
+
+  private tell(): void {
+    for (const listener of this.listeners) listener(this.open !== null);
   }
 
   isOpen(): boolean {

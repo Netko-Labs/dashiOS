@@ -11,6 +11,7 @@
 
 import { chordText, type PressedChord } from "./app-menus/index.ts";
 import type { Compositor, CompositorWindow } from "./compositor/index.ts";
+import { POPOVER_DISMISS } from "./keymap/index.ts";
 import { takeScreenshot } from "./screenshots/index.ts";
 import type { SwitcherController } from "./switcher/index.ts";
 import type { HardwareKeys } from "./system/keys.ts";
@@ -42,6 +43,8 @@ export interface ShellActions {
   appShortcut?(window: number, shortcut: string): Promise<boolean>;
   /** Tells the app of the window owned by `pid` that it is quitting, before its close request (app-menus/, kit/close.ts). */
   appQuitting?(pid: number | null): void;
+  /** Esc while an applet's popover is open (keymap.ts `POPOVER_RULES`): closes it. */
+  dismissPopover?(): void;
   /** Spaces: ⌃← ⌃→ and ⌃1…⌃9 (spaces/); says whether the binding was one of its keys. */
   spaces?: { binding(name: string): boolean };
   /**
@@ -158,6 +161,8 @@ export async function runBinding(name: string, window: number | null, compositor
   // Bound only while the switcher is open (keymap.ts SWITCHER_RULES).
   if (name.startsWith("switcher-")) return switcherBinding(name, chord?.key, actions.switcher);
   switch (name) {
+    case POPOVER_DISMISS:
+      return actions.dismissPopover?.();
     case "app-chord":
       return appChord(window, compositor, actions, chord);
     case "app-erase":
