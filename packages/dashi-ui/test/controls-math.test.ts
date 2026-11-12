@@ -184,7 +184,7 @@ describe("states", () => {
       expect(secondary.edge).toBe(colors.controlEdge);
       expect(buttonLook(colors, "secondary", { isDefault: true })).toMatchObject({ edge: colors.primary, edgeWidth: 2 });
     });
-    test(`${mode}: a primary button's steps can be seen, each toward the page, its words staying AA (D41)`, () => {
+    test(`${mode}: a primary button's steps can be seen, each toward the page, its words staying AA (D44)`, () => {
       const rest = buttonLook(colors, "primary");
       const held = buttonLook(colors, "primary", { pressed: true });
       const fills = [rest.fill, rest.hover, held.fill];

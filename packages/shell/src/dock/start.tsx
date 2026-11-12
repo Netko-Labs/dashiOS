@@ -78,6 +78,27 @@ export function viewSurface(variant: string, output: string | undefined): { heig
   };
 }
 
+/** Opens `element` on a new host; `onClosed` runs once, however it ended. */
+function open(hostOptions: NativeHostOptions, element: ReactElement, onClosed: () => void): DockHandle {
+  const host = spawnShellHost({ appId: "dev.dashi.shell", ...hostOptions });
+  const root = render(element, host);
+  let up = true;
+  host.onClose(() => {
+    if (!up) return;
+    up = false;
+    root.unmount();
+    onClosed();
+  });
+  return {
+    close() {
+      if (!up) return;
+      up = false;
+      root.unmount();
+      host.close();
+    },
+  };
+}
+
 export function startDock(options: StartDockOptions): DockRuntime {
   const { prefs, toplevels } = options;
   const autohide = new Autohide();
@@ -95,27 +116,6 @@ export function startDock(options: StartDockOptions): DockRuntime {
     options.compositor
       ?.inputRegion({ namespace: DOCK_NAMESPACE, rects: wire })
       .catch((error) => console.error("dashi-shell: the Dock takes clicks across the screen:", error instanceof Error ? error.message : error));
-  };
-
-  /** Opens `element` on a new host; `onClosed` runs once, however it ended. */
-  const open = (hostOptions: NativeHostOptions, element: ReactElement, onClosed: () => void): DockHandle => {
-    const host = spawnShellHost({ appId: "dev.dashi.shell", ...hostOptions });
-    const root = render(element, host);
-    let up = true;
-    host.onClose(() => {
-      if (!up) return;
-      up = false;
-      root.unmount();
-      onClosed();
-    });
-    return {
-      close() {
-        if (!up) return;
-        up = false;
-        root.unmount();
-        host.close();
-      },
-    };
   };
 
   const view = new DockSurface({

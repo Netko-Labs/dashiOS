@@ -65,6 +65,25 @@ export function TerminalWindow(props: TerminalWindowProps) {
   return <Terminal {...props} binary={props.binary} />;
 }
 
+/** The two menus' places, and the grid's turn at the keyboard when one goes. */
+function useMenusAt() {
+  const [menuAt, setMenuAt] = useState<Point | null>(null);
+  /** The tab strip's count was pressed: the menu of every tab, under it. */
+  const [tabsMenuAt, setTabsMenuAt] = useState<Point | null>(null);
+  /** Bumped when a sheet goes, so the grid (mounted again) takes the keyboard back. */
+  const [gridFocus, setGridFocus] = useState(0);
+  const refocus = (): void => setGridFocus((n) => n + 1);
+  const closeMenu = (): void => {
+    setMenuAt(null);
+    refocus();
+  };
+  const closeTabsMenu = (): void => {
+    setTabsMenuAt(null);
+    refocus();
+  };
+  return { menuAt, setMenuAt, tabsMenuAt, setTabsMenuAt, closeMenu, closeTabsMenu, gridFocus, refocus };
+}
+
 function Terminal({
   binary,
   onExit,
@@ -78,12 +97,7 @@ function Terminal({
   const palette = terminalPalette(dark);
   const home = process.env.HOME;
   const [fontSize, setFontSize] = useState(FONT_SIZE);
-  const [menuAt, setMenuAt] = useState<Point | null>(null);
-  /** The tab strip's count was pressed: the menu of every tab, under it. */
-  const [tabsMenuAt, setTabsMenuAt] = useState<Point | null>(null);
-  /** Bumped when a sheet goes, so the grid (mounted again) takes the keyboard back. */
-  const [gridFocus, setGridFocus] = useState(0);
-  const refocus = (): void => setGridFocus((n) => n + 1);
+  const { menuAt, setMenuAt, tabsMenuAt, setTabsMenuAt, closeMenu, closeTabsMenu, gridFocus, refocus } = useMenusAt();
   const { tabs, setTabs, sessions, bells } = useTabSessions({ binary, clipboard, palette });
 
   const front = activeTab(tabs);
@@ -105,14 +119,6 @@ function Terminal({
       restart: () => front && sessions.restart(front.id, here()),
       pageRows: Math.max(1, (sessions.size.current?.rows ?? 2) - 1),
     });
-  const closeMenu = (): void => {
-    setMenuAt(null);
-    refocus();
-  };
-  const closeTabsMenu = (): void => {
-    setTabsMenuAt(null);
-    refocus();
-  };
   const selectTabId = (id: number): void => setTabs((current) => selectTab(current, id));
 
   return (

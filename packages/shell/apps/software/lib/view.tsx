@@ -37,6 +37,20 @@ import { windowOverlay } from "./window-overlay.tsx";
 export const SOFTWARE_SIZE = { width: 1020, height: 640 } as const;
 
 /** `initialQuery`: open on a search for these words (the launcher's "Find … in Software"); `initialPage`: on a sidebar place (the update notice's Show). */
+type Services = ReturnType<typeof useServices>;
+
+/** Looks for updates when the window opens, and gives the toolbar's "check now". */
+function useUpdateChecks(store: Services["store"], applets: Services["applets"]): () => void {
+  useEffect(() => {
+    void store.refreshInstalled().then(() => store.checkUpdates());
+    void applets.refresh();
+  }, [store, applets]);
+  return () => {
+    void store.checkUpdates(true);
+    void applets.refresh();
+  };
+}
+
 export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuery?: string; initialPage?: string } = {}) {
   const { store, applets, catalog, appletImages, restart, openUrl } = useServices();
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
@@ -50,10 +64,7 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
   const [pageWidth, setPageWidth] = useState(820);
   const compact = isCompact(pageWidth);
 
-  useEffect(() => {
-    void store.refreshInstalled().then(() => store.checkUpdates());
-    void applets.refresh();
-  }, [store, applets]);
+  const checkForUpdates = useUpdateChecks(store, applets);
 
   const systemUpdates = state.system?.updates.length ?? 0;
   const updateCount = (state.appUpdates?.length ?? 0) + systemUpdates + applets.updates().length;
@@ -72,10 +83,6 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
   });
 
   const leading = canGoBack(nav) ? <ToolbarButton testID="back" glyph={BACK} tooltip="Back" onPress={goBack} /> : undefined;
-  const checkForUpdates = (): void => {
-    void store.checkUpdates(true);
-    void applets.refresh();
-  };
 
   return (
     <ActionsContext.Provider value={actions}>

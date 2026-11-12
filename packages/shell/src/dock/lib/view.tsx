@@ -35,21 +35,7 @@ const SLOT = DOCK.icon + DOCK.gap;
 /** The slide of a Dock that stays put. */
 const STILL = new Slide();
 
-export function Dock({
-  apps,
-  catalog,
-  pins,
-  toplevels,
-  controller,
-  menus,
-  output,
-  attention = null,
-  prefs = null,
-  autohide = null,
-  slide = null,
-  tiles = null,
-  onPanel,
-}: {
+interface DockProps {
   /** The apps the menu bar names windows by (the Dock's first-run defaults). */
   apps: readonly App[];
   catalog: readonly Entry[];
@@ -71,7 +57,26 @@ export function Dock({
   tiles?: Pick<TileStore, "set"> | null;
   /** Told where the panel is on the surface: only there does the Dock take clicks (start.tsx). */
   onPanel?: (bounds: Bounds) => void;
-}) {
+}
+
+/** The Dock's surface: the panel at its foot, in the middle. */
+const DOCK_ROOM = { flex: 1, flexDirection: "column", alignItems: "center", justifyContent: "flex-end", position: "relative" } as const;
+
+export function Dock({
+  apps,
+  catalog,
+  pins,
+  toplevels,
+  controller,
+  menus,
+  output,
+  attention = null,
+  prefs = null,
+  autohide = null,
+  slide = null,
+  tiles = null,
+  onPanel,
+}: DockProps) {
   const windows = useToplevels(toplevels);
   const starting = useStarting(controller);
   const wanting = useAttention(attention);
@@ -114,14 +119,7 @@ export function Dock({
   return (
     <View
       // An autohiding Dock slides down out of its surface, which clips it.
-      style={{
-        flex: 1,
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "flex-end",
-        position: "relative",
-        top: Math.round(slid.position * (DOCK_HEIGHT + DOCK.margin)),
-      }}
+      style={{ ...DOCK_ROOM, top: Math.round(slid.position * (DOCK_HEIGHT + DOCK.margin)) }}
     >
       <Painted slide={slide} />
       <DockPanel
@@ -145,7 +143,7 @@ export function Dock({
 }
 
 /** The Dock's icons in their three groups, on the panel the Dock draws. */
-function DockPanel(props: {
+interface DockPanelProps {
   /** The kept apps, in the order they show now (a dragged one moved). */
   pinned: readonly DockEntry[];
   running: readonly DockEntry[];
@@ -161,7 +159,9 @@ function DockPanel(props: {
   onMenu(key: string, centerX: number): void;
   onOptions(x: number): void;
   onRestore(id: number): void;
-}) {
+}
+
+function DockPanel(props: DockPanelProps) {
   const colors = useColors();
   const { pinned, running, minimized, slid, tiles } = props;
   return (

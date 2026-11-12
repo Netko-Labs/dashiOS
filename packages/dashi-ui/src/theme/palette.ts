@@ -42,7 +42,7 @@ export interface Palette {
    * steps toward the page under the pointer and more while held (lighter in
    * Light, where ink to black can't be seen; dimmer in Dark), each step 1.2
    * to 1 or more from the one before, and `onPrimary` is AA on all three
-   * (decisions.md D41). A default secondary button's 2 px edge is `primary` too.
+   * (decisions.md D44). A default secondary button's 2 px edge is `primary` too.
    */
   primary: string;
   primaryHover: string;

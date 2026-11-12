@@ -50,106 +50,120 @@ function rateGraph(title: string, first: readonly number[], second: readonly num
   };
 }
 
-export function content(
-  tab: Tab,
-  state: MonitorState,
-  totals: { processes: number; threads: number },
-  top: Line | null,
-): { left: Figure[]; right: Figure[]; graph: GraphSpec } {
+type Totals = { processes: number; threads: number };
+type Content = { left: Figure[]; right: Figure[]; graph: GraphSpec };
+
+function cpuContent(state: MonitorState, totals: Totals): Content {
+  return {
+    left: [
+      { label: "System", value: `${formatPercent(state.cpu.system)}%`, color: SERIES.second },
+      { label: "User", value: `${formatPercent(state.cpu.user)}%`, color: SERIES.first },
+      { label: "Idle", value: `${formatPercent(state.cpu.idle)}%` },
+    ],
+    right: [
+      { label: "Threads", value: formatCount(totals.threads) },
+      { label: "Processes", value: formatCount(totals.processes) },
+      { label: "Cores", value: formatCount(state.cpus) },
+    ],
+    graph: {
+      // Of all the cores together; a process's % CPU is of one core.
+      title: "CPU load",
+      max: 100,
+      scale: "100%",
+      series: [
+        { values: stacked(state.cpuHistory.system, state.cpuHistory.user), color: SERIES.first },
+        { values: state.cpuHistory.system, color: SERIES.second },
+      ],
+    },
+  };
+}
+
+function memoryContent(state: MonitorState): Content {
+  const memory = state.memory;
+  const known = (format: (m: NonNullable<typeof memory>) => string): string => (memory ? format(memory) : "—");
+  return {
+    left: [
+      { label: "Memory", value: known((m) => formatBytes(m.total)) },
+      { label: "Used", value: known((m) => formatBytes(m.total - m.available)), color: SERIES.first },
+      { label: "Cached files", value: known((m) => formatBytes(m.cached)) },
+    ],
+    right: [
+      { label: "Available", value: known((m) => formatBytes(m.available)) },
+      { label: "Swap used", value: known((m) => formatBytes(m.swapTotal - m.swapFree)) },
+      { label: "Swap size", value: known((m) => formatBytes(m.swapTotal)) },
+    ],
+    graph: { title: "Memory used", max: 100, scale: "100%", series: [{ values: state.memoryHistory, color: SERIES.first }] },
+  };
+}
+
+function energyContent(state: MonitorState, totals: Totals, top: Line | null): Content {
+  const { impact, wakeups, gpu, history } = state.energy;
+  const max = niceMax(history, 10);
+  return {
+    left: [
+      { label: "Energy impact", value: formatPercent(impact), color: SERIES.first },
+      { label: "Wakeups/s", value: wakeups === null ? "—" : formatCount(wakeups) },
+      { label: "% GPU", value: gpu === null ? "—" : formatPercent(gpu) },
+    ],
+    right: [
+      { label: "Most energy", value: top && top.impact >= 1 ? top.name : "Nothing much" },
+      { label: "Processes", value: formatCount(totals.processes) },
+      { label: "Threads", value: formatCount(totals.threads) },
+    ],
+    graph: { title: "Energy impact", max, scale: formatCount(max), series: [{ values: history, color: SERIES.first }] },
+  };
+}
+
+function diskContent(state: MonitorState): Content {
+  const { totals: disk, perSecond, history } = state.disk;
+  return {
+    left: [
+      { label: "Reads", value: formatCount(disk.readOps) },
+      { label: "Writes", value: formatCount(disk.writeOps) },
+      { label: "Reads/s", value: formatCount(perSecond.readOps) },
+      { label: "Writes/s", value: formatCount(perSecond.writeOps) },
+    ],
+    right: [
+      { label: "Data read", value: formatBytes(disk.readBytes) },
+      { label: "Data written", value: formatBytes(disk.writeBytes) },
+      { label: "Read/s", value: formatRate(perSecond.readBytes), color: SERIES.second },
+      { label: "Written/s", value: formatRate(perSecond.writeBytes), color: SERIES.first },
+    ],
+    graph: rateGraph("Disk activity", history.read, history.write, 64 * 1024),
+  };
+}
+
+function networkContent(state: MonitorState): Content {
+  const { totals: net, perSecond, history } = state.net;
+  return {
+    left: [
+      { label: "Packets in", value: formatCount(net.packetsIn) },
+      { label: "Packets out", value: formatCount(net.packetsOut) },
+      { label: "Packets in/s", value: formatCount(perSecond.packetsIn) },
+      { label: "Packets out/s", value: formatCount(perSecond.packetsOut) },
+    ],
+    right: [
+      { label: "Received", value: formatBytes(net.bytesIn) },
+      { label: "Sent", value: formatBytes(net.bytesOut) },
+      { label: "Received/s", value: formatRate(perSecond.bytesIn), color: SERIES.second },
+      { label: "Sent/s", value: formatRate(perSecond.bytesOut), color: SERIES.first },
+    ],
+    graph: rateGraph("Network activity", history.in, history.out, 16 * 1024),
+  };
+}
+
+export function content(tab: Tab, state: MonitorState, totals: Totals, top: Line | null): Content {
   switch (tab) {
     case "cpu":
-      return {
-        left: [
-          { label: "System", value: `${formatPercent(state.cpu.system)}%`, color: SERIES.second },
-          { label: "User", value: `${formatPercent(state.cpu.user)}%`, color: SERIES.first },
-          { label: "Idle", value: `${formatPercent(state.cpu.idle)}%` },
-        ],
-        right: [
-          { label: "Threads", value: formatCount(totals.threads) },
-          { label: "Processes", value: formatCount(totals.processes) },
-          { label: "Cores", value: formatCount(state.cpus) },
-        ],
-        graph: {
-          // Of all the cores together; a process's % CPU is of one core.
-          title: "CPU load",
-          max: 100,
-          scale: "100%",
-          series: [
-            { values: stacked(state.cpuHistory.system, state.cpuHistory.user), color: SERIES.first },
-            { values: state.cpuHistory.system, color: SERIES.second },
-          ],
-        },
-      };
-    case "memory": {
-      const memory = state.memory;
-      const known = (format: (m: NonNullable<typeof memory>) => string): string => (memory ? format(memory) : "—");
-      return {
-        left: [
-          { label: "Memory", value: known((m) => formatBytes(m.total)) },
-          { label: "Used", value: known((m) => formatBytes(m.total - m.available)), color: SERIES.first },
-          { label: "Cached files", value: known((m) => formatBytes(m.cached)) },
-        ],
-        right: [
-          { label: "Available", value: known((m) => formatBytes(m.available)) },
-          { label: "Swap used", value: known((m) => formatBytes(m.swapTotal - m.swapFree)) },
-          { label: "Swap size", value: known((m) => formatBytes(m.swapTotal)) },
-        ],
-        graph: { title: "Memory used", max: 100, scale: "100%", series: [{ values: state.memoryHistory, color: SERIES.first }] },
-      };
-    }
-    case "energy": {
-      const { impact, wakeups, gpu, history } = state.energy;
-      const max = niceMax(history, 10);
-      return {
-        left: [
-          { label: "Energy impact", value: formatPercent(impact), color: SERIES.first },
-          { label: "Wakeups/s", value: wakeups === null ? "—" : formatCount(wakeups) },
-          { label: "% GPU", value: gpu === null ? "—" : formatPercent(gpu) },
-        ],
-        right: [
-          { label: "Most energy", value: top && top.impact >= 1 ? top.name : "Nothing much" },
-          { label: "Processes", value: formatCount(totals.processes) },
-          { label: "Threads", value: formatCount(totals.threads) },
-        ],
-        graph: { title: "Energy impact", max, scale: formatCount(max), series: [{ values: history, color: SERIES.first }] },
-      };
-    }
-    case "disk": {
-      const { totals: disk, perSecond, history } = state.disk;
-      return {
-        left: [
-          { label: "Reads", value: formatCount(disk.readOps) },
-          { label: "Writes", value: formatCount(disk.writeOps) },
-          { label: "Reads/s", value: formatCount(perSecond.readOps) },
-          { label: "Writes/s", value: formatCount(perSecond.writeOps) },
-        ],
-        right: [
-          { label: "Data read", value: formatBytes(disk.readBytes) },
-          { label: "Data written", value: formatBytes(disk.writeBytes) },
-          { label: "Read/s", value: formatRate(perSecond.readBytes), color: SERIES.second },
-          { label: "Written/s", value: formatRate(perSecond.writeBytes), color: SERIES.first },
-        ],
-        graph: rateGraph("Disk activity", history.read, history.write, 64 * 1024),
-      };
-    }
-    case "network": {
-      const { totals: net, perSecond, history } = state.net;
-      return {
-        left: [
-          { label: "Packets in", value: formatCount(net.packetsIn) },
-          { label: "Packets out", value: formatCount(net.packetsOut) },
-          { label: "Packets in/s", value: formatCount(perSecond.packetsIn) },
-          { label: "Packets out/s", value: formatCount(perSecond.packetsOut) },
-        ],
-        right: [
-          { label: "Received", value: formatBytes(net.bytesIn) },
-          { label: "Sent", value: formatBytes(net.bytesOut) },
-          { label: "Received/s", value: formatRate(perSecond.bytesIn), color: SERIES.second },
-          { label: "Sent/s", value: formatRate(perSecond.bytesOut), color: SERIES.first },
-        ],
-        graph: rateGraph("Network activity", history.in, history.out, 16 * 1024),
-      };
-    }
+      return cpuContent(state, totals);
+    case "memory":
+      return memoryContent(state);
+    case "energy":
+      return energyContent(state, totals, top);
+    case "disk":
+      return diskContent(state);
+    case "network":
+      return networkContent(state);
   }
 }
 

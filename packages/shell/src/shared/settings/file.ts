@@ -8,21 +8,18 @@
 
 import { homedir } from "node:os";
 import { isAbsolute, join } from "node:path";
+import type { Infer, Shape } from "@dashi/shape";
 
 export type Raw = Record<string, unknown>;
-export type Check = (value: unknown) => boolean;
+
+/** What each key of a section may hold, as shapes (`@dashi/shape`). */
+// biome-ignore lint/suspicious/noExplicitAny: a section holds shapes of any type; each key is inferred from its own.
+export type Fields = Record<string, Shape<any>>;
+
+/** A section as read: each key that holds a good value, typed by its shape. */
+export type SectionOf<F extends Fields> = { [K in keyof F]?: Infer<F[K]> };
 
 export const isRaw = (value: unknown): value is Raw => typeof value === "object" && value !== null && !Array.isArray(value);
-
-export const isBoolean: Check = (value) => typeof value === "boolean";
-export const numberIn =
-  (min: number, max: number, whole = false): Check =>
-  (value) =>
-    typeof value === "number" && Number.isFinite(value) && value >= min && value <= max && (!whole || Number.isInteger(value));
-export const oneOf =
-  (...options: string[]): Check =>
-  (value) =>
-    typeof value === "string" && options.includes(value);
 
 /** Where photos may live (an added wallpaper, an account's picture): absolute, no control characters, a sane length. */
 const PHOTO_PATH = /^\/[^\0-\x1f\x7f]{1,4095}$/;
@@ -39,13 +36,18 @@ export function dig(root: Raw, path: readonly string[]): Raw | undefined {
   return isRaw(at) ? at : undefined;
 }
 
-/** Only the keys of the section at `path` that hold a value of the right kind. */
-export function readFields(raw: Raw, path: readonly string[], fields: Record<string, Check>): Raw {
+/**
+ * Only the keys of the section at `path` that hold a value of the right kind, each as its shape
+ * parsed it: a key with a bad value reads as not set, and never loses the rest.
+ */
+export function readFields<F extends Fields>(raw: Raw, path: readonly string[], fields: F): SectionOf<F> {
   const found = dig(raw, path);
-  const out: Raw = {};
+  const out: SectionOf<F> = {};
   if (!found) return out;
-  for (const [key, check] of Object.entries(fields)) {
-    if (Object.hasOwn(found, key) && check(found[key])) out[key] = found[key];
+  for (const key of Object.keys(fields) as (keyof F & string)[]) {
+    if (!Object.hasOwn(found, key)) continue;
+    const parsed = (fields[key] as F[typeof key]).parse(found[key]);
+    if (parsed.ok) out[key] = parsed.value;
   }
   return out;
 }

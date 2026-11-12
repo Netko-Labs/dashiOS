@@ -45,10 +45,43 @@ function NetworkRow({ network, current, state, onJoin }: { network: WifiNetwork;
   );
 }
 
+/** The networks joined before; forgetting one asks first, in its row. */
+function KnownNetworks({ state, onForget }: { state: ReturnType<typeof useWifi>; onForget: (saved: SavedNetwork) => void }) {
+  const [asking, setAsking] = useState<string | null>(null);
+  const forget = (saved: SavedNetwork) => {
+    setAsking(null);
+    onForget(saved);
+  };
+  return (
+    <>
+      <Caption above>Known Networks</Caption>
+      <Group testID="net-known">
+        {state.saved.map((saved) => (
+          <ListRow
+            key={saved.key}
+            testID={`net-known:${saved.ssid}`}
+            name={saved.ssid}
+            detail={state.current?.key === saved.key ? "Connected" : "Joins automatically when in range"}
+          >
+            {asking === saved.key ? (
+              <>
+                <MiniButton testID={`net-forget-cancel:${saved.ssid}`} label="Cancel" onPress={() => setAsking(null)} />
+                <MiniButton testID={`net-forget-confirm:${saved.ssid}`} label="Forget" tone="critical" onPress={() => forget(saved)} />
+              </>
+            ) : (
+              <MiniButton testID={`net-forget:${saved.ssid}`} label="Forget…" tone="critical" onPress={() => setAsking(saved.key)} />
+            )}
+          </ListRow>
+        ))}
+      </Group>
+      <Caption>Forgetting a network deletes its saved password; you enter it again to rejoin.</Caption>
+    </>
+  );
+}
+
 function WifiSection({ services, on, onRadio }: { services: PaneServices; on: boolean; onRadio: (on: boolean) => void }) {
   const { wifi } = services;
   const state = useWifi(wifi);
-  const [asking, setAsking] = useState<string | null>(null);
   useEffect(() => {
     wifi.open();
     return () => wifi.close();
@@ -65,10 +98,6 @@ function WifiSection({ services, on, onRadio }: { services: PaneServices; on: bo
   const failure = state.join.phase === "failed" ? `“${state.join.ssid}”: ${joinMessage(state.join.reason)}` : null;
   const known = state.networks.filter((network) => network.known);
   const others = state.networks.filter((network) => !network.known);
-  const forget = (saved: SavedNetwork) => {
-    setAsking(null);
-    void wifi.forget(saved);
-  };
   return (
     <>
       <Group testID="net-wifi-switch">
@@ -99,31 +128,7 @@ function WifiSection({ services, on, onRadio }: { services: PaneServices; on: bo
             )}
           </Group>
           {failure && <Failure testID="net-wifi-failure">{failure}</Failure>}
-          {state.saved.length > 0 && (
-            <>
-              <Caption above>Known Networks</Caption>
-              <Group testID="net-known">
-                {state.saved.map((saved) => (
-                  <ListRow
-                    key={saved.key}
-                    testID={`net-known:${saved.ssid}`}
-                    name={saved.ssid}
-                    detail={state.current?.key === saved.key ? "Connected" : "Joins automatically when in range"}
-                  >
-                    {asking === saved.key ? (
-                      <>
-                        <MiniButton testID={`net-forget-cancel:${saved.ssid}`} label="Cancel" onPress={() => setAsking(null)} />
-                        <MiniButton testID={`net-forget-confirm:${saved.ssid}`} label="Forget" tone="critical" onPress={() => forget(saved)} />
-                      </>
-                    ) : (
-                      <MiniButton testID={`net-forget:${saved.ssid}`} label="Forget…" tone="critical" onPress={() => setAsking(saved.key)} />
-                    )}
-                  </ListRow>
-                ))}
-              </Group>
-              <Caption>Forgetting a network deletes its saved password; you enter it again to rejoin.</Caption>
-            </>
-          )}
+          {state.saved.length > 0 && <KnownNetworks state={state} onForget={(saved) => void wifi.forget(saved)} />}
         </>
       )}
     </>

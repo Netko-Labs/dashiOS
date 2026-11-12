@@ -50,3 +50,11 @@ export function describeCutDrag(error: PersonBusy, reached: string): ToolResult 
     `The person started using ${where} midway, so the drag was let go at ${reached}, before it reached \`to\`. Take a screenshot to see what it did; wait at least ${seconds(error.waitMs)} before acting there again.`,
   );
 }
+
+/** A scroll the person cut short by coming back: what was scrolled stays, and the result says how much of it that was. */
+export function describeCutScroll(error: PersonBusy, done: { dx: number; dy: number }, asked: { dx: number; dy: number }): ToolResult {
+  const where = error.desktop ? "the desktop" : `w${error.window}`;
+  return toolError(
+    `The person started using ${where} midway, so the scroll stopped after (${done.dx}, ${done.dy}) of (${asked.dx}, ${asked.dy}). Wait at least ${seconds(error.waitMs)}, then scroll the rest.`,
+  );
+}

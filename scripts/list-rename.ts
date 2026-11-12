@@ -10,10 +10,11 @@
 // `bun scripts/<check>.ts --shrink` does the same for its own list.
 
 import { readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { carryRenames, readList, writeList } from "./ratchet.ts";
 import { gitRenames } from "./renames.ts";
 
-const LISTS = new URL("./lists/", import.meta.url).pathname;
+const LISTS = fileURLToPath(new URL("./lists/", import.meta.url));
 
 /** Carry renames through every list file; returns "list: old -> new" lines. */
 export function carryAll(moved: Map<string, string>): string[] {

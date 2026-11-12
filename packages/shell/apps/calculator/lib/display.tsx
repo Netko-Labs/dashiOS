@@ -6,7 +6,7 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { Text, TextInput, View } from "@mirinjs/metal";
+import { Text, TextInput, type TextInputStyle, View } from "@mirinjs/metal";
 import type { Dispatch } from "react";
 import { type copyNumber, fitFontSize } from "./format.ts";
 import { DISPLAY, GAP, LINE_LARGEST, LINE_SMALLEST } from "./layout.ts";
@@ -44,6 +44,40 @@ export interface CalculatorDisplayProps {
   onMenu(menu: MenuAt): void;
 }
 
+/** The line's look: all the room, the text at its right edge, so it ends where the result and the keys do, and a long line scrolls to the caret. */
+function lineStyle(fontSize: number, colors: ReturnType<typeof useColors>): TextInputStyle {
+  return {
+    width: "100%",
+    textAlign: "right",
+    height: Math.round(fontSize * 1.25),
+    fontSize,
+    padding: 0,
+    color: colors.text,
+    placeholderColor: colors.text,
+    backgroundColor: CLEAR,
+    borderColor: CLEAR,
+    focusBorderColor: CLEAR,
+  };
+}
+
+/** The words under the line, on their one row: smaller when they are long, never cut. */
+function Words({ words, room }: { words: ResultWords; room: number }) {
+  const colors = useColors();
+  const fontSize = fitFontSize(words.text, room, WORDS_LARGEST, WORDS_SMALLEST);
+  return (
+    <View
+      testID="result"
+      accessibilityLiveRegion="polite"
+      accessibilityLabel={words.text}
+      style={{ height: 22, flexDirection: "row", justifyContent: "flex-end" }}
+    >
+      <Text numberOfLines={1} style={{ fontSize, lineHeight: 22, color: words.tone === "error" ? colors.ume : colors.textMuted, textAlign: "right" }}>
+        {words.text}
+      </Text>
+    </View>
+  );
+}
+
 export function CalculatorDisplay({
   line,
   revision,
@@ -62,8 +96,6 @@ export function CalculatorDisplay({
 }: CalculatorDisplayProps) {
   const colors = useColors();
   const fontSize = fitFontSize(line.text || "0", room, LINE_LARGEST, LINE_SMALLEST);
-  // The words under the line fit the display on their one row: smaller when they are long, never cut.
-  const wordsSize = fitFontSize(words.text, room, WORDS_LARGEST, WORDS_SMALLEST);
   return (
     <View
       testID="display"
@@ -104,33 +136,9 @@ export function CalculatorDisplay({
         onSelectionChange={(selection) => dispatch({ type: "select", selection })}
         onSubmitEditing={() => dispatch({ type: "equals", locale })}
         onKeyPress={(key) => dispatch(key === "Escape" ? { type: "clear" } : { type: "recall", step: key === "ArrowUp" ? 1 : -1, locale })}
-        style={{
-          // All the room, the text at its right edge: it ends where the result and the keys do, and a long line scrolls to the caret.
-          width: "100%",
-          textAlign: "right",
-          height: Math.round(fontSize * 1.25),
-          fontSize,
-          padding: 0,
-          color: colors.text,
-          placeholderColor: colors.text,
-          backgroundColor: CLEAR,
-          borderColor: CLEAR,
-          focusBorderColor: CLEAR,
-        }}
+        style={lineStyle(fontSize, colors)}
       />
-      <View
-        testID="result"
-        accessibilityLiveRegion="polite"
-        accessibilityLabel={words.text}
-        style={{ height: 22, flexDirection: "row", justifyContent: "flex-end" }}
-      >
-        <Text
-          numberOfLines={1}
-          style={{ fontSize: wordsSize, lineHeight: 22, color: words.tone === "error" ? colors.ume : colors.textMuted, textAlign: "right" }}
-        >
-          {words.text}
-        </Text>
-      </View>
+      <Words words={words} room={room} />
     </View>
   );
 }

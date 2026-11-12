@@ -79,16 +79,13 @@ export function recentLabels(paths: readonly string[]): string[] {
   });
 }
 
-/** The menus, and what choosing each row does. */
-export function previewMenus(context: PreviewMenuContext): { menus: MenuSpec[]; run: (id: string) => void } {
-  const { actions, blocked, hasFile, hasPicture, isPdf } = context;
+/** The menu bar's menus, as rows. */
+function menuSpecs(context: PreviewMenuContext, recentRows: MenuItemSpec[]): MenuSpec[] {
+  const { blocked, hasFile, hasPicture, isPdf } = context;
   const open = hasFile && !blocked;
   const seeing = hasPicture && !blocked;
   const unit = isPdf ? "Page" : "Image";
-  const recents = context.recents.slice(0, RECENT_ROWS);
-  const recentRows: MenuItemSpec[] = recentLabels(recents).map((label, index) => ({ id: `recent-${index}`, label, enabled: !blocked }));
-
-  const menus: MenuSpec[] = [
+  return [
     {
       id: "file",
       items: [
@@ -150,8 +147,11 @@ export function previewMenus(context: PreviewMenuContext): { menus: MenuSpec[]; 
       ],
     },
   ];
+}
 
-  const simple: Readonly<Record<string, () => void>> = {
+/** What each row with one plain action does, by its id. */
+function actionsById(actions: PreviewMenuContext["actions"]): Readonly<Record<string, () => void>> {
+  return {
     open: actions.open,
     "clear-recents": actions.clearRecents,
     "open-with": actions.openWith,
@@ -174,7 +174,16 @@ export function previewMenus(context: PreviewMenuContext): { menus: MenuSpec[]; 
     previous: () => actions.step(-1),
     next: () => actions.step(1),
   };
+}
 
+/** The menus, and what choosing each row does. */
+export function previewMenus(context: PreviewMenuContext): { menus: MenuSpec[]; run: (id: string) => void } {
+  const { actions, blocked } = context;
+  const recents = context.recents.slice(0, RECENT_ROWS);
+  const recentRows: MenuItemSpec[] = recentLabels(recents).map((label, index) => ({ id: `recent-${index}`, label, enabled: !blocked }));
+
+  const menus = menuSpecs(context, recentRows);
+  const simple = actionsById(actions);
   const run = (id: string): void => {
     if (!enabledIds(menus).has(id)) return;
     const recent = /^recent-(\d)$/.exec(id);

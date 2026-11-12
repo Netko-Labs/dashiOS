@@ -41,14 +41,36 @@ export interface MenuBarProps extends StatusSources {
   voice?: ChipSource;
 }
 
+/** The bar's row; the clock's pill has 8 of its own at the right. */
+const BAR = { flex: 1, flexDirection: "row", alignItems: "center", paddingLeft: 6, paddingRight: 6, position: "relative" } as const;
+
+/**
+ * A hairline, not a shadow: a shadow needs a surface taller than the bar, and that would take clicks from the windows' top edge.
+ * It spans the bar, so it says the bar's width too (Metal reports a root's children's layout, not the root's).
+ */
+function BarEdge({ onWidth }: { onWidth: (width: number) => void }) {
+  const colors = useColors();
+  return (
+    <View
+      testID="menu-bar-edge"
+      onLayout={(bounds) => onWidth(bounds.width)}
+      style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 1, backgroundColor: colors.menuBarEdge }}
+    />
+  );
+}
+
+/** What is open from this bar: only the bar the popover opened from shows it as open, and the keyboard's ring. */
+function useOwnPopover(menus: MenuBarProps["menus"], output: MenuBarProps["output"]) {
+  const { popover, appName, output: openOn, bar: ring } = useMenus(menus);
+  const here = openOn === output;
+  return { popover: here ? popover : null, focused: here ? (ring ?? null) : null, frozenName: appName };
+}
+
 export function MenuBar(props: MenuBarProps) {
   const { apps, toplevels, menus, appMenus, output, installed, accessible = () => false } = props;
   const colors = useColors();
   const label = { fontSize: 13, color: colors.text } as const;
-  const { popover: current, appName: frozenName, output: openOn, bar: ring } = useMenus(menus);
-  // Only the bar the popover opened from shows it as open, and the keyboard's ring.
-  const popover = openOn === output ? current : null;
-  const focused = openOn === output ? (ring ?? null) : null;
+  const { popover, focused, frozenName } = useOwnPopover(menus, output);
   // The room the menus leave the status side: the bar's width and the menus' (both measured).
   const [barWidth, setBarWidth] = useState<number | null>(null);
   const [menusWidth, setMenusWidth] = useState<number | null>(null);
@@ -75,25 +97,8 @@ export function MenuBar(props: MenuBarProps) {
   );
 
   return (
-    <View
-      style={{
-        flex: 1,
-        flexDirection: "row",
-        alignItems: "center",
-        paddingLeft: 6,
-        // The clock's pill has 8 of its own.
-        paddingRight: 6,
-        position: "relative",
-        backgroundColor: colors.menuBar,
-      }}
-    >
-      {/* A hairline, not a shadow: a shadow needs a surface taller than the bar, and that would take clicks from the windows' top edge. */}
-      {/* It spans the bar, so it says the bar's width too (Metal reports a root's children's layout, not the root's). */}
-      <View
-        testID="menu-bar-edge"
-        onLayout={(bounds) => setBarWidth(bounds.width)}
-        style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 1, backgroundColor: colors.menuBarEdge }}
-      />
+    <View style={{ ...BAR, backgroundColor: colors.menuBar }}>
+      <BarEdge onWidth={setBarWidth} />
       {/* The app's menus never give way: the status side does (menubar-fit.ts). */}
       <View testID="menu-titles" onLayout={(bounds) => setMenusWidth(bounds.width)} style={{ flexDirection: "row", alignItems: "center", flexShrink: 0 }}>
         {menu("dashi", <Svg markup={LOGO} size={16} color={colors.text} />)}

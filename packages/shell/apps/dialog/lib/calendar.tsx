@@ -23,12 +23,52 @@ interface Day {
   day: number;
 }
 
+const same = (a: Day, b: Day): boolean => a.year === b.year && a.month === b.month && a.day === b.day;
+
+/** The month's days, six weeks of them: the chosen one filled, today ringed. */
+function MonthDays({ chosen, today, onPick }: { chosen: Day; today: Day; onPick: (day: Day) => void }) {
+  const colors = useColors();
+  const cells = monthCells(chosen.year, chosen.month);
+  const weeks = Array.from({ length: 6 }, (_, week) => cells.slice(week * 7, week * 7 + 7));
+  return (
+    <>
+      {weeks.map((week, row) => (
+        <View key={row} style={{ flexDirection: "row", height: CELL }}>
+          {week.map((day, column) => {
+            if (day === null) return <View key={column} style={{ width: CELL }} />;
+            const cell = { year: chosen.year, month: chosen.month, day };
+            const picked = same(cell, chosen);
+            return (
+              <View
+                key={column}
+                testID={`dialog:day:${day}`}
+                onPress={() => onPick(cell)}
+                style={{
+                  width: CELL,
+                  height: CELL,
+                  borderRadius: CELL / 2,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: picked ? colors.selection : "#00000000",
+                  hoverBackgroundColor: picked ? colors.selection : colors.button,
+                  ...(same(cell, today) && !picked ? { borderWidth: 1, borderColor: colors.selection } : {}),
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: picked ? "semibold" : "normal", color: picked ? "#ffffff" : colors.text }}>{String(day)}</Text>
+              </View>
+            );
+          })}
+        </View>
+      ))}
+    </>
+  );
+}
+
 export function CalendarDialog({ spec, answer }: { spec: CalendarSpec; answer: Answer }) {
   const colors = useColors();
   const [chosen, setChosen] = useState<Day>({ year: spec.year, month: spec.month, day: Math.min(spec.day, daysIn(spec.year, spec.month)) });
   const now = new Date();
   const today: Day = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
-  const same = (a: Day, b: Day): boolean => a.year === b.year && a.month === b.month && a.day === b.day;
   const page = (by: number): void =>
     setChosen((current) => {
       const month = current.month + by;
@@ -47,8 +87,6 @@ export function CalendarDialog({ spec, answer }: { spec: CalendarSpec; answer: A
       <Svg markup={markup} size={12} color={colors.textMuted} />
     </View>
   );
-  const cells = monthCells(chosen.year, chosen.month);
-  const weeks = Array.from({ length: 6 }, (_, week) => cells.slice(week * 7, week * 7 + 7));
   return (
     <DialogFrame
       title={spec.title}
@@ -78,34 +116,7 @@ export function CalendarDialog({ spec, answer }: { spec: CalendarSpec; answer: A
             </View>
           ))}
         </View>
-        {weeks.map((week, row) => (
-          <View key={row} style={{ flexDirection: "row", height: CELL }}>
-            {week.map((day, column) => {
-              if (day === null) return <View key={column} style={{ width: CELL }} />;
-              const cell = { year: chosen.year, month: chosen.month, day };
-              const picked = same(cell, chosen);
-              return (
-                <View
-                  key={column}
-                  testID={`dialog:day:${day}`}
-                  onPress={() => setChosen(cell)}
-                  style={{
-                    width: CELL,
-                    height: CELL,
-                    borderRadius: CELL / 2,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: picked ? colors.selection : "#00000000",
-                    hoverBackgroundColor: picked ? colors.selection : colors.button,
-                    ...(same(cell, today) && !picked ? { borderWidth: 1, borderColor: colors.selection } : {}),
-                  }}
-                >
-                  <Text style={{ fontSize: 12, fontWeight: picked ? "semibold" : "normal", color: picked ? "#ffffff" : colors.text }}>{String(day)}</Text>
-                </View>
-              );
-            })}
-          </View>
-        ))}
+        <MonthDays chosen={chosen} today={today} onPick={setChosen} />
       </View>
     </DialogFrame>
   );

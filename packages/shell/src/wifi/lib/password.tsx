@@ -15,6 +15,29 @@ import { joinMessage, passwordProblem } from "../networks.ts";
 import { useWifi, type WifiStore } from "../store.ts";
 import type { WifiNetwork } from "../types.ts";
 
+function ShowPassword({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+  const colors = useColors();
+  return (
+    <View testID="wifi-show-password" onPress={onToggle} style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6 }}>
+      <View
+        style={{
+          width: 15,
+          height: 15,
+          borderRadius: 4,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: shown ? colors.selection : colors.tile,
+          borderWidth: 1,
+          borderColor: shown ? colors.selection : colors.checkbox,
+        }}
+      >
+        {shown && <Svg markup={CHECK} size={10} color="#ffffff" />}
+      </View>
+      <Text style={{ fontSize: 12, color: colors.text }}>Show password</Text>
+    </View>
+  );
+}
+
 export function PasswordSheet({ network, wifi, onClose }: { network: WifiNetwork; wifi: WifiStore; onClose: () => void }) {
   const colors = useColors();
   const { join } = useWifi(wifi);
@@ -70,27 +93,7 @@ export function PasswordSheet({ network, wifi, onClose }: { network: WifiNetwork
           style={{ fontSize: 13, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: "#00000000" }}
         />
       </View>
-      <View
-        testID="wifi-show-password"
-        onPress={() => setShown(!shown)}
-        style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6 }}
-      >
-        <View
-          style={{
-            width: 15,
-            height: 15,
-            borderRadius: 4,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: shown ? colors.selection : colors.tile,
-            borderWidth: 1,
-            borderColor: shown ? colors.selection : colors.checkbox,
-          }}
-        >
-          {shown && <Svg markup={CHECK} size={10} color="#ffffff" />}
-        </View>
-        <Text style={{ fontSize: 12, color: colors.text }}>Show password</Text>
-      </View>
+      <ShowPassword shown={shown} onToggle={() => setShown(!shown)} />
       <View testID="wifi-hint" style={{ alignSelf: "stretch" }}>
         <Text style={{ fontSize: 12, color: refusal ? colors.critical : colors.textMuted }}>{hint}</Text>
       </View>

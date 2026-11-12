@@ -135,6 +135,49 @@ function LoginRow({ login, onAgents, onDelete }: { login: LoginSummary; onAgents
   );
 }
 
+/** Where logins come from, and where a new one is saved. */
+function Sources({ passwords }: { passwords: Passwords }) {
+  const prefs = useSyncExternalStore(passwords.prefs.subscribe, passwords.prefs.getSnapshot);
+  return (
+    <>
+      <Group testID="passwords-sources">
+        <Setting id="passwords/source-dashi">
+          <Switch
+            testID="passwords-source-dashi"
+            on={prefs.sources.dashi}
+            onChange={(on) => passwords.prefs.set({ sources: { ...prefs.sources, dashi: on } })}
+          />
+        </Setting>
+        <Setting
+          id="passwords/source-1password"
+          detail={
+            passwords.onePasswordReady() ? "Logins, codes and cards from your vault" : "Needs the 1Password app and its CLI (op), with CLI integration on"
+          }
+        >
+          <Switch
+            testID="passwords-source-1password"
+            on={prefs.sources["1password"]}
+            onChange={(on) => passwords.prefs.set({ sources: { ...prefs.sources, "1password": on } })}
+          />
+        </Setting>
+      </Group>
+      <Group>
+        <Setting id="passwords/save-to" stack={false}>
+          <Choices
+            testID="passwords-save-to"
+            value={prefs.saveTo}
+            options={[
+              { value: "dashi", label: "Dashi" },
+              { value: "1password", label: "1Password" },
+            ]}
+            onChange={(saveTo) => passwords.prefs.set({ saveTo })}
+          />
+        </Setting>
+      </Group>
+    </>
+  );
+}
+
 export function PasswordsPane({ passwords }: { passwords: Passwords }) {
   // Agents' pictures blank this window while the pane shows.
   useEffect(() => vaultShown(), []);
@@ -167,40 +210,7 @@ export function PasswordsPane({ passwords }: { passwords: Passwords }) {
   return (
     <>
       <Page title="Passwords">
-        <Group testID="passwords-sources">
-          <Setting id="passwords/source-dashi">
-            <Switch
-              testID="passwords-source-dashi"
-              on={prefs.sources.dashi}
-              onChange={(on) => passwords.prefs.set({ sources: { ...prefs.sources, dashi: on } })}
-            />
-          </Setting>
-          <Setting
-            id="passwords/source-1password"
-            detail={
-              passwords.onePasswordReady() ? "Logins, codes and cards from your vault" : "Needs the 1Password app and its CLI (op), with CLI integration on"
-            }
-          >
-            <Switch
-              testID="passwords-source-1password"
-              on={prefs.sources["1password"]}
-              onChange={(on) => passwords.prefs.set({ sources: { ...prefs.sources, "1password": on } })}
-            />
-          </Setting>
-        </Group>
-        <Group>
-          <Setting id="passwords/save-to" stack={false}>
-            <Choices
-              testID="passwords-save-to"
-              value={prefs.saveTo}
-              options={[
-                { value: "dashi", label: "Dashi" },
-                { value: "1password", label: "1Password" },
-              ]}
-              onChange={(saveTo) => passwords.prefs.set({ saveTo })}
-            />
-          </Setting>
-        </Group>
+        <Sources passwords={passwords} />
         <Caption>
           Agents sign in and enter codes through Dashi, which types them: an agent never sees a password or a code, and each use is asked about on screen.
         </Caption>

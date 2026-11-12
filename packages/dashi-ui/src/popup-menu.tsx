@@ -4,7 +4,7 @@
  */
 
 import { ScrollView, View } from "@mirinjs/metal";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { KeySink } from "./key-sink.tsx";
 import type { KeyInput } from "./keys.ts";
 import { hungHeight, litAfter, MENU, type MenuRowKind, menuFits, menuHeight, menuMaxWidth, placeMenu, type Size } from "./menu-place.ts";
@@ -70,8 +70,6 @@ export function MenuList({
   /** At most this tall, padding and edge included: the rows scroll inside (`PopupMenu`, in a window shorter than the menu). */
   maxHeight?: number;
 }) {
-  const colors = useColors();
-  const surface = useSurface();
   const rows = tidyEntries(items);
   const ticks = rows.some((row) => !isSeparator(row) && row.checked !== undefined);
   const [ownLit, setOwnLit] = useState<number | null>(null);
@@ -106,6 +104,29 @@ export function MenuList({
     ),
   );
   return (
+    <MenuCard testID={testID} minWidth={minWidth} maxWidth={maxWidth} maxHeight={maxHeight}>
+      {list}
+    </MenuCard>
+  );
+}
+
+/** The card a menu's rows sit in; with a `maxHeight`, the rows scroll inside it. */
+function MenuCard({
+  testID,
+  minWidth,
+  maxWidth,
+  maxHeight,
+  children,
+}: {
+  testID: string;
+  minWidth: number;
+  maxWidth: number | undefined;
+  maxHeight: number | undefined;
+  children: ReactNode;
+}) {
+  const colors = useColors();
+  const surface = useSurface();
+  return (
     <View
       occlude
       testID={testID}
@@ -135,10 +156,10 @@ export function MenuList({
         }}
       >
         {maxHeight === undefined ? (
-          list
+          children
         ) : (
           <ScrollView testID={`${testID}:rows`} style={{ flex: 1, flexDirection: "column" }}>
-            {list}
+            {children}
           </ScrollView>
         )}
       </View>

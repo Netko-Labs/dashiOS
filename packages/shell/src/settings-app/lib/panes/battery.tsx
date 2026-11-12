@@ -65,11 +65,93 @@ const NO_LAPTOP = {
   })(),
 };
 
+type EnergyState = ReturnType<typeof useEnergy>;
+
+/** When the screen goes off and when the computer sleeps. */
+function IdleTimers({ settings }: { settings: SettingsStore }) {
+  const { idle } = useSettings(settings).data;
+  const blank = idle.blankAfterSeconds ?? DEFAULT_BLANK_AFTER;
+  const sleep = idle.sleepAfterSeconds ?? 0;
+  return (
+    <>
+      <Setting id="battery/turn-display-off" title="Turn the screen off after" stack={false} detail={null}>
+        <Choices
+          testID="power-blank"
+          options={timePills(BLANK_CHOICES)}
+          common={BLANK_COMMON}
+          value={blankChoice(blank)}
+          onChange={(blankAfterSeconds) => settings.patch("idle", { blankAfterSeconds })}
+        />
+      </Setting>
+      <Setting id="battery/sleep-after" title="Sleep after" stack={false} detail={null}>
+        <Choices
+          testID="power-sleep"
+          options={timePills(SLEEP_CHOICES)}
+          common={SLEEP_COMMON}
+          value={sleepChoice(sleep)}
+          onChange={(sleepAfterSeconds) => settings.patch("idle", { sleepAfterSeconds })}
+        />
+      </Setting>
+    </>
+  );
+}
+
+/** The battery's health and cycles, and its percentage in the menu bar. */
+function BatteryStatus({ battery }: { battery: NonNullable<EnergyState["battery"]> }) {
+  return (
+    <>
+      <Caption above>Battery</Caption>
+      <Group testID="battery-status">
+        {battery.health !== null && (
+          <Setting id="battery/battery-health">
+            <Value testID="battery-health">{`${battery.health}%`}</Value>
+          </Setting>
+        )}
+        {battery.cycles !== null && (
+          <Setting id="battery/cycle-count">
+            <Value testID="battery-cycles">{String(battery.cycles)}</Value>
+          </Setting>
+        )}
+        <Setting id="battery/battery-percentage" control="battery-menubar" />
+      </Group>
+    </>
+  );
+}
+
+/** What the lid and the power button do: read from the system, not set here. */
+function LidAndButton({ lid }: { lid: EnergyState["lid"] }) {
+  return (
+    <>
+      <Caption above>{lid ? "Lid and Power Button" : "Power Button"}</Caption>
+      <Group testID="power-lid">
+        {lid && (
+          <>
+            <Setting id="battery/lid">
+              <Value testID="power-lid-battery">{describeAction(lid.lid)}</Value>
+            </Setting>
+            <Setting id="battery/lid-on-power">
+              <Value testID="power-lid-power">{describeAction(lid.lidExternalPower)}</Value>
+            </Setting>
+            <Setting id="battery/lid-docked">
+              <Value testID="power-lid-docked">{describeAction(lid.lidDocked)}</Value>
+            </Setting>
+          </>
+        )}
+        <Setting id="battery/power-button">
+          <Value testID="power-button">Asks before shutting down</Value>
+        </Setting>
+      </Group>
+      <Caption>
+        {lid ? "The lid is set by the system (logind.conf), not per user. The power button always asks first." : "The power button always asks first."}
+      </Caption>
+    </>
+  );
+}
+
 export function BatteryPane({ services, settings, show }: { services: PaneServices; settings: SettingsStore; show: ShowPane }) {
   const { energy } = services;
   const state = useEnergy(energy);
   const monitor = useMonitorState(services.battery);
-  const { idle } = useSettings(settings).data;
   const limit = useChargeLimit(services.laptop, settings);
   const lowers = useOnBattery(services.laptop, services.refresh);
   useEffect(() => {
@@ -77,8 +159,6 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
     return () => energy.close();
   }, [energy]);
   const { battery, profiles, lid } = state;
-  const blank = idle.blankAfterSeconds ?? DEFAULT_BLANK_AFTER;
-  const sleep = idle.sleepAfterSeconds ?? 0;
   // The monitor's reading carries the watts and the history; the energy store's, the health.
   const reading = monitor?.battery ?? battery;
   return (
@@ -108,43 +188,9 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
       {!services.laptop && state.failed !== null && <Failure testID="power-failure">{`Couldn’t switch to ${PROFILE_LABEL[state.failed]}.`}</Failure>}
       <Group testID="power-timers">
         {battery && lowers && <OnBatteryRow laptop={services.laptop} refresh={services.refresh} show={show} />}
-        <Setting id="battery/turn-display-off" title="Turn the screen off after" stack={false} detail={null}>
-          <Choices
-            testID="power-blank"
-            options={timePills(BLANK_CHOICES)}
-            common={BLANK_COMMON}
-            value={blankChoice(blank)}
-            onChange={(blankAfterSeconds) => settings.patch("idle", { blankAfterSeconds })}
-          />
-        </Setting>
-        <Setting id="battery/sleep-after" title="Sleep after" stack={false} detail={null}>
-          <Choices
-            testID="power-sleep"
-            options={timePills(SLEEP_CHOICES)}
-            common={SLEEP_COMMON}
-            value={sleepChoice(sleep)}
-            onChange={(sleepAfterSeconds) => settings.patch("idle", { sleepAfterSeconds })}
-          />
-        </Setting>
+        <IdleTimers settings={settings} />
       </Group>
-      {battery && (
-        <>
-          <Caption above>Battery</Caption>
-          <Group testID="battery-status">
-            {battery.health !== null && (
-              <Setting id="battery/battery-health">
-                <Value testID="battery-health">{`${battery.health}%`}</Value>
-              </Setting>
-            )}
-            {battery.cycles !== null && (
-              <Setting id="battery/cycle-count">
-                <Value testID="battery-cycles">{String(battery.cycles)}</Value>
-              </Setting>
-            )}
-            <Setting id="battery/battery-percentage" control="battery-menubar" />
-          </Group>
-        </>
-      )}
+      {battery && <BatteryStatus battery={battery} />}
       {services.laptop && (
         <>
           <FullChargeGroup laptop={services.laptop} settings={settings} />
@@ -152,28 +198,7 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
         </>
       )}
       {battery && services.battery && <BatteryUsage monitor={services.battery} />}
-      <Caption above>{lid ? "Lid and Power Button" : "Power Button"}</Caption>
-      <Group testID="power-lid">
-        {lid && (
-          <>
-            <Setting id="battery/lid">
-              <Value testID="power-lid-battery">{describeAction(lid.lid)}</Value>
-            </Setting>
-            <Setting id="battery/lid-on-power">
-              <Value testID="power-lid-power">{describeAction(lid.lidExternalPower)}</Value>
-            </Setting>
-            <Setting id="battery/lid-docked">
-              <Value testID="power-lid-docked">{describeAction(lid.lidDocked)}</Value>
-            </Setting>
-          </>
-        )}
-        <Setting id="battery/power-button">
-          <Value testID="power-button">Asks before shutting down</Value>
-        </Setting>
-      </Group>
-      <Caption>
-        {lid ? "The lid is set by the system (logind.conf), not per user. The power button always asks first." : "The power button always asks first."}
-      </Caption>
+      <LidAndButton lid={lid} />
     </Page>
   );
 }

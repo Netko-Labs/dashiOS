@@ -62,6 +62,37 @@ export interface MenuContext {
   };
 }
 
+/** What each row does when chosen, by its id. */
+function menuHandlers(actions: MenuContext["actions"]): Readonly<Record<string, () => void>> {
+  return {
+    new: actions.newWindow,
+    open: actions.open,
+    close: actions.close,
+    save: actions.save,
+    "save-as": actions.saveAs,
+    revert: actions.revertTo,
+    "delete-draft": actions.deleteDraft,
+    undo: actions.undo,
+    redo: actions.redo,
+    cut: actions.cut,
+    copy: actions.copy,
+    paste: actions.paste,
+    "select-all": actions.selectAll,
+    find: actions.find,
+    "find-next": () => actions.findNext(1),
+    "find-previous": () => actions.findNext(-1),
+    replace: actions.replace,
+    "go-to-line": actions.goToLine,
+    "match-case": actions.toggleCase,
+    "line-numbers": actions.toggleLineNumbers,
+    monospace: actions.toggleMonospace,
+    bigger: () => actions.fontSize(1),
+    smaller: () => actions.fontSize(-1),
+    "actual-size": () => actions.fontSize(0),
+    ...Object.fromEntries(TAB_WIDTHS.map((width) => [`tab-width-${width}`, () => actions.tabWidth(width)])),
+  };
+}
+
 export function editorMenus(context: MenuContext): { menus: MenuSpec[]; run: (id: string) => void } {
   const { actions } = context;
   const menus: MenuSpec[] = [
@@ -114,33 +145,7 @@ export function editorMenus(context: MenuContext): { menus: MenuSpec[]; run: (id
     },
   ];
 
-  const handlers: Readonly<Record<string, () => void>> = {
-    new: actions.newWindow,
-    open: actions.open,
-    close: actions.close,
-    save: actions.save,
-    "save-as": actions.saveAs,
-    revert: actions.revertTo,
-    "delete-draft": actions.deleteDraft,
-    undo: actions.undo,
-    redo: actions.redo,
-    cut: actions.cut,
-    copy: actions.copy,
-    paste: actions.paste,
-    "select-all": actions.selectAll,
-    find: actions.find,
-    "find-next": () => actions.findNext(1),
-    "find-previous": () => actions.findNext(-1),
-    replace: actions.replace,
-    "go-to-line": actions.goToLine,
-    "match-case": actions.toggleCase,
-    "line-numbers": actions.toggleLineNumbers,
-    monospace: actions.toggleMonospace,
-    bigger: () => actions.fontSize(1),
-    smaller: () => actions.fontSize(-1),
-    "actual-size": () => actions.fontSize(0),
-    ...Object.fromEntries(TAB_WIDTHS.map((width) => [`tab-width-${width}`, () => actions.tabWidth(width)])),
-  };
+  const handlers = menuHandlers(actions);
   const run = (id: string): void => {
     if (enabledIds(menus).has(id)) handlers[id]?.();
   };

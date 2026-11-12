@@ -66,6 +66,54 @@ const same = (a: ShareChoice | null, b: ShareChoice): boolean => {
   return a?.kind === "window" && b.kind === "window" && a.toplevel === b.toplevel;
 };
 
+/** A screen or a window to share: its frame (ringed when chosen) and its caption. */
+function Picture({ testID, rect, chosen, caption, onPress }: { testID: string; rect: Rect; chosen: boolean; caption: string; onPress: () => void }) {
+  const colors = useColors();
+  return (
+    <View>
+      <View
+        testID={testID}
+        onPress={onPress}
+        style={{
+          ...at({ x: rect.x - RING, y: rect.y - RING, width: rect.width + 2 * RING, height: rect.height + 2 * RING }),
+          borderRadius: 8,
+          borderWidth: RING,
+          borderColor: chosen ? colors.selection : colors.separator,
+        }}
+      />
+      <View style={{ ...at(captionOf(rect)), alignItems: "center", justifyContent: "center" }}>
+        <Text numberOfLines={1} style={{ fontSize: 11, color: chosen ? colors.text : colors.textMuted }}>
+          {caption}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+/** "Hide notifications while sharing", ticked or not. */
+function QuietOption({ rect, quiet, onToggle }: { rect: Rect; quiet: boolean; onToggle: () => void }) {
+  const colors = useColors();
+  return (
+    <View testID="share-quiet" onPress={onToggle} style={{ ...at(rect), flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <View
+        style={{
+          width: 16,
+          height: 16,
+          borderRadius: 4,
+          borderWidth: 1,
+          borderColor: quiet ? colors.selection : colors.checkbox,
+          backgroundColor: quiet ? colors.selection : "#00000000",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {quiet ? <Text style={{ fontSize: 11, color: "#ffffff" }}>✓</Text> : null}
+      </View>
+      <Text style={{ fontSize: 13, color: colors.text }}>Hide notifications while sharing</Text>
+    </View>
+  );
+}
+
 export function SharePicker({ store, layout, screens, windows, onDone }: PickerProps) {
   const colors = useColors();
   const { chosen, quiet } = useSyncExternalStore(store.subscribe, store.getSnapshot);
@@ -80,23 +128,7 @@ export function SharePicker({ store, layout, screens, windows, onDone }: PickerP
     store.set({ chosen: choice });
   };
   const picture = (key: string, rect: Rect, choice: ShareChoice, caption: string) => (
-    <View key={key}>
-      <View
-        testID={key}
-        onPress={() => press(choice)}
-        style={{
-          ...at({ x: rect.x - RING, y: rect.y - RING, width: rect.width + 2 * RING, height: rect.height + 2 * RING }),
-          borderRadius: 8,
-          borderWidth: RING,
-          borderColor: same(chosen, choice) ? colors.selection : colors.separator,
-        }}
-      />
-      <View style={{ ...at(captionOf(rect)), alignItems: "center", justifyContent: "center" }}>
-        <Text numberOfLines={1} style={{ fontSize: 11, color: same(chosen, choice) ? colors.text : colors.textMuted }}>
-          {caption}
-        </Text>
-      </View>
-    </View>
+    <Picture key={key} testID={key} rect={rect} chosen={same(chosen, choice)} caption={caption} onPress={() => press(choice)} />
   );
   return (
     <View style={{ width: layout.size.width, height: layout.size.height, borderRadius: 14, backgroundColor: colors.menu, shadow: "xl" }}>
@@ -120,27 +152,7 @@ export function SharePicker({ store, layout, screens, windows, onDone }: PickerP
         const rect = layout.windows[index];
         return rect ? picture(`share-window-${index}`, rect, { kind: "window", toplevel: window.toplevel }, window.title || window.app) : null;
       })}
-      <View
-        testID="share-quiet"
-        onPress={() => store.set({ quiet: !quiet })}
-        style={{ ...at(layout.option), flexDirection: "row", alignItems: "center", gap: 8 }}
-      >
-        <View
-          style={{
-            width: 16,
-            height: 16,
-            borderRadius: 4,
-            borderWidth: 1,
-            borderColor: quiet ? colors.selection : colors.checkbox,
-            backgroundColor: quiet ? colors.selection : "#00000000",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {quiet ? <Text style={{ fontSize: 11, color: "#ffffff" }}>✓</Text> : null}
-        </View>
-        <Text style={{ fontSize: 13, color: colors.text }}>Hide notifications while sharing</Text>
-      </View>
+      <QuietOption rect={layout.option} quiet={quiet} onToggle={() => store.set({ quiet: !quiet })} />
       <View style={at(layout.cancel)}>
         <Button label="Cancel" testID="share-cancel" onPress={() => onDone(null)} />
       </View>

@@ -43,6 +43,17 @@ export function catalogDetail(source: CatalogSource, load: CatalogLoad | undefin
   return state === where ? where : `${state} · ${where}`;
 }
 
+/** A label 4 over its own field, and the sheet's gap away from the field above. */
+function Labeled({ label, children }: { label: string; children: ReactNode }) {
+  const colors = useColors();
+  return (
+    <View style={{ flexShrink: 0, flexDirection: "column", gap: 4 }}>
+      <Text style={{ fontSize: 12, color: colors.textMuted }}>{label}</Text>
+      {children}
+    </View>
+  );
+}
+
 function AddCatalog({ onDone }: { onDone: () => void }) {
   const colors = useColors();
   const { applets } = useServices();
@@ -73,25 +84,16 @@ function AddCatalog({ onDone }: { onDone: () => void }) {
   const escape = (pressed: string): void => {
     if (pressed === "Escape") leave();
   };
-  // A label sits 4 over its own field, and the sheet's gap away from the field above.
-  const field = (text: string, input: ReactNode) => (
-    <View style={{ flexShrink: 0, flexDirection: "column", gap: 4 }}>
-      <Text style={{ fontSize: 12, color: colors.textMuted }}>{text}</Text>
-      {input}
-    </View>
-  );
   return (
     <Sheet testID="add-catalog" width={SHEET_WIDTH} onCancel={leave}>
       <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Add a Catalog</Text>
       <Text style={{ fontSize: 12, lineHeight: 17, color: colors.textMuted }}>
         Applets from it are checked as Dashi’s are, but nobody at Dashi reviews them. Add only catalogs you trust.
       </Text>
-      {field(
-        "Name",
-        <TextField testID="add-catalog:name" value={name} placeholder="Team Applets" autoFocus onChangeText={setName} onSubmit={submit} onKeyPress={escape} />,
-      )}
-      {field(
-        "Index address",
+      <Labeled label="Name">
+        <TextField testID="add-catalog:name" value={name} placeholder="Team Applets" autoFocus onChangeText={setName} onSubmit={submit} onKeyPress={escape} />
+      </Labeled>
+      <Labeled label="Index address">
         <TextField
           testID="add-catalog:url"
           value={url}
@@ -99,10 +101,9 @@ function AddCatalog({ onDone }: { onDone: () => void }) {
           onChangeText={setUrl}
           onSubmit={submit}
           onKeyPress={escape}
-        />,
-      )}
-      {field(
-        "Public key",
+        />
+      </Labeled>
+      <Labeled label="Public key">
         <TextField
           testID="add-catalog:key"
           value={key}
@@ -110,8 +111,8 @@ function AddCatalog({ onDone }: { onDone: () => void }) {
           onChangeText={setKey}
           onSubmit={submit}
           onKeyPress={escape}
-        />,
-      )}
+        />
+      </Labeled>
       {error !== null && (
         <View testID="add-catalog:error" style={{ paddingTop: 2 }}>
           <Text style={{ fontSize: 12, lineHeight: 17, color: colors.ume }}>{error}</Text>

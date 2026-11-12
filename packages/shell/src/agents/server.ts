@@ -99,36 +99,10 @@ export function startAgents({
   // Dashi's browser extension joins here through its host (docs/actions.md, "Websites").
   const browser: BrowserBridge = startBrowserBridge();
   const { secrets, mask, close: closeAtspi } = sharedSecrets(compositor, sources, vault);
-  const context = {
-    compositor,
-    ui,
-    desktop,
-    hands,
-    mask,
-    grants,
-    lock,
-    publish,
-    tile,
-    arrangement,
-    secrets,
-    browser,
-    sites,
-    ...(tasks ? { tasks } : {}),
-    ...(alone ? { alone } : {}),
-  };
-  const runAsPerson = personRunner({
-    compositor,
-    ui,
-    desktop,
-    hands,
-    mask,
-    secrets,
-    lock,
-    browser,
-    tile,
-    arrangement,
-    alone: () => alone?.status() ?? NOT_ALONE,
-  });
+  // What every tool reaches, an agent's or the person's own run.
+  const shared = { compositor, ui, desktop, hands, mask, secrets, lock, browser, tile, arrangement };
+  const context = { ...shared, grants, publish, sites, ...(tasks ? { tasks } : {}), ...(alone ? { alone } : {}) };
+  const runAsPerson = personRunner({ ...shared, alone: () => alone?.status() ?? NOT_ALONE });
 
   const stopSessions = (stopping: Session[]) => {
     const names = stopping.map((session) => session.peer.name);

@@ -8,7 +8,7 @@
  * clipping or a sheet never cuts it, and it stays inside the window.
  */
 
-import { type Bounds, createPortal, Svg, Text, View } from "@mirinjs/metal";
+import { type Bounds, createPortal, Svg, Text, View, type ViewStyle } from "@mirinjs/metal";
 import { useRef, useState } from "react";
 import { buttonLook } from "./button-look.ts";
 import type { Choice } from "./choices.tsx";
@@ -64,6 +64,45 @@ export interface PopUpButtonProps<T extends string | number> {
   focused?: boolean;
 }
 
+/** The button's face: as wide as asked, or as its label needs. */
+function faceStyle(width: number | undefined, look: ReturnType<typeof buttonLook>, disabled: boolean, opacity: number | undefined): ViewStyle {
+  return {
+    ...(width !== undefined ? { width } : { maxWidth: 260 }),
+    height: 28,
+    flexShrink: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingLeft: 10,
+    paddingRight: 6,
+    borderRadius: 7,
+    backgroundColor: look.fill,
+    borderWidth: 1,
+    borderColor: look.edge,
+    hoverBackgroundColor: disabled ? look.fill : look.hover,
+    opacity,
+  };
+}
+
+/** The open menu, its chosen row on the button, in the window's layer when there is one. */
+function OpenMenu({ testID, button, entries, onClose }: { testID: string; button: Bounds; entries: MenuEntry[]; onClose: () => void }) {
+  const layer = useWindowLayer();
+  const at = popUpMenuAt(button, entries);
+  const node = (
+    <PopupMenu
+      testID={testID}
+      x={at.x}
+      y={at.y}
+      items={at.items}
+      flip={false}
+      // Its right edge on the button's (wider only by the ticks' column it opens to the left), unless its rows need more.
+      minWidth={popUpMenuWidth(button)}
+      onClose={onClose}
+    />
+  );
+  return layer === null ? node : createPortal(node, layer);
+}
+
 export function PopUpButton<T extends string | number>({
   options,
   value,
@@ -76,7 +115,6 @@ export function PopUpButton<T extends string | number>({
   focused,
 }: PopUpButtonProps<T>) {
   const colors = useColors();
-  const layer = useWindowLayer();
   const state = useControlState({ disabled, focused });
   const [open, setOpen] = useState<Bounds | null>(null);
   // Pointer presses carry the button's bounds; the last layout stands in for a key's.
@@ -89,26 +127,6 @@ export function PopUpButton<T extends string | number>({
   const entries: MenuEntry[] = options.map((option) =>
     isOption(option) ? { label: option.label, checked: option.value === value, onPress: () => option.value !== value && onChange(option.value) } : option,
   );
-  const menu =
-    open === null
-      ? null
-      : (() => {
-          const at = popUpMenuAt(open, entries);
-          const node = (
-            <PopupMenu
-              testID={`${testID}:menu`}
-              x={at.x}
-              y={at.y}
-              items={at.items}
-              flip={false}
-              // Its right edge on the button's (wider only by the ticks' column it opens to the left), unless its rows need more.
-              minWidth={popUpMenuWidth(open)}
-              onClose={() => setOpen(null)}
-            />
-          );
-          return layer === null ? node : createPortal(node, layer);
-        })();
-
   return (
     <View
       testID={testID}
@@ -118,22 +136,7 @@ export function PopUpButton<T extends string | number>({
       onLayout={(bounds) => {
         laid.current = bounds;
       }}
-      style={{
-        ...(width !== undefined ? { width } : { maxWidth: 260 }),
-        height: 28,
-        flexShrink: 1,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        paddingLeft: 10,
-        paddingRight: 6,
-        borderRadius: 7,
-        backgroundColor: look.fill,
-        borderWidth: 1,
-        borderColor: look.edge,
-        hoverBackgroundColor: disabled ? look.fill : look.hover,
-        opacity: state.opacity,
-      }}
+      style={faceStyle(width, look, disabled === true, state.opacity)}
     >
       {glyph !== undefined && <Svg markup={glyph} size={14} color={colors.textMuted} />}
       <View style={{ ...(width !== undefined ? { flex: 1 } : {}), flexShrink: 1, minWidth: 0 }}>
@@ -157,7 +160,7 @@ export function PopUpButton<T extends string | number>({
           ringColor={colors.focusRing}
         />
       )}
-      {menu}
+      {open !== null && <OpenMenu testID={`${testID}:menu`} button={open} entries={entries} onClose={() => setOpen(null)} />}
     </View>
   );
 }

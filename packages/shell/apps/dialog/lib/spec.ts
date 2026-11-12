@@ -187,6 +187,31 @@ function common(args: ParsedArgs, kind: DialogKind): Common {
   };
 }
 
+function listSpec(args: ParsedArgs, base: ReturnType<typeof common>): DialogSpec {
+  const flag = (name: Parameters<ParsedArgs["flags"]["has"]>[0]): boolean => args.flags.has(name);
+  const columns = args.repeats.get("column") ?? [];
+  if (columns.length === 0) throw new SpecError("No column titles specified for List dialog.");
+  const mode = flag("checklist") ? "checklist" : flag("radiolist") ? "radiolist" : "plain";
+  const printRaw = args.values.get("print-column");
+  return {
+    ...base,
+    kind: "list",
+    columns,
+    cells: args.positional,
+    mode,
+    multiple: flag("multiple"),
+    // Zenity expands escapes in it ("\n" puts each choice on its own line).
+    separator: compressEscapes(args.values.get("separator") ?? "|"),
+    printColumns: printRaw === undefined ? [mode === "plain" ? 1 : 2] : columnsOf(printRaw, "print-column"),
+    hiddenColumns: (() => {
+      const raw = args.values.get("hide-column");
+      const hidden = raw === undefined ? [] : columnsOf(raw, "hide-column");
+      return hidden === "all" ? [] : hidden;
+    })(),
+    hideHeader: flag("hide-header"),
+  };
+}
+
 function buildSpec(args: ParsedArgs, kind: Exclude<DialogKind, "forms" | "color-selection" | "notification">, now: Date): DialogSpec {
   const base = common(args, kind);
   const flag = (name: Parameters<ParsedArgs["flags"]["has"]>[0]): boolean => args.flags.has(name);
@@ -216,29 +241,8 @@ function buildSpec(args: ParsedArgs, kind: Exclude<DialogKind, "forms" | "color-
       return { ...base, kind, entryText: args.values.get("entry-text") ?? "", hideText: flag("hide-text") };
     case "password":
       return { ...base, kind, username: flag("username") };
-    case "list": {
-      const columns = args.repeats.get("column") ?? [];
-      if (columns.length === 0) throw new SpecError("No column titles specified for List dialog.");
-      const mode = flag("checklist") ? "checklist" : flag("radiolist") ? "radiolist" : "plain";
-      const printRaw = args.values.get("print-column");
-      return {
-        ...base,
-        kind,
-        columns,
-        cells: args.positional,
-        mode,
-        multiple: flag("multiple"),
-        // Zenity expands escapes in it ("\n" puts each choice on its own line).
-        separator: compressEscapes(args.values.get("separator") ?? "|"),
-        printColumns: printRaw === undefined ? [mode === "plain" ? 1 : 2] : columnsOf(printRaw, "print-column"),
-        hiddenColumns: (() => {
-          const raw = args.values.get("hide-column");
-          const hidden = raw === undefined ? [] : columnsOf(raw, "hide-column");
-          return hidden === "all" ? [] : hidden;
-        })(),
-        hideHeader: flag("hide-header"),
-      };
-    }
+    case "list":
+      return listSpec(args, base);
     case "text-info":
       return { ...base, kind, filename: args.values.get("filename") ?? null, editable: flag("editable"), checkbox: args.values.get("checkbox") ?? null };
     case "scale": {

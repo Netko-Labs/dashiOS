@@ -9,8 +9,10 @@
 //                      what a hand-written check leaves of them, cast the
 //                      rest of the way: `object` (typeof x === "object"),
 //                      `{}` (x != null) and a list of unknown
-//                      (Array.isArray). `isRecord` and a shape narrow
-//                      without a cast (decisions.md D31).
+//                      (Array.isArray), and what `isRecord` or a parse
+//                      leaves, `Record<string, unknown>`: its keys are known
+//                      to be strings and nothing else. A shape narrows
+//                      without a cast (decisions.md D31, D42).
 //   H8  raw-requests   `request("method")` with a compositor IPC method
 //                      (docs/compositor-ipc.md) outside packages/shell/src/compositor/client.ts
 //   H10 return-types   an exported function in a .ts file without a return type
@@ -110,10 +112,31 @@ function untypedExport(node: ts.Node): boolean {
   });
 }
 
-/** A cast of a value a hand-written check narrowed from unknown (`isLoose`) to a type that claims more. */
+/**
+ * A record of unknown: an object type with no named fields, whose every key holds `unknown`
+ * (`Record<string, unknown>`, null and undefined beside it not counting). What `isRecord`
+ * and `JSON.parse`'s checks give, and no more known of its fields than of `object`'s.
+ */
+export function isRecordOfUnknown(type: ts.Type, checker: ts.TypeChecker): boolean {
+  if (type.isUnion()) {
+    const rest = type.types.filter((each) => (each.flags & (ts.TypeFlags.Null | ts.TypeFlags.Undefined)) === 0);
+    return rest.length > 0 && rest.every((each) => isRecordOfUnknown(each, checker));
+  }
+  if ((type.flags & ts.TypeFlags.Object) === 0 || checker.getPropertiesOfType(type).length > 0) return false;
+  const index = checker.getIndexInfosOfType(type);
+  return index.length > 0 && index.every((info) => isUnchecked(info.type));
+}
+
+/**
+ * A cast of a value a check narrowed from unknown (`isLoose`, or a record of unknown) to a type
+ * that claims more. A record cast to another record of unknown claims nothing new.
+ */
 function isNarrowedCast(node: ts.AsExpression | ts.TypeAssertion, checker: ts.TypeChecker): boolean {
-  if (isLiteral(node.expression) || !isLoose(checker.getTypeAtLocation(node.expression), checker)) return false;
-  return !claimsNothing(checker.getTypeFromTypeNode(node.type), checker);
+  if (isLiteral(node.expression)) return false;
+  const from = checker.getTypeAtLocation(node.expression);
+  const to = checker.getTypeFromTypeNode(node.type);
+  if (isLoose(from, checker)) return !claimsNothing(to, checker);
+  return isRecordOfUnknown(from, checker) && !claimsNothing(to, checker) && !isRecordOfUnknown(to, checker);
 }
 
 export interface Findings {

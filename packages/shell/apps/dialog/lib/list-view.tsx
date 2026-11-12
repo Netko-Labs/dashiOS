@@ -57,6 +57,21 @@ function useCells(initial: readonly string[]): string[] {
   return cells;
 }
 
+/** The columns shown; a list with ticks draws its first as the tick. */
+function listColumns(spec: ListSpec, ticks: { ticked: Set<number>; radio: boolean } | null): Column<ListRow>[] {
+  return shownColumns(spec.columns.length, spec.hiddenColumns).map((index) =>
+    ticks && index === 0
+      ? {
+          key: `c${index}`,
+          title: spec.columns[index] ?? "",
+          width: TOGGLE_WIDTH,
+          text: (row) => (ticks.ticked.has(row.id) ? "TRUE" : "FALSE"),
+          cell: (row) => <Toggle on={ticks.ticked.has(row.id)} radio={ticks.radio} testID={`dialog:tick:${row.id}`} />,
+        }
+      : { key: `c${index}`, title: spec.columns[index] ?? "", text: (row) => row.cells[index] ?? "" },
+  );
+}
+
 export function ListDialog({ spec, answer }: { spec: ListSpec; answer: Answer }) {
   const colors = useColors();
   const cells = useCells(spec.cells);
@@ -88,17 +103,7 @@ export function ListDialog({ spec, answer }: { spec: ListSpec; answer: Answer })
       });
   };
 
-  const columns: Column<ListRow>[] = shownColumns(spec.columns.length, spec.hiddenColumns).map((index) =>
-    toggles && index === 0
-      ? {
-          key: `c${index}`,
-          title: spec.columns[index] ?? "",
-          width: TOGGLE_WIDTH,
-          text: (row) => (ticked.has(row.id) ? "TRUE" : "FALSE"),
-          cell: (row) => <Toggle on={ticked.has(row.id)} radio={radio} testID={`dialog:tick:${row.id}`} />,
-        }
-      : { key: `c${index}`, title: spec.columns[index] ?? "", text: (row) => row.cells[index] ?? "" },
-  );
+  const columns = listColumns(spec, toggles ? { ticked, radio } : null);
   const shown = sortRows(rows, columns, sort);
 
   const chosen = (): Set<number> => (toggles ? ticked : spec.multiple ? picked : new Set(selected === null ? [] : [selected]));

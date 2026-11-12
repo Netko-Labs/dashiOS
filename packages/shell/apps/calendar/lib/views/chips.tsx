@@ -13,6 +13,40 @@ import { clockShort, titleOf } from "../format.ts";
 import { occurrenceKey } from "../grid/event-block.tsx";
 import { MONTH_CHIP_HEIGHT } from "../layout.ts";
 
+interface ChipPress {
+  testID: string;
+  focusable: boolean;
+  accessibilityRole: "button";
+  onPress: (info: { bounds?: Bounds }) => void;
+  onPointer: (info: PointerInfo) => void;
+}
+
+/** An all-day event, or a timed one that began on an earlier day: a bar in its calendar's colour. */
+function BarChip({ common, color, title, selected, dragged }: { common: ChipPress; color: string; title: string; selected: boolean; dragged: boolean }) {
+  const colors = useColors();
+  return (
+    <View
+      {...common}
+      style={{
+        height: MONTH_CHIP_HEIGHT - 1,
+        flexShrink: 0,
+        paddingHorizontal: 5,
+        borderRadius: 4,
+        justifyContent: "center",
+        backgroundColor: color,
+        borderWidth: selected ? 2 : 0,
+        borderColor: colors.text,
+        opacity: dragged ? 0.35 : 1,
+        focusRingColor: colors.focusRing,
+      }}
+    >
+      <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: "semibold", color: inkOn(color) }}>
+        {title}
+      </Text>
+    </View>
+  );
+}
+
 export function EventChip({
   occurrence,
   color,
@@ -40,36 +74,14 @@ export function EventChip({
   const title = titleOf(event);
   // A timed event that began on an earlier day is a bar on this one.
   const bar = event.allDay || dayPart(occurrence.start) < day;
-  const common = {
+  const common: ChipPress = {
     testID: `chip:${occurrenceKey(occurrence)}`,
     focusable: true,
-    accessibilityRole: "button" as const,
+    accessibilityRole: "button",
     onPress: (info: { bounds?: Bounds }) => onPress(info.bounds),
     onPointer,
   };
-  if (bar) {
-    return (
-      <View
-        {...common}
-        style={{
-          height: MONTH_CHIP_HEIGHT - 1,
-          flexShrink: 0,
-          paddingHorizontal: 5,
-          borderRadius: 4,
-          justifyContent: "center",
-          backgroundColor: color,
-          borderWidth: selected ? 2 : 0,
-          borderColor: colors.text,
-          opacity: dragged ? 0.35 : 1,
-          focusRingColor: colors.focusRing,
-        }}
-      >
-        <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: "semibold", color: inkOn(color) }}>
-          {title}
-        </Text>
-      </View>
-    );
-  }
+  if (bar) return <BarChip common={common} color={color} title={title} selected={selected} dragged={dragged} />;
   return (
     <View
       {...common}

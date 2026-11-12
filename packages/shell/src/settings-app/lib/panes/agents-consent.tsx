@@ -23,7 +23,7 @@ import type { PaneContext } from "../../context.ts";
 import { useGrantEntries, useSettings } from "../../hooks.ts";
 import { Spot } from "../../spot.tsx";
 import type { ChangeEntry } from "../changes/log.ts";
-import { ONLY_YOU, usePersonOnly } from "../person-only.ts";
+import { type ByPerson, ONLY_YOU, usePersonOnly } from "../person-only.ts";
 import { type AgentCard, agentCards, CONSEQUENCES, sinceWords } from "../privacy-words.ts";
 import { Row as Item, PAGE } from "../row.tsx";
 import { ChangeRow } from "./change-row.tsx";
@@ -127,27 +127,33 @@ function AgentHead({ agent, onRevokeAll }: { agent: ShownCard; onRevokeAll: (() 
   );
 }
 
-function AgentGroup({
-  agent,
-  ctx,
-  changes,
-  history,
-  revoked,
-  onRevoked,
-}: {
+interface AgentGroupProps {
   agent: ShownCard;
   ctx: Pick<PaneContext, "grants" | "settings" | "show" | "byPerson">;
   changes: readonly ChangeEntry[];
   history: readonly HistoryEntry[];
   revoked: Revoked | null;
   onRevoked: (revoked: Revoked) => void;
-}) {
+}
+
+/** What was just revoked, with its Undo: the person's alone, or an agent would press back what it just lost. */
+function RevokedNote({ agent, revoked, byPerson }: { agent: string; revoked: Revoked; byPerson?: ByPerson }) {
+  const guard = usePersonOnly(byPerson);
+  return (
+    <View testID={`agent-revoked:${agent}`} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4, marginTop: -8 }}>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Caption>{guard.refused === agent ? ONLY_YOU : revoked.words}</Caption>
+      </View>
+      <Button testID={`agent-revoked-undo:${agent}`} label="Undo" onPress={() => guard.mine(agent, revoked.undo)} />
+    </View>
+  );
+}
+
+function AgentGroup({ agent, ctx, changes, history, revoked, onRevoked }: AgentGroupProps) {
   const prefs = useClockPrefs();
   const now = new Date();
   const log = ctx.settings.changes;
   const { notice, undo } = useUndoEntry(log);
-  // Undo gives back what was just revoked: the person's alone, or an agent would press it for itself.
-  const guard = usePersonOnly(ctx.byPerson);
   const lately = changesBy(changes, agent).slice(0, LATELY);
   const last = history.find((entry) => entry.who === agent.title && !entry.request);
   const revokeOne = (scope: Scope, label: string, since: number | null) => {
@@ -203,12 +209,7 @@ function AgentGroup({
         {last && <Item testID={`agent-last:${agent.key}`} label={last.summary} detail={`Last connected ${ago(last.time, Math.floor(Date.now() / 1000))}`} />}
       </Group>
       {revoked?.key === agent.key ? (
-        <View testID={`agent-revoked:${agent.key}`} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4, marginTop: -8 }}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Caption>{guard.refused === agent.key ? ONLY_YOU : revoked.words}</Caption>
-          </View>
-          <Button testID={`agent-revoked-undo:${agent.key}`} label="Undo" onPress={() => guard.mine(agent.key, revoked.undo)} />
-        </View>
+        <RevokedNote agent={agent.key} revoked={revoked} {...(ctx.byPerson ? { byPerson: ctx.byPerson } : {})} />
       ) : (
         notice !== null && <Caption>{notice}</Caption>
       )}

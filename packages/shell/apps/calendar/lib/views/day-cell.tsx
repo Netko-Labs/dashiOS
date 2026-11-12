@@ -46,9 +46,57 @@ export interface MonthShared {
   geometry: Parameters<GridHandlers["begin"]>[1];
 }
 
-export function DayCell({ day, row, column, shared }: { day: Day; row: number; column: number; shared: MonthShared }) {
+/** The day's number in its corner; a press shows that day. */
+function DayNumber({
+  day,
+  isToday,
+  inMonth,
+  picked,
+  prefs,
+  onPress,
+}: {
+  day: Day;
+  isToday: boolean;
+  inMonth: boolean;
+  picked: boolean;
+  prefs: ClockPrefs;
+  onPress: () => void;
+}) {
   const colors = useColors();
   const surface = useSurface();
+  return (
+    <View style={{ height: 20, flexShrink: 0, flexDirection: "row", justifyContent: "flex-end" }}>
+      <View
+        testID={`day-number:${day}`}
+        onPress={onPress}
+        style={{
+          minWidth: 20,
+          height: 20,
+          paddingHorizontal: 4,
+          borderRadius: 10,
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          // Today is an ink mark: green means "on".
+          backgroundColor: isToday ? colors.text : picked ? colors.button : "#00000000",
+          borderWidth: picked && !isToday ? 1 : 0,
+          borderColor: colors.selection,
+          hoverBackgroundColor: isToday ? colors.text : colors.button,
+        }}
+      >
+        <Text
+          numberOfLines={1}
+          style={{ fontSize: 12, fontWeight: isToday ? "bold" : "normal", color: isToday ? surface.window : inMonth ? colors.text : colors.textMuted }}
+        >
+          {day.endsWith("-01") ? monthDay(day, prefs) : dayNumber(day)}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+export function DayCell({ day, row, column, shared }: { day: Day; row: number; column: number; shared: MonthShared }) {
+  const colors = useColors();
   const dark = useDark();
   const { today, month, prefs, occurrences, colorOf, state, handlers, capacity, timed, weeks, geometry } = shared;
   const { drag, pending, selected, selectedEvent } = state;
@@ -79,37 +127,7 @@ export function DayCell({ day, row, column, shared }: { day: Day; row: number; c
         overflow: "hidden",
       }}
     >
-      <View style={{ height: 20, flexShrink: 0, flexDirection: "row", justifyContent: "flex-end" }}>
-        <View
-          testID={`day-number:${day}`}
-          onPress={() => handlers.showDay(day)}
-          style={{
-            minWidth: 20,
-            height: 20,
-            paddingHorizontal: 4,
-            borderRadius: 10,
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-            // Today is an ink mark: green means "on".
-            backgroundColor: isToday ? colors.text : day === selected ? colors.button : "#00000000",
-            borderWidth: day === selected && !isToday ? 1 : 0,
-            borderColor: colors.selection,
-            hoverBackgroundColor: isToday ? colors.text : colors.button,
-          }}
-        >
-          <Text
-            numberOfLines={1}
-            style={{
-              fontSize: 12,
-              fontWeight: isToday ? "bold" : "normal",
-              color: isToday ? surface.window : inMonth ? colors.text : colors.textMuted,
-            }}
-          >
-            {day.endsWith("-01") ? monthDay(day, prefs) : dayNumber(day)}
-          </Text>
-        </View>
-      </View>
+      <DayNumber day={day} isToday={isToday} inMonth={inMonth} picked={day === selected} prefs={prefs} onPress={() => handlers.showDay(day)} />
       {naming && pending && (
         <View style={{ height: MONTH_CHIP_HEIGHT - 1, flexShrink: 0 }}>
           <InlineTitle

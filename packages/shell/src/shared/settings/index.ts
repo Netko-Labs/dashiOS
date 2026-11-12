@@ -1,5 +1,5 @@
-export type { Check, Raw } from "./file.ts";
-export { dig, isBoolean, isPhotoPath, isRaw, numberIn, oneOf, readFields, settingsPath } from "./file.ts";
+export type { Fields, Raw, SectionOf } from "./file.ts";
+export { dig, isPhotoPath, isRaw, readFields, settingsPath } from "./file.ts";
 export {
   AT,
   BATTERY,

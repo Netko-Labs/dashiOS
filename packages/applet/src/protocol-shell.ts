@@ -64,13 +64,16 @@ function parseRunMessage(type: string, fields: Record<string, unknown>, seq: num
   if (type === "dismiss") return { type: "dismiss-view", seq };
   if (type === "run") {
     if (typeof fields.command !== "string") return null;
-    const args = isRecord(fields.args) ? fields.args : {};
-    if (!Object.values(args).every(isArgValue)) return null;
+    const args: Record<string, string | number | boolean> = {};
+    for (const [name, value] of Object.entries(isRecord(fields.args) ? fields.args : {})) {
+      if (!isArgValue(value)) return null;
+      args[name] = value;
+    }
     return {
       type: "run",
       seq,
       command: fields.command,
-      args: args as Record<string, string | number | boolean>,
+      args,
       ...(typeof fields.query === "string" ? { query: fields.query } : {}),
       ...(typeof fields.item === "string" ? { item: fields.item } : {}),
     };

@@ -109,14 +109,26 @@ export interface PanelActions {
   stopAll(): void;
 }
 
-function RunCard({
-  run,
-  entry,
-  now,
-  first,
-  focused,
-  actions,
-}: {
+/** One step of a run at work: a dot while it runs, a tick or a cross once it ends. */
+function StepRow({ step }: { step: RunView["steps"][number] }) {
+  const colors = useColors();
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 18 }}>
+      <View style={{ width: 12, alignItems: "center" }}>
+        {step.state === "running" ? (
+          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.agent }} />
+        ) : (
+          <Text style={{ fontSize: 11, color: step.state === "done" ? colors.textMuted : colors.criticalInk }}>{step.state === "done" ? "✓" : "✕"}</Text>
+        )}
+      </View>
+      <Text numberOfLines={1} style={{ fontSize: 12, color: step.state === "running" ? colors.text : colors.textMuted }}>
+        {step.words}
+      </Text>
+    </View>
+  );
+}
+
+interface RunCardProps {
   run: RunView;
   /** It as the mark sees it, while it works: what its connection sees. */
   entry?: AgentEntry;
@@ -124,7 +136,9 @@ function RunCard({
   first: boolean;
   focused: boolean;
   actions: PanelActions;
-}) {
+}
+
+function RunCard({ run, entry, now, first, focused, actions }: RunCardProps) {
   const colors = useColors();
   const working = isWorking(run);
   const steps = run.steps.slice(-CARD_STEPS);
@@ -168,23 +182,7 @@ function RunCard({
             <AccessChip entry={entry} />
           </View>
         )}
-        {working &&
-          steps.map((step) => (
-            <View key={step.id} style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 18 }}>
-              <View style={{ width: 12, alignItems: "center" }}>
-                {step.state === "running" ? (
-                  <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.agent }} />
-                ) : (
-                  <Text style={{ fontSize: 11, color: step.state === "done" ? colors.textMuted : colors.criticalInk }}>
-                    {step.state === "done" ? "✓" : "✕"}
-                  </Text>
-                )}
-              </View>
-              <Text numberOfLines={1} style={{ fontSize: 12, color: step.state === "running" ? colors.text : colors.textMuted }}>
-                {step.words}
-              </Text>
-            </View>
-          ))}
+        {working && steps.map((step) => <StepRow key={step.id} step={step} />)}
         {run.question && <QuestionBox run={run} question={run.question} onAnswer={(choice) => actions.answer(run.id, run.question?.id ?? "", choice)} />}
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
           <Small testID={`agents-show:${run.id}`} label="Show" onPress={() => actions.show(run.id)} />

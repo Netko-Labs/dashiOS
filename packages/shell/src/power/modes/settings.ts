@@ -18,6 +18,7 @@
  * "integrated", "hybrid" or "smart" (graphics/policy.ts).
  */
 
+import { bool, int, literal, type Shape, str } from "@dashi/shape";
 import type { ModeChoice } from "./types.ts";
 
 export const BOOST_CHOICES = ["always", "plugged", "off"] as const;
@@ -48,29 +49,20 @@ export interface GraphicsSettings {
   mode?: GraphicsChoice;
 }
 
-type Check = (value: unknown) => boolean;
-const oneOf =
-  (options: readonly string[]): Check =>
-  (value) =>
-    typeof value === "string" && options.includes(value);
-const wholeIn =
-  (min: number, max: number): Check =>
-  (value) =>
-    typeof value === "number" && Number.isInteger(value) && value >= min && value <= max;
-const isBoolean: Check = (value) => typeof value === "boolean";
-const isClock: Check = (value) => typeof value === "string" && /^([01]?\d|2[0-3]):[0-5]\d$/.test(value);
+/** A time of day, "HH:MM". */
+const clock = str({ pattern: /^([01]?\d|2[0-3]):[0-5]\d$/ });
 
-/** The checks settings-app/store.ts runs on each key, on read and before a write. */
+/** What each key may hold: settings-app/store.ts reads with these, and checks a value with them before it writes it. */
 export const POWER_FIELDS = {
-  mode: oneOf(["automatic", "low-power", "balanced", "performance"]),
-  chargeLimit: wholeIn(CHARGE_LIMIT_MIN, CHARGE_LIMIT_MAX),
-  fullChargeOnce: isBoolean,
-  fullBy: isClock,
-  fullByDays: oneOf(FULL_BY_DAYS),
-  boost: oneOf(BOOST_CHOICES),
-  epp: oneOf(EPP_CHOICES),
+  mode: literal("automatic", "low-power", "balanced", "performance"),
+  chargeLimit: int({ min: CHARGE_LIMIT_MIN, max: CHARGE_LIMIT_MAX }),
+  fullChargeOnce: bool(),
+  fullBy: clock,
+  fullByDays: literal(...FULL_BY_DAYS),
+  boost: literal(...BOOST_CHOICES),
+  epp: literal(...EPP_CHOICES),
   // Up to 10 GHz, in kHz as cpufreq counts.
-  batteryMaxKhz: wholeIn(0, 10_000_000),
-} as const satisfies Record<keyof PowerSection, Check>;
+  batteryMaxKhz: int({ min: 0, max: 10_000_000 }),
+} satisfies { [K in keyof PowerSection]-?: Shape<NonNullable<PowerSection[K]>> };
 
-export const GRAPHICS_FIELDS = { mode: oneOf(GRAPHICS_CHOICES) } as const satisfies Record<keyof GraphicsSettings, Check>;
+export const GRAPHICS_FIELDS = { mode: literal(...GRAPHICS_CHOICES) } satisfies { [K in keyof GraphicsSettings]-?: Shape<NonNullable<GraphicsSettings[K]>> };

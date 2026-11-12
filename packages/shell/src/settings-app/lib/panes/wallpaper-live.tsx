@@ -66,6 +66,13 @@ const isFile = (path: string): boolean => {
   }
 };
 
+/** The saved videos that are still there. They are looked up when the list changes, not on every draw (a look at the disk each). */
+export function useVideoTiles(videos: readonly string[], exists: (path: string) => boolean = isFile): LiveTile[] {
+  const saved = videos.join("\n");
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the list is the key; `exists` is read when it changes
+  return useMemo(() => videoTiles(saved === "" ? [] : saved.split("\n"), exists), [saved]);
+}
+
 /** Why `typed` cannot be a video wallpaper, or null when it can. */
 export function videoProblem(typed: string, exists: (path: string) => boolean = isFile): string | null {
   const path = typed.trim();
@@ -75,17 +82,33 @@ export function videoProblem(typed: string, exists: (path: string) => boolean = 
   return exists(path) ? null : "There is no such file.";
 }
 
-export function LiveSection({ settings, chooser }: { settings: SettingsStore; chooser: PhotoChooser }) {
+/** A video's path, typed where there is no file chooser; it empties once the path is taken. */
+function VideoPathField({ onSubmit }: { onSubmit: (path: string) => boolean }) {
   const colors = useColors();
   const surface = useSurface();
+  const [typed, setTyped] = useState("");
+  return (
+    <TextInput
+      testID="live-video-path"
+      value={typed}
+      placeholder="/home/you/Videos/loop.mp4"
+      autoFocus
+      onChangeText={setTyped}
+      onSubmitEditing={(text) => {
+        if (onSubmit(text)) setTyped("");
+      }}
+      style={{ width: "100%", fontSize: 13, padding: 8, borderRadius: 7, color: colors.text, backgroundColor: surface.field }}
+    />
+  );
+}
+
+export function LiveSection({ settings, chooser }: { settings: SettingsStore; chooser: PhotoChooser }) {
+  const colors = useColors();
   const { wallpaper } = useSettings(settings).data;
   const chosen = chosenRef(wallpaper);
   const videos = wallpaper.videos ?? [];
-  // Which saved videos are still there is looked up when the list changes, not on every draw (a look at the disk each).
-  const saved = videos.join("\n");
-  const clips = useMemo(() => videoTiles(saved === "" ? [] : saved.split("\n"), isFile), [saved]);
+  const clips = useVideoTiles(videos);
   const [typing, setTyping] = useState(false);
-  const [typed, setTyped] = useState("");
   const [note, setNote] = useState<string | null>(null);
 
   const choose = (ref: string) => {
@@ -140,17 +163,7 @@ export function LiveSection({ settings, chooser }: { settings: SettingsStore; ch
         </Setting>
         {typing && (
           <Setting id="wallpaper/video-path">
-            <TextInput
-              testID="live-video-path"
-              value={typed}
-              placeholder="/home/you/Videos/loop.mp4"
-              autoFocus
-              onChangeText={setTyped}
-              onSubmitEditing={(text) => {
-                if (adopt(text)) setTyped("");
-              }}
-              style={{ width: "100%", fontSize: 13, padding: 8, borderRadius: 7, color: colors.text, backgroundColor: surface.field }}
-            />
+            <VideoPathField onSubmit={adopt} />
           </Setting>
         )}
         <Setting id="wallpaper/pause-on-battery" control="live-pause-battery" />

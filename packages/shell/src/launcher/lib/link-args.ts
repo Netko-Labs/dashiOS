@@ -19,7 +19,7 @@ interface Schema {
 
 const schemaOf = (action: Pick<ActionDef, "properties">, name: string): Schema => {
   const schema = action.properties[name];
-  return isRecord(schema) ? (schema as Schema) : {};
+  return isRecord(schema) ? { type: schema.type, minimum: schema.minimum, maximum: schema.maximum } : {};
 };
 
 const clip = (text: string): string => (text.length > MAX_VALUE ? `${text.slice(0, MAX_VALUE - 1)}…` : text);

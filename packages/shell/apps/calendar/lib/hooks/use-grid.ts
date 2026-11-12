@@ -57,6 +57,16 @@ export interface Grid {
   onKey: (key: WindowKeyInfo) => void;
 }
 
+/** Deletes an event, or asks which of a repeating one's first; true when nothing is left to ask. */
+function deleteNow(occurrence: Occurrence, options: GridOptions): boolean {
+  if (asksScope(occurrence)) {
+    options.ask({ kind: "scope", action: "delete", ref: refOf(occurrence), title: occurrence.event.title, allowThis: true });
+    return false;
+  }
+  if (options.model.deleteOccurrence(refOf(occurrence), "all")) options.deleted(occurrence.event.title);
+  return true;
+}
+
 export function useGrid(options: GridOptions): Grid {
   const { model, state, occurrences, prefs, firstDay, destination } = options;
   const [popover, setPopover] = useState<Grid["popover"]>(null);
@@ -75,8 +85,6 @@ export function useGrid(options: GridOptions): Grid {
     takeKeys: options.takeKeys,
   });
 
-  const onDrop = (drag: Drag): void => finishDrag(drag, { model, destination, name: named.set, pick, ask: options.ask });
-
   /** A click on an empty day or half hour picks it; a second click on it soon after makes an event there. */
   const clickDay = (day: Day, minutes: number | null): void => {
     setPopover(null);
@@ -88,7 +96,7 @@ export function useGrid(options: GridOptions): Grid {
   };
 
   const gesture = useGesture({
-    onDrop,
+    onDrop: (drag: Drag) => finishDrag(drag, { model, destination, name: named.set, pick, ask: options.ask }),
     onClick: (start) => {
       if (start.kind === "create") clickDay(start.day, halfHour(start.minutes ?? 0));
     },
@@ -96,12 +104,7 @@ export function useGrid(options: GridOptions): Grid {
 
   const deleteOccurrence = (occurrence: Occurrence): void => {
     setPopover(null);
-    if (asksScope(occurrence)) {
-      options.ask({ kind: "scope", action: "delete", ref: refOf(occurrence), title: occurrence.event.title, allowThis: true });
-      return;
-    }
-    if (model.deleteOccurrence(refOf(occurrence), "all")) options.deleted(occurrence.event.title);
-    pick(null);
+    if (deleteNow(occurrence, options)) pick(null);
   };
 
   const newEvent = (): void => {

@@ -56,6 +56,23 @@ function Value({ words, width, color }: { words: string; width: number; color: s
   );
 }
 
+/** The value twice: muted on the track, and in the ink's own color clipped to the fill, so it reads across the edge. */
+function Words({ words, width, fill }: { words: string; width: number; fill: number }) {
+  const colors = useControlColors();
+  return (
+    <>
+      <Value words={words} width={width} color={colors.muted} />
+      {fill > 0 && (
+        <View style={{ position: "absolute", left: 0, top: 0, width: fill, height: INK_SLIDER.height, overflow: "hidden" }}>
+          <Value words={words} width={width} color={colors.fillInk} />
+        </View>
+      )}
+    </>
+  );
+}
+
+const TRACK = { height: INK_SLIDER.height, flexShrink: 0, position: "relative", borderRadius: INK_SLIDER.height / 2 } as const;
+
 export function InkSlider({ value, range = UNIT_RANGE, testID, glyph, format, width = INK_SLIDER.width, onChange, onCommit, disabled }: InkSliderProps) {
   const colors = useControlColors();
   const [dragging, setDragging] = useState<number | null>(null);
@@ -99,15 +116,7 @@ export function InkSlider({ value, range = UNIT_RANGE, testID, glyph, format, wi
       }
       accessibilityRole="group"
       accessibilityLabel={words ?? String(shown)}
-      style={{
-        width,
-        height: INK_SLIDER.height,
-        flexShrink: 0,
-        position: "relative",
-        borderRadius: radius,
-        backgroundColor: colors.line,
-        opacity: disabled ? DISABLED_OPACITY : 1,
-      }}
+      style={{ ...TRACK, width, backgroundColor: colors.line, opacity: disabled ? DISABLED_OPACITY : 1 }}
     >
       <InkFill length={fill} total={width} standing={false} radius={radius} />
       {glyph !== undefined && (
@@ -115,13 +124,7 @@ export function InkSlider({ value, range = UNIT_RANGE, testID, glyph, format, wi
           <Chip glyph={glyph} />
         </View>
       )}
-      {/* The value twice: muted on the track, and in the ink's own color clipped to the fill, so it reads across the edge. */}
-      {words !== undefined && <Value words={words} width={width} color={colors.muted} />}
-      {words !== undefined && fill > 0 && (
-        <View style={{ position: "absolute", left: 0, top: 0, width: fill, height: INK_SLIDER.height, overflow: "hidden" }}>
-          <Value words={words} width={width} color={colors.fillInk} />
-        </View>
-      )}
+      {words !== undefined && <Words words={words} width={width} fill={fill} />}
       {!disabled && (
         <StepKeys
           testID={testID}

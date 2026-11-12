@@ -39,6 +39,24 @@ export interface CalculatorWindowProps {
   remember?: (remembered: Remembered) => void;
 }
 
+/** The right-click menu, and the line's key: a new field asks for the keyboard (autoFocus), which is how the line takes it back after a menu. */
+function useMenu(): { menu: MenuAt | null; setMenu: (menu: MenuAt | null) => void; closeMenu: () => void; fieldKey: number } {
+  const [menu, setMenu] = useState<MenuAt | null>(null);
+  const [fieldKey, setFieldKey] = useState(0);
+  const closeMenu = (): void => {
+    setMenu(null);
+    setFieldKey((key) => key + 1);
+  };
+  return { menu, setMenu, closeMenu, fieldKey };
+}
+
+/** The keys' layout, and the line's room: the column less the keys' inset each side, so it ends where the keys do. */
+function layoutOf(size: Size, showsTape: boolean): { keys: ReturnType<typeof keypadLayout>; room: number } {
+  const keypadWidth = size.width - (showsTape ? TAPE_WIDTH : 0);
+  const keys = keypadLayout(keypadWidth, size.height);
+  return { keys, room: Math.max(LINE_SMALLEST, keypadWidth - keys.inset * 2) };
+}
+
 export function CalculatorWindow({
   clipboard: givenClipboard,
   locale: given,
@@ -53,9 +71,7 @@ export function CalculatorWindow({
   const followed = useNumberLocale();
   const locale = given ?? followed;
   const { state, dispatch, showsTape, setShowsTape, size, setSize } = useCalculatorState(remembered, locale, remember);
-  const [menu, setMenu] = useState<MenuAt | null>(null);
-  // A new field asks for the keyboard (autoFocus): how the line takes it back after a menu.
-  const [fieldKey, setFieldKey] = useState(0);
+  const { menu, setMenu, closeMenu, fieldKey } = useMenu();
   const { line } = state;
   const outcome = liveResult(line, locale);
   const resultValue = outcome.kind === "value" ? outcome.value : line.carry && line.text === line.carry.text ? line.carry.value : null;
@@ -70,14 +86,7 @@ export function CalculatorWindow({
     resizeWindow,
     resultValue,
   });
-  const closeMenu = (): void => {
-    setMenu(null);
-    setFieldKey((key) => key + 1);
-  };
-  const keypadWidth = size.width - (showsTape ? TAPE_WIDTH : 0);
-  const keys = keypadLayout(keypadWidth, size.height);
-  // The line's room: the column less the keys' inset each side, so it ends where the keys do.
-  const room = Math.max(LINE_SMALLEST, keypadWidth - keys.inset * 2);
+  const { keys, room } = layoutOf(size, showsTape);
   const words = resultWords(state.notice ? { kind: "notice", notice: state.notice } : outcome, locale);
 
   return (

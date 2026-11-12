@@ -19,6 +19,43 @@ import type { MenuState, Overlays } from "../use-overlays.ts";
 import { ConflictSheet } from "./conflict-sheet.tsx";
 import { InfoSheet, OpenWithSheet } from "./sheets.tsx";
 
+type DeleteAsk = Extract<NonNullable<Overlays["sheet"]>, { kind: "empty-trash" | "delete" }>;
+
+/** The two questions asked before something is gone for good: Empty Trash, and Delete Immediately. */
+function DeleteSheet({ sheet, count, ops, close }: { sheet: DeleteAsk; count: number; ops: Operations; close: () => void }) {
+  if (sheet?.kind === "empty-trash") {
+    return (
+      <ConfirmSheet
+        testID="empty-trash"
+        title="Empty the Trash?"
+        message={`${formatCount(count)} will be deleted for good.`}
+        confirmLabel="Empty Trash"
+        danger
+        onCancel={close}
+        onConfirm={() => {
+          void ops.emptyTrash();
+          close();
+        }}
+      />
+    );
+  }
+  const names = sheet.items.length === 1 ? `“${sheet.items[0]?.name}”` : formatCount(sheet.items.length);
+  return (
+    <ConfirmSheet
+      testID="delete-forever"
+      title={`Delete ${names} immediately?`}
+      message="You can’t undo this."
+      confirmLabel="Delete"
+      danger
+      onCancel={close}
+      onConfirm={() => {
+        void ops.deleteForever(sheet.items);
+        close();
+      }}
+    />
+  );
+}
+
 export function filesOverlay({
   store,
   ops,
@@ -57,39 +94,7 @@ export function filesOverlay({
       />
     );
   }
-  if (sheet?.kind === "empty-trash") {
-    return (
-      <ConfirmSheet
-        testID="empty-trash"
-        title="Empty the Trash?"
-        message={`${formatCount(state.items.length)} will be deleted for good.`}
-        confirmLabel="Empty Trash"
-        danger
-        onCancel={close}
-        onConfirm={() => {
-          void ops.emptyTrash();
-          close();
-        }}
-      />
-    );
-  }
-  if (sheet?.kind === "delete") {
-    const names = sheet.items.length === 1 ? `“${sheet.items[0]?.name}”` : formatCount(sheet.items.length);
-    return (
-      <ConfirmSheet
-        testID="delete-forever"
-        title={`Delete ${names} immediately?`}
-        message="You can’t undo this."
-        confirmLabel="Delete"
-        danger
-        onCancel={close}
-        onConfirm={() => {
-          void ops.deleteForever(sheet.items);
-          close();
-        }}
-      />
-    );
-  }
+  if (sheet?.kind === "empty-trash" || sheet?.kind === "delete") return <DeleteSheet sheet={sheet} count={state.items.length} ops={ops} close={close} />;
   if (menu) {
     // The menu keeps itself inside the window, flipped at the pointer when it would run off (PA-9).
     // "…"'s hangs by its right edge under the button, at the width it is drawn.

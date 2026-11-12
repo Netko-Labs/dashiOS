@@ -87,21 +87,7 @@ export function popoverSurface(output?: string): LayerSurface {
 /** How far above the screen's bottom edge a Dock menu ends: the Dock's panel, then a little air. */
 const DOCK_MENU_ABOVE = DOCK.margin + DOCK_HEIGHT + 6;
 
-export function PopoverRoot({
-  controller,
-  appMenus,
-  controlCenter,
-  notifications,
-  dockInset,
-  onChoose,
-  onDockChoose,
-  onStatusChoose,
-  onStatusClosed,
-  agentsPanel,
-  battery,
-  overflowRow,
-  accessible = () => false,
-}: {
+interface PopoverRootProps {
   controller: MenuController;
   /** The menus apps published; the open app menu follows its updates. */
   appMenus: AppMenuStore;
@@ -125,7 +111,86 @@ export function PopoverRoot({
   overflowRow?: (props: { right: number; keys: readonly string[]; close: () => void; escape: () => void }) => ReactElement;
   /** The Metal host takes accessibility props (launcher/access.ts). */
   accessible?: () => boolean;
-}) {
+}
+
+interface OpenMenuProps extends Pick<PopoverRootProps, "controller" | "onDockChoose" | "onStatusChoose" | "onStatusClosed"> {
+  popover: NonNullable<ReturnType<typeof useMenus>["popover"]>;
+  /** The open menu's rows, when it is one of the bar's. */
+  entries: readonly MenuEntry[];
+  room: { width: number; height: number };
+  /** The keyboard came from the bar's ring. */
+  fromKeys: boolean;
+  onChoose: (action: MenuAction) => void;
+}
+
+/** The open menu, when the popover is one: the bar's, a Dock icon's, or a status item's. Choosing a row closes it first. */
+function OpenMenu({ popover, entries, room, fromKeys: fromBar, controller, onChoose, onDockChoose, onStatusChoose, onStatusClosed }: OpenMenuProps) {
+  const close = () => controller.close();
+  return (
+    <>
+      {popover.kind === "menu" && (
+        <DropdownMenu
+          key={popover.id}
+          entries={entries}
+          x={popover.x}
+          room={room}
+          fromKeys={fromBar}
+          onSide={(toward) => controller.side(toward)}
+          onClose={() => controller.back()}
+          onChoose={(action) => {
+            close();
+            onChoose(action);
+          }}
+        />
+      )}
+      {popover.kind === "dock-menu" && (
+        <DropdownMenu
+          entries={popover.entries}
+          x={popover.x}
+          above={popover.above ?? DOCK_MENU_ABOVE}
+          room={room}
+          onClose={close}
+          onChoose={(action) => {
+            close();
+            onDockChoose(action);
+          }}
+        />
+      )}
+      {popover.kind === "status-menu" && (
+        <StatusMenu
+          key={popover.key}
+          entries={popover.entries}
+          right={popover.right}
+          room={room}
+          fromKeys={fromBar}
+          onSide={(toward) => controller.side(toward)}
+          onClosed={() => onStatusClosed?.(popover.key)}
+          onClose={() => controller.back()}
+          onChoose={(action) => {
+            close();
+            onStatusChoose(action);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+export function PopoverRoot({
+  controller,
+  appMenus,
+  controlCenter,
+  notifications,
+  dockInset,
+  onChoose,
+  onDockChoose,
+  onStatusChoose,
+  onStatusClosed,
+  agentsPanel,
+  battery,
+  overflowRow,
+  accessible = () => false,
+}: PopoverRootProps) {
   // The surface's size (the screen under the bar): the battery panel and the menus stay inside it.
   const [room, setRoom] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const width = room.width > 0 ? room.width : null;
@@ -152,48 +217,17 @@ export function PopoverRoot({
     >
       <View testID="popover-backdrop" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} onPress={close} />
       {popover === null && bar !== undefined && <BarAnnouncer label={controller.labelOf(bar)} accessible={accessible} />}
-      {popover?.kind === "menu" && (
-        <DropdownMenu
-          key={popover.id}
+      {popover !== null && (
+        <OpenMenu
+          popover={popover}
           entries={entries}
-          x={popover.x}
           room={room}
           fromKeys={fromBar}
-          onSide={(toward) => controller.side(toward)}
-          onClose={back}
-          onChoose={(action) => {
-            close();
-            onChoose(action, appName ?? "Desktop");
-          }}
-        />
-      )}
-      {popover?.kind === "dock-menu" && (
-        <DropdownMenu
-          entries={popover.entries}
-          x={popover.x}
-          above={popover.above ?? DOCK_MENU_ABOVE}
-          room={room}
-          onClose={close}
-          onChoose={(action) => {
-            close();
-            onDockChoose(action);
-          }}
-        />
-      )}
-      {popover?.kind === "status-menu" && (
-        <StatusMenu
-          key={popover.key}
-          entries={popover.entries}
-          right={popover.right}
-          room={room}
-          fromKeys={fromBar}
-          onSide={(toward) => controller.side(toward)}
-          onClosed={() => onStatusClosed?.(popover.key)}
-          onClose={back}
-          onChoose={(action) => {
-            close();
-            onStatusChoose(action);
-          }}
+          controller={controller}
+          onChoose={(action) => onChoose(action, appName ?? "Desktop")}
+          onDockChoose={onDockChoose}
+          onStatusChoose={onStatusChoose}
+          onStatusClosed={onStatusClosed}
         />
       )}
       {popover?.kind === "control-center" && (
