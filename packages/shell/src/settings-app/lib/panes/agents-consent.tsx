@@ -23,6 +23,7 @@ import type { PaneContext } from "../../context.ts";
 import { useGrantEntries, useSettings } from "../../hooks.ts";
 import { Spot } from "../../spot.tsx";
 import type { ChangeEntry } from "../changes/log.ts";
+import { ONLY_YOU, usePersonOnly } from "../person-only.ts";
 import { type AgentCard, agentCards, CONSEQUENCES, sinceWords } from "../privacy-words.ts";
 import { Row as Item, PAGE } from "../row.tsx";
 import { ChangeRow } from "./change-row.tsx";
@@ -135,7 +136,7 @@ function AgentGroup({
   onRevoked,
 }: {
   agent: ShownCard;
-  ctx: Pick<PaneContext, "grants" | "settings" | "show">;
+  ctx: Pick<PaneContext, "grants" | "settings" | "show" | "byPerson">;
   changes: readonly ChangeEntry[];
   history: readonly HistoryEntry[];
   revoked: Revoked | null;
@@ -145,6 +146,8 @@ function AgentGroup({
   const now = new Date();
   const log = ctx.settings.changes;
   const { notice, undo } = useUndoEntry(log);
+  // Undo gives back what was just revoked: the person's alone, or an agent would press it for itself.
+  const guard = usePersonOnly(ctx.byPerson);
   const lately = changesBy(changes, agent).slice(0, LATELY);
   const last = history.find((entry) => entry.who === agent.title && !entry.request);
   const revokeOne = (scope: Scope, label: string, since: number | null) => {
@@ -202,9 +205,9 @@ function AgentGroup({
       {revoked?.key === agent.key ? (
         <View testID={`agent-revoked:${agent.key}`} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4, marginTop: -8 }}>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Caption>{revoked.words}</Caption>
+            <Caption>{guard.refused === agent.key ? ONLY_YOU : revoked.words}</Caption>
           </View>
-          <Button testID={`agent-revoked-undo:${agent.key}`} label="Undo" onPress={revoked.undo} />
+          <Button testID={`agent-revoked-undo:${agent.key}`} label="Undo" onPress={() => guard.mine(agent.key, revoked.undo)} />
         </View>
       ) : (
         notice !== null && <Caption>{notice}</Caption>
@@ -213,7 +216,7 @@ function AgentGroup({
   );
 }
 
-export function ConsentDashboard({ ctx }: { ctx: Pick<PaneContext, "grants" | "settings" | "flags" | "agents" | "answers" | "home" | "show"> }) {
+export function ConsentDashboard({ ctx }: { ctx: Pick<PaneContext, "grants" | "settings" | "flags" | "agents" | "answers" | "home" | "show" | "byPerson"> }) {
   const entries = useGrantEntries(ctx.grants);
   const connected = useSyncExternalStore(ctx.agents?.subscribe ?? NO_AGENTS.subscribe, ctx.agents?.getSnapshot ?? NO_AGENTS.getSnapshot);
   const changes = useSyncExternalStore(ctx.settings.changes.subscribe, ctx.settings.changes.getSnapshot);

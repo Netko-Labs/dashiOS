@@ -89,12 +89,20 @@ seconds, and after five minutes whatever happens.
   chip"). Listening: the microphone's level and the end of what was heard so
   far. Thinking: what was heard. Speaking: the line being said, each word
   lighting at its `start`. Its words are a screen reader's too.
-- **Settings › Voice** (`settings-app/lib/panes/voice.tsx`): the switch;
+- **Settings › Voice** (`settings-app/lib/panes/voice.tsx`): the switch,
+  which reads on only when Voice is on (asked for, and its models here; while
+  it offers or waits for the fetch it reads off and its row says "It turns on
+  once its models are here.");
   turning it on with no models says what will come and how big, and only
   "Fetch" fetches; progress with Pause, and Resume from what came; the talk
   key and what it costs; Dashi's voice with "Play a sample"; "More
   languages" (Whisper) as its own fetch; Remove. Each set's `credit` shows
-  under the page.
+  under the page. Only the person's own press turns Voice on, fetches,
+  removes, or picks the key or the voice: the pane asks the compositor whose
+  press it was (`input-origin`, `settings-app/lib/person-only.ts`), and an
+  agent's press changes nothing and the row says "Only you can change this.
+  Press it yourself, here." Turning Voice off and Pause only narrow, so they
+  are not asked about.
 
 ## The socket
 

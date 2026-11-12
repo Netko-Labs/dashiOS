@@ -21,6 +21,7 @@ import { useSettings } from "../../hooks.ts";
 import { Spot } from "../../spot.tsx";
 import type { SettingsStore } from "../../store.ts";
 import { Choices, Switch } from "../../ui.tsx";
+import { type ByPerson, ONLY_YOU, usePersonOnly } from "../person-only.ts";
 import { Row as Item } from "../row.tsx";
 import { Setting } from "../setting.tsx";
 import { ListRow } from "./parts.tsx";
@@ -120,7 +121,23 @@ export function HistoryRow({ entry, onUndo }: { entry: HistoryEntry; onUndo: (in
   );
 }
 
-export function AnswerSettings({ settings, answers }: { settings: SettingsStore; answers: AnswerStatus }) {
+/** "Don't ask for these again". On, a task starts without showing what its agent may use: the person's alone. Off only narrows. */
+function SkipGrants({ settings, on, byPerson }: { settings: SettingsStore; on: boolean; byPerson?: ByPerson }) {
+  const guard = usePersonOnly(byPerson);
+  return (
+    <Setting id="agents/skip-grants" {...(guard.refused === "agents/skip-grants" ? { detail: ONLY_YOU } : {})}>
+      <Switch
+        testID="agents-skip-grants"
+        on={on}
+        onChange={(next) =>
+          next ? guard.mine("agents/skip-grants", () => settings.patch("agents", { skipGrants: true })) : settings.patch("agents", { skipGrants: undefined })
+        }
+      />
+    </Setting>
+  );
+}
+
+export function AnswerSettings({ settings, answers, byPerson }: { settings: SettingsStore; answers: AnswerStatus; byPerson?: ByPerson }) {
   const { data } = useSettings(settings);
   const choice = data.agents.answerer;
   const [place, setPlace] = useState<KeyPlace | null>(null);
@@ -210,13 +227,7 @@ export function AnswerSettings({ settings, answers }: { settings: SettingsStore;
               <Note>{ANSWERERS[handOff].name}</Note>
             )}
           </Setting>
-          <Setting id="agents/skip-grants">
-            <Switch
-              testID="agents-skip-grants"
-              on={data.agents.skipGrants === true}
-              onChange={(on) => settings.patch("agents", { skipGrants: on || undefined })}
-            />
-          </Setting>
+          <SkipGrants settings={settings} on={data.agents.skipGrants === true} {...(byPerson ? { byPerson } : {})} />
         </Group>
       )}
       {harnessName !== null && (

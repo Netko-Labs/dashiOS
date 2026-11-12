@@ -3,7 +3,8 @@
  * of time, for every agent, so an agent working alone (an unattended demo)
  * opens them with no sheet (agents/sites.ts, sites.json's `person`). Add…
  * opens a field for an address or a host; Remove takes one off, and agents
- * ask for it again. Only this list adds to it: no agent can.
+ * ask for it again. Only this list adds to it, and only by the person's own
+ * press (person-only.ts): an agent that may click and type here adds nothing.
  */
 
 import { Text, TextInput, View } from "@mirinjs/metal";
@@ -12,6 +13,7 @@ import { siteFromInput } from "../../../agents/sites.ts";
 import { Button, Caption, Group, useSurface } from "../../../shared/cards/index.ts";
 import { useColors } from "../../colors.ts";
 import type { AheadSites } from "../../context.ts";
+import { type ByPerson, ONLY_YOU, usePersonOnly } from "../person-only.ts";
 import { Setting } from "../setting.tsx";
 
 const NOTHING: readonly string[] = [];
@@ -40,18 +42,23 @@ function SiteRow({ site, onRemove }: { site: string; onRemove: () => void }) {
   );
 }
 
-export function AgentSitesSection({ sites }: { sites: AheadSites | undefined }) {
+export function AgentSitesSection({ sites, byPerson }: { sites: AheadSites | undefined; byPerson?: ByPerson }) {
   const colors = useColors();
   const surface = useSurface();
   const source = sites ?? NONE;
   const listed = useSyncExternalStore(source.subscribe, source.ahead);
   const [adding, setAdding] = useState<string | null>(null);
+  const guard = usePersonOnly(byPerson);
   if (!sites) return null;
   const wanted = adding === null ? null : siteToAdd(adding, listed);
   const add = () => {
     if (!wanted || !("site" in wanted)) return;
-    sites.allowAhead(wanted.site);
-    setAdding(null);
+    const { site } = wanted;
+    // A site on this list opens for every agent without asking: only the person puts one there.
+    guard.mine("agents/sites", () => {
+      sites.allowAhead(site);
+      setAdding(null);
+    });
   };
   return (
     <>
@@ -80,6 +87,11 @@ export function AgentSitesSection({ sites }: { sites: AheadSites | undefined }) 
                 </View>
                 <Button testID="agents-site-add-button" label="Add" primary disabled={!wanted || !("site" in wanted)} onPress={add} />
                 <Button testID="agents-site-cancel" label="Cancel" onPress={() => setAdding(null)} />
+              </View>
+            )}
+            {guard.refused === "agents/sites" && (
+              <View testID="agents-site-refused">
+                <Text style={{ fontSize: 11.5, color: colors.textMuted }}>{ONLY_YOU}</Text>
               </View>
             )}
             {wanted && "problem" in wanted && wanted.problem !== null && (

@@ -869,6 +869,50 @@ Numbered in the order they were written down; a new one goes at the end.
 - **Undo:** `tab_interval` in mirin's `line_layout.rs` (count the space
   instead of the 0); `TAB_WIDTHS` and the rows in `apps/editor/lib/menus.ts`.
 
+### D43. Where a wrong press in Settings costs something, only the person's press counts
+
+- **Date:** 2026-11-11. The `polish` agent's, reversible
+  (`settings-app/lib/person-only.ts`).
+- **Question:** an agent that may click in windows can press what Settings
+  shows. D26 closed that for "Let agents work alone". Settings › Voice was
+  open (an agent could turn it on and start a 1 GB fetch), and so were
+  others. Which presses are asked about?
+- **Choice:** the ones that widen what agents may do, or that cost the
+  person something they did not ask for. The pane asks the compositor whose
+  press it was (`input-origin`), and an agent's changes nothing and the row
+  says "Only you can change this. Press it yourself, here.":
+  - Voice: turning it on, Fetch and Resume, Remove, the talk key, the voice.
+  - Agents: adding a site agents may use, Undo of a revoke, turning on
+    "Don't ask for these again".
+  A press that only narrows is never asked about: turning Voice off, Pause,
+  Revoke, removing a site.
+- **Not changed, for the lead:** an app's or the system's sound devices
+  (agents have a tool for it, with its own permission; a click costs
+  little and is undone by one), a login's "Ask / Never" in Passwords, an
+  API token's hosts, and every other row. The general answer would be the
+  compositor refusing an agent's input to Settings' window, or a list of
+  rows agents may press; this entry closes the plain cases only.
+- **Why:** consent is the person's hands (D26, D38). Part A: narrow who may
+  do something.
+- **Cost:** one `input-origin` round trip for each such press. A press held
+  longer than two seconds, or made while no compositor answers, is refused:
+  the person presses again.
+- **Undo:** drop `byPerson` from `PaneContext` (`boot/settings.ts`); each
+  pane then changes at any press.
+
+### D44. The Voice switch reads on only when Voice is on
+
+- **Date:** 2026-11-11. The `polish` agent's, reversible.
+- **Question:** the switch went green as soon as it was pressed, while the
+  pane only offered the fetch, and stayed green with the models removed.
+- **Choice:** on means asked for and usable. While it offers the fetch,
+  fetches, or waits with the models gone, it reads off and its row says "It
+  turns on once its models are here." A press then takes the ask back.
+- **Why:** green means on and nothing else (CO-1).
+- **Cost:** pressing the switch with no models shows no change in the
+  switch itself; the Models row appearing under it is the answer.
+- **Undo:** `on` in `VoicePane`.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its
