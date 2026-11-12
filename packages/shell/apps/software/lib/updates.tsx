@@ -152,6 +152,45 @@ function SystemUpdates({ onUpdateSystem }: { onUpdateSystem: () => void }) {
   );
 }
 
+function RestartNote({ onRestart }: { onRestart: () => void }) {
+  const colors = useColors();
+  return (
+    <Group testID="restart-note">
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 52, paddingHorizontal: 12, paddingVertical: 8 }}>
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
+          <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Restart to finish updating</Text>
+          <Text style={{ fontSize: 11, color: colors.textMuted }}>The kernel or core system libraries changed. Restart when it suits you.</Text>
+        </View>
+        <Button label="Restart…" testID="restart" primary onPress={onRestart} />
+      </View>
+    </Group>
+  );
+}
+
+function AppletUpdates() {
+  const { applets } = useServices();
+  const actions = useActions();
+  const appletUpdates = applets.updates();
+  return (
+    <>
+      <SectionHeader
+        title="Menu bar applets"
+        detail={`${appletUpdates.length} ${appletUpdates.length === 1 ? "update" : "updates"}`}
+        action={
+          <Button
+            label={appletUpdates.some((entry) => applets.needsConsent(entry)) ? "Update all…" : "Update all"}
+            testID="update-applets"
+            onPress={() => {
+              for (const entry of appletUpdates) actions.getApplet(entry);
+            }}
+          />
+        }
+      />
+      <AppletGroup entries={appletUpdates} testID="applet-updates" />
+    </>
+  );
+}
+
 export function Updates({ onRestart, onUpdateSystem }: { onRestart: () => void; onUpdateSystem: () => void }) {
   const colors = useColors();
   const { store, applets } = useServices();
@@ -175,17 +214,7 @@ export function Updates({ onRestart, onUpdateSystem }: { onRestart: () => void; 
 
   return (
     <ScrollView testID="updates" style={{ flex: 1, flexDirection: "column", gap: 14, padding: 22 }}>
-      {state.restartNeeded === true && (
-        <Group testID="restart-note">
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 52, paddingHorizontal: 12, paddingVertical: 8 }}>
-            <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Restart to finish updating</Text>
-              <Text style={{ fontSize: 11, color: colors.textMuted }}>The kernel or core system libraries changed. Restart when it suits you.</Text>
-            </View>
-            <Button label="Restart…" testID="restart" primary onPress={onRestart} />
-          </View>
-        </Group>
-      )}
+      {state.restartNeeded === true && <RestartNote onRestart={onRestart} />}
       {errors.length > 0 && (
         <View testID="updates-errors" style={{ flexShrink: 0 }}>
           <Text style={{ fontSize: 12, color: colors.broth }}>{`Not everything could be checked. ${errors.join(" ")}`}</Text>
@@ -229,24 +258,7 @@ export function Updates({ onRestart, onUpdateSystem }: { onRestart: () => void; 
           </Group>
         </>
       )}
-      {appletUpdates.length > 0 && (
-        <>
-          <SectionHeader
-            title="Menu bar applets"
-            detail={`${appletUpdates.length} ${appletUpdates.length === 1 ? "update" : "updates"}`}
-            action={
-              <Button
-                label={appletUpdates.some((entry) => applets.needsConsent(entry)) ? "Update all…" : "Update all"}
-                testID="update-applets"
-                onPress={() => {
-                  for (const entry of appletUpdates) actions.getApplet(entry);
-                }}
-              />
-            }
-          />
-          <AppletGroup entries={appletUpdates} testID="applet-updates" />
-        </>
-      )}
+      {appletUpdates.length > 0 && <AppletUpdates />}
     </ScrollView>
   );
 }
