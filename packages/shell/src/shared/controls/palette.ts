@@ -1,13 +1,13 @@
 /**
  * Control Center's tokens (the approved design, docs/design.html "Control
  * Center"): a soft surface, off tiles a shade of it, on tiles Dashi green,
- * sliders filled with ink (dark in Light, light in Dark), and the purple
- * keyboard ring. The battery panel, the Wi-Fi, Bluetooth and Sound pages,
+ * sliders filled with ink (dark in Light, light in Dark), and the keyboard's
+ * purple ring, @dashi/ui's `focusRing` (KB-2: one ring everywhere). The battery panel, the Wi-Fi, Bluetooth and Sound pages,
  * and System Settings draw with the same ones; Settings adds its window,
  * its sidebar, and a knob's resting circle (docs/design.html "Settings").
  */
 
-import { type MenuHighlight, TRUE_BLACK, useDark } from "@dashi/ui";
+import { darkColors, lightColors, type MenuHighlight, TRUE_BLACK, useDark } from "@dashi/ui";
 
 export interface ControlPalette {
   /** The panel. */
@@ -57,7 +57,7 @@ export const LIGHT_CONTROLS: ControlPalette = {
   muted: "#1d183094",
   line: "#1d18301f",
   chip: "#f3eff8",
-  focus: "#6e56cf",
+  focus: lightColors.focusRing,
   window: "#f7f4fa",
   sidebar: "#efeaf5",
   knobRest: "#1d18301a",
@@ -68,8 +68,8 @@ export const LIGHT_CONTROLS: ControlPalette = {
  * Dark is true black (TRUE_BLACK in @dashi/ui): the panel and Settings'
  * window are the black ground itself, the sidebar the first lift, off tiles
  * and cards the second; the panel's edge is a hairline (`line`), since its
- * shadow has nothing to darken on black. Green, its ink and the purple ring
- * are as they were.
+ * shadow has nothing to darken on black. Green and its ink are as they
+ * were; the ring is Dark's lighter purple.
  */
 export const DARK_CONTROLS: ControlPalette = {
   surface: TRUE_BLACK.ground,
@@ -85,7 +85,7 @@ export const DARK_CONTROLS: ControlPalette = {
   muted: `${TRUE_BLACK.ink}99`,
   line: TRUE_BLACK.edge,
   chip: TRUE_BLACK.ground,
-  focus: "#6e56cf",
+  focus: darkColors.focusRing,
   window: TRUE_BLACK.ground,
   sidebar: TRUE_BLACK.lift,
   knobRest: "#ffffff1a",

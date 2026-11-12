@@ -84,7 +84,7 @@ export function NotesField({ value, onChange, onCancel }: { value: string; onCha
           placeholderColor: colors.textDisabled,
           backgroundColor: surface.card,
           borderColor: colors.separator,
-          focusBorderColor: colors.selection,
+          focusBorderColor: colors.focusRing,
         }}
       />
     </FormRow>

@@ -10,7 +10,7 @@
  * all, as ⌃❖Esc does.
  */
 
-import { useColors } from "@dashi/ui";
+import { buttonLook, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import {
@@ -37,6 +37,7 @@ export function useRuns(runs: Pick<AgentRuns, "subscribe" | "getSnapshot">): rea
 
 function Small({ label, primary, danger, testID, onPress }: { label: string; primary?: true; danger?: true; testID: string; onPress: () => void }) {
   const colors = useColors();
+  const look = buttonLook(colors, "primary");
   return (
     <View
       testID={testID}
@@ -47,10 +48,11 @@ function Small({ label, primary, danger, testID, onPress }: { label: string; pri
         paddingRight: 10,
         borderRadius: 6,
         justifyContent: "center",
-        backgroundColor: primary ? colors.selection : colors.button,
+        backgroundColor: primary ? look.fill : colors.button,
+        hoverBackgroundColor: primary ? look.hover : colors.separator,
       }}
     >
-      <Text style={{ fontSize: 12, fontWeight: "semibold", color: primary ? "#ffffff" : danger ? colors.criticalInk : colors.text }}>{label}</Text>
+      <Text style={{ fontSize: 12, fontWeight: "semibold", color: primary ? look.ink : danger ? colors.criticalInk : colors.text }}>{label}</Text>
     </View>
   );
 }

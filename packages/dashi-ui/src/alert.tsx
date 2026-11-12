@@ -28,10 +28,10 @@ export interface AlertButton {
   label: string;
   testID: string;
   onPress: () => void;
-  /** `primary` (kombu) goes ahead, `danger` (ume) destroys; secondary by default. */
+  /** `primary` (ink) goes ahead, `danger` (ume) destroys; secondary by default. */
   kind?: ButtonKind;
   /**
-   * What Enter presses (a secondary one wears the kombu ring). By default
+   * What Enter presses (a secondary one wears the 2 px ink edge). By default
    * the enabled primary button; `false` on it means Enter never presses it
    * (a grant: only a click gives access).
    */

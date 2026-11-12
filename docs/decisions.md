@@ -265,6 +265,71 @@ Numbered in the order they were written down; a new one goes at the end.
   pass of their own.
 - **Undo:** write `main` in `.mirin-branch` and rebuild the Metal host.
 
+### D15. The focus ring is purple everywhere
+
+- **Date:** 2026-11-11. The owner's decision, open since 0.5.
+- **Question:** the ring was kombu in apps and purple (`#6E56CF`) only in
+  Control Center and System Settings, where a green ring vanished on green
+  tiles, switches and pills. Two rings, and green with a second meaning.
+- **Choice:** one purple ring in every app, the shell, the launcher, sheets,
+  the lock screen and the login screen. Green means "on" and nothing else.
+  `@dashi/ui`'s `focusRing` is the one source: the shell's palette
+  (`shared/controls/palette.ts`) and `LOGIN_FOCUS_RING` read it.
+- **Why:** a ring must show on whatever it rings, and one color must have one
+  job (CO-1).
+- **Cost:** shiso has a second job, the keyboard's. It stays a 2 px line,
+  never a fill, a tile or a word, so it does not read as an agent.
+- **Undo:** ask the owner. The value is two lines of `palette.ts`.
+
+### D16. Primary buttons are ink
+
+- **Date:** 2026-11-11. The owner's decision, open since 0.5.
+- **Question:** the one button that goes ahead was kombu under white words.
+  Nothing about it is "on".
+- **Choice:** ink. In Light the ink (`#1D1D1F`) under white words; in Dark the
+  light ink (`#ECECEE`) under black words. It deepens under the pointer and
+  more while held, its words AA in every state; disabled, the whole button at
+  40%. Danger stays ume. New tokens `primary`, `primaryHover`,
+  `primaryPressed`, `onPrimary`; `buttonLook` is the one look, and the sheets
+  that drew their own (consent, Force Quit, Restart, the capture toolbar, the
+  agents' panel) call it. Selected rows, switches, ticks, "on" tiles, chosen
+  pills and the selection wash stay green.
+- **Why:** green means on or chosen (CO-1). Settings' and Setup's pills were
+  ink already.
+- **Cost:** in Light the steps from ink to black are small to the eye (16.8,
+  19.3, 21 to 1 under white); the owner asked that they deepen, so they do.
+- **Undo:** ask the owner. The fills are eight lines of `palette.ts`.
+
+### D17. The smaller calls that came with D15 and D16
+
+- **Date:** 2026-11-11. The `colours` agent's, each reversible.
+- **Dark's ring is the lighter shiso, `#8B76E8`** (Dark's `agent`), not
+  `#6E56CF`. `#6E56CF` passes 3:1 on true black and its lifts (3.9, 3.65,
+  3.41) but with little to spare, and falls under on a hovered tile; the
+  lighter one is 5.1 or more, and the ring is `agent`'s value in both modes.
+  The login screen, dark in either mode, takes Dark's. Undo: one line.
+- **A default secondary button has a 2 px ink edge** (`isDefault`), where it
+  had a kombu ring. It says "Enter presses this", which is the primary
+  button's meaning, so it wears the primary's color as a line. Purple would
+  say the keyboard is there when it may not be; kombu would say "on".
+- **A text field's focused edge is the ring's purple,** where it was kombu
+  (`TextField`, Files' rename field, Calendar's and dashi-dialog's fields): it
+  is focus, and one ring means one color.
+- **A chosen pill is its own kind in `buttonLook`, `chosen`,** still kombu:
+  it shared the primary's fills, and it is chosen, not a way ahead.
+- **Software's Get, Open and Update pills have ink words,** where they had
+  kombu words (`accentInk`): they go ahead and nothing is on. The pill stays
+  quiet; the app's page has the ink primary button.
+- **The consent sheet's destructive button is `umeFill`,** as every other
+  destructive button, where it was `critical` (pink under white in Dark,
+  2.9 to 1).
+- **The ring around the active window stays kombu** (DE-3): it marks the
+  window that is chosen, and a purple ring around a whole window would read as
+  an agent at work in it.
+- **Left as they are, for the owner:** kombu links (`accentInk`), the kombu
+  tile behind an alert's glyph, and GTK apps, whose suggested buttons and
+  focus outlines follow GTK's accent, which is kombu.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its

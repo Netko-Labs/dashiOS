@@ -3,7 +3,7 @@
  * and UI-6): a sheet with the question, what will be lost, Cancel, and the
  * button that goes ahead. When going ahead destroys something (`danger`),
  * that button is ume and Enter never presses it: Enter and Esc both cancel,
- * and Cancel wears the kombu ring that says it is the default. Only a click
+ * and Cancel wears the ink edge that says it is the default. Only a click
  * on the ume button goes ahead.
  *
  * `useConfirm` is the short way to it: `confirm.ask({...})` from a handler,

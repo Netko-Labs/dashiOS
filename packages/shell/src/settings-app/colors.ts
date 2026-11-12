@@ -3,8 +3,9 @@
  * tokens (docs/design.html, "Settings"): @dashi/ui's names, so a pane's
  * words, hairlines and fills follow the cards they sit on. Text is the off
  * tile's ink, quieter text the muted ink, hairlines and tracks the line,
- * a secondary fill the knob's, "chosen" Dashi green (it is on), and the
- * ring purple. The job colors (ume, broth, shiso) stay @dashi/ui's.
+ * a secondary fill the knob's, "chosen" Dashi green (it is on), a primary
+ * button the slider's ink fill and its words, and the ring @dashi/ui's own
+ * purple. The job colors (ume, broth, shiso) stay @dashi/ui's.
  */
 
 import { type Palette, useColors as usePalette } from "@dashi/ui";
@@ -21,6 +22,8 @@ export function useColors(): Palette {
     button: colors.knobOff,
     track: colors.line,
     selection: colors.on,
+    primary: colors.fill,
+    onPrimary: colors.fillInk,
     focusRing: colors.focus,
   };
 }

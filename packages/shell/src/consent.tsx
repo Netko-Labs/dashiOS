@@ -8,7 +8,7 @@
  * person types elsewhere must not answer it.
  */
 
-import { Shortcut, useColors } from "@dashi/ui";
+import { buttonLook, Shortcut, useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Allow, Ask } from "./agents/index.ts";
@@ -48,7 +48,7 @@ export function goAheadLook(danger: boolean | undefined): { danger: true } | { p
   return danger === true ? { danger: true } : { primary: true };
 }
 
-/** A sheet's button: `primary` is the green one, `danger` the red one for what can't be undone. */
+/** A sheet's button: `primary` is the ink one, `danger` the ume one for what can't be undone. */
 export function Button({
   label,
   primary,
@@ -62,7 +62,7 @@ export function Button({
   testID?: string;
   onPress: () => void;
 }) {
-  const colors = useColors();
+  const look = buttonLook(useColors(), danger ? "danger" : primary ? "primary" : "secondary");
   return (
     <View
       {...(testID ? { testID } : {})}
@@ -72,11 +72,12 @@ export function Button({
         height: 30,
         borderRadius: 8,
         justifyContent: "center",
-        backgroundColor: danger ? colors.critical : primary ? colors.selection : colors.button,
+        backgroundColor: look.fill,
+        hoverBackgroundColor: look.hover,
       }}
       onPress={onPress}
     >
-      <Text style={{ fontSize: 13, fontWeight: "semibold", color: primary || danger ? "#ffffff" : colors.text }}>{label}</Text>
+      <Text style={{ fontSize: 13, fontWeight: "semibold", color: look.ink }}>{label}</Text>
     </View>
   );
 }

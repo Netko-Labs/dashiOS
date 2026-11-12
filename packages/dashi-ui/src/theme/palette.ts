@@ -27,15 +27,26 @@ export interface Palette {
   /** A battery at its last few percent: ume, as `critical`. */
   batteryLow: string;
   /**
-   * Kombu, the person's color: the selected row, a chosen pill, a switch
-   * that is on, the one primary button. White text on it is AA (5.1:1), so
-   * it is a little deeper than the brand's #3E8A72. Never a decoration, a
-   * hover, or an icon at rest.
+   * Kombu, the person's color, and it means on or chosen and nothing else:
+   * the selected row, a chosen pill, a switch that is on, a tick. White on
+   * it is AA (5.1:1), so it is a little deeper than the brand's #3E8A72.
+   * Never a decoration, a hover, an icon at rest, a button or a ring.
    */
   selection: string;
-  /** Kombu under the pointer, and pressed: a primary button deepens, never lightens, so white on it stays AA. */
+  /** Kombu under the pointer, and pressed: a chosen thing deepens, never lightens, so white on it stays AA. */
   selectionHover: string;
   selectionPressed: string;
+  /**
+   * The one primary button (button-look.ts): ink. The ink itself under
+   * `onPrimary` words in Light, the light ink under black words in Dark. It
+   * deepens under the pointer and more while held, and `onPrimary` is AA on
+   * all three. A default secondary button's 2 px edge is `primary` too.
+   */
+  primary: string;
+  primaryHover: string;
+  primaryPressed: string;
+  /** The words on a primary button. */
+  onPrimary: string;
   /**
    * A selected row in a list, a table or a sidebar (the launcher, every app:
    * selection.tsx, CO-9): a 14% kombu wash
@@ -59,9 +70,12 @@ export interface Palette {
   /** Text on `selectionWash`. */
   onSelection: string;
   /**
-   * The focus ring (KB-2): kombu, 2 px wide and 2 px out from the control,
-   * only after the keyboard moved focus. The brand's lighter kombu in Dark
-   * Mode, so it stands 3:1 on every window ground.
+   * The focus ring (KB-2), and a text field's edge while it has the
+   * keyboard: shiso purple, the one ring in every app, the shell, the
+   * launcher, sheets and the login screen (`agent`'s value: purple is the
+   * agents' and the keyboard's). 2 px wide and 2 px out from the control,
+   * only after the keyboard moved focus. Dark's is the lighter shiso, well
+   * over 3:1 on true black and its lifts and glass.
    */
   focusRing: string;
   /** The chosen app in the switcher, and an open menu bar item: a soft wash. */
@@ -98,8 +112,8 @@ export interface Palette {
   /** Moss, for success ("Installed", "Saved"): text, AA on every window ground. Not kombu: done is not selected. */
   moss: string;
   /**
-   * Kombu as words: the verb on a store's pill (Get, Update) and a link,
-   * AA on every window ground and on `button`. The brand's lighter kombu in
+   * Kombu as words: a link, AA on every window ground and on `button` (a
+   * store pill's verb, Get or Update, is ink: it goes ahead, it is not on). The brand's lighter kombu in
    * Dark Mode, where `selection` as text is too quiet.
    */
   accentInk: string;
@@ -149,11 +163,15 @@ export const lightColors: Palette = {
   selection: "#357A64",
   selectionHover: "#2F6E5A",
   selectionPressed: "#29614F",
+  primary: "#1d1d1f",
+  primaryHover: "#0e0e10",
+  primaryPressed: "#000000",
+  onPrimary: "#ffffff",
   selectionWash: "#3E8A7224",
   textSelection: "#3E8A7240",
   selectionBar: "#357A64",
   onSelection: "#1d1d1f",
-  focusRing: "#357A64",
+  focusRing: "#6E56CF",
   switcherSelection: "#1d1d1f24",
   button: "#1d1d1f12",
   controlEdge: "#1d1d1f80",
@@ -234,11 +252,15 @@ export const darkColors: Palette = {
   selection: "#357A64",
   selectionHover: "#2F6E5A",
   selectionPressed: "#29614F",
+  primary: INK,
+  primaryHover: "#d6d6da",
+  primaryPressed: "#c0c0c6",
+  onPrimary: BLACK,
   selectionWash: "#3E8A7238",
   textSelection: "#3E8A7280",
   selectionBar: "#3E8A72",
   onSelection: INK,
-  focusRing: "#3E8A72",
+  focusRing: "#8B76E8",
   switcherSelection: "#ffffff24",
   button: "#ffffff1f",
   controlEdge: `${INK}66`,

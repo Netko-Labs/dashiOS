@@ -216,7 +216,7 @@ export function PillButton({
   focusable?: boolean;
 }) {
   const colors = useControlColors();
-  const { critical } = useColors();
+  const { critical, primaryHover } = useColors();
   const height = small ? 28 : 36;
   const ink = tone === "ink" ? colors.window : tone === "danger" ? critical : colors.text;
   return (
@@ -236,7 +236,7 @@ export function PillButton({
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: tone === "ink" ? colors.text : "#00000000",
-        hoverBackgroundColor: tone === "ink" ? colors.text : colors.knobOff,
+        hoverBackgroundColor: tone === "ink" ? (disabled ? colors.text : primaryHover) : colors.knobOff,
         borderWidth: tone === "ink" ? 0 : 1.5,
         borderColor: colors.line,
         opacity: disabled ? DISABLED_OPACITY : 1,

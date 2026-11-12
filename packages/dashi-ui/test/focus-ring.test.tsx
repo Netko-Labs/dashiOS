@@ -16,7 +16,7 @@ import { darkColors, lightColors } from "../src/theme/palette.ts";
 import { ToolbarButton } from "../src/window.tsx";
 import { fakeHost, settle } from "./host.ts";
 
-// The focus ring is kombu (KB-2) in every Dashi window, whatever root it is
+// The focus ring is purple (KB-2) in every Dashi window, whatever root it is
 // in: Metal draws the nearest `focusRingColor` on the way up, and without one
 // its own blue.
 
@@ -62,7 +62,7 @@ function Controls() {
   );
 }
 
-test("every focusable control rings in kombu under any root, Light and Dark (KB-2)", async () => {
+test("every focusable control rings in purple under any root, Light and Dark (KB-2)", async () => {
   for (const [dark, colors] of [
     [false, lightColors],
     [true, darkColors],
@@ -75,6 +75,18 @@ test("every focusable control rings in kombu under any root, Light and Dark (KB-
     expect(found.length).toBe(7);
     expect(found.every((ring) => ring === colors.focusRing)).toBe(true);
   }
+});
+
+test("the ring is shiso purple, the agents' color and the keyboard's, in both modes; never kombu", () => {
+  expect(lightColors.focusRing).toBe("#6E56CF");
+  for (const colors of [lightColors, darkColors]) {
+    expect(colors.focusRing).toBe(colors.agent);
+    expect(colors.focusRing).not.toBe(colors.selection);
+    // Beside a green switch or an "on" pill the ring is another hue, so it never vanishes into them.
+    expect(contrastRatio(colors.focusRing, "#ffffff")).not.toBeCloseTo(contrastRatio(colors.selection, "#ffffff"), 1);
+  }
+  // One source: the login screen's is Dark's.
+  expect(LOGIN_FOCUS_RING).toBe(darkColors.focusRing);
 });
 
 test("the roots @dashi/ui draws name the ring too: a sheet, an alert window, the login screen", async () => {

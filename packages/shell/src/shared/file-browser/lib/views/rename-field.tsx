@@ -52,8 +52,8 @@ export function RenameField({ item, width }: { item: FileItem; width?: number })
         borderRadius: 4,
         color: colors.text,
         backgroundColor: surface.card,
-        borderColor: colors.selection,
-        focusBorderColor: colors.selection,
+        borderColor: colors.focusRing,
+        focusBorderColor: colors.focusRing,
       }}
     />
   );
