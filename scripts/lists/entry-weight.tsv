@@ -254,6 +254,7 @@ packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/time
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/sound
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/spaces
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/system
+packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/voice
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/wallpaper
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/wifi
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/xwayland-scale.ts
@@ -384,6 +385,7 @@ packages/shell/src/main.tsx	packages/shell/src/text-size.ts
 packages/shell/src/main.tsx	packages/shell/src/theme.ts
 packages/shell/src/main.tsx	packages/shell/src/toplevels.ts
 packages/shell/src/main.tsx	packages/shell/src/tray
+packages/shell/src/main.tsx	packages/shell/src/voice
 packages/shell/src/main.tsx	packages/shell/src/wallpaper
 packages/shell/src/main.tsx	packages/shell/src/wifi
 packages/shell/src/main.tsx	packages/shell/src/xwayland-scale.ts

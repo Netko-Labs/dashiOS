@@ -21,7 +21,7 @@ test("the panes the design drew come first in their groups, in its order", () =>
 });
 
 test("every pane is in the sidebar once, Recently changed included, and named as drawn", () => {
-  expect(SIDEBAR_PANES.length).toBe(23);
+  expect(SIDEBAR_PANES.length).toBe(24);
   expect(new Set(ids(SIDEBAR_PANES)).size).toBe(SIDEBAR_PANES.length);
   expect(paneGroups().flatMap((group) => ids(group.panes))).toEqual(ids(PANES));
   const title = (id: string) => PANES.find((pane) => pane.id === id)?.title;

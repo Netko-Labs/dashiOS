@@ -58,6 +58,7 @@ import {
   startSwitcher,
   startSwitches,
   startSystemStores,
+  startTalking,
 } from "./boot/index.ts";
 import { pickPrimary } from "./menubar/index.ts";
 import { OverlaySlots } from "./overlay-slots.ts";
@@ -77,6 +78,8 @@ const primaryScreen = pickPrimary(firstScreens, screens.mainDisplay) ?? undefine
 // The windows, settings.json, the clocks; Spaces and the screens; how things look; where windows go.
 const stores = startStores(services);
 const { settingsStore } = stores;
+// Talking to Dashi: the talk key, the voice service, the chip in every bar.
+const talking = startTalking({ compositor, settingsStore, services, late });
 const desktops = await startDesktops({ compositor, settingsStore, screens, services, late });
 const look = startLook(compositor, desktops, stores.dockPrefs, services);
 const arranging = await startArranging(compositor, desktops, services, late);
@@ -88,7 +91,7 @@ const system = startSystemStores(compositor, radios.wifi, look, services);
 const guards = startGuards({ compositor, look, settingsStore, developmentRun: radios.developmentRun, services, late });
 
 // Agents' groundwork, notifications and what speaks through them, Control Center's switches.
-const basics = startAgentBasics(compositor, services);
+const basics = startAgentBasics(compositor, services, talking.voice);
 const notices = startNotices(compositor, services);
 const { notifications } = notices;
 const screenshots = new Screenshots(compositor, { capture: guards.capture, notifications }, services, late);
@@ -129,6 +132,7 @@ const settingsWindows = startSettingsWindows({
   agentStore: basics.agentStore,
   alone: basics.alone,
   agents,
+  talking,
   settingsApps,
   services,
   late,
@@ -172,6 +176,7 @@ startBars({
   handoff,
   screenshots,
   barTips,
+  talking,
   services,
   late,
 });

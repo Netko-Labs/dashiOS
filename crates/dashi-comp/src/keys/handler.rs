@@ -7,7 +7,8 @@
 //! waits on Bun: a `bind` goes to the shell as a `binding` event, a `send` is
 //! replayed to the focused client as another chord while the key is held, a
 //! `tap` replays chords at once, a `swallow` is dropped. Keys no rule matches
-//! go to the client as they are. A `binding` carries the key's text as
+//! go to the client as they are. A key the shell holds (`held-keys`, held.rs)
+//! comes before all of that: only the shell hears it. A `binding` carries the key's text as
 //! typed, when it has one, so the shell can take typing too (the launcher's
 //! keys between a ❖ tap and its field taking the keyboard), and a tap switches
 //! to the keymap's `afterTap` rules at once, before the shell has heard of it
@@ -40,6 +41,8 @@ pub(crate) struct Keys {
     pub(super) taken: HashMap<Keycode, Taken>,
     /// The snippets' keywords, and what was just typed (snippets.rs).
     pub snippets: super::snippets::Snippets,
+    /// The keys the shell holds, and which are down (held.rs).
+    pub held: super::held::HeldKeys,
     /// The button of a ❖-click whose client was lent Super until it comes up (super_click.rs).
     pub(super) lent_super: Option<u32>,
 }
@@ -52,6 +55,10 @@ pub(super) enum Taken {
 
 impl Dashi {
     pub(crate) fn on_key(&mut self, keycode: Keycode, state: KeyState, time: u32) {
+        // A key the shell holds (held.rs) is no one else's, ❖ included: the right ❖ as the talk key opens nothing.
+        if self.on_held_key(keycode, state) {
+            return;
+        }
         if SUPER_KEYCODES.contains(&keycode.raw()) {
             return self.on_super(state);
         }

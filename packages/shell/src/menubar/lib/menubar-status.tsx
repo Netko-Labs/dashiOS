@@ -50,6 +50,8 @@ export interface StatusSideProps {
   onStops?: (stops: BarStop[]) => void;
   /** The Metal host takes accessibility props: "…" is named. */
   accessible?: boolean;
+  /** The row's width as drawn (the voice chip sits clear of it). */
+  onWidth?: (width: number) => void;
 }
 
 /** Each item's width and place as drawn, and what fits: the items that go into "…" while the room is short. */
@@ -152,7 +154,7 @@ function arrangeStatus(
   return drawn;
 }
 
-export function StatusSide({ slots, room, areaOpen, moreOpen, onMore, onHidden, focused = null, onStops, accessible = false }: StatusSideProps) {
+export function StatusSide({ slots, room, areaOpen, moreOpen, onMore, onHidden, focused = null, onStops, accessible = false, onWidth }: StatusSideProps) {
   const colors = useColors();
   const { fit, placed, measure } = useStatusFit(slots, room, onHidden);
   const shown = new Set(fit.shown);
@@ -189,6 +191,7 @@ export function StatusSide({ slots, room, areaOpen, moreOpen, onMore, onHidden, 
   return (
     <View
       testID="status-side"
+      onLayout={(bounds) => onWidth?.(bounds.width)}
       style={{
         marginLeft: "auto",
         flexDirection: "row",

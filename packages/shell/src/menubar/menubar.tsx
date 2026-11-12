@@ -10,7 +10,9 @@
  * published its own menus (app-menus/) has them here while one of its
  * windows is focused, in place of File, Edit, and View. The bar is one row:
  * when the status side runs out of room, its items go into "…"
- * (menubar-status.tsx), never the menus.
+ * (menubar-status.tsx), never the menus. While the person talks to Dashi its
+ * chip shows in the room between the two, over the bar, moving neither
+ * (voice/chip.tsx).
  */
 
 import { LOGO, useColors } from "@dashi/ui";
@@ -20,6 +22,7 @@ import { type AppMenuStore, useAppMenus } from "../app-menus/index.ts";
 import { type BarMenuId, barMenus, titleStop, useMenus } from "../menus/index.ts";
 import type { App } from "../shared/apps/index.ts";
 import type { ToplevelStore } from "../toplevels.ts";
+import { type ChipSource, VoiceChip } from "../voice/index.ts";
 import { statusRoom } from "./lib/menubar-fit.ts";
 import { Title } from "./lib/menubar-items.tsx";
 import { titleLabel, useBarStops } from "./lib/menubar-keys.ts";
@@ -34,6 +37,8 @@ export interface MenuBarProps extends StatusSources {
   appMenus: AppMenuStore;
   /** The installed app a window's app id stands for (the Dock's match), for its name. */
   installed?: (appId: string) => App | undefined;
+  /** Talking to Dashi: its chip, laid over the room between the menus and the status side (voice/chip.tsx). */
+  voice?: ChipSource;
 }
 
 export function MenuBar(props: MenuBarProps) {
@@ -47,6 +52,7 @@ export function MenuBar(props: MenuBarProps) {
   // The room the menus leave the status side: the bar's width and the menus' (both measured).
   const [barWidth, setBarWidth] = useState<number | null>(null);
   const [menusWidth, setMenusWidth] = useState<number | null>(null);
+  const [statusWidth, setStatusWidth] = useState<number | null>(null);
   const appName = useBarName(apps, toplevels, installed, frozenName);
   const openMenu = popover?.kind === "menu" ? popover.id : null;
   // Held while a popover is open, like the name (app-menus/store.ts).
@@ -120,7 +126,17 @@ export function MenuBar(props: MenuBarProps) {
           statusStops.current = stops;
         }}
         accessible={accessible()}
+        onWidth={setStatusWidth}
       />
+      {props.voice && (
+        <VoiceChip
+          voice={props.voice}
+          bar={barWidth}
+          menus={menusWidth}
+          status={statusWidth}
+          {...(props.reduceMotion ? { reduceMotion: props.reduceMotion } : {})}
+        />
+      )}
     </View>
   );
 }

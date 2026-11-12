@@ -29,6 +29,7 @@ import {
 import { isCatalogList } from "../shared/applet-store/catalogs.ts";
 import { type Check, dig, isBoolean, isPhotoPath, isRaw, numberIn, type Raw, readFields } from "../shared/settings/index.ts";
 import { CLOCK_SECTION, type ClockSettings, REGION_SECTION, type RegionSettings } from "../shared/time/index.ts";
+import { isTalkKeyId, isVoiceId, type VoiceSettings } from "../voice/index.ts";
 import type {
   AgentsSettings,
   AppearanceSettings,
@@ -93,6 +94,7 @@ export const SECTIONS = {
   },
   screenSharing: { path: ["screenSharing"], fields: { clients: (value) => Array.isArray(value) && value.length <= 64 && value.every(isProgramPath) } },
   applets: { path: ["applets"], fields: { catalogs: isCatalogList } },
+  voice: { path: ["voice"], fields: { on: isBoolean, key: isTalkKeyId, voice: isVoiceId } },
 } as const satisfies Record<string, { path: readonly string[]; fields: Record<string, Check> }>;
 
 export type Sections = Omit<SettingsData, "displays">;
@@ -146,5 +148,6 @@ export function readSettings(raw: unknown): SettingsData {
     clipboard: readSection(root, "clipboard") as ClipboardSettings,
     screenSharing: readSection(root, "screenSharing") as ScreenSharingSettings,
     applets: readSection(root, "applets") as AppletsSettings,
+    voice: readSection(root, "voice") as VoiceSettings,
   };
 }

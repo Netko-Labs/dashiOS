@@ -53,6 +53,8 @@ export function personRunner(parts: PersonParts): (call: Call, confirm: (questio
       browser: { link: () => browser.current(), whenConnected: (ms) => browser.whenConnected(ms), allowSite: async () => true, mayUse: () => true, tab: null },
       alone: parts.alone,
       confirm,
+      // A person has no one to ask but themselves.
+      question: async () => ({ none: "no-answer" }),
       signal,
     });
   };

@@ -105,7 +105,8 @@ crates/dashi-comp/src/
                     sheets (a window attached under another's title bar: IPC `attach`)
   input/            keyboard and pointer routing, decorations, constraints, gestures; a still pointer follows windows moving under it (follow.rs)
   keys/             keymap, bindings, ❖ phases, snippet keywords (snippets.rs), ❖-click (super_click.rs),
-                    keys while locked (locked.rs)
+                    keys while locked (locked.rs),
+                    the keys the shell holds (held.rs: IPC `held-keys`, the talk key)
   xwayland/         Xwayland and the X11 window manager
   ipc/              socket, framing, who connected, the method table (who may ask what), methods/
   background.rs     blocking work (PNG encoding, file IO) on a thread, back as a calloop event

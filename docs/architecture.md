@@ -94,6 +94,9 @@ systemd --user
   and speaks what the shell gives it (Kokoro), on ONNX Runtime, all on the
   machine. It has no network: a unit of its own fetches the models when the
   person turns Voice on. It refuses every caller in an agent's cgroup.
+  The shell's side is `packages/shell/src/voice/` (docs/voice.md, "The
+  shell's side"): the talk key (a key the compositor holds for the shell),
+  the menu bar's chip and captions, Settings › Voice, and `ask_person`.
 - **dashi-agent** (`session/dashi-agent`, `src/agents/sandbox.ts`) runs an
   agent in the agent sandbox, a `dashi-agent-*.scope` with bubblewrap, so it
   can use secrets through Dashi but never read them.
