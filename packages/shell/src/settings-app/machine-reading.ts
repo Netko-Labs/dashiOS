@@ -41,7 +41,15 @@ export interface SoundReading {
   /** Each app playing sound; `output` is "default" or the output's name. */
   apps: AppReading[];
   /** The apps recording, and from which input. */
-  recording: Array<{ name: string; input: string }>;
+  recording: RecordingReading[];
+}
+
+/** One stream of an app that has several (a browser's tabs). */
+export interface StreamReading {
+  title: string;
+  playing: boolean;
+  level: number;
+  muted: boolean;
 }
 
 export interface AppReading {
@@ -50,9 +58,27 @@ export interface AppReading {
   level: number;
   muted: boolean;
   output: string;
+  /** Its streams, when it has more than one; else none. */
+  streams: StreamReading[];
+}
+
+/** An app that records now. */
+export interface RecordingReading {
+  name: string;
+  /** What it records from now: an input's name, or "this computer's sound". */
+  input: string;
+  /** How much of the input it takes, 0 to 1, and whether it is muted. */
+  level: number;
+  muted: boolean;
+  /** The input chosen for it: "default", or an input's name. */
+  recordsFrom: string;
 }
 
 export type AppVolumeOutcome = { ok: true; app: AppReading } | { ok: false; reason: "unavailable" | "none" | "many" | "no-output" | "failed" };
+
+export type AppInputOutcome =
+  | { ok: true; app: RecordingReading }
+  | { ok: false; reason: "unavailable" | "none" | "many" | "no-input" | "own-sound" | "failed" };
 
 export type OutputOutcome = { ok: true; name: string; changed: boolean } | { ok: false; reason: "none" | "many" | "failed" };
 
@@ -83,6 +109,8 @@ export interface MachineDesktop {
   setVolume(target: "output" | "input", change: { level?: number; muted?: boolean }): Promise<Volume | null>;
   /** One app's level, mute, and output (a name from `sound`, or "default"). */
   setAppVolume(app: string, change: { level?: number; muted?: boolean; output?: string }): Promise<AppVolumeOutcome>;
+  /** One recording app's level, mute, and input (a name from `sound`, or "default"). */
+  setAppInput(app: string, change: { level?: number; muted?: boolean; input?: string }): Promise<AppInputOutcome>;
   power(): Promise<PowerReading>;
   setPowerProfile(id: ProfileId): Promise<"ok" | "unavailable" | "failed">;
   account(): Promise<AccountReading | null>;

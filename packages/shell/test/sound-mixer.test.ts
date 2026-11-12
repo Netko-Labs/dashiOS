@@ -10,7 +10,7 @@ import { GraphMap, JsonArrays } from "../src/sound/apps/lib/graph-map.ts";
 import type { ProcessLook } from "../src/sound/apps/lib/identity.ts";
 import { streamOwners } from "../src/sound/apps/lib/owners.ts";
 import { parseDump } from "../src/sound/lib/parse-dump.ts";
-import { link, node, vmGraph } from "./fixtures/pw-graph.ts";
+import { link, metadata, node, vmGraph } from "./fixtures/pw-graph.ts";
 import { catalog } from "./support/sound-mixer.ts";
 import { fakeClockEachTest } from "./support/time.ts";
 
@@ -22,16 +22,18 @@ describe("parseGraph: pw-dump as streams", () => {
 
   test("outputs, and the default", () => {
     expect(graph.outputs).toEqual([
-      { id: 51, name: "mixer-speakers", label: "Speakers" },
-      { id: 56, name: "mixer-headphones", label: "Headphones" },
+      { id: 51, serial: 1051, name: "mixer-speakers", label: "Speakers" },
+      { id: 56, serial: 1056, name: "mixer-headphones", label: "Headphones" },
     ]);
+    expect(graph.inputs).toEqual([{ id: 62, serial: 1062, name: "mixer-mic", label: "Microphone" }]);
     expect(graph.defaultOutput).toBe("mixer-speakers");
   });
 
   test("a native stream: its level is the cube root, its device from its links", () => {
     expect(byId(64)).toMatchObject({ direction: "play", appName: "pw-play", pid: 228856, secPid: 228856, pulse: false, running: true, muted: false });
     expect(byId(64)?.level).toBeCloseTo(0.55, 3);
-    expect(byId(64)?.device).toEqual({ id: 51, name: "mixer-speakers", label: "Speakers", kind: "output" });
+    expect(byId(64)?.device).toEqual({ id: 51, serial: 1051, name: "mixer-speakers", label: "Speakers", kind: "output" });
+    expect(byId(64)?.serial).toBe(1064);
   });
 
   test("a Pulse stream: the pid it claims (a string), muted, and pipewire-pulse's socket pid", () => {
@@ -53,7 +55,29 @@ describe("parseGraph: pw-dump as streams", () => {
   });
 
   test("objects that aren't what they should be are skipped", () => {
-    expect(parseGraph([null, 3, { id: "x" }, { id: 1, type: "PipeWire:Interface:Node" }])).toEqual({ streams: [], outputs: [], defaultOutput: null });
+    expect(parseGraph([null, 3, { id: "x" }, { id: 1, type: "PipeWire:Interface:Node" }])).toEqual({
+      streams: [],
+      outputs: [],
+      inputs: [],
+      defaultOutput: null,
+    });
+  });
+
+  test("a target is told as the device's node.name, whether the metadata holds its serial or its name", () => {
+    const target = (value: unknown) => {
+      const objects = vmGraph().map((object) =>
+        object.type === "PipeWire:Interface:Metadata" ? metadata(33, [{ subject: 84, key: "target.object", type: "Spa:Id", value }]) : object,
+      );
+      return parseGraph(objects).streams.find((stream) => stream.id === 84)?.target;
+    };
+    // WirePlumber writes the serial (a number, or one in text) when it restores an app's output; Dashi writes it too.
+    expect(target(1056)).toBe("mixer-headphones");
+    expect(target("1056")).toBe("mixer-headphones");
+    expect(target("mixer-headphones")).toBe("mixer-headphones");
+    expect(target({ name: "mixer-headphones" })).toBe("mixer-headphones");
+    // A serial that names nothing (the device went), and WirePlumber's "none": the default.
+    expect(target(4040)).toBeNull();
+    expect(target("-1")).toBeNull();
   });
 
   test("a stream without a Props param is at full volume, unmuted", () => {
@@ -127,7 +151,9 @@ describe("a real dump (the VM, PipeWire 1.6.11)", () => {
       ["pw-play", 1, "Speakers"],
       ["paplay", 0.6, "Speakers"],
     ]);
-    expect(rows.recording).toEqual([{ key: "sound:pw-record", name: "pw-record", icon: catalog.genericIcon, input: "Microphone", monitor: false }]);
+    expect(rows.recording).toMatchObject([{ key: "sound:pw-record", name: "pw-record", icon: catalog.genericIcon, input: "Microphone", monitor: false }]);
+    // The recorder's meter is pointed at the microphone it records from, by the serial the real dump gives it.
+    expect(rows.recording[0]?.parts).toEqual([{ id: 78, title: "rec.wav", level: 1, muted: false, playing: true, meter: 8371 }]);
     expect(graph.outputs.map((output) => output.label)).toEqual(["Speakers", "Headphones"]);
   });
 });

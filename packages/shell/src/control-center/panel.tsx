@@ -31,7 +31,8 @@ import { PanelEditor } from "./lib/edit.tsx";
 import { ControlGrid } from "./lib/grid.tsx";
 import { PageView } from "./lib/pages.tsx";
 import { panelKey } from "./lib/panel-keys.ts";
-import { PageKeysContext, PageOrigin, usePageKeys } from "./page-parts.tsx";
+import { PageOrigin } from "./page-parts.tsx";
+import { PageKeysContext, usePageKeys } from "./page-stops.ts";
 import { TILE_RADIUS } from "./tiles.tsx";
 
 export const CONTROL_CENTER_PANEL = { width: GRID.width, padding: GRID.padding, gap: GRID.gap } as const;

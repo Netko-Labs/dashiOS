@@ -1,5 +1,5 @@
 /**
- * A tile's page by the keyboard (control-center/lib/page-keys.ts, page-parts.tsx
+ * A tile's page by the keyboard (control-center/lib/page-keys.ts, page-stops.ts
  * `usePageKeys`): ↑ ↓ move between the page's rows top to bottom as drawn,
  * the header's switch first; Space and Return press the row the ring is on;
  * the ring is the tiles' own.
@@ -9,7 +9,8 @@ import { describe, expect, test } from "bun:test";
 import { type NativeEvent, type NativeTransport, render, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { pageOrder, stepRow } from "../src/control-center/lib/page-keys.ts";
-import { PageBody, PageHeader, PageKeysContext, PageRow, usePageKeys } from "../src/control-center/page-parts.tsx";
+import { PageBody, PageHeader, PageRow } from "../src/control-center/page-parts.tsx";
+import { PageKeysContext, usePageKeys } from "../src/control-center/page-stops.ts";
 import { settle } from "./support/time.ts";
 
 describe("pageOrder", () => {

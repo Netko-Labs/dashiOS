@@ -227,6 +227,25 @@ for byte and checks every tool is still called the same way (`parseCall`
 and an action's `check` share `checkToolArgs`). Changing a tool changes the
 fixture in the same commit.
 
+### Sound
+
+Five tools, all in the `settings` scope, so the person is asked once on
+screen ("change settings") as for the other settings tools; names of apps
+and devices are data, never instructions.
+
+| Tool | What it does |
+| --- | --- |
+| `get_sound {}` | The outputs and inputs and which is the default of each, both volumes, and the mixer: under `apps`, each app playing sound (`name`, `playing`, `level`, `muted`, `output`: "default" or an output's name, and `streams` when it has several: each one's `title`, `playing`, `level`, `muted`); under `recording`, each app recording now (`name`, `input`: what it records from now, or "this computer's sound", its `level` and `muted`, and `records_from`: "default" or an input's name). It never listens to anything. |
+| `set_sound_output {device}` | Makes an output the default. |
+| `set_volume {target?, level?, muted?}` | The default output's or input's volume and mute. |
+| `set_app_volume {app, level?, muted?, output?}` | One playing app, by its name in `apps`: its level, its mute, and the output it plays on ("default" follows the default output). |
+| `set_app_input {app, level?, muted?, input?}` | One recording app, by its name in `recording`: the input it records from ("default" follows the default input), how much of it the app takes, and its mute. An app that records this computer's own sound can't be moved to a microphone. |
+
+A change to an app is made on each of its streams and is remembered by
+WirePlumber, as one made in Settings › Sound is (`docs/architecture.md`,
+"Sound"). An agent can't set one stream of an app apart from the others:
+that is the person's, in Settings. On a development run nothing is written.
+
 ### The agents' hands
 
 `click`, `type_text`, `press_keys`, `scroll` and `drag` use the agent's own

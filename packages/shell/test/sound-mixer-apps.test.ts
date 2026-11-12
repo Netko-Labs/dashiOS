@@ -8,6 +8,7 @@ import { DASHI_KEY } from "../src/shared/processes/index.ts";
 import { micIndicator, parseGraph, rowsFrom, type Stream } from "../src/sound/apps/index.ts";
 import type { ProcessLook } from "../src/sound/apps/lib/identity.ts";
 import { streamOwners } from "../src/sound/apps/lib/owners.ts";
+import { streamTitle } from "../src/sound/apps/rows.ts";
 import { client, link, node, vmGraph } from "./fixtures/pw-graph.ts";
 import { catalog, owner } from "./support/sound-mixer.ts";
 import { fakeClockEachTest, flush } from "./support/time.ts";
@@ -56,11 +57,48 @@ describe("app rows", () => {
   });
 
   test("recording: the microphone's apps by name, a monitor apart", () => {
-    expect(rows.recording).toEqual([
+    expect(rows.recording.map(({ key, name, icon, input, monitor }) => ({ key, name, icon, input, monitor }))).toEqual([
       { key: "sound:pw-record", name: "pw-record", icon: catalog.genericIcon, input: "Microphone", monitor: false },
       { key: "signal", name: "Signal", icon: "/icons/signal.png", input: "Microphone", monitor: false },
       { key: "sound:OBS", name: "OBS", icon: catalog.genericIcon, input: "Speakers", monitor: true },
     ]);
+  });
+
+  test("an app's streams are its parts: each one's title, level and mute, and what its meter listens to", () => {
+    expect(app("Helium")?.parts).toEqual([
+      { id: 84, title: "Playback", level: 0.5, muted: false, playing: true, meter: 1084 },
+      { id: 66, title: "Playback 2", level: 0.7, muted: false, playing: false, meter: 1066 },
+    ]);
+    expect(app("pw-play")?.parts.map((part) => part.title)).toEqual(["tone-a.wav"]);
+    // A player names its stream by the file's path: the file's name is enough.
+    expect(streamTitle("/home/alexk/Music/Night drive.flac")).toBe("Night drive.flac");
+    expect(streamTitle("  ")).toBe("Sound");
+    // A stream that names nothing is "Sound".
+    const bare = [
+      client(1, { "application.name": "Game", "application.process.id": 10, "pipewire.sec.pid": 10 }),
+      node(2, { "media.class": "Stream/Output/Audio", "client.id": 1 }),
+      node(3, { "media.class": "Stream/Output/Audio", "client.id": 1, "media.name": "Voice chat" }),
+      node(4, { "media.class": "Stream/Output/Audio", "client.id": 1 }),
+    ];
+    expect(rowsFrom(parseGraph(bare).streams, owner).apps[0]?.parts.map((part) => part.title)).toEqual(["Sound", "Voice chat", "Sound 2"]);
+  });
+
+  test("an app that records: its own level and mute, and a meter on the input it records from", () => {
+    const signal = rows.recording.find((each) => each.key === "signal");
+    expect(signal).toMatchObject({ streams: [94], level: 1, muted: false, target: null });
+    // A recording stream can't be listened to itself: its meter is the microphone's (the node's serial).
+    expect(signal?.parts).toEqual([{ id: 94, title: "call", level: 1, muted: false, playing: true, meter: 1062 }]);
+    expect(rows.recording.find((each) => each.key === "sound:OBS")?.parts[0]?.meter).toBe(1051);
+  });
+
+  test("an app that records a microphone and this computer's sound is named by the microphone", () => {
+    const graph = [
+      ...vmGraph(),
+      node(97, { "media.class": "Stream/Input/Audio", "client.id": 95, "application.name": "OBS", "media.name": "mic" }),
+      link(110, 62, 97),
+    ];
+    const obs = rowsFrom(parseGraph(graph).streams, owner).recording.find((each) => each.key === "sound:OBS");
+    expect(obs).toMatchObject({ streams: [96, 97], input: "Microphone", monitor: false });
   });
 
   test("Dashi's own level meter is hidden; an app the shell launched keeps its name", () => {
@@ -110,7 +148,7 @@ describe("app rows", () => {
 });
 
 describe("the microphone indicator", () => {
-  const recording = (name: string, monitor = false) => ({ key: name, name, icon: "", input: monitor ? "Speakers" : "Microphone", monitor });
+  const recording = (name: string, monitor = false) => ({ name, monitor });
 
   test("off with nobody recording, or only this computer's sound", () => {
     expect(micIndicator([])).toEqual({ on: false, names: [], words: "" });

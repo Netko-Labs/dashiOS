@@ -7,6 +7,7 @@ export {
   type PipeWireWatch,
   pipewireWatch,
   playOnLabel,
+  type StreamSound,
   startAppMixer,
   useAppNames,
   useMicWords,
@@ -19,4 +20,5 @@ export { fakeMeter, type LevelMeter, pipewireMeter } from "./meter.ts";
 export { MicPill } from "./mic-pill.tsx";
 export { SoundPage } from "./page.tsx";
 export { type SoundState, SoundStore, useSound } from "./store.ts";
+export { meterShown, type StreamMeters, streamMeters, useMeterLevel } from "./stream-meters.ts";
 export type { AudioBackend } from "./types.ts";

@@ -43,6 +43,15 @@ export async function setBluetoothConnection(call: Extract<Call, { name: "set_bl
   }
 }
 
+/** A recording app as agents read it. */
+const recordingJson = (app: { name: string; input: string; level: number; muted: boolean; recordsFrom: string }) => ({
+  name: app.name,
+  input: app.input,
+  level: app.level,
+  muted: app.muted,
+  records_from: app.recordsFrom,
+});
+
 export async function getSound(ctx: RunContext): Promise<ToolResult> {
   ctx.status("Checking sound settings");
   const sound = await ctx.desktop.machine.sound();
@@ -54,7 +63,7 @@ export async function getSound(ctx: RunContext): Promise<ToolResult> {
     input_volume: volume(sound.inputVolume),
     show_sound_in_menu_bar: sound.showInMenuBar,
     apps: sound.apps,
-    recording: sound.recording,
+    recording: sound.recording.map(recordingJson),
   });
 }
 
@@ -104,6 +113,40 @@ export async function setAppVolume(call: Extract<Call, { name: "set_app_volume" 
       return toolError(`No output is called “${call.output ?? ""}”; get_sound shows them, or use "default".`);
     case "failed":
       return toolError(`Couldn't change “${call.app}”. It may have stopped playing.`);
+  }
+}
+
+export async function setAppInput(call: Extract<Call, { name: "set_app_input" }>, ctx: RunContext): Promise<ToolResult> {
+  ctx.status(
+    call.level !== undefined
+      ? "Setting how much an app records"
+      : call.muted !== undefined
+        ? `${call.muted ? "Muting" : "Unmuting"} what an app records`
+        : "Changing what an app records from",
+  );
+  const result = await ctx.desktop.machine.setAppInput(call.app, {
+    ...(call.level === undefined ? {} : { level: call.level }),
+    ...(call.muted === undefined ? {} : { muted: call.muted }),
+    ...(call.input === undefined ? {} : { input: call.input }),
+  });
+  if (result.ok) {
+    const { app } = result;
+    const where = app.recordsFrom === "default" ? "the default input" : `“${app.recordsFrom}”`;
+    return text(`“${app.name}” records from ${where} at ${app.level}${app.muted ? ", muted" : ""}.`, recordingJson(app));
+  }
+  switch (result.reason) {
+    case "unavailable":
+      return toolError("App inputs aren't available on this computer.");
+    case "none":
+      return toolError(`No app called “${call.app}” is recording; get_sound lists the apps that are, under recording.`);
+    case "many":
+      return toolError(`More than one app is called “${call.app}”; the person can choose in Settings > Sound.`);
+    case "no-input":
+      return toolError(`No input is called “${call.input ?? ""}”; get_sound shows them, or use "default".`);
+    case "own-sound":
+      return toolError(`“${call.app}” records this computer's own sound, which is not an input to choose.`);
+    case "failed":
+      return toolError(`Couldn't change “${call.app}”. It may have stopped recording.`);
   }
 }
 

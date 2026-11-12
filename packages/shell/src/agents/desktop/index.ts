@@ -11,6 +11,7 @@ export {
   getPower,
   getSound,
   listBluetoothDevices,
+  setAppInput,
   setAppVolume,
   setBluetoothConnection,
   setPowerProfile,

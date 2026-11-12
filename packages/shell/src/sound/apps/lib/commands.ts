@@ -1,11 +1,21 @@
 /**
- * Changing an app's sound, on each of its streams, with PipeWire's own tools
- * (separate MIT programs, structured arguments only): `wpctl set-volume`
- * (capped at 100%, as the output volume is) and `wpctl set-mute` by node id,
- * and `pw-metadata <id> target.object <node.name>` to send a stream to an
- * output, which WirePlumber carries out at once; deleting the key sends it
- * back to the default. On a development run nothing is written (`heldControl`):
- * the store keeps the change in memory, as the output volume's stand-in does.
+ * Changing a stream's sound with PipeWire's own tools (separate MIT
+ * programs, structured arguments only): `wpctl set-volume` (capped at 100%,
+ * as the output volume is) and `wpctl set-mute` by node id, and
+ * `pw-metadata <id> target.object <serial> Spa:Id` to send a stream to an
+ * output, or have it record from an input, which WirePlumber carries out at
+ * once; deleting the key sends it back to the default.
+ *
+ * WirePlumber remembers all three by itself (its stream state, per app:
+ * `application.id`, else `application.name`, else `media.name`), and gives
+ * them to the app's next stream: the volume and mute whenever the stream's
+ * own change, and the target only when `target.object` holds the device's
+ * object.serial, which it stores as the device's node.name. A target given
+ * as a node.name is carried out but forgotten, so a name is used only for a
+ * device that has no serial. Dashi keeps no table of its own.
+ *
+ * On a development run nothing is written (`heldControl`): the store keeps
+ * the change in memory, as the output volume's stand-in does.
  */
 
 import { run as defaultRun, type Run } from "../../../system/exec.ts";
@@ -26,12 +36,22 @@ export function muteCommands(ids: readonly number[], muted: boolean): string[][]
   return ids.filter(isNodeId).map((id) => ["wpctl", "set-mute", String(id), muted ? "1" : "0"]);
 }
 
-/** Sends the streams to `output` (a node.name), or back to the default with null. A name that isn't one gives no commands. */
-export function moveCommands(ids: readonly number[], output: string | null): string[][] {
-  if (output !== null && !isNodeName(output)) return [];
-  return ids
-    .filter(isNodeId)
-    .map((id) => (output === null ? ["pw-metadata", "-d", String(id), "target.object"] : ["pw-metadata", String(id), "target.object", output]));
+/** A device to send streams to: its object.serial (what WirePlumber remembers it by), and its node.name for one without. */
+export interface MoveTarget {
+  serial: number | null;
+  name: string;
+}
+
+/** Sends the streams to `target`, or back to the default with null. A target that can't be named gives no commands. */
+export function moveCommands(ids: readonly number[], target: MoveTarget | null): string[][] {
+  const nodes = ids.filter(isNodeId);
+  if (target === null) return nodes.map((id) => ["pw-metadata", "-d", String(id), "target.object"]);
+  if (target.serial !== null && isNodeId(target.serial)) {
+    const serial = String(target.serial);
+    return nodes.map((id) => ["pw-metadata", String(id), "target.object", serial, "Spa:Id"]);
+  }
+  if (!isNodeName(target.name)) return [];
+  return nodes.map((id) => ["pw-metadata", String(id), "target.object", target.name]);
 }
 
 export interface MixerControl {
@@ -39,7 +59,8 @@ export interface MixerControl {
   readonly held: boolean;
   setLevel(ids: readonly number[], level: number): Promise<boolean>;
   setMuted(ids: readonly number[], muted: boolean): Promise<boolean>;
-  setOutput(ids: readonly number[], output: string | null): Promise<boolean>;
+  /** Sends playing streams to an output, or recording ones to an input; null is the default. */
+  setTarget(ids: readonly number[], target: MoveTarget | null): Promise<boolean>;
 }
 
 async function runAll(run: Run, commands: readonly string[][]): Promise<boolean> {
@@ -53,12 +74,12 @@ export function pipewireControl(run: Run = defaultRun): MixerControl {
     held: false,
     setLevel: (ids, level) => runAll(run, volumeCommands(ids, level)),
     setMuted: (ids, muted) => runAll(run, muteCommands(ids, muted)),
-    setOutput: (ids, output) => runAll(run, moveCommands(ids, output)),
+    setTarget: (ids, target) => runAll(run, moveCommands(ids, target)),
   };
 }
 
 /** A development run's: nothing reaches the developer's machine. */
 export function heldControl(): MixerControl {
   const ok = async () => true;
-  return { held: true, setLevel: ok, setMuted: ok, setOutput: ok };
+  return { held: true, setLevel: ok, setMuted: ok, setTarget: ok };
 }

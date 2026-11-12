@@ -38,6 +38,8 @@ export function menuStores(options: MenusOptions, closeMenus: () => void): MenuS
     bluetooth: options.bluetooth.radio,
   });
   const devices = new DeviceStore({
+    // On a development run the volume slider is remembered here, never written to the developer's machine.
+    standIn: options.wifi.fake,
     hotspotRadio: radios.hotspot,
     volumeChanged: (volume) => options.system.publish("volume", volume),
     ...(pipewire?.available ? { followVolume: followOutputVolume(pipewire) } : {}),

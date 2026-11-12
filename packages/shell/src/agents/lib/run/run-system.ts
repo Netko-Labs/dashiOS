@@ -18,6 +18,7 @@ export const systemHandlers = {
   set_sound_output: (call, ctx) => desktop.setSoundOutput(call, ctx),
   set_volume: (call, ctx) => desktop.setVolume(call, ctx),
   set_app_volume: (call, ctx) => desktop.setAppVolume(call, ctx),
+  set_app_input: (call, ctx) => desktop.setAppInput(call, ctx),
   get_power: (_call, ctx) => desktop.getPower(ctx),
   set_power_profile: (call, ctx) => desktop.setPowerProfile(call, ctx),
   get_account: (_call, ctx) => desktop.getAccount(ctx),
@@ -49,6 +50,7 @@ export const systemHandlers = {
   | "set_sound_output"
   | "set_volume"
   | "set_app_volume"
+  | "set_app_input"
   | "get_power"
   | "set_power_profile"
   | "get_account"

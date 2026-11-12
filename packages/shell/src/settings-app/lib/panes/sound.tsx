@@ -7,19 +7,20 @@
  * microphone, the input is one row that says so, and none of its controls
  * (a slider for a microphone that isn't there would say there is one). The
  * meter listens to the microphone only while this pane is on screen, reads
- * the loudness, and keeps nothing. Each app's volume, mute and output are
- * the Apps card under the output's volume, and the apps using the
- * microphone a card under the input (sound-apps.tsx). The title's detail is
- * the output in use (VS-2).
+ * the loudness, and keeps nothing. The full mixer is here: each app's
+ * volume, mute, streams and output are the Apps card under the output's
+ * volume (sound-apps.tsx), and the apps that record a card under the input,
+ * each with its level, mute and microphone (sound-recording.tsx). The
+ * title's detail is the output in use (VS-2).
  */
 
 import { CHECK } from "@dashi/ui";
-import { Svg, View } from "@mirinjs/metal";
+import { Svg } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { speakerGlyph } from "../../../glyphs.ts";
 import { Caption, Group, Note } from "../../../shared/cards/index.ts";
 import { MIC, MIC_OFF, MUTE, VOLUME as VOLUME_KNOB } from "../../../shared/settings/index.ts";
-import { type LevelMeter, type SoundState, type SoundStore, useLevels, useSound } from "../../../sound/index.ts";
+import { type LevelMeter, meterShown, type SoundState, type SoundStore, useLevels, useSound } from "../../../sound/index.ts";
 import type { Volume } from "../../../system/volume.ts";
 import { useColors } from "../../colors.ts";
 import { MICROPHONE } from "../../glyphs-machine.ts";
@@ -27,7 +28,9 @@ import type { PaneServices } from "../../services.ts";
 import { Page, Slider, Switch } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";
 import { Failure, ListRow } from "./parts.tsx";
-import { AppsCard, RecordingCard } from "./sound-apps.tsx";
+import { AppsCard } from "./sound-apps.tsx";
+import { MeterBar } from "./sound-mixer-parts.tsx";
+import { RecordingCard } from "./sound-recording.tsx";
 
 const VOLUME = { min: 0, max: 1, step: 0.01 } as const;
 
@@ -123,29 +126,18 @@ function VolumeRow({
   );
 }
 
-/** How fast a bar falls: the meter reads the loudest sample of each 100 ms, which would flicker as a bar. */
-const FALL = 0.25;
-
+/** The microphone's meter: 200 wide; it listens only while this pane shows it. */
 function InputMeter({ meter }: { meter: LevelMeter }) {
-  const colors = useColors();
   const [level, setLevel] = useState(0);
   const shown = useRef(0);
   useEffect(() => {
     const stop = meter.start((next) => {
-      shown.current = Math.max(next, shown.current - FALL);
+      shown.current = meterShown(next, shown.current);
       setLevel(shown.current);
     });
     return stop;
   }, [meter]);
-  const width = 200;
-  return (
-    <View testID="input-meter" style={{ width, height: 8, borderRadius: 4, overflow: "hidden", backgroundColor: colors.track }}>
-      <View
-        testID="input-meter-fill"
-        style={{ width: Math.round(width * level), height: 8, borderRadius: 4, backgroundColor: level > 0.85 ? colors.critical : colors.selection }}
-      />
-    </View>
-  );
+  return <MeterBar testID="input-meter" level={level} width={200} height={8} />;
 }
 
 /** The input: its devices, volume, mute and meter while there is a microphone; else one row that says there is none. */
@@ -205,10 +197,10 @@ export function SoundPane({ services }: { services: PaneServices }) {
         onLevel={(level) => void levels.setLevel("output", level)}
         onMute={(muted) => void levels.setMuted("output", muted)}
       />
-      {services.mixer && <AppsCard mixer={services.mixer} />}
+      {services.mixer && <AppsCard mixer={services.mixer} meters={services.meters} />}
       <Caption above>Input</Caption>
       <Input services={services} volume={volumes.input} />
-      {services.mixer && <RecordingCard mixer={services.mixer} />}
+      {services.mixer && <RecordingCard mixer={services.mixer} meters={services.meters} />}
       <Caption above>Menu Bar</Caption>
       <Group>
         <Setting id="sound/show-in-menu-bar" control="sound-menubar" />

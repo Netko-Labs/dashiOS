@@ -8,85 +8,19 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { type Bounds, Image, Svg, Text, View } from "@mirinjs/metal";
-import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { Image, Svg, Text, View } from "@mirinjs/metal";
+import { createContext, type ReactNode, useContext } from "react";
 import { useGrow } from "../shared/controls/motion.ts";
 import { useControlColors } from "../shared/controls/palette.ts";
 import { FocusRing } from "../shared/controls/parts.tsx";
 import { CHEVRON_LEFT as BACK } from "./glyphs.ts";
 import { GRID } from "./layout.ts";
-import { pageOrder, stepRow } from "./lib/page-keys.ts";
+import { usePageKey } from "./page-stops.ts";
 
 /** Where the page's tile was in the grid; the header grows from there. Null: it was opened some other way. */
 export const PageOrigin = createContext<{ left: number; top: number; width: number } | null>(null);
 
 const INNER = GRID.width - 2 * GRID.padding;
-
-/** A row that can be pressed, as the page's keys know it (panel.tsx, page-keys.ts). */
-export interface PageKeyRow {
-  press: () => void;
-  y: number | null;
-}
-
-/** The page's keys: which row the ring is on, and the rows that can be pressed, by id. */
-export interface PageKeys {
-  focused: string | null;
-  rows: Map<string, PageKeyRow>;
-}
-
-/** The panel's page keys; none outside a panel (a page drawn on its own). */
-export const PageKeysContext = createContext<PageKeys | null>(null);
-
-/**
- * The keys of the page that is open (panel.tsx): what its rows read from
- * `PageKeysContext`, and `pageKey` for a key the panel didn't take: ↑ ↓
- * move between the rows top to bottom, Space and Return press the one the
- * ring is on. Another page, or the tiles again, starts from no row.
- */
-export function usePageKeys(page: string): { pageKeys: PageKeys; pageKey: (name: string) => void } {
-  const rows = useRef(new Map<string, PageKeyRow>());
-  const [focused, setFocused] = useState<string | null>(null);
-  const pageKeys = useMemo(() => ({ focused, rows: rows.current }), [focused]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: on each page change.
-  useEffect(() => setFocused(null), [page]);
-  const pageKey = (name: string): void => {
-    if (name === "up" || name === "down") {
-      const order = pageOrder([...rows.current].map(([id, row]) => ({ id, y: row.y })));
-      setFocused((now) => stepRow(order, now, name));
-      return;
-    }
-    if ((name === "space" || name === "enter") && focused !== null) rows.current.get(focused)?.press();
-  };
-  return { pageKeys, pageKey };
-}
-
-/**
- * A row the page's arrows reach: whether the ring is on it, and its
- * `onLayout`, which tells the keys where it is drawn. A row that can't be
- * pressed now (the output in use, the network joining) still takes the
- * ring, so choosing a row leaves the ring on it.
- */
-function usePageKey(id: string, press: (() => void) | undefined): { focused: boolean; onLayout: (bounds: Bounds) => void } {
-  const keys = useContext(PageKeysContext);
-  const latest = useRef(press);
-  latest.current = press;
-  const y = useRef<number | null>(null);
-  useEffect(() => {
-    if (!keys) return;
-    keys.rows.set(id, { press: () => latest.current?.(), y: y.current });
-    return () => {
-      keys.rows.delete(id);
-    };
-  }, [keys, id]);
-  return {
-    focused: keys?.focused === id,
-    onLayout: (bounds) => {
-      y.current = bounds.y;
-      const row = keys?.rows.get(id);
-      if (row) row.y = bounds.y;
-    },
-  };
-}
 
 /** The header's switch: 42 × 24, its knob at the right when on. */
 function HeaderSwitch({ testID, on, onChange }: { testID: string; on: boolean; onChange: (on: boolean) => void }) {

@@ -32,14 +32,22 @@ describe("the commands", () => {
     expect(muteCommands([70], false)).toEqual([["wpctl", "set-mute", "70", "0"]]);
   });
 
-  test("move: target.object by node.name, deleted for the default; never an option-looking name", () => {
-    expect(moveCommands([84], "mixer-headphones")).toEqual([["pw-metadata", "84", "target.object", "mixer-headphones"]]);
+  test("move: target.object by the device's serial, as WirePlumber remembers it; deleted for the default", () => {
+    expect(moveCommands([84, 66], { serial: 1056, name: "mixer-headphones" })).toEqual([
+      ["pw-metadata", "84", "target.object", "1056", "Spa:Id"],
+      ["pw-metadata", "66", "target.object", "1056", "Spa:Id"],
+    ]);
     expect(moveCommands([84, 66], null)).toEqual([
       ["pw-metadata", "-d", "84", "target.object"],
       ["pw-metadata", "-d", "66", "target.object"],
     ]);
-    expect(moveCommands([84], "-d")).toEqual([]);
-    expect(moveCommands([84], "alsa_output.pci-0000_00_1f.3.analog-stereo")).toHaveLength(1);
+  });
+
+  test("move: a device without a serial goes by its node.name, never an option-looking one", () => {
+    expect(moveCommands([84], { serial: null, name: "mixer-headphones" })).toEqual([["pw-metadata", "84", "target.object", "mixer-headphones"]]);
+    expect(moveCommands([84], { serial: null, name: "-d" })).toEqual([]);
+    expect(moveCommands([84], { serial: null, name: "alsa_output.pci-0000_00_1f.3.analog-stereo" })).toHaveLength(1);
+    expect(moveCommands([-1], { serial: 1056, name: "mixer-headphones" })).toEqual([]);
   });
 
   test("Play on's words", () => {
@@ -92,7 +100,9 @@ describe("the store", () => {
     expect(await mixer.setOutput("helium", null)).toBe(true);
     expect(await mixer.setOutput("helium", "not-an-output")).toBe(false);
     expect(await mixer.setLevel("nobody", 0.4)).toBe(false);
-    expect(control.calls).toEqual(["level 84,66 0.4", "mute 84,66 true", "output 84,66 null"]);
+    expect(await mixer.setOutput("helium", "mixer-speakers")).toBe(true);
+    expect(control.calls).toEqual(["level 84,66 0.4", "mute 84,66 true", "target 84,66 default", "target 84,66 mixer-speakers#1051"]);
+    expect(mixer.getSnapshot().apps.find((app) => app.key === "helium")?.target).toBe("mixer-speakers");
     // Raising a muted app unmutes it too.
     expect(await mixer.setLevel("sound:paplay", 0.6)).toBe(true);
     expect(control.calls.slice(-2)).toEqual(["level 70 0.6", "mute 70 false"]);
@@ -163,6 +173,66 @@ describe("the store", () => {
     expect(mixer.getSnapshot().recording.map((each) => each.name)).toEqual(["pw-record", "Signal", "OBS"]);
     mixer.stop();
     const none = new AppMixer({ graph: { available: false, start: () => () => {} }, control: heldControl(), owner });
-    expect(none.getSnapshot()).toEqual({ available: false, apps: [], recording: [], outputs: [] });
+    expect(none.getSnapshot()).toEqual({ available: false, apps: [], recording: [], outputs: [], inputs: [] });
+  });
+});
+
+describe("the store: one stream, and the apps that record", () => {
+  const started = () => {
+    const graph = pushedGraph();
+    const control = recordingControl();
+    const mixer = new AppMixer({ graph, control, owner });
+    mixer.start();
+    graph.push(vmGraph());
+    return { graph, control, mixer };
+  };
+  const helium = (mixer: AppMixer) => mixer.getSnapshot().apps.find((app) => app.key === "helium");
+
+  test("a stream's level and mute are made on it alone, and the app reads as its streams do", async () => {
+    const { control, mixer } = started();
+    expect(helium(mixer)?.parts.map((part) => [part.id, part.title, part.level])).toEqual([
+      [84, "Playback", 0.5],
+      [66, "Playback 2", 0.7],
+    ]);
+    expect(await mixer.setStreamLevel(66, 0.2)).toBe(true);
+    expect(helium(mixer)?.parts.map((part) => part.level)).toEqual([0.5, 0.2]);
+    expect(helium(mixer)?.level).toBe(0.5);
+    expect(await mixer.setStreamMuted(84, true)).toBe(true);
+    expect(helium(mixer)?.muted).toBe(false);
+    expect(await mixer.setStreamMuted(66, true)).toBe(true);
+    expect(helium(mixer)?.muted).toBe(true);
+    // Raising a muted stream unmutes it; a stream that isn't there is refused.
+    expect(await mixer.setStreamLevel(84, 0.9)).toBe(true);
+    expect(await mixer.setStreamLevel(4040, 0.9)).toBe(false);
+    expect(control.calls).toEqual(["level 66 0.2", "mute 84 true", "mute 66 true", "level 84 0.9", "mute 84 false"]);
+    mixer.stop();
+  });
+
+  test("a change to the whole app replaces what was set on its streams", async () => {
+    const { mixer } = started();
+    await mixer.setStreamLevel(66, 0.2);
+    await mixer.setLevel("helium", 0.6);
+    expect(helium(mixer)?.parts.map((part) => part.level)).toEqual([0.6, 0.6]);
+    expect(helium(mixer)?.level).toBe(0.6);
+    mixer.stop();
+  });
+
+  test("an app that records: its level, its mute, and the input it records from", async () => {
+    const { control, mixer } = started();
+    const signal = () => mixer.getSnapshot().recording.find((app) => app.key === "signal");
+    expect(mixer.getSnapshot().inputs).toEqual([{ id: 62, serial: 1062, name: "mixer-mic", label: "Microphone" }]);
+    expect(signal()).toMatchObject({ streams: [94], level: 1, muted: false, input: "Microphone", monitor: false, target: null });
+    expect(await mixer.setRecordingLevel("signal", 0.5)).toBe(true);
+    expect(await mixer.setRecordingMuted("signal", true)).toBe(true);
+    expect(await mixer.setInput("signal", "mixer-mic")).toBe(true);
+    expect(signal()).toMatchObject({ level: 0.5, muted: true, target: "mixer-mic" });
+    expect(await mixer.setInput("signal", null)).toBe(true);
+    // An output is no input, and a playing app's key is no recording row.
+    expect(await mixer.setInput("signal", "mixer-speakers")).toBe(false);
+    expect(await mixer.setInput("helium", "mixer-mic")).toBe(false);
+    expect(control.calls).toEqual(["level 94 0.5", "mute 94 true", "target 94 mixer-mic#1062", "target 94 default"]);
+    // Signal's playing side is its own row: nothing here touched it.
+    expect(mixer.getSnapshot().apps.some((app) => app.key === "signal")).toBe(false);
+    mixer.stop();
   });
 });

@@ -19,7 +19,8 @@ export const node = (id: number, props: Json, extra: { state?: string; volumes?:
     "change-mask": ["input-ports", "output-ports", "state", "props", "params"],
     state: extra.state ?? "running",
     error: null,
-    props: { "object.id": id, ...props },
+    // A node's serial here is its id and a thousand: what `target.object` holds, and what a meter is pointed at.
+    props: { "object.id": id, "object.serial": 1000 + id, ...props },
     params: {
       EnumFormat: [],
       Props: [

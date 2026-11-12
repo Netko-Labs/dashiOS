@@ -250,15 +250,38 @@ separate MIT programs, with structured arguments only; it links nothing.
   claimed pid for a Pulse one) and its parents, by itself or by its window;
   else its `application.name`. An app no desktop entry names gets the icon
   its stream names (`application.icon_name`) from the icon theme. Settings'
-  search finds each app by name, at its row in Sound's Apps card. Dashi's own streams (Settings' level meter,
-  the recorder, event sounds) are not rows. One row per app (`rows.ts`);
-  `wpctl set-volume`/`set-mute` on each of its streams, and
-  `pw-metadata <id> target.object <node.name>` to send it to an output
-  (`commands.ts`). WirePlumber remembers each app's volume and mute (per
-  `application.name`); Dashi keeps nothing. The store (`store.ts`) feeds
-  Control Center's Sound page, Settings › Sound, the menu bar's microphone
-  indicator and agents (`get_sound`, `set_app_volume`). On a development
-  run the host is read and never written: changes stay in memory.
+  search finds each app by name, at its row in Sound's Apps card. Dashi's own
+  streams (the level meters, the recorder, event sounds) are not rows. One
+  row per app, its streams the row's parts, and one row per app that
+  records (`rows.ts`). A change to an app is `wpctl set-volume`/`set-mute`
+  on each of its streams, to a stream on it alone, and
+  `pw-metadata <id> target.object <serial> Spa:Id` sends an app's streams
+  to an output, or has them record from an input (`commands.ts`).
+  **WirePlumber remembers; Dashi keeps no table.** Its stream state keys an
+  app by `application.id`, else `application.name`, else `media.name`, and
+  gives what it stored to the app's next stream, after a restart or a new
+  login: the volume and mute whenever they change, and the target only when
+  `target.object` holds the device's object.serial (it stores the device's
+  node.name; a target written as a node.name is carried out but forgotten).
+  What it can't do: remember two streams of one app apart (they share the
+  app's key, so the last one changed wins), or bring an app back to a
+  device that was away when the app started until its next stream. The
+  store (`store.ts`) feeds Control Center's Sound page (the short list),
+  Settings › Sound (the full mixer), the menu bar's microphone indicator
+  and agents (`get_sound`, `set_app_volume`, `set_app_input`). On a
+  development run the host is read and never written: changes stay in
+  memory, Control Center's volume slider included.
+- **The mixer's meters** (`src/sound/stream-meters.ts`, `meter.ts`): a live
+  level per app and, when its row is open, per stream. Each is a
+  `pw-record` pointed at one node by its object.serial (`--target`), read
+  as 8 kHz mono for its loudness and dropped: an app's stream itself when
+  it plays; for an app that records, the device it records from (a
+  recording stream has nothing to listen to). The recorder is told never
+  to fall back or reconnect, so without its target it ends: a meter for an
+  app's sound can never end up on the microphone. It is marked a monitor
+  and kept out of WirePlumber's memory. A meter runs only while a row on
+  screen listens to it; rows on one node share one; 16 run at most. A
+  development run's meters move by themselves.
 
 ## Channels
 

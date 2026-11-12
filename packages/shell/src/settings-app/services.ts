@@ -27,7 +27,9 @@ import {
   type PipeWireWatch,
   pipewireMeter,
   SoundStore,
+  type StreamMeters,
   shadowLevels,
+  streamMeters,
   wpctlLevels,
 } from "../sound/index.ts";
 import { readBatteryDetails } from "../system/battery-details.ts";
@@ -60,6 +62,8 @@ export interface PaneServices extends SharedStores {
   inputs: SoundStore;
   levels: LevelsStore;
   meter: LevelMeter;
+  /** The mixer's meters, one per app or stream on screen (sound/stream-meters.ts). */
+  meters: StreamMeters;
   energy: EnergyStore;
   /** The battery's history, draw, energy users, and insights (battery/); null without one. */
   battery: BatteryMonitor | null;
@@ -109,6 +113,8 @@ export function createPaneServices(options: ServicesOptions): PaneServices {
     inputs: new SoundStore(inputsOf(shared.audio)),
     levels: new LevelsStore(fake ? shadowLevels(real) : real, (volume) => system.publish("volume", volume)),
     meter: fake ? fakeMeter() : pipewireMeter(),
+    // A development run's meters move by themselves: nothing listens to the developer's machine.
+    meters: streamMeters((serial) => (fake ? fakeMeter(serial) : pipewireMeter(undefined, serial))),
     energy,
     account: new AccountStore(accounts.backend),
     changePassword: (needsCurrent) => prompt.ask(needsCurrent),

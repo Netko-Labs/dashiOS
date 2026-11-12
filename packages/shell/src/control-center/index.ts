@@ -6,6 +6,7 @@ export { BLUETOOTH, CHEVRON_LEFT, CHEVRON_RIGHT, CONTRAST, LOCK, MOON, PADLOCK, 
 export { GRID, type Layout, type Placed, pack, shown } from "./layout.ts";
 export { LayoutStore, useLayout } from "./layout-store.ts";
 export { PageBody, PageHeader, PageNote, PageRow, PageSection } from "./page-parts.tsx";
+export { type PageKeyRow, type PageKeys, PageKeysContext, usePageKey, usePageKeys } from "./page-stops.ts";
 export { ControlCenterPanel, type ControlCenterProps } from "./panel.tsx";
 export { bluetoothRadio, type Radio, radiosFor } from "./radios.ts";
 export { SliderTile } from "./tiles.tsx";

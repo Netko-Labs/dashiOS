@@ -5,7 +5,8 @@
  * Choosing another makes it the default. The list is read again while the
  * page is open, so a headset plugged in appears on its own. Under them,
  * each app playing sound with its own volume and mute, and the apps using
- * the microphone (app-rows.tsx).
+ * the microphone (app-rows.tsx): the short list. "Sound Settings…" is
+ * last: the full mixer is there.
  */
 
 import { View } from "@mirinjs/metal";
@@ -99,6 +100,13 @@ export function SoundPage({ sound, volume, onVolume, onBack, mixer, onSettings }
             onMute={(key, muted) => void mixer.setMuted(key, muted)}
             {...(onSettings ? { onMore: onSettings } : {})}
           />
+        )}
+        {onSettings && (
+          // The full mixer: each app's streams, its output, its meter, and the apps that record.
+          <>
+            <PageSection>More</PageSection>
+            <PageRow testID="sound-settings" label="Sound Settings…" onPress={onSettings} />
+          </>
         )}
       </PageBody>
     </>
