@@ -35,16 +35,8 @@ export interface TimeGridProps {
   scroll: (testID: string, dy: number) => void;
 }
 
-export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, state, handlers, scroll }: TimeGridProps) {
-  const colors = useColors();
-  const surface = useSurface();
-  const [columnWidth, setColumnWidth] = useState(0);
-  const stacked = columnWidth > 0 && columnWidth < STACK_HEAD_BELOW;
-  const showsToday = days.includes(today);
-  const nowMinutes = showsToday ? now.getHours() * 60 + now.getMinutes() : null;
-
-  // The hours scroll to the working day when the view opens.
-  const top = HOUR_HEIGHT * firstHour(showsToday, now.getHours()) - 14;
+/** Where the hours are scrolled to: the working day when the view opens, and a new event made out of sight. */
+function useHoursScroll(scroll: TimeGridProps["scroll"], dayCount: number, top: number, reveal: GridState["reveal"]): void {
   // biome-ignore lint/correctness/useExhaustiveDependencies: only a different kind of view (Day, Week) scrolls again; paging and the clock leave the hours be
   useEffect(() => {
     // The scroll offset outlives a switch between Day and Week, and a scroll is relative: back to the top first.
@@ -53,60 +45,96 @@ export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, state,
       scroll("hours", Math.max(0, top));
     }, 80);
     return () => clearTimeout(timer);
-  }, [scroll, days.length]);
+  }, [scroll, dayCount]);
 
   // A new event from the + button starts where the hours may be scrolled away from: they scroll to it.
-  const reveal = state.reveal;
   useEffect(() => {
     if (reveal === null) return;
     scroll("hours", -100_000);
     scroll("hours", revealOffset(reveal.minutes));
   }, [scroll, reveal]);
+}
+
+/** A day's name and number over its column; a press shows that day. */
+function DayHead({
+  day,
+  isToday,
+  picked,
+  stacked,
+  prefs,
+  onPress,
+}: {
+  day: Day;
+  isToday: boolean;
+  picked: boolean;
+  stacked: boolean;
+  prefs: ClockPrefs;
+  onPress: () => void;
+}) {
+  const colors = useColors();
+  const surface = useSurface();
+  return (
+    <View
+      testID={`head:${day}`}
+      onPress={onPress}
+      style={{
+        flex: 1,
+        minWidth: 0,
+        flexDirection: stacked ? "column" : "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: stacked ? 1 : 7,
+        overflow: "hidden",
+      }}
+    >
+      <View style={{ flexShrink: 1, minWidth: 0 }}>
+        <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: isToday ? colors.text : colors.textMuted }}>
+          {weekdayShort(day, prefs)}
+        </Text>
+      </View>
+      {/* Today is an ink mark: green means "on". */}
+      <View
+        style={{
+          minWidth: 26,
+          height: 26,
+          flexShrink: 0,
+          paddingHorizontal: 3,
+          borderRadius: 13,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: isToday ? colors.text : picked ? colors.button : "#00000000",
+        }}
+      >
+        <Text style={{ fontSize: 16, fontWeight: isToday ? "bold" : "normal", color: isToday ? surface.window : colors.text }}>{dayNumber(day)}</Text>
+      </View>
+    </View>
+  );
+}
+
+export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, state, handlers, scroll }: TimeGridProps) {
+  const colors = useColors();
+  const [columnWidth, setColumnWidth] = useState(0);
+  const stacked = columnWidth > 0 && columnWidth < STACK_HEAD_BELOW;
+  const showsToday = days.includes(today);
+  const nowMinutes = showsToday ? now.getHours() * 60 + now.getMinutes() : null;
+
+  useHoursScroll(scroll, days.length, HOUR_HEIGHT * firstHour(showsToday, now.getHours()) - 14, state.reveal);
 
   return (
     <View testID="time-grid" style={{ flex: 1, flexDirection: "column", minHeight: 0 }}>
       <View style={{ flexShrink: 0, flexDirection: "row", height: days.length === 1 ? 52 : 46, borderBottomWidth: 1, borderColor: colors.separator }}>
         <View style={{ width: GUTTER, flexShrink: 0 }} />
-        {days.map((day) => {
-          const isToday = day === today;
-          return (
-            <View
-              key={day}
-              testID={`head:${day}`}
-              onPress={() => handlers.showDay(day)}
-              style={{
-                flex: 1,
-                minWidth: 0,
-                flexDirection: stacked ? "column" : "row",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: stacked ? 1 : 7,
-                overflow: "hidden",
-              }}
-            >
-              <View style={{ flexShrink: 1, minWidth: 0 }}>
-                <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: isToday ? colors.text : colors.textMuted }}>
-                  {weekdayShort(day, prefs)}
-                </Text>
-              </View>
-              {/* Today is an ink mark: green means "on". */}
-              <View
-                style={{
-                  minWidth: 26,
-                  height: 26,
-                  flexShrink: 0,
-                  paddingHorizontal: 3,
-                  borderRadius: 13,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: isToday ? colors.text : day === state.selected && days.length > 1 ? colors.button : "#00000000",
-                }}
-              >
-                <Text style={{ fontSize: 16, fontWeight: isToday ? "bold" : "normal", color: isToday ? surface.window : colors.text }}>{dayNumber(day)}</Text>
-              </View>
-            </View>
-          );
-        })}
+        {days.map((day) => (
+          <DayHead
+            key={day}
+            day={day}
+            isToday={day === today}
+            picked={day === state.selected && days.length > 1}
+            stacked={stacked}
+            prefs={prefs}
+            onPress={() => handlers.showDay(day)}
+          />
+        ))}
       </View>
       <AllDayStrip days={days} occurrences={occurrences} colorOf={colorOf} gutter={GUTTER} columnWidth={columnWidth} state={state} handlers={handlers} />
       <ScrollView testID="hours" style={{ flex: 1, minHeight: 0 }}>
