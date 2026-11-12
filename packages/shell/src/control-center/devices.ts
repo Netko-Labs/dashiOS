@@ -8,6 +8,12 @@
  * radios are read back afterwards, the sliders' writes coalesce. The volume
  * also follows PipeWire as it changes (the session's `pw-dump --monitor`),
  * so a change made elsewhere (a key, `wpctl`, another output) shows at once.
+ *
+ * On a development run (`standIn`) the volume is read from the host but the
+ * slider's level is only kept here, never written to the developer's
+ * machine: the same rule as Settings' sliders (sound/levels.ts
+ * `shadowLevels`) and the radios (radios.ts). Once the slider has set a
+ * level, it reads as that for the rest of the run.
  */
 
 import { useSyncExternalStore } from "react";
@@ -49,6 +55,8 @@ export interface DeviceDeps {
   volumeChanged?: (volume: Volume) => void;
   /** Tells the output volume each time PipeWire changes (sound/apps/watch.ts). Returns the stop. */
   followVolume?: (onVolume: (volume: Volume | null) => void) => () => void;
+  /** A development run: the volume slider writes nothing to the machine. */
+  standIn?: boolean;
 }
 
 export class DeviceStore {
@@ -56,6 +64,8 @@ export class DeviceStore {
   private light: Backlight | null = null;
   /** The sink was muted when the slider moved up: the next write unmutes it. */
   private pendingUnmute = false;
+  /** A development run's volume, once the slider set it: shown over the host's from then on. */
+  private told: Volume | null = null;
   private readonly listeners = new Set<() => void>();
   private readonly run: Run;
   private readonly radio: Radio;
@@ -81,7 +91,10 @@ export class DeviceStore {
 
   /** Follows the volume until the returned stop (with `followVolume`). */
   start(): () => void {
-    this.stopFollow ??= this.deps.followVolume?.((volume) => this.volumeFollow.heard(volume)) ?? null;
+    this.stopFollow ??=
+      this.deps.followVolume?.((volume) => {
+        if (this.told === null) this.volumeFollow.heard(volume);
+      }) ?? null;
     return () => {
       this.stopFollow?.();
       this.stopFollow = null;
@@ -105,7 +118,7 @@ export class DeviceStore {
       wifi,
       bluetooth: bluetoothPower,
       brightness: light ? levelOf(light) : null,
-      volume,
+      volume: this.told ?? volume,
       hotspot,
     });
   }
@@ -141,6 +154,13 @@ export class DeviceStore {
     if (!volume) return;
     if (volume.muted && level > 0) this.pendingUnmute = true;
     const shown = { level: Math.min(Math.max(level, 0), 1), muted: volume.muted && level <= 0 };
+    if (this.deps.standIn) {
+      this.pendingUnmute = false;
+      this.told = shown;
+      this.publish({ volume: shown });
+      this.deps.volumeChanged?.(shown);
+      return;
+    }
     this.volumeFollow.set(shown);
     this.publish({ volume: shown });
     this.writeVolume(level);

@@ -6,7 +6,8 @@
 
 import { describe, expect, test } from "bun:test";
 import { type NativeEvent, type NativeTransport, render, View } from "@mirinjs/metal";
-import { AppsCard, RecordingCard } from "../src/settings-app/lib/panes/sound-apps.tsx";
+import { AppsCard } from "../src/settings-app/lib/panes/sound-apps.tsx";
+import { RecordingCard } from "../src/settings-app/lib/panes/sound-recording.tsx";
 import { catalogFrom } from "../src/shared/processes/index.ts";
 import { AppSections, foldApps } from "../src/sound/app-rows.tsx";
 import { AppMixer, type AppSound, fixedGraph, parseGraph, useMicWords } from "../src/sound/apps/index.ts";
@@ -49,6 +50,7 @@ const app = (key: string, extra: Partial<AppSound> = {}): AppSound => ({
   name: key,
   icon: "/icons/generic.svg",
   streams: [1],
+  parts: [{ id: 1, title: "Sound", level: 0.5, muted: false, playing: true, meter: 1001 }],
   level: 0.5,
   muted: false,
   playing: true,
@@ -119,7 +121,20 @@ describe("Control Center's apps", () => {
     const { trees, transport, press } = host();
     const muted: Array<[string, boolean]> = [];
     const more: number[] = [];
-    const recording = [{ key: "signal", name: "Signal", icon: "/icons/signal.png", input: "Microphone", monitor: false }];
+    const recording = [
+      {
+        key: "signal",
+        name: "Signal",
+        icon: "/icons/signal.png",
+        streams: [9],
+        parts: [],
+        level: 1,
+        muted: false,
+        input: "Microphone",
+        monitor: false,
+        target: null,
+      },
+    ];
     const apps = [app("Helium"), app("paplay", { muted: true }), app("A"), app("B"), app("C")];
     const root = render(
       <View>
@@ -168,18 +183,24 @@ describe("Settings' Apps card", () => {
     await settle();
     const tree = trees.at(-1) ?? "";
     for (const name of ["Helium", "Lollypop", "paplay", "pw-play"]) expect(tree).toContain(name);
-    expect(tree).toContain("Playing");
+    // Helium's two tabs fold under it; paplay has one stream and nothing to open.
+    expect(tree).toContain("2 streams");
+    expect(root.nodeId("sound-app:sound:paplay:fold")).toBeUndefined();
     expect(tree).toContain("Headphones");
     expect(tree).toContain("Default");
-    expect(tree).toContain("Using Microphone now");
-    press(root.nodeId("sound-app-mute:sound:paplay"));
+    // The apps that record, with what they record from; OBS records this computer's own sound.
+    expect(root.nodeId("sound-recording-row:sound:Signal")).toBeDefined();
+    expect(root.nodeId("sound-recording-dot:sound:Signal")).toBeDefined();
+    expect(root.nodeId("sound-recording-dot:sound:OBS")).toBeUndefined();
+    expect(tree).toContain("This computer’s sound");
+    press(root.nodeId("sound-app:sound:paplay-mute"));
     await settle();
     expect(mixer.getSnapshot().apps.find((each) => each.key === "sound:paplay")?.muted).toBe(false);
     root.unmount();
     mixer.stop();
 
     const empty = host();
-    const none = new AppMixer({ graph: fixedGraph({ streams: [], outputs: [], defaultOutput: null }), control: heldControl(), owner: () => null });
+    const none = new AppMixer({ graph: fixedGraph({ streams: [], outputs: [], inputs: [], defaultOutput: null }), control: heldControl(), owner: () => null });
     none.start();
     await settle(5);
     const second = render(<AppSettingsCard mixer={none} />, empty.transport);

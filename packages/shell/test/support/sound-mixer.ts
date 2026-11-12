@@ -48,6 +48,6 @@ export function recordingControl(): MixerControl & { calls: string[] } {
     calls,
     setLevel: async (ids, level) => calls.push(`level ${ids.join(",")} ${level}`) > 0,
     setMuted: async (ids, muted) => calls.push(`mute ${ids.join(",")} ${muted}`) > 0,
-    setOutput: async (ids, output) => calls.push(`output ${ids.join(",")} ${output}`) > 0,
+    setTarget: async (ids, target) => calls.push(`target ${ids.join(",")} ${target === null ? "default" : `${target.name}#${target.serial}`}`) > 0,
   };
 }

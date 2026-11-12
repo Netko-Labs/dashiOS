@@ -23,7 +23,7 @@ import { type Graph, parseGraph } from "./streams.ts";
 /** A burst of updates (a stream starting links several ports) is told once. */
 const SETTLE_MS = 40;
 
-export const EMPTY_GRAPH: Graph = { streams: [], outputs: [], defaultOutput: null };
+export const EMPTY_GRAPH: Graph = { streams: [], outputs: [], inputs: [], defaultOutput: null };
 
 export type Follow = (onLine: (line: string) => void, onStart: () => void) => () => void;
 

@@ -265,6 +265,97 @@ Numbered in the order they were written down; a new one goes at the end.
   pass of their own.
 - **Undo:** write `main` in `.mirin-branch` and rebuild the Metal host.
 
+### D15. An app's output and input are set by the device's serial, so WirePlumber remembers them
+
+- **Date:** 2026-11-11 (the mixer, `dashi-0.8.0-review/02-mixer`).
+- **Question:** the owner decided WirePlumber remembers the mixer's choices
+  and Dashi keeps no table. 0.5 sent an app to an output with
+  `pw-metadata <id> target.object <node.name>`. WirePlumber carries that out,
+  but its stream state looks the value up as an object.serial, finds none,
+  and stores "no target": the choice was gone when the app restarted.
+- **Choice:** `target.object` holds the device's object.serial (`Spa:Id`),
+  as WirePlumber itself writes it when it restores a stream. A node.name is
+  sent only for a device with no serial. The graph tells either form as the
+  device's node.name (`sound/apps/streams.ts`, `lib/commands.ts`).
+- **Why:** it is the form WirePlumber stores (as the device's node.name) and
+  gives back to the app's next stream, after a restart or a new login.
+- **Cost:** what WirePlumber's restore can't do stays undone, since Dashi
+  keeps nothing: two streams of one app are not remembered apart (they share
+  the app's key, so the last one changed wins for the next stream), and an
+  app whose chosen device is away when it starts plays on the default until
+  its next stream.
+- **Undo:** write names again in `moveCommands`; or keep a table of Dashi's
+  own, which is the owner's call.
+
+### D16. A meter is one `pw-record` per node on screen, and never falls back
+
+- **Date:** 2026-11-11.
+- **Question:** a live level for each app and each open stream, cheap, with
+  no meter running while nothing shows it. Link PipeWire's library, or run
+  its own recorder as Settings' microphone meter already does?
+- **Choice:** one `pw-record --target <serial>` per node a row on screen
+  listens to, 8 kHz mono, read for its loudness and dropped
+  (`sound/stream-meters.ts`). A playing stream is listened to itself; an app
+  that records is metered at the device it records from, since a recording
+  stream has no output to listen to. Rows on one node share one recorder; 16
+  run at most; a muted row's meter reads empty and doesn't listen. The
+  recorder is told `node.dont-fallback` and `node.dont-reconnect`, so when
+  its target is missing or goes it ends.
+- **Why:** no dependency, the tool is PipeWire's own, and the rule that
+  matters is kept by PipeWire, not by Dashi's care: a meter for an app's
+  sound can never end up listening to the microphone.
+- **Cost:** a process per metered node while Settings › Sound shows it.
+  Control Center's short list has no meters.
+- **Undo:** replace `pipewireMeter` behind `StreamMeters` with a client of
+  PipeWire's library (MIT), which could meter every node from one process.
+
+### D17. The mixer folds with "More"'s treatment, and the meter takes the line under the name
+
+- **Date:** 2026-11-11.
+- **Question:** a folded app must stay one row, yet say it has streams, show
+  a live level and keep its slider, mute and output.
+- **Choice:** the line under the app's name (20 tall, where "Playing" was)
+  holds the fold in "More"'s words ("3 streams" and a chevron, "Hide
+  streams" when open) and then the meter, 64 by 4, ink; "Paused" stands
+  where the meter would while no sound moves. A stream's row is 44, under
+  its app with no line between. Meters are ink, the microphone's too (it
+  was green): green means on.
+- **Why:** no height is added to a row, and the word that was there
+  ("Playing") is said better by a bar that moves.
+- **Cost:** "Playing" is no longer written; a screen reader hears it in the
+  row's name instead.
+- **Undo:** `StatusLine` in `sound-mixer-parts.tsx`.
+
+### D18. Apps that record this computer's own sound are listed, and keep what they record
+
+- **Date:** 2026-11-11.
+- **Question:** the recording card listed only microphone users. The mixer
+  lists every app that records, with its level and mute; what of a screen
+  recorder, which records a sink's monitor?
+- **Choice:** it is listed, without the orange dot (it is not the
+  microphone, and the menu bar's pill stays off), with its level and mute;
+  its "Record from" reads "This computer’s sound" and is dimmed. Agents get
+  the same refusal (`set_app_input`: `own-sound`).
+- **Why:** moving a screen recorder onto a microphone is never what a
+  person meant by a pop-up of microphones.
+- **Cost:** such an app's source can't be changed from Dashi.
+- **Undo:** drop `fixed` in `sound-recording.tsx` and `own-sound` in
+  `lib/machine-sound.ts`.
+
+### D19. Agents choose an app's input with a tool of its own
+
+- **Date:** 2026-11-11.
+- **Question:** `set_app_volume` already takes an output. Add `input` to it,
+  or a second tool?
+- **Choice:** `set_app_input {app, level?, muted?, input?}` for the apps
+  under `recording`; `set_app_volume` is unchanged, for the apps under
+  `apps`. `get_sound` reads the whole mixer. Both are in the `settings`
+  scope, as the sound tools were.
+- **Why:** an app that plays and records has two rows with two levels; one
+  tool with both would have to say which side a level is for.
+- **Cost:** one more tool in `tools/list` (the fixture changed with it).
+- **Undo:** fold it into `set_app_volume` with a `side` argument.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its
