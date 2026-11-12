@@ -404,7 +404,10 @@ Code: `agents/alone/` (`rules.ts`, `work-alone.ts`, `records.ts`),
   link, a key binding, the launcher and D-Bus can't: its rows have no value
   to set, so their addresses only open Settings. While it runs, `start` is
   refused, so nothing lengthens or widens it; to change it the person stops
-  it and starts again. Anyone may stop it: stopping only narrows.
+  it and starts again. Before it is on, the pane asks the same of every
+  change to a pick (`byPerson`): a tick, the time, a site or the lock switch
+  an agent pressed stays as it was, and the row says "Only you can change
+  what is picked". Anyone may stop it: stopping only narrows.
 - **In the menu bar** the whole time, beside the agent mark: a chip in the
   agents' purple with a stop square and the time left, counting down
   (`alone-chip.tsx`). One click stops it. It never goes into "…".

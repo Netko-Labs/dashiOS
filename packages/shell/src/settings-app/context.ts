@@ -29,7 +29,7 @@ export interface PaneContext {
   /** The sites agents may use without asking, the person's list (Settings › Agents). */
   sites?: AheadSites;
   /** Work alone (agents/alone/): Settings › Agents turns it on and stops it, and lists its records. */
-  alone?: Pick<WorkAlone, "subscribe" | "getSnapshot" | "start" | "stop" | "records">;
+  alone?: Pick<WorkAlone, "subscribe" | "getSnapshot" | "start" | "stop" | "byPerson" | "records">;
   /** Opens one record of Work alone, whole, as text. */
   showAloneRecord?: (record: AloneRecord) => void;
   /** The apps' permissions the portal keeps (Privacy & Security); absent where the shell runs none. */

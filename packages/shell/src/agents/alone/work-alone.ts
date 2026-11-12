@@ -6,8 +6,9 @@
  *
  * Only the person turns it on: `start` asks whether their own hands just
  * pressed in System Settings (the compositor's `input-origin`), so an agent's
- * pointer or keys, a link, a key binding or a tool can't. Nothing lengthens
- * or widens it while it runs: `start` is refused, and there is no other way
+ * pointer or keys, a link, a key binding or a tool can't; the pane asks the
+ * same (`byPerson`) before it changes a pick. Nothing lengthens or widens it
+ * while it runs: `start` is refused, and there is no other way
  * in. Anyone may stop it; stopping only narrows.
  *
  * It ends by itself when the time is up, when the screen locks (unless the
@@ -57,6 +58,19 @@ export class WorkAlone implements AloneGate {
   }
 
   /**
+   * Whether the person's own hands just pressed in System Settings. The pane
+   * asks before it changes a pick, so an agent's pointer or keys can't widen
+   * what the person is about to turn on; not knowing is a no.
+   */
+  async byPerson(): Promise<boolean> {
+    try {
+      return await this.options.personPressed();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Turn it on, from Settings › Agents. Refused while it is on (nothing
    * lengthens or widens it), when what was picked allows nothing, and unless
    * the person's own press asked for it.
@@ -65,13 +79,7 @@ export class WorkAlone implements AloneGate {
     if (this.state.on) return { ok: false, why: "It is on. Stop it first to change it." };
     const clean = cleanConfig(config);
     if ("problem" in clean) return { ok: false, why: clean.problem };
-    let person = false;
-    try {
-      person = await this.options.personPressed();
-    } catch {
-      // Not known to be the person: no.
-    }
-    if (!person) return { ok: false, why: "Only you can turn this on. Press it yourself, here." };
+    if (!(await this.byPerson())) return { ok: false, why: "Only you can turn this on. Press it yourself, here." };
     if (this.state.on) return { ok: false, why: "It is on. Stop it first to change it." };
     this.begin(clean);
     return { ok: true };

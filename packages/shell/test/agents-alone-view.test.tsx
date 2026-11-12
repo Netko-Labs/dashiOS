@@ -15,7 +15,7 @@ import { Grants } from "../src/agents/consent.ts";
 import { SiteGrants } from "../src/agents/sites.ts";
 import { AloneChip, aloneTip, leftText } from "../src/alone-chip.tsx";
 import type { PaneContext } from "../src/settings-app/context.ts";
-import { NEVER_WORDS, onWords, WorkAloneSection } from "../src/settings-app/lib/panes/agents-alone.tsx";
+import { NEVER_WORDS, ONLY_YOU_PICK, onWords, WorkAloneSection } from "../src/settings-app/lib/panes/agents-alone.tsx";
 import { fakeClockEachTest, settle } from "./support/time.ts";
 
 const clock = fakeClockEachTest();
@@ -114,8 +114,14 @@ test("Settings starts from what was already allowed, and the switch turns it on 
   expect(view.has("alone-tools")).toBe(false);
   await view.press("alone-switch");
   expect(alone.getSnapshot()).toEqual({ on: false });
+  // The picks are as the person left them, for a second run.
+  expect(view.tree()).toContain('"value":"1"');
+  await view.press("alone-switch");
+  expect(alone.getSnapshot()).toMatchObject({ on: true, scopes: ["see", "screen", "web"], sites: ["bodytech.com.co"] });
+  await view.press("alone-switch");
   // Its record is listed, with Show.
   const [record] = alone.records.getSnapshot();
+  expect(alone.records.getSnapshot()).toHaveLength(2);
   expect(view.has(`alone-record:${record?.started}`)).toBe(true);
   expect(view.tree()).toContain("Agents did nothing");
   view.root.unmount();
@@ -127,12 +133,49 @@ test("a press that wasn't the person's turns nothing on, and the pane says why",
   await view.press("alone-switch");
   expect(alone.getSnapshot()).toEqual({ on: false });
   expect(view.tree()).toContain("Only you can turn this on. Press it yourself, here.");
-  // A custom time that is no time is refused, in words.
+  view.root.unmount();
+});
+
+test("an agent's press changes no pick: it can't widen what the person is about to turn on", async () => {
+  let person = false;
+  const { alone, ctx } = setup(async () => person);
+  const view = await mount(<WorkAloneSection ctx={ctx} />);
+  const ticked = (testID: string): boolean => {
+    const find = (node: { props?: Record<string, unknown>; children?: unknown[] }): boolean | null => {
+      if (node.props?.id === view.root.nodeId(testID)) return (node.props.access as { checked?: boolean } | undefined)?.checked === true;
+      for (const child of node.children ?? []) {
+        const found = typeof child === "object" && child !== null ? find(child) : null;
+        if (found !== null) return found;
+      }
+      return null;
+    };
+    return find(JSON.parse(view.tree())) === true;
+  };
+  expect([ticked("alone-tools:see"), ticked("alone-tools:act")]).toEqual([true, false]);
+  // Not the person's: the ticks, the time, the lock switch and a typed time all stay.
+  await view.press("alone-tools:act");
+  await view.press("alone-tools:web");
+  await view.press("alone-time:240");
+  await view.press("alone-through-lock");
+  expect(ticked("alone-tools:act")).toBe(false);
+  expect(view.has("alone-sites")).toBe(false);
+  expect(view.tree()).toContain(ONLY_YOU_PICK);
+  // The person's own: they change, and the words go.
+  person = true;
+  await view.press("alone-tools:act");
   await view.press("alone-time:custom");
   await view.type("alone-custom", "900");
+  expect(ticked("alone-tools:act")).toBe(true);
+  expect(view.tree()).not.toContain(ONLY_YOU_PICK);
+  // A custom time that is no time is refused, in words.
   expect(view.tree()).toContain("minutes, from 1 to 480");
   await view.press("alone-switch");
   expect(view.tree()).toContain("Pick a time from 1 minute to 8 hours.");
+  // What the person had turned on is what they picked, never what the agent pressed.
+  await view.type("alone-custom", "5");
+  await view.press("alone-switch");
+  expect(alone.getSnapshot()).toMatchObject({ on: true, scopes: ["see", "screen", "act"], throughLock: false });
+  expect(alone.status().secondsLeft).toBe(300);
   view.root.unmount();
 });
 

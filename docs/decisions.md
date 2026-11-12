@@ -367,6 +367,12 @@ Numbered in the order they were written down; a new one goes at the end.
 - **It covers every agent,** connected then or later, local or over SSH:
   the person is away, and can't say which agent will ask. What a launcher
   run's card refused stays refused. Undo: a key check in `Scopes.worksAlone`.
+- **Only the person's presses change a pick, too.** An agent that may click
+  in windows could tick more boxes in Settings and leave them for the person
+  to turn on without looking. The pane asks the compositor whose press it was
+  for every tick, time and site, as it does for the switch. Cost: one
+  `input-origin` round trip for each change. Undo: `mine` in
+  `agents-alone.tsx`.
 - **Signing in is never covered,** though its sheet is a per-login one and
   not the fingerprint: it uses the vault's secrets, and the brief says
   "anything needing the fingerprint or password, reading secrets". An

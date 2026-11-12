@@ -6,7 +6,7 @@
  * when and what it covers, and the switch stops it; to change it, stop it
  * and start again. Under it, the last times it ran, each with what agents
  * did and Show for the whole record. Only the person's own press here turns
- * it on (the shell asks the compositor whose press it was).
+ * it on or changes a pick (the shell asks the compositor whose press it was).
  */
 
 import { Text, TextInput, View } from "@mirinjs/metal";
@@ -36,6 +36,8 @@ import { AddSite, Ticks } from "./agents-alone-parts.tsx";
 /** How many of the last times it lists. */
 const RECORDS_SHOWN = 3;
 
+export const ONLY_YOU_PICK = "Only you can change what is picked. Press it yourself, here.";
+
 export const NEVER_WORDS =
   "Payments, sign-ins, your clipboard history, force quit, the Trash, and installing or updating software always ask. Only you can turn this on, here; agents can't, and can't make it longer or wider.";
 
@@ -53,10 +55,16 @@ export function onWords(state: Extract<AloneState, { on: true }>, ends: string):
 
 type Alone = NonNullable<PaneContext["alone"]>;
 
-/** The picks, before it is on. */
-function Picks({ ctx, alone }: { ctx: Pick<PaneContext, "grants" | "sites">; alone: Alone }) {
-  const colors = useColors();
-  const surface = useSurface();
+/** A set with `value` in or out. */
+function toggled<T extends string>(set: ReadonlySet<T>, value: T, on: boolean): Set<T> {
+  const next = new Set(set);
+  if (on) next.add(value);
+  else next.delete(value);
+  return next;
+}
+
+/** What the person picked, kept while Settings is open, so a second run starts from the first's picks. */
+function usePicks(ctx: Pick<PaneContext, "grants" | "sites">) {
   const entries = useGrantEntries(ctx.grants);
   const [first] = useState(() => aloneDefaults(entries, [...(ctx.sites?.ahead() ?? []), ...(ctx.sites?.everyAgents() ?? [])]));
   const [scopes, setScopes] = useState<ReadonlySet<Scope>>(() => new Set(first.scopes));
@@ -65,14 +73,22 @@ function Picks({ ctx, alone }: { ctx: Pick<PaneContext, "grants" | "sites">; alo
   const [time, setTime] = useState<Time>("60");
   const [custom, setCustom] = useState("30");
   const [throughLock, setThroughLock] = useState(false);
+  return { scopes, setScopes, offered, setOffered, sites, setSites, time, setTime, custom, setCustom, throughLock, setThroughLock };
+}
+
+/** The picks, before it is on. */
+function Picks({ picks, alone }: { picks: ReturnType<typeof usePicks>; alone: Alone }) {
+  const colors = useColors();
+  const surface = useSurface();
+  const { scopes, setScopes, offered, setOffered, sites, setSites, time, setTime, custom, setCustom, throughLock, setThroughLock } = picks;
   const [problem, setProblem] = useState<string | null>(null);
+  // A pick changes only when the person's own press changed it: an agent's pointer or keys here change nothing.
+  const mine = (change: () => void) =>
+    void alone.byPerson().then((person) => {
+      if (person) change();
+      setProblem(person ? null : ONLY_YOU_PICK);
+    });
   const minutes = time === "custom" ? customMinutes(custom) : Number(time);
-  const toggle = <T extends string>(set: ReadonlySet<T>, value: T, on: boolean): Set<T> => {
-    const next = new Set(set);
-    if (on) next.add(value);
-    else next.delete(value);
-    return next;
-  };
   const start = () => {
     setProblem(null);
     void alone.start({ scopes: [...scopes], sites: [...sites], minutes, throughLock }).then((started) => setProblem(started.ok ? null : started.why));
@@ -80,19 +96,20 @@ function Picks({ ctx, alone }: { ctx: Pick<PaneContext, "grants" | "sites">; alo
   return (
     <>
       <Group testID="agents-alone">
-        <Setting id="agents/work-alone" testID="alone-row">
+        {/* Why it didn't start, where the person just pressed. */}
+        <Setting id="agents/work-alone" testID="alone-row" {...(problem === null ? {} : { detail: problem })}>
           <Switch testID="alone-switch" on={false} onChange={start} />
         </Setting>
         <Setting id="agents/work-alone-time" stack>
           <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-            <Choices testID="alone-time" options={TIMES} value={time} onChange={setTime} />
+            <Choices testID="alone-time" options={TIMES} value={time} onChange={(value) => mine(() => setTime(value))} />
             {time === "custom" && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <View style={{ width: 56, height: 28, justifyContent: "center", paddingHorizontal: 8, borderRadius: 8, backgroundColor: surface.field }}>
                   <TextInput
                     testID="alone-custom"
                     value={custom}
-                    onChangeText={setCustom}
+                    onChangeText={(text) => mine(() => setCustom(text))}
                     onSubmitEditing={start}
                     style={{ flex: 1, fontSize: 12, color: colors.text, backgroundColor: "#00000000" }}
                   />
@@ -109,7 +126,7 @@ function Picks({ ctx, alone }: { ctx: Pick<PaneContext, "grants" | "sites">; alo
             testID="alone-tools"
             options={ALONE_SCOPES.map((scope) => ({ value: scope, label: label(scope) }))}
             chosen={scopes}
-            onChange={(scope, on) => setScopes((now) => toggle(now, scope, on))}
+            onChange={(scope, on) => mine(() => setScopes((now) => toggled(now, scope, on)))}
           />
         </Setting>
         {scopes.has("web") && (
@@ -118,22 +135,24 @@ function Picks({ ctx, alone }: { ctx: Pick<PaneContext, "grants" | "sites">; alo
               testID="alone-sites"
               options={offered.map((site) => ({ value: site, label: site }))}
               chosen={sites}
-              onChange={(site, on) => setSites((now) => toggle(now, site, on))}
+              onChange={(site, on) => mine(() => setSites((now) => toggled(now, site, on)))}
             />
             <AddSite
               listed={offered}
-              onAdd={(site) => {
-                setOffered((now) => [...now, site]);
-                setSites((now) => toggle(now, site, true));
-              }}
+              onAdd={(site) =>
+                mine(() => {
+                  setOffered((now) => [...now, site]);
+                  setSites((now) => toggled(now, site, true));
+                })
+              }
             />
           </Setting>
         )}
         <Setting id="agents/work-alone-lock">
-          <Switch testID="alone-through-lock" on={throughLock} onChange={setThroughLock} />
+          <Switch testID="alone-through-lock" on={throughLock} onChange={(on) => mine(() => setThroughLock(on))} />
         </Setting>
       </Group>
-      <Caption>{problem ?? NEVER_WORDS}</Caption>
+      <Caption>{NEVER_WORDS}</Caption>
     </>
   );
 }
@@ -171,6 +190,7 @@ function Section({ ctx, alone }: { ctx: Pick<PaneContext, "grants" | "sites" | "
   const prefs = useClockPrefs();
   const state = useSyncExternalStore(alone.subscribe, alone.getSnapshot);
   const records = useSyncExternalStore(alone.records.subscribe, alone.records.getSnapshot);
+  const picks = usePicks(ctx);
   return (
     <>
       {state.on ? (
@@ -183,7 +203,7 @@ function Section({ ctx, alone }: { ctx: Pick<PaneContext, "grants" | "sites" | "
           <Caption>To change it, turn it off and on again. The menu bar shows the time left, and a click there stops it.</Caption>
         </>
       ) : (
-        <Picks ctx={ctx} alone={alone} />
+        <Picks picks={picks} alone={alone} />
       )}
       <Records records={records} {...(ctx.showAloneRecord ? { onShow: ctx.showAloneRecord } : {})} />
     </>
