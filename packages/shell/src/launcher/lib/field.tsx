@@ -48,6 +48,51 @@ function ChipIcon({ icon, size }: { icon: RowIcon; size: number }) {
 /** Words measured as the field draws them, by size: the same words at the same size are measured once a session. */
 const measured = new Map<string, number>();
 
+/** What the field is about (an app, a scope), before the words. */
+function Chip({ chip }: { chip: NonNullable<FieldProps["chip"]> }) {
+  const colors = useColors();
+  const m = useMeasures();
+  return (
+    <View
+      testID="launcher:chip"
+      style={{
+        // It gives way before the field's least room (a long request at the largest text size).
+        flexShrink: 1,
+        minWidth: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        height: m.chip,
+        paddingLeft: 8,
+        paddingRight: 8,
+        borderRadius: 7,
+        backgroundColor: colors.button,
+      }}
+    >
+      {chip.icon && <ChipIcon icon={chip.icon} size={Math.round(m.title * 1.08)} />}
+      <Text numberOfLines={1} style={{ fontSize: m.title, color: colors.text }}>
+        {chip.title}
+      </Text>
+    </View>
+  );
+}
+
+/** The keys that do something here, at the field's right end. */
+function Hints({ hints }: { hints: readonly Hint[] }) {
+  const colors = useColors();
+  const m = useMeasures();
+  return (
+    <View testID="launcher:hints" style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 10 }}>
+      {hints.map((hint) => (
+        <View key={hint.keys} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <Shortcut keys={hint.keys} color={colors.textMuted} size={m.small} />
+          <Text style={{ fontSize: m.small, color: colors.textMuted }}>{hint.label}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export function Field({ value, revision, placeholder, chip, hints, notice, glyph, access, onChangeText, onSubmit, onKey }: FieldProps) {
   const colors = useColors();
   const m = useMeasures();
@@ -60,29 +105,7 @@ export function Field({ value, revision, placeholder, chip, hints, notice, glyph
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 16, paddingRight: 16, height: m.field }}>
       <Svg markup={glyph?.markup ?? SEARCH} size={m.searchGlyph} color={glyph?.color ?? colors.textMuted} />
-      {chip && (
-        <View
-          testID="launcher:chip"
-          style={{
-            // It gives way before the field's least room (a long request at the largest text size).
-            flexShrink: 1,
-            minWidth: 0,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-            height: m.chip,
-            paddingLeft: 8,
-            paddingRight: 8,
-            borderRadius: 7,
-            backgroundColor: colors.button,
-          }}
-        >
-          {chip.icon && <ChipIcon icon={chip.icon} size={Math.round(m.title * 1.08)} />}
-          <Text numberOfLines={1} style={{ fontSize: m.title, color: colors.text }}>
-            {chip.title}
-          </Text>
-        </View>
-      )}
+      {chip && <Chip chip={chip} />}
       <View
         testID="launcher:field-room"
         style={{ flex: 1, minWidth: leastRoom(choices, widthOf), flexDirection: "row", alignItems: "center" }}
@@ -125,16 +148,7 @@ export function Field({ value, revision, placeholder, chip, hints, notice, glyph
           </Text>
         </View>
       ) : (
-        hints.length > 0 && (
-          <View testID="launcher:hints" style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 10 }}>
-            {hints.map((hint) => (
-              <View key={hint.keys} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <Shortcut keys={hint.keys} color={colors.textMuted} size={m.small} />
-                <Text style={{ fontSize: m.small, color: colors.textMuted }}>{hint.label}</Text>
-              </View>
-            ))}
-          </View>
-        )
+        hints.length > 0 && <Hints hints={hints} />
       )}
     </View>
   );
