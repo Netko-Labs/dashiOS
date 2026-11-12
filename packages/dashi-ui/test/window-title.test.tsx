@@ -37,8 +37,13 @@ test("the title gives way before the toolbar: the detail takes only what is left
   await settle();
   // The title's row takes the room the controls leave, never less than a little, and never their room.
   expect(propsOf(host.last(), root.nodeId("window-title"))).toMatchObject({ flex: 1, minWidth: 96 });
-  // The detail grows from nothing (it has only what the title leaves), so it is cut first.
-  expect(propsOf(host.last(), root.nodeId("window-title-detail"))).toMatchObject({ flex: 1 });
+  // The detail grows into what the title leaves and never shrinks below its place: the row wraps it
+  // out of sight instead (a second line, clipped), so it is whole, cut to a useful length, or gone.
+  expect(propsOf(host.last(), root.nodeId("window-title-detail"))).toMatchObject({ grow: 1, shrink: false, height: 18 });
+  expect(propsOf(host.last(), root.nodeId("window-title-detail-room"))).toMatchObject({ maxWidth: 120, height: 0, clip: true });
+  const row = JSON.stringify(propsOf(host.last(), root.nodeId("window-title")));
+  expect(row).not.toContain('"wrap"');
+  expect(host.last()).toMatch(/"height":18,[^{}]*"wrap":true|"wrap":true,[^{}]*"height":18/);
   // Both are one line, cut with an ellipsis.
   expect(host.last().match(/"truncate":true/g)?.length).toBeGreaterThanOrEqual(2);
   root.unmount();
