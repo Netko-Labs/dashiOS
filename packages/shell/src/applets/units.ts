@@ -43,9 +43,16 @@ export const UNIT_LIMITS = ["CPUQuota=50%", "MemoryMax=768M", "Nice=10"] as cons
  */
 export const SESSION_TARGET = "dashi-session.target";
 
+/**
+ * Being stopped is not a failure: the runner ends with 143 (128 + SIGTERM)
+ * when systemd stops it, and without this each applet's unit was "Failed
+ * with result 'exit-code'" in the journal at every logout.
+ */
+export const STOPPED_IS_FINE = "SuccessExitStatus=143";
+
 /** `systemd-run`'s arguments for an applet's unit. */
 export function startCommand(unit: string, argv: readonly string[]): string[] {
-  const properties = ["Restart=on-failure", "RestartSec=3", `PartOf=${SESSION_TARGET}`, ...UNIT_LIMITS];
+  const properties = ["Restart=on-failure", "RestartSec=3", STOPPED_IS_FINE, `PartOf=${SESSION_TARGET}`, ...UNIT_LIMITS];
   return ["systemd-run", "--user", "--quiet", "--collect", `--unit=${unit}`, ...properties.flatMap((property) => ["-p", property]), "--", ...argv];
 }
 

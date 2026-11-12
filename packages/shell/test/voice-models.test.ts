@@ -5,7 +5,7 @@
  */
 
 import { expect, test } from "bun:test";
-import { removeWords, setsWords, voiceChoices, whatFetching } from "../src/settings-app/lib/panes/voice-words.ts";
+import { offerWords, removeWords, setsWords, voiceChoices, whatFetching } from "../src/settings-app/lib/panes/voice-words.ts";
 import { basicsHere, partly, VoiceModels } from "../src/voice/models.ts";
 import { troubleOf } from "../src/voice/start.ts";
 import { settle } from "./support/time.ts";
@@ -133,4 +133,12 @@ test("the service gone says so, with the one thing to do", async () => {
   expect(store.getSnapshot().service).toBe("missing");
   expect(store.ready).toBe(false);
   expect(troubleOf(store)).toEqual({ text: "Voice isn't running. Log out and in again.", go: "voice" });
+});
+
+test("the fetch's offer names only the models that are not here yet, with what is left of each", () => {
+  const none = [set("listen", true, 673e6, 0), set("speak", true, 335e6, 0)];
+  expect(offerWords(none)).toBe("Voice needs 1.01 GB of models, fetched once and kept on this computer: Listening (673 MB), Speaking (335 MB).");
+  // Listening is already here (a fetch that was cut short, or models put there by hand): it is not asked for again.
+  const half = [set("listen", true, 673e6, 673e6), set("speak", true, 335e6, 100e6)];
+  expect(offerWords(half)).toBe("Voice needs 235 MB of models, fetched once and kept on this computer: Speaking (235 MB).");
 });

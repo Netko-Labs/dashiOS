@@ -36,7 +36,7 @@ import { Page, Switch } from "../../ui.tsx";
 import { type ByPerson, ONLY_YOU, type PersonOnly, usePersonOnly } from "../person-only.ts";
 import { Setting } from "../setting.tsx";
 import { MiniButton } from "./parts.tsx";
-import { removeWords, setsWords, voiceChoices, whatFetching } from "./voice-words.ts";
+import { offerWords, removeWords, setsWords, voiceChoices, whatFetching } from "./voice-words.ts";
 
 export type VoicePaneSource = Pick<VoiceParts, "models" | "sample">;
 
@@ -205,7 +205,6 @@ export function VoicePane({ settings, voice, byPerson }: { settings: SettingsSto
   const basics = basicSets(view.sets);
   const more = view.sets.filter((set) => !set.basic);
   const usable = basicsHere(view.sets);
-  const need = basics.reduce((sum, set) => sum + set.bytes - set.have, 0);
   const on = wanted && usable;
   const turn = (next: boolean): void => {
     // Off, or taking back an ask that hasn't its models yet: stopping only narrows, so anyone may.
@@ -222,7 +221,7 @@ export function VoicePane({ settings, voice, byPerson }: { settings: SettingsSto
     void voice.models.fetch();
   };
   const detail = switchDetail({ wanted, usable, refused: guard.refused === "voice/on" });
-  const offer = `Voice needs ${sizeWords(need)} of models, fetched once and kept on this computer: ${setsWords(basics, true)}.`;
+  const offer = offerWords(basics);
   return (
     <Page title="Voice">
       <Group testID="voice-main">

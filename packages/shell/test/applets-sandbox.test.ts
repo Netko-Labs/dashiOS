@@ -262,6 +262,13 @@ test("an applet's unit is part of the session's target, and is stopped without w
   expect(stopNowCommand(["a.service", "b.service"])).toEqual(["systemctl", "--user", "stop", "--no-block", "a.service", "b.service"]);
 });
 
+test("an applet's unit that systemd stops has not failed", () => {
+  // The runner ends with 143 when it is told to stop; the journal said "Failed with result 'exit-code'" at every logout.
+  const command = startCommand("dashi-applet-dev.example.weather.service", ["/usr/bin/bun", "run.ts", "plan.json"]);
+  expect(command[command.indexOf("SuccessExitStatus=143") - 1]).toBe("-p");
+  expect(command).toContain("Restart=on-failure");
+});
+
 test("a look that was under way when the shell went starts nothing", async () => {
   const root = installedTree(["network"]);
   const { log, units } = fakeUnits();
