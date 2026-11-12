@@ -41,3 +41,30 @@ test("a shell started at 0 lights a screen an earlier one left dark", async () =
   await new ScreenDark(fake, true).follow(0.0625);
   expect(fake.calls).toEqual([{ method: "power", on: true, output: "eDP-1" }]);
 });
+
+test("a request the compositor refuses is asked again at the same level", async () => {
+  const calls: unknown[] = [];
+  let refuse = true;
+  const fake = fakeCompositor(async (method, params) => {
+    if (method === "outputs") return OUTPUTS;
+    calls.push({ method, ...params });
+    if (refuse) throw new Error("no such output");
+    return {};
+  });
+  const error = console.error;
+  console.error = () => {};
+  try {
+    const dark = new ScreenDark(fake);
+    await dark.follow(0);
+    refuse = false;
+    // Still at 0: the screen is not dark yet, so it is asked again, not taken as done.
+    await dark.follow(0);
+    await dark.follow(0);
+  } finally {
+    console.error = error;
+  }
+  expect(calls).toEqual([
+    { method: "power", on: false, output: "eDP-1" },
+    { method: "power", on: false, output: "eDP-1" },
+  ]);
+});
