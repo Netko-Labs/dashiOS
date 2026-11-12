@@ -19,8 +19,9 @@
         "noImportCycles": "error"
       },
       "complexity": {
-        // H3: no function over 80 lines. Today's longer ones are in the overrides
-        // below, each file held at its longest (scripts/lists/long-functions.txt).
+        // H3: no function over 80 lines. Biome's count is short (it skips the lines of
+        // JSX children and of template strings), so this catches a long function early
+        // and scripts/check-structure.ts (`long-functions`) holds the rule, by lines as written.
         "noExcessiveLinesPerFunction": {
           "level": "error",
           "options": {
@@ -154,8 +155,5 @@
   "overrides": [
     // A test's describe block is not a function to split (H3).
     { "includes": ["**/test/**"], "linter": { "rules": { "complexity": { "noExcessiveLinesPerFunction": "off" } } } }
-    // H3 overrides: written by `bun scripts/check-biome.ts --shrink`; do not edit by hand.
-
-    // H3 overrides end.
   ]
 }

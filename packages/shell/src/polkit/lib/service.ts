@@ -89,6 +89,34 @@ async function registerAgent(on: DBusConnection, subject: Subject, locale: strin
 }
 
 /** Keep the agent registered until `close()`. Never rejects: problems are logged and retried. */
+/** Best effort: polkitd drops the registration by itself when the connection closes. */
+function unregister(on: DBusConnection, subject: ServeOptions["subject"]): void {
+  on.call({
+    destination: AUTHORITY_NAME,
+    path: AUTHORITY_PATH,
+    interface: AUTHORITY_INTERFACE,
+    member: "UnregisterAuthenticationAgent",
+    signature: "(sa{sv})s",
+    body: [subject, AGENT_PATH],
+    noReply: true,
+  }).catch(() => {});
+}
+
+/** Says what went wrong once, not on every retry of the same failure. */
+function complainer(): ((what: string, error: unknown) => void) & { reset(): void } {
+  let last = "";
+  const complain = (what: string, error: unknown): void => {
+    const text = `${what}: ${error instanceof Error ? error.message : String(error)}`;
+    if (text !== last) console.error(`dashi-shell: polkit agent: ${text}`);
+    last = text;
+  };
+  return Object.assign(complain, {
+    reset() {
+      last = "";
+    },
+  });
+}
+
 export function serveAgent(options: ServeOptions): AgentService {
   const { controller, subject, locale } = options;
   const retryMin = options.retryMs ?? 1000;
@@ -98,13 +126,7 @@ export function serveAgent(options: ServeOptions): AgentService {
   let closed = false;
   let retry = retryMin;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  let lastComplaint = "";
-
-  const complain = (what: string, error: unknown): void => {
-    const text = `${what}: ${error instanceof Error ? error.message : String(error)}`;
-    if (text !== lastComplaint) console.error(`dashi-shell: polkit agent: ${text}`);
-    lastComplaint = text;
-  };
+  const complain = complainer();
 
   const register = (on: DBusConnection): Promise<void> => registerAgent(on, subject, locale);
 
@@ -139,7 +161,7 @@ export function serveAgent(options: ServeOptions): AgentService {
       owner = await authorityOwner(bus);
       await register(bus);
       retry = retryMin;
-      lastComplaint = "";
+      complain.reset();
       console.error("dashi-shell: polkit agent registered");
     } catch (error) {
       complain("could not register", error);
@@ -165,16 +187,7 @@ export function serveAgent(options: ServeOptions): AgentService {
       clearTimeout(timer);
       const on = connection;
       connection = null;
-      // Best effort: polkitd drops the registration by itself when the connection closes.
-      on?.call({
-        destination: AUTHORITY_NAME,
-        path: AUTHORITY_PATH,
-        interface: AUTHORITY_INTERFACE,
-        member: "UnregisterAuthenticationAgent",
-        signature: "(sa{sv})s",
-        body: [subject, AGENT_PATH],
-        noReply: true,
-      }).catch(() => {});
+      if (on) unregister(on, subject);
       on?.close();
     },
   };

@@ -11,7 +11,7 @@
  * presses one (page-keys.ts), with the same ring.
  */
 
-import { type KeyDownInfo, View } from "@mirinjs/metal";
+import { type KeyDownInfo, View, type ViewStyle } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import type { BluetoothStore } from "../bluetooth/store.ts";
 import type { Laptop } from "../laptop/start.ts";
@@ -73,6 +73,18 @@ export interface ControlCenterProps {
   embedded?: boolean;
 }
 
+/** The panel's card: hung under the bar's right end, or, embedded in Settings, in the page. */
+function panelStyle(embedded: boolean, surface: string, edge: ReturnType<typeof usePanelEdge>): ViewStyle {
+  return {
+    ...(embedded ? {} : { position: "absolute" as const, right: 8, top: 4 }),
+    width: GRID.width,
+    flexDirection: "column",
+    borderRadius: GRID.radius,
+    backgroundColor: surface,
+    ...(embedded ? { padding: GRID.padding } : { shadow: "xl" as const, ...edge }),
+  };
+}
+
 export function ControlCenterPanel(props: ControlCenterProps) {
   const { page, onPage, onClose, embedded = false } = props;
   const colors = useControlColors();
@@ -125,14 +137,7 @@ export function ControlCenterPanel(props: ControlCenterProps) {
       onContextMenu={() => {
         if (page === "main" && !draft) setDraft(saved);
       }}
-      style={{
-        ...(embedded ? {} : { position: "absolute" as const, right: 8, top: 4 }),
-        width: GRID.width,
-        flexDirection: "column",
-        borderRadius: GRID.radius,
-        backgroundColor: colors.surface,
-        ...(embedded ? { padding: GRID.padding } : { shadow: "xl" as const, ...edge }),
-      }}
+      style={panelStyle(embedded, colors.surface, edge)}
     >
       {page !== "main" ? (
         <PageOrigin.Provider value={origin}>

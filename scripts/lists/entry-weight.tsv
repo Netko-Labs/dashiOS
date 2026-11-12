@@ -292,6 +292,7 @@ packages/shell/src/main.tsx	packages/shell/src/clipboard
 packages/shell/src/main.tsx	packages/shell/src/closing-apps.ts
 packages/shell/src/main.tsx	packages/shell/src/compositor
 packages/shell/src/main.tsx	packages/shell/src/confirm-sheet.tsx
+packages/shell/src/main.tsx	packages/shell/src/consent-scopes.tsx
 packages/shell/src/main.tsx	packages/shell/src/consent.tsx
 packages/shell/src/main.tsx	packages/shell/src/control-center
 packages/shell/src/main.tsx	packages/shell/src/desktop-entries.ts

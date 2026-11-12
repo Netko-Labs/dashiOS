@@ -17,6 +17,20 @@ import { mount } from "./lib/drives.ts";
 import type { Volume } from "./lib/mounts.ts";
 import { favorites, folderAt, type GlyphName, type Location, sameLocation } from "./location.ts";
 
+/** The small button at a row's end (Eject, Empty). */
+function RowAction({ testID, glyph, color, onPress }: { testID: string; glyph: string; color: string; onPress: () => void }) {
+  const colors = useColors();
+  return (
+    <View
+      testID={testID}
+      onPress={onPress}
+      style={{ width: 22, height: 22, borderRadius: 5, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
+    >
+      <Svg markup={glyph} size={13} color={color} />
+    </View>
+  );
+}
+
 function Row({
   id,
   name,
@@ -78,22 +92,7 @@ function Row({
           </Text>
         </View>
       )}
-      {action && !rail && (
-        <View
-          testID={`place:${id}:${action.id}`}
-          onPress={action.onPress}
-          style={{
-            width: 22,
-            height: 22,
-            borderRadius: 5,
-            alignItems: "center",
-            justifyContent: "center",
-            hoverBackgroundColor: colors.button,
-          }}
-        >
-          <Svg markup={action.glyph} size={13} color={look.glyph} />
-        </View>
-      )}
+      {action && !rail && <RowAction testID={`place:${id}:${action.id}`} glyph={action.glyph} color={look.glyph} onPress={action.onPress} />}
       {tip.node}
     </View>
   );

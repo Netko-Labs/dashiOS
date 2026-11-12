@@ -92,8 +92,7 @@ export const inputTools: readonly ToolDef[] = [
   tool({
     name: "scroll",
     title: "Scroll in a window",
-    description:
-      "Scroll with the mouse wheel at a point in a window. `dy` is in logical pixels, positive down; `dx` positive right. About 15 pixels is one wheel notch.",
+    description: "Scroll at a point in a window. `dy` is in logical pixels, positive down; `dx` positive right: what is under the point moves that far.",
     scope: "act",
     readOnly: false,
     destructive: false,

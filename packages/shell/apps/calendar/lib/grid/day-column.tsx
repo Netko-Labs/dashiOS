@@ -42,6 +42,28 @@ export interface DayColumnProps {
   handlers: GridHandlers;
 }
 
+/** The 24 hours' rules. */
+function HourLines() {
+  const colors = useColors();
+  return Array.from({ length: 24 }, (_, hour) => (
+    <View key={hour} style={{ height: HOUR_HEIGHT, flexShrink: 0, borderBottomWidth: 1, borderColor: colors.separator }} />
+  ));
+}
+
+/** The time now runs across every day shown, in kombu; today's has the dot. */
+function NowLine({ minutes, isToday }: { minutes: number; isToday: boolean }) {
+  const colors = useColors();
+  return (
+    <View
+      testID={isToday ? "now" : undefined}
+      style={{ position: "absolute", left: 0, right: 0, top: yAtMinutes(minutes) - 5, height: 10, justifyContent: "center" }}
+    >
+      <View style={{ height: isToday ? 2 : 1, backgroundColor: isToday ? colors.selection : tint(colors.selection, 0.45) }} />
+      {isToday && <View style={{ position: "absolute", left: -5, width: 10, height: 10, borderRadius: 5, backgroundColor: colors.selection }} />}
+    </View>
+  );
+}
+
 export function DayColumn({ day, days, isToday, nowMinutes, prefs, occurrences, colorOf, columnWidth, onWidth, state, handlers }: DayColumnProps) {
   const colors = useColors();
   const { drag, pending, selected, selectedSlot, selectedEvent } = state;
@@ -63,9 +85,7 @@ export function DayColumn({ day, days, isToday, nowMinutes, prefs, occurrences, 
       }
       style={{ flex: 1, minWidth: 0, height: GRID_HEIGHT, position: "relative", flexDirection: "column", borderLeftWidth: 1, borderColor: colors.separator }}
     >
-      {Array.from({ length: 24 }, (_, hour) => (
-        <View key={hour} style={{ height: HOUR_HEIGHT, flexShrink: 0, borderBottomWidth: 1, borderColor: colors.separator }} />
-      ))}
+      <HourLines />
       {day === selected && selectedSlot !== null && (
         <View
           testID="selected-slot"
@@ -120,16 +140,7 @@ export function DayColumn({ day, days, isToday, nowMinutes, prefs, occurrences, 
           />
         </View>
       )}
-      {nowMinutes !== null && (
-        // The time now runs across every day shown, in kombu; today's has the dot.
-        <View
-          testID={isToday ? "now" : undefined}
-          style={{ position: "absolute", left: 0, right: 0, top: yAtMinutes(nowMinutes) - 5, height: 10, justifyContent: "center" }}
-        >
-          <View style={{ height: isToday ? 2 : 1, backgroundColor: isToday ? colors.selection : tint(colors.selection, 0.45) }} />
-          {isToday && <View style={{ position: "absolute", left: -5, width: 10, height: 10, borderRadius: 5, backgroundColor: colors.selection }} />}
-        </View>
-      )}
+      {nowMinutes !== null && <NowLine minutes={nowMinutes} isToday={isToday} />}
     </View>
   );
 }

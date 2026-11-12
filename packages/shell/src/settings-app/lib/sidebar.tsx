@@ -63,14 +63,7 @@ function Results({ results }: { results: SidebarResults }) {
 
 const LIST_ID = "settings-sidebar-list";
 
-export function Sidebar({
-  current,
-  onSelect,
-  shown,
-  results,
-  search,
-  waiting = 0,
-}: {
+interface SidebarProps {
   current: PaneId;
   onSelect: (pane: PaneId) => void;
   shown?: ReadonlySet<PaneId>;
@@ -78,14 +71,14 @@ export function Sidebar({
   search: SearchProps;
   /** Agents waiting for you: Agents' count. */
   waiting?: number;
-}) {
-  const colors = useControlColors();
-  const { controls } = useWindowChrome();
+}
+
+/** Keeps the chosen pane in view: scrolled once each time it changes, as soon as it and the list are laid out. */
+function useReveal(current: PaneId): { list: { current: Bounds | null }; rows: { current: Map<PaneId, Bounds> }; reveal: () => void } {
   const host = useContext(SpotContext);
   const list = useRef<Bounds | null>(null);
   const rows = useRef(new Map<PaneId, Bounds>());
   const revealed = useRef<PaneId | null>(null);
-  // Keep the chosen pane in view: scrolled once each time it changes, as soon as it and the list are laid out.
   const reveal = (): void => {
     const row = rows.current.get(current);
     if (revealed.current === current || !row || !list.current) return;
@@ -94,9 +87,36 @@ export function Sidebar({
     if (dy !== 0) host?.scroll?.(LIST_ID, dy);
   };
   useEffect(reveal);
-  // Room for the lights before the field; the whole row but the field is where the window is grabbed.
+  return { list, rows, reveal };
+}
+
+/** The search field's row: room for the lights before the field; all of it but the field is where the window is grabbed. */
+function TopBand({ search }: { search: SearchProps }) {
+  const { controls } = useWindowChrome();
   const lights = controls ? Math.max(Math.ceil(controls.x + controls.width) - SIDEBAR.paddingX + 8, 0) : 0;
   const band = topBand(controls);
+  return (
+    <View
+      testID="settings-sidebar-top"
+      dragRegion
+      style={{
+        height: band.row,
+        flexShrink: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        paddingLeft: SIDEBAR.paddingX + lights,
+        paddingRight: SIDEBAR.paddingX + 4,
+        marginBottom: 2 + band.below,
+      }}
+    >
+      <SearchPill search={search} />
+    </View>
+  );
+}
+
+export function Sidebar({ current, onSelect, shown, results, search, waiting = 0 }: SidebarProps) {
+  const colors = useControlColors();
+  const { list, rows, reveal } = useReveal(current);
   return (
     <View
       testID="settings-sidebar"
@@ -108,21 +128,7 @@ export function Sidebar({
         backgroundColor: colors.sidebar,
       }}
     >
-      <View
-        testID="settings-sidebar-top"
-        dragRegion
-        style={{
-          height: band.row,
-          flexShrink: 0,
-          flexDirection: "row",
-          alignItems: "center",
-          paddingLeft: SIDEBAR.paddingX + lights,
-          paddingRight: SIDEBAR.paddingX + 4,
-          marginBottom: 2 + band.below,
-        }}
-      >
-        <SearchPill search={search} />
-      </View>
+      <TopBand search={search} />
       <ScrollView
         testID={LIST_ID}
         onLayout={(laid) => {

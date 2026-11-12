@@ -47,10 +47,46 @@ impl<const MIN: i64, const MAX: i64> Int<MIN, MAX> {
         self.0
     }
 
-    /// As another integer type; the range is the caller's promise that it fits.
-    pub(crate) fn to<T: TryFrom<i64> + Default>(self) -> T {
-        T::try_from(self.0).unwrap_or_default()
+    /// As another integer type. Every value from `MIN` to `MAX` must fit it:
+    /// a range that does not is refused when the crate is built, so no number
+    /// is ever wrapped, truncated or turned into zero here.
+    pub(crate) fn to<T: Holds>(self) -> T {
+        const {
+            assert!(
+                MIN >= T::LOW && MAX <= T::HIGH,
+                "this Int's range does not fit the integer type it is asked as"
+            );
+        }
+        T::held(self.0)
     }
+}
+
+/// An integer type an [`Int`] may be read as, and the range it holds.
+pub(crate) trait Holds: Sized {
+    const LOW: i64;
+    const HIGH: i64;
+    /// `value` as this type; only called with a value from `LOW` to `HIGH`.
+    fn held(value: i64) -> Self;
+}
+
+macro_rules! holds {
+    ($($kind:ty: $low:expr, $high:expr;)*) => {$(
+        impl Holds for $kind {
+            const LOW: i64 = $low;
+            const HIGH: i64 = $high;
+            fn held(value: i64) -> Self {
+                // In range: `Int::to` refused, at build time, any range that is not.
+                value as $kind
+            }
+        }
+    )*};
+}
+
+holds! {
+    i32: i32::MIN as i64, i32::MAX as i64;
+    u32: 0, u32::MAX as i64;
+    u64: 0, i64::MAX;
+    usize: 0, if usize::BITS >= 64 { i64::MAX } else { usize::MAX as i64 };
 }
 
 impl<'de, const MIN: i64, const MAX: i64> Deserialize<'de> for Int<MIN, MAX> {
@@ -92,9 +128,15 @@ impl<const MIN: i64, const MAX: i64> Pixels<MIN, MAX> {
         self.0
     }
 
-    /// As an `i32`: every range here fits one.
+    /// As an `i32`. A range that does not fit one is refused when the crate is built.
     pub(crate) fn i32(self) -> i32 {
-        i32::try_from(self.0).unwrap_or_default()
+        const {
+            assert!(
+                MIN >= i32::MIN as i64 && MAX <= i32::MAX as i64,
+                "this Pixels' range does not fit an i32"
+            );
+        }
+        self.0 as i32
     }
 }
 
@@ -194,6 +236,30 @@ mod tests {
         assert!(from_value::<Fingers>(json!(4_294_967_299_u64)).is_err());
         assert!(from_value::<Fingers>(json!(2.5)).is_err());
         assert!(from_value::<Pid>(json!(1)).is_err());
+    }
+
+    #[test]
+    fn integers_become_other_types_whole() {
+        // The range must fit the type: `Int::<0, { 1 << 40 }>::to::<u32>()` does not build
+        // (it used to give 0 for 4294967296 and up).
+        assert_eq!(
+            Count::new(i64::from(u32::MAX)).map(Count::to::<u32>),
+            Some(u32::MAX)
+        );
+        assert_eq!(Count::new(7).map(Count::to::<usize>), Some(7));
+        assert_eq!(
+            Pid::new(i64::from(i32::MAX)).map(Pid::to::<i32>),
+            Some(i32::MAX)
+        );
+        assert_eq!(Int::<-5, 5>::new(-5).map(Int::to::<i32>), Some(-5));
+        assert_eq!(
+            Millis::<{ i64::MAX }>::new(i64::MAX).map(Millis::to::<u64>),
+            Some(i64::MAX as u64)
+        );
+        assert_eq!(
+            Wide::new(i64::from(i32::MIN)).map(Wide::i32),
+            Some(i32::MIN)
+        );
     }
 
     #[test]

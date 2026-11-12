@@ -70,50 +70,75 @@ async function plain(): Promise<void> {
 const AGAIN_FOR_MS = 120_000;
 const AGAIN_EVERY_MS = 250;
 
+/** A stream's chunks as whole lines; the unfinished tail waits for the next chunk. */
+function lineSplitter(): { push(chunk: Uint8Array): string[]; rest(): string } {
+  const decoder = new TextDecoder();
+  let pending = "";
+  return {
+    push(chunk) {
+      const lines = (pending + decoder.decode(chunk, { stream: true })).split("\n");
+      pending = lines.pop() ?? "";
+      return lines;
+    },
+    rest: () => pending,
+  };
+}
+
+/** What waits to be written to the socket, in order. */
+function outbox(): { push(line: string): void; write(socket: Bun.Socket<undefined>): boolean; clear(): void } {
+  const encoder = new TextEncoder();
+  let queue: Uint8Array[] = [];
+  return {
+    push: (line) => void queue.push(encoder.encode(`${line}\n`)),
+    /** Writes what the socket takes; true when nothing is left waiting. */
+    write(socket) {
+      while (queue.length > 0) {
+        const next = queue[0] as Uint8Array;
+        const written = socket.write(next);
+        if (written < next.byteLength) {
+          queue[0] = next.subarray(Math.max(written, 0));
+          return false;
+        }
+        queue.shift();
+      }
+      return true;
+    },
+    clear() {
+      queue = [];
+    },
+  };
+}
+
 /** Line by line, so it can say `initialize` again and fail what was lost when the socket closes. */
 async function reconnecting(): Promise<void> {
   const relay = new McpRelay();
-  const encoder = new TextEncoder();
+  const out = outbox();
   let socket: Bun.Socket<undefined> | null = null;
-  /** What waits to be written to the socket, in order. */
-  let queue: Uint8Array[] = [];
   /** The client's lines while Dashi is away. */
   let held: string[] = [];
   let clientDone = false;
 
   const pump = () => {
-    while (socket && queue.length > 0) {
-      const next = queue[0] as Uint8Array;
-      const written = socket.write(next);
-      if (written < next.byteLength) {
-        queue[0] = next.subarray(Math.max(written, 0));
-        return;
-      }
-      queue.shift();
-    }
-    if (socket && clientDone && queue.length === 0) socket.end();
+    if (socket && out.write(socket) && clientDone) socket.end();
   };
   const send = (line: string) => {
-    queue.push(encoder.encode(`${line}\n`));
+    out.push(line);
     pump();
   };
 
   const connect = async (): Promise<boolean> => {
-    const decoder = new TextDecoder();
-    let pending = "";
+    const lines = lineSplitter();
     try {
       socket = await Bun.connect({
         unix: path,
         socket: {
           data(_socket, data) {
-            const lines = (pending + decoder.decode(data, { stream: true })).split("\n");
-            pending = lines.pop() ?? "";
-            for (const line of lines) if (line.trim() && relay.fromServer(line)) toClient(`${line}\n`);
+            for (const line of lines.push(data)) if (line.trim() && relay.fromServer(line)) toClient(`${line}\n`);
           },
           drain: pump,
           close() {
             socket = null;
-            queue = [];
+            out.clear();
             void lost();
           },
         },
@@ -149,8 +174,7 @@ async function reconnecting(): Promise<void> {
     process.exit(1);
   }
 
-  const decoder = new TextDecoder();
-  let pending = "";
+  const lines = lineSplitter();
   const fromClient = (line: string) => {
     if (!line.trim()) return;
     relay.fromClient(line);
@@ -158,11 +182,9 @@ async function reconnecting(): Promise<void> {
     else held.push(line);
   };
   for await (const chunk of Bun.stdin.stream()) {
-    const lines = (pending + decoder.decode(chunk, { stream: true })).split("\n");
-    pending = lines.pop() ?? "";
-    for (const line of lines) fromClient(line);
+    for (const line of lines.push(chunk)) fromClient(line);
   }
-  fromClient(pending);
+  fromClient(lines.rest());
   clientDone = true;
   // The client is done: let Dashi see the end once what it sent is written.
   if (socket) pump();

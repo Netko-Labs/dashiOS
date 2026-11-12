@@ -10,7 +10,7 @@
  */
 
 import { MENU, MenuLine, MenuRow, menuHeight, type Size, useColors, useSurface } from "@dashi/ui";
-import { ScrollView, View } from "@mirinjs/metal";
+import { ScrollView, View, type ViewStyle } from "@mirinjs/metal";
 import { useState } from "react";
 import { isEnabled, stepHighlight } from "../model.ts";
 import type { MenuEntry } from "../types.ts";
@@ -40,17 +40,7 @@ export function dropdownKey(
   }
 }
 
-export function DropdownMenu<A>({
-  entries,
-  x,
-  above,
-  alignRight = false,
-  room = { width: 0, height: 0 },
-  fromKeys = false,
-  onSide,
-  onChoose,
-  onClose,
-}: {
+interface DropdownMenuProps<A> {
   entries: readonly MenuEntry<A>[];
   /** The panel's left edge, in screen pixels (its center with `above`, its right edge with `alignRight`). */
   x: number;
@@ -69,7 +59,39 @@ export function DropdownMenu<A>({
   onSide?: (toward: "left" | "right") => void;
   onChoose: (action: A) => void;
   onClose: () => void;
-}) {
+}
+
+/** The panel: where it was placed, solid, with the menu's edge. */
+function panelStyle(place: ReturnType<typeof placeDropdown>, ground: string, edge: string): ViewStyle {
+  return {
+    position: "absolute",
+    left: place.left,
+    ...(place.top !== undefined ? { top: place.top } : {}),
+    ...(place.bottom !== undefined ? { bottom: place.bottom } : {}),
+    ...(place.maxHeight !== undefined ? { height: place.maxHeight } : {}),
+    minWidth: DROPDOWN.minWidth,
+    maxWidth: DROPDOWN.maxWidth,
+    flexDirection: "column",
+    borderRadius: MENU.radius,
+    // Solid, as a window's menu: the window under it never ghosts through its rows (the menu's tint lies on the card ground).
+    backgroundColor: ground,
+    borderWidth: MENU.edge,
+    borderColor: edge,
+    shadow: "xl",
+  };
+}
+
+export function DropdownMenu<A>({
+  entries,
+  x,
+  above,
+  alignRight = false,
+  room = { width: 0, height: 0 },
+  fromKeys = false,
+  onSide,
+  onChoose,
+  onClose,
+}: DropdownMenuProps<A>) {
   const colors = useColors();
   const surface = useSurface();
   const [highlight, setHighlight] = useState<number | null>(() => (fromKeys ? stepHighlight(entries, null, "down") : null));
@@ -117,22 +139,7 @@ export function DropdownMenu<A>({
         else if (command?.kind === "choose") choose();
         else if (command?.kind === "side") onSide?.(command.toward);
       }}
-      style={{
-        position: "absolute",
-        left: place.left,
-        ...(place.top !== undefined ? { top: place.top } : {}),
-        ...(place.bottom !== undefined ? { bottom: place.bottom } : {}),
-        ...(place.maxHeight !== undefined ? { height: place.maxHeight } : {}),
-        minWidth: DROPDOWN.minWidth,
-        maxWidth: DROPDOWN.maxWidth,
-        flexDirection: "column",
-        borderRadius: MENU.radius,
-        // Solid, as a window's menu: the window under it never ghosts through its rows (the menu's tint lies on the card ground).
-        backgroundColor: surface.card,
-        borderWidth: MENU.edge,
-        borderColor: colors.menuEdge,
-        shadow: "xl",
-      }}
+      style={panelStyle(place, surface.card, colors.menuEdge)}
     >
       <View
         style={{

@@ -54,6 +54,8 @@ function ArrangementBox({ box, monitor, view, lifted }: { box: Box; monitor: Mon
   );
 }
 
+const AREA = { width: ARRANGEMENT_WIDTH, height: ARRANGEMENT_HEIGHT, flexShrink: 0, position: "relative", overflow: "hidden", borderRadius: 16 } as const;
+
 export function ArrangementView({ monitors, onMove }: { monitors: readonly Monitor[]; onMove: (name: string, spot: Spot) => void }) {
   const colors = useControlColors();
   const boxes = boxesOf(monitors);
@@ -112,15 +114,7 @@ export function ArrangementView({ monitors, onMove }: { monitors: readonly Monit
             }
           }
         }}
-        style={{
-          width: ARRANGEMENT_WIDTH,
-          height: ARRANGEMENT_HEIGHT,
-          flexShrink: 0,
-          position: "relative",
-          overflow: "hidden",
-          borderRadius: 16,
-          backgroundColor: colors.line,
-        }}
+        style={{ ...AREA, backgroundColor: colors.line }}
       >
         {boxes.map((box) => (
           <ArrangementBox

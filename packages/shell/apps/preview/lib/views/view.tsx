@@ -21,7 +21,7 @@ import { useChrome } from "../hooks/use-chrome.ts";
 import { useKeys } from "../hooks/use-keys.ts";
 import { useToolbar } from "../hooks/use-toolbar.ts";
 import { useZoom } from "../hooks/use-zoom.ts";
-import { keyAction } from "../keys.ts";
+import { type KeyAction, keyAction } from "../keys.ts";
 import { previewMenus } from "../menus.ts";
 import { usePictureView } from "../picture-view.ts";
 import type { Viewer } from "../viewer.ts";
@@ -33,6 +33,20 @@ import { ToolbarRow } from "./toolbar.tsx";
 export const PREVIEW_SIZE = { width: 1000, height: 700 } as const;
 /** The least the window gets: a picture, the name, Previous and Next, and "…" still fit (fold.ts). */
 export const PREVIEW_MIN_SIZE = { width: 360, height: 280 } as const;
+
+/** The window's keys, while no sheet or menu has them. */
+function WindowKeys({ isPdf, onKey }: { isPdf: boolean; onKey: (action: KeyAction) => void }) {
+  return (
+    <View
+      testID="keys"
+      onWindowKeyDown={(key) => {
+        const action = keyAction(key, isPdf);
+        if (action) onKey(action);
+      }}
+      style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }}
+    />
+  );
+}
 
 export function PreviewWindow({ viewer, clipboard, cacheDir }: { viewer: Viewer; clipboard?: Clipboard; cacheDir?: string }) {
   const colors = useColors();
@@ -87,16 +101,7 @@ export function PreviewWindow({ viewer, clipboard, cacheDir }: { viewer: Viewer;
       sidebarWidth={chrome.sidebarWidth}
       overlay={overlay}
     >
-      {chrome.sheet === null && chrome.menu === null && (
-        <View
-          testID="keys"
-          onWindowKeyDown={(key) => {
-            const action = keyAction(key, isPdf);
-            if (action) onKey(action);
-          }}
-          style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }}
-        />
-      )}
+      {chrome.sheet === null && chrome.menu === null && <WindowKeys isPdf={isPdf} onKey={onKey} />}
       <View
         testID="drop-area"
         onDrop={drop.onDrop}

@@ -18,6 +18,51 @@ import type { PrintDeps, SheetAnswer, SheetRequest } from "./backend.ts";
 import { defaultPrinter, listPrinters, printPdf } from "./cups.ts";
 import { everydayMedia, jobOptions, MAX_COPIES, mediaLabel, type PrintChoice, parseCopies, parseRanges } from "./settings.ts";
 
+interface PagesChoiceProps {
+  rangeMode: boolean;
+  setRangeMode: (on: boolean) => void;
+  pages: string;
+  onPages: (pages: string) => void;
+  onSubmit: () => void;
+  onKeyPress: (key: "Escape" | "ArrowUp" | "ArrowDown") => void;
+}
+
+/** All the pages, or a range typed beside the choice. */
+function PagesChoice({ rangeMode, setRangeMode, pages, onPages, onSubmit, onKeyPress }: PagesChoiceProps) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <Choices
+        testID="print:pages"
+        options={[
+          { value: "all", label: "All" },
+          { value: "range", label: "Range" },
+        ]}
+        value={rangeMode ? "range" : "all"}
+        onChange={(mode) => setRangeMode(mode === "range")}
+      />
+      {rangeMode && (
+        <TextField testID="print:range" width={120} placeholder="1-3, 5" value={pages} onChangeText={onPages} onSubmit={onSubmit} onKeyPress={onKeyPress} />
+      )}
+    </View>
+  );
+}
+
+function PaperRow({ media, chosen, onChange }: { media: string[]; chosen: string; onChange: (keyword: string) => void }) {
+  return (
+    <Group testID="print:more-rows">
+      <Row label="Paper">
+        <PopUpButton
+          testID="print:paper"
+          width={220}
+          options={media.map((keyword) => ({ value: keyword, label: mediaLabel(keyword) }))}
+          value={chosen}
+          onChange={onChange}
+        />
+      </Row>
+    </Group>
+  );
+}
+
 function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value: SheetAnswer) => void }) {
   const colors = useColors();
   const [choice, setChoice] = useState<PrintChoice>(request.start);
@@ -79,45 +124,19 @@ function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value
           />
         </Row>
         <Row label={request.pages ? `Pages (${request.pages})` : "Pages"}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Choices
-              testID="print:pages"
-              options={[
-                { value: "all", label: "All" },
-                { value: "range", label: "Range" },
-              ]}
-              value={rangeMode ? "range" : "all"}
-              onChange={(mode) => setRangeMode(mode === "range")}
-            />
-            {rangeMode && (
-              <TextField
-                testID="print:range"
-                width={120}
-                placeholder="1-3, 5"
-                value={choice.pages}
-                onChangeText={(pages) => update({ pages })}
-                onSubmit={print}
-                onKeyPress={fieldKeys}
-              />
-            )}
-          </View>
+          <PagesChoice
+            rangeMode={rangeMode}
+            setRangeMode={setRangeMode}
+            pages={choice.pages}
+            onPages={(pages) => update({ pages })}
+            onSubmit={print}
+            onKeyPress={fieldKeys}
+          />
         </Row>
       </Group>
       {twoSided && <CheckBox testID="print:two-sided" label="Two-sided" checked={choice.twoSided} onChange={(on) => update({ twoSided: on })} />}
       <MoreButton testID="print:more" open={more} more="More Options" less="Fewer Options" onPress={() => setMore(!more)} />
-      {more && media.length > 0 && (
-        <Group testID="print:more-rows">
-          <Row label="Paper">
-            <PopUpButton
-              testID="print:paper"
-              width={220}
-              options={media.map((keyword) => ({ value: keyword, label: mediaLabel(keyword) }))}
-              value={choice.media ?? media[0] ?? ""}
-              onChange={(keyword) => update({ media: keyword })}
-            />
-          </Row>
-        </Group>
-      )}
+      {more && media.length > 0 && <PaperRow media={media} chosen={choice.media ?? media[0] ?? ""} onChange={(keyword) => update({ media: keyword })} />}
       {more && printer?.color && <CheckBox testID="print:color" label="Color" checked={choice.color} onChange={(on) => update({ color: on })} />}
     </PortalFrame>
   );

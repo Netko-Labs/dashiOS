@@ -145,6 +145,30 @@ function paneContext(
   };
 }
 
+/** Raises the window: the compositor lists it by app id, and `focus` brings a minimized or hidden one back too. */
+async function raiseSettings(compositor: SettingsAppOptions["compositor"]): Promise<void> {
+  try {
+    const window = (await compositor?.windows())?.find((candidate) => candidate.appId === SETTINGS_APP_ID);
+    if (window) await compositor?.focus({ window: window.id });
+  } catch (error) {
+    console.error("dashi-shell: could not bring System Settings forward:", error);
+  }
+}
+
+/** Settings' Edit menu in the menu bar, for the window's process (by its app id, once the compositor lists it). */
+function editMenuFor(options: SettingsAppOptions, find: FindFocus): ReturnType<typeof publishEditMenu> | null {
+  const { compositor } = options;
+  const menus = options.menus?.();
+  if (!menus || !compositor) return null;
+  return publishEditMenu(
+    menus,
+    options.settings.undo,
+    async () => (await compositor.windows()).find((window) => window.appId === SETTINGS_APP_ID)?.pid ?? null,
+    undefined,
+    () => find.request(),
+  );
+}
+
 export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
   const { compositor } = options;
   const nav = new Nav();
@@ -163,15 +187,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
     current.surface?.close();
   };
 
-  /** Raises the window: the compositor lists it by app id, and `focus` brings a minimized or hidden one back too. */
-  const raise = async (): Promise<void> => {
-    try {
-      const window = (await compositor?.windows())?.find((candidate) => candidate.appId === SETTINGS_APP_ID);
-      if (window) await compositor?.focus({ window: window.id });
-    } catch (error) {
-      console.error("dashi-shell: could not bring System Settings forward:", error);
-    }
-  };
+  const raise = (): Promise<void> => raiseSettings(compositor);
 
   const open = (pane?: PaneId, row?: string): void => {
     if (pane) nav.select(pane);
@@ -186,18 +202,7 @@ export function startSettingsApp(options: SettingsAppOptions): SettingsApp {
     const ctx = paneContext(options, screens, clipboard, open);
     const stopScreens = screens.start();
     const stopWatching = options.settings.watch();
-    const menus = options.menus?.();
-    // The window's process, by its app id, once the compositor lists it.
-    const editMenu =
-      menus && compositor
-        ? publishEditMenu(
-            menus,
-            options.settings.undo,
-            async () => (await compositor.windows()).find((window) => window.appId === SETTINGS_APP_ID)?.pid ?? null,
-            undefined,
-            () => find.request(),
-          )
-        : null;
+    const editMenu = editMenuFor(options, find);
     const current: Session = {
       surface: null,
       stop: () => {

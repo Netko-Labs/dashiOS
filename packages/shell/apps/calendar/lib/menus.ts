@@ -41,6 +41,62 @@ export interface MenuContext {
 
 const LABELS: Record<View, string> = { day: "Day", week: "Week", month: "Month" };
 
+function runAction(id: string, actions: MenuContext["actions"]): void {
+  switch (id) {
+    case "event:new":
+      return actions.newEvent();
+    case "calendar:new":
+      return actions.newCalendar();
+    case "import":
+      return actions.importFile();
+    case "export":
+      return actions.exportFile();
+    case "view:day":
+      return actions.setView("day");
+    case "view:week":
+      return actions.setView("week");
+    case "view:month":
+      return actions.setView("month");
+    case "today":
+      return actions.today();
+    case "previous":
+      return actions.step(-1);
+    case "next":
+      return actions.step(1);
+    case "undo":
+      return actions.undo();
+    case "redo":
+      return actions.redo();
+    case "delete":
+      return actions.deleteEvent();
+    case "event:edit":
+      return actions.editEvent();
+    case "event:duplicate":
+      return actions.duplicate();
+    case "find":
+      return actions.find();
+  }
+}
+
+function viewMenu(view: MenuContext["view"], free: boolean): MenuSpec {
+  return {
+    id: "view",
+    items: [
+      ...(["day", "week", "month"] as const).map((each, index) => ({
+        id: `view:${each}`,
+        label: LABELS[each],
+        shortcut: `❖${index + 1}`,
+        enabled: free,
+        checked: view === each,
+      })),
+      { type: "separator" },
+      { id: "today", label: "Go to Today", shortcut: "❖T", enabled: free },
+      { id: "previous", label: `Previous ${LABELS[view]}`, shortcut: "❖[", enabled: free },
+      { id: "next", label: `Next ${LABELS[view]}`, shortcut: "❖]", enabled: free },
+    ],
+  };
+}
+
 export function calendarMenus(context: MenuContext): { menus: MenuSpec[]; run: (id: string) => void } {
   const { actions, modal, view, picked } = context;
   const free = !modal;
@@ -76,22 +132,7 @@ export function calendarMenus(context: MenuContext): { menus: MenuSpec[]; run: (
       { id: "event:duplicate", label: "Duplicate", shortcut: "❖D", enabled: free && picked },
     ],
   };
-  const views: MenuSpec = {
-    id: "view",
-    items: [
-      ...(["day", "week", "month"] as const).map((each, index) => ({
-        id: `view:${each}`,
-        label: LABELS[each],
-        shortcut: `❖${index + 1}`,
-        enabled: free,
-        checked: view === each,
-      })),
-      { type: "separator" },
-      { id: "today", label: "Go to Today", shortcut: "❖T", enabled: free },
-      { id: "previous", label: `Previous ${LABELS[view]}`, shortcut: "❖[", enabled: free },
-      { id: "next", label: `Next ${LABELS[view]}`, shortcut: "❖]", enabled: free },
-    ],
-  };
+  const views = viewMenu(view, free);
   const enabled = new Set(
     [file, edit, event, views].flatMap((menu) =>
       menu.items.filter((item) => "id" in item && item.enabled !== false).map((item) => ("id" in item ? item.id : "")),
@@ -100,40 +141,7 @@ export function calendarMenus(context: MenuContext): { menus: MenuSpec[]; run: (
   const run = (id: string): void => {
     // A chord the shell matched a moment before a sheet opened does nothing behind it.
     if (!enabled.has(id)) return;
-    switch (id) {
-      case "event:new":
-        return actions.newEvent();
-      case "calendar:new":
-        return actions.newCalendar();
-      case "import":
-        return actions.importFile();
-      case "export":
-        return actions.exportFile();
-      case "view:day":
-        return actions.setView("day");
-      case "view:week":
-        return actions.setView("week");
-      case "view:month":
-        return actions.setView("month");
-      case "today":
-        return actions.today();
-      case "previous":
-        return actions.step(-1);
-      case "next":
-        return actions.step(1);
-      case "undo":
-        return actions.undo();
-      case "redo":
-        return actions.redo();
-      case "delete":
-        return actions.deleteEvent();
-      case "event:edit":
-        return actions.editEvent();
-      case "event:duplicate":
-        return actions.duplicate();
-      case "find":
-        return actions.find();
-    }
+    runAction(id, actions);
   };
   return { menus: [file, edit, event, views], run };
 }

@@ -54,21 +54,21 @@ function NameSheet({
   );
 }
 
-export function NotesSheet({
-  sheet,
-  onClose,
-  actions,
-}: {
-  sheet: SheetState;
-  onClose: () => void;
-  actions: {
-    createFolder(name: string): void;
-    renameFolder(from: string, to: string): void;
-    deleteFolder(name: string): void;
-    purge(): void;
-    emptyTrash(): void;
-  };
-}) {
+interface SheetActions {
+  createFolder(name: string): void;
+  renameFolder(from: string, to: string): void;
+  deleteFolder(name: string): void;
+  purge(): void;
+  emptyTrash(): void;
+}
+
+/** What becomes of a deleted folder's notes. */
+function whereNotesGo(count: number): string {
+  if (count === 0) return "The folder is empty.";
+  return `Its ${count === 1 ? "note moves" : `${count} notes move`} to Recently Deleted, where ${count === 1 ? "it stays" : "they stay"} for 30 days.`;
+}
+
+export function NotesSheet({ sheet, onClose, actions }: { sheet: SheetState; onClose: () => void; actions: SheetActions }) {
   const done = (action: () => void) => () => {
     action();
     onClose();
@@ -102,11 +102,7 @@ export function NotesSheet({
         <ConfirmSheet
           testID="delete-folder"
           title={`Delete the folder “${sheet.name}”?`}
-          message={
-            sheet.count === 0
-              ? "The folder is empty."
-              : `Its ${sheet.count === 1 ? "note moves" : `${sheet.count} notes move`} to Recently Deleted, where ${sheet.count === 1 ? "it stays" : "they stay"} for 30 days.`
-          }
+          message={whereNotesGo(sheet.count)}
           confirmLabel="Delete"
           danger
           onConfirm={done(() => actions.deleteFolder(sheet.name))}

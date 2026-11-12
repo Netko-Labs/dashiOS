@@ -38,6 +38,31 @@ export interface ChooserInput {
   hiddenChord: (info: WindowKeyInfo) => boolean;
 }
 
+/** A key the listing did not take: Open, Cancel, back, up a folder, a peek, or a name typed ahead. */
+function browserKey(
+  key: BrowserKey,
+  { go, answer, store, setPeek }: { go: () => void; answer: (value: null) => void; store: ChooserModel["store"]; setPeek: (on: boolean) => void },
+): void {
+  switch (key.kind) {
+    case "open":
+      return go();
+    case "clear":
+      return answer(null);
+    case "back":
+      return store.goBack();
+    case "enclosing":
+      return store.goUp();
+    case "peek":
+      if (store.selectedItems().length > 0) setPeek(true);
+      return;
+    case "text":
+      if (key.text.trim() !== "") store.typeAhead(key.text);
+      return;
+    default:
+      return;
+  }
+}
+
 export function useChooserInput({
   model,
   exists,
@@ -70,26 +95,7 @@ export function useChooserInput({
     };
   });
 
-  const onKey = (key: BrowserKey): void => {
-    switch (key.kind) {
-      case "open":
-        return go();
-      case "clear":
-        return answer(null);
-      case "back":
-        return store.goBack();
-      case "enclosing":
-        return store.goUp();
-      case "peek":
-        if (store.selectedItems().length > 0) setPeek(true);
-        return;
-      case "text":
-        if (key.text.trim() !== "") store.typeAhead(key.text);
-        return;
-      default:
-        return;
-    }
-  };
+  const onKey = (key: BrowserKey): void => browserKey(key, { go, answer, store, setPeek });
   const fieldKeys = (key: FieldKey): void => {
     if (key === "Escape") {
       if (files.query !== "") store.setQuery("");

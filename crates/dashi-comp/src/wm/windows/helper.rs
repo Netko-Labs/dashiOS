@@ -72,8 +72,7 @@ mod tests {
     use super::last_used_in;
 
     #[test]
-    fn a_copy_through_wl_copy_is_the_last_used_window_in_its_session_the_last_used_window_in_its_session()
-     {
+    fn a_copy_through_wl_copy_is_the_last_used_window_in_its_session() {
         let windows = [
             (1, Some(40), 3),
             (2, Some(50), 9),

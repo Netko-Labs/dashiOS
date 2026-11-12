@@ -126,21 +126,28 @@ function AgentHead({ agent, onRevokeAll }: { agent: ShownCard; onRevokeAll: (() 
   );
 }
 
-function AgentGroup({
-  agent,
-  ctx,
-  changes,
-  history,
-  revoked,
-  onRevoked,
-}: {
+interface AgentGroupProps {
   agent: ShownCard;
   ctx: Pick<PaneContext, "grants" | "settings" | "show">;
   changes: readonly ChangeEntry[];
   history: readonly HistoryEntry[];
   revoked: Revoked | null;
   onRevoked: (revoked: Revoked) => void;
-}) {
+}
+
+/** What was just revoked, with its Undo. */
+function RevokedNote({ agent, revoked }: { agent: string; revoked: Revoked }) {
+  return (
+    <View testID={`agent-revoked:${agent}`} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4, marginTop: -8 }}>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Caption>{revoked.words}</Caption>
+      </View>
+      <Button testID={`agent-revoked-undo:${agent}`} label="Undo" onPress={revoked.undo} />
+    </View>
+  );
+}
+
+function AgentGroup({ agent, ctx, changes, history, revoked, onRevoked }: AgentGroupProps) {
   const prefs = useClockPrefs();
   const now = new Date();
   const log = ctx.settings.changes;
@@ -199,16 +206,7 @@ function AgentGroup({
         })}
         {last && <Item testID={`agent-last:${agent.key}`} label={last.summary} detail={`Last connected ${ago(last.time, Math.floor(Date.now() / 1000))}`} />}
       </Group>
-      {revoked?.key === agent.key ? (
-        <View testID={`agent-revoked:${agent.key}`} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4, marginTop: -8 }}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Caption>{revoked.words}</Caption>
-          </View>
-          <Button testID={`agent-revoked-undo:${agent.key}`} label="Undo" onPress={revoked.undo} />
-        </View>
-      ) : (
-        notice !== null && <Caption>{notice}</Caption>
-      )}
+      {revoked?.key === agent.key ? <RevokedNote agent={agent.key} revoked={revoked} /> : notice !== null && <Caption>{notice}</Caption>}
     </>
   );
 }

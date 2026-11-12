@@ -1,9 +1,6 @@
 //! The pointer and windows under it: moves from under a still pointer, and a window held against an edge.
 
-use std::{
-    thread::sleep,
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 
 use serde_json::json;
 
@@ -54,18 +51,22 @@ fn a_window_held_against_an_edge_is_told_after_a_while() {
     // Still there: told again.
     assert_eq!(wait_event(&mut ipc, &mut client, "edge-hold")["count"], 2);
 
-    // Off the edge, then let go: no more.
+    // Off the edge: the hold ends. Back against it is a new hold, timed and counted afresh;
+    // had the first gone on, its third telling would come first, and sooner.
     assert_eq!(hand(&mut ipc, id, 60.0, 40.0, "move")["result"], json!({}));
+    let back = Instant::now();
+    assert_eq!(hand(&mut ipc, id, 0.0, 40.0, "move")["result"], json!({}));
+    let again = wait_event(&mut ipc, &mut client, "edge-hold");
+    assert_eq!(
+        again["count"], 1,
+        "a hold ends when the window leaves the edge"
+    );
+    assert!(
+        back.elapsed() >= Duration::from_millis(380),
+        "the new hold is timed from coming back"
+    );
     assert_eq!(
         hand(&mut ipc, id, 60.0, 40.0, "release")["result"],
         json!({})
-    );
-    ipc.events.retain(|e| e["event"] != "edge-hold");
-    sleep(Duration::from_millis(900));
-    client.dispatch();
-    ipc.request("windows", json!({}));
-    assert!(
-        ipc.events.iter().all(|e| e["event"] != "edge-hold"),
-        "a hold ends when the window leaves the edge"
     );
 }

@@ -1,2 +1,2 @@
-# H3: files with functions over 80 lines, tests exempt (count = those functions' lines, summed). May only shrink.
-# Each also has a biome.jsonc override at its longest function (bun scripts/check-biome.ts --shrink writes them).
+# H3: files with functions over 80 lines as written, tests exempt (count = those functions' lines, summed). May only shrink.
+# The measure is scripts/function-lines.ts (bun scripts/check-structure.ts).

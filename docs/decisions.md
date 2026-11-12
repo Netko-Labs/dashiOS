@@ -650,6 +650,8 @@ Numbered in the order they were written down; a new one goes at the end.
   they found. Typing them is the next step, and the check does not see it.
 - **Undo:** take `isNarrowedCast` out of `scripts/check-boundaries.ts`; the
   code stays stricter than the check.
+- **Since:** D42 counts the cast from `Record<string, unknown>` too, and
+  Settings' sections are read by their shapes.
 
 ### D32. Esc closes an applet's popover from the shell, not from the applet
 
@@ -714,7 +716,6 @@ Numbered in the order they were written down; a new one goes at the end.
   that share one sit in a row of their own beside it. An older Metal host
   refuses a tree that asks for it.
 - **Undo:** `alignItems: "center"` in `dashi-ui/src/sidebar.tsx`.
-
 ### D36. The talk key is a key the compositor holds for the shell, named by its code
 
 - **Date:** 2026-11-11 (`crates/dashi-comp/src/keys/held.rs`,
@@ -823,6 +824,82 @@ Numbered in the order they were written down; a new one goes at the end.
 - **Voice is the pane after Privacy** in Settings' "You" group, so the four
   the design drew stay first. No agent can set its rows.
 - **The chip shows on every screen's bar,** as the agent mark does.
+
+### D41. H3 counts a function's lines as written, with a check of our own
+
+- **Date:** 2026-11-11 (0.8, the `rules` branch).
+- **Question:** H3 says no function over 80 lines, and Biome's
+  `noExcessiveLinesPerFunction` held it. Biome counts the line breaks between
+  a body's tokens: a break inside one token is not counted, and both the
+  whitespace between JSX children and a template string are one token. A
+  97-line component counted 51. The rule has three options (`maxLines`,
+  `skipBlankLines`, `skipIifes`) and none changes that. By lines as written,
+  92 functions were over 80 and passed.
+- **Choice:** `scripts/function-lines.ts` counts a function from the line it
+  starts on to the line its body ends on, everything between included, and
+  `scripts/check-structure.ts` holds it on the `long-functions` list, which
+  starts empty: all 92 were split, none listed. Biome's rule stays on, as an
+  early warning in the editor; its per-file overrides in `biome.jsonc` are
+  gone with the list entries they were written for.
+- **Why:** the rule says lines, and a reader scrolls lines, not tokens. A
+  count that differs by kind of code would keep long views and split short
+  logic.
+- **Cost:** two lines stricter than Biome on plain code (it left out the
+  signature's line and the closing one). A nested function counts in its
+  outer function's lines too, as in Biome.
+- **Undo:** take `checkFunctions` out of `scripts/check-structure.ts`; the
+  code stays shorter than the check.
+
+### D42. H7's check counts a cast from `Record<string, unknown>`
+
+- **Date:** 2026-11-11 (0.8, the `rules` branch).
+- **Question:** D31 left one cast uncounted: from `Record<string, unknown>`,
+  what `isRecord` and a parse give, because code also builds that type for
+  itself (spawn options, a tool's arguments) and the check can't tell the two
+  apart. Settings cast each section it read that way, 23 times. Can the check
+  see it after all?
+- **Choice:** yes, by not telling them apart. Once Settings read its sections
+  by their shapes (every key of every section is a shape now; a section's
+  type is inferred from them, and the store checks a value with the same
+  shape before it writes it), four such casts were left in the whole
+  codebase, and none needed to be one: an applet's arguments are copied key
+  by key, a link's schema is read field by field, a simulation command has a
+  shape checked against mirin's type, and the spawn options are written as
+  the two calls they were. The check now counts every cast from a record of
+  unknown to a type that claims more, whoever built the record.
+- **Why:** a record of unknown says as little about its fields as `object`
+  does, so a cast from it checks as little. Code that builds one for itself
+  can build the type it means.
+- **Cost:** code may no longer gather options into a `Record<string,
+  unknown>` and cast at the end; it writes the typed object. A section's
+  value is now what its shape parsed, not the file's own (a Desktop's name is
+  tidied on read, as the shell already read it).
+- **Undo:** take `isRecordOfUnknown` out of `isNarrowedCast` in
+  `scripts/check-boundaries.ts`.
+
+### D43. An agent's scroll is so many pixels, from a continuous source
+
+- **Date:** 2026-11-11 (0.8, the `rules` branch).
+- **Question:** the agents' `scroll` tool takes pixels, and dashi-comp played
+  them as a mouse wheel: 15 px a notch, as libinput counts. A client makes
+  its own distance of a notch (GPUI three lines, about 77 px), so 45 px moved
+  a Metal window 234. What should an agent's scroll be on the wire?
+- **Choice:** a continuous source's (`wl_pointer.axis_source` continuous,
+  the value alone, no notches), the one kind of scroll besides a finger's
+  whose value is a distance. mirin's GPUI fork multiplied every pixel scroll
+  by 3; it now takes a continuous source's as it is and keeps the 3 for a
+  finger, the speed a touchpad has. In the VM, 45 asked moved 45.1 points and
+  100 moved 100.0.
+- **Why:** only a pixel scroll can go as far as it is asked. A finger's
+  would start the client's own coasting when it ends; a continuous one does
+  not.
+- **Cost:** button scrolling (a trackpoint) is a continuous source too, so
+  in Metal windows it now moves 1:1, a third of what it did, as it does in
+  GTK and Chromium. A client that reads only wheel notches would not scroll
+  for an agent; none Dashi ships does.
+- **Undo:** `scroll_frame` back to a wheel's frame in
+  `crates/dashi-comp/src/session/agent_pointer.rs`, and `pixel_scroll_factor`
+  back to 3 in mirin's `vendor/gpui`.
 
 ## How to add a decision
 

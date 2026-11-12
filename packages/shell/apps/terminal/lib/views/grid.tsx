@@ -18,6 +18,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { TerminalPalette } from "../palette.ts";
 import { cellAt, cellText, type Screen, scrolledBack } from "../screen.ts";
 import { type ScreenStore, useScreen } from "../store.ts";
+import { LostNote, SizeNote } from "./grid-notes.tsx";
 import { type Cell, color, Line, type Look, lookFor } from "./line.tsx";
 
 /**
@@ -30,8 +31,6 @@ export const MARGIN = 12;
 export const GRID_TOP = 6;
 /** The ground's room around the grid, both sides together: what fitting a grid to the window subtracts. */
 export const GRID_INSET = { width: MARGIN * 2, height: GRID_TOP * 2 } as const;
-/** The lost-shell notice's distance from the window's sides. */
-const NOTICE_INSET = 12;
 /** A failed command's mark: 3 px wide, inset 2 px from its row's top and bottom. */
 const MARK_WIDTH = 3;
 const MARK_INSET = 2;
@@ -120,31 +119,8 @@ export function Grid({ store, id, cell, palette, dark, bells, lost, onKeyDown, o
         {!lost && <TerminalCursor screen={screen} cell={cell} look={look} />}
       </View>
       {scrolledBack(screen.scroll) && <ScrollBar scroll={screen.scroll} track={screen.rows * cell.height} color={colors.textMuted} />}
-      {size !== null && (
-        <View testID="terminal-size" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
-          <View
-            style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 7, backgroundColor: colors.menu, borderWidth: 1, borderColor: colors.separator }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>{size}</Text>
-          </View>
-        </View>
-      )}
-      {lost && (
-        <View testID="terminal-lost" style={{ position: "absolute", left: NOTICE_INSET, right: NOTICE_INSET, bottom: 24, alignItems: "center" }}>
-          <View
-            style={{
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderRadius: 9,
-              backgroundColor: colors.menu,
-              borderWidth: 1,
-              borderColor: colors.separator,
-            }}
-          >
-            <Text style={{ fontSize: 13, color: colors.text, textAlign: "center" }}>The shell stopped. Press Return to restart.</Text>
-          </View>
-        </View>
-      )}
+      {size !== null && <SizeNote size={size} />}
+      {lost && <LostNote />}
       {flashing && (
         <View testID="terminal-bell" style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, borderWidth: 2, borderColor: look.cursor }} />
       )}

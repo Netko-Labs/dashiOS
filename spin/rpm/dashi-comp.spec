@@ -25,6 +25,9 @@ BuildRequires:  pkgconfig(egl)
 BuildRequires:  pkgconfig(gstreamer-1.0)
 BuildRequires:  pkgconfig(gstreamer-app-1.0)
 BuildRequires:  pkgconfig(gstreamer-video-1.0)
+# %%check plays a WebM clip as the wallpaper: the VP8 decoder and the WebM demuxer.
+BuildRequires:  gstreamer1-plugins-base
+BuildRequires:  gstreamer1-plugins-good
 
 Requires:       mesa-dri-drivers
 Requires:       mesa-libgbm

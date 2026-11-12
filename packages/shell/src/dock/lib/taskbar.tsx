@@ -11,7 +11,7 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { type Bounds, Image, type PointerInfo, Text, View } from "@mirinjs/metal";
+import { type Bounds, Image, type PointerInfo, Text, View, type ViewStyle } from "@mirinjs/metal";
 import { useRef } from "react";
 import { appFor } from "../../apps.ts";
 import type { MenuController } from "../../menus/index.ts";
@@ -29,7 +29,7 @@ import type { Autohide } from "./autohide.ts";
 import { reorderByCenters, reorderIndex } from "./gesture.ts";
 import { buildDockMenu, buildDockOptionsMenu } from "./menu.ts";
 import { inPreviewOrder, type PressSetup, usePress } from "./press.ts";
-import { iconRise, Painted, panelOpacity, Slide, useSlide } from "./slide.tsx";
+import { iconRise, Painted, panelOpacity, Slide, type SlideState, useSlide } from "./slide.tsx";
 import { type TaskbarButton, taskbarButtons, taskbarCenters } from "./taskbar-model.ts";
 
 /** The distance a drag must cover to pass a neighbor when the buttons have not been measured. */
@@ -41,20 +41,7 @@ const NO_SETUP: PressSetup = { order: [], targetOf: (from) => from, onHold: () =
 /** The slide of a bar that stays put. */
 const STILL = new Slide();
 
-export function Taskbar({
-  apps,
-  catalog,
-  pins,
-  toplevels,
-  controller,
-  menus,
-  output,
-  attention = null,
-  prefs = null,
-  autohide = null,
-  slide = null,
-  tiles = null,
-}: {
+interface TaskbarProps {
   /** The apps the menu bar names windows by (the Dock's first-run defaults). */
   apps: readonly App[];
   catalog: readonly Entry[];
@@ -71,7 +58,61 @@ export function Taskbar({
   slide?: Slide | null;
   /** Told where each app's first button is, for the minimize animation (animation-targets.ts). */
   tiles?: Pick<TileStore, "set"> | null;
-}) {
+}
+
+/** Each app's first button: where its windows aim when they minimize. */
+function firstButtons(buttons: readonly TaskbarButton[]): Map<string, string> {
+  const first = new Map<string, string>();
+  for (const button of buttons) if (!first.has(button.entry.key)) first.set(button.entry.key, button.key);
+  return first;
+}
+
+/** What a press needs: the kept apps' order, where a drag drops, and the menu a hold opens. */
+function pressSetup(
+  now: { buttons: readonly TaskbarButton[]; layout: ReturnType<typeof dockLayout> },
+  laid: ReadonlyMap<string, Bounds>,
+  onHold: () => void,
+): PressSetup {
+  const order = now.layout.pinned.map((entry) => entry.key);
+  const centers = taskbarCenters(order, now.buttons, laid);
+  return {
+    order,
+    targetOf: (from, dx) => (centers ? reorderByCenters(centers, from, dx) : reorderIndex(from, dx, UNMEASURED_SLOT, order.length)),
+    onHold,
+  };
+}
+
+function barStyle(colors: ReturnType<typeof useColors>, slid: SlideState): ViewStyle {
+  return {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingLeft: 8,
+    paddingRight: 8,
+    backgroundColor: colors.dock,
+    borderTopWidth: 1,
+    borderColor: colors.dockBorder,
+    position: "relative",
+    top: Math.round(slid.position * TASKBAR.height),
+    opacity: panelOpacity(slid),
+  };
+}
+
+export function Taskbar({
+  apps,
+  catalog,
+  pins,
+  toplevels,
+  controller,
+  menus,
+  output,
+  attention = null,
+  prefs = null,
+  autohide = null,
+  slide = null,
+  tiles = null,
+}: TaskbarProps) {
   const colors = useColors();
   const windows = useToplevels(toplevels);
   const starting = useStarting(controller);
@@ -81,9 +122,7 @@ export function Taskbar({
   const { preview, pointer: press, swallows } = usePress(pins, autohide);
   // While an app is dragged the others make room for it.
   const buttons = taskbarButtons({ ...layout, pinned: [...inPreviewOrder(layout.pinned, preview)] });
-  // An app's windows aim at its first button.
-  const firstOfApp = new Map<string, string>();
-  for (const button of buttons) if (!firstOfApp.has(button.entry.key)) firstOfApp.set(button.entry.key, button.key);
+  const firstOfApp = firstButtons(buttons);
   /** Where each button was last laid out (window pixels); a drag measures the kept apps' groups from this. */
   const laid = useRef(new Map<string, Bounds>());
 
@@ -99,20 +138,10 @@ export function Taskbar({
     if (button) void menus.openDockMenu(x, buildDockMenu(button.entry), latest.current.appName, output, above);
   };
 
-  /** What a press on `button` needs: the kept apps' order, where a drag drops, and the menu a hold opens. */
-  const setupFor = (button: TaskbarButton, x: number): PressSetup => {
-    const order = latest.current.layout.pinned.map((entry) => entry.key);
-    const centers = taskbarCenters(order, latest.current.buttons, laid.current);
-    return {
-      order,
-      targetOf: (from, dx) => (centers ? reorderByCenters(centers, from, dx) : reorderIndex(from, dx, UNMEASURED_SLOT, order.length)),
-      onHold: () => openMenu(button.key, x),
-    };
-  };
-
   const pointer = (button: TaskbarButton, event: PointerInfo) => {
     const place = button.entry.pinned ? latest.current.layout.pinned.findIndex((entry) => entry.key === button.entry.key) : -1;
-    press(button.entry, place < 0 ? null : place, event, event.phase === "down" ? setupFor(button, event.x) : NO_SETUP);
+    const setup = event.phase === "down" ? pressSetup(latest.current, laid.current, () => openMenu(button.key, event.x)) : NO_SETUP;
+    press(button.entry, place < 0 ? null : place, event, setup);
   };
 
   return (
@@ -121,20 +150,7 @@ export function Taskbar({
       onContextMenu={(event) => {
         if (prefs) void menus.openDockMenu(event.x, buildDockOptionsMenu(prefs.snapshot), appName, output, above);
       }}
-      style={{
-        flex: 1,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-        paddingLeft: 8,
-        paddingRight: 8,
-        backgroundColor: colors.dock,
-        borderTopWidth: 1,
-        borderColor: colors.dockBorder,
-        position: "relative",
-        top: Math.round(slid.position * TASKBAR.height),
-        opacity: panelOpacity(slid),
-      }}
+      style={barStyle(colors, slid)}
     >
       <Painted slide={slide} />
       {buttons.map((button, index) => (
@@ -158,6 +174,25 @@ export function Taskbar({
         />
       ))}
     </View>
+  );
+}
+
+/** The mark under a running app, longer under the focused one. */
+function RunningMark({ running, lit }: { running: boolean; lit: boolean }) {
+  const colors = useColors();
+  return (
+    <View
+      style={{
+        position: "absolute",
+        bottom: 2,
+        alignSelf: "center",
+        left: lit ? 10 : 18,
+        right: lit ? 10 : 18,
+        height: 2,
+        borderRadius: 1,
+        backgroundColor: running ? colors.dot : "#00000000",
+      }}
+    />
   );
 }
 
@@ -232,19 +267,7 @@ function TaskbarItem({
         )}
         {attention && <View testID={`taskbar-${name}-attention`} style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.critical }} />}
       </View>
-      {/* The mark under a running app, longer under the focused one. */}
-      <View
-        style={{
-          position: "absolute",
-          bottom: 2,
-          alignSelf: "center",
-          left: lit ? 10 : 18,
-          right: lit ? 10 : 18,
-          height: 2,
-          borderRadius: 1,
-          backgroundColor: running ? colors.dot : "#00000000",
-        }}
-      />
+      <RunningMark running={running} lit={lit} />
     </View>
   );
 }

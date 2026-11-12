@@ -3,11 +3,12 @@
 import { appFor } from "../apps.ts";
 import type { Compositor } from "../compositor/index.ts";
 import type { App } from "../shared/apps/index.ts";
-import { type AppCatalog, catalogFrom, readerMemory, readSnapshot, sysconf } from "../shared/processes/index.ts";
+import { type catalogFrom, readerMemory, readSnapshot, sysconf } from "../shared/processes/index.ts";
 import { readPowerSupplies } from "../system/battery.ts";
 import { readBatteryDetails } from "../system/battery-details.ts";
 import { powerProfiles } from "../system/profiles.ts";
 import { systemBus } from "../system/system-bus.ts";
+import { catalogKeeper } from "./lib/catalog.ts";
 import { HistoryFile } from "./lib/file.ts";
 import { BatteryMonitor } from "./monitor.ts";
 
@@ -25,19 +26,13 @@ export function startBatteryMonitor(options: BatteryMonitorOptions): BatteryMoni
   const profiles = powerProfiles(systemBus());
   // Kept between looks, so a process's command line and app are read once.
   const memory = readerMemory();
-  let catalog: AppCatalog | undefined;
-  let listed = "";
+  const apps = catalogKeeper();
   const monitor = new BatteryMonitor({
     supplies: readPowerSupplies,
     processes: () => {
-      const entries = options.entries?.();
-      // An app installed or removed meanwhile (the list's ids changed, even at the same length): processes are matched again.
-      const ids = entries?.map((entry) => entry.id).join("\n") ?? "";
-      if (entries && ids !== listed) {
-        catalog = catalogFrom(entries);
-        listed = ids;
-        memory.known.clear();
-      }
+      // An app installed or removed meanwhile: processes are matched again.
+      const { catalog, changed } = apps(options.entries?.());
+      if (changed) memory.known.clear();
       return readSnapshot({ io: false, sockets: false, ownUid: uid, pageSize, memory, ...(catalog ? { apps: catalog } : {}) }).processes;
     },
     windows: async () => {

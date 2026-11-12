@@ -20,6 +20,53 @@ const CELL = { height: 26, dot: 24 } as const;
  * `onOpenDay` is called with a day ("2026-11-05") when it is clicked, once Calendar is there to show it
  * (calendar/); days with events carry a dot.
  */
+type GridDay = ReturnType<typeof monthGrid>[number][number];
+
+/** One day of the month: today filled, a dot under a day with events; a press opens it in Calendar. */
+function MonthDay({ date, day, busy, onPress }: { date: string; day: GridDay; busy: boolean; onPress: (() => void) | undefined }) {
+  const colors = useColors();
+  return (
+    <View testID={`nc-day:${date}`} onPress={onPress} style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+      <View
+        style={{
+          width: CELL.dot,
+          height: CELL.dot,
+          borderRadius: CELL.dot / 2,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: day.today ? colors.selection : "#00000000",
+          hoverBackgroundColor: day.today || !onPress ? undefined : colors.button,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 12,
+            fontWeight: day.today ? "bold" : "normal",
+            color: day.today ? "#ffffff" : day.inMonth ? colors.text : colors.textMuted,
+            opacity: day.inMonth || day.today ? 1 : 0.5,
+          }}
+        >
+          {String(day.day)}
+        </Text>
+        {busy && (
+          <View
+            testID={`nc-dot:${date}`}
+            style={{
+              position: "absolute",
+              bottom: 1,
+              width: 4,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: day.today ? "#ffffff" : colors.selection,
+              opacity: day.inMonth || day.today ? 1 : 0.5,
+            }}
+          />
+        )}
+      </View>
+    </View>
+  );
+}
+
 export function MonthCard({ now, onOpenDay }: { now: Date; onOpenDay?: (day: string) => void }) {
   const colors = useColors();
   const prefs = useClockPrefs();
@@ -65,51 +112,7 @@ export function MonthCard({ now, onOpenDay }: { now: Date; onOpenDay?: (day: str
         <View key={row} style={{ flexDirection: "row", height: CELL.height }}>
           {week.map((day, column) => {
             const key = addDays(start, row * 7 + column);
-            return (
-              <View
-                key={column}
-                testID={`nc-day:${key}`}
-                onPress={clickable ? () => onOpenDay?.(key) : undefined}
-                style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-              >
-                <View
-                  style={{
-                    width: CELL.dot,
-                    height: CELL.dot,
-                    borderRadius: CELL.dot / 2,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: day.today ? colors.selection : "#00000000",
-                    hoverBackgroundColor: day.today || !clickable ? undefined : colors.button,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: day.today ? "bold" : "normal",
-                      color: day.today ? "#ffffff" : day.inMonth ? colors.text : colors.textMuted,
-                      opacity: day.inMonth || day.today ? 1 : 0.5,
-                    }}
-                  >
-                    {String(day.day)}
-                  </Text>
-                  {busy.has(key) && (
-                    <View
-                      testID={`nc-dot:${key}`}
-                      style={{
-                        position: "absolute",
-                        bottom: 1,
-                        width: 4,
-                        height: 4,
-                        borderRadius: 2,
-                        backgroundColor: day.today ? "#ffffff" : colors.selection,
-                        opacity: day.inMonth || day.today ? 1 : 0.5,
-                      }}
-                    />
-                  )}
-                </View>
-              </View>
-            );
+            return <MonthDay key={column} date={key} day={day} busy={busy.has(key)} onPress={clickable ? () => onOpenDay?.(key) : undefined} />;
           })}
         </View>
       ))}

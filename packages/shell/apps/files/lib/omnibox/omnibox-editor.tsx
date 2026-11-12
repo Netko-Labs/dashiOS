@@ -14,6 +14,62 @@ import { completions, intentOf } from "../../../../src/shared/file-browser/omnib
 import { Field } from "./omnibox-field.tsx";
 import type { OmniboxProps } from "./omnibox-props.ts";
 
+/** Tells the window what to list under the omnibox: the folders offered, the one lit, and what a pick does. */
+function useSuggestions(
+  onSuggest: OmniboxProps["onSuggest"],
+  bounds: Bounds | null,
+  offered: string[],
+  highlighted: number,
+  pick: (index: number) => void,
+): void {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `pick` and `onSuggest` are read when a pick happens; the list, the highlight, and the place are what change
+  useEffect(() => {
+    if (bounds === null || offered.length === 0) {
+      onSuggest(null);
+      return;
+    }
+    onSuggest({ bounds, items: offered, highlighted, pick });
+  }, [bounds, offered, highlighted]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: clears the list once, when the editor goes
+  useEffect(() => () => onSuggest(null), []);
+}
+
+/** Where a search looks: this folder or everywhere, and that it is still looking. */
+function SearchScope() {
+  const colors = useColors();
+  const { store } = useFiles();
+  const state = useFilesState();
+  const here =
+    state.location.kind === "folder" ? (state.location.path === store.env.home ? "Home" : (state.location.path.split("/").at(-1) ?? "")) : "This list";
+  return (
+    <>
+      {state.searching && <Text style={{ fontSize: 11, color: colors.textMuted }}>Searching…</Text>}
+      <Segmented
+        testID="omnibox:scope"
+        options={[
+          { value: "folder", label: here },
+          { value: "computer", label: "Everywhere" },
+        ]}
+        value={state.scope}
+        onChange={(scope) => store.setScope(scope)}
+      />
+    </>
+  );
+}
+
+function ClearButton({ onPress }: { onPress: () => void }) {
+  const colors = useColors();
+  return (
+    <View
+      testID="omnibox:clear"
+      onPress={onPress}
+      style={{ width: 18, height: 18, borderRadius: 9, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
+    >
+      <Svg markup={CLOSE} size={10} color={colors.textMuted} />
+    </View>
+  );
+}
+
 export function Editor({ editing, onDone, onSuggest }: OmniboxProps) {
   const colors = useColors();
   const { store, actions } = useFiles();
@@ -33,19 +89,8 @@ export function Editor({ editing, onDone, onSuggest }: OmniboxProps) {
     onDone();
   };
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `go`, `text`, and `onSuggest` are read when a pick happens; the list, the highlight, and the place are what change
-  useEffect(() => {
-    if (bounds === null || offered.length === 0) {
-      onSuggest(null);
-      return;
-    }
-    onSuggest({ bounds, items: offered, highlighted, pick: (index) => go(offered[index] ?? text) });
-  }, [bounds, offered, highlighted]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: clears the list once, when the editor goes
-  useEffect(() => () => onSuggest(null), []);
+  useSuggestions(onSuggest, bounds, offered, highlighted, (index) => go(offered[index] ?? text));
 
-  const here =
-    state.location.kind === "folder" ? (state.location.path === store.env.home ? "Home" : (state.location.path.split("/").at(-1) ?? "")) : "This list";
   return (
     <Field testID="omnibox" onLayout={setBounds}>
       <View style={{ width: 22, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -89,31 +134,14 @@ export function Editor({ editing, onDone, onSuggest }: OmniboxProps) {
           style={{ fontSize: 13, color: colors.text, placeholderColor: colors.textDisabled }}
         />
       </View>
-      {intent === "search" && text.trim() !== "" && (
-        <>
-          {state.searching && <Text style={{ fontSize: 11, color: colors.textMuted }}>Searching…</Text>}
-          <Segmented
-            testID="omnibox:scope"
-            options={[
-              { value: "folder", label: here },
-              { value: "computer", label: "Everywhere" },
-            ]}
-            value={state.scope}
-            onChange={(scope) => store.setScope(scope)}
-          />
-        </>
-      )}
-      <View
-        testID="omnibox:clear"
+      {intent === "search" && text.trim() !== "" && <SearchScope />}
+      <ClearButton
         onPress={() => {
           if (state.query !== "") store.setQuery("");
           onDone();
           actions.refocus();
         }}
-        style={{ width: 18, height: 18, borderRadius: 9, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
-      >
-        <Svg markup={CLOSE} size={10} color={colors.textMuted} />
-      </View>
+      />
     </Field>
   );
 }

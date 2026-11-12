@@ -8,8 +8,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import type { Outcome } from "../../actions/index.ts";
 import { NO_CONTEXT, type TaskContext } from "../../agents/index.ts";
 import type { Entry } from "../../shared/app-entries/index.ts";
-import { iconPath } from "../../shared/apps/index.ts";
-import { useClockPrefs, usesHour24 } from "../../shared/time/index.ts";
+import { useClockPrefs } from "../../shared/time/index.ts";
 import { BUDGET } from "../budget.ts";
 import type { Presented } from "../host.ts";
 import type { ArrowsWanted } from "../pictures.ts";
@@ -19,7 +18,7 @@ import { type FileRow, fileNameMatches, type Row } from "../row-model.ts";
 import { FILE_ROWS, filesStateFor, type Section } from "../sections.ts";
 import { logTiming, timingNow } from "../timing.ts";
 import type { HandoffSnapshot, LauncherAgentsSnapshot, LauncherScope } from "../types.ts";
-import { type Verb, type VerbContext, verbsFor } from "../verbs.ts";
+import { type Verb, verbsFor } from "../verbs.ts";
 import type { WorldSnapshot } from "../world.ts";
 import { firstChoice, withAgents } from "./agents/agent-rows.ts";
 import { showsContext, withHandoff } from "./agents/handoff-rows.ts";
@@ -29,7 +28,8 @@ import { fitToRoom } from "./fit.ts";
 import { launcherIndex } from "./items.ts";
 import { type Measures, PANEL, SURFACE } from "./measures.ts";
 import { initialMode, type Mode } from "./mode.ts";
-import { buildSections, selectable } from "./rows.ts";
+import { selectable } from "./rows.ts";
+import { foundSections, verbContext } from "./search-rows.ts";
 import type { LauncherState, Notice, Search } from "./state.ts";
 import { usePictures } from "./use-pictures.ts";
 
@@ -41,8 +41,6 @@ import { usePictures } from "./use-pictures.ts";
 export const FILE_DELAY_MS = 0;
 /** How long a notice ("Copied") stays at the field's right end. */
 const NOTICE_MS = 2_000;
-
-const ICONS = { calculator: iconPath("calculator"), files: iconPath("files"), software: iconPath("software"), command: iconPath("settings") };
 
 const NO_WORLD: WorldSnapshot = { actions: [], windows: [], serial: 0 };
 const NO_PREFS: LauncherPrefsSnapshot = { aliases: new Map(), aliasOf: () => undefined, keyOf: () => undefined };
@@ -145,7 +143,7 @@ function useNoticeAndLink(presented: Presented | null | undefined, s: LauncherSt
 /** The rows for what is typed: found, assembled with what came from outside and the agents', fitted to the panel. */
 export function useSearch(props: LauncherProps, s: LauncherState, m: Measures): Search {
   const { files, host, keys, onClose } = props;
-  const { query, mode, scope, world, prefs, held } = s;
+  const { query, mode, scope, world, held } = s;
   const text = query.trim();
   const filesState = filesStateFor({ query, offered: files !== undefined && !scope, off: s.filesOff, answer: s.found, lastCount: s.lastFileCount });
   useFiles(props, s, text, filesState.kind === "waiting");
@@ -154,13 +152,7 @@ export function useSearch(props: LauncherProps, s: LauncherState, m: Measures): 
     () => launcherIndex({ entries: props.entries, actions: world.actions, windows: world.windows, ...(props.languages ? { languages: props.languages } : {}) }),
     [props.entries, world.actions, world.windows, props.languages],
   );
-  const ctx: VerbContext = {
-    windows: world.windows,
-    actions: world.actions,
-    aliasOf: prefs.aliasOf,
-    keyOf: prefs.keyOf,
-    ...(host ? { pinned: (entry: Entry) => host.pinned(entry) } : {}),
-  };
+  const ctx = verbContext(s, host);
   // Answers in the Region's numbers and the person's clock (answers/).
   const clock = useClockPrefs();
   const working = timingNow();
@@ -179,20 +171,7 @@ export function useSearch(props: LauncherProps, s: LauncherState, m: Measures): 
     },
     viewMeasures,
   );
-  const searched = buildSections({
-    answers: { locale: clock.locale, hour24: usesHour24(clock) },
-    // In a scope its own rows show: the search's are the empty field's, which cost nothing.
-    query: scope ? "" : query,
-    entries: props.entries,
-    recent: (props.recent ?? []).slice(0, m.listRows - 1),
-    limits: { local: m.localRows, files: m.fileRows, allApps: m.allAppsRows },
-    files: filesState,
-    index,
-    windows: world.windows,
-    aliases: prefs.aliases,
-    ...(props.ranking ? { signals: props.ranking } : {}),
-    ...{ allApps: s.allApps, copied: s.copied, failed: s.failed, icons: ICONS },
-  });
+  const searched = foundSections({ props, s, m, clock, files: filesState, index });
   const { assembled, inOutside, contextShown } = assemble(props, s, ext, searched, text);
   useEffect(() => {
     if (contextShown && !s.chipsShown) s.setChipsShown(true);

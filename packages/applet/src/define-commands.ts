@@ -12,6 +12,22 @@ import type { WarmHost } from "./warm-host.ts";
 const answerOf = (answer: CommandAnswer): CommandResult => (typeof answer === "string" ? { text: answer } : answer);
 const errorOf = (error: unknown): CommandResult => ({ error: (error instanceof Error ? error.message : String(error)).slice(0, 200) || "It failed." });
 
+type ViewComponent<S> = NonNullable<CommandDefinition<S>["view"]>["component"];
+
+/** A command's view, drawn again whenever the applet's state changes. */
+function liveView<S>(component: ViewComponent<S>, handle: AppletHandle<S>, listeners: Set<() => void>, args: Args, close: () => void) {
+  return (): ReturnType<typeof createElement> => {
+    const now = useSyncExternalStore(
+      (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+      () => handle.state,
+    );
+    return createElement(component, { state: now, set: handle.set, args, close });
+  };
+}
+
 /** The launcher's runs, answered by `commands` (one view open at a time, drawn as a popover is). */
 export function commandHandlers<S>(
   commands: Record<string, CommandDefinition<S>>,
@@ -64,28 +80,18 @@ export function commandHandlers<S>(
     onView: (seq, placement: PopoverPlacement) => {
       const current = view;
       if (current?.seq !== seq || current.open) return;
-      const { component } = current.spec;
-      const View = (): ReturnType<typeof createElement> => {
-        const now = useSyncExternalStore(
-          (listener) => {
-            listeners.add(listener);
-            return () => listeners.delete(listener);
-          },
-          () => handle.state,
-        );
-        return createElement(component, { state: now, set: handle.set, args: current.args, close: () => client.dismissView(seq) });
-      };
+      const close = (): void => client.dismissView(seq);
       current.open = openPopoverWindow({
         appId: manifest?.id ?? "applet.view",
         title,
         placement,
-        element: createElement(View),
+        element: createElement(liveView(current.spec.component, handle, listeners, current.args, close)),
         warm,
         // The launcher keeps the keyboard, and closes the view on Esc.
         keyboard: "on-demand",
         onClosed: () => {
           if (view?.seq === seq) view = null;
-          client.dismissView(seq);
+          close();
         },
       });
     },

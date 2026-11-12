@@ -45,6 +45,39 @@ export interface AgentHandlers {
   leave(): void;
 }
 
+/** Return on a task: what it does depends on where the task is (taskSubmit). */
+function submitTask(deps: AgentHandlerDeps, step: number | null): void {
+  const remote = deps.agents;
+  const task = deps.task;
+  if (!remote || !task) return;
+  const choice = taskSubmit(task, deps.draft, step);
+  switch (choice.kind) {
+    case "follow-up":
+      if (remote.followUp(task.id, choice.text)) deps.clearDraft();
+      return;
+    case "run":
+      return remote.run(task.id);
+    case "allow-once":
+      return remote.allowOnce(task.id, choice.step);
+    case "undo": {
+      const entry = remote.entryOf(task.id);
+      const undo = task.steps[choice.step]?.undo;
+      if (entry && undo) void remote.undo(entry, choice.step, undo).then((outcome) => !outcome.ok && deps.say(outcome));
+      return;
+    }
+    case "retry":
+      return remote.retry(task.id);
+    case "settings":
+      remote.setUp();
+      return deps.close();
+    case "sign-in":
+      remote.signIn();
+      return deps.close();
+    case "none":
+      return;
+  }
+}
+
 export function agentHandlers(deps: AgentHandlerDeps): AgentHandlers {
   const remote = deps.agents;
   const act = (value: AgentAct): void => {
@@ -88,36 +121,7 @@ export function agentHandlers(deps: AgentHandlerDeps): AgentHandlers {
     if (deps.snapshot?.unset) deps.offerSetUp(deps.text);
   };
 
-  const submit = (step: number | null): void => {
-    const task = deps.task;
-    if (!remote || !task) return;
-    const choice = taskSubmit(task, deps.draft, step);
-    switch (choice.kind) {
-      case "follow-up":
-        if (remote.followUp(task.id, choice.text)) deps.clearDraft();
-        return;
-      case "run":
-        return remote.run(task.id);
-      case "allow-once":
-        return remote.allowOnce(task.id, choice.step);
-      case "undo": {
-        const entry = remote.entryOf(task.id);
-        const undo = task.steps[choice.step]?.undo;
-        if (entry && undo) void remote.undo(entry, choice.step, undo).then((outcome) => !outcome.ok && deps.say(outcome));
-        return;
-      }
-      case "retry":
-        return remote.retry(task.id);
-      case "settings":
-        remote.setUp();
-        return deps.close();
-      case "sign-in":
-        remote.signIn();
-        return deps.close();
-      case "none":
-        return;
-    }
-  };
+  const submit = (step: number | null): void => submitTask(deps, step);
 
   const leave = (): void => {
     const task = deps.task;

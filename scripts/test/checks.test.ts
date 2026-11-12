@@ -5,12 +5,36 @@ import { STEPS } from "../check.ts";
 import { castsIn, ipcMethods } from "../check-boundaries.ts";
 import { allowed } from "../check-licenses.ts";
 import { barrelExtras, lineCount, specifiers, wrongWay } from "../check-structure.ts";
+import { longFunctionsIn } from "../function-lines.ts";
+import { isTest, read, repoFiles } from "../ratchet.ts";
 
 describe("H2 line count", () => {
   test("counts lines with or without a final newline", () => {
     expect(lineCount("")).toBe(0);
     expect(lineCount("a\nb\n")).toBe(2);
     expect(lineCount("a\nb")).toBe(2);
+  });
+});
+
+describe("H3 function lines", () => {
+  const rows = (count: number, row: string): string => Array.from({ length: count }, () => row).join("\n");
+  test("counts a function from its first line to its last, as written", () => {
+    const text = "export function five(): number {\n  // a comment\n\n  return 1;\n}\n";
+    expect(longFunctionsIn("x.ts", text, 4)).toEqual([{ name: "five", line: 1, lines: 5 }]);
+    expect(longFunctionsIn("x.ts", text, 5)).toEqual([]);
+  });
+  test("counts the lines of JSX children and of a template string, which Biome's rule skips", () => {
+    const view = `export function View() {\n  return (\n    <div>\n${rows(80, "      <span>row</span>")}\n    </div>\n  );\n}\n`;
+    expect(longFunctionsIn("x.tsx", view)).toEqual([{ name: "View", line: 1, lines: 86 }]);
+    const text = `export const help = (): string => {\n  return \`\n${rows(80, "line")}\n\`;\n};\n`;
+    expect(longFunctionsIn("x.ts", text)).toEqual([{ name: "help", line: 1, lines: 84 }]);
+  });
+  test("names methods, and counts a nested function as its own as well", () => {
+    const text = `class Box {\n  open(): void {\n    const inner = () => {\n${rows(3, "      step();")}\n    };\n    inner();\n  }\n}\n`;
+    expect(longFunctionsIn("x.ts", text, 4)).toEqual([
+      { name: "open", line: 2, lines: 8 },
+      { name: "inner", line: 3, lines: 5 },
+    ]);
   });
 });
 
@@ -53,6 +77,13 @@ describe("H7 casts", () => {
     expect(count("return value != null ? (value as Box) : null;")).toBe(1);
     expect(count("return Array.isArray(value) ? (value as number[]) : [];")).toBe(1);
     expect(count("const list: unknown[] = []; return list as [string, number];")).toBe(1);
+  });
+  test("a cast of a record of unknown, which says no more of its fields than `object` does", () => {
+    const record = "const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;";
+    expect(count(`${record} return isRecord(value) ? (value as Box) : null;`)).toBe(1);
+    expect(count("const built: Record<string, unknown> = { x: 1 }; return built as Box;")).toBe(1);
+    expect(count(`${record} return isRecord(value) ? (value as Record<string, unknown>) : null;`)).toBe(0);
+    expect(count(`${record} return isRecord(value) && typeof value.x === "number" ? { x: value.x } : null;`)).toBe(0);
   });
   test("not a cast that claims nothing, a literal, a checked value, or a generic parser's own result", () => {
     expect(count("return Array.isArray(value) ? (value as unknown[]) : [];")).toBe(0);
@@ -108,5 +139,13 @@ describe("bun run check", () => {
     expect(step).toBeDefined();
     // Not in check:fast: it asks Cargo about five trees.
     expect(step?.fast).toBeUndefined();
+  });
+});
+
+describe("paths from import.meta.url", () => {
+  test("go through fileURLToPath: a URL's pathname is percent-encoded, so a checkout in a folder with a space did not start", () => {
+    const files = repoFiles().filter((file) => /^(packages|scripts|vm|spin)\/.*\.tsx?$/.test(file) && !isTest(file));
+    const offenders = files.filter((file) => /new URL\([^;]*import\.meta\.url\)\s*\.pathname/.test(read(file)));
+    expect(offenders).toEqual([]);
   });
 });

@@ -33,8 +33,34 @@ function raiseOnSecondStart(compositor: Compositor | null, appMenus: AppMenuStor
   });
 }
 
+type Stores = ReturnType<typeof menuStores>;
+
+/** The stores Settings shares with the menus. */
+function sharedStores(options: MenusOptions, stores: Stores): Menus["shared"] {
+  return {
+    wifi: stores.wifi,
+    devices: stores.devices,
+    bluetooth: stores.bluetooth,
+    sound: stores.sound,
+    audio: stores.audio,
+    ...(options.mixer ? { mixer: options.mixer } : {}),
+    ...(options.pipewire ? { pipewire: options.pipewire } : {}),
+    // The popover is not up when Settings asks, so there is nothing to close first.
+    askWifiPassword: (network) => stores.passwords.ask(network),
+  };
+}
+
+function closeStores(options: MenusOptions, stores: Stores): void {
+  stores.passwords.close();
+  stores.sound.close();
+  stores.stopDevices();
+  stores.pairing.close();
+  options.wifi.backend.close();
+  options.bluetooth.backend.close();
+}
+
 export function startMenus(options: MenusOptions): Menus {
-  const { compositor, pipewire } = options;
+  const { compositor } = options;
   const appMenus = options.appMenus ?? new AppMenuStore();
   let entries: readonly Entry[] | null = options.catalog ?? null;
   const entryFor = (appId: string) => findEntry((entries ??= loadEntries()), appId);
@@ -88,17 +114,7 @@ export function startMenus(options: MenusOptions): Menus {
   return {
     controller,
     controlCenter,
-    shared: {
-      wifi: stores.wifi,
-      devices: stores.devices,
-      bluetooth: stores.bluetooth,
-      sound: stores.sound,
-      audio: stores.audio,
-      ...(options.mixer ? { mixer: options.mixer } : {}),
-      ...(pipewire ? { pipewire } : {}),
-      // The popover is not up when Settings asks, so there is nothing to close first.
-      askWifiPassword: (network) => stores.passwords.ask(network),
-    },
+    shared: sharedStores(options, stores),
     confirmPower,
     menusOf,
     run: (action, appName) => {
@@ -115,12 +131,7 @@ export function startMenus(options: MenusOptions): Menus {
       controller.close();
       stopSyncingCenter();
       dialogs.close();
-      stores.passwords.close();
-      stores.sound.close();
-      stores.stopDevices();
-      stores.pairing.close();
-      options.wifi.backend.close();
-      options.bluetooth.backend.close();
+      closeStores(options, stores);
     },
   };
 }

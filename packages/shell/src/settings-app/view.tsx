@@ -77,6 +77,41 @@ export const SETTINGS_WINDOW = {
   minHeight: 300,
 } as const;
 
+function NoVault() {
+  return (
+    <Page title="Passwords">
+      <Group testID="passwords-none">
+        <Note>Dashi's vault isn't running in this session, so there are no passwords to show. Log out and in again to start it.</Note>
+      </Group>
+    </Page>
+  );
+}
+
+function Keyboard({ ctx }: { ctx: PaneContext }) {
+  return (
+    <KeyboardPane
+      settings={ctx.settings}
+      layouts={ctx.layouts}
+      laptop={ctx.services.laptop}
+      clipboard={ctx.clipboard ?? null}
+      {...(ctx.installedApp ? { installed: ctx.installedApp } : {})}
+    />
+  );
+}
+
+function Privacy({ ctx }: { ctx: PaneContext }) {
+  return (
+    <PrivacyPane
+      grants={ctx.grants}
+      home={ctx.home}
+      settings={ctx.settings}
+      show={ctx.show}
+      {...(ctx.privacy ? { privacy: ctx.privacy } : {})}
+      {...(ctx.installedApp ? { installedApp: ctx.installedApp } : {})}
+    />
+  );
+}
+
 function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
   switch (id) {
     case "appearance":
@@ -98,15 +133,7 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "desktop-dock":
       return <DesktopDockPane />;
     case "keyboard":
-      return (
-        <KeyboardPane
-          settings={ctx.settings}
-          layouts={ctx.layouts}
-          laptop={ctx.services.laptop}
-          clipboard={ctx.clipboard ?? null}
-          {...(ctx.installedApp ? { installed: ctx.installedApp } : {})}
-        />
-      );
+      return <Keyboard ctx={ctx} />;
     case "trackpad":
       return <TrackpadPane settings={ctx.settings} />;
     case "mouse":
@@ -120,15 +147,7 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "notifications":
       return <NotificationsPane />;
     case "passwords":
-      return ctx.passwords ? (
-        <PasswordsPane passwords={ctx.passwords} />
-      ) : (
-        <Page title="Passwords">
-          <Group testID="passwords-none">
-            <Note>Dashi's vault isn't running in this session, so there are no passwords to show. Log out and in again to start it.</Note>
-          </Group>
-        </Page>
-      );
+      return ctx.passwords ? <PasswordsPane passwords={ctx.passwords} /> : <NoVault />;
     case "agents":
       return <AgentsPane ctx={ctx} />;
     case "voice":
@@ -142,16 +161,7 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
         </Page>
       );
     case "privacy":
-      return (
-        <PrivacyPane
-          grants={ctx.grants}
-          home={ctx.home}
-          settings={ctx.settings}
-          show={ctx.show}
-          {...(ctx.privacy ? { privacy: ctx.privacy } : {})}
-          {...(ctx.installedApp ? { installedApp: ctx.installedApp } : {})}
-        />
-      );
+      return <Privacy ctx={ctx} />;
     case "about":
       return <AboutPane about={ctx.about} openSetup={ctx.openSetup} />;
     case "network":

@@ -56,12 +56,10 @@ export interface TextAreaProps {
   reveal: { offset: number; seq: number } | null;
 }
 
-export function TextArea({ text, prefs, lines, session, selection, onSelectionChange, highlights, onChange, onEscape, scroll, reveal }: TextAreaProps) {
-  const colors = useColors();
-  const surface = useSurface();
-  const font = prefs.monospace ? ("monospace" as const) : ("default" as const);
-  const [height, setHeight] = useState(480);
-  const [measured, setMeasured] = useState(0);
+const FIELD = { width: "100%", padding: 0, backgroundColor: "#00000000" } as const;
+
+/** Typing at the end keeps the end in view: the view follows it down for a moment after each new line is laid out. */
+function useFollowEnd(scroll: TextAreaProps["scroll"]): { following: { current: boolean }; followEnd: () => void } {
   const following = useRef(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const later = (fn: () => void, ms: number): void => {
@@ -80,6 +78,16 @@ export function TextArea({ text, prefs, lines, session, selection, onSelectionCh
       following.current = false;
     }, 400);
   };
+  return { following, followEnd };
+}
+
+export function TextArea({ text, prefs, lines, session, selection, onSelectionChange, highlights, onChange, onEscape, scroll, reveal }: TextAreaProps) {
+  const colors = useColors();
+  const surface = useSurface();
+  const font = prefs.monospace ? ("monospace" as const) : ("default" as const);
+  const [height, setHeight] = useState(480);
+  const [measured, setMeasured] = useState(0);
+  const { following, followEnd } = useFollowEnd(scroll);
   // The place to scroll to: the text before it is measured once laid out.
   const [revealing, setRevealing] = useState<{ offset: number; seq: number } | null>(null);
   useEffect(() => {
@@ -107,8 +115,8 @@ export function TextArea({ text, prefs, lines, session, selection, onSelectionCh
             <View
               key={`reveal:${revealing.seq}`}
               testID="reveal-measure"
+              // Up to the place's line, with a third of the view above it.
               onLayout={(bounds) => {
-                // Up to the place's line, with a third of the view above it.
                 scroll(Math.max(0, bounds.height - height / 3), true);
                 setRevealing(null);
               }}
@@ -136,14 +144,11 @@ export function TextArea({ text, prefs, lines, session, selection, onSelectionCh
             onKeyPress={(key) => key === "Escape" && onEscape()}
             onSelectionChange={onSelectionChange}
             style={{
-              width: "100%",
+              ...FIELD,
+              ...textStyle,
               height: Math.max(200, height - 40, Math.ceil(measured) + 4),
-              fontSize: prefs.fontSize,
-              fontFamily: font,
-              padding: 0,
               color: colors.text,
               placeholderColor: colors.textDisabled,
-              backgroundColor: "#00000000",
             }}
           />
         </View>

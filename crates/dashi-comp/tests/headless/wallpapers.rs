@@ -1,6 +1,6 @@
 //! Wallpapers and pictures: checked, then shown or cleared.
 
-use std::{io::BufRead, process::Command};
+use std::{io::BufRead, path::Path};
 
 use serde_json::{Value, json};
 
@@ -94,27 +94,8 @@ fn wallpapers_are_checked_then_shown() {
 #[test]
 fn a_video_plays_as_the_wallpaper() {
     let compositor = Compositor::start(&[]);
-    let video = compositor.dir.path().join("loop.webm");
-    let made = Command::new("gst-launch-1.0")
-        .args([
-            "-q",
-            "videotestsrc",
-            "num-buffers=20",
-            "!",
-            "video/x-raw,width=320,height=180",
-            "!",
-            "vp8enc",
-            "!",
-            "webmmux",
-            "!",
-            "filesink",
-        ])
-        .arg(format!("location={}", video.display()))
-        .status();
-    if !made.is_ok_and(|status| status.success()) {
-        eprintln!("skipping: gst-launch-1.0 with vp8enc is not here to make a test video");
-        return;
-    }
+    // A clip made once and kept (tests/fixtures/README.md), so the test needs no encoder and never skips.
+    let video = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/loop.webm");
     let mut ipc = compositor.connect();
     assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
     assert_eq!(

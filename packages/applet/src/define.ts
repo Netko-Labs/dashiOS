@@ -67,6 +67,21 @@ function specOf<S>(definition: AppletDefinition<S>, state: S, itemId: string, ti
   };
 }
 
+/** The applet's popover, drawn again whenever its state changes. */
+function popoverView<S>(definition: AppletDefinition<S>, listeners: Set<() => void>, handle: () => AppletHandle<S>) {
+  return (): ReturnType<typeof createElement> | null => {
+    const applet = handle();
+    const now = useSyncExternalStore(
+      (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+      () => applet.state,
+    );
+    return definition.popover ? createElement(definition.popover.component, { state: now, set: applet.set, close: applet.closePopover }) : null;
+  };
+}
+
 export function defineApplet<S>(definition: AppletDefinition<S>): AppletHandle<S> {
   const manifest = definition.manifest ?? findManifest();
   const client = definition.client ?? clientFor(manifest);
@@ -81,24 +96,13 @@ export function defineApplet<S>(definition: AppletDefinition<S>): AppletHandle<S
 
   const spec = (): AppletSpec => specOf(definition, state, itemId, title);
 
-  const Popover = (): ReturnType<typeof createElement> | null => {
-    const now = useSyncExternalStore(
-      (listener) => {
-        listeners.add(listener);
-        return () => listeners.delete(listener);
-      },
-      () => state,
-    );
-    return definition.popover ? createElement(definition.popover.component, { state: now, set: handle.set, close: handle.closePopover }) : null;
-  };
-
   const placed = (placement: PopoverPlacement): void => {
     popover?.close();
     popover = openPopoverWindow({
       appId: manifest?.id ?? `applet.${itemId}`,
       title,
       placement,
-      element: createElement(Popover),
+      element: createElement(popoverView(definition, listeners, () => handle)),
       warm,
       onClosed: () => {
         popover = null;

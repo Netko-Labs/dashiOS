@@ -120,16 +120,12 @@ export function HistoryRow({ entry, onUndo }: { entry: HistoryEntry; onUndo: (in
   );
 }
 
-export function AnswerSettings({ settings, answers }: { settings: SettingsStore; answers: AnswerStatus }) {
+/** What the chosen answerer needs said: where its key is, and which model answers. */
+function AnswererDetail({ choice, settings, answers }: { choice: AnswererChoice; settings: SettingsStore; answers: AnswerStatus }) {
   const { data } = useSettings(settings);
-  const choice = data.agents.answerer;
   const [place, setPlace] = useState<KeyPlace | null>(null);
   const [models, setModels] = useState<string[] | null | undefined>(undefined);
   const [gptModels, setGptModels] = useState<string[] | null | undefined>(undefined);
-  const [entries, setEntries] = useState<readonly HistoryEntry[]>(() => answers.history());
-  const [notice, setNotice] = useState<string | null>(null);
-  const harnesses = useHarnesses(answers.harnesses);
-
   useEffect(() => {
     let current = true;
     setPlace(null);
@@ -141,16 +137,80 @@ export function AnswerSettings({ settings, answers }: { settings: SettingsStore;
       current = false;
     };
   }, [choice, answers]);
+  const gptPills = gptModels && gptModels.length > 1 ? gptModels.slice(0, MODEL_PILLS) : [];
+  const pills = models && models.length > 1 ? models.slice(0, MODEL_PILLS) : [];
+  return (
+    <Group testID="agents-answerer-detail">
+      {choice === "claude" && <Setting id="agents/key" testID="agents-key" detail={keyWords(place, "anthropic")} />}
+      {choice === "gpt" && <Setting id="agents/key" testID="agents-key" detail={keyWords(place, "openai")} />}
+      {choice === "gpt" && (
+        <Setting id="agents/model" testID="agents-gpt-model" detail={gptModelWords(gptModels, data.agents.gptModel)} stack={gptPills.length > 0}>
+          {gptPills.length > 0 && (
+            <Choices
+              testID="agents-gpt-model-choice"
+              options={gptPills.map((name) => ({ value: name, label: name }))}
+              value={data.agents.gptModel ?? gptPills[0] ?? ""}
+              onChange={(name) => settings.patch("agents", { gptModel: name })}
+            />
+          )}
+        </Setting>
+      )}
+      {choice === "local" && (
+        <Setting id="agents/model" testID="agents-model" detail={modelWords(models, data.agents.localModel)} stack={pills.length > 0}>
+          {pills.length > 0 && (
+            <Choices
+              testID="agents-model-choice"
+              options={pills.map((name) => ({ value: name, label: name }))}
+              value={data.agents.localModel ?? pills[0] ?? ""}
+              onChange={(name) => settings.patch("agents", { localModel: name })}
+            />
+          )}
+        </Setting>
+      )}
+    </Group>
+  );
+}
+
+/** "Hand off to": the harness a plan goes to, and whether its steps skip the asking. */
+function HandOffGroup({ installed, settings }: { installed: ReturnType<typeof harnessOrder>; settings: SettingsStore }) {
+  const { data } = useSettings(settings);
+  const handOff = installed[0] ?? "claude-code";
+  return (
+    <Group testID="agents-hand-off">
+      <Setting id="agents/hand-off-to" testID="agents-hand-off-to" stack={installed.length > 1}>
+        {installed.length > 1 ? (
+          <Choices
+            testID="agents-hand-off-choice"
+            options={installed.map((id) => ({ value: id, label: ANSWERERS[id].name }))}
+            value={handOff}
+            onChange={(id) => settings.patch("agents", { handOff: id })}
+          />
+        ) : (
+          <Note>{ANSWERERS[handOff].name}</Note>
+        )}
+      </Setting>
+      <Setting id="agents/skip-grants">
+        <Switch testID="agents-skip-grants" on={data.agents.skipGrants === true} onChange={(on) => settings.patch("agents", { skipGrants: on || undefined })} />
+      </Setting>
+    </Group>
+  );
+}
+
+export function AnswerSettings({ settings, answers }: { settings: SettingsStore; answers: AnswerStatus }) {
+  const { data } = useSettings(settings);
+  const choice = data.agents.answerer;
+  const [entries, setEntries] = useState<readonly HistoryEntry[]>(() => answers.history());
+  const [notice, setNotice] = useState<string | null>(null);
+  const harnesses = useHarnesses(answers.harnesses);
+
   useEffect(() => answers.onHistory(() => setEntries(answers.history())), [answers]);
 
   const choose = (value: AnswererChoice) => settings.patch("agents", { answerer: value });
-  const gptPills = gptModels && gptModels.length > 1 ? gptModels.slice(0, MODEL_PILLS) : [];
   const undo = (entry: HistoryEntry, index: number) => {
     const step = entry.steps[index];
     if (!step?.undo) return;
     void answers.undo(entry.id, index, step.undo).then((outcome) => setNotice(outcome.ok ? `Undone: ${step.undo?.title}` : outcome.error));
   };
-  const pills = models && models.length > 1 ? models.slice(0, MODEL_PILLS) : [];
   const harnessName = isHarnessId(choice) ? ANSWERERS[choice].name : null;
   // "Hand off to": the harnesses installed, the one named first (else the answerer, else the first).
   const installed = harnessOrder(
@@ -158,7 +218,6 @@ export function AnswerSettings({ settings, answers }: { settings: SettingsStore;
     data.agents.handOff,
     choice,
   );
-  const handOff = installed[0] ?? "claude-code";
 
   return (
     <>
@@ -166,59 +225,8 @@ export function AnswerSettings({ settings, answers }: { settings: SettingsStore;
         <Setting id="agents/answer-with" />
         <AnswererList testID="agents-answerer-choice" chosen={choice} harnesses={harnesses} onChoose={choose} />
       </Group>
-      {(choice === "claude" || choice === "gpt" || choice === "local") && (
-        <Group testID="agents-answerer-detail">
-          {choice === "claude" && <Setting id="agents/key" testID="agents-key" detail={keyWords(place, "anthropic")} />}
-          {choice === "gpt" && <Setting id="agents/key" testID="agents-key" detail={keyWords(place, "openai")} />}
-          {choice === "gpt" && (
-            <Setting id="agents/model" testID="agents-gpt-model" detail={gptModelWords(gptModels, data.agents.gptModel)} stack={gptPills.length > 0}>
-              {gptPills.length > 0 && (
-                <Choices
-                  testID="agents-gpt-model-choice"
-                  options={gptPills.map((name) => ({ value: name, label: name }))}
-                  value={data.agents.gptModel ?? gptPills[0] ?? ""}
-                  onChange={(name) => settings.patch("agents", { gptModel: name })}
-                />
-              )}
-            </Setting>
-          )}
-          {choice === "local" && (
-            <Setting id="agents/model" testID="agents-model" detail={modelWords(models, data.agents.localModel)} stack={pills.length > 0}>
-              {pills.length > 0 && (
-                <Choices
-                  testID="agents-model-choice"
-                  options={pills.map((name) => ({ value: name, label: name }))}
-                  value={data.agents.localModel ?? pills[0] ?? ""}
-                  onChange={(name) => settings.patch("agents", { localModel: name })}
-                />
-              )}
-            </Setting>
-          )}
-        </Group>
-      )}
-      {installed.length > 0 && (
-        <Group testID="agents-hand-off">
-          <Setting id="agents/hand-off-to" testID="agents-hand-off-to" stack={installed.length > 1}>
-            {installed.length > 1 ? (
-              <Choices
-                testID="agents-hand-off-choice"
-                options={installed.map((id) => ({ value: id, label: ANSWERERS[id].name }))}
-                value={handOff}
-                onChange={(id) => settings.patch("agents", { handOff: id })}
-              />
-            ) : (
-              <Note>{ANSWERERS[handOff].name}</Note>
-            )}
-          </Setting>
-          <Setting id="agents/skip-grants">
-            <Switch
-              testID="agents-skip-grants"
-              on={data.agents.skipGrants === true}
-              onChange={(on) => settings.patch("agents", { skipGrants: on || undefined })}
-            />
-          </Setting>
-        </Group>
-      )}
+      {(choice === "claude" || choice === "gpt" || choice === "local") && <AnswererDetail choice={choice} settings={settings} answers={answers} />}
+      {installed.length > 0 && <HandOffGroup installed={installed} settings={settings} />}
       {harnessName !== null && (
         <Caption>{`${harnessName} runs in Dashi's agent sandbox with only its own sign-in, and its own tools are off: it can only plan.`}</Caption>
       )}
