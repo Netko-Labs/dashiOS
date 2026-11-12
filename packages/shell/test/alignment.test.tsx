@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { Caption, Group, ROW_INSET, Row, SidebarItem, TILE_SIZE } from "@dashi/ui";
 import { type NativeEvent, type NativeTransport, render, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { PAGE, pillsUnder, roomBeside, Row as SettingsRow } from "../src/settings-app/lib/row.tsx";
+import { PAGE, pillsUnder, roomBeside, Row as SettingsRow, wordsOnly } from "../src/settings-app/lib/row.tsx";
 import { titleLine } from "../src/settings-app/ui.tsx";
 import { pillsWrapped, SEGMENTED, Segmented } from "../src/shared/controls/inputs.tsx";
 import { settle } from "./support/time.ts";
@@ -136,4 +136,34 @@ test("pills squeezed while the window narrows go back beside the words when it w
   await laid("row", 822, 56);
   expect(under()).toBe(false);
   root.unmount();
+});
+
+test("a stacked row without a knob keeps no blank band under a one-line title: its words' line is as tall as its words", async () => {
+  expect(wordsOnly(true, false)).toBe(true);
+  expect(wordsOnly(true, true)).toBe(false);
+  expect(wordsOnly(false, false)).toBe(false);
+  const lines = async (row: ReactNode): Promise<Node[]> => {
+    const all = views(await lastTree(row));
+    return all.filter((view) => view.props.direction === "row" && view.children?.some((child) => isNode(child) && child.props.direction === "column"));
+  };
+  // "For" (Settings › Agents): the title, then the pills 10 under it.
+  const [stacked] = await lines(
+    <SettingsRow label="For" stack>
+      <View testID="pills" />
+    </SettingsRow>,
+  );
+  expect(stacked?.props.minHeight).toBeUndefined();
+  // A control beside the words, or a knob before them, still has the full line to centre on.
+  const [beside] = await lines(
+    <SettingsRow label="Dark Mode">
+      <View testID="switch" />
+    </SettingsRow>,
+  );
+  expect(beside?.props.minHeight).toBe(PAGE.row - 16);
+  const [knobbed] = await lines(
+    <SettingsRow label="Text size" glyph="<svg/>" stack>
+      <View testID="pills" />
+    </SettingsRow>,
+  );
+  expect(knobbed?.props.minHeight).toBe(PAGE.row - 16);
 });
