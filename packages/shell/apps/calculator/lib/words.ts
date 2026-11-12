@@ -4,7 +4,7 @@
  * happened ("Copied"). Pure; the result's number comes formatted.
  */
 
-import type { Outcome } from "./expression.ts";
+import type { Outcome } from "./evaluate.ts";
 import { formatResult } from "./format.ts";
 import { EN_US, type NumberLocale } from "./locale.ts";
 import type { Notice } from "./state.ts";
