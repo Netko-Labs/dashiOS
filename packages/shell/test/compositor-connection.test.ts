@@ -108,7 +108,7 @@ test("the session says whether the screen is locked", async () => {
 
 test("a session answer without the lock state is not understood", async () => {
   const { compositor } = await connected(() => session);
-  expect(compositor.session()).rejects.toThrow("locked");
+  await expect(compositor.session()).rejects.toThrow("locked");
 });
 
 test("agents stay locked out until the compositor says the screen is unlocked", async () => {
