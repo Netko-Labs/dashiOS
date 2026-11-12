@@ -135,6 +135,7 @@ crates/
   dashi-comp/       the Wayland compositor (Rust, smithay)
   dashi-hardware/   the privileged hardware helper (docs/hardware.md)
   dashi-secretd/    the vault, its PAM helper and the Secret Service bridge (docs/secrets.md)
+  dashi-voice/      Dashi's voice: speech to text and text to speech on this machine (docs/voice.md)
   dashi-term/       the terminal engine on libghostty-vt; a Cargo workspace of its own
 packages/
   shell/            @dashi/shell

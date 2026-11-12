@@ -97,3 +97,58 @@ fn events_are_one_line_named_by_event() {
         r#"{"event":"sentence","id":3,"index":0,"text":"Hi there.","ms":900,"words":[{"text":"Hi","start":100,"end":300}]}"#
     );
 }
+
+/// docs/voice.md is the contract: it names every method and every event the code has.
+#[test]
+fn the_doc_names_every_method_and_event() {
+    let doc = include_str!("../../../docs/voice.md");
+    for method in METHODS {
+        assert!(
+            doc.contains(&format!("| `{method}` |")),
+            "docs/voice.md lacks the method {method}"
+        );
+    }
+    let events = [
+        Event::State { state: State::Idle },
+        Event::Level { level: 0.0 },
+        Event::Partial {
+            text: String::new(),
+        },
+        Event::Heard {
+            text: String::new(),
+            speech_ms: 0,
+        },
+        Event::Sentence {
+            id: 0,
+            index: 0,
+            text: String::new(),
+            ms: 0,
+            words: Vec::new(),
+        },
+        Event::Spoken {
+            id: 0,
+            reason: Ended::Done,
+            error: None,
+        },
+        Event::Fetch {
+            set: None,
+            file: None,
+            received: 0,
+            bytes: 0,
+            done: false,
+            error: None,
+        },
+        Event::Models {},
+        Event::Error {
+            message: String::new(),
+        },
+    ];
+    for event in events {
+        let line: Value = serde_json::from_str(&event.line()).unwrap();
+        let name = line["event"].as_str().unwrap();
+        assert!(
+            doc.contains(&format!("| `{name}` |")),
+            "docs/voice.md lacks the event {name}"
+        );
+    }
+}

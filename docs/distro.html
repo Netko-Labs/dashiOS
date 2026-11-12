@@ -185,7 +185,7 @@
 const PACKAGES = [
   { n: "dashi", layer: "desktop", s: "The desktop: session, shell, and apps",
     carries: "dashi-session, dashi-mcp, the shell and every first-party app (/usr/share/dashi/shell), the vendored runtime packages, the session target, portal and mime config.",
-    needs: ["dashi-comp", "dashi-bun", "mirin-metal-host", "dashi-term"], ext: "polkit, xdg-desktop-portal (gtk, wlr), wl-clipboard, Inter and Noto fonts, Adwaita cursors" },
+    needs: ["dashi-comp", "dashi-bun", "mirin-metal-host", "dashi-term", "dashi-voice"], ext: "polkit, xdg-desktop-portal (gtk, wlr), wl-clipboard, Inter and Noto fonts, Adwaita cursors" },
   { n: "dashi-comp", layer: "desktop", s: "The Wayland compositor (Rust, smithay)",
     carries: "/usr/bin/dashi-comp: DRM/KMS, libinput, Xwayland, rendering, window mechanics, the IPC server.",
     needs: [], ext: "Mesa (DRI, GBM, EGL), xkeyboard-config; recommends Xwayland and GStreamer (video wallpapers)" },
@@ -201,6 +201,9 @@ const PACKAGES = [
   { n: "dashi-term", layer: "desktop", s: "The Terminal's engine, on Ghostty's core",
     carries: "/usr/libexec/dashi/dashi-term: the shell on a PTY and the terminal in libghostty-vt, streaming rows to the Terminal app (packages/shell/apps/terminal).",
     needs: ["libghostty-vt"], ext: "none beyond libghostty-vt" },
+  { n: "dashi-voice", layer: "desktop", s: "Dashi's voice: speech to text and text to speech on this machine",
+    carries: "/usr/libexec/dashi/dashi-voice and its user units (dashi-voice.socket, dashi-voice.service): Silero VAD, Parakeet and Whisper to hear, Kokoro to speak. No models: they are fetched when Voice is turned on (docs/voice.md).",
+    needs: [], ext: "onnxruntime, espeak-ng, pipewire-utils, curl" },
   { n: "libghostty-vt", layer: "desktop", s: "Ghostty's terminal core as a C library",
     carries: "libghostty-vt.so from Ghostty 1.4.0 (escape sequences, scrollback, reflow, key encoding, selection); -devel has the headers. Built with Zig 0.17, vendored in the SRPM.",
     needs: [], ext: "none (libc)" },
