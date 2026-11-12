@@ -13,7 +13,7 @@ import { type AgentUi, type Answer, DENY, personAnswered, SHEET_LAYERS, SheetQue
 import { CONSENT } from "../consent.tsx";
 import { spawnShellHost } from "../shared/metal/index.ts";
 import { closeOverlay, createStoppedNotes, createTurns } from "./lib/agent-overlays.tsx";
-import { allowSiteSheet, askSheet, confirmSheet, personSheet, type Sheet, signInSheet } from "./lib/agent-sheet-views.tsx";
+import { allowSiteSheet, askSheet, confirmSheet, personSheet, type QuestionVoice, questionSheet, type Sheet, signInSheet } from "./lib/agent-sheet-views.tsx";
 
 /** The sheets' layer: blanked in agents' pictures, and asked about for whose press answered. */
 const CONSENT_LAYER = SHEET_LAYERS[0];
@@ -23,6 +23,8 @@ const SHEET_GONE_MS = 150;
 export interface AgentUiOptions {
   /** The compositor's `input-origin`: it says whose press answered a sheet. */
   inputOrigin(params: { namespace: string }): Promise<{ person: number | null; agent: number | null }>;
+  /** Voice, for a question said out loud and answered by the talk key; null where there is none. */
+  voice?(): QuestionVoice | null;
 }
 
 /** The sheet queue's id for the person's own questions (agents' connections count from 1). */
@@ -60,7 +62,14 @@ export function createAgentUi(options: AgentUiOptions): AgentUi & PersonSheets &
       const root = render(<TextSelectionLook>{entry.view(answer)}</TextSelectionLook>, host);
       // A sheet whose host died can't be answered: that's a no.
       host.onClose(gone);
-      return { close: () => closeOverlay({ host, root }) };
+      // A question is said out loud now that it shows, and a spoken answer is the person's own (the talk key is theirs alone).
+      const hidden = entry.shown?.(given);
+      return {
+        close: () => {
+          hidden?.();
+          closeOverlay({ host, root });
+        },
+      };
     },
     onIdle() {
       const waiters = clearWaiters;
@@ -84,6 +93,7 @@ export function createAgentUi(options: AgentUiOptions): AgentUi & PersonSheets &
     allowSite: (ask, signal) => new Promise((resolve) => queue(allowSiteSheet(ask, resolve), signal)),
     confirmPerson: (question, signal) => new Promise((resolve) => queue(personSheet(PERSON_SHEETS, question, resolve), signal)),
     signIn: (ask, signal) => new Promise((resolve) => queue(signInSheet(ask, resolve), signal)),
+    question: (ask, signal) => new Promise((resolve) => queue(questionSheet(ask, options.voice?.() ?? null, resolve), signal)),
     turn: (turn, signal) => turns.start(turn, signal),
     dismiss(agent) {
       sheets.dismiss(agent);

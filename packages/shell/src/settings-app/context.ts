@@ -8,6 +8,7 @@ import type { PhotoChooser } from "../wallpaper/chooser.ts";
 import type { ControlCenterEditor } from "./control-center.tsx";
 import type { XkbLayouts } from "./layouts.ts";
 import type { AboutInfo } from "./lib/about.ts";
+import type { VoicePaneSource } from "./lib/panes/voice.tsx";
 import type { ScreensStore } from "./lib/screens.ts";
 import type { PaneServices } from "./services.ts";
 import type { SettingsStore } from "./store.ts";
@@ -42,6 +43,8 @@ export interface PaneContext {
   clipboard?: Pick<ClipboardHistory, "subscribe" | "getSnapshot" | "clear">;
   /** The installed app an app id or program stands for, as the Dock matches it: its name and icon. */
   installedApp?: (id: string) => { name: string; icon: string } | undefined;
+  /** Talking to Dashi: its models and voices (Settings › Voice); absent where the shell runs no voice. */
+  voice?: VoicePaneSource;
   /** The agents connected now (Settings › Agents: "Connected now"). */
   agents?: Pick<AgentStore, "subscribe" | "getSnapshot">;
   /** The keyboard layouts xkb knows. */

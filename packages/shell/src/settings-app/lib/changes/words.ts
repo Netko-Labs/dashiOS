@@ -94,6 +94,9 @@ const OWN: Readonly<Record<string, Named>> = {
   "agents.skipGrants": { name: "Don't ask for these again", row: "agents/skip-grants", unset: "off" },
   "agents.localModel": { name: "Local model", row: "agents/model", unset: "the first installed", say: (value) => String(value) },
   "agents.gptModel": { name: "GPT model", row: "agents/model", unset: "the most capable", say: (value) => String(value) },
+  "voice.on": { name: "Voice", row: "voice/on", unset: "off" },
+  "voice.key": { name: "Talk key", row: "voice/key", unset: "right ❖ or Copilot", say: (value) => String(value) },
+  "voice.voice": { name: "Dashi's voice", row: "voice/dashis-voice", unset: "Dashi's own", say: (value) => String(value) },
 };
 
 /** The registry's row for each key it binds; the first wins where two panes show one setting. */

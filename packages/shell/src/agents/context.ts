@@ -8,7 +8,7 @@ import type { Atspi, Placed, Rect } from "./atspi/index.ts";
 import type { Question } from "./confirm.ts";
 import type { Desktop, Hands } from "./desktop/index.ts";
 import type { AgentMask } from "./mask.ts";
-import type { AgentUi } from "./presence.ts";
+import type { AgentUi, PersonAnswer } from "./presence.ts";
 import type { Approval, LoginSource, SheetLogin, SignInAnswer, Vault } from "./secrets/index.ts";
 
 /** What the secrets tools need from the connection (desktop/secrets.ts). */
@@ -97,6 +97,12 @@ export interface RunContext {
    * locking all come back false. The answer is never kept.
    */
   confirm(question: Question): Promise<boolean>;
+  /**
+   * Ask the person a question in words, said out loud and shown, and wait at
+   * most `seconds` once it shows. Their own words, or that there are none:
+   * never an answer made up.
+   */
+  question(question: string, seconds: number): Promise<PersonAnswer>;
   /** Whether agents work alone now, and for how long (alone/): what `get_work_alone` answers. */
   alone(): AloneStatus;
   /** Aborted when the agent gives up on this call, or leaves: sheets come down, nothing more is typed. */

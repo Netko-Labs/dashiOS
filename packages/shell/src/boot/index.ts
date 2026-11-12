@@ -14,3 +14,4 @@ export { Late, Services } from "./services.ts";
 export { connectCompositor, guardProcess, Screens, startLogin, startStores } from "./session.ts";
 export { startSettingsApps, startSettingsWindows } from "./settings.ts";
 export { chooseRadios, startGuards, startSystemStores } from "./system.ts";
+export { startTalking } from "./voice.ts";

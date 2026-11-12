@@ -600,6 +600,114 @@ Numbered in the order they were written down; a new one goes at the end.
 - **Undo:** drop `DASHI_VOICE_FETCH_VIA` and the address-family line from the
   unit; the service then fetches as its own child everywhere.
 
+### D30. The talk key is a key the compositor holds for the shell, named by its code
+
+- **Date:** 2026-11-11 (`crates/dashi-comp/src/keys/held.rs`,
+  `packages/shell/src/voice/keys.ts`; docs/compositor-ipc.md `held-keys`).
+- **Question:** hold-to-talk needs a key going down and coming up, kept from
+  the focused app. The keymap binds chords and has no "up"; ❖ is the
+  compositor's own; and a Copilot key sends ⇧❖F23 on many laptops.
+- **Choice:** a mechanism of its own. The shell lists keys by evdev code
+  (`held-keys`), the compositor takes them before anything else (before ❖,
+  before the keymap) and says `held-key` down and up. Which keys and what
+  they mean stay in the shell. The right ❖ and F23 are held by default; the
+  F23 is taken whatever is held with it, and marks the ❖ it came with as a
+  chord, so no launcher opens. `bare` keys (Esc) are taken only alone.
+- **Why:** a code names the key whatever the layout calls it (F23 is
+  `XF86TouchpadOff` on some xkb data and `XF86Assistant` on newer), and a
+  key taken before ❖'s own handling can't also be a modifier or open the
+  launcher, which is what the owner asked of the right ❖.
+- **Cost:** a second way to take keys beside the keymap. The person picks
+  the key from a short list, not by pressing any key. Voice off, nothing is
+  held, so the right ❖ is a ❖ again.
+- **Undo:** an empty `held-keys` list; the mechanism can stay unused.
+
+### D31. The voice chip is laid over the bar's free room, and cut by characters
+
+- **Date:** 2026-11-11 (`packages/shell/src/voice/chip.tsx`,
+  `voice/lib/captions.ts`; docs/design.html, "The voice chip").
+- **Question:** captions need room in a one-row bar whose status side
+  already gives way to the menus. Where does the chip go without pushing
+  anything, and what happens to a long sentence?
+- **Choice:** it is not in the row. It is laid over the bar, centred in the
+  room between the app's menus and the status side, up to 440 wide. A spoken
+  sentence is cut into lines of 52 characters at word ends and the line
+  being said shows; what the person says shows its newest words with "…" in
+  front; a notice shows its first 90 characters. With under 150 of room it
+  keeps 150 and covers its neighbours' edges while it shows.
+- **Why:** an item in the row would send Sound and Wi-Fi into "…" every time
+  the person talked. Laid over, nothing moves (VS-1), and the words never
+  wrap or grow the bar.
+- **Cost:** on a narrow screen with long menus it covers part of them for as
+  long as Dashi listens or speaks. It shows on every screen's bar.
+- **Undo:** a status slot `goes: null` in `menubar-program-slots.tsx`.
+
+### D32. Nothing said runs a plan: a spoken ask waits for the person's Return
+
+- **Date:** 2026-11-11 (`packages/shell/src/voice/asker.ts`).
+- **Question:** the launcher's agent answers with a plan that runs on the
+  person's own Return. Should a spoken "yes" run it?
+- **Choice:** no. A spoken ask is a launcher task like a typed one; when it
+  comes back with steps Dashi says them and opens the launcher on the plan,
+  and Return there runs it, checked by `input-origin` as always.
+- **Why:** consent is the person's hands (docs/secrets.md, `agents/person.ts`).
+  A microphone hears a video, a guest, or a page read aloud as well as it
+  hears the person, and Part A says to narrow who may do something.
+- **Cost:** asking Dashi to do something takes one key press after talking.
+- **Undo:** not wanted without a way to tell the person's voice from others.
+
+### D33. `ask_person` has its own permission, may be covered by Work alone, and its spoken answer is sent as heard
+
+- **Date:** 2026-11-11 (`agents/tools/lib/ask.ts`, `agents/consent.ts`,
+  `agent-sheets/lib/question-sheet.tsx`).
+- **Its own permission, "Ask you questions".** The owner asked for a consent
+  kind of its own. It is asked for once and can be kept: a question is the
+  least an agent can do to the person, and a sheet before every question
+  would be two sheets.
+- **Work alone may cover it.** The person may tick it with the other kinds.
+  Why: a question only talks and shows, and an agent left alone that hits
+  something only the person knows should be able to ask and hear "no
+  answer" rather than stall on a consent sheet. It is not in the never list
+  because its answer is words, not a permission: everything that asks every
+  time, or needs the fingerprint or password, still does. Undo: add `ask` to
+  `NEVER_ALONE_SCOPES`.
+- **Answered by the talk key, not by a listen that opens by itself.** The
+  owner's words. The microphone opens only on the person's own press.
+- **The spoken answer goes as heard,** shown in the chip ("You said: …"),
+  with no second press to confirm. Why: confirming is typing, which is the
+  other way to answer. The result says `by: "voice"` and the tool's words
+  tell the agent speech may be misheard. Undo: put the words in the sheet's
+  field for Return instead (`questionSheet.shown`).
+- **The wait is the agent's `seconds`, counted from when the sheet shows,**
+  10 to 300, 60 unless given, in place of the queue's two minutes.
+- **It can't be turned into a secret's way out.** The field is plain, the
+  sheet says it is no place for a password, code or card, the tool's words
+  forbid asking for one, and nothing reads the answer but the agent.
+
+### D34. The smaller calls that came with Voice in the shell
+
+- **Date:** 2026-11-11. Each reversible.
+- **A tap does nothing but say how.** Under 300 ms nothing is heard; it
+  stops Dashi if it was speaking, else the chip says "Hold … to talk." for
+  2.5 s. A Copilot key whose firmware releases it at once is a tap: the
+  person picks another key. Undo: `TAP_MS`.
+- **Esc is held only while there is something to stop,** and only alone, so
+  apps keep Esc the rest of the time and ⌃❖Esc still stops agents.
+- **A failed ask is said and stays in the chip** for 4 s after, with a press
+  that goes where it is fixed. An answer Voice can't say (a language it has
+  no voice for) is shown instead.
+- **The agent is told the ask was spoken** (a line after the words, as the
+  launcher's context chips go), so it answers in a sentence or two.
+- **`listen` names no language** unless the session's is one only Whisper
+  hears: Parakeet then hears any of its 25, so a person may speak Spanish in
+  an English session.
+- **The fetch is asked for in the pane, not on a sheet:** turning the switch
+  on with no models shows the sizes on the row, and only "Fetch" turns Voice
+  on and fetches. Removing the main models removes every set.
+- **Voice is the pane after Privacy** in Settings' "You" group, so the four
+  the design drew stay first. No agent can set its rows.
+- **The chip shows on every screen's bar,** as the agent mark does.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its

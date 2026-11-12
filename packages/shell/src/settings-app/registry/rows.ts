@@ -8,10 +8,11 @@
 import { INPUT_ROWS } from "./lib/input.ts";
 import { LOOK_ROWS } from "./lib/look.ts";
 import { MACHINE_ROWS } from "./lib/machine.ts";
+import { VOICE_ROWS } from "./lib/voice.ts";
 import { YOU_ROWS } from "./lib/you.ts";
 import type { RowDef } from "./types.ts";
 
-const ALL = [...LOOK_ROWS, ...INPUT_ROWS, ...MACHINE_ROWS, ...YOU_ROWS] as const;
+const ALL = [...LOOK_ROWS, ...INPUT_ROWS, ...MACHINE_ROWS, ...YOU_ROWS, ...VOICE_ROWS] as const;
 
 /** A row's id, `<pane>/<row>`: a pane can only draw a row that is here. */
 export type SettingId = (typeof ALL)[number]["id"];

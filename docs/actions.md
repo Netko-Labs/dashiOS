@@ -442,10 +442,77 @@ Code: `agents/alone/` (`rules.ts`, `work-alone.ts`, `records.ts`),
   2 sites, 9 without asking in 1:00:00.") with Show; Settings › Agents lists
   the last three times, each with Show, which opens the whole record as text.
   The last ten are kept in `$XDG_STATE_HOME/dashi/agents/alone.json`.
+- **Questions may be covered.** "Ask you questions" (`ask_person`,
+  [Asking the person](#asking-the-person)) is a kind the person may pick: an
+  agent left alone that needs a word from the person can ask it without a
+  consent sheet first. The question itself still shows and is said, and with
+  nobody there it comes back as no answer. An answer is words: it is never a
+  yes to anything that asks.
 - **Agents can ask.** `get_work_alone` answers `{on, secondsLeft, scopes,
   sites}`, read-only, with no sheet and no permission, so an agent left
   alone can plan. It takes no argument; nothing an agent can call turns
   Work alone on.
+
+## Talking to Dashi
+
+Voice (`packages/shell/src/voice/`, docs/voice.md): hold the talk key, say
+what to do, let go. What was heard goes to the launcher's agent, and the
+answer is said in Dashi's voice with captions in the menu bar. Off until
+turned on in Settings › Voice. Tests: `test/voice-*.test.ts`.
+
+- **A spoken ask is a launcher Ask.** The words become a task of
+  `agents/ask/lib/tasks.ts` (`voice/asker.ts`), with a line telling the
+  agent they were spoken and that its reply is read out. So it is in the
+  launcher's "Now", it can be followed up there, and it is kept in the same
+  history (`tasks.jsonl`) as a typed one.
+- **Nothing said runs a plan.** When the agent answers with steps, Dashi
+  says the plan ("My plan: Turn Dark Mode on. Press Return in the launcher
+  to run it.") and opens the launcher on it. Running it is the person's own
+  Return there, checked as it always is (`input-origin`, "Running an
+  action"): a voice in the room is not the person's hands (decisions.md D32).
+- **What is missing is said in the chip,** with the one thing to do, and a
+  press on it goes there: Voice's models not fetched or the service not
+  running (Settings › Voice), no agent chosen (Settings › Agents), a harness
+  not signed in (the launcher, whose row signs in), no microphone (the
+  service's own sentence).
+
+## Asking the person
+
+`ask_person` (`agents/tools/lib/ask.ts`, `agents/desktop/ask-person.ts`,
+`agent-sheets/lib/question-sheet.tsx`; tests `test/agents-ask-person.test.ts`)
+lets an agent ask the person one short question in words.
+
+- **Arguments:** `question` (one or two sentences, 300 characters at most;
+  control characters and line breaks become spaces) and `seconds` (10 to
+  300, 60 unless given): how long it waits once the question shows.
+- **What the person meets.** A sheet in the agents' queue, "<agent> asks",
+  with the question, a field, "Don't Answer" and "Answer". With Voice on,
+  Dashi says "<agent> asks: <question>" as the sheet comes up (captions in
+  the chip), and the next thing the person says while holding the talk key
+  is the answer: it shows in the chip ("You said: …") and goes to the agent
+  as it was heard. Or they type it and press Return. With Voice off the
+  question is shown only, and answered by typing.
+- **What the agent gets:** `{answered: true, answer, by: "voice" |
+  "typing"}`, or `{answered: false, reason}`: the person chose not to
+  answer, or did not within `seconds`. The screen locking, the agent
+  leaving and the sheet's host dying are no answer too. Dashi never makes an
+  answer up, and the reason tells the agent not to guess one.
+- **Whose answer it is.** A typed answer counts only as the person's own
+  press on the sheet (`input-origin`, as a consent sheet's yes). A spoken
+  one comes from the talk key, which the compositor takes only from the
+  person's own keyboard: an agent's keys never hold it
+  (docs/compositor-ipc.md, `held-keys`).
+- **Its own permission,** "Ask you questions" (`ask`): asked for the first
+  time like any other, kept by Always Allow, taken back in Settings ›
+  Agents. Work alone may cover it (above).
+- **Never a way round a fingerprint or password.** The answer is text handed
+  to the agent, and nothing else reads it: `pay`, `sign_in`, `fill_code`,
+  force quit, the Trash and installs ask on their own sheets whatever was
+  answered here, and the sheet says it is no place for a password, a code or
+  a card. The voice service refuses agents (docs/voice.md, "Who may ask"),
+  so the only way an agent reaches the person's voice is this tool.
+- **Only agents call it** (`who: "agents"`): it is no command of the
+  person's, and not a step a launcher plan may hold.
 
 ## In the launcher
 

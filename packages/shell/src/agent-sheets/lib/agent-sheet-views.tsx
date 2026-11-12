@@ -12,6 +12,8 @@ import {
   type Ask,
   type Confirm,
   DENY,
+  type PersonAnswer,
+  type PersonAsk,
   type QueuedSheet,
   type SignInAsk,
   type SignInChoice,
@@ -19,6 +21,7 @@ import {
 } from "../../agents/index.ts";
 import { ConfirmSheet } from "../../confirm-sheet.tsx";
 import { ConsentSheet } from "../../consent.tsx";
+import { QUESTION, QuestionSheet, spokenQuestion } from "./question-sheet.tsx";
 import { SIGN_IN, SignInSheet } from "./sign-in-sheet.tsx";
 
 /** A sheet and how to draw it, given how the person's answer gets back. */
@@ -26,6 +29,14 @@ export interface Sheet extends QueuedSheet {
   view(answer: (answer: Answer) => void): ReactElement;
   /** The surface, when not the consent sheet's. */
   size?: { width: number; height: number };
+  /** Runs as it comes on screen, with the way to answer it from outside the sheet (a spoken answer); returns what to run as it comes down. */
+  shown?(answer: (answer: Answer) => void): () => void;
+}
+
+/** Voice, as a question uses it (voice/voice.ts): says the question, hears the answer, names the talk key. */
+export interface QuestionVoice {
+  ask(words: string, heard: (text: string) => void): () => void;
+  talkKey(): string | null;
 }
 
 /** A plain yes is allowed once; a no is the queue's DENY. */
@@ -87,5 +98,40 @@ export function signInSheet(ask: SignInAsk, resolve: (choice: SignInChoice) => v
       resolve(
         answer.allow === "deny" ? { allow: "deny", login: null } : { allow: answer.allow === "always" ? "task" : "once", login: answer.scopes[0] ?? null },
       ),
+  };
+}
+
+/**
+ * A question in words (`ask_person`). On the queue's Answer the words ride in
+ * `scopes`. Typed, they count only as the person's own press (the queue's
+ * check); spoken, they come from the talk key, which only the person's hands
+ * hold (the compositor never takes an agent's key for it).
+ */
+export function questionSheet(ask: PersonAsk, voice: QuestionVoice | null, resolve: (answer: PersonAnswer) => void): Sheet {
+  let by: "voice" | "typing" = "typing";
+  let declined = false;
+  return {
+    agent: ask.agent,
+    size: QUESTION,
+    timeoutMs: ask.seconds * 1000,
+    view: (answer) => (
+      <QuestionSheet
+        ask={ask}
+        talkKey={voice?.talkKey() ?? null}
+        onAnswer={(text) => {
+          declined = text === null;
+          answer(text === null ? DENY : { allow: "once", scopes: [text] });
+        }}
+      />
+    ),
+    shown: (answer) =>
+      voice?.ask(spokenQuestion(ask), (text) => {
+        by = "voice";
+        answer({ allow: "once", scopes: [text] });
+      }) ?? (() => {}),
+    resolve: (answer) => {
+      const text = answer.scopes[0]?.trim() ?? "";
+      resolve(answer.allow === "deny" || text === "" ? { none: declined ? "declined" : "no-answer" } : { text, by });
+    },
   };
 }

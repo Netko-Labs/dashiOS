@@ -9,7 +9,7 @@ import type { Question } from "../../confirm.ts";
 import { choices, isScope, kept, label, type Scope } from "../../consent.ts";
 import { type ToolResult, toolError } from "../../context.ts";
 import { LOCKED } from "../../lock.ts";
-import { WAITING_STATUS, type Who } from "../../presence.ts";
+import { type PersonAnswer, WAITING_STATUS, type Who } from "../../presence.ts";
 import type { SiteAnswer } from "../../sites.ts";
 import { type Call, scopeOf } from "../../tools/index.ts";
 import type * as mcp from "../mcp.ts";
@@ -221,6 +221,21 @@ export class Scopes {
       const yes = await this.ctx.ui.confirm({ agent: this.host.id, who: this.host.who(), ...question }, signal);
       return yes && !this.host.closed() && !this.ctx.lock.isLocked && !signal.aborted;
     });
+  }
+
+  /** A question in words (`ask_person`): the person's own, or that there is none (they said no, the time ran out, the agent left, the screen locked). */
+  async question(question: string, seconds: number, signal: AbortSignal): Promise<PersonAnswer> {
+    const none: PersonAnswer = { none: "no-answer" };
+    if (this.host.closed() || this.ctx.lock.isLocked || signal.aborted) return none;
+    return this.whileConfirming(async () => {
+      const answer = await this.ctx.ui.question({ agent: this.host.id, who: this.host.who(), question, seconds }, signal);
+      return this.host.closed() || this.ctx.lock.isLocked || signal.aborted ? none : answer;
+    });
+  }
+
+  /** What a running call asks the person through. */
+  asks(signal: AbortSignal): { confirm(question: Question): Promise<boolean>; question(question: string, seconds: number): Promise<PersonAnswer> } {
+    return { confirm: (question) => this.confirm(question, signal), question: (question, seconds) => this.question(question, seconds, signal) };
   }
 
   /** Waiting on the person for a question: the status says so, and goes back when the last one is answered. */

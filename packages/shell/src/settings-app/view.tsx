@@ -43,6 +43,7 @@ import { RecentPane } from "./lib/panes/recent.tsx";
 import { SoundPane } from "./lib/panes/sound.tsx";
 import { TrackpadPane } from "./lib/panes/trackpad.tsx";
 import { UsersPane } from "./lib/panes/users.tsx";
+import { VoicePane } from "./lib/panes/voice.tsx";
 import { WallpaperPane } from "./lib/panes/wallpaper.tsx";
 import { PAGE } from "./lib/row.tsx";
 import { PaneStoresContext } from "./lib/setting.tsx";
@@ -130,6 +131,16 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
       );
     case "agents":
       return <AgentsPane ctx={ctx} />;
+    case "voice":
+      return ctx.voice ? (
+        <VoicePane settings={ctx.settings} voice={ctx.voice} />
+      ) : (
+        <Page title="Voice">
+          <Group testID="voice-none">
+            <Note>Voice isn't running in this session. Log out and in again to start it.</Note>
+          </Group>
+        </Page>
+      );
     case "privacy":
       return (
         <PrivacyPane
