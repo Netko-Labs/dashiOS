@@ -2,6 +2,7 @@
 //! sound, who is subscribed, and what Voice is doing now; each connection
 //! calls `handle` with its requests.
 
+mod capture;
 pub(crate) mod clock;
 pub(crate) mod engines;
 mod fetching;
@@ -135,6 +136,7 @@ impl Service {
             Request::Warm(warm) => self.warm(&warm),
             Request::Listen(params) => self.listen(connection, params),
             Request::ListenStop => self.listen_stop(),
+            Request::ListenQuiet(quiet) => self.listen_quiet(&quiet),
             Request::ListenCancel => {
                 self.listen_cancel(None);
                 Ok(json!({}))

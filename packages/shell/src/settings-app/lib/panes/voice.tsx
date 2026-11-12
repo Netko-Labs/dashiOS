@@ -24,6 +24,7 @@ import {
   partly,
   sizeWords,
   TALK_KEYS,
+  type TalkKey,
   type TalkKeyId,
   talkKey,
   type VoiceParts,
@@ -145,12 +146,7 @@ function KeyAndVoice({ settings, voice, view, guard }: { settings: SettingsStore
   const choices = voiceChoices(view.voices, view.defaultVoice);
   return (
     <Group testID="voice-key-and-voice">
-      <Setting
-        id="voice/key"
-        testID="voice-key"
-        detail={guard.refused === "voice/key" ? ONLY_YOU : `Hold ${key.hold} to talk, and let go to hear the answer. ${key.cost ?? ""}`.trim()}
-        stack
-      >
+      <Setting id="voice/key" testID="voice-key" detail={guard.refused === "voice/key" ? ONLY_YOU : keyWords(key)} stack>
         <FoldedChoices
           testID="voice-key-choice"
           value={key.id}
@@ -174,6 +170,11 @@ function KeyAndVoice({ settings, voice, view, guard }: { settings: SettingsStore
       )}
     </Group>
   );
+}
+
+/** What the key's row says: how it talks, how a tap of it talks where one does, and what it no longer does. */
+export function keyWords(key: TalkKey): string {
+  return [`Hold ${key.hold} to talk, and let go to hear the answer.`, key.tap, key.cost].filter(Boolean).join(" ");
 }
 
 /** What the switch's row says: an agent's press, what Voice waits for, or the registry's own words. */

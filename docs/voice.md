@@ -46,10 +46,14 @@ Voice are the shell's.
    opens only on the person's own press, never because an agent asked.
    (`"until": "silence"` is there for a listen that ends by itself; the
    shell does not use it in 0.8.)
-7. **Keep it warm:** when Voice is on and the session starts (or when the
-   key's sheet opens), send `warm` so the first hold answers at once. Models
-   unused for ten minutes are let go of, and loaded again when next needed
-   (one to four seconds).
+7. **Keep it warm:** when Voice is on and the session starts, send `warm`
+   so the first hold answers at once. Models unused for ten minutes are let
+   go of (the service is then 33 MB, not 1.8 GB), and loaded again when next
+   needed (one to four seconds). So as the talk key goes down the shell
+   sends `warm` with `speak`, and the speaking model loads while the person
+   talks (the listening one loads with the `listen`): the answer never waits
+   for a model. Each model has its own lock, so one loading never holds up
+   another.
 8. **The microphone pill** lights by itself: see "The microphone pill".
 
 Nothing listens unless the shell asked, and a listen ends when the connection
@@ -78,9 +82,17 @@ seconds, and after five minutes whatever happens.
   Lock, Menu). A held key reaches no app and is no modifier. With Voice off
   no key is held: the right ❖ is a ❖ like the left.
 - **A hold** shorter than 300 ms is a tap: nothing is heard; it stops Dashi
-  if it was speaking, and otherwise the chip says "Hold … to talk." A
-  Copilot key that can't be held (some laptops send its press and release
-  together) is therefore a tap: pick another key in Settings › Voice.
+  if it was speaking, and otherwise the chip says "Hold … to talk."
+- **The Copilot key's tap talks.** Many laptops send its press and release
+  together, whatever the finger does, so it can't be held. The compositor
+  holds it under a name of its own (`talk-tap`; the others are `talk`), and
+  a tap of it (under 300 ms) keeps the listen its press opened: the shell
+  sends `listen.quiet` (1.5 s), and the listen ends when the person has
+  talked and gone quiet (its words come in `heard`), at the next tap of a
+  talk key (`listen.stop`), or at Esc. If nothing at all is heard in 8 s the
+  shell cancels it and the chip says "I didn't hear anything." Held 300 ms
+  or more it is a hold like any other key; a tap while Dashi speaks only
+  stops it. Settings › Voice says so beside the key.
 - **Stopping.** Esc (held by the shell only while Dashi listens, thinks or
   speaks, and only alone: ⌃❖Esc still stops agents), the talk key again, a
   press on the chip, and the screen locking each stop it at once.
@@ -150,6 +162,7 @@ The same rule as the vault's (`docs/secrets.md`).
 | `warm` | `listen?`, `speak?`, `language?` | `{}`, once the models are in memory |
 | `listen` | `language?`, `until?`, `quiet_ms?`, `partials?` | `{}`, once the microphone is open |
 | `listen.stop` | none | `text`, `speech_ms` |
+| `listen.quiet` | `quiet_ms?` | `{}`: the listen under way now ends by itself on a quiet |
 | `listen.cancel` | none | `{}` |
 | `speak` | `text`, `voice?`, `language?`, `speed?`, `queue?` | `id` |
 | `speak.stop` | none | `{}` |
@@ -238,7 +251,7 @@ a woman, `m` a man.
 Loads the models now. `language` picks which listening model (see
 "Languages").
 
-### `listen`, `listen.stop`, `listen.cancel`
+### `listen`, `listen.stop`, `listen.quiet`, `listen.cancel`
 
 ```json
 {"id":10,"method":"listen","params":{"language":"en"}}
@@ -269,6 +282,19 @@ was once the silence was dropped. One listen at a time
 `Voice is not listening.` A listen that ended by itself tells its words in
 the `heard` event only.
 
+`listen.quiet` turns the listen under way into one that ends by itself, as
+`"until": "silence"` would have made it: once the person has spoken and then
+been quiet for `quiet_ms` (1200 unless given, 300 to 10000). What was heard
+since the listen opened is kept. It is for a key that was tapped, not held:
+the listen was opened when the key went down, and no key coming up will end
+it. Its words come in the `heard` event; `listen.stop` still ends it sooner.
+With no listen running: `Voice is not listening.`
+
+```json
+{"id":13,"method":"listen.quiet","params":{"quiet_ms":1500}}
+{"id":13,"result":{}}
+```
+
 `listen.cancel` closes the microphone and drops what was heard: no `heard`
 event, no words worked out.
 
@@ -288,7 +314,12 @@ event, no words worked out.
 ```
 
 - `text`: up to 20000 bytes. It is cut into sentences; each is made into
-  sound while the one before plays.
+  sound while the one before plays. The first sound waits for the first
+  piece to be made whole, so a first sentence of 60 characters or more is
+  said in two pieces, cut after its first comma, semicolon, colon or dash
+  that leaves both 20 characters or more: each piece has a `sentence` event
+  of its own. The speakers are opened as the utterance starts, while the
+  first piece is made, not after.
 - `voice`: a voice's id. Without it, `language`'s first voice (`"en-GB"` →
   `bf_emma`, `"es"` → `ef_dora`); without both, Dashi's own (`af_heart`).
 - `speed`: 0.5 to 2; 1 is the voice's own pace.
@@ -308,7 +339,7 @@ sound at once and forgets what was queued; every utterance it ended gets a
 | `level` | `level`, 0 to 1 | About 31 times a second while listening: the microphone's loudness (RMS on a decibel scale, −60 dBFS is 0). |
 | `partial` | `text` | While listening: all the words so far. Each replaces the one before; `heard` replaces the last. |
 | `heard` | `text`, `speech_ms` | A listen ended (by `listen.stop`, by silence, by the microphone ending, or at five minutes). Not after `listen.cancel`. |
-| `sentence` | `id`, `index`, `text`, `ms`, `words[]` (`text`, `start`, `end`) | A sentence's first sound plays now. `ms` is how long it lasts; a word's `start` and `end` are milliseconds from now. |
+| `sentence` | `id`, `index`, `text`, `ms`, `words[]` (`text`, `start`, `end`) | A sentence's (or, for a long first one, each of its two pieces') first sound plays now. `ms` is how long it lasts; a word's `start` and `end` are milliseconds from now. |
 | `spoken` | `id`, `reason` (`done`, `stopped`, `failed`), `error?` | An utterance ended. |
 | `fetch` | `set?`, `file?`, `received`, `bytes`, `done`, `error?` | A fetch's progress, about five times a second: `received` of `bytes` over every file asked for. `done: true` ends it; with `error`, it failed or was cancelled. |
 | `models` | none | Which models are here changed (a fetch ended, a set was removed): ask `models` again. |
@@ -515,6 +546,7 @@ It needs `onnxruntime`, `espeak-ng`, `pipewire-utils` and `curl` installed.
 ## What it can't do yet
 
 - No dictation into a text field: what is said goes to Dashi's agent only.
+- Only the Copilot key's tap talks. A key the person picked is held.
 - The talk key is one of a short list, not any key pressed to choose it.
 
 - No words while Whisper listens are streamed token by token: partials are

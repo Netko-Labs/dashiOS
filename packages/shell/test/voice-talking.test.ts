@@ -63,13 +63,13 @@ test("Voice off holds no key; on, the talk key by its codes, and Esc only while 
   const off = talking({ on: false });
   expect(off.held).toEqual([[]]);
   const { held, talk, state } = talking();
-  expect(held).toEqual([["talk:126", "talk:193"]]);
+  expect(held).toEqual([["talk:126", "talk-tap:193"]]);
   talk.key(TALK, true);
   await settle();
-  expect(held.at(-1)).toEqual(["talk:126", "talk:193", "stop:1:bare"]);
+  expect(held.at(-1)).toEqual(["talk:126", "talk-tap:193", "stop:1:bare"]);
   talk.key(STOP, true);
   await settle();
-  expect(held.at(-1)).toEqual(["talk:126", "talk:193"]);
+  expect(held.at(-1)).toEqual(["talk:126", "talk-tap:193"]);
   state.key = talkKey("right-option");
   talk.sync();
   expect(held.at(-1)).toEqual(["talk:100"]);
@@ -79,7 +79,7 @@ test("held, Dashi listens and shows the words as they are heard; let go, the age
   const { voice, timers, asked, talk, chip, state } = talking();
   talk.key(TALK, true);
   await settle();
-  expect(voice.calls).toEqual(["listen"]);
+  expect(voice.calls).toEqual(["listen", "warm"]);
   expect(chip()).toEqual({ kind: "listening", text: "", question: false });
   voice.emit({ event: "level", level: 0.4 });
   expect(talk.level.getSnapshot()).toBe(0.4);
@@ -88,7 +88,7 @@ test("held, Dashi listens and shows the words as they are heard; let go, the age
   state.now += 2000;
   talk.key(TALK, false);
   await settle();
-  expect(voice.calls).toEqual(["listen", "listen.stop", "speak:Here it is. Your next meeting is at four."]);
+  expect(voice.calls).toEqual(["listen", "warm", "listen.stop", "speak:Here it is. Your next meeting is at four."]);
   expect(asked).toEqual(["Open the calendar."]);
   expect(chip()).toEqual({ kind: "thinking", text: "Open the calendar." });
   voice.emit(SENTENCE);
@@ -104,7 +104,7 @@ test("held, Dashi listens and shows the words as they are heard; let go, the age
 test("a tap listens to nothing and says how to talk; silence is not turned into an ask", async () => {
   const { voice, asked, chip, hold, timers } = talking();
   await hold(120);
-  expect(voice.calls).toEqual(["listen", "listen.cancel"]);
+  expect(voice.calls).toEqual(["listen", "warm", "listen.cancel"]);
   expect(chip()).toEqual({ kind: "notice", text: "Hold the right ❖ or the Copilot key to talk." });
   timers.advance(2500);
   expect(chip()).toBeNull();
@@ -131,7 +131,7 @@ test("Esc, the key again, and a press on the chip each stop Dashi at once", asyn
   const before = voice.calls.length;
   // The key again: stopped at once, and a tap after it says nothing more.
   await hold(100);
-  expect(voice.calls.slice(before)).toEqual(["speak.stop", "listen", "listen.cancel"]);
+  expect(voice.calls.slice(before)).toEqual(["speak.stop", "listen", "warm", "listen.cancel"]);
   expect(chip()).toBeNull();
 });
 
@@ -160,7 +160,7 @@ test("no microphone: the service's own words show, and go to Settings › Voice"
   voice.replies.listen = new Error("Voice can't hear: no microphone was found.");
   await hold(1500);
   expect(chip()).toEqual({ kind: "notice", text: "Voice can't hear: no microphone was found.", go: "voice" });
-  expect(voice.calls).toEqual(["listen"]);
+  expect(voice.calls).toEqual(["listen", "warm"]);
 });
 
 test("an ask that failed is said, and its words stay in the chip with where to go", async () => {

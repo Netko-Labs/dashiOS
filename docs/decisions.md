@@ -913,6 +913,58 @@ Numbered in the order they were written down; a new one goes at the end.
   switch itself; the Models row appearing under it is the answer.
 - **Undo:** `on` in `VoicePane`.
 
+### D45. A tap of the Copilot key talks; every other key is still held
+
+- **Date:** 2026-11-11. The `polish` agent's, reversible. It replaces one
+  line of D40 ("A Copilot key whose firmware releases it at once is a tap:
+  the person picks another key").
+- **Question:** many laptops send the Copilot key's press and release
+  together, so holding it hears nothing. How does such a key talk, without
+  changing what a held key does?
+- **Choice:** the Copilot key (F23) has its own name among the held keys.
+  A tap of it, under 300 ms, keeps the listen its press opened and asks the
+  service to end it on a quiet of 1.5 s (`listen.quiet`, new); the next tap
+  ends it sooner, Esc cancels it, and with nothing heard in 8 s it is given
+  up on. Held, it is a hold. The right ❖ and the keys a person picks are
+  only ever held: their tap still says "Hold … to talk."
+- **Why:** nobody can tell from the key's events whether its firmware can
+  hold it, but a tap is a tap on both kinds, so the rule needs no guess. A
+  key that can be held keeps the surer way: the microphone is open exactly
+  while the finger is down.
+- **Cost:** after a tap the microphone stays open until the person stops
+  talking; a tap by mistake is 8 s of open microphone, shown by the chip
+  and the orange pill, and ended by Esc or a second tap. A pause longer
+  than 1.5 s ends the ask.
+- **Undo:** `TALK_TAP` in `voice/keys.ts` (name F23 `talk` again).
+
+### D46. Dashi's first sound: what was cut, and the speaking model is not kept in memory
+
+- **Date:** 2026-11-11. The `polish` agent's, reversible
+  (`crates/dashi-voice/src/service/`, `voice/voice.ts`).
+- **Question:** the first sound came long after the key came up. Where did
+  the time go, and should the speaking model stay in memory while Voice is
+  on, as the brief suggested?
+- **Measured** in the VM, from the key coming up to sound at the speakers,
+  with a stub agent that answers in 2 ms (`dashi-0.8.0-review/10-polish`):
+  0.19 s for the words, 0.73 s to make the first sentence (3.9 s of
+  speech) whole, 0.36 s for the speakers to open after that, and 0.76 s
+  more to load the speaking model when it had been let go of.
+- **Choice:** three cuts, none of which costs memory. The speakers open as
+  the utterance starts, while the first sentence is made. A long first
+  sentence is said in two pieces, cut at its first pause, so less is made
+  before the first sound. And the shell sends `warm` for the speaking
+  model as the talk key goes down, so it loads while the person talks; each
+  model has its own lock, so that never holds up the listening one. The
+  model is **not** kept in memory: ten idle minutes still bring the service
+  down to 33 MB.
+- **Why:** 0.48 GB held for as long as Voice is on, to save a load that
+  now happens behind the person's own words, is a poor trade on a laptop.
+- **Cost:** a first sentence said in two pieces has a comma's pause where
+  it was cut, and two captions. An ask shorter than the model's load (under
+  a second, after ten idle minutes) still waits for the rest of it.
+- **Undo:** `text::pieces` back to `text::sentences` in `speak.rs`;
+  `player.open()` back into `play`; the `warm` in `Voice.keyDown`.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its

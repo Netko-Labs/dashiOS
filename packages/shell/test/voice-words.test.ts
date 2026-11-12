@@ -61,7 +61,7 @@ test("a listen names a language only when Parakeet lacks it", () => {
 test("the talk key: the right ❖ and the Copilot key unless another is picked, and Esc bare while there is something to stop", () => {
   expect(heldKeys(talkKey(undefined), false)).toEqual([
     { name: "talk", code: 126 },
-    { name: "talk", code: 193 },
+    { name: "talk-tap", code: 193 },
   ]);
   expect(heldKeys(talkKey("caps-lock"), true)).toEqual([
     { name: "talk", code: 58 },

@@ -46,6 +46,16 @@ fn params_are_read_strictly() {
             .contains("missing field `text`")
     );
     assert!(request(r#"{"id":2,"method":"listen","params":{"until":"later"}}"#).is_err());
+    assert_eq!(
+        request(r#"{"id":3,"method":"listen.quiet","params":{"quiet_ms":1500}}"#),
+        Ok(Request::ListenQuiet(Quiet {
+            quiet_ms: Some(1500)
+        }))
+    );
+    assert_eq!(
+        request(r#"{"id":3,"method":"listen.quiet"}"#),
+        Ok(Request::ListenQuiet(Quiet::default()))
+    );
 }
 
 #[test]
