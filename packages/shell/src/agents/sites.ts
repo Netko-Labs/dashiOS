@@ -14,6 +14,7 @@
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { stateDir } from "./consent.ts";
 
 /** A page's site: its host without "www.", for http and https pages; null for anything else (a browser page, a file). */
@@ -43,9 +44,9 @@ export function siteFromInput(text: string): string | null {
 
 /** sites.json's `person`: `{site: since}`; anything unreadable is left out. */
 export function parsePersonSites(value: unknown): Map<string, number> {
-  const person = typeof value === "object" && value !== null ? (value as Record<string, unknown>).person : null;
+  const person = isRecord(value) ? value.person : null;
   const out = new Map<string, number>();
-  if (typeof person !== "object" || person === null || Array.isArray(person)) return out;
+  if (!isRecord(person)) return out;
   for (const [site, since] of Object.entries(person)) {
     if (siteOf(`https://${site}/`) === site) out.set(site, typeof since === "number" ? since : 0);
   }
@@ -55,10 +56,10 @@ export function parsePersonSites(value: unknown): Map<string, number> {
 /** sites.json read: `{version: 1, agents: {key: {site: since}}}`; anything else is nothing kept. */
 export function parseSiteGrants(value: unknown): Map<string, Map<string, number>> {
   const out = new Map<string, Map<string, number>>();
-  const agents = typeof value === "object" && value !== null ? (value as Record<string, unknown>).agents : null;
-  if (typeof agents !== "object" || agents === null) return out;
+  const agents = isRecord(value) ? value.agents : null;
+  if (!isRecord(agents)) return out;
   for (const [key, sites] of Object.entries(agents)) {
-    if (typeof sites !== "object" || sites === null || Array.isArray(sites)) continue;
+    if (!isRecord(sites)) continue;
     const kept = new Map<string, number>();
     for (const [site, since] of Object.entries(sites)) {
       if (siteOf(`https://${site}/`) === site) kept.set(site, typeof since === "number" ? since : 0);

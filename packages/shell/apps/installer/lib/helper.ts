@@ -12,6 +12,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { LineSplitter } from "../../../src/shared/io/index.ts";
 
 export const HELPER_PATH = "/usr/libexec/dashi/dashi-install";
@@ -37,8 +38,8 @@ export function parseEvent(line: string): InstallEvent | null {
   } catch {
     return null;
   }
-  if (typeof value !== "object" || value === null) return null;
-  const event = value as Record<string, unknown>;
+  if (!isRecord(value)) return null;
+  const event = value;
   switch (event.event) {
     case "step":
       return isStep(event.step) ? { event: "step", step: event.step } : null;

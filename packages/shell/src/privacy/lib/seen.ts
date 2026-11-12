@@ -10,6 +10,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 
 export function seenPath(env: Record<string, string | undefined> = process.env): string {
   return join(env.XDG_STATE_HOME || join(homedir(), ".local/state"), "dashi", "privacy", "seen.json");
@@ -24,8 +25,8 @@ export function parseSeen(text: string): Map<string, number> {
   } catch {
     return out;
   }
-  const seen = typeof value === "object" && value !== null ? (value as Record<string, unknown>).seen : undefined;
-  if (typeof seen !== "object" || seen === null) return out;
+  const seen = isRecord(value) ? value.seen : undefined;
+  if (!isRecord(seen)) return out;
   for (const [key, time] of Object.entries(seen)) {
     if (typeof time === "number" && Number.isInteger(time) && time >= 0 && key.length <= 1024) out.set(key, time);
   }

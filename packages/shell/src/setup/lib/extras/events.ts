@@ -5,6 +5,8 @@
  * dropped. Pure, so the window and its tests agree.
  */
 
+import { isRecord } from "@dashi/shape";
+
 export const EXTRA_STEPS = ["codecs", "nvidia", "gaming", "flathub"] as const;
 export type ExtraStep = (typeof EXTRA_STEPS)[number];
 
@@ -32,8 +34,8 @@ export function parseEvent(line: string): ExtrasEvent | null {
   } catch {
     return null;
   }
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
-  const fields = value as Record<string, unknown>;
+  if (!isRecord(value)) return null;
+  const fields = value;
   if (fields.event === "finished") return typeof fields.ok === "boolean" ? { event: "finished", ok: fields.ok } : null;
   const { step } = fields;
   if (!isExtraStep(step)) return null;

@@ -20,6 +20,7 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { useSyncExternalStore } from "react";
 import type { Compositor } from "../compositor/index.ts";
 
@@ -31,8 +32,8 @@ const MAX_CLIENTS = 64;
 
 /** The portal's binaries and the `screenSharing.clients` of settings.json, strictly read: only absolute path strings count. */
 export function parseCaptureClients(settings: unknown): string[] {
-  const section = typeof settings === "object" && settings !== null ? (settings as Record<string, unknown>).screenSharing : undefined;
-  const listed = typeof section === "object" && section !== null ? (section as Record<string, unknown>).clients : undefined;
+  const section = isRecord(settings) ? settings.screenSharing : undefined;
+  const listed = isRecord(section) ? section.clients : undefined;
   const extra = Array.isArray(listed)
     ? listed.filter((path): path is string => typeof path === "string" && path.startsWith("/") && !path.includes("\0") && path.length <= 4096)
     : [];

@@ -1,7 +1,7 @@
 // The hard-rule checks' pure parts: what each counts as an offence.
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { ipcMethods } from "../check-boundaries.ts";
+import { castsIn, ipcMethods } from "../check-boundaries.ts";
 import { allowed } from "../check-licenses.ts";
 import { barrelExtras, lineCount, specifiers, wrongWay } from "../check-structure.ts";
 
@@ -37,6 +37,28 @@ describe("H6 barrels", () => {
   });
   test("anything else counts", () => {
     expect(barrelExtras("index.ts", 'import { a } from "./a.ts";\nexport { a };\nexport const b = 1;\nstart();\n')).toBe(4);
+  });
+});
+
+describe("H7 casts", () => {
+  const count = (body: string): number => castsIn(`interface Box { x: number }\nexport function read(value: unknown) {\n${body}\n}\n`).unknown;
+  test("a cast of unknown, and of JSON.parse", () => {
+    expect(count("return value as Box;")).toBe(1);
+    expect(castsIn('export const box = JSON.parse("{}") as { x: number };')).toEqual({ json: 1, unknown: 0 });
+  });
+  test("a cast of what a hand-written check leaves of unknown: object, {}, a list of unknown", () => {
+    expect(count('return typeof value === "object" && value !== null ? (value as Box) : null;')).toBe(1);
+    expect(count('return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : null;')).toBe(1);
+    expect(count("return value != null ? (value as Box) : null;")).toBe(1);
+    expect(count("return Array.isArray(value) ? (value as number[]) : [];")).toBe(1);
+    expect(count("const list: unknown[] = []; return list as [string, number];")).toBe(1);
+  });
+  test("not a cast that claims nothing, a literal, a checked value, or a generic parser's own result", () => {
+    expect(count("return Array.isArray(value) ? (value as unknown[]) : [];")).toBe(0);
+    expect(count("return {} as Box;")).toBe(0);
+    expect(count('return typeof value === "string" ? (value as "a" | "b") : null;')).toBe(0);
+    expect(count('return Array.isArray(value) && value.every((n): n is number => typeof n === "number") ? value : [];')).toBe(0);
+    expect(castsIn("export function all<T>(list: unknown[]): T[] {\n  return list as T[];\n}\n").unknown).toBe(0);
   });
 });
 

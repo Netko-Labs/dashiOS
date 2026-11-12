@@ -14,6 +14,7 @@
  * a stream when there is no record (a run an older shell started).
  */
 
+import { isRecord } from "@dashi/shape";
 import { HARNESS_IDS, type HarnessId, isHarnessId, type Undo } from "../../ask/index.ts";
 import type { RunMessage, RunView } from "../run-view.ts";
 import { streamEvents } from "./stream.ts";
@@ -75,7 +76,7 @@ export function recordOf(run: RunView, extra: RecordExtra): RunRecord {
 }
 
 type Raw = Record<string, unknown>;
-const isRaw = (value: unknown): value is Raw => typeof value === "object" && value !== null && !Array.isArray(value);
+const isRaw = (value: unknown): value is Raw => isRecord(value);
 const count = (value: unknown): number | null => (typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null);
 const time = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null);
 /** A run's id as its scope's name needs it (sandbox.ts `taskOfCgroup`). */

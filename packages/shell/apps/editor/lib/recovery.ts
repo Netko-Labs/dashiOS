@@ -14,6 +14,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import type { Encoding, LineEnding } from "./codec.ts";
 
 export interface Recovery {
@@ -54,8 +55,8 @@ export function parseRecovery(text: string): Recovery | null {
   } catch {
     return null;
   }
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
-  const record = value as Record<string, unknown>;
+  if (!isRecord(value)) return null;
+  const record = value;
   const { path, encoding, lineEnding, time } = record;
   if (typeof record.text !== "string") return null;
   if (path !== null && (typeof path !== "string" || path === "" || path.includes("\0"))) return null;

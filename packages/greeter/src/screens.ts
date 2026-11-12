@@ -7,6 +7,7 @@
  * HiDPI panel's login screen isn't tiny.
  */
 
+import { isRecord } from "@dashi/shape";
 import { defaultScale } from "@dashi/ui";
 
 export interface Screen {
@@ -16,11 +17,11 @@ export interface Screen {
 
 /** The enabled screens in an `outputs` answer, malformed entries skipped. */
 export function parseScreens(answer: unknown): Screen[] {
-  const outputs = typeof answer === "object" && answer !== null ? (answer as { outputs?: unknown }).outputs : undefined;
+  const outputs = isRecord(answer) ? answer.outputs : undefined;
   if (!Array.isArray(outputs)) return [];
   return outputs.flatMap((output: unknown): Screen[] => {
-    if (typeof output !== "object" || output === null) return [];
-    const { name, enabled, primary } = output as Record<string, unknown>;
+    if (!isRecord(output)) return [];
+    const { name, enabled, primary } = output;
     if (typeof name !== "string" || name === "" || name.length > 64 || enabled === false) return [];
     return [{ name, primary: primary === true }];
   });
@@ -28,16 +29,16 @@ export function parseScreens(answer: unknown): Screen[] {
 
 /** The screens whose scale isn't the one their density wants: `{name, scale}` to ask for. */
 export function scalesToSet(answer: unknown): { name: string; scale: number }[] {
-  const outputs = typeof answer === "object" && answer !== null ? (answer as { outputs?: unknown }).outputs : undefined;
+  const outputs = isRecord(answer) ? answer.outputs : undefined;
   if (!Array.isArray(outputs)) return [];
   const number = (value: unknown): number => (typeof value === "number" && Number.isFinite(value) ? value : 0);
   return outputs.flatMap((output: unknown) => {
-    if (typeof output !== "object" || output === null) return [];
-    const { name, enabled, mode, physicalMm, scale, transform } = output as Record<string, unknown>;
+    if (!isRecord(output)) return [];
+    const { name, enabled, mode, physicalMm, scale, transform } = output;
     if (typeof name !== "string" || name === "" || name.length > 64 || enabled === false || typeof scale !== "number") return [];
-    const pixels = (typeof mode === "object" && mode !== null ? mode : {}) as Record<string, unknown>;
-    const size = (typeof physicalMm === "object" && physicalMm !== null ? physicalMm : {}) as Record<string, unknown>;
-    const turn = typeof transform === "object" && transform !== null ? (transform as Record<string, unknown>).rotation : 0;
+    const pixels: Record<string, unknown> = isRecord(mode) ? mode : {};
+    const size: Record<string, unknown> = isRecord(physicalMm) ? physicalMm : {};
+    const turn = isRecord(transform) ? transform.rotation : 0;
     const sideways = turn === 90 || turn === 270;
     const [width, height] = sideways ? [number(pixels.height), number(pixels.width)] : [number(pixels.width), number(pixels.height)];
     const [widthMm, heightMm] = sideways ? [number(size.height), number(size.width)] : [number(size.width), number(size.height)];
@@ -74,10 +75,10 @@ export async function watchScreens(onScreens: (screens: Screen[]) => void, path 
           } catch {
             continue;
           }
-          if (typeof frame !== "object" || frame === null) continue;
-          const { result, event } = frame as { result?: unknown; event?: unknown };
+          if (!isRecord(frame)) continue;
+          const { result, event } = frame;
           if (event === "outputs-changed") socket.write(ask("outputs"));
-          else if (result !== undefined && typeof result === "object" && result !== null && "outputs" in result) {
+          else if (result !== undefined && isRecord(result) && "outputs" in result) {
             // A new scale changes the outputs, and the screens are read again then.
             for (const change of scalesToSet(result)) socket.write(ask("output", change));
             onScreens(parseScreens(result));

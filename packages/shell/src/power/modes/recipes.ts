@@ -8,6 +8,7 @@
  * are laid over it, so they too reach the hardware in the recipe's one write.
  */
 
+import { isRecord } from "@dashi/shape";
 import type { Knob, KnobValue } from "../../hardware/index.ts";
 import type { PowerSection } from "./settings.ts";
 import { type Column, isMode, MODES, type Mode, type Recipe, type Recipes } from "./types.ts";
@@ -39,7 +40,7 @@ const SCREEN_RATE = "screen-rate";
 const KNOB_NAME = /^[a-z][a-z0-9-]{0,63}$/;
 
 function parseColumn(raw: unknown): Recipe | null {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return null;
+  if (!isRecord(raw)) return null;
   const values: Record<string, KnobValue> = {};
   for (const [name, value] of Object.entries(raw)) {
     if (name === SCREEN_RATE || !KNOB_NAME.test(name)) continue;
@@ -50,12 +51,12 @@ function parseColumn(raw: unknown): Recipe | null {
 
 /** The model's recipes; a mode or column the model leaves out is tuned's default. */
 export function parseRecipes(raw: unknown): Recipes {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return DEFAULT_RECIPES;
-  const record = raw as Record<string, unknown>;
+  if (!isRecord(raw)) return DEFAULT_RECIPES;
+  const record = raw;
   const out = {} as Record<Mode, Record<Column, Recipe>>;
   for (const mode of MODES) {
     const entry = record[mode];
-    const columns = typeof entry === "object" && entry !== null ? (entry as Record<string, unknown>) : {};
+    const columns = isRecord(entry) ? entry : {};
     out[mode] = {
       plugged: parseColumn(columns.plugged) ?? DEFAULT_RECIPES[mode].plugged,
       battery: parseColumn(columns.battery) ?? DEFAULT_RECIPES[mode].battery,

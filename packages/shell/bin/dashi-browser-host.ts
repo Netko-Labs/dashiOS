@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+
 /**
  * dashi-browser-host: the native messaging host of Dashi's browser extension
  * (docs/actions.md, "Websites"). The browser starts it when the extension
@@ -13,6 +14,7 @@
  */
 
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { callerExtension, encodeFrame, FrameReader } from "../src/browser/native.ts";
 
 const VERSION = "0.5.0";
@@ -35,7 +37,7 @@ let outbox: Promise<unknown> = Promise.resolve();
 function toExtension(message: unknown): void {
   const frame = encodeFrame(message);
   if (!frame) {
-    const id = typeof message === "object" && message !== null ? (message as { id?: unknown }).id : undefined;
+    const id = isRecord(message) ? message.id : undefined;
     if (typeof id === "number") toShell({ id, ok: false, error: "That request is too large for the browser." });
     return;
   }
@@ -57,7 +59,7 @@ function fromShell(data: Uint8Array): void {
     if (!line.trim()) continue;
     try {
       const message = JSON.parse(line) as unknown;
-      if (typeof message === "object" && message !== null && !Array.isArray(message)) toExtension(message);
+      if (isRecord(message)) toExtension(message);
     } catch {
       // Not JSON: dropped.
     }

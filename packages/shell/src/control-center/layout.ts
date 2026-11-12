@@ -14,6 +14,7 @@
  * order but isn't packed, so it leaves no gap and comes back where it was.
  */
 
+import { isRecord } from "@dashi/shape";
 import type { Direction } from "../shared/controls/slider-math.ts";
 
 export const TILE_SIZES = ["round", "wide", "tall", "flat"] as const;
@@ -202,12 +203,12 @@ const ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,160}$/;
 
 /** A saved layout; null for anything unreadable (the default is used). Unknown sizes and repeated ids are left out. */
 export function parseLayout(value: unknown): Layout | null {
-  if (typeof value !== "object" || value === null || !Array.isArray((value as { items?: unknown }).items)) return null;
+  if (!isRecord(value) || !Array.isArray(value.items)) return null;
   const seen = new Set<string>();
   const items: LayoutItem[] = [];
-  for (const entry of (value as { items: unknown[] }).items) {
-    if (typeof entry !== "object" || entry === null) continue;
-    const { id, size } = entry as Record<string, unknown>;
+  for (const entry of value.items) {
+    if (!isRecord(entry)) continue;
+    const { id, size } = entry;
     if (typeof id !== "string" || !ID.test(id) || seen.has(id) || !isTileSize(size)) continue;
     seen.add(id);
     items.push({ id, size });

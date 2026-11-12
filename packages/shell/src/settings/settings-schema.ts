@@ -6,7 +6,7 @@
  * whoever reads (the shell's in settings.ts `defaults`).
  */
 
-import { accept, bool, type Infer, int, literal, num, reject, type Shape, shape, str } from "@dashi/shape";
+import { accept, bool, type Infer, int, isRecord, literal, num, reject, type Shape, shape, str } from "@dashi/shape";
 import { TEXT_SIZES } from "@dashi/ui";
 import { DOCK_STYLES } from "../dock/settings.ts";
 import { INPUT_METHODS } from "../input-method.ts";
@@ -130,7 +130,7 @@ export function checksOf<F extends Fields>(fields: F): { [K in keyof F]: (value:
  */
 export function readSection<F extends Fields>(name: string, value: unknown, fields: F, problems: string[], known: readonly string[] = []): SectionOf<F> {
   if (value === undefined) return {};
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+  if (!isRecord(value)) {
     problems.push(`${name} must be an object`);
     return {};
   }

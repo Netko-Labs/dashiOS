@@ -16,6 +16,7 @@
 
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { logActivity } from "../consent.ts";
 import { peerPid, socketFd } from "../peer.ts";
 import { inAgentScope } from "../sandbox.ts";
@@ -47,8 +48,8 @@ export function parseOpen(line: string): { unit: string } | { error: string } {
   } catch {
     return { error: "The request is not JSON." };
   }
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return { error: "The request must be an object." };
-  const { open, ...rest } = value as Record<string, unknown>;
+  if (!isRecord(value)) return { error: "The request must be an object." };
+  const { open, ...rest } = value;
   if (Object.keys(rest).length > 0 || typeof open !== "string" || !UNIT.test(open))
     return { error: 'The request is {"open": "dashi-agent-<name>-<n>.scope"}.' };
   return { unit: open };

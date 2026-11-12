@@ -20,6 +20,7 @@
  * project are never sent.
  */
 
+import { isRecord } from "@dashi/shape";
 import { ANSWERERS, AnswerError, type Answerer, type ModelCall, type PlanTool, SYSTEM_PROMPT, type Turn } from "../answerer.ts";
 import { rankGptModels } from "./gpt-models.ts";
 import { errorWords, type Fetch, HttpError, requestJson, UnreadableError } from "./http.ts";
@@ -54,7 +55,7 @@ const MAX_TOKENS = 16_000;
 const MODELS_FRESH_MS = 10 * 60_000;
 
 type Schema = Record<string, unknown>;
-const isSchema = (value: unknown): value is Schema => typeof value === "object" && value !== null && !Array.isArray(value);
+const isSchema = (value: unknown): value is Schema => isRecord(value);
 
 /** `schema` with `null` allowed too. */
 function nullable(schema: Schema): Schema {
@@ -139,6 +140,11 @@ export function readGptReply(completion: unknown): { text: string; calls: ModelC
   return { text: (content ?? "").trim(), calls, message: { role: "assistant", content, ...(sent.length > 0 ? { tool_calls: sent } : {}) } };
 }
 
+const ROLES = new Set(["developer", "user", "assistant", "tool"]);
+/** A message of the history this answerer handed back last time: read again, not taken on its word. */
+const isChatMessage = (value: unknown): value is ChatMessage =>
+  isRecord(value) && typeof value.role === "string" && ROLES.has(value.role) && (value.content === null || typeof value.content === "string");
+
 /** The messages for a turn: how the last calls went, then the words. */
 export function gptMessages(history: readonly ChatMessage[], turn: Turn): ChatMessage[] {
   return [
@@ -211,7 +217,7 @@ export function gptAnswerer(options: GptOptions): Answerer {
           model = listed.models[0] ?? null;
           if (!model) throw new AnswerError("no-model", "Your OpenAI key lists no chat model.");
         }
-        const messages = gptMessages(history as readonly ChatMessage[], turn);
+        const messages = gptMessages(history.filter(isChatMessage), turn);
         const completion = await call(
           key,
           "/chat/completions",

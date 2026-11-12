@@ -21,6 +21,7 @@
 
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { watchLines } from "../system/watch.ts";
 
 export interface KernelLine {
@@ -37,14 +38,14 @@ export function parseJournalLine(line: string): KernelLine | null {
   } catch {
     return null;
   }
-  if (typeof entry !== "object" || entry === null || Array.isArray(entry)) return null;
-  const record = entry as Record<string, unknown>;
+  if (!isRecord(entry)) return null;
+  const record = entry;
   const raw = record.MESSAGE;
   const message =
     typeof raw === "string"
       ? raw
-      : Array.isArray(raw) && raw.every((byte) => typeof byte === "number" && byte >= 0 && byte < 256)
-        ? new TextDecoder().decode(Uint8Array.from(raw as number[]))
+      : Array.isArray(raw) && raw.every((byte): byte is number => typeof byte === "number" && byte >= 0 && byte < 256)
+        ? new TextDecoder().decode(Uint8Array.from(raw))
         : null;
   if (message === null) return null;
   const device = typeof record._KERNEL_DEVICE === "string" ? record._KERNEL_DEVICE : null;

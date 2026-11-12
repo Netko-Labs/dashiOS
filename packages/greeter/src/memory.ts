@@ -6,6 +6,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 
 export interface Last {
   user: string | null;
@@ -20,8 +21,8 @@ export function memoryPath(env: Record<string, string | undefined> = process.env
 export function parseLast(text: string): Last {
   try {
     const value: unknown = JSON.parse(text);
-    if (typeof value !== "object" || value === null) return { user: null, session: null };
-    const { user, session } = value as Record<string, unknown>;
+    if (!isRecord(value)) return { user: null, session: null };
+    const { user, session } = value;
     return { user: typeof user === "string" ? user : null, session: typeof session === "string" ? session : null };
   } catch {
     return { user: null, session: null };

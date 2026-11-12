@@ -10,6 +10,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { setAppearanceSource } from "@dashi/ui";
 import { useSyncExternalStore } from "react";
 
@@ -32,8 +33,8 @@ export function parseFlags(text: string): Flags {
   } catch {
     return DEFAULTS;
   }
-  if (typeof value !== "object" || value === null) return DEFAULTS;
-  const { dnd, dark, night } = value as Record<string, unknown>;
+  if (!isRecord(value)) return DEFAULTS;
+  const { dnd, dark, night } = value;
   return { dnd: dnd === true, dark: dark === true, night: night === true };
 }
 

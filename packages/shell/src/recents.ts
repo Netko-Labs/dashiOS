@@ -11,6 +11,7 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { mkdir, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import type { Entry } from "./shared/app-entries/index.ts";
 
 /** How many apps the history keeps; the launcher shows up to `SHOWN`. */
@@ -34,8 +35,8 @@ export function parseRecents(text: string): string[] {
   } catch {
     return [];
   }
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return [];
-  const { recent } = value as Record<string, unknown>;
+  if (!isRecord(value)) return [];
+  const { recent } = value;
   if (!Array.isArray(recent)) return [];
   return [...new Set(recent.filter(isAppId))].slice(0, MAX_RECENTS);
 }

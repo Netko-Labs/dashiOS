@@ -12,6 +12,7 @@
  */
 
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 
 /** What can be shared: a screen by its output name, or a window by its ext-foreign-toplevel-list identifier. */
 export type ShareChoice = { kind: "screen"; output: string } | { kind: "window"; toplevel: string };
@@ -38,7 +39,7 @@ export function isPickRequest(line: string): boolean {
   if (line.length > MAX_LINE) return false;
   try {
     const value: unknown = JSON.parse(line);
-    return typeof value === "object" && value !== null && "pick" in value;
+    return isRecord(value) && "pick" in value;
   } catch {
     return false;
   }
@@ -53,8 +54,8 @@ export function parseAnswer(line: string): string | null {
   } catch {
     return null;
   }
-  if (typeof value !== "object" || value === null) return null;
-  const choice = (value as { choice?: unknown }).choice;
+  if (!isRecord(value)) return null;
+  const choice = value.choice;
   if (typeof choice !== "string") return null;
   return /^(Monitor|Window): [A-Za-z0-9_.:@-]{1,256}$/.test(choice) ? choice : null;
 }

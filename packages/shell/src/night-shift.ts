@@ -14,6 +14,7 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import type { Compositor } from "./compositor/index.ts";
 import type { FlagsStore } from "./shared/control-center/index.ts";
 
@@ -77,9 +78,9 @@ export interface NightSettings {
 
 /** The `nightShift` part of settings.json, strictly read; anything off is the default. */
 export function parseNightSettings(value: unknown): NightSettings {
-  const section = typeof value === "object" && value !== null ? (value as Record<string, unknown>).nightShift : undefined;
-  if (typeof section !== "object" || section === null) return { kelvin: DEFAULT_KELVIN, schedule: null };
-  const { from, to, kelvin } = section as Record<string, unknown>;
+  const section = isRecord(value) ? value.nightShift : undefined;
+  if (!isRecord(section)) return { kelvin: DEFAULT_KELVIN, schedule: null };
+  const { from, to, kelvin } = section;
   const start = parseClock(from);
   const end = parseClock(to);
   const warmth = typeof kelvin === "number" && Number.isFinite(kelvin) ? Math.min(NEUTRAL_KELVIN, Math.max(MIN_KELVIN, kelvin)) : DEFAULT_KELVIN;

@@ -18,8 +18,8 @@ const WINDOW_COORDS = 1;
 const WAKE_MS = 400;
 
 function rectOf(value: unknown): Rect | null {
-  if (!Array.isArray(value) || value.length !== 4 || !value.every((n) => typeof n === "number" && Number.isFinite(n))) return null;
-  const [x, y, width, height] = value as number[];
+  if (!Array.isArray(value) || value.length !== 4 || !value.every((n): n is number => typeof n === "number" && Number.isFinite(n))) return null;
+  const [x, y, width, height] = value;
   return width && height && width > 0 && height > 0 ? { x: x ?? 0, y: y ?? 0, width, height } : null;
 }
 
@@ -58,7 +58,7 @@ class Node implements A11yNode {
     if (!Array.isArray(children)) return [];
     return children.flatMap((child: unknown) => {
       if (!Array.isArray(child)) return [];
-      const [name, path] = child as unknown[];
+      const [name, path]: unknown[] = child;
       return typeof name === "string" && typeof path === "string" && path !== "/org/a11y/atspi/null" ? [new Node(this.bus, name, path)] : [];
     });
   }
@@ -70,7 +70,7 @@ class Node implements A11yNode {
   async parent(): Promise<A11yNode | null> {
     const value = unwrap(await this.call(PROPERTIES, "Get", "ss", [ACCESSIBLE, "Parent"]));
     if (!Array.isArray(value)) return null;
-    const [name, path] = value as unknown[];
+    const [name, path]: unknown[] = value;
     return typeof name === "string" && typeof path === "string" && path !== "/org/a11y/atspi/null" ? new Node(this.bus, name, path) : null;
   }
 

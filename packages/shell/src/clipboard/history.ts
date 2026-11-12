@@ -12,6 +12,7 @@ import { createHash } from "node:crypto";
 import { chmodSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { extensionFor, type Size } from "./lib/images.ts";
 import type { SkipReason } from "./lib/privacy.ts";
 
@@ -64,8 +65,6 @@ export function clipboardDir(env: Record<string, string | undefined> = process.e
 export function copyId(kind: EntryKind, content: string | Uint8Array): string {
   return createHash("sha256").update(kind).update("\0").update(content).digest("hex").slice(0, 32);
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
 /** One kept entry read back from the file; null for anything malformed (an edit by hand). */
 export function parseEntry(value: unknown): ClipEntry | null {

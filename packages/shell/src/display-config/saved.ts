@@ -9,6 +9,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { type Mode, ROTATIONS, type Rotation } from "./monitors.ts";
 
 /** More arrangements than anyone has monitor sets; the oldest are dropped. */
@@ -42,8 +43,7 @@ export function displaysPath(env: Record<string, string | undefined> = process.e
   return join(config, "dashi", "displays.json");
 }
 
-const record = (value: unknown): Record<string, unknown> | null =>
-  typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+const record = (value: unknown): Record<string, unknown> | null => (isRecord(value) ? value : null);
 const position = (value: unknown): number | null => (typeof value === "number" && Number.isInteger(value) && Math.abs(value) <= FAR ? value : null);
 
 function parseMode(value: unknown): Mode | null {

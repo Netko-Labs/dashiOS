@@ -20,7 +20,7 @@ const WHAT: Readonly<Record<Doing, string>> = {
 /** The system's code for an error (EACCES), if it has one. */
 function codeOf(error: unknown): string | null {
   if (typeof error !== "object" || error === null || !("code" in error)) return null;
-  const { code } = error as { code: unknown };
+  const { code } = error;
   return typeof code === "string" ? code : null;
 }
 

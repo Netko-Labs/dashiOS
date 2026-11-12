@@ -9,6 +9,7 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import type { SortState } from "@dashi/ui";
 import { writeTextAtomic } from "../fs/index.ts";
 
@@ -34,9 +35,9 @@ export function parsePrefs(text: string): FilesPrefs {
   } catch {
     return DEFAULT_PREFS;
   }
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return DEFAULT_PREFS;
-  const record = value as Record<string, unknown>;
-  const sort = typeof record.sort === "object" && record.sort !== null ? (record.sort as Record<string, unknown>) : {};
+  if (!isRecord(value)) return DEFAULT_PREFS;
+  const record = value;
+  const sort = isRecord(record.sort) ? record.sort : {};
   const key = SORT_KEYS.find((each) => each === sort.key);
   return {
     view: record.view === "list" ? "list" : "icons",

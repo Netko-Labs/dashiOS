@@ -13,6 +13,7 @@
  * a boolean only where the schema says boolean.
  */
 
+import { isRecord } from "@dashi/shape";
 import type { Args } from "./types.ts";
 
 export const SCHEME = "dashi://";
@@ -85,8 +86,8 @@ export function parseAddress(text: string): ParsedAddress | null {
 
 /** The type a property's schema gives, or the types of a `oneOf`. */
 function typesOf(schema: unknown): string[] {
-  if (typeof schema !== "object" || schema === null) return [];
-  const record = schema as Record<string, unknown>;
+  if (!isRecord(schema)) return [];
+  const record = schema;
   if (typeof record.type === "string") return [record.type];
   if (Array.isArray(record.oneOf)) return record.oneOf.flatMap(typesOf);
   return [];

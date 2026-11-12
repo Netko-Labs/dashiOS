@@ -142,7 +142,8 @@ function parseFrame(value: Record<string, unknown>): Frame | null {
     if (!isRecord(line) || typeof line.y !== "number" || !Array.isArray(line.spans)) return [];
     return [{ y: line.y, spans: parseSpans(line.spans) }];
   });
-  const bar = Array.isArray(scroll) && scroll.length === 3 && scroll.every((n) => typeof n === "number") ? (scroll as [number, number, number]) : [0, 0, 0];
+  const [top, shown, total]: unknown[] = Array.isArray(scroll) && scroll.length === 3 ? scroll : [];
+  const bar: [number, number, number] = typeof top === "number" && typeof shown === "number" && typeof total === "number" ? [top, shown, total] : [0, 0, 0];
   return {
     cols,
     rows,
@@ -156,7 +157,7 @@ function parseFrame(value: Record<string, unknown>): Frame | null {
       style,
     },
     lines: parsedLines,
-    scroll: bar as [number, number, number],
+    scroll: bar,
     selected: value.selected === true,
     marks: parseMarks(value.marks),
   };

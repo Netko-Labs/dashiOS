@@ -16,6 +16,7 @@
  */
 
 import { unlinkSync } from "node:fs";
+import { isRecord } from "@dashi/shape";
 import type { NativeHostTransport, NativeRoot, SimCommand } from "@mirinjs/metal";
 
 export type ControlRequest = { click: string } | { contextmenu: string } | { key: string } | { type: string } | { sim: SimCommand } | { tree: true };
@@ -28,14 +29,14 @@ export function parseControl(line: string): ControlRequest | null {
   } catch {
     return null;
   }
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
-  const record = value as Record<string, unknown>;
+  if (!isRecord(value)) return null;
+  const record = value;
   if (typeof record.click === "string") return { click: record.click };
   if (typeof record.contextmenu === "string") return { contextmenu: record.contextmenu };
   if (typeof record.key === "string") return { key: record.key };
   if (typeof record.type === "string") return { type: record.type };
   if (record.tree === true) return { tree: true };
-  if (typeof record.sim === "object" && record.sim !== null && typeof (record.sim as Record<string, unknown>).kind === "string") {
+  if (isRecord(record.sim) && typeof record.sim.kind === "string") {
     return { sim: record.sim as SimCommand };
   }
   return null;

@@ -1,3 +1,4 @@
+import { isRecord } from "@dashi/shape";
 import type { SpacesState } from "./types.ts";
 /**
  * Spaces as plain data: what the compositor says about them, and what the keys
@@ -14,8 +15,8 @@ const isIndex = (value: unknown): value is number => typeof value === "number" &
 
 /** The `spaces` answer (or a `space` event), checked; null when it makes no sense. */
 export function parseSpaces(value: unknown): SpacesState | null {
-  if (typeof value !== "object" || value === null) return null;
-  const { count, current } = value as { count?: unknown; current?: unknown };
+  if (!isRecord(value)) return null;
+  const { count, current } = value;
   if (!isIndex(count) || !isIndex(current) || count < 1 || count > MAX_SPACES || current >= count) return null;
   return { count, current };
 }

@@ -12,6 +12,7 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { type NotificationStore, type NotifyInput, SHELL_SENDER } from "../../notifications/index.ts";
 import { iconPath } from "../../shared/apps/index.ts";
 import { type Alert, alertMessage, alertsBetween, dayPart, instantOf } from "../../shared/calendar/index.ts";
@@ -38,8 +39,8 @@ export function firedPath(env: Readonly<Record<string, string | undefined>> = pr
 /** What is remembered as fired: alert key to when. Anything of the wrong shape is dropped. */
 export function parseFired(value: unknown): Map<string, number> {
   const out = new Map<string, number>();
-  const fired = typeof value === "object" && value !== null ? (value as Record<string, unknown>).fired : undefined;
-  if (typeof fired !== "object" || fired === null || Array.isArray(fired)) return out;
+  const fired = isRecord(value) ? value.fired : undefined;
+  if (!isRecord(fired)) return out;
   for (const [key, at] of Object.entries(fired)) if (typeof at === "number" && Number.isFinite(at) && key.length < 600) out.set(key, at);
   return out;
 }

@@ -10,6 +10,8 @@
  *   18:40:12 #4 → 1 rows
  */
 
+import { isRecord } from "@dashi/shape";
+
 const time = (now: Date): string => now.toTimeString().slice(0, 8);
 
 type Fields = Record<string, unknown>;
@@ -17,7 +19,7 @@ type Fields = Record<string, unknown>;
 function fieldsOf(line: string): Fields | null {
   try {
     const value: unknown = JSON.parse(line);
-    return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Fields) : null;
+    return isRecord(value) ? value : null;
   } catch {
     return null;
   }
@@ -62,11 +64,11 @@ export class MessageLog {
   private fromApplet(fields: Fields): string | null {
     switch (fields.type) {
       case "hello": {
-        const manifest = (fields.manifest ?? {}) as Fields;
+        const manifest: Fields = isRecord(fields.manifest) ? fields.manifest : {};
         return `hello as ${String(manifest.id)} ${String(manifest.version)}`;
       }
       case "applet": {
-        const applet = (fields.applet ?? {}) as Fields;
+        const applet: Fields = isRecord(fields.applet) ? fields.applet : {};
         const id = String(applet.id);
         if (!this.shown.has(id)) {
           this.shown.add(id);

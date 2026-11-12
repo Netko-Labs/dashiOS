@@ -10,23 +10,23 @@
  * lines out (tested).
  */
 
+import { isRecord } from "@dashi/shape";
+
 /** The error a request on its way when Dashi went gets (JSON-RPC's server error range). */
 export const LOST_CODE = -32000;
 export const LOST_MESSAGE = "Dashi restarted before this finished. Try it again.";
 
 type Id = string | number;
 
-interface Message {
-  id?: unknown;
-  method?: unknown;
-}
+/** A JSON-RPC line as an object; its `id` and `method` are read where they are used. */
+type Message = Record<string, unknown>;
 
 const isId = (value: unknown): value is Id => typeof value === "string" || (typeof value === "number" && Number.isFinite(value));
 
 function parse(line: string): Message | null {
   try {
     const value: unknown = JSON.parse(line);
-    return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Message) : null;
+    return isRecord(value) ? value : null;
   } catch {
     return null;
   }
@@ -45,7 +45,7 @@ export class McpRelay {
   fromClient(line: string): void {
     const message = parse(line);
     if (!message) return;
-    if (message.method === "initialize" && this.initialize === null) this.initialize = message as Record<string, unknown>;
+    if (message.method === "initialize" && this.initialize === null) this.initialize = message;
     if (message.method === "notifications/initialized") this.initialized = line;
     if (typeof message.method === "string" && isId(message.id)) this.pending.set(JSON.stringify(message.id), message.id);
   }

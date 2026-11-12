@@ -11,6 +11,7 @@
 import { existsSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { type Day, isDay } from "./dates.ts";
 
 export function socketPath(env: Readonly<Record<string, string | undefined>> = process.env): string {
@@ -25,8 +26,8 @@ export interface OpenMessage {
 export function parseMessage(line: string): OpenMessage | null {
   try {
     const value: unknown = JSON.parse(line);
-    if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
-    const { day } = value as Record<string, unknown>;
+    if (!isRecord(value)) return null;
+    const { day } = value;
     if (day === undefined) return { day: null };
     return isDay(day) ? { day } : null;
   } catch {

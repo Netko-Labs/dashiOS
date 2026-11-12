@@ -6,6 +6,7 @@
  */
 
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 
 /** The links socket's name in the runtime folder. */
 export const LINKS_SOCKET = "dashi-links.sock";
@@ -26,7 +27,7 @@ export function parseLinkAnswer(text: string): LinkAnswer {
   } catch {
     // Below: no answer.
   }
-  const fields = typeof reply === "object" && reply !== null ? (reply as Record<string, unknown>) : {};
+  const fields = isRecord(reply) ? reply : {};
   if (fields.ok === true) return { ok: true, text: typeof fields.text === "string" ? fields.text : "" };
   return { ok: false, error: typeof fields.error === "string" ? fields.error : "Dashi gave no answer." };
 }

@@ -4,6 +4,8 @@
  * The greeter asks; greetd answers each request with one response.
  */
 
+import { isRecord } from "@dashi/shape";
+
 export type Request =
   | { type: "create_session"; username: string }
   | { type: "post_auth_message_response"; response?: string }
@@ -48,8 +50,6 @@ export class FrameReader {
     return payloads;
   }
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
 
 /** A response from greetd; null for anything that is not one. */
 export function parseResponse(json: string): Response | null {

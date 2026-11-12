@@ -20,6 +20,7 @@
 
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import type { Scope } from "../consent.ts";
 import { stateDir } from "../consent.ts";
 import { cut } from "./words.ts";
@@ -119,7 +120,7 @@ export class GrantsMemory {
     if (!this.path) return this.seen;
     try {
       const value: unknown = JSON.parse(readFileSync(this.path, "utf8"));
-      const seen = typeof value === "object" && value !== null ? (value as { seen?: unknown }).seen : null;
+      const seen = isRecord(value) ? value.seen : null;
       if (Array.isArray(seen)) for (const kind of seen) if (typeof kind === "string" && kind.length <= 200) this.seen.add(kind);
     } catch {
       // None kept yet.

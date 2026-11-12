@@ -16,6 +16,7 @@
 
 import { chmodSync, existsSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
+import { isRecord } from "@dashi/shape";
 import { peerPid, socketFd } from "../../agents/peer.ts";
 import { LINKS_SOCKET } from "../../shared/links/index.ts";
 import { MAX_ADDRESS } from "../address.ts";
@@ -38,9 +39,9 @@ export function parseLinkRequest(line: string): { url: string } | { error: strin
   } catch {
     return { error: "The request is not JSON." };
   }
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return { error: "The request must be an object." };
+  if (!isRecord(value)) return { error: "The request must be an object." };
   const keys = Object.keys(value);
-  const url = (value as Record<string, unknown>).open;
+  const url = value.open;
   if (keys.length !== 1 || typeof url !== "string") return { error: 'The request is {"open": "dashi://…"}.' };
   if (url.length > MAX_ADDRESS) return { error: "The link is too long." };
   return { url };

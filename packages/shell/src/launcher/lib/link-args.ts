@@ -5,6 +5,7 @@
  * from a link, shown, never obeyed.
  */
 
+import { isRecord } from "@dashi/shape";
 import type { ActionDef, Args } from "../../actions/index.ts";
 
 /** The longest a shown value is, in characters. */
@@ -18,7 +19,7 @@ interface Schema {
 
 const schemaOf = (action: Pick<ActionDef, "properties">, name: string): Schema => {
   const schema = action.properties[name];
-  return typeof schema === "object" && schema !== null ? (schema as Schema) : {};
+  return isRecord(schema) ? (schema as Schema) : {};
 };
 
 const clip = (text: string): string => (text.length > MAX_VALUE ? `${text.slice(0, MAX_VALUE - 1)}…` : text);

@@ -7,6 +7,7 @@
  * stays small whatever happens. Pure: store.ts reads and writes it.
  */
 
+import { isRecord } from "@dashi/shape";
 import { prepare } from "../fold.ts";
 
 /** A decayed count, as of `at` (ms since the epoch). */
@@ -125,8 +126,6 @@ export function serializeMemory(memory: Memory): string {
   const picked = Object.fromEntries([...memory.picked].map(([query, picks]) => [query, Object.fromEntries([...picks].map(([id, use]) => [id, toPair(use)]))]));
   return `${JSON.stringify({ version: 1, opened, picked })}\n`;
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
 function parseUse(value: unknown): Use | null {
   if (!Array.isArray(value) || value.length !== 2) return null;

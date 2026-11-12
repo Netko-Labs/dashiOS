@@ -421,6 +421,38 @@ Numbered in the order they were written down; a new one goes at the end.
 - **Cost:** one more tool in `tools/list` (the fixture changed with it).
 - **Undo:** fold it into `set_app_volume` with a `side` argument.
 
+### D30. H7's check sees a cast of what a hand-written check left of `unknown`
+
+- **Date:** 2026-11-11 (the review of 0.5 to 0.7, pull request 4).
+- **Question:** H7 forbids `as T` on outside data, and its check looked only
+  at values typed `unknown` or `any`. `typeof x === "object" && x !== null`
+  makes `x` an `object`, and `Array.isArray(x)` an `any[]`: a cast after
+  either passed the check, 131 times in 75 files, though it checks as little.
+  How far should the check reach?
+- **Choice:** it also counts a cast from `object`, from `{}` and from a list
+  or tuple of unknown, to any type that claims more. Not counted: a cast to a
+  type that claims nothing (`as unknown[]`), a literal written there
+  (`{} as T`), and a generic parser's own result (`as Tuple<S>`), which its
+  schema types. A cast from `Record<string, unknown>` is not counted either:
+  that is what `isRecord` and a parser give, and also a type code builds for
+  itself (a section of settings, a tool's arguments, spawn options), which the
+  check cannot tell apart. Every offender was fixed, none listed: `isRecord`
+  from `@dashi/shape` in place of the private checks, a type predicate where
+  a list is checked entry by entry, and a shape where a file is read
+  (`orElse` is new there, for a file where one bad field must not lose the
+  rest).
+- **Why:** the rule was the owner's and the code did not follow it; the check
+  is what keeps it true (Part A, D1). The line is drawn where the type alone
+  says "this came from unknown".
+- **Cost:** `isRecord` refuses a list where `typeof x === "object"` took
+  one. Every place read named fields, which a list has none of, so nothing
+  that was read before is refused now. Settings still casts each section it
+  read from a `Record` to its type (`settings-app/sections.ts`, 21 times, and
+  `shared/time/clock.ts`, twice): its checks say true or false, not what type
+  they found. Typing them is the next step, and the check does not see it.
+- **Undo:** take `isNarrowedCast` out of `scripts/check-boundaries.ts`; the
+  code stays stricter than the check.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its
