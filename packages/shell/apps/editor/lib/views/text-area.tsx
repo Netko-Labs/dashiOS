@@ -121,6 +121,8 @@ export function TextArea({ text, prefs, lines, session, selection, onSelectionCh
             key={`text:${session}`}
             testID="text"
             multiline
+            // Tab types a tab here, as in any text editor; Shift+Tab still leaves for the toolbar.
+            tabBehavior="insert"
             value={text}
             placeholder="Start typing…"
             autoFocus

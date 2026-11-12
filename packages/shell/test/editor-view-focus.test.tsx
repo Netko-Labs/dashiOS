@@ -168,3 +168,18 @@ test("one Esc leaves Find: the query stays, the text takes the keyboard on the c
   expect(model.getSnapshot().find.query).toBe("one");
   root.unmount();
 });
+
+test("Tab types a tab in the document instead of moving the keyboard to the toolbar", async () => {
+  const model = new EditorModel({ loadPrefs: () => DEFAULT_PREFS, savePrefs: () => {} });
+  const host = fakeHost();
+  const root = render(
+    <EditorWindow model={model} quit={() => {}} newWindow={() => {}} press={() => {}} scroll={() => {}} focusText={() => {}} setTitle={() => {}} />,
+    host.transport,
+  );
+  await settle();
+  const id = root.nodeId("text");
+  type Node = { type: string; props: { id?: string; insertTab?: boolean }; children?: Node[] };
+  const find = (node: Node): Node | null => (node.props?.id === id ? node : ((node.children ?? []).map(find).find(Boolean) ?? null));
+  expect(find(JSON.parse(host.trees.at(-1) ?? "{}") as Node)?.props.insertTab).toBe(true);
+  root.unmount();
+});
