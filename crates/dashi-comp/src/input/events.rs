@@ -18,6 +18,8 @@ impl Dashi {
             InputEvent::DeviceAdded { .. } | InputEvent::DeviceRemoved { .. } => return,
             _ => false,
         };
+        // An agent mid-drag on this seat, borrowed, lets go before the person's input lands.
+        self.agent_yields_seat();
         self.note_input(deliberate);
         // The person's own presses, against what gets them (session/origin.rs);
         // a pointer press goes to what the pointer is over.

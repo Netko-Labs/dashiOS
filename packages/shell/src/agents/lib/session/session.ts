@@ -9,6 +9,7 @@
 
 import { isRecord } from "@dashi/shape";
 import { type Actor, actingAs } from "../../../acting.ts";
+import { NOT_ALONE, noteCall } from "../../alone/index.ts";
 import { logActivity, type Scope } from "../../consent.ts";
 import { type ToolResult, toolError } from "../../context.ts";
 import { LOCKED_WHILE_RUNNING } from "../../lock.ts";
@@ -70,6 +71,8 @@ export class Session {
       (site) => this.scopes.askSite(site),
       // A launcher run's sites hold for the whole task, through its follow-ups' connections.
       task?.policy.sites,
+      // The sites the person picked for Work alone, while it runs.
+      (site) => ctx.alone?.site(site) === true,
     );
     this.browser = new SessionBrowser(ctx.browser, this.sites);
     this.watch = new SessionWatch(
@@ -187,7 +190,8 @@ export class Session {
     if (this.scopes.drop(id)) this.log(null, "cancelled");
   }
 
-  private async run(id: mcp.Id, call: Call): Promise<void> {
+  private async run(id: mcp.Id, call: Call, free = false): Promise<void> {
+    const sites = new Set<string>();
     const controller = new AbortController();
     this.inFlight.set(id, controller);
     const { signal } = controller;
@@ -212,8 +216,9 @@ export class Session {
             status: (text) => this.setStatus(text),
             tile: this.ctx.tile,
             arrangement: this.ctx.arrangement,
-            mayName: () => this.scopes.granted.has("see"),
-            browser: this.browser.run(),
+            mayName: () => this.scopes.holds("see"),
+            browser: this.browser.run((site) => sites.add(site)),
+            alone: () => this.ctx.alone?.status() ?? NOT_ALONE,
             confirm: (question) => this.scopes.confirm(question, signal),
             signal,
           }),
@@ -225,6 +230,8 @@ export class Session {
       this.inFlight.delete(id);
       this.watch.end(watch);
     }
+    // Work alone's record: who called what, on which sites, and whether it ran without asking.
+    noteCall(this.ctx.alone, { agent: this.actor().agent, tool: call.name, sites, free }, signal.aborted, result.isError === true);
     if (signal.aborted) {
       this.log(call.name, "cancelled");
       this.settle();
@@ -247,7 +254,7 @@ export class Session {
       resetStatus: () => {
         this.status = "Connected";
       },
-      run: (id, call) => void this.run(id, call),
+      run: (id, call, free) => void this.run(id, call, free),
       reply: (id, tool, result) => this.reply(id, tool, result),
     };
   }

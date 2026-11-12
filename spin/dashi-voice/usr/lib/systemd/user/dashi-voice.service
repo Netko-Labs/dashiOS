@@ -1,0 +1,27 @@
+# dashi-voice: speech to text and text to speech, all on this machine
+# (docs/voice.md). It hears the microphone only while the shell asks it to,
+# and it has no network: models are fetched by a process of its own
+# (dashi-voice-fetch.service, started with systemd-run), which never sees sound.
+[Unit]
+Description=Dashi's voice
+Documentation=https://github.com/Netko-Labs/dashiOS/blob/main/docs/voice.md
+Requires=dashi-voice.socket
+After=dashi-voice.socket
+PartOf=dashi-session.target
+
+[Service]
+ExecStart=/usr/libexec/dashi/dashi-voice serve
+Environment=DASHI_VOICE_FETCH_VIA=systemd-run
+Restart=on-failure
+# No core dumps: they would hold what was said.
+LimitCORE=0
+NoNewPrivileges=yes
+# AF_UNIX only: its socket, PipeWire, and the session bus (systemd-run). No network.
+RestrictAddressFamilies=AF_UNIX
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+SystemCallArchitectures=native
+
+[Install]
+Also=dashi-voice.socket

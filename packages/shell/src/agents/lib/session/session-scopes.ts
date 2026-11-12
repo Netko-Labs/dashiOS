@@ -26,8 +26,8 @@ export interface ScopeHost {
   setStatus(text: string): void;
   /** The status without announcing it yet: the caller publishes. */
   resetStatus(): void;
-  /** A call that may run now. */
-  run(id: mcp.Id, call: Call): void;
+  /** A call that may run now; `free` when only Work alone lets it (the agent was never allowed it). */
+  run(id: mcp.Id, call: Call, free?: boolean): void;
   /** A call that didn't run. */
   reply(id: mcp.Id, tool: string, result: ToolResult): void;
 }
@@ -98,8 +98,12 @@ export class Scopes {
     const scope = scopeOf(call);
     // A launcher run may hand the window its context chip named to the person.
     const handsOwnWindow = call.name === "hand_over" && this.task !== null && call.window === this.task.policy.window;
-    if (this.granted.has(scope) || handsOwnWindow) {
+    // Whether Work alone is on is no secret, and an agent left alone must be able to plan: it never asks.
+    const asksAboutAlone = call.name === "get_work_alone";
+    if (this.granted.has(scope) || handsOwnWindow || asksAboutAlone) {
       this.host.run(id, call);
+    } else if (this.worksAlone(call.name, scope)) {
+      this.host.run(id, call, true);
     } else if (this.refused.has(scope)) {
       this.host.reply(
         id,
@@ -114,6 +118,22 @@ export class Scopes {
       this.waiting.push({ id, call });
       void this.ask();
     }
+  }
+
+  /**
+   * Whether Work alone lets `tool` run though this connection was never
+   * allowed `scope` (alone/): the person picked its kind, for a while. Never
+   * for what a launcher run's card refused, and nothing is kept: when it
+   * ends, the next call asks.
+   */
+  private worksAlone(tool: string, scope: Scope): boolean {
+    if (this.task?.policy.refused.includes(scope)) return false;
+    return this.ctx.alone?.covers(tool, scope) === true;
+  }
+
+  /** Whether this connection holds `scope` now: allowed, or Work alone covers it. */
+  holds(scope: Scope): boolean {
+    return this.granted.has(scope) || (!this.task?.policy.refused.includes(scope) && this.ctx.alone?.holds(scope) === true);
   }
 
   /** Put up the sheet for what the waiting calls need. */

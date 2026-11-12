@@ -36,6 +36,9 @@ the same change.
   the address scheme, and the links socket.
 - `docs/secrets.md` - the vault and secrets for agents: the socket protocol,
   sign-in, codes, passkeys, payments, the agent sandbox.
+- `docs/voice.md` - dashi-voice's contract (the socket, every method and
+  event, the states, the models and their sizes, what the shell does); the
+  service and the shell change with it.
 - `docs/hardware.md` - dashi-hardware's contract (the hardware helper's D-Bus
   interface, the model database, and cardwire's API); the service and its
   callers change with it.
@@ -111,6 +114,7 @@ the same change.
   firmware attributes, power profiles, the charge limit, fans, the SMU; the
   model database is `data/models/`, a captured laptop `data/fixtures/`.
 - `crates/dashi-secretd` - the vault (`docs/secrets.md`): secrets agents can use but never read, its PAM helper, and the Secret Service bridge.
+- `crates/dashi-voice` - Dashi's voice (`docs/voice.md`): speech to text and text to speech on this machine, a user service on a socket; its models are fetched, never packaged.
 - `crates/dashi-term` - the terminal engine on libghostty-vt; a Cargo workspace of its own
   (its own `Cargo.lock`), checked like the others.
 - `packages/shell` - `@dashi/shell`: session supervisor (`src/session.ts`), shell

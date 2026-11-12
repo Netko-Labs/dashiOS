@@ -8,8 +8,11 @@
 //! shader that fades the pixels outside each corner's arc (antialiased).
 //! The GLES frame is reached through `GlesAccess`, for the nested renderer
 //! and the multi-GPU one alike. A rounded surface is never scanned out
-//! directly and claims no opaque region (what shows through its corners must
-//! be drawn).
+//! directly. It is opaque where its client says, but for the cut corners
+//! (rounded/corners.rs): what shows through them must be drawn, and nothing
+//! else behind the window is.
+
+mod corners;
 
 use smithay::{
     backend::renderer::{
@@ -146,6 +149,8 @@ pub(crate) struct RoundedElement<R: Renderer> {
     /// The window's box from this surface's top-left, as fractions of the surface's size
     /// (x, y, width, height): the same wherever the surface is drawn, shrunk or not.
     window: [f32; 4],
+    /// The radius in physical pixels where the element is made (before any shrinking).
+    reach: i32,
 }
 
 impl<R: Renderer> RoundedElement<R> {
@@ -155,6 +160,7 @@ impl<R: Renderer> RoundedElement<R> {
         radius: f32,
         top: bool,
         window: [f32; 4],
+        reach: i32,
     ) -> Self {
         Self {
             inner,
@@ -162,6 +168,7 @@ impl<R: Renderer> RoundedElement<R> {
             radius,
             top,
             window,
+            reach,
         }
     }
 }
@@ -199,9 +206,15 @@ impl<R: Renderer + ImportAll> Element for RoundedElement<R> {
         self.inner.damage_since(scale, commit)
     }
 
-    // What shows through the corners must still be drawn.
-    fn opaque_regions(&self, _scale: Scale<f64>) -> OpaqueRegions<i32, Physical> {
-        OpaqueRegions::default()
+    // The surface's own, less the cut corners: what shows through them must still be drawn.
+    fn opaque_regions(&self, scale: Scale<f64>) -> OpaqueRegions<i32, Physical> {
+        let cut = corners::cut(
+            self.inner.geometry(scale).size,
+            self.window,
+            self.reach,
+            self.top,
+        );
+        OpaqueRegions::from_slice(&corners::opaque_but(self.inner.opaque_regions(scale), cut))
     }
 
     fn alpha(&self) -> f32 {

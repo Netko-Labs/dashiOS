@@ -1,0 +1,23 @@
+[package]
+name = "dashi-voice"
+version = "0.8.0"
+description = "Dashi's voice: speech to text and text to speech, all on this machine"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+base64 = "0.22"
+libc = "0.2"
+# ONNX Runtime, found on the system when a model is first loaded (Fedora's
+# `onnxruntime`): nothing is linked or downloaded at build time.
+ort = { version = "=2.0.0-rc.15", default-features = false, features = ["std", "load-dynamic", "api-21"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+
+[dev-dependencies]
+tempfile = "3"

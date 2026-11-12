@@ -22,6 +22,7 @@ mod lifecycle;
 mod pace;
 mod planes;
 mod probe;
+mod renderer;
 mod screens;
 mod sleep;
 mod start;
@@ -69,11 +70,7 @@ use smithay::{
         egl::{EGLDevice, EGLDisplay},
         input::InputEvent,
         libinput::{LibinputInputBackend, LibinputSessionInterface},
-        renderer::{
-            ImportDma, ImportMemWl,
-            gles::GlesRenderer,
-            multigpu::{GpuManager, gbm::GbmGlesBackend},
-        },
+        renderer::{ImportDma, ImportMemWl, gles::GlesRenderer, multigpu::GpuManager},
         session::{Event as SessionEvent, Session, libseat::LibSeatSession},
         udev::{UdevBackend, UdevEvent, all_gpus, primary_gpu},
     },

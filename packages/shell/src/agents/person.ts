@@ -27,3 +27,23 @@ export async function personAnswered(
     return false;
   }
 }
+
+/**
+ * Whether the person's own hands just pressed in the window of app `appId`
+ * (System Settings turning Work alone on: alone/). No such window, an
+ * agent's press there since, or no answer: no.
+ */
+export async function personPressedWindow(
+  compositor: {
+    windows(): Promise<ReadonlyArray<{ id: number; appId: string }>>;
+    inputOrigin(params: { window: number }): Promise<{ person: number | null; agent: number | null }>;
+  },
+  appId: string,
+): Promise<boolean> {
+  try {
+    const window = (await compositor.windows()).find((each) => each.appId === appId);
+    return window ? answeredByPerson(await compositor.inputOrigin({ window: window.id })) : false;
+  } catch {
+    return false;
+  }
+}

@@ -272,6 +272,7 @@ packages/shell/src/main.tsx	packages/shell/src/agent-mark.tsx
 packages/shell/src/main.tsx	packages/shell/src/agent-sheets
 packages/shell/src/main.tsx	packages/shell/src/agents
 packages/shell/src/main.tsx	packages/shell/src/agents-panel
+packages/shell/src/main.tsx	packages/shell/src/alone-chip.tsx
 packages/shell/src/main.tsx	packages/shell/src/app-catalog.ts
 packages/shell/src/main.tsx	packages/shell/src/app-menus
 packages/shell/src/main.tsx	packages/shell/src/appearance

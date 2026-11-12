@@ -40,7 +40,7 @@ pub(crate) fn window_for_copy(state: &Dashi, focus: &WlSurface) -> Option<Window
     if !helper {
         return own;
     }
-    let pid = focus.client()?.get_data::<ClientState>()?.pid?;
+    let pid = focus.client()?.get_data::<ClientState>()?.pid()?;
     let session = session_of(pid)?;
     let windows = state
         .windows

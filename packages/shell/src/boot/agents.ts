@@ -10,9 +10,13 @@ import type { Ask } from "../agents/ask/types.ts";
 import {
   AgentStore,
   type Agents,
+  AloneRecords,
+  aloneNotice,
   modelKeys,
   type Passwords,
   personAnswered,
+  personPressedWindow,
+  SHOW_RECORD,
   serveTokens,
   startAgents,
   startAsk,
@@ -21,13 +25,16 @@ import {
   TurnWatch,
   tokensSocketPath,
   vaultTokenSource,
+  WorkAlone,
   watchApprovals,
 } from "../agents/index.ts";
 import { createApprovalUi } from "../approval-sheet.tsx";
+import { SETTINGS_APP_ID } from "../apps.ts";
 import type { Compositor } from "../compositor/index.ts";
 import { openFile } from "../file-manager.ts";
 import { ContextSource, type HandoffShell, startHandoffShell } from "../handoff-shell.tsx";
 import { LAUNCHER_MOTION } from "../launcher/resident.tsx";
+import { SHELL_SENDER } from "../notifications/index.ts";
 import type { Notifications } from "../notifications/service.ts";
 import { regionDesktop } from "../region/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
@@ -49,6 +56,8 @@ export interface AgentBasics {
   passwords: Passwords;
   agentUi: ReturnType<typeof createAgentUi>;
   turnWatch: TurnWatch;
+  /** Work alone (agents/alone/): Settings › Agents turns it on, the menu bar shows it, the agents' server asks it. */
+  alone: WorkAlone;
 }
 
 /** Who is connected, passwords and the vault, the token proxy, and the sheets agents ask through. */
@@ -69,7 +78,14 @@ export function startAgentBasics(compositor: Compositor | null, services: Servic
   const turnWatch = new TurnWatch();
   const showTurn = agentUi.turn;
   agentUi.turn = (turn, signal) => turnWatch.track(turn, showTurn(turn, signal));
-  return { agentStore, passwords, agentUi, turnWatch };
+  // Only the person turns Work alone on, with their own press in Settings; it ends with the shell (logout).
+  const alone = new WorkAlone({
+    // Its window, by its app id, asked of the compositor (`input-origin`): an agent's pointer or keys there, or no compositor, is a no.
+    personPressed: () => (compositor ? personPressedWindow(compositor, SETTINGS_APP_ID) : Promise.resolve(false)),
+    records: new AloneRecords(),
+  });
+  services.add("work alone", () => alone.close());
+  return { agentStore, passwords, agentUi, turnWatch, alone };
 }
 
 /** An action run as the person, by its address; an address with nothing at it is an error, not a throw. */
@@ -148,6 +164,19 @@ export function startHandoff({ compositor, settingsStore, agentStore, notificati
   return { handoffShell, launcherContext, talk };
 }
 
+/** When Work alone ends, a notification says why and what agents did; Show opens its record in Settings › Agents. */
+function aloneNotices(alone: WorkAlone, notifications: Notifications, show: () => void): () => void {
+  const posted = new Set<number>();
+  const offEnd = alone.onEnd((record) => posted.add(notifications.store.notify(aloneNotice(record), 0, SHELL_SENDER)));
+  const offActions = notifications.store.onEvent((event) => {
+    if (event.type === "action" && posted.has(event.id) && (event.key === SHOW_RECORD || event.key === "default")) show();
+  });
+  return () => {
+    offEnd();
+    offActions();
+  };
+}
+
 interface ServerNeeds {
   compositor: Compositor | null;
   basics: AgentBasics;
@@ -179,6 +208,7 @@ export function startAgentServer(needs: ServerNeeds): Agents | null {
           before: handoff.handoffShell.service.before,
           after: handoff.handoffShell.service.after,
         },
+        alone: basics.alone,
         sources: basics.passwords.sources,
         vault: basics.passwords.vault,
         store: basics.agentStore,
@@ -211,6 +241,10 @@ export function startAgentServer(needs: ServerNeeds): Agents | null {
       })
     : null;
   needs.services.add("agents", () => agents?.close());
+  needs.services.add(
+    "work alone notices",
+    aloneNotices(basics.alone, notifications, () => late.get("settingsApp").open("agents", "work-alone")),
+  );
   return agents;
 }
 

@@ -57,7 +57,7 @@ pub(crate) fn init(
         },
     )?;
 
-    let gpus = GpuManager::new(GbmGlesBackend::default())?;
+    let gpus = GpuManager::new(renderer::backend())?;
     let probes = probe::probes(handle)?;
     state.backend = Backend::Udev(Box::new(UdevData {
         session,

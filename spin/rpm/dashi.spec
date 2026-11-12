@@ -17,6 +17,9 @@ Requires:       dashi-secretd = %{version}-%{release}
 # Power modes, the charge limit, the laptop's keys and lights (docs/hardware.md);
 # D-Bus activated, so it costs nothing on a machine that never asks.
 Requires:       dashi-hardware = %{version}-%{release}
+# Voice: speech to text and text to speech on this machine (docs/voice.md);
+# socket activated, and its models are fetched only when Voice is turned on.
+Requires:       dashi-voice = %{version}-%{release}
 Requires:       dashi-bun
 Requires:       mirin-metal-host
 # The Terminal's engine (apps/terminal runs it).

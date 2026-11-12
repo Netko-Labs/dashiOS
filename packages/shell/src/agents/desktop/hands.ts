@@ -13,6 +13,10 @@
  *    and the agent's own actions, don't count: session/idle.rs); the call
  *    waits up to WAIT_MS for a pause ("Waiting for you to pause" in the menu
  *    bar), then gives up, saying how long to wait.
+ *  - A drag there holds the person's button down across several requests. Its
+ *    press waits for a pause like any action; once it is down, a step the
+ *    compositor refuses is not waited out (`"once"`): the person is back, the
+ *    compositor has already let go for them, and the drag ends there.
  */
 
 import type { Compositor, Params } from "../../compositor/index.ts";
@@ -80,6 +84,9 @@ export interface Clock {
 
 const realClock: Clock = { now: () => Date.now(), sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)) };
 
+/** Whether a borrowing action waits for the person to pause (up to WAIT_MS), or is tried once. */
+export type Patience = "waits" | "once";
+
 /** What a tool sends: a pointer action or keys; `window` and the cursor's name are added here. */
 export type Payload = Omit<Params<"agent-input">, "window" | "label" | "borrow" | "release">;
 
@@ -109,10 +116,17 @@ export class Hands {
 
   /**
    * One request of input into `window`. Rejects with `PersonBusy` when the
-   * person is using it (or, borrowing, the desktop, for longer than WAIT_MS),
-   * or with the compositor's own words when it refuses.
+   * person is using it (or, borrowing, the desktop, for longer than WAIT_MS;
+   * at once with `"once"`, a step of a drag already under way), or with the
+   * compositor's own words when it refuses.
    */
-  async send(window: { id: number; appId: string; x11?: boolean }, payload: Payload, agent: string, say: (text: string) => void): Promise<void> {
+  async send(
+    window: { id: number; appId: string; x11?: boolean },
+    payload: Payload,
+    agent: string,
+    say: (text: string) => void,
+    patience: Patience = "waits",
+  ): Promise<void> {
     const borrow = borrowsPersonSeat(window);
     const give = this.clock.now() + WAIT_MS;
     const request = { window: window.id, label: agent, ...payload, ...(borrow ? { borrow: { idleMs: QUIET_MS } } : {}) };
@@ -124,11 +138,16 @@ export class Hands {
         return;
       } catch (error) {
         if (!isBusyAnswer(error)) throw error;
-        if (this.clock.now() >= give) throw new PersonBusy(window.id, true, busyWait(error.message));
+        if (patience === "once" || this.clock.now() >= give) throw new PersonBusy(window.id, true, busyWait(error.message));
         say("Waiting for you to pause");
         await this.clock.sleep(POLL_MS);
       }
     }
+  }
+
+  /** Wait `ms` on the hands' clock: the gap between a drag's steps. */
+  pause(ms: number): Promise<void> {
+    return this.clock.sleep(ms);
   }
 
   /** Let go of everything the agent holds and hide its cursor (the stop key, an agent leaving). */

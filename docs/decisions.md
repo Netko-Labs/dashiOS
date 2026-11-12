@@ -421,6 +421,185 @@ Numbered in the order they were written down; a new one goes at the end.
 - **Cost:** one more tool in `tools/list` (the fixture changed with it).
 - **Undo:** fold it into `set_app_volume` with a `side` argument.
 
+### D23. dashi-comp's renderer makes no fence per texture it draws
+
+- **Date:** 2026-11-11 (`dashi-0.8.0-review/03-bugs/cpu`).
+- **Question:** smithay's GLES renderer, when the card can (`Capability::Fencing`,
+  every GLES 3 card), waits on a fence and makes a new one after each quad it
+  draws from a texture. A fence flushes the GL context, so each frame flushed
+  once per surface, title bar and wallpaper piece drawn: about a seventh of
+  dashi-comp's time while a window scrolled. Keep them, patch smithay, or ask
+  for a renderer without that capability?
+- **Choice:** dashi-comp makes its renderers itself (`backend/udev/renderer.rs`)
+  with every capability the card has but `Fencing`. The frame's own fence for
+  the display (`ExportFence`) stays.
+- **Why:** the fences order reads and writes of one texture between EGL
+  contexts that share it. Dashi's share nothing: one context per card, used
+  only on the event loop, where GL runs in the order it is called. smithay
+  offers the choice (`GlesRenderer::with_capabilities`), so nothing is patched.
+- **Cost:** if dashi-comp ever draws from a second thread or shares a context
+  between cards, the fences must come back for those textures.
+- **Undo:** `GpuManager::new(GbmGlesBackend::default())` in
+  `backend/udev/start.rs`.
+
+### D24. Return goes ahead on the Log Out, Restart and Shut Down sheets
+
+- **Date:** 2026-11-11.
+- **Question:** those sheets took Esc only, "so a stray key cannot shut the
+  machine down", though their go-ahead button is drawn as the default one.
+  Design rule UI-6 lets Enter go ahead only when that is safe. Is it, here?
+- **Choice:** Return presses the default button (Log Out, Restart, Shut Down);
+  Esc cancels.
+- **Why:** going ahead loses nothing: every app is asked to close first, one
+  with unsaved changes asks the person, and the holding notice still has
+  Cancel. A sheet that draws a default button and ignores Return is a broken
+  promise. The stray key the old rule feared, the Return that chose the menu's
+  row, can't arrive: a held key doesn't repeat into a surface that got the
+  keyboard after it went down (GPUI stops its repeat when the keyboard leaves).
+- **Cost:** a Return pressed twice by mistake on "Restart…" restarts.
+- **Undo:** drop `onSubmit` on `ConfirmSheet`'s `KeyCatcher`
+  (`menus/lib/power-sheets.tsx`).
+
+### D25. "Demo mode" is called "Let agents work alone"
+
+- **Date:** 2026-11-11. The `demo` agent's, reversible.
+- **Question:** the brief called the switch "Demo mode" and asked for a
+  better plain name if there was one.
+- **Choice:** the switch is **Let agents work alone**; the feature is "Work
+  alone" in code (`agents/alone/`, `get_work_alone`) and "Working alone" in
+  the docs. "demo", "demo mode" and "unattended" find it in the launcher and
+  in Settings' search.
+- **Why:** the name says what happens, to a person who has never seen it.
+  "Demo" names one use of it (it is as much for a long task while the person
+  is at lunch), and on phones and in shops "demo mode" means a display unit
+  with made-up data. "Unattended" is a long word for "alone".
+- **Cost:** the plan and the review folder say "Demo mode"; this entry and
+  the keywords are the bridge.
+- **Undo:** the title in `settings-app/registry/lib/you.ts`, and the words in
+  `alone-chip.tsx`, `agents-alone.tsx` and `record-words.ts`.
+
+### D26. The calls that came with working alone
+
+- **Date:** 2026-11-11. The `demo` agent's, each reversible.
+- **It ends when the screen locks, unless the person chose to keep it.** A
+  lock means the person left the desk closed, or the computer was left idle
+  long enough to lock itself; whoever unlocks it should find agents asking
+  again. Turning it back on is one press. Kept through a lock, its time
+  still runs, and agents still do nothing while it is locked. Undo: the
+  default of `throughLock`.
+- **What runs is kept in memory only.** Logging out, a restart, or the shell
+  crashing ends it; nothing on disk can bring it back or be edited to turn
+  it on. Cost: a shell that crashes mid-demo ends it. Undo: not wanted.
+- **The person picks kinds of tools, not single tools.** They are the kinds
+  the consent sheet already asks about, so the picks start from what was
+  allowed, and eleven ticks fit where ninety would not. Cost: no "only
+  `screenshot`". Undo: a list of tools beside the kinds in `rules.ts`.
+- **It covers every agent,** connected then or later, local or over SSH:
+  the person is away, and can't say which agent will ask. What a launcher
+  run's card refused stays refused. Undo: a key check in `Scopes.worksAlone`.
+- **Only the person's presses change a pick, too.** An agent that may click
+  in windows could tick more boxes in Settings and leave them for the person
+  to turn on without looking. The pane asks the compositor whose press it was
+  for every tick, time and site, as it does for the switch. Cost: one
+  `input-origin` round trip for each change. Undo: `mine` in
+  `agents-alone.tsx`.
+- **Signing in is never covered,** though its sheet is a per-login one and
+  not the fingerprint: it uses the vault's secrets, and the brief says
+  "anything needing the fingerprint or password, reading secrets". An
+  unattended agent that needs a login waits, or the person hands it over.
+- **The longest time is 8 hours.** Longer than a working day is a standing
+  permission, which Always Allow already is, by agent. Undo:
+  `ALONE_MAX_MINUTES`.
+- **One click on the chip stops it, with no "are you sure".** Stopping only
+  narrows, and a mistaken click costs one press in Settings. ⌃❖Esc and the
+  panel's Stop all end it too: "stop the agents" should leave nothing they
+  may do by themselves.
+- **`get_work_alone` never asks.** Whether it is on is no secret, and an
+  agent that must first get a sheet answered to learn it can work alone
+  would stall, which is the problem this solves. It is the one tool with no
+  permission. Undo: the line in `Scopes.call`.
+- **The record lists every call made while it ran,** not only the ones that
+  ran without asking: "what agents did" is the question the person comes
+  back with. Each says whether it asked.
+- **It is shown by a notification and kept in Settings › Agents,** not on a
+  sheet or a banner: one chrome row, and a person who comes back to a locked
+  screen finds it in the notification center.
+
+### D27. Voice runs on Fedora's ONNX Runtime, loaded at run time; its models are fetched, not shipped
+
+- **Date:** 2026-11-11 (`crates/dashi-voice`, `docs/voice.md`).
+- **Question:** which engine hears and speaks, and how does it build on COPR,
+  where a build script that downloads a prebuilt library fails? sherpa-onnx
+  (Apache-2.0) runs all the models but builds its own ONNX Runtime, or fetches
+  one; Handy's crates do the same.
+- **Choice:** the models are run directly on ONNX Runtime (MIT) through the
+  `ort` crate (MIT OR Apache-2.0) with `load-dynamic`: the library is Fedora's
+  `onnxruntime` package, found when a model is first loaded. Nothing is linked
+  or downloaded at build time. The pipelines are Dashi's own, a few hundred
+  lines each (`src/engine/`): Silero VAD (MIT); Parakeet TDT 0.6B v3
+  (weights CC-BY-4.0, credited in the notices and in `models`' `credit`);
+  Whisper large-v3-turbo (weights MIT) for the languages Parakeet lacks;
+  Kokoro 82M (Apache-2.0) with token lengths for word times. The models are
+  fetched to the person's data folder when Voice is turned on, each file
+  pinned by commit and SHA-256 (`models/manifest.rs`).
+- **Why:** one runtime for four models, from the distribution, with no build
+  dependency at all: the crate builds and its tests run on a machine without
+  the library, in CI and on COPR. A newer ONNX Runtime keeps the older API, so
+  a Fedora update does not break it. sherpa-onnx would have been less code of
+  ours and a C++ build with its own downloads.
+- **Cost:** the decoding loops, Whisper's spectrogram and the phoneme table
+  are ours to keep. `ort` is a release candidate, pinned (`=2.0.0-rc.15`), and
+  asks ONNX Runtime for API 21: `api-22` crashes Fedora's 1.22.2 in its device
+  listing. Kokoro's full-precision file is used (325 MB): the 16-bit one gives
+  silence on some sentences and the 8-bit one is three times slower on a CPU.
+  About 1.9 GB of memory while the listening and speaking models are loaded;
+  they are let go of after ten minutes unused.
+- **Undo:** put sherpa-onnx behind `engine::Recognizer` and
+  `engine::Synthesizer`; the service and the protocol don't change.
+
+### D28. eSpeak NG, PipeWire's tools and curl are programs Voice runs, not libraries it links
+
+- **Date:** 2026-11-11 (`engine/kokoro/phonemes.rs`, `audio/pipewire.rs`,
+  `models/fetch.rs`).
+- **Question:** Kokoro needs phonemes, and eSpeak NG, which gives them, is
+  GPL-3.0-or-later. The microphone and speakers need PipeWire; the models
+  need HTTPS. Link libraries, or run programs?
+- **Choice:** run programs: `espeak-ng` for a phrase's phonemes (the licence
+  rule's "a separate program Dashi only runs"), `pw-record` and `pw-play` for
+  sound on a pipe, `curl` for fetching (it resumes a stopped file by itself).
+- **Why:** nothing GPL is linked, so Dashi stays MIT. No bindgen, no libclang
+  and no `-devel` package at build time; no `unsafe` for audio; stopping a
+  program closes the microphone and silences speech at once, whatever state
+  it was in. A Rust HTTPS client would have brought a TLS stack and a root
+  store whose licences need a look each.
+- **Cost:** a process start for each phrase said (about 5 ms) and each listen
+  (about 30 ms); the streams' latency is `pw-cat`'s (20 ms asked). Kokoro was
+  trained on misaki's phonemes, and eSpeak's are close, not the same: a few
+  words sound flatter than they could.
+- **Undo:** a phonemizer of our own behind `kokoro::Phonemizer`; the
+  `pipewire` crate behind `audio::pipewire::Sound`.
+
+### D29. The service that hears has no network; a process of its own fetches
+
+- **Date:** 2026-11-11 (`spin/dashi-voice/usr/lib/systemd/user/`,
+  `service/fetching.rs`).
+- **Question:** the service must fetch models, and must promise that no sound
+  leaves the machine. One process with both the microphone and the network?
+- **Choice:** two. `dashi-voice.service` may use Unix sockets only
+  (`RestrictAddressFamilies=AF_UNIX`). A fetch is `dashi-voice fetch`, started
+  with `systemd-run --user` as a unit of its own, which has the network, runs
+  `curl`, and never sees sound; the service reads its progress from a pipe.
+  The socket refuses agents by cgroup, as the vault does.
+- **Why:** "nothing leaves the machine" should be what the kernel enforces,
+  not what the code intends. Narrowing who may do something is worth a little
+  machinery (Part A, D8).
+- **Cost:** a fetch needs the session's systemd; from a checkout, without the
+  unit, the service runs the fetcher as its own child, with the network it
+  then has. Filesystem sandboxing (`ProtectHome`) is not used: a user unit
+  needs user namespaces for it, and the data folder may not exist yet.
+- **Undo:** drop `DASHI_VOICE_FETCH_VIA` and the address-family line from the
+  unit; the service then fetches as its own child everywhere.
+
 ### D30. H7's check sees a cast of what a hand-written check left of `unknown`
 
 - **Date:** 2026-11-11 (the review of 0.5 to 0.7, pull request 4).

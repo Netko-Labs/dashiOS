@@ -49,7 +49,7 @@ below, the same command CI runs (`.github/workflows/check.yml`);
 | H12 | Rust: no `unwrap()` outside tests; every `unsafe` block and `unsafe fn` documented; no blocking file or PNG work on dashi-comp's event loop. | `[workspace.lints]` in `Cargo.toml` (and `crates/dashi-term/Cargo.toml`), `clippy.toml`, `crates/dashi-comp/clippy.toml` | `cargo clippy --workspace --all-targets -- -D warnings` (and in `crates/dashi-term`) |
 | H13 | Every shell script passes `bash -n` and shellcheck (every severity). | `scripts/check-shell.ts` (`shell-parse`, `shellcheck`) | `bun scripts/check-shell.ts` |
 | H14 | Nothing generated is committed (bytecode, build output), and no file holds a merge's conflict markers; `CLAUDE.md` and `AGENTS.md` match; every version matches. | `tools/check-repo` | `tools/check-repo` |
-| H15 | Every dependency's licence is on the allowed list ("Licenses"), or listed with its reason. | `scripts/check-licenses.ts` (`license-exceptions`) | `bun scripts/check-licenses.ts` |
+| H15 | Every dependency's licence is on the allowed list ("Licenses"), or listed with its reason; each package's `LICENSE.dependencies` and its spec's `License:` tag are current. | `scripts/check-licenses.ts` (`license-exceptions`); `spin/license-dependencies --check` | `bun scripts/check-licenses.ts`, `bun spin/license-dependencies --check` |
 | H16 | Heavy libraries never load at shell start (the AI SDKs are banned there); the count of library modules at start has a ceiling (Dashi's own modules don't count: splitting files adds them). | `scripts/boot-weight.ts` (`boot-weight`) | `bun scripts/boot-weight.ts` |
 | H17 | A system service Dashi ships scores 5.0 or better on `systemd-analyze security`. | `scripts/check-units.ts` (`unit-exposure`) | `bun scripts/check-units.ts` |
 | H18 | Only a module's own files import its `lib/` (a test may, to test a private helper). `lib/` is never in a package's `exports` or `bin`, and holds no `main.ts`. | `scripts/check-modules.ts` (`lib-imports`) | `bun scripts/check-modules.ts` |
@@ -135,6 +135,7 @@ crates/
   dashi-comp/       the Wayland compositor (Rust, smithay)
   dashi-hardware/   the privileged hardware helper (docs/hardware.md)
   dashi-secretd/    the vault, its PAM helper and the Secret Service bridge (docs/secrets.md)
+  dashi-voice/      Dashi's voice: speech to text and text to speech on this machine (docs/voice.md)
   dashi-term/       the terminal engine on libghostty-vt; a Cargo workspace of its own
 packages/
   shell/            @dashi/shell
@@ -545,7 +546,12 @@ earns its own file by having a concern of its own.
   `cargo test` run them all.
 - Tests never wait on real time (H11): no `Bun.sleep` or `setTimeout` waits;
   drive time with a fake clock. Each test has 2 s (`bunfig.toml`); one that
-  needs more is a bug to fix, not a limit to raise. Each package's
+  needs more is a bug to fix, not a limit to raise. A test waits on the thing
+  itself (a node to show, a call to be made: `shows()`, `until()`), never on
+  a number of turns of the loop; and a check that reads the whole dependency
+  tree or runs a build is a step of `bun run check`, not a test. A test that
+  leaves the clock stopped doesn't stop it for the next (`test/real-clock.ts`,
+  preloaded). Each package's
   `test/support/time.ts` has `settle()` (let React, mirin and promises
   finish), `until()` (a file, socket or process: turn the loop until a
   condition holds) and `fakeClock()` / `fakeClockEachTest()` (stop timers,

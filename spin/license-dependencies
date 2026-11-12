@@ -51,6 +51,7 @@ export const TARGETS: (RustTarget | JsTarget)[] = [
   { kind: "rust", manifest: "Cargo.toml", crate: "dashi-comp", out: `spin/dashi-comp/${LICENSES}/dashi-comp/LICENSE.dependencies`, spec: "spin/rpm/dashi-comp.spec" },
   { kind: "rust", manifest: "Cargo.toml", crate: "dashi-hardware", out: `spin/dashi-hardware/${LICENSES}/dashi-hardware/LICENSE.dependencies`, spec: "spin/rpm/dashi-hardware.spec" },
   { kind: "rust", manifest: "Cargo.toml", crate: "dashi-secretd", out: `spin/dashi-secretd/${LICENSES}/dashi-secretd/LICENSE.dependencies`, spec: "spin/rpm/dashi-secretd.spec" },
+  { kind: "rust", manifest: "Cargo.toml", crate: "dashi-voice", out: `spin/dashi-voice/${LICENSES}/dashi-voice/LICENSE.dependencies`, spec: "spin/rpm/dashi-voice.spec" },
   { kind: "rust", manifest: "crates/dashi-term/Cargo.toml", crate: "dashi-term", out: `spin/dashi-term/${LICENSES}/dashi-term/LICENSE.dependencies`, spec: "spin/rpm/dashi-term.spec" },
   { kind: "rust", manifest: "../mirin/crates/mirin-metal/Cargo.toml", crate: "mirin-metal", out: `spin/mirin-metal-host/${LICENSES}/mirin-metal-host/LICENSE.dependencies`, spec: "spin/rpm/mirin-metal-host.spec" },
   { kind: "js", out: `spin/dashi/${LICENSES}/dashi/LICENSE.dependencies`, spec: "spin/rpm/dashi.spec" },

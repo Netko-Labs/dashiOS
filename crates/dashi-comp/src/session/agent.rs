@@ -34,8 +34,10 @@ pub(crate) struct Agent {
     pub seat: Option<Seat<Dashi>>,
     /// Where the agent's pointer is (global logical) and whose it is; None while hidden.
     pub pointer: Option<(Point<f64, Logical>, String)>,
-    pub(super) pressed_buttons: Vec<u32>,
-    pub(super) pressed_keys: Vec<Keycode>,
+    /// What the agent holds down, and on which seat: its own, or the person's, borrowed
+    /// (a drag in a window that hears only the person's seat).
+    pub(super) pressed_buttons: Vec<(Seat<Dashi>, u32)>,
+    pub(super) pressed_keys: Vec<(Seat<Dashi>, Keycode)>,
     /// When the agent last acted (`agent-input`): dark screens keep pacing
     /// their clients briskly for a while after (backend/udev/pace.rs).
     pub acted_at: Option<std::time::Instant>,
@@ -159,36 +161,51 @@ impl Dashi {
         self.origins.agent(target, std::time::Instant::now());
     }
 
-    /// Let go of everything the agent holds and hide its pointer.
+    /// Let go of everything the agent holds, on whichever seat it holds it, and hide its pointer.
     pub(crate) fn agent_release(&mut self) {
         let time = self.start_time.elapsed().as_millis() as u32;
-        let seat = self.agent.seat.clone();
-        if let Some(pointer) = seat.as_ref().and_then(Seat::get_pointer) {
-            for button in std::mem::take(&mut self.agent.pressed_buttons) {
-                let event = ButtonEvent {
-                    serial: SERIAL_COUNTER.next_serial(),
-                    time,
-                    button,
-                    state: ButtonState::Released,
-                };
-                pointer.button(self, &event);
-            }
+        for (seat, button) in std::mem::take(&mut self.agent.pressed_buttons) {
+            let Some(pointer) = seat.get_pointer() else {
+                continue;
+            };
+            let event = ButtonEvent {
+                serial: SERIAL_COUNTER.next_serial(),
+                time,
+                button,
+                state: ButtonState::Released,
+            };
+            pointer.button(self, &event);
             pointer.frame(self);
         }
-        if let Some(keyboard) = seat.as_ref().and_then(Seat::get_keyboard) {
-            for code in std::mem::take(&mut self.agent.pressed_keys) {
-                keyboard.input::<(), _>(
-                    self,
-                    code,
-                    KeyState::Released,
-                    SERIAL_COUNTER.next_serial(),
-                    time,
-                    |_, _, _| FilterResult::Forward,
-                );
-            }
+        for (seat, code) in std::mem::take(&mut self.agent.pressed_keys) {
+            let Some(keyboard) = seat.get_keyboard() else {
+                continue;
+            };
+            keyboard.input::<(), _>(
+                self,
+                code,
+                KeyState::Released,
+                SERIAL_COUNTER.next_serial(),
+                time,
+                |_, _, _| FilterResult::Forward,
+            );
         }
         self.agent.pointer = None;
     }
+
+    /// The person is at their seat again (input/events.rs): an agent holding a button or key on
+    /// it lets go first, so the person's own input never lands in the middle of an agent's drag.
+    pub(crate) fn agent_yields_seat(&mut self) {
+        if holds_on(&self.agent, &self.seat) {
+            self.agent_release();
+        }
+    }
+}
+
+/// Whether the agent holds a button or key down on `seat`.
+fn holds_on(agent: &Agent, seat: &Seat<Dashi>) -> bool {
+    agent.pressed_buttons.iter().any(|(held, _)| held == seat)
+        || agent.pressed_keys.iter().any(|(held, _)| held == seat)
 }
 
 /// The light an agent's `action` presses, when it lands on one (`light`): only a click does, as the

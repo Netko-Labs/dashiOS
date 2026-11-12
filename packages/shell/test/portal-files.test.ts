@@ -10,6 +10,7 @@ import {
   forgetCheckoutPortal,
   linkCheckoutPortal,
   STALE_UNITS,
+  stopsOnlyLoaded,
 } from "../src/session/lib/portal-files.ts";
 import { startSessionTarget, stopSessionTarget, TARGET } from "../src/session/lib/target.ts";
 
@@ -89,4 +90,17 @@ test("each session starts with no portal backend left from an earlier one, and s
     await stopSessionTarget(deps);
     expect(ran).toEqual([`systemctl --user stop ${TARGET}`, ...stops]);
   });
+});
+
+test("the backend's units are stopped by pattern: no unit is loaded to be stopped, so two never claim its bus name at once", () => {
+  // A checkout's unit and the installed one both say BusName=org.freedesktop.impl.portal.desktop.dashi,
+  // and systemd refuses the second it loads ("Two services allocated for the same bus name").
+  expect(checkoutUnit("/home/alexk/dashi/session")).toContain("BusName=org.freedesktop.impl.portal.desktop.dashi");
+  for (const unit of STALE_UNITS) expect([unit, stopsOnlyLoaded(unit)]).toEqual([unit, true]);
+  expect(stopsOnlyLoaded("dashi-portal.service")).toBe(false);
+  expect(stopsOnlyLoaded(CHECKOUT_UNIT)).toBe(false);
+  // One pattern takes in both units' names.
+  const both = new Bun.Glob("dashi-portal*.service");
+  expect(STALE_UNITS).toContain("dashi-portal*.service");
+  expect(both.match("dashi-portal.service") && both.match(CHECKOUT_UNIT)).toBe(true);
 });

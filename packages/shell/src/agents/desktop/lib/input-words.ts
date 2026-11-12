@@ -42,3 +42,11 @@ export function describePerson(error: PersonBusy): ToolResult {
       : `The person is using w${error.window}, so nothing was done; ${rule}. Wait at least ${seconds(error.waitMs)} and try again, or work in another window.`,
   );
 }
+
+/** A drag the person cut short by coming back: the button was let go where the drag had got to. */
+export function describeCutDrag(error: PersonBusy, reached: string): ToolResult {
+  const where = error.desktop ? "the desktop" : `w${error.window}`;
+  return toolError(
+    `The person started using ${where} midway, so the drag was let go at ${reached}, before it reached \`to\`. Take a screenshot to see what it did; wait at least ${seconds(error.waitMs)} before acting there again.`,
+  );
+}

@@ -1,0 +1,14 @@
+# Dashi's voice, on your session's own socket (docs/voice.md). Only your
+# processes may connect (mode 0600), and dashi-voice refuses an agent's: it
+# checks each caller's cgroup. The service starts when the shell first asks.
+[Unit]
+Description=Dashi's voice socket
+Documentation=https://github.com/Netko-Labs/dashiOS/blob/main/docs/voice.md
+PartOf=dashi-session.target
+
+[Socket]
+ListenStream=%t/dashi-voice.sock
+SocketMode=0600
+
+[Install]
+WantedBy=dashi-session.target

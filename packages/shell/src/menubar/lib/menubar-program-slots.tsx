@@ -13,6 +13,7 @@ import { AgentMark } from "../../agent-mark.tsx";
 import {
   type AgentRuns,
   type AgentStore,
+  type AloneState,
   agentRecording,
   type MarkState,
   markState,
@@ -20,8 +21,10 @@ import {
   type Recording,
   recordingPill,
   useAgents,
+  type WorkAlone,
 } from "../../agents/index.ts";
 import { useRuns } from "../../agents-panel/index.ts";
+import { AloneChip } from "../../alone-chip.tsx";
 import { ExtraItem, type ExtrasStore, type MenuBarExtra, useExtras } from "../../extras/index.ts";
 import { extraEntries, type MenuController, type Popover } from "../../menus/index.ts";
 import { RecordingButton, type ScreenRecorder } from "../../recorder/index.ts";
@@ -55,6 +58,8 @@ export interface StatusSources {
   output?: string;
   /** Agents from the launcher: with the connected ones, the mark and its panel (agents-panel/agents-panel.tsx). */
   runs?: Pick<AgentRuns, "subscribe" | "getSnapshot">;
+  /** Work alone (agents/alone/): its chip while it runs, with the time left and the stop. */
+  alone?: Pick<WorkAlone, "subscribe" | "getSnapshot" | "stop">;
   /** The apps' sound: the microphone indicator while one records (sound/apps/). */
   mixer?: AppMixer;
   /** Show or take down the bar's tooltip (the agent mark's words). */
@@ -68,6 +73,7 @@ export interface StatusSources {
 const IDLE: Recording = { kind: "idle" };
 const NEVER = () => () => {};
 const NO_RUNS = { subscribe: NEVER, getSnapshot: () => [] } as const;
+const NOT_ALONE: AloneState = { on: false };
 
 /** The recorder's state, or idle without one. */
 function useRecording(recorder: ScreenRecorder | undefined): Recording {
@@ -81,6 +87,7 @@ interface ProgramContext {
   appName: string;
   recording: Recording;
   mark: MarkState;
+  alone: AloneState;
   micWords: string;
   capturing: boolean;
   extras: readonly MenuBarExtra[];
@@ -153,6 +160,22 @@ function agentMarkSlot({ sources, popover, appName, mark, tip }: ProgramContext,
   ];
 }
 
+/** Agents work alone: the chip, beside the mark, never hidden. A click (or the keyboard) stops it. */
+function aloneSlot({ sources, alone, tip }: ProgramContext): StatusSlot[] {
+  if (!alone.on) return [];
+  const stop = () => void sources.alone?.stop();
+  return [
+    {
+      key: "work-alone",
+      goes: null,
+      label: "Agents work alone. Stop",
+      radius: 11,
+      open: { kind: "action" as const, run: stop },
+      node: <AloneChip state={alone} onStop={stop} onTip={tip} />,
+    },
+  ];
+}
+
 function recordingSlot({ sources, recording, mark }: ProgramContext): StatusSlot[] {
   const { recorder } = sources;
   if (!(recorder && recordingPill(recording, mark.kind !== "none"))) return [];
@@ -194,6 +217,7 @@ export function useStatusSlots(sources: StatusSources, popover: Popover | null, 
     recording,
     // Every agent, launched or connected, is one mark; an agent's recording is its red dot.
     mark: markState(mergeAgents(useAgents(agents), useRuns(runs ?? NO_RUNS)), agentRecording(recording)),
+    alone: useSyncExternalStore(sources.alone?.subscribe ?? NEVER, sources.alone ? sources.alone.getSnapshot : () => NOT_ALONE),
     micWords: useMicWords(mixer),
     // Someone shares the screen, and it isn't Dashi's own recorder (the pill decides that itself).
     capturing: useScreenCapture(capture) && recording.kind === "idle",
@@ -222,6 +246,7 @@ export function useStatusSlots(sources: StatusSources, popover: Popover | null, 
     // Never hidden: someone else sharing the screen, every agent, the person's own recording.
     ...(context.capturing ? [{ key: "capture", goes: null, node: <CapturePill store={capture} {...(recorder ? { recorder } : {})} /> }] : []),
     ...agentMarkSlot(context, accessible()),
+    ...aloneSlot(context),
     ...recordingSlot(context),
     // Never hidden either: an app using the microphone.
     ...micSlot(context),

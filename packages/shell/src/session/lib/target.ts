@@ -69,7 +69,7 @@ export async function startSessionTarget(deps: TargetDeps): Promise<void> {
   deps.log(failure === null ? `started ${TARGET}` : `could not start ${TARGET} (${failure}); apps may get no portal`);
 }
 
-/** Stop Dashi's portal backend, in whichever unit it runs (best effort: most are not loaded). */
+/** Stop Dashi's portal backend, in whichever unit it runs: by pattern, so only units that are loaded (portal-files.ts). */
 async function stopPortal(deps: Pick<TargetDeps, "run">): Promise<void> {
   for (const unit of STALE_UNITS) await deps.run(["systemctl", "--user", "stop", unit]);
 }

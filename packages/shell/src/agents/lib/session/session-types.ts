@@ -3,6 +3,7 @@
 import type { BrowserBridge } from "../../../browser/bridge.ts";
 import type { Compositor } from "../../../compositor/index.ts";
 import type { Arrange, Tile } from "../../../layout.ts";
+import type { AloneGate } from "../../alone/index.ts";
 import type { Undo } from "../../ask/index.ts";
 import type { Grants, Scope } from "../../consent.ts";
 import type { Desktop, Hands } from "../../desktop/index.ts";
@@ -33,6 +34,8 @@ export interface SessionContext {
   browser: BrowserBridge;
   /** The websites agents may always use (sites.ts). */
   sites: SiteGrants;
+  /** Work alone: what agents use without asking for a set time (alone/). Absent, everything asks. */
+  alone?: AloneGate;
   /** An agent started from the launcher: Undo for its settings changes (agents/handoff/service.ts). */
   tasks?: TaskHooks;
 }

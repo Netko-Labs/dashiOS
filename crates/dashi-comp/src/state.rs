@@ -196,10 +196,18 @@ impl Dashi {
 #[derive(Default)]
 pub(crate) struct ClientState {
     pub compositor_state: CompositorClientState,
-    /// The client's process (SO_PEERCRED), for protocols only the shell may bind.
-    pub pid: Option<i32>,
+    /// The client's process, held by a pidfd (session/process.rs), for protocols only the
+    /// shell may bind: asked about each time, long after it connected.
+    pub process: Option<crate::session::process::Held>,
     /// The sandbox it connected through (security-context), if any.
     pub sandbox: Option<smithay::wayland::security_context::SecurityContext>,
+}
+
+impl ClientState {
+    /// The pid of the process that connected, while that process lives.
+    pub(crate) fn pid(&self) -> Option<i32> {
+        self.process.as_ref().and_then(|process| process.pid())
+    }
 }
 
 impl ClientData for ClientState {

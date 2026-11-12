@@ -1,5 +1,6 @@
 /** The desktop itself: Force Quit and the lock, Spaces, notifications, menus, and the software the person can ask for. */
 
+import { json } from "../../context.ts";
 import * as desktop from "../../desktop/index.ts";
 import type { Handlers } from "./run-types.ts";
 
@@ -20,6 +21,8 @@ export const desktopHandlers = {
   list_software_updates: (_call, ctx) => desktop.listSoftwareUpdates(ctx),
   request_software_install: (call, ctx) => desktop.requestInstall(call, ctx),
   request_software_update: (call, ctx) => desktop.requestUpdate(call, ctx),
+  // Read-only: whether agents work alone now, the seconds left, and what it covers (alone/).
+  get_work_alone: (_call, ctx) => json({ ...ctx.alone() }),
 } satisfies Handlers<
   | "force_quit_app"
   | "lock_screen"
@@ -37,4 +40,5 @@ export const desktopHandlers = {
   | "list_software_updates"
   | "request_software_install"
   | "request_software_update"
+  | "get_work_alone"
 >;

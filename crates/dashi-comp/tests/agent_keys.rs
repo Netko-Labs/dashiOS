@@ -27,8 +27,9 @@ use support::shell_client::{Conn, KEY_A};
 
 const SCENARIO: &str = "DASHI_AGENT_KEYS_SCENARIO";
 const RESULT: &str = "DASHI_AGENT_KEYS_RESULT";
-/// evdev KEY_B and KEY_LEFTSHIFT.
+/// evdev KEY_B, KEY_ENTER and KEY_LEFTSHIFT.
 const KEY_B: u32 = 48;
+const KEY_ENTER: u32 = 28;
 const KEY_LEFTSHIFT: u32 = 42;
 
 /// Not a test of its own: the shell side of the test below, run by the
@@ -148,4 +149,32 @@ fn play() {
         method.state.input_method_keys
     );
     assert!(window.state.focused, "the window kept the keyboard");
+
+    // A newline in the text is the Return key, as the tool says (it was a key no layout has).
+    window.state.keys.clear();
+    let lines = json!({
+        "window": id, "label": "Claude", "borrow": { "idleMs": 0 },
+        "keys": [{ "text": "a\nb" }],
+    });
+    assert_eq!(request(&mut ipc, "agent-input", lines)["result"], json!({}));
+    window.roundtrip();
+    assert_eq!(
+        window.state.keys,
+        [KEY_A, KEY_ENTER, KEY_B],
+        "a newline presses Return"
+    );
+
+    // Text the layout can't type is refused whole: no key of it is pressed.
+    window.state.keys.clear();
+    let beyond = json!({
+        "window": id, "label": "Claude", "borrow": { "idleMs": 0 },
+        "keys": [{ "text": "a\u{4f60}b" }],
+    });
+    let refused = request(&mut ipc, "agent-input", beyond);
+    assert!(
+        refused["error"].to_string().contains("can't type"),
+        "refused: {refused}"
+    );
+    window.roundtrip();
+    assert!(window.state.keys.is_empty(), "nothing was typed");
 }

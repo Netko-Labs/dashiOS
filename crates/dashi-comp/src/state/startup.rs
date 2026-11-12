@@ -264,11 +264,8 @@ fn listen(
     let socket = ListeningSocketSource::new_auto()?;
     let name = socket.socket_name().to_os_string();
     handle.insert_source(socket, |stream, _, state| {
-        let pid = rustix::net::sockopt::socket_peercred(&stream)
-            .ok()
-            .map(|cred| cred.pid.as_raw_nonzero().get());
         let data = ClientState {
-            pid,
+            process: crate::session::process::Held::peer_of(&stream),
             ..ClientState::default()
         };
         if let Err(error) = state.display_handle.insert_client(stream, Arc::new(data)) {

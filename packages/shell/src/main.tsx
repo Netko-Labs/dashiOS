@@ -127,6 +127,7 @@ const settingsWindows = startSettingsWindows({
   switches,
   passwords: basics.passwords,
   agentStore: basics.agentStore,
+  alone: basics.alone,
   agents,
   settingsApps,
   services,

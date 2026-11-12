@@ -1,0 +1,2 @@
+# The socket is on in every Dashi session; the service starts when asked.
+enable dashi-voice.socket

@@ -13,6 +13,7 @@ import { join } from "node:path";
 import { type BrowserBridge, startBrowserBridge } from "../browser/bridge.ts";
 import type { Compositor } from "../compositor/index.ts";
 import type { Arrange, Tile } from "../layout.ts";
+import { type AloneGate, NOT_ALONE } from "./alone/index.ts";
 import type { Question } from "./confirm.ts";
 import { Grants } from "./consent.ts";
 import type { ToolResult } from "./context.ts";
@@ -20,6 +21,7 @@ import { type Desktop, frontPage, Hands } from "./desktop/index.ts";
 import { personRunner } from "./lib/server-person.ts";
 import { sharedSecrets } from "./lib/server-shared.ts";
 import { listenAgents } from "./lib/server-sockets.ts";
+import { watchAgents } from "./lib/server-watch.ts";
 import type { Session } from "./lib/session/session.ts";
 import type { TaskHooks, TaskPolicy } from "./lib/session/session-types.ts";
 import { LockWatch } from "./lock.ts";
@@ -72,6 +74,8 @@ export interface AgentsOptions {
   vault?: Pick<Vault, "cards" | "pay">;
   /** Runs started from the launcher (agents/handoff/): a connection from one's sandbox gets its policy. */
   tasks?: TaskHooks & { policy(task: string): TaskPolicy | null };
+  /** Work alone (alone/): what agents use without asking for a set time; it hears of the lock and of ⌃❖Esc. */
+  alone?: AloneGate & { screenLocked(): void; stop(): unknown };
 }
 
 export function startAgents({
@@ -84,6 +88,7 @@ export function startAgents({
   sources = () => [],
   vault = new Vault(),
   tasks,
+  alone,
 }: AgentsOptions): Agents {
   const sessions = new Map<number, Session>();
   const publish = () => store.set([...sessions.values()].map((session) => session.info()));
@@ -94,8 +99,36 @@ export function startAgents({
   // Dashi's browser extension joins here through its host (docs/actions.md, "Websites").
   const browser: BrowserBridge = startBrowserBridge();
   const { secrets, mask, close: closeAtspi } = sharedSecrets(compositor, sources, vault);
-  const context = { compositor, ui, desktop, hands, mask, grants, lock, publish, tile, arrangement, secrets, browser, sites, ...(tasks ? { tasks } : {}) };
-  const runAsPerson = personRunner({ compositor, ui, desktop, hands, mask, secrets, lock, browser, tile, arrangement });
+  const context = {
+    compositor,
+    ui,
+    desktop,
+    hands,
+    mask,
+    grants,
+    lock,
+    publish,
+    tile,
+    arrangement,
+    secrets,
+    browser,
+    sites,
+    ...(tasks ? { tasks } : {}),
+    ...(alone ? { alone } : {}),
+  };
+  const runAsPerson = personRunner({
+    compositor,
+    ui,
+    desktop,
+    hands,
+    mask,
+    secrets,
+    lock,
+    browser,
+    tile,
+    arrangement,
+    alone: () => alone?.status() ?? NOT_ALONE,
+  });
 
   const stopSessions = (stopping: Session[]) => {
     const names = stopping.map((session) => session.peer.name);
@@ -105,21 +138,8 @@ export function startAgents({
     if (names.length > 0) ui.stopped(names);
   };
 
-  const offShortcuts = compositor.on((event) => {
-    if (event.event === "shortcut" && event.name === "stop-agents") stopSessions([...sessions.values()]);
-  });
-  // A revoked answer is gone from the connections that hold it too.
-  const offGrants = grants.onChange((change) => {
-    if (!change.removed && !change.revoked) return;
-    // Its websites go with it, and with "Use websites".
-    if (change.removed || change.revoked?.includes("web")) sites.remove(change.key);
-    for (const session of sessions.values()) session.revoke(change.key, change.revoked);
-    publish();
-  });
-  // Locking takes down any sheet that is up; calls fail while it lasts.
-  lock.onChange((locked) => {
-    if (locked) for (const session of sessions.values()) session.screenLocked();
-  });
+  // ⌃❖Esc, a revoked answer and the lock reach every connection, and Work alone (lib/server-watch.ts).
+  const unwatch = watchAgents({ compositor, grants, sites, lock, alone, sessions: () => [...sessions.values()], stopSessions, publish });
 
   const path = socketPath();
   if (!path) console.error("dashi-shell: no XDG_RUNTIME_DIR; agents can't connect");
@@ -136,11 +156,11 @@ export function startAgents({
       if (session) stopSessions([session]);
     },
     stopAll() {
+      alone?.stop();
       if (listening) stopSessions([...sessions.values()]);
     },
     close() {
-      offShortcuts();
-      offGrants();
+      unwatch();
       lock.close();
       hands.close();
       listening?.close();
