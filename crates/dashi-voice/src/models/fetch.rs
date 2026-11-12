@@ -1,10 +1,10 @@
-//! Fetching models: one file at a time with `curl` (run as a program; it
-//! resumes a file a stopped fetch left), each checked against its size and
-//! SHA-256 before it gets its name. Run by `dashi-voice fetch`, a process of
+//! Fetching models: `curl` (run as a program) brings every missing file,
+//! four at a time, going on from the part a stopped fetch left; each is
+//! checked against its size and SHA-256 before it gets its name. Run by `dashi-voice fetch`, a process of
 //! its own: the service that hears the microphone has no network
 //! (docs/voice.md, "The models").
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::Duration;
 
@@ -40,104 +40,115 @@ pub(crate) fn megabytes(bytes: u64) -> String {
     format!("{} MB", bytes.div_ceil(1_000_000))
 }
 
-fn curl(url: &str, to: &Path) -> Result<Child, String> {
-    Command::new("curl")
-        .args(["--fail", "--location", "--silent", "--show-error"])
+/// One file of a fetch: where it comes from, and where its part and its whole go.
+struct Wanted {
+    set: &'static Set,
+    file: &'static File,
+    part: PathBuf,
+    path: PathBuf,
+}
+
+impl Wanted {
+    /// Bytes of it here so far.
+    fn have(&self) -> u64 {
+        let size = |path: &Path| std::fs::metadata(path).map_or(0, |found| found.len());
+        size(&self.part).max(size(&self.path)).min(self.file.bytes)
+    }
+}
+
+/// One curl for every file: connections are kept, four files come at a time,
+/// and each goes on from the part a stopped fetch left.
+fn curl(wanted: &[&Wanted]) -> Result<Child, String> {
+    let mut command = Command::new("curl");
+    command
         .args([
-            "--retry",
-            "3",
-            "--connect-timeout",
-            "20",
-            "--continue-at",
-            "-",
+            "--fail",
+            "--fail-early",
+            "--location",
+            "--silent",
+            "--show-error",
         ])
-        .arg("--output")
-        .arg(to)
-        .arg(url)
+        .args(["--retry", "3", "--connect-timeout", "20"])
+        .args(["--parallel", "--parallel-max", "4"]);
+    for each in wanted {
+        command
+            .args(["--continue-at", "-", "--output"])
+            .arg(&each.part)
+            .arg(each.file.url);
+    }
+    command
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::piped())
+        .stderr(Stdio::null())
         .spawn()
         .map_err(|_| "curl is not installed".to_owned())
 }
 
 /// What curl said went wrong, as a person would say it.
-fn curl_words(code: Option<i32>, name: &str) -> String {
+fn curl_words(code: Option<i32>) -> String {
     match code {
-        Some(6 | 7 | 28 | 35 | 52 | 56) => format!(
-            "{name} could not be fetched: this computer is offline, or the server did not answer"
-        ),
-        Some(22) => format!("{name} could not be fetched: the server refused"),
-        Some(23) => {
-            format!("{name} could not be saved: the disk is full, or the folder can't be written")
+        Some(6 | 7 | 28 | 35 | 52 | 56) => {
+            "The models could not be fetched: this computer is offline, or the server did not answer.".into()
         }
-        _ => format!("{name} could not be fetched"),
+        Some(22) => "The models could not be fetched: the server refused.".into(),
+        Some(23) => {
+            "The models could not be saved: the disk is full, or the folder can't be written.".into()
+        }
+        _ => "The models could not be fetched.".into(),
     }
 }
 
-/// Bring one file down to its `.part`, telling `tick` its size as it grows. False when cancelled.
-fn download(file: &File, part: &Path, tick: &mut dyn FnMut(u64) -> bool) -> Result<bool, String> {
-    let have = std::fs::metadata(part).map_or(0, |found| found.len());
-    if have > file.bytes {
-        let _ = std::fs::remove_file(part);
-    } else if have == file.bytes {
+/// Bring these files down to their parts, telling `tick` as they grow. False when cancelled.
+fn download(wanted: &[&Wanted], tick: &mut dyn FnMut() -> bool) -> Result<bool, String> {
+    for each in wanted {
+        if let Some(folder) = each.part.parent() {
+            std::fs::create_dir_all(folder)
+                .map_err(|error| format!("{}: {error}", folder.display()))?;
+        }
+        // A part longer than the file is not a part of it.
+        if std::fs::metadata(&each.part).is_ok_and(|found| found.len() > each.file.bytes) {
+            let _ = std::fs::remove_file(&each.part);
+        }
+    }
+    // A part that is already whole needs no fetching (and curl would be refused the rest of nothing).
+    let coming: Vec<&Wanted> = wanted
+        .iter()
+        .copied()
+        .filter(|each| each.have() < each.file.bytes)
+        .collect();
+    if coming.is_empty() {
         return Ok(true);
     }
-    let mut child = curl(file.url, part)?;
+    let mut child = curl(&coming)?;
     loop {
-        let size = std::fs::metadata(part).map_or(0, |found| found.len());
-        if !tick(size) {
+        if !tick() {
             let _ = child.kill();
             let _ = child.wait();
             return Ok(false);
         }
         match child.try_wait() {
             Ok(Some(status)) if status.success() => return Ok(true),
-            Ok(Some(status)) => {
-                // 33: the server would not resume; start the file again next time.
-                if status.code() == Some(33) {
-                    let _ = std::fs::remove_file(part);
-                }
-                return Err(curl_words(status.code(), file.path));
-            }
+            Ok(Some(status)) => return Err(curl_words(status.code())),
             Ok(None) => std::thread::sleep(TICK),
-            Err(error) => return Err(format!("{}: {error}", file.path)),
+            Err(error) => return Err(format!("curl: {error}")),
         }
     }
 }
 
-/// One file, whole and checked, under its name. False when cancelled.
-fn fetch_file(
-    store: &Store,
-    set: &Set,
-    file: &File,
-    tick: &mut dyn FnMut(u64) -> bool,
-) -> Result<bool, String> {
-    let (path, part) = (store.path(set, file), store.partial(set, file));
-    if let Some(folder) = path.parent() {
-        std::fs::create_dir_all(folder)
-            .map_err(|error| format!("{}: {error}", folder.display()))?;
-    }
-    // A part kept from a stopped fetch may be stale: if its hash is wrong, fetch it once more from nothing.
-    for attempt in 0..2 {
-        if !download(file, &part, tick)? {
-            return Ok(false);
-        }
-        let size = std::fs::metadata(&part).map_or(0, |found| found.len());
-        if size == file.bytes && sha256(&part)? == file.sha256 {
-            std::fs::rename(&part, &path)
-                .map_err(|error| format!("{}: {error}", path.display()))?;
-            return Ok(true);
-        }
-        let _ = std::fs::remove_file(&part);
-        if attempt == 1 {
-            break;
+/// Give each part that is whole and has the right hash its name; the ones that were wrong, their parts deleted.
+fn keep<'a>(wanted: &[&'a Wanted]) -> Result<Vec<&'a Wanted>, String> {
+    let mut wrong = Vec::new();
+    for each in wanted {
+        let whole = std::fs::metadata(&each.part).is_ok_and(|found| found.len() == each.file.bytes);
+        if whole && sha256(&each.part)? == each.file.sha256 {
+            std::fs::rename(&each.part, &each.path)
+                .map_err(|error| format!("{}: {error}", each.path.display()))?;
+        } else {
+            let _ = std::fs::remove_file(&each.part);
+            wrong.push(*each);
         }
     }
-    Err(format!(
-        "{} did not arrive whole; nothing was kept of it",
-        file.path
-    ))
+    Ok(wrong)
 }
 
 /// Fetch what is missing of these sets. `report` hears the progress and
@@ -148,18 +159,18 @@ pub(crate) fn fetch(
     report: &mut dyn FnMut(Progress) -> bool,
 ) -> Result<bool, String> {
     let bytes: u64 = sets.iter().map(|set| set.bytes()).sum();
-    let mut done: u64 = sets
+    let wanted: Vec<Wanted> = sets
         .iter()
-        .map(|set| {
-            set.bytes()
-                - store
-                    .missing(set)
-                    .iter()
-                    .map(|file| file.bytes)
-                    .sum::<u64>()
+        .flat_map(|set| store.missing(set).into_iter().map(move |file| (*set, file)))
+        .map(|(set, file)| Wanted {
+            set,
+            file,
+            part: store.partial(set, file),
+            path: store.path(set, file),
         })
-        .sum();
-    let needed = bytes - sets.iter().map(|set| store.have(set)).sum::<u64>();
+        .collect();
+    let missing: u64 = wanted.iter().map(|each| each.file.bytes).sum();
+    let needed = missing - wanted.iter().map(Wanted::have).sum::<u64>();
     std::fs::create_dir_all(store.folder())
         .map_err(|error| format!("{}: {error}", store.folder().display()))?;
     if let Some(free) = free_bytes(store.folder())
@@ -171,23 +182,38 @@ pub(crate) fn fetch(
             megabytes(free)
         ));
     }
-    for set in sets {
-        for file in store.missing(set) {
-            let mut tick = |size: u64| {
-                report(Progress {
-                    set: set.id,
-                    file: file.path,
-                    received: done + size.min(file.bytes),
-                    bytes,
-                })
-            };
-            if !fetch_file(store, set, file, &mut tick)? {
-                return Ok(false);
-            }
-            done += file.bytes;
+    let mut left: Vec<&Wanted> = wanted.iter().collect();
+    // A part kept from a stopped fetch may be stale: what has the wrong hash is fetched once more from nothing.
+    for _ in 0..2 {
+        if left.is_empty() {
+            break;
         }
+        let mut tick = || {
+            // The first file still coming names the progress.
+            let coming = wanted
+                .iter()
+                .find(|each| each.have() < each.file.bytes)
+                .unwrap_or(&wanted[0]);
+            let received = bytes - missing + wanted.iter().map(Wanted::have).sum::<u64>();
+            report(Progress {
+                set: coming.set.id,
+                file: coming.file.path,
+                received,
+                bytes,
+            })
+        };
+        if !download(&left, &mut tick)? {
+            return Ok(false);
+        }
+        left = keep(&left)?;
     }
-    Ok(true)
+    match left.first() {
+        None => Ok(true),
+        Some(each) => Err(format!(
+            "{} did not arrive whole; nothing was kept of it.",
+            each.file.path
+        )),
+    }
 }
 
 #[cfg(test)]

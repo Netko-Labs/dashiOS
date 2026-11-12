@@ -336,8 +336,9 @@ Nothing else is ever written to disk: no sound, no words, no log of either.
 on Hugging Face names a commit, so it can't change under its SHA-256, which
 is checked before a file gets its name. A file comes down as `<name>.part`;
 a fetch that stops keeps the part and the next one goes on from it (`curl
---continue-at -`), and a part whose hash turns out wrong is thrown away and
-fetched once more from nothing. Before it starts, a fetch checks the disk
+--continue-at -`, one curl for all the files, four at a time), and a part
+whose hash turns out wrong is thrown away and fetched once more from
+nothing. Before it starts, a fetch checks the disk
 has room and says so in words if not. `dashi-voice models --verify` checks
 every installed file again.
 
@@ -411,23 +412,34 @@ dashi-voice [--models DIR] <command>
 
 ## Speed and memory
 
-Measured on the development laptop (Ryzen AI 9 HX 370, 24 threads, CPU only,
-eight threads per model), release build:
+Measured on the development laptop (AMD Ryzen AI 9 HX 370, 12 cores, CPU
+only, eight threads per model), release build, on 7.35 s of speech in three
+sentences, while other builds ran on the machine (load 6 to 10):
 
 | What | Measured |
 | --- | --- |
-| Parakeet, 7.3 s of speech | 0.18 s to 0.37 s: 0.025 to 0.05 of real time |
-| Whisper turbo, 7.3 s of speech | 0.8 s to 2.6 s: 0.11 to 0.35 of real time |
-| Kokoro, 7.3 s of speech in three sentences | 2.0 s: 0.27 of real time; first sound after 0.3 s to 0.46 s |
-| Silero VAD, 6.6 s of sound | 0.09 s |
-| Loading: Parakeet, Kokoro, Whisper | 0.9 s to 2.2 s, 0.3 s to 0.7 s, 1.2 s to 3.8 s |
-| Memory while loaded: Parakeet, Kokoro | 1.45 GB, 0.48 GB |
+| Parakeet (with the VAD's pass) | 0.23 s to 0.30 s: 0.03 to 0.04 of real time |
+| Whisper turbo | 1.3 s to 3.9 s: 0.18 to 0.53 of real time |
+| Kokoro | 1.10 s to 1.17 s: 0.15 of real time; first sound after 0.28 s |
+| Kokoro, one word ("Okay.") | 0.21 s |
+| Loading from disk: Parakeet, Kokoro, Whisper | 1.3 s to 2.1 s, 0.5 s to 0.6 s, 1.4 s to 5.2 s |
+| Memory while loaded: Parakeet, Kokoro; both | 1.45 GB, 0.48 GB; 1.81 GB |
+| Memory once let go of (ten minutes unused) | 33 MB |
 
-The ranges are a quiet machine and one where other builds ran. A held key's
-words come about a fifth of a second after it is let go; Dashi's first sound
-comes under half a second after `speak`, once the models are warm. The 8-bit
-Kokoro file is a third of the size and three times slower on a CPU; the
-16-bit one gives silence on some sentences. Hence the full one.
+Through the service in the VM (8 cores, PipeWire, a null source and sink;
+`dashi-0.8.0-review/01-voice/`):
+
+| What | Measured |
+| --- | --- |
+| Key let go → the words (`listen.stop` → its reply), 7 s of speech | 0.31 s, of which 0.13 s is the last eighth of a second heard |
+| Speech begins → first `partial` | about 1 s; then one about every 0.8 s |
+| `speak` → first sound (`sentence`), models warm | 0.37 s to 0.43 s |
+| `speak.stop` → silence at the speakers | under 20 ms |
+| Fetching both basic sets (1 GB) | 62 s on the VM's connection |
+
+The 8-bit Kokoro file is a third of the size and three times slower on a
+CPU (0.57 of real time); the 16-bit one gives silence on some sentences.
+Hence the full one.
 
 ## From a checkout
 

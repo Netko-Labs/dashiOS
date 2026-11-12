@@ -151,7 +151,71 @@ fn a_cancelled_fetch_stops_and_says_so() {
 fn sizes_and_failures_are_said_in_words() {
     assert_eq!(megabytes(672_862_728), "673 MB");
     assert_eq!(megabytes(1), "1 MB");
-    assert!(curl_words(Some(6), "a.onnx").contains("offline"));
-    assert!(curl_words(Some(23), "a.onnx").contains("disk is full"));
+    assert!(curl_words(Some(6)).contains("offline"));
+    assert!(curl_words(Some(23)).contains("disk is full"));
     assert!(free_bytes(Path::new("/")).is_some_and(|free| free > 0));
+}
+
+#[test]
+fn many_files_come_with_one_curl_each_to_its_own_place() {
+    if !has_curl() {
+        return;
+    }
+    let folder = tempfile::tempdir().unwrap();
+    let mut files = Vec::new();
+    for (name, text, sha256) in [
+        (
+            "one.bin",
+            "abc",
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        ),
+        ("deep/two.bin", WORDS, WORDS_SHA),
+        (
+            "three.bin",
+            "xyz",
+            "3608bca1e44ea6c4d268eb6db02260269892c0b42b86bbf1e77a6fa16c3c9282",
+        ),
+    ] {
+        let source = folder.path().join(name.replace('/', "-"));
+        std::fs::write(&source, text).unwrap();
+        let url: &'static str = Box::leak(format!("file://{}", source.display()).into_boxed_str());
+        files.push(File {
+            path: name,
+            url,
+            bytes: text.len() as u64,
+            sha256,
+        });
+    }
+    let set: &'static Set = Box::leak(Box::new(Set {
+        id: "many",
+        name: "Many",
+        about: "",
+        credit: "",
+        basic: true,
+        files: Box::leak(files.into_boxed_slice()),
+    }));
+    let store = Store::new(folder.path().join("models"));
+    // The second file was half fetched before.
+    let part = store.partial(set, &set.files[1]);
+    std::fs::create_dir_all(part.parent().unwrap()).unwrap();
+    std::fs::write(&part, &WORDS[..20]).unwrap();
+    let mut last = 0;
+    assert!(
+        fetch(&store, &[set], &mut |progress| {
+            assert!(progress.received >= last && progress.received <= progress.bytes);
+            last = progress.received;
+            true
+        })
+        .unwrap()
+    );
+    assert!(store.installed(set));
+    assert_eq!(
+        std::fs::read_to_string(store.path(set, &set.files[1])).unwrap(),
+        WORDS
+    );
+    assert_eq!(
+        std::fs::read_to_string(store.path(set, &set.files[0])).unwrap(),
+        "abc"
+    );
+    store.verify(set).unwrap();
 }
