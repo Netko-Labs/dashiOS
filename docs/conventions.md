@@ -499,9 +499,12 @@ Rules:
 
 Dashi is MIT (`LICENSE`), and stays MIT. Nothing may change that.
 
-- **Dashi's own code** is MIT. Code adapted from another MIT, BSD, ISC or
-  Zlib project keeps its authors' notice in `THIRD-PARTY-NOTICES.md` and
-  says where it came from in a comment.
+- **Dashi's own code** is MIT. Code adapted from another MIT, BSD, ISC, Zlib
+  or Apache-2.0 project keeps its authors' notice in `THIRD-PARTY-NOTICES.md`
+  and says where it came from in a comment. Adapted Apache-2.0 code stays
+  Apache-2.0: the notice names the files, says they were changed, and carries
+  the project's `NOTICE` text if it has one. Nothing adapted may ask Dashi as
+  a whole to take another license.
 - **Libraries Dashi links or bundles**: permissive (MIT, BSD, Apache-2.0,
   ISC, Zlib; a choice that includes one of these), MPL-2.0 used unmodified
   as a library, or LGPL as a shared library from the system. Models and

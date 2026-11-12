@@ -600,6 +600,25 @@ Numbered in the order they were written down; a new one goes at the end.
 - **Undo:** drop `DASHI_VOICE_FETCH_VIA` and the address-family line from the
   unit; the service then fetches as its own child everywhere.
 
+### D30. Code may be adapted from Apache-2.0 projects, as long as Dashi stays MIT
+
+- **Date:** 2026-11-11 (the owner's call; `docs/conventions.md`, "Licenses").
+- **Question:** Voice's phoneme table follows misaki's and its token table is
+  Kokoro's, both Apache-2.0. The rulebook let adapted code come only from MIT,
+  BSD, ISC or Zlib projects, though Apache-2.0 libraries were already allowed.
+- **Choice:** Apache-2.0 joins the list for adapted code. Those files stay
+  Apache-2.0 inside an MIT project: the notice names them, says they were
+  changed, and carries the project's `NOTICE` text. The owner's line: nothing
+  may force Dashi to change its own license.
+- **Why:** Apache-2.0 is permissive and asks only for its notice and a word
+  that the files changed; it puts no terms on the rest of Dashi. Copyleft and
+  non-commercial code is still never copied (clean room only).
+- **Cost:** a few files carry a second license, and a person reusing them
+  must keep the Apache notice. Apache-2.0's patent terms don't sit with GPLv2
+  code, which Dashi doesn't link.
+- **Undo:** take Apache-2.0 back out of the rule and rewrite those tables
+  clean room from a spec.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its
