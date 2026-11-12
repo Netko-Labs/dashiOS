@@ -142,7 +142,8 @@ test("an agent's press changes no pick: it can't widen what the person is about 
   const view = await mount(<WorkAloneSection ctx={ctx} />);
   const ticked = (testID: string): boolean => {
     const find = (node: { props?: Record<string, unknown>; children?: unknown[] }): boolean | null => {
-      if (node.props?.id === view.root.nodeId(testID)) return (node.props.access as { checked?: boolean } | undefined)?.checked === true;
+      const access = node.props?.id === view.root.nodeId(testID) ? node.props?.access : undefined;
+      if (typeof access === "object" && access !== null) return "checked" in access && access.checked === true;
       for (const child of node.children ?? []) {
         const found = typeof child === "object" && child !== null ? find(child) : null;
         if (found !== null) return found;
