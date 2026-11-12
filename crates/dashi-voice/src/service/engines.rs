@@ -163,10 +163,16 @@ impl Engines for Loaded {
         if let Ok(mut held) = self.held.lock()
             && now.saturating_sub(held.used) >= idle
         {
+            let had = held.parakeet.is_some() || held.whisper.is_some() || held.kokoro.is_some();
             *held = Held {
                 used: held.used,
                 ..Held::default()
             };
+            if had {
+                // SAFETY: malloc_trim takes a pad size and touches no memory of ours;
+                // it hands the freed models' pages back to the system.
+                unsafe { libc::malloc_trim(0) };
+            }
         }
     }
 
