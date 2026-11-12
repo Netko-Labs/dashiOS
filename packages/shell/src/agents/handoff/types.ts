@@ -77,7 +77,11 @@ export interface Handoff {
   subscribeHarnesses(listener: () => void): () => void;
   /** Whether the grants card shows before a task with this context starts. */
   needsCard(context: TaskContext): boolean;
-  /** Start a task; its run's id, or null when nothing could start. */
+  /**
+   * Start a task; its run's id. A task whose harness couldn't be started
+   * (it isn't installed) is still a run, ended as failed, so its row says
+   * why; null is for a service that keeps no run at all.
+   */
   start(input: StartTask): Promise<string | null>;
   /** Send words to a run (⇥ on its row, Follow up): false when there's no such run. */
   tell(run: string, text: string): boolean;
