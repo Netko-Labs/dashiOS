@@ -1,8 +1,11 @@
 /** What the voice module shows and is given (docs/voice.md is the service's side). */
 
-import type { ModelSet, SpokenVoice } from "./lib/wire.ts";
+import type { ModelSet as WireModelSet, SpokenVoice as WireSpokenVoice } from "./lib/wire.ts";
 
-export type { ModelSet, SpokenVoice };
+/** A set of models the service can fetch, as the service names it. */
+export type ModelSet = WireModelSet;
+/** One of the voices Dashi can speak in. */
+export type SpokenVoice = WireSpokenVoice;
 
 /** Where a chip's words send the person when pressed. */
 export type ChipGo = "voice" | "agents" | "launcher";
