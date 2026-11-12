@@ -768,6 +768,30 @@ Numbered in the order they were written down; a new one goes at the end.
 - **Undo:** take `isRecordOfUnknown` out of `isNarrowedCast` in
   `scripts/check-boundaries.ts`.
 
+### D38. An agent's scroll is so many pixels, from a continuous source
+
+- **Date:** 2026-11-11 (0.8, the `rules` branch).
+- **Question:** the agents' `scroll` tool takes pixels, and dashi-comp played
+  them as a mouse wheel: 15 px a notch, as libinput counts. A client makes
+  its own distance of a notch (GPUI three lines, about 77 px), so 45 px moved
+  a Metal window 234. What should an agent's scroll be on the wire?
+- **Choice:** a continuous source's (`wl_pointer.axis_source` continuous,
+  the value alone, no notches), the one kind of scroll besides a finger's
+  whose value is a distance. mirin's GPUI fork multiplied every pixel scroll
+  by 3; it now takes a continuous source's as it is and keeps the 3 for a
+  finger, the speed a touchpad has. In the VM, 45 asked moved 45.1 points and
+  100 moved 100.0.
+- **Why:** only a pixel scroll can go as far as it is asked. A finger's
+  would start the client's own coasting when it ends; a continuous one does
+  not.
+- **Cost:** button scrolling (a trackpoint) is a continuous source too, so
+  in Metal windows it now moves 1:1, a third of what it did, as it does in
+  GTK and Chromium. A client that reads only wheel notches would not scroll
+  for an agent; none Dashi ships does.
+- **Undo:** `scroll_frame` back to a wheel's frame in
+  `crates/dashi-comp/src/session/agent_pointer.rs`, and `pixel_scroll_factor`
+  back to 3 in mirin's `vendor/gpui`.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its
