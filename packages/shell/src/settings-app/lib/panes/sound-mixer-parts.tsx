@@ -9,7 +9,7 @@
 
 import { MoreButton, PopUpButton, type PopUpOption } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { InkSlider } from "../../../shared/controls/ink-slider.tsx";
 import { useControlColors } from "../../../shared/controls/palette.ts";
 import { type MixerOutput, MuteKnob, type StreamMeters, type StreamSound, useMeterLevel } from "../../../sound/index.ts";
@@ -19,9 +19,36 @@ import { PAGE } from "../row.tsx";
  * The rows' measures: the slider 210 wide, the mute button 36, the device's
  * pop-up 144 wide (so the sliders line up), the icon 24 on the knob; the
  * line under the name 20 tall, the meter on it 64 by 4; a stream's row 44,
- * its words starting where its app's do.
+ * its words starting where its app's do. In a narrow window a stream's
+ * controls go under its title: they then sit `tied` under it, and the title
+ * starts `apart` below the controls above, so each slider reads as its
+ * title's.
  */
-export const APPS_CARD = { slider: 210, mute: 36, popUp: 144, icon: 24, line: 20, meter: { width: 64, height: 4 }, stream: 44 } as const;
+export const APPS_CARD = {
+  slider: 210,
+  mute: 36,
+  popUp: 144,
+  icon: 24,
+  line: 20,
+  meter: { width: 64, height: 4 },
+  stream: 44,
+  tied: 0,
+  apart: 14,
+} as const;
+
+/** Whether a stream's controls wrapped under its title: the row is then taller than its one line and a half of the controls' height. */
+export function streamWrapped(height: number): boolean {
+  return height > APPS_CARD.stream + APPS_CARD.mute / 2;
+}
+
+/**
+ * A stream row's spacing. On one line: nothing above, 6 between and under.
+ * Wrapped: `apart` above the title and `tied` between it and its controls,
+ * so the space under a slider is more than twice the space over it.
+ */
+export function streamSpacing(wrapped: boolean): { paddingTop: number; rowGap: number; paddingBottom: number } {
+  return wrapped ? { paddingTop: APPS_CARD.apart, rowGap: APPS_CARD.tied, paddingBottom: 6 } : { paddingTop: 0, rowGap: 6, paddingBottom: 6 };
+}
 
 const VOLUME = { min: 0, max: 1, step: 0.01 } as const;
 
@@ -235,21 +262,23 @@ export function StreamRow({
   onMute: (muted: boolean) => void;
 }) {
   const colors = useControlColors();
+  // The row's own height says whether its controls wrapped; the spacing it then takes keeps it over the line either way.
+  const [wrapped, setWrapped] = useState(false);
   return (
     <View
       testID={testID}
       accessibilityRole="group"
       accessibilityLabel={`${app}, ${part.title}`}
+      onLayout={(laid) => setWrapped(streamWrapped(laid.height))}
       style={{
         minHeight: APPS_CARD.stream,
         flexDirection: "row",
         flexWrap: "wrap",
         alignItems: "center",
-        rowGap: 6,
         columnGap: 12,
         paddingLeft: PAGE.knobInset,
         paddingRight: PAGE.inset,
-        paddingBottom: 6,
+        ...streamSpacing(wrapped),
       }}
     >
       {/* The knob's room, so the title starts where the app's name does and wrapped controls sit under the app's. */}
