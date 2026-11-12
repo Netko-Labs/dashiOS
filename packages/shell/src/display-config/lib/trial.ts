@@ -32,7 +32,6 @@ export function askToKeep(ask: AskToKeep, summary: string, now: () => number, sc
     let cancel = (): void => {};
     let settled = false;
     const finish = (keep: boolean): void => {
-      console.error("KEEP finish", keep, new Error().stack?.split("\n").slice(2, 5).join("|"));
       if (settled) return;
       settled = true;
       cancel();
