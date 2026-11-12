@@ -844,6 +844,31 @@ Numbered in the order they were written down; a new one goes at the end.
 - **Undo:** `primaryHover` and `primaryPressed` in `palette.ts`, and the
   test's 1.2.
 
+### D42. Tab stops are every 4 widths of the font's 0, and Text Editor's View menu sets them
+
+- **Date:** 2026-11-11. The `polish` agent's, reversible (mirin `1332472`,
+  `d873e0e`; `apps/editor/lib/prefs.ts`).
+- **Question:** a typed tab looked like a space. It was in fact a stop every
+  four *spaces* of the font, which Linux's shaper set by itself: in a
+  proportional font four spaces are about one em, so "name" and "city" ended
+  on different stops and nothing lined up. What is a tab stop's width, and
+  who sets it?
+- **Choice:** mirin sets the stops itself, on every platform, every
+  `tabSize` widths of the font's **0** (CSS's `ch`), 4 by default. In a
+  fixed-pitch font that is exactly four spaces, as asked; in a proportional
+  one it is about twice as far, wide enough for short words to share a stop.
+  Text Editor has View › Tab Width: 2, 4, 8, kept with its other View
+  settings; a note's body keeps 4.
+- **Why:** "four spaces" only means a column in a fixed-pitch font. The 0 is
+  what CSS and every editor count columns in, and it gives the same answer
+  there.
+- **Cost:** three more rows in Text Editor's View menu (it has no
+  submenus). On a line that soft-wraps, the stops of its later rows are
+  still counted from the paragraph's start. Words longer than a stop still
+  need a second tab, as in any editor.
+- **Undo:** `tab_interval` in mirin's `line_layout.rs` (count the space
+  instead of the 0); `TAB_WIDTHS` and the rows in `apps/editor/lib/menus.ts`.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its

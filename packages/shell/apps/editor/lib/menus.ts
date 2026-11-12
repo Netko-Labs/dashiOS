@@ -14,6 +14,7 @@
 
 import { redoLabel, undoLabel } from "@dashi/ui";
 import { enabledIds, type MenuSpec } from "../../kit/index.ts";
+import { TAB_WIDTHS, type TabWidth } from "./prefs.ts";
 
 export interface MenuContext {
   /** The document has a file (Untitled has none: it is a draft). */
@@ -32,6 +33,8 @@ export interface MenuContext {
   hasMatches: boolean;
   monospace: boolean;
   lineNumbers: boolean;
+  /** How far apart the tab stops are (prefs.ts `TAB_WIDTHS`). */
+  tabWidth: TabWidth;
   caseSensitive: boolean;
   actions: {
     newWindow(): void;
@@ -54,6 +57,7 @@ export interface MenuContext {
     toggleCase(): void;
     toggleLineNumbers(): void;
     toggleMonospace(): void;
+    tabWidth(width: TabWidth): void;
     fontSize(step: 1 | -1 | 0): void;
   };
 }
@@ -103,6 +107,9 @@ export function editorMenus(context: MenuContext): { menus: MenuSpec[]; run: (id
         { id: "bigger", label: "Bigger", shortcut: "❖=" },
         { id: "smaller", label: "Smaller", shortcut: "❖-" },
         { id: "actual-size", label: "Actual Size", shortcut: "❖0" },
+        { type: "separator" },
+        // A set of choices: the one in use is ticked.
+        ...TAB_WIDTHS.map((width) => ({ id: `tab-width-${width}`, label: `Tab Width: ${width}`, checked: context.tabWidth === width })),
       ],
     },
   ];
@@ -132,6 +139,7 @@ export function editorMenus(context: MenuContext): { menus: MenuSpec[]; run: (id
     bigger: () => actions.fontSize(1),
     smaller: () => actions.fontSize(-1),
     "actual-size": () => actions.fontSize(0),
+    ...Object.fromEntries(TAB_WIDTHS.map((width) => [`tab-width-${width}`, () => actions.tabWidth(width)])),
   };
   const run = (id: string): void => {
     if (enabledIds(menus).has(id)) handlers[id]?.();

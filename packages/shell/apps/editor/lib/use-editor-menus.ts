@@ -46,6 +46,7 @@ export function useEditorMenus({
     hasMatches: find.matches.length > 0,
     monospace: state.prefs.monospace,
     lineNumbers: state.prefs.lineNumbers,
+    tabWidth: state.prefs.tabWidth,
     caseSensitive: find.caseSensitive,
     actions: {
       newWindow: () => newWindow([]),
@@ -68,6 +69,7 @@ export function useEditorMenus({
       toggleCase: () => model.setCaseSensitive(!find.caseSensitive),
       toggleLineNumbers: () => model.setLineNumbers(!state.prefs.lineNumbers),
       toggleMonospace: () => model.setMonospace(!state.prefs.monospace),
+      tabWidth: (width) => model.setTabWidth(width),
       fontSize: (step) => model.stepFontSize(step),
     },
   });

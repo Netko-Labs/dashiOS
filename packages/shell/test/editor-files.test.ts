@@ -252,7 +252,10 @@ describe("keeping changes as they are typed", () => {
 
 describe("prefs", () => {
   test("parsing keeps what is valid", () => {
-    expect(parsePrefs('{"monospace":true,"fontSize":16}')).toEqual({ monospace: true, fontSize: 16, lineNumbers: true });
+    expect(parsePrefs('{"monospace":true,"fontSize":16}')).toEqual({ monospace: true, fontSize: 16, lineNumbers: true, tabWidth: 4 });
+    // A tab width outside the list is the default's.
+    expect(parsePrefs('{"tabWidth":8}')).toEqual({ ...DEFAULT_PREFS, tabWidth: 8 });
+    expect(parsePrefs('{"tabWidth":3}')).toEqual(DEFAULT_PREFS);
     expect(parsePrefs('{"lineNumbers":false}')).toEqual({ ...DEFAULT_PREFS, lineNumbers: false });
     expect(parsePrefs('{"monospace":"yes","fontSize":15}')).toEqual(DEFAULT_PREFS);
     expect(parsePrefs("[]")).toEqual(DEFAULT_PREFS);
@@ -270,8 +273,8 @@ describe("prefs", () => {
 
   test("written and read back", () => {
     const path = join(dir, "config", "editor.json");
-    writePrefs({ monospace: true, fontSize: 18, lineNumbers: false }, path);
-    expect(readPrefs(path)).toEqual({ monospace: true, fontSize: 18, lineNumbers: false });
+    writePrefs({ monospace: true, fontSize: 18, lineNumbers: false, tabWidth: 2 }, path);
+    expect(readPrefs(path)).toEqual({ monospace: true, fontSize: 18, lineNumbers: false, tabWidth: 2 });
     expect(readPrefs(join(dir, "none.json"))).toEqual(DEFAULT_PREFS);
   });
 });

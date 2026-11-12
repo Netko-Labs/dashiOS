@@ -6,7 +6,7 @@
 
 import { findMatches, matchAtOrAfter, replaceAll, stepMatch } from "./find.ts";
 import { History } from "./history.ts";
-import { DEFAULT_PREFS, type EditorPrefs, samePrefs, stepFontSize } from "./prefs.ts";
+import { DEFAULT_PREFS, type EditorPrefs, samePrefs, stepFontSize, type TabWidth } from "./prefs.ts";
 import type { EditorState, FindState } from "./state.ts";
 
 export abstract class EditorDocument {
@@ -86,6 +86,10 @@ export abstract class EditorDocument {
 
   setLineNumbers(lineNumbers: boolean): void {
     this.setPrefs({ ...this.state.prefs, lineNumbers });
+  }
+
+  setTabWidth(tabWidth: TabWidth): void {
+    this.setPrefs({ ...this.state.prefs, tabWidth });
   }
 
   /** Bigger (1), Smaller (-1), or the default size (0). */
