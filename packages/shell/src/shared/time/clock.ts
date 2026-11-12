@@ -6,9 +6,10 @@
  * held in `clockPrefs` so every surface of the shell repaints together.
  */
 
+import { bool, literal, refine, str } from "@dashi/shape";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { isFormatsLocale, localeFromEnv, toBcp47 } from "../locale/index.ts";
-import { isBoolean, isRaw, oneOf, readFields } from "../settings/index.ts";
+import { isRaw, readFields } from "../settings/index.ts";
 
 export interface ClockPrefs {
   /** The BCP 47 tag the formats follow (`de-DE`). */
@@ -219,14 +220,17 @@ export interface RegionSettings {
   firstWeekday?: FirstWeekday;
 }
 
-export const CLOCK_SECTION = { path: ["clock"], fields: { hour24: isBoolean, showDate: isBoolean } } as const;
-export const REGION_SECTION = { path: ["region"], fields: { formats: isFormatsLocale, firstWeekday: oneOf(...WEEKDAYS) } } as const;
+/** A locale name as the system writes it (`de_DE.UTF-8`). */
+const formatsLocale = refine(str(), (value, where) => (isFormatsLocale(value) ? null : `${where} must be a locale such as de_DE.UTF-8`));
+
+export const CLOCK_SECTION = { path: ["clock"], fields: { hour24: bool(), showDate: bool() } } as const;
+export const REGION_SECTION = { path: ["region"], fields: { formats: formatsLocale, firstWeekday: literal(...WEEKDAYS) } } as const;
 
 /** The two sections from a decoded settings file. Never throws. */
 export function readRegionSettings(raw: unknown): { clock: ClockSettings; region: RegionSettings } {
   const root = isRaw(raw) ? raw : {};
   return {
-    clock: readFields(root, CLOCK_SECTION.path, CLOCK_SECTION.fields) as ClockSettings,
-    region: readFields(root, REGION_SECTION.path, REGION_SECTION.fields) as RegionSettings,
+    clock: readFields(root, CLOCK_SECTION.path, CLOCK_SECTION.fields),
+    region: readFields(root, REGION_SECTION.path, REGION_SECTION.fields),
   };
 }

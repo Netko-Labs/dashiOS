@@ -40,7 +40,7 @@ import { basename, dirname } from "node:path";
 import { UndoStack } from "@dashi/ui";
 import { isVrrMode, type VrrMode } from "../display-config/monitors.ts";
 import { isRefreshChoice, type RefreshChoice } from "../display-config/refresh-policy.ts";
-import { type Check, ensure, isRaw, prune, type Raw, settingsPath, updateSettingsFile } from "../shared/settings/index.ts";
+import { ensure, type Fields, isRaw, prune, type Raw, settingsPath, updateSettingsFile } from "../shared/settings/index.ts";
 import { changesPath } from "./lib/changes/file.ts";
 import { ChangeLog, type Change as LoggedChange } from "./lib/changes/log.ts";
 import { describeChanges } from "./lib/changes/words.ts";
@@ -111,12 +111,12 @@ export class SettingsStore {
    */
   patch<S extends SectionName>(section: S, change: Change<S>): void {
     const spec = SECTIONS[section];
-    const fields: Record<string, Check> = spec.fields;
+    const fields: Fields = spec.fields;
     const entries = Object.entries(change);
     for (const [key, value] of entries) {
-      const check = fields[key];
-      if (!check) throw new TypeError(`unknown setting ${spec.path.join(".")}.${key}`);
-      if (value !== undefined && !check(value)) throw new TypeError(`bad value for ${spec.path.join(".")}.${key}: ${JSON.stringify(value)}`);
+      const field = fields[key];
+      if (!field) throw new TypeError(`unknown setting ${spec.path.join(".")}.${key}`);
+      if (value !== undefined && !field.parse(value).ok) throw new TypeError(`bad value for ${spec.path.join(".")}.${key}: ${JSON.stringify(value)}`);
     }
     // What each key held, as Settings read it (a value of the wrong kind in the file reads as not set).
     const held = this.snapshot.data[section] as Record<string, unknown>;

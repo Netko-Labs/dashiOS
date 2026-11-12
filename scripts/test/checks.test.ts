@@ -77,6 +77,13 @@ describe("H7 casts", () => {
     expect(count("return Array.isArray(value) ? (value as number[]) : [];")).toBe(1);
     expect(count("const list: unknown[] = []; return list as [string, number];")).toBe(1);
   });
+  test("a cast of a record of unknown, which says no more of its fields than `object` does", () => {
+    const record = "const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;";
+    expect(count(`${record} return isRecord(value) ? (value as Box) : null;`)).toBe(1);
+    expect(count("const built: Record<string, unknown> = { x: 1 }; return built as Box;")).toBe(1);
+    expect(count(`${record} return isRecord(value) ? (value as Record<string, unknown>) : null;`)).toBe(0);
+    expect(count(`${record} return isRecord(value) && typeof value.x === "number" ? { x: value.x } : null;`)).toBe(0);
+  });
   test("not a cast that claims nothing, a literal, a checked value, or a generic parser's own result", () => {
     expect(count("return Array.isArray(value) ? (value as unknown[]) : [];")).toBe(0);
     expect(count("return {} as Box;")).toBe(0);

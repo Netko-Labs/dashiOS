@@ -49,16 +49,12 @@ export const run: Runner = async (command, options = {}) => {
   };
   let process_: ReturnType<typeof Bun.spawn>;
   try {
-    const spawnOptions: Record<string, unknown> = { env: toolEnv(), stdin: "ignore" };
-    if (options.terminal) {
-      const terminal: TerminalOption = { cols: 120, rows: 30, data: (_terminal, data) => take(decoder.decode(data, { stream: true })) };
-      spawnOptions.terminal = terminal;
-      delete spawnOptions.stdin;
-    } else {
-      spawnOptions.stdout = "pipe";
-      spawnOptions.stderr = "pipe";
-    }
-    process_ = Bun.spawn([...command], spawnOptions as Parameters<typeof Bun.spawn>[1]);
+    const env = toolEnv();
+    // In a terminal the tool draws its own progress; without one its two streams are read.
+    const terminal: TerminalOption = { cols: 120, rows: 30, data: (_terminal, data) => take(decoder.decode(data, { stream: true })) };
+    process_ = options.terminal
+      ? Bun.spawn([...command], { env, terminal })
+      : Bun.spawn([...command], { env, stdin: "ignore", stdout: "pipe", stderr: "pipe" });
   } catch (error) {
     return { code: null, output: error instanceof Error ? error.message : String(error) };
   }

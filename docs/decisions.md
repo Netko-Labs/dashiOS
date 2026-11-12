@@ -650,6 +650,8 @@ Numbered in the order they were written down; a new one goes at the end.
   they found. Typing them is the next step, and the check does not see it.
 - **Undo:** take `isNarrowedCast` out of `scripts/check-boundaries.ts`; the
   code stays stricter than the check.
+- **Since:** D37 counts the cast from `Record<string, unknown>` too, and
+  Settings' sections are read by their shapes.
 
 ### D32. Esc closes an applet's popover from the shell, not from the applet
 
@@ -738,6 +740,33 @@ Numbered in the order they were written down; a new one goes at the end.
   outer function's lines too, as in Biome.
 - **Undo:** take `checkFunctions` out of `scripts/check-structure.ts`; the
   code stays shorter than the check.
+
+### D37. H7's check counts a cast from `Record<string, unknown>`
+
+- **Date:** 2026-11-11 (0.8, the `rules` branch).
+- **Question:** D31 left one cast uncounted: from `Record<string, unknown>`,
+  what `isRecord` and a parse give, because code also builds that type for
+  itself (spawn options, a tool's arguments) and the check can't tell the two
+  apart. Settings cast each section it read that way, 23 times. Can the check
+  see it after all?
+- **Choice:** yes, by not telling them apart. Once Settings read its sections
+  by their shapes (every key of every section is a shape now; a section's
+  type is inferred from them, and the store checks a value with the same
+  shape before it writes it), four such casts were left in the whole
+  codebase, and none needed to be one: an applet's arguments are copied key
+  by key, a link's schema is read field by field, a simulation command has a
+  shape checked against mirin's type, and the spawn options are written as
+  the two calls they were. The check now counts every cast from a record of
+  unknown to a type that claims more, whoever built the record.
+- **Why:** a record of unknown says as little about its fields as `object`
+  does, so a cast from it checks as little. Code that builds one for itself
+  can build the type it means.
+- **Cost:** code may no longer gather options into a `Record<string,
+  unknown>` and cast at the end; it writes the typed object. A section's
+  value is now what its shape parsed, not the file's own (a Desktop's name is
+  tidied on read, as the shell already read it).
+- **Undo:** take `isRecordOfUnknown` out of `isNarrowedCast` in
+  `scripts/check-boundaries.ts`.
 
 ## How to add a decision
 

@@ -16,8 +16,23 @@
  */
 
 import { unlinkSync } from "node:fs";
-import { isRecord } from "@dashi/shape";
+import { bool, isRecord, literal, maybe, num, obj, optional, type Shape, str, union } from "@dashi/shape";
 import type { NativeHostTransport, NativeRoot, SimCommand } from "@mirinjs/metal";
+
+const id = str();
+/** A command for the Metal host's simulation channel, as mirin's `SimCommand` says it. */
+const SIM: Shape<SimCommand> = union(
+  obj({ kind: literal("click"), id }),
+  obj({ kind: literal("click"), x: num(), y: num() }),
+  obj({ kind: literal("key"), keystroke: str() }),
+  obj({ kind: literal("type"), text: str() }),
+  obj({ kind: literal("layout") }),
+  obj({ kind: literal("drag"), id, fromX: optional(num()), fromY: optional(num()), toX: optional(num()), toY: optional(num()) }),
+  obj({ kind: literal("contextmenu"), id }),
+  obj({ kind: literal("hover"), id, hovered: bool() }),
+  obj({ kind: literal("scroll"), id, dy: num() }),
+  obj({ kind: literal("window"), action: literal("zoom", "minimize") }),
+);
 
 export type ControlRequest = { click: string } | { contextmenu: string } | { key: string } | { type: string } | { sim: SimCommand } | { tree: true };
 
@@ -36,10 +51,8 @@ export function parseControl(line: string): ControlRequest | null {
   if (typeof record.key === "string") return { key: record.key };
   if (typeof record.type === "string") return { type: record.type };
   if (record.tree === true) return { tree: true };
-  if (isRecord(record.sim) && typeof record.sim.kind === "string") {
-    return { sim: record.sim as SimCommand };
-  }
-  return null;
+  const sim = maybe(SIM, record.sim);
+  return sim ? { sim } : null;
 }
 
 /** Carries out one request; the reply to write back. */

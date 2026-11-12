@@ -6,13 +6,13 @@
  * whoever reads (the shell's in settings.ts `defaults`).
  */
 
-import { accept, bool, type Infer, int, isRecord, literal, num, reject, type Shape, shape, str } from "@dashi/shape";
+import { accept, bool, int, isRecord, literal, num, reject, type Shape, shape, str } from "@dashi/shape";
 import { TEXT_SIZES } from "@dashi/ui";
 import { DOCK_STYLES } from "../dock/settings.ts";
 import { INPUT_METHODS } from "../input-method.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../scroll-speed.ts";
 import { CORNER_NAMES, POINTER_SIZE, REDUCE_MOTION } from "../shared/appearance/index.ts";
-import { isPhotoPath } from "../shared/settings/index.ts";
+import { type Fields, isPhotoPath, type SectionOf } from "../shared/settings/index.ts";
 import { parseSpaceNames } from "../spaces/names.ts";
 import type { SpaceNames } from "../spaces/types.ts";
 import { isWallpaperRef, WALLPAPER_MODES } from "../wallpaper/catalog.ts";
@@ -20,7 +20,7 @@ import { FRAME_RATES, isVideoList, isVideoPath, LIVE_SHADERS, WALLPAPER_KINDS } 
 import { X11_SCALINGS } from "../xwayland-scale.ts";
 
 /** A value a type guard accepts; refused saying `wanted`. */
-const guarded = <T>(guard: (value: unknown) => value is T, wanted: string, schema: Record<string, unknown> = {}): Shape<T> =>
+export const guarded = <T>(guard: (value: unknown) => value is T, wanted: string, schema: Record<string, unknown> = {}): Shape<T> =>
   shape(
     (value, where) => (guard(value) ? accept(value) : reject(`${where} must be ${wanted}`)),
     () => schema,
@@ -106,22 +106,9 @@ export const SPACES = {
   fullscreenDesktop: bool(),
 };
 
-// biome-ignore lint/suspicious/noExplicitAny: a section holds shapes of any type; each key is inferred from its own.
-export type Fields = Record<string, Shape<any>>;
-
-/** A section as read: each key that holds a good value. */
-export type SectionOf<F extends Fields> = { [K in keyof F]?: Infer<F[K]> };
-
 export type TouchpadSettings = SectionOf<typeof TOUCHPAD>;
 export type MouseSettings = SectionOf<typeof MOUSE>;
 export type KeyboardSettings = SectionOf<typeof KEYBOARD>;
-
-/** Whether a value fits each key: the store's checks (settings-app/store.ts). */
-export function checksOf<F extends Fields>(fields: F): { [K in keyof F]: (value: unknown) => boolean } {
-  const checks: Record<string, (value: unknown) => boolean> = {};
-  for (const [key, field] of Object.entries(fields)) checks[key] = (value) => field.parse(value).ok;
-  return checks as { [K in keyof F]: (value: unknown) => boolean };
-}
 
 /**
  * One section of a decoded file: the keys that hold a good value; each one
