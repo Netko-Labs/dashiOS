@@ -32,6 +32,9 @@ export const STEPS: Step[] = [
   { name: "cargo fmt", command: ["cargo", "fmt", "--all", "--check"], fast: true },
   { name: "cargo fmt (dashi-term)", command: ["cargo", "fmt", "--check"], cwd: TERM, fast: true },
   { name: "H15 licences", command: ["bun", "scripts/check-licenses.ts"] },
+  // A step, not a test: it asks Cargo about five crates' trees (fetching what is missing) and
+  // reads every notice they carry, which under load took longer than a test's 2 s.
+  { name: "H15 licence notices and the specs' License: tags", command: ["bun", "spin/license-dependencies", "--check"] },
   { name: "H17 system units", command: ["bun", "scripts/check-units.ts"] },
   { name: "tests (bun; H9 contract)", command: ["bun", "run", "test"] },
   { name: "H12 clippy", command: ["cargo", "clippy", "--workspace", "--all-targets", "--locked", "--", "-D", "warnings"] },
@@ -58,4 +61,4 @@ async function main(): Promise<void> {
   process.exit(failed === 0 ? 0 : 1);
 }
 
-await main();
+if (import.meta.main) await main();

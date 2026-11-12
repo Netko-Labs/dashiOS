@@ -1,4 +1,4 @@
 [test]
-preload = ["./test/isolate-home.ts"]
+preload = ["./test/isolate-home.ts", "./test/real-clock.ts"]
 # H11 (docs/conventions.md, "Hard rules"): no test waits on real time; 2 s each at most.
 timeout = 2000

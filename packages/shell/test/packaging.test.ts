@@ -1,8 +1,9 @@
 /**
  * What the packages ship: the privileged helpers' systemd sandboxes
- * (scripts/check-units.ts), the generated license notices (spin/license-dependencies),
- * a %license in every spec, and Dashi's own libraries in the shell's node_modules. The first two
- * need systemd-analyze and Cargo's crate sources; they skip where those are missing.
+ * (scripts/check-units.ts), a %license in every spec, and Dashi's own libraries in the shell's
+ * node_modules. The first needs systemd-analyze and skips where it is missing. The generated
+ * license notices (spin/license-dependencies --check) are a step of `bun run check`, not a test:
+ * it reads five crates' trees, which no test's 2 s can promise.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -55,17 +56,6 @@ describe("licenses", () => {
     const bundled = readFileSync(join(ROOT, "spin/vendored-modules"), "utf8");
     expect(bundled).not.toMatch(/anthropic|openai/);
   });
-
-  test.skipIf(!Bun.which("cargo") || !existsSync(join(ROOT, "../mirin/crates/mirin-metal/Cargo.toml")))(
-    "LICENSE.dependencies and the specs' License: tags are current (spin/license-dependencies --check)",
-    () => {
-      const probe = run(["cargo", "metadata", "--format-version", "1", "--locked", "--offline", "--no-deps"]);
-      if (probe.code !== 0) return; // crate sources not fetched here
-      const { code, output } = run(["bun", join(ROOT, "spin/license-dependencies"), "--check"]);
-      expect(output).not.toMatch(/STALE|LICENSE TAG|NOT PERMISSIVE/);
-      expect(code).toBe(0);
-    },
-  );
 });
 
 describe("Dashi's own libraries", () => {
