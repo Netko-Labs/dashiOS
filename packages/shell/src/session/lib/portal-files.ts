@@ -38,6 +38,9 @@ export const STALE_UNITS: readonly string[] = ["dashi-portal*.service", "dbus-*-
 /** Whether stopping `unit` leaves a unit that is not loaded alone (a pattern; systemd.unit(7), systemctl(1)). */
 export const stopsOnlyLoaded = (unit: string): boolean => /[*?[]/.test(unit);
 
+/** The session's target (session/dashi-session.target), by its file's name. */
+const SESSION_TARGET = "dashi-session.target";
+
 type Env = Readonly<Record<string, string | undefined>>;
 
 const dataHome = (env: Env): string => env.XDG_DATA_HOME || join(env.HOME || homedir(), ".local", "share");
@@ -123,7 +126,25 @@ export function linkCheckoutPortal(sessionDir: string, env: Env, log: (message: 
   return changes;
 }
 
-/** An installed session: forget a checkout's unit and service file, so the system's starts the installed backend. */
+/**
+ * Remove the session target a checkout's session linked (`systemctl --user link`): a link in the
+ * person's units wins over the installed target, so an installed session on a machine that once ran a
+ * checkout kept that checkout's target, whatever the package's said. A file that is not a link is theirs.
+ */
+function unlinkCheckoutTarget(env: Env): boolean {
+  const link = join(configHome(env), "systemd", "user", SESSION_TARGET);
+  try {
+    if (!lstatSync(link, { throwIfNoEntry: false })?.isSymbolicLink()) return false;
+    rmSync(link);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** An installed session: forget a checkout's units and service file, so the system's own are the ones that run. */
 export function forgetCheckoutPortal(env: Env): PortalChanges {
-  return { unit: removeOurs(unitFile(env)), service: removeOurs(serviceFile(env)) };
+  const backend = removeOurs(unitFile(env));
+  const target = unlinkCheckoutTarget(env);
+  return { unit: backend || target, service: removeOurs(serviceFile(env)) };
 }
