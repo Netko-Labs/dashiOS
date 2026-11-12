@@ -123,6 +123,35 @@ export interface AgentMarkProps {
   accessible?: boolean;
 }
 
+/** An agent waits on the person: one disc and the words, in broth. */
+function AskMark({ state, open, events }: { state: Extract<MarkState, { kind: "ask" }>; open: boolean; events: object }) {
+  const colors = useColors();
+  return (
+    <View
+      testID="agent-mark"
+      {...events}
+      style={{
+        flexShrink: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        height: MARK.height,
+        paddingLeft: MARK.padding,
+        paddingRight: 9,
+        borderRadius: MARK.height / 2,
+        position: "relative",
+        backgroundColor: open ? colors.broth : colors.brothWash,
+      }}
+    >
+      <Disc harness={state.harness} size={MARK.askDisc} color={colors.broth} />
+      <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: open ? opaque(colors.launcher) : colors.broth }}>
+        Waiting for you
+      </Text>
+      {state.watching && <RedDot />}
+    </View>
+  );
+}
+
 export function AgentMark({ state, open, onPress, onTip, reduceMotion, accessible = false }: AgentMarkProps) {
   const colors = useColors();
   const laid = useRef<Bounds | null>(null);
@@ -154,32 +183,7 @@ export function AgentMark({ state, open, onPress, onTip, reduceMotion, accessibl
     },
     ...(accessible ? { accessibilityRole: "button" as const, accessibilityLabel: state.label, accessibilityState: { expanded: open } } : {}),
   };
-  if (state.kind === "ask") {
-    return (
-      <View
-        testID="agent-mark"
-        {...events}
-        style={{
-          flexShrink: 0,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 6,
-          height: MARK.height,
-          paddingLeft: MARK.padding,
-          paddingRight: 9,
-          borderRadius: MARK.height / 2,
-          position: "relative",
-          backgroundColor: open ? colors.broth : colors.brothWash,
-        }}
-      >
-        <Disc harness={state.harness} size={MARK.askDisc} color={colors.broth} />
-        <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: open ? opaque(colors.launcher) : colors.broth }}>
-          Waiting for you
-        </Text>
-        {state.watching && <RedDot />}
-      </View>
-    );
-  }
+  if (state.kind === "ask") return <AskMark state={state} open={open} events={events} />;
   return (
     <View
       testID="agent-mark"
