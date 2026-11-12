@@ -83,10 +83,11 @@ export type NavigationKey = "Escape" | "ArrowUp" | "ArrowDown";
  * arrows, and Enter only from a focused text input, so this is an invisible
  * one that never keeps what is typed. Needs the surface to hold the keyboard.
  */
-export function KeyCatcher({ onKey, onSubmit }: { onKey: (key: NavigationKey) => void; onSubmit?: () => void }) {
+export function KeyCatcher({ onKey, onSubmit, testID }: { onKey: (key: NavigationKey) => void; onSubmit?: () => void; testID?: string }) {
   return (
     <View style={{ position: "absolute", left: 0, top: 0, width: 1, height: 1, opacity: 0, overflow: "hidden" }}>
       <TextInput
+        testID={testID}
         value=""
         autoFocus
         onChangeText={() => {}}

@@ -286,6 +286,24 @@ Numbered in the order they were written down; a new one goes at the end.
 - **Undo:** `GpuManager::new(GbmGlesBackend::default())` in
   `backend/udev/start.rs`.
 
+### D16. Return goes ahead on the Log Out, Restart and Shut Down sheets
+
+- **Date:** 2026-11-11.
+- **Question:** those sheets took Esc only, "so a stray key cannot shut the
+  machine down", though their go-ahead button is drawn as the default one.
+  Design rule UI-6 lets Enter go ahead only when that is safe. Is it, here?
+- **Choice:** Return presses the default button (Log Out, Restart, Shut Down);
+  Esc cancels.
+- **Why:** going ahead loses nothing: every app is asked to close first, one
+  with unsaved changes asks the person, and the holding notice still has
+  Cancel. A sheet that draws a default button and ignores Return is a broken
+  promise. The stray key the old rule feared, the Return that chose the menu's
+  row, can't arrive: a held key doesn't repeat into a surface that got the
+  keyboard after it went down (GPUI stops its repeat when the keyboard leaves).
+- **Cost:** a Return pressed twice by mistake on "Restart…" restarts.
+- **Undo:** drop `onSubmit` on `ConfirmSheet`'s `KeyCatcher`
+  (`menus/lib/power-sheets.tsx`).
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its
