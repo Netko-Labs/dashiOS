@@ -54,6 +54,19 @@ export function windowOverlay({
   return undefined;
 }
 
+/** Get Info: the file's facts, then the page's or the picture's own. */
+function infoSheet(snap: Snapshot, page: number, onClose: () => void): ReactElement | null {
+  const { pdf } = snap;
+  if (!snap.facts) return null;
+  const upright = snap.natural ? turned(snap.natural, snap.turns) : null;
+  const extra = pdf
+    ? pdfRows(pdf.pages, pdf.title, pdf.sizes[page - 1] ?? null, snap.turns)
+    : upright
+      ? imageRows(upright.width, upright.height, snap.turns, snap.note)
+      : [];
+  return <InfoSheet name={snap.facts.name} rows={infoRows(snap.facts, extra)} onClose={onClose} />;
+}
+
 export function PreviewSheet({
   sheet,
   snap,
@@ -68,18 +81,9 @@ export function PreviewSheet({
   hooks: commands.CommandHooks;
   onClose: () => void;
 }) {
-  const { pdf } = snap;
   switch (sheet.kind) {
-    case "info": {
-      if (!snap.facts) return null;
-      const upright = snap.natural ? turned(snap.natural, snap.turns) : null;
-      const extra = pdf
-        ? pdfRows(pdf.pages, pdf.title, pdf.sizes[page - 1] ?? null, snap.turns)
-        : upright
-          ? imageRows(upright.width, upright.height, snap.turns, snap.note)
-          : [];
-      return <InfoSheet name={snap.facts.name} rows={infoRows(snap.facts, extra)} onClose={onClose} />;
-    }
+    case "info":
+      return infoSheet(snap, page, onClose);
     case "open-with":
       return (
         <OpenWithSheet

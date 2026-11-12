@@ -81,6 +81,64 @@ export function scrollIntoView(row: PageBox | undefined, scroll: number, height:
   return scroll;
 }
 
+interface StripRowProps {
+  testID: string;
+  item: StripItem;
+  row: PageBox;
+  /** Where it sits in the strip as scrolled. */
+  top: number;
+  thumbWide: number;
+  /** The open one. */
+  marked: boolean;
+  onPress: () => void;
+}
+
+/** One page or picture: its thumbnail in a frame, and its label under it. */
+function StripRow({ testID, item, row, top, thumbWide, marked, onPress }: StripRowProps) {
+  const colors = useColors();
+  const surface = useSurface();
+  const thumb = row.height - FRAME * 2 - LABEL;
+  return (
+    <View
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={item.label}
+      {...(marked ? { accessibilityState: { selected: true } } : {})}
+      onPress={onPress}
+      style={{ position: "absolute", left: 0, right: 0, top, height: row.height, alignItems: "center" }}
+    >
+      <View
+        style={{
+          width: thumbWide + FRAME * 2,
+          height: thumb + FRAME * 2,
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 6,
+          borderWidth: 2,
+          borderColor: marked ? colors.selection : "#00000000",
+          hoverBackgroundColor: marked ? "#00000000" : colors.button,
+        }}
+      >
+        {item.source !== null ? (
+          <Image source={item.source} resizeMode="contain" style={{ width: thumbWide, height: thumb, borderRadius: 2 }} />
+        ) : (
+          // A page not drawn yet: the card ground, quiet in both modes.
+          <View style={{ width: thumbWide, height: thumb, backgroundColor: surface.card, borderRadius: 2, borderWidth: 1, borderColor: colors.separator }} />
+        )}
+      </View>
+      {/* One line, centred, with an ellipsis when it is longer than the thumbnail is wide. */}
+      <View style={{ height: LABEL, justifyContent: "center", paddingHorizontal: 4, width: thumbWide + FRAME * 2 }}>
+        <Text
+          numberOfLines={1}
+          style={{ fontSize: 11, fontWeight: marked ? "semibold" : "normal", color: marked ? colors.accentInk : colors.textMuted, textAlign: "center" }}
+        >
+          {item.label}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export function Strip({
   items,
   current,
@@ -134,49 +192,17 @@ export function Strip({
         const item = items[index];
         const row = rows[index];
         if (!item || !row) return null;
-        const marked = index === current;
-        const thumb = row.height - FRAME * 2 - LABEL;
         return (
-          <View
+          <StripRow
             key={item.key}
             testID={`${testID}:${index + 1}`}
-            accessibilityRole="button"
-            accessibilityLabel={item.label}
-            {...(marked ? { accessibilityState: { selected: true } } : {})}
+            item={item}
+            row={row}
+            top={row.top - held}
+            thumbWide={thumbWide}
+            marked={index === current}
             onPress={() => onPick(index)}
-            style={{ position: "absolute", left: 0, right: 0, top: row.top - held, height: row.height, alignItems: "center" }}
-          >
-            <View
-              style={{
-                width: thumbWide + FRAME * 2,
-                height: thumb + FRAME * 2,
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: 6,
-                borderWidth: 2,
-                borderColor: marked ? colors.selection : "#00000000",
-                hoverBackgroundColor: marked ? "#00000000" : colors.button,
-              }}
-            >
-              {item.source !== null ? (
-                <Image source={item.source} resizeMode="contain" style={{ width: thumbWide, height: thumb, borderRadius: 2 }} />
-              ) : (
-                // A page not drawn yet: the card ground, quiet in both modes.
-                <View
-                  style={{ width: thumbWide, height: thumb, backgroundColor: surface.card, borderRadius: 2, borderWidth: 1, borderColor: colors.separator }}
-                />
-              )}
-            </View>
-            {/* One line, centred, with an ellipsis when it is longer than the thumbnail is wide. */}
-            <View style={{ height: LABEL, justifyContent: "center", paddingHorizontal: 4, width: thumbWide + FRAME * 2 }}>
-              <Text
-                numberOfLines={1}
-                style={{ fontSize: 11, fontWeight: marked ? "semibold" : "normal", color: marked ? colors.accentInk : colors.textMuted, textAlign: "center" }}
-              >
-                {item.label}
-              </Text>
-            </View>
-          </View>
+          />
         );
       })}
       {held > 0 && (
