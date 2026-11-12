@@ -606,6 +606,7 @@ bun run typecheck
 cargo fmt --all --check
 (cd crates/dashi-term && cargo fmt --check)
 bun scripts/check-licenses.ts
+bun spin/license-dependencies --check
 bun scripts/check-units.ts
 bun run test
 cargo clippy --workspace --all-targets --locked -- -D warnings
