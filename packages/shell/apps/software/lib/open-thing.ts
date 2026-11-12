@@ -50,7 +50,13 @@ export function useOpenThing(page: Page, actions: Actions): OpenThingHandle | nu
   if (appId !== null && facts) {
     const installed = app.kind === "open" || app.kind === "update" ? app.installed : null;
     return {
-      can: { canOpen: installed !== null, canGet: app.kind === "get", canUpdate: app.kind === "update", canRemove: installed !== null, asks: appAsks(app, facts.asks) },
+      can: {
+        canOpen: installed !== null,
+        canGet: app.kind === "get",
+        canUpdate: app.kind === "update",
+        canRemove: installed !== null,
+        asks: appAsks(app, facts.asks),
+      },
       open: () => installed && actions.launch(appId),
       get: () => app.kind === "get" && actions.install(appId, facts.name),
       update: () => app.kind === "update" && actions.update(app.installed, facts.name),

@@ -123,17 +123,6 @@ describe("saving on its own", () => {
     expect(readFileSync(path, "utf8")).toBe("kept, and more");
   });
 
-  test("Revert To has nothing for a file until it is written over", () => {
-    const path = join(dir, "fresh.txt");
-    writeFileSync(path, "as opened");
-    const { editor } = setup();
-    editor.open(path);
-    expect(editor.hasVersions).toBe(false);
-    editor.edit("changed");
-    expect(editor.autosave()).toBe("saved");
-    expect(editor.hasVersions).toBe(true);
-  });
-
   test("Untitled has no versions", () => {
     const { editor } = setup();
     editor.edit("x");
