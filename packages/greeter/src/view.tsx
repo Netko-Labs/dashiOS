@@ -102,7 +102,13 @@ export function Greeter({ users, sessions, initialUser, initialSession, login, o
       error={error}
       above={
         users.length > 1 ? (
-          <View testID="greeter-other-users" onPress={() => setUser(null)} style={{ marginBottom: 6 }}>
+          <View
+            testID="greeter-other-users"
+            focusable
+            accessibilityRole="button"
+            onPress={() => setUser(null)}
+            style={{ marginBottom: 6, paddingHorizontal: 6, borderRadius: 6 }}
+          >
             <Text style={{ fontSize: 12, color: MUTED }}>‹ Other Users</Text>
           </View>
         ) : undefined
@@ -111,6 +117,9 @@ export function Greeter({ users, sessions, initialUser, initialSession, login, o
         sessions.length > 1 ? (
           <View
             testID="greeter-session"
+            focusable
+            accessibilityRole="button"
+            accessibilityLabel={`Session: ${session.name}`}
             onPress={nextSession}
             style={{ marginTop: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, backgroundColor: "#ffffff1a" }}
           >
@@ -156,8 +165,10 @@ function UserPicker(props: { day: string; time: string; users: User[]; onPick: (
             <View
               key={user.name}
               testID={`greeter-user-${user.name}`}
+              focusable
+              accessibilityRole="button"
               onPress={() => onPick(user)}
-              style={{ flexDirection: "column", alignItems: "center", gap: 10, width: 110 }}
+              style={{ flexDirection: "column", alignItems: "center", gap: 10, width: 110, paddingVertical: 6, borderRadius: 12 }}
             >
               <Avatar name={user.displayName} picture={user.picture} size={72} />
               <Text style={{ fontSize: 14, fontWeight: "semibold", color: TEXT }}>{user.displayName}</Text>
