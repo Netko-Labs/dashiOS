@@ -6,6 +6,7 @@ import { castsIn, ipcMethods } from "../check-boundaries.ts";
 import { allowed } from "../check-licenses.ts";
 import { barrelExtras, lineCount, specifiers, wrongWay } from "../check-structure.ts";
 import { longFunctionsIn } from "../function-lines.ts";
+import { isTest, read, repoFiles } from "../ratchet.ts";
 
 describe("H2 line count", () => {
   test("counts lines with or without a final newline", () => {
@@ -138,5 +139,13 @@ describe("bun run check", () => {
     expect(step).toBeDefined();
     // Not in check:fast: it asks Cargo about five trees.
     expect(step?.fast).toBeUndefined();
+  });
+});
+
+describe("paths from import.meta.url", () => {
+  test("go through fileURLToPath: a URL's pathname is percent-encoded, so a checkout in a folder with a space did not start", () => {
+    const files = repoFiles().filter((file) => /^(packages|scripts|vm|spin)\/.*\.tsx?$/.test(file) && !isTest(file));
+    const offenders = files.filter((file) => /new URL\([^;]*import\.meta\.url\)\s*\.pathname/.test(read(file)));
+    expect(offenders).toEqual([]);
   });
 });

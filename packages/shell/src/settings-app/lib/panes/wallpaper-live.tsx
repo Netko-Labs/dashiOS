@@ -66,6 +66,13 @@ const isFile = (path: string): boolean => {
   }
 };
 
+/** The saved videos that are still there. They are looked up when the list changes, not on every draw (a look at the disk each). */
+export function useVideoTiles(videos: readonly string[], exists: (path: string) => boolean = isFile): LiveTile[] {
+  const saved = videos.join("\n");
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the list is the key; `exists` is read when it changes
+  return useMemo(() => videoTiles(saved === "" ? [] : saved.split("\n"), exists), [saved]);
+}
+
 /** Why `typed` cannot be a video wallpaper, or null when it can. */
 export function videoProblem(typed: string, exists: (path: string) => boolean = isFile): string | null {
   const path = typed.trim();
@@ -100,9 +107,7 @@ export function LiveSection({ settings, chooser }: { settings: SettingsStore; ch
   const { wallpaper } = useSettings(settings).data;
   const chosen = chosenRef(wallpaper);
   const videos = wallpaper.videos ?? [];
-  // Which saved videos are still there is looked up when the list changes, not on every draw (a look at the disk each).
-  const saved = videos.join("\n");
-  const clips = useMemo(() => videoTiles(saved === "" ? [] : saved.split("\n"), isFile), [saved]);
+  const clips = useVideoTiles(videos);
   const [typing, setTyping] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
