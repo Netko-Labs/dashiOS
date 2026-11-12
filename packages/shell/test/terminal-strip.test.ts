@@ -8,6 +8,9 @@ describe("the tab strip's fit", () => {
     // The default window's strip (760 wide) holds six.
     expect(fitTabs(6, 0, 630)).toEqual({ start: 0, end: 6, hidden: 0 });
     expect(fitTabs(6, 3, null)).toEqual({ start: 0, end: 6, hidden: 0 });
+    // One tab in a strip too narrow for it still shows: the tab in front is never folded into a count.
+    expect(fitTabs(1, 0, TAB_MIN - 40)).toEqual({ start: 0, end: 1, hidden: 0 });
+    expect(fitTabs(3, 2, 20)).toEqual({ start: 2, end: 3, hidden: 2 });
     expect(fitTabs(0, -1, 400)).toEqual({ start: 0, end: 0, hidden: 0 });
   });
 

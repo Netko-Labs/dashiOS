@@ -32,7 +32,8 @@ export function fitTabs(count: number, front: number, width: number | null): Str
   if (count <= 0) return { start: 0, end: 0, hidden: 0 };
   if (width === null || count * TAB_MIN + (count - 1) * TAB_GAP <= width) return { start: 0, end: count, hidden: 0 };
   // Each shown tab takes its least width and a gap; the count takes the rest.
-  const shown = Math.min(count - 1, Math.max(1, Math.floor((width - MORE_WIDTH) / (TAB_MIN + TAB_GAP))));
+  // At least the one in front, however narrow; never all of them here (they would have fit above), unless there is only one.
+  const shown = Math.max(1, Math.min(count - 1, Math.floor((width - MORE_WIDTH) / (TAB_MIN + TAB_GAP))));
   const at = Math.min(Math.max(front, 0), count - 1);
   // From the first tab while the one in front is among them; else the one in front ends the run.
   const start = at < shown ? 0 : at - shown + 1;
