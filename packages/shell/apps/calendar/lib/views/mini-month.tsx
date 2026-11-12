@@ -25,9 +25,73 @@ export interface MiniMonthProps {
   idPrefix?: string;
 }
 
-export function MiniMonth({ anchor, today, firstDay, prefs, shown, busy, onPick, idPrefix = "mini" }: MiniMonthProps) {
+interface MiniDayProps {
+  testID: string;
+  day: Day;
+  isToday: boolean;
+  inMonth: boolean;
+  /** Among the days the main view shows. */
+  lit: boolean;
+  /** It has events. */
+  dot: boolean;
+  onPress: () => void;
+}
+
+function MiniDay({ testID, day, isToday, inMonth, lit, dot, onPress }: MiniDayProps) {
   const colors = useColors();
   const surface = useSurface();
+  return (
+    <View
+      testID={testID}
+      onPress={onPress}
+      style={{
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: lit && !isToday ? colors.button : "#00000000",
+        borderRadius: 6,
+      }}
+    >
+      <View
+        style={{
+          width: CELL - 2,
+          height: CELL - 2,
+          borderRadius: (CELL - 2) / 2,
+          alignItems: "center",
+          justifyContent: "center",
+          // Today is an ink mark, and a day with events a muted dot: green means "on".
+          backgroundColor: isToday ? colors.text : "#00000000",
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 11,
+            fontWeight: isToday ? "bold" : "normal",
+            color: isToday ? surface.window : inMonth ? colors.text : colors.textMuted,
+            opacity: inMonth || isToday ? 1 : 0.55,
+          }}
+        >
+          {String(Number(day.slice(8, 10)))}
+        </Text>
+        {dot && (
+          <View
+            style={{
+              position: "absolute",
+              bottom: 1,
+              width: 3,
+              height: 3,
+              borderRadius: 2,
+              backgroundColor: isToday ? surface.window : colors.textMuted,
+            }}
+          />
+        )}
+      </View>
+    </View>
+  );
+}
+
+export function MiniMonth({ anchor, today, firstDay, prefs, shown, busy, onPick, idPrefix = "mini" }: MiniMonthProps) {
+  const colors = useColors();
   const [page, setPage] = useState<Day>(firstOfMonth(monthOf(anchor).year, monthOf(anchor).month));
   // The main view moved to another month: follow it.
   useEffect(() => {
@@ -70,60 +134,18 @@ export function MiniMonth({ anchor, today, firstDay, prefs, shown, busy, onPick,
       </View>
       {weeks.map((week) => (
         <View key={week[0]} style={{ flexDirection: "row", height: CELL }}>
-          {week.map((day) => {
-            const isToday = day === today;
-            const inMonth = monthOf(day).month === month;
-            const lit = shown.has(day);
-            return (
-              <View
-                key={day}
-                testID={`${idPrefix}:${day}`}
-                onPress={() => onPick(day)}
-                style={{
-                  flex: 1,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: lit && !isToday ? colors.button : "#00000000",
-                  borderRadius: 6,
-                }}
-              >
-                <View
-                  style={{
-                    width: CELL - 2,
-                    height: CELL - 2,
-                    borderRadius: (CELL - 2) / 2,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    // Today is an ink mark, and a day with events a muted dot: green means "on".
-                    backgroundColor: isToday ? colors.text : "#00000000",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      fontWeight: isToday ? "bold" : "normal",
-                      color: isToday ? surface.window : inMonth ? colors.text : colors.textMuted,
-                      opacity: inMonth || isToday ? 1 : 0.55,
-                    }}
-                  >
-                    {String(Number(day.slice(8, 10)))}
-                  </Text>
-                  {dots.has(day) && (
-                    <View
-                      style={{
-                        position: "absolute",
-                        bottom: 1,
-                        width: 3,
-                        height: 3,
-                        borderRadius: 2,
-                        backgroundColor: isToday ? surface.window : colors.textMuted,
-                      }}
-                    />
-                  )}
-                </View>
-              </View>
-            );
-          })}
+          {week.map((day) => (
+            <MiniDay
+              key={day}
+              testID={`${idPrefix}:${day}`}
+              day={day}
+              isToday={day === today}
+              inMonth={monthOf(day).month === month}
+              lit={shown.has(day)}
+              dot={dots.has(day)}
+              onPress={() => onPick(day)}
+            />
+          ))}
         </View>
       ))}
     </View>

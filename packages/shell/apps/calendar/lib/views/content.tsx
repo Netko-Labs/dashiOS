@@ -5,7 +5,7 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { type Bounds, View } from "@mirinjs/metal";
+import { type Bounds, type DropInfo, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Day, Occurrence } from "../../../../src/shared/calendar/index.ts";
 import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
@@ -14,6 +14,18 @@ import type { Grid } from "../hooks/use-grid.ts";
 import { isIcsPath } from "../import.ts";
 import type { CalendarState } from "../state.ts";
 import { MonthView } from "./month-view.tsx";
+
+/** An .ics file dragged over the window: whether one is over it now, and its import when it is let go. */
+function useIcsDrop(importPath: (path: string) => void): { dropping: boolean; onDrop: (drop: DropInfo) => void } {
+  const [dropping, setDropping] = useState(false);
+  const onDrop = (drop: DropInfo): void => {
+    if (drop.phase === "enter" || drop.phase === "over") setDropping(drop.paths.some(isIcsPath));
+    else setDropping(false);
+    const file = drop.phase === "drop" ? drop.paths.find(isIcsPath) : undefined;
+    if (file) importPath(file);
+  };
+  return { dropping, onDrop };
+}
 
 export function CalendarContent({
   state,
@@ -47,20 +59,10 @@ export function CalendarContent({
   scroll: (testID: string, dy: number) => void;
 }) {
   const colors = useColors();
-  const [dropping, setDropping] = useState(false);
+  const { dropping, onDrop } = useIcsDrop(importPath);
   const { view, anchor, today } = state;
   return (
-    <View
-      testID="calendar-content"
-      style={{ flex: 1, flexDirection: "column", minHeight: 0, position: "relative" }}
-      onLayout={onLayout}
-      onDrop={(drop) => {
-        if (drop.phase === "enter" || drop.phase === "over") setDropping(drop.paths.some(isIcsPath));
-        else setDropping(false);
-        const file = drop.phase === "drop" ? drop.paths.find(isIcsPath) : undefined;
-        if (file) importPath(file);
-      }}
-    >
+    <View testID="calendar-content" style={{ flex: 1, flexDirection: "column", minHeight: 0, position: "relative" }} onLayout={onLayout} onDrop={onDrop}>
       {keysOpen && (
         <View key={String(keys)} testID="keys" onWindowKeyDown={grid.onKey} style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }} />
       )}

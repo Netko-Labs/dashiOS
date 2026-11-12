@@ -46,6 +46,30 @@ const REPEATS: ReadonlyArray<{ value: RepeatChoice; label: string }> = [
   { value: "yearly", label: "Yearly" },
 ];
 
+/** When it is: the start, the end, and for a timed event its time zone. */
+function WhenRows({ draft, prefs, firstDay, setDraft }: { draft: Draft; prefs: ClockPrefs; firstDay: number; setDraft: (draft: Draft) => void }) {
+  const fields = { prefs, firstDay };
+  return (
+    <>
+      <FormRow label="Starts">
+        <DayField id="start" value={draft.startDay} {...fields} onChange={(day) => setDraft(moveStart(draft, day, draft.startMinutes))} />
+        {!draft.allDay && (
+          <TimeField id="start" minutes={draft.startMinutes} prefs={prefs} onChange={(minutes) => setDraft(moveStart(draft, draft.startDay, minutes))} />
+        )}
+      </FormRow>
+      <FormRow label="Ends">
+        <DayField id="end" value={draft.endDay} {...fields} onChange={(endDay) => setDraft({ ...draft, endDay })} />
+        {!draft.allDay && <TimeField id="end" minutes={draft.endMinutes} prefs={prefs} onChange={(endMinutes) => setDraft({ ...draft, endMinutes })} />}
+      </FormRow>
+      {!draft.allDay && (
+        <FormRow label="Time zone">
+          <ZoneField zone={draft.zone} onChange={(zone) => setDraft({ ...draft, zone })} />
+        </FormRow>
+      )}
+    </>
+  );
+}
+
 export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, editing, onSave, onDelete, onCancel, windowHeight = 0 }: EventSheetProps) {
   const colors = useColors();
   const inset = useTitleBarInset();
@@ -57,7 +81,6 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
   };
   const repeatChoices = initial.repeat === "custom" ? [...REPEATS, { value: "custom" as RepeatChoice, label: "Custom" }] : REPEATS;
   const repeats = draft.repeat !== "none" && draft.repeat !== "custom";
-  const fields = { prefs, firstDay };
   const formMax = windowHeight > 0 ? Math.min(FORM_MAX, sheetBodyRoom(windowHeight, inset.top, FOOTER + (problem !== null ? PROBLEM : 0))) : FORM_MAX;
 
   return (
@@ -82,21 +105,7 @@ export function EventSheet({ draft: initial, calendars, prefs, firstDay = 1, edi
               <Switch on={draft.allDay} testID="event-all-day" onChange={(allDay) => setDraft(setAllDay(draft, allDay))} />
             </View>
           </FormRow>
-          <FormRow label="Starts">
-            <DayField id="start" value={draft.startDay} {...fields} onChange={(day) => setDraft(moveStart(draft, day, draft.startMinutes))} />
-            {!draft.allDay && (
-              <TimeField id="start" minutes={draft.startMinutes} prefs={prefs} onChange={(minutes) => setDraft(moveStart(draft, draft.startDay, minutes))} />
-            )}
-          </FormRow>
-          <FormRow label="Ends">
-            <DayField id="end" value={draft.endDay} {...fields} onChange={(endDay) => change({ endDay })} />
-            {!draft.allDay && <TimeField id="end" minutes={draft.endMinutes} prefs={prefs} onChange={(endMinutes) => change({ endMinutes })} />}
-          </FormRow>
-          {!draft.allDay && (
-            <FormRow label="Time zone">
-              <ZoneField zone={draft.zone} onChange={(zone) => change({ zone })} />
-            </FormRow>
-          )}
+          <WhenRows draft={draft} prefs={prefs} firstDay={firstDay} setDraft={setDraft} />
           <FormRow label="Location">
             <TextField
               testID="event-location"

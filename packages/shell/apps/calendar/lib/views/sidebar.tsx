@@ -27,6 +27,32 @@ export interface SidebarProps extends MiniMonthProps {
   onImport: () => void;
 }
 
+/** The round check that shows or hides a calendar's events, in its colour. */
+function ShownCheck({ calendar, visible, onToggle }: { calendar: Calendar; visible: boolean; onToggle: () => void }) {
+  return (
+    <View
+      testID={`calendar-check:${calendar.id}`}
+      onPress={onToggle}
+      style={{ width: 22, height: 22, marginLeft: -4, marginRight: -4, alignItems: "center", justifyContent: "center" }}
+    >
+      <View
+        style={{
+          width: 14,
+          height: 14,
+          borderRadius: 7,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: visible ? calendar.color : "#00000000",
+          borderWidth: 1.5,
+          borderColor: calendar.color,
+        }}
+      >
+        {visible && <Svg markup={CHECK} size={9} color="#ffffff" />}
+      </View>
+    </View>
+  );
+}
+
 function CalendarRow({
   calendar,
   visible,
@@ -65,26 +91,7 @@ function CalendarRow({
       }}
     >
       {chosen && <SelectionBar rowHeight={28} />}
-      <View
-        testID={`calendar-check:${calendar.id}`}
-        onPress={onToggle}
-        style={{ width: 22, height: 22, marginLeft: -4, marginRight: -4, alignItems: "center", justifyContent: "center" }}
-      >
-        <View
-          style={{
-            width: 14,
-            height: 14,
-            borderRadius: 7,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: visible ? calendar.color : "#00000000",
-            borderWidth: 1.5,
-            borderColor: calendar.color,
-          }}
-        >
-          {visible && <Svg markup={CHECK} size={9} color="#ffffff" />}
-        </View>
-      </View>
+      <ShownCheck calendar={calendar} visible={visible} onToggle={onToggle} />
       {/* The name ends in an ellipsis, 8 clear of the "⋯". */}
       <View style={{ flex: 1, minWidth: 0, justifyContent: "center", paddingLeft: 8, marginRight: 4 }}>
         <Text numberOfLines={1} style={{ fontSize: 13, color: chosen ? colors.onSelection : visible ? colors.text : colors.textMuted }}>

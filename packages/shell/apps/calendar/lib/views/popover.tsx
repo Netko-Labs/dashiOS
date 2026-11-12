@@ -32,16 +32,7 @@ export function zoneNote(occurrence: Pick<Occurrence, "event" | "start" | "end">
   return `${timeSpan(event, start, end, prefs)} in ${zoneCity(event.zone)}`;
 }
 
-export function EventPopover({
-  occurrence,
-  calendar,
-  anchor,
-  area,
-  prefs,
-  onEdit,
-  onDelete,
-  onClose,
-}: {
+interface EventPopoverProps {
   occurrence: Occurrence;
   calendar: Calendar | undefined;
   anchor: Bounds;
@@ -50,7 +41,25 @@ export function EventPopover({
   onEdit: () => void;
   onDelete: () => void;
   onClose: () => void;
-}) {
+}
+
+/** The popover's keys: Esc closes it, Return edits, Delete deletes. */
+function PopoverKeys({ onEdit, onDelete, onClose }: Pick<EventPopoverProps, "onEdit" | "onDelete" | "onClose">) {
+  return (
+    <View
+      testID="popover:keys"
+      onWindowKeyDown={(key) => {
+        if (key.ctrl || key.alt || key.meta) return;
+        if (key.key === "escape") onClose();
+        else if (key.key === "enter") onEdit();
+        else if (key.key === "backspace" || key.key === "delete") onDelete();
+      }}
+      style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }}
+    />
+  );
+}
+
+export function EventPopover({ occurrence, calendar, anchor, area, prefs, onEdit, onDelete, onClose }: EventPopoverProps) {
   const colors = useColors();
   const surface = useSurface();
   const { event } = occurrence;
@@ -92,16 +101,7 @@ export function EventPopover({
         focusRingColor: colors.focusRing,
       }}
     >
-      <View
-        testID="popover:keys"
-        onWindowKeyDown={(key) => {
-          if (key.ctrl || key.alt || key.meta) return;
-          if (key.key === "escape") onClose();
-          else if (key.key === "enter") onEdit();
-          else if (key.key === "backspace" || key.key === "delete") onDelete();
-        }}
-        style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }}
-      />
+      <PopoverKeys onEdit={onEdit} onDelete={onDelete} onClose={onClose} />
       <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: "semibold", color: colors.text }}>
         {titleOf(event)}
       </Text>
