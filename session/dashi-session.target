@@ -7,5 +7,9 @@
 Description=Dashi session
 Documentation=https://github.com/Netko-Labs/dashiOS/blob/main/docs/architecture.md
 BindsTo=graphical-session.target
+# The end goes the other way too: without this, stopping the session's target
+# left graphical-session.target up, so xdg-desktop-portal ran on at the login
+# screen and started Dashi's portal backend again, with no compositor to draw on.
+PropagatesStopTo=graphical-session.target
 Wants=graphical-session-pre.target
 After=graphical-session-pre.target
