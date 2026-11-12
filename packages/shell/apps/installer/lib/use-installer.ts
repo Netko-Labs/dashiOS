@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { type InstallChoice, isDryRun, runInstall } from "./helper.ts";
+import { type InstallChoice, type InstallEvent, isDryRun, runInstall } from "./helper.ts";
 import { type Account, advance, type Page, type Progress, START, suggestHostname, suggestUser } from "./model.ts";
 import { type Disk, type Machine, probeMachine } from "./probe.ts";
 
@@ -39,27 +39,39 @@ interface InstallOps {
   clearPassword(): void;
 }
 
-/** Runs the install for the chosen disk, and says where it ended: "done" or "failed". */
-function startInstall(chosen: Disk, account: Account, nvidia: boolean, dryRun: boolean, ops: InstallOps): void {
+/** Where the install ended, from its exit status and the last progress it reported. */
+function ended(latest: Progress, code: number | null, ops: InstallOps): void {
+  if (latest.ok === true && code === 0) return ops.setPage("done");
+  if (!latest.failed) {
+    const message = code === null ? "The installer couldn't start (pkexec or dashi-install is missing)." : "The installer stopped without saying why.";
+    ops.setProgress({ ...latest, failed: { step: latest.step ?? "check", message } });
+  }
+  ops.setPage("failed");
+}
+
+/**
+ * Runs the install for the chosen disk, and says where it ended: "done" or
+ * "failed". A helper that can't be talked to (it went before it took the
+ * password, its output can't be read) is a failed install too, never a page
+ * that stays on "installing".
+ */
+export function startInstall(chosen: Disk, account: Account, nvidia: boolean, dryRun: boolean, ops: InstallOps, run: typeof runInstall = runInstall): void {
   const choice: InstallChoice = { disk: chosen.path, user: account.user, fullName: account.fullName.trim(), hostname: account.hostname, nvidia };
   const password = account.password;
   // The password leaves the form as soon as it is on its way.
   ops.clearPassword();
   let latest = START;
-  void runInstall(choice, password, dryRun, (event) => {
+  const heard = (event: InstallEvent): void => {
     latest = advance(latest, event);
     ops.setProgress(latest);
-  }).then((code) => {
-    if (latest.ok === true && code === 0) ops.setPage("done");
-    else {
-      if (!latest.failed) {
-        const message = code === null ? "The installer couldn't start (pkexec or dashi-install is missing)." : "The installer stopped without saying why.";
-        latest = { ...latest, failed: { step: latest.step ?? "check", message } };
-        ops.setProgress(latest);
-      }
-      ops.setPage("failed");
-    }
-  });
+  };
+  void run(choice, password, dryRun, heard).then(
+    (code) => ended(latest, code, ops),
+    (error) => {
+      console.error("dev.dashi.installer: the install stopped:", error instanceof Error ? error.message : error);
+      ended(latest, -1, ops);
+    },
+  );
 }
 
 export function useInstaller(): Wizard {
