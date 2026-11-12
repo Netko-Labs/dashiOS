@@ -44,33 +44,11 @@ export interface ToolbarChoice {
   microphone: boolean;
 }
 
-function Toolbar({
-  initial,
-  onDone,
-  refuse,
-}: {
-  initial: ToolbarChoice;
-  onDone: (choice: ToolbarChoice | null) => void;
-  /** Why this choice can't be done now (an agent is recording), said in the toolbar instead of closing it. */
-  refuse?: (choice: ToolbarChoice) => string | null;
-}) {
+/** One of the toolbar's glyph buttons; the chosen mode's is filled. */
+function ToolButton({ testID, chosen, glyph, onPress }: { testID: string; chosen: boolean; glyph: string; onPress: () => void }) {
   const colors = useColors();
-  const goLook = buttonLook(colors, "primary");
-  const [mode, setMode] = useState(initial.mode);
-  const [microphone, setMicrophone] = useState(initial.microphone);
-  const [notice, setNotice] = useState<string | null>(null);
-  const go = () => {
-    const why = refuse?.({ mode, microphone }) ?? null;
-    if (why) setNotice(why);
-    else onDone({ mode, microphone });
-  };
-  const choose = (next: CaptureMode) => {
-    setNotice(null);
-    setMode(next);
-  };
-  const button = (key: string, chosen: boolean, glyph: string, onPress: () => void, testID: string) => (
+  return (
     <View
-      key={key}
       testID={testID}
       onPress={onPress}
       style={{
@@ -85,6 +63,48 @@ function Toolbar({
     >
       <Svg markup={glyph} size={18} color={chosen ? "#ffffff" : colors.text} />
     </View>
+  );
+}
+
+/** The button that does it: Capture, or Record. */
+function GoButton({ label, onPress }: { label: string; onPress: () => void }) {
+  const look = buttonLook(useColors(), "primary");
+  return (
+    <View
+      testID="capture-toolbar:go"
+      onPress={onPress}
+      style={{ height: 30, paddingHorizontal: 14, borderRadius: 7, justifyContent: "center", backgroundColor: look.fill, hoverBackgroundColor: look.hover }}
+    >
+      <Text style={{ fontSize: 13, fontWeight: "semibold", color: look.ink }}>{label}</Text>
+    </View>
+  );
+}
+
+function Toolbar({
+  initial,
+  onDone,
+  refuse,
+}: {
+  initial: ToolbarChoice;
+  onDone: (choice: ToolbarChoice | null) => void;
+  /** Why this choice can't be done now (an agent is recording), said in the toolbar instead of closing it. */
+  refuse?: (choice: ToolbarChoice) => string | null;
+}) {
+  const colors = useColors();
+  const [mode, setMode] = useState(initial.mode);
+  const [microphone, setMicrophone] = useState(initial.microphone);
+  const [notice, setNotice] = useState<string | null>(null);
+  const go = () => {
+    const why = refuse?.({ mode, microphone }) ?? null;
+    if (why) setNotice(why);
+    else onDone({ mode, microphone });
+  };
+  const choose = (next: CaptureMode) => {
+    setNotice(null);
+    setMode(next);
+  };
+  const button = (key: string, chosen: boolean, glyph: string, onPress: () => void, testID: string) => (
+    <ToolButton key={key} testID={testID} chosen={chosen} glyph={glyph} onPress={onPress} />
   );
   const divider = (key: string) => <View key={key} style={{ width: 1, height: 22, backgroundColor: colors.separator, marginLeft: 4, marginRight: 4 }} />;
   return (
@@ -129,20 +149,7 @@ function Toolbar({
           {notice ?? (isRecording(mode) ? `${TITLES[mode]}${microphone ? ", with sound" : ""}` : TITLES[mode])}
         </Text>
       </View>
-      <View
-        testID="capture-toolbar:go"
-        onPress={go}
-        style={{
-          height: 30,
-          paddingHorizontal: 14,
-          borderRadius: 7,
-          justifyContent: "center",
-          backgroundColor: goLook.fill,
-          hoverBackgroundColor: goLook.hover,
-        }}
-      >
-        <Text style={{ fontSize: 13, fontWeight: "semibold", color: goLook.ink }}>{ACTION[mode]}</Text>
-      </View>
+      <GoButton label={ACTION[mode]} onPress={go} />
     </View>
   );
 }

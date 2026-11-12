@@ -50,6 +50,46 @@ export function sheetSize(state: Pick<SheetState, "message" | "details">): { wid
 const chevron = (open: boolean) =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path d="${open ? "M2 3.5 5 6.5 8 3.5" : "M3.5 2 6.5 5 3.5 8"}" stroke="#000" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
+/** Who to authenticate as, when more than one person may: a pill each. */
+function UserPills({ users, chosen, onPick }: { users: SheetState["users"]; chosen: SheetState["user"]; onPick: SheetActions["pick"] }) {
+  const colors = useColors();
+  return (
+    <View style={{ flexDirection: "row", justifyContent: "center", gap: 6 }}>
+      {users.slice(0, MAX_PILLS).map((user) => (
+        <View
+          key={user.uid}
+          testID={`polkit-user-${user.login}`}
+          onPress={() => onPick(user.uid)}
+          style={{
+            height: 22,
+            paddingLeft: 10,
+            paddingRight: 10,
+            justifyContent: "center",
+            borderRadius: 11,
+            backgroundColor: user.uid === chosen ? colors.selection : colors.button,
+          }}
+        >
+          <Text style={{ fontSize: 12, color: user.uid === chosen ? "#ffffff" : colors.text }}>{user.label}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function Details({ rows }: { rows: SheetState["details"] }) {
+  const colors = useColors();
+  return (
+    <View testID="polkit-details" style={{ alignSelf: "stretch", gap: DETAIL_GAP }}>
+      {rows.map((row) => (
+        <View key={row.label} style={{ alignSelf: "stretch" }}>
+          <Text style={{ fontSize: 11, color: colors.textMuted }}>{row.label}</Text>
+          <Text style={{ fontSize: 12, color: colors.text }}>{row.value}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export function PolkitSheet({ store, actions }: { store: SheetStore; actions: SheetActions }) {
   const colors = useColors();
   const state = useSheet(store);
@@ -75,25 +115,7 @@ export function PolkitSheet({ store, actions }: { store: SheetStore; actions: Sh
       </View>
       <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>{HINT}</Text>
       {state.users.length > 1 ? (
-        <View style={{ flexDirection: "row", justifyContent: "center", gap: 6 }}>
-          {state.users.slice(0, MAX_PILLS).map((user) => (
-            <View
-              key={user.uid}
-              testID={`polkit-user-${user.login}`}
-              onPress={() => actions.pick(user.uid)}
-              style={{
-                height: 22,
-                paddingLeft: 10,
-                paddingRight: 10,
-                justifyContent: "center",
-                borderRadius: 11,
-                backgroundColor: user.uid === state.user ? colors.selection : colors.button,
-              }}
-            >
-              <Text style={{ fontSize: 12, color: user.uid === state.user ? "#ffffff" : colors.text }}>{user.label}</Text>
-            </View>
-          ))}
-        </View>
+        <UserPills users={state.users} chosen={state.user} onPick={actions.pick} />
       ) : (
         <View testID="polkit-user">
           <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>{current?.label ?? ""}</Text>
@@ -135,16 +157,7 @@ export function PolkitSheet({ store, actions }: { store: SheetStore; actions: Sh
         <Svg markup={chevron(state.detailsOpen)} size={10} color={colors.textMuted} />
         <Text style={{ fontSize: 12, color: colors.textMuted }}>Details</Text>
       </View>
-      {state.detailsOpen && (
-        <View testID="polkit-details" style={{ alignSelf: "stretch", gap: DETAIL_GAP }}>
-          {state.details.map((row) => (
-            <View key={row.label} style={{ alignSelf: "stretch" }}>
-              <Text style={{ fontSize: 11, color: colors.textMuted }}>{row.label}</Text>
-              <Text style={{ fontSize: 12, color: colors.text }}>{row.value}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+      {state.detailsOpen && <Details rows={state.details} />}
       <View style={{ flexDirection: "row", alignSelf: "stretch", gap: 10, marginTop: 4 }}>
         <Button testID="polkit-cancel" label="Cancel" onPress={actions.cancel} />
         <Button testID="polkit-ok" label="OK" primary disabled={!canAnswer} onPress={submit} />

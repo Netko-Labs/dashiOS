@@ -9,7 +9,7 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
+import { ScrollView, Svg, Text, View, type ViewStyle } from "@mirinjs/metal";
 import { useMemo, useState } from "react";
 import { calendarBridge } from "../calendar/bridge.ts";
 import { MOON } from "../control-center/index.ts";
@@ -38,6 +38,48 @@ export interface NotificationCenterProps {
   dockInset: number;
 }
 
+/** The center's card, down the right side of the screen. */
+function centerStyle(colors: ReturnType<typeof useColors>, dockInset: number): ViewStyle {
+  return {
+    position: "absolute",
+    right: 8,
+    top: 2,
+    // The Dock, when it takes room, stays visible under it.
+    bottom: centerBottom(dockInset),
+    width: NOTIFICATION_CENTER.width,
+    flexDirection: "column",
+    gap: NOTIFICATION_CENTER.gap,
+    padding: NOTIFICATION_CENTER.padding,
+    borderRadius: NOTIFICATION_CENTER.radius,
+    // Solid, as the menus are: the menu's tint without its alpha, so a window under the empty half never ghosts through.
+    backgroundColor: colors.menu.slice(0, 7),
+    borderWidth: 1,
+    borderColor: colors.menuEdge,
+    shadow: "xl",
+  };
+}
+
+function DoNotDisturbRow() {
+  const colors = useColors();
+  return (
+    <View
+      testID="nc-dnd"
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        height: 28,
+        paddingLeft: 10,
+        borderRadius: 9,
+        backgroundColor: colors.tile,
+      }}
+    >
+      <Svg markup={MOON} size={13} color={colors.text} />
+      <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>Do Not Disturb</Text>
+    </View>
+  );
+}
+
 export function NotificationCenterPanel({ store, onClose, onEscape = onClose, dockInset }: NotificationCenterProps) {
   const colors = useColors();
   const { history, doNotDisturb } = useNotifications(store);
@@ -62,27 +104,7 @@ export function NotificationCenterPanel({ store, onClose, onEscape = onClose, do
   return (
     <>
       <KeyCatcher onKey={(key) => key === "Escape" && onEscape()} />
-      <View
-        occlude
-        testID="notification-center"
-        style={{
-          position: "absolute",
-          right: 8,
-          top: 2,
-          // The Dock, when it takes room, stays visible under it.
-          bottom: centerBottom(dockInset),
-          width: NOTIFICATION_CENTER.width,
-          flexDirection: "column",
-          gap: NOTIFICATION_CENTER.gap,
-          padding: NOTIFICATION_CENTER.padding,
-          borderRadius: NOTIFICATION_CENTER.radius,
-          // Solid, as the menus are: the menu's tint without its alpha, so a window under the empty half never ghosts through.
-          backgroundColor: colors.menu.slice(0, 7),
-          borderWidth: 1,
-          borderColor: colors.menuEdge,
-          shadow: "xl",
-        }}
-      >
+      <View occlude testID="notification-center" style={centerStyle(colors, dockInset)}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 24, paddingLeft: 4 }}>
           <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>{dateHeading(now)}</Text>
           {groups.length > 0 && <TextButton testID="nc-clear-all" label="Clear All" onPress={() => store.remove()} />}
@@ -95,23 +117,7 @@ export function NotificationCenterPanel({ store, onClose, onEscape = onClose, do
             calendarBridge()?.openDay(day);
           }}
         />
-        {doNotDisturb && (
-          <View
-            testID="nc-dnd"
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-              height: 28,
-              paddingLeft: 10,
-              borderRadius: 9,
-              backgroundColor: colors.tile,
-            }}
-          >
-            <Svg markup={MOON} size={13} color={colors.text} />
-            <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>Do Not Disturb</Text>
-          </View>
-        )}
+        {doNotDisturb && <DoNotDisturbRow />}
         {groups.length === 0 ? (
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
             <Text style={{ fontSize: 15, fontWeight: "semibold", color: colors.textMuted }}>No Notifications</Text>
