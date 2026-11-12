@@ -1048,6 +1048,40 @@ Numbered in the order they were written down; a new one goes at the end.
 - **Undo:** `text::pieces` back to `text::sentences` in `speak.rs`;
   `player.open()` back into `play`; the `warm` in `Voice.keyDown`.
 
+### D50. A logout stops the session's units itself, before it ends the login
+
+- **Date:** 2026-11-11. The `smoke` agent's, reversible
+  (`shared/session-power/session.ts`, `session/dashi-session.target`,
+  `session/lib/target.ts`, `session/lib/portal-files.ts`).
+- **Question:** after Log Out from the installed packages, Voice (1.9 GB
+  with its models), the portal backend and sometimes an applet ran on at the
+  login screen, and the backend's window host panicked every second and a
+  half for want of a compositor (251 times in the smoke run's journal). The
+  supervisor stops the session's target as it ends; why was that not enough,
+  and where should the stop be?
+- **Found:** `loginctl terminate-session` kills everything in the login at
+  once. The supervisor logged "session ending" and was gone before the shell
+  had stopped, so its stop never ran; a stop started at that moment
+  (`stopSessionTargetNow`, tried first) lost the same race. And stopping
+  `dashi-session.target` left `graphical-session.target` up, so
+  xdg-desktop-portal started the backend again.
+- **Choice:** the shell has systemd stop the session's units (the target and
+  the portal backend, `SESSION_UNITS`) and waits for it, 3 s at most, before
+  it asks logind to end the login. The target carries
+  `PropagatesStopTo=graphical-session.target`. The supervisor still asks
+  first thing as it ends, for the ends that are not a logout (the login
+  manager restarted, the compositor gone). An installed session removes the
+  target a checkout's session linked into the person's units, as it already
+  removed that checkout's portal files: the link wins over the package's.
+- **Why:** only what runs before the login ends is sure to run. The other
+  way, a unit of the person's that watches the login, is more machinery for
+  the same result.
+- **Cost:** a logout takes as long as the units take to stop (tens of
+  milliseconds in the VM). Restart and Shut Down are unchanged: the machine
+  goes down with them.
+- **Undo:** `endLogin` back to one `loginctl terminate-session`; drop the
+  `PropagatesStopTo` line.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its
