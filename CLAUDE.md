@@ -20,7 +20,8 @@ the same change.
   "UI Components".
 - Runtime and package manager: Bun. Compositor: smithay on calloop.
 - mirin is a sibling checkout at `../mirin`, on the branch that goes with
-  Dashi's (for a release branch, the one `.mirin-branch` names).
+  Dashi's (for a release branch, the one `.mirin-branch` names: mirin's
+  `main` since 0.9, decisions.md D51).
 
 ## Source Of Truth
 

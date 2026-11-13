@@ -2,4 +2,4 @@
 # from node_modules at start: fail above it, and fail when more than 10 under it (lower it). Dashi's own modules
 # don't count: splitting a long file (H2) adds modules without adding code.
 # banned:<package> counts a banned package's modules at start; may only shrink. The AI SDKs are banned, and gone.
-25	library-modules
+27	library-modules

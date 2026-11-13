@@ -208,8 +208,8 @@ packages/applet/src/  a library package: its `exports` are its public surface
 
 `../mirin` is a sibling checkout: `@mirinjs/metal`, `@mirinjs/metal-ui`, and
 `mirin-metal-host` come from it. Use the mirin branch that goes with Dashi's
-(for a release, the one `.mirin-branch` names; CI picks it the same way, see
-"Verification").
+(for a release, the one `.mirin-branch` names: mirin's `main` since 0.9,
+decisions.md D51; CI picks it the same way, see "Verification").
 
 New packages go under `packages/<name>` with a scoped name (`@dashi/<name>`);
 new Rust crates under `crates/<name>`, in the root Cargo workspace.
@@ -627,8 +627,10 @@ cargo test --workspace --locked
 CI (`.github/workflows/check.yml`) runs `bun run check` on every push and pull
 request in a Fedora 44 container, with `Netko-Labs/mirin` checked out beside
 the repository. The mirin branch is the one named like Dashi's branch with
-`/` turned into `-` (`v07/tooling` → `v07-tooling`) when mirin has it, and
-otherwise the one in `.mirin-branch`.
+`/` turned into `-` (`v09/store` → `v09-store`) when mirin has it, and
+otherwise the one in `.mirin-branch` (`main`). A fix Dashi needs in mirin goes
+to mirin's `main` by pull request, from a branch named that way, so CI runs
+on it before it lands.
 
 Native behavior is checked in the VM: `vm/vm desktop`, then run the session
 from the shared checkout or install the packages built from it. Never test a

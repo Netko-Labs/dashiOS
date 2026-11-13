@@ -3,8 +3,9 @@
 #
 # mirin is checked out beside the repository (`../mirin`, where package.json's
 # `file:` dependency points). Its branch: the one named like this branch with
-# `/` turned into `-` (v07/tooling -> v07-tooling) when mirin has it, otherwise
-# the one in .mirin-branch (the release's). mirin is public: no token needed.
+# `/` turned into `-` (v09/store -> v09-store) when mirin has it, otherwise
+# the one in .mirin-branch (the release's: mirin's main since 0.9, decisions.md
+# D51). mirin is public: no token needed.
 name: check
 on:
   push:

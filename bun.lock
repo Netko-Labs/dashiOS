@@ -116,7 +116,7 @@
 
     "@dashi/ui": ["@dashi/ui@workspace:packages/dashi-ui"],
 
-    "@mirinjs/metal": ["@mirinjs/metal@file:../mirin/packages/mirin-metal", { "dependencies": { "react-reconciler": "^0.33.0" }, "devDependencies": { "@types/react": "^19.2.0", "@types/react-reconciler": "^0.32.0", "react": "^19.2.0" }, "peerDependencies": { "react": "^19.0.0" } }],
+    "@mirinjs/metal": ["@mirinjs/metal@file:../mirin/packages/mirin-metal", { "dependencies": { "react-reconciler": "^0.33.0" }, "devDependencies": { "@types/react": "^19.2.0", "@types/react-reconciler": "^0.32.0", "react": "^19.2.0" }, "peerDependencies": { "react": "^19.0.0" }, "bin": { "mirin-metal": "./src/cli.ts" } }],
 
     "@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
 
@@ -140,10 +140,10 @@
 
     "undici-types": ["undici-types@8.9.0", "", {}, "sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg=="],
 
-    "@dashi/greeter/@mirinjs/metal": ["@mirinjs/metal@file:../mirin/packages/mirin-metal", { "dependencies": { "react-reconciler": "^0.33.0" }, "devDependencies": { "@types/react": "^19.2.0", "@types/react-reconciler": "^0.32.0", "react": "^19.2.0" }, "peerDependencies": { "react": "^19.0.0" } }],
+    "@dashi/greeter/@mirinjs/metal": ["@mirinjs/metal@file:../mirin/packages/mirin-metal", { "dependencies": { "react-reconciler": "^0.33.0" }, "devDependencies": { "@types/react": "^19.2.0", "@types/react-reconciler": "^0.32.0", "react": "^19.2.0" }, "peerDependencies": { "react": "^19.0.0" }, "bin": { "mirin-metal": "./src/cli.ts" } }],
 
-    "@dashi/shell/@mirinjs/metal": ["@mirinjs/metal@file:../mirin/packages/mirin-metal", { "dependencies": { "react-reconciler": "^0.33.0" }, "devDependencies": { "@types/react": "^19.2.0", "@types/react-reconciler": "^0.32.0", "react": "^19.2.0" }, "peerDependencies": { "react": "^19.0.0" } }],
+    "@dashi/shell/@mirinjs/metal": ["@mirinjs/metal@file:../mirin/packages/mirin-metal", { "dependencies": { "react-reconciler": "^0.33.0" }, "devDependencies": { "@types/react": "^19.2.0", "@types/react-reconciler": "^0.32.0", "react": "^19.2.0" }, "peerDependencies": { "react": "^19.0.0" }, "bin": { "mirin-metal": "./src/cli.ts" } }],
 
-    "@dashi/ui/@mirinjs/metal": ["@mirinjs/metal@file:../mirin/packages/mirin-metal", { "dependencies": { "react-reconciler": "^0.33.0" }, "devDependencies": { "@types/react": "^19.2.0", "@types/react-reconciler": "^0.32.0", "react": "^19.2.0" }, "peerDependencies": { "react": "^19.0.0" } }],
+    "@dashi/ui/@mirinjs/metal": ["@mirinjs/metal@file:../mirin/packages/mirin-metal", { "dependencies": { "react-reconciler": "^0.33.0" }, "devDependencies": { "@types/react": "^19.2.0", "@types/react-reconciler": "^0.32.0", "react": "^19.2.0" }, "peerDependencies": { "react": "^19.0.0" }, "bin": { "mirin-metal": "./src/cli.ts" } }],
   }
 }

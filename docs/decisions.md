@@ -246,6 +246,8 @@ Numbered in the order they were written down; a new one goes at the end.
 
 ### D14. 0.7 ships on the mirin it was built on, not on mirin's `main` yet
 
+Replaced by D51: 0.9 builds on mirin's `main`.
+
 - **Date:** 2026-11-10 (`.mirin-branch`).
 - **Question:** Metal reached mirin's `main` on 2026-11-10 (mirin #22), with 15
   commits Dashi had never run on. One of them rebuilt a window's whole
@@ -1081,6 +1083,58 @@ Numbered in the order they were written down; a new one goes at the end.
   goes down with them.
 - **Undo:** `endLogin` back to one `loginctl terminate-session`; drop the
   `PropagatesStopTo` line.
+
+### D51. Dashi 0.9 builds on mirin's `main`
+
+- **Date:** 2026-11-13 (`.mirin-branch`). The owner's call; it replaces D14.
+- **Question:** 0.7 and 0.8 were each built on a mirin branch of their own
+  (`wave4-0.7`, `wave5-0.8`), because `main` carried a slowdown (D14). The
+  performance work D14 waited for has landed there (mirin #24, 191 commits):
+  the host keeps the tree and takes patches, keeps the drawings of what did
+  not change, and GPUI, taffy, blade-graphics and AccessKit's Unix adapter
+  are forks inside mirin (`forks/`). Stay on a release's own branch, or
+  build on `main`?
+- **Choice:** `main`. `.mirin-branch` says so, and CI takes it unless mirin
+  has a branch named like Dashi's. A fix Dashi needs in mirin goes to `main`
+  by pull request; until it lands, the checkout's `../mirin` is on the branch
+  that has it (`dashi-0.9` for the release), and the packages are built from
+  that checkout's HEAD, as always (`vendor/MIRIN_COMMIT` names it).
+- **Why:** the slowdown is gone and what replaced it is much faster (the
+  times are in the 0.9 review, `03-mirin-main`); and one mirin for every
+  Dashi branch ends the merges from branch to branch.
+- **Found on the way:** nothing in Dashi's code had to change: it installs,
+  type-checks and passes its tests on `main` as it was; one check's number
+  moved (D52). One bug in mirin: a
+  host kept warm (every sheet, menu and popover of Dashi's) said which patch
+  protocol it takes before anything listened, so its first tree waited
+  250 ms and it was never patched. Fixed in mirin (`dashi-0.9`, ff6d252),
+  with a test.
+- **Cost:** `main` moves under Dashi: a change there can break a build that
+  was green. CI runs on every push and says so.
+- **Undo:** write a branch's name in `.mirin-branch`, `git switch` the
+  sibling checkout to it, `bun install`, and rebuild the Metal host.
+
+### D52. H16's ceiling is 27 library modules at start, for mirin `main`
+
+- **Date:** 2026-11-13 (`scripts/lists/boot-weight.txt`). The `mirin-main`
+  agent's; the owner may want it another way.
+- **Question:** on mirin's `main` the shell loads 27 library modules at
+  start, over H16's ceiling of 25. The ten of React, its reconciler and the
+  scheduler are as before; `@mirinjs/metal` went from 11 to 17, because the
+  patch protocol split its serializer (`tree-sync`, `view-props`,
+  `commit-log`, `order`) and added the handshake and the collection at rest.
+  Nothing in Dashi can load fewer: they are the renderer.
+- **Choice:** the ceiling is 27, what `main` loads, with no room above it.
+  The AI SDKs stay banned, and the check is otherwise as it was.
+- **Why:** H16 guards the start from heavy libraries, and none came in: the
+  same code in more files, as D2 found for Dashi's own. A ceiling that
+  cannot be met is not a rule.
+- **Cost:** the next file mirin splits in its renderer fails this check
+  again, and someone raises the number again. Not counting mirin (it is
+  written to the same file limit as Dashi) would end that, and stop watching
+  what mirin loads at start: left for the owner.
+- **Undo:** `25` in `scripts/lists/boot-weight.txt` (it fails until mirin
+  loads fewer).
 
 ## How to add a decision
 
