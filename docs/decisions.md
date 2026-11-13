@@ -1099,9 +1099,13 @@ Replaced by D51: 0.9 builds on mirin's `main`.
   by pull request; until it lands, the checkout's `../mirin` is on the branch
   that has it (`dashi-0.9` for the release), and the packages are built from
   that checkout's HEAD, as always (`vendor/MIRIN_COMMIT` names it).
-- **Why:** the slowdown is gone and what replaced it is much faster (the
-  times are in the 0.9 review, `03-mirin-main`); and one mirin for every
-  Dashi branch ends the merges from branch to branch.
+- **Why:** the slowdown is gone, and `main` is faster where it was measured
+  in the VM against 0.8 (the 0.9 review, `03-mirin-main`): a menu 121 → 82
+  ms, a notification's banner 670 → 411, an app's start 426 → 339, a click
+  among 5,000 rows 638 → 339, Select All of 5,000 22 s → 11 s. A long text
+  gained nothing (a key in 6,000 lines 115 → 111 ms), and Files holds 5.3 GB
+  with 5,000 items selected, where it held 2.3. And one mirin for every Dashi
+  branch ends the merges from branch to branch.
 - **Found on the way:** nothing in Dashi's code had to change: it installs,
   type-checks and passes its tests on `main` as it was; one check's number
   moved (D52). One bug in mirin: a
