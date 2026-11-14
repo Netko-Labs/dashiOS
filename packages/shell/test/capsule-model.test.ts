@@ -1,10 +1,10 @@
 /** The capsule's pure parts (src/capsule/lib): what shows, the words that fit, a card's limit, the colours, the spoken yes. */
 
 import { expect, test } from "bun:test";
-import { spokenLine } from "../src/capsule/lib/line.tsx";
 import { contrastWithWhite, dashiColours, dashiFill, inkColours } from "../src/capsule/lib/measures.ts";
 import { cardContent, head, shownOf, tail } from "../src/capsule/lib/model.ts";
 import { dotHeights } from "../src/capsule/lib/parts.tsx";
+import { spokenLine } from "../src/capsule/lib/voice-line.tsx";
 import { doneLine, planSpoken, spokenYesNo } from "../src/capsule/lib/words.ts";
 import type { OpenCard } from "../src/capsule/types.ts";
 import type { PillAsk } from "../src/shared/pill/index.ts";

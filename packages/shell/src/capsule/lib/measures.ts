@@ -37,6 +37,9 @@ export const CARD = {
   maxWidth: 520,
   maxHeight: 240,
   radius: 17.5,
+  /** Its rim, and the outline it wears while it has the keyboard. */
+  rim: 1.5,
+  focusRim: 3,
   paddingX: 12,
   paddingTop: 9,
   paddingBottom: 10,

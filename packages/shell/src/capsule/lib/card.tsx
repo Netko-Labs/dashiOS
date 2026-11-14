@@ -12,7 +12,7 @@ import { Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import type { Cell } from "../../shared/pill/index.ts";
 import type { OpenCard } from "../types.ts";
-import { AMBER, CARD, type CapsuleColours } from "./measures.ts";
+import { CARD, type CapsuleColours } from "./measures.ts";
 import { type CardContent, cardContent } from "./model.ts";
 import { Button, Disc, Dots } from "./parts.tsx";
 
@@ -200,9 +200,9 @@ export function Card(props: CardProps) {
         paddingTop: CARD.paddingTop,
         paddingBottom: CARD.paddingBottom,
         backgroundColor: colours.fill,
-        // With the keyboard it wears the white outline; asking, the amber ring.
-        borderWidth: card.keyboard ? 3 : asks ? 2.5 : 1.5,
-        borderColor: card.keyboard ? "#ffffff" : asks ? AMBER : colours.rim,
+        // A thin light rim, as the capsule's; with the keyboard, the white outline. The amber is the disc's and the Dock's.
+        borderWidth: card.keyboard ? CARD.focusRim : CARD.rim,
+        borderColor: colours.rim,
         shadow: "xl",
       }}
     >

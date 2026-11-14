@@ -10,8 +10,9 @@ import { type ReactNode, useSyncExternalStore } from "react";
 import type { Cell, DictationCommand, Persona, VoiceModeCommand } from "../../shared/pill/index.ts";
 import type { Place, Shown } from "../types.ts";
 import { Card, type CardAnswer } from "./card.tsx";
-import { Capsule, DictationLine, VoiceLine } from "./line.tsx";
+import { Capsule, DictationLine } from "./line.tsx";
 import { dashiColours, inkColours } from "./measures.ts";
+import { VoiceLine } from "./voice-line.tsx";
 
 /** What shows, and where. */
 export interface ViewState {

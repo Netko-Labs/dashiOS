@@ -1,22 +1,21 @@
 /**
- * The capsule's one line: dictation's in ink (five dots moving with the
- * voice, the words as heard, "Typed" with what changed, the words that wait
- * with Copy, one line of trouble), and Dashi's in its colour (what it heard,
- * the step, the answer as it is spoken, done). Core writes dictation's
- * words; these only draw them.
+ * The capsule's shape, and dictation's one line in ink: five dots moving
+ * with the voice, the words as heard, "Typed" with what changed, the words
+ * that wait with Copy, one line of trouble. Core writes dictation's words;
+ * this only draws them. Dashi's line is voice-line.tsx.
  */
 
 import { CHECK, CLOSE } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import type { Cell, DictationCommand, DictationState, PersonaMark, VoiceModeCommand, VoiceModeState } from "../../shared/pill/index.ts";
+import type { Cell, DictationCommand, DictationState } from "../../shared/pill/index.ts";
 import { CAPSULE, type CapsuleColours } from "./measures.ts";
 import { charsIn, head, tail } from "./model.ts";
-import { Button, Disc, Dots, Line, Separator, Working } from "./parts.tsx";
+import { Button, Dots, Line, Separator } from "./parts.tsx";
 
 type Level = Pick<Cell<number>, "subscribe" | "getSnapshot">;
 
-interface Common {
+export interface Common {
   colours: CapsuleColours;
   /** The most of the words shown, in points. */
   tailPoints: number;
@@ -120,131 +119,6 @@ export function DictationLine({
         </>
       );
   }
-}
-
-/** What leads Dashi's capsule: its disc with the spark, or five dots for a persona that chose them. */
-function Lead({ colours, mark }: { colours: CapsuleColours; mark: PersonaMark }) {
-  return mark === "dots" ? <Dots level={null} color={colours.text} /> : <Disc colours={colours} />;
-}
-
-type VoiceProps = Common & { state: Exclude<VoiceModeState, { phase: "idle" }>; mark: PersonaMark; send(command: VoiceModeCommand): void };
-
-export function VoiceLine({ state, mark, send, ...common }: VoiceProps): ReactNode {
-  const { colours, level, still } = common;
-  const chars = charsIn(common.tailPoints);
-  const stop = (
-    <Button label="Stop" square colours={colours} onPress={() => send(state.phase === "step" ? { do: "stop", task: state.task } : { do: "stop" })} />
-  );
-  switch (state.phase) {
-    case "key-down":
-      return <Lead colours={colours} mark={mark} />;
-    case "listening": {
-      const heard = tail(state.text, chars);
-      return (
-        <>
-          {/* A persona whose mark is the dots leads with the ones that move. */}
-          {mark === "spark" && <Lead colours={colours} mark={mark} />}
-          <Dots level={still ? null : level} color={colours.text} />
-          {heard !== "" ? (
-            <Line color={colours.text}>{heard}</Line>
-          ) : (
-            <Line color={colours.soft}>{state.answering ? "Listening for your answer" : "Listening"}</Line>
-          )}
-        </>
-      );
-    }
-    case "heard":
-      // Nothing has run yet: the way out of the wrong capsule is here.
-      return (
-        <>
-          <Lead colours={colours} mark={mark} />
-          <Line color={colours.text}>{tail(state.text, Math.max(8, chars - 26)) || "Thinking"}</Line>
-          <Working color={colours.soft} still={still} />
-          <Separator color={colours.soft} />
-          {state.text !== "" && <Button label="Type it instead" colours={colours} onPress={() => send({ do: "type-instead" })} />}
-          <Button label="Cancel" colours={colours} onPress={() => send({ do: "stop" })} />
-        </>
-      );
-    case "step":
-      return (
-        <>
-          <Lead colours={colours} mark={mark} />
-          <Line bold color={colours.text}>
-            {head(state.title, Math.max(8, chars - 12))}
-          </Line>
-          {state.of > 1 && <Line color={colours.soft}>{`${state.index + 1} of ${state.of}`}</Line>}
-          <Working color={colours.soft} still={still} />
-          <Separator color={colours.soft} />
-          {stop}
-        </>
-      );
-    case "answer":
-      return <AnswerLine words={state.words} at={state.at} chars={Math.max(8, chars - 10)} colours={colours} mark={mark} stop={stop} />;
-    case "done":
-      return (
-        <>
-          <Lead colours={colours} mark={mark} />
-          <Svg markup={CHECK} size={13} color={colours.ok} />
-          <Line bold color={colours.text}>
-            {head(state.line, chars)}
-          </Line>
-        </>
-      );
-    case "stopped":
-      return (
-        <>
-          <Lead colours={colours} mark={mark} />
-          <Line bold color={colours.text}>
-            Stopped
-          </Line>
-        </>
-      );
-    case "notice":
-      return (
-        <>
-          <Lead colours={colours} mark={mark} />
-          <Line bold color={colours.text}>
-            {head(state.line, chars)}
-          </Line>
-        </>
-      );
-  }
-}
-
-/** The words Dashi speaks, a line's worth around the one being said: said ones bold, the rest soft. */
-export function spokenLine(words: readonly string[], at: number, chars: number): { said: string; coming: string } {
-  const lines: Array<{ from: number; to: number }> = [];
-  let from = 0;
-  let length = 0;
-  words.forEach((word, index) => {
-    if (index > from && length + 1 + word.length > chars) {
-      lines.push({ from, to: index });
-      from = index;
-      length = 0;
-    }
-    length += (length === 0 ? 0 : 1) + word.length;
-  });
-  lines.push({ from, to: words.length });
-  const now = lines.find((line) => at < line.to) ?? lines.at(-1) ?? { from: 0, to: 0 };
-  const said = Math.max(now.from, Math.min(at + 1, now.to));
-  return { said: words.slice(now.from, said).join(" "), coming: words.slice(said, now.to).join(" ") };
-}
-
-function AnswerLine(props: { words: readonly string[]; at: number; chars: number; colours: CapsuleColours; mark: PersonaMark; stop: ReactNode }) {
-  const { said, coming } = spokenLine(props.words, props.at, props.chars);
-  return (
-    <>
-      <Lead colours={props.colours} mark={props.mark} />
-      {said !== "" && (
-        <Line bold color={props.colours.text} testID="capsule-said">
-          {said}
-        </Line>
-      )}
-      {coming !== "" && <Line color={props.colours.soft}>{coming}</Line>}
-      <Separator color={props.colours.soft} />
-      {props.stop}
-    </>
-  );
 }
 
 /** The capsule itself: the shape every line sits in. `tight` when it ends in a button, which sits closer to the edge than words do. */
