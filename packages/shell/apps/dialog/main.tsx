@@ -22,6 +22,7 @@ import { ScaleDialog } from "./lib/scale.tsx";
 import { dialogSize, type Size } from "./lib/size.ts";
 import type { DialogSpec } from "./lib/spec.ts";
 import { TextInfoDialog } from "./lib/text-info.tsx";
+import { cannotShow } from "./lib/where.ts";
 
 /** Zenity's status when the dialog's `--timeout` runs out. */
 const TIMED_OUT = 5;
@@ -79,10 +80,11 @@ const answer: Answer = (code, output) => {
   else process.exit(code);
 };
 
-// The kit exits 1 without a host, which a script would take for No: here it is an error.
-const host = process.env.DASHI_METAL_HOST ?? METAL_HOST;
-if (!existsSync(host)) {
-  console.error(`dashi-dialog: no Metal host at ${host}; set DASHI_METAL_HOST`);
+// The kit exits 1 without a host, which a script would take for No: here it is an error, and so is no display.
+const host = process.env.DASHI_METAL_HOST || METAL_HOST;
+const problem = cannotShow(process.env, host, existsSync);
+if (problem) {
+  console.error(problem);
   process.exit(255);
 }
 const size = dialogSize(spec, spec.kind === "list" ? Math.ceil(spec.cells.length / spec.columns.length) : 0);

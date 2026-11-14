@@ -33,4 +33,11 @@ if [ ! -x "${bun:-}" ]; then
   echo "dashi-dialog: bun not found; install it (https://bun.sh) or set DASHI_BUN" >&2
   exit 255
 fi
+# The Metal host its dialogs are drawn by: the installed one, as the session's own default is, unless
+# DASHI_METAL_HOST says otherwise. A script run by cron, over ssh or by a systemd unit has no session
+# environment to say it.
+if [ -z "${DASHI_METAL_HOST:-}" ] && [ -x "$base/libexec/dashi/mirin-metal-host" ]; then
+  DASHI_METAL_HOST=$base/libexec/dashi/mirin-metal-host
+  export DASHI_METAL_HOST
+fi
 exec "$bun" "$script" "$@"
