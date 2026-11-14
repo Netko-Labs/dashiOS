@@ -2319,3 +2319,27 @@ short words, as the rulebook is written.
   paste) is not scrolled to.
 - **Undo:** when mirin can scroll a node into view, call that in
   `BrowserKeys` and drop `reveal.ts`.
+
+### D114. The agents' panel is solid, and a row on another Desktop says where and who, whole
+
+- **Date:** 2026-11-14. The `n19-polish` agent's. Adds to D91.
+- **Question:** two things in the panel. Its ground was the launcher's
+  glass, and over a window, in Dark most, the window's words read through
+  it. And a row of an agent at work on another Desktop holds Show as well
+  as Stop, so its line "On Desktop 4 · “dev-box”, connected over SSH" was
+  cut after the first letter of the agent's name.
+- **Choice:** the ground is the menu's tint without its alpha, edged as a
+  menu is: what the notification center already does for the same reason.
+  The row stays one line under its title (never a second): it says the
+  Desktop and who the agent says it is, "On Desktop 4 · “dev-box”". To
+  make the room, that row leaves out the chip when all it would say is
+  "Connected" (the row being there says it) and a remote agent's
+  "connected over SSH" (its title is "Remote agent"). A chip that says more
+  ("Waiting for you", "Seeing the screen · 0:07") stays, and rows of
+  agents on the Desktop that shows are as they were.
+- **Why:** a panel that says who can see the screen has to be readable
+  over anything; and a name cut to one letter reads as a mistake.
+- **Cost:** the panel no longer shows the wallpaper through. A name longer
+  than about 18 letters is still cut, at its end.
+- **Undo:** `PANEL_GROUND` in `agents-panel.tsx`; `rowLine` in
+  `lib/agents-rows.tsx`.

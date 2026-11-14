@@ -33,6 +33,8 @@ import { panelTaskList, TaskCard, taskCardFocus, taskWorks } from "./lib/task-ca
 import { type PanelTasks, PanelTasksContext } from "./tasks.tsx";
 
 export const AGENTS_PANEL = { width: 380, padding: 6, radius: 12 } as const;
+/** The panel's ground: the menu's tint without its alpha. */
+const PANEL_GROUND = (colors: ReturnType<typeof useColors>): string => colors.menu.slice(0, 7);
 
 export function useRuns(runs: Pick<AgentRuns, "subscribe" | "getSnapshot">): readonly RunView[] {
   return useSyncExternalStore(runs.subscribe, runs.getSnapshot);
@@ -151,7 +153,7 @@ function RunCard({ run, entry, now, first, focused, actions }: RunCardProps) {
         }}
       >
         <Svg markup={harnessGlyph(run.harness)} size={15} color={colors.agent} />
-        {entry?.watching && <TileDot ring={colors.launcher} />}
+        {entry?.watching && <TileDot ring={PANEL_GROUND(colors)} />}
       </View>
       <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 2 }}>
         <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
@@ -248,8 +250,9 @@ export function AgentsPanel({
         padding: AGENTS_PANEL.padding,
         borderRadius: AGENTS_PANEL.radius,
         borderWidth: 1,
-        borderColor: colors.separator,
-        backgroundColor: colors.launcher,
+        borderColor: colors.menuEdge,
+        // Solid, as the menus and the notification center are (D114): the launcher's glass let a window's words read through it, in Dark most.
+        backgroundColor: PANEL_GROUND(colors),
         shadow: "xl",
       }}
     >

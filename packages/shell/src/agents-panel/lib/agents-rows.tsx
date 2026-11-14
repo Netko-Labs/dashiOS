@@ -139,17 +139,33 @@ interface RowActions {
   showSpace?(space: number): void;
 }
 
+/**
+ * A connection's second line: the chip of its access, then what it does and where it is from.
+ * At work on another Desktop the row also holds Show, and its line is one row and never two
+ * (D114): it says the Desktop and who the agent says it is, whole, "On Desktop 4 · “claude-ai”".
+ * To make the room, the chip is left out when all it would say is "Connected" (the row being
+ * there says that), and a remote agent's "connected over SSH" too (its title is "Remote agent").
+ * The bar's line for it then is "Working on Desktop 3" (session-status.ts); here, "On Desktop 3".
+ */
+export function rowLine(entry: Pick<AgentEntry, "agent" | "doing" | "watching" | "phase" | "kind">): { chip: boolean; words: string } {
+  const space = entry.agent?.space;
+  const join = (...parts: (string | null)[]): string => parts.filter(Boolean).join(" · ");
+  if (entry.watching) return { chip: true, words: originWords(entry) };
+  if (space === undefined || entry.doing !== `Working on ${spaceLabel(space)}`) {
+    return { chip: true, words: join(entry.phase === "working" ? entry.doing : null, originWords(entry)) };
+  }
+  const agent = entry.agent;
+  const who = agent?.remote ? (agent.claims ? `“${agent.claims}”` : "") : originWords(entry);
+  return { chip: accessWords(entry) !== "Connected", words: join(`On ${spaceLabel(space)}`, who) };
+}
+
 /** A connected agent: who, the access it has now, where it's from, Stop, and Show when it works on another Desktop. */
 export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; first: boolean; actions: RowActions }) {
   const space = entry.agent?.space;
   const onShow = actions.showSpace;
   const onStop = () => entry.agent && actions.stopAgent(entry.agent.id);
   const colors = useColors();
-  // At work on another Desktop, its line says where while it rests, in few words: Show takes room.
-  // The bar's line for it then is "Working on Desktop 3" (session-status.ts); here, "On Desktop 3".
-  const resting = space !== undefined && entry.doing === `Working on ${spaceLabel(space)}` ? `On ${spaceLabel(space)}` : null;
-  const doing = entry.watching ? null : (resting ?? (entry.phase === "working" ? entry.doing : null));
-  const origin = originWords(entry);
+  const line = rowLine(entry);
   return (
     <View
       testID={`agents-row:${entry.agent?.id ?? entry.key}`}
@@ -174,17 +190,17 @@ export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; fi
         }}
       >
         <Svg markup={discGlyph(entry.harness)} size={18} color="#ffffff" />
-        {entry.watching && <TileDot ring={colors.launcher} />}
+        {entry.watching && <TileDot ring={colors.menu.slice(0, 7)} />}
       </View>
       <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 3 }}>
         <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
           {entry.name}
         </Text>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, minWidth: 0 }}>
-          <AccessChip entry={entry} />
+          {line.chip && <AccessChip entry={entry} />}
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
-              {[doing, origin].filter(Boolean).join(" · ")}
+            <Text testID={`agents-row-line:${entry.agent?.id ?? entry.key}`} numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+              {line.words}
             </Text>
           </View>
         </View>
