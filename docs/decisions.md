@@ -1691,3 +1691,26 @@ short words, as the rulebook is written.
   not follow the voice's real words; they keep their own time.
 - **Undo:** `useSaying` in `settings-app/lib/panes/persona-parts.tsx`.
 
+### D80. A click or a key in the window after you let go: the words are not typed
+
+- **Date:** 2026-11-14. The `n8-harden` agent's.
+- **Question:** dictation belongs to the field where the key went down, but
+  Dashi knows the window, not the field. A click on another conversation, a
+  Tab to the next field, during the tidying: the words landed there and the
+  capsule said Typed. AT-SPI names a focused field in some apps, but a chat
+  app uses the same field for every conversation, so "the same field" proves
+  nothing.
+- **Choice:** no field counts as identified tonight. If the person's own
+  hands pressed a button or a key in that window after the dictation key
+  came up (the compositor's `input-origin`, the person's presses only, never
+  an agent's), nothing is typed: "You moved on. Your words wait here." with
+  Copy, for ten minutes (`WaitReason` `moved`, added to `shared/pill`).
+  Hands-free asks from the first words heard of each sentence, so Return and
+  then the next sentence still lands; the tap that ends hands-free is a key
+  in the window itself and is not asked. "Type it instead" asks from its
+  press. Where the compositor can't say, the window is trusted as before.
+- **Why:** one Return from the wrong person is worse than a paste.
+- **Cost:** a harmless click (to place the caret where the words should go)
+  loses the landing; the words are one Copy away. A sentence under a second
+  in hands-free has no first words to count from and is typed.
+- **Undo:** `moved` in `dictation/lib/land.ts`.

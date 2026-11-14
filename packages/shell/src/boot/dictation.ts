@@ -169,6 +169,7 @@ export function startDictating({ compositor, settingsStore, services, late, talk
       return front ? { window: front.id, pid: front.pid } : null;
     },
     secret: async (front) => (front.pid !== null && (await fields.passwordFocused(front.pid)) ? true : null),
+    pressed: async (window) => (compositor ? (await compositor.inputOrigin({ window })).person : null),
     typeText: async (window, text) => {
       if (!compositor) throw new Error("no compositor");
       await compositor.typeText({ window, text });

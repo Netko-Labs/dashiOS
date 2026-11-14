@@ -110,8 +110,14 @@ the capsule one `DictationState` at a time (`shared/pill/dictation.ts`).
    line break), so the next words do not join them.
 5. **Nothing is typed**, and the words wait ten minutes in memory with Copy,
    when no window has the keyboard (`no-field`), another window took it
-   (`left-window`), a password field has it (`secret`), or neither typing nor
-   pasting worked (`failed`).
+   (`left-window`), a password field has it (`secret`), neither typing nor
+   pasting worked (`failed`), or the person's own hands pressed a button or
+   a key in that window after the key came up (`moved`, "You moved on.";
+   the compositor's `input-origin` says so). No app tells one field from
+   another well enough (the same field serves the next conversation), so a
+   click or a key there means the caret may be elsewhere (decisions.md D80).
+   Hands-free asks the same from the first words of each sentence; the tap
+   that ends it is not asked, being a key in the window itself.
 6. **Hands-free** (a double tap): `listen` with `"until": "silence"` and
    `quiet_ms` 1200; each `heard` is a sentence, which lands, and the next
    is listened for. It ends on a tap of the key, when

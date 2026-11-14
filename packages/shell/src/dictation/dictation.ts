@@ -76,7 +76,7 @@ export class Dictation {
   gesture({ gesture }: KeyGesture): void {
     if (this.handsFree.running) {
       // A tap ends hands-free; so does the press that would start another.
-      if (gesture === "tap" || gesture === "double-tap") void this.handsFree.end("ended");
+      if (gesture === "tap" || gesture === "double-tap") void this.handsFree.end("ended", true);
       return;
     }
     switch (gesture) {
@@ -164,6 +164,8 @@ export class Dictation {
     this.hold = null;
     this.clearLimits();
     if (!hold) return this.rest();
+    // From here a click or a key in the window means the person moved on (lib/land.ts).
+    const since = this.now();
     const turn = ++this.turn;
     if (!hold.opened) return this.show({ phase: "idle" });
     this.show({ phase: "tidying", text: this.state.phase === "listening" ? this.state.text : "" });
@@ -177,7 +179,7 @@ export class Dictation {
     }
     if (turn !== this.turn) return;
     if (text === "") return this.notice(limit ?? "nothing-said");
-    const landing = await land({ ...this.deps, timers: this.timers }, text, await hold.at);
+    const landing = await land({ ...this.deps, timers: this.timers }, text, { at: await hold.at, since });
     if (turn !== this.turn) return;
     this.show(limit && landing.state.phase === "landed" ? { ...landing.state, line: `${landing.state.line} Time limit.` } : landing.state);
   }
@@ -232,7 +234,7 @@ export class Dictation {
     this.stop();
     const turn = this.turn;
     this.show({ phase: "tidying", text });
-    const landing = await land({ ...this.deps, timers: this.timers }, text, null);
+    const landing = await land({ ...this.deps, timers: this.timers }, text, { at: null, since: this.now() });
     if (turn === this.turn) this.show(landing.state);
   }
 

@@ -46,6 +46,11 @@ export interface DictationDeps {
   front(): Promise<Front | null>;
   /** Whether a password field has the keyboard there; null when it can't be told. */
   secret(front: Front): Promise<boolean | null>;
+  /**
+   * How long ago (ms) the person's own hands last pressed a button or a key in the window (the compositor's
+   * `input-origin`); null when not within the last minute, or when it can't be told.
+   */
+  pressed(window: number): Promise<number | null>;
   /** Type into the window (the compositor's `type-text`); rejects with its refusal. */
   typeText(window: number, text: string): Promise<void>;
   /** The honest fallback: through the clipboard, which is put back; whether it pasted. */

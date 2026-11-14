@@ -32,6 +32,8 @@ export class HandsFree {
   private endsAt = 0;
   private sentences = 0;
   private text = "";
+  /** When this sentence was first heard being said: a click or a key in the window after it means the person moved on. */
+  private since: number | null = null;
   private quiet: unknown = null;
   private limit: unknown = null;
 
@@ -86,6 +88,7 @@ export class HandsFree {
     }
     if (turn !== this.turn) return void this.deps.service.call("listen.cancel").catch(() => {});
     this.text = "";
+    this.since = null;
     this.host.show({ phase: "listening", text: "", handsFree: true, endsAt: this.endsAt, hint: null });
     this.rearmQuiet();
   }
@@ -95,6 +98,7 @@ export class HandsFree {
     if (event.event === "level" && "level" in event) this.deps.hub.level.set(event.level);
     if (event.event === "partial" && "text" in event && this.host.phase() === "listening") {
       this.text = event.text;
+      this.since ??= this.now();
       this.host.show({ phase: "listening", text: event.text, handsFree: true, endsAt: this.endsAt, hint: null });
       this.rearmQuiet();
       void this.watch();
@@ -117,7 +121,7 @@ export class HandsFree {
     const words = heard.trim();
     if (words === "") return this.listen(turn);
     this.rearmQuiet();
-    const landing = await land(this.deps, words, this.at);
+    const landing = await land(this.deps, words, { at: this.at, since: this.since });
     if (turn !== this.turn) return;
     if (!landing.typed) {
       // Nowhere to type any more: the words wait, and hands-free is over.
@@ -132,7 +136,7 @@ export class HandsFree {
   }
 
   /** It ends, heard: what was being said lands, a short sound, and a line that says why. */
-  async end(trouble: "ended" | "limit"): Promise<void> {
+  async end(trouble: "ended" | "limit", byKey = false): Promise<void> {
     if (!this.running) return;
     this.turn++;
     this.running = false;
@@ -146,7 +150,8 @@ export class HandsFree {
     }
     this.deps.chime();
     if (text !== "") {
-      const landing = await land(this.deps, text, this.at);
+      // The tap that ends it is itself a key pressed in the window: it can't be told from another, so it is not asked.
+      const landing = await land(this.deps, text, { at: this.at, since: byKey ? null : this.since });
       if (!landing.typed) return this.host.show(landing.state);
     }
     this.host.notice(trouble, true);

@@ -130,6 +130,7 @@ function started() {
     muted: async () => false,
     front: async () => ({ window: 7, pid: 70 }),
     secret: async () => null,
+    pressed: async () => null,
     typeText: async (_window, text) => void did.push(`type:${text}`),
     paste: async () => false,
     copy: async () => true,

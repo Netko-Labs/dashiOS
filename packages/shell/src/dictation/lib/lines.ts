@@ -24,6 +24,7 @@ export function landedLine(changes: readonly TidyChange[], how: "typed" | "paste
 const WAITING: Readonly<Record<WaitReason, string>> = {
   "no-field": "Nothing to type into. Your words wait here.",
   "left-window": "The window changed. Your words wait here.",
+  moved: "You moved on. Your words wait here.",
   secret: "That is a password field. Your words wait here.",
   failed: "Couldn't type that. Your words wait here.",
 };

@@ -63,3 +63,36 @@ test("hands-free off: a double tap opens nothing", async () => {
   expect(voice.calls).toEqual([]);
   expect(state()).toEqual({ phase: "idle" });
 });
+
+test("hands-free: a click in the window while a sentence is said keeps it out; the tap that ends it does not", async () => {
+  const { voice, typed, world, key, state } = dictating({ heard: "the rest." });
+  await key("double-tap");
+  // Return pressed to send the last message, then the next is said: it lands.
+  world.pressed = 0;
+  world.now += 500;
+  voice.emit({ event: "partial", text: "Next" });
+  world.now += 2000;
+  world.pressed = 2500;
+  voice.emit({ event: "heard", text: "Next one." });
+  await settle();
+  expect(typed).toEqual(["7:Next one. "]);
+  // The ending tap is a key in the window too, and what was being said still lands.
+  world.now += 1000;
+  voice.emit({ event: "partial", text: "the" });
+  world.now += 1000;
+  world.pressed = 0;
+  await key("tap");
+  expect(typed).toEqual(["7:Next one. ", "7:The rest. "]);
+  expect(state()).toMatchObject({ phase: "notice", trouble: "ended" });
+
+  const moved = dictating({ heard: "" });
+  await moved.key("double-tap");
+  moved.voice.emit({ event: "partial", text: "For" });
+  moved.world.now += 1500;
+  moved.world.pressed = 400;
+  moved.voice.emit({ event: "heard", text: "For Marta." });
+  await settle();
+  expect(moved.typed).toEqual([]);
+  expect(moved.world.chimes).toBe(1);
+  expect(moved.state()).toMatchObject({ phase: "waiting", reason: "moved", text: "For Marta." });
+});
