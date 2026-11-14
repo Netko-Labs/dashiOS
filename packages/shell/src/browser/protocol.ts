@@ -56,11 +56,14 @@ export function parseFromBrowser(line: string): FromBrowser {
     const { browserPid, extension, version } = value;
     if (typeof browserPid !== "number" || !Number.isInteger(browserPid) || browserPid <= 1) return { kind: "invalid", why: "bad browserPid" };
     if (typeof extension !== "string" || typeof version !== "string") return { kind: "invalid", why: "bad host hello" };
-    const extensionVersion = typeof value.extensionVersion === "string" && VERSION.test(value.extensionVersion) ? { extensionVersion: value.extensionVersion } : {};
+    const extensionVersion =
+      typeof value.extensionVersion === "string" && VERSION.test(value.extensionVersion) ? { extensionVersion: value.extensionVersion } : {};
     return { kind: "hello", hello: { event: "host", browserPid, extension, version, ...extensionVersion } };
   }
   if (value.event === "hello") {
-    return typeof value.version === "string" && VERSION.test(value.version) ? { kind: "extension", version: value.version } : { kind: "invalid", why: "bad extension hello" };
+    return typeof value.version === "string" && VERSION.test(value.version)
+      ? { kind: "extension", version: value.version }
+      : { kind: "invalid", why: "bad extension hello" };
   }
   const { id, ok } = value;
   if (typeof id !== "number" || !Number.isInteger(id)) return { kind: "invalid", why: "no id" };

@@ -12,9 +12,9 @@
 import { join } from "node:path";
 import { type BrowserBridge, startBrowserBridge } from "../browser/bridge.ts";
 import { staleExtensionWatch } from "../browser/stale.ts";
-import { SHELL_SENDER } from "../notifications/index.ts";
 import type { Compositor, Placing } from "../compositor/index.ts";
 import type { Arrange, Tile } from "../layout.ts";
+import { SHELL_SENDER } from "../notifications/index.ts";
 import { type AloneGate, NOT_ALONE } from "./alone/index.ts";
 import type { Question } from "./confirm.ts";
 import { Grants } from "./consent.ts";
