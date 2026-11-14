@@ -146,8 +146,9 @@ export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; fi
   const onStop = () => entry.agent && actions.stopAgent(entry.agent.id);
   const colors = useColors();
   // At work on another Desktop, its line says where while it rests, in few words: Show takes room.
-  const resting = space === undefined ? null : `On ${spaceLabel(space)}`;
-  const doing = entry.watching ? null : entry.phase === "working" ? entry.doing : resting;
+  // The bar's line for it then is "Working on Desktop 3" (session-status.ts); here, "On Desktop 3".
+  const resting = space !== undefined && entry.doing === `Working on ${spaceLabel(space)}` ? `On ${spaceLabel(space)}` : null;
+  const doing = entry.watching ? null : (resting ?? (entry.phase === "working" ? entry.doing : null));
   const origin = originWords(entry);
   return (
     <View
