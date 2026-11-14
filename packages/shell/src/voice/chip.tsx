@@ -9,8 +9,8 @@
  * Dashi, or goes where a notice points.
  */
 
-import { useColors } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
+import { KeyedText, useColors } from "@dashi/ui";
+import { Svg, View } from "@mirinjs/metal";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { MIC, SPARK, VOLUME } from "../shared/settings/index.ts";
 import { CAPTION_CHARS, captionLines, head, lineAt, tail } from "./lib/captions.ts";
@@ -115,13 +115,11 @@ function Dots({ still }: { still: boolean }) {
 function Line({ children, bold, faint }: { children: string; bold?: boolean; faint?: boolean }) {
   const colors = useColors();
   return (
-    <View style={{ flexShrink: 0 }}>
-      <Text
-        numberOfLines={1}
-        style={{ fontSize: VOICE_CHIP.fontSize, color: colors.agentInk, fontWeight: bold ? "semibold" : "normal", ...(faint ? { opacity: 0.6 } : {}) }}
-      >
+    <View style={{ flexShrink: 0, ...(faint ? { opacity: 0.6 } : {}) }}>
+      {/* A notice may name the key ("Hold ❖Space or the Copilot key to talk."): drawn at the text's size. */}
+      <KeyedText oneLine style={{ fontSize: VOICE_CHIP.fontSize, color: colors.agentInk, fontWeight: bold ? "semibold" : "normal" }}>
         {children}
-      </Text>
+      </KeyedText>
     </View>
   );
 }

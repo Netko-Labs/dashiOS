@@ -8,6 +8,7 @@
  * meant for what was there before answers nothing.
  */
 
+import { KeyedText } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import type { Cell } from "../../shared/pill/index.ts";
@@ -223,9 +224,9 @@ export function Card(props: CardProps) {
           {props.listening && <Dots level={props.still ? null : props.level} color={colours.text} />}
           <View testID="card-hint" style={{ flex: 1, minWidth: 0 }}>
             {(props.listening || hint !== "") && (
-              <Text style={{ fontSize: CARD.hintSize, lineHeight: CARD.hintSize * 1.35, color: props.listening ? colours.text : colours.soft }}>
+              <KeyedText style={{ fontSize: CARD.hintSize, lineHeight: CARD.hintSize * 1.35, color: props.listening ? colours.text : colours.soft }}>
                 {props.listening ? props.listening.text || "Listening for your answer" : hint}
-              </Text>
+              </KeyedText>
             )}
           </View>
         </View>

@@ -2343,3 +2343,31 @@ short words, as the rulebook is written.
   than about 18 letters is still cut, at its end.
 - **Undo:** `PANEL_GROUND` in `agents-panel.tsx`; `rowLine` in
   `lib/agents-rows.tsx`.
+
+### D115. A key named in a sentence is drawn as a shortcut's glyph, by one component
+
+- **Date:** 2026-11-14. The `n19-polish` agent's.
+- **Question:** "Hold ❖Space or the Copilot key", "the right ⌥": inside a
+  sentence ❖ and ⌥ were about half the size of the words. There was no
+  one place that drew them: each sentence was a plain `Text`, the UI font
+  has neither glyph, and the font the Metal host falls back to draws them
+  small. (`Shortcut` has always drawn keys as SVG for this reason, but
+  only as a shortcut on its own, after a label.)
+- **Choice:** one component, `KeyedText` in `@dashi/ui`. A sentence with a
+  key glyph is laid out a word at a time in a row that wraps, as a caption
+  with keys already was, each glyph an SVG in a box 1.15 of the type's
+  size, in the text's colour, kept in one piece with the word it is
+  written against ("❖Space"). A sentence with none is the plain `Text` it
+  was. It is what draws a Settings row's detail, a caption, the capsule's
+  line, the voice chip's line and the card's hint, so every such sentence
+  is covered where it is drawn, not where it is written.
+- **Why:** mirin was not to be changed this round, and a font with these
+  glyphs at text size would be a new dependency for five characters.
+- **Cost:** such a sentence is many text nodes, not one: it wraps between
+  words only, cannot be selected as one run, and a screen reader gets the
+  whole sentence from the row's label. A one-line one (the capsule's) is
+  not cut with an ellipsis when it is too long. Text drawn elsewhere with
+  a key in it (a notification's body, an app's own words) is still the
+  font's.
+- **Undo:** when the host's fallback font draws them at size, make
+  `KeyedText` a plain `Text` again.

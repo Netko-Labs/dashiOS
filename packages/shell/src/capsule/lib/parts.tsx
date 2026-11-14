@@ -1,6 +1,6 @@
 /** The capsule's small parts: the five dots, a one-line text, a button, Dashi's disc. */
 
-import { Shortcut } from "@dashi/ui";
+import { KeyedText, Shortcut } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Cell } from "../../shared/pill/index.ts";
@@ -67,9 +67,10 @@ export function Line({
 }) {
   return (
     <View testID={testID} style={{ flexShrink: 0 }}>
-      <Text numberOfLines={1} style={{ fontSize: size, color, fontWeight: bold ? "semibold" : "normal" }}>
+      {/* A line may name keys ("Hold ❖Space to talk"): drawn at the text's size. */}
+      <KeyedText oneLine style={{ fontSize: size, color, fontWeight: bold ? "semibold" : "normal" }}>
         {children}
-      </Text>
+      </KeyedText>
     </View>
   );
 }

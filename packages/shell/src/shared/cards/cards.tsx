@@ -6,7 +6,7 @@
  * draw with them.
  */
 
-import { Shortcut, type Surface } from "@dashi/ui";
+import { KeyedText, Shortcut, type Surface } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { Children, createContext, Fragment, isValidElement, type ReactNode, useContext, useMemo } from "react";
 import { PillButton } from "../controls/inputs.tsx";
@@ -88,7 +88,8 @@ export function Caption({ children, above, keys }: { children: string; above?: b
   if (!keys) {
     return (
       <View style={place}>
-        <Text style={text}>{children}</Text>
+        {/* A sentence may name keys in its words ("the right ⌥"): drawn at the text's size. */}
+        <KeyedText style={text}>{children}</KeyedText>
       </View>
     );
   }

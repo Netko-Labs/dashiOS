@@ -41,6 +41,7 @@ export {
   WARNING,
 } from "./glyphs.ts";
 export { KeySink, type KeySinkProps } from "./key-sink.tsx";
+export { KeyedText, type KeyedTextStyle, keyGlyphSize, namesKeys } from "./keyed-text.tsx";
 export { type KeyInput, keyName } from "./keys.ts";
 export { Avatar, LOGIN_FOCUS_RING, LOGIN_GROUND, LOGIN_INK, LOGIN_MUTED, LoginScreen, type LoginScreenProps, type PowerAction } from "./login-screen.tsx";
 export { MENU, type MenuRowKind, menuHeight, menuLabelLeft, placeMenu, rowTop, type Size } from "./menu-place.ts";
