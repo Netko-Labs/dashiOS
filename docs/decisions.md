@@ -2298,3 +2298,24 @@ short words, as the rulebook is written.
   cannot be seen is a trap, and nobody starts a rectangle in it on purpose.
 - **Cost:** none seen.
 - **Undo:** take `height: ROW` off the grip in `list.tsx` `NameCell`.
+
+### D113. The keyboard's item is scrolled into view by asking the window
+
+- **Date:** 2026-11-14. The `n19-polish` agent's.
+- **Question:** ↑ or ⇧↑ past the top of what shows left the selection off
+  screen, in Files and in the open and save sheets. Metal neither says
+  where a scroll view stands nor takes a "show this node".
+- **Choice:** after a key that moves the keyboard's place (the arrows, the
+  page keys, Home, End, a typed name), the listing asks the window where
+  its items are painted and scrolls it there through the simulation
+  channel, as a marquee does (D100; `lib/marquee/reveal.ts`): just far
+  enough to show the item whole, and all the way when it is in the first
+  or last row. One item at a time; a scroll not painted yet is counted, so
+  a key that repeats is not scrolled for twice. It is done in
+  `BrowserKeys`, so Files, the sheets and `dashi-dialog` all have it.
+- **Why:** one place, no change to mirin, and it lands on what is painted.
+- **Cost:** a `layout` answer or two per key that moved the place. A
+  selection made another way (a new folder off screen, Select after
+  paste) is not scrolled to.
+- **Undo:** when mirin can scroll a node into view, call that in
+  `BrowserKeys` and drop `reveal.ts`.

@@ -17,6 +17,7 @@ import { useFiles, useFilesState } from "./context.ts";
 import { useDropTarget } from "./drop.ts";
 import { type BrowserKey, browserKey } from "./keys.ts";
 import { marqueeOf } from "./lib/marquee/of.ts";
+import { revealOf } from "./lib/marquee/reveal.ts";
 import { Grid } from "./lib/views/grid.tsx";
 import { ListView } from "./lib/views/list.tsx";
 import { folderAt } from "./location.ts";
@@ -59,7 +60,7 @@ function Empty({ store }: { store: FilesStore }) {
 
 /**
  * The keys the window gets when nothing else takes them. Moves are the
- * browser's own; the rest go to `onKey`. Change `focusKey` to take the
+ * browser's own, and the item they land on is kept in view; the rest go to `onKey`. Change `focusKey` to take the
  * keyboard back from a field (a new key view gives it to the window).
  */
 export function BrowserKeys({
@@ -83,8 +84,13 @@ export function BrowserKeys({
         if (onChord?.(info)) return;
         const key = browserKey(info);
         if (!key) return;
+        const was = store.keyboardAt();
         if (key.kind === "move") store.move(key.step, key.extend);
         else onKey(key);
+        // The arrows, the page keys or a typed name moved the keyboard: its item is scrolled into view (D113).
+        const now = store.keyboardAt();
+        const marquee = marqueeOf(store);
+        if (now !== null && now !== was) revealOf(store).show(now, () => marquee);
       }}
       style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }}
     />
