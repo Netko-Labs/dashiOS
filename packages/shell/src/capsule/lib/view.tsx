@@ -11,7 +11,7 @@ import type { Cell, DictationCommand, Persona, VoiceModeCommand } from "../../sh
 import type { Place, Shown } from "../types.ts";
 import { Card, type CardAnswer } from "./card.tsx";
 import { Capsule, DictationLine } from "./line.tsx";
-import { dashiColours, inkColours } from "./measures.ts";
+import { CARD, dashiColours, inkColours } from "./measures.ts";
 import { VoiceLine } from "./voice-line.tsx";
 
 /** What shows, and where. */
@@ -69,7 +69,16 @@ export function CapsuleView(props: CapsuleViewProps) {
     return (
       <View style={{ flex: 1, position: "relative" }}>
         <View style={{ position: "absolute", left: 0, right: 0, bottom: cardBottom, flexDirection: "row", justifyContent: "center" }}>
-          <View onLayout={props.onBounds} style={{ flexShrink: 0 }}>
+          {/* With the keyboard the white outline wears an ink line outside it, so it shows on a white window too. */}
+          <View
+            onLayout={props.onBounds}
+            style={{
+              flexShrink: 0,
+              borderRadius: CARD.radius + CARD.focusLine,
+              borderWidth: CARD.focusLine,
+              borderColor: shown.card.keyboard ? CARD.focusInk : "#00000000",
+            }}
+          >
             <Card
               card={shown.card}
               colours={dashi}

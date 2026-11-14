@@ -6,7 +6,7 @@
 
 import { describe, expect, test } from "bun:test";
 import type { TaskView } from "../src/agents/index.ts";
-import { BarJobs } from "../src/menubar/index.ts";
+import { BarJobs, FIN_LEAVES_MS } from "../src/menubar/index.ts";
 import {
   type BarJob,
   capsuleWidth,
@@ -232,6 +232,23 @@ describe("the jobs' store", () => {
     set([task("b", "done"), task("c", "running"), task("a", "done")], 20_000);
     store.lookedAll();
     expect(store.getSnapshot().jobs.map((job) => job.id)).toEqual(["c"]);
+    store.close();
+  });
+
+  test("a finished job nobody opened leaves the bar by itself, a minute after it finished", () => {
+    const { store, start, set, advance } = sources();
+    start();
+    advance(0);
+    set([task("a", "done"), task("b", "running")], 1000);
+    advance(1000 + FIN_SPEAKS_MS + 1);
+    expect(
+      store
+        .getSnapshot()
+        .jobs.map((job) => job.id)
+        .sort(),
+    ).toEqual(["a", "b"]);
+    advance(1000 + FIN_LEAVES_MS + 1);
+    expect(store.getSnapshot().jobs.map((job) => job.id)).toEqual(["b"]);
     store.close();
   });
 });

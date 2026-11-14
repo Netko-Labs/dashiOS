@@ -1515,6 +1515,69 @@ Replaced by D51: 0.9 builds on mirin's `main`.
   drop the launcher fallback in `boot/lib/bar-sources.ts` once the card is
   always there.
 
+### D71. The card's keys are heard on a second surface
+
+- **Date:** 2026-11-14. The `join` agent's (night build).
+- **Question:** a layer surface's keyboard is fixed when it opens, so
+  giving the card the keyboard hid the capsule's surface and opened it
+  again: the card blinked away for about a second, and a Return pressed
+  meanwhile was lost.
+- **Choice:** the capsule's surface never takes the keyboard. A tap of the
+  Dashi key opens a second layer surface (`dashi.capsule.keys`,
+  `capsule/lib/card-keys.tsx`) that draws nothing, takes no pointer and
+  has the keyboard; the card stays put. A yes by Return counts when
+  `input-origin` on that layer says the person pressed.
+- **Why:** the card must not move under a hand that is about to answer it.
+- **Cost:** a second resident Metal host for the session.
+- **Undo:** when mirin can change a live layer surface's keyboard, drop
+  the second surface and set it on the first.
+
+### D72. A tap of the Dashi key is the card's only while a card is on screen
+
+- **Date:** 2026-11-14. The `join` agent's (night build).
+- **Question:** the compositor sends every plain key the launcher's way
+  the moment the Dashi key is tapped (type-ahead). With an ask waiting no
+  launcher opened, so Return never reached the card and typing stayed
+  dead; and an ask that was not on screen (a typed plan in the bar) took
+  the tap for nothing.
+- **Choice:** boot asks the capsule whether a card is on screen
+  (`cardUp`). If so the tap is the card's, and the plain keys go back once
+  the card has the keyboard (no window has it), or after two seconds; a
+  key pressed in between is dropped, never typed into the window in
+  front. Otherwise the tap opens the launcher, whatever asks wait.
+- **Why:** "a tap means one thing", and a Return meant for a card must
+  not land in a document.
+- **Cost:** a Return pressed within a few hundredths of a second of the
+  tap can be dropped; it is pressed again.
+- **Undo:** have the compositor report when a layer takes the keyboard,
+  and play the keys typed ahead into the card.
+
+### D73. A spoken plan is said once, by its card
+
+- **Date:** 2026-11-14. The `join` agent's (night build).
+- **Question:** 0.8's voice loop said "Press Return in the launcher to run
+  it" for an instant before the card took the turn and read the plan.
+- **Choice:** when the capsule handles `voiceCommands`, the asker answers
+  the voice loop with nothing to say (`voice/asker.ts`); the card says the
+  plan and hears the yes. With no capsule, 0.8's words and the launcher.
+  A spoken yes counts for the task whose card heard it, once.
+- **Why:** one voice, and no instruction that is no longer true.
+- **Undo:** `showPlan` returning false brings 0.8's sentence back.
+
+### D74. A notice takes the step up, and a finished job's tick leaves by itself
+
+- **Date:** 2026-11-14. The `join` agent's (night build).
+- **Question:** a notice was cut hard in the narrow seat beside the Dock;
+  finished jobs' ticks piled up in the bar until each panel was opened.
+- **Choice:** while the capsule shows a notice it sits one step up,
+  centred, at full width, never beside the Dock (`capsule/lib/place.ts`,
+  `whole`). A finished job nobody opened leaves the bar a minute after it
+  finished (`menubar/jobs.ts`, `FIN_LEAVES_MS`); it stays in the
+  launcher's history.
+- **Why:** a line of trouble must be read whole; a row of ticks says nothing.
+- **Cost:** the notice lies over the window's last lines for four seconds.
+- **Undo:** drop `whole` in `placeOf`; set `FIN_LEAVES_MS` to infinity.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its

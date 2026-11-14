@@ -3,7 +3,8 @@
  * launcher's Ask tasks, the runs and the connected agents, with who speaks
  * now. The Ask tasks start after the bars do, so they are asked for each
  * time until they are there. A finished job falls silent by itself after a
- * while; one looked at (its panel opened) leaves the bar.
+ * while; one looked at (its panel opened) leaves the bar, and so does one
+ * nobody looked at, a minute after it finished.
  */
 
 import { type AgentInfo, mergeAgents, type RunView, type TaskView } from "../agents/index.ts";
@@ -34,6 +35,8 @@ export interface JobsSnapshot {
 }
 
 const EMPTY: JobsSnapshot = { jobs: [], speaking: null };
+/** How long a finished job's tick stays in the bar when nobody opens it. */
+export const FIN_LEAVES_MS = 60_000;
 /** How often the Ask tasks are looked for until they have started. */
 const LOOK_MS = 500;
 
@@ -109,11 +112,20 @@ export class BarJobs {
       ...taskJobs(this.tasks?.getSnapshot() ?? [], asks.getSnapshot(), this.seen),
     ];
     this.stamps = stampJobs(this.stamps, jobs, now);
+    // A finished job nobody opened leaves the bar by itself in a while (it stays in the launcher's history): ticks do not pile up.
+    const finished = jobs.filter((job) => job.kind === "task" && job.state === "fin");
+    const stale = finished.filter((job) => now - (this.stamps.get(job.key)?.at ?? now) >= FIN_LEAVES_MS);
+    if (stale.length > 0) {
+      for (const job of stale) this.seen.add(job.id);
+      return this.refresh();
+    }
+    const leaves = finished.map((job) => (this.stamps.get(job.key)?.at ?? now) + FIN_LEAVES_MS);
     const speaking = speaker(jobs, this.stamps, now);
     const timers = this.timers();
     if (this.timer !== null) timers.clear(this.timer);
-    const next = nextSilence(jobs, this.stamps, now);
-    this.timer = next === null ? null : timers.set(() => this.refresh(), next - now + 1);
+    const silence = nextSilence(jobs, this.stamps, now);
+    const next = Math.min(...leaves, silence ?? Number.POSITIVE_INFINITY);
+    this.timer = Number.isFinite(next) ? timers.set(() => this.refresh(), next - now + 1) : null;
     const before = this.snapshot;
     const same =
       before.speaking === speaking &&

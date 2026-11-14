@@ -3,7 +3,7 @@ export { OverflowRow } from "./bar-overflow.tsx";
 export { startBarTips } from "./bar-tip.tsx";
 export type { FieldAsker } from "./field.ts";
 export { BarField, insertWords } from "./field.ts";
-export { BarJobs } from "./jobs.ts";
+export { BarJobs, FIN_LEAVES_MS } from "./jobs.ts";
 export { MenuBar } from "./menubar.tsx";
 export { choosePrimary, MenuBars, pickPrimary } from "./menubars.ts";
 export type { BarPill } from "./pill.ts";

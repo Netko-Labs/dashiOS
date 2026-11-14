@@ -40,6 +40,9 @@ export const CARD = {
   /** Its rim, and the outline it wears while it has the keyboard. */
   rim: 1.5,
   focusRim: 3,
+  /** The ink line outside that outline (it shows the outline on a white window). */
+  focusLine: 1.5,
+  focusInk: "#1d1d1f",
   paddingX: 12,
   paddingTop: 9,
   paddingBottom: 10,
