@@ -6,6 +6,7 @@ export { PinStore } from "./pins.ts";
 export { DockPrefs } from "./prefs.ts";
 export { bottomInset } from "./presenter.ts";
 export { DOCK_DEFAULTS, DOCK_STYLES, type DockSettings, resolveDock } from "./settings.ts";
+export { ASK_RIM, type DockPlace, dockSign } from "./sign.ts";
 export { startDock } from "./start.tsx";
 export { TileStore } from "./tiles.ts";
 export type { DockMenuAction } from "./types.ts";

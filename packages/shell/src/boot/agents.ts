@@ -30,6 +30,7 @@ import {
 } from "../agents/index.ts";
 import { createApprovalUi } from "../approval-sheet.tsx";
 import { SETTINGS_APP_ID } from "../apps.ts";
+import { runningCapsule } from "../capsule/index.ts";
 import type { Compositor } from "../compositor/index.ts";
 import { openFile } from "../file-manager.ts";
 import { ContextSource, type HandoffShell, startHandoffShell } from "../handoff-shell.tsx";
@@ -275,7 +276,10 @@ export function startAskAgents({ compositor, settingsStore, basics, agents, acti
     actions: () => actions.registry.list(),
     runApproved: (action, args, by) => actions.runApproved(action, args, by),
     runAsPerson: (address, args) => runAddressAsPerson(actions, address, args),
-    personPressed: () => (compositor ? personAnswered((params) => compositor.inputOrigin(params), LAUNCHER_MOTION.namespace) : Promise.resolve(false)),
+    // The launcher's Return, or a yes on the capsule's card (capsule/: a press there, or the Dashi key held and "yes" said).
+    personPressed: async () =>
+      (compositor ? await personAnswered((params) => compositor.inputOrigin(params), LAUNCHER_MOTION.namespace) : false) ||
+      ((await runningCapsule.getSnapshot()?.personAnswered()) ?? false),
     settingNow: (name) => settingNow(name, registryStores),
     focus: async (window) => {
       await compositor?.focus({ window });

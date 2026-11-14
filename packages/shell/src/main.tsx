@@ -36,6 +36,7 @@ import {
   startBarHolds,
   startBarMenus,
   startBars,
+  startCapsule,
   startCatalog,
   startDesktops,
   startGuards,
@@ -223,6 +224,7 @@ screenshots.registerApp(services);
 const registryNeeds = { compositor, apps, stores, desktops, arranging, system, guards, switches, agents, basics, settingsWindows, catalog, awake, programs };
 const { actions } = startRegistry({ ...registryNeeds, menus, screenshots, launcher, services, late });
 late.set("askAgents", startAskAgents({ compositor, settingsStore, basics, agents, actions, registryStores, services, late }));
+startCapsule({ compositor, talking, look, services, late });
 startKeys({
   compositor,
   screens,

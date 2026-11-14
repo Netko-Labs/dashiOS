@@ -26,6 +26,7 @@ import { Dock } from "./lib/view.tsx";
 import type { PinStore } from "./pins.ts";
 import type { DockPrefs } from "./prefs.ts";
 import { DockPresenter, specOf } from "./presenter.ts";
+import { dockSign } from "./sign.ts";
 import type { TileStore } from "./tiles.ts";
 
 export interface StartDockOptions {
@@ -99,6 +100,25 @@ function open(hostOptions: NativeHostOptions, element: ReactElement, onClosed: (
   };
 }
 
+/** Open a Dock view and say where it is for as long as it is up (sign.ts): the capsule sits clear of it, and a card stands on it. */
+function signed(style: "dock" | "taskbar", output: string | undefined, openView: (onClosed: () => void) => DockHandle, onClosed: () => void): DockHandle {
+  dockSign.place.set({ shown: true, style, panel: null, output });
+  const gone = (): void => {
+    const place = dockSign.place.getSnapshot();
+    if (place) dockSign.place.set({ ...place, shown: false, panel: null });
+  };
+  const handle = openView(() => {
+    gone();
+    onClosed();
+  });
+  return {
+    close() {
+      gone();
+      handle.close();
+    },
+  };
+}
+
 export function startDock(options: StartDockOptions): DockRuntime {
   const { prefs, toplevels } = options;
   const autohide = new Autohide();
@@ -113,6 +133,10 @@ export function startDock(options: StartDockOptions): DockRuntime {
     const key = JSON.stringify(wire);
     if (key === region) return;
     region = key;
+    // The capsule sits beside the panel when a window fills down to the Dock (sign.ts).
+    const panel = rects?.[0];
+    const place = dockSign.place.getSnapshot();
+    if (place && panel) dockSign.place.set({ ...place, panel: { x: panel.x, width: panel.width } });
     options.compositor
       ?.inputRegion({ namespace: DOCK_NAMESPACE, rects: wire })
       .catch((error) => console.error("dashi-shell: the Dock takes clicks across the screen:", error instanceof Error ? error.message : error));
@@ -144,7 +168,7 @@ export function startDock(options: StartDockOptions): DockRuntime {
       ) : (
         <Dock {...shared} autohide={autohide} onPanel={(bounds) => clickable([bounds])} />
       );
-      return open({ title: "Dock", width: 1, height, surface }, element, onClosed);
+      return signed(taskbar ? "taskbar" : "dock", output, (closed) => open({ title: "Dock", width: 1, height, surface }, element, closed), onClosed);
     },
     onLost: options.onLost,
   });
@@ -156,9 +180,13 @@ export function startDock(options: StartDockOptions): DockRuntime {
   // An icon's menu opens on a surface of its own, so the pointer leaves the Dock: it stays out while the menu is up.
   const stopMenus = options.menus.subscribe(() => autohide.hold("menu", options.menus.getSnapshot().popover?.kind === "dock-menu"));
 
+  // A card that asks stands on the Dock: an autohidden Dock comes out for as long as it does.
+  const stopAsking = dockSign.asking.subscribe(() => autohide.hold("ask", dockSign.asking.getSnapshot()));
+
   return {
     place: (output) => presenter.place(output),
     close() {
+      stopAsking();
       stopMenus();
       stopEdges?.();
       presenter.close();
