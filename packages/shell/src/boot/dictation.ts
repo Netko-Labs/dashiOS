@@ -151,6 +151,11 @@ export function startDictating({ compositor, settingsStore, services, late, talk
     teach: () => taught.now(),
     language: listenLanguage(process.env.LC_ALL || process.env.LC_MESSAGES || process.env.LANG),
   });
+  // DASHI_DICTATION_LOG=1: each gesture and each state in the session's log, for a proof with no capsule to look at.
+  if (process.env.DASHI_DICTATION_LOG === "1") {
+    hub.keys.listen((gesture) => console.error(`dashi-shell: key ${gesture.key} ${gesture.gesture}`));
+    hub.dictation.subscribe(() => console.error(`dashi-shell: dictation ${JSON.stringify(hub.dictation.getSnapshot())}`));
+  }
   const stopHearing = compositor
     ? compositor.on((event) => {
         if (event.event === "held-key") parts.key(event.name, event.down, event.chord === true);
