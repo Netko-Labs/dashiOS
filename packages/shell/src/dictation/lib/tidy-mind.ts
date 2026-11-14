@@ -1,7 +1,9 @@
 /**
  * A change of mind (tidy.ts): "no wait", "scratch that", "no, perdón". The
  * phrase counts only when it stands apart, a mark or the start before it and
- * a mark or the end after it ("there's no wait at the door" is not one).
+ * a mark or the end after it ("there's no wait at the door" is not one);
+ * starting a sentence it may run straight into a word or two ("No wait
+ * Wednesday.").
  * What it takes back, the simple way:
  *
  * - nothing follows it: the sentence before it goes;
@@ -27,6 +29,12 @@ const text = (list: readonly Token[]): string =>
     .map((token) => token.text)
     .join(" ");
 
+function wordsToEnd(list: readonly Token[], from: number): number {
+  let count = 0;
+  for (let at = from; at < list.length && !ends(list[at]); at++) if (list[at]?.word) count++;
+  return count;
+}
+
 /** How many tokens the phrase takes at `at` (its words, with a comma allowed between them), or 0. */
 function phraseAt(list: readonly Token[], at: number): number {
   for (const phrase of CHANGES_OF_MIND) {
@@ -45,7 +53,8 @@ function phraseAt(list: readonly Token[], at: number): number {
     const before = list[at - 1];
     const after = list[index];
     if (before === undefined || (before.word && !ends(before))) continue;
-    if (after?.word) continue;
+    // No mark after it ("No wait Wednesday."): only a sentence's start, and only a word or two to its end.
+    if (after?.word && !(ends(before) && wordsToEnd(list, index) <= 2)) continue;
     return index - at;
   }
   return 0;

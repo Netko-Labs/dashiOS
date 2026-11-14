@@ -36,6 +36,9 @@ test("punctuation said out loud becomes the mark", () => {
   expect(typed("Hello, comma, how are you question mark")).toBe("Hello, how are you?");
   expect(typed("Dear Alex, new line. Thanks for the notes. New paragraph. See you soon")).toBe("Dear Alex\nThanks for the notes.\n\nSee you soon");
   expect(typed("first item new line second item")).toBe("First item\nSecond item");
+  // The model's own full stop after a comma said out loud goes, and so does the capital it gave the next word.
+  expect(typed("Um, hello there, comma. This is a test of dictation period.")).toBe("Hello there, this is a test of dictation.");
+  expect(typed("Tell Sam comma. I'm late period")).toBe("Tell Sam, I'm late.");
   expect(tidy("Hello comma world period").changes).toContainEqual({ kind: "punctuation", count: 2 });
 });
 
@@ -62,6 +65,10 @@ test("a simple change of mind is carried out", () => {
   expect(typed("I think we should cancel, no wait, let's just move the meeting.")).toBe("Let's just move the meeting.");
   expect(typed("Call me at five. No, wait. Six.")).toBe("Call me at six.");
   expect(typed("Buy milk. Buy eggs. Scratch that.")).toBe("Buy milk.");
+  // As the model writes it when no comma is heard.
+  expect(typed("Let's meet on Tuesday. No wait Wednesday. I do not want three of them. Uh, I want thirty.")).toBe(
+    "Let's meet on Wednesday. I do not want three of them. I want thirty.",
+  );
   expect(tidy("Let's meet on Tuesday, no wait, Wednesday.").changes).toContainEqual({ kind: "change-of-mind", from: "Tuesday", to: "Wednesday" });
 });
 

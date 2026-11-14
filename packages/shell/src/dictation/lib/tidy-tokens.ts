@@ -11,6 +11,8 @@ export interface Token {
   gap: boolean;
   /** A mark tidying made from words said out loud ("comma"). */
   made?: true;
+  /** A comma that took a full stop's place: the next word starts no sentence. */
+  joined?: true;
 }
 
 const WORD = /[\p{L}\p{N}]+(?:[.,:'’/-][\p{L}\p{N}]+)*/uy;
@@ -50,13 +52,16 @@ export const isBreak = (token: Token | undefined): boolean => token !== undefine
 export const ends = (token: Token | undefined): boolean => token !== undefined && !token.word && (/^[.!?…]$/.test(token.text) || isBreak(token));
 const joins = (token: Token): boolean => !token.word && /^[,.;:!?…]$/.test(token.text);
 
+/** A word the model began a sentence with, as it is inside one: "This" is "this"; "I", "I'm" and "NASA" stay. */
+const unstart = (word: string): string => (/^\p{Lu}\p{Ll}+$/u.test(word) ? word.toLowerCase() : word);
+
 /** Marks that met after words between them went: one comma, never ", ." or a mark leading a line. */
 export function settle(list: readonly Token[]): Token[] {
   const out: Token[] = [];
   for (const token of list) {
     const before = out.at(-1);
     if (!joins(token) && !isBreak(token)) {
-      out.push(token);
+      out.push(before?.joined && token.word ? { ...token, text: unstart(token.text) } : token);
       continue;
     }
     // Nothing to close or join yet: a mark can't lead the text or a line.
@@ -70,7 +75,9 @@ export function settle(list: readonly Token[]): Token[] {
     if (before && joins(before) && (before.made || token.made || before.text === "," || token.text === ",")) {
       // Two marks where a word went: the one said out loud wins, then the stronger.
       const keep = before.made && !token.made ? before : token.made || before.text === "," ? token : before;
-      out[out.length - 1] = { ...keep, gap: false };
+      // A full stop the model put after a comma said out loud is gone: the word after it starts no sentence.
+      const dropped = keep === before ? token : before;
+      out[out.length - 1] = { ...keep, gap: false, ...(ends(dropped) && !ends(keep) ? { joined: true as const } : {}) };
       continue;
     }
     out.push(token);
