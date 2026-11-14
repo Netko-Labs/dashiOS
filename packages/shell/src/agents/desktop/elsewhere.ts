@@ -4,7 +4,7 @@
  * person's screen never moves. Each connection has one `Elsewhere`: the Space
  * it works in (followed through the renumbering, spaces/lib/followed.ts),
  * and whether it added that Space itself, in which case it takes it away
- * again once it is empty (added-spaces.ts). Nothing is kept on disk.
+ * again once it is empty (lib/added-spaces.ts). Nothing is kept on disk.
  *
  * `WorkPlaces` is what the connections share: it tells the arranger where a
  * new window goes (arrange/, `window-placing`) before the window is ever on
@@ -25,9 +25,8 @@ import type { Compositor, Placing } from "../../compositor/index.ts";
 import { MAX_SPACES, type SpaceRef, spaceLabel } from "../../spaces/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import { descendsFrom } from "../peer.ts";
-import { AddedSpaces, type AgentSpaces } from "./added-spaces.ts";
-
-export type { AgentSpaces };
+import { AddedSpaces } from "./lib/added-spaces.ts";
+import type { AgentSpaces } from "./types.ts";
 
 /** A window about to open that an agent asked for: its launch's process (null: not known), or its app. */
 export interface Opening {
@@ -196,7 +195,7 @@ export class Elsewhere {
    * Stop working there (another Space, "shown", or the agent left). A Space
    * it added goes once nothing is left on it and the person is not looking
    * at it: now, or when its last window closes or the person leaves it
-   * (added-spaces.ts). Taking away the one that shows would move their screen.
+   * (lib/added-spaces.ts). Taking away the one that shows would move their screen.
    */
   async leave(): Promise<void> {
     const ref = this.ref;

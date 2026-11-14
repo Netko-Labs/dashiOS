@@ -2262,7 +2262,7 @@ short words, as the rulebook is written.
   with its window open and the person closes it later; the person was
   looking at the empty Desktop and then goes elsewhere.
 - **Choice:** a Desktop that could not go when its agent left is kept by
-  `AddedSpaces` (`agents/desktop/added-spaces.ts`) and looked at again when a
+  `AddedSpaces` (`agents/desktop/lib/added-spaces.ts`) and looked at again when a
   window closes or moves to another Desktop, when the screen goes to another
   Desktop, and when an agent stops working on one. It goes the first time it
   has no windows, does not show, and no agent works on it. Only Desktops made

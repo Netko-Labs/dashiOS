@@ -11,18 +11,9 @@
  * restarts stays until the person closes it.
  */
 
-import type { Compositor } from "../../compositor/index.ts";
-import type { SpaceRef } from "../../spaces/index.ts";
-
-/** The Desktops as agents need them: SpacesController (spaces/). */
-export interface AgentSpaces {
-  getSnapshot(): { count: number; current: number; labels: readonly string[]; fullscreen: readonly (number | null)[] };
-  /** A new Space at the end: its index, or null at the limit. */
-  add(): Promise<number | null>;
-  remove(index: number): Promise<void>;
-  follow(index: number): SpaceRef;
-  unfollow(ref: SpaceRef): void;
-}
+import type { Compositor } from "../../../compositor/index.ts";
+import type { SpaceRef } from "../../../spaces/index.ts";
+import type { AgentSpaces } from "../types.ts";
 
 export class AddedSpaces {
   private readonly waiting = new Set<SpaceRef>();

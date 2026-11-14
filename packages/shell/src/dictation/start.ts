@@ -37,6 +37,17 @@ export interface DictationParts {
   close(): void;
 }
 
+/**
+ * "Type it instead" may land what is said to Dashi: the field check is warmed at the Dashi key's hold, as a dictation's
+ * own hold warms it, so the first one of a session does not wait on a cold accessibility bus (decisions.md D122).
+ */
+function warmFieldCheck(options: DictationOptions): void {
+  void options
+    .front()
+    .then((front) => (front ? options.secret(front) : null))
+    .catch(() => {});
+}
+
 export function startDictation(options: DictationOptions): DictationParts {
   const timers = options.timers ?? realTimers;
   const now = options.now ?? (() => Date.now());
@@ -57,12 +68,7 @@ export function startDictation(options: DictationOptions): DictationParts {
     switch (gesture.gesture) {
       case "hold":
         listening = true;
-        // "Type it instead" may land what is said now: the field check is warmed here, as a dictation's own hold warms
-        // it, so the first one of a session does not wait on a cold accessibility bus at the landing (decisions.md D122).
-        void options
-          .front()
-          .then((front) => (front ? options.secret(front) : null))
-          .catch(() => {});
+        warmFieldCheck(options);
         return options.voice.hold();
       case "up":
         listening = false;

@@ -22,7 +22,10 @@ fn typed(ipc: &mut Ipc, window: u64) -> Instant {
 /// Ask for the window's picture and do not wait for the answer.
 fn ask_picture(ipc: &mut Ipc, compositor: &Compositor, window: u64) -> u64 {
     ipc.next += 1;
-    let path = compositor.dir.path().join(format!("window-{}.png", ipc.next));
+    let path = compositor
+        .dir
+        .path()
+        .join(format!("window-{}.png", ipc.next));
     let line = json!({ "id": ipc.next, "method": "capture", "params": { "window": window, "path": path } });
     writeln!(ipc.stream, "{line}").unwrap();
     ipc.next

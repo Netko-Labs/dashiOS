@@ -107,14 +107,24 @@ class Link {
   }
 }
 
+/** Who hears which version an extension says it is. */
+function versionListeners(): { onExtension: BrowserBridge["onExtension"]; said(version: string): void } {
+  const listeners = new Set<(version: string) => void>();
+  return {
+    onExtension(listener) {
+      listeners.add(listener);
+      return () => void listeners.delete(listener);
+    },
+    said(version) {
+      for (const listener of listeners) listener(version);
+    },
+  };
+}
+
 export function startBrowserBridge(runtime = process.env.XDG_RUNTIME_DIR): BrowserBridge {
   const links: Link[] = [];
   let joined: Array<() => void> = [];
-  const versions = new Set<(version: string) => void>();
-  const onExtension = (listener: (version: string) => void) => {
-    versions.add(listener);
-    return () => void versions.delete(listener);
-  };
+  const { onExtension, said } = versionListeners();
   const current = (): BrowserLink | null => {
     const link = [...links].reverse().find((candidate) => candidate.hello !== null);
     return link?.hello ? { hello: link.hello, ask: (method, params, timeoutMs) => link.ask(method, params, timeoutMs) } : null;
@@ -132,12 +142,7 @@ export function startBrowserBridge(runtime = process.env.XDG_RUNTIME_DIR): Brows
           socket.terminate();
           return;
         }
-        const link = new Link(
-          (text) => socket.write(text),
-          (version) => {
-            for (const listener of versions) listener(version);
-          },
-        );
+        const link = new Link((text) => socket.write(text), said);
         socket.data = { link };
         links.push(link);
       },

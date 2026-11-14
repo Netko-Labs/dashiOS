@@ -1,13 +1,13 @@
-//! A minimal Wayland client for the tests: one xdg toplevel that draws a
-//! solid shm buffer once it is configured; a movable one asks to be moved
-//! (xdg_toplevel.move) when a button is pressed in it, as apps that draw
-//! their own title bars do; a listening one only notes what its pointer hears
-//! (client/pointer.rs); a locking one locks the pointer (client/lock.rs). It can open dialogs too: more toplevels whose xdg
-//! parent is the first.
+//! A minimal Wayland client for the tests: one xdg toplevel that draws a solid shm buffer once it is
+//! configured (and again when asked: client/redraw.rs); a movable one asks to be moved
+//! (xdg_toplevel.move) when a button is pressed in it, as apps that draw their own title bars do; a
+//! listening one only notes what its pointer hears (client/pointer.rs); a locking one locks the pointer
+//! (client/lock.rs). It can open dialogs too: more toplevels whose xdg parent is the first.
 
 mod keyboard;
 mod lock;
 mod pointer;
+mod redraw;
 
 use std::{io::Write, os::fd::AsFd, path::Path};
 
@@ -147,14 +147,6 @@ impl Client {
             configured: false,
             drawn: false,
         });
-        self.queue.flush().ok();
-    }
-
-    /// Draw the window again: a new buffer, committed.
-    pub fn redraw(&mut self) {
-        self.state.drawn = false;
-        let qh = self.queue.handle();
-        self.state.draw(&qh);
         self.queue.flush().ok();
     }
 
