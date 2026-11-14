@@ -2285,3 +2285,16 @@ short words, as the rulebook is written.
   is painted. The selection's wash is wider than what a press takes.
 - **Undo:** in `file-browser/lib/views/grid.tsx` spread `grip` on the cell
   and drop `parts` from the model.
+
+### D112. In Files' list the grip is as tall as the row
+
+- **Date:** 2026-11-14. The `n19-polish` agent's. Adds to D99.
+- **Question:** the icon and the name are what drags a file out of the
+  list (D99), and the grip was as tall as the name's line (about 16 of the
+  row's 26): 10 px of every row, between two names, were empty space, and
+  a press there drew a thin rectangle instead of dragging the file.
+- **Choice:** the grip is the row's height and the icon and name's width.
+- **Why:** rows touch; a strip of empty space between two names that
+  cannot be seen is a trap, and nobody starts a rectangle in it on purpose.
+- **Cost:** none seen.
+- **Undo:** take `height: ROW` off the grip in `list.tsx` `NameCell`.
