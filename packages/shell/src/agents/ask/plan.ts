@@ -164,6 +164,9 @@ export function describeStep(action: ActionDef, args: Args): string {
       return `Set the time zone to ${quoted(args.time_zone)}`;
     case "set_power_profile":
       return `Change the power mode to ${quoted(args.profile)}`;
+    case "work_in_space":
+      if (args.space === "new") return "Work on a new Desktop, out of your way";
+      return args.space === "shown" ? "Work where you are again" : `Work on Desktop ${oneLine(String(args.space), 4)}`;
     case "switch_space":
       return `Switch to Desktop ${oneLine(String(args.space), 4)}`;
     case "set_bluetooth_connection":

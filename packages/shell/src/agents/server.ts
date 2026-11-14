@@ -141,6 +141,7 @@ export function startAgents({
       unwatch();
       lock.close();
       hands.close();
+      places.close();
       listening?.close();
       browser.close();
       closeAtspi();

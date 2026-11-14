@@ -41,6 +41,8 @@ export interface HandoffShellDeps extends Omit<HandoffOptions, "ended"> {
   /** Cut a connected agent off (the panel's Stop on its row), and every one (Stop all); the StoppedNote follows. */
   stopAgent(id: number): void;
   stopAgents(): void;
+  /** Show the Desktop a connected agent works on (the panel's Show on its row). */
+  showSpace?(space: number): void;
   notifications: NotificationStore;
   /** The menus' controller, once it exists (the panel is a popover). */
   menus(): MenuController | null;
@@ -123,6 +125,10 @@ function panelActions(service: Handoff, deps: HandoffShellDeps): PanelActions {
     },
     undo: (run, index) => void service.undo(run, index),
     stopAgent: (id) => deps.stopAgent(id),
+    showSpace(space) {
+      deps.showSpace?.(space);
+      deps.menus()?.close();
+    },
     stopAll() {
       // As ⌃❖Esc: every connection, and every run still working (its connection may be between turns).
       for (const run of service.runs.getSnapshot()) if (isWorking(run)) service.stop(run.id);

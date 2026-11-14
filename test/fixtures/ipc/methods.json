@@ -662,7 +662,10 @@
   "spaces": {
     "params": {
       "count": 3,
-      "follow": true
+      "follow": true,
+      "quiet": [
+        2
+      ]
     },
     "reply": {
       "count": 3,

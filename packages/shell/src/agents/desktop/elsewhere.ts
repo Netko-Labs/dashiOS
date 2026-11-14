@@ -55,13 +55,41 @@ const nameOf = (spaces: AgentSpaces, index: number): string => spaces.getSnapsho
 export class WorkPlaces {
   private readonly claims = new Set<Claim>();
   /** The Spaces agents work in now. */
-  readonly working = new Set<SpaceRef>();
+  private readonly working = new Set<SpaceRef>();
+  private stop: (() => void) | null = null;
 
   constructor(
-    readonly compositor: Pick<Compositor, "windows">,
+    readonly compositor: Pick<Compositor, "windows" | "spaces" | "on">,
     readonly spaces: () => AgentSpaces | undefined,
     private readonly descends: (pid: number, ancestor: number) => boolean = descendsFrom,
   ) {}
+
+  /** An agent works on `space` from now (or no longer): apps there that raise themselves must not move the screen. */
+  work(space: SpaceRef, on: boolean): void {
+    if (on) this.working.add(space);
+    else this.working.delete(space);
+    // Spaces are renumbered as they come and go: the compositor is told again each time.
+    if (this.working.size > 0) {
+      this.stop ??= this.compositor.on((event) => {
+        if (event.event === "space") this.quiet();
+      });
+    } else {
+      this.stop?.();
+      this.stop = null;
+    }
+    this.quiet();
+  }
+
+  /** Tell the compositor which Spaces a window's own activation never switches to (`spaces {quiet}`). */
+  private quiet(): void {
+    const quiet = [...new Set([...this.working].map((ref) => ref.index).filter((index): index is number => index !== null))];
+    this.compositor.spaces({ quiet }).catch((error) => console.error("dashi-shell: quiet Spaces:", error instanceof Error ? error.message : error));
+  }
+
+  close(): void {
+    this.stop?.();
+    this.stop = null;
+  }
 
   /** The next window that is `opening`'s goes to `space`, until the returned function is called. */
   claim(opening: Opening, space: SpaceRef): () => void {
@@ -93,6 +121,8 @@ export class WorkPlaces {
 }
 
 export class Elsewhere {
+  /** The browser tab it opened in a window of its own there: the next page opens beside it. */
+  tab: number | null = null;
   private ref: SpaceRef | null = null;
   /** It added the Space it works in: gone again once it leaves it empty. */
   private added = false;
@@ -145,7 +175,7 @@ export class Elsewhere {
     if (index === null) return toolError("A new Space could not be added.");
     this.ref = spaces.follow(index);
     this.added = target === "new";
-    this.places.working.add(this.ref);
+    this.places.work(this.ref, true);
     ctx.status(`Working on ${nameOf(spaces, index)}`);
     return this.answer(spaces, index, this.added);
   }
@@ -171,7 +201,8 @@ export class Elsewhere {
     const added = this.added;
     this.ref = null;
     this.added = false;
-    this.places.working.delete(ref);
+    this.tab = null;
+    this.places.work(ref, false);
     try {
       const index = ref.index;
       if (!added || !spaces || index === null) return;

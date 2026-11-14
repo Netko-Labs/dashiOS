@@ -144,6 +144,7 @@ export function startHandoff({ compositor, settingsStore, agentStore, notificati
     // The agents' server starts below; the panel's Stop reaches it once it has.
     stopAgent: (id) => late.get("agents")?.stop(id),
     stopAgents: () => late.get("agents")?.stopAll(),
+    showSpace: (space) => void compositor?.spaceSwitch({ space }).catch(() => {}),
     notifications: notifications.store,
     menus: () => late.get("menus").controller,
     personPressed: (layer) => (compositor ? personAnswered((params) => compositor.inputOrigin(params), layer) : Promise.resolve(false)),

@@ -159,8 +159,9 @@ impl Dashi {
             if let Some(entry) = self.windows.get_mut(id) {
                 entry.away_at = Some((at.x, at.y + bar).into());
             }
-            // New, so in front there.
+            // New, so in front there; and it hears frames a while, to draw its first ones off screen.
             self.windows.rank_front(id);
+            self.agent.away.wake(id, std::time::Instant::now());
         }
         if let Some(x11) = window.x11_surface() {
             let size = window.geometry().size;

@@ -78,7 +78,12 @@ async function launchApp(wanted: string, ctx: RunContext): Promise<ToolResult> {
  * its window there is raised there (the view stays), and one on another Space is left alone,
  * the result saying so. Null when neither applies, and the launch goes on as ever.
  */
-function alreadyOpenElsewhere(entry: Entry, entries: readonly Entry[], open: readonly CompositorWindow[], ctx: RunContext): Promise<ToolResult> | ToolResult | null {
+function alreadyOpenElsewhere(
+  entry: Entry,
+  entries: readonly Entry[],
+  open: readonly CompositorWindow[],
+  ctx: RunContext,
+): Promise<ToolResult> | ToolResult | null {
   const space = ctx.elsewhere.away;
   if (space === null) return null;
   const say = (window: CompositorWindow) => (ctx.mayName() ? describe(window, entries, ctx.arrangement(window.id)) : { id: `w${window.id}`, app: entry.name });
@@ -87,7 +92,9 @@ function alreadyOpenElsewhere(entry: Entry, entries: readonly Entry[], open: rea
     ctx.status(`Bringing ${entry.name} forward on ${ctx.elsewhere.label}`);
     return ctx.compositor.focus({ window: there.id, stay: true }).then(() => {
       const described = say({ ...there, state: "normal" });
-      return text(`${entry.name} was already open on ${ctx.elsewhere.label}; its window is in front there: ${JSON.stringify(described)}`, { window: described });
+      return text(`${entry.name} was already open on ${ctx.elsewhere.label}; its window is in front there: ${JSON.stringify(described)}`, {
+        window: described,
+      });
     });
   }
   const other = windowToFront(open);
@@ -164,7 +171,8 @@ async function started(entry: Entry, entries: readonly Entry[], opening: Opening
   // Without "see", the new window is only an id and the app the agent asked for.
   const described = ctx.mayName() ? describe(window, entries, null) : { id: `w${window.id}`, app: entry.name };
   // Opened on a Space that does not show (an agent at work there): say so, since nothing came on screen.
-  const where = ctx.elsewhere.away !== null && (window.space ?? 0) === ctx.elsewhere.away ? ` on ${ctx.elsewhere.label}, and the person's screen did not change` : "";
+  const where =
+    ctx.elsewhere.away !== null && (window.space ?? 0) === ctx.elsewhere.away ? ` on ${ctx.elsewhere.label}, and the person's screen did not change` : "";
   return text(`${entry.name} is open${where}: ${JSON.stringify(described)}`, { window: described });
 }
 

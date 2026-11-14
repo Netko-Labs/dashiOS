@@ -82,6 +82,24 @@ async function read(params: Params): Promise<Record<string, unknown>> {
   return { tab: info(await chrome.tabs.get(id)), text, truncated: parts.some((part) => part.truncated) };
 }
 
+/** A new tab in the window in front, where the person watches. */
+async function openInFront(url: string): Promise<chrome.tabs.Tab> {
+  const front = await chrome.windows.getLastFocused().catch(() => null);
+  return chrome.tabs.create({ url, active: true, ...(front?.id !== undefined ? { windowId: front.id } : {}) });
+}
+
+/**
+ * A page for an agent at work on another Desktop: beside tab `near` (one it opened there before),
+ * else in a new window of its own, which Dashi puts on the agent's Space. Never focused: the
+ * person's window keeps the keyboard.
+ */
+async function openOwn(url: string, near: unknown): Promise<chrome.tabs.Tab> {
+  const beside = typeof near === "number" ? await chrome.tabs.get(near).catch(() => null) : null;
+  if (beside?.windowId !== undefined) return chrome.tabs.create({ url, active: true, windowId: beside.windowId });
+  const [tab] = (await chrome.windows.create({ url, focused: false })).tabs ?? [];
+  return tab ?? openInFront(url);
+}
+
 async function open(params: Params): Promise<Record<string, unknown>> {
   const url = String(params.url ?? "");
   if (typeof params.tab === "number") {
@@ -91,8 +109,7 @@ async function open(params: Params): Promise<Record<string, unknown>> {
     const load = await watch.done;
     return { tab: info(await chrome.tabs.get(idOf(tab))), load };
   }
-  const front = await chrome.windows.getLastFocused().catch(() => null);
-  const created = await chrome.tabs.create({ url, active: true, ...(front?.id !== undefined ? { windowId: front.id } : {}) });
+  const created = params.own === true ? await openOwn(url, params.near) : await openInFront(url);
   const load = await watchLoad(idOf(created), LOAD_MS).done;
   return { tab: info(await chrome.tabs.get(idOf(created))), load };
 }

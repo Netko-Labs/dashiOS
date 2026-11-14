@@ -19,6 +19,9 @@ pub(crate) struct Spaces {
     pub follow: bool,
     /// A switch in progress: the windows of `from` and `to` drawn `at` (0–1) of the way.
     pub slide: Option<Slide>,
+    /// Spaces where a window's own activation switches nothing (`spaces {quiet}`: an agent at
+    /// work there, and the person's screen is not to move for it). The shell says which.
+    pub quiet: Vec<usize>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -35,6 +38,7 @@ impl Default for Spaces {
             current: 0,
             follow: true,
             slide: None,
+            quiet: Vec::new(),
         }
     }
 }
@@ -50,6 +54,14 @@ impl Dashi {
     /// Window `id` goes along when the Space changes: held in a move grab, or carried (`space-switch {carry}`).
     pub(crate) fn goes_along(&self, id: WindowId) -> bool {
         self.held == Some(id) || self.carried == Some(id)
+    }
+
+    /// Whether window `id` asking to be activated may bring its Space on screen: not from a
+    /// quiet Space that does not show.
+    pub(crate) fn activation_may_switch(&self, id: WindowId) -> bool {
+        self.windows.get(id).is_none_or(|entry| {
+            entry.space == self.spaces.current || !self.spaces.quiet.contains(&entry.space)
+        })
     }
 
     pub(crate) fn on_current_space(&self, id: WindowId) -> bool {

@@ -86,6 +86,8 @@ export interface PanelActions {
   undo(run: string, index: number): void;
   /** Cut a connected agent off (its StoppedNote follows). */
   stopAgent(id: number): void;
+  /** Go to the Desktop a connected agent works on (its row's Show). */
+  showSpace?(space: number): void;
   /** Every working run and every connected agent, as ⌃❖Esc. */
   stopAll(): void;
 }
@@ -263,7 +265,7 @@ export function AgentsPanel({
             entry.run ? (
               cardOf(entry.run, tasks.length + index, entry)
             ) : (
-              <ConnectionRow key={entry.key} entry={entry} first={tasks.length + index === 0} onStop={() => entry.agent && actions.stopAgent(entry.agent.id)} />
+              <ConnectionRow key={entry.key} entry={entry} first={tasks.length + index === 0} actions={actions} />
             ),
           )}
           {ended.map((run, index) => cardOf(run, tasks.length + entries.length + index))}

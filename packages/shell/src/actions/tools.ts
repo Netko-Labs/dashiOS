@@ -29,6 +29,7 @@ export const PERSON_TOOLS: Readonly<Partial<Record<ToolName, ActionKind>>> = {
   lock_screen: "run",
   switch_space: "open",
   move_window_to_space: "run",
+  work_in_space: "run",
   set_display_scale: "pick",
   set_display_rotation: "pick",
   set_primary_display: "pick",

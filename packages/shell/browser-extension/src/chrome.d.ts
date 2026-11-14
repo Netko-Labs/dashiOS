@@ -54,6 +54,7 @@ declare namespace chrome {
     }
     function update(windowId: number, change: { focused?: boolean }): Promise<Window>;
     function getLastFocused(): Promise<Window>;
+    function create(options: { url: string; focused?: boolean }): Promise<Window & { tabs?: tabs.Tab[] }>;
   }
 
   namespace webNavigation {
