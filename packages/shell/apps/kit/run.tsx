@@ -16,7 +16,7 @@ import { type NativeHostTransport, type NativeRoot, render, spawnNativeHost, typ
 import type { ReactElement } from "react";
 import { METAL_HOST } from "../../src/shared/apps/index.ts";
 import { connectDarkMode } from "../../src/shared/control-center/index.ts";
-import { appNameEnv, onWindowTyping } from "../../src/shared/metal/index.ts";
+import { appNameEnv, onWindowTyping, Surface, windowSurface } from "../../src/shared/metal/index.ts";
 import { followDarkMode } from "./appearance.ts";
 import { closeRequests } from "./close.ts";
 import { serveControl } from "./lib/control.ts";
@@ -108,7 +108,16 @@ export function runApp(options: AppOptions, element: ReactElement): RunningApp {
     env,
     askToClose: true,
   });
-  const root = render(<TextSelectionLook>{element}</TextSelectionLook>, host);
+  // What a view may ask of its window (where its nodes are painted, a scroll): the tree is mounted after, so the root is asked late.
+  const mounted: { root: NativeRoot | null } = { root: null };
+  const surface = windowSurface(host, () => mounted.root);
+  const root = render(
+    <TextSelectionLook>
+      <Surface.Provider value={surface}>{element}</Surface.Provider>
+    </TextSelectionLook>,
+    host,
+  );
+  mounted.root = root;
   const stopControl = serveControl(host, root);
   let open = true;
   const closeCode = options.closeCode ?? 0;

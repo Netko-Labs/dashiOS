@@ -2082,3 +2082,87 @@ short words, as the rulebook is written.
 - **Why:** a bug, not a choice, but it settles what the lights do there.
 - **Cost:** none known.
 - **Undo:** `Decor::pressed` in `render/titlebar.rs`.
+
+### D99. In Files' list the icon and the name are the item; the rest of a row is empty space to a drag
+
+- **Date:** 2026-11-14. The `n15-marquee` agent's.
+- **Question:** Files gets a marquee (a press on empty space, dragged, selects
+  what the rectangle touches). In the list every row runs the window's width
+  and the whole row dragged the file, so there was no empty space to start
+  from except under the last row. What is a press on a row's blank part?
+- **Choice:** as the Finder's list: the icon and the name are the item. A
+  press there, moved, drags the file (to a folder, the sidebar, another
+  app); a press anywhere else on the row, moved, draws a marquee. A click
+  anywhere on the row still selects it, a double click still opens it, and
+  a right-click anywhere on it is still the item's menu. In the icon view
+  the whole tile is the item, as its hover wash shows; a marquee starts in
+  the space beside, between and under the tiles.
+- **Why:** a list of forty files has no other empty space, and people who
+  know the Finder or Explorer press beside the name to drag out a box.
+- **Cost:** a file is no longer dragged by its date or size. The name's
+  width is estimated (`tile-name.ts`'s letter widths), so the grip can run
+  a few pixels past or short of a name.
+- **Undo:** in `file-browser/lib/views/list.tsx`, give `Table` its
+  `dragFiles` back and take the grip out of `NameCell`.
+
+### D100. A marquee asks its window where the items are painted
+
+- **Date:** 2026-11-14. The `n15-marquee` agent's.
+- **Question:** the rectangle must stay on the items while they scroll, and
+  scroll them at the edges. Metal tells an app neither where a scroll view
+  stands nor lets it scroll one, and mirin is not to be changed for this.
+- **Choice:** the nearest thing Metal has: its simulation channel, which
+  Calendar already uses to scroll to "now". `WindowSurface`
+  (`src/shared/metal/surface.ts`) asks the host for the painted bounds
+  (`layout`) and scrolls a view by pixels (`scroll`); `runApp` and the
+  portal's windows provide it, so Files, `dashi-dialog`, the portal's
+  sheets and Text Editor's chooser all get the marquee from the one
+  listing. The drag asks once when it starts and again when the items may
+  have moved by themselves (a wheel, the end of the scrolling), and counts
+  its own scrolling in between from the views' own measures.
+- **Why:** no second listing, no change to mirin, and the answer is what
+  was painted, so the rectangle lands on what the person sees.
+- **Cost:** a `layout` answer names every painted node (some tens of
+  kilobytes in a big window) each time it is asked: a few times a drag,
+  never on a click. The views' measures (tile 104 × 98, row 26) are now
+  also what the rectangle is matched against: change one and
+  `tileRects`/`rowRects` change with it.
+- **Undo:** when mirin reports a scroll position and takes a scroll, read
+  those in `lib/marquee/session.ts` `place` and `tick`, and drop
+  `surface.ts`.
+
+### D101. A drag's keys are the keys of the click its release makes
+
+- **Date:** 2026-11-14. The `n15-marquee` agent's.
+- **Question:** plain drag replaces the selection, ⇧ adds, ❖ toggles. But
+  Metal's `onPointer` (press, moves, release) carries no keys; only
+  `onPress`, the click, does, and it comes at the release.
+- **Choice:** the click that ends the drag says the keys: with ⇧ or ❖ the
+  selection is worked out again against the one from before the drag, at
+  the release. Until then the drag shows as a plain one. A release outside
+  the listing makes no click, so it stays plain. The meanings are the
+  click's (`selection.ts`): ⇧ adds, ❖ or Ctrl toggles, ⇧❖ adds, as
+  ⇧❖-click adds a run. A host that sends `modifiers` with the pointer is
+  believed from the press on (`session.ts` reads them when they are there).
+- **Why:** the result is right in the common case with what Metal gives
+  today; the other choice was no ⇧ or ❖ at all.
+- **Cost:** with ⇧ or ❖ held the earlier selection looks dropped during the
+  drag and comes back when the button goes up. The fix is three lines in
+  mirin: `modifiers` on the `pointer` event's `down`
+  (`crates/mirin-metal/src/render.rs`, where `onPointer` hears the press,
+  `events.rs` `Pointer`, `PointerInfo` in `packages/mirin-metal/src/types.ts`).
+- **Undo:** nothing to undo once mirin sends them; `press` in `session.ts`
+  then only keeps the click from clearing the selection.
+
+### D102. A marquee takes an item when it touches its tile or its row
+
+- **Date:** 2026-11-14. The `n15-marquee` agent's.
+- **Question:** what does the rectangle have to touch: the icon and the
+  name (the Finder), or the item's whole place?
+- **Choice:** the whole place: a tile in the icon view (104 × 98), a row
+  across the list's width. The keyboard's place after a drag (the anchor
+  of ⇧ with the arrows) is the item nearest the corner that moved.
+- **Why:** it is what Dashi shows as the item (the hover wash, the
+  selection wash), and it needs no measuring of names.
+- **Cost:** a rectangle that only crosses a tile's empty corner takes it.
+- **Undo:** `tileRects` and `rowRects` say what an item's place is.

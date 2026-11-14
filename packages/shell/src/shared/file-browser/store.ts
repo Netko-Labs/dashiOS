@@ -181,6 +181,11 @@ export class FilesStore implements StoreHost {
     this.selection.clickEmpty();
   }
 
+  /** A marquee's selection; the keyboard goes on from `last` once it ends (store-selection.ts). */
+  sweep(paths: readonly string[], last: string | null): void {
+    this.selection.sweep(paths, last);
+  }
+
   contextOn(item: FileItem): void {
     this.selection.contextOn(item);
   }

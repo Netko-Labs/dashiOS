@@ -16,6 +16,8 @@ import { LINK_BADGE } from "../../glyphs.ts";
 import { fitMiddle, tileName } from "../../tile-name.ts";
 import { dragPaths } from "../drag.ts";
 import { iconFor, previewFor, thumbnails } from "../icons.ts";
+import type { Rect } from "../marquee/geometry.ts";
+import { marqueeOf } from "../marquee/of.ts";
 import { RenameField } from "./rename-field.tsx";
 
 const TILE_WIDTH = 104;
@@ -38,6 +40,24 @@ export const columnsFor = (width: number): number => Math.max(1, Math.floor((wid
 /** The grid's side inset at `width`: the padding, and half of what the whole tiles leave, so the rows sit in the middle. */
 export const gridInset = (width: number): number =>
   width <= 0 ? PADDING : PADDING + Math.max(0, Math.floor((width - 2 * PADDING - columnsFor(width) * TILE_WIDTH) / 2));
+
+/** Where each of `count` tiles is, in the pixels of what scrolls (the rows' column, its padding included), `height` tall, at `width`. */
+export function tileRects(count: number, width: number, height: number): Rect[] {
+  const columns = columnsFor(width);
+  const inset = gridInset(width);
+  return Array.from({ length: count }, (_, at) => ({
+    x: inset + (at % columns) * TILE_WIDTH,
+    y: PADDING + Math.floor(at / columns) * (height + ROW_GAP),
+    width: TILE_WIDTH,
+    height,
+  }));
+}
+
+/** How tall `count` tiles are with their padding: what the rows' column scrolls over. */
+export function gridHeight(count: number, width: number, height: number): number {
+  const rows = Math.ceil(count / columnsFor(width));
+  return 2 * PADDING + rows * height + Math.max(0, rows - 1) * ROW_GAP;
+}
 
 /** A search result's folder, its middle taken out once to fit under the tile (never cut again at its end). */
 export const whereLine = (where: string): string => fitMiddle(where, WHERE_ROOM);
@@ -94,6 +114,8 @@ function Tile({
     <View
       testID={`item:${item.path}`}
       dragFiles={{ paths: dragPaths(item.path, selection), icon: picture ?? iconFor(item, dark, store.emblems) }}
+      // A press on a tile is the tile's (it drags the item): the listing around it hears none of it, so no marquee starts here.
+      onPointer={marqueeOf(store).itemPointer}
       {...drop.props}
       onPress={(event) => {
         store.click(item, event.modifiers);
@@ -157,6 +179,18 @@ export function Grid({ items, empty }: { items: readonly FileItem[]; empty: Reac
   const height = items.some((item) => item.where !== undefined) ? TALL_TILE_HEIGHT : TILE_HEIGHT;
   const chosen = new Set(state.selection);
   const cut = new Set(state.clipboard?.cut ? state.clipboard.paths : []);
+  // Where the tiles are, for a marquee (lib/marquee/).
+  const rects = useMemo(() => tileRects(items.length, width, height), [items.length, width, height]);
+  marqueeOf(store).model =
+    items.length === 0
+      ? null
+      : {
+          scrollID: "grid:rows",
+          contentHeight: gridHeight(items.length, width, height),
+          paths: items.map((item) => item.path),
+          rects,
+          nodeOf: (path) => `item:${path}`,
+        };
   return (
     <View
       testID="grid"
