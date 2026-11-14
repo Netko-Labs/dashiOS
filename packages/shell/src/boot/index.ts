@@ -12,7 +12,7 @@ export { startBarMenus, startMachine } from "./menus.tsx";
 export { startNotices, startSpoken, startSwitches } from "./notices.ts";
 export { closeOnLock, type OverlayKind, Screenshots, sheetOpener, startSwitcher } from "./overlays.tsx";
 export type { LateParts } from "./parts.ts";
-export { startPersonaPiece } from "./persona.ts";
+export { followCircumstances, startPersonaPiece } from "./persona.ts";
 export { Late, Services } from "./services.ts";
 export { connectCompositor, guardProcess, Screens, startLogin, startStores } from "./session.ts";
 export { startSettingsApps, startSettingsWindows } from "./settings.ts";

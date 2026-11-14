@@ -10,6 +10,7 @@
 
 import { colourOfHex, presetCharacter } from "../../../persona/index.ts";
 import { toBcp47 } from "../../../shared/locale/index.ts";
+import { dotShape, GLYPH_NAMES, isPersonaDots, isPersonaGlyph } from "../../../shared/pill/index.ts";
 import { layoutWords, variantWords } from "../../layouts.ts";
 import { describeValue, findRow, type RowDef, rowName, SETTINGS_ROWS } from "../../registry/index.ts";
 import type { Change, ChangeWords } from "./log.ts";
@@ -107,7 +108,13 @@ const OWN: Readonly<Record<string, Named>> = {
   "persona.character": { name: "Character", row: "persona/character", unset: "Dashi", say: sayCharacter },
   "persona.name": { name: "Dashi's name", row: "persona/name", unset: "Dashi", say: (value) => String(value) },
   "persona.colour": { name: "Dashi's colour", row: "persona/colour", unset: "Violet", say: (value) => colourOfHex(value)?.name ?? String(value) },
-  "persona.mark": { name: "Dashi's mark", row: "persona/mark", unset: "Spark" },
+  "persona.mark": { name: "Dashi's mark", row: "persona/mark", unset: "Spark", say: (value) => (isPersonaGlyph(value) ? GLYPH_NAMES[value] : plain(value)) },
+  "persona.dots": {
+    name: "Dashi's dots",
+    row: "persona/dots",
+    unset: "In a line",
+    say: (value) => (isPersonaDots(value) ? dotShape(value).name : plain(value)),
+  },
   "persona.talk": { name: "How much Dashi talks", row: "persona/talk", unset: "Normal", say: (value) => TALK_WORDS[String(value)] ?? plain(value) },
   "persona.language": {
     name: "Dashi answers in",

@@ -100,7 +100,10 @@ test("the preview's line: fixed words, the name, and the person's name only when
 test("choosing a character sets its look and talk at once; a name of the person's own stays", () => {
   const kombu = presetCharacter("kombu") ?? DASHI;
   const fromMiso = chooseCharacter(view({ character: "miso", name: "Miso" }), kombu, "en", [], ["bm_george", "af_heart"]);
-  expect(fromMiso).toEqual({ persona: { character: "kombu", talk: "less", colour: "#136770", mark: "dots", name: "Kombu" }, voice: "bm_george" });
+  expect(fromMiso).toEqual({
+    persona: { character: "kombu", talk: "less", colour: "#136770", mark: "dot", dots: "pearls", name: "Kombu" },
+    voice: "bm_george",
+  });
   const pixel = chooseCharacter(view({ character: "miso", name: "Pixel" }), kombu, "es", [], ["af_heart"]);
   expect(pixel.persona.name).toBeUndefined();
   // Its voice is not on this computer: the voice stays as it is.

@@ -7,7 +7,7 @@
  *   { "dashiCharacter": 1, "id": "abuela", "name": "Abuela",
  *     "about": { "en": "Fusses over you, then gets it done." },
  *     "prompt": { "en": "You speak like a loving grandmother…", "es": "Hablas como una abuela cariñosa…" },
- *     "talk": "normal", "colour": "berry", "mark": "spark", "voice": { "en": "af_heart", "es": "ef_dora" } }
+ *     "talk": "normal", "colour": "berry", "mark": "leaf", "dots": "smile", "motion": "warm", "voice": { "en": "af_heart", "es": "ef_dora" } }
  *
  * Only the person writes there: no agent tool does, and an agent's sandbox has the folder read-only
  * at most (test/persona-agents.test.ts).
@@ -16,12 +16,13 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { isRecord } from "@dashi/shape";
-import { isCharacterId, isPersonaMark, isPersonaTalk, type PersonaTalk } from "../../shared/pill/index.ts";
+import { isCharacterId, isPersonaDots, isPersonaMark, isPersonaMotion, isPersonaTalk, type PersonaTalk } from "../../shared/pill/index.ts";
 import { settingsPath } from "../../shared/settings/index.ts";
 import { type Character, DASHI, presetCharacter, type Words } from "./characters.ts";
 import { checkName } from "./name.ts";
 import { colourById } from "./palette.ts";
 import { CHARACTER_TEXT_MAX, characterText } from "./prompt.ts";
+import type { PersonaView } from "./resolve.ts";
 
 /** A file larger than this is not read. */
 export const FILE_MAX_BYTES = 8 * 1024;
@@ -81,6 +82,8 @@ export function checkCharacterFile(text: string): FileCheck {
       hello: { en: "Hi, {you}. I'm {name}.", es: "Hola, {you}. Soy {name}." },
       colour: colourById(raw.colour)?.id ?? DASHI.colour,
       mark: isPersonaMark(raw.mark) ? raw.mark : DASHI.mark,
+      dots: isPersonaDots(raw.dots) ? raw.dots : DASHI.dots,
+      motion: isPersonaMotion(raw.motion) ? raw.motion : DASHI.motion,
       talk: isPersonaTalk(talk) ? talk : DASHI.talk,
       voice: { en: voiceId(voice.en, DASHI.voice.en), es: voiceId(voice.es, DASHI.voice.es) },
       own: true,
@@ -145,6 +148,8 @@ export function characterFileText(from: Character, id: string, name: string): st
     talk: from.talk,
     colour: from.colour,
     mark: from.mark,
+    dots: from.dots,
+    motion: from.motion,
     voice: from.voice,
   };
   return `${JSON.stringify(file, null, 2)}\n`;
@@ -158,4 +163,56 @@ export function makeCharacterFile(from: Character, dir: string = charactersDir()
   const path = join(dir, `${id}.json`);
   writeFileSync(path, characterFileText(from, id, "My character"), { flag: "wx", mode: 0o600 });
   return { path, id };
+}
+
+/** A file somebody sent, read and checked before anything is copied: over 8 KB it is not even read. */
+export function readCharacterFile(path: string): FileCheck {
+  try {
+    const stat = statSync(path);
+    if (!stat.isFile()) return { ok: false, why: "it is not a file" };
+    if (stat.size > FILE_MAX_BYTES) return { ok: false, why: "it is larger than 8 KB" };
+    return checkCharacterFile(readFileSync(path, "utf8"));
+  } catch {
+    return { ok: false, why: "it cannot be read" };
+  }
+}
+
+/**
+ * "Add": the checked character written into the folder as `<id>.json`, from what was checked and
+ * never the sender's bytes, so only text and ids arrive. One that is already there is not replaced.
+ * The person's own press only, after they read its text (the pane's sheet).
+ */
+export function addCharacterFile(character: Character, dir: string = charactersDir()): { ok: true; path: string } | { ok: false; why: string } {
+  const path = join(dir, `${character.id}.json`);
+  try {
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
+    if (existsSync(path)) return { ok: false, why: "you already have one with its id" };
+    writeFileSync(path, characterFileText(character, character.id, character.name), { flag: "wx", mode: 0o600 });
+    return { ok: true, path };
+  } catch {
+    return { ok: false, why: "it could not be copied" };
+  }
+}
+
+/** A file's id for a name: its letters and digits, lowercase; never a preset's (a file may not take one). */
+export function shareId(name: string): string {
+  const slug = name
+    .normalize("NFKD")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 20);
+  const id = slug === "" ? "my-dashi" : slug;
+  return presetCharacter(id) ? `${id}-2` : id;
+}
+
+/**
+ * "Export": this Dashi as one file to send, with the name and the look as they are now, whatever
+ * character they started from. What it calls the person and their own note stay here: those are
+ * about them, not about the character.
+ */
+export function shareFileText(view: PersonaView): { name: string; text: string } {
+  const id = shareId(view.name);
+  const from: Character = { ...view.character, colour: view.colour.id, mark: view.mark, dots: view.dots, talk: view.talk };
+  return { name: `${id}.json`, text: characterFileText(from, id, view.name) };
 }

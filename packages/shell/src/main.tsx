@@ -21,6 +21,7 @@ import {
   chooseRadios,
   closeOnLock,
   connectCompositor,
+  followCircumstances,
   guardProcess,
   Late,
   type LateParts,
@@ -229,6 +230,7 @@ const registryNeeds = { compositor, apps, stores, desktops, arranging, system, g
 const { actions } = startRegistry({ ...registryNeeds, menus, screenshots, launcher, services, late });
 late.set("askAgents", startAskAgents({ compositor, settingsStore, basics, agents, actions, registryStores, services, late }));
 startCapsule({ compositor, talking, look, services, late });
+followCircumstances({ compositor, sharing: guards.screenCapture, recorder: screenshots.tools?.recorder ?? null, services, late });
 startKeys({
   compositor,
   screens,

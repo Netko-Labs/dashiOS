@@ -5,7 +5,7 @@
  * by a script, never retyped. A character is wording and looks only: nothing here is read by a permission.
  */
 
-import type { PersonaMark, PersonaTalk } from "../../shared/pill/index.ts";
+import type { PersonaDots, PersonaMark, PersonaMotion, PersonaTalk } from "../../shared/pill/index.ts";
 import type { ColourId } from "./palette.ts";
 
 export interface Words {
@@ -25,6 +25,10 @@ export interface Character {
   hello: Words;
   colour: ColourId;
   mark: PersonaMark;
+  /** Its five dots at rest: its face (shared/pill/look.ts). */
+  dots: PersonaDots;
+  /** How its dots move (capsule/lib/motion.ts). */
+  motion: PersonaMotion;
   talk: PersonaTalk;
   /** A voice of dashi-voice for each language. */
   voice: Words;
@@ -50,6 +54,8 @@ export const CHARACTERS: readonly Character[] = [
     },
     colour: "violet",
     mark: "spark",
+    dots: "line",
+    motion: "calm",
     talk: "normal",
     voice: { en: "af_heart", es: "ef_dora" },
   },
@@ -69,7 +75,9 @@ export const CHARACTERS: readonly Character[] = [
       es: "Hola, {you}. Soy {name}. Qué gusto verte. ¿Qué preparamos hoy?",
     },
     colour: "cocoa",
-    mark: "spark",
+    mark: "bowl",
+    dots: "smile",
+    motion: "warm",
     talk: "normal",
     voice: { en: "af_bella", es: "ef_dora" },
   },
@@ -89,7 +97,9 @@ export const CHARACTERS: readonly Character[] = [
       es: "{name}. Listo.",
     },
     colour: "teal",
-    mark: "dots",
+    mark: "dot",
+    dots: "pearls",
+    motion: "quiet",
     talk: "less",
     voice: { en: "bm_george", es: "em_alex" },
   },
@@ -109,7 +119,9 @@ export const CHARACTERS: readonly Character[] = [
       es: "{name}. Te aviso si es mala idea. Y luego lo hago igual.",
     },
     colour: "moss",
-    mark: "spark",
+    mark: "flame",
+    dots: "wave",
+    motion: "dry",
     talk: "less",
     voice: { en: "am_puck", es: "em_alex" },
   },
@@ -129,7 +141,9 @@ export const CHARACTERS: readonly Character[] = [
       es: "Hola, {you}. Soy {name}. Pregunta lo que quieras y te muestro cómo se hace.",
     },
     colour: "blue",
-    mark: "spark",
+    mark: "leaf",
+    dots: "steps",
+    motion: "patient",
     talk: "more",
     voice: { en: "bf_emma", es: "ef_dora" },
   },
@@ -149,7 +163,9 @@ export const CHARACTERS: readonly Character[] = [
       es: "¡Hola, {you}! Aquí {name}. Vamos a sacar algo adelante.",
     },
     colour: "berry",
-    mark: "spark",
+    mark: "drop",
+    dots: "hop",
+    motion: "bright",
     talk: "normal",
     voice: { en: "af_nicole", es: "ef_dora" },
   },

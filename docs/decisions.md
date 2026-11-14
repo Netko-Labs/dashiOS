@@ -1584,3 +1584,110 @@ Add one entry at the end of Part B, in the commit that makes the change: its
 number, the date, the question, the choice, why, what it cost, and how to undo
 it. If it teaches a new way to decide, add a line to Part A naming it. Plain,
 short words, as the rulebook is written.
+
+### D75. The five dots are Dashi's face: eight marks, six shapes, ids only
+
+- **Date:** 2026-11-14. The `n6-face` agent's.
+- **Question:** the design names eight marks and four shapes of the dots; the
+  first slice built two marks (`spark`, `dots`) and no shape. The brief asks
+  for a shape for each of the six characters.
+- **Choice:** `persona.mark` takes the design's eight glyphs, and still `dots`
+  (the first slice's "no disc", so a file that has it keeps working; the pane
+  no longer offers it). `persona.dots` takes six shapes: the design's four
+  (`line`, `smile`, `wave`, `pearls`, its 6 px dot being 4 points) and two of
+  ours, `steps` (Nori) and `hop` (Yuzu), so no two characters share a face.
+  The capsule draws the disc and then the dots in every phase of Dashi's line,
+  as the design's line-up does; beside the Dock, next to buttons, the disc
+  stands alone. The glyphs and shapes are data in `shared/pill/look.ts`,
+  because the capsule, the bar and Settings all draw them; the hub's
+  `Persona` gained `dots` and `motion`. The spark stays the glyph the shell
+  already drew, so a Dashi nobody changed looks as it did. A character's file
+  names a mark, a shape and a way of moving by id; anything else in those
+  fields is Dashi's (D61 holds: text and ids only).
+- **Why:** a face is the cheapest thing that makes six characters six.
+- **Cost:** Dashi's capsule is 44 points wider wherever it has the room. The
+  bar's mark still draws the spark: `markSvg(persona.mark)` is there for it.
+- **Undo:** `FaceLead` in `capsule/lib/face.tsx` back to the disc alone;
+  `PERSONA_DOTS` and `DOT_SHAPES` in `shared/pill/`.
+
+### D76. Each character moves the dots its own way, on one timer, and not at all when asked
+
+- **Date:** 2026-11-14. The `n6-face` agent's.
+- **Question:** the design put "the dots come alive" in the second slice,
+  waiting on mirin width and offset transitions.
+- **Choice:** no transitions: `shared/face/motion.ts` is arithmetic from a
+  moment to five offsets and sizes, and `FaceDots` draws it anew on one
+  `setInterval` (80 ms at rest, 50 or 100 ms thinking, 33 ms speaking). Dashi
+  breathes; Miso's smile deepens; Kombu barely moves and only its middle pearl
+  answers a word; Wasabi does not breathe and turns its wave over; Nori steps
+  along the row; Yuzu bounces. All blink once when they have heard you, jump
+  on each spoken word, and rise when the pointer is on them (mirin tells a
+  surface that it is hovered, not where the pointer is, so "toward the
+  pointer" is "up"). No timer runs while the capsule is hidden (the dots are
+  unmounted), while listening (the level's own changes draw them, as bars,
+  exactly as dictation's), with Reduce Motion, or while Dashi drops the act
+  (D77): those draw the still shape.
+- **Why:** it costs five small views redrawn, and only while Dashi is on
+  screen doing something.
+- **Cost:** a React commit of five views per tick: at most 30 a second while
+  it speaks, 12 at rest. Not measured in the VM yet.
+- **Undo:** give every character `still` in `persona/lib/characters.ts`.
+
+### D77. Dashi drops the act when a character is out of place
+
+- **Date:** 2026-11-14. The `n6-face` agent's.
+- **Question:** a playful character over a shared screen, a film, or right
+  after something broke.
+- **Choice:** one rule, `dropsAct` in `persona/lib/act.ts`: while another
+  program captures the screen, while the screen is recorded (by the person or
+  an agent), while any window is full screen, and from a failed ask until a
+  later one is done, Dashi is plain: its own character's words, Brief, and
+  the dots keep their shape and do not move. The name, colour, mark, dots,
+  voice and language stay. The pane still shows what was chosen. With nothing
+  chosen only the dots hold still. "During a call" is in the rule
+  (`Circumstances.call`) but nothing sets it: the shell cannot tell a call
+  from any other use of the microphone tonight.
+- **Why:** the person chose a character for themselves, not for the meeting.
+- **Cost:** recording Dashi with Dashi's own recorder shows it plain, so the
+  dots' motion cannot be filmed that way. Full screen on any Space counts,
+  not only the one in front.
+- **Undo:** `followCircumstances` in `boot/persona.ts` (one line in
+  `main.tsx`) tells the persona; without it Dashi is always as chosen.
+
+### D78. A character is shared as one file: read in full before it is added, written from what was checked
+
+- **Date:** 2026-11-14. The `n6-face` agent's.
+- **Question:** how a character goes from one person to another, and what a
+  file somebody sent may bring with it.
+- **Choice:** "Add a File…" opens the desktop's file chooser, checks the file
+  (D61's rules; over 8 KB it is not read), and hangs a sheet from the window
+  with its name, who it is, and all of what the assistant would be told, in
+  both languages. Only "Add" copies it, and what is written into the folder
+  is the checked character written out again, never the sender's bytes, so
+  an unknown key cannot ride along. A file whose id is already there is
+  refused, not replaced. "Export…" writes this Dashi through the desktop's
+  save dialog: the character's text with the name, colour, mark, dots and
+  talk as they are now. What it calls the person and their own note are not
+  exported. An exported preset takes a new id (`miso-2`): a file may not
+  take a preset's.
+- **Why:** the text is somebody else's words until the person has read it.
+- **Cost:** a long text makes a tall sheet (the confirm sheet does not
+  scroll). No link or QR yet.
+- **Undo:** `Share` in `settings-app/lib/panes/persona-share.tsx`; the folder
+  and "Make a File" work without it.
+
+### D79. The preview says its line when you choose a character
+
+- **Date:** 2026-11-14. The `n6-face` agent's.
+- **Question:** the brief left room for one more idea, cheap and delightful.
+  The design's fifth, "meet them at first start, by ear", is days of work.
+- **Choice:** its smallest part, in Settings: when a character (or its dots)
+  is chosen, and at each "Hear it", the preview's dots jump to the words of
+  its line, the character's own way, for at most 14 words at 230 ms each,
+  then rest. You see how Kombu and Yuzu differ in the moment you pick one.
+  Never when the pane opens, never with Reduce Motion.
+- **Why:** choosing is when a person wants to see who they are getting.
+- **Cost:** one timer for about three seconds after a choice. The jumps do
+  not follow the voice's real words; they keep their own time.
+- **Undo:** `useSaying` in `settings-app/lib/panes/persona-parts.tsx`.
+
