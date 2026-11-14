@@ -199,7 +199,7 @@ export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; fi
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, minWidth: 0 }}>
           {line.chip && <AccessChip entry={entry} />}
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text testID={`agents-row-line:${entry.agent?.id ?? entry.key}`} numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+            <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
               {line.words}
             </Text>
           </View>
