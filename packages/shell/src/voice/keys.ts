@@ -1,8 +1,8 @@
 /**
  * The talk key: which keys Dashi takes while Voice is on, by evdev code
  * (the compositor's `held-keys`, docs/compositor-ipc.md), and what Settings ›
- * Voice says about each. By default the right ❖ and the Copilot key both
- * talk. Many laptops send the Copilot key as ⇧❖F23, some as F23 alone: the
+ * Voice says about each. By default ❖Space kept down (the Dashi key,
+ * dictation/keys.ts) and the Copilot key both talk. Many laptops send the Copilot key as ⇧❖F23, some as F23 alone: the
  * key is taken at its F23 either way. The person may pick another key; one
  * that does something else too says what it stops doing while it talks.
  *
@@ -28,21 +28,18 @@ export interface TalkKey {
   tap?: string;
 }
 
-const KEY_RIGHTMETA = 126;
 const KEY_F23 = 193;
 const KEY_RIGHTALT = 100;
 const KEY_RIGHTCTRL = 97;
 const KEY_CAPSLOCK = 58;
 const KEY_COMPOSE = 127;
-const KEY_ESC = 1;
 
 /** The right ❖ and the Copilot key: what talks unless the person picks another. */
 const DEFAULT_KEY: TalkKey = {
   id: "default",
-  label: "Right ❖ or Copilot",
-  hold: "the right ❖ or the Copilot key",
-  codes: [KEY_RIGHTMETA, KEY_F23],
-  cost: "The right ❖ no longer opens the launcher or makes shortcuts; the left ❖ does.",
+  label: "❖Space or Copilot",
+  hold: "❖Space or the Copilot key",
+  codes: [KEY_F23],
   tap: "A Copilot key that can't be held: tap it, talk, then stop talking or tap it again.",
 };
 
@@ -80,10 +77,13 @@ export const STOP = "stop";
 /** Whether a `held-key` name is a talk key's. */
 export const talks = (name: string): boolean => name === TALK || name === TALK_TAP;
 
-/** What `held-keys` is sent: the talk key while Voice is on (the Copilot key under its own name), and Esc (alone, never a chord) while there is something to stop. */
-export function heldKeys(key: TalkKey | null, stoppable: boolean): Array<{ name: string; code: number; bare?: boolean }> {
-  const talk = key ? key.codes.map((code) => ({ name: code === KEY_F23 ? TALK_TAP : TALK, code })) : [];
-  return [...talk, ...(stoppable ? [{ name: STOP, code: KEY_ESC, bare: true }] : [])];
+/**
+ * What `held-keys` is sent for Voice: the talk key while Voice is on (the Copilot key under its own
+ * name). ❖Space, the Dashi key, is dictation/keys.ts's. Esc is never taken from the app in front
+ * (0.9): Dashi is stopped from its capsule, by the key again, or by ⌃❖Esc.
+ */
+export function heldKeys(key: TalkKey | null): Array<{ name: string; code: number; bare?: boolean }> {
+  return key ? key.codes.map((code) => ({ name: code === KEY_F23 ? TALK_TAP : TALK, code })) : [];
 }
 
 /** After a tap of the Copilot key: a quiet this long ends the listen, and with nothing heard at all it gives up after this long. */

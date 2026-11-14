@@ -50,7 +50,7 @@ export class Voice {
   private readonly captions: Captions;
   /** Bumped by every press and stop: what an older press was waiting for is no longer wanted. */
   private turn = 0;
-  private holding: { since: number; stopped: boolean; opened: Promise<boolean> | null; tap: boolean } | null = null;
+  private holding: { since: number; stopped: boolean; opened: Promise<boolean> | null; tap: boolean; sure: boolean } | null = null;
   /** A listen a tap of the Copilot key began, which ends by itself (lib/tap-listen.ts). */
   private readonly tapped: TapListen;
   private asking: AbortController | null = null;
@@ -102,8 +102,7 @@ export class Voice {
   /** The keys held follow the settings and what there is to stop (the pane's switch, the key's choice). */
   sync(): void {
     const { on, key } = this.deps.prefs();
-    const busy = this.saying.busy || this.asking !== null || this.chip?.kind === "listening" || this.chip?.kind === "thinking";
-    const keys = heldKeys(on ? key : null, busy);
+    const keys = heldKeys(on ? key : null);
     const text = JSON.stringify(keys);
     if (text === this.held) return;
     this.held = text;
@@ -120,7 +119,16 @@ export class Voice {
     return this.deps.now?.() ?? Date.now();
   }
 
-  private keyDown(tap: boolean): void {
+  /** The Dashi key (❖Space) became a hold: a listen, as a talk key held; `release` ends it with its words. */
+  hold(): void {
+    this.keyDown(false, true);
+  }
+
+  release(): void {
+    void this.keyUp();
+  }
+
+  private keyDown(tap: boolean, sure = false): void {
     if (this.holding) return;
     // The tap after the one that began a listen ends it, as letting go of a held key does.
     if (this.tapped.end()) return void this.words(this.turn);
@@ -128,7 +136,7 @@ export class Voice {
     const stopped = this.halt();
     const turn = this.turn;
     const trouble = this.deps.trouble();
-    this.holding = { since: this.now(), stopped, opened: null, tap };
+    this.holding = { since: this.now(), stopped, opened: null, tap, sure };
     if (trouble) return this.notice(trouble.text, trouble.go);
     this.level.set(0);
     this.show({ kind: "listening", text: "", question: this.question !== null });
@@ -149,7 +157,7 @@ export class Voice {
     this.holding = null;
     if (!held?.opened) return;
     const turn = this.turn;
-    const short = this.now() - held.since < TAP_MS;
+    const short = !held.sure && this.now() - held.since < TAP_MS;
     if (!(await held.opened) || turn !== this.turn) return;
     if (short) {
       // The Copilot key's tap talks, unless it was the tap that stopped Dashi.

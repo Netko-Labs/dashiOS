@@ -2,7 +2,8 @@
  * Voice: talking to Dashi. Off until turned on here. Turning it on says what
  * will be fetched and how big it is, then fetches the models with progress,
  * Pause and Resume; nothing is fetched before that, and never at install.
- * Then the talk key, Dashi's voice (with a sample), the optional model for
+ * Then the talk key, Dashi's voice (with a sample), dictation and its key
+ * (voice-dictation.tsx), the optional model for
  * more languages, and removing the models. What is missing is said here in
  * words, with the one thing to do.
  *
@@ -36,6 +37,7 @@ import { Page, Switch } from "../../ui.tsx";
 import { type ByPerson, ONLY_YOU, type PersonOnly, usePersonOnly } from "../person-only.ts";
 import { Setting } from "../setting.tsx";
 import { MiniButton } from "./parts.tsx";
+import { DictationRows } from "./voice-dictation.tsx";
 import { offerWords, removeWords, setsWords, voiceChoices, whatFetching } from "./voice-words.ts";
 
 export type VoicePaneSource = Pick<VoiceParts, "models" | "sample">;
@@ -235,6 +237,7 @@ export function VoicePane({ settings, voice, byPerson }: { settings: SettingsSto
       </Group>
       {view.error !== null && <Note testID="voice-error">{view.error}</Note>}
       {on && <KeyAndVoice settings={settings} voice={voice} view={view} guard={guard} />}
+      {on && <DictationRows settings={settings} guard={guard} />}
       {on && more.length > 0 && (
         <Group testID="voice-more">
           <ModelsRow

@@ -38,6 +38,7 @@ import {
   startBars,
   startCatalog,
   startDesktops,
+  startDictating,
   startGuards,
   startHandoff,
   startKeepingAwake,
@@ -83,6 +84,7 @@ const stores = startStores(services);
 const { settingsStore } = stores;
 // Talking to Dashi: the talk key, the voice service, the chip in every bar.
 const talking = startTalking({ compositor, settingsStore, services, late });
+startDictating({ compositor, settingsStore, services, late, talking });
 const desktops = await startDesktops({ compositor, settingsStore, screens, services, late });
 const look = startLook(compositor, desktops, stores.dockPrefs, services);
 const arranging = await startArranging(compositor, desktops, services, late);

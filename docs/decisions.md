@@ -1161,6 +1161,84 @@ Replaced by D51: 0.9 builds on mirin's `main`.
 - **Undo:** fold the cells into the modules that own them once the pieces
   are merged, and delete `shared/pill/hub.ts`.
 
+### D54. ❖Space and the dictation key are keys the compositor hears, not keymap rules
+
+- **Date:** 2026-11-13. The night build's `core` agent's.
+- **Question:** ❖Space opened the launcher on press, a keymap rule. Held, it
+  must talk to Dashi, and a tap must still open the launcher; the right ⌥
+  must dictate when held alone and stay AltGr and ⌥ otherwise.
+- **Choice:** `held-keys` gains `super` (taken only under ❖ alone, comes up
+  when it or ❖ does), `alone` (heard, still the app's modifier, `chord` the
+  moment another key goes down) and `tapMs` (the compositor says whether it
+  was a tap and arms `afterTap` then). The shell works out hold, tap and
+  double tap. While Voice is off none is listed and ❖Space is the keymap's
+  rule as in 0.8. The default talk key is ❖Space and the Copilot key: the
+  right ❖ is free again unless the person picked a key in 0.8. Esc is no
+  longer held while Dashi speaks. Caps Lock as the dictation key is taken
+  (it would turn capitals on); the right ⌥ and the right ⌃ are heard alone.
+- **Why:** no policy in Rust, and nothing changes for people who only tap or
+  who never turned Voice on.
+- **Cost:** with Voice on the launcher opens as ❖Space comes up, not as it
+  goes down (about 80 ms later for a quick tap). An app sees the right ⌥ go
+  down and up when it is held to dictate; one that opens its menu bar on a
+  bare Alt will.
+- **Undo:** drop the `dashi` entry in `dictation/keys.ts` `pillHeldKeys`,
+  and put `KEY_RIGHTMETA` back in `voice/keys.ts`.
+
+### D55. Dictated words are typed through a keymap made for them
+
+- **Date:** 2026-11-13. The night build's `core` agent's.
+- **Question:** how do words reach the field as one step, with ñ and é on
+  any layout, without the clipboard and without ever sending BackSpace?
+- **Choice:** `type-text`: the compositor gives the keyboard a keymap with
+  one key for each character of the text, presses the keys, and puts the
+  layout back, in one turn of its loop (as `wtype` does from outside). X11
+  windows are refused (`x11`: Xwayland applies a keymap too slowly to trust)
+  and get a paste, with the clipboard put back and the line saying
+  "Pasted." The compositor's `text-focus` was not built: smithay 0.7 keeps
+  a text-input's content purpose to itself, so the password check is
+  AT-SPI's, only where accessibility is already on.
+- **Why:** it is the only way to type any character with no input method in
+  the way, and the app sees ordinary keys, so its own undo takes them back.
+- **Cost:** the app sees two keymap changes for each landing. A password
+  field in an app with no accessibility tree is not known: the microphone
+  opens there.
+- **Undo:** `dictation/lib/land.ts` `type` can call `paste` alone.
+
+### D56. Tidying is careful rather than clever, and checks itself
+
+- **Date:** 2026-11-13. The night build's `core` agent's.
+- **Question:** which words may a rule take out or change with no model to
+  understand them?
+- **Choice:** only what can be nothing else. A filler word that is also a
+  word ("este", "o sea") goes only between two commas. "period", "punto",
+  "coma", "new line" stay words after an article or where no sentence ends.
+  A change of mind counts only when the phrase stands apart, and does one of
+  four simple things (docs/voice.md). A check of its own reads every result:
+  no word that was not said, no other order, no number or "not" lost
+  outside what the person took back, and there the two sides must say "not"
+  as often. When it trips the words land as heard.
+- **Why:** a wrong word typed for the person is worse than an "um" left in.
+- **Cost:** speech the model gave no commas keeps its "este" and its "no
+  wait". "Do not send it, no wait, send it today" lands as heard.
+- **Undo:** the lists are `dictation/lib/tidy-words.ts`.
+
+### D57. Hands-free is short and ends out loud
+
+- **Date:** 2026-11-13. The night build's `core` agent's.
+- **Question:** when does hands-free end, and what lands?
+- **Choice:** each sentence lands at a pause of 1.2 s, with a space before
+  every one but the first. It ends on a tap, when another window takes the
+  keyboard (looked at as words come), after 20 s with nothing said, at ten
+  minutes, or when a sentence has nowhere to land; always with a short sound
+  and a line. A plain dictation adds no space before or after its words.
+  Ending when this computer plays sound (`sound`) is not built.
+- **Why:** the microphone is never left open by mistake, and never closes
+  without the person knowing.
+- **Cost:** two dictations one after the other in the same field join with
+  no space between them.
+- **Undo:** `DICTATION_LIMITS` and `dictation/lib/hands-free.ts`.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its

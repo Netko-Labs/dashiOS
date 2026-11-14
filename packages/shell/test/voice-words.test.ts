@@ -58,18 +58,12 @@ test("a listen names a language only when Parakeet lacks it", () => {
   expect(listenLanguage(undefined)).toBeUndefined();
 });
 
-test("the talk key: the right ❖ and the Copilot key unless another is picked, and Esc bare while there is something to stop", () => {
-  expect(heldKeys(talkKey(undefined), false)).toEqual([
-    { name: "talk", code: 126 },
-    { name: "talk-tap", code: 193 },
-  ]);
-  expect(heldKeys(talkKey("caps-lock"), true)).toEqual([
-    { name: "talk", code: 58 },
-    { name: "stop", code: 1, bare: true },
-  ]);
-  expect(heldKeys(null, false)).toEqual([]);
-  // Every key says what it stops doing while it talks, and none is listed twice.
-  expect(TALK_KEYS.every((key) => key.cost !== undefined && key.codes.length > 0)).toBe(true);
+test("the talk key: the Copilot key (❖Space is the Dashi key) unless another is picked, and Esc is never taken", () => {
+  expect(heldKeys(talkKey(undefined))).toEqual([{ name: "talk-tap", code: 193 }]);
+  expect(heldKeys(talkKey("caps-lock"))).toEqual([{ name: "talk", code: 58 }]);
+  expect(heldKeys(null)).toEqual([]);
+  // Every key the person picks says what it stops doing while it talks, and none is listed twice.
+  expect(TALK_KEYS.every((key) => (key.id === "default" || key.cost !== undefined) && key.codes.length > 0)).toBe(true);
   expect(new Set(TALK_KEYS.flatMap((key) => key.codes)).size).toBe(TALK_KEYS.flatMap((key) => key.codes).length);
   expect(isTalkKeyId("menu")).toBe(true);
   expect(isTalkKeyId("space")).toBe(false);
