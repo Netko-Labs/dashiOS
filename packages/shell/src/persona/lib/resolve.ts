@@ -7,10 +7,13 @@
 
 import {
   DEFAULT_PERSONA,
+  isPersonaDots,
   isPersonaMark,
   isPersonaTalk,
   type Persona,
+  type PersonaDots,
   type PersonaMark,
+  type PersonaMotion,
   type PersonaSettings,
   type PersonaTalk,
 } from "../../shared/pill/index.ts";
@@ -48,6 +51,9 @@ export interface PersonaView {
   /** The `#rrggbb` the hub is given: the chosen colour's, else the agents' purple as before. */
   hex: string;
   mark: PersonaMark;
+  dots: PersonaDots;
+  /** The chosen character's way of moving its dots. */
+  motion: PersonaMotion;
   /** `voice.voice`; undefined is Dashi's own. */
   voice: string | undefined;
 }
@@ -70,6 +76,8 @@ export function resolvePersona(settings: { persona: PersonaSection; voice: { voi
     colour: colourOfHex(held.colour) ?? VIOLET,
     hex: colourOfHex(held.colour)?.to ?? DEFAULT_PERSONA.colour,
     mark: isPersonaMark(held.mark) ? held.mark : DEFAULT_PERSONA.mark,
+    dots: isPersonaDots(held.dots) ? held.dots : DEFAULT_PERSONA.dots,
+    motion: (character ?? DASHI).motion,
     voice: settings.voice.voice,
   };
 }
@@ -94,6 +102,8 @@ export function hubPersona(view: PersonaView, language: "en" | "es"): Persona {
     name: view.name,
     colour: view.hex,
     mark: view.mark,
+    dots: view.dots,
+    motion: view.motion,
     voice: view.voice,
     talk: view.talk,
     prompt: personaStyle(view, language).full,
@@ -113,7 +123,7 @@ export interface CharacterChoice {
 }
 
 /**
- * What choosing a character writes, as one change: the character and its own talk, colour and mark,
+ * What choosing a character writes, as one change: the character and its own talk, colour, mark and dots,
  * its voice where that voice is here, and its name only while the name is still a character's (so
  * "Miso" follows to "Kombu" and "Pixel" stays "Pixel"). After that every row is the person's.
  */
@@ -128,7 +138,14 @@ export function chooseCharacter(
   const follows = !view.set || names.has(view.name);
   const voice = to.voice[language];
   return {
-    persona: { character: to.id, talk: to.talk, colour: (colourById(to.colour) ?? VIOLET).to, mark: to.mark, ...(follows ? { name: to.name } : {}) },
+    persona: {
+      character: to.id,
+      talk: to.talk,
+      colour: (colourById(to.colour) ?? VIOLET).to,
+      mark: to.mark,
+      dots: to.dots,
+      ...(follows ? { name: to.name } : {}),
+    },
     voice: voices.includes(voice) ? voice : undefined,
   };
 }

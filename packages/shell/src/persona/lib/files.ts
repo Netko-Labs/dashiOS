@@ -7,7 +7,7 @@
  *   { "dashiCharacter": 1, "id": "abuela", "name": "Abuela",
  *     "about": { "en": "Fusses over you, then gets it done." },
  *     "prompt": { "en": "You speak like a loving grandmother…", "es": "Hablas como una abuela cariñosa…" },
- *     "talk": "normal", "colour": "berry", "mark": "spark", "voice": { "en": "af_heart", "es": "ef_dora" } }
+ *     "talk": "normal", "colour": "berry", "mark": "leaf", "dots": "smile", "motion": "warm", "voice": { "en": "af_heart", "es": "ef_dora" } }
  *
  * Only the person writes there: no agent tool does, and an agent's sandbox has the folder read-only
  * at most (test/persona-agents.test.ts).
@@ -16,7 +16,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { isRecord } from "@dashi/shape";
-import { isCharacterId, isPersonaMark, isPersonaTalk, type PersonaTalk } from "../../shared/pill/index.ts";
+import { isCharacterId, isPersonaDots, isPersonaMark, isPersonaMotion, isPersonaTalk, type PersonaTalk } from "../../shared/pill/index.ts";
 import { settingsPath } from "../../shared/settings/index.ts";
 import { type Character, DASHI, presetCharacter, type Words } from "./characters.ts";
 import { checkName } from "./name.ts";
@@ -81,6 +81,8 @@ export function checkCharacterFile(text: string): FileCheck {
       hello: { en: "Hi, {you}. I'm {name}.", es: "Hola, {you}. Soy {name}." },
       colour: colourById(raw.colour)?.id ?? DASHI.colour,
       mark: isPersonaMark(raw.mark) ? raw.mark : DASHI.mark,
+      dots: isPersonaDots(raw.dots) ? raw.dots : DASHI.dots,
+      motion: isPersonaMotion(raw.motion) ? raw.motion : DASHI.motion,
       talk: isPersonaTalk(talk) ? talk : DASHI.talk,
       voice: { en: voiceId(voice.en, DASHI.voice.en), es: voiceId(voice.es, DASHI.voice.es) },
       own: true,
@@ -145,6 +147,8 @@ export function characterFileText(from: Character, id: string, name: string): st
     talk: from.talk,
     colour: from.colour,
     mark: from.mark,
+    dots: from.dots,
+    motion: from.motion,
     voice: from.voice,
   };
   return `${JSON.stringify(file, null, 2)}\n`;

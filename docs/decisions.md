@@ -1521,3 +1521,52 @@ Add one entry at the end of Part B, in the commit that makes the change: its
 number, the date, the question, the choice, why, what it cost, and how to undo
 it. If it teaches a new way to decide, add a line to Part A naming it. Plain,
 short words, as the rulebook is written.
+
+### D71. The five dots are Dashi's face: eight marks, six shapes, ids only
+
+- **Date:** 2026-11-14. The `n6-face` agent's.
+- **Question:** the design names eight marks and four shapes of the dots; the
+  first slice built two marks (`spark`, `dots`) and no shape. The brief asks
+  for a shape for each of the six characters.
+- **Choice:** `persona.mark` takes the design's eight glyphs, and still `dots`
+  (the first slice's "no disc", so a file that has it keeps working; the pane
+  no longer offers it). `persona.dots` takes six shapes: the design's four
+  (`line`, `smile`, `wave`, `pearls`, its 6 px dot being 4 points) and two of
+  ours, `steps` (Nori) and `hop` (Yuzu), so no two characters share a face.
+  The capsule draws the disc and then the dots in every phase of Dashi's line,
+  as the design's line-up does; beside the Dock, next to buttons, the disc
+  stands alone. The glyphs and shapes are data in `shared/pill/look.ts`,
+  because the capsule, the bar and Settings all draw them; the hub's
+  `Persona` gained `dots` and `motion`. The spark stays the glyph the shell
+  already drew, so a Dashi nobody changed looks as it did. A character's file
+  names a mark, a shape and a way of moving by id; anything else in those
+  fields is Dashi's (D61 holds: text and ids only).
+- **Why:** a face is the cheapest thing that makes six characters six.
+- **Cost:** Dashi's capsule is 44 points wider wherever it has the room. The
+  bar's mark still draws the spark: `markSvg(persona.mark)` is there for it.
+- **Undo:** `FaceLead` in `capsule/lib/face.tsx` back to the disc alone;
+  `PERSONA_DOTS` and `DOT_SHAPES` in `shared/pill/`.
+
+### D72. Each character moves the dots its own way, on one timer, and not at all when asked
+
+- **Date:** 2026-11-14. The `n6-face` agent's.
+- **Question:** the design put "the dots come alive" in the second slice,
+  waiting on mirin width and offset transitions.
+- **Choice:** no transitions: `shared/face/motion.ts` is arithmetic from a
+  moment to five offsets and sizes, and `FaceDots` draws it anew on one
+  `setInterval` (80 ms at rest, 50 or 100 ms thinking, 33 ms speaking). Dashi
+  breathes; Miso's smile deepens; Kombu barely moves and only its middle pearl
+  answers a word; Wasabi does not breathe and turns its wave over; Nori steps
+  along the row; Yuzu bounces. All blink once when they have heard you, jump
+  on each spoken word, and rise when the pointer is on them (mirin tells a
+  surface that it is hovered, not where the pointer is, so "toward the
+  pointer" is "up"). No timer runs while the capsule is hidden (the dots are
+  unmounted), while listening (the level's own changes draw them, as bars,
+  exactly as dictation's), with Reduce Motion, or while Dashi drops the act
+  (D73): those draw the still shape.
+- **Why:** it costs five small views redrawn, and only while Dashi is on
+  screen doing something.
+- **Cost:** a React commit of five views per tick: at most 30 a second while
+  it speaks, 12 at rest. Not measured in the VM yet.
+- **Undo:** give every character `still` in `persona/lib/characters.ts`.
+

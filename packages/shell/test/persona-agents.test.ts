@@ -30,6 +30,7 @@ test("every row of Your Dashi is the person's alone: get_settings and set_settin
     "persona/voice",
     "persona/colour",
     "persona/mark",
+    "persona/dots",
     "persona/note",
     "persona/own",
     "persona/reset",

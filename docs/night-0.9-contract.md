@@ -133,7 +133,9 @@ Sets `hub.persona` (`Persona`) from settings.json, live. **The keys the others c
 | --- | --- | --- | --- |
 | `persona.name` | 1 to 24 characters | `"Dashi"` | `Persona.name` |
 | `persona.colour` | `#rrggbb` | `#6E56CF` | `Persona.colour` |
-| `persona.mark` | `"spark"` or `"dots"` | `"spark"` | `Persona.mark` |
+| `persona.mark` | `spark` `bowl` `dot` `moon` `leaf` `drop` `flame` `paw`, or `dots` (no disc) | `"spark"` | `Persona.mark`; draw it with `markSvg(mark)` (`shared/pill/look.ts`) |
+| `persona.dots` | `line` `smile` `wave` `pearls` `steps` `hop` | `"line"` | `Persona.dots`; its offsets and widths are `dotShape(dots)` |
+| (the character's) | `calm` `warm` `quiet` `dry` `patient` `bright`, or `still` | `"calm"` | `Persona.motion`: how the dots move (`shared/face`); `still` while Dashi drops the act |
 | `persona.talk` | `"less"`, `"normal"`, `"more"` | `"normal"` | `Persona.talk` |
 | `persona.character` | an id, `[a-z0-9-]` | none | the persona piece's own |
 | `voice.voice` | a voice id (0.8's key, unchanged) | Dashi's own | `Persona.voice` |

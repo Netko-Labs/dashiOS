@@ -1,7 +1,7 @@
 /**
  * Your Dashi: who the assistant is. Its name, one of six characters or the person's own from a
  * small file, what it calls them, how much it talks, the language and the voice it answers in, and
- * the colour and mark of its capsule, shown as it will look. A character changes how Dashi sounds
+ * the colour, mark and dots of its capsule, shown as it will look and moving as it will move. A character changes how Dashi sounds
  * and looks, never what it may do (docs/decisions.md D58), and the pane says so.
  *
  * Every row is the person's alone: each change first asks whose press it was (person-only.ts),
@@ -25,7 +25,7 @@ import {
 } from "../../../persona/index.ts";
 import { Caption, Group, Note } from "../../../shared/cards/index.ts";
 import { FoldedChoices } from "../../../shared/controls/folded.tsx";
-import { PERSONA_MARKS, PERSONA_TALK } from "../../../shared/pill/index.ts";
+import { PERSONA_TALK } from "../../../shared/pill/index.ts";
 import { basicsHere } from "../../../voice/index.ts";
 import type { PaneContext } from "../../context.ts";
 import { useSettings } from "../../hooks.ts";
@@ -35,7 +35,8 @@ import { LANGUAGE_WORDS, TALK_WORDS } from "../changes/words.ts";
 import { type ByPerson, ONLY_YOU, type PersonOnly, usePersonOnly } from "../person-only.ts";
 import { Setting } from "../setting.tsx";
 import { MiniButton } from "./parts.tsx";
-import { CapsulePreview, CharacterFilesNotes, LineField, Swatches } from "./persona-parts.tsx";
+import { Look } from "./persona-look.tsx";
+import { CapsulePreview, CharacterFilesNotes, LineField } from "./persona-parts.tsx";
 import type { VoicePaneSource } from "./voice.tsx";
 import { voiceChoices } from "./voice-words.ts";
 
@@ -48,6 +49,7 @@ const EVERY_KEY: PersonaSection = {
   character: undefined,
   colour: undefined,
   mark: undefined,
+  dots: undefined,
   talk: undefined,
   you: undefined,
   language: undefined,
@@ -170,25 +172,6 @@ function Sound({ settings, persona, guard, voices }: Parts) {
   );
 }
 
-function Look({ settings, persona, guard }: Parts) {
-  const view = useSyncExternalStore(persona.source.subscribe, persona.source.view);
-  return (
-    <Group testID="persona-look">
-      <Setting id="persona/colour" testID="persona-colour" {...quiet(guard, "persona/colour")}>
-        <Swatches value={view.colour.id} onChange={(colour) => guard.mine("persona/colour", () => settings.patch("persona", { colour: colour.to }))} />
-      </Setting>
-      <Setting id="persona/mark" testID="persona-mark" {...quiet(guard, "persona/mark")}>
-        <FoldedChoices
-          testID="persona-mark-choice"
-          value={view.mark}
-          options={PERSONA_MARKS.map((mark) => ({ value: mark, label: mark === "spark" ? "Spark" : "Dots" }))}
-          onChange={(mark) => guard.mine("persona/mark", () => settings.patch("persona", { mark }))}
-        />
-      </Setting>
-    </Group>
-  );
-}
-
 function Own({ settings, persona, guard }: Parts) {
   const view = useSyncExternalStore(persona.source.subscribe, persona.source.view);
   const [failed, setFailed] = useState(false);
@@ -254,7 +237,15 @@ export function PersonaPane(props: PersonaPaneProps) {
     <Page title="Your Dashi">
       <Hero testID="persona-hero">
         <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, padding: 8 }}>
-          <CapsulePreview colour={view.colour} mark={view.mark} line={previewLine(view, persona.source.language())} />
+          <CapsulePreview
+            colour={view.colour}
+            mark={view.mark}
+            dots={view.dots}
+            motion={view.motion}
+            name={view.name}
+            still={useSettings(settings).data.appearance.reduceMotion === true}
+            line={previewLine(view, persona.source.language())}
+          />
           <MiniButton
             testID="persona-hear"
             label={voices ? "Hear it" : "Turn on Voice to hear it"}
