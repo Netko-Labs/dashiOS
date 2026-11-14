@@ -11,6 +11,7 @@
 import { CARD_ARM_MS, type KeyGesture, type PillAsk, type PillHub, type VoiceModeCommand, type VoiceModeState } from "../../shared/pill/index.ts";
 import { realTimers, type Timers } from "../../shared/time/index.ts";
 import type { OpenCard, Reading } from "../types.ts";
+import { Hearing } from "./hearing.ts";
 import { READING_CHARS } from "./model.ts";
 import { Questions } from "./questions.ts";
 import { cardId, type Task, type TaskSource, type VoiceSource } from "./sources.ts";
@@ -32,6 +33,8 @@ export interface VoiceModeDeps {
 
 /** How long "Done", "Stopped" and a notice of the capsule's own stay. */
 const STAYS_MS = 4000;
+/** How long an answer to read stays, unless it is closed or the person talks again. */
+const READING_STAYS_MS = 120_000;
 /** A spoken yes counts for the run that follows it at once. */
 const SAID_YES_MS = 2000;
 
@@ -48,11 +51,12 @@ export class VoiceMode {
   private reading: Reading | null = null;
   /** A state of the capsule's own that no chip says: key-down, done, stopped. */
   private own: { state: VoiceModeState; timer: unknown } | null = null;
-  private hearing: (() => void) | null = null;
+  private readonly hearing: Hearing;
   private saidYesAt = Number.NEGATIVE_INFINITY;
 
   constructor(private readonly deps: VoiceModeDeps) {
     this.timers = deps.timers ?? realTimers;
+    this.hearing = new Hearing(deps.voice, this.timers);
     this.questions = new Questions(
       this.timers,
       () => this.now(),
@@ -127,14 +131,26 @@ export class VoiceMode {
       }
       // An answer too long for the line is read whole in the card.
       if (task.phase === "done" && task.steps.length === 0 && task.said.length > READING_CHARS)
-        this.reading = { id: task.id, request: task.request, text: task.said };
+        this.read({ id: task.id, request: task.request, text: task.said });
     }
+  }
+
+  /** A long answer opens in the card, and closes by itself after a while (nothing waits on it). */
+  private read(reading: Reading): void {
+    this.reading = reading;
+    this.timers.set(() => {
+      if (this.reading !== reading) return;
+      this.reading = null;
+      this.refresh();
+    }, READING_STAYS_MS);
   }
 
   /** Read 0.8's state again and tell the hub what changed. */
   refresh(): void {
     const tasks = this.tasks();
     this.follow(tasks);
+    // An answer being read goes when the person talks to Dashi again.
+    if (this.deps.voice?.getSnapshot()?.kind === "listening") this.reading = null;
     const { hub } = this.deps;
     const asks = [...permissionsOf(tasks, this.spoken, this.since, this.now()), ...this.questions.asks()].sort((a, b) => a.since - b.since);
     if (JSON.stringify(asks) !== JSON.stringify(hub.asks.getSnapshot())) hub.asks.set(asks);
@@ -166,7 +182,7 @@ export class VoiceMode {
 
   private setCard(card: OpenCard | null): void {
     if (card === this.card) return;
-    if (!card || !this.card || cardId(card) !== cardId(this.card)) this.unhear();
+    if (!card || !this.card || cardId(card) !== cardId(this.card)) this.hearing.stop();
     this.card = card;
     this.deps.onCard(card);
   }
@@ -179,28 +195,9 @@ export class VoiceMode {
     this.answerPermission(id, yes, true);
   }
 
-  /**
-   * Say `words` and take the next thing heard as the card's answer. A moment
-   * later, not now: the voice loop is still handing the plan over, and
-   * taking its turn here would stop the task (voice/voice.ts `halt`).
-   */
+  /** Say `words`; the next thing heard, while that card is still up, is its answer. */
   private hear(id: string, words: string, heard: (text: string) => void): void {
-    const voice = this.deps.voice;
-    if (!voice) return;
-    this.unhear();
-    let release: (() => void) | null = null;
-    const timer = this.timers.set(() => {
-      if (this.cardIs(id)) release = voice.ask(words, (text) => this.cardIs(id) && heard(text));
-    }, 0);
-    this.hearing = () => {
-      this.timers.clear(timer);
-      release?.();
-    };
-  }
-
-  private unhear(): void {
-    this.hearing?.();
-    this.hearing = null;
+    this.hearing.start(words, () => this.cardIs(id), heard);
   }
 
   private cardIs(id: string): boolean {
@@ -212,7 +209,7 @@ export class VoiceMode {
     // The buttons are not armed yet: a click meant for what was there before answers nothing.
     if (yes && !said && this.card && this.cardIs(id) && this.now() < this.card.armsAt) return;
     this.opened.delete(id);
-    this.unhear();
+    this.hearing.stop();
     if (!yes) {
       tasks?.stop(id);
       return this.show({ phase: "stopped", until: this.now() + 2500 }, 2500);
@@ -283,7 +280,7 @@ export class VoiceMode {
 
   close(): void {
     for (const off of this.offs) off();
-    this.unhear();
+    this.hearing.stop();
     if (this.own) this.timers.clear(this.own.timer);
     this.questions.close();
   }

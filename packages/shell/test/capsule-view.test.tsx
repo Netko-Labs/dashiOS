@@ -180,6 +180,8 @@ test("a card with the keyboard says so and hears keys; a question says how to an
   const reading = await drawn(card({ reading: { id: "r", request: "what is new", text: "Three things.\nThe assistant." } }));
   expect(reading.words).toEqual(["Dashi says", "“what is new”", "Three things.", "The assistant.", "Close"]);
   expect(reading.has("capsule-disc")).toBe(true);
+  const long = await drawn(card({ reading: { id: "r", request: "what is new", text: "word ".repeat(200) } }));
+  expect(long.words.slice(-3)).toEqual(["There is more than fits here.", "Close", "Read it all"]);
 });
 
 test("the seat is where the place says: centred, or beside the Dock", async () => {

@@ -36,6 +36,8 @@ function speak(stage: Stage, sentence: string, everyMs: number): void {
 export const SCENES: Readonly<Record<string, Scene>> = {
   idle: (stage) => {
     stage.hub.dictation.set({ phase: "idle" });
+    // Talking again closes an answer being read.
+    stage.voice.show({ kind: "listening", text: "", question: false });
     stage.voice.show(null);
     stage.tasks.clear();
     stage.hub.level.set(0);

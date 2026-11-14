@@ -1214,8 +1214,9 @@ Replaced by D51: 0.9 builds on mirin's `main`.
 
 - **Date:** 2026-11-13. The `n2-capsule` agent's.
 - **Question:** the design names the seats; the code needs their edges.
-- **Choice:** a window "fills down to the Dock" when its bottom edge is
-  within 2 of the windows' area's and it lies under the middle of the
+- **Choice:** a window "fills down to the Dock" when the capsule at home
+  would lie on it: the window comes down past the capsule's top by 4 or
+  more (a tiled window's gap included) and lies under the middle of the
   screen (175 either side of the centre). The side is the focused window's
   centre; a window across both sides, the right. A seat beside the Dock
   needs 200 of room, else one step up (62). With no Dock on screen: 11 from

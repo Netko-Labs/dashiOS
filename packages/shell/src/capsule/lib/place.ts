@@ -1,7 +1,7 @@
 /**
  * Where the capsule sits (pill-v2 README, "Where it sits"): home is the
- * bottom centre, just above the Dock. When a window fills down to the Dock
- * it goes into the Dock's row, beside the Dock, on the side of the window
+ * bottom centre, just above the Dock. When a window fills or tiles down to
+ * the Dock (the capsule would lie on its last lines) it goes into the Dock's row, beside the Dock, on the side of the window
  * that has the keyboard. With no room there (a taskbar, a full Dock) it goes
  * one step up; with no Dock, against the edge, or a step up from it when a
  * window is there. A card always stands on the Dock, centred.
@@ -44,17 +44,26 @@ const home = (dock: DockPlace | null): Place => ({
   tail: CAPSULE.tail,
 });
 
-/** Whether `window` comes down to the windows' bottom edge and lies under the capsule's home. */
-function fillsDown(window: PlacedWindow, input: PlaceInput): boolean {
-  const bottom = input.usable.y + input.usable.height;
-  if (window.y + window.height < bottom - 2) return false;
+/**
+ * Whether the capsule at `bottom` (from the screen's bottom edge) would lie
+ * on `window`: the window comes down past the capsule's top, and lies under
+ * the middle of the screen. A window that fills or tiles down to the Dock
+ * does; one floating higher up does not.
+ */
+function under(window: PlacedWindow, bottom: number, input: PlaceInput): boolean {
+  const edge = input.screen.y + input.screen.height;
+  const top = edge - bottom - CAPSULE.height;
+  if (window.y + window.height < top + OVERLAP || window.y > edge - bottom - OVERLAP) return false;
   const centre = input.screen.x + input.screen.width / 2;
   return window.x < centre + CAPSULE.maxWidth / 4 && window.x + window.width > centre - CAPSULE.maxWidth / 4;
 }
+/** This much of the capsule over a window is on it. */
+const OVERLAP = 4;
 
 export function placeOf(input: PlaceInput): Place {
   const { dock, screen } = input;
-  const filling = input.windows.filter((window) => fillsDown(window, input));
+  const rest = dock?.shown ? home(dock).bottom : SEAT.edge;
+  const filling = input.windows.filter((window) => under(window, rest, input));
   const up = { at: { centre: true } as const, maxWidth: CAPSULE.maxWidth, tail: CAPSULE.tail };
   if (!dock?.shown) return filling.length > 0 ? { seat: "edge-up", bottom: SEAT.edgeUp, ...up } : { seat: "edge", bottom: SEAT.edge, ...up };
   if (filling.length === 0) return home(dock);

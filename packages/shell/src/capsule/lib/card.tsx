@@ -36,8 +36,8 @@ export interface CardProps {
 
 /** The hint under a card: how to answer it, or that it has the keyboard. */
 export function hintOf(content: CardContent, card: OpenCard, talkKey: string | null): string {
+  if (content.kind === "reading") return card.keyboard ? "Return closes it." : content.whole ? "" : "There is more than fits here.";
   if (!content.whole) return "It is too long to answer here.";
-  if (content.kind === "reading") return card.keyboard ? "Return closes it." : "";
   if (card.keyboard)
     return content.kind === "permission"
       ? "Return is yes, Esc is no. Any other key gives the keyboard back."
@@ -123,7 +123,8 @@ function Buttons({ content, armed, colours, onAnswer }: { content: CardContent; 
       testID={`card-button:${answer.do}`}
     />
   );
-  if (content.kind === "reading") return <>{[!content.whole && button("Read it all", { do: "read" }), button("Close", { do: "close" }, content.whole)]}</>;
+  if (content.kind === "reading")
+    return <>{[button("Close", { do: "close" }, content.whole), !content.whole && button("Read it all", { do: "read" }, true)]}</>;
   // Past the limit there is no Yes: only reading it whole, where it lives.
   if (!content.whole) return <>{[button(content.kind === "permission" ? "No" : "Skip", { do: "no" }), button("Read it all", { do: "read" }, true)]}</>;
   if (content.kind === "question") return <>{[button("Skip", { do: "no" }), button("Type it", { do: "read" }, content.choices.length === 0)]}</>;

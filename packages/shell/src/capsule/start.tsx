@@ -84,6 +84,9 @@ class Running implements Capsule {
   /** What was showing when the place was last asked for. */
   private located = "";
   private region = "";
+  /** How tall what is drawn was last laid out, and the screen it is on. */
+  private height: number | null = null;
+  private output: string | undefined = undefined;
 
   constructor(private readonly needs: CapsuleNeeds) {
     const { hub } = needs;
@@ -141,9 +144,26 @@ class Running implements Capsule {
         onDictation={(command) => void hub.dictationCommands.send(command)}
         onVoice={(command) => void hub.voiceCommands.send(command)}
         onCard={(answer) => this.answer(answer)}
-        onBounds={(bounds) => this.state.getSnapshot().shown.kind !== "none" && this.clickable([bounds])}
+        onBounds={(bounds) => this.drew(bounds)}
       />
     );
+  }
+
+  /** What is drawn said where it is: that is all of the surface that takes the pointer, and how high the stack reaches. */
+  private drew(bounds: Bounds): void {
+    if (this.state.getSnapshot().shown.kind === "none") return;
+    this.clickable([bounds]);
+    this.height = bounds.height;
+    this.stack();
+  }
+
+  /** The bottom centre's stack: the volume indicator sits above what shows here (stack.ts). */
+  private stack(): void {
+    const { shown, place, cardBottom: bottom } = this.state.getSnapshot();
+    if (shown.kind === "none") return bottomStack.set(null);
+    const top = shown.kind === "card" ? bottom + (this.height ?? CARD.maxHeight) : place.bottom + CAPSULE.height;
+    const now = bottomStack.getSnapshot();
+    if (now?.top !== top || now.output !== this.output) bottomStack.set({ top, output: this.output });
   }
 
   /** The pointer is taken only on what is drawn: the rest of the surface lets it through. */
@@ -198,6 +218,7 @@ class Running implements Capsule {
       this.state.set({ ...this.state.getSnapshot(), shown });
       // The region stays as it was: the same line may come back at the same bounds, which are told once.
       this.surface.hide();
+      this.height = null;
       return bottomStack.set(null);
     }
     // Where it sits is asked when it appears and when what it shows changes kind, not at every word.
@@ -211,7 +232,8 @@ class Running implements Capsule {
     // A card stands on the Dock, on the Dock's screen.
     const output = shown.kind === "card" && this.where.screens > 1 ? (dock?.output ?? this.where.output) : this.where.output;
     this.surface.show(output, shown.kind === "card" && shown.card.keyboard);
-    bottomStack.set({ top: shown.kind === "card" ? bottom + CARD.maxHeight : this.where.place.bottom + CAPSULE.height, output });
+    this.output = output;
+    this.stack();
   }
 
   async personAnswered(): Promise<boolean> {

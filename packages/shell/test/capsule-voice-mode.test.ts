@@ -252,7 +252,7 @@ test("a question can be skipped, typed elsewhere, or run out of time", async () 
 });
 
 test("an answer too long for the line is read whole in the card; Read it all opens the launcher", () => {
-  const { voice, tasks, state, say, mode } = stage();
+  const { voice, tasks, state, say, mode, advance } = stage();
   const id = say("What is new?");
   tasks.settle(id, [], "A long answer. ".repeat(12));
   voice.show(null);
@@ -260,6 +260,17 @@ test("an answer too long for the line is read whole in the card; Read it all ope
   mode.cardAction("read");
   expect(state.card).toBeNull();
   expect(state.launcher).toBe(1);
+  // It goes when the person talks to Dashi again, or after two minutes.
+  tasks.settle(say("And what else?"), [], "Another long answer. ".repeat(10));
+  voice.show(null);
+  expect(state.card).not.toBeNull();
+  voice.show({ kind: "listening", text: "", question: false });
+  expect(state.card).toBeNull();
+  tasks.settle(say("And then?"), [], "A third long answer. ".repeat(10));
+  voice.show(null);
+  expect(state.card).not.toBeNull();
+  advance(120_000);
+  expect(state.card).toBeNull();
   // A short answer is only said.
   const short = say("What time is it?");
   tasks.settle(short, [], "Half past eleven.");

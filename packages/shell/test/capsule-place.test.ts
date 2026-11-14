@@ -29,9 +29,17 @@ test("a window that fills down to the Dock sends it into the Dock's row, beside 
   expect(place).toMatchObject({ seat: "right", bottom: SEAT.row, at: { left: 852 }, maxWidth: 350, tail: 180 });
 });
 
-test("tiled windows: it sits on the side of the one that has the keyboard", () => {
-  const left = { x: 0, y: 28, width: 760, height: 701, focused: true };
-  const right = { x: 760, y: 28, width: 520, height: 701, focused: false };
+test("a window that floats above the capsule's place leaves it at home; one it would lie on moves it", () => {
+  // The capsule is 80 to 111 from the bottom edge: 689 to 720 on this screen.
+  expect(placeOf({ dock, screen, usable, windows: [{ ...centred, height: 592 }] }).seat).toBe("home");
+  expect(placeOf({ dock, screen, usable, windows: [{ ...centred, height: 600 }] }).seat).toBe("right");
+  // Off to the side of the middle: nothing under it.
+  expect(placeOf({ dock, screen, usable, windows: [{ x: 900, y: 28, width: 380, height: 701, focused: true }] }).seat).toBe("home");
+});
+
+test("tiled windows, with their gaps: it sits on the side of the one that has the keyboard", () => {
+  const left = { x: 8, y: 36, width: 748, height: 685, focused: true };
+  const right = { x: 764, y: 36, width: 508, height: 685, focused: false };
   expect(placeOf({ dock, screen, usable, windows: [left, right] })).toMatchObject({ seat: "left", at: { right: 852 } });
   expect(
     placeOf({
