@@ -238,6 +238,10 @@ impl Dashi {
         let (Some(person), Some(client)) = (self.seat.get_pointer(), away.surface.client()) else {
             return;
         };
+        // Its surface is gone (the window closed under it): there is nothing to leave.
+        if !away.surface.is_alive() {
+            return;
+        }
         let time = self.start_time.elapsed().as_millis() as u32;
         for pointer in person.client_pointers(&client) {
             for button in &away.buttons {
