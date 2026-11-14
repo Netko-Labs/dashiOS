@@ -9,6 +9,7 @@ import { mkdirSync, watch } from "node:fs";
 import { dirname } from "node:path";
 import type { PromptStyle } from "../agents/index.ts";
 import type { Persona } from "../shared/pill/index.ts";
+import { AT_EASE, type Circumstances, inCircumstances } from "./lib/act.ts";
 import type { Character } from "./lib/characters.ts";
 import { type CharacterFiles, charactersDir, readCharacters } from "./lib/files.ts";
 import { promptLanguage } from "./lib/language.ts";
@@ -25,6 +26,8 @@ export interface PersonaSource {
   subscribe(listener: () => void): () => void;
   /** Read the folder again now (the pane just wrote a file). */
   refresh(): void;
+  /** What is going on around Dashi changed (lib/act.ts): it drops the act, or takes it up again. */
+  circumstances(now: Circumstances): void;
   stop(): void;
 }
 
@@ -82,6 +85,7 @@ export function startPersona(options: PersonaOptions): PersonaSource {
   let files = readCharacters(dir);
   let language: "en" | "es" = "en";
   let last = "";
+  let around: Circumstances = AT_EASE;
   const read = (): { view: PersonaView; language: "en" | "es" } => {
     const data = options.settings.getSnapshot().data;
     const characters: readonly Character[] = files.characters;
@@ -91,8 +95,10 @@ export function startPersona(options: PersonaOptions): PersonaSource {
   let view = read().view;
   const apply = (): void => {
     const next = read();
-    const persona = hubPersona(next.view, next.language);
-    const style = personaStyle(next.view, next.language);
+    // The pane shows what was chosen; the capsule, the bar and the prompt get who Dashi is right now.
+    const worn = inCircumstances(next.view, around);
+    const persona = hubPersona(worn, next.language);
+    const style = personaStyle(worn, next.language);
     // The same choices are not told twice: the cell's readers, and the pane, compare by identity.
     const now = JSON.stringify([next, persona, style, files]);
     if (now === last) return;
@@ -128,6 +134,10 @@ export function startPersona(options: PersonaOptions): PersonaSource {
       }
       folder.follow();
       refresh();
+    },
+    circumstances(now) {
+      around = now;
+      apply();
     },
     stop() {
       offSettings();

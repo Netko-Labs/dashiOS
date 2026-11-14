@@ -7,6 +7,7 @@
  * (agents/ask/answerer.ts `styledPrompt`).
  */
 
+export { type ActReason, AT_EASE, afterFailure, type Circumstances, dropsAct, inCircumstances, plain } from "./lib/act.ts";
 export { CHARACTERS, type Character, DASHI, presetCharacter, type Words } from "./lib/characters.ts";
 export {
   type CharacterFiles,

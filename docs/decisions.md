@@ -1570,3 +1570,24 @@ short words, as the rulebook is written.
   it speaks, 12 at rest. Not measured in the VM yet.
 - **Undo:** give every character `still` in `persona/lib/characters.ts`.
 
+### D73. Dashi drops the act when a character is out of place
+
+- **Date:** 2026-11-14. The `n6-face` agent's.
+- **Question:** a playful character over a shared screen, a film, or right
+  after something broke.
+- **Choice:** one rule, `dropsAct` in `persona/lib/act.ts`: while another
+  program captures the screen, while the screen is recorded (by the person or
+  an agent), while any window is full screen, and from a failed ask until a
+  later one is done, Dashi is plain: its own character's words, Brief, and
+  the dots keep their shape and do not move. The name, colour, mark, dots,
+  voice and language stay. The pane still shows what was chosen. With nothing
+  chosen only the dots hold still. "During a call" is in the rule
+  (`Circumstances.call`) but nothing sets it: the shell cannot tell a call
+  from any other use of the microphone tonight.
+- **Why:** the person chose a character for themselves, not for the meeting.
+- **Cost:** recording Dashi with Dashi's own recorder shows it plain, so the
+  dots' motion cannot be filmed that way. Full screen on any Space counts,
+  not only the one in front.
+- **Undo:** `followCircumstances` in `boot/persona.ts` (one line in
+  `main.tsx`) tells the persona; without it Dashi is always as chosen.
+

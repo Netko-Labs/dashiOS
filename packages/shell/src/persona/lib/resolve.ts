@@ -97,7 +97,11 @@ export function personaStyle(view: PersonaView, language: "en" | "es"): { full: 
 
 /** What the capsule, the bar and the voice loop read. A colour that is not one of the six is not worn. */
 export function hubPersona(view: PersonaView, language: "en" | "es"): Persona {
-  if (!view.set) return view.voice === undefined ? DEFAULT_PERSONA : { ...DEFAULT_PERSONA, voice: view.voice };
+  if (!view.set) {
+    // Nothing chosen: Dashi as it came, its dots still while it drops the act (lib/act.ts).
+    if (view.voice === undefined && view.motion === DEFAULT_PERSONA.motion) return DEFAULT_PERSONA;
+    return { ...DEFAULT_PERSONA, motion: view.motion, voice: view.voice };
+  }
   return {
     name: view.name,
     colour: view.hex,
