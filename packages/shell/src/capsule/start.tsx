@@ -42,6 +42,8 @@ export interface CapsuleNeeds {
   tasks(): TaskSource | null;
   reduceMotion(): boolean;
   openLauncher(): void;
+  /** System Settings on a pane: where a notice points. */
+  openSettings(pane: "voice" | "agents"): void;
   /** Start a Metal host with no window. */
   spawn(options: NativeHostOptions): NativeHostTransport;
   /** A file of scene names to play (lib/fake.ts): the fake stands in for the voice loop and the tasks. */
@@ -144,6 +146,7 @@ class Running implements Capsule {
         onDictation={(command) => void hub.dictationCommands.send(command)}
         onVoice={(command) => void hub.voiceCommands.send(command)}
         onCard={(answer) => this.answer(answer)}
+        onGo={(where) => (where === "launcher" ? this.needs.openLauncher() : this.needs.openSettings(where))}
         onBounds={(bounds) => this.drew(bounds)}
       />
     );

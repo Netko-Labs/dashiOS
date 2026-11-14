@@ -31,6 +31,7 @@ export function startCapsule({ compositor, talking, look, services, late }: Caps
     openLauncher: () => {
       if (!late.peek("overlays")?.has("launcher")) late.peek("launcher")?.open();
     },
+    openSettings: (pane) => late.peek("settingsApp")?.open(pane),
     spawn: (options) => spawnShellHost(options),
     // A file of scene names, for proof without a microphone or an agent (capsule/lib/fake.ts).
     fake: process.env.DASHI_CAPSULE_FAKE || undefined,

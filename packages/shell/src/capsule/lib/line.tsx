@@ -129,6 +129,7 @@ export function Capsule({
   dashi,
   tight,
   testID,
+  onPress,
 }: {
   colours: CapsuleColours;
   children: ReactNode;
@@ -136,10 +137,13 @@ export function Capsule({
   dashi: boolean;
   tight: boolean;
   testID: string;
+  /** A press on the capsule itself (a notice that points somewhere); its buttons take their own. */
+  onPress?: (() => void) | undefined;
 }) {
   return (
     <View
       testID={testID}
+      {...(onPress ? { onPress, accessibilityRole: "button" as const } : {})}
       style={{
         flexShrink: 0,
         flexDirection: "row",

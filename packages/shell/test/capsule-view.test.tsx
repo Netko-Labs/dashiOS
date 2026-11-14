@@ -48,6 +48,7 @@ async function drawn(shown: Shown, options: { place?: Place; persona?: Persona; 
       onDictation={(command) => void sent.push(command)}
       onVoice={(command) => void sent.push(command)}
       onCard={(answer) => void sent.push(answer)}
+      onGo={(where) => void sent.push({ go: where })}
       onBounds={() => {}}
     />,
     transport,
@@ -206,4 +207,11 @@ test("the seat is where the place says: centred, or beside the Dock", async () =
   // Beside the Dock there is less room: the end of the words.
   expect(shown.words).toEqual(["…checking the screenshots"]);
   expect((await drawn(dictation({ phase: "key-down" }))).has("capsule-seat:home")).toBe(true);
+});
+
+test("a notice that points somewhere is a press; one that does not is not", async () => {
+  const pointing = await drawn(voice({ phase: "notice", line: "No agent answers yet.", go: "agents", until: 0 }));
+  expect(pointing.node("capsule:voice:notice")?.props.onPress).toBe(true);
+  const plain = await drawn(voice({ phase: "notice", line: "I didn't hear anything.", until: 0 }));
+  expect(plain.node("capsule:voice:notice")?.props.onPress).toBeUndefined();
 });

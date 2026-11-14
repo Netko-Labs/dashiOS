@@ -35,6 +35,8 @@ export interface CapsuleViewProps {
   onDictation(command: DictationCommand): void;
   onVoice(command: VoiceModeCommand): void;
   onCard(answer: CardAnswer): void;
+  /** A press on a notice that points somewhere: Settings › Voice, Settings › Agents, the launcher. */
+  onGo(where: "voice" | "agents" | "launcher"): void;
   /** Where what is drawn is, in the surface. */
   onBounds(bounds: Bounds): void;
 }
@@ -85,6 +87,7 @@ export function CapsuleView(props: CapsuleViewProps) {
     );
   }
   const common = { tailPoints: place.tail, level: props.level, still };
+  const go = shown.kind === "voice" && shown.state.phase === "notice" ? shown.state.go : undefined;
   return (
     <View style={{ flex: 1, position: "relative" }}>
       <Seat place={place}>
@@ -106,6 +109,7 @@ export function CapsuleView(props: CapsuleViewProps) {
               dashi={persona.mark === "spark"}
               tight={endsInButton(shown)}
               testID={`capsule:voice:${shown.state.phase}`}
+              onPress={go ? () => props.onGo(go) : undefined}
             >
               <VoiceLine state={shown.state} mark={persona.mark} send={props.onVoice} colours={dashi} {...common} />
             </Capsule>
