@@ -66,22 +66,31 @@ function useOwnPopover(menus: MenuBarProps["menus"], output: MenuBarProps["outpu
   return { popover: here ? popover : null, focused: here ? (ring ?? null) : null, frozenName: appName };
 }
 
+/**
+ * The bar's widths as drawn: the bar's and the menus' (the room the menus leave the status side), the status side's,
+ * and what every status item would take, hidden ones too (the jobs get what is left of the room).
+ */
+function useBarWidths() {
+  const [barWidth, setBarWidth] = useState<number | null>(null);
+  const [menusWidth, setMenusWidth] = useState<number | null>(null);
+  const [statusWidth, setStatusWidth] = useState<number | null>(null);
+  const [fullWidth, setFullWidth] = useState<number | null>(null);
+  return { barWidth, menusWidth, statusWidth, fullWidth, setBarWidth, setMenusWidth, setStatusWidth, setFullWidth };
+}
+
 export function MenuBar(props: MenuBarProps) {
   const { apps, toplevels, menus, appMenus, output, installed, accessible = () => false } = props;
   const colors = useColors();
   const label = { fontSize: 13, color: colors.text } as const;
   const { popover, focused, frozenName } = useOwnPopover(menus, output);
-  // The room the menus leave the status side: the bar's width and the menus' (both measured).
-  const [barWidth, setBarWidth] = useState<number | null>(null);
-  const [menusWidth, setMenusWidth] = useState<number | null>(null);
-  const [statusWidth, setStatusWidth] = useState<number | null>(null);
+  const { barWidth, menusWidth, statusWidth, fullWidth, setBarWidth, setMenusWidth, setStatusWidth, setFullWidth } = useBarWidths();
   const appName = useBarName(apps, toplevels, installed, frozenName);
   const openMenu = popover?.kind === "menu" ? popover.id : null;
   // Held while a popover is open, like the name (app-menus/store.ts).
   const titles = barMenus(useAppMenus(appMenus));
   const { titleBounds, statusStops } = useBarStops(menus, output, appName, titles);
   const room = barWidth === null || menusWidth === null ? null : statusRoom(barWidth, menusWidth, 12);
-  const slots = useStatusSlots(props, popover, appName, barWidth, { room, statusWidth });
+  const slots = useStatusSlots(props, popover, appName, barWidth, { room, fullWidth });
   const menu = (id: BarMenuId, children: ReactNode) => (
     <Title
       key={id}
@@ -133,6 +142,7 @@ export function MenuBar(props: MenuBarProps) {
         }}
         accessible={accessible()}
         onWidth={setStatusWidth}
+        onFull={setFullWidth}
       />
       {props.voice && (
         <VoiceChip

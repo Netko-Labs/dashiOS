@@ -124,6 +124,14 @@ describe("the row in the room it has", () => {
       ["d", "disc"],
       ["n", "step"],
     ]);
+    // A quiet speaker with no room for its step beside a count is a disc as well.
+    const tight = layoutJobs([job("a"), job("b"), job("d")], "d", MORE_JOBS_WIDTH + 4 + 20);
+    expect(tight.capsules.map(({ job: each, form }) => [each.key, form])).toEqual([["d", "disc"]]);
+    expect(tight.more).toBe(2);
+    // With room for its step once the discs are counted, it keeps its words.
+    const counted = layoutJobs([job("a"), job("b"), job("d")], "d", MORE_JOBS_WIDTH + 4 + capsuleWidth(job("d"), "step"));
+    expect(counted.capsules.map(({ job: each, form }) => [each.key, form])).toEqual([["d", "step"]]);
+    expect(counted.more).toBe(2);
     // Even with nothing left, amber stays.
     expect(layoutJobs([job("m", "need"), job("n", "need")], "n", 10).capsules.map(({ job: each }) => each.key)).toEqual(["m", "n"]);
   });
@@ -147,7 +155,8 @@ describe("the jobs' store", () => {
     const timers: Array<{ run: () => void; ms: number }> = [];
     let now = 0;
     let started = false;
-    const still = { subscribe: () => () => {}, getSnapshot: () => [] as never[] };
+    const none: never[] = [];
+    const still = { subscribe: () => () => {}, getSnapshot: () => none };
     const store = new BarJobs({
       tasks: () =>
         started

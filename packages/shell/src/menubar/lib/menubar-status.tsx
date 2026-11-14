@@ -52,10 +52,12 @@ export interface StatusSideProps {
   accessible?: boolean;
   /** The row's width as drawn (the voice chip sits clear of it). */
   onWidth?: (width: number) => void;
+  /** The width every item would take, the hidden ones too (the jobs take what the others leave: menubar-program-slots.tsx). */
+  onFull?: (width: number) => void;
 }
 
 /** Each item's width and place as drawn, and what fits: the items that go into "…" while the room is short. */
-function useStatusFit(slots: readonly StatusSlot[], room: number | null, onHidden: StatusSideProps["onHidden"]) {
+function useStatusFit(slots: readonly StatusSlot[], room: number | null, onHidden: StatusSideProps["onHidden"], onFull: StatusSideProps["onFull"]) {
   // Each item's width as last drawn: a hidden one keeps the width it had, so it comes back when that much room does.
   const widths = useRef(new Map<string, number>());
   // Where each item is drawn, for opening one from the keyboard.
@@ -76,6 +78,10 @@ function useStatusFit(slots: readonly StatusSlot[], room: number | null, onHidde
   useEffect(() => {
     onHidden?.(hiddenKey === "" ? [] : hiddenKey.split("\n"));
   }, [hiddenKey, onHidden]);
+  const full = items.reduce((sum, item) => sum + item.width, 0);
+  useEffect(() => {
+    onFull?.(full);
+  }, [full, onFull]);
   return { fit, placed, measure };
 }
 
@@ -154,9 +160,21 @@ function arrangeStatus(
   return drawn;
 }
 
-export function StatusSide({ slots, room, areaOpen, moreOpen, onMore, onHidden, focused = null, onStops, accessible = false, onWidth }: StatusSideProps) {
+export function StatusSide({
+  slots,
+  room,
+  areaOpen,
+  moreOpen,
+  onMore,
+  onHidden,
+  focused = null,
+  onStops,
+  accessible = false,
+  onWidth,
+  onFull,
+}: StatusSideProps) {
   const colors = useColors();
-  const { fit, placed, measure } = useStatusFit(slots, room, onHidden);
+  const { fit, placed, measure } = useStatusFit(slots, room, onHidden, onFull);
   const shown = new Set(fit.shown);
   const attention = slots.some((slot) => slot.attention && !shown.has(slot.key));
   const wrap = (slot: StatusSlot) => (

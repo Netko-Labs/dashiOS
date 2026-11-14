@@ -184,8 +184,9 @@ const rowWidth = (widths: readonly number[]): number => widths.reduce((sum, widt
 /**
  * The jobs' row in `room` (null: not measured yet, everything shows). The
  * speaking capsule stands last. It is drawn whole when that fits; else with
- * its step alone; else as a disc. Then discs go into "+N", the oldest
- * first, but never one that needs the person, and never the speaking one.
+ * its step alone; else the discs go into "+N", the oldest first, but never
+ * one that needs the person; and only when its step fits beside nothing but
+ * a count is the speaking one a disc as well.
  */
 export function layoutJobs(jobs: readonly BarJob[], speaking: string | null, room: number | null): JobRow {
   const voice = jobs.find((job) => job.key === speaking) ?? null;
@@ -197,17 +198,23 @@ export function layoutJobs(jobs: readonly BarJob[], speaking: string | null, roo
   const fits = (form: CapsuleForm, shown: readonly BarJob[], more: number): boolean =>
     room === null || rowWidth([...(more > 0 ? [MORE_JOBS_WIDTH] : []), ...shown.map(() => DISC_WIDTH), ...(voice ? [capsuleWidth(voice, form)] : [])]) <= room;
   for (const form of ["full", "step"] as const) if (fits(form, quiet, 0)) return row(form, quiet, 0);
-  // Short of room: the discs go, the oldest first, the ones that need the person last of all (and then never).
-  const shown = [...quiet];
-  let more = 0;
-  const form: CapsuleForm = voice?.state === "need" ? "step" : "disc";
-  while (!fits(form, shown, more)) {
-    const at = shown.findIndex((job) => job.state !== "need");
-    if (at < 0) break;
-    shown.splice(at, 1);
-    more++;
-  }
-  return row(form, shown, more);
+  // Short of room: the discs go into the count, the oldest first; one that needs the person stays.
+  const count = (form: CapsuleForm): { shown: BarJob[]; more: number; fit: boolean } => {
+    const shown = [...quiet];
+    let more = 0;
+    while (!fits(form, shown, more)) {
+      const at = shown.findIndex((job) => job.state !== "need");
+      if (at < 0) return { shown, more, fit: false };
+      shown.splice(at, 1);
+      more++;
+    }
+    return { shown, more, fit: true };
+  };
+  // The speaking one keeps its step while that fits beside a count; else it is a disc too (never one that needs the person).
+  const spoken = count("step");
+  if (spoken.fit || voice?.state === "need") return row("step", spoken.shown, spoken.more);
+  const silent = count("disc");
+  return row("disc", silent.shown, silent.more);
 }
 
 /** What a screen reader says for a job. */

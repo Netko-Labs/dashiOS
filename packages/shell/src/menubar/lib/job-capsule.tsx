@@ -122,9 +122,10 @@ export function JobCapsule({ job, form, dashi, onOpen, onStop, reduceMotion, acc
   const [hovered, setHovered] = useState(false);
   const look = capsuleLook(job, colors, dashi);
   const speaks = form !== "disc";
-  // The square shows on a capsule with words, while the job can still be stopped.
-  const stop = hovered && speaks && onStop !== undefined && (job.state === "run" || job.state === "need");
-  const words = { fontSize: CAPSULE.fontSize, color: look.ink } as const;
+  // The square shows on a task's capsule with words, while it can still be stopped; an agent is stopped from its panel.
+  const stop = hovered && speaks && onStop !== undefined && job.kind === "task" && (job.state === "run" || job.state === "need");
+  // The words are cut to length as data (bar-jobs.ts): they are drawn whole, never squeezed.
+  const words = { fontSize: CAPSULE.fontSize, color: look.ink, flexShrink: 0 } as const;
   const open = ({ bounds }: { bounds?: { x: number; width: number } }) => onOpen(job, bounds ? bounds.x + bounds.width : 0);
   return (
     <View
@@ -153,18 +154,22 @@ export function JobCapsule({ job, form, dashi, onOpen, onStop, reduceMotion, acc
         <View
           testID={`job-words:${job.key}`}
           onPress={open}
-          style={{ flexDirection: "row", alignItems: "center", gap: 5, height: CAPSULE.height, paddingLeft: CAPSULE.gap, paddingRight: CAPSULE.right }}
+          style={{
+            flexShrink: 0,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 5,
+            height: CAPSULE.height,
+            paddingLeft: CAPSULE.gap,
+            paddingRight: CAPSULE.right,
+          }}
         >
           {stop ? (
-            <Text numberOfLines={1} style={{ ...words, fontWeight: "semibold" }}>{`Stop ${job.title}`}</Text>
+            <Text style={{ ...words, fontWeight: "semibold" }}>{`Stop ${job.title}`}</Text>
           ) : (
             <>
-              {form === "full" && (
-                <Text numberOfLines={1} style={{ ...words, fontWeight: "semibold" }}>
-                  {job.title}
-                </Text>
-              )}
-              <Text numberOfLines={1} style={{ ...words, ...(form === "full" ? { opacity: 0.9 } : { fontWeight: "semibold" }) }}>
+              {form === "full" && <Text style={{ ...words, fontWeight: "semibold" }}>{job.title}</Text>}
+              <Text style={{ ...words, ...(form === "full" ? { opacity: 0.9 } : { fontWeight: "semibold" }) }}>
                 {form === "full" ? job.step : job.step.charAt(0).toUpperCase() + job.step.slice(1)}
               </Text>
             </>

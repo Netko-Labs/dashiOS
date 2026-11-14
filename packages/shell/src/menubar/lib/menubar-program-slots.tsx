@@ -35,13 +35,10 @@ import { formatClock, useClockPrefs, useMinuteClock } from "../../shared/time/in
 import { type AppMixer, MicPill, useMicWords } from "../../sound/index.ts";
 import { type SystemStore, useSystem } from "../../system/store.ts";
 import type { BarPill } from "../pill.ts";
-import { extraGoes, MENU_GAP } from "./menubar-fit.ts";
+import { extraGoes, STATUS_GAP } from "./menubar-fit.ts";
 import { agentMarkSlot, jobsSlot, type PillNow, usePill } from "./menubar-pill-slots.tsx";
 import { systemSlots } from "./menubar-slots.tsx";
 import type { StatusSlot } from "./menubar-status.tsx";
-
-/** The least room kept between the app's menus and the jobs. */
-const JOBS_GAP = 12;
 
 /** The bar's tooltip (bar-tip.tsx): words under a point of this bar (as wide as `barWidth`), or none. */
 export type BarTip = { text: string; x: number; barWidth?: number; output?: string } | null;
@@ -186,11 +183,12 @@ function micSlot({ micWords, openSound, tip }: ProgramContext): StatusSlot[] {
   ];
 }
 
-/** The room the jobs have: what the menus leave the status side, less everything else in it (the jobs' own width as drawn is told back). */
-function useJobsRoom(fit: { room: number | null; statusWidth: number | null }): [number | null, (width: number) => void] {
+/** The room the jobs have: what the menus leave the status side, less every other item in it, hidden or not (the jobs' own width as drawn is told back). */
+function useJobsRoom(fit: { room: number | null; fullWidth: number | null }): [number | null, (width: number) => void] {
   const [jobsWidth, setJobsWidth] = useState(0);
-  const others = fit.statusWidth === null ? null : Math.max(0, fit.statusWidth - jobsWidth);
-  const room = fit.room === null || others === null ? null : Math.max(0, fit.room + MENU_GAP - JOBS_GAP - others);
+  // The status side counts a gap with each item, the jobs' included.
+  const others = fit.fullWidth === null ? null : Math.max(0, fit.fullWidth - jobsWidth - STATUS_GAP);
+  const room = fit.room === null || others === null ? null : Math.max(0, fit.room - others - STATUS_GAP);
   return [room, (width) => setJobsWidth((was) => (Math.abs(was - width) < 0.5 ? was : width))];
 }
 
@@ -200,8 +198,8 @@ export function useStatusSlots(
   popover: Popover | null,
   appName: string,
   barWidth: number | null,
-  /** The room the menus leave the whole status side, and its width as drawn: what is left over is the jobs'. */
-  fit: { room: number | null; statusWidth: number | null } = { room: null, statusWidth: null },
+  /** The room the menus leave the whole status side, and what all its items take: what is left over is the jobs'. */
+  fit: { room: number | null; fullWidth: number | null } = { room: null, fullWidth: null },
 ): StatusSlot[] {
   const { agents, capture, recorder, system, menus, settings, output, runs, mixer, onTip, accessible = () => false } = sources;
   const colors = useColors();

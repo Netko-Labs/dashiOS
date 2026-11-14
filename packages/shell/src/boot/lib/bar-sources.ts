@@ -4,6 +4,8 @@
  * (menubar/start-pill.tsx), and the voice chip's source.
  */
 
+import type { ReactElement } from "react";
+import { panelTasks, withPanelTasks } from "../../agents-panel/index.ts";
 import type { BarPill, startBarPill } from "../../menubar/index.ts";
 import { openOverlay } from "../../overlay.tsx";
 import type { PillHub } from "../../shared/pill/index.ts";
@@ -35,6 +37,34 @@ export function chipSource(talking: VoiceParts, hub: PillHub): ChipSource {
   return source;
 }
 
+/** The launcher, where a plan with no card is answered. */
+function showLauncher(late: BarsNeeds["late"]): void {
+  if (!late.peek("overlays")?.has("launcher")) late.peek("launcher")?.open();
+}
+
+/** A task's plan waits for a yes: its card (the capsule piece's) when there is one, else the launcher. */
+function answerTask(late: BarsNeeds["late"], task: string): void {
+  const hub = late.get("pill");
+  const ask = hub.asks.getSnapshot().find((each) => each.kind === "permission" && each.task === task);
+  if (ask && hub.voiceCommands.send({ do: "open-ask", id: ask.id })) return;
+  late.peek("menus")?.controller.close();
+  showLauncher(late);
+}
+
+/** The agents' panel, with the launcher's Ask tasks as cards in it too (a click on a task's capsule in the bar opens it there). */
+export function agentsPanelWithTasks<Props>(
+  panel: ((props: Props) => ReactElement) | undefined,
+  late: BarsNeeds["late"],
+): ((props: Props) => ReactElement) | undefined {
+  return withPanelTasks(
+    panel,
+    panelTasks(
+      () => late.peek("askAgents")?.tasks ?? null,
+      (task) => answerTask(late, task),
+    ),
+  );
+}
+
 /** What Dashi's mark, the jobs and the field need of the session (menubar/start-pill.tsx). */
 export function pillNeeds(needs: BarsNeeds, bar: PillNeeds["bar"]): PillNeeds {
   const { late } = needs;
@@ -50,9 +80,7 @@ export function pillNeeds(needs: BarsNeeds, bar: PillNeeds["bar"]): PillNeeds {
     runs: needs.handoff.handoffShell.service.runs,
     menus: needs.menus.controller,
     primary: () => late.peek("menuBars")?.primaryName ?? needs.primaryScreen,
-    showLauncher: () => {
-      if (!late.peek("overlays")?.has("launcher")) late.peek("launcher")?.open();
-    },
+    showLauncher: () => showLauncher(late),
     bar,
   };
 }

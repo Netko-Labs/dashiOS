@@ -21,6 +21,7 @@ import { startAppMixer } from "../sound/index.ts";
 import { MENU_BAR_HEIGHT } from "../theme.ts";
 import type { Catalog, Programs } from "./apps.ts";
 import type { Arranging, Desktops } from "./desktop.ts";
+import { agentsPanelWithTasks } from "./lib/bar-sources.ts";
 import type { Look } from "./look.ts";
 import type { Switches } from "./notices.ts";
 import type { LateParts } from "./parts.ts";
@@ -235,7 +236,7 @@ export function startBarMenus(needs: MenusNeeds): BarMenus {
             : needs.settingsWindows.settingsApp.open("battery"),
     laptop,
     statusClosed: (key) => programs.extras.menuClosed(key),
-    agentsPanel: needs.handoffPanel,
+    agentsPanel: agentsPanelWithTasks(needs.handoffPanel, late),
     // "…": the status items the bar had no room for, each working as it does there (bar-overflow.tsx).
     overflowRow: ({ right, keys, close, escape }) => (
       <OverflowRowFor menus={late.get("menus")} programs={programs} system={system} right={right} keys={keys} close={close} escape={escape} />
