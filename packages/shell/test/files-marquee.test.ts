@@ -15,7 +15,7 @@ import {
   stepWithin,
   touches,
 } from "../src/shared/file-browser/lib/marquee/geometry.ts";
-import { gridHeight, tileRects } from "../src/shared/file-browser/lib/views/grid.tsx";
+import { gridHeight, itemParts, tileRects } from "../src/shared/file-browser/lib/views/grid-places.ts";
 import { rowRects } from "../src/shared/file-browser/lib/views/list.tsx";
 
 const none: Modifiers = { shift: false, control: false, alt: false, super: false };
@@ -45,6 +45,38 @@ test("it takes every item it touches, an edge included, and none it only passes"
   expect(hitsIn(rects, { x: 0, y: 109, width: 400, height: 2 })).toEqual([]);
   expect(touches({ x: 0, y: 0, width: 10, height: 10 }, { x: 10, y: 10, width: 5, height: 5 })).toBe(true);
   expect(touches({ x: 0, y: 0, width: 10, height: 10 }, { x: 11, y: 0, width: 5, height: 5 })).toBe(false);
+});
+
+test("in the icon view the item is its icon and its name, at the name's width: the rest of the cell is empty space", () => {
+  const cell = { x: 10, y: 10, width: 104, height: 98 };
+  const [icon, name] = itemParts("a.txt", cell);
+  // The picture, 56 square, in the middle under the cell's 6 of padding.
+  expect(icon).toEqual({ x: 34, y: 16, width: 56, height: 56 });
+  // The name: one line under it, in the middle, far narrower than the cell.
+  expect(name?.y).toBe(76);
+  expect(name?.height).toBe(17);
+  expect(name?.width).toBeLessThan(50);
+  expect((name?.x ?? 0) + (name?.width ?? 0) / 2).toBe(62);
+  // A long name takes two lines and never more than the cell less 5 each side.
+  const [, long] = itemParts("a very long name of a file that goes on.txt", cell);
+  expect(long?.height).toBe(32);
+  expect(long?.width).toBeGreaterThan(80);
+  expect(long?.width).toBeLessThanOrEqual(94);
+  // A search result's name keeps two lines' height whatever it says.
+  expect(itemParts("a.txt", cell, true)[1]?.height).toBe(32);
+});
+
+test("a marquee takes an icon-view item when it touches the icon or the name, not the cell's empty corners", () => {
+  const cells = tileRects(2, 2 * 10 + 2 * 104, 98);
+  const parts = cells.map((cell) => itemParts("a.txt", cell));
+  // Between the two icons, from the first cell's right part into the second's left: 90 to 138 touches neither icon (34 to 90, 138 to 194).
+  expect(hitsIn(parts, { x: 92, y: 20, width: 44, height: 40 })).toEqual([]);
+  expect(hitsIn(cells, { x: 92, y: 20, width: 44, height: 40 })).toEqual([0, 1]);
+  // Reaching the first icon's edge takes it; the name alone takes it too.
+  expect(hitsIn(parts, { x: 90, y: 20, width: 44, height: 40 })).toEqual([0]);
+  expect(hitsIn(parts, { x: 0, y: 80, width: 62, height: 4 })).toEqual([0]);
+  // The cell's corner beside the name takes nothing.
+  expect(hitsIn(parts, { x: 10, y: 80, width: 20, height: 20 })).toEqual([]);
 });
 
 test("the tiles sit in the middle of a width they don't fill, and the rows of a list run its width", () => {

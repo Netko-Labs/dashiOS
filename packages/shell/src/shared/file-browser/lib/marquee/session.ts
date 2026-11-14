@@ -211,7 +211,7 @@ export class Marquee {
     const at = clampTo(this.pointer, viewport);
     const corner = { x: at.x - origin.x, y: at.y - origin.y };
     const marquee = rectBetween(this.anchor, corner);
-    const hits = hitsIn(model.rects, marquee);
+    const hits = hitsIn(model.parts ?? model.rects, marquee);
     const paths = hits.flatMap((index) => model.paths[index] ?? []);
     const last = lastTaken(model.rects, hits, corner);
     this.taken = { paths, last: last === null ? null : (model.paths[last] ?? null) };

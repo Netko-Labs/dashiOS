@@ -75,10 +75,13 @@ export function clampTo(point: Point, frame: Rect): Point {
   };
 }
 
-/** The places (indexes into `rects`) the rectangle touches, in the order drawn. */
-export function hitsIn(rects: readonly Rect[], marquee: Rect): number[] {
+/** The places (indexes into `places`) the rectangle touches, in the order drawn; a place of several parts is touched when one of them is. */
+export function hitsIn(places: readonly (Rect | readonly Rect[])[], marquee: Rect): number[] {
   const hits: number[] = [];
-  for (const [index, rect] of rects.entries()) if (touches(rect, marquee)) hits.push(index);
+  for (const [index, place] of places.entries()) {
+    const parts: readonly Rect[] = "x" in place ? [place] : place;
+    if (parts.some((part) => touches(part, marquee))) hits.push(index);
+  }
   return hits;
 }
 

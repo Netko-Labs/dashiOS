@@ -2252,3 +2252,36 @@ short words, as the rulebook is written.
   only.
 - **Undo:** `git revert` of this entry's commit brings `rowPress` and
   `pressed()` back.
+
+### D111. In Files' icon view the icon and the name are the item, to a press and to a marquee
+
+- **Date:** 2026-11-14. The `n19-polish` agent's. Changes D99's last
+  sentence and D102 for the icon view.
+- **Question:** a tile filled its whole cell (104 × 98) and the cells stand
+  side by side, so a press between two icons dragged a file, and a marquee
+  could start only in the margins or after the last tile; the installed
+  pass moved two files by accident. What is the item, and what must the
+  rectangle touch?
+- **Choice:** as the Finder: the item is the icon (its 56 px square) and
+  the name, at the name's own width. A press on either selects, opens on
+  a second click, drags the file, and a right-click there is the item's
+  menu. The rest of the cell is empty space: a press there, dragged, draws
+  the rectangle; clicked, it clears the selection; a right-click is the
+  folder's menu. The rectangle takes an item when it touches its icon or
+  its name, no longer its whole cell: a drag begun inside a cell would
+  otherwise always take that cell's item, whichever way it went. The list
+  keeps D102 (a row is taken anywhere along it; rows have no empty part
+  the rectangle could start in and miss). Files dropped anywhere on a
+  folder's cell still go into it, and a selected item still washes its
+  whole cell (design.html CO-9); the hover wash is now on the part under
+  the pointer, the icon or the name, which shows what a press takes.
+- **Why:** it is the default view, and a full folder had almost nowhere to
+  begin a rectangle. The press and the rectangle now agree on what an item
+  is.
+- **Cost:** a smaller target: a press 10 px beside a short name misses the
+  item. The name's box is estimated for the rectangle
+  (`grid-places.ts` `itemParts`, from `tile-name.ts`'s letter widths), so
+  it can take or miss a name by a few pixels; the press itself uses what
+  is painted. The selection's wash is wider than what a press takes.
+- **Undo:** in `file-browser/lib/views/grid.tsx` spread `grip` on the cell
+  and drop `parts` from the model.

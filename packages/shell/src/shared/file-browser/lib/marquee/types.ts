@@ -11,6 +11,8 @@ export interface ListingModel {
   /** The items, in the order drawn, and where each is. */
   paths: readonly string[];
   rects: readonly Rect[];
+  /** What of each item a marquee must touch to take it (an icon view's icon and name); its whole place when absent. */
+  parts?: readonly (readonly Rect[])[];
   /** The `testID` of the node painted at an item's rectangle. */
   nodeOf(path: string): string;
 }

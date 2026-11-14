@@ -2,7 +2,8 @@
  * The icon view: tiles in rows that fill the width. The rows are the scroll
  * column's children (Metal lays out only the ones near the viewport), and
  * the number of columns comes from the width the view is laid out at; the
- * store hears it, so ← → ↑ ↓ move by place and by row (selection.ts).
+ * store hears it, so ← → ↑ ↓ move by place and by row (selection.ts). The
+ * measures, and what of a cell is the item, are grid-places.ts.
  */
 
 import { useColors, useDark } from "@dashi/ui";
@@ -16,48 +17,32 @@ import { LINK_BADGE } from "../../glyphs.ts";
 import { fitMiddle, tileName } from "../../tile-name.ts";
 import { dragPaths } from "../drag.ts";
 import { iconFor, previewFor, thumbnails } from "../icons.ts";
-import type { Rect } from "../marquee/geometry.ts";
 import { marqueeOf } from "../marquee/of.ts";
+import {
+  columnsFor,
+  gridHeight,
+  gridInset,
+  itemParts,
+  NAME_BOX,
+  NAME_GAP,
+  NAME_HEIGHT,
+  NAME_LINE,
+  NAME_PAD_X,
+  NAME_PAD_Y,
+  NAME_ROOM,
+  PADDING,
+  PICTURE,
+  PICTURE_TOP,
+  ROW_GAP,
+  TALL_TILE_HEIGHT,
+  TILE_HEIGHT,
+  TILE_WIDTH,
+  tileRects,
+} from "./grid-places.ts";
 import { RenameField } from "./rename-field.tsx";
 
-const TILE_WIDTH = 104;
-const TILE_HEIGHT = 98;
-/** Search results and Recents show where each item is, one line more. */
-const TALL_TILE_HEIGHT = 114;
-const PICTURE = 56;
-const ROW_GAP = 4;
-const PADDING = 10;
-/** The room a name has on each of its two lines under a tile, in ems of its 12 px type: 84 px. */
-const NAME_ROOM = (TILE_WIDTH - 20) / 12;
-/** A name's two lines (15 each) and its 1 px above and below: a search result's path sits under them, at one height in a row. */
-const NAME_HEIGHT = 32;
 /** The room the "where" line has, in ems of its 10 px type: 90 px. */
 const WHERE_ROOM = (TILE_WIDTH - 14) / 10;
-
-/** How many tiles fit across `width`. */
-export const columnsFor = (width: number): number => Math.max(1, Math.floor((width - 2 * PADDING) / TILE_WIDTH));
-
-/** The grid's side inset at `width`: the padding, and half of what the whole tiles leave, so the rows sit in the middle. */
-export const gridInset = (width: number): number =>
-  width <= 0 ? PADDING : PADDING + Math.max(0, Math.floor((width - 2 * PADDING - columnsFor(width) * TILE_WIDTH) / 2));
-
-/** Where each of `count` tiles is, in the pixels of what scrolls (the rows' column, its padding included), `height` tall, at `width`. */
-export function tileRects(count: number, width: number, height: number): Rect[] {
-  const columns = columnsFor(width);
-  const inset = gridInset(width);
-  return Array.from({ length: count }, (_, at) => ({
-    x: inset + (at % columns) * TILE_WIDTH,
-    y: PADDING + Math.floor(at / columns) * (height + ROW_GAP),
-    width: TILE_WIDTH,
-    height,
-  }));
-}
-
-/** How tall `count` tiles are with their padding: what the rows' column scrolls over. */
-export function gridHeight(count: number, width: number, height: number): number {
-  const rows = Math.ceil(count / columnsFor(width));
-  return 2 * PADDING + rows * height + Math.max(0, rows - 1) * ROW_GAP;
-}
 
 /** A search result's folder, its middle taken out once to fit under the tile (never cut again at its end). */
 export const whereLine = (where: string): string => fitMiddle(where, WHERE_ROOM);
@@ -86,6 +71,9 @@ function LinkBadge() {
   );
 }
 
+/** What makes a view part of the item: its press, its drag, its menu. */
+type Grip = Pick<React.ComponentProps<typeof View>, "dragFiles" | "onPointer" | "onPress" | "onContextMenu">;
+
 function Tile({
   item,
   selected,
@@ -110,35 +98,43 @@ function Tile({
   const picture = useMemo(() => previewFor(item, 128, store.env.cache), [item, store.env.cache, made]);
   const drop = useDropTarget(item.kind === "folder" ? item.path : null);
   const lit = selected || drop.over;
+  // The icon and the name are the item (D111): a press on either is the item's (it drags it, and the listing around
+  // hears none of it, so no marquee starts there); a press on the rest of the cell is one on empty space.
+  const grip: Grip = {
+    dragFiles: { paths: dragPaths(item.path, selection), icon: picture ?? iconFor(item, dark, store.emblems) },
+    onPointer: marqueeOf(store).itemPointer,
+    onPress: (event) => {
+      store.click(item, event.modifiers);
+      actions.refocus();
+    },
+    onContextMenu: (point: { x: number; y: number }) => {
+      store.contextOn(item);
+      actions.menu(point, "item");
+    },
+  };
+  const hover = lit ? "#00000000" : colors.button;
   return (
     <View
-      testID={`item:${item.path}`}
-      dragFiles={{ paths: dragPaths(item.path, selection), icon: picture ?? iconFor(item, dark, store.emblems) }}
-      // A press on a tile is the tile's (it drags the item): the listing around it hears none of it, so no marquee starts here.
-      onPointer={marqueeOf(store).itemPointer}
+      testID={`cell:${item.path}`}
+      // Files dropped anywhere on a folder's cell go into it.
       {...drop.props}
-      onPress={(event) => {
-        store.click(item, event.modifiers);
-        actions.refocus();
-      }}
-      onContextMenu={(point) => {
-        store.contextOn(item);
-        actions.menu(point, "item");
-      }}
       style={{
         width: TILE_WIDTH,
         height,
         flexShrink: 0,
         alignItems: "center",
-        paddingTop: 6,
-        gap: 4,
+        paddingTop: PICTURE_TOP,
+        gap: NAME_GAP,
         borderRadius: 8,
         opacity: dimmed ? 0.45 : item.hidden ? 0.65 : 1,
         backgroundColor: lit ? colors.selectionWash : "#00000000",
-        hoverBackgroundColor: lit ? colors.selectionWash : colors.button,
       }}
     >
-      <View style={{ width: PICTURE, height: PICTURE, alignItems: "center", justifyContent: "center" }}>
+      <View
+        testID={`item:${item.path}`}
+        {...grip}
+        style={{ width: PICTURE, height: PICTURE, alignItems: "center", justifyContent: "center", borderRadius: 6, hoverBackgroundColor: hover }}
+      >
         {picture ? (
           <Image source={picture} resizeMode="contain" style={{ width: PICTURE, height: PICTURE, borderRadius: 3 }} />
         ) : (
@@ -146,22 +142,41 @@ function Tile({
         )}
         {item.isLink && <LinkBadge />}
       </View>
-      <View style={{ width: TILE_WIDTH - 10, alignItems: "center" }}>
-        {renaming ? (
-          <RenameField item={item} width={TILE_WIDTH - 10} />
-        ) : (
-          <View style={{ maxWidth: TILE_WIDTH - 10, paddingHorizontal: 5, paddingVertical: 1, ...(item.where !== undefined ? { height: NAME_HEIGHT } : {}) }}>
-            <Text style={{ fontSize: 12, lineHeight: 15, color: selected ? colors.onSelection : colors.text, textAlign: "center" }}>
-              {tileName(item.name, NAME_ROOM)}
-            </Text>
-          </View>
-        )}
-        {item.where !== undefined && (
-          <Text numberOfLines={1} style={{ fontSize: 10, color: selected ? colors.onSelection : colors.textMuted, textAlign: "center" }}>
-            {whereLine(item.where)}
+      <TileName item={item} selected={selected} renaming={renaming} grip={grip} hover={hover} />
+    </View>
+  );
+}
+
+/** A tile's name under its picture (the field it is renamed in), and under it where a search result is. */
+function TileName({ item, selected, renaming, grip, hover }: { item: FileItem; selected: boolean; renaming: boolean; grip: Grip; hover: string }) {
+  const colors = useColors();
+  return (
+    <View style={{ width: NAME_BOX, alignItems: "center" }}>
+      {renaming ? (
+        <RenameField item={item} width={NAME_BOX} />
+      ) : (
+        <View
+          testID={`name:${item.path}`}
+          {...grip}
+          style={{
+            maxWidth: NAME_BOX,
+            paddingHorizontal: NAME_PAD_X,
+            paddingVertical: NAME_PAD_Y,
+            borderRadius: 4,
+            hoverBackgroundColor: hover,
+            ...(item.where !== undefined ? { height: NAME_HEIGHT } : {}),
+          }}
+        >
+          <Text style={{ fontSize: 12, lineHeight: NAME_LINE, color: selected ? colors.onSelection : colors.text, textAlign: "center" }}>
+            {tileName(item.name, NAME_ROOM)}
           </Text>
-        )}
-      </View>
+        </View>
+      )}
+      {item.where !== undefined && (
+        <Text numberOfLines={1} style={{ fontSize: 10, color: selected ? colors.onSelection : colors.textMuted, textAlign: "center" }}>
+          {whereLine(item.where)}
+        </Text>
+      )}
     </View>
   );
 }
@@ -179,8 +194,10 @@ export function Grid({ items, empty }: { items: readonly FileItem[]; empty: Reac
   const height = items.some((item) => item.where !== undefined) ? TALL_TILE_HEIGHT : TILE_HEIGHT;
   const chosen = new Set(state.selection);
   const cut = new Set(state.clipboard?.cut ? state.clipboard.paths : []);
-  // Where the tiles are, for a marquee (lib/marquee/).
+  // Where the cells are, and in each the icon and the name a marquee must touch (lib/marquee/).
   const rects = useMemo(() => tileRects(items.length, width, height), [items.length, width, height]);
+  const tall = height === TALL_TILE_HEIGHT;
+  const parts = useMemo(() => items.map((item, at) => itemParts(item.name, rects[at] ?? { x: 0, y: 0, width: 0, height: 0 }, tall)), [items, rects, tall]);
   marqueeOf(store).model =
     items.length === 0
       ? null
@@ -189,7 +206,8 @@ export function Grid({ items, empty }: { items: readonly FileItem[]; empty: Reac
           contentHeight: gridHeight(items.length, width, height),
           paths: items.map((item) => item.path),
           rects,
-          nodeOf: (path) => `item:${path}`,
+          parts,
+          nodeOf: (path) => `cell:${path}`,
         };
   return (
     <View
