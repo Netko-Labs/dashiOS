@@ -7,10 +7,33 @@
  * and the StoppedNote says so (consent.tsx).
  */
 
-import { Shortcut, useColors } from "@dashi/ui";
+import { buttonLook, Shortcut, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { type AgentEntry, accessWords, discGlyph, watchTime } from "../../agents/index.ts";
+
+/** A small button of a card: Show, Stop, Undo. */
+export function Small({ label, primary, danger, testID, onPress }: { label: string; primary?: true; danger?: true; testID: string; onPress: () => void }) {
+  const colors = useColors();
+  const look = buttonLook(colors, "primary");
+  return (
+    <View
+      testID={testID}
+      onPress={onPress}
+      style={{
+        height: 24,
+        paddingLeft: 10,
+        paddingRight: 10,
+        borderRadius: 6,
+        justifyContent: "center",
+        backgroundColor: primary ? look.fill : colors.button,
+        hoverBackgroundColor: primary ? look.hover : colors.separator,
+      }}
+    >
+      <Text style={{ fontSize: 12, fontWeight: "semibold", color: primary ? look.ink : danger ? colors.criticalInk : colors.text }}>{label}</Text>
+    </View>
+  );
+}
 
 /** A connected agent's row: its glyph on a round shiso tile. */
 const TILE = 32;

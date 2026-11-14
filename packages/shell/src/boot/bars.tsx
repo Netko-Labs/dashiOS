@@ -8,18 +8,19 @@ import { joinShellMenus } from "../applets/index.ts";
 import { appFor } from "../apps.ts";
 import type { Compositor } from "../compositor/index.ts";
 import { AnimationTargets, dockScreen, startDock, TileStore } from "../dock/index.ts";
-import { barHold, MenuBar, MenuBars, startBarTips } from "../menubar/index.ts";
+import { type BarPill, barHold, MenuBar, MenuBars, startBarPill, startBarTips } from "../menubar/index.ts";
 import type { Menus } from "../menus/index.ts";
 import type { NotifyInput } from "../notifications/index.ts";
 import { openOverlay } from "../overlay.tsx";
 import type { App } from "../shared/apps/index.ts";
 import { configureMachineEnd } from "../shutdown.ts";
 import { MENU_BAR_HEIGHT } from "../theme.ts";
-import type { ChipSource, VoiceParts } from "../voice/index.ts";
+import type { VoiceParts } from "../voice/index.ts";
 import { startXwaylandScaling } from "../xwayland-scale.ts";
 import type { AgentBasics, Handoff } from "./agents.ts";
 import type { Catalog, KeepingAwake, Programs } from "./apps.ts";
 import type { Arranging } from "./desktop.ts";
+import { barSources, chipSource, pillNeeds } from "./lib/bar-sources.ts";
 import type { Look } from "./look.ts";
 import type { BarMenus } from "./menus.tsx";
 import type { Notices } from "./notices.ts";
@@ -99,7 +100,7 @@ export function startBarHolds({ compositor, apps, catalog, notices, arranging, p
   return barTips;
 }
 
-interface BarsNeeds {
+export interface BarsNeeds {
   compositor: Compositor | null;
   apps: App[];
   screens: Screens;
@@ -131,6 +132,8 @@ interface BarsNeeds {
  */
 export function startBars(needs: BarsNeeds): MenuBars {
   const { compositor, screens, stores, catalog, services, late } = needs;
+  const { pill, stop: stopPill } = startBarPill(pillNeeds(needs, (output) => barSources(needs, output, pill)));
+  services.add("bar pill", stopPill);
   const dockTiles = new TileStore();
   const dockRuntime = startDock({
     tiles: dockTiles,
@@ -183,7 +186,7 @@ export function startBars(needs: BarsNeeds): MenuBars {
   const menuBars = late.set(
     "menuBars",
     new MenuBars({
-      open: (output, onClosed, primary) => openMenuBar(needs, output, onClosed, primary),
+      open: (output, onClosed, primary) => openMenuBar(needs, pill, output, onClosed, primary),
       onPrimaryLost: () => late.get("quit")(),
       onPrimaryChanged: (name) => dockRuntime.place(name),
       screens: () => screens.names(),
@@ -204,19 +207,8 @@ export function startBars(needs: BarsNeeds): MenuBars {
   return menuBars;
 }
 
-/** What the bars' chip reads of the voice: the one object for every bar. */
-const chipSources = new WeakMap<VoiceParts, ChipSource>();
-function chipSource(talking: VoiceParts): ChipSource {
-  const made = chipSources.get(talking);
-  if (made) return made;
-  const { voice } = talking;
-  const source: ChipSource = { subscribe: voice.subscribe, getSnapshot: voice.getSnapshot, level: voice.level, stop: () => voice.stop(), go: talking.go };
-  chipSources.set(talking, source);
-  return source;
-}
-
 /** One screen's menu bar; the primary's host also reports the windows. */
-function openMenuBar(needs: BarsNeeds, output: string | undefined, onClosed: () => void, primary: boolean) {
+function openMenuBar(needs: BarsNeeds, pill: BarPill, output: string | undefined, onClosed: () => void, primary: boolean) {
   const { stores, programs, late } = needs;
   return openOverlay(
     {
@@ -234,25 +226,12 @@ function openMenuBar(needs: BarsNeeds, output: string | undefined, onClosed: () 
       },
     },
     <MenuBar
+      {...barSources(needs, output, pill)}
       apps={needs.apps}
       toplevels={stores.toplevels}
-      agents={needs.agents.agentStore}
-      alone={needs.agents.alone}
-      capture={needs.guards.screenCapture}
-      {...(needs.screenshots.tools ? { recorder: needs.screenshots.tools.recorder } : {})}
-      system={needs.system.system.store}
-      menus={needs.menus.controller}
       appMenus={programs.appMenus.store}
-      extras={programs.extras}
-      settings={stores.settingsStore}
-      {...(output === undefined ? {} : { output })}
-      runs={needs.handoff.handoffShell.service.runs}
       installed={needs.catalog.installedApp}
-      mixer={needs.mixer}
-      voice={chipSource(needs.talking)}
-      onTip={(tip) => needs.barTips.show(tip)}
-      reduceMotion={() => needs.look.state.reduceMotion}
-      accessible={() => late.get("launcherAccess").accessible}
+      voice={chipSource(needs.talking, late.get("pill"))}
     />,
     onClosed,
     primary ? (host) => stores.toplevels.attach(host) : undefined,

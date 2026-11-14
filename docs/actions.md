@@ -921,26 +921,30 @@ restarts"), `test/agents-mcp-relay.test.ts` (the bridge connecting again).
   notification's icon is the same mark on a shiso tile
   (`shell/icons/claude-code.svg`, `codex.svg`, `opencode.svg`, and
   `agents.svg` for the rest).
-- **The agent mark** (the approved design, 46-menu-bar.html option A;
-  `agents/mark.ts`, `agent-mark.tsx`). One mark in the menu bar for every
-  agent: the runs from the launcher and the agents connected from outside
-  (an MCP client, Claude on a phone over SSH) are one list
-  (`mergeAgents`; a run's own connection folds into its run, a connection
-  whose run ended stays while it is connected). Each agent's harness glyph
-  on a small disc, overlapping, up to three, then "+N" (a connection's
-  harness from its process's name or the name it claims, else the
-  sparkle). A ring turns round the lead disc while one works (still with
-  Reduce Motion). The red dot shows while any agent records or sees the
-  screen (`record_screen`, `screenshot`) or uses its own pointer and keys
+- **Dashi's mark and the jobs** (0.9: the pill's second version, the `b-`
+  frames; `agent-mark.tsx`, `menubar/lib/bar-jobs.ts`,
+  `menubar/lib/job-capsule.tsx`, `agents/mark.ts`). The mark is always in
+  the menu bar, leading the status items; a click turns the bar's row into
+  the field, where a typed task goes to the launcher's assistant
+  (`menubar/field.ts`). Every job is a capsule beside the mark: a launcher
+  Ask task, a run from the launcher, an agent connected from outside (an
+  MCP client, Claude on a phone over SSH; `mergeAgents` makes runs and
+  connections one list, a run's own connection folded into its run). A
+  capsule is a disc with a ring and who it is (the harness's glyph, else
+  the spark); the one whose step changed last also has its name and step
+  in words. The ring turns while it works (still with Reduce Motion). The
+  red dot on the mark shows while any agent records or sees the screen
+  (`record_screen`, `screenshot`) or uses its own pointer and keys
   (`click`, `drag`, `scroll`, `type_text`, `press_keys`), and for 3 s
-  after, or while the recorder records for an agent. At rest it has no
-  words: pointing at it shows "‹Name› · ‹what it's doing›". Only while one
-  needs the person is it an amber pill, "Waiting for you". An agent's
-  recording is the red dot, not a timer of its own; the person's own
-  recording keeps its timer pill, which a click stops (and an agent's
-  recording whose agent is already gone keeps the pill too: a recording is
-  never out of sight). Stopping an agent stops its recording.
-- **The panel**, from a click on the mark (380 wide): agents waiting on the
+  after, or while the recorder records for an agent. A job that needs the
+  person is amber and the mark counts them; the question is the card's
+  (the capsule piece), the bar only opens it. An agent's recording is the
+  red dot, not a timer of its own; the person's own recording keeps its
+  timer pill, which a click stops (and an agent's recording whose agent is
+  already gone keeps the pill too: a recording is never out of sight).
+  Stopping an agent stops its recording.
+- **The panel**, from a click on a job's capsule (380 wide): the launcher's
+  Ask tasks (their steps, Stop, the result, Undo), then agents waiting on the
   person first, then working, then connected, newest first, then runs that
   ended in the last hour. A run is its card: its words, harness, time,
   "step N of about M", its last three steps (never a transcript), Show (the

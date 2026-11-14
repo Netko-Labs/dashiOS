@@ -179,18 +179,26 @@ describe("the drawn mark", () => {
     return { trees, listeners, transport };
   }
 
-  test("the red dot and the ring are drawn; a press opens the panel with the mark's right edge; hovering says who", async () => {
+  test("the red dot is drawn; a press says the mark's right edge; hovering says who", async () => {
     const { trees, listeners, transport } = host();
     const presses: number[] = [];
     const tips: Array<string | null> = [];
     const state = markState(mergeAgents([connection(1, { status: "Recording the screen", watching: "recording" })], []));
+    if (state.kind === "none") throw new Error("no agents");
     const root = render(
-      <AgentMark state={state} open={false} onPress={(right) => presses.push(right)} onTip={(tip) => tips.push(tip?.text ?? null)} reduceMotion={() => true} />,
+      <AgentMark
+        need={0}
+        watching={state.watching}
+        open={false}
+        label={state.label}
+        tip={state.tip}
+        onPress={(right) => presses.push(right)}
+        onTip={(tip) => tips.push(tip?.text ?? null)}
+      />,
       transport,
     );
     await settle();
     expect(root.nodeId("agent-mark-dot")).toBeDefined();
-    expect(root.nodeId("agent-mark-ring")).toBeDefined();
     // Words only in the tip, never in the bar.
     expect(trees.at(-1)).not.toContain("Recording the screen");
     const mark = root.nodeId("agent-mark");
@@ -203,12 +211,24 @@ describe("the drawn mark", () => {
     root.unmount();
   });
 
-  test("needs you: the amber words", async () => {
+  test("at rest it is the spark alone: no count, no dot, no words", async () => {
     const { trees, transport } = host();
-    const state = markState(mergeAgents([connection(1, { waiting: true })], []));
-    const root = render(<AgentMark state={state} open={false} onPress={() => {}} reduceMotion={() => false} />, transport);
+    const root = render(<AgentMark need={0} watching={false} open={false} label="Ask Dashi" tip="" onPress={() => {}} />, transport);
     await settle();
-    expect(trees.at(-1)).toContain("Waiting for you");
+    expect(root.nodeId("agent-mark")).toBeDefined();
+    expect(root.nodeId("agent-mark-count")).toBeUndefined();
+    expect(root.nodeId("agent-mark-dot")).toBeUndefined();
+    expect(trees.at(-1)).not.toContain("?");
+    root.unmount();
+  });
+
+  test("needs you: amber, and it counts", async () => {
+    const { trees, transport } = host();
+    const root = render(<AgentMark need={3} watching={false} open={false} label="Dashi: 3 jobs need you" tip="" onPress={() => {}} />, transport);
+    await settle();
+    expect(root.nodeId("agent-mark-count")).toBeDefined();
+    expect(trees.at(-1)).toContain('"3"');
+    expect(trees.at(-1)?.toLowerCase()).toContain("#f0b93c");
     root.unmount();
   });
 });
