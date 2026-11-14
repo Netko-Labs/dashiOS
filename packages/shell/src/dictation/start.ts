@@ -57,6 +57,12 @@ export function startDictation(options: DictationOptions): DictationParts {
     switch (gesture.gesture) {
       case "hold":
         listening = true;
+        // "Type it instead" may land what is said now: the field check is warmed here, as a dictation's own hold warms
+        // it, so the first one of a session does not wait on a cold accessibility bus at the landing (decisions.md D122).
+        void options
+          .front()
+          .then((front) => (front ? options.secret(front) : null))
+          .catch(() => {});
         return options.voice.hold();
       case "up":
         listening = false;

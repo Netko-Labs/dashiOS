@@ -20,6 +20,8 @@ export function dictating(options: { heard?: string; taught?: boolean } = {}) {
     muted: false,
     front: { window: 7, pid: 70 } as Front | null,
     secret: false as boolean | null,
+    /** The field check never answers, as an accessibility bus that is still starting. */
+    secretHangs: false,
     /** How long ago the person pressed something in the window in front. */
     pressed: null as number | null,
     refuse: null as string | null,
@@ -37,7 +39,7 @@ export function dictating(options: { heard?: string; taught?: boolean } = {}) {
     busy: () => world.busy,
     muted: async () => world.muted,
     front: async () => world.front,
-    secret: async () => world.secret,
+    secret: () => (world.secretHangs ? new Promise<boolean | null>(() => {}) : Promise.resolve(world.secret)),
     pressed: async () => world.pressed,
     typeText: async (window, text) => {
       if (world.refuse) throw new Error(world.refuse);

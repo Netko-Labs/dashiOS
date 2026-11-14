@@ -2364,3 +2364,26 @@ short words, as the rulebook is written.
   the slide takes the Desktop away as the person arrives; the screen stays
   where it was. After the slide the Desktop stays, as D89 says.
 - **Undo:** not wanted.
+
+### D122. "Type it instead" never waits long on the password-field check
+
+- **Date:** 2026-11-14. The `n20-agents` agent's.
+- **Question:** seen once: the first "Type it instead" after a login through
+  the greeter stopped the ask and typed nothing. Read, not reproduced. A
+  dictation asks at its key's hold whether a password field has the
+  keyboard, which also connects to the accessibility bus; words sent by
+  Dashi's capsule were first checked at the landing, so the first of a
+  session waited there on a cold bus (its timeouts add up to about 8 s), and
+  a click or key in the window meanwhile made them wait with Copy ("moved",
+  D81) instead of being typed.
+- **Choice:** holding the Dashi key warms the same check, and the landing
+  waits for its answer 1.5 s at most (`FIELD_CHECK_MS`, `dictation/lib/land.ts`);
+  past that the words are typed.
+- **Why:** a warm check answers in milliseconds; the bound is for the bus
+  that is still starting, where waiting gains nothing the person can see.
+- **Cost:** when the check does not answer in 1.5 s, words can be typed into
+  a password field that was not recognised. That was already so when the
+  bus cannot be reached at all; a dictation's own hold still refuses a
+  password field it knows of before listening.
+- **Undo:** `secretIn` back to `deps.secret` in `place`; the warm-up line in
+  `dictation/start.ts`.
