@@ -1691,3 +1691,21 @@ short words, as the rulebook is written.
   not follow the voice's real words; they keep their own time.
 - **Undo:** `useSaying` in `settings-app/lib/panes/persona-parts.tsx`.
 
+
+### D80. The bar wears the mark the person chose, on every capsule that is Dashi's colour
+
+- **Date:** 2026-11-14. The `n7-smoke` agent's.
+- **Question:** the bar's mark, the field's lead and the jobs drew the spark
+  whatever mark was chosen in Settings › Your Dashi. A job with no harness of
+  its own (a launcher task, an agent on another machine) already took
+  Dashi's colour: does it take the mark too?
+- **Choice:** yes. The mark, the field's lead, and every job that is drawn
+  in Dashi's colour draw `markSvg(persona.mark)`; Claude Code, Codex and
+  OpenCode keep their own glyphs. The ticks, the square and the amber "?"
+  are unchanged.
+- **Why:** one colour with two glyphs reads as two things. The colour was
+  already the persona's there (D69), so the glyph follows it.
+- **Cost:** an agent on another machine wears Dashi's mark in the bar, as it
+  already wore Dashi's colour; its name says who it is.
+- **Undo:** the `glyph` prop of `AgentMark`, `JobCapsule` and the field's
+  `Lead` (`menubar/lib/menubar-pill-slots.tsx` passes it).
