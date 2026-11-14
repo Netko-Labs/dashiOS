@@ -10,9 +10,9 @@
  * all, as ⌃❖Esc does.
  */
 
-import { buttonLook, useColors } from "@dashi/ui";
+import { useColors } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
-import { useSyncExternalStore } from "react";
+import { useContext, useSyncExternalStore } from "react";
 import {
   type AgentEntry,
   type AgentInfo,
@@ -25,36 +25,17 @@ import {
   progressWords,
   type RunQuestion,
   type RunView,
+  type TaskView,
 } from "../agents/index.ts";
 import { KeyCatcher } from "../overlay.tsx";
-import { AccessChip, ConnectionRow, StopAllFooter, TileDot } from "./lib/agents-rows.tsx";
+import { AccessChip, ConnectionRow, Small, StopAllFooter, TileDot } from "./lib/agents-rows.tsx";
+import { panelTaskList, TaskCard, taskCardFocus, taskWorks } from "./lib/task-cards.tsx";
+import { type PanelTasks, PanelTasksContext } from "./tasks.tsx";
 
 export const AGENTS_PANEL = { width: 380, padding: 6, radius: 12 } as const;
 
 export function useRuns(runs: Pick<AgentRuns, "subscribe" | "getSnapshot">): readonly RunView[] {
   return useSyncExternalStore(runs.subscribe, runs.getSnapshot);
-}
-
-function Small({ label, primary, danger, testID, onPress }: { label: string; primary?: true; danger?: true; testID: string; onPress: () => void }) {
-  const colors = useColors();
-  const look = buttonLook(colors, "primary");
-  return (
-    <View
-      testID={testID}
-      onPress={onPress}
-      style={{
-        height: 24,
-        paddingLeft: 10,
-        paddingRight: 10,
-        borderRadius: 6,
-        justifyContent: "center",
-        backgroundColor: primary ? look.fill : colors.button,
-        hoverBackgroundColor: primary ? look.hover : colors.separator,
-      }}
-    >
-      <Text style={{ fontSize: 12, fontWeight: "semibold", color: primary ? look.ink : danger ? colors.criticalInk : colors.text }}>{label}</Text>
-    </View>
-  );
 }
 
 const minutes = (from: number, to: number): string => {
@@ -202,6 +183,27 @@ function RunCard({ run, entry, now, first, focused, actions }: RunCardProps) {
   );
 }
 
+const NEVER = () => () => {};
+const NONE: readonly TaskView[] = [];
+const NO_TASKS = (): readonly TaskView[] => NONE;
+
+/** The launcher's Ask tasks (tasks.tsx): what a click on a task's capsule in the bar opens. */
+function usePanelTasks(): { source: PanelTasks | null; tasks: TaskView[]; working: TaskView[] } {
+  const source = useContext(PanelTasksContext);
+  const tasks = panelTaskList(useSyncExternalStore(source?.subscribe ?? NEVER, source ? source.getSnapshot : NO_TASKS));
+  return { source, tasks, working: tasks.filter(taskWorks) };
+}
+
+function TaskCards({ tasks, source, focus }: { tasks: readonly TaskView[]; source: PanelTasks; focus: string | null }) {
+  return tasks.map((task, index) => <TaskCard key={task.id} task={task} first={index === 0} focused={taskCardFocus(task.id) === focus} tasks={source} />);
+}
+
+/** Stop all: every Ask task still at work, then every run and connection (which also closes the panel). */
+function stopAll(actions: PanelActions, tasks: PanelTasks | null, working: readonly string[]): void {
+  for (const id of working) tasks?.stop(id);
+  actions.stopAll();
+}
+
 /** The panel under the mark: agents waiting on the person first, then working, then connected; then the runs that ended in the last hour. */
 export function AgentsPanel({
   runs,
@@ -225,7 +227,8 @@ export function AgentsPanel({
   const now = Date.now();
   const entries = mergeAgents(connected, all);
   const ended = all.filter((run) => !isWorking(run)).sort((a, b) => b.started - a.started);
-  const count = entries.length + ended.length;
+  const { source, tasks, working } = usePanelTasks();
+  const count = entries.length + ended.length + tasks.length;
   const cardOf = (run: RunView, index: number, entry?: AgentEntry) => (
     <RunCard key={run.id} run={run} {...(entry ? { entry } : {})} now={now} first={index === 0} focused={run.id === focus && count > 1} actions={actions} />
   );
@@ -251,21 +254,32 @@ export function AgentsPanel({
       <KeyCatcher onKey={(key) => key === "Escape" && onClose()} />
       {count === 0 ? (
         <View style={{ padding: 12 }}>
-          <Text style={{ fontSize: 12.5, color: colors.textMuted }}>No agents in the last hour. Type a task in the launcher to hand it off.</Text>
+          <Text style={{ fontSize: 12.5, color: colors.textMuted }}>No agents in the last hour. Click Dashi’s mark in the menu bar to give it a job.</Text>
         </View>
       ) : (
         <ScrollView style={{ flexShrink: 1 }}>
+          {source && <TaskCards tasks={tasks} source={source} focus={count > 1 ? focus : null} />}
           {entries.map((entry, index) =>
             entry.run ? (
-              cardOf(entry.run, index, entry)
+              cardOf(entry.run, tasks.length + index, entry)
             ) : (
-              <ConnectionRow key={entry.key} entry={entry} first={index === 0} onStop={() => entry.agent && actions.stopAgent(entry.agent.id)} />
+              <ConnectionRow key={entry.key} entry={entry} first={tasks.length + index === 0} onStop={() => entry.agent && actions.stopAgent(entry.agent.id)} />
             ),
           )}
-          {ended.map((run, index) => cardOf(run, entries.length + index))}
+          {ended.map((run, index) => cardOf(run, tasks.length + entries.length + index))}
         </ScrollView>
       )}
-      {entries.length > 0 && <StopAllFooter onStopAll={actions.stopAll} />}
+      {(entries.length > 0 || working.length > 0) && (
+        <StopAllFooter
+          onStopAll={() =>
+            stopAll(
+              actions,
+              source,
+              working.map((task) => task.id),
+            )
+          }
+        />
+      )}
     </View>
   );
 }

@@ -1446,6 +1446,75 @@ Replaced by D51: 0.9 builds on mirin's `main`.
 - **Cost:** a light colour shows darker in the capsule than in Settings.
 - **Undo:** `dashiFill` and `dashiColours` in `capsule/lib/measures.ts`.
 
+### D68. The bar's field is a surface of its own, laid over the bar's row
+
+- **Date:** 2026-11-13. The `bar` agent's (night build).
+- **Question:** a click on Dashi's mark turns the menu bar's row into a
+  field. The bar's own surface never holds the keyboard (a layer that did
+  would take it from every window). Where does the caret live?
+- **Choice:** a second surface (`dashi.barfield`, the overlay layer, the
+  keyboard exclusive), opened only while the field is, whose top 28 points
+  sit exactly on the bar and draw the whole row (logo, Dashi's capsule, the
+  field, the keys, the signs and the clock). Under the row it is clear, and
+  a click there closes the field, as a click closes a menu. It is the way
+  the bar's menus already take the keyboard (`menus/lib/popover.tsx`).
+- **Why:** one row, always: nothing grows or moves. No compositor change
+  tonight, and Esc, Return, the caret and a paste work as in any field.
+- **Cost:** the click that closes the field does not also reach the window
+  under it, and the windows show inactive while it is open, as under a
+  menu. The field's row is drawn twice in code (the bar, and the field's
+  row), kept alike by sharing the status slots.
+- **Undo:** give the bar's surface the keyboard on demand in the
+  compositor, draw the field in `menubar.tsx`, and delete
+  `menubar/lib/field-row.tsx` and the surface in `menubar/start-pill.tsx`.
+
+### D69. A job in the bar opens 0.8's panel; the jobs give way before a status item does
+
+- **Date:** 2026-11-13. The `bar` agent's (night build).
+- **Question:** the design turns the row into the job on a click (b-10,
+  b-17) and fills a job's ring as it goes. 0.8 has the agents' panel, and
+  knows no job's progress. When the bar is short, who gives way?
+- **Choice:** a click on a capsule opens the agents' panel on that job; a
+  launcher Ask task has a card there now (steps, Stop, the result, Undo,
+  and Answer for a plan that waits). The ring turns while a job works; it
+  does not fill. The square that stops a job shows on a speaking task's
+  disc only; agents are stopped from the panel. The jobs take the room the
+  other status items leave: the name goes first, then discs become "+N",
+  and no extra goes into "…" for a job. With no model chosen the field
+  offers one way on, System Settings › Agents, not the design's three.
+- **Why:** the panel exists, is tested and asks nothing new of the keys.
+  A ring that filled would be a guess. Status items a person put in the
+  bar outrank the words of a job that is still a click away.
+- **Cost:** b-10, b-17 and b-19's rows are not built: a result is read in
+  the panel, two clicks from a fresh look instead of one line in the row.
+  A draft longer than the row is not read whole in a card before it is
+  sent (b-05, b-06): the field scrolls. Choosing Claude Code or Codex from
+  the field (b-04) is not built.
+- **Undo:** draw the job in `menubar/lib/field-row.tsx` (the row is
+  already a surface with the keyboard) and send the capsule's click there
+  instead of to `toggleAgents` (`menubar/lib/menubar-pill-slots.tsx`).
+
+### D70. Until the card exists, a plan that waits is answered in the launcher
+
+- **Date:** 2026-11-13. The `bar` agent's (night build).
+- **Question:** a task typed in the bar becomes a plan that waits for a
+  yes. The card that asks is the capsule piece's, built at the same time.
+  What does a click on the amber capsule do without it, and how does the
+  bar know the capsule now shows what the voice chip showed?
+- **Choice:** the bar sends `open-ask` for the ask the capsule piece
+  lists (`hub.asks`); with no such ask, or nobody handling the port, it
+  opens the launcher, where 0.8 keeps the plan and its Return. The mark
+  counts the asks, or the jobs that need the person when there are more of
+  those. The voice chip stops drawing once `hub.voiceCommands` has a
+  handler, found by sending `open-ask` for no ask (it changes nothing).
+- **Why:** the bar works alone tonight and with the capsule tomorrow,
+  with no switch to flip at the merge.
+- **Cost:** an empty `open-ask` reaches the port's listeners now and then;
+  the port has no "is anyone there" of its own.
+- **Undo:** give `Port` a `handled()` in `shared/pill/hub.ts` and ask that;
+  drop the launcher fallback in `boot/lib/bar-sources.ts` once the card is
+  always there.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its
