@@ -16,8 +16,7 @@ import { useMemo, useSyncExternalStore } from "react";
 import { opaque } from "../../consent.tsx";
 import { KeyCatcher } from "../../overlay.tsx";
 import type { Cell, Persona } from "../../shared/pill/index.ts";
-import { DEFAULT_PERSONA } from "../../shared/pill/index.ts";
-import { SPARK } from "../../shared/settings/index.ts";
+import { DEFAULT_PERSONA, markSvg } from "../../shared/pill/index.ts";
 import { MENU_BAR_HEIGHT } from "../../theme.ts";
 import type { BarField } from "../field.ts";
 import { CAPSULE } from "./bar-jobs.ts";
@@ -30,7 +29,7 @@ const STAYS = new Set(["capture", "recording", "microphone", "clock"]);
 export const FIELD_ROW = { logoLeft: 16, lead: 20, text: 13, hint: 10.5, key: 16, edge: 1.5 } as const;
 
 /** Dashi's capsule at the head of the field: who the words go to. */
-function Lead({ name, colour }: { name: string; colour: string }) {
+function Lead({ name, colour, glyph }: { name: string; colour: string; glyph: string }) {
   return (
     <View
       testID="bar-field-lead"
@@ -66,7 +65,7 @@ function Lead({ name, colour }: { name: string; colour: string }) {
             justifyContent: "center",
           }}
         >
-          <Svg markup={SPARK} size={CAPSULE.glyph + 2} color={colour} />
+          <Svg markup={glyph} size={CAPSULE.glyph + 2} color={colour} />
         </View>
       </View>
       <Text numberOfLines={1} style={{ fontSize: CAPSULE.fontSize, fontWeight: "semibold", color: "#ffffff" }}>
@@ -170,7 +169,7 @@ export function FieldRow({ field, persona, bar }: FieldRowProps) {
       >
         <Svg markup={LOGO} size={16} color={colors.text} />
         <View style={{ width: 20 }} />
-        <Lead name={who.name} colour={colour} />
+        <Lead name={who.name} colour={colour} glyph={markSvg(who.mark)} />
         {state.noModel ? (
           <NoModel name={who.name} accessible={accessible} onSetUp={() => field.submit()} onClose={() => field.close()} />
         ) : (
