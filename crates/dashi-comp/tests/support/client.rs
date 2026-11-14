@@ -2,10 +2,11 @@
 //! solid shm buffer once it is configured; a movable one asks to be moved
 //! (xdg_toplevel.move) when a button is pressed in it, as apps that draw
 //! their own title bars do; a listening one only notes what its pointer hears
-//! (client/pointer.rs). It can open dialogs too: more toplevels whose xdg
+//! (client/pointer.rs); a locking one locks the pointer (client/lock.rs). It can open dialogs too: more toplevels whose xdg
 //! parent is the first.
 
 mod keyboard;
+mod lock;
 mod pointer;
 
 use std::{io::Write, os::fd::AsFd, path::Path};
@@ -49,6 +50,8 @@ pub struct State {
     /// What the pointer heard, in order: its buttons (pressed or let go) and how often it moved.
     pub buttons: Vec<bool>,
     pub motions: usize,
+    /// What a locking window's lock heard, in order: it took hold (true) or let go.
+    pub locks: Vec<bool>,
     /// What a listening window's keyboard heard.
     pub keyboard: keyboard::Heard,
     /// A listening window's seat, kept so its pointer and keyboard live.

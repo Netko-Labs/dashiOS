@@ -37,7 +37,9 @@ impl Dashi {
             }
             return;
         }
-        let free = pressed && !pointer.is_grabbed();
+        // A locked pointer's press is its window's: nothing of Dashi's is under it
+        // (a light, a border, a banner that came up there), and the keyboard stays.
+        let free = pressed && !pointer.is_grabbed() && !self.pointer_locked();
         // A press on a title bar or a traffic light is the compositor's, not a client's.
         let on_decoration = free && self.decoration_at(at).is_some();
         // So is a press on the resize border around a window Dashi frames.

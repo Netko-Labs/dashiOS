@@ -74,6 +74,8 @@ impl SeatHandler for Dashi {
                 self.windows.used(surface);
             }
             self.x11_focus(focused);
+            // A game's lock on the pointer goes with the keyboard (input/constraints.rs).
+            self.hold_follows_keyboard(focused);
         }
     }
 }

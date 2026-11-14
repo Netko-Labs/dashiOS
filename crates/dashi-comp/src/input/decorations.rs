@@ -15,7 +15,7 @@ use smithay::{
 };
 
 use crate::{
-    render::titlebar::{Decor, Part, part_at},
+    render::titlebar::{Part, part_at},
     state::Dashi,
     wm::{Shown, frame_of},
 };
@@ -58,11 +58,10 @@ impl Dashi {
             if !frame.to_f64().contains(pos) {
                 continue;
             }
-            if entry.decor == Decor::None {
-                return None;
-            }
+            // Full screen, a title bar is gone: its strip is the window's own.
+            let decor = entry.decor.pressed(entry.fullscreen.is_some());
             let at = pos - frame.loc.to_f64();
-            return part_at(at.x, at.y, frame.size.w, entry.decor)
+            return part_at(at.x, at.y, frame.size.w, decor)
                 .map(|part| (entry.id, window.clone(), part));
         }
         None
@@ -143,7 +142,8 @@ impl Dashi {
         window: &Window,
         pos: Point<f64, Logical>,
     ) -> Option<Part> {
-        let decor = self.windows.get(id)?.decor;
+        let entry = self.windows.get(id)?;
+        let decor = entry.decor.pressed(entry.fullscreen.is_some());
         let frame = frame_of(self, window)?;
         let at = pos - frame.loc.to_f64();
         part_at(at.x, at.y, frame.size.w, decor).filter(|part| *part != Part::Bar)

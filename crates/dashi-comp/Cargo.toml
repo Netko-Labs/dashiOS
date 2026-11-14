@@ -56,7 +56,7 @@ features = [
 png = "0.17"
 tempfile = "3"
 wayland-client = "0.31"
-wayland-protocols = { version = "0.32", features = ["client", "server", "staging"] }
+wayland-protocols = { version = "0.32", features = ["client", "server", "staging", "unstable"] }
 # The lock tests' shell side (tests/lock.rs): a sheet that takes the keyboard, and a virtual keyboard.
 wayland-protocols-misc = { version = "0.3", features = ["client"] }
 wayland-protocols-wlr = { version = "0.3", features = ["client"] }

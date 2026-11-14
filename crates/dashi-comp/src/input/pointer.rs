@@ -78,6 +78,10 @@ impl Dashi {
             return;
         };
 
+        // A locked pointer stays where it is; a tablet has no relative motion to give.
+        if self.pointer_locked() {
+            return;
+        }
         let under = self.surface_under(pos);
 
         pointer.motion(
