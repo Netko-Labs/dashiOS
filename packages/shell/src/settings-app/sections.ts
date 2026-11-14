@@ -9,6 +9,7 @@ import { isAnswererChoice, isHarnessId } from "../agents/ask/answerer.ts";
 import { isModelName } from "../agents/ask/local.ts";
 import { isVrrMode } from "../display-config/monitors.ts";
 import { isAliasMap, isKeyMap } from "../launcher/person-keys.ts";
+import { isPersonaLanguage, isPersonaNote, isPersonaYou } from "../persona/index.ts";
 import { GRAPHICS_FIELDS, POWER_FIELDS } from "../power/modes/settings.ts";
 import { APPEARANCE, DOCK, guarded, IDLE, INPUT_METHOD, KEYBOARD, MENU_BAR, MOUSE, SPACES, TOUCHPAD, WALLPAPER } from "../settings/index.ts";
 import { isCatalogList } from "../shared/applet-store/catalogs.ts";
@@ -75,6 +76,9 @@ export const SECTIONS = {
       colour: guarded(isPersonaColour, "a colour as #rrggbb"),
       mark: guarded(isPersonaMark, "a mark"),
       talk: guarded(isPersonaTalk, "less, normal or more"),
+      you: guarded(isPersonaYou, "a name of 30 characters at most"),
+      language: guarded(isPersonaLanguage, "auto, en or es"),
+      note: guarded(isPersonaNote, "a note of 200 characters at most"),
     },
   },
 } as const satisfies Record<string, { path: readonly string[]; fields: Fields }>;

@@ -16,7 +16,16 @@ export {
   SHOW_RECORD,
   WorkAlone,
 } from "./alone/index.ts";
-export { ANSWERERS, type AnswererChoice, type AnswererInfo, type HarnessId, isAnswererChoice, isHarnessId } from "./ask/answerer.ts";
+export {
+  ANSWERERS,
+  type AnswererChoice,
+  type AnswererInfo,
+  type HarnessId,
+  isAnswererChoice,
+  isHarnessId,
+  type PromptStyle,
+  promptStyle,
+} from "./ask/answerer.ts";
 export { type AnswererRow, answererRows } from "./ask/choices.ts";
 export { type HarnessStatus, signInCommand } from "./ask/harness/index.ts";
 export { ago, type HistoryEntry } from "./ask/history.ts";

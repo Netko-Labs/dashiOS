@@ -8,6 +8,7 @@
  * names a change in Title Case, as menus do ("Undo Text Size").
  */
 
+import { colourOfHex, presetCharacter } from "../../../persona/index.ts";
 import { toBcp47 } from "../../../shared/locale/index.ts";
 import { layoutWords, variantWords } from "../../layouts.ts";
 import { describeValue, findRow, type RowDef, rowName, SETTINGS_ROWS } from "../../registry/index.ts";
@@ -74,6 +75,12 @@ export function localeWords(value: unknown): string {
   }
 }
 
+/** How much Dashi talks, and the language it answers in, as Settings › Your Dashi says them. */
+export const TALK_WORDS: Readonly<Record<string, string>> = { less: "Brief", normal: "Normal", more: "Chatty" };
+export const LANGUAGE_WORDS: Readonly<Record<string, string>> = { auto: "The language you speak", en: "English", es: "Español" };
+/** A character by its name: one of Dashi's, else the person's own by its id. */
+const sayCharacter = (value: unknown): string => presetCharacter(value)?.name ?? String(value);
+
 const OWN: Readonly<Record<string, Named>> = {
   "appearance.auto": { name: "Automatic appearance", row: "appearance/dark-mode", unset: "off" },
   "clock.hour24": { name: "24-hour time", row: "date-time/24-hour-time", unset: "the region's" },
@@ -97,6 +104,19 @@ const OWN: Readonly<Record<string, Named>> = {
   "voice.on": { name: "Voice", row: "voice/on", unset: "off" },
   "voice.key": { name: "Talk key", row: "voice/key", unset: "right ❖ or Copilot", say: (value) => String(value) },
   "voice.voice": { name: "Dashi's voice", row: "voice/dashis-voice", unset: "Dashi's own", say: (value) => String(value) },
+  "persona.character": { name: "Character", row: "persona/character", unset: "Dashi", say: sayCharacter },
+  "persona.name": { name: "Dashi's name", row: "persona/name", unset: "Dashi", say: (value) => String(value) },
+  "persona.colour": { name: "Dashi's colour", row: "persona/colour", unset: "Violet", say: (value) => colourOfHex(value)?.name ?? String(value) },
+  "persona.mark": { name: "Dashi's mark", row: "persona/mark", unset: "Spark" },
+  "persona.talk": { name: "How much Dashi talks", row: "persona/talk", unset: "Normal", say: (value) => TALK_WORDS[String(value)] ?? plain(value) },
+  "persona.language": {
+    name: "Dashi answers in",
+    row: "persona/language",
+    unset: "The language you speak",
+    say: (value) => LANGUAGE_WORDS[String(value)] ?? plain(value),
+  },
+  "persona.you": { name: "What Dashi calls you", row: "persona/you", unset: "no name", say: (value) => String(value) || "no name" },
+  "persona.note": { name: "In your own words", row: "persona/note", unset: "nothing", say: (value) => String(value) || "nothing" },
 };
 
 /** The registry's row for each key it binds; the first wins where two panes show one setting. */

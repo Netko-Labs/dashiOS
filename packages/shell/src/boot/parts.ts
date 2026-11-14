@@ -21,6 +21,7 @@ import type { MenuBars } from "../menubar/index.ts";
 import type { Menus } from "../menus/index.ts";
 import type { OverlaySlots } from "../overlay-slots.ts";
 import type { OverviewController } from "../overview/index.ts";
+import type { PersonaSource } from "../persona/index.ts";
 import type { ControlCenterEditor } from "../settings-app/control-center.tsx";
 import type { SettingsApp } from "../settings-app/index.ts";
 import type { SetupAssistant } from "../setup/index.ts";
@@ -33,6 +34,8 @@ import type { OverlayKind } from "./overlays.tsx";
 export interface LateParts {
   /** Where the capsule, the bar, dictation and Dashi's persona meet (docs/night-0.9-contract.md); set first, before any of them starts. */
   pill: PillHub;
+  /** Who Dashi is, kept current from settings.json and the characters folder (boot/persona.ts); Settings › Your Dashi reads it. */
+  persona: PersonaSource;
   overview: OverviewController | null;
   fullscreenBars: FullscreenBars | null;
   menuBars: MenuBars;

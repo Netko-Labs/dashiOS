@@ -17,7 +17,7 @@
 
 import { join } from "node:path";
 import { isRecord } from "@dashi/shape";
-import { ANSWERERS, AnswerError, type Answerer, type PlanTool, SYSTEM_PROMPT, type Turn } from "../answerer.ts";
+import { ANSWERERS, AnswerError, type Answerer, type PlanTool, promptStyle, SYSTEM_PROMPT, styledPrompt, type Turn } from "../answerer.ts";
 import { oneLine } from "../plan.ts";
 import type { HarnessSpec } from "./catalog.ts";
 import type { FoundHarness } from "./detect.ts";
@@ -30,6 +30,9 @@ export const HARNESS_PROMPT = [
   "Your only tools are Dashi's, in plan mode: each call adds a step to the plan and runs nothing.",
   "When the plan is complete, end your turn without describing it.",
 ].join(" ");
+
+/** The harness's prompt now: its own words whole, then how the person made Dashi sound, then the closing line (answerer.ts `styledPrompt`). */
+export const harnessPrompt = (): string => styledPrompt(HARNESS_PROMPT, promptStyle.get().full);
 
 /** How long a turn may take, start-up and all. */
 export const TURN_TIMEOUT_MS = 120_000;
@@ -88,7 +91,7 @@ export function harnessAnswerer(options: HarnessOptions): Answerer {
         const bridge = options.direct
           ? { command: options.shell.bun, args: [options.shell.bridge], env: { DASHI_MCP_SOCKET: server.path } }
           : bridgeInside(options.shell, runtime);
-        const command = spec.command({ prompt: turnPrompt(turn), system: HARNESS_PROMPT, session: kept.session, mcp: bridge });
+        const command = spec.command({ prompt: turnPrompt(turn), system: harnessPrompt(), session: kept.session, mcp: bridge });
         const profile = {
           socket: server.path,
           readOnly: [...found.readOnly, ...[options.shell.bun, options.shell.bridge].filter((path) => path.startsWith(`${home}/`))],

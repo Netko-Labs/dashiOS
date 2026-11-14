@@ -67,6 +67,8 @@ export interface SettingsAppOptions {
   passwords?: Passwords;
   /** Talking to Dashi (Settings › Voice). */
   voice?: PaneContext["voice"];
+  /** Who Dashi is (Settings › Your Dashi); asked for when the window opens. */
+  persona?: () => PaneContext["persona"] | null;
   /** The launcher's Ask, for Settings › Agents; late-bound (it starts after Settings), so asked for when the window opens. */
   answers?: () => AnswerStatus | null;
   /** The clipboard history (Settings › Keyboard); asked for when the window opens, since it starts after Settings. */
@@ -96,6 +98,12 @@ export const SETTINGS_TITLE = "System Settings";
 function answersOf(options: SettingsAppOptions): { answers?: AnswerStatus } {
   const answers = options.answers?.();
   return answers ? { answers } : {};
+}
+
+/** Who Dashi is, for its pane, when the shell keeps it. */
+function personaOf(options: SettingsAppOptions): { persona?: NonNullable<PaneContext["persona"]> } {
+  const persona = options.persona?.();
+  return persona ? { persona } : {};
 }
 
 /** Control Center's switches, by name, as Undo in Recently changed writes them back. */
@@ -141,6 +149,7 @@ function paneContext(
     about: readAbout,
     ...(options.agents ? { agents: options.agents } : {}),
     ...(options.voice ? { voice: options.voice } : {}),
+    ...personaOf(options),
     lock: options.lock,
     openSetup: options.openSetup,
     show: (pane, row) => open(pane, row),

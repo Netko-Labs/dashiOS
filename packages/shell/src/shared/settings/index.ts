@@ -35,6 +35,7 @@ export {
   MOUSE,
   MUTE,
   NIGHT_SHIFT,
+  PERSONA,
   PLUG,
   POINTER,
   POWER,
