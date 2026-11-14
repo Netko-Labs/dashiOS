@@ -2217,9 +2217,14 @@ short words, as the rulebook is written.
   count, as they are what the screen showed last.
 - **Why:** what is selected while the button is down is what is selected
   when it goes up, which is the whole promise of a live marquee.
-- **Cost:** none in Dashi. On a Metal host built before this (the field is
-  optional), D101's path is still there: the rule is the keys of the click
-  the release makes, and shows only then.
+- **Cost:** ❖ pressed or let go in the middle of a drag changes nothing
+  (seen in the VM): ❖ is Dashi's, and the compositor lends Super to a
+  window only for a button that goes down with ❖ held, until that button
+  comes up (`dashi-comp/src/keys/super_click.rs`). ⇧ and Ctrl do change
+  the rule mid-drag, and a drag begun with ❖ is a ❖ drag throughout. On a
+  Metal host built before this (the field is optional), D101's path is
+  still there: the rule is the keys of the click the release makes, and
+  shows only then.
 - **Undo:** not wanted. To latch the rule at the press (the keys at the
   press decide, whatever is held later), read `modifiers` only on `down` in
   `pointerEvent`.
