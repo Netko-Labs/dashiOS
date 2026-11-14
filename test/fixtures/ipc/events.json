@@ -145,6 +145,11 @@
     "event": "gpus-changed"
   },
   {
+    "event": "pointers",
+    "mouse": true,
+    "touchpad": true
+  },
+  {
     "event": "session-changed"
   },
   {

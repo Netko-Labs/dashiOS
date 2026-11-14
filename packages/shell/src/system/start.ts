@@ -7,6 +7,7 @@ import { openOsdSurface } from "./lib/osd-panel.tsx";
 import { type ScreenHost, startScreenDark } from "./lib/screen-dark.ts";
 import type { Network } from "./network.ts";
 import { OsdController } from "./osd-state.ts";
+import { PointerDevices, type PointerSource } from "./pointers.ts";
 import { type SystemSources, SystemStore, systemSources } from "./store.ts";
 
 export interface System {
@@ -16,6 +17,8 @@ export interface System {
   hardware: HardwareKeys;
   /** The on-screen display, for keys handled elsewhere (the laptop's, laptop/). */
   osd: OsdController;
+  /** Which kinds of pointer device are connected (Settings › Trackpad, the trackpad key). */
+  pointers: PointerDevices;
   /** Brightness changed to `level` (0..1) elsewhere (Control Center): at 0 the built-in screen goes off. */
   brightnessChanged(level: number): void;
   close(): void;
@@ -31,6 +34,8 @@ export interface SystemOptions {
   monitor?: (onChange: () => void) => () => void;
   /** dashi-comp, to turn the built-in screen off at brightness 0 (none: the backlight alone). */
   compositor?: ScreenHost | null;
+  /** dashi-comp, for which pointer devices are connected (none: not known). */
+  pointers?: PointerSource | null;
   /** The session's PipeWire watcher: the bar's speaker follows it instead of polling. */
   pipewire?: PipeWireWatch;
   /** A development run: the volume and mute keys write nothing to the machine (keys.ts). */
@@ -54,14 +59,18 @@ export function startSystem(options: SystemOptions = {}): System {
     brightnessChanged,
     ...(options.standIn ? { standIn: true } : {}),
   });
+  const pointers = new PointerDevices();
+  const stopPointers = options.pointers ? pointers.follow(options.pointers) : () => {};
   const stopCharger = watchCharger(store, osd);
   store.start();
   return {
     store,
     hardware,
     osd,
+    pointers,
     brightnessChanged,
     close() {
+      stopPointers();
       stopCharger();
       store.stop();
       osd.hide();

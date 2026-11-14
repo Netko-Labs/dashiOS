@@ -18,7 +18,7 @@ use super::{
 };
 use crate::{
     handlers::layer_regions::InputRegion,
-    input::InputParams,
+    input::{InputParams, Pointers},
     keys::{HeldKeysParams, KeyboardParams, KeymapParams, TypeText},
     outputs::{MirrorParams, OutputsConfig},
     render::{depth::WindowStyle, mask::CaptureMask},
@@ -141,7 +141,8 @@ fn chrome_and_spaces(into: &mut BTreeMap<&'static str, Value>) {
     example!(into, "gestures", Gestures, json!({ "swipe": [3] }), Done, none.clone());
     example!(into, "idle", Idle, json!({ "timeouts": [120, 300] }), Done, none.clone());
     example!(into, "keyboard", KeyboardParams, json!({ "layout": "us,de", "variant": "", "options": "", "repeatRate": 30, "repeatDelay": 400 }), Done, none.clone());
-    example!(into, "input", InputParams, json!({ "touchpad": { "tap": true, "naturalScroll": true, "accelSpeed": 0.3, "clickMethod": "clickfinger", "scrollSpeed": 1.5 }, "mouse": { "accelProfile": "flat" } }), Done, none.clone());
+    example!(into, "input", InputParams, json!({ "touchpad": { "tap": true, "naturalScroll": true, "accelSpeed": 0.3, "clickMethod": "clickfinger", "scrollSpeed": 1.5, "off": false, "offWithMouse": true }, "mouse": { "accelProfile": "flat" } }), Done, none.clone());
+    example!(into, "pointers", Nothing, none.clone(), Pointers, json!({ "touchpad": true, "mouse": false }));
     example!(into, "spaces", SpacesParams, json!({ "count": 3, "follow": true, "quiet": [2] }), SpacesAnswer, spaces.clone());
     example!(into, "space-add", SpaceAdd, json!({ "at": 1 }), SpacesAnswer, json!({ "count": 4, "current": 2, "space": 1 }));
     example!(into, "space-remove", OneSpace, json!({ "space": 2 }), SpacesAnswer, json!({ "count": 2, "current": 1 }));
@@ -200,6 +201,7 @@ fn events() -> Vec<Event> {
         Event::Edge { edge: Bottom::Bottom, inside: true },
         Event::OutputsChanged,
         Event::GpusChanged,
+        Event::Pointers { pointers: Pointers { touchpad: true, mouse: true } },
         Event::SessionChanged,
         Event::Lock { locked: true },
         Event::ScreenCapture { active: true },

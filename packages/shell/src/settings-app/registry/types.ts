@@ -44,6 +44,8 @@ export interface Binding {
   key: string;
   /** What no setting means (the value shown while the file holds none). */
   fallback?: SettingValue;
+  /** The switch shows the opposite of what `key` keeps ("Trackpad" is on while `touchpad.off` is not true). */
+  opposite?: true;
   /** Null where there is nothing to read (no Dock). */
   get(stores: RegistryStores): SettingValue | null;
   /** `value` has been checked against `schema` (registry/values.ts `accepts`). */

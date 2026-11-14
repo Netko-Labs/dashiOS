@@ -5,6 +5,7 @@ import type { PrivacyStore } from "../privacy/store.ts";
 import type { RegionStore } from "../region/store.ts";
 import type { FlagsStore } from "../shared/control-center/index.ts";
 import type { PaneId } from "../shared/settings/index.ts";
+import type { PointerDevices } from "../system/index.ts";
 import type { PhotoChooser } from "../wallpaper/chooser.ts";
 import type { ControlCenterEditor } from "./control-center.tsx";
 import type { XkbLayouts } from "./layouts.ts";
@@ -57,6 +58,8 @@ export interface PaneContext {
   persona?: { source: PersonaSource; openFile(path: string): void; dialogs?: { choose(): Promise<string | null>; save(name: string): Promise<string | null> } };
   /** The agents connected now (Settings › Agents: "Connected now"). */
   agents?: Pick<AgentStore, "subscribe" | "getSnapshot">;
+  /** Which pointer devices are connected (Settings › Trackpad); absent where no compositor says. */
+  pointers?: PointerDevices;
   /** The keyboard layouts xkb knows. */
   layouts: XkbLayouts;
   /** The desktop's file chooser for "Add Photo…" (Wallpaper). */

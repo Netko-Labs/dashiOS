@@ -14,6 +14,8 @@ export type OsdState =
   | { kind: "power"; percent: number; charge: true | "plugged" }
   /** The laptop's mode key (Fn F5) or the firmware changed the power mode (laptop/). */
   | { kind: "mode"; mode: "low-power" | "balanced" | "performance"; label: string }
+  /** The trackpad's key turned it off or on. */
+  | { kind: "trackpad"; on: boolean }
   /** The keyboard light's key: its level of `max`. */
   | { kind: "keyboard-light"; level: number; max: number };
 
@@ -45,6 +47,7 @@ export function litSegments(state: OsdState): number {
     case "keyboard-light":
       return state.max > 0 ? filledSegments(state.level / state.max) : 0;
     case "mode":
+    case "trackpad":
     case "mic":
     case "power":
       return 0;

@@ -72,6 +72,14 @@ impl Backend {
         }
     }
 
+    /// Which kinds of pointer device are connected; none outside a seat of dashi-comp's own.
+    pub(crate) fn pointers(&self) -> crate::input::Pointers {
+        match self {
+            Backend::Udev(data) => data.pointers(),
+            _ => crate::input::Pointers::default(),
+        }
+    }
+
     /// A screen on or off (Displays).
     pub(crate) fn set_enabled(&mut self, output: &smithay::output::Output, enabled: bool) {
         if let Backend::Udev(data) = self {

@@ -154,6 +154,7 @@ pub(crate) const METHODS: &[Method] = &[
     shell("idle", typed!(chrome::idle)),
     shell("keyboard", typed!(chrome::keyboard)),
     shell("input", typed!(chrome::input)),
+    anyone("pointers", typed!(chrome::pointers)),
     // Spaces and overview
     shell("spaces", typed!(spaces::spaces)),
     shell("space-add", typed!(spaces::space_add)),

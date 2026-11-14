@@ -81,6 +81,7 @@ const EVENTS = {
   "window-attention": loose({ window: num() }),
   "outputs-changed": loose({}),
   "gpus-changed": loose({}),
+  pointers: loose({ touchpad: bool(), mouse: bool() }),
   "session-changed": loose({}),
   lock: loose({ locked: bool() }),
   "screen-capture": loose({ active: bool() }),

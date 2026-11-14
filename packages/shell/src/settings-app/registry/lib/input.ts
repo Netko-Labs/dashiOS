@@ -5,7 +5,7 @@ import { SCROLL_SPEED_DEFAULT, SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../../
 import { CLICK, CLIPBOARD, CURVE, HISTORY, KEYBOARD, MOUSE, POINTER, REPEAT, SCROLL, SHIELD, TAP, TERMINAL, TRACKPAD } from "../../../shared/settings/index.ts";
 import { DEFAULTS, REPEAT_DELAY, REPEAT_RATE, SPEED } from "../../lib/controls.ts";
 import type { ChoiceOption, RowDef } from "../types.ts";
-import { storedChoice, storedNumber, storedSwitch } from "../values.ts";
+import { storedChoice, storedNumber, storedOffSwitch, storedSwitch } from "../values.ts";
 
 const INPUT_METHOD_OPTIONS: readonly ChoiceOption[] = [
   { value: "none", label: "None" },
@@ -91,6 +91,26 @@ export const INPUT_ROWS = [
     value: storedSwitch("clipboard", "snippetsInTerminals", false, { unset: false }),
   },
 
+  {
+    id: "trackpad/on",
+    glyph: TRACKPAD,
+    title: "Trackpad",
+    name: "Trackpad on",
+    detail: "Off, it ignores every touch. The laptop's trackpad key turns it off and on too.",
+    keywords: ["disable trackpad", "turn off touchpad", "touchpad toggle", "trackpad key"],
+    kind: "switch",
+    value: storedOffSwitch("touchpad", "off"),
+  },
+  {
+    id: "trackpad/ignore-with-mouse",
+    glyph: MOUSE,
+    title: "Ignore the pad while a mouse is connected",
+    detail: "Keeps a resting palm from moving the pointer or clicking while you use a mouse.",
+    keywords: ["palm rejection", "disable trackpad with mouse", "external mouse", "games"],
+    kind: "switch",
+    value: storedSwitch("touchpad", "offWithMouse", false),
+    agent: "trackpad_ignore_with_mouse",
+  },
   {
     id: "trackpad/tap-to-click",
     glyph: TAP,

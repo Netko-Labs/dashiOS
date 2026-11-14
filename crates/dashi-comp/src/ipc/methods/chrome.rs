@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use super::{Ask, done};
 use crate::{
-    input::InputParams,
-    ipc::protocol::{Coord, Count, Done, Int, Millis, Rect},
+    input::{InputParams, Pointers},
+    ipc::protocol::{Coord, Count, Done, Int, Millis, Nothing, Rect},
     keys::{HeldKeysParams, KeyboardParams, Keymap, KeymapParams},
     render::{self, depth::WindowStyle},
     state::Dashi,
@@ -142,4 +142,8 @@ pub(crate) fn keyboard(state: &mut Dashi, _: &Ask, params: KeyboardParams) -> Re
 
 pub(crate) fn input(state: &mut Dashi, _: &Ask, params: InputParams) -> Result<Done, String> {
     done(state.set_input(&params))
+}
+
+pub(crate) fn pointers(state: &mut Dashi, _: &Ask, _: Nothing) -> Result<Pointers, String> {
+    Ok(state.pointers())
 }

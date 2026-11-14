@@ -12,7 +12,9 @@ mod gestures;
 mod pointer;
 mod resize_edges;
 pub(crate) mod settings;
+pub(crate) mod trackpad;
 mod under;
 
 pub(crate) use claims::Claims;
 pub(crate) use settings::InputParams;
+pub(crate) use trackpad::Pointers;

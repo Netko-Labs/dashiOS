@@ -1,5 +1,5 @@
 /**
- * The hardware keys' actions: volume, mute, brightness, and media. keymap.ts
+ * The hardware keys' actions: volume, mute, brightness, media, and the trackpad's key. keymap.ts
  * binds the XF86 keys to these names; shortcuts.ts hands them here. Each
  * press changes the system through its tool and shows the on-screen display.
  *
@@ -28,7 +28,19 @@ export const HARDWARE_BINDINGS: readonly string[] = [
   "media-pause",
   "media-next",
   "media-previous",
+  "trackpad-toggle",
+  "trackpad-on",
+  "trackpad-off",
 ];
+
+/** The trackpad's switch, as the trackpad key reads and sets it (settings.json `input.touchpad.off`). */
+export interface TrackpadSwitch {
+  /** Whether this computer has a trackpad, as far as anyone knows. */
+  present(): boolean;
+  off(): boolean;
+  /** Saves it; the compositor hears it from the file, as it does a switch in Settings. */
+  set(off: boolean): void;
+}
 
 const flipped = (before: Volume): Volume => ({ ...before, muted: !before.muted });
 
@@ -50,10 +62,16 @@ export class HardwareKeys {
   private queue: Promise<unknown> = Promise.resolve();
   /** The laptop's own keys (laptop/lib/hotkeys.ts), handed in once the machine is known. */
   private machineKeys: ((name: string) => Promise<boolean>) | null = null;
+  private trackpad: TrackpadSwitch | null = null;
   /** A development run's output and microphone, once a key set them: shown over the host's from then on. */
   private readonly told = new Map<string, Volume>();
 
   constructor(private readonly deps: HardwareDeps) {}
+
+  /** The trackpad's switch, once the settings are there (boot/settings.ts). */
+  setTrackpad(trackpad: TrackpadSwitch | null): void {
+    this.trackpad = trackpad;
+  }
 
   /** Runs this machine's own keys (Fn F5, Fn F4, the ROG key) before the generic ones. */
   setMachineKeys(run: ((name: string) => Promise<boolean>) | null): void {
@@ -78,6 +96,7 @@ export class HardwareKeys {
       await pressMedia(run, name, this.deps.hasPlayerctl);
       return;
     }
+    if (name.startsWith("trackpad-")) return this.pressTrackpad(name);
     switch (name) {
       case "volume-up":
       case "volume-down": {
@@ -105,6 +124,15 @@ export class HardwareKeys {
         return;
       }
     }
+  }
+
+  /** The trackpad key: off and on, kept in the settings, with the on-screen display. Nothing on a computer without a trackpad. */
+  private pressTrackpad(name: string): void {
+    const trackpad = this.trackpad;
+    if (!trackpad?.present()) return;
+    const off = name === "trackpad-toggle" ? !trackpad.off() : name === "trackpad-off";
+    if (off !== trackpad.off()) trackpad.set(off);
+    this.deps.osd.show({ kind: "trackpad", on: !off });
   }
 
   /** A development run's key: `change` made to what was last told (the host's volume, read, the first time), and nothing written. */
