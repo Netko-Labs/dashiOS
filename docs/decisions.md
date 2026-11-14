@@ -1613,3 +1613,18 @@ short words, as the rulebook is written.
 - **Undo:** `Share` in `settings-app/lib/panes/persona-share.tsx`; the folder
   and "Make a File" work without it.
 
+### D75. The preview says its line when you choose a character
+
+- **Date:** 2026-11-14. The `n6-face` agent's.
+- **Question:** the brief left room for one more idea, cheap and delightful.
+  The design's fifth, "meet them at first start, by ear", is days of work.
+- **Choice:** its smallest part, in Settings: when a character (or its dots)
+  is chosen, and at each "Hear it", the preview's dots jump to the words of
+  its line, the character's own way, for at most 14 words at 230 ms each,
+  then rest. You see how Kombu and Yuzu differ in the moment you pick one.
+  Never when the pane opens, never with Reduce Motion.
+- **Why:** choosing is when a person wants to see who they are getting.
+- **Cost:** one timer for about three seconds after a choice. The jumps do
+  not follow the voice's real words; they keep their own time.
+- **Undo:** `useSaying` in `settings-app/lib/panes/persona-parts.tsx`.
+

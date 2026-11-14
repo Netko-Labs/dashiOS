@@ -2,12 +2,14 @@
 
 import { expect, test } from "bun:test";
 import { type NativeTransport, render } from "@mirinjs/metal";
+import { useSyncExternalStore } from "react";
 import { FaceScope, faceNow, moodOf } from "../src/capsule/lib/face-scope.tsx";
 import { CAPSULE } from "../src/capsule/lib/measures.ts";
 import { dotHeights } from "../src/capsule/lib/parts.tsx";
 import { CapsuleView, type ViewState } from "../src/capsule/lib/view.tsx";
 import type { Place, Shown } from "../src/capsule/types.ts";
-import { CHARACTERS, checkCharacterFile } from "../src/persona/index.ts";
+import { CHARACTERS, checkCharacterFile, VIOLET } from "../src/persona/index.ts";
+import { CapsulePreview, SAYING } from "../src/settings-app/lib/panes/persona-parts.tsx";
 import { BLINK_MS, FACE_HEIGHT, faceFrame, faceTick, WAYS, WORD_MS } from "../src/shared/face/index.ts";
 import {
   cell,
@@ -22,7 +24,7 @@ import {
   type VoiceModeState,
 } from "../src/shared/pill/index.ts";
 import { SPARK } from "../src/shared/settings/index.ts";
-import { settle } from "./support/time.ts";
+import { fakeClock, settle } from "./support/time.ts";
 
 test("eight marks, each a glyph of one colour on the 24 grid; the spark is the one the shell drew before", () => {
   expect(PERSONA_GLYPHS).toEqual(["spark", "bowl", "dot", "moon", "leaf", "drop", "flame", "paw"]);
@@ -183,4 +185,33 @@ test("a character's file names its look by id only: an unknown or drawn one is D
   expect(good.ok && [good.character.mark, good.character.dots, good.character.motion]).toEqual(["paw", "hop", "bright"]);
   const bad = checkCharacterFile(file({ mark: "<svg onload=alert(1)>", dots: { dy: [99] }, motion: "spin" }));
   expect(bad.ok && [bad.character.mark, bad.character.dots, bad.character.motion]).toEqual(["spark", "line", "calm"]);
+});
+
+test("the preview says its line when the character changes, then rests; never at first sight, never with Reduce Motion", async () => {
+  const clock = fakeClock();
+  try {
+    const transport: NativeTransport = { send() {}, onEvent() {}, onClose() {}, simulate() {}, close() {} };
+    const now = cell<{ motion: "calm" | "bright"; still: boolean }>({ motion: "calm", still: false });
+    function Preview() {
+      const { motion, still } = useSyncExternalStore(now.subscribe, now.getSnapshot);
+      return <CapsulePreview colour={VIOLET} mark="spark" dots="line" motion={motion} name="Dashi" line="Hi. I am Dashi." still={still} />;
+    }
+    const root = render(<Preview />, transport);
+    await settle();
+    expect(root.nodeId("persona-capsule-dots:line")).toBeDefined();
+    now.set({ motion: "bright", still: false });
+    await settle();
+    expect(root.nodeId("persona-capsule-dots:line:saying")).toBeDefined();
+    // Four words, then rest.
+    await clock.advance(SAYING.wordMs * 4 + 10, SAYING.wordMs);
+    await settle();
+    expect(root.nodeId("persona-capsule-dots:line:saying")).toBeUndefined();
+    expect(root.nodeId("persona-capsule-dots:line")).toBeDefined();
+    now.set({ motion: "calm", still: true });
+    await settle();
+    expect(root.nodeId("persona-capsule-dots:line:saying")).toBeUndefined();
+    root.unmount();
+  } finally {
+    clock.restore();
+  }
 });

@@ -4,7 +4,7 @@
  */
 
 import { Svg, Text, TextInput, View } from "@mirinjs/metal";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { COLOURS, type Colour, type ColourId, type PersonaSource } from "../../../persona/index.ts";
 import { Group, Note, useSurface } from "../../../shared/cards/index.ts";
 import { FaceDots } from "../../../shared/face/index.ts";
@@ -23,6 +23,7 @@ export function CapsulePreview({
   name,
   line,
   still,
+  said = 0,
 }: {
   colour: Colour;
   mark: PersonaMark;
@@ -32,7 +33,10 @@ export function CapsulePreview({
   line: string;
   /** Reduce Motion: the dots keep their shape and do not move. */
   still: boolean;
+  /** Counts presses of "Hear it": each one says the line again. */
+  said?: number;
 }) {
+  const word = useSaying(line, `${motion}:${dots}:${said}`, still);
   return (
     <View
       testID="persona-capsule"
@@ -68,7 +72,15 @@ export function CapsulePreview({
           <Svg markup={markSvg(mark)} size={13} color={colour.deep} />
         </View>
       )}
-      <FaceDots testID={`persona-capsule-dots:${dots}`} dots={dots} motion={motion} mood="rest" color="#ffffff" still={still} />
+      <FaceDots
+        testID={`persona-capsule-dots:${dots}${word === null ? "" : ":saying"}`}
+        dots={dots}
+        motion={motion}
+        mood={word === null ? "rest" : "speak"}
+        color="#ffffff"
+        still={still}
+        {...(word === null ? {} : { word })}
+      />
       <View style={{ flexShrink: 0, width: 1, height: 13, backgroundColor: colour.soft, opacity: 0.5 }} />
       <View style={{ flexShrink: 0 }}>
         <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: "#ffffff" }}>
@@ -82,6 +94,41 @@ export function CapsulePreview({
       </View>
     </View>
   );
+}
+
+/** How long the preview takes over each word, and the most words it moves to. */
+export const SAYING = { wordMs: 230, words: 14 } as const;
+
+/**
+ * The preview says its line when a character is chosen, and again at "Hear it": the dots jump on
+ * each word, the character's way, and then rest. The word it is on, or null while it rests. Its one
+ * timer runs only for those few seconds; never at first sight, and never with Reduce Motion.
+ */
+function useSaying(line: string, what: string, still: boolean): number | null {
+  const [word, setWord] = useState<number | null>(null);
+  const seen = useRef(what);
+  const words = Math.min(SAYING.words, line.split(/\s+/).length);
+  useEffect(() => {
+    if (seen.current === what || still) {
+      seen.current = what;
+      return;
+    }
+    seen.current = what;
+    let at = 0;
+    setWord(0);
+    const timer = setInterval(() => {
+      at += 1;
+      if (at >= words) {
+        clearInterval(timer);
+        setWord(null);
+      } else setWord(at);
+    }, SAYING.wordMs);
+    return () => {
+      clearInterval(timer);
+      setWord(null);
+    };
+  }, [what, still, words]);
+  return word;
 }
 
 const SWATCH = 26;

@@ -120,9 +120,9 @@ test("choosing a character shows at once, is one change, and is one Undo", async
   const { view, settings, hub, data } = await pane({ is: true }, { voice: { on: true } });
   await view.press("persona-character-choice:miso");
   expect(data().persona).toEqual({ character: "miso", talk: "normal", colour: "#6f4d3c", mark: "bowl", dots: "smile", name: "Miso" });
-  // The preview wears them at once: the bowl in its disc, and a smile for its dots.
+  // The preview wears them at once, the bowl in its disc and a smile for its dots, and says its line: the dots move to the words.
   expect(view.has("persona-capsule-mark:bowl")).toBe(true);
-  expect(view.has("persona-capsule-dots:smile")).toBe(true);
+  expect(view.has("persona-capsule-dots:smile:saying")).toBe(true);
   expect(data().voice.voice).toBe("af_bella");
   // The capsule and the bar read the hub; the answerers read the prompt.
   expect(hub.persona.getSnapshot()).toMatchObject({

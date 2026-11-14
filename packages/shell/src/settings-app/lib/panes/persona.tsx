@@ -232,6 +232,8 @@ export function PersonaPane(props: PersonaPaneProps) {
   const choices = on && models ? voiceChoices(models.voices, models.defaultVoice) : [];
   const voices = on && models && choices.length > 0 ? { choices, own: models.defaultVoice } : null;
   const confirm = useConfirm();
+  // The preview's dots say the line again at each "Hear it".
+  const [said, setSaid] = useState(0);
   const parts: Parts = { ...props, guard, voices, ask: confirm.ask };
   return (
     <>
@@ -246,12 +248,16 @@ export function PersonaPane(props: PersonaPaneProps) {
               name={view.name}
               still={useSettings(settings).data.appearance.reduceMotion === true}
               line={previewLine(view, persona.source.language())}
+              said={said}
             />
             <MiniButton
               testID="persona-hear"
               label={voices ? "Hear it" : "Turn on Voice to hear it"}
               disabled={!voices}
-              onPress={() => voice?.sample(view.voice ?? voices?.own ?? "")}
+              onPress={() => {
+                setSaid((times) => times + 1);
+                voice?.sample(view.voice ?? voices?.own ?? "");
+              }}
             />
           </View>
         </Hero>
