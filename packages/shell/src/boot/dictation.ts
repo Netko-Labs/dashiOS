@@ -97,6 +97,27 @@ function teaching(): { known: boolean; now(): void } {
   return taught;
 }
 
+/** How often, and how many times, the card is asked whether it has the keyboard yet. */
+const CARD_KEYS_MS = 40;
+const CARD_KEYS_TRIES = 50;
+
+/**
+ * A tap that went to a card: the plain keys the compositor took for the launcher go back, once the card has the
+ * keyboard (no window has it any more), or after two seconds. Until then they are dropped: a Return pressed
+ * before the card could hear it must never land in the window in front.
+ */
+async function keysBackToCard(compositor: Compositor | null, late: Late<LateParts>): Promise<void> {
+  if (!compositor) return;
+  for (let tries = 0; tries < CARD_KEYS_TRIES; tries++) {
+    const windows = await compositor.windows().catch(() => null);
+    if (!windows?.some((window) => window.focused)) break;
+    await new Promise((resolve) => setTimeout(resolve, CARD_KEYS_MS));
+  }
+  // A launcher that opened meanwhile keeps its own keys (boot/keys.ts).
+  if (late.peek("overlays")?.has("launcher")) return;
+  await compositor.keymap(idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error));
+}
+
 export function startDictating({ compositor, settingsStore, services, late, talking }: DictatingNeeds): DictationParts {
   const hub = late.get("pill");
   const clipboard = systemClipboard();
@@ -136,8 +157,7 @@ export function startDictating({ compositor, settingsStore, services, late, talk
       const launcherOpen = late.peek("overlays")?.has("launcher") === true;
       // A card that is on screen takes the tap (capsule/), never an ask that is not shown. The compositor began sending plain
       // keys the launcher's way the moment the key was tapped (launcher/type-ahead.ts): they go back to whoever has the keyboard.
-      if (runningCapsule.getSnapshot()?.cardUp() && !launcherOpen)
-        return void compositor?.keymap(idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error));
+      if (runningCapsule.getSnapshot()?.cardUp() && !launcherOpen) return void keysBackToCard(compositor, late);
       late.peek("launcher")?.toggle();
     },
     trouble,
