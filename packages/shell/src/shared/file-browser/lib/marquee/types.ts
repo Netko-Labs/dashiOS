@@ -13,11 +13,6 @@ export interface ListingModel {
   rects: readonly Rect[];
   /** The `testID` of the node painted at an item's rectangle. */
   nodeOf(path: string): string;
-  /**
-   * The items take no press themselves (the list's rows, D103): a click on
-   * one reaches the listing, which asks which item it was on.
-   */
-  clicksToListing: boolean;
 }
 
 /** The part of the store a marquee uses. */

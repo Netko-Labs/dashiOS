@@ -190,7 +190,6 @@ export function Grid({ items, empty }: { items: readonly FileItem[]; empty: Reac
           paths: items.map((item) => item.path),
           rects,
           nodeOf: (path) => `item:${path}`,
-          clicksToListing: false,
         };
   return (
     <View

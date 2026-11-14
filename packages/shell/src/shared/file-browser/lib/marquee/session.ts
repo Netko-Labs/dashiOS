@@ -3,17 +3,17 @@
  * threshold draws a rectangle to the pointer, and every item it touches is
  * selected as it moves (geometry.ts). The rectangle is anchored to what
  * scrolls, not to the window: at the top or bottom edge the listing scrolls
- * under it and it grows. Letting go keeps the selection; Esc puts back the
- * one from before.
+ * under it and it grows. Letting go keeps it; Esc puts back the one before.
  *
- * Metal gives a press, its moves and its release (`onPointer`), but neither
- * where a scroll view stands nor the keys held during a drag (D99). So the
- * session asks the window where an item is painted (`WindowSurface.bounds`)
- * to learn where the content sits: when the drag starts, and then every
- * `POLL_MS` while it is not scrolling the listing itself, since a wheel
- * moves the items with no word to the app (the scroll view takes the turn).
- * Its own scrolling it counts. The keys are those of the click the release makes
- * (`press`), unless the host says them with the pointer.
+ * Metal gives a press, its moves and its release (`onPointer`), each with
+ * the keys held (D104), but not where a scroll view stands (D100). So the
+ * session asks the window where an item is painted (`WindowSurface.bounds`):
+ * when the drag starts, and then every `POLL_MS` while it is not scrolling
+ * the listing itself (a wheel moves the items with no word to the app). Its
+ * own scrolling it counts. The keys say the drag's rule from the press on:
+ * plain replaces, ⇧ adds, ❖ toggles, and one pressed or let go mid-drag
+ * changes it there and then. An older host says no keys with the pointer:
+ * the rule is then the keys of the click the release makes (`press`).
  */
 
 import type { Bounds, Modifiers, PointerInfo } from "@mirinjs/metal";
@@ -34,11 +34,13 @@ import {
   stepWithin,
   TICK_MS,
 } from "./geometry.ts";
-import { inView, itemAt, locate } from "./locate.ts";
+import { inView, locate } from "./locate.ts";
 import { IDLE, type ListingModel, type MarqueeStore, type MarqueeView, REAL_TIMERS, type Timers } from "./types.ts";
 
 /** How often a drag asks where the content stands, while it is not scrolling it itself. */
 export const POLL_MS = 150;
+/** How long after a drag's release its click may still come (none comes from a release off the item pressed): a later one is its own. */
+export const CLICK_MS = 400;
 
 type Phase = "idle" | "armed" | "placing" | "active";
 
@@ -50,6 +52,9 @@ export class Marquee {
   private phase: Phase = "idle";
   /** This press became a drag: the click its release makes is not a click. */
   private dragged = false;
+  private stopWaiting: (() => void) | null = null;
+  /** The host says the keys with the pointer; an older one leaves them to the click. */
+  private keyed = false;
   private released = false;
   private down: Point = { x: 0, y: 0 };
   private pointer: Point = { x: 0, y: 0 };
@@ -87,20 +92,24 @@ export class Marquee {
   getSnapshot = (): MarqueeView => this.view;
 
   /** The pointer on the listing's own space (a press on an item never gets here: the item takes it). */
-  pointerEvent = (event: PointerInfo & { modifiers?: Modifiers }): void => {
+  pointerEvent = (event: PointerInfo): void => {
     const at = { x: event.x, y: event.y };
     if (event.bounds) this.frame = event.bounds;
     if (event.phase === "down") {
       this.stop();
-      this.dragged = false;
+      this.forget();
       this.taken = null;
       this.down = at;
       this.pointer = at;
+      this.keyed = event.modifiers !== undefined;
       this.mode = event.modifiers ? modeOf(event.modifiers) : "replace";
       this.phase = this.surface && this.model ? "armed" : "idle";
       return;
     }
     this.pointer = at;
+    // The keys as they are now: one pressed or let go mid-drag comes as a move where the pointer is.
+    if (event.modifiers) this.mode = modeOf(event.modifiers);
+    if (event.phase === "up" && this.dragged) this.stopWaiting = this.timers.every(CLICK_MS, this.forget);
     if (event.phase === "move") {
       if (this.phase === "armed" && isDrag(this.down, at)) this.begin();
       else if (this.phase === "active") this.update();
@@ -115,33 +124,31 @@ export class Marquee {
   /** The pointer on an item (a tile, a row's icon and name): the press is the item's, and whatever drag came before is over. */
   itemPointer = (event: PointerInfo): void => {
     if (event.phase !== "down") return;
-    this.dragged = false;
+    this.forget();
     this.taken = null;
   };
 
   /**
    * The click a release makes, on the empty space or on a row. True when it
-   * ended a drag: it is then not a click, and its keys say what the drag
-   * does (plain replaces, ⇧ adds, ❖ toggles).
+   * ended a drag: it is then not a click. From a host that says no keys with
+   * the pointer, the click's keys say what the drag does.
    */
   press(held: Modifiers): boolean {
     if (!this.dragged) return false;
-    this.dragged = false;
+    this.forget();
+    if (this.keyed) return true;
     this.mode = modeOf(held);
     if (this.phase === "active") this.update();
     else if (this.taken) this.store.sweep(combine(this.base, this.taken.paths, this.mode), this.taken.last);
     return true;
   }
 
-  /**
-   * The item the last press on the listing's own space was on, where the
-   * items leave their clicks to the listing (the list's rows): null for
-   * empty space, and at once where items take their own clicks.
-   */
-  pressed(): Promise<string | null> | null {
-    const { model, surface } = this;
-    return model?.clicksToListing && surface ? itemAt(surface, model, this.down) : null;
-  }
+  /** The press is no longer a drag whose click is owed: the click came, or will not. */
+  private forget = (): void => {
+    this.dragged = false;
+    this.stopWaiting?.();
+    this.stopWaiting = null;
+  };
 
   /** Esc: the drag ends and the selection from before comes back. True when there was one. */
   cancel(): boolean {
@@ -187,7 +194,7 @@ export class Marquee {
     // A press outside what scrolls (a list's header) draws nothing.
     if (!inView(down, viewport)) {
       this.stop();
-      this.dragged = false;
+      this.forget();
       return;
     }
     this.anchor = { x: down.x - this.origin.x, y: down.y - this.origin.y };

@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import type { Bounds, Modifiers, PointerInfo } from "@mirinjs/metal";
 import { scrollStep, TICK_MS } from "../src/shared/file-browser/lib/marquee/geometry.ts";
-import { Marquee, POLL_MS } from "../src/shared/file-browser/lib/marquee/session.ts";
+import { CLICK_MS, Marquee, POLL_MS } from "../src/shared/file-browser/lib/marquee/session.ts";
 import type { ListingModel, Timers } from "../src/shared/file-browser/lib/marquee/types.ts";
 import { rowRects } from "../src/shared/file-browser/lib/views/list.tsx";
 import type { WindowSurface } from "../src/shared/metal/index.ts";
@@ -31,7 +31,6 @@ function setup(selection: string[] = []) {
     paths,
     rects: rowRects(10, 400),
     nodeOf: (path) => `list:row:${path}`,
-    clicksToListing: true,
   };
   const answers: (() => void)[] = [];
   const surface: WindowSurface = {
@@ -67,7 +66,9 @@ function setup(selection: string[] = []) {
   const marquee = new Marquee(store, timers);
   marquee.surface = surface;
   marquee.model = model;
-  const send = (phase: PointerInfo["phase"], x: number, y: number) => marquee.pointerEvent({ phase, x, y, bounds: frame });
+  /** The pointer, from a host that says the keys held with it (`held`), or an older one that says none. */
+  const send = (phase: PointerInfo["phase"], x: number, y: number, held?: Modifiers) =>
+    marquee.pointerEvent({ phase, x, y, bounds: frame, ...(held ? { modifiers: held } : {}) });
   /** Let the window answer what it was asked. */
   const answer = async () => {
     for (const each of answers.splice(0)) each();
@@ -79,7 +80,9 @@ function setup(selection: string[] = []) {
   /** The drag's look at where the content stands, if it is due. */
   const poll = () => timed.find((entry) => entry.ms === POLL_MS)?.run();
   const scrolling = () => timed.some((entry) => entry.ms === TICK_MS);
-  return { marquee, world, send, answer, tick, poll, scrolling, frame };
+  /** The wait for a release's click runs out, if one is on. */
+  const wait = () => timed.find((entry) => entry.ms === CLICK_MS)?.run();
+  return { marquee, world, send, answer, tick, poll, scrolling, wait, frame };
 }
 
 test("a press on empty space, dragged, selects what the rectangle touches, live, and keeps it on release", async () => {
@@ -119,7 +122,7 @@ test("a click without a drag is left to the click, and the click after a drag is
   expect(marquee.press(none)).toBe(false);
 });
 
-test("⇧ adds and ❖ toggles against the selection from before, whether the click comes before the release or after", async () => {
+test("from a host that says no keys with the pointer, ⇧ adds and ❖ toggles at the click the release makes, before it or after", async () => {
   const added = setup(["/f1", "/f7"]);
   added.send("down", 400, 60);
   added.send("move", 400, 110);
@@ -139,12 +142,57 @@ test("⇧ adds and ❖ toggles against the selection from before, whether the cl
   expect(toggled.world.selection).toEqual(["/f7", "/f0", "/f2"]);
 });
 
-test("a host that says the keys with the pointer has them from the start", async () => {
-  const { marquee, world, answer } = setup(["/f7"]);
-  marquee.pointerEvent({ phase: "down", x: 400, y: 60, modifiers: shift });
-  marquee.pointerEvent({ phase: "move", x: 400, y: 70 });
+test("⇧ and ❖ drags show the kept selection from the first move, and a release anywhere keeps the rule", async () => {
+  const added = setup(["/f1", "/f7"]);
+  added.send("down", 400, 60, shift);
+  added.send("move", 400, 110, shift);
+  await added.answer();
+  // Live, with the button still down: rows 0 to 2 added to what was selected.
+  expect(added.world.selection).toEqual(["/f1", "/f7", "/f0", "/f2"]);
+  // Let go outside the listing (the sidebar): no click comes, and nothing is lost.
+  added.send("up", 20, 110, shift);
+  expect(added.world.selection).toEqual(["/f1", "/f7", "/f0", "/f2"]);
+  expect(added.marquee.getSnapshot()).toEqual({ rect: null, dragging: false });
+
+  const toggled = setup(["/f1", "/f7"]);
+  toggled.send("down", 400, 60, command);
+  toggled.send("move", 400, 110, command);
+  await toggled.answer();
+  expect(toggled.world.selection).toEqual(["/f7", "/f0", "/f2"]);
+  toggled.send("up", 400, 110, command);
+  // The click the release makes is the drag's, and its keys change nothing.
+  expect(toggled.marquee.press(none)).toBe(true);
+  expect(toggled.world.selection).toEqual(["/f7", "/f0", "/f2"]);
+});
+
+test("a key pressed or let go during the drag changes its rule there and then", async () => {
+  const { world, send, answer } = setup(["/f1", "/f7"]);
+  send("down", 400, 60, none);
+  send("move", 400, 110, none);
   await answer();
-  expect(world.selection).toEqual(["/f7", "/f0"]);
+  expect(world.selection).toEqual(["/f0", "/f1", "/f2"]);
+  // ⇧ goes down with the pointer still: the host sends a move where it is.
+  send("move", 400, 110, shift);
+  expect(world.selection).toEqual(["/f1", "/f7", "/f0", "/f2"]);
+  // ⇧ up, ❖ down.
+  send("move", 400, 110, command);
+  expect(world.selection).toEqual(["/f7", "/f0", "/f2"]);
+  // Let go of ❖ before the button: the release is a plain one.
+  send("move", 400, 110, none);
+  send("up", 400, 110, none);
+  expect(world.selection).toEqual(["/f0", "/f1", "/f2"]);
+});
+
+test("a drag let go where no click is made does not take the next click, made without the pointer", async () => {
+  const { marquee, send, answer, wait } = setup();
+  send("down", 400, 60, none);
+  send("move", 400, 110, none);
+  await answer();
+  // Let go on another row than the press was on: no click comes.
+  send("up", 400, 110, none);
+  wait();
+  // A row pressed by a screen reader, later: a click of its own.
+  expect(marquee.press(none)).toBe(false);
 });
 
 test("Esc ends the drag and puts back the selection and the keyboard's place from before", async () => {
@@ -234,25 +282,4 @@ test("without a window to ask, nothing is dragged out", () => {
   send("up", 400, 100);
   expect(world.selection).toEqual(["/f3"]);
   expect(marquee.press(none)).toBe(false);
-});
-
-test("a click on a row that leaves its clicks to the listing is found by asking the window where the rows are", async () => {
-  const { marquee, world, send, answer } = setup();
-  world.top = 52;
-  // Row 2 shows at the top (50 to 76); the press is on the next one.
-  send("down", 300, 80);
-  send("up", 300, 80);
-  expect(marquee.press(none)).toBe(false);
-  const pressed = marquee.pressed();
-  await answer();
-  expect(await pressed).toBe("/f3");
-  // Under the last row there is none.
-  world.top = 10 * 26 + 8 - 130;
-  send("down", 300, 178);
-  const empty = marquee.pressed();
-  await answer();
-  expect(await empty).toBeNull();
-  // Where items take their own clicks, a click on the listing is on empty space, at once.
-  if (marquee.model) marquee.model = { ...marquee.model, clicksToListing: false };
-  expect(marquee.pressed()).toBeNull();
 });
