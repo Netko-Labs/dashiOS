@@ -48,6 +48,7 @@ import {
   startMachine,
   startNotices,
   startOverview,
+  startPersonaPiece,
   startPickerAndTray,
   startPrograms,
   startRegistry,
@@ -81,6 +82,7 @@ const primaryScreen = pickPrimary(firstScreens, screens.mainDisplay) ?? undefine
 // The windows, settings.json, the clocks; Spaces and the screens; how things look; where windows go.
 const stores = startStores(services);
 const { settingsStore } = stores;
+startPersonaPiece({ settingsStore, services, late });
 // Talking to Dashi: the talk key, the voice service, the chip in every bar.
 const talking = startTalking({ compositor, settingsStore, services, late });
 const desktops = await startDesktops({ compositor, settingsStore, screens, services, late });

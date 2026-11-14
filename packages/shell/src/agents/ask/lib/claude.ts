@@ -22,7 +22,7 @@
  */
 
 import { isRecord } from "@dashi/shape";
-import { ANSWERERS, AnswerError, type Answerer, type ModelCall, type PlanTool, SYSTEM_PROMPT, type Turn } from "../answerer.ts";
+import { ANSWERERS, AnswerError, type Answerer, type ModelCall, type PlanTool, systemPrompt, type Turn } from "../answerer.ts";
 import { errorWords, type Fetch, HttpError, requestJson, UnreadableError } from "./http.ts";
 import { strictSchema } from "./strict.ts";
 
@@ -166,7 +166,7 @@ export function claudeAnswerer(options: ClaudeOptions): Answerer {
             body: {
               model: options.model ?? CLAUDE_MODEL,
               max_tokens: MAX_TOKENS,
-              system: SYSTEM_PROMPT,
+              system: systemPrompt(),
               messages,
               tools: tools.map(claudeTool),
               tool_choice: { type: "auto" },

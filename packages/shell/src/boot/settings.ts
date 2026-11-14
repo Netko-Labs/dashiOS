@@ -134,6 +134,11 @@ export function startSettingsWindows(needs: SettingsWindowNeeds): SettingsWindow
     // Who is connected now, for Settings › Agents.
     agents: needs.agentStore,
     voice: needs.talking,
+    // Who Dashi is (Settings › Your Dashi); a file the person makes there opens in its app (Text Editor).
+    persona: () => {
+      const source = late.peek("persona");
+      return source ? { source, openFile: (path: string) => openFile(`file://${path}`) } : null;
+    },
   });
   late.set("settingsApp", settingsApp);
   services.add("settings app", () => settingsApp.close());

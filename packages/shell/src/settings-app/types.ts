@@ -9,11 +9,12 @@ import type { AnswererChoice, HarnessId } from "../agents/index.ts";
 import type { RefreshChoice, VrrMode } from "../display-config/index.ts";
 import type { DockSettings } from "../dock/settings.ts";
 import type { InputMethodName } from "../input-method.ts";
+import type { PersonaSection } from "../persona/index.ts";
 import type { GraphicsSettings, PowerSection } from "../power/index.ts";
 import type { KeyboardSettings, MouseSettings, TouchpadSettings } from "../settings/index.ts";
 import type { CornerName } from "../shared/appearance/index.ts";
 import type { CatalogSetting } from "../shared/applet-store/index.ts";
-import type { DictationSettings, PersonaSettings } from "../shared/pill/index.ts";
+import type { DictationSettings } from "../shared/pill/index.ts";
 import type { ClockSettings, RegionSettings } from "../shared/time/index.ts";
 import type { SpaceNames } from "../spaces/types.ts";
 import type { VoiceSettings } from "../voice/types.ts";
@@ -182,6 +183,6 @@ export interface SettingsData {
   voice: VoiceSettings;
   /** Dictation: whether it is on, its key, hands-free and tidying (shared/pill/dictation.ts; Settings › Voice). */
   dictation: DictationSettings;
-  /** Who Dashi is: its name, character, colour, mark and how much it talks (shared/pill/persona.ts; Settings › Dashi). */
-  persona: PersonaSettings;
+  /** Who Dashi is: its name, character, colour, mark, how much it talks, what it calls the person, its language and their note (persona/; Settings › Your Dashi). */
+  persona: PersonaSection;
 }

@@ -21,7 +21,7 @@
  */
 
 import { isRecord } from "@dashi/shape";
-import { ANSWERERS, AnswerError, type Answerer, type ModelCall, type PlanTool, SYSTEM_PROMPT, type Turn } from "../answerer.ts";
+import { ANSWERERS, AnswerError, type Answerer, type ModelCall, type PlanTool, systemPrompt, type Turn } from "../answerer.ts";
 import { rankGptModels } from "./gpt-models.ts";
 import { errorWords, type Fetch, HttpError, requestJson, UnreadableError } from "./http.ts";
 import { strictSchema } from "./strict.ts";
@@ -148,7 +148,7 @@ const isChatMessage = (value: unknown): value is ChatMessage =>
 /** The messages for a turn: how the last calls went, then the words. */
 export function gptMessages(history: readonly ChatMessage[], turn: Turn): ChatMessage[] {
   return [
-    ...(history.length === 0 ? [{ role: "developer" as const, content: SYSTEM_PROMPT }] : history),
+    ...(history.length === 0 ? [{ role: "developer" as const, content: systemPrompt() }] : history),
     ...turn.results.map((result) => ({ role: "tool" as const, tool_call_id: result.id, content: result.error ? `Error: ${result.text}` : result.text })),
     { role: "user" as const, content: turn.text },
   ];

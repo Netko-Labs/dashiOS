@@ -5,7 +5,7 @@
  * settings.json, else the first one installed.
  */
 
-import { ANSWERERS, AnswerError, type Answerer, type ModelCall, type PlanTool, SYSTEM_PROMPT } from "./answerer.ts";
+import { ANSWERERS, AnswerError, type Answerer, type ModelCall, type PlanTool, systemPrompt } from "./answerer.ts";
 import type { Fetch } from "./lib/http.ts";
 
 export const LOCAL_URL = "http://127.0.0.1:11434";
@@ -122,7 +122,7 @@ export function localAnswerer(options: LocalOptions): Answerer {
       const model = named ?? installed?.[0];
       if (!model) throw new AnswerError("no-model", "No local model is installed.");
       const messages = [
-        ...(history.length === 0 ? [{ role: "system", content: SYSTEM_PROMPT }] : history),
+        ...(history.length === 0 ? [{ role: "system", content: systemPrompt("small") }] : history),
         ...turn.results.map((result) => ({ role: "tool", content: result.text })),
         { role: "user", content: turn.text },
       ];
