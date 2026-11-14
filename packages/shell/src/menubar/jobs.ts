@@ -68,6 +68,13 @@ export class BarJobs {
     this.refresh();
   }
 
+  /** The panel opened on all of them ("+N", the keyboard): every finished one was looked at. */
+  lookedAll(): void {
+    const finished = this.snapshot.jobs.filter((job) => job.kind === "task" && job.state === "fin");
+    for (const job of finished) this.seen.add(job.id);
+    if (finished.length > 0) this.refresh();
+  }
+
   close(): void {
     this.closed = true;
     for (const stop of this.stops.splice(0)) stop();

@@ -228,6 +228,10 @@ describe("the jobs' store", () => {
     if (!done) throw new Error("no job");
     store.looked(done);
     expect(store.getSnapshot().jobs).toEqual([]);
+    // The panel opened on all of them: every finished one goes, the ones at work stay.
+    set([task("b", "done"), task("c", "running"), task("a", "done")], 20_000);
+    store.lookedAll();
+    expect(store.getSnapshot().jobs.map((job) => job.id)).toEqual(["c"]);
     store.close();
   });
 });

@@ -58,6 +58,10 @@ export function jobsSlot({ sources, appName, pill }: ProgramContext, room: numbe
     pill.source.jobs.looked(job);
     panel(right, job.kind === "task" ? taskFocus(job.id) : job.id);
   };
+  const all = (right: number) => {
+    pill.source.jobs.lookedAll();
+    panel(right, null);
+  };
   const voice = row.capsules.at(-1)?.job;
   return [
     {
@@ -65,7 +69,7 @@ export function jobsSlot({ sources, appName, pill }: ProgramContext, room: numbe
       goes: null,
       label: voice ? jobLabel(voice) : "Jobs",
       radius: 10,
-      open: { kind: "panel" as const, run: (bounds: Bounds | null) => panel(bounds ? bounds.x + bounds.width : 0, null) },
+      open: { kind: "panel" as const, run: (bounds: Bounds | null) => all(bounds ? bounds.x + bounds.width : 0) },
       node: (
         <View onLayout={(bounds) => onWidth(bounds.width)}>
           <JobsRow
@@ -73,7 +77,7 @@ export function jobsSlot({ sources, appName, pill }: ProgramContext, room: numbe
             dashi={pill.colour}
             onOpen={open}
             onStop={(job) => job.kind === "task" && pill.source.stopTask(job.id)}
-            onMore={(right) => panel(right, null)}
+            onMore={(right) => all(right)}
             reduceMotion={reduceMotion}
             accessible={accessible}
           />
