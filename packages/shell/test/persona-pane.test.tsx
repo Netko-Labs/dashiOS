@@ -223,3 +223,15 @@ test("an agent's press changes nothing, on any row, and the row says so", async 
   expect(opened).toEqual([]);
   expect(existsSync(join(home, "characters"))).toBe(false);
 });
+
+test("an example in an empty field is drawn muted, never like a value", async () => {
+  const { view } = await pane({ is: true });
+  const inputs = [...view.tree().matchAll(/"type":"input","props":\{[^}]*\}/g)].map((match) => match[0]);
+  expect(inputs.length).toBeGreaterThanOrEqual(3);
+  for (const input of inputs) {
+    const color = /"color":"([^"]+)"/.exec(input)?.[1];
+    const placeholder = /"placeholderColor":"([^"]+)"/.exec(input)?.[1];
+    expect(placeholder).toBeDefined();
+    expect(placeholder).not.toBe(color);
+  }
+});

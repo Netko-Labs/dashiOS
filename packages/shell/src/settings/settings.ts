@@ -120,7 +120,8 @@ export function parseSettings(value: unknown): Loaded {
     return { settings, problems };
   }
   // displays, nightShift, and spaces are read by displays.ts, night-shift.ts, and spaces/; clock and region by clock.ts
-  // and the Setup Assistant; launcher by the launcher (settings-app/store.ts holds their keys).
+  // and the Setup Assistant; launcher by the launcher (settings-app/store.ts holds their keys). power, graphics, agents,
+  // clipboard, screenSharing, voice, dictation and persona are read by their own modules: known here, never a problem.
   const sections = [
     "input",
     "keyboard",
@@ -136,6 +137,14 @@ export function parseSettings(value: unknown): Loaded {
     "spaces",
     "launcher",
     "applets",
+    "power",
+    "graphics",
+    "agents",
+    "clipboard",
+    "screenSharing",
+    "voice",
+    "dictation",
+    "persona",
   ];
   for (const key of Object.keys(value)) if (!sections.includes(key)) problems.push(`unknown section ${key}`);
 
