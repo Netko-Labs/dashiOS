@@ -11,6 +11,7 @@ import { buttonLook, Shortcut, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { type AgentEntry, accessWords, discGlyph, watchTime } from "../../agents/index.ts";
+import { spaceLabel } from "../../spaces/index.ts";
 
 /** A small button of a card: Show, Stop, Undo. */
 export function Small({ label, primary, danger, testID, onPress }: { label: string; primary?: true; danger?: true; testID: string; onPress: () => void }) {
@@ -144,8 +145,9 @@ export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; fi
   const onShow = actions.showSpace;
   const onStop = () => entry.agent && actions.stopAgent(entry.agent.id);
   const colors = useColors();
-  // At work on another Desktop, its line says where even while it rests ("Working on Desktop 3").
-  const doing = (entry.phase === "working" || space !== undefined) && !entry.watching ? entry.doing : null;
+  // At work on another Desktop, its line says where while it rests, in few words: Show takes room.
+  const resting = space === undefined ? null : `On ${spaceLabel(space)}`;
+  const doing = entry.watching ? null : entry.phase === "working" ? entry.doing : resting;
   const origin = originWords(entry);
   return (
     <View
