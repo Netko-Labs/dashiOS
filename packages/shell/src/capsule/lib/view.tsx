@@ -115,7 +115,7 @@ export function CapsuleView(props: CapsuleViewProps) {
             <Capsule
               colours={dashi}
               maxWidth={place.maxWidth}
-              dashi={persona.mark === "spark"}
+              dashi={persona.mark !== "dots"}
               tight={endsInButton(shown)}
               testID={`capsule:voice:${shown.state.phase}`}
               onPress={go ? () => props.onGo(go) : undefined}

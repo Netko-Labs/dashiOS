@@ -3,7 +3,7 @@
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Cell } from "../../shared/pill/index.ts";
-import { SPARK } from "../../shared/settings/index.ts";
+import { useFaceMark } from "./face-scope.tsx";
 import { CAPSULE, type CapsuleColours } from "./measures.ts";
 
 /** The five dots' heights at a level: dots at rest, bars as the voice rises, the middle one tallest. */
@@ -126,6 +126,7 @@ export function Button({ label, colours, onPress, primary = false, square = fals
 
 /** Dashi's disc: its mark on white; a question mark on amber when it needs the person. */
 export function Disc({ colours, size = CAPSULE.disc, asks = false }: { colours: CapsuleColours; size?: number; asks?: boolean }) {
+  const mark = useFaceMark();
   return (
     <View
       testID={asks ? "capsule-disc:asks" : "capsule-disc"}
@@ -142,7 +143,7 @@ export function Disc({ colours, size = CAPSULE.disc, asks = false }: { colours: 
       {asks ? (
         <Text style={{ fontSize: size * 0.62, fontWeight: "bold", color: "#1d1d1f" }}>?</Text>
       ) : (
-        <Svg markup={SPARK} size={Math.round(size * 0.58)} color={colours.fill} />
+        <Svg markup={mark} size={Math.round(size * 0.58)} color={colours.fill} />
       )}
     </View>
   );

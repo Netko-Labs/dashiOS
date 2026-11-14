@@ -244,11 +244,13 @@ packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/cards
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/control-center
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/controls
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/dbus
+packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/face
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/io
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/locale
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/logind
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/metal
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/pill
+packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/portal
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/processes
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/session-power
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/settings
@@ -364,6 +366,7 @@ packages/shell/src/main.tsx	packages/shell/src/shared/clipboard
 packages/shell/src/main.tsx	packages/shell/src/shared/control-center
 packages/shell/src/main.tsx	packages/shell/src/shared/controls
 packages/shell/src/main.tsx	packages/shell/src/shared/dbus
+packages/shell/src/main.tsx	packages/shell/src/shared/face
 packages/shell/src/main.tsx	packages/shell/src/shared/files
 packages/shell/src/main.tsx	packages/shell/src/shared/fs
 packages/shell/src/main.tsx	packages/shell/src/shared/io

@@ -119,10 +119,21 @@ test("with nothing chosen it is Dashi as before: violet, the spark, and no word 
 test("choosing a character shows at once, is one change, and is one Undo", async () => {
   const { view, settings, hub, data } = await pane({ is: true }, { voice: { on: true } });
   await view.press("persona-character-choice:miso");
-  expect(data().persona).toEqual({ character: "miso", talk: "normal", colour: "#6f4d3c", mark: "spark", name: "Miso" });
+  expect(data().persona).toEqual({ character: "miso", talk: "normal", colour: "#6f4d3c", mark: "bowl", dots: "smile", name: "Miso" });
+  // The preview wears them at once, the bowl in its disc and a smile for its dots, and says its line: the dots move to the words.
+  expect(view.has("persona-capsule-mark:bowl")).toBe(true);
+  expect(view.has("persona-capsule-dots:smile:saying")).toBe(true);
   expect(data().voice.voice).toBe("af_bella");
   // The capsule and the bar read the hub; the answerers read the prompt.
-  expect(hub.persona.getSnapshot()).toMatchObject({ name: "Miso", colour: "#6f4d3c", mark: "spark", talk: "normal", voice: "af_bella" });
+  expect(hub.persona.getSnapshot()).toMatchObject({
+    name: "Miso",
+    colour: "#6f4d3c",
+    mark: "bowl",
+    dots: "smile",
+    motion: "warm",
+    talk: "normal",
+    voice: "af_bella",
+  });
   expect(systemPrompt()).toContain("Your name is Miso.");
   expect(systemPrompt().endsWith(STYLE_CLOSE)).toBe(true);
   expect(view.tree()).toContain("Dashi's capsule, Cocoa: Hi. I'm Miso. Good to see you. What are we making today?");
@@ -144,7 +155,7 @@ test("a name of the person's own stays when the character changes; another assis
   expect(data().persona.name).toBe("Pixel");
   expect(hub.persona.getSnapshot().name).toBe("Pixel");
   await view.press("persona-character-choice:kombu");
-  expect(data().persona).toMatchObject({ character: "kombu", name: "Pixel", talk: "less", colour: "#136770", mark: "dots" });
+  expect(data().persona).toMatchObject({ character: "kombu", name: "Pixel", talk: "less", colour: "#136770", mark: "dot", dots: "pearls" });
   expect(view.tree()).toContain("Dashi's capsule, Teal: Pixel. Ready.");
   // An empty field is Dashi again.
   await view.submit("persona-name-field", "");
@@ -154,13 +165,22 @@ test("a name of the person's own stays when the character changes; another assis
 test("the rows write what the others read: colour, mark, how much it talks, the language, what it calls you, the note", async () => {
   const { view, data, hub } = await pane({ is: true });
   await view.press("persona-colour:berry");
-  await view.press("persona-mark-choice:dots");
+  await view.press("persona-mark:moon");
+  await view.press("persona-dots:wave");
   await view.press("persona-talk-choice:more");
   await view.press("persona-language-choice:es");
   await view.submit("persona-you-field", "Alex");
   await view.submit("persona-note-field", "Short answers in the morning.");
-  expect(data().persona).toEqual({ colour: "#9f2a5f", mark: "dots", talk: "more", language: "es", you: "Alex", note: "Short answers in the morning." });
-  expect(hub.persona.getSnapshot()).toMatchObject({ colour: "#9f2a5f", mark: "dots", talk: "more", name: "Dashi" });
+  expect(data().persona).toEqual({
+    colour: "#9f2a5f",
+    mark: "moon",
+    dots: "wave",
+    talk: "more",
+    language: "es",
+    you: "Alex",
+    note: "Short answers in the morning.",
+  });
+  expect(hub.persona.getSnapshot()).toMatchObject({ colour: "#9f2a5f", mark: "moon", dots: "wave", motion: "calm", talk: "more", name: "Dashi" });
   expect(systemPrompt()).toContain("Hablas con calma, claro y en pocas palabras.");
   expect(systemPrompt()).toContain("Answer in Spanish.");
   expect(view.tree()).toContain("Hola, Alex. Soy Dashi.");
@@ -189,7 +209,8 @@ test("an agent's press changes nothing, on any row, and the row says so", async 
   await view.press("persona-character-choice:miso");
   expect(view.tree()).toContain(ONLY_YOU);
   await view.press("persona-colour:berry");
-  await view.press("persona-mark-choice:dots");
+  await view.press("persona-mark:moon");
+  await view.press("persona-dots:wave");
   await view.press("persona-talk-choice:more");
   await view.press("persona-language-choice:es");
   await view.press("persona-voice-choice:af_bella");

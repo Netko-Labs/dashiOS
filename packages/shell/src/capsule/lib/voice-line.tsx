@@ -8,15 +8,14 @@ import { CHECK } from "@dashi/ui";
 import { Svg } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import type { PersonaMark, VoiceModeCommand, VoiceModeState } from "../../shared/pill/index.ts";
+import { FaceLead } from "./face.tsx";
 import type { Common } from "./line.tsx";
 import type { CapsuleColours } from "./measures.ts";
 import { charsIn, head, tail } from "./model.ts";
-import { Button, Disc, Dots, Line, Separator, Working } from "./parts.tsx";
+import { Button, Line, Separator, Working } from "./parts.tsx";
 
-/** What leads Dashi's capsule: its disc with the spark, or five dots for a persona that chose them. */
-function Lead({ colours, mark }: { colours: CapsuleColours; mark: PersonaMark }) {
-  return mark === "dots" ? <Dots level={null} color={colours.text} /> : <Disc colours={colours} />;
-}
+/** What leads Dashi's capsule: its disc with the persona's mark and its five dots, its face (face.tsx). */
+const Lead = FaceLead;
 
 /** What Dashi heard, before anything runs: the way out of the wrong capsule is here (Cancel, Type it instead). */
 function Heard({
@@ -61,9 +60,7 @@ export function VoiceLine({ state, mark, send, ...common }: VoiceProps): ReactNo
       const heard = tail(state.text, chars);
       return (
         <>
-          {/* A persona whose mark is the dots leads with the ones that move. */}
-          {mark === "spark" && <Lead colours={colours} mark={mark} />}
-          <Dots level={still ? null : level} color={colours.text} />
+          <Lead colours={colours} mark={mark} listening={still ? null : level} />
           {heard !== "" ? (
             <Line color={colours.text}>{heard}</Line>
           ) : (

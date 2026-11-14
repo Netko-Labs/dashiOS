@@ -12,6 +12,7 @@ import { CAPSULE_LAYER, cell, type PillHub } from "../shared/pill/index.ts";
 import { realTimers, type Timers } from "../shared/time/index.ts";
 import type { CardAnswer } from "./lib/card.tsx";
 import { CardKeys, KEYS_LAYER } from "./lib/card-keys.tsx";
+import { FaceScope } from "./lib/face-scope.tsx";
 import { FakeTasks, FakeVoice, followScenes } from "./lib/fake.ts";
 import { type LocateOutput, type LocateWindow, locate } from "./lib/locate.ts";
 import { CAPSULE, CARD, SEAT } from "./lib/measures.ts";
@@ -151,19 +152,21 @@ class Running implements Capsule {
   private view() {
     const { hub } = this.needs;
     return (
-      <CapsuleView
-        state={this.state}
-        level={hub.level}
-        persona={hub.persona}
-        still={this.needs.reduceMotion}
-        talkKey={() => this.mode.talkKey()}
-        now={this.now}
-        onDictation={(command) => void hub.dictationCommands.send(command)}
-        onVoice={(command) => void hub.voiceCommands.send(command)}
-        onCard={(answer) => this.answer(answer)}
-        onGo={(where) => (where === "launcher" ? this.needs.openLauncher() : this.needs.openSettings(where))}
-        onBounds={(bounds) => this.drew(bounds)}
-      />
+      <FaceScope state={this.state} persona={hub.persona} level={hub.level} still={this.needs.reduceMotion}>
+        <CapsuleView
+          state={this.state}
+          level={hub.level}
+          persona={hub.persona}
+          still={this.needs.reduceMotion}
+          talkKey={() => this.mode.talkKey()}
+          now={this.now}
+          onDictation={(command) => void hub.dictationCommands.send(command)}
+          onVoice={(command) => void hub.voiceCommands.send(command)}
+          onCard={(answer) => this.answer(answer)}
+          onGo={(where) => (where === "launcher" ? this.needs.openLauncher() : this.needs.openSettings(where))}
+          onBounds={(bounds) => this.drew(bounds)}
+        />
+      </FaceScope>
     );
   }
 

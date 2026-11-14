@@ -7,8 +7,10 @@
  * (agents/ask/answerer.ts `styledPrompt`).
  */
 
+export { type ActReason, AT_EASE, afterFailure, type Circumstances, dropsAct, inCircumstances, plain } from "./lib/act.ts";
 export { CHARACTERS, type Character, DASHI, presetCharacter, type Words } from "./lib/characters.ts";
 export {
+  addCharacterFile,
   type CharacterFiles,
   characterFileText,
   charactersDir,
@@ -17,7 +19,10 @@ export {
   type FileCheck,
   makeCharacterFile,
   NO_FILES,
+  readCharacterFile,
   readCharacters,
+  shareFileText,
+  shareId,
 } from "./lib/files.ts";
 export { isPersonaLanguage, LANGUAGES, type PersonaLanguage, promptLanguage } from "./lib/language.ts";
 export { checkName, NAME_MAX, type NameCheck, NOTE_MAX, plainText, TAKEN_NAME, YOU_MAX } from "./lib/name.ts";

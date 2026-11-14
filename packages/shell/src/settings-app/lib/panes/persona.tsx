@@ -1,13 +1,14 @@
 /**
  * Your Dashi: who the assistant is. Its name, one of six characters or the person's own from a
  * small file, what it calls them, how much it talks, the language and the voice it answers in, and
- * the colour and mark of its capsule, shown as it will look. A character changes how Dashi sounds
+ * the colour, mark and dots of its capsule, shown as it will look and moving as it will move. A character changes how Dashi sounds
  * and looks, never what it may do (docs/decisions.md D58), and the pane says so.
  *
  * Every row is the person's alone: each change first asks whose press it was (person-only.ts),
  * and an agent's changes nothing. Choosing a character is one change and one Undo.
  */
 
+import { type Confirm, useConfirm } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import {
@@ -25,7 +26,7 @@ import {
 } from "../../../persona/index.ts";
 import { Caption, Group, Note } from "../../../shared/cards/index.ts";
 import { FoldedChoices } from "../../../shared/controls/folded.tsx";
-import { PERSONA_MARKS, PERSONA_TALK } from "../../../shared/pill/index.ts";
+import { PERSONA_TALK } from "../../../shared/pill/index.ts";
 import { basicsHere } from "../../../voice/index.ts";
 import type { PaneContext } from "../../context.ts";
 import { useSettings } from "../../hooks.ts";
@@ -35,7 +36,9 @@ import { LANGUAGE_WORDS, TALK_WORDS } from "../changes/words.ts";
 import { type ByPerson, ONLY_YOU, type PersonOnly, usePersonOnly } from "../person-only.ts";
 import { Setting } from "../setting.tsx";
 import { MiniButton } from "./parts.tsx";
-import { CapsulePreview, CharacterFilesNotes, LineField, Swatches } from "./persona-parts.tsx";
+import { Look } from "./persona-look.tsx";
+import { CapsulePreview, CharacterFilesNotes, LineField } from "./persona-parts.tsx";
+import { Share, type ShareDialogs } from "./persona-share.tsx";
 import type { VoicePaneSource } from "./voice.tsx";
 import { voiceChoices } from "./voice-words.ts";
 
@@ -48,6 +51,7 @@ const EVERY_KEY: PersonaSection = {
   character: undefined,
   colour: undefined,
   mark: undefined,
+  dots: undefined,
   talk: undefined,
   you: undefined,
   language: undefined,
@@ -58,13 +62,15 @@ const NO_VOICE = { subscribe: () => () => {}, getSnapshot: () => null };
 
 export interface PersonaPaneProps {
   settings: SettingsStore;
-  persona: { source: PersonaSource; openFile(path: string): void };
+  persona: { source: PersonaSource; openFile(path: string): void; dialogs?: ShareDialogs };
   voice?: VoicePaneSource;
   byPerson?: ByPerson;
 }
 
 interface Parts extends PersonaPaneProps {
   guard: PersonOnly;
+  /** Opens the pane's sheet: a file somebody sent is read in full before it is added. */
+  ask: Confirm["ask"];
   /** The voices here and Dashi's own; null while Voice is off or its models are not here. */
   voices: { choices: Array<{ value: string; label: string }>; own: string } | null;
 }
@@ -170,26 +176,7 @@ function Sound({ settings, persona, guard, voices }: Parts) {
   );
 }
 
-function Look({ settings, persona, guard }: Parts) {
-  const view = useSyncExternalStore(persona.source.subscribe, persona.source.view);
-  return (
-    <Group testID="persona-look">
-      <Setting id="persona/colour" testID="persona-colour" {...quiet(guard, "persona/colour")}>
-        <Swatches value={view.colour.id} onChange={(colour) => guard.mine("persona/colour", () => settings.patch("persona", { colour: colour.to }))} />
-      </Setting>
-      <Setting id="persona/mark" testID="persona-mark" {...quiet(guard, "persona/mark")}>
-        <FoldedChoices
-          testID="persona-mark-choice"
-          value={view.mark}
-          options={PERSONA_MARKS.map((mark) => ({ value: mark, label: mark === "spark" ? "Spark" : "Dots" }))}
-          onChange={(mark) => guard.mine("persona/mark", () => settings.patch("persona", { mark }))}
-        />
-      </Setting>
-    </Group>
-  );
-}
-
-function Own({ settings, persona, guard }: Parts) {
+function Own({ settings, persona, guard, ask }: Parts) {
   const view = useSyncExternalStore(persona.source.subscribe, persona.source.view);
   const [failed, setFailed] = useState(false);
   const make = (): void =>
@@ -223,12 +210,7 @@ function Own({ settings, persona, guard }: Parts) {
           onKeep={(text) => guard.mine("persona/note", () => settings.patch("persona", { note: text.trim() === "" ? undefined : text.trim() }))}
         />
       </Setting>
-      <Setting id="persona/own" testID="persona-own-row" {...quiet(guard, "persona/own", failed ? "The file could not be made." : undefined)}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <MiniButton testID="persona-open-folder" label="Show Folder" onPress={() => persona.openFile(persona.source.dir)} />
-          <MiniButton testID="persona-make-file" label="Make a File" onPress={make} />
-        </View>
-      </Setting>
+      <Share settings={settings} persona={persona} guard={guard} ask={ask} onMake={make} problem={failed ? "The file could not be made." : undefined} />
       <Setting
         id="persona/reset"
         testID="persona-reset-row"
@@ -249,27 +231,45 @@ export function PersonaPane(props: PersonaPaneProps) {
   const on = useSettings(settings).data.voice.on === true && models !== null && models.service === "ready" && basicsHere(models.sets);
   const choices = on && models ? voiceChoices(models.voices, models.defaultVoice) : [];
   const voices = on && models && choices.length > 0 ? { choices, own: models.defaultVoice } : null;
-  const parts: Parts = { ...props, guard, voices };
+  const confirm = useConfirm();
+  // The preview's dots say the line again at each "Hear it".
+  const [said, setSaid] = useState(0);
+  const parts: Parts = { ...props, guard, voices, ask: confirm.ask };
   return (
-    <Page title="Your Dashi">
-      <Hero testID="persona-hero">
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, padding: 8 }}>
-          <CapsulePreview colour={view.colour} mark={view.mark} line={previewLine(view, persona.source.language())} />
-          <MiniButton
-            testID="persona-hear"
-            label={voices ? "Hear it" : "Turn on Voice to hear it"}
-            disabled={!voices}
-            onPress={() => voice?.sample(view.voice ?? voices?.own ?? "")}
-          />
-        </View>
-      </Hero>
-      <Who {...parts} />
-      <Sound {...parts} />
-      <Look {...parts} />
-      <Own {...parts} />
-      <CharacterFilesNotes source={persona.source} />
-      <Caption>{PERSONA_PROMISE}</Caption>
-    </Page>
+    <>
+      <Page title="Your Dashi">
+        <Hero testID="persona-hero">
+          <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, padding: 8 }}>
+            <CapsulePreview
+              colour={view.colour}
+              mark={view.mark}
+              dots={view.dots}
+              motion={view.motion}
+              name={view.name}
+              still={useSettings(settings).data.appearance.reduceMotion === true}
+              line={previewLine(view, persona.source.language())}
+              said={said}
+            />
+            <MiniButton
+              testID="persona-hear"
+              label={voices ? "Hear it" : "Turn on Voice to hear it"}
+              disabled={!voices}
+              onPress={() => {
+                setSaid((times) => times + 1);
+                voice?.sample(view.voice ?? voices?.own ?? "");
+              }}
+            />
+          </View>
+        </Hero>
+        <Who {...parts} />
+        <Sound {...parts} />
+        <Look {...parts} />
+        <Own {...parts} />
+        <CharacterFilesNotes source={persona.source} />
+        <Caption>{PERSONA_PROMISE}</Caption>
+      </Page>
+      {confirm.sheet}
+    </>
   );
 }
 
