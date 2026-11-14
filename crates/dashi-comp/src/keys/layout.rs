@@ -203,6 +203,13 @@ impl Dashi {
         Ok(())
     }
 
+    /// The person's layout again, after a keymap made for some text (type_text.rs).
+    pub(super) fn restore_layout(&mut self) {
+        if let Err(error) = self.apply_layout() {
+            tracing::warn!(%error, "putting the keyboard layout back");
+        }
+    }
+
     fn seats(&self) -> Vec<smithay::input::Seat<Dashi>> {
         std::iter::once(self.seat.clone())
             .chain(self.agent.seat.clone())

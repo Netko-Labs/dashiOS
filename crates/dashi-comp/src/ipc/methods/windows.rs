@@ -6,7 +6,7 @@ use smithay::utils::Point;
 use super::{Ask, done};
 use crate::{
     ipc::protocol::{At, Coord, Count, Done, Nothing, Rect, Wide, Window, WindowId},
-    keys::Chord,
+    keys::{Chord, TypeText},
     state::Dashi,
     wm::{Shown, valid_frame},
     xwayland::XState,
@@ -190,6 +190,11 @@ pub(crate) fn send_keys(state: &mut Dashi, _: &Ask, params: SendKeys) -> Result<
             params.chord
         ))
     }
+}
+
+/// `type-text`: refused in a word the shell acts on (`left-window`, `x11`, `keys-down`).
+pub(crate) fn type_text(state: &mut Dashi, _: &Ask, params: TypeText) -> Result<Done, String> {
+    done(state.type_text(&params))
 }
 
 pub(crate) fn animation_target(

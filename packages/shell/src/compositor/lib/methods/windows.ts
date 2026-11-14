@@ -28,6 +28,7 @@ export const WINDOWS = {
   place: method("shell", obj({ window: WindowId, x: num(), y: num(), space: optional(num({ min: 0 })) }), Done),
   fullscreen: method("granted", Switch, Done),
   "send-keys": method("shell", obj({ window: WindowId, chord: str() }), Done),
+  "type-text": method("shell", obj({ window: WindowId, text: str() }), Done),
   "animation-target": method("shell", obj({ targets: list(obj({ window: WindowId, rect: optional(nullable(FrameShape)) })) }), Done),
   "layer-motion": method("shell", obj({ namespace: str(), ms: num({ min: 0, max: 300 }), scale: optional(num({ min: 0.5, max: 1 })) }), Done),
   "window-for-handle": method(

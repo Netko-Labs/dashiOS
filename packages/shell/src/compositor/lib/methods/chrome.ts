@@ -59,7 +59,14 @@ export const CHROME = {
   chrome: method("shell", obj({ dark: optional(bool()), radius: optional(num()), reduceMotion: optional(bool()) }), Done),
   "window-style": method("shell", WindowStyle, Done),
   keymap: method("shell", Keymap, Done),
-  "held-keys": method("shell", obj({ keys: list(obj({ name: str(), code: int({ min: 1, max: 767 }), bare: optional(bool()) }), { max: 16 }) }), Done),
+  "held-keys": method("shell", obj({ keys: list(obj({
+        name: str(),
+        code: int({ min: 1, max: 767 }),
+        bare: optional(bool()),
+        alone: optional(bool()),
+        super: optional(bool()),
+        tapMs: optional(int({ min: 1, max: 2000 })),
+      }), { max: 16 }) }), Done),
   bars: method("shell", obj({ top: optional(num()), show: optional(bool()), output: optional(str()) }), Done),
   edges: method(
     "shell",
