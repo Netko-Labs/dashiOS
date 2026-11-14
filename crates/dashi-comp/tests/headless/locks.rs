@@ -70,6 +70,12 @@ fn a_lock_waits_for_the_keyboard() {
     let compositor = Compositor::start(&[]);
     let mut ipc = compositor.connect();
     let (mut game, id, _other, other_id) = game_and_another(&compositor, &mut ipc);
+    // The lock first: the game asks for it after its window opens, and a keyboard
+    // that left before it took hold leaves nothing to let go (this test once
+    // moved the keyboard at once, and failed whenever the game was the slower).
+    wait_client(&mut game, "the lock never took hold", |state| {
+        state.locks == [true]
+    });
     ipc.request("focus", json!({ "window": other_id }));
     wait_client(
         &mut game,
