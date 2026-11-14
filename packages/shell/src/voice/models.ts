@@ -7,7 +7,7 @@
 
 import { maybe } from "@dashi/shape";
 import type { VoiceService } from "./lib/service.ts";
-import { type FolderWatch, watchFolder } from "./lib/watch-folder.ts";
+import type { FolderWatch } from "./lib/watch-folder.ts";
 import { FetchReply, ModelsShape, VoicesShape } from "./lib/wire.ts";
 import type { ModelSet, ModelsView } from "./types.ts";
 
@@ -35,7 +35,11 @@ export class VoiceModels {
   private readonly listeners = new Set<() => void>();
   private readonly offs: Array<() => void>;
 
-  constructor(private readonly service: VoiceService) {
+  /** `watcher`: what watches the models' folder for `watch` (voice/start.ts gives the real one); without it nothing is watched. */
+  constructor(
+    private readonly service: VoiceService,
+    private readonly watcher: FolderWatch | null = null,
+  ) {
     this.offs = [
       service.on((event) => {
         if (event.event === "models") void this.refresh();
@@ -90,7 +94,9 @@ export class VoiceModels {
    * burst of changes (a big file being copied) is one look, `settleMs`
    * after its last. Gives back how to stop.
    */
-  watch(watcher: FolderWatch = watchFolder, settleMs = 400): () => void {
+  watch(settleMs = 400): () => void {
+    const watcher = this.watcher;
+    if (!watcher) return () => {};
     let stop: (() => void) | null = null;
     let watched: string | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;

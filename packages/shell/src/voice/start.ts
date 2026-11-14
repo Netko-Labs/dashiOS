@@ -10,6 +10,7 @@ import type { VoiceLink } from "./client.ts";
 import { type heldKeys, isTalkKeyId, talkKey } from "./keys.ts";
 import { voiceConnector } from "./lib/launch.ts";
 import { VoiceService } from "./lib/service.ts";
+import { watchFolder } from "./lib/watch-folder.ts";
 import { basicsHere, VoiceModels } from "./models.ts";
 import type { Asker, ChipGo, Trouble, VoiceSettings } from "./types.ts";
 import { Voice } from "./voice.ts";
@@ -62,7 +63,7 @@ export function troubleOf(models: VoiceModels): Trouble {
 
 export function startVoice(options: VoiceOptions): VoiceParts {
   const service = new VoiceService(options.connect ?? voiceConnector());
-  const models = new VoiceModels(service);
+  const models = new VoiceModels(service, watchFolder);
   const prefs = () => {
     const { on, key, voice } = options.settings.getSnapshot().data.voice;
     return { on: on === true, key: talkKey(isTalkKeyId(key) ? key : undefined), voice };

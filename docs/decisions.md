@@ -2371,3 +2371,36 @@ short words, as the rulebook is written.
   font's.
 - **Undo:** when the host's fallback font draws them at size, make
   `KeyedText` a plain `Text` again.
+
+### D116. The capsule has one home; a card says "Stopped"; dictation says once that it needs Voice
+
+- **Date:** 2026-11-14. The `n19-polish` agent's. Three small calls in the
+  capsule. Adds to D83.
+- **One home.** The capsule sat 11 from the edge in a new session (no Dock
+  laid out yet) and higher later, with no Dock on screen either time. Its
+  home is now 9 above the top of the Dock's band whether or not the Dock
+  shows: hidden by itself, not laid out yet, or a display with none. The
+  seats beside the Dock and one step up are still only for a Dock that is
+  on screen with a window down to it. *Cost:* with the Dock hidden and a
+  window down to the edge, the capsule lies on that window's last lines (as
+  the step up from the edge did) and 80 of empty wallpaper are under it
+  on a bare desktop. *Undo:* `placeOf` in `capsule/lib/place.ts`.
+- **❖Esc under a card.** The capsule's own line is not drawn while a card
+  is up, so ❖Esc stopped Dashi's voice and the card looked the same. The
+  card's foot now says it: "❖Esc stops the voice." while Dashi speaks (the
+  capsule's Stop already wears the keys), and "Stopped" for 2.5 s after,
+  as the capsule says after Cancel; then how to answer the card is back.
+  What Dashi hears still goes before both. *Cost:* while it speaks, the
+  line that says how to answer is away (the buttons are not). *Undo:*
+  `footOf` in `capsule/lib/card.tsx`.
+- **The dictation key with Voice off.** It did nothing and said nothing.
+  Now, while Voice is off and dictation is asked for, the key is still
+  heard, and the first hold says one line, "Dictation needs Voice turned
+  on. See Settings › Voice."; a press on the capsule goes there (so does
+  one on "Dictation needs its models."). After that the key is let go of
+  for the rest of the session. Only a key that is heard and not taken (the
+  right ⌥ or ⌃, held alone): where the key would be Caps Lock or the Menu
+  key, nothing is asked of the compositor and nothing is said, because
+  taking Caps Lock from someone who turned Voice off is worse than
+  silence. *Cost:* those layouts (Spanish, most European) still get no
+  line. *Undo:* `teaching` in `dictation/start.ts`.

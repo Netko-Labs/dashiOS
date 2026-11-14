@@ -1,11 +1,14 @@
 /**
  * Where the capsule sits (pill-v2 README, "Where it sits"): home is the
- * bottom centre, just above the Dock. When a window fills or tiles down to
- * the Dock (the capsule would lie on its last lines) it goes into the Dock's row, beside the Dock, on the side of the window
- * that has the keyboard. With no room there (a taskbar, a full Dock), or when
- * it shows a notice (a line to read whole, which the narrow seat would cut), it goes
- * one step up; with no Dock, against the edge, or a step up from it when a
- * window is there. A card always stands on the Dock, centred.
+ * bottom centre, just above the Dock's band, and it is the same place
+ * whether or not the Dock is on screen (hidden by itself, not laid out yet,
+ * or no Dock at all: D116), so the capsule never sits lower in one session
+ * than in the next. When the Dock shows and a window fills or tiles down to
+ * it (the capsule would lie on its last lines) it goes into the Dock's row,
+ * beside the Dock, on the side of the window that has the keyboard. With no
+ * room there (a taskbar, a full Dock), or when it shows a notice (a line to
+ * read whole, which the narrow seat would cut), it goes one step up. A card
+ * always stands on the Dock, centred.
  */
 
 import type { DockPlace } from "../../dock/index.ts";
@@ -33,15 +36,19 @@ export interface PlaceInput {
   whole?: boolean;
 }
 
+/** The top of the Dock's band, from the screen's bottom edge: where the Dock's top is when it shows, whether or not it does now (a taskbar's for a taskbar). */
+export function bandTop(dock: Pick<DockPlace, "style"> | null): number {
+  return dock?.style === "taskbar" ? TASKBAR.height : DOCK_HEIGHT + DOCK.margin;
+}
+
 /** The Dock's top, from the screen's bottom edge; 0 with no Dock on screen. */
 export function dockTop(dock: DockPlace | null): number {
-  if (!dock?.shown) return 0;
-  return dock.style === "taskbar" ? TASKBAR.height : DOCK_HEIGHT + DOCK.margin;
+  return dock?.shown ? bandTop(dock) : 0;
 }
 
 const home = (dock: DockPlace | null): Place => ({
   seat: "home",
-  bottom: dockTop(dock) + SEAT.aboveDock,
+  bottom: bandTop(dock) + SEAT.aboveDock,
   at: { centre: true },
   maxWidth: CAPSULE.maxWidth,
   tail: CAPSULE.tail,
@@ -65,10 +72,10 @@ const OVERLAP = 4;
 
 export function placeOf(input: PlaceInput): Place {
   const { dock, screen } = input;
-  const rest = dock?.shown ? home(dock).bottom : SEAT.edge;
-  const filling = input.windows.filter((window) => under(window, rest, input));
+  // No Dock on screen: there is no row to go into, and the one place is home, above the band.
+  if (!dock?.shown) return home(dock);
+  const filling = input.windows.filter((window) => under(window, home(dock).bottom, input));
   const up = { at: { centre: true } as const, maxWidth: CAPSULE.maxWidth, tail: CAPSULE.tail };
-  if (!dock?.shown) return filling.length > 0 ? { seat: "edge-up", bottom: SEAT.edgeUp, ...up } : { seat: "edge", bottom: SEAT.edge, ...up };
   if (filling.length === 0) return home(dock);
   const step: Place = { seat: "up", bottom: dockTop(dock) + SEAT.aboveDock + SEAT.step, ...up };
   if (dock.style === "taskbar" || !dock.panel || input.whole) return step;
@@ -90,7 +97,7 @@ export function placeOf(input: PlaceInput): Place {
 /** A card's bottom edge: on the Dock (it comes out for as long as the card asks), a little over its top; against the edge with none. */
 export function cardBottom(dock: DockPlace | null, dockVisible: boolean): number {
   if (!dockVisible || !dock) return SEAT.edge;
-  return (dock.style === "taskbar" ? TASKBAR.height : DOCK_HEIGHT + DOCK.margin) - CARD.onDock;
+  return bandTop(dock) - CARD.onDock;
 }
 
 /** How high the capsule or card reaches from the bottom edge: the small volume indicator sits above it. */

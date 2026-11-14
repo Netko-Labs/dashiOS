@@ -3,7 +3,7 @@
 import { expect, test } from "bun:test";
 import { locate } from "../src/capsule/lib/locate.ts";
 import { CAPSULE, SEAT } from "../src/capsule/lib/measures.ts";
-import { cardBottom, dockTop, placeOf } from "../src/capsule/lib/place.ts";
+import { bandTop, cardBottom, dockTop, placeOf } from "../src/capsule/lib/place.ts";
 import type { DockPlace } from "../src/dock/index.ts";
 
 const screen = { x: 0, y: 0, width: 1280, height: 800 };
@@ -65,11 +65,20 @@ test("with no room beside the Dock it goes one step up", () => {
   expect(placeOf({ dock: { ...dock, style: "taskbar", panel: null }, screen, usable, windows: [filling] }).seat).toBe("up");
 });
 
-test("with the Dock hidden it sits against the edge, or a step up from it over a window", () => {
+test("it has one place whether or not the Dock is on screen: above the Dock's band, never against the edge", () => {
   const hidden: DockPlace = { ...dock, shown: false, panel: null };
   const whole = { x: 0, y: 28, width: 1280, height: 772 };
-  expect(placeOf({ dock: hidden, screen, usable: whole, windows: [] })).toMatchObject({ seat: "edge", bottom: SEAT.edge });
-  expect(placeOf({ dock: null, screen, usable: whole, windows: [{ ...whole, focused: true }] })).toMatchObject({ seat: "edge-up", bottom: SEAT.edgeUp });
+  const shown = placeOf({ dock, screen, usable, windows: [] });
+  expect(shown).toMatchObject({ seat: "home", bottom: 80, at: { centre: true } });
+  // The Dock hiding itself, a session whose Dock is not laid out yet, a display with none: the same place.
+  expect(placeOf({ dock: hidden, screen, usable: whole, windows: [] })).toEqual(shown);
+  expect(placeOf({ dock: null, screen, usable: whole, windows: [] })).toEqual(shown);
+  // A window down to the edge does not move it either: with no Dock there is no row to go into.
+  expect(placeOf({ dock: hidden, screen, usable: whole, windows: [{ ...whole, focused: true }] })).toEqual(shown);
+  expect(placeOf({ dock: null, screen, usable: whole, windows: [{ ...whole, focused: true }] })).toEqual(shown);
+  // A taskbar's band is the taskbar's.
+  expect(bandTop({ style: "taskbar" })).toBe(dockTop({ ...dock, style: "taskbar" }));
+  expect(dockTop(hidden)).toBe(0);
 });
 
 test("a card stands on the Dock, a little over its top; against the edge with none", () => {
@@ -88,7 +97,7 @@ test("it goes on the display of the window that has the keyboard, else the point
   expect(found?.output).toBe("DP-2");
   // No Dock on that display, and a window down to its edge.
   expect(found?.input.dock).toBeNull();
-  expect(found && placeOf(found.input).seat).toBe("edge-up");
+  expect(found && placeOf(found.input)).toMatchObject({ seat: "home", bottom: 80 });
   expect(locate(outputs, [{ ...onSecond, focused: false }], { x: 1300, y: 10 }, dock)?.output).toBe("DP-2");
   expect(locate(outputs, [{ ...onSecond, state: "minimized" }], null, dock)?.output).toBe("eDP-1");
   expect(locate([], [], null, dock)).toBeNull();

@@ -1,6 +1,7 @@
 /** The capsule's pure parts (src/capsule/lib): what shows, the words that fit, a card's limit, the colours, the spoken yes. */
 
 import { expect, test } from "bun:test";
+import { footOf } from "../src/capsule/lib/card.tsx";
 import { contrastWithWhite, dashiColours, dashiFill, inkColours } from "../src/capsule/lib/measures.ts";
 import { cardContent, head, shownOf, tail } from "../src/capsule/lib/model.ts";
 import { dotHeights } from "../src/capsule/lib/parts.tsx";
@@ -28,6 +29,20 @@ test("one thing shows: an open card first, then dictation, then Dashi", () => {
   const card = open(permission(["Turn Dark Mode on"]));
   expect(shownOf({ phase: "key-down" }, listening, card)).toEqual({ kind: "card", card, listening });
   expect(shownOf({ phase: "idle" }, { phase: "idle" }, card)).toEqual({ kind: "card", card, listening: null });
+});
+
+test("under a card the capsule's line is not drawn, so the card says that Dashi speaks and that ❖Esc stopped it", () => {
+  const card = open(permission(["Turn Dark Mode on"]));
+  const speaking = shownOf({ phase: "idle" }, { phase: "answer", words: ["I", "would"], at: 0, full: "I would" }, card);
+  expect(speaking).toEqual({ kind: "card", card, listening: null, voice: "speaking" });
+  expect(shownOf({ phase: "idle" }, { phase: "stopped", until: 1 }, card)).toEqual({ kind: "card", card, listening: null, voice: "stopped" });
+  const hint = "Press a button, or tap the Dashi key then Return.";
+  // While it speaks the foot names the keys that stop it; stopped, it says so; then the hint is back.
+  expect(footOf(hint, null, "speaking")).toEqual({ words: "❖Esc stops the voice.", loud: false, bold: false });
+  expect(footOf(hint, null, "stopped")).toEqual({ words: "Stopped", loud: true, bold: true });
+  expect(footOf(hint, null)).toEqual({ words: hint, loud: false, bold: false });
+  // What Dashi hears goes before either.
+  expect(footOf(hint, { text: "yes" }, "stopped").words).toBe("yes");
 });
 
 test("the words that fit keep their end while listening and their start otherwise", () => {

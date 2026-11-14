@@ -232,3 +232,42 @@ test("a tap of the Dashi key does not close a launcher that a tap of ❖ alone j
   // No ❖ tap at all: ❖Space closes the launcher it opened, as before.
   expect(tapClosesLauncher(Number.POSITIVE_INFINITY)).toBe(true);
 });
+
+test("with Voice off the dictation key says once what dictation needs, then stays quiet; a key that would be taken is never asked for", () => {
+  const { parts, hub, held, gestures, settings, pass, change } = started();
+  settings.voiceOn = false;
+  change();
+  // The right ⌥ is still heard (held alone, never taken from the app); the Dashi key is not.
+  expect(held.at(-1)).toEqual(["dictation:100"]);
+  // A tap says nothing.
+  parts.key("dictation", true);
+  pass(50);
+  parts.key("dictation", false);
+  expect(hub.dictation.getSnapshot().phase).toBe("idle");
+  // A hold: one line that names Settings › Voice, and the key is let go of.
+  pass(1000);
+  parts.key("dictation", true);
+  pass(400);
+  expect(hub.dictation.getSnapshot()).toMatchObject({ phase: "notice", trouble: "voice-off", line: "Dictation needs Voice turned on. See Settings › Voice." });
+  expect(held.at(-1)).toEqual([]);
+  // No gesture was told to the capsule's other parts: nothing listens.
+  expect(gestures).toEqual([]);
+  // The line goes by itself, and a second hold in the same session says nothing: the key is no longer heard.
+  parts.key("dictation", false);
+  pass(10_000);
+  expect(hub.dictation.getSnapshot().phase).toBe("idle");
+  change();
+  expect(held.at(-1)).toEqual([]);
+  // Dictation turned off: nothing to say, nothing held.
+  const { held: quiet, settings: off, change: again } = started();
+  off.voiceOn = false;
+  off.on = false;
+  again();
+  expect(quiet.at(-1)).toEqual([]);
+  // Caps Lock (a Spanish layout) would be taken from the person: not asked for while Voice is off.
+  const { held: caps, settings: spanish, change: more } = started();
+  spanish.voiceOn = false;
+  spanish.layout = { layout: "es" };
+  more();
+  expect(caps.at(-1)).toEqual([]);
+});

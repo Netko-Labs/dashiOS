@@ -67,6 +67,11 @@ export class Dictation {
     this.show({ phase: "notice", trouble, line: words, until: this.now() + DICTATION_LIMITS.notice });
   }
 
+  /** The key was held while Voice is off: one line that says what dictation needs (start.ts says it once a session). */
+  needsVoice(): void {
+    this.notice("voice-off");
+  }
+
   private clearLimits(): void {
     for (const limit of this.limits) this.timers.clear(limit);
     this.limits = [];

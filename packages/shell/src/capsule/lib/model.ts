@@ -31,11 +31,15 @@ export function head(text: string, chars: number): string {
 
 /**
  * The one thing to draw. A card that is open stays while Dashi listens for
- * its answer; otherwise dictation's capsule goes before Dashi's (the words
+ * its answer, speaks, or was just stopped; otherwise dictation's capsule goes before Dashi's (the words
  * being typed are the person's own).
  */
 export function shownOf(dictation: DictationState, voice: VoiceModeState, card: OpenCard | null): Shown {
-  if (card) return { kind: "card", card, listening: voice.phase === "listening" ? voice : null };
+  if (card) {
+    // The capsule's own line is not drawn under a card: the card says that Dashi speaks, and that it was stopped (D116).
+    const says = voice.phase === "answer" ? ({ voice: "speaking" } as const) : voice.phase === "stopped" ? ({ voice: "stopped" } as const) : {};
+    return { kind: "card", card, listening: voice.phase === "listening" ? voice : null, ...says };
+  }
   if (dictation.phase !== "idle") return { kind: "dictation", state: dictation };
   if (voice.phase !== "idle") return { kind: "voice", state: voice };
   return { kind: "none" };

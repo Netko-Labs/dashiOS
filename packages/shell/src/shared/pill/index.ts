@@ -6,6 +6,7 @@ export {
   type DictationSettings,
   type DictationState,
   type DictationTrouble,
+  goesToVoice,
   type TidyChange,
   type WaitReason,
 } from "./dictation.ts";

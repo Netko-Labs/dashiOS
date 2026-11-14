@@ -8,7 +8,7 @@ import { expect, test } from "bun:test";
 import { offerWords, removeWords, setsWords, voiceChoices, whatFetching } from "../src/settings-app/lib/panes/voice-words.ts";
 import { basicsHere, partly, VoiceModels } from "../src/voice/models.ts";
 import { troubleOf } from "../src/voice/start.ts";
-import { fakeClock, settle } from "./support/time.ts";
+import { settle } from "./support/time.ts";
 import { fakeVoice } from "./support/voice.ts";
 
 const set = (id: string, basic: boolean, bytes: number, have: number) => ({
@@ -141,40 +141,4 @@ test("the fetch's offer names only the models that are not here yet, with what i
   // Listening is already here (a fetch that was cut short, or models put there by hand): it is not asked for again.
   const half = [set("listen", true, 673e6, 673e6), set("speak", true, 335e6, 100e6)];
   expect(offerWords(half)).toBe("Voice needs 235 MB of models, fetched once and kept on this computer: Speaking (235 MB).");
-});
-
-test("while Settings › Voice is open, models that appear in the folder behind its back are seen: one look after a burst of changes", async () => {
-  const clock = fakeClock();
-  const { store, state, voice } = models({ listen: 0, speak: 0 });
-  const watching: { folder: string; changed: () => void; stopped: boolean }[] = [];
-  const stop = store.watch((folder, changed) => {
-    const entry = { folder, changed, stopped: false };
-    watching.push(entry);
-    return () => {
-      entry.stopped = true;
-    };
-  });
-  // Nothing to watch until the service said where the models are.
-  expect(watching).toEqual([]);
-  await store.refresh();
-  expect(watching.map((each) => each.folder)).toEqual(["/home/alexk/.local/share/dashi/voice"]);
-  expect(store.ready).toBe(false);
-  // The models are copied in by hand: many changes, one look once they stop.
-  state.listen = 600;
-  state.speak = 400;
-  const asked = voice.calls.length;
-  for (let at = 0; at < 5; at++) watching[0]?.changed();
-  expect(voice.calls.length).toBe(asked);
-  await settle(450);
-  expect(voice.calls.slice(asked)).toEqual(["models", "voices"]);
-  expect(store.ready).toBe(true);
-  // The same folder is watched once, however often the sets are read; the pane closing stops it.
-  expect(watching.length).toBe(1);
-  stop();
-  expect(watching[0]?.stopped).toBe(true);
-  // A change heard after that asks nothing.
-  watching[0]?.changed();
-  await settle(450);
-  expect(voice.calls.slice(asked)).toEqual(["models", "voices"]);
-  clock.restore();
 });

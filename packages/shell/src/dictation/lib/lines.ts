@@ -56,6 +56,8 @@ export function troubleLine(trouble: DictationTrouble, name: string, handsFree =
       return "No dictation into a password field.";
     case "ended":
       return "Hands-free ended.";
+    case "voice-off":
+      return "Dictation needs Voice turned on. See Settings › Voice.";
   }
 }
 
