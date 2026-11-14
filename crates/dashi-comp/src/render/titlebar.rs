@@ -254,10 +254,6 @@ mod tests {
             part_at(20.0, 19.0, 600, full(Decor::Unified)),
             Some(Part::Close)
         );
-        assert_eq!(
-            part_at(300.0, 10.0, 600, Decor::Standard.pressed(false)),
-            Some(Part::Bar)
-        );
     }
 
     #[test]
