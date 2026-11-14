@@ -36,5 +36,12 @@ export function startCapsule({ compositor, talking, look, services, late }: Caps
     // A file of scene names, for proof without a microphone or an agent (capsule/lib/fake.ts).
     fake: process.env.DASHI_CAPSULE_FAKE || undefined,
   });
+  // DASHI_DICTATION_LOG=1: voice mode's states, the asks and the tasks' phases in the session's log, beside dictation's (boot/dictation.ts).
+  if (process.env.DASHI_DICTATION_LOG === "1") {
+    const hub = late.get("pill");
+    hub.voiceMode.subscribe(() => console.error(`dashi-shell: voice-mode ${Date.now() % 100000} ${JSON.stringify(hub.voiceMode.getSnapshot())}`));
+    hub.asks.subscribe(() => console.error(`dashi-shell: asks ${Date.now() % 100000} ${JSON.stringify(hub.asks.getSnapshot())}`));
+    talking.voice.subscribe(() => console.error(`dashi-shell: chip ${Date.now() % 100000} ${JSON.stringify(talking.voice.getSnapshot())}`));
+  }
   services.add("capsule", () => capsule.close());
 }
