@@ -1,5 +1,5 @@
 /**
- * Who Dashi is, as the person made it (docs/decisions.md D53 to D57; Settings › Your Dashi): its
+ * Who Dashi is, as the person made it (docs/decisions.md D70 to D75; Settings › Your Dashi): its
  * name, one of six characters or the person's own from a small file, how much it talks, the
  * language it answers in, and the colour and mark of its capsule. A character changes how Dashi
  * sounds and looks. It never changes what Dashi may do: nothing here is read by a permission, a

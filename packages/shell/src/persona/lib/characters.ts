@@ -1,5 +1,5 @@
 /**
- * The six characters Dashi ships with (docs/decisions.md D53): who each is in a line, what the
+ * The six characters Dashi ships with (docs/decisions.md D70): who each is in a line, what the
  * assistant is told so it sounds like them, the line the pane's preview says, and the look and
  * voice choosing one sets. Copied from the design's data (dashi-0.9.0-design/persona/src/40-persona-data.js)
  * by a script, never retyped. A character is wording and looks only: nothing here is read by a permission.

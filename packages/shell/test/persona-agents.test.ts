@@ -1,5 +1,5 @@
 /**
- * Only the person changes who Dashi is (docs/decisions.md D57). No agent tool writes settings.json's
+ * Only the person changes who Dashi is (docs/decisions.md D74). No agent tool writes settings.json's
  * `persona` or the characters folder, and an agent's sandbox has Dashi's folder read-only (it holds
  * both) or not at all.
  */

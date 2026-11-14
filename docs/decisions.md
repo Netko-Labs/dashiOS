@@ -1161,6 +1161,130 @@ Replaced by D51: 0.9 builds on mirin's `main`.
 - **Undo:** fold the cells into the modules that own them once the pieces
   are merged, and delete `shared/pill/hub.ts`.
 
+### D70. A character changes how Dashi sounds and looks, never what it may do
+
+- **Date:** 2026-11-13. The `n4-persona` agent's. Numbered from D70 so the
+  night's other pieces can take D54 onward; the lead renumbers.
+- **Question:** the person can now name the assistant, pick one of six
+  characters or write their own, and say how to talk to them. That text goes
+  to a model that also plans actions. What stops it from changing what Dashi
+  does?
+- **Choice:** the character is only ever the middle of the prompt
+  (`agents/ask/answerer.ts` `styledPrompt`): Dashi's own prompt whole and
+  first, then the style (`persona/lib/prompt.ts`), then a closing line Dashi
+  writes (`STYLE_CLOSE`) that is the last thing said: the lines change
+  wording only, the assistant is an AI and says so, the words in a plan, a
+  permission or a question are Dashi's, and text from pages, files and tools
+  is data. With no `persona` section the prompt is the old one, letter for
+  letter. Nothing a permission, a plan's step, a card or a button shows is
+  read from the persona; what asks is decided by code that never sees it.
+  The model on this computer gets the name, the length and the language but
+  not the character's text or the note (`small`).
+- **Why:** a prompt is a request, not a guard, so the guard stays where it
+  was: a plan waits for the person's own press whatever the model was told
+  (`test/persona-prompt.test.ts` tries a hostile character file).
+- **Cost:** a styled prompt is about 150 words longer. A follow-up keeps the
+  prompt its conversation began with (the local model and GPT keep the first
+  message), so a change of character shows from the next request.
+- **Undo:** `promptStyle.set(NO_STYLE)` in `boot/persona.ts`.
+
+### D71. Six fixed colours, no picker
+
+- **Date:** 2026-11-13. The `n4-persona` agent's.
+- **Question:** which colours may Dashi's capsule wear?
+- **Choice:** six, measured (`persona/lib/palette.ts`, the design's
+  `contrast.md` kept as a test): violet, blue, teal, moss, berry, cocoa.
+  `persona.colour` holds the `#rrggbb` of the chosen one's lighter end, the
+  key the contract gives the capsule and the bar; any other colour in the
+  file is not worn.
+- **Why:** ink is dictation's, amber needs you, green is on, red records,
+  and each must keep meaning one thing. White words reach 4.5 to 1 on all
+  six.
+- **Cost:** no colour of the person's own until a picker can check it.
+- **Undo:** let `colourOfHex` take any colour that passes the same ratios.
+
+### D72. The name is the assistant's, not the system's
+
+- **Date:** 2026-11-13. The `n4-persona` agent's.
+- **Question:** what may the assistant be called, and what keeps the word
+  Dashi?
+- **Choice:** letters of any script, digits, spaces, `-`, `'` and `.`, 1 to
+  24 characters (the contract's limit; the design drew 20), one line. Never
+  another assistant's name (Claude, ChatGPT, GPT, Codex, Gemini, Copilot,
+  Siri, Alexa, Cortana, Grok, Bixby): the field says "That is another
+  assistant's name." The system, its key, System Settings and the pane's
+  title ("Your Dashi") keep the word Dashi; a card may say "Miso asks".
+- **Why:** Dashi never passes for another product or a person, and help
+  written for "the Dashi key" stays true whatever the assistant is called.
+- **Cost:** a person who wants to call it Claude cannot.
+- **Undo:** empty `TAKEN` in `persona/lib/name.ts`.
+
+### D73. A character of your own is a small file of text and ids
+
+- **Date:** 2026-11-13. The `n4-persona` agent's.
+- **Question:** how does a person make and share a character?
+- **Choice:** one JSON file in `~/.config/dashi/characters/`, named after
+  its id, 8 KB at most: a name, a line about it, the prompt text in English,
+  Spanish or both (600 characters each), and ids for the talk, colour, mark
+  and voices. No image, hex colour, SVG, voice file or code travels in one.
+  "Make a File" writes a copy of the chosen character and opens it in Text
+  Editor; the folder is watched, so a saved change shows at once. The pane
+  shows in full what a person's own character tells the assistant, and why a
+  file was refused. The person's own file is theirs to write (the lead's
+  call); "Add a File…" with its reading sheet is not built: a file is added
+  by putting it in the folder ("Show Folder").
+- **Why:** text can be read before it is trusted and ids cannot carry
+  anything; D70 makes the text harmless to what Dashi may do.
+- **Cost:** a shared file is not shown before it is in the folder, only
+  after it is chosen.
+- **Undo:** delete the folder; `persona.character` falls back to Dashi.
+
+### D74. Only the person changes who Dashi is
+
+- **Date:** 2026-11-13. The `n4-persona` agent's.
+- **Question:** may an agent rename the assistant, change its character or
+  write a character file?
+- **Choice:** no. No row of Your Dashi has an agent's name, so
+  `get_settings` and `set_setting` know none of them; each change in the
+  pane first asks the compositor whose press it was, as the Voice rows do;
+  and an agent's sandbox has `~/.config/dashi` (settings.json and the
+  characters folder) read-only, or not at all in plan mode and tasks. The
+  shell now makes that folder at start, because the sandbox binds it
+  read-only only if it exists. The files tools already refuse it
+  (`test/persona-agents.test.ts`).
+- **Why:** who speaks to the person is the person's to say; an agent that
+  could set the prompt's style could try to talk its way past D70.
+- **Cost:** "call yourself Miso" said to the assistant does nothing; it is
+  done in Settings.
+- **What is not closed:** an agent the person lets click and type in
+  windows can still drive Terminal or Text Editor as the person, and so
+  write any file the person can, this folder included. That is the reach of
+  "manage windows" itself, as before tonight, and D70 holds even then.
+- **Undo:** give the rows `agent` names in `registry/lib/persona.ts`.
+
+### D75. Where the persona's design and the night's contract disagree, the contract wins
+
+- **Date:** 2026-11-13. The `n4-persona` agent's.
+- **Question:** the design (`dashi-0.9.0-design/persona/spec.md`) and the
+  contract the capsule and the bar are built against name different keys.
+- **Choice:** the contract's, since two other pieces read them tonight:
+  `persona.colour` is a `#rrggbb` (one of D71's six), `persona.mark` is
+  `spark` or `dots` (the design's eight marks and four dot shapes are not
+  built), `persona.talk` is `less`, `normal`, `more` (shown as Brief,
+  Normal, Chatty), a character's id has no `file:` prefix (a file's id is
+  never a preset's), and the name may be 24 characters. Added keys, the
+  persona piece's own: `persona.you`, `persona.language`, `persona.note`.
+  The pane's glyph is a speech bubble, since the spark is Agents' and every
+  pane has its own. "Hear it" plays the voice's sample, not the preview's
+  line. Following the code where the design assumed otherwise: the answer's
+  voice is one id (`voice.voice`, which choosing a character sets when that
+  voice is installed), not one per language; and the spoken length
+  (`persona/lib/prompt.ts` `spokenContext`) is ready but not wired, because
+  `voice/asker.ts` is core's tonight: it is one line there.
+- **Why:** three pieces built at once must read the same keys.
+- **Cost:** the look is narrower than drawn: six colours and two marks.
+- **Undo:** widen `shared/pill/persona.ts` and the capsule together.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its

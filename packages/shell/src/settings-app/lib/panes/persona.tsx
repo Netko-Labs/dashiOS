@@ -2,7 +2,7 @@
  * Your Dashi: who the assistant is. Its name, one of six characters or the person's own from a
  * small file, what it calls them, how much it talks, the language and the voice it answers in, and
  * the colour and mark of its capsule, shown as it will look. A character changes how Dashi sounds
- * and looks, never what it may do (docs/decisions.md D53), and the pane says so.
+ * and looks, never what it may do (docs/decisions.md D70), and the pane says so.
  *
  * Every row is the person's alone: each change first asks whose press it was (person-only.ts),
  * and an agent's changes nothing. Choosing a character is one change and one Undo.

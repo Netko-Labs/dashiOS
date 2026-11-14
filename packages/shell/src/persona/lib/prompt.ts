@@ -1,5 +1,5 @@
 /**
- * What a character adds to the assistant's prompt (docs/decisions.md D53): one block of lines that
+ * What a character adds to the assistant's prompt (docs/decisions.md D70): one block of lines that
  * says how Dashi sounds. It is only ever the middle: agents/ask/answerer.ts `styledPrompt` puts
  * Dashi's own prompt before it and the closing line after it, and neither is built from anything
  * here. The frame is English; only the character's text is in the person's language.
