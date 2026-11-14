@@ -5,41 +5,9 @@
  */
 
 import { expect, test } from "bun:test";
-import { FakeTasks, FakeVoice } from "../src/capsule/lib/fake.ts";
-import { VoiceMode } from "../src/capsule/lib/voice-mode.ts";
-import type { OpenCard } from "../src/capsule/types.ts";
-import { CARD_ARM_MS, createPillHub } from "../src/shared/pill/index.ts";
+import { CARD_ARM_MS } from "../src/shared/pill/index.ts";
+import { stage } from "./support/capsule.ts";
 import { flush } from "./support/time.ts";
-import { handTimers } from "./support/voice.ts";
-
-function stage(options: { pressed?: () => boolean } = {}) {
-  const hub = createPillHub();
-  const hand = handTimers();
-  let clock = 1000;
-  const advance = (ms: number): void => {
-    clock += ms;
-    hand.advance(ms);
-  };
-  const voice = new FakeVoice();
-  const state: { card: OpenCard | null; launcher: number; mode: VoiceMode | null } = { card: null, launcher: 0, mode: null };
-  const tasks = new FakeTasks(hand, async (task) => (state.mode?.saidYes(task) ?? false) || (options.pressed?.() ?? false), 1000);
-  const mode = new VoiceMode({
-    hub,
-    voice,
-    tasks: () => tasks,
-    onCard: (card) => void (state.card = card),
-    openLauncher: () => void state.launcher++,
-    timers: hand,
-    now: () => clock,
-  });
-  state.mode = mode;
-  /** A spoken ask, as 0.8 tells it: the words heard, then the task. */
-  const say = (request: string): string => {
-    voice.show({ kind: "thinking", text: request });
-    return tasks.ask(request);
-  };
-  return { hub, voice, tasks, mode, state, advance, say, phase: () => hub.voiceMode.getSnapshot().phase };
-}
 
 test("the chip's states become voice mode's, and the level follows the microphone", () => {
   const { hub, voice, phase } = stage();
@@ -267,30 +235,4 @@ test("a question can be skipped, typed elsewhere, or run out of time", async () 
   advance(30_000);
   expect(await late).toEqual({ none: "no-answer" });
   expect(hub.asks.getSnapshot()).toEqual([]);
-});
-
-test("an answer too long for the line is read whole in the card; Read it all opens the launcher", () => {
-  const { voice, tasks, state, say, mode, advance } = stage();
-  const id = say("What is new?");
-  tasks.settle(id, [], "A long answer. ".repeat(12));
-  voice.show(null);
-  expect(state.card).toMatchObject({ what: { reading: { id, request: "What is new?" } } });
-  mode.cardAction("read");
-  expect(state.card).toBeNull();
-  expect(state.launcher).toBe(1);
-  // It goes when the person talks to Dashi again, or after two minutes.
-  tasks.settle(say("And what else?"), [], "Another long answer. ".repeat(10));
-  voice.show(null);
-  expect(state.card).not.toBeNull();
-  voice.show({ kind: "listening", text: "", question: false });
-  expect(state.card).toBeNull();
-  tasks.settle(say("And then?"), [], "A third long answer. ".repeat(10));
-  voice.show(null);
-  expect(state.card).not.toBeNull();
-  advance(120_000);
-  expect(state.card).toBeNull();
-  // A short answer is only said.
-  const short = say("What time is it?");
-  tasks.settle(short, [], "Half past eleven.");
-  expect(state.card).toBeNull();
 });

@@ -18,7 +18,7 @@ const permission = (steps: string[]): PillAsk => ({
   spoken: true,
   since: 1,
 });
-const open = (ask: PillAsk): OpenCard => ({ what: { ask }, keyboard: false, armsAt: 0, hears: false });
+const open = (ask: PillAsk): OpenCard => ({ what: { ask }, keyboard: false, armsAt: 0, hears: false, from: 0 });
 
 test("one thing shows: an open card first, then dictation, then Dashi", () => {
   const listening = { phase: "listening", text: "hi", answering: true } as const;
@@ -60,7 +60,42 @@ test("past the limit nothing is cut silently: the start, how much more, and not 
   const long = cardContent({ reading: { id: "r", request: "what is new", text: "word ".repeat(200) } }, "Dashi");
   expect(long.whole).toBe(false);
   expect(long.lines).toHaveLength(1);
-  expect(long.more).toMatch(/^and \d+ more characters$/);
+  expect(long.more).toBe("and more below");
+});
+
+test("Read it all scrolls in place, a view at a time, and the end is whole: every word shows once", () => {
+  const steps = Array.from({ length: 13 }, (_, index) => `Step number ${index + 1}`);
+  const what = { ask: permission(steps) };
+  const seen: string[] = [];
+  let from = 0;
+  for (let views = 0; views < 10; views++) {
+    const content = cardContent(what, "Dashi", from);
+    seen.push(...content.lines);
+    expect(content.whole).toBe(content.end);
+    if (content.end) break;
+    expect(content.next).toBeGreaterThan(from);
+    from = content.next;
+  }
+  expect(seen).toEqual(steps.map((step, index) => `${index + 1}. ${step}`));
+  expect(cardContent(what, "Dashi", from)).toMatchObject({
+    end: true,
+    whole: true,
+    more: "",
+    lines: ["11. Step number 11", "12. Step number 12", "13. Step number 13"],
+  });
+  // One long line is cut at words, and nothing of it is lost.
+  const text = "word ".repeat(200).trim();
+  const reading = { reading: { id: "r", request: "", text } };
+  const words: string[] = [];
+  for (let at = 0, views = 0; views < 10; views++) {
+    const content = cardContent(reading, "Dashi", at);
+    words.push(...content.lines);
+    if (content.end) break;
+    at = content.next;
+  }
+  expect(words.join(" ")).toBe(text);
+  // Scrolled past a message that got shorter, its end shows.
+  expect(cardContent({ ask: permission(["One", "Two"]) }, "Dashi", 9)).toMatchObject({ end: true, lines: ["2. Two"] });
 });
 
 test("a question with more choices than the card holds shows none of them as buttons", () => {

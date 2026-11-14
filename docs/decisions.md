@@ -1714,3 +1714,26 @@ short words, as the rulebook is written.
   loses the landing; the words are one Copy away. A sentence under a second
   in hands-free has no first words to count from and is typed.
 - **Undo:** `moved` in `dictation/lib/land.ts`.
+
+### D81. "Read it all" scrolls the card in place, a view at a time
+
+- **Date:** 2026-11-14. The `n8-harden` agent's.
+- **Question:** past six lines a card has no Yes, and "Read it all" opened
+  the launcher: another surface, away from the question, and for a spoken
+  plan the wrong one. The design's "opens the text where it lives" would put
+  a message in an app's field before any yes.
+- **Choice:** the card itself scrolls. "Read it all" shows the next view of
+  the message (five lines and "and N more steps"; a line longer than a view
+  is cut at words), then "More", until the end shows; only then is Yes back
+  (a question's choices too). The buttons arm again after each scroll, so two
+  quick presses on the same spot are never a yes; with the keyboard, Return
+  reads on and is yes only at the end. A yes said before the end is answered
+  "Read it all first, then say yes." A view at a time, not a free scroll:
+  "the end was shown" is then a fact the model knows, not a guess from a
+  scroll position. Nothing is typed anywhere and the launcher is not opened.
+  "Type it" on a question still answers it where it lives.
+- **Why:** the person reads and answers in one place, and nothing acts
+  before the yes.
+- **Cost:** no way back up tonight (the card says what the task was; No and
+  asking again is the way). A plan of forty steps is eight presses.
+- **Undo:** `fit` and `OpenCard.from` in `capsule/`; `cardAction("read")`.

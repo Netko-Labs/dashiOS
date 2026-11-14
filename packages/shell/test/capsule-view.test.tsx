@@ -66,7 +66,7 @@ const dictation = (state: Exclude<DictationState, { phase: "idle" }>): Shown => 
 const voice = (state: Exclude<VoiceModeState, { phase: "idle" }>): Shown => ({ kind: "voice", state });
 const card = (what: OpenCard["what"], more: Partial<OpenCard> = {}): Shown => ({
   kind: "card",
-  card: { what, keyboard: false, armsAt: 0, hears: false, ...more },
+  card: { what, keyboard: false, armsAt: 0, hears: false, from: 0, ...more },
   listening: null,
 });
 const permission = (steps: string[]): PillAsk => ({ kind: "permission", id: "t", task: "t", request: "Turn on Dark Mode", steps, spoken: true, since: 0 });
@@ -169,23 +169,32 @@ test("the card shows the whole plan, names its task, and has both buttons", asyn
   expect(shown.has("card:permission")).toBe(true);
 });
 
-test("past the limit the card has no Yes: only Read it all", async () => {
-  const shown = await drawn(card({ ask: permission(Array.from({ length: 9 }, (_, index) => `Step ${index + 1}`)) }));
+test("past the limit the card has no Yes: Read it all scrolls it, and Yes is back at its end", async () => {
+  const what = { ask: permission(Array.from({ length: 9 }, (_, index) => `Step ${index + 1}`)) };
+  const shown = await drawn(card(what));
   expect(shown.words).toContain("… and 4 more steps");
   expect(shown.words).not.toContain("Yes, this once");
-  expect(shown.words.slice(-3)).toEqual(["It is too long to answer here.", "No", "Read it all"]);
+  expect(shown.words.slice(-3)).toEqual(["Read it all to answer.", "No", "Read it all"]);
+  const end = await drawn(card(what, { from: 5 }));
+  expect(end.words).toContain("9. Step 9");
+  expect(end.words).not.toContain("1. Step 1");
+  expect(end.words.slice(-2)).toEqual(["No", "Yes, this once"]);
+  const middle = await drawn(card({ ask: permission(Array.from({ length: 14 }, (_, index) => `Step ${index + 1}`)) }, { from: 5, keyboard: true }));
+  expect(middle.words.slice(-3)).toEqual(["Return reads on. Esc closes it.", "No", "More"]);
 });
 
-test("the card's keys: Return is yes only as the first key, armed and whole; Esc is no; anything else gives the keyboard back", () => {
-  const whole = { kind: "permission", whole: true } as const;
+test("the card's keys: Return is yes only as the first key, armed and at the end; before it, it reads on; Esc is no; anything else gives the keyboard back", () => {
+  const whole = { kind: "permission", whole: true, end: true } as const;
   expect(cardKey("enter", true, true, whole)).toEqual({ do: "yes" });
   expect(cardKey("enter", false, true, whole)).toEqual({ do: "unfocus" });
   expect(cardKey("enter", true, false, whole)).toEqual({ do: "unfocus" });
-  expect(cardKey("enter", true, true, { kind: "permission", whole: false })).toEqual({ do: "unfocus" });
+  expect(cardKey("enter", true, true, { kind: "permission", whole: false, end: false })).toEqual({ do: "read" });
+  expect(cardKey("enter", true, false, { kind: "permission", whole: false, end: false })).toEqual({ do: "unfocus" });
   expect(cardKey("escape", false, false, whole)).toEqual({ do: "no" });
-  expect(cardKey("escape", true, true, { kind: "reading", whole: true })).toEqual({ do: "close" });
-  expect(cardKey("enter", true, true, { kind: "reading", whole: true })).toEqual({ do: "close" });
-  expect(cardKey("enter", true, true, { kind: "question", whole: true })).toEqual({ do: "unfocus" });
+  expect(cardKey("escape", true, true, { kind: "reading", whole: true, end: true })).toEqual({ do: "close" });
+  expect(cardKey("enter", true, true, { kind: "reading", whole: true, end: true })).toEqual({ do: "close" });
+  expect(cardKey("enter", true, true, { kind: "question", whole: true, end: true })).toEqual({ do: "unfocus" });
+  expect(cardKey("enter", true, true, { kind: "question", whole: false, end: true })).toEqual({ do: "unfocus" });
   expect(cardKey("text", true, true, whole)).toEqual({ do: "unfocus" });
 });
 

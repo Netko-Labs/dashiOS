@@ -112,7 +112,6 @@ class Running implements Capsule {
         this.card = next;
         this.sync();
       },
-      openLauncher: needs.openLauncher,
       timers: this.timers,
       now: this.now,
     });

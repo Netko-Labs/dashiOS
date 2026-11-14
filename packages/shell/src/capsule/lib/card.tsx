@@ -2,9 +2,10 @@
  * The card (pill-v2 README, "What the capsule is"): what must be answered or
  * read in full. It wraps, shows the whole message and both buttons, and
  * stands on the Dock. Past its limit there is no Yes: it shows the start,
- * says how much more there is, and "Read it all" opens the text where it
- * lives. Its buttons arm a moment after it opens, so a click meant for what
- * was there before answers nothing.
+ * says how much more there is, and "Read it all" scrolls it in place, a view
+ * at a time; Yes comes back once the end has been shown (decisions.md D81).
+ * Its buttons arm a moment after it opens and after each scroll, so a click
+ * meant for what was there before answers nothing.
  */
 
 import { Text, View } from "@mirinjs/metal";
@@ -35,8 +36,10 @@ export interface CardProps {
 
 /** The hint under a card: how to answer it, or that it has the keyboard. */
 export function hintOf(content: CardContent, card: OpenCard, talkKey: string | null): string {
-  if (content.kind === "reading") return card.keyboard ? "Return closes it." : content.whole ? "" : "There is more than fits here.";
-  if (!content.whole) return "It is too long to answer here.";
+  if (!content.end)
+    return card.keyboard ? "Return reads on. Esc closes it." : content.kind === "reading" ? "There is more than fits here." : "Read it all to answer.";
+  if (content.kind === "reading") return card.keyboard ? "Return closes it." : "";
+  if (!content.whole) return "It has too many choices to answer here.";
   if (card.keyboard)
     return content.kind === "permission"
       ? "Return is yes, Esc is no. Any other key gives the keyboard back."
@@ -109,7 +112,19 @@ function Message({ content, colours }: { content: CardContent; colours: CapsuleC
   );
 }
 
-function Buttons({ content, armed, colours, onAnswer }: { content: CardContent; armed: boolean; colours: CapsuleColours; onAnswer(answer: CardAnswer): void }) {
+function Buttons({
+  card,
+  content,
+  armed,
+  colours,
+  onAnswer,
+}: {
+  card: OpenCard;
+  content: CardContent;
+  armed: boolean;
+  colours: CapsuleColours;
+  onAnswer(answer: CardAnswer): void;
+}) {
   const button = (label: string, answer: CardAnswer, primary = false) => (
     <Button
       key={label}
@@ -122,10 +137,11 @@ function Buttons({ content, armed, colours, onAnswer }: { content: CardContent; 
       testID={`card-button:${answer.do}`}
     />
   );
-  if (content.kind === "reading")
-    return <>{[button("Close", { do: "close" }, content.whole), !content.whole && button("Read it all", { do: "read" }, true)]}</>;
-  // Past the limit there is no Yes: only reading it whole, where it lives.
-  if (!content.whole) return <>{[button(content.kind === "permission" ? "No" : "Skip", { do: "no" }), button("Read it all", { do: "read" }, true)]}</>;
+  // Scrolled once, the same button reads on.
+  const read = button(card.from === 0 ? "Read it all" : "More", { do: "read" }, true);
+  if (content.kind === "reading") return <>{[button("Close", { do: "close" }, content.end), !content.end && read]}</>;
+  // Past the limit there is no Yes until its end has been shown.
+  if (!content.end) return <>{[button(content.kind === "permission" ? "No" : "Skip", { do: "no" }), read]}</>;
   if (content.kind === "question") return <>{[button("Skip", { do: "no" }), button("Type it", { do: "read" }, content.choices.length === 0)]}</>;
   return <>{[button("No", { do: "no" }), button("Yes, this once", { do: "yes" }, true)]}</>;
 }
@@ -170,7 +186,7 @@ function Choices({
 
 export function Card(props: CardProps) {
   const { card, colours } = props;
-  const content = cardContent(card.what, props.name);
+  const content = cardContent(card.what, props.name, card.from);
   const armed = useArmed(card.armsAt, props.now);
   const asks = content.kind !== "reading";
   const hint = hintOf(content, card, props.talkKey);
@@ -211,7 +227,7 @@ export function Card(props: CardProps) {
             )}
           </View>
         </View>
-        <Buttons content={content} armed={armed} colours={colours} onAnswer={props.onAnswer} />
+        <Buttons card={card} content={content} armed={armed} colours={colours} onAnswer={props.onAnswer} />
       </View>
     </View>
   );
