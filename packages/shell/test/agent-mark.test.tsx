@@ -222,6 +222,20 @@ describe("the drawn mark", () => {
     root.unmount();
   });
 
+  test("it draws the glyph it is given (the persona's mark), and the spark without one", async () => {
+    const { trees, transport } = host();
+    const moon =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000"><path d="M20.5 14.6A9 9 0 1 1 9.4 3.5a7.2 7.2 0 0 0 11.1 11.1Z"/></svg>';
+    const root = render(<AgentMark need={0} watching={false} open={false} glyph={moon} label="Ask Miso" tip="" onPress={() => {}} />, transport);
+    await settle();
+    expect(trees.at(-1)).toContain("M20.5 14.6A9 9");
+    root.unmount();
+    const plain = render(<AgentMark need={0} watching={false} open={false} label="Ask Dashi" tip="" onPress={() => {}} />, transport);
+    await settle();
+    expect(trees.at(-1)).not.toContain("M20.5 14.6A9 9");
+    plain.unmount();
+  });
+
   test("needs you: amber, and it counts", async () => {
     const { trees, transport } = host();
     const root = render(<AgentMark need={3} watching={false} open={false} label="Dashi: 3 jobs need you" tip="" onPress={() => {}} />, transport);

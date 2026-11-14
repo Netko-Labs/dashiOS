@@ -207,7 +207,15 @@ export function LineField({
           onDraft?.(next);
         }}
         onSubmitEditing={(text) => onKeep([...text].slice(0, max).join(""))}
-        style={{ width: "100%", fontSize: 13, padding: 7, borderRadius: 7, color: colors.text, backgroundColor: surface.field }}
+        style={{
+          width: "100%",
+          fontSize: 13,
+          padding: 7,
+          borderRadius: 7,
+          color: colors.text,
+          placeholderColor: colors.textMuted,
+          backgroundColor: surface.field,
+        }}
       />
     </View>
   );

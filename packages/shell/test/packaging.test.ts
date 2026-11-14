@@ -159,8 +159,8 @@ describe("dashi-release", () => {
   });
 
   test("a release build names its version alone", () => {
-    const out = filled("0.8.0");
-    expect(out["usr/lib/os-release"]).toContain('VERSION="0.8"\n');
-    expect(out["usr/lib/dashi-release"]).toBe("Dashi release 0.8\n");
+    const out = filled("0.9.0");
+    expect(out["usr/lib/os-release"]).toContain('VERSION="0.9"\n');
+    expect(out["usr/lib/dashi-release"]).toBe("Dashi release 0.9\n");
   });
 });

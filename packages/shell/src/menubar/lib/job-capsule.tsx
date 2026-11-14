@@ -68,7 +68,8 @@ function Turning({ color, reduceMotion }: { color: string; reduceMotion: () => b
 }
 
 /** The disc: the ring's track, the turning arc while it works, and the white disc with who it is (a tick when done, a square to stop). */
-function JobDisc({ job, look, stop, reduceMotion }: { job: BarJob; look: ReturnType<typeof capsuleLook>; stop: boolean; reduceMotion: () => boolean }) {
+function JobDisc(props: { job: BarJob; look: ReturnType<typeof capsuleLook>; stop: boolean; glyph: string; reduceMotion: () => boolean }) {
+  const { job, look, stop, glyph, reduceMotion } = props;
   const light = look.ink === "#ffffff";
   const done = job.state === "fin";
   return (
@@ -95,7 +96,7 @@ function JobDisc({ job, look, stop, reduceMotion }: { job: BarJob; look: ReturnT
         }}
       >
         <Svg
-          markup={stop ? SQUARE : done ? CHECK : job.who === null ? SPARK : discGlyph(job.who)}
+          markup={stop ? SQUARE : done ? CHECK : job.who === null ? glyph : discGlyph(job.who)}
           size={done ? 11 : stop ? 10 : CAPSULE.glyph + 2}
           color={job.state === "need" && !stop ? NEED.glyph : look.glyph}
         />
@@ -109,6 +110,8 @@ export interface JobCapsuleProps {
   form: CapsuleForm;
   /** Dashi's colour (the persona's). */
   dashi: string;
+  /** Dashi's glyph (the persona's mark, as SVG); the spark unless set. */
+  glyph?: string;
   /** A click: open what it is doing, or its question. */
   onOpen: (job: BarJob, right: number) => void;
   /** The square: stop it. Absent where it can only be stopped from its panel. */
@@ -117,7 +120,7 @@ export interface JobCapsuleProps {
   accessible: boolean;
 }
 
-export function JobCapsule({ job, form, dashi, onOpen, onStop, reduceMotion, accessible }: JobCapsuleProps) {
+export function JobCapsule({ job, form, dashi, glyph = SPARK, onOpen, onStop, reduceMotion, accessible }: JobCapsuleProps) {
   const colors = useColors();
   const [hovered, setHovered] = useState(false);
   const look = capsuleLook(job, colors, dashi);
@@ -148,7 +151,7 @@ export function JobCapsule({ job, form, dashi, onOpen, onStop, reduceMotion, acc
         onPress={stop ? () => onStop?.(job) : open}
         style={{ height: CAPSULE.height, paddingLeft: CAPSULE.left, paddingRight: speaks ? 0 : CAPSULE.left, justifyContent: "center" }}
       >
-        <JobDisc job={job} look={look} stop={stop} reduceMotion={reduceMotion} />
+        <JobDisc job={job} look={look} stop={stop} glyph={glyph} reduceMotion={reduceMotion} />
       </View>
       {speaks && (
         <View

@@ -5,7 +5,7 @@
 # (libghostty-vt-devel), which the rest of the tree must not need.
 [package]
 name = "dashi-term"
-version = "0.8.0"
+version = "0.9.0"
 description = "Dashi's terminal engine: a PTY and Ghostty's terminal core"
 edition = "2024"
 license = "MIT"

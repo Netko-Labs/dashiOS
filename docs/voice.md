@@ -262,7 +262,7 @@ The same rule as the vault's (`docs/secrets.md`).
 
 ```json
 {"id":1,"method":"status"}
-{"id":1,"result":{"version":"0.8.0","state":"idle","listen":true,"speak":true,"whisper":false,"fetching":false}}
+{"id":1,"result":{"version":"0.9.0","state":"idle","listen":true,"speak":true,"whisper":false,"fetching":false}}
 ```
 
 `listen`, `speak` and `whisper` say whether each model set is on this

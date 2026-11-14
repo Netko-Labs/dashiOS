@@ -19,7 +19,7 @@ function fakeChrome() {
     },
   };
   const chrome = {
-    runtime: { connectNative: () => port, getManifest: () => ({ version: "0.8.0" }), onStartup: { addListener: () => {} }, lastError: undefined },
+    runtime: { connectNative: () => port, getManifest: () => ({ version: "0.9.0" }), onStartup: { addListener: () => {} }, lastError: undefined },
     alarms: { create: () => {}, onAlarm: { addListener: () => {} } },
   };
   return { chrome, posted, receive: (message: unknown) => onMessage(message), drop: () => void (dropped = true) };
@@ -38,7 +38,7 @@ test("an answer for a host that went while the request ran is dropped, not throw
   const onRejection = (reason: unknown) => void rejections.push(reason);
   process.on("unhandledRejection", onRejection);
   connectHost(() => new Promise((resolve) => void (finish = resolve)));
-  expect(fake.posted).toEqual([{ event: "hello", version: "0.8.0" }]);
+  expect(fake.posted).toEqual([{ event: "hello", version: "0.9.0" }]);
 
   // A request arrives; the host goes before its answer is ready.
   fake.receive({ id: 1, method: "read-page", params: {} });

@@ -72,6 +72,8 @@ Requires:       bubblewrap
 Requires:       xdg-dbus-proxy
 # The screen recorder (⇧❖5, src/recorder/): wf-recorder over dashi-comp's screencopy.
 Requires:       wf-recorder
+# The short sound when hands-free dictation ends (boot/dictation.ts plays message.oga with pw-play; silent without it).
+Recommends:     sound-theme-freedesktop
 Recommends:     gvfs-fuse
 Recommends:     gvfs-mtp
 Recommends:     gvfs-smb

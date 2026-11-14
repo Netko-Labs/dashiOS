@@ -65,8 +65,8 @@ function Asking({ need }: { need: number }) {
   );
 }
 
-/** At rest: the spark on its disc. */
-function Spark({ ink }: { ink: string }) {
+/** At rest: Dashi's glyph on its disc (the spark, or the one the person chose). */
+function Spark({ ink, glyph }: { ink: string; glyph: string }) {
   const colors = useColors();
   return (
     <View
@@ -79,7 +79,7 @@ function Spark({ ink }: { ink: string }) {
         justifyContent: "center",
       }}
     >
-      <Svg markup={SPARK} size={MARK.glyph} color={ink} />
+      <Svg markup={glyph} size={MARK.glyph} color={ink} />
     </View>
   );
 }
@@ -93,6 +93,8 @@ export interface AgentMarkProps {
   open: boolean;
   /** Dashi's colour (the persona's); the agents' purple unless set. */
   colour?: string;
+  /** Dashi's glyph (the persona's mark, as SVG); the spark unless set. */
+  glyph?: string;
   /** What a screen reader says. */
   label: string;
   /** The tooltip's words; "" for none. */
@@ -105,7 +107,7 @@ export interface AgentMarkProps {
   accessible?: boolean;
 }
 
-export function AgentMark({ need, watching, open, colour, label, tip, onPress, onTip, accessible = false }: AgentMarkProps) {
+export function AgentMark({ need, watching, open, colour, glyph = SPARK, label, tip, onPress, onTip, accessible = false }: AgentMarkProps) {
   const colors = useColors();
   const laid = useRef<Bounds | null>(null);
   // A press or the mark going takes its tooltip down (the latest `onTip`: the bar passes a new one each render).
@@ -153,7 +155,7 @@ export function AgentMark({ need, watching, open, colour, label, tip, onPress, o
         ...(asking ? { borderWidth: 1.5, borderColor: NEED.ink } : {}),
       }}
     >
-      {asking ? <Asking need={need} /> : <Spark ink={ink} />}
+      {asking ? <Asking need={need} /> : <Spark ink={ink} glyph={glyph} />}
       {watching && <RedDot />}
     </View>
   );
