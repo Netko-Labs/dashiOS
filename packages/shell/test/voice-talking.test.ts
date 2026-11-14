@@ -59,17 +59,16 @@ const SENTENCE = {
   ],
 };
 
-test("Voice off holds no key; on, the talk key by its codes, and Esc only while there is something to stop", async () => {
+test("Voice off holds no key; on, the talk key by its codes, and never Esc", async () => {
   const off = talking({ on: false });
   expect(off.held).toEqual([[]]);
   const { held, talk, state } = talking();
-  expect(held).toEqual([["talk:126", "talk-tap:193"]]);
+  expect(held).toEqual([["talk-tap:193"]]);
   talk.key(TALK, true);
   await settle();
-  expect(held.at(-1)).toEqual(["talk:126", "talk-tap:193", "stop:1:bare"]);
   talk.key(STOP, true);
   await settle();
-  expect(held.at(-1)).toEqual(["talk:126", "talk-tap:193"]);
+  expect(held).toEqual([["talk-tap:193"]]);
   state.key = talkKey("right-option");
   talk.sync();
   expect(held.at(-1)).toEqual(["talk:100"]);
@@ -105,7 +104,7 @@ test("a tap listens to nothing and says how to talk; silence is not turned into 
   const { voice, asked, chip, hold, timers } = talking();
   await hold(120);
   expect(voice.calls).toEqual(["listen", "warm", "listen.cancel"]);
-  expect(chip()).toEqual({ kind: "notice", text: "Hold the right ❖ or the Copilot key to talk." });
+  expect(chip()).toEqual({ kind: "notice", text: "Hold ❖Space or the Copilot key to talk." });
   timers.advance(2500);
   expect(chip()).toBeNull();
   voice.replies["listen.stop"] = { text: "", speech_ms: 0 };
@@ -189,7 +188,7 @@ test("an agent's question is said, and the next words heard are its answer, not 
   const end = talk.ask("Claude asks: Which calendar?", (text) => heard.push(text));
   await settle();
   expect(voice.calls).toEqual(["speak:Claude asks: Which calendar?"]);
-  expect(talk.talkKey()).toBe("the right ❖ or the Copilot key");
+  expect(talk.talkKey()).toBe("❖Space or the Copilot key");
   talk.key(TALK, true);
   await settle();
   expect(chip()).toEqual({ kind: "listening", text: "", question: true });

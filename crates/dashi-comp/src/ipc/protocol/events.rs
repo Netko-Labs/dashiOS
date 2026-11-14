@@ -237,5 +237,11 @@ pub(crate) enum Event {
     HeldKey {
         name: String,
         down: bool,
+        /// Up because another key went down under it (`alone`, `super`).
+        #[serde(skip_serializing_if = "Option::is_none")]
+        chord: Option<bool>,
+        /// Whether the press was a tap, for a key listed with `tapMs`.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        tap: Option<bool>,
     },
 }

@@ -233,6 +233,17 @@
           "bare": true,
           "code": 1,
           "name": "stop"
+        },
+        {
+          "alone": true,
+          "code": 100,
+          "name": "dictation"
+        },
+        {
+          "code": 57,
+          "name": "dashi",
+          "super": true,
+          "tapMs": 300
         }
       ]
     },
@@ -666,6 +677,14 @@
   "suspend": {
     "params": {
       "on": true,
+      "window": 7
+    },
+    "reply": {},
+    "who": "shell"
+  },
+  "type-text": {
+    "params": {
+      "text": "señor, ¿qué tal?",
       "window": 7
     },
     "reply": {},

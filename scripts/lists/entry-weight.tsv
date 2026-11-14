@@ -212,6 +212,7 @@ packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/bluetooth
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/clipboard
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/compositor
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/control-center
+packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/dictation
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/display-config
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/displays.ts
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/dock
@@ -298,6 +299,7 @@ packages/shell/src/main.tsx	packages/shell/src/consent-scopes.tsx
 packages/shell/src/main.tsx	packages/shell/src/consent.tsx
 packages/shell/src/main.tsx	packages/shell/src/control-center
 packages/shell/src/main.tsx	packages/shell/src/desktop-entries.ts
+packages/shell/src/main.tsx	packages/shell/src/dictation
 packages/shell/src/main.tsx	packages/shell/src/display-config
 packages/shell/src/main.tsx	packages/shell/src/displays.ts
 packages/shell/src/main.tsx	packages/shell/src/dock

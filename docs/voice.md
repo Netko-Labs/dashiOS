@@ -60,6 +60,96 @@ Nothing listens unless the shell asked, and a listen ends when the connection
 that asked for it closes, when the microphone gives nothing for three
 seconds, and after five minutes whatever happens.
 
+## The two keys (0.9)
+
+| Key | Held | Tapped |
+| --- | --- | --- |
+| **The Dashi key**: ❖Space, and the Copilot key | talks to Dashi (steps 3 to 5 above), from the moment it has been down 300 ms | ❖Space opens the launcher as the key comes up, as it always did; while a card is up the capsule gives the card the keyboard instead. The Copilot key's tap talks (many can't be held) |
+| **The dictation key**: the right ⌥ held alone; Caps Lock where the layout makes the right ⌥ AltGr (Spanish, US International, most others) | dictation: the words are typed where the keyboard is | twice: hands-free |
+
+- The compositor only reports the keys (`held-keys` with `super`, `alone`
+  and `tapMs`, docs/compositor-ipc.md); `dictation/lib/gestures.ts` works out
+  what a press was (`down`, `hold`, `up`, `tap`, `double-tap`, `chord`) and
+  tells it on the hub (`hub.keys`, docs/night-0.9-contract.md).
+- The right ⌥ stays a modifier: it reaches the app as it is, and the moment
+  another key goes down under it the press was a chord and nothing is heard.
+  Caps Lock as the dictation key is taken: it no longer turns capitals on.
+- The right ❖ is no longer a talk key unless the person picks a key in
+  Settings › Voice (`voice.key`, kept from 0.8). Esc is never taken from the
+  app in front: Dashi is stopped from its capsule, by its key again, or by
+  ⌃❖Esc.
+- Both follow settings.json live: `voice.on`, `voice.key`, `dictation.on`,
+  `dictation.key` (`auto`, `right-option`, `caps-lock`, `right-control`,
+  `menu`), `dictation.handsFree`, `dictation.tidy`, and `keyboard.layout`
+  (else the system's) for AltGr. With Voice off no key is held and ❖Space
+  is the launcher's binding as before.
+
+## Dictation
+
+`packages/shell/src/dictation/`; started by `boot/dictation.ts`. It hears
+through the same service and the same models as talking to Dashi, and tells
+the capsule one `DictationState` at a time (`shared/pill/dictation.ts`).
+
+1. **The key is a hold.** What stops the microphone is said and nothing
+   opens: no models (`no-model`), the service starting or gone (`loading`,
+   `voice-gone`), Dashi listening (`busy`), the microphone muted (`muted`,
+   from `wpctl get-volume @DEFAULT_AUDIO_SOURCE@`), a password field with the
+   keyboard (`secret`). Then `listen`; only its reply makes the state
+   `listening`, so words said before the microphone opened are not claimed.
+2. **While it is held** `partial` events are the words so far and `level`
+   the dots. With nothing said for 30 s it ends by itself; after five
+   minutes it lands what was said.
+3. **The key comes up:** `listen.stop`, then the words are tidied by rule
+   (below) and typed.
+4. **Typing** is the compositor's `type-text {window, text}`: one step, into
+   the window the key went down in, through a keymap made for the text, so ñ
+   and é type on any layout. The clipboard is not touched and no BackSpace is
+   ever sent. An X11 window can't take it (`x11`): there the words are pasted
+   (the clipboard is put back 300 ms later) and the line says "Pasted."
+   While the bar's row is the field the words go to it (`barCommands` `insert`). A space is typed after the words (none after a
+   line break), so the next words do not join them.
+5. **Nothing is typed**, and the words wait ten minutes in memory with Copy,
+   when no window has the keyboard (`no-field`), another window took it
+   (`left-window`), a password field has it (`secret`), or neither typing nor
+   pasting worked (`failed`).
+6. **Hands-free** (a double tap): `listen` with `"until": "silence"` and
+   `quiet_ms` 1200; each `heard` is a sentence, which lands, and the next
+   is listened for. It ends on a tap of the key, when
+   another window takes the keyboard, after 20 s with nothing said, at ten
+   minutes, or when a sentence has nowhere to land; each time with a short
+   sound (`pw-play`, a freedesktop sound) and a line that stays.
+
+Whether a field is a password field is asked of AT-SPI, and only where
+accessibility is already on (`clipboard/lib/fields.ts`): dictation does not
+turn it on. Where it can't be told the window is trusted.
+
+### Tidying by rule
+
+`dictation/lib/tidy*.ts`. On this computer, no model; English and Spanish.
+
+- **Fillers out:** "um", "uh", "uhm", "erm", "hm", "hmm", "mm", "eh", "ehm"
+  wherever they are, with the comma that was only theirs. "este" and "o sea"
+  only between two commas, where they can be nothing else.
+- **Punctuation said out loud:** "comma" / "coma", "period" / "full stop" /
+  "punto", "question mark", "exclamation mark", "punto y coma", "new line" /
+  "nueva línea", "new paragraph" / "nuevo párrafo". Not after a word that
+  makes it a noun ("the trial period", "en punto", "que coma"), and "period"
+  and "punto" only where a sentence ends.
+- **A change of mind:** "no wait", "scratch that", "no, perdón", only when it
+  stands apart (a mark or the start before it, a mark or the end after it).
+  Nothing after it: the sentence before goes. What follows starts with a
+  word the sentence had: the sentence is cut back to that word. One or two
+  words follow: they replace its last one or two. More: the sentence starts
+  again.
+- **Spaces and capitals:** no space before a mark, one after; a capital
+  where a sentence or a line starts.
+- **The check** (`tidy-check.ts`) reads the result: every word typed was
+  said, in that order; no number and no "not", "no", "never" (or "nunca",
+  "ni", "sin", …) is lost, except in what the person took back, where the
+  part taken back and what replaced it must say "not" as often. When it does
+  not hold the words land as heard, and the line says "As you said it."
+- `dictation.tidy: false` types the words as heard.
+
 ## The shell's side
 
 `packages/shell/src/voice/` (started by `boot/voice.ts`; tests
@@ -69,6 +159,7 @@ seconds, and after five minutes whatever happens.
 | --- | --- |
 | `client.ts`, `lib/wire.ts` | the socket's client; every reply and event parsed with shapes |
 | `lib/launch.ts`, `lib/service.ts` | connecting when first needed and again after the service goes; from a checkout, starting it as the unit `dashi-voice` |
+| `../dictation/` | the two keys' gestures, dictation, hands-free, tidying by rule ("The two keys", "Dictation") |
 | `keys.ts` | the talk key: which evdev codes the compositor holds (`held-keys`, docs/compositor-ipc.md), and what each choice costs |
 | `voice.ts` | the key held and let go, the ask, the answer said, captions, Esc, an agent's question |
 | `asker.ts`, `lib/answer.ts` | what was said becomes a launcher Ask task; its answer or its plan in words |
@@ -553,9 +644,13 @@ It needs `onnxruntime`, `espeak-ng`, `pipewire-utils` and `curl` installed.
 
 ## What it can't do yet
 
-- No dictation into a text field: what is said goes to Dashi's agent only.
 - Only the Copilot key's tap talks. A key the person picked is held.
-- The talk key is one of a short list, not any key pressed to choose it.
+- The talk key and the dictation key are each one of a short list, not any
+  key pressed to choose it.
+- Dictation: no correcting model and no marks drawn in the field; hands-free
+  does not end when this computer plays sound; a password field is known only
+  where accessibility is on, and a field that takes no text only when no
+  window has the keyboard at all.
 
 - No words while Whisper listens are streamed token by token: partials are
   the whole speech so far, worked out again about every 0.8 s, which is

@@ -253,5 +253,17 @@
     "down": true,
     "event": "held-key",
     "name": "talk"
+  },
+  {
+    "down": false,
+    "event": "held-key",
+    "name": "dashi",
+    "tap": true
+  },
+  {
+    "chord": true,
+    "down": false,
+    "event": "held-key",
+    "name": "dictation"
   }
 ]

@@ -1161,9 +1161,87 @@ Replaced by D51: 0.9 builds on mirin's `main`.
 - **Undo:** fold the cells into the modules that own them once the pieces
   are merged, and delete `shared/pill/hub.ts`.
 
-### D70. A character changes how Dashi sounds and looks, never what it may do
+### D54. ❖Space and the dictation key are keys the compositor hears, not keymap rules
 
-- **Date:** 2026-11-13. The `n4-persona` agent's. Numbered from D70 so the
+- **Date:** 2026-11-13. The night build's `core` agent's.
+- **Question:** ❖Space opened the launcher on press, a keymap rule. Held, it
+  must talk to Dashi, and a tap must still open the launcher; the right ⌥
+  must dictate when held alone and stay AltGr and ⌥ otherwise.
+- **Choice:** `held-keys` gains `super` (taken only under ❖ alone, comes up
+  when it or ❖ does), `alone` (heard, still the app's modifier, `chord` the
+  moment another key goes down) and `tapMs` (the compositor says whether it
+  was a tap and arms `afterTap` then). The shell works out hold, tap and
+  double tap. While Voice is off none is listed and ❖Space is the keymap's
+  rule as in 0.8. The default talk key is ❖Space and the Copilot key: the
+  right ❖ is free again unless the person picked a key in 0.8. Esc is no
+  longer held while Dashi speaks. Caps Lock as the dictation key is taken
+  (it would turn capitals on); the right ⌥ and the right ⌃ are heard alone.
+- **Why:** no policy in Rust, and nothing changes for people who only tap or
+  who never turned Voice on.
+- **Cost:** with Voice on the launcher opens as ❖Space comes up, not as it
+  goes down (about 80 ms later for a quick tap). An app sees the right ⌥ go
+  down and up when it is held to dictate; one that opens its menu bar on a
+  bare Alt will.
+- **Undo:** drop the `dashi` entry in `dictation/keys.ts` `pillHeldKeys`,
+  and put `KEY_RIGHTMETA` back in `voice/keys.ts`.
+
+### D55. Dictated words are typed through a keymap made for them
+
+- **Date:** 2026-11-13. The night build's `core` agent's.
+- **Question:** how do words reach the field as one step, with ñ and é on
+  any layout, without the clipboard and without ever sending BackSpace?
+- **Choice:** `type-text`: the compositor gives the keyboard a keymap with
+  one key for each character of the text, presses the keys, and puts the
+  layout back, in one turn of its loop (as `wtype` does from outside). X11
+  windows are refused (`x11`: Xwayland applies a keymap too slowly to trust)
+  and get a paste, with the clipboard put back and the line saying
+  "Pasted." The compositor's `text-focus` was not built: smithay 0.7 keeps
+  a text-input's content purpose to itself, so the password check is
+  AT-SPI's, only where accessibility is already on.
+- **Why:** it is the only way to type any character with no input method in
+  the way, and the app sees ordinary keys, so its own undo takes them back.
+- **Cost:** the app sees two keymap changes for each landing. A password
+  field in an app with no accessibility tree is not known: the microphone
+  opens there.
+- **Undo:** `dictation/lib/land.ts` `type` can call `paste` alone.
+
+### D56. Tidying is careful rather than clever, and checks itself
+
+- **Date:** 2026-11-13. The night build's `core` agent's.
+- **Question:** which words may a rule take out or change with no model to
+  understand them?
+- **Choice:** only what can be nothing else. A filler word that is also a
+  word ("este", "o sea") goes only between two commas. "period", "punto",
+  "coma", "new line" stay words after an article or where no sentence ends.
+  A change of mind counts only when the phrase stands apart, and does one of
+  four simple things (docs/voice.md). A check of its own reads every result:
+  no word that was not said, no other order, no number or "not" lost
+  outside what the person took back, and there the two sides must say "not"
+  as often. When it trips the words land as heard.
+- **Why:** a wrong word typed for the person is worse than an "um" left in.
+- **Cost:** speech the model gave no commas keeps its "este" and its "no
+  wait". "Do not send it, no wait, send it today" lands as heard.
+- **Undo:** the lists are `dictation/lib/tidy-words.ts`.
+
+### D57. Hands-free is short and ends out loud
+
+- **Date:** 2026-11-13. The night build's `core` agent's.
+- **Question:** when does hands-free end, and what lands?
+- **Choice:** each sentence lands at a pause of 1.2 s. It ends on a tap, when another window takes the
+  keyboard (looked at as words come), after 20 s with nothing said, at ten
+  minutes, or when a sentence has nowhere to land; always with a short sound
+  and a line. Every landing, held or hands-free, types a space after its words (none
+  after a line break): Dashi cannot see what is before the caret, and words
+  that join ("done.Next") are worse than a space at the end.
+  Ending when this computer plays sound (`sound`) is not built.
+- **Why:** the microphone is never left open by mistake, and never closes
+  without the person knowing.
+- **Cost:** a dictation leaves a space at the end of the field.
+- **Undo:** `DICTATION_LIMITS` and `dictation/lib/hands-free.ts`.
+
+### D58. A character changes how Dashi sounds and looks, never what it may do
+
+- **Date:** 2026-11-13. The `n4-persona` agent's. Numbered from D58 so the
   night's other pieces can take D54 onward; the lead renumbers.
 - **Question:** the person can now name the assistant, pick one of six
   characters or write their own, and say how to talk to them. That text goes
@@ -1188,7 +1266,7 @@ Replaced by D51: 0.9 builds on mirin's `main`.
   message), so a change of character shows from the next request.
 - **Undo:** `promptStyle.set(NO_STYLE)` in `boot/persona.ts`.
 
-### D71. Six fixed colours, no picker
+### D59. Six fixed colours, no picker
 
 - **Date:** 2026-11-13. The `n4-persona` agent's.
 - **Question:** which colours may Dashi's capsule wear?
@@ -1203,7 +1281,7 @@ Replaced by D51: 0.9 builds on mirin's `main`.
 - **Cost:** no colour of the person's own until a picker can check it.
 - **Undo:** let `colourOfHex` take any colour that passes the same ratios.
 
-### D72. The name is the assistant's, not the system's
+### D60. The name is the assistant's, not the system's
 
 - **Date:** 2026-11-13. The `n4-persona` agent's.
 - **Question:** what may the assistant be called, and what keeps the word
@@ -1219,7 +1297,7 @@ Replaced by D51: 0.9 builds on mirin's `main`.
 - **Cost:** a person who wants to call it Claude cannot.
 - **Undo:** empty `TAKEN` in `persona/lib/name.ts`.
 
-### D73. A character of your own is a small file of text and ids
+### D61. A character of your own is a small file of text and ids
 
 - **Date:** 2026-11-13. The `n4-persona` agent's.
 - **Question:** how does a person make and share a character?
@@ -1234,12 +1312,12 @@ Replaced by D51: 0.9 builds on mirin's `main`.
   call); "Add a File…" with its reading sheet is not built: a file is added
   by putting it in the folder ("Show Folder").
 - **Why:** text can be read before it is trusted and ids cannot carry
-  anything; D70 makes the text harmless to what Dashi may do.
+  anything; D58 makes the text harmless to what Dashi may do.
 - **Cost:** a shared file is not shown before it is in the folder, only
   after it is chosen.
 - **Undo:** delete the folder; `persona.character` falls back to Dashi.
 
-### D74. Only the person changes who Dashi is
+### D62. Only the person changes who Dashi is
 
 - **Date:** 2026-11-13. The `n4-persona` agent's.
 - **Question:** may an agent rename the assistant, change its character or
@@ -1253,22 +1331,22 @@ Replaced by D51: 0.9 builds on mirin's `main`.
   read-only only if it exists. The files tools already refuse it
   (`test/persona-agents.test.ts`).
 - **Why:** who speaks to the person is the person's to say; an agent that
-  could set the prompt's style could try to talk its way past D70.
+  could set the prompt's style could try to talk its way past D58.
 - **Cost:** "call yourself Miso" said to the assistant does nothing; it is
   done in Settings.
 - **What is not closed:** an agent the person lets click and type in
   windows can still drive Terminal or Text Editor as the person, and so
   write any file the person can, this folder included. That is the reach of
-  "manage windows" itself, as before tonight, and D70 holds even then.
+  "manage windows" itself, as before tonight, and D58 holds even then.
 - **Undo:** give the rows `agent` names in `registry/lib/persona.ts`.
 
-### D75. Where the persona's design and the night's contract disagree, the contract wins
+### D63. Where the persona's design and the night's contract disagree, the contract wins
 
 - **Date:** 2026-11-13. The `n4-persona` agent's.
 - **Question:** the design (`dashi-0.9.0-design/persona/spec.md`) and the
   contract the capsule and the bar are built against name different keys.
 - **Choice:** the contract's, since two other pieces read them tonight:
-  `persona.colour` is a `#rrggbb` (one of D71's six), `persona.mark` is
+  `persona.colour` is a `#rrggbb` (one of D59's six), `persona.mark` is
   `spark` or `dots` (the design's eight marks and four dot shapes are not
   built), `persona.talk` is `less`, `normal`, `more` (shown as Brief,
   Normal, Chatty), a character's id has no `file:` prefix (a file's id is

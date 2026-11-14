@@ -20,6 +20,8 @@ impl Dashi {
         let pressed = button_state == ButtonState::Pressed;
         if pressed {
             self.note_chord();
+            // A click under a key heard as held (⌥-click) makes it a modifier too (keys/held.rs).
+            self.held_keys_chorded();
             // A click may move the caret: what was typed is no longer before it.
             self.keys.snippets.reset();
         }

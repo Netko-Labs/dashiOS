@@ -1,5 +1,5 @@
 /**
- * The name rule (docs/decisions.md D72): letters of any script, digits, spaces, `-`, `'` and `.`;
+ * The name rule (docs/decisions.md D60): letters of any script, digits, spaces, `-`, `'` and `.`;
  * 1 to 24 characters, the store's own limit (shared/pill/persona.ts); no line break. Never another
  * assistant's name: Dashi does not pass for one. The name is the assistant's; the system, its key
  * and Settings keep the word Dashi.

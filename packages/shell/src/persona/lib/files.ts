@@ -1,6 +1,6 @@
 /**
  * A person's own character: one small JSON file in `~/.config/dashi/characters/`, named `<id>.json`
- * (docs/decisions.md D73). It is the whole shareable thing, and it is text and ids only: no image,
+ * (docs/decisions.md D61). It is the whole shareable thing, and it is text and ids only: no image,
  * no hex colour, no SVG, no voice file, no code. What it says goes into the prompt as the character's
  * text and nowhere else, so a file can change how Dashi sounds and looks and nothing it may do.
  *

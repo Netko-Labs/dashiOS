@@ -1,5 +1,5 @@
 /**
- * The six colours Dashi's capsule, questions and jobs may wear (docs/decisions.md D71). Fixed and
+ * The six colours Dashi's capsule, questions and jobs may wear (docs/decisions.md D59). Fixed and
  * measured (test/persona-palette.test.ts keeps the design's contrast.md): white words on both ends
  * at least 4.5 to 1, the soft words at least 4.5, the amber disc at least 3 against the fill. No
  * free colour: ink is dictation's, amber needs you, green is on, red records. Copied from the

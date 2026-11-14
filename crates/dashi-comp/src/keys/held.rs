@@ -4,21 +4,28 @@
 //! talk key, Esc while Dashi speaks). Mechanism only: which keys, and what
 //! they do, are the shell's.
 //!
+//! Two kinds are heard without being a key of their own:
+//! - `alone`: a modifier held with nothing else (the right ⌥ for dictation).
+//!   It still reaches the app as the modifier it is; the shell hears it go
+//!   down, and `chord: true` the moment another key goes down under it (it
+//!   was a modifier after all).
+//! - `super`: a key pressed while ❖ alone is held (❖Space). It is taken, and
+//!   comes up for the shell when it or ❖ does, whichever is first.
+//!
+//! With `tapMs` the compositor says whether the press was a tap (`tap`), and
+//! a tap switches to the keymap's `afterTap` rules at once, as a tap of ❖
+//! does: what is typed next is the launcher's.
+//!
 //! A key is named by its evdev code (`KEY_RIGHTMETA` is 126), not by a
 //! keysym: the key is the same whatever the layout calls it. Only the
 //! person's own keys count: an agent's (`agent-input`) never come this way.
 //! While the screen is locked no key is taken; one already down still comes
 //! up, so the shell is never left with a key it thinks is held.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Instant};
 
+use crate::ipc::protocol::Int;
 use serde::{Deserialize, Serialize};
-use smithay::{backend::input::KeyState, input::keyboard::Keycode};
-
-use crate::{
-    ipc::protocol::{Event, Int},
-    state::Dashi,
-};
 
 /// At most this many keys.
 const MAX_KEYS: usize = 16;
@@ -35,7 +42,7 @@ pub(crate) struct HeldKeysParams {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct HeldKey {
     /// What the `held-key` events call it.
     pub name: String,
@@ -43,19 +50,61 @@ pub(crate) struct HeldKey {
     pub code: Int<1, 767>,
     /// Taken only while no modifier is held (Esc, but not ⌃❖Esc).
     pub bare: Option<bool>,
+    /// Heard, not taken: it reaches the app as the modifier it is, only while no other modifier is held.
+    pub alone: Option<bool>,
+    /// Taken only while ❖ is held with no other modifier (❖Space).
+    #[serde(rename = "super")]
+    pub with_super: Option<bool>,
+    /// Up within this many ms with no other key is a tap: the event says so, and `afterTap` is armed.
+    pub tap_ms: Option<Int<1, 2000>>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Kind {
+    /// The shell's alone: no client sees it.
+    Taken,
+    Bare,
+    Alone,
+    WithSuper,
 }
 
 struct Held {
     name: String,
-    bare: bool,
+    kind: Kind,
+    tap_ms: Option<u64>,
+}
+
+struct Down {
+    name: String,
+    kind: Kind,
+    since: Instant,
+    tap_ms: Option<u64>,
+    /// The shell was already told it came up (a chord, ❖ let go first).
+    told: bool,
+}
+
+/// The modifiers held as a key goes down.
+#[derive(Debug, Clone, Copy, Default)]
+pub(super) struct ModsDown {
+    pub logo: bool,
+    /// Ctrl, Alt or Shift.
+    pub other: bool,
+}
+
+/// A key came up, as the shell is told it.
+#[derive(Debug, PartialEq, Eq)]
+pub(super) struct Up {
+    pub name: String,
+    pub chord: bool,
+    pub tap: Option<bool>,
 }
 
 #[derive(Default)]
 pub(crate) struct HeldKeys {
     /// By xkb keycode.
     keys: HashMap<u32, Held>,
-    /// The keys down now that were taken, and the name each went down as.
-    down: HashMap<u32, String>,
+    /// The keys down now that were taken or heard.
+    down: HashMap<u32, Down>,
 }
 
 impl HeldKeys {
@@ -78,9 +127,23 @@ impl HeldKeys {
                     key.name
                 ));
             }
+            let flags = [key.bare, key.alone, key.with_super].map(|flag| flag.unwrap_or(false));
+            let kind = match flags {
+                [false, false, false] => Kind::Taken,
+                [true, false, false] => Kind::Bare,
+                [false, true, false] => Kind::Alone,
+                [false, false, true] => Kind::WithSuper,
+                _ => {
+                    return Err(format!(
+                        "key {:?} is one of bare, alone and super",
+                        key.name
+                    ));
+                }
+            };
             let held = Held {
                 name: key.name.clone(),
-                bare: key.bare.unwrap_or(false),
+                kind,
+                tap_ms: key.tap_ms.map(|ms| ms.to::<u64>()),
             };
             if keys
                 .insert(key.code.to::<u32>() + XKB_OFFSET, held)
@@ -94,153 +157,83 @@ impl HeldKeys {
         Ok(())
     }
 
-    /// A key went down: the name it is held as, when the shell holds it now.
-    fn press(&mut self, keycode: u32, locked: bool, modifier_held: bool) -> Option<Taken> {
-        if self.down.contains_key(&keycode) {
-            return Some(Taken::Again);
+    /// A key went down: the name it is held as, when the shell holds or hears it now.
+    fn press(&mut self, keycode: u32, locked: bool, mods: ModsDown, now: Instant) -> Option<Taken> {
+        if let Some(down) = self.down.get(&keycode) {
+            return Some(Taken::Again(down.kind != Kind::Alone));
         }
         let held = self.keys.get(&keycode)?;
-        if locked || (held.bare && modifier_held) {
+        let wanted = match held.kind {
+            Kind::Taken => true,
+            Kind::Bare | Kind::Alone => !mods.logo && !mods.other,
+            Kind::WithSuper => mods.logo && !mods.other,
+        };
+        if locked || !wanted {
             return None;
         }
-        self.down.insert(keycode, held.name.clone());
-        Some(Taken::Down(held.name.clone()))
+        let down = Down {
+            name: held.name.clone(),
+            kind: held.kind,
+            since: now,
+            tap_ms: held.tap_ms,
+            told: false,
+        };
+        self.down.insert(keycode, down);
+        Some(Taken::Down(held.name.clone(), held.kind != Kind::Alone))
     }
 
-    /// A key came up: the name it went down as, if it was taken.
-    fn release(&mut self, keycode: u32) -> Option<String> {
-        self.down.remove(&keycode)
+    /// A key came up: what the shell is told (nothing when it already was), and whether the key was taken.
+    fn release(&mut self, keycode: u32, now: Instant) -> Option<(Option<Up>, bool)> {
+        let down = self.down.remove(&keycode)?;
+        let taken = down.kind != Kind::Alone;
+        Some(((!down.told).then(|| up_of(&down, false, now)), taken))
+    }
+
+    /// Another key went down: the keys heard as held alone or with ❖ were modifiers after all.
+    fn chorded(&mut self, now: Instant) -> Vec<Up> {
+        self.end(
+            |kind| matches!(kind, Kind::Alone | Kind::WithSuper),
+            true,
+            now,
+        )
+    }
+
+    /// ❖ came up: the keys held with it come up for the shell now.
+    fn super_up(&mut self, now: Instant) -> Vec<Up> {
+        self.end(|kind| kind == Kind::WithSuper, false, now)
+    }
+
+    fn end(&mut self, which: impl Fn(Kind) -> bool, chord: bool, now: Instant) -> Vec<Up> {
+        let mut ups = Vec::new();
+        for down in self.down.values_mut() {
+            if !down.told && which(down.kind) {
+                down.told = true;
+                ups.push(up_of(down, chord, now));
+            }
+        }
+        ups
+    }
+}
+
+fn up_of(down: &Down, chord: bool, now: Instant) -> Up {
+    let tap = down
+        .tap_ms
+        .map(|ms| !chord && now.saturating_duration_since(down.since).as_millis() < u128::from(ms));
+    Up {
+        name: down.name.clone(),
+        chord,
+        tap,
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 enum Taken {
-    Down(String),
-    /// Already down (a second press without a release): taken, and nothing said.
-    Again,
+    /// It went down as this name; whether it is kept from the client.
+    Down(String, bool),
+    /// Already down (a second press without a release): nothing said; whether it is kept from the client.
+    Again(bool),
 }
 
-impl Dashi {
-    /// Whether the shell holds this key: it was taken, and the shell told.
-    pub(super) fn on_held_key(&mut self, keycode: Keycode, state: KeyState) -> bool {
-        let raw = keycode.raw();
-        match state {
-            KeyState::Released => {
-                let Some(name) = self.keys.held.release(raw) else {
-                    return false;
-                };
-                self.ipc.emit(Event::HeldKey { name, down: false });
-                true
-            }
-            KeyState::Pressed => {
-                let modifier_held = self.keys.super_is_down()
-                    || self.seat.get_keyboard().is_some_and(|keyboard| {
-                        let mods = keyboard.modifier_state();
-                        mods.ctrl || mods.alt || mods.shift || mods.logo
-                    });
-                match self.keys.held.press(raw, self.lock.locked, modifier_held) {
-                    None => false,
-                    Some(Taken::Again) => true,
-                    Some(Taken::Down(name)) => {
-                        // With ❖ held (a Copilot key sends ⇧❖F23) this is no tap of ❖.
-                        self.note_chord();
-                        self.keys.snippets.reset();
-                        self.ipc.emit(Event::HeldKey { name, down: true });
-                        true
-                    }
-                }
-            }
-        }
-    }
-}
-
+mod input;
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn key(name: &str, code: i64, bare: bool) -> HeldKey {
-        HeldKey {
-            name: name.into(),
-            code: Int::new(code).expect("a key code"),
-            bare: bare.then_some(true),
-        }
-    }
-
-    fn held(keys: Vec<HeldKey>) -> HeldKeys {
-        let mut held = HeldKeys::default();
-        held.set(&HeldKeysParams { keys })
-            .expect("the keys are fine");
-        held
-    }
-
-    #[test]
-    fn a_listed_key_is_taken_down_and_up_by_its_evdev_code() {
-        let mut keys = held(vec![key("talk", 126, false), key("talk", 193, false)]);
-        // KEY_RIGHTMETA is 126: xkb's 134.
-        assert_eq!(
-            keys.press(134, false, false),
-            Some(Taken::Down("talk".into()))
-        );
-        assert_eq!(keys.press(134, false, false), Some(Taken::Again));
-        assert_eq!(keys.release(134), Some("talk".into()));
-        assert_eq!(keys.release(134), None);
-        // A Copilot key's F23 comes with ⇧ and ❖ held: still taken.
-        assert_eq!(
-            keys.press(201, false, true),
-            Some(Taken::Down("talk".into()))
-        );
-        assert_eq!(keys.press(38, false, false), None);
-    }
-
-    #[test]
-    fn a_bare_key_gives_way_to_a_chord() {
-        let mut keys = held(vec![key("stop", 1, true)]);
-        assert_eq!(keys.press(9, false, true), None);
-        assert_eq!(keys.release(9), None);
-        assert_eq!(
-            keys.press(9, false, false),
-            Some(Taken::Down("stop".into()))
-        );
-    }
-
-    #[test]
-    fn nothing_is_taken_while_locked_but_a_key_down_still_comes_up() {
-        let mut keys = held(vec![key("talk", 126, false)]);
-        assert_eq!(keys.press(134, true, false), None);
-        assert_eq!(
-            keys.press(134, false, false),
-            Some(Taken::Down("talk".into()))
-        );
-        // The list changes (and the screen locks) while it is down: its release is still the shell's.
-        keys.set(&HeldKeysParams { keys: vec![] })
-            .expect("an empty list");
-        assert_eq!(keys.release(134), Some("talk".into()));
-        assert_eq!(keys.press(134, false, false), None);
-    }
-
-    #[test]
-    fn a_bad_list_is_refused_whole() {
-        let mut keys = held(vec![key("talk", 126, false)]);
-        let twice = HeldKeysParams {
-            keys: vec![key("a", 1, false), key("b", 1, false)],
-        };
-        assert!(keys.set(&twice).is_err());
-        let unnamed = HeldKeysParams {
-            keys: vec![key("", 1, false)],
-        };
-        assert!(keys.set(&unnamed).is_err());
-        let shouting = HeldKeysParams {
-            keys: vec![key("Talk Key", 1, false)],
-        };
-        assert!(keys.set(&shouting).is_err());
-        let many = HeldKeysParams {
-            keys: (1..=17).map(|code| key("k", code, false)).collect(),
-        };
-        assert!(keys.set(&many).is_err());
-        // What was held before a refusal is held still.
-        assert_eq!(
-            keys.press(134, false, false),
-            Some(Taken::Down("talk".into()))
-        );
-    }
-}
+mod tests;

@@ -115,7 +115,7 @@ test("held, the Copilot key is a hold; and a tap of a key that can be held still
   const second = talking();
   await second.press(TALK, 50);
   expect(second.voice.calls).toEqual(["listen", "warm", "listen.cancel"]);
-  expect(second.chip()).toEqual({ kind: "notice", text: "Hold the right ❖ or the Copilot key to talk." });
+  expect(second.chip()).toEqual({ kind: "notice", text: "Hold ❖Space or the Copilot key to talk." });
   expect(chip()).not.toBeNull();
 });
 

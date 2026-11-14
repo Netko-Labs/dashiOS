@@ -127,7 +127,7 @@ export const SYSTEM_PROMPT = [
 ].join(" ");
 
 /**
- * What a character adds to the prompt (persona/; docs/decisions.md D70): how the assistant sounds,
+ * What a character adds to the prompt (persona/; docs/decisions.md D58): how the assistant sounds,
  * as one run of text. `full` goes to Claude, GPT and the harnesses; `small` (no character text, no
  * note) to the model on this computer. Both empty while the person has made no choice.
  */

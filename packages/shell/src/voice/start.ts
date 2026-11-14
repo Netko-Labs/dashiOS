@@ -28,6 +28,8 @@ export interface VoiceOptions {
 
 export interface VoiceParts {
   voice: Voice;
+  /** The connection to dashi-voice: dictation hears through it too (dictation/). */
+  service: VoiceService;
   models: VoiceModels;
   /** Say a few words in a voice (Settings › Voice's "Play"). */
   sample(voice: string): void;
@@ -95,6 +97,7 @@ export function startVoice(options: VoiceOptions): VoiceParts {
   void models.refresh();
   return {
     voice,
+    service,
     models,
     sample(id) {
       const language = models.getSnapshot().voices.find((each) => each.id === id)?.language ?? "en";

@@ -3,6 +3,7 @@ export { startAgentBasics, startAgentServer, startAskAgents, startHandoff } from
 export { appQuitting, appShortcut, startCatalog, startKeepingAwake, startPickerAndTray, startPrograms } from "./apps.ts";
 export { startBarHolds, startBars } from "./bars.tsx";
 export { startArranging, startDesktops, startOverview } from "./desktop.ts";
+export { startDictating } from "./dictation.ts";
 export { startKeys } from "./keys.ts";
 export { startLauncher } from "./launcher.tsx";
 export { startLook } from "./look.ts";
