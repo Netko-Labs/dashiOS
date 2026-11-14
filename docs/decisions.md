@@ -2252,3 +2252,25 @@ short words, as the rulebook is written.
   only.
 - **Undo:** `git revert` of this entry's commit brings `rowPress` and
   `pressed()` back.
+
+### D118. A Desktop an agent added is watched after the agent leaves it
+
+- **Date:** 2026-11-14. The `n20-agents` agent's. Adds to D89 and D90.
+- **Question:** D89 looked at an added Desktop once, as its agent left. Three
+  orders of events left an empty one behind: the agent's connection drops
+  while its last window is still closing; a plan's hold ends (D90, 30 s)
+  with its window open and the person closes it later; the person was
+  looking at the empty Desktop and then goes elsewhere.
+- **Choice:** a Desktop that could not go when its agent left is kept by
+  `AddedSpaces` (`agents/desktop/added-spaces.ts`) and looked at again when a
+  window closes or moves to another Desktop, when the screen goes to another
+  Desktop, and when an agent stops working on one. It goes the first time it
+  has no windows, does not show, and no agent works on it. Only Desktops made
+  by `work_in_space "new"` are ever kept there.
+- **Why:** the rule is about the Desktop, not about the moment the agent left.
+- **Cost:** a Desktop an agent added and the person then took for their own
+  windows also goes once they empty it and look elsewhere: Dashi cannot tell
+  "theirs now" from "left over". Nothing is kept on disk, so one that waits
+  when the shell restarts stays until its × is pressed.
+- **Undo:** in `Elsewhere.leave`, call `added.look()` once and forget the
+  Desktop (`AddedSpaces.left` without the listener).

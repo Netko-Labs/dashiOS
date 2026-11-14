@@ -4,7 +4,7 @@
  * person's screen never moves. Each connection has one `Elsewhere`: the Space
  * it works in (followed through the renumbering, spaces/lib/followed.ts),
  * and whether it added that Space itself, in which case it takes it away
- * again once it is empty. Nothing is kept on disk.
+ * again once it is empty (added-spaces.ts). Nothing is kept on disk.
  *
  * `WorkPlaces` is what the connections share: it tells the arranger where a
  * new window goes (arrange/, `window-placing`) before the window is ever on
@@ -25,16 +25,9 @@ import type { Compositor, Placing } from "../../compositor/index.ts";
 import { MAX_SPACES, type SpaceRef, spaceLabel } from "../../spaces/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import { descendsFrom } from "../peer.ts";
+import { AddedSpaces, type AgentSpaces } from "./added-spaces.ts";
 
-/** The Desktops as agents need them: SpacesController (spaces/). */
-export interface AgentSpaces {
-  getSnapshot(): { count: number; current: number; labels: readonly string[]; fullscreen: readonly (number | null)[] };
-  /** A new Space at the end: its index, or null at the limit. */
-  add(): Promise<number | null>;
-  remove(index: number): Promise<void>;
-  follow(index: number): SpaceRef;
-  unfollow(ref: SpaceRef): void;
-}
+export type { AgentSpaces };
 
 /** A window about to open that an agent asked for: its launch's process (null: not known), or its app. */
 export interface Opening {
@@ -57,12 +50,16 @@ export class WorkPlaces {
   /** The Spaces agents work in now. */
   private readonly working = new Set<SpaceRef>();
   private stop: (() => void) | null = null;
+  /** The Desktops agents added and left: each goes once it is empty and does not show. */
+  readonly added: AddedSpaces;
 
   constructor(
     readonly compositor: Pick<Compositor, "windows" | "spaces" | "on">,
     readonly spaces: () => AgentSpaces | undefined,
     private readonly descends: (pid: number, ancestor: number) => boolean = descendsFrom,
-  ) {}
+  ) {
+    this.added = new AddedSpaces(compositor, spaces, (index) => [...this.working].some((ref) => ref.index === index));
+  }
 
   /** An agent works on `space` from now (or no longer): apps there that raise themselves must not move the screen. */
   work(space: SpaceRef, on: boolean): void {
@@ -78,6 +75,8 @@ export class WorkPlaces {
       this.stop = null;
     }
     this.quiet();
+    // A Desktop another agent added and left is no longer this one's to keep.
+    if (!on) void this.added.look();
   }
 
   /** Tell the compositor which Spaces a window's own activation never switches to (`spaces {quiet}`). */
@@ -89,6 +88,7 @@ export class WorkPlaces {
   close(): void {
     this.stop?.();
     this.stop = null;
+    this.added.close();
   }
 
   /** The next window that is `opening`'s goes to `space`, until the returned function is called. */
@@ -194,32 +194,19 @@ export class Elsewhere {
 
   /**
    * Stop working there (another Space, "shown", or the agent left). A Space
-   * it added goes if nothing is left on it; one with windows stays, and so
-   * does one the person is looking at: taking it away would move their screen.
+   * it added goes once nothing is left on it and the person is not looking
+   * at it: now, or when its last window closes or the person leaves it
+   * (added-spaces.ts). Taking away the one that shows would move their screen.
    */
   async leave(): Promise<void> {
     const ref = this.ref;
     if (!ref) return;
-    const spaces = this.places.spaces();
     const added = this.added;
     this.ref = null;
     this.added = false;
     this.tab = null;
     this.places.work(ref, false);
-    try {
-      const index = ref.index;
-      if (!added || !spaces || index === null) return;
-      const { count, current } = spaces.getSnapshot();
-      if (count <= 1 || index === current) return;
-      const windows = await this.places.compositor.windows();
-      // Read again: the Spaces may have been renumbered while the windows were read.
-      const now = ref.index;
-      if (now === null || now === spaces.getSnapshot().current || windows.some((window) => (window.space ?? 0) === now)) return;
-      await spaces.remove(now);
-    } catch (error) {
-      console.error("dashi-shell: tidying an agent's Space:", error instanceof Error ? error.message : error);
-    } finally {
-      spaces?.unfollow(ref);
-    }
+    if (added) await this.places.added.left(ref);
+    else this.places.spaces()?.unfollow(ref);
   }
 }
