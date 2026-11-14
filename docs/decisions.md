@@ -1806,3 +1806,127 @@ short words, as the rulebook is written.
   field; the draft is one click away.
 - **Undo:** `frontWatch`; `hintOf`; `voiceStateOf`; `LINGER_MS`;
   `tapClosesLauncher`.
+
+### D85. An agent's input reaches a window off screen without borrowing the person's seat
+
+- **Date:** 2026-11-14. The `n10-elsewhere` agent's.
+- **Question:** in a real session the agent has no seat of its own (GPUI
+  and Chromium hear one seat), so every action borrows the person's: their
+  pointer moves and their keyboard focus goes to the agent's window, after
+  they have paused 2 s. For a window on another Desktop that breaks the
+  promise twice: their screen is touched, and an agent "out of my way"
+  stalls for as long as they type.
+- **Choice:** for a window on a Space that does not show, dashi-comp sends
+  the events straight to that window's client, on the `wl_pointer` and
+  `wl_keyboard` it made on the person's seat, and leaves the seat's own
+  state alone (`session/agent_away.rs`): no pointer warp, no focus change,
+  modifiers kept in an xkb state of the agent's own, and no wait.
+- **Why:** it is the only way that keeps "nothing of the person's moves"
+  true for apps that hear one seat, which are Dashi's own.
+- **Cost:** the clipboard does not follow (selections go with the seat's
+  real focus, so ❖C and ❖V in such a window do nothing useful); a window's
+  lights can't be clicked there; X11 windows are refused (Xwayland has one
+  focus); the keyboard enters and leaves once per request, so an app that
+  closes a popup when it loses the keyboard closes it between requests. On
+  the Space that shows nothing changed: an action there still borrows.
+- **Undo:** take the `away_content` branch out of `agent_input`
+  (`session/agent.rs`); such a window is then "not on screen" again.
+
+### D86. Their pointer and keyboard step aside only for the same app, after 400 ms
+
+- **Date:** 2026-11-14. The `n10-elsewhere` agent's.
+- **Question:** a client's pointer or keyboard can be in one of its
+  surfaces at a time. When the person is in one window of an app and the
+  agent acts in another window of the same app on another Desktop, whose is
+  it?
+- **Choice:** the person's leaves that app for the length of the agent's
+  request and is given back at its end (the pointer, while a drag holds a
+  button, when the drag ends or the person moves), and only once their own
+  input is 400 ms old; else the usual refusal, which the shell waits out up
+  to 6 s.
+- **Why:** 2 s (the borrow's rule) would stall the agent for as long as they
+  type; no wait at all would cut a key they are holding. 400 ms falls in the
+  gaps of ordinary typing.
+- **Cost:** in that one case their app sees its keyboard leave and come back
+  (a held key stops repeating, a hover is drawn again). Not proved in the VM.
+- **Undo:** `ASIDE_AFTER` in `session/agent_away.rs`.
+
+### D87. Which window is an agent's: its launch's process, else its app, else the next one
+
+- **Date:** 2026-11-14. The `n10-elsewhere` agent's.
+- **Question:** a window must be put on the agent's Desktop before it is
+  ever on screen, so the shell has to know it is the agent's when the
+  compositor asks where it goes.
+- **Choice:** the tool that opens it says so first (`Elsewhere.claim`):
+  `launch_app` and `open_in_preview` by the launch's process (and its
+  children) or the app's id, `open_url` by Helium's id, `open_file` by "the
+  next new window", until 3 s after its app took the file, since which app
+  that is isn't known there. `window-placing` now says the app's `pid`.
+  Besides claims: a dialog goes where its window is, and a new window of an
+  app whose windows are all on an agent's Space opens there.
+- **Why:** moving a window after it opened would show it to the person
+  first, with the keyboard.
+- **Cost:** a window the person opens in the same moment, of the same app
+  (or any, within `open_file`'s seconds), lands on the agent's Desktop. An
+  app that shows a file in a window it already has, on the person's Space,
+  shows it there.
+- **Undo:** `WorkPlaces.spaceFor`; `arranger.elsewhere` in `boot/agents.ts`.
+
+### D88. An app on an agent's Desktop that raises itself does not move the screen
+
+- **Date:** 2026-11-14. The `n10-elsewhere` agent's.
+- **Question:** an app may ask to be activated (xdg-activation, X11), and
+  activating a window on another Space switches there. One on the agent's
+  Desktop would pull the person's view to it.
+- **Choice:** the shell names the Spaces agents work in (`spaces {quiet}`);
+  a window's own activation there wants attention instead. The shell's own
+  `focus` still switches, and so does the person.
+- **Why:** the person did not ask to go there; the agent did the thing that
+  made the app raise itself.
+- **Cost:** while an agent works on a Desktop, an app there that the person
+  started from elsewhere (a link opened from the Terminal) does not bring
+  them to it either: its Dock icon asks for attention.
+- **Undo:** `activation_may_switch` (`wm/spaces.rs`); `WorkPlaces.work`.
+
+### D89. A Space the agent added goes when it is left empty, unless the person is on it
+
+- **Date:** 2026-11-14. The `n10-elsewhere` agent's.
+- **Question:** the lead's rule: a Space added by `"new"` is removed when
+  the agent leaves it with no windows. What if the person is looking at it?
+- **Choice:** it stays. Removing the Space that shows slides the screen to
+  its neighbour.
+- **Why:** "the person's screen never moves" outranks tidiness.
+- **Cost:** an empty Desktop is left over, which they close with its ×. The
+  count is saved in settings.json like any Desktop the person adds.
+- **Undo:** `Elsewhere.leave`.
+
+### D90. The assistant's plans may work on another Desktop, for their steps and 30 s
+
+- **Date:** 2026-11-14. The `n10-elsewhere` agent's.
+- **Question:** a plan's steps run as the person, one after another, with
+  no connection to end; where does `work_in_space` in a plan stop holding?
+- **Choice:** the tool is a plan step ("Work on a new Desktop, out of your
+  way"), the answerers are told the phrase ("on another desktop", "en otro
+  escritorio"), and the Space holds from that step until 30 s after the
+  last person-run call (`PLAN_SPACE_MS`, `agents/lib/server-person.ts`).
+- **Why:** threading a plan's id down to every tool call is a larger change
+  than tonight's; the steps of one plan run within a second of each other.
+- **Cost:** a tool command the person runs themselves within those 30 s
+  (a `dashi://` link that opens an app) opens on that Desktop too.
+- **Undo:** take `work_in_space` out of `PERSON_TOOLS`; the sentence in
+  `SYSTEM_PROMPT`.
+
+### D91. The bar says where at rest, the panel has Show, and it is always "Desktop N"
+
+- **Date:** 2026-11-14. The `n10-elsewhere` agent's.
+- **Question:** how the person sees an agent at work on another Desktop,
+  in one chrome row.
+- **Choice:** the agent's line reads "Working on Desktop 3" whenever it is
+  not saying what it does this moment; its row in the agents' panel has a
+  Show button that switches there. The Space is named by its number in
+  everything said about it: the shell's label follows the apps on it
+  ("Calculator, Text Editor"), which reads as an app in a sentence.
+- **Why:** the line is already there; a second one is not allowed.
+- **Cost:** a Desktop the person named ("Work") is still "Desktop 3" in the
+  agent's line. `work_in_space` answers both.
+- **Undo:** `SessionStatus.shown`; `ShowButton` in `agents-panel/lib/agents-rows.tsx`.

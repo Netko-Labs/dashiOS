@@ -140,11 +140,13 @@ export class Elsewhere {
     return space === null || space === this.places.spaces()?.getSnapshot().current ? null : space;
   }
 
-  /** What the Space it works in is called ("Desktop 3"), or null. */
+  /**
+   * What the Space it works in is called, or null: always "Desktop 3", by its number. The shell's
+   * own label follows the apps on it ("Calculator, Text Editor"), which reads as an app in a sentence.
+   */
   get label(): string | null {
     const space = this.space;
-    const spaces = space === null ? undefined : this.places.spaces();
-    return spaces && space !== null ? nameOf(spaces, space) : null;
+    return space === null ? null : spaceLabel(space);
   }
 
   /** A window this agent is opening goes to its Space; the returned function ends the claim. Nothing without a Space. */
@@ -176,17 +178,18 @@ export class Elsewhere {
     this.ref = spaces.follow(index);
     this.added = target === "new";
     this.places.work(this.ref, true);
-    ctx.status(`Working on ${nameOf(spaces, index)}`);
+    ctx.status(`Working on ${spaceLabel(index)}`);
     return this.answer(spaces, index, this.added);
   }
 
   private answer(spaces: AgentSpaces, index: number, added: boolean): ToolResult {
     const name = nameOf(spaces, index);
+    const desktop = spaceLabel(index);
     const shows = index === spaces.getSnapshot().current;
     const words = shows
-      ? `${name} is the Space that shows now, so the person sees what you open.`
+      ? `${desktop} is the Space that shows now, so the person sees what you open.`
       : `Windows you open go there, and the person's screen stays as it is: click, type, and take window screenshots there as anywhere. switch_space shows it to them only if they ask.`;
-    return json({ space: index + 1, name, shows, added, note: `You work on ${name}${added ? ", added for you" : ""}. ${words}` });
+    return json({ space: index + 1, name, shows, added, note: `You work on ${desktop}${added ? ", added for you" : ""}. ${words}` });
   }
 
   /**
