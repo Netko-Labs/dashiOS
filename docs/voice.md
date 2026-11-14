@@ -201,7 +201,10 @@ turn it on. Where it can't be told the window is trusted.
   chip"). Listening: the microphone's level and the end of what was heard so
   far. Thinking: what was heard. Speaking: the line being said, each word
   lighting at its `start`. Its words are a screen reader's too.
-- **Settings › Voice** (`settings-app/lib/panes/voice.tsx`): the switch,
+- **Settings › Voice** (`settings-app/lib/panes/voice.tsx`): it asks `models`
+  when it is shown, and again whenever the models' folder (`folder` in the
+  reply) changes while it is open (`models.ts` `watch`), so models copied in
+  by hand or fetched from a terminal show without reopening it; the switch,
   which reads on only when Voice is on (asked for, and its models here; while
   it offers or waits for the fetch it reads off and its row says "It turns on
   once its models are here.");

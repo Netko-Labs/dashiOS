@@ -7,6 +7,7 @@
 
 import { maybe } from "@dashi/shape";
 import type { VoiceService } from "./lib/service.ts";
+import { type FolderWatch, watchFolder } from "./lib/watch-folder.ts";
 import { FetchReply, ModelsShape, VoicesShape } from "./lib/wire.ts";
 import type { ModelSet, ModelsView } from "./types.ts";
 
@@ -79,6 +80,46 @@ export class VoiceModels {
     return this.view.service === "ready" && basicsHere(this.view.sets);
   }
 
+  /** Where the models are kept, once the service said. */
+  private folder: string | null = null;
+
+  /**
+   * Look again whenever the models' folder changes behind Dashi's back
+   * (models copied in by hand, `dashi-voice fetch` in a terminal), for as
+   * long as someone looks at them: Settings › Voice, while it is open. A
+   * burst of changes (a big file being copied) is one look, `settleMs`
+   * after its last. Gives back how to stop.
+   */
+  watch(watcher: FolderWatch = watchFolder, settleMs = 400): () => void {
+    let stop: (() => void) | null = null;
+    let watched: string | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let stopped = false;
+    const changed = (): void => {
+      if (stopped) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        void this.refresh();
+      }, settleMs);
+    };
+    // The folder is known once the service answered, and may be another after it came back.
+    const arm = (): void => {
+      if (this.folder === null || this.folder === watched) return;
+      stop?.();
+      watched = this.folder;
+      stop = watcher(watched, changed);
+    };
+    const off = this.subscribe(arm);
+    arm();
+    return () => {
+      stopped = true;
+      off();
+      stop?.();
+      if (timer) clearTimeout(timer);
+    };
+  }
+
   private reading: Promise<void> | null = null;
 
   /** Read the sets and the voices again (the pane opening, a fetch ending, the service coming back); one read at a time. */
@@ -94,6 +135,7 @@ export class VoiceModels {
       const models = maybe(ModelsShape, await this.service.call("models"));
       const voices = maybe(VoicesShape, await this.service.call("voices"));
       if (!models) throw new Error("Voice answered in a way Dashi doesn't know.");
+      if (models.folder !== undefined) this.folder = models.folder;
       this.set({
         service: "ready",
         sets: models.sets,

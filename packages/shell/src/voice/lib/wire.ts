@@ -13,7 +13,7 @@ export type VoiceStatus = Infer<typeof StatusShape>;
 const SetShape = loose({ id: str(), name: str(), about: str(), credit: str(), basic: bool(), bytes: num(), have: num(), installed: bool() });
 export type ModelSet = Infer<typeof SetShape>;
 
-export const ModelsShape = loose({ fetching: bool(), sets: lenientList(SetShape, { max: 16 }) });
+export const ModelsShape = loose({ folder: optional(str()), fetching: bool(), sets: lenientList(SetShape, { max: 16 }) });
 
 const VoiceShape = loose({ id: str(), name: str(), language: str(), language_name: str(), installed: bool() });
 export type SpokenVoice = Infer<typeof VoiceShape>;
