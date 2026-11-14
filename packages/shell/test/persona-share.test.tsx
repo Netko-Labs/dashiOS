@@ -50,7 +50,7 @@ async function pane(person: { is: boolean }) {
   const listeners = new Set<(event: NativeEvent) => void>();
   const transport: NativeTransport = { send() {}, onEvent: (listener) => void listeners.add(listener), onClose() {}, simulate() {}, close() {} };
   const root = render(
-    <Appearance>
+    <Appearance dark={false}>
       <View style={{ width: 760, height: 900 }}>
         <PaneStoresContext.Provider value={{ settings, flags: new FlagsStore(join(home, "flags.json")) }}>
           <PersonaPane settings={settings} persona={{ source, openFile() {}, dialogs }} byPerson={async () => person.is} />
