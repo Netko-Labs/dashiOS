@@ -138,7 +138,7 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "keyboard":
       return <Keyboard ctx={ctx} />;
     case "trackpad":
-      return <TrackpadPane settings={ctx.settings} />;
+      return <TrackpadPane settings={ctx.settings} pointers={ctx.pointers ?? null} />;
     case "mouse":
       return <MousePane settings={ctx.settings} />;
     case "date-time":

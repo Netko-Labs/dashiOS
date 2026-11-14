@@ -85,6 +85,18 @@ export function stored<S extends SectionName>(
 export const storedSwitch = <S extends SectionName>(section: S, key: keyof SettingsData[S] & string, fallback: boolean, options: FileOptions = {}): Binding =>
   stored(section, key, fallback, { type: "boolean" }, options);
 
+/** A switch that is on until settings.json says `key` is true ("Trackpad", kept as `touchpad.off`); on is no setting. */
+export const storedOffSwitch = <S extends SectionName>(section: S, key: keyof SettingsData[S] & string): Binding => {
+  const kept = stored(section, key, false, { type: "boolean" }, { unset: false });
+  return {
+    ...kept,
+    fallback: true,
+    opposite: true,
+    get: (stores) => kept.get(stores) !== true,
+    set: (stores, value) => kept.set(stores, value !== true),
+  };
+};
+
 /** A choice kept in settings.json, by its options' values. */
 export const storedChoice = <S extends SectionName>(
   section: S,

@@ -8,7 +8,7 @@
  *
  *   {
  *     "input": {
- *       "touchpad": { "tap": true, "naturalScroll": true, "accelSpeed": 0.3,
+ *       "touchpad": { "tap": true, "naturalScroll": true, "accelSpeed": 0.3, "offWithMouse": true,
  *                     "disableWhileTyping": true, "clickMethod": "clickfinger",
  *                     "scrollSpeed": 1.5 },
  *       "mouse": { "naturalScroll": false, "accelSpeed": 0, "accelProfile": "flat",

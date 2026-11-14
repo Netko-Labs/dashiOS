@@ -56,6 +56,7 @@ export function startSystemStores(compositor: Compositor | null, wifi: WifiSetup
   // On a development run the volume keys write nothing, as Control Center's slider and the mixer don't (the same switch).
   const system = startSystem({
     compositor,
+    pointers: compositor,
     pipewire,
     standIn: wifi.fake,
     ...(wifi.status ? { network: wifi.status, ...(wifi.monitor ? { monitor: wifi.monitor } : {}) } : {}),

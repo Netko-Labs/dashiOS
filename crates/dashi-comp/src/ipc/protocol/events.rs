@@ -4,6 +4,7 @@
 use serde::Serialize;
 
 use super::window::{At, Frame, State, Window};
+use crate::input::Pointers;
 
 /// What a person did with a window's square (the only control the shell decides).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -163,6 +164,11 @@ pub(crate) enum Event {
     },
     OutputsChanged,
     GpusChanged,
+    /// A touchpad or a mouse was connected or went away.
+    Pointers {
+        #[serde(flatten)]
+        pointers: Pointers,
+    },
     SessionChanged,
     Lock {
         locked: bool,

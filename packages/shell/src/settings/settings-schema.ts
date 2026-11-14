@@ -46,6 +46,10 @@ export const TOUCHPAD = {
   clickMethod: literal("buttonAreas", "clickfinger"),
   /** A factor on how far a scroll goes (scroll-speed.ts); 1 with none. */
   scrollSpeed,
+  /** Turned off: the laptop's trackpad key, or Settings › Trackpad (system/keys.ts). */
+  off: bool(),
+  /** Ignored while a mouse is connected. */
+  offWithMouse: bool(),
 };
 
 export const MOUSE = { naturalScroll: bool(), accelSpeed: speed, accelProfile: literal("flat", "adaptive"), scrollSpeed };

@@ -41,6 +41,8 @@ const MENU: Readonly<Record<string, string>> = {
   "touchpad.scrollSpeed": "Scroll Speed",
   "touchpad.disableWhileTyping": "Ignore While Typing",
   "touchpad.clickMethod": "Click Method",
+  "touchpad.off": "Trackpad",
+  "touchpad.offWithMouse": "Ignore While a Mouse Is Connected",
   "mouse.naturalScroll": "Natural Scrolling",
   "mouse.accelSpeed": "Pointer Speed",
   "mouse.accelProfile": "Acceleration",
@@ -140,7 +142,9 @@ function sayNumber(row: RowDef, value: number): string {
 
 /** A value of a registry row in words; not set is the row's default. */
 function sayRow(row: RowDef, value: unknown): string {
-  const shown = value ?? row.value?.fallback;
+  // A switch that shows the opposite of what the file keeps ("Trackpad" is on while `off` is not set).
+  const kept = row.value?.opposite && typeof value === "boolean" ? !value : value;
+  const shown = kept ?? row.value?.fallback;
   if (typeof shown === "boolean" || typeof shown === "string") return describeValue(row, shown);
   if (typeof shown === "number") return row.options?.some((option) => option.value === shown) ? describeValue(row, shown) : sayNumber(row, shown);
   return "default";
