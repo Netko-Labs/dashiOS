@@ -11,6 +11,8 @@
 
 import { join } from "node:path";
 import { type BrowserBridge, startBrowserBridge } from "../browser/bridge.ts";
+import { staleExtensionWatch } from "../browser/stale.ts";
+import { SHELL_SENDER } from "../notifications/index.ts";
 import type { Compositor, Placing } from "../compositor/index.ts";
 import type { Arrange, Tile } from "../layout.ts";
 import { type AloneGate, NOT_ALONE } from "./alone/index.ts";
@@ -101,6 +103,8 @@ export function startAgents({
   const sites = new SiteGrants();
   // Dashi's browser extension joins here through its host (docs/actions.md, "Websites").
   const browser: BrowserBridge = startBrowserBridge();
+  // An extension older than the package's is said once, with what to do (browser/stale.ts, decisions.md D117).
+  browser.onExtension(staleExtensionWatch((notice) => desktop.notifications.notify(notice, 0, SHELL_SENDER)));
   const { secrets, mask, close: closeAtspi } = sharedSecrets(compositor, sources, vault);
   // What every tool reaches, an agent's or the person's own run.
   const shared = { compositor, ui, desktop, hands, places, mask, secrets, lock, browser, tile, arrangement };

@@ -34,7 +34,7 @@ export interface ClipboardCopy {
 
 export interface Desktop {
   /** The notification center's history, and taking notifications out of it. */
-  notifications: Pick<NotificationStore, "getSnapshot" | "remove">;
+  notifications: Pick<NotificationStore, "getSnapshot" | "remove" | "notify">;
   /** Control Center's switches (Dark Mode, Do Not Disturb). */
   flags: Pick<FlagsStore, "getSnapshot" | "set">;
   /** The Dock's settings (autohide, style): the store the Dock's menu and System Settings change. Absent where there is no Dock. */

@@ -3,6 +3,8 @@
     "mngbphpldanjlpbagnkmfalmglolgkmb": {
       "installation_mode": "force_installed",
       "update_url": "file:///usr/share/dashi/browser/updates.xml",
+      "override_update_url": true,
+      "minimum_version_required": "0.9.0",
       "toolbar_pin": "default_unpinned"
     }
   }

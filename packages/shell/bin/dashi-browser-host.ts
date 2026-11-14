@@ -17,7 +17,7 @@ import { join } from "node:path";
 import { isRecord } from "@dashi/shape";
 import { callerExtension, encodeFrame, FrameReader } from "../src/browser/native.ts";
 
-const VERSION = "0.5.0";
+const VERSION = "0.9.0";
 const RETRY_MS = 2_000;
 
 const extension = callerExtension(process.argv.slice(2));
@@ -32,6 +32,8 @@ const path = join(runtime, "dashi-browser.sock");
 let shell: Bun.Socket<undefined> | null = null;
 let pending = "";
 let outbox: Promise<unknown> = Promise.resolve();
+/** The version the extension said it is (its first message), kept for a shell that joins or comes back later. */
+let extensionVersion: string | null = null;
 
 /** To the extension, in order. */
 function toExtension(message: unknown): void {
@@ -81,7 +83,7 @@ async function joinShell(): Promise<void> {
           error: () => {},
         },
       });
-      toShell({ event: "host", browserPid: process.ppid, extension, version: VERSION });
+      toShell({ event: "host", browserPid: process.ppid, extension, version: VERSION, ...(extensionVersion ? { extensionVersion } : {}) });
       return;
     } catch {
       await Bun.sleep(RETRY_MS);
@@ -94,7 +96,10 @@ void joinShell();
 const reader = new FrameReader();
 try {
   for await (const chunk of Bun.stdin.stream()) {
-    for (const message of reader.push(chunk)) toShell(message);
+    for (const message of reader.push(chunk)) {
+      if (isRecord(message) && message.event === "hello" && typeof message.version === "string") extensionVersion = message.version;
+      toShell(message);
+    }
   }
 } catch (error) {
   console.error(`dashi-browser-host: ${error instanceof Error ? error.message : String(error)}`);

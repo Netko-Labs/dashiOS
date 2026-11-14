@@ -35,6 +35,8 @@ export interface BrowserBridge {
   current(): BrowserLink | null;
   /** Until an extension joins (a browser just started), at most `ms`. */
   whenConnected(ms: number): Promise<BrowserLink | null>;
+  /** Each time an extension says which version it is (once a connection). */
+  onExtension(listener: (version: string) => void): () => void;
   close(): void;
 }
 
@@ -58,7 +60,10 @@ class Link {
   private readonly waiting = new Map<number, { resolve(result: Record<string, unknown>): void; reject(error: Error): void; timer: Timer }>();
   readonly lines = new LineBuffer();
 
-  constructor(private readonly write: (text: string) => void) {}
+  constructor(
+    private readonly write: (text: string) => void,
+    private readonly said: (version: string) => void,
+  ) {}
 
   ask(method: BrowserMethod, params: Record<string, unknown>, timeoutMs = REQUEST_MS): Promise<Record<string, unknown>> {
     const id = ++this.nextId;
@@ -75,7 +80,13 @@ class Link {
   receive(line: string): void {
     const message = parseFromBrowser(line);
     if (message.kind === "hello") {
-      if (message.hello.extension === EXTENSION_ID) this.hello = message.hello;
+      if (message.hello.extension !== EXTENSION_ID) return;
+      this.hello = message.hello;
+      if (message.hello.extensionVersion) this.said(message.hello.extensionVersion);
+      return;
+    }
+    if (message.kind === "extension") {
+      if (this.hello) this.said(message.version);
       return;
     }
     if (message.kind !== "reply") return;
@@ -99,11 +110,16 @@ class Link {
 export function startBrowserBridge(runtime = process.env.XDG_RUNTIME_DIR): BrowserBridge {
   const links: Link[] = [];
   let joined: Array<() => void> = [];
+  const versions = new Set<(version: string) => void>();
+  const onExtension = (listener: (version: string) => void) => {
+    versions.add(listener);
+    return () => void versions.delete(listener);
+  };
   const current = (): BrowserLink | null => {
     const link = [...links].reverse().find((candidate) => candidate.hello !== null);
     return link?.hello ? { hello: link.hello, ask: (method, params, timeoutMs) => link.ask(method, params, timeoutMs) } : null;
   };
-  if (!runtime) return { current: () => null, whenConnected: async () => null, close() {} };
+  if (!runtime) return { current: () => null, whenConnected: async () => null, onExtension, close() {} };
   const path = join(runtime, BROWSER_SOCKET);
   if (existsSync(path)) unlinkSync(path);
   const server = Bun.listen<{ link?: Link }>({
@@ -116,7 +132,12 @@ export function startBrowserBridge(runtime = process.env.XDG_RUNTIME_DIR): Brows
           socket.terminate();
           return;
         }
-        const link = new Link((text) => socket.write(text));
+        const link = new Link(
+          (text) => socket.write(text),
+          (version) => {
+            for (const listener of versions) listener(version);
+          },
+        );
         socket.data = { link };
         links.push(link);
       },
@@ -148,6 +169,7 @@ export function startBrowserBridge(runtime = process.env.XDG_RUNTIME_DIR): Brows
   chmodSync(path, 0o600);
   return {
     current,
+    onExtension,
     whenConnected: async (ms) => {
       const now = current();
       if (now) return now;
