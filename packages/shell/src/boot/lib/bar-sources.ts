@@ -80,6 +80,7 @@ export function pillNeeds(needs: BarsNeeds, bar: PillNeeds["bar"]): PillNeeds {
     runs: needs.handoff.handoffShell.service.runs,
     menus: needs.menus.controller,
     primary: () => late.peek("menuBars")?.primaryName ?? needs.primaryScreen,
+    onLock: (listener) => needs.compositor?.on((event) => void (event.event === "lock" && event.locked && listener())) ?? (() => {}),
     showLauncher: () => showLauncher(late),
     bar,
   };

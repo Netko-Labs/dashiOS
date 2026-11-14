@@ -36,6 +36,8 @@ export interface BarPillNeeds {
   menus: Source<{ popover: unknown; bar?: unknown }> & { close(): void };
   /** The primary screen's name, for a field opened by another piece. */
   primary(): string | undefined;
+  /** The screen locked: `listener` runs; the returned function stops it. */
+  onLock(listener: () => void): () => void;
   /** The launcher, where a plan with no card is answered. */
   showLauncher(): void;
   /** What a bar's status side is built from, for the signs that stay in the row. */
@@ -80,6 +82,11 @@ export function startBarPill(needs: BarPillNeeds): { pill: BarPill; stop(): void
     const { popover, bar } = needs.menus.getSnapshot();
     if (popover !== null || bar !== undefined) field.close();
   });
+  // The Dashi key opens the launcher or listens: the row gives the keyboard up, the draft kept.
+  const stopKeys = hub.keys.listen((gesture) => {
+    if (gesture.key === "dashi" && (gesture.gesture === "tap" || gesture.gesture === "hold")) field.close();
+  });
+  const stopLock = needs.onLock(() => field.close());
   return {
     pill: {
       hub,
@@ -90,6 +97,8 @@ export function startBarPill(needs: BarPillNeeds): { pill: BarPill; stop(): void
     },
     stop() {
       stopMenus();
+      stopKeys();
+      stopLock();
       field.stop();
       jobs.close();
     },
