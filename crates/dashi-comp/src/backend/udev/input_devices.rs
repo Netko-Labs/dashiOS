@@ -61,7 +61,7 @@ impl InputDevices {
             }
             _ => {}
         }
-        self.listen_to_touchpads();
+        self.listen_to_touchpads(true);
         let after = self.pointers();
         (after != before).then_some(after)
     }
@@ -71,7 +71,7 @@ impl InputDevices {
         for (device, _) in &mut self.pointers {
             configure(device, settings);
         }
-        self.listen_to_touchpads();
+        self.listen_to_touchpads(false);
     }
 
     /// Which kinds of pointer device are connected.
@@ -79,8 +79,9 @@ impl InputDevices {
         trackpad::connected(self.pointers.iter().map(|(_, kind)| kind))
     }
 
-    /// Each touchpad on, off, or off beside a mouse (input/trackpad.rs).
-    fn listen_to_touchpads(&mut self) {
+    /// Each touchpad on, off, or off beside a mouse (input/trackpad.rs); `devices_changed`
+    /// when a device just came or went.
+    fn listen_to_touchpads(&mut self, devices_changed: bool) {
         let mouse = self.pointers().mouse;
         for (device, kind) in &mut self.pointers {
             if !kind.touchpad {
@@ -92,7 +93,14 @@ impl InputDevices {
                 SendEvents::DisabledOnExternalMouse => SendEventsMode::DISABLED_ON_EXTERNAL_MOUSE,
             };
             if device.config_send_events_mode() == mode {
-                continue;
+                // libinput looks for a mouse when the mode is set; one plugged in later
+                // did not stop the touchpad (libinput 1.31), so it is asked to look again.
+                if !(devices_changed && mode == SendEventsMode::DISABLED_ON_EXTERNAL_MOUSE) {
+                    continue;
+                }
+                if let Err(error) = device.config_send_events_set_mode(SendEventsMode::ENABLED) {
+                    tracing::debug!(device = device.name(), ?error, "a touchpad on or off");
+                }
             }
             if let Err(error) = device.config_send_events_set_mode(mode) {
                 tracing::debug!(device = device.name(), ?error, "a touchpad on or off");

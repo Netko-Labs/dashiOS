@@ -52,9 +52,12 @@ export function TrackpadPane({ settings, pointers: devices }: { settings: Settin
         />
         <Setting id="trackpad/click" stack={false} control="trackpad-click" />
       </Group>
-      <Caption>
-        {none ? "This computer has no trackpad. These apply when one is plugged in." : "With no touchpad connected, these apply when one is plugged in."}
-      </Caption>
+      {/* A trackpad dashi-comp says is there needs no word about one being plugged in. */}
+      {pointers?.touchpad === true ? null : (
+        <Caption>
+          {none ? "This computer has no trackpad. These apply when one is plugged in." : "With no touchpad connected, these apply when one is plugged in."}
+        </Caption>
+      )}
     </Page>
   );
 }

@@ -1944,14 +1944,18 @@ short words, as the rulebook is written.
   like any other trackpad setting (libinput send-events `disabled`).
   Settings › Trackpad has it as a switch named "Trackpad", on until the file
   says `off` (the registry's `storedOffSwitch`, so the change log reads
-  "Trackpad on: off").
+  "Trackpad on: off"). Agents' `set_setting` takes
+  `trackpad_ignore_with_mouse` and not this switch: an agent that turns the
+  only pointer off leaves a person without a mouse to find the way back by
+  keyboard.
 - **Why:** one place, already watched and applied at start, written by the
   key and the switch alike; no state in Rust.
 - **Cost:** the key takes a file write and the watcher's turn before the pad
   stops (well under a second). The notice does not say how to turn it back
   on: the key that was just pressed does, and so does the switch, which the
   keyboard reaches.
-- **Undo:** the three rules in `keymap/keymap.ts`; `off` in `TOUCHPAD`.
+- **Undo:** the three rules in `keymap/keymap.ts`; `off` in `TOUCHPAD`;
+  `agent: "trackpad_on"` on the row in `registry/lib/input.ts` gives it to agents.
 
 ### D93. A mouse is what libinput calls one: udev's mouse, on USB or Bluetooth
 
@@ -1963,7 +1967,10 @@ short words, as the rulebook is written.
 - **Choice:** libinput's (`input/trackpad.rs`): a pointer udev marks
   `ID_INPUT_MOUSE` whose input device is on USB or Bluetooth, and is not a
   touchpad. A trackpoint (PS/2, I2C) and a virtual pointer are not mice. The
-  same rule answers `pointers`, which Settings reads.
+  same rule answers `pointers`, which Settings reads. Where libinput has the
+  mode, dashi-comp sets it again each time a device comes or goes: libinput
+  1.31 looks for a mouse when the mode is set, and in the VM a mouse plugged
+  in afterwards did not stop the touchpad until it was.
 - **Why:** two rules for one switch would make the pad behave differently by
   how it is wired.
 - **Cost:** a USB receiver that shows a mouse with none paired, or a keyboard
@@ -1990,14 +1997,3 @@ short words, as the rulebook is written.
 - **Cost:** one more method and event. It says kinds, not a list of devices.
 - **Undo:** `pointers` in `ipc/table.rs` and `Event::Pointers`; the pane
   falls back to showing every row.
-
-### D95. Agents may set "ignore beside a mouse", not turn the trackpad off
-
-- **Date:** 2026-11-14. The `n12-trackpad` agent's.
-- **Question:** which of the two new rows `get_settings` / `set_setting` take.
-- **Choice:** `trackpad_ignore_with_mouse` only. "Trackpad" (off) is the
-  person's alone.
-- **Why:** an agent that turns the only pointer off leaves a person without
-  a mouse to find the way back by keyboard.
-- **Cost:** "turn my trackpad off" asked of Dashi opens Settings instead.
-- **Undo:** `agent: "trackpad_on"` on the row in `registry/lib/input.ts`.
