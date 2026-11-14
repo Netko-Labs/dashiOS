@@ -18,6 +18,8 @@ impl Dashi {
             return Ok(());
         }
         let was_focused = self.is_focused(&entry.window);
+        // An agent's pointer in a window off screen leaves it: the window may come on screen.
+        self.away_pointer_leave();
         self.space_unmap(id);
         if let Some(entry) = self.windows.get_mut(id) {
             entry.space = space;

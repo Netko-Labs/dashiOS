@@ -11,6 +11,7 @@ import { buttonLook, Shortcut, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { type AgentEntry, accessWords, discGlyph, watchTime } from "../../agents/index.ts";
+import { spaceLabel } from "../../spaces/index.ts";
 
 /** A small button of a card: Show, Stop, Undo. */
 export function Small({ label, primary, danger, testID, onPress }: { label: string; primary?: true; danger?: true; testID: string; onPress: () => void }) {
@@ -105,6 +106,20 @@ export function TileDot({ ring }: { ring: string }) {
   );
 }
 
+/** "Show": go to the Desktop an agent works on (the screen slides there; the person asked to look). */
+function ShowButton({ testID, onPress }: { testID: string; onPress: () => void }) {
+  const colors = useColors();
+  return (
+    <View
+      testID={testID}
+      onPress={onPress}
+      style={{ flexShrink: 0, height: 24, paddingLeft: 10, paddingRight: 10, borderRadius: 6, justifyContent: "center", backgroundColor: colors.button }}
+    >
+      <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>Show</Text>
+    </View>
+  );
+}
+
 function StopButton({ testID, onPress }: { testID: string; onPress: () => void }) {
   const colors = useColors();
   return (
@@ -118,10 +133,22 @@ function StopButton({ testID, onPress }: { testID: string; onPress: () => void }
   );
 }
 
-/** A connected agent: who, the access it has now, where it's from, and Stop. */
-export function ConnectionRow({ entry, first, onStop }: { entry: AgentEntry; first: boolean; onStop: () => void }) {
+/** What a connection's row does: cut the agent off, and go to the Desktop it works on. */
+interface RowActions {
+  stopAgent(id: number): void;
+  showSpace?(space: number): void;
+}
+
+/** A connected agent: who, the access it has now, where it's from, Stop, and Show when it works on another Desktop. */
+export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; first: boolean; actions: RowActions }) {
+  const space = entry.agent?.space;
+  const onShow = actions.showSpace;
+  const onStop = () => entry.agent && actions.stopAgent(entry.agent.id);
   const colors = useColors();
-  const doing = entry.phase === "working" && !entry.watching ? entry.doing : null;
+  // At work on another Desktop, its line says where while it rests, in few words: Show takes room.
+  // The bar's line for it then is "Working on Desktop 3" (session-status.ts); here, "On Desktop 3".
+  const resting = space !== undefined && entry.doing === `Working on ${spaceLabel(space)}` ? `On ${spaceLabel(space)}` : null;
+  const doing = entry.watching ? null : (resting ?? (entry.phase === "working" ? entry.doing : null));
   const origin = originWords(entry);
   return (
     <View
@@ -162,6 +189,7 @@ export function ConnectionRow({ entry, first, onStop }: { entry: AgentEntry; fir
           </View>
         </View>
       </View>
+      {space !== undefined && onShow && <ShowButton testID={`agents-show-agent:${entry.agent?.id ?? entry.key}`} onPress={() => onShow(space)} />}
       <StopButton testID={`agents-stop-agent:${entry.agent?.id ?? entry.key}`} onPress={onStop} />
     </View>
   );

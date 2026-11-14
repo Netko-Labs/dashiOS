@@ -71,7 +71,8 @@ impl Dashi {
         };
         let id = entry.id;
         let parked = entry.shown != Shown::Normal;
-        if parked || source == FROM_PAGER || self.xwayland.focused.is_some() {
+        let asked = parked || source == FROM_PAGER || self.xwayland.focused.is_some();
+        if asked && self.activation_may_switch(id) {
             if let Err(error) = self.focus_window(id) {
                 tracing::debug!(%error, "activating an X11 window");
             }

@@ -58,7 +58,7 @@ impl XdgActivationHandler for Dashi {
                     && focused_client.is_some()
             }
         };
-        if data.timestamp.elapsed() < FRESH && from_focused {
+        if data.timestamp.elapsed() < FRESH && from_focused && self.activation_may_switch(id) {
             if let Err(error) = self.focus_window(id) {
                 tracing::debug!(%error, "activating a window");
             }

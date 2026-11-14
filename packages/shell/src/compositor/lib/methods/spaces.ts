@@ -14,7 +14,7 @@ const Spaces = obj({ count: num(), current: num(), space: optional(num()) }, { s
 const Picture = { x: num(), y: num(), w: num(), h: num() };
 
 export const SPACES = {
-  spaces: method("shell", obj({ count: optional(int({ min: 1, max: 16 })), follow: optional(bool()) }), Spaces),
+  spaces: method("shell", obj({ count: optional(int({ min: 1, max: 16 })), follow: optional(bool()), quiet: optional(list(Space)) }), Spaces),
   "space-add": method("shell", obj({ at: optional(int({ min: 0 })) }), Spaces),
   "space-remove": method("shell", obj({ space: Space }), Spaces),
   "space-switch": method("granted", obj({ space: Space, progress: optional(num()), carry: optional(WindowId) }), Spaces),

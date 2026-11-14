@@ -89,6 +89,19 @@ impl Dashi {
         Ok(())
     }
 
+    /// `focus {stay}`: on a Space that does not show, the window comes back if it was minimized
+    /// or hidden and waits in front there; the Space that shows, and the keyboard, stay as they
+    /// are. On the Space that shows it is `focus`.
+    pub(crate) fn raise_on_its_space(&mut self, id: WindowId) -> Result<(), String> {
+        self.window_of(id)?;
+        if self.on_current_space(id) {
+            return self.focus_window(id);
+        }
+        self.show_window(id);
+        self.windows.rank_front(id);
+        Ok(())
+    }
+
     /// Window `id` is gone (its client destroyed it, or an X11 window unmapped).
     pub(crate) fn window_gone(&mut self, id: WindowId) {
         let Some(entry) = self.windows.remove(id) else {

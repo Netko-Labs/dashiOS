@@ -29,6 +29,10 @@ impl Dashi {
         for window in self.pictured_off_screen() {
             window.send_frame(output, elapsed, None, |_, _| Some(output.clone()));
         }
+        // Off screen, with an agent at work in them (session/agent_away.rs): they draw what it did.
+        for window in self.agent_awake_off_screen() {
+            window.send_frame(output, elapsed, None, |_, _| Some(output.clone()));
+        }
         for layer in layer_map_for_output(output).layers() {
             layer.send_frame(output, elapsed, throttle, surface_primary_scanout_output);
         }

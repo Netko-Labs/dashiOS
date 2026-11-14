@@ -14,7 +14,10 @@ impl Dashi {
     /// Each seat's pointer enters what is under it now, if that changed.
     pub(crate) fn follow_pointers(&mut self) {
         let time = self.start_time.elapsed().as_millis() as u32;
-        if let Some(pointer) = self.seat.get_pointer() {
+        // Not while it stands aside for an agent in the same app's off-screen window (session/agent_away.rs).
+        if let Some(pointer) = self.seat.get_pointer()
+            && !self.agent.away.pointer_aside()
+        {
             self.follow_pointer(&pointer, time);
         }
         // An agent's own seat (session/agent.rs) only while its pointer is in a surface:

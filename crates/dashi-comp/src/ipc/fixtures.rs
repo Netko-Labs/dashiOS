@@ -69,7 +69,7 @@ fn window() -> Value {
     json!({
         "id": 7, "appId": "dev.dashi.notes", "title": "Notes", "pid": 4242, "focused": true,
         "state": "normal", "frame": { "x": 100, "y": 80, "width": 800, "height": 600 },
-        "configuring": null, "minSize": { "width": 300, "height": 200 }, "titleBar": 38,
+        "away": null, "configuring": null, "minSize": { "width": 300, "height": 200 }, "titleBar": 38,
         "fullscreen": false, "space": 0, "attention": false, "x11": false, "sheetOf": null,
         "parent": null, "icon": { "name": "accessories-text-editor", "path": null },
         "toplevel": "a1b2c3"
@@ -99,7 +99,7 @@ fn windows_and_screens(into: &mut BTreeMap<&'static str, Value>) {
     example!(into, "subscribe", Nothing, none.clone(), Done, none.clone());
     example!(into, "session", Nothing, none.clone(), Session, json!({ "waylandDisplay": "wayland-1", "display": ":1", "xwayland": "ready", "pointer": { "x": 640.5, "y": 400.0 }, "locked": false }));
     example!(into, "windows", Nothing, none.clone(), Windows, json!({ "windows": [window()] }));
-    example!(into, "focus", OneWindow, one.clone(), Done, none.clone());
+    example!(into, "focus", Focus, json!({ "window": 7, "stay": true }), Done, none.clone());
     example!(into, "close", OneWindow, one.clone(), Done, none.clone());
     example!(into, "minimize", OneWindow, one.clone(), Done, none.clone());
     example!(into, "hide", OneWindow, one.clone(), Done, none.clone());
@@ -142,7 +142,7 @@ fn chrome_and_spaces(into: &mut BTreeMap<&'static str, Value>) {
     example!(into, "idle", Idle, json!({ "timeouts": [120, 300] }), Done, none.clone());
     example!(into, "keyboard", KeyboardParams, json!({ "layout": "us,de", "variant": "", "options": "", "repeatRate": 30, "repeatDelay": 400 }), Done, none.clone());
     example!(into, "input", InputParams, json!({ "touchpad": { "tap": true, "naturalScroll": true, "accelSpeed": 0.3, "clickMethod": "clickfinger", "scrollSpeed": 1.5 }, "mouse": { "accelProfile": "flat" } }), Done, none.clone());
-    example!(into, "spaces", SpacesParams, json!({ "count": 3, "follow": true }), SpacesAnswer, spaces.clone());
+    example!(into, "spaces", SpacesParams, json!({ "count": 3, "follow": true, "quiet": [2] }), SpacesAnswer, spaces.clone());
     example!(into, "space-add", SpaceAdd, json!({ "at": 1 }), SpacesAnswer, json!({ "count": 4, "current": 2, "space": 1 }));
     example!(into, "space-remove", OneSpace, json!({ "space": 2 }), SpacesAnswer, json!({ "count": 2, "current": 1 }));
     example!(into, "space-switch", SpaceSwitch, json!({ "space": 1, "progress": 0.4 }), SpacesAnswer, spaces);
@@ -184,7 +184,7 @@ fn events() -> Vec<Event> {
     vec![
         Event::WindowOpened { window },
         Event::WindowClosed { id: 7 },
-        Event::WindowPlacing { window: Placing { id: 7, app_id: "dev.dashi.notes".into(), title: "Notes".into(), width: 800, height: 638, position: Some(Position { x: 100, y: 80 }), parent: None } },
+        Event::WindowPlacing { window: Placing { id: 7, app_id: "dev.dashi.notes".into(), title: "Notes".into(), width: 800, height: 638, position: Some(Position { x: 100, y: 80 }), parent: None, pid: Some(4242) } },
         Event::WindowAttention { window: 7 },
         Event::window_space(7, 1),
         Event::state(7, State::Minimized),

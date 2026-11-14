@@ -53,6 +53,8 @@ export class Arranger {
   afterFullscreen: (() => void) | null = null;
   /** Full-screen windows' own Desktops; none, and full screen stays on the Desktop it is on. */
   desktops: FullscreenDesktopsHook | null = null;
+  /** The Space an agent's window opens on, when it works on another Desktop (agents/desktop/elsewhere.ts); null for the usual one. */
+  elsewhere: ((window: Placing) => Promise<number | null>) | null = null;
   /** A new window someone else places (a portal dialog that is a sheet: portal-host/sheets.ts); true takes it. */
   claim: ((window: Placing) => boolean) | null = null;
 
@@ -136,6 +138,7 @@ export class Arranger {
     return {
       compositor: this.compositor,
       desktops: this.desktops,
+      elsewhere: this.elsewhere,
       outputs: this.outputs,
       arranged: this.arranged,
       beforeFullscreen: this.beforeFullscreen,

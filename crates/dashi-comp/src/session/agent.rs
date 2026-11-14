@@ -41,6 +41,8 @@ pub(crate) struct Agent {
     /// When the agent last acted (`agent-input`): dark screens keep pacing
     /// their clients briskly for a while after (backend/udev/pace.rs).
     pub acted_at: Option<std::time::Instant>,
+    /// What it has going in windows on Spaces that do not show (session/agent_away.rs).
+    pub away: super::agent_away::Away,
 }
 
 impl Agent {
@@ -51,6 +53,7 @@ impl Agent {
             pressed_buttons: Vec::new(),
             pressed_keys: Vec::new(),
             acted_at: None,
+            away: Default::default(),
         }
     }
 }
@@ -75,10 +78,15 @@ impl Dashi {
             .filter(|e| e.announced)
             .ok_or_else(|| format!("no window {id}"))?;
         let window = entry.window.clone();
+        // On a Space that does not show: straight to its client, nothing of the person's moved.
+        if let Some((window, content)) = super::agent_away::away_content(self, id) {
+            return self.agent_input_away(id, &window, content, params);
+        }
         let content = self
             .space
             .element_geometry(&window)
             .ok_or("that window is not on screen")?;
+        self.away_pointer_leave();
         let label = params
             .label
             .as_deref()
@@ -163,6 +171,7 @@ impl Dashi {
 
     /// Let go of everything the agent holds, on whichever seat it holds it, and hide its pointer.
     pub(crate) fn agent_release(&mut self) {
+        self.away_pointer_leave();
         let time = self.start_time.elapsed().as_millis() as u32;
         for (seat, button) in std::mem::take(&mut self.agent.pressed_buttons) {
             let Some(pointer) = seat.get_pointer() else {
@@ -198,6 +207,10 @@ impl Dashi {
     pub(crate) fn agent_yields_seat(&mut self) {
         if holds_on(&self.agent, &self.seat) {
             self.agent_release();
+        }
+        // Their pointer stood aside for the agent, in another window of the same app: it is theirs again.
+        if self.agent.away.pointer_aside() {
+            self.away_pointer_leave();
         }
     }
 }

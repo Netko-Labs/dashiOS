@@ -79,6 +79,9 @@ pub(crate) struct Placing {
     pub position: Option<Position>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parent: Option<u64>,
+    /// Its app's process, when the compositor knows it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pid: Option<i32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

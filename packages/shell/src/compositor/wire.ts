@@ -47,6 +47,7 @@ const WindowFields = obj(
     focused: bool(),
     state: WindowStateShape,
     frame: map(optional(nullable(FrameShape)), (frame) => frame ?? null),
+    away: map(optional(nullable(FrameShape)), (frame) => frame ?? undefined),
     configuring: positive,
     minSize: positive,
     titleBar: map(optional(num()), (bar) => bar ?? 0),
@@ -71,6 +72,7 @@ export const WindowShape = map(WindowFields, (w) => ({
   focused: w.focused,
   state: w.state,
   frame: w.frame,
+  ...(w.away ? { away: w.away } : {}),
   ...(w.configuring ? { configuring: w.configuring } : {}),
   ...(w.minSize ? { minSize: w.minSize } : {}),
   titleBar: w.titleBar,
@@ -93,6 +95,8 @@ export interface CompositorWindow {
   focused: boolean;
   state: Infer<typeof WindowStateShape>;
   frame: Frame | null;
+  /** Its frame where it waits on a Space that does not show (`frame` is null then). */
+  away?: Frame;
   configuring?: { width: number; height: number };
   minSize?: { width: number; height: number };
   titleBar: number;

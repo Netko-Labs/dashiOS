@@ -10,6 +10,8 @@ export const desktopHandlers = {
   list_spaces: (_call, ctx) => desktop.listSpaces(ctx),
   switch_space: (call, ctx) => desktop.switchSpace(call.space, ctx),
   move_window_to_space: (call, ctx) => desktop.moveWindowToSpace(call.window, call.space, ctx),
+  // Where this agent's windows open from now on, the screen staying where it is (desktop/elsewhere.ts).
+  work_in_space: (call, ctx) => ctx.elsewhere.go(call.space, ctx),
   list_notifications: (call, ctx) => desktop.listNotifications(call.limit, ctx),
   dismiss_notification: (call, ctx) => desktop.dismissNotification(call.id, ctx),
   clear_notifications: (_call, ctx) => desktop.clearNotifications(ctx),
@@ -31,6 +33,7 @@ export const desktopHandlers = {
   | "list_spaces"
   | "switch_space"
   | "move_window_to_space"
+  | "work_in_space"
   | "list_notifications"
   | "dismiss_notification"
   | "clear_notifications"

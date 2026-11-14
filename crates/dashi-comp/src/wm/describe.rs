@@ -2,7 +2,7 @@
 //! `windows` reply and the `window-opened` event.
 
 use super::{
-    geometry::{configuring, frame_of, min_frame},
+    geometry::{away_frame, configuring, frame_of, min_frame},
     windows::{Entry, names, parent_of, pid_of, toplevel_surface},
 };
 use crate::{
@@ -28,6 +28,7 @@ pub(crate) fn describe(entry: &Entry, state: &Dashi) -> protocol::Window {
         focused,
         state: entry.shown.wire(),
         frame: frame_of(state, &entry.window).map(Frame::from),
+        away: away_frame(state, &entry.window).map(Frame::from),
         configuring: configuring(state, &entry.window).map(Extent::from),
         min_size: min_frame(state, &entry.window).map(Extent::from),
         title_bar: state.bar_height(&entry.window),

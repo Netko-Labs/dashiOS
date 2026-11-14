@@ -182,3 +182,77 @@ fn an_agent_drags_on_the_persons_seat_and_lets_go_of_it() {
     client.roundtrip();
     assert_eq!(client.state.buttons, [true, false, true, false]);
 }
+
+/// A window on a Space that does not show hears the agent, and nothing of the person's moves:
+/// no wait for them to pause, their pointer where it was, the Space that shows as it is.
+#[test]
+fn an_agent_acts_in_a_window_on_a_space_that_does_not_show() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    let session = ipc.request("session", json!({}))["result"].clone();
+    let display = session["waylandDisplay"].as_str().unwrap().to_owned();
+    assert_eq!(ipc.request("space-add", json!({}))["result"]["space"], 1);
+    let mut client =
+        Client::open_listening(compositor.dir.path(), &display, "dev.dashi.test", "Away");
+    let id = wait_event(&mut ipc, &mut client, "window-placing")["window"]["id"]
+        .as_u64()
+        .unwrap();
+    ipc.request(
+        "place",
+        json!({ "window": id, "x": 100, "y": 50, "space": 1 }),
+    );
+    wait_event(&mut ipc, &mut client, "window-opened");
+    let window = ipc.request("windows", json!({}))["result"]["windows"][0].clone();
+    assert!(window["frame"].is_null(), "off screen");
+    assert_eq!(
+        (
+            window["away"]["x"].as_i64(),
+            window["away"]["width"].as_i64()
+        ),
+        (Some(100), Some(320)),
+        "where it waits"
+    );
+
+    // The person was just here (the compositor started): on screen the agent would wait.
+    let click = json!({
+        "window": id, "label": "Claude", "borrow": { "idleMs": 60000 },
+        "pointer": { "x": 20, "y": 30 }, "action": "click",
+    });
+    assert_eq!(ipc.request("agent-input", click)["result"], json!({}));
+    let typed = json!({ "window": id, "label": "Claude", "borrow": { "idleMs": 60000 }, "keys": [{ "text": "Hi" }] });
+    assert_eq!(ipc.request("agent-input", typed)["result"], json!({}));
+    client.roundtrip();
+    assert_eq!(client.state.buttons, [true, false]);
+    assert!(client.state.pointer_in, "its pointer stays in the window");
+    let keys = &client.state.keyboard;
+    // Shift, h, h, Shift, i, i: the agent's own Shift, let go again.
+    let pressed: Vec<bool> = keys.keys.iter().map(|(_, down)| *down).collect();
+    assert_eq!(pressed, [true, true, false, false, true, false]);
+    assert_eq!((keys.enters, keys.focused, keys.depressed), (1, false, 0));
+    let outside = json!({ "window": id, "label": "Claude", "pointer": { "x": 5000, "y": 30 }, "action": "click" });
+    assert!(
+        ipc.request("agent-input", outside)["error"]
+            .as_str()
+            .unwrap()
+            .contains("outside")
+    );
+
+    // Raised where it is: the Space that shows stays, and so does the person's pointer.
+    assert_eq!(
+        ipc.request("focus", json!({ "window": id, "stay": true }))["result"],
+        json!({})
+    );
+    assert_eq!(ipc.request("spaces", json!({}))["result"]["current"], 0);
+    assert_eq!(
+        ipc.request("session", json!({}))["result"]["pointer"],
+        session["pointer"]
+    );
+    // Letting go takes its pointer out of the window.
+    assert_eq!(
+        ipc.request("agent-input", json!({ "release": true }))["result"],
+        json!({})
+    );
+    client.roundtrip();
+    assert!(!client.state.pointer_in);
+}

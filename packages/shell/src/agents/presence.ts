@@ -108,6 +108,8 @@ export interface AgentInfo {
   /** Its key in the kept answers (consent.ts), so Settings › Agents can say it is connected now. */
   key?: string;
   status: string;
+  /** The Space it works in (from 0), when the person asked it to work on another Desktop and that one does not show. */
+  space?: number;
   scopes: string[];
   /** A run started from the launcher (agents/handoff/): its card speaks for it, not a row of its own. */
   task?: string;

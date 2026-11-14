@@ -151,6 +151,7 @@
   },
   "focus": {
     "params": {
+      "stay": true,
       "window": 7
     },
     "reply": {},
@@ -661,7 +662,10 @@
   "spaces": {
     "params": {
       "count": 3,
-      "follow": true
+      "follow": true,
+      "quiet": [
+        2
+      ]
     },
     "reply": {
       "count": 3,
@@ -755,6 +759,7 @@
         {
           "appId": "dev.dashi.notes",
           "attention": false,
+          "away": null,
           "configuring": null,
           "focused": true,
           "frame": {

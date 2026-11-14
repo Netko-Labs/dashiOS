@@ -19,6 +19,15 @@ pub(crate) struct OneWindow {
     pub window: WindowId,
 }
 
+/// `focus`'s params: `stay` leaves the Space that shows as it is.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Focus {
+    pub window: WindowId,
+    #[serde(default)]
+    pub stay: bool,
+}
+
 /// Params turning something on or off for one window.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -133,8 +142,12 @@ pub(crate) fn windows(state: &mut Dashi, _: &Ask, _: Nothing) -> Result<Windows,
     })
 }
 
-pub(crate) fn focus(state: &mut Dashi, _: &Ask, params: OneWindow) -> Result<Done, String> {
-    done(state.focus_window(params.window.0))
+pub(crate) fn focus(state: &mut Dashi, _: &Ask, params: Focus) -> Result<Done, String> {
+    done(if params.stay {
+        state.raise_on_its_space(params.window.0)
+    } else {
+        state.focus_window(params.window.0)
+    })
 }
 
 pub(crate) fn close(state: &mut Dashi, _: &Ask, params: OneWindow) -> Result<Done, String> {

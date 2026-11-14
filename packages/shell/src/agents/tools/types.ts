@@ -35,6 +35,8 @@ export type Call =
   | { name: "list_spaces" }
   | { name: "switch_space"; space: number }
   | { name: "move_window_to_space"; window: number; space: number }
+  /** Work on Space `space` (from 0), a new one, or back on the one that shows. */
+  | { name: "work_in_space"; space: number | "new" | "shown" }
   | { name: "list_notifications"; limit: number }
   | { name: "dismiss_notification"; id: number }
   | { name: "clear_notifications" }

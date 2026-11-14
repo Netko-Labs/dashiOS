@@ -9,7 +9,8 @@
 import type { Compositor, CompositorWindow } from "../../compositor/index.ts";
 import { ONE_SPACE, parseSpaces } from "../model.ts";
 import { spaceLabels } from "../names.ts";
-import type { SpaceNames, SpacesState } from "../types.ts";
+import type { SpaceNames, SpaceRef, SpacesState } from "../types.ts";
+import { Followed } from "./followed.ts";
 import { desktopCount, fitSlots, type Slots } from "./slots.ts";
 
 /** What settings.json says about Spaces (settings/settings.ts). */
@@ -53,6 +54,8 @@ export abstract class DesktopsState {
   protected saved: number | undefined;
   protected applied: SpacesSettings | null = null;
   private readonly listeners = new Set<() => void>();
+  /** The Spaces someone follows through the renumbering (followed.ts). */
+  protected readonly followed = new Followed();
 
   constructor(
     /** Remember how many Spaces there are (settings.json). */
@@ -61,6 +64,15 @@ export abstract class DesktopsState {
   ) {}
 
   getSnapshot = (): Desktops => this.state;
+
+  /** Keep hold of Space `index` while Spaces are added and removed around it: `ref.index` is where it is now. */
+  follow(index: number): SpaceRef {
+    return this.followed.follow(index);
+  }
+
+  unfollow(ref: SpaceRef): void {
+    this.followed.unfollow(ref);
+  }
 
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
@@ -97,7 +109,11 @@ export abstract class DesktopsState {
 
   protected set(state: SpacesState): void {
     // More or fewer than this made (settings.json edited by hand): new ones at the end are Desktops.
-    if (state.count !== this.slots.length) this.slots = fitSlots(this.slots, state.count);
+    if (state.count !== this.slots.length) {
+      this.slots = fitSlots(this.slots, state.count);
+      // Not a change this made (those renumber what is followed themselves): the last Spaces went.
+      this.followed.fit(state.count);
+    }
     this.publish({ count: state.count, current: state.current });
     // The compositor is the truth while it runs; the file follows it, counting the Desktops only.
     const desktops = desktopCount(this.slots);

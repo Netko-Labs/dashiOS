@@ -285,6 +285,56 @@ compositor's `agent-input`), and never fight the person:
   question); a pause needs nothing from them, and it would flash amber every
   time they typed while an agent worked.
 
+### Working on another Desktop
+
+`work_in_space {space}` (scope "act") lets an agent work on a Space that does
+not show, when the person asks for it ("on another desktop", "on Desktop 3",
+"out of my way"; never otherwise: where they are, they can watch). `space` is
+a Space's number from `list_spaces`, `"new"` (a Space added at the end for
+the agent) or `"shown"` (back where the person is). It answers the Space's
+number and name, and holds for that connection only: nothing is saved
+(`agents/desktop/elsewhere.ts`; decisions.md D85 to D91).
+
+- **What it opens lands there, and the screen does not move.** `launch_app`,
+  `open_in_preview`, `open_file` and `open_url` say which window is theirs
+  before it exists (the launch's process, the app's id), and the arranger
+  places it on the agent's Space (`window-placing`, `place {space}`): it is
+  never on the person's screen first. A dialog goes where its window is. A
+  new window of an app whose windows are all on an agent's Space opens
+  there too. Nothing goes onto a full-screen window's own Desktop.
+- **An app already open elsewhere is left there.** `launch_app` for an app
+  with a window on another Space says so and names the window;
+  `move_window_to_space` brings it over, which is the agent's choice and the
+  person's ask. One already on the agent's Space is raised there.
+- **Hands and eyes reach a window on a Space that does not show**, with or
+  without `work_in_space`: `click`, `scroll`, `drag`, `type_text`,
+  `press_keys`, a window `screenshot`, the website tools and `list_menus` /
+  `choose_menu_item`. dashi-comp sends the input straight to that window's
+  app (`agent-input`, docs/compositor-ipc.md): the person's pointer, keyboard
+  focus and modifiers are not touched, so the agent does not wait for them
+  to pause. Only when the person has another window of the same app under
+  their pointer or keyboard does theirs step aside for the action, and then
+  only once their own input is 400 ms old. A whole-screen `screenshot` is
+  still what the person sees. Not there: the clipboard, X11 windows, and a
+  window's lights.
+- **`focus_window`** on a window of the agent's Space raises it there and
+  switches nothing. Without `work_in_space` it goes to the window's Space,
+  as ever.
+- **An app there that raises itself does not pull the view** (`spaces
+  {quiet}`): it wants attention instead.
+- **A Space the agent added goes when it leaves it empty** (the connection
+  ends, or `work_in_space` again). One with windows stays; so does one the
+  person is looking at, and one the agent did not add is never removed. At
+  16 Spaces `"new"` says there is no room.
+- **The person sees it.** At rest the agent's line in the bar says "Working
+  on Desktop 3"; its row in the agents' panel has **Show**, which goes
+  there. When they use a window the agent works in, the usual rule holds:
+  the agent's action there says so and does nothing.
+- **Dashi's own assistant** learns the phrase too ("on another desktop", "en
+  otro escritorio"): a plan may start with `work_in_space`, and the steps
+  after it open there. The Space holds for the plan's steps and is let go
+  30 s after the last.
+
 ## Websites
 
 Agents use web pages through Dashi's own extension in Helium, not through

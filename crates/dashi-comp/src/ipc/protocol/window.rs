@@ -80,6 +80,8 @@ pub(crate) struct Window {
     pub focused: bool,
     pub state: State,
     pub frame: Option<Frame>,
+    /// Its frame where it waits on a Space that does not show; null on screen, minimized or hidden.
+    pub away: Option<Frame>,
     pub configuring: Option<Extent>,
     pub min_size: Option<Extent>,
     pub title_bar: i32,

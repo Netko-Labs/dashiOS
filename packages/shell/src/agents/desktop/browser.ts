@@ -30,6 +30,9 @@ const tabId = (tab: TabInfo): string => `t${tab.id}`;
 
 const failed = (error: unknown): ToolResult => toolError(error instanceof Error ? error.message : String(error));
 
+/** Whether a window is Dashi's browser's (Helium's app id). */
+const isBrowser = (appId: string): boolean => /^helium/i.test(appId);
+
 /** Helium's entry, to start it when no browser is connected. */
 function browserEntry() {
   return loadEntries().find((entry) => /^helium/i.test(entry.id) || entry.wmClass?.toLowerCase() === "helium") ?? null;
@@ -41,8 +44,15 @@ async function linkFor(ctx: RunContext, start: boolean): Promise<BrowserLink | T
   const entry = start ? browserEntry() : null;
   if (!entry) return toolError(NO_EXTENSION);
   ctx.status(`Opening ${entry.name}`);
-  if (launchEntry(entry) === null) return toolError(`${entry.name} could not start.`);
-  return (await ctx.browser.whenConnected(START_MS)) ?? toolError(`${entry.name} started, but Dashi's extension didn't connect. ${NO_EXTENSION}`);
+  // At work on another Desktop: the browser's first window opens there.
+  const release = ctx.elsewhere.claim({ pid: null, owns: isBrowser });
+  if (launchEntry(entry) === null) {
+    release();
+    return toolError(`${entry.name} could not start.`);
+  }
+  return (
+    (await ctx.browser.whenConnected(START_MS).finally(release)) ?? toolError(`${entry.name} started, but Dashi's extension didn't connect. ${NO_EXTENSION}`)
+  );
 }
 
 /** The page in front in the browser with Dashi's extension (the launcher's context chip); null without one. */
@@ -132,10 +142,15 @@ async function openUrl(call: Extract<Call, { name: "open_url" }>, ctx: RunContex
       if (isResult(tab)) return tab;
     }
     const started = Date.now();
-    const result = await link.ask("open", { url: call.url, tab: call.tab });
+    // At work on another Desktop: a new page opens in a browser window of this agent's own there
+    // (beside the tab it opened last), never as a tab in the window the person is looking at.
+    const own = call.tab === null && ctx.elsewhere.away !== null;
+    const release = own ? ctx.elsewhere.claim({ pid: null, owns: isBrowser }) : () => {};
+    const result = await link.ask("open", { url: call.url, tab: call.tab, ...(own ? { own: true, near: ctx.elsewhere.tab } : {}) }).finally(release);
     const tab = parseTab(result.tab);
     if (!tab) return toolError("The browser didn't say which tab it opened.");
     ctx.browser.tab = tab.id;
+    if (own) ctx.elsewhere.tab = tab.id;
     const shown = about(tab, ctx);
     return text(`Tab ${tabId(tab)}: ${shown.url}${shown.title ? ` (“${shown.title}”)` : ""}. ${loadWords(result.load)} read_page to see it.`, {
       ...shown,

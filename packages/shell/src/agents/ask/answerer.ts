@@ -123,6 +123,7 @@ export const SYSTEM_PROMPT = [
   "They typed a request in the launcher. Answer by calling the tools that do what they asked, in the order they should run.",
   "Dashi shows your calls to the person as numbered steps and runs exactly those calls only if the person approves; nothing runs before that.",
   "You can't see the screen, the windows, or the files, and nothing you call runs until later, so plan from the request alone.",
+  'When they ask for it "on another desktop" ("en otro escritorio"), on a Desktop they name, or out of their way, call work_in_space first ("new" unless they name one) and then the tools that open things: those open there and their screen stays as it is. Never call it otherwise.',
   "If no tool can do what they asked, call none and say so in one short sentence. Don't ask questions back.",
 ].join(" ");
 

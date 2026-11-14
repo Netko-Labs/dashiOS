@@ -6,6 +6,11 @@ export interface SpacesState {
   current: number;
 }
 
+/** A Space someone follows (SpacesController `follow`): where it is now, or null once it was removed. */
+export interface SpaceRef {
+  index: number | null;
+}
+
 export type SpaceNames = (string | null)[];
 
 export type SwipeStep =

@@ -6,7 +6,7 @@ import type { Arrange, Tile } from "../layout.ts";
 import type { AloneStatus } from "./alone/index.ts";
 import type { Atspi, Placed, Rect } from "./atspi/index.ts";
 import type { Question } from "./confirm.ts";
-import type { Desktop, Hands } from "./desktop/index.ts";
+import type { Desktop, Elsewhere, Hands } from "./desktop/index.ts";
 import type { AgentMask } from "./mask.ts";
 import type { AgentUi, PersonAnswer } from "./presence.ts";
 import type { Approval, LoginSource, SheetLogin, SignInAnswer, Vault } from "./secrets/index.ts";
@@ -70,6 +70,8 @@ export interface RunContext {
   desktop: Desktop;
   /** The agent seat: pointer and keyboard input in one window (desktop/hands.ts). */
   hands: Hands;
+  /** The Space this agent works in when asked to work on another Desktop (desktop/elsewhere.ts). */
+  elsewhere: Elsewhere;
   /** What its pictures blank (mask.ts): updated before every capture. */
   mask: AgentMask;
   /** Signing in and handing over (desktop/secrets.ts). */

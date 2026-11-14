@@ -16,12 +16,14 @@ use crate::{
 /// A Space's index (they are counted from 0, at most `MAX_SPACES`).
 type Space = Int<0, { MAX_SPACES as i64 - 1 }>;
 
-/// How many Spaces, and whether switching follows the focused window.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+/// How many Spaces, whether switching follows the focused window, and the Spaces a window's
+/// own activation never switches to.
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct SpacesParams {
     pub count: Option<Count>,
     pub follow: Option<bool>,
+    pub quiet: Option<Vec<Space>>,
 }
 
 /// Where a new Space goes (the end when absent).
@@ -58,6 +60,9 @@ pub(crate) fn spaces(
     _: &Ask,
     params: SpacesParams,
 ) -> Result<SpacesAnswer, String> {
+    if let Some(quiet) = params.quiet {
+        state.spaces.quiet = quiet.into_iter().map(|space| space.to::<usize>()).collect();
+    }
     state.configure_spaces(params.count.map(Count::to::<usize>), params.follow)
 }
 

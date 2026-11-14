@@ -116,6 +116,8 @@ export function arrowPlan(
 export interface ArrangeContext {
   compositor: Pick<Compositor, "session" | "windows" | "place" | "fullscreen">;
   desktops: FullscreenDesktopsHook | null;
+  /** The Space an agent's window opens on (agents/desktop/elsewhere.ts); null for the usual one. */
+  elsewhere: ((window: Placing) => Promise<number | null>) | null;
   outputs: readonly Output[];
   arranged: ReadonlyMap<number, Arranged>;
   /** The frame each full-screen window had before: given back when it leaves. */
@@ -173,10 +175,12 @@ export async function placeWindow(context: ArrangeContext, window: Placing, next
   const { x, y } = window.position ?? placeNew(window, usable, next());
   const fitted = fitFrame({ x, y, width: window.width, height: window.height }, usable);
   // While a full-screen Desktop shows, another app's window opens on the Desktop it came from.
-  const space = (await context.desktops?.spaceFor(window).catch(() => null)) ?? null;
+  // An agent at work on another Desktop: its window opens there, and the screen stays where it is.
+  const away = (await context.elsewhere?.(window).catch(() => null)) ?? null;
+  const space = away ?? (await context.desktops?.spaceFor(window).catch(() => null)) ?? null;
   await context.compositor.place({ window: window.id, x: fitted.x, y: fitted.y, ...(space === null ? {} : { space }) });
   if (fitted.width !== window.width || fitted.height !== window.height) await context.frame(window.id, fitted, null);
-  if (space !== null) await context.desktops?.opened(space);
+  if (space !== null && away === null) await context.desktops?.opened(space);
 }
 
 /**

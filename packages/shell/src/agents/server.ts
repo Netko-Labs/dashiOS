@@ -11,13 +11,13 @@
 
 import { join } from "node:path";
 import { type BrowserBridge, startBrowserBridge } from "../browser/bridge.ts";
-import type { Compositor } from "../compositor/index.ts";
+import type { Compositor, Placing } from "../compositor/index.ts";
 import type { Arrange, Tile } from "../layout.ts";
 import { type AloneGate, NOT_ALONE } from "./alone/index.ts";
 import type { Question } from "./confirm.ts";
 import { Grants } from "./consent.ts";
 import type { ToolResult } from "./context.ts";
-import { type Desktop, frontPage, Hands } from "./desktop/index.ts";
+import { type Desktop, frontPage, Hands, WorkPlaces } from "./desktop/index.ts";
 import { personRunner } from "./lib/server-person.ts";
 import { sharedSecrets } from "./lib/server-shared.ts";
 import { listenAgents } from "./lib/server-sockets.ts";
@@ -41,6 +41,8 @@ export interface Agents {
   stopAll(): void;
   /** The stores and controllers tools reach (the action registry reads settings through them: actions/). */
   readonly desktop: Desktop;
+  /** The Space a new window opens on when an agent at work on another Desktop is opening it; null for the one that shows (desktop/elsewhere.ts). */
+  spaceFor(window: Placing): Promise<number | null>;
   /**
    * Carry out a tool's call for the person (the launcher, a key, a link:
    * actions/lib/run.ts): the same code an agent's call runs, named as "you",
@@ -95,12 +97,13 @@ export function startAgents({
   const lock = new LockWatch(compositor);
   const grants = new Grants();
   const hands = new Hands(compositor);
+  const places = new WorkPlaces(compositor, () => desktop.spaces);
   const sites = new SiteGrants();
   // Dashi's browser extension joins here through its host (docs/actions.md, "Websites").
   const browser: BrowserBridge = startBrowserBridge();
   const { secrets, mask, close: closeAtspi } = sharedSecrets(compositor, sources, vault);
   // What every tool reaches, an agent's or the person's own run.
-  const shared = { compositor, ui, desktop, hands, mask, secrets, lock, browser, tile, arrangement };
+  const shared = { compositor, ui, desktop, hands, places, mask, secrets, lock, browser, tile, arrangement };
   const context = { ...shared, grants, publish, sites, ...(tasks ? { tasks } : {}), ...(alone ? { alone } : {}) };
   const runAsPerson = personRunner({ ...shared, alone: () => alone?.status() ?? NOT_ALONE });
 
@@ -123,6 +126,7 @@ export function startAgents({
     grants,
     sites,
     desktop,
+    spaceFor: (window) => places.spaceFor(window),
     runAsPerson,
     frontPage: () => frontPage(browser.current()),
     stop(id) {
@@ -137,6 +141,7 @@ export function startAgents({
       unwatch();
       lock.close();
       hands.close();
+      places.close();
       listening?.close();
       browser.close();
       closeAtspi();

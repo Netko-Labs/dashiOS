@@ -196,6 +196,19 @@ fn window_elements<R>(
     R: Renderer + ImportAll + ImportMem + GlesAccess,
     R::TextureId: Clone + Send + 'static,
 {
+    // One window's picture, of a window on a Space that does not show: drawn where it waits.
+    if let Some(only) = &view.only
+        && state.space.element_location(only).is_none()
+    {
+        let waits = state
+            .windows
+            .by_window(only)
+            .and_then(|e| crate::session::agent_away::away_content(state, e.id));
+        if let Some((window, content)) = waits {
+            framed_window(state, renderer, &window, content.loc, spot, elements);
+        }
+        return;
+    }
     let shown: Vec<Window> = state.space.elements().rev().cloned().collect();
     for window in &shown {
         if view.only.as_ref().is_some_and(|only| only != window) {

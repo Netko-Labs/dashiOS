@@ -15,7 +15,7 @@ export const WINDOWS = {
     Nothing,
     map(obj({ windows: lenientList(WindowShape) }, { strict: false }), ({ windows }) => windows),
   ),
-  focus: method("granted", OneWindow, Done),
+  focus: method("granted", obj({ window: WindowId, stay: optional(bool()) }), Done),
   close: method("granted", OneWindow, Done),
   minimize: method("granted", OneWindow, Done),
   hide: method("granted", OneWindow, Done),

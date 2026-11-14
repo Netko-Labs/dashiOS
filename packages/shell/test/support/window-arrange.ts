@@ -29,7 +29,7 @@ type FakeCompositor = ReturnType<typeof fakeCompositor<{ on: Compositor["on"]; w
  * at `catchUp()`, and until then `configuring` says what it will be.
  */
 export function fake(
-  windows: Array<CompositorWindow & { away?: Rect | null }>,
+  windows: Array<CompositorWindow & { before?: Rect | null }>,
   outputs: Array<{ name: string; frame: Rect; usable: Rect }> = [{ name: "Virtual-1", frame: SCREEN, usable: USABLE }],
   lag = false,
 ): {
@@ -55,18 +55,18 @@ export function fake(
       }
       if (window && method === "fullscreen") {
         const on = params.on === true;
-        if (on) window.away = window.frame;
+        if (on) window.before = window.frame;
         window.fullscreen = on;
-        window.frame = on ? { ...SCREEN } : { x: window.away?.x ?? 0, y: window.away?.y ?? 0, width: SCREEN.width, height: SCREEN.height };
+        window.frame = on ? { ...SCREEN } : { x: window.before?.x ?? 0, y: window.before?.y ?? 0, width: SCREEN.width, height: SCREEN.height };
         if (on) delete window.configuring;
-        else if (window.away) window.configuring = { width: window.away.width, height: window.away.height };
+        else if (window.before) window.configuring = { width: window.before.width, height: window.before.height };
         events.emit({ event: "outputs-changed" });
       }
       return {};
     },
     {
       on: events.on,
-      windows: async () => windows.map(({ away: _, ...window }) => ({ ...window })),
+      windows: async () => windows.map(({ before: _, ...window }) => ({ ...window })),
     },
   );
   const frames = () => requests.filter(([method]) => method === "frame" || method === "fullscreen");

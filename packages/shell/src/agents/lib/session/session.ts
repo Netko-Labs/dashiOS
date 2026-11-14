@@ -11,6 +11,7 @@ import { isRecord } from "@dashi/shape";
 import type { Actor } from "../../../acting.ts";
 import { logActivity, type Scope } from "../../consent.ts";
 import { type ToolResult, toolError } from "../../context.ts";
+import { Elsewhere } from "../../desktop/index.ts";
 import { connectionHarness } from "../../mark.ts";
 import { grantKey, type Peer } from "../../peer.ts";
 import type { AgentInfo, Who } from "../../presence.ts";
@@ -42,6 +43,8 @@ export class Session {
   /** When it connected. */
   private readonly since = Date.now();
   private readonly watch: SessionWatch;
+  /** The Space it works in, when the person asked it to work on another Desktop. */
+  private readonly elsewhere: Elsewhere;
 
   constructor(
     readonly id: number,
@@ -81,6 +84,7 @@ export class Session {
       () => ctx.publish(),
       () => this.closed,
     );
+    this.elsewhere = new Elsewhere(ctx.places);
     this.calls = new SessionCalls(this.callHost());
   }
 
@@ -89,7 +93,8 @@ export class Session {
       id: this.id,
       name: this.peer.name,
       key: grantKey(this.peer, this.claims),
-      status: this.state.text,
+      status: this.state.shown(this.elsewhere.label),
+      ...(this.elsewhere.away === null ? {} : { space: this.elsewhere.away }),
       scopes: [...this.scopes.granted],
       ...(this.task ? { task: this.task.id } : {}),
       detail: this.peer.detail,
@@ -201,6 +206,7 @@ export class Session {
       secrets: this.secrets,
       scopes: this.scopes,
       browser: this.browser,
+      elsewhere: this.elsewhere,
       watch: this.watch,
       setStatus: (text) => this.state.set(text),
       ended: (tool, outcome) => {
@@ -243,6 +249,8 @@ export class Session {
     this.log(null, why);
     // What it was doing stops (nothing more is typed), and its sheets, and a "Your turn" it left up, come down.
     this.calls.stop();
+    // A Space it added for itself goes with it, once nothing is left there.
+    void this.elsewhere.leave();
     this.ctx.ui.dismiss(this.id);
     this.connection.terminate();
     this.onGone(this);

@@ -21,6 +21,10 @@ async function windowVerb(call: CallOf<WindowVerb>, ctx: RunContext): Promise<To
   ctx.status(`${STATUS[call.name]} ${subject(window, ctx)}`);
   if (call.name === "tile_window") {
     await ctx.tile(window.id, call.tile);
+  } else if (call.name === "focus_window" && ctx.elsewhere.away !== null && (window.space ?? 0) === ctx.elsewhere.away) {
+    // On the Space this agent works in, which does not show: raised there, and the person's screen stays as it is.
+    await ctx.compositor.focus({ window: window.id, stay: true });
+    return text(`w${window.id}${ctx.mayName() ? ` (“${window.title}”)` : ""} is in front on ${ctx.elsewhere.label}; the person's screen did not change.`);
   } else {
     const method = { focus_window: "focus", minimize_window: "minimize", close_window: "close" } as const;
     await ctx.compositor[method[call.name]]({ window: window.id });
