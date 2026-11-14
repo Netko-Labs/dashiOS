@@ -83,6 +83,19 @@ export class StoreSelection {
     if (this.host.getSnapshot().selection.length > 0) this.select([]);
   }
 
+  /**
+   * A marquee's selection (lib/marquee/): while it moves `last` is null and
+   * the keyboard stays where it was, so Esc puts everything back; when it
+   * ends, the keyboard goes on from `last`, the item it took last.
+   */
+  sweep(paths: readonly string[], last: string | null): void {
+    this.lastClick = null;
+    this.host.patch({ selection: paths });
+    if (last === null) return;
+    this.anchor = last;
+    this.focus = last;
+  }
+
   /** A right-click: a click outside the selection selects what was clicked. */
   contextOn(item: FileItem): void {
     if (!this.host.getSnapshot().selection.includes(item.path)) this.select([item.path]);

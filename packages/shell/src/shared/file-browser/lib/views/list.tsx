@@ -1,17 +1,35 @@
 /** The list view: the kit's Table with Name, Date Modified, Size, and Kind (Where while searching), sortable. */
 
 import { type Column, Table, useColors, useDark } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
-import { useMemo, useState } from "react";
+import { type DragFiles, type Modifiers, type PointerInfo, Text, View } from "@mirinjs/metal";
+import { useContext, useMemo, useState } from "react";
 import type { FileItem } from "../../../files/index.ts";
+import { Surface } from "../../../metal/index.ts";
 import { useFiles, useFilesState } from "../../context.ts";
 import { FileIcon } from "../../file-icon.tsx";
+import { textWidth } from "../../tile-name.ts";
 import { dragPaths } from "../drag.ts";
 import { iconFor } from "../icons.ts";
+import type { Rect } from "../marquee/geometry.ts";
+import { marqueeOf } from "../marquee/of.ts";
 import { columnMode, fileColumns, fitColumns } from "../sort.ts";
 import { RenameField } from "./rename-field.tsx";
 
 const ROW = 26;
+/** The table's rows start this far in from its sides, and it keeps this much under the last (`@dashi/ui`'s `Table`). */
+const ROW_INSET = 5;
+const LIST_END = 8;
+/** The Name cell's icon and the gap after it. */
+const ICON = 16;
+const ICON_GAP = 7;
+
+/** Where each of `count` rows is, in the pixels of what scrolls, in a list `width` wide. */
+export function rowRects(count: number, width: number): Rect[] {
+  return Array.from({ length: count }, (_, at) => ({ x: ROW_INSET, y: at * ROW, width: Math.max(0, width - 2 * ROW_INSET), height: ROW }));
+}
+
+/** How wide a name is drawn in the list, at its 12 px type: estimated (tile-name.ts), a little over. */
+export const nameWidth = (name: string): number => Math.ceil(textWidth(name) * 12) + 6;
 
 interface NameCellProps {
   item: FileItem;
@@ -20,45 +38,59 @@ interface NameCellProps {
   faded: boolean;
   renaming: boolean;
   emblems: React.ComponentProps<typeof FileIcon>["emblems"];
+  /** What a press on the icon or the name drags out. */
+  drag: DragFiles;
+  /** The pointer on the icon or the name. */
+  onGrip: (event: PointerInfo) => void;
+  /** A click on the icon or the name. */
+  onPress: (held: Modifiers) => void;
 }
 
-/** The Name column: the file's icon and its name, or the field it is renamed in. */
-function NameCell({ item, selected, faded, renaming, emblems }: NameCellProps) {
+/**
+ * The Name column: the file's icon and its name, or the field it is renamed
+ * in. The icon and the name are the item, as in the Finder's list: a press
+ * there drags the file, and a press on the rest of the row, dragged, draws
+ * a marquee (D99). A click anywhere on the row still selects it.
+ */
+function NameCell({ item, selected, faded, renaming, emblems, drag, onGrip, onPress }: NameCellProps) {
   const colors = useColors();
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 7,
-        minWidth: 0,
-        flex: 1,
-        opacity: faded ? 0.45 : item.hidden ? 0.65 : 1,
-      }}
-    >
-      <FileIcon item={item} size={16} emblems={emblems} />
-      {renaming ? (
+  const look = { flexDirection: "row", alignItems: "center", gap: ICON_GAP, minWidth: 0, opacity: faded ? 0.45 : item.hidden ? 0.65 : 1 } as const;
+  if (renaming) {
+    return (
+      <View style={{ ...look, flex: 1 }}>
+        <FileIcon item={item} size={ICON} emblems={emblems} />
         <RenameField item={item} />
-      ) : (
-        <View style={{ flex: 1, minWidth: 0 }}>
+      </View>
+    );
+  }
+  return (
+    <View style={{ flexDirection: "row", flex: 1, minWidth: 0 }}>
+      <View
+        testID={`list:name:${item.path}`}
+        dragFiles={drag}
+        // The press is the item's: the listing around it hears none of it, so no marquee starts here.
+        onPointer={onGrip}
+        onPress={(event) => onPress(event.modifiers)}
+        style={{ ...look, flexShrink: 1 }}
+      >
+        <FileIcon item={item} size={ICON} emblems={emblems} />
+        <View style={{ width: nameWidth(item.name), flexShrink: 1, minWidth: 0 }}>
           <Text numberOfLines={1} style={{ fontSize: 12, color: selected ? colors.onSelection : colors.text }}>
             {item.name}
           </Text>
         </View>
-      )}
+      </View>
     </View>
   );
 }
 
-export function ListView({ items, empty }: { items: readonly FileItem[]; empty: React.ReactNode }) {
-  const { store, actions, ops } = useFiles();
+/** The list's columns at `width`, the Name one drawn with its icon (and the field it is renamed in). */
+function useFileColumns(width: number): Column<FileItem>[] {
+  const { store, actions } = useFiles();
   const state = useFilesState();
   const colors = useColors();
   const dark = useDark();
-  const byPath = useMemo(() => new Map(items.map((item) => [item.path, item])), [items]);
   const mode = columnMode(state);
-  // The list's width: a narrow one shows fewer columns, Name last to go (sort.ts).
-  const [width, setWidth] = useState(0);
   const cut = new Set(state.clipboard?.cut ? state.clipboard.paths : []);
   // biome-ignore lint/correctness/useExhaustiveDependencies: `cut` is made from the clipboard each render; the clipboard says when it changed
   const columns = useMemo<Column<FileItem>[]>(
@@ -68,15 +100,53 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
           ? {
               ...column,
               cell: (item, selected) => (
-                <NameCell item={item} selected={selected} faded={cut.has(item.path)} renaming={state.renaming === item.path} emblems={store.emblems} />
+                <NameCell
+                  item={item}
+                  selected={selected}
+                  faded={cut.has(item.path)}
+                  renaming={state.renaming === item.path}
+                  emblems={store.emblems}
+                  drag={{ paths: dragPaths(item.path, state.selection), icon: iconFor(item, dark, store.emblems) }}
+                  onGrip={marqueeOf(store).itemPointer}
+                  onPress={(held) => {
+                    store.click(item, held);
+                    actions.refocus();
+                  }}
+                />
               ),
             }
           : column,
       ),
     // The cut set is read at draw time through the closure; a new clipboard is a new state and a new render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, width, colors, state.clipboard, state.renaming],
+    [mode, width, colors, dark, state.clipboard, state.renaming, state.selection],
   );
+  return columns;
+}
+
+export function ListView({ items, empty }: { items: readonly FileItem[]; empty: React.ReactNode }) {
+  const { store, actions, ops } = useFiles();
+  const state = useFilesState();
+  const byPath = useMemo(() => new Map(items.map((item) => [item.path, item])), [items]);
+  const marquee = marqueeOf(store);
+  // With a window to ask (src/shared/metal/surface.ts), the rows leave their clicks to the listing around them (D103).
+  const surface = useContext(Surface);
+  // The list's width: a narrow one shows fewer columns, Name last to go (sort.ts).
+  const [width, setWidth] = useState(0);
+  const columns = useFileColumns(width);
+  // Where the rows are, for a marquee (lib/marquee/).
+  const rects = useMemo(() => rowRects(items.length, width), [items.length, width]);
+  marquee.model =
+    items.length === 0
+      ? null
+      : {
+          scrollID: "list:rows",
+          contentHeight: items.length * ROW + LIST_END,
+          paths: items.map((item) => item.path),
+          rects,
+          nodeOf: (path) => `list:row:${path}`,
+          clicksToListing: surface !== null,
+        };
   return (
     <View
       testID="list:frame"
@@ -93,6 +163,7 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
         rowKey={(item) => item.path}
         selected={null}
         selectedKeys={new Set(state.selection)}
+        rowPress={surface === null}
         onSelect={(path, held) => {
           const item = byPath.get(path);
           if (item) store.click(item, held);
@@ -106,7 +177,6 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
         sort={store.effectiveSort()}
         onSort={(next) => store.setSort(next)}
         muted={(item) => item.hidden}
-        dragFiles={(item) => ({ paths: dragPaths(item.path, state.selection), icon: iconFor(item, dark, store.emblems) })}
         onDropRow={(item) =>
           item.kind === "folder" && ops
             ? (event) => {
