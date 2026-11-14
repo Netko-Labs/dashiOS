@@ -1,5 +1,11 @@
 export { barHold, holdingBar } from "./bar-hold.ts";
 export { OverflowRow } from "./bar-overflow.tsx";
 export { startBarTips } from "./bar-tip.tsx";
+export type { FieldAsker } from "./field.ts";
+export { BarField, insertWords } from "./field.ts";
+export { BarJobs } from "./jobs.ts";
 export { MenuBar } from "./menubar.tsx";
 export { choosePrimary, MenuBars, pickPrimary } from "./menubars.ts";
+export type { BarPill } from "./pill.ts";
+export { taskFocus } from "./pill.ts";
+export { FIELD_LAYER, startBarPill } from "./start-pill.tsx";

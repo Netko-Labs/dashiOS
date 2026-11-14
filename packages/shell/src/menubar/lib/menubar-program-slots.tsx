@@ -8,8 +8,7 @@
 
 import { useColors } from "@dashi/ui";
 import type { Bounds } from "@mirinjs/metal";
-import { useSyncExternalStore } from "react";
-import { AgentMark } from "../../agent-mark.tsx";
+import { useState, useSyncExternalStore } from "react";
 import {
   type AgentRuns,
   type AgentStore,
@@ -35,9 +34,14 @@ import { controlFlags, useFlags } from "../../shared/control-center/index.ts";
 import { formatClock, useClockPrefs, useMinuteClock } from "../../shared/time/index.ts";
 import { type AppMixer, MicPill, useMicWords } from "../../sound/index.ts";
 import { type SystemStore, useSystem } from "../../system/store.ts";
-import { extraGoes } from "./menubar-fit.ts";
+import type { BarPill } from "../pill.ts";
+import { extraGoes, MENU_GAP } from "./menubar-fit.ts";
+import { agentMarkSlot, jobsSlot, type PillNow, usePill } from "./menubar-pill-slots.tsx";
 import { systemSlots } from "./menubar-slots.tsx";
 import type { StatusSlot } from "./menubar-status.tsx";
+
+/** The least room kept between the app's menus and the jobs. */
+const JOBS_GAP = 12;
 
 /** The bar's tooltip (bar-tip.tsx): words under a point of this bar (as wide as `barWidth`), or none. */
 export type BarTip = { text: string; x: number; barWidth?: number; output?: string } | null;
@@ -62,6 +66,8 @@ export interface StatusSources {
   alone?: Pick<WorkAlone, "subscribe" | "getSnapshot" | "stop">;
   /** The apps' sound: the microphone indicator while one records (sound/apps/). */
   mixer?: AppMixer;
+  /** Dashi's mark, the jobs beside it and the field (pill.ts); without it the mark only shows who watches. */
+  pill?: BarPill;
   /** Show or take down the bar's tooltip (the agent mark's words). */
   onTip?: (tip: BarTip) => void;
   /** Reduce Motion: the mark's ring stands still. */
@@ -81,7 +87,7 @@ function useRecording(recorder: ScreenRecorder | undefined): Recording {
 }
 
 /** What the program slots need from the bar and its state. */
-interface ProgramContext {
+export interface ProgramContext {
   sources: StatusSources;
   popover: Popover | null;
   appName: string;
@@ -93,6 +99,8 @@ interface ProgramContext {
   extras: readonly MenuBarExtra[];
   tip: (shown: { text: string; bounds: Bounds } | null) => void;
   openSound: () => void;
+  /** The jobs, who speaks, the asks and the persona, as read now. */
+  pill: PillNow | null;
 }
 
 function extraSlots({ sources, popover, appName, extras, accessible }: ProgramContext & { accessible: boolean }): StatusSlot[] {
@@ -131,33 +139,6 @@ function extraSlots({ sources, popover, appName, extras, accessible }: ProgramCo
       />
     ),
   }));
-}
-
-function agentMarkSlot({ sources, popover, appName, mark, tip }: ProgramContext, accessible: boolean): StatusSlot[] {
-  if (mark.kind === "none") return [];
-  const { menus, output, reduceMotion = () => false } = sources;
-  return [
-    {
-      key: "agent-mark",
-      goes: null,
-      label: mark.label,
-      radius: 11,
-      open: {
-        kind: "panel" as const,
-        run: (bounds: Bounds | null) => void menus.toggleAgents(appName, bounds ? bounds.x + bounds.width : 0, null, output),
-      },
-      node: (
-        <AgentMark
-          state={mark}
-          open={popover?.kind === "agents"}
-          onPress={(right) => void menus.toggleAgents(appName, right, null, output)}
-          onTip={tip}
-          reduceMotion={reduceMotion}
-          accessible={accessible}
-        />
-      ),
-    },
-  ];
 }
 
 /** Agents work alone: the chip, beside the mark, never hidden. A click (or the keyboard) stops it. */
@@ -205,11 +186,27 @@ function micSlot({ micWords, openSound, tip }: ProgramContext): StatusSlot[] {
   ];
 }
 
+/** The room the jobs have: what the menus leave the status side, less everything else in it (the jobs' own width as drawn is told back). */
+function useJobsRoom(fit: { room: number | null; statusWidth: number | null }): [number | null, (width: number) => void] {
+  const [jobsWidth, setJobsWidth] = useState(0);
+  const others = fit.statusWidth === null ? null : Math.max(0, fit.statusWidth - jobsWidth);
+  const room = fit.room === null || others === null ? null : Math.max(0, fit.room + MENU_GAP - JOBS_GAP - others);
+  return [room, (width) => setJobsWidth((was) => (Math.abs(was - width) < 0.5 ? was : width))];
+}
+
 /** The status side's slots, left to right, as the bar draws them. */
-export function useStatusSlots(sources: StatusSources, popover: Popover | null, appName: string, barWidth: number | null): StatusSlot[] {
+export function useStatusSlots(
+  sources: StatusSources,
+  popover: Popover | null,
+  appName: string,
+  barWidth: number | null,
+  /** The room the menus leave the whole status side, and its width as drawn: what is left over is the jobs'. */
+  fit: { room: number | null; statusWidth: number | null } = { room: null, statusWidth: null },
+): StatusSlot[] {
   const { agents, capture, recorder, system, menus, settings, output, runs, mixer, onTip, accessible = () => false } = sources;
   const colors = useColors();
   const recording = useRecording(recorder);
+  const [jobsRoom, setJobsWidth] = useJobsRoom(fit);
   const context: ProgramContext = {
     sources,
     popover,
@@ -234,6 +231,7 @@ export function useStatusSlots(sources: StatusSources, popover: Popover | null, 
           : null,
       ),
     openSound: () => void menus.toggleControlCenter(appName, "sound", output),
+    pill: usePill(sources.pill, output, colors.agent),
   };
   const { battery, network, volume } = useSystem(system);
   const { menuBar } = useSettings(settings).data;
@@ -242,11 +240,13 @@ export function useStatusSlots(sources: StatusSources, popover: Popover | null, 
   const now = useMinuteClock();
   const clock = useClockPrefs();
   return [
-    ...extraSlots({ ...context, accessible: accessible() }),
-    // Never hidden: someone else sharing the screen, every agent, the person's own recording.
-    ...(context.capturing ? [{ key: "capture", goes: null, node: <CapturePill store={capture} {...(recorder ? { recorder } : {})} /> }] : []),
+    // The jobs, then Dashi's mark, lead the status items (never hidden); "work alone" says so beside them.
+    ...jobsSlot(context, jobsRoom, setJobsWidth, accessible()),
     ...agentMarkSlot(context, accessible()),
     ...aloneSlot(context),
+    ...extraSlots({ ...context, accessible: accessible() }),
+    // Never hidden: someone else sharing the screen, the person's own recording.
+    ...(context.capturing ? [{ key: "capture", goes: null, node: <CapturePill store={capture} {...(recorder ? { recorder } : {})} /> }] : []),
     ...recordingSlot(context),
     // Never hidden either: an app using the microphone.
     ...micSlot(context),

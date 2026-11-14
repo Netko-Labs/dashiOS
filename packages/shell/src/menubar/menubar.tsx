@@ -80,7 +80,8 @@ export function MenuBar(props: MenuBarProps) {
   // Held while a popover is open, like the name (app-menus/store.ts).
   const titles = barMenus(useAppMenus(appMenus));
   const { titleBounds, statusStops } = useBarStops(menus, output, appName, titles);
-  const slots = useStatusSlots(props, popover, appName, barWidth);
+  const room = barWidth === null || menusWidth === null ? null : statusRoom(barWidth, menusWidth, 12);
+  const slots = useStatusSlots(props, popover, appName, barWidth, { room, statusWidth });
   const menu = (id: BarMenuId, children: ReactNode) => (
     <Title
       key={id}
@@ -119,7 +120,7 @@ export function MenuBar(props: MenuBarProps) {
       </View>
       <StatusSide
         slots={slots}
-        room={barWidth === null || menusWidth === null ? null : statusRoom(barWidth, menusWidth, 12)}
+        room={room}
         areaOpen={popover?.kind === "control-center"}
         moreOpen={popover?.kind === "overflow"}
         onMore={(right, hidden) => void menus.toggleOverflow(appName, right, hidden, output)}
