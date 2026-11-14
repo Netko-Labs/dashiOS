@@ -16,6 +16,12 @@ export class SessionStatus {
     return this.words;
   }
 
+  /** What the bar says: at rest, where it works when that is another Desktop ("Working on Desktop 3"). */
+  shown(desktop: string | null): string {
+    const resting = this.words === "Idle" || this.words === "Connected";
+    return desktop !== null && resting ? `Working on ${desktop}` : this.words;
+  }
+
   set(text: string): void {
     this.words = text;
     this.serial++;

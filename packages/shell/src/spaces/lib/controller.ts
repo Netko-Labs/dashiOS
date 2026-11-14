@@ -139,6 +139,7 @@ export class SpacesController extends DesktopsState {
       this.slots = [...slots];
       return;
     }
+    this.followed.removed(index);
     // Removed: the names after it move down one, as the Desktops did.
     if (ordinal < this.state.names.length) {
       const names = withoutSpace(this.state.names, ordinal);
@@ -160,6 +161,7 @@ export class SpacesController extends DesktopsState {
     this.slots = [...before.slice(0, at), window, ...before.slice(at)];
     try {
       const state = parseSpaces(await this.compositor.spaceAdd({ at }));
+      this.followed.inserted(at);
       if (state) this.set(state);
       return true;
     } catch (error) {
@@ -179,6 +181,7 @@ export class SpacesController extends DesktopsState {
     this.slots = before.filter((_, at) => at !== index);
     await this.ask("space-remove", () => this.compositor.spaceRemove({ space: index }));
     if (this.state.count === count) this.slots = [...before];
+    else this.followed.removed(index);
     this.publish({});
   }
 

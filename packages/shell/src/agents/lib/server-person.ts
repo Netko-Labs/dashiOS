@@ -6,7 +6,7 @@ import type { Arrange, Tile } from "../../layout.ts";
 import type { AloneStatus } from "../alone/index.ts";
 import type { Question } from "../confirm.ts";
 import { type ToolResult, toolError } from "../context.ts";
-import type { Desktop, Hands } from "../desktop/index.ts";
+import { type Desktop, Elsewhere, type Hands, type WorkPlaces } from "../desktop/index.ts";
 import { LOCKED, type LockWatch } from "../lock.ts";
 import type { AgentMask } from "../mask.ts";
 import type { AgentUi } from "../presence.ts";
@@ -19,6 +19,7 @@ export interface PersonParts {
   ui: AgentUi;
   desktop: Desktop;
   hands: Hands;
+  places: WorkPlaces;
   mask: AgentMask;
   secrets: SecretsShared;
   lock: LockWatch;
@@ -33,6 +34,8 @@ export function personRunner(parts: PersonParts): (call: Call, confirm: (questio
   const { compositor, ui, desktop, hands, mask, lock, browser, tile, arrangement } = parts;
   // The person's calls: never confined (no sign-in for them), named "You" where a sheet would name an agent.
   const personSecrets = new SessionSecrets(parts.secrets, ui, false);
+  // The person works where they are; the tool is the same, and theirs to try.
+  const elsewhere = new Elsewhere(parts.places);
   const you = () => ({ name: "You", detail: "", claims: null, remote: false });
   return async (call, confirm) => {
     if (lock.isLocked) return toolError(LOCKED);
@@ -42,6 +45,7 @@ export function personRunner(parts: PersonParts): (call: Call, confirm: (questio
       ui,
       desktop,
       hands,
+      elsewhere,
       mask,
       secrets: personSecrets.run(0, you, signal),
       agent: "You",

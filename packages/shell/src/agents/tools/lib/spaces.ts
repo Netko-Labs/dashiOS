@@ -2,12 +2,25 @@
 
 import { MAX_SPACES } from "../../../spaces/index.ts";
 import type { ToolDef } from "../define.ts";
-import { tool, wholeArg, windowId } from "./args.ts";
+import { custom, tool, wholeArg, windowId } from "./args.ts";
 
 const SPACE_SAYS = `\`space\` must be a Space number from list_spaces, 1 to ${MAX_SPACES}.`;
 
 /** The `space` argument, 1-based as agents count (the compositor's index is 0-based). */
 const spaceNumber = wholeArg(1, MAX_SPACES, SPACE_SAYS, "A Space's number from list_spaces: 1 is Desktop 1.");
+
+/** `work_in_space`'s `space`: a Space's number (kept from 0, as the compositor counts), "new", or "shown". */
+const workSpace = custom<number | "new" | "shown">(
+  {
+    description: 'Where to work: a Space\'s number from list_spaces, "new" for a Space added at the end for you, or "shown" to work where the person is again.',
+    anyOf: [{ type: "integer", minimum: 1, maximum: MAX_SPACES }, { enum: ["new", "shown"] }],
+  },
+  (value) => {
+    if (value === "new" || value === "shown") return value;
+    return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= MAX_SPACES ? value - 1 : null;
+  },
+  `\`space\` must be a Space number from list_spaces (1 to ${MAX_SPACES}), "new", or "shown".`,
+);
 
 export const spaceTools: readonly ToolDef[] = [
   tool({
@@ -31,6 +44,22 @@ export const spaceTools: readonly ToolDef[] = [
     idempotent: true,
     args: { space: spaceNumber },
     build: ({ space }) => ({ name: "switch_space", space: space - 1 }),
+  }),
+  tool({
+    name: "work_in_space",
+    title: "Work on another Desktop",
+    description:
+      'Work on another Space without moving the person\'s screen. Use it only when the person asks for another desktop ("on another desktop", "on Desktop 3", "out of my way") or to be left undisturbed; otherwise work where they are, so they can watch. ' +
+      "After it, the windows you open (launch_app, open_url, open_file, open_in_preview) land on that Space and the view stays where it is; click, type, press keys, read pages and take window screenshots there as anywhere, " +
+      "and focus_window raises a window there without switching. An app already open on the Space that shows is left there: the result says so, and move_window_to_space brings its window over if the person wants that. " +
+      'A whole-screen screenshot still shows what the person sees, not your Space. "new" adds a Space for you, removed when you leave it empty; "shown" goes back to working where the person is. ' +
+      "It answers the Space's number and name, and holds for this connection only.",
+    scope: "act",
+    readOnly: false,
+    destructive: false,
+    idempotent: true,
+    args: { space: workSpace },
+    build: ({ space }) => ({ name: "work_in_space", space }),
   }),
   tool({
     name: "move_window_to_space",

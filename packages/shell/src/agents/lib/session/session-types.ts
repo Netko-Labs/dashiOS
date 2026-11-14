@@ -6,7 +6,7 @@ import type { Arrange, Tile } from "../../../layout.ts";
 import type { AloneGate } from "../../alone/index.ts";
 import type { Undo } from "../../ask/index.ts";
 import type { Grants, Scope } from "../../consent.ts";
-import type { Desktop, Hands } from "../../desktop/index.ts";
+import type { Desktop, Hands, WorkPlaces } from "../../desktop/index.ts";
 import type { AgentMask } from "../../mask.ts";
 import type { AgentUi } from "../../presence.ts";
 import type { SecretsShared } from "../../secrets/index.ts";
@@ -21,6 +21,8 @@ export interface SessionContext {
   mask: AgentMask;
   /** The agent seat, shared by every connection. */
   hands: Hands;
+  /** Where agents' windows open when one works on another Desktop, shared by every connection (desktop/elsewhere.ts). */
+  places: WorkPlaces;
   grants: Grants;
   /** Whether the screen is locked: agents are refused and nobody is asked then. */
   lock: { readonly isLocked: boolean };

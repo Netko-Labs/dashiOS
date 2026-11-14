@@ -43,9 +43,15 @@ export async function searchFiles(call: { query: string; folder: string | null; 
   return "error" in result ? toolError(result.error) : json({ results: result.results, total: result.total, ...(result.truncated ? { truncated: true } : {}) });
 }
 
+/** How long after an app took a file its window may still be on its way. */
+const OPENED_WINDOW_MS = 3000;
+
 export async function openFile(call: { path: string }, ctx: RunContext): Promise<ToolResult> {
   ctx.status("Opening a file");
-  const result = await openForAgent(call.path, { policy: currentPolicy(), index: systemMimeIndex() });
+  // At work on another Desktop: the window its app opens for it goes there. Which app that is isn't known
+  // here, so the next new window is taken to be it, until a little after the app has the file.
+  const release = ctx.elsewhere.claim({ pid: null, owns: () => true });
+  const result = await openForAgent(call.path, { policy: currentPolicy(), index: systemMimeIndex() }).finally(() => setTimeout(release, OPENED_WINDOW_MS));
   if ("error" in result) return toolError(result.error);
   return result.confirmed
     ? text(`Opened the ${result.kind} in its app.`, { path: result.opened, kind: result.kind, opened: true })

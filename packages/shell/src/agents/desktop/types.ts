@@ -18,6 +18,7 @@ import type { SettingsStore } from "../../settings-app/store.ts";
 import type { PageId } from "../../setup/index.ts";
 import type { FlagsStore } from "../../shared/control-center/index.ts";
 import type { WifiStore } from "../../wifi/index.ts";
+import type { AgentSpaces } from "./elsewhere.ts";
 import type { SoftwareBackend } from "./software.ts";
 
 /** One copy as an agent reads it: the text, or what a picture or files were. */
@@ -42,8 +43,8 @@ export interface Desktop {
   wifi: Pick<WifiStore, "getSnapshot" | "refresh" | "rescan" | "join" | "dismissFailure">;
   /** What Force Quit Applications lists, and ending one of those. */
   forceQuit: Pick<ForceQuit, "apps" | "end">;
-  /** The Desktops as the shell names them, full-screen windows' own included (spaces/). Absent without them. */
-  spaces?: { getSnapshot(): { labels: readonly string[]; fullscreen: readonly (number | null)[] } };
+  /** The Desktops as the shell names them, full-screen windows' own included, and adding, removing and following one (spaces/). Absent without them. */
+  spaces?: AgentSpaces;
   /** The display arrangement (display-config/): resolution, rotation, main display, positions. Absent without a compositor. */
   displays?: Pick<DisplayManager, "monitors" | "setMode" | "setRotation" | "setPrimary" | "arrange">;
   /** Remember a screen's scale as Settings does, so the next start keeps what was set. */

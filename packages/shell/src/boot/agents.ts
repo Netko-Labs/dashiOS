@@ -245,6 +245,8 @@ export function startAgentServer(needs: ServerNeeds): Agents | null {
         },
       })
     : null;
+  // An agent at work on another Desktop: its windows open there, before they are ever on screen (agents/desktop/elsewhere.ts).
+  if (agents && arranging.arranger) arranging.arranger.elsewhere = (window) => agents.spaceFor(window);
   needs.services.add("agents", () => agents?.close());
   needs.services.add(
     "work alone notices",

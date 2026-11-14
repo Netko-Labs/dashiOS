@@ -7,7 +7,9 @@ import { windowToFront } from "../../../front-window.ts";
 import type { Tile } from "../../../layout.ts";
 import type { Entry } from "../../../shared/app-entries/index.ts";
 import { kindOf } from "../../../shared/files/index.ts";
+import { spaceLabel } from "../../../spaces/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../../context.ts";
+import type { Opening } from "../../desktop/index.ts";
 import { descendsFrom } from "../../peer.ts";
 import type { Handlers } from "./run-types.ts";
 
@@ -28,7 +30,8 @@ function describe(window: CompositorWindow, entries: readonly Entry[], arrangeme
     state: window.state,
     arrangement,
     fullscreen: window.fullscreen ?? false,
-    frame: window.frame,
+    // Where it waits, on a Space that does not show.
+    frame: window.frame ?? window.away ?? null,
     // Agents count Spaces from 1, as people see them.
     space: (window.space ?? 0) + 1,
   };
@@ -54,8 +57,12 @@ async function launchApp(wanted: string, ctx: RunContext): Promise<ToolResult> {
   const entries = loadEntries();
   const entry = entries.find((candidate) => candidate.id.toLowerCase() === query) ?? entries.find((candidate) => candidate.name.toLowerCase() === query);
   if (!entry) return toolError(`No installed app is called “${wanted}”; list_apps shows what is installed.`);
+  const open = (await ctx.compositor.windows()).filter((window) => owns(entry, window.appId));
+  // At work on another Desktop: its window there comes to the front there; one elsewhere stays where the person has it.
+  const away = alreadyOpenElsewhere(entry, entries, open, ctx);
+  if (away) return away;
   // Already open (minimized, say): its window comes forward, as from the Dock, and no second copy starts.
-  const front = windowToFront((await ctx.compositor.windows()).filter((window) => owns(entry, window.appId)));
+  const front = windowToFront(open);
   if (front) {
     ctx.status(`Bringing ${entry.name} forward`);
     await ctx.compositor.focus({ window: front.id });
@@ -64,6 +71,33 @@ async function launchApp(wanted: string, ctx: RunContext): Promise<ToolResult> {
     return text(`${entry.name} was already open; its window is in front: ${JSON.stringify(described)}`, { window: described });
   }
   return startAndWait(entry, entries, ctx);
+}
+
+/**
+ * `launch_app` from an agent at work on a Space that does not show, for an app that is open:
+ * its window there is raised there (the view stays), and one on another Space is left alone,
+ * the result saying so. Null when neither applies, and the launch goes on as ever.
+ */
+function alreadyOpenElsewhere(entry: Entry, entries: readonly Entry[], open: readonly CompositorWindow[], ctx: RunContext): Promise<ToolResult> | ToolResult | null {
+  const space = ctx.elsewhere.away;
+  if (space === null) return null;
+  const say = (window: CompositorWindow) => (ctx.mayName() ? describe(window, entries, ctx.arrangement(window.id)) : { id: `w${window.id}`, app: entry.name });
+  const there = windowToFront(open.filter((window) => (window.space ?? 0) === space));
+  if (there) {
+    ctx.status(`Bringing ${entry.name} forward on ${ctx.elsewhere.label}`);
+    return ctx.compositor.focus({ window: there.id, stay: true }).then(() => {
+      const described = say({ ...there, state: "normal" });
+      return text(`${entry.name} was already open on ${ctx.elsewhere.label}; its window is in front there: ${JSON.stringify(described)}`, { window: described });
+    });
+  }
+  const other = windowToFront(open);
+  if (!other) return null;
+  const described = say(other);
+  return text(
+    `${entry.name} is already open on ${spaceLabel(other.space ?? 0)}, not on ${ctx.elsewhere.label} where you work, and was left there: the person may be using it. ` +
+      `If they want it with you, move_window_to_space puts w${other.id} on Space ${space + 1}. ${JSON.stringify(described)}`,
+    { window: described, left: true },
+  );
 }
 
 /** Preview, Dashi's viewer, opened on a file: a window of its own for each. */
@@ -82,7 +116,18 @@ async function openInPreview(path: string, ctx: RunContext): Promise<ToolResult>
 
 /** Start `entry`, and return its first new window (waiting up to LAUNCH_WAIT_MS). */
 async function startAndWait(entry: Entry, entries: readonly Entry[], ctx: RunContext): Promise<ToolResult> {
-  ctx.status(`Opening ${entry.name}`);
+  ctx.status(ctx.elsewhere.away === null ? `Opening ${entry.name}` : `Opening ${entry.name} on ${ctx.elsewhere.label}`);
+  // At work on another Desktop: its window opens there (desktop/elsewhere.ts), by its process or its app.
+  const opening: Opening = { pid: null, owns: (appId) => owns(entry, appId) };
+  const release = ctx.elsewhere.claim(opening);
+  try {
+    return await started(entry, entries, opening, ctx);
+  } finally {
+    release();
+  }
+}
+
+async function started(entry: Entry, entries: readonly Entry[], opening: Opening, ctx: RunContext): Promise<ToolResult> {
   // Listen before starting it, so its window can't slip by.
   let pid: number | null = null;
   let stop = () => {};
@@ -105,6 +150,7 @@ async function startAndWait(entry: Entry, entries: readonly Entry[], ctx: RunCon
     };
   });
   pid = launchEntry(entry);
+  opening.pid = pid;
   if (pid === null) {
     stop();
     return toolError(`${entry.name} could not start.`);
@@ -117,7 +163,9 @@ async function startAndWait(entry: Entry, entries: readonly Entry[], ctx: RunCon
   }
   // Without "see", the new window is only an id and the app the agent asked for.
   const described = ctx.mayName() ? describe(window, entries, null) : { id: `w${window.id}`, app: entry.name };
-  return text(`${entry.name} is open: ${JSON.stringify(described)}`, { window: described });
+  // Opened on a Space that does not show (an agent at work there): say so, since nothing came on screen.
+  const where = ctx.elsewhere.away !== null && (window.space ?? 0) === ctx.elsewhere.away ? ` on ${ctx.elsewhere.label}, and the person's screen did not change` : "";
+  return text(`${entry.name} is open${where}: ${JSON.stringify(described)}`, { window: described });
 }
 
 export const appHandlers = {

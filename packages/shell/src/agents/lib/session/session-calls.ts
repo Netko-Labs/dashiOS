@@ -7,6 +7,7 @@
 import { type Actor, actingAs } from "../../../acting.ts";
 import { NOT_ALONE, noteCall } from "../../alone/index.ts";
 import { type ToolResult, toolError } from "../../context.ts";
+import type { Elsewhere } from "../../desktop/index.ts";
 import { LOCKED_WHILE_RUNNING } from "../../lock.ts";
 import { watchingOf } from "../../mark.ts";
 import type { Who } from "../../presence.ts";
@@ -31,6 +32,8 @@ export interface CallHost {
   secrets: SessionSecrets;
   scopes: Scopes;
   browser: SessionBrowser;
+  /** The Space it works in, when asked to work on another Desktop. */
+  elsewhere: Elsewhere;
   watch: SessionWatch;
   setStatus(text: string): void;
   /** A call that ended without an answer to send (cancelled). */
@@ -77,6 +80,7 @@ export class SessionCalls {
             ui: ctx.ui,
             desktop: ctx.desktop,
             hands: ctx.hands,
+            elsewhere: host.elsewhere,
             mask: ctx.mask,
             secrets: host.secrets.run(host.id, () => host.who(), signal),
             agent: host.agent,

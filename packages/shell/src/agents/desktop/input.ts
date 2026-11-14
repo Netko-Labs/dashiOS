@@ -30,10 +30,12 @@ const at = (x: number, y: number) => `(${Math.round(x)}, ${Math.round(y)})`;
 
 /** The size of a window's content, or why there is none to act in. */
 function content(window: CompositorWindow): { width: number; height: number } | ToolResult {
-  if (window.state !== "normal" || window.frame === null) {
+  // On a Space that does not show it is still there to act in, where it waits (`away`).
+  const frame = window.frame ?? window.away ?? null;
+  if (window.state !== "normal" || frame === null) {
     return toolError(`w${window.id} is ${window.state === "normal" ? "not on screen" : window.state}; focus_window brings it back.`);
   }
-  return { width: window.frame.width, height: window.frame.height - window.titleBar };
+  return { width: frame.width, height: frame.height - window.titleBar };
 }
 
 const isResult = (value: object): value is ToolResult => "content" in value;
