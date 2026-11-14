@@ -2,7 +2,8 @@
  * Where the capsule sits (pill-v2 README, "Where it sits"): home is the
  * bottom centre, just above the Dock. When a window fills or tiles down to
  * the Dock (the capsule would lie on its last lines) it goes into the Dock's row, beside the Dock, on the side of the window
- * that has the keyboard. With no room there (a taskbar, a full Dock) it goes
+ * that has the keyboard. With no room there (a taskbar, a full Dock), or when
+ * it shows a notice (a line to read whole, which the narrow seat would cut), it goes
  * one step up; with no Dock, against the edge, or a step up from it when a
  * window is there. A card always stands on the Dock, centred.
  */
@@ -28,6 +29,8 @@ export interface PlaceInput {
   usable: { x: number; y: number; width: number; height: number };
   /** The windows showing on that screen. */
   windows: readonly PlacedWindow[];
+  /** A notice shows: one line that must be read whole, so never the narrow seat beside the Dock. */
+  whole?: boolean;
 }
 
 /** The Dock's top, from the screen's bottom edge; 0 with no Dock on screen. */
@@ -68,7 +71,7 @@ export function placeOf(input: PlaceInput): Place {
   if (!dock?.shown) return filling.length > 0 ? { seat: "edge-up", bottom: SEAT.edgeUp, ...up } : { seat: "edge", bottom: SEAT.edge, ...up };
   if (filling.length === 0) return home(dock);
   const step: Place = { seat: "up", bottom: dockTop(dock) + SEAT.aboveDock + SEAT.step, ...up };
-  if (dock.style === "taskbar" || !dock.panel) return step;
+  if (dock.style === "taskbar" || !dock.panel || input.whole) return step;
   const roomRight = screen.width - (dock.panel.x + dock.panel.width) - SEAT.beside * 2;
   const roomLeft = dock.panel.x - SEAT.beside * 2;
   // The side of the window that has the keyboard; a window across both sides, the right.

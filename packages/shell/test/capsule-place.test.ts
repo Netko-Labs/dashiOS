@@ -29,6 +29,11 @@ test("a window that fills down to the Dock sends it into the Dock's row, beside 
   expect(place).toMatchObject({ seat: "right", bottom: SEAT.row, at: { left: 852 }, maxWidth: 350, tail: 180 });
 });
 
+test("a notice is read whole: it takes the step up, never the narrow seat beside the Dock", () => {
+  expect(placeOf({ dock, screen, usable, windows: [filling], whole: true })).toMatchObject({ seat: "up", at: { centre: true }, maxWidth: CAPSULE.maxWidth });
+  expect(placeOf({ dock, screen, usable, windows: [], whole: true }).seat).toBe("home");
+});
+
 test("a window that floats above the capsule's place leaves it at home; one it would lie on moves it", () => {
   // The capsule is 80 to 111 from the bottom edge: 689 to 720 on this screen.
   expect(placeOf({ dock, screen, usable, windows: [{ ...centred, height: 592 }] }).seat).toBe("home");

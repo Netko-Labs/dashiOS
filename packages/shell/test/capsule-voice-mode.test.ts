@@ -22,7 +22,7 @@ function stage(options: { pressed?: () => boolean } = {}) {
   };
   const voice = new FakeVoice();
   const state: { card: OpenCard | null; launcher: number; mode: VoiceMode | null } = { card: null, launcher: 0, mode: null };
-  const tasks = new FakeTasks(hand, async () => (state.mode?.saidYes() ?? false) || (options.pressed?.() ?? false), 1000);
+  const tasks = new FakeTasks(hand, async (task) => (state.mode?.saidYes(task) ?? false) || (options.pressed?.() ?? false), 1000);
   const mode = new VoiceMode({
     hub,
     voice,
@@ -155,6 +155,24 @@ test("the Dashi key held and yes said, as the whole of it, runs the plan; anythi
   await flush();
   expect(tasks.getSnapshot()[0]?.phase).toBe("running");
   expect(state.card).toBeNull();
+});
+
+test("a spoken yes is the yes of the plan it answered: it runs no other task, and counts once", async () => {
+  const { tasks, state, say, voice, advance } = stage();
+  const id = say("Lock the screen");
+  tasks.settle(id, ["Lock the screen"]);
+  const other = tasks.ask("Empty the Trash");
+  tasks.settle(other, ["Empty the Trash"]);
+  voice.show(null);
+  advance(0);
+  expect(voice.hear("yes")).toBe(true);
+  // Another task asks to run in the same breath: the yes was not for it.
+  expect(state.mode?.saidYes(other)).toBe(false);
+  await tasks.run(other);
+  expect(tasks.getSnapshot().find((task) => task.id === other)?.phase).toBe("planned");
+  await flush();
+  expect(tasks.getSnapshot().find((task) => task.id === id)?.phase).toBe("running");
+  expect(state.mode?.saidYes(id)).toBe(false);
 });
 
 test("a no stops the task and says Stopped", () => {

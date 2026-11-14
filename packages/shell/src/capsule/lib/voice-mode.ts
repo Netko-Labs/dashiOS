@@ -52,7 +52,8 @@ export class VoiceMode {
   /** A state of the capsule's own that no chip says: key-down, done, stopped. */
   private own: { state: VoiceModeState; timer: unknown } | null = null;
   private readonly hearing: Hearing;
-  private saidYesAt = Number.NEGATIVE_INFINITY;
+  /** The plan the person said yes to, and when: the yes is that task's, no other's. */
+  private saidYesTo: { task: string; at: number } | null = null;
 
   constructor(private readonly deps: VoiceModeDeps) {
     this.timers = deps.timers ?? realTimers;
@@ -76,9 +77,12 @@ export class VoiceMode {
     return this.deps.now?.() ?? Date.now();
   }
 
-  /** Whether the person said yes to a card just now: counts as their own press for the run (boot/agents.ts). */
-  saidYes(): boolean {
-    return this.now() - this.saidYesAt <= SAID_YES_MS;
+  /** Whether the person said yes to `task`'s card just now: counts as their own press for that task's run (boot/agents.ts), once. */
+  saidYes(task: string): boolean {
+    const said = this.saidYesTo;
+    if (!said || said.task !== task) return false;
+    this.saidYesTo = null;
+    return this.now() - said.at <= SAID_YES_MS;
   }
 
   /** How the person answers by voice, or null when they can't. */
@@ -191,7 +195,7 @@ export class VoiceMode {
   private heardPlan(id: string, text: string): void {
     const yes = spokenYesNo(text);
     if (yes === null) return this.hear(id, "Say yes or no.", (again) => this.heardPlan(id, again));
-    if (yes) this.saidYesAt = this.now();
+    if (yes) this.saidYesTo = { task: id, at: this.now() };
     this.answerPermission(id, yes, true);
   }
 

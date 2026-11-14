@@ -53,8 +53,8 @@ export interface CapsuleNeeds {
 }
 
 export interface Capsule {
-  /** Whether the person's own press on the card, or their spoken yes, just answered it. */
-  personAnswered(): Promise<boolean>;
+  /** Whether the person's own press on the card just answered it, or their spoken yes to `task`'s card. */
+  personAnswered(task: string): Promise<boolean>;
   /** An agent's question in the card; "elsewhere" when the person would type it (the sheet has the field). */
   question(question: CardQuestion, signal?: AbortSignal): Promise<QuestionAnswer | "elsewhere">;
   /** Whether a question can go to the card now: the person can answer it by voice. */
@@ -95,7 +95,7 @@ class Running implements Capsule {
     this.timers = needs.timers ?? realTimers;
     this.now = needs.now ?? Date.now;
     const fakeVoice = needs.fake ? new FakeVoice() : null;
-    const fakeTasks = needs.fake ? new FakeTasks(this.timers, () => this.personAnswered()) : null;
+    const fakeTasks = needs.fake ? new FakeTasks(this.timers, (task) => this.personAnswered(task)) : null;
     this.mode = new VoiceMode({
       hub,
       voice: fakeVoice ?? needs.voice,
@@ -204,7 +204,9 @@ class Running implements Capsule {
       ]);
       const found = locate(outputs, windows, session?.pointer ?? null, dockSign.place.getSnapshot());
       if (!found) return;
-      this.where = { output: outputs.length > 1 ? found.output : undefined, place: placeOf(found.input), screens: outputs.length };
+      const { shown } = this.state.getSnapshot();
+      const whole = shown.kind !== "none" && shown.kind !== "card" && shown.state.phase === "notice";
+      this.where = { output: outputs.length > 1 ? found.output : undefined, place: placeOf({ ...found.input, whole }), screens: outputs.length };
       this.sync();
     } catch {
       // Home, on the compositor's screen, is where it stays.
@@ -239,9 +241,9 @@ class Running implements Capsule {
     this.stack();
   }
 
-  async personAnswered(): Promise<boolean> {
+  async personAnswered(task: string): Promise<boolean> {
     const { compositor } = this.needs;
-    if (this.mode.saidYes()) return true;
+    if (this.mode.saidYes(task)) return true;
     return compositor ? personAnswered((params) => compositor.inputOrigin(params), CAPSULE_LAYER) : false;
   }
 

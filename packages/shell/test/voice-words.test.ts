@@ -153,7 +153,10 @@ test("a spoken ask is a launcher task: told it was spoken, answered when the tas
   let shown = 0;
   const asker = launcherAsker(
     () => store,
-    () => shown++,
+    () => {
+      shown++;
+      return false;
+    },
   );
   const answer = asker.ask("Turn on Dark Mode", new AbortController().signal);
   expect(store.asked).toEqual([["Turn on Dark Mode", SPOKEN_CONTEXT]]);
@@ -161,10 +164,21 @@ test("a spoken ask is a launcher task: told it was spoken, answered when the tas
   expect(await answer).toEqual({ say: "My plan: Turn Dark Mode on. Press Return in the launcher to run it." });
   expect(shown).toBe(1);
 
+  // The capsule's card takes the plan (it reads it out and hears the yes): nothing is said here, so no "Press Return" under it.
+  const taken = tasks(task({ phase: "asking" }));
+  const quiet = launcherAsker(
+    () => taken,
+    () => true,
+    () => "(short)",
+  ).ask("Turn on Dark Mode", new AbortController().signal);
+  expect(taken.asked).toEqual([["Turn on Dark Mode", "(short)"]]);
+  taken.set(task({ phase: "planned", steps: [{ title: "Turn Dark Mode on" }] }));
+  expect(await quiet).toEqual({ say: "" });
+
   // Nobody answers the launcher: said so, with where to choose.
   const none = launcherAsker(
     () => tasks(null),
-    () => {},
+    () => false,
   );
   expect(await none.ask("Hello", new AbortController().signal)).toEqual({
     say: "No agent answers yet. Choose one in Settings, under Agents.",
@@ -175,7 +189,7 @@ test("a spoken ask is a launcher task: told it was spoken, answered when the tas
   const given = new AbortController();
   const late = launcherAsker(
     () => waiting,
-    () => {},
+    () => false,
   ).ask("Hello", given.signal);
   given.abort();
   expect(await late).toEqual({ say: "" });

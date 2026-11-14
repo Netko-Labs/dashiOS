@@ -6,6 +6,7 @@
  */
 
 import type { Compositor } from "../compositor/index.ts";
+import { spokenContext } from "../persona/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import { launcherAsker, STOP, startVoice, talks, type VoiceParts } from "../voice/index.ts";
 import type { LateParts } from "./parts.ts";
@@ -55,7 +56,13 @@ export function startTalking({ compositor, settingsStore, services, late }: Talk
     // With the capsule up, a spoken plan asks in its card (capsule/), not in the launcher: the capsule handles `voiceCommands`.
     asker: launcherAsker(
       () => late.peek("askAgents")?.tasks ?? null,
-      () => void (late.peek("pill")?.voiceCommands.send({ do: "open-ask", id: "spoken" }) || openLauncher()),
+      () => {
+        if (late.peek("pill")?.voiceCommands.send({ do: "open-ask", id: "spoken" })) return true;
+        openLauncher();
+        return false;
+      },
+      // How much Dashi talks (Settings › Your Dashi) reaches spoken answers.
+      () => spokenContext(late.peek("pill")?.persona.getSnapshot().talk ?? "normal"),
     ),
     go: (where) => {
       if (where === "launcher") openLauncher();

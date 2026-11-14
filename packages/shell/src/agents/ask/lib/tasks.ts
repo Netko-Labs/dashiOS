@@ -180,7 +180,7 @@ export class AskTasks {
     if (!task || task.phase !== "planned") return;
     const steps = runnable(task.steps);
     if (steps.length === 0) return;
-    if (!(await this.deps.personPressed())) {
+    if (!(await this.deps.personPressed(id))) {
       for (const step of steps) step.state = { kind: "not-allowed" };
       this.publish();
       return;
@@ -201,7 +201,7 @@ export class AskTasks {
     const task = this.find(id);
     const step = task?.steps[index];
     if (!task || !step || step.state.kind !== "not-allowed" || task.phase === "running" || task.phase === "asking") return;
-    if (!(await this.deps.personPressed())) return;
+    if (!(await this.deps.personPressed(id))) return;
     const before = task.phase;
     task.phase = "running";
     await this.runStep(task, step);

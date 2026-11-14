@@ -13,8 +13,8 @@ export interface TaskDeps {
   actions(): readonly ActionDef[];
   /** Run one approved step, logged as `by.agent`'s, in task `by.task`. */
   run(action: ActionDef, args: Args, by: { agent: string; task: string }): Promise<Outcome>;
-  /** Whether the person's own hands pressed the launcher just now (`input-origin`). */
-  personPressed(): Promise<boolean>;
+  /** Whether the person's own hands pressed the launcher just now (`input-origin`), or said yes to `task`'s card. */
+  personPressed(task: string): Promise<boolean>;
   /** A setting's value now, for Undo; null where it has none. */
   settingNow(name: string): ActionState;
   /** Put a setting back, as the person. */

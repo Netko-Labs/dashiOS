@@ -60,7 +60,7 @@ export class FakeTasks implements TaskSource {
   constructor(
     private readonly timers: Timers,
     /** Whether the person's own press or word said yes (the real tasks ask the compositor). */
-    private readonly pressed: () => Promise<boolean>,
+    private readonly pressed: (task: string) => Promise<boolean>,
     private readonly stepMs = 1400,
   ) {}
 
@@ -90,7 +90,7 @@ export class FakeTasks implements TaskSource {
   async run(id: string): Promise<void> {
     const task = this.tasks.getSnapshot().find((each) => each.id === id);
     if (!task || task.phase !== "planned") return;
-    if (!(await this.pressed()))
+    if (!(await this.pressed(id)))
       return this.change(id, (each) => ({ ...each, steps: each.steps.map((step) => ({ ...step, state: { kind: "not-allowed" } })) }));
     this.change(id, (each) => ({ ...each, phase: "running" }));
     task.steps.forEach((_, index) => {

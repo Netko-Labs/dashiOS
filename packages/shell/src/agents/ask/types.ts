@@ -41,8 +41,8 @@ export interface AskOptions {
   runApproved(action: ActionDef, args: Args, by: { agent: string; task: string }): Promise<Outcome>;
   /** The action at an address, run as the person (Undo). */
   runAsPerson(address: string, args: Args): Promise<Outcome>;
-  /** `input-origin` on the launcher's layer says the person's own hands pressed it. */
-  personPressed(): Promise<boolean>;
+  /** `input-origin` on the launcher's layer says the person's own hands pressed it; a spoken yes counts for the `task` it answered only. */
+  personPressed(task: string): Promise<boolean>;
   settingNow(name: string): ActionState;
   /** Bring a window forward (a "Your turn"). */
   focus(window: number): Promise<void>;

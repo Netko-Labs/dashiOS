@@ -17,11 +17,17 @@ export interface SpokenTasks {
   stop(id: string): void;
 }
 
-export function launcherAsker(tasks: () => SpokenTasks | null, showPlan: () => void): Asker {
+/**
+ * `showPlan` shows a plan that waits and says whether it also says it (the
+ * capsule's card reads the plan out and hears the yes): then nothing is said
+ * here, so "Press Return in the launcher" is never heard under the card.
+ * `context` is what goes after the words (how much Dashi talks: the persona's).
+ */
+export function launcherAsker(tasks: () => SpokenTasks | null, showPlan: () => boolean, context: () => string = () => SPOKEN_CONTEXT): Asker {
   return {
     ask(words, signal) {
       const store = tasks();
-      const id = store?.ask(words, SPOKEN_CONTEXT) ?? null;
+      const id = store?.ask(words, context()) ?? null;
       if (!store || id === null) return Promise.resolve(NO_AGENT);
       return new Promise<Answer>((resolve) => {
         let off = (): void => {};
@@ -31,8 +37,7 @@ export function launcherAsker(tasks: () => SpokenTasks | null, showPlan: () => v
           if (!answer) return;
           off();
           const { plan, ...rest } = answer;
-          if (plan) showPlan();
-          resolve(rest);
+          resolve(plan && showPlan() ? { say: "" } : rest);
         };
         off = store.subscribe(look);
         signal.addEventListener(

@@ -277,9 +277,9 @@ export function startAskAgents({ compositor, settingsStore, basics, agents, acti
     runApproved: (action, args, by) => actions.runApproved(action, args, by),
     runAsPerson: (address, args) => runAddressAsPerson(actions, address, args),
     // The launcher's Return, or a yes on the capsule's card (capsule/: a press there, or the Dashi key held and "yes" said).
-    personPressed: async () =>
+    personPressed: async (task) =>
       (compositor ? await personAnswered((params) => compositor.inputOrigin(params), LAUNCHER_MOTION.namespace) : false) ||
-      ((await runningCapsule.getSnapshot()?.personAnswered()) ?? false),
+      ((await runningCapsule.getSnapshot()?.personAnswered(task)) ?? false),
     settingNow: (name) => settingNow(name, registryStores),
     focus: async (window) => {
       await compositor?.focus({ window });
