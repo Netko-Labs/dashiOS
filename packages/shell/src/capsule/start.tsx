@@ -79,7 +79,8 @@ class Running implements Capsule {
   private readonly surface: CapsuleSurface;
   private readonly offs: Array<() => void>;
   private card: OpenCard | null = null;
-  private where: { output: string | undefined; place: Place } = { output: undefined, place: HOME };
+  /** The capsule's screen (undefined with one screen: nothing to choose) and its seat there. */
+  private where: { output: string | undefined; place: Place; screens: number } = { output: undefined, place: HOME, screens: 1 };
   /** What was showing when the place was last asked for. */
   private located = "";
   private region = "";
@@ -102,9 +103,16 @@ class Running implements Capsule {
       timers: this.timers,
       now: this.now,
     });
+    // Until something is drawn and says where it is, the surface takes no clicks at all.
+    this.clickable([]);
     this.surface = new CapsuleSurface({ spawn: needs.spawn, element: this.view() });
     const sync = (): void => this.sync();
-    this.offs = [hub.dictation.subscribe(sync), hub.voiceMode.subscribe(sync), dockSign.place.subscribe(sync)];
+    // The Dock came, went or was laid out: the seat is worked out again.
+    const moved = (): void => {
+      this.located = "";
+      this.sync();
+    };
+    this.offs = [hub.dictation.subscribe(sync), hub.voiceMode.subscribe(sync), dockSign.place.subscribe(moved)];
     if (needs.fake && fakeVoice && fakeTasks) {
       const stage = {
         hub,
@@ -173,7 +181,7 @@ class Running implements Capsule {
       ]);
       const found = locate(outputs, windows, session?.pointer ?? null, dockSign.place.getSnapshot());
       if (!found) return;
-      this.where = { output: outputs.length > 1 ? found.output : undefined, place: placeOf(found.input) };
+      this.where = { output: outputs.length > 1 ? found.output : undefined, place: placeOf(found.input), screens: outputs.length };
       this.sync();
     } catch {
       // Home, on the compositor's screen, is where it stays.
@@ -188,7 +196,7 @@ class Running implements Capsule {
     if (shown.kind === "none") {
       this.located = "";
       this.state.set({ ...this.state.getSnapshot(), shown });
-      this.clickable([]);
+      // The region stays as it was: the same line may come back at the same bounds, which are told once.
       this.surface.hide();
       return bottomStack.set(null);
     }
@@ -201,7 +209,7 @@ class Running implements Capsule {
     const bottom = cardBottom(dock, dock?.shown === true);
     this.state.set({ shown, place: this.where.place, cardBottom: bottom });
     // A card stands on the Dock, on the Dock's screen.
-    const output = shown.kind === "card" ? (dock?.output ?? this.where.output) : this.where.output;
+    const output = shown.kind === "card" && this.where.screens > 1 ? (dock?.output ?? this.where.output) : this.where.output;
     this.surface.show(output, shown.kind === "card" && shown.card.keyboard);
     bottomStack.set({ top: shown.kind === "card" ? bottom + CARD.maxHeight : this.where.place.bottom + CAPSULE.height, output });
   }

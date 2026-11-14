@@ -2,7 +2,7 @@
 
 import { expect, test } from "bun:test";
 import { type NativeHostOptions, type NativeHostTransport, View } from "@mirinjs/metal";
-import { CapsuleSurface, capsuleSurface } from "../src/capsule/lib/surface.ts";
+import { CapsuleSurface, capsuleSurface, REOPEN_MS } from "../src/capsule/lib/surface.ts";
 import { osdSurface } from "../src/system/lib/osd-panel.tsx";
 
 function hosts() {
@@ -66,20 +66,42 @@ test("one host with no window; it opens when something shows and hides when noth
   surface.close();
 });
 
-test("another screen, or the keyboard for a card, opens it again", () => {
+test("another screen, or the keyboard for a card, opens it again, a moment after it hid", () => {
   const { log, spawn } = hosts();
-  const surface = new CapsuleSurface({ spawn, element: <View /> });
+  let clock = 0;
+  const later: Array<{ at: number; fn: () => void }> = [];
+  const advance = (ms: number): void => {
+    clock += ms;
+    for (const due of later.splice(0).filter((each) => each.at <= clock || void later.push(each))) due.fn();
+  };
+  const surface = new CapsuleSurface({ spawn, element: <View />, now: () => clock, later: (fn, ms) => later.push({ at: clock + ms, fn }) });
   surface.show("eDP-1", false);
   surface.show("eDP-1", true);
+  // The host is never asked to open in the same breath as it hid (REOPEN_MS).
+  expect(log).toEqual(["open eDP-1 none", "hide"]);
+  advance(REOPEN_MS - 1);
+  expect(log).toHaveLength(2);
+  advance(1);
+  expect(log).toEqual(["open eDP-1 none", "hide", "open eDP-1 exclusive"]);
+  // What is wanted by then is what opens: here the other screen, once.
   surface.show("DP-2", false);
-  expect(log).toEqual(["open eDP-1 none", "hide", "open eDP-1 exclusive", "hide", "open DP-2 none"]);
+  surface.show("DP-2", true);
+  surface.show("DP-2", false);
+  advance(REOPEN_MS);
+  expect(log.slice(3)).toEqual(["hide", "open DP-2 none"]);
+  // Hidden and shown again at once (a key tapped twice) waits too.
+  surface.hide();
+  surface.show("DP-2", false);
+  expect(log.slice(5)).toEqual(["hide"]);
+  advance(REOPEN_MS);
+  expect(log.slice(5)).toEqual(["hide", "open DP-2 none"]);
   surface.close();
 });
 
 test("a host that died is replaced, and what was showing shows again", () => {
   const { log, spawned, spawn } = hosts();
   const later: Array<() => void> = [];
-  const surface = new CapsuleSurface({ spawn, element: <View />, later: (fn) => later.push(fn) });
+  const surface = new CapsuleSurface({ spawn, element: <View />, later: (fn) => later.push(fn), now: () => 0 });
   surface.show(undefined, false);
   spawned[0]?.die();
   expect(surface.shown).toBe(false);

@@ -116,7 +116,7 @@ export function Button({ label, colours, onPress, primary = false, square = fals
         opacity: off ? 0.45 : 1,
       }}
     >
-      {square && <View style={{ width: CAPSULE.stop, height: CAPSULE.stop, borderRadius: 2, backgroundColor: color }} />}
+      {square && <View style={{ flexShrink: 0, alignSelf: "center", width: CAPSULE.stop, height: CAPSULE.stop, borderRadius: 2, backgroundColor: color }} />}
       <Text numberOfLines={1} style={{ fontSize: measures.fontSize, fontWeight: "semibold", color }}>
         {label}
       </Text>

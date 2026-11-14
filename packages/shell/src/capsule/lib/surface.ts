@@ -15,6 +15,13 @@ import { SURFACE_HEIGHT } from "./measures.ts";
 
 /** A host that died is replaced after this long. */
 const RESPAWN_MS = 1500;
+/**
+ * The least time between hiding the window and opening it again. A resident
+ * host asked to open in the same breath as it hid dies in its GPU layer
+ * (`ERROR_NATIVE_WINDOW_IN_USE_KHR`: the old window's surface is not gone
+ * yet), seen in the VM with mirin `main`.
+ */
+export const REOPEN_MS = 150;
 
 export interface SurfaceOptions {
   /** Start a host with no window (`deferred`). */
@@ -22,6 +29,8 @@ export interface SurfaceOptions {
   /** What the surface draws; rendered once, for as long as the host lives. */
   element: ReactElement;
   later?(fn: () => void, ms: number): unknown;
+  /** A clock for the gap after a hide; `performance.now` unless a test says. */
+  now?(): number;
 }
 
 /** The layer surface the capsule opens as, on `output`, with or without the keyboard. */
@@ -43,6 +52,8 @@ export class CapsuleSurface {
   private open: { output: string | undefined; keyboard: boolean } | null = null;
   private wanted: { output: string | undefined; keyboard: boolean } | null = null;
   private stopped = false;
+  private hiddenAt = Number.NEGATIVE_INFINITY;
+  private waiting = false;
 
   constructor(private readonly options: SurfaceOptions) {
     this.start();
@@ -64,6 +75,10 @@ export class CapsuleSurface {
     this.apply();
   }
 
+  private now(): number {
+    return this.options.now?.() ?? performance.now();
+  }
+
   private apply(): void {
     const { host, open } = this;
     const wanted = this.wanted;
@@ -71,11 +86,20 @@ export class CapsuleSurface {
     if (open && (!wanted || wanted.output !== open.output || wanted.keyboard !== open.keyboard)) {
       host.hide();
       this.open = null;
+      this.hiddenAt = this.now();
     }
-    if (wanted && !this.open) {
-      host.open({ title: "Dashi", appId: "dev.dashi.shell", width: 1, height: SURFACE_HEIGHT, surface: capsuleSurface(wanted.output, wanted.keyboard) });
-      this.open = { ...wanted };
+    if (!wanted || this.open || this.waiting) return;
+    const wait = this.hiddenAt + REOPEN_MS - this.now();
+    if (wait > 0) {
+      this.waiting = true;
+      (this.options.later ?? setTimeout)(() => {
+        this.waiting = false;
+        this.apply();
+      }, wait);
+      return;
     }
+    host.open({ title: "Dashi", appId: "dev.dashi.shell", width: 1, height: SURFACE_HEIGHT, surface: capsuleSurface(wanted.output, wanted.keyboard) });
+    this.open = { ...wanted };
   }
 
   private start(): void {
@@ -87,6 +111,7 @@ export class CapsuleSurface {
       if (this.host !== host) return;
       this.host = null;
       this.open = null;
+      this.hiddenAt = Number.NEGATIVE_INFINITY;
       this.root?.unmount();
       this.root = null;
       if (!this.stopped) (this.options.later ?? setTimeout)(() => this.start(), RESPAWN_MS);
