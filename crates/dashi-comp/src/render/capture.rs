@@ -218,7 +218,10 @@ pub(crate) fn window_area(
     ),
     String,
 > {
-    let frame = crate::wm::frame_of(state, window).ok_or("that window is not on screen")?;
+    // On a Space that does not show, it is pictured where it waits there.
+    let frame = crate::wm::frame_of(state, window)
+        .or_else(|| crate::wm::away_frame(state, window))
+        .ok_or("that window is not on screen")?;
     let center = frame.loc.to_f64() + frame.size.to_f64().downscale(2.0).to_point();
     let output = state
         .space

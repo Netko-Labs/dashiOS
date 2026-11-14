@@ -135,6 +135,8 @@ impl Dashi {
         if target == previous {
             return;
         }
+        // An agent's pointer in a window off screen leaves it: the windows change places.
+        self.away_pointer_leave();
         self.carry_held(target);
         // Off the screen back to front, so each waits with its place in the stack.
         let leaving: Vec<WindowId> = self

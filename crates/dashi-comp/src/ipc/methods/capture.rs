@@ -62,6 +62,8 @@ pub(crate) fn capture(state: &mut Dashi, ask: &Ask, params: CaptureParams) -> Re
             .map(|entry| entry.window.clone())
             .ok_or_else(|| format!("no window {id}"))?;
         let (frame, output) = render::capture::window_area(state, &window)?;
+        // Off screen, it keeps drawing for a while: the next picture shows what changed.
+        state.agent.away.wake(id, std::time::Instant::now());
         (frame, output, Some(window))
     } else if let Some(rect) = params.rect {
         let rect = valid_frame(

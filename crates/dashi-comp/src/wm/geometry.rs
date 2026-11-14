@@ -20,6 +20,17 @@ pub(crate) fn frame_of(state: &Dashi, window: &Window) -> Option<Rectangle<i32, 
     Some(frame)
 }
 
+/// The outer frame a window has where it waits on a Space that does not show (as `frame_of`
+/// gives it on screen); None on screen, minimized or hidden.
+pub(crate) fn away_frame(state: &Dashi, window: &Window) -> Option<Rectangle<i32, Logical>> {
+    let id = state.windows.by_window(window)?.id;
+    let (_, mut frame) = crate::session::agent_away::away_content(state, id)?;
+    let bar = bar_of(state, window);
+    frame.loc.y -= bar;
+    frame.size.h += bar;
+    Some(frame)
+}
+
 /// The height of the title bar dashi-comp draws above `window` (0 for none).
 pub(crate) fn bar_of(state: &Dashi, window: &Window) -> i32 {
     state.bar_height(window)

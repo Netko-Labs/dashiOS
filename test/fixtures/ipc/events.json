@@ -4,6 +4,7 @@
     "window": {
       "appId": "dev.dashi.notes",
       "attention": false,
+      "away": null,
       "configuring": null,
       "focused": true,
       "frame": {
@@ -43,6 +44,7 @@
       "appId": "dev.dashi.notes",
       "height": 638,
       "id": 7,
+      "pid": 4242,
       "position": {
         "x": 100,
         "y": 80

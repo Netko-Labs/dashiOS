@@ -61,6 +61,10 @@ impl Dashi {
         let mut size = window.geometry().size;
         size.h += super::geometry::bar_of(self, &window);
         let parent = super::windows::parent_of(self, &window);
+        let pid = self
+            .windows
+            .get(id)
+            .and_then(|entry| super::windows::pid_of(entry, self));
         self.ipc.emit(Event::WindowPlacing {
             window: Placing {
                 id,
@@ -70,6 +74,7 @@ impl Dashi {
                 height: size.h,
                 position: asked.map(|at| Position { x: at.x, y: at.y }),
                 parent,
+                pid,
             },
         });
         let waited = self.loop_handle.insert_source(

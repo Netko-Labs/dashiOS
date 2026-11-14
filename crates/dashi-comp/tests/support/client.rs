@@ -5,6 +5,7 @@
 //! (client/pointer.rs). It can open dialogs too: more toplevels whose xdg
 //! parent is the first.
 
+mod keyboard;
 mod pointer;
 
 use std::{io::Write, os::fd::AsFd, path::Path};
@@ -48,7 +49,9 @@ pub struct State {
     /// What the pointer heard, in order: its buttons (pressed or let go) and how often it moved.
     pub buttons: Vec<bool>,
     pub motions: usize,
-    /// A listening window's seat, kept so its pointer lives.
+    /// What a listening window's keyboard heard.
+    pub keyboard: keyboard::Heard,
+    /// A listening window's seat, kept so its pointer and keyboard live.
     listens: Option<wl_seat::WlSeat>,
     /// Dialogs opened (`open_dialog`), by their xdg_surface's number (1 on).
     dialogs: Vec<Dialog>,
@@ -71,6 +74,7 @@ impl Client {
         let stream = client.queue.handle();
         let seat: wl_seat::WlSeat = client.globals.bind(&stream, 1..=7, ()).expect("wl_seat");
         seat.get_pointer(&stream, ());
+        seat.get_keyboard(&stream, ());
         client.state.listens = Some(seat);
         client.roundtrip();
         client

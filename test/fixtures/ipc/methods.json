@@ -151,6 +151,7 @@
   },
   "focus": {
     "params": {
+      "stay": true,
       "window": 7
     },
     "reply": {},
@@ -755,6 +756,7 @@
         {
           "appId": "dev.dashi.notes",
           "attention": false,
+          "away": null,
           "configuring": null,
           "focused": true,
           "frame": {

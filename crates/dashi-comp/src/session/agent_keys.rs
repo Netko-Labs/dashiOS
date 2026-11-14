@@ -28,7 +28,7 @@ use super::agent_input::{KeyMove, KeyStep};
 use crate::state::Dashi;
 
 /// The longest text typed in one request.
-const MAX_TEXT: usize = 4096;
+pub(super) const MAX_TEXT: usize = 4096;
 
 /// How an agent's key reaches the window.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -180,7 +180,7 @@ impl Dashi {
 }
 
 /// The characters of `text` that are keys of their own: "\r\n" is one line's end, so one key.
-fn typed_chars(text: &str) -> impl Iterator<Item = char> {
+pub(super) fn typed_chars(text: &str) -> impl Iterator<Item = char> {
     let mut after_return = false;
     text.chars().filter(move |ch| {
         let line_feed_of_a_pair = *ch == '\n' && after_return;
@@ -191,7 +191,7 @@ fn typed_chars(text: &str) -> impl Iterator<Item = char> {
 
 /// The keysym name of the key that types each character of `text`. A line's end is Return: xkb
 /// names a newline Linefeed, a key no layout has, so `type_text` dropped it.
-fn typed_key_names(text: &str) -> Vec<String> {
+pub(super) fn typed_key_names(text: &str) -> Vec<String> {
     typed_chars(text)
         .map(|ch| match ch {
             '\n' | '\r' => "Return".to_owned(),

@@ -22,8 +22,9 @@ const Placing = map(
     height: num(),
     position: optional(nullable(PointShape)),
     parent: optional(nullable(num())),
+    pid: optional(nullable(num())),
   }),
-  ({ id, appId, title, width, height, position, parent }) => ({
+  ({ id, appId, title, width, height, position, parent, pid }) => ({
     id,
     appId: appId ?? "",
     title: title ?? "",
@@ -31,6 +32,7 @@ const Placing = map(
     height,
     ...(position ? { position: { x: position.x, y: position.y } } : {}),
     ...(parent !== undefined && parent !== null && Number.isInteger(parent) && parent > 0 ? { parent } : {}),
+    ...(pid !== undefined && pid !== null && Number.isInteger(pid) && pid > 0 ? { pid } : {}),
   }),
 );
 export type Placing = Infer<typeof Placing>;
