@@ -9,9 +9,10 @@
  * Metal gives a press, its moves and its release (`onPointer`), but neither
  * where a scroll view stands nor the keys held during a drag (D99). So the
  * session asks the window where an item is painted (`WindowSurface.bounds`)
- * to learn where the content sits, when the drag starts and whenever it may
- * have moved by itself (a wheel, the end of the range), and counts its own
- * scrolling in between. The keys are those of the click the release makes
+ * to learn where the content sits: when the drag starts, and then every
+ * `POLL_MS` while it is not scrolling the listing itself, since a wheel
+ * moves the items with no word to the app (the scroll view takes the turn).
+ * Its own scrolling it counts. The keys are those of the click the release makes
  * (`press`), unless the host says them with the pointer.
  */
 
@@ -33,11 +34,11 @@ import {
   stepWithin,
   TICK_MS,
 } from "./geometry.ts";
+import { inView, itemAt, locate } from "./locate.ts";
 import { IDLE, type ListingModel, type MarqueeStore, type MarqueeView, REAL_TIMERS, type Timers } from "./types.ts";
 
-/** How long after the listing moved by itself it is asked where it stands, and once more after that. */
-const SETTLE_MS = 50;
-const SETTLE_AGAIN_MS = 120;
+/** How often a drag asks where the content stands, while it is not scrolling it itself. */
+export const POLL_MS = 150;
 
 type Phase = "idle" | "armed" | "placing" | "active";
 
@@ -67,8 +68,9 @@ export class Marquee {
   /** Every pixel this session scrolled the listing. */
   private scrolled = 0;
   private stopTicking: (() => void) | null = null;
-  private stopSettling: (() => void) | null = null;
-  private settleAgain = false;
+  private stopPolling: (() => void) | null = null;
+  /** The listing was just scrolled from here: what is painted may not show it yet, so one poll is let go. */
+  private justScrolled = false;
   private view: MarqueeView = IDLE;
   private readonly listeners = new Set<() => void>();
 
@@ -131,10 +133,15 @@ export class Marquee {
     return true;
   }
 
-  /** The wheel turned over the listing during a drag: it moved by itself. */
-  wheel = (): void => {
-    if (this.phase === "active") this.settleSoon();
-  };
+  /**
+   * The item the last press on the listing's own space was on, where the
+   * items leave their clicks to the listing (the list's rows): null for
+   * empty space, and at once where items take their own clicks.
+   */
+  pressed(): Promise<string | null> | null {
+    const { model, surface } = this;
+    return model?.clicksToListing && surface ? itemAt(surface, model, this.down) : null;
+  }
 
   /** Esc: the drag ends and the selection from before comes back. True when there was one. */
   cancel(): boolean {
@@ -160,19 +167,16 @@ export class Marquee {
   private place(): void {
     const { model, surface, run, scrolled } = this;
     if (!model || !surface) return;
-    void surface.bounds([model.scrollID, ...model.paths.map((path) => model.nodeOf(path))]).then(([viewport, ...nodes]) => {
+    void locate(surface, model).then((placed) => {
       if (run !== this.run || (this.phase !== "placing" && this.phase !== "active")) return;
-      const index = nodes.findIndex((node) => node !== null);
-      const node = nodes[index];
-      const rect = model.rects[index];
-      if (!viewport || !node || !rect) {
+      if (!placed) {
         // Nothing to go by: a drag that has not started never does; one under way keeps its count.
         if (this.phase === "placing") this.stop();
         return;
       }
-      this.viewport = viewport;
+      this.viewport = placed.viewport;
       // What was scrolled since the question was asked is not in its answer.
-      this.origin = { x: node.x - rect.x, y: node.y - rect.y - (this.scrolled - scrolled) };
+      this.origin = { x: placed.origin.x, y: placed.origin.y - (this.scrolled - scrolled) };
       if (this.phase === "placing") this.start();
       else this.update();
     });
@@ -181,13 +185,14 @@ export class Marquee {
   private start(): void {
     const { viewport, down } = this;
     // A press outside what scrolls (a list's header) draws nothing.
-    if (down.x < viewport.x || down.x > viewport.x + viewport.width || down.y < viewport.y || down.y > viewport.y + viewport.height) {
+    if (!inView(down, viewport)) {
       this.stop();
       this.dragged = false;
       return;
     }
     this.anchor = { x: down.x - this.origin.x, y: down.y - this.origin.y };
     this.phase = "active";
+    this.stopPolling = this.timers.every(POLL_MS, this.poll);
     this.update();
     if (this.released) this.finish();
   }
@@ -237,27 +242,19 @@ export class Marquee {
     this.update();
   };
 
-  /** The scrolling stops: once it is painted, ask where the content stands. */
+  /** The scrolling stops; the next poll but one says where the content came to rest. */
   private rest(): void {
     if (!this.stopTicking) return;
     this.stopTicking();
     this.stopTicking = null;
-    this.settleSoon();
+    this.justScrolled = true;
   }
 
-  /** Ask where the content stands in a moment, and once more after (a touchpad goes on a little). */
-  private settleSoon(): void {
-    this.settleAgain = true;
-    this.stopSettling ??= this.timers.after(SETTLE_MS, this.settle);
-  }
-
-  private settle = (): void => {
-    this.stopSettling = null;
-    if (this.phase !== "active") return;
-    this.place();
-    if (!this.settleAgain) return;
-    this.settleAgain = false;
-    this.stopSettling = this.timers.after(SETTLE_AGAIN_MS, this.settle);
+  /** The listing may have moved by itself (a wheel): ask, unless this drag is scrolling it. */
+  private poll = (): void => {
+    if (this.phase !== "active" || this.stopTicking) return;
+    if (this.justScrolled) this.justScrolled = false;
+    else this.place();
   };
 
   private finish(): void {
@@ -272,9 +269,9 @@ export class Marquee {
     this.phase = "idle";
     this.stopTicking?.();
     this.stopTicking = null;
-    this.stopSettling?.();
-    this.stopSettling = null;
-    this.settleAgain = false;
+    this.stopPolling?.();
+    this.stopPolling = null;
+    this.justScrolled = false;
     this.show(IDLE);
   }
 

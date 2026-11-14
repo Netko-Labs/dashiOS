@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import type { Bounds, Modifiers, PointerInfo } from "@mirinjs/metal";
 import { scrollStep, TICK_MS } from "../src/shared/file-browser/lib/marquee/geometry.ts";
-import { Marquee } from "../src/shared/file-browser/lib/marquee/session.ts";
+import { Marquee, POLL_MS } from "../src/shared/file-browser/lib/marquee/session.ts";
 import type { ListingModel, Timers } from "../src/shared/file-browser/lib/marquee/types.ts";
 import { rowRects } from "../src/shared/file-browser/lib/views/list.tsx";
 import type { WindowSurface } from "../src/shared/metal/index.ts";
@@ -25,7 +25,14 @@ function setup(selection: string[] = []) {
     },
     commitRename: async () => true,
   };
-  const model: ListingModel = { scrollID: "list:rows", contentHeight: 10 * 26 + 8, paths, rects: rowRects(10, 400), nodeOf: (path) => `list:row:${path}` };
+  const model: ListingModel = {
+    scrollID: "list:rows",
+    contentHeight: 10 * 26 + 8,
+    paths,
+    rects: rowRects(10, 400),
+    nodeOf: (path) => `list:row:${path}`,
+    clicksToListing: true,
+  };
   const answers: (() => void)[] = [];
   const surface: WindowSurface = {
     bounds: (ids) =>
@@ -49,20 +56,12 @@ function setup(selection: string[] = []) {
       world.top = Math.max(0, Math.min(10 * 26 + 8 - frame.height, world.top + dy));
     },
   };
-  const timed: { ms: number; run: () => void; every: boolean }[] = [];
+  const timed: { ms: number; run: () => void }[] = [];
   const timers: Timers = {
     every: (ms, run) => {
-      const entry = { ms, run, every: true };
+      const entry = { ms, run };
       timed.push(entry);
       return () => void timed.splice(timed.indexOf(entry), 1);
-    },
-    after: (ms, run) => {
-      const entry = { ms, run, every: false };
-      timed.push(entry);
-      return () => {
-        const at = timed.indexOf(entry);
-        if (at >= 0) timed.splice(at, 1);
-      };
     },
   };
   const marquee = new Marquee(store, timers);
@@ -76,15 +75,11 @@ function setup(selection: string[] = []) {
     await Promise.resolve();
   };
   /** One tick of the scrolling timer, if it runs. */
-  const tick = () => timed.find((entry) => entry.every)?.run();
-  /** The waits that are due, run once. */
-  const elapse = () => {
-    for (const entry of timed.filter((each) => !each.every)) {
-      timed.splice(timed.indexOf(entry), 1);
-      entry.run();
-    }
-  };
-  return { marquee, world, send, answer, tick, elapse, timed, frame };
+  const tick = () => timed.find((entry) => entry.ms === TICK_MS)?.run();
+  /** The drag's look at where the content stands, if it is due. */
+  const poll = () => timed.find((entry) => entry.ms === POLL_MS)?.run();
+  const scrolling = () => timed.some((entry) => entry.ms === TICK_MS);
+  return { marquee, world, send, answer, tick, poll, scrolling, frame };
 }
 
 test("a press on empty space, dragged, selects what the rectangle touches, live, and keeps it on release", async () => {
@@ -173,14 +168,14 @@ test("Esc ends the drag and puts back the selection and the keyboard's place fro
 });
 
 test("past the bottom edge the listing scrolls and the rectangle, held to its items, grows", async () => {
-  const { marquee, world, send, answer, tick, elapse, timed } = setup();
+  const { marquee, world, send, answer, tick, poll, scrolling } = setup();
   send("down", 400, 60);
   send("move", 400, 100);
   await answer();
-  expect(timed.length).toBe(0);
+  expect(scrolling()).toBe(false);
   // 60 past the bottom edge (180).
   send("move", 400, 240);
-  expect(timed.map((entry) => entry.ms)).toEqual([TICK_MS]);
+  expect(scrolling()).toBe(true);
   // Down to the view's bottom edge, where row 5 starts: touching it takes it.
   expect(world.selection).toEqual(["/f0", "/f1", "/f2", "/f3", "/f4", "/f5"]);
   tick();
@@ -193,10 +188,12 @@ test("past the bottom edge the listing scrolls and the rectangle, held to its it
   // At the end it stops asking for more, and every row down to the last is taken.
   expect(world.top).toBe(10 * 26 + 8 - 130);
   expect(world.selection.length).toBe(10);
-  expect(timed.some((entry) => entry.every)).toBe(false);
-  // Once it stopped, the window is asked where the content stands.
+  expect(scrolling()).toBe(false);
+  // Once it stopped, the window is asked where the content stands: not at once (the last step may not be painted), a poll later.
   const asked = world.asked;
-  elapse();
+  poll();
+  expect(world.asked).toBe(asked);
+  poll();
   expect(world.asked).toBe(asked + 1);
   await answer();
   send("up", 400, 240);
@@ -205,15 +202,14 @@ test("past the bottom edge the listing scrolls and the rectangle, held to its it
 });
 
 test("a wheel during the drag moves the items under the rectangle: the window is asked where they are", async () => {
-  const { marquee, world, send, answer, elapse } = setup();
+  const { world, send, answer, poll } = setup();
   send("down", 400, 60);
   send("move", 400, 100);
   await answer();
   expect(world.selection).toEqual(["/f0", "/f1"]);
   // The host scrolled by itself: two rows up.
   world.top = 52;
-  marquee.wheel();
-  elapse();
+  poll();
   await answer();
   // The press was on row 0's place, which is now 52 above the view: rows 0 to 3 lie between it and the pointer.
   expect(world.selection).toEqual(["/f0", "/f1", "/f2", "/f3"]);
@@ -238,4 +234,25 @@ test("without a window to ask, nothing is dragged out", () => {
   send("up", 400, 100);
   expect(world.selection).toEqual(["/f3"]);
   expect(marquee.press(none)).toBe(false);
+});
+
+test("a click on a row that leaves its clicks to the listing is found by asking the window where the rows are", async () => {
+  const { marquee, world, send, answer } = setup();
+  world.top = 52;
+  // Row 2 shows at the top (50 to 76); the press is on the next one.
+  send("down", 300, 80);
+  send("up", 300, 80);
+  expect(marquee.press(none)).toBe(false);
+  const pressed = marquee.pressed();
+  await answer();
+  expect(await pressed).toBe("/f3");
+  // Under the last row there is none.
+  world.top = 10 * 26 + 8 - 130;
+  send("down", 300, 178);
+  const empty = marquee.pressed();
+  await answer();
+  expect(await empty).toBeNull();
+  // Where items take their own clicks, a click on the listing is on empty space, at once.
+  if (marquee.model) marquee.model = { ...marquee.model, clicksToListing: false };
+  expect(marquee.pressed()).toBeNull();
 });

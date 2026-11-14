@@ -138,18 +138,24 @@ export function Listing({ onBackgroundMenu }: ListingProps) {
   const marquee = marqueeOf(store);
   // The window says where the items are painted and scrolls them; without it nothing is dragged out.
   marquee.surface = useContext(Surface);
-  const { dragging } = useSyncExternalStore(marquee.subscribe, marquee.getSnapshot);
   return (
     <View
       testID="content"
       {...drop.props}
       onPointer={marquee.pointerEvent}
-      // The wheel is heard only during a drag: it moves the items under the rectangle.
-      {...(dragging ? { onWheel: marquee.wheel } : {})}
       onPress={(event) => {
         // The click that ends a marquee is the marquee's: its keys say what it does (plain replaces, ⇧ adds, ❖ toggles).
         if (marquee.press(event.modifiers)) return;
-        store.clickEmpty();
+        // In the list a row's click comes here too (D103): the window says which row the press was on.
+        const pressed = marquee.pressed();
+        if (pressed === null) store.clickEmpty();
+        else {
+          void pressed.then((path) => {
+            const item = path === null ? undefined : store.visible().find((each) => each.path === path);
+            if (item) store.click(item, event.modifiers);
+            else store.clickEmpty();
+          });
+        }
         actions.refocus();
       }}
       {...(onBackgroundMenu ? { onContextMenu: onBackgroundMenu } : {})}

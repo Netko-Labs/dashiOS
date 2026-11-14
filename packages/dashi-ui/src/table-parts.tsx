@@ -1,6 +1,6 @@
 /** A table's pieces (table.tsx): what a column is, the header of titles that sort, and one row. */
 
-import { type DragFiles, type DropInfo, type Modifiers, type PointerInfo, Svg, Text, View } from "@mirinjs/metal";
+import { type DragFiles, type DropInfo, type Modifiers, type PointerInfo, type PressInfo, Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { CHEVRON_DOWN, CHEVRON_UP } from "./glyphs.ts";
 import { SelectionBar } from "./selection.tsx";
@@ -88,7 +88,8 @@ export interface TableRowProps<T> {
   chosen: boolean;
   muted: boolean;
   height: number;
-  onSelect: (held: Modifiers) => void;
+  /** A click on the row; null for a row that takes no press (`Table`'s `rowPress`). */
+  onSelect: ((held: Modifiers) => void) | null;
   /** A steady table's row says when the pointer aims at it and when the button goes down or up on it. */
   steady?: { aim: () => void; press: (down: boolean) => void };
   dragFiles?: DragFiles;
@@ -105,7 +106,7 @@ export function TableRow<T>({ row, columns, testID, striped, chosen, muted, heig
   return (
     <View
       testID={testID}
-      onPress={(event) => onSelect(event.modifiers)}
+      {...(onSelect ? { onPress: (event: PressInfo) => onSelect(event.modifiers) } : {})}
       {...(steady
         ? {
             onHoverChange: (hovered: boolean) => {

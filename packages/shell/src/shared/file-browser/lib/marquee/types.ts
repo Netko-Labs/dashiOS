@@ -13,6 +13,11 @@ export interface ListingModel {
   rects: readonly Rect[];
   /** The `testID` of the node painted at an item's rectangle. */
   nodeOf(path: string): string;
+  /**
+   * The items take no press themselves (the list's rows, D103): a click on
+   * one reaches the listing, which asks which item it was on.
+   */
+  clicksToListing: boolean;
 }
 
 /** The part of the store a marquee uses. */
@@ -25,17 +30,12 @@ export interface MarqueeStore {
 
 export interface Timers {
   every(ms: number, run: () => void): () => void;
-  after(ms: number, run: () => void): () => void;
 }
 
 export const REAL_TIMERS: Timers = {
   every: (ms, run) => {
     const timer = setInterval(run, ms);
     return () => clearInterval(timer);
-  },
-  after: (ms, run) => {
-    const timer = setTimeout(run, ms);
-    return () => clearTimeout(timer);
   },
 };
 

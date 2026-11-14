@@ -2117,14 +2117,16 @@ short words, as the rulebook is written.
   (`layout`) and scrolls a view by pixels (`scroll`); `runApp` and the
   portal's windows provide it, so Files, `dashi-dialog`, the portal's
   sheets and Text Editor's chooser all get the marquee from the one
-  listing. The drag asks once when it starts and again when the items may
-  have moved by themselves (a wheel, the end of the scrolling), and counts
-  its own scrolling in between from the views' own measures.
+  listing. The drag asks when it starts, and then every 150 ms while it
+  is not scrolling the listing itself: a wheel moves the items with no word
+  to the app (the scroll view takes the turn; `onWheel` on the view around
+  it hears nothing, as the VM showed). Its own scrolling it counts, from
+  the views' own measures.
 - **Why:** no second listing, no change to mirin, and the answer is what
   was painted, so the rectangle lands on what the person sees.
 - **Cost:** a `layout` answer names every painted node (some tens of
-  kilobytes in a big window) each time it is asked: a few times a drag,
-  never on a click. The views' measures (tile 104 × 98, row 26) are now
+  kilobytes in a big window) each time it is asked: about seven times a
+  second during a drag, and once for a click on a list's row (D103). The views' measures (tile 104 × 98, row 26) are now
   also what the rectangle is matched against: change one and
   `tileRects`/`rowRects` change with it.
 - **Undo:** when mirin reports a scroll position and takes a scroll, read
@@ -2166,3 +2168,28 @@ short words, as the rulebook is written.
   selection wash), and it needs no measuring of names.
 - **Cost:** a rectangle that only crosses a tile's empty corner takes it.
 - **Undo:** `tileRects` and `rowRects` say what an item's place is.
+
+### D103. In Files' list a row's click is the listing's
+
+- **Date:** 2026-11-14. The `n15-marquee` agent's.
+- **Question:** D101 reads a drag's keys from the click its release makes.
+  In the VM a ⇧-drag that started on one row and ended on another added
+  nothing: Metal gives a press to the innermost view with `onPress` (the
+  row), and a row hears a click only when the button goes up on that same
+  row. So most drags in a list made no click, and had no keys.
+- **Choice:** in Files' list the rows take no press (`Table`'s new
+  `rowPress`, off there); the listing around them owns every press that is
+  not on an icon or a name, so every release inside it is its click, with
+  the keys. A click that was not a drag is then looked up: the listing
+  asks the window where the rows are painted (D100) and selects the row
+  the press was on, or nothing under the last row. The icon and the name
+  keep their own click. Where no window can be asked (a test's host), the
+  rows take their presses as before and nothing is dragged out.
+- **Why:** it makes ⇧ and ❖ drags right from anywhere in a list, with what
+  Metal gives today.
+- **Cost:** a click on a row's blank part waits for one `layout` answer
+  from the host before it selects (not measured; not seen in the VM), and a
+  row is no longer a button to a screen reader (its name still is).
+  Activity Monitor and every other `Table` are untouched.
+- **Undo:** once mirin sends `modifiers` with the pointer (D101), drop
+  `rowPress={false}` in `list.tsx` and `pressed()` in `session.ts`.
