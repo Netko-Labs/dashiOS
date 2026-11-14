@@ -1591,3 +1591,25 @@ short words, as the rulebook is written.
 - **Undo:** `followCircumstances` in `boot/persona.ts` (one line in
   `main.tsx`) tells the persona; without it Dashi is always as chosen.
 
+### D74. A character is shared as one file: read in full before it is added, written from what was checked
+
+- **Date:** 2026-11-14. The `n6-face` agent's.
+- **Question:** how a character goes from one person to another, and what a
+  file somebody sent may bring with it.
+- **Choice:** "Add a File…" opens the desktop's file chooser, checks the file
+  (D61's rules; over 8 KB it is not read), and hangs a sheet from the window
+  with its name, who it is, and all of what the assistant would be told, in
+  both languages. Only "Add" copies it, and what is written into the folder
+  is the checked character written out again, never the sender's bytes, so
+  an unknown key cannot ride along. A file whose id is already there is
+  refused, not replaced. "Export…" writes this Dashi through the desktop's
+  save dialog: the character's text with the name, colour, mark, dots and
+  talk as they are now. What it calls the person and their own note are not
+  exported. An exported preset takes a new id (`miso-2`): a file may not
+  take a preset's.
+- **Why:** the text is somebody else's words until the person has read it.
+- **Cost:** a long text makes a tall sheet (the confirm sheet does not
+  scroll). No link or QR yet.
+- **Undo:** `Share` in `settings-app/lib/panes/persona-share.tsx`; the folder
+  and "Make a File" work without it.
+

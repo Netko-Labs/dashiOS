@@ -8,6 +8,7 @@
  * and an agent's changes nothing. Choosing a character is one change and one Undo.
  */
 
+import { type Confirm, useConfirm } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import {
@@ -37,6 +38,7 @@ import { Setting } from "../setting.tsx";
 import { MiniButton } from "./parts.tsx";
 import { Look } from "./persona-look.tsx";
 import { CapsulePreview, CharacterFilesNotes, LineField } from "./persona-parts.tsx";
+import { Share, type ShareDialogs } from "./persona-share.tsx";
 import type { VoicePaneSource } from "./voice.tsx";
 import { voiceChoices } from "./voice-words.ts";
 
@@ -60,13 +62,15 @@ const NO_VOICE = { subscribe: () => () => {}, getSnapshot: () => null };
 
 export interface PersonaPaneProps {
   settings: SettingsStore;
-  persona: { source: PersonaSource; openFile(path: string): void };
+  persona: { source: PersonaSource; openFile(path: string): void; dialogs?: ShareDialogs };
   voice?: VoicePaneSource;
   byPerson?: ByPerson;
 }
 
 interface Parts extends PersonaPaneProps {
   guard: PersonOnly;
+  /** Opens the pane's sheet: a file somebody sent is read in full before it is added. */
+  ask: Confirm["ask"];
   /** The voices here and Dashi's own; null while Voice is off or its models are not here. */
   voices: { choices: Array<{ value: string; label: string }>; own: string } | null;
 }
@@ -172,7 +176,7 @@ function Sound({ settings, persona, guard, voices }: Parts) {
   );
 }
 
-function Own({ settings, persona, guard }: Parts) {
+function Own({ settings, persona, guard, ask }: Parts) {
   const view = useSyncExternalStore(persona.source.subscribe, persona.source.view);
   const [failed, setFailed] = useState(false);
   const make = (): void =>
@@ -206,12 +210,7 @@ function Own({ settings, persona, guard }: Parts) {
           onKeep={(text) => guard.mine("persona/note", () => settings.patch("persona", { note: text.trim() === "" ? undefined : text.trim() }))}
         />
       </Setting>
-      <Setting id="persona/own" testID="persona-own-row" {...quiet(guard, "persona/own", failed ? "The file could not be made." : undefined)}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <MiniButton testID="persona-open-folder" label="Show Folder" onPress={() => persona.openFile(persona.source.dir)} />
-          <MiniButton testID="persona-make-file" label="Make a File" onPress={make} />
-        </View>
-      </Setting>
+      <Share settings={settings} persona={persona} guard={guard} ask={ask} onMake={make} problem={failed ? "The file could not be made." : undefined} />
       <Setting
         id="persona/reset"
         testID="persona-reset-row"
@@ -232,35 +231,39 @@ export function PersonaPane(props: PersonaPaneProps) {
   const on = useSettings(settings).data.voice.on === true && models !== null && models.service === "ready" && basicsHere(models.sets);
   const choices = on && models ? voiceChoices(models.voices, models.defaultVoice) : [];
   const voices = on && models && choices.length > 0 ? { choices, own: models.defaultVoice } : null;
-  const parts: Parts = { ...props, guard, voices };
+  const confirm = useConfirm();
+  const parts: Parts = { ...props, guard, voices, ask: confirm.ask };
   return (
-    <Page title="Your Dashi">
-      <Hero testID="persona-hero">
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, padding: 8 }}>
-          <CapsulePreview
-            colour={view.colour}
-            mark={view.mark}
-            dots={view.dots}
-            motion={view.motion}
-            name={view.name}
-            still={useSettings(settings).data.appearance.reduceMotion === true}
-            line={previewLine(view, persona.source.language())}
-          />
-          <MiniButton
-            testID="persona-hear"
-            label={voices ? "Hear it" : "Turn on Voice to hear it"}
-            disabled={!voices}
-            onPress={() => voice?.sample(view.voice ?? voices?.own ?? "")}
-          />
-        </View>
-      </Hero>
-      <Who {...parts} />
-      <Sound {...parts} />
-      <Look {...parts} />
-      <Own {...parts} />
-      <CharacterFilesNotes source={persona.source} />
-      <Caption>{PERSONA_PROMISE}</Caption>
-    </Page>
+    <>
+      <Page title="Your Dashi">
+        <Hero testID="persona-hero">
+          <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, padding: 8 }}>
+            <CapsulePreview
+              colour={view.colour}
+              mark={view.mark}
+              dots={view.dots}
+              motion={view.motion}
+              name={view.name}
+              still={useSettings(settings).data.appearance.reduceMotion === true}
+              line={previewLine(view, persona.source.language())}
+            />
+            <MiniButton
+              testID="persona-hear"
+              label={voices ? "Hear it" : "Turn on Voice to hear it"}
+              disabled={!voices}
+              onPress={() => voice?.sample(view.voice ?? voices?.own ?? "")}
+            />
+          </View>
+        </Hero>
+        <Who {...parts} />
+        <Sound {...parts} />
+        <Look {...parts} />
+        <Own {...parts} />
+        <CharacterFilesNotes source={persona.source} />
+        <Caption>{PERSONA_PROMISE}</Caption>
+      </Page>
+      {confirm.sheet}
+    </>
   );
 }
 

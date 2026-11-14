@@ -54,7 +54,7 @@ export interface PaneContext {
   /** Talking to Dashi: its models and voices (Settings › Voice); absent where the shell runs no voice. */
   voice?: VoicePaneSource;
   /** Who Dashi is (Settings › Your Dashi): the choices as resolved, the person's character files, and opening one in its app. */
-  persona?: { source: PersonaSource; openFile(path: string): void };
+  persona?: { source: PersonaSource; openFile(path: string): void; dialogs?: { choose(): Promise<string | null>; save(name: string): Promise<string | null> } };
   /** The agents connected now (Settings › Agents: "Connected now"). */
   agents?: Pick<AgentStore, "subscribe" | "getSnapshot">;
   /** The keyboard layouts xkb knows. */

@@ -33,6 +33,7 @@ test("every row of Your Dashi is the person's alone: get_settings and set_settin
     "persona/dots",
     "persona/note",
     "persona/own",
+    "persona/share",
     "persona/reset",
   ]);
   for (const row of rows) {

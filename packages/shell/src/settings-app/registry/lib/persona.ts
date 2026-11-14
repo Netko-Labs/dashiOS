@@ -84,5 +84,13 @@ export const PERSONA_ROWS = [
     keywords: ["make a file", "character file", "share", "json", "custom character"],
     kind: "action",
   },
+  {
+    id: "persona/share",
+    title: "Share it",
+    name: "Export this Dashi as a file",
+    detail: "One small file with its name, character, colour, mark and dots. Send it; they press Add a File.",
+    keywords: ["export", "share", "send", "file", "character"],
+    kind: "action",
+  },
   { id: "persona/reset", title: "Back to Dashi", name: "Put Dashi back as it was", keywords: ["reset", "default", "restore"], kind: "action" },
 ] as const satisfies readonly RowDef[];

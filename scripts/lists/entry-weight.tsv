@@ -250,6 +250,7 @@ packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/locale
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/logind
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/metal
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/pill
+packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/portal
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/processes
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/session-power
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/settings
