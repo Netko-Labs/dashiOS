@@ -5,41 +5,10 @@
  */
 
 import { expect, test } from "bun:test";
-import { FakeTasks, FakeVoice } from "../src/capsule/lib/fake.ts";
-import { VoiceMode } from "../src/capsule/lib/voice-mode.ts";
-import type { OpenCard } from "../src/capsule/types.ts";
-import { CARD_ARM_MS, createPillHub } from "../src/shared/pill/index.ts";
+import { voiceStateOf } from "../src/capsule/lib/told.ts";
+import { CARD_ARM_MS } from "../src/shared/pill/index.ts";
+import { stage } from "./support/capsule.ts";
 import { flush } from "./support/time.ts";
-import { handTimers } from "./support/voice.ts";
-
-function stage(options: { pressed?: () => boolean } = {}) {
-  const hub = createPillHub();
-  const hand = handTimers();
-  let clock = 1000;
-  const advance = (ms: number): void => {
-    clock += ms;
-    hand.advance(ms);
-  };
-  const voice = new FakeVoice();
-  const state: { card: OpenCard | null; launcher: number; mode: VoiceMode | null } = { card: null, launcher: 0, mode: null };
-  const tasks = new FakeTasks(hand, async (task) => (state.mode?.saidYes(task) ?? false) || (options.pressed?.() ?? false), 1000);
-  const mode = new VoiceMode({
-    hub,
-    voice,
-    tasks: () => tasks,
-    onCard: (card) => void (state.card = card),
-    openLauncher: () => void state.launcher++,
-    timers: hand,
-    now: () => clock,
-  });
-  state.mode = mode;
-  /** A spoken ask, as 0.8 tells it: the words heard, then the task. */
-  const say = (request: string): string => {
-    voice.show({ kind: "thinking", text: request });
-    return tasks.ask(request);
-  };
-  return { hub, voice, tasks, mode, state, advance, say, phase: () => hub.voiceMode.getSnapshot().phase };
-}
 
 test("the chip's states become voice mode's, and the level follows the microphone", () => {
   const { hub, voice, phase } = stage();
@@ -242,6 +211,23 @@ test("Stop stops the voice and the task", () => {
   expect(phase()).toBe("stopped");
 });
 
+test("❖Esc stops what Dashi says and every task of its at work, and is nothing when there is none", () => {
+  const { hub, voice, tasks, say, phase } = stage();
+  hub.voiceCommands.send({ do: "stop", all: true });
+  expect(phase()).toBe("idle");
+  const spoken = say("Lock the screen");
+  const typed = tasks.ask("Open Files");
+  const waits = tasks.ask("Turn on Dark Mode");
+  tasks.settle(waits, ["Turn Dark Mode on"]);
+  hub.voiceCommands.send({ do: "stop", all: true });
+  expect(voice.getSnapshot()).toBeNull();
+  const phaseOf = (id: string): string | undefined => tasks.getSnapshot().find((task) => task.id === id)?.phase;
+  expect([phaseOf(spoken), phaseOf(typed)]).toEqual(["stopped", "stopped"]);
+  // A plan that waits for a yes is not at work: its card stays.
+  expect(phaseOf(waits)).toBe("planned");
+  expect(phase()).toBe("stopped");
+});
+
 test("an agent's question opens by itself, is said, and the next words heard answer it", async () => {
   const { hub, voice, mode, state, advance } = stage();
   const answer = mode.questions.ask({ who: "Claude Code", text: "Which branch?", spoken: "Claude Code asks: Which branch?", seconds: 60 });
@@ -269,28 +255,27 @@ test("a question can be skipped, typed elsewhere, or run out of time", async () 
   expect(hub.asks.getSnapshot()).toEqual([]);
 });
 
-test("an answer too long for the line is read whole in the card; Read it all opens the launcher", () => {
-  const { voice, tasks, state, say, mode, advance } = stage();
-  const id = say("What is new?");
-  tasks.settle(id, [], "A long answer. ".repeat(12));
+test("Done after a spoken yes has its four seconds: a line that repeats what was heard does not keep it waiting", async () => {
+  const { hub, voice, tasks, say, advance, phase } = stage();
+  const id = say("Lock the screen");
+  tasks.settle(id, ["Lock the screen"]);
   voice.show(null);
-  expect(state.card).toMatchObject({ what: { reading: { id, request: "What is new?" } } });
-  mode.cardAction("read");
-  expect(state.card).toBeNull();
-  expect(state.launcher).toBe(1);
-  // It goes when the person talks to Dashi again, or after two minutes.
-  tasks.settle(say("And what else?"), [], "Another long answer. ".repeat(10));
+  advance(0);
+  expect(voice.hear("yes")).toBe(true);
+  await flush();
+  voice.show({ kind: "notice", text: "You said: Yes." });
+  expect(hub.voiceMode.getSnapshot()).toMatchObject({ phase: "notice", line: "You said: Yes." });
+  advance(1001);
+  expect(hub.voiceMode.getSnapshot()).toMatchObject({ phase: "done", line: "Done: Lock the screen" });
+  advance(2500);
   voice.show(null);
-  expect(state.card).not.toBeNull();
-  voice.show({ kind: "listening", text: "", question: false });
-  expect(state.card).toBeNull();
-  tasks.settle(say("And then?"), [], "A third long answer. ".repeat(10));
-  voice.show(null);
-  expect(state.card).not.toBeNull();
-  advance(120_000);
-  expect(state.card).toBeNull();
-  // A short answer is only said.
-  const short = say("What time is it?");
-  tasks.settle(short, [], "Half past eleven.");
-  expect(state.card).toBeNull();
+  expect(phase()).toBe("done");
+  advance(1500);
+  expect(phase()).toBe("idle");
+  // A notice that leads somewhere is still said first.
+  expect(
+    voiceStateOf({ kind: "notice", text: "No agent answers yet.", go: "agents" }, { phase: "done", line: "Done", until: 0 }, [], new Set(), 9),
+  ).toMatchObject({
+    phase: "notice",
+  });
 });

@@ -1709,3 +1709,100 @@ short words, as the rulebook is written.
   already wore Dashi's colour; its name says who it is.
 - **Undo:** the `glyph` prop of `AgentMark`, `JobCapsule` and the field's
   `Lead` (`menubar/lib/menubar-pill-slots.tsx` passes it).
+
+### D81. A click or a key in the window after you let go: the words are not typed
+
+- **Date:** 2026-11-14. The `n8-harden` agent's.
+- **Question:** dictation belongs to the field where the key went down, but
+  Dashi knows the window, not the field. A click on another conversation, a
+  Tab to the next field, during the tidying: the words landed there and the
+  capsule said Typed. AT-SPI names a focused field in some apps, but a chat
+  app uses the same field for every conversation, so "the same field" proves
+  nothing.
+- **Choice:** no field counts as identified tonight. If the person's own
+  hands pressed a button or a key in that window after the dictation key
+  came up (the compositor's `input-origin`, the person's presses only, never
+  an agent's), nothing is typed: "You moved on. Your words wait here." with
+  Copy, for ten minutes (`WaitReason` `moved`, added to `shared/pill`).
+  Hands-free asks from the first words heard of each sentence, so Return and
+  then the next sentence still lands; the tap that ends hands-free is a key
+  in the window itself and is not asked. "Type it instead" asks from its
+  press. Where the compositor can't say, the window is trusted as before.
+- **Why:** one Return from the wrong person is worse than a paste.
+- **Cost:** a harmless click (to place the caret where the words should go)
+  loses the landing; the words are one Copy away. A sentence under a second
+  in hands-free has no first words to count from and is typed.
+- **Undo:** `moved` in `dictation/lib/land.ts`.
+
+### D82. "Read it all" scrolls the card in place, a view at a time
+
+- **Date:** 2026-11-14. The `n8-harden` agent's.
+- **Question:** past six lines a card has no Yes, and "Read it all" opened
+  the launcher: another surface, away from the question, and for a spoken
+  plan the wrong one. The design's "opens the text where it lives" would put
+  a message in an app's field before any yes.
+- **Choice:** the card itself scrolls. "Read it all" shows the next view of
+  the message (five lines and "and N more steps"; a line longer than a view
+  is cut at words), then "More", until the end shows; only then is Yes back
+  (a question's choices too). The buttons arm again after each scroll, so two
+  quick presses on the same spot are never a yes; with the keyboard, Return
+  reads on and is yes only at the end. A yes said before the end is answered
+  "Read it all first, then say yes." A view at a time, not a free scroll:
+  "the end was shown" is then a fact the model knows, not a guess from a
+  scroll position. Nothing is typed anywhere and the launcher is not opened.
+  "Type it" on a question still answers it where it lives.
+- **Why:** the person reads and answers in one place, and nothing acts
+  before the yes.
+- **Cost:** no way back up tonight (the card says what the task was; No and
+  asking again is the way). A plan of forty steps is eight presses.
+- **Undo:** `fit` and `OpenCard.from` in `capsule/`; `cardAction("read")`.
+
+### D83. ❖Esc stops Dashi, with one hand
+
+- **Date:** 2026-11-14. The `n8-harden` agent's.
+- **Question:** bare Esc is no longer taken from the app (the night's rule),
+  so stopping Dashi meant reaching the capsule's Stop with the pointer, or
+  ⌃❖Esc, which takes two hands on most keyboards and cuts every agent off.
+- **Choice:** ❖Esc. The thumb and a finger of the left hand; no plain key
+  is taken (the chord was already the shell's, to leave the ❖Tab switcher,
+  and still does that while the switcher is up). It stops what Dashi hears,
+  thinks or says, and every task of Dashi's that is at work, typed or
+  spoken; a plan that waits for a yes keeps its card. With nothing speaking
+  or at work it does nothing and shows nothing. The capsule's Stop wears
+  "❖Esc" as its hint. The Dashi key held with Esc comes to the same, since
+  the Dashi key is ❖Space. TypeScript only: no compositor change.
+- **Why:** one key to learn, on the hand that is already at the keyboard,
+  beside the chord people know for "get me out" (⌥❖Esc is Force Quit).
+- **Cost:** dictation is not stopped by it (letting go, or a tap in
+  hands-free, already does). Agents from outside Dashi are still ⌃❖Esc.
+- **Undo:** the `switch-cancel` case in `shortcuts.ts`; `STOP_KEYS`.
+
+### D84. Small things the join left open
+
+- **Date:** 2026-11-14. The `n8-harden` agent's.
+- **Question:** seven loose ends from the first run of the four pieces
+  together (`04-night/join/README.md`), each small, each a choice.
+- **Choice:**
+  - The bar's field closes, draft kept, when the window in front changes.
+    While the field has the keyboard no window is focused, so "changed" is
+    read from what changes it: a window opening or closing (not the
+    clipboard's helper or a portal dialog), another Space, Mission Control,
+    the ❖Tab switcher.
+  - A card says "hold the Dashi key and say yes" only when it listens (a
+    spoken plan, a question); a typed plan's card says to press.
+  - "Done" goes before a notice that only repeats what was heard, so it
+    shows for its four seconds; a notice that leads somewhere (Settings) is
+    still first.
+  - The capsule's window lingers 350 ms after its last line, so the next
+    line is drawn in it instead of in a window that takes half a second to
+    reopen. For that time the place it had still takes a click.
+  - A tap of ❖Space does not close a launcher that a tap of ❖ alone opened
+    in the last 1.5 s.
+  - The bar's mark, the field's lead and Dashi's jobs wear the chosen mark.
+  - `settings/settings.ts` knows every section `settings-app/sections.ts`
+    keeps; a test holds the two together.
+- **Why:** each is the plainer reading of what the person meant.
+- **Cost:** a window that opens by itself (a download's dialog) closes the
+  field; the draft is one click away.
+- **Undo:** `frontWatch`; `hintOf`; `voiceStateOf`; `LINGER_MS`;
+  `tapClosesLauncher`.

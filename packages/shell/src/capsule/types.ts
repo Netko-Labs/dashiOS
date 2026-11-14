@@ -15,6 +15,8 @@ export interface OpenCard {
   what: { ask: PillAsk } | { reading: Reading };
   keyboard: boolean;
   armsAt: number;
+  /** How far "Read it all" has scrolled it: the first of its lines that shows (0 at the start). */
+  from: number;
   /** Dashi listens for a spoken yes or no, or the answer. */
   hears: boolean;
 }

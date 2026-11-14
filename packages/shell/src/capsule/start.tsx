@@ -20,7 +20,7 @@ import { shownOf } from "./lib/model.ts";
 import { cardBottom, dockTop, placeOf } from "./lib/place.ts";
 import { SCENES } from "./lib/scenes.ts";
 import type { TaskSource, VoiceSource } from "./lib/sources.ts";
-import { CapsuleSurface } from "./lib/surface.ts";
+import { CapsuleSurface, LINGER_MS } from "./lib/surface.ts";
 import { CapsuleView, type ViewState } from "./lib/view.tsx";
 import { VoiceMode } from "./lib/voice-mode.ts";
 import { bottomStack } from "./stack.ts";
@@ -112,13 +112,12 @@ class Running implements Capsule {
         this.card = next;
         this.sync();
       },
-      openLauncher: needs.openLauncher,
       timers: this.timers,
       now: this.now,
     });
     // Until something is drawn and says where it is, the surface takes no clicks at all.
     this.clickable([]);
-    this.surface = new CapsuleSurface({ spawn: needs.spawn, element: this.view() });
+    this.surface = new CapsuleSurface({ spawn: needs.spawn, element: this.view(), lingerMs: LINGER_MS });
     needs.compositor?.inputRegion({ namespace: KEYS_LAYER, rects: [] }).catch(() => {});
     const keys = <CardKeys card={this.keyCard} now={this.now} onAnswer={(answer) => this.answer(answer)} />;
     this.keys = new CapsuleSurface({

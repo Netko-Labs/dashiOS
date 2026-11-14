@@ -19,9 +19,13 @@ import { cardId } from "./sources.ts";
 /** The key surface's layer: `input-origin` there says the person pressed Return. */
 export const KEYS_LAYER = "dashi.capsule.keys";
 
-/** What a key comes to: Return is yes only as the first key after the card took the keyboard, armed and shown whole; Esc is no; anything else gives the keyboard back. */
-export function cardKey(kind: string, first: boolean, armed: boolean, content: Pick<CardContent, "kind" | "whole">): CardAnswer {
+/**
+ * What a key comes to: Return is yes only as the first key after the card took the keyboard (or was scrolled), armed and
+ * with its end shown; before the end it reads on; Esc is no; anything else gives the keyboard back.
+ */
+export function cardKey(kind: string, first: boolean, armed: boolean, content: Pick<CardContent, "kind" | "whole" | "end">): CardAnswer {
   if (kind === "escape") return content.kind === "reading" ? { do: "close" } : { do: "no" };
+  if (kind === "enter" && first && armed && !content.end) return { do: "read" };
   if (kind === "enter" && first && armed && content.whole)
     return content.kind === "permission" ? { do: "yes" } : content.kind === "reading" ? { do: "close" } : { do: "unfocus" };
   return { do: "unfocus" };
@@ -38,7 +42,10 @@ function Sink({ card, now, onAnswer }: { card: OpenCard; now(): number; onAnswer
   // Keys counted since this card took the keyboard.
   const keys = useRef(0);
   return (
-    <KeySink testID="card-keys" onKey={(input) => onAnswer(cardKey(input.kind, keys.current++ === 0, now() >= card.armsAt, cardContent(card.what, "")))} />
+    <KeySink
+      testID="card-keys"
+      onKey={(input) => onAnswer(cardKey(input.kind, keys.current++ === 0, now() >= card.armsAt, cardContent(card.what, "", card.from)))}
+    />
   );
 }
 
@@ -50,5 +57,5 @@ function Sink({ card, now, onAnswer }: { card: OpenCard; now(): number; onAnswer
  */
 export function CardKeys({ card: cell, now, onAnswer }: CardKeysProps) {
   const card = useSyncExternalStore(cell.subscribe, cell.getSnapshot);
-  return <View style={{ flex: 1 }}>{card && <Sink key={cardId(card)} card={card} now={now} onAnswer={onAnswer} />}</View>;
+  return <View style={{ flex: 1 }}>{card && <Sink key={`${cardId(card)}:${card.from}`} card={card} now={now} onAnswer={onAnswer} />}</View>;
 }

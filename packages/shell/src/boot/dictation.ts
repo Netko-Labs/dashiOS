@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { runningCapsule } from "../capsule/index.ts";
 import { atspiFieldCheck } from "../clipboard/index.ts";
 import type { Compositor } from "../compositor/index.ts";
-import { type DictationParts, type Layout, startDictation } from "../dictation/index.ts";
+import { type DictationParts, type Layout, startDictation, tapClosesLauncher } from "../dictation/index.ts";
 import { idleKeymap } from "../keymap/keymap-state.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import { type Clipboard, systemClipboard } from "../shared/clipboard/index.ts";
@@ -118,12 +118,26 @@ async function keysBackToCard(compositor: Compositor | null, late: Late<LatePart
   await compositor.keymap(idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error));
 }
 
+/** A tap of the Dashi key: the launcher, as ❖Space always did. `sinceSuperTap` is how long ago ❖ alone was tapped. */
+function dashiTap(compositor: Compositor | null, late: Late<LateParts>, sinceSuperTap: number): void {
+  const launcherOpen = late.peek("overlays")?.has("launcher") === true;
+  // A card that is on screen takes the tap (capsule/), never an ask that is not shown. The compositor began sending plain
+  // keys the launcher's way the moment the key was tapped (launcher/type-ahead.ts): they go back to whoever has the keyboard.
+  if (runningCapsule.getSnapshot()?.cardUp() && !launcherOpen) return void keysBackToCard(compositor, late);
+  // A launcher that a tap of ❖ alone just opened stays: ❖ and then ❖Space is one habit, not two wishes.
+  if (launcherOpen && !tapClosesLauncher(sinceSuperTap)) return;
+  late.peek("launcher")?.toggle();
+}
+
 export function startDictating({ compositor, settingsStore, services, late, talking }: DictatingNeeds): DictationParts {
   const hub = late.get("pill");
   const clipboard = systemClipboard();
-  const fields = atspiFieldCheck();
+  // Accessibility is turned on at the first hold (as snippets do at their first keyword: clipboard/lib/fields.ts), so a
+  // password field can be told: asked again at the landing, by when an app that only then published its fields has.
+  const fields = atspiFieldCheck({ turnOn: true });
   const system = systemLayout();
   const taught = teaching();
+  let superTapAt = Number.NEGATIVE_INFINITY;
   const settings = () => settingsStore.getSnapshot().data;
   const trouble = (): DictationTrouble | null => {
     const view = talking.models.getSnapshot();
@@ -153,13 +167,7 @@ export function startDictating({ compositor, settingsStore, services, late, talk
     },
     hold: (keys) => talking.heldKeys.set("dictation", keys),
     voice: talking.voice,
-    launcher: () => {
-      const launcherOpen = late.peek("overlays")?.has("launcher") === true;
-      // A card that is on screen takes the tap (capsule/), never an ask that is not shown. The compositor began sending plain
-      // keys the launcher's way the moment the key was tapped (launcher/type-ahead.ts): they go back to whoever has the keyboard.
-      if (runningCapsule.getSnapshot()?.cardUp() && !launcherOpen) return void keysBackToCard(compositor, late);
-      late.peek("launcher")?.toggle();
-    },
+    launcher: () => dashiTap(compositor, late, performance.now() - superTapAt),
     trouble,
     busy: () => talking.voice.getSnapshot()?.kind === "listening",
     muted: microphoneMuted,
@@ -169,6 +177,7 @@ export function startDictating({ compositor, settingsStore, services, late, talk
       return front ? { window: front.id, pid: front.pid } : null;
     },
     secret: async (front) => (front.pid !== null && (await fields.passwordFocused(front.pid)) ? true : null),
+    pressed: async (window) => (compositor ? (await compositor.inputOrigin({ window })).person : null),
     typeText: async (window, text) => {
       if (!compositor) throw new Error("no compositor");
       await compositor.typeText({ window, text });
@@ -188,6 +197,7 @@ export function startDictating({ compositor, settingsStore, services, late, talk
   const stopHearing = compositor
     ? compositor.on((event) => {
         if (event.event === "held-key") parts.key(event.name, event.down, event.chord === true);
+        if (event.event === "super" && event.phase === "tap") superTapAt = performance.now();
         if (event.event === "lock" && event.locked) parts.dictation.stop();
       })
     : () => {};

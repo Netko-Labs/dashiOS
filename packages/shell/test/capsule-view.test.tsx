@@ -7,7 +7,7 @@ import { CAPSULE } from "../src/capsule/lib/measures.ts";
 import { CapsuleView, type ViewState } from "../src/capsule/lib/view.tsx";
 import type { OpenCard, Place, Shown } from "../src/capsule/types.ts";
 import { cell, DEFAULT_PERSONA, type DictationState, type Persona, type PillAsk, type VoiceModeState } from "../src/shared/pill/index.ts";
-import { settle } from "./support/time.ts";
+import { settle, until } from "./support/time.ts";
 
 interface Node {
   type: string;
@@ -54,6 +54,8 @@ async function drawn(shown: Shown, options: { place?: Place; persona?: Persona; 
     />,
     transport,
   );
+  // The first tree, however many turns the first render of the file takes; then what it set going.
+  await until(() => trees.length > 0, "the capsule's first tree");
   await settle();
   const { words, nodes } = read(JSON.parse(trees.at(-1) ?? "{}") as Node);
   /** Whether a node with that testID is drawn, and the node. */
@@ -66,7 +68,7 @@ const dictation = (state: Exclude<DictationState, { phase: "idle" }>): Shown => 
 const voice = (state: Exclude<VoiceModeState, { phase: "idle" }>): Shown => ({ kind: "voice", state });
 const card = (what: OpenCard["what"], more: Partial<OpenCard> = {}): Shown => ({
   kind: "card",
-  card: { what, keyboard: false, armsAt: 0, hears: false, ...more },
+  card: { what, keyboard: false, armsAt: 0, hears: false, from: 0, ...more },
   listening: null,
 });
 const permission = (steps: string[]): PillAsk => ({ kind: "permission", id: "t", task: "t", request: "Turn on Dark Mode", steps, spoken: true, since: 0 });
@@ -126,9 +128,11 @@ test("Dashi: the step with Stop, the answer as it is spoken, done", async () => 
     "Turn Dark Mode on",
     "1 of 2",
     "Stop",
+    // The one fast way to stop, as a hint: ❖ is drawn, Esc is its word.
+    "Esc",
   ]);
   const words = ["It", "is", "half", "past", "eleven."];
-  expect((await drawn(voice({ phase: "answer", words, at: 1, full: words.join(" ") }))).words).toEqual(["It is", "half past eleven.", "Stop"]);
+  expect((await drawn(voice({ phase: "answer", words, at: 1, full: words.join(" ") }))).words).toEqual(["It is", "half past eleven.", "Stop", "Esc"]);
   expect((await drawn(voice({ phase: "done", line: "Done: Turn Dark Mode on", until: 0 }))).words).toEqual(["Done: Turn Dark Mode on"]);
   expect((await drawn(voice({ phase: "stopped", until: 0 }))).words).toEqual(["Stopped"]);
   expect((await drawn(voice({ phase: "listening", text: "", answering: true }))).words).toEqual(["Listening for your answer"]);
@@ -154,7 +158,7 @@ test("a persona's mark and colour show on Dashi's capsule, never on dictation's"
 });
 
 test("the card shows the whole plan, names its task, and has both buttons", async () => {
-  const shown = await drawn(card({ ask: permission(["Turn Dark Mode on", "Open “Notes”"]) }));
+  const shown = await drawn(card({ ask: permission(["Turn Dark Mode on", "Open “Notes”"]) }, { hears: true }));
   expect(shown.words).toEqual([
     "?",
     "Dashi asks",
@@ -169,31 +173,45 @@ test("the card shows the whole plan, names its task, and has both buttons", asyn
   expect(shown.has("card:permission")).toBe(true);
 });
 
-test("past the limit the card has no Yes: only Read it all", async () => {
-  const shown = await drawn(card({ ask: permission(Array.from({ length: 9 }, (_, index) => `Step ${index + 1}`)) }));
+test("past the limit the card has no Yes: Read it all scrolls it, and Yes is back at its end", async () => {
+  const what = { ask: permission(Array.from({ length: 9 }, (_, index) => `Step ${index + 1}`)) };
+  const shown = await drawn(card(what));
   expect(shown.words).toContain("… and 4 more steps");
   expect(shown.words).not.toContain("Yes, this once");
-  expect(shown.words.slice(-3)).toEqual(["It is too long to answer here.", "No", "Read it all"]);
+  expect(shown.words.slice(-3)).toEqual(["Read it all to answer.", "No", "Read it all"]);
+  const end = await drawn(card(what, { from: 5 }));
+  expect(end.words).toContain("9. Step 9");
+  expect(end.words).not.toContain("1. Step 1");
+  expect(end.words.slice(-2)).toEqual(["No", "Yes, this once"]);
+  const middle = await drawn(card({ ask: permission(Array.from({ length: 14 }, (_, index) => `Step ${index + 1}`)) }, { from: 5, keyboard: true }));
+  expect(middle.words.slice(-3)).toEqual(["Return reads on. Esc closes it.", "No", "More"]);
 });
 
-test("the card's keys: Return is yes only as the first key, armed and whole; Esc is no; anything else gives the keyboard back", () => {
-  const whole = { kind: "permission", whole: true } as const;
+test("the card's keys: Return is yes only as the first key, armed and at the end; before it, it reads on; Esc is no; anything else gives the keyboard back", () => {
+  const whole = { kind: "permission", whole: true, end: true } as const;
   expect(cardKey("enter", true, true, whole)).toEqual({ do: "yes" });
   expect(cardKey("enter", false, true, whole)).toEqual({ do: "unfocus" });
   expect(cardKey("enter", true, false, whole)).toEqual({ do: "unfocus" });
-  expect(cardKey("enter", true, true, { kind: "permission", whole: false })).toEqual({ do: "unfocus" });
+  expect(cardKey("enter", true, true, { kind: "permission", whole: false, end: false })).toEqual({ do: "read" });
+  expect(cardKey("enter", true, false, { kind: "permission", whole: false, end: false })).toEqual({ do: "unfocus" });
   expect(cardKey("escape", false, false, whole)).toEqual({ do: "no" });
-  expect(cardKey("escape", true, true, { kind: "reading", whole: true })).toEqual({ do: "close" });
-  expect(cardKey("enter", true, true, { kind: "reading", whole: true })).toEqual({ do: "close" });
-  expect(cardKey("enter", true, true, { kind: "question", whole: true })).toEqual({ do: "unfocus" });
+  expect(cardKey("escape", true, true, { kind: "reading", whole: true, end: true })).toEqual({ do: "close" });
+  expect(cardKey("enter", true, true, { kind: "reading", whole: true, end: true })).toEqual({ do: "close" });
+  expect(cardKey("enter", true, true, { kind: "question", whole: true, end: true })).toEqual({ do: "unfocus" });
+  expect(cardKey("enter", true, true, { kind: "question", whole: false, end: true })).toEqual({ do: "unfocus" });
   expect(cardKey("text", true, true, whole)).toEqual({ do: "unfocus" });
+});
+
+test("a typed plan's card does not listen, so it does not say to say yes", async () => {
+  const typed = await drawn(card({ ask: permission(["Lock the screen"]) }));
+  expect(typed.words.slice(-3)).toEqual(["Press a button, or tap the Dashi key then Return.", "No", "Yes, this once"]);
 });
 
 test("a card with the keyboard says so; a question says how to answer; a long answer closes", async () => {
   const focused = await drawn(card({ ask: permission(["Lock the screen"]) }, { keyboard: true }));
   expect(focused.words).toContain("Return is yes, Esc is no. Any other key gives the keyboard back.");
   const question = await drawn(
-    card({ ask: { kind: "question", id: "q", text: "Which branch?", choices: [], who: "Claude Code", about: "fix the test", since: 0 } }),
+    card({ ask: { kind: "question", id: "q", text: "Which branch?", choices: [], who: "Claude Code", about: "fix the test", since: 0 } }, { hears: true }),
   );
   expect(question.words).toEqual(["?", "Claude Code asks", "“fix the test”", "Which branch?", "Hold the Dashi key and answer, or type it.", "Skip", "Type it"]);
   const reading = await drawn(card({ reading: { id: "r", request: "what is new", text: "Three things.\nThe assistant." } }));

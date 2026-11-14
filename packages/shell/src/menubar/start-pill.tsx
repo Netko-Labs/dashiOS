@@ -38,6 +38,8 @@ export interface BarPillNeeds {
   primary(): string | undefined;
   /** The screen locked: `listener` runs; the returned function stops it. */
   onLock(listener: () => void): () => void;
+  /** The window in front changed (one opened or closed, another Space, the switcher, Mission Control): `listener` runs; the returned function stops it. */
+  onFront(listener: () => void): () => void;
   /** The launcher, where a plan with no card is answered. */
   showLauncher(): void;
   /** What a bar's status side is built from, for the signs that stay in the row. */
@@ -87,6 +89,8 @@ export function startBarPill(needs: BarPillNeeds): { pill: BarPill; stop(): void
     if (gesture.key === "dashi" && (gesture.gesture === "tap" || gesture.gesture === "hold")) field.close();
   });
   const stopLock = needs.onLock(() => field.close());
+  // The words were for what was in front: when that changes the row gives the keyboard up, the draft kept.
+  const stopFront = needs.onFront(() => field.close());
   return {
     pill: {
       hub,
@@ -99,6 +103,7 @@ export function startBarPill(needs: BarPillNeeds): { pill: BarPill; stop(): void
       stopMenus();
       stopKeys();
       stopLock();
+      stopFront();
       field.stop();
       jobs.close();
     },

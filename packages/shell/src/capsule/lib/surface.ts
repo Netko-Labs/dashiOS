@@ -28,6 +28,12 @@ const RESPAWN_MS = 1500;
  */
 export const MIN_OPEN_MS = 400;
 export const REOPEN_MS = 150;
+/**
+ * How long the capsule's window stays open, drawing nothing, after the last line went: one line often replaces
+ * another a moment later (heard, then the step; typed, then a notice), and a window that hid in between took half
+ * a second to come back (`REOPEN_MS` and the host's own opening).
+ */
+export const LINGER_MS = 350;
 
 export interface SurfaceOptions {
   /** Start a host with no window (`deferred`). */
@@ -36,6 +42,8 @@ export interface SurfaceOptions {
   element: ReactElement;
   /** The layer's name; the capsule's own unless said (the card's key surface, card-keys.tsx). */
   namespace?: string;
+  /** Stay open this long after `hide`, in case something shows again; 0 unless said. */
+  lingerMs?: number;
   /** The window was just opened. */
   opened?(): void;
   later?(fn: () => void, ms: number): unknown;
@@ -64,6 +72,7 @@ export class CapsuleSurface {
   private stopped = false;
   private hiddenAt = Number.NEGATIVE_INFINITY;
   private openedAt = Number.NEGATIVE_INFINITY;
+  private hideAt = Number.NEGATIVE_INFINITY;
   private waiting = false;
 
   constructor(private readonly options: SurfaceOptions) {
@@ -82,6 +91,7 @@ export class CapsuleSurface {
   }
 
   hide(): void {
+    if (this.wanted) this.hideAt = this.now() + (this.options.lingerMs ?? 0);
     this.wanted = null;
     this.apply();
   }
@@ -96,7 +106,7 @@ export class CapsuleSurface {
     const wanted = this.wanted;
     if (!host || this.waiting) return;
     if (open && (!wanted || wanted.output !== open.output || wanted.keyboard !== open.keyboard)) {
-      if (this.wait(this.openedAt + MIN_OPEN_MS)) return;
+      if (this.wait(Math.max(this.openedAt + MIN_OPEN_MS, wanted ? 0 : this.hideAt))) return;
       host.hide();
       this.open = null;
       this.hiddenAt = this.now();

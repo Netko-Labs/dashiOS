@@ -86,3 +86,12 @@ export function pillHeldKeys(options: { dashi: boolean; dictation: DictationKey 
   if (key) keys.push({ name: DICTATION, code: key.code, ...(key.modifier ? { alone: true as const } : {}) });
   return keys;
 }
+
+/** A launcher that a tap of ❖ alone opened this little ago was "just opened". */
+export const JUST_OPENED_MS = 1500;
+
+/**
+ * Whether a tap of the Dashi key (❖Space) closes the launcher that is open. Not when a tap of ❖ alone just opened it:
+ * the two keys are one habit for many hands (❖, then ❖Space), and the second would undo the first.
+ */
+export const tapClosesLauncher = (sinceSuperTap: number): boolean => sinceSuperTap >= JUST_OPENED_MS;

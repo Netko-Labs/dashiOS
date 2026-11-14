@@ -20,6 +20,8 @@ export type WaitReason =
   | "no-field"
   /** The window the key went down in is no longer in front (d-17). */
   | "left-window"
+  /** The person clicked or pressed a key in the window after letting go, and the field can't be told from another (D81). */
+  | "moved"
   /** The field says it is a password (d-20); only where Dashi can know. */
   | "secret"
   /** The paste was refused or failed. */

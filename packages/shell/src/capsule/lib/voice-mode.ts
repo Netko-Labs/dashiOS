@@ -12,7 +12,7 @@ import { CARD_ARM_MS, type KeyGesture, type PillAsk, type PillHub, type VoiceMod
 import { realTimers, type Timers } from "../../shared/time/index.ts";
 import type { OpenCard, Reading } from "../types.ts";
 import { Hearing } from "./hearing.ts";
-import { READING_CHARS } from "./model.ts";
+import { cardContent, READING_CHARS } from "./model.ts";
 import { Questions } from "./questions.ts";
 import { cardId, type Task, type TaskSource, type VoiceSource } from "./sources.ts";
 import { permissionsOf, voiceStateOf } from "./told.ts";
@@ -25,8 +25,6 @@ export interface VoiceModeDeps {
   tasks(): TaskSource | null;
   /** The card that is open changed. */
   onCard(card: OpenCard | null): void;
-  /** "Read it all": the launcher, where a task's plan and its words live. */
-  openLauncher(): void;
   timers?: Timers;
   now?(): number;
 }
@@ -168,7 +166,7 @@ export class VoiceMode {
     const ask = asks.find((each) => each.kind === "question" || each.spoken || this.opened.has(each.id));
     const what: OpenCard["what"] | null = ask ? { ask } : this.reading ? { reading: this.reading } : null;
     if (!what) return this.setCard(null);
-    const next: OpenCard = { what, keyboard: false, armsAt: this.now() + CARD_ARM_MS, hears: false };
+    const next: OpenCard = { what, keyboard: false, armsAt: this.now() + CARD_ARM_MS, hears: false, from: 0 };
     if (this.card && cardId(this.card) === cardId(next)) {
       if (JSON.stringify(this.card.what) !== JSON.stringify(what)) this.setCard({ ...this.card, what });
       return;
@@ -212,6 +210,11 @@ export class VoiceMode {
     const tasks = this.watched;
     // The buttons are not armed yet: a click meant for what was there before answers nothing.
     if (yes && !said && this.card && this.cardIs(id) && this.now() < this.card.armsAt) return;
+    // No yes, pressed or said, before the end of it has been shown.
+    if (yes && this.card && this.cardIs(id) && !cardContent(this.card.what, "", this.card.from).end) {
+      if (said) this.hear(id, "Read it all first, then say yes.", (again) => this.heardPlan(id, again));
+      return;
+    }
     this.opened.delete(id);
     this.hearing.stop();
     if (!yes) {
@@ -244,10 +247,14 @@ export class VoiceMode {
       case "open-ask":
         if (this.deps.hub.asks.getSnapshot().some((ask) => ask.id === command.id)) this.opened.add(command.id);
         return this.refresh();
-      case "stop":
+      case "stop": {
+        const working = command.all ? this.tasks().filter((task) => task.phase === "asking" || task.phase === "running") : [];
+        // ❖Esc with nothing speaking or at work is nothing.
+        if (command.all && working.length === 0 && !this.deps.voice?.getSnapshot()) return;
         this.deps.voice?.stop();
-        if (command.task) this.watched?.stop(command.task);
+        for (const id of [command.task, ...working.map((task) => task.id)]) if (id) this.watched?.stop(id);
         return this.show({ phase: "stopped", until: this.now() + 2500 }, 2500);
+      }
       case "type-instead":
         return this.typeInstead();
     }
@@ -268,18 +275,16 @@ export class VoiceMode {
     const card = this.card;
     if (!card) return;
     if (action === "unfocus") return this.setCard({ ...card, keyboard: false });
+    const content = cardContent(card.what, "", card.from);
+    // "Read it all" scrolls the card in place; its buttons arm again, so a second press meant for it is no yes.
+    if (action === "read" && !content.end) return this.setCard({ ...card, from: content.next, armsAt: this.now() + CARD_ARM_MS });
     if ("reading" in card.what) {
       this.reading = null;
-      if (action === "read") this.deps.openLauncher();
       return this.refresh();
     }
-    // Too long to answer here, or to be typed: it is read and answered where it lives.
+    // A question to be typed, or with more choices than fit: it is answered where it lives.
     const ask = card.what.ask;
-    if (ask.kind === "question") return this.questions.elsewhere(ask.id);
-    this.opened.delete(ask.id);
-    this.spoken.delete(ask.id);
-    this.deps.openLauncher();
-    this.refresh();
+    if (ask.kind === "question") this.questions.elsewhere(ask.id);
   }
 
   close(): void {

@@ -45,6 +45,10 @@ export interface ShellActions {
   appQuitting?(pid: number | null): void;
   /** Esc while an applet's popover is open (keymap.ts `POPOVER_RULES`): closes it. */
   dismissPopover?(): void;
+  /** ❖Esc with no switcher up: stop what Dashi says or does (decisions.md D83). */
+  stopDashi?(): void;
+  /** Whether the ❖Tab switcher is up. */
+  switching?(): boolean;
   /** Spaces: ⌃← ⌃→ and ⌃1…⌃9 (spaces/); says whether the binding was one of its keys. */
   spaces?: { binding(name: string): boolean };
   /**
@@ -174,6 +178,8 @@ export async function runBinding(name: string, window: number | null, compositor
     case "switch-previous":
       return actions.switcher.step("previous");
     case "switch-cancel":
+      // ❖Esc leaves the switcher; with none up it stops Dashi.
+      if (actions.stopDashi && actions.switching?.() !== true) return actions.stopDashi();
       return actions.switcher.cancel();
     case "lock-screen":
       return actions.lock();

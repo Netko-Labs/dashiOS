@@ -17,7 +17,8 @@ export function permissionsOf(tasks: readonly Task[], spoken: ReadonlySet<string
 /**
  * Voice mode's state: what the chip says first (listening, heard, the
  * answer, a notice), then a state of the capsule's own (`own`: the key down,
- * done, stopped), then a spoken task's running step.
+ * done, stopped), then a spoken task's running step. "Done" goes before a
+ * notice that leads nowhere, so it has its whole four seconds.
  */
 export function voiceStateOf(
   chip: Chip | null,
@@ -29,7 +30,9 @@ export function voiceStateOf(
   if (chip?.kind === "listening") return { phase: "listening", text: chip.text, answering: chip.question };
   if (chip?.kind === "thinking") return { phase: "heard", text: chip.text };
   if (chip?.kind === "speaking") return { phase: "answer", words: chip.words, at: chip.at, full: chip.full };
-  if (chip?.kind === "notice") return { phase: "notice", line: chip.text, ...(chip.go ? { go: chip.go } : {}), until: noticeUntil };
+  // "Done" is not kept waiting behind a line that only repeats what was heard ("You said: Yes."): it would be gone before it was read.
+  const repeats = chip?.kind === "notice" && !chip.go && own?.phase === "done";
+  if (chip?.kind === "notice" && !repeats) return { phase: "notice", line: chip.text, ...(chip.go ? { go: chip.go } : {}), until: noticeUntil };
   if (own) return own;
   const running = tasks.find((task) => task.phase === "running" && spoken.has(task.id));
   if (!running) return { phase: "idle" };

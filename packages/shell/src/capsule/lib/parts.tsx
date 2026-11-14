@@ -1,5 +1,6 @@
 /** The capsule's small parts: the five dots, a one-line text, a button, Dashi's disc. */
 
+import { Shortcut } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Cell } from "../../shared/pill/index.ts";
@@ -84,6 +85,8 @@ interface ButtonProps {
   primary?: boolean;
   /** A square before the word: Stop. */
   square?: boolean;
+  /** The keys that do the same, after the word, soft. */
+  keys?: string;
   /** Not armed yet, or not for now: drawn faint, and a press does nothing. */
   off?: boolean;
   measures?: { height: number; paddingX: number; fontSize: number };
@@ -91,7 +94,7 @@ interface ButtonProps {
 }
 
 /** A button of the capsule or the card: an outline, or filled for the yes. */
-export function Button({ label, colours, onPress, primary = false, square = false, off = false, measures = CAPSULE.button, testID }: ButtonProps) {
+export function Button({ label, colours, onPress, primary = false, square = false, off = false, keys, measures = CAPSULE.button, testID }: ButtonProps) {
   const color = primary ? colours.onPrimary : colours.text;
   return (
     <View
@@ -120,6 +123,7 @@ export function Button({ label, colours, onPress, primary = false, square = fals
       <Text numberOfLines={1} style={{ fontSize: measures.fontSize, fontWeight: "semibold", color }}>
         {label}
       </Text>
+      {keys && <Shortcut keys={keys} color={colours.soft} size={measures.fontSize - 1} />}
     </View>
   );
 }

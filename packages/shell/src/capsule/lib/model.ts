@@ -41,75 +41,100 @@ export function shownOf(dictation: DictationState, voice: VoiceModeState, card: 
   return { kind: "none" };
 }
 
-/** A card's words, laid out: nothing is cut while a button is live (`whole`). */
+/** A card's words, laid out: nothing is answered until its end has been shown (`whole`). */
 export interface CardContent {
   kind: "permission" | "question" | "reading";
   /** Who asks and about what: "Dashi asks" and the task it answers. */
   who: string;
   about: string;
   question: string;
-  /** The message's lines as they show: all of them when `whole`, else the start. */
+  /** The message's lines that show now: from where it was scrolled to, as many as fit. */
   lines: readonly string[];
   choices: readonly string[];
-  /** All of it shows. When false there is no Yes: only "Read it all". */
+  /** Its end shows, and it can be answered here. When false there is no Yes. */
   whole: boolean;
-  /** What does not show, in words ("and 3 more steps"), "" when whole. */
+  /** Its end shows: there is nothing more to scroll to. */
+  end: boolean;
+  /** What is below, in words ("and 3 more steps"), "" at the end. */
   more: string;
+  /** Where "Read it all" scrolls to next (`OpenCard.from`). */
+  next: number;
 }
 
 /** How many lines of the card `text` takes. */
 const linesOf = (text: string): number => text.split("\n").reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / CARD.lineChars)), 0);
 
-function fit(all: readonly string[], unit: string): Pick<CardContent, "lines" | "whole" | "more"> {
+/** A line too long for one view of the card, cut at words into pieces that each fit one. */
+function pieces(line: string): string[] {
+  const most = CARD.lineChars * (CARD.lines - 1);
+  const cut: string[] = [];
+  let rest = line;
+  while (rest.length > most) {
+    const space = rest.lastIndexOf(" ", most);
+    const at = space > most / 2 ? space : most;
+    cut.push(rest.slice(0, at).trimEnd());
+    rest = rest.slice(at).trimStart();
+  }
+  return [...cut, rest];
+}
+
+/** As many of `all` from `from` as take `budget` lines of the card. */
+function take(all: readonly string[], from: number, budget: number): string[] {
   let used = 0;
   const lines: string[] = [];
-  for (const line of all) {
-    const takes = linesOf(line);
-    if (used + takes > CARD.lines) break;
-    used += takes;
+  for (const line of all.slice(from)) {
+    used += linesOf(line);
+    if (used > budget) break;
     lines.push(line);
   }
-  if (lines.length === all.length) return { lines, whole: true, more: "" };
-  const first = all[0] ?? "";
-  // Not even the first fits: show its start, and say how much more there is.
-  if (lines.length === 0) {
-    const shown = head(first, CARD.lineChars * (CARD.lines - 1));
-    return { lines: [shown], whole: false, more: `and ${first.length - shown.length + 1} more characters` };
-  }
-  // A line is kept for what is left out.
-  const shown = lines.slice(0, Math.min(lines.length, CARD.lines - 1));
-  const left = all.length - shown.length;
-  return { lines: shown, whole: false, more: `and ${left} more ${unit}${left === 1 ? "" : "s"}` };
+  return lines;
+}
+
+/** The view of the message that starts at `from`: what fits, whether its end shows, and what is below. */
+function fit(message: readonly string[], unit: string, from: number): Pick<CardContent, "lines" | "end" | "more" | "next"> {
+  const all = message.flatMap(pieces);
+  const start = Math.min(Math.max(0, from), Math.max(0, all.length - 1));
+  const lines = take(all, start, CARD.lines);
+  if (start + lines.length >= all.length) return { lines, end: true, more: "", next: start };
+  // A line is kept for what is below; every piece fits the rest.
+  const shown = take(all, start, CARD.lines - 1);
+  const left = all.length - start - shown.length;
+  const more = all.length === message.length ? `and ${left} more ${unit}${left === 1 ? "" : "s"}` : "and more below";
+  return { lines: shown, end: false, more, next: start + shown.length };
 }
 
 /** The task a card answers, in a few words, quoted. */
 const aboutOf = (request: string): string => (request.trim() === "" ? "" : `“${head(request, 44)}”`);
 
-export function cardContent(what: OpenCard["what"], name: string): CardContent {
-  if ("reading" in what) return readingContent(what.reading, name);
+/** `from` is how far the card was scrolled (`OpenCard.from`). */
+export function cardContent(what: OpenCard["what"], name: string, from = 0): CardContent {
+  if ("reading" in what) return readingContent(what.reading, name, from);
   const ask: PillAsk = what.ask;
   if (ask.kind === "permission") {
     const steps = ask.steps.length === 1 ? ask.steps : ask.steps.map((step, index) => `${index + 1}. ${step}`);
+    const fitted = fit(steps, "step", from);
     return {
       kind: "permission",
       who: `${name} asks`,
       about: aboutOf(ask.request),
       question: ask.steps.length === 1 ? "Do this?" : `Do these ${ask.steps.length} things?`,
       choices: [],
-      ...fit(steps, "step"),
+      ...fitted,
+      whole: fitted.end,
     };
   }
-  const fitted = fit([ask.text], "line");
-  const whole = fitted.whole && ask.choices.length <= CARD.choices;
+  const fitted = fit(ask.text.split("\n"), "line", from);
+  const whole = fitted.end && ask.choices.length <= CARD.choices;
   return { kind: "question", who: `${ask.who} asks`, about: aboutOf(ask.about), question: "", choices: whole ? ask.choices : [], ...fitted, whole };
 }
 
-function readingContent(reading: Reading, name: string): CardContent {
+function readingContent(reading: Reading, name: string, from: number): CardContent {
   const paragraphs = reading.text
     .split(/\n+/)
     .map((line) => line.trim())
     .filter(Boolean);
-  return { kind: "reading", who: `${name} says`, about: aboutOf(reading.request), question: "", choices: [], ...fit(paragraphs, "paragraph") };
+  const fitted = fit(paragraphs, "paragraph", from);
+  return { kind: "reading", who: `${name} says`, about: aboutOf(reading.request), question: "", choices: [], ...fitted, whole: fitted.end };
 }
 
 /** An answer this long does not fit the line: it opens in the card. */

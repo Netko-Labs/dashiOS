@@ -40,13 +40,18 @@ export type VoiceModeCommand =
   | { do: "answer-permission"; id: string; yes: boolean }
   /** An answer to a question: a choice pressed or words typed. */
   | { do: "answer-question"; id: string; text: string }
-  /** The square, the Dashi key with Esc, a press on a speaking capsule: stop hearing, thinking, speaking. `task` stops that task too. */
-  | { do: "stop"; task?: string }
+  /**
+   * The square, a press on a speaking capsule: stop hearing, thinking, speaking. `task` stops that task too. `all` is ❖Esc
+   * (`STOP_KEYS`, decisions.md D83): every task of Dashi's at work stops as well, and with nothing speaking or at work it does nothing.
+   */
+  | { do: "stop"; task?: string; all?: true }
   /** The bar: show this ask's card now (a typed task's does not open by itself). */
   | { do: "open-ask"; id: string }
   /** Only in phase `heard`: not for Dashi after all. Stop the task and land the words as a dictation (`dictationCommands` `type`). */
   | { do: "type-instead" };
 
+/** The one fast way to stop Dashi, with one hand, as the capsule's Stop shows it: no plain key is taken from the app. */
+export const STOP_KEYS = "❖Esc";
 /** The card's buttons arm this long after it opens (pill-v2 README, "A real question, and a fake"). */
 export const CARD_ARM_MS = 500;
 /** The layer namespace of the capsule and its card: what `input-origin`, `input-region` and `layer-motion` are asked about. */

@@ -20,6 +20,8 @@ export function dictating(options: { heard?: string; taught?: boolean } = {}) {
     muted: false,
     front: { window: 7, pid: 70 } as Front | null,
     secret: false as boolean | null,
+    /** How long ago the person pressed something in the window in front. */
+    pressed: null as number | null,
     refuse: null as string | null,
     pastes: true,
     taught: options.taught ?? true,
@@ -36,6 +38,7 @@ export function dictating(options: { heard?: string; taught?: boolean } = {}) {
     muted: async () => world.muted,
     front: async () => world.front,
     secret: async () => world.secret,
+    pressed: async () => world.pressed,
     typeText: async (window, text) => {
       if (world.refuse) throw new Error(world.refuse);
       typed.push(`${window}:${text}`);

@@ -7,7 +7,7 @@
 import { CHECK } from "@dashi/ui";
 import { Svg } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import type { PersonaMark, VoiceModeCommand, VoiceModeState } from "../../shared/pill/index.ts";
+import { type PersonaMark, STOP_KEYS, type VoiceModeCommand, type VoiceModeState } from "../../shared/pill/index.ts";
 import { FaceLead } from "./face.tsx";
 import type { Common } from "./line.tsx";
 import type { CapsuleColours } from "./measures.ts";
@@ -51,7 +51,13 @@ export function VoiceLine({ state, mark, send, ...common }: VoiceProps): ReactNo
   const { colours, level, still } = common;
   const chars = charsIn(common.tailPoints);
   const stop = (
-    <Button label="Stop" square colours={colours} onPress={() => send(state.phase === "step" ? { do: "stop", task: state.task } : { do: "stop" })} />
+    <Button
+      label="Stop"
+      square
+      keys={STOP_KEYS}
+      colours={colours}
+      onPress={() => send(state.phase === "step" ? { do: "stop", task: state.task } : { do: "stop" })}
+    />
   );
   switch (state.phase) {
     case "key-down":
@@ -76,7 +82,7 @@ export function VoiceLine({ state, mark, send, ...common }: VoiceProps): ReactNo
         <>
           <Lead colours={colours} mark={mark} />
           <Line bold color={colours.text}>
-            {head(state.title, Math.max(8, chars - 12))}
+            {head(state.title, Math.max(8, chars - 17))}
           </Line>
           {state.of > 1 && <Line color={colours.soft}>{`${state.index + 1} of ${state.of}`}</Line>}
           <Working color={colours.soft} still={still} />
@@ -85,7 +91,7 @@ export function VoiceLine({ state, mark, send, ...common }: VoiceProps): ReactNo
         </>
       );
     case "answer":
-      return <AnswerLine words={state.words} at={state.at} chars={Math.max(8, chars - 10)} colours={colours} mark={mark} stop={stop} />;
+      return <AnswerLine words={state.words} at={state.at} chars={Math.max(8, chars - 15)} colours={colours} mark={mark} stop={stop} />;
     case "done":
       return (
         <>

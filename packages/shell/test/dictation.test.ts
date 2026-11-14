@@ -186,3 +186,32 @@ test("off, the key does nothing", async () => {
   expect(voice.calls).toEqual([]);
   expect(state()).toEqual({ phase: "idle" });
 });
+
+test("a click or a key in the window after the key came up: nothing is typed, the words wait with Copy", async () => {
+  const { typed, world, key, hold, state, hub } = dictating();
+  await hold();
+  // The dictation key itself went down in the window, well before it came up.
+  world.pressed = 900;
+  await key("up");
+  expect(typed).toEqual(["7:Hello there. "]);
+  // The same window, but the person clicked another conversation while the words were tidied.
+  await hold();
+  world.now += 2000;
+  const up = key("up");
+  world.now += 800;
+  world.pressed = 300;
+  await up;
+  expect(typed).toEqual(["7:Hello there. "]);
+  expect(state()).toMatchObject({ phase: "waiting", reason: "moved", text: "Hello there.", line: "You moved on. Your words wait here." });
+  hub.dictationCommands.send({ do: "copy" });
+  await settle();
+  expect(world.copied).toEqual(["Hello there."]);
+});
+
+test("where the compositor can't say who pressed, the window is trusted", async () => {
+  const { typed, world, key, hold } = dictating();
+  world.pressed = null;
+  await hold();
+  await key("up");
+  expect(typed).toEqual(["7:Hello there. "]);
+});
