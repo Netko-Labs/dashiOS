@@ -38,6 +38,8 @@ describe("the tools, from an agent at work on another Desktop", () => {
     const clicked = await handsCall({ name: "click", window: 5, x: 20, y: 290, button: "left", count: 1 }, ctx);
     expect(clicked.isError).toBeUndefined();
     expect(sent).toEqual([{ pointer: { x: 20, y: 290 }, action: "click", button: "left" }]);
+    // The bar says where: the person sent it out of their way, and reads which Desktop it is on.
+    expect(d.said.at(-1)).toBe("Clicking in “Window 5” on Desktop 2");
     // Its content is 400×300 (the title bar is not the app's).
     const outside = await handsCall({ name: "click", window: 5, x: 20, y: 310, button: "left", count: 1 }, ctx);
     expect(words(outside)).toContain("outside w5, whose content is 400×300 points");

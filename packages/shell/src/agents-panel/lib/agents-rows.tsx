@@ -144,7 +144,8 @@ export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; fi
   const onShow = actions.showSpace;
   const onStop = () => entry.agent && actions.stopAgent(entry.agent.id);
   const colors = useColors();
-  const doing = entry.phase === "working" && !entry.watching ? entry.doing : null;
+  // At work on another Desktop, its line says where even while it rests ("Working on Desktop 3").
+  const doing = (entry.phase === "working" || space !== undefined) && !entry.watching ? entry.doing : null;
   const origin = originWords(entry);
   return (
     <View
