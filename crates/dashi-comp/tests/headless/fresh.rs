@@ -81,3 +81,22 @@ fn a_picture_after_the_agents_input_waits_for_the_windows_next_frame() {
     let asked = ask_picture(&mut ipc, &compositor, window);
     assert!(answer(&mut ipc, asked, Duration::from_secs(5)).is_some());
 }
+
+/// Found proving an agent's added Desktop (11-agents): removed while the screen was still sliding
+/// to it, the slide finished on a Space that was gone, and `current` was past the last one.
+#[test]
+fn a_space_removed_while_the_screen_slides_to_it_leaves_the_screen_where_it_was() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(
+        ipc.request("space-add", json!({}))["result"]["count"],
+        json!(2)
+    );
+    ipc.request("space-switch", json!({ "space": 1 }));
+    let removed = ipc.request("space-remove", json!({ "space": 1 }))["result"].clone();
+    assert_eq!(removed["count"], json!(1));
+    // Longer than a slide (250 ms): the timer that would have finished it has run.
+    std::thread::sleep(Duration::from_millis(400));
+    let now = ipc.request("spaces", json!({}))["result"].clone();
+    assert_eq!((&now["count"], &now["current"]), (&json!(1), &json!(0)));
+}
