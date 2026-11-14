@@ -117,7 +117,7 @@ export class HandsFree {
     const words = heard.trim();
     if (words === "") return this.listen(turn);
     this.rearmQuiet();
-    const landing = await land(this.deps, words, this.at, this.sentences > 0 ? " " : "");
+    const landing = await land(this.deps, words, this.at);
     if (turn !== this.turn) return;
     if (!landing.typed) {
       // Nowhere to type any more: the words wait, and hands-free is over.
@@ -146,7 +146,7 @@ export class HandsFree {
     }
     this.deps.chime();
     if (text !== "") {
-      const landing = await land(this.deps, text, this.at, this.sentences > 0 ? " " : "");
+      const landing = await land(this.deps, text, this.at);
       if (!landing.typed) return this.host.show(landing.state);
     }
     this.host.notice(trouble, true);

@@ -17,11 +17,11 @@ test("hands-free: a double tap; each sentence lands at its pause; a tap ends it,
   voice.emit({ event: "partial", text: "First" });
   voice.emit({ event: "heard", text: "First sentence." });
   await settle();
-  expect(typed).toEqual(["7:First sentence."]);
+  expect(typed).toEqual(["7:First sentence. "]);
   expect(voice.calls).toEqual(["listen", "listen"]);
   voice.emit({ event: "heard", text: "um second one." });
   await settle();
-  expect(typed).toEqual(["7:First sentence.", "7: Second one."]);
+  expect(typed).toEqual(["7:First sentence. ", "7:Second one. "]);
   expect(state()).toMatchObject({ phase: "listening", handsFree: true, text: "" });
   await key("down");
   await key("tap");
@@ -51,7 +51,7 @@ test("hands-free ends by itself, never silently: another window, quiet, the limi
     long.timers.advance(10_000);
   }
   await settle();
-  expect(long.typed).toEqual(["7:The last words"]);
+  expect(long.typed).toEqual(["7:The last words "]);
   expect(long.world.chimes).toBe(1);
   expect(long.state()).toMatchObject({ phase: "notice", trouble: "limit", line: "Hands-free ended: the time limit." });
 });

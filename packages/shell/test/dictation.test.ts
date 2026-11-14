@@ -20,7 +20,7 @@ test("the key held is a listen; let go, the words are tidied and typed into the 
   expect(state()).toMatchObject({ phase: "listening", text: "Um hello" });
   await key("up");
   expect(voice.calls).toEqual(["listen", "listen.stop"]);
-  expect(typed).toEqual(["7:Hello there."]);
+  expect(typed).toEqual(["7:Hello there. "]);
   expect(state()).toMatchObject({ phase: "landed", typed: "Hello there.", heard: "Um, hello there.", line: "Typed. 1 filler out." });
   expect(phases()).toEqual(["key-down", "opening", "listening", "listening", "tidying", "landed"]);
   expect(hub.level.getSnapshot()).toBe(0);
@@ -109,7 +109,7 @@ test("where typing can't be done the words are pasted and the line says so; wher
   pasted.world.refuse = "x11";
   await pasted.hold();
   await pasted.key("up");
-  expect(pasted.typed).toEqual(["paste 7:Hello there."]);
+  expect(pasted.typed).toEqual(["paste 7:Hello there. "]);
   expect(pasted.state()).toMatchObject({ phase: "landed", line: "Pasted. 1 filler out." });
   const failed = dictating();
   failed.world.refuse = "x11";
@@ -134,7 +134,7 @@ test("a key the person still holds is waited out, then the words are typed", asy
   world.refuse = null;
   timers.advance(150);
   await settle();
-  expect(typed).toEqual(["7:Hello there."]);
+  expect(typed).toEqual(["7:Hello there. "]);
   expect(state().phase).toBe("landed");
 });
 
@@ -161,7 +161,7 @@ test("while the bar's row is the field the words go to it", async () => {
   });
   await hold();
   await key("up");
-  expect(inserted).toEqual(["Hello there."]);
+  expect(inserted).toEqual(["Hello there. "]);
   expect(typed).toEqual([]);
   expect(state().phase).toBe("landed");
 });
@@ -171,11 +171,11 @@ test("tidying off types the words as heard; Type it instead lands words as a dic
   world.tidy = false;
   await hold();
   await key("up");
-  expect(typed).toEqual(["7:Um, hello there."]);
+  expect(typed).toEqual(["7:Um, hello there. "]);
   world.tidy = true;
   hub.dictationCommands.send({ do: "type", text: "uh, open the calendar" });
   await settle();
-  expect(typed.at(-1)).toBe("7:Open the calendar");
+  expect(typed.at(-1)).toBe("7:Open the calendar ");
   expect(state()).toMatchObject({ phase: "landed", line: "Typed. 1 filler out." });
 });
 

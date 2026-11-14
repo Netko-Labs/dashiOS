@@ -1227,16 +1227,16 @@ Replaced by D51: 0.9 builds on mirin's `main`.
 
 - **Date:** 2026-11-13. The night build's `core` agent's.
 - **Question:** when does hands-free end, and what lands?
-- **Choice:** each sentence lands at a pause of 1.2 s, with a space before
-  every one but the first. It ends on a tap, when another window takes the
+- **Choice:** each sentence lands at a pause of 1.2 s. It ends on a tap, when another window takes the
   keyboard (looked at as words come), after 20 s with nothing said, at ten
   minutes, or when a sentence has nowhere to land; always with a short sound
-  and a line. A plain dictation adds no space before or after its words.
+  and a line. Every landing, held or hands-free, types a space after its words (none
+  after a line break): Dashi cannot see what is before the caret, and words
+  that join ("done.Next") are worse than a space at the end.
   Ending when this computer plays sound (`sound`) is not built.
 - **Why:** the microphone is never left open by mistake, and never closes
   without the person knowing.
-- **Cost:** two dictations one after the other in the same field join with
-  no space between them.
+- **Cost:** a dictation leaves a space at the end of the field.
 - **Undo:** `DICTATION_LIMITS` and `dictation/lib/hands-free.ts`.
 
 ## How to add a decision

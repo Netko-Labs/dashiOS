@@ -54,12 +54,14 @@ async function place(deps: DictationDeps, text: string, at: Front | null): Promi
   return type(deps, front.window, text);
 }
 
-/** `at` is the window the key went down in (null: wherever the keyboard is now). `lead` goes before the words (the space between two sentences). */
-export async function land(deps: DictationDeps, heard: string, at: Front | null, lead = ""): Promise<Landing> {
+/** What is typed for the tidied words: a space after them, so the next words (said or typed) do not join them; none after a line break. */
+export const withSpace = (typed: string): string => (typed.endsWith("\n") ? typed : `${typed} `);
+
+/** `at` is the window the key went down in (null: wherever the keyboard is now). */
+export async function land(deps: DictationDeps, heard: string, at: Front | null): Promise<Landing> {
   const now = deps.now?.() ?? Date.now();
   const tidied: Tidied = tidy(heard, deps.prefs().tidy);
-  // A sentence that starts on a new line needs no space before it.
-  const how = await place(deps, (tidied.typed.startsWith("\n") ? "" : lead) + tidied.typed, at);
+  const how = await place(deps, withSpace(tidied.typed), at);
   if (how === "typed" || how === "pasted") {
     const line = landedLine(tidied.changes, how, tidied.asHeard);
     return {

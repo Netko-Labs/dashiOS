@@ -195,12 +195,12 @@ test("the dictation key held types what was heard; 0.8's talk keys are told to t
   await settle();
   parts.key("dictation", false);
   await settle();
-  expect(did).toEqual(["type:Hello"]);
+  expect(did).toEqual(["type:Hello "]);
   expect(gestures).toEqual(["dictation:down", "dictation:hold", "dictation:up"]);
   parts.key("talk-tap", true);
   parts.key("talk-tap", false);
   expect(gestures.slice(3)).toEqual(["dashi:down", "dashi:tap"]);
-  expect(did).toEqual(["type:Hello"]);
+  expect(did).toEqual(["type:Hello "]);
 });
 
 test("the keys follow the settings live: the layout, the key chosen, dictation off, Voice off", () => {

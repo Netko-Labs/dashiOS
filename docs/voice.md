@@ -106,15 +106,15 @@ the capsule one `DictationState` at a time (`shared/pill/dictation.ts`).
    and é type on any layout. The clipboard is not touched and no BackSpace is
    ever sent. An X11 window can't take it (`x11`): there the words are pasted
    (the clipboard is put back 300 ms later) and the line says "Pasted."
-   While the bar's row is the field the words go to it (`barCommands`
-   `insert`).
+   While the bar's row is the field the words go to it (`barCommands` `insert`). A space is typed after the words (none after a
+   line break), so the next words do not join them.
 5. **Nothing is typed**, and the words wait ten minutes in memory with Copy,
    when no window has the keyboard (`no-field`), another window took it
    (`left-window`), a password field has it (`secret`), or neither typing nor
    pasting worked (`failed`).
 6. **Hands-free** (a double tap): `listen` with `"until": "silence"` and
-   `quiet_ms` 1200; each `heard` is a sentence, which lands with a space
-   before it, and the next is listened for. It ends on a tap of the key, when
+   `quiet_ms` 1200; each `heard` is a sentence, which lands, and the next
+   is listened for. It ends on a tap of the key, when
    another window takes the keyboard, after 20 s with nothing said, at ten
    minutes, or when a sentence has nowhere to land; each time with a short
    sound (`pw-play`, a freedesktop sound) and a line that stays.
