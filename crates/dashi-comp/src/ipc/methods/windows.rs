@@ -207,7 +207,11 @@ pub(crate) fn send_keys(state: &mut Dashi, _: &Ask, params: SendKeys) -> Result<
 
 /// `type-text`: refused in a word the shell acts on (`left-window`, `x11`, `keys-down`).
 pub(crate) fn type_text(state: &mut Dashi, _: &Ask, params: TypeText) -> Result<Done, String> {
-    done(state.type_text(&params))
+    let result = state.type_text(&params);
+    if result.is_ok() {
+        state.agent_acted_in(params.window.0);
+    }
+    done(result)
 }
 
 pub(crate) fn animation_target(

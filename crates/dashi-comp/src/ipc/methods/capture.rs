@@ -51,6 +51,23 @@ pub(crate) struct Captured {
 }
 
 pub(crate) fn capture(state: &mut Dashi, ask: &Ask, params: CaptureParams) -> Result<(), String> {
+    // A window the agent has just acted in is pictured once it has drawn that, or 250 ms after
+    // (session/agent_fresh.rs). One that is not there is refused now, as ever.
+    if let Some(id) = params.window.map(|id| id.0)
+        && state.windows.get(id).is_some_and(|entry| entry.announced)
+        && state.capture_when_fresh(id, ask, &params)
+    {
+        return Ok(());
+    }
+    capture_now(state, ask, params)
+}
+
+/// The picture, taken now.
+pub(crate) fn capture_now(
+    state: &mut Dashi,
+    ask: &Ask,
+    params: CaptureParams,
+) -> Result<(), String> {
     let mask = params.mask;
     let path = render::capture_file::check_path(&params.path)?.to_owned();
     let (area, output, only) = if let Some(id) = params.window {

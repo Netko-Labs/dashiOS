@@ -11,6 +11,7 @@ mod support {
 
 mod agent;
 mod fixtures;
+mod fresh;
 mod ipc;
 mod locks;
 mod pointer;

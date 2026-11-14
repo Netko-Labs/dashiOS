@@ -150,6 +150,14 @@ impl Client {
         self.queue.flush().ok();
     }
 
+    /// Draw the window again: a new buffer, committed.
+    pub fn redraw(&mut self) {
+        self.state.drawn = false;
+        let qh = self.queue.handle();
+        self.state.draw(&qh);
+        self.queue.flush().ok();
+    }
+
     /// Handle what the compositor sent (drawing once configured).
     pub fn dispatch(&mut self) {
         self.queue.flush().ok();

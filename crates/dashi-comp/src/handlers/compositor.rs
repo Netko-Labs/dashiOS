@@ -45,6 +45,17 @@ impl CompositorHandler for Dashi {
     }
 
     fn commit(&mut self, surface: &WlSurface) {
+        // Read before the renderer takes the buffer: a commit with a new buffer is a frame drawn.
+        let drew = smithay::wayland::compositor::with_states(surface, |states| {
+            matches!(
+                states
+                    .cached_state
+                    .get::<smithay::wayland::compositor::SurfaceAttributes>()
+                    .current()
+                    .buffer,
+                Some(smithay::wayland::compositor::BufferAssignment::NewBuffer(_))
+            )
+        });
         on_commit_buffer_handler::<Self>(surface);
         if let Some((icon, offset)) = self.dnd_icon.as_mut()
             && icon == surface
@@ -64,8 +75,13 @@ impl CompositorHandler for Dashi {
             while let Some(parent) = get_parent(&root) {
                 root = parent;
             }
-            if let Some(entry) = self.windows.by_surface(&root) {
+            let window = self.windows.by_surface(&root).map(|entry| {
                 entry.window.on_commit();
+                entry.id
+            });
+            // A picture an agent asked for after its own input was waiting for this frame (session/agent_fresh.rs).
+            if let Some(id) = window.filter(|_| drew) {
+                self.window_drew(id);
             }
             self.update_decor(&root);
             self.update_icon(&root);

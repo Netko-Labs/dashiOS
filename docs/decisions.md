@@ -2274,3 +2274,28 @@ short words, as the rulebook is written.
   when the shell restarts stays until its × is pressed.
 - **Undo:** in `Elsewhere.leave`, call `added.look()` once and forget the
   Desktop (`AddedSpaces.left` without the listener).
+
+### D119. A window's picture waits for the frame after the agent's input, 250 ms at most
+
+- **Date:** 2026-11-14. The `n20-agents` agent's.
+- **Question:** a window screenshot asked within about 50 ms of typing
+  showed the frame from before (ten of ten). Where does the wait go, and
+  how long may it be?
+- **Choice:** in the compositor (`session/agent_fresh.rs`). `agent-input`
+  and `type-text` note the window; `capture {window}` asked before that
+  window has committed a new buffer since is held and taken at that commit,
+  or 250 ms after the input, whichever is first. Past 250 ms, or once the
+  window has drawn, nothing waits. Screen and `rect` captures never wait.
+- **Why:** only the compositor sees the window's commits, so only there can
+  the wait end the moment the frame is in (about 20 ms for Text Editor)
+  rather than always after a fixed sleep. 250 ms is four times the 66 ms at
+  which every picture was current, and short enough that an input which
+  draws nothing (a click on empty space) costs a quarter of a second at
+  worst, and only when the picture is asked that soon.
+- **Cost:** it is the first new buffer after the input, not proof the input
+  is in it: an app that was already drawing a frame (a caret's blink) when
+  the keys arrived can still hand over the old words, and what an app draws
+  later (Text Editor's character count, a quarter of a second after) is not
+  waited for. A buffer committed by a synchronised subsurface alone is not
+  seen; the bound covers it.
+- **Undo:** `capture` calls `capture_now` directly (`ipc/methods/capture.rs`).

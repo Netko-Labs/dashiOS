@@ -48,6 +48,10 @@ pub(crate) fn agent_input(state: &mut Dashi, _: &Ask, params: AgentInput) -> Res
     if result.is_ok() {
         // The screens may be dark (the person away): its window still shows what it did.
         backend::udev::agent_acted(state);
+        // Its next picture of that window waits for the frame that follows (session/agent_fresh.rs).
+        if let Some(window) = params.window.filter(|_| !params.release) {
+            state.agent_acted_in(window.to::<u64>());
+        }
     }
     done(result)
 }
