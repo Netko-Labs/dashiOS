@@ -1,7 +1,8 @@
 //! What the shell claims of the pointer and touchpad: a band along a
 //! screen's bottom edge (`edges`, the Dock's autohide), and swipes with some
 //! numbers of fingers (`gestures`, Spaces). Claimed swipes go to the shell,
-//! not to clients; the band only reports, it takes nothing.
+//! not to clients; the band only reports, it takes nothing. A locked pointer
+//! (a game's) is in no band and over no light.
 
 use crate::ipc::protocol::{Bottom, Event};
 use smithay::utils::{Logical, Point};
@@ -17,6 +18,8 @@ pub(crate) struct Claims {
     swipe_fingers: Vec<u32>,
     /// A claimed swipe is going on.
     pub swiping: bool,
+    /// The pointer was locked when last looked at (`pointer_lock_changed`).
+    locked: bool,
 }
 
 impl Dashi {
@@ -58,6 +61,36 @@ impl Dashi {
                 edge: Bottom::Bottom,
                 inside,
             });
+        }
+    }
+
+    /// After each dispatch: a window took a lock on the pointer, or let it go.
+    /// A locked pointer is nowhere for Dashi: what its place had lit or brought
+    /// out goes at once (a light under it, the bars at the top edge, the Dock's
+    /// band), since no motion will come to say it left. Let go, it is where it
+    /// is again, and the same are told.
+    pub(crate) fn pointer_lock_changed(&mut self) {
+        let locked = self.pointer_locked();
+        if locked == self.claims.locked {
+            return;
+        }
+        self.claims.locked = locked;
+        if locked {
+            for entry in self.windows.entries_mut() {
+                entry.hover = None;
+            }
+            self.leave_bars();
+            if self.claims.inside {
+                self.claims.inside = false;
+                self.ipc.emit(Event::Edge {
+                    edge: Bottom::Bottom,
+                    inside: false,
+                });
+            }
+        } else if let Some(at) = self.seat.get_pointer().map(|p| p.current_location()) {
+            self.watch_bars(at);
+            self.watch_edges(at);
+            self.hover_controls(at);
         }
     }
 

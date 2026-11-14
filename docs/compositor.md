@@ -155,8 +155,20 @@ Each milestone ends with the shell running on it in the VM.
   per-surface dmabuf feedback offers a scanned-out surface the formats its
   plane takes),
   VRR (done: off, on, or full screen only, the shell's choice per screen),
-  pointer constraints and relative pointer (done). Tearing control waits on
-  async page flips in smithay's DRM compositor.
+  pointer constraints and relative pointer (done). A lock or confinement is
+  held by the surface the pointer is in, whatever comes to lie under the
+  pointer; it takes hold when the pointer is in its window and the keyboard
+  too, lets go when the keyboard leaves the window or the overview opens, and
+  holds again on the way back. While a pointer is locked no press is the
+  compositor's (a light, a title bar, a border), and no edge band or hover
+  hears it move: a lock taking hold tells the shell the pointer left the top
+  band and the Dock's (`bars-edge`, `edge`) and puts out a lit light. A lock
+  asked for by the window with the keyboard while the pointer is elsewhere
+  brings the pointer to that window. Xwayland's position hint is read in its
+  own pixels, and only followed inside the window. A full-screen window's
+  hidden title bar takes no press (`input/constraints.rs`, `input/claims.rs`,
+  decisions.md D95 to D98). Tearing control waits on async page flips in
+  smithay's DRM compositor.
 - **Explicit sync (done):** linux-drm-syncobj when the drawing GPU can wait on
   syncobjs; otherwise commits wait for their dmabufs (implicit sync).
 - **Software rendering (done):** when the GPU chosen to draw has only a

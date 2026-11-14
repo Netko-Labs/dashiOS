@@ -1930,3 +1930,88 @@ short words, as the rulebook is written.
 - **Cost:** a Desktop the person named ("Work") is still "Desktop 3" in the
   agent's line. `work_in_space` answers both.
 - **Undo:** `SessionStatus.shown`; `ShowButton` in `agents-panel/lib/agents-rows.tsx`.
+
+### D95. A pointer lock is held by the pointer's own surface, and goes with the keyboard
+
+- **Date:** 2026-11-14. The `n13-games` agent's.
+- **Question:** a game locks the pointer; when does the lock hold, and what
+  ends it? dashi-comp asked, on every motion, whether the surface *under* the
+  pointer had an active lock, so anything that put the pointer over
+  something else (a banner, a title bar's strip, a wrong hint, D97) set it
+  free under a game that still thought it locked.
+- **Choice:** the surface the pointer is *in* holds it, whatever lies under.
+  A lock or confinement takes hold when the pointer is in its window and the
+  keyboard is too; it lets go when the keyboard leaves that window (❖Tab, the
+  launcher, a sheet that takes the keyboard) or Mission Control opens, and
+  holds again on the way back. A lock asked for by the window that has the
+  keyboard while the pointer is elsewhere brings the pointer to the middle of
+  that window. A surface that is no window of Dashi's (an X11 window that
+  manages itself) asks nothing of the keyboard.
+- **Why:** it is what a person means by "the game has the mouse": the game
+  has it while they are in the game, and their own keys take them out. The
+  keyboard is the one signal both the shell and the compositor already
+  agree on for "the person is here".
+- **Cost:** this is a rule in Rust, where rules are not meant to live; it is
+  the protocol's own ("the compositor decides when a lock is active") and has
+  no setting. An app with the keyboard can take the pointer from anywhere on
+  screen by asking for a lock.
+- **Undo:** `may_hold_with`, `hold_follows_keyboard` and
+  `bring_pointer_to_lock` in `input/constraints.rs`; `hold_at` back to the
+  surface under the pointer.
+
+### D96. A locked pointer is nowhere for Dashi
+
+- **Date:** 2026-11-14. The `n13-games` agent's.
+- **Question:** what of Dashi's may answer a pointer that a window has
+  locked? The owner saw the Dock, the menu bar and the window's lights come
+  out over Minecraft and take its clicks, and "sometimes stay".
+- **Choice:** nothing. While a lock holds, no press is the compositor's (a
+  light, a title bar, a resize border, a sheet, a banner under the pointer:
+  the press goes to the game and the keyboard stays), no edge band or hover
+  hears the pointer, and a tablet's absolute motion is dropped. The moment a
+  lock takes hold the shell hears the pointer leave the top band and the
+  Dock's band (`bars-edge` and `edge` with `inside: false`), and a lit light
+  goes out: no later motion would say so. When it lets go, the bands and
+  lights are told where the pointer is.
+- **Why:** a locked pointer has no place the person can see, so nothing
+  should treat it as being somewhere.
+- **Cost:** a tablet or touch screen cannot be used over a game that holds a
+  lock until the keyboard leaves it.
+- **Undo:** `pointer_lock_changed` in `input/claims.rs`; the `pointer_locked`
+  checks in `input/buttons.rs` and `input/pointer.rs`.
+
+### D97. Xwayland's position hint is in its pixels, and never followed outside the window
+
+- **Date:** 2026-11-14. The `n13-games` agent's.
+- **Question:** an X11 game's lock sends, with every motion, where its
+  pointer "is" (pointer-constraints' position hint; Xwayland sends the X
+  pointer's place). dashi-comp put the real pointer there, reading Xwayland's
+  pixels as points: 1.75 times too far on a 1.75 screen, soon off the window
+  or the screen. What to do with a hint?
+- **Choice:** divide it by the client's scale (Xwayland's, `xwayland-scale`),
+  and follow it only when it lands inside the window; otherwise the pointer
+  stays where it was.
+- **Why:** this was the cause of the owner's report (review `07-games`). A
+  hint is a wish for where the cursor shows when the lock ends; a place
+  outside the window cannot be that.
+- **Cost:** smithay hands the hint over unscaled, so the scale is applied in
+  Dashi; if smithay starts scaling it, this divides twice (the unit test
+  `an_x11_games_hint_is_in_xwaylands_pixels` does not see that: check the
+  VM cases in `07-games/client` when smithay is updated).
+- **Undo:** `hint_in` in `handlers/pointer.rs`.
+
+### D98. A full-screen window's top strip is its own
+
+- **Date:** 2026-11-14. The `n13-games` agent's.
+- **Question:** full screen, a window with Dashi's title bar loses the bar,
+  but presses along its top 28 points still went to the bar that was not
+  drawn: a click at a full-screen game's top left hit the hidden yellow light
+  and minimized it. What does a free cursor meet at the top of a full-screen
+  window?
+- **Choice:** only what is drawn. A title bar that is not drawn takes no
+  press (`Decor::pressed`); a unified window keeps its lights, which it
+  draws room for. The top row of pixels still brings the menu bar down
+  (`fullscreen.ts`), as before; the Dock does not show in full screen.
+- **Why:** a bug, not a choice, but it settles what the lights do there.
+- **Cost:** none known.
+- **Undo:** `Decor::pressed` in `render/titlebar.rs`.

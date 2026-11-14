@@ -278,8 +278,8 @@ it again before it is sent (`keys/locked.rs`).
 | `shortcut` | `name` |
 | `binding` | `name, window: int\|null, key?, text?, shift?, ctrl?, alt?`; `text` is what the key types with the modifiers held ("a", "A", "é", " "), absent for keys that type nothing (Return, BackSpace, Escape, arrows) |
 | `super` | `phase: "tap"\|"hold"\|"chord"\|"up"`; no `tap` or `hold` while locked (a tap then switches to no `afterTap` rules either) |
-| `bars-edge` | `inside, output?` |
-| `edge` | `edge: "bottom", inside` |
+| `bars-edge` | `inside, output?`; also `inside: false` when a window locks the pointer while it is in the band (no motion will say it left) |
+| `edge` | `edge: "bottom", inside`; also `inside: false` when a window locks the pointer while it is in the band, and how it stands again when the lock lets go |
 | `outputs-changed` | |
 | `gpus-changed` | none: a GPU was opened, went to sleep, appeared or went away, stopped or started answering, or would not open with a screen on it (`gpus` says how they are now) |
 | `session-changed` | |

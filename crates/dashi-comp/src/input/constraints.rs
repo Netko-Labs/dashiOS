@@ -119,6 +119,54 @@ impl Dashi {
         self.release_hold();
     }
 
+    /// A lock the window with the keyboard asked for while the pointer was
+    /// elsewhere (over the menu bar brought out, the Dock, another window): the
+    /// pointer goes to the middle of that window and the lock takes hold. The
+    /// person is in that app and it has taken the pointer (a game left its
+    /// menu); left where it was, the pointer would run free under a game that
+    /// thinks it locked, and what it was over would stay out.
+    pub(crate) fn bring_pointer_to_lock(&mut self, pointer: &PointerHandle<Self>, time: u32) {
+        if self.overview.is_some() || self.lock.locked || pointer.is_grabbed() {
+            return;
+        }
+        let Some(surface) = self
+            .seat
+            .get_keyboard()
+            .and_then(|keyboard| keyboard.current_focus())
+            .filter(|surface| pointer.current_focus().as_ref() != Some(surface))
+        else {
+            return;
+        };
+        let asks = with_pointer_constraint(&surface, pointer, |constraint| {
+            constraint
+                .is_some_and(|c| !c.is_active() && matches!(&*c, PointerConstraint::Locked(_)))
+        });
+        let Some((at, geometry)) =
+            self.windows
+                .by_surface(&surface)
+                .filter(|_| asks)
+                .and_then(|entry| {
+                    let at = self.space.element_location(&entry.window)?;
+                    Some((at.to_f64(), entry.window.geometry().to_f64()))
+                })
+        else {
+            return;
+        };
+        let middle = at + geometry.size.downscale(2.0).to_point();
+        let event = smithay::input::pointer::MotionEvent {
+            location: middle,
+            serial: smithay::utils::SERIAL_COUNTER.next_serial(),
+            time,
+        };
+        pointer.motion(self, Some((surface.clone(), at - geometry.loc)), &event);
+        pointer.frame(self);
+        with_pointer_constraint(&surface, pointer, |constraint| {
+            if let Some(constraint) = constraint {
+                constraint.activate();
+            }
+        });
+    }
+
     /// Let go of the lock or confinement the pointer is under: the person asked
     /// for something of Dashi's that the pointer must reach (Mission Control).
     /// It takes hold again when the pointer next moves in its window.

@@ -37,18 +37,12 @@ fn a_lock_takes_hold_with_the_pointer_and_the_keyboard_and_goes_with_the_keyboar
     let compositor = Compositor::start(&[]);
     let mut ipc = compositor.connect();
     let (mut game, id, _other, other_id) = game_and_another(&compositor, &mut ipc);
-    // The keyboard is in the game (it opened last); the pointer is not yet.
-    game.roundtrip();
-    assert_eq!(
-        game.state.locks,
-        [] as [bool; 0],
-        "no lock before the pointer comes"
-    );
-    assert_eq!(hand(&mut ipc, id, 20.0, 20.0, "move")["result"], json!({}));
-    ipc.request("focus", json!({ "window": id }));
+    // The keyboard is in the game (it opened last) and the pointer is not: it is
+    // brought there, and the lock holds.
     wait_client(&mut game, "the lock never took hold", |state| {
-        state.locks == [true]
+        state.locks == [true] && state.pointer_in
     });
+    let _ = id;
 
     // ❖Tab to another window: the lock lets go, though the pointer never moved.
     assert_eq!(
@@ -77,6 +71,11 @@ fn a_lock_waits_for_the_keyboard() {
     let mut ipc = compositor.connect();
     let (mut game, id, _other, other_id) = game_and_another(&compositor, &mut ipc);
     ipc.request("focus", json!({ "window": other_id }));
+    wait_client(
+        &mut game,
+        "the lock held after the keyboard left",
+        |state| state.locks == [true, false],
+    );
     // The pointer comes over the game while the keyboard is elsewhere: no lock.
     assert_eq!(hand(&mut ipc, id, 20.0, 20.0, "move")["result"], json!({}));
     wait_client(&mut game, "the pointer never entered", |state| {
@@ -84,11 +83,11 @@ fn a_lock_waits_for_the_keyboard() {
     });
     ipc.request("windows", json!({}));
     game.roundtrip();
-    assert_eq!(game.state.locks, [] as [bool; 0]);
+    assert_eq!(game.state.locks, [true, false]);
     // The keyboard comes: it holds.
     ipc.request("focus", json!({ "window": id }));
     wait_client(&mut game, "the lock never took hold", |state| {
-        state.locks == [true]
+        state.locks == [true, false, true]
     });
 }
 
@@ -97,8 +96,6 @@ fn mission_control_lets_a_lock_go() {
     let compositor = Compositor::start(&[]);
     let mut ipc = compositor.connect();
     let (mut game, id, _other, _) = game_and_another(&compositor, &mut ipc);
-    assert_eq!(hand(&mut ipc, id, 20.0, 20.0, "move")["result"], json!({}));
-    ipc.request("focus", json!({ "window": id }));
     wait_client(&mut game, "the lock never took hold", |state| {
         state.locks == [true]
     });
