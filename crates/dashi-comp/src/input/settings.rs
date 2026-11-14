@@ -1,6 +1,7 @@
 //! Touchpad and mouse settings (`input`), as the shell's settings name them:
 //! tap to click, natural scrolling, pointer speed and profile, disable while
-//! typing, the click method, and a scroll speed factor. The backend that has
+//! typing, the click method, a scroll speed factor, and whether a touchpad is
+//! off or ignored beside a mouse (input/trackpad.rs). The backend that has
 //! the devices (udev, through libinput) configures them, plugged in now or
 //! later; a key left out is the device's own default. The scroll factor is
 //! the compositor's: it scales what a touchpad's or a wheel's scroll moves.
@@ -8,6 +9,7 @@
 use serde::{Deserialize, Serialize};
 use smithay::backend::input::AxisSource;
 
+use super::trackpad::Pointers;
 use crate::{ipc::protocol::Real, state::Dashi};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
@@ -34,6 +36,10 @@ pub(crate) struct PointerSettings {
     pub disable_while_typing: Option<bool>,
     pub click_method: Option<ClickMethod>,
     pub scroll_speed: Option<f64>,
+    /// A touchpad the person turned off (input/trackpad.rs).
+    pub off: Option<bool>,
+    /// A touchpad that is ignored while a mouse is connected.
+    pub off_with_mouse: Option<bool>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -67,6 +73,10 @@ pub(crate) struct TouchpadParams {
     pub disable_while_typing: Option<bool>,
     pub click_method: Option<ClickMethod>,
     pub scroll_speed: Option<ScrollSpeed>,
+    /// Turned off (the laptop's touchpad key, or Settings).
+    pub off: Option<bool>,
+    /// Ignored while a mouse is connected.
+    pub off_with_mouse: Option<bool>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
@@ -90,6 +100,8 @@ impl From<&InputParams> for InputSettings {
                 disable_while_typing: touchpad.disable_while_typing,
                 click_method: touchpad.click_method,
                 scroll_speed: touchpad.scroll_speed.map(ScrollSpeed::get),
+                off: touchpad.off,
+                off_with_mouse: touchpad.off_with_mouse,
             },
             mouse: PointerSettings {
                 natural_scroll: mouse.natural_scroll,
@@ -108,6 +120,11 @@ impl Dashi {
         self.backend.apply_input(&settings);
         self.input_settings = settings;
         Ok(())
+    }
+
+    /// Which kinds of pointer device are connected, where the backend has devices.
+    pub(crate) fn pointers(&self) -> Pointers {
+        self.backend.pointers()
     }
 
     /// How far a scroll from `source` goes: a touchpad's (finger, continuous) or a wheel's.
@@ -132,7 +149,7 @@ mod tests {
     #[test]
     fn the_shells_settings_read_as_they_are_written() {
         let settings = of(json!({
-            "touchpad": { "tap": true, "naturalScroll": true, "accelSpeed": 0.3, "disableWhileTyping": true, "clickMethod": "clickfinger", "scrollSpeed": 1.5 },
+            "touchpad": { "tap": true, "naturalScroll": true, "accelSpeed": 0.3, "disableWhileTyping": true, "clickMethod": "clickfinger", "scrollSpeed": 1.5, "off": false, "offWithMouse": true },
             "mouse": { "naturalScroll": false, "accelSpeed": 0, "accelProfile": "flat", "scrollSpeed": 1 }
         }))
         .expect("valid settings");
@@ -143,6 +160,8 @@ mod tests {
         );
         assert_eq!(settings.mouse.accel_profile, Some(AccelProfile::Flat));
         assert_eq!(settings.mouse.tap, None);
+        assert_eq!(settings.touchpad.off, Some(false));
+        assert_eq!(settings.touchpad.off_with_mouse, Some(true));
         assert_eq!(
             of(json!({})).expect("nothing is fine"),
             InputSettings::default()
@@ -162,6 +181,11 @@ mod tests {
                 .contains("unknown field `tap`")
         );
         assert!(of(json!({ "touchpad": { "clickMethod": "both" } })).is_err());
+        assert!(
+            of(json!({ "mouse": { "off": true } }))
+                .unwrap_err()
+                .contains("unknown field `off`")
+        );
         assert!(of(json!({ "mouse": "fast" })).is_err());
     }
 }

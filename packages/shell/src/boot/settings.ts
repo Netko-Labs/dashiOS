@@ -104,12 +104,23 @@ export interface SettingsWindows {
 export function startSettingsWindows(needs: SettingsWindowNeeds): SettingsWindows {
   const { compositor, stores, desktops, guards, switches, agents, services, late } = needs;
   const { settingsStore } = stores;
+  // The trackpad key (system/keys.ts): off and on, kept in settings.json as Settings › Trackpad's switch is.
+  const { hardware, pointers } = needs.system.system;
+  hardware.setTrackpad({
+    present: () => pointers.hasTrackpad,
+    off: () => {
+      settingsStore.reload();
+      return settingsStore.getSnapshot().data.touchpad.off === true;
+    },
+    set: (off) => settingsStore.patch("touchpad", { off: off ? true : undefined }),
+  });
   // Control Center's stores for Settings › Control Center, once the menus have made them.
   const settingsApp = startSettingsApp({
     controlCenter: () => late.peek("controlCenterEditor") ?? null,
     compositor,
     displays: desktops.displays,
     settings: settingsStore,
+    pointers: needs.system.system.pointers,
     region: stores.region.store,
     passwords: needs.passwords,
     clipboard: () => late.peek("clipboard")?.history ?? null,

@@ -7,14 +7,16 @@ import type { ReactNode } from "react";
 import { type GrantEntry, Grants } from "../src/agents/consent.ts";
 import type { AppGrants } from "../src/privacy/store.ts";
 import { AppearancePane } from "../src/settings-app/appearance.tsx";
+import { describeChanges } from "../src/settings-app/lib/changes/words.ts";
 import { DesktopDockPane } from "../src/settings-app/lib/panes/desktop-dock.tsx";
 import { MousePane } from "../src/settings-app/lib/panes/mouse.tsx";
 import { PrivacyPane } from "../src/settings-app/lib/panes/privacy.tsx";
-import { TrackpadPane } from "../src/settings-app/lib/panes/trackpad.tsx";
+import { ignoredDetail, TrackpadPane } from "../src/settings-app/lib/panes/trackpad.tsx";
 import { PaneStoresContext } from "../src/settings-app/lib/setting.tsx";
 import { rowPlace, SETTINGS_ROWS } from "../src/settings-app/registry/index.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
 import { FlagsStore } from "../src/shared/control-center/flags.ts";
+import { PointerDevices } from "../src/system/pointers.ts";
 import { settle } from "./support/time.ts";
 
 // Panes drawn from the registry, on a stand-in for the Metal host: every row is there, at its address, and its control works.
@@ -57,6 +59,40 @@ test("every row of a pane is drawn at its address, and a switch from the registr
   expect(at.settings.getSnapshot().data.touchpad.tap).toBe(true);
   await view.press("trackpad-click:clickfinger");
   expect(at.settings.getSnapshot().data.touchpad.clickMethod).toBe("clickfinger");
+});
+
+test("Trackpad's own switch is on until it is turned off, and the pad can be ignored beside a mouse", async () => {
+  const at = stores();
+  const view = await mount(
+    <PaneStoresContext.Provider value={at}>
+      <TrackpadPane settings={at.settings} />
+    </PaneStoresContext.Provider>,
+  );
+  // Off is what the file keeps (`input.touchpad.off`), as the trackpad key writes it; on again is no setting.
+  await view.press("trackpad-on");
+  expect(at.settings.getSnapshot().data.touchpad.off).toBe(true);
+  expect(describeChanges([{ key: "touchpad.off", from: undefined, to: true }])).toMatchObject({ name: "Trackpad on", from: "on", to: "off" });
+  await view.press("trackpad-on");
+  expect(at.settings.getSnapshot().data.touchpad.off).toBeUndefined();
+  await view.press("trackpad-ignore-with-mouse");
+  expect(at.settings.getSnapshot().data.touchpad.offWithMouse).toBe(true);
+});
+
+test("on a computer dashi-comp says has no trackpad, the switches that turn one off are absent and the pane says why", async () => {
+  const at = stores();
+  const devices = new PointerDevices();
+  devices.set({ touchpad: false, mouse: true });
+  const view = await mount(
+    <PaneStoresContext.Provider value={at}>
+      <TrackpadPane settings={at.settings} pointers={devices} />
+    </PaneStoresContext.Provider>,
+  );
+  expect(view.has("spot:on")).toBe(false);
+  expect(view.has("spot:ignore-with-mouse")).toBe(false);
+  expect(view.has("spot:tap-to-click")).toBe(true);
+  expect(ignoredDetail(true, { touchpad: true, mouse: true })).toBe("A mouse is connected: the pad is ignored now.");
+  expect(ignoredDetail(true, { touchpad: true, mouse: false })).toBeUndefined();
+  expect(ignoredDetail(undefined, { touchpad: true, mouse: true })).toBeUndefined();
 });
 
 test("Appearance, Mouse, and Desktop & Dock draw all their rows; a choice from the registry writes its value", async () => {

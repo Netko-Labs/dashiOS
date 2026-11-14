@@ -50,3 +50,51 @@ test("in the machine's own session the keys change its sound", async () => {
   expect(asked).toEqual(["wpctl get-volume", "wpctl set-volume", "wpctl get-volume", "wpctl set-mute", "wpctl get-volume"]);
   expect(told.at(-1)).toEqual({ level: 0.5, muted: true });
 });
+
+/** A trackpad's switch as the settings keep it, and what the key showed. */
+function trackpad(present = true, off = false) {
+  const shown: OsdState[] = [];
+  const saved: boolean[] = [];
+  const state = { off };
+  const keys = new HardwareKeys({ osd: { show: (osd) => void shown.push(osd) } });
+  keys.setTrackpad({
+    present: () => present,
+    off: () => state.off,
+    set: (next) => {
+      state.off = next;
+      saved.push(next);
+    },
+  });
+  return { keys, shown, saved, state };
+}
+
+test("the trackpad key turns the trackpad off and on again, saved each time, and says which", async () => {
+  const { keys, shown, saved } = trackpad();
+  expect(await keys.run("trackpad-toggle")).toBe(true);
+  expect(await keys.run("trackpad-toggle")).toBe(true);
+  expect(saved).toEqual([true, false]);
+  expect(shown).toEqual([
+    { kind: "trackpad", on: false },
+    { kind: "trackpad", on: true },
+  ]);
+});
+
+test("a laptop's own on and off keys say what they mean, and save nothing that is already so", async () => {
+  const { keys, shown, saved } = trackpad(true, true);
+  await keys.run("trackpad-off");
+  await keys.run("trackpad-on");
+  await keys.run("trackpad-on");
+  expect(saved).toEqual([false]);
+  expect(shown.map((osd) => osd.kind === "trackpad" && osd.on)).toEqual([false, true, true]);
+});
+
+test("with no trackpad, or before the settings are there, the key is taken and does nothing", async () => {
+  const none = trackpad(false);
+  expect(await none.keys.run("trackpad-toggle")).toBe(true);
+  expect(none.saved).toEqual([]);
+  expect(none.shown).toEqual([]);
+  const shown: OsdState[] = [];
+  const early = new HardwareKeys({ osd: { show: (osd) => void shown.push(osd) } });
+  expect(await early.run("trackpad-toggle")).toBe(true);
+  expect(shown).toEqual([]);
+});

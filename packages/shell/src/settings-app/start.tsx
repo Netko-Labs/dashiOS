@@ -52,6 +52,8 @@ export interface SettingsAppOptions {
   settings: SettingsStore;
   /** The system time zone, clock sync, and language. */
   region: RegionStore;
+  /** Which pointer devices are connected (Settings › Trackpad). */
+  pointers?: PaneContext["pointers"];
   flags: FlagsStore;
   grants: Pick<Grants, "entries" | "remove" | "revoke" | "restore" | "onChange">;
   /** The sites agents may use without asking (Settings › Agents). */
@@ -142,6 +144,7 @@ function paneContext(
     ...answersOf(options),
     ...(clipboard ? { clipboard } : {}),
     ...(options.installedApp ? { installedApp: options.installedApp } : {}),
+    ...(options.pointers ? { pointers: options.pointers } : {}),
     layouts: loadLayouts(),
     chooser: portalChooser(),
     services: options.services(),

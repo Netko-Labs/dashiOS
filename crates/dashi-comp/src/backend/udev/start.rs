@@ -50,7 +50,14 @@ pub(crate) fn init(
                 event,
                 InputEvent::DeviceAdded { .. } | InputEvent::DeviceRemoved { .. }
             ) {
-                with_udev(state, |_, data| data.input_devices.device_event(&event));
+                // A touchpad or a mouse came or went: the shell hears which kinds are here now.
+                if let Some(Some(pointers)) =
+                    with_udev(state, |_, data| data.input_devices.device_event(&event))
+                {
+                    state
+                        .ipc
+                        .emit(crate::ipc::protocol::Event::Pointers { pointers });
+                }
             } else {
                 state.process_input_event(event);
             }

@@ -117,6 +117,11 @@ export const KEYMAP: Keymap = {
     { when: "XF86AudioPause", bind: "media-pause" },
     { when: "XF86AudioNext", bind: "media-next" },
     { when: "XF86AudioPrev", bind: "media-previous" },
+    // The laptop's trackpad key: off and on (system/keys.ts). The toggle is KEY_TOUCHPAD_TOGGLE;
+    // some laptops send an "on" and an "off" of their own.
+    { when: "XF86TouchpadToggle", bind: "trackpad-toggle" },
+    { when: "XF86TouchpadOn", bind: "trackpad-on" },
+    { when: "XF86TouchpadOff", bind: "trackpad-off" },
     // The power key: the shell asks before shutting down (power/).
     { when: "XF86PowerOff", bind: "power-key" },
 

@@ -7,7 +7,7 @@
 import { useColors } from "@dashi/ui";
 import { type NativeHostOptions, render, Svg, Text, View } from "@mirinjs/metal";
 import { type BottomStack, bottomStack } from "../../capsule/index.ts";
-import { batteryGlyph, micGlyph, SUN, speakerGlyph } from "../../glyphs.ts";
+import { batteryGlyph, micGlyph, SUN, speakerGlyph, trackpadGlyph } from "../../glyphs.ts";
 import { keyboardLightGlyph, modeGlyph } from "../../laptop/index.ts";
 import { spawnShellHost } from "../../shared/metal/index.ts";
 import { litSegments, type OpenOsd, OSD, type OsdState, type OsdStore, useOsd } from "../osd-state.ts";
@@ -26,6 +26,8 @@ function glyphOf(state: OsdState): string {
       return batteryGlyph(state.percent, state.charge);
     case "mode":
       return modeGlyph(state.mode);
+    case "trackpad":
+      return trackpadGlyph(state.on);
     case "keyboard-light":
       return keyboardLightGlyph(state.level > 0);
   }
@@ -36,6 +38,7 @@ function caption(state: OsdState): string | null {
   if (state.kind === "mic") return state.muted ? "Microphone off" : "Microphone on";
   if (state.kind === "power") return `${state.charge === true ? "Charging" : "Plugged In"} · ${state.percent}%`;
   if (state.kind === "mode") return state.label;
+  if (state.kind === "trackpad") return state.on ? "Trackpad on" : "Trackpad off";
   return null;
 }
 

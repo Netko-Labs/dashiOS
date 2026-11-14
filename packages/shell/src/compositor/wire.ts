@@ -126,6 +126,10 @@ export const SessionShape = obj(
 );
 export type Session = Infer<typeof SessionShape>;
 
+/** Which kinds of pointer device are connected (`pointers`, and the event of that name). */
+export const PointersShape = obj({ touchpad: bool(), mouse: bool() }, { strict: false });
+export type Pointers = Infer<typeof PointersShape>;
+
 export const GpuShape = obj(
   {
     card: str(),

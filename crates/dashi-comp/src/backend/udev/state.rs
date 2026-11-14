@@ -164,6 +164,10 @@ impl UdevData {
         self.input_devices.apply_input(settings);
     }
 
+    pub(crate) fn pointers(&self) -> crate::input::Pointers {
+        self.input_devices.pointers()
+    }
+
     pub(crate) fn change_vt(&mut self, vt: u32) {
         if let Err(error) = self.session.change_vt(vt as i32) {
             tracing::warn!(vt, %error, "switching VT");

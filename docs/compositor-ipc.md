@@ -150,7 +150,8 @@ least that big (`src/arrange/arrange.ts`, `keepLeast`); an X11 window's `pid` is
 | `gestures` | shell | `{swipe: number[]}`: finger counts the shell claims | `{}`; `gesture` events (none while locked: every swipe goes to the lock screen) |
 | `idle` | shell | `{timeouts: number[]}` (seconds) | `{}`; `idle` / `active` events |
 | `keyboard` | shell | `{layout?, variant?, options?, repeatRate?, repeatDelay?}`: xkb name lists ("" is the system's own: `DASHI_XKB_*`, else localed's `00-keyboard.conf`), repeat in characters a second and ms; *see* `keyboardRequest`, `src/settings/settings.ts` | `{}`, or an error (nothing changes) when the layout does not compile |
-| `input` | shell | `{touchpad?: {tap?, naturalScroll?, accelSpeed?, disableWhileTyping?, clickMethod?, scrollSpeed?}, mouse?: {naturalScroll?, accelSpeed?, accelProfile?, scrollSpeed?}}`; a key left out is the device's default; *see* `src/settings/settings.ts` | `{}`; devices plugged in later get them too |
+| `input` | shell | `{touchpad?: {tap?, naturalScroll?, accelSpeed?, disableWhileTyping?, clickMethod?, scrollSpeed?, off?, offWithMouse?}, mouse?: {naturalScroll?, accelSpeed?, accelProfile?, scrollSpeed?}}`; a key left out is the device's default; *see* `src/settings/settings.ts` | `{}`; devices plugged in later get them too. `touchpad.off` stops a touchpad sending events (libinput's send-events `disabled`: the laptop's trackpad key, Settings › Trackpad); `touchpad.offWithMouse` stops it while a mouse is connected: libinput's own `disabled-on-external-mouse` on a laptop's built-in touchpad, and for a touchpad without that mode (one on USB or Bluetooth) dashi-comp turns it off and on itself as mice come and go, by libinput's rule for a mouse (`pointers`); libinput's mode is set again whenever a device comes or goes, so a mouse plugged in later counts |
+| `pointers` | anyone | `{}` | `{touchpad: bool, mouse: bool}`: whether a touchpad (a pointer that can tap) and a mouse (a pointer udev calls a mouse, on USB or Bluetooth, that is not a touchpad: a trackpoint is not one) are connected; both false outside a seat of dashi-comp's own (nested, headless). The `pointers` event says so again when one comes or goes. libinput hands over the devices it found at start with the first input from any of them, so until then the answer is both false and the event follows |
 
 ### Spaces and overview
 
@@ -281,6 +282,7 @@ it again before it is sent (`keys/locked.rs`).
 | `bars-edge` | `inside, output?`; also `inside: false` when a window locks the pointer while it is in the band (no motion will say it left) |
 | `edge` | `edge: "bottom", inside`; also `inside: false` when a window locks the pointer while it is in the band, and how it stands again when the lock lets go |
 | `outputs-changed` | |
+| `pointers` | `touchpad, mouse`: a touchpad or a mouse was connected or went away (what `pointers` answers) |
 | `gpus-changed` | none: a GPU was opened, went to sleep, appeared or went away, stopped or started answering, or would not open with a screen on it (`gpus` says how they are now) |
 | `session-changed` | |
 | `lock` | `locked` |

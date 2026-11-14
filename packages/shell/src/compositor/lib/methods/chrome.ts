@@ -1,7 +1,7 @@
 /** The shell's chrome, its input claims, and its settings (docs/compositor-ipc.md, "Shell chrome and input claims"). */
 
 import { bool, int, list, map, num, obj, optional, record, str } from "@dashi/shape";
-import { FrameShape } from "../../wire.ts";
+import { FrameShape, PointersShape } from "../../wire.ts";
 import { Done, method } from "./spec.ts";
 
 /** One keymap rule (the shell's src/keymap/keymap.ts `Rule`). */
@@ -43,7 +43,16 @@ const Pointer = {
 };
 
 const Input = obj({
-  touchpad: optional(obj({ ...Pointer, tap: optional(bool()), disableWhileTyping: optional(bool()), clickMethod: optional(str()) })),
+  touchpad: optional(
+    obj({
+      ...Pointer,
+      tap: optional(bool()),
+      disableWhileTyping: optional(bool()),
+      clickMethod: optional(str()),
+      off: optional(bool()),
+      offWithMouse: optional(bool()),
+    }),
+  ),
   mouse: optional(obj(Pointer)),
 });
 
@@ -87,4 +96,5 @@ export const CHROME = {
   idle: method("shell", obj({ timeouts: list(num({ min: 0 })) }), Done),
   keyboard: method("shell", Keyboard, Done),
   input: method("shell", Input, Done),
+  pointers: method("anyone", obj({}), PointersShape),
 };

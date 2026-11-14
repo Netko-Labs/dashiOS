@@ -102,6 +102,16 @@ export function micGlyph(muted: boolean): string {
   );
 }
 
+/** The trackpad: the pad and its click line, struck through when it is off. */
+export function trackpadGlyph(on: boolean): string {
+  return svg(
+    "0 0 16 16",
+    `<rect x="1.6" y="3.2" width="12.8" height="9.6" rx="2" stroke="#000" stroke-width="1.3" fill="none"/>` +
+      stroke("M1.8 9.8h12.4M8 9.8v2.8", 1.1) +
+      (on ? "" : stroke("M2.4 2l11.2 12", 1.6)),
+  );
+}
+
 /** Control Center: two toggle pills, each with its knob. */
 export const CONTROL_CENTER = svg(
   "0 0 16 16",
