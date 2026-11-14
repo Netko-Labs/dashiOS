@@ -61,6 +61,12 @@ impl Dashi {
         }
     }
 
+    /// Something else was pressed under a key heard as held (a click): it was a modifier after all.
+    pub(crate) fn held_keys_chorded(&mut self) {
+        let ups = self.keys.held.chorded(Instant::now());
+        self.tell_ups(ups);
+    }
+
     fn tell_ups(&mut self, ups: Vec<Up>) {
         for up in ups {
             // As a tap of ❖ does: the keys after this one are the shell's from now (keymap.rs).
