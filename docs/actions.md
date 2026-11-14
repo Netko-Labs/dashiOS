@@ -379,6 +379,24 @@ agent ──MCP──> shell ──dashi-browser.sock──> dashi-browser-host 
   extension is, by Chromium's rules, held disabled until the person accepts
   an "extension added" prompt (not tried in Helium). Measured in the VM: Helium 0.20.3 installs the CRX from the
   `file://` update manifest at start (location 7, policy download, enabled).
+  **Updates** (decisions.md D117): Chromium asks a policy's `update_url` only
+  for the first install; after it, it asks the URL in the extension's own
+  manifest, and for one without (Dashi's) the web store, which knows nothing
+  of it. So a profile kept the version it first installed (0.5.0 from 7 Nov
+  through 0.8 and 0.9; Helium's own Update button asked the store too). The
+  policy now sets `override_update_url` (its URL is asked for updates as
+  well) and `minimum_version_required`, the packaged version
+  (`browser-pinning.test.ts` keeps it the manifest's): an older extension is
+  turned off and updated from the package at once, when Helium starts and
+  when the policy file changes under a running Helium. Measured in the VM on
+  its old profile: 0.5.0 became 0.9.0 within 5 s of the package's install
+  with Helium open, and stayed after a restart; the profile's entry kept its
+  first install time (an update, not a new install, so what the extension
+  stored is kept). The extension says its version to the host
+  (`{event: "hello", version}`), the host passes it on (`extensionVersion` in
+  its own line when the shell joins later), and a shell that hears a version
+  older than `/usr/share/dashi/browser/updates.xml` holds says so once, in a
+  notification: "Helium needs a restart" (`src/browser/stale.ts`).
 - **The id is pinned** by the manifest's `key` (the public half of the
   extension's signing key): `mngbphpldanjlpbagnkmfalmglolgkmb`.
   `bin/dashi-browser-pack.ts` builds and signs the CRX (CRX3, `src/browser/crx.ts`);

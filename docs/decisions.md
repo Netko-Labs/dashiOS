@@ -2299,3 +2299,68 @@ short words, as the rulebook is written.
   waited for. A buffer committed by a synchronised subsurface alone is not
   seen; the bound covers it.
 - **Undo:** `capture` calls `capture_now` directly (`ipc/methods/capture.rs`).
+
+### D117. Helium takes the packaged extension through the policy's own update URL and a minimum version
+
+- **Date:** 2026-11-14. The `n20-agents` agent's.
+- **Question:** a Helium profile that already had Dashi's extension kept
+  0.5.0 for ever. The cause: the policy's `update_url` is asked only for the
+  first install; later checks go to the manifest's `update_url`, and with
+  none, to the web store. How does an existing profile get the packaged
+  version after one restart, with no step from the person?
+- **Choice:** two keys in the policy's `ExtensionSettings`:
+  `override_update_url: true`, so the package's `file://` update manifest is
+  asked for updates too, and `minimum_version_required` set to the packaged
+  version, so an older extension is turned off and updated at once (as
+  Helium starts, or as soon as the policy file changes) instead of at the
+  updater's next round, hours later, and instead of waiting for a busy
+  service worker to go idle. The shell also compares the version the
+  extension says with the package's and posts one notification per pair of
+  versions and shell run when it is older.
+- **Why:** it reaches profiles that hold an old manifest (adding
+  `update_url` to the manifest would only help installs made after it), it
+  is Chromium's own update path (the entry, its permissions and its storage
+  are kept), and nothing runs outside the browser. An external-extensions
+  JSON was not used: it would install beside the policy's entry under
+  another location and the two would take turns.
+- **Cost:** `minimum_version_required` must be raised with every extension
+  version (a test holds it to the manifest's). While the update is fetched
+  the old extension is off (under a second from a local file); if the CRX
+  were missing it would stay off, where before it would have run old. The
+  notice is not kept on disk, so a shell restart may say it once more.
+- **Undo:** drop the two keys from `spin/dashi-helium/…/dashi.json`; the
+  `onExtension` line in `agents/server.ts` for the notice.
+
+### D120. dashi-dialog finds the packaged Metal host itself, and says when there is no display
+
+- **Date:** 2026-11-14. The `n20-agents` agent's.
+- **Question:** started by cron, over ssh or by a systemd unit, `dashi-dialog`
+  has none of the session's environment: what does it take as given?
+- **Choice:** its launcher sets `DASHI_METAL_HOST` to the packaged host
+  (`<prefix>/libexec/dashi/mirin-metal-host`) when the variable is not set,
+  as `dashi-portal` does and as the session's own default is. It never
+  guesses a display: with no Wayland socket to connect to (`WAYLAND_DISPLAY`,
+  else `wayland-0`, under `XDG_RUNTIME_DIR`) and no `DISPLAY`, it stops with
+  exit 255 and says to run it in the session or to give it the session's
+  `WAYLAND_DISPLAY` and `XDG_RUNTIME_DIR` (`apps/dialog/lib/where.ts`).
+- **Why:** the host's path is the package's fact; which session a script
+  means to show a dialog in is the script's.
+- **Cost:** a cron job still has to name the display (the session's socket
+  is `wayland-1` in the VM, not the default name).
+- **Undo:** the block in `session/dashi-dialog`; `cannotShow` in `main.tsx`.
+
+### D121. A Space removed while the screen slides to it ends the slide
+
+- **Date:** 2026-11-14. The `n20-agents` agent's.
+- **Question:** found in the VM: `space-remove` of the Space a 250 ms slide
+  was going to left the slide running, and its end showed a Space that was
+  gone (`current` equal to `count`; the shell then could not list Spaces).
+- **Choice:** `remove_space` ends a slide to or from the removed Space where
+  the screen is, and renumbers a slide between Spaces after it
+  (`wm/space_list.rs`). The shell's `AddedSpaces` still reads `current` from
+  its own snapshot, which is the Space the slide started from until it ends.
+- **Why:** the compositor must never show a Space it does not have.
+- **Cost:** an agent that shows its empty added Desktop and leaves it within
+  the slide takes the Desktop away as the person arrives; the screen stays
+  where it was. After the slide the Desktop stays, as D89 says.
+- **Undo:** not wanted.
