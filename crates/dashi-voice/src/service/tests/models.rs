@@ -15,7 +15,7 @@ fn status_and_models_say_what_is_here() {
     let status = world.ask(Request::Status).unwrap();
     assert_eq!(
         status,
-        json!({ "version": "0.8.0", "state": "idle", "listen": false, "speak": false, "whisper": false, "fetching": false })
+        json!({ "version": "0.9.0", "state": "idle", "listen": false, "speak": false, "whisper": false, "fetching": false })
     );
     let models = world.ask(Request::Models).unwrap();
     let sets = models["sets"].as_array().unwrap();

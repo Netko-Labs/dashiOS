@@ -1,6 +1,6 @@
 {
   "name": "@dashi/applet",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "type": "module",
   "description": "Dashi's applet SDK: the client for the menu bar's applets channel, popovers drawn with Metal, applet.json (the manifest), packages and their signatures, and the dashi-applet CLI.",
   "license": "MIT",
