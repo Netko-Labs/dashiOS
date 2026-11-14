@@ -80,7 +80,7 @@ One file browser, used everywhere. Extract Files' core (store, grid and list, si
 Ticked are in `feat/0.5-files`; the rest moved to `tasks/todo.md` ("Left from the Files and portal roasts").
 
 - [x] 1 Keyboard: Files reads Metal's window keys itself (`apps/files/keys.ts`, `browser.tsx`): ← → ↑ ↓ in two directions in the grid, ⇧ extends, Home, End, Page Up and Down, Return opens, ❖↓ opens, ❖↑ goes up, F2 renames, Delete and ❖⌫ move to the Trash (❖⌫ reaches the menus first: `src/keymap.ts` `app-erase`), Space peeks. `@dashi/ui`'s `KeySink` is unchanged for the other apps (moved on).
-- [x] 2 Selection: ⇧-click, ❖-click (wave 1), a click on empty space selects nothing. The rubber band moved on: Metal doesn't report where a scroll view stands, so the box can't be matched to tiles.
+- [x] 2 Selection: ⇧-click, ❖-click (wave 1), a click on empty space selects nothing. The rubber band came in 0.9 (`shared/file-browser/lib/marquee/`, decisions.md D99 to D102): Metal still doesn't report where a scroll view stands, so the window is asked where the items are painted.
 - [x] 3 Undo: every write, and a Replace's victim comes back too (`undoable.ts` `withReplaced`).
 - [x] 4 Conflicts: Replace / Keep Both / Skip with "do the same for the others" (`operations.ts`, `conflict-sheet.tsx`).
 - [x] 5 Peek: Space shows a picture, the start of a text file, or the icon with kind and size; arrows step, Return opens (`peek.tsx`). PDF, audio and video through Preview's renderers moved on.
