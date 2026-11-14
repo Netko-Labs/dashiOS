@@ -6,7 +6,8 @@
  */
 
 import { mkdirSync, watch } from "node:fs";
-import type { PromptStyle } from "../agents/ask/index.ts";
+import { dirname } from "node:path";
+import type { PromptStyle } from "../agents/index.ts";
 import type { Persona } from "../shared/pill/index.ts";
 import type { Character } from "./lib/characters.ts";
 import { type CharacterFiles, charactersDir, readCharacters } from "./lib/files.ts";
@@ -42,43 +43,16 @@ export interface PersonaOptions {
   watch?: boolean;
 }
 
-export function startPersona(options: PersonaOptions): PersonaSource {
-  const dir = options.dir ?? charactersDir();
-  const listeners = new Set<() => void>();
-  let files = readCharacters(dir);
-  let view: PersonaView;
-  let language: "en" | "es" = "en";
-  let last = "";
-  const apply = (): void => {
-    const data = options.settings.getSnapshot().data;
-    const characters: readonly Character[] = files.characters;
-    view = resolvePersona(data, characters);
-    language = promptLanguage(view.language, data.region.formats, options.lang ?? process.env.LANG);
-    const persona = hubPersona(view, language);
-    const style = personaStyle(view, language);
-    // The same choices are not told twice: the cell's readers compare by identity.
-    const now = JSON.stringify([persona, style, files, view.missing]);
-    if (now === last) return;
-    last = now;
-    options.set(persona);
-    options.style(style);
-    for (const listener of [...listeners]) listener();
-  };
-  view = resolvePersona(options.settings.getSnapshot().data, files.characters);
-  apply();
-  const refresh = (): void => {
-    files = readCharacters(dir);
-    apply();
-  };
-  const offSettings = options.settings.subscribe(apply);
+/** Follows the characters folder once it exists: a file saved there shows at once. */
+function followFolder(dir: string, changed: () => void, on: boolean): { follow(): void; stop(): void } {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let watcher: ReturnType<typeof watch> | null = null;
   const follow = (): void => {
-    if (watcher || options.watch === false) return;
+    if (watcher || !on) return;
     try {
       watcher = watch(dir, () => {
         clearTimeout(timer);
-        timer = setTimeout(refresh, 150);
+        timer = setTimeout(changed, 150);
       });
       watcher.on("error", () => {});
     } catch {
@@ -86,6 +60,56 @@ export function startPersona(options: PersonaOptions): PersonaSource {
     }
   };
   follow();
+  return {
+    follow,
+    stop() {
+      clearTimeout(timer);
+      watcher?.close();
+    },
+  };
+}
+
+export function startPersona(options: PersonaOptions): PersonaSource {
+  const dir = options.dir ?? charactersDir();
+  const listeners = new Set<() => void>();
+  // Dashi's folder is there before any agent runs: its sandbox binds the folder read-only only if it
+  // exists (agents/sandbox.ts), and with it settings.json and the characters folder inside.
+  try {
+    mkdirSync(dirname(dir), { recursive: true });
+  } catch {
+    // Nowhere to keep settings: nothing to guard either.
+  }
+  let files = readCharacters(dir);
+  let language: "en" | "es" = "en";
+  let last = "";
+  const read = (): { view: PersonaView; language: "en" | "es" } => {
+    const data = options.settings.getSnapshot().data;
+    const characters: readonly Character[] = files.characters;
+    const next = resolvePersona(data, characters);
+    return { view: next, language: promptLanguage(next.language, data.region.formats, options.lang ?? process.env.LANG) };
+  };
+  let view = read().view;
+  const apply = (): void => {
+    const next = read();
+    const persona = hubPersona(next.view, next.language);
+    const style = personaStyle(next.view, next.language);
+    // The same choices are not told twice: the cell's readers, and the pane, compare by identity.
+    const now = JSON.stringify([next, persona, style, files]);
+    if (now === last) return;
+    last = now;
+    view = next.view;
+    language = next.language;
+    options.set(persona);
+    options.style(style);
+    for (const listener of [...listeners]) listener();
+  };
+  apply();
+  const refresh = (): void => {
+    files = readCharacters(dir);
+    apply();
+  };
+  const offSettings = options.settings.subscribe(apply);
+  const folder = followFolder(dir, refresh, options.watch !== false);
   return {
     view: () => view,
     files: () => files,
@@ -102,13 +126,12 @@ export function startPersona(options: PersonaOptions): PersonaSource {
       } catch {
         // No folder is no characters.
       }
-      follow();
+      folder.follow();
       refresh();
     },
     stop() {
       offSettings();
-      clearTimeout(timer);
-      watcher?.close();
+      folder.stop();
     },
   };
 }

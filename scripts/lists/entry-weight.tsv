@@ -227,6 +227,7 @@ packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/menus
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/network
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/night-shift.ts
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/overlay.tsx
+packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/persona
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/power
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/privacy
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/region
@@ -331,6 +332,7 @@ packages/shell/src/main.tsx	packages/shell/src/notifications
 packages/shell/src/main.tsx	packages/shell/src/overlay-slots.ts
 packages/shell/src/main.tsx	packages/shell/src/overlay.tsx
 packages/shell/src/main.tsx	packages/shell/src/overview
+packages/shell/src/main.tsx	packages/shell/src/persona
 packages/shell/src/main.tsx	packages/shell/src/pointer.ts
 packages/shell/src/main.tsx	packages/shell/src/polkit
 packages/shell/src/main.tsx	packages/shell/src/portal-host

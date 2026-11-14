@@ -23,6 +23,7 @@ import {
   LOCK,
   MIC,
   MOUSE,
+  PERSONA,
   SHIELD,
   SPARK,
   TRACKPAD,
@@ -47,6 +48,7 @@ export type PaneId =
   | "notifications"
   | "passwords"
   | "agents"
+  | "persona"
   | "voice"
   | "privacy"
   | "about"
@@ -103,6 +105,7 @@ export const PANES: readonly PaneInfo[] = [
   { id: "passwords", title: "Passwords", glyph: KEY, group: "you", private: true },
   { id: "agents", title: "Agents", glyph: SPARK, group: "you" },
   { id: "privacy", title: "Privacy", glyph: SHIELD, group: "you" },
+  { id: "persona", title: "Your Dashi", glyph: PERSONA, group: "you" },
   { id: "voice", title: "Voice", glyph: MIC, group: "you" },
   { id: "lock-screen", title: "Lock Screen", glyph: LOCK, group: "you" },
   { id: "date-time", title: "Date & Time", glyph: CLOCK, group: "you" },

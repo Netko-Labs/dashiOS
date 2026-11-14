@@ -5,7 +5,7 @@
  * Settings › Your Dashi shows at once, with no logging out.
  */
 
-import { promptStyle } from "../agents/ask/index.ts";
+import { promptStyle } from "../agents/index.ts";
 import { type PersonaSource, startPersona } from "../persona/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import type { LateParts } from "./parts.ts";

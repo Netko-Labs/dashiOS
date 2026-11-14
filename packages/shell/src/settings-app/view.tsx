@@ -38,6 +38,7 @@ import { MousePane } from "./lib/panes/mouse.tsx";
 import { NetworkPane } from "./lib/panes/network.tsx";
 import { NotificationsPane } from "./lib/panes/notifications.tsx";
 import { PasswordsPane } from "./lib/panes/passwords.tsx";
+import { YourDashiPane } from "./lib/panes/persona.tsx";
 import { PrivacyPane } from "./lib/panes/privacy.tsx";
 import { RecentPane } from "./lib/panes/recent.tsx";
 import { SoundPane } from "./lib/panes/sound.tsx";
@@ -77,15 +78,17 @@ export const SETTINGS_WINDOW = {
   minHeight: 300,
 } as const;
 
-function NoVault() {
+/** A pane whose part of the shell did not start in this session. */
+function NoService({ title, testID, note }: { title: string; testID: string; note: string }) {
   return (
-    <Page title="Passwords">
-      <Group testID="passwords-none">
-        <Note>Dashi's vault isn't running in this session, so there are no passwords to show. Log out and in again to start it.</Note>
+    <Page title={title}>
+      <Group testID={testID}>
+        <Note>{note}</Note>
       </Group>
     </Page>
   );
 }
+const AGAIN = "Log out and in again to start it.";
 
 function Keyboard({ ctx }: { ctx: PaneContext }) {
   return (
@@ -147,18 +150,24 @@ function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
     case "notifications":
       return <NotificationsPane />;
     case "passwords":
-      return ctx.passwords ? <PasswordsPane passwords={ctx.passwords} /> : <NoVault />;
+      return ctx.passwords ? (
+        <PasswordsPane passwords={ctx.passwords} />
+      ) : (
+        <NoService
+          title="Passwords"
+          testID="passwords-none"
+          note={`Dashi's vault isn't running in this session, so there are no passwords to show. ${AGAIN}`}
+        />
+      );
     case "agents":
       return <AgentsPane ctx={ctx} />;
+    case "persona":
+      return <YourDashiPane ctx={ctx} />;
     case "voice":
       return ctx.voice ? (
         <VoicePane settings={ctx.settings} voice={ctx.voice} {...(ctx.byPerson ? { byPerson: ctx.byPerson } : {})} />
       ) : (
-        <Page title="Voice">
-          <Group testID="voice-none">
-            <Note>Voice isn't running in this session. Log out and in again to start it.</Note>
-          </Group>
-        </Page>
+        <NoService title="Voice" testID="voice-none" note={`Voice isn't running in this session. ${AGAIN}`} />
       );
     case "privacy":
       return <Privacy ctx={ctx} />;

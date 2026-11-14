@@ -80,6 +80,10 @@ export const RING = svg(`<rect x="4" y="5" width="16" height="14" rx="3"/><rect 
 /** The Dock's and the Desktops' rows. */
 export const DESKTOPS = svg(`<rect x="3" y="6" width="13" height="10" rx="2"/><path d="M8 19h11a2 2 0 0 0 2-2V9"/>`);
 /** A speaker over a microphone: Sound's input. */
+/** Your Dashi: a speech bubble that smiles (the spark is Agents'). */
+export const PERSONA = svg(
+  `<path d="M5 4.5h14a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2h-7.5L7 21v-4H5a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2z"/><path d="M8.8 10.2c1.2 2 5.2 2 6.4 0"/>`,
+);
 export const MIC = svg(`<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>`);
 /** The microphone, struck through: the input muted. */
 export const MIC_OFF = svg(`<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M4 4l16 16"/>`);
