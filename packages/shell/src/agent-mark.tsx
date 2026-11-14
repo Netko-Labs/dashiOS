@@ -1,6 +1,6 @@
 /**
  * Dashi's mark in the menu bar (docs/design.html, "The mark"; the design's
- * b-01, b-12, b-14): the spark on a small disc, always there, leading the
+ * b-01, b-12, b-14): Dashi's mark (the spark, or the one the person chose) on a small disc, always there, leading the
  * status items so the jobs can sit against it (menubar/lib/job-capsule.tsx).
  * A click turns the bar's row into the field (menubar/field.ts). While
  * something waits on the person it turns amber with an ink line and counts
@@ -65,8 +65,8 @@ function Asking({ need }: { need: number }) {
   );
 }
 
-/** At rest: the spark on its disc. */
-function Spark({ ink }: { ink: string }) {
+/** At rest: the mark's glyph on its disc. */
+function Spark({ ink, glyph }: { ink: string; glyph: string }) {
   const colors = useColors();
   return (
     <View
@@ -79,7 +79,7 @@ function Spark({ ink }: { ink: string }) {
         justifyContent: "center",
       }}
     >
-      <Svg markup={SPARK} size={MARK.glyph} color={ink} />
+      <Svg markup={glyph} size={MARK.glyph} color={ink} />
     </View>
   );
 }
@@ -93,6 +93,8 @@ export interface AgentMarkProps {
   open: boolean;
   /** Dashi's colour (the persona's); the agents' purple unless set. */
   colour?: string;
+  /** The glyph on the disc (the persona's mark, `markSvg`); the spark unless set. */
+  glyph?: string;
   /** What a screen reader says. */
   label: string;
   /** The tooltip's words; "" for none. */
@@ -105,7 +107,7 @@ export interface AgentMarkProps {
   accessible?: boolean;
 }
 
-export function AgentMark({ need, watching, open, colour, label, tip, onPress, onTip, accessible = false }: AgentMarkProps) {
+export function AgentMark({ need, watching, open, colour, glyph = SPARK, label, tip, onPress, onTip, accessible = false }: AgentMarkProps) {
   const colors = useColors();
   const laid = useRef<Bounds | null>(null);
   // A press or the mark going takes its tooltip down (the latest `onTip`: the bar passes a new one each render).
@@ -153,7 +155,7 @@ export function AgentMark({ need, watching, open, colour, label, tip, onPress, o
         ...(asking ? { borderWidth: 1.5, borderColor: NEED.ink } : {}),
       }}
     >
-      {asking ? <Asking need={need} /> : <Spark ink={ink} />}
+      {asking ? <Asking need={need} /> : <Spark ink={ink} glyph={glyph} />}
       {watching && <RedDot />}
     </View>
   );

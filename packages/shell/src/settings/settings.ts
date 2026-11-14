@@ -136,6 +136,15 @@ export function parseSettings(value: unknown): Loaded {
     "spaces",
     "launcher",
     "applets",
+    // Read by their own modules through settings-app/sections.ts: none of them is a stranger here.
+    "power",
+    "graphics",
+    "agents",
+    "clipboard",
+    "screenSharing",
+    "voice",
+    "dictation",
+    "persona",
   ];
   for (const key of Object.keys(value)) if (!sections.includes(key)) problems.push(`unknown section ${key}`);
 

@@ -8,7 +8,7 @@
 import { type Bounds, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import { AgentMark } from "../../agent-mark.tsx";
-import { DEFAULT_PERSONA, type PillAsk } from "../../shared/pill/index.ts";
+import { DEFAULT_PERSONA, markSvg, type PillAsk } from "../../shared/pill/index.ts";
 import type { FieldState } from "../field.ts";
 import { type BarPill, taskFocus } from "../pill.ts";
 import { type BarJob, jobLabel, layoutJobs, needCount } from "./bar-jobs.ts";
@@ -24,6 +24,8 @@ export interface PillNow {
   speaking: string | null;
   asks: readonly PillAsk[];
   colour: string;
+  /** The glyph of the mark the person chose (`markSvg`). */
+  glyph: string;
   name: string;
   fieldOpen: boolean;
 }
@@ -42,7 +44,7 @@ export function usePill(pill: BarPill | undefined, output: string | undefined, a
   if (!pill) return null;
   // The default purple follows the appearance (lighter in Dark); a colour the person chose is theirs.
   const colour = persona.colour.toLowerCase() === DEFAULT_PERSONA.colour.toLowerCase() ? agent : persona.colour;
-  return { source: pill, jobs, speaking, asks, colour, name: persona.name, fieldOpen: field.open && field.output === output };
+  return { source: pill, jobs, speaking, asks, colour, glyph: markSvg(persona.mark), name: persona.name, fieldOpen: field.open && field.output === output };
 }
 
 /** The jobs beside the mark (job-capsule.tsx): never hidden, they shrink to discs and a count instead (bar-jobs.ts). */
@@ -75,6 +77,7 @@ export function jobsSlot({ sources, appName, pill }: ProgramContext, room: numbe
           <JobsRow
             row={row}
             dashi={pill.colour}
+            glyph={pill.glyph}
             onOpen={open}
             onStop={(job) => job.kind === "task" && pill.source.stopTask(job.id)}
             onMore={(right) => all(right)}
@@ -107,7 +110,7 @@ export function agentMarkSlot({ sources, mark, pill, tip }: ProgramContext, acce
           need={need}
           watching={mark.kind !== "none" && mark.watching}
           open={pill?.fieldOpen === true}
-          {...(pill ? { colour: pill.colour } : {})}
+          {...(pill ? { colour: pill.colour, glyph: pill.glyph } : {})}
           label={label}
           tip={mark.kind === "none" ? "" : mark.tip}
           onPress={openField}

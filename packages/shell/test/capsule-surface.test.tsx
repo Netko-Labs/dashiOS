@@ -2,7 +2,7 @@
 
 import { expect, test } from "bun:test";
 import { type NativeHostOptions, type NativeHostTransport, View } from "@mirinjs/metal";
-import { CapsuleSurface, capsuleSurface, MIN_OPEN_MS, REOPEN_MS } from "../src/capsule/lib/surface.ts";
+import { CapsuleSurface, capsuleSurface, LINGER_MS, MIN_OPEN_MS, REOPEN_MS } from "../src/capsule/lib/surface.ts";
 import { osdSurface } from "../src/system/lib/osd-panel.tsx";
 
 function hosts() {
@@ -50,7 +50,7 @@ test("it takes no keyboard, lies over everything along the bottom edge, and is n
 });
 
 /** A surface on a clock moved by hand. */
-function timed() {
+function timed(lingerMs = 0) {
   const { log, spawned, spawn } = hosts();
   let clock = 0;
   let later: Array<{ at: number; fn: () => void }> = [];
@@ -63,7 +63,7 @@ function timed() {
       due.fn();
     }
   };
-  const surface = new CapsuleSurface({ spawn, element: <View />, now: () => clock, later: (fn, ms) => later.push({ at: clock + ms, fn }) });
+  const surface = new CapsuleSurface({ spawn, element: <View />, lingerMs, now: () => clock, later: (fn, ms) => later.push({ at: clock + ms, fn }) });
   return { log, spawned, surface, advance };
 }
 
@@ -150,4 +150,23 @@ test("the volume indicator is small and above the capsule while one is up, and t
   expect(small).toMatchObject({ small: true, height: 55, surface: { exclusiveZone: -1, margin: { bottom: 107 }, output: "DP-2" } });
   // Its row starts above the capsule's top: 107 + the surface's own margin of 12 = 119 > 111.
   expect(107 + 12).toBeGreaterThan(111);
+});
+
+test("one line replaces another: the window lingers, so it never hides in between", () => {
+  const { log, surface, advance } = timed(LINGER_MS);
+  surface.show(undefined, false);
+  advance(2000);
+  // Nothing shows for a moment (heard, then the step), then the next line: the same window, never hidden.
+  surface.hide();
+  advance(LINGER_MS - 1);
+  surface.show(undefined, false);
+  advance(5000);
+  expect(log).toEqual(["open any none"]);
+  // Nothing more comes: it hides once it has lingered.
+  surface.hide();
+  advance(LINGER_MS - 1);
+  expect(log).toEqual(["open any none"]);
+  advance(1);
+  expect(log).toEqual(["open any none", "hide"]);
+  surface.close();
 });

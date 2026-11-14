@@ -5,7 +5,7 @@
  */
 
 import { expect, test } from "bun:test";
-import { dictationKey, pillHeldKeys, usesAltGr } from "../src/dictation/keys.ts";
+import { dictationKey, pillHeldKeys, tapClosesLauncher, usesAltGr } from "../src/dictation/keys.ts";
 import { KeyGestures } from "../src/dictation/lib/gestures.ts";
 import { type DictationOptions, startDictation } from "../src/dictation/start.ts";
 import { createPillHub, type DictationKeyId } from "../src/shared/pill/index.ts";
@@ -223,4 +223,12 @@ test("the keys follow the settings live: the layout, the key chosen, dictation o
   expect(held.at(-1)).toEqual([]);
   change();
   expect(held).toHaveLength(5);
+});
+
+test("a tap of the Dashi key does not close a launcher that a tap of ❖ alone just opened", () => {
+  expect(tapClosesLauncher(200)).toBe(false);
+  expect(tapClosesLauncher(1499)).toBe(false);
+  expect(tapClosesLauncher(1500)).toBe(true);
+  // No ❖ tap at all: ❖Space closes the launcher it opened, as before.
+  expect(tapClosesLauncher(Number.POSITIVE_INFINITY)).toBe(true);
 });

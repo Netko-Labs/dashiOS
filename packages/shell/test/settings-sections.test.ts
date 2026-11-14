@@ -1,6 +1,7 @@
 // How Settings reads the settings file (settings-app/sections.ts): each key by its shape, a bad one never losing the rest.
 import { expect, test } from "bun:test";
-import { readSettings } from "../src/settings-app/sections.ts";
+import { parseSettings } from "../src/settings/settings.ts";
+import { readSettings, SECTIONS } from "../src/settings-app/sections.ts";
 
 test("a key with a bad value reads as not set, and the section's other keys stay", () => {
   const read = readSettings({
@@ -25,4 +26,11 @@ test("a list is kept whole when every entry is good", () => {
   const read = readSettings({ screenSharing: { clients: ["/usr/bin/obs"] }, launcher: { aliases: { ff: "dashi://app/org.mozilla.firefox" } } });
   expect(read.screenSharing).toEqual({ clients: ["/usr/bin/obs"] });
   expect(read.launcher).toEqual({ aliases: { ff: "dashi://app/org.mozilla.firefox" } });
+});
+
+test("the shell's own reader knows every section the settings are kept in: none prints as unknown at start", () => {
+  const tops = [...new Set(Object.values(SECTIONS).map((section) => section.path[0] ?? ""))];
+  const { problems } = parseSettings(Object.fromEntries(tops.map((top) => [top, {}])));
+  expect(problems.filter((problem) => problem.startsWith("unknown section"))).toEqual([]);
+  expect(parseSettings({ nonsense: {} }).problems).toContain("unknown section nonsense");
 });

@@ -44,8 +44,10 @@ export function hintOf(content: CardContent, card: OpenCard, talkKey: string | n
     return content.kind === "permission"
       ? "Return is yes, Esc is no. Any other key gives the keyboard back."
       : "Esc skips it. Any other key gives the keyboard back.";
-  if (content.kind === "question") return talkKey ? `Hold ${talkKey} and answer, or type it.` : "";
-  return talkKey ? `Press a button, or tap the Dashi key then Return. Or hold ${talkKey} and say yes.` : "Press a button, or tap the Dashi key then Return.";
+  // Saying it is offered only on a card that listens for it (a typed plan's does not: voice-mode.ts `hears`).
+  const say = card.hears ? talkKey : null;
+  if (content.kind === "question") return say ? `Hold ${say} and answer, or type it.` : "";
+  return say ? `Press a button, or tap the Dashi key then Return. Or hold ${say} and say yes.` : "Press a button, or tap the Dashi key then Return.";
 }
 
 /** Whether the card's buttons are armed yet; turns true by itself when they are. */

@@ -5,6 +5,7 @@
  */
 
 import { expect, test } from "bun:test";
+import { voiceStateOf } from "../src/capsule/lib/told.ts";
 import { CARD_ARM_MS } from "../src/shared/pill/index.ts";
 import { stage } from "./support/capsule.ts";
 import { flush } from "./support/time.ts";
@@ -252,4 +253,29 @@ test("a question can be skipped, typed elsewhere, or run out of time", async () 
   advance(30_000);
   expect(await late).toEqual({ none: "no-answer" });
   expect(hub.asks.getSnapshot()).toEqual([]);
+});
+
+test("Done after a spoken yes has its four seconds: a line that repeats what was heard does not keep it waiting", async () => {
+  const { hub, voice, tasks, say, advance, phase } = stage();
+  const id = say("Lock the screen");
+  tasks.settle(id, ["Lock the screen"]);
+  voice.show(null);
+  advance(0);
+  expect(voice.hear("yes")).toBe(true);
+  await flush();
+  voice.show({ kind: "notice", text: "You said: Yes." });
+  expect(hub.voiceMode.getSnapshot()).toMatchObject({ phase: "notice", line: "You said: Yes." });
+  advance(1001);
+  expect(hub.voiceMode.getSnapshot()).toMatchObject({ phase: "done", line: "Done: Lock the screen" });
+  advance(2500);
+  voice.show(null);
+  expect(phase()).toBe("done");
+  advance(1500);
+  expect(phase()).toBe("idle");
+  // A notice that leads somewhere is still said first.
+  expect(
+    voiceStateOf({ kind: "notice", text: "No agent answers yet.", go: "agents" }, { phase: "done", line: "Done", until: 0 }, [], new Set(), 9),
+  ).toMatchObject({
+    phase: "notice",
+  });
 });

@@ -6,7 +6,8 @@
 
 import { expect, test } from "bun:test";
 import type { NativeHostOptions } from "@mirinjs/metal";
-import { FIELD_LAYER, startBarPill } from "../src/menubar/index.ts";
+import type { CompositorEvent } from "../src/compositor/events.ts";
+import { FIELD_LAYER, frontWatch, startBarPill } from "../src/menubar/index.ts";
 import { createPillHub } from "../src/shared/pill/index.ts";
 
 function start() {
@@ -17,6 +18,7 @@ function start() {
   let menuState: { popover: unknown; bar?: unknown } = { popover: null };
   const menuListeners = new Set<() => void>();
   const locks = new Set<() => void>();
+  const fronts = new Set<() => void>();
   const log: string[] = [];
   const { pill, stop } = startBarPill({
     hub,
@@ -46,6 +48,10 @@ function start() {
       locks.add(listener);
       return () => locks.delete(listener);
     },
+    onFront: (listener) => {
+      fronts.add(listener);
+      return () => fronts.delete(listener);
+    },
     showLauncher: () => log.push("launcher"),
     // The row is not drawn here (the surface is a stand-in), so its sources are never read.
     bar: () => ({}) as ReturnType<Parameters<typeof startBarPill>[0]["bar"]>,
@@ -57,6 +63,7 @@ function start() {
     opened,
     log,
     locks,
+    fronts,
     menus: (state: typeof menuState) => {
       menuState = state;
       for (const listener of menuListeners) listener();
@@ -112,4 +119,34 @@ test("the others' commands reach the field: open on the primary screen, insert a
   expect(pill.field.getSnapshot().text).toBe("book a class");
   expect(hub.bar.getSnapshot()).toEqual({ mode: "field", text: "book a class" });
   stop();
+});
+
+test("the window in front changes: the field closes and keeps its draft", () => {
+  const { pill, fronts, stop } = start();
+  pill.field.open("eDP-1");
+  pill.field.type("Reply to Marta that");
+  for (const listener of fronts) listener();
+  expect(pill.field.getSnapshot()).toMatchObject({ open: false, text: "Reply to Marta that" });
+  pill.field.open("eDP-1");
+  expect(pill.field.getSnapshot()).toMatchObject({ open: true, text: "Reply to Marta that" });
+  stop();
+});
+
+test("what counts as the window in front changing: a window opening or closing, a Space, Mission Control, the switcher; never the clipboard's helper", () => {
+  let changes = 0;
+  const watch = frontWatch(() => void changes++);
+  const hear = (event: Record<string, unknown>): void => watch(event as CompositorEvent);
+  const window = (id: number, appId: string) => ({ id, appId });
+  hear({ event: "window-opened", window: window(4, "io.github.bugaevc.wl-clipboard") });
+  hear({ event: "window-closed", id: 4 });
+  hear({ event: "person-input", window: 3 });
+  hear({ event: "overview", active: false });
+  hear({ event: "binding", name: "switch-cancel" });
+  expect(changes).toBe(0);
+  hear({ event: "window-opened", window: window(5, "dev.dashi.notes") });
+  hear({ event: "window-closed", id: 5 });
+  hear({ event: "space", current: 2, previous: 1, count: 2 });
+  hear({ event: "overview", active: true });
+  hear({ event: "binding", name: "switch-next" });
+  expect(changes).toBe(5);
 });

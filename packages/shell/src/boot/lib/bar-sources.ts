@@ -6,7 +6,7 @@
 
 import type { ReactElement } from "react";
 import { panelTasks, withPanelTasks } from "../../agents-panel/index.ts";
-import type { BarPill, startBarPill } from "../../menubar/index.ts";
+import { type BarPill, frontWatch, type startBarPill } from "../../menubar/index.ts";
 import { openOverlay } from "../../overlay.tsx";
 import type { PillHub } from "../../shared/pill/index.ts";
 import type { ChipSource, VoiceParts } from "../../voice/index.ts";
@@ -81,6 +81,7 @@ export function pillNeeds(needs: BarsNeeds, bar: PillNeeds["bar"]): PillNeeds {
     menus: needs.menus.controller,
     primary: () => late.peek("menuBars")?.primaryName ?? needs.primaryScreen,
     onLock: (listener) => needs.compositor?.on((event) => void (event.event === "lock" && event.locked && listener())) ?? (() => {}),
+    onFront: (listener) => needs.compositor?.on(frontWatch(listener)) ?? (() => {}),
     showLauncher: () => showLauncher(late),
     bar,
   };

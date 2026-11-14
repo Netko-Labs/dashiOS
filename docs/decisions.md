@@ -1757,3 +1757,33 @@ short words, as the rulebook is written.
 - **Cost:** dictation is not stopped by it (letting go, or a tap in
   hands-free, already does). Agents from outside Dashi are still ⌃❖Esc.
 - **Undo:** the `switch-cancel` case in `shortcuts.ts`; `STOP_KEYS`.
+
+### D83. Small things the join left open
+
+- **Date:** 2026-11-14. The `n8-harden` agent's.
+- **Question:** seven loose ends from the first run of the four pieces
+  together (`04-night/join/README.md`), each small, each a choice.
+- **Choice:**
+  - The bar's field closes, draft kept, when the window in front changes.
+    While the field has the keyboard no window is focused, so "changed" is
+    read from what changes it: a window opening or closing (not the
+    clipboard's helper or a portal dialog), another Space, Mission Control,
+    the ❖Tab switcher.
+  - A card says "hold the Dashi key and say yes" only when it listens (a
+    spoken plan, a question); a typed plan's card says to press.
+  - "Done" goes before a notice that only repeats what was heard, so it
+    shows for its four seconds; a notice that leads somewhere (Settings) is
+    still first.
+  - The capsule's window lingers 350 ms after its last line, so the next
+    line is drawn in it instead of in a window that takes half a second to
+    reopen. For that time the place it had still takes a click.
+  - A tap of ❖Space does not close a launcher that a tap of ❖ alone opened
+    in the last 1.5 s.
+  - The bar's mark, the field's lead and Dashi's jobs wear the chosen mark.
+  - `settings/settings.ts` knows every section `settings-app/sections.ts`
+    keeps; a test holds the two together.
+- **Why:** each is the plainer reading of what the person meant.
+- **Cost:** a window that opens by itself (a download's dialog) closes the
+  field; the draft is one click away.
+- **Undo:** `frontWatch`; `hintOf`; `voiceStateOf`; `LINGER_MS`;
+  `tapClosesLauncher`.
