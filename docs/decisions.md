@@ -1363,6 +1363,89 @@ Replaced by D51: 0.9 builds on mirin's `main`.
 - **Cost:** the look is narrower than drawn: six colours and two marks.
 - **Undo:** widen `shared/pill/persona.ts` and the capsule together.
 
+### D64. The capsule is one resident surface across the bottom edge, with no window while nothing shows
+
+- **Date:** 2026-11-13. The `n2-capsule` agent's (the night build).
+- **Question:** the dots must be there as the key goes down, on any screen,
+  beside the Dock or above it, and never take the pointer from the window
+  under them. A new Metal host takes seconds; a layer surface's screen,
+  place and keyboard are fixed when it opens.
+- **Choice:** one Metal host kept for the session with no window
+  (`capsule/lib/surface.ts`, as the launcher's is). When something shows it
+  opens a layer surface (`dashi.capsule`, overlay) as wide as the screen and
+  340 tall along the bottom edge, see-through, taking the pointer only on
+  what is drawn (`input-region`); when nothing shows it is hidden, so there
+  is no surface over a game or a film. A change of screen, or the card
+  taking the keyboard, hides it and opens it again.
+- **Why:** the seat is then only layout inside one surface (home, beside the
+  Dock, a step up), with nothing new asked of the compositor tonight.
+- **Cost:** one more host process for the session; a blink when a card takes
+  the keyboard; the capsule moves without a transition.
+- **Undo:** `capsule/lib/surface.ts` is the only file that knows; a
+  compositor-placed surface can replace it behind `show` and `hide`.
+
+### D65. A spoken plan asks in the card; a typed plan keeps the launcher; a question is typed in the sheet
+
+- **Date:** 2026-11-13. The `n2-capsule` agent's.
+- **Question:** which of 0.8's asks go to the card tonight, and what is a yes?
+- **Choice:** a launcher Ask task that waits for a yes is an ask on the hub.
+  A spoken one opens its card by itself and the launcher stays shut
+  (`boot/voice.ts` sends `open-ask` and opens the launcher only when nobody
+  handles it); a typed one keeps the launcher's plan and opens a card only
+  when the bar asks. An agent's `ask_person` opens in the card when the
+  person can answer by voice; "Type it", or no voice, is 0.8's sheet, which
+  has the field: nothing is typed into the card. Other consent sheets (an
+  MCP agent's scopes, sign-in, a site) stay sheets. A yes is the person's
+  press on `dashi.capsule` (`input-origin`), Return as the first key after a
+  tap of the Dashi key gave the card the keyboard, or "yes" said as the
+  whole of what was heard while the card listens (for 2 s it counts as the
+  press: `Capsule.personAnswered`, which `boot/agents.ts` asks beside the
+  launcher's). While a spoken plan's card is up the voice loop's one
+  question slot is the card's, so the plan is said by the capsule piece
+  ("I would …. Say yes, or press Yes.") and not by 0.8's "Press Return in
+  the launcher".
+- **Why:** the card must not be a second place that types, and the voice
+  loop already keeps the talk key for the person alone.
+- **Cost:** a voice in the room that says "yes" while the person holds the
+  key counts, as the design accepts. One ask at a time has the voice.
+- **Undo:** drop the `runningCapsule` lines in `boot/agents.ts`,
+  `boot/voice.ts` and `agent-sheets/agent-sheets.tsx`: everything asks where
+  it did in 0.8.
+
+### D66. Where the capsule sits when the design does not say
+
+- **Date:** 2026-11-13. The `n2-capsule` agent's.
+- **Question:** the design names the seats; the code needs their edges.
+- **Choice:** a window "fills down to the Dock" when the capsule at home
+  would lie on it: the window comes down past the capsule's top by 4 or
+  more (a tiled window's gap included) and lies under the middle of the
+  screen (175 either side of the centre). The side is the focused window's
+  centre; a window across both sides, the right. A seat beside the Dock
+  needs 200 of room, else one step up (62). With no Dock on screen: 11 from
+  the edge, or 74 over a window. The screen is the focused window's, else
+  the pointer's, else the primary; a card is on the Dock's screen. The place
+  is asked when the capsule appears and when its state changes kind, not at
+  every word. With the taskbar there is no rim: the Dock's amber rim is the
+  floating Dock's only.
+- **Why:** each can be said in a line and tested (`test/capsule-place.test.ts`).
+- **Cost:** a window that moves while the capsule is up does not move it
+  until its next state.
+- **Undo:** the numbers are `SEAT` in `capsule/lib/measures.ts`.
+
+### D67. Dashi's capsule is one flat fill, and a persona's colour is darkened to carry white words
+
+- **Date:** 2026-11-13. The `n2-capsule` agent's.
+- **Question:** the design's capsule is a gradient with a glow; a persona may
+  pick any colour, yellow included.
+- **Choice:** one flat fill: `#4A33B0` for the agents' purple (the middle of
+  the design's gradient, 8.5:1 under white), and for any other colour the
+  colour itself darkened in steps of a tenth until white words give 7:1
+  (`dashiFill`). No gradient, no coloured glow: the design lists both as cut.
+  Dictation's capsule stays ink with five dots whatever the persona.
+- **Why:** the words must read on any colour a person picks.
+- **Cost:** a light colour shows darker in the capsule than in Settings.
+- **Undo:** `dashiFill` and `dashiColours` in `capsule/lib/measures.ts`.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its

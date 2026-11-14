@@ -9,7 +9,7 @@
 
 import { useColors } from "@dashi/ui";
 import { type Bounds, type PointerInfo, View } from "@mirinjs/metal";
-import { useRef } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import { appFor } from "../../apps.ts";
 import type { MenuController } from "../../menus/index.ts";
 import type { Entry } from "../../shared/app-entries/index.ts";
@@ -21,6 +21,7 @@ import { type DockController, useStarting } from "../controller.ts";
 import { type DockEntry, dockLayout, type MinimizedEntry, matchEntry } from "../layout.ts";
 import { type PinStore, usePins } from "../pins.ts";
 import type { DockPrefs } from "../prefs.ts";
+import { ASK_RIM, dockSign } from "../sign.ts";
 import type { TileStore } from "../tiles.ts";
 import type { Autohide } from "./autohide.ts";
 import { reorderIndex } from "./gesture.ts";
@@ -163,6 +164,9 @@ interface DockPanelProps {
 
 function DockPanel(props: DockPanelProps) {
   const colors = useColors();
+  // A card asks (sign.ts): the icons dim under an amber rim, a sign no window can draw.
+  const asking = useSyncExternalStore(dockSign.asking.subscribe, dockSign.asking.getSnapshot);
+  const dim = asking ? ASK_RIM.dim : 1;
   const { pinned, running, minimized, slid, tiles } = props;
   return (
     <View
@@ -181,8 +185,8 @@ function DockPanel(props: DockPanelProps) {
         paddingBottom: DOCK.paddingBottom,
         borderRadius: DOCK.radius,
         backgroundColor: colors.dock,
-        borderWidth: 1,
-        borderColor: colors.dockBorder,
+        borderWidth: asking ? ASK_RIM.width : 1,
+        borderColor: asking ? ASK_RIM.color : colors.dockBorder,
       }}
     >
       {pinned.map((entry, index) => (
@@ -191,7 +195,7 @@ function DockPanel(props: DockPanelProps) {
           icon={entry.app.icon}
           running={entry.windows.length > 0 || props.starting.has(entry.key)}
           attention={props.wanting.has(entry.key)}
-          opacity={props.opacityOf(entry.key)}
+          opacity={props.opacityOf(entry.key) * dim}
           onPress={() => props.onPress(entry)}
           onPointer={(event, centerX) => props.onPointer(entry, index, centerX, event)}
           onMenu={(centerX) => props.onMenu(entry.key, centerX)}
@@ -207,6 +211,7 @@ function DockPanel(props: DockPanelProps) {
           icon={entry.app.icon}
           running
           attention={props.wanting.has(entry.key)}
+          opacity={dim}
           onPress={() => props.onPress(entry)}
           onPointer={(event, centerX) => props.onPointer(entry, null, centerX, event)}
           onMenu={(centerX) => props.onMenu(entry.key, centerX)}
@@ -221,7 +226,7 @@ function DockPanel(props: DockPanelProps) {
           key={`minimized:${window.id}`}
           icon={app.icon}
           running={false}
-          opacity={0.82}
+          opacity={0.82 * dim}
           onPress={() => props.onRestore(window.id)}
           rise={iconRise(slid.rise, pinned.length + running.length + index)}
           testID={`dock-minimized-${window.id}`}

@@ -52,7 +52,11 @@ export function startTalking({ compositor, settingsStore, services, late }: Talk
     settings: settingsStore,
     hold: (keys) => heldKeys.set("voice", keys),
     // The launcher's own tasks: a spoken ask is in its "Now" and its history like a typed one, and its plan waits there for Return.
-    asker: launcherAsker(() => late.peek("askAgents")?.tasks ?? null, openLauncher),
+    // With the capsule up, a spoken plan asks in its card (capsule/), not in the launcher: the capsule handles `voiceCommands`.
+    asker: launcherAsker(
+      () => late.peek("askAgents")?.tasks ?? null,
+      () => void (late.peek("pill")?.voiceCommands.send({ do: "open-ask", id: "spoken" }) || openLauncher()),
+    ),
     go: (where) => {
       if (where === "launcher") openLauncher();
       else late.peek("settingsApp")?.open(where);

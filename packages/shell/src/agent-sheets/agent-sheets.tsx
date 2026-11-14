@@ -9,11 +9,13 @@
 import { TextSelectionLook } from "@dashi/ui";
 import { render } from "@mirinjs/metal";
 import type { PersonQuestion } from "../actions/index.ts";
-import { type AgentUi, type Answer, DENY, personAnswered, SHEET_LAYERS, SheetQueue } from "../agents/index.ts";
+import { type AgentUi, type Answer, DENY, type PersonAnswer, type PersonAsk, personAnswered, SHEET_LAYERS, SheetQueue } from "../agents/index.ts";
+import { runningCapsule } from "../capsule/index.ts";
 import { CONSENT } from "../consent.tsx";
 import { spawnShellHost } from "../shared/metal/index.ts";
 import { closeOverlay, createStoppedNotes, createTurns } from "./lib/agent-overlays.tsx";
 import { allowSiteSheet, askSheet, confirmSheet, personSheet, type QuestionVoice, questionSheet, type Sheet, signInSheet } from "./lib/agent-sheet-views.tsx";
+import { spokenQuestion } from "./lib/question-sheet.tsx";
 
 /** The sheets' layer: blanked in agents' pictures, and asked about for whose press answered. */
 const CONSENT_LAYER = SHEET_LAYERS[0];
@@ -33,6 +35,26 @@ export const PERSON_SHEETS = 0;
 /** What else the queue shows: the person's own questions (actions/lib/run.ts), answered by their press only. */
 export interface PersonSheets {
   confirmPerson(question: PersonQuestion, signal?: AbortSignal): Promise<boolean>;
+}
+
+/**
+ * An agent's question: where the person can answer by voice it asks in the
+ * capsule's card (capsule/); typing it, or no capsule, is the sheet, which
+ * has the field (nothing is typed into the card).
+ */
+function askQuestion(
+  ask: PersonAsk,
+  signal: AbortSignal | undefined,
+  sheet: (voice: QuestionVoice | null) => void,
+  resolve: (answer: PersonAnswer) => void,
+  options: AgentUiOptions,
+): void {
+  const capsule = runningCapsule.getSnapshot();
+  if (!capsule?.takesQuestions()) return sheet(options.voice?.() ?? null);
+  const who = ask.who.remote ? "An agent on another machine" : ask.who.name;
+  void capsule
+    .question({ who, text: ask.question, spoken: spokenQuestion(ask), seconds: ask.seconds }, signal)
+    .then((answer) => (answer === "elsewhere" ? sheet(null) : resolve(answer)));
 }
 
 export function createAgentUi(options: AgentUiOptions): AgentUi & PersonSheets & { close(): void } {
@@ -93,7 +115,8 @@ export function createAgentUi(options: AgentUiOptions): AgentUi & PersonSheets &
     allowSite: (ask, signal) => new Promise((resolve) => queue(allowSiteSheet(ask, resolve), signal)),
     confirmPerson: (question, signal) => new Promise((resolve) => queue(personSheet(PERSON_SHEETS, question, resolve), signal)),
     signIn: (ask, signal) => new Promise((resolve) => queue(signInSheet(ask, resolve), signal)),
-    question: (ask, signal) => new Promise((resolve) => queue(questionSheet(ask, options.voice?.() ?? null, resolve), signal)),
+    question: (ask, signal) =>
+      new Promise((resolve) => askQuestion(ask, signal, (voice) => queue(questionSheet(ask, voice, resolve), signal), resolve, options)),
     turn: (turn, signal) => turns.start(turn, signal),
     dismiss(agent) {
       sheets.dismiss(agent);

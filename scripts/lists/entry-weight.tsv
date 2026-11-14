@@ -291,6 +291,7 @@ packages/shell/src/main.tsx	packages/shell/src/bluetooth
 packages/shell/src/main.tsx	packages/shell/src/boot
 packages/shell/src/main.tsx	packages/shell/src/browser
 packages/shell/src/main.tsx	packages/shell/src/calendar
+packages/shell/src/main.tsx	packages/shell/src/capsule
 packages/shell/src/main.tsx	packages/shell/src/clipboard
 packages/shell/src/main.tsx	packages/shell/src/closing-apps.ts
 packages/shell/src/main.tsx	packages/shell/src/compositor
