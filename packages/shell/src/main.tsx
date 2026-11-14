@@ -63,9 +63,12 @@ import {
 import { pickPrimary } from "./menubar/index.ts";
 import { OverlaySlots } from "./overlay-slots.ts";
 import { resolvePinned } from "./shared/apps/index.ts";
+import { createPillHub } from "./shared/pill/index.ts";
 
 const services = new Services();
 const late = new Late<LateParts>();
+// The night build's pieces meet here (docs/night-0.9-contract.md); each reaches it with `late.peek("pill")`.
+late.set("pill", createPillHub());
 
 guardProcess();
 const apps = resolvePinned();

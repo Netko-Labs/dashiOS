@@ -13,6 +13,7 @@ import type { GraphicsSettings, PowerSection } from "../power/index.ts";
 import type { KeyboardSettings, MouseSettings, TouchpadSettings } from "../settings/index.ts";
 import type { CornerName } from "../shared/appearance/index.ts";
 import type { CatalogSetting } from "../shared/applet-store/index.ts";
+import type { DictationSettings, PersonaSettings } from "../shared/pill/index.ts";
 import type { ClockSettings, RegionSettings } from "../shared/time/index.ts";
 import type { SpaceNames } from "../spaces/types.ts";
 import type { VoiceSettings } from "../voice/types.ts";
@@ -179,4 +180,8 @@ export interface SettingsData {
   applets: AppletsSettings;
   /** Talking to Dashi: whether it is on, its key and its voice (voice/; Settings › Voice). */
   voice: VoiceSettings;
+  /** Dictation: whether it is on, its key, hands-free and tidying (shared/pill/dictation.ts; Settings › Voice). */
+  dictation: DictationSettings;
+  /** Who Dashi is: its name, character, colour, mark and how much it talks (shared/pill/persona.ts; Settings › Dashi). */
+  persona: PersonaSettings;
 }

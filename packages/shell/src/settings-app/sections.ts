@@ -12,6 +12,7 @@ import { isAliasMap, isKeyMap } from "../launcher/person-keys.ts";
 import { GRAPHICS_FIELDS, POWER_FIELDS } from "../power/modes/settings.ts";
 import { APPEARANCE, DOCK, guarded, IDLE, INPUT_METHOD, KEYBOARD, MENU_BAR, MOUSE, SPACES, TOUCHPAD, WALLPAPER } from "../settings/index.ts";
 import { isCatalogList } from "../shared/applet-store/catalogs.ts";
+import { isCharacterId, isDictationKeyId, isPersonaColour, isPersonaMark, isPersonaName, isPersonaTalk } from "../shared/pill/index.ts";
 import { dig, type Fields, isRaw, type Raw, readFields, type SectionOf } from "../shared/settings/index.ts";
 import { CLOCK_SECTION, REGION_SECTION } from "../shared/time/index.ts";
 import { isTalkKeyId, isVoiceId } from "../voice/index.ts";
@@ -65,6 +66,17 @@ export const SECTIONS = {
   screenSharing: { path: ["screenSharing"], fields: { clients: list(guarded(isProgramPath, "an absolute path"), { max: 64 }) } },
   applets: { path: ["applets"], fields: { catalogs: guarded(isCatalogList, "a list of catalogs") } },
   voice: { path: ["voice"], fields: { on: bool(), key: guarded(isTalkKeyId, "a talk key"), voice: guarded(isVoiceId, "a voice's id") } },
+  dictation: { path: ["dictation"], fields: { on: bool(), key: guarded(isDictationKeyId, "a dictation key"), handsFree: bool(), tidy: bool() } },
+  persona: {
+    path: ["persona"],
+    fields: {
+      name: guarded(isPersonaName, "a name of 1 to 24 characters"),
+      character: guarded(isCharacterId, "a character's id"),
+      colour: guarded(isPersonaColour, "a colour as #rrggbb"),
+      mark: guarded(isPersonaMark, "a mark"),
+      talk: guarded(isPersonaTalk, "less, normal or more"),
+    },
+  },
 } as const satisfies Record<string, { path: readonly string[]; fields: Fields }>;
 
 export type Sections = Omit<SettingsData, "displays">;
@@ -115,5 +127,7 @@ export function readSettings(raw: unknown): SettingsData {
     screenSharing: section(SECTIONS.screenSharing),
     applets: section(SECTIONS.applets),
     voice: section(SECTIONS.voice),
+    dictation: section(SECTIONS.dictation),
+    persona: section(SECTIONS.persona),
   };
 }

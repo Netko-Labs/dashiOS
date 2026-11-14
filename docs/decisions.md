@@ -1140,6 +1140,27 @@ Replaced by D51: 0.9 builds on mirin's `main`.
 - **Undo:** `25` in `scripts/lists/boot-weight.txt` (it fails until mirin
   loads fewer).
 
+### D53. The night build's four pieces meet at one hub in the shell
+
+- **Date:** 2026-11-13. The `n0-foundation` agent's.
+- **Question:** core, the capsule, the bar and the persona are built in one
+  night by four people who cannot talk. Where do they meet, and who turns
+  0.8's voice loop into what the capsule draws?
+- **Choice:** one hub in the shell (`shared/pill`, `late.peek("pill")`):
+  cells with one owner each, ports with one handler each, and no piece
+  imports another (`docs/night-0.9-contract.md`). The Rust wire (keys,
+  typing) is core's own on both ends, so it is not part of the contract. The
+  capsule piece, not core, adapts 0.8's voice chip and Ask tasks into voice
+  mode and the asks. A tap of the Dashi key opens the launcher, never the
+  bar's field. `shared/pill` is listed for the two entry points that load it
+  at start (`scripts/lists/entry-weight.tsv`): types and a hub of 100 lines.
+- **Why:** each piece can be built and tested against a fake of the others
+  tonight, and core (Rust, dictation, typing) carries the most already.
+- **Cost:** a second way for shell parts to talk beside `Late` and the
+  stores; voice mode is an adapter over a chip that will go.
+- **Undo:** fold the cells into the modules that own them once the pieces
+  are merged, and delete `shared/pill/hub.ts`.
+
 ## How to add a decision
 
 Add one entry at the end of Part B, in the commit that makes the change: its

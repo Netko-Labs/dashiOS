@@ -246,6 +246,7 @@ packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/io
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/locale
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/logind
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/metal
+packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/pill
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/processes
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/session-power
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/settings
@@ -366,6 +367,7 @@ packages/shell/src/main.tsx	packages/shell/src/shared/locale
 packages/shell/src/main.tsx	packages/shell/src/shared/logind
 packages/shell/src/main.tsx	packages/shell/src/shared/metal
 packages/shell/src/main.tsx	packages/shell/src/shared/notes
+packages/shell/src/main.tsx	packages/shell/src/shared/pill
 packages/shell/src/main.tsx	packages/shell/src/shared/portal
 packages/shell/src/main.tsx	packages/shell/src/shared/portal-host
 packages/shell/src/main.tsx	packages/shell/src/shared/processes

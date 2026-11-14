@@ -26,10 +26,13 @@ import type { SettingsApp } from "../settings-app/index.ts";
 import type { SetupAssistant } from "../setup/index.ts";
 import type { Entry } from "../shared/app-entries/index.ts";
 import type { Clipboard as SystemClipboard } from "../shared/clipboard/index.ts";
+import type { PillHub } from "../shared/pill/index.ts";
 import type { LauncherOpener } from "./launcher.tsx";
 import type { OverlayKind } from "./overlays.tsx";
 
 export interface LateParts {
+  /** Where the capsule, the bar, dictation and Dashi's persona meet (docs/night-0.9-contract.md); set first, before any of them starts. */
+  pill: PillHub;
   overview: OverviewController | null;
   fullscreenBars: FullscreenBars | null;
   menuBars: MenuBars;
