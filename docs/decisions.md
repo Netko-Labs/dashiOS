@@ -1704,7 +1704,7 @@ short words, as the rulebook is written.
   OpenCode keep their own glyphs. The ticks, the square and the amber "?"
   are unchanged.
 - **Why:** one colour with two glyphs reads as two things. The colour was
-  already the persona's there (D69), so the glyph follows it.
+  already the persona's there, so the glyph follows it.
 - **Cost:** an agent on another machine wears Dashi's mark in the bar, as it
   already wore Dashi's colour; its name says who it is.
 - **Undo:** the `glyph` prop of `AgentMark`, `JobCapsule` and the field's
