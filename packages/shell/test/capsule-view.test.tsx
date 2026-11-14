@@ -126,9 +126,11 @@ test("Dashi: the step with Stop, the answer as it is spoken, done", async () => 
     "Turn Dark Mode on",
     "1 of 2",
     "Stop",
+    // The one fast way to stop, as a hint: ❖ is drawn, Esc is its word.
+    "Esc",
   ]);
   const words = ["It", "is", "half", "past", "eleven."];
-  expect((await drawn(voice({ phase: "answer", words, at: 1, full: words.join(" ") }))).words).toEqual(["It is", "half past eleven.", "Stop"]);
+  expect((await drawn(voice({ phase: "answer", words, at: 1, full: words.join(" ") }))).words).toEqual(["It is", "half past eleven.", "Stop", "Esc"]);
   expect((await drawn(voice({ phase: "done", line: "Done: Turn Dark Mode on", until: 0 }))).words).toEqual(["Done: Turn Dark Mode on"]);
   expect((await drawn(voice({ phase: "stopped", until: 0 }))).words).toEqual(["Stopped"]);
   expect((await drawn(voice({ phase: "listening", text: "", answering: true }))).words).toEqual(["Listening for your answer"]);

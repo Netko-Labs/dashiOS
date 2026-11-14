@@ -247,10 +247,14 @@ export class VoiceMode {
       case "open-ask":
         if (this.deps.hub.asks.getSnapshot().some((ask) => ask.id === command.id)) this.opened.add(command.id);
         return this.refresh();
-      case "stop":
+      case "stop": {
+        const working = command.all ? this.tasks().filter((task) => task.phase === "asking" || task.phase === "running") : [];
+        // ❖Esc with nothing speaking or at work is nothing.
+        if (command.all && working.length === 0 && !this.deps.voice?.getSnapshot()) return;
         this.deps.voice?.stop();
-        if (command.task) this.watched?.stop(command.task);
+        for (const id of [command.task, ...working.map((task) => task.id)]) if (id) this.watched?.stop(id);
         return this.show({ phase: "stopped", until: this.now() + 2500 }, 2500);
+      }
       case "type-instead":
         return this.typeInstead();
     }

@@ -9,6 +9,7 @@ function setup() {
   let listener: ((event: CompositorEvent) => void) | null = null;
   const done: string[] = [];
   let locked = false;
+  let switching = false;
   const compositor = fakeCompositor(
     async (method, params) => {
       done.push(`${method} ${JSON.stringify(params)}`);
@@ -26,7 +27,9 @@ function setup() {
     toggleLauncher: () => done.push("launcher"),
     showSheet: () => done.push("sheet"),
     hideSheet: () => done.push("hide sheet"),
-    switcher: { commit: () => done.push("switcher commit"), step: () => {}, cancel: () => {} },
+    switcher: { commit: () => done.push("switcher commit"), step: () => {}, cancel: () => done.push("switcher cancel") },
+    stopDashi: () => done.push("stop Dashi"),
+    switching: () => switching,
     hardware: { run: async () => false },
     appShortcut: async () => false,
     launcher: {
@@ -41,6 +44,9 @@ function setup() {
     done,
     lock: (on: boolean) => {
       locked = on;
+    },
+    switch: (on: boolean) => {
+      switching = on;
     },
   };
 }
@@ -81,4 +87,14 @@ test("❖Space opens the launcher before the next event: keys typed after it in 
   emit({ event: "binding", name: "launcher", window: 4 });
   emit({ event: "binding", name: "launcher-type", window: 4, key: "s", text: "s" });
   expect(done).toEqual(["launcher", "typed s"]);
+});
+
+test("❖Esc stops Dashi, and leaves the switcher instead while it is up", async () => {
+  const { emit, done, switch: switcher } = setup();
+  emit({ event: "binding", name: "switch-cancel" });
+  await settle();
+  switcher(true);
+  emit({ event: "binding", name: "switch-cancel" });
+  await settle();
+  expect(done).toEqual(["stop Dashi", "switcher cancel"]);
 });

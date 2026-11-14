@@ -77,7 +77,10 @@ seconds, and after five minutes whatever happens.
 - The right ❖ is no longer a talk key unless the person picks a key in
   Settings › Voice (`voice.key`, kept from 0.8). Esc is never taken from the
   app in front: Dashi is stopped from its capsule, by its key again, or by
-  ⌃❖Esc.
+  **❖Esc**, with one hand: what it says stops, and every task of its at
+  work (`voiceCommands {do: "stop", all: true}`; the capsule's Stop shows
+  the keys as its hint; decisions.md D82). With the ❖Tab switcher up, ❖Esc
+  leaves the switcher as before. ⌃❖Esc still cuts every agent off.
 - Both follow settings.json live: `voice.on`, `voice.key`, `dictation.on`,
   `dictation.key` (`auto`, `right-option`, `caps-lock`, `right-control`,
   `menu`), `dictation.handsFree`, `dictation.tidy`, and `keyboard.layout`
@@ -190,9 +193,9 @@ turn it on. Where it can't be told the window is trusted.
   shell cancels it and the chip says "I didn't hear anything." Held 300 ms
   or more it is a hold like any other key; a tap while Dashi speaks only
   stops it. Settings › Voice says so beside the key.
-- **Stopping.** Esc (held by the shell only while Dashi listens, thinks or
-  speaks, and only alone: ⌃❖Esc still stops agents), the talk key again, a
-  press on the chip, and the screen locking each stop it at once.
+- **Stopping.** ❖Esc (never bare Esc since 0.9; ⌃❖Esc still stops agents),
+  the talk key again, a press on the capsule's Stop, and the screen locking
+  each stop it at once.
 - **The chip** is laid over the menu bar in the room between the app's menus
   and the status side, so it moves neither (docs/design.html, "The voice
   chip"). Listening: the microphone's level and the end of what was heard so

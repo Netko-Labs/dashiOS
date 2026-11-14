@@ -1737,3 +1737,23 @@ short words, as the rulebook is written.
 - **Cost:** no way back up tonight (the card says what the task was; No and
   asking again is the way). A plan of forty steps is eight presses.
 - **Undo:** `fit` and `OpenCard.from` in `capsule/`; `cardAction("read")`.
+
+### D82. ❖Esc stops Dashi, with one hand
+
+- **Date:** 2026-11-14. The `n8-harden` agent's.
+- **Question:** bare Esc is no longer taken from the app (the night's rule),
+  so stopping Dashi meant reaching the capsule's Stop with the pointer, or
+  ⌃❖Esc, which takes two hands on most keyboards and cuts every agent off.
+- **Choice:** ❖Esc. The thumb and a finger of the left hand; no plain key
+  is taken (the chord was already the shell's, to leave the ❖Tab switcher,
+  and still does that while the switcher is up). It stops what Dashi hears,
+  thinks or says, and every task of Dashi's that is at work, typed or
+  spoken; a plan that waits for a yes keeps its card. With nothing speaking
+  or at work it does nothing and shows nothing. The capsule's Stop wears
+  "❖Esc" as its hint. The Dashi key held with Esc comes to the same, since
+  the Dashi key is ❖Space. TypeScript only: no compositor change.
+- **Why:** one key to learn, on the hand that is already at the keyboard,
+  beside the chord people know for "get me out" (⌥❖Esc is Force Quit).
+- **Cost:** dictation is not stopped by it (letting go, or a tap in
+  hands-free, already does). Agents from outside Dashi are still ⌃❖Esc.
+- **Undo:** the `switch-cancel` case in `shortcuts.ts`; `STOP_KEYS`.

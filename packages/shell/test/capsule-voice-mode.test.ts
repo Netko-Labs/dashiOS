@@ -210,6 +210,23 @@ test("Stop stops the voice and the task", () => {
   expect(phase()).toBe("stopped");
 });
 
+test("❖Esc stops what Dashi says and every task of its at work, and is nothing when there is none", () => {
+  const { hub, voice, tasks, say, phase } = stage();
+  hub.voiceCommands.send({ do: "stop", all: true });
+  expect(phase()).toBe("idle");
+  const spoken = say("Lock the screen");
+  const typed = tasks.ask("Open Files");
+  const waits = tasks.ask("Turn on Dark Mode");
+  tasks.settle(waits, ["Turn Dark Mode on"]);
+  hub.voiceCommands.send({ do: "stop", all: true });
+  expect(voice.getSnapshot()).toBeNull();
+  const phaseOf = (id: string): string | undefined => tasks.getSnapshot().find((task) => task.id === id)?.phase;
+  expect([phaseOf(spoken), phaseOf(typed)]).toEqual(["stopped", "stopped"]);
+  // A plan that waits for a yes is not at work: its card stays.
+  expect(phaseOf(waits)).toBe("planned");
+  expect(phase()).toBe("stopped");
+});
+
 test("an agent's question opens by itself, is said, and the next words heard answer it", async () => {
   const { hub, voice, mode, state, advance } = stage();
   const answer = mode.questions.ask({ who: "Claude Code", text: "Which branch?", spoken: "Claude Code asks: Which branch?", seconds: 60 });

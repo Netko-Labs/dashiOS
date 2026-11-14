@@ -35,4 +35,4 @@ export {
   type PersonaSettings,
   type PersonaTalk,
 } from "./persona.ts";
-export { CAPSULE_LAYER, CARD_ARM_MS, type PillAsk, type VoiceModeCommand, type VoiceModePhase, type VoiceModeState } from "./voice-mode.ts";
+export { CAPSULE_LAYER, CARD_ARM_MS, type PillAsk, STOP_KEYS, type VoiceModeCommand, type VoiceModePhase, type VoiceModeState } from "./voice-mode.ts";

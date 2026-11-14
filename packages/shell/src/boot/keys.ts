@@ -229,6 +229,8 @@ export function startKeys(needs: KeysNeeds): void {
         powerKey: () => needs.guards.power.powerKey(),
         launcher: { binding: keyboard.binding },
         dismissPopover: () => needs.programs.appletPopovers.dismiss(),
+        stopDashi: () => void late.peek("pill")?.voiceCommands.send({ do: "stop", all: true }),
+        switching: () => overlays.has("switcher"),
         isLocked: needs.guards.screenLocked,
       })
     : () => {};
