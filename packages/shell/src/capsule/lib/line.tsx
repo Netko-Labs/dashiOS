@@ -142,7 +142,8 @@ export function VoiceLine({ state, mark, send, ...common }: VoiceProps): ReactNo
       const heard = tail(state.text, chars);
       return (
         <>
-          <Lead colours={colours} mark={mark} />
+          {/* A persona whose mark is the dots leads with the ones that move. */}
+          {mark === "spark" && <Lead colours={colours} mark={mark} />}
           <Dots level={still ? null : level} color={colours.text} />
           {heard !== "" ? (
             <Line color={colours.text}>{heard}</Line>

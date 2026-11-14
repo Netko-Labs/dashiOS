@@ -6,6 +6,7 @@
  * takes the pointer only on what is drawn (`input-region`). It takes no
  * keyboard, until a card is given it. A layer surface's screen and keyboard
  * are fixed when it opens, so a change of either hides it and opens it again.
+ * `shown` says what is wanted, not what the host has got to yet.
  */
 
 import { type NativeHostOptions, type NativeHostTransport, type NativeRoot, render } from "@mirinjs/metal";
@@ -16,11 +17,15 @@ import { SURFACE_HEIGHT } from "./measures.ts";
 /** A host that died is replaced after this long. */
 const RESPAWN_MS = 1500;
 /**
- * The least time between hiding the window and opening it again. A resident
- * host asked to open in the same breath as it hid dies in its GPU layer
- * (`ERROR_NATIVE_WINDOW_IN_USE_KHR`: the old window's surface is not gone
- * yet), seen in the VM with mirin `main`.
+ * A resident host dies in its GPU layer when its window is hidden before it
+ * has drawn (`ERROR_EXTENSION_NOT_PRESENT` at the next open: a key that
+ * turned out to be a chord shows and hides the capsule in one breath), and
+ * when it is opened in the same breath as it hid
+ * (`ERROR_NATIVE_WINDOW_IN_USE_KHR`); both seen in the VM with mirin `main`.
+ * So a window stays open at least `MIN_OPEN_MS` (drawing nothing by then),
+ * and opens at least `REOPEN_MS` after it hid.
  */
+export const MIN_OPEN_MS = 400;
 export const REOPEN_MS = 150;
 
 export interface SurfaceOptions {
@@ -53,13 +58,14 @@ export class CapsuleSurface {
   private wanted: { output: string | undefined; keyboard: boolean } | null = null;
   private stopped = false;
   private hiddenAt = Number.NEGATIVE_INFINITY;
+  private openedAt = Number.NEGATIVE_INFINITY;
   private waiting = false;
 
   constructor(private readonly options: SurfaceOptions) {
     this.start();
   }
 
-  /** Whether the window is on screen. */
+  /** Whether the window is open (it may be about to hide). */
   get shown(): boolean {
     return this.open !== null;
   }
@@ -79,27 +85,33 @@ export class CapsuleSurface {
     return this.options.now?.() ?? performance.now();
   }
 
+  /** Bring the window to what is wanted now, waiting where the host needs time; what is wanted when the wait ends is what counts. */
   private apply(): void {
     const { host, open } = this;
     const wanted = this.wanted;
-    if (!host) return;
+    if (!host || this.waiting) return;
     if (open && (!wanted || wanted.output !== open.output || wanted.keyboard !== open.keyboard)) {
+      if (this.wait(this.openedAt + MIN_OPEN_MS)) return;
       host.hide();
       this.open = null;
       this.hiddenAt = this.now();
     }
-    if (!wanted || this.open || this.waiting) return;
-    const wait = this.hiddenAt + REOPEN_MS - this.now();
-    if (wait > 0) {
-      this.waiting = true;
-      (this.options.later ?? setTimeout)(() => {
-        this.waiting = false;
-        this.apply();
-      }, wait);
-      return;
-    }
+    if (!wanted || this.open || this.wait(this.hiddenAt + REOPEN_MS)) return;
     host.open({ title: "Dashi", appId: "dev.dashi.shell", width: 1, height: SURFACE_HEIGHT, surface: capsuleSurface(wanted.output, wanted.keyboard) });
     this.open = { ...wanted };
+    this.openedAt = this.now();
+  }
+
+  /** Come back to `apply` at `until` if that is still ahead; whether it is. */
+  private wait(until: number): boolean {
+    const ms = until - this.now();
+    if (ms <= 0) return false;
+    this.waiting = true;
+    (this.options.later ?? setTimeout)(() => {
+      this.waiting = false;
+      this.apply();
+    }, ms);
+    return true;
   }
 
   private start(): void {

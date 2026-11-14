@@ -57,7 +57,7 @@ async function drawn(shown: Shown, options: { place?: Place; persona?: Persona; 
   /** Whether a node with that testID is drawn, and the node. */
   const has = (testID: string): boolean => root.nodeId(testID) !== undefined;
   const node = (testID: string): Node | undefined => nodes.get(root.nodeId(testID) ?? "");
-  return { words, has, node, root, sent };
+  return { words, nodes, has, node, root, sent };
 }
 
 const dictation = (state: Exclude<DictationState, { phase: "idle" }>): Shown => ({ kind: "dictation", state });
@@ -139,6 +139,12 @@ test("a persona's mark and colour show on Dashi's capsule, never on dictation's"
   expect(listening.node("capsule:voice:key-down")?.props.background).not.toBe(
     (await drawn(voice({ phase: "key-down" }))).node("capsule:voice:key-down")?.props.background,
   );
+  // While it listens, the dots that lead are the ones that move: one row of them, not two.
+  const heard: string[] = [];
+  const trees = await drawn(voice({ phase: "listening", text: "", answering: false }), { persona: miso });
+  for (const node of trees.nodes.values()) if (node.props.id === trees.root.nodeId("capsule-dots")) heard.push("dots");
+  expect(heard).toEqual(["dots"]);
+  expect(trees.has("capsule-disc")).toBe(false);
   const ink = await drawn(dictation({ phase: "key-down" }), { persona: miso });
   expect(ink.node("capsule:dictation:key-down")?.props.background).toBe(
     (await drawn(dictation({ phase: "key-down" }))).node("capsule:dictation:key-down")?.props.background,
