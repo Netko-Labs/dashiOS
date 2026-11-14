@@ -144,18 +144,9 @@ export function Listing({ onBackgroundMenu }: ListingProps) {
       {...drop.props}
       onPointer={marquee.pointerEvent}
       onPress={(event) => {
-        // The click that ends a marquee is the marquee's: its keys say what it does (plain replaces, ⇧ adds, ❖ toggles).
+        // The click that ends a marquee is the marquee's, not a click on empty space.
         if (marquee.press(event.modifiers)) return;
-        // In the list a row's click comes here too (D103): the window says which row the press was on.
-        const pressed = marquee.pressed();
-        if (pressed === null) store.clickEmpty();
-        else {
-          void pressed.then((path) => {
-            const item = path === null ? undefined : store.visible().find((each) => each.path === path);
-            if (item) store.click(item, event.modifiers);
-            else store.clickEmpty();
-          });
-        }
+        store.clickEmpty();
         actions.refocus();
       }}
       {...(onBackgroundMenu ? { onContextMenu: onBackgroundMenu } : {})}

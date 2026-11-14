@@ -36,13 +36,6 @@ export interface TableProps<T, K extends string | number> {
   dragFiles?: (row: T) => DragFiles | undefined;
   /** Files dropped on a row: its handler, or null for a row that takes none. A row lights up while files are over it. */
   onDropRow?: (row: T) => ((event: DropInfo) => void) | null;
-  /**
-   * Off: the rows take no press, and the view around the table says what a
-   * click on one does (Files' list: a press on a row's blank part, dragged,
-   * is a marquee, and only the view that owns the press hears its click and
-   * the keys held). `onSelect` is then never called.
-   */
-  rowPress?: boolean;
   /** The header of column titles; on by default (a list of choices may go without it). */
   header?: boolean;
   /**
@@ -144,7 +137,6 @@ export function Table<T, K extends string | number>({
   dragFiles,
   onDropRow,
   header = true,
-  rowPress = true,
   steady = false,
 }: TableProps<T, K>) {
   const surface = useSurface();
@@ -184,7 +176,7 @@ export function Table<T, K extends string | number>({
                 chosen={selectedKeys ? selectedKeys.has(key) : key === selected}
                 muted={muted?.(row) ?? false}
                 height={rowHeight}
-                onSelect={rowPress ? (held) => onSelect(key, held) : null}
+                onSelect={(held) => onSelect(key, held)}
                 {...(steady ? { steady: { aim, press } } : {})}
                 {...(drags ? { dragFiles: drags } : {})}
                 onDrop={onDropRow?.(row) ?? null}

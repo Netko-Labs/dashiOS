@@ -2126,7 +2126,7 @@ short words, as the rulebook is written.
   was painted, so the rectangle lands on what the person sees.
 - **Cost:** a `layout` answer names every painted node (some tens of
   kilobytes in a big window) each time it is asked: about seven times a
-  second during a drag, and once for a click on a list's row (D103). The views' measures (tile 104 × 98, row 26) are now
+  second during a drag (the one more for a click on a list's row went with D103: D105). The views' measures (tile 104 × 98, row 26) are now
   also what the rectangle is matched against: change one and
   `tileRects`/`rowRects` change with it.
 - **Undo:** when mirin reports a scroll position and takes a scroll, read
@@ -2135,6 +2135,8 @@ short words, as the rulebook is written.
 
 ### D101. A drag's keys are the keys of the click its release makes
 
+- **Superseded by D104** (2026-11-14): mirin's pointer says the keys. What
+  is below is now only what happens on a Metal host older than that.
 - **Date:** 2026-11-14. The `n15-marquee` agent's.
 - **Question:** plain drag replaces the selection, ⇧ adds, ❖ toggles. But
   Metal's `onPointer` (press, moves, release) carries no keys; only
@@ -2171,6 +2173,8 @@ short words, as the rulebook is written.
 
 ### D103. In Files' list a row's click is the listing's
 
+- **Superseded by D105** (2026-11-14): the rows take their press again and
+  `rowPress` is gone from `Table`.
 - **Date:** 2026-11-14. The `n15-marquee` agent's.
 - **Question:** D101 reads a drag's keys from the click its release makes.
   In the VM a ⇧-drag that started on one row and ended on another added
@@ -2193,3 +2197,53 @@ short words, as the rulebook is written.
   Activity Monitor and every other `Table` are untouched.
 - **Undo:** once mirin sends `modifiers` with the pointer (D101), drop
   `rowPress={false}` in `list.tsx` and `pressed()` in `session.ts`.
+
+### D104. A drag's keys are the keys the pointer says, from the press on
+
+- **Date:** 2026-11-14. The `n16-modkeys` agent's. Supersedes D101.
+- **Question:** D101 took a marquee's keys from the click its release
+  makes, because Metal's pointer said none: a ⇧ or ❖ drag looked plain until
+  the button went up, and one let go outside the listing stayed plain. The
+  owner's rule is that a gap in the library is closed in the library.
+- **Choice:** mirin Metal's `pointer` event now says the modifiers held on
+  `down`, on every move and on `up`, in the names a press uses
+  (`PointerInfo.modifiers`; mirin branch `dashi-0.9-pointer-modifiers`), and
+  a modifier pressed or let go while the button is down sends a move where
+  the pointer is. Files' marquee (`lib/marquee/session.ts`) takes its rule
+  from each of them: ⇧ adds and ❖ toggles from the first move, the rule
+  follows the keys while the drag goes on (⇧ pressed mid-drag brings the
+  earlier selection back at once; let go, it goes), and the release keeps
+  the rule wherever it lands. The keys at the release are the ones that
+  count, as they are what the screen showed last.
+- **Why:** what is selected while the button is down is what is selected
+  when it goes up, which is the whole promise of a live marquee.
+- **Cost:** none in Dashi. On a Metal host built before this (the field is
+  optional), D101's path is still there: the rule is the keys of the click
+  the release makes, and shows only then.
+- **Undo:** not wanted. To latch the rule at the press (the keys at the
+  press decide, whatever is held later), read `modifiers` only on `down` in
+  `pointerEvent`.
+
+### D105. In Files' list a row takes its press again
+
+- **Date:** 2026-11-14. The `n16-modkeys` agent's. Supersedes D103.
+- **Question:** D103 took the press away from the list's rows only so that
+  every release made a click with keys. With D104 no click is needed for
+  the keys. Do the rows get their press back?
+- **Choice:** yes. `Table`'s `rowPress` is gone, a row is a button again (to
+  a screen reader too), and a click on a row selects it at once, with no
+  question to the window. A press on a row's blank part still starts a
+  marquee: the listing around the rows hears the pointer, the row hears the
+  click. The click a drag's release makes (on the row it started on, or on
+  the empty space) is dropped by the marquee (`press`); a release anywhere
+  else makes none, and the marquee stops waiting for one after 400 ms
+  (`CLICK_MS`), so a row pressed later without the pointer is a click.
+- **Why:** less code, one fewer round trip per click, and the row is what a
+  screen reader presses.
+- **Cost:** on a Metal host older than D104's, a ⇧ or ❖ drag in the list
+  that ends on another row than it began on is a plain one again (no click,
+  so no keys): the case D103 was for. Dashi 0.9's packages are built from
+  the mirin branch that has the keys, so this is a checkout on an old host
+  only.
+- **Undo:** `git revert` of this entry's commit brings `rowPress` and
+  `pressed()` back.

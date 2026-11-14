@@ -2,7 +2,7 @@
  * Where a listing's content stands in its window, asked of the window
  * (`WindowSurface.bounds`, D100): the scroll view's painted bounds, and the
  * window pixels of the content's top left, worked out from the first item
- * that is painted. And from that, the item under a point.
+ * that is painted.
  */
 
 import type { WindowSurface } from "../../../metal/index.ts";
@@ -29,14 +29,4 @@ export async function locate(surface: WindowSurface, model: ListingModel): Promi
 /** Whether `point` (window pixels) is in the scroll view. */
 export function inView(point: Point, viewport: Rect): boolean {
   return point.x >= viewport.x && point.x <= viewport.x + viewport.width && point.y >= viewport.y && point.y <= viewport.y + viewport.height;
-}
-
-/** The item at `point` (window pixels), or null for empty space. */
-export async function itemAt(surface: WindowSurface, model: ListingModel, point: Point): Promise<string | null> {
-  const placed = await locate(surface, model);
-  if (!placed || !inView(point, placed.viewport)) return null;
-  const x = point.x - placed.origin.x;
-  const y = point.y - placed.origin.y;
-  const index = model.rects.findIndex((rect) => x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height);
-  return model.paths[index] ?? null;
 }

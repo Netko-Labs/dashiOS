@@ -1,10 +1,9 @@
 /** The list view: the kit's Table with Name, Date Modified, Size, and Kind (Where while searching), sortable. */
 
 import { type Column, Table, useColors, useDark } from "@dashi/ui";
-import { type DragFiles, type Modifiers, type PointerInfo, Text, View } from "@mirinjs/metal";
-import { useContext, useMemo, useState } from "react";
+import { type DragFiles, type PointerInfo, Text, View } from "@mirinjs/metal";
+import { useMemo, useState } from "react";
 import type { FileItem } from "../../../files/index.ts";
-import { Surface } from "../../../metal/index.ts";
 import { useFiles, useFilesState } from "../../context.ts";
 import { FileIcon } from "../../file-icon.tsx";
 import { textWidth } from "../../tile-name.ts";
@@ -42,8 +41,6 @@ interface NameCellProps {
   drag: DragFiles;
   /** The pointer on the icon or the name. */
   onGrip: (event: PointerInfo) => void;
-  /** A click on the icon or the name. */
-  onPress: (held: Modifiers) => void;
 }
 
 /**
@@ -52,7 +49,7 @@ interface NameCellProps {
  * there drags the file, and a press on the rest of the row, dragged, draws
  * a marquee (D99). A click anywhere on the row still selects it.
  */
-function NameCell({ item, selected, faded, renaming, emblems, drag, onGrip, onPress }: NameCellProps) {
+function NameCell({ item, selected, faded, renaming, emblems, drag, onGrip }: NameCellProps) {
   const colors = useColors();
   const look = { flexDirection: "row", alignItems: "center", gap: ICON_GAP, minWidth: 0, opacity: faded ? 0.45 : item.hidden ? 0.65 : 1 } as const;
   if (renaming) {
@@ -70,7 +67,6 @@ function NameCell({ item, selected, faded, renaming, emblems, drag, onGrip, onPr
         dragFiles={drag}
         // The press is the item's: the listing around it hears none of it, so no marquee starts here.
         onPointer={onGrip}
-        onPress={(event) => onPress(event.modifiers)}
         style={{ ...look, flexShrink: 1 }}
       >
         <FileIcon item={item} size={ICON} emblems={emblems} />
@@ -86,7 +82,7 @@ function NameCell({ item, selected, faded, renaming, emblems, drag, onGrip, onPr
 
 /** The list's columns at `width`, the Name one drawn with its icon (and the field it is renamed in). */
 function useFileColumns(width: number): Column<FileItem>[] {
-  const { store, actions } = useFiles();
+  const { store } = useFiles();
   const state = useFilesState();
   const colors = useColors();
   const dark = useDark();
@@ -108,10 +104,6 @@ function useFileColumns(width: number): Column<FileItem>[] {
                   emblems={store.emblems}
                   drag={{ paths: dragPaths(item.path, state.selection), icon: iconFor(item, dark, store.emblems) }}
                   onGrip={marqueeOf(store).itemPointer}
-                  onPress={(held) => {
-                    store.click(item, held);
-                    actions.refocus();
-                  }}
                 />
               ),
             }
@@ -129,8 +121,6 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
   const state = useFilesState();
   const byPath = useMemo(() => new Map(items.map((item) => [item.path, item])), [items]);
   const marquee = marqueeOf(store);
-  // With a window to ask (src/shared/metal/surface.ts), the rows leave their clicks to the listing around them (D103).
-  const surface = useContext(Surface);
   // The list's width: a narrow one shows fewer columns, Name last to go (sort.ts).
   const [width, setWidth] = useState(0);
   const columns = useFileColumns(width);
@@ -145,7 +135,6 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
           paths: items.map((item) => item.path),
           rects,
           nodeOf: (path) => `list:row:${path}`,
-          clicksToListing: surface !== null,
         };
   return (
     <View
@@ -163,8 +152,9 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
         rowKey={(item) => item.path}
         selected={null}
         selectedKeys={new Set(state.selection)}
-        rowPress={surface === null}
         onSelect={(path, held) => {
+          // The click that ends a marquee started on a row's blank part is the marquee's, not the row's.
+          if (marquee.press(held)) return;
           const item = byPath.get(path);
           if (item) store.click(item, held);
           actions.refocus();
