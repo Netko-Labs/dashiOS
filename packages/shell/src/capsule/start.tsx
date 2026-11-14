@@ -11,6 +11,7 @@ import { dockSign } from "../dock/index.ts";
 import { CAPSULE_LAYER, cell, type PillHub } from "../shared/pill/index.ts";
 import { realTimers, type Timers } from "../shared/time/index.ts";
 import type { CardAnswer } from "./lib/card.tsx";
+import { CardKeys, KEYS_LAYER } from "./lib/card-keys.tsx";
 import { FakeTasks, FakeVoice, followScenes } from "./lib/fake.ts";
 import { type LocateOutput, type LocateWindow, locate } from "./lib/locate.ts";
 import { CAPSULE, CARD, SEAT } from "./lib/measures.ts";
@@ -57,6 +58,8 @@ export interface Capsule {
   personAnswered(task: string): Promise<boolean>;
   /** An agent's question in the card; "elsewhere" when the person would type it (the sheet has the field). */
   question(question: CardQuestion, signal?: AbortSignal): Promise<QuestionAnswer | "elsewhere">;
+  /** Whether a card is on screen: a tap of the Dashi key is then its, not the launcher's. */
+  cardUp(): boolean;
   /** Whether a question can go to the card now: the person can answer it by voice. */
   takesQuestions(): boolean;
   close(): void;
@@ -79,6 +82,10 @@ class Running implements Capsule {
   private readonly now: () => number;
   private readonly mode: VoiceMode;
   private readonly surface: CapsuleSurface;
+  /** The card's keys: a surface that draws nothing, open while a card has the keyboard. */
+  private readonly keys: CapsuleSurface;
+  /** The card whose keys are heard: set once the key surface's window is open. */
+  private readonly keyCard = cell<OpenCard | null>(null);
   private readonly offs: Array<() => void>;
   private card: OpenCard | null = null;
   /** The capsule's screen (undefined with one screen: nothing to choose) and its seat there. */
@@ -111,6 +118,14 @@ class Running implements Capsule {
     // Until something is drawn and says where it is, the surface takes no clicks at all.
     this.clickable([]);
     this.surface = new CapsuleSurface({ spawn: needs.spawn, element: this.view() });
+    needs.compositor?.inputRegion({ namespace: KEYS_LAYER, rects: [] }).catch(() => {});
+    const keys = <CardKeys card={this.keyCard} now={this.now} onAnswer={(answer) => this.answer(answer)} />;
+    this.keys = new CapsuleSurface({
+      spawn: needs.spawn,
+      element: keys,
+      namespace: KEYS_LAYER,
+      opened: () => this.keyCard.set(this.card?.keyboard ? this.card : null),
+    });
     const sync = (): void => this.sync();
     // The Dock came, went or was laid out: the seat is worked out again.
     const moved = (): void => {
@@ -223,6 +238,8 @@ class Running implements Capsule {
       this.state.set({ ...this.state.getSnapshot(), shown });
       // The region stays as it was: the same line may come back at the same bounds, which are told once.
       this.surface.hide();
+      this.keyCard.set(null);
+      this.keys.hide();
       this.height = null;
       return bottomStack.set(null);
     }
@@ -236,7 +253,12 @@ class Running implements Capsule {
     this.state.set({ shown, place: this.where.place, cardBottom: bottom });
     // A card stands on the Dock, on the Dock's screen.
     const output = shown.kind === "card" && this.where.screens > 1 ? (dock?.output ?? this.where.output) : this.where.output;
-    this.surface.show(output, shown.kind === "card" && shown.card.keyboard);
+    this.surface.show(output, false);
+    // The keyboard comes to a surface of its own, so the card does not blink away while it does.
+    const keyed = shown.kind === "card" && shown.card.keyboard ? shown.card : null;
+    if (!keyed || this.keys.shown) this.keyCard.set(keyed);
+    if (keyed) this.keys.show(output, true);
+    else this.keys.hide();
     this.output = output;
     this.stack();
   }
@@ -244,22 +266,25 @@ class Running implements Capsule {
   async personAnswered(task: string): Promise<boolean> {
     const { compositor } = this.needs;
     if (this.mode.saidYes(task)) return true;
-    return compositor ? personAnswered((params) => compositor.inputOrigin(params), CAPSULE_LAYER) : false;
+    if (!compositor) return false;
+    const origin = (params: { namespace: string }) => compositor.inputOrigin(params);
+    // A press on the card, or Return on its key surface.
+    return (await personAnswered(origin, CAPSULE_LAYER)) || (await personAnswered(origin, KEYS_LAYER));
   }
 
   question(question: CardQuestion, signal?: AbortSignal): Promise<QuestionAnswer | "elsewhere"> {
     return this.mode.questions.ask(question, signal);
   }
 
-  takesQuestions(): boolean {
-    return this.mode.talkKey() !== null;
-  }
+  cardUp = (): boolean => this.card !== null;
+  takesQuestions = (): boolean => this.mode.talkKey() !== null;
 
   close(): void {
     for (const off of this.offs) off();
     runningCapsule.set(null);
     this.mode.close();
     this.surface.close();
+    this.keys.close();
     dockSign.asking.set(false);
     bottomStack.set(null);
   }

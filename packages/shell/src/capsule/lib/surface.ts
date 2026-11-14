@@ -4,8 +4,9 @@
  * dots are there as the key goes down (a new host takes seconds). The
  * surface spans the screen's width along its bottom edge, see-through, and
  * takes the pointer only on what is drawn (`input-region`). It takes no
- * keyboard, until a card is given it. A layer surface's screen and keyboard
- * are fixed when it opens, so a change of either hides it and opens it again.
+ * keyboard: a card that is given it gets a second surface for its keys
+ * (card-keys.tsx), so the card itself stays put. A layer surface's screen and
+ * keyboard are fixed when it opens, so a change of either hides it and opens it again.
  * `shown` says what is wanted, not what the host has got to yet.
  */
 
@@ -33,20 +34,24 @@ export interface SurfaceOptions {
   spawn(options: NativeHostOptions): NativeHostTransport;
   /** What the surface draws; rendered once, for as long as the host lives. */
   element: ReactElement;
+  /** The layer's name; the capsule's own unless said (the card's key surface, card-keys.tsx). */
+  namespace?: string;
+  /** The window was just opened. */
+  opened?(): void;
   later?(fn: () => void, ms: number): unknown;
   /** A clock for the gap after a hide; `performance.now` unless a test says. */
   now?(): number;
 }
 
 /** The layer surface the capsule opens as, on `output`, with or without the keyboard. */
-export function capsuleSurface(output: string | undefined, keyboard: boolean): NonNullable<NativeHostOptions["surface"]> {
+export function capsuleSurface(output: string | undefined, keyboard: boolean, namespace: string = CAPSULE_LAYER): NonNullable<NativeHostOptions["surface"]> {
   return {
     layer: "overlay",
     anchor: ["bottom", "left", "right"],
     // Measured from the screen's own edge, whatever the Dock keeps for itself.
     exclusiveZone: -1,
     keyboard: keyboard ? "exclusive" : "none",
-    namespace: CAPSULE_LAYER,
+    namespace,
     ...(output === undefined ? {} : { output }),
   };
 }
@@ -97,9 +102,16 @@ export class CapsuleSurface {
       this.hiddenAt = this.now();
     }
     if (!wanted || this.open || this.wait(this.hiddenAt + REOPEN_MS)) return;
-    host.open({ title: "Dashi", appId: "dev.dashi.shell", width: 1, height: SURFACE_HEIGHT, surface: capsuleSurface(wanted.output, wanted.keyboard) });
+    host.open({
+      title: "Dashi",
+      appId: "dev.dashi.shell",
+      width: 1,
+      height: SURFACE_HEIGHT,
+      surface: capsuleSurface(wanted.output, wanted.keyboard, this.options.namespace),
+    });
     this.open = { ...wanted };
     this.openedAt = this.now();
+    this.options.opened?.();
   }
 
   /** Come back to `apply` at `until` if that is still ahead; whether it is. */

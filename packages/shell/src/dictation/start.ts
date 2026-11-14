@@ -24,7 +24,7 @@ export interface DictationOptions extends Omit<DictationDeps, "prefs"> {
   hold(keys: PillHeldKey[]): void;
   /** Dashi's own listen (voice/voice.ts): the Dashi key became a hold, came up, or was a chord after all. */
   voice: { hold(): void; release(): void; stop(): void };
-  /** A tap of the Dashi key with no card up: the launcher, as ❖Space always did. */
+  /** A tap of the Dashi key: the launcher, as ❖Space always did, unless a card is on screen (it takes the keyboard). */
   launcher(): void;
 }
 
@@ -66,9 +66,8 @@ export function startDictation(options: DictationOptions): DictationParts {
         listening = false;
         return;
       case "tap":
-        // While a card is up the capsule gives it the keyboard; core does nothing more.
-        if (hub.asks.getSnapshot().length === 0) options.launcher();
-        return;
+        // The launcher, unless a card on screen takes the tap (boot/dictation.ts asks the capsule).
+        return options.launcher();
       default:
         return;
     }

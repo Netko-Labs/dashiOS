@@ -169,22 +169,23 @@ test("a tap of the Dashi key opens the launcher as it comes up; kept down, it ta
   expect(gestures.slice(2)).toEqual(["dashi:down", "dashi:hold", "dashi:up"]);
 });
 
-test("while a card is up a tap of the Dashi key is the capsule's, and a chord talks to no one", () => {
+test("a tap of the Dashi key is told to boot whatever asks wait (it asks the capsule whether a card is on screen), and a chord talks to no one", () => {
   const { parts, hub, did, gestures, pass } = started();
+  // An ask that is not on screen (a typed plan waiting in the bar) does not take the tap.
   hub.asks.set([{ id: "a1" } as never]);
   parts.key("dashi", true);
   parts.key("dashi", false);
-  expect(did).toEqual([]);
+  expect(did).toEqual(["launcher"]);
   expect(gestures).toEqual(["dashi:down", "dashi:tap"]);
   hub.asks.set([]);
   parts.key("dashi", true);
   pass(50);
   parts.key("dashi", false, true);
-  expect(did).toEqual([]);
+  expect(did).toEqual(["launcher"]);
   parts.key("dashi", true);
   pass(400);
   parts.key("dashi", false, true);
-  expect(did).toEqual(["voice.hold", "voice.stop"]);
+  expect(did).toEqual(["launcher", "voice.hold", "voice.stop"]);
 });
 
 test("the dictation key held types what was heard; 0.8's talk keys are told to the capsule as the Dashi key", async () => {

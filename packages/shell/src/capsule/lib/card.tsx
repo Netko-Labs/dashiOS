@@ -7,9 +7,8 @@
  * was there before answers nothing.
  */
 
-import { KeySink } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Cell } from "../../shared/pill/index.ts";
 import type { OpenCard } from "../types.ts";
 import { CARD, type CapsuleColours } from "./measures.ts";
@@ -173,15 +172,6 @@ export function Card(props: CardProps) {
   const { card, colours } = props;
   const content = cardContent(card.what, props.name);
   const armed = useArmed(card.armsAt, props.now);
-  // Return is yes only as the first key after the card took the keyboard.
-  const keys = useRef(0);
-  const key = (kind: string): void => {
-    const first = keys.current++ === 0;
-    if (kind === "escape") return props.onAnswer(content.kind === "reading" ? { do: "close" } : { do: "no" });
-    if (kind === "enter" && first && armed && content.whole)
-      return props.onAnswer(content.kind === "permission" ? { do: "yes" } : content.kind === "reading" ? { do: "close" } : { do: "unfocus" });
-    props.onAnswer({ do: "unfocus" });
-  };
   const asks = content.kind !== "reading";
   const hint = hintOf(content, card, props.talkKey);
   return (
@@ -200,13 +190,12 @@ export function Card(props: CardProps) {
         paddingTop: CARD.paddingTop,
         paddingBottom: CARD.paddingBottom,
         backgroundColor: colours.fill,
-        // A thin light rim, as the capsule's; with the keyboard, the white outline. The amber is the disc's and the Dock's.
+        // A thin light rim, as the capsule's; with the keyboard (its keys are heard on a surface of their own, card-keys.tsx), the white outline. The amber is the disc's and the Dock's.
         borderWidth: card.keyboard ? CARD.focusRim : CARD.rim,
         borderColor: colours.rim,
         shadow: "xl",
       }}
     >
-      {card.keyboard && <KeySink testID="card-keys" onKey={(input) => key(input.kind)} />}
       <Head content={content} colours={colours} asks={asks} />
       {content.question !== "" && <Text style={{ fontSize: CARD.questionSize, fontWeight: "semibold", color: colours.text }}>{content.question}</Text>}
       <Message content={content} colours={colours} />

@@ -9,9 +9,11 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { runningCapsule } from "../capsule/index.ts";
 import { atspiFieldCheck } from "../clipboard/index.ts";
 import type { Compositor } from "../compositor/index.ts";
 import { type DictationParts, type Layout, startDictation } from "../dictation/index.ts";
+import { idleKeymap } from "../keymap/keymap-state.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import { type Clipboard, systemClipboard } from "../shared/clipboard/index.ts";
 import { type DictationTrouble, isDictationKeyId } from "../shared/pill/index.ts";
@@ -130,7 +132,14 @@ export function startDictating({ compositor, settingsStore, services, late, talk
     },
     hold: (keys) => talking.heldKeys.set("dictation", keys),
     voice: talking.voice,
-    launcher: () => late.peek("launcher")?.toggle(),
+    launcher: () => {
+      const launcherOpen = late.peek("overlays")?.has("launcher") === true;
+      // A card that is on screen takes the tap (capsule/), never an ask that is not shown. The compositor began sending plain
+      // keys the launcher's way the moment the key was tapped (launcher/type-ahead.ts): they go back to whoever has the keyboard.
+      if (runningCapsule.getSnapshot()?.cardUp() && !launcherOpen)
+        return void compositor?.keymap(idleKeymap()).catch((error) => console.error("dashi-shell: dashi-comp refused the keymap:", error));
+      late.peek("launcher")?.toggle();
+    },
     trouble,
     busy: () => talking.voice.getSnapshot()?.kind === "listening",
     muted: microphoneMuted,

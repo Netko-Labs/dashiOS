@@ -2,6 +2,7 @@
 
 import { expect, test } from "bun:test";
 import { type NativeTransport, render } from "@mirinjs/metal";
+import { cardKey } from "../src/capsule/lib/card-keys.tsx";
 import { CAPSULE } from "../src/capsule/lib/measures.ts";
 import { CapsuleView, type ViewState } from "../src/capsule/lib/view.tsx";
 import type { OpenCard, Place, Shown } from "../src/capsule/types.ts";
@@ -166,7 +167,6 @@ test("the card shows the whole plan, names its task, and has both buttons", asyn
     "Yes, this once",
   ]);
   expect(shown.has("card:permission")).toBe(true);
-  expect(shown.has("card-keys")).toBe(false);
 });
 
 test("past the limit the card has no Yes: only Read it all", async () => {
@@ -176,9 +176,21 @@ test("past the limit the card has no Yes: only Read it all", async () => {
   expect(shown.words.slice(-3)).toEqual(["It is too long to answer here.", "No", "Read it all"]);
 });
 
-test("a card with the keyboard says so and hears keys; a question says how to answer; a long answer closes", async () => {
+test("the card's keys: Return is yes only as the first key, armed and whole; Esc is no; anything else gives the keyboard back", () => {
+  const whole = { kind: "permission", whole: true } as const;
+  expect(cardKey("enter", true, true, whole)).toEqual({ do: "yes" });
+  expect(cardKey("enter", false, true, whole)).toEqual({ do: "unfocus" });
+  expect(cardKey("enter", true, false, whole)).toEqual({ do: "unfocus" });
+  expect(cardKey("enter", true, true, { kind: "permission", whole: false })).toEqual({ do: "unfocus" });
+  expect(cardKey("escape", false, false, whole)).toEqual({ do: "no" });
+  expect(cardKey("escape", true, true, { kind: "reading", whole: true })).toEqual({ do: "close" });
+  expect(cardKey("enter", true, true, { kind: "reading", whole: true })).toEqual({ do: "close" });
+  expect(cardKey("enter", true, true, { kind: "question", whole: true })).toEqual({ do: "unfocus" });
+  expect(cardKey("text", true, true, whole)).toEqual({ do: "unfocus" });
+});
+
+test("a card with the keyboard says so; a question says how to answer; a long answer closes", async () => {
   const focused = await drawn(card({ ask: permission(["Lock the screen"]) }, { keyboard: true }));
-  expect(focused.has("card-keys")).toBe(true);
   expect(focused.words).toContain("Return is yes, Esc is no. Any other key gives the keyboard back.");
   const question = await drawn(
     card({ ask: { kind: "question", id: "q", text: "Which branch?", choices: [], who: "Claude Code", about: "fix the test", since: 0 } }),
