@@ -12,6 +12,7 @@ mod support {
 mod agent;
 mod fixtures;
 mod ipc;
+mod locks;
 mod pointer;
 mod screens;
 mod session;

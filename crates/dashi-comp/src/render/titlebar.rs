@@ -123,6 +123,17 @@ impl Decor {
         }
     }
 
+    /// What there is of it to press (`fullscreen`: while the window is full
+    /// screen): nothing where nothing is drawn, so a full-screen window's top
+    /// strip is its own.
+    pub(crate) fn pressed(self, fullscreen: bool) -> Decor {
+        if self.drawn(fullscreen) {
+            self
+        } else {
+            Decor::None
+        }
+    }
+
     /// The size of the image drawn for a window `width` wide (logical): the
     /// whole bar, or just the lights and their margins.
     pub(crate) fn image_size(self, width: i32) -> Size<i32, Logical> {
@@ -231,6 +242,18 @@ mod tests {
             "a unified window's top is the app's"
         );
         assert_eq!(part_at(20.0, 14.0, 600, Decor::None), None);
+    }
+
+    #[test]
+    fn a_full_screen_window_has_no_title_bar_to_press() {
+        let full = |decor: Decor| decor.pressed(true);
+        assert_eq!(part_at(20.0, 14.0, 600, full(Decor::Standard)), None);
+        assert_eq!(part_at(300.0, 10.0, 600, full(Decor::Standard)), None);
+        // A unified window keeps its lights there, where its app leaves them room.
+        assert_eq!(
+            part_at(20.0, 19.0, 600, full(Decor::Unified)),
+            Some(Part::Close)
+        );
     }
 
     #[test]

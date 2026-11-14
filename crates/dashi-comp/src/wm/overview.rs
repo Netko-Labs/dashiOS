@@ -118,6 +118,8 @@ impl Dashi {
             press: None,
         });
         if opening {
+            // The overview is the pointer's: a game's lock on it lets go (input/constraints.rs).
+            self.release_hold();
             self.ipc.emit(Event::Overview { active: true });
             self.animate_overview(OPENING, false);
         }

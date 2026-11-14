@@ -162,6 +162,16 @@ impl Dashi {
         }
     }
 
+    /// The pointer is no longer in the top band (a window locked it): the shell hears it leave.
+    pub(crate) fn leave_bars(&mut self) {
+        if self.bars.inside.take().is_some() {
+            self.ipc.emit(Event::BarsEdge {
+                inside: false,
+                output: None,
+            });
+        }
+    }
+
     /// After the pointer moves: tell the shell when it enters or leaves the top band.
     pub(crate) fn watch_bars(&mut self, at: Point<f64, Logical>) {
         if self.bars.top == 0 {

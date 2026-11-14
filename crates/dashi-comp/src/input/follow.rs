@@ -20,6 +20,7 @@ impl Dashi {
         {
             self.follow_pointer(&pointer, time);
         }
+        self.pointer_lock_changed();
         // An agent's own seat (session/agent.rs) only while its pointer is in a surface:
         // one that never moved isn't anywhere, and shouldn't enter what is at 0, 0.
         if let Some(pointer) = self.agent.seat.as_ref().and_then(|seat| seat.get_pointer())
@@ -36,8 +37,24 @@ impl Dashi {
                 constraint.is_some_and(|constraint| constraint.is_active())
             })
         });
-        if !held {
-            self.refresh_pointer_focus(pointer, pointer.current_location(), time);
+        if held {
+            return;
+        }
+        let at = pointer.current_location();
+        self.refresh_pointer_focus(pointer, at, time);
+        // A constraint waiting on the surface it is in now (a lock asked for before
+        // the pointer came, a window put under a still pointer) takes hold.
+        let persons = self.seat.get_pointer().as_ref() == Some(pointer);
+        if persons {
+            self.bring_pointer_to_lock(pointer, time);
+        }
+        let waits = persons
+            && pointer.current_focus().is_some_and(|surface| {
+                with_pointer_constraint(&surface, pointer, |constraint| constraint.is_some())
+            });
+        if waits {
+            let under = self.surface_under(at);
+            self.activate_hold(pointer, under.as_ref(), at);
         }
     }
 }
