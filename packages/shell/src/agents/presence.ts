@@ -29,6 +29,8 @@ export interface Ask {
   agent: number;
   who: Who;
   scopes: ScopeChoice[];
+  /** The sheet's heading, when it is not an agent that asks: Dashi's own assistant's first use (agents/assistant/). */
+  title?: string;
 }
 
 /**

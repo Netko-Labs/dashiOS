@@ -122,7 +122,7 @@ export class Voice {
     this.holding = { since: this.now(), stopped, opened: null, tap, sure };
     if (trouble) return this.notice(trouble.text, trouble.go);
     this.listening();
-    this.holding.opened = waiting ? this.mic.cancel().then(() => this.mic.open(turn)) : this.mic.open(turn);
+    this.holding.opened = waiting ? this.mic.reopen(turn) : this.mic.open(turn);
     // The speaking model loads while the person talks, so the answer never waits for it (docs/voice.md, "Keep it warm").
     if (this.question === null) void this.deps.service.call("warm", { speak: true }).catch(() => {});
   }

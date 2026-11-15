@@ -151,7 +151,7 @@ export function ConsentSheet({ ask, onAnswer }: { ask: Ask; onAnswer: (allow: Al
   const lined = more ? [...allowed, ...others] : allowed;
   const about = lined.find((scope) => scope.id === pointed);
   const { who } = ask;
-  const title = who.remote ? "An agent on another machine wants to use Dashi" : `${who.name} wants to use Dashi`;
+  const title = ask.title ?? (who.remote ? "An agent on another machine wants to use Dashi" : `${who.name} wants to use Dashi`);
   const origin = [who.detail, who.claims ? `says it is “${who.claims}”` : null].filter(Boolean).join(" · ");
   const point = (id: string, hovered: boolean): void => setPointed((now) => (hovered ? id : now === id ? null : now));
 

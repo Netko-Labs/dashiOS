@@ -45,7 +45,8 @@ export async function viaHarness({ options, talk, task, words, moment, run, say 
   if (run.signal.aborted) throw new DOMException("Stopped.", "AbortError");
   if (end.missing) throw new AnswerError("not-installed", `${info.binary} isn't installed.`);
   talk.session = end.session;
-  if (end.error && end.said === "") {
+  // It ended badly having done nothing: whatever it printed ("Not logged in · Please run /login") is not an answer.
+  if (end.error && (end.said === "" || run.steps.length === 0)) {
     options.log?.(`assistant harness: ${end.error}`);
     throw info.signedOut(end.error)
       ? new AnswerError("not-signed-in", "It isn't signed in. Sign in from the launcher.")

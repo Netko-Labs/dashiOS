@@ -141,11 +141,12 @@ export class Conversation {
     this.tell();
   };
 
-  /** An exchange ended: it is kept in words, for the next ask and for the file. */
-  record(exchange: Exchange): void {
-    const id = this.current?.id;
-    if (!id) return;
-    this.exchanges.push(exchange);
+  /**
+   * An exchange of conversation `id` ended: it is kept in words, for the next ask and for the file. One that was
+   * stopped by what also closed the conversation (❖Esc, the lock) is still written down.
+   */
+  record(id: string, exchange: Exchange): void {
+    if (this.current?.id === id) this.exchanges.push(exchange);
     this.deps.log?.add({
       conversation: id,
       time: Math.floor(exchange.time / 1000),

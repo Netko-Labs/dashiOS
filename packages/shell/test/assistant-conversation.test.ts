@@ -52,15 +52,19 @@ test("the person, ❖Esc and the lock end it at once; its listeners hear it open
   let told = 0;
   talk.subscribe(() => told++);
   talk.begin();
-  talk.record({ time: 9_000, asked: "open Helium", said: "Helium is open.", steps: ["Opening Helium"] });
+  talk.record("talk1", { time: 9_000, asked: "open Helium", said: "Helium is open.", steps: ["Opening Helium"] });
   talk.end("stopped");
   talk.end("locked");
+  // What ❖Esc stopped is written down too, though the conversation closed first.
+  talk.record("talk1", { time: 9_500, asked: "count my windows", said: "", steps: ["Looking at your windows"], interrupted: true });
   expect(closed).toEqual(["talk1:stopped"]);
   expect(told).toBe(2);
   expect(lines).toEqual([
     { conversation: "talk1", time: 9, asked: "open Helium", said: "Helium is open.", steps: ["Opening Helium"] },
     { conversation: "talk1", time: 5, closed: "stopped", exchanges: 1 },
+    { conversation: "talk1", time: 9, asked: "count my windows", said: "", steps: ["Looking at your windows"], interrupted: true },
   ]);
+  expect(talk.exchanges).toHaveLength(1);
 });
 
 const MOMENT: Moment = {

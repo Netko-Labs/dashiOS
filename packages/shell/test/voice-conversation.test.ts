@@ -186,3 +186,29 @@ test("❖Esc ends the conversation; the capsule's square only stops what is said
   expect(chip()).toBeNull();
   expect(voice.calls).toContain("speak.stop");
 });
+
+test("the key held while a listen that opened by itself has heard nothing takes its place, even while the service still closes that one", async () => {
+  const { voice, timers, asked, talk, state, hold } = conversing();
+  await hold();
+  voice.emit({ event: "spoken", id: 1, reason: "done" });
+  timers.advance(300);
+  await settle();
+  // The service answers the cancel before it has let go of the microphone: the first listen after it is refused.
+  let refusals = 2;
+  voice.replies.listen = () => {
+    if (refusals-- > 0) throw new Error("Voice is already listening.");
+    return {};
+  };
+  voice.replies["listen.stop"] = { text: "search for lo-fi", speech_ms: 800 };
+  talk.key(TALK, true);
+  await settle();
+  timers.advance(100);
+  await settle();
+  timers.advance(100);
+  await settle();
+  expect(talk.getSnapshot()).toEqual({ kind: "listening", text: "", question: false });
+  state.now += 1500;
+  talk.key(TALK, false);
+  await settle();
+  expect(asked).toEqual(["open Helium and go to YouTube", "search for lo-fi"]);
+});

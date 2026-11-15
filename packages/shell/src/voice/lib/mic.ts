@@ -16,6 +16,10 @@ export const AGAIN_AFTER_MS = 300;
 /** A listen that opened by itself is given up after this long with nothing said. */
 export const AGAIN_WAIT_MS = 6000;
 
+/** How often, and how far apart, a listen is asked again while the service still closes the one before. */
+const REOPEN_TRIES = 10;
+const REOPEN_MS = 100;
+
 const message = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
 export interface MicHost {
@@ -73,15 +77,40 @@ export class Mic {
   }
 
   /** Open the microphone; false, with the service's words in the chip, when it won't. */
-  open(turn: number): Promise<boolean> {
+  async open(turn: number): Promise<boolean> {
+    const refusal = await this.listen();
+    if (refusal !== null && turn === this.host.turn()) this.host.notice(refusal, "voice");
+    return refusal === null;
+  }
+
+  /** Ask the service to listen; its refusal in words, or null when the microphone is open. */
+  private listen(): Promise<string | null> {
     const language = listenLanguage(this.host.locale);
     return this.host.service.call("listen", language ? { language } : {}).then(
-      () => true,
-      (error) => {
-        if (turn === this.host.turn()) this.host.notice(message(error), "voice");
-        return false;
-      },
+      () => null,
+      (error) => message(error),
     );
+  }
+
+  /**
+   * The key's own listen takes the place of one that opened by itself: that
+   * one is cancelled, and the microphone opened again. The service lets go
+   * of the microphone a moment after its cancel answers, so a refusal that
+   * says it still listens is asked again, a few times.
+   */
+  async reopen(turn: number): Promise<boolean> {
+    await this.cancel();
+    for (let tries = 0; ; tries++) {
+      const refusal = await this.listen();
+      if (refusal === null) return true;
+      if (turn !== this.host.turn()) return false;
+      if (tries >= REOPEN_TRIES || !/already listening/i.test(refusal)) {
+        this.host.notice(refusal, "voice");
+        return false;
+      }
+      await new Promise<void>((resolve) => this.host.timers.set(resolve, REOPEN_MS));
+      if (turn !== this.host.turn()) return false;
+    }
   }
 
   /** The open listen goes on and ends by itself once the person has talked and gone quiet; given up after `waitMs` of nothing. */

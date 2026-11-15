@@ -23,8 +23,10 @@ export async function firstUse(options: Pick<AssistantOptions, "agents" | "ui" |
   // Kept by "Always Allow". Paying and the clipboard history are never kept: they ask every time themselves.
   const stored = agents.grants.get(ASSISTANT_KEY);
   if (stored.size > 0) return new Set<Scope>([...stored, "pay", "clipboard"]);
-  const who = { name: options.name(), detail: "Your assistant, when you ask it by voice", claims: null, remote: false };
-  const answer = await ui.ask({ agent: ASSISTANT_SHEETS, who, scopes: choices(new Set(ALL_SCOPES), new Set()) }, signal);
+  const name = options.name();
+  const who = { name, detail: "When you ask by voice, it does what you say with these. What is in front goes with your words.", claims: null, remote: false };
+  const title = `Let ${name} see and use this computer?`;
+  const answer = await ui.ask({ agent: ASSISTANT_SHEETS, who, scopes: choices(new Set(ALL_SCOPES), new Set()), title }, signal);
   if (answer.allow === "deny" || signal.aborted) return null;
   const allowed = new Set(answer.scopes.filter(isScope));
   if (answer.allow === "always") agents.grants.set(ASSISTANT_KEY, kept(new Set(), [...allowed], new Set()));

@@ -114,7 +114,9 @@ class Core {
     const outcome = await this.options.runUndo(entry.undo);
     if (!outcome.ok) return { say: "I couldn't put that back." };
     entry.undone = true;
-    return { say: "Done. I put that back." };
+    const said = "Done. I put that back.";
+    if (this.talk.id) this.talk.record(this.talk.id, { time: this.now(), asked: "undo that", said, steps: [entry.undo.title] });
+    return { say: said };
   }
 
   private failure(error: unknown): SpokenAnswer {
@@ -157,7 +159,7 @@ class Core {
     const interrupted = signal.aborted;
     const steps = run.steps.map((step) => step.title);
     const all = [said.trim(), answer.failed ? "" : answer.say].filter(Boolean).join(" ");
-    talk.record({ time: this.now(), asked: words, said: all, steps, ...(interrupted ? { interrupted: true as const } : {}) });
+    talk.record(id, { time: this.now(), asked: words, said: all, steps, ...(interrupted ? { interrupted: true as const } : {}) });
     this.keepHistory(id, words, run);
     this.log(
       `assistant asked=${JSON.stringify(words.slice(0, 80))} way=${way} calls=${steps.length} ended=${interrupted ? "stopped" : (run.stopped ?? (answer.failed ? "failed" : "done"))}`,
