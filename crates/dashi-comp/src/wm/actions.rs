@@ -73,6 +73,13 @@ impl Dashi {
         {
             Some(sheet) => {
                 self.space.raise_element(&window, false);
+                // The window was asked for: it is the one used last but its sheet
+                // (which may have the keyboard already, and would not be told again).
+                for used in [&window, &sheet] {
+                    if let Some(surface) = toplevel_surface(used) {
+                        self.windows.used(&surface);
+                    }
+                }
                 sheet
             }
             None => window,

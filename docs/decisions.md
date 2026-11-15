@@ -2744,6 +2744,40 @@ short words, as the rulebook is written.
   (`calculate` in `apps/calculator/lib/state.ts`), and `sameSpot` in
   `lib/field.ts` to counting the same digits.
 
+### D125. A Dashi app's file dialog is a sheet of its window, named by its process
+
+- **Date:** 2026-11-14. The `n22` final fixes.
+- **Question:** a click on Preview with its Open panel up put Preview over
+  the panel, which looked gone. The compositor keeps a sheet above its
+  parent in every path (`focus_window`); the panel was never a sheet.
+  Dashi's own apps asked the portal for it with no parent window
+  (`file-chooser.ts` sent `""`), so it was an ordinary window beside
+  Preview, and the person's click raised Preview as it would over any
+  window. An agent's click never did it (its click raises nothing). The
+  empty parent is as old as the portal client (in `8dded6d` and before
+  0.8), so this is no regression. How does a Metal app say which window is
+  its own? It has no xdg-foreign handle: mirin's host exports none.
+- **Choice:** the app gives the portal `dashi:PID`, its own process.
+  xdg-desktop-portal hands the string on as it is; dashi-portal expects a
+  sheet for it as for any parent, and the shell finds the window: one whose
+  client is that process or its child (a Metal host), the focused one
+  first, and only a window of Dashi's own apps (`dev.dashi.*`), never a
+  portal dialog or a sheet. Then the usual `attach`. Also: a window asked
+  to the front while its sheet has the keyboard counts as used (the window
+  list had another window between the sheet and its parent).
+- **Why:** no change to mirin tonight, and no new IPC; the shell already
+  ties windows to processes this way for the menus (`ownerPids`).
+- **Cost:** a process number can be guessed where an exported handle
+  cannot: any program that can call the portal may hang a file dialog of
+  its own on a Dashi app's window by naming that app's process. It gains
+  nothing by it (the dialog answers to the caller, and shows on screen),
+  and it cannot reach other apps' windows. The bar still names the app used
+  before the sheet while a sheet has the keyboard ("Calculator" over
+  Preview's panel, when Calculator was in front before).
+- **Undo:** send `""` again in `src/shared/portal/file-chooser.ts`. The
+  right end is mirin's host exporting its window (xdg-foreign v2) and the
+  app passing `wayland:HANDLE`; `dashi:` can go then.
+
 ### D126. In the agents' panel a row's buttons always sit beside its title
 
 - **Date:** 2026-11-14. The `n22` final fixes. Adds to D114.

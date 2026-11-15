@@ -30,9 +30,23 @@ export const sheetTitle = (token: string): string => `dashi-portal:${token}`;
 const SHEET_TITLE = /^dashi-portal:[A-Za-z0-9_]{1,64}$/;
 export const isSheetTitle = (title: string): boolean => SHEET_TITLE.test(title);
 
-/** A portal parent window as xdg-desktop-portal passes it: `wayland:HANDLE` or `x11:XID`; anything else is no parent. */
+/**
+ * A portal parent window: `wayland:HANDLE` or `x11:XID` as xdg-desktop-portal passes it, or
+ * `dashi:PID`, one of Dashi's own apps naming its window by its process (`ownWindow`: a Metal
+ * window exports no handle; decisions.md D125). Anything else is no parent.
+ */
 export function parseParentWindow(text: string): string | null {
   if (/^wayland:[A-Za-z0-9_-]{1,128}$/.test(text)) return text;
   if (/^x11:(0x)?[0-9a-fA-F]{1,8}$/.test(text)) return text;
+  if (ownWindowPid(text) !== null) return text;
   return null;
+}
+
+/** The parent a Dashi app gives the portal for its own window: the app's process (the shell finds its window). */
+export const ownWindow = (pid: number): string => `dashi:${pid}`;
+
+/** The process an `ownWindow` parent names, or null for any other parent. */
+export function ownWindowPid(parent: string): number | null {
+  const pid = /^dashi:([1-9][0-9]{0,9})$/.exec(parent)?.[1];
+  return pid === undefined ? null : Number(pid);
 }
