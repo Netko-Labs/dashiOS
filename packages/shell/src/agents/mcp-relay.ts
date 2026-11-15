@@ -63,14 +63,14 @@ export class McpRelay {
     return true;
   }
 
-  /** Dashi went: an error line for each request on its way, which will never be answered. */
-  lost(): string[] {
-    const lines = [...this.pending.values()].map((id) => JSON.stringify({ jsonrpc: "2.0", id, error: { code: LOST_CODE, message: LOST_MESSAGE } }));
+  /** Dashi went (or, with `message`, could not be reached): an error line for each request on its way, which will never be answered. */
+  lost(message: string = LOST_MESSAGE): string[] {
+    const lines = [...this.pending.values()].map((id) => JSON.stringify({ jsonrpc: "2.0", id, error: { code: LOST_CODE, message } }));
     this.pending.clear();
     return lines;
   }
 
-  /** Connected again: what to say first, the client's `initialize` (under an id of the bridge's) and `notifications/initialized`. */
+  /** Connected (for the first time at the client's first call: mcp-local.ts) or connected again: what to say first, the client's `initialize` (under an id of the bridge's) and `notifications/initialized`. */
   reconnected(): string[] {
     if (!this.initialize) return [];
     const id = `dashi-mcp-again-${++this.times}`;

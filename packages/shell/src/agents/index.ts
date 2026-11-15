@@ -57,14 +57,17 @@ export {
   accessWords,
   agentRecording,
   discGlyph,
+  idleConnections,
   type MarkState,
   markState,
   mergeAgents,
+  outsideAgents,
   type Recording,
   recordingPill,
   watchTime,
 } from "./mark.ts";
 export { SHEET_LAYERS } from "./mask.ts";
+export { answerLocally, initializeResult, type LocalAnswer } from "./mcp-local.ts";
 export { McpRelay } from "./mcp-relay.ts";
 export { parseStat, peerPid, socketFd } from "./peer.ts";
 export { personAnswered, personPressedWindow } from "./person.ts";

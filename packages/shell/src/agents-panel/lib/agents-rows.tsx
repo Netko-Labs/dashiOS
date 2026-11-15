@@ -164,11 +164,20 @@ export function rowLine(entry: Pick<AgentEntry, "agent" | "doing" | "watching" |
   return { chip: accessWords(entry) !== "Connected", words: join(`On ${spaceLabel(space)}`, who) };
 }
 
-/** A connected agent: who, the access it has now, where it's from, Stop, and Show when it works on another Desktop. */
+/** "Claude Code · 3 sessions" from two sessions of one agent; its name alone for one. */
+export const rowTitle = (entry: Pick<AgentEntry, "name" | "sessions">): string =>
+  entry.sessions > 1 ? `${entry.name} · ${entry.sessions} sessions` : entry.name;
+
+/**
+ * A connected agent: who (and how many sessions), the access it has now, where it's from, Stop, and Show
+ * when it works on another Desktop. Stop cuts off every session of it in sight (decisions.md D137).
+ */
 export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; first: boolean; actions: RowActions }) {
   const space = entry.agent?.space;
   const onShow = actions.showSpace;
-  const onStop = () => entry.agent && actions.stopAgent(entry.agent.id);
+  const onStop = () => {
+    for (const agent of entry.agents ?? (entry.agent ? [entry.agent] : [])) actions.stopAgent(agent.id);
+  };
   const colors = useColors();
   const line = rowLine(entry);
   const id = entry.agent?.id ?? entry.key;
@@ -176,7 +185,7 @@ export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; fi
   const stop = <StopButton testID={`agents-stop-agent:${id}`} onPress={onStop} />;
   const title = (
     <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
-      {entry.name}
+      {rowTitle(entry)}
     </Text>
   );
   const words = (
@@ -224,6 +233,20 @@ export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; fi
         </View>
         {words}
       </View>
+    </View>
+  );
+}
+
+/** "5 more connected, idle": the connections that have called nothing, or nothing for a while; Settings › Agents lists them. */
+export const idleWords = (idle: number, rows: number): string => (rows > 0 ? `${idle} more connected, idle` : `${idle} connected, idle`);
+
+export function IdleLine({ idle, rows }: { idle: number; rows: number }) {
+  const colors = useColors();
+  return (
+    <View testID="agents-idle" style={{ paddingTop: 6, paddingBottom: 6, paddingLeft: 10, paddingRight: 10 }}>
+      <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+        {idleWords(idle, rows)}
+      </Text>
     </View>
   );
 }

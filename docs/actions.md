@@ -999,9 +999,17 @@ restarts"), `test/agents-mcp-relay.test.ts` (the bridge connecting again).
   the menu bar, leading the status items; a click turns the bar's row into
   the field, where a typed task goes to the launcher's assistant
   (`menubar/field.ts`). Every job is a capsule beside the mark: a launcher
-  Ask task, a run from the launcher, an agent connected from outside (an
-  MCP client, Claude on a phone over SSH; `mergeAgents` makes runs and
-  connections one list, a run's own connection folded into its run). A
+  Ask task or a run from the launcher. An agent connected from outside (an
+  MCP client, Claude on a phone over SSH) is never a capsule, nor are its
+  calls: the mark is the one sign of them all, with the first one's glyph
+  beside the spark and, from two sessions, how many; a click there opens
+  the panel (decisions.md D138). `mergeAgents` makes runs and connections
+  one list, a run's own connection folded into its run, the sessions of
+  one agent one entry (D137). A connection is not an action: one that has
+  called no tool, or none for five minutes, and holds nothing (a call
+  running, a sheet, the screen seen or recorded, a Desktop of its own,
+  Work alone) is in no bar and has no row (`lib/session/session-quiet.ts`,
+  D136); listing the server's tools is not a call. A
   capsule is a disc with a ring and who it is (the harness's glyph, else
   the spark); the one whose step changed last also has its name and step
   in words. The ring turns while it works (still with Reduce Motion). The
@@ -1015,7 +1023,8 @@ restarts"), `test/agents-mcp-relay.test.ts` (the bridge connecting again).
   timer pill, which a click stops (and an agent's recording whose agent is
   already gone keeps the pill too: a recording is never out of sight).
   Stopping an agent stops its recording.
-- **The panel**, from a click on a job's capsule (380 wide): the launcher's
+- **The panel**, from a click on a job's capsule or on the agents' part of
+  the mark (380 wide): the launcher's
   Ask tasks (their steps, Stop, the result, Undo), then agents waiting on the
   person first, then working, then connected, newest first, then runs that
   ended in the last hour. A run is its card: its words, harness, time,
@@ -1023,13 +1032,18 @@ restarts"), `test/agents-mcp-relay.test.ts` (the bridge connecting again).
   whole log, `log.txt` beside its streams, in Text Editor) and Stop; while
   its connection watches, its tile has the red dot and an access chip
   ("Recording the screen"); a finished run stays an hour, with Undo for
-  each settings change it made. A connected agent is a row
+  each settings change it made. A connected agent is a row, one for all
+  its sessions ("claude · 3 sessions": the same program, the same name it
+  claims; `agents/lib/agent-groups.ts`), saying what the session that
+  waits, works, or called last does
   (`agents-panel/lib/agents-rows.tsx`): its glyph, its name, an access chip ("Recording the
   screen", "Seeing the screen", "Using its pointer", "Waiting for you",
   "Connected"), where it's from ("“claude-ai”, connected over SSH", "from
-  ~/.local/bin/claude") and Stop, which cuts it off as ⌃❖Esc does, with
-  the "Stopped …" note. The foot has "Stop all": every working run and
-  every connection.
+  ~/.local/bin/claude") and Stop, which cuts every session of it in sight
+  off as ⌃❖Esc does, with the "Stopped …" note. Connections that are quiet
+  are one line above the foot ("5 more connected, idle"); Settings ›
+  Agents lists each. The foot has "Stop all": every working run and
+  every connection, the quiet ones too.
 - **Questions in the panel.** A run's questions go on its card: a website
   (Allow, Always, Don't), which login (Allow for this task, Once, Other
   login… when there is more than one, Don't), a hand-over (do it, then Done), another permission, one

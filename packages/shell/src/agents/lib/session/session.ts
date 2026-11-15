@@ -13,14 +13,16 @@ import { logActivity, type Scope } from "../../consent.ts";
 import { type ToolResult, toolError } from "../../context.ts";
 import { Elsewhere } from "../../desktop/index.ts";
 import { connectionHarness } from "../../mark.ts";
+import { initializeResult } from "../../mcp-local.ts";
 import { grantKey, type Peer } from "../../peer.ts";
 import type { AgentInfo, Who } from "../../presence.ts";
 import { SessionSecrets } from "../../secrets/index.ts";
 import { SiteConsent } from "../../sites.ts";
-import { catalog, INSTRUCTIONS, parseCall } from "../../tools/index.ts";
+import { catalog, parseCall } from "../../tools/index.ts";
 import * as mcp from "../mcp.ts";
 import { SessionBrowser } from "./session-browser.ts";
 import { type CallHost, SessionCalls } from "./session-calls.ts";
+import { type QuietClock, SessionQuiet } from "./session-quiet.ts";
 import { type ScopeHost, Scopes } from "./session-scopes.ts";
 import { SessionStatus } from "./session-status.ts";
 import type { Connection, SessionContext, SessionTask } from "./session-types.ts";
@@ -45,6 +47,10 @@ export class Session {
   private readonly watch: SessionWatch;
   /** The Space it works in, when the person asked it to work on another Desktop. */
   private readonly elsewhere: Elsewhere;
+  /** Whether it is in sight: it called a tool a while ago at most, or holds something (session-quiet.ts). */
+  private readonly quiet: SessionQuiet;
+  /** It called a tool at least once: only then is it in the activity log. */
+  private called = false;
 
   constructor(
     readonly id: number,
@@ -56,7 +62,9 @@ export class Session {
     confined = false,
     /** A run started from the launcher: its card's grants, for this connection only, and nothing kept. */
     private readonly task: SessionTask | null = null,
+    clock: QuietClock = {},
   ) {
+    this.quiet = new SessionQuiet(() => !this.closed && ctx.publish(), clock);
     this.state = new SessionStatus(
       () => ctx.publish(),
       () => this.closed || this.scopes.asking,
@@ -89,6 +97,7 @@ export class Session {
   }
 
   info(): AgentInfo {
+    const watching = this.watch.now();
     return {
       id: this.id,
       name: this.peer.name,
@@ -103,8 +112,17 @@ export class Session {
       harness: connectionHarness(this.peer.name, this.claims),
       since: this.since,
       waiting: this.scopes.busy,
-      ...this.watch.now(),
+      ...watching,
+      quiet: this.quiet.quiet(this.holds(watching.watching ?? null)),
+      ...(this.quiet.acted === null ? {} : { acted: this.quiet.acted }),
     };
+  }
+
+  /** What keeps it in sight however long ago it called: a sheet up, a call running, the screen seen or recorded, a Desktop of its own, Work alone. */
+  private holds(watching: AgentInfo["watching"]): boolean {
+    if (this.scopes.busy || this.calls.running || watching !== null || this.elsewhere.space !== null) return true;
+    // Work alone: an agent that has called is acting without asking for as long as it lasts.
+    return this.quiet.acted !== null && this.ctx.alone?.status().on === true;
   }
 
   /** Who this agent is in what it changes: the name it shows with (a remote one's claimed name), and its grants' key. */
@@ -147,14 +165,7 @@ export class Session {
         this.claims = name ? name.replace(/\p{Cc}/gu, "").slice(0, 64) : null;
         // An agent over SSH is known by its name; its stored grants show up now. A launcher run has its card's only.
         if (!this.task) this.scopes.loadKept();
-        this.send(
-          mcp.result(id, {
-            protocolVersion: mcp.negotiate(params.protocolVersion),
-            capabilities: { tools: { listChanged: false } },
-            serverInfo: { name: "dashi", title: "Dashi", version: "0.1.0" },
-            instructions: INSTRUCTIONS,
-          }),
-        );
+        this.send(mcp.result(id, initializeResult(params)));
         this.ctx.publish();
         return;
       }
@@ -163,6 +174,10 @@ export class Session {
       case "tools/list":
         return this.send(mcp.result(id, { tools: catalog() }));
       case "tools/call": {
+        // Any call counts as doing something, a read too: it looks at the person's computer (D136).
+        this.called = true;
+        this.quiet.act();
+        this.ctx.publish();
         const call = parseCall(params);
         if ("unknown" in call) return this.send(mcp.error(id, mcp.INVALID_PARAMS, `Unknown tool: ${call.unknown}`));
         if ("arguments" in call) return this.reply(id, String(params.name), toolError(call.arguments));
@@ -235,6 +250,8 @@ export class Session {
     if (this.closed) return;
     this.log(tool, result.isError ? "error" : "ok");
     this.send(mcp.result(id, result));
+    // The wait runs from the end of its last call, however long that one took.
+    this.quiet.act();
     this.state.settle();
   }
 
@@ -246,7 +263,9 @@ export class Session {
   stop(why: "stopped" | "disconnected"): void {
     if (this.closed) return;
     this.closed = true;
-    this.log(null, why);
+    this.quiet.close();
+    // A connection that came and went without one call is not written down: it did nothing (D139).
+    if (this.called) this.log(null, why);
     // What it was doing stops (nothing more is typed), and its sheets, and a "Your turn" it left up, come down.
     this.calls.stop();
     // A Space it added for itself goes with it, once nothing is left there.

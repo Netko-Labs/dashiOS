@@ -5,13 +5,17 @@
  * A click turns the bar's row into the field (menubar/field.ts). While
  * something waits on the person it turns amber with an ink line and counts
  * them; the red dot shows while an agent sees or records the screen or uses
- * its own pointer. Pointing at it shows who and what in a tooltip under the
- * bar.
+ * its own pointer. It is the one sign of the agents connected from outside,
+ * whatever their number (decisions.md D138): while one acts, its glyph
+ * stands beside the spark, with how many sessions from two, and a click
+ * there opens the agents' panel. Pointing at it shows who and what in a
+ * tooltip under the bar.
  */
 
 import { useColors } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef } from "react";
+import { discGlyph } from "./agents/index.ts";
 import { opaque } from "./consent.tsx";
 import { SPARK } from "./shared/settings/index.ts";
 
@@ -84,6 +88,20 @@ function Spark({ ink, glyph }: { ink: string; glyph: string }) {
   );
 }
 
+/** The agents from outside at work: the first one's glyph and, from two sessions, how many. */
+function Outside({ sessions, harness, ink }: { sessions: number; harness: string | null; ink: string }) {
+  return (
+    <>
+      <Svg markup={discGlyph(harness)} size={MARK.glyph} color={ink} />
+      {sessions > 1 && (
+        <View testID="agent-mark-sessions">
+          <Text style={{ fontSize: 11.5, fontWeight: "bold", color: ink }}>{String(sessions)}</Text>
+        </View>
+      )}
+    </>
+  );
+}
+
 export interface AgentMarkProps {
   /** How many things wait on the person: the mark turns amber and counts them. */
   need: number;
@@ -99,6 +117,10 @@ export interface AgentMarkProps {
   label: string;
   /** The tooltip's words; "" for none. */
   tip: string;
+  /** The agents from outside in sight: how many sessions, and the first one's harness (null: the sparkle). */
+  agents?: { sessions: number; harness: string | null };
+  /** A click on the agents' part, with the mark's right edge in the bar: their panel. */
+  onAgents?: (right: number) => void;
   /** A click, with the mark's right edge in the bar. */
   onPress: (right: number) => void;
   /** The pointer came to rest on it (its words and bounds), or left (null). */
@@ -107,7 +129,8 @@ export interface AgentMarkProps {
   accessible?: boolean;
 }
 
-export function AgentMark({ need, watching, open, colour, glyph = SPARK, label, tip, onPress, onTip, accessible = false }: AgentMarkProps) {
+export function AgentMark(props: AgentMarkProps) {
+  const { need, watching, open, colour, glyph = SPARK, label, tip, agents, onAgents, onPress, onTip, accessible = false } = props;
   const colors = useColors();
   const laid = useRef<Bounds | null>(null);
   // A press or the mark going takes its tooltip down (the latest `onTip`: the bar passes a new one each render).
@@ -123,18 +146,21 @@ export function AgentMark({ need, watching, open, colour, glyph = SPARK, label, 
   const box = (bounds?: Bounds) => bounds ?? laid.current ?? { x: 0, y: 0, width: 0, height: 0 };
   const asking = need > 0;
   const ink = colour ?? colors.agent;
+  // The agents' part is a press of its own; the spark keeps the field.
+  const outside = !asking && agents !== undefined && agents.sessions > 0 ? agents : null;
+  const press = (to: (right: number) => void) => (event: { bounds?: Bounds }) => {
+    tipped.current = false;
+    onTip?.(null);
+    const at = laid.current ?? box(event.bounds);
+    to(at.x + at.width);
+  };
   return (
     <View
       testID="agent-mark"
       onLayout={(bounds: Bounds) => {
         laid.current = bounds;
       }}
-      onPress={({ bounds }: { bounds?: Bounds }) => {
-        tipped.current = false;
-        onTip?.(null);
-        const at = box(bounds);
-        onPress(at.x + at.width);
-      }}
+      {...(outside ? {} : { onPress: press(onPress) })}
       onHoverChange={(hovered: boolean, bounds?: Bounds) => {
         if (tip === "") return;
         tipped.current = hovered;
@@ -148,14 +174,31 @@ export function AgentMark({ need, watching, open, colour, glyph = SPARK, label, 
         gap: 5,
         height: MARK.height,
         paddingLeft: asking ? 3 : MARK.padding,
-        paddingRight: asking ? 8 : MARK.padding,
+        paddingRight: asking || (outside && outside.sessions > 1) ? 8 : MARK.padding,
         borderRadius: MARK.height / 2,
         position: "relative",
         backgroundColor: asking ? NEED.fill : open ? ink : colors.agentWash,
         ...(asking ? { borderWidth: 1.5, borderColor: NEED.ink } : {}),
       }}
     >
-      {asking ? <Asking need={need} /> : <Spark ink={ink} glyph={glyph} />}
+      {asking ? (
+        <Asking need={need} />
+      ) : outside ? (
+        <>
+          <View testID="agent-mark-spark" onPress={press(onPress)}>
+            <Spark ink={ink} glyph={glyph} />
+          </View>
+          <View
+            testID="agent-mark-agents"
+            onPress={press(onAgents ?? onPress)}
+            style={{ flexDirection: "row", alignItems: "center", gap: 4, height: MARK.height }}
+          >
+            <Outside sessions={outside.sessions} harness={outside.harness} ink={open ? "#ffffff" : colors.agentInk} />
+          </View>
+        </>
+      ) : (
+        <Spark ink={ink} glyph={glyph} />
+      )}
       {watching && <RedDot />}
     </View>
   );

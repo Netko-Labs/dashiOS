@@ -17,6 +17,7 @@ import {
   type MarkState,
   markState,
   mergeAgents,
+  outsideAgents,
   type Recording,
   recordingPill,
   useAgents,
@@ -90,6 +91,8 @@ export interface ProgramContext {
   appName: string;
   recording: Recording;
   mark: MarkState;
+  /** The agents from outside in sight: the mark's count, and how many wait on the person (agents/mark.ts). */
+  outside: ReturnType<typeof outsideAgents>;
   alone: AloneState;
   micWords: string;
   capturing: boolean;
@@ -205,13 +208,15 @@ export function useStatusSlots(
   const colors = useColors();
   const recording = useRecording(recorder);
   const [jobsRoom, setJobsWidth] = useJobsRoom(fit);
+  const entries = mergeAgents(useAgents(agents), useRuns(runs ?? NO_RUNS));
   const context: ProgramContext = {
     sources,
     popover,
     appName,
     recording,
     // Every agent, launched or connected, is one mark; an agent's recording is its red dot.
-    mark: markState(mergeAgents(useAgents(agents), useRuns(runs ?? NO_RUNS)), agentRecording(recording)),
+    mark: markState(entries, agentRecording(recording)),
+    outside: outsideAgents(entries), // never a capsule each: the mark counts them
     alone: useSyncExternalStore(sources.alone?.subscribe ?? NEVER, sources.alone ? sources.alone.getSnapshot : () => NOT_ALONE),
     micWords: useMicWords(mixer),
     // Someone shares the screen, and it isn't Dashi's own recorder (the pill decides that itself).

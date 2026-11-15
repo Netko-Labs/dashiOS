@@ -47,6 +47,11 @@ export class SessionCalls {
 
   constructor(private readonly host: CallHost) {}
 
+  /** A call runs now. */
+  get running(): boolean {
+    return this.inFlight.size > 0;
+  }
+
   /** Give up on the running call `id`; false when it isn't running. */
   cancel(id: mcp.Id): boolean {
     const running = this.inFlight.get(id);

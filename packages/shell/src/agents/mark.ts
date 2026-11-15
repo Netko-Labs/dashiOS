@@ -7,12 +7,15 @@
  * draws: each agent's harness glyph on a disc, up to three, then "+N"; a
  * ring while one works; the red dot while one sees or records the screen or
  * uses its own pointer and keys; amber words, "Waiting for you", only while
- * one needs the person. Nothing here hides an agent: every connection is an
- * entry while it is connected, whatever its run did. Pure.
+ * one needs the person. A connection that has called nothing, or nothing for
+ * a while, is no entry (lib/session/session-quiet.ts: a connection is not an
+ * action), and the sessions of one agent are one entry (lib/agent-groups.ts).
+ * Pure.
  */
 
 import { elapsedText } from "../shared/time/index.ts";
 import { currentStep, harnessGlyph, isWorking, type RunView } from "./handoff/index.ts";
+import { type AgentGroup, groupConnections, isResting } from "./lib/agent-groups.ts";
 import type { AgentInfo, Watching } from "./presence.ts";
 
 /** At most this many discs; the rest are "+N". */
@@ -22,7 +25,7 @@ export type EntryPhase = "idle" | "working" | "waiting";
 
 /** One agent, from the launcher or connected, as the mark and the panel see it. */
 export interface AgentEntry {
-  /** `run:<id>` or `agent:<connection id>`. */
+  /** `run:<id>`, or `agent:<id>` with the id of its oldest session in sight. */
   key: string;
   kind: "run" | "connection";
   /** Its harness's id (harness-icons.ts), or null for the agents' sparkle. */
@@ -38,7 +41,12 @@ export interface AgentEntry {
   /** When it started or connected, for the order. */
   since: number;
   run?: RunView;
+  /** The session that speaks for a connected agent (lib/agent-groups.ts). */
   agent?: AgentInfo;
+  /** A connected agent's sessions in sight, the one that speaks first. */
+  agents?: readonly AgentInfo[];
+  /** How many sessions it is: "Claude Code · 3 sessions" from two. */
+  sessions: number;
 }
 
 /** The harness a connection is, from its process's name or the name it claims; null when neither says. */
@@ -63,32 +71,59 @@ export function strongest(a: Watching | null, b: Watching | null | undefined): W
 const runDoing = (run: RunView): string =>
   run.question ? "Waiting for you" : (currentStep(run)?.words ?? (run.steps.length === 0 && run.phase === "starting" ? "Starting" : "Thinking"));
 
-const QUIET = new Set(["Connected", "Idle"]);
-
-function connectionEntry(agent: AgentInfo): AgentEntry {
-  const phase: EntryPhase = agent.waiting ? "waiting" : QUIET.has(agent.status) ? "idle" : "working";
+function connectionEntry({ lead, members }: AgentGroup): AgentEntry {
+  const phase: EntryPhase = lead.waiting ? "waiting" : isResting(lead.status) ? "idle" : "working";
+  const watching = members.reduce<Watching | null>((most, agent) => strongest(most, agent.watching), null);
+  const sinces = members.flatMap((agent) =>
+    watching !== null && agent.watching === watching && agent.watchingSince !== undefined ? [agent.watchingSince] : [],
+  );
   return {
-    key: `agent:${agent.id}`,
+    key: `agent:${Math.min(...members.map((agent) => agent.id))}`,
     kind: "connection",
-    harness: agent.harness ?? null,
-    name: agent.name,
-    doing: agent.waiting ? "Waiting for you" : agent.status,
+    harness: lead.harness ?? null,
+    name: lead.name,
+    doing: lead.waiting ? "Waiting for you" : lead.status,
     phase,
-    watching: agent.watching ?? null,
-    watchingSince: agent.watching ? (agent.watchingSince ?? null) : null,
-    since: agent.since ?? 0,
-    agent,
+    watching,
+    watchingSince: sinces.length > 0 ? Math.min(...sinces) : null,
+    since: Math.min(...members.map((agent) => agent.since ?? 0)),
+    agent: lead,
+    agents: members,
+    sessions: members.length,
+  };
+}
+
+/** A connection that is not a working run's: an agent from outside. */
+const outside = (connections: readonly AgentInfo[], runs: readonly RunView[]): AgentInfo[] => {
+  const runIds = new Set(runs.filter(isWorking).map((run) => run.id));
+  return connections.filter((agent) => agent.task === undefined || !runIds.has(agent.task));
+};
+
+/** The connections from outside that are quiet: connected, and nothing to show ("5 more connected, idle"). */
+export function idleConnections(connections: readonly AgentInfo[], runs: readonly RunView[]): number {
+  return outside(connections, runs).filter((agent) => agent.quiet === true).length;
+}
+
+/**
+ * What the bar's one mark says of the agents from outside (decisions.md D138): how many sessions
+ * are in sight, the glyph of the first, and how many wait on the person. Never a capsule each.
+ */
+export function outsideAgents(entries: readonly AgentEntry[]): { sessions: number; harness: string | null; waiting: number } {
+  const connected = entries.filter((entry) => entry.kind === "connection");
+  return {
+    sessions: connected.reduce((sum, entry) => sum + entry.sessions, 0),
+    harness: connected[0]?.harness ?? null,
+    waiting: connected.reduce((sum, entry) => sum + (entry.agents ?? []).filter((agent) => agent.waiting === true).length, 0),
   };
 }
 
 /**
  * Every agent, once: each working run with what its connections see, then
- * every connection that isn't a working run's. Waiting on the person first,
+ * the agents connected from outside that are in sight, their sessions as one. Waiting on the person first,
  * then working, then idle; newest first within each.
  */
 export function mergeAgents(connections: readonly AgentInfo[], runs: readonly RunView[]): AgentEntry[] {
   const working = runs.filter(isWorking);
-  const runIds = new Set(working.map((run) => run.id));
   const fromRuns = working.map((run): AgentEntry => {
     const own = connections.filter((agent) => agent.task === run.id);
     const watching = own.reduce<Watching | null>((most, agent) => strongest(most, agent.watching), null);
@@ -107,10 +142,11 @@ export function mergeAgents(connections: readonly AgentInfo[], runs: readonly Ru
       watchingSince: sinces.length > 0 ? Math.min(...sinces) : null,
       since: run.started,
       run,
+      sessions: 1,
     };
   });
-  // A connection whose run ended (or that never had one) is still connected: it stays in sight.
-  const fromConnections = connections.filter((agent) => agent.task === undefined || !runIds.has(agent.task)).map(connectionEntry);
+  // A connection whose run ended (or that never had one) is an agent from outside: in sight while it acts.
+  const fromConnections = groupConnections(outside(connections, runs)).map(connectionEntry);
   const order: Readonly<Record<EntryPhase, number>> = { waiting: 0, working: 1, idle: 2 };
   return [...fromRuns, ...fromConnections].sort((a, b) => order[a.phase] - order[b.phase] || b.since - a.since);
 }

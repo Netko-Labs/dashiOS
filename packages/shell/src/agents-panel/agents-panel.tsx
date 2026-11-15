@@ -5,9 +5,10 @@
  * steps (never a transcript), the question it waits on (answered here, not
  * in a sheet over the person's work), Show (the whole log in its own
  * window), Stop, and for an hour after it ends, Undo where its changes can
- * be put back. An agent connected from outside is a row (lib/agents-rows.tsx):
- * what it may see or do now, where it's from, Stop. "Stop all" stops them
- * all, as ⌃❖Esc does.
+ * be put back. An agent connected from outside is a row (lib/agents-rows.tsx),
+ * one for all its sessions: what it may see or do now, where it's from, Stop.
+ * Connections that have called nothing are a quiet line at the foot. "Stop
+ * all" stops them all, as ⌃❖Esc does.
  */
 
 import { useColors } from "@dashi/ui";
@@ -20,6 +21,7 @@ import {
   CARD_STEPS,
   cut,
   harnessGlyph,
+  idleConnections,
   isWorking,
   mergeAgents,
   progressWords,
@@ -28,7 +30,7 @@ import {
   type TaskView,
 } from "../agents/index.ts";
 import { KeyCatcher } from "../overlay.tsx";
-import { AccessChip, ConnectionRow, Small, StopAllFooter, TileDot } from "./lib/agents-rows.tsx";
+import { AccessChip, ConnectionRow, IdleLine, Small, StopAllFooter, TileDot } from "./lib/agents-rows.tsx";
 import { panelTaskList, TaskCard, taskCardFocus, taskWorks } from "./lib/task-cards.tsx";
 import { type PanelTasks, PanelTasksContext } from "./tasks.tsx";
 
@@ -229,7 +231,7 @@ export function AgentsPanel({
   const all = useRuns(runs);
   const connected = useSyncExternalStore(agents.subscribe, agents.getSnapshot);
   const now = Date.now();
-  const entries = mergeAgents(connected, all);
+  const [entries, idle] = [mergeAgents(connected, all), idleConnections(connected, all)];
   const ended = all.filter((run) => !isWorking(run)).sort((a, b) => b.started - a.started);
   const { source, tasks, working } = usePanelTasks();
   const count = entries.length + ended.length + tasks.length;
@@ -274,7 +276,8 @@ export function AgentsPanel({
           {ended.map((run, index) => cardOf(run, tasks.length + entries.length + index))}
         </ScrollView>
       )}
-      {(entries.length > 0 || working.length > 0) && (
+      {idle > 0 && <IdleLine idle={idle} rows={count} />}
+      {(entries.length > 0 || working.length > 0 || idle > 0) && (
         <StopAllFooter
           onStopAll={() =>
             stopAll(

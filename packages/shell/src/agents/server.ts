@@ -79,7 +79,7 @@ export interface AgentsOptions {
   /** Runs started from the launcher (agents/handoff/): a connection from one's sandbox gets its policy. */
   tasks?: TaskHooks & { policy(task: string): TaskPolicy | null };
   /** Work alone (alone/): what agents use without asking for a set time; it hears of the lock and of ⌃❖Esc. */
-  alone?: AloneGate & { screenLocked(): void; stop(): unknown };
+  alone?: AloneGate & { screenLocked(): void; stop(): unknown; subscribe?(listener: () => void): () => void };
 }
 
 export function startAgents({
@@ -122,6 +122,9 @@ export function startAgents({
   // ⌃❖Esc, a revoked answer and the lock reach every connection, and Work alone (lib/server-watch.ts).
   const unwatch = watchAgents({ compositor, grants, sites, lock, alone, sessions: () => [...sessions.values()], stopSessions, publish });
 
+  // Work alone going on or off changes who is in sight (session-quiet.ts).
+  const offAlone = alone?.subscribe?.(publish);
+
   const path = socketPath();
   if (!path) console.error("dashi-shell: no XDG_RUNTIME_DIR; agents can't connect");
   const listening = path ? listenAgents(path, { sessions, context, tasks, publish }) : null;
@@ -143,6 +146,7 @@ export function startAgents({
     },
     close() {
       unwatch();
+      offAlone?.();
       lock.close();
       hands.close();
       places.close();
