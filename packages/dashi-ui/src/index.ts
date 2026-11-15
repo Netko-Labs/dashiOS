@@ -65,6 +65,7 @@ export { Switch, type SwitchProps } from "./switch.tsx";
 export { Table, type TableProps } from "./table.tsx";
 export type { Column } from "./table-parts.tsx";
 export { holdOrder, moveSelection, nextSort, type SortableColumn, type SortState, sortRows } from "./table-sort.ts";
+export { hostTextAntialiasing, type TextAntialiasing } from "./text-antialiasing.ts";
 export {
   Appearance,
   type AppearanceSource,

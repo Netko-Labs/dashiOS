@@ -138,8 +138,9 @@ export LANG="${LANG:-C.UTF-8}"
 # the development build checks and warns on every render, two to three times slower.
 export NODE_ENV="${NODE_ENV:-production}"
 # Dashi's text is subpixel (decisions.md D132): mirin's hosts draw grays on
-# Linux unless told. Every host of the session inherits it: the shell's, the
-# apps', dashi-dialog's, the portal's, applets'.
+# Linux unless told. Dashi's own hosts are told as they are spawned
+# (hostTextAntialiasing, @dashi/ui); this is for a Metal program that is not
+# Dashi's, so its text matches. A value already set wins, for Dashi's hosts too.
 export MIRIN_METAL_TEXT="${MIRIN_METAL_TEXT:-subpixel}"
 
 [ -n "${XDG_RUNTIME_DIR:-}" ] || {

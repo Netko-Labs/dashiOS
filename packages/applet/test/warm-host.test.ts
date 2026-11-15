@@ -76,7 +76,7 @@ test("an applet's host starts a moment after the applet, named for screen reader
   expect(spawned).toHaveLength(0);
   expect(await pass()).toEqual([WARM_AFTER_MS]);
   expect(spawned).toHaveLength(1);
-  expect(spawned[0]?.options).toEqual({ deferred: true, env: { MIRIN_METAL_APP_NAME: "Weather" } });
+  expect(spawned[0]?.options).toEqual({ deferred: true, textAntialiasing: "subpixel", env: { MIRIN_METAL_APP_NAME: "Weather" } });
   expect(warm.isReady()).toBe(true);
 
   expect(warm.take(window)).not.toBeNull();

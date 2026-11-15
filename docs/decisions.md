@@ -2958,11 +2958,19 @@ short words, as the rulebook is written.
   greeter's, `dashi-dialog`, the portal's, applets'. Until mirin's PR 36 is
   on `main`, `session/dashi-session` and `session/dashi-greeter` set
   `MIRIN_METAL_TEXT=subpixel` (a value already set wins), which every host
-  of the session inherits. PR 36 is on `main` now (`db8a00e`), and the two
-  lines stay: mirin's `NativeHostOptions.textAntialiasing` is that same
-  variable set for one spawn, and "unset, the driver's own environment
-  decides", so the session's environment is the one place for all of
-  Dashi's hosts, an applet's included (it spawns its own).
+  of the session inherits. PR 36 is on `main` now (`db8a00e`), so every
+  place Dashi spawns a host gives mirin's
+  `NativeHostOptions.textAntialiasing` (`hostTextAntialiasing()`,
+  `@dashi/ui`: the shell's `shellHostOptions`, which the portal, the
+  launcher and the warm hosts go through; the kit's `runApp`, so every app
+  and `dashi-dialog`; the greeter; the applet SDK's two). The greeter's
+  script no longer sets the variable. `session/dashi-session` still does,
+  for a Metal program in the session that is not Dashi's; and a value
+  someone set there (`MIRIN_METAL_TEXT=grayscale`, to measure) is still
+  taken by Dashi's hosts, since the option would otherwise hide it.
+  A window that is not opaque (a layer surface: the bar, the Dock, the
+  launcher, the capsule, banners, the login screen) draws grays whatever
+  is asked: mirin's rule, since subpixel text needs to know what is behind it.
 - **Left:** the setting (`appearance.textSmoothing`, "subpixel" or
   "grayscale", a row in Settings › Appearance, known to agents). It is not
   a small change: mirin applies a change per host (`setTextAntialiasing`
@@ -2976,7 +2984,7 @@ short words, as the rulebook is written.
   `setTextAntialiasing`. The greeter has no person yet and stays subpixel.
 - **Cost:** about 1 MB more per idle host than grayscale, and fringes of
   the wrong order on a rotated screen.
-- **Undo:** the two `export` lines.
+- **Undo:** `hostTextAntialiasing` and the `export` line.
 
 ### D133. A picture the host cannot draw says so, and what stands in is drawn then
 

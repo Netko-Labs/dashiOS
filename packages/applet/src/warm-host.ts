@@ -19,6 +19,7 @@
  */
 
 import { join } from "node:path";
+import { hostTextAntialiasing } from "@dashi/ui";
 import { type NativeHostOptions, type NativeHostTransport, type NativeWindowOptions, spawnNativeHost } from "@mirinjs/metal";
 
 export type Spawn = (binary: string, options: NativeHostOptions) => NativeHostTransport;
@@ -131,6 +132,7 @@ export class WarmHost {
     if (this.spare || this.stopped) return;
     const host = this.spawn(this.options.binary, {
       deferred: true,
+      textAntialiasing: hostTextAntialiasing(),
       env: { MIRIN_METAL_APP_NAME: this.options.appName },
     });
     this.spare = host;
