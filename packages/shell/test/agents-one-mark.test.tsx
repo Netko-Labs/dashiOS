@@ -7,6 +7,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
+import { useState } from "react";
 import { AgentMark } from "../src/agent-mark.tsx";
 import { AgentRuns } from "../src/agents/handoff/store.ts";
 import type { AgentInfo } from "../src/agents/index.ts";
@@ -111,6 +112,27 @@ describe("one sign in the bar (D138)", () => {
     expect(asking.nodeId("agent-mark-agents")).toBeUndefined();
     expect(trees.at(-1)).toContain('"2"');
     asking.unmount();
+  });
+
+  test("the tooltip's words follow what the agents do while the pointer rests on the mark", async () => {
+    const { listeners, transport } = host();
+    const tips: Array<string | null> = [];
+    let say: (tip: string) => void = () => {};
+    function Mark() {
+      const [tip, setTip] = useState("claude · Waiting for you");
+      say = setTip;
+      return <AgentMark need={0} watching={false} open={false} label="" tip={tip} onPress={() => {}} onTip={(shown) => tips.push(shown?.text ?? null)} />;
+    }
+    const root = render(<Mark />, transport);
+    await settle();
+    const node = root.nodeId("agent-mark");
+    if (!node) throw new Error("no mark");
+    const bounds = { x: 900, y: 3, width: 28, height: 22 };
+    for (const listener of listeners) listener({ type: "hover", nodeId: node, hovered: true, bounds });
+    say("claude · Looking at your windows");
+    await settle();
+    expect(tips).toEqual(["claude · Waiting for you", "claude · Looking at your windows"]);
+    root.unmount();
   });
 
   test("the panel: one row for three sessions, Stop cuts off all three, and the idle ones are a line at the foot", async () => {

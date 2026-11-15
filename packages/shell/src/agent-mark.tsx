@@ -135,6 +135,7 @@ export function AgentMark(props: AgentMarkProps) {
   const laid = useRef<Bounds | null>(null);
   // A press or the mark going takes its tooltip down (the latest `onTip`: the bar passes a new one each render).
   const tipped = useRef(false);
+  const tippedAt = useRef<Bounds | null>(null);
   const tipTo = useRef(onTip);
   tipTo.current = onTip;
   useEffect(
@@ -143,6 +144,10 @@ export function AgentMark(props: AgentMarkProps) {
     },
     [],
   );
+  // Its words follow what the agents do while the pointer rests on it.
+  useEffect(() => {
+    if (tipped.current && tippedAt.current) tipTo.current?.(tip === "" ? null : { text: tip, bounds: tippedAt.current });
+  }, [tip]);
   const box = (bounds?: Bounds) => bounds ?? laid.current ?? { x: 0, y: 0, width: 0, height: 0 };
   const asking = need > 0;
   const ink = colour ?? colors.agent;
@@ -164,6 +169,7 @@ export function AgentMark(props: AgentMarkProps) {
       onHoverChange={(hovered: boolean, bounds?: Bounds) => {
         if (tip === "") return;
         tipped.current = hovered;
+        tippedAt.current = hovered ? box(bounds) : null;
         onTip?.(hovered ? { text: tip, bounds: box(bounds) } : null);
       }}
       {...(accessible ? { accessibilityRole: "button" as const, accessibilityLabel: label, accessibilityState: { expanded: open } } : {})}
