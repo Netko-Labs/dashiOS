@@ -3400,3 +3400,34 @@ short words, as the rulebook is written.
   method or a drop of text to do it.
 - **Undo:** `git revert` of this entry's two commits (Calendar; Calculator).
 
+### D145. No surface of Dashi's is declared opaque: the login screen and the lock show the wallpaper
+
+- **Date:** 2026-11-15. `n34`, Dashi on mirin `50241ea` (PR 47:
+  `opaque` on a layer or lock surface).
+- **Question:** a layer or lock surface that says `opaque: true` is opened
+  with no alpha, and an opted-in host (D142) draws subpixel text on it.
+  D142 left "declare the login screen and the lock opaque". Which of
+  Dashi's surfaces are opaque?
+- **Choice:** none, so none is declared. Looked at, not assumed:
+  - The login screen and the lock paint `LOGIN_GROUND`, true black at 72%
+    (`#…b8`, `@dashi/ui` `login-screen.tsx`), over the wallpaper the
+    compositor draws behind: the design's rule ("the wallpaper darkened
+    to 72% black", design.html). Opened opaque, what the tree leaves
+    see-through is over black: the wallpaper would be gone from both.
+  - The menu bar (`menuBar`, alpha `c7` in Light, `e6` in Dark) and the
+    Dock (`99`, `cc`) are glass over the wallpaper; the Dock is rounded.
+  - The launcher (`f5`), menus (`f7`), banners, sheets, the capsule and
+    the switcher are rounded panels with a shadow over whatever is under.
+- **Why:** taking the wallpaper off the login screen and the lock is a
+  change in what a person sees, for an opt-in few will set. It is the
+  owner's to make.
+- **Cost:** in a session opted in to subpixel (D142), windows are
+  subpixel and every surface of the shell, the login screen and the lock
+  included, stays in grays.
+- **To have subpixel there:** the surface must hold what is behind its
+  text: the greeter and the lock would draw the wallpaper themselves (an
+  `<Image>` under the ground) and then say `opaque`, asked only of a host
+  that names `MIRIN_METAL_OPAQUE_SURFACE` (one from before refuses the
+  surface, and a login screen that does not open locks the person out).
+- **Undo:** nothing to undo.
+
