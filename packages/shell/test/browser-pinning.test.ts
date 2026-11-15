@@ -39,11 +39,14 @@ describe("the extension's id is pinned", () => {
 
   // Chromium asks a policy's update_url only for the first install; after it, an extension with no update_url of its
   // own is looked for in the web store, so a profile kept its first version for ever (decisions.md D117).
-  test("the policy's update manifest is asked for updates too, and an older extension is updated as Helium starts", () => {
+  // No `minimum_version_required`: with it Helium 0.9's start on a profile that held an older extension stopped with
+  // SIGTRAP, every time (decisions.md D123).
+  test("the policy's update manifest is asked for updates too, and no minimum version is set", () => {
     const policy = readJson("spin/dashi-helium/etc/chromium/policies/managed/dashi.json") as {
       ExtensionSettings: Record<string, Record<string, string | boolean>>;
     };
-    expect(policy.ExtensionSettings[EXTENSION_ID]).toMatchObject({ override_update_url: true, minimum_version_required: manifest.version });
+    expect(policy.ExtensionSettings[EXTENSION_ID]).toMatchObject({ override_update_url: true });
+    expect(policy.ExtensionSettings[EXTENSION_ID]).not.toHaveProperty("minimum_version_required");
   });
 
   test("the host serves only the pinned extension", () => {

@@ -2686,3 +2686,25 @@ short words, as the rulebook is written.
   input is 400 ms old (D86). A drag still moves their pointer.
 - **Undo:** take the `agent_goes_direct` branch out of `agent_input`
   (`session/agent.rs`).
+
+### D123. The browser policy sets no minimum version for Dashi's extension
+
+- **Date:** 2026-11-14. The `n21` installed pass.
+- **Question:** with D117's `minimum_version_required: "0.9.0"` installed,
+  Helium stopped with SIGTRAP at every start on a profile that already held
+  an older Dashi extension (the VM's 0.5.0 profile, and a profile Helium made
+  itself under the 0.8 packages with 0.8.0): no window, a core dump each
+  time. D117 was proved only with Helium open while the package changed. A
+  new profile was fine. What makes an old profile start and still update?
+- **Choice:** the key is taken out; `override_update_url: true` stays.
+- **Why:** measured in the VM on copies of the 0.8 profile, one key removed
+  at a time: without the minimum version Helium starts and the profile holds
+  0.9.0 within 10 s; with it (with or without `override_update_url`) it
+  stops at start. Chromium's own updater still does the work.
+- **Cost:** the update is no longer forced at the instant of start: an old
+  extension may run for the first seconds, and D117's notice ("Helium needs
+  a restart") covers a Helium that keeps running it. A busy service worker
+  may put the update off until Helium is next opened.
+- **Undo:** put the key back in
+  `spin/dashi-helium/etc/chromium/policies/managed/dashi.json` and in
+  `browser-pinning.test.ts`, once Helium no longer stops on it.

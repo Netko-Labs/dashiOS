@@ -388,7 +388,11 @@ agent ──MCP──> shell ──dashi-browser.sock──> dashi-browser-host 
   well) and `minimum_version_required`, the packaged version
   (`browser-pinning.test.ts` keeps it the manifest's): an older extension is
   turned off and updated from the package at once, when Helium starts and
-  when the policy file changes under a running Helium. Measured in the VM on
+  when the policy file changes under a running Helium. **Taken out again
+  (D123):** with `minimum_version_required` a Helium that starts on a profile
+  holding an older extension stops with SIGTRAP at every start; with
+  `override_update_url` alone it starts and has the packaged version within
+  10 s. Measured in the VM on
   its old profile: 0.5.0 became 0.9.0 within 5 s of the package's install
   with Helium open, and stayed after a restart; the profile's entry kept its
   first install time (an update, not a new install, so what the extension
