@@ -21,6 +21,15 @@ test("at work on another Desktop the row says the Desktop and who the agent says
   expect(lineOf({ space: 1, status: "Working on Desktop 2", detail: "~/.local/bin/claude" }).words).toBe("On Desktop 2 · from ~/.local/bin/claude");
 });
 
+test("while it sees the screen from another Desktop, the chip says so and its name follows, short", () => {
+  expect(lineOf({ space: 3, status: "Taking a screenshot", watching: "screen", remote: true, claims: "dashi-vm-agent", detail: "connected over SSH" })).toEqual(
+    {
+      chip: true,
+      words: "“dashi-vm-agent”",
+    },
+  );
+});
+
 test("a chip that says more than Connected stays, and a row with no Desktop is as it was", () => {
   // Waiting on the person there: the chip says so, and the line says what it does.
   expect(lineOf({ space: 3, status: "Working on Desktop 4", waiting: true, remote: true, claims: "claude-ai" }).chip).toBe(true);

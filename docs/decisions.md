@@ -2330,17 +2330,23 @@ short words, as the rulebook is written.
   cut after the first letter of the agent's name.
 - **Choice:** the ground is the menu's tint without its alpha, edged as a
   menu is: what the notification center already does for the same reason.
-  The row stays one line under its title (never a second): it says the
+  The row stays one line under its title (never a second): with Show in
+  the row, the two buttons sit beside the title and that line runs the
+  row's whole width (the VM showed the name still cut beside Show while
+  the agent saw the screen). It says the
   Desktop and who the agent says it is, "On Desktop 4 · “dev-box”". To
   make the room, that row leaves out the chip when all it would say is
   "Connected" (the row being there says it) and a remote agent's
   "connected over SSH" (its title is "Remote agent"). A chip that says more
-  ("Waiting for you", "Seeing the screen · 0:07") stays, and rows of
-  agents on the Desktop that shows are as they were.
+  ("Waiting for you", "Seeing the screen · 0:07") stays; while it sees or
+  records the screen the chip is followed by the name alone (the Desktop
+  gives way: Show is there). Rows of agents on the Desktop that shows are
+  as they were.
 - **Why:** a panel that says who can see the screen has to be readable
   over anything; and a name cut to one letter reads as a mistake.
-- **Cost:** the panel no longer shows the wallpaper through. A name longer
-  than about 18 letters is still cut, at its end.
+- **Cost:** the panel no longer shows the wallpaper through. A row with
+  Show is about 8 taller than one without. A name longer than about 30
+  letters (23 beside a chip) is still cut, at its end.
 - **Undo:** `PANEL_GROUND` in `agents-panel.tsx`; `rowLine` in
   `lib/agents-rows.tsx`.
 
