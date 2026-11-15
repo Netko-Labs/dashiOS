@@ -9,6 +9,7 @@
 import { realTimers, type Timers } from "../shared/time/index.ts";
 import { checkAnswer } from "./checks.ts";
 import { complete, healthy } from "./lib/complete.ts";
+import { MODEL } from "./lib/model.ts";
 import type { RewriteService } from "./lib/service.ts";
 import { measure } from "./lib/speed.ts";
 import { adviceFor, type SpeedStore, tooSlow } from "./lib/speed-store.ts";
@@ -164,7 +165,8 @@ class ModelRewriter implements Rewriter {
     const left = request.deadlineMs - (this.now() - started);
     if (left <= 0) return failed("deadline", "the model was still loading");
     const maxTokens = words(request.transcript) * 3 + 32;
-    const done = await complete(rewriteMessages(request), {
+    const asked = MODEL.context ? request : { ...request, tone: "", before: "" };
+    const done = await complete(rewriteMessages(asked), {
       socket: service.socket,
       deadlineMs: left,
       maxTokens,

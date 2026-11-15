@@ -203,15 +203,15 @@ A cue is a word that can take back what came before it ("no", "actually", "wait"
 sea"…; `rewrite/lib/words.ts`).
 
 What they cost and what they buy, on the evaluation set with the shipped model: with no
-checks the model damages @@NC_DAMAGE@@ of all sentences and keeps @@NC_RESTRAINT@@ of the
-right ones; with them, @@C_DAMAGE@@ and @@C_RESTRAINT@@. They refuse @@REFUSED@@ of 370
-answers, @@LOST@@ of which were good rewrites (two letters the model laid out on three
+checks the model damages 6.5% of all sentences and keeps 96.5% of the
+right ones; with them, 1.6% (2.4% on the processor) and 98.6%. They refuse 24 of 370
+answers, 4 of which were good rewrites (two letters the model laid out on three
 lines, one filler sentence, one "only" the speaker added while correcting).
 
 ## Languages
 
 English, Spanish, and a sentence that mixes both: the model beats both baselines in each
-(self-corrections fixed, close match: @@SC_EN@@ English, @@SC_ES@@ Spanish, @@SC_MIX@@
+(self-corrections fixed, close match: 76% English, 75% Spanish, 88%
 mixed; the rules alone fix about one in ten). No language is switched off. `offFor` in
 `createRewriter` is where one would be: a request whose first language is in it answers
 `failed: off`. Other languages are not measured; the model was trained to keep the
@@ -231,7 +231,12 @@ candidates, is D170.
   never changes comes first, so the server keeps it evaluated: a dictation costs only its
   own words. Then, in the last message, the vocabulary, the tone and the text before the
   caret, each on its line, and the transcript between tags. With its own prompt the model
-  fixes as much but changes one right sentence in seven; with Dashi's, one in seventy.
+  fixes a little more but changes one right sentence in seven; with Dashi's, one in seventy
+  (D173).
+- **The tone and the text before the caret are not sent to this model** (`MODEL.context`
+  in `rewrite/lib/model.ts`): with them it fixed fewer self-corrections (67% of the English
+  ones, not 76%). The seam carries them for a model that takes them; the vocabulary is
+  always sent.
 - **What it does not do**, and the rules must: fix words that are not words ("dot" for
   "don't": 5%), take out "like" as a filler (9%), write vocabulary names where the heard
   form is other real words ("cloud code": 39%). Replacements, the contraction rule and
@@ -254,15 +259,17 @@ old for this model and has no Vulkan (D172). `DASHI_REWRITE_SERVER` names anothe
 - **A Unix socket**, `$XDG_RUNTIME_DIR/dashi-rewrite.sock` (`DASHI_REWRITE_SOCKET` puts
   it elsewhere), mode 0600 (`UMask=0077`). No TCP port is opened, and the unit may use no
   network at all (`RestrictAddressFamilies=AF_UNIX`). No core dumps (`LimitCORE=0`): they
-  would hold what was said. `NoNewPrivileges`, `Nice=5`.
+  would hold what was said. Its log is kept nowhere (`StandardOutput=null`,
+  `StandardError=null`; `DASHI_REWRITE_LOG=1` keeps it in the journal, for a checkout): it
+  names no word, but it says when and how much. `NoNewPrivileges`, `Nice=5`.
 - **On the processor**, half the threads and eight at most (D171). `DASHI_REWRITE_DEVICE=gpu`
   tries a graphics card instead; the NVIDIA card is never used for this
   (`VK_LOADER_DRIVERS_DISABLE`), so dictating never wakes it.
 - **Warm while in use.** The key going down starts the server (if it is not up), waits
-  for the model, and has it read the fixed part of the prompt: @@RISE@@ on the development
+  for the model, and has it read the fixed part of the prompt: about 2 s on the development
   laptop, so a first dictation shorter than that lands by rule (`starting`). After that
   each dictation costs its own words only.
-- **What it holds:** @@RSS@@ of memory while it is up, none of the graphics card's, no
+- **What it holds:** 1 GB of memory while it is up, none of the graphics card's, no
   processor time while idle; nothing once it is stopped.
 - The protocol is llama-server's own (`POST /v1/chat/completions`, streamed, temperature
   0, thinking off); `rewrite/lib/complete.ts` is the only code that speaks it.
@@ -291,8 +298,8 @@ one sentence of sixteen words three times and keeps the middle time in
 | 800 ms to 2.5 s | lands by rule and is refined, always | "It takes a moment here: your words land first, and are corrected right after." |
 | over 2.5 s | the model is not used (`too-slow`) | "This computer is too slow for it, so dictation tidies by rule." |
 
-On the development laptop the test says @@SPEED@@: `advice()` is "once, 1200 ms" up to
-about @@ONCE_WORDS@@ words.
+On the development laptop the test says 236 ms: `advice()` is "once, 1200 ms" up to
+about 54 words.
 
 ## The evaluation set
 
@@ -332,7 +339,7 @@ bun packages/shell/test/support/rewrite-eval/run.ts --system model --socket /pat
 
 `packages/shell/test/rewrite-*.test.ts`: the checks, case by case; the rewriter against a
 scripted server on a Unix socket (`test/support/rewrite-server.ts`): text, unchanged,
-refused, the deadline, an abort, a server still loading, one that does not come up, off,
+refused, what is and is not sent, the deadline, an abort, a server still loading, one that does not come up, off,
 no model, too slow, the key starting it once, the idle stop; the unit's command; the
 speed test's advice; the scorer and the set. `settings-voice-corrections.test.tsx`: the
 row. `cargo test -p dashi-voice`: the set is pinned and sized.
@@ -343,6 +350,7 @@ row. `cargo test -p dashi-voice`: the set is pinned and sized.
 - Three self-corrections in ten are left as said (never made worse): the hard ones are a
   phrase started again with no cue ("Lo que pasa es que, el problema es que…") and the
   owner's rows 11 and 25. A Dashi fine-tune is the plan for these (D176).
-- Tone: the profile's line is sent, but this model was not trained to follow one and the
-  set does not measure it.
+- Tone and the text before the caret: taken by the seam, not used by this model (above).
+- Gemma 4 E2B (3.1 GB) cleans more than this model does (non-words, fillers, names) and is
+  as careful; it is the one to offer as a second, larger fetch, or to swap to (D170).
 - `dashi-llama` has not been built as a package.

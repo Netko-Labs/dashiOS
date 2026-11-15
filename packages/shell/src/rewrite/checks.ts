@@ -29,17 +29,22 @@ export const OVERLAP_FLOOR = 0.7;
 /** An answer may have this many words more than the transcript, for a split word or a mended one. */
 export const LONGER_BY = 2;
 
-const TAGS = /<\/?transcript>|<\|[^|>]*\|>|<\/?think>|^\s*(?:assistant|user|system)\s*:/im;
+const TAGS = /<\/?transcript>|<\|[^|>]*\|>|<\/?think>/i;
+/** A chat role at the head of the answer, which the transcript did not start with itself. */
+const ROLE = /^\s*(?:assistant|user|system)\s*:/i;
+
+const CONTEXT_LINES = /^(?:(?:Vocabulary|Tone|Already typed)[^\n]*\n)+/;
 
 /**
  * The answer with the frame taken off, when the model gave the message back around its answer:
  * the lines before the transcript ("Vocabulary: …") and the tags themselves, if they are whole.
  */
 function unframed(answer: string): string {
-  let text = answer.trim();
-  const open = text.lastIndexOf(OPEN);
-  if (open >= 0 && /^(?:(?:Vocabulary|Tone|Already typed)[^\n]*\n)*$/.test(text.slice(0, open))) text = text.slice(open + OPEN.length).trim();
-  if (open >= 0 && text.endsWith(CLOSE)) text = text.slice(0, -CLOSE.length).trim();
+  let text = answer.trim().replace(CONTEXT_LINES, "").trim();
+  if (text.startsWith(OPEN)) {
+    text = text.slice(OPEN.length).trim();
+    if (text.endsWith(CLOSE)) text = text.slice(0, -CLOSE.length).trim();
+  }
   return text;
 }
 
@@ -133,7 +138,7 @@ function overlap(said: readonly string[], kept: readonly string[], vocabulary: r
 export function checkAnswer(transcript: string, answer: string, vocabulary: readonly string[] = []): Checked {
   const text = unframed(answer);
   if (text === "") return { ok: false, check: "empty" };
-  if (TAGS.test(text)) return { ok: false, check: "tags" };
+  if (TAGS.test(text) || (ROLE.test(text) && !ROLE.test(transcript))) return { ok: false, check: "tags" };
   const said = wordsOf(transcript);
   const kept = wordsOf(text);
   if (kept.length === 0) return { ok: false, check: "empty" };

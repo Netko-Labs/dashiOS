@@ -8,4 +8,10 @@ export const MODEL = {
   set: "rewrite",
   file: "SpeakoFlow-Mini-0.8B-Q4_K_M.gguf",
   bytes: 541_903_616,
+  /**
+   * Whether the tone and the text before the caret are sent. Not to this model: with them it fixed
+   * 67% of English self-corrections instead of 76% (docs/dictation-rewrite.md, "The model"). The
+   * vocabulary is always sent.
+   */
+  context: false,
 } as const;

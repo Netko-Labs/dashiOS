@@ -2,6 +2,7 @@ import { afterEach, expect, test } from "bun:test";
 import { MODEL } from "../src/rewrite/lib/model.ts";
 import type { RewriteService } from "../src/rewrite/lib/service.ts";
 import type { Speed, SpeedStore } from "../src/rewrite/lib/speed-store.ts";
+import { rewriteMessages } from "../src/rewrite/prompt.ts";
 import { createRewriter, type RewriterOptions, WORDS_MOST } from "../src/rewrite/rewriter.ts";
 import type { RewriteRequest } from "../src/rewrite/types.ts";
 import { handTimers, type ScriptedServer, type Step, scriptedServer } from "./support/rewrite-server.ts";
@@ -81,15 +82,22 @@ test("an answer that fails a check is refused, and names the check", async () =>
   expect(await rewriter.rewrite(request("Meet me at five, no, I mean six."))).toMatchObject({ kind: "failed", why: "refused", detail: "earlier" });
 });
 
-test("the vocabulary, the tone and the text before the caret go before the transcript, cut to size", async () => {
+test("the vocabulary goes before the transcript, cut to fifty; the tone and the caret's text are not sent to this model", async () => {
   const { rewriter, scripted } = rig([{ say: "Ask Claude Code." }]);
   const vocabulary = ["Claude Code", ...Array.from({ length: 80 }, (_, nth) => `Term${nth}`)];
-  await rewriter.rewrite(request("Ask cloud code.", { vocabulary, tone: "Casual.", before: `${"x".repeat(300)} the end` }));
+  await rewriter.rewrite(request("Ask cloud code.", { vocabulary, tone: "Casual.", before: "Something typed before." }));
   const last = scripted.asked.at(-1)?.messages.at(-1)?.content ?? "";
   expect(last.startsWith("Vocabulary: Claude Code, Term0, ")).toBe(true);
   expect(last).toContain("Term48");
   expect(last).not.toContain("Term49");
-  expect(last).toContain("\nTone: Casual.\n");
+  expect(last).not.toContain("Casual.");
+  expect(last).not.toContain("Something typed before.");
+  expect(last.endsWith("\n<transcript>\nAsk cloud code.\n</transcript>")).toBe(true);
+});
+
+test("the prompt has a place for the tone and for the text before the caret, cut to 200 characters, for a model that takes them", () => {
+  const last = rewriteMessages({ transcript: "Hello.", vocabulary: [], tone: "Casual.", before: `${"x".repeat(300)} the end` }).at(-1)?.content ?? "";
+  expect(last).toContain("Tone: Casual.\n");
   expect(last).toMatch(/before this \(do not repeat it\): x{192} the end\n<transcript>/);
 });
 
@@ -148,7 +156,7 @@ test("a language the model is off for, an empty transcript, a transcript too lon
 
 test("the key going down starts the server once, primes it, and times it the first time only", async () => {
   const speed = memory(null);
-  const { rewriter, scripted, calls, hand } = rig([{ say: "a" }, { say: "b" }, { say: "c" }], { speed });
+  const { rewriter, scripted, calls, hand } = rig([{ say: "x" }, { say: "a" }, { say: "x" }, { say: "b" }, { say: "x" }, { say: "c" }], { speed });
   scripted.up = false;
   expect(rewriter.state()).toBe("asleep");
   rewriter.warm();
@@ -162,8 +170,8 @@ test("the key going down starts the server once, primes it, and times it the fir
     return rewriter.state() === "ready";
   });
   expect(calls.start).toBe(1);
-  // One priming request, then the test sentence three times.
-  expect(scripted.asked.length).toBe(4);
+  // One priming request, then the test sentence three times, another sentence before each.
+  expect(scripted.asked.length).toBe(7);
   expect(scripted.asked[0]?.maxTokens).toBe(4);
   expect(speed.written.map((written) => written.model)).toEqual([MODEL.file]);
 });

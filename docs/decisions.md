@@ -3431,3 +3431,215 @@ short words, as the rulebook is written.
   surface, and a login screen that does not open locks the person out).
 - **Undo:** nothing to undo.
 
+
+### D170. The model that corrects dictation is SpeakoFlow Mini, a fine-tuned 0.8B, not a prompted 3 to 4B
+
+- **Date:** 2026-11-15. `d1`, branch `v09/rewrite`. The numbers are in
+  `dashi-0.9.0-review/24-rewrite/README.md`; the contract is
+  `docs/dictation-rewrite.md`.
+- **Question:** which small model rewrites a transcript on this computer
+  (the owner's must: "no, I mean…" lands as the corrected words), at which
+  quantisation? The research's order of testing put prompted 3 to 4B models
+  first and a fine-tune of a 0.6 to 1B model as a later goal.
+- **Choice:** **SpeakoFlow Mini** (`SpeakoFlow/speakoflow-mini`,
+  Apache-2.0, a fine-tune of Qwen3.5 0.8B, itself Apache-2.0), at **Q4_K_M**
+  (542 MB). Seven candidates were run through 370 pairs (192 English, 114
+  Spanish, 64 mixed), all with Dashi's prompt and checks:
+
+  | Q4 unless said | Size | Right sentences left alone | Self-corrections fixed: en / es / mixed | All edits | Damage | 16 words on the processor |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | Do nothing | – | 100.0% | 0% / 0% / 0% | 9% | 0.0% | – |
+  | The rules alone | – | 98.6% | 5% / 4% / 6% | 17% | 0.3% | – |
+  | **SpeakoFlow Mini 0.8B** (fine-tuned) | 542 MB | 98.6% | 76% / 75% / 88% | 61% | 2.4% | 0.26 s |
+  | Gemma 4 E2B | 3.11 GB | 98.6% | 72% / 69% / 84% | 76% | 1.1% | 0.49 s |
+  | SmolLM3-3B | 1.92 GB | 96.5% | 67% / 69% / 69% | 65% | 1.6% | 0.65 s |
+  | Qwen3-4B | 2.50 GB | 92.3% | 74% / 69% / 78% | 68% | 2.7% | 1.02 s |
+  | Qwen3-0.6B (Q8) | 639 MB | 94.4% | 66% / 48% / 56% | 52% | 3.8% | 0.28 s |
+  | Granite 4.0 H 1B | 901 MB | 93.7% | 66% / 25% / 38% | 46% | 3.2% | 0.42 s |
+  | Qwen3.5-0.8B (the base, prompted) | 533 MB | 97.2% | 9% / 8% / 9% | 18% | 2.4% | 0.34 s |
+
+- **Why:**
+  1. It is the best at the must in each language, and it leaves right
+     sentences alone as often as the rules do (98.6%).
+  2. It is the smallest and the fastest: a sentence in a quarter of a
+     second on the processor alone, holding 1 GB, so the default needs no
+     graphics card and fits a small machine.
+  3. Q8 (834 MB) scores the same within the set's noise, and is slower.
+  4. The research's guess held for the base: the same 0.8B, only prompted,
+     fixes one self-correction in ten; fine-tuned, three in four.
+  5. **Gemma 4 E2B is the one that could have been chosen instead**, and
+     this is a judgement, not a clear win: prompted, it is as careful
+     (98.6%), nearly as good at the must, and far better at everything
+     else (non-words 86%, fillers 86%, names 61%, the owner's corpus 57%
+     against 24%). It costs 3.1 GB to fetch, 4.3 GB of memory while up,
+     half a second for a sentence and 1.4 s for forty words on the
+     processor (so it would refine, or need the integrated card: D171). What
+     it does better is what rules do for nothing (D174); what SpeakoFlow
+     Mini does better is the one thing rules cannot. On the 60 held-out
+     pairs: SpeakoFlow Mini 33 of 34 left alone and 17 of 22 fixed; Gemma
+     33 of 34 and 16 of 22.
+- **Cost:** one developer's fine-tune, published in 2026: if the repository
+  goes, the fetch breaks (the file is pinned by commit and SHA-256, and the
+  licence lets Dashi mirror it). It does not fix non-words or names heard as
+  other words: the rules do (D174). If stage 1's rules do not land, Gemma 4
+  E2B is the better model for the owner's corpus, and the lead should swap.
+- **Undo:** the model is three lines in `rewrite/lib/model.ts` and one
+  `File` in `crates/dashi-voice/src/models/manifest.rs`; the prompt and the
+  checks do not change with the model. Run the set first
+  (`docs/dictation-rewrite.md`, "The evaluation set").
+
+### D171. The model runs on the processor, and never on the NVIDIA card
+
+- **Date:** 2026-11-15. `d1`.
+- **Question:** the laptop has an integrated Radeon 890M (the desktop is
+  drawn on it), an NVIDIA card (asleep, or the owner's games) and 24
+  threads. Where does the model run by default?
+- **Choice:** on the processor: `-ngl 0`, half the threads and eight at
+  most, `Nice=5`. `DASHI_REWRITE_DEVICE=gpu` tries a graphics card through
+  Vulkan; the NVIDIA driver is disabled for the server either way.
+- **Why:** measured on the laptop with the chosen model: sixteen words in
+  0.26 s on the processor and 0.16 s on the integrated card; forty-two
+  in 0.63 s and 0.41 s. The card is faster by a tenth of a second, which
+  nobody sees under a 1.2 s limit, and it costs what could not be measured
+  without touching the session: the compositor draws on the same card, and
+  a burst of compute may drop its frames. The processor path works on every
+  machine, with no Vulkan driver to go wrong. The NVIDIA card: measured once, 0.07 s and 0.26 s, but its first request took 20 s and the server then kept a processor thread spinning while idle; it is the owner's gaming card, and is left alone.
+- **Cost:** on a weak processor the speed test will say "refine" or "too
+  slow" where an integrated card might have been quick enough. Eight
+  threads are busy for a fifth of a second per dictation.
+- **Undo:** `deviceOf` in `rewrite/lib/service.ts`; to make the card the
+  default, first measure dropped frames in the VM's session and on the
+  laptop with the owner.
+
+### D172. llama.cpp's server, as a separate program on a Unix socket, in a package of Dashi's own
+
+- **Date:** 2026-11-15. `d1`.
+- **Question:** how does the shell reach the model: linked into
+  dashi-voice, a child of dashi-voice, Fedora's `llama-cpp` package, or a
+  unit of its own?
+- **Choice:** `llama-server` (llama.cpp, MIT) runs as the user unit
+  `dashi-rewrite`, started by the shell with `systemd-run --user` on the
+  first dictation and stopped after ten idle minutes, listening on
+  `$XDG_RUNTIME_DIR/dashi-rewrite.sock` (0600) with
+  `RestrictAddressFamilies=AF_UNIX`, `NoNewPrivileges`, `LimitCORE=0`. It
+  comes from a new package, `dashi-llama`, at
+  `/usr/libexec/dashi/llama/`, which `dashi` recommends.
+- **Why:**
+  - Not linked: llama.cpp is C++ with its own GPU backends; as a program it
+    keeps its licence to itself, crashes alone, and is stopped to free its
+    memory.
+  - Not a child of dashi-voice: that service hears the microphone and holds
+    1.8 GB of speech models; the rewrite model has another life (ten idle
+    minutes) and another owner (the shell decides when to rewrite).
+  - Not Fedora's `llama-cpp`: Fedora 44 has build 6153, which predates
+    Qwen3.5, is built for ROCm (`hipblas`) and has no Vulkan.
+  - A transient unit, not a unit file: its whole definition is one function
+    (`serverCommand`), tested, and it carries the model's path and the
+    device, which a static unit would need a wrapper for.
+- **Cost:** a package to build and keep current (the spec is written and
+  **not built**: it needs `glslc`, which the laptop lacks). The server's
+  HTTP dialect is llama.cpp's and has changed before: `rewrite/lib/complete.ts`
+  is the only code that speaks it.
+- **Undo:** `unitService` returns null when the program is not there, and
+  dictation tidies by rule: removing the package is the undo.
+
+### D173. Dashi's own prompt and checks around the model, not the prompt it was trained with
+
+- **Date:** 2026-11-15. `d1`.
+- **Question:** SpeakoFlow Mini's card says to send its own system prompt
+  and the bare transcript, "with nothing added". Dashi has a vocabulary, a
+  tone and the text before the caret to pass, and its own idea of what must
+  never be changed.
+- **Choice:** Dashi's prompt (`rewrite/prompt.ts`: seven rules, fifteen
+  example turns, then the vocabulary, the tone, the text before the caret
+  and the transcript in tags) and Dashi's checks (`rewrite/checks.ts`,
+  twelve of them) on every answer.
+- **Why:** measured both ways, on the 370 pairs and then on 60 written
+  after the prompt and the checks were frozen:
+
+  | | Right sentences left alone | Self-corrections fixed (en / es / mixed) | Damage | Names from the vocabulary |
+  | --- | --- | --- | --- | --- |
+  | Its own prompt, no checks | 85.9% (held-out: 73.5%) | 81% / 85% / 94% | 13.2% (18.3%) | 4% |
+  | Its own prompt, Dashi's checks | 98.6% (94.1%) | 79% / 81% / 94% | 2.7% (3.3%) | 13% |
+  | Dashi's prompt, no checks | 96.5% (94.1%) | 78% / 79% / 88% | 6.5% (8.3%) | 43% |
+  | **Dashi's prompt, Dashi's checks** | **98.6% (100%)** | **76% / 75% / 88%** | **1.6% (0%)** | **43%** |
+
+  (These rows ran on the integrated card. On the processor, which ships,
+  the last row reads 98.6% (97.1%: 33 of 34), 76% / 75% / 88%, 2.4% (1.7%):
+  the same weights answer a few sentences differently on the two devices.)
+
+  With its own prompt the model fixes a few more corrections and drops a
+  real "No," or "Actually," from one right sentence in seven (one in four
+  on sentences it had not been tuned around): the checks then carry the
+  whole weight, and they were written against this set. With Dashi's
+  examples the model itself is careful, and the checks are a second line.
+  What a person forgives least is their own words changed.
+- **Cost:** three to six self-corrections in a hundred that the model's own
+  prompt would have fixed. The fifteen examples are about 1,100 tokens,
+  read once when the server comes up. The tone and the text before the
+  caret have a place in the prompt but are **not sent to this model**
+  (`MODEL.context`): with them it fixed 67% / 71% / 84% of
+  self-corrections instead of 76% / 75% / 88%. The vocabulary is sent.
+- **Undo:** `rewriteMessages(request, rules)` takes other rules; the runner
+  has `--system speakoflow` to measure the model's own prompt again.
+
+### D174. The model takes words back; the rules keep everything else
+
+- **Date:** 2026-11-15. `d1`.
+- **Question:** the same model could also lay out lists, fix words that are
+  not words, take out "like", and write names from the vocabulary. Should
+  dictation ask it to?
+- **Choice:** no. The model is there for what a rule cannot decide: what
+  the speaker took back. Lists are the rules' and the profile's (the checks
+  refuse an answer that adds or removes a line break); non-words, dropped
+  contractions, fillers and names are stage 1's.
+- **Why:** measured: this model fixes 5% of non-words, 9% of "like", 39% of
+  names heard as other real words, and turned "shouldt" into "should" (the
+  `negation` check now refuses that). A rule does each of these every time,
+  and for nothing.
+- **Cost:** until stage 1 has the contraction rule, replacements and "like"
+  by position (`v09/dictate`), rows 1 to 6, 9, 10, 17, 19 and 21 of the
+  owner's corpus land as heard.
+- **Undo:** the `lines` check in `rewrite/checks.ts` is what keeps lists
+  out; the prompt's rule 5 already asks for non-words and names, for a
+  model that does them.
+
+### D175. A sentence lands once, under 1.2 s; a long dictation lands by rule and is refined
+
+- **Date:** 2026-11-15. `d1`.
+- **Question:** wait for the model and land once, or land the rules' text
+  and replace it (research 3.1, "the wait")? Under which deadline?
+- **Choice:** by a one-time speed test (sixteen words, three times, the
+  middle time kept in `rewrite-speed.json`): when a transcript is expected
+  to take under 0.8 s, dictation waits and lands **once**, with 1.2 s as
+  the limit; a longer one, or any on a slower machine, lands by rule and is
+  **refined** (limit: twice the expected time, 8 s at most); over 2.5 s for
+  the test sentence the model is not used. The server starts on the key
+  going down and stops after ten idle minutes.
+- **Why:** on the laptop the test says 236 ms, so everything up to
+  about 54 words lands once, in 212 ms at the median and
+  341 ms nine times in ten: under the 300 ms at which the capsule would say
+  "tidying". Text that lands and then changes is worse than text that lands
+  right a moment later, but only for a moment that short.
+- **Cost:** the first dictation after ten idle minutes: the server needs
+  about 2 s (3 s the very first time, when the speed test runs) to come up, so a first hold shorter than that lands by rule
+  (`starting`). While it is up it holds 1 GB of memory.
+- **Undo:** `ONCE_MS`, `TOO_SLOW_MS`, `REFINE_MOST_MS` in
+  `rewrite/lib/speed-store.ts`; `IDLE_MS` in `rewrite/rewriter.ts`.
+
+### D176. A Dashi fine-tune is written down, not started
+
+- **Date:** 2026-11-15. `d1`.
+- **Question:** the plan's third step is a Dashi fine-tune of a sub-1B
+  model for English, Spanish and mixed repairs. Is it still needed, and
+  what does it take?
+- **Choice:** not started, and not needed to ship: a fine-tune that does
+  the job exists under Apache-2.0 (D170). What a Dashi one would be for,
+  and what it needs, is in `dashi-0.9.0-review/24-rewrite/README.md`,
+  "A Dashi fine-tune".
+- **Why:** what is left after D170 is one self-correction in four (a
+  phrase started again with no cue word, the owner's rows 11 and 25), and
+  the caution Dashi now gets from fifteen examples and twelve checks, which
+  a model trained on Dashi's own pairs would have by itself.
+- **Cost:** none now.
+- **Undo:** nothing to undo.
