@@ -73,6 +73,7 @@ impl Windows {
             unified: false,
             title_images: Default::default(),
             fullscreen: None,
+            wants_fullscreen: false,
             space: 0,
             away_at: None,
             away_rank: 0,

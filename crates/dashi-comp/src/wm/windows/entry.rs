@@ -35,6 +35,9 @@ pub(crate) struct Entry {
     pub title_images: crate::wm::by_scale::ByScale<titlebar::Image>,
     /// Full screen on this output, and the outer frame to go back to.
     pub fullscreen: Option<(String, Rectangle<i32, Logical>)>,
+    /// An X11 app asked for full screen before the shell knew the window;
+    /// told once it does (xwayland/fullscreen.rs).
+    pub wants_fullscreen: bool,
     /// The Space it is on.
     pub space: usize,
     /// Where it was while its Space is not shown.

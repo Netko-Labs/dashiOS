@@ -41,6 +41,7 @@ impl Dashi {
 
     /// Ask the shell where window `id` goes.
     pub(crate) fn start_placing(&mut self, id: WindowId) {
+        self.x11_note_fullscreen(id);
         let listening = self.ipc.has_subscribers();
         let Some(entry) = self.windows.get_mut(id) else {
             return;
@@ -181,6 +182,7 @@ impl Dashi {
             self.ipc.emit(Event::WindowOpened { window });
             self.foreign_opened(id);
         }
+        self.x11_tell_fullscreen(id);
     }
 
     /// The area the menu bar and Dock leave free on the screen under the pointer (global logical).

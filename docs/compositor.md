@@ -38,7 +38,13 @@ shell's client:
   them only while an X11 window has the keyboard. `_NET_ACTIVE_WINDOW`, which
   X11Wm ignores, is heard on a second X connection (`xwayland/activate.rs`):
   a minimized or hidden window comes back, as does one a pager asks for or
-  any while an X11 app has the keyboard; others want attention.
+  any while an X11 app has the keyboard; others want attention. A third
+  connection (`xwayland/probe.rs`) reads what X11Wm does not:
+  `_NET_WM_STATE_FULLSCREEN` set before a window shows, and the screens in
+  X11's pixels. A window keeps the size its app asked for in those pixels
+  (`scale.rs`), full screen asked before the shell knows the window is told
+  once it does, and a full-screen X11 window is sized to its screen's own
+  pixels (`fullscreen.rs`; decisions.md D106, D107).
 - **Window management mechanics:** `windows.rs`, `layout.rs` (drag-to-tile
   zones), `fullscreen.rs`, `spaces/` (`switch`), `overview/` (`scene`,
   `input`), `motion/` (animations), `grabs/resize_grab.rs`, `title.rs` and

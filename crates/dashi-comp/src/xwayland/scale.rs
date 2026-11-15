@@ -6,7 +6,10 @@
 //! shell sets) draw sharp. smithay converts X11 geometry, input, and outputs
 //! for that client; this sets the scale and makes everyone hear about it.
 
-use smithay::xwayland::XWaylandClientData;
+use smithay::{
+    utils::{Logical, Rectangle},
+    xwayland::{X11Surface, XWaylandClientData},
+};
 
 use crate::state::Dashi;
 
@@ -29,6 +32,18 @@ impl Dashi {
         self.xwayland.scale = scale;
         self.apply_xwayland_scale();
         Ok(())
+    }
+
+    /// A new X11 window's place and size in points. X11Wm reads them with
+    /// the scale cut to a whole number (1.75 as 1), so at a fractional scale
+    /// a window that asked for 800 pixels was taken for 800 points and, once
+    /// placed, made 1400 pixels: 1.75 times what its app asked, and twice
+    /// scaled for an app that had sized itself from `Xft.dpi`. Said again
+    /// here with the real scale, before anything is configured from it.
+    pub(super) fn x11_read_geometry(&self, surface: &X11Surface) {
+        if let Some(real) = real_geometry(surface.geometry(), self.xwayland.scale) {
+            let _ = surface.configure(real);
+        }
     }
 
     /// Give Xwayland's client the scale, and resend what depends on it: the
@@ -54,5 +69,44 @@ impl Dashi {
                 let _ = x11.configure(None);
             }
         }
+    }
+}
+
+/// What `read` (pixels over the scale's whole part) is in points; None when it is right already.
+fn real_geometry(read: Rectangle<i32, Logical>, scale: f64) -> Option<Rectangle<i32, Logical>> {
+    let cut = scale.trunc();
+    if cut == scale {
+        return None;
+    }
+    let real = |v: i32| (f64::from(v) * cut / scale).round() as i32;
+    Some(Rectangle::new(
+        (real(read.loc.x), real(read.loc.y)).into(),
+        (real(read.size.w).max(1), real(read.size.h).max(1)).into(),
+    ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::real_geometry;
+    use smithay::utils::Rectangle;
+
+    #[test]
+    fn a_window_of_800_pixels_is_457_points_at_one_and_three_quarters() {
+        let read = Rectangle::new((560, 300).into(), (800, 600).into());
+        let real = Rectangle::new((320, 171).into(), (457, 343).into());
+        assert_eq!(real_geometry(read, 1.75), Some(real));
+    }
+
+    #[test]
+    fn whole_scales_were_read_right() {
+        let read = Rectangle::new((0, 0).into(), (400, 300).into());
+        assert_eq!(real_geometry(read, 1.0), None);
+        assert_eq!(real_geometry(read, 2.0), None);
+        // 2.5 was cut to 2: 1000 pixels read as 500 points are 400.
+        let wide = Rectangle::new((0, 0).into(), (500, 500).into());
+        assert_eq!(
+            real_geometry(wide, 2.5).map(|r| r.size),
+            Some((400, 400).into())
+        );
     }
 }

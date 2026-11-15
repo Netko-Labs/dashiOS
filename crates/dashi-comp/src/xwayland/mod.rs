@@ -6,10 +6,13 @@
 //! tooltips (override-redirect windows) go where the app puts them. Its scale
 //! (`scale.rs`) is the shell's: above 1, X11 apps draw at the screen's pixels.
 //! An app asking for its window back (`_NET_ACTIVE_WINDOW`) is heard on a
-//! connection of dashi-comp's own (`activate.rs`).
+//! connection of dashi-comp's own (`activate.rs`). Full screen asked for
+//! before a window shows, and its exact size, are in `fullscreen.rs`.
 
 mod activate;
 mod focus;
+mod fullscreen;
+mod probe;
 mod scale;
 mod selection;
 mod server;

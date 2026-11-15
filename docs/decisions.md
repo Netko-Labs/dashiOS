@@ -2252,3 +2252,72 @@ short words, as the rulebook is written.
   only.
 - **Undo:** `git revert` of this entry's commit brings `rowPress` and
   `pressed()` back.
+
+### D106. An X11 window keeps the size its app asked for, in X11's pixels
+
+- **Date:** 2026-11-14. The `n18-x11` agent's.
+- **Question:** on a screen at 1.75, X11 apps draw in the screen's pixels
+  (`appearance.x11Apps: sharp`) and are told the size to draw at through
+  `Xft.dpi`. smithay's X11Wm reads a new window's size with the scale cut to
+  a whole number (1.75 as 1), so a window that asked for 800 by 600 pixels
+  was taken for 800 by 600 points and, when placed, made 1400 by 1050
+  pixels. At 2 the same window stayed 800 by 600 pixels. Which is right?
+- **Choice:** the app's pixels, at every scale: the size is read again with
+  the real scale as the window is made (`xwayland/scale.rs`,
+  `x11_read_geometry`), so placing it sends back the size it has.
+- **Why:** the window manager was scaling a size that was already in
+  pixels. GLFW and SDL (sdl2-compat) asked for 800 by 600 and were made
+  1400 by 1050; an app that sizes itself from `Xft.dpi` (Qt, Chromium,
+  Steam: not tried here) is scaled twice that way; and a game that keeps
+  its size in pixels and asks for it again (Neverball saves 1920 by 1200)
+  is given 1.75 times its screen and draws past its window, which is the
+  likely cause of the picture drawn too large in `07-games/installed`.
+  1.75 now behaves as 2 always did, and as `xwayland-scale.ts` says ("an
+  app that ignores it draws small").
+- **Cost:** an X11 app that ignores `Xft.dpi` (GLFW: Minecraft's window at
+  854 by 480) opens 1.75 times smaller on a 1.75 screen than it did, at the
+  size it has on a screen at 2. A size is kept in whole points, so a width
+  that is no whole number of points moves by one pixel when the window is
+  first configured.
+- **Undo:** empty `new_window` in `xwayland/wm.rs`.
+
+### D107. An X11 window asks for full screen before the shell knows it, and covers its screen in X11's pixels
+
+- **Date:** 2026-11-14. The `n18-x11` agent's.
+- **Question:** SDL sets `_NET_WM_STATE_FULLSCREEN` on its window before it
+  shows and asks again as it shows; GLFW asks as it shows. smithay's X11Wm
+  never reads the property, and dashi-comp dropped a request for a window
+  the shell had not heard of yet (it has not drawn), so a game that starts
+  full screen came up as a window. And a full-screen frame is kept in whole
+  points: 1920 by 1200 at 1.75 was 1098 by 686 points, sent back as 1922 by
+  1201 pixels.
+- **Choice:** dashi-comp keeps a connection of its own to Xwayland
+  (`xwayland/probe.rs`) and, as a new X11 window is placed, reads the
+  property; a request that comes before the window is announced is kept on
+  it; a window with no frame that is exactly a screen's size counts as
+  asking too. The shell hears `fullscreen` right after `window-opened` and
+  decides as for any request. In full screen an X11 window gets the whole
+  points nearest its screen's own pixels, as RandR gives them
+  (`xwayland/fullscreen.rs`): 1097 by 686, which is 1920 by 1201. A size
+  an app asks for while full screen (GLFW and SDL do as they leave) becomes
+  the size it goes back to. A window that asks before the shell knows it
+  is made its screen's size at once (the screen under the pointer) and
+  told it is full screen: a game sizes its picture as its window is made
+  and waits only a moment for the answer (Neverball never looks again, and
+  drew 800 by 600 in a corner of a full screen without this).
+- **Why:** the policy stays the shell's (it may give the window its own
+  Desktop); the compositor only stops losing the request. The nearest size
+  because a game draws to the size it is told.
+- **Cost:** two waited-for requests to Xwayland when an X11 window opens and
+  one when one goes full screen. The window shows at its place for a
+  moment before it fills the screen. A game that started full screen and
+  leaves it comes back as a window the size of the screen, with a title
+  bar: that is the frame the shell saw it open with (`arrange-frames.ts`
+  frames it back to it), whatever size the game asks for as it leaves. One
+  row of pixels too many at 1.75
+  (cut off at the bottom): the exact size cannot be said in whole points,
+  and only the window manager's connection may size a window (tried: a
+  resize from the probe's connection comes back to X11Wm as a request).
+  Exact needs smithay to take a size in pixels.
+- **Undo:** drop the calls to `x11_note_fullscreen`, `x11_tell_fullscreen`
+  and `x11_screen_frame`.

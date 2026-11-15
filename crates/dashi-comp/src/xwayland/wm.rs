@@ -58,7 +58,9 @@ impl XwmHandler for Dashi {
         }
     }
 
-    fn new_window(&mut self, _xwm: XwmId, _window: X11Surface) {}
+    fn new_window(&mut self, _xwm: XwmId, window: X11Surface) {
+        self.x11_read_geometry(&window);
+    }
     fn new_override_redirect_window(&mut self, _xwm: XwmId, _window: X11Surface) {}
 
     fn map_window_request(&mut self, _xwm: XwmId, surface: X11Surface) {
@@ -119,6 +121,11 @@ impl XwmHandler for Dashi {
         h: Option<u32>,
         _reorder: Option<Reorder>,
     ) {
+        // In full screen it stays its screen; the size is for after (fullscreen.rs).
+        if self.x11_size_after_fullscreen(&surface, w, h) {
+            let _ = surface.configure(None);
+            return;
+        }
         // An X11 app may size itself; where it goes is the shell's.
         let mut geometry = surface.geometry();
         if let Some(w) = w {
@@ -263,6 +270,14 @@ impl Dashi {
 
     fn ask_shell_x11(&mut self, surface: &X11Surface, asked: Asked, on: bool) {
         let Some(id) = self.x11_announced(surface) else {
+            // Asked before the shell knows the window: told once it does (fullscreen.rs).
+            if let (Asked::Fullscreen, Some(id)) = (asked, self.x11_id(surface)) {
+                if on {
+                    self.x11_size_for_fullscreen(id);
+                } else if let Some(entry) = self.windows.get_mut(id) {
+                    entry.wants_fullscreen = false;
+                }
+            }
             return;
         };
         self.ipc.emit(asked.event(id, on));

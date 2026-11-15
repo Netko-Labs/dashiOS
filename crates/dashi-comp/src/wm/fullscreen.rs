@@ -66,6 +66,8 @@ impl Dashi {
                 }
                 entry.tiled = false;
             }
+            // An X11 window covers the screen in X11's own pixels (xwayland/fullscreen.rs).
+            let screen = self.x11_screen_frame(&window, screen);
             configure(&window, Some(screen.size), Some(&output));
             super::actions::x11_follow(&window, screen.loc);
             if away {
