@@ -2107,6 +2107,8 @@ short words, as the rulebook is written.
 
 ### D100. A marquee asks its window where the items are painted
 
+**Superseded by D134:** the scroll view says where it is and how far it is scrolled, and takes a scroll; nothing is asked through the simulation channel.
+
 - **Date:** 2026-11-14. The `n15-marquee` agent's.
 - **Question:** the rectangle must stay on the items while they scroll, and
   scroll them at the edges. Metal tells an app neither where a scroll view
@@ -2435,6 +2437,8 @@ short words, as the rulebook is written.
 - **Undo:** take `height: ROW` off the grip in `list.tsx` `NameCell`.
 
 ### D113. The keyboard's item is scrolled into view by asking the window
+
+**Superseded by D134:** the same sum, on what the scroll view says, sent to the view itself.
 
 - **Date:** 2026-11-14. The `n19-polish` agent's.
 - **Question:** ↑ or ⇧↑ past the top of what shows left the selection off
@@ -3006,3 +3010,41 @@ short words, as the rulebook is written.
 - **Undo:** `git revert` of this commit brings `drawn.ts` and its callers
   back.
 
+### D134. A listing's scroll view says where it stands, and is scrolled through its handle
+
+- **Date:** 2026-11-15. The `n28` take-up, finished by `n29` (mirin
+  `5703b91`, PR 34).
+- **Question:** D100 and D113 asked the window where the items were
+  painted (every 150 ms during a drag, once or twice per key) and scrolled
+  through the simulation channel, because Metal said nothing of a scroll
+  view. Now a view that scrolls has `onScroll` and its `ref` is a
+  `ViewHandle`. What is built on them?
+- **Choice:** `ScrollPlace` (`shared/file-browser/lib/marquee/place.ts`),
+  one per browser, fed by the listing's scroll view (the grid's
+  `ScrollView`; the list's through `Table`'s new `scroll` prop): its
+  `onLayout` is where the view is in the window, its `onScroll` how far the
+  content has gone under it, its `ref` scrolls it. The content's top left
+  is the view's less the offset. The marquee is worked out again whenever
+  either changes (a wheel or a touchpad mid-drag, its own scrolling at an
+  edge, the view moving), with no timer that asks. The keyboard's item is
+  shown by the same sum as D113 and one `scrollTo`. A scroll asked for is
+  told back a frame later: until then the place counts it (250 ms at
+  most), so a tick or a key that repeats goes on from where the last one
+  was sent. `WindowSurface` is now one question, `scrolls()` (the host's
+  `protocol` said `scroll`). Calendar's hours are scrolled the same way
+  (`scrollTo` on the hours' `ref`, an offset and no longer "to the top,
+  then down"), and its `scroll` prop from `main.tsx` is gone.
+- **Why not `scrollIntoView()` for the keyboard's item:** it would need a
+  `ref` kept for every tile and row, and it shows an item "the least":
+  D113's rule that the first and last rows take the listing all the way
+  (the grid's padding, the room under a list's last row) would be lost.
+- **Why:** the host knows; the 150 ms look made a wheel mid-drag lag the
+  rectangle by up to that long, and each look carried every painted node.
+- **Cost:** on a host that says no `scroll` (none ships with Dashi: the
+  host is built from the same mirin) nothing is dragged out, the
+  keyboard's item is not scrolled to, and Calendar's hours open at
+  midnight. D100's way is not kept beside the new one. Still through the
+  simulation channel, and left: Notes' and Text Editor's scroll to the
+  caret (`apps/notes/main.tsx`, `apps/editor/main.tsx`) and Settings'
+  scroll to a searched row (`src/overlay.tsx`).
+- **Undo:** `git revert` of this commit.

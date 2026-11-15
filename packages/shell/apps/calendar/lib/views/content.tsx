@@ -40,7 +40,6 @@ export function CalendarContent({
   keysOpen,
   onLayout,
   importPath,
-  scroll,
 }: {
   state: CalendarState;
   firstDay: number;
@@ -56,7 +55,6 @@ export function CalendarContent({
   keysOpen: boolean;
   onLayout: (bounds: Bounds) => void;
   importPath: (path: string) => void;
-  scroll: (testID: string, dy: number) => void;
 }) {
   const colors = useColors();
   const { dropping, onDrop } = useIcsDrop(importPath);
@@ -78,17 +76,7 @@ export function CalendarContent({
           handlers={grid.handlers}
         />
       ) : (
-        <TimeGrid
-          days={days}
-          today={today}
-          now={now}
-          prefs={prefs}
-          occurrences={occurrences}
-          colorOf={colorOf}
-          state={grid.state}
-          handlers={grid.handlers}
-          scroll={scroll}
-        />
+        <TimeGrid days={days} today={today} now={now} prefs={prefs} occurrences={occurrences} colorOf={colorOf} state={grid.state} handlers={grid.handlers} />
       )}
       {dropping && (
         <View

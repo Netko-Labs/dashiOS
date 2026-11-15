@@ -38,7 +38,7 @@ import { CalendarToolbar, headingOf, ToolbarCenter } from "./toolbar.tsx";
 
 export const CALENDAR_SIZE = { width: 1120, height: 740 } as const;
 
-export function CalendarWindow({ model, chooser, scroll }: { model: CalendarModel; chooser: IcsChooser; scroll: (testID: string, dy: number) => void }) {
+export function CalendarWindow({ model, chooser }: { model: CalendarModel; chooser: IcsChooser }) {
   const { clock: prefs, firstDay } = useRegionPrefs();
   const [area, setArea] = useState<Bounds>({ x: 0, y: 0, width: CALENDAR_SIZE.width, height: CALENDAR_SIZE.height });
   // The content sits right of the sidebar, so together they are the window's width (Metal records no bounds for the root).
@@ -103,7 +103,6 @@ export function CalendarWindow({ model, chooser, scroll }: { model: CalendarMode
         keysOpen={!overlays.modal && grid.popover === null && find.search === null && overlays.menu === null}
         onLayout={setArea}
         importPath={files.importPath}
-        scroll={scroll}
       />
     </AppWindow>
   );
