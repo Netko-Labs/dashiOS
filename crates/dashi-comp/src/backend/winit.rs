@@ -44,9 +44,17 @@ pub(crate) fn init(
     handle: &LoopHandle<'static, Dashi>,
     state: &mut Dashi,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // `DASHI_NESTED_SIZE=1200x300`: a smaller window, for a measurement that needs little of the screen.
+    let (width, height) = std::env::var("DASHI_NESTED_SIZE")
+        .ok()
+        .as_deref()
+        .and_then(virtual_size)
+        .map_or((1280.0, 800.0), |size| {
+            (f64::from(size.w), f64::from(size.h))
+        });
     let attributes = WindowAttributes::default()
         .with_title("Dashi (nested)")
-        .with_inner_size(LogicalSize::new(1280.0, 800.0));
+        .with_inner_size(LogicalSize::new(width, height));
     let (mut backend, winit) = winit::init_from_attributes::<GlesRenderer>(attributes)?;
     let mode = Mode {
         size: backend.window_size(),
@@ -180,7 +188,8 @@ fn redraw(state: &mut Dashi) {
     state.send_frames(&output);
 }
 
-/// `DASHI_NESTED_SCREEN=1920x1080`: a size for the nested session's second screen.
+/// `DASHI_NESTED_SCREEN=1920x1080`: a size for the nested session's second screen
+/// (and `DASHI_NESTED_SIZE`, the nested window's own).
 fn virtual_size(text: &str) -> Option<smithay::utils::Size<i32, smithay::utils::Physical>> {
     let (w, h) = text.trim().split_once('x')?;
     let (w, h) = (w.parse::<i32>().ok()?, h.parse::<i32>().ok()?);

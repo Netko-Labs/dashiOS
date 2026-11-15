@@ -3250,3 +3250,51 @@ short words, as the rulebook is written.
   shell does not have; the call is then refused as unknown. Both are
   installed from one package.
 - **Undo:** `OWN_SERVER = false` in `bin/dashi-mcp.ts`.
+
+### D141. The Dock's slide is slow because the engine holds a surface without the keyboard to 30 frames a second; Dashi does not pretend the Dock is the active window
+
+- **Date:** 2026-11-15. `n32`, the owner's "dock sliding from bottom edge
+  is laggy", on the laptop, since the install on sumi.
+- **What was measured** (the laptop's AMD GPU, a nested `dashi-comp` in a
+  1200 × 300 window at scale 1.75, the real `startDock` driven by
+  `packages/shell/bench/dock-slide.tsx`, 20 entrances each, medians): the
+  Dock sends a patch every 16 ms on every host. The host Dashi 0.9 installs
+  (mirin `5703b91`, sumi) draws 18 frames for an entrance's 47 patches, one
+  every 48 ms; the host before it (`ba4612d`, gpui 0.2.2) drew 49, one
+  every 16 ms. Subpixel or grayscale text makes no difference (18 and 18).
+  Opening the surface is not it: the first frame is 162 ms after the
+  pointer reaches the edge on the new host and 167 ms on the old, 120 ms
+  of which is the wait at the edge (`AUTOHIDE.revealMs`).
+- **Cause:** sumi draws a window that is not the active one at most every
+  33.3 ms (`WindowOptions::inactive_frame_interval`), and a layer surface
+  that takes no keyboard is never active. A frame put off is tried again
+  on a 16.67 ms timer, so with a patch every 16 ms it is the third that is
+  drawn. The same host given `inactive_frame_interval: None` for desktop
+  surfaces (eight lines in mirin's `crates/mirin-metal/src/surface.rs`)
+  draws 49 frames, one every 16 ms.
+- **Question:** it is mirin's to fix, and mirin's `main` is not this
+  branch's to change. Does Dashi work around it meanwhile? It could: a
+  host takes `{"sim":{"kind":"window","action":"activate"}}` and then
+  counts its window as the active one.
+- **Choice:** no. That line is a check's tool; it tells a screen reader
+  that the Dock became the active window at every entrance, while the
+  keyboard stays in the app. The Dock's code is unchanged: its motion was
+  never the fault. The finding, the numbers, the patch and the smallest
+  program that shows it are in
+  `dashi-0.9.0-review/19-dock-lag/README.md`, "For mirin"; packages built
+  with a host that has the patch are what the owner tries.
+- **What else it holds back:** everything a surface without the keyboard
+  animates: the capsule's dots, a banner, the menu bar's capsules, the
+  taskbar. A surface that holds the keyboard (the launcher, a menu,
+  Control Center) is active and is not held back; the launcher's entrance
+  is the compositor's (`layer-motion`). The same engine holds every
+  window, active or not, to 30 frames a second while the power profile is
+  `power-saver`: for mirin to decide with Dashi.
+- **Kept for later:** the Dock still starts a host for every entrance. On
+  a quiet machine that costs about 45 ms; with every core busy it took
+  250 to 500 ms on either engine, and past 500 ms the slide starts before
+  anything is on screen (`armEntrance`'s wait). A host kept for the
+  session, as the capsule and the launcher have, would end that.
+- **Cost:** until the host has mirin's fix the Dock slides at about 21
+  frames a second.
+- **Undo:** nothing to undo.
