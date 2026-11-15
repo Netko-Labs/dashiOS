@@ -2365,3 +2365,31 @@ short words, as the rulebook is written.
   layer of Dashi's, that would say "bring it back". Not built: unproved,
   and it is a listener of its own.
 - **Undo:** nothing to undo.
+
+### D110. An agent's click, scroll and typing reach an on-screen Wayland window without the person's seat
+
+- **Date:** 2026-11-14. The `n18-x11` agent's. Extends D85.
+- **Question:** the server tells agents "the person's pointer and focus stay
+  where they are", but on the Space that shows every action in an app that
+  hears one seat (Dashi's own, Chromium's family) borrowed the person's
+  seat after a two-second pause: their pointer jumped and their keyboard
+  went to the agent's window.
+- **Choice:** with `borrow`, a move, a click, a scroll and keys that are not
+  the clipboard's go to an on-screen Wayland window the way D85 sends them
+  off screen (`session/agent_direct.rs`): straight to the app, the seat
+  untouched, the window neither raised nor focused, the agent's pointer
+  drawn. The seat is still borrowed for what only it can do: X11 windows, a
+  press held and its release (drags, and an app's own window move), a
+  window's lights, copy, cut and paste, and `borrow {idleMs: 0}`. The
+  agent now waits for the person's pause in that one window (their own
+  press there 2 s old), no longer the whole desktop.
+- **Why:** it makes the words true for click, type_text, press_keys and
+  scroll, and an agent no longer stalls while the person works in another
+  window.
+- **Cost:** the app sees its keyboard enter and leave once per request (a
+  popup that closes when the keyboard leaves closes between requests); a
+  window behind another is clicked where it is, unseen; in the person's own
+  app, their pointer or keyboard steps aside for the request once their
+  input is 400 ms old (D86). A drag still moves their pointer.
+- **Undo:** take the `agent_goes_direct` branch out of `agent_input`
+  (`session/agent.rs`).

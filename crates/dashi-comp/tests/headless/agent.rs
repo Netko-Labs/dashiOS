@@ -35,7 +35,8 @@ fn an_agent_acts_in_one_window_with_its_own_seat() {
             .unwrap()
             .contains("outside")
     );
-    let busy = json!({ "window": id, "label": "Claude", "pointer": { "x": 20, "y": 30 }, "borrow": { "idleMs": 60000 } });
+    // A press held is the seat's (a click or a move would go straight to the app: agent_direct.rs).
+    let busy = json!({ "window": id, "label": "Claude", "pointer": { "x": 20, "y": 30 }, "action": "press", "borrow": { "idleMs": 60000 } });
     // The refusal names how long until the seat is free.
     let refused = ipc.request("agent-input", busy)["error"]
         .as_str()

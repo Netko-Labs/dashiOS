@@ -7,8 +7,15 @@
  *    `person-input` events), input to that window waits until they have left
  *    it alone for QUIET_MS; the call is told "the person is using this window".
  *  - Apps that listen only to the person's seat (Metal apps today, and
- *    probably Chromium's family) can't hear the agent seat. For those, one
- *    action borrows the person's seat, and the compositor refuses unless the
+ *    probably Chromium's family) can't hear the agent seat. A click, a scroll
+ *    or typing there goes straight to the app on that seat's own pointer and
+ *    keyboard, the seat left alone (`borrow` says the app is one of these:
+ *    comp/src/session/agent_direct.rs, decisions.md D110): the person's
+ *    pointer and focus stay where they are; the compositor refuses while the
+ *    person's own press in that window is under QUIET_MS old, and the call
+ *    waits as below. What only the seat can do (an
+ *    X11 window, a drag, a window's lights, copy and paste) borrows the
+ *    person's seat for one action, and the compositor refuses unless the
  *    person's own input is QUIET_MS old (a page keeping the screen awake,
  *    and the agent's own actions, don't count: session/idle.rs); the call
  *    waits up to WAIT_MS for a pause ("Waiting for you to pause" in the menu
