@@ -619,10 +619,10 @@ Dora is 660 ms and where Dora hands back 480 ms (Heart to Heart is
 760 ms). Where the voice changes, each side keeps a sentence's pause and
 no more, 300 ms after the last sound and 150 ms before the first, and the
 cut edge is faded over 5 ms so there is no step to hear as a click
-(`service/seam.rs`). Measured on the command line's file of the owner's
-four sentences: 440 ms and 320 ms, the largest step in the pause 0.005 of
-full scale, as in any pause of one voice. `speed` is the same for every
-voice.
+(`service/seam.rs`). Measured on the service's own sound in the VM, the
+owner's four sentences recorded from a null sink: 440, 320 and 420 ms, and
+the largest step inside a pause 0.0012 of full scale (0.0013 in a pause
+between two sentences of one voice). `speed` is the same for every voice.
 
 **How it is read.** A voice reads by its own language's rules; a tag with a
 region changes them where eSpeak NG has others: Spanish with a region that
@@ -648,6 +648,11 @@ are made into words first (`engine/kokoro/reading.rs`):
 | `9:00`, `9:05` | nine o'clock, nine oh five | nueve en punto, nueve y cinco | "nine zero zero" |
 | `1,000` | one thousand | mil | "uno coma cero cero cero" |
 | `&`, `+`, `=` | and, plus, equals | y, más, igual a | nothing |
+
+"sh" between two vowels in a Spanish sentence ("Dashi", "sushi") is given
+to eSpeak as "ch", the nearest sound Spanish has: eSpeak's Spanish said it
+as s ("Dasi"). At a word's start or end it keeps the sound ("show",
+"flash") and the word is left alone.
 
 Measures: km, m, cm, mm, kg, g, mg, l, ml, h, min, ms, km/h, °, °C, °F, KB,
 MB, GB, TB, px, after a number or written against it. French, Italian and
@@ -726,7 +731,7 @@ dashi-voice [--models DIR] <command>
   serve [--socket PATH]                            the service
   transcribe [--language LANG] [--json] FILE.wav   the words in a WAV file
   speak [--voice ID] [--language LANG] [--voices LANG=ID,…] [--hint LANG] [--one-voice]
-        [--read-as LANG] [--speed N] [--json] --out FILE.wav TEXT…
+        [--same-voice | --mix] [--speed N] [--json] --out FILE.wav TEXT…
   levels                                           each voice's loudness, pitch and pace
   models [--verify]                                the models, and which are here
   fetch [SET…]                                     fetch models (listen and speak, unless named)
@@ -735,8 +740,8 @@ dashi-voice [--models DIR] <command>
 ```
 
 - `transcribe` reads PCM or float WAV at any rate, any channels. With
-  `--json`: `text`, `audio_ms`, `speech_ms`, `load_ms`, `ms`,
-  `real_time_factor`.
+  `--json`: `text`, `language` (as `heard` tells it), `audio_ms`,
+  `speech_ms`, `load_ms`, `ms`, `real_time_factor`.
 - `speak` says what the service would, seams and levels as it would:
   `--voices`, `--hint` and `--one-voice` are `speak`'s `voices`, `hint` and
   `by_language: false`. `--json` prints `voice`, `audio_ms`, `load_ms`,
@@ -744,11 +749,12 @@ dashi-voice [--models DIR] <command>
   `language`, `phonemes`, `level_db`, the hush before and after it
   (`lead_ms`, `tail_ms`), and its words and times; the WAV is 24 kHz,
   16-bit, one channel.
-- Two experiments are the command line's alone, for listening: `--read-as
-  es` has the voice named read everything by Spanish rules (Heart's own
-  sound with Spanish phonemes: the same speaker, with an accent), and a
-  voice written `ef_dora+af_heart` is the mean of the two (a voice between
-  them). The service does neither.
+- Two experiments are the command line's alone, for listening. With
+  `--same-voice` a sentence of another language is said by the voice asked
+  for, read by that language's rules (Heart's own sound with Spanish
+  phonemes: the same speaker, with an accent). With `--mix` it is said by
+  the mean of the two voices (`ef_dora+af_heart`: a voice between them).
+  The service does neither.
 - `levels` prints a line of JSON for each installed voice: `level_db`,
   `peak`, `pitch_hz`, `phonemes_per_s`. Its levels and pitches are the
   table in `engine/kokoro/levels.rs`.

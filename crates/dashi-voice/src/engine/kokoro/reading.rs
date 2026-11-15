@@ -151,7 +151,38 @@ pub(super) fn said(body: &str, before: Option<&str>, tongue: Tongue, tag: &str) 
         let name = if one(amount) { name.1.0 } else { name.1.1 };
         return Some(name.to_owned());
     }
-    (number(body) && plain(body, tongue) != body).then(|| plain(body, tongue))
+    if number(body) && plain(body, tongue) != body {
+        return Some(plain(body, tongue));
+    }
+    hushed(body, tongue)
+}
+
+/// Spanish has no "sh". eSpeak says it between two vowels as s ("Dashi" came
+/// out "Dasi", "sushi" "susi"); Spanish speakers say it there with the sound
+/// of "ch", the nearest their language has, so that is what eSpeak is
+/// given. At a word's start or end eSpeak keeps the sound ("show", "flash").
+fn hushed(body: &str, tongue: Tongue) -> Option<String> {
+    if tongue != Tongue::Spanish {
+        return None;
+    }
+    let vowel = |c: char| "aeiouáéíóúAEIOUÁÉÍÓÚ".contains(c);
+    let letters: Vec<char> = body.chars().collect();
+    let mut said = String::with_capacity(body.len());
+    let mut changed = false;
+    for (at, letter) in letters.iter().enumerate() {
+        let between = at > 0
+            && at + 2 < letters.len()
+            && vowel(letters[at - 1])
+            && letters[at + 1].eq_ignore_ascii_case(&'h')
+            && vowel(letters[at + 2]);
+        match letter {
+            's' if between => said.push('c'),
+            'S' if between => said.push('C'),
+            _ => said.push(*letter),
+        }
+        changed |= between && letter.eq_ignore_ascii_case(&'s');
+    }
+    changed.then_some(said)
 }
 
 #[cfg(test)]

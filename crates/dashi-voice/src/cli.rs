@@ -27,7 +27,7 @@ pub(crate) const USAGE: &str = "dashi-voice [--models DIR] <command>
   serve [--socket PATH]                          the service (docs/voice.md)
   transcribe [--language LANG] [--json] FILE.wav the words in a WAV file
   speak [--voice ID] [--language LANG] [--voices LANG=ID,…] [--hint LANG] [--one-voice]
-        [--read-as LANG] [--speed N] [--json] --out FILE.wav TEXT…
+        [--same-voice | --mix] [--speed N] [--json] --out FILE.wav TEXT…
                                                  say TEXT into a WAV file
   levels                                         each voice's loudness, pitch and pace
   models [--verify]                              the models, and which are here
@@ -198,10 +198,13 @@ fn transcribe(store: Store, mut rest: Vec<String>) -> Result<(), String> {
     let audio_ms = samples.len() as u64 * 1000 / u64::from(LISTEN_RATE);
     if as_json {
         let speech_ms = gate.speech().len() as u64 * 1000 / u64::from(LISTEN_RATE);
+        // The language of the words, as `heard` tells it: none when they give too little.
+        let language = crate::tongue::evidence(&text, &crate::tongue::Tongue::ALL)
+            .map(crate::tongue::Tongue::code);
         let factor = took as f64 / audio_ms.max(1) as f64;
         println!(
             "{}",
-            json!({ "text": text, "audio_ms": audio_ms, "speech_ms": speech_ms, "load_ms": load_ms, "ms": took, "real_time_factor": factor })
+            json!({ "text": text, "language": language, "audio_ms": audio_ms, "speech_ms": speech_ms, "load_ms": load_ms, "ms": took, "real_time_factor": factor })
         );
     } else {
         println!("{text}");

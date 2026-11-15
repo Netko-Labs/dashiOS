@@ -99,3 +99,15 @@ fn spanish_thousands_with_commas_are_thousands_and_words_are_left_alone() {
         assert_eq!(es(word), None, "{word}");
     }
 }
+
+#[test]
+fn sh_between_vowels_is_said_in_spanish_as_its_speakers_say_it() {
+    assert_eq!(es("Dashi").as_deref(), Some("Dachi"));
+    assert_eq!(es("sushi").as_deref(), Some("suchi"));
+    assert_eq!(es("WASHINGTON").as_deref(), Some("WACHINGTON"));
+    // Where eSpeak keeps the sound, the word is left alone.
+    for kept in ["show", "flash", "dashboard", "casa", "Shakira"] {
+        assert_eq!(es(kept), None, "{kept}");
+    }
+    assert_eq!(en("Dashi"), None);
+}

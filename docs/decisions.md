@@ -3486,7 +3486,7 @@ short words, as the rulebook is written.
 - **Cost:** the pair is another speaker: four characters are Dora in
   Spanish and two are Alex. The same voice with Spanish phonemes, and a
   mix of two voices, would keep more of the speaker; both are on the
-  command line (`--read-as`, `a+b`) for the owner to hear, and neither is
+  command line (`--same-voice`, `--mix`) for the owner to hear, and neither is
   offered until ears say it is better. Sentences of one voice keep the
   model's own pause (760 ms for Heart), longer than a seam's.
 - **Undo:** empty `MEASURED` in `levels.rs` (no gain, pairs by order); set
