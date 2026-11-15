@@ -7,8 +7,8 @@
 # (spin/copr-publish turns the builders' network on): the registry's, and the
 # ones Cargo.lock pins by git commit (wgpu, and Zed's forks of async-process,
 # calloop, font-kit, khronos-egl and xim-rs, with smol-rs/async-task). Cargo
-# clones those itself; no git is needed. mirin's forks/sumi/rust-toolchain.toml
-# is rustup's file: Fedora's cargo does not read it, and nothing is downloaded.
+# clones those itself; no git is needed. Once mirin tags a release, this
+# builds from its source tarball with --offline instead (decisions.md D131).
 %global debug_package %{nil}
 %{!?cargo_target:%global cargo_target %{_builddir}/cargo-target}
 

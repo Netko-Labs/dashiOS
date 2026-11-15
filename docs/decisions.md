@@ -2919,3 +2919,25 @@ short words, as the rulebook is written.
 - **Undo:** `MIN_OPEN_MS` and `REOPEN_MS` in `capsule/lib/surface.ts` as in
   `d93574ad`.
 
+### D131. The Metal host is built from `../mirin`'s HEAD until mirin tags a release
+
+- **Date:** 2026-11-15. The `n28` take-up (mirin `a41eac5`, PR 38). The
+  lead's decision.
+- **Question:** each mirin release will now publish
+  `mirin-metal-<version>-source.tar.xz` and its `.sha256`, with the crates
+  inside, which builds with `--offline`. No release has been tagged since,
+  so there is no tarball. Build one ourselves, or wait?
+- **Choice:** wait. `spin/build-rpms` goes on archiving `../mirin`'s HEAD
+  and the package goes on fetching its crates (D127). Nothing in the build
+  changes now: `forks/sumi/rust-toolchain.toml` is gone from mirin, and
+  only the spec's comment spoke of it.
+- **When mirin tags a release:** `spin/build-rpms` downloads the release's
+  tarball and its `.sha256` and checks one against the other in place of
+  `git archive` (the spec's `Source0` and `Version` are the release's, not
+  a snapshot's); `%build` runs `cargo build --release --locked --offline`;
+  the builders need no network for this package, so D127's cost goes for
+  it; `spin/license-dependencies` reads the tarball's lockfile.
+  `@mirinjs/metal`'s TypeScript must come from the same tag.
+- **Cost:** until then a build needs the network, as D127 says.
+- **Undo:** nothing to undo.
+
