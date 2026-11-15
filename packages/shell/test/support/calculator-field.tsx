@@ -1,9 +1,6 @@
 /**
- * The Calculator against a stand-in for the Metal host's field that keeps its
- * own buffer and caret as the host does (mirin `window::sync_inputs` and
- * `selection::SelectionState`): typing edits it and reports the text, then the
- * caret; a tree resets it to a value the app set (not one it reported), and to
- * the tree's selection. Events and trees cross with the lag a real round trip
+ * The Calculator against a stand-in for the Metal host's field
+ * (`host-field.ts`). Events and trees cross with the lag a real round trip
  * has, all at once (`roundTrips`) or one way at a time (`hear`, `takeTrees`).
  */
 
@@ -11,12 +8,12 @@ import { afterAll, beforeAll } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import * as metal from "@mirinjs/metal";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { EN_US } from "../../apps/calculator/lib/locale.ts";
 import { FRESH } from "../../apps/calculator/lib/store.ts";
 import { CalculatorWindow } from "../../apps/calculator/lib/view.tsx";
 import type { Clipboard } from "../../apps/kit/index.ts";
+import { HostField, type InputProps } from "./host-field.ts";
 import { settle, shows } from "./time.ts";
 
 /** The Calculator's state file goes to a folder of the test's own, for the file that calls this. */
@@ -35,29 +32,6 @@ export function ownRuntimeDir(): void {
   });
 }
 
-/**
- * The host's `textHash` (mirin's FNV-1a over UTF-16 code units), when this
- * mirin has it: a mirin that does drops a selection made in a text the app has
- * since replaced (lib/field-texts.ts), which typing faster than a round trip needs.
- */
-export const mirinHash = (metal as Record<string, unknown>).textHash as ((text: string) => number) | undefined;
-function textHash(text: string): number {
-  if (mirinHash) return mirinHash(text);
-  let hash = 0x811c9dc5;
-  for (let at = 0; at < text.length; at += 1) hash = Math.imul(hash ^ text.charCodeAt(at), 0x01000193) >>> 0;
-  return hash >>> 0;
-}
-
-type Range = [number, number];
-const same = (a: Range | null, b: Range | null): boolean => a !== null && b !== null && a[0] === b[0] && a[1] === b[1];
-
-interface InputProps {
-  id: string;
-  value: string;
-  revision?: number;
-  selection?: { start: number; end: number };
-}
-
 function findInput(node: unknown, id: string): InputProps | null {
   if (typeof node !== "object" || node === null) return null;
   const { type, props, children } = node as { type?: string; props?: InputProps; children?: unknown[] };
@@ -69,88 +43,8 @@ function findInput(node: unknown, id: string): InputProps | null {
   return null;
 }
 
-/** The host's field: its buffer, caret, and what it has told the app and not yet heard back. */
-class HostField {
-  buffer = "";
-  anchor = 0;
-  caret = 0;
-  private synced = "";
-  private revision = 0;
-  private echoes: string[] = [];
-  private selectionSynced: Range | null = [0, 0];
-  private selectionEchoes: Range[] = [];
-  private reported: Range = [0, 0];
-  readonly out: NativeEvent[] = [];
-
-  constructor(readonly id: string) {}
-
-  private range(): Range {
-    return [Math.min(this.anchor, this.caret), Math.max(this.anchor, this.caret)];
-  }
-
-  private report(): void {
-    const now = this.range();
-    if (same(now, this.reported)) return;
-    this.reported = now;
-    this.selectionEchoes.push(now);
-    this.out.push({ type: "selection", nodeId: this.id, start: now[0], end: now[1], textHash: textHash(this.buffer) } as NativeEvent);
-  }
-
-  /** A key typed: it replaces the selection, and the field says so (text, then caret). */
-  type(char: string): void {
-    const [start, end] = this.range();
-    this.buffer = this.buffer.slice(0, start) + char + this.buffer.slice(end);
-    this.anchor = this.caret = start + char.length;
-    this.echoes.push(this.buffer);
-    this.out.push({ type: "change", nodeId: this.id, value: this.buffer });
-    this.report();
-  }
-
-  /** The person selects in the field, which says so. */
-  select(anchor: number, caret: number): void {
-    this.anchor = anchor;
-    this.caret = caret;
-    this.report();
-  }
-
-  /** A tree arrived with the field in it. */
-  take(props: InputProps): void {
-    let reset = false;
-    const revision = props.revision ?? 0;
-    if (revision !== this.revision) {
-      this.revision = revision;
-      reset = true;
-    } else if (props.value !== this.synced) {
-      const echoed = this.echoes.indexOf(props.value);
-      if (echoed >= 0) this.echoes.splice(0, echoed + 1);
-      else reset = true;
-    }
-    this.synced = props.value;
-    if (reset) {
-      this.echoes = [];
-      this.buffer = props.value;
-      this.anchor = this.caret = props.value.length;
-    }
-    const wanted: Range | null = props.selection ? [props.selection.start, props.selection.end] : null;
-    let moved = reset;
-    if (wanted) {
-      let driverSets = reset;
-      if (!reset && !same(wanted, this.selectionSynced)) {
-        const echoed = this.selectionEchoes.findIndex((range) => same(range, wanted));
-        if (echoed >= 0) this.selectionEchoes.splice(0, echoed + 1);
-        else driverSets = true;
-      }
-      if (driverSets) {
-        this.selectionEchoes = [];
-        this.anchor = Math.min(wanted[0], this.buffer.length);
-        this.caret = Math.min(wanted[1], this.buffer.length);
-        moved = true;
-      }
-    }
-    this.selectionSynced = wanted;
-    if (moved) this.report();
-  }
-}
+/** What a host that carries typing onto an app's write says of itself (whole trees, no patches). */
+const REBASES: NativeEvent = { type: "protocol", nodeId: "root", patches: 0, rebase: true };
 
 export async function mount() {
   const trees: string[] = [];
@@ -167,6 +61,7 @@ export async function mount() {
   // The line itself, however many turns the file's first render takes in a busy run; then what it set going.
   const id = await shows(root, "line");
   await settle();
+  for (const listener of listeners) listener(REBASES);
   const field = new HostField(id);
   let taken = trees.length;
   for (const tree of trees) {

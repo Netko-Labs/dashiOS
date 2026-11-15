@@ -2711,6 +2711,8 @@ short words, as the rulebook is written.
 
 ### D124. Keys typed before Calculator's line took a keypad key land after it; the agent's path is left as it is
 
+**Superseded by D129:** mirin's host now types such keys again on the line's text, and the line's kept texts are gone.
+
 - **Date:** 2026-11-14. The `n22` final fixes.
 - **Question:** an agent's click on 7 and `type_text "*6="` sent at once
   left 76 on Calculator's display and no sum, three times of five (D110's
@@ -2856,3 +2858,45 @@ short words, as the rulebook is written.
   checked: they are downloaded PNG, JPEG or WebP.
 - **Undo:** `resolveIcon` in `shared/apps/icons.ts`, `tiff` in
   `shared/files/kinds.ts`, and the five callers of `hostDrawsFile`.
+
+### D129. Calculator's line trusts the host to carry typing onto a key pressed meanwhile
+
+- **Date:** 2026-11-15. The `n28` take-up of mirin Metal (mirin `a41eac5`, PR 33).
+- **Question:** D124 kept up to eight of the line's older texts, to read
+  what the field typed before it took a keypad key. mirin now does this
+  where it belongs: the host types those keys again on the app's text (a
+  rebase) and the driver never passes on a change made on a text the app
+  has replaced. What is left for Calculator to do?
+- **Choice:** D124's kept texts are removed (`sent`, and reading against
+  several texts): the reducer is as it was before D124. Three things mirin's
+  answer needs from the app, each small:
+  1. The host reports the keys it typed again as **one** change ("7", then
+     "\*6=" arrives as "7\*6="). Several characters put in at once that
+     are all keys are done one by one, as typed ("=" works the sum out);
+     anything else is still read as a paste. ❖V is the app's own paste, so
+     the field never pastes by itself.
+  2. A key the line refuses (a letter, a space) is taken out of the field
+     25 ms after the field's last word, not at once. Taking it out is a new
+     `valueRevision`, which the host answers with a reset that drops what
+     was typed since: an agent's "12 + 3" typed at once lost the "+ 3". The
+     wait is longer than the gap between an agent's keys (2 to 5 ms) and
+     shorter than a person's.
+  3. A caret at the end of the line is not sent as `selection`. The host
+     keeps the caret with the keys it typed again, and then put it where
+     the tree's `selection` said (the app's caret, made before it knew of
+     those keys): the next key landed in front of them ("12", + on the
+     keypad, "3\*4-5=" typed gave −5, 39 crossings of 150).
+- **Why:** the three were found with a stand-in for the host that does what
+  mirin's does (`test/support/host-field.ts`, from `value.rs` and
+  `field/rebase.rs`), in the crossings D124's test already ran: 150 of 150
+  in both of its cases now.
+- **Cost:** on a host without `rebase` (none ships with Dashi: the host is
+  built from the same mirin) the D124 race is back: a click on 7 and
+  "\*6=" within a round trip gives 76. Return pressed within a round trip
+  of a keypad key works out the line without what was typed (a `submit`
+  carries the field's text as it was; "=" is not affected). A keypad key
+  pressed with the caret inside the line, and keys typed within the same
+  round trip, can still land one place early (3 needs mirin: a rebase
+  should not take the tree's `selection`).
+- **Undo:** `fe547913` and `ec811ee3` are D124's two commits.
+

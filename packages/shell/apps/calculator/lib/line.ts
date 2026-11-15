@@ -92,6 +92,9 @@ function typedText(char: string, locale: NumberLocale): string {
   return operatorFor(char) ?? "";
 }
 
+/** Whether a typed character puts something in the line. */
+export const isTypedKey = (char: string, locale: NumberLocale): boolean => typedText(char, locale) !== "";
+
 /** Pasted text as what it puts in the line, or null when it is refused (see the header). */
 export function pastedText(text: string, locale: NumberLocale): string | null {
   const one = parsePasted(text, locale);
