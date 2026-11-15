@@ -19,7 +19,7 @@ code, mirin's does.
   carries it out and reports back.
 - TypeScript defines the UI. Every Dashi surface (menu bar, Dock, sheets,
   Settings, the apps, the login screen) is React rendered through
-  `@mirinjs/metal`, and mirin's Metal host (`mirin-metal-host`, GPUI) draws it.
+  `@mirinjs/metal`, and mirin's Metal host (`mirin-metal-host`, on sumi, mirin's engine) draws it.
   Shell and apps never draw pixels themselves.
 
 When a feature needs both, split it at that line: the compositor exposes a
@@ -111,7 +111,7 @@ pair: `bun scripts/list-rename.ts OLD NEW`. It never adds an entry.
 | greeter | `packages/greeter` (`@dashi/greeter`): the login screen, greetd's greeter. |
 | Dashi UI | `packages/dashi-ui` (`@dashi/ui`): Dashi's own components and palettes. |
 | metal-ui | `@mirinjs/metal-ui` (mirin): shadcn/ui ported to Metal. |
-| Metal host | `mirin-metal-host`: mirin's native process that draws a React tree with GPUI. |
+| Metal host | `mirin-metal-host`: mirin's native process that draws a React tree with sumi. |
 | session | `session/`: the login entry point (`dashi-session`), the systemd user target, session files. |
 | spin | `spin/`: packaging and image files, by package. |
 | VM | `vm/`: the development VM. |

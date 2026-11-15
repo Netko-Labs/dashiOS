@@ -74,7 +74,7 @@
       <tr><td>Display server</td><td>Wayland only: <code>dashi-comp</code> (smithay), with Xwayland for X11 apps</td></tr>
       <tr><td>Login</td><td>greetd with Dashi's own greeter (<code>dashi-greeter</code>)</td></tr>
       <tr><td>Session runtime</td><td>Bun 1.4.4 at <code>/usr/libexec/dashi/bin/bun</code> (<code>dashi-bun</code>); no Node</td></tr>
-      <tr><td>UI toolkit</td><td>React through <code>@mirinjs/metal</code>, drawn by <code>mirin-metal-host</code> (GPUI, Vulkan)</td></tr>
+      <tr><td>UI toolkit</td><td>React through <code>@mirinjs/metal</code>, drawn by <code>mirin-metal-host</code> (sumi, mirin's engine, on Vulkan)</td></tr>
       <tr><td>Interface font</td><td>Inter (<code>rsms-inter-fonts</code>), with Noto Sans, Noto Sans Mono, and Noto Sans Symbols 2</td></tr>
       <tr><td>Default shell</td><td>zsh, for every new account (<code>dashi-release</code> sets <code>useradd</code>'s default)</td></tr>
       <tr><td>Browser</td><td>Helium (<code>helium-bin</code>), with Dashi's defaults (<code>dashi-helium</code>)</td></tr>
@@ -192,9 +192,9 @@ const PACKAGES = [
   { n: "dashi-greeter", layer: "desktop", s: "The login screen, greetd's greeter",
     carries: "/usr/bin/dashi-greeter and /usr/share/dashi/greeter; greetd's config (replacing only the stock one).",
     needs: ["dashi"], ext: "greetd. Replaces the old dashi-sddm." },
-  { n: "mirin-metal-host", layer: "desktop", s: "mirin's native host: React drawn with GPUI",
+  { n: "mirin-metal-host", layer: "desktop", s: "mirin's native host: React drawn with sumi",
     carries: "/usr/libexec/dashi/mirin-metal-host, built from the mirin checkout it is versioned by.",
-    needs: [], ext: "vulkan-loader, mesa-vulkan-drivers, libwayland-client" },
+    needs: [], ext: "vulkan-loader, mesa-vulkan-drivers, libwayland-client; recommends libglvnd-egl and libwayland-egl (the GL fallback)" },
   { n: "dashi-bun", layer: "desktop", s: "The Bun runtime the session runs on",
     carries: "/usr/libexec/dashi/bin/bun (Bun 1.4.4, Oven's release build) and its license.",
     needs: [], ext: "none" },

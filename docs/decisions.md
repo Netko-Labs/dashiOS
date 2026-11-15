@@ -2799,3 +2799,60 @@ short words, as the rulebook is written.
   still cut at the row's end.
 - **Undo:** `ConnectionRow` and `rowLine` in
   `packages/shell/src/agents-panel/lib/agents-rows.tsx`.
+
+### D127. The Metal host's package fetches its crates as it builds, the git ones too
+
+- **Date:** 2026-11-15. The `n24` move to sumi, mirin's own engine.
+- **Question:** on sumi the host's `Cargo.lock` pins seven repositories by
+  git commit (wgpu, Zed's forks of async-process, calloop, font-kit,
+  khronos-egl and xim-rs, and smol-rs/async-task); the old engine had none.
+  Vendor the crates into the tarball so the build needs no network, or go on
+  fetching?
+- **Choice:** go on fetching. None of Dashi's Rust packages vendors its
+  crates: each `cargo build --locked` reaches crates.io, and
+  `spin/copr-publish` turns the builders' network on for that. Cargo clones
+  the git ones itself, at the commits the lockfile names, with no `git`
+  installed (proved in a root holding only the spec's `BuildRequires`).
+  The spec loses `clang`, `cmake`, `pkgconfig(openssl)` and
+  `pkgconfig(vulkan)`, which the new engine does not build with, names
+  `gcc`, and recommends the two libraries of the GL fallback.
+- **Why:** one way for all six packages. A vendored tarball of this tree is
+  some hundreds of megabytes in every source RPM, and would be the only
+  package that differs.
+- **Cost:** a build needs the network and seven more hosts' worth of trust
+  in GitHub being up; the lockfile's commits are what make it the same
+  build. A builder with no network cannot build any of Dashi's Rust
+  packages, as before.
+- **Undo:** in `spin/build-rpms`, run `cargo vendor --locked` in
+  `crates/mirin-metal` of the staged mirin tree and write its
+  `.cargo/config.toml` into the tarball; build with `--offline`.
+
+### D128. A picture the host cannot draw is never handed to it
+
+- **Date:** 2026-11-15. `n24`. sumi decodes PNG, JPEG, GIF, WebP, BMP and
+  ICO and draws SVG; the old engine also read TIFF, TGA and PNM.
+- **Question:** the host draws a file it cannot decode as nothing, and says
+  nothing to the driver. Where Dashi shows a picture it did not make, what
+  stands in?
+- **Choice:** the file's first bytes are read before it is handed over
+  (`hostDrawsFile`, `packages/shell/src/shared/apps/drawn.ts`; the name is
+  believed only for SVG). An app's icon given by path, a notification's
+  picture and an applet's or extension's icon fall back to the generic icon
+  or their glyph; an account picture to the person's initials (Settings,
+  the account portal, the login screen); an icon an app sends as bytes to
+  the sheet's glyph. Preview treats TIFF as it treats HEIC: converted by
+  ImageMagick (a `Requires` of `dashi`), and "Preview can’t open TIFF
+  pictures on this computer." without it. Its strip of the folder's
+  pictures hands a file over as it is only when its bytes say the host
+  draws it (a TIFF named `.png` gets the empty frame). Files and wallpapers already took only
+  formats the host draws.
+- **Why:** a blank where a picture should be reads as a bug and gives no
+  way on. One rule over bytes covers TIFF and every format the host never
+  read (XPM, HEIC, AVIF), which were blanks on the old engine too.
+- **Cost:** one `stat` per draw and a 4 KB read per changed file. A TIFF
+  wallpaper or account picture is not converted, only refused. The login
+  screen has its own five-line copy of the rule (it cannot import the
+  shell). Software's screenshots and the applet store's icons are not
+  checked: they are downloaded PNG, JPEG or WebP.
+- **Undo:** `resolveIcon` in `shared/apps/icons.ts`, `tiff` in
+  `shared/files/kinds.ts`, and the five callers of `hostDrawsFile`.

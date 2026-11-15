@@ -2,6 +2,7 @@
 
 import { type Applet, type Manifest, permissionName } from "@dashi/applet";
 import type { ExtraMenuRow, MenuBarExtra } from "../../extras/index.ts";
+import { hostDrawsFile } from "../../shared/apps/index.ts";
 import { flattenRows } from "./protocol.ts";
 
 /** What the bar draws for an applet. */
@@ -9,7 +10,7 @@ export function appletExtra(key: string, applet: Applet, dev = false): MenuBarEx
   const icon =
     applet.glyph !== undefined
       ? { kind: "glyph" as const, markup: applet.glyph }
-      : applet.icon !== undefined
+      : applet.icon !== undefined && hostDrawsFile(applet.icon)
         ? { kind: "image" as const, path: applet.icon }
         : null;
   return {

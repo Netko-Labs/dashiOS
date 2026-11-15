@@ -16,7 +16,7 @@ greetd
       │                             Rust: Wayland, DRM/KMS, libinput, Xwayland
       └─ session supervisor         Bun: systemd --user/D-Bus activation, restarts the shell
          └─ shell (src/main.tsx)    Bun: menu bar, Dock, sheets, Settings, system services
-            ├─ mirin-metal-host ×N  one per shell surface (layer-shell), draws React with GPUI
+            ├─ mirin-metal-host ×N  one per shell surface (layer-shell), draws React with sumi
             └─ apps/<name>/main.tsx Bun, one process per first-party app
                └─ mirin-metal-host  its window
 systemd --user (D-Bus activated)

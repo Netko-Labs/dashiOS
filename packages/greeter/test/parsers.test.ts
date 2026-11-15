@@ -83,10 +83,13 @@ test("an account picture is shown only when it is a reasonable file", async () =
   const { join } = await import("node:path");
   const { accountPicture } = await import("../src/users.ts");
   const dir = mkdtempSync(join(tmpdir(), "pictures-"));
-  writeFileSync(join(dir, "ana"), "png bytes");
+  writeFileSync(join(dir, "ana"), new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  // A TIFF is a file the host does not draw: the person's initials stand in.
+  writeFileSync(join(dir, "tiff"), new Uint8Array([0x49, 0x49, 42, 0, 8, 0, 0, 0]));
   writeFileSync(join(dir, "empty"), "");
   mkdirSync(join(dir, "folder"));
   expect(accountPicture("ana", dir)).toBe(join(dir, "ana"));
+  expect(accountPicture("tiff", dir)).toBeUndefined();
   expect(accountPicture("empty", dir)).toBeUndefined();
   expect(accountPicture("folder", dir)).toBeUndefined();
   expect(accountPicture("nobody", dir)).toBeUndefined();
