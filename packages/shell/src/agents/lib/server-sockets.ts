@@ -28,6 +28,8 @@ export interface SocketParts {
   tasks: (TaskHooks & { policy(task: string): TaskPolicy | null }) | undefined;
   /** The menu bar's list changed. */
   publish(): void;
+  /** The next session's id: one count for every connection, a socket's or the shell's own (server-local.ts). */
+  nextId(): number;
 }
 
 /** The task a connection belongs to, when a launcher run's sandbox made it. */
@@ -38,8 +40,7 @@ function taskOf(pid: number, confined: boolean, remote: boolean, tasks: SocketPa
   return taskId && policy ? { id: taskId, policy } : null;
 }
 
-function handlersFor({ sessions, context, tasks, publish }: SocketParts): Bun.SocketHandler<{ session?: Session }> {
-  let nextId = 0;
+function handlersFor({ sessions, context, tasks, publish, nextId }: SocketParts): Bun.SocketHandler<{ session?: Session }> {
   return {
     open(socket) {
       // Bun sockets carry their fd; SO_PEERCRED says who is on the other end.
@@ -53,7 +54,7 @@ function handlersFor({ sessions, context, tasks, publish }: SocketParts): Bun.So
       const confined = isConfined(readText, pid, peer.remote);
       const task = taskOf(pid, confined, peer.remote, tasks);
       const session = new Session(
-        ++nextId,
+        nextId(),
         // A launcher run goes by its harness's name on sheets and in the activity ("Codex wants to use …"); its detail stays the process.
         task ? { ...peer, name: task.policy.name } : peer,
         socket,

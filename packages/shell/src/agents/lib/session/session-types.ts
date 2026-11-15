@@ -52,6 +52,21 @@ export interface TaskPolicy {
   name: string;
   /** The sites the person allowed for this task (not always): every turn's connection shares them. */
   sites?: Set<string>;
+  /** Set for Dashi's own assistant (agents/assistant/): how its calls are held to an ask, and what it is told of a new site. */
+  assistant?: AssistantGate;
+}
+
+/**
+ * Dashi's own assistant on a connection: the person asked by voice and is
+ * at the screen. Its calls run without a scope sheet (its policy grants
+ * every scope); a destructive one waits for a spoken yes
+ * (session-assistant.ts); a site new to the conversation is used and said.
+ */
+export interface AssistantGate {
+  /** Why a call may not start now (the ask's cap, a stop), in words for the model; null when it may. */
+  refuses(tool: string): string | null;
+  /** A site is used for the first time in this conversation: it is said in a line, and allowed for the conversation. */
+  site(site: string): void;
 }
 
 /** The launcher's runs' side of a call: what would put it back, and that it went well. */

@@ -5,6 +5,7 @@
  */
 
 import { formatAddress, type startActions } from "../actions/index.ts";
+import type { ActionState } from "../actions/types.ts";
 import { createAgentUi, type QuestionVoice } from "../agent-sheets/index.ts";
 import type { Ask } from "../agents/ask/types.ts";
 import {
@@ -41,6 +42,7 @@ import { regionDesktop } from "../region/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import { machineDesktop } from "../settings-app/machine-desktop.ts";
 import { agentRow, type RegistryStores, valueOf } from "../settings-app/registry/index.ts";
+import { taskHooks } from "./assistant.ts";
 import type { Arranging, Desktops } from "./desktop.ts";
 import type { Switches } from "./notices.ts";
 import type { Screenshots } from "./overlays.tsx";
@@ -106,7 +108,7 @@ function openTerminal(actions: Actions): void {
 }
 
 /** A registry setting's value now, by the name agents know it by (settings-app/registry/). */
-function settingNow(name: string, stores: RegistryStores) {
+export function settingNow(name: string, stores: RegistryStores): ActionState {
   const row = agentRow(name);
   return row ? valueOf(row, stores) : null;
 }
@@ -209,11 +211,9 @@ export function startAgentServer(needs: ServerNeeds): Agents | null {
         compositor,
         // A launcher run's questions go to the agents' panel (and the sheets while it is closed).
         ui: handoff.handoffShell.ui(basics.agentUi),
-        tasks: {
-          policy: handoff.handoffShell.service.policy,
-          before: handoff.handoffShell.service.before,
-          after: handoff.handoffShell.service.after,
-        },
+        // A connection from a sandbox whose scope names a task: Dashi's own assistant's conversation, else a run from the launcher.
+        // A task's connection: Dashi's own assistant's conversation, else a run from the launcher.
+        tasks: taskHooks(late, handoff.handoffShell.service),
         alone: basics.alone,
         sources: basics.passwords.sources,
         vault: basics.passwords.vault,

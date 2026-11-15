@@ -20,6 +20,7 @@ import type { Question } from "./confirm.ts";
 import { Grants } from "./consent.ts";
 import type { ToolResult } from "./context.ts";
 import { type Desktop, frontPage, Hands, WorkPlaces } from "./desktop/index.ts";
+import { type LocalLink, localSession } from "./lib/server-local.ts";
 import { personRunner } from "./lib/server-person.ts";
 import { sharedSecrets } from "./lib/server-shared.ts";
 import { listenAgents } from "./lib/server-sockets.ts";
@@ -54,7 +55,20 @@ export interface Agents {
   runAsPerson(call: Call, confirm: (question: Question) => Promise<boolean>): Promise<ToolResult>;
   /** The page in front in Helium, through Dashi's extension (the launcher's context chip); null without one. */
   frontPage(): Promise<{ url: string; title: string } | null>;
+  /**
+   * A session of the shell's own, for Dashi's assistant when the shell drives the model (agents/assistant/): the same
+   * server, tools and consent as a connection on the socket, with `policy` as a launcher run has one.
+   */
+  connect(task: string, policy: TaskPolicy): LocalLink;
+  /** Cut off every connection of a task (the assistant's Stop): what it was doing stops, and no key or button it held stays down. */
+  stopTask(task: string): void;
   close(): void;
+}
+
+/** Every connection of `task` is cut off, and no key or button it held stays down. */
+function stopTask(sessions: ReadonlyMap<number, Session>, hands: Hands, task: string): void {
+  for (const session of [...sessions.values()]) if (session.info().task === task) session.stop("stopped");
+  void hands.release();
 }
 
 export function socketPath(): string | null {
@@ -125,9 +139,11 @@ export function startAgents({
   // Work alone going on or off changes who is in sight (session-quiet.ts).
   const offAlone = alone?.subscribe?.(publish);
 
+  let lastId = 0;
+  const nextId = (): number => ++lastId;
   const path = socketPath();
   if (!path) console.error("dashi-shell: no XDG_RUNTIME_DIR; agents can't connect");
-  const listening = path ? listenAgents(path, { sessions, context, tasks, publish }) : null;
+  const listening = path ? listenAgents(path, { sessions, context, tasks, publish, nextId }) : null;
 
   return {
     grants,
@@ -136,6 +152,8 @@ export function startAgents({
     spaceFor: (window) => places.spaceFor(window),
     runAsPerson,
     frontPage: () => frontPage(browser.current()),
+    connect: (task, policy) => localSession({ sessions, context, publish, nextId }, { id: task, policy }, "Dashi’s assistant"),
+    stopTask: (task) => stopTask(sessions, hands, task),
     stop(id) {
       const session = sessions.get(id);
       if (session) stopSessions([session]);

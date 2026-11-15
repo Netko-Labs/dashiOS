@@ -829,6 +829,56 @@ the keys). Tests: `test/agents-ask-*.test.ts`, `test/launcher-agents.test.tsx`.
   signed in. Return opens Terminal to sign in with claude auth login."
   (Terminal can't be handed a command yet, so the row names it.)
 
+### The assistant, by voice
+
+What is said to Dashi is not planned first (decisions.md D147 to D150;
+`agents/assistant/`): it is done, in a loop, with the tools any agent has on
+`dashi-mcp`, all of them, the browser's included.
+
+- **One conversation while it is open** (`conversation.ts`): from the first
+  thing said until two minutes after Dashi's last word with nothing said,
+  or "that's all", "new topic", "forget that" (and their Spanish), ❖Esc, or
+  the lock. Everything said meanwhile continues it. Its exchanges are kept
+  in words in `$XDG_STATE_HOME/dashi/agents/conversations.jsonl`.
+- **Two ways to drive the tools, one server, one policy.** A harness the
+  person set up (Claude Code, Codex, OpenCode) runs in Dashi's sandbox as a
+  run from the launcher does, on the full server's socket, its scope named
+  for the conversation, `--resume` on every ask after the first, its stream
+  read as it is printed (`lib/harness.ts`). With a key (Claude) or a model on
+  this computer (Ollama), the shell runs the loop itself over a session of
+  the same server that has no socket (`lib/model-loop.ts`,
+  `agents/lib/server-local.ts`): the same `tools/list` and `tools/call`.
+  GPT has no loop yet and keeps plan mode.
+- **Consent** (`agents/lib/session/session-assistant.ts`): the assistant's
+  policy grants every scope, after one first-use sheet ("Always Allow" keeps
+  it; Settings › Agents' "Don't ask for these again" skips it). Reading and
+  ordinary calls run. A `destructive` tool with no sheet of its own
+  (`close_window`, `dismiss_notification`, `clear_notifications`,
+  `choose_menu_item`) waits for one yes or no, said or typed, on the
+  capsule's card ("Close the window “Terminal”?"). `force_quit_app`,
+  `trash_file`, the software requests, `read_clipboard_history`, sign-in and
+  payments keep their own sheets. A site new to the conversation is used
+  and said in the capsule's line; only the person keeps a site for good.
+  Work alone still skips the spoken yes for what it covers. Locked, nothing.
+- **Limits** (`lib/running.ts`): 25 calls and two minutes of its own time
+  an ask (the time a question, a sign-in or a hand-over waits on the person
+  is theirs). At the cap the next call is refused in words the model reads,
+  so it says where it got to; at the time, Dashi says it.
+- **Say, do, say**: the model says a line before its first call, each call
+  is the capsule's line in Dashi's words (`lib/steps.ts`), and the last
+  sentence says what happened. A settings change is followed by "Say undo
+  that to put it back", and "undo that" puts it back by rule. The steps are
+  in the launcher's history with their Undo.
+- **With every ask** (`context.ts`): after the words, what is in front and
+  its page, the selection, the time, the Desktop, and once a conversation
+  the installed apps and the names a transcript mishears.
+- **Stop**: ❖Esc, the capsule's square, or the Dashi key held. The harness
+  is stopped (its scope too), the task's connections are cut and no key or
+  button stays down. What was said so far stays in the conversation, marked
+  interrupted.
+- **Plan mode stays** for the launcher's typed asks, and for voice when
+  Settings › Voice's "Ask before every step" is on.
+
 ### Plan mode
 
 How a harness the person already has (Claude Code, Codex, OpenCode) answers

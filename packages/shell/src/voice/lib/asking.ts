@@ -86,7 +86,7 @@ export class Asking {
     this.controller = null;
     this.step = "";
     if (answer.failed) host.saying.keep({ kind: "notice", text: head(answer.say, 90), ...(answer.failed.go ? { go: answer.failed.go } : {}) });
-    if (answer.say.trim() !== "") this.say(words, answer.say);
+    if (answer.say.trim() !== "") this.say(words, `\n\n${answer.say}\n\n`);
     // A stopped ask, or one that only did things, says nothing more.
     if (host.saying.busy) host.saying.close();
     else if (!host.saying.holding) host.rest();

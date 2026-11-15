@@ -13,7 +13,7 @@
 
 import { maybe } from "@dashi/shape";
 import type { Chip, ChipGo } from "../types.ts";
-import { sentencesOf } from "./sentences.ts";
+import { SentenceCutter, sentencesOf } from "./sentences.ts";
 import type { VoiceService } from "./service.ts";
 import type { Captions } from "./speech.ts";
 import { SpeakReply, type SpokenWord } from "./wire.ts";
@@ -56,6 +56,8 @@ interface Run {
   closed: boolean;
   /** One after another, so the service hears them in order. */
   sending: Promise<void>;
+  /** The words written so far that do not yet end a sentence. */
+  cutter: SentenceCutter;
 }
 
 const quoted = (text: string): string => JSON.stringify(text.length > 80 ? `${text.slice(0, 79)}…` : text);
@@ -71,9 +73,14 @@ export class Saying {
 
   constructor(private readonly host: SayingHost) {}
 
-  /** Something is being said, or about to be. */
+  /** A run of speech is under way: something is being said, or more words may come. */
   get busy(): boolean {
     return this.run !== null;
+  }
+
+  /** A sentence is playing or waits to: the speakers are not quiet. */
+  get speaking(): boolean {
+    return (this.run?.waiting.length ?? 0) > 0;
   }
 
   /** A dictation holds the rest of what Dashi was saying. */
@@ -89,7 +96,7 @@ export class Saying {
   /** Say `text` whole in Dashi's voice (or `voice`), with captions. What can't be said is shown instead. */
   say(text: string, voice?: string, asked = ""): void {
     this.begin(asked, voice);
-    this.add(text);
+    this.addWhole(text);
     this.close();
   }
 
@@ -98,20 +105,28 @@ export class Saying {
     // What was queued for the run before would otherwise still be said.
     if (this.end("stopped")) void this.host.service.call("speak.stop").catch(() => {});
     this.paused = null;
-    this.run = { asked, voice: voice ?? this.host.voice(), waiting: [], handed: 0, played: 0, closed: false, sending: Promise.resolve() };
+    const run = { asked, voice: voice ?? this.host.voice(), waiting: [], handed: 0, played: 0, closed: false, sending: Promise.resolve() };
+    this.run = { ...run, cutter: new SentenceCutter() };
     if (this.lasting) this.host.show(this.lasting);
     else this.host.sync();
   }
 
-  /** More words for the run under way: each sentence goes to `speak` now, after the ones before. */
+  /** Words as they are written, for the run under way: each sentence goes to `speak` once it is whole, after the ones before. */
   add(text: string): void {
-    const run = this.run;
-    if (!run) return;
-    for (const words of sentencesOf(text)) {
+    if (this.run) this.hand(this.run, this.run.cutter.push(text));
+  }
+
+  /** Words that are whole (a question, a notice): every sentence of them goes to `speak` now. */
+  addWhole(text: string): void {
+    if (this.run) this.hand(this.run, [...this.run.cutter.end(), ...sentencesOf(text)]);
+  }
+
+  private hand(run: Run, sentences: readonly string[]): void {
+    for (const words of sentences) {
       const sentence: Sentence = { text: words, id: null };
       run.waiting.push(sentence);
       run.handed++;
-      run.sending = run.sending.then(() => this.hand(run, sentence));
+      run.sending = run.sending.then(() => this.speak(run, sentence));
     }
   }
 
@@ -119,11 +134,12 @@ export class Saying {
   close(): void {
     const run = this.run;
     if (!run) return;
+    this.hand(run, run.cutter.end());
     run.closed = true;
     void run.sending.then(() => this.settle(run));
   }
 
-  private async hand(run: Run, sentence: Sentence): Promise<void> {
+  private async speak(run: Run, sentence: Sentence): Promise<void> {
     if (this.run !== run) return;
     try {
       // Queued, always: a `speak` without it would stop the sentence before.
@@ -239,7 +255,7 @@ export class Saying {
     this.paused = null;
     if (!paused || this.run || paused.rest.length === 0) return false;
     this.begin(paused.asked, paused.voice);
-    for (const sentence of paused.rest) this.add(sentence);
+    for (const sentence of paused.rest) this.addWhole(sentence);
     if (!more) this.close();
     return true;
   }

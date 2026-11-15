@@ -54,7 +54,7 @@ export class Voice {
       listening: () => this.listening(),
       notice: (text, go, ms) => this.notice(text, go, ms),
       rest: () => this.rest(true),
-      mayOpen: () => !this.holding && !this.saying.busy && !this.deps.trouble() && this.deps.prefs().on,
+      mayOpen: () => !this.holding && !this.saying.speaking && !this.deps.trouble() && this.deps.prefs().on,
     });
     const { show } = this;
     this.saying = new Saying({
@@ -74,7 +74,6 @@ export class Voice {
   }
 
   subscribe = (listener: () => void): (() => void) => this.chips.subscribe(listener);
-
   getSnapshot = (): Chip | null => this.chips.getSnapshot();
 
   private get chip(): Chip | null {
@@ -131,6 +130,7 @@ export class Voice {
   /** The chip while the microphone is open. */
   private listening(): void {
     this.level.set(0);
+    this.deps.asker.prepare?.();
     this.show({ kind: "listening", text: "", question: this.question !== null });
   }
 
@@ -254,7 +254,7 @@ export class Voice {
   ask(words: string, heard: (text: string) => void): (keep?: boolean) => void {
     this.question = heard;
     const spoken = this.deps.trouble() === null && this.deps.prefs().on;
-    if (spoken && this.saying.busy) this.saying.add(words);
+    if (spoken && this.saying.busy) this.saying.addWhole(words);
     else if (spoken) this.saying.say(words, undefined, "(a question)");
     return (keep = false) => {
       if (this.question !== heard) return;

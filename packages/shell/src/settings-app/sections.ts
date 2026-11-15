@@ -66,7 +66,10 @@ export const SECTIONS = {
   clipboard: { path: ["clipboard"], fields: { history: bool(), leftOut: list(appName, { max: 64 }), snippetsInTerminals: bool() } },
   screenSharing: { path: ["screenSharing"], fields: { clients: list(guarded(isProgramPath, "an absolute path"), { max: 64 }) } },
   applets: { path: ["applets"], fields: { catalogs: guarded(isCatalogList, "a list of catalogs") } },
-  voice: { path: ["voice"], fields: { on: bool(), key: guarded(isTalkKeyId, "a talk key"), voice: guarded(isVoiceId, "a voice's id") } },
+  voice: {
+    path: ["voice"],
+    fields: { on: bool(), key: guarded(isTalkKeyId, "a talk key"), voice: guarded(isVoiceId, "a voice's id"), listenAgain: bool(), askEveryStep: bool() },
+  },
   dictation: { path: ["dictation"], fields: { on: bool(), key: guarded(isDictationKeyId, "a dictation key"), handsFree: bool(), tidy: bool() } },
   persona: {
     path: ["persona"],

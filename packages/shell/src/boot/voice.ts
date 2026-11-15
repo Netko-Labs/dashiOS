@@ -9,6 +9,7 @@ import type { Compositor } from "../compositor/index.ts";
 import { spokenContext } from "../persona/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import { launcherAsker, STOP, startVoice, talks, type VoiceParts } from "../voice/index.ts";
+import { startAssistantPiece } from "./assistant.ts";
 import type { LateParts } from "./parts.ts";
 import type { Late, Services } from "./services.ts";
 
@@ -49,21 +50,24 @@ export function startTalking({ compositor, settingsStore, services, late }: Talk
   const openLauncher = (): void => {
     if (!late.peek("overlays")?.has("launcher")) late.peek("launcher")?.open();
   };
+  // Plan mode, as 0.8 asked: the launcher's own tasks, a plan that waits for a yes. It answers "Ask before every step" and an
+  // answerer with no loop yet. With the capsule up, a spoken plan asks in its card (capsule/), not in the launcher.
+  const planner = launcherAsker(
+    () => late.peek("askAgents")?.tasks ?? null,
+    () => {
+      if (late.peek("pill")?.voiceCommands.send({ do: "open-ask", id: "spoken" })) return true;
+      openLauncher();
+      return false;
+    },
+    // How much Dashi talks (Settings › Your Dashi) reaches spoken answers.
+    () => spokenContext(late.peek("pill")?.persona.getSnapshot().talk ?? "normal"),
+  );
+  // What is said goes to Dashi's assistant: one conversation, and the tools any agent has, in a loop (agents/assistant/).
+  const assistant = startAssistantPiece({ compositor, settingsStore, services, late, planner });
   const parts = startVoice({
     settings: settingsStore,
     hold: (keys) => heldKeys.set("voice", keys),
-    // The launcher's own tasks: a spoken ask is in its "Now" and its history like a typed one, and its plan waits there for Return.
-    // With the capsule up, a spoken plan asks in its card (capsule/), not in the launcher: the capsule handles `voiceCommands`.
-    asker: launcherAsker(
-      () => late.peek("askAgents")?.tasks ?? null,
-      () => {
-        if (late.peek("pill")?.voiceCommands.send({ do: "open-ask", id: "spoken" })) return true;
-        openLauncher();
-        return false;
-      },
-      // How much Dashi talks (Settings › Your Dashi) reaches spoken answers.
-      () => spokenContext(late.peek("pill")?.persona.getSnapshot().talk ?? "normal"),
-    ),
+    asker: { ask: (words, signal, hears) => assistant.ask(words, signal, hears), talk: assistant.talk, prepare: () => assistant.prepare() },
     go: (where) => {
       if (where === "launcher") openLauncher();
       else late.peek("settingsApp")?.open(where);

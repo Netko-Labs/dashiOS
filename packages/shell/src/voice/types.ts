@@ -61,6 +61,8 @@ export interface Talk {
 export interface Asker {
   ask(words: string, signal: AbortSignal, hears?: AskHears): Promise<Answer>;
   talk?: Talk;
+  /** The microphone opens: what is in front is read now, before the words are known. */
+  prepare?(): void;
 }
 
 /** Voice's part of settings.json. */
@@ -73,6 +75,8 @@ export interface VoiceSettings {
   voice?: string;
   /** After Dashi speaks in an open conversation, the microphone opens for the reply; on unless false. */
   listenAgain?: boolean;
+  /** "Ask before every step": what is said is planned first and waits for a yes on its card, as it did before 0.9 (agents/assistant/). Off unless true. */
+  askEveryStep?: boolean;
 }
 
 /** What Settings › Voice reads (models.ts). */

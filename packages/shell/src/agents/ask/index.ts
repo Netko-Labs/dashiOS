@@ -1,7 +1,9 @@
 export {
   ANSWERERS,
+  AnswerError,
   type AnswererChoice,
   type AnswererInfo,
+  type AnswerFailure,
   HARNESS_IDS,
   type HarnessId,
   isAnswererChoice,
@@ -31,9 +33,11 @@ export {
   signedIn,
   signInCommand,
 } from "./harness/index.ts";
-export { ago, type HistoryEntry } from "./history.ts";
-export { type KeyPlace, modelKeys, type Provider, vaultTokenSource } from "./keys.ts";
-export { isModelName } from "./local.ts";
+export { ago, type HistoryEntry, HistoryLog } from "./history.ts";
+export { type KeyPlace, type ModelKeys, modelKeys, type Provider, vaultTokenSource } from "./keys.ts";
+export { ANTHROPIC_HOST, ANTHROPIC_VERSION, answerFailure, CLAUDE_MODEL, type ContentBlock, echoed, FALLBACK_BETA, readReply } from "./lib/claude.ts";
+export { type Fetch, HttpError } from "./lib/http.ts";
+export { isModelName, LOCAL_URL, localModels, toolsForRequest } from "./local.ts";
 export { type NowItem, TurnWatch } from "./now.ts";
 export { oneLine, type Step, settingWords, type Undo } from "./plan.ts";
 export { startAsk } from "./service.ts";

@@ -3460,3 +3460,107 @@ short words, as the rulebook is written.
 - **Undo:** hand the whole text in one `speak` again (`Saying.add`); the
   log line then counts pieces, not sentences.
 
+### D147. One conversation while it is open: two minutes after Dashi's last word, and nothing guesses a new subject
+
+- **Date:** 2026-11-15. `v09/loop`.
+- **Question:** every spoken ask was a new conversation ("Each request
+  starts fresh for me"). When does one end, and who decides that a
+  sentence is a follow-up?
+- **Choice:** one conversation at a time (`agents/assistant/conversation.ts`).
+  It is open from the first thing said until two minutes after Dashi's
+  last word with nothing said back (the lead's number; the diagnosis said
+  90 s), or until the person ends it: "that's all", "new topic", "forget
+  that" and their Spanish as the whole of what was said, ❖Esc, the lock.
+  While it is open every ask continues it: a harness is resumed by its
+  session, a model the shell drives gets the messages. No rule guesses a
+  change of subject; the model is good at that and a wrong guess by rule
+  loses the thread. The capsule shows it: one quiet line, "Still with
+  you", with Done. The exchanges go, in words, to
+  `~/.local/state/dashi/agents/conversations.jsonl`.
+- **Why:** the owner tested exactly this and was told no each time.
+- **Cost:** two minutes of a longer context after an unrelated second
+  question. The square in the capsule stops what is said and keeps the
+  conversation; only ❖Esc and Done end it.
+- **Undo:** `TALK_OPEN_MS`; or have `begin()` always start a new one.
+
+### D148. Spoken asks run on the full server in a loop, two ways; the person's voice is the consent, with the registry's exceptions
+
+- **Date:** 2026-11-15. `v09/loop`. The owner: "It should have the same
+  level of access, even if it is running in the sandbox… use the same tools
+  as Claude can with the system MCP."
+- **Question:** the voice path planned with 30 tools and ran nothing
+  until a yes. How does it get the 87, and what replaces the card?
+- **Choice:**
+  - **Way one:** the harness the person set up, in the sandbox with the
+    task profile as a launcher run has, on the full server's socket. Its
+    prompt is Dashi's own (`--system-prompt`, not appended to a coding
+    agent's), `--effort low`, `--include-partial-messages`, `--resume` on
+    every ask after a conversation's first. One process an ask (0.3 s to
+    start, measured in the diagnosis); no process is kept alive.
+  - **Way two:** with a key (Claude) or Ollama, the shell runs the loop
+    over a session of the same server with no socket. Its tools are not
+    strict (all are offered; the server checks every call). A local model
+    is offered a core of ten tools and the ones the words name.
+  - **GPT keeps plan mode**: its loop is not built.
+  - **Consent** is the diagnosis's table. One first-use sheet, then every
+    scope is granted to the assistant's connections. `destructive` tools
+    with no sheet of their own wait for a yes or no on the capsule's card,
+    by voice or typed, and a yes is heard at the start of what was said.
+    The ones that ask every time, sign-in and payments are untouched. A
+    site new to the conversation is used and said in the capsule's line.
+  - **Limits:** 25 calls and two minutes of the ask's own time; the time
+    a call waits on the person is not counted.
+  - **Plan mode is no longer the default for voice.** It stays for typed
+    asks and as "Ask before every step" in Settings › Voice.
+- **Why:** the sandbox was never the limit: Dashi's tools run in the
+  shell. Only the socket and the policy differed from a launcher run.
+- **Cost:** a page can now put words in front of a model that can act on
+  them. The guard is the rows that still ask (logins, payments, the Trash,
+  installs, the clipboard) and the cap, not a card. The assistant shows in
+  the agents' panel as "Dashi" while it works, and Stop there stops it.
+  A second sheet can still appear when the person unticked a kind on the
+  first-use sheet.
+- **Undo:** turn "Ask before every step" on; or make `wayOf` return
+  `plan`.
+
+### D149. What is in front goes with every ask, after the words
+
+- **Date:** 2026-11-15. `v09/loop`.
+- **Question:** a spoken ask carried the words and one sentence. What
+  does the model need of the moment, and where does it go?
+- **Choice:** one block after the words in the user turn
+  (`agents/assistant/context.ts`), read when the microphone opens: the
+  window in front and its title, in Helium the page's address, the
+  selection, the time, the Desktop that shows, and the line that the words
+  are a transcript and names may be misheard, with the names the person
+  uses. The installed apps go once a conversation, not with every ask.
+  After the words, never in the system prompt, so the prompt stays the
+  same and cached.
+- **Why:** "helium", "you tube", "body tech" resolve from the list of
+  apps and names without a correcting model.
+- **Cost:** the title and address of what is in front, and the selection,
+  go to the model the person chose with every spoken ask. The first-use
+  sheet is where that is said.
+- **Undo:** `contextBlock` returns only the transcript line.
+
+### D150. After Dashi speaks, the microphone opens for the reply: after its last sample, never over it
+
+- **Date:** 2026-11-15. `v09/loop`.
+- **Question:** a conversation where the key must be held for every
+  reply is not one. There is no echo cancelling: what keeps Dashi from
+  hearing itself?
+- **Choice:** the simple way (the diagnosis's 9.6 a). When the
+  conversation is open and Dashi's last sentence has played, 300 ms later
+  the microphone opens until the person goes quiet; with nothing said for
+  6 s it closes without a word. After a question (`ask_person`, a spoken
+  yes or no) it always opens. It never opens while a sentence still plays
+  or waits. A setting, Settings › Voice › "Listen again after Dashi
+  speaks", on by default, turns the first kind off. The key and ❖Esc
+  interrupt as before; a key held while a listen that opened by itself has
+  heard nothing takes its place.
+- **Why:** it needs nothing from the service, and it cannot loop on
+  itself.
+- **Cost:** no talking over Dashi by voice. A room's own sound in those
+  six seconds can be taken for a reply.
+- **Undo:** the setting; or `Mic.again` does nothing.
+

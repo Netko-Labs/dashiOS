@@ -74,6 +74,8 @@ export interface AnswerStatus {
 }
 
 export interface Ask {
+  /** The history on disk: Dashi's assistant keeps what it did by voice there too (agents/assistant/). */
+  history: HistoryLog;
   launcher: LauncherAgents;
   status: AnswerStatus;
   tasks: AskTasks;
