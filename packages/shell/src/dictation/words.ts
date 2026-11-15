@@ -34,9 +34,19 @@ const ENDINGS: readonly (readonly [RegExp, string])[] = [
   [/ly$/, ""],
   [/er$/, ""],
   [/est$/, ""],
+  [/r$/, ""],
+  [/st$/, ""],
+  [/ier$/, "y"],
+  [/iest$/, "y"],
+  [/ily$/, "y"],
+  [/ness$/, ""],
+  [/able$/, ""],
+  [/able$/, "e"],
   [/(.)\1ed$/, "$1"],
   [/(.)\1ing$/, "$1"],
 ];
+
+const PREFIXES: readonly string[] = ["re", "un", "non", "dis", "mis", "pre", "over", "out", "de", "sub", "auto"];
 
 /** The words of `lists` (one stem a line, hunspell's flags after a slash), as a dictionary. */
 export function wordsFrom(lists: readonly string[]): Words {
@@ -51,10 +61,16 @@ export function wordsFrom(lists: readonly string[]): Words {
       if (stem === folded) lower.add(folded);
     }
   }
+  const stemmed = (set: ReadonlySet<string>, word: string): boolean =>
+    set.has(word) || ENDINGS.some(([ending, stem]) => ending.test(word) && set.has(word.replace(ending, stem)));
   const within = (set: ReadonlySet<string>, word: string): boolean => {
-    const folded = word.toLowerCase().replace(/’/g, "'");
-    if (set.has(folded)) return true;
-    return ENDINGS.some(([ending, stem]) => ending.test(folded) && set.has(folded.replace(ending, stem)));
+    const folded = word
+      .toLowerCase()
+      .replace(/’/g, "'")
+      .replace(/^'+|'+$/g, "");
+    if (stemmed(set, folded)) return true;
+    // "rewriting", "unresolved": a common prefix on a word that is known.
+    return PREFIXES.some((prefix) => folded.startsWith(prefix) && folded.length - prefix.length > 2 && stemmed(set, folded.slice(prefix.length)));
   };
   return { loaded: any.size > 0, known: (word) => within(any, word), common: (word) => within(lower, word) };
 }

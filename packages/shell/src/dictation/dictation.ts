@@ -37,7 +37,10 @@ export class Dictation {
 
   constructor(private readonly deps: DictationDeps) {
     this.timers = deps.timers ?? realTimers;
-    this.landings = new Landings({ ...deps, timers: this.timers });
+    this.landings = new Landings({ ...deps, timers: this.timers }, (state) => {
+      // The model's words took the place of words that landed: said only while their line still shows.
+      if (this.state.phase === "landed") this.show(state);
+    });
     this.handsFree = new HandsFree(
       { ...deps, timers: this.timers },
       {

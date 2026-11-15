@@ -25,6 +25,8 @@ const Entry = obj(
     typed: str(),
     /** What the person did with it after: taken back, or the raw words landed instead. */
     after: optional(str()),
+    /** What the correction model said of it, when it was asked: "text", "unchanged", or why it failed. */
+    model: optional(str()),
   },
   { strict: false },
 );
@@ -109,7 +111,7 @@ export class DictationHistory {
     this.write();
   }
 
-  /** What became of a landing: "undone", "raw". */
+  /** What became of a landing: "undone", "raw", "refined". */
   mark(id: string, after: string): void {
     const entry = this.read().find((each) => each.id === id);
     if (!entry) return;

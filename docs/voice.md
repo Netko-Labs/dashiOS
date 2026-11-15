@@ -229,13 +229,65 @@ repository in front; nothing fills it yet), then the person's.
 stems) the first time it is asked; with none installed, the rules that need
 one stand down.
 
+### The gate and the correction model
+
+`dictation/lib/gate.ts`, `rewrite.ts`, `language.ts`, `rules-spoken.ts`;
+the seam is `docs/dictation-rewrite.md` (the model, its server and the
+checks on its answer are `rewrite/`'s).
+
+1. **Rules first** (above), with what is said aloud written as it is
+   written: an email ("alex at example dot com"), a web address ("example
+   dot com slash docs"), a file's name ("index dot ts"), numbers from ten
+   up ("twenty five" → 25, "dos mil" → 2000, "ten percent" → 10%). Small
+   numbers stay words, and so do "first" and "second".
+2. **The gate** (`gate`) says whether the rules' text needs the model, and
+   why: `cue` (a self-correction: "no, I mean", "actually,", "perdón",
+   "mejor dicho", "not … but"; or something said twice), `list` (list
+   markers the rules made no list of), `run-on` (twenty words with no
+   mark), `non-word` (a word no dictionary knows; English only), `near-term`
+   (the first word of what a vocabulary term is heard as: "cloud"),
+   `polish` (the profile asks for every utterance). A short clean sentence
+   has no reason and is never sent: the model can only make it worse.
+   Never at a shell's prompt, in Verbatim, or with tidying off.
+3. **The call**: `Rewriter.rewrite` with the rules' text as `transcript`,
+   the languages of what was said (little words and Spanish letters, in
+   the words and in the text before the caret; the session's locale when
+   they do not say), the first fifty names of the active vocabulary, the
+   last 200 characters before the caret, the profile's tone line, and the
+   deadline `advice()` gives. `warm()` is called when the key goes down.
+   Only an answer that is `text` changes anything: it gets the profile's
+   style again and lands. `unchanged`, any failure or the deadline land
+   the rules' words. A rewriter whose state is `off`, `no-model` or
+   `too-slow`, or no rewriter at all, is not asked: everything above works
+   with no model.
+4. **The wait**: the capsule shows the dots and the last words at once,
+   and says "Tidying" only once 300 ms have passed (`tidying.said`).
+5. **Land, then refine** (`advice().land === "refine"`, a machine that
+   cannot answer in time): the rules' words land at once and the model is
+   asked with the longer deadline; its words take their place only if the
+   field still ends with what landed (the insertion record's check), and
+   the line says "Refined." A new dictation, Undo or Raw drops the answer.
+6. **After**: the line counts what changed ("Typed. 2 fixes."), with Undo
+   and Raw. The history keeps what the model said (`model`: "text",
+   "unchanged", or the failure's kind).
+
+Until `rewrite/` is merged, `dictation/types.ts` declares the seam's
+shapes and nothing passes a rewriter: `boot/dictation.ts` gives
+`rewriter: startRewriter(…)` when it is.
+
 ### Tidying by rule
 
 `dictation/lib/tidy*.ts`. On this computer, no model; English and Spanish.
 
 - **Fillers out:** "um", "uh", "uhm", "erm", "hm", "hmm", "mm", "eh", "ehm"
   wherever they are, with the comma that was only theirs. "este" and "o sea"
-  only between two commas, where they can be nothing else.
+  only where they are set off: between two commas, or starting a sentence
+  before a comma. So are "like" and "you know". "like" with no commas is a
+  filler only by its place: after a word it cannot follow as a verb or a
+  comparison (a verb that takes its object at once, a joining word, an
+  article) and before what was meant ("give like an instruction", "gather
+  like most of them"); "looks like a", "I like the" and "something like
+  that" stay.
 - **Punctuation said out loud:** "comma" / "coma", "period" / "full stop" /
   "punto", "question mark", "exclamation mark", "punto y coma", "new line" /
   "nueva línea", "new paragraph" / "nuevo párrafo". Not after a word that

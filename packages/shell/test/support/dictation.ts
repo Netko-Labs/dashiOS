@@ -6,7 +6,15 @@ import { createPillHub, type DictationState, type DictationTrouble, type KeyGest
 import { settle } from "./time.ts";
 import { fakeVoice, handTimers } from "./voice.ts";
 
-export function dictating(options: { heard?: string; taught?: boolean; history?: DictationDeps["history"] } = {}) {
+interface DictatingOptions {
+  heard?: string;
+  taught?: boolean;
+  history?: DictationDeps["history"];
+  rewriter?: DictationDeps["rewriter"];
+  words?: DictationDeps["words"];
+}
+
+export function dictating(options: DictatingOptions = {}) {
   const voice = fakeVoice({ "listen.stop": { text: options.heard ?? "Um, hello there.", speech_ms: 900 } });
   const timers = handTimers();
   const hub = createPillHub();
@@ -78,6 +86,8 @@ export function dictating(options: { heard?: string; taught?: boolean; history?:
       world.taught = true;
     },
     history: options.history,
+    rewriter: options.rewriter,
+    words: options.words,
     timers,
     now: () => world.now,
   };

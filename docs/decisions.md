@@ -3517,3 +3517,31 @@ short words, as the rulebook is written.
   app that sends on ⇧Return would send.
 - **Undo:** a profile's file changes any of it (`line breaks: return`,
   `code: no`); `PROFILES` in `dictation/lib/profiles.ts` holds Dashi's own.
+
+### D183. The model is asked only where the rules' text says it is needed
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's (the seam is D170's,
+  `docs/dictation-rewrite.md`).
+- **Question:** when is the correction model asked, and what lands when it
+  does not answer?
+- **Choice:** the rules always run and their text is what lands by
+  default. A gate of plain patterns decides: a self-correction cue or a
+  repeat, list markers the rules did not use, twenty words with no mark, a
+  word no dictionary knows, the first word of a term's "heard as" form, or
+  a profile that asks for polish. A sentence with no reason is never
+  sent. The answer changes the text only when it is `text`; it is styled
+  again by the profile. "Tidying" is said after 300 ms. Where the
+  rewriter advises `refine`, the rules' words land and are replaced later
+  only if the field still ends with them. Numbers from ten up become
+  digits by rule; one to nine, and ordinals, stay words. "like" is a
+  filler by rule only in the places the corpus shows (after a verb that
+  takes its object, before an article or an -ing word).
+- **Why:** restraint is measured in what is not touched. The owner's
+  corpus has more sentences that are right than wrong; a model that reads
+  every one of them will damage some, and each ask is a wait.
+- **Cost:** a mishearing that leaves real words and no cue ("through
+  boys", "it just start") is not sent: 9 of the corpus's 16 model rows
+  have no reason the gate can see alone. A profile with `polish: yes`
+  sends everything.
+- **Undo:** `gate()` in `dictation/lib/gate.ts`; `polish: yes` in a
+  profile's file asks for every utterance today.

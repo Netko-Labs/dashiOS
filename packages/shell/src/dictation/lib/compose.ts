@@ -14,6 +14,7 @@ import type { Pair, Term } from "../types.ts";
 import type { Words } from "../words.ts";
 import type { Place } from "./profiles.ts";
 import { applyCode, backticks } from "./rules-code.ts";
+import { applySpoken } from "./rules-spoken.ts";
 import { applyStyle } from "./rules-style.ts";
 import { applyTerms } from "./rules-terms.ts";
 import { tidy } from "./tidy.ts";
@@ -38,6 +39,10 @@ export interface Composed {
   changes: TidyChange[];
   /** Tidying's check did not hold: its part was skipped. */
   asHeard: boolean;
+  /** The rules made a list of it. */
+  listed: boolean;
+  /** The vocabulary it was made with, the nearest first. */
+  terms: readonly Term[];
 }
 
 /** The vocabulary for one dictation, the nearest first: the profile's words, the project's, then the person's. */
@@ -83,19 +88,26 @@ const fixed = (count: number): TidyChange[] => (count > 0 ? [{ kind: "fix", coun
 /** A shell's prompt with no agent in it: words there are a command, not sentences. */
 export const isShell = (composing: Pick<Composing, "place" | "agent">): boolean => composing.place.terminal && !composing.agent;
 
+/** The profile's style on words that are already tidied: what the rules end with, and what a model's answer gets again. */
+export function restyle(text: string, composing: Composing, terms: readonly Term[]): { text: string; fixes: number } {
+  const { profile } = composing.place;
+  const shell = isShell(composing);
+  const names = namesOf(terms);
+  const styled = applyStyle(text, profile, shell, names);
+  return profile.code && !shell ? backticks(styled, names) : { text: styled, fixes: 0 };
+}
+
 export function compose(heard: string, composing: Composing): Composed {
   const said = heard.trim().replace(/[ \t]+/g, " ");
   const { profile } = composing.place;
-  if (!composing.tidy || !profile.tidy || said === "") return { heard: heard.trim(), text: said, changes: [], asHeard: false };
   const terms = activeTerms(composing);
+  if (!composing.tidy || !profile.tidy || said === "") return { heard: heard.trim(), text: said, changes: [], asHeard: false, listed: false, terms };
   const named = applyTerms(said, { terms, replacements: [...profile.replacements, ...composing.lexicon.replacements] }, composing.words);
-  const tidied = tidy(named.text);
+  const spoken = applySpoken(named.text);
+  const tidied = tidy(spoken.text);
   const snipped = applySnippets(tidied.typed, composing.lexicon.snippets);
-  const shell = isShell(composing);
   const coded = profile.code ? applyCode(snipped.text, composing.place.terminal) : { text: snipped.text, fixes: 0 };
-  const names = namesOf(terms);
-  const styled = applyStyle(coded.text, profile, shell, names);
-  const ticked = profile.code && !shell ? backticks(styled, names) : { text: styled, fixes: 0 };
-  const changes = [...tidied.changes, ...fixed(named.fixes + snipped.fixes + coded.fixes + ticked.fixes)];
-  return { heard: heard.trim(), text: ticked.text, changes, asHeard: tidied.asHeard };
+  const styled = restyle(coded.text, composing, terms);
+  const changes = [...tidied.changes, ...fixed(named.fixes + spoken.fixes + snipped.fixes + coded.fixes + styled.fixes)];
+  return { heard: heard.trim(), text: styled.text, changes, asHeard: tidied.asHeard, listed: false, terms };
 }

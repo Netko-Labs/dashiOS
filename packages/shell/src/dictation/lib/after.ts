@@ -67,13 +67,14 @@ export async function raw(deps: DictationDeps, kept: Insertions, id: string | nu
 }
 
 /** `text` with the space Dashi put before and after the words of `entry`. */
-function entryTyped(entry: Insertion, text: string): string {
+export function entryTyped(entry: Insertion, text: string): string {
   const lead = /^\s*/.exec(entry.typed)?.[0] ?? "";
   const trail = /[ \t]*$/.exec(entry.typed)?.[0] ?? "";
   return `${lead.replace(/\n/g, "")}${text}${text.endsWith("\n") ? "" : trail}`;
 }
 
-async function typeAgain(deps: DictationDeps, kept: Insertions, like: Insertion, said: string): Promise<DictationState> {
+/** `like`'s words typed where the keyboard is now, remembered; the line ends with `said`. */
+export async function typeAgain(deps: DictationDeps, kept: Insertions, like: Insertion, said: string): Promise<DictationState> {
   const front = await deps.front().catch(() => null);
   if (!front) return told(deps, waitingLine("no-field"), "warn");
   const field = await fieldIn(deps, front);

@@ -15,10 +15,11 @@ import { DICTATION_LIMITS, type DictationState, type WaitReason } from "../../sh
 import type { LexiconView } from "../lexicon.ts";
 import type { DictationDeps, FieldRead, Front } from "../types.ts";
 import type { Words } from "../words.ts";
-import { type Composed, compose } from "./compose.ts";
+import { type Composed, type Composing, compose } from "./compose.ts";
 import { landedLine, waitingLine } from "./lines.ts";
 import { type Place, pickProfile } from "./profiles.ts";
 import { type Insertion, type Insertions, insertionId } from "./record.ts";
+import { type Asking, correct, reasonsFor } from "./rewrite.ts";
 import { type Typed, typeInto } from "./type.ts";
 
 /** A press this little before `since` counts as after it: the shell hears the key come up a moment late. */
@@ -65,6 +66,8 @@ export interface Landing {
   typed: boolean;
   /** What was remembered of it, when it was typed into a window. */
   entry: Insertion | null;
+  /** The rules' words landed and the model is still to be asked: what to ask it (landings.ts replaces the words when it answers). */
+  refine?: Asking;
 }
 
 /** What is typed for the tidied words: a space after them, so the next words (said or typed) do not join them; none after a line break. */
@@ -86,11 +89,12 @@ async function placeFor(deps: DictationDeps, { at, since }: Meant): Promise<Spot
 const fieldWords = (field: FieldRead | null): string => (field ? (field.site ? `${field.role} on ${field.site}` : field.role) : "");
 
 /** What landed, remembered: on the stack for Undo, and in the history. */
-function remember(deps: DictationDeps, kept: Insertions, entry: Omit<Insertion, "id" | "at">): Insertion {
+function remember(deps: DictationDeps, kept: Insertions, entry: Omit<Insertion, "id" | "at">, model: string): Insertion {
   const now = deps.now?.() ?? Date.now();
   const whole: Insertion = { ...entry, id: insertionId(now), at: now };
   kept.push(whole);
-  deps.history?.add({ id: whole.id, at: now, app: whole.app, profile: whole.profile, heard: whole.heard, typed: whole.text });
+  const said = model ? { model } : {};
+  deps.history?.add({ id: whole.id, at: now, app: whole.app, profile: whole.profile, heard: whole.heard, typed: whole.text, ...said });
   return whole;
 }
 
@@ -148,23 +152,28 @@ export async function typeAndRemember(
   deps: DictationDeps,
   kept: Insertions,
   where: { front: Front; field: FieldRead | null },
-  what: { heard: string; text: string; typed: string; profile: string; breaks: string | null },
+  what: { heard: string; text: string; typed: string; profile: string; breaks: string | null; model?: string },
 ): Promise<{ how: Typed; entry: Insertion | null }> {
   const how = await typeInto(deps, where.front.window, what.typed, what.breaks);
   if (how !== "typed" && how !== "pasted") return { how, entry: null };
-  const entry = remember(deps, kept, {
-    window: where.front.window,
-    pid: where.front.pid,
-    app: deps.appName?.(where.front) ?? where.front.appId ?? "",
-    field: fieldWords(where.field),
-    heard: what.heard,
-    text: what.text,
-    typed: what.typed,
-    how,
-    profile: what.profile,
-    readable: where.field !== null && where.field.before !== null,
-    breaks: what.breaks,
-  });
+  const entry = remember(
+    deps,
+    kept,
+    {
+      window: where.front.window,
+      pid: where.front.pid,
+      app: deps.appName?.(where.front) ?? where.front.appId ?? "",
+      field: fieldWords(where.field),
+      heard: what.heard,
+      text: what.text,
+      typed: what.typed,
+      how,
+      profile: what.profile,
+      readable: where.field !== null && where.field.before !== null,
+      breaks: what.breaks,
+    },
+    what.model ?? "",
+  );
   return { how, entry };
 }
 
@@ -180,9 +189,13 @@ export async function land(deps: DictationDeps, ctx: LandContext, heard: string,
   const where = await placeFor(deps, meant);
   if (typeof where === "string") return waiting(deps, compose(heard, { ...composing, ...(await placeOf(deps, ctx, null, null)) }), where);
   const { place, agent } = await placeOf(deps, ctx, where.front, where.field);
-  const made = compose(heard, { ...composing, place, agent });
-  const what = { heard: made.heard, text: made.text, typed: withSpace(made.text), profile: place.profile.name, breaks: breaksFor(place, agent) };
+  const full: Composing = { ...composing, place, agent };
+  const rules = compose(heard, full);
+  // The gate, then the model where it is needed and can be waited for; else the rules' words.
+  const asking: Asking = { made: rules, composing: full, before: where.field?.before ?? "", reasons: reasonsFor(rules, full) };
+  const { made, refine, model } = await correct(deps, asking);
+  const what = { heard: made.heard, text: made.text, typed: withSpace(made.text), profile: place.profile.name, breaks: breaksFor(place, agent), model };
   const { how, entry } = await typeAndRemember(deps, ctx.kept, where, what);
   if (how !== "typed" && how !== "pasted") return waiting(deps, made, how);
-  return landed(deps, made, how, entry, place.profile.name);
+  return { ...landed(deps, made, how, entry, place.profile.name), ...(refine && entry ? { refine: asking } : {}) };
 }
