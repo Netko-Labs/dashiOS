@@ -827,8 +827,8 @@ It needs `onnxruntime`, `espeak-ng`, `pipewire-utils` and `curl` installed.
 
 - `cargo test -p dashi-voice`: the protocol, the gate, the decoders, the
   planner and its timing, the fetcher (from `file://` addresses), the
-  language told for 77 sentences in English, Spanish and both
-  (`src/tongue/tests*.rs`), who says each sentence, the seam, how money and
+  language told for 83 sentences (English, Spanish, both in one, and the
+  four other languages; `src/tongue/tests*.rs`), who says each sentence, the seam, how money and
   measures are read, and the whole service with scripted models and sound
   (`src/service/tests/`). No model and no audio device is needed.
 - In the VM, with a null source and sink: `dashi-0.8.0-review/01-voice/` has

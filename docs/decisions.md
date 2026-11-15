@@ -3448,7 +3448,7 @@ short words, as the rulebook is written.
   then nothing is told. On by default; `by_language: false` (Settings'
   switch off) is the one voice as before.
 - **Why:** no model, nothing fetched, a few microseconds, and exact enough
-  for whole sentences in the two languages the owner speaks (77 sentences
+  for whole sentences in the two languages the owner speaks (83 sentences
   in the tests, his dictated kind included). Marking the language in the
   answer would put markup in every answerer's words; a language-ID model
   is a download and a licence for what a word list does here.
