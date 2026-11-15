@@ -2969,7 +2969,9 @@ short words, as the rulebook is written.
 - **Cost:** until then a build needs the network, as D127 says.
 - **Undo:** nothing to undo.
 
-### D132. Dashi's text is subpixel
+### D132. Dashi's text is subpixel (superseded by D142)
+
+- **Superseded 2026-11-15 by D142.** The heading and "The owner's decision" below were wrong: the owner's decision is grayscale as the supported default, subpixel as an opt-in. What follows is kept as the record of what was built and measured.
 
 - **Date:** 2026-11-15. The `n28` take-up (mirin PR 36). The owner's
   decision.
@@ -3298,3 +3300,28 @@ short words, as the rulebook is written.
 - **Cost:** until the host has mirin's fix the Dock slides at about 21
   frames a second.
 - **Undo:** nothing to undo.
+
+### D142. Dashi's text is in grays; subpixel is an opt-in
+
+- **Date:** 2026-11-15. The owner's decision, which corrects D132.
+- **Question:** D132 recorded "the owner chose subpixel" and made every
+  Dashi host ask for it at spawn. The owner's decision is the other way:
+  grayscale is Dashi's supported default and subpixel is an opt-in.
+- **Choice:** no host is spawned with `textAntialiasing: "subpixel"` by
+  default. `hostTextAntialiasing()` (`@dashi/ui`) gives "grayscale" unless
+  the session's environment says `MIRIN_METAL_TEXT=subpixel`, and every
+  place that spawns a host still goes through it, so the opt-in is applied
+  at spawn and never by a switch after a window is open.
+  `session/dashi-session` no longer sets the variable. An opted-in host
+  draws subpixel text in windows, and on a layer or lock surface only where
+  the surface is declared opaque (mirin PR 47); Dashi declares none opaque
+  yet, so with the opt-in its bar, Dock, launcher, banners, capsule and
+  login screen stay in grays.
+- **Why:** grays carry no colour fringes to a rotated or another screen,
+  look the same on windows and on the shell's surfaces, and are what the
+  design was drawn on; an idle host is 0.7 MB smaller (D132's measure).
+- **Left:** the opt-in as a setting (`appearance.textSmoothing`, with a row
+  in Settings › Appearance), which D132 says what it needs; and declaring
+  the opaque surfaces (the login screen, the lock) so an opted-in session
+  has subpixel there too.
+- **Undo:** the default in `hostTextAntialiasing`.

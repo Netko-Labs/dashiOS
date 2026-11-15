@@ -18,7 +18,7 @@ export function appNameEnv(name: string): Record<string, string> {
   return { MIRIN_METAL_APP_NAME: name };
 }
 
-/** `options` for one of the shell's hosts: named Dashi, its text subpixel (D132), keeping any environment the caller gave. */
+/** `options` for one of the shell's hosts: named Dashi, its text in grays unless the environment opted in (D142), keeping any environment the caller gave. */
 export function shellHostOptions(options: NativeHostOptions): NativeHostOptions {
   return { textAntialiasing: hostTextAntialiasing(), ...options, env: { ...appNameEnv(SHELL_APP_NAME), ...options.env } };
 }

@@ -9,6 +9,9 @@ import { openPopoverWindow } from "../src/popover.tsx";
 import { compositorIsThere, REWARM_MAX_MS, REWARM_MS, rewarmDelay, WARM_AFTER_MS, WarmHost, type WarmTimers } from "../src/warm-host.ts";
 import { flush } from "./support/time.ts";
 
+// The session these tests run in may have opted in to subpixel text; the tests are about the default.
+delete process.env.MIRIN_METAL_TEXT;
+
 function fakeHosts() {
   const spawned: { options: NativeHostOptions; opened: NativeWindowOptions[]; die: () => void }[] = [];
   const spawn = (_binary: string, options: NativeHostOptions): NativeHostTransport => {
@@ -76,7 +79,7 @@ test("an applet's host starts a moment after the applet, named for screen reader
   expect(spawned).toHaveLength(0);
   expect(await pass()).toEqual([WARM_AFTER_MS]);
   expect(spawned).toHaveLength(1);
-  expect(spawned[0]?.options).toEqual({ deferred: true, textAntialiasing: "subpixel", env: { MIRIN_METAL_APP_NAME: "Weather" } });
+  expect(spawned[0]?.options).toEqual({ deferred: true, textAntialiasing: "grayscale", env: { MIRIN_METAL_APP_NAME: "Weather" } });
   expect(warm.isReady()).toBe(true);
 
   expect(warm.take(window)).not.toBeNull();

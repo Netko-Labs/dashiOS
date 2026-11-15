@@ -62,7 +62,7 @@ function surfaceOn(output: string | undefined, keyboard: boolean): NativeHostTra
   return spawnNativeHost(metalHost(), {
     title: "Login",
     appId: "dev.dashi.greeter",
-    // Dashi's text is subpixel (D132).
+    // Grays, or what the environment opted in to (D142).
     textAntialiasing: hostTextAntialiasing(),
     surface: {
       role: "layer",

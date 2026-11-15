@@ -105,7 +105,7 @@ export function runApp(options: AppOptions, element: ReactElement): RunningApp {
     height: size.height,
     ...least,
     titleBar,
-    // Dashi's text is subpixel (D132).
+    // Grays, or what the environment opted in to (D142).
     textAntialiasing: hostTextAntialiasing(),
     env,
     askToClose: true,
