@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test";
-import type { Bounds, ViewHandle } from "@mirinjs/metal";
-import { ScrollPlace } from "../src/shared/file-browser/lib/marquee/place.ts";
-import { reveal, revealStep } from "../src/shared/file-browser/lib/marquee/reveal.ts";
+import type { Bounds } from "@mirinjs/metal";
+import { Reveal, revealStep } from "../src/shared/file-browser/lib/marquee/reveal.ts";
 import type { ListingModel } from "../src/shared/file-browser/lib/marquee/types.ts";
 import { rowRects } from "../src/shared/file-browser/lib/views/list.tsx";
+import type { WindowSurface } from "../src/shared/metal/index.ts";
 
 test("an item out of view is scrolled just far enough to show whole; one in view moves nothing", () => {
   const row = (at: number) => ({ x: 5, y: at * 26, width: 390, height: 26 });
@@ -20,80 +20,81 @@ test("an item out of view is scrolled just far enough to show whole; one in view
   expect(revealStep(row(19), 260, 130, 528)).toBe(528 - 130 - 260);
 });
 
-/** A list of 20 rows, five showing, whose scroll view says where it stands only when `drawn` is called (a frame). */
+/** A list of 20 rows, five showing, in a window that paints a scroll only when `paint` is called. */
 function setup() {
   const paths = Array.from({ length: 20 }, (_, at) => `/f${at}`);
   const frame: Bounds = { x: 100, y: 50, width: 400, height: 130 };
-  const height = 20 * 26 + 8;
-  const world = { top: 0, scrolls: [] as number[] };
-  const model: ListingModel = { contentHeight: height, paths, rects: rowRects(20, 400) };
-  const place = new ScrollPlace(() => 0);
-  const handle: ViewHandle = {
-    scrollTo: ({ y }) => {
-      if (y === undefined) return;
-      world.scrolls.push(y);
-      world.top = Math.max(0, Math.min(height - frame.height, y));
+  const world = { top: 0, painted: 0, scrolls: [] as number[], asked: 0 };
+  const model: ListingModel = { scrollID: "list:rows", contentHeight: 20 * 26 + 8, paths, rects: rowRects(20, 400), nodeOf: (path) => `list:row:${path}` };
+  const surface: WindowSurface = {
+    bounds: async (ids) => {
+      world.asked++;
+      return ids.map((id) => {
+        if (id === "list:rows") return frame;
+        const at = paths.findIndex((path) => `list:row:${path}` === id);
+        const y = frame.y + at * 26 - world.painted;
+        return at < 0 || y + 26 < frame.y || y > frame.y + frame.height ? null : { x: frame.x + 5, y, width: 390, height: 26 };
+      });
     },
-    scrollToEnd: () => {},
-    scrollIntoView: () => {},
+    scrollBy: (_id, dy) => {
+      world.scrolls.push(dy);
+      world.top = Math.max(0, Math.min(20 * 26 + 8 - frame.height, world.top + dy));
+    },
   };
-  place.attach(handle);
-  place.layout(frame);
-  const drawn = () =>
-    place.scroll({
-      contentOffset: { x: 0, y: world.top },
-      contentSize: { width: 400, height },
-      layoutMeasurement: { width: 400, height: frame.height },
-    });
-  return { world, model, place, drawn, handle };
+  const listing = () => ({ surface, model });
+  const turns = async (count = 20) => {
+    for (let at = 0; at < count; at++) await Promise.resolve();
+  };
+  return { world, listing, turns, paint: () => void (world.painted = world.top) };
 }
 
-test("the keyboard's item is scrolled into view, down and back up", () => {
-  const { world, model, place, drawn } = setup();
-  reveal("/f3", model, place);
+test("the keyboard's item is scrolled into view through the window, down and back up", async () => {
+  const { world, listing, turns, paint } = setup();
+  const reveal = new Reveal();
+  reveal.show("/f3", listing);
+  await turns();
   expect(world.scrolls).toEqual([]);
-  reveal("/f5", model, place);
+  reveal.show("/f5", listing);
+  await turns();
   expect(world.scrolls).toEqual([26]);
-  drawn();
-  reveal("/f19", model, place);
-  drawn();
+  paint();
+  await turns();
+  reveal.show("/f19", listing);
+  await turns();
+  paint();
+  await turns();
   expect(world.top).toBe(20 * 26 + 8 - 130);
-  reveal("/f0", model, place);
-  drawn();
+  reveal.show("/f0", listing);
+  await turns();
+  paint();
+  await turns();
   expect(world.top).toBe(0);
 });
 
-test("keys that repeat before a scroll is told back go on from where it was sent: it ends on the last one's item", () => {
-  const { world, model, place, drawn } = setup();
-  reveal("/f5", model, place);
-  // Two more keys before a frame is drawn.
-  reveal("/f6", model, place);
-  reveal("/f7", model, place);
-  // Row 7's bottom at the view's bottom: 8 × 26 − 130.
-  expect(world.scrolls).toEqual([26, 52, 78]);
-  drawn();
-  // Another key there moves nothing.
-  reveal("/f7", model, place);
-  expect(world.scrolls).toEqual([26, 52, 78]);
+test("keys that repeat before a scroll is painted are not counted twice: it ends on the last one's item", async () => {
+  const { world, listing, turns, paint } = setup();
+  const reveal = new Reveal();
+  reveal.show("/f5", listing);
+  await turns(4);
+  // Two more keys while the first scroll is not painted yet.
+  reveal.show("/f6", listing);
+  reveal.show("/f7", listing);
+  await turns(60);
+  // The first scroll never showed, and is still counted: 26 for row 5, then 52 more for row 7, not 78.
+  expect(world.scrolls).toEqual([26, 52]);
+  paint();
+  // Row 7's bottom at the view's bottom: 8 × 26 − 130. Another key there moves nothing.
+  expect(world.top).toBe(78);
+  reveal.show("/f7", listing);
+  await turns(60);
+  expect(world.scrolls).toEqual([26, 52]);
 });
 
-test("another scroll view (icons to list, a folder that was empty) starts at its start", () => {
-  const { world, model, place, drawn, handle } = setup();
-  reveal("/f19", model, place);
-  drawn();
-  expect(place.top).toBe(398);
-  place.attach(null);
-  place.attach({ ...handle });
-  place.layout({ x: 100, y: 50, width: 400, height: 130 });
-  expect(place.top).toBe(0);
-  reveal("/f5", model, place);
-  expect(world.scrolls.at(-1)).toBe(26);
-});
-
-test("a listing not laid out yet, or an item that is not listed, scrolls nothing", () => {
-  const { world, model, place } = setup();
-  reveal("/gone", model, place);
-  reveal("/f9", null, place);
-  reveal("/f9", model, new ScrollPlace());
+test("a listing with no window, or an item that is not listed, scrolls nothing", async () => {
+  const { world, listing, turns } = setup();
+  const reveal = new Reveal();
+  reveal.show("/gone", listing);
+  reveal.show("/f9", () => ({ surface: null, model: listing().model }));
+  await turns();
   expect(world.scrolls).toEqual([]);
 });

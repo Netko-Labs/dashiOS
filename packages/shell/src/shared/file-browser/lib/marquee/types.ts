@@ -4,6 +4,8 @@ import type { Rect } from "./geometry.ts";
 
 /** How a view lays its items out, in its content's pixels (from the top left of what scrolls). */
 export interface ListingModel {
+  /** The scroll view's `testID`. */
+  scrollID: string;
   /** How tall everything that scrolls is. */
   contentHeight: number;
   /** The items, in the order drawn, and where each is. */
@@ -11,6 +13,8 @@ export interface ListingModel {
   rects: readonly Rect[];
   /** What of each item a marquee must touch to take it (an icon view's icon and name); its whole place when absent. */
   parts?: readonly (readonly Rect[])[];
+  /** The `testID` of the node painted at an item's rectangle. */
+  nodeOf(path: string): string;
 }
 
 /** The part of the store a marquee uses. */

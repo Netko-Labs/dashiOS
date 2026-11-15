@@ -202,10 +202,12 @@ export function Grid({ items, empty }: { items: readonly FileItem[]; empty: Reac
     items.length === 0
       ? null
       : {
+          scrollID: "grid:rows",
           contentHeight: gridHeight(items.length, width, height),
           paths: items.map((item) => item.path),
           rects,
           parts,
+          nodeOf: (path) => `cell:${path}`,
         };
   return (
     <View
@@ -221,8 +223,6 @@ export function Grid({ items, empty }: { items: readonly FileItem[]; empty: Reac
       ) : (
         <ScrollView
           testID="grid:rows"
-          // Where it is and how far it is scrolled, for a marquee and the keyboard's item (lib/marquee/place.ts).
-          {...marqueeOf(store).place.props}
           style={{ flex: 1, flexDirection: "column", paddingVertical: PADDING, paddingHorizontal: gridInset(width), gap: ROW_GAP }}
         >
           {rows.map((row) => (

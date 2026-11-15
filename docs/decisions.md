@@ -2107,7 +2107,7 @@ short words, as the rulebook is written.
 
 ### D100. A marquee asks its window where the items are painted
 
-**Superseded by D134:** the scroll view says where it is and how far it is scrolled, and takes a scroll; nothing is asked through the simulation channel.
+**Still so after mirin's scroll position came (D134):** on a long list it is not to be trusted yet.
 
 - **Date:** 2026-11-14. The `n15-marquee` agent's.
 - **Question:** the rectangle must stay on the items while they scroll, and
@@ -2438,7 +2438,7 @@ short words, as the rulebook is written.
 
 ### D113. The keyboard's item is scrolled into view by asking the window
 
-**Superseded by D134:** the same sum, on what the scroll view says, sent to the view itself.
+**Still so (D134).**
 
 - **Date:** 2026-11-14. The `n19-polish` agent's.
 - **Question:** ↑ or ⇧↑ past the top of what shows left the selection off
@@ -3018,41 +3018,40 @@ short words, as the rulebook is written.
 - **Undo:** `git revert` of this commit brings `drawn.ts` and its callers
   back.
 
-### D134. A listing's scroll view says where it stands, and is scrolled through its handle
+### D134. Files still asks its window where the items are; Calendar scrolls its hours by their handle
 
 - **Date:** 2026-11-15. The `n28` take-up, finished by `n29` (mirin
   `5703b91`, PR 34).
-- **Question:** D100 and D113 asked the window where the items were
-  painted (every 150 ms during a drag, once or twice per key) and scrolled
-  through the simulation channel, because Metal said nothing of a scroll
-  view. Now a view that scrolls has `onScroll` and its `ref` is a
-  `ViewHandle`. What is built on them?
-- **Choice:** `ScrollPlace` (`shared/file-browser/lib/marquee/place.ts`),
-  one per browser, fed by the listing's scroll view (the grid's
-  `ScrollView`; the list's through `Table`'s new `scroll` prop): its
-  `onLayout` is where the view is in the window, its `onScroll` how far the
-  content has gone under it, its `ref` scrolls it. The content's top left
-  is the view's less the offset. The marquee is worked out again whenever
-  either changes (a wheel or a touchpad mid-drag, its own scrolling at an
-  edge, the view moving), with no timer that asks. The keyboard's item is
-  shown by the same sum as D113 and one `scrollTo`. A scroll asked for is
-  told back a frame later: until then the place counts it (250 ms at
-  most), so a tick or a key that repeats goes on from where the last one
-  was sent. `WindowSurface` is now one question, `scrolls()` (the host's
-  `protocol` said `scroll`). Calendar's hours are scrolled the same way
-  (`scrollTo` on the hours' `ref`, an offset and no longer "to the top,
-  then down"), and its `scroll` prop from `main.tsx` is gone.
-- **Why not `scrollIntoView()` for the keyboard's item:** it would need a
-  `ref` kept for every tile and row, and it shows an item "the least":
-  D113's rule that the first and last rows take the listing all the way
-  (the grid's padding, the room under a list's last row) would be lost.
-- **Why:** the host knows; the 150 ms look made a wheel mid-drag lag the
-  rectangle by up to that long, and each look carried every painted node.
-- **Cost:** on a host that says no `scroll` (none ships with Dashi: the
-  host is built from the same mirin) nothing is dragged out, the
-  keyboard's item is not scrolled to, and Calendar's hours open at
-  midnight. D100's way is not kept beside the new one. Still through the
-  simulation channel, and left: Notes' and Text Editor's scroll to the
-  caret (`apps/notes/main.tsx`, `apps/editor/main.tsx`) and Settings'
-  scroll to a searched row (`src/overlay.tsx`).
-- **Undo:** `git revert` of this commit.
+- **Question:** D100 and D113 ask the window where the items are painted
+  (every 150 ms during a drag, once or twice per key) and scroll through
+  the simulation channel, because Metal said nothing of a scroll view. Now
+  a view that scrolls has `onScroll`, and its `ref` is a `ViewHandle`
+  (`scrollTo`, `scrollIntoView`). Move Files' marquee and the keyboard's
+  reveal onto them?
+- **Choice:** not yet. It was built (`fd03ff15`: a `ScrollPlace` fed by the
+  listing's `onLayout`, `onScroll` and `ref`) and taken back after the VM:
+  on a long list, which both of Files' views are (mirin lays out only the
+  rows near the view), the host's offset is wrong once rows have changed.
+  A row whose props change is taken out of the list's measures and counted
+  as nothing until it is laid out again, and a list that reports its
+  offset is counted whole only once. Seen with 89 rows of 26: wheeled to
+  1200, then Select All, the list says it is at 0; and a marquee held at
+  the bottom edge, which changes the selected rows on every step, was sent
+  to 98 and landed on 722, then the end, then 78, and selected 48 rows of
+  the 86 under it. The same happens with the simulation channel's scroll
+  once the list has `onScroll`. Without `onScroll` the list is as it was,
+  and D100's way selects the 86. So Files, the sheets and `dashi-dialog`
+  keep D100 and D113 as they were.
+  **Calendar is moved:** its hours are a plain scroll view, and
+  `scrollTo` on their `ref` puts them at an offset (no longer "to the
+  top, then down" through `main.tsx`, whose `scroll` prop is gone).
+- **When mirin counts a changed list again** (`list.rs`:
+  `invalidate_changed` splices rows in with no height; `estimate_rows`
+  runs once per width): bring `fd03ff15` back. It is written and tested.
+- **Cost:** the 150 ms look stays during a drag. On a host that says no
+  `scroll` (none ships with Dashi) Calendar's hours open at midnight.
+  Still through the simulation channel as well: Notes' and Text Editor's
+  scroll to the caret (`apps/notes/main.tsx`, `apps/editor/main.tsx`) and
+  Settings' scroll to a searched row (`src/overlay.tsx`).
+- **Undo:** Calendar: `git revert` of this entry's first commit, less the
+  files under `shared/file-browser`.

@@ -10,7 +10,7 @@
 
 import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
-import { type NativeHostTransport, type NativeWindowOptions, render, spawnNativeHost } from "@mirinjs/metal";
+import { type NativeHostTransport, type NativeRoot, type NativeWindowOptions, render, spawnNativeHost } from "@mirinjs/metal";
 import { createElement, type ReactElement } from "react";
 import { METAL_HOST } from "../../../src/shared/apps/index.ts";
 import { Surface, shellHostOptions, WarmHost, windowSurface } from "../../../src/shared/metal/index.ts";
@@ -69,9 +69,11 @@ export function dialogWindows(shell: ShellLink, binary: string = METAL_HOST): Sh
         resolve(value);
       };
       const onAbort = () => finish(closed);
-      // The chooser's listing asks whether the host says where it is scrolled (a marquee, src/shared/metal/surface.ts).
-      const surface = windowSurface(transport);
+      // The chooser's listing asks its window where its items are (a marquee, src/shared/metal/surface.ts).
+      const mounted: { root: NativeRoot | null } = { root: null };
+      const surface = windowSurface(transport, () => mounted.root);
       const root = render(createElement(Surface.Provider, { value: surface }, build(finish)), transport);
+      mounted.root = root;
       transport.onClose(() => finish(closed));
       signal.addEventListener("abort", onAbort);
       if (sheet) retitle = setTimeout(() => transport.setTitle(window.title), RETITLE_MS);

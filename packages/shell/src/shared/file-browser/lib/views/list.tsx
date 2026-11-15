@@ -132,9 +132,11 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
     items.length === 0
       ? null
       : {
+          scrollID: "list:rows",
           contentHeight: items.length * ROW + LIST_END,
           paths: items.map((item) => item.path),
           rects,
+          nodeOf: (path) => `list:row:${path}`,
         };
   return (
     <View
@@ -178,8 +180,6 @@ export function ListView({ items, empty }: { items: readonly FileItem[]; empty: 
         }
         empty={empty}
         rowHeight={ROW}
-        // Where the rows' scroll view is and how far it is scrolled, for a marquee and the keyboard's item (lib/marquee/place.ts).
-        scroll={marquee.place.props}
       />
     </View>
   );
