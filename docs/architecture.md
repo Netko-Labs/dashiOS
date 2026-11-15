@@ -171,7 +171,13 @@ gnome-keyring. xdg-desktop-portal-gtk is not installed.
   bar, above it, on its Space, without a title bar of its own, and gives it
   the keyboard and the presses the parent would get. With no parent the
   dialog is an ordinary window, opened at once: a question from an app with
-  no window (Access, Account) does not wait in the menu bar.
+  no window (Access, Account) does not wait in the menu bar. Dashi's own
+  apps (Preview's Open, Settings' Add Photo, Calendar's import:
+  `src/shared/portal/file-chooser.ts`) have no handle to give, a Metal
+  window exports none, so they name their window by their process,
+  `dashi:PID`, and the shell finds it: a window of Dashi's own that this
+  process (or its Metal host) draws, the focused one first
+  (`src/portal-host/sheets.ts`, decisions.md D125).
 - **What is the shell's stays the shell's.** Holds (Inhibit) go to the
   shell's `InhibitStore` (`src/inhibit/`), which idle reads: while an app
   holds, the screens don't blank and the computer doesn't sleep; the

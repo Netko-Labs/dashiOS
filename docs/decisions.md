@@ -2686,3 +2686,116 @@ short words, as the rulebook is written.
   input is 400 ms old (D86). A drag still moves their pointer.
 - **Undo:** take the `agent_goes_direct` branch out of `agent_input`
   (`session/agent.rs`).
+
+### D123. The browser policy sets no minimum version for Dashi's extension
+
+- **Date:** 2026-11-14. The `n21` installed pass.
+- **Question:** with D117's `minimum_version_required: "0.9.0"` installed,
+  Helium stopped with SIGTRAP at every start on a profile that already held
+  an older Dashi extension (the VM's 0.5.0 profile, and a profile Helium made
+  itself under the 0.8 packages with 0.8.0): no window, a core dump each
+  time. D117 was proved only with Helium open while the package changed. A
+  new profile was fine. What makes an old profile start and still update?
+- **Choice:** the key is taken out; `override_update_url: true` stays.
+- **Why:** measured in the VM on copies of the 0.8 profile, one key removed
+  at a time: without the minimum version Helium starts and the profile holds
+  0.9.0 within 10 s; with it (with or without `override_update_url`) it
+  stops at start. Chromium's own updater still does the work.
+- **Cost:** the update is no longer forced at the instant of start: an old
+  extension may run for the first seconds, and D117's notice ("Helium needs
+  a restart") covers a Helium that keeps running it. A busy service worker
+  may put the update off until Helium is next opened.
+- **Undo:** put the key back in
+  `spin/dashi-helium/etc/chromium/policies/managed/dashi.json` and in
+  `browser-pinning.test.ts`, once Helium no longer stops on it.
+
+### D124. Keys typed before Calculator's line took a keypad key land after it; the agent's path is left as it is
+
+- **Date:** 2026-11-14. The `n22` final fixes.
+- **Question:** an agent's click on 7 and `type_text "*6="` sent at once
+  left 76 on Calculator's display and no sum, three times of five (D110's
+  direct path). Where is the fault: the compositor's order, or the app?
+- **Choice:** the app. Calculator's line is written by two hands: the
+  keypad writes it in the app, the field types in the Metal host. The keys
+  reached the field (in order, with their modifiers) before the field had
+  taken the "7" the click made, so it reported "\*", "\*6", "\*6=" typed on
+  its old, empty text, and the line read those as edits of "7". Now the
+  line keeps the texts the field may still hold (its own older texts, up
+  to eight: each went out in a tree, and the field takes the trees in turn
+  and types between them), reads each report as the smallest edit of any
+  of them, and puts it after what the field never had. A caret the field
+  reports in the line's own text says it has taken it. The
+  compositor's direct path is not changed: it sends a click and then keys
+  in order, and it does not wait for an app to show what a click did.
+- **Why:** replayed in the reducer with no compositor at all: key 7, then
+  the field's "\*", "\*6", "\*6=" gave "76" and no sum, every time. The two
+  good runs of five were the ones where the field had already taken the 7.
+  One text kept was not enough: four calls 2 ms apart (click 7, "+2", ⇧8,
+  "3=") were right 12 times of 30 in the VM, and 59 of 150 seeded
+  crossings of reports and trees in the test; with the older texts kept,
+  150 of 150 (and 3,000 of 3,000 from another seed, run once).
+- **Cost:** a person who clicks a key and, before the field has taken it (a
+  round trip, some tens of ms), replaces a selection by typing is read as
+  typing after the key. Any other app whose field is written by the app
+  and typed in at the same instant has the same race; mirin could say with
+  each change which text it was made on (the selection already carries its
+  text's hash), and that is the fix for all of them.
+- **Undo:** `held` goes back to null when the line changes another way
+  (`calculate` in `apps/calculator/lib/state.ts`), and `sameSpot` in
+  `lib/field.ts` to counting the same digits.
+
+### D125. A Dashi app's file dialog is a sheet of its window, named by its process
+
+- **Date:** 2026-11-14. The `n22` final fixes.
+- **Question:** a click on Preview with its Open panel up put Preview over
+  the panel, which looked gone. The compositor keeps a sheet above its
+  parent in every path (`focus_window`); the panel was never a sheet.
+  Dashi's own apps asked the portal for it with no parent window
+  (`file-chooser.ts` sent `""`), so it was an ordinary window beside
+  Preview, and the person's click raised Preview as it would over any
+  window. An agent's click never did it (its click raises nothing). The
+  empty parent is as old as the portal client (in `8dded6d` and before
+  0.8), so this is no regression. How does a Metal app say which window is
+  its own? It has no xdg-foreign handle: mirin's host exports none.
+- **Choice:** the app gives the portal `dashi:PID`, its own process.
+  xdg-desktop-portal hands the string on as it is; dashi-portal expects a
+  sheet for it as for any parent, and the shell finds the window: one whose
+  client is that process or its child (a Metal host), the focused one
+  first, and only a window of Dashi's own apps (`dev.dashi.*`), never a
+  portal dialog or a sheet. Then the usual `attach`. Also: a window asked
+  to the front while its sheet has the keyboard counts as used (the window
+  list had another window between the sheet and its parent).
+- **Why:** no change to mirin tonight, and no new IPC; the shell already
+  ties windows to processes this way for the menus (`ownerPids`).
+- **Cost:** a process number can be guessed where an exported handle
+  cannot: any program that can call the portal may hang a file dialog of
+  its own on a Dashi app's window by naming that app's process. It gains
+  nothing by it (the dialog answers to the caller, and shows on screen),
+  and it cannot reach other apps' windows. The bar still names the app used
+  before the sheet while a sheet has the keyboard ("Calculator" over
+  Preview's panel, when Calculator was in front before).
+- **Undo:** send `""` again in `src/shared/portal/file-chooser.ts`. The
+  right end is mirin's host exporting its window (xdg-foreign v2) and the
+  app passing `wayland:HANDLE`; `dashi:` can go then.
+
+### D126. In the agents' panel a row's buttons always sit beside its title
+
+- **Date:** 2026-11-14. The `n22` final fixes. Adds to D114.
+- **Question:** D114 left the rows of agents on the Desktop that shows as
+  they were: Stop beside both lines. While such an agent saw the screen the
+  line was the chip "Seeing the screen · 0:01" and "“dashi-vm-agent”,
+  connected over SSH" in what Stop left, and the name was cut
+  ("“dashi-vm-agent…", the installed pass's still). The polish round's
+  stills were of an agent on another Desktop, the row D114 did change.
+- **Choice:** every row is laid out as D114's: Stop (and Show, when there
+  is one) beside the title, the line under it the row's whole width. While
+  an agent sees or records the screen the chip is followed by its name
+  alone, on this Desktop too; "connected over SSH" gives way there.
+- **Why:** one layout, and the name is what the person needs beside "Seeing
+  the screen". The chip at its longest ("Recording the screen · 12:14") and
+  a 14-letter name fit the 300 points the line has.
+- **Cost:** while it watches, a remote agent's row no longer says
+  "connected over SSH" (its title is "Remote agent"). A much longer name is
+  still cut at the row's end.
+- **Undo:** `ConnectionRow` and `rowLine` in
+  `packages/shell/src/agents-panel/lib/agents-rows.tsx`.

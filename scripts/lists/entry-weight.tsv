@@ -44,6 +44,7 @@ packages/shell/apps/calendar/main.tsx	packages/shell/src/shared/io
 packages/shell/apps/calendar/main.tsx	packages/shell/src/shared/locale
 packages/shell/apps/calendar/main.tsx	packages/shell/src/shared/metal
 packages/shell/apps/calendar/main.tsx	packages/shell/src/shared/portal
+packages/shell/apps/calendar/main.tsx	packages/shell/src/shared/portal-host
 packages/shell/apps/calendar/main.tsx	packages/shell/src/shared/settings
 packages/shell/apps/calendar/main.tsx	packages/shell/src/shared/time
 packages/shell/apps/components/main.tsx	packages/shell/apps/components
@@ -142,6 +143,7 @@ packages/shell/apps/preview/main.tsx	packages/shell/src/shared/io
 packages/shell/apps/preview/main.tsx	packages/shell/src/shared/locale
 packages/shell/apps/preview/main.tsx	packages/shell/src/shared/metal
 packages/shell/apps/preview/main.tsx	packages/shell/src/shared/portal
+packages/shell/apps/preview/main.tsx	packages/shell/src/shared/portal-host
 packages/shell/apps/software/main.tsx	packages/shell/apps/kit
 packages/shell/apps/software/main.tsx	packages/shell/apps/software
 packages/shell/apps/software/main.tsx	packages/shell/src/shared/app-menus
@@ -251,6 +253,7 @@ packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/logind
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/metal
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/pill
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/portal
+packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/portal-host
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/processes
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/session-power
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/settings

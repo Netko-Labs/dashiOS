@@ -6,7 +6,7 @@
  */
 
 import { AppCatalog } from "../app-catalog.ts";
-import { type AppMenus, startAppMenus } from "../app-menus/index.ts";
+import { type AppMenus, ownerPids, startAppMenus } from "../app-menus/index.ts";
 import { AppletCommands, AppletControls, AppletPopovers, AppletPower, popoverScreen, startApplets } from "../applets/index.ts";
 import { appFor, launch } from "../apps.ts";
 import { startBatteryMonitor } from "../battery/index.ts";
@@ -132,7 +132,7 @@ export function startKeepingAwake({ compositor, look, arranging, guards, catalog
   const holds = keepAwake();
   idle?.holdWith({ screen: () => holds.blocks(InhibitFlag.idle), sleep: () => holds.blocks(InhibitFlag.suspend) });
   const stopFollowingHolds = holds.subscribe(() => idle?.holdsChanged());
-  const portalSheets = compositor && arranger ? new PortalSheets(compositor, (window) => arranger.place(window)) : null;
+  const portalSheets = compositor && arranger ? new PortalSheets(compositor, (window) => arranger.place(window), Date.now, ownerPids) : null;
   if (arranger && portalSheets) arranger.claim = (window) => portalSheets.claim(window);
   const portalHost = startPortalHost({
     store: holds,

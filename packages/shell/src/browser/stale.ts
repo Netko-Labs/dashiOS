@@ -1,8 +1,9 @@
 /**
  * An extension older than the one the package holds (decisions.md D117).
- * Helium takes the packaged extension when it starts (the policy's
- * `minimum_version_required`); a Helium that was open through the package's
- * update still runs the old one, and what the old one lacks fails quietly
+ * Helium takes the packaged extension soon after it starts (the policy's
+ * `override_update_url`; D123 took the minimum version out); until then, and
+ * in a Helium that was open through the package's update, the old one still
+ * runs, and what the old one lacks fails quietly
  * (a page opened for an agent lands in the person's window). So the shell
  * says it once, with what to do. Pure but for reading the update manifest.
  */

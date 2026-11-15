@@ -4,7 +4,10 @@
  * asks to be placed, the shell finds the parent the handle names (IPC
  * `window-for-handle`) and attaches the dialog to it (IPC `attach`, the
  * compositor keeps it there). A handle that names no window leaves the
- * dialog an ordinary window, placed as any other (arrange.ts).
+ * dialog an ordinary window, placed as any other (arrange.ts). One of
+ * Dashi's own apps names its window by its process (`dashi:PID`: a Metal
+ * window exports no handle), and the shell finds the window: the one that
+ * process draws, the focused one first, and only a window of Dashi's own.
  *
  * A sheet hangs under the parent's title bar. dashi-comp knows the height of
  * the bars it draws; for a window that draws its own (a browser's tabs and
@@ -14,7 +17,7 @@
  */
 
 import type { Compositor, CompositorWindow, Placing } from "../compositor/index.ts";
-import { PORTAL_APP_ID, parseParentWindow } from "../shared/portal-host/index.ts";
+import { ownWindowPid, PORTAL_APP_ID, parseParentWindow } from "../shared/portal-host/index.ts";
 
 /** An expectation older than this is forgotten: the portal's window never came. */
 const EXPECT_MS = 15_000;
@@ -50,6 +53,20 @@ export function sheetTop(parent: Pick<CompositorWindow, "appId" | "titleBar">): 
   return SHEET_TOPS.other;
 }
 
+const DASHI_APP = /^dev\.dashi\./;
+
+/**
+ * The window a Dashi app means by its own process: one whose client is that process or its child
+ * (a Metal host's app), the focused one first. Only a window of Dashi's own apps, never a dialog of
+ * the portal's or a sheet: a process number can be guessed, an exported handle cannot.
+ */
+export function ownWindowOf(pid: number, windows: readonly CompositorWindow[], owners: (pid: number | null) => readonly number[]): number | null {
+  const theirs = windows.filter(
+    (each) => DASHI_APP.test(each.appId) && each.appId !== PORTAL_APP_ID && each.sheetOf === undefined && owners(each.pid).includes(pid),
+  );
+  return (theirs.find((each) => each.focused) ?? theirs[0])?.id ?? null;
+}
+
 export class PortalSheets {
   private readonly pending = new Map<string, { parent: string; until: number }>();
 
@@ -58,6 +75,8 @@ export class PortalSheets {
     /** Places a window that is not a sheet after all (the Arranger). */
     private readonly placeNormally: (window: Placing) => Promise<void>,
     private readonly now: () => number = Date.now,
+    /** The processes a window's client belongs to: its own, then its parent's (app-menus' `ownerPids`). */
+    private readonly owners: (pid: number | null) => readonly number[] = (pid) => (pid === null ? [] : [pid]),
   ) {}
 
   /** The window that comes with `title` hangs from `parent` (a portal parent handle). */
@@ -85,9 +104,10 @@ export class PortalSheets {
   }
 
   private async attach(window: Placing, handle: string): Promise<void> {
-    const parent = await this.host.windowForHandle({ handle });
-    if (parent === null) return this.placeNormally(window);
+    const own = ownWindowPid(handle);
     const listed = await this.host.windows().catch(() => []);
+    const parent = own === null ? await this.host.windowForHandle({ handle }) : ownWindowOf(own, listed, this.owners);
+    if (parent === null) return this.placeNormally(window);
     const parentWindow = listed.find((each) => each.id === parent);
     const top = parentWindow ? sheetTop(parentWindow) : undefined;
     await this.host.attach({ window: window.id, parent, ...(top === undefined ? {} : { top }) });

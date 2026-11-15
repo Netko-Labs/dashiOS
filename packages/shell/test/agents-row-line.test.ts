@@ -34,8 +34,13 @@ test("a chip that says more than Connected stays, and a row with no Desktop is a
   // Waiting on the person there: the chip says so, and the line says what it does.
   expect(lineOf({ space: 3, status: "Working on Desktop 4", waiting: true, remote: true, claims: "claude-ai" }).chip).toBe(true);
   expect(lineOf({ remote: true, claims: "claude-ai", detail: "connected over SSH" })).toEqual({ chip: true, words: "“claude-ai”, connected over SSH" });
-  expect(lineOf({ status: "Recording the screen", watching: "recording", remote: true, claims: "claude-ai" })).toEqual({
+});
+
+// The installed pass's still (12-evening-installed, small-06): on the person's own Desktop, "“dashi-vm-agent…".
+test("while it sees or records the screen on this Desktop, its name follows the chip, whole", () => {
+  expect(lineOf({ status: "Taking a screenshot", watching: "screen", remote: true, claims: "dashi-vm-agent", detail: "connected over SSH" })).toEqual({
     chip: true,
-    words: "“claude-ai”, connected over SSH",
+    words: "“dashi-vm-agent”",
   });
+  expect(lineOf({ status: "Recording the screen", watching: "recording", remote: true, claims: "claude-ai" }).words).toBe("“claude-ai”");
 });

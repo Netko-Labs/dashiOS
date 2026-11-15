@@ -180,6 +180,58 @@ fn a_sheet_hangs_where_the_shell_says_on_a_window_that_draws_its_own_bar() {
     assert!(ipc.request("attach", bad)["error"].is_string());
 }
 
+/// A window with a sheet on it never comes above it: asked to the front (a click on it, the
+/// Dock, an agent's `focus_window`), both come, the sheet on top and with the keyboard.
+#[test]
+fn a_window_brought_forward_brings_its_sheet_above_it() {
+    let compositor = Compositor::start(&[]);
+    let mut ipc = compositor.connect();
+    assert_eq!(ipc.request("subscribe", json!({}))["result"], json!({}));
+    let display = ipc.request("session", json!({}))["result"]["waylandDisplay"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let dir = compositor.dir.path();
+    let open = |ipc: &mut Ipc, app: &str, title: &str, place: bool| {
+        let mut client = Client::open(dir, &display, app, title);
+        let id = wait_event(ipc, &mut client, "window-placing")["window"]["id"]
+            .as_u64()
+            .unwrap();
+        if place {
+            ipc.request("place", json!({ "window": id, "x": 100, "y": 100 }));
+            wait_event(ipc, &mut client, "window-opened");
+        }
+        (client, id)
+    };
+    let (_parent, parent) = open(&mut ipc, "dev.dashi.test", "Parent", true);
+    let (mut sheet_client, sheet) = open(&mut ipc, "dev.dashi.portal", "Open", false);
+    let attach = json!({ "window": sheet, "parent": parent, "top": 38 });
+    assert_eq!(ipc.request("attach", attach)["result"], json!({}));
+    wait_event(&mut ipc, &mut sheet_client, "window-opened");
+    let (_other, other) = open(&mut ipc, "dev.dashi.test", "Other", true);
+    // Front to back, and which has the keyboard.
+    let order = |ipc: &mut Ipc| -> (Vec<u64>, Option<u64>) {
+        let windows = ipc.request("windows", json!({}))["result"]["windows"].clone();
+        let list = windows.as_array().unwrap();
+        let focused = list.iter().find(|w| w["focused"] == true);
+        (
+            list.iter().map(|w| w["id"].as_u64().unwrap()).collect(),
+            focused.map(|w| w["id"].as_u64().unwrap()),
+        )
+    };
+    assert_eq!(order(&mut ipc), (vec![other, sheet, parent], Some(other)));
+
+    ipc.request("focus", json!({ "window": parent }));
+    assert_eq!(order(&mut ipc), (vec![sheet, parent, other], Some(sheet)));
+    // Again, with nothing between them: the parent does not pass its sheet.
+    ipc.request("focus", json!({ "window": parent }));
+    assert_eq!(order(&mut ipc), (vec![sheet, parent, other], Some(sheet)));
+    // Moved by the shell (a tile, Fill): still under its sheet, which follows it.
+    let frame = json!({ "window": parent, "x": 300, "y": 120, "width": 640, "height": 480 });
+    assert_eq!(ipc.request("frame", frame)["result"], json!({}));
+    assert_eq!(order(&mut ipc), (vec![sheet, parent, other], Some(sheet)));
+}
+
 #[test]
 fn portal_parents_and_sheets_are_checked() {
     let compositor = Compositor::start(&[]);

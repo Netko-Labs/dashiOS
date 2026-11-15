@@ -15,6 +15,7 @@ import { randomBytes } from "node:crypto";
 import { isAbsolute } from "node:path";
 import { maybe, obj, unknown } from "@dashi/shape";
 import { DBusConnection, type Variant, variant } from "../dbus/index.ts";
+import { ownWindow } from "../portal-host/index.ts";
 
 const PORTAL = "org.freedesktop.portal.Desktop";
 const PORTAL_PATH = "/org/freedesktop/portal/desktop";
@@ -128,7 +129,8 @@ async function ask(
             interface: CHOOSER,
             member,
             signature: "ssa{sv}",
-            body: ["", title, new Map<string, Variant>([["handle_token", variant("s", token)], ["modal", variant("b", true)], ...options])],
+            // Its own window, by its process: the dialog hangs from it as a sheet (portal-host/sheets.ts).
+            body: [ownWindow(process.pid), title, new Map<string, Variant>([["handle_token", variant("s", token)], ["modal", variant("b", true)], ...options])],
           }),
         )
         .catch(stop);
