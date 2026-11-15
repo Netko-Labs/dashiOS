@@ -2,19 +2,20 @@
  * Runs the evaluation set through one system and prints its scores.
  *
  *   bun packages/shell/test/support/rewrite-eval/run.ts --system nothing|rules|model|speakoflow \
- *     [--socket PATH] [--rules-first] [--own-rules] [--no-checks] [--label NAME] [--out FILE.json] [--only TAG]
+ *     [--socket PATH] [--set held-out] [--rules-first] [--own-rules] [--names-rule] [--no-checks] [--label NAME] [--out FILE.json] [--only TAG]
  *
  * `model` sends Dashi's prompt (src/rewrite/prompt.ts) to a llama-server on a Unix socket and
  * passes the answer through Dashi's checks; `speakoflow` sends SpeakoFlow Mini's own system
  * prompt and the bare transcript, as its card says to. Nothing here runs in `bun run test`.
  */
 
+import { join } from "node:path";
 import { parseArgs } from "node:util";
 import { list, maybe, obj, str } from "@dashi/shape";
 import { tidy } from "../../../src/dictation/lib/tidy.ts";
 import { checkAnswer } from "../../../src/rewrite/checks.ts";
 import { type Message, rewriteMessages } from "../../../src/rewrite/prompt.ts";
-import { breakdown, judge, loadPairs, type Pair, type Score } from "./score.ts";
+import { breakdown, FIXTURES, judge, loadPairs, type Pair, type Score } from "./score.ts";
 
 const SPEAKOFLOW = `You clean up SpeakoFlow dictation. Return only the cleaned transcript text.
 Rules:
@@ -42,6 +43,8 @@ const { values } = parseArgs({
     only: { type: "string" },
     "rules-first": { type: "boolean", default: false },
     "own-rules": { type: "boolean", default: false },
+    "names-rule": { type: "boolean", default: false },
+    set: { type: "string" },
     "no-checks": { type: "boolean", default: false },
   },
 });
@@ -90,7 +93,13 @@ async function answerOf(pair: Pair): Promise<Row> {
   const messages: Message[] =
     values.system === "speakoflow"
       ? [
-          { role: "system", content: SPEAKOFLOW },
+          {
+            role: "system",
+            content:
+              values["names-rule"] && vocabulary.length > 0
+                ? `${SPEAKOFLOW}\n- Write these names exactly this way where the text has something that sounds like one: ${vocabulary.join(", ")}.`
+                : SPEAKOFLOW,
+          },
           { role: "user", content: transcript },
         ]
       : rewriteMessages({ transcript, tone: "", vocabulary, before: "" }, values["own-rules"] ? SPEAKOFLOW : undefined);
@@ -104,7 +113,9 @@ const pct = (value: number | null): string => (value === null ? "   –  " : `${
 const line = (key: string, s: Score): string =>
   `${key.padEnd(26)} n=${String(s.pairs).padStart(3)}  restraint ${pct(s.restraint)}  edit ${pct(s.edit)}  edit(close) ${pct(s.editClose)}  damage ${pct(s.damage)}`;
 
-const pairs = loadPairs().filter((pair) => !values.only || pair.tags.includes(values.only) || pair.lang === values.only);
+const pairs = loadPairs(values.set ? join(FIXTURES, values.set) : FIXTURES).filter(
+  (pair) => !values.only || pair.tags.includes(values.only) || pair.lang === values.only,
+);
 const rows: Row[] = [];
 for (const pair of pairs) rows.push(await answerOf(pair));
 const answers = new Map(rows.map((row) => [row.id, row.answer]));
