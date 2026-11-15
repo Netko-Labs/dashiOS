@@ -34,8 +34,9 @@ export class Landings {
 
   /** The instruction the last utterance was taken as, while its Undo is offered: what it did, and the words to type instead. */
   private instructed: (Instructed & { heard: string }) | null = null;
-  /** The reads of the field still to come after a landing, to see a fix the person makes. */
+  /** The reads of the field still to come after a landing, to see a fix the person makes; and the fix the last read found. */
   private looks: unknown[] = [];
+  private seen: { from: string; to: string } | null = null;
   /** The model's answer that is still awaited for words that landed already; aborted when they are taken back or others land. */
   private refining: AbortController | null = null;
 
@@ -67,6 +68,7 @@ export class Landings {
     this.refining = null;
     for (const look of this.looks) this.deps.timers?.clear(look);
     this.looks = [];
+    this.seen = null;
   }
 
   /** After a landing the field is read again a few times: a word the person changed is offered as a replacement (learn.ts). */
@@ -82,7 +84,10 @@ export class Landings {
     const field = await this.deps.field(front).catch(() => null);
     if (!field || field.kind === "password" || field.before === null) return;
     const fix = correctionOf(entry.text, `${field.before}${field.after ?? ""}`);
-    if (!fix) return;
+    // Offered only once it has stayed the same from one look to the next: a fix still being typed is not one yet.
+    const settled = fix !== null && this.seen?.from === fix.from && this.seen.to === fix.to;
+    this.seen = fix;
+    if (!fix || !settled) return;
     this.settle();
     // What was typed is no longer what the field holds: it is the person's now.
     this.kept.drop(entry.id);
@@ -176,7 +181,7 @@ export class Landings {
     return typeWords(this.deps, this.kept, { heard: words, text: words }, "As you said it.");
   }
 
-  private async seen(state: Promise<DictationState>): Promise<DictationState> {
+  private async saw(state: Promise<DictationState>): Promise<DictationState> {
     const next = await state;
     this.sawState(next, this.kept.top()?.id ?? null);
     return next;
@@ -188,16 +193,16 @@ export class Landings {
     this.instructed = null;
     // Only while its line still offers Undo: later, Undo is the plain one.
     const offered = instructed && "until" in instructed.state && (this.deps.now?.() ?? Date.now()) <= instructed.state.until;
-    if (instructed && offered) return this.seen(this.literal(instructed));
-    return this.seen(undo(this.deps, this.kept));
+    if (instructed && offered) return this.saw(this.literal(instructed));
+    return this.saw(undo(this.deps, this.kept));
   }
 
   raw(): Promise<DictationState> {
     this.settle();
-    return this.seen(raw(this.deps, this.kept, this.last?.entry ?? null));
+    return this.saw(raw(this.deps, this.kept, this.last?.entry ?? null));
   }
 
   pasteLast(): Promise<DictationState> {
-    return this.seen(pasteLast(this.deps, this.kept, this.last));
+    return this.saw(pasteLast(this.deps, this.kept, this.last));
   }
 }

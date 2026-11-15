@@ -698,6 +698,8 @@
   },
   "type-text": {
     "params": {
+      "breaks": "shift+Return",
+      "erase": 4,
       "text": "señor, ¿qué tal?",
       "window": 7
     },

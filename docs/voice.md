@@ -107,7 +107,10 @@ the capsule one `DictationState` at a time (`shared/pill/dictation.ts`).
 4. **Typing** is the compositor's `type-text {window, text}`: one step, into
    the window the key went down in, through a keymap made for the text, so ñ
    and é type on any layout. The clipboard is not touched. A BackSpace is
-   sent only to take back what Dashi itself typed ("The insertion record"). An X11 window can't take it (`x11`): there the words are pasted
+   sent only to take back what Dashi itself typed ("The insertion record"),
+   and a line break is the chord the place wants; both ride in the same
+   `type-text` request (`erase`, `breaks`), because a chord sent apart
+   (`send-keys`) goes through the input method and arrives after the text. An X11 window can't take it (`x11`): there the words are pasted
    (the clipboard is put back 300 ms later) and the line says "Pasted."
    While the bar's row is the field the words go to it (`barCommands` `insert`). A space is typed after the words (none after a
    line break), so the next words do not join them.
@@ -143,13 +146,17 @@ the history on disk.
 
 - **Undo** (the capsule's button after a landing, `dashi://dictation/undo`,
   ⌃❖Z) takes the newest insertion of the window in front back with
-  BackSpace, once for each character Dashi sent, and only when those
-  characters are still the last thing in the field (decisions.md D180):
+  BackSpace, once for each character Dashi sent (`type-text`'s `erase`,
+  one request; `send-keys` one key at a time only in an X11 window), and
+  only when those characters are still the last thing in the field
+  (decisions.md D180, D187):
   - where the field's text can be read (AT-SPI's Text interface, the walk
     the password check uses), the text before the caret must end with them;
   - where it can't (most terminals), the person's own hands must not have
     pressed a key or a button in that window since they landed
-    (`input-origin`), and the text must hold no line break;
+    (`input-origin`; the dictation key, ❖ and a chord the keymap takes,
+    ⌃❖Z among them, are not keys in the window), and the text must hold
+    no line break;
   - otherwise nothing is touched, and the capsule says "That text has
     changed, so I left it." Never the person's own text.
 - **Raw** (after a landing that tidying changed) takes the insertion back
@@ -343,9 +350,10 @@ model (`list`).
 ### Learning from a fix
 
 `dictation/lib/learn.ts`. After words land in a field whose text can be
-read, the field is read again 2.5, 5 and 8 seconds later. If one word or a
-short run (three at most) changed, with at least two of Dashi's words
-still round it, the capsule offers "Always write “Kōji” for “Koji”?" for
+read, the field is read again every 2.5 seconds, four times. If one word
+or a short run (three at most) changed, with at least two of Dashi's words
+still round it, and the next read finds the same change (the person has
+finished typing it), the capsule offers "Always write “Kōji” for “Koji”?" for
 eight seconds. Yes is a press on **Always** or a tap of the dictation key
 (the one key that is dictation's own; no plain key is taken); it becomes a
 line in `replacements`, or a word in `vocabulary` when only its capitals

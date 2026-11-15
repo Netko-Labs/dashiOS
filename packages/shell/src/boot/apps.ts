@@ -83,7 +83,8 @@ export function startCatalog({ compositor, apps, stores, desktops, settingsWindo
   const nameApp = (window: CompositorWindow): string => appFor(apps, window, installedApp).name;
   late.set("installedApp", installedApp);
   late.set("nameApp", nameApp);
-  late.set("appNames", () => appCatalog.entries.map((entry) => entry.name));
+  // The apps a person installed or Dashi ships, not the shell's own places (a Settings pane is "Trackpad", a word, not a name).
+  late.set("appNames", () => appCatalog.entries.filter((entry) => !entry.shell && !entry.hidden).map((entry) => entry.name));
   void desktops.spaces?.controller.relabel();
   const pins = new PinStore({ defaults: dockDefaults(apps) });
   const rankingMemory = new RankingMemory();

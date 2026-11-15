@@ -177,9 +177,9 @@ function deskDeps(
     },
     appName: (front) => (front.appId ? (late.peek("installedApp")?.(front.appId)?.name ?? front.appId) : ""),
     pressed: async (window) => (compositor ? (await compositor.inputOrigin({ window })).person : null),
-    typeText: async (window, text) => {
+    typeText: async (window, text, how = {}) => {
       if (!compositor) throw new Error("no compositor");
-      await compositor.typeText({ window, text });
+      await compositor.typeText({ window, text, ...(how.erase ? { erase: how.erase } : {}), ...(how.breaks ? { breaks: how.breaks } : {}) });
     },
     paste: (window, text) => paste(compositor, clipboard, window, text),
     copy: (text) => clipboard.writeText(text),

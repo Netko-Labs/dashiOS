@@ -1,6 +1,7 @@
 /**
  * Taking back what Dashi typed (record.ts; decisions.md D180): BackSpace,
- * once for each character Dashi sent, and only when those characters are
+ * once for each character Dashi sent (in one `type-text` request, so they
+ * arrive in order with whatever is typed next), and only when those characters are
  * still the last thing in the field. Where the field can be read (AT-SPI),
  * the text before the caret must end with them. Where it can't (most
  * terminals), the person's own hands must not have pressed a key or a
@@ -12,6 +13,7 @@
 
 import type { DictationDeps } from "../types.ts";
 import type { Insertion } from "./record.ts";
+import { backspace } from "./type.ts";
 
 export type Erased = "erased" | "changed" | "left-window" | "failed";
 
@@ -48,10 +50,5 @@ export async function erase(deps: DictationDeps, entry: Insertion): Promise<Eras
   if (field && field.before !== null) count = eraseCount(entry.typed, field.before);
   else count = (await untouched(deps, entry)) ? points(entry.typed) : null;
   if (count === null) return "changed";
-  try {
-    for (let sent = 0; sent < count; sent++) await deps.sendKeys(entry.window, "BackSpace");
-  } catch {
-    return "failed";
-  }
-  return "erased";
+  return (await backspace(deps, entry.window, count)) ? "erased" : "failed";
 }

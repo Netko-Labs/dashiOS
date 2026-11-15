@@ -3441,8 +3441,8 @@ short words, as the rulebook is written.
   Three ways: the app's own undo (Ctrl+Z), a range delete through AT-SPI's
   EditableText, or BackSpace.
 - **Choice:** BackSpace, once for each character Dashi sent
-  (`send-keys`), and only when those characters are still the last thing
-  in the field. Where AT-SPI gives the field's text, the text before the
+  (`type-text`'s `erase` since D187), and only when those characters are
+  still the last thing in the field. Where AT-SPI gives the field's text, the text before the
   caret must end with them. Where it does not (most terminals), the
   person's own hands must not have pressed a key or a button in that
   window since the words landed (`input-origin`, which the compositor
@@ -3458,8 +3458,7 @@ short words, as the rulebook is written.
   typed, or nothing.
 - **Cost:** an editor that changes what was typed (auto-indent, a closed
   bracket, autocomplete) no longer ends with Dashi's characters, so Undo
-  refuses there: the safe failure. A long dictation is one `send-keys` per
-  character.
+  refuses there: the safe failure.
 - **Undo:** `erase()` in `dictation/lib/erase.ts` is the one place; a
   range delete can replace the loop where a field offers one.
 
@@ -3601,17 +3600,55 @@ short words, as the rulebook is written.
   second list, item 8).
 - **Question:** how does Dashi learn the person's words without learning
   the wrong thing?
-- **Choice:** the field is read again 2.5, 5 and 8 seconds after a
-  landing (no AT-SPI events: three reads of the focused field). One
+- **Choice:** the field is read again every 2.5 seconds, four times,
+  after a landing (no AT-SPI events: reads of the focused field). One
   changed run of up to three words, with two of Dashi's words still round
-  it, is offered on the capsule; a press on Always, or a tap of the
+  it, seen the same at two reads in a row (in the VM a half-typed fix was
+  offered until this was added), is offered on the capsule; a press on Always, or a tap of the
   dictation key, stores it in `replacements` (or `vocabulary` when only
   capitals changed). Numbers, paths and addresses are never offered.
 - **Why:** the owner's corpus is names; each fix made once by hand should
   be the last. An offer cannot learn a mistake silently, and the
   dictation key is the only key Dashi may take.
-- **Cost:** three more reads of the field per landing where it is
+- **Cost:** four more reads of the field per landing where it is
   readable; nothing in terminals or Dashi's own apps, whose text AT-SPI
   does not give. A word swapped for meaning ("there" to "here") is
   offered too; saying nothing lets it pass.
 - **Undo:** `Landings.watch` in `dictation/lib/landings.ts`.
+
+### D187. `type-text` carries the BackSpaces and the line-break chord; a key the shell takes is not a press in the window
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's, from what the VM
+  showed.
+- **Question:** two things failed in the VM that the unit tests could not
+  see. (1) Undo by ⌃❖Z, and "scratch that", refused in every field that
+  can't be read (Terminal, Text Editor): `input-origin` counted the
+  shortcut's own keys, and the dictation key itself, as "the person
+  pressed a key in this window". (2) A list in Helium landed as "1. Buy
+  milk2. Call Alex": the ⇧Return sent by `send-keys` goes through the
+  input method (fcitx5), which hands it on later, while `type-text`'s
+  keys go straight to the window; the break arrived after the next line.
+  The same would let an Undo's BackSpaces arrive after the words typed
+  next.
+- **Choice:** both fixed where they start, in the compositor.
+  - A key is noted as the person's press where it is given to what has
+    the keyboard (`keys/handler.rs` `note_person_key`): not a modifier
+    alone, not a key the shell holds (`held-keys`, ❖), not a chord the
+    keymap binds or swallows. A chord the keymap turns into other keys
+    for the window (❖C as Ctrl+C) still counts. Pointer presses are as
+    before.
+  - `type-text` takes `erase` (that many BackSpaces before the text) and
+    `breaks` (the chord a line break is typed as: its modifier is a key
+    of the made keymap, held while Return goes). One request, one route,
+    in order. Dictation no longer uses `send-keys` except for BackSpace
+    in an X11 window, where `type-text` is refused.
+- **Why:** the alternative for (1) was to let Undo trust a window the
+  person may have typed in, which breaks the one promise Undo makes; for
+  (2) a wait between requests, which is a guess about another program's
+  timing.
+- **Cost:** consent that counts a person's key (`input-origin` on a
+  sheet's layer) now counts only keys the sheet is given: a Return on a
+  sheet still counts; a chord the keymap binds while a sheet has the
+  keyboard does not. The IPC grew two optional fields.
+- **Undo:** note every key press again in `input/events.rs`; drop the
+  two fields and send chords with `send-keys`.

@@ -39,6 +39,10 @@ test("a word fixed within seconds of the landing is offered, and a tap of the di
   world.before = "Ask the Kōji agent about it. ";
   timers.advance(2500);
   await settle();
+  // Seen once: it may still be being typed. Offered when the next look finds it the same.
+  expect(state().phase).not.toBe("offer");
+  timers.advance(2500);
+  await settle();
   expect(state()).toMatchObject({ phase: "offer", from: "Koji", to: "Kōji", line: "Always write “Kōji” for “Koji”?" });
   await key("down");
   await key("tap");
@@ -54,7 +58,7 @@ test("nothing is offered when nothing was fixed, and an offer goes away by itsel
   const quiet = learning("See you there tomorrow.");
   await quiet.hold();
   await quiet.key("up");
-  quiet.timers.advance(8000);
+  quiet.timers.advance(10000);
   await settle();
   expect(quiet.state().phase).toBe("idle");
 
@@ -62,6 +66,8 @@ test("nothing is offered when nothing was fixed, and an offer goes away by itsel
   await offered.hold();
   await offered.key("up");
   offered.world.before = "See you here tomorrow. ";
+  offered.timers.advance(2500);
+  await settle();
   offered.timers.advance(2500);
   await settle();
   expect(offered.state()).toMatchObject({ phase: "offer", from: "there", to: "here" });

@@ -3,7 +3,10 @@
  * waiting out a key the person still holds; pasted where typing can't be
  * done (an X11 window). In a field where Return sends (a chat) a line break
  * is typed as ⇧Return, and in an agent's prompt in a terminal as ⌃J, which
- * such fields take as a line break that does not send.
+ * such fields take as a line break that does not send. The chord rides with
+ * the text in the one request, so it lands between the lines it separates:
+ * a chord sent apart goes through the input method and arrives late
+ * (measured in the VM with fcitx5: the break landed after the next line).
  */
 
 import type { WaitReason } from "../../shared/pill/index.ts";
@@ -17,12 +20,13 @@ export type Typed = "typed" | "pasted" | WaitReason;
 
 const message = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
-/** Type, waiting out a key still held; then how it went. */
-async function typeOnce(deps: DictationDeps, window: number, text: string): Promise<Typed> {
+/** `text` into `window`, waiting out a key still held; with `breaks`, each line break is that chord in place of Return. Then how it went. */
+export async function typeInto(deps: DictationDeps, window: number, text: string, breaks: string | null): Promise<Typed> {
   const timers = deps.timers;
+  const how = breaks && text.includes("\n") ? { breaks } : undefined;
   for (let tries = 0; ; tries++) {
     try {
-      await deps.typeText(window, text);
+      await deps.typeText(window, text, how);
       return "typed";
     } catch (error) {
       const refusal = message(error);
@@ -37,24 +41,26 @@ async function typeOnce(deps: DictationDeps, window: number, text: string): Prom
   }
 }
 
-/** `text` into `window`; with `breaks`, each line break is that chord (⇧Return, or ⌃J in an agent's prompt) in place of Return. */
-export async function typeInto(deps: DictationDeps, window: number, text: string, breaks: string | null): Promise<Typed> {
-  if (!breaks || !text.includes("\n")) return typeOnce(deps, window, text);
-  const lines = text.split("\n");
-  let how: Typed = "typed";
-  for (const [nth, line] of lines.entries()) {
-    if (nth > 0) {
+/** BackSpace `count` times into `window`, in one request; one key at a time where `type-text` can't be used (an X11 window). */
+export async function backspace(deps: DictationDeps, window: number, count: number): Promise<boolean> {
+  const timers = deps.timers;
+  for (let tries = 0; ; tries++) {
+    try {
+      await deps.typeText(window, "", { erase: count });
+      return true;
+    } catch (error) {
+      const refusal = message(error);
+      if (refusal.includes("keys-down") && tries < KEYS_DOWN_TRIES && timers) {
+        await new Promise<void>((resolve) => timers.set(resolve, KEYS_DOWN_MS));
+        continue;
+      }
+      if (!refusal.includes("x11")) return false;
       try {
-        await deps.sendKeys(window, breaks);
+        for (let sent = 0; sent < count; sent++) await deps.sendKeys(window, "BackSpace");
+        return true;
       } catch {
-        return "failed";
+        return false;
       }
     }
-    if (line === "") continue;
-    const went = await typeOnce(deps, window, line);
-    // Pasted (an X11 window): the rest goes as one paste would have.
-    if (went !== "typed" && went !== "pasted") return went;
-    how = went;
   }
-  return how;
 }

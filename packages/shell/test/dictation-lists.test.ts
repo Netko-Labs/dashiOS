@@ -95,8 +95,8 @@ test("new line, said alone, is an instruction: ⇧Return where Return sends", as
   world.before = "Hello";
   await hold();
   await key("up");
-  expect(keys).toEqual(["7:shift+Return"]);
-  expect(typed).toEqual([]);
+  expect(typed).toEqual(["7:<shift+Return>"]);
+  expect(keys).toEqual([]);
   expect(state()).toMatchObject({ phase: "told", line: "Took that as an instruction. A new line." });
 });
 
@@ -107,8 +107,8 @@ test("a list lands as Markdown in a chat with ⇧Return between its lines, and a
   chat.world.site = "web.whatsapp.com";
   await chat.hold();
   await chat.key("up");
-  expect(chat.typed).toEqual(["7:1. Buy milk", "7:2. Call Alex", "7:3. Sleep "]);
-  expect(chat.keys).toEqual(["7:shift+Return", "7:shift+Return"]);
+  // One request: the breaks ride with the text, so they land between the lines.
+  expect(chat.typed).toEqual(["7:1. Buy milk<shift+Return>2. Call Alex<shift+Return>3. Sleep "]);
   expect(chat.state()).toMatchObject({ phase: "landed", line: "Typed. A list of 3.", profile: "Chat" });
 
   const document = dictating({ heard: "Shopping. Bullet point milk, bullet point bread." });

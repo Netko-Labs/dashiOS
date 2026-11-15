@@ -2,15 +2,15 @@
  * Learning from a fix (landings.ts; research 1.11, "learn from the fix,
  * visibly"): after words land, the field is read again a few times. If the
  * person changed one word or a short run of them, with the words round it
- * still as Dashi typed them, the capsule offers to always write it their
- * way. Never learned silently, never from a field that can't be read, and
+ * still as Dashi typed them, and the change is the same at the next read
+ * (they have finished it), the capsule offers to always write it their way. Never learned silently, never from a field that can't be read, and
  * never a number, a path or an address.
  */
 
 import type { Pair } from "../types.ts";
 
-/** When the field is read again after a landing, in ms. */
-export const LOOK_AGAIN_MS: readonly number[] = [2500, 5000, 8000];
+/** When the field is read again after a landing, in ms. A fix is offered once two reads in a row find the same one: the person has stopped typing it. */
+export const LOOK_AGAIN_MS: readonly number[] = [2500, 5000, 7500, 10000];
 
 /** A fix is this many words at most, on either side. */
 const MOST = 3;

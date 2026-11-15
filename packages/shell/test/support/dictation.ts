@@ -68,9 +68,16 @@ export function dictating(options: DictatingOptions = {}) {
       if (chord === "BackSpace" && world.before !== null) world.before = [...world.before].slice(0, -1).join("");
     },
     pressed: async () => world.pressed,
-    typeText: async (window, text) => {
+    typeText: async (window, text, how = {}) => {
       if (world.refuse) throw new Error(world.refuse);
-      typed.push(`${window}:${text}`);
+      // BackSpaces first, as the compositor types them: each takes the last character the field holds.
+      for (let sent = 0; sent < (how.erase ?? 0); sent++) {
+        keys.push(`${window}:BackSpace`);
+        if (world.before !== null) world.before = [...world.before].slice(0, -1).join("");
+      }
+      if (text === "") return;
+      // A line break typed as a chord is shown as the chord, between the lines.
+      typed.push(`${window}:${how.breaks ? text.replaceAll("\n", `<${how.breaks}>`) : text}`);
       if (world.before !== null) world.before += text;
     },
     paste: async (window, text) => {

@@ -107,7 +107,7 @@ export interface DictationDeps {
   secret(front: Front): Promise<boolean | null>;
   /** The field with the keyboard there: what it is and the text around its caret; null when it can't be told. */
   field(front: Front): Promise<FieldRead | null>;
-  /** One chord into the window (the compositor's `send-keys`): BackSpace for Undo, shift+Return for a line break that does not send. */
+  /** One chord into the window (the compositor's `send-keys`): BackSpace for Undo where `type-text` can't be used (an X11 window). */
   sendKeys(window: number, chord: string): Promise<void>;
   /** The app a window is, by the name the person knows ("Text Editor"); "" when not known. */
   appName?(front: Front): string;
@@ -126,8 +126,12 @@ export interface DictationDeps {
    * `input-origin`); null when not within the last minute, or when it can't be told.
    */
   pressed(window: number): Promise<number | null>;
-  /** Type into the window (the compositor's `type-text`); rejects with its refusal. */
-  typeText(window: number, text: string): Promise<void>;
+  /**
+   * Type into the window (the compositor's `type-text`); rejects with its refusal. `erase`: that many BackSpaces first.
+   * `breaks`: the chord a line break is typed as where Return sends ("shift+Return"). Both ride with the text because
+   * only so do they reach the window in order: a `send-keys` chord goes through the input method and arrives later.
+   */
+  typeText(window: number, text: string, how?: { erase?: number; breaks?: string }): Promise<void>;
   /** The honest fallback: through the clipboard, which is put back; whether it pasted. */
   paste(window: number, text: string): Promise<boolean>;
   copy(text: string): Promise<boolean>;
