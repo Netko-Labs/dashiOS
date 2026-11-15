@@ -16,7 +16,7 @@ import { isCatalogList } from "../shared/applet-store/catalogs.ts";
 import { isCharacterId, isDictationKeyId, isPersonaColour, isPersonaDots, isPersonaMark, isPersonaName, isPersonaTalk } from "../shared/pill/index.ts";
 import { dig, type Fields, isRaw, type Raw, readFields, type SectionOf } from "../shared/settings/index.ts";
 import { CLOCK_SECTION, REGION_SECTION } from "../shared/time/index.ts";
-import { isTalkKeyId, isVoiceId } from "../voice/index.ts";
+import { isTalkKeyId, isVoiceId, isVoiceMap } from "../voice/index.ts";
 import type { DisplaySettings, SettingsData } from "./types.ts";
 
 /** A program `screenSharing.clients` may name: an absolute path, no NUL. */
@@ -68,7 +68,15 @@ export const SECTIONS = {
   applets: { path: ["applets"], fields: { catalogs: guarded(isCatalogList, "a list of catalogs") } },
   voice: {
     path: ["voice"],
-    fields: { on: bool(), key: guarded(isTalkKeyId, "a talk key"), voice: guarded(isVoiceId, "a voice's id"), listenAgain: bool(), askEveryStep: bool() },
+    fields: {
+      on: bool(),
+      key: guarded(isTalkKeyId, "a talk key"),
+      voice: guarded(isVoiceId, "a voice's id"),
+      voices: guarded(isVoiceMap, "a voice for each language"),
+      byLanguage: bool(),
+      listenAgain: bool(),
+      askEveryStep: bool(),
+    },
   },
   dictation: { path: ["dictation"], fields: { on: bool(), key: guarded(isDictationKeyId, "a dictation key"), handsFree: bool(), tidy: bool() } },
   persona: {

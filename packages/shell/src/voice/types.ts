@@ -42,6 +42,8 @@ export interface AskHears {
   say(text: string): void;
   /** A step, in Dashi's words ("Reading the page"): the capsule's line while it works. */
   step(title: string): void;
+  /** The language the words were heard in ("es"), when the service told it: the answer is in it. */
+  language?: string | undefined;
 }
 
 /** The conversation a spoken ask belongs to, as much as the voice loop needs of it (agents/assistant/). */
@@ -77,6 +79,20 @@ export interface VoiceSettings {
   listenAgain?: boolean;
   /** "Ask before every step": what is said is planned first and waits for a yes on its card, as it did before 0.9 (agents/assistant/). Off unless true. */
   askEveryStep?: boolean;
+  /**
+   * The voice for each other language Dashi speaks, by the language's code (`es: "ef_dora"`);
+   * `false` is a language it does not speak. Unset: English and Spanish, by the voice's pairs (tongues.ts).
+   */
+  voices?: Record<string, string | false>;
+  /** False says everything in the one voice; each sentence in a voice of its own language unless set. */
+  byLanguage?: boolean;
+}
+
+/** What `speak` is sent beside the text and the voice (`byLanguage` goes as `by_language`). */
+export interface SpeakExtras {
+  voices?: Record<string, string>;
+  hint?: string;
+  byLanguage?: false;
 }
 
 /** What Settings › Voice reads (models.ts). */
@@ -99,8 +115,8 @@ export type Trouble = { text: string; go?: ChipGo } | null;
 /** What the voice loop is given (voice.ts). */
 export interface VoiceDeps {
   service: VoiceService;
-  /** Voice is on (settings.json), its key and voice, and whether it listens again after it speaks. */
-  prefs(): { on: boolean; key: TalkKey; voice: string | undefined; listenAgain?: boolean };
+  /** Voice is on (settings.json), its key and voice, whether it listens again after it speaks, and what `speak` is sent (tongues.ts). */
+  prefs(): { on: boolean; key: TalkKey; voice: string | undefined; listenAgain?: boolean; speak?: SpeakExtras };
   /** What stops Voice from being used now (models.ts, the service), or null. */
   trouble(): Trouble;
   /** The keys the compositor holds for the shell (`held-keys`). */

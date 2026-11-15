@@ -4,7 +4,8 @@
  * after the words in the user turn so the prompt before it stays the same
  * (and cached): the window in front and, in Helium, its page; what is
  * selected; the time; the Desktop that shows; the apps installed and the
- * names the person uses, for a transcript that mishears them; and, when a
+ * names the person uses, for a transcript that mishears them; the language
+ * they spoke, which the answer is in; and, when a
  * new session starts inside an open conversation, the last exchanges.
  */
 
@@ -39,6 +40,15 @@ export const talkWords = (talk: "less" | "normal" | "more"): string =>
     more: "Answer in up to four short plain sentences.",
   })[talk];
 
+/** The languages the voice service tells (`heard`'s `language`), by name. */
+const SPOKEN: Readonly<Record<string, string>> = { en: "English", es: "Spanish", fr: "French", hi: "Hindi", it: "Italian", pt: "Portuguese" };
+
+/** "They spoke Spanish: answer in Spanish…", when the words told their language; the prompt's rule holds when they did not. */
+export function spokeWords(language: string | undefined): string | null {
+  const name = SPOKEN[language?.split(/[-_]/)[0]?.toLowerCase() ?? ""];
+  return name ? `They spoke ${name}: answer in ${name}. Keep the names of products, apps and sites as they are written.` : null;
+}
+
 /** The most of the app list that goes with an ask. */
 const APPS_MAX = 80;
 const SELECTION_MAX = 600;
@@ -65,8 +75,9 @@ export function exchangesWords(exchanges: readonly Exchange[], last = 3): string
  * The block for one ask. `fresh` when the model has not heard this
  * conversation's start (a new conversation, or a session that could not be
  * resumed): the app list and the names go once, then, not with every ask.
+ * `spoke` is the language this ask was heard in, and goes with every ask.
  */
-export function contextBlock(moment: Moment, options: { fresh: boolean; earlier?: readonly Exchange[] } = { fresh: true }): string {
+export function contextBlock(moment: Moment, options: { fresh: boolean; earlier?: readonly Exchange[]; spoke?: string | undefined } = { fresh: true }): string {
   const lines: string[] = ["(Not said by the person, from Dashi:"];
   const { window } = moment;
   if (window) {
@@ -86,6 +97,8 @@ export function contextBlock(moment: Moment, options: { fresh: boolean; earlier?
   }
   const names = moment.names.length > 0 ? ` The person uses: ${moment.names.join(", ")}.` : "";
   lines.push(`Their words are a transcript of speech and may be wrong; names of apps and sites may be misheard.${names}`);
+  const spoke = spokeWords(options.spoke);
+  if (spoke) lines.push(spoke);
   lines.push(`${moment.talk})`);
   return lines.join("\n");
 }

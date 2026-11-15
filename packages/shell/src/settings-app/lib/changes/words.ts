@@ -82,6 +82,13 @@ export function localeWords(value: unknown): string {
 export const TALK_WORDS: Readonly<Record<string, string>> = { less: "Brief", normal: "Normal", more: "Chatty" };
 export const LANGUAGE_WORDS: Readonly<Record<string, string>> = { auto: "The language you speak", en: "English", es: "Español" };
 /** A character by its name: one of Dashi's, else the person's own by its id. */
+/** "es: ef_dora, fr: off". */
+const sayVoices = (value: unknown): string =>
+  typeof value === "object" && value !== null
+    ? Object.entries(value)
+        .map(([code, voice]) => `${code}: ${voice === false ? "off" : String(voice)}`)
+        .join(", ")
+    : String(value);
 const sayCharacter = (value: unknown): string => presetCharacter(value)?.name ?? String(value);
 
 const OWN: Readonly<Record<string, Named>> = {
@@ -107,6 +114,8 @@ const OWN: Readonly<Record<string, Named>> = {
   "voice.on": { name: "Voice", row: "voice/on", unset: "off" },
   "voice.key": { name: "Talk key", row: "voice/key", unset: "right ❖ or Copilot", say: (value) => String(value) },
   "voice.voice": { name: "Dashi's voice", row: "voice/dashis-voice", unset: "Dashi's own", say: (value) => String(value) },
+  "voice.voices": { name: "Voices for other languages", row: "voice/each-language", unset: "each voice's pair", say: sayVoices },
+  "voice.byLanguage": { name: "Speak each language in its own voice", row: "voice/each-language", unset: "on" },
   "persona.character": { name: "Character", row: "persona/character", unset: "Dashi", say: sayCharacter },
   "persona.name": { name: "Dashi's name", row: "persona/name", unset: "Dashi", say: (value) => String(value) },
   "persona.colour": { name: "Dashi's colour", row: "persona/colour", unset: "Violet", say: (value) => colourOfHex(value)?.name ?? String(value) },

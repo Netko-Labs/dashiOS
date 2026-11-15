@@ -8,6 +8,8 @@ type Reply = unknown | ((params: Record<string, unknown>) => unknown);
 
 export interface FakeVoice {
   service: VoiceService;
+  /** The connection itself, for what makes its own service (voice/start.ts). */
+  link: VoiceLink;
   /** Every call made, in order: "listen", "speak:Hello." */
   calls: string[];
   /** What a method answers; an Error is its refusal. Unlisted methods answer `{}`. */
@@ -40,6 +42,7 @@ export function fakeVoice(replies: Record<string, Reply> = {}): FakeVoice {
   };
   const fake: FakeVoice = {
     service: new VoiceService(async () => link),
+    link,
     calls,
     replies,
     emit: (event) => {

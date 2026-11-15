@@ -144,7 +144,7 @@ class Core {
     let said = "";
     let answer: SpokenAnswer;
     try {
-      const ask = { options, talk, task: id, words, moment, run, say: this.hearing.say };
+      const ask = { options, talk, task: id, words, moment, run, say: this.hearing.say, spoke: this.hearing.language };
       said = way === "harness" && isHarnessId(choice) ? await viaHarness(ask, choice) : await viaModel(ask, choice === "local", this.policyFor(scopes));
       answer = { say: lastWords(run, said) };
     } catch (error) {

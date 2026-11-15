@@ -24,7 +24,7 @@ fn sentences_are_said_in_order_with_their_words() {
     let world = world();
     assert_eq!(
         world.ask(say("Hello there. How are you today?")).unwrap(),
-        json!({ "id": 1 })
+        json!({ "id": 1, "language": "en" })
     );
     world.until("it is said", |world| spoken(world, 1));
     let sentences = world.events_named("sentence");
@@ -32,7 +32,8 @@ fn sentences_are_said_in_order_with_their_words() {
     assert_eq!(
         sentences[0],
         json!({ "event": "sentence", "id": 1, "index": 0, "text": "Hello there.", "ms": 200,
-            "words": [{ "text": "Hello", "start": 0, "end": 100 }, { "text": "there.", "start": 100, "end": 200 }] })
+            "words": [{ "text": "Hello", "start": 0, "end": 100 }, { "text": "there.", "start": 100, "end": 200 }],
+            "voice": "af_heart", "language": "en-US" })
     );
     assert_eq!(
         (sentences[1]["index"].clone(), sentences[1]["ms"].clone()),

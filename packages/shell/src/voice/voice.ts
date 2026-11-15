@@ -60,7 +60,7 @@ export class Voice {
     this.saying = new Saying({
       service: deps.service,
       captions: this.captions,
-      voice: () => deps.prefs().voice,
+      prefs: deps.prefs,
       show,
       notice: (text, go, ms) => this.notice(text, go, ms),
       sync: () => this.sync(),
@@ -104,7 +104,6 @@ export class Voice {
   hold(): void {
     this.keyDown(false, true);
   }
-
   release(): void {
     void this.keyUp();
   }
@@ -165,20 +164,16 @@ export class Voice {
   /** The listen ends here: its words, then what they are for. */
   private async words(turn: number): Promise<void> {
     this.show({ kind: "thinking", text: this.chip?.kind === "listening" ? this.chip.text : "" });
-    let text: string;
-    try {
-      text = maybe(HeardReply, await this.deps.service.call("listen.stop"))?.text.trim() ?? "";
-    } catch (error) {
-      if (turn === this.turn) this.notice(message(error), "voice");
-      return;
-    }
-    if (turn !== this.turn) return;
+    const failed = (error: unknown): null => (turn === this.turn ? this.notice(message(error), "voice") : undefined) ?? null;
+    const reply = await this.deps.service.call("listen.stop").then((heard) => maybe(HeardReply, heard) ?? { text: "" }, failed);
+    if (!reply || turn !== this.turn) return;
+    const text = reply.text.trim();
     if (text === "") return this.notice("I didn't hear anything.", undefined, 2500);
-    this.heard(text);
+    this.heard(text, reply.language);
   }
 
-  /** The words are here: an agent's question gets them, else Dashi's assistant is asked. */
-  private heard(text: string): void {
+  /** The words are here, and the language they tell: an agent's question gets them, else Dashi's assistant is asked. */
+  private heard(text: string, language?: string): void {
     this.deps.asker.talk?.busy();
     const question = this.question;
     if (question) {
@@ -186,11 +181,12 @@ export class Voice {
       this.notice(`You said: ${tail(text, 80)}`, undefined, 2500);
       return question(text);
     }
-    void this.asking.ask(text);
+    void this.asking.ask(text, language);
   }
 
-  say(text: string, voice?: string): void {
-    this.saying.say(text, voice);
+  /** Say `text` in Dashi's voice, each sentence in a voice of its language; or all in `voice`, read as `language` (a sample). */
+  say(text: string, voice?: string, language?: string): void {
+    this.saying.say(text, "", voice ? { voice, language } : undefined);
   }
 
   private event(event: VoiceEvent): void {
@@ -205,7 +201,7 @@ export class Voice {
         if (!this.mic.end()) return;
         if (event.text.trim() === "")
           return this.question || this.deps.asker.talk?.open() ? this.rest(true) : this.notice("I didn't hear anything.", undefined, 2500);
-        return this.heard(event.text.trim());
+        return this.heard(event.text.trim(), event.language);
       case "sentence":
         return this.saying.sentence(event.id, event.text, event.words);
       case "spoken":
@@ -255,7 +251,7 @@ export class Voice {
     this.question = heard;
     const spoken = this.deps.trouble() === null && this.deps.prefs().on;
     if (spoken && this.saying.busy) this.saying.addWhole(words);
-    else if (spoken) this.saying.say(words, undefined, "(a question)");
+    else if (spoken) this.saying.say(words, "(a question)");
     return (keep = false) => {
       if (this.question !== heard) return;
       this.question = null;

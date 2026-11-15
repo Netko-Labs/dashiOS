@@ -10,8 +10,10 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
+use super::Service;
+use super::lines::{Line, lines};
 use super::player::Player;
-use super::{Service, voices};
+use super::seam::{joined, seams};
 use crate::audio::pipewire::Closer;
 use crate::engine::Spoken;
 use crate::protocol::{Ended, Event, Speak};
@@ -21,9 +23,18 @@ const MOST_TEXT: usize = 20_000;
 
 struct Utterance {
     id: u64,
-    text: String,
-    voice: String,
+    /// Each sentence with the voice that says it.
+    lines: Vec<Line>,
+    /// The first two lines are one long sentence, said in two parts.
+    cut: bool,
     speed: f32,
+}
+
+/// `DASHI_VOICE_DEBUG=speak` writes each sentence's voice, language and
+/// phonemes to the service's log. Off unless asked for: the log is otherwise
+/// never given what was said.
+fn debugging() -> bool {
+    std::env::var("DASHI_VOICE_DEBUG").is_ok_and(|what| what.split(',').any(|one| one == "speak"))
 }
 
 #[derive(Default)]
@@ -42,27 +53,8 @@ pub(super) struct Speech {
     wake: Condvar,
 }
 
-/// A sentence, made: its place, its words, its sound.
-pub(super) type Made = Result<(usize, String, Spoken), String>;
-
-/// The hush kept before the first sound of an utterance, and at each side of
-/// the join of a sentence said in two pieces (a comma's pause in all).
-const LEAD_MS: u64 = 30;
-const JOIN_MS: u64 = 120;
-
-/// A piece without the hush that only delays: the model starts each piece
-/// with a third of a second of it, which the first sound of an utterance
-/// waited through, and ends each with half a second, which would make a
-/// sentence said in two pieces stop for most of a second at its comma.
-fn unhushed(mut spoken: Spoken, index: usize, cut: bool) -> Spoken {
-    if index == 0 || (cut && index == 1) {
-        spoken.trim_start(LEAD_MS);
-    }
-    if cut && index == 0 {
-        spoken.trim_end(JOIN_MS);
-    }
-    spoken
-}
+/// A sentence, made: its place, its line (words and voice), its sound.
+pub(super) type Made = Result<(usize, Line, Spoken), String>;
 
 /// The speaking thread.
 pub(super) fn start(service: &Arc<Service>) {
@@ -82,28 +74,47 @@ pub(super) fn start(service: &Arc<Service>) {
 
 impl Service {
     pub(super) fn speak(&self, params: Speak) -> Result<Value, String> {
-        if params.text.len() > MOST_TEXT {
+        let parts = params.parts.iter().flatten();
+        let length = params.text.len() + parts.map(|part| part.text.len()).sum::<usize>();
+        if length > MOST_TEXT {
             return Err("That is too much to say at once.".into());
         }
-        let voice = voices::choose(params.voice.as_deref(), params.language.as_deref())?;
-        if let Some(why) = self.engines.mute_in(&voice) {
+        let (lines, cut) = lines(&params)?;
+        // Every voice that will speak is here, or nothing is said. With nothing to say, the voice asked for.
+        let asked = params.voice.as_deref().into_iter();
+        let mut voices: Vec<&str> = lines.iter().map(|line| line.voice.as_str()).collect();
+        voices.extend(asked.filter(|_| lines.is_empty()));
+        if voices.is_empty() {
+            voices.push(super::voices::DEFAULT);
+        }
+        voices.sort_unstable();
+        voices.dedup();
+        if let Some(why) = voices.iter().find_map(|voice| self.engines.mute_in(voice)) {
             return Err(why);
         }
         if !params.queue {
             self.speak_stop();
         }
+        // The language its last sentence is said in: what the asker hints the next `speak` with.
+        let language = lines
+            .last()
+            .and_then(|line| super::voices::tongue(&line.voice))
+            .map(|tongue| tongue.code());
         let mut queue = self.speech.queue.lock().map_err(|_| "Voice is not well.")?;
         queue.last_id += 1;
         let id = queue.last_id;
         queue.waiting.push_back(Utterance {
             id,
-            text: params.text,
-            voice,
+            lines,
+            cut,
             speed: params.speed.unwrap_or(1.0).clamp(0.5, 2.0),
         });
         drop(queue);
         self.speech.wake.notify_all();
-        Ok(json!({ "id": id }))
+        Ok(match language {
+            Some(language) => json!({ "id": id, "language": language }),
+            None => json!({ "id": id }),
+        })
     }
 
     /// Stop what is being said, at once, and forget what was waiting.
@@ -168,11 +179,12 @@ impl Service {
     fn say(self: &Arc<Self>, utterance: &Utterance, generation: u64) {
         self.act(|activity| activity.thinking += 1);
         // The first sentence in two parts when it is long: the first sound waits for less.
-        let (sentences, cut) = crate::text::pieces_cut(&utterance.text);
-        let any = !sentences.is_empty();
+        let (lines, cut) = (utterance.lines.clone(), utterance.cut);
+        let seams = seams(&lines);
+        let any = !lines.is_empty();
         let (made, sound) = sync_channel::<Made>(1);
         let maker = self.clone();
-        let (voice, speed) = (utterance.voice.clone(), utterance.speed);
+        let (id, speed, debug) = (utterance.id, utterance.speed, debugging());
         std::thread::spawn(move || {
             let synthesizer = match maker.engines.synthesizer() {
                 Ok(synthesizer) => synthesizer,
@@ -181,18 +193,26 @@ impl Service {
                     return;
                 }
             };
-            for (index, sentence) in sentences.into_iter().enumerate() {
+            for (index, line) in lines.into_iter().enumerate() {
                 if maker.stale(generation) {
                     return;
                 }
                 let spoken = match synthesizer.lock() {
-                    Ok(mut synthesizer) => synthesizer.speak(&sentence, &voice, speed),
+                    Ok(mut synthesizer) => {
+                        synthesizer.speak(&line.text, &line.voice, line.tag.as_deref(), speed)
+                    }
                     Err(_) => Err("Voice is not well.".to_owned()),
                 }
-                .map(|spoken| unhushed(spoken, index, cut));
+                .map(|spoken| joined(spoken, index, cut, seams[index]));
+                if let (true, Ok(spoken)) = (debug, &spoken) {
+                    eprintln!(
+                        "dashi-voice: speak {id}.{index} voice={} language={} phonemes=[{}] text=[{}]",
+                        line.voice, spoken.language, spoken.phonemes, line.text
+                    );
+                }
                 let failed = spoken.is_err();
                 if made
-                    .send(spoken.map(|spoken| (index, sentence, spoken)))
+                    .send(spoken.map(|spoken| (index, line, spoken)))
                     .is_err()
                     || failed
                 {

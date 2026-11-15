@@ -24,6 +24,8 @@ export interface Hears {
   say(text: string): void;
   /** What Dashi is doing, in its own words. */
   step(title: string): void;
+  /** The language the words were heard in ("es"), when they told it: the answer is in it. */
+  language?: string | undefined;
 }
 
 export interface AssistantSettings {

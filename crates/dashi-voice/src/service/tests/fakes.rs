@@ -26,13 +26,16 @@ impl SpeechDetector for Loudness {
 #[derive(Default)]
 pub(super) struct Counter {
     pub(super) asked: Vec<(usize, Option<String>)>,
+    /// What it hears instead, when a test says so.
+    pub(super) hears: Option<String>,
 }
 
 impl Recognizer for Counter {
     fn transcribe(&mut self, samples: &[f32], language: Option<&str>) -> Result<String, String> {
         self.asked
             .push((samples.len() / FRAME, language.map(str::to_owned)));
-        Ok(format!("{} frames", samples.len() / FRAME))
+        let frames = format!("{} frames", samples.len() / FRAME);
+        Ok(self.hears.clone().unwrap_or(frames))
     }
     fn longest(&self) -> usize {
         usize::MAX
@@ -44,7 +47,13 @@ impl Recognizer for Counter {
 struct Tenths(Arc<Played>);
 
 impl Synthesizer for Tenths {
-    fn speak(&mut self, sentence: &str, _voice: &str, _speed: f32) -> Result<Spoken, String> {
+    fn speak(
+        &mut self,
+        sentence: &str,
+        voice: &str,
+        language: Option<&str>,
+        _speed: f32,
+    ) -> Result<Spoken, String> {
         // The maker's thread and the speakers' opening run side by side, so a test that asks which came
         // first has the maker wait for the speakers (two seconds at most): speakers that open only after
         // the first sentence is made are then counted as closed.
@@ -54,6 +63,8 @@ impl Synthesizer for Tenths {
                 std::thread::yield_now();
             }
         }
+        let asked = (voice.to_owned(), language.map(str::to_owned));
+        self.0.voices.lock().unwrap().push(asked);
         let opened = self.0.opened.load(Ordering::SeqCst);
         self.0.opened_when_made.lock().unwrap().push(opened);
         if sentence.contains("fail") {
@@ -68,9 +79,16 @@ impl Synthesizer for Tenths {
                 end_ms: index as u64 * 100 + 100,
             })
             .collect();
+        // The language as the real one tells it: the tag's, else the voice's own.
+        let own = crate::engine::kokoro::of_voice(voice).map_or("", |language| language.code);
         Ok(Spoken {
             samples: vec![0.25; words.len() * 2400],
             words,
+            language: language.map_or(own, |tag| match tag {
+                "es-CO" => "es-419",
+                _ => own,
+            }),
+            phonemes: String::new(),
         })
     }
 }
@@ -151,6 +169,8 @@ pub(super) struct Played {
     /// Speakers opened so far, and how many were open each time a sentence was asked for.
     pub(super) opened: AtomicUsize,
     pub(super) opened_when_made: Mutex<Vec<usize>>,
+    /// The voice and the language tag each sentence was asked for in.
+    pub(super) voices: Mutex<Vec<(String, Option<String>)>>,
     /// The maker waits for the speakers before it notes whether they were open.
     pub(super) made_waits_for_open: AtomicBool,
     pub(super) closed: AtomicBool,

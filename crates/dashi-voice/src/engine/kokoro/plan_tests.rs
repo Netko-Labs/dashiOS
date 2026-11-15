@@ -14,8 +14,17 @@ impl Phonemizer for Echo {
 }
 
 fn plan_of(sentence: &str) -> (Vec<Part>, Vec<String>) {
+    plan_in(sentence, 0, "en-US")
+}
+
+/// The plan in `LANGUAGES[language]`, read as `tag` says.
+fn plan_in(sentence: &str, language: usize, tag: &str) -> (Vec<Part>, Vec<String>) {
     let mut echo = Echo { asked: Vec::new() };
-    let parts = plan(sentence, LANGUAGES[0], &mut echo).unwrap();
+    let reader = Reader {
+        language: LANGUAGES[language],
+        tag,
+    };
+    let parts = plan(sentence, reader, &mut echo).unwrap().parts;
     (parts, echo.asked)
 }
 
@@ -124,4 +133,28 @@ fn with_no_pause_it_is_cut_between_words() {
     );
     assert!(pack(vec![atom("x", 20, false)], 14).is_err());
     assert!(pack(Vec::new(), 14).unwrap().is_empty());
+}
+
+#[test]
+fn money_shares_and_measures_are_said_in_the_sentences_language() {
+    let (parts, asked) = plan_of("It costs $20, or 50% for 3 km.");
+    assert_eq!(
+        asked,
+        vec!["It costs 20 dollars", "or 50 percent for 3 kilometers"]
+    );
+    // The written word keeps its place and its sign; its phonemes are the words said for it.
+    let spans = &parts[0].words;
+    assert_eq!(spans[2].text, "$20,");
+    assert_eq!(
+        spelled(&parts[0].tokens[spans[2].first..spans[2].end]),
+        " dollars,"
+    );
+    assert_eq!(spans[4].text, "50%");
+    let (_, asked) = plan_in("Cuesta $20, o el 50% a las 15:30.", 2, "es");
+    assert_eq!(
+        asked,
+        vec!["Cuesta 20 dólares", "o el 50 por ciento a las 15 y 30"]
+    );
+    let (_, asked) = plan_in("Son $20.000 y 3 km.", 2, "es-CO");
+    assert_eq!(asked, vec!["Son 20.000 pesos y 3 kilómetros"]);
 }

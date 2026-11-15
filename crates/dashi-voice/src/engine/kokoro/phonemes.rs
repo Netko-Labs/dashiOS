@@ -76,6 +76,46 @@ pub(crate) fn of_voice(voice: &str) -> Option<Language> {
         .find(|language| language.letter == letter)
 }
 
+/// Spanish as most of its speakers say it ("gracias" with an s): for a tag
+/// whose region is not Spain. The voices are the same; eSpeak's rules differ.
+pub(crate) const LATIN_SPANISH: Language = Language {
+    letter: 'e',
+    code: "es-419",
+    espeak: "es-419",
+    name: "Spanish (Latin America)",
+};
+
+fn primary(tag: &str) -> String {
+    tag.split(['-', '_']).next().unwrap_or("").to_lowercase()
+}
+
+/// The language a sentence is read in: the tag's when one is given ("es-CO"
+/// is Latin American Spanish, "en-GB" British), else the voice's own. A tag
+/// that only names the voice's language ("en" for a British voice) keeps
+/// the voice's own.
+pub(crate) fn read_as(voice: &str, tag: Option<&str>) -> Option<Language> {
+    let own = of_voice(voice);
+    let Some(tag) = tag else {
+        return own;
+    };
+    let exact = LANGUAGES
+        .into_iter()
+        .find(|known| known.code.eq_ignore_ascii_case(tag));
+    if exact.is_some() {
+        return exact;
+    }
+    let region = tag.split(['-', '_']).nth(1).unwrap_or("");
+    if primary(tag) == "es" && !region.is_empty() && !region.eq_ignore_ascii_case("ES") {
+        return Some(LATIN_SPANISH);
+    }
+    own.filter(|own| primary(own.code) == primary(tag))
+        .or_else(|| {
+            LANGUAGES
+                .into_iter()
+                .find(|known| primary(known.code) == primary(tag))
+        })
+}
+
 /// Says how a phrase with no punctuation sounds, a word of phonemes for each
 /// word where it can.
 pub(crate) trait Phonemizer: Send {
@@ -196,50 +236,5 @@ fn syllabic(phonemes: &str) -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    const US: Language = LANGUAGES[0];
-    const UK: Language = LANGUAGES[1];
-    const SPANISH: Language = LANGUAGES[2];
-
-    #[test]
-    fn american_sounds_become_kokoros_letters() {
-        assert_eq!(
-            kokoro_letters("həlˈo^ʊ ðˈɛ^ɹ\n hˈa^ʊ ɑː^ɹ juː", US),
-            "həlˈO ðˈɛɹ hˈW ɑɹ ju"
-        );
-        assert_eq!(
-            kokoro_letters("d^ʒˈʌmps ˌo^ʊvɚ ðə lˈe^ɪzi", US),
-            "ʤˈʌmps ˌOvəɹ ðə lˈAzi"
-        );
-        assert_eq!(kokoro_letters("bˈʌʔn\u{329}", US), "bˈʌtn");
-        assert_eq!(kokoro_letters("bˈɑːɾə^l wˈɜːd", US), "bˈɑɾᵊl wˈɜɹd");
-        assert_eq!(kokoro_letters("ɹˈɪðm\u{329}", US), "ɹˈɪðᵊm");
-        assert_eq!(kokoro_letters("a^ɪ kæn hˈa^ɪ", US), "ˌI kæn hˈI");
-    }
-
-    #[test]
-    fn british_keeps_its_long_vowels() {
-        assert_eq!(kokoro_letters("ɡˈə^ʊ ðˈe^ə fˈɑːðə", UK), "ɡˈQ ðˈɛː fˈɑːðə");
-    }
-
-    #[test]
-    fn other_languages_keep_their_own_sounds() {
-        assert_eq!(
-            kokoro_letters("kˈomo estˈas\nrˈapiðo", SPANISH),
-            "kˈomo estˈas rˈapiðo"
-        );
-        assert_eq!(kokoro_letters("mˈut^ʃo", SPANISH), "mˈuʧo");
-    }
-
-    #[test]
-    fn a_voice_names_its_language() {
-        assert_eq!(of_voice("af_heart").map(|l| l.code), Some("en-US"));
-        assert_eq!(of_voice("bm_george").map(|l| l.espeak), Some("en-gb"));
-        assert_eq!(of_voice("pf_dora").map(|l| l.code), Some("pt-BR"));
-        // Japanese and Mandarin voices exist, but nothing here can read for them.
-        assert_eq!(of_voice("jf_alpha"), None);
-        assert_eq!(of_voice(""), None);
-    }
-}
+#[path = "phonemes_tests.rs"]
+mod tests;

@@ -102,7 +102,9 @@ function Who({ settings, persona, guard, voices }: Parts) {
       // One entry in Recently changed, one Undo: the character with its look, its talk and its voice.
       settings.changes.group(null, () => {
         settings.patch("persona", choice.persona);
-        if (choice.voice !== undefined) settings.patch("voice", { voice: choice.voice });
+        // Its voice, and its voice in the other language; the languages the person turned on themselves stay.
+        const voices = choice.voices ? { ...settings.getSnapshot().data.voice.voices, ...choice.voices } : undefined;
+        if (choice.voice !== undefined) settings.patch("voice", { voice: choice.voice, ...(voices ? { voices } : {}) });
       });
     });
   const all = [...CHARACTERS, ...files];

@@ -5,6 +5,9 @@
  * nothing is ever cut: a run ends when its last sentence has played, when
  * it is stopped, or when the service fails. A dictation that starts while
  * Dashi speaks pauses the run: what was not said is kept and said after.
+ * Each sentence is said by a voice of its own language (tongues.ts): the
+ * service tells it from the words, and answers with the language it chose,
+ * which the next sentence is told in case its own words tell nothing.
  *
  * One line a run goes to the shell's log: what was asked, how many
  * sentences were handed to `speak`, how many the service says it played,
@@ -12,9 +15,10 @@
  */
 
 import { maybe } from "@dashi/shape";
-import type { Chip, ChipGo } from "../types.ts";
+import type { Chip, ChipGo, SpeakExtras } from "../types.ts";
 import { SentenceCutter, sentencesOf } from "./sentences.ts";
 import type { VoiceService } from "./service.ts";
+import { type OneVoice, speakParams } from "./speak-params.ts";
 import type { Captions } from "./speech.ts";
 import { SpeakReply, type SpokenWord } from "./wire.ts";
 
@@ -25,8 +29,8 @@ export type RunEnd = "done" | "stopped" | "failed" | "paused";
 export interface SayingHost {
   service: VoiceService;
   captions: Captions;
-  /** Dashi's voice as chosen in Settings; its own when none. */
-  voice(): string | undefined;
+  /** Dashi's voice as chosen in Settings (its own when none), and what `speak` is sent with it (tongues.ts). */
+  prefs(): { voice: string | undefined; speak?: SpeakExtras | undefined };
   show(chip: Chip | null): void;
   notice(text: string, go?: ChipGo, ms?: number): void;
   /** The keys held follow what there is to stop. */
@@ -43,11 +47,17 @@ interface Sentence {
   text: string;
   /** `speak`'s id, once the service has named it. */
   id: number | null;
+  /** It went to `speak`, told the language of the sentence before it (`after`; none for a run's first). */
+  sent: boolean;
+  after: string | undefined;
 }
 
 interface Run {
   asked: string;
-  voice: string | undefined;
+  /** Not Dashi's voice and its pairs: this one alone. */
+  only: OneVoice | undefined;
+  /** The language the service said the last sentence in: the next one's, when its words tell nothing. */
+  tongue: string | undefined;
   /** Handed to `speak` and not ended yet, in order. */
   waiting: Sentence[];
   handed: number;
@@ -67,7 +77,7 @@ export class Saying {
   /** A notice that outlasts the speech said with it. */
   private lasting: Notice | null = null;
   /** What a dictation interrupted: said again from the sentence it stopped in. */
-  private paused: { asked: string; voice: string | undefined; rest: string[] } | null = null;
+  private paused: { asked: string; only: OneVoice | undefined; after: string | undefined; rest: string[] } | null = null;
   /** `sentence` and `spoken` events that came before `speak` answered with their id. */
   private early: Array<{ id: number; apply(): void }> = [];
 
@@ -93,19 +103,22 @@ export class Saying {
     this.lasting = notice;
   }
 
-  /** Say `text` whole in Dashi's voice (or `voice`), with captions. What can't be said is shown instead. */
-  say(text: string, voice?: string, asked = ""): void {
-    this.begin(asked, voice);
+  /**
+   * Say `text` whole in Dashi's voice, each sentence by the voice of its own language; or all of it
+   * in `only`'s voice (a sample). With captions. What can't be said is shown instead.
+   */
+  say(text: string, asked = "", only?: OneVoice): void {
+    this.begin(asked, only);
     this.addWhole(text);
     this.close();
   }
 
-  /** A run of speech begins; whatever was being said stops. */
-  begin(asked: string, voice?: string): void {
+  /** A run of speech begins; whatever was being said stops. `after`: the language of what was said before it. */
+  begin(asked: string, only?: OneVoice, after?: string): void {
     // What was queued for the run before would otherwise still be said.
     if (this.end("stopped")) void this.host.service.call("speak.stop").catch(() => {});
     this.paused = null;
-    const run = { asked, voice: voice ?? this.host.voice(), waiting: [], handed: 0, played: 0, closed: false, sending: Promise.resolve() };
+    const run = { asked, only, tongue: after, waiting: [], handed: 0, played: 0, closed: false, sending: Promise.resolve() };
     this.run = { ...run, cutter: new SentenceCutter() };
     if (this.lasting) this.host.show(this.lasting);
     else this.host.sync();
@@ -123,7 +136,7 @@ export class Saying {
 
   private hand(run: Run, sentences: readonly string[]): void {
     for (const words of sentences) {
-      const sentence: Sentence = { text: words, id: null };
+      const sentence: Sentence = { text: words, id: null, sent: false, after: undefined };
       run.waiting.push(sentence);
       run.handed++;
       run.sending = run.sending.then(() => this.speak(run, sentence));
@@ -141,12 +154,14 @@ export class Saying {
 
   private async speak(run: Run, sentence: Sentence): Promise<void> {
     if (this.run !== run) return;
+    sentence.sent = true;
+    sentence.after = run.tongue;
     try {
-      // Queued, always: a `speak` without it would stop the sentence before.
-      const reply = maybe(SpeakReply, await this.host.service.call("speak", { text: sentence.text, queue: true, ...(run.voice ? { voice: run.voice } : {}) }));
+      const reply = maybe(SpeakReply, await this.host.service.call("speak", speakParams(sentence.text, sentence.after, run.only, this.host.prefs())));
       if (this.run !== run) return;
       sentence.id = reply?.id ?? null;
       if (sentence.id === null) return this.fail(run, sentence);
+      if (reply?.language) run.tongue = reply.language;
       const early = this.early.filter((event) => event.id === sentence.id);
       this.early = this.early.filter((event) => event.id !== sentence.id);
       for (const event of early) event.apply();
@@ -237,7 +252,10 @@ export class Saying {
    */
   pause(): boolean {
     const run = this.end("paused");
-    this.paused = { asked: run?.asked ?? "", voice: run?.voice ?? this.host.voice(), rest: run?.waiting.map((sentence) => sentence.text) ?? [] };
+    // The first sentence kept is said again as it was: after the same language.
+    const first = run?.waiting[0];
+    const after = first?.sent ? first.after : run?.tongue;
+    this.paused = { asked: run?.asked ?? "", only: run?.only, after, rest: run?.waiting.map((sentence) => sentence.text) ?? [] };
     if (!run) return false;
     void this.host.service.call("speak.stop").catch(() => {});
     this.host.ended?.("paused");
@@ -254,7 +272,7 @@ export class Saying {
     const paused = this.paused;
     this.paused = null;
     if (!paused || this.run || paused.rest.length === 0) return false;
-    this.begin(paused.asked, paused.voice);
+    this.begin(paused.asked, paused.only, paused.after);
     for (const sentence of paused.rest) this.addWhole(sentence);
     if (!more) this.close();
     return true;

@@ -3,11 +3,14 @@
 //! calls `handle` with its requests.
 
 mod capture;
+mod cast;
 pub(crate) mod clock;
 pub(crate) mod engines;
 mod fetching;
+mod lines;
 mod listen;
 mod player;
+mod seam;
 mod speak;
 mod voices;
 
@@ -17,7 +20,9 @@ use std::time::Duration;
 use serde_json::{Value, json};
 
 pub(crate) use self::fetching::UNIT as FETCH_UNIT;
-pub(crate) use self::voices::choose as choose_voice;
+pub(crate) use self::lines::lines;
+pub(crate) use self::seam::{joined, seams};
+pub(crate) use self::voices::list as voices;
 
 use self::clock::Clock;
 use self::engines::Engines;

@@ -2,7 +2,8 @@
  * Voice: talking to Dashi. Off until turned on here. Turning it on says what
  * will be fetched and how big it is, then fetches the models with progress,
  * Pause and Resume; nothing is fetched before that, and never at install.
- * Then the talk key, Dashi's voice (with a sample), dictation and its key
+ * Then the talk key, Dashi's voice (with a sample) and the voice for each
+ * other language it speaks (voice-languages.tsx), dictation and its key
  * (voice-dictation.tsx), the optional model for
  * more languages, and removing the models. What is missing is said here in
  * words, with the one thing to do.
@@ -38,6 +39,7 @@ import { type ByPerson, ONLY_YOU, type PersonOnly, usePersonOnly } from "../pers
 import { Setting } from "../setting.tsx";
 import { MiniButton } from "./parts.tsx";
 import { DictationRows } from "./voice-dictation.tsx";
+import { VoiceLanguages } from "./voice-languages.tsx";
 import { TalkRows } from "./voice-talk.tsx";
 import { offerWords, removeWords, setsWords, voiceChoices, whatFetching } from "./voice-words.ts";
 
@@ -171,6 +173,7 @@ function KeyAndVoice({ settings, voice, view, guard }: { settings: SettingsStore
           </View>
         </Setting>
       )}
+      {choices.length > 0 && <VoiceLanguages settings={settings} voice={voice} view={view} guard={guard} />}
     </Group>
   );
 }

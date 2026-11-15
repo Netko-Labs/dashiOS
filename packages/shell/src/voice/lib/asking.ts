@@ -59,7 +59,7 @@ export class Asking {
     saying.add(text);
   }
 
-  async ask(words: string): Promise<void> {
+  async ask(words: string, language?: string): Promise<void> {
     const { host } = this;
     this.abort();
     const controller = new AbortController();
@@ -69,6 +69,7 @@ export class Asking {
     host.show({ kind: "thinking", text: words });
     const answer = await host.asker
       .ask(words, controller.signal, {
+        language,
         say: (text) => live() && this.say(words, text),
         step: (title) => {
           if (!live()) return;
