@@ -2941,3 +2941,21 @@ short words, as the rulebook is written.
 - **Cost:** until then a build needs the network, as D127 says.
 - **Undo:** nothing to undo.
 
+### D132. Dashi's text is subpixel
+
+- **Date:** 2026-11-15. The `n28` take-up (mirin PR 36). The owner's
+  decision.
+- **Question:** mirin's hosts now draw grayscale text on Linux unless
+  asked (it carries no colour fringes to a rotated or another screen, and
+  an idle host is about 1 MB smaller). Which does Dashi ship?
+- **Choice:** subpixel, in every host: the shell's, every app's, the
+  greeter's, `dashi-dialog`, the portal's, applets'. Until mirin's PR 36 is
+  on `main`, `session/dashi-session` and `session/dashi-greeter` set
+  `MIRIN_METAL_TEXT=subpixel` (a value already set wins), which every host
+  of the session inherits. After it, the hosts are spawned with
+  `textAntialiasing` and Settings › Appearance has the choice
+  (`appearance.textSmoothing`).
+- **Cost:** about 1 MB more per idle host than grayscale, and fringes of
+  the wrong order on a rotated screen.
+- **Undo:** the two `export` lines.
+

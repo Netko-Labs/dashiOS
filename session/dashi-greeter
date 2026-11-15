@@ -48,6 +48,8 @@ exec >>"$log" 2>&1
 export XDG_SESSION_TYPE=wayland
 export XDG_CURRENT_DESKTOP=Dashi
 export LANG="${LANG:-C.UTF-8}"
+# Subpixel text, as in the session (decisions.md D132).
+export MIRIN_METAL_TEXT="${MIRIN_METAL_TEXT:-subpixel}"
 # The greeter ends this compositor once the session is chosen (exec keeps the pid).
 export DASHI_GREETER_COMPOSITOR=$$
 
