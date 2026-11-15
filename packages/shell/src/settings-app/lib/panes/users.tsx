@@ -12,6 +12,7 @@ import { Image, Text, TextInput, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { useAccount } from "../../../accounts/index.ts";
 import { type Account, initialsOf, nameProblem } from "../../../shared/accounts/index.ts";
+import { hostDrawsFile } from "../../../shared/apps/index.ts";
 import { Button, Caption, Group, Note, useSurface } from "../../../shared/cards/index.ts";
 import type { PhotoChooser } from "../../../wallpaper/chooser.ts";
 import { useColors } from "../../colors.ts";
@@ -37,7 +38,7 @@ function Avatar({ account }: { account: Account }) {
         backgroundColor: colors.selection,
       }}
     >
-      {account.iconFile !== null ? (
+      {account.iconFile !== null && hostDrawsFile(account.iconFile) ? (
         <Image source={account.iconFile} resizeMode="cover" style={{ width: AVATAR, height: AVATAR }} />
       ) : (
         <Text style={{ fontSize: 28, fontWeight: "semibold", color: "#ffffff" }}>{initialsOf(account)}</Text>

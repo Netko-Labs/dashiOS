@@ -15,6 +15,7 @@ import { join } from "node:path";
 import { TextField, useColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
+import { hostDraws } from "../../../src/shared/apps/index.ts";
 import { type InterfaceSpec, Variant } from "../../../src/shared/dbus/index.ts";
 import { appInfo } from "./apps.ts";
 import { parseIcon } from "./notification.ts";
@@ -98,10 +99,10 @@ export function dynamicLauncherInterface(requests: Requests, ask: AskInstall, ad
   };
 }
 
-/** The icon the app sent, as a file the sheet can draw; null for a themed one or none. */
+/** The icon the app sent, as a file the sheet can draw; null for a themed one, none, or bytes the host does not draw. */
 function iconPicture(icon: Variant | null): string | null {
   const parsed = parseIcon(icon ?? undefined);
-  if (!parsed || !("bytes" in parsed)) return null;
+  if (!parsed || !("bytes" in parsed) || !hostDraws(parsed.bytes)) return null;
   try {
     const dir = join(process.env.XDG_RUNTIME_DIR || "/tmp", "dashi-portal", "icons");
     mkdirSync(dir, { recursive: true, mode: 0o700 });

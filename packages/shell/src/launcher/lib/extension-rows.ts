@@ -14,6 +14,7 @@
  */
 
 import { type ActionDef, type Outcome, type PickRow, ready } from "../../actions/index.ts";
+import { hostDrawsFile } from "../../shared/apps/index.ts";
 import type { SlowSnapshot } from "../budget.ts";
 import type { Row, RowIcon } from "../row-model.ts";
 import type { Section } from "../sections.ts";
@@ -28,7 +29,7 @@ export const SCRIPT_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 
 
 /** The icon of a row from outside: its own picture when it has one, else the puzzle piece (scripts, the prompt). */
 export function outsideIcon(icon: string | undefined, source: string): RowIcon {
-  if (icon?.startsWith("/")) return { image: icon };
+  if (icon?.startsWith("/") && hostDrawsFile(icon)) return { image: icon };
   return { glyph: source === "scripts" ? SCRIPT_GLYPH : EXTENSION_GLYPH };
 }
 

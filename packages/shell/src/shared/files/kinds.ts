@@ -8,7 +8,7 @@ import { extname } from "node:path";
 
 export type Kind = "image" | "pdf";
 
-/** Formats Preview names. `svg` and the first six are drawn as they are; `converted` ones need ImageMagick. */
+/** Formats Preview names. `svg` and the first five are drawn as they are; the others (TIFF since mirin's sumi engine) need ImageMagick. */
 export type Format = "png" | "jpeg" | "gif" | "webp" | "bmp" | "tiff" | "svg" | "heic" | "avif" | "jxl" | "pdf";
 
 interface FormatInfo {
@@ -17,7 +17,7 @@ interface FormatInfo {
   label: string;
   /** The ImageMagick coder name, for the formats it reads; absent for ones it must not (SVG, PDF). */
   coder?: string;
-  /** Metal's image loader draws it without help. */
+  /** Metal's image loader draws it without help (sumi decodes PNG, JPEG, GIF, WebP, BMP and ICO, and draws SVG); `hostDraws` in shared/apps is the same rule over a file's bytes. */
   native: boolean;
 }
 
@@ -27,7 +27,7 @@ export const FORMATS: Readonly<Record<Format, FormatInfo>> = {
   gif: { kind: "image", mime: "image/gif", label: "GIF image", coder: "gif", native: true },
   webp: { kind: "image", mime: "image/webp", label: "WebP image", coder: "webp", native: true },
   bmp: { kind: "image", mime: "image/bmp", label: "BMP image", coder: "bmp", native: true },
-  tiff: { kind: "image", mime: "image/tiff", label: "TIFF image", coder: "tiff", native: true },
+  tiff: { kind: "image", mime: "image/tiff", label: "TIFF image", coder: "tiff", native: false },
   svg: { kind: "image", mime: "image/svg+xml", label: "SVG image", native: true },
   heic: { kind: "image", mime: "image/heic", label: "HEIC image", coder: "heic", native: false },
   avif: { kind: "image", mime: "image/avif", label: "AVIF image", coder: "avif", native: false },
