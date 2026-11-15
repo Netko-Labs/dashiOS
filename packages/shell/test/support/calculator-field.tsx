@@ -17,7 +17,7 @@ import { EN_US } from "../../apps/calculator/lib/locale.ts";
 import { FRESH } from "../../apps/calculator/lib/store.ts";
 import { CalculatorWindow } from "../../apps/calculator/lib/view.tsx";
 import type { Clipboard } from "../../apps/kit/index.ts";
-import { settle } from "./time.ts";
+import { settle, shows } from "./time.ts";
 
 /** The Calculator's state file goes to a folder of the test's own, for the file that calls this. */
 export function ownRuntimeDir(): void {
@@ -164,8 +164,9 @@ export async function mount() {
   };
   const clipboard: Clipboard = { canWrite: true, writeText: async () => true, readText: async () => "" };
   const root = render(<CalculatorWindow clipboard={clipboard} locale={EN_US} remembered={FRESH} remember={() => {}} />, transport);
+  // The line itself, however many turns the file's first render takes in a busy run; then what it set going.
+  const id = await shows(root, "line");
   await settle();
-  const id = root.nodeId("line") ?? "";
   const field = new HostField(id);
   let taken = trees.length;
   for (const tree of trees) {
