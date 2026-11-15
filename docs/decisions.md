@@ -3545,3 +3545,23 @@ short words, as the rulebook is written.
   sends everything.
 - **Undo:** `gate()` in `dictation/lib/gate.ts`; `polish: yes` in a
   profile's file asks for every utterance today.
+
+### D184. Dictated words are fitted to the text around the caret, read through AT-SPI
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's.
+- **Question:** every landing began with a capital and ended with a full
+  stop and a space, wherever the caret was.
+- **Choice:** the field's text before and after the caret is read at the
+  landing, by the walk the password check already makes (no second
+  round-trip to find the field), and four things follow from it: a
+  leading space or none, a capital or none, a final full stop or none, a
+  trailing space or none (`dictation/lib/fit.ts`). After a colon the
+  words are left as said. A name keeps its capital mid-sentence. Where
+  the text can't be read nothing changes from before.
+- **Why:** it is the difference between words that continue a sentence
+  and words pasted into it; Wispr does this part on the device for the
+  same reason.
+- **Cost:** accessibility is on from the first hold (it was already, for
+  the password check). Dashi's own apps and terminals give no text, so
+  they get no fit yet: mirin would have to publish its fields to AT-SPI.
+- **Undo:** `fit()` returning the words with a space after.

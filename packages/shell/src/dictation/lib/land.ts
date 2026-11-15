@@ -15,7 +15,8 @@ import { DICTATION_LIMITS, type DictationState, type WaitReason } from "../../sh
 import type { LexiconView } from "../lexicon.ts";
 import type { DictationDeps, FieldRead, Front } from "../types.ts";
 import type { Words } from "../words.ts";
-import { type Composed, type Composing, compose } from "./compose.ts";
+import { type Composed, type Composing, compose, namesOf } from "./compose.ts";
+import { fit } from "./fit.ts";
 import { landedLine, waitingLine } from "./lines.ts";
 import { type Place, pickProfile } from "./profiles.ts";
 import { type Insertion, type Insertions, insertionId } from "./record.ts";
@@ -194,8 +195,11 @@ export async function land(deps: DictationDeps, ctx: LandContext, heard: string,
   // The gate, then the model where it is needed and can be waited for; else the rules' words.
   const asking: Asking = { made: rules, composing: full, before: where.field?.before ?? "", reasons: reasonsFor(rules, full) };
   const { made, refine, model } = await correct(deps, asking);
-  const what = { heard: made.heard, text: made.text, typed: withSpace(made.text), profile: place.profile.name, breaks: breaksFor(place, agent), model };
+  // The words continue what the field holds: a space, a capital and a full stop only where they belong (fit.ts).
+  const fitted = fit(made.text, where.field, { words: ctx.words, names: namesOf(made.terms) });
+  const fits: Composed = { ...made, text: fitted.text };
+  const what = { heard: made.heard, text: fitted.text, typed: fitted.typed, profile: place.profile.name, breaks: breaksFor(place, agent), model };
   const { how, entry } = await typeAndRemember(deps, ctx.kept, where, what);
   if (how !== "typed" && how !== "pasted") return waiting(deps, made, how);
-  return { ...landed(deps, made, how, entry, place.profile.name), ...(refine && entry ? { refine: asking } : {}) };
+  return { ...landed(deps, fits, how, entry, place.profile.name), ...(refine && entry ? { refine: asking } : {}) };
 }

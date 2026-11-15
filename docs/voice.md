@@ -275,6 +275,28 @@ Until `rewrite/` is merged, `dictation/types.ts` declares the seam's
 shapes and nothing passes a rewriter: `boot/dictation.ts` gives
 `rewriter: startRewriter(…)` when it is.
 
+### Fitting the field
+
+`dictation/lib/fit.ts`. At the landing the text before and after the caret
+is read (AT-SPI's Text interface on the focused field; up to 400
+characters each way; never in a password field), and the words are made to
+continue it:
+
+- **A space before** them unless the caret is at the start, after a space
+  or a line break, or after an opening mark (`(`, `“`, `/`, `-`, …).
+- **No capital** when the line before the caret is a sentence already
+  begun (it does not end with `.`, `!`, `?`, `…` or `:`), unless the first
+  word is a name: one the vocabulary writes with a capital, "I", or a word
+  the dictionary lists only with a capital.
+- **No full stop** of Dashi's when text follows on the same line: the
+  words went into a sentence that has its own end.
+- **A space after** them unless what follows starts with a space or a
+  closing mark.
+
+Where the field can't be read (Dashi's own apps and most terminals do not
+give their text to AT-SPI) the words land as said, with a space after, as
+before. Undo's check uses exactly what was typed, the spaces included.
+
 ### Tidying by rule
 
 `dictation/lib/tidy*.ts`. On this computer, no model; English and Spanish.

@@ -20,20 +20,20 @@ const backspaces = (keys: readonly string[]): number => keys.filter((key) => key
 
 test("Undo takes back exactly what was typed, where the field still ends with it", async () => {
   const { hub, world, keys, hold, key, state } = dictating();
-  world.before = "Dear Alex, ";
+  world.before = "Dear Alex. ";
   await hold();
   await key("up");
   expect(state()).toMatchObject({ phase: "landed", typed: "Hello there.", undo: true, raw: true });
-  expect(world.before).toBe("Dear Alex, Hello there. ");
+  expect(world.before).toBe("Dear Alex. Hello there. ");
   hub.dictationCommands.send({ do: "undo" });
   await settle();
   expect(backspaces(keys)).toBe("Hello there. ".length);
-  expect(world.before).toBe("Dear Alex, ");
+  expect(world.before).toBe("Dear Alex. ");
   expect(state()).toMatchObject({ phase: "told", tone: "ok", line: "Removed 2 words." });
   // Nothing is left to take back: the person's own text is never touched.
   hub.dictationCommands.send({ do: "undo" });
   await settle();
-  expect(world.before).toBe("Dear Alex, ");
+  expect(world.before).toBe("Dear Alex. ");
   expect(state()).toMatchObject({ phase: "told", tone: "warn", line: "Nothing of mine to take back." });
 });
 
