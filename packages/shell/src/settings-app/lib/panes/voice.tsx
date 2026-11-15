@@ -3,7 +3,8 @@
  * will be fetched and how big it is, then fetches the models with progress,
  * Pause and Resume; nothing is fetched before that, and never at install.
  * Then the talk key, Dashi's voice (with a sample), dictation and its key
- * (voice-dictation.tsx), the optional model for
+ * (voice-dictation.tsx), the optional model that corrects dictation
+ * (docs/dictation-rewrite.md), the optional model for
  * more languages, and removing the models. What is missing is said here in
  * words, with the one thing to do.
  *
@@ -15,6 +16,7 @@
 
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { speedWord } from "../../../rewrite/speed-word.ts";
 import { Caption, Group, Note } from "../../../shared/cards/index.ts";
 import { FoldedChoices } from "../../../shared/controls/folded.tsx";
 import {
@@ -38,7 +40,7 @@ import { type ByPerson, ONLY_YOU, type PersonOnly, usePersonOnly } from "../pers
 import { Setting } from "../setting.tsx";
 import { MiniButton } from "./parts.tsx";
 import { DictationRows } from "./voice-dictation.tsx";
-import { offerWords, removeWords, setsWords, voiceChoices, whatFetching } from "./voice-words.ts";
+import { correctionsOffer, offerWords, REWRITE_SET, removeWords, setsWords, speedWords, voiceChoices, whatFetching } from "./voice-words.ts";
 
 export type VoicePaneSource = Pick<VoiceParts, "models" | "sample">;
 
@@ -83,15 +85,18 @@ function ModelsRow({
   view,
   voice,
   offer,
+  hereNote = "",
   onFetch,
   guard,
 }: {
-  id: "voice/models" | "voice/more-languages";
+  id: "voice/models" | "voice/more-languages" | "voice/corrections";
   sets: readonly ModelSet[];
   view: ModelsView;
   voice: VoicePaneSource;
   /** What the row says while nothing is here. */
   offer: string;
+  /** Said after "On this computer: …" once it is here. */
+  hereNote?: string;
   onFetch: () => void;
   /** Fetching and removing are the person's alone. */
   guard: PersonOnly;
@@ -110,7 +115,7 @@ function ModelsRow({
       : fetching
         ? `Fetching ${setsWords(sets)}.`
         : here
-          ? `On this computer: ${setsWords(sets)}.`
+          ? `On this computer: ${setsWords(sets)}.${hereNote}`
           : part
             ? `Paused at ${sizeWords(have)} of ${sizeWords(bytes)}. What came is kept.`
             : offer;
@@ -207,7 +212,9 @@ export function VoicePane({ settings, voice, byPerson }: { settings: SettingsSto
     );
   }
   const basics = basicSets(view.sets);
-  const more = view.sets.filter((set) => !set.basic);
+  // The model that corrects dictation has a row of its own: it is fetched for another reason than a language.
+  const corrections = view.sets.filter((set) => set.id === REWRITE_SET);
+  const more = view.sets.filter((set) => !set.basic && set.id !== REWRITE_SET);
   const usable = basicsHere(view.sets);
   const on = wanted && usable;
   const turn = (next: boolean): void => {
@@ -240,6 +247,20 @@ export function VoicePane({ settings, voice, byPerson }: { settings: SettingsSto
       {view.error !== null && <Note testID="voice-error">{view.error}</Note>}
       {on && <KeyAndVoice settings={settings} voice={voice} view={view} guard={guard} />}
       {on && <DictationRows settings={settings} guard={guard} />}
+      {on && corrections.length > 0 && (
+        <Group testID="voice-corrections">
+          <ModelsRow
+            id="voice/corrections"
+            sets={corrections}
+            view={view}
+            voice={voice}
+            offer={correctionsOffer(corrections)}
+            hereNote={speedWords(speedWord())}
+            onFetch={() => void voice.models.fetch(corrections.map((set) => set.id))}
+            guard={guard}
+          />
+        </Group>
+      )}
       {on && more.length > 0 && (
         <Group testID="voice-more">
           <ModelsRow
@@ -253,7 +274,7 @@ export function VoicePane({ settings, voice, byPerson }: { settings: SettingsSto
           />
         </Group>
       )}
-      <Caption>{[...basics, ...(on ? more : [])].map((set) => set.credit).join(" ")}</Caption>
+      <Caption>{[...basics, ...(on ? [...corrections, ...more] : [])].map((set) => set.credit).join(" ")}</Caption>
     </Page>
   );
 }

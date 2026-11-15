@@ -14,7 +14,7 @@ test("the set is large enough, a third of it Spanish or mixed, and every id is i
     expect(pairs.filter((row) => row.lang === lang && row.tags.includes("self-correction")).length).toBeGreaterThanOrEqual(30);
   }
   // Every row of the owner's corpus is there.
-  expect(new Set(pairs.flatMap((row) => (row.corpus === undefined ? [] : [row.corpus]))).size).toBe(31);
+  expect(new Set(pairs.flatMap((row) => (row.corpus === undefined ? [] : [row.corpus]))).size).toBe(33);
 });
 
 test("a pair tagged restraint wants what was heard, and no other pair does", () => {

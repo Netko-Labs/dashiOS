@@ -6,6 +6,6 @@
 export const MODEL = {
   /** The set's id in dashi-voice, and its folder under the models' folder. */
   set: "rewrite",
-  file: "SmolLM3-Q4_K_M.gguf",
-  bytes: 1_915_305_312,
+  file: "SpeakoFlow-Mini-0.8B-Q4_K_M.gguf",
+  bytes: 541_903_616,
 } as const;

@@ -23,6 +23,13 @@ test("nothing, or no words, is refused", () => {
 
 test("the frame given back whole is taken off; tags left inside are refused", () => {
   expect(checkAnswer("Hello there.", "<transcript>\nHello there.\n</transcript>")).toEqual({ ok: true, text: "Hello there.", unchanged: true });
+  // A small model sometimes gives the whole message back, with or without the closing tag.
+  expect(checkAnswer("Ask cloud code.", "Vocabulary: Claude Code, Dashi\n<transcript>\nAsk Claude Code.", ["Claude Code"])).toEqual({
+    ok: true,
+    text: "Ask Claude Code.",
+    unchanged: false,
+  });
+  expect(refused("Hello there.", "Here it is: <transcript>Hello there.</transcript>")).toBe("tags");
   expect(refused("Hello there.", "Hello there.</transcript>")).toBe("tags");
   expect(refused("Hello there.", "<|im_start|>assistant Hello there.")).toBe("tags");
   expect(refused("Hello there.", "Assistant: Hello there.")).toBe("tags");
@@ -61,12 +68,52 @@ test("what came after the last cue is the final version: an answer that kept the
   expect(refused("Rename it to feature login, sorry, feature sign in.", "Rename it to feature login.")).toBe("earlier");
   expect(refused("Make the font bigger, no, smaller, in the sidebar.", "Make the font bigger in the sidebar.")).toBe("earlier");
   expect(refused("Quiero el rojo, mejor dicho el azul.", "Quiero el rojo.")).toBe("earlier");
+  // The same number in the sentence's own language is the final version too.
+  expect(refused("Nos vemos a las cinco, no, I mean six.", "Nos vemos a las seis.")).toBeNull();
+  expect(refused("Compra dos tickets, wait, three tickets.", "Compra tres tickets.")).toBeNull();
   // The words that go with a cue, and fillers, are not the final version.
   expect(refused("Ship it by Wednesday. Scratch that, by Friday.", "Ship it by Friday.")).toBeNull();
   expect(refused("El vuelo sale de mañana, quise decir de tarde.", "El vuelo sale de tarde.")).toBeNull();
   expect(refused("I'll be there in ten minutes, wait, make that twenty.", "I'll be there in twenty minutes.")).toBeNull();
   // A "no" that is no cue changes nothing: the whole sentence is still there.
   expect(refused("No, I mean it.", "No, I mean it.")).toBeNull();
+});
+
+test("a cue the sentence opens with takes nothing back: it stays", () => {
+  expect(refused("No, gracias, ya he comido.", "Ya he comido.")).toBe("opening");
+  expect(refused("Actually, me parece buena idea.", "Me parece buena idea.")).toBe("opening");
+  expect(refused("I mean, it's fine, but it could be faster.", "It's fine, but it could be faster.")).toBe("opening");
+  expect(refused("Wait, is the server down again?", "Is the server down again?")).toBe("opening");
+  expect(refused("No, we shouldn't merge it; yes, we should test it more.", "Yes, we should test it more.")).toBe("opening");
+  // A filler before a sentence is no cue, and a cue further in is not the opening.
+  expect(refused("Um, I think we should start.", "I think we should start.")).toBeNull();
+  expect(refused("Um, no, I think we should start at five, no, six.", "No, I think we should start at six.")).toBeNull();
+});
+
+test("with no cue, words go only as a phrase started again", () => {
+  expect(refused("Muy complicada. Let's keep it simple.", "Let's keep it simple.")).toBe("dropped");
+  expect(refused("Thanks for the update. I'll review it tonight.", "I'll review it tonight.")).toBe("dropped");
+  expect(refused("Can you send, could you forward the invoice to accounting?", "Could you forward the invoice to accounting?")).toBeNull();
+  expect(refused("I was going to, I think we should just delete the old tests.", "I think we should just delete the old tests.")).toBeNull();
+  expect(refused("The thing is that we, the problem is that we never measured it.", "The problem is that we never measured it.")).toBeNull();
+  expect(refused("We we need to to check the logs first.", "We need to check the logs first.")).toBeNull();
+  expect(refused("Uh, can you, like, send me the the file?", "Can you send me the file?")).toBeNull();
+});
+
+test("what is inside quotation marks is kept to the word", () => {
+  expect(refused('The test case is the sentence "at five, no, I mean six".', 'The test case is the sentence "at six".')).toBe("quotes");
+  expect(
+    refused('Si alguien dice "a las cinco, no, a las seis", debe escribir "a las seis".', 'Si alguien dice "a las cinco", debe escribir "a las seis".'),
+  ).toBe("quotes");
+  expect(refused('She said "wait, sorry", and then, um, hung up.', 'She said "wait, sorry", and then hung up.')).toBeNull();
+});
+
+test("a 'not' inside a word is kept, even when the recogniser dropped its ending", () => {
+  expect(refused("It shouldt have that button.", "It should have that button.")).toBe("negation");
+  expect(refused("I don't like the new layout.", "I like the new layout.")).toBe("negation");
+  expect(refused("They wouldt answer the phone.", "They would not answer the phone.")).toBeNull();
+  expect(refused("It doesnt start when I press the key.", "It doesn't start when I press the key.")).toBeNull();
+  expect(refused("We can't go on Monday, no, we can go on Monday.", "We can go on Monday.")).toBeNull();
 });
 
 test("a vocabulary term that was said stays unless it was taken back", () => {

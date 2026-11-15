@@ -36,13 +36,20 @@ export function modelPath(env: Env = process.env): string {
 /** Half the threads, eight at most: the person is using the machine. */
 export const threads = (cores: number = navigator.hardwareConcurrency): number => Math.max(2, Math.min(8, Math.floor(cores / 2)));
 
+/** Where the model runs: the processor (the default, decisions.md D170), or a graphics card that is not NVIDIA's. */
+export type Device = "cpu" | "gpu";
+
+/** `DASHI_REWRITE_DEVICE=gpu` tries the integrated graphics card; anything else is the processor. */
+export const deviceOf = (env: Env = process.env): Device => (env.DASHI_REWRITE_DEVICE === "gpu" ? "gpu" : "cpu");
+
 /**
  * The command that starts the server as the user unit `dashi-rewrite`.
  * - No network: Unix sockets only. No core dumps: they would hold what was said.
- * - The NVIDIA card is never woken for this, and Mesa's software Vulkan is not a graphics card:
- *   with neither, the server uses the integrated one, or the processor when there is none.
+ * - On the processor by default: the model is small enough, and the desktop is drawn by the
+ *   integrated graphics card. Asked for a graphics card, the NVIDIA one is still never woken for
+ *   this, and Mesa's software Vulkan is not a graphics card.
  */
-export function serverCommand(program: string, model: string, socket: string, cores?: number): string[] {
+export function serverCommand(program: string, model: string, socket: string, cores?: number, device: Device = "cpu"): string[] {
   const properties = [
     "PartOf=dashi-session.target",
     "NoNewPrivileges=yes",
@@ -55,7 +62,8 @@ export function serverCommand(program: string, model: string, socket: string, co
     "RestrictSUIDSGID=yes",
     "SystemCallArchitectures=native",
   ].flatMap((property) => ["-p", property]);
-  const server = [program, "-m", model, "--host", socket, "-ngl", "99", "-c", "4096", "-np", "1", "-t", String(threads(cores))];
+  const offload = device === "gpu" ? ["-ngl", "99"] : ["-ngl", "0", "--device", "none"];
+  const server = [program, "-m", model, "--host", socket, ...offload, "-c", "4096", "-np", "1", "-t", String(threads(cores))];
   return [
     "systemd-run",
     "--user",
@@ -97,7 +105,7 @@ export function unitService(env: Env = process.env): RewriteService | null {
   return {
     socket,
     // A unit left from before (a shell that crashed) still serves: starting it again fails and that is fine.
-    start: async () => (await run(serverCommand(program, modelPath(env), socket))) || existsSync(socket),
+    start: async () => (await run(serverCommand(program, modelPath(env), socket, undefined, deviceOf(env)))) || existsSync(socket),
     stop: async () => {
       await run(["systemctl", "--user", "stop", `${UNIT}.service`]);
     },

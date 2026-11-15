@@ -5,10 +5,22 @@
  * back. A failed check means the rules' text lands.
  */
 
-import { finalWords, isCue, isNumber, near, wordsOf } from "./lib/words.ts";
+import { finalWords, isAside, isCue, isNot, isNumber, near, openingCue, same, wordsOf } from "./lib/words.ts";
 import { CLOSE, OPEN } from "./prompt.ts";
 
-export type CheckName = "empty" | "tags" | "longer" | "lines" | "overlap" | "earlier" | "numbers" | "vocabulary";
+export type CheckName =
+  | "empty"
+  | "tags"
+  | "longer"
+  | "lines"
+  | "overlap"
+  | "opening"
+  | "earlier"
+  | "dropped"
+  | "quotes"
+  | "numbers"
+  | "negation"
+  | "vocabulary";
 
 export type Checked = { ok: true; text: string; unchanged: boolean } | { ok: false; check: CheckName };
 
@@ -19,10 +31,15 @@ export const LONGER_BY = 2;
 
 const TAGS = /<\/?transcript>|<\|[^|>]*\|>|<\/?think>|^\s*(?:assistant|user|system)\s*:/im;
 
-/** The answer with the frame taken off, if the model gave it back whole. */
+/**
+ * The answer with the frame taken off, when the model gave the message back around its answer:
+ * the lines before the transcript ("Vocabulary: …") and the tags themselves, if they are whole.
+ */
 function unframed(answer: string): string {
-  const text = answer.trim();
-  if (text.startsWith(OPEN) && text.endsWith(CLOSE)) return text.slice(OPEN.length, -CLOSE.length).trim();
+  let text = answer.trim();
+  const open = text.lastIndexOf(OPEN);
+  if (open >= 0 && /^(?:(?:Vocabulary|Tone|Already typed)[^\n]*\n)*$/.test(text.slice(0, open))) text = text.slice(open + OPEN.length).trim();
+  if (open >= 0 && text.endsWith(CLOSE)) text = text.slice(0, -CLOSE.length).trim();
   return text;
 }
 
@@ -37,13 +54,56 @@ function takenBack(said: readonly string[], at: number): boolean {
 
 /** Every number said is still there, unless it was taken back (said twice counts once). */
 function keepsNumbers(said: readonly string[], kept: readonly string[]): boolean {
-  const there = new Set(kept);
-  return said.every((word, at) => !isNumber(word) || there.has(word) || takenBack(said, at));
+  return said.every((word, at) => !isNumber(word) || kept.some((other) => same(word, other)) || takenBack(said, at));
+}
+
+/** A "don't" or a "shouldn't" (even one that lost its ending) is still a "not" in the answer, unless it was taken back. */
+function keepsNots(said: readonly string[], kept: readonly string[]): boolean {
+  const nots = said.filter((word, at) => isNot(word) && !takenBack(said, at)).length;
+  return nots <= kept.filter((word) => isNot(word) || word === "not" || word === "cannot").length;
 }
 
 /** What was said after the last cue is the final version: an answer without it kept the earlier one. */
 function keepsLater(said: readonly string[], kept: readonly string[]): boolean {
-  return finalWords(said).every((word) => kept.some((other) => near(word, other)));
+  return finalWords(said).every((word) => kept.some((other) => same(word, other)));
+}
+
+/** A cue the transcript opens with takes nothing back: it must still open the answer. */
+function keepsOpening(said: readonly string[], kept: readonly string[]): boolean {
+  const cue = openingCue(said);
+  return cue === null || kept.slice(0, said.indexOf(cue) + 1).includes(cue);
+}
+
+/**
+ * With no cue anywhere, words may go only as a phrase started again ("can you send, could you
+ * forward"): a quarter or more of what went is said again in what stayed. Fillers, a word said twice
+ * in a row, and a word that was mended (another stands in its place) do not count as gone.
+ */
+function dropsOnlyRestarts(said: readonly string[], kept: readonly string[]): boolean {
+  if (said.some(isCue)) return true;
+  const left = [...kept];
+  const gone: string[] = [];
+  // Words that went but are still in the answer: said twice, the mark of a phrase started again.
+  let again = 0;
+  said.forEach((word, at) => {
+    const found = left.findIndex((other) => near(word, other));
+    if (found >= 0) {
+      left.splice(found, 1);
+      return;
+    }
+    if (kept.includes(word)) again++;
+    if (!isAside(word) && said[at + 1] !== word && said[at - 1] !== word) gone.push(word);
+  });
+  // What is left of the answer are new words: each stands in for one that went.
+  const dropped = gone.length - left.length;
+  return dropped <= 0 || again * 4 >= gone.length;
+}
+
+/** What the speaker put in quotation marks is kept to the word. */
+function keepsQuotes(transcript: string, text: string): boolean {
+  const plain = wordsOf(text).join(" ");
+  const quoted = transcript.match(/"[^"]+"|“[^”]+”|«[^»]+»/g) ?? [];
+  return quoted.every((quote) => plain.includes(wordsOf(quote).join(" ")));
 }
 
 /** Where a term's words stand in a row in `words`, or -1. */
@@ -64,9 +124,8 @@ function keepsVocabulary(said: readonly string[], kept: readonly string[], vocab
 
 function overlap(said: readonly string[], kept: readonly string[], vocabulary: readonly string[]): number {
   if (kept.length === 0) return 0;
-  const known = new Set([...said, ...vocabulary.flatMap(wordsOf)]);
-  const list = [...known];
-  const hits = kept.filter((word) => known.has(word) || list.some((other) => near(word, other))).length;
+  const known = [...new Set([...said, ...vocabulary.flatMap(wordsOf)])];
+  const hits = kept.filter((word) => known.some((other) => same(word, other))).length;
   return hits / kept.length;
 }
 
@@ -81,9 +140,13 @@ export function checkAnswer(transcript: string, answer: string, vocabulary: read
   if (kept.length > said.length + LONGER_BY) return { ok: false, check: "longer" };
   if (lineBreaks(text) !== lineBreaks(transcript.trim())) return { ok: false, check: "lines" };
   if (overlap(said, kept, vocabulary) < OVERLAP_FLOOR) return { ok: false, check: "overlap" };
+  if (!keepsOpening(said, kept)) return { ok: false, check: "opening" };
   if (!keepsLater(said, kept)) return { ok: false, check: "earlier" };
+  if (!keepsQuotes(transcript, text)) return { ok: false, check: "quotes" };
   if (!keepsNumbers(said, kept)) return { ok: false, check: "numbers" };
+  if (!keepsNots(said, kept)) return { ok: false, check: "negation" };
   if (!keepsVocabulary(said, kept, vocabulary)) return { ok: false, check: "vocabulary" };
+  if (!dropsOnlyRestarts(said, kept)) return { ok: false, check: "dropped" };
   const same = text.replace(/\s+/g, " ") === transcript.trim().replace(/\s+/g, " ");
   return { ok: true, text, unchanged: same };
 }

@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from "bun:test";
 import { MODEL } from "../src/rewrite/lib/model.ts";
 import type { RewriteService } from "../src/rewrite/lib/service.ts";
-import type { Speed, SpeedStore } from "../src/rewrite/lib/speed.ts";
+import type { Speed, SpeedStore } from "../src/rewrite/lib/speed-store.ts";
 import { createRewriter, type RewriterOptions, WORDS_MOST } from "../src/rewrite/rewriter.ts";
 import type { RewriteRequest } from "../src/rewrite/types.ts";
 import { handTimers, type ScriptedServer, type Step, scriptedServer } from "./support/rewrite-server.ts";

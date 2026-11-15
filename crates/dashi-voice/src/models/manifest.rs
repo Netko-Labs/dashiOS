@@ -214,8 +214,22 @@ const WHISPER: &[File] = &[
 pub(crate) const LISTEN_SET: &str = "listen";
 pub(crate) const SPEAK_SET: &str = "speak";
 pub(crate) const WHISPER_SET: &str = "whisper";
+pub(crate) const REWRITE_SET: &str = "rewrite";
 
-pub(crate) const SETS: [Set; 3] = [
+/// The model that corrects dictation (docs/dictation-rewrite.md): one GGUF file,
+/// read by llama.cpp's server, which the shell starts. This service only fetches it.
+const REWRITE: &[File] = &[File {
+    path: "SpeakoFlow-Mini-0.8B-Q4_K_M.gguf",
+    url: hf!(
+        "SpeakoFlow/speakoflow-mini",
+        "835431771f72820251fe6c6b4b07f12b000e2647",
+        "SpeakoFlow-Mini-0.8B-Q4_K_M.gguf"
+    ),
+    bytes: 541_903_616,
+    sha256: "530e0a5d4e9314e3bae2c92aecf3ab39ca48e8cfecac41372058f9fcb742329d",
+}];
+
+pub(crate) const SETS: [Set; 4] = [
     Set {
         id: LISTEN_SET,
         name: "Listening",
@@ -239,6 +253,14 @@ pub(crate) const SETS: [Set; 3] = [
         credit: "Whisper large-v3-turbo by OpenAI (MIT), ONNX export by the sherpa-onnx project.",
         basic: false,
         files: WHISPER,
+    },
+    Set {
+        id: REWRITE_SET,
+        name: "Corrections",
+        about: "Fixes what you take back as you dictate (“at five, no, six”), in English and Spanish, on this computer.",
+        credit: "SpeakoFlow Mini by SpeakoFlow (Apache 2.0), made from Qwen3.5 0.8B by Alibaba Cloud (Apache 2.0).",
+        basic: false,
+        files: REWRITE,
     },
 ];
 
@@ -294,6 +316,7 @@ mod tests {
         assert_eq!(set(LISTEN_SET).map(Set::bytes), Some(672_862_728));
         assert_eq!(set(SPEAK_SET).map(Set::bytes), Some(334_932_491));
         assert_eq!(set(WHISPER_SET).map(Set::bytes), Some(1_036_613_791));
+        assert_eq!(set(REWRITE_SET).map(Set::bytes), Some(541_903_616));
         assert!(set("other").is_none());
     }
 }

@@ -6,7 +6,7 @@
 import { statSync } from "node:fs";
 import { MODEL } from "./lib/model.ts";
 import { modelPath, unitService } from "./lib/service.ts";
-import { speedFile } from "./lib/speed.ts";
+import { speedFile } from "./lib/speed-store.ts";
 import { createRewriter } from "./rewriter.ts";
 import type { Rewriter } from "./types.ts";
 

@@ -10,7 +10,8 @@ import { realTimers, type Timers } from "../shared/time/index.ts";
 import { checkAnswer } from "./checks.ts";
 import { complete, healthy } from "./lib/complete.ts";
 import type { RewriteService } from "./lib/service.ts";
-import { adviceFor, measure, type SpeedStore, tooSlow } from "./lib/speed.ts";
+import { measure } from "./lib/speed.ts";
+import { adviceFor, type SpeedStore, tooSlow } from "./lib/speed-store.ts";
 import { rewriteMessages } from "./prompt.ts";
 import type { RewriteAdvice, RewriteFailure, RewriteReply, RewriteRequest, Rewriter, RewriteState, RewriteTimings } from "./types.ts";
 

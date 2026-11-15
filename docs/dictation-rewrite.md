@@ -27,8 +27,11 @@ export interface Rewriter {
   warm(): void;
   /** What the capsule and Settings can say without asking the server. */
   state(): RewriteState;
-  /** How dictation should wait on this machine (from the one-time speed test). */
-  advice(): RewriteAdvice;
+  /**
+   * How dictation should wait on this machine (from the one-time speed test). Given the
+   * transcript, the advice is for that transcript: a long one is refined, not waited for.
+   */
+  advice(transcript?: string): RewriteAdvice;
 }
 ```
 

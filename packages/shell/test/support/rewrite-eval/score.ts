@@ -57,16 +57,12 @@ export interface Verdict {
   damaged: boolean;
 }
 
-export function judge(pair: Pair, answer: string): Verdict {
-  const accepted = [pair.want, ...(pair.also ?? [])];
-  const noop = strict(pair.want) === strict(pair.heard);
-  const exact = accepted.some((text) => strict(text) === strict(answer));
-  const close = accepted.some((text) => loose(text) === loose(answer));
-  // The words both said and wanted: each must still be there, as often.
+/** Whether `answer` lost a word that was both said and wanted in `wanted`. */
+function lost(heard: string, wanted: string, answer: string): boolean {
   const left = words(answer);
-  const said = words(pair.heard);
+  const said = words(heard);
   let damaged = false;
-  for (const word of words(pair.want)) {
+  for (const word of words(wanted)) {
     const at = said.indexOf(word);
     if (at < 0) continue;
     said.splice(at, 1);
@@ -74,7 +70,17 @@ export function judge(pair: Pair, answer: string): Verdict {
     if (found < 0) damaged = true;
     else left.splice(found, 1);
   }
-  return { noop, exact, close: close || exact, damaged };
+  return damaged;
+}
+
+export function judge(pair: Pair, answer: string): Verdict {
+  const accepted = [pair.want, ...(pair.also ?? [])];
+  const noop = strict(pair.want) === strict(pair.heard);
+  const exact = accepted.some((text) => strict(text) === strict(answer));
+  const close = exact || accepted.some((text) => loose(text) === loose(answer));
+  // Damage is against the nearest accepted answer: one that lost nothing against any of them lost nothing.
+  const damaged = !close && accepted.every((text) => lost(pair.heard, text, answer));
+  return { noop, exact, close, damaged };
 }
 
 export interface Score {

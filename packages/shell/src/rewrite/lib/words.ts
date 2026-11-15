@@ -18,6 +18,35 @@ const NUMBER_WORDS = new Set(
 /** A number, in figures or in words ("one", "uno" and "una" are left out: they are mostly not numbers). */
 export const isNumber = (word: string): boolean => /\d/.test(word) || NUMBER_WORDS.has(word);
 
+/** The same number in English and Spanish: "no, I mean six" may be typed "seis" where the sentence is Spanish. */
+const NUMBER_PAIRS: readonly (readonly [string, string])[] = [
+  ["two", "dos"],
+  ["three", "tres"],
+  ["four", "cuatro"],
+  ["five", "cinco"],
+  ["six", "seis"],
+  ["seven", "siete"],
+  ["eight", "ocho"],
+  ["nine", "nueve"],
+  ["ten", "diez"],
+  ["eleven", "once"],
+  ["twelve", "doce"],
+  ["twenty", "veinte"],
+  ["thirty", "treinta"],
+  ["hundred", "cien"],
+  ["thousand", "mil"],
+];
+const OTHER_TONGUE = new Map(NUMBER_PAIRS.flatMap(([en, es]) => [[en, es] as const, [es, en] as const]));
+
+/** The same word, one slip apart, or the same number in the other language. */
+export const same = (a: string, b: string): boolean => near(a, b) || OTHER_TONGUE.get(a) === b;
+
+/** "don't", "shouldn't", and the same with its ending lost in recognition ("dont", "shouldt"): a "not" that is never a cue. */
+export const isNot = (word: string): boolean =>
+  /n't$/.test(word) ||
+  /^(?:do|does|did|is|are|was|were|has|have|had|ca|wo|should|would|could|must)nt$/.test(word) ||
+  /^(?:should|would|could|does|must)t$/.test(word);
+
 /** Words that can take back what came before them, in English and Spanish. */
 const CUES = new Set(
   (
@@ -29,7 +58,24 @@ const CUES = new Set(
 export const isCue = (word: string): boolean => CUES.has(word);
 
 /** Words that go with a cue or mean nothing, so the final version may lack them ("scratch that", "quise decir", "um"). */
-const WITH_CUE = new Set("that mind decir dicho eso i yo make it lo um uh uhm eh ehm er erm hm hmm mm este like well bueno pues o or yes si".split(" "));
+const WITH_CUE = new Set(
+  "that mind decir dicho eso i yo make it lo um uh uhm eh ehm er erm hm hmm mm este like well bueno pues o or yes si was era eran".split(" "),
+);
+
+/** Whether a word may go with nothing said about it: a filler, or a word that only goes with a cue. */
+export const isAside = (word: string): boolean => WITH_CUE.has(word);
+
+/**
+ * The cue a transcript opens with, if it opens with one ("No, thank you", "Actually, that works", "I mean, fine"):
+ * nothing was said before it, so it takes nothing back and is what the speaker means.
+ */
+export function openingCue(said: readonly string[]): string | null {
+  for (const word of said) {
+    if (isCue(word)) return word;
+    if (!WITH_CUE.has(word)) return null;
+  }
+  return null;
+}
 
 /**
  * The words said after the last cue: the final version, which a rewrite must keep. Empty when no cue was said.

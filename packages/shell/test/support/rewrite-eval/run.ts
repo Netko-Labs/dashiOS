@@ -2,7 +2,7 @@
  * Runs the evaluation set through one system and prints its scores.
  *
  *   bun packages/shell/test/support/rewrite-eval/run.ts --system nothing|rules|model|speakoflow \
- *     [--socket PATH] [--rules-first] [--no-checks] [--label NAME] [--out FILE.json] [--only TAG]
+ *     [--socket PATH] [--rules-first] [--own-rules] [--no-checks] [--label NAME] [--out FILE.json] [--only TAG]
  *
  * `model` sends Dashi's prompt (src/rewrite/prompt.ts) to a llama-server on a Unix socket and
  * passes the answer through Dashi's checks; `speakoflow` sends SpeakoFlow Mini's own system
@@ -41,6 +41,7 @@ const { values } = parseArgs({
     out: { type: "string" },
     only: { type: "string" },
     "rules-first": { type: "boolean", default: false },
+    "own-rules": { type: "boolean", default: false },
     "no-checks": { type: "boolean", default: false },
   },
 });
@@ -92,7 +93,7 @@ async function answerOf(pair: Pair): Promise<Row> {
           { role: "system", content: SPEAKOFLOW },
           { role: "user", content: transcript },
         ]
-      : rewriteMessages({ transcript, tone: "", vocabulary, before: "" });
+      : rewriteMessages({ transcript, tone: "", vocabulary, before: "" }, values["own-rules"] ? SPEAKOFLOW : undefined);
   const { text, ms } = await ask(messages);
   if (values["no-checks"]) return row(text, text.trim() === "" ? transcript : text.trim(), null, ms);
   const checked = checkAnswer(transcript, text, vocabulary);
