@@ -151,12 +151,10 @@ test("a paste in the line reads one number; a refused one never lands; Esc clear
   const calc = await mount({ tape: [], showsTape: false, size: null });
   await calc.emit({ type: "change", nodeId: calc.node("line"), value: "Total: 1,234.50" });
   expect(calc.tree()).toContain('"value":"1,234.5"');
-  // Text the field put in itself and the line refuses: the field takes the line back (a new revision), a moment later.
+  // Text the field put in itself and the line refuses: the field takes the line back (a new revision), at once.
   await calc.emit({ type: "change", nodeId: calc.node("line"), value: "1,234.5calc" });
   expect(calc.tree()).toContain("Not a number or a sum");
   expect(calc.tree()).toContain('"value":"1,234.5"');
-  expect(calc.tree()).toContain('"revision":0');
-  await settle(30);
   expect(calc.tree()).toContain('"revision":1');
   await calc.emit({ type: "key", nodeId: calc.node("line"), value: "Escape" });
   expect(calc.tree()).toContain('"value":""');

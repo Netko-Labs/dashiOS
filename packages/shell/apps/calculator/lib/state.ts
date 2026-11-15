@@ -47,13 +47,17 @@ export interface CalcState {
   /** The caret the field is about to report in its own text (`held`): not the line's, so not taken. */
   late: TextSelection | null;
   /**
-   * The line refused the field's last edit (a letter, a space): the field
-   * still shows it, and takes the line's text back at the next `take-back`.
-   * Not at once: a reset drops what was typed since, and a burst of keys
-   * (an agent's "12 + 3") has more on the way.
+   * The line refused the field's last edit and told it to take the line's
+   * text back: what it reports next, several characters at once, is what
+   * was typed after the refused key, done again by the host (field.ts).
    */
   refused: boolean;
-  /** Bumped when the field must take the line's text back though the line didn't change (an edit refused). */
+  /**
+   * Bumped when the field must take the line's text back though the line
+   * didn't change: it refused the field's edit (a letter, a space). At once:
+   * the host types what came after the refused key again on the line's text
+   * (an agent's "12 + 3" keeps "+ 3"; decisions.md D144).
+   */
   revision: number;
 }
 
@@ -65,8 +69,6 @@ export type CalcAction =
   /** The field's text after the person edited it there. */
   | { type: "field"; text: string; locale: NumberLocale }
   | { type: "select"; selection: TextSelection }
-  /** The field has been quiet since the line refused its edit: it takes the line's text back. */
-  | { type: "take-back" }
   /** A keypad key pressed. */
   | { type: "key"; id: KeyId; locale: NumberLocale }
   /** Return in the field. */
@@ -108,15 +110,16 @@ function typedChar(before: string, after: string): string | null {
 
 /**
  * The field reported `raw` and the line took it as `next`: when the line
- * writes it differently the field takes the line's text back (by `take-back`
- * when the line itself didn't change, an edit refused), and until then its
- * own text and the caret it reports in it are not the line's.
+ * writes it differently the field takes the line's text back (by a new
+ * `revision` when the line itself didn't change, an edit refused), and until
+ * then its own text and the caret it reports in it are not the line's.
  */
 function fieldTook(state: CalcState, next: CalcState, raw: string): CalcState {
   if (next.line.text === raw) return { ...next, held: null, late: null, refused: false };
   const caret = fieldCaret(state.line, raw, state.held);
   const late = caret.start === next.line.selection.start && caret.end === next.line.selection.end ? null : caret;
-  return { ...next, held: raw, late, refused: next.line.text === state.line.text };
+  const refused = next.line.text === state.line.text;
+  return { ...next, held: raw, late, refused, revision: refused ? state.revision + 1 : next.revision };
 }
 
 /** Keys the field reported in one edit, each done as it is when typed alone. */
@@ -140,7 +143,7 @@ export function calculate(state: CalcState, action: CalcAction): CalcState {
 function step(state: CalcState, action: CalcAction): CalcState {
   switch (action.type) {
     case "field": {
-      const edit = fromField(state.line, action.text, action.locale, state.held);
+      const edit = fromField(state.line, action.text, action.locale, state.held, state.refused);
       const char = typedChar(state.line.text, action.text) ?? (state.held === null ? null : typedChar(state.held, action.text));
       const lit = char === null ? null : keyForChar(char, action.locale);
       if (edit.kind === "equals") return fieldTook(state, workedOut(state, action.locale), action.text);
@@ -154,8 +157,6 @@ function step(state: CalcState, action: CalcAction): CalcState {
       if (late && late.start === action.selection.start && late.end === action.selection.end) return { ...state, late: null };
       return { ...state, late: null, line: select(state.line, action.selection) };
     }
-    case "take-back":
-      return state.refused ? { ...state, held: null, late: null, refused: false, revision: state.revision + 1 } : state;
     case "key": {
       if (action.id === "equals") return { ...workedOut(state, action.locale), lit: null };
       if (action.id === "clear") return edited(state, { line: EMPTY_LINE });
