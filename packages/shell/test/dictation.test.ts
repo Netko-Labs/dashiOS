@@ -215,3 +215,17 @@ test("where the compositor can't say who pressed, the window is trusted", async 
   await key("up");
   expect(typed).toEqual(["7:Hello there. "]);
 });
+
+// The first field check of a session connects to the accessibility bus, which can take seconds (D122).
+test("words typed instead are not held by a field check that does not answer: they are typed after a second and a half", async () => {
+  const { typed, hub, timers, state, world } = dictating();
+  world.secretHangs = true;
+  hub.dictationCommands.send({ do: "type", text: "open the calendar" });
+  await settle();
+  expect(typed).toEqual([]);
+  expect(state()).toMatchObject({ phase: "tidying" });
+  timers.advance(1500);
+  await settle();
+  expect(typed).toEqual(["7:Open the calendar "]);
+  expect(state()).toMatchObject({ phase: "landed" });
+});

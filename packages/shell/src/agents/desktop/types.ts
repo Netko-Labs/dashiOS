@@ -17,8 +17,8 @@ import type { MachineDesktop } from "../../settings-app/machine-reading.ts";
 import type { SettingsStore } from "../../settings-app/store.ts";
 import type { PageId } from "../../setup/index.ts";
 import type { FlagsStore } from "../../shared/control-center/index.ts";
+import type { SpaceRef } from "../../spaces/index.ts";
 import type { WifiStore } from "../../wifi/index.ts";
-import type { AgentSpaces } from "./elsewhere.ts";
 import type { SoftwareBackend } from "./software.ts";
 
 /** One copy as an agent reads it: the text, or what a picture or files were. */
@@ -34,7 +34,7 @@ export interface ClipboardCopy {
 
 export interface Desktop {
   /** The notification center's history, and taking notifications out of it. */
-  notifications: Pick<NotificationStore, "getSnapshot" | "remove">;
+  notifications: Pick<NotificationStore, "getSnapshot" | "remove" | "notify">;
   /** Control Center's switches (Dark Mode, Do Not Disturb). */
   flags: Pick<FlagsStore, "getSnapshot" | "set">;
   /** The Dock's settings (autohide, style): the store the Dock's menu and System Settings change. Absent where there is no Dock. */
@@ -72,4 +72,14 @@ export interface Desktop {
     of(window: CompositorWindow): Promise<WindowMenu[]>;
     run(action: MenuAction, appName: string): Promise<void>;
   };
+}
+
+/** The Desktops as agents need them: SpacesController (spaces/). */
+export interface AgentSpaces {
+  getSnapshot(): { count: number; current: number; labels: readonly string[]; fullscreen: readonly (number | null)[] };
+  /** A new Space at the end: its index, or null at the limit. */
+  add(): Promise<number | null>;
+  remove(index: number): Promise<void>;
+  follow(index: number): SpaceRef;
+  unfollow(ref: SpaceRef): void;
 }

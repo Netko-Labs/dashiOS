@@ -165,7 +165,12 @@ the same change.
   a screenshot lands one menu bar item off: the agents' mark is in the bar only
   while an agent is connected. `.mcp.json` offers the same server to
   Claude Code as `dashi-vm`. The first call of each kind asks for consent on the
-  VM's screen; allow it there once ("Always Allow"). `vm/vm ipc METHOD JSON` sends one
+  VM's screen; allow it there once ("Always Allow"). The sheet is blank in
+  `vm/agent`'s own pictures and an agent's `click` never answers it: press its
+  button with `vm/agent pointer X Y` (a one-permission sheet on the 1922×1201
+  screen has Always Allow at 1020, 918 and Allow Once at 1218, 918), or see it
+  first with the person's screenshot key (`vm/qmp.py vm/images/qmp.sock key
+  shift-meta_l-3`, saved in the VM's `~/Pictures/Screenshots`). `vm/vm ipc METHOD JSON` sends one
   compositor request from outside the session: only the methods anyone may
   ask (`session`, `outputs`, `gpus`; docs/compositor-ipc.md, "Who may ask").
 - Start the VM as its own user unit, so it outlives the shell that started it:

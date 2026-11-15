@@ -5,9 +5,11 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { Elsewhere } from "../src/agents/desktop/elsewhere.ts";
 import { parseCall } from "../src/agents/tools/registry.ts";
 import { MAX_SPACES } from "../src/spaces/model.ts";
 import { desk, window, words } from "./support/elsewhere.ts";
+import { settle } from "./support/time.ts";
 
 describe("work_in_space's arguments", () => {
   test("a Space's number as people count, a new one, or back where the person is", () => {
@@ -109,6 +111,82 @@ describe("a Space the agent added cleans up after itself", () => {
     await d.elsewhere.go("new", d.ctx);
     d.state.current = 2;
     await d.elsewhere.leave();
+    expect(d.state.count).toBe(3);
+  });
+
+  // The two orders of events the installed passes found (11-agents), and the person's own leaving (D118).
+  const tick = settle;
+
+  test("its window still closing as the agent's connection drops: it goes when the window is gone", async () => {
+    const d = desk(2);
+    await d.elsewhere.go("new", d.ctx);
+    d.state.windows.push(window(4, 2));
+    await d.elsewhere.leave();
+    expect(d.state.count).toBe(3);
+    d.state.windows.length = 0;
+    d.emit({ event: "window-closed", id: 4 });
+    await tick();
+    expect(d.state.count).toBe(2);
+    // Nothing waits any more: a later event removes nothing else.
+    d.emit({ event: "window-closed", id: 5 });
+    await tick();
+    expect(d.state.count).toBe(2);
+  });
+
+  test("a plan's Desktop, let go with its window open: it goes when the person closes the window, or moves it away", async () => {
+    for (const how of ["closed", "moved"] as const) {
+      const d = desk(2);
+      await d.elsewhere.go("new", d.ctx);
+      d.state.windows.push(window(4, 2), window(5, 0));
+      await d.elsewhere.leave();
+      if (how === "closed") {
+        d.state.windows.shift();
+        d.emit({ event: "window-closed", id: 4 });
+      } else {
+        d.state.windows[0] = window(4, 0);
+        d.emit({ event: "window-space", window: 4, space: 0 });
+      }
+      await tick();
+      expect(d.state.count).toBe(2);
+    }
+  });
+
+  test("the person was looking at it, empty: it goes when they leave it", async () => {
+    const d = desk(2);
+    await d.elsewhere.go("new", d.ctx);
+    d.state.current = 2;
+    await d.elsewhere.leave();
+    expect(d.state.count).toBe(3);
+    d.state.current = 0;
+    d.emit({ event: "space", current: 0, previous: 2, count: 3 });
+    await tick();
+    expect(d.state.count).toBe(2);
+  });
+
+  test("while another agent works on it, it stays; it goes when that one leaves it empty", async () => {
+    const d = desk(2);
+    await d.elsewhere.go("new", d.ctx);
+    d.state.windows.push(window(4, 2));
+    await d.elsewhere.leave();
+    const other = new Elsewhere(d.places);
+    await other.go(2, d.ctx);
+    d.state.windows.length = 0;
+    d.emit({ event: "window-closed", id: 4 });
+    await tick();
+    expect(d.state.count).toBe(3);
+    await other.leave();
+    await tick();
+    expect(d.state.count).toBe(2);
+  });
+
+  test("a Desktop no agent added is never taken, whatever closes on it", async () => {
+    const d = desk(3, [window(4, 2)]);
+    await d.elsewhere.go(2, d.ctx);
+    await d.elsewhere.leave();
+    d.state.windows.length = 0;
+    d.emit({ event: "window-closed", id: 4 });
+    d.emit({ event: "space", current: 0, previous: 1, count: 3 });
+    await tick();
     expect(d.state.count).toBe(3);
   });
 });

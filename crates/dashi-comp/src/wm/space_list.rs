@@ -69,6 +69,17 @@ impl Dashi {
             self.spaces.slide = None;
             self.switch_space_now(into);
         }
+        // A slide to or from the Space that goes ends where the screen is (finishing it would show a
+        // Space that is not there); one between Spaces after it follows the renumbering.
+        match self.spaces.slide {
+            Some(slide) if slide.to == space || slide.from == space => self.spaces.slide = None,
+            Some(mut slide) => {
+                slide.to -= usize::from(slide.to > space);
+                slide.from -= usize::from(slide.from > space);
+                self.spaces.slide = Some(slide);
+            }
+            None => {}
+        }
         let ids: Vec<WindowId> = self.windows.ids().collect();
         for id in &ids {
             if self.windows.get(*id).is_some_and(|e| e.space == space)

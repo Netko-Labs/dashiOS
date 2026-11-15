@@ -28,10 +28,20 @@ export interface HostHello {
   browserPid: number;
   /** The extension's id, from the origin the browser gave the host. */
   extension: string;
+  /** The host's own version. */
   version: string;
+  /** The extension's version, when it had said it before the host joined (else its own `hello` line follows). */
+  extensionVersion?: string;
 }
 
-export type FromBrowser = { kind: "reply"; reply: BrowserReply } | { kind: "hello"; hello: HostHello } | { kind: "invalid"; why: string };
+export type FromBrowser =
+  | { kind: "reply"; reply: BrowserReply }
+  | { kind: "hello"; hello: HostHello }
+  /** The extension's own first words, relayed by the host: the version the browser runs. */
+  | { kind: "extension"; version: string }
+  | { kind: "invalid"; why: string };
+
+const VERSION = /^\d+(\.\d+){0,3}$/;
 
 /** One line from the host. */
 export function parseFromBrowser(line: string): FromBrowser {
@@ -46,7 +56,14 @@ export function parseFromBrowser(line: string): FromBrowser {
     const { browserPid, extension, version } = value;
     if (typeof browserPid !== "number" || !Number.isInteger(browserPid) || browserPid <= 1) return { kind: "invalid", why: "bad browserPid" };
     if (typeof extension !== "string" || typeof version !== "string") return { kind: "invalid", why: "bad host hello" };
-    return { kind: "hello", hello: { event: "host", browserPid, extension, version } };
+    const extensionVersion =
+      typeof value.extensionVersion === "string" && VERSION.test(value.extensionVersion) ? { extensionVersion: value.extensionVersion } : {};
+    return { kind: "hello", hello: { event: "host", browserPid, extension, version, ...extensionVersion } };
+  }
+  if (value.event === "hello") {
+    return typeof value.version === "string" && VERSION.test(value.version)
+      ? { kind: "extension", version: value.version }
+      : { kind: "invalid", why: "bad extension hello" };
   }
   const { id, ok } = value;
   if (typeof id !== "number" || !Number.isInteger(id)) return { kind: "invalid", why: "no id" };

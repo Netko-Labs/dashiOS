@@ -110,6 +110,7 @@ function started() {
   const hub = createPillHub();
   const clock = { now: 0 };
   const did: string[] = [];
+  const checked: number[] = [];
   const held: string[][] = [];
   const settings = { voiceOn: true, on: true, key: undefined as DictationKeyId | undefined, handsFree: true, tidy: true, layout: { layout: "us" } };
   const listeners = new Set<() => void>();
@@ -129,7 +130,10 @@ function started() {
     busy: () => false,
     muted: async () => false,
     front: async () => ({ window: 7, pid: 70 }),
-    secret: async () => null,
+    secret: async (front) => {
+      checked.push(front.window);
+      return null;
+    },
     pressed: async () => null,
     typeText: async (_window, text) => void did.push(`type:${text}`),
     paste: async () => false,
@@ -150,7 +154,7 @@ function started() {
   const change = (): void => {
     for (const listener of [...listeners]) listener();
   };
-  return { parts, hub, did, held, gestures, settings, pass, change, voice };
+  return { parts, hub, did, checked, held, gestures, settings, pass, change, voice };
 }
 
 test("a tap of the Dashi key opens the launcher as it comes up; kept down, it talks to Dashi", () => {
@@ -231,4 +235,19 @@ test("a tap of the Dashi key does not close a launcher that a tap of ❖ alone j
   expect(tapClosesLauncher(1500)).toBe(true);
   // No ❖ tap at all: ❖Space closes the launcher it opened, as before.
   expect(tapClosesLauncher(Number.POSITIVE_INFINITY)).toBe(true);
+});
+
+// Seen once in the smoke pass: the first "Type it instead" after logging in typed nothing (11-agents, D122).
+test("holding the Dashi key warms the field check, so words typed instead do not wait on it at the landing", async () => {
+  const { parts, checked, pass } = started();
+  parts.key("dashi", true);
+  pass(100);
+  parts.key("dashi", false);
+  await settle();
+  // A tap is the launcher's: nothing is checked.
+  expect(checked).toEqual([]);
+  parts.key("dashi", true);
+  pass(300);
+  await settle();
+  expect(checked).toEqual([7]);
 });

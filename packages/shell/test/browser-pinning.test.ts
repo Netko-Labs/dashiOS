@@ -28,13 +28,22 @@ describe("the extension's id is pinned", () => {
 
   test("the policy force-installs that extension from Dashi's update manifest", () => {
     const policy = readJson("spin/dashi-helium/etc/chromium/policies/managed/dashi.json") as {
-      ExtensionSettings: Record<string, Record<string, string>>;
+      ExtensionSettings: Record<string, Record<string, string | boolean>>;
     };
     expect(Object.keys(policy.ExtensionSettings)).toEqual([EXTENSION_ID]);
     expect(policy.ExtensionSettings[EXTENSION_ID]).toMatchObject({
       installation_mode: "force_installed",
       update_url: "file:///usr/share/dashi/browser/updates.xml",
     });
+  });
+
+  // Chromium asks a policy's update_url only for the first install; after it, an extension with no update_url of its
+  // own is looked for in the web store, so a profile kept its first version for ever (decisions.md D117).
+  test("the policy's update manifest is asked for updates too, and an older extension is updated as Helium starts", () => {
+    const policy = readJson("spin/dashi-helium/etc/chromium/policies/managed/dashi.json") as {
+      ExtensionSettings: Record<string, Record<string, string | boolean>>;
+    };
+    expect(policy.ExtensionSettings[EXTENSION_ID]).toMatchObject({ override_update_url: true, minimum_version_required: manifest.version });
   });
 
   test("the host serves only the pinned extension", () => {

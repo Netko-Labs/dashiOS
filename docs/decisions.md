@@ -2252,3 +2252,138 @@ short words, as the rulebook is written.
   only.
 - **Undo:** `git revert` of this entry's commit brings `rowPress` and
   `pressed()` back.
+
+### D118. A Desktop an agent added is watched after the agent leaves it
+
+- **Date:** 2026-11-14. The `n20-agents` agent's. Adds to D89 and D90.
+- **Question:** D89 looked at an added Desktop once, as its agent left. Three
+  orders of events left an empty one behind: the agent's connection drops
+  while its last window is still closing; a plan's hold ends (D90, 30 s)
+  with its window open and the person closes it later; the person was
+  looking at the empty Desktop and then goes elsewhere.
+- **Choice:** a Desktop that could not go when its agent left is kept by
+  `AddedSpaces` (`agents/desktop/lib/added-spaces.ts`) and looked at again when a
+  window closes or moves to another Desktop, when the screen goes to another
+  Desktop, and when an agent stops working on one. It goes the first time it
+  has no windows, does not show, and no agent works on it. Only Desktops made
+  by `work_in_space "new"` are ever kept there.
+- **Why:** the rule is about the Desktop, not about the moment the agent left.
+- **Cost:** a Desktop an agent added and the person then took for their own
+  windows also goes once they empty it and look elsewhere: Dashi cannot tell
+  "theirs now" from "left over". Nothing is kept on disk, so one that waits
+  when the shell restarts stays until its × is pressed.
+- **Undo:** in `Elsewhere.leave`, call `added.look()` once and forget the
+  Desktop (`AddedSpaces.left` without the listener).
+
+### D119. A window's picture waits for the frame after the agent's input, 250 ms at most
+
+- **Date:** 2026-11-14. The `n20-agents` agent's.
+- **Question:** a window screenshot asked within about 50 ms of typing
+  showed the frame from before (ten of ten). Where does the wait go, and
+  how long may it be?
+- **Choice:** in the compositor (`session/agent_fresh.rs`). `agent-input`
+  and `type-text` note the window; `capture {window}` asked before that
+  window has committed a new buffer since is held and taken at that commit,
+  or 250 ms after the input, whichever is first. Past 250 ms, or once the
+  window has drawn, nothing waits. Screen and `rect` captures never wait.
+- **Why:** only the compositor sees the window's commits, so only there can
+  the wait end the moment the frame is in (about 20 ms for Text Editor)
+  rather than always after a fixed sleep. 250 ms is four times the 66 ms at
+  which every picture was current, and short enough that an input which
+  draws nothing (a click on empty space) costs a quarter of a second at
+  worst, and only when the picture is asked that soon.
+- **Cost:** it is the first new buffer after the input, not proof the input
+  is in it: an app that was already drawing a frame (a caret's blink) when
+  the keys arrived can still hand over the old words, and what an app draws
+  later (Text Editor's character count, a quarter of a second after) is not
+  waited for. A buffer committed by a synchronised subsurface alone is not
+  seen; the bound covers it.
+- **Undo:** `capture` calls `capture_now` directly (`ipc/methods/capture.rs`).
+
+### D117. Helium takes the packaged extension through the policy's own update URL and a minimum version
+
+- **Date:** 2026-11-14. The `n20-agents` agent's.
+- **Question:** a Helium profile that already had Dashi's extension kept
+  0.5.0 for ever. The cause: the policy's `update_url` is asked only for the
+  first install; later checks go to the manifest's `update_url`, and with
+  none, to the web store. How does an existing profile get the packaged
+  version after one restart, with no step from the person?
+- **Choice:** two keys in the policy's `ExtensionSettings`:
+  `override_update_url: true`, so the package's `file://` update manifest is
+  asked for updates too, and `minimum_version_required` set to the packaged
+  version, so an older extension is turned off and updated at once (as
+  Helium starts, or as soon as the policy file changes) instead of at the
+  updater's next round, hours later, and instead of waiting for a busy
+  service worker to go idle. The shell also compares the version the
+  extension says with the package's and posts one notification per pair of
+  versions and shell run when it is older.
+- **Why:** it reaches profiles that hold an old manifest (adding
+  `update_url` to the manifest would only help installs made after it), it
+  is Chromium's own update path (the entry, its permissions and its storage
+  are kept), and nothing runs outside the browser. An external-extensions
+  JSON was not used: it would install beside the policy's entry under
+  another location and the two would take turns.
+- **Cost:** `minimum_version_required` must be raised with every extension
+  version (a test holds it to the manifest's). While the update is fetched
+  the old extension is off (under a second from a local file); if the CRX
+  were missing it would stay off, where before it would have run old. The
+  notice is not kept on disk, so a shell restart may say it once more.
+- **Undo:** drop the two keys from `spin/dashi-helium/…/dashi.json`; the
+  `onExtension` line in `agents/server.ts` for the notice.
+
+### D120. dashi-dialog finds the packaged Metal host itself, and says when there is no display
+
+- **Date:** 2026-11-14. The `n20-agents` agent's.
+- **Question:** started by cron, over ssh or by a systemd unit, `dashi-dialog`
+  has none of the session's environment: what does it take as given?
+- **Choice:** its launcher sets `DASHI_METAL_HOST` to the packaged host
+  (`<prefix>/libexec/dashi/mirin-metal-host`) when the variable is not set,
+  as `dashi-portal` does and as the session's own default is. It never
+  guesses a display: with no Wayland socket to connect to (`WAYLAND_DISPLAY`,
+  else `wayland-0`, under `XDG_RUNTIME_DIR`) and no `DISPLAY`, it stops with
+  exit 255 and says to run it in the session or to give it the session's
+  `WAYLAND_DISPLAY` and `XDG_RUNTIME_DIR` (`apps/dialog/lib/where.ts`).
+- **Why:** the host's path is the package's fact; which session a script
+  means to show a dialog in is the script's.
+- **Cost:** a cron job still has to name the display (the session's socket
+  is `wayland-1` in the VM, not the default name).
+- **Undo:** the block in `session/dashi-dialog`; `cannotShow` in `main.tsx`.
+
+### D121. A Space removed while the screen slides to it ends the slide
+
+- **Date:** 2026-11-14. The `n20-agents` agent's.
+- **Question:** found in the VM: `space-remove` of the Space a 250 ms slide
+  was going to left the slide running, and its end showed a Space that was
+  gone (`current` equal to `count`; the shell then could not list Spaces).
+- **Choice:** `remove_space` ends a slide to or from the removed Space where
+  the screen is, and renumbers a slide between Spaces after it
+  (`wm/space_list.rs`). The shell's `AddedSpaces` still reads `current` from
+  its own snapshot, which is the Space the slide started from until it ends.
+- **Why:** the compositor must never show a Space it does not have.
+- **Cost:** an agent that shows its empty added Desktop and leaves it within
+  the slide takes the Desktop away as the person arrives; the screen stays
+  where it was. After the slide the Desktop stays, as D89 says.
+- **Undo:** not wanted.
+
+### D122. "Type it instead" never waits long on the password-field check
+
+- **Date:** 2026-11-14. The `n20-agents` agent's.
+- **Question:** seen once: the first "Type it instead" after a login through
+  the greeter stopped the ask and typed nothing. Read, not reproduced. A
+  dictation asks at its key's hold whether a password field has the
+  keyboard, which also connects to the accessibility bus; words sent by
+  Dashi's capsule were first checked at the landing, so the first of a
+  session waited there on a cold bus (its timeouts add up to about 8 s), and
+  a click or key in the window meanwhile made them wait with Copy ("moved",
+  D81) instead of being typed.
+- **Choice:** holding the Dashi key warms the same check, and the landing
+  waits for its answer 1.5 s at most (`FIELD_CHECK_MS`, `dictation/lib/land.ts`);
+  past that the words are typed.
+- **Why:** a warm check answers in milliseconds; the bound is for the bus
+  that is still starting, where waiting gains nothing the person can see.
+- **Cost:** when the check does not answer in 1.5 s, words can be typed into
+  a password field that was not recognised. That was already so when the
+  bus cannot be reached at all; a dictation's own hold still refuses a
+  password field it knows of before listening.
+- **Undo:** `secretIn` back to `deps.secret` in `place`; the warm-up line in
+  `dictation/start.ts`.

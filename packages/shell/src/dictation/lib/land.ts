@@ -22,6 +22,27 @@ const KEYS_DOWN_TRIES = 6;
 /** A press this little before `since` counts as after it: the shell hears the key come up a moment late. */
 const MOVED_SLACK_MS = 60;
 
+/**
+ * How long the landing waits to hear whether a password field has the keyboard. The first check of a
+ * session connects to the accessibility bus and can take seconds (decisions.md D122): past this the
+ * words are typed, as they are when the bus can't be reached at all.
+ */
+const FIELD_CHECK_MS = 1500;
+
+/** Whether a password field has the keyboard in `front`; null when that is not known in time. */
+function secretIn(deps: DictationDeps, front: Front): Promise<boolean | null> {
+  const timers = deps.timers;
+  if (!timers) return deps.secret(front).catch(() => null);
+  return new Promise((resolve) => {
+    const timer = timers.set(() => resolve(null), FIELD_CHECK_MS);
+    const known = (secret: boolean | null): void => {
+      timers.clear(timer);
+      resolve(secret);
+    };
+    deps.secret(front).then(known, () => known(null));
+  });
+}
+
 /** Where the words belong: the window the listen began in (null: wherever the keyboard is now), and when the person stopped (null: not known). */
 export interface Meant {
   at: Front | null;
@@ -71,7 +92,7 @@ async function place(deps: DictationDeps, text: string, { at, since }: Meant): P
   const front = await deps.front();
   if (!front) return "no-field";
   if (at && front.window !== at.window) return "left-window";
-  if ((await deps.secret(front)) === true) return "secret";
+  if ((await secretIn(deps, front)) === true) return "secret";
   if (await moved(deps, front.window, since)) return "moved";
   return type(deps, front.window, text);
 }

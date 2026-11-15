@@ -1,7 +1,8 @@
 /** A desk for the tests of an agent at work on another Desktop: Desktops and a compositor that keep the Spaces as plain numbers. */
 
 import type { RunContext, ToolResult } from "../../src/agents/context.ts";
-import { type AgentSpaces, Elsewhere, WorkPlaces } from "../../src/agents/desktop/elsewhere.ts";
+import { Elsewhere, WorkPlaces } from "../../src/agents/desktop/elsewhere.ts";
+import type { AgentSpaces } from "../../src/agents/desktop/types.ts";
 import type { CompositorEvent } from "../../src/compositor/events.ts";
 import type { CompositorWindow } from "../../src/compositor/index.ts";
 import { Followed } from "../../src/spaces/lib/followed.ts";

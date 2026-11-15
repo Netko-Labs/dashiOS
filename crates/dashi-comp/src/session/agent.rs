@@ -43,6 +43,8 @@ pub(crate) struct Agent {
     pub acted_at: Option<std::time::Instant>,
     /// What it has going in windows on Spaces that do not show (session/agent_away.rs).
     pub away: super::agent_away::Away,
+    /// Pictures of windows that wait for the frame after its input (session/agent_fresh.rs).
+    pub fresh: super::agent_fresh::Fresh,
 }
 
 impl Agent {
@@ -54,6 +56,7 @@ impl Agent {
             pressed_keys: Vec::new(),
             acted_at: None,
             away: Default::default(),
+            fresh: Default::default(),
         }
     }
 }
