@@ -3561,7 +3561,7 @@ short words, as the rulebook is written.
   | --- | --- | --- | --- | --- |
   | Its own prompt, no checks | 85.9% (held-out: 73.5%) | 81% / 85% / 94% | 13.2% (18.3%) | 4% |
   | Its own prompt, Dashi's checks | 98.6% (94.1%) | 79% / 81% / 94% | 2.7% (3.3%) | 13% |
-  | Dashi's prompt, no checks | 96.5% (94.1%) | 78% / 79% / 88% | 6.5% (8.3%) | 43% |
+  | Dashi's prompt, no checks | 96.5% (94.1%) | 78% / 79% / 88% | 6.5% (8.3%) | 35% |
   | **Dashi's prompt, Dashi's checks** | **98.6% (100%)** | **76% / 75% / 88%** | **1.6% (0%)** | **43%** |
 
   (These rows ran on the integrated card. On the processor, which ships,
