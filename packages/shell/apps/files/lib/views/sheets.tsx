@@ -1,8 +1,9 @@
 /** Files' sheets: Get Info and Open With (naming happens in place, rename-field.tsx). Drawn inside the window by the kit's Sheet. */
 
 import { Button, Group, Sheet, useColors } from "@dashi/ui";
-import { Image, Text, View } from "@mirinjs/metal";
+import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
+import { AppIcon } from "../../../../src/shared/apps/index.ts";
 import { formatCount, formatDate, formatSize } from "../../../../src/shared/file-browser/format.ts";
 import { measure } from "../../../../src/shared/file-browser/size.ts";
 import type { FileItem, OpenWithApp } from "../../../../src/shared/files/index.ts";
@@ -114,7 +115,7 @@ export function OpenWithSheet({
               onPress={() => onChoose(app)}
               style={{ height: 34, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, hoverBackgroundColor: colors.button }}
             >
-              <Image source={app.icon} resizeMode="contain" style={{ width: 22, height: 22 }} />
+              <AppIcon source={app.icon} resizeMode="contain" style={{ width: 22, height: 22 }} />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
                   {app.name}

@@ -5,7 +5,8 @@
  */
 
 import { CHEVRON_DOWN, type Column, useColors } from "@dashi/ui";
-import { Image, Svg, Text, View } from "@mirinjs/metal";
+import { Svg, Text, View } from "@mirinjs/metal";
+import { AppIcon } from "../../../../src/shared/apps/index.ts";
 import type { Line } from "../lines.ts";
 
 /** Pointing right: closed. */
@@ -40,7 +41,7 @@ export function NameCell({ line, selected, onToggle }: { line: Line; selected: b
         // Where the chevron would be, on every line: an app's processes sit one step in from its name, not level with the lines around.
         <View style={{ width: 14, flexShrink: 0 }} />
       )}
-      <View style={{ width: ICON, height: ICON, flexShrink: 0 }}>{line.icon && <Image source={line.icon} style={{ width: ICON, height: ICON }} />}</View>
+      <View style={{ width: ICON, height: ICON, flexShrink: 0 }}>{line.icon && <AppIcon source={line.icon} style={{ width: ICON, height: ICON }} />}</View>
       <View style={{ flexShrink: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={{ fontSize: 12, color: ink }}>
           {line.name}

@@ -6,10 +6,20 @@
  * that asks for attention gets a dot, as a Dock icon does.
  */
 
-import { useColors } from "@dashi/ui";
-import { type Bounds, Image, Svg, Text, View } from "@mirinjs/metal";
+import { Picture, useColors } from "@dashi/ui";
+import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { useRef } from "react";
 import type { MenuBarExtra } from "./types.ts";
+
+/** Nothing to draw (an icon no theme has, a file the host cannot draw): the name's first letter, so it can still be found and clicked. */
+function Letter({ title }: { title: string }) {
+  const colors = useColors();
+  return (
+    <View style={{ width: SIZE, height: SIZE, borderRadius: 4, borderWidth: 1.5, borderColor: colors.text, alignItems: "center", justifyContent: "center" }}>
+      <Text style={{ fontSize: 10, fontWeight: "bold", color: colors.text }}>{[...title][0]?.toUpperCase() ?? "?"}</Text>
+    </View>
+  );
+}
 
 /** The picture's size in the bar: the status glyphs' own. */
 const SIZE = 16;
@@ -64,15 +74,11 @@ export function ExtraItem({ extra, open, onMenu, onActivate, tile = false, acces
       }}
     >
       {extra.icon?.kind === "glyph" && <Svg markup={extra.icon.markup} size={SIZE} color={colors.text} />}
-      {extra.icon?.kind === "image" && <Image source={extra.icon.path} style={{ width: SIZE, height: SIZE }} />}
-      {extra.icon === null && extra.label === undefined && (
-        // Nothing to draw (an icon no theme has): its name's first letter, so it can still be found and clicked.
-        <View
-          style={{ width: SIZE, height: SIZE, borderRadius: 4, borderWidth: 1.5, borderColor: colors.text, alignItems: "center", justifyContent: "center" }}
-        >
-          <Text style={{ fontSize: 10, fontWeight: "bold", color: colors.text }}>{[...extra.title][0]?.toUpperCase() ?? "?"}</Text>
-        </View>
+      {extra.icon?.kind === "image" && (
+        // A file the host cannot draw: the letter, unless a label already says what this is.
+        <Picture source={extra.icon.path} style={{ width: SIZE, height: SIZE }} fallback={extra.label === undefined ? <Letter title={extra.title} /> : null} />
       )}
+      {extra.icon === null && extra.label === undefined && <Letter title={extra.title} />}
       {extra.label !== undefined && (
         <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
           {extra.label}

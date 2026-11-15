@@ -6,9 +6,10 @@
  */
 
 import { LOGO, Notice, Button as UiButton, useColors } from "@dashi/ui";
-import { Image, Svg, Text, View } from "@mirinjs/metal";
+import { Svg, Text, View } from "@mirinjs/metal";
 import { holdingCopy } from "../../closing-apps.ts";
 import { KeyCatcher } from "../../overlay.tsx";
+import { AppIcon } from "../../shared/apps/index.ts";
 import { Button, Panel } from "../sheets.tsx";
 import type { PowerKind } from "../types.ts";
 import { HOLDING, type HoldingPlace } from "./holding-place.ts";
@@ -116,7 +117,7 @@ export function AboutWindow({ info, onClose }: { info: AboutInfo; onClose: () =>
   return (
     <Panel>
       <KeyCatcher onKey={(key) => key === "Escape" && onClose()} onSubmit={onClose} />
-      {info.icon ? <Image source={info.icon} style={{ width: 64, height: 64 }} /> : <Svg markup={LOGO} size={56} color={colors.text} />}
+      {info.icon ? <AppIcon source={info.icon} style={{ width: 64, height: 64 }} /> : <Svg markup={LOGO} size={56} color={colors.text} />}
       <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{info.title}</Text>
       <View style={{ flexDirection: "column", alignItems: "center", gap: 2 }}>
         {info.lines.map((line) => (

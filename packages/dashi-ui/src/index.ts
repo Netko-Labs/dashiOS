@@ -48,6 +48,7 @@ export { MENU, type MenuRowKind, menuHeight, menuLabelLeft, placeMenu, rowTop, t
 export { type MenuHighlight, MenuHighlightContext, MenuLine, MenuRow, type MenuRowProps, menuHighlight } from "./menu-row.tsx";
 export { MORE_BUTTON, MoreButton } from "./more.tsx";
 export { Notice, type NoticeProps } from "./notice.tsx";
+export { Picture, type PictureProps } from "./picture.tsx";
 export { PopUpButton, type PopUpButtonProps, type PopUpOption, popUpMenuWidth, popUpOrigin } from "./popup-button.tsx";
 export { isSeparator, MENU_SEPARATOR, type MenuEntry, type MenuItem, MenuList, type MenuSeparator, PopupMenu, tidyEntries } from "./popup-menu.tsx";
 export { LOADING_DELAY_MS, Loading, ProgressBar, type ProgressBarProps, Spinner, useShownAfter } from "./progress.tsx";

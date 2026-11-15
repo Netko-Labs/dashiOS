@@ -8,8 +8,9 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { Image, Svg, Text, View } from "@mirinjs/metal";
+import { Svg, Text, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext } from "react";
+import { AppIcon } from "../shared/apps/index.ts";
 import { useGrow } from "../shared/controls/motion.ts";
 import { useControlColors } from "../shared/controls/palette.ts";
 import { FocusRing } from "../shared/controls/parts.tsx";
@@ -178,7 +179,7 @@ export function PageRow({ testID, label, glyph, icon, detail, trailing, checked 
             backgroundColor: checked ? colors.knobOn : colors.knobOff,
           }}
         >
-          {icon ? <Image source={icon} style={{ width: 22, height: 22 }} /> : <Svg markup={glyph ?? ""} size={16} color={ink} />}
+          {icon ? <AppIcon source={icon} style={{ width: 22, height: 22 }} /> : <Svg markup={glyph ?? ""} size={16} color={ink} />}
         </View>
       )}
       <View style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>

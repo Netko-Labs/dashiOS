@@ -26,6 +26,7 @@ function fakeHost() {
     setTitle() {},
     setSize() {},
     setMinSize() {},
+    setTextAntialiasing: () => false,
     open() {},
   } as unknown as NativeHostTransport;
   const tree = (): { props: Record<string, unknown> } => JSON.parse(sent.at(-1) ?? "{}");

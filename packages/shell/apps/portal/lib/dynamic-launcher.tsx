@@ -12,10 +12,9 @@
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { TextField, useColors } from "@dashi/ui";
-import { Image, Text, View } from "@mirinjs/metal";
+import { Picture, TextField, useColors } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { hostDraws } from "../../../src/shared/apps/index.ts";
 import { type InterfaceSpec, Variant } from "../../../src/shared/dbus/index.ts";
 import { appInfo } from "./apps.ts";
 import { parseIcon } from "./notification.ts";
@@ -99,10 +98,10 @@ export function dynamicLauncherInterface(requests: Requests, ask: AskInstall, ad
   };
 }
 
-/** The icon the app sent, as a file the sheet can draw; null for a themed one, none, or bytes the host does not draw. */
+/** The icon the app sent, as a file for the sheet; null for a themed one or none. Bytes the host cannot draw show as the empty tile. */
 function iconPicture(icon: Variant | null): string | null {
   const parsed = parseIcon(icon ?? undefined);
-  if (!parsed || !("bytes" in parsed) || !hostDraws(parsed.bytes)) return null;
+  if (!parsed || !("bytes" in parsed)) return null;
   try {
     const dir = join(process.env.XDG_RUNTIME_DIR || "/tmp", "dashi-portal", "icons");
     mkdirSync(dir, { recursive: true, mode: 0o700 });
@@ -129,6 +128,8 @@ function InstallSheet({ request, answer }: { request: InstallRequest; answer: (n
   const browser = appInfo(request.appId).name;
   const host = hostOf(request.target);
   const picture = iconPicture(request.icon);
+  // With no icon, a themed one, or bytes the host cannot draw.
+  const tile = <View style={{ width: 48, height: 48, borderRadius: 11, backgroundColor: colors.button }} />;
   const chosen = launcherName(name);
   const add = () => chosen && answer(chosen);
   return (
@@ -142,11 +143,7 @@ function InstallSheet({ request, answer }: { request: InstallRequest; answer: (n
       ]}
     >
       <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start" }}>
-        {picture ? (
-          <Image source={picture} style={{ width: 48, height: 48, borderRadius: 11 }} />
-        ) : (
-          <View style={{ width: 48, height: 48, borderRadius: 11, backgroundColor: colors.button }} />
-        )}
+        {picture ? <Picture source={picture} style={{ width: 48, height: 48, borderRadius: 11 }} fallback={tile} /> : tile}
         <View style={{ flex: 1, flexDirection: "column", gap: 6, minWidth: 0 }}>
           <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>{`Add “${chosen ?? request.name}” to the Dock?`}</Text>
           <Text style={{ fontSize: 12, color: colors.textMuted }}>

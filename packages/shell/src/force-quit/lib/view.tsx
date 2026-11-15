@@ -6,9 +6,10 @@
  */
 
 import { buttonLook, rowLook, SelectionBar, useColors } from "@dashi/ui";
-import { Image, Text, View } from "@mirinjs/metal";
+import { Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import { KeyCatcher, type NavigationKey } from "../../overlay.tsx";
+import { AppIcon } from "../../shared/apps/index.ts";
 import type { AppGroup } from "../types.ts";
 import type { ForceQuitController, ForceQuitState } from "./controller.ts";
 import { VISIBLE_ROWS } from "./model.ts";
@@ -70,7 +71,7 @@ function Row({ group, selected, onPress }: { group: AppGroup; selected: boolean;
       }}
     >
       {selected && <SelectionBar rowHeight={ROW_HEIGHT} />}
-      <Image source={group.icon} style={{ width: 22, height: 22 }} />
+      <AppIcon source={group.icon} style={{ width: 22, height: 22 }} />
       <Text numberOfLines={1} style={{ fontSize: 13, color: look.ink }}>
         {group.name}
       </Text>
@@ -117,7 +118,7 @@ function Question({ group, onCancel, onConfirm }: { group: AppGroup; onCancel: (
   const colors = useColors();
   return (
     <>
-      <Image source={group.icon} style={{ width: 48, height: 48 }} />
+      <AppIcon source={group.icon} style={{ width: 48, height: 48 }} />
       <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{`Do you want to force “${group.name}” to quit?`}</Text>
       <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>You will lose any unsaved changes.</Text>
       <View style={{ flexDirection: "row", justifyContent: "flex-end", alignSelf: "stretch", gap: 10, marginTop: 6 }}>

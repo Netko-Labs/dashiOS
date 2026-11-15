@@ -7,8 +7,8 @@
  * to set, so the scroll is ours, as on the document surface.
  */
 
-import { useColors, useSurface } from "@dashi/ui";
-import { Image, Text, View } from "@mirinjs/metal";
+import { Picture, useColors, useSurface } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LINE_PX } from "../document.ts";
 import { clampScroll, type PageBox, visiblePages } from "../layout.ts";
@@ -98,6 +98,10 @@ function StripRow({ testID, item, row, top, thumbWide, marked, onPress }: StripR
   const colors = useColors();
   const surface = useSurface();
   const thumb = row.height - FRAME * 2 - LABEL;
+  // A page not drawn yet, or a file the host cannot draw: the card ground, quiet in both modes.
+  const empty = (
+    <View style={{ width: thumbWide, height: thumb, backgroundColor: surface.card, borderRadius: 2, borderWidth: 1, borderColor: colors.separator }} />
+  );
   return (
     <View
       testID={testID}
@@ -120,10 +124,9 @@ function StripRow({ testID, item, row, top, thumbWide, marked, onPress }: StripR
         }}
       >
         {item.source !== null ? (
-          <Image source={item.source} resizeMode="contain" style={{ width: thumbWide, height: thumb, borderRadius: 2 }} />
+          <Picture source={item.source} resizeMode="contain" style={{ width: thumbWide, height: thumb, borderRadius: 2 }} fallback={empty} />
         ) : (
-          // A page not drawn yet: the card ground, quiet in both modes.
-          <View style={{ width: thumbWide, height: thumb, backgroundColor: surface.card, borderRadius: 2, borderWidth: 1, borderColor: colors.separator }} />
+          empty
         )}
       </View>
       {/* One line, centred, with an ellipsis when it is longer than the thumbnail is wide. */}

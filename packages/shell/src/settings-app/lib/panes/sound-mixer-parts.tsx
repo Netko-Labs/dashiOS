@@ -8,8 +8,9 @@
  */
 
 import { MoreButton, PopUpButton, type PopUpOption } from "@dashi/ui";
-import { Image, Text, View } from "@mirinjs/metal";
+import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
+import { AppIcon } from "../../../shared/apps/index.ts";
 import { InkSlider } from "../../../shared/controls/ink-slider.tsx";
 import { useControlColors } from "../../../shared/controls/palette.ts";
 import { type MixerOutput, MuteKnob, type StreamMeters, type StreamSound, useMeterLevel } from "../../../sound/index.ts";
@@ -67,7 +68,7 @@ export function IconKnob({ icon }: { icon: string }) {
         backgroundColor: colors.knobRest,
       }}
     >
-      <Image source={icon} style={{ width: APPS_CARD.icon, height: APPS_CARD.icon }} />
+      <AppIcon source={icon} style={{ width: APPS_CARD.icon, height: APPS_CARD.icon }} />
     </View>
   );
 }

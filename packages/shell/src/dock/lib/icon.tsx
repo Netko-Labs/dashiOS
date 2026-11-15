@@ -5,8 +5,9 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { type Bounds, Image, type PointerInfo, View } from "@mirinjs/metal";
+import { type Bounds, type PointerInfo, View } from "@mirinjs/metal";
 import { useRef } from "react";
+import { AppIcon } from "../../shared/apps/index.ts";
 import { DOCK } from "../../theme.ts";
 
 const SETTLED = { offset: 0, opacity: 1 } as const;
@@ -76,7 +77,7 @@ export function DockIcon({
     >
       {/* The entrance moves the picture, not the icon's box: the minimize animation aims at the box. */}
       <View style={{ width: DOCK.icon, height: DOCK.icon, position: "relative", top: rise.offset, opacity: rise.opacity }}>
-        <Image source={icon} style={{ width: DOCK.icon, height: DOCK.icon, opacity }} />
+        <AppIcon source={icon} style={{ width: DOCK.icon, height: DOCK.icon, opacity }} />
         {attention && (
           <View
             testID={`${testID}-attention`}

@@ -14,12 +14,13 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { Image, Svg, Text, View } from "@mirinjs/metal";
+import { Svg, Text, View } from "@mirinjs/metal";
 import { percentText } from "../control-center/catalog.ts";
 import { GRID } from "../control-center/layout.ts";
 import { PageRow, PageSection } from "../control-center/page-parts.tsx";
 import { usePageKey } from "../control-center/page-stops.ts";
 import { speakerGlyph } from "../glyphs.ts";
+import { AppIcon } from "../shared/apps/index.ts";
 import { useControlColors } from "../shared/controls/palette.ts";
 import { FocusRing, InkFill } from "../shared/controls/parts.tsx";
 import { fillLength, levelAt } from "../shared/controls/slider-math.ts";
@@ -66,7 +67,7 @@ function AppSlider({ app, onLevel }: { app: AppSound; onLevel: (level: number) =
             backgroundColor: colors.chip,
           }}
         >
-          <Image source={app.icon} style={{ width: APP_ROW.icon, height: APP_ROW.icon }} />
+          <AppIcon source={app.icon} style={{ width: APP_ROW.icon, height: APP_ROW.icon }} />
         </View>
         <View
           style={{

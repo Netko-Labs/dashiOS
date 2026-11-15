@@ -2831,6 +2831,8 @@ short words, as the rulebook is written.
 
 ### D128. A picture the host cannot draw is never handed to it
 
+**Superseded by D133:** the host now says when it cannot draw a file, and nothing reads a file's first bytes. Preview's TIFF conversion stays.
+
 - **Date:** 2026-11-15. `n24`. sumi decodes PNG, JPEG, GIF, WebP, BMP and
   ICO and draws SVG; the old engine also read TIFF, TGA and PNM.
 - **Question:** the host draws a file it cannot decode as nothing, and says
@@ -2952,10 +2954,55 @@ short words, as the rulebook is written.
   greeter's, `dashi-dialog`, the portal's, applets'. Until mirin's PR 36 is
   on `main`, `session/dashi-session` and `session/dashi-greeter` set
   `MIRIN_METAL_TEXT=subpixel` (a value already set wins), which every host
-  of the session inherits. After it, the hosts are spawned with
-  `textAntialiasing` and Settings › Appearance has the choice
-  (`appearance.textSmoothing`).
+  of the session inherits. PR 36 is on `main` now (`db8a00e`), and the two
+  lines stay: mirin's `NativeHostOptions.textAntialiasing` is that same
+  variable set for one spawn, and "unset, the driver's own environment
+  decides", so the session's environment is the one place for all of
+  Dashi's hosts, an applet's included (it spawns its own).
+- **Left:** the setting (`appearance.textSmoothing`, "subpixel" or
+  "grayscale", a row in Settings › Appearance, known to agents). It is not
+  a small change: mirin applies a change per host (`setTextAntialiasing`
+  on each transport), and Dashi's hosts belong to many processes (the
+  shell's bar, Dock, launcher, capsule, sheets and warm hosts; every app;
+  the portal; `dashi-dialog`; each applet). Each would watch the settings
+  file and keep a list of its live transports, at eight spawn sites. What
+  it needs: one `spawnHost` that every site goes through (the shell's
+  `spawnShellHost`, the kit's `runApp`, the applet SDK's two), which sets
+  `textAntialiasing` from the setting and keeps the transport for a later
+  `setTextAntialiasing`. The greeter has no person yet and stays subpixel.
 - **Cost:** about 1 MB more per idle host than grayscale, and fringes of
   the wrong order on a rotated screen.
 - **Undo:** the two `export` lines.
+
+### D133. A picture the host cannot draw says so, and what stands in is drawn then
+
+- **Date:** 2026-11-15. The `n28` take-up (mirin `36ea764`, PR 35).
+- **Question:** D128 read a file's first bytes before handing it to the
+  host, because the host drew a file it could not decode as nothing and
+  said nothing. Now an `<Image>` has `onError`. Keep the reading?
+- **Choice:** no. `Picture` (`@dashi/ui`) is an `<Image>` with a
+  `fallback`, shown when the host says it cannot draw the source; `AppIcon`
+  (`shared/apps`) is a `Picture` whose fallback is the generic icon.
+  Every place D128 touched uses one: an app's icon wherever it is drawn
+  (the Dock, the taskbar, the switcher, Force Quit, the launcher's rows and
+  chip, notifications, the polkit sheet, Open With, the app chooser, the
+  sound and clipboard rows, Activity Monitor), an account picture (the
+  login screen, Settings, the account portal: the initials), an applet's
+  icon in the bar (its first letter), a launcher the portal is asked to
+  add (the empty tile), Preview's strip (the empty frame).
+  `shared/apps/drawn.ts` and the greeter's copy of it are gone. Preview's
+  TIFF conversion stays: it is a conversion, not a check.
+- **Why:** the host knows what it decodes; a second list of formats in
+  Dashi was one more thing to keep true (and two, with the greeter's).
+- **Cost:** the host tries first, so the place is empty for a frame before
+  the fallback shows. An extension's row with a picture the host cannot
+  draw now gets the generic icon, not the puzzle piece. A path that failed
+  stays failed for the host's life (mirin): an account picture replaced by
+  a good one under the same path (AccountsService always writes
+  `/var/lib/AccountsService/icons/<name>`) shows the initials until the
+  window is reopened (Settings, the portal) or the session restarts (the
+  lock screen). On a host that does not say (none ships with Dashi) a bad
+  file is a blank, as before D128.
+- **Undo:** `git revert` of this commit brings `drawn.ts` and its callers
+  back.
 

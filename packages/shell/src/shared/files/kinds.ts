@@ -17,7 +17,7 @@ interface FormatInfo {
   label: string;
   /** The ImageMagick coder name, for the formats it reads; absent for ones it must not (SVG, PDF). */
   coder?: string;
-  /** Metal's image loader draws it without help (sumi decodes PNG, JPEG, GIF, WebP, BMP and ICO, and draws SVG); `hostDraws` in shared/apps is the same rule over a file's bytes. */
+  /** Metal's image loader draws it without help (sumi decodes PNG, JPEG, GIF, WebP, BMP and ICO, and draws SVG); any other file it says it cannot draw (`Picture`, @dashi/ui). */
   native: boolean;
 }
 

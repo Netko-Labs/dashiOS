@@ -8,8 +8,9 @@
  */
 
 import { SEARCH, Shortcut, useColors } from "@dashi/ui";
-import { Image, Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
+import { AppIcon } from "../../shared/apps/index.ts";
 import { noticeAccess } from "../access.ts";
 import type { RowIcon } from "../row-model.ts";
 import type { Hint } from "../verbs.ts";
@@ -40,7 +41,7 @@ export interface FieldProps {
 
 function ChipIcon({ icon, size }: { icon: RowIcon; size: number }) {
   const colors = useColors();
-  if ("image" in icon) return <Image source={icon.image} style={{ width: size + 2, height: size + 2 }} />;
+  if ("image" in icon) return <AppIcon source={icon.image} style={{ width: size + 2, height: size + 2 }} />;
   if ("glyph" in icon) return <Svg markup={icon.glyph} size={size} color={colors.text} />;
   return null;
 }

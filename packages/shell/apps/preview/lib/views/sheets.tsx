@@ -1,8 +1,9 @@
 /** Preview's sheets: file info, the Open With list, Export, and a plain message. */
 
 import { AlertSheet, Button, Group, INFO, PopUpButton, Row, Sheet, Slider, useColors } from "@dashi/ui";
-import { Image, Text, View } from "@mirinjs/metal";
+import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
+import { AppIcon } from "../../../../src/shared/apps/index.ts";
 import { EXPORT_FORMATS, type ExportFormat } from "../convert.ts";
 import type { Handler } from "../handlers.ts";
 import { type FileFacts, formatBytes, formatCount, formatDate, formatDimensions, megapixels } from "../info.ts";
@@ -113,7 +114,7 @@ export function OpenWithSheet({
                   hoverBackgroundColor: colors.button,
                 }}
               >
-                <Image source={handler.icon} resizeMode="contain" style={{ width: 20, height: 20 }} />
+                <AppIcon source={handler.icon} resizeMode="contain" style={{ width: 20, height: 20 }} />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
                     {handler.name}
