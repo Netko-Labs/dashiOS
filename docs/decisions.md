@@ -3603,8 +3603,9 @@ short words, as the rulebook is written.
 - **Choice:** the field is read again every 2.5 seconds, four times,
   after a landing (no AT-SPI events: reads of the focused field). One
   changed run of up to three words, with two of Dashi's words still round
-  it, seen the same at two reads in a row (in the VM a half-typed fix was
-  offered until this was added), is offered on the capsule; a press on Always, or a tap of the
+  it, seen the same at two reads in a row (in the VM the offer came at
+  the first read, when a person could still be typing), is offered on the
+  capsule; a press on Always, or a tap of the
   dictation key, stores it in `replacements` (or `vocabulary` when only
   capitals changed). Numbers, paths and addresses are never offered.
 - **Why:** the owner's corpus is names; each fix made once by hand should
