@@ -59,6 +59,28 @@ fn params_are_read_strictly() {
 }
 
 #[test]
+fn speak_names_its_languages_and_their_voices() {
+    let Ok(Request::Speak(speak)) = request(
+        r#"{"id":4,"method":"speak","params":{"text":"Hola.","voice":"af_heart","voices":{"es-CO":"ef_dora"},"hint":"es","by_language":true}}"#,
+    ) else {
+        panic!("not a speak");
+    };
+    assert_eq!(speak.voices.unwrap()["es-CO"], "ef_dora");
+    assert_eq!(
+        (speak.hint.as_deref(), speak.by_language),
+        (Some("es"), Some(true))
+    );
+    let Ok(Request::Speak(parts)) = request(
+        r#"{"id":4,"method":"speak","params":{"parts":[{"text":"Hi."},{"text":"Hola.","language":"es"}]}}"#,
+    ) else {
+        panic!("not a speak");
+    };
+    let parts = parts.parts.unwrap();
+    assert_eq!((parts.len(), parts[1].language.as_deref()), (2, Some("es")));
+    assert!(request(r#"{"id":4,"method":"speak","params":{"speed":1}}"#).is_err());
+}
+
+#[test]
 fn what_is_not_a_request_still_gets_its_id_back() {
     let (id, result) = parse(br#"{"id":7,"method":"dance"}"#);
     assert_eq!((id, result), (Some(7), Err("unknown method dance".into())));
@@ -100,11 +122,13 @@ fn events_are_one_line_named_by_event() {
             start: 100,
             end: 300,
         }],
+        voice: "af_heart".into(),
+        language: "en-US".into(),
     }
     .line();
     assert_eq!(
         sentence,
-        r#"{"event":"sentence","id":3,"index":0,"text":"Hi there.","ms":900,"words":[{"text":"Hi","start":100,"end":300}]}"#
+        r#"{"event":"sentence","id":3,"index":0,"text":"Hi there.","ms":900,"words":[{"text":"Hi","start":100,"end":300}],"voice":"af_heart","language":"en-US"}"#
     );
 }
 
@@ -127,6 +151,7 @@ fn the_doc_names_every_method_and_event() {
         Event::Heard {
             text: String::new(),
             speech_ms: 0,
+            language: None,
         },
         Event::Sentence {
             id: 0,
@@ -134,6 +159,8 @@ fn the_doc_names_every_method_and_event() {
             text: String::new(),
             ms: 0,
             words: Vec::new(),
+            voice: String::new(),
+            language: String::new(),
         },
         Event::Spoken {
             id: 0,

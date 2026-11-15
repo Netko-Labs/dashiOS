@@ -4,6 +4,7 @@
 
 pub(crate) mod level;
 pub(crate) mod pipewire;
+pub(crate) mod pitch;
 pub(crate) mod resample;
 pub(crate) mod wav;
 

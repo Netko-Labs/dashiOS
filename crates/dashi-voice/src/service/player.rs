@@ -57,7 +57,7 @@ impl Player<'_> {
     /// True when everything was said; false when stopped.
     pub(super) fn play(&mut self, sound: &Receiver<Made>) -> Result<bool, String> {
         for made in sound {
-            let (index, text, spoken) = made?;
+            let (index, line, spoken) = made?;
             if self.service.stale(self.generation) {
                 return Ok(false);
             }
@@ -70,9 +70,11 @@ impl Player<'_> {
                 Event::Sentence {
                     id: self.id,
                     index,
-                    text,
+                    text: line.text,
                     ms,
                     words,
+                    voice: line.voice,
+                    language: spoken.language.to_owned(),
                 },
             ));
             for chunk in spoken.samples.chunks(CHUNK) {

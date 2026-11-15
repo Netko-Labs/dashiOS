@@ -98,14 +98,23 @@ pub(crate) fn pieces(text: &str) -> Vec<String> {
 }
 
 /// `pieces`, and whether its first two are one sentence said in two parts.
-pub(crate) fn pieces_cut(text: &str) -> (Vec<String>, bool) {
+#[cfg(test)]
+fn pieces_cut(text: &str) -> (Vec<String>, bool) {
     let mut pieces = sentences(text);
-    let cut = pieces.first().and_then(|first| first_pause(first));
-    if let Some(cut) = cut {
-        let rest = pieces[0].split_off(cut);
-        pieces.insert(1, rest.trim().to_owned());
+    let halves = pieces.first().and_then(|first| halves(first));
+    let cut = halves.is_some();
+    if let Some((first, rest)) = halves {
+        pieces[0] = first;
+        pieces.insert(1, rest);
     }
-    (pieces, cut.is_some())
+    (pieces, cut)
+}
+
+/// A long sentence as the two parts it is said in; none when it is said whole.
+pub(crate) fn halves(sentence: &str) -> Option<(String, String)> {
+    let cut = first_pause(sentence)?;
+    let (first, rest) = sentence.split_at(cut);
+    Some((first.to_owned(), rest.trim().to_owned()))
 }
 
 fn push(sentences: &mut Vec<String>, piece: &str) {

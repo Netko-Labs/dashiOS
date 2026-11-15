@@ -3431,3 +3431,107 @@ short words, as the rulebook is written.
   surface, and a login screen that does not open locks the person out).
 - **Undo:** nothing to undo.
 
+
+### D160. Each sentence is said by a voice of its own language, told from its words
+
+- **Date:** 2026-11-15. `v09/tongue`, the owner's ask: "the Spanish ones
+  with a Spanish voice … because it only uses one single voice".
+- **Question:** Kokoro reads by the rules of its voice's language, so
+  `af_heart` said Spanish with American sounds. Who decides a sentence's
+  language, and how?
+- **Choice:** the service, a sentence at a time (`crates/dashi-voice/src/tongue/`):
+  the common words of each language, its letters (ñ ¿ ¡ ã ì, Devanagari)
+  and a few shapes; a capital inside a sentence is a name and tells
+  nothing; a sentence with too little evidence keeps the language before
+  it, and the first keeps the conversation's (`hint`). `speak` may name
+  the language of all of it (`language`) or of each stretch (`parts`), and
+  then nothing is told. On by default; `by_language: false` (Settings'
+  switch off) is the one voice as before.
+- **Why:** no model, nothing fetched, a few microseconds, and exact enough
+  for whole sentences in the two languages the owner speaks (77 sentences
+  in the tests, his dictated kind included). Marking the language in the
+  answer would put markup in every answerer's words; a language-ID model
+  is a download and a licence for what a word list does here.
+- **Cost:** a sentence that changes language half way is said by one
+  voice, in the language most of it is in. Only the languages that may be
+  spoken are told among: English and Spanish unless the person turns on
+  more (French, Hindi, Italian, Portuguese), since each language added is
+  one more to mistake a short sentence for. `speak {voice, language}` with
+  a voice of another language used to say it in that voice with the wrong
+  sounds; now the voice's pair says it.
+- **Undo:** `voice.byLanguage: false` for one person; for all, make
+  `by_language` default to false in `service/lines.rs`.
+
+### D161. A voice's pair is the nearest in pitch of the same kind of speaker; every voice is brought to one level; a seam is a sentence's pause
+
+- **Date:** 2026-11-15. `v09/tongue`.
+- **Question:** a character should keep one person's voice across
+  languages, and the change of voice should not be heard as a jump: which
+  voice, how loud, how long a pause?
+- **Choice:** measured, not guessed (`dashi-voice levels`; the table is
+  `engine/kokoro/levels.rs`). The pair of a voice in another language is
+  that language's voice of the same kind of speaker (the second letter of
+  its name) whose median pitch is nearest; English for a voice of another
+  language is American, for a British voice British. Every voice is
+  multiplied to Dashi's own level (`af_heart`, −21.7 dBFS; they differed
+  by 9 dB). Where the voice changes each side keeps 300 ms and 150 ms of
+  hush, faded over 5 ms (`service/seam.rs`).
+- **Why:** the set has one woman's and one man's voice in each language
+  but English, so the pair is forced there; where there is a choice
+  (Spanish Alex into English) pitch is the one likeness a machine can
+  measure, and it picked Fenrir (1.2 semitones) over the first listed
+  (Michael, 2.3). Left as the model made them the seams were 480 and
+  660 ms and the Spanish voice 0.6 dB quieter than Heart, the Italian
+  8 dB louder.
+- **Cost:** the pair is another speaker: four characters are Dora in
+  Spanish and two are Alex. The same voice with Spanish phonemes, and a
+  mix of two voices, would keep more of the speaker; both are on the
+  command line (`--read-as`, `a+b`) for the owner to hear, and neither is
+  offered until ears say it is better. Sentences of one voice keep the
+  model's own pause (760 ms for Heart), longer than a seam's.
+- **Undo:** empty `MEASURED` in `levels.rs` (no gain, pairs by order); set
+  `SEAM_AFTER_MS` and `SEAM_BEFORE_MS` past a second.
+
+### D162. Spanish is read as Latin American unless the formats are Spain's; `$` is pesos where the region counts in pesos; money and measures are made into words before eSpeak
+
+- **Date:** 2026-11-15. `v09/tongue`.
+- **Question:** eSpeak's `es` is Spain's ("gracias" with the th of
+  "think"), which is how Kokoro's Spanish voices read before. The owner
+  is Colombian and his formats are English. And "$20", "50%" and "3 km"
+  were said as "twenty", "fifty" and "three kay em" in any language.
+- **Choice:** a tag's region picks the rules: Spanish with a region that
+  is not Spain is eSpeak's `es-419`. The shell sends the region of the
+  person's formats (`es-CO`), and `es-419` when those are not Spanish;
+  `es-ES` only when they are Spain's. The service alone, told nothing,
+  reads as before (`es`). `engine/kokoro/reading.rs` makes money, shares,
+  measures, times and `& + =` into words in the sentence's language
+  before eSpeak sees them; `$` is "pesos" for `es-AR, CL, CO, CU, DO, MX,
+  PH, UY` and "dólares" elsewhere (`US$` always).
+- **Why:** nine in ten Spanish speakers say s, and a Dashi that lisps at a
+  Colombian is wrong more often than one that does not at a Spaniard, who
+  has `es_ES` formats to say so. The phonemes are ones the model knows.
+- **Cost:** the voices were trained on Spain's rules; how Dora sounds with
+  s for z is for ears (`dora-es-419.wav` and `dora-es-ES.wav` in the
+  review folder). French, Italian and Portuguese get money and `%` only.
+- **Undo:** `tagOf` in `voice/tongues.ts` returns `"es"`; drop
+  `reading::said`'s call in `plan.rs`.
+
+### D163. What was heard comes with its language, told from the words; what was said goes to the log only when asked
+
+- **Date:** 2026-11-15. `v09/tongue`.
+- **Question:** the brief asked whether Parakeet v3 reports the language
+  it heard. And the proof needs each sentence's phonemes, in a service
+  that logs no words.
+- **Choice:** Parakeet does not: its vocabulary has language tokens
+  (`<|es|>`) but the TDT decoder Dashi runs names words only. So `heard`
+  and `listen.stop` carry `language` when the words tell it, by the same
+  detector, among all six languages; left out otherwise. The shell keeps
+  the last one as the conversation's language (`hint`).
+  `DASHI_VOICE_DEBUG=speak` writes each sentence's voice, language,
+  phonemes and text to the service's log; off unless set.
+- **Why:** a hint that is sometimes absent is honest; a made-up one is
+  not. The log rule ("no sound, no words, no log of either") stands for
+  every session that did not ask.
+- **Cost:** a short ask ("sí", "OK") gives no language, and the hint
+  stays what it was.
+- **Undo:** drop `language_of` in `service/listen.rs`.

@@ -1,8 +1,11 @@
 //! Kokoro 82M (hexgrad, Apache-2.0; the ONNX file with token lengths is
 //! onnx-community's): text to speech at 24 kHz, with each word's time.
 
+mod levels;
 mod phonemes;
 mod plan;
+mod reading;
+mod reading_words;
 mod timing;
 mod vocab;
 
@@ -11,8 +14,10 @@ use std::path::{Path, PathBuf};
 
 use ort::session::Session;
 
+pub(crate) use levels::semitones;
 use phonemes::{Espeak, Phonemizer};
 pub(crate) use phonemes::{LANGUAGES, of_voice};
+use plan::Reader;
 
 use super::{Spoken, Synthesizer, runtime, tensor};
 use crate::audio::SPEAK_RATE;
@@ -47,8 +52,8 @@ impl Kokoro {
         })
     }
 
-    /// The voice's style for a sentence of this many tokens.
-    fn style(&mut self, voice: &str, tokens: usize) -> Result<Vec<f32>, String> {
+    /// A voice's file as numbers: a style for each length of sentence.
+    fn styles(&mut self, voice: &str) -> Result<&Vec<f32>, String> {
         if !self.styles.contains_key(voice) {
             if !is_voice_name(voice) {
                 return Err(format!("there is no voice named {voice}"));
@@ -62,9 +67,26 @@ impl Kokoro {
             }
             self.styles.insert(voice.to_owned(), numbers);
         }
-        let numbers = &self.styles[voice];
-        let row = tokens.min(numbers.len() / STYLE - 1);
-        Ok(numbers[row * STYLE..(row + 1) * STYLE].to_vec())
+        Ok(&self.styles[voice])
+    }
+
+    /// The voice's style for a sentence of this many tokens. "ef_dora+af_heart"
+    /// is the mean of the two: a voice between them (an experiment the command
+    /// line offers; the service names one voice).
+    fn style(&mut self, voice: &str, tokens: usize) -> Result<Vec<f32>, String> {
+        let mut mean = vec![0.0; STYLE];
+        let voices: Vec<&str> = voice.split('+').collect();
+        for one in &voices {
+            let numbers = self.styles(one)?;
+            let row = tokens.min(numbers.len() / STYLE - 1);
+            for (sum, number) in mean
+                .iter_mut()
+                .zip(&numbers[row * STYLE..(row + 1) * STYLE])
+            {
+                *sum += number / voices.len() as f32;
+            }
+        }
+        Ok(mean)
     }
 
     /// One run of the model: the sound, and each token's length.
@@ -97,11 +119,29 @@ impl Kokoro {
 }
 
 impl Synthesizer for Kokoro {
-    fn speak(&mut self, sentence: &str, voice: &str, speed: f32) -> Result<Spoken, String> {
-        let language = of_voice(voice).ok_or_else(|| format!("there is no voice named {voice}"))?;
-        let parts = plan::plan(sentence, language, self.phonemizer.as_mut())?;
-        let mut spoken = Spoken::default();
-        for part in parts {
+    fn speak(
+        &mut self,
+        sentence: &str,
+        voice: &str,
+        language: Option<&str>,
+        speed: f32,
+    ) -> Result<Spoken, String> {
+        let read = phonemes::read_as(voice, language).ok_or_else(|| match language {
+            Some(language) => format!("Voice can't speak {language}."),
+            None => format!("there is no voice named {voice}"),
+        })?;
+        let reader = Reader {
+            language: read,
+            tag: language.unwrap_or(read.code),
+        };
+        let planned = plan::plan(sentence, reader, self.phonemizer.as_mut())?;
+        let mut spoken = Spoken {
+            language: read.code,
+            phonemes: planned.phonemes.join(" | "),
+            ..Spoken::default()
+        };
+        let gain = levels::gain(voice);
+        for part in planned.parts {
             let style = self.style(voice, part.tokens.len())?;
             let (sound, lengths) = self.run(&part.tokens, style, speed.clamp(0.5, 2.0))?;
             let before_ms = spoken.samples.len() as f64 * 1000.0 / f64::from(SPEAK_RATE);
@@ -111,7 +151,11 @@ impl Synthesizer for Kokoro {
                 word.end_ms += before_ms.round() as u64;
                 spoken.words.push(word);
             }
-            spoken.samples.extend(sound);
+            spoken.samples.extend(
+                sound
+                    .into_iter()
+                    .map(|sample| (sample * gain).clamp(-1.0, 1.0)),
+            );
         }
         Ok(spoken)
     }

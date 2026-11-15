@@ -4,10 +4,14 @@
 //! only after `subscribe`. Params are read strictly: a field a method does
 //! not name is refused.
 
-use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+
+use serde::Deserialize;
 use serde_json::{Value, json};
 
-use crate::engine::Word;
+mod event;
+
+pub(crate) use event::{Ended, Event, State, WordTime};
 
 /// The longest request line: a page of text to say fits; a runaway client doesn't.
 pub(crate) const MAX_LINE: usize = 1024 * 1024;
@@ -65,15 +69,40 @@ pub(crate) struct Quiet {
     pub(crate) quiet_ms: Option<u64>,
 }
 
+/// A stretch of what `speak` says, when the asker knows each one's language.
+#[derive(Debug, Default, Clone, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Stretch {
+    pub(crate) text: String,
+    /// The language of all of it; none lets the service tell, a sentence at a time.
+    #[serde(default)]
+    pub(crate) language: Option<String>,
+}
+
 #[derive(Debug, Default, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Speak {
+    /// What to say; or `parts`.
+    #[serde(default)]
     pub(crate) text: String,
+    /// What to say, in stretches that each name their language.
+    #[serde(default)]
+    pub(crate) parts: Option<Vec<Stretch>>,
     /// A voice's id; none is the language's first voice, or Dashi's own.
     #[serde(default)]
     pub(crate) voice: Option<String>,
+    /// The language of all of `text`; none lets the service tell, a sentence at a time.
     #[serde(default)]
     pub(crate) language: Option<String>,
+    /// The voice for each other language that may be spoken ("es-CO": "ef_dora").
+    #[serde(default)]
+    pub(crate) voices: Option<BTreeMap<String, String>>,
+    /// The conversation's language: a first sentence that gives no evidence is in it.
+    #[serde(default)]
+    pub(crate) hint: Option<String>,
+    /// False says everything in `voice`, whatever its language.
+    #[serde(default)]
+    pub(crate) by_language: Option<bool>,
     /// 0.5 to 2; 1 is the voice's own pace.
     #[serde(default)]
     pub(crate) speed: Option<f32>,
@@ -170,6 +199,14 @@ pub(crate) fn parse(line: &[u8]) -> (Option<u64>, Result<Request, String>) {
         "listen.stop" => none(method, given, Request::ListenStop),
         "listen.quiet" => params(method, given).map(Request::ListenQuiet),
         "listen.cancel" => none(method, given, Request::ListenCancel),
+        // `text` or `parts`: one of them says what to say.
+        "speak"
+            if given.as_ref().is_none_or(|given| {
+                given.get("text").is_none() && given.get("parts").is_none()
+            }) =>
+        {
+            Err("speak: missing field `text`".into())
+        }
         "speak" => params(method, given).map(Request::Speak),
         "speak.stop" => none(method, given, Request::SpeakStop),
         _ => Err(format!("unknown method {method}")),
@@ -184,106 +221,6 @@ pub(crate) fn reply(id: Option<u64>, result: Result<Value, String>) -> String {
         Err(error) => json!({ "id": id, "error": error }),
     }
     .to_string()
-}
-
-/// What Voice is doing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub(crate) enum State {
-    Idle,
-    /// The microphone is open.
-    Listening,
-    /// Working: turning speech into words, or words into speech before the first sound.
-    Thinking,
-    Speaking,
-}
-
-/// Why something being said ended.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub(crate) enum Ended {
-    Done,
-    Stopped,
-    Failed,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize)]
-pub(crate) struct WordTime {
-    pub(crate) text: String,
-    pub(crate) start: u64,
-    pub(crate) end: u64,
-}
-
-impl From<&Word> for WordTime {
-    fn from(word: &Word) -> Self {
-        Self {
-            text: word.text.clone(),
-            start: word.start_ms,
-            end: word.end_ms,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(tag = "event", rename_all = "kebab-case")]
-pub(crate) enum Event {
-    State {
-        state: State,
-    },
-    /// The microphone's loudness, 0 to 1, about 31 times a second while listening.
-    Level {
-        level: f32,
-    },
-    /// The words so far; the next `partial` or `heard` replaces them.
-    Partial {
-        text: String,
-    },
-    /// A listen ended: the words (none when nothing was said), and how long the speech was.
-    Heard {
-        text: String,
-        speech_ms: u64,
-    },
-    /// A sentence begins to sound now: its words and when each is said, in ms from now.
-    Sentence {
-        id: u64,
-        index: usize,
-        text: String,
-        ms: u64,
-        words: Vec<WordTime>,
-    },
-    /// What `speak` gave this id has ended.
-    Spoken {
-        id: u64,
-        reason: Ended,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        error: Option<String>,
-    },
-    /// A fetch's progress over all its files; `done` ends it, with `error` if it failed.
-    Fetch {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        set: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        file: Option<String>,
-        received: u64,
-        bytes: u64,
-        done: bool,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        error: Option<String>,
-    },
-    /// Which models are here changed: ask `models` again.
-    Models {},
-    /// Something failed outside a request, in words for the person.
-    Error {
-        message: String,
-    },
-}
-
-impl Event {
-    pub(crate) fn line(&self) -> String {
-        serde_json::to_string(self).unwrap_or_else(|_| {
-            r#"{"event":"error","message":"an event could not be written"}"#.into()
-        })
-    }
 }
 
 #[cfg(test)]

@@ -9,7 +9,7 @@ use std::time::Instant;
 use serde_json::json;
 
 use crate::audio::pipewire::PipeWire;
-use crate::audio::{LISTEN_RATE, SPEAK_RATE, resample::resample, wav};
+use crate::audio::{LISTEN_RATE, resample::resample, wav};
 use crate::engine::gate::Gate;
 use crate::engine::vad::FRAME;
 use crate::models::fetch::{self, megabytes};
@@ -20,11 +20,16 @@ use crate::service::engines::{Engines, Loaded};
 use crate::service::{Parts, Service};
 use crate::{paths, server};
 
+mod measure;
+mod speak;
+
 pub(crate) const USAGE: &str = "dashi-voice [--models DIR] <command>
   serve [--socket PATH]                          the service (docs/voice.md)
   transcribe [--language LANG] [--json] FILE.wav the words in a WAV file
-  speak [--voice ID | --language LANG] [--speed N] [--json] --out FILE.wav TEXT…
+  speak [--voice ID] [--language LANG] [--voices LANG=ID,…] [--hint LANG] [--one-voice]
+        [--read-as LANG] [--speed N] [--json] --out FILE.wav TEXT…
                                                  say TEXT into a WAV file
+  levels                                         each voice's loudness, pitch and pace
   models [--verify]                              the models, and which are here
   fetch [SET…]                                   fetch models (listen and speak, unless named)
   remove [SET…]                                  delete models (all, unless named)
@@ -88,7 +93,8 @@ pub(crate) fn run(args: Args) -> Result<(), String> {
     match command.as_str() {
         "serve" => serve(store, option(&mut rest, "--socket")?.map(PathBuf::from)),
         "transcribe" => transcribe(store, rest),
-        "speak" => speak(store, rest),
+        "speak" => speak::speak(store, rest),
+        "levels" => measure::levels(store),
         "models" => models_list(&store, flag(&mut rest, "--verify")),
         "fetch" => fetch_sets(&store, &rest),
         "remove" => {
@@ -199,47 +205,6 @@ fn transcribe(store: Store, mut rest: Vec<String>) -> Result<(), String> {
         );
     } else {
         println!("{text}");
-    }
-    Ok(())
-}
-
-fn speak(store: Store, mut rest: Vec<String>) -> Result<(), String> {
-    let voice = option(&mut rest, "--voice")?;
-    let language = option(&mut rest, "--language")?;
-    let speed = option(&mut rest, "--speed")?.map_or(Ok(1.0), |speed| {
-        speed.parse::<f32>().map_err(|_| "--speed needs a number")
-    })?;
-    let out = option(&mut rest, "--out")?.ok_or("speak needs --out FILE.wav")?;
-    let as_json = flag(&mut rest, "--json");
-    let text = rest.join(" ");
-    let voice = crate::service::choose_voice(voice.as_deref(), language.as_deref())?;
-    let engines = Loaded::new(store);
-    if let Some(why) = engines.mute_in(&voice) {
-        return Err(why);
-    }
-    let started = Instant::now();
-    let synthesizer = engines.synthesizer()?;
-    let mut synthesizer = synthesizer.lock().map_err(|_| "the model is not well")?;
-    let load_ms = ms(started);
-    let started = Instant::now();
-    let (mut samples, mut sentences, mut first_ms) = (Vec::new(), Vec::new(), None);
-    for sentence in crate::text::sentences(&text) {
-        let spoken = synthesizer.speak(&sentence, &voice, speed)?;
-        first_ms.get_or_insert_with(|| ms(started));
-        let at = samples.len() as u64 * 1000 / u64::from(SPEAK_RATE);
-        let words: Vec<_> = spoken.words.iter().map(|word| json!({ "text": word.text, "start": at + word.start_ms, "end": at + word.end_ms })).collect();
-        sentences.push(json!({ "text": sentence, "at": at, "words": words }));
-        samples.extend(spoken.samples);
-    }
-    let took = ms(started);
-    wav::write(Path::new(&out), SPEAK_RATE, &samples)?;
-    if as_json {
-        let audio_ms = samples.len() as u64 * 1000 / u64::from(SPEAK_RATE);
-        let factor = took as f64 / audio_ms.max(1) as f64;
-        println!(
-            "{}",
-            json!({ "voice": voice, "audio_ms": audio_ms, "load_ms": load_ms, "first_sound_ms": first_ms, "ms": took, "real_time_factor": factor, "sentences": sentences })
-        );
     }
     Ok(())
 }
