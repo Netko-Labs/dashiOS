@@ -47,7 +47,8 @@ interface NameCellProps {
  * The Name column: the file's icon and its name, or the field it is renamed
  * in. The icon and the name are the item, as in the Finder's list: a press
  * there drags the file, and a press on the rest of the row, dragged, draws
- * a marquee (D99). A click anywhere on the row still selects it.
+ * a marquee (D99). The grip is the row's height and the icon and name's
+ * width. A click anywhere on the row still selects it.
  */
 function NameCell({ item, selected, faded, renaming, emblems, drag, onGrip }: NameCellProps) {
   const colors = useColors();
@@ -67,7 +68,8 @@ function NameCell({ item, selected, faded, renaming, emblems, drag, onGrip }: Na
         dragFiles={drag}
         // The press is the item's: the listing around it hears none of it, so no marquee starts here.
         onPointer={onGrip}
-        style={{ ...look, flexShrink: 1 }}
+        // As tall as the row (D112): rows have no gap between them, so no press between two names falls on empty space.
+        style={{ ...look, flexShrink: 1, height: ROW }}
       >
         <FileIcon item={item} size={ICON} emblems={emblems} />
         <View style={{ width: nameWidth(item.name), flexShrink: 1, minWidth: 0 }}>

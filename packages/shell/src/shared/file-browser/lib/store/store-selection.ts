@@ -38,6 +38,11 @@ export class StoreSelection {
     this.focus = path;
   }
 
+  /** The item the keyboard is on, or null. */
+  keyboardAt(): string | null {
+    return this.focus;
+  }
+
   select(paths: readonly string[]): void {
     this.host.patch({ selection: paths });
     this.focus = paths.at(-1) ?? null;

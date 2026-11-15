@@ -48,22 +48,11 @@ function warmFieldCheck(options: DictationOptions): void {
     .catch(() => {});
 }
 
-export function startDictation(options: DictationOptions): DictationParts {
-  const timers = options.timers ?? realTimers;
-  const now = options.now ?? (() => Date.now());
+/** What the Dashi key's gestures do: a hold is 0.8's listen, a tap the launcher; every one is told on the hub. */
+function dashiKey(options: DictationOptions): (gesture: KeyGesture) => void {
   const { hub } = options;
-  const prefs: DictationDeps["prefs"] = () => {
-    const { voiceOn, on, handsFree, tidy } = options.settings();
-    return { on: voiceOn && on, tidy, handsFree, name: hub.persona.getSnapshot().name };
-  };
-  const dictation = new Dictation({ ...options, prefs, timers, now });
-  const chosen = (): DictationKey | null => {
-    const { voiceOn, on, key, layout } = options.settings();
-    return voiceOn && on ? dictationKey(key, layout, options.talkCodes()) : null;
-  };
-
   let listening = false;
-  const dashi = (gesture: KeyGesture): void => {
+  return (gesture: KeyGesture): void => {
     hub.keys.send(gesture);
     switch (gesture.gesture) {
       case "hold":
@@ -84,6 +73,34 @@ export function startDictation(options: DictationOptions): DictationParts {
         return;
     }
   };
+}
+
+export function startDictation(options: DictationOptions): DictationParts {
+  const timers = options.timers ?? realTimers;
+  const now = options.now ?? (() => Date.now());
+  const { hub } = options;
+  const prefs: DictationDeps["prefs"] = () => {
+    const { voiceOn, on, handsFree, tidy } = options.settings();
+    return { on: voiceOn && on, tidy, handsFree, name: hub.persona.getSnapshot().name };
+  };
+  const dictation = new Dictation({ ...options, prefs, timers, now });
+  const chosen = (): DictationKey | null => {
+    const { voiceOn, on, key, layout } = options.settings();
+    return voiceOn && on ? dictationKey(key, layout, options.talkCodes()) : null;
+  };
+
+  // Voice is off and dictation is asked for: its key is still heard, until a hold of it has been told what
+  // dictation needs, once a session (D116). Only a key that is heard and not taken (a modifier, held alone):
+  // Caps Lock and the Menu key stay the person's while Voice is off.
+  let told = false;
+  const teaching = (): DictationKey | null => {
+    const { voiceOn, on, key, layout } = options.settings();
+    if (told || voiceOn || !on) return null;
+    const would = dictationKey(key, layout, options.talkCodes());
+    return would.modifier ? would : null;
+  };
+
+  const dashi = dashiKey(options);
   const gestures = {
     [DASHI]: new KeyGestures("dashi", { timers, now, tell: dashi }),
     [DICTATION]: new KeyGestures("dictation", {
@@ -91,6 +108,13 @@ export function startDictation(options: DictationOptions): DictationParts {
       now,
       doubles: true,
       tell: (gesture) => {
+        if (teaching()) {
+          if (gesture.gesture !== "hold") return;
+          told = true;
+          // The key is let go of first (that stops dictation, which has nothing on), then the line shows.
+          sync();
+          return dictation.needsVoice();
+        }
         hub.keys.send(gesture);
         dictation.gesture(gesture);
       },
@@ -100,15 +124,15 @@ export function startDictation(options: DictationOptions): DictationParts {
   };
 
   let sent = "";
-  const sync = (): void => {
+  function sync(): void {
     const { voiceOn } = options.settings();
-    const keys = pillHeldKeys({ dashi: voiceOn, dictation: chosen() });
+    const keys = pillHeldKeys({ dashi: voiceOn, dictation: chosen() ?? teaching() });
     const text = JSON.stringify(keys);
     if (text === sent) return;
     sent = text;
     options.hold(keys);
     if (!prefs().on) dictation.stop();
-  };
+  }
   const off = options.subscribe(sync);
   sync();
 

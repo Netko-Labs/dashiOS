@@ -169,10 +169,7 @@ export class FilesStore implements StoreHost {
     return this.selection.selectedItems();
   }
 
-  /**
-   * A click on an item, with the keys held (selection.ts): select it, ⇧ a
-   * run to it, ❖ add or take it out; a plain second click on it opens it.
-   */
+  /** A click on an item, with the keys held; a plain second click opens it (store-selection.ts). */
   click(item: FileItem, held?: Modifiers): void {
     this.selection.click(item, held);
   }
@@ -201,6 +198,11 @@ export class FilesStore implements StoreHost {
 
   typeAhead(text: string): void {
     this.selection.typeAhead(text);
+  }
+
+  /** The item the keyboard is on (the moving end of a ⇧ run), which the listing keeps in view; null for none. */
+  keyboardAt(): string | null {
+    return this.selection.keyboardAt();
   }
 
   // --- Renaming in place (store-rename.ts) ---------------------------------------------

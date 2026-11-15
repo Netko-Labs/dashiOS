@@ -139,20 +139,57 @@ interface RowActions {
   showSpace?(space: number): void;
 }
 
+/**
+ * A connection's second line: the chip of its access, then what it does and where it is from.
+ * At work on another Desktop the row also holds Show; its buttons then sit beside the title, and
+ * this line has the row's whole width and is one line, never two (D114). It says the Desktop and
+ * who the agent says it is, whole: "On Desktop 4 · “claude-ai”". To make the room, the chip is
+ * left out when all it would say is "Connected" (the row being there says that), and a remote
+ * agent's "connected over SSH" too (its title is "Remote agent"). While it sees or records the
+ * screen the chip says so and the name follows it; the Desktop gives way (Show is there).
+ * The bar's line for it at rest is "Working on Desktop 3" (session-status.ts); here, "On Desktop 3".
+ */
+export function rowLine(entry: Pick<AgentEntry, "agent" | "doing" | "watching" | "phase" | "kind">): { chip: boolean; words: string } {
+  const agent = entry.agent;
+  const space = agent?.space;
+  const join = (...parts: (string | null)[]): string => parts.filter(Boolean).join(" · ");
+  // Who it is, in the fewest words, for a row that also holds Show.
+  const who = agent?.remote ? (agent.claims ? `“${agent.claims}”` : "") : originWords(entry);
+  if (entry.watching) return { chip: true, words: space === undefined ? originWords(entry) : who };
+  if (space === undefined || entry.doing !== `Working on ${spaceLabel(space)}`) {
+    return { chip: true, words: join(entry.phase === "working" ? entry.doing : null, originWords(entry)) };
+  }
+  return { chip: accessWords(entry) !== "Connected", words: join(`On ${spaceLabel(space)}`, who) };
+}
+
 /** A connected agent: who, the access it has now, where it's from, Stop, and Show when it works on another Desktop. */
 export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; first: boolean; actions: RowActions }) {
   const space = entry.agent?.space;
   const onShow = actions.showSpace;
   const onStop = () => entry.agent && actions.stopAgent(entry.agent.id);
   const colors = useColors();
-  // At work on another Desktop, its line says where while it rests, in few words: Show takes room.
-  // The bar's line for it then is "Working on Desktop 3" (session-status.ts); here, "On Desktop 3".
-  const resting = space !== undefined && entry.doing === `Working on ${spaceLabel(space)}` ? `On ${spaceLabel(space)}` : null;
-  const doing = entry.watching ? null : (resting ?? (entry.phase === "working" ? entry.doing : null));
-  const origin = originWords(entry);
+  const line = rowLine(entry);
+  const id = entry.agent?.id ?? entry.key;
+  const show = space !== undefined && onShow ? <ShowButton testID={`agents-show-agent:${id}`} onPress={() => onShow(space)} /> : null;
+  const stop = <StopButton testID={`agents-stop-agent:${id}`} onPress={onStop} />;
+  const title = (
+    <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+      {entry.name}
+    </Text>
+  );
+  const words = (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, minWidth: 0 }}>
+      {line.chip && <AccessChip entry={entry} />}
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+          {line.words}
+        </Text>
+      </View>
+    </View>
+  );
   return (
     <View
-      testID={`agents-row:${entry.agent?.id ?? entry.key}`}
+      testID={`agents-row:${id}`}
       style={{
         flexDirection: "row",
         alignItems: "center",
@@ -174,23 +211,25 @@ export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; fi
         }}
       >
         <Svg markup={discGlyph(entry.harness)} size={18} color="#ffffff" />
-        {entry.watching && <TileDot ring={colors.launcher} />}
+        {entry.watching && <TileDot ring={colors.menu.slice(0, 7)} />}
       </View>
-      <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 3 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
-          {entry.name}
-        </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, minWidth: 0 }}>
-          <AccessChip entry={entry} />
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
-              {[doing, origin].filter(Boolean).join(" · ")}
-            </Text>
+      {show ? (
+        // With Show the buttons sit beside the title only, and the line under it has the row's whole width: nothing in it is cut.
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 3 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>{title}</View>
+            {show}
+            {stop}
           </View>
+          {words}
         </View>
-      </View>
-      {space !== undefined && onShow && <ShowButton testID={`agents-show-agent:${entry.agent?.id ?? entry.key}`} onPress={() => onShow(space)} />}
-      <StopButton testID={`agents-stop-agent:${entry.agent?.id ?? entry.key}`} onPress={onStop} />
+      ) : (
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 3 }}>
+          {title}
+          {words}
+        </View>
+      )}
+      {!show && stop}
     </View>
   );
 }

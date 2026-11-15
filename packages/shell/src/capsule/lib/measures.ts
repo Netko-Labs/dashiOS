@@ -73,9 +73,8 @@ export const SEAT = {
   least: 200,
   /** One step up from home. */
   step: 62,
-  /** No Dock: against the edge, or one step up from it. */
+  /** A card with no Dock to stand on: against the edge. */
   edge: 11,
-  edgeUp: 74,
   /** The volume indicator, small, this far above the capsule or the card. */
   aboveCapsule: 8,
 } as const;

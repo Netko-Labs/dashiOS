@@ -39,7 +39,8 @@ export type DictationTrouble =
   | "muted" // the microphone is muted: "The microphone is muted"
   | "loading" // the speech model is still loading: say so and that a second press will work
   | "secret" // d-20: a password field has the keyboard; the microphone never opened
-  | "ended"; // d-33: hands-free ended by a tap or a change of window (never silently)
+  | "ended" // d-33: hands-free ended by a tap or a change of window (never silently)
+  | "voice-off"; // the dictation key was held while Voice is off: said once a session, and a press goes to Settings › Voice
 
 export type DictationState =
   /** d-01. Nothing shows. */
@@ -60,6 +61,9 @@ export type DictationState =
   | { phase: "notice"; trouble: DictationTrouble; line: string; until: number };
 
 export type DictationPhase = DictationState["phase"];
+
+/** The troubles whose line names Settings › Voice: a press on the capsule goes there. */
+export const goesToVoice = (trouble: DictationTrouble): boolean => trouble === "no-model" || trouble === "voice-off";
 
 /** What the capsule asks of the engine. */
 export type DictationCommand =

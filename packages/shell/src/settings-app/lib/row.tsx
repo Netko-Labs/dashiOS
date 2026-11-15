@@ -7,6 +7,7 @@
  * (`below`: the charge limit's switch, and its slider while it is on).
  */
 
+import { KeyedText } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useContext, useLayoutEffect, useRef, useState } from "react";
 import { CARD_RADIUS, CardRowsContext } from "../../shared/cards/index.ts";
@@ -101,7 +102,8 @@ export function Row({ label, detail, glyph, children, stack: asked, below, testI
   const words = (
     <View style={{ flex: 1, flexDirection: "column", gap: 1, minWidth: PAGE.words }}>
       <Text style={{ fontSize: 13.5, fontWeight: "semibold", color: colors.offInk }}>{label}</Text>
-      {detail !== undefined && detail !== "" && <Text style={{ fontSize: 11.5, color: colors.muted }}>{detail}</Text>}
+      {/* A detail may name keys ("Hold ❖Space…"): drawn at the text's size (`KeyedText`). */}
+      {detail !== undefined && detail !== "" && <KeyedText style={{ fontSize: 11.5, color: colors.muted }}>{detail}</KeyedText>}
     </View>
   );
   const knob = glyph !== undefined ? <Knob glyph={glyph} size={PAGE.knob} /> : null;

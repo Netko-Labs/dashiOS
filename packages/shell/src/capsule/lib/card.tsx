@@ -8,9 +8,10 @@
  * meant for what was there before answers nothing.
  */
 
+import { KeyedText } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
-import type { Cell } from "../../shared/pill/index.ts";
+import { type Cell, STOP_KEYS } from "../../shared/pill/index.ts";
 import type { OpenCard } from "../types.ts";
 import { CARD, type CapsuleColours } from "./measures.ts";
 import { type CardContent, cardContent } from "./model.ts";
@@ -28,6 +29,8 @@ export interface CardProps {
   talkKey: string | null;
   /** Dashi listens now: the level, and what it has heard. */
   listening: { text: string } | null;
+  /** Dashi's voice while the card is up: it speaks, or ❖Esc just stopped it. */
+  voice?: "speaking" | "stopped" | undefined;
   level: Pick<Cell<number>, "subscribe" | "getSnapshot">;
   still: boolean;
   now(): number;
@@ -48,6 +51,17 @@ export function hintOf(content: CardContent, card: OpenCard, talkKey: string | n
   const say = card.hears ? talkKey : null;
   if (content.kind === "question") return say ? `Hold ${say} and answer, or type it.` : "";
   return say ? `Press a button, or tap the Dashi key then Return. Or hold ${say} and say yes.` : "Press a button, or tap the Dashi key then Return.";
+}
+
+/**
+ * The line at the card's foot: what Dashi hears, else "Stopped" for the moment after ❖Esc stopped its voice (as the
+ * capsule says it after Cancel), else while it speaks the keys that stop it, else how to answer the card (D116).
+ */
+export function footOf(hint: string, listening: { text: string } | null, voice?: "speaking" | "stopped"): { words: string; loud: boolean; bold: boolean } {
+  if (listening) return { words: listening.text || "Listening for your answer", loud: true, bold: false };
+  if (voice === "stopped") return { words: "Stopped", loud: true, bold: true };
+  if (voice === "speaking") return { words: `${STOP_KEYS} stops the voice.`, loud: false, bold: false };
+  return { words: hint, loud: false, bold: false };
 }
 
 /** Whether the card's buttons are armed yet; turns true by itself when they are. */
@@ -191,7 +205,7 @@ export function Card(props: CardProps) {
   const content = cardContent(card.what, props.name, card.from);
   const armed = useArmed(card.armsAt, props.now);
   const asks = content.kind !== "reading";
-  const hint = hintOf(content, card, props.talkKey);
+  const foot = footOf(hintOf(content, card, props.talkKey), props.listening, props.voice);
   return (
     <View
       testID={`card:${content.kind}`}
@@ -222,10 +236,17 @@ export function Card(props: CardProps) {
         <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 6 }}>
           {props.listening && <Dots level={props.still ? null : props.level} color={colours.text} />}
           <View testID="card-hint" style={{ flex: 1, minWidth: 0 }}>
-            {(props.listening || hint !== "") && (
-              <Text style={{ fontSize: CARD.hintSize, lineHeight: CARD.hintSize * 1.35, color: props.listening ? colours.text : colours.soft }}>
-                {props.listening ? props.listening.text || "Listening for your answer" : hint}
-              </Text>
+            {foot.words !== "" && (
+              <KeyedText
+                style={{
+                  fontSize: CARD.hintSize,
+                  lineHeight: CARD.hintSize * 1.35,
+                  color: foot.loud ? colours.text : colours.soft,
+                  ...(foot.bold ? { fontWeight: "semibold" as const } : {}),
+                }}
+              >
+                {foot.words}
+              </KeyedText>
             )}
           </View>
         </View>

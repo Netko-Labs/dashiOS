@@ -2387,3 +2387,161 @@ short words, as the rulebook is written.
   password field it knows of before listening.
 - **Undo:** `secretIn` back to `deps.secret` in `place`; the warm-up line in
   `dictation/start.ts`.
+
+### D111. In Files' icon view the icon and the name are the item, to a press and to a marquee
+
+- **Date:** 2026-11-14. The `n19-polish` agent's. Changes D99's last
+  sentence and D102 for the icon view.
+- **Question:** a tile filled its whole cell (104 × 98) and the cells stand
+  side by side, so a press between two icons dragged a file, and a marquee
+  could start only in the margins or after the last tile; the installed
+  pass moved two files by accident. What is the item, and what must the
+  rectangle touch?
+- **Choice:** as the Finder: the item is the icon (its 56 px square) and
+  the name, at the name's own width. A press on either selects, opens on
+  a second click, drags the file, and a right-click there is the item's
+  menu. The rest of the cell is empty space: a press there, dragged, draws
+  the rectangle; clicked, it clears the selection; a right-click is the
+  folder's menu. The rectangle takes an item when it touches its icon or
+  its name, no longer its whole cell: a drag begun inside a cell would
+  otherwise always take that cell's item, whichever way it went. The list
+  keeps D102 (a row is taken anywhere along it; rows have no empty part
+  the rectangle could start in and miss). Files dropped anywhere on a
+  folder's cell still go into it, and a selected item still washes its
+  whole cell (design.html CO-9); the hover wash is now on the part under
+  the pointer, the icon or the name, which shows what a press takes.
+- **Why:** it is the default view, and a full folder had almost nowhere to
+  begin a rectangle. The press and the rectangle now agree on what an item
+  is.
+- **Cost:** a smaller target: a press 10 px beside a short name misses the
+  item. The name's box is estimated for the rectangle
+  (`grid-places.ts` `itemParts`, from `tile-name.ts`'s letter widths), so
+  it can take or miss a name by a few pixels; the press itself uses what
+  is painted. The selection's wash is wider than what a press takes.
+- **Undo:** in `file-browser/lib/views/grid.tsx` spread `grip` on the cell
+  and drop `parts` from the model.
+
+### D112. In Files' list the grip is as tall as the row
+
+- **Date:** 2026-11-14. The `n19-polish` agent's. Adds to D99.
+- **Question:** the icon and the name are what drags a file out of the
+  list (D99), and the grip was as tall as the name's line (about 16 of the
+  row's 26): 10 px of every row, between two names, were empty space, and
+  a press there drew a thin rectangle instead of dragging the file.
+- **Choice:** the grip is the row's height and the icon and name's width.
+- **Why:** rows touch; a strip of empty space between two names that
+  cannot be seen is a trap, and nobody starts a rectangle in it on purpose.
+- **Cost:** none seen.
+- **Undo:** take `height: ROW` off the grip in `list.tsx` `NameCell`.
+
+### D113. The keyboard's item is scrolled into view by asking the window
+
+- **Date:** 2026-11-14. The `n19-polish` agent's.
+- **Question:** ↑ or ⇧↑ past the top of what shows left the selection off
+  screen, in Files and in the open and save sheets. Metal neither says
+  where a scroll view stands nor takes a "show this node".
+- **Choice:** after a key that moves the keyboard's place (the arrows, the
+  page keys, Home, End, a typed name), the listing asks the window where
+  its items are painted and scrolls it there through the simulation
+  channel, as a marquee does (D100; `lib/marquee/reveal.ts`): just far
+  enough to show the item whole, and all the way when it is in the first
+  or last row. One item at a time; a scroll not painted yet is counted, so
+  a key that repeats is not scrolled for twice. It is done in
+  `BrowserKeys`, so Files, the sheets and `dashi-dialog` all have it.
+- **Why:** one place, no change to mirin, and it lands on what is painted.
+- **Cost:** a `layout` answer or two per key that moved the place. A
+  selection made another way (a new folder off screen, Select after
+  paste) is not scrolled to.
+- **Undo:** when mirin can scroll a node into view, call that in
+  `BrowserKeys` and drop `reveal.ts`.
+
+### D114. The agents' panel is solid, and a row on another Desktop says where and who, whole
+
+- **Date:** 2026-11-14. The `n19-polish` agent's. Adds to D91.
+- **Question:** two things in the panel. Its ground was the launcher's
+  glass, and over a window, in Dark most, the window's words read through
+  it. And a row of an agent at work on another Desktop holds Show as well
+  as Stop, so its line "On Desktop 4 · “dev-box”, connected over SSH" was
+  cut after the first letter of the agent's name.
+- **Choice:** the ground is the menu's tint without its alpha, edged as a
+  menu is: what the notification center already does for the same reason.
+  The row stays one line under its title (never a second): with Show in
+  the row, the two buttons sit beside the title and that line runs the
+  row's whole width (the VM showed the name still cut beside Show while
+  the agent saw the screen). It says the
+  Desktop and who the agent says it is, "On Desktop 4 · “dev-box”". To
+  make the room, that row leaves out the chip when all it would say is
+  "Connected" (the row being there says it) and a remote agent's
+  "connected over SSH" (its title is "Remote agent"). A chip that says more
+  ("Waiting for you", "Seeing the screen · 0:07") stays; while it sees or
+  records the screen the chip is followed by the name alone (the Desktop
+  gives way: Show is there). Rows of agents on the Desktop that shows are
+  as they were.
+- **Why:** a panel that says who can see the screen has to be readable
+  over anything; and a name cut to one letter reads as a mistake.
+- **Cost:** the panel no longer shows the wallpaper through. A row with
+  Show is about 8 taller than one without. A name longer than about 30
+  letters (23 beside a chip) is still cut, at its end.
+- **Undo:** `PANEL_GROUND` in `agents-panel.tsx`; `rowLine` in
+  `lib/agents-rows.tsx`.
+
+### D115. A key named in a sentence is drawn as a shortcut's glyph, by one component
+
+- **Date:** 2026-11-14. The `n19-polish` agent's.
+- **Question:** "Hold ❖Space or the Copilot key", "the right ⌥": inside a
+  sentence ❖ and ⌥ were about half the size of the words. There was no
+  one place that drew them: each sentence was a plain `Text`, the UI font
+  has neither glyph, and the font the Metal host falls back to draws them
+  small. (`Shortcut` has always drawn keys as SVG for this reason, but
+  only as a shortcut on its own, after a label.)
+- **Choice:** one component, `KeyedText` in `@dashi/ui`. A sentence with a
+  key glyph is laid out a word at a time in a row that wraps, as a caption
+  with keys already was, each glyph an SVG in a box 1.15 of the type's
+  size, in the text's colour, kept in one piece with the word it is
+  written against ("❖Space"). A sentence with none is the plain `Text` it
+  was. It is what draws a Settings row's detail, a caption, the capsule's
+  line, the voice chip's line and the card's hint, so every such sentence
+  is covered where it is drawn, not where it is written.
+- **Why:** mirin was not to be changed this round, and a font with these
+  glyphs at text size would be a new dependency for five characters.
+- **Cost:** such a sentence is many text nodes, not one: it wraps between
+  words only, cannot be selected as one run, and a screen reader gets the
+  whole sentence from the row's label. A one-line one (the capsule's) is
+  not cut with an ellipsis when it is too long. Text drawn elsewhere with
+  a key in it (a notification's body, an app's own words) is still the
+  font's.
+- **Undo:** when the host's fallback font draws them at size, make
+  `KeyedText` a plain `Text` again.
+
+### D116. The capsule has one home; a card says "Stopped"; dictation says once that it needs Voice
+
+- **Date:** 2026-11-14. The `n19-polish` agent's. Three small calls in the
+  capsule. Adds to D83.
+- **One home.** The capsule sat 11 from the edge in a new session (no Dock
+  laid out yet) and higher later, with no Dock on screen either time. Its
+  home is now 9 above the top of the Dock's band whether or not the Dock
+  shows: hidden by itself, not laid out yet, or a display with none. The
+  seats beside the Dock and one step up are still only for a Dock that is
+  on screen with a window down to it. *Cost:* with the Dock hidden and a
+  window down to the edge, the capsule lies on that window's last lines (as
+  the step up from the edge did) and 80 of empty wallpaper are under it
+  on a bare desktop. *Undo:* `placeOf` in `capsule/lib/place.ts`.
+- **❖Esc under a card.** The capsule's own line is not drawn while a card
+  is up, so ❖Esc stopped Dashi's voice and the card looked the same. The
+  card's foot now says it: "❖Esc stops the voice." while Dashi speaks (the
+  capsule's Stop already wears the keys), and "Stopped" for 2.5 s after,
+  as the capsule says after Cancel; then how to answer the card is back.
+  What Dashi hears still goes before both. *Cost:* while it speaks, the
+  line that says how to answer is away (the buttons are not). *Undo:*
+  `footOf` in `capsule/lib/card.tsx`.
+- **The dictation key with Voice off.** It did nothing and said nothing.
+  Now, while Voice is off and dictation is asked for, the key is still
+  heard, and the first hold says one line, "Dictation needs Voice turned
+  on. See Settings › Voice."; a press on the capsule goes there (so does
+  one on "Dictation needs its models."). After that the key is let go of
+  for the rest of the session. Only a key that is heard and not taken (the
+  right ⌥ or ⌃, held alone): where the key would be Caps Lock or the Menu
+  key, nothing is asked of the compositor and nothing is said, because
+  taking Caps Lock from someone who turned Voice off is worse than
+  silence. *Cost:* those layouts (Spanish, most European) still get no
+  line. *Undo:* `teaching` in `dictation/start.ts`.

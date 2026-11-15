@@ -192,8 +192,10 @@ export function VoicePane({ settings, voice, byPerson }: { settings: SettingsSto
   const guard = usePersonOnly(byPerson);
   // Turning it on with no models: say what comes and how big it is before anything is fetched.
   const [asking, setAsking] = useState(false);
+  // Look when the pane is shown, and again whenever the models' folder changes while it is (models that appear behind its back).
   useEffect(() => {
     void voice.models.refresh();
+    return voice.models.watch();
   }, [voice]);
   if (view.service !== "ready") {
     return (

@@ -7,7 +7,7 @@
 import { useDark } from "@dashi/ui";
 import { type Bounds, View } from "@mirinjs/metal";
 import { type ReactNode, useSyncExternalStore } from "react";
-import type { Cell, DictationCommand, Persona, VoiceModeCommand } from "../../shared/pill/index.ts";
+import { type Cell, type DictationCommand, goesToVoice, type Persona, type VoiceModeCommand } from "../../shared/pill/index.ts";
 import type { Place, Shown } from "../types.ts";
 import { Card, type CardAnswer } from "./card.tsx";
 import { Capsule, DictationLine } from "./line.tsx";
@@ -85,6 +85,7 @@ export function CapsuleView(props: CapsuleViewProps) {
               name={persona.name}
               talkKey={props.talkKey()}
               listening={shown.listening}
+              voice={shown.voice}
               level={props.level}
               still={still}
               now={props.now}
@@ -97,6 +98,8 @@ export function CapsuleView(props: CapsuleViewProps) {
   }
   const common = { tailPoints: place.tail, level: props.level, still };
   const go = shown.kind === "voice" && shown.state.phase === "notice" ? shown.state.go : undefined;
+  // A dictation line that names Settings › Voice (no models, Voice off) goes there on a press.
+  const toVoice = shown.kind === "dictation" && shown.state.phase === "notice" && goesToVoice(shown.state.trouble);
   return (
     <View style={{ flex: 1, position: "relative" }}>
       <Seat place={place}>
@@ -108,6 +111,7 @@ export function CapsuleView(props: CapsuleViewProps) {
               dashi={false}
               tight={endsInButton(shown)}
               testID={`capsule:dictation:${shown.state.phase}`}
+              onPress={toVoice ? () => props.onGo("voice") : undefined}
             >
               <DictationLine state={shown.state} send={props.onDictation} colours={inkColours(dark)} {...common} />
             </Capsule>

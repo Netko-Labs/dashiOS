@@ -26,10 +26,11 @@ export type Shown =
   | { kind: "none" }
   | { kind: "dictation"; state: Exclude<DictationState, { phase: "idle" }> }
   | { kind: "voice"; state: Exclude<VoiceModeState, { phase: "idle" }> }
-  | { kind: "card"; card: OpenCard; listening: Extract<VoiceModeState, { phase: "listening" }> | null };
+  /** `voice`: what Dashi's voice does while the card is up, which the card says in its hint's place: it speaks (❖Esc stops it), or was just stopped. */
+  | { kind: "card"; card: OpenCard; listening: Extract<VoiceModeState, { phase: "listening" }> | null; voice?: "speaking" | "stopped" };
 
 /** Which seat the capsule takes (pill-v2 README, "Where it sits"). */
-export type Seat = "home" | "left" | "right" | "up" | "edge" | "edge-up";
+export type Seat = "home" | "left" | "right" | "up";
 
 export interface Place {
   seat: Seat;

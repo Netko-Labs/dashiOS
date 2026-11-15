@@ -17,7 +17,7 @@ import { FakeTasks, FakeVoice, followScenes } from "./lib/fake.ts";
 import { type LocateOutput, type LocateWindow, locate } from "./lib/locate.ts";
 import { CAPSULE, CARD, SEAT } from "./lib/measures.ts";
 import { shownOf } from "./lib/model.ts";
-import { cardBottom, dockTop, placeOf } from "./lib/place.ts";
+import { bandTop, cardBottom, placeOf } from "./lib/place.ts";
 import { SCENES } from "./lib/scenes.ts";
 import type { TaskSource, VoiceSource } from "./lib/sources.ts";
 import { CapsuleSurface, LINGER_MS } from "./lib/surface.ts";
@@ -68,7 +68,7 @@ export interface Capsule {
 
 const HOME: Place = {
   seat: "home",
-  bottom: dockTop({ shown: true, style: "dock", panel: null, output: undefined }) + SEAT.aboveDock,
+  bottom: bandTop(null) + SEAT.aboveDock,
   at: { centre: true },
   maxWidth: CAPSULE.maxWidth,
   tail: CAPSULE.tail,
