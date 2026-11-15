@@ -2338,3 +2338,30 @@ short words, as the rulebook is written.
   button is held (❖Space with the mouse button down) still goes to Dashi,
   and the window has seen Super go down for it.
 - **Undo:** take the two `super_in_a_drag` calls out of `keys/super_key.rs`.
+
+### D109. A game that resumes under the bar or the Dock: nothing is done, because nothing is asked
+
+- **Date:** 2026-11-14. The `n18-x11` agent's.
+- **Question:** a game leaves its menu while the pointer lies over the menu
+  bar brought out over full screen, or over the Dock. The bar stays out
+  until the mouse moves. Can dashi-comp bring the pointer back, or hide
+  what it revealed, at that moment?
+- **Choice:** no change. A window that asks for a lock while the pointer is
+  elsewhere already gets the pointer brought to it and what it revealed
+  hidden (D95 to D98; `bring_pointer_to_lock`). The games in question ask
+  for nothing: GLFW and SDL on Wayland lock only when the pointer is in
+  their surface, a cursor can only be hidden with the serial of an enter,
+  and Xwayland turns an X11 grab, a hidden cursor and a warp into a lock
+  only for the window its pointer is in. dashi-comp has no request to act
+  on.
+- **Why:** the only signals left are guesses (a key pressed in a window that
+  once held a lock), and a guess that moves the person's pointer is worse
+  than a bar that waits for the mouse.
+- **Cost:** the bar or the Dock stays out until the mouse moves, then the
+  lock holds. For X11 games there is one true signal not used yet: the X
+  server shows the game's hidden cursor the moment it grabs the pointer
+  (XFixes `DisplayCursorNotify` on the probe's connection, the image all
+  transparent); with the keyboard in an X11 window and the pointer over a
+  layer of Dashi's, that would say "bring it back". Not built: unproved,
+  and it is a listener of its own.
+- **Undo:** nothing to undo.
