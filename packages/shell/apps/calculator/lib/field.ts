@@ -14,7 +14,7 @@
 
 import type { TextSelection } from "@mirinjs/metal";
 import { isQuiet } from "./expression.ts";
-import { type Edited, isTypedKey, type Line, paste, settle, typeChar } from "./line.ts";
+import { type Edited, type Line, paste, settle, typeChar, typedText } from "./line.ts";
 import type { NumberLocale } from "./locale.ts";
 
 export type FieldEdit =
@@ -25,7 +25,7 @@ export type FieldEdit =
   | { kind: "keys"; line: Line; keys: string[] };
 
 /** A key the line answers: one it types, "=" or "n"; and a space, which types nothing. */
-const isKey = (char: string, locale: NumberLocale): boolean => char === " " || char === "=" || char === "n" || char === "N" || isTypedKey(char, locale);
+const isKey = (char: string, locale: NumberLocale): boolean => char === " " || char === "=" || char === "n" || char === "N" || typedText(char, locale) !== "";
 
 /** One edit between two texts: `old.slice(start, end)` became `inserted`. */
 interface Splice {

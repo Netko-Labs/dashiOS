@@ -86,14 +86,11 @@ export function settle(line: Line, raw: string, caret: number, locale: NumberLoc
 }
 
 /** What a typed character puts in the line: itself, its operator ("*" is ×), the locale's decimal mark, or nothing. */
-function typedText(char: string, locale: NumberLocale): string {
+export function typedText(char: string, locale: NumberLocale): string {
   if (/^[0-9]$/.test(char) || char === "%" || char === "(" || char === ")") return char;
   if (numberMarks(locale).decimals.has(char)) return locale.decimal;
   return operatorFor(char) ?? "";
 }
-
-/** Whether a typed character puts something in the line. */
-export const isTypedKey = (char: string, locale: NumberLocale): boolean => typedText(char, locale) !== "";
 
 /** Pasted text as what it puts in the line, or null when it is refused (see the header). */
 export function pastedText(text: string, locale: NumberLocale): string | null {
