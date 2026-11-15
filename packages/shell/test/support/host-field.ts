@@ -1,11 +1,17 @@
 /**
- * A stand-in for the Metal host's field, as mirin's host keeps one
- * (`crates/mirin-metal/src/value.rs`, `field/rebase.rs`, `selection.rs`): its
- * own buffer and caret; every edit reported with the hash of the text it was
- * made on and of the text it made, then the caret; a value the app wrote over
- * a text the field has typed into since has the typing done again to it (a
- * rebase), reported as one change made on the app's value; a new revision
- * resets the buffer, whatever was typed.
+ * A stand-in for the Metal host's field, as mirin's host keeps one at
+ * `50241ea` (`crates/mirin-metal/src/value.rs`, `field/rebase.rs`,
+ * `selection.rs`): its own buffer and caret; every edit reported with the
+ * hash of the text it was made on and of the text it made, then the caret.
+ * - A value the app wrote over a text the field has typed into since has the
+ *   typing done again to it (a rebase), reported as one change made on the
+ *   app's value. The rebase keeps its own caret, and says where it is.
+ * - A new revision is such a write too, though the text may be the same
+ *   (the app refused a key): the keys typed after it are carried onto it.
+ * - A `selection` the app made in a text the field no longer holds (its
+ *   `textHash`) is dropped. One the field takes from the tree as said is
+ *   not reported back; a key, a click, typing, a rebase's caret and a
+ *   reset's caret at the end are.
  */
 
 import { type NativeEvent, textHash } from "@mirinjs/metal";
@@ -18,8 +24,10 @@ export interface InputProps {
   value: string;
   revision?: number;
   baseHash?: number;
-  selection?: { start: number; end: number };
+  selection?: { start: number; end: number; textHash?: number };
 }
+
+type Taken = "kept" | "reset" | "rebased";
 
 interface Splice {
   start: number;
@@ -36,19 +44,44 @@ function splice(from: string, to: string): Splice {
   return { start, end: from.length - tail, count: to.length - tail - start };
 }
 
-/** The field edited `known` into `held` while the app replaced `known` with `written`: the app's text with the field's edit in it, and the caret. */
-export function rebase(known: string, held: string, written: string): { text: string; caret: number } {
+/**
+ * The field edited `known` into `held` (its caret at `cursor`) while the app
+ * replaced `known` with `written`: the app's text with the field's edit in
+ * it, and where the caret is now (`rebase.rs`, line for line).
+ */
+export function rebase(known: string, held: string, written: string, cursor: number = held.length): { text: string; caret: number } {
   const typed = splice(known, held);
   const wrote = splice(known, written);
   const typedText = held.slice(typed.start, typed.start + typed.count);
   const wroteText = written.slice(wrote.start, wrote.start + wrote.count);
   const tail = Math.max(typed.end, wrote.end);
   let text: string;
-  if (typed.start < wrote.start) text = known.slice(0, typed.start) + typedText + known.slice(Math.min(typed.end, wrote.start), wrote.start) + wroteText;
-  else if (typed.start >= wrote.end) text = known.slice(0, wrote.start) + wroteText + known.slice(wrote.end, typed.start) + typedText;
-  else text = known.slice(0, wrote.start) + wroteText + typedText;
-  const caret = typed.start < wrote.start ? typed.start + typed.count : text.length;
-  return { text: text + known.slice(tail), caret };
+  let typedAt: number;
+  if (typed.start < wrote.start) {
+    typedAt = typed.start;
+    text = known.slice(0, typed.start) + typedText + known.slice(Math.min(typed.end, wrote.start), wrote.start) + wroteText;
+  } else if (typed.start >= wrote.end) {
+    const before = known.slice(0, wrote.start) + wroteText + known.slice(wrote.end, typed.start);
+    typedAt = before.length;
+    text = before + typedText;
+  } else {
+    typedAt = wrote.start + wroteText.length;
+    text = known.slice(0, wrote.start) + wroteText + typedText;
+  }
+  const body = text.length;
+  text += known.slice(tail);
+  const at = Math.min(cursor, held.length);
+  let caret: number;
+  if (at >= typed.start && at <= typed.start + typed.count) caret = typedAt + (at - typed.start);
+  else if (at < typed.start) {
+    if (at <= wrote.start) caret = at;
+    else if (at >= wrote.end) caret = at - (wrote.end - wrote.start) + wrote.count;
+    else caret = wrote.start + wrote.count;
+  } else {
+    const inKnown = at - typed.count + (typed.end - typed.start);
+    caret = inKnown >= tail ? text.length - (known.length - inKnown) : body;
+  }
+  return { text, caret };
 }
 
 /** The host's field: its buffer, caret, and what it has told the app and not yet heard back. */
@@ -103,66 +136,75 @@ export class HostField {
     this.report();
   }
 
-  /** The app's new value, written over the text hashing to `baseHash`. */
-  private takeValue(value: string, baseHash: number | undefined): "kept" | "reset" | "rebased" {
-    if (baseHash === undefined) {
-      const echoed = this.echoes.indexOf(value);
-      if (echoed >= 0) {
-        this.echoes.splice(0, echoed + 1);
-        return "kept";
-      }
-    } else if (baseHash === textHash(value)) {
-      const echoed = this.echoes.indexOf(value);
-      if (echoed >= 0) this.echoes.splice(0, echoed + 1);
-      return "kept";
-    } else {
-      const known = [this.synced, ...this.echoes].reverse().find((text) => textHash(text) === baseHash);
-      if (known !== undefined && known !== this.buffer) {
-        const rebased = rebase(known, this.buffer, value);
-        this.buffer = rebased.text;
-        this.anchor = this.caret = rebased.caret;
-        this.echoes = [];
-        return "rebased";
-      }
-    }
+  private reset(value: string): Taken {
     this.echoes = [];
     this.buffer = value;
     this.anchor = this.caret = value.length;
     return "reset";
   }
 
+  /** A value the app wrote over the text hashing to `baseHash`: what the field typed into that text since is done again to it. */
+  private takeWrite(value: string, baseHash: number): Taken {
+    const known = [this.synced, ...this.echoes].reverse().find((text) => textHash(text) === baseHash);
+    if (known === undefined || known === this.buffer) return this.reset(value);
+    const rebased = rebase(known, this.buffer, value, this.caret);
+    this.buffer = rebased.text;
+    this.anchor = this.caret = rebased.caret;
+    this.echoes = [];
+    return "rebased";
+  }
+
+  /** The app's new value, written over the text hashing to `baseHash`. */
+  private takeValue(value: string, baseHash: number | undefined): Taken {
+    const echoed = this.echoes.indexOf(value);
+    if (baseHash === undefined) {
+      if (echoed < 0) return this.reset(value);
+      this.echoes.splice(0, echoed + 1);
+      return "kept";
+    }
+    if (baseHash !== textHash(value)) return this.takeWrite(value, baseHash);
+    if (echoed >= 0) this.echoes.splice(0, echoed + 1);
+    return "kept";
+  }
+
+  /** The tree's `selection`, taken when it is the app's news and made in the text the field holds; never said back as it was said. */
+  private takeSelection(selection: InputProps["selection"], taken: Taken): void {
+    const wanted: Range | null = selection ? [selection.start, selection.end] : null;
+    const reset = taken === "reset";
+    let took: Range | null = null;
+    if (selection && wanted) {
+      const late = selection.textHash === undefined ? taken === "rebased" : selection.textHash !== textHash(this.buffer);
+      let sets = reset;
+      if (!reset && !same(wanted, this.selectionSynced) && !late) {
+        const echoed = this.selectionEchoes.findIndex((range) => same(range, wanted));
+        if (echoed >= 0) this.selectionEchoes.splice(0, echoed + 1);
+        else sets = true;
+      }
+      if (sets) {
+        this.selectionEchoes = [];
+        this.anchor = Math.min(wanted[0], this.buffer.length);
+        this.caret = Math.min(wanted[1], this.buffer.length);
+        took = wanted;
+      }
+    }
+    this.selectionSynced = wanted;
+    // Taken as said: the app's own word, not told to it. Put elsewhere (past the end): told.
+    if (took && same(this.range(), took)) this.reported = took;
+    else if (took || reset) this.report();
+  }
+
   /** A tree arrived with the field in it. */
   take(props: InputProps): void {
-    let taken: "kept" | "reset" | "rebased" = "kept";
+    let taken: Taken = "kept";
     const revision = props.revision ?? 0;
     if (revision !== this.revision) {
       this.revision = revision;
-      this.echoes = [];
-      this.buffer = props.value;
-      this.anchor = this.caret = props.value.length;
-      taken = "reset";
+      taken = props.baseHash === undefined ? this.reset(props.value) : this.takeWrite(props.value, props.baseHash);
     } else if (props.value !== this.synced) taken = this.takeValue(props.value, props.baseHash);
     this.synced = props.value;
     if (taken !== "kept") this.base = textHash(props.value);
     if (taken === "rebased") this.reportChange();
-    const reset = taken === "reset";
-    const wanted: Range | null = props.selection ? [props.selection.start, props.selection.end] : null;
-    let moved = reset;
-    if (wanted) {
-      let driverSets = reset;
-      if (!reset && !same(wanted, this.selectionSynced)) {
-        const echoed = this.selectionEchoes.findIndex((range) => same(range, wanted));
-        if (echoed >= 0) this.selectionEchoes.splice(0, echoed + 1);
-        else driverSets = true;
-      }
-      if (driverSets) {
-        this.selectionEchoes = [];
-        this.anchor = Math.min(wanted[0], this.buffer.length);
-        this.caret = Math.min(wanted[1], this.buffer.length);
-        moved = true;
-      }
-    }
-    this.selectionSynced = wanted;
-    if (moved || taken === "rebased") this.report();
+    this.takeSelection(props.selection, taken);
+    if (taken === "rebased") this.report();
   }
 }

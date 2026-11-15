@@ -37,7 +37,6 @@ function fakeHosts() {
       setTitle() {},
       setSize() {},
       setMinSize() {},
-      setTextAntialiasing: () => false,
       open: (window) => record.opened.push(window),
     };
   };
@@ -222,7 +221,6 @@ test("an applet's popover draws on a solid ground, clipped to its corners, whate
     setTitle() {},
     setSize() {},
     setMinSize() {},
-    setTextAntialiasing: () => false,
     open() {},
   } as unknown as NativeHostTransport;
   const popover = openPopoverWindow({

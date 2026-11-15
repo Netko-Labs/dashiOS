@@ -17,7 +17,7 @@ import { useFiles, useFilesState } from "./context.ts";
 import { useDropTarget } from "./drop.ts";
 import { type BrowserKey, browserKey } from "./keys.ts";
 import { marqueeOf } from "./lib/marquee/of.ts";
-import { revealOf } from "./lib/marquee/reveal.ts";
+import { reveal } from "./lib/marquee/reveal.ts";
 import { Grid } from "./lib/views/grid.tsx";
 import { ListView } from "./lib/views/list.tsx";
 import { folderAt } from "./location.ts";
@@ -87,10 +87,10 @@ export function BrowserKeys({
         const was = store.keyboardAt();
         if (key.kind === "move") store.move(key.step, key.extend);
         else onKey(key);
-        // The arrows, the page keys or a typed name moved the keyboard: its item is scrolled into view (D113).
+        // The arrows, the page keys or a typed name moved the keyboard: its item is scrolled into view (D143).
         const now = store.keyboardAt();
         const marquee = marqueeOf(store);
-        if (now !== null && now !== was) revealOf(store).show(now, () => marquee);
+        if (now !== null && now !== was && marquee.surface?.scrolls()) reveal(now, marquee.model, marquee.place);
       }}
       style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }}
     />
@@ -142,7 +142,7 @@ export function Listing({ onBackgroundMenu }: ListingProps) {
   const items = waited ? [] : store.visible();
   const empty = <Empty store={store} />;
   const marquee = marqueeOf(store);
-  // The window says where the items are painted and scrolls them; without it nothing is dragged out.
+  // The window says whether its host tells where the listing is scrolled; without that nothing is dragged out.
   marquee.surface = useContext(Surface);
   return (
     <View

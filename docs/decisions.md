@@ -3045,7 +3045,7 @@ short words, as the rulebook is written.
 - **Undo:** `git revert` of this commit brings `drawn.ts` and its callers
   back.
 
-### D134. Files still asks its window where the items are; Calendar scrolls its hours by their handle
+### D134. Files still asks its window where the items are; Calendar scrolls its hours by their handle (Files: superseded by D143)
 
 - **Date:** 2026-11-15. The `n28` take-up, finished by `n29` (mirin
   `5703b91`, PR 34).
@@ -3325,3 +3325,109 @@ short words, as the rulebook is written.
   the opaque surfaces (the login screen, the lock) so an opted-in session
   has subpixel there too.
 - **Undo:** the default in `hostTextAntialiasing`.
+
+### D143. Files' marquee and the keyboard's item go by what the scroll view says
+
+- **Date:** 2026-11-15. `n34`, Dashi on mirin `50241ea`. Supersedes D134 for
+  Files (and D100 and D113, which D134 had kept).
+- **Question:** D134 took Files back to asking its window where the items
+  are painted, every 150 ms during a drag, because a long list's offset
+  from the host was wrong once its rows changed. mirin fixed that (PR 42:
+  a row that changes keeps its height). Bring the version on mirin's API
+  back?
+- **Choice:** yes: `fd03ff15` is back as it was written (the revert of
+  `3326c307`). A `ScrollPlace` (`shared/file-browser/lib/marquee/place.ts`)
+  is fed by the listing's scroll view: `onLayout` says where it is,
+  `onScroll` how far its content has gone under it, whoever scrolled it,
+  and its `ref` (`ViewHandle.scrollTo`) scrolls it at an edge and for the
+  keyboard's item. The 150 ms asking through the simulation channel and
+  `locate.ts` are gone, in Files, the open and save sheets and
+  `dashi-dialog` (one listing). The keyboard's item is shown by a sum and
+  `scrollTo`, not by `scrollIntoView` on its node: both views are long
+  lists, and a row far away has no node to name until it is laid out.
+- **Left on the simulation channel:** Notes' and Text Editor's scroll to
+  the caret and Settings' scroll to a searched row. They are relative
+  ("this much further down", "from the top, then down") and are asked
+  from outside the view that scrolls; on the handle each needs the view's
+  `ref` passed out and its offset kept from `onScroll`. Not the same small
+  change, so not made here. Nothing is wrong with them on this host.
+- **Cost:** on a host that says no `scroll` in its `protocol` line (none
+  ships with Dashi: `mirin-metal-host` is built from the same mirin)
+  nothing is dragged out and the keyboard's item is not scrolled to.
+- **Undo:** `git revert` of this entry's commit.
+
+### D144. Calendar's hours scroll as they are mounted; Calculator takes a refused key out at once and says its caret wherever it is
+
+- **Date:** 2026-11-15. `n34`, Dashi on mirin `50241ea`. Supersedes
+  D134's 80 ms wait and D129's points 2 and 3.
+- **Question:** three things Dashi did around faults mirin has fixed.
+  Calendar waited 80 ms before its hours' first scroll (asked as the view
+  was mounted, it was lost: PR 43 keeps it). Calculator waited 25 ms
+  before it took a refused key out of its field (a new `valueRevision`
+  reset the field and dropped the keys typed since: PR 46 carries them),
+  and did not send `selection` for a caret at the line's end (a rebase put
+  the caret where the tree said, in front of the keys it had typed again:
+  PR 45 keeps the rebase's own caret and drops a selection made in a text
+  the field no longer holds). Keep any of the three?
+- **Choice:** none.
+  1. Calendar asks `scrollTo` in the effect of the commit that mounts the
+     hours. No timer.
+  2. Calculator bumps the field's `valueRevision` in the same step that
+     refuses a key. The host types what came after it again on the line's
+     text and reports it as one change; that change, the first after a
+     refusal, is read key by key even when a key among them is refused too
+     ("1a2b3" typed at once: the host says "2b3" in one edit, and the line
+     takes 2 and 3). Any other edit of several characters is still a paste
+     unless every character is a key.
+  3. Calculator sends the line's `selection` always. It is the plainer
+     code (no "is the caret at the end" in the view), and on this host a
+     selection taken from the tree is not reported back (PR 48), so a
+     keypad key costs one event less than leaving the field to say where
+     its reset put the caret.
+- **Why:** checked with the stand-in for the host's field, made to do what
+  the host does at `50241ea` (`test/support/host-field.ts`: a revision is a
+  write that carries typing, a rebase keeps its caret, a selection made in
+  another text is dropped, one taken as said is not reported): D124's
+  crossings 150 of 150 in both cases, and refused keys among typing with
+  the field's reports and the app's trees crossing in any order, 150 of
+  150 in two cases.
+- **Cost:** on a host without `revisionRebase` or `selectionHash` (none
+  ships with Dashi) D129's two faults are back: an agent's "12 + 3" loses
+  "+ 3", and a key typed across a keypad key can land a place early. Two
+  pastes the line refuses, made by the field itself one right after the
+  other, would have the second read key by key ("c" clears): ❖V is the
+  app's own paste and never goes through the field, so it takes an input
+  method or a drop of text to do it.
+- **Undo:** `git revert` of this entry's two commits (Calendar; Calculator).
+
+### D145. No surface of Dashi's is declared opaque: the login screen and the lock show the wallpaper
+
+- **Date:** 2026-11-15. `n34`, Dashi on mirin `50241ea` (PR 47:
+  `opaque` on a layer or lock surface).
+- **Question:** a layer or lock surface that says `opaque: true` is opened
+  with no alpha, and an opted-in host (D142) draws subpixel text on it.
+  D142 left "declare the login screen and the lock opaque". Which of
+  Dashi's surfaces are opaque?
+- **Choice:** none, so none is declared. Looked at, not assumed:
+  - The login screen and the lock paint `LOGIN_GROUND`, true black at 72%
+    (`#…b8`, `@dashi/ui` `login-screen.tsx`), over the wallpaper the
+    compositor draws behind: the design's rule ("the wallpaper darkened
+    to 72% black", design.html). Opened opaque, what the tree leaves
+    see-through is over black: the wallpaper would be gone from both.
+  - The menu bar (`menuBar`, alpha `c7` in Light, `e6` in Dark) and the
+    Dock (`99`, `cc`) are glass over the wallpaper; the Dock is rounded.
+  - The launcher (`f5`), menus (`f7`), banners, sheets, the capsule and
+    the switcher are rounded panels with a shadow over whatever is under.
+- **Why:** taking the wallpaper off the login screen and the lock is a
+  change in what a person sees, for an opt-in few will set. It is the
+  owner's to make.
+- **Cost:** in a session opted in to subpixel (D142), windows are
+  subpixel and every surface of the shell, the login screen and the lock
+  included, stays in grays.
+- **To have subpixel there:** the surface must hold what is behind its
+  text: the greeter and the lock would draw the wallpaper themselves (an
+  `<Image>` under the ground) and then say `opaque`, asked only of a host
+  that names `MIRIN_METAL_OPAQUE_SURFACE` (one from before refuses the
+  surface, and a login screen that does not open locks the person out).
+- **Undo:** nothing to undo.
+

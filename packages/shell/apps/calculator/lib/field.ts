@@ -84,8 +84,12 @@ export function fieldCaret(line: Line, raw: string, held: string | null): TextSe
  * The field's text after the person edited it there (typing, ⌫, a paste,
  * Cut): what changed, against the line as it was, done the line's way.
  * Typing "=" works it out and "n" negates; they never land in the text.
+ * `typedAgain`: the line has just refused a key and told the field to take
+ * its text back, so several characters at once are the keys typed after
+ * that one, which the host typed again: each is done as typed, a refused
+ * one among them too, and never read as a paste.
  */
-export function fromField(line: Line, raw: string, locale: NumberLocale, held: string | null = null): FieldEdit {
+export function fromField(line: Line, raw: string, locale: NumberLocale, held: string | null = null, typedAgain = false): FieldEdit {
   const old = line.text;
   const { start: from, end, inserted } = spliceInLine(line, raw, held, locale);
   const removed = old.slice(from, end);
@@ -106,7 +110,7 @@ export function fromField(line: Line, raw: string, locale: NumberLocale, held: s
   if (chars.length > 1) {
     // Every character a key: keys the host typed again in one edit ("=" among them), each done as typed.
     // ❖V is the app's own paste, so the field puts several characters in at once only so, or from an input method.
-    if (chars.every((char) => isKey(char, locale))) return { kind: "keys", line: replacing, keys: chars };
+    if (typedAgain || chars.every((char) => isKey(char, locale))) return { kind: "keys", line: replacing, keys: chars };
     return { kind: "line", edited: paste(replacing, inserted, locale) };
   }
   if (inserted === "=") return { kind: "equals" };

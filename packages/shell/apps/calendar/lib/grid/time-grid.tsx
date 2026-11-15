@@ -35,13 +35,12 @@ export interface TimeGridProps {
 
 /** Where the hours are scrolled to: the working day when the view opens, and a new event made out of sight. */
 function useHoursScroll(dayCount: number, top: number, reveal: GridState["reveal"]): RefObject<ViewHandle | null> {
-  // The hours' scroll view: it is told where to stand (mirin's `ViewHandle`; a host from before it leaves the hours at midnight, D134).
+  // The hours' scroll view: it is told where to stand (mirin's `ViewHandle`; a host from before it leaves the hours at midnight, D143).
   const hours = useRef<ViewHandle>(null);
   // biome-ignore lint/correctness/useExhaustiveDependencies: only a different kind of view (Day, Week) scrolls again; paging and the clock leave the hours be
   useEffect(() => {
-    // Not at once: a scroll asked of a view in the turn it is mounted is lost (the VM showed the hours left at midnight).
-    const timer = setTimeout(() => hours.current?.scrollTo({ y: Math.max(0, top) }), 80);
-    return () => clearTimeout(timer);
+    // In the effect of the commit that mounts them: the host keeps a scroll asked before the view is first laid out (D144).
+    hours.current?.scrollTo({ y: Math.max(0, top) });
   }, [dayCount]);
 
   // A new event from the + button starts where the hours may be scrolled away from: they scroll to it.
