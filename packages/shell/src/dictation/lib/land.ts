@@ -178,6 +178,20 @@ export async function typeAndRemember(
   return { how, entry };
 }
 
+/** The window and field the words would go to now, or why they can't. */
+export const spotFor = placeFor;
+
+/** The chord a line break is typed as in `front`'s field, or null for Return itself. */
+export async function breaksIn(
+  deps: DictationDeps,
+  ctx: LandContext,
+  front: Front,
+  field: FieldRead | null,
+): Promise<{ breaks: string | null; profile: string }> {
+  const { place, agent } = await placeOf(deps, ctx, front, field);
+  return { breaks: breaksFor(place, agent), profile: place.profile.name };
+}
+
 export async function land(deps: DictationDeps, ctx: LandContext, heard: string, meant: Meant): Promise<Landing> {
   const { hub } = deps;
   const lexicon = ctx.lexicon();

@@ -297,6 +297,44 @@ Where the field can't be read (Dashi's own apps and most terminals do not
 give their text to AT-SPI) the words land as said, with a space after, as
 before. Undo's check uses exactly what was typed, the spaces included.
 
+### Instructions and lists
+
+`dictation/lib/instruction.ts`, `instructed.ts`, `lists.ts`.
+
+**An instruction is the whole utterance** (one press, one phrase), from a
+short fixed grammar in English and Spanish; sounds and "please" round it
+do not count. The same words inside a longer sentence are words and are
+typed ("Tell him to scratch that idea.").
+
+| Said alone | Does |
+| --- | --- |
+| "scratch that", "delete that", "undo that", "remove that", "erase that", "remove (or delete) the previous text", "remove the last text", "remove what I just said"; "borra eso", "quita eso", "elimina eso", "deshaz eso", "borra (or quita) lo anterior", "borra el texto anterior" | takes back Dashi's newest insertion in the window in front, checked as Undo checks it; said again, the one before |
+| "new line", "nueva línea", "punto y aparte"; "new paragraph", "nuevo párrafo" | a line break, or two, typed as the place breaks lines (Return, ⇧Return where Return sends, ⌃J in an agent's prompt) |
+
+The capsule says "Took that as an instruction", what it did ("Removed 14
+words.") and **Undo**, which puts back what was removed (or takes back the
+break) and types the words themselves, as heard. Where nothing of Dashi's
+is there, or the field changed, it says so and touches nothing; Undo still
+types the words. With "Tidy what I say" off nothing is an instruction.
+
+**Lists**, by rule where the markers are plain (`makeList`):
+
+- "first… second… third…" ("primero… segundo…"), two or more in order,
+  not after an article or a preposition ("the first time") and not before
+  "of", "time", "thoughts"…: a numbered list.
+- "one, … two, … three, …" ("uno… dos… tres…"), three or more, each at the
+  start or after a mark: a numbered list.
+- "bullet point … bullet point …", "next item", "viñeta", twice or more:
+  bullets.
+
+The markers go, each item gets a line and a capital, and what came before
+the first is the line that introduces them, ending with a colon. Bullets
+are `- ` where the profile's lists are Markdown (Chat, Developer) or the
+app is a Markdown editor (`MARKDOWN_APPS`: Notes, Obsidian, …), and bare
+lines in a plain field. Never at a shell's prompt. The line says "A list
+of 3." Anything less plain is left as said, and the gate sends it to the
+model (`list`).
+
 ### Tidying by rule
 
 `dictation/lib/tidy*.ts`. On this computer, no model; English and Spanish.

@@ -3565,3 +3565,29 @@ short words, as the rulebook is written.
   the password check). Dashi's own apps and terminals give no text, so
   they get no fit yet: mirin would have to publish its fields to AT-SPI.
 - **Undo:** `fit()` returning the words with a space after.
+
+### D185. An instruction is the whole utterance; lists are made only from plain markers
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's (research 1.9).
+- **Question:** the owner wants "remove the previous text" and "here's the
+  list: first…" to be understood. How is an instruction told from words,
+  and how much structure may a rule make?
+- **Choice:** an instruction must be everything that was said in one
+  press, from a fixed list in English and Spanish; it acts on the
+  insertion record only (D180's check). The capsule says it took it as an
+  instruction and offers Undo, which restores and types the words as
+  heard. With nothing of Dashi's to remove, nothing is typed either: the
+  line says so and Undo types the words. A list is made from ordinals in
+  order, counted items that each start a clause, or repeated "bullet
+  point"; numbered when counted, Markdown bullets in chat, at an agent's
+  prompt and in Markdown editors, bare lines elsewhere, nothing at a
+  shell's prompt.
+- **Why:** deleting by mistake costs trust and typing "scratch that" by
+  mistake costs one press; the whole-utterance rule removes the quoting
+  failures without a classifier. "Tell him to scratch that" is typed.
+- **Cost:** "scratch that" at the end of a longer utterance is not an
+  instruction (inside an utterance it is tidying's change of mind, or the
+  model's). "delete the last sentence" and "replace X with Y" are not
+  built. A list said without clear markers waits for the model.
+- **Undo:** `ERASE` and `BREAKS` in `dictation/lib/instruction.ts`;
+  `makeList` in `lists.ts`.

@@ -8,8 +8,10 @@ import type { DictationState } from "../../shared/pill/index.ts";
 import { Lexicon } from "../lexicon.ts";
 import type { DictationDeps, Front } from "../types.ts";
 import { NO_WORDS } from "../words.ts";
-import { entryTyped, pasteLast, raw, told, typeAgain, undo } from "./after.ts";
+import { entryTyped, pasteLast, raw, told, typeAgain, typeWords, undo } from "./after.ts";
 import { erase } from "./erase.ts";
+import { carryOut, type Instructed } from "./instructed.ts";
+import { instructionOf } from "./instruction.ts";
 import { fieldIn, type LandContext, type Landing, land, type Meant, placeOf } from "./land.ts";
 import { nextProfile } from "./profiles.ts";
 import { type Insertion, Insertions } from "./record.ts";
@@ -29,6 +31,8 @@ export class Landings {
   private readonly lexicon: Lexicon;
   private readonly ctx: LandContext;
 
+  /** The instruction the last utterance was taken as, while its Undo is offered: what it did, and the words to type instead. */
+  private instructed: (Instructed & { heard: string }) | null = null;
   /** The model's answer that is still awaited for words that landed already; aborted when they are taken back or others land. */
   private refining: AbortController | null = null;
 
@@ -105,13 +109,33 @@ export class Landings {
     if (state.phase === "waiting") this.last = { heard: state.heard, text: state.text, entry: null };
   }
 
-  /** The words land, and are the last dictation from now on. */
+  /** The words land, and are the last dictation from now on; an instruction said alone is carried out instead. */
   async land(heard: string, meant: Meant): Promise<Landing> {
     this.settle();
+    this.instructed = null;
+    const instruction = this.deps.prefs().tidy ? instructionOf(heard) : null;
+    if (instruction) {
+      const done = await carryOut(this.deps, this.ctx, instruction, meant);
+      this.instructed = { ...done, heard };
+      return { state: done.state, typed: true, entry: null };
+    }
+    return this.type(heard, meant);
+  }
+
+  private async type(heard: string, meant: Meant): Promise<Landing> {
     const landing = await land(this.deps, this.ctx, heard, meant);
     this.sawState(landing.state, landing.entry?.id ?? null);
     if (landing.refine && landing.entry) void this.refine(landing.entry, landing.refine);
     return landing;
+  }
+
+  /** Undo after an instruction: what it removed is put back, what it typed is taken back, and its words are typed instead. */
+  private async literal(instructed: Instructed & { heard: string }): Promise<DictationState> {
+    if (instructed.typed && (await erase(this.deps, instructed.typed)) === "erased") this.kept.drop(instructed.typed.id);
+    if (instructed.removed) await typeAgain(this.deps, this.kept, instructed.removed, "");
+    // The words themselves, as they were heard: nothing in them is an instruction or a mark this time.
+    const words = instructed.heard.trim();
+    return typeWords(this.deps, this.kept, { heard: words, text: words }, "As you said it.");
   }
 
   private async seen(state: Promise<DictationState>): Promise<DictationState> {
@@ -122,6 +146,9 @@ export class Landings {
 
   undo(): Promise<DictationState> {
     this.settle();
+    const instructed = this.instructed;
+    this.instructed = null;
+    if (instructed) return this.seen(this.literal(instructed));
     return this.seen(undo(this.deps, this.kept));
   }
 

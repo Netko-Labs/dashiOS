@@ -12,6 +12,7 @@ import type { TidyChange } from "../../shared/pill/index.ts";
 import type { LexiconView } from "../lexicon.ts";
 import type { Pair, Term } from "../types.ts";
 import type { Words } from "../words.ts";
+import { makeList } from "./lists.ts";
 import type { Place } from "./profiles.ts";
 import { applyCode, backticks } from "./rules-code.ts";
 import { applySpoken } from "./rules-spoken.ts";
@@ -107,7 +108,14 @@ export function compose(heard: string, composing: Composing): Composed {
   const tidied = tidy(spoken.text);
   const snipped = applySnippets(tidied.typed, composing.lexicon.snippets);
   const coded = profile.code ? applyCode(snipped.text, composing.place.terminal) : { text: snipped.text, fixes: 0 };
-  const styled = restyle(coded.text, composing, terms);
-  const changes = [...tidied.changes, ...fixed(named.fixes + spoken.fixes + snipped.fixes + coded.fixes + styled.fixes)];
-  return { heard: heard.trim(), text: styled.text, changes, asHeard: tidied.asHeard, listed: false, terms };
+  // A list, where its markers are plain; never at a shell's prompt, where a line break runs what is typed.
+  const style = profile.lists === "markdown" || composing.place.markdown ? "markdown" : "plain";
+  const listed = isShell(composing) ? null : makeList(coded.text, style);
+  const styled = restyle(listed?.text ?? coded.text, composing, terms);
+  const changes: TidyChange[] = [
+    ...tidied.changes,
+    ...fixed(named.fixes + spoken.fixes + snipped.fixes + coded.fixes + styled.fixes),
+    ...(listed ? [{ kind: "list" as const, count: listed.items }] : []),
+  ];
+  return { heard: heard.trim(), text: styled.text, changes, asHeard: tidied.asHeard, listed: listed !== null, terms };
 }

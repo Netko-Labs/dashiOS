@@ -95,9 +95,8 @@ export async function typeAgain(deps: DictationDeps, kept: Insertions, like: Ins
   };
 }
 
-/** "Paste last": the last dictation again, where the keyboard is now (`last` is its words when it never landed). */
-export async function pasteLast(deps: DictationDeps, kept: Insertions, last: { heard: string; text: string } | null): Promise<DictationState> {
-  if (!last) return told(deps, "Nothing dictated yet.", "warn");
+/** These words typed where the keyboard is now, as they are, remembered; the line ends with `said`. */
+export function typeWords(deps: DictationDeps, kept: Insertions, words: { heard: string; text: string }, said: string): Promise<DictationState> {
   const like: Insertion = {
     id: "",
     at: 0,
@@ -105,13 +104,19 @@ export async function pasteLast(deps: DictationDeps, kept: Insertions, last: { h
     pid: null,
     app: "",
     field: "",
-    heard: last.heard,
-    text: last.text,
-    typed: withSpace(last.text),
+    heard: words.heard,
+    text: words.text,
+    typed: withSpace(words.text),
     how: "typed",
     profile: "",
     readable: false,
     breaks: null,
   };
-  return typeAgain(deps, kept, like, "Your last dictation.");
+  return typeAgain(deps, kept, like, said);
+}
+
+/** "Paste last": the last dictation again, where the keyboard is now (`last` is its words when it never landed). */
+export async function pasteLast(deps: DictationDeps, kept: Insertions, last: { heard: string; text: string } | null): Promise<DictationState> {
+  if (!last) return told(deps, "Nothing dictated yet.", "warn");
+  return typeWords(deps, kept, last, "Your last dictation.");
 }

@@ -142,11 +142,16 @@ export const isTerminalApp = (appId: string | undefined): boolean => {
   return id !== "" && TERMINALS.some((terminal) => id.includes(terminal));
 };
 
+/** Apps whose documents are Markdown, by a part of their app id: a list there is Markdown whatever the profile. */
+export const MARKDOWN_APPS: readonly string[] = ["dev.dashi.notes", "obsidian", "marktext", "ghostwriter", "apostrophe", "logseq", "zettlr"];
+
 /** Where the words go, as the profiles see it. */
 export interface Place {
   profile: Profile;
   /** A shell's prompt, or an agent's: Return there runs or sends, and words are not sentences. */
   terminal: boolean;
+  /** A Markdown editor: a list is Markdown there. */
+  markdown: boolean;
 }
 
 /** The profile for the window and field in front, with no setup. `chosen` is the person's own pick for this window. */
@@ -156,17 +161,18 @@ export function pickProfile(profiles: readonly Profile[], front: Front | null, f
   if (!fallback) throw new Error("dictation has no profile");
   const appId = (front?.appId ?? "").toLowerCase();
   const terminal = field?.role === "terminal" || isTerminalApp(appId);
+  const markdown = appId !== "" && MARKDOWN_APPS.some((app) => appId.includes(app));
   const picked = chosen ? byId(chosen) : undefined;
-  if (picked) return { profile: picked, terminal };
-  if (terminal) return { profile: byId("developer") ?? fallback, terminal };
+  if (picked) return { profile: picked, terminal, markdown };
+  if (terminal) return { profile: byId("developer") ?? fallback, terminal, markdown };
   const site = field?.site?.toLowerCase() ?? null;
   if (site) {
     const forSite = profiles.find((profile) => profile.sites.some((each) => onSite(site, each)));
     // A page nobody claims is writing, whatever the browser is.
-    return { profile: forSite ?? fallback, terminal };
+    return { profile: forSite ?? fallback, terminal, markdown };
   }
   const forApp = appId === "" ? undefined : profiles.find((profile) => profile.apps.some((app) => appId.includes(app)));
-  return { profile: forApp ?? fallback, terminal };
+  return { profile: forApp ?? fallback, terminal, markdown };
 }
 
 /** The profile after `id`, for a press on the capsule. */
