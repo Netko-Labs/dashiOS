@@ -4,7 +4,9 @@
 //! pause, or between words when it has none.
 
 use super::phonemes::{Language, Phonemizer};
+use super::reading;
 use super::vocab::{self, MOST_TOKENS};
+use crate::tongue::Tongue;
 
 const SPACE: char = ' ';
 
@@ -38,6 +40,20 @@ struct Written<'a> {
     after: Vec<i64>,
 }
 
+/// How a sentence is read: its language, and the tag that names its region ("es-CO").
+#[derive(Clone, Copy)]
+pub(crate) struct Reader<'a> {
+    pub(crate) language: Language,
+    pub(crate) tag: &'a str,
+}
+
+/// A sentence's parts, and its phonemes as they were given to the model, a phrase at a time.
+#[derive(Debug, Default)]
+pub(crate) struct Planned {
+    pub(crate) parts: Vec<Part>,
+    pub(crate) phonemes: Vec<String>,
+}
+
 /// The punctuation Kokoro knows for a written mark; none drops it.
 fn mark(character: char) -> Option<char> {
     match character {
@@ -56,7 +72,12 @@ fn said(character: char) -> bool {
     character.is_alphanumeric()
 }
 
-fn written(text: &str) -> Written<'_> {
+/// The word without the marks around it, its signs kept: "($20)," is "$20".
+fn body(text: &str) -> &str {
+    text.trim_matches(|character: char| !(said(character) || reading::sign(character)))
+}
+
+fn written<'a>(text: &'a str, before: Option<&str>, reader: Reader) -> Written<'a> {
     let first = text.find(said).unwrap_or(text.len());
     let last = text
         .char_indices()
@@ -69,10 +90,13 @@ fn written(text: &str) -> Written<'_> {
             .filter_map(vocab::id)
             .collect()
     };
+    // Money, a share, a measure, a time: said as words (reading.rs), not as eSpeak would.
+    let read = Tongue::of(reader.language.code)
+        .and_then(|tongue| reading::said(body(text), before, tongue, reader.tag));
     Written {
         text,
         before: marks(&text[..first]),
-        core: text[first..last].to_owned(),
+        core: read.unwrap_or_else(|| text[first..last].to_owned()),
         after: marks(&text[last..]),
     }
 }
@@ -82,6 +106,7 @@ fn clause(
     words: &[Written],
     language: Language,
     phonemizer: &mut dyn Phonemizer,
+    told: &mut Vec<String>,
 ) -> Result<Vec<Atom>, String> {
     // A mark alone ("–") is a word on screen with nothing to say but its pause.
     let spoken: Vec<&Written> = words.iter().filter(|word| !word.core.is_empty()).collect();
@@ -95,15 +120,25 @@ fn clause(
     } else {
         phonemizer.phonemes(&phrase, language)?
     };
+    if !phonemes.is_empty() {
+        told.push(phonemes.clone());
+    }
     let said: Vec<&str> = phonemes
         .split(SPACE)
         .filter(|word| !word.is_empty())
         .collect();
-    // eSpeak gave a word for each word: each has its own phonemes. If it
-    // joined or split some (numbers, "tout le monde"), the phrase's phonemes
-    // are shared out by the words' lengths.
-    let mut each = if said.len() == spoken.len() {
-        said.iter().map(|word| vocab::ids(word)).collect()
+    // eSpeak gave a word for each word said (a word read out, "$20", is
+    // said as two): each has its own phonemes. If it joined or split some
+    // (numbers, "tout le monde"), the phrase's phonemes are shared out by
+    // the words' lengths.
+    let counts: Vec<usize> = spoken
+        .iter()
+        .map(|word| word.core.split(SPACE).count())
+        .collect();
+    let mut each = if counts.iter().sum::<usize>() == said.len() {
+        let mut said = said.iter().copied();
+        let own = |count: &usize| said.by_ref().take(*count).collect::<Vec<_>>().join(" ");
+        counts.iter().map(own).map(|own| vocab::ids(&own)).collect()
     } else {
         share(&vocab::ids(&phonemes), &spoken)
     }
@@ -153,27 +188,31 @@ fn share(tokens: &[i64], words: &[&Written]) -> Vec<Vec<i64>> {
 
 fn atoms(
     sentence: &str,
-    language: Language,
+    reader: Reader,
     phonemizer: &mut dyn Phonemizer,
+    told: &mut Vec<String>,
 ) -> Result<Vec<Atom>, String> {
+    let language = reader.language;
     let mut atoms = Vec::new();
     let mut run: Vec<Written> = Vec::new();
+    let mut before: Option<&str> = None;
     for text in sentence.split_whitespace() {
-        let word = written(text);
+        let word = written(text, before, reader);
+        before = Some(body(text));
         // A mark before a word ends the run before it; one after it ends the run with it.
         if !word.before.is_empty() && !run.is_empty() {
-            atoms.extend(clause(&run, language, phonemizer)?);
+            atoms.extend(clause(&run, language, phonemizer, told)?);
             run.clear();
         }
         let ends = !word.after.is_empty();
         run.push(word);
         if ends {
-            atoms.extend(clause(&run, language, phonemizer)?);
+            atoms.extend(clause(&run, language, phonemizer, told)?);
             run.clear();
         }
     }
     if !run.is_empty() {
-        atoms.extend(clause(&run, language, phonemizer)?);
+        atoms.extend(clause(&run, language, phonemizer, told)?);
     }
     Ok(atoms)
 }
@@ -181,10 +220,15 @@ fn atoms(
 /// The parts of a sentence, each within the model's limit.
 pub(crate) fn plan(
     sentence: &str,
-    language: Language,
+    reader: Reader,
     phonemizer: &mut dyn Phonemizer,
-) -> Result<Vec<Part>, String> {
-    pack(atoms(sentence, language, phonemizer)?, MOST_TOKENS)
+) -> Result<Planned, String> {
+    let mut phonemes = Vec::new();
+    let atoms = atoms(sentence, reader, phonemizer, &mut phonemes)?;
+    Ok(Planned {
+        parts: pack(atoms, MOST_TOKENS)?,
+        phonemes,
+    })
 }
 
 fn pack(atoms: Vec<Atom>, most: usize) -> Result<Vec<Part>, String> {

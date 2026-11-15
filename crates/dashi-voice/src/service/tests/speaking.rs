@@ -32,7 +32,8 @@ fn sentences_are_said_in_order_with_their_words() {
     assert_eq!(
         sentences[0],
         json!({ "event": "sentence", "id": 1, "index": 0, "text": "Hello there.", "ms": 200,
-            "words": [{ "text": "Hello", "start": 0, "end": 100 }, { "text": "there.", "start": 100, "end": 200 }] })
+            "words": [{ "text": "Hello", "start": 0, "end": 100 }, { "text": "there.", "start": 100, "end": 200 }],
+            "voice": "af_heart", "language": "en-US" })
     );
     assert_eq!(
         (sentences[1]["index"].clone(), sentences[1]["ms"].clone()),

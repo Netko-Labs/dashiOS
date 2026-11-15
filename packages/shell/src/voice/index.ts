@@ -5,5 +5,17 @@ export { isTalkKeyId, isVoiceId, STOP, TALK, TALK_KEYS, type TalkKey, type TalkK
 export { listenLanguage } from "./lib/captions.ts";
 export { basicSets, basicsHere, partly, sizeWords, VoiceModels } from "./models.ts";
 export { startVoice, type VoiceOptions, type VoiceParts } from "./start.ts";
+export {
+  isVoiceMap,
+  type SpeakExtras,
+  type SpokenTongue,
+  speakExtras,
+  spokenTongues,
+  TONGUES,
+  type TongueCode,
+  tagOf,
+  tongueOf,
+  withTongue,
+} from "./tongues.ts";
 export type { Answer, Asker, Chip, ChipGo, ModelSet, ModelsView, SpokenVoice, VoiceSettings } from "./types.ts";
 export { Voice } from "./voice.ts";

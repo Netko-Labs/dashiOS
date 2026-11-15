@@ -3,10 +3,11 @@
 
 use serde_json::{Value, json};
 
-use crate::engine::kokoro::{LANGUAGES, of_voice};
+use crate::engine::kokoro::{LANGUAGES, of_voice, semitones};
 use crate::models::manifest::{self, SPEAK_SET};
 use crate::models::store::Store;
 use crate::service::engines::primary;
+use crate::tongue::Tongue;
 
 /// Dashi's voice.
 pub(crate) const DEFAULT: &str = "af_heart";
@@ -32,6 +33,47 @@ fn name(id: &str) -> String {
     })
 }
 
+/// The language a voice speaks, as a tongue: `bm_george` is English.
+pub(crate) fn tongue(voice: &str) -> Option<Tongue> {
+    of_voice(voice).and_then(|language| Tongue::of(language.code))
+}
+
+/// Who speaks: the second letter of a voice's name, `f` a woman, `m` a man.
+fn speaker(voice: &str) -> Option<char> {
+    voice.chars().nth(1)
+}
+
+/// The voice of another language that goes with `voice`: of the same kind
+/// of speaker (a woman's voice with a woman's), the one whose pitch is
+/// nearest; where the language has none of that kind, its first. English is
+/// American unless the voice is British: an accent is not chosen by pitch.
+/// docs/voice.md, "A voice for each language", says how close each pair is.
+pub(crate) fn pair(voice: &str, to: Tongue) -> Option<String> {
+    let british = voice.starts_with('b');
+    let ids: Vec<&str> = ids()
+        .into_iter()
+        .filter(|id| tongue(id) == Some(to))
+        .filter(|id| to != Tongue::English || id.starts_with('b') == british)
+        .collect();
+    let apart = |id: &&str| semitones(voice, id).map_or(f32::MAX, f32::abs);
+    let nearest = ids
+        .iter()
+        .filter(|id| speaker(id) == speaker(voice))
+        .min_by(|a, b| apart(a).total_cmp(&apart(b)));
+    nearest.or(ids.first()).map(|id| (*id).to_owned())
+}
+
+/// Each other language's voice for `voice`, by the language's code.
+fn pairs(voice: &str) -> Value {
+    let own = tongue(voice);
+    let pairs: serde_json::Map<String, Value> = Tongue::ALL
+        .into_iter()
+        .filter(|tongue| Some(*tongue) != own)
+        .filter_map(|tongue| Some((tongue.code().to_owned(), json!(pair(voice, tongue)?))))
+        .collect();
+    Value::Object(pairs)
+}
+
 pub(crate) fn list(store: &Store) -> Value {
     let folder = store.set_folder(SPEAK_SET).join("voices");
     let voices: Vec<Value> = ids()
@@ -43,6 +85,7 @@ pub(crate) fn list(store: &Store) -> Value {
                 "name": name(id),
                 "language": language.code,
                 "language_name": language.name,
+                "pairs": pairs(id),
                 "installed": folder.join(format!("{id}.bin")).is_file(),
             }))
         })
@@ -101,8 +144,29 @@ mod tests {
         assert_eq!(voices.len(), 18);
         assert_eq!(
             voices[0],
-            json!({ "id": "af_heart", "name": "Heart", "language": "en-US", "language_name": "English (US)", "installed": false })
+            json!({ "id": "af_heart", "name": "Heart", "language": "en-US", "language_name": "English (US)", "installed": false,
+                "pairs": { "es": "ef_dora", "fr": "ff_siwis", "hi": "hf_alpha", "it": "if_sara", "pt": "pf_dora" } })
         );
+        let george = voices
+            .iter()
+            .find(|voice| voice["id"] == "bm_george")
+            .unwrap();
+        assert_eq!(
+            george["pairs"],
+            // No man's voice in French: the language's only one.
+            json!({ "es": "em_alex", "fr": "ff_siwis", "hi": "hm_omega", "it": "im_nicola", "pt": "pm_alex" })
+        );
+        let alex = voices
+            .iter()
+            .find(|voice| voice["id"] == "em_alex")
+            .unwrap();
+        // Of the American men's voices, Fenrir's pitch is nearest Alex's.
+        assert_eq!(alex["pairs"]["en"], "am_fenrir");
+        let dora = voices
+            .iter()
+            .find(|voice| voice["id"] == "ef_dora")
+            .unwrap();
+        assert_eq!(dora["pairs"]["en"], "af_heart");
         assert_eq!(listed["default"], "af_heart");
     }
 }

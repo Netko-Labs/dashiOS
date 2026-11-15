@@ -103,11 +103,17 @@ test("choosing a character sets its look and talk at once; a name of the person'
   expect(fromMiso).toEqual({
     persona: { character: "kombu", talk: "less", colour: "#136770", mark: "dot", dots: "pearls", name: "Kombu" },
     voice: "bm_george",
+    voices: undefined,
   });
   const pixel = chooseCharacter(view({ character: "miso", name: "Pixel" }), kombu, "es", [], ["af_heart"]);
   expect(pixel.persona.name).toBeUndefined();
   // Its voice is not on this computer: the voice stays as it is.
   expect(pixel.voice).toBeUndefined();
+  expect(pixel.voices).toBeUndefined();
+  // With both of its voices here it keeps one person's voice in the other language too.
+  const both = ["bm_george", "em_alex", "af_heart"];
+  expect(chooseCharacter(view({}), kombu, "en", [], both).voices).toEqual({ es: "em_alex" });
+  expect(chooseCharacter(view({}), kombu, "es", [], both)).toMatchObject({ voice: "em_alex", voices: { en: "bm_george" } });
 });
 
 test("a character file: good, another version, an unknown colour, a long prompt, too large, a preset's id", () => {

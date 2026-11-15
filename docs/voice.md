@@ -10,7 +10,10 @@ with it.
   speech into words (25 European languages), and Whisper large-v3-turbo does
   for the languages Parakeet lacks.
 - **Speak:** Kokoro 82M, played through PipeWire a sentence at a time, with
-  each word's time so captions keep step. A stop is at once.
+  each word's time so captions keep step. A stop is at once. Each sentence is
+  said by a voice of its own language: an English sentence by the person's
+  English voice, a Spanish one by a Spanish voice ("A voice for each
+  language").
 - **Models:** never in the package. The service fetches them when asked, to
   the person's data folder, each file pinned by commit and SHA-256.
 
@@ -39,7 +42,11 @@ Voice are the shell's.
    comes as its first sound plays, with every word's start and end in
    milliseconds from that moment: show the sentence as the caption and move
    the highlight by the shell's own clock. `spoken` ends it. Esc, or the
-   person talking: `speak.stop`.
+   person talking: `speak.stop`. With the voice it sends `voices` (the
+   voice for each other language Dashi speaks, from Settings › Voice) and
+   `hint` (the conversation's language: what `heard` last told, else the
+   language chosen for Dashi, else the region's formats'); the service
+   tells each sentence's language and changes voice (`voice/tongues.ts`).
 6. **`ask_person`:** `speak` the question as its sheet comes up. The person
    answers as they ask: holding the talk key (`listen`, then `listen.stop`),
    and the words heard are the answer instead of an ask. The microphone
@@ -173,6 +180,7 @@ turn it on. Where it can't be told the window is trusted.
 | `voice.ts` | the key held and let go, the ask, the answer said, captions, Esc, an agent's question |
 | `asker.ts`, `lib/answer.ts` | what was said becomes a launcher Ask task; its answer or its plan in words |
 | `chip.tsx`, `lib/captions.ts`, `lib/speech.ts` | the menu bar's chip, how long words are cut, each word lit at its time |
+| `tongues.ts` | the other languages Dashi speaks and each one's voice (`voice.voices`, `voice.byLanguage`); what `speak` is sent with |
 | `models.ts` | the sets, a fetch's progress, Pause and Resume, removing (Settings › Voice) |
 
 - **The key.** While Voice is on (`voice.on` in settings.json) the shell
@@ -210,7 +218,14 @@ turn it on. Where it can't be told the window is trusted.
   once its models are here.");
   turning it on with no models says what will come and how big, and only
   "Fetch" fetches; progress with Pause, and Resume from what came; the talk
-  key and what it costs; Dashi's voice with "Play a sample"; "More
+  key and what it costs; Dashi's voice with "Play a sample"; under it the
+  switch "Speak each language in its own voice" (on unless turned off;
+  `voice.byLanguage`) and a row for each other language that is spoken, "In
+  Spanish", with the voice that says it, changeable, "Off", and "Play a
+  sample", which says a line in that language in that voice (`voice.voices`;
+  `panes/voice-languages.tsx`). English and Spanish are spoken unless turned
+  off; French, Hindi, Italian and Portuguese are turned on from "Speak
+  another language". "More
   languages" (Whisper) as its own fetch; Remove. Each set's `credit` shows
   under the page. Only the person's own press turns Voice on, fetches,
   removes, or picks the key or the voice: the pane asks the compositor whose
@@ -264,10 +279,10 @@ The same rule as the vault's (`docs/secrets.md`).
 | `voices` | none | `default`, `voices[]` |
 | `warm` | `listen?`, `speak?`, `language?` | `{}`, once the models are in memory |
 | `listen` | `language?`, `until?`, `quiet_ms?`, `partials?` | `{}`, once the microphone is open |
-| `listen.stop` | none | `text`, `speech_ms` |
+| `listen.stop` | none | `text`, `speech_ms`, `language?` |
 | `listen.quiet` | `quiet_ms?` | `{}`: the listen under way now ends by itself on a quiet |
 | `listen.cancel` | none | `{}` |
-| `speak` | `text`, `voice?`, `language?`, `speed?`, `queue?` | `id` |
+| `speak` | `text` or `parts`, `voice?`, `language?`, `voices?`, `hint?`, `by_language?`, `speed?`, `queue?` | `id` |
 | `speak.stop` | none | `{}` |
 
 ### `status`
@@ -337,12 +352,15 @@ while a fetch runs.
 ```json
 {"id":8,"method":"voices"}
 {"id":8,"result":{"default":"af_heart","voices":[
-  {"id":"af_heart","name":"Heart","language":"en-US","language_name":"English (US)","installed":true},
-  {"id":"bf_emma","name":"Emma","language":"en-GB","language_name":"English (UK)","installed":true}, "…"]}}
+  {"id":"af_heart","name":"Heart","language":"en-US","language_name":"English (US)","installed":true,
+   "pairs":{"es":"ef_dora","fr":"ff_siwis","hi":"hf_alpha","it":"if_sara","pt":"pf_dora"}},
+  {"id":"bf_emma","name":"Emma","language":"en-GB","language_name":"English (UK)","installed":true,"pairs":{"…":"…"}}, "…"]}}
 ```
 
 `default` is Dashi's voice. The second letter of an id says who speaks: `f`
-a woman, `m` a man.
+a woman, `m` a man. `pairs` is the voice of each other language that goes
+with this one ("A voice for each language"): what a sentence in that
+language is said by when `speak` names no voice for it.
 
 ### `warm`
 
@@ -364,9 +382,9 @@ Loads the models now. `language` picks which listening model (see
 {"event":"partial","text":"Open the"}
 {"id":11,"method":"listen.stop"}
 {"event":"state","state":"thinking"}
-{"event":"heard","text":"Open the calendar.","speech_ms":1632}
+{"event":"heard","text":"Open the calendar.","speech_ms":1632,"language":"en"}
 {"event":"state","state":"idle"}
-{"id":11,"result":{"text":"Open the calendar.","speech_ms":1632}}
+{"id":11,"result":{"text":"Open the calendar.","speech_ms":1632,"language":"en"}}
 ```
 
 - `language`: what is spoken, as a BCP 47 tag (`"en"`, `"pt-BR"`); only its
@@ -380,7 +398,12 @@ Loads the models now. `language` picks which listening model (see
 `listen.stop` hears a last eighth of a second (the key comes up as the last
 word ends), then answers with the words. `text` is `""` when nothing was
 said: silence is never turned into words. `speech_ms` is how long the speech
-was once the silence was dropped. One listen at a time
+was once the silence was dropped. `language` is the language of the words
+(`"en"`, `"es"`, `"fr"`, `"hi"`, `"it"`, `"pt"`), in the reply and in
+`heard`, when the words tell it: Parakeet picks the language it hears by
+itself and does not say which (its decoder gives words only), so the
+service tells it from the words, as it does for what it speaks. Left out
+when they give too little ("OK", a name) or are in another language. One listen at a time
 (`Voice is already listening.`); `listen.stop` with none running is
 `Voice is not listening.` A listen that ended by itself tells its words in
 the `heard` event only.
@@ -410,8 +433,10 @@ event, no words worked out.
 {"event":"state","state":"speaking"}
 {"event":"sentence","id":1,"index":0,"text":"It's ten past four.","ms":1650,
  "words":[{"text":"It's","start":350,"end":520},{"text":"ten","start":570,"end":760},
-          {"text":"past","start":800,"end":1080},{"text":"four.","start":1120,"end":1625}]}
-{"event":"sentence","id":1,"index":1,"text":"You have two meetings left.","ms":1900,"words":["…"]}
+          {"text":"past","start":800,"end":1080},{"text":"four.","start":1120,"end":1625}],
+ "voice":"af_heart","language":"en-US"}
+{"event":"sentence","id":1,"index":1,"text":"You have two meetings left.","ms":1900,"words":["…"],
+ "voice":"af_heart","language":"en-US"}
 {"event":"spoken","id":1,"reason":"done"}
 {"event":"state","state":"idle"}
 ```
@@ -426,10 +451,28 @@ event, no words worked out.
   third of a second of hush and ends it with half a second: the hush before
   an utterance's first sound is cut to 30 ms, and at the join of a sentence
   said in two pieces to a comma's pause (120 ms, then 30 ms), with the
-  words' times moved to match. Between sentences it is left as the model
-  made it.
+  words' times moved to match. Between sentences of one voice it is left as
+  the model made it; where the voice changes it is cut to a sentence's
+  pause ("The seam").
+- `parts`: in place of `text`, stretches that each may name their language:
+  `[{"text":"Dijo:","language":"es"},{"text":"See you at five."}]`. A
+  stretch that names none is told a sentence at a time.
 - `voice`: a voice's id. Without it, `language`'s first voice (`"en-GB"` →
   `bf_emma`, `"es"` → `ef_dora`); without both, Dashi's own (`af_heart`).
+- `language`: the language of all of `text`, as a BCP 47 tag; nothing is
+  told from the words. Said by `voice` when that is its language, else by
+  the voice `voices` names for it, else by `voice`'s pair. Its region is
+  how it is read (`"es-CO"`: Latin American Spanish, `$` is pesos).
+  `Voice can't speak ja.` for a language with no voice.
+- `voices`: the voice for each other language that may be spoken, by its
+  tag: `{"es-CO":"ef_dora","fr":"ff_siwis"}`. These and `voice`'s own are
+  the languages a sentence is told among. Without it: English and Spanish,
+  by `voice`'s pairs. A voice named for a language it does not speak is
+  refused (`bm_george is not a voice that speaks Spanish.`).
+- `hint`: the conversation's language. A first sentence that gives no
+  evidence ("OK.", a name) is said in it; without it, in `voice`'s own.
+- `by_language`: `false` says everything in `voice`, read as that voice's
+  language reads it, as before 0.9.
 - `speed`: 0.5 to 2; 1 is the voice's own pace.
 - `queue`: `true` says it after what is being said. Without it, a new
   `speak` takes the place of the old one, which ends with
@@ -446,8 +489,8 @@ sound at once and forgets what was queued; every utterance it ended gets a
 | `state` | `state` | The state changed (see "States"). |
 | `level` | `level`, 0 to 1 | About 31 times a second while listening: the microphone's loudness (RMS on a decibel scale, −60 dBFS is 0). |
 | `partial` | `text` | While listening: all the words so far. Each replaces the one before; `heard` replaces the last. |
-| `heard` | `text`, `speech_ms` | A listen ended (by `listen.stop`, by silence, by the microphone ending, or at five minutes). Not after `listen.cancel`. |
-| `sentence` | `id`, `index`, `text`, `ms`, `words[]` (`text`, `start`, `end`) | A sentence's (or, for a long first one, each of its two pieces') first sound plays now. `ms` is how long it lasts; a word's `start` and `end` are milliseconds from now. |
+| `heard` | `text`, `speech_ms`, `language?` | A listen ended (by `listen.stop`, by silence, by the microphone ending, or at five minutes). Not after `listen.cancel`. |
+| `sentence` | `id`, `index`, `text`, `ms`, `words[]` (`text`, `start`, `end`), `voice`, `language` | A sentence's (or, for a long first one, each of its two pieces') first sound plays now. `ms` is how long it lasts; a word's `start` and `end` are milliseconds from now. `voice` says it, read as `language` (`"en-US"`, `"es-419"`). |
 | `spoken` | `id`, `reason` (`done`, `stopped`, `failed`), `error?` | An utterance ended. |
 | `fetch` | `set?`, `file?`, `received`, `bytes`, `done`, `error?` | A fetch's progress, about five times a second: `received` of `bytes` over every file asked for. `done: true` ends it; with `error`, it failed or was cancelled. |
 | `models` | none | Which models are here changed (a fetch ended, a set was removed): ask `models` again. |
@@ -500,6 +543,126 @@ this computer.`).
 Kokoro also has Japanese and Mandarin voices; they need dictionaries eSpeak
 NG lacks, and are not offered. `speak` with a language outside the table is
 `Voice can't speak ja.`: the shell shows the text instead.
+
+All 18 are Kokoro v1.0's own voices, 522 240 bytes each, Apache-2.0 with the
+model ("The models"). Nothing new is fetched for speaking a second
+language: the Spanish, French, Hindi, Italian and Portuguese voices came
+with the `speak` set from the start.
+
+## A voice for each language
+
+Kokoro reads a sentence by the rules of its voice's language (the first
+letter of the voice's name), so `af_heart` given a Spanish sentence said it
+with American letter-to-sound rules. Now each sentence is said by a voice
+of its own language (`service/lines.rs`, `service/cast.rs`).
+
+**Telling the language** (`crates/dashi-voice/src/tongue/`): from the
+sentence's words, with no model and nothing fetched.
+
+- Each language has a list of its common words; those that hold sentences
+  together ("the", "que") weigh double. A word common to two languages
+  ("no", "me", "a") is in both lists and tells neither apart.
+- Letters tell too: `ñ ¿ ¡` are Spanish, `ã õ` Portuguese, `ì ò` Italian,
+  Devanagari is Hindi; so do a few shapes ("don't", "l'ami", "-ing").
+- A capital inside a sentence is a name (Helium, YouTube, Settings, Toño)
+  and tells nothing, so "abre Helium y ve a YouTube" is Spanish and "Call La
+  Casa de Toño" is English.
+- The language with the most evidence wins when it leads the next by
+  enough. A sentence that gives too little ("OK.", "42.", a name), or as
+  much for two, keeps the language of the sentence before it; the first
+  keeps `hint`'s.
+- Only the languages that may be spoken are told among: English and
+  Spanish unless `voices` names others. With two the detector is at its
+  best; each language added is one more to mistake a short sentence for.
+- It is right for whole sentences. A sentence that changes language half
+  way is said in the language most of it is in, by one voice.
+
+**Who says each language.** `voice` says its own. For another, the voice
+`voices` names; else `voice`'s pair (`voices`' `pairs`): of that language's
+voices with the same kind of speaker (a woman's with a woman's), the one
+whose pitch is nearest; where the language has none of that kind, its
+first. English for a voice of another language is American, and for a
+British voice British: an accent is not chosen by pitch. How close a pair
+is, as measured (`dashi-voice levels`: the median pitch of each voice
+saying a line of its own language; a semitone is the step between two
+piano keys):
+
+| A voice | Its pair in Spanish | Apart |
+| --- | --- | --- |
+| `af_heart` (Dashi) 195 Hz | `ef_dora` 180 Hz | 1.4 semitones lower |
+| `af_bella` (Miso) 202 Hz | `ef_dora` | 1.9 lower |
+| `af_nicole` (Yuzu) 152 Hz | `ef_dora` | 3.0 higher: Nicole is low and breathy, Dora is neither |
+| `bf_emma` (Nori) 183 Hz | `ef_dora` | 0.3 lower |
+| `bm_george` (Kombu) 147 Hz | `em_alex` 134 Hz | 1.6 lower |
+| `am_puck` (Wasabi) 122 Hz | `em_alex` | 1.7 higher |
+| `am_michael` 118 Hz | `em_alex` | 2.3 higher |
+| `am_fenrir` 144 Hz | `em_alex` | 1.2 lower |
+| `bm_fable` 127 Hz | `em_alex` | 0.9 higher |
+
+Pitch is the one thing measured. The pair is another speaker: the set has
+one woman's and one man's voice in Spanish, so Dashi, Miso, Nori and Yuzu
+are all Dora in Spanish, and Kombu and Wasabi both Alex. French has one
+voice, a woman's (`ff_siwis`): a man's voice is paired with her. Whether a
+pair sounds like one person is for ears, not for this table.
+
+**The same loudness.** The voices differ by up to 9 dB as the model makes
+them (`if_sara` −13.3 dBFS, `am_michael` −22.5; the RMS of the sound that
+is speech). Each was measured once (`dashi-voice levels`) and the table is
+in `engine/kokoro/levels.rs`: every voice is brought to Dashi's own
+(`af_heart`, −21.7 dBFS). The loudest is cut by 8.4 dB, none is raised by
+1 dB, so nothing is pushed to clip. A voice the table lacks is left as the
+model made it (a test names every voice of the manifest).
+
+**The seam.** The model puts hush around every sentence, a different
+length for each voice: left alone, the pause where Heart hands over to
+Dora is 660 ms and where Dora hands back 480 ms (Heart to Heart is
+760 ms). Where the voice changes, each side keeps a sentence's pause and
+no more, 300 ms after the last sound and 150 ms before the first, and the
+cut edge is faded over 5 ms so there is no step to hear as a click
+(`service/seam.rs`). Measured on the service's own sound in the VM, the
+owner's four sentences recorded from a null sink: 440, 320 and 420 ms, and
+the largest step inside a pause 0.0012 of full scale (0.0013 in a pause
+between two sentences of one voice). `speed` is the same for every voice.
+
+**How it is read.** A voice reads by its own language's rules; a tag with a
+region changes them where eSpeak NG has others: Spanish with a region that
+is not Spain (`es-CO`, `es-MX`, `es-419`) is read as Latin American
+(eSpeak's `es-419`: "gracias" with an s), `es` and `es-ES` as in Spain.
+The shell sends the region of the person's formats, and `es-419` where
+those are not Spanish.
+
+**Numbers, money and measures** are said in the sentence's language.
+eSpeak NG says digits, dates and decimals rightly in each language ("15 de
+noviembre de 2026", "3,5"), and these it got wrong or never saw, so they
+are made into words first (`engine/kokoro/reading.rs`):
+
+| Written | English | Spanish | Before |
+| --- | --- | --- | --- |
+| `$20` | twenty dollars | veinte dólares; veinte pesos where the region counts in pesos (`es-CO`, `es-MX`, …) | "twenty": the sign was dropped |
+| `$20.50` | twenty dollars and fifty cents | veinte dólares con cincuenta centavos | |
+| `50%` | fifty percent | cincuenta por ciento | "fifty" |
+| `3 km`, `3km` | three kilometers | tres kilómetros | "three kay em", "tres ka eme" |
+| `1 h` | one hour | una hora | |
+| `20°C` | twenty degrees Celsius | veinte grados centígrados | "twenty degrees C" |
+| `15:30` | fifteen thirty | quince y treinta | "quince treinta" |
+| `9:00`, `9:05` | nine o'clock, nine oh five | nueve en punto, nueve y cinco | "nine zero zero" |
+| `1,000` | one thousand | mil | "uno coma cero cero cero" |
+| `&`, `+`, `=` | and, plus, equals | y, más, igual a | nothing |
+
+"sh" between two vowels in a Spanish sentence ("Dashi", "sushi") is given
+to eSpeak as "ch", the nearest sound Spanish has: eSpeak's Spanish said it
+as s ("Dasi"). At a word's start or end it keeps the sound ("show",
+"flash") and the word is left alone.
+
+Measures: km, m, cm, mm, kg, g, mg, l, ml, h, min, ms, km/h, °, °C, °F, KB,
+MB, GB, TB, px, after a number or written against it. French, Italian and
+Portuguese have money and `%` only; Hindi is left to eSpeak. Not done:
+ordinals ("1º"), "veintiún dólares" (it says "veintiuno"), ranges ("3-5").
+
+**To see what was said**, start the service with `DASHI_VOICE_DEBUG=speak`:
+each sentence's voice, language, phonemes and text go to its log. Off
+unless asked for; the log is otherwise never given what was said.
+`dashi-voice speak --json` prints the same for a file.
 
 ## The models
 
@@ -567,7 +730,9 @@ VM need no microphone:
 dashi-voice [--models DIR] <command>
   serve [--socket PATH]                            the service
   transcribe [--language LANG] [--json] FILE.wav   the words in a WAV file
-  speak [--voice ID | --language LANG] [--speed N] [--json] --out FILE.wav TEXT…
+  speak [--voice ID] [--language LANG] [--voices LANG=ID,…] [--hint LANG] [--one-voice]
+        [--same-voice | --mix] [--speed N] [--json] --out FILE.wav TEXT…
+  levels                                           each voice's loudness, pitch and pace
   models [--verify]                                the models, and which are here
   fetch [SET…]                                     fetch models (listen and speak, unless named)
   remove [SET…]                                    delete models (all, unless named)
@@ -575,11 +740,24 @@ dashi-voice [--models DIR] <command>
 ```
 
 - `transcribe` reads PCM or float WAV at any rate, any channels. With
-  `--json`: `text`, `audio_ms`, `speech_ms`, `load_ms`, `ms`,
-  `real_time_factor`.
-- `speak --json` prints `voice`, `audio_ms`, `load_ms`, `first_sound_ms`,
-  `ms`, `real_time_factor` and each sentence's words and times; the WAV is
-  24 kHz, 16-bit, one channel.
+  `--json`: `text`, `language` (as `heard` tells it), `audio_ms`,
+  `speech_ms`, `load_ms`, `ms`, `real_time_factor`.
+- `speak` says what the service would, seams and levels as it would:
+  `--voices`, `--hint` and `--one-voice` are `speak`'s `voices`, `hint` and
+  `by_language: false`. `--json` prints `voice`, `audio_ms`, `load_ms`,
+  `first_sound_ms`, `ms`, `real_time_factor` and each sentence's `voice`,
+  `language`, `phonemes`, `level_db`, the hush before and after it
+  (`lead_ms`, `tail_ms`), and its words and times; the WAV is 24 kHz,
+  16-bit, one channel.
+- Two experiments are the command line's alone, for listening. With
+  `--same-voice` a sentence of another language is said by the voice asked
+  for, read by that language's rules (Heart's own sound with Spanish
+  phonemes: the same speaker, with an accent). With `--mix` it is said by
+  the mean of the two voices (`ef_dora+af_heart`: a voice between them).
+  The service does neither.
+- `levels` prints a line of JSON for each installed voice: `level_db`,
+  `peak`, `pitch_hz`, `phonemes_per_s`. Its levels and pitches are the
+  table in `engine/kokoro/levels.rs`.
 - `fetch` prints a line of JSON for each step and `{"done":true,"error":…}`
   last; the service reads the same lines.
 
@@ -648,9 +826,11 @@ It needs `onnxruntime`, `espeak-ng`, `pipewire-utils` and `curl` installed.
 ## Checks
 
 - `cargo test -p dashi-voice`: the protocol, the gate, the decoders, the
-  planner and its timing, the fetcher (from `file://` addresses), and the
-  whole service with scripted models and sound (`src/service/tests/`). No
-  model and no audio device is needed.
+  planner and its timing, the fetcher (from `file://` addresses), the
+  language told for 83 sentences (English, Spanish, both in one, and the
+  four other languages; `src/tongue/tests*.rs`), who says each sentence, the seam, how money and
+  measures are read, and the whole service with scripted models and sound
+  (`src/service/tests/`). No model and no audio device is needed.
 - In the VM, with a null source and sink: `dashi-0.8.0-review/01-voice/` has
   the script, the WAVs, the transcript and the timings.
 
@@ -667,6 +847,11 @@ It needs `onnxruntime`, `espeak-ng`, `pipewire-utils` and `curl` installed.
 - No words while Whisper listens are streamed token by token: partials are
   the whole speech so far, worked out again about every 0.8 s, which is
   cheap for Parakeet and slower for Whisper.
+- A sentence that changes language half way is said by one voice, in the
+  language most of it is in. A language is told among those turned on only.
+- A character's voice in another language is another speaker (two Spanish
+  voices in all); a mix of two voices and the same voice with another
+  language's phonemes are experiments of the command line, not offered.
 - No GPU: ONNX Runtime's CPU provider only.
 - No Japanese or Mandarin voice (see "Languages").
 - The word times of a phrase eSpeak NG re-words (numbers, some French

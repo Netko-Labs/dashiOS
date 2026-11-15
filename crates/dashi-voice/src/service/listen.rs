@@ -17,6 +17,7 @@ use crate::audio::pipewire::{Closer, Microphone};
 use crate::engine::gate::Gate;
 use crate::engine::vad::SpeechDetector;
 use crate::protocol::{Event, Listen, Quiet, Until};
+use crate::tongue::{self, Tongue};
 
 pub(super) const RUNNING: u8 = 0;
 pub(super) const STOPPING: u8 = 1;
@@ -33,6 +34,14 @@ const THINK: Duration = Duration::from_secs(120);
 struct Heard {
     text: String,
     speech_ms: u64,
+    /// The language of the words, when they tell it.
+    language: Option<String>,
+}
+
+/// Parakeet picks the language itself and does not say which, so the words
+/// tell: one of the languages Dashi speaks, or none when they give too little.
+fn language_of(text: &str) -> Option<String> {
+    tongue::evidence(text, &Tongue::ALL).map(|tongue| tongue.code().to_owned())
 }
 
 pub(super) struct Run {
@@ -152,6 +161,7 @@ impl Service {
                 Ok(heard) => self.hub.emit(&Event::Heard {
                     text: heard.text.clone(),
                     speech_ms: heard.speech_ms,
+                    language: heard.language.clone(),
                 }),
                 Err(error) => self.hub.emit(&Event::Error {
                     message: error.clone(),
@@ -172,12 +182,18 @@ impl Service {
             return Ok(Heard {
                 text: String::new(),
                 speech_ms: 0,
+                language: None,
             });
         }
         let recognizer = self.engines.recognizer(language)?;
         let mut recognizer = recognizer.lock().map_err(|_| "Voice is not well.")?;
         let text = crate::engine::transcribe(&mut *recognizer, gate.speech(), language)?;
-        Ok(Heard { text, speech_ms })
+        let language = language_of(&text);
+        Ok(Heard {
+            text,
+            speech_ms,
+            language,
+        })
     }
 
     /// Words as they come: the speech so far, each time the listen hands some over.
@@ -222,7 +238,13 @@ impl Service {
             .wait_timeout_while(done, THINK, |done| done.is_none())
             .map_err(|_| "Voice is not well.")?;
         match done.clone() {
-            Some(Ok(heard)) => Ok(json!({ "text": heard.text, "speech_ms": heard.speech_ms })),
+            Some(Ok(heard)) => {
+                let mut reply = json!({ "text": heard.text, "speech_ms": heard.speech_ms });
+                if let Some(language) = heard.language {
+                    reply["language"] = json!(language);
+                }
+                Ok(reply)
+            }
             Some(Err(error)) => Err(error),
             None => Err("Voice took too long to work out the words.".into()),
         }

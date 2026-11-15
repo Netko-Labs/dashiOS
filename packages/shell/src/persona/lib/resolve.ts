@@ -124,6 +124,12 @@ export interface CharacterChoice {
   persona: PersonaSection;
   /** `voice.voice` to set; undefined leaves the voice as it is (the character's is not installed). */
   voice: string | undefined;
+  /**
+   * The character's voice in its other language, for `voice.voices` (`{ es: "ef_dora" }`): a
+   * character keeps one person's voice when a sentence is in the other language. None when that
+   * voice is not installed, or when the character's own was not set.
+   */
+  voices: Record<string, string> | undefined;
 }
 
 /**
@@ -141,6 +147,8 @@ export function chooseCharacter(
   const names = new Set([...CHARACTERS, ...files].map((each) => each.name));
   const follows = !view.set || names.has(view.name);
   const voice = to.voice[language];
+  const other = language === "en" ? "es" : "en";
+  const here = voices.includes(voice);
   return {
     persona: {
       character: to.id,
@@ -150,6 +158,7 @@ export function chooseCharacter(
       dots: to.dots,
       ...(follows ? { name: to.name } : {}),
     },
-    voice: voices.includes(voice) ? voice : undefined,
+    voice: here ? voice : undefined,
+    voices: here && voices.includes(to.voice[other]) ? { [other]: to.voice[other] } : undefined,
   };
 }

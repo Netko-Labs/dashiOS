@@ -15,6 +15,7 @@ mod protocol;
 mod server;
 mod service;
 mod text;
+mod tongue;
 
 use std::process::ExitCode;
 

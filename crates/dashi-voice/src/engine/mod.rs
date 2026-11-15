@@ -50,11 +50,18 @@ pub(crate) struct Word {
 pub(crate) struct Spoken {
     pub(crate) samples: Vec<f32>,
     pub(crate) words: Vec<Word>,
+    /// The language it was read in ("en-US", "es-419").
+    pub(crate) language: &'static str,
+    /// The phonemes the model was given, a phrase at a time.
+    pub(crate) phonemes: String,
 }
 
 /// A sample this loud or louder is sound; under it, the hush a model puts
 /// around what it says (Kokoro: a third of a second before, half a second after).
 const HUSH: f32 = 0.01;
+
+/// How long a cut edge takes to come up from nothing.
+const FADE_MS: u64 = 5;
 
 fn samples_of(ms: u64) -> usize {
     (ms * u64::from(crate::audio::SPEAK_RATE) / 1000) as usize
@@ -76,6 +83,20 @@ impl Spoken {
         }
     }
 
+    /// Bring the first or the last few milliseconds up from, or down to,
+    /// nothing: where the hush was cut there is no step to hear as a click.
+    pub(crate) fn fade(&mut self, start: bool) {
+        let length = samples_of(FADE_MS).min(self.samples.len());
+        for step in 0..length {
+            let at = if start {
+                step
+            } else {
+                self.samples.len() - 1 - step
+            };
+            self.samples[at] *= step as f32 / length as f32;
+        }
+    }
+
     /// Drop the hush after the last sound, but for `keep_ms` of it.
     pub(crate) fn trim_end(&mut self, keep_ms: u64) {
         let Some(last) = self.samples.iter().rposition(|sample| sample.abs() >= HUSH) else {
@@ -93,8 +114,15 @@ impl Spoken {
 
 /// Text to speech.
 pub(crate) trait Synthesizer: Send {
-    /// One sentence in a voice, at a speed (1 is the voice's own).
-    fn speak(&mut self, sentence: &str, voice: &str, speed: f32) -> Result<Spoken, String>;
+    /// One sentence in a voice, at a speed (1 is the voice's own), read in
+    /// `language` (a BCP 47 tag) when it is not simply the voice's own.
+    fn speak(
+        &mut self,
+        sentence: &str,
+        voice: &str,
+        language: Option<&str>,
+        speed: f32,
+    ) -> Result<Spoken, String>;
 }
 
 #[cfg(test)]
@@ -113,6 +141,7 @@ mod tests {
                 start_ms: 310,
                 end_ms: 790,
             }],
+            ..Spoken::default()
         }
     }
 
@@ -141,17 +170,30 @@ mod tests {
     }
 
     #[test]
+    fn a_cut_edge_comes_up_from_nothing() {
+        let mut spoken = Spoken {
+            samples: vec![0.008; 2400],
+            ..Spoken::default()
+        };
+        spoken.fade(true);
+        spoken.fade(false);
+        assert_eq!((spoken.samples[0], spoken.samples[2399]), (0.0, 0.0));
+        assert!(spoken.samples[60] > 0.0 && spoken.samples[60] < 0.008);
+        assert_eq!(spoken.samples[1200], 0.008);
+    }
+
+    #[test]
     fn a_piece_that_is_all_hush_or_all_sound_is_left_as_it_is() {
         let mut hush = Spoken {
             samples: vec![0.0; 2400],
-            words: Vec::new(),
+            ..Spoken::default()
         };
         hush.trim_start(30);
         hush.trim_end(30);
         assert_eq!(hush.samples.len(), 2400);
         let mut sound = Spoken {
             samples: vec![0.25; 2400],
-            words: Vec::new(),
+            ..Spoken::default()
         };
         sound.trim_start(30);
         sound.trim_end(30);
