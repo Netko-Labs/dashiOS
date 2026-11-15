@@ -25,6 +25,7 @@ import {
 import type { Compositor } from "../compositor/index.ts";
 import { loadEntries } from "../entries.ts";
 import { primarySelection } from "../handoff-shell.tsx";
+import { readAbout, rememberAbout } from "../persona/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import type { LateParts } from "./parts.ts";
 import type { Late, Services } from "./services.ts";
@@ -109,7 +110,8 @@ function momentReader(compositor: Compositor | null, late: Late<LateParts>): () 
       apps: appNames(),
       names: USUAL_NAMES,
       talk: talkWords(persona?.talk ?? "normal"),
-      about: "",
+      // "What I know about you": read each time, so what the person just wrote in it counts.
+      about: readAbout(),
     };
   };
 }
@@ -149,6 +151,7 @@ export function startAssistantPiece({ compositor, settingsStore, services, late,
       return action && actions ? actions.run(action, undo.args) : { ok: false as const, error: `Nothing is at ${undo.address}.` };
     },
     history: { add: (record) => late.peek("askAgents")?.history.add(record), undone: (task, step) => late.peek("askAgents")?.history.undone(task, step) },
+    remember: (fact) => rememberAbout(fact),
     log: (line) => console.error(`dashi-shell: ${line}`),
   });
   services.add("assistant", () => {

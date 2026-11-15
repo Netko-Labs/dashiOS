@@ -3564,3 +3564,25 @@ short words, as the rulebook is written.
   six seconds can be taken for a reply.
 - **Undo:** the setting; or `Mic.again` does nothing.
 
+### D151. "What I know about you" is a plain file; Dashi writes a line only when told "remember that…"
+
+- **Date:** 2026-11-15. `v09/loop`.
+- **Question:** Dashi remembered nothing of the person across
+  conversations, and guessed a name from the harness's own account. Where
+  does what it knows live, and who writes it?
+- **Choice:** one text file, `~/.config/dashi/about-you.md`
+  (`persona/lib/about.ts`). Settings › Your Dashi has a row, "What Dashi
+  knows about you", that says how many lines it holds and opens it in the
+  editor: the person reads and changes every word. Its text (2000
+  characters at most) goes with the first ask of each conversation, in the
+  block after the words (D149). Dashi adds a line only when the person
+  says "remember that…" ("recuerda que…") about themselves: their own
+  words, by rule, with no model asked, answered "I'll remember that."
+  "Remember to buy milk" and "can you remember…?" are not this.
+- **Why:** a file is the one form of memory a person can audit whole.
+- **Cost:** the model never offers to remember something (the brief's "or
+  agrees" half is not built: it needs a tool and a card). A transcript's
+  mishearing is written as heard, for the person to fix in the file.
+- **Undo:** delete the file; `remember` left out of the assistant's
+  options turns the rule off.
+

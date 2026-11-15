@@ -53,6 +53,8 @@ export interface AssistantOptions {
   /** Put a setting back, as the person. */
   runUndo(undo: Undo): Promise<Outcome>;
   history?: Pick<HistoryLog, "add" | "undone">;
+  /** Keep one line the person asked to have remembered ("What I know about you"); false when it could not be kept. */
+  remember?(fact: string): boolean;
   talkLog?: TalkLog;
   fetch?: Fetch;
   timers?: Timers;

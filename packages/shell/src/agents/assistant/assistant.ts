@@ -28,7 +28,7 @@ import { Conversation, fileTalkLog } from "./conversation.ts";
 import { firstUse } from "./lib/first-use.ts";
 import { Running, stoppedWords } from "./lib/running.ts";
 import { isAbort, viaHarness, viaModel } from "./lib/ways.ts";
-import { asksUndo, endsTalk } from "./lib/words.ts";
+import { asksRemember, asksUndo, endsTalk } from "./lib/words.ts";
 import type { Assistant, AssistantOptions, Hears, SpokenAnswer } from "./types.ts";
 
 const NO_HEARS: Hears = { say: () => {}, step: () => {} };
@@ -199,6 +199,9 @@ class Core {
       return { say: "OK." };
     }
     if (asksUndo(text) && talk.open()) return this.undoLast();
+    // "Remember that…": the person's own words go into the file they can read and edit, and no model is asked.
+    const fact = options.remember ? asksRemember(text) : null;
+    if (fact !== null) return { say: options.remember?.(fact) ? "I'll remember that." : "I couldn't write that down." };
     const settings = options.settings();
     const way = wayOf(settings.agents.answerer, settings.voice.askEveryStep === true);
     if (way === "plan") return options.planner.ask(text, signal);

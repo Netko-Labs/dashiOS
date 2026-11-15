@@ -50,5 +50,29 @@ export const endsTalk = (heard: string): boolean => ENDS.has(stripped(heard)) ||
 
 const UNDOES = new Set(["undo that", "undo", "undo it", "put it back", "put that back", "deshaz eso", "deshazlo", "deshacer", "deshace eso", "revierte eso"]);
 
+const REMEMBER =
+  /^(?:remember(?: that|:)? (?=(?:that |i |i'|my |me |we |our |to call me ))|recuerda(?: que)? (?=(?:que |yo |mi |mis |me |nos |soy |tengo )))(.+)$/i;
+
+/**
+ * What the person asks Dashi to remember about them, in their own words:
+ * "remember that I go to Bodytech on Mondays", "recuerda que me llamo Pe".
+ * Null for anything else ("remember to buy milk", "can you remember what I
+ * said?"): those are the model's to answer.
+ */
+export function asksRemember(heard: string): string | null {
+  const said = heard
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^(?:ok(?:ay)?|please|hey dashi|dashi|por favor)[, ]+/i, "");
+  const found = REMEMBER.exec(said);
+  const fact =
+    found?.[1]
+      ?.replace(/^that /i, "")
+      .replace(/^que /i, "")
+      .replace(/[.!]+$/, "")
+      .trim() ?? "";
+  return fact.split(" ").length >= 2 ? fact.charAt(0).toUpperCase() + fact.slice(1) : null;
+}
+
 /** Whether what was said asks to take the last change back: "undo that" as the whole of it. */
 export const asksUndo = (heard: string): boolean => UNDOES.has(stripped(heard));

@@ -36,6 +36,7 @@ import { LANGUAGE_WORDS, TALK_WORDS } from "../changes/words.ts";
 import { type ByPerson, ONLY_YOU, type PersonOnly, usePersonOnly } from "../person-only.ts";
 import { Setting } from "../setting.tsx";
 import { MiniButton } from "./parts.tsx";
+import { AboutYou } from "./persona-about.tsx";
 import { Look } from "./persona-look.tsx";
 import { CapsulePreview, CharacterFilesNotes, LineField } from "./persona-parts.tsx";
 import { Share, type ShareDialogs } from "./persona-share.tsx";
@@ -265,6 +266,7 @@ export function PersonaPane(props: PersonaPaneProps) {
         <Sound {...parts} />
         <Look {...parts} />
         <Own {...parts} />
+        <AboutYou openFile={persona.openFile} />
         <CharacterFilesNotes source={persona.source} />
         <Caption>{PERSONA_PROMISE}</Caption>
       </Page>

@@ -872,6 +872,10 @@ What is said to Dashi is not planned first (decisions.md D147 to D150;
 - **With every ask** (`context.ts`): after the words, what is in front and
   its page, the selection, the time, the Desktop, and once a conversation
   the installed apps and the names a transcript mishears.
+- **What it knows about you** (decisions.md D151): the text of
+  `~/.config/dashi/about-you.md` goes with a conversation's first ask.
+  "Remember that…" adds a line to it by rule; Settings › Your Dashi opens
+  the file.
 - **Stop**: ❖Esc, the capsule's square, or the Dashi key held. The harness
   is stopped (its scope too), the task's connections are cut and no key or
   button stays down. What was said so far stays in the conversation, marked
