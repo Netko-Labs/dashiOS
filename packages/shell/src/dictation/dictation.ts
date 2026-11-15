@@ -15,7 +15,7 @@ import { DICTATION_LIMITS, type DictationCommand, type DictationState, type Dict
 import { realTimers, type Timers } from "../shared/time/index.ts";
 import { HandsFree } from "./lib/hands-free.ts";
 import { HeardText } from "./lib/heard.ts";
-import { land } from "./lib/land.ts";
+import { Landings } from "./lib/landings.ts";
 import { HINT, troubleLine, troubleOf } from "./lib/lines.ts";
 import type { DictationDeps, Front, HearingEvent } from "./types.ts";
 
@@ -28,11 +28,15 @@ export class Dictation {
   private at: Promise<Front | null> = Promise.resolve(null);
   private readonly handsFree: HandsFree;
   private timer: unknown = null;
+  private saying: unknown = null;
   private limits: unknown[] = [];
+  /** What landed: what Undo, Raw and "paste last" act on. */
+  private readonly landings: Landings;
   private readonly offs: Array<() => void>;
 
   constructor(private readonly deps: DictationDeps) {
     this.timers = deps.timers ?? realTimers;
+    this.landings = new Landings({ ...deps, timers: this.timers });
     this.handsFree = new HandsFree(
       { ...deps, timers: this.timers },
       {
@@ -40,6 +44,7 @@ export class Dictation {
         notice: (trouble, handsFree) => this.notice(trouble, undefined, handsFree),
         ready: (at) => this.ready(at),
         phase: () => this.state.phase,
+        land: (heard, meant) => this.landings.land(heard, meant),
       },
     );
     this.offs = [deps.service.on((event) => this.event(event)), deps.hub.dictationCommands.handle((command) => this.command(command))];
@@ -56,10 +61,21 @@ export class Dictation {
   /** One state at a time; one that ends by itself (`until`) goes back to idle then. */
   private show(state: DictationState): void {
     if (this.timer !== null) this.timers.clear(this.timer);
+    if (this.saying !== null) this.timers.clear(this.saying);
     this.timer = null;
+    this.saying = null;
     if (state.phase !== "listening") this.deps.hub.level.set(0);
     this.deps.hub.dictation.set(state);
     if ("until" in state) this.timer = this.timers.set(() => this.show({ phase: "idle" }), Math.max(0, state.until - this.now()));
+  }
+
+  /** The key came up: nothing is said for a moment, then "Tidying". */
+  private tidying(text: string): void {
+    this.show({ phase: "tidying", text });
+    this.saying = this.timers.set(() => {
+      this.saying = null;
+      if (this.state.phase === "tidying") this.deps.hub.dictation.set({ ...this.state, said: true });
+    }, DICTATION_LIMITS.tidyingSaid);
   }
 
   private notice(trouble: DictationTrouble, line?: string, handsFree = false): void {
@@ -173,7 +189,7 @@ export class Dictation {
     const since = this.now();
     const turn = ++this.turn;
     if (!hold.opened) return this.show({ phase: "idle" });
-    this.show({ phase: "tidying", text: this.state.phase === "listening" ? this.state.text : "" });
+    this.tidying(this.state.phase === "listening" ? this.state.text : "");
     if (!(await hold.opened) || turn !== this.turn) return;
     let text: string;
     try {
@@ -184,7 +200,7 @@ export class Dictation {
     }
     if (turn !== this.turn) return;
     if (text === "") return this.notice(limit ?? "nothing-said");
-    const landing = await land({ ...this.deps, timers: this.timers }, text, { at: await hold.at, since });
+    const landing = await this.landings.land(text, { at: await hold.at, since });
     if (turn !== this.turn) return;
     this.show(limit && landing.state.phase === "landed" ? { ...landing.state, line: `${landing.state.line} Time limit.` } : landing.state);
   }
@@ -229,7 +245,23 @@ export class Dictation {
         return this.stop();
       case "type":
         return void this.type(command.text);
+      case "undo":
+        return void this.after(() => this.landings.undo());
+      case "raw":
+        return void this.after(() => this.landings.raw());
+      case "paste-last":
+        return void this.after(() => this.landings.pasteLast());
+      case "profile":
+        return;
     }
+  }
+
+  /** Something done with what landed (lib/after.ts); never while the microphone is open. */
+  private async after(run: () => Promise<DictationState>): Promise<void> {
+    if (this.hold || this.handsFree.running) return;
+    const turn = ++this.turn;
+    const state = await run();
+    if (turn === this.turn) this.show(state);
   }
 
   /** Words from elsewhere (Dashi's capsule's "Type it instead") land as a dictation would. */
@@ -238,8 +270,8 @@ export class Dictation {
     if (text === "") return;
     this.stop();
     const turn = this.turn;
-    this.show({ phase: "tidying", text });
-    const landing = await land({ ...this.deps, timers: this.timers }, text, { at: null, since: this.now() });
+    this.tidying(text);
+    const landing = await this.landings.land(text, { at: null, since: this.now() });
     if (turn === this.turn) this.show(landing.state);
   }
 

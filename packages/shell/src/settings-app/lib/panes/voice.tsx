@@ -31,6 +31,7 @@ import {
   type VoiceParts,
 } from "../../../voice/index.ts";
 import { useColors } from "../../colors.ts";
+import type { PaneContext } from "../../context.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
 import { Page, Switch } from "../../ui.tsx";
@@ -38,6 +39,7 @@ import { type ByPerson, ONLY_YOU, type PersonOnly, usePersonOnly } from "../pers
 import { Setting } from "../setting.tsx";
 import { MiniButton } from "./parts.tsx";
 import { DictationRows } from "./voice-dictation.tsx";
+import { DictationHistoryRows } from "./voice-dictation-history.tsx";
 import { offerWords, removeWords, setsWords, voiceChoices, whatFetching } from "./voice-words.ts";
 
 export type VoicePaneSource = Pick<VoiceParts, "models" | "sample">;
@@ -185,7 +187,14 @@ export function switchDetail(state: { wanted: boolean; usable: boolean; refused:
   return state.wanted && !state.usable ? "It turns on once its models are here." : undefined;
 }
 
-export function VoicePane({ settings, voice, byPerson }: { settings: SettingsStore; voice: VoicePaneSource; byPerson?: ByPerson }) {
+interface VoicePaneProps {
+  settings: SettingsStore;
+  voice: VoicePaneSource;
+  dictation?: PaneContext["dictation"];
+  byPerson?: ByPerson;
+}
+
+export function VoicePane({ settings, voice, dictation, byPerson }: VoicePaneProps) {
   const view = useSyncExternalStore(voice.models.subscribe, voice.models.getSnapshot);
   // Asked for (settings.json); it is on once its models are here too.
   const wanted = useSettings(settings).data.voice.on === true;
@@ -240,6 +249,7 @@ export function VoicePane({ settings, voice, byPerson }: { settings: SettingsSto
       {view.error !== null && <Note testID="voice-error">{view.error}</Note>}
       {on && <KeyAndVoice settings={settings} voice={voice} view={view} guard={guard} />}
       {on && <DictationRows settings={settings} guard={guard} />}
+      {on && dictation && <DictationHistoryRows settings={settings} source={dictation} guard={guard} />}
       {on && more.length > 0 && (
         <Group testID="voice-more">
           <ModelsRow

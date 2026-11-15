@@ -12,6 +12,7 @@ import type { AppMenus } from "../app-menus/index.ts";
 import type { BatteryMonitor } from "../battery/index.ts";
 import type { Clipboard } from "../clipboard/index.ts";
 import type { CompositorWindow } from "../compositor/index.ts";
+import type { DictationParts } from "../dictation/index.ts";
 import type { AutoRefresh } from "../display-config/index.ts";
 import type { Extensions } from "../extensions/index.ts";
 import type { FullscreenBars } from "../fullscreen.ts";
@@ -36,6 +37,8 @@ export interface LateParts {
   pill: PillHub;
   /** Who Dashi is, kept current from settings.json and the characters folder (boot/persona.ts); Settings › Your Dashi reads it. */
   persona: PersonaSource;
+  /** Dictation (boot/dictation.ts): its history, for Settings › Voice. */
+  dictation: DictationParts;
   overview: OverviewController | null;
   fullscreenBars: FullscreenBars | null;
   menuBars: MenuBars;

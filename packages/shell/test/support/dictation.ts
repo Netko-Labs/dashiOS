@@ -6,11 +6,12 @@ import { createPillHub, type DictationState, type DictationTrouble, type KeyGest
 import { settle } from "./time.ts";
 import { fakeVoice, handTimers } from "./voice.ts";
 
-export function dictating(options: { heard?: string; taught?: boolean } = {}) {
+export function dictating(options: { heard?: string; taught?: boolean; history?: DictationDeps["history"] } = {}) {
   const voice = fakeVoice({ "listen.stop": { text: options.heard ?? "Um, hello there.", speech_ms: 900 } });
   const timers = handTimers();
   const hub = createPillHub();
   const typed: string[] = [];
+  const keys: string[] = [];
   const world = {
     on: true,
     tidy: true,
@@ -22,6 +23,11 @@ export function dictating(options: { heard?: string; taught?: boolean } = {}) {
     secret: false as boolean | null,
     /** The field check never answers, as an accessibility bus that is still starting. */
     secretHangs: false,
+    /** The text around the caret; null where the field can't be read. */
+    before: null as string | null,
+    after: null as string | null,
+    role: "text" as "terminal" | "entry" | "text" | "other",
+    site: null as string | null,
     /** How long ago the person pressed something in the window in front. */
     pressed: null as number | null,
     refuse: null as string | null,
@@ -40,10 +46,23 @@ export function dictating(options: { heard?: string; taught?: boolean } = {}) {
     muted: async () => world.muted,
     front: async () => world.front,
     secret: () => (world.secretHangs ? new Promise<boolean | null>(() => {}) : Promise.resolve(world.secret)),
+    field: () => {
+      if (world.secretHangs) return new Promise<null>(() => {});
+      if (world.secret === null) return Promise.resolve(null);
+      const kind = world.secret ? "password" : "text";
+      return Promise.resolve({ kind, role: world.role, site: world.site, before: world.before, after: world.after });
+    },
+    sendKeys: async (window, chord) => {
+      if (world.refuse) throw new Error(world.refuse);
+      keys.push(`${window}:${chord}`);
+      // A BackSpace takes the last character of what the field holds, as an app does.
+      if (chord === "BackSpace" && world.before !== null) world.before = [...world.before].slice(0, -1).join("");
+    },
     pressed: async () => world.pressed,
     typeText: async (window, text) => {
       if (world.refuse) throw new Error(world.refuse);
       typed.push(`${window}:${text}`);
+      if (world.before !== null) world.before += text;
     },
     paste: async (window, text) => {
       if (world.pastes) typed.push(`paste ${window}:${text}`);
@@ -58,6 +77,7 @@ export function dictating(options: { heard?: string; taught?: boolean } = {}) {
     teach: () => {
       world.taught = true;
     },
+    history: options.history,
     timers,
     now: () => world.now,
   };
@@ -74,5 +94,5 @@ export function dictating(options: { heard?: string; taught?: boolean } = {}) {
   };
   const state = (): DictationState => hub.dictation.getSnapshot();
   const phases = (): string[] => states.map((each) => each.phase);
-  return { voice, timers, hub, typed, world, dictation, states, key, hold, state, phases };
+  return { voice, timers, hub, typed, keys, world, deps, dictation, states, key, hold, state, phases };
 }

@@ -20,12 +20,14 @@ import {
 import { AutoAppearance } from "../appearance/index.ts";
 import { SETTINGS_APP_ID } from "../apps.ts";
 import type { Compositor } from "../compositor/index.ts";
+import type { DictationHistory } from "../dictation/index.ts";
 import { openFile } from "../file-manager.ts";
 import { type ForceQuit, startForceQuit } from "../force-quit/index.ts";
 import { type SettingsApp, startSettingsApp } from "../settings-app/index.ts";
 import { registerPaneEntries } from "../settings-app/search.ts";
 import { createPaneServices, type PaneServices } from "../settings-app/services.ts";
 import { type SetupAssistant, startSetupAssistant } from "../setup/index.ts";
+import { systemClipboard } from "../shared/clipboard/index.ts";
 import type { VoiceParts } from "../voice/index.ts";
 import type { Desktops } from "./desktop.ts";
 import type { Switches } from "./notices.ts";
@@ -60,6 +62,15 @@ export function startSettingsApps(compositor: Compositor | null, system: SystemS
     }));
   return { forceQuit, paneServicesOf };
 }
+
+/** What was dictated (Settings › Voice › Dictation), once dictation runs. */
+function dictationSource(late: Late<LateParts>): { history: DictationHistory; copy(text: string): void } | null {
+  const history = late.peek("dictation")?.history;
+  return history ? { history, copy: (text: string) => void systemClipboard().writeText(text) } : null;
+}
+
+/** Settings › Voice's sources: talking to Dashi, and what was dictated. */
+const voiceSources = (talking: VoiceParts, late: Late<LateParts>) => ({ voice: talking, dictation: () => dictationSource(late) });
 
 interface SettingsWindowNeeds {
   compositor: Compositor | null;
@@ -144,7 +155,7 @@ export function startSettingsWindows(needs: SettingsWindowNeeds): SettingsWindow
     menus: () => late.get("appMenus").store,
     // Who is connected now, for Settings › Agents.
     agents: needs.agentStore,
-    voice: needs.talking,
+    ...voiceSources(needs.talking, late),
     // Who Dashi is (Settings › Your Dashi); a file the person makes there opens in its app (Text Editor).
     persona: () => {
       const source = late.peek("persona");

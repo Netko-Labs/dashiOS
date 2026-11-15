@@ -1,5 +1,6 @@
 import type { AgentStore, AloneRecord, AnswerStatus, Grants, Passwords, SiteGrants, WorkAlone } from "../agents/index.ts";
 import type { ClipboardHistory } from "../clipboard/history.ts";
+import type { DictationHistory } from "../dictation/index.ts";
 import type { PersonaSource } from "../persona/index.ts";
 import type { PrivacyStore } from "../privacy/store.ts";
 import type { RegionStore } from "../region/store.ts";
@@ -54,6 +55,8 @@ export interface PaneContext {
   installedApp?: (id: string) => { name: string; icon: string } | undefined;
   /** Talking to Dashi: its models and voices (Settings › Voice); absent where the shell runs no voice. */
   voice?: VoicePaneSource;
+  /** What was dictated (Settings › Voice › Dictation): the history, and copying a row; absent where dictation is not running. */
+  dictation?: { history: Pick<DictationHistory, "subscribe" | "getSnapshot" | "remove" | "clear">; copy(text: string): void };
   /** Who Dashi is (Settings › Your Dashi): the choices as resolved, the person's character files, and opening one in its app. */
   persona?: { source: PersonaSource; openFile(path: string): void; dialogs?: { choose(): Promise<string | null>; save(name: string): Promise<string | null> } };
   /** The agents connected now (Settings › Agents: "Connected now"). */

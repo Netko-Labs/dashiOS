@@ -3431,3 +3431,52 @@ short words, as the rulebook is written.
   surface, and a login screen that does not open locks the person out).
 - **Undo:** nothing to undo.
 
+
+### D180. Dictation remembers what it typed, and Undo is BackSpace on exactly that
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's (the research's first
+  list, 3.1; briefs/d2-dictate.md).
+- **Question:** the night's cut said "never send backspaces into an app".
+  Undo, Raw and "scratch that" all need Dashi to take back its own words.
+  Three ways: the app's own undo (Ctrl+Z), a range delete through AT-SPI's
+  EditableText, or BackSpace.
+- **Choice:** BackSpace, once for each character Dashi sent
+  (`send-keys`), and only when those characters are still the last thing
+  in the field. Where AT-SPI gives the field's text, the text before the
+  caret must end with them. Where it does not (most terminals), the
+  person's own hands must not have pressed a key or a button in that
+  window since the words landed (`input-origin`, which the compositor
+  knows for certain) and the words must hold no line break. Anything else
+  touches nothing and says so. Dashi keeps the newest forty insertions in
+  memory (`dictation/lib/record.ts`) and never reasons about text it did
+  not write. Undo is on the capsule and at ⌃❖Z, "paste last" at ⌃❖V:
+  ❖Z stays the app's own.
+- **Why:** the app's undo is unpredictable (a web editor groups typed keys
+  as it likes; a terminal has none), and EditableText is missing in
+  Chromium's editors and in every terminal. BackSpace works everywhere a
+  key does, and the check makes it exact: what it deletes is what Dashi
+  typed, or nothing.
+- **Cost:** an editor that changes what was typed (auto-indent, a closed
+  bracket, autocomplete) no longer ends with Dashi's characters, so Undo
+  refuses there: the safe failure. A long dictation is one `send-keys` per
+  character.
+- **Undo:** `erase()` in `dictation/lib/erase.ts` is the one place; a
+  range delete can replace the loop where a field offers one.
+
+### D181. The history keeps a day of raw and final words, on this computer, and no sound
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's.
+- **Question:** how long, where, and what.
+- **Choice:** `$XDG_STATE_HOME/dashi/dictation/history.jsonl`, mode 600:
+  the time, the app, the profile, the words as heard and as typed. A day
+  by default; a week, or nothing (`dictation.history`), in Settings ›
+  Voice, where each row has Copy and Delete. "Nothing" writes nothing and
+  removes the file. No audio in this slice. Reading the text around the
+  caret needed two optional additions to `agents/atspi` (`caretText` on a
+  node, `role` and `text` on a focused field): small, and nothing there
+  changed its behaviour.
+- **Why:** the raw words must never be lost (the corpus's rows 8 and 16
+  could not be read back), and a day is what someone needs to recover a
+  dictation without keeping a diary of everything said.
+- **Cost:** a file with the person's words in their home folder.
+- **Undo:** Settings › Voice, "Nothing"; or delete the file.

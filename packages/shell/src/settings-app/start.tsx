@@ -71,6 +71,8 @@ export interface SettingsAppOptions {
   voice?: PaneContext["voice"];
   /** Who Dashi is (Settings › Your Dashi); asked for when the window opens. */
   persona?: () => PaneContext["persona"] | null;
+  /** Dictation's history, once dictation runs (boot/dictation.ts). */
+  dictation?: () => PaneContext["dictation"] | null;
   /** The launcher's Ask, for Settings › Agents; late-bound (it starts after Settings), so asked for when the window opens. */
   answers?: () => AnswerStatus | null;
   /** The clipboard history (Settings › Keyboard); asked for when the window opens, since it starts after Settings. */
@@ -106,6 +108,12 @@ function answersOf(options: SettingsAppOptions): { answers?: AnswerStatus } {
 function personaOf(options: SettingsAppOptions): { persona?: NonNullable<PaneContext["persona"]> } {
   const persona = options.persona?.();
   return persona ? { persona } : {};
+}
+
+/** What was dictated, for Settings › Voice, when dictation runs. */
+function dictationOf(options: SettingsAppOptions): { dictation?: NonNullable<PaneContext["dictation"]> } {
+  const dictation = options.dictation?.();
+  return dictation ? { dictation } : {};
 }
 
 /** Control Center's switches, by name, as Undo in Recently changed writes them back. */
@@ -153,6 +161,7 @@ function paneContext(
     ...(options.agents ? { agents: options.agents } : {}),
     ...(options.voice ? { voice: options.voice } : {}),
     ...personaOf(options),
+    ...dictationOf(options),
     lock: options.lock,
     openSetup: options.openSetup,
     show: (pane, row) => open(pane, row),

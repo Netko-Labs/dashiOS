@@ -63,6 +63,14 @@ export const VOICE_ROWS = [
     kind: "switch",
   },
   {
+    id: "voice/dictation-history",
+    title: "Keep what I dictate for",
+    name: "Dictation history",
+    detail: "What you dictated, as heard and as typed, to copy or delete. Kept on this computer only.",
+    keywords: ["history", "transcript", "raw", "last dictation", "keep nothing", "delete", "privacy"],
+    kind: "choice",
+  },
+  {
     id: "voice/more-languages",
     title: "More languages",
     name: "Voice in more languages",

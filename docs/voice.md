@@ -106,8 +106,8 @@ the capsule one `DictationState` at a time (`shared/pill/dictation.ts`).
    (below) and typed.
 4. **Typing** is the compositor's `type-text {window, text}`: one step, into
    the window the key went down in, through a keymap made for the text, so ñ
-   and é type on any layout. The clipboard is not touched and no BackSpace is
-   ever sent. An X11 window can't take it (`x11`): there the words are pasted
+   and é type on any layout. The clipboard is not touched. A BackSpace is
+   sent only to take back what Dashi itself typed ("The insertion record"). An X11 window can't take it (`x11`): there the words are pasted
    (the clipboard is put back 300 ms later) and the line says "Pasted."
    While the bar's row is the field the words go to it (`barCommands` `insert`). A space is typed after the words (none after a
    line break), so the next words do not join them.
@@ -128,9 +128,45 @@ the capsule one `DictationState` at a time (`shared/pill/dictation.ts`).
    minutes, or when a sentence has nowhere to land; each time with a short
    sound (`pw-play`, a freedesktop sound) and a line that stays.
 
-Whether a field is a password field is asked of AT-SPI, and only where
-accessibility is already on (`clipboard/lib/fields.ts`): dictation does not
-turn it on. Where it can't be told the window is trusted.
+Whether a field is a password field, and the text around its caret, are
+asked of AT-SPI (`clipboard/lib/fields.ts`), which dictation turns on at its
+first hold. Where it can't be told the window is trusted.
+
+### The insertion record
+
+`dictation/lib/record.ts`, `erase.ts`, `after.ts`, `landings.ts`;
+`dictation/history.ts`. Dashi remembers what it typed: the window, the
+field as far as AT-SPI tells (its role, and the site of a web page), when,
+the recogniser's words and the words that landed, and exactly the
+characters it sent. The newest forty, in memory; the words alone also go to
+the history on disk.
+
+- **Undo** (the capsule's button after a landing, `dashi://dictation/undo`,
+  ⌃❖Z) takes the newest insertion of the window in front back with
+  BackSpace, once for each character Dashi sent, and only when those
+  characters are still the last thing in the field (decisions.md D180):
+  - where the field's text can be read (AT-SPI's Text interface, the walk
+    the password check uses), the text before the caret must end with them;
+  - where it can't (most terminals), the person's own hands must not have
+    pressed a key or a button in that window since they landed
+    (`input-origin`), and the text must hold no line break;
+  - otherwise nothing is touched, and the capsule says "That text has
+    changed, so I left it." Never the person's own text.
+- **Raw** (after a landing that tidying changed) takes the insertion back
+  the same way and types the recogniser's own words in its place.
+- **Paste last** (`dashi://dictation/paste-last`, ⌃❖V) types the last
+  dictation again where the keyboard is now, also one that never landed
+  (the words that waited).
+- **The history** (Settings › Voice, "Dictation history"): each landing's
+  time, app, the words as heard beside the words as typed, Copy, Delete,
+  Delete all. `$XDG_STATE_HOME/dashi/dictation/history.jsonl`, mode 600,
+  one JSON line each. Kept a day by default (`dictation.history`: `day`,
+  `week`, `none`); "Nothing" writes nothing and removes the file. No sound
+  is kept, and nothing from a password field (nothing lands there).
+
+The capsule's states for these: `landed` carries `undo` and `raw` (which
+buttons show), and `told` is one line of what was done or not ("Removed 14
+words.", "That text has changed, so I left it.").
 
 ### Tidying by rule
 

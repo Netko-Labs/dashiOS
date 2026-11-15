@@ -36,7 +36,7 @@ export { oneLine, type Step, type Undo } from "./ask/plan.ts";
 export { startAsk } from "./ask/service.ts";
 export type { AnswerStatus, TaskView } from "./ask/types.ts";
 export { Atspi } from "./atspi/client.ts";
-export { type A11yNode, documents, fieldAt, focusedField, hasState, limits, passwordFields, placeAgain, ROLE, STATE } from "./atspi/tree.ts";
+export { type A11yNode, documents, type Focused, fieldAt, focusedField, hasState, limits, passwordFields, placeAgain, ROLE, STATE } from "./atspi/tree.ts";
 export type { Question } from "./confirm.ts";
 export { type GrantEntry, Grants, label, logActivity, SCOPES, type Scope, stateDir } from "./consent.ts";
 export type { ToolResult } from "./context.ts";

@@ -43,7 +43,12 @@ export interface CapsuleViewProps {
 
 /** Whether the line ends in a button, which sits closer to the capsule's edge than words do. */
 function endsInButton(shown: Shown): boolean {
-  if (shown.kind === "dictation") return shown.state.phase === "listening" && shown.state.handsFree;
+  if (shown.kind === "dictation") {
+    const { state } = shown;
+    if (state.phase === "landed") return state.undo === true || state.raw === true;
+    if (state.phase === "told") return state.undo === true;
+    return state.phase === "listening" && state.handsFree;
+  }
   return shown.kind === "voice" && (shown.state.phase === "heard" || shown.state.phase === "step" || shown.state.phase === "answer");
 }
 

@@ -12,11 +12,11 @@ import { join } from "node:path";
 import { runningCapsule } from "../capsule/index.ts";
 import { atspiFieldCheck } from "../clipboard/index.ts";
 import type { Compositor } from "../compositor/index.ts";
-import { type DictationParts, type Layout, startDictation, tapClosesLauncher } from "../dictation/index.ts";
+import { DictationHistory, type DictationOptions, type DictationParts, type Layout, startDictation, tapClosesLauncher } from "../dictation/index.ts";
 import { idleKeymap } from "../keymap/keymap-state.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import { type Clipboard, systemClipboard } from "../shared/clipboard/index.ts";
-import { type DictationTrouble, isDictationKeyId } from "../shared/pill/index.ts";
+import { type DictationTrouble, isDictationKeyId, isHistoryKeep } from "../shared/pill/index.ts";
 import { basicsHere, isTalkKeyId, listenLanguage, talkKey } from "../voice/index.ts";
 import type { LateParts } from "./parts.ts";
 import type { Late, Services } from "./services.ts";
@@ -129,12 +129,41 @@ function dashiTap(compositor: Compositor | null, late: Late<LateParts>, sinceSup
   late.peek("launcher")?.toggle();
 }
 
-export function startDictating({ compositor, settingsStore, services, late, talking }: DictatingNeeds): DictationParts {
-  const hub = late.get("pill");
+/** The desktop, as dictation reaches it: the window in front and its field, typing and keys into it, the clipboard. */
+function deskDeps(
+  compositor: Compositor | null,
+  late: Late<LateParts>,
+): Pick<DictationOptions, "muted" | "front" | "secret" | "field" | "sendKeys" | "appName" | "pressed" | "typeText" | "paste" | "copy"> {
   const clipboard = systemClipboard();
   // Accessibility is turned on at the first hold (as snippets do at their first keyword: clipboard/lib/fields.ts), so a
   // password field can be told: asked again at the landing, by when an app that only then published its fields has.
   const fields = atspiFieldCheck({ turnOn: true });
+  return {
+    muted: microphoneMuted,
+    front: async () => {
+      const windows = await compositor?.windows().catch(() => null);
+      const front = windows?.find((window) => window.focused);
+      return front ? { window: front.id, pid: front.pid, appId: front.appId, title: front.title } : null;
+    },
+    secret: async (front) => (front.pid !== null && (await fields.passwordFocused(front.pid)) ? true : null),
+    field: async (front) => (front.pid === null ? null : fields.read(front.pid)),
+    sendKeys: async (window, chord) => {
+      if (!compositor) throw new Error("no compositor");
+      await compositor.sendKeys({ window, chord });
+    },
+    appName: (front) => (front.appId ? (late.peek("installedApp")?.(front.appId)?.name ?? front.appId) : ""),
+    pressed: async (window) => (compositor ? (await compositor.inputOrigin({ window })).person : null),
+    typeText: async (window, text) => {
+      if (!compositor) throw new Error("no compositor");
+      await compositor.typeText({ window, text });
+    },
+    paste: (window, text) => paste(compositor, clipboard, window, text),
+    copy: (text) => clipboard.writeText(text),
+  };
+}
+
+export function startDictating({ compositor, settingsStore, services, late, talking }: DictatingNeeds): DictationParts {
+  const hub = late.get("pill");
   const system = systemLayout();
   const taught = teaching();
   let superTapAt = Number.NEGATIVE_INFINITY;
@@ -146,8 +175,16 @@ export function startDictating({ compositor, settingsStore, services, late, talk
     if (view.service === "missing") return "voice-gone";
     return basicsHere(view.sets) ? null : "no-model";
   };
+  const history = new DictationHistory({
+    keep: () => {
+      const { history: keep } = settings().dictation;
+      return isHistoryKeep(keep) ? keep : "day";
+    },
+  });
+  const stopKeeping = settingsStore.subscribe(() => history.refresh());
   const parts = startDictation({
     hub,
+    history,
     service: talking.service,
     settings: () => {
       const { voice, dictation, keyboard } = settings();
@@ -170,20 +207,7 @@ export function startDictating({ compositor, settingsStore, services, late, talk
     launcher: () => dashiTap(compositor, late, performance.now() - superTapAt),
     trouble,
     busy: () => talking.voice.getSnapshot()?.kind === "listening",
-    muted: microphoneMuted,
-    front: async () => {
-      const windows = await compositor?.windows().catch(() => null);
-      const front = windows?.find((window) => window.focused);
-      return front ? { window: front.id, pid: front.pid } : null;
-    },
-    secret: async (front) => (front.pid !== null && (await fields.passwordFocused(front.pid)) ? true : null),
-    pressed: async (window) => (compositor ? (await compositor.inputOrigin({ window })).person : null),
-    typeText: async (window, text) => {
-      if (!compositor) throw new Error("no compositor");
-      await compositor.typeText({ window, text });
-    },
-    paste: (window, text) => paste(compositor, clipboard, window, text),
-    copy: (text) => clipboard.writeText(text),
+    ...deskDeps(compositor, late),
     chime,
     taught: () => taught.known,
     teach: () => taught.now(),
@@ -201,8 +225,10 @@ export function startDictating({ compositor, settingsStore, services, late, talk
         if (event.event === "lock" && event.locked) parts.dictation.stop();
       })
     : () => {};
+  late.set("dictation", parts);
   services.add("dictation", () => {
     stopHearing();
+    stopKeeping();
     parts.close();
   });
   return parts;
