@@ -45,7 +45,8 @@ const { values } = parseArgs({
   },
 });
 
-const Completion = obj({ choices: list(obj({ message: obj({ content: str() }) })) });
+const LOOSE = { strict: false };
+const Completion = obj({ choices: list(obj({ message: obj({ content: str() }, LOOSE) }, LOOSE)) }, LOOSE);
 
 async function ask(messages: Message[]): Promise<{ text: string; ms: number }> {
   const started = performance.now();

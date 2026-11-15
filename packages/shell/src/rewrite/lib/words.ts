@@ -28,6 +28,18 @@ const CUES = new Set(
 
 export const isCue = (word: string): boolean => CUES.has(word);
 
+/** Words that go with a cue or mean nothing, so the final version may lack them ("scratch that", "quise decir", "um"). */
+const WITH_CUE = new Set("that mind decir dicho eso i yo make it lo um uh uhm eh ehm er erm hm hmm mm este like well bueno pues o or yes si".split(" "));
+
+/**
+ * The words said after the last cue: the final version, which a rewrite must keep. Empty when no cue was said.
+ * ("at five, no, I mean six": "six". A rewrite that says "at five" kept the version that was taken back.)
+ */
+export function finalWords(said: readonly string[]): string[] {
+  const last = said.findLastIndex(isCue);
+  return last < 0 ? [] : said.slice(last + 1).filter((word) => !WITH_CUE.has(word));
+}
+
 /** Whether two words are the same but for a slip: one letter changed, added or dropped (longer words only). */
 export function near(a: string, b: string): boolean {
   if (a === b) return true;

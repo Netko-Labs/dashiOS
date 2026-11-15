@@ -5,10 +5,10 @@
  * back. A failed check means the rules' text lands.
  */
 
-import { isCue, isNumber, near, wordsOf } from "./lib/words.ts";
+import { finalWords, isCue, isNumber, near, wordsOf } from "./lib/words.ts";
 import { CLOSE, OPEN } from "./prompt.ts";
 
-export type CheckName = "empty" | "tags" | "longer" | "lines" | "overlap" | "numbers" | "vocabulary";
+export type CheckName = "empty" | "tags" | "longer" | "lines" | "overlap" | "earlier" | "numbers" | "vocabulary";
 
 export type Checked = { ok: true; text: string; unchanged: boolean } | { ok: false; check: CheckName };
 
@@ -35,16 +35,15 @@ function takenBack(said: readonly string[], at: number): boolean {
   return said.slice(at + 1).some(isCue);
 }
 
+/** Every number said is still there, unless it was taken back (said twice counts once). */
 function keepsNumbers(said: readonly string[], kept: readonly string[]): boolean {
-  const left = [...kept];
-  for (let at = said.length - 1; at >= 0; at--) {
-    const word = said[at];
-    if (word === undefined || !isNumber(word)) continue;
-    const found = left.lastIndexOf(word);
-    if (found >= 0) left.splice(found, 1);
-    else if (!takenBack(said, at)) return false;
-  }
-  return true;
+  const there = new Set(kept);
+  return said.every((word, at) => !isNumber(word) || there.has(word) || takenBack(said, at));
+}
+
+/** What was said after the last cue is the final version: an answer without it kept the earlier one. */
+function keepsLater(said: readonly string[], kept: readonly string[]): boolean {
+  return finalWords(said).every((word) => kept.some((other) => near(word, other)));
 }
 
 /** Where a term's words stand in a row in `words`, or -1. */
@@ -82,6 +81,7 @@ export function checkAnswer(transcript: string, answer: string, vocabulary: read
   if (kept.length > said.length + LONGER_BY) return { ok: false, check: "longer" };
   if (lineBreaks(text) !== lineBreaks(transcript.trim())) return { ok: false, check: "lines" };
   if (overlap(said, kept, vocabulary) < OVERLAP_FLOOR) return { ok: false, check: "overlap" };
+  if (!keepsLater(said, kept)) return { ok: false, check: "earlier" };
   if (!keepsNumbers(said, kept)) return { ok: false, check: "numbers" };
   if (!keepsVocabulary(said, kept, vocabulary)) return { ok: false, check: "vocabulary" };
   const same = text.replace(/\s+/g, " ") === transcript.trim().replace(/\s+/g, " ");

@@ -48,5 +48,6 @@ export interface Rewriter {
   /** The dictation key went down: have the model in memory by the time it comes up. */
   warm(): void;
   state(): RewriteState;
-  advice(): RewriteAdvice;
+  /** How dictation should wait on this machine; for this transcript, when given (a long one is refined, not waited for). */
+  advice(transcript?: string): RewriteAdvice;
 }

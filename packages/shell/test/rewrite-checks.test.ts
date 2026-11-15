@@ -53,8 +53,20 @@ test("a number may go only when a cue came after it, or it was said twice", () =
   expect(refused("Move it to three, three thirty.", "Move it to three thirty.")).toBeNull();
   expect(refused("Llego en diez minutos, espera, en veinte.", "Llego en veinte minutos.")).toBeNull();
   expect(refused("Hay cinco sillas y dos mesas.", "Hay sillas y dos mesas.")).toBe("numbers");
-  // The number that replaced it must stay: the cue is before it, not after.
-  expect(refused("Meet me at five, no, I mean six.", "Meet me at five.")).toBe("numbers");
+  expect(refused("We sold 80 in May, or wait, 90. Yes, 90 in May.", "We sold 90 in May.")).toBeNull();
+});
+
+test("what came after the last cue is the final version: an answer that kept the earlier one is refused", () => {
+  expect(refused("Meet me at five, no, I mean six.", "Meet me at five.")).toBe("earlier");
+  expect(refused("Rename it to feature login, sorry, feature sign in.", "Rename it to feature login.")).toBe("earlier");
+  expect(refused("Make the font bigger, no, smaller, in the sidebar.", "Make the font bigger in the sidebar.")).toBe("earlier");
+  expect(refused("Quiero el rojo, mejor dicho el azul.", "Quiero el rojo.")).toBe("earlier");
+  // The words that go with a cue, and fillers, are not the final version.
+  expect(refused("Ship it by Wednesday. Scratch that, by Friday.", "Ship it by Friday.")).toBeNull();
+  expect(refused("El vuelo sale de mañana, quise decir de tarde.", "El vuelo sale de tarde.")).toBeNull();
+  expect(refused("I'll be there in ten minutes, wait, make that twenty.", "I'll be there in twenty minutes.")).toBeNull();
+  // A "no" that is no cue changes nothing: the whole sentence is still there.
+  expect(refused("No, I mean it.", "No, I mean it.")).toBeNull();
 });
 
 test("a vocabulary term that was said stays unless it was taken back", () => {
