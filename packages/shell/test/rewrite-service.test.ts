@@ -38,6 +38,9 @@ test("the unit: a Unix socket only, no network, no core dump, the NVIDIA card le
   expect([deviceOf({}), deviceOf({ DASHI_REWRITE_DEVICE: "gpu" }), deviceOf({ DASHI_REWRITE_DEVICE: "nvidia" })]).toEqual(["cpu", "gpu", "cpu"]);
   expect(text).toContain("-rea off");
   expect(text).not.toContain("--port");
+  // Its log is kept nowhere, unless a checkout asks for it.
+  expect(text).toContain("-p StandardOutput=null -p StandardError=null");
+  expect(serverCommand("/x/llama-server", "/m.gguf", "/s.sock", 24, "cpu", true).join(" ")).not.toContain("StandardError");
 });
 
 test("half the threads, eight at most, two at least", () => {

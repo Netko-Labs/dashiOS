@@ -2,7 +2,7 @@
  * Runs the evaluation set through one system and prints its scores.
  *
  *   bun packages/shell/test/support/rewrite-eval/run.ts --system nothing|rules|model|speakoflow \
- *     [--socket PATH] [--set held-out] [--rules-first] [--own-rules] [--names-rule] [--no-checks] [--label NAME] [--out FILE.json] [--only TAG]
+ *     [--socket PATH] [--set held-out] [--before TEXT] [--tone TEXT] [--rules-first] [--own-rules] [--names-rule] [--no-checks] [--label NAME] [--out FILE.json] [--only TAG]
  *
  * `model` sends Dashi's prompt (src/rewrite/prompt.ts) to a llama-server on a Unix socket and
  * passes the answer through Dashi's checks; `speakoflow` sends SpeakoFlow Mini's own system
@@ -45,6 +45,8 @@ const { values } = parseArgs({
     "own-rules": { type: "boolean", default: false },
     "names-rule": { type: "boolean", default: false },
     set: { type: "string" },
+    before: { type: "string", default: "" },
+    tone: { type: "string", default: "" },
     "no-checks": { type: "boolean", default: false },
   },
 });
@@ -102,7 +104,7 @@ async function answerOf(pair: Pair): Promise<Row> {
           },
           { role: "user", content: transcript },
         ]
-      : rewriteMessages({ transcript, tone: "", vocabulary, before: "" }, values["own-rules"] ? SPEAKOFLOW : undefined);
+      : rewriteMessages({ transcript, tone: values.tone ?? "", vocabulary, before: values.before ?? "" }, values["own-rules"] ? SPEAKOFLOW : undefined);
   const { text, ms } = await ask(messages);
   if (values["no-checks"]) return row(text, text.trim() === "" ? transcript : text.trim(), null, ms);
   const checked = checkAnswer(transcript, text, vocabulary);

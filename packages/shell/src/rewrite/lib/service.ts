@@ -45,11 +45,12 @@ export const deviceOf = (env: Env = process.env): Device => (env.DASHI_REWRITE_D
 /**
  * The command that starts the server as the user unit `dashi-rewrite`.
  * - No network: Unix sockets only. No core dumps: they would hold what was said.
+ * - Its log goes nowhere, unless `DASHI_REWRITE_LOG=1` keeps it in the journal (a checkout, to see why it failed).
  * - On the processor by default: the model is small enough, and the desktop is drawn by the
  *   integrated graphics card. Asked for a graphics card, the NVIDIA one is still never woken for
  *   this, and Mesa's software Vulkan is not a graphics card.
  */
-export function serverCommand(program: string, model: string, socket: string, cores?: number, device: Device = "cpu"): string[] {
+export function serverCommand(program: string, model: string, socket: string, cores?: number, device: Device = "cpu", log = false): string[] {
   const properties = [
     "PartOf=dashi-session.target",
     "NoNewPrivileges=yes",
@@ -61,6 +62,8 @@ export function serverCommand(program: string, model: string, socket: string, co
     "RestrictRealtime=yes",
     "RestrictSUIDSGID=yes",
     "SystemCallArchitectures=native",
+    // The server's log names no word that was said, but it says when and how much: none of it is kept.
+    ...(log ? [] : ["StandardOutput=null", "StandardError=null"]),
   ].flatMap((property) => ["-p", property]);
   const offload = device === "gpu" ? ["-ngl", "99"] : ["-ngl", "0", "--device", "none"];
   const server = [program, "-m", model, "--host", socket, ...offload, "-c", "4096", "-np", "1", "-t", String(threads(cores))];
@@ -105,7 +108,8 @@ export function unitService(env: Env = process.env): RewriteService | null {
   return {
     socket,
     // A unit left from before (a shell that crashed) still serves: starting it again fails and that is fine.
-    start: async () => (await run(serverCommand(program, modelPath(env), socket, undefined, deviceOf(env)))) || existsSync(socket),
+    start: async () =>
+      (await run(serverCommand(program, modelPath(env), socket, undefined, deviceOf(env), env.DASHI_REWRITE_LOG === "1"))) || existsSync(socket),
     stop: async () => {
       await run(["systemctl", "--user", "stop", `${UNIT}.service`]);
     },
