@@ -83,7 +83,8 @@ crates/dashi-comp/src/
                     imports.rs, a card gone while open gone.rs), each card's
                     GLES renderer, with no fence per texture drawn (renderer.rs)
     winit.rs        nested in another compositor's window (a second, virtual
-                    screen beside it with DASHI_NESTED_SCREEN=WxH)
+                    screen beside it with DASHI_NESTED_SCREEN=WxH; a window
+                    of another size with DASHI_NESTED_SIZE=WxH)
     headless.rs     no screens drawn: IPC and protocol tests (more than one
                     with DASHI_HEADLESS_SCREENS=N)
   handlers/         one module per Wayland protocol (or family): compositor,
