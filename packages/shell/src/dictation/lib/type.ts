@@ -1,9 +1,9 @@
 /**
  * Putting characters into a window (land.ts): the compositor's `type-text`,
  * waiting out a key the person still holds; pasted where typing can't be
- * done (an X11 window). In a field where Return sends (a chat, an agent's
- * prompt) a line break is typed as ⇧Return, which every such field takes
- * as a line break (`soft`).
+ * done (an X11 window). In a field where Return sends (a chat) a line break
+ * is typed as ⇧Return, and in an agent's prompt in a terminal as ⌃J, which
+ * such fields take as a line break that does not send.
  */
 
 import type { WaitReason } from "../../shared/pill/index.ts";
@@ -37,17 +37,17 @@ async function typeOnce(deps: DictationDeps, window: number, text: string): Prom
   }
 }
 
-/** `text` into `window`; with `soft`, each line break is ⇧Return. */
-export async function typeInto(deps: DictationDeps, window: number, text: string, soft: boolean): Promise<Typed> {
-  if (!soft || !text.includes("\n")) return typeOnce(deps, window, text);
+/** `text` into `window`; with `breaks`, each line break is that chord (⇧Return, or ⌃J in an agent's prompt) in place of Return. */
+export async function typeInto(deps: DictationDeps, window: number, text: string, breaks: string | null): Promise<Typed> {
+  if (!breaks || !text.includes("\n")) return typeOnce(deps, window, text);
   const lines = text.split("\n");
   let how: Typed = "typed";
   for (const [nth, line] of lines.entries()) {
     if (nth > 0) {
       try {
-        await deps.sendKeys(window, "shift+Return");
+        await deps.sendKeys(window, breaks);
       } catch {
-        return nth === 0 ? "failed" : how;
+        return "failed";
       }
     }
     if (line === "") continue;

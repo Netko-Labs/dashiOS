@@ -50,6 +50,8 @@ export interface LateParts {
   installedApp: (appId: string) => Entry | undefined;
   /** What the Dock calls a window's app, for Desktops named after their apps; set once the app catalog is read. */
   nameApp: (window: CompositorWindow) => string;
+  /** The installed apps' names, as they are now: dictation's vocabulary starts with them (dictation/lexicon.ts). */
+  appNames: () => string[];
   appMenus: AppMenus;
   /** Chooses the item of a window's app menus that shows a shortcut. */
   appShortcut: (window: number, shortcut: string) => Promise<boolean>;

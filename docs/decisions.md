@@ -3480,3 +3480,40 @@ short words, as the rulebook is written.
   dictation without keeping a diary of everything said.
 - **Cost:** a file with the person's words in their home folder.
 - **Undo:** Settings › Voice, "Nothing"; or delete the file.
+
+### D182. Five profiles chosen by what is in front; the person's words are plain files
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's.
+- **Question:** the owner asked for "profiles like a developer profile with
+  a subset of names". Who picks the profile, where do the words live, and
+  what may a rule change without a model?
+- **Choice:**
+  - Five profiles (Developer, Writing, Chat, Email, Verbatim), picked by
+    the field's role, then the site, then the app, else Writing: no setup.
+    The site comes from the web document around the focused field
+    (AT-SPI), so it needs neither the browser's extension nor a
+    permission. The capsule names the profile and a press changes it for
+    that window only; nothing is remembered per app yet.
+  - `~/.config/dashi/dictation/`: `vocabulary`, `replacements`, `snippets`
+    and `profiles/<id>`, plain text, seeded once and never written over.
+    Settings edits the first two; the rest is edited as files.
+  - Rules are exact: a replacement needs its words said whole; a near miss
+    is taken only for a word no dictionary knows (hunspell's stems, read
+    lazily; a system package Dashi only reads); casing and symbols need
+    their own names ("camel case…", "dash dash…", "equals sign"), never a
+    bare "plus", "star" or "colon".
+  - A shell's prompt is told from an agent's prompt by the processes under
+    the terminal (`/proc`), not by asking the terminal. In an agent's
+    prompt a line break is ⌃J, which Claude Code and Codex take as a new
+    line; at a bare shell Dashi adds none of its own.
+- **Why:** Wispr's four fixed categories are what people find easiest;
+  files are what a developer can keep in a repository and what a person
+  can repair by hand. A rule that guesses is worse than no rule: typing
+  "+" for "plus" in a sentence costs trust.
+- **Cost:** a name that is also a word ("Notes", "Files") is not seeded and
+  is never fuzzy-matched; "cloud can do" for "Claude can do" waits for the
+  model. A Spanish verb form is unknown to the stem list, so near misses
+  are English-leaning. ⌃J and ⇧Return are conventions, not guarantees: an
+  app that sends on ⇧Return would send.
+- **Undo:** a profile's file changes any of it (`line breaks: return`,
+  `code: no`); `PROFILES` in `dictation/lib/profiles.ts` holds Dashi's own.

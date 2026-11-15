@@ -12,6 +12,7 @@ import { realTimers } from "../shared/time/index.ts";
 import { Dictation } from "./dictation.ts";
 import type { DictationHistory } from "./history.ts";
 import { DASHI, DICTATION, type DictationKey, dictationKey, type Layout, type PillHeldKey, pillHeldKeys } from "./keys.ts";
+import type { Lexicon } from "./lexicon.ts";
 import { KeyGestures } from "./lib/gestures.ts";
 import type { DictationDeps } from "./types.ts";
 
@@ -33,6 +34,8 @@ export interface DictationParts {
   dictation: Dictation;
   /** What was dictated, for Settings › Voice › Dictation; null where none is kept. */
   history: DictationHistory | null;
+  /** The person's words and profiles, for Settings › Voice › Dictation; null where none is given. */
+  lexicon: Lexicon | null;
   /** A `held-key` event of the compositor's. `talk` says one of 0.8's talk keys moved: the capsule is told, Voice hears it itself. */
   key(name: string, down: boolean, chord?: boolean): void;
   /** The key that dictates now, or null while dictation is off. */
@@ -142,6 +145,7 @@ export function startDictation(options: DictationOptions): DictationParts {
   return {
     dictation,
     history: options.history ?? null,
+    lexicon: options.lexicon ?? null,
     key(name, down, chord = false) {
       const which = name === DASHI ? gestures[DASHI] : name === DICTATION ? gestures[DICTATION] : gestures.talk;
       if (down) which.down();

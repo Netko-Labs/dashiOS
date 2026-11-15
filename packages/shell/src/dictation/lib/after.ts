@@ -78,7 +78,7 @@ async function typeAgain(deps: DictationDeps, kept: Insertions, like: Insertion,
   if (!front) return told(deps, waitingLine("no-field"), "warn");
   const field = await fieldIn(deps, front);
   if (field?.kind === "password") return told(deps, "That is a password field. Nothing typed.", "warn");
-  const what = { heard: like.heard, text: like.text, typed: like.typed, profile: like.profile, soft: like.soft };
+  const what = { heard: like.heard, text: like.text, typed: like.typed, profile: like.profile, breaks: like.breaks };
   const { how, entry } = await typeAndRemember(deps, kept, { front, field }, what);
   if (how !== "typed" && how !== "pasted") return told(deps, "Couldn't type that.", "warn");
   return {
@@ -110,7 +110,7 @@ export async function pasteLast(deps: DictationDeps, kept: Insertions, last: { h
     how: "typed",
     profile: "",
     readable: false,
-    soft: false,
+    breaks: null,
   };
   return typeAgain(deps, kept, like, "Your last dictation.");
 }

@@ -7,12 +7,22 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { homedir, userInfo } from "node:os";
 import { join } from "node:path";
 import { runningCapsule } from "../capsule/index.ts";
 import { atspiFieldCheck } from "../clipboard/index.ts";
 import type { Compositor } from "../compositor/index.ts";
-import { DictationHistory, type DictationOptions, type DictationParts, type Layout, startDictation, tapClosesLauncher } from "../dictation/index.ts";
+import {
+  agentUnder,
+  DictationHistory,
+  type DictationOptions,
+  type DictationParts,
+  type Layout,
+  Lexicon,
+  startDictation,
+  systemWords,
+  tapClosesLauncher,
+} from "../dictation/index.ts";
 import { idleKeymap } from "../keymap/keymap-state.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import { type Clipboard, systemClipboard } from "../shared/clipboard/index.ts";
@@ -51,6 +61,19 @@ async function microphoneMuted(): Promise<boolean> {
     return (await child.exited) === 0 && text.includes("[MUTED]");
   } catch {
     return false;
+  }
+}
+
+/** The person's own name, as the account has it (the passwd entry's first field), "" when it has none. */
+function realName(): string {
+  try {
+    const { username } = userInfo();
+    const line = readFileSync("/etc/passwd", "utf8")
+      .split("\n")
+      .find((each) => each.startsWith(`${username}:`));
+    return line?.split(":")[4]?.split(",")[0]?.trim() ?? "";
+  } catch {
+    return "";
   }
 }
 
@@ -182,9 +205,14 @@ export function startDictating({ compositor, settingsStore, services, late, talk
     },
   });
   const stopKeeping = settingsStore.subscribe(() => history.refresh());
+  const words = systemWords();
+  const lexicon = new Lexicon({ words, seed: () => ({ apps: late.peek("appNames")?.() ?? [], person: realName() }) });
   const parts = startDictation({
     hub,
     history,
+    lexicon,
+    words,
+    terminalAgent: async (front) => front.pid !== null && agentUnder(front.pid),
     service: talking.service,
     settings: () => {
       const { voice, dictation, keyboard } = settings();

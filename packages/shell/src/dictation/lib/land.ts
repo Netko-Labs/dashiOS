@@ -12,10 +12,13 @@
  */
 
 import { DICTATION_LIMITS, type DictationState, type WaitReason } from "../../shared/pill/index.ts";
+import type { LexiconView } from "../lexicon.ts";
 import type { DictationDeps, FieldRead, Front } from "../types.ts";
+import type { Words } from "../words.ts";
+import { type Composed, compose } from "./compose.ts";
 import { landedLine, waitingLine } from "./lines.ts";
+import { type Place, pickProfile } from "./profiles.ts";
 import { type Insertion, type Insertions, insertionId } from "./record.ts";
-import { type Tidied, tidy } from "./tidy.ts";
 import { type Typed, typeInto } from "./type.ts";
 
 /** A press this little before `since` counts as after it: the shell hears the key come up a moment late. */
@@ -68,9 +71,9 @@ export interface Landing {
 export const withSpace = (typed: string): string => (typed.endsWith("\n") ? typed : `${typed} `);
 
 /** Where the words can go: the window and its field, or why they can't. */
-type Place = { front: Front; field: FieldRead | null } | WaitReason;
+type Spot = { front: Front; field: FieldRead | null } | WaitReason;
 
-async function placeFor(deps: DictationDeps, { at, since }: Meant): Promise<Place> {
+async function placeFor(deps: DictationDeps, { at, since }: Meant): Promise<Spot> {
   const front = await deps.front();
   if (!front) return "no-field";
   if (at && front.window !== at.window) return "left-window";
@@ -91,31 +94,53 @@ function remember(deps: DictationDeps, kept: Insertions, entry: Omit<Insertion, 
   return whole;
 }
 
-function waiting(deps: DictationDeps, tidied: Tidied, reason: WaitReason): Landing {
+/** What every landing reads: the person's words and profiles, the dictionary, and the profile they chose for a window. */
+export interface LandContext {
+  kept: Insertions;
+  lexicon(): LexiconView;
+  words: Words;
+  chosen(window: number): string | undefined;
+}
+
+function waiting(deps: DictationDeps, made: Composed, reason: WaitReason): Landing {
   const now = deps.now?.() ?? Date.now();
   return {
     typed: false,
     entry: null,
-    state: { phase: "waiting", text: tidied.typed, heard: tidied.heard, reason, line: waitingLine(reason), until: now + DICTATION_LIMITS.waiting },
+    state: { phase: "waiting", text: made.text, heard: made.heard, reason, line: waitingLine(reason), until: now + DICTATION_LIMITS.waiting },
   };
 }
 
-function landed(deps: DictationDeps, tidied: Tidied, how: "typed" | "pasted", entry: Insertion | null): Landing {
+function landed(deps: DictationDeps, made: Composed, how: "typed" | "pasted", entry: Insertion | null, profile: string): Landing {
   const now = deps.now?.() ?? Date.now();
   return {
     typed: true,
     entry,
     state: {
       phase: "landed",
-      typed: tidied.typed,
-      heard: tidied.heard,
-      changes: tidied.changes,
-      line: landedLine(tidied.changes, how, tidied.asHeard),
+      typed: made.text,
+      heard: made.heard,
+      changes: made.changes,
+      line: landedLine(made.changes, how, made.asHeard),
       until: now + DICTATION_LIMITS.landed,
       undo: entry !== null,
-      raw: entry !== null && tidied.typed !== tidied.heard,
+      raw: entry !== null && made.text !== made.heard,
+      ...(profile ? { profile } : {}),
     },
   };
+}
+
+/** The profile of the place in front, and whether an agent's prompt runs in its terminal. */
+export async function placeOf(deps: DictationDeps, ctx: LandContext, front: Front | null, field: FieldRead | null): Promise<{ place: Place; agent: boolean }> {
+  const place = pickProfile(ctx.lexicon().profiles, front, field, front ? ctx.chosen(front.window) : undefined);
+  const agent = place.terminal && front !== null && ((await deps.terminalAgent?.(front).catch(() => false)) ?? false);
+  return { place, agent };
+}
+
+/** The chord a line break is typed as there, or null for Return itself. */
+function breaksFor(place: Place, agent: boolean): string | null {
+  if (place.terminal) return agent ? "ctrl+j" : null;
+  return place.profile.breaks === "soft" ? "shift+Return" : null;
 }
 
 /** Characters into the window in front, remembered; `text` is what the history calls them. */
@@ -123,9 +148,9 @@ export async function typeAndRemember(
   deps: DictationDeps,
   kept: Insertions,
   where: { front: Front; field: FieldRead | null },
-  what: { heard: string; text: string; typed: string; profile: string; soft: boolean },
+  what: { heard: string; text: string; typed: string; profile: string; breaks: string | null },
 ): Promise<{ how: Typed; entry: Insertion | null }> {
-  const how = await typeInto(deps, where.front.window, what.typed, what.soft);
+  const how = await typeInto(deps, where.front.window, what.typed, what.breaks);
   if (how !== "typed" && how !== "pasted") return { how, entry: null };
   const entry = remember(deps, kept, {
     window: where.front.window,
@@ -138,22 +163,26 @@ export async function typeAndRemember(
     how,
     profile: what.profile,
     readable: where.field !== null && where.field.before !== null,
-    soft: what.soft,
+    breaks: what.breaks,
   });
   return { how, entry };
 }
 
-export async function land(deps: DictationDeps, kept: Insertions, heard: string, meant: Meant): Promise<Landing> {
-  const tidied: Tidied = tidy(heard, deps.prefs().tidy);
+export async function land(deps: DictationDeps, ctx: LandContext, heard: string, meant: Meant): Promise<Landing> {
   const { hub } = deps;
-  // The bar's row is the field: the words are its, at its caret.
-  if (hub.bar.getSnapshot().mode === "field" && hub.barCommands.send({ do: "insert", text: withSpace(tidied.typed) })) {
-    return landed(deps, tidied, "typed", null);
+  const lexicon = ctx.lexicon();
+  const composing = { lexicon, words: ctx.words, tidy: deps.prefs().tidy };
+  // The bar's row is the field: the words are its, at its caret, as Writing has them.
+  if (hub.bar.getSnapshot().mode === "field") {
+    const made = compose(heard, { ...composing, ...(await placeOf(deps, ctx, null, null)) });
+    if (hub.barCommands.send({ do: "insert", text: withSpace(made.text) })) return landed(deps, made, "typed", null, "");
   }
   const where = await placeFor(deps, meant);
-  if (typeof where === "string") return waiting(deps, tidied, where);
-  const what = { heard: tidied.heard, text: tidied.typed, typed: withSpace(tidied.typed), profile: "", soft: false };
-  const { how, entry } = await typeAndRemember(deps, kept, where, what);
-  if (how !== "typed" && how !== "pasted") return waiting(deps, tidied, how);
-  return landed(deps, tidied, how, entry);
+  if (typeof where === "string") return waiting(deps, compose(heard, { ...composing, ...(await placeOf(deps, ctx, null, null)) }), where);
+  const { place, agent } = await placeOf(deps, ctx, where.front, where.field);
+  const made = compose(heard, { ...composing, place, agent });
+  const what = { heard: made.heard, text: made.text, typed: withSpace(made.text), profile: place.profile.name, breaks: breaksFor(place, agent) };
+  const { how, entry } = await typeAndRemember(deps, ctx.kept, where, what);
+  if (how !== "typed" && how !== "pasted") return waiting(deps, made, how);
+  return landed(deps, made, how, entry, place.profile.name);
 }

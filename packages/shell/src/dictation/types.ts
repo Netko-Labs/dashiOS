@@ -3,6 +3,8 @@
 import type { DictationTrouble, PillHub } from "../shared/pill/index.ts";
 import type { Timers } from "../shared/time/index.ts";
 import type { DictationHistory } from "./history.ts";
+import type { Lexicon } from "./lexicon.ts";
+import type { Words } from "./words.ts";
 
 /** dashi-voice, as dictation uses it (voice/'s service). */
 export interface Hearing {
@@ -25,6 +27,47 @@ export interface Front {
   /** The app the window is (its `app_id`) and its title, where the compositor says. */
   appId?: string | undefined;
   title?: string | undefined;
+}
+
+/** A word dictation writes the person's way, and what the recogniser tends to hear instead. */
+export interface Term {
+  term: string;
+  heard: string[];
+}
+
+/** What was heard, and what is typed for it (a replacement, a snippet). */
+export interface Pair {
+  from: string;
+  to: string;
+}
+
+/** How dictation behaves in one kind of place (`~/.config/dashi/dictation/profiles/<id>`; lib/profiles.ts has Dashi's own five). */
+export interface Profile {
+  id: string;
+  /** What the capsule and Settings call it. */
+  name: string;
+  /** The apps it is for (parts of an app id, lower case) and the sites (a host and its subdomains). */
+  apps: string[];
+  sites: string[];
+  /** One short sentence for the correction model. */
+  tone: string;
+  /** The model is asked for every utterance, not only where the gate thinks it is needed. */
+  polish: boolean;
+  /** False: nothing is changed but spacing (Verbatim). */
+  tidy: boolean;
+  /** A sentence starts with a capital. */
+  capitals: boolean;
+  /** The full stop at the very end: kept, dropped, or dropped when one sentence is all there is. */
+  period: "keep" | "drop" | "drop-single";
+  /** A line break is Return (`hard`), or ⇧Return where Return sends (`soft`). */
+  breaks: "hard" | "soft";
+  lists: "markdown" | "plain";
+  /** Casing and symbols by voice, and backticks around identifiers. */
+  code: boolean;
+  /** A line break after an opening "Hi Alex,". */
+  greeting: boolean;
+  words: string[];
+  replacements: Pair[];
 }
 
 /** The field that has the keyboard, as far as AT-SPI tells (clipboard/lib/fields.ts). */
@@ -68,6 +111,12 @@ export interface DictationDeps {
   sendKeys(window: number, chord: string): Promise<void>;
   /** The app a window is, by the name the person knows ("Text Editor"); "" when not known. */
   appName?(front: Front): string;
+  /** Whether an agent's prompt (Claude Code, Codex) runs in the terminal in front, not a bare shell (lib/terminal.ts). */
+  terminalAgent?(front: Front): Promise<boolean>;
+  /** The person's vocabulary, replacements, snippets and profiles (lexicon.ts); Dashi's own, unseeded, where none is given. */
+  lexicon?: Lexicon | undefined;
+  /** Which words are words (lib/words.ts); none where no dictionary is given. */
+  words?: Words | undefined;
   /** What was dictated, kept on disk for the history (lib/history.ts); none in a test that needs none. */
   history?: DictationHistory | undefined;
   /**

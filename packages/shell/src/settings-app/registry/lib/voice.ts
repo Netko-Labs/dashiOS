@@ -63,6 +63,22 @@ export const VOICE_ROWS = [
     kind: "switch",
   },
   {
+    id: "voice/dictation-words",
+    title: "Words",
+    name: "Dictation's words",
+    detail: "Names and terms dictation writes your way. Add what it is heard as, if you know.",
+    keywords: ["vocabulary", "dictionary", "names", "terms", "spelling", "profiles", "developer", "custom words"],
+    kind: "action",
+  },
+  {
+    id: "voice/dictation-replacements",
+    title: "Replacements",
+    name: "Dictation's replacements",
+    detail: "What is heard, and what is typed for it.",
+    keywords: ["replace", "correction", "misheard", "sounds like", "cloud code"],
+    kind: "action",
+  },
+  {
     id: "voice/dictation-history",
     title: "Keep what I dictate for",
     name: "Dictation history",

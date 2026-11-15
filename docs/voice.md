@@ -168,6 +168,67 @@ The capsule's states for these: `landed` carries `undo` and `raw` (which
 buttons show), and `told` is one line of what was done or not ("Removed 14
 words.", "That text has changed, so I left it.").
 
+### Vocabulary and profiles
+
+`dictation/lexicon.ts`, `dictation/lib/lexicon-files.ts`, `profiles.ts`,
+`compose.ts`, `rules-terms.ts`, `rules-code.ts`, `rules-style.ts`,
+`seed.ts`; `dictation/words.ts`, `terminal.ts`.
+
+**The files**, in `~/.config/dashi/dictation/`, plain text a person can
+read and edit; read again at each press of the key when one changed:
+
+| File | A line | Means |
+| --- | --- | --- |
+| `vocabulary` | `Dashi: dashy, dead dash` | a term as it is written; after the colon, what the recogniser tends to hear instead |
+| `replacements` | `cloud code -> Claude Code` | heard → typed: whole words, any capitals, the longest first |
+| `snippets` | `my address -> 12 Example Street\nSpringfield` | said → text (`\n` is a line break) |
+| `profiles/<id>` | `key: value` | one profile: `name`, `apps`, `sites`, `tone`, `polish`, `tidy`, `capitals`, `final period`, `line breaks`, `lists`, `code`, `greeting`, and its own `word:` and `replace:` lines |
+
+A `#` starts a comment; a line that can't be read is skipped. A file that
+is missing is written with Dashi's own; one that is there is never written
+over. The first run seeds `vocabulary` with Dashi's and mirin's own words
+(with what Parakeet was seen to hear: "dashy", "dead dash", "cloud code",
+"whisperflow"), the person's own name (the passwd entry), and the installed
+apps' names that are names (an inner capital, a digit, or a word the
+dictionary does not have: "Kdenlive", not "Notes").
+
+**The five profiles**, chosen with no setup (`pickProfile`): a terminal
+(the field's AT-SPI role, or a terminal's app id) is Developer; else the
+site of the page the field is in (the web document around it, from AT-SPI;
+a page nobody claims is Writing, whatever the browser); else the app; else
+Writing.
+
+| Profile | Where | What it does |
+| --- | --- | --- |
+| Developer | terminals, editors, T3 Code, code hosts | casing by voice ("camel case user id" → `userId`; pascal, snake, kebab, constant, dot), flags and symbols by voice ("dash dash help" → `--help`, "open paren", "underscore", "equals sign"; "pipe" in a terminal only), backticks round identifiers outside a shell; at a shell's prompt no capital and no full stop; its own words (GitHub, TypeScript, …) |
+| Writing | documents, notes, anything unclaimed | sentences as tidied |
+| Chat | messaging apps and sites | no full stop after a single sentence; a line break is ⇧Return, so Return does not send |
+| Email | mail apps and sites | full sentences; "Hi Alex," goes on a line of its own |
+| Verbatim | chosen by hand | nothing changed but spacing |
+
+A terminal with an agent's program under its process (`terminal.ts`
+`agentUnder`: claude, codex, aider, …, read from /proc) is an agent's
+prompt, where words are prose: capitals and full stops stay, identifiers
+get backticks, and a line break is ⌃J. A bare shell's words are a command.
+
+The capsule shows the profile's name, small, while it listens and after
+the words land; a press on it takes the next profile for that window until
+it closes (`DictationCommand` `profile`). Settings › Voice lists the
+profiles, the words and the replacements, with add and remove, and opens
+the folder.
+
+**The rules, in order** (`compose`): names and terms (a replacement or a
+"heard as" form; a term's own capitals; a word no dictionary knows that is
+within 0.8 of a term, 0.86 with no dictionary; a contraction that lost its
+ending: "shouldt" → "shouldn't", "I dot like" → "I don't like"), then
+tidying with its check (below), then snippets, the Developer profile's
+casing and symbols, and the profile's style. The vocabulary for one
+dictation is the profile's words, then the project's (a place kept for the
+repository in front; nothing fills it yet), then the person's.
+`words.ts` reads the system's hunspell dictionaries (English and Spanish
+stems) the first time it is asked; with none installed, the rules that need
+one stand down.
+
 ### Tidying by rule
 
 `dictation/lib/tidy*.ts`. On this computer, no model; English and Spanish.

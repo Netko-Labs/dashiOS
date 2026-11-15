@@ -40,6 +40,7 @@ import { Setting } from "../setting.tsx";
 import { MiniButton } from "./parts.tsx";
 import { DictationRows } from "./voice-dictation.tsx";
 import { DictationHistoryRows } from "./voice-dictation-history.tsx";
+import { DictationWordsRows } from "./voice-dictation-words.tsx";
 import { offerWords, removeWords, setsWords, voiceChoices, whatFetching } from "./voice-words.ts";
 
 export type VoicePaneSource = Pick<VoiceParts, "models" | "sample">;
@@ -249,6 +250,7 @@ export function VoicePane({ settings, voice, dictation, byPerson }: VoicePanePro
       {view.error !== null && <Note testID="voice-error">{view.error}</Note>}
       {on && <KeyAndVoice settings={settings} voice={voice} view={view} guard={guard} />}
       {on && <DictationRows settings={settings} guard={guard} />}
+      {on && dictation && <DictationWordsRows source={dictation} guard={guard} />}
       {on && dictation && <DictationHistoryRows settings={settings} source={dictation} guard={guard} />}
       {on && more.length > 0 && (
         <Group testID="voice-more">

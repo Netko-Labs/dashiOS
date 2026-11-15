@@ -12,6 +12,12 @@ export type TidyChange =
   | { kind: "spacing"; count: number }
   | { kind: "capital"; count: number }
   | { kind: "punctuation"; count: number }
+  /** A name, a term or a symbol written the person's way ("cloud code" → "Claude Code", "dash dash help" → "--help"). */
+  | { kind: "fix"; count: number }
+  /** A list made of what was said ("first… second…"): how many items. */
+  | { kind: "list"; count: number }
+  /** The correction model changed this many words. */
+  | { kind: "model"; count: number }
   | { kind: "change-of-mind"; from: string; to: string };
 
 /** Why the words were not typed and wait in the capsule with Copy. */

@@ -13,6 +13,7 @@
 import { maybe } from "@dashi/shape";
 import { DICTATION_LIMITS, type DictationCommand, type DictationState, type DictationTrouble, type KeyGesture } from "../shared/pill/index.ts";
 import { realTimers, type Timers } from "../shared/time/index.ts";
+import { runCommand } from "./lib/commands.ts";
 import { HandsFree } from "./lib/hands-free.ts";
 import { HeardText } from "./lib/heard.ts";
 import { Landings } from "./lib/landings.ts";
@@ -103,6 +104,7 @@ export class Dictation {
     switch (gesture) {
       case "down":
         this.at = this.deps.prefs().on ? this.deps.front() : Promise.resolve(null);
+        if (this.deps.prefs().on) this.landings.refresh();
         // Words that wait stay until a hold replaces them.
         if (this.deps.prefs().on && this.state.phase !== "waiting") this.show({ phase: "key-down" });
         return;
@@ -165,6 +167,7 @@ export class Dictation {
     const hint = this.deps.taught() ? null : HINT;
     if (hint) this.deps.teach();
     this.show({ phase: "listening", text: "", handsFree: false, endsAt: this.now() + DICTATION_LIMITS.hold, hint });
+    this.named(turn, hold.at);
     this.limits = [
       // A held key with nothing said ends by itself.
       this.timers.set(() => {
@@ -226,42 +229,34 @@ export class Dictation {
     }
   }
 
-  /** What the capsule asks (shared/pill/dictation.ts `DictationCommand`). */
+  /** What the capsule asks (lib/commands.ts). */
   private command(command: DictationCommand): void {
-    const state = this.state;
-    switch (command.do) {
-      case "copy": {
-        if (state.phase !== "waiting" && state.phase !== "landed") return;
-        const text = command.heard ? state.heard : state.phase === "waiting" ? state.text : state.typed;
-        void this.deps.copy(text);
-        // Copied, the words need not wait any longer.
-        if (state.phase === "waiting") this.show({ phase: "idle" });
-        return;
-      }
-      case "finish":
-        if (this.handsFree.running) return void this.handsFree.end("ended");
-        return void this.finish();
-      case "dismiss":
-        return this.stop();
-      case "type":
-        return void this.type(command.text);
-      case "undo":
-        return void this.after(() => this.landings.undo());
-      case "raw":
-        return void this.after(() => this.landings.raw());
-      case "paste-last":
-        return void this.after(() => this.landings.pasteLast());
-      case "profile":
-        return;
-    }
+    runCommand(
+      {
+        deps: this.deps,
+        landings: this.landings,
+        state: () => this.state,
+        show: (state) => this.show(state),
+        hearing: () => this.hold !== null || this.handsFree.running,
+        turn: () => this.turn,
+        nextTurn: () => ++this.turn,
+        finish: () => void (this.handsFree.running ? this.handsFree.end("ended") : this.finish()),
+        stop: () => this.stop(),
+        type: (text) => void this.type(text),
+        named: (turn, at) => this.named(turn, at),
+      },
+      command,
+    );
   }
 
-  /** Something done with what landed (lib/after.ts); never while the microphone is open. */
-  private async after(run: () => Promise<DictationState>): Promise<void> {
-    if (this.hold || this.handsFree.running) return;
-    const turn = ++this.turn;
-    const state = await run();
-    if (turn === this.turn) this.show(state);
+  /** The listening line says which profile will tidy the words. */
+  private named(turn: number, at: Promise<Front | null>): void {
+    void at
+      .then((front) => this.landings.profileName(front))
+      .then((profile) => {
+        if (turn === this.turn && this.state.phase === "listening" && profile !== "") this.deps.hub.dictation.set({ ...this.state, profile });
+      })
+      .catch(() => {});
   }
 
   /** Words from elsewhere (Dashi's capsule's "Type it instead") land as a dictation would. */

@@ -83,6 +83,7 @@ export function startCatalog({ compositor, apps, stores, desktops, settingsWindo
   const nameApp = (window: CompositorWindow): string => appFor(apps, window, installedApp).name;
   late.set("installedApp", installedApp);
   late.set("nameApp", nameApp);
+  late.set("appNames", () => appCatalog.entries.map((entry) => entry.name));
   void desktops.spaces?.controller.relabel();
   const pins = new PinStore({ defaults: dockDefaults(apps) });
   const rankingMemory = new RankingMemory();

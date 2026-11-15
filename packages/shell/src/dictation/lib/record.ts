@@ -24,8 +24,8 @@ export interface Insertion {
   profile: string;
   /** The field's text could be read when it landed, so Undo can check it is still there. */
   readable: boolean;
-  /** Its line breaks were typed as ⇧Return (a field where Return sends). */
-  soft: boolean;
+  /** The chord its line breaks were typed as where Return sends (⇧Return, ⌃J); null where they were Return. */
+  breaks: string | null;
 }
 
 /** How many are remembered. */
