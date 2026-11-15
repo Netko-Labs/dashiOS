@@ -14,7 +14,7 @@ the same change.
   input; every decision (placement, shortcuts, permissions, power, network,
   accounts) is the shell's, sent over IPC.
 - **TypeScript defines the UI; mirin Metal draws it.** Surfaces are React
-  through `@mirinjs/metal`, drawn by `mirin-metal-host` (GPUI).
+  through `@mirinjs/metal`, drawn by `mirin-metal-host` (sumi, mirin's engine).
 - **Components:** `@mirinjs/metal-ui` (shadcn) for anything shadcn has;
   `@dashi/ui` for Dashi's own; app-local otherwise. See `docs/conventions.md`,
   "UI Components".

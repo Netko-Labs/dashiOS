@@ -85,7 +85,7 @@ export function Group({
   );
 }
 
-/** One line of 13 px text: GPUI's line height is φ times the size (vendor/gpui style.rs). */
+/** One line of 13 px text: the engine's line height is φ times the size (sumi's style.rs). */
 const LINE_13 = 21;
 /** A row's least height (LA-1). */
 const ROW_MIN = 44;

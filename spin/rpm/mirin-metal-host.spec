@@ -35,6 +35,9 @@ BuildRequires:  pkgconfig(fontconfig)
 Requires:       vulkan-loader
 Requires:       mesa-vulkan-drivers
 Requires:       libwayland-client
+# Opened only when no Vulkan driver has a device: the engine then draws with GL.
+Recommends:     libglvnd-egl
+Recommends:     libwayland-egl
 
 %description
 The process that draws mirin Metal apps: it takes a React tree from Bun and
