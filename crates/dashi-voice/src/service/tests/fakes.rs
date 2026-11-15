@@ -45,6 +45,15 @@ struct Tenths(Arc<Played>);
 
 impl Synthesizer for Tenths {
     fn speak(&mut self, sentence: &str, _voice: &str, _speed: f32) -> Result<Spoken, String> {
+        // The maker's thread and the speakers' opening run side by side, so a test that asks which came
+        // first has the maker wait for the speakers (two seconds at most): speakers that open only after
+        // the first sentence is made are then counted as closed.
+        if self.0.made_waits_for_open.load(Ordering::SeqCst) {
+            let until = std::time::Instant::now() + Duration::from_secs(2);
+            while self.0.opened.load(Ordering::SeqCst) == 0 && std::time::Instant::now() < until {
+                std::thread::yield_now();
+            }
+        }
         let opened = self.0.opened.load(Ordering::SeqCst);
         self.0.opened_when_made.lock().unwrap().push(opened);
         if sentence.contains("fail") {
@@ -142,6 +151,8 @@ pub(super) struct Played {
     /// Speakers opened so far, and how many were open each time a sentence was asked for.
     pub(super) opened: AtomicUsize,
     pub(super) opened_when_made: Mutex<Vec<usize>>,
+    /// The maker waits for the speakers before it notes whether they were open.
+    pub(super) made_waits_for_open: AtomicBool,
     pub(super) closed: AtomicBool,
     pub(super) finished: AtomicBool,
     /// Called once this many samples were written.

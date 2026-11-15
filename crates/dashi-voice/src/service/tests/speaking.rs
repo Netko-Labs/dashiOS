@@ -58,9 +58,13 @@ fn sentences_are_said_in_order_with_their_words() {
 #[test]
 fn the_speakers_open_while_the_first_sentence_is_made_not_after() {
     let world = world();
+    world
+        .played
+        .made_waits_for_open
+        .store(true, Ordering::SeqCst);
     world.ask(say("Hello there. How are you today?")).unwrap();
     world.until("it is said", |world| spoken(world, 1));
-    // One pair of speakers for the utterance, open before any sentence was asked for.
+    // One pair of speakers for the utterance, open without waiting for a sentence to be made.
     assert_eq!(world.played.opened.load(Ordering::SeqCst), 1);
     assert_eq!(*world.played.opened_when_made.lock().unwrap(), vec![1, 1]);
     world.until("it is idle", |world| {
