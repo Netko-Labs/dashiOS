@@ -12,8 +12,14 @@ import { Voice } from "../src/voice/voice.ts";
 import { settle } from "./support/time.ts";
 import { fakeVoice, handTimers } from "./support/voice.ts";
 
+/** Each `speak` is one sentence, with an id of its own: 7, 8, 9… */
+function speakIds(): () => { id: number } {
+  let id = 6;
+  return () => ({ id: ++id });
+}
+
 function talking() {
-  const voice = fakeVoice({ "listen.stop": { text: "Open the calendar.", speech_ms: 900 }, speak: { id: 7 } });
+  const voice = fakeVoice({ "listen.stop": { text: "Open the calendar.", speech_ms: 900 }, speak: speakIds() });
   const timers = handTimers();
   const asked: string[] = [];
   const quiet: unknown[] = [];
@@ -131,7 +137,8 @@ test("Esc ends a tap's listen at once, and a tap while Dashi speaks only stops i
   await settle();
   expect(asked).toEqual([]);
   // Dashi speaks; a tap stops it and listens to nothing.
-  await talk.say("A long answer.");
+  talk.say("A long answer.");
+  await settle();
   const before = voice.calls.length;
   await press(TALK_TAP, 0);
   expect(voice.calls.slice(before)).toEqual(["speak.stop", "listen", "warm", "listen.cancel"]);

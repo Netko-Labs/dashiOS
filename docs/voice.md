@@ -35,17 +35,31 @@ Voice are the shell's.
 4. **The key comes up:** send `listen.stop`. Its reply carries the words;
    the state is `thinking` until then. Esc: `listen.cancel` (nothing is
    worked out).
-5. **Say an answer:** send `speak`. For each sentence a `sentence` event
-   comes as its first sound plays, with every word's start and end in
-   milliseconds from that moment: show the sentence as the caption and move
-   the highlight by the shell's own clock. `spoken` ends it. Esc, or the
-   person talking: `speak.stop`.
-6. **`ask_person`:** `speak` the question as its sheet comes up. The person
-   answers as they ask: holding the talk key (`listen`, then `listen.stop`),
-   and the words heard are the answer instead of an ask. The microphone
-   opens only on the person's own press, never because an agent asked.
-   (`"until": "silence"` is there for a listen that ends by itself; the
-   shell does not use it in 0.8.)
+5. **Say an answer:** one `speak` for each sentence, with `queue: true`,
+   in order, as the answer is written (`voice/lib/saying.ts`,
+   `voice/lib/sentences.ts`): the first is heard while the rest is still
+   coming, and none is ever cut, whatever the answer's length. For each a
+   `sentence` event comes as its first sound plays, with every word's start
+   and end in milliseconds from that moment: show the sentence as the
+   caption and move the highlight by the shell's own clock. `spoken` ends
+   each; the answer is over when the last has ended. Esc, or the key held
+   again: `speak.stop`. A dictation that starts while Dashi speaks opens
+   the microphone, which stops the sound (the service's rule): the shell
+   keeps the sentences that had not played to their end and says them once
+   the dictation is over, with "Paused while you dictate." meanwhile. One
+   line an utterance goes to the session's log: `dashi-shell: voice said
+   asked="…" handed=N played=M ended=done|stopped|failed|paused` (the
+   sentences handed to `speak`, and the ones the service said it played).
+6. **`ask_person`:** `speak` the question as its card comes up, after
+   whatever Dashi is saying. Once its last sentence has played, and 300 ms
+   more, the shell opens the microphone by itself (`listen`, then
+   `listen.quiet`) and the words heard are the answer instead of an ask;
+   with nothing said for 6 s it closes again. The same happens after an
+   answer while the conversation is open, unless Settings › Voice turns
+   "Listen again after Dashi speaks" off. The microphone never opens while
+   a sample still plays: there is no echo cancelling yet, so Dashi would
+   hear itself. Holding the talk key works as ever, and takes the place of
+   a listen that opened by itself.
 7. **Keep it warm:** when Voice is on and the session starts, send `warm`
    so the first hold answers at once. Models unused for ten minutes are let
    go of (the service is then 33 MB, not 1.8 GB), and loaded again when next

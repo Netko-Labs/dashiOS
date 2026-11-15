@@ -65,6 +65,10 @@ export function chipLabel(chip: Chip): string {
       return chip.text ? `Dashi is thinking about: ${chip.text}. Stop` : "Dashi is thinking. Stop";
     case "speaking":
       return `Dashi says: ${chip.full} Stop`;
+    case "working":
+      return `Dashi is working: ${chip.text}. Stop`;
+    case "open":
+      return "Dashi is still with you";
     case "notice":
       return chip.text;
   }
@@ -158,6 +162,8 @@ function Words({ chip, chars, still, level }: { chip: Chip; chars: number; still
       </>
     );
   }
+  // The capsule draws the open conversation's quiet line; the bar's chip has nothing to say of it.
+  if (chip.kind === "open") return null;
   return <Line bold>{head(chip.text, chars + 4)}</Line>;
 }
 
@@ -173,7 +179,7 @@ export interface VoiceChipProps {
 export function VoiceChip({ voice, bar, menus, status, reduceMotion = () => false }: VoiceChipProps) {
   const colors = useColors();
   const chip = useSyncExternalStore(voice.subscribe, voice.getSnapshot);
-  if (!chip || bar === null || menus === null) return null;
+  if (!chip || chip.kind === "open" || bar === null || menus === null) return null;
   const place = chipPlace(bar, menus, status ?? 0);
   const press = () => {
     if (chip.kind === "notice") {

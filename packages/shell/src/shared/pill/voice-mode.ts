@@ -14,10 +14,12 @@ export type VoiceModeState =
   | { phase: "listening"; text: string; answering: boolean }
   /** v-03. The key came up: what was heard, while the assistant thinks. Nothing has run yet: Cancel and "Type it instead" show here. */
   | { phase: "heard"; text: string }
-  /** v-05, v-20. The assistant runs step `index` (from 0) of `of`. */
+  /** v-05, v-20. The assistant runs step `index` (from 0) of `of`; `of` is 0 when it works in a loop and the count is not known. `task` is "" then: Stop stops the voice loop. */
   | { phase: "step"; title: string; index: number; of: number; task: string }
   /** v-11, v-19. Dashi speaks: the sentence's words and the one being said (`at`, -1 before the first). `full` is for a screen reader and the card. */
   | { phase: "answer"; words: readonly string[]; at: number; full: string }
+  /** Nothing is said or heard, and the conversation is still open: what is said next continues it. A quiet line, not a new surface. */
+  | { phase: "open" }
   /** v-12. It is done: one line, then idle at `until`. */
   | { phase: "done"; line: string; until: number }
   /** v-18. Stopped by the person. */

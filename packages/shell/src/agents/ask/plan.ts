@@ -107,9 +107,10 @@ const CHATTER: readonly RegExp[] = [
 ];
 
 /**
- * What an answerer says to the person under its plan: its last paragraph
- * (its final words, after any tool calls), on one line; nothing when that
- * is its tools' chatter, never "29 tools | ok: Planned as step 1…".
+ * What an answerer says to the person under its plan, for a launcher row:
+ * its last paragraph (its final words, after any tool calls), on one line;
+ * nothing when that is its tools' chatter, never "29 tools | ok: Planned as
+ * step 1…". Never what is spoken: speech takes `wholeWords`.
  */
 export function spokenWords(text: string, max = 140): string {
   const last =
@@ -119,6 +120,24 @@ export function spokenWords(text: string, max = 140): string {
       .filter(Boolean)
       .at(-1) ?? "";
   return CHATTER.some((pattern) => pattern.test(last)) ? "" : oneLine(last, max);
+}
+
+/**
+ * Everything an answerer says to the person, for speech and for the card
+ * that reads it whole: every paragraph, uncut, without its tools' chatter.
+ * The launcher's row keeps its one short line (`spokenWords`).
+ */
+export function wholeWords(text: string): string {
+  return text
+    .split(/\n\s*\n/)
+    .map((paragraph) =>
+      paragraph
+        .replace(/\p{Cc}/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim(),
+    )
+    .filter((paragraph) => paragraph !== "" && !CHATTER.some((pattern) => pattern.test(paragraph)))
+    .join("\n\n");
 }
 
 const quoted = (value: unknown): string => `“${oneLine(String(value), 40)}”`;

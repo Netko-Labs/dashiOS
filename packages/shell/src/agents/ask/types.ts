@@ -90,8 +90,10 @@ export interface TaskView {
   request: string;
   phase: TaskPhase;
   steps: readonly Step[];
-  /** What the model said besides its calls, on one line. */
+  /** What the model said besides its calls, on one line (a launcher row's). */
   said: string;
+  /** All it said, uncut: what Dashi speaks. Absent where only the row's line is known. */
+  words?: string;
   failure: { kind: AnswerFailure; text: string } | null;
   /** A failed ask that has left "Now" (a while after, or once the launcher closed); still Retry-able from its plan, and in the history. */
   leftNow?: true;

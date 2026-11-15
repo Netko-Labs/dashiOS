@@ -74,11 +74,23 @@ export function startTalking({ compositor, settingsStore, services, late }: Talk
     ? compositor.on((event) => {
         // The Dashi key and the dictation key are boot/dictation.ts's.
         if (event.event === "held-key" && (talks(event.name) || event.name === STOP)) parts.voice.key(event.name, event.down);
-        if (event.event === "lock" && event.locked) parts.voice.stop();
+        // The lock ends the conversation too.
+        if (event.event === "lock" && event.locked) parts.voice.stop(true);
       })
     : () => {};
+  // A dictation opens the microphone, and that stops Dashi's sound (the service's rule): what it was saying waits and is said after.
+  const hub = late.peek("pill");
+  const open = (): boolean => ["opening", "listening", "tidying"].includes(hub?.dictation.getSnapshot().phase ?? "idle");
+  let dictating = open();
+  const offDictation = hub?.dictation.subscribe(() => {
+    if (open() === dictating) return;
+    dictating = !dictating;
+    if (dictating) parts.voice.pauseSpeech();
+    else parts.voice.resumeSpeech();
+  });
   services.add("voice", () => {
     stopHearing();
+    offDictation?.();
     parts.close();
   });
   return { ...parts, heldKeys };

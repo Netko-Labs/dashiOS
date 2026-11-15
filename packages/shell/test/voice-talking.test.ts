@@ -12,8 +12,14 @@ import { Voice } from "../src/voice/voice.ts";
 import { settle } from "./support/time.ts";
 import { fakeVoice, handTimers } from "./support/voice.ts";
 
+/** Each `speak` is one sentence, with an id of its own: 7, 8, 9… */
+function speakIds(): () => { id: number } {
+  let id = 6;
+  return () => ({ id: ++id });
+}
+
 function talking(options: { on?: boolean; trouble?: string | null; answer?: Answer | ((words: string) => Promise<Answer>) } = {}) {
-  const voice = fakeVoice({ "listen.stop": { text: "Open the calendar.", speech_ms: 900 }, speak: { id: 7 } });
+  const voice = fakeVoice({ "listen.stop": { text: "Open the calendar.", speech_ms: 900 }, speak: speakIds() });
   const timers = handTimers();
   const held: string[][] = [];
   const asked: string[] = [];
@@ -87,7 +93,8 @@ test("held, Dashi listens and shows the words as they are heard; let go, the age
   state.now += 2000;
   talk.key(TALK, false);
   await settle();
-  expect(voice.calls).toEqual(["listen", "warm", "listen.stop", "speak:Here it is. Your next meeting is at four."]);
+  // Each sentence is handed to `speak` by itself, queued after the one before: none is cut, and each is counted.
+  expect(voice.calls).toEqual(["listen", "warm", "listen.stop", "speak:Here it is.", "speak:Your next meeting is at four."]);
   expect(asked).toEqual(["Open the calendar."]);
   expect(chip()).toEqual({ kind: "thinking", text: "Open the calendar." });
   voice.emit(SENTENCE);
@@ -97,6 +104,9 @@ test("held, Dashi listens and shows the words as they are heard; let go, the age
   timers.advance(350);
   expect(chip()).toMatchObject({ kind: "speaking", at: 2 });
   voice.emit({ event: "spoken", id: 7, reason: "done" });
+  // The second sentence is still to play.
+  expect(chip()).toMatchObject({ kind: "speaking" });
+  voice.emit({ event: "spoken", id: 8, reason: "done" });
   expect(chip()).toBeNull();
 });
 
@@ -170,6 +180,7 @@ test("an ask that failed is said, and its words stay in the chip with where to g
   voice.emit({ ...SENTENCE, text: "No agent answers yet." });
   expect(chip()).toEqual(notice);
   voice.emit({ event: "spoken", id: 7, reason: "done" });
+  voice.emit({ event: "spoken", id: 8, reason: "done" });
   expect(chip()).toEqual(notice);
   timers.advance(4000);
   expect(chip()).toBeNull();

@@ -65,8 +65,8 @@ export function startVoice(options: VoiceOptions): VoiceParts {
   const service = new VoiceService(options.connect ?? voiceConnector());
   const models = new VoiceModels(service, watchFolder);
   const prefs = () => {
-    const { on, key, voice } = options.settings.getSnapshot().data.voice;
-    return { on: on === true, key: talkKey(isTalkKeyId(key) ? key : undefined), voice };
+    const { on, key, voice, listenAgain } = options.settings.getSnapshot().data.voice;
+    return { on: on === true, key: talkKey(isTalkKeyId(key) ? key : undefined), voice, listenAgain: listenAgain !== false };
   };
   const voice = new Voice({
     service,
@@ -80,6 +80,7 @@ export function startVoice(options: VoiceOptions): VoiceParts {
     hold: options.hold,
     asker: options.asker,
     locale: options.locale,
+    log: (line) => console.error(`dashi-shell: voice ${line}`),
   });
   // Warm while it is on and can be used, so the first hold answers at once (docs/voice.md).
   let warmed = false;
@@ -102,7 +103,7 @@ export function startVoice(options: VoiceOptions): VoiceParts {
     models,
     sample(id) {
       const language = models.getSnapshot().voices.find((each) => each.id === id)?.language ?? "en";
-      void voice.say(sampleWords(language), id);
+      voice.say(sampleWords(language), id);
     },
     go: options.go,
     close() {

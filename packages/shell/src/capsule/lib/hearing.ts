@@ -8,7 +8,7 @@ import type { Timers } from "../../shared/time/index.ts";
 import type { VoiceSource } from "./sources.ts";
 
 export class Hearing {
-  private end: (() => void) | null = null;
+  private end: ((keep: boolean) => void) | null = null;
 
   constructor(
     private readonly voice: VoiceSource | null,
@@ -25,18 +25,19 @@ export class Hearing {
     const voice = this.voice;
     if (!voice) return;
     this.stop();
-    let release: (() => void) | null = null;
+    let release: ((keep?: boolean) => void) | null = null;
     const timer = this.timers.set(() => {
       if (still()) release = voice.ask(words, (text) => still() && heard(text));
     }, 0);
-    this.end = () => {
+    this.end = (keep) => {
       this.timers.clear(timer);
-      release?.();
+      release?.(keep);
     };
   }
 
-  stop(): void {
-    this.end?.();
+  /** The card's turn is over. `keep` when the card was answered: what Dashi was saying is said to its end, not cut by the press. */
+  stop(keep = false): void {
+    this.end?.(keep);
     this.end = null;
   }
 }

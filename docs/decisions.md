@@ -3431,3 +3431,32 @@ short words, as the rulebook is written.
   surface, and a login screen that does not open locks the person out).
 - **Undo:** nothing to undo.
 
+### D146. Dashi's speech is never cut: every sentence is handed to `speak`, and each utterance is counted in the log
+
+- **Date:** 2026-11-15. `v09/loop` (the assistant's rebuild, brief b1).
+- **Question:** half of a day's spoken answers stopped in the middle of a
+  sentence. The words were cut to 140 characters for a launcher row
+  (`agents/ask/plan.ts` `spokenWords`) and that cut line was what was
+  spoken. What is spoken, and what else stops speech early?
+- **Choice:**
+  - A task keeps all the model said (`words`, `wholeWords`: every
+    paragraph, uncut, without its tools' chatter). Speech and the card
+    that reads an answer use it. The launcher's row keeps its one line.
+  - The shell cuts the words into sentences and hands each to `speak`
+    queued (`voice/lib/saying.ts`). An utterance is over when the last has
+    played. One line each in the session's log: asked, handed, played, why
+    it ended.
+  - A yes on a card lets Dashi finish its sentence; a no, or a card that
+    goes, stops it.
+  - A dictation that starts while Dashi speaks pauses it: the sentences
+    not played to their end are said after the dictation, and the capsule
+    says "Paused while you dictate." The service still stops the sound
+    when the microphone opens; the shell says the rest again.
+- **Why:** the cut was a launcher's measure used for speech. The other two
+  dropped the part of an answer that says what Dashi could not do.
+- **Cost:** a sentence interrupted by a dictation is said again from its
+  start. One `speak` a sentence opens the speakers once a sentence; the
+  pause between sentences is the service's (about half a second).
+- **Undo:** hand the whole text in one `speak` again (`Saying.add`); the
+  log line then counts pieces, not sentences.
+
