@@ -179,6 +179,29 @@ function KeyAndVoice({ settings, voice, view, guard }: { settings: SettingsStore
   );
 }
 
+/**
+ * The model that corrects dictation (docs/dictation-rewrite.md), in a row of its own: it is fetched for another
+ * reason than a language, so never with "More languages". Once here, the row says what the speed test found.
+ */
+function Corrections({ voice, view, guard }: { voice: VoicePaneSource; view: ModelsView; guard: PersonOnly }) {
+  const sets = view.sets.filter((set) => set.id === REWRITE_SET);
+  if (sets.length === 0) return null;
+  return (
+    <Group testID="voice-corrections">
+      <ModelsRow
+        id="voice/corrections"
+        sets={sets}
+        view={view}
+        voice={voice}
+        offer={correctionsOffer(sets)}
+        hereNote={speedWords(speedWord())}
+        onFetch={() => void voice.models.fetch(sets.map((set) => set.id))}
+        guard={guard}
+      />
+    </Group>
+  );
+}
+
 /** What the key's row says: how it talks, how a tap of it talks where one does, and what it no longer does. */
 export function keyWords(key: TalkKey): string {
   return [`Hold ${key.hold} to talk, and let go to hear the answer.`, key.tap, key.cost].filter(Boolean).join(" ");
@@ -212,8 +235,6 @@ export function VoicePane({ settings, voice, byPerson }: { settings: SettingsSto
     );
   }
   const basics = basicSets(view.sets);
-  // The model that corrects dictation has a row of its own: it is fetched for another reason than a language.
-  const corrections = view.sets.filter((set) => set.id === REWRITE_SET);
   const more = view.sets.filter((set) => !set.basic && set.id !== REWRITE_SET);
   const usable = basicsHere(view.sets);
   const on = wanted && usable;
@@ -247,20 +268,7 @@ export function VoicePane({ settings, voice, byPerson }: { settings: SettingsSto
       {view.error !== null && <Note testID="voice-error">{view.error}</Note>}
       {on && <KeyAndVoice settings={settings} voice={voice} view={view} guard={guard} />}
       {on && <DictationRows settings={settings} guard={guard} />}
-      {on && corrections.length > 0 && (
-        <Group testID="voice-corrections">
-          <ModelsRow
-            id="voice/corrections"
-            sets={corrections}
-            view={view}
-            voice={voice}
-            offer={correctionsOffer(corrections)}
-            hereNote={speedWords(speedWord())}
-            onFetch={() => void voice.models.fetch(corrections.map((set) => set.id))}
-            guard={guard}
-          />
-        </Group>
-      )}
+      {on && <Corrections voice={voice} view={view} guard={guard} />}
       {on && more.length > 0 && (
         <Group testID="voice-more">
           <ModelsRow
@@ -274,7 +282,7 @@ export function VoicePane({ settings, voice, byPerson }: { settings: SettingsSto
           />
         </Group>
       )}
-      <Caption>{[...basics, ...(on ? [...corrections, ...more] : [])].map((set) => set.credit).join(" ")}</Caption>
+      <Caption>{[...basics, ...(on ? view.sets.filter((set) => !set.basic) : [])].map((set) => set.credit).join(" ")}</Caption>
     </Page>
   );
 }
