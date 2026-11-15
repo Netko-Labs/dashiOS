@@ -1,4 +1,4 @@
-/** Settings › Voice's rows (lib/panes/voice.tsx): the switch, the models, the talk key, Dashi's voice, dictation, and more languages. The person's alone: no agent turns the microphone's feature on. */
+/** Settings › Voice's rows (lib/panes/voice.tsx): the switch, the models, the talk key, Dashi's voice and the voice for each other language, dictation, and more languages. The person's alone: no agent turns the microphone's feature on. */
 
 import type { RowDef } from "../types.ts";
 
@@ -31,6 +31,68 @@ export const VOICE_ROWS = [
     detail: "The voice answers and questions are said in.",
     keywords: ["speaker", "accent", "sample", "text to speech", "tts", "play", "language"],
     kind: "choice",
+  },
+  {
+    id: "voice/each-language",
+    title: "Speak each language in its own voice",
+    detail: "A sentence in Spanish is said by a Spanish voice, one in English by an English voice. Off, everything is said in the one voice.",
+    keywords: ["bilingual", "spanish", "english", "accent", "language", "switch voice", "multilingual", "pronunciation"],
+    kind: "switch",
+  },
+  {
+    id: "voice/in-en",
+    title: "In English",
+    name: "Dashi's voice in English",
+    detail: "The voice that says what is in English.",
+    keywords: ["english", "voice", "accent", "language", "sample"],
+    kind: "choice",
+  },
+  {
+    id: "voice/in-es",
+    title: "In Spanish",
+    name: "Dashi's voice in Spanish",
+    detail: "The voice that says what is in Spanish.",
+    keywords: ["spanish", "voice", "accent", "language", "sample"],
+    kind: "choice",
+  },
+  {
+    id: "voice/in-fr",
+    title: "In French",
+    name: "Dashi's voice in French",
+    detail: "The voice that says what is in French.",
+    keywords: ["french", "voice", "accent", "language", "sample"],
+    kind: "choice",
+  },
+  {
+    id: "voice/in-hi",
+    title: "In Hindi",
+    name: "Dashi's voice in Hindi",
+    detail: "The voice that says what is in Hindi.",
+    keywords: ["hindi", "voice", "accent", "language", "sample"],
+    kind: "choice",
+  },
+  {
+    id: "voice/in-it",
+    title: "In Italian",
+    name: "Dashi's voice in Italian",
+    detail: "The voice that says what is in Italian.",
+    keywords: ["italian", "voice", "accent", "language", "sample"],
+    kind: "choice",
+  },
+  {
+    id: "voice/in-pt",
+    title: "In Portuguese",
+    name: "Dashi's voice in Portuguese",
+    detail: "The voice that says what is in Portuguese.",
+    keywords: ["portuguese", "voice", "accent", "language", "sample"],
+    kind: "choice",
+  },
+  {
+    id: "voice/add-language",
+    title: "Speak another language",
+    detail: "Turns on a voice for a language Dashi does not speak yet.",
+    keywords: ["french", "hindi", "italian", "portuguese", "add language", "voice", "multilingual"],
+    kind: "action",
   },
   {
     id: "voice/dictation",
