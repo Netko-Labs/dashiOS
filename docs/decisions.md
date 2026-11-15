@@ -2904,6 +2904,28 @@ short words, as the rulebook is written.
   pressed with the caret inside the line, and keys typed within the same
   round trip, can still land one place early (3 needs mirin: a rebase
   should not take the tree's `selection`).
+- **The other fields the app also writes,** and whether a `submit` that
+  carries the field's text as it was when Enter was pressed matters there
+  (looked at by `n29`; none needed a change):
+  - The launcher's field (`launcher/lib/field.tsx`; the app takes a chip
+    out of the words, completes on Tab, empties it as it opens). Enter
+    runs the row the launcher's own state has chosen and never reads the
+    text the `submit` carries; what was typed before Enter comes as
+    changes first. Does not matter.
+  - The bar's field and the capsule's (`menubar/lib/field-row.tsx`; the
+    app writes it with `valueRevision`: history, "Type it instead",
+    emptied when sent). Enter sends the state's text. Does not matter.
+  - Settings' search (`settings-app/lib/sidebar-search.tsx`; the app
+    empties it on Esc). Enter opens what the state found. Does not matter.
+  - Files' omnibox (`apps/files/lib/omnibox/omnibox-editor.tsx`). It
+    reads the text the `submit` carries, but the app writes the field only
+    on Esc, which ends the edit. Does not matter.
+  - Rename in place (`shared/file-browser/lib/views/rename-field.tsx`)
+    reads the carried text too, and the app never writes the field after
+    it opens. Does not matter.
+  - Find in Text Editor and Notes: the app never writes the field. Terminal
+    has no find field; a tab's name is written only as its field opens.
+  - Calculator's line is the one where it matters (the cost above).
 - **Undo:** `fe547913` and `ec811ee3` are D124's two commits.
 
 ### D130. The capsule's window opens and hides when asked; it still lingers
