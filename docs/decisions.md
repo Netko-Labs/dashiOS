@@ -2924,7 +2924,7 @@ short words, as the rulebook is written.
     reads the carried text too, and the app never writes the field after
     it opens. Does not matter.
   - Find in Text Editor and Notes: the app never writes the field. Terminal
-    has no find field; a tab's name is written only as its field opens.
+    has no text field.
   - Calculator's line is the one where it matters (the cost above).
 - **Undo:** `fe547913` and `ec811ee3` are D124's two commits.
 
@@ -3079,3 +3079,38 @@ short words, as the rulebook is written.
   Settings' scroll to a searched row (`src/overlay.tsx`).
 - **Undo:** Calendar: `git revert` of this entry's first commit, less the
   files under `shared/file-browser`.
+
+### D135. A file drag to or from an X11 app is not carried yet; a link dropped on Files is refused
+
+- **Date:** 2026-11-15. The `n28` take-up, finished by `n29` (mirin PR 40).
+- **Question:** mirin found a Metal file drag right between Wayland apps
+  and lost when the other side is an X11 app under Xwayland, and said that
+  path is the compositor's. Build the bridge now? And what does Files do
+  with a link dropped on it?
+- **What was seen** (the VM, real pointer): a file dragged from Files onto
+  Helium's upload page is taken when Helium is a Wayland app (the page got
+  the file's name and size) and not at all when Helium runs with
+  `--ozone-platform=x11` (no `dragover`). A link dragged from Firefox onto
+  Files' listing brought nothing, with Firefox on Wayland or on X11.
+  Dashi starts Helium with `--ozone-platform=wayland` and Firefox with
+  `MOZ_ENABLE_WAYLAND=1`, in the VM and on the laptop, so both are Wayland
+  apps as shipped.
+- **Choice:** not built in 0.9. `dashi-comp` wires smithay's Xwayland
+  selections (the clipboard and the primary selection, both ways:
+  `xwayland/selection.rs`) and nothing for drags, because smithay 0.7.0,
+  the newest release, has no XDND: no `XdndAware` window, no
+  `XdndEnter`/`Position`/`Drop`, in either direction. The bridge is
+  Dashi's to write on its second X connection (`xwayland/wm.rs`): a proxy
+  window that owns `XdndSelection` for a Wayland drag over an X11 window
+  and speaks XDND to it, reading the Wayland source through the data
+  device; and the other way, a `wl_data_source` made by the compositor for
+  an X11 `XdndSelection` owner. Several days with its headless tests, and
+  a fault in it breaks every drag, so it is its own piece of work.
+- **A link dropped on Files:** refused, as mirin's host does (the pointer
+  shows no drop). A file manager's other answer, a `.desktop` link file in
+  the folder, needs the host to hand over a drag with no file in it, which
+  it does not; asked of mirin only if someone wants it.
+- **Cost:** an app that is X11 only (some games' launchers, old toolkits)
+  neither takes a file dragged from Files nor gives one to it. Open and
+  Save sheets, the clipboard and paste work there.
+- **Undo:** nothing to undo.
