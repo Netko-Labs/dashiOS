@@ -43,8 +43,8 @@ function findInput(node: unknown, id: string): InputProps | null {
   return null;
 }
 
-/** What a host that carries typing onto an app's write says of itself (whole trees, no patches). */
-const REBASES: NativeEvent = { type: "protocol", nodeId: "root", patches: 0, rebase: true };
+/** What mirin's host at `50241ea` says of its fields (whole trees, no patches): it carries typing onto a write and onto a new revision, drops a selection made in another text, and says back none it was told. */
+const REBASES: NativeEvent = { type: "protocol", nodeId: "root", patches: 0, rebase: true, selectionHash: true, noSelectionEcho: true, revisionRebase: true };
 
 export async function mount() {
   const trees: string[] = [];
