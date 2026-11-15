@@ -1,26 +1,122 @@
 {
   "source": "dashi-0.9.0-design/assistant-v2/dictation-corpus.md: what Dashi's dictation got wrong in the owner's own messages. Each row is what landed then; `by` says what puts it right now: `rules` (it lands as `want` with no model), `model` (it waits for the correction model; `gate` is why the gate sends it, empty when nothing in the words says so), `voice` (the speaker's own phrasing: it must land untouched), `unresolved` (the lead could not tell what was meant).",
   "rows": [
-    { "row": 1, "landed": "I use cloud code for that.", "by": "rules", "want": "I use Claude Code for that." },
-    { "row": 2, "landed": "Cloud can do that.", "by": "model", "gate": ["near-term"] },
-    { "row": 3, "landed": "Ask the dead dash agent.", "by": "rules", "want": "Ask the Dashi agent." },
-    { "row": 4, "landed": "The dashy agent is slow.", "by": "rules", "want": "The Dashi agent is slow." },
-    { "row": 5, "landed": "I want to do it through boys.", "by": "model", "gate": [] },
-    { "row": 6, "landed": "It is not correcting like Whisperflow.", "by": "rules", "want": "It is not correcting like Wispr Flow." },
-    { "row": 7, "landed": "The text to speech is not correcting what I dictate.", "by": "model", "gate": [] },
-    { "row": 8, "landed": "The text to speech is being caught.", "by": "unresolved" },
-    { "row": 9, "landed": "I dot like it.", "by": "rules", "want": "I don't like it." },
-    { "row": 10, "landed": "It shouldt have that.", "by": "rules", "want": "It shouldn't have that." },
-    { "row": 11, "landed": "Make him or make her whatever it is use the tools.", "by": "model", "gate": [] },
-    { "row": 12, "landed": "Right now, it does nothing. Right now it cannot follow up.", "by": "model", "gate": ["cue"] },
-    { "row": 13, "landed": "It just start a new chat.", "by": "model", "gate": [] },
-    { "row": 14, "landed": "It feels like a cheap out siri.", "by": "rules", "want": "It feels like a cheap out Siri." },
-    { "row": 15, "landed": "So what about we can make it better.", "by": "model", "gate": [] },
-    { "row": 16, "landed": "Take that on mine on the text.", "by": "unresolved" },
-    { "row": 17, "landed": "Just give me idead.", "by": "model", "gate": ["non-word"] },
-    { "row": 18, "landed": "Pick the more silly ones.", "by": "voice" },
-    { "row": 19, "landed": "So you gather like most of the issues.", "by": "rules", "want": "So you gather most of the issues." },
-    { "row": 20, "landed": "It's made on purpose.", "by": "voice" },
+    {
+      "row": 1,
+      "landed": "I use cloud code for that.",
+      "by": "rules",
+      "want": "I use Claude Code for that."
+    },
+    {
+      "row": 2,
+      "landed": "Cloud can do that.",
+      "by": "model",
+      "gate": ["near-term"]
+    },
+    {
+      "row": 3,
+      "landed": "Ask the dead dash agent.",
+      "by": "rules",
+      "want": "Ask the Dashi agent."
+    },
+    {
+      "row": 4,
+      "landed": "The dashy agent is slow.",
+      "by": "rules",
+      "want": "The Dashi agent is slow."
+    },
+    {
+      "row": 5,
+      "landed": "I want to do it through boys.",
+      "by": "model",
+      "gate": []
+    },
+    {
+      "row": 6,
+      "landed": "It is not correcting like Whisperflow.",
+      "by": "rules",
+      "want": "It is not correcting like Wispr Flow."
+    },
+    {
+      "row": 7,
+      "landed": "The text to speech is not correcting what I dictate.",
+      "by": "model",
+      "gate": []
+    },
+    {
+      "row": 8,
+      "landed": "The text to speech is being caught.",
+      "by": "unresolved"
+    },
+    {
+      "row": 9,
+      "landed": "I dot like it.",
+      "by": "rules",
+      "want": "I don't like it."
+    },
+    {
+      "row": 10,
+      "landed": "It shouldt have that.",
+      "by": "rules",
+      "want": "It shouldn't have that."
+    },
+    {
+      "row": 11,
+      "landed": "Make him or make her whatever it is use the tools.",
+      "by": "model",
+      "gate": []
+    },
+    {
+      "row": 12,
+      "landed": "Right now, it does nothing. Right now it cannot follow up.",
+      "by": "model",
+      "gate": ["cue"]
+    },
+    {
+      "row": 13,
+      "landed": "It just start a new chat.",
+      "by": "model",
+      "gate": []
+    },
+    {
+      "row": 14,
+      "landed": "It feels like a cheap out siri.",
+      "by": "rules",
+      "want": "It feels like a cheap out Siri."
+    },
+    {
+      "row": 15,
+      "landed": "So what about we can make it better.",
+      "by": "model",
+      "gate": []
+    },
+    {
+      "row": 16,
+      "landed": "Take that on mine on the text.",
+      "by": "unresolved"
+    },
+    {
+      "row": 17,
+      "landed": "Just give me idead.",
+      "by": "model",
+      "gate": []
+    },
+    {
+      "row": 18,
+      "landed": "Pick the more silly ones.",
+      "by": "voice"
+    },
+    {
+      "row": 19,
+      "landed": "So you gather like most of the issues.",
+      "by": "rules",
+      "want": "So you gather most of the issues."
+    },
+    {
+      "row": 20,
+      "landed": "It's made on purpose.",
+      "by": "voice"
+    },
     {
       "row": 21,
       "landed": "I want it to recognize when I give like an instruction.",
@@ -31,16 +127,59 @@
       "row": 22,
       "landed": "when I start like a bullet point list like hey here's the list first for example that will be cool",
       "by": "model",
-      "gate": ["list"]
+      "gate": []
     },
-    { "row": 23, "landed": "That will be cool.", "by": "voice" },
-    { "row": 24, "landed": "Hey how you going?", "by": "model", "gate": [] },
-    { "row": 25, "landed": "We can fix it with without not but with changing the model.", "by": "model", "gate": ["cue"] },
-    { "row": 26, "landed": "Let them recognize the language.", "by": "model", "gate": [] },
-    { "row": 27, "landed": "It only used like one single voice.", "by": "rules", "want": "It only used one single voice." },
-    { "row": 28, "landed": "Muy complicada.", "by": "voice" },
-    { "row": 29, "landed": "I mean the autocorrection time.", "by": "model", "gate": [] },
-    { "row": 30, "landed": "Hey but no, this is dead.", "by": "model", "gate": ["cue", "near-term"] },
-    { "row": 31, "landed": "For example, when I say hey, no, I mean or hey but no, this is dead.", "by": "model", "gate": ["cue", "near-term"] }
+    {
+      "row": 23,
+      "landed": "That will be cool.",
+      "by": "voice"
+    },
+    {
+      "row": 24,
+      "landed": "Hey how you going?",
+      "by": "model",
+      "gate": []
+    },
+    {
+      "row": 25,
+      "landed": "We can fix it with without not but with changing the model.",
+      "by": "model",
+      "gate": ["cue"]
+    },
+    {
+      "row": 26,
+      "landed": "Let them recognize the language.",
+      "by": "model",
+      "gate": []
+    },
+    {
+      "row": 27,
+      "landed": "It only used like one single voice.",
+      "by": "rules",
+      "want": "It only used one single voice."
+    },
+    {
+      "row": 28,
+      "landed": "Muy complicada.",
+      "by": "voice"
+    },
+    {
+      "row": 29,
+      "landed": "I mean the autocorrection time.",
+      "by": "model",
+      "gate": []
+    },
+    {
+      "row": 30,
+      "landed": "Hey but no, this is dead.",
+      "by": "model",
+      "gate": ["cue", "near-term"]
+    },
+    {
+      "row": 31,
+      "landed": "For example, when I say hey, no, I mean or hey but no, this is dead.",
+      "by": "model",
+      "gate": ["cue", "near-term"]
+    }
   ]
 }

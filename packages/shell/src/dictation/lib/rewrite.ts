@@ -20,6 +20,14 @@ export const noRewriter: Rewriter = {
   advice: () => ({ land: "once", deadlineMs: 0 }),
 };
 
+/**
+ * The reasons the model is asked for. Measured on its evaluation set (docs/dictation-rewrite.md): it takes back what the
+ * speaker took back and leaves right sentences alone, but it does not mend a non-word (5%), and its checks refuse an
+ * answer that adds a line break, so it never lays out a list. Those two reasons stay the gate's to name and are not
+ * worth the wait: non-words and lists are the rules' (rules-terms.ts, lists.ts).
+ */
+const HELPED: ReadonlySet<GateReason> = new Set<GateReason>(["cue", "run-on", "near-term", "polish"]);
+
 /** How many names the model is given: its prompt's length is the wait. */
 const MOST_TERMS = 50;
 
@@ -35,7 +43,9 @@ export interface Asking {
 export function reasonsFor(made: Composed, composing: Composing): GateReason[] {
   const { profile } = composing.place;
   if (!composing.tidy || !profile.tidy || isShell(composing) || made.text.trim() === "") return [];
-  return gate({ text: made.text, listed: made.listed, terms: made.terms, words: composing.words, polish: profile.polish });
+  return gate({ text: made.text, listed: made.listed, terms: made.terms, words: composing.words, polish: profile.polish }).filter((reason) =>
+    HELPED.has(reason),
+  );
 }
 
 export function requestFor(deps: DictationDeps, asking: Asking, deadlineMs: number, signal?: AbortSignal): RewriteRequest {

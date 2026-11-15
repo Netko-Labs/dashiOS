@@ -249,7 +249,11 @@ checks on its answer are `rewrite/`'s).
    (the first word of what a vocabulary term is heard as: "cloud"),
    `polish` (the profile asks for every utterance). A short clean sentence
    has no reason and is never sent: the model can only make it worse.
-   Never at a shell's prompt, in Verbatim, or with tidying off.
+   Never at a shell's prompt, in Verbatim, or with tidying off. Of these,
+   the model is asked for `cue`, `run-on`, `near-term` and `polish` only
+   (`HELPED` in `rewrite.ts`): measured on its evaluation set it does not
+   mend a non-word, and its checks refuse an answer that adds a line
+   break, so non-words and lists stay the rules' work.
 3. **The call**: `Rewriter.rewrite` with the rules' text as `transcript`,
    the languages of what was said (little words and Spanish letters, in
    the words and in the text before the caret; the session's locale when

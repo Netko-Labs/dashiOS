@@ -3540,8 +3540,11 @@ short words, as the rulebook is written.
   corpus has more sentences that are right than wrong; a model that reads
   every one of them will damage some, and each ask is a wait.
 - **Cost:** a mishearing that leaves real words and no cue ("through
-  boys", "it just start") is not sent: 9 of the corpus's 16 model rows
-  have no reason the gate can see alone. A profile with `polish: yes`
+  boys", "it just start") is not sent: 10 of the corpus's 15 model rows
+  have no reason worth asking for. The gate also names `non-word` and
+  `list`, but the model is not asked for them: `v09/rewrite` measured that
+  it mends 5% of non-words and never lays out a list (its checks refuse a
+  new line break), so those stay the rules'. A profile with `polish: yes`
   sends everything.
 - **Undo:** `gate()` in `dictation/lib/gate.ts`; `polish: yes` in a
   profile's file asks for every utterance today.
