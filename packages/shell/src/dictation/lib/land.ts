@@ -209,6 +209,8 @@ export async function land(deps: DictationDeps, ctx: LandContext, heard: string,
   // The gate, then the model where it is needed and can be waited for; else the rules' words.
   const asking: Asking = { made: rules, composing: full, before: where.field?.before ?? "", reasons: reasonsFor(rules, full) };
   const { made, refine, model } = await correct(deps, asking);
+  // The model took its time: a click or a key in the window meanwhile means the caret may be elsewhere (D81).
+  if (model !== "" && (await moved(deps, where.front.window, meant.since))) return waiting(deps, made, "moved");
   // The words continue what the field holds: a space, a capital and a full stop only where they belong (fit.ts).
   const fitted = fit(made.text, where.field, { words: ctx.words, names: namesOf(made.terms) });
   const fits: Composed = { ...made, text: fitted.text };

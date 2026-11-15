@@ -186,7 +186,9 @@ export class Landings {
     this.settle();
     const instructed = this.instructed;
     this.instructed = null;
-    if (instructed) return this.seen(this.literal(instructed));
+    // Only while its line still offers Undo: later, Undo is the plain one.
+    const offered = instructed && "until" in instructed.state && (this.deps.now?.() ?? Date.now()) <= instructed.state.until;
+    if (instructed && offered) return this.seen(this.literal(instructed));
     return this.seen(undo(this.deps, this.kept));
   }
 
