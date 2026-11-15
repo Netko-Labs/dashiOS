@@ -56,7 +56,7 @@ shell's client:
   (`packages/shell/src/spaces/fullscreen.ts`); `window-state` tells it when a
   window is minimized or hidden however that happened.
 - **Session:** `lock.rs`, `idle/` (`protocols`, `ipc`), `keys/` (keymap,
-  bindings, ❖ phases, the snippets' keywords watched as the person types, Super lent to the window of a ❖-click), `agent_seat/` (a second seat an agent drives, drawn
+  bindings, ❖ phases, the snippets' keywords watched as the person types, Super told to the window a button is held down in: a ❖-click, ❖ during a drag), `agent_seat/` (a second seat an agent drives, drawn
   with its own pointer), `capture.rs`, `wallpaper/` (`request`, `live`,
   `tick`), `outputs/` (`config`, `apply`, `place`, `report`, `chrome`).
 - **IPC (`ipc/`):** `server` (the socket and replies), `incoming` (each connection's requests, read and run), `frame`, `peer` (who connected), `table` (every method, who may ask it, what runs), `methods/` (what each does, by area, with its params and reply as serde types), `protocol/` (the IPC's one Rust definition: `Event`, `Window`, the `outputs` reply, ids and numbers that refuse what is out of range), `grants` (`ipc-clients`).

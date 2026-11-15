@@ -2321,3 +2321,20 @@ short words, as the rulebook is written.
   Exact needs smithay to take a size in pixels.
 - **Undo:** drop the calls to `x11_note_fullscreen`, `x11_tell_fullscreen`
   and `x11_screen_frame`.
+
+### D108. ❖ during a pointer drag in a window is that window's modifier
+
+- **Date:** 2026-11-14. The lead's decision, carried out by the `n18-x11`
+  agent. Closes D104's cost.
+- **Question:** ❖ reached a window only for a button that went down with it
+  held, so Files' area drag could not change its rule on ❖ midway.
+- **Choice:** while a pointer button is held down in the window that has the
+  keyboard, ❖ going down or up is told to that window as Super
+  (`keys/super_click.rs`), and such a press is a chord, not a tap: no
+  launcher on release. With no button down ❖ is Dashi's, as before.
+- **Why:** a drag's modifiers are the app's to read, as ⇧ and Ctrl already
+  were.
+- **Cost:** ❖ pressed during a drag opens nothing; a ❖ chord typed while a
+  button is held (❖Space with the mouse button down) still goes to Dashi,
+  and the window has seen Super go down for it.
+- **Undo:** take the two `super_in_a_drag` calls out of `keys/super_key.rs`.

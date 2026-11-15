@@ -1,8 +1,8 @@
 //! Every key press goes through here before any client sees it.
 //!
 //! ❖ (Super) is Dashi's: no client ever sees its key; its tap, hold, chord, and
-//! release go to the shell as `super` events (a click with it held lends the
-//! clicked window Super, super_click.rs). Every other key is matched
+//! release go to the shell as `super` events (while a button is down in a
+//! window, that window hears it as Super, super_click.rs). Every other key is matched
 //! against the shell's keymap, on the compositor's own thread so typing never
 //! waits on Bun: a `bind` goes to the shell as a `binding` event, a `send` is
 //! replayed to the focused client as another chord while the key is held, a
@@ -43,8 +43,10 @@ pub(crate) struct Keys {
     pub snippets: super::snippets::Snippets,
     /// The keys the shell holds, and which are down (held.rs).
     pub held: super::held::HeldKeys,
-    /// The button of a ❖-click whose client was lent Super until it comes up (super_click.rs).
-    pub(super) lent_super: Option<u32>,
+    /// The button held down in the window that has the keyboard (super_click.rs).
+    pub(super) client_button: Option<u32>,
+    /// That window was told Super is held, and is yet to hear the real modifiers.
+    pub(super) super_lent: bool,
 }
 
 pub(super) enum Taken {

@@ -1,14 +1,17 @@
-//! A click with ❖ held: the clicked window hears Super with it.
+//! ❖ with a pointer button: the window with the button hears Super.
 //!
 //! ❖ is Dashi's (handler.rs): its key never reaches a client, so xkb's state
 //! never holds it, and a ❖-click arrived in apps as a plain click (Files'
 //! ❖-click, which adds an item to the selection as ⌘-click does on the Mac,
-//! selected it alone). While a button is down with ❖ held, the client that
-//! takes the click and has the keyboard gets the person's modifiers with
-//! Super (Mod4, xkb's "Super"/logo) added, as one `wl_keyboard.modifiers`; when
-//! that button comes up, after its release, it gets the real state back.
-//! Nothing else changes: the compositor's own xkb state, and so the keymap's
-//! matching, never sees Super.
+//! selected it alone). While a button is down in the window that has the
+//! keyboard, that window hears ❖ as the modifier it is: the person's
+//! modifiers with Super (Mod4, xkb's "Super"/logo) added, as one
+//! `wl_keyboard.modifiers`, when the button goes down with ❖ held or ❖ goes
+//! down with the button held (a drag whose rule ❖ changes midway); and the
+//! real state again when ❖ is let go, or after the button's release. A ❖
+//! pressed during such a drag is a chord, never a tap: the launcher stays
+//! shut. Nothing else changes: with no button down ❖ is Dashi's, and the
+//! compositor's own xkb state, and so the keymap's matching, never sees Super.
 
 use smithay::{
     input::keyboard::{KeyboardTarget, ModifiersState, xkb},
@@ -19,50 +22,75 @@ use smithay::{
 use crate::state::Dashi;
 
 impl Dashi {
-    /// A button went down on a client: with ❖ held, lend it Super until the button comes up.
+    /// A button went down on a client: while it is down that window hears ❖, held now or pressed later.
     pub(crate) fn lend_super(&mut self, button: u32) {
-        if !self.keys.super_is_down() || self.keys.lent_super.is_some() {
+        if self.keys.client_button.is_some() || !self.button_is_the_keyboards() {
             return;
         }
-        let (Some(keyboard), Some(pointer)) = (self.seat.get_keyboard(), self.seat.get_pointer())
-        else {
-            return;
-        };
-        let (Some(focus), Some(under)) = (keyboard.current_focus(), pointer.current_focus()) else {
-            return;
-        };
-        // Only the window taking the click: a panel that leaves the keyboard where it was isn't it.
-        if !focus.id().same_client_as(&under.id()) {
-            return;
+        self.keys.client_button = Some(button);
+        if self.keys.super_is_down() {
+            self.tell_super(true);
         }
-        let logo = keyboard.with_xkb_state(self, |context| {
-            let xkb = context.xkb().lock().ok()?;
-            // SAFETY: the keymap is only read while the Xkb lock is held.
-            let keymap = unsafe { xkb.keymap() };
-            Some(keymap.mod_get_index(xkb::MOD_NAME_LOGO))
-        });
-        let Some(mods) = logo.and_then(|index| with_super(keyboard.modifier_state(), index)) else {
-            return;
-        };
-        let seat = self.seat.clone();
-        focus.modifiers(&seat, self, mods, SERIAL_COUNTER.next_serial());
-        self.keys.lent_super = Some(button);
     }
 
-    /// A button came up: if it was a ❖-click, the client hears the modifiers as they are again.
+    /// A button came up: if its window was lent Super, it hears the modifiers as they are again.
     pub(crate) fn return_super(&mut self, button: u32) {
-        if self.keys.lent_super != Some(button) {
+        if self.keys.client_button != Some(button) {
             return;
         }
-        self.keys.lent_super = None;
+        self.keys.client_button = None;
+        self.tell_super(false);
+    }
+
+    /// ❖ went down or up. True while a button is held down in a window: the
+    /// window was told, and the press is no tap.
+    pub(super) fn super_in_a_drag(&mut self, down: bool) -> bool {
+        if self.keys.client_button.is_none() {
+            return false;
+        }
+        self.tell_super(down);
+        true
+    }
+
+    /// Whether the surface under the pointer is the keyboard's client's: only
+    /// the window taking the click hears Super; a panel that leaves the
+    /// keyboard where it was isn't it.
+    fn button_is_the_keyboards(&self) -> bool {
+        let focus = self.seat.get_keyboard().and_then(|k| k.current_focus());
+        let under = self.seat.get_pointer().and_then(|p| p.current_focus());
+        matches!((focus, under), (Some(focus), Some(under)) if focus.id().same_client_as(&under.id()))
+    }
+
+    /// Tell the window with the keyboard its modifiers: with Super (`held`), or as they are.
+    fn tell_super(&mut self, held: bool) {
+        if held == self.keys.super_lent {
+            return;
+        }
         let Some(keyboard) = self.seat.get_keyboard() else {
             return;
         };
         let Some(focus) = keyboard.current_focus() else {
+            self.keys.super_lent = false;
             return;
         };
+        let mut mods = keyboard.modifier_state();
+        if held {
+            if !self.button_is_the_keyboards() {
+                return;
+            }
+            let logo = keyboard.with_xkb_state(self, |context| {
+                let xkb = context.xkb().lock().ok()?;
+                // SAFETY: the keymap is only read while the Xkb lock is held.
+                let keymap = unsafe { xkb.keymap() };
+                Some(keymap.mod_get_index(xkb::MOD_NAME_LOGO))
+            });
+            let Some(lent) = logo.and_then(|index| with_super(mods, index)) else {
+                return;
+            };
+            mods = lent;
+        }
+        self.keys.super_lent = held;
         let seat = self.seat.clone();
-        let mods = keyboard.modifier_state();
         focus.modifiers(&seat, self, mods, SERIAL_COUNTER.next_serial());
     }
 }
