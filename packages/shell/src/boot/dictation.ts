@@ -168,7 +168,8 @@ function deskDeps(
       const front = windows?.find((window) => window.focused);
       return front ? { window: front.id, pid: front.pid, appId: front.appId, title: front.title } : null;
     },
-    secret: async (front) => (front.pid !== null && (await fields.passwordFocused(front.pid)) ? true : null),
+    // Read as the landing reads it, so a browser's page is woken before the microphone opens over a password field.
+    secret: async (front) => (front.pid !== null && (await fields.read(front.pid, 0))?.kind === "password" ? true : null),
     field: async (front) => (front.pid === null ? null : fields.read(front.pid)),
     sendKeys: async (window, chord) => {
       if (!compositor) throw new Error("no compositor");

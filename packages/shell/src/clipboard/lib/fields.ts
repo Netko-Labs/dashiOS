@@ -107,7 +107,9 @@ export function atspiFieldCheck(options: { turnOn?: boolean } = {}): FieldCheck 
   return {
     passwordFocused: async (pid) => (await focused(pid))?.kind === "password",
     async read(pid, span = 400) {
-      const field = await focused(pid);
+      let field = await focused(pid);
+      // Chromium (Helium, Electron) publishes its page only once it is asked (Atspi.wake): asked once an app, then looked for again.
+      if (!field && atspi && (await atspi.wake(pid).catch(() => false))) field = await focused(pid);
       return field ? fieldText(field, span).catch(() => null) : null;
     },
   };
