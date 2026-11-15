@@ -192,7 +192,7 @@ fn a_window_brought_forward_brings_its_sheet_above_it() {
         .unwrap()
         .to_owned();
     let dir = compositor.dir.path();
-    let mut open = |ipc: &mut Ipc, app: &str, title: &str, place: bool| {
+    let open = |ipc: &mut Ipc, app: &str, title: &str, place: bool| {
         let mut client = Client::open(dir, &display, app, title);
         let id = wait_event(ipc, &mut client, "window-placing")["window"]["id"]
             .as_u64()
