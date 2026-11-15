@@ -3044,7 +3044,9 @@ short words, as the rulebook is written.
   keep D100 and D113 as they were.
   **Calendar is moved:** its hours are a plain scroll view, and
   `scrollTo` on their `ref` puts them at an offset (no longer "to the
-  top, then down" through `main.tsx`, whose `scroll` prop is gone).
+  top, then down" through `main.tsx`, whose `scroll` prop is gone). The
+  first one, as the view opens, still waits 80 ms: asked in the turn the
+  view is mounted it is lost, and the hours stayed at midnight in the VM.
 - **When mirin counts a changed list again** (`list.rs`:
   `invalidate_changed` splices rows in with no height; `estimate_rows`
   runs once per width): bring `fd03ff15` back. It is written and tested.

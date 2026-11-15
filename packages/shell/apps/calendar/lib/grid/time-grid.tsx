@@ -39,7 +39,9 @@ function useHoursScroll(dayCount: number, top: number, reveal: GridState["reveal
   const hours = useRef<ViewHandle>(null);
   // biome-ignore lint/correctness/useExhaustiveDependencies: only a different kind of view (Day, Week) scrolls again; paging and the clock leave the hours be
   useEffect(() => {
-    hours.current?.scrollTo({ y: Math.max(0, top) });
+    // Not at once: a scroll asked of a view in the turn it is mounted is lost (the VM showed the hours left at midnight).
+    const timer = setTimeout(() => hours.current?.scrollTo({ y: Math.max(0, top) }), 80);
+    return () => clearTimeout(timer);
   }, [dayCount]);
 
   // A new event from the + button starts where the hours may be scrolled away from: they scroll to it.
