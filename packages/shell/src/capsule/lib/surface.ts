@@ -18,20 +18,10 @@ import { SURFACE_HEIGHT } from "./measures.ts";
 /** A host that died is replaced after this long. */
 const RESPAWN_MS = 1500;
 /**
- * A resident host dies in its GPU layer when its window is hidden before it
- * has drawn (`ERROR_EXTENSION_NOT_PRESENT` at the next open: a key that
- * turned out to be a chord shows and hides the capsule in one breath), and
- * when it is opened in the same breath as it hid
- * (`ERROR_NATIVE_WINDOW_IN_USE_KHR`); both seen in the VM with mirin `main`.
- * So a window stays open at least `MIN_OPEN_MS` (drawing nothing by then),
- * and opens at least `REOPEN_MS` after it hid.
- */
-export const MIN_OPEN_MS = 400;
-export const REOPEN_MS = 150;
-/**
  * How long the capsule's window stays open, drawing nothing, after the last line went: one line often replaces
- * another a moment later (heard, then the step; typed, then a notice), and a window that hid in between took half
- * a second to come back (`REOPEN_MS` and the host's own opening).
+ * another a moment later (heard, then the step; typed, then a notice), and a window that hid in between is a
+ * window opened again (the host's own opening, and a blink of nothing). The host itself needs no time between a
+ * hide and an open, either way round (mirin PR 37; decisions.md D130).
  */
 export const LINGER_MS = 350;
 
@@ -47,7 +37,7 @@ export interface SurfaceOptions {
   /** The window was just opened. */
   opened?(): void;
   later?(fn: () => void, ms: number): unknown;
-  /** A clock for the gap after a hide; `performance.now` unless a test says. */
+  /** A clock for the linger; `performance.now` unless a test says. */
   now?(): number;
 }
 
@@ -70,8 +60,6 @@ export class CapsuleSurface {
   private open: { output: string | undefined; keyboard: boolean } | null = null;
   private wanted: { output: string | undefined; keyboard: boolean } | null = null;
   private stopped = false;
-  private hiddenAt = Number.NEGATIVE_INFINITY;
-  private openedAt = Number.NEGATIVE_INFINITY;
   private hideAt = Number.NEGATIVE_INFINITY;
   private waiting = false;
 
@@ -100,18 +88,17 @@ export class CapsuleSurface {
     return this.options.now?.() ?? performance.now();
   }
 
-  /** Bring the window to what is wanted now, waiting where the host needs time; what is wanted when the wait ends is what counts. */
+  /** Bring the window to what is wanted now, once it has lingered; what is wanted when the wait ends is what counts. */
   private apply(): void {
     const { host, open } = this;
     const wanted = this.wanted;
     if (!host || this.waiting) return;
     if (open && (!wanted || wanted.output !== open.output || wanted.keyboard !== open.keyboard)) {
-      if (this.wait(Math.max(this.openedAt + MIN_OPEN_MS, wanted ? 0 : this.hideAt))) return;
+      if (!wanted && this.wait(this.hideAt)) return;
       host.hide();
       this.open = null;
-      this.hiddenAt = this.now();
     }
-    if (!wanted || this.open || this.wait(this.hiddenAt + REOPEN_MS)) return;
+    if (!wanted || this.open) return;
     host.open({
       title: "Dashi",
       appId: "dev.dashi.shell",
@@ -120,7 +107,6 @@ export class CapsuleSurface {
       surface: capsuleSurface(wanted.output, wanted.keyboard, this.options.namespace),
     });
     this.open = { ...wanted };
-    this.openedAt = this.now();
     this.options.opened?.();
   }
 
@@ -145,7 +131,6 @@ export class CapsuleSurface {
       if (this.host !== host) return;
       this.host = null;
       this.open = null;
-      this.hiddenAt = Number.NEGATIVE_INFINITY;
       this.root?.unmount();
       this.root = null;
       if (!this.stopped) (this.options.later ?? setTimeout)(() => this.start(), RESPAWN_MS);

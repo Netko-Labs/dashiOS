@@ -2900,3 +2900,22 @@ short words, as the rulebook is written.
   should not take the tree's `selection`).
 - **Undo:** `fe547913` and `ec811ee3` are D124's two commits.
 
+### D130. The capsule's window opens and hides when asked; it still lingers
+
+- **Date:** 2026-11-15. The `n28` take-up (mirin `a41eac5`, PR 37).
+- **Question:** the capsule kept its window open at least 400 ms and waited
+  150 ms after a hide before it opened again, because a resident host died
+  when hidden as it opened or opened as it hid. mirin says sumi no longer
+  does. Which waits go?
+- **Choice:** both of those go (`MIN_OPEN_MS`, `REOPEN_MS`). The 350 ms
+  linger after the last line (D84) stays: it was never for the fault. It is
+  there so one line replaces another in the same window, and a hide and an
+  open in between is still a window opened again.
+- **Why:** the waits cost a held key its first 150 ms after a tap, and kept
+  an empty window over the Dock's place for 400 ms after a chord.
+- **Cost:** mirin could not make the old fault fail on its GPU and did not
+  test the VM's driver. If a host dies in the VM's rounds, the respawn
+  (1.5 s) still brings it back, and the waits return from this entry.
+- **Undo:** `MIN_OPEN_MS` and `REOPEN_MS` in `capsule/lib/surface.ts` as in
+  `d93574ad`.
+

@@ -2,7 +2,7 @@
 
 import { expect, test } from "bun:test";
 import { type NativeHostOptions, type NativeHostTransport, View } from "@mirinjs/metal";
-import { CapsuleSurface, capsuleSurface, LINGER_MS, MIN_OPEN_MS, REOPEN_MS } from "../src/capsule/lib/surface.ts";
+import { CapsuleSurface, capsuleSurface, LINGER_MS } from "../src/capsule/lib/surface.ts";
 import { osdSurface } from "../src/system/lib/osd-panel.tsx";
 
 function hosts() {
@@ -76,7 +76,7 @@ test("one host with no window; it opens when something shows and hides when noth
   surface.show(undefined, false);
   expect(log).toEqual(["open any none"]);
   expect(surface.shown).toBe(true);
-  advance(MIN_OPEN_MS);
+  advance(1);
   surface.hide();
   surface.hide();
   expect(log).toEqual(["open any none", "hide"]);
@@ -84,46 +84,23 @@ test("one host with no window; it opens when something shows and hides when noth
   surface.close();
 });
 
-test("a window is never hidden in the breath it opened: a key that was a chord after all", () => {
-  const { log, surface, advance } = timed();
+// The host needs no time between the two (mirin PR 37): a key that was a chord after all shows and hides at once.
+test("it hides in the breath it opened, and opens in the breath it hid", () => {
+  const { log, surface } = timed();
   surface.show(undefined, false);
   surface.hide();
-  expect(log).toEqual(["open any none"]);
-  // Shown again before the wait ends: it never hid.
-  advance(100);
   surface.show(undefined, false);
-  advance(MIN_OPEN_MS);
-  expect(log).toEqual(["open any none"]);
   surface.hide();
-  expect(log).toEqual(["open any none", "hide"]);
-  // And the other way: hidden while it waits, it hides once the host has had its time.
-  surface.show(undefined, false);
-  advance(REOPEN_MS);
-  surface.hide();
-  advance(MIN_OPEN_MS - 1);
-  expect(log.slice(2)).toEqual(["open any none"]);
-  advance(1);
-  expect(log.slice(2)).toEqual(["open any none", "hide"]);
+  expect(log).toEqual(["open any none", "hide", "open any none", "hide"]);
   surface.close();
 });
 
-test("another screen, or the keyboard for a card, opens it again, a moment after it hid", () => {
-  const { log, surface, advance } = timed();
+test("another screen, or the keyboard for a card, opens it again at once", () => {
+  const { log, surface } = timed();
   surface.show("eDP-1", false);
-  advance(MIN_OPEN_MS);
   surface.show("eDP-1", true);
-  // The host is never asked to open in the same breath as it hid (REOPEN_MS).
-  expect(log).toEqual(["open eDP-1 none", "hide"]);
-  advance(REOPEN_MS - 1);
-  expect(log).toHaveLength(2);
-  advance(1);
   expect(log).toEqual(["open eDP-1 none", "hide", "open eDP-1 exclusive"]);
-  // What is wanted by the time the host is ready is what opens: the other screen, once.
   surface.show("DP-2", false);
-  surface.show("DP-2", true);
-  surface.show("DP-2", false);
-  advance(MIN_OPEN_MS);
-  advance(REOPEN_MS);
   expect(log.slice(3)).toEqual(["hide", "open DP-2 none"]);
   surface.close();
 });
