@@ -3045,7 +3045,7 @@ short words, as the rulebook is written.
 - **Undo:** `git revert` of this commit brings `drawn.ts` and its callers
   back.
 
-### D134. Files still asks its window where the items are; Calendar scrolls its hours by their handle
+### D134. Files still asks its window where the items are; Calendar scrolls its hours by their handle (Files: superseded by D143)
 
 - **Date:** 2026-11-15. The `n28` take-up, finished by `n29` (mirin
   `5703b91`, PR 34).
@@ -3325,3 +3325,33 @@ short words, as the rulebook is written.
   the opaque surfaces (the login screen, the lock) so an opted-in session
   has subpixel there too.
 - **Undo:** the default in `hostTextAntialiasing`.
+
+### D143. Files' marquee and the keyboard's item go by what the scroll view says
+
+- **Date:** 2026-11-15. `n34`, Dashi on mirin `50241ea`. Supersedes D134 for
+  Files (and D100 and D113, which D134 had kept).
+- **Question:** D134 took Files back to asking its window where the items
+  are painted, every 150 ms during a drag, because a long list's offset
+  from the host was wrong once its rows changed. mirin fixed that (PR 42:
+  a row that changes keeps its height). Bring the version on mirin's API
+  back?
+- **Choice:** yes: `fd03ff15` is back as it was written (the revert of
+  `3326c307`). A `ScrollPlace` (`shared/file-browser/lib/marquee/place.ts`)
+  is fed by the listing's scroll view: `onLayout` says where it is,
+  `onScroll` how far its content has gone under it, whoever scrolled it,
+  and its `ref` (`ViewHandle.scrollTo`) scrolls it at an edge and for the
+  keyboard's item. The 150 ms asking through the simulation channel and
+  `locate.ts` are gone, in Files, the open and save sheets and
+  `dashi-dialog` (one listing). The keyboard's item is shown by a sum and
+  `scrollTo`, not by `scrollIntoView` on its node: both views are long
+  lists, and a row far away has no node to name until it is laid out.
+- **Left on the simulation channel:** Notes' and Text Editor's scroll to
+  the caret and Settings' scroll to a searched row. They are relative
+  ("this much further down", "from the top, then down") and are asked
+  from outside the view that scrolls; on the handle each needs the view's
+  `ref` passed out and its offset kept from `onScroll`. Not the same small
+  change, so not made here. Nothing is wrong with them on this host.
+- **Cost:** on a host that says no `scroll` in its `protocol` line (none
+  ships with Dashi: `mirin-metal-host` is built from the same mirin)
+  nothing is dragged out and the keyboard's item is not scrolled to.
+- **Undo:** `git revert` of this entry's commit.

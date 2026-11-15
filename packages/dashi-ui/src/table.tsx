@@ -6,7 +6,7 @@
  * rows near the viewport (a scroll column of many children is virtualized).
  */
 
-import { type DragFiles, type DropInfo, type Modifiers, ScrollView, View } from "@mirinjs/metal";
+import { type DragFiles, type DropInfo, type Modifiers, ScrollView, View, type ViewProps } from "@mirinjs/metal";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { type Column, TABLE_PAD, TableHeader, TableRow } from "./table-parts.tsx";
 import { holdOrder, type SortState } from "./table-sort.ts";
@@ -46,6 +46,8 @@ export interface TableProps<T, K extends string | number> {
    * a row just chosen doesn't jump away. A click on a column's title sorts at once.
    */
   steady?: boolean;
+  /** For the rows' scroll view: its handle, where it is, and how far it is scrolled (a file list's marquee). */
+  scroll?: Pick<ViewProps, "ref" | "onLayout" | "onScroll">;
 }
 
 /** Room under the last row, so its wash never runs into the window's rounded corner. */
@@ -138,6 +140,7 @@ export function Table<T, K extends string | number>({
   onDropRow,
   header = true,
   steady = false,
+  scroll,
 }: TableProps<T, K>) {
   const surface = useSurface();
   const { shown, aim, pointerOver, press, release } = useSteadyRows(rows, rowKey, steady, selected, sort ? `${sort.key}:${sort.ascending}` : "");
@@ -159,6 +162,7 @@ export function Table<T, K extends string | number>({
       ) : (
         <ScrollView
           testID={`${testID}:rows`}
+          {...scroll}
           {...(steady ? { onHoverChange: pointerOver } : {})}
           // The last row clears the window's rounded corner when scrolled to the end.
           style={{ flex: 1, flexDirection: "column", paddingHorizontal: TABLE_PAD / 2, paddingBottom: END_INSET }}

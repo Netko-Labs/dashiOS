@@ -110,16 +110,14 @@ export function runApp(options: AppOptions, element: ReactElement): RunningApp {
     env,
     askToClose: true,
   });
-  // What a view may ask of its window (where its nodes are painted, a scroll): the tree is mounted after, so the root is asked late.
-  const mounted: { root: NativeRoot | null } = { root: null };
-  const surface = windowSurface(host, () => mounted.root);
+  // What a view may know of its window: whether its host says where a scroll view stands (src/shared/metal/surface.ts).
+  const surface = windowSurface(host);
   const root = render(
     <TextSelectionLook>
       <Surface.Provider value={surface}>{element}</Surface.Provider>
     </TextSelectionLook>,
     host,
   );
-  mounted.root = root;
   const stopControl = serveControl(host, root);
   let open = true;
   const closeCode = options.closeCode ?? 0;
