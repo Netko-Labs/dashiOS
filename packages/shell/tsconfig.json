@@ -13,5 +13,5 @@
     "types": ["bun"],
     "lib": ["ESNext"]
   },
-  "include": ["src", "apps", "test", "bin", "wallpapers"]
+  "include": ["src", "apps", "test", "bin", "bench", "wallpapers"]
 }
