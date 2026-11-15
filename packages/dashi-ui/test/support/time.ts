@@ -17,18 +17,18 @@
 import { afterEach, beforeEach, jest, setSystemTime } from "bun:test";
 
 /** Turn the event loop `turns` times: every promise settles, and React's scheduled work runs. */
-export async function flush(turns = 5): Promise<void> {
+export async function flush(turns = 25): Promise<void> {
   for (let turn = 0; turn < turns; turn++) await new Promise<void>((done) => setImmediate(done));
 }
 
 /** Let pending promises finish, move the fake clock on by `ms` in slices of `step`, and let what that frees finish. */
 async function advance(ms: number, step = ms): Promise<void> {
   // Promises first: what they set going (a timer, say) is then on the clock before time moves.
-  await flush(2);
+  await flush();
   let moved = 0;
   do {
     jest.advanceTimersByTime(Math.min(step, ms - moved));
-    await flush(2);
+    await flush();
     moved += step;
   } while (moved < ms);
 }
