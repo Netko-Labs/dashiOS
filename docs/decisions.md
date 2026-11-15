@@ -3004,7 +3004,10 @@ short words, as the rulebook is written.
   `spawnShellHost`, the kit's `runApp`, the applet SDK's two), which sets
   `textAntialiasing` from the setting and keeps the transport for a later
   `setTextAntialiasing`. The greeter has no person yet and stays subpixel.
-- **Cost:** about 1 MB more per idle host than grayscale, and fringes of
+- **Cost:** 0.7 MB more per idle host than grayscale (measured on the
+  installed build: six shell hosts 165.4 MB RSS and 56.6 MB PSS in
+  subpixel, 161.2 and 52.3 in grays; a cold app's first window is no
+  slower), and fringes of
   the wrong order on a rotated screen.
 - **Undo:** `hostTextAntialiasing` and the `export` line.
 
