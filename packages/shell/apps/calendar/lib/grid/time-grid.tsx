@@ -8,8 +8,8 @@
  */
 
 import { useColors, useSurface } from "@dashi/ui";
-import { ScrollView, Text, View } from "@mirinjs/metal";
-import { useEffect, useState } from "react";
+import { ScrollView, Text, View, type ViewHandle } from "@mirinjs/metal";
+import { type RefObject, useEffect, useRef, useState } from "react";
 import type { Day, Occurrence } from "../../../../src/shared/calendar/index.ts";
 import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
 import { dayNumber, hourLabel, weekdayShort } from "../format.ts";
@@ -31,28 +31,24 @@ export interface TimeGridProps {
   colorOf: (calendarId: string) => string;
   state: GridState;
   handlers: GridHandlers;
-  /** Scrolls the hours (the app's simulation channel; Metal has no scroll-into-view). */
-  scroll: (testID: string, dy: number) => void;
 }
 
 /** Where the hours are scrolled to: the working day when the view opens, and a new event made out of sight. */
-function useHoursScroll(scroll: TimeGridProps["scroll"], dayCount: number, top: number, reveal: GridState["reveal"]): void {
+function useHoursScroll(dayCount: number, top: number, reveal: GridState["reveal"]): RefObject<ViewHandle | null> {
+  // The hours' scroll view: it is told where to stand (mirin's `ViewHandle`; a host from before it leaves the hours at midnight, D134).
+  const hours = useRef<ViewHandle>(null);
   // biome-ignore lint/correctness/useExhaustiveDependencies: only a different kind of view (Day, Week) scrolls again; paging and the clock leave the hours be
   useEffect(() => {
-    // The scroll offset outlives a switch between Day and Week, and a scroll is relative: back to the top first.
-    const timer = setTimeout(() => {
-      scroll("hours", -100_000);
-      scroll("hours", Math.max(0, top));
-    }, 80);
+    // Not at once: a scroll asked of a view in the turn it is mounted is lost (the VM showed the hours left at midnight).
+    const timer = setTimeout(() => hours.current?.scrollTo({ y: Math.max(0, top) }), 80);
     return () => clearTimeout(timer);
-  }, [scroll, dayCount]);
+  }, [dayCount]);
 
   // A new event from the + button starts where the hours may be scrolled away from: they scroll to it.
   useEffect(() => {
-    if (reveal === null) return;
-    scroll("hours", -100_000);
-    scroll("hours", revealOffset(reveal.minutes));
-  }, [scroll, reveal]);
+    if (reveal !== null) hours.current?.scrollTo({ y: revealOffset(reveal.minutes) });
+  }, [reveal]);
+  return hours;
 }
 
 /** A day's name and number over its column; a press shows that day. */
@@ -111,14 +107,14 @@ function DayHead({
   );
 }
 
-export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, state, handlers, scroll }: TimeGridProps) {
+export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, state, handlers }: TimeGridProps) {
   const colors = useColors();
   const [columnWidth, setColumnWidth] = useState(0);
   const stacked = columnWidth > 0 && columnWidth < STACK_HEAD_BELOW;
   const showsToday = days.includes(today);
   const nowMinutes = showsToday ? now.getHours() * 60 + now.getMinutes() : null;
 
-  useHoursScroll(scroll, days.length, HOUR_HEIGHT * firstHour(showsToday, now.getHours()) - 14, state.reveal);
+  const hours = useHoursScroll(days.length, HOUR_HEIGHT * firstHour(showsToday, now.getHours()) - 14, state.reveal);
 
   return (
     <View testID="time-grid" style={{ flex: 1, flexDirection: "column", minHeight: 0 }}>
@@ -137,7 +133,7 @@ export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, state,
         ))}
       </View>
       <AllDayStrip days={days} occurrences={occurrences} colorOf={colorOf} gutter={GUTTER} columnWidth={columnWidth} state={state} handlers={handlers} />
-      <ScrollView testID="hours" style={{ flex: 1, minHeight: 0 }}>
+      <ScrollView testID="hours" ref={hours} style={{ flex: 1, minHeight: 0 }}>
         <View style={{ flexDirection: "row", height: GRID_HEIGHT, flexShrink: 0 }}>
           <View style={{ width: GUTTER, flexShrink: 0, position: "relative" }}>
             {Array.from({ length: 24 }, (_, hour) => (

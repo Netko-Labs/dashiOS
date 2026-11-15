@@ -7,9 +7,10 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { Image, Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { Button, Panel, SHEET_SIZE } from "../../menus/sheets.tsx";
+import { AppIcon } from "../../shared/apps/index.ts";
 import { type DetailRow, HINT, type SheetActions, type SheetState, type SheetStore, useSheet } from "./model.ts";
 
 /** A padlock, for requests that name no icon of their own. */
@@ -108,7 +109,7 @@ export function PolkitSheet({ store, actions }: { store: SheetStore; actions: Sh
   const hintColor = state.notice?.kind === "error" && state.phase !== "checking" ? colors.critical : colors.textMuted;
   return (
     <Panel>
-      {state.icon ? <Image source={state.icon} style={{ width: 48, height: 48 }} /> : <Svg markup={PADLOCK} size={34} color={colors.text} />}
+      {state.icon ? <AppIcon source={state.icon} style={{ width: 48, height: 48 }} /> : <Svg markup={PADLOCK} size={34} color={colors.text} />}
       {/* Stretched so the text is measured at the width it is drawn at; a shrink-wrapped one counts a line too few. */}
       <View style={{ alignSelf: "stretch" }}>
         <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{state.message}</Text>

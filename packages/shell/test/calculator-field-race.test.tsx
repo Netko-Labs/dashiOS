@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { mount, ownRuntimeDir } from "./support/calculator-field.tsx";
 
 // The field types on a text the line has since changed another way: a keypad key pressed, and keys
-// typed before the field took what the key made (decisions.md D124).
+// typed before the field took what the key made. The host types them again on the line's text and
+// reports them in one edit (mirin's rebase; decisions.md D129, which replaced D124).
 
 ownRuntimeDir();
 

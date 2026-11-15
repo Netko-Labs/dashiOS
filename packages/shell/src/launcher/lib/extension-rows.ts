@@ -14,7 +14,6 @@
  */
 
 import { type ActionDef, type Outcome, type PickRow, ready } from "../../actions/index.ts";
-import { hostDrawsFile } from "../../shared/apps/index.ts";
 import type { SlowSnapshot } from "../budget.ts";
 import type { Row, RowIcon } from "../row-model.ts";
 import type { Section } from "../sections.ts";
@@ -27,9 +26,9 @@ export const EXTENSION_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox=
 /** A prompt: one of your own scripts. */
 export const SCRIPT_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M3 4.5 6.5 8 3 11.5M8 12h5" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-/** The icon of a row from outside: its own picture when it has one, else the puzzle piece (scripts, the prompt). */
+/** The icon of a row from outside: its own picture when it names one (the generic icon if the host cannot draw it: row-view.tsx), else the puzzle piece (scripts, the prompt). */
 export function outsideIcon(icon: string | undefined, source: string): RowIcon {
-  if (icon?.startsWith("/") && hostDrawsFile(icon)) return { image: icon };
+  if (icon?.startsWith("/")) return { image: icon };
   return { glyph: source === "scripts" ? SCRIPT_GLYPH : EXTENSION_GLYPH };
 }
 

@@ -6,6 +6,7 @@
  * in the shell's own environment, which apps and terminals inherit.
  */
 
+import { hostTextAntialiasing } from "@dashi/ui";
 import { type NativeHostOptions, type NativeHostTransport, type NativeWindowOptions, spawnNativeHost } from "@mirinjs/metal";
 import { METAL_HOST } from "../apps/list.ts";
 
@@ -17,9 +18,9 @@ export function appNameEnv(name: string): Record<string, string> {
   return { MIRIN_METAL_APP_NAME: name };
 }
 
-/** `options` for one of the shell's hosts: named Dashi, keeping any environment the caller gave. */
+/** `options` for one of the shell's hosts: named Dashi, its text subpixel (D132), keeping any environment the caller gave. */
 export function shellHostOptions(options: NativeHostOptions): NativeHostOptions {
-  return { ...options, env: { ...appNameEnv(SHELL_APP_NAME), ...options.env } };
+  return { textAntialiasing: hostTextAntialiasing(), ...options, env: { ...appNameEnv(SHELL_APP_NAME), ...options.env } };
 }
 
 /** Spawn one of the shell's hosts (`METAL_HOST` unless `binary` says otherwise). */

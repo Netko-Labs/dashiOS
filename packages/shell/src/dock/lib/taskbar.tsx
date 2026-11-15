@@ -11,12 +11,13 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { type Bounds, Image, type PointerInfo, Text, View, type ViewStyle } from "@mirinjs/metal";
+import { type Bounds, type PointerInfo, Text, View, type ViewStyle } from "@mirinjs/metal";
 import { useRef } from "react";
 import { appFor } from "../../apps.ts";
 import type { MenuController } from "../../menus/index.ts";
 import type { Entry } from "../../shared/app-entries/index.ts";
 import type { App } from "../../shared/apps/index.ts";
+import { AppIcon } from "../../shared/apps/index.ts";
 import { TASKBAR } from "../../theme.ts";
 import { type ToplevelStore, useToplevels } from "../../toplevels.ts";
 import { type AttentionStore, useAttention } from "../attention.ts";
@@ -257,7 +258,7 @@ function TaskbarItem({
           top: rise.offset,
         }}
       >
-        <Image source={button.entry.app.icon} style={{ width: TASKBAR.icon, height: TASKBAR.icon }} />
+        <AppIcon source={button.entry.app.icon} style={{ width: TASKBAR.icon, height: TASKBAR.icon }} />
         {button.label !== "" && (
           <View style={{ flexShrink: 1, minWidth: 0 }}>
             <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text, fontWeight: lit ? "semibold" : "normal" }}>

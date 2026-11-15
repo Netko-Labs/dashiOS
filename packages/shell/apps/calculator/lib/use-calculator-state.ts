@@ -15,6 +15,12 @@ import type { Remembered } from "./store.ts";
 
 /** How long a key the keyboard typed stays lit. */
 const LIT_MS = 120;
+/**
+ * How long the field keeps an edit the line refused before it takes the
+ * line's text back: longer than the gap between an agent's keys (2 to 5 ms),
+ * shorter than a person's, and too short to see.
+ */
+const TAKE_BACK_MS = 25;
 /** How long a word under the line ("Copied") stays. */
 const NOTICE_MS = 2000;
 /** Saving waits for the window to stop changing size. */
@@ -40,6 +46,13 @@ export function useCalculatorState(remembered: Remembered, locale: NumberLocale,
     const timer = setTimeout(() => dispatch({ type: "unlit" }), LIT_MS);
     return () => clearTimeout(timer);
   }, [state.lit]);
+  // Counted from the field's last word: each of its reports is a new `held`.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `held` restarts the wait.
+  useEffect(() => {
+    if (!state.refused) return;
+    const timer = setTimeout(() => dispatch({ type: "take-back" }), TAKE_BACK_MS);
+    return () => clearTimeout(timer);
+  }, [state.refused, state.held]);
   useEffect(() => {
     if (state.notice === null) return;
     const timer = setTimeout(() => dispatch({ type: "notice", notice: null }), NOTICE_MS);

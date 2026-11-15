@@ -2107,6 +2107,8 @@ short words, as the rulebook is written.
 
 ### D100. A marquee asks its window where the items are painted
 
+**Still so after mirin's scroll position came (D134):** on a long list it is not to be trusted yet.
+
 - **Date:** 2026-11-14. The `n15-marquee` agent's.
 - **Question:** the rectangle must stay on the items while they scroll, and
   scroll them at the edges. Metal tells an app neither where a scroll view
@@ -2436,6 +2438,8 @@ short words, as the rulebook is written.
 
 ### D113. The keyboard's item is scrolled into view by asking the window
 
+**Still so (D134).**
+
 - **Date:** 2026-11-14. The `n19-polish` agent's.
 - **Question:** ↑ or ⇧↑ past the top of what shows left the selection off
   screen, in Files and in the open and save sheets. Metal neither says
@@ -2711,6 +2715,8 @@ short words, as the rulebook is written.
 
 ### D124. Keys typed before Calculator's line took a keypad key land after it; the agent's path is left as it is
 
+**Superseded by D129:** mirin's host now types such keys again on the line's text, and the line's kept texts are gone.
+
 - **Date:** 2026-11-14. The `n22` final fixes.
 - **Question:** an agent's click on 7 and `type_text "*6="` sent at once
   left 76 on Calculator's display and no sum, three times of five (D110's
@@ -2829,6 +2835,8 @@ short words, as the rulebook is written.
 
 ### D128. A picture the host cannot draw is never handed to it
 
+**Superseded by D133:** the host now says when it cannot draw a file, and nothing reads a file's first bytes. Preview's TIFF conversion stays.
+
 - **Date:** 2026-11-15. `n24`. sumi decodes PNG, JPEG, GIF, WebP, BMP and
   ICO and draws SVG; the old engine also read TIFF, TGA and PNM.
 - **Question:** the host draws a file it cannot decode as nothing, and says
@@ -2856,3 +2864,256 @@ short words, as the rulebook is written.
   checked: they are downloaded PNG, JPEG or WebP.
 - **Undo:** `resolveIcon` in `shared/apps/icons.ts`, `tiff` in
   `shared/files/kinds.ts`, and the five callers of `hostDrawsFile`.
+
+### D129. Calculator's line trusts the host to carry typing onto a key pressed meanwhile
+
+- **Date:** 2026-11-15. The `n28` take-up of mirin Metal (mirin `a41eac5`, PR 33).
+- **Question:** D124 kept up to eight of the line's older texts, to read
+  what the field typed before it took a keypad key. mirin now does this
+  where it belongs: the host types those keys again on the app's text (a
+  rebase) and the driver never passes on a change made on a text the app
+  has replaced. What is left for Calculator to do?
+- **Choice:** D124's kept texts are removed (`sent`, and reading against
+  several texts): the reducer is as it was before D124. Three things mirin's
+  answer needs from the app, each small:
+  1. The host reports the keys it typed again as **one** change ("7", then
+     "\*6=" arrives as "7\*6="). Several characters put in at once that
+     are all keys are done one by one, as typed ("=" works the sum out);
+     anything else is still read as a paste. ❖V is the app's own paste, so
+     the field never pastes by itself.
+  2. A key the line refuses (a letter, a space) is taken out of the field
+     25 ms after the field's last word, not at once. Taking it out is a new
+     `valueRevision`, which the host answers with a reset that drops what
+     was typed since: an agent's "12 + 3" typed at once lost the "+ 3". The
+     wait is longer than the gap between an agent's keys (2 to 5 ms) and
+     shorter than a person's.
+  3. A caret at the end of the line is not sent as `selection`. The host
+     keeps the caret with the keys it typed again, and then put it where
+     the tree's `selection` said (the app's caret, made before it knew of
+     those keys): the next key landed in front of them ("12", + on the
+     keypad, "3\*4-5=" typed gave −5, 39 crossings of 150).
+- **Why:** the three were found with a stand-in for the host that does what
+  mirin's does (`test/support/host-field.ts`, from `value.rs` and
+  `field/rebase.rs`), in the crossings D124's test already ran: 150 of 150
+  in both of its cases now.
+- **Cost:** on a host without `rebase` (none ships with Dashi: the host is
+  built from the same mirin) the D124 race is back: a click on 7 and
+  "\*6=" within a round trip gives 76. Return pressed within a round trip
+  of a keypad key works out the line without what was typed (a `submit`
+  carries the field's text as it was; "=" is not affected). A keypad key
+  pressed with the caret inside the line, and keys typed within the same
+  round trip, can still land one place early (3 needs mirin: a rebase
+  should not take the tree's `selection`).
+- **The other fields the app also writes,** and whether a `submit` that
+  carries the field's text as it was when Enter was pressed matters there
+  (looked at by `n29`; none needed a change):
+  - The launcher's field (`launcher/lib/field.tsx`; the app takes a chip
+    out of the words, completes on Tab, empties it as it opens). Enter
+    runs the row the launcher's own state has chosen and never reads the
+    text the `submit` carries; what was typed before Enter comes as
+    changes first. Does not matter.
+  - The bar's field and the capsule's (`menubar/lib/field-row.tsx`; the
+    app writes it with `valueRevision`: history, "Type it instead",
+    emptied when sent). Enter sends the state's text. Does not matter.
+  - Settings' search (`settings-app/lib/sidebar-search.tsx`; the app
+    empties it on Esc). Enter opens what the state found. Does not matter.
+  - Files' omnibox (`apps/files/lib/omnibox/omnibox-editor.tsx`). It
+    reads the text the `submit` carries, but the app writes the field only
+    on Esc, which ends the edit. Does not matter.
+  - Rename in place (`shared/file-browser/lib/views/rename-field.tsx`)
+    reads the carried text too, and the app never writes the field after
+    it opens. Does not matter.
+  - Find in Text Editor and Notes: the app never writes the field. Terminal
+    has no text field.
+  - Calculator's line is the one where it matters (the cost above).
+- **Undo:** `fe547913` and `ec811ee3` are D124's two commits.
+
+### D130. The capsule's window opens and hides when asked; it still lingers
+
+- **Date:** 2026-11-15. The `n28` take-up (mirin `a41eac5`, PR 37).
+- **Question:** the capsule kept its window open at least 400 ms and waited
+  150 ms after a hide before it opened again, because a resident host died
+  when hidden as it opened or opened as it hid. mirin says sumi no longer
+  does. Which waits go?
+- **Choice:** both of those go (`MIN_OPEN_MS`, `REOPEN_MS`). The 350 ms
+  linger after the last line (D84) stays: it was never for the fault. It is
+  there so one line replaces another in the same window, and a hide and an
+  open in between is still a window opened again.
+- **Why:** the waits cost a held key its first 150 ms after a tap, and kept
+  an empty window over the Dock's place for 400 ms after a chord.
+- **Cost:** mirin could not make the old fault fail on its GPU and did not
+  test the VM's driver. If a host dies in the VM's rounds, the respawn
+  (1.5 s) still brings it back, and the waits return from this entry.
+- **Undo:** `MIN_OPEN_MS` and `REOPEN_MS` in `capsule/lib/surface.ts` as in
+  `d93574ad`.
+
+### D131. The Metal host is built from `../mirin`'s HEAD until mirin tags a release
+
+- **Date:** 2026-11-15. The `n28` take-up (mirin `a41eac5`, PR 38). The
+  lead's decision.
+- **Question:** each mirin release will now publish
+  `mirin-metal-<version>-source.tar.xz` and its `.sha256`, with the crates
+  inside, which builds with `--offline`. No release has been tagged since,
+  so there is no tarball. Build one ourselves, or wait?
+- **Choice:** wait. `spin/build-rpms` goes on archiving `../mirin`'s HEAD
+  and the package goes on fetching its crates (D127). Nothing in the build
+  changes now: `forks/sumi/rust-toolchain.toml` is gone from mirin, and
+  only the spec's comment spoke of it.
+- **When mirin tags a release:** `spin/build-rpms` downloads the release's
+  tarball and its `.sha256` and checks one against the other in place of
+  `git archive` (the spec's `Source0` and `Version` are the release's, not
+  a snapshot's); `%build` runs `cargo build --release --locked --offline`;
+  the builders need no network for this package, so D127's cost goes for
+  it; `spin/license-dependencies` reads the tarball's lockfile.
+  `@mirinjs/metal`'s TypeScript must come from the same tag.
+- **Cost:** until then a build needs the network, as D127 says.
+- **Undo:** nothing to undo.
+
+### D132. Dashi's text is subpixel
+
+- **Date:** 2026-11-15. The `n28` take-up (mirin PR 36). The owner's
+  decision.
+- **Question:** mirin's hosts now draw grayscale text on Linux unless
+  asked (it carries no colour fringes to a rotated or another screen, and
+  an idle host is about 1 MB smaller). Which does Dashi ship?
+- **Choice:** subpixel, in every host: the shell's, every app's, the
+  greeter's, `dashi-dialog`, the portal's, applets'. Until mirin's PR 36 is
+  on `main`, `session/dashi-session` and `session/dashi-greeter` set
+  `MIRIN_METAL_TEXT=subpixel` (a value already set wins), which every host
+  of the session inherits. PR 36 is on `main` now (`db8a00e`), so every
+  place Dashi spawns a host gives mirin's
+  `NativeHostOptions.textAntialiasing` (`hostTextAntialiasing()`,
+  `@dashi/ui`: the shell's `shellHostOptions`, which the portal, the
+  launcher and the warm hosts go through; the kit's `runApp`, so every app
+  and `dashi-dialog`; the greeter; the applet SDK's two). The greeter's
+  script no longer sets the variable. `session/dashi-session` still does,
+  for a Metal program in the session that is not Dashi's; and a value
+  someone set there (`MIRIN_METAL_TEXT=grayscale`, to measure) is still
+  taken by Dashi's hosts, since the option would otherwise hide it.
+  A window that is not opaque (a layer surface: the bar, the Dock, the
+  launcher, the capsule, banners, the login screen) draws grays whatever
+  is asked: mirin's rule, since subpixel text needs to know what is behind it.
+- **Left:** the setting (`appearance.textSmoothing`, "subpixel" or
+  "grayscale", a row in Settings › Appearance, known to agents). It is not
+  a small change: mirin applies a change per host (`setTextAntialiasing`
+  on each transport), and Dashi's hosts belong to many processes (the
+  shell's bar, Dock, launcher, capsule, sheets and warm hosts; every app;
+  the portal; `dashi-dialog`; each applet). Each would watch the settings
+  file and keep a list of its live transports, at eight spawn sites. What
+  it needs: one `spawnHost` that every site goes through (the shell's
+  `spawnShellHost`, the kit's `runApp`, the applet SDK's two), which sets
+  `textAntialiasing` from the setting and keeps the transport for a later
+  `setTextAntialiasing`. The greeter has no person yet and stays subpixel.
+- **Cost:** 0.7 MB more per idle host than grayscale (measured on the
+  installed build: six shell hosts 165.4 MB RSS and 56.6 MB PSS in
+  subpixel, 161.2 and 52.3 in grays; a cold app's first window is no
+  slower), and fringes of
+  the wrong order on a rotated screen.
+- **Undo:** `hostTextAntialiasing` and the `export` line.
+
+### D133. A picture the host cannot draw says so, and what stands in is drawn then
+
+- **Date:** 2026-11-15. The `n28` take-up (mirin `36ea764`, PR 35).
+- **Question:** D128 read a file's first bytes before handing it to the
+  host, because the host drew a file it could not decode as nothing and
+  said nothing. Now an `<Image>` has `onError`. Keep the reading?
+- **Choice:** no. `Picture` (`@dashi/ui`) is an `<Image>` with a
+  `fallback`, shown when the host says it cannot draw the source; `AppIcon`
+  (`shared/apps`) is a `Picture` whose fallback is the generic icon.
+  Every place D128 touched uses one: an app's icon wherever it is drawn
+  (the Dock, the taskbar, the switcher, Force Quit, the launcher's rows and
+  chip, notifications, the polkit sheet, Open With, the app chooser, the
+  sound and clipboard rows, Activity Monitor), an account picture (the
+  login screen, Settings, the account portal: the initials), an applet's
+  icon in the bar (its first letter), a launcher the portal is asked to
+  add (the empty tile), Preview's strip (the empty frame).
+  `shared/apps/drawn.ts` and the greeter's copy of it are gone. Preview's
+  TIFF conversion stays: it is a conversion, not a check.
+- **Why:** the host knows what it decodes; a second list of formats in
+  Dashi was one more thing to keep true (and two, with the greeter's).
+- **Cost:** the host tries first, so the place is empty for a frame before
+  the fallback shows. An extension's row with a picture the host cannot
+  draw now gets the generic icon, not the puzzle piece. A path that failed
+  stays failed for the host's life (mirin): an account picture replaced by
+  a good one under the same path (AccountsService always writes
+  `/var/lib/AccountsService/icons/<name>`) shows the initials until the
+  window is reopened (Settings, the portal) or the session restarts (the
+  lock screen). On a host that does not say (none ships with Dashi) a bad
+  file is a blank, as before D128.
+- **Undo:** `git revert` of this commit brings `drawn.ts` and its callers
+  back.
+
+### D134. Files still asks its window where the items are; Calendar scrolls its hours by their handle
+
+- **Date:** 2026-11-15. The `n28` take-up, finished by `n29` (mirin
+  `5703b91`, PR 34).
+- **Question:** D100 and D113 ask the window where the items are painted
+  (every 150 ms during a drag, once or twice per key) and scroll through
+  the simulation channel, because Metal said nothing of a scroll view. Now
+  a view that scrolls has `onScroll`, and its `ref` is a `ViewHandle`
+  (`scrollTo`, `scrollIntoView`). Move Files' marquee and the keyboard's
+  reveal onto them?
+- **Choice:** not yet. It was built (`fd03ff15`: a `ScrollPlace` fed by the
+  listing's `onLayout`, `onScroll` and `ref`) and taken back after the VM:
+  on a long list, which both of Files' views are (mirin lays out only the
+  rows near the view), the host's offset is wrong once rows have changed.
+  A row whose props change is taken out of the list's measures and counted
+  as nothing until it is laid out again, and a list that reports its
+  offset is counted whole only once. Seen with 89 rows of 26: wheeled to
+  1200, then Select All, the list says it is at 0; and a marquee held at
+  the bottom edge, which changes the selected rows on every step, was sent
+  to 98 and landed on 722, then the end, then 78, and selected 48 rows of
+  the 86 under it. The same happens with the simulation channel's scroll
+  once the list has `onScroll`. Without `onScroll` the list is as it was,
+  and D100's way selects the 86. So Files, the sheets and `dashi-dialog`
+  keep D100 and D113 as they were.
+  **Calendar is moved:** its hours are a plain scroll view, and
+  `scrollTo` on their `ref` puts them at an offset (no longer "to the
+  top, then down" through `main.tsx`, whose `scroll` prop is gone). The
+  first one, as the view opens, still waits 80 ms: asked in the turn the
+  view is mounted it is lost, and the hours stayed at midnight in the VM.
+- **When mirin counts a changed list again** (`list.rs`:
+  `invalidate_changed` splices rows in with no height; `estimate_rows`
+  runs once per width): bring `fd03ff15` back. It is written and tested.
+- **Cost:** the 150 ms look stays during a drag. On a host that says no
+  `scroll` (none ships with Dashi) Calendar's hours open at midnight.
+  Still through the simulation channel as well: Notes' and Text Editor's
+  scroll to the caret (`apps/notes/main.tsx`, `apps/editor/main.tsx`) and
+  Settings' scroll to a searched row (`src/overlay.tsx`).
+- **Undo:** Calendar: `git revert` of this entry's first commit, less the
+  files under `shared/file-browser`.
+
+### D135. A file drag to or from an X11 app is not carried yet; a link dropped on Files is refused
+
+- **Date:** 2026-11-15. The `n28` take-up, finished by `n29` (mirin PR 40).
+- **Question:** mirin found a Metal file drag right between Wayland apps
+  and lost when the other side is an X11 app under Xwayland, and said that
+  path is the compositor's. Build the bridge now? And what does Files do
+  with a link dropped on it?
+- **What was seen** (the VM, real pointer): a file dragged from Files onto
+  Helium's upload page is taken when Helium is a Wayland app (the page got
+  the file's name and size) and not at all when Helium runs with
+  `--ozone-platform=x11` (no `dragover`). A link dragged from Firefox onto
+  Files' listing brought nothing, with Firefox on Wayland or on X11.
+  Dashi starts Helium with `--ozone-platform=wayland` and Firefox with
+  `MOZ_ENABLE_WAYLAND=1`, in the VM and on the laptop, so both are Wayland
+  apps as shipped.
+- **Choice:** not built in 0.9. `dashi-comp` wires smithay's Xwayland
+  selections (the clipboard and the primary selection, both ways:
+  `xwayland/selection.rs`) and nothing for drags, because smithay 0.7.0,
+  the newest release, has no XDND: no `XdndAware` window, no
+  `XdndEnter`/`Position`/`Drop`, in either direction. The bridge is
+  Dashi's to write on its second X connection (`xwayland/wm.rs`): a proxy
+  window that owns `XdndSelection` for a Wayland drag over an X11 window
+  and speaks XDND to it, reading the Wayland source through the data
+  device; and the other way, a `wl_data_source` made by the compositor for
+  an X11 `XdndSelection` owner. Several days with its headless tests, and
+  a fault in it breaks every drag, so it is its own piece of work.
+- **A link dropped on Files:** refused, as mirin's host does (the pointer
+  shows no drop). A file manager's other answer, a `.desktop` link file in
+  the folder, needs the host to hand over a drag with no file in it, which
+  it does not; asked of mirin only if someone wants it.
+- **Cost:** an app that is X11 only (some games' launchers, old toolkits)
+  neither takes a file dragged from Files nor gives one to it. Open and
+  Save sheets, the clipboard and paste work there.
+- **Undo:** nothing to undo.

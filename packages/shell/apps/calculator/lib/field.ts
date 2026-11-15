@@ -4,19 +4,28 @@
  * then its caret); the line takes the edit and writes itself tidy, and the
  * field takes that text back. Between the two the field may have reported a
  * caret in its own, untidy text, and typed on it again before it took the
- * line's (fast typing): neither is the line's. The same holds when the line
- * changed another way (a keypad key, a paste) and the field typed before it
- * took that: an agent's click on 7 and "*6=" typed 5 ms later, or several
- * calls 2 ms apart, the field taking a tree between two of its keys
- * (decisions.md D124). Pure.
+ * line's (fast typing): neither is the line's.
+ *
+ * What was typed while the line changed another way (a keypad key, a paste)
+ * the Metal host types again on the line's new text, and reports as one edit
+ * (mirin's rebase; decisions.md D129): a click on 7 and "*6=" typed 5 ms
+ * later arrive as "*6=" put after the 7, several keys at once. Pure.
  */
 
 import type { TextSelection } from "@mirinjs/metal";
 import { isQuiet } from "./expression.ts";
-import { type Edited, type Line, paste, settle, typeChar } from "./line.ts";
+import { type Edited, type Line, paste, settle, typeChar, typedText } from "./line.ts";
 import type { NumberLocale } from "./locale.ts";
 
-export type FieldEdit = { kind: "line"; edited: Edited } | { kind: "equals" } | { kind: "negate" };
+export type FieldEdit =
+  | { kind: "line"; edited: Edited }
+  | { kind: "equals" }
+  | { kind: "negate" }
+  /** Several keys in one edit, typed in turn over `line`'s selection. */
+  | { kind: "keys"; line: Line; keys: string[] };
+
+/** A key the line answers: one it types, "=" or "n"; and a space, which types nothing. */
+const isKey = (char: string, locale: NumberLocale): boolean => char === " " || char === "=" || char === "n" || char === "N" || typedText(char, locale) !== "";
 
 /** One edit between two texts: `old.slice(start, end)` became `inserted`. */
 interface Splice {
@@ -35,62 +44,37 @@ function spliceOf(old: string, raw: string): Splice {
 
 const sizeOf = (splice: Splice): number => splice.end - splice.start + splice.inserted.length;
 
-/** What of `text` counts: its digits and operators, without spaces and grouping marks. */
-const meaningful = (text: string, locale: NumberLocale): string => [...text].filter((char) => !isQuiet(char, locale)).join("");
-
-/**
- * Where offset `at` in `from` (the field's own text) is in `to` (the line's):
- * after the same digit or operator (spaces and grouping marks don't count).
- * What the line has that the field never held (a keypad key pressed while the
- * field was still behind, written at its caret) is before that spot: the
- * field's caret would have moved past it.
- */
+/** Where offset `at` in `from` is in `to`: after the same digit or operator (spaces and grouping marks don't count). */
 function sameSpot(from: string, at: number, to: string, locale: NumberLocale): number {
-  const before = meaningful(from.slice(0, at), locale).length;
-  const change = spliceOf(meaningful(from, locale), meaningful(to, locale));
-  const untouched = before < change.start || (before === change.start && change.end > change.start);
-  const count = untouched ? before : change.start + change.inserted.length + Math.max(0, before - change.end);
+  let meaningful = 0;
+  for (let index = 0; index < at; index += 1) if (!isQuiet(from[index] as string, locale)) meaningful += 1;
   let spot = 0;
-  for (let seen = 0; spot < to.length && seen < count; spot += 1) if (!isQuiet(to[spot] as string, locale)) seen += 1;
+  for (let seen = 0; spot < to.length && seen < meaningful; spot += 1) if (!isQuiet(to[spot] as string, locale)) seen += 1;
   return spot;
 }
 
 /**
- * The field's edit and the text it made it on. `held` are the texts the
- * field may hold that are not the line's, the likeliest last: the line's
- * as it was before it changed (the field takes each tree in turn, and types
- * between them), then the field's own as it last reported it. The edit is
- * the smallest one from any of them, the later first among equals, and the
- * line's own text before them all.
+ * The field's edit and the text it made it on. `held` is the field's own
+ * text as it last reported it: when the line wrote that differently and the
+ * field typed on its own before taking the line's, the edit is the smaller
+ * one from `held`.
  */
-function editOf(line: Line, raw: string, held: readonly string[]): { base: string | null; splice: Splice } {
+function editOf(line: Line, raw: string, held: string | null): { onOwn: boolean; splice: Splice } {
   const direct = spliceOf(line.text, raw);
-  let best: { base: string | null; splice: Splice } = { base: null, splice: direct };
-  for (let index = held.length - 1; index >= 0; index -= 1) {
-    const base = held[index] as string;
-    if (base === line.text) continue;
-    const own = spliceOf(base, raw);
-    // The line's very text reported as an edit is one typed on the field's own: it ended up spelling the line's.
-    const smaller = sizeOf(best.splice) === 0 || sizeOf(own) < sizeOf(best.splice);
-    if (sizeOf(own) > 0 && smaller) best = { base, splice: own };
-  }
-  return best;
-}
-
-/** The text the field made its edit on, when that is not the line's: one of `held`. */
-export function fieldBase(line: Line, raw: string, held: readonly string[]): string | null {
-  return editOf(line, raw, held).base;
+  if (held === null || held === line.text) return { onOwn: false, splice: direct };
+  const own = spliceOf(held, raw);
+  return sizeOf(own) > 0 && sizeOf(own) < sizeOf(direct) ? { onOwn: true, splice: own } : { onOwn: false, splice: direct };
 }
 
 /** The field's edit as a splice of the line's text: one made on its own text lands at the same digits in the line. */
-function spliceInLine(line: Line, raw: string, held: readonly string[], locale: NumberLocale): Splice {
-  const { base, splice } = editOf(line, raw, held);
-  if (base === null) return splice;
-  return { start: sameSpot(base, splice.start, line.text, locale), end: sameSpot(base, splice.end, line.text, locale), inserted: splice.inserted };
+function spliceInLine(line: Line, raw: string, held: string | null, locale: NumberLocale): Splice {
+  const { onOwn, splice } = editOf(line, raw, held);
+  if (!onOwn || held === null) return splice;
+  return { start: sameSpot(held, splice.start, line.text, locale), end: sameSpot(held, splice.end, line.text, locale), inserted: splice.inserted };
 }
 
 /** The field's caret in `raw` just after its edit (after what it typed), as it reports it next. */
-export function fieldCaret(line: Line, raw: string, held: readonly string[]): TextSelection {
+export function fieldCaret(line: Line, raw: string, held: string | null): TextSelection {
   const { splice } = editOf(line, raw, held);
   const at = splice.start + splice.inserted.length;
   return { start: at, end: at };
@@ -101,7 +85,7 @@ export function fieldCaret(line: Line, raw: string, held: readonly string[]): Te
  * Cut): what changed, against the line as it was, done the line's way.
  * Typing "=" works it out and "n" negates; they never land in the text.
  */
-export function fromField(line: Line, raw: string, locale: NumberLocale, held: readonly string[] = []): FieldEdit {
+export function fromField(line: Line, raw: string, locale: NumberLocale, held: string | null = null): FieldEdit {
   const old = line.text;
   const { start: from, end, inserted } = spliceInLine(line, raw, held, locale);
   const removed = old.slice(from, end);
@@ -118,7 +102,13 @@ export function fromField(line: Line, raw: string, locale: NumberLocale, held: r
       edited: { line: settle({ ...line, carry: start === 0 && end === old.length ? null : line.carry }, old.slice(0, start) + old.slice(end), start, locale) },
     };
   }
-  if ([...inserted].length > 1) return { kind: "line", edited: paste(replacing, inserted, locale) };
+  const chars = [...inserted];
+  if (chars.length > 1) {
+    // Every character a key: keys the host typed again in one edit ("=" among them), each done as typed.
+    // ❖V is the app's own paste, so the field puts several characters in at once only so, or from an input method.
+    if (chars.every((char) => isKey(char, locale))) return { kind: "keys", line: replacing, keys: chars };
+    return { kind: "line", edited: paste(replacing, inserted, locale) };
+  }
   if (inserted === "=") return { kind: "equals" };
   if (inserted === "n" || inserted === "N") return { kind: "negate" };
   return { kind: "line", edited: { line: typeChar(replacing, inserted, locale) } };

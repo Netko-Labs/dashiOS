@@ -15,7 +15,8 @@ let dir = "";
 let model: CalendarModel;
 let root: NativeRoot;
 let listeners: ((event: NativeEvent) => void)[] = [];
-let scrolls: [string, number][] = [];
+/** What the hours' scroll view was asked: its node and the offset. */
+let scrolls: { id: string; y: number }[] = [];
 const id = (testID: string): string => root.nodeId(testID) ?? "";
 const emit = async (event: NativeEvent): Promise<void> => {
   for (const listener of listeners) listener(event);
@@ -45,8 +46,19 @@ afterEach(() => {
 async function open(view: "week" | "month"): Promise<void> {
   // Thursday, November 5, 2026, at 8:00 in the morning.
   model = new CalendarModel(new CalendarStore(dir), () => new Date("2026-11-05T08:00:00"), { view, day: "2026-11-05" });
-  const transport: NativeTransport = { send() {}, onEvent: (listener) => listeners.push(listener), onClose() {}, simulate() {}, close() {} };
-  root = render(<CalendarWindow model={model} chooser={{ choose: async () => null }} scroll={(testID, dy) => scrolls.push([testID, dy])} />, transport);
+  const transport: NativeTransport = {
+    send(line) {
+      const said = JSON.parse(line) as { scrollTo?: { id: string; y: number } };
+      if (said.scrollTo) scrolls.push(said.scrollTo);
+    },
+    onEvent: (listener) => listeners.push(listener),
+    onClose() {},
+    simulate() {},
+    close() {},
+  };
+  root = render(<CalendarWindow model={model} chooser={{ choose: async () => null }} />, transport);
+  // A host that takes a scroll from the app.
+  for (const listener of listeners) listener({ type: "protocol", nodeId: "root", patches: 0, scroll: true });
   await settle(120);
 }
 
@@ -58,11 +70,8 @@ test("the + button's new event is scrolled into sight, wherever the hours were",
   scrolls = [];
   await emit({ type: "press", nodeId: id("new-event") });
   expect(root.nodeId("pending-title")).toBeTruthy();
-  // The hours go to the top, then to an hour above it.
-  expect(scrolls).toEqual([
-    ["hours", -100_000],
-    ["hours", revealOffset(9 * 60)],
-  ]);
+  // The hours go to an hour above it, wherever they stood.
+  expect(scrolls).toEqual([{ id: id("hours"), y: revealOffset(9 * 60) }]);
   expect(revealOffset(9 * 60)).toBe(HOUR_HEIGHT * 8);
 });
 

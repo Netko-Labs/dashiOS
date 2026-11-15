@@ -7,7 +7,8 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { Image, Text, View } from "@mirinjs/metal";
+import { Text, View } from "@mirinjs/metal";
+import { AppIcon } from "../../shared/apps/index.ts";
 import { type NotificationStore, useNotifications } from "../store.ts";
 import { ellipsize } from "../text.ts";
 import type { Notification, NotificationAction } from "../types.ts";
@@ -105,7 +106,7 @@ export function Banner({ store, id }: { store: NotificationStore; id: number }) 
         onHoverChange={(hovered) => store.hold(id, hovered)}
       >
         <View style={{ flexDirection: "row", gap: BANNER.gap, flex: 1 }}>
-          <Image source={notificationIcon(notification)} resizeMode="contain" style={{ width: BANNER.icon, height: BANNER.icon, borderRadius: 8 }} />
+          <AppIcon source={notificationIcon(notification)} resizeMode="contain" style={{ width: BANNER.icon, height: BANNER.icon, borderRadius: 8 }} />
           <View style={{ flex: 1, flexDirection: "column", gap: 4 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: BANNER.summaryLine }}>
               {notification.urgency === "critical" && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.critical }} />}

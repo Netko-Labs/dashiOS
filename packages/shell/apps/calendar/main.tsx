@@ -23,18 +23,11 @@ if (await openInRunning(day)) process.exit(0);
 
 const model = new CalendarModel(new CalendarStore(defaultRoot()), () => new Date(), day ? { day, view: "day" } : undefined);
 
-// The view scrolls its hours through the app once the window exists.
-const handle: { scroll: (testID: string, dy: number) => void } = { scroll: () => {} };
-
-const app = runApp(
+runApp(
   // The least size keeps every toolbar control and a week's seven columns readable (chrome.ts).
   { id: "dev.dashi.calendar", title: "Calendar", size: CALENDAR_SIZE, minSize: CALENDAR_LEAST },
-  <CalendarWindow model={model} chooser={portalIcsChooser()} scroll={(testID, dy) => handle.scroll(testID, dy)} />,
+  <CalendarWindow model={model} chooser={portalIcsChooser()} />,
 );
-handle.scroll = (testID, dy) => {
-  const id = app.root.nodeId(testID);
-  if (id) app.host.simulate({ kind: "scroll", id, dy });
-};
 
 // Only the sidecar changed (a calendar was hidden here or in the shell): no calendar is read again.
 const onlySidecar = (names: ReadonlySet<string> | null): boolean =>

@@ -86,7 +86,7 @@ export function settle(line: Line, raw: string, caret: number, locale: NumberLoc
 }
 
 /** What a typed character puts in the line: itself, its operator ("*" is ×), the locale's decimal mark, or nothing. */
-function typedText(char: string, locale: NumberLocale): string {
+export function typedText(char: string, locale: NumberLocale): string {
   if (/^[0-9]$/.test(char) || char === "%" || char === "(" || char === ")") return char;
   if (numberMarks(locale).decimals.has(char)) return locale.decimal;
   return operatorFor(char) ?? "";

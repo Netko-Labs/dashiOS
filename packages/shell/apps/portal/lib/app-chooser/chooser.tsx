@@ -11,8 +11,9 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { glyphs, rowLook, SelectionBar, useColors } from "@dashi/ui";
-import { Image, ScrollView, Svg, Text, View } from "@mirinjs/metal";
+import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
+import { AppIcon } from "../../../../src/shared/apps/index.ts";
 import type { InterfaceSpec } from "../../../../src/shared/dbus/index.ts";
 import { exec } from "../../../../src/shared/files/index.ts";
 import { appInfo } from "../apps.ts";
@@ -129,7 +130,7 @@ function AppRow({ id, chosen, isDefault, onPress }: { id: string; chosen: boolea
       }}
     >
       {chosen && <SelectionBar rowHeight={34} />}
-      {app.icon ? <Image source={app.icon} style={{ width: 22, height: 22 }} /> : <Svg markup={glyphs.INFO} size={18} color={look.glyph} />}
+      {app.icon ? <AppIcon source={app.icon} style={{ width: 22, height: 22 }} /> : <Svg markup={glyphs.INFO} size={18} color={look.glyph} />}
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={{ fontSize: 13, color: look.ink }}>
           {app.name}

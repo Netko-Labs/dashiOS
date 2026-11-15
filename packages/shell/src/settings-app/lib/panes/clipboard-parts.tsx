@@ -5,11 +5,11 @@
  * and whether snippets expand in terminals. settings.json `clipboard`.
  */
 
-import { Image, Text, TextInput, View } from "@mirinjs/metal";
+import { Text, TextInput, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import type { ClipboardHistory, HistorySnapshot } from "../../../clipboard/history.ts";
 import { DEFAULT_LEFT_OUT, leftOutApps, withoutApp } from "../../../clipboard/left-out.ts";
-import { iconPath } from "../../../shared/apps/index.ts";
+import { AppIcon, iconPath } from "../../../shared/apps/index.ts";
 import { Button, Caption, Group, useSurface } from "../../../shared/cards/index.ts";
 import { useColors } from "../../colors.ts";
 import { useSettings } from "../../hooks.ts";
@@ -50,7 +50,7 @@ function LeftOutList({ settings, list, installed }: { settings: SettingsStore; l
         const key = app.ids[0] ?? app.name;
         return (
           <View key={key} testID={`clipboard-left-out:${key}`} style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 28 }}>
-            <Image source={icon} style={{ width: APP_ICON, height: APP_ICON }} />
+            <AppIcon source={icon} style={{ width: APP_ICON, height: APP_ICON }} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
                 {app.name}

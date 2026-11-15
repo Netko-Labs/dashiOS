@@ -8,9 +8,10 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { Image, Text, View } from "@mirinjs/metal";
+import { Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import type { Rect } from "../layout.ts";
+import { AppIcon } from "../shared/apps/index.ts";
 import { ICON, switcherLayout } from "./layout.ts";
 import type { SwitcherApp, SwitcherState } from "./types.ts";
 
@@ -69,7 +70,7 @@ function AppCell({ testID, app, icon, cell, lit, onPoint, onPick }: CellProps & 
         backgroundColor: lit ? colors.switcherSelection : "#00000000",
       }}
     >
-      <Image source={icon} style={{ width: ICON, height: ICON, opacity: app.away ? 0.45 : 1 }} />
+      <AppIcon source={icon} style={{ width: ICON, height: ICON, opacity: app.away ? 0.45 : 1 }} />
       {app.count > 1 ? (
         <View
           style={{

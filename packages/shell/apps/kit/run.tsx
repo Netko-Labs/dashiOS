@@ -11,7 +11,7 @@
  */
 
 import { existsSync } from "node:fs";
-import { TextSelectionLook } from "@dashi/ui";
+import { hostTextAntialiasing, TextSelectionLook } from "@dashi/ui";
 import { type NativeHostTransport, type NativeRoot, render, spawnNativeHost, type TitleBarStyle } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { METAL_HOST } from "../../src/shared/apps/index.ts";
@@ -105,6 +105,8 @@ export function runApp(options: AppOptions, element: ReactElement): RunningApp {
     height: size.height,
     ...least,
     titleBar,
+    // Dashi's text is subpixel (D132).
+    textAntialiasing: hostTextAntialiasing(),
     env,
     askToClose: true,
   });

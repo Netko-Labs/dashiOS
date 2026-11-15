@@ -11,9 +11,10 @@
  * the host's (the shell's lock controller, the greeter's greetd login).
  */
 
-import { Image, Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useState } from "react";
 import { RESTART, SHUT_DOWN, SLEEP } from "./glyphs.ts";
+import { Picture } from "./picture.tsx";
 import { darkColors, TRUE_BLACK } from "./theme/palette.ts";
 
 /**
@@ -148,12 +149,13 @@ export function LoginScreen(props: LoginScreenProps): ReactNode {
   );
 }
 
-/** A person's initial in a circle (a picture, once accounts have them). */
+/** A person's picture in a circle, or their initial: with no picture, or one the host cannot draw. */
 export function Avatar({ name, picture, size = 64 }: { name: string; picture?: string; size?: number }): ReactNode {
-  if (picture) return <Image source={picture} resizeMode="cover" style={{ width: size, height: size, borderRadius: size / 2 }} />;
-  return (
+  const initial = (
     <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: "#ffffff2e", alignItems: "center", justifyContent: "center" }}>
       <Text style={{ fontSize: Math.round(size * 0.44), fontWeight: "semibold", color: TEXT }}>{(name[0] ?? "?").toUpperCase()}</Text>
     </View>
   );
+  if (!picture) return initial;
+  return <Picture source={picture} resizeMode="cover" style={{ width: size, height: size, borderRadius: size / 2 }} fallback={initial} />;
 }

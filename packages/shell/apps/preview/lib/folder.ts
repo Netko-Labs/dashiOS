@@ -11,7 +11,6 @@
 import { existsSync, type FSWatcher, watch } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
-import { hostDrawsFile } from "../../../src/shared/apps/index.ts";
 import { FORMATS, formatFromName } from "../../../src/shared/files/kinds.ts";
 import { cacheFile, cacheKey, partialName, publish } from "./cache.ts";
 import { CONVERT_MEMORY_MIB, thumbnailArgs } from "./convert.ts";
@@ -184,8 +183,8 @@ export class Folder {
       return null;
     }
     const native = FORMATS[format].native && format !== "gif";
-    // The file itself, when no thumbnail can be made: only one the host draws (a TIFF named .png is a blank), else the empty frame.
-    const asItIs = (): string | null => (native && info.size <= DRAWN_AS_IS_BYTES && hostDrawsFile(path) ? path : null);
+    // The file itself, when no thumbnail can be made; one the host cannot draw after all (a TIFF named .png) gets the empty frame where it is drawn (strip.tsx).
+    const asItIs = (): string | null => (native && info.size <= DRAWN_AS_IS_BYTES ? path : null);
     if (!this.options.magick || !thumbnailArgs(format, "")) return asItIs();
     const turns = this.options.turnsFor?.(path, info) ?? 0;
     const out = cacheFile(this.options.root, cacheKey({ path, mtimeMs: info.mtimeMs, size: info.size }, `strip:${turns}`), "png");

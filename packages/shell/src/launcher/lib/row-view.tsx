@@ -13,7 +13,8 @@
  */
 
 import { KEY_GLYPHS, Shortcut, Switch, useColors } from "@dashi/ui";
-import { Image, Svg, Text, View } from "@mirinjs/metal";
+import { Svg, Text, View } from "@mirinjs/metal";
+import { AppIcon } from "../../shared/apps/index.ts";
 import type { Row, RowIcon } from "../row-model.ts";
 import { type Measures, STANDARD, useMeasures } from "./measures.ts";
 
@@ -31,7 +32,7 @@ const STOP = 9;
 function Icon({ icon, m, agent }: { icon: RowIcon; m: Measures; agent?: Row["agent"] }) {
   const colors = useColors();
   if ("none" in icon) return null;
-  if ("image" in icon) return <Image source={icon.image} style={{ width: m.icon, height: m.icon }} />;
+  if ("image" in icon) return <AppIcon source={icon.image} style={{ width: m.icon, height: m.icon }} />;
   // A pane's own glyph in ink on a neutral tile: never tinted (CO-2, CO-4). Only Ask's glyph is shiso (CO-3).
   return (
     <View

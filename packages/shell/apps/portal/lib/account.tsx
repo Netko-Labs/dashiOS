@@ -11,7 +11,6 @@
 import { AlertWindow, Avatar, alertWindowHeight, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { Account } from "../../../src/shared/accounts/index.ts";
-import { hostDrawsFile } from "../../../src/shared/apps/index.ts";
 import type { InterfaceSpec } from "../../../src/shared/dbus/index.ts";
 import { fileUri } from "../../../src/shared/files/index.ts";
 import { appInfo } from "./apps.ts";
@@ -97,7 +96,7 @@ function AccountSheet({ request, account, answer }: { request: AccountRequest; a
       ]}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 10, borderRadius: 10, backgroundColor: colors.button }}>
-        <Avatar name={name} {...(account.iconFile && hostDrawsFile(account.iconFile) ? { picture: account.iconFile } : {})} size={44} />
+        <Avatar name={name} {...(account.iconFile ? { picture: account.iconFile } : {})} size={44} />
         <View style={{ flexDirection: "column", gap: 2, minWidth: 0 }}>
           <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
             {name}

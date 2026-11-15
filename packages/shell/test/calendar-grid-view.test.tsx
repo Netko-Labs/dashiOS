@@ -24,7 +24,7 @@ beforeEach(async () => {
   model = new CalendarModel(new CalendarStore(dir), () => new Date("2026-11-05T08:00:00"), { view: "week", day: "2026-11-05" });
   listeners = [];
   const transport: NativeTransport = { send() {}, onEvent: (listener) => listeners.push(listener), onClose() {}, simulate() {}, close() {} };
-  root = render(<CalendarWindow model={model} chooser={{ choose: async () => null }} scroll={() => {}} />, transport);
+  root = render(<CalendarWindow model={model} chooser={{ choose: async () => null }} />, transport);
   await settle();
   // The columns are 100 wide (the first column says so; the week starts on Saturday, Sunday, or Monday by region).
   for (const day of ["2026-10-31", "2026-11-01", "2026-11-02"]) {

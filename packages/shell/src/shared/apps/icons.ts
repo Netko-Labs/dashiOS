@@ -13,7 +13,6 @@
 import { existsSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { hostDrawsFile } from "./drawn.ts";
 import { type App, iconPath, resolvePinned } from "./list.ts";
 
 /** Tried first, in this order; every other theme follows alphabetically. */
@@ -65,11 +64,12 @@ export function themeIcon(name: string, roots: readonly string[], categories: re
 const ICON_SIZES = ["scalable", "512x512", "256x256", "128x128", "96x96", "64x64", "48x48"];
 
 /**
- * An icon name (or absolute path) as a file the renderer can draw. A path to a
- * file the host does not draw (an XPM, a TIFF) gets the generic icon, never a blank.
+ * An icon name (or absolute path) as a file for the renderer. A path is given
+ * as it is: where it is drawn (`AppIcon`), a file the host cannot draw (an
+ * XPM, a TIFF, one that is gone) gets the generic icon, never a blank.
  */
 export function resolveIcon(name: string, roots = iconRoots()): string {
-  if (name.startsWith("/")) return hostDrawsFile(name) ? name : iconPath("generic");
+  if (name.startsWith("/")) return name;
   if (!name) return iconPath("generic");
   for (const root of roots) {
     for (const size of ICON_SIZES) {

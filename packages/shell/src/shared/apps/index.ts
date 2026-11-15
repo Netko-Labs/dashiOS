@@ -1,3 +1,4 @@
+export { AppIcon } from "./app-icon.tsx";
 export { defaultHandlers, mergeDefaults, removeDefaults } from "./default-handlers.ts";
 export {
   type DesktopAction,
@@ -9,7 +10,6 @@ export {
   parseExec,
   splitList,
 } from "./desktop-entry.ts";
-export { HEAD_BYTES, hostDraws, hostDrawsFile } from "./drawn.ts";
 export {
   EDITOR_MIME_TYPES,
   FIRST_PARTY,

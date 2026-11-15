@@ -7,7 +7,7 @@
  * switch (appearance.ts).
  */
 
-import { setAppearanceSource, useSurface } from "@dashi/ui";
+import { hostTextAntialiasing, setAppearanceSource, useSurface } from "@dashi/ui";
 import { type NativeHostTransport, render, type SurfaceOptions, spawnNativeHost, View } from "@mirinjs/metal";
 import type { ReactElement, ReactNode } from "react";
 import { appearance } from "./appearance.ts";
@@ -102,7 +102,7 @@ export function openPopoverWindow({
   }
   const shape = { appId, title, width: placement.width, height: placement.height, surface: popoverSurface(placement, keyboard) };
   // A warm host draws on its first frame; a new one takes a second or two to start. Either is named for screen readers.
-  const host = warm?.take(shape) ?? spawn(metalHost(), { ...shape, env: { MIRIN_METAL_APP_NAME: title } });
+  const host = warm?.take(shape) ?? spawn(metalHost(), { ...shape, textAntialiasing: hostTextAntialiasing(), env: { MIRIN_METAL_APP_NAME: title } });
   let open = true;
   const finish = (): void => {
     if (!open) return;

@@ -8,11 +8,11 @@
  * login needs an administrator: polkit asks, on the shell's own sheet.
  */
 
-import { Image, Text, TextInput, View } from "@mirinjs/metal";
+import { Picture } from "@dashi/ui";
+import { Text, TextInput, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { useAccount } from "../../../accounts/index.ts";
 import { type Account, initialsOf, nameProblem } from "../../../shared/accounts/index.ts";
-import { hostDrawsFile } from "../../../shared/apps/index.ts";
 import { Button, Caption, Group, Note, useSurface } from "../../../shared/cards/index.ts";
 import type { PhotoChooser } from "../../../wallpaper/chooser.ts";
 import { useColors } from "../../colors.ts";
@@ -25,6 +25,8 @@ const AVATAR = 72;
 
 function Avatar({ account }: { account: Account }) {
   const colors = useColors();
+  // With no picture, or one the host cannot draw (a TIFF, an AVIF).
+  const initials = <Text style={{ fontSize: 28, fontWeight: "semibold", color: "#ffffff" }}>{initialsOf(account)}</Text>;
   return (
     <View
       testID="account-avatar"
@@ -38,10 +40,10 @@ function Avatar({ account }: { account: Account }) {
         backgroundColor: colors.selection,
       }}
     >
-      {account.iconFile !== null && hostDrawsFile(account.iconFile) ? (
-        <Image source={account.iconFile} resizeMode="cover" style={{ width: AVATAR, height: AVATAR }} />
+      {account.iconFile !== null ? (
+        <Picture source={account.iconFile} resizeMode="cover" style={{ width: AVATAR, height: AVATAR }} fallback={initials} />
       ) : (
-        <Text style={{ fontSize: 28, fontWeight: "semibold", color: "#ffffff" }}>{initialsOf(account)}</Text>
+        initials
       )}
     </View>
   );

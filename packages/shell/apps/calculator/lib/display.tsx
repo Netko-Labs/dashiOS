@@ -96,6 +96,11 @@ export function CalculatorDisplay({
 }: CalculatorDisplayProps) {
   const colors = useColors();
   const fontSize = fitFontSize(line.text || "0", room, LINE_LARGEST, LINE_SMALLEST);
+  // A caret at the line's end is not said: a field that takes a new text puts its caret there itself, and one
+  // that typed meanwhile keeps its caret with what it typed (the host types it again on the line's text). A
+  // caret said would be put before those keys, and the next one would land in front of them (D129).
+  const { start, end } = line.selection;
+  const selection = start === end && end === line.text.length ? undefined : line.selection;
   return (
     <View
       testID="display"
@@ -128,7 +133,7 @@ export function CalculatorDisplay({
         testID="line"
         value={line.text}
         valueRevision={revision}
-        selection={line.selection}
+        selection={selection}
         placeholder="0"
         autoFocus
         accessibilityLabel="Sum"

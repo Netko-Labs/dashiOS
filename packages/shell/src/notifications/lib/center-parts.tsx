@@ -5,8 +5,9 @@
  */
 
 import { useColors } from "@dashi/ui";
-import { Image, Svg, Text, View } from "@mirinjs/metal";
+import { Svg, Text, View } from "@mirinjs/metal";
 import { useMemo, useState } from "react";
+import { AppIcon } from "../../shared/apps/index.ts";
 import { ellipsize } from "../text.ts";
 import type { HistoryEntry } from "../types.ts";
 import { relativeTime } from "./group.ts";
@@ -146,7 +147,7 @@ export function GroupHeader({
   const icon = useMemo(() => notificationIcon({ imagePath: "", appIcon, desktopEntry }), [appIcon, desktopEntry]);
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 22, paddingLeft: 4 }}>
-      <Image source={icon} resizeMode="contain" style={{ width: CARD.icon, height: CARD.icon, borderRadius: 4 }} />
+      <AppIcon source={icon} resizeMode="contain" style={{ width: CARD.icon, height: CARD.icon, borderRadius: 4 }} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: colors.textMuted }}>
           {name}

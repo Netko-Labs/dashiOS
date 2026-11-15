@@ -8,7 +8,7 @@
  *   GREETD_SOCK=… WAYLAND_DISPLAY=… bun src/main.tsx
  */
 
-import { TextSelectionLook } from "@dashi/ui";
+import { hostTextAntialiasing, TextSelectionLook } from "@dashi/ui";
 import { type NativeHostTransport, render, spawnNativeHost } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { connectGreetd, Login, type LoginState } from "./greetd/index.ts";
@@ -62,6 +62,8 @@ function surfaceOn(output: string | undefined, keyboard: boolean): NativeHostTra
   return spawnNativeHost(metalHost(), {
     title: "Login",
     appId: "dev.dashi.greeter",
+    // Dashi's text is subpixel (D132).
+    textAntialiasing: hostTextAntialiasing(),
     surface: {
       role: "layer",
       layer: "overlay",
