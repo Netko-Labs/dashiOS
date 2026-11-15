@@ -32,7 +32,6 @@ function fakeHosts() {
       setTitle() {},
       setSize() {},
       setMinSize() {},
-      setTextAntialiasing: () => false,
       open: (window) => record.opened.push(window),
     };
   };

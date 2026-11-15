@@ -42,7 +42,6 @@ function fakeHosts() {
       setTitle() {},
       setSize() {},
       setMinSize() {},
-      setTextAntialiasing: () => false,
       open: (window: NativeWindowOptions) => lines.push(`open ${window.title}`),
     };
     return host as NativeHostTransport;
