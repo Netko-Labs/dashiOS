@@ -277,7 +277,7 @@ describe("the panel", () => {
     expect(root.nodeId("agents-row:7")).toBeDefined();
     expect(root.nodeId("agents-card:r1")).toBeDefined();
     expect(tree).toContain("Recording the screen");
-    expect(tree).toContain("“claude-ai”, connected over SSH");
+    expect(tree).toContain("“claude-ai”");
     expect(root.nodeId("agents-dot")).toBeDefined();
     for (const id of ["agents-stop-agent:7", "agents-stop-all"]) {
       const node = root.nodeId(id);

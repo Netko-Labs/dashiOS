@@ -141,12 +141,13 @@ interface RowActions {
 
 /**
  * A connection's second line: the chip of its access, then what it does and where it is from.
- * At work on another Desktop the row also holds Show; its buttons then sit beside the title, and
- * this line has the row's whole width and is one line, never two (D114). It says the Desktop and
+ * The row's buttons (Stop, and Show at work on another Desktop) sit beside the title, and
+ * this line has the row's whole width and is one line, never two (D114, D126). It says the Desktop and
  * who the agent says it is, whole: "On Desktop 4 · “claude-ai”". To make the room, the chip is
  * left out when all it would say is "Connected" (the row being there says that), and a remote
  * agent's "connected over SSH" too (its title is "Remote agent"). While it sees or records the
- * screen the chip says so and the name follows it; the Desktop gives way (Show is there).
+ * screen the chip says so and the name follows it, whole, on this Desktop or another; the Desktop
+ * and "connected over SSH" give way.
  * The bar's line for it at rest is "Working on Desktop 3" (session-status.ts); here, "On Desktop 3".
  */
 export function rowLine(entry: Pick<AgentEntry, "agent" | "doing" | "watching" | "phase" | "kind">): { chip: boolean; words: string } {
@@ -155,7 +156,8 @@ export function rowLine(entry: Pick<AgentEntry, "agent" | "doing" | "watching" |
   const join = (...parts: (string | null)[]): string => parts.filter(Boolean).join(" · ");
   // Who it is, in the fewest words, for a row that also holds Show.
   const who = agent?.remote ? (agent.claims ? `“${agent.claims}”` : "") : originWords(entry);
-  if (entry.watching) return { chip: true, words: space === undefined ? originWords(entry) : who };
+  // The chip is at its longest then ("Recording the screen · 12:14"): beside it, only who it is.
+  if (entry.watching) return { chip: true, words: who };
   if (space === undefined || entry.doing !== `Working on ${spaceLabel(space)}`) {
     return { chip: true, words: join(entry.phase === "working" ? entry.doing : null, originWords(entry)) };
   }
@@ -213,23 +215,15 @@ export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; fi
         <Svg markup={discGlyph(entry.harness)} size={18} color="#ffffff" />
         {entry.watching && <TileDot ring={colors.menu.slice(0, 7)} />}
       </View>
-      {show ? (
-        // With Show the buttons sit beside the title only, and the line under it has the row's whole width: nothing in it is cut.
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 3 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, minWidth: 0 }}>
-            <View style={{ flex: 1, minWidth: 0 }}>{title}</View>
-            {show}
-            {stop}
-          </View>
-          {words}
+      {/* The buttons sit beside the title only, and the line under it has the row's whole width: nothing in it is cut. */}
+      <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 3 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, minWidth: 0 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>{title}</View>
+          {show}
+          {stop}
         </View>
-      ) : (
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 3 }}>
-          {title}
-          {words}
-        </View>
-      )}
-      {!show && stop}
+        {words}
+      </View>
     </View>
   );
 }

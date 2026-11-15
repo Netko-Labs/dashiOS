@@ -167,19 +167,25 @@ async function mount() {
     if (props) field.take(props);
   }
   field.out.length = 0;
+  /** The app hears the oldest `count` things the field said (all of them by default); how many it heard. */
+  const hear = (count = Number.POSITIVE_INFINITY): number => {
+    const events = field.out.splice(0, count);
+    for (const event of events) for (const listener of listeners) listener(event);
+    return events.length;
+  };
+  /** The field takes the trees the app sent since it last looked; how many. */
+  const takeTrees = (): number => {
+    const fresh = trees.slice(taken);
+    taken = trees.length;
+    for (const tree of fresh) {
+      const props = findInput(JSON.parse(tree), id);
+      if (props) field.take(props);
+    }
+    return fresh.length;
+  };
   /** The app hears what the field said; the field takes the trees that came of it; until neither has anything left. */
   const roundTrips = (): void => {
-    for (let round = 0; round < 50; round += 1) {
-      const events = field.out.splice(0);
-      for (const event of events) for (const listener of listeners) listener(event);
-      const fresh = trees.slice(taken);
-      taken = trees.length;
-      for (const tree of fresh) {
-        const props = findInput(JSON.parse(tree), id);
-        if (props) field.take(props);
-      }
-      if (events.length === 0 && fresh.length === 0) return;
-    }
+    for (let round = 0; round < 50; round += 1) if (hear() + takeTrees() === 0) return;
     throw new Error("the field and the app never settled");
   };
   const line = (): InputProps => {
@@ -192,7 +198,7 @@ async function mount() {
     const event = { type: "press", nodeId: root.nodeId(testID) ?? "" } as NativeEvent;
     for (const listener of listeners) listener(event);
   };
-  return { root, field, roundTrips, line, press };
+  return { root, field, roundTrips, line, press, hear, takeTrees };
 }
 
 describe("the line as the field types it", () => {
@@ -274,5 +280,47 @@ describe("the line as the field types it", () => {
     calc.roundTrips();
     expect(calc.line().value).toBe("85");
     calc.root.unmount();
+  });
+
+  // The same with several calls 2 ms apart (click 7, "+2", ⇧8, "3="): the field types while trees
+  // it has not taken yet are on their way, and takes them between its keys, in any order of the two.
+  test("whatever the order of the field's reports and the trees it takes, every key lands once, in order", async () => {
+    let seed = 7;
+    const random = (): number => {
+      seed = (Math.imul(seed, 1103515245) + 12345) >>> 0;
+      return seed / 2 ** 32;
+    };
+    for (const [before, key, typed, want] of [
+      ["", "key:7", "+2*3=", "13|13"],
+      ["12", "key:plus", "3*4-5=", "19|19"],
+    ] as const) {
+      const outcomes = new Map<string, number>();
+      for (let run = 0; run < 150; run += 1) {
+        const calc = await mount();
+        const crossings = (): void => {
+          for (let turns = Math.floor(random() * 4); turns > 0; turns -= 1) {
+            if (random() < 0.5) calc.hear(1);
+            else calc.takeTrees();
+          }
+        };
+        for (const char of before) calc.field.type(char);
+        calc.roundTrips();
+        calc.press(key);
+        for (const char of typed) {
+          crossings();
+          calc.field.type(char);
+        }
+        let got: string;
+        try {
+          calc.roundTrips();
+          got = `${calc.line().value}|${calc.field.buffer}`;
+        } catch {
+          got = "never settled";
+        }
+        outcomes.set(got, (outcomes.get(got) ?? 0) + 1);
+        calc.root.unmount();
+      }
+      expect(Object.fromEntries(outcomes)).toEqual({ [want]: 150 });
+    }
   });
 });

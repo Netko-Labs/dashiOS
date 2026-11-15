@@ -6,7 +6,7 @@
  */
 
 import type { TextSelection } from "@mirinjs/metal";
-import { fieldCaret, fromField } from "./field.ts";
+import { fieldBase, fieldCaret, fromField } from "./field.ts";
 import { charForKey, type KeyId, keyForChar } from "./keys.ts";
 import {
   cutSelection,
@@ -30,6 +30,9 @@ import { withEntry } from "./store.ts";
 /** A word under the line for a moment: why a paste was refused, or that a copy happened. */
 export type Notice = Note | "copied";
 
+/** How many of the line's older texts are kept for the field to have typed on. */
+const SENT_MOST = 8;
+
 export interface CalcState {
   line: Line;
   tape: TapeEntry[];
@@ -39,12 +42,18 @@ export interface CalcState {
   /** The key to light on the keypad: the keyboard just typed it. */
   lit: KeyId | null;
   /**
-   * The field's own text while the line's is another: as it last reported
-   * it ("1250" for "1,250"), or as it was when a keypad key or a paste
-   * changed the line. Until the field takes the line's, it may type on its
-   * own (field.ts).
+   * The field's own text as it last reported it, while the line writes it
+   * differently ("1250" for "1,250"): until the field takes the line's, it
+   * may type on its own (field.ts).
    */
   held: string | null;
+  /**
+   * The line's texts the field may not have taken yet, or may hold still,
+   * oldest first: each went out in a tree, the field takes the trees in
+   * turn, and it types between them (a keypad key pressed and keys typed
+   * 5 ms later; several of an agent's calls 2 ms apart).
+   */
+  sent: readonly string[];
   /** The caret the field is about to report in its own text (`held`): not the line's, so not taken. */
   late: TextSelection | null;
   /** Bumped when the field must take the line's text back though the line didn't change (an edit refused). */
@@ -52,7 +61,7 @@ export interface CalcState {
 }
 
 export function initialState(tape: readonly TapeEntry[] = []): CalcState {
-  return { line: EMPTY_LINE, tape: [...tape], recalled: null, notice: null, lit: null, held: null, late: null, revision: 0 };
+  return { line: EMPTY_LINE, tape: [...tape], recalled: null, notice: null, lit: null, held: null, sent: [], late: null, revision: 0 };
 }
 
 export type CalcAction =
@@ -105,11 +114,25 @@ function typedChar(before: string, after: string): string | null {
  * own text and the caret it reports in it are not the line's.
  */
 function fieldTook(state: CalcState, next: CalcState, raw: string): CalcState {
-  if (next.line.text === raw) return { ...next, held: null, late: null };
-  const caret = fieldCaret(state.line, raw, state.held);
+  // Typed on a text of the line's it had taken: the ones before that, it holds no longer.
+  const base = fieldBase(state.line, raw, mayHold(state));
+  const taken = base === null || base === state.held ? -1 : state.sent.lastIndexOf(base);
+  const sent = sentWith(state.sent.slice(taken + 1), state.line.text);
+  if (next.line.text === raw) return { ...next, held: null, sent, late: null };
+  const caret = fieldCaret(state.line, raw, mayHold(state));
   const late = caret.start === next.line.selection.start && caret.end === next.line.selection.end ? null : caret;
   const revision = next.line.text === state.line.text ? state.revision + 1 : state.revision;
-  return { ...next, held: raw, late, revision };
+  return { ...next, held: raw, sent, late, revision };
+}
+
+/** `sent` and then `text`, once: the newest `SENT_MOST`. */
+function sentWith(sent: readonly string[], text: string): readonly string[] {
+  return [...sent.filter((other) => other !== text), text].slice(-SENT_MOST);
+}
+
+/** The texts the field may hold that are not the line's: the line's older ones, then its own, the likeliest last. */
+function mayHold(state: CalcState): readonly string[] {
+  return state.held === null ? state.sent : [...state.sent, state.held];
 }
 
 export function calculate(state: CalcState, action: CalcAction): CalcState {
@@ -117,15 +140,14 @@ export function calculate(state: CalcState, action: CalcAction): CalcState {
   if (action.type === "field" || action.type === "select" || next.line === state.line) return next;
   // The line changed another way (a keypad key, a paste): the field takes it, but until it has, it still
   // holds what it held and may type on that (an agent's click, then its keys 5 ms later: field.ts).
-  const held = state.held ?? state.line.text;
-  return { ...next, held: held === next.line.text ? null : held, late: null };
+  return { ...next, sent: sentWith(state.sent, state.line.text), late: null };
 }
 
 function step(state: CalcState, action: CalcAction): CalcState {
   switch (action.type) {
     case "field": {
-      const edit = fromField(state.line, action.text, action.locale, state.held);
-      const char = typedChar(state.line.text, action.text) ?? (state.held === null ? null : typedChar(state.held, action.text));
+      const edit = fromField(state.line, action.text, action.locale, mayHold(state));
+      const char = typedChar(fieldBase(state.line, action.text, mayHold(state)) ?? state.line.text, action.text);
       const lit = char === null ? null : keyForChar(char, action.locale);
       if (edit.kind === "equals") return fieldTook(state, workedOut(state, action.locale), action.text);
       if (edit.kind === "negate") return fieldTook(state, edited(state, { line: negate(state.line, action.locale) }, "negate"), action.text);
@@ -136,7 +158,7 @@ function step(state: CalcState, action: CalcAction): CalcState {
       const late = state.late;
       if (late && late.start === action.selection.start && late.end === action.selection.end) return { ...state, late: null };
       // A caret in the line's own text: the field has taken it, and holds nothing else.
-      return { ...state, late: null, held: null, line: select(state.line, action.selection) };
+      return { ...state, late: null, held: null, sent: [], line: select(state.line, action.selection) };
     }
     case "key": {
       if (action.id === "equals") return { ...workedOut(state, action.locale), lit: null };

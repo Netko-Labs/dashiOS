@@ -6,7 +6,9 @@
  * caret in its own, untidy text, and typed on it again before it took the
  * line's (fast typing): neither is the line's. The same holds when the line
  * changed another way (a keypad key, a paste) and the field typed before it
- * took that: an agent's click on 7 and "*6=" typed 5 ms later. Pure.
+ * took that: an agent's click on 7 and "*6=" typed 5 ms later, or several
+ * calls 2 ms apart, the field taking a tree between two of its keys
+ * (decisions.md D124). Pure.
  */
 
 import type { TextSelection } from "@mirinjs/metal";
@@ -54,29 +56,41 @@ function sameSpot(from: string, at: number, to: string, locale: NumberLocale): n
 }
 
 /**
- * The field's edit and the text it made it on. `held` is the field's own
- * text as it last reported it, or as it was when the line changed another
- * way: when the line's text differs and the field typed on its own before
- * taking the line's, the edit is the smaller one from `held`.
+ * The field's edit and the text it made it on. `held` are the texts the
+ * field may hold that are not the line's, the likeliest last: the line's
+ * as it was before it changed (the field takes each tree in turn, and types
+ * between them), then the field's own as it last reported it. The edit is
+ * the smallest one from any of them, the later first among equals, and the
+ * line's own text before them all.
  */
-function editOf(line: Line, raw: string, held: string | null): { onOwn: boolean; splice: Splice } {
+function editOf(line: Line, raw: string, held: readonly string[]): { base: string | null; splice: Splice } {
   const direct = spliceOf(line.text, raw);
-  if (held === null || held === line.text) return { onOwn: false, splice: direct };
-  const own = spliceOf(held, raw);
-  // The line's very text reported as an edit is one typed on the field's own: it ended up spelling the line's.
-  const smaller = sizeOf(direct) === 0 || sizeOf(own) < sizeOf(direct);
-  return sizeOf(own) > 0 && smaller ? { onOwn: true, splice: own } : { onOwn: false, splice: direct };
+  let best: { base: string | null; splice: Splice } = { base: null, splice: direct };
+  for (let index = held.length - 1; index >= 0; index -= 1) {
+    const base = held[index] as string;
+    if (base === line.text) continue;
+    const own = spliceOf(base, raw);
+    // The line's very text reported as an edit is one typed on the field's own: it ended up spelling the line's.
+    const smaller = sizeOf(best.splice) === 0 || sizeOf(own) < sizeOf(best.splice);
+    if (sizeOf(own) > 0 && smaller) best = { base, splice: own };
+  }
+  return best;
+}
+
+/** The text the field made its edit on, when that is not the line's: one of `held`. */
+export function fieldBase(line: Line, raw: string, held: readonly string[]): string | null {
+  return editOf(line, raw, held).base;
 }
 
 /** The field's edit as a splice of the line's text: one made on its own text lands at the same digits in the line. */
-function spliceInLine(line: Line, raw: string, held: string | null, locale: NumberLocale): Splice {
-  const { onOwn, splice } = editOf(line, raw, held);
-  if (!onOwn || held === null) return splice;
-  return { start: sameSpot(held, splice.start, line.text, locale), end: sameSpot(held, splice.end, line.text, locale), inserted: splice.inserted };
+function spliceInLine(line: Line, raw: string, held: readonly string[], locale: NumberLocale): Splice {
+  const { base, splice } = editOf(line, raw, held);
+  if (base === null) return splice;
+  return { start: sameSpot(base, splice.start, line.text, locale), end: sameSpot(base, splice.end, line.text, locale), inserted: splice.inserted };
 }
 
 /** The field's caret in `raw` just after its edit (after what it typed), as it reports it next. */
-export function fieldCaret(line: Line, raw: string, held: string | null): TextSelection {
+export function fieldCaret(line: Line, raw: string, held: readonly string[]): TextSelection {
   const { splice } = editOf(line, raw, held);
   const at = splice.start + splice.inserted.length;
   return { start: at, end: at };
@@ -87,7 +101,7 @@ export function fieldCaret(line: Line, raw: string, held: string | null): TextSe
  * Cut): what changed, against the line as it was, done the line's way.
  * Typing "=" works it out and "n" negates; they never land in the text.
  */
-export function fromField(line: Line, raw: string, locale: NumberLocale, held: string | null = null): FieldEdit {
+export function fromField(line: Line, raw: string, locale: NumberLocale, held: readonly string[] = []): FieldEdit {
   const old = line.text;
   const { start: from, end, inserted } = spliceInLine(line, raw, held, locale);
   const removed = old.slice(from, end);
