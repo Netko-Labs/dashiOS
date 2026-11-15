@@ -18,7 +18,7 @@ export const namesKeys = (text: string): boolean => [...text].some((char) => KEY
 export const keyGlyphSize = (fontSize: number): number => Math.round(fontSize * 1.15);
 
 /** The room between two words, as a space in the text's font takes. */
-const SPACE = 0.28;
+const SPACE = 0.24;
 
 export interface KeyedTextStyle {
   fontSize: number;
