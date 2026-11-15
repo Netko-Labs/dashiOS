@@ -3355,3 +3355,48 @@ short words, as the rulebook is written.
   ships with Dashi: `mirin-metal-host` is built from the same mirin)
   nothing is dragged out and the keyboard's item is not scrolled to.
 - **Undo:** `git revert` of this entry's commit.
+
+### D144. Calendar's hours scroll as they are mounted; Calculator takes a refused key out at once and says its caret wherever it is
+
+- **Date:** 2026-11-15. `n34`, Dashi on mirin `50241ea`. Supersedes
+  D134's 80 ms wait and D129's points 2 and 3.
+- **Question:** three things Dashi did around faults mirin has fixed.
+  Calendar waited 80 ms before its hours' first scroll (asked as the view
+  was mounted, it was lost: PR 43 keeps it). Calculator waited 25 ms
+  before it took a refused key out of its field (a new `valueRevision`
+  reset the field and dropped the keys typed since: PR 46 carries them),
+  and did not send `selection` for a caret at the line's end (a rebase put
+  the caret where the tree said, in front of the keys it had typed again:
+  PR 45 keeps the rebase's own caret and drops a selection made in a text
+  the field no longer holds). Keep any of the three?
+- **Choice:** none.
+  1. Calendar asks `scrollTo` in the effect of the commit that mounts the
+     hours. No timer.
+  2. Calculator bumps the field's `valueRevision` in the same step that
+     refuses a key. The host types what came after it again on the line's
+     text and reports it as one change; that change, the first after a
+     refusal, is read key by key even when a key among them is refused too
+     ("1a2b3" typed at once: the host says "2b3" in one edit, and the line
+     takes 2 and 3). Any other edit of several characters is still a paste
+     unless every character is a key.
+  3. Calculator sends the line's `selection` always. It is the plainer
+     code (no "is the caret at the end" in the view), and on this host a
+     selection taken from the tree is not reported back (PR 48), so a
+     keypad key costs one event less than leaving the field to say where
+     its reset put the caret.
+- **Why:** checked with the stand-in for the host's field, made to do what
+  the host does at `50241ea` (`test/support/host-field.ts`: a revision is a
+  write that carries typing, a rebase keeps its caret, a selection made in
+  another text is dropped, one taken as said is not reported): D124's
+  crossings 150 of 150 in both cases, and refused keys among typing with
+  the field's reports and the app's trees crossing in any order, 150 of
+  150 in two cases.
+- **Cost:** on a host without `revisionRebase` or `selectionHash` (none
+  ships with Dashi) D129's two faults are back: an agent's "12 + 3" loses
+  "+ 3", and a key typed across a keypad key can land a place early. Two
+  pastes the line refuses, made by the field itself one right after the
+  other, would have the second read key by key ("c" clears): ❖V is the
+  app's own paste and never goes through the field, so it takes an input
+  method or a drop of text to do it.
+- **Undo:** `git revert` of this entry's two commits (Calendar; Calculator).
+
