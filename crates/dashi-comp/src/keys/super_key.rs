@@ -39,6 +39,10 @@ impl Dashi {
                     since: Instant::now(),
                     chorded: false,
                 });
+                // With a button down in a window, ❖ is that drag's modifier, not a tap (super_click.rs).
+                if self.super_in_a_drag(true) {
+                    self.note_chord();
+                }
                 let hold = std::time::Duration::from_millis(self.keys.keymap.hold_ms);
                 let _ = self.loop_handle.insert_source(
                     Timer::from_duration(hold),
@@ -62,6 +66,7 @@ impl Dashi {
                 let Some(press) = self.keys.super_down.take() else {
                     return;
                 };
+                self.super_in_a_drag(false);
                 // While locked a tap opens nothing and switches no rules.
                 let tapped = !press.chorded
                     && !self.lock.locked

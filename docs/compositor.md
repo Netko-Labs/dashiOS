@@ -38,7 +38,13 @@ shell's client:
   them only while an X11 window has the keyboard. `_NET_ACTIVE_WINDOW`, which
   X11Wm ignores, is heard on a second X connection (`xwayland/activate.rs`):
   a minimized or hidden window comes back, as does one a pager asks for or
-  any while an X11 app has the keyboard; others want attention.
+  any while an X11 app has the keyboard; others want attention. A third
+  connection (`xwayland/probe.rs`) reads what X11Wm does not:
+  `_NET_WM_STATE_FULLSCREEN` set before a window shows, and the screens in
+  X11's pixels. A window keeps the size its app asked for in those pixels
+  (`scale.rs`), full screen asked before the shell knows the window is told
+  once it does, and a full-screen X11 window is sized to its screen's own
+  pixels (`fullscreen.rs`; decisions.md D106, D107).
 - **Window management mechanics:** `windows.rs`, `layout.rs` (drag-to-tile
   zones), `fullscreen.rs`, `spaces/` (`switch`), `overview/` (`scene`,
   `input`), `motion/` (animations), `grabs/resize_grab.rs`, `title.rs` and
@@ -50,7 +56,7 @@ shell's client:
   (`packages/shell/src/spaces/fullscreen.ts`); `window-state` tells it when a
   window is minimized or hidden however that happened.
 - **Session:** `lock.rs`, `idle/` (`protocols`, `ipc`), `keys/` (keymap,
-  bindings, ❖ phases, the snippets' keywords watched as the person types, Super lent to the window of a ❖-click), `agent_seat/` (a second seat an agent drives, drawn
+  bindings, ❖ phases, the snippets' keywords watched as the person types, Super told to the window a button is held down in: a ❖-click, ❖ during a drag), `agent_seat/` (a second seat an agent drives, drawn
   with its own pointer), `capture.rs`, `wallpaper/` (`request`, `live`,
   `tick`), `outputs/` (`config`, `apply`, `place`, `report`, `chrome`).
 - **IPC (`ipc/`):** `server` (the socket and replies), `incoming` (each connection's requests, read and run), `frame`, `peer` (who connected), `table` (every method, who may ask it, what runs), `methods/` (what each does, by area, with its params and reply as serde types), `protocol/` (the IPC's one Rust definition: `Event`, `Window`, the `outputs` reply, ids and numbers that refuse what is out of range), `grants` (`ipc-clients`).

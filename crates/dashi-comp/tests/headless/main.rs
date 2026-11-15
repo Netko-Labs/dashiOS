@@ -10,6 +10,7 @@ mod support {
 }
 
 mod agent;
+mod agent_direct;
 mod fixtures;
 mod fresh;
 mod ipc;

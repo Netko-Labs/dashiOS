@@ -100,7 +100,12 @@ pub(super) fn wait_client(
     let start = Instant::now();
     while !done(&client.state) {
         client.dispatch();
-        assert!(start.elapsed() < Duration::from_secs(5), "{what}");
+        assert!(
+            start.elapsed() < Duration::from_secs(5),
+            "{what} (locks heard: {:?}, pointer in: {})",
+            client.state.locks,
+            client.state.pointer_in
+        );
         sleep(Duration::from_millis(10));
     }
 }

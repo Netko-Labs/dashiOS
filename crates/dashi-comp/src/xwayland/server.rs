@@ -56,6 +56,7 @@ impl Dashi {
                                 state.xwayland.state = XState::Ready;
                                 state.xwayland.restarts = 0;
                                 state.listen_x11_activation(display_number);
+                                state.xwayland.probe = super::probe::Probe::connect(display_number);
                                 tracing::info!(display = display_number, "Xwayland is ready");
                             }
                             Err(error) => {
@@ -78,6 +79,7 @@ impl Dashi {
     /// Xwayland died: say so, and start it again a little later.
     fn xwayland_gone(&mut self) {
         self.xwayland.wm = None;
+        self.xwayland.probe = None;
         self.xwayland.client = None;
         self.xwayland.display = None;
         self.xwayland.state = XState::Failed;

@@ -16,6 +16,8 @@ pub(crate) struct AwayPointer {
     pub(super) buttons: Vec<u32>,
     /// The person's pointer left this client for it, and comes back when this ends.
     pub(super) aside: bool,
+    /// Its window is on the Space that shows (agent_direct.rs): it leaves when the person's pointer moves.
+    pub(super) shown: bool,
 }
 
 /// What an agent has going in windows that are off screen.
@@ -30,6 +32,11 @@ impl Away {
     /// Whether the person's pointer stands aside now: it must not enter what is under it.
     pub(crate) fn pointer_aside(&self) -> bool {
         self.pointer.as_ref().is_some_and(|pointer| pointer.aside)
+    }
+
+    /// Whether the agent's pointer is told into a window the person can see.
+    pub(crate) fn pointer_shown(&self) -> bool {
+        self.pointer.as_ref().is_some_and(|pointer| pointer.shown)
     }
 
     /// Window `id` keeps drawing for a while: an agent acted in it or looked at it.

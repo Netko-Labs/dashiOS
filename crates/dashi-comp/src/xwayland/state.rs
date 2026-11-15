@@ -32,6 +32,8 @@ pub(crate) struct Xwayland {
     pub(super) restarts: usize,
     /// Xwayland's own Wayland connection, while it runs.
     pub(super) client: Option<Client>,
+    /// dashi-comp's own connection to it, for what X11Wm does not read (probe.rs).
+    pub(super) probe: Option<super::probe::Probe>,
     /// X11 pixels per logical pixel (IPC `xwayland-scale`); kept for restarts.
     pub(super) scale: f64,
 }
@@ -46,6 +48,7 @@ impl Default for Xwayland {
             focused: None,
             restarts: 0,
             client: None,
+            probe: None,
             scale: 1.0,
         }
     }

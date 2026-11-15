@@ -168,6 +168,7 @@ impl Dashi {
                 surface,
                 buttons: Vec::new(),
                 aside: theirs,
+                shown: false,
             });
         }
         let button = button_code(params.button);

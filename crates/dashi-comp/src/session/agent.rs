@@ -4,8 +4,10 @@
 //! toolkit that reads one seat (GPUI, so the shell itself, and others)
 //! follows the last seat announced and would stop hearing the person's
 //! keyboard. Without it, and for apps that read one seat only (and X11
-//! apps, `borrow {idleMs}`), an action borrows the person's seat, allowed
-//! only once the person has left it alone that long. The agent's pointer is
+//! apps, `borrow {idleMs}`), a click, a scroll or typing in a Wayland window
+//! goes straight to its app with the seat left alone (agent_direct.rs), and
+//! what only the seat can do borrows the person's, allowed only once the
+//! person has left it alone that long. The agent's pointer is
 //! drawn with its name. Consent and policy are the shell's
 //! (packages/shell/src/agents/); this carries the input out.
 
@@ -27,7 +29,7 @@ use crate::{render::titlebar::Part, state::Dashi};
 
 /// How long the person must have left the desktop alone before an action
 /// borrows their seat, when the shell does not say.
-const BORROW_AFTER_MS: u64 = 3000;
+pub(super) const BORROW_AFTER_MS: u64 = 3000;
 
 pub(crate) struct Agent {
     /// The agent's own seat, when it has one (`DASHI_AGENT_SEAT=1`).
@@ -84,6 +86,10 @@ impl Dashi {
         // On a Space that does not show: straight to its client, nothing of the person's moved.
         if let Some((window, content)) = super::agent_away::away_content(self, id) {
             return self.agent_input_away(id, &window, content, params);
+        }
+        // On the Space that shows, what needs no seat goes straight to its app too (agent_direct.rs).
+        if self.agent_goes_direct(id, &window, params) {
+            return self.agent_input_direct(id, &window, params);
         }
         let content = self
             .space
@@ -167,7 +173,7 @@ impl Dashi {
     }
 
     /// An agent's press, even on the person's borrowed seat, is marked as the agent's.
-    fn note_agent_press(&mut self, window: u64) {
+    pub(super) fn note_agent_press(&mut self, window: u64) {
         let target = crate::session::origin::Target::Window(window);
         self.origins.agent(target, std::time::Instant::now());
     }
@@ -212,7 +218,8 @@ impl Dashi {
             self.agent_release();
         }
         // Their pointer stood aside for the agent, in another window of the same app: it is theirs again.
-        if self.agent.away.pointer_aside() {
+        // So is a window on screen the agent's pointer was told into: theirs may enter it now.
+        if self.agent.away.pointer_aside() || self.agent.away.pointer_shown() {
             self.away_pointer_leave();
         }
     }
