@@ -47,6 +47,7 @@ function endsInButton(shown: Shown): boolean {
     const { state } = shown;
     if (state.phase === "landed") return state.undo === true || state.raw === true;
     if (state.phase === "told") return state.undo === true;
+    if (state.phase === "offer") return true;
     return state.phase === "listening" && state.handsFree;
   }
   return shown.kind === "voice" && (shown.state.phase === "heard" || shown.state.phase === "step" || shown.state.phase === "answer");

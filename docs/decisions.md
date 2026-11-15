@@ -3591,3 +3591,24 @@ short words, as the rulebook is written.
   built. A list said without clear markers waits for the model.
 - **Undo:** `ERASE` and `BREAKS` in `dictation/lib/instruction.ts`;
   `makeList` in `lists.ts`.
+
+### D186. A fix made by hand is offered as a replacement; a tap of the dictation key says yes
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's (the research's
+  second list, item 8).
+- **Question:** how does Dashi learn the person's words without learning
+  the wrong thing?
+- **Choice:** the field is read again 2.5, 5 and 8 seconds after a
+  landing (no AT-SPI events: three reads of the focused field). One
+  changed run of up to three words, with two of Dashi's words still round
+  it, is offered on the capsule; a press on Always, or a tap of the
+  dictation key, stores it in `replacements` (or `vocabulary` when only
+  capitals changed). Numbers, paths and addresses are never offered.
+- **Why:** the owner's corpus is names; each fix made once by hand should
+  be the last. An offer cannot learn a mistake silently, and the
+  dictation key is the only key Dashi may take.
+- **Cost:** three more reads of the field per landing where it is
+  readable; nothing in terminals or Dashi's own apps, whose text AT-SPI
+  does not give. A word swapped for meaning ("there" to "here") is
+  offered too; saying nothing lets it pass.
+- **Undo:** `Landings.watch` in `dictation/lib/landings.ts`.

@@ -4,7 +4,7 @@
  * change to the raw words, or type again (after.ts).
  */
 
-import type { DictationState } from "../../shared/pill/index.ts";
+import { DICTATION_LIMITS, type DictationState } from "../../shared/pill/index.ts";
 import { Lexicon } from "../lexicon.ts";
 import type { DictationDeps, Front } from "../types.ts";
 import { NO_WORDS } from "../words.ts";
@@ -13,6 +13,7 @@ import { erase } from "./erase.ts";
 import { carryOut, type Instructed } from "./instructed.ts";
 import { instructionOf } from "./instruction.ts";
 import { fieldIn, type LandContext, type Landing, land, type Meant, placeOf } from "./land.ts";
+import { correctionOf, LOOK_AGAIN_MS, offerLine } from "./learn.ts";
 import { nextProfile } from "./profiles.ts";
 import { type Insertion, Insertions } from "./record.ts";
 import { type Asking, requestFor, usable, withModel } from "./rewrite.ts";
@@ -33,6 +34,8 @@ export class Landings {
 
   /** The instruction the last utterance was taken as, while its Undo is offered: what it did, and the words to type instead. */
   private instructed: (Instructed & { heard: string }) | null = null;
+  /** The reads of the field still to come after a landing, to see a fix the person makes. */
+  private looks: unknown[] = [];
   /** The model's answer that is still awaited for words that landed already; aborted when they are taken back or others land. */
   private refining: AbortController | null = null;
 
@@ -40,6 +43,8 @@ export class Landings {
     private readonly deps: DictationDeps,
     /** The capsule's line, when words that landed were replaced by the model's. */
     private readonly show: (state: DictationState) => void = () => {},
+    /** An offer to learn a fix, shown when nothing else needs the line. */
+    private readonly offer: (state: DictationState) => void = () => {},
   ) {
     this.lexicon = deps.lexicon ?? ownLexicon();
     this.ctx = {
@@ -56,10 +61,42 @@ export class Landings {
     this.deps.rewriter?.warm();
   }
 
-  /** Whatever the model was still to answer is no longer wanted. */
+  /** Whatever the model was still to answer, and the looks still to come, are no longer wanted. */
   private settle(): void {
     this.refining?.abort();
     this.refining = null;
+    for (const look of this.looks) this.deps.timers?.clear(look);
+    this.looks = [];
+  }
+
+  /** After a landing the field is read again a few times: a word the person changed is offered as a replacement (learn.ts). */
+  private watch(entry: Insertion): void {
+    const timers = this.deps.timers;
+    if (!timers || !entry.readable || !this.deps.lexicon) return;
+    this.looks = LOOK_AGAIN_MS.map((ms) => timers.set(() => void this.look(entry), ms));
+  }
+
+  private async look(entry: Insertion): Promise<void> {
+    const front = await this.deps.front().catch(() => null);
+    if (!front || front.window !== entry.window || this.kept.get(entry.id) === null) return;
+    const field = await this.deps.field(front).catch(() => null);
+    if (!field || field.kind === "password" || field.before === null) return;
+    const fix = correctionOf(entry.text, `${field.before}${field.after ?? ""}`);
+    if (!fix) return;
+    this.settle();
+    // What was typed is no longer what the field holds: it is the person's now.
+    this.kept.drop(entry.id);
+    const until = (this.deps.now?.() ?? Date.now()) + DICTATION_LIMITS.offer;
+    this.offer({ phase: "offer", from: fix.from, to: fix.to, line: offerLine(fix), until });
+  }
+
+  /** Yes to an offer: a replacement from now on, or a word when only its capitals changed. */
+  learn(from: string, to: string): DictationState {
+    const lexicon = this.deps.lexicon;
+    if (!lexicon) return told(this.deps, "Nowhere to keep that.", "warn");
+    if (from.toLowerCase() === to.toLowerCase()) lexicon.addWord(to);
+    else lexicon.addReplacement(from, to);
+    return told(this.deps, `Saved. “${to}” from now on.`);
   }
 
   /**
@@ -126,6 +163,7 @@ export class Landings {
     const landing = await land(this.deps, this.ctx, heard, meant);
     this.sawState(landing.state, landing.entry?.id ?? null);
     if (landing.refine && landing.entry) void this.refine(landing.entry, landing.refine);
+    else if (landing.entry) this.watch(landing.entry);
     return landing;
   }
 

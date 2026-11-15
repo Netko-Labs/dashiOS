@@ -77,6 +77,40 @@ const Amber = ({ colours }: { colours: CapsuleColours }) => (
   <View style={{ flexShrink: 0, width: 7, height: 7, borderRadius: 3.5, backgroundColor: colours.amber }} />
 );
 
+type After = Extract<DictationState, { phase: "landed" | "told" | "offer" }>;
+
+/** After the words: what landed with Undo and Raw, what an instruction or an Undo did, an offer to learn a fix. */
+function AfterLine({ state, send, colours, chars }: { state: After; send(command: DictationCommand): void; colours: CapsuleColours; chars: number }) {
+  switch (state.phase) {
+    case "landed":
+      return (
+        <>
+          <Svg markup={CHECK} size={13} color={colours.ok} />
+          <Told line={state.line} colours={colours} chars={Math.max(12, chars - (state.undo ? 8 : 0) - (state.raw ? 7 : 0) - (state.profile?.length ?? 0))} />
+          {state.profile && <Profile name={state.profile} colours={colours} send={send} />}
+          {state.undo && <Button label="Undo" colours={colours} onPress={() => send({ do: "undo" })} />}
+          {state.raw && <Button label="Raw" colours={colours} onPress={() => send({ do: "raw" })} />}
+        </>
+      );
+    case "told":
+      return (
+        <>
+          {state.tone === "ok" ? <Svg markup={CHECK} size={13} color={colours.ok} /> : <Amber colours={colours} />}
+          <Told line={state.line} colours={colours} chars={Math.max(12, chars - (state.undo ? 8 : 0))} />
+          {state.undo && <Button label="Undo" colours={colours} onPress={() => send({ do: "undo" })} />}
+        </>
+      );
+    case "offer":
+      return (
+        <>
+          <Line color={colours.text}>{head(state.line, Math.max(16, chars - 14))}</Line>
+          <Button label="Always" primary colours={colours} onPress={() => send({ do: "learn" })} />
+          <Close colours={colours} onPress={() => send({ do: "dismiss" })} />
+        </>
+      );
+  }
+}
+
 export function DictationLine({
   state,
   send,
@@ -119,23 +153,9 @@ export function DictationLine({
         </>
       );
     case "landed":
-      return (
-        <>
-          <Svg markup={CHECK} size={13} color={colours.ok} />
-          <Told line={state.line} colours={colours} chars={Math.max(12, chars - (state.undo ? 8 : 0) - (state.raw ? 7 : 0) - (state.profile?.length ?? 0))} />
-          {state.profile && <Profile name={state.profile} colours={colours} send={send} />}
-          {state.undo && <Button label="Undo" colours={colours} onPress={() => send({ do: "undo" })} />}
-          {state.raw && <Button label="Raw" colours={colours} onPress={() => send({ do: "raw" })} />}
-        </>
-      );
     case "told":
-      return (
-        <>
-          {state.tone === "ok" ? <Svg markup={CHECK} size={13} color={colours.ok} /> : <Amber colours={colours} />}
-          <Told line={state.line} colours={colours} chars={Math.max(12, chars - (state.undo ? 8 : 0))} />
-          {state.undo && <Button label="Undo" colours={colours} onPress={() => send({ do: "undo" })} />}
-        </>
-      );
+    case "offer":
+      return <AfterLine state={state} send={send} colours={colours} chars={chars} />;
     case "waiting":
       return (
         <>

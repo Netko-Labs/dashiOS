@@ -12,6 +12,7 @@ interface DictatingOptions {
   history?: DictationDeps["history"];
   rewriter?: DictationDeps["rewriter"];
   words?: DictationDeps["words"];
+  lexicon?: DictationDeps["lexicon"];
 }
 
 export function dictating(options: DictatingOptions = {}) {
@@ -88,6 +89,7 @@ export function dictating(options: DictatingOptions = {}) {
     history: options.history,
     rewriter: options.rewriter,
     words: options.words,
+    lexicon: options.lexicon,
     timers,
     now: () => world.now,
   };

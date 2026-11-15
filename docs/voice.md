@@ -166,7 +166,8 @@ the history on disk.
 
 The capsule's states for these: `landed` carries `undo` and `raw` (which
 buttons show), and `told` is one line of what was done or not ("Removed 14
-words.", "That text has changed, so I left it.").
+words.", "That text has changed, so I left it.") `offer` is the
+question of "Learning from a fix".
 
 ### Vocabulary and profiles
 
@@ -334,6 +335,18 @@ app is a Markdown editor (`MARKDOWN_APPS`: Notes, Obsidian, …), and bare
 lines in a plain field. Never at a shell's prompt. The line says "A list
 of 3." Anything less plain is left as said, and the gate sends it to the
 model (`list`).
+
+### Learning from a fix
+
+`dictation/lib/learn.ts`. After words land in a field whose text can be
+read, the field is read again 2.5, 5 and 8 seconds later. If one word or a
+short run (three at most) changed, with at least two of Dashi's words
+still round it, the capsule offers "Always write “Kōji” for “Koji”?" for
+eight seconds. Yes is a press on **Always** or a tap of the dictation key
+(the one key that is dictation's own; no plain key is taken); it becomes a
+line in `replacements`, or a word in `vocabulary` when only its capitals
+changed. Nothing is learned silently, and never a number, a path or an
+address. The landing is then the person's: Undo no longer takes it back.
 
 ### Tidying by rule
 

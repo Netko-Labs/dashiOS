@@ -115,6 +115,34 @@ test("dictation: words that were not typed wait with Copy and a way to close; ha
   expect(muted.words).toEqual(["The microphone is muted."]);
 });
 
+test("dictation: after the words, the profile's name, Undo and Raw; what an instruction did; an offer to learn a fix; Tidying only once it is said", async () => {
+  const landed = await drawn(
+    dictation({
+      phase: "landed",
+      typed: "Claude Code",
+      heard: "cloud code",
+      changes: [{ kind: "fix", count: 2 }],
+      line: "Typed. 2 fixes.",
+      until: 0,
+      undo: true,
+      raw: true,
+      profile: "Developer",
+    }),
+  );
+  expect(landed.words).toEqual(["Typed", "2 fixes", "Developer", "Undo", "Raw"]);
+  for (const id of ["capsule-profile", "capsule-button:Undo", "capsule-button:Raw"]) expect(landed.has(id)).toBe(true);
+  const told = await drawn(dictation({ phase: "told", line: "Took that as an instruction. Removed 14 words.", tone: "ok", undo: true, until: 0 }));
+  expect(told.words).toEqual(["Took that as an instruction", "Removed 14 words", "Undo"]);
+  const left = await drawn(dictation({ phase: "told", line: "That text has changed, so I left it.", tone: "warn", until: 0 }));
+  expect(left.words).toEqual(["That text has changed, so I left it"]);
+  const offer = await drawn(dictation({ phase: "offer", from: "dashy", to: "Dashi", line: "Always write “Dashi” for “dashy”?", until: 0 }));
+  expect(offer.words).toEqual(["Always write “Dashi” for “dashy”?", "Always"]);
+  expect((await drawn(dictation({ phase: "tidying", text: "the release notes" }))).words).toEqual(["the release notes"]);
+  expect((await drawn(dictation({ phase: "tidying", text: "the release notes", said: true }))).words).toEqual(["Tidying", "the release notes"]);
+  const listening = await drawn(dictation({ phase: "listening", text: "", handsFree: false, endsAt: null, hint: null, profile: "Chat" }));
+  expect(listening.words).toEqual(["Listening", "Chat"]);
+});
+
 test("Dashi: what it heard comes with Cancel and Type it instead, before anything runs", async () => {
   const heard = await drawn(voice({ phase: "heard", text: "turn on dark mode" }));
   expect(heard.words).toEqual(["turn on dark mode", "Type it instead", "Cancel"]);

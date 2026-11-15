@@ -37,10 +37,13 @@ export class Dictation {
 
   constructor(private readonly deps: DictationDeps) {
     this.timers = deps.timers ?? realTimers;
-    this.landings = new Landings({ ...deps, timers: this.timers }, (state) => {
+    this.landings = new Landings(
+      { ...deps, timers: this.timers },
       // The model's words took the place of words that landed: said only while their line still shows.
-      if (this.state.phase === "landed") this.show(state);
-    });
+      (state) => this.state.phase === "landed" && this.show(state),
+      // The person fixed a word: offered only while nothing else needs the line.
+      (state) => ["idle", "landed", "told"].includes(this.state.phase) && this.show(state),
+    );
     this.handsFree = new HandsFree(
       { ...deps, timers: this.timers },
       {
@@ -109,7 +112,7 @@ export class Dictation {
         this.at = this.deps.prefs().on ? this.deps.front() : Promise.resolve(null);
         if (this.deps.prefs().on) this.landings.refresh();
         // Words that wait stay until a hold replaces them.
-        if (this.deps.prefs().on && this.state.phase !== "waiting") this.show({ phase: "key-down" });
+        if (this.deps.prefs().on && this.state.phase !== "waiting" && this.state.phase !== "offer") this.show({ phase: "key-down" });
         return;
       case "hold":
         return void this.begin();
@@ -120,6 +123,8 @@ export class Dictation {
         if (!this.deps.prefs().on || !this.deps.prefs().handsFree) return this.rest();
         return void this.handsFree.start(this.deps.front());
       case "tap":
+        // A tap while an offer shows is its yes: the one key that is dictation's own.
+        if (this.state.phase === "offer") return this.command({ do: "learn" });
         return this.rest();
       case "chord":
         return this.cancel();

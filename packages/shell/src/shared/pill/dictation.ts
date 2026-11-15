@@ -77,6 +77,8 @@ export type DictationState =
     }
   /** Something Dashi did or would not do, in one line ("Removed 14 words.", "That text has changed, so I left it."). `undo` offers to put it back. */
   | { phase: "told"; line: string; tone: "ok" | "warn"; undo?: boolean | undefined; until: number }
+  /** The person fixed a word after it landed: an offer to always write it their way ("Always write “Claude Code” for “cloud code”?"). A press, or a tap of the dictation key, takes it. */
+  | { phase: "offer"; from: string; to: string; line: string; until: number }
   /** d-17, d-18, d-20. Not typed: the words wait here, in memory, until `until` (ten minutes), with Copy. */
   | { phase: "waiting"; text: string; heard: string; reason: WaitReason; line: string; until: number }
   /** d-23, d-25 to d-28, d-32, d-33. One line, then idle at `until`. */
@@ -104,7 +106,9 @@ export type DictationCommand =
   /** Type the last dictation again, where the keyboard is now ("paste last"). */
   | { do: "paste-last" }
   /** The next profile, for the window in front, until it closes. */
-  | { do: "profile" };
+  | { do: "profile" }
+  /** Yes to the offer that shows: the fix becomes a replacement. */
+  | { do: "learn" };
 
 /** The limits (pill-v2 README, "What tidying may do"), in ms. */
 export const DICTATION_LIMITS = {
@@ -122,6 +126,8 @@ export const DICTATION_LIMITS = {
   landed: 6_000,
   /** How long a notice stays. */
   notice: 4_000,
+  /** How long an offer to learn a fix stays. */
+  offer: 8_000,
   /** The key came up this long ago and the words are not there yet: the capsule says "Tidying". */
   tidyingSaid: 300,
 } as const;

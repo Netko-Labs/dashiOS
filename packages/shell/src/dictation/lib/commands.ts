@@ -72,5 +72,7 @@ export function runCommand(host: CommandHost, command: DictationCommand): void {
       return void after(host, () => host.landings.pasteLast());
     case "profile":
       return void chooseProfile(host);
+    case "learn":
+      return state.phase === "offer" ? host.show(host.landings.learn(state.from, state.to)) : undefined;
   }
 }
