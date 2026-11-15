@@ -2841,8 +2841,10 @@ short words, as the rulebook is written.
   or their glyph; an account picture to the person's initials (Settings,
   the account portal, the login screen); an icon an app sends as bytes to
   the sheet's glyph. Preview treats TIFF as it treats HEIC: converted by
-  ImageMagick (a `Requires` of `dashi`), and "Preview can't open TIFF
-  image" in words without it. Files and wallpapers already took only
+  ImageMagick (a `Requires` of `dashi`), and "Preview can’t open TIFF
+  pictures on this computer." without it. Its strip of the folder's
+  pictures hands a file over as it is only when its bytes say the host
+  draws it (a TIFF named `.png` gets the empty frame). Files and wallpapers already took only
   formats the host draws.
 - **Why:** a blank where a picture should be reads as a bug and gives no
   way on. One rule over bytes covers TIFF and every format the host never
