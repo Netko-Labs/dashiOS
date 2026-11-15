@@ -20,6 +20,10 @@ Requires:       dashi-hardware = %{version}-%{release}
 # Voice: speech to text and text to speech on this machine (docs/voice.md);
 # socket activated, and its models are fetched only when Voice is turned on.
 Requires:       dashi-voice = %{version}-%{release}
+# llama.cpp's server (MIT), a separate program the shell starts for the model
+# that corrects dictation (docs/dictation-rewrite.md). Without it dictation
+# tidies by rule.
+Recommends:     dashi-llama
 Requires:       dashi-bun
 Requires:       mirin-metal-host
 # The Terminal's engine (apps/terminal runs it).
