@@ -1,14 +1,22 @@
-# mirin-metal-host: mirin's native host that draws a React tree with GPUI,
+# mirin-metal-host: mirin's native host that draws a React tree with sumi,
+# mirin's own engine (forks/sumi in mirin: from Zed's GPUI, Apache-2.0, changed),
 # built from the sibling mirin checkout (spin/build-rpms makes the tarball
 # and sets mirin_snapshot and mirin_source in the SRPM's spec).
+#
+# Cargo fetches the crates while it builds, as Dashi's other Rust packages do
+# (spin/copr-publish turns the builders' network on): the registry's, and the
+# ones Cargo.lock pins by git commit (wgpu, and Zed's forks of async-process,
+# calloop, font-kit, khronos-egl and xim-rs, with smol-rs/async-task). Cargo
+# clones those itself; no git is needed. mirin's forks/sumi/rust-toolchain.toml
+# is rustup's file: Fedora's cargo does not read it, and nothing is downloaded.
 %global debug_package %{nil}
 %{!?cargo_target:%global cargo_target %{_builddir}/cargo-target}
 
 Name:           mirin-metal-host
 Version:        %{mirin_snapshot}
 Release:        1%{?dist}
-Summary:        mirin's Metal host: React UI drawn natively with GPUI
-License:        Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND CC0-1.0 AND ISC AND MIT AND MPL-2.0 AND NCSA AND Unicode-3.0 AND Zlib
+Summary:        mirin's Metal host: React UI drawn natively with sumi
+License:        Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND CC0-1.0 AND ISC AND MIT AND MPL-2.0 AND Unicode-3.0 AND Zlib
 URL:            https://github.com/Netko-Labs/mirin
 Source0:        %{mirin_source}.tar.gz
 Source1:        %{dashi_source}.tar.gz
@@ -16,16 +24,13 @@ ExclusiveArch:  x86_64 aarch64
 
 BuildRequires:  cargo
 BuildRequires:  rust
-BuildRequires:  clang
-BuildRequires:  cmake
+BuildRequires:  gcc
 BuildRequires:  pkgconfig(wayland-client)
 BuildRequires:  pkgconfig(xkbcommon)
 BuildRequires:  pkgconfig(xkbcommon-x11)
 BuildRequires:  pkgconfig(xcb)
 BuildRequires:  pkgconfig(freetype2)
 BuildRequires:  pkgconfig(fontconfig)
-BuildRequires:  pkgconfig(vulkan)
-BuildRequires:  pkgconfig(openssl)
 
 Requires:       vulkan-loader
 Requires:       mesa-vulkan-drivers
@@ -33,8 +38,9 @@ Requires:       libwayland-client
 
 %description
 The process that draws mirin Metal apps: it takes a React tree from Bun and
-draws it with GPUI on Vulkan, on Wayland (windows and layer-shell surfaces).
-Dashi's shell, apps, and login screen run on it.
+draws it with sumi, mirin's engine (from Zed's GPUI), through wgpu on Vulkan,
+on Wayland (windows and layer-shell surfaces). Dashi's shell, apps, and login
+screen run on it.
 
 %prep
 %setup -q -n %{mirin_source}
