@@ -100,6 +100,13 @@ class HostField {
     this.report();
   }
 
+  /** The person selects in the field, which says so. */
+  select(anchor: number, caret: number): void {
+    this.anchor = anchor;
+    this.caret = caret;
+    this.report();
+  }
+
   /** A tree arrived with the field in it. */
   take(props: InputProps): void {
     let reset = false;
@@ -180,7 +187,12 @@ async function mount() {
     if (!props) throw new Error("no line");
     return props;
   };
-  return { root, field, roundTrips, line };
+  /** A keypad key pressed: the app hears it at once; the field has not taken the tree that came of it. */
+  const press = (testID: string): void => {
+    const event = { type: "press", nodeId: root.nodeId(testID) ?? "" } as NativeEvent;
+    for (const listener of listeners) listener(event);
+  };
+  return { root, field, roundTrips, line, press };
 }
 
 describe("the line as the field types it", () => {
@@ -224,6 +236,43 @@ describe("the line as the field types it", () => {
     }
     expect(calc.line().value).toBe("12");
     expect(calc.field.buffer).toBe("12");
+    calc.root.unmount();
+  });
+
+  // An agent's click on a key and its typing 5 ms later (dashi-0.9.0-review/13-final-fixes): the
+  // field types on the text it had before the key, and the line had "76" and no sum.
+  test("typed before the field took a keypad key, the keys land after it", async () => {
+    for (const [before, key, typed, want] of [
+      ["", "key:7", "*6=", "42"],
+      ["", "key:7", "+", "7 +"],
+      ["12", "key:3", "+4", "123 + 4"],
+      ["9", "key:plus", "1", "9 + 1"],
+      ["", "key:7", "7", "77"],
+    ] as const) {
+      const calc = await mount();
+      for (const char of before) calc.field.type(char);
+      calc.roundTrips();
+      calc.press(key);
+      for (const char of typed) calc.field.type(char);
+      calc.roundTrips();
+      expect(calc.line().value).toBe(want);
+      expect(calc.field.buffer).toBe(want);
+      calc.root.unmount();
+    }
+  });
+
+  test("once the field took a keypad key, what replaces it replaces it", async () => {
+    const calc = await mount();
+    calc.press("key:7");
+    calc.roundTrips();
+    expect(calc.field.buffer).toBe("7");
+    calc.field.select(0, 1);
+    calc.field.type("8");
+    calc.roundTrips();
+    expect(calc.line().value).toBe("8");
+    calc.field.type("5");
+    calc.roundTrips();
+    expect(calc.line().value).toBe("85");
     calc.root.unmount();
   });
 });

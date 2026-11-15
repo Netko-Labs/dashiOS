@@ -4,7 +4,9 @@
  * then its caret); the line takes the edit and writes itself tidy, and the
  * field takes that text back. Between the two the field may have reported a
  * caret in its own, untidy text, and typed on it again before it took the
- * line's (fast typing): neither is the line's. Pure.
+ * line's (fast typing): neither is the line's. The same holds when the line
+ * changed another way (a keypad key, a paste) and the field typed before it
+ * took that: an agent's click on 7 and "*6=" typed 5 ms later. Pure.
  */
 
 import type { TextSelection } from "@mirinjs/metal";
@@ -31,26 +33,39 @@ function spliceOf(old: string, raw: string): Splice {
 
 const sizeOf = (splice: Splice): number => splice.end - splice.start + splice.inserted.length;
 
-/** Where offset `at` in `from` is in `to`: after the same digit or operator (spaces and grouping marks don't count). */
+/** What of `text` counts: its digits and operators, without spaces and grouping marks. */
+const meaningful = (text: string, locale: NumberLocale): string => [...text].filter((char) => !isQuiet(char, locale)).join("");
+
+/**
+ * Where offset `at` in `from` (the field's own text) is in `to` (the line's):
+ * after the same digit or operator (spaces and grouping marks don't count).
+ * What the line has that the field never held (a keypad key pressed while the
+ * field was still behind, written at its caret) is before that spot: the
+ * field's caret would have moved past it.
+ */
 function sameSpot(from: string, at: number, to: string, locale: NumberLocale): number {
-  let meaningful = 0;
-  for (let index = 0; index < at; index += 1) if (!isQuiet(from[index] as string, locale)) meaningful += 1;
+  const before = meaningful(from.slice(0, at), locale).length;
+  const change = spliceOf(meaningful(from, locale), meaningful(to, locale));
+  const untouched = before < change.start || (before === change.start && change.end > change.start);
+  const count = untouched ? before : change.start + change.inserted.length + Math.max(0, before - change.end);
   let spot = 0;
-  for (let seen = 0; spot < to.length && seen < meaningful; spot += 1) if (!isQuiet(to[spot] as string, locale)) seen += 1;
+  for (let seen = 0; spot < to.length && seen < count; spot += 1) if (!isQuiet(to[spot] as string, locale)) seen += 1;
   return spot;
 }
 
 /**
  * The field's edit and the text it made it on. `held` is the field's own
- * text as it last reported it: when the line wrote that differently and the
- * field typed on its own before taking the line's, the edit is the smaller
- * one from `held`.
+ * text as it last reported it, or as it was when the line changed another
+ * way: when the line's text differs and the field typed on its own before
+ * taking the line's, the edit is the smaller one from `held`.
  */
 function editOf(line: Line, raw: string, held: string | null): { onOwn: boolean; splice: Splice } {
   const direct = spliceOf(line.text, raw);
   if (held === null || held === line.text) return { onOwn: false, splice: direct };
   const own = spliceOf(held, raw);
-  return sizeOf(own) > 0 && sizeOf(own) < sizeOf(direct) ? { onOwn: true, splice: own } : { onOwn: false, splice: direct };
+  // The line's very text reported as an edit is one typed on the field's own: it ended up spelling the line's.
+  const smaller = sizeOf(direct) === 0 || sizeOf(own) < sizeOf(direct);
+  return sizeOf(own) > 0 && smaller ? { onOwn: true, splice: own } : { onOwn: false, splice: direct };
 }
 
 /** The field's edit as a splice of the line's text: one made on its own text lands at the same digits in the line. */

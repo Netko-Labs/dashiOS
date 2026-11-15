@@ -39,9 +39,10 @@ export interface CalcState {
   /** The key to light on the keypad: the keyboard just typed it. */
   lit: KeyId | null;
   /**
-   * The field's own text as it last reported it, while the line writes it
-   * differently ("1250" for "1,250"): until the field takes the line's, it
-   * may type on its own (field.ts).
+   * The field's own text while the line's is another: as it last reported
+   * it ("1250" for "1,250"), or as it was when a keypad key or a paste
+   * changed the line. Until the field takes the line's, it may type on its
+   * own (field.ts).
    */
   held: string | null;
   /** The caret the field is about to report in its own text (`held`): not the line's, so not taken. */
@@ -113,9 +114,11 @@ function fieldTook(state: CalcState, next: CalcState, raw: string): CalcState {
 
 export function calculate(state: CalcState, action: CalcAction): CalcState {
   const next = step(state, action);
-  // The line changed another way: the field takes it, whatever it held.
-  if (action.type === "field" || action.type === "select" || next.line === state.line || (next.held === null && next.late === null)) return next;
-  return { ...next, held: null, late: null };
+  if (action.type === "field" || action.type === "select" || next.line === state.line) return next;
+  // The line changed another way (a keypad key, a paste): the field takes it, but until it has, it still
+  // holds what it held and may type on that (an agent's click, then its keys 5 ms later: field.ts).
+  const held = state.held ?? state.line.text;
+  return { ...next, held: held === next.line.text ? null : held, late: null };
 }
 
 function step(state: CalcState, action: CalcAction): CalcState {
@@ -132,7 +135,8 @@ function step(state: CalcState, action: CalcAction): CalcState {
       // The caret the field reported in its own text, before it took the line's: the line has its own.
       const late = state.late;
       if (late && late.start === action.selection.start && late.end === action.selection.end) return { ...state, late: null };
-      return { ...state, late: null, line: select(state.line, action.selection) };
+      // A caret in the line's own text: the field has taken it, and holds nothing else.
+      return { ...state, late: null, held: null, line: select(state.line, action.selection) };
     }
     case "key": {
       if (action.id === "equals") return { ...workedOut(state, action.locale), lit: null };
