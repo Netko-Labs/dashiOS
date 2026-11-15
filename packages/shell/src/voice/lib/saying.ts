@@ -6,6 +6,7 @@
  */
 
 import { maybe } from "@dashi/shape";
+import type { SpeakExtras } from "../tongues.ts";
 import type { Chip, ChipGo } from "../types.ts";
 import type { VoiceService } from "./service.ts";
 import type { Captions } from "./speech.ts";
@@ -17,8 +18,8 @@ type Notice = Extract<Chip, { kind: "notice" }>;
 export interface SayingHost {
   service: VoiceService;
   captions: Captions;
-  /** Dashi's voice as chosen in Settings; its own when none. */
-  voice(): string | undefined;
+  /** Dashi's voice as chosen in Settings (its own when none), and what `speak` is sent with it (tongues.ts). */
+  prefs(): { voice: string | undefined; speak?: SpeakExtras };
   /** The press this belongs to: a newer one makes it stale. */
   turn(): number;
   show(chip: Chip | null): void;
@@ -45,16 +46,25 @@ export class Saying {
     this.lasting = notice;
   }
 
-  /** Say `text` in Dashi's voice (or `voice`), with captions. What can't be said is shown instead. */
-  async say(text: string, voice?: string): Promise<void> {
+  /**
+   * Say `text` in Dashi's voice, each sentence by the voice of its own language; or all of it in
+   * `voice`, read as `language` (a sample). With captions. What can't be said is shown instead.
+   */
+  async say(text: string, voice?: string, language?: string): Promise<void> {
     const { host } = this;
     const turn = host.turn();
-    const chosen = voice ?? host.voice();
+    const { voice: own, speak } = host.prefs();
+    // The service's field is `by_language`: false says it all in the one voice.
+    const one = { by_language: false };
+    const { byLanguage, ...named } = speak ?? {};
+    const params = voice
+      ? { text, voice, ...(language ? { language } : one) }
+      : { text, ...(own ? { voice: own } : {}), ...named, ...(byLanguage === false ? one : {}) };
     this.utterance = "pending";
     if (this.lasting) host.show(this.lasting);
     else host.sync();
     try {
-      const reply = maybe(SpeakReply, await host.service.call("speak", { text, ...(chosen ? { voice: chosen } : {}) }));
+      const reply = maybe(SpeakReply, await host.service.call("speak", params));
       if (turn === host.turn() && this.utterance === "pending") this.utterance = reply?.id ?? null;
     } catch {
       if (turn !== host.turn()) return;

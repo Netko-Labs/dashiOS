@@ -21,6 +21,7 @@ import type { VoiceService } from "./lib/service.ts";
 import { Captions, LevelStore } from "./lib/speech.ts";
 import { TapListen } from "./lib/tap-listen.ts";
 import { HeardReply, type VoiceEvent } from "./lib/wire.ts";
+import type { SpeakExtras } from "./tongues.ts";
 import type { Answer, Asker, Chip, ChipGo, Trouble } from "./types.ts";
 
 /** How long a notice stays. */
@@ -30,7 +31,7 @@ const message = (error: unknown): string => (error instanceof Error ? error.mess
 export interface VoiceDeps {
   service: VoiceService;
   /** Voice is on (settings.json), and its key and voice. */
-  prefs(): { on: boolean; key: TalkKey; voice: string | undefined };
+  prefs(): { on: boolean; key: TalkKey; voice: string | undefined; speak?: SpeakExtras };
   /** What stops Voice from being used now (models.ts, the service), or null. */
   trouble(): Trouble;
   /** The keys the compositor holds for the shell (`held-keys`). */
@@ -68,7 +69,7 @@ export class Voice {
     this.saying = new Saying({
       service: deps.service,
       captions: this.captions,
-      voice: () => deps.prefs().voice,
+      prefs: deps.prefs,
       turn: () => this.turn,
       show: (chip) => this.show(chip),
       notice: (text, go, ms) => this.notice(text, go, ms),
@@ -217,8 +218,8 @@ export class Voice {
   }
 
   /** Say `text` in Dashi's voice (or `voice`), with captions. What can't be said is shown instead. */
-  say(text: string, voice?: string): Promise<void> {
-    return this.saying.say(text, voice);
+  say(text: string, voice?: string, language?: string): Promise<void> {
+    return this.saying.say(text, voice, language);
   }
 
   private event(event: VoiceEvent): void {

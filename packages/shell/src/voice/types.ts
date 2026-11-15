@@ -42,6 +42,13 @@ export interface VoiceSettings {
   key?: string;
   /** Dashi's voice, a voice id of the service's; its own (`af_heart`) unless set. */
   voice?: string;
+  /**
+   * The voice for each other language Dashi speaks, by the language's code (`es: "ef_dora"`);
+   * `false` is a language it does not speak. Unset: English and Spanish, by the voice's pairs (tongues.ts).
+   */
+  voices?: Record<string, string | false>;
+  /** False says everything in the one voice; each sentence in a voice of its own language unless set. */
+  byLanguage?: boolean;
 }
 
 /** What Settings › Voice reads (models.ts). */

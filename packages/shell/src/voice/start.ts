@@ -12,12 +12,16 @@ import { voiceConnector } from "./lib/launch.ts";
 import { VoiceService } from "./lib/service.ts";
 import { watchFolder } from "./lib/watch-folder.ts";
 import { basicsHere, VoiceModels } from "./models.ts";
+import { speakExtras, tagOf, tongueOf } from "./tongues.ts";
 import type { Asker, ChipGo, Trouble, VoiceSettings } from "./types.ts";
 import { Voice } from "./voice.ts";
 
 export interface VoiceOptions {
-  /** settings.json's `voice`. */
-  settings: { getSnapshot(): { data: { voice: VoiceSettings } }; subscribe(listener: () => void): () => void };
+  /** settings.json's `voice`; the region's formats and the persona's language say how other languages are read. */
+  settings: {
+    getSnapshot(): { data: { voice: VoiceSettings; region?: { formats?: string }; persona?: { language?: string } } };
+    subscribe(listener: () => void): () => void;
+  };
   /** The compositor's `held-keys`. */
   hold(keys: ReturnType<typeof heldKeys>): void;
   asker: Asker;
@@ -64,9 +68,15 @@ export function troubleOf(models: VoiceModels): Trouble {
 export function startVoice(options: VoiceOptions): VoiceParts {
   const service = new VoiceService(options.connect ?? voiceConnector());
   const models = new VoiceModels(service, watchFolder);
+  // The language of what the person last said, as the service told it: the conversation's.
+  let heard: string | undefined;
+  const formats = (): string | undefined => options.settings.getSnapshot().data.region?.formats ?? options.locale;
   const prefs = () => {
-    const { on, key, voice } = options.settings.getSnapshot().data.voice;
-    return { on: on === true, key: talkKey(isTalkKeyId(key) ? key : undefined), voice };
+    const data = options.settings.getSnapshot().data;
+    const { on, key, voice } = data.voice;
+    const view = models.getSnapshot();
+    const speak = speakExtras(data.voice, view.voices, voice ?? view.defaultVoice, { formats: formats(), heard, persona: data.persona?.language });
+    return { on: on === true, key: talkKey(isTalkKeyId(key) ? key : undefined), voice, speak };
   };
   const voice = new Voice({
     service,
@@ -89,6 +99,9 @@ export function startVoice(options: VoiceOptions): VoiceParts {
     warmed = usable;
   };
   const offs = [
+    service.on((event) => {
+      if (event.event === "heard" && event.language) heard = event.language;
+    }),
     options.settings.subscribe(() => {
       voice.sync();
       warm();
@@ -102,7 +115,9 @@ export function startVoice(options: VoiceOptions): VoiceParts {
     models,
     sample(id) {
       const language = models.getSnapshot().voices.find((each) => each.id === id)?.language ?? "en";
-      void voice.say(sampleWords(language), id);
+      // In that voice alone, read as the person's region reads it: a Spanish sample sounds as Spanish answers will.
+      const tag = tongueOf(language) === "es" ? tagOf("es", formats()) : language;
+      void voice.say(sampleWords(language), id, tag);
     },
     go: options.go,
     close() {
