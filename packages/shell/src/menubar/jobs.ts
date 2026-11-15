@@ -1,7 +1,7 @@
 /**
  * The jobs every menu bar shows (lib/bar-jobs.ts), as one store: the
- * launcher's Ask tasks, the runs and the connected agents, with who speaks
- * now. The Ask tasks start after the bars do, so they are asked for each
+ * launcher's Ask tasks and the runs, with who speaks now (an agent
+ * connected from outside is the mark's, never a job). The Ask tasks start after the bars do, so they are asked for each
  * time until they are there. A finished job falls silent by itself after a
  * while; one looked at (its panel opened) leaves the bar, and so does one
  * nobody looked at, a minute after it finished.

@@ -3117,3 +3117,136 @@ short words, as the rulebook is written.
   neither takes a file dragged from Files nor gives one to it. Open and
   Save sheets, the clipboard and paste work there.
 - **Undo:** nothing to undo.
+
+### D136. An agent that only connected is not in the bar; it shows from its first call and goes quiet five minutes after its last
+
+- **Date:** 2026-11-15. The `n31` agent's, on the lead's brief.
+- **Question:** the owner has Dashi's MCP server in Claude Code's user
+  configuration, so every chat and every delegated sub-agent on the laptop
+  connects, dozens a day, and almost none calls a tool. Each one was in the
+  menu bar and the agents' panel. "why always claude autoconnects to dashi
+  mcp, is annoying, also now appears as duplicated". What shows, and when?
+- **Choice:** a connection is not an action. A connection is *quiet*, in
+  no menu bar, with no row in the panel and not in the launcher's Now,
+  until it calls a tool (`lib/session/session-quiet.ts`,
+  `AgentInfo.quiet`). `initialize`, `ping`, `tools/list` and a method Dashi
+  does not speak are not calls. **Every `tools/call` counts, a read too**
+  (`list_windows`, `screenshot`, `get_work_alone`): it looks at the
+  person's computer, or at what Dashi lets agents do. It goes quiet again
+  **five minutes** after its last call ended, connected or not, and comes
+  back with the next. While it holds something it stays, however long ago
+  it called: a call running (a recording is one), a sheet waiting on the
+  person, the screen seen or recorded, a Desktop of its own
+  (`work_in_space`), and Work alone for an agent that has called at least
+  once. A launcher run's own connection is its run's, as before.
+- **Why five minutes:** an agent at work thinks between calls for a minute
+  or two at most, so it does not come and go in the bar; a chat that is
+  over is gone before the person wonders what it still does. The wait is
+  read once per connection (`DASHI_AGENTS_QUIET_MS` shortens it for a
+  proof; under 100 ms is ignored).
+- **Cost:** an agent that could act any second (it holds grants) is out of
+  sight while it does not. Its first call shows it at once, and what it
+  was allowed is in Settings › Agents, which lists every connection as
+  "Connected now", quiet or not: nothing is hidden from someone who looks.
+- **Undo:** `SessionQuiet.quiet` returning `false` shows every connection
+  again.
+
+### D137. One row per agent: the sessions of one program are one, with a count
+
+- **Date:** 2026-11-15. The `n31` agent's.
+- **Question:** two Claude Code chats were two rows named the same. What
+  makes two connections one agent, what does the row say, and what does
+  Stop do?
+- **Choice:** connections with the same grants' key (the executable, and
+  the script for an interpreter; `ssh:<name>` for a remote one), the same
+  name they claim, the same process name and the same run are one row
+  (`agents/lib/agent-groups.ts`): "claude · 3 sessions" from two sessions
+  in sight. Its line is the session's that waits on the person, else one
+  at work, else the one that called last; the red dot shows if any of them
+  watches. **The parent application is not part of it:** Claude Code under
+  T3 Code and Claude Code in a terminal are one row. It cannot be told
+  reliably (some terminals give each tab a scope of its own, which would
+  bring the duplicates back), and the person already answered for them as
+  one: their grants share a key. **Stop cuts off the sessions in sight**,
+  all of them; a quiet session of the same program is left alone (it did
+  nothing, and cutting thirty idle chats off Dashi to stop one is not
+  what the button says). **No Stop for one session alone:** the sessions
+  of one program have nothing the person could tell them apart by, so a
+  disclosure would be a list of the same line. "Stop all" and ⌃❖Esc still
+  cut every connection, quiet ones too. **Quiet connections are one line**
+  above the panel's foot, "5 more connected, idle" ("5 connected, idle"
+  with no rows), so the panel says they exist without a row each.
+- **Cost:** two different jobs done by two chats of one program read as
+  one row with one line. Stopping one of them means stopping both.
+- **Undo:** `groupKey` returning the connection's id gives a row each.
+
+### D138. The menu bar has one sign for agents from outside: the mark, with a count. Never a capsule each
+
+- **Date:** 2026-11-15. The owner's rule, given to the lead while `n31`
+  ran: "im seeing five indicators, is awful, and spammy, why not just one".
+- **Question:** 0.9's bar made every connected agent a job capsule beside
+  the mark (D69's jobs: `agentJobs` took every entry of `mergeAgents`), so
+  five chats were five discs.
+- **Choice:** a hard rule. The bar never shows more than one indicator
+  for connected agents, whatever their number or kind. A job capsule is a
+  task Dashi's assistant runs or a run started from the launcher; an agent
+  connected from outside is never one, and neither are its calls
+  (`menubar/lib/bar-jobs.ts` `agentJobs` keeps runs only). Outside agents
+  show through Dashi's mark (`agent-mark.tsx`): while one is in sight the
+  first one's glyph stands beside the spark, and from two sessions how
+  many (`agents/mark.ts` `outsideAgents`). A click on that part opens the
+  agents' panel, where the rows are (D137); the spark still opens the
+  field. Several things that need the person at once (two consents) are
+  still the one mark, amber, with the count (`needCount` adds the outside
+  sessions whose sheet is up).
+- **Cost:** what an outside agent is doing is no longer in words in the
+  bar: it is the mark's tooltip and the panel's row. The keyboard reaches
+  the field from the mark, not the panel, when no job capsule is up.
+- **Undo:** none wanted: it is the owner's rule.
+
+### D139. A connection that never called a tool is not in the activity log
+
+- **Date:** 2026-11-15. The `n31` agent's.
+- **Question:** the laptop's `activity.jsonl` was line after line of
+  `"tool":null,"outcome":"disconnected"`, hiding the real lines. Drop
+  them, or count them in one line?
+- **Choice:** dropped. A connection's end ("disconnected", "stopped") is
+  written only if it called a tool at least once (`session.ts`). Nothing
+  is counted in their place: a count of nothing done is still noise.
+- **Why:** the log is what agents did. The history reads an end line only
+  to close a session that has calls (`ask/history.ts`); an idle chat's end
+  line could close another chat's session of the same program early,
+  which this also stops.
+- **Cost:** the log no longer shows that something connected and did
+  nothing. Consent, grants and Work alone are untouched.
+- **Undo:** log the end line whatever `called` says.
+
+### D140. `dashi-mcp` connects to the shell at the first tool call
+
+- **Date:** 2026-11-15. The `n31` agent's.
+- **Question:** can the bridge answer `initialize` and `tools/list` by
+  itself, so an idle chat costs the shell nothing? Does the tool list
+  depend on the session?
+- **What was found:** for the agents' server it does not. `tools/list` is
+  `catalog()` and `initialize` is `INSTRUCTIONS` and a version: one table
+  (`tools/registry.ts`), the same for every agent whatever it was allowed
+  or has installed; grants are checked at each call. **But the bridge also
+  serves another server:** plan mode's (`ask/harness/lib/plan-server.ts`,
+  reached with `DASHI_MCP_SOCKET`), whose tools and words are its own (30
+  tools, not 87).
+- **Choice:** when the socket is the agents' own (its file is named
+  `dashi-mcp.sock`: the session's, and the tasks' in `dashi-mcp.d/`), the
+  bridge answers `initialize`, `ping`, `tools/list` and "method not found"
+  itself, from the same code the session uses (`agents/mcp-local.ts`), and
+  connects at the first `tools/call`, saying the client's `initialize`
+  again first, its answer kept from the client (`mcp-relay.ts`, as after a
+  shell restart). From then on every line is the shell's. For any other
+  socket it connects at once and answers nothing itself. With no socket
+  file at all it still fails to start, as before; a socket nobody answers
+  at the first call fails that call with why, and the next call tries
+  again.
+- **Cost:** the bridge loads the tool table (about 60 ms). A bridge from
+  one version of Dashi beside a shell of another could list a tool the
+  shell does not have; the call is then refused as unknown. Both are
+  installed from one package.
+- **Undo:** `OWN_SERVER = false` in `bin/dashi-mcp.ts`.

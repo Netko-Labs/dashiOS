@@ -56,7 +56,8 @@ export function nowItems(input: { turns: readonly Turn[]; tasks: readonly TaskVi
   const handing = new Set(input.turns.map((turn) => turn.agent));
   // A run started from the launcher is listed as itself ("Agents"), not as its connection.
   const agents: NowItem[] = input.agents
-    .filter((agent) => !handing.has(agent.id) && agent.task === undefined)
+    // One that has called nothing, or nothing for a while, is doing nothing now (lib/session/session-quiet.ts).
+    .filter((agent) => !handing.has(agent.id) && agent.task === undefined && agent.quiet !== true)
     .map((agent) => ({ kind: "agent", id: agent.id, name: agent.name, status: agent.status }));
   return [...turns, ...tasks, ...agents];
 }

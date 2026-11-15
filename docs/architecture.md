@@ -72,7 +72,10 @@ systemd --user
   with reaches them; the shell's launcher (`src/applets/launcher.ts`) starts
   and stops them, and listens on a socket of their own.
 - **dashi-mcp** (`session/dashi-mcp`) bridges an agent's MCP stdio to the
-  session's socket (`$XDG_RUNTIME_DIR/dashi-mcp.sock`); the person at the
+  session's socket (`$XDG_RUNTIME_DIR/dashi-mcp.sock`), which it connects
+  to at the agent's first tool call: `initialize` and `tools/list` it
+  answers itself, so a chat that never uses Dashi never reaches the shell
+  (decisions.md D140); the person at the
   screen consents before an agent sees or does anything. The tools it lists
   are the agents' part of the shell's action registry (`docs/actions.md`).
   Each call runs as that agent (`src/acting.ts`), so a setting it changes

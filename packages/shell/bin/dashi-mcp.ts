@@ -1,14 +1,24 @@
 #!/usr/bin/env bun
 /**
  * dashi-mcp: Dashi's MCP server for agents, over stdio. The server runs in
- * the Dashi session (shell/src/agents); this copies stdin to its socket and
- * the socket to stdout, nothing more, so MCP clients can spawn it:
+ * the Dashi session (shell/src/agents); this carries the client's lines to
+ * its socket and the socket's to stdout, so MCP clients can spawn it:
  *
  *   claude mcp add dashi -- bun <dashi>/shell/bin/dashi-mcp.ts
  *   ssh <host> bun <dashi>/shell/bin/dashi-mcp.ts     (from another machine)
  *
  * The person at the screen is asked before the agent may see or do
  * anything (docs/agents.html).
+ *
+ * It does not connect until the client calls a tool: `initialize`,
+ * `tools/list` and `ping` are answered here, from the same table the shell
+ * uses (src/agents/mcp-local.ts), so a chat that starts this server and
+ * never uses it is nothing to the shell (decisions.md D140). At the first
+ * `tools/call` it connects, says the client's `initialize` again, and from
+ * then on carries every line. Only for the agents' server, whose socket is
+ * named `dashi-mcp.sock`: another server reached through this bridge (plan
+ * mode's, `DASHI_MCP_SOCKET`: agents/ask/harness/) has its own tools and
+ * words, so there it connects at once and answers nothing itself.
  *
  * With `--reconnect` (a launcher run's harness starts it so: agents/handoff/),
  * it outlives the shell restarting: when the socket closes it connects again
@@ -17,7 +27,9 @@
  * Without it, it ends when the socket does.
  */
 
-import { join } from "node:path";
+import { existsSync } from "node:fs";
+import { basename, join } from "node:path";
+import { answerLocally } from "../src/agents/mcp-local.ts";
 import { McpRelay } from "../src/agents/mcp-relay.ts";
 
 const runtime = process.env.XDG_RUNTIME_DIR || `/run/user/${process.getuid?.() ?? 0}`;
@@ -28,43 +40,6 @@ let flushed: Promise<unknown> = Promise.resolve();
 const toClient = (data: Uint8Array | string) => {
   flushed = flushed.then(() => Bun.write(Bun.stdout, data));
 };
-
-/** Stdin to the socket and back as bytes; it ends when either does. */
-async function plain(): Promise<void> {
-  let drained: (() => void) | null = null;
-  let socket: Bun.Socket<undefined>;
-  try {
-    socket = await Bun.connect({
-      unix: path,
-      socket: {
-        data(_socket, data) {
-          toClient(new Uint8Array(data));
-        },
-        drain() {
-          drained?.();
-          drained = null;
-        },
-        close() {
-          void flushed.then(() => process.exit(0));
-        },
-      },
-    });
-  } catch (error) {
-    console.error(`dashi-mcp: can't reach Dashi at ${path} (${error}); is a Dashi session running?`);
-    process.exit(1);
-  }
-
-  for await (const chunk of Bun.stdin.stream()) {
-    let rest = chunk;
-    while (rest.byteLength > 0) {
-      const written = socket.write(rest);
-      rest = rest.subarray(Math.max(written, 0));
-      if (rest.byteLength > 0) await new Promise<void>((resolve) => (drained = resolve));
-    }
-  }
-  // The client is done: let Dashi see the end.
-  socket.end();
-}
 
 /** How long it tries to reach Dashi again, and how often. */
 const AGAIN_FOR_MS = 120_000;
@@ -109,87 +84,139 @@ function outbox(): { push(line: string): void; write(socket: Bun.Socket<undefine
   };
 }
 
-/** Line by line, so it can say `initialize` again and fail what was lost when the socket closes. */
-async function reconnecting(): Promise<void> {
-  const relay = new McpRelay();
-  const out = outbox();
-  let socket: Bun.Socket<undefined> | null = null;
-  /** The client's lines while Dashi is away. */
-  let held: string[] = [];
-  let clientDone = false;
+/** The agents' server, whose `initialize` and `tools/list` this bridge knows; any other server answers for itself. */
+const OWN_SERVER = basename(path) === "dashi-mcp.sock";
 
-  const pump = () => {
-    if (socket && out.write(socket) && clientDone) socket.end();
-  };
-  const send = (line: string) => {
-    out.push(line);
-    pump();
+/** What a call is told when Dashi can't be reached at the client's first call. */
+const UNREACHABLE = `Dashi can't be reached at ${path}. Is a Dashi session running?`;
+
+/**
+ * Line by line: the client's lines are answered here until its first tool call, then carried to Dashi;
+ * with `reconnect`, `initialize` is said again and what was lost fails when the socket closes.
+ */
+class Bridge {
+  private readonly relay = new McpRelay();
+  private readonly out = outbox();
+  private socket: Bun.Socket<undefined> | null = null;
+  /** It has reached Dashi once: from then on every line is Dashi's to answer. */
+  private reached = false;
+  private connecting = false;
+  /** The client's lines while Dashi is away, or not reached yet. */
+  private held: string[] = [];
+  private clientDone = false;
+
+  constructor(private readonly reconnect: boolean) {}
+
+  private exit(code: number): void {
+    void flushed.then(() => process.exit(code));
+  }
+
+  private readonly pump = (): void => {
+    if (this.socket && this.out.write(this.socket) && this.clientDone) this.socket.end();
   };
 
-  const connect = async (): Promise<boolean> => {
+  private send(line: string): void {
+    this.out.push(line);
+    this.pump();
+  }
+
+  private async connect(): Promise<boolean> {
     const lines = lineSplitter();
     try {
-      socket = await Bun.connect({
+      this.socket = await Bun.connect({
         unix: path,
         socket: {
-          data(_socket, data) {
-            for (const line of lines.push(data)) if (line.trim() && relay.fromServer(line)) toClient(`${line}\n`);
+          data: (_socket, data) => {
+            for (const line of lines.push(data)) if (line.trim() && this.relay.fromServer(line)) toClient(`${line}\n`);
           },
-          drain: pump,
-          close() {
-            socket = null;
-            out.clear();
-            void lost();
+          drain: this.pump,
+          close: () => {
+            this.socket = null;
+            this.out.clear();
+            void this.lost();
           },
         },
       });
       return true;
     } catch {
-      socket = null;
+      this.socket = null;
       return false;
     }
-  };
+  }
 
-  /** The socket closed: done if the client is, else what was on its way fails and it connects again. */
-  const lost = async () => {
-    if (clientDone) return void flushed.then(() => process.exit(0));
-    for (const line of relay.lost()) toClient(`${line}\n`);
+  /** Connected: the client's `initialize` first, then what waited. */
+  private resume(): void {
+    for (const line of this.relay.reconnected()) this.send(line);
+    const waiting = this.held;
+    this.held = [];
+    for (const line of waiting) this.send(line);
+  }
+
+  /** The socket closed: done if the client is, or without `--reconnect`; else what was on its way fails and it connects again. */
+  private async lost(): Promise<void> {
+    if (this.clientDone || !this.reconnect) return this.exit(0);
+    for (const line of this.relay.lost()) toClient(`${line}\n`);
     const until = Date.now() + AGAIN_FOR_MS;
     while (Date.now() < until) {
       await Bun.sleep(AGAIN_EVERY_MS);
-      if (!(await connect())) continue;
-      for (const line of relay.reconnected()) send(line);
-      const waiting = held;
-      held = [];
-      for (const line of waiting) send(line);
-      return;
+      if (await this.connect()) return this.resume();
     }
     console.error(`dashi-mcp: can't reach Dashi at ${path} again; giving up`);
-    for (const line of relay.lost()) toClient(`${line}\n`);
-    void flushed.then(() => process.exit(1));
-  };
-
-  if (!(await connect())) {
-    console.error(`dashi-mcp: can't reach Dashi at ${path}; is a Dashi session running?`);
-    process.exit(1);
+    for (const line of this.relay.lost()) toClient(`${line}\n`);
+    this.exit(1);
   }
 
-  const lines = lineSplitter();
-  const fromClient = (line: string) => {
+  /** The client's first tool call: reach Dashi now. A call that can't is told so, and the next one tries again. */
+  private async reach(): Promise<void> {
+    if (this.connecting) return;
+    this.connecting = true;
+    this.reached = await this.connect();
+    this.connecting = false;
+    if (this.reached) return this.resume();
+    this.held = [];
+    for (const line of this.relay.lost(UNREACHABLE)) toClient(`${line}\n`);
+    if (this.clientDone) this.exit(0);
+  }
+
+  private fromClient(line: string): void {
     if (!line.trim()) return;
-    relay.fromClient(line);
-    if (socket) send(line);
-    else held.push(line);
-  };
-  for await (const chunk of Bun.stdin.stream()) {
-    for (const line of lines.push(chunk)) fromClient(line);
+    this.relay.fromClient(line);
+    if (this.reached) return this.socket ? this.send(line) : void this.held.push(line);
+    const answer = answerLocally(line);
+    if (answer.kind === "none") return;
+    if (answer.kind === "connect") {
+      this.held.push(line);
+      return void this.reach();
+    }
+    // Answered here: nothing is on its way to Dashi for it.
+    this.relay.fromServer(answer.line);
+    toClient(`${answer.line}\n`);
   }
-  fromClient(lines.rest());
-  clientDone = true;
-  // The client is done: let Dashi see the end once what it sent is written.
-  if (socket) pump();
-  else void flushed.then(() => process.exit(0));
+
+  async run(): Promise<void> {
+    if (!OWN_SERVER) {
+      // Another server's tools and words are its own: connect now, and carry every line.
+      this.reached = await this.connect();
+      if (!this.reached) {
+        console.error(`dashi-mcp: can't reach Dashi at ${path}; is a Dashi session running?`);
+        process.exit(1);
+      }
+    }
+    const lines = lineSplitter();
+    for await (const chunk of Bun.stdin.stream()) {
+      for (const line of lines.push(chunk)) this.fromClient(line);
+    }
+    this.fromClient(lines.rest());
+    this.clientDone = true;
+    // The client is done: let Dashi see the end once what it sent is written.
+    if (this.socket) this.pump();
+    else if (!this.connecting) this.exit(0);
+  }
 }
 
-if (process.argv.includes("--reconnect")) await reconnecting();
-else await plain();
+// Nothing to connect to, now or at a first call: say so at once, as a server that can't start.
+if (!existsSync(path)) {
+  console.error(`dashi-mcp: can't reach Dashi at ${path}; is a Dashi session running?`);
+  process.exit(1);
+}
+await new Bridge(process.argv.includes("--reconnect")).run();

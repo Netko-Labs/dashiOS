@@ -162,8 +162,8 @@ the same change.
   (`launch_app`, `click`, `type_text`, `press_keys`, `record_screen`, …),
   `vm/agent batch -` for several calls; `vm/agent pointer X Y [right]` clicks the
   real pointer at a screenshot's pixels inside the session. A bare QMP click after
-  a screenshot lands one menu bar item off: the agents' mark is in the bar only
-  while an agent is connected. `.mcp.json` offers the same server to
+  a screenshot lands one menu bar item off: the agents' part of the mark is in the bar only
+  while an agent is in sight (it called a tool in the last five minutes). `.mcp.json` offers the same server to
   Claude Code as `dashi-vm`. The first call of each kind asks for consent on the
   VM's screen; allow it there once ("Always Allow"). The sheet is blank in
   `vm/agent`'s own pictures and an agent's `click` never answers it: press its

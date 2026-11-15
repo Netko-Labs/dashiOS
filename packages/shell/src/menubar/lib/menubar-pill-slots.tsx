@@ -90,10 +90,14 @@ export function jobsSlot({ sources, appName, pill }: ProgramContext, room: numbe
   ];
 }
 
-/** Dashi's mark: always there, leading the status items. A click (or the keyboard) turns the row into the field. */
-export function agentMarkSlot({ sources, mark, pill, tip }: ProgramContext, accessible: boolean): StatusSlot[] {
-  const { output } = sources;
-  const need = pill ? needCount(pill.jobs, pill.asks) : 0;
+/**
+ * Dashi's mark: always there, leading the status items, and the one sign of every agent from outside
+ * (D138): their glyph and, from two sessions, the count, which a click opens the agents' panel on.
+ * A click on the spark (or the keyboard) turns the row into the field.
+ */
+export function agentMarkSlot({ sources, mark, outside, pill, tip, appName }: ProgramContext, accessible: boolean): StatusSlot[] {
+  const { output, menus } = sources;
+  const need = needCount(pill?.jobs ?? [], pill?.asks ?? [], outside.waiting);
   const name = pill?.name ?? "Dashi";
   const label =
     need > 0 ? `${name}: ${need} ${need === 1 ? "job needs" : "jobs need"} you` : mark.kind === "none" ? `Ask ${name}` : `Ask ${name}. ${mark.label}`;
@@ -113,6 +117,8 @@ export function agentMarkSlot({ sources, mark, pill, tip }: ProgramContext, acce
           {...(pill ? { colour: pill.colour, glyph: pill.glyph } : {})}
           label={label}
           tip={mark.kind === "none" ? "" : mark.tip}
+          agents={outside}
+          onAgents={(right) => void menus.toggleAgents(appName, right, null, output)}
           onPress={openField}
           onTip={tip}
           accessible={accessible}

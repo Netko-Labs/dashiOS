@@ -1,9 +1,10 @@
 /**
  * The jobs in the menu bar (docs/design.html, "Jobs in the bar"; the
  * design's b-09 to b-21), as data. A job is a launcher Ask task
- * (agents/ask), a run started from the launcher or an agent connected from
- * outside (agents/mark.ts `mergeAgents`): each is one capsule beside the
- * mark. One capsule speaks at a time: a job that needs the person first,
+ * (agents/ask) or a run started from the launcher: each is one capsule
+ * beside the mark. An agent connected from outside is never a capsule, nor
+ * are its calls: it shows through the one mark, with a count (decisions.md
+ * D138). One capsule speaks at a time: a job that needs the person first,
  * else the one whose step changed last; the others are discs. When the room
  * is short the speaking one drops its name and keeps its step, then the
  * discs that don't fit become a count. A job that needs the person is never
@@ -13,11 +14,11 @@
 import type { AgentEntry, TaskView } from "../../agents/index.ts";
 import type { PillAsk } from "../../shared/pill/index.ts";
 
-/** `run`: at work (the ring turns). `need`: waits on the person (amber). `fin`: done (a tick). `off`: failed or stopped. `idle`: connected, doing nothing. */
+/** `run`: at work (the ring turns). `need`: waits on the person (amber). `fin`: done (a tick). `off`: failed or stopped. `idle`: at rest. */
 export type JobState = "run" | "need" | "fin" | "off" | "idle";
 
 export interface BarJob {
-  /** `task:<id>`, `run:<id>` or `agent:<id>`. */
+  /** `task:<id>` or `run:<id>`. */
   key: string;
   kind: "task" | "agent";
   /** The task's id, or the agents' panel's focus for a run. */
@@ -97,9 +98,10 @@ export function taskJobs(tasks: readonly TaskView[], asks: readonly PillAsk[], s
     .reverse();
 }
 
-/** Runs from the launcher and agents connected from outside as jobs, the oldest first. */
+/** Runs from the launcher as jobs, the oldest first. An agent connected from outside is the mark's, never a job (D138). */
 export function agentJobs(entries: readonly AgentEntry[]): BarJob[] {
-  return [...entries]
+  return entries
+    .filter((entry) => entry.kind === "run")
     .sort((a, b) => a.since - b.since)
     .map(
       (entry): BarJob => ({
@@ -223,7 +225,10 @@ export function jobLabel(job: BarJob): string {
   return `${who}${job.title}: ${job.step}`;
 }
 
-/** How many jobs wait on the person: what the mark counts, with the capsule piece's asks when it has more. */
-export function needCount(jobs: readonly BarJob[], asks: readonly PillAsk[]): number {
-  return Math.max(asks.length, jobs.filter((job) => job.state === "need").length);
+/**
+ * How many things wait on the person: what the mark counts. The jobs that need them and the
+ * sessions from outside whose sheet is up (`outside`), or the capsule piece's asks when it has more.
+ */
+export function needCount(jobs: readonly BarJob[], asks: readonly PillAsk[], outside = 0): number {
+  return Math.max(asks.length, jobs.filter((job) => job.state === "need").length + outside);
 }

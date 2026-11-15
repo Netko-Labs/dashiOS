@@ -128,6 +128,13 @@ export interface AgentInfo {
   watching?: Watching | null;
   /** Since when it has been doing what `watching` says (ms), for its row's time (agents-panel/lib/agents-rows.tsx). */
   watchingSince?: number;
+  /**
+   * It has called no tool, or none for a while, and holds nothing (lib/session/session-quiet.ts): it is in no
+   * menu bar and has no row in the agents' panel. Settings › Agents lists it all the same.
+   */
+  quiet?: boolean;
+  /** When it last called a tool (ms); absent when it never did. */
+  acted?: number;
 }
 
 /** What the agents server needs from the shell's UI. */
