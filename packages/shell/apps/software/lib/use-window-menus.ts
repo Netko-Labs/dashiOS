@@ -25,9 +25,10 @@ export interface WindowMenuInput {
   blocked: boolean;
   actions: Actions;
   askSystem(): void;
+  openSources(): void;
 }
 
-export function useWindowMenus({ nav, goBack, go, refocus, store, applets, state, blocked, actions, askSystem }: WindowMenuInput): void {
+export function useWindowMenus({ nav, goBack, go, refocus, store, applets, state, blocked, actions, askSystem, openSources }: WindowMenuInput): void {
   const appUpdates = state.appUpdates ?? [];
   const systemUpdates = state.system?.updates.length ?? 0;
   // The menu bar's menus, with the keys they show, acting on the open page's app or applet.
@@ -59,6 +60,7 @@ export function useWindowMenus({ nav, goBack, go, refocus, store, applets, state
         for (const installation of new Set(appUpdates.map((update) => update.installation))) actions.updateAll(installation);
       },
       updateSystem: askSystem,
+      sources: openSources,
       open: () => thing?.open(),
       get: () => thing?.get(),
       update: () => thing?.update(),

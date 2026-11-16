@@ -5,7 +5,7 @@ import { tintFor } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import { createContext, useContext } from "react";
 import type { StoreApplet } from "../../../src/shared/applet-store/index.ts";
-import type { Installation, InstalledApp } from "../../../src/shared/software/index.ts";
+import type { CatalogEntry, Installation, InstalledApp, Offer } from "../../../src/shared/software/index.ts";
 import { useImage } from "./hooks.ts";
 
 /**
@@ -36,6 +36,14 @@ export interface Actions {
   /** Asks first; one installed that no longer reads goes the same way. */
   removeApplet(applet: InstalledApplet | UnreadableApplet): void;
   openUrl(url: string): void;
+  /** Opens a catalog row's page, on one of its sources (its default when none is named). */
+  openEntry(key: string, source?: string): void;
+  /** Gets a package: its sheet first (not sandboxed, the password). */
+  getPackage(entry: CatalogEntry, offer: Offer): void;
+  /** Asks first, then removes a package (the password). */
+  removePackage(entry: CatalogEntry, offer: Offer): void;
+  /** Starts an app a package installed. */
+  openPackage(entry: CatalogEntry): void;
   /** Shows a screenshot's file at the window's full size. */
   showPicture(file: string): void;
 }

@@ -17,7 +17,11 @@ export type Page =
   | { kind: "installed" }
   | { kind: "updates" }
   | { kind: "applets" }
-  | { kind: "applet"; id: string };
+  | { kind: "applet"; id: string }
+  | { kind: "entry"; key: string; source?: string }
+  | { kind: "apps"; category?: CategoryId }
+  | { kind: "extensions" }
+  | { kind: "widgets" };
 
 export interface Nav {
   page: Page;
@@ -61,7 +65,7 @@ export const canGoBack = (nav: Nav): boolean => nav.back.length > 0;
 
 /** The sidebar places a deep link (`DASHI_SOFTWARE_PAGE`) may open on. */
 export function startPage(name: string | undefined): Nav {
-  if (name === "updates" || name === "installed" || name === "applets") return goTo({ kind: name });
+  if (name === "updates" || name === "installed" || name === "applets" || name === "apps" || name === "extensions") return goTo({ kind: name });
   return START;
 }
 

@@ -13,6 +13,8 @@ export interface RunOptions {
   /** Ends the process (SIGTERM) when it aborts. */
   signal?: AbortSignal;
   timeoutMs?: number;
+  /** How much of the output to keep, from the end (`OUTPUT_TAIL` unless said: the catalog's queries print megabytes). */
+  keep?: number;
 }
 
 export interface RunResult {
@@ -42,9 +44,10 @@ interface TerminalOption {
 
 export const run: Runner = async (command, options = {}) => {
   const decoder = new TextDecoder();
+  const keep = options.keep ?? OUTPUT_TAIL;
   let output = "";
   const take = (chunk: string): void => {
-    output = (output + chunk).slice(-OUTPUT_TAIL);
+    output = output.length + chunk.length > keep ? (output + chunk).slice(-keep) : output + chunk;
     options.onOutput?.(chunk);
   };
   let process_: ReturnType<typeof Bun.spawn>;

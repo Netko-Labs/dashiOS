@@ -15,8 +15,8 @@ export interface Operation {
   kind: OperationKind;
   /** The app's or applet's id (none for a system update or "update all"). */
   id?: string;
-  /** An applet's change, not a Flatpak app's (their ids may look alike). */
-  subject?: "applet";
+  /** An applet's or a package's change, not a Flatpak app's (their ids may look alike). */
+  subject?: "applet" | "package" | "source";
   name: string;
   status: "queued" | "running";
   progress: Progress | null;
@@ -30,11 +30,15 @@ export type AppState =
 
 /** The operation touching app `id` now, if any: an install, remove, or update of that app (or an "update all" that covers it). */
 export function operationFor(operations: readonly Operation[], id: string, covered: ReadonlySet<string> = new Set()): Operation | undefined {
-  const apps = operations.filter((operation) => operation.subject !== "applet");
+  const apps = operations.filter((operation) => operation.subject === undefined);
   return (
     apps.find((operation) => operation.id === id) ?? apps.find((operation) => operation.kind === "update" && operation.id === undefined && covered.has(id))
   );
 }
+
+/** The operation touching package `name` now, if any. */
+export const packageOperation = (operations: readonly Operation[], name: string): Operation | undefined =>
+  operations.find((operation) => operation.subject === "package" && operation.id === name);
 
 /** The operation touching applet `id` now, if any. */
 export const appletOperation = (operations: readonly Operation[], id: string): Operation | undefined =>

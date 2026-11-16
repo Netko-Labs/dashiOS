@@ -11,10 +11,12 @@ import { useSyncExternalStore } from "react";
 import { formatBytes, type InstalledApp } from "../../../src/shared/software/index.ts";
 import { InstalledApplets } from "./applets/pages.tsx";
 import { useAppletState } from "./applets/rows.tsx";
+import { useCatalog } from "./catalog-hooks.ts";
 import { StateChip } from "./chip.tsx";
 import { INSTALLED } from "./glyphs.ts";
 import { SectionHeader } from "./heading.tsx";
 import { useAppState, useInstalledIcon } from "./hooks.ts";
+import { InstalledPackages } from "./installed-packages.tsx";
 import { whereInstalled } from "./model.ts";
 import { AppIcon, ROW, useActions } from "./parts.tsx";
 import { useServices } from "./services.ts";
@@ -70,6 +72,14 @@ export function Installed({ query }: { query: string }) {
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const applets = useAppletState();
   const needle = query.trim().toLowerCase();
+  const catalog = useCatalog();
+  const hasPackages =
+    catalog?.entries.some(
+      (entry) =>
+        entry.kind === "app" &&
+        (needle === "" || entry.name.toLowerCase().includes(needle)) &&
+        entry.offers.some((offer) => offer.kind === "rpm" && offer.installed && !offer.cameWithSystem),
+    ) ?? false;
   if (state.installed === null && state.hasFlatpak) return <Loading label="Looking at your apps…" />;
   const apps = [...(state.installed ?? [])]
     .filter((app) => needle === "" || app.name.toLowerCase().includes(needle) || app.id.toLowerCase().includes(needle))
@@ -78,7 +88,7 @@ export function Installed({ query }: { query: string }) {
     ...applets.installed.map((applet) => `${applet.manifest.name} ${applet.manifest.id}`),
     ...applets.unreadable.map((applet) => `${applet.name ?? ""} ${applet.id}`),
   ].filter((words) => needle === "" || words.toLowerCase().includes(needle)).length;
-  if (apps.length === 0 && appletCount === 0) {
+  if (apps.length === 0 && appletCount === 0 && !hasPackages) {
     return (
       <EmptyState
         testID="installed-empty"
@@ -89,7 +99,7 @@ export function Installed({ query }: { query: string }) {
             ? `Nothing you have matches “${query.trim()}”.`
             : state.hasFlatpak
               ? (state.installedError ?? "Apps and applets you get from Discover show up here.")
-              : "Software installs apps with Flatpak. Install the flatpak package, then open Software again."
+              : "The Store installs Flathub’s apps with Flatpak. Install the flatpak package, then open the Store again."
         }
       />
     );
@@ -104,6 +114,7 @@ export function Installed({ query }: { query: string }) {
           ))}
         </Group>
       )}
+      <InstalledPackages needle={needle} />
       {appletCount > 0 && <SectionHeader title="Menu bar applets" />}
       <InstalledApplets needle={needle} />
     </ScrollView>

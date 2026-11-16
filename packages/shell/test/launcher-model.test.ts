@@ -70,11 +70,11 @@ describe("rows", () => {
     expect(mixed[2]?.rows.every((row) => row.kind === "Settings" && "glyph" in row.icon)).toBe(true);
   });
 
-  test("nothing found: Did you mean, Search files, Find in Software", () => {
+  test("nothing found: Did you mean, Search files, Find in the Store", () => {
     const entries = [app("Firefox"), app("Files", { id: "dev.dashi.files" }), app("Software", { id: "dev.dashi.software" })];
     const [nothing] = buildSections(list({ query: "fierfox", entries, files: { kind: "found", files: [] } }));
     expect(nothing?.title).toBe("Nothing called “fierfox”");
-    expect(nothing?.rows.map((row) => row.title)).toEqual(["Did you mean Firefox?", "Search files for “fierfox”", "Find “fierfox” in Software"]);
+    expect(nothing?.rows.map((row) => row.title)).toEqual(["Did you mean Firefox?", "Search files for “fierfox”", "Find “fierfox” in the Store"]);
   });
 
   test("while files are on their way and nothing else matched, nothing is said yet", () => {

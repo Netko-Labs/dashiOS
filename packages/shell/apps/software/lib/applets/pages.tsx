@@ -14,7 +14,7 @@ import { useReportStale } from "../hooks.ts";
 import { AppIcon, ROW, useActions } from "../parts.tsx";
 import { useServices } from "../services.ts";
 import { AppletGroup, useAppletState } from "./rows.tsx";
-import { CATEGORY_LABELS, skippedWords } from "./words.ts";
+import { CATEGORY_LABELS, inMenuBar, skippedWords } from "./words.ts";
 
 const byName = (a: StoreApplet, b: StoreApplet): number => a.manifest.name.localeCompare(b.manifest.name);
 
@@ -54,7 +54,7 @@ export function AppletsPage() {
   const state = useAppletState();
   useReportStale(state.stale);
   if (state.index === null) return state.loading ? <Loading label="Loading the applets…" /> : <AppletsProblem />;
-  const entries = [...state.index.applets].sort(byName);
+  const entries = state.index.applets.filter(inMenuBar).sort(byName);
   const forHere = entries.filter((entry) => entry.manifest.when !== undefined && applets.fitsHere(entry) === true);
   const rest = entries.filter((entry) => !forHere.includes(entry));
   const categories = Object.keys(CATEGORY_LABELS) as Array<keyof typeof CATEGORY_LABELS>;
@@ -86,8 +86,10 @@ function InstalledAppletRow({ applet, entry }: { applet: InstalledApplet; entry:
   const actions = useActions();
   const { applets } = useServices();
   const origin = applets.originOf(applet);
-  const from =
-    origin.kind === "local"
+  const dashis = applet.record.firstParty === true;
+  const from = dashis
+    ? "Dashi’s own · part of Dashi"
+    : origin.kind === "local"
       ? "added by hand"
       : origin.kind === "removed"
         ? "catalog removed"
@@ -121,7 +123,8 @@ function InstalledAppletRow({ applet, entry }: { applet: InstalledApplet; entry:
           </Text>
         </View>
       </View>
-      <Button label="Remove…" testID={`remove:${applet.manifest.id}`} onPress={() => actions.removeApplet(applet)} />
+      {/* Dashi's own extensions (GitHub, Emoji) come with Dashi and go with it (D347): no Remove. */}
+      {!dashis && <Button label="Remove…" testID={`remove:${applet.manifest.id}`} onPress={() => actions.removeApplet(applet)} />}
     </View>
   );
 }

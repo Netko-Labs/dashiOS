@@ -9,19 +9,21 @@ import type { InstalledApplet, UnreadableApplet } from "@dashi/applet";
 import { useMemo } from "react";
 import type { StoreApplet } from "../../../src/shared/applet-store/index.ts";
 import type { InstalledApp } from "../../../src/shared/software/index.ts";
+import { openDesktop } from "./catalog-hooks.ts";
 import { type Nav, push } from "./nav.ts";
 import type { Actions } from "./parts.tsx";
 import type { Services } from "./services.ts";
+import { packageAsk, sourceOf } from "./source-words.ts";
 import { appTrust, askReasons } from "./trust-words.ts";
 import type { WindowAsk } from "./use-window-sheets.ts";
 
-export interface WindowActionInput extends Pick<Services, "store" | "applets" | "catalog" | "openUrl"> {
+export interface WindowActionInput extends Pick<Services, "store" | "applets" | "catalog" | "openUrl" | "index"> {
   setNav(update: (now: Nav) => Nav): void;
   enqueue(ask: WindowAsk): void;
   setPicture(file: string | null): void;
 }
 
-export function useWindowActions({ store, applets, catalog, openUrl, setNav, enqueue, setPicture }: WindowActionInput): Actions {
+export function useWindowActions({ store, applets, catalog, index, openUrl, setNav, enqueue, setPicture }: WindowActionInput): Actions {
   return useMemo(
     () => ({
       openApp: (id) => setNav((now) => push(now, { kind: "app", id })),
@@ -55,7 +57,13 @@ export function useWindowActions({ store, applets, catalog, openUrl, setNav, enq
         ),
       openUrl,
       showPicture: setPicture,
+      openEntry: (key, source) => setNav((now) => push(now, { kind: "entry", key, ...(source ? { source } : {}) })),
+      getPackage: (entry, offer) => enqueue({ kind: "get-package", entry, offer, message: packageAsk(index.sources(), offer, entry.kind === "tool") }),
+      removePackage: (entry, offer) => enqueue({ kind: "remove-package", entry, offer, source: sourceOf(index.sources(), offer)?.label ?? "its source" }),
+      openPackage: (entry) => {
+        if (entry.desktopId !== null) openDesktop(entry.desktopId);
+      },
     }),
-    [store, applets, catalog, openUrl, setNav, enqueue, setPicture],
+    [store, applets, catalog, index, openUrl, setNav, enqueue, setPicture],
   );
 }

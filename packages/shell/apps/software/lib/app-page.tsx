@@ -11,6 +11,7 @@ import { Button, Group, Loading, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { type AppDetails, formatBytes } from "../../../src/shared/software/index.ts";
+import { useCatalog } from "./catalog-hooks.ts";
 import { StateChip } from "./chip.tsx";
 import { Gallery } from "./gallery.tsx";
 import { SectionHeader } from "./heading.tsx";
@@ -19,6 +20,7 @@ import { VerifiedBadge } from "./marks.tsx";
 import { whereInstalled } from "./model.ts";
 import { AppIcon, ROW, useActions } from "./parts.tsx";
 import { useServices } from "./services.ts";
+import { getAllowed, SourcePicker } from "./source-picker.tsx";
 import { Failed } from "./states.tsx";
 import { TrustCard } from "./trust.tsx";
 import { appTrust, askReasons, licenseWords, releaseHeading } from "./trust-words.ts";
@@ -69,14 +71,26 @@ export function facts(app: AppDetails): FactRow[] {
   return rows.filter((row): row is FactRow => row !== null);
 }
 
+/** The catalog's row for a Flathub app, and its Flathub offer, when the catalog has it. */
+function useFlathubEntry(id: string) {
+  const data = useCatalog();
+  const entry = data?.entries.find((each) => each.offers.some((offer) => offer.kind === "flatpak" && offer.ref === id));
+  const offer = entry?.offers.find((each) => each.kind === "flatpak" && each.ref === id);
+  return entry && offer ? { entry, offer } : null;
+}
+
 function Buttons({ app, asks }: { app: AppDetails; asks: boolean }) {
   const actions = useActions();
   const state = useAppState(app.id);
+  const found = useFlathubEntry(app.id);
+  const allowed = found === null || getAllowed(found.entry, found.offer);
   if (state.kind === "busy")
     return <StateChip chip={{ kind: "busy", operation: state.operation }} testID="app" wide onCancel={() => actions.cancel(state.operation.key)} />;
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 0 }}>
-      {state.kind === "get" && <Button label={asks ? "Get…" : "Get"} testID="install" primary onPress={() => actions.install(app.id, app.name)} />}
+      {state.kind === "get" && (
+        <Button label={asks ? "Get…" : "Get"} testID="install" primary disabled={!allowed} onPress={() => actions.install(app.id, app.name)} />
+      )}
       {state.kind !== "get" && <Button label="Remove…" testID="remove" onPress={() => actions.remove(state.installed)} />}
       {state.kind === "update" && <Button label="Update" testID="update" primary onPress={() => actions.update(state.installed, app.name)} />}
       {state.kind !== "get" && <Button label="Open" testID="open" primary={state.kind === "open"} onPress={() => actions.launch(app.id)} />}
@@ -87,6 +101,7 @@ function Buttons({ app, asks }: { app: AppDetails; asks: boolean }) {
 function Page({ app }: { app: AppDetails }) {
   const colors = useColors();
   const state = useAppState(app.id);
+  const found = useFlathubEntry(app.id);
   const reasons = askReasons(app);
   const installedNote = state.kind === "open" || state.kind === "update" ? whereInstalled(state.installed) : null;
   const sections: ReactNode[] = [];
@@ -121,7 +136,10 @@ function Page({ app }: { app: AppDetails }) {
           {installedNote !== null && <Text style={{ fontSize: 12, color: colors.textMuted }}>{installedNote}</Text>}
           {app.eol && <Text style={{ fontSize: 12, color: colors.ume }}>This app is no longer maintained.</Text>}
         </View>
-        <Buttons app={app} asks={reasons.length > 0} />
+        <View style={{ flexShrink: 0, flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+          <Buttons app={app} asks={reasons.length > 0} />
+          {found && <SourcePicker entry={found.entry} offer={found.offer} />}
+        </View>
       </View>
       <TrustCard facts={appTrust(app)} strong={reasons} />
       {sections}

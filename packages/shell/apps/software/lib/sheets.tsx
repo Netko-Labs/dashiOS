@@ -8,7 +8,7 @@
 import { AlertSheet, CHEVRON_DOWN, CHEVRON_UP, ConfirmSheet, Switch, useColors, WARNING } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { InstalledApp } from "../../../src/shared/software/index.ts";
+import type { CatalogEntry, InstalledApp, Offer } from "../../../src/shared/software/index.ts";
 import { RESTART, SHIELD } from "./glyphs.ts";
 import type { Failure } from "./store.ts";
 import { ReachLines } from "./trust.tsx";
@@ -19,7 +19,10 @@ export type Ask =
   | { kind: "remove-applet"; id: string; name: string }
   | { kind: "system"; count: number; restart: boolean }
   | { kind: "restart" }
-  | { kind: "get"; id: string; name: string; facts: TrustFacts; reasons: string[] };
+  | { kind: "logout" }
+  | { kind: "get"; id: string; name: string; facts: TrustFacts; reasons: string[] }
+  | { kind: "get-package"; entry: CatalogEntry; offer: Offer; message: string }
+  | { kind: "remove-package"; entry: CatalogEntry; offer: Offer; source: string };
 
 /** The answer: yes or no, and for a removal whether its data goes too. */
 export interface Answer {
@@ -98,6 +101,35 @@ export function Question({ ask, onAnswer }: { ask: Ask; onAnswer: (answer: Answe
       return <RemoveSheet name={ask.name} system={false} applet onAnswer={onAnswer} />;
     case "get":
       return <GetSheet ask={ask} onAnswer={onAnswer} />;
+    case "get-package":
+      return (
+        <AlertSheet
+          testID="get-package-sheet"
+          width={440}
+          question={`Get “${ask.entry.name}”?`}
+          message={ask.message}
+          glyph={SHIELD}
+          tone="warning"
+          buttons={[
+            { label: "Cancel", testID: "get-package-sheet:cancel", onPress: () => onAnswer({ yes: false }), cancel: true },
+            // A grant (UI-6): Return doesn't say yes.
+            { label: "Get", testID: "get-package-sheet:get", onPress: () => onAnswer({ yes: true }), kind: "primary", isDefault: false },
+          ]}
+        />
+      );
+    case "remove-package":
+      return (
+        <ConfirmSheet
+          testID="remove-package-sheet"
+          title={`Remove “${ask.entry.name}”?`}
+          message={`It is taken off this computer (the ${ask.offer.ref} package from ${ask.source}), with what only it needed. Your files stay.`}
+          confirmLabel="Remove"
+          danger
+          glyph={WARNING}
+          onConfirm={() => onAnswer({ yes: true })}
+          onCancel={() => onAnswer({ yes: false })}
+        />
+      );
     case "system":
       return (
         <ConfirmSheet
@@ -105,6 +137,18 @@ export function Question({ ask, onAnswer }: { ask: Ask; onAnswer: (answer: Answe
           title="Update the system?"
           message={`${ask.count} ${ask.count === 1 ? "package" : "packages"} will be updated. You’ll be asked for your password.${ask.restart ? " The kernel or core libraries are included, so you’ll need to restart afterwards." : ""}`}
           confirmLabel="Update"
+          glyph={RESTART}
+          onConfirm={() => onAnswer({ yes: true })}
+          onCancel={() => onAnswer({ yes: false })}
+        />
+      );
+    case "logout":
+      return (
+        <ConfirmSheet
+          testID="logout-sheet"
+          title="Log out to finish updating Dashi?"
+          message="Save your work first: open apps are asked to quit, and their windows aren’t reopened. Dashi starts in its new version when you log back in."
+          confirmLabel="Log Out"
           glyph={RESTART}
           onConfirm={() => onAnswer({ yes: true })}
           onCancel={() => onAnswer({ yes: false })}

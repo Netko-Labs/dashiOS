@@ -8,7 +8,8 @@
 import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
 import { back, goTo, type Nav, type Page, search, startPage } from "./nav.ts";
 
-const SEARCH_DELAY_MS = 300;
+/** Short: the catalog is on this computer, so a result per key costs about 10 ms (D320). */
+const SEARCH_DELAY_MS = 60;
 
 export interface WindowNavigation {
   nav: Nav;

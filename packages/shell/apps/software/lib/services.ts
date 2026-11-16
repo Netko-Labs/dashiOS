@@ -24,18 +24,25 @@ import {
 } from "../../../src/shared/applet-store/index.ts";
 import { spawnDetached } from "../../../src/shared/apps/index.ts";
 import { settingsPath } from "../../../src/shared/settings/index.ts";
-import { cacheRoot, displayUrl, Flathub, ImageCache, Images, JsonCache, Software, standIn } from "../../../src/shared/software/index.ts";
+import { Catalog, cacheRoot, displayUrl, Flathub, ImageCache, Images, JsonCache, Packages, Software, standIn } from "../../../src/shared/software/index.ts";
 import { AppletStore } from "./applets/store.ts";
 import { SoftwareStore } from "./store.ts";
 
 export interface Services {
+  /** Flathub's live answers: an app's page, its pictures, Discover's rows. */
   catalog: Flathub;
+  /** The catalog on this computer: every source, searched offline (D320). */
+  index: Catalog;
+  /** Packages and sources: PackageKit and flatpak's remotes (D322). */
+  packages: Packages;
   images: Images;
   store: SoftwareStore;
   applets: AppletStore;
   appletImages: StoreImages;
   /** Restarts the machine, after the person asked (the shell's own path, refused outside a real session). */
   restart(): void;
+  /** Logs out, after the person asked (to finish Dashi's own update). */
+  logOut(): void;
   /** Opens an https address in the browser (an app's website, an applet's source). */
   openUrl(url: string): void;
 }
@@ -46,9 +53,13 @@ export function openInBrowser(url: string, launch: (command: readonly string[]) 
   if (checked) launch(["gio", "open", checked]);
 }
 
-export function createServices(restart: () => void, env: Readonly<Record<string, string | undefined>> = process.env): Services {
+export function createServices(restart: () => void, logOut: () => void, env: Readonly<Record<string, string | undefined>> = process.env): Services {
   const root = cacheRoot();
-  const store = new SoftwareStore(new Software(standIn() ?? {}));
+  const fake = standIn();
+  const software = new Software(fake ?? {});
+  const store = new SoftwareStore(software);
+  const packages = new Packages(fake?.run ? { run: fake.run } : {});
+  const installedFlatpaks = async (): Promise<string[]> => (software.hasFlatpak ? (await software.installed()).map((app) => app.id) : []);
   const appletCache = storeCacheDir(env);
   const dashi = dashiCatalog(env, keyFrom(env.DASHI_APPLETS_KEY) ?? DASHI_INDEX_KEY);
   const path = settingsPath(env);
@@ -70,11 +81,19 @@ export function createServices(restart: () => void, env: Readonly<Record<string,
   });
   return {
     catalog: new Flathub({ cache: new JsonCache(root) }),
+    index: new Catalog({
+      root,
+      installedFlatpaks,
+      refreshMetadata: () => packages.refresh(),
+      ...(fake?.run ? { run: fake.run, fetch: () => Promise.reject(new Error("stand-in")) } : {}),
+    }),
+    packages,
     images: new Images(new ImageCache(root)),
     store,
     applets: new AppletStore(appletCatalogs, installer, () => readMachine(), SDK_VERSION, store),
     appletImages: new StoreImages(`${appletCache}/images`, undefined, () => [...new Set(appletCatalogs.sources().flatMap((source) => hostsFor(source.url)))]),
     restart,
+    logOut,
     openUrl: (url) => openInBrowser(url),
   };
 }

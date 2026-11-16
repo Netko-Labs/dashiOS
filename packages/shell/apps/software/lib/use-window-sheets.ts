@@ -8,6 +8,7 @@
 import { useCallback, useState } from "react";
 import type { StoreApplet } from "../../../src/shared/applet-store/index.ts";
 import type { AppletState } from "./applets/store.ts";
+import { installPackageJob, removePackageJob } from "./package-actions.ts";
 import type { Services } from "./services.ts";
 import type { Answer, Ask } from "./sheets.tsx";
 
@@ -25,18 +26,23 @@ export interface WindowSheets {
   catalogs: boolean;
   openCatalogs(): void;
   closeCatalogs(): void;
+  /** The Sources sheet (Flathub, Fedora, Terra, each enabled COPR). */
+  sources: boolean;
+  openSources(): void;
+  closeSources(): void;
   /** Bumped on each close: the search field's key. */
   focus: number;
   refocus(): void;
   closeFailure(): void;
 }
 
-type SheetServices = Pick<Services, "store" | "applets" | "restart">;
+type SheetServices = Pick<Services, "store" | "applets" | "restart" | "logOut" | "index" | "packages">;
 
-export function useWindowSheets({ store, applets, restart, appletState }: SheetServices & { appletState: AppletState }): WindowSheets {
+export function useWindowSheets({ store, applets, restart, logOut, appletState, index, packages }: SheetServices & { appletState: AppletState }): WindowSheets {
   const [asks, setAsks] = useState<WindowAsk[]>([]);
   const [picture, setPicture] = useState<string | null>(null);
   const [catalogs, setCatalogs] = useState(false);
+  const [sources, setSources] = useState(false);
   const [focus, setFocus] = useState(0);
   const refocus = useCallback(() => setFocus((n) => n + 1), []);
   const enqueue = useCallback((ask: WindowAsk): void => setAsks((now) => [...now, ask]), []);
@@ -56,12 +62,20 @@ export function useWindowSheets({ store, applets, restart, appletState }: SheetS
       }
       case "get":
         return store.install(current.id, current.name);
+      case "get-package":
+        store.enqueue(installPackageJob({ store, index, packages }, current.entry, current.offer));
+        return;
+      case "remove-package":
+        store.enqueue(removePackageJob({ store, index, packages }, current.entry, current.offer));
+        return;
       case "consent":
         return applets.install(current.entry);
       case "system":
         return store.updateSystem();
       case "restart":
         return restart();
+      case "logout":
+        return logOut();
     }
   };
 
@@ -73,6 +87,12 @@ export function useWindowSheets({ store, applets, restart, appletState }: SheetS
     setPicture,
     catalogs,
     openCatalogs: () => setCatalogs(true),
+    sources,
+    openSources: () => setSources(true),
+    closeSources: () => {
+      setSources(false);
+      refocus();
+    },
     closeCatalogs: () => {
       setCatalogs(false);
       refocus();

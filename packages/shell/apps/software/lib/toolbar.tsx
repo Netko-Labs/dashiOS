@@ -8,7 +8,7 @@
 
 import { SearchField, ToolbarButton } from "@dashi/ui";
 import type { Dispatch, SetStateAction } from "react";
-import { APPLETS, REFRESH } from "./glyphs.ts";
+import { APPLETS, REFRESH, SOURCES } from "./glyphs.ts";
 import { queueLine } from "./model.ts";
 import { type Nav, type Page, search } from "./nav.ts";
 import type { Actions } from "./parts.tsx";
@@ -32,6 +32,7 @@ export interface SoftwareToolbarProps {
   go(page: Page): void;
   actions: Pick<Actions, "openApp" | "openApplet">;
   openCatalogs(): void;
+  openSources(): void;
   onCheckUpdates(): void;
 }
 
@@ -49,6 +50,7 @@ export function SoftwareToolbar({
   go,
   actions,
   openCatalogs,
+  openSources,
   onCheckUpdates,
 }: SoftwareToolbarProps) {
   const activity = queueLine(operations, { short: compact });
@@ -61,7 +63,11 @@ export function SoftwareToolbar({
           testID="activity"
           text={activity}
           maxWidth={CHIP_MAX_WIDTH}
-          onPress={() => (running?.id === undefined ? go({ kind: "updates" }) : actions[running.subject === "applet" ? "openApplet" : "openApp"](running.id))}
+          onPress={() =>
+            running?.id === undefined || (running.subject !== undefined && running.subject !== "applet")
+              ? go({ kind: "updates" })
+              : actions[running.subject === "applet" ? "openApplet" : "openApp"](running.id)
+          }
         />
       )}
       {nav.page.kind === "updates" && (
@@ -76,12 +82,15 @@ export function SoftwareToolbar({
       {nav.page.kind === "applets" && (
         <ToolbarButton testID="catalogs" glyph={APPLETS} {...(compact ? { tooltip: "Catalogs…" } : { label: "Catalogs…" })} onPress={openCatalogs} />
       )}
+      {(nav.page.kind === "installed" || nav.page.kind === "apps") && (
+        <ToolbarButton testID="sources" glyph={SOURCES} {...(compact ? { tooltip: "Sources…" } : { label: "Sources…" })} onPress={openSources} />
+      )}
       <SearchField
         key={focus}
         testID="search"
         value={query}
         onChangeText={setQuery}
-        placeholder={compact ? "Search" : filtering ? "Search installed" : "Search apps and applets"}
+        placeholder={compact ? "Search" : filtering ? "Search installed" : "Search apps, tools and add-ons"}
         width={SEARCH_WIDTH}
         minWidth={SEARCH_MIN_WIDTH}
         autoFocus

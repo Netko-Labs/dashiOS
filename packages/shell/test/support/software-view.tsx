@@ -18,10 +18,13 @@ import type { CatalogSetting } from "../../src/shared/applet-store/catalogs.ts";
 import { StoreImages } from "../../src/shared/applet-store/images.ts";
 import { AppletInstaller } from "../../src/shared/applet-store/installer.ts";
 import { ImageCache, JsonCache } from "../../src/shared/software/cache.ts";
+import { Catalog } from "../../src/shared/software/catalog.ts";
 import { Flathub } from "../../src/shared/software/flathub.ts";
 import { Images } from "../../src/shared/software/images.ts";
 import type { Runner } from "../../src/shared/software/lib/run.ts";
+import { standInPackages } from "../../src/shared/software/lib/stand-in-catalog.ts";
 import { Software } from "../../src/shared/software/manager.ts";
+import { Packages } from "../../src/shared/software/packages.ts";
 import { settle } from "./time.ts";
 
 /** Runs a file's tests with a runtime dir of their own, put back after. */
@@ -182,7 +185,21 @@ export function harness(options: HarnessOptions = {}): Harness {
   });
   const g14 = { vendor: "ASUSTeK COMPUTER INC.", product: "ROG Zephyrus G14", laptop: true };
   const opened: string[] = [];
+  // dnf and PackageKit from the stand-in's small computer (Fedora, Terra, Dashi's COPR, one COPR enabled by hand).
+  const packageRun: Runner = async (command, runOptions) => {
+    log.push(command.join(" "));
+    return (await standInPackages(command, runOptions)) ?? { code: 0, output: "" };
+  };
   const services: Services = {
+    index: new Catalog({
+      run: packageRun,
+      root: join(tree.dir, "catalog"),
+      swcatalog: join(tree.dir, "no-swcatalog"),
+      fetch: () => Promise.reject(new Error("offline in tests")),
+      installedFlatpaks: async () => [],
+    }),
+    packages: new Packages({ run: packageRun }),
+    logOut: () => {},
     catalog: new Flathub({ cache: new JsonCache(join(tree.dir, "flathub")), fetch: flathubFetch }),
     images: new Images(new ImageCache(join(tree.dir, "images")), async () => new Response("", { status: 404 })),
     store,

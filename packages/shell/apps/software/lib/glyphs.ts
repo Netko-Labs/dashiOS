@@ -32,6 +32,22 @@ export const CHECK_MARK = svg(stroke("M3.4 8.4l3 3 6.2-6.6", 1.8));
 /** What a page or card can't reach: a lock. */
 export const SHIELD = svg(stroke("M8 1.8l5.2 2v4c0 3.1-2.2 5.4-5.2 6.4-3-1-5.2-3.3-5.2-6.4v-4z", 1.4));
 
+/** A command-line tool: a prompt. */
+export const TERMINAL = svg(stroke("M3 4.6l3.4 3.4L3 11.4M8.4 11.6h4.6", 1.6));
+/** Apps: four tiles. */
+export const APPS = svg(stroke("M2.4 2.4h4.4v4.4H2.4zM9.2 2.4h4.4v4.4H9.2zM2.4 9.2h4.4v4.4H2.4zM9.2 9.2h4.4v4.4H9.2z", 1.3));
+/** Launcher extensions: the launcher's field with a row under it. */
+export const EXTENSIONS = svg(stroke("M2 3h12v3.6H2zM2 9.4h12M2 12.6h8", 1.3));
+/** Widgets: a big tile and two small ones. */
+export const WIDGETS = svg(stroke("M2.2 2.2h6.4v11.6H2.2zM10.4 2.2h3.4v5H10.4zM10.4 8.8h3.4v5H10.4z", 1.3));
+/** Sources: stacked discs. */
+export const SOURCES = svg(
+  stroke(
+    "M2.6 4c0-1 2.4-1.8 5.4-1.8s5.4.8 5.4 1.8-2.4 1.8-5.4 1.8S2.6 5 2.6 4zM2.6 4v8c0 1 2.4 1.8 5.4 1.8s5.4-.8 5.4-1.8V4M2.6 8c0 1 2.4 1.8 5.4 1.8s5.4-.8 5.4-1.8",
+    1.2,
+  ),
+);
+
 /** Category glyphs: white on the colored tile. */
 export const CATEGORY_GLYPHS: Readonly<Record<string, string>> = {
   AudioVideo: svg(`<path d="M5.4 3.4l7.2 4.6-7.2 4.6z" fill="#000"/>`),

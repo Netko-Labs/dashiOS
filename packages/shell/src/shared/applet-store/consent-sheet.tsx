@@ -77,7 +77,7 @@ const QUESTION: Record<ConsentKind, (name: string) => string> = {
 };
 
 const MESSAGE: Record<ConsentKind, string> = {
-  get: "It goes in the menu bar. You can turn it off or remove it in Software.",
+  get: "It goes in the menu bar. You can turn it off or remove it in the Store.",
   update: "The new version asks for more than you allowed before.",
   allow: "It was added to this computer and asks before it runs for the first time.",
 };

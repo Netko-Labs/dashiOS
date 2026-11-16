@@ -5265,6 +5265,145 @@ short words, as the rulebook is written.
   session, no focus on the title). `newNote` now forgets the note it left
   before opening the new one, so its title always takes the keyboard.
 
+### D320. The Store's catalog is built on the computer, one source at a time
+
+- **Date:** 2026-11-16. `v09/store` (brief s2; `scope/store` §3.9).
+- **Dilemma:** 0.8's Software asked Flathub's web API on every key and knew
+  nothing of Fedora, Terra or a COPR.
+- **Decision:** `shared/software/catalog.ts` reads Flathub's own
+  `appstream.xml.gz` (fetched daily with its ETag, kept in
+  `~/.cache/dashi/software/catalog/`), Fedora's and RPM Fusion's AppStream
+  files (`/usr/share/swcatalog/xml`), and dnf's cache for every enabled
+  repository (`dnf5 repoquery --cacheonly`: every package, and the
+  `application()` provides that make one an app). An app is matched across
+  sources by its AppStream id, then its desktop file. One row per app;
+  a package that isn't an app is a command-line tool, found only by its name.
+  Each source is read on its own: one that fails leaves the others' rows.
+  Parsed AppStream is kept as JSON keyed by its file's size and time.
+  Measured on the laptop: about 0.5 s to read everything, 6 to 12 ms a search.
+- **Cost:** Terra and COPRs publish no AppStream data, so their apps have
+  the package's name and summary, no icon; an app whose ids differ between
+  sources (Terra's `codium`, Flathub's `com.vscodium.codium`) is two rows.
+- **Undo:** `Catalog` in `shared/software/catalog.ts`; the window's search
+  goes back to `Listing` with `kind: "search"`.
+
+### D321. When several sources have an app: Flathub, Fedora, Dashi, Terra, then a COPR
+
+- **Date:** 2026-11-16. `v09/store`. The owner's order (16 Nov), written down.
+- **Decision:** what is installed comes first; then Flathub, Fedora, Dashi's
+  own COPR, Terra, then a COPR the person enabled or another repository.
+  RPM Fusion counts like a COPR ("like any other enabled repository").
+  `sourceRank` in `shared/software/sources.ts`.
+- **Undo:** that one function.
+
+### D322. Packages install and remove through PackageKit, one file deep
+
+- **Date:** 2026-11-16. `v09/store`.
+- **Dilemma:** PackageKit or dnf5daemon for a session that isn't root.
+- **Found:** Fedora 44 ships PackageKit 1.4 with its dnf5 backend
+  (`libpk_backend_dnf5.so`) and Dashi already depends on it; `dnf5daemon-server`
+  is in Fedora's repositories but not installed (laptop, VM).
+- **Decision:** `pkcon` with PackageKit's package id (`name;evr;arch;repo`),
+  so the source the person chose is the one used. Repositories are turned on
+  and off with `pkcon repo-enable/repo-disable`, Flathub with
+  `flatpak remote-modify`. Who is asked is PackageKit's polkit rule:
+  install, remove and a repository change ask (`auth_admin_keep`); an update
+  from a source already on does not. That is the design's rule and D260's.
+  Everything is in `shared/software/packages.ts` and `lib/package-cmd.ts`.
+- **Undo / move:** those two files, to dnf5daemon's D-Bus API.
+
+### D323. An app installed from one source is not swapped for another by a click
+
+- **Date:** 2026-11-16. `v09/store`.
+- **Decision:** the Source pop-up shows the app from any source; when it is
+  installed from another, Get is off and the page says "Installed from
+  Fedora. Remove that one first to get it from here." The design's swap
+  sheet (remove one, install the other) is later work.
+- **Undo:** `getAllowed` in `apps/software/lib/source-picker.tsx`.
+
+### D324. Software is called Store; its id stays `dev.dashi.software`
+
+- **Date:** 2026-11-16. The owner's call; how it is done is mine.
+- **Decision:** the window, the menu bar, the Dock and the launcher say
+  "Store"; "software" is one of its keywords so the old name finds it. The
+  app id, the folder and the settings keys keep "software": changing an id
+  breaks pins, defaults and every agent that names it.
+- **Undo:** `name` in `shared/apps/first-party.ts`, the titles in
+  `apps/software/main.tsx` and `lib/view.tsx`.
+
+### D325. Agents name an app and its source in one id
+
+- **Date:** 2026-11-16. `v09/store`.
+- **Decision:** `search_software` searches every source and answers each
+  result with `id` (`flatpak:org.gimp.GIMP@flathub`, `rpm:htop@fedora`,
+  `rpm:helium-bin@copr:imput/helium`), `source`, `sandboxed`,
+  `needsPassword`, `installed` and the other sources. A bare Flatpak id
+  still means Flathub's. `request_software_install` with a package id asks
+  on screen every time (D260: installing changes the system), then
+  PackageKit asks for the password.
+- **Undo:** `agents/desktop/software-catalog.ts`.
+
+### D326. Shelves: Widgets is an empty shelf, Themes stays hidden
+
+- **Date:** 2026-11-16. `v09/store` (store-v2 §1.1).
+- **Decision:** the sidebar is Discover, Apps, Menu bar applets, Widgets,
+  Launcher extensions, then Yours (Installed, Updates). Flathub's categories
+  are chips on Apps. Widgets shows a "coming" shelf (the frames draw it);
+  Themes is hidden until the themes release, as the spec says. An add-on
+  with `commands` is on Launcher extensions and on Menu bar applets (every
+  add-on today has a menu bar item); `applet.json` gains no `shows` field yet.
+- **Undo:** `apps/software/lib/sidebar.tsx`, `shelves.tsx`.
+
+### D327. Add-on updates that ask for nothing new install by themselves
+
+- **Date:** 2026-11-16. The owner's call (16 Nov); how it is done is mine.
+- **Decision:** a few minutes after login and then daily, the shell installs
+  each add-on update from the catalog that installed it, signed by the same
+  author key (the installer refuses otherwise), that asks for no permission
+  the person hasn't allowed (`applet-store/add-ons.ts`). One that asks for
+  more waits in the Store's Updates. There is no switch to turn this off yet.
+- **Undo:** `watchQuietUpdates` in `applets/start.tsx`.
+
+### D328. The launcher's Store asks in place, in one line
+
+- **Date:** 2026-11-16. `v09/store` (store-v2 L15, L16).
+- **Decision:** "Store" in the launcher is a scope of Dashi's add-ons
+  (extensions, applets, installed, and "Find in the Store" for apps). ↩ on
+  one not installed asks in the launcher's own one-line question (what it
+  adds, what it can reach, "Nobody at Dashi has read this version's code"
+  when that is so); ↩ again gets it. L16's panel with Cancel and Get is
+  later work; a click on a row shows the add-on in the Store, it never
+  installs.
+- **Undo:** `applet-store/launcher-store.ts`.
+
+### D329. Terra is on by default through a dnf5 vendor file in dashi-release
+
+- **Date:** 2026-11-16. The owner's call (Terra on by default); how is mine.
+- **Dilemma:** ship Terra's `.repo` and key in `dashi-release`, or
+  `Requires: terra-release` with a bootstrap.
+- **Found:** `terra-release` (GPL-3.0, Terra's repository) owns
+  `/etc/yum.repos.d/terra.repo`; its key comes from `terra-gpg-keys` (MIT).
+  Neither is in Fedora, so a `Requires` can't be met by a Dashi that has only
+  Fedora and Dashi's COPR on (an upgrade from 0.8 would fail). Two packages
+  can't own one file with different contents, and two `[terra]` sections are
+  one too many. dnf5 reads `/etc/yum.repos.d`, then `/usr/share/dnf5/repos.d`,
+  and a file of the same name earlier replaces a later one whole (tried with
+  `dnf5 repolist --setopt=reposdir=…`).
+- **Decision:** `dashi-release` ships `/usr/share/dnf5/repos.d/terra.repo`
+  (Terra's own settings, the key at `/usr/share/dashi/pki/`) and Terra's two
+  public keys. Where `terra-release` is installed its file replaces ours by
+  name; nothing conflicts on upgrade. `Recommends: terra-release` stays.
+  The Sources page turns Terra off and on (`pkcon repo-disable terra`, an
+  override in `/etc/dnf/repos.override.d`).
+- **Licences:** a repository is not a dependency. Dashi ships two public
+  keys (MIT) and a configuration file; nothing Terra hosts is in Dashi.
+  Terra carries software under many licences, some not open (1Password,
+  Android Studio), and its own page says some of its packages may conflict
+  with RPM Fusion. What a person installs from it keeps its own terms; the
+  package page says "Built by Terra… Fedora didn't review them". Dashi stays
+  MIT.
+- **Undo:** delete the vendor file and keys from `spin/dashi-release`.
+
 ### D340. Launcher views are a tree the launcher draws; version 6 of the channel is theirs
 
 - **Date:** 2026-11-16. `v09/launcher-ext` (store-v2 spec § 4, slice 2;
@@ -5429,3 +5568,67 @@ short words, as the rulebook is written.
   `>=0.9`. Every applet in the catalog says `>=0.4` or `>=0.5` and still
   runs; one that said `^0.5` would not (none does).
 - **Undo:** `SDK_VERSION` in `packages/applet/src/package.ts`.
+
+### D330. A wheel user installs and removes packages without a password; the Store's sheet is the ask
+
+- **Date:** 2026-11-16. `v09/store`, found in the VM pass.
+- **Found:** Fedora 44's PackageKit ships
+  `/usr/share/polkit-1/rules.d/org.freedesktop.packagekit.rules`: an active,
+  local member of `wheel` installs, removes and updates packages with no
+  password (`package-install`, `package-remove`, `system-update`). Changing
+  a repository (`system-sources-configure`) still asks. The design assumed a
+  password for every new package and removal ("hole 2", untested then).
+- **Decision:** keep Fedora's rule. Installing system software is critical
+  (D260), and the person is asked every time on the Store's own Get sheet
+  (and an agent's install on the confirm sheet); the sheet no longer
+  promises a password, it says the package isn't sandboxed and is installed
+  for everyone. Someone not in `wheel` still gets polkit's password sheet.
+- **Owner's call, open:** a Dashi polkit rule could ask for the password
+  again on installs and removals (auth_admin_keep), as the design drew.
+- **Undo:** the words in `apps/software/lib/source-words.ts` (`packageAsk`),
+  `agents/desktop/software-catalog.ts` (`packageDetail`).
+
+### D331. `dnf copr enable` asks for Fedora's chroot on Dashi
+
+- **Date:** 2026-11-16. `v09/store`, found in the VM pass.
+- **Found:** dnf5's COPR plugin names the chroot from os-release's `ID`,
+  which is `dashi`, so `dnf copr enable atim/lazygit` failed: "Chroot not
+  found in the given Copr project (dashi-44-x86_64)". The owner's way to add
+  a COPR (by hand in Terminal) didn't work on Dashi at all.
+- **Decision:** `dashi-release` ships `/etc/dnf/plugins/copr.d/dashi.conf`
+  with `[main] distribution = fedora` (the plugin reads it; tried in the VM:
+  the chroot becomes `fedora-44-x86_64`). `%config(noreplace)`.
+- **Undo:** delete that file from `spin/dashi-release`.
+
+### D332. A source with no metadata yet is fetched once; an install PackageKit can't place is tried again
+
+- **Date:** 2026-11-16. `v09/store`, found in the VM pass.
+- **Found:** a COPR enabled in Terminal has nothing in dnf's cache until
+  something refreshes, so the Store didn't list its packages; and PackageKit
+  keeps its own copy of the metadata, so an install from it failed at once.
+  The Store also read pkcon's "Waiting for authentication" status line as
+  "the password was not given" and showed nothing.
+- **Decision:** the catalog's network round runs `pkcon refresh` once a
+  session when a repository that is on has no packages in the cache, then
+  reads again; an install that fails is tried once more after `pkcon
+  refresh`. PackageKit lets an active session refresh without a password.
+  Only "Failed to obtain authentication", "Not authorized" and the like
+  count as a no.
+- **Undo:** `emptyRepos` and `refreshMetadata` in `shared/software/catalog.ts`,
+  `install` in `shared/software/packages.ts`.
+
+### D333. Installed lists the package apps the person added, not the image's
+
+- **Date:** 2026-11-16. `v09/store`, found in the VM pass (flows/store hole 22).
+- **Found:** every installed RPM with a desktop file showed up, the image's
+  own helpers first (Anaconda, Geoclue, Fcitx's tools).
+- **Decision:** what the system's first transaction installed (the image's
+  or the installer's, `dnf5 history info 1 --json`, 0.04 s) came with the
+  computer and isn't listed; anything installed later is. (A first try,
+  "installed an hour after the oldest package", failed in the VM: an update
+  resets a package's install time.) Tools are not listed (dnf can't tell a
+  person's from the system's), and a filter that matches nothing says so.
+- **Cost:** an app from the image that the person removed and installed
+  again is listed as theirs, which it now is.
+- **Undo:** `cameWithSystem` in `shared/software/lib/catalog-merge.ts` and
+  `apps/software/lib/installed-packages.tsx`.

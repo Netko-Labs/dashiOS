@@ -65,6 +65,8 @@ export function launcherElement(view: LauncherView, { presented, scope, entries,
   const world = late.peek("launcherWorld");
   const host = late.peek("launcherHost");
   const clipboard = late.peek("clipboard");
+  const store = late.peek("storeScope");
+  const scopes = [...(clipboard?.scopes ?? []), ...(store ? [store] : [])];
   const ask = late.peek("askAgents");
   const assistant = late.peek("assistant");
   const persona = late.peek("pill")?.persona.getSnapshot();
@@ -96,7 +98,7 @@ export function launcherElement(view: LauncherView, { presented, scope, entries,
       ranking={view.rankingMemory}
       {...(host ? { host } : {})}
       presented={presented}
-      {...(clipboard ? { scopes: clipboard.scopes } : {})}
+      {...(scopes.length > 0 ? { scopes } : {})}
       scope={scope}
       languages={view.languages}
       typeAhead={keyboard.typeAhead}

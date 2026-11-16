@@ -9,46 +9,17 @@
  * person's password on screen.
  */
 
-import { type AppDetails, CatalogError, cacheRoot, Flathub, formatBytes, JsonCache, Software, standIn, tidy } from "../../shared/software/index.ts";
+import { type AppDetails, formatBytes, tidy } from "../../shared/software/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import type { Call } from "../tools/index.ts";
+import { backend, bounded, busy, installedIds, person, type SoftwareBackend, unavailable } from "./software-backend.ts";
 
-/** What the tools need of the catalog and the package tools; tests give fakes. */
-export interface SoftwareBackend {
-  catalog: Pick<Flathub, "search" | "details">;
-  manager: Pick<Software, "installed" | "flatpakUpdates" | "systemUpdates" | "install" | "updateFlatpak" | "updateSystem" | "needsRestart">;
-}
-
-let shared: SoftwareBackend | null = null;
-
-function backend(ctx: RunContext): SoftwareBackend {
-  shared ??= { catalog: new Flathub({ cache: new JsonCache(cacheRoot()) }), manager: new Software(standIn() ?? {}) };
-  return ctx.desktop.software ?? shared;
-}
-
-/** How long a request waits for the work itself; past it the agent is told to check back. */
-export const WORK_WAIT_MS = 10 * 60_000;
-
-let working = false;
-
-const unavailable = (error: unknown): ToolResult => {
-  if (error instanceof CatalogError) return toolError(error.message);
-  return toolError(error instanceof Error ? tidy(error.message, 300) : "Software could not do that.");
-};
-
-const installedIds = async (b: SoftwareBackend): Promise<Set<string>> => {
-  try {
-    return new Set((await b.manager.installed()).map((app) => app.id));
-  } catch {
-    return new Set();
-  }
-};
-
-const person = (value: string, max = 80): string => tidy(value, max);
+import { describeEntry, findOffer, flatpakId, installedPackages, parseOfferId, requestPackage, searchEverySource } from "./software-catalog.ts";
 
 export async function searchSoftware(call: Extract<Call, { name: "search_software" }>, ctx: RunContext): Promise<ToolResult> {
   ctx.status("Looking for apps");
   const b = backend(ctx);
+  if (b.index) return searchEverySource(b, call.query, call.limit);
   try {
     const [found, have] = await Promise.all([b.catalog.search(call.query, 1, call.limit), installedIds(b)]);
     return json({
@@ -70,8 +41,15 @@ export async function searchSoftware(call: Extract<Call, { name: "search_softwar
 export async function getSoftware(call: Extract<Call, { name: "get_software" }>, ctx: RunContext): Promise<ToolResult> {
   ctx.status("Reading an app's page");
   const b = backend(ctx);
+  const parsed = parseOfferId(call.app);
+  if (parsed?.kind === "rpm" && b.index) {
+    const found = await findOffer(b.index, parsed);
+    if (!found) return toolError("That package isn't in the sources that are on. Look it up again with search_software.");
+    const offers = [found.offer, ...found.entry.offers.filter((each) => each !== found.offer)];
+    return json({ ...describeEntry(found.sources, { ...found.entry, offers }), license: found.entry.license });
+  }
   try {
-    const [page, have] = await Promise.all([b.catalog.details(call.app), installedIds(b)]);
+    const [page, have] = await Promise.all([b.catalog.details(flatpakId(call.app)), installedIds(b)]);
     const app = page.value;
     return json({
       id: app.id,
@@ -87,6 +65,8 @@ export async function getSoftware(call: Extract<Call, { name: "get_software" }>,
       homepage: app.homepage,
       endOfLife: app.eol,
       installed: have.has(app.id),
+      source: "Flathub",
+      sandboxed: true,
     });
   } catch (error) {
     return unavailable(error);
@@ -96,8 +76,11 @@ export async function getSoftware(call: Extract<Call, { name: "get_software" }>,
 export async function listInstalledSoftware(ctx: RunContext): Promise<ToolResult> {
   ctx.status("Looking at the apps installed");
   try {
-    const apps = await backend(ctx).manager.installed();
+    const b = backend(ctx);
+    const apps = await b.manager.installed();
+    const packages = b.index ? await installedPackages(b.index).catch(() => []) : [];
     return json({
+      packages,
       apps: apps.map((app) => ({
         id: app.id,
         name: person(app.name),
@@ -124,7 +107,10 @@ export async function listSoftwareUpdates(ctx: RunContext): Promise<ToolResult> 
       apps.status === "fulfilled"
         ? apps.value.map((u) => ({ id: u.id, name: person(u.name), version: u.version, installation: u.installation, downloadSize: u.downloadSize }))
         : [],
-    system: system.status === "fulfilled" ? system.value.updates.slice(0, 100).map((u) => ({ package: u.name, version: u.version, kind: u.kind })) : [],
+    system:
+      system.status === "fulfilled"
+        ? system.value.updates.slice(0, 100).map((u) => ({ package: u.name, version: u.version, kind: u.kind, repository: u.repo }))
+        : [],
     restartLikelyNeeded: system.status === "fulfilled" ? system.value.restartCauses.length > 0 : false,
     ...(notes.length > 0 ? { notes } : {}),
   });
@@ -136,43 +122,32 @@ const reason = (error: unknown): string => (error instanceof Error ? tidy(error.
 export function installDetail(app: AppDetails): string {
   const who = app.developer === null ? "Developer unknown" : `By ${person(app.developer, 60)}${app.verified ? " (verified)" : " (not verified)"}`;
   const size = app.downloadSize !== null ? `, ${formatBytes(app.downloadSize)} to download` : "";
-  return `${who}${size}. It is installed for you only, from Flathub, and can be removed in Software.`;
-}
-
-/** Runs `work`, but answers after `WORK_WAIT_MS` that it carries on, so a long install does not hold the agent's call forever. */
-async function bounded<T>(work: Promise<T>): Promise<{ done: true; value: T } | { done: false }> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const late = new Promise<{ done: false }>((resolve) => {
-    timer = setTimeout(() => resolve({ done: false }), WORK_WAIT_MS);
-  });
-  try {
-    return await Promise.race([work.then((value) => ({ done: true as const, value })), late]);
-  } finally {
-    clearTimeout(timer);
-  }
+  return `${who}${size}. It is installed for you only, from Flathub, and can be removed in the Store.`;
 }
 
 export async function requestInstall(call: Extract<Call, { name: "request_software_install" }>, ctx: RunContext): Promise<ToolResult> {
   ctx.status("Looking up an app to install");
   const b = backend(ctx);
+  const parsed = parseOfferId(call.app);
+  if (parsed?.kind === "rpm") return requestPackage(b, parsed, ctx);
   let app: AppDetails;
   try {
-    app = (await b.catalog.details(call.app)).value;
+    app = (await b.catalog.details(flatpakId(call.app))).value;
   } catch (error) {
     return unavailable(error);
   }
   if ((await installedIds(b)).has(app.id)) return text(`“${person(app.name)}” is already installed.`);
-  if (working) return toolError("Software is already installing or updating something for the person; try again when that is done.");
+  if (busy.working) return toolError("Software is already installing or updating something for the person; try again when that is done.");
   const name = person(app.name, 60);
   const yes = await ctx.confirm({ summary: `install “${name}” (${app.id})`, detail: installDetail(app), action: "Install" });
   if (!yes) return toolError(`The person did not allow “${name}” to be installed. Don't ask again unless they agree.`);
-  working = true;
+  busy.working = true;
   ctx.status(`Installing ${name}`);
   const job = b.manager.install(app.id, (progress) =>
     ctx.status(progress.fraction === null ? `Installing ${name}` : `Installing ${name}, ${Math.round(progress.fraction * 100)}%`),
   );
   const finished = job.finally(() => {
-    working = false;
+    busy.working = false;
   });
   try {
     const result = await bounded(finished);
@@ -192,7 +167,7 @@ export async function requestUpdate(call: Extract<Call, { name: "request_softwar
     const chosen = call.target === "apps" ? waiting : waiting.filter((update) => update.id === (call.target as { app: string }).app);
     if (chosen.length === 0)
       return text(call.target === "apps" ? "No app updates are waiting." : "That app has no update waiting; list_software_updates shows what does.");
-    if (working) return toolError("Software is already installing or updating something for the person; try again when that is done.");
+    if (busy.working) return toolError("Software is already installing or updating something for the person; try again when that is done.");
     const names = chosen
       .slice(0, 4)
       .map((update) => `“${person(update.name, 40)}”`)
@@ -203,7 +178,7 @@ export async function requestUpdate(call: Extract<Call, { name: "request_softwar
       action: "Update",
     });
     if (!yes) return toolError("The person did not allow the update. Don't ask again unless they agree.");
-    working = true;
+    busy.working = true;
     const run = async (): Promise<string[]> => {
       const failures: string[] = [];
       const installations = [...new Set(chosen.map((update) => update.installation))];
@@ -215,7 +190,7 @@ export async function requestUpdate(call: Extract<Call, { name: "request_softwar
       }
       return failures;
     };
-    const result = await bounded(run().finally(() => (working = false)));
+    const result = await bounded(run().finally(() => (busy.working = false)));
     if (!result.done) return text("The person said yes and the updates are still going; list_software_updates shows what is left.");
     return result.value.length === 0
       ? text(`${chosen.length === 1 ? "The app is" : "The apps are"} updated.`)
@@ -228,7 +203,7 @@ export async function requestUpdate(call: Extract<Call, { name: "request_softwar
 async function updateSystem(b: SoftwareBackend, ctx: RunContext): Promise<ToolResult> {
   const { updates, restartCauses } = await b.manager.systemUpdates();
   if (updates.length === 0) return text("The system is up to date.");
-  if (working) return toolError("Software is already installing or updating something for the person; try again when that is done.");
+  if (busy.working) return toolError("Software is already installing or updating something for the person; try again when that is done.");
   const restart =
     restartCauses.length > 0
       ? ` A restart will be needed afterwards (${restartCauses
@@ -242,9 +217,9 @@ async function updateSystem(b: SoftwareBackend, ctx: RunContext): Promise<ToolRe
     action: "Update",
   });
   if (!yes) return toolError("The person did not allow the system update. Don't ask again unless they agree.");
-  working = true;
+  busy.working = true;
   ctx.status("Updating the system");
-  const result = await bounded(b.manager.updateSystem(() => {}).finally(() => (working = false)));
+  const result = await bounded(b.manager.updateSystem(() => {}).finally(() => (busy.working = false)));
   if (!result.done) return text("The person said yes and the system update is still going; list_software_updates shows what is left.");
   if (!result.value.ok) return toolError(`The system update did not finish: ${tidy(result.value.message, 300)}`);
   const needs = await b.manager.needsRestart();
