@@ -2,6 +2,7 @@
 
 import type { Timers } from "../shared/time/index.ts";
 import type { heldKeys, TalkKey } from "./keys.ts";
+import type { KeptTongue } from "./lib/fillers.ts";
 import type { VoiceService } from "./lib/service.ts";
 import type { ModelSet as WireModelSet, SpokenVoice as WireSpokenVoice } from "./lib/wire.ts";
 
@@ -77,6 +78,8 @@ export interface VoiceSettings {
   voice?: string;
   /** After Dashi speaks in an open conversation, the microphone opens for the reply; on unless false. */
   listenAgain?: boolean;
+  /** The model that hears (recognizers.ts): Parakeet unless `whisper` (decisions.md D200). */
+  recognizer?: string;
   /**
    * The voice for each other language Dashi speaks, by the language's code (`es: "ef_dora"`);
    * `false` is a language it does not speak. Unset: English and Spanish, by the voice's pairs (tongues.ts).
@@ -114,7 +117,7 @@ export type Trouble = { text: string; go?: ChipGo } | null;
 export interface VoiceDeps {
   service: VoiceService;
   /** Voice is on (settings.json), its key and voice, whether it listens again after it speaks, and what `speak` is sent (tongues.ts). */
-  prefs(): { on: boolean; key: TalkKey; voice: string | undefined; listenAgain?: boolean; speak?: SpeakExtras };
+  prefs(): { on: boolean; key: TalkKey; voice: string | undefined; listenAgain?: boolean; speak?: SpeakExtras; recognizer?: string | undefined };
   /** What stops Voice from being used now (models.ts, the service), or null. */
   trouble(): Trouble;
   /** The keys the compositor holds for the shell (`held-keys`). */
@@ -122,6 +125,8 @@ export interface VoiceDeps {
   asker: Asker;
   /** The session's locale, for a language only Whisper hears. */
   locale?: string | undefined;
+  /** The conversation's language, kept across fillers and short replies (lib/fillers.ts); unset, each ask's own. */
+  tongue?: KeptTongue | undefined;
   timers?: Timers;
   now?(): number;
   /** One line for the shell's log (an utterance, a failed ask). */

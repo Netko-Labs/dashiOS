@@ -8,31 +8,22 @@
  * of what was said.
  */
 
-import { CARD_ARM_MS, type KeyGesture, type PillAsk, type PillHub, type VoiceModeCommand, type VoiceModeState } from "../../shared/pill/index.ts";
+import { CARD_ARM_MS, type KeyGesture, type PillAsk, type VoiceModeCommand, type VoiceModeState } from "../../shared/pill/index.ts";
 import { realTimers, type Timers } from "../../shared/time/index.ts";
 import type { OpenCard, Reading } from "../types.ts";
 import { Hearing } from "./hearing.ts";
 import { cardContent, READING_CHARS } from "./model.ts";
 import { Questions } from "./questions.ts";
-import { cardId, type Task, type TaskSource, type VoiceSource } from "./sources.ts";
+import { cardId, type Task, type TaskSource, type VoiceModeDeps } from "./sources.ts";
 import { permissionsOf, voiceStateOf } from "./told.ts";
-import { doneLine, planSpoken, spokenYesNo } from "./words.ts";
-
-export interface VoiceModeDeps {
-  hub: PillHub;
-  voice: VoiceSource | null;
-  /** Null until the launcher's agents have started. */
-  tasks(): TaskSource | null;
-  /** The card that is open changed. */
-  onCard(card: OpenCard | null): void;
-  timers?: Timers;
-  now?(): number;
-}
+import { answersOnly, doneLine, planSpoken, spokenYesNo } from "./words.ts";
 
 /** How long "Done", "Stopped" and a notice of the capsule's own stay. */
 const STAYS_MS = 4000;
 /** How long an answer to read stays, unless it is closed or the person talks again. */
 const READING_STAYS_MS = 120_000;
+/** After a card gave up, a yes or no said this late is not a new ask. */
+const LATE_MS = 10_000;
 /** A spoken yes counts for the run that follows it at once. */
 const SAID_YES_MS = 2000;
 
@@ -60,6 +51,7 @@ export class VoiceMode {
       this.timers,
       () => this.now(),
       () => this.refresh(),
+      () => this.gaveUp(),
     );
     const { hub, voice } = deps;
     if (voice) {
@@ -95,6 +87,12 @@ export class VoiceMode {
       this.offs.push(source.subscribe(() => this.refresh()));
     }
     return source?.getSnapshot() ?? [];
+  }
+
+  /** A question went unanswered: the capsule says so, and a yes or no said a moment too late asks nothing. */
+  private gaveUp(): void {
+    this.deps.voice?.over?.(LATE_MS, answersOnly);
+    this.show({ phase: "notice", line: "No answer, so nothing was done.", until: this.now() + STAYS_MS }, STAYS_MS);
   }
 
   private show(state: VoiceModeState, ms: number | null): void {

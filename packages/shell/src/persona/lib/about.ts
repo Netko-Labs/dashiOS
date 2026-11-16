@@ -7,7 +7,7 @@
  * time, never silently, and never a secret's place (it is a text file).
  */
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 /** The most of the file that goes with a conversation. */
@@ -22,6 +22,7 @@ export const aboutPath = (env: Readonly<Record<string, string | undefined>> = pr
 export function readAbout(path: string = aboutPath()): string {
   try {
     const text = readFileSync(path, "utf8")
+      .replace(/^#.*$/gmu, "")
       .replace(/\p{Cc}+/gu, (run) => (run.includes("\n") ? "\n" : " "))
       .trim();
     return text.length > ABOUT_MAX ? text.slice(0, ABOUT_MAX) : text;
@@ -30,11 +31,23 @@ export function readAbout(path: string = aboutPath()): string {
   }
 }
 
-/** The file, made empty if it is not there yet, so it can be opened and written in. Its path. */
+/**
+ * The file's first line while it holds nothing else: what it is for. A line that starts with "#" is the file's own and
+ * is never read to the assistant or counted. It is there so the file is never empty: an empty file has no kind, and
+ * nothing opens it.
+ */
+export const ABOUT_HEAD =
+  "# What Dashi knows about you. Write one line for each thing: what to call you, names you use, how you like answers. Dashi adds a line only when you say “remember that…”. Change or delete anything.\n";
+
+/** The file, made with its first line if it is not there yet or is empty, so it can be opened and written in. Its path. */
 export function ensureAbout(path: string = aboutPath()): string {
-  if (!existsSync(path)) {
+  let empty = true;
+  try {
+    empty = readFileSync(path, "utf8").trim() === "";
+  } catch {}
+  if (empty) {
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
-    writeFileSync(path, "", { mode: 0o600 });
+    writeFileSync(path, ABOUT_HEAD, { mode: 0o600 });
   }
   return path;
 }

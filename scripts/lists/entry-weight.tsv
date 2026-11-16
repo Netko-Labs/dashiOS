@@ -264,6 +264,7 @@ packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/persona
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/power
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/privacy
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/region
+packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/rewrite
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/scroll-speed.ts
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/settings
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/settings-app
@@ -379,6 +380,7 @@ packages/shell/src/main.tsx	packages/shell/src/privacy
 packages/shell/src/main.tsx	packages/shell/src/recents.ts
 packages/shell/src/main.tsx	packages/shell/src/recorder
 packages/shell/src/main.tsx	packages/shell/src/region
+packages/shell/src/main.tsx	packages/shell/src/rewrite
 packages/shell/src/main.tsx	packages/shell/src/screen-capture
 packages/shell/src/main.tsx	packages/shell/src/screenshots
 packages/shell/src/main.tsx	packages/shell/src/scroll-speed.ts

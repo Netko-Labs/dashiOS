@@ -8,11 +8,12 @@
 
 import type { VoiceLink } from "./client.ts";
 import { type heldKeys, isTalkKeyId, talkKey } from "./keys.ts";
+import { KeptTongue } from "./lib/fillers.ts";
 import { voiceConnector } from "./lib/launch.ts";
 import { VoiceService } from "./lib/service.ts";
 import { watchFolder } from "./lib/watch-folder.ts";
 import { basicsHere, VoiceModels } from "./models.ts";
-import { speakExtras, tagOf, tongueOf } from "./tongues.ts";
+import { speakExtras, tagOf, tongueOf, tonguesOn } from "./tongues.ts";
 import type { Asker, ChipGo, Trouble, VoiceSettings } from "./types.ts";
 import { Voice } from "./voice.ts";
 
@@ -68,15 +69,20 @@ export function troubleOf(models: VoiceModels): Trouble {
 export function startVoice(options: VoiceOptions): VoiceParts {
   const service = new VoiceService(options.connect ?? voiceConnector());
   const models = new VoiceModels(service, watchFolder);
-  // The language of what the person last said, as the service told it: the conversation's.
-  let heard: string | undefined;
+  // The conversation's language: the last one the person's words told with confidence, among those turned on (lib/fillers.ts).
+  const tongue = new KeptTongue(() => {
+    const data = options.settings.getSnapshot().data;
+    const view = models.getSnapshot();
+    return tonguesOn(data.voice, view.voices, data.voice.voice ?? view.defaultVoice);
+  });
   const formats = (): string | undefined => options.settings.getSnapshot().data.region?.formats ?? options.locale;
   const prefs = () => {
     const data = options.settings.getSnapshot().data;
-    const { on, key, voice, listenAgain } = data.voice;
+    const { on, key, voice, listenAgain, recognizer } = data.voice;
     const view = models.getSnapshot();
+    const heard = tongue.language;
     const speak = speakExtras(data.voice, view.voices, voice ?? view.defaultVoice, { formats: formats(), heard, persona: data.persona?.language });
-    return { on: on === true, key: talkKey(isTalkKeyId(key) ? key : undefined), voice, listenAgain: listenAgain !== false, speak };
+    return { on: on === true, key: talkKey(isTalkKeyId(key) ? key : undefined), voice, listenAgain: listenAgain !== false, speak, recognizer };
   };
   const voice = new Voice({
     service,
@@ -90,6 +96,7 @@ export function startVoice(options: VoiceOptions): VoiceParts {
     hold: options.hold,
     asker: options.asker,
     locale: options.locale,
+    tongue,
     log: (line) => console.error(`dashi-shell: voice ${line}`),
   });
   // Warm while it is on and can be used, so the first hold answers at once (docs/voice.md).
@@ -100,8 +107,9 @@ export function startVoice(options: VoiceOptions): VoiceParts {
     warmed = usable;
   };
   const offs = [
+    // Every listen that ends by itself tells it too (the loop's own, a held key's, are told in voice.ts): telling twice is the same.
     service.on((event) => {
-      if (event.event === "heard" && event.language) heard = event.language;
+      if (event.event === "heard") tongue.tell(event.text, event.language);
     }),
     options.settings.subscribe(() => {
       voice.sync();

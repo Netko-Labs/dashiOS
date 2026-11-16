@@ -15,6 +15,12 @@ export function spokenYesNo(heard: string): boolean | null {
   return null;
 }
 
+/** Whether what was said only answers a yes-or-no card ("No.", "Yes, go ahead."): a few words that start with one. */
+export function answersOnly(heard: string): boolean {
+  const said = heard.trim();
+  return said.split(/\s+/).length <= 4 && (spokenYesNo(said) !== null || /^(?:yes|yeah|no|nope|s[ií]|ok|okay)(?![\p{L}\p{N}])/iu.test(said));
+}
+
 const sentence = (text: string): string => {
   const clean = text.replace(/\s+/g, " ").trim();
   return clean === "" || /[.!?…]$/.test(clean) ? clean : `${clean}.`;

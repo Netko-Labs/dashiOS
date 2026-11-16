@@ -9,7 +9,7 @@ import type { Assistant } from "../agents/index.ts";
 import type { Compositor } from "../compositor/index.ts";
 import { spokenContext } from "../persona/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
-import { launcherAsker, STOP, startVoice, type Talk, talks, type VoiceParts } from "../voice/index.ts";
+import { endedLine, launcherAsker, STOP, startVoice, type Talk, talks, type VoiceParts } from "../voice/index.ts";
 import { startAssistantPiece } from "./assistant.ts";
 import type { LateParts } from "./parts.ts";
 import type { Late, Services } from "./services.ts";
@@ -91,12 +91,22 @@ export function startTalking({ compositor, settingsStore, services, late }: Talk
   const parts = startVoice({
     settings: settingsStore,
     hold: (keys) => heldKeys.set("voice", keys),
-    asker: { ask: (words, signal, hears) => assistant.ask(words, signal, hears), talk: spokenTalk(assistant), prepare: () => assistant.prepare() },
+    // Dashi hears the person's words as dictation writes them ("d tree code" → "T3 Code"; D198); typed words are as typed.
+    // The conversation as voice sees it is open only while its last turn was spoken (decisions.md D261).
+    asker: {
+      ask: (words, signal, hears) => assistant.ask(late.peek("dictation")?.lexicon?.spell(words) ?? words, signal, hears),
+      talk: spokenTalk(assistant),
+      prepare: () => assistant.prepare(),
+    },
     go: (where) => {
       if (where === "launcher") openLauncher();
       else late.peek("settingsApp")?.open(where);
     },
     locale: process.env.LC_ALL || process.env.LC_MESSAGES || process.env.LANG,
+  });
+  // Every listen's end, the Dashi key's and dictation's: why, how much speech, and what heard it (D199).
+  const offEnded = parts.service.on((event) => {
+    if (event.event === "heard") console.error(`dashi-shell: voice ${endedLine(event)}`);
   });
   const stopHearing = compositor
     ? compositor.on((event) => {
@@ -117,6 +127,7 @@ export function startTalking({ compositor, settingsStore, services, late }: Talk
     else parts.voice.resumeSpeech();
   });
   services.add("voice", () => {
+    offEnded();
     stopHearing();
     offDictation?.();
     parts.close();

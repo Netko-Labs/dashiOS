@@ -21,18 +21,15 @@ impl Dashi {
         // An agent mid-drag on this seat, borrowed, lets go before the person's input lands.
         self.agent_yields_seat();
         self.note_input(deliberate);
-        // The person's own presses, against what gets them (session/origin.rs);
-        // a pointer press goes to what the pointer is over.
-        if deliberate {
-            let focus = match &event {
-                InputEvent::Keyboard { .. } => {
-                    self.seat.get_keyboard().and_then(|k| k.current_focus())
-                }
-                _ => self.seat.get_pointer().and_then(|p| {
-                    let at = p.current_location();
-                    self.surface_under(at).map(|(surface, _)| surface)
-                }),
-            };
+        // The person's own presses, against what gets them (session/origin.rs):
+        // a pointer press goes to what the pointer is over; a key is noted where
+        // it is given to what has the keyboard (keys/handler.rs), so a key the
+        // shell takes for itself is not a press in the window.
+        if deliberate && !matches!(event, InputEvent::Keyboard { .. }) {
+            let focus = self.seat.get_pointer().and_then(|p| {
+                let at = p.current_location();
+                self.surface_under(at).map(|(surface, _)| surface)
+            });
             self.note_person_press(focus);
         }
         match event {

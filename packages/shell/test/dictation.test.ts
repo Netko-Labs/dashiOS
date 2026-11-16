@@ -22,7 +22,8 @@ test("the key held is a listen; let go, the words are tidied and typed into the 
   expect(voice.calls).toEqual(["listen", "listen.stop"]);
   expect(typed).toEqual(["7:Hello there. "]);
   expect(state()).toMatchObject({ phase: "landed", typed: "Hello there.", heard: "Um, hello there.", line: "Typed. 1 filler out." });
-  expect(phases()).toEqual(["key-down", "opening", "listening", "listening", "tidying", "landed"]);
+  // Listening is told three times: the microphone opened, the profile was named, the first words came.
+  expect(phases()).toEqual(["key-down", "opening", "listening", "listening", "listening", "tidying", "landed"]);
   expect(hub.level.getSnapshot()).toBe(0);
 });
 

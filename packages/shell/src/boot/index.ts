@@ -7,6 +7,7 @@ export { startCapsule } from "./capsule.tsx";
 export { startArranging, startDesktops, startOverview } from "./desktop.ts";
 export { startDictating } from "./dictation.ts";
 export { startKeys } from "./keys.ts";
+export { knownNames } from "./known-names.ts";
 export { startLauncher } from "./launcher.tsx";
 export { startLook } from "./look.ts";
 export { startBarMenus, startMachine } from "./menus.tsx";

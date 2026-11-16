@@ -32,6 +32,13 @@ export class FakeVoice implements VoiceSource {
     this.chip.set(null);
   }
 
+  /** What `over` was last told: a card gave up. */
+  late: { ms: number; answers(text: string): boolean } | null = null;
+
+  over(ms: number, answers: (text: string) => boolean): void {
+    this.late = { ms, answers };
+  }
+
   ask(words: string, heard: (text: string) => void): () => void {
     this.said = words;
     this.heard = heard;

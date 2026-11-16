@@ -10,7 +10,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { asksRemember } from "../src/agents/assistant/lib/words.ts";
-import { ABOUT_MAX, aboutPath, ensureAbout, readAbout, rememberAbout } from "../src/persona/lib/about.ts";
+import { ABOUT_HEAD, ABOUT_MAX, aboutPath, ensureAbout, readAbout, rememberAbout } from "../src/persona/lib/about.ts";
 import { aboutWords } from "../src/settings-app/lib/panes/persona-about.tsx";
 import { fakeAssistant } from "./support/assistant.ts";
 
@@ -28,6 +28,15 @@ test("the file: made when first opened, a line added each time, read back cut to
   expect(aboutPath({ HOME: "/home/alexk" })).toBe("/home/alexk/.config/dashi/about-you.md");
   expect(readAbout(path)).toBe("");
   expect(ensureAbout(path)).toBe(path);
+  // Never empty (an empty file opens in nothing): its first line says what it is for, and is not read or counted.
+  expect(readFileSync(path, "utf8")).toBe(ABOUT_HEAD);
+  expect(readAbout(path)).toBe("");
+  expect(aboutWords(readAbout(path))).toBe("Nothing yet");
+  expect(rememberAbout("I like short answers", path)).toBe(true);
+  expect(readAbout(path)).toBe("- I like short answers");
+  writeFileSync(path, "");
+  ensureAbout(path);
+  expect(readFileSync(path, "utf8")).toBe(ABOUT_HEAD);
   writeFileSync(path, "Call me Pe.");
   expect(rememberAbout("  I go to Bodytech\non Mondays ", path)).toBe(true);
   expect(readFileSync(path, "utf8")).toBe("Call me Pe.\n- I go to Bodytech on Mondays\n");

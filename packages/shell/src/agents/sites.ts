@@ -156,6 +156,18 @@ export class SiteGrants {
   }
 }
 
+/** Every site the person allowed: ahead of time for every agent, or always for one (sites.json); [] when there is none. */
+export function allowedSites(path: string = join(stateDir(), "sites.json")): string[] {
+  let read: unknown = null;
+  try {
+    read = JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    return [];
+  }
+  const agents = [...parseSiteGrants(read).values()].flatMap((sites) => [...sites.keys()]);
+  return [...new Set([...parsePersonSites(read).keys(), ...agents])];
+}
+
 export type SiteAnswer = "once" | "always" | "deny";
 
 /**

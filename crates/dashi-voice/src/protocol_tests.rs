@@ -27,13 +27,14 @@ fn every_method_parses_with_and_without_params() {
 fn params_are_read_strictly() {
     assert_eq!(
         request(
-            r#"{"id":2,"method":"listen","params":{"language":"es","until":"silence","quiet_ms":900}}"#
+            r#"{"id":2,"method":"listen","params":{"language":"es","until":"silence","quiet_ms":900,"model":"whisper"}}"#
         ),
         Ok(Request::Listen(Listen {
             language: Some("es".into()),
             until: Until::Silence,
             quiet_ms: Some(900),
             partials: None,
+            model: Some("whisper".into()),
         }))
     );
     let unknown = request(r#"{"id":2,"method":"listen","params":{"lang":"es"}}"#).unwrap_err();
@@ -145,6 +146,7 @@ fn the_doc_names_every_method_and_event() {
     let events = [
         Event::State { state: State::Idle },
         Event::Level { level: 0.0 },
+        Event::Speech {},
         Event::Partial {
             text: String::new(),
         },
@@ -152,6 +154,8 @@ fn the_doc_names_every_method_and_event() {
             text: String::new(),
             speech_ms: 0,
             language: None,
+            ended: None,
+            model: None,
         },
         Event::Sentence {
             id: 0,

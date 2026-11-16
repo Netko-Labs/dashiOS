@@ -86,8 +86,12 @@ export function heldKeys(key: TalkKey | null): Array<{ name: string; code: numbe
   return key ? key.codes.map((code) => ({ name: code === KEY_F23 ? TALK_TAP : TALK, code })) : [];
 }
 
-/** After a tap of the Copilot key: a quiet this long ends the listen, and with nothing heard at all it gives up after this long. */
-export const TAP_QUIET_MS = 1500;
+/**
+ * After a tap of the Copilot key, and after Dashi speaks: a quiet this long ends the listen, and with nothing heard at all it
+ * gives up after this long. A turn of a conversation waits longer than a dictated sentence (1.2 s): people stop to think
+ * (D199).
+ */
+export const TAP_QUIET_MS = 1800;
 export const TAP_WAIT_MS = 8000;
 
 /** A press shorter than this is a tap: it stops Dashi if it was speaking, and otherwise says how to talk. */

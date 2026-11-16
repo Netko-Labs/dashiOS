@@ -55,6 +55,62 @@ function Close({ colours, onPress }: { colours: CapsuleColours; onPress(): void 
   );
 }
 
+/** The profile's name, small and soft; a press takes the next one for this window. */
+function Profile({ name, colours, send }: { name: string; colours: CapsuleColours; send(command: DictationCommand): void }) {
+  return (
+    <View
+      testID="capsule-profile"
+      onPress={() => send({ do: "profile" })}
+      accessibilityRole="button"
+      accessibilityLabel={`Profile: ${name}. Press for the next.`}
+      style={{ flexShrink: 0, height: CAPSULE.height, justifyContent: "center" }}
+    >
+      <Line color={colours.soft} size={CAPSULE.fontSize - 2}>
+        {name}
+      </Line>
+    </View>
+  );
+}
+
+/** An amber dot (something was not done), or the check. */
+const Amber = ({ colours }: { colours: CapsuleColours }) => (
+  <View style={{ flexShrink: 0, width: 7, height: 7, borderRadius: 3.5, backgroundColor: colours.amber }} />
+);
+
+type After = Extract<DictationState, { phase: "landed" | "told" | "offer" }>;
+
+/** After the words: what landed with Undo and Raw, what an instruction or an Undo did, an offer to learn a fix. */
+function AfterLine({ state, send, colours, chars }: { state: After; send(command: DictationCommand): void; colours: CapsuleColours; chars: number }) {
+  switch (state.phase) {
+    case "landed":
+      return (
+        <>
+          <Svg markup={CHECK} size={13} color={colours.ok} />
+          <Told line={state.line} colours={colours} chars={Math.max(12, chars - (state.undo ? 8 : 0) - (state.raw ? 7 : 0) - (state.profile?.length ?? 0))} />
+          {state.profile && <Profile name={state.profile} colours={colours} send={send} />}
+          {state.undo && <Button label="Undo" colours={colours} onPress={() => send({ do: "undo" })} />}
+          {state.raw && <Button label="Raw" colours={colours} onPress={() => send({ do: "raw" })} />}
+        </>
+      );
+    case "told":
+      return (
+        <>
+          {state.tone === "ok" ? <Svg markup={CHECK} size={13} color={colours.ok} /> : <Amber colours={colours} />}
+          <Told line={state.line} colours={colours} chars={Math.max(12, chars - (state.undo ? 8 : 0))} />
+          {state.undo && <Button label="Undo" colours={colours} onPress={() => send({ do: "undo" })} />}
+        </>
+      );
+    case "offer":
+      return (
+        <>
+          <Line color={colours.text}>{head(state.line, Math.max(16, chars - 14))}</Line>
+          <Button label="Always" primary colours={colours} onPress={() => send({ do: "learn" })} />
+          <Close colours={colours} onPress={() => send({ do: "dismiss" })} />
+        </>
+      );
+  }
+}
+
 export function DictationLine({
   state,
   send,
@@ -78,6 +134,7 @@ export function DictationLine({
           ) : (
             <Line color={colours.soft}>{head(state.hint ?? (state.handsFree ? "Hands-free" : "Listening"), chars)}</Line>
           )}
+          {state.profile && <Profile name={state.profile} colours={colours} send={send} />}
           {state.handsFree && <Separator color={colours.text} />}
           {state.handsFree && <Button label="Done" square colours={colours} onPress={() => send({ do: "finish" })} />}
         </>
@@ -87,23 +144,22 @@ export function DictationLine({
       return (
         <>
           <Dots level={null} color={colours.text} dim />
-          <Line bold color={colours.text}>
-            Tidying
-          </Line>
+          {state.said && (
+            <Line bold color={colours.text}>
+              Tidying
+            </Line>
+          )}
           {state.text !== "" && <Line color={colours.soft}>{tail(state.text, Math.max(8, chars - 10))}</Line>}
         </>
       );
     case "landed":
-      return (
-        <>
-          <Svg markup={CHECK} size={13} color={colours.ok} />
-          <Told line={state.line} colours={colours} chars={chars} />
-        </>
-      );
+    case "told":
+    case "offer":
+      return <AfterLine state={state} send={send} colours={colours} chars={chars} />;
     case "waiting":
       return (
         <>
-          <View style={{ flexShrink: 0, width: 7, height: 7, borderRadius: 3.5, backgroundColor: colours.amber }} />
+          <Amber colours={colours} />
           <Told line={state.line} colours={colours} chars={chars} />
           <Button label="Copy" primary colours={colours} onPress={() => send({ do: "copy" })} />
           <Close colours={colours} onPress={() => send({ do: "dismiss" })} />
@@ -112,7 +168,7 @@ export function DictationLine({
     case "notice":
       return (
         <>
-          <View style={{ flexShrink: 0, width: 7, height: 7, borderRadius: 3.5, backgroundColor: colours.amber }} />
+          <Amber colours={colours} />
           <Line bold color={colours.text}>
             {head(state.line, chars)}
           </Line>

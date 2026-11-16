@@ -6,10 +6,11 @@
  */
 
 import { DBusConnection, unwrap, variant } from "../../shared/dbus/index.ts";
-import { type A11yNode, documents, limits, type Rect } from "./tree.ts";
+import { type A11yNode, type CaretText, documents, limits, type Rect } from "./tree.ts";
 
 const PROPERTIES = "org.freedesktop.DBus.Properties";
 const ACCESSIBLE = "org.a11y.atspi.Accessible";
+const TEXT = "org.a11y.atspi.Text";
 /** Each call's budget: a hung app must not hold an agent's screenshot. */
 const CALL_MS = 300;
 /** ATSPI_COORD_TYPE_WINDOW. */
@@ -77,6 +78,22 @@ class Node implements A11yNode {
   /** Its attributes, asked only for the asking's sake (see Atspi.wake). */
   async attributes(): Promise<void> {
     await this.call(ACCESSIBLE, "GetAttributes");
+  }
+
+  async caretText(span: number): Promise<CaretText | null> {
+    const property = async (name: string): Promise<number | null> => {
+      const value = unwrap(await this.call(PROPERTIES, "Get", "ss", [TEXT, name]));
+      return typeof value === "number" ? value : null;
+    };
+    const [caret, count] = await Promise.all([property("CaretOffset"), property("CharacterCount")]);
+    if (caret === null || count === null || caret < 0 || caret > count) return null;
+    const range = async (from: number, to: number): Promise<string | null> => {
+      if (to <= from) return "";
+      const text = await this.call(TEXT, "GetText", "ii", [from, to]);
+      return typeof text === "string" ? text : null;
+    };
+    const [before, after] = await Promise.all([range(Math.max(0, caret - span), caret), range(caret, Math.min(count, caret + span))]);
+    return before === null || after === null ? null : { before, after };
   }
 
   async url(): Promise<string | null> {

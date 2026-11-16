@@ -134,6 +134,8 @@ function started() {
       checked.push(front.window);
       return null;
     },
+    field: async () => null,
+    sendKeys: async () => {},
     pressed: async () => null,
     typeText: async (_window, text) => void did.push(`type:${text}`),
     paste: async () => false,

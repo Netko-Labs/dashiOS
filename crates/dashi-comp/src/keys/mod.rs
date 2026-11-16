@@ -10,6 +10,7 @@ mod replay;
 mod snippets;
 mod super_click;
 mod super_key;
+mod type_plan;
 mod type_text;
 
 pub(crate) use handler::Keys;

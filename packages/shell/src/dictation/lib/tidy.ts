@@ -10,7 +10,9 @@ import type { TidyChange } from "../../shared/pill/index.ts";
 import { keepsMeaning } from "./tidy-check.ts";
 import { changeMind } from "./tidy-mind.ts";
 import { ends, render, settle, type Token, tokens } from "./tidy-tokens.ts";
-import { FILLERS, SET_OFF_FILLERS, SPOKEN, type Spoken } from "./tidy-words.ts";
+import { AFTER_FILLER_LIKE, AFTER_PLAIN_NO, BEFORE_FILLER_LIKE, FILLERS, SET_OFF_FILLERS, SPOKEN, type Spoken } from "./tidy-words.ts";
+
+const PLAIN_NO = new Set(AFTER_PLAIN_NO.split("|"));
 
 export interface Tidied {
   typed: string;
@@ -62,15 +64,45 @@ function punctuate(list: readonly Token[]): { tokens: Token[]; count: number } {
   return { tokens: out, count };
 }
 
+/** The word before `at`, looking past sounds that are never words ("the uh like describing"). */
+function wordBefore(list: readonly Token[], at: number): Token | undefined {
+  let before = at - 1;
+  while (list[before]?.word && FILLERS.has(lower(list[before]))) before--;
+  return list[before];
+}
+
+/** "like" as a filler by its place alone (tidy-words.ts says where). */
+function fillerLike(list: readonly Token[], at: number): boolean {
+  if (lower(list[at]) !== "like") return false;
+  const before = wordBefore(list, at);
+  const after = list[at + 1];
+  if (!before?.word || !after?.word) return false;
+  // "like like": the first is the filler.
+  if (lower(after) === "like") return true;
+  return BEFORE_FILLER_LIKE.has(lower(before)) && (AFTER_FILLER_LIKE.has(lower(after)) || /ing$/.test(lower(after)));
+}
+
+/** Set off: commas on both sides, or a sentence's start before a comma. */
+function setOff(list: readonly Token[], at: number, length: number): boolean {
+  const before = list[at - 1];
+  const after = list[at + length];
+  if (!isComma(after)) return false;
+  return isComma(before) || before === undefined || ends(before);
+}
+
 /** How many tokens a filler takes at `at`, or 0. */
 function fillerAt(list: readonly Token[], at: number): number {
   const token = list[at];
   if (!token?.word) return 0;
   if (FILLERS.has(lower(token))) return 1;
   for (const words of SET_OFF_FILLERS) {
-    if (wordsAt(list, at, words) && isComma(list[at - 1]) && isComma(list[at + words.length])) return words.length;
+    if (!wordsAt(list, at, words) || !setOff(list, at, words.length)) continue;
+    // "o sea, no…" takes back what came before it: it is a change of mind, the model's to carry out, not a filler.
+    const [next, then] = list.slice(at + words.length).filter((token) => token.word);
+    if (words[0] === "o" && lower(next) === "no" && !PLAIN_NO.has(lower(then))) continue;
+    return words.length;
   }
-  return 0;
+  return fillerLike(list, at) ? 1 : 0;
 }
 
 /** Fillers go, each with the comma or the full stop that was only theirs; how many. */
