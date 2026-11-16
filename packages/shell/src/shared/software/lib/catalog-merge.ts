@@ -23,8 +23,8 @@ export interface MergeInput {
   rpmApps: RpmApp[];
   /** Installed RPMs: name to the repository dnf says it came from. */
   installedRpms: ReadonlyMap<string, string>;
-  /** When each installed RPM was installed (Unix seconds). */
-  installedAt?: ReadonlyMap<string, number>;
+  /** The packages the system's first transaction installed (the image's). */
+  imagePackages?: ReadonlySet<string>;
   installedFlatpaks: ReadonlySet<string>;
 }
 
@@ -80,7 +80,7 @@ function addFlathub(build: Builder, apps: readonly AppStreamApp[], installed: Re
           arch: null,
           verified: app.verified,
           installed: installed.has(app.flatpak),
-          installedAt: null,
+          cameWithSystem: false,
         },
       ],
     });
@@ -107,7 +107,7 @@ function rpmOffers(name: string, input: MergeInput, byName: ReadonlyMap<string, 
       arch: pkg.arch,
       verified: false,
       installed,
-      installedAt: input.installedAt?.get(name) ?? null,
+      cameWithSystem: installed && (input.imagePackages?.has(name) ?? false),
     });
   }
   return [...offers.values()];

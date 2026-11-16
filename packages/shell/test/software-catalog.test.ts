@@ -3,7 +3,7 @@ import { flathubEnabled } from "../src/shared/software/catalog.ts";
 import { parseAppStream, plain } from "../src/shared/software/lib/appstream.ts";
 import { type MergeInput, mergeCatalog, nameFromPackage } from "../src/shared/software/lib/catalog-merge.ts";
 import { searchCatalog } from "../src/shared/software/lib/catalog-search.ts";
-import { FIELD, parseApps, parseInstalled, parsePackages, parseRepoList, RECORD } from "../src/shared/software/lib/rpm-query.ts";
+import { FIELD, parseApps, parseInstalled, parsePackages, parseRepoList, parseTransactionNames, RECORD } from "../src/shared/software/lib/rpm-query.ts";
 import { COPR_NOTE, coprName, type Repo, sourceOfRepo, sourceRank, sourcesFrom } from "../src/shared/software/sources.ts";
 
 const REPOS: Repo[] = [
@@ -132,6 +132,9 @@ test("dnf's output is read strictly: other arches, side packages and bad names a
       ]),
     ).at,
   ).toEqual(new Map([["htop", 1763300000]]));
+  expect([
+    ...parseTransactionNames('[{"nevra":"firefox-0:160.0-1.fc44.x86_64"},{"nevra":"python3-pip-0:25.1-2.fc44.noarch"},{"nevra":"x y-0:1-1.x"}]'),
+  ]).toEqual(["firefox", "python3-pip"]);
   expect(parseRepoList('[{"id":"fedora","name":"Fedora","is_enabled":true},{"id":"bad id","is_enabled":true},{"id":"x"}]')).toEqual([
     { id: "fedora", name: "Fedora", enabled: true },
   ]);

@@ -136,3 +136,16 @@ export function parseRepoList(output: string): Repo[] {
   }
   return repos;
 }
+
+/** The system's first transaction: what the image (or the installer) put on the computer. */
+export const firstTransactionCommand = (): string[] => ["dnf5", "history", "info", "1", "--json"];
+
+/** The package names in a transaction's JSON (`"nevra":"firefox-0:160.0-1.fc44.x86_64"` → `firefox`); a bad entry is skipped. */
+export function parseTransactionNames(output: string): Set<string> {
+  const names = new Set<string>();
+  for (const match of output.matchAll(/"nevra"\s*:\s*"([^"]{1,300})"/g)) {
+    const name = (match[1] ?? "").replace(/-\d+:[^-]+-[^-]+$/, "");
+    if (NAME.test(name)) names.add(name);
+  }
+  return names;
+}

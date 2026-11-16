@@ -3,13 +3,10 @@
  * Fedora, Terra, a COPR or Dashi, each with its source, Open and Remove….
  * Dashi's own parts are listed apart and can't be removed here. Command-line
  * tools aren't listed: dnf can't tell the ones the person added from the
- * thousands the system came with. An app counts as added when it was
- * installed more than an hour after the system itself (the oldest package);
- * what came with the computer (the image's helpers, Firefox) isn't listed.
+ * thousands the system came with. What the system's first transaction
+ * installed (the image: its helpers, Firefox) came with the computer and
+ * isn't listed (dnf's history; D333).
  */
-
-/** After the system's own install, the image's packages are done: an hour's room. */
-const IMAGE_HOUR = 3600;
 
 import { Button, Group, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
@@ -58,7 +55,7 @@ export function InstalledPackages({ needle }: { needle: string }) {
     if (entry.kind !== "app") return [];
     const offer = entry.offers.find((each) => each.kind === "rpm" && each.installed);
     if (!offer) return [];
-    if (data.systemInstalledAt !== null && (offer.installedAt ?? 0) < data.systemInstalledAt + IMAGE_HOUR) return [];
+    if (offer.cameWithSystem) return [];
     if (needle !== "" && !`${entry.name} ${offer.ref}`.toLowerCase().includes(needle)) return [];
     const dashi = data.sources.find((source) => source.id === offer.source)?.dashi === true;
     return [{ entry, offer, dashi, label: offerLabel(data.sources, offer) }];

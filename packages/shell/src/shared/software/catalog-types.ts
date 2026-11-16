@@ -16,8 +16,8 @@ export interface Offer {
   /** Flathub's mark: its developer proved who publishes it. */
   verified: boolean;
   installed: boolean;
-  /** When it was installed (Unix seconds), for an installed package; null otherwise. */
-  installedAt: number | null;
+  /** Installed by the system's first transaction: it came with the computer (the image), the person didn't add it. */
+  cameWithSystem: boolean;
 }
 
 export interface CatalogEntry {
@@ -43,8 +43,6 @@ export interface CatalogData {
   builtAt: number;
   sources: Source[];
   entries: CatalogEntry[];
-  /** When the system itself was installed (the oldest package, Unix seconds): what came after, the person added. */
-  systemInstalledAt: number | null;
 }
 
 /** A search's answer: apps and tools apart, as the page shows them. */

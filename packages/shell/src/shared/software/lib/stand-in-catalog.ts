@@ -58,6 +58,8 @@ export async function standInPackages(command: readonly string[], options: RunOp
   const [program, verb, target = ""] = command[0] === "pkcon" ? [command[0], command[3] ?? command[1], command[4] ?? command[2]] : command;
   if (program === "dnf5" && verb === "repo") return { code: 0, output: JSON.stringify(REPOS.map((repo) => ({ ...repo, is_enabled: on(repo.id) }))) };
   if (program === "dnf5" && verb === "repoquery") return { code: 0, output: query(command) };
+  // The image's transaction: Dashi came with the computer.
+  if (program === "dnf5" && verb === "history") return { code: 0, output: '[{"packages":[{"nevra":"dashi-0:0.9.0-1.fc44.noarch","action":"Install"}]}]' };
   if (program !== "pkcon") return null;
   if (command[1] === "repo-enable" || command[1] === "repo-disable") {
     if (command[1] === "repo-enable") state.off.delete(command[2] ?? "");

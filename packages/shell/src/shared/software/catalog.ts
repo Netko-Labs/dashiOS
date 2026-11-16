@@ -19,7 +19,18 @@ import { appStreamFile, flathubFile, systemAppStream } from "./lib/catalog-files
 import { mergeCatalog } from "./lib/catalog-merge.ts";
 import { searchCatalog } from "./lib/catalog-search.ts";
 import { remotes } from "./lib/package-cmd.ts";
-import { appsCommand, installedCommand, packagesCommand, parseApps, parseInstalled, parsePackages, parseRepoList, repoListCommand } from "./lib/rpm-query.ts";
+import {
+  appsCommand,
+  firstTransactionCommand,
+  installedCommand,
+  packagesCommand,
+  parseApps,
+  parseInstalled,
+  parsePackages,
+  parseRepoList,
+  parseTransactionNames,
+  repoListCommand,
+} from "./lib/rpm-query.ts";
 import { run as defaultRun, type Runner } from "./lib/run.ts";
 import { cacheRoot } from "./paths.ts";
 import { type Repo, type Source, sourcesFrom } from "./sources.ts";
@@ -122,7 +133,7 @@ export class Catalog {
 
   private async build(network: boolean): Promise<CatalogData> {
     const settle = <T>(promise: Promise<T>, fallback: T): Promise<T> => promise.catch(() => fallback);
-    const [repoText, packagesText, appsText, installedText, remoteText, flatpaks, flathub] = await Promise.all([
+    const [repoText, packagesText, appsText, installedText, remoteText, flatpaks, flathub, imageText] = await Promise.all([
       settle(this.text(repoListCommand()), ""),
       settle(this.text(packagesCommand()), ""),
       settle(this.text(appsCommand()), ""),
@@ -130,6 +141,7 @@ export class Catalog {
       settle(this.text(remotes()), ""),
       settle(this.deps.installedFlatpaks?.() ?? Promise.resolve([]), []),
       settle(this.flathub(network), []),
+      settle(this.text(firstTransactionCommand()), ""),
     ]);
     const repos: Repo[] = parseRepoList(repoText);
     const installed = parseInstalled(installedText);
@@ -153,13 +165,12 @@ export class Catalog {
       packages,
       rpmApps: parseApps(appsText),
       installedRpms: installed.from,
-      installedAt: installed.at,
+      imagePackages: parseTransactionNames(imageText),
       installedFlatpaks: new Set(flatpaks),
     });
     // A network round that found nothing new keeps what the local read had.
     if (network && flathub.length === 0 && this.data !== null) return this.data;
-    const times = [...installed.at.values()];
-    this.data = { builtAt: this.now(), sources, entries, systemInstalledAt: times.length > 0 ? Math.min(...times) : null };
+    this.data = { builtAt: this.now(), sources, entries };
     for (const listener of [...this.listeners]) listener();
     return this.data;
   }

@@ -73,7 +73,13 @@ export function Installed({ query }: { query: string }) {
   const applets = useAppletState();
   const needle = query.trim().toLowerCase();
   const catalog = useCatalog();
-  const hasPackages = catalog?.entries.some((entry) => entry.kind === "app" && entry.offers.some((offer) => offer.kind === "rpm" && offer.installed)) ?? false;
+  const hasPackages =
+    catalog?.entries.some(
+      (entry) =>
+        entry.kind === "app" &&
+        (needle === "" || entry.name.toLowerCase().includes(needle)) &&
+        entry.offers.some((offer) => offer.kind === "rpm" && offer.installed && !offer.cameWithSystem),
+    ) ?? false;
   if (state.installed === null && state.hasFlatpak) return <Loading label="Looking at your apps…" />;
   const apps = [...(state.installed ?? [])]
     .filter((app) => needle === "" || app.name.toLowerCase().includes(needle) || app.id.toLowerCase().includes(needle))

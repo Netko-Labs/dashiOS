@@ -95,17 +95,14 @@ export function storeSections(deps: StoreScopeDeps, query: string): Section[] {
 export function storeScope(deps: StoreScopeDeps): LauncherScope {
   const entryOf = (rowId: string | undefined): StoreApplet | undefined =>
     rowId?.startsWith("addon:") ? deps.addOns.getSnapshot().entries?.find((each) => each.manifest.id === rowId.slice(6)) : undefined;
-  let asked = false;
   return {
     id: "store",
     address: STORE_ADDRESS,
     chip: { title: "Store", icon: { glyph: STORE_GLYPH } },
     placeholder: "Search add-ons",
+    // Read again each time the scope opens: the Store window may have got or removed one since.
     subscribe: (listener) => {
-      if (!asked) {
-        asked = true;
-        void deps.addOns.refresh().catch(() => {});
-      }
+      void deps.addOns.refresh().catch(() => {});
       return deps.addOns.subscribe(listener);
     },
     getSnapshot: deps.addOns.getSnapshot,

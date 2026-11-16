@@ -5622,9 +5622,13 @@ short words, as the rulebook is written.
 - **Date:** 2026-11-16. `v09/store`, found in the VM pass (flows/store hole 22).
 - **Found:** every installed RPM with a desktop file showed up, the image's
   own helpers first (Anaconda, Geoclue, Fcitx's tools).
-- **Decision:** an app counts as added when it was installed more than an
-  hour after the system's oldest package (`%{installtime}`). Tools are not
-  listed (dnf can't tell a person's from the system's).
-- **Cost:** an app the person installed in the first hour after installing
-  the system isn't listed; it is still found by search, installed.
-- **Undo:** `IMAGE_HOUR` in `apps/software/lib/installed-packages.tsx`.
+- **Decision:** what the system's first transaction installed (the image's
+  or the installer's, `dnf5 history info 1 --json`, 0.04 s) came with the
+  computer and isn't listed; anything installed later is. (A first try,
+  "installed an hour after the oldest package", failed in the VM: an update
+  resets a package's install time.) Tools are not listed (dnf can't tell a
+  person's from the system's), and a filter that matches nothing says so.
+- **Cost:** an app from the image that the person removed and installed
+  again is listed as theirs, which it now is.
+- **Undo:** `cameWithSystem` in `shared/software/lib/catalog-merge.ts` and
+  `apps/software/lib/installed-packages.tsx`.
