@@ -61,10 +61,13 @@ tar -xzf %{SOURCE1} -C dashi --strip-components=1 \
 # Nothing is fetched while it builds: no prebuilt web UI (its default), no
 # web UI at all, no OpenSSL (the server speaks to a Unix socket only), no
 # unified binary, no llama-connect. The tarball has no .git, so the build's
-# number and commit are given.
+# number and commit are given. The libraries are copied from the build tree,
+# so they are linked there with the path they are installed with ($ORIGIN),
+# never the builder's folder.
 cmake -S . -B build -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_RPATH='$ORIGIN' \
+  -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
   -DBUILD_SHARED_LIBS=ON \
   -DGGML_NATIVE=OFF \
   -DGGML_BACKEND_DL=ON \
