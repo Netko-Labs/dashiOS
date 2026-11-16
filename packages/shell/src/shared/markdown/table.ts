@@ -71,9 +71,10 @@ export interface Column {
   floor: number;
 }
 
-export function columnsOf(table: Table): Column[] {
+/** Each column's measure, of its words as drawn (`words`: a link is its words, not its address). */
+export function columnsOf(table: Table, words: (cell: string) => string = (cell) => cell): Column[] {
   return table.header.map((cell, column) => {
-    const cells = [cell, ...table.rows.map((row) => row[column] ?? "")];
+    const cells = [cell, ...table.rows.map((row) => row[column] ?? "")].map(words);
     const longest = Math.max(...cells.map((each) => each.length));
     const word = Math.max(...cells.flatMap((each) => each.split(/\s+/).map((part) => part.length)));
     return { weight: Math.min(40, Math.max(4, longest)), floor: Math.min(24, word) };

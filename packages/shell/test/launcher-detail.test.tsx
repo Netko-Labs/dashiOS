@@ -9,7 +9,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { parseTree, type ViewNode } from "@dashi/applet";
 import type { TreeSnapshot, TreeView } from "../src/actions/index.ts";
-import { markdownBlocks } from "../src/launcher/lib/detail-markdown.ts";
+import { inline, markdownBlocks } from "../src/launcher/lib/detail-markdown.ts";
 import { DetailScroll, detailScroll } from "../src/launcher/lib/detail-scroll.ts";
 import { treeScope } from "../src/launcher/lib/tree-scope.ts";
 import { leastWidth, parseTable } from "../src/shared/markdown/index.ts";
@@ -131,4 +131,18 @@ describe("a table wider than the column", () => {
       new RegExp(`"scrollX":true,"onLayout":true\\},"children":\\[\\{"type":"view","props":\\{"id":"\\d+","direction":"column","width":${least},`),
     );
   });
+});
+
+// The VM (renovatebot/renovate#47608): each column was as wide as its link's address, so four short columns ran off the side.
+test("a column is measured by its words as drawn, not by its links' addresses", () => {
+  const Renovate = [
+    "| Package | Change | [Age](https://docs.renovatebot.com/merge-confidence/) | [Confidence](https://docs.renovatebot.com/merge-confidence/) |",
+    "|---|---|---|---|",
+    "| [glob](https://github.com/isaacs/node-glob) | [`13.0.6` → `14.0.2`](https://renovatebot.com/diffs/npm/glob/13.0.6/14.0.2) | ![age](https://developer.mend.io/api/mc/badges/age/npm/glob/14.0.2?slim=true) | ![confidence](https://developer.mend.io/api/mc/badges/confidence/npm/glob/13.0.6/14.0.2?slim=true) |",
+  ];
+  const table = parseTable(Renovate);
+  const drawn = leastWidth(table, 12 * 0.58, 12, inline);
+  expect(drawn).toBeLessThan(leastWidth(table, 12 * 0.58, 12));
+  // Four columns of short words fit beside the facts (the column is about 376 wide at the launcher's 620).
+  expect(drawn).toBeLessThan(376);
 });

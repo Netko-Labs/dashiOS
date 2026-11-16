@@ -34,13 +34,13 @@ const columnFloor = (column: Column | undefined, letter: number, wholeWord: numb
   Math.ceil(Math.min(column?.floor ?? 0, wholeWord ?? Number.POSITIVE_INFINITY) * letter * BOLD) + 16;
 
 /** The least width `table` takes with its words wrapped (its borders too): wider than the room, a caller scrolls it sideways. */
-export function leastWidth(table: Table, letter: number, wholeWord?: number): number {
-  return columnsOf(table).reduce((sum, column) => sum + columnFloor(column, letter, wholeWord), 2);
+export function leastWidth(table: Table, letter: number, wholeWord?: number, words?: (cell: string) => string): number {
+  return columnsOf(table, words).reduce((sum, column) => sum + columnFloor(column, letter, wholeWord), 2);
 }
 
 export function TableView({ table, cellText, size, letter, onLayout, testID, wholeWord, width }: TableViewProps) {
   const colors = useColors();
-  const columns = columnsOf(table);
+  const columns = columnsOf(table, cellText);
   const row = (cells: readonly string[], index: number, header: boolean) => (
     <View
       key={index}

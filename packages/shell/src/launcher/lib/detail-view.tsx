@@ -53,7 +53,7 @@ function Quote({ block, m }: { block: Extract<MarkdownBlock, { kind: "quote" }>;
 function DetailTable({ table, m }: { table: Table; m: Measures }) {
   const [room, setRoom] = useState(0);
   const letter = m.detail * 0.58;
-  const width = Math.max(room, leastWidth(table, letter, DETAIL_WHOLE_WORD));
+  const width = Math.max(room, leastWidth(table, letter, DETAIL_WHOLE_WORD, inline));
   return (
     <View
       testID="launcher:detail:table-scroll"

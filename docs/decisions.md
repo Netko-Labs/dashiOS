@@ -5775,7 +5775,10 @@ short words, as the rulebook is written.
     drawn (80 before, when nothing scrolled).
   - A table is as wide as the column; one that is wider at its least (each
     column its longest word, at most 12 letters) is drawn at that width and
-    scrolls sideways, as GitHub's does. Its cells wrap either way.
+    scrolls sideways, as GitHub's does (the wheel across, or ⇧ and the
+    wheel). Its cells wrap either way. A column is measured by its words as
+    drawn (Notes' tables too): a link's address used to count, so
+    Renovate's four short columns ran off the side.
   - `---`, `***`, `___` are a hairline; under a paragraph `---` and `===`
     make it a heading, as Markdown says.
   - A quote has a 3 px bar; an alert has its word ("Note", "Tip",
