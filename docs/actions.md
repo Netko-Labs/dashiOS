@@ -285,6 +285,15 @@ compositor's `agent-input`), and never fight the person:
   question); a pause needs nothing from them, and it would flash amber every
   time they typed while an agent worked.
 
+- **Where typing will go.** `list_windows` says, for the focused window,
+  which kind of field has its keyboard (`keyboard`: "text field", "password
+  field", "no text field"), and a left `click` says it of its window a
+  moment after (150 ms): the app's last AT-SPI focus event, checked to still
+  hold the focus (`agents/desktop/keyboard.ts`). Never the field's name or
+  value. Nothing is said where accessibility can't tell (an app that sends
+  no focus events, an X11 app, no bus), and a second at most is spent
+  asking (decisions.md D211).
+
 ### Working on another Desktop
 
 `work_in_space {space}` (scope "act") lets an agent work on a Space that does

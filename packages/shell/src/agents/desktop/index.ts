@@ -10,6 +10,7 @@ export { fileTextCall } from "./file-text.ts";
 export { listFolder, openFile, searchFiles, trashFile } from "./files.ts";
 export { Hands, type Payload } from "./hands.ts";
 export { handsCall } from "./input.ts";
+export { type KeyboardAt, keyboardIn } from "./keyboard.ts";
 export {
   getAccount,
   getNetwork,

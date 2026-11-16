@@ -3961,3 +3961,18 @@ short words, as the rulebook is written.
 - **What it doesn't solve:** reading the board (the model reads the
   picture), drags, a frame's trusted click, timing (a game clock).
 - **Undo:** take `canvasTools` out of `TOOLS`.
+
+### D211. list_windows and click say what kind of field has the keyboard, from AT-SPI's focus, never the field's name
+
+- **Date:** 2026-11-16. `v09/reach`. "Can't tell which field has focus in a
+  native window before typing."
+- **Choice:** the focused window in `list_windows`, and a left click's
+  window 150 ms after, ask the accessibility bus Dashi's sign-in already
+  uses: the app's last focus event (`Atspi.focusedIn`), still focused
+  (`fieldAt`), as "text field", "password field" or "no text field".
+  Bounded: 600 ms to the bus, 300 to each answer. The element tree of a
+  window (`read_window`) is `v09/windowtree`'s; this is only the one fact
+  an agent needs before `type_text`.
+- **Cost:** an app that never sent a focus event since Dashi joined the
+  bus says nothing; Chromium-family apps publish focus only once woken.
+- **Undo:** drop `keyboardIn` from `listWindows` and the click.

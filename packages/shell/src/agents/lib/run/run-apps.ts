@@ -9,7 +9,7 @@ import type { Entry } from "../../../shared/app-entries/index.ts";
 import { kindOf } from "../../../shared/files/index.ts";
 import { spaceLabel } from "../../../spaces/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../../context.ts";
-import type { Opening } from "../../desktop/index.ts";
+import { keyboardIn, type Opening } from "../../desktop/index.ts";
 import { descendsFrom } from "../../peer.ts";
 import type { Handlers } from "./run-types.ts";
 
@@ -41,7 +41,13 @@ async function listWindows(ctx: RunContext): Promise<ToolResult> {
   ctx.status("Looking at your windows");
   // Hidden entries too: they only name windows (T3 Code's window answers to a NoDisplay one).
   const entries = loadEntries({ withHidden: true });
-  return json({ windows: (await ctx.compositor.windows()).map((window) => describe(window, entries, ctx.arrangement(window.id))) });
+  const windows = await ctx.compositor.windows();
+  // The window with the keyboard says what kind of field has it, where accessibility tells (agents/desktop/keyboard.ts).
+  const front = windows.find((window) => window.focused);
+  const keyboard = front ? await keyboardIn(front.pid, ctx) : null;
+  return json({
+    windows: windows.map((window) => ({ ...describe(window, entries, ctx.arrangement(window.id)), ...(window === front && keyboard ? { keyboard } : {}) })),
+  });
 }
 
 async function listApps(ctx: RunContext): Promise<ToolResult> {
