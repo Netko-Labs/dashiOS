@@ -11,7 +11,7 @@
 import { type Palette, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactElement, useMemo } from "react";
-import { type Table, TableView, TASK_BOX } from "../../../../src/shared/markdown/index.ts";
+import { TASK_BOX, type Table, TableView } from "../../../../src/shared/markdown/index.ts";
 import { type Para, type Projection, project } from "../project.ts";
 import { BODY_SIZE } from "../sizes.ts";
 

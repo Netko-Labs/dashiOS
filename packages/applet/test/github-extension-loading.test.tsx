@@ -47,7 +47,19 @@ test("the pull requests' view is taken while it loads and once it has loaded", a
   expect(loading).toBeDefined();
   expect(parseTree(JSON.parse(JSON.stringify(loading)))).not.toHaveProperty("error");
   expect(JSON.stringify(loading)).not.toContain("can't be shown");
-  answer([{ number: 47608, title: "build(deps): update dependency glob", user: { login: "renovate" }, draft: true, labels: [], head: { ref: "renovate/glob", sha: "abc" }, html_url: "https://github.com/x", body: "", updated_at: "2026-11-16T10:00:00Z" }]);
+  answer([
+    {
+      number: 47608,
+      title: "build(deps): update dependency glob",
+      user: { login: "renovate" },
+      draft: true,
+      labels: [],
+      head: { ref: "renovate/glob", sha: "abc" },
+      html_url: "https://github.com/x",
+      body: "",
+      updated_at: "2026-11-16T10:00:00Z",
+    },
+  ]);
   await flush(60);
   const patched = sent.some((message) => message.type === "patch");
   const last = trees().at(-1);

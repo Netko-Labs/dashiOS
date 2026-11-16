@@ -4,10 +4,20 @@
  * agents, the run to talk to).
  */
 
-import { openFile } from "../../file-manager.ts";
 import { placedOutputs } from "../../arrange/index.ts";
 import type { Compositor } from "../../compositor/index.ts";
-import { LAUNCHER, Launcher, type LauncherFiles, type LauncherPlace, launcherPlace, type LauncherPrefs, type PictureRect, type Presented, type RankingMemory } from "../../launcher/index.ts";
+import { openFile } from "../../file-manager.ts";
+import {
+  LAUNCHER,
+  Launcher,
+  type LauncherFiles,
+  type LauncherPlace,
+  type LauncherPrefs,
+  launcherPlace,
+  type PictureRect,
+  type Presented,
+  type RankingMemory,
+} from "../../launcher/index.ts";
 import type { OpenOverlay } from "../../overlay.tsx";
 import type { RecentApps } from "../../recents.ts";
 import { recentEntries } from "../../recents.ts";

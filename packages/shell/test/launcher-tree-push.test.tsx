@@ -1,8 +1,8 @@
 import { afterEach, expect, test } from "bun:test";
 import { parseTree, type ViewNode } from "@dashi/applet";
 import type { TreeActed, TreeSnapshot, TreeView } from "../src/actions/index.ts";
-import type { Row } from "../src/launcher/row-model.ts";
 import { treeScope } from "../src/launcher/lib/tree-scope.ts";
+import type { Row } from "../src/launcher/row-model.ts";
 import { mount, unmountLauncher } from "./launcher-harness.tsx";
 
 // Pass 42: ↩ on a repository ("Show Pull Requests") pushed its pull requests, but the field kept the
