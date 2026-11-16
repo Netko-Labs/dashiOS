@@ -10,9 +10,11 @@ import { chordWhen } from "../person-keys.ts";
 import type { LauncherProps } from "../props.ts";
 import type { Row } from "../row-model.ts";
 import { applyEdits } from "../type-ahead.ts";
-import { KEYS, spaceFlips } from "../verbs.ts";
+import { KEYS } from "../verbs.ts";
 import { aliasToKeep, mayKeep } from "./editing.ts";
 import type { ModeLists } from "./mode.ts";
+import { moveSelection } from "./selection.ts";
+import { spaceFlips } from "./space-flips.ts";
 import type { LauncherState, Search } from "./state.ts";
 import { talkSubmit, tries } from "./talk/talk-mode.ts";
 import type { Acts } from "./use-acts.ts";
@@ -163,6 +165,15 @@ function commander(parts: Parts, submit: (stay?: boolean) => void, drawnRows: ()
         return acts.agentKeys.tab();
       }
       case "arrow":
+        // In an extension's grid ← and → step through its cells; elsewhere they are the windows' pictures'.
+        if (search.sections.some((section) => section.grid !== undefined && section.rows.some((row) => row.id === search.selected)))
+          return s.setHeld((now) =>
+            moveSelection(
+              search.rows.map((row) => row.id),
+              now,
+              cmd.to === "right" ? "down" : "up",
+            ),
+          );
         search.pictures.arrow(cmd.to);
         return;
     }
@@ -208,6 +219,8 @@ function keyHandler({ props, s, search, acts }: Parts): (key: "Escape" | "ArrowU
     // A command from outside's own scope first, then a launcher scope's chip: back to the whole launcher,
     // or closed when it was opened for the scope.
     if (search.ext.escape()) return;
+    // A scope's own step back first: an extension's pushed view, a question in the field.
+    if (s.scoped?.scope.back?.()) return search.restart("");
     if (s.scoped) return s.scoped.alone ? onClose() : acts.enterScope(null);
     if (s.allApps && !query) return s.setAllApps(false);
     if (query) return search.restart("");

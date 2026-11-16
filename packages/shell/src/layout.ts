@@ -29,8 +29,23 @@ export interface Zone {
   frame: Rect;
 }
 
-/** How a window can be arranged: a half, a quarter, or Fill (the whole usable area, and the app is told it is maximized). */
-export const TILES = ["left", "right", "top", "bottom", "top-left", "top-right", "bottom-left", "bottom-right", "fill"] as const;
+/** How a window can be arranged: a half, a quarter, a third or two, or Fill (the whole usable area, and the app is told it is maximized). */
+export const TILES = [
+  "left",
+  "right",
+  "top",
+  "bottom",
+  "top-left",
+  "top-right",
+  "bottom-left",
+  "bottom-right",
+  "left-third",
+  "center-third",
+  "right-third",
+  "left-two-thirds",
+  "right-two-thirds",
+  "fill",
+] as const;
 export type Tile = (typeof TILES)[number];
 
 /** What can be asked of a window's arrangement: a tile, centered at its own size, or its own frame back. */
@@ -54,6 +69,9 @@ export function tileFrame(tile: Tile, usable: Rect): Rect {
   const halfHeight = Math.floor((inner.height - GAP) / 2);
   const right = inner.x + inner.width - halfWidth;
   const bottom = inner.y + inner.height - halfHeight;
+  // Thirds keep the same gap between them: three columns, and two of them joined with the gap between.
+  const third = Math.floor((inner.width - 2 * GAP) / 3);
+  const thirdX = (at: number): number => inner.x + at * (third + GAP);
   const rect = (x: number, y: number, width: number, height: number): Rect => ({ x, y, width, height });
   switch (tile) {
     case "left":
@@ -72,6 +90,16 @@ export function tileFrame(tile: Tile, usable: Rect): Rect {
       return rect(inner.x, bottom, halfWidth, halfHeight);
     case "bottom-right":
       return rect(right, bottom, halfWidth, halfHeight);
+    case "left-third":
+      return rect(thirdX(0), inner.y, third, inner.height);
+    case "center-third":
+      return rect(thirdX(1), inner.y, third, inner.height);
+    case "right-third":
+      return rect(inner.x + inner.width - third, inner.y, third, inner.height);
+    case "left-two-thirds":
+      return rect(inner.x, inner.y, 2 * third + GAP, inner.height);
+    case "right-two-thirds":
+      return rect(thirdX(1), inner.y, inner.x + inner.width - thirdX(1), inner.height);
   }
 }
 

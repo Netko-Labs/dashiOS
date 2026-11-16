@@ -16,6 +16,7 @@ import { type Extensions, openTarget, startExtensions } from "../extensions/inde
 import { openFile } from "../file-manager.ts";
 import { windowToFront } from "../front-window.ts";
 import { currentKeymap } from "../keymap/keymap-state.ts";
+import { QuicklinkSource } from "../launcher/quicklinks.ts";
 import { shellLauncherHost } from "../launcher/shell-host.ts";
 import { desktopWord, LauncherWorld } from "../launcher/world.ts";
 import type { Menus } from "../menus/index.ts";
@@ -166,9 +167,16 @@ function startClipboardHistory({ compositor, stores, guards, basics, settingsWin
   );
   const stopClipboardSource = actions.registry.add(clipboard.source);
   const stopDictationSource = actions.registry.add(dictationActions(late.get("pill")));
+  // The person's quicklinks, beside their aliases (launcher/quicklinks.ts).
+  const quicklinks = new QuicklinkSource({
+    store: launcher.prefs.quicklinks,
+    open: (target) => openTarget(target, { openUrl: openFile, openLink: (url) => actions.openLink(url) }),
+  });
+  const stopQuicklinks = actions.registry.add(quicklinks);
   services.add("clipboard", () => {
     stopClipboardSource();
     stopDictationSource();
+    stopQuicklinks();
     clipboard.close();
   });
   return clipboard;

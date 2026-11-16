@@ -5264,3 +5264,168 @@ short words, as the rulebook is written.
   took the same name, and `select` took it for the note already open (no new
   session, no focus on the title). `newNote` now forgets the note it left
   before opening the new one, so its title always takes the keyboard.
+
+### D340. Launcher views are a tree the launcher draws; version 6 of the channel is theirs
+
+- **Date:** 2026-11-16. `v09/launcher-ext` (store-v2 spec § 4, slice 2;
+  approved by the owner on 16 Nov).
+- **Dilemma:** the spec left the channel's number open ("6 if it lands with
+  widgets, else the one after"), and widgets are designed, not built.
+- **Decision:** version 6 is the launcher's views (`open`, `tree`, `patch`,
+  `push`, `pop`, `toast`, `close`, `event`, `prefs`:
+  `packages/applet/src/view/wire.ts`). Widgets' messages
+  (`dashi-0.9.0-design/widgets/api.md` § 12) become version 7 when they are
+  built. The pixel `view` mode stays as it was.
+- **Cost:** api.md's numbering moves by one.
+- **Undo:** renumber `VIEW_PROTOCOL` and the parsers' version gates.
+
+### D341. One element set with widgets: six shared elements, widgets' tones
+
+- **Date:** 2026-11-16. `v09/launcher-ext`.
+- **Decision:** `Text`, `Image`, `Tag`, `Label`, `Link` and `Action` are
+  named once (`packages/applet/src/view/elements.ts`, marked `shared`) and
+  used by both the launcher's views and, when they are built, widgets; the
+  launcher adds `List`, `Grid`, `Section`, `Item`, `Detail`, `Metadata`,
+  `TagList`, `Separator`, `ActionPanel`, `ActionSection`, `EmptyView`. A
+  node on the wire is `{t, i, p, c}` (props under `p`, so a prop can never
+  be taken for the type or the id). Tones are widgets' (`primary`,
+  `secondary`, `tertiary`, `accent`, `ume`, `broth`, `moss`), not the spec
+  example's `ok`/`critical`: they were named first and are Dashi's tokens.
+  Component names stay Raycast's (spec § 7.8). api.md § 4 and spec § 4.3
+  say the same.
+- **Cost:** widgets' lower-case `text`/`image` become `Text`/`Image`.
+- **Undo:** rename in `elements.ts` and the two documents.
+
+### D342. An extension's view is a launcher scope
+
+- **Date:** 2026-11-16. `v09/launcher-ext`.
+- **Decision:** the launcher enters an extension's view the way it enters
+  the clipboard history: a `LauncherScope` (`launcher/lib/tree-scope.ts`)
+  whose rows are the launcher's own (`ResultRow`, with tags at the right
+  end), whose verbs are the item's ActionPanel, ❖K in place. ↩ is the first
+  action and ❖↩ the second unless they name a key. Esc goes back a pushed
+  view first, then out. A grid is one window of cells (↑ ↓ a line, ← → a
+  cell, the arrows taken only while a cell is selected); a detail is one row
+  standing for it, the rest of the room its Markdown and a 200-wide facts
+  column. Scopes gained `back`, `leave`, `secure` and `notice`.
+- **Why:** no second list, selection, key map or action panel to keep in
+  step with the first; every rule the launcher's rows keep (TY-1, CO-6, the
+  one chrome row) holds for extensions for free.
+- **Not built:** list with detail beside it (L11, L15), the dropdown in the
+  field row, forms (slice 4).
+- **Undo:** `enterTree` in `lib/use-search.ts`.
+
+### D343. A launcher-only extension starts on use and stops a minute after; not kept warm
+
+- **Date:** 2026-11-16. `v09/launcher-ext`.
+- **Measured first** (spec § 6): Bun in bubblewrap, a bare script, reaches
+  its first message in 6 ms (median of 10, the laptop); the GitHub
+  extension's bundle (580 KB: React, the reconciler, the SDK) says hello in
+  17 ms; a 40-row tree rendered and sent in 18 ms. In the VM, from the
+  command chosen to its first tree, systemd and the runner included: cold
+  73 to 204 ms (nine opens), warm 11 to 24 ms
+  (`dashi-0.9.0-review/36-launcher-ext/README.md`).
+- **Decision:** `"shows": ["launcher"]` is not started at login
+  (`AppletLauncher.reconcile` skips it); opening one of its commands starts
+  it (`ensure`), the launcher draws the skeleton at once, "Loading…" after
+  300 ms, the tree when it comes; it is stopped 60 s after its last view
+  closed (`ExtensionViews`, `IDLE_STOP_MS`). Not kept warm when the launcher
+  opens: § 6 asked for that only past ~250 ms.
+- **Undo:** launch it in `reconcile` as before.
+
+### D344. Open, Copy, Paste and Set run in the shell; Paste copies where it can't paste yet
+
+- **Date:** 2026-11-16. `v09/launcher-ext`.
+- **Decision:** as spec § 4.2. Push runs in the extension (it holds the
+  element); the shell keeps the stack and pops on Esc. Paste into the window
+  that was in front is not wired to the clipboard's paster yet: it copies and
+  says "Copied: paste it with ❖V". `set` (new, beside the spec's) asks the
+  person for a preference in the launcher's field.
+- **Undo:** `TreeSession.builtIn`.
+
+### D345. Preferences are kept by Dashi; a secret in the Secret Service through `secret-tool`
+
+- **Date:** 2026-11-16. `v09/launcher-ext`.
+- **Decision:** `text` and `checkbox` in `applet-data/<id>.prefs.json`
+  (outside the sandbox: the extension can't write them), `secret` in the
+  Secret Service under `dashi-extension=<id> preference=<name>` with
+  libsecret's `secret-tool` (LGPL, a separate program: `Requires: libsecret`).
+  The extension gets its values with `open` and `prefs`, never reads them
+  from disk. Until accounts (slice 4), GitHub takes a pasted token this way
+  and says "Public data only: no GitHub account yet" without one.
+- **Undo:** `src/applets/preferences.ts`.
+
+### D346. `network:HOST` gives the network until the proxy exists, and the sheet says so
+
+- **Date:** 2026-11-16. `v09/launcher-ext`.
+- **Decision:** the permission parses and is shown as "Use the network: it
+  says it only talks to HOST"; the sandbox shares the network as for
+  `network`. Nothing asks at run time (D260). The proxy that holds it to
+  the host is slice 4's.
+- **Undo:** `usesNetwork` in `permissions.ts`.
+
+### D347. Dashi's own extensions are built from the shell's source at start
+
+- **Date:** 2026-11-16. `v09/launcher-ext`.
+- **Decision:** Emoji and GitHub live in `packages/shell/extensions/`, are
+  bundled with `Bun.build` (27 ms for both) into the person's applets folder
+  when their source changed, with `"firstParty": true` and their permissions
+  allowed in `install.json`, and run like anyone's: own unit, bubblewrap,
+  their manifest's permissions. Nothing generated is committed and nothing is
+  published.
+- **Cost:** removed in the Store, they come back at the next start.
+- **Undo:** `src/applets/first-party.ts`.
+
+### D348. A tree is one line: 64 KB, not the spec's 256 KB
+
+- **Date:** 2026-11-16. `v09/launcher-ext`.
+- **Decision:** the channel's lines and outbox are 64 KB and its rate 30
+  messages a second; a tree is one message. 2,000 nodes, 12 deep. A big list
+  filters itself or pages; Emoji sends at most 160 cells. The SDK sends at
+  most every 50 ms and refuses to send a tree the shell would refuse.
+- **Undo:** `TREE_LIMITS`, and the connection's limits for version 6.
+
+### D349. Quicklinks and fallbacks live beside the aliases; Search the Web is the first
+
+- **Date:** 2026-11-16. `v09/launcher-ext` (slice 3, L9, L13).
+- **Decision:** `launcher.quicklinks` and `launcher.fallbacks` in
+  settings.json. Unset, there is one quicklink, Search the Web
+  (DuckDuckGo), and it is the one fallback. Fallbacks come first in "Nothing
+  called …", then Search files and Find in Software, then Ask Dashi last.
+  ❖K on any action that takes the words alone offers Use When Nothing
+  Matches; order is the order they were added (no reordering UI yet).
+- **Undo:** `launcher/quicklinks.ts`, `quicklink-list.ts`.
+
+### D350. Thirds and two thirds are tiles; agents get them too
+
+- **Date:** 2026-11-16. `v09/launcher-ext` (L10).
+- **Decision:** `left-third`, `center-third`, `right-third`,
+  `left-two-thirds`, `right-two-thirds` join `TILES`, with the halves' gap;
+  every tile has a named launcher command (`dashi://window/tile/<tile>`) and
+  a glyph drawing the part it takes. The shell computes frames; the
+  compositor's `frame` needed nothing. `tile_window` takes them (its
+  tools/list golden changed). Displays and Desktops from the launcher (the
+  rest of L10) are not built.
+- **Undo:** `TILES`, `NAMED_TILES`.
+
+### D351. The clipboard's kinds are chosen in ❖K, not a dropdown in the field row
+
+- **Date:** 2026-11-16. `v09/launcher-ext` (L11).
+- **Decision:** Show Text, Links, Images or Files Only, and Show All
+  Kinds, in the history's ❖K; the head says "214 copies · Links only" and the
+  placeholder "Search links". A link is text that is one address. L11's
+  "All kinds" dropdown would be a second control in the field row, which
+  already holds the hints; ❖K is where the launcher's choices are. The
+  preview column is not built.
+- **Undo:** `kindVerbs` in `clipboard/lib/scope.ts`.
+
+### D352. The applet runtime is 0.9: an extension's `"dashi": ">=0.9"` is how it asks for views
+
+- **Date:** 2026-11-16. `v09/launcher-ext`. Found in the VM: Emoji and
+  GitHub (`"dashi": ">=0.9"`) were never run, because `SDK_VERSION`, what
+  `dashi` is checked against, was still 0.5.0.
+- **Decision:** `SDK_VERSION` is 0.9.0: the runtime grew (version 6 of the
+  channel, the launcher module), and an extension that needs it says
+  `>=0.9`. Every applet in the catalog says `>=0.4` or `>=0.5` and still
+  runs; one that said `^0.5` would not (none does).
+- **Undo:** `SDK_VERSION` in `packages/applet/src/package.ts`.

@@ -22,6 +22,8 @@ export interface PicturesInput {
   searching: boolean;
   /** Told what ← and → are for (launcher/keys.ts). */
   arrows?: (want: ArrowsWanted) => void;
+  /** The selection is in an extension's grid: ← and → move through its cells (lib/commands.ts). */
+  grid?: boolean;
   /** Where the pictures go, in the surface's pixels; empty clears them. */
   onPictures?: (rects: PictureRect[]) => void;
 }
@@ -44,7 +46,7 @@ export interface PicturesState {
   layout(window: number, bounds: Bounds): void;
 }
 
-export function usePictures({ selectedRow, windows, searching, arrows, onPictures }: PicturesInput): PicturesState {
+export function usePictures({ selectedRow, windows, searching, arrows, grid, onPictures }: PicturesInput): PicturesState {
   const [pictures, setPictures] = useState<Pictures | null>(null);
   const offset = useRef(0);
   const frames = useRef(new Map<number, Bounds>());
@@ -58,7 +60,7 @@ export function usePictures({ selectedRow, windows, searching, arrows, onPicture
   const first = open ? firstShown(open.at, offset.current, rowWins.length) : 0;
   offset.current = first;
   const shown = open ? rowWins.slice(first, first + STRIP.shown) : [];
-  const want = arrowsWanted(open, rowWins.length > 0);
+  const want = grid ? "browse" : arrowsWanted(open, rowWins.length > 0);
 
   useEffect(() => arrows?.(want), [arrows, want]);
   // However the launcher goes, ← and → are the field's again and the pictures are cleared.

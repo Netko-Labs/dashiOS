@@ -21,6 +21,7 @@ import { LineBuffer } from "../../shared/io/index.ts";
 import type { AppletCommands, CommandMessage } from "../commands.ts";
 import type { AppletControls } from "../controls.ts";
 import { type AppletPower, attachPower, mayChoosePower } from "../power.ts";
+import type { ExtensionViews } from "../views.ts";
 import type { AppletContext, Wire } from "./connection-context.ts";
 import { appletExtra, appletRows, chosen, sameManifest } from "./extra.ts";
 import { PopoverSlot } from "./popover-slot.ts";
@@ -52,6 +53,8 @@ export class AppletConnection implements ExtraActions {
   private commands: ReturnType<AppletCommands["attach"]> | null = null;
   /** Stops telling it the power mode; set from a version 4 hello with `power.mode` on. */
   private stopPower: (() => void) | null = null;
+  /** Its commands' views, from a version 6 hello on (views.ts). */
+  private views: ReturnType<ExtensionViews["attach"]> | null = null;
   /** Its controls in Control Center, from a version 5 hello with `controls` on. */
   private controls: ReturnType<AppletControls["attach"]> | null = null;
   private readonly extras: ExtrasStore;
@@ -116,6 +119,8 @@ export class AppletConnection implements ExtraActions {
     this.popover.close();
     this.commands?.detach();
     this.commands = null;
+    this.views?.detach();
+    this.views = null;
     this.stopPower?.();
     this.stopPower = null;
     this.controls?.detach();
@@ -183,6 +188,16 @@ export class AppletConnection implements ExtraActions {
         return this.command(message);
       case "power":
         return this.askPower(message.choice);
+      case "tree":
+      case "patch":
+      case "push":
+      case "pop":
+      case "toast":
+      case "close": {
+        if (!this.views) return this.refuse(`${message.type}: this applet has no views`);
+        const refused = this.views.receive(message);
+        return refused === null ? undefined : this.refuse(refused);
+      }
       case "control": {
         if (!this.controls) return this.refuse("control: declare it in applet.json’s controls, with the “controls” permission");
         const { type: _type, ...update } = message;
@@ -251,6 +266,9 @@ export class AppletConnection implements ExtraActions {
         grant: (on) => this.context.grants?.set(this.pid, on) ?? Promise.resolve(),
       });
     }
+    // Its commands' views (an installed one's as installed), drawn by the launcher from their trees.
+    if (this.version >= 6 && manifest.commands.length > 0 && this.context.views)
+      this.views = this.context.views.attach({ manifest: installed ?? manifest, send: (message) => this.send(message) });
     // The power mode now, and on every change, for an applet that asked for it (an installed one as installed).
     if (this.version >= 4 && this.context.power && mayChoosePower(installed ?? manifest)) {
       this.stopPower = attachPower(this.context.power, (state) => this.send({ type: "power", ...state }));

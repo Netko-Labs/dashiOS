@@ -32,6 +32,9 @@ the same change.
   this doc change together.
 - `docs/applets.md` - the applets channel (programs' items in the menu bar,
   beside tray icons); the protocol, its limits, and examples.
+- `docs/launcher-extensions.md` - launcher extensions: views the launcher
+  draws from a tree an extension sends (version 6 of the applets channel),
+  the element set shared with widgets, the SDK, when they run, permissions.
 - `docs/actions.md` - the action registry (every command at a `dashi://`
   address, shared by the launcher, the keymap, links, and agents' MCP tools),
   the address scheme, and the links socket.

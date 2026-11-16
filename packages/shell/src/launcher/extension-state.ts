@@ -7,7 +7,7 @@
  */
 
 import { isRecord } from "@dashi/shape";
-import type { ActionDef, Args, Outcome, PickRow, Shown } from "../actions/index.ts";
+import type { ActionDef, Args, Outcome, PickRow, Shown, TreeView } from "../actions/index.ts";
 import { realTimers, type SlowSnapshot, type SlowSource, SlowSources, type Timers } from "./budget.ts";
 import { outsideIcon } from "./lib/extension-rows.ts";
 import type { LauncherItem } from "./lib/items.ts";
@@ -79,6 +79,8 @@ export interface ExtensionsInput {
   select(id: string): void;
   /** Run an action for the person (the launcher's host), and take what it came to as any run's. */
   run(action: ActionDef, args: Args): void;
+  /** An extension's view (protocol 6): the launcher enters it as a scope of its own (lib/tree-scope.ts). */
+  enterTree(title: string, view: TreeView): void;
 }
 
 export type Scope =
@@ -162,6 +164,11 @@ export function showOutcome(held: Held, outcome: Outcome): boolean {
   }
   const address = held.last.current?.action?.address ?? "dashi://search/command";
   held.setResult(null);
+  if (show.kind === "tree") {
+    held.enter(null);
+    held.latest.current.enterTree(show.title, show.view);
+    return true;
+  }
   held.enter(show.kind === "pick" ? { kind: "pick", shown: show, from, icon, address } : { kind: "view", shown: show, from });
   held.latest.current.restart("");
   return true;

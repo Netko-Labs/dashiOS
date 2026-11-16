@@ -6,6 +6,8 @@
  * socket and its own Wayland surfaces.
  *
  *   network                   the network
+ *   network:HOST              the network, said as "it only talks to HOST": until Dashi's proxy can hold it to
+ *                             that address (store-v2 spec § 5, slice 4), the sandbox gives the network whole
  *   notifications             org.freedesktop.Notifications on the session bus
  *   hardware.sensors          dashi-hardware: read the machine (Describe, Get, the Changed signal)
  *   hardware.power            dashi-hardware: everyday knobs (mode, charge limit, boost, EPP)
@@ -33,6 +35,8 @@ export type HardwareScope = (typeof HARDWARE)[number];
 
 export type Permission =
   | { kind: "network" }
+  /** The network for one address (`network:api.github.com`): given as `network` until the proxy is built, and said so. */
+  | { kind: "host"; host: string }
   | { kind: "notifications" }
   | { kind: "hardware"; scope: HardwareScope }
   /** Dashi's own power mode, Automatic included (power.ts): the shell checks it; the sandbox gives nothing more. */
@@ -43,6 +47,9 @@ export type Permission =
   | { kind: "files"; folder: Folder; write: boolean };
 
 /** A well-known bus name: dots between parts of letters, digits, `_` and `-`. */
+/** A host name: letters, digits and `-` between dots, lowercase. */
+const HOST = /^(?=.{1,253}$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/;
+
 const BUS_NAME = /^[A-Za-z_][A-Za-z0-9_-]*(\.[A-Za-z_][A-Za-z0-9_-]*)+$/;
 
 /** Names an applet may not ask for by name: they are the system's to grant, or Dashi's own channels. */
@@ -52,6 +59,10 @@ export function parsePermission(value: unknown): Permission | { error: string } 
   if (typeof value !== "string") return { error: "a permission must be a string" };
   if (value === "network") return { kind: "network" };
   if (value === "notifications") return { kind: "notifications" };
+  if (value.startsWith("network:")) {
+    const host = value.slice("network:".length);
+    return HOST.test(host) ? { kind: "host", host } : { error: `“${host}” is not a host name` };
+  }
   if (value === POWER_MODE_PERMISSION) return { kind: "power-mode" };
   if (value === CONTROLS_PERMISSION) return { kind: "controls" };
   const hardware = /^hardware\.([a-z]+)$/.exec(value);
@@ -83,6 +94,8 @@ export function permissionName(permission: Permission): string {
     case "network":
     case "notifications":
       return permission.kind;
+    case "host":
+      return `network:${permission.host}`;
     case "hardware":
       return `hardware.${permission.scope}`;
     case "power-mode":
@@ -148,6 +161,8 @@ export function describePermission(permission: Permission): string {
   switch (permission.kind) {
     case "network":
       return REACH.network;
+    case "host":
+      return `${REACH.network}: it says it only talks to ${permission.host}`;
     case "notifications":
       return REACH.notifications;
     case "hardware":
@@ -170,11 +185,14 @@ export const asksForPassword = (permission: Permission): boolean =>
 /** What the sheet says it can't do: the reassuring line under the list. */
 export function cannotDo(permissions: readonly Permission[]): string | null {
   const files = permissions.some((each) => each.kind === "files");
-  const network = permissions.some((each) => each.kind === "network");
+  const network = permissions.some(usesNetwork);
   if (files && network) return null;
   if (!files && !network) return "It can't read your files or use the network.";
   return files ? "It can't use the network." : "It can't read your files.";
 }
+
+/** Whether it reaches the network: `network`, or `network:HOST` (the sandbox can't yet hold it to the host). */
+export const usesNetwork = (permission: Permission): boolean => permission.kind === "network" || permission.kind === "host";
 
 /** The consent sheet's list: plain words, in the manifest's order, each once. */
 export function consentLines(permissions: readonly Permission[]): string[] {

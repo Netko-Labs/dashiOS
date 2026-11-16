@@ -22,7 +22,8 @@ parsers are `@dashi/applet`'s (`packages/applet/src/protocol.ts`); the shell's
 `src/applets/` serves them. What follows first is version 1, which every
 applet speaks; version 2 (below) adds a manifest, popovers, and submenus;
 version 3, the launcher's commands; version 4, Dashi's power mode; version 5,
-tiles in Control Center.
+tiles in Control Center; version 6, views the launcher draws from a tree
+(docs/launcher-extensions.md).
 
 ### Applet → shell
 
@@ -328,6 +329,23 @@ welcome (a shell restart), and each declared icon is sent as its glyph once.
 Underneath, `AppletsClient.updateControl` and `onControls`; `drawsControls`
 says whether the shell speaks 5.
 
+## Version 6: views the launcher draws
+
+A hello with `"protocol":6` speaks version 6. It adds commands whose mode is
+`list`, `grid` or `detail`: the shell sends `open` (with the extension's
+preferences), the extension sends its view as a tree of data (`tree`, then
+`patch`, `push`, `pop`, `toast`, `close`), and the launcher draws it in its
+own rows and keys; the shell sends back `event`s by node id and `prefs`
+when the person changes one. Open, Copy, Paste and Set run in the shell. The
+elements, the wire, the limits, when such an extension runs (started on use,
+stopped a minute after) and the SDK (`@dashi/applet/launcher`) are in
+docs/launcher-extensions.md; the parsers are `packages/applet/src/view/`,
+the shell's side `src/applets/views.ts` and `src/launcher/lib/tree-scope.ts`.
+
+A manifest may also say `shows` (`menu-bar`, `launcher`, `widgets`: its
+shelves in the store; `["launcher"]` alone runs only while used) and
+`preferences` (drawn and kept by Dashi, a `secret` in the Secret Service).
+
 ## applet.json
 
 The manifest says who an applet is, when it applies, and what it may touch.
@@ -365,6 +383,7 @@ the authority; `packages/applet/manifest.schema.json` is the same for editors.
 | `when` | | When it applies: `vendor`, `product`, `board`, `family` (DMI's `sys_vendor`, `product_name`, `board_name`, `product_family`; text or a list, a trailing `*` is a prefix), `laptop` (true or false), `hardware` (names dashi-hardware must report). Every condition given must hold. The store says "fits this machine" from it. |
 | `permissions` | | What it may touch (below). None is the default. |
 | `commands` | | What it adds to the launcher, up to 16: `{id, title, keywords?, args?, mode}`. `id` as an applet's; `title` 60 characters, sentence case; `keywords` up to 12; `args` up to 4 of `{name, type, title?, required?}` (`name` lowercase, `type` one of `string`, `number`, `boolean`); `mode` one of `instant`, `pick`, `view` ([Version 3](#version-3-commands)). `src/commands.ts` parses them. |
+| `shows`, `preferences` | | Where it shows, and what the person may set ([Version 6](#version-6-views-the-launcher-draws); docs/launcher-extensions.md). `commands[].mode` may also be `list`, `grid` or `detail`. |
 | `controls` | | Its tiles in Control Center, up to 8: `{id, kind, title, icon?, sizes?, choices?, min?, max?}` ([Version 5](#version-5-control-center)); needs the `controls` permission. `src/controls.ts` parses them. |
 
 ### Permissions
@@ -372,6 +391,7 @@ the authority; `packages/applet/manifest.schema.json` is the same for editors.
 | Permission | In the consent sheet | What the sandbox gives |
 | --- | --- | --- |
 | `network` | Use the network | the network namespace, the resolver, the certificates |
+| `network:HOST` | Use the network: it says it only talks to HOST | the same as `network` until a proxy holds it to HOST (the next slice), which is why the sheet says it that way |
 | `notifications` | Show notifications | the session bus through `xdg-dbus-proxy`, talking only to `org.freedesktop.Notifications` |
 | `hardware.sensors` | Read temperatures, fan speeds and power draw | the system bus through the proxy, calling only dashi-hardware's `Describe`, `Get`, `GetFanCurve`, `CurveOptimizer`, `BootGuard`, `Slash`, and hearing `Changed` |
 | `hardware.power` | Change the power mode, battery charge limit and processor boost | the above, and `Set`, `SetMany` |

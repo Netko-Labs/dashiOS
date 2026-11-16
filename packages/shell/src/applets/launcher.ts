@@ -15,7 +15,18 @@
 import { existsSync, mkdirSync, readFileSync, watch, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { consentNames, dashiSatisfies, FOLDERS, type Folder, type InstalledApplet, isAllowed, readInstalled, shouldRun, writeRecord } from "@dashi/applet";
+import {
+  consentNames,
+  dashiSatisfies,
+  FOLDERS,
+  type Folder,
+  type InstalledApplet,
+  isAllowed,
+  launcherOnly,
+  readInstalled,
+  shouldRun,
+  writeRecord,
+} from "@dashi/applet";
 import type { AppletContext } from "./lib/connection-context.ts";
 import { type SandboxPaths, sandboxPlan, unitName } from "./lib/sandbox.ts";
 import { appletSocketDir, ensureSocketDir, serveApplets } from "./lib/server.ts";
@@ -123,6 +134,8 @@ export class AppletLauncher {
       // Installed again (an update, or the same version rebuilt): the new files run, not the old process.
       if (current?.version === version && current.sha256 === applet.record.sha256) continue;
       if (current) await this.halt(id);
+      // One that shows only in the launcher starts when one of its commands opens (views.ts), not at login.
+      if (launcherOnly(applet.manifest)) continue;
       await this.launch(applet);
     }
     // Their commands are in the launcher from now on, running or not (applets/commands.ts).
@@ -197,6 +210,24 @@ export class AppletLauncher {
         await this.launch(applet);
       })
       .catch((error) => console.error(`dashi-shell: applet ${id}:`, error));
+  }
+
+  /** Starts an installed extension that isn't running (one of its commands opened: views.ts); one running stays. */
+  ensure(id: string): void {
+    if (this.stopped || this.running.has(id)) return;
+    this.busy = this.busy
+      .then(async () => {
+        if (this.running.has(id)) return;
+        const applet = readInstalled(this.options.root).find((each) => each.manifest.id === id);
+        if (!applet || !shouldRun(applet) || !dashiSatisfies(applet.manifest.dashi, this.options.dashiVersion)) return;
+        await this.launch(applet);
+      })
+      .catch((error) => console.error(`dashi-shell: applet ${id}:`, error));
+  }
+
+  /** Stops a launcher-only extension nobody used for a minute (views.ts); the next command starts it again. */
+  sleep(id: string): void {
+    this.busy = this.busy.then(() => this.halt(id)).catch((error) => console.error(`dashi-shell: applet ${id}:`, error));
   }
 
   /**

@@ -14,13 +14,19 @@
  * A mode says what choosing it is like:
  * - `instant`: it runs, and its `result` is a line in the launcher, the clipboard, or something opened;
  * - `pick`: the launcher asks it for rows as the person types (`items`), draws them, and runs the one chosen;
- * - `view`: the applet's own Metal host draws its answer where the launcher's rows were.
+ * - `view`: the applet's own Metal host draws its answer where the launcher's rows were;
+ * - `list`, `grid`, `detail`: the launcher draws the view from a tree the applet sends (protocol 6:
+ *   view/wire.ts; docs/launcher-extensions.md), in Dashi's own rows and type.
  */
 
 import { id, isRefusal, list, type Refusal, record, refuse, text } from "@dashi/shape/kit";
 
-export const COMMAND_MODES = ["instant", "pick", "view"] as const;
+export const COMMAND_MODES = ["instant", "pick", "view", "list", "grid", "detail"] as const;
 export type CommandMode = (typeof COMMAND_MODES)[number];
+
+/** The modes whose view the launcher draws from a tree the extension sends (protocol 6, view/wire.ts). */
+export const TREE_MODES = ["list", "grid", "detail"] as const;
+export const isTreeMode = (mode: CommandMode): mode is (typeof TREE_MODES)[number] => (TREE_MODES as readonly string[]).includes(mode);
 
 export const ARG_TYPES = ["string", "number", "boolean"] as const;
 export type CommandArgType = (typeof ARG_TYPES)[number];

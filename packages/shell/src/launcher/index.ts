@@ -10,6 +10,8 @@ export { isAliasMap, isKeyMap } from "./person-keys.ts";
 export { launcherOrigin, type PictureRect, picturesOnScreen } from "./pictures.ts";
 export { LauncherPrefs } from "./prefs.ts";
 export type { LauncherFiles } from "./props.ts";
+export { isFallbackList, isQuicklinkList } from "./quicklink-list.ts";
+export { QuicklinkSource } from "./quicklinks.ts";
 export { RankingMemory } from "./ranking/index.ts";
 export { LAUNCHER_MOTION, ResidentHost } from "./resident.tsx";
 export type { Row } from "./row-model.ts";

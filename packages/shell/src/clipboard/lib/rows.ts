@@ -108,11 +108,36 @@ export function skippedSummary(skipped: readonly Skip[]): string | null {
 }
 
 /** The history's rows for `query`, pinned first. */
+/** What the history shows (store-v2 frame L11): every kind, or only text, links, images or files (❖K in the scope). */
+export const CLIP_KINDS = ["all", "text", "links", "images", "files"] as const;
+export type ClipKind = (typeof CLIP_KINDS)[number];
+export const CLIP_KIND_WORDS: Readonly<Record<ClipKind, string>> = { all: "All kinds", text: "Text", links: "Links", images: "Images", files: "Files" };
+
+const LINK = /^(https?:\/\/|www\.)\S+$/i;
+
+/** Whether `entry` is of `kind`: a link is text that is one address. */
+export function ofKind(entry: ClipEntry, kind: ClipKind): boolean {
+  const link = entry.kind === "text" && LINK.test((entry.text ?? "").trim());
+  switch (kind) {
+    case "all":
+      return true;
+    case "text":
+      return entry.kind === "text" && !link;
+    case "links":
+      return link;
+    case "images":
+      return entry.kind === "image";
+    case "files":
+      return entry.kind === "files";
+  }
+}
+
 export function historySections(
   snapshot: HistorySnapshot,
   query: string,
-  options: { now: number; enabled: boolean; imagePath(entry: ClipEntry): string | null },
+  options: { now: number; enabled: boolean; imagePath(entry: ClipEntry): string | null; kind?: ClipKind },
 ): Section[] {
+  const kind = options.kind ?? "all";
   if (!options.enabled) {
     return [
       {
@@ -130,7 +155,7 @@ export function historySections(
       },
     ];
   }
-  const matching = snapshot.entries.filter((entry) => entryMatches(entry, query));
+  const matching = snapshot.entries.filter((entry) => ofKind(entry, kind) && entryMatches(entry, query));
   const ordered = [...matching.filter((entry) => entry.pinned), ...matching.filter((entry) => !entry.pinned)];
   const rows = ordered.map((entry) => entryRow(entry, options.now, options.imagePath));
   const aside = skippedSummary(snapshot.skipped);
@@ -138,14 +163,15 @@ export function historySections(
     const empty = snapshot.entries.length === 0;
     rows.push({
       id: "clip:none",
-      title: empty ? "Nothing copied yet" : "No copy has those words",
+      title: empty ? "Nothing copied yet" : kind !== "all" && !query.trim() ? `No ${CLIP_KIND_WORDS[kind].toLowerCase()} copied` : "No copy has those words",
       detail: empty ? "What you copy shows here for 7 days" : "",
       kind: "",
       icon: { glyph: CLIPBOARD },
       action: { kind: "scope", verb: "none" },
     });
   }
-  const count = snapshot.entries.length === 1 ? "1 copy" : `${snapshot.entries.length} copies`;
+  const total = snapshot.entries.length === 1 ? "1 copy" : `${snapshot.entries.length} copies`;
+  const count = kind === "all" ? total : `${total} · ${CLIP_KIND_WORDS[kind]} only`;
   return [{ id: "clipboard", title: count, ...(aside ? { aside } : {}), rows, window: SHOWN_ROWS }];
 }
 

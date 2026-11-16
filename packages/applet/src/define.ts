@@ -21,6 +21,7 @@ import type { AppletSpec, PopoverPlacement } from "./client-types.ts";
 import { type ControlsApi, controlsApi } from "./controls-api.ts";
 import { commandHandlers } from "./define-commands.ts";
 import type { AppletDefinition, AppletHandle, Of } from "./define-types.ts";
+import { LauncherViews, type ViewCommand } from "./launcher/views.ts";
 import type { Manifest } from "./manifest.ts";
 import { findManifest, manifestPath, sendIcons } from "./manifest-file.ts";
 import { metalHost, type OpenPopover, openPopoverWindow } from "./popover.tsx";
@@ -87,7 +88,8 @@ export function defineApplet<S>(definition: AppletDefinition<S>): AppletHandle<S
   const client = definition.client ?? clientFor(manifest);
   const itemId = definition.id ?? manifest?.id.split(".").at(-1) ?? "applet";
   const title = definition.title ?? manifest?.name ?? itemId;
-  let state = definition.initial;
+  // An extension with only launcher views has no state of its own.
+  let state = definition.initial as S;
   const listeners = new Set<() => void>();
   let popover: OpenPopover | null = null;
   let controls: ControlsApi | null = null;
@@ -117,7 +119,8 @@ export function defineApplet<S>(definition: AppletDefinition<S>): AppletHandle<S
     },
     set(next) {
       state = typeof next === "function" ? next(state) : { ...state, ...next };
-      client.show(spec());
+      const now = spec();
+      if (now.glyph !== undefined || now.icon !== undefined || now.label !== undefined) client.show(now);
       for (const listener of listeners) listener();
     },
     openPopover() {
@@ -145,19 +148,43 @@ export function defineApplet<S>(definition: AppletDefinition<S>): AppletHandle<S
     },
   };
 
-  client.show(spec(), {
-    onActivate: (x, y) => {
-      if (!definition.popover) return definition.onActivate?.(handle, x, y);
-      if (client.isPopoverOpen(itemId)) handle.closePopover();
-      else handle.openPopover();
-    },
-    onSelect: (item) => definition.onSelect?.(item, handle),
-    onPopover: placed,
-    onDismiss: () => popover?.close(),
-  });
-  if (definition.commands) client.onCommands(commandHandlers(definition.commands, handle, manifest, title, listeners, warm));
+  wire(definition, handle, { manifest, title, listeners, warm, placed, itemId, popover: () => popover });
   const stopStart = definition.start?.(handle);
   return handle;
+}
+
+/** The item and its handlers (an extension with only commands shows nothing in the menu bar), the commands and the launcher's views. */
+function wire<S>(
+  definition: AppletDefinition<S>,
+  handle: AppletHandle<S>,
+  parts: {
+    manifest: Manifest | null;
+    title: string;
+    listeners: Set<() => void>;
+    warm: WarmHost | null;
+    itemId: string;
+    placed(placement: PopoverPlacement): void;
+    popover(): OpenPopover | null;
+  },
+): void {
+  const { client } = handle;
+  const first = specOf(definition, handle.state, parts.itemId, parts.title);
+  if (first.glyph !== undefined || first.icon !== undefined || first.label !== undefined)
+    client.show(first, {
+      onActivate: (x, y) => {
+        if (!definition.popover) return definition.onActivate?.(handle, x, y);
+        if (client.isPopoverOpen(parts.itemId)) handle.closePopover();
+        else handle.openPopover();
+      },
+      onSelect: (item) => definition.onSelect?.(item, handle),
+      onPopover: parts.placed,
+      onDismiss: () => parts.popover()?.close(),
+    });
+  if (!definition.commands) return;
+  const views = new LauncherViews(treeViews(definition.commands), (message) => client.sendView(message));
+  client.onCommands(commandHandlers(definition.commands, handle, parts.manifest, parts.title, parts.listeners, parts.warm), (message) =>
+    views.receive(message),
+  );
 }
 
 /**
@@ -166,6 +193,13 @@ export function defineApplet<S>(definition: AppletDefinition<S>): AppletHandle<S
  */
 function warmHostFor<S>(definition: AppletDefinition<S>, title: string): WarmHost | null {
   if (definition.warmHost !== undefined) return definition.warmHost;
-  const views = Object.values(definition.commands ?? {}).some((command) => command.view);
+  const views = Object.values(definition.commands ?? {}).some((command) => command.view && typeof command.view === "object");
   return definition.popover || views ? new WarmHost({ binary: metalHost(), appName: title }) : null;
+}
+
+/** The commands whose view the launcher draws (a component, for modes list, grid and detail). */
+function treeViews<S>(commands: NonNullable<AppletDefinition<S>["commands"]>): Record<string, ViewCommand> {
+  const views: Record<string, ViewCommand> = {};
+  for (const [name, command] of Object.entries(commands)) if (typeof command.view === "function") views[name] = command.view;
+  return views;
 }

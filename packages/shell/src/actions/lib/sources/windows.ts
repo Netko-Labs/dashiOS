@@ -10,7 +10,7 @@ import { parseWindowId } from "../../../agents/tools/define.ts";
 import { ARROWS, type Arrow } from "../../../arrange/index.ts";
 import type { CompositorWindow } from "../../../compositor/index.ts";
 import type { Keymap } from "../../../keymap/keymap.ts";
-import type { Arrange } from "../../../layout.ts";
+import type { Arrange, Tile } from "../../../layout.ts";
 import { formatAddress } from "../../address.ts";
 import { keyFor } from "../../keys.ts";
 import { type ActionDef, type ActionSource, type Args, failed, invalid, ok, ready } from "../../types.ts";
@@ -57,6 +57,23 @@ const ARRANGE: ReadonlyArray<{ id: string; title: string; words: readonly string
   },
 ];
 
+/** Each tile by name, as the launcher lists them (store-v2 frame L10): "Left Third", "Top Left Quarter". */
+export const NAMED_TILES: ReadonlyArray<{ tile: Tile; title: string; words: readonly string[] }> = [
+  { tile: "left", title: "Left Half", words: ["half", "left"] },
+  { tile: "right", title: "Right Half", words: ["half", "right"] },
+  { tile: "top", title: "Top Half", words: ["half", "top"] },
+  { tile: "bottom", title: "Bottom Half", words: ["half", "bottom"] },
+  { tile: "top-left", title: "Top Left Quarter", words: ["quarter", "corner"] },
+  { tile: "top-right", title: "Top Right Quarter", words: ["quarter", "corner"] },
+  { tile: "bottom-left", title: "Bottom Left Quarter", words: ["quarter", "corner"] },
+  { tile: "bottom-right", title: "Bottom Right Quarter", words: ["quarter", "corner"] },
+  { tile: "left-third", title: "Left Third", words: ["third", "left"] },
+  { tile: "center-third", title: "Center Third", words: ["third", "middle", "centre"] },
+  { tile: "right-third", title: "Right Third", words: ["third", "right"] },
+  { tile: "left-two-thirds", title: "Left Two Thirds", words: ["thirds", "left"] },
+  { tile: "right-two-thirds", title: "Right Two Thirds", words: ["thirds", "right"] },
+];
+
 /** Arranging the focused window (or a named one): the actions ⌃❖ and an arrow, ↩, C, R, and F are bound to. */
 export function arrangeActions(deps: WindowDeps): ActionDef[] {
   const define = (segments: string[], title: string, words: readonly string[], run: (window: number) => Promise<void>): ActionDef => {
@@ -91,6 +108,7 @@ export function arrangeActions(deps: WindowDeps): ActionDef[] {
   return [
     ...ARRANGE.map((each) => define(["window", "arrange", each.id], each.title, each.words, (window) => each.run(deps, window))),
     define(["window", "full-screen"], "Enter or leave full screen", ["full screen", "fullscreen"], (window) => deps.fullscreen(window)),
+    ...NAMED_TILES.map((each) => define(["window", "tile", each.tile], each.title, ["tile", ...each.words], (window) => deps.tile(window, each.tile))),
   ];
 }
 

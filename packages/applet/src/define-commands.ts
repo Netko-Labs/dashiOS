@@ -5,6 +5,7 @@ import type { AppletsClient } from "./client.ts";
 import type { CommandRun, PopoverPlacement } from "./client-types.ts";
 import type { CommandResult } from "./commands.ts";
 import type { AppletHandle, Args, CommandAnswer, CommandDefinition } from "./define-types.ts";
+import type { ViewCommand } from "./launcher/views.ts";
 import type { Manifest } from "./manifest.ts";
 import { type OpenPopover, openPopoverWindow } from "./popover.tsx";
 import type { WarmHost } from "./warm-host.ts";
@@ -12,7 +13,8 @@ import type { WarmHost } from "./warm-host.ts";
 const answerOf = (answer: CommandAnswer): CommandResult => (typeof answer === "string" ? { text: answer } : answer);
 const errorOf = (error: unknown): CommandResult => ({ error: (error instanceof Error ? error.message : String(error)).slice(0, 200) || "It failed." });
 
-type ViewComponent<S> = NonNullable<CommandDefinition<S>["view"]>["component"];
+type PixelView<S> = Exclude<CommandDefinition<S>["view"], ViewCommand | undefined>;
+type ViewComponent<S> = PixelView<S>["component"];
 
 /** A command's view, drawn again whenever the applet's state changes. */
 function liveView<S>(component: ViewComponent<S>, handle: AppletHandle<S>, listeners: Set<() => void>, args: Args, close: () => void) {
@@ -38,7 +40,7 @@ export function commandHandlers<S>(
   warm: WarmHost | null,
 ): Parameters<AppletsClient["onCommands"]>[0] {
   const { client } = handle;
-  let view: { seq: number; open: OpenPopover | null; args: Args; spec: NonNullable<CommandDefinition<S>["view"]> } | null = null;
+  let view: { seq: number; open: OpenPopover | null; args: Args; spec: PixelView<S> } | null = null;
   const closeView = (): void => {
     const open = view?.open;
     view = null;
@@ -70,7 +72,7 @@ export function commandHandlers<S>(
           );
         return;
       }
-      if (command.view) {
+      if (command.view && typeof command.view === "object") {
         closeView();
         view = { seq: run.seq, open: null, args: run.args, spec: command.view };
         return client.requestView(run.seq, command.view.height);

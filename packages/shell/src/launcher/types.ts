@@ -59,6 +59,14 @@ export interface LauncherScope {
   /** The field's right end for the selected row. */
   hints(row: Row | undefined): Hint[];
   run(verb: string, row: Row | undefined, query: string): ScopeResult | Promise<ScopeResult>;
+  /** Esc inside it (an extension's pushed view, a question in the field): true when it went back itself. */
+  back?(): boolean;
+  /** The launcher left it (Esc, or the launcher closed). */
+  leave?(): void;
+  /** What is typed is a secret: the field shows dots. */
+  secure?(): boolean;
+  /** Its own word at the field's right end (an extension's toast), when the launcher has none. */
+  notice?(): { text: string; ok: boolean } | null;
 }
 
 /** One row a slow source found: what it says, and what choosing it does. */

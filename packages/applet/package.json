@@ -2,7 +2,7 @@
   "name": "@dashi/applet",
   "version": "0.9.0",
   "type": "module",
-  "description": "Dashi's applet SDK: the client for the menu bar's applets channel, popovers drawn with Metal, applet.json (the manifest), packages and their signatures, and the dashi-applet CLI.",
+  "description": "Dashi's applet SDK: the client for the menu bar's applets channel, popovers drawn with Metal, launcher views drawn by the launcher from a tree, applet.json (the manifest), packages and their signatures, and the dashi-applet CLI.",
   "license": "MIT",
   "exports": {
     ".": "./src/index.ts",
@@ -14,7 +14,8 @@
     "./signing": "./src/signing/index.ts",
     "./catalog": "./src/catalog.ts",
     "./popover": "./src/popover.tsx",
-    "./manifest.schema.json": "./manifest.schema.json"
+    "./manifest.schema.json": "./manifest.schema.json",
+    "./launcher": "./src/launcher/index.ts"
   },
   "bin": {
     "dashi-applet": "./src/cli/main.ts"
@@ -31,9 +32,11 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@types/react": "^19.2.0",
-    "typescript": "^5.9.0"
+    "typescript": "^5.9.0",
+    "@types/react-reconciler": "^0.32.0"
   },
   "dependencies": {
-    "@dashi/shape": "workspace:*"
+    "@dashi/shape": "workspace:*",
+    "react-reconciler": "^0.33.0"
   }
 }

@@ -20,6 +20,7 @@ import { METAL_HOST } from "../shared/apps/index.ts";
 import { MENU_BAR_HEIGHT } from "../theme.ts";
 import type { AppletCommands } from "./commands.ts";
 import type { AppletControls } from "./controls.ts";
+import { installAllFirstParty } from "./first-party.ts";
 import { AppletLauncher } from "./launcher.ts";
 import type { AppletContext } from "./lib/connection-context.ts";
 import { AppletGrants } from "./lib/grants.ts";
@@ -27,6 +28,7 @@ import type { PopoverScreen } from "./lib/placement.ts";
 import { serveApplets } from "./lib/server.ts";
 import type { AppletPopovers } from "./popovers.ts";
 import type { AppletPower } from "./power.ts";
+import type { ExtensionViews } from "./views.ts";
 
 export interface StartAppletsOptions {
   compositor: Compositor | null;
@@ -42,6 +44,8 @@ export interface StartAppletsOptions {
   controls?: AppletControls;
   /** One popover at a time with the shell's menus (popovers.ts). */
   popovers?: AppletPopovers;
+  /** Extensions' views in the launcher (views.ts): their connections send trees; launcher-only ones start on use. */
+  views?: ExtensionViews;
 }
 
 /** The screen a popover goes on, in points, from the compositor's `outputs`. */
@@ -120,7 +124,7 @@ function consentAsker(openOverlay: OpenOverlay): (applet: InstalledApplet, updat
     });
 }
 
-export function startApplets({ compositor, extras, openOverlay, primary, commands, power, controls, popovers }: StartAppletsOptions): () => void {
+export function startApplets({ compositor, extras, openOverlay, primary, commands, power, controls, popovers, views }: StartAppletsOptions): () => void {
   const grants = new AppletGrants(compositor);
   const context: Omit<AppletContext, "installed"> = {
     extras,
@@ -129,6 +133,7 @@ export function startApplets({ compositor, extras, openOverlay, primary, command
     ...(power ? { power } : {}),
     ...(controls ? { controls } : {}),
     ...(popovers ? { popovers } : {}),
+    ...(views ? { views } : {}),
     screen: (output) => popoverScreen(compositor, output, primary()),
     catcher: popoverCatcher(openOverlay),
   };
@@ -156,7 +161,9 @@ export function startApplets({ compositor, extras, openOverlay, primary, command
     : null;
   // A press on the tile of an applet that isn't running starts it.
   if (launcher) controls?.setWake((id) => launcher.wake(id));
-  launcher?.start();
+  if (launcher) views?.connect({ ensure: (id) => launcher.ensure(id), sleep: (id) => launcher.sleep(id) });
+  // Dashi's own extensions (Emoji, GitHub) are built and installed first, then everything runs as installed.
+  void installAllFirstParty(appletsRoot()).finally(() => launcher?.start());
   // Pulled versions are turned off even when Software isn't opened.
   const stopKillSwitch = watchKillSwitch();
   return () => {

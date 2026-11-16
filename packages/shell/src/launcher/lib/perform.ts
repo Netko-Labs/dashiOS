@@ -62,6 +62,7 @@ export function perform(effect: Effect, row: Row | undefined, stay: boolean, d: 
     case "unshortcut":
     case "forget":
     case "forget-all":
+    case "fallback":
       return performEdit(effect, d);
   }
 }
@@ -190,7 +191,7 @@ function performOnThing(
 }
 
 /** The person's own words for a row: an alias, a key, the ranking forgotten. */
-function performEdit(effect: Of<"alias" | "unalias" | "shortcut" | "unshortcut" | "forget" | "forget-all">, d: PerformDeps): void {
+function performEdit(effect: Of<"alias" | "unalias" | "shortcut" | "unshortcut" | "forget" | "forget-all" | "fallback">, d: PerformDeps): void {
   const { props, s, search, backToSearch } = d;
   const { sayDone } = search;
   switch (effect.kind) {
@@ -214,6 +215,10 @@ function performEdit(effect: Of<"alias" | "unalias" | "shortcut" | "unshortcut" 
     case "forget":
       props.ranking?.forget(effect.id);
       sayDone("Ranking reset");
+      return backToSearch();
+    case "fallback":
+      props.prefs?.setFallback?.(effect.address, effect.on);
+      sayDone(effect.on ? `${effect.title} shows when nothing matches` : `${effect.title} no longer shows when nothing matches`);
       return backToSearch();
     case "forget-all":
       props.ranking?.forgetAll();

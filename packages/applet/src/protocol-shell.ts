@@ -5,6 +5,7 @@ import { isRefusal, typedObject } from "@dashi/shape/kit";
 import { parseControlAction, parseShown } from "./controls.ts";
 import { parsePowerState } from "./power.ts";
 import type { AppletShellMessage } from "./protocol-types.ts";
+import { parseViewShellMessage } from "./view/wire.ts";
 
 const isNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 
@@ -62,6 +63,7 @@ const isArgValue = (value: unknown): value is string | number | boolean =>
 /** The shell's version 3 messages, each about a command run. */
 function parseRunMessage(type: string, fields: Record<string, unknown>, seq: number): AppletShellMessage | null {
   if (type === "dismiss") return { type: "dismiss-view", seq };
+  if (type === "open" || type === "event" || type === "prefs") return parseViewShellMessage(type, fields, seq);
   if (type === "run") {
     if (typeof fields.command !== "string") return null;
     const args: Record<string, string | number | boolean> = {};

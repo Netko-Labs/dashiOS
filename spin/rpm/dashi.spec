@@ -74,6 +74,8 @@ Requires:       gvfs
 Requires:       bubblewrap
 # Applets from the Applet Store run in bubblewrap too; their D-Bus permissions go through the proxy (docs/applets.md).
 Requires:       xdg-dbus-proxy
+# secret-tool (LGPL, a separate program): launcher extensions' secret preferences in the Secret Service (decisions.md D345).
+Requires:       libsecret
 # The screen recorder (⇧❖5, src/recorder/): wf-recorder over dashi-comp's screencopy.
 Requires:       wf-recorder
 # The short sound when hands-free dictation ends (boot/dictation.ts plays message.oga with pw-play; silent without it).
