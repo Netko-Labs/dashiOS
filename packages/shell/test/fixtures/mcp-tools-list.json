@@ -205,7 +205,7 @@
     {
       "name": "open_url",
       "title": "Open a web page",
-      "description": "Open an address in the person's browser (Helium, with Dashi's extension) and return once the page has loaded: no waiting, no screenshot. Without `tab` it opens in a new tab, which becomes the tab the other website tools use. The person is asked the first time you use each site. Then read_page to see it.",
+      "description": "Open an address in the person's browser (Helium, with Dashi's extension) and return once the page has loaded: no waiting, no screenshot. Without `tab` it opens in a new tab, which becomes the tab the other website tools use. Says where it landed: a redirect, a sign-in page, a CAPTCHA. The person is asked the first time you use each site. Then read_page to see it.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -255,7 +255,7 @@
     {
       "name": "click_element",
       "title": "Click an element on a web page",
-      "description": "Click an element read_page numbered (a link, a button, a checkbox, a tab). When the click loads a page, it returns once that page has loaded. Read the page again after.",
+      "description": "Click an element read_page numbered (a link, a button, a checkbox, a tab). Says what happened: a page that loaded (once it has), a new tab, else whether the page changed around it, a dialog that opened, new text, and what the element is now.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -282,7 +282,7 @@
     {
       "name": "fill_element",
       "title": "Fill in a field on a web page",
-      "description": "Replace what a text field read_page numbered holds with `text`, as typing would (the page hears it). Refused on password, card and one-time code fields: sign_in, fill_code and pay fill those, and you never hold the secret.",
+      "description": "Replace what a text field read_page numbered holds with `text`, as typing would (the page hears it), and say what the field holds after. Refused on password, card and one-time code fields: sign_in, fill_code and pay fill those, and you never hold the secret.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -344,7 +344,7 @@
     {
       "name": "press",
       "title": "Press keys on a web page",
-      "description": "Press keys in a tab's page, to whatever has its focus, in Dashi's notation: \"Return\", \"Tab\", \"⇧Tab\", \"Escape\", \"↓\", \"PageDown\", \"Return Return\". Return in a field submits its form, Tab moves to the next field, arrows and Page keys scroll. Not for typing text (fill_element) or the browser's own shortcuts.",
+      "description": "Press keys in a tab's page, to whatever has its focus, in Dashi's notation: \"Return\", \"Tab\", \"⇧Tab\", \"Escape\", \"↓\", \"PageDown\", \"Return Return\". Return in a field submits its form, Tab moves to the next field, arrows and Page keys scroll. Says what happened (a page that loaded, what changed, where the keyboard went). Not for typing text (fill_element) or the browser's own shortcuts.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2249,7 +2249,7 @@
     {
       "name": "sign_in",
       "title": "Sign in for the person",
-      "description": "Sign in to a site with one of the person's saved logins. In the browser with Dashi's extension, name the user name or password field read_page numbered (`ref`); elsewhere, click into the field first and name the window. The person is asked on screen which login, and whether for this once or the whole task; then Dashi types the account name (when the user name field is focused), presses Tab, and types the password, only into a real password field on a page of that site. You never see the password, in results or screenshots (they show a blank). A login marked \"Never\", a bank, or a CAPTCHA: use hand_over.",
+      "description": "Sign in to a site with one of the person's saved logins. In the browser with Dashi's extension, name the user name or password field read_page numbered (`ref`); elsewhere, click into the field first and name the window. The person is asked on screen which login, and whether for this once or the whole task; then Dashi types the account name (when the user name field is focused), presses Tab, and types the password, only into a real password field on a page of that site. You never see the password, in results or screenshots (they show a blank). With `submit` in a browser tab, it watches the page after Return and says what happened: signed in, a wrong password (the site's words), a code asked for, a CAPTCHA, blocked, or still loading. A login marked \"Never\", a bank, or a CAPTCHA: use hand_over.",
       "inputSchema": {
         "type": "object",
         "properties": {

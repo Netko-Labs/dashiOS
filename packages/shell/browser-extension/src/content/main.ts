@@ -7,10 +7,10 @@
 
 import { parseChords } from "../page/keys.ts";
 import { readFrame } from "../page/read.ts";
-import { parseWait } from "../page/wait.ts";
 import { click, field, fill, markFilled, press, Refusal, scroll, select } from "./actions.ts";
+import { startWatch } from "./changes.ts";
 import { DOC, DomNode, deepActive, elementOf, refOf, watchPasswordFields } from "./dom.ts";
-import { waitInPage } from "./wait.ts";
+import { handleMore } from "./more.ts";
 
 /** The DOM is quiet once nothing has changed for this long (a page drawing itself after load). */
 const QUIET_MS = 150;
@@ -52,6 +52,12 @@ function target(message: Message): Element {
   return element;
 }
 
+/** A field's value after fill_element: what the page kept (it may format or cut what was typed). Never asked of a secret field: fill refuses those. */
+function valueOf(element: Element): string {
+  if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) return element.value.slice(0, 500);
+  return element instanceof HTMLElement ? element.innerText.slice(0, 500) : "";
+}
+
 async function handle(message: Message): Promise<Record<string, unknown>> {
   switch (message.op) {
     case "read": {
@@ -61,24 +67,26 @@ async function handle(message: Message): Promise<Record<string, unknown>> {
       const { text, truncated } = readFrame(root, (node) => refOf((node as DomNode).node), undefined, origin);
       return { doc: DOC, text, truncated, title: document.title };
     }
-    case "wait": {
-      const wait = parseWait(message);
-      if (!wait) throw new Refusal("Unknown wait.");
-      if (wait.kind === "element" && message.doc !== DOC) return { met: wait.state === "gone", ms: 0, gone: true };
-      const left = typeof message.until === "number" ? message.until - Date.now() : 10_000;
-      return { ...(await waitInPage(wait, Math.max(0, Math.min(left, 60_000)))) };
-    }
     case "focus":
       return { doc: DOC, hasFocus: document.hasFocus(), inFrame: document.activeElement instanceof HTMLIFrameElement };
-    case "click":
-      return { ...click(target(message)) };
-    case "fill":
-      return { described: fill(target(message), String(message.text ?? "")) };
-    case "select":
-      return { described: select(target(message), String(message.value ?? "")) };
+    case "click": {
+      const element = target(message);
+      startWatch(element);
+      return { ...click(element) };
+    }
+    case "fill": {
+      const element = target(message);
+      return { described: fill(element, String(message.text ?? "")), value: valueOf(element) };
+    }
+    case "select": {
+      const element = target(message);
+      startWatch(element);
+      return { described: select(element, String(message.value ?? "")) };
+    }
     case "press": {
       const chords = message.chords === undefined ? [] : parseChords(message.chords);
       if (!chords) throw new Refusal("`chords` must be a list of keys with their modifiers.");
+      startWatch(deepActive());
       return { did: press(chords) };
     }
     case "scroll": {
@@ -95,8 +103,11 @@ async function handle(message: Message): Promise<Record<string, unknown>> {
       if (element) markFilled(element);
       return {};
     }
-    default:
-      throw new Refusal("Unknown request.");
+    default: {
+      const more = await handleMore(message);
+      if (!more) throw new Refusal("Unknown request.");
+      return more;
+    }
   }
 }
 

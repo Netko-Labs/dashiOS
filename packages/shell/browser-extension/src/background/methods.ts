@@ -6,6 +6,7 @@
 
 import { renumber } from "../page/refs.ts";
 import { ask, documentsOf, framesOf, tableOf, watchLoad } from "./frames.ts";
+import { outcomeInTab } from "./outcome.ts";
 import { waitInTab } from "./wait.ts";
 
 type Params = Record<string, unknown>;
@@ -108,12 +109,15 @@ async function open(params: Params): Promise<Record<string, unknown>> {
     const watch = watchLoad(idOf(tab), LOAD_MS);
     await chrome.tabs.update(idOf(tab), { url, active: true });
     const load = await watch.done;
-    return { tab: info(await chrome.tabs.get(idOf(tab))), load };
+    return { tab: info(await chrome.tabs.get(idOf(tab))), load, page: await probe(idOf(tab)) };
   }
   const created = params.own === true ? await openOwn(url, params.near) : await openInFront(url);
   const load = await watchLoad(idOf(created), LOAD_MS).done;
-  return { tab: info(await chrome.tabs.get(idOf(created))), load };
+  return { tab: info(await chrome.tabs.get(idOf(created))), load, page: await probe(idOf(created)) };
 }
+
+/** A page just opened, at a glance: its address and title, whether it asks for a password or shows a CAPTCHA. */
+const probe = (tab: number): Promise<Record<string, unknown> | null> => ask(tab, 0, { op: "probe" }).catch(() => null);
 
 async function click(params: Params): Promise<Record<string, unknown>> {
   const tab = idOf(await tabOf(params));
@@ -132,14 +136,23 @@ async function click(params: Params): Promise<Record<string, unknown>> {
     const load = await watchLoad(idOf(created), LOAD_MS).done;
     return { described: result.described, opened: info(await chrome.tabs.get(idOf(created))), load };
   }
-  const grace = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), result.mayNavigate ? MAY_NAVIGATE_MS : CLICK_NAVIGATE_MS));
+  return { described: result.described, ...(await after(tab, target.frameId, watch, result.mayNavigate === true)) };
+}
+
+/**
+ * What an action led to: a page that loaded (the browser's events say so), else what changed in
+ * the page, read by the content script once it was quiet (content/changes.ts).
+ */
+async function after(tab: number, frameId: number, watch: ReturnType<typeof watchLoad>, mayNavigate: boolean): Promise<Record<string, unknown>> {
+  const grace = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), mayNavigate ? MAY_NAVIGATE_MS : CLICK_NAVIGATE_MS));
   const started = await Promise.race([watch.started, grace]);
   if (!started) {
     watch.cancel();
-    return { described: result.described, tab: info(await chrome.tabs.get(tab)) };
+    const changes = await ask(tab, frameId, { op: "changes" }).catch(() => null);
+    return { tab: info(await chrome.tabs.get(tab)), ...(changes ? { changes } : {}) };
   }
   const load = await watch.done;
-  return { described: result.described, load, tab: info(await chrome.tabs.get(tab)) };
+  return { load, tab: info(await chrome.tabs.get(tab)) };
 }
 
 /** The frame with the keyboard focus: the one whose document has it and isn't passing it to a frame of its own. */
@@ -187,10 +200,27 @@ export const METHODS: Record<string, Method> = {
   read,
   click,
   fill: async (params) => (await onElement(params, "fill", { text: String(params.text ?? "") })).result,
-  select: async (params) => (await onElement(params, "select", { value: String(params.value ?? "") })).result,
+  select: async (params) => {
+    const tab = idOf(await tabOf(params));
+    const target = targetOf(tab, params.ref);
+    const watch = watchLoad(tab, LOAD_MS);
+    const result = await ask(tab, target.frameId, { op: "select", doc: target.doc, ref: target.local, value: String(params.value ?? "") }).catch(
+      (error: unknown) => {
+        watch.cancel();
+        throw error;
+      },
+    );
+    return { ...result, ...(await after(tab, target.frameId, watch, false)) };
+  },
   press: async (params) => {
     const tab = idOf(await tabOf(params));
-    return ask(tab, await focusedFrame(tab), { op: "press", chords: params.chords });
+    const frameId = await focusedFrame(tab);
+    const watch = watchLoad(tab, LOAD_MS);
+    const result = await ask(tab, frameId, { op: "press", chords: params.chords }).catch((error: unknown) => {
+      watch.cancel();
+      throw error;
+    });
+    return { ...result, ...(await after(tab, frameId, watch, true)) };
   },
   scroll: async (params) => {
     if (typeof params.ref === "number") return (await onElement(params, "scroll", { how: params.how })).result;
@@ -199,6 +229,7 @@ export const METHODS: Record<string, Method> = {
   },
   field,
   wait: async (params) => waitInTab(idOf(await tabOf(params)), params),
+  outcome: async (params) => outcomeInTab(idOf(await tabOf(params)), params),
   filled: async (params) => {
     const tab = idOf(await tabOf(params));
     if (typeof params.ref === "number") return (await onElement(params, "filled")).result;

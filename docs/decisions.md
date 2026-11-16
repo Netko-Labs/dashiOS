@@ -3747,3 +3747,36 @@ short words, as the rulebook is written.
 - **Cost:** a title that changes and changes back within 250 ms is missed.
 - **Undo:** take `waitTools` out of `TOOLS`; the extension's `wait`
   method stays harmless.
+
+### D201. Acting tools say what changed, read from the page; sign-in's outcome is read from the page after Return
+
+- **Date:** 2026-11-15. `v09/reach`. The assistant: "sign_in said submitted:
+  true even though login never finished"; "click_element navigated: false
+  with no hint whether the click did anything".
+- **Choice:** the content script starts a MutationObserver just before a
+  click, a key or a choice, and reads it once the page has been quiet
+  300 ms (1.5 s at most): changed near the element (its form, list item,
+  row, section or three levels up), elsewhere, or not at all; a dialog
+  that opened (`dialog[open]`, `role=dialog`, `aria-modal`); the first
+  200 characters of new text; the element still there and what it is now;
+  where the focus went. A load, seen by `webNavigation`, wins over these.
+  `fill_element` says the field's value after. `open_url` says the final
+  address and whether it is a sign-in page (a password field shows, or the
+  redirect's path says login/auth/accounts) or a CAPTCHA. `sign_in` and
+  `fill_code` with `submit` on a browser tab watch the page up to 15 s
+  after Return (across navigations) and classify, by rule
+  (`page/outcome.ts`): a CAPTCHA frame or words first, then the site's
+  words for a block, then an error alert while the field still shows
+  (wrong), then a code field or words (a code is asked for), then the
+  field gone once the page is quiet (signed in, saying whether the address
+  changed); at the deadline, still loading or unchanged. In a native
+  window nothing can be seen: it says so and asks for a screenshot.
+- **Why:** a model reads the result as the truth; "submitted" made it wait
+  and poll.
+- **Cost:** a JavaScript `alert()` blocks the page's scripts, so a click
+  that opens one answers after the 1.5 s cap with no change seen. Error
+  words are English and Spanish only; another language reads as
+  "unchanged" with the alert's text, which still says what the site said.
+  A sign-in watched 15 s holds the agent's other calls that long.
+- **Undo:** `after()` in `background/methods.ts`; `afterSubmit` in
+  `secrets/broker.ts`.

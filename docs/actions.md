@@ -416,12 +416,12 @@ The tools (`src/agents/tools/lib/browser.ts`, carried out by
 
 | Tool | What it does |
 | --- | --- |
-| `open_url {url, tab?}` | Opens an http(s) address in a new tab (or `tab`), starting Helium if no extension is connected, and returns once the page has loaded |
+| `open_url {url, tab?}` | Opens an http(s) address in a new tab (or `tab`), starting Helium if no extension is connected, and returns once the page has loaded, with where it landed: the final address and title (for an allowed site), `redirected`, `signInPage` (a password field shows, or a redirect to a login path), and a CAPTCHA |
 | `read_page {tab?}` | The page as text: headings (`#`), text in reading order, links in their sentence with their address (a path on the page's own site), every other control on its own line: `[7] textbox "Correo electrónico" value="…"`, `[9] password field "Contraseña" (filled: no)`, `[12] button "Ingresar"` |
-| `click_element {ref, tab?}` | Clicks an element; when that loads a page, returns once it has |
-| `fill_element {ref, text, tab?}` | Replaces a text field's value as typing would (`insertText`, else the value's setter and `input`/`change`); refused on password, card and code fields |
-| `select_option {ref, value, tab?}` | Chooses a `<select>`'s option by value or label |
-| `press {keys, tab?}` | Keys in Dashi's notation to the page's focus, with the browser's defaults done when the page doesn't prevent them (Return submits, Tab moves, Page keys scroll) |
+| `click_element {ref, tab?}` | Clicks an element; when that loads a page, returns once it has, else says what the click did (`changes`: the DOM changed `near` the element, `elsewhere` or `none`, a dialog that opened, text that appeared, whether the element is `still` there and what it is `now`, where the keyboard went), read by the content script once the page is quiet (300 ms, at most 1.5 s) |
+| `fill_element {ref, text, tab?}` | Replaces a text field's value as typing would (`insertText`, else the value's setter and `input`/`change`) and says what it holds after (`value`, `asTyped`: a page that formats or cuts a value is said); refused on password, card and code fields |
+| `select_option {ref, value, tab?}` | Chooses a `<select>`'s option by value or label, says the choice now, and what changed on the page (a load, `changes`) |
+| `press {keys, tab?}` | Keys in Dashi's notation to the page's focus, with the browser's defaults done when the page doesn't prevent them (Return submits, Tab moves, Page keys scroll); says what followed, as `click_element` does |
 | `scroll_page {direction?, pages?, ref?, tab?}` | Scrolls, or brings an element into view; says whether the page is at its end |
 | `list_tabs`, `switch_tab {tab}` | The browser's tabs (title and address only for allowed sites), and bringing one forward |
 | `wait_for {text \| text_gone \| element+state \| page \| window_title \| file, timeout?, tab?}` | Waits for one thing, watched where it happens: in the page by the extension (a MutationObserver, the load events), a window's title by the shell on each compositor event and every 250 ms, a file by its folder. Answers `met`, what it saw (the line the text is in, a window's id) and `ms`. 10 s by default, 60 at most; a wait that runs out is `met: false`, not an error (decisions.md D200) |

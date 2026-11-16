@@ -8,11 +8,12 @@
 
 import { isRecord } from "@dashi/shape";
 import type { BrowserLink } from "../../browser/bridge.ts";
-import { parseTab, type TabInfo } from "../../browser/protocol.ts";
+import { parseChanges, parseProbe, parseTab, type TabInfo } from "../../browser/index.ts";
 import { launchEntry, loadEntries } from "../../entries.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import { siteOf } from "../sites.ts";
 import type { Call } from "../tools/index.ts";
+import { changeWords, landingWords } from "./lib/browser-words.ts";
 
 type BrowserCall = Extract<
   Call,
@@ -152,9 +153,14 @@ async function openUrl(call: Extract<Call, { name: "open_url" }>, ctx: RunContex
     ctx.browser.tab = tab.id;
     if (own) ctx.elsewhere.tab = tab.id;
     const shown = about(tab, ctx);
-    return text(`Tab ${tabId(tab)}: ${shown.url}${shown.title ? ` (“${shown.title}”)` : ""}. ${loadWords(result.load)} read_page to see it.`, {
+    // Where it really is: a redirect (to a sign-in page, say) is said, the final address only for a site allowed.
+    const landing = landingWords(call.url, typeof shown.url === "string" && shown.title !== undefined ? shown.url : "", parseProbe(result.page));
+    const head = `Tab ${tabId(tab)}: ${shown.url}${shown.title ? ` (“${shown.title}”)` : ""}. ${loadWords(result.load)}`;
+    return text(`${head}${landing.words ? ` ${landing.words}` : ""} read_page to see it.`, {
       ...shown,
       loaded: isRecord(result.load) && result.load.loaded === true,
+      redirected: landing.redirected,
+      signInPage: landing.signIn,
       ms: Date.now() - started,
     });
   } catch (error) {
@@ -178,14 +184,17 @@ async function clickElement(call: Extract<Call, { name: "click_element" }>, ctx:
     const opened = parseTab(result.opened);
     if (opened) ctx.browser.tab = opened.id;
     const now = opened ?? parseTab(result.tab) ?? tab;
+    const changes = parseChanges(result.changes);
     const moved = opened
       ? `It opened tab ${tabId(opened)}: ${about(opened, ctx).url}. ${loadWords(result.load)}`
       : result.load
         ? `A page loaded: ${about(now, ctx).url}. ${loadWords(result.load)}`
-        : "";
-    return text(`Clicked [${call.ref}] ${String(result.described ?? "")}.${moved ? ` ${moved}` : ""}`, {
+        : changeWords(changes);
+    return text(`Clicked [${call.ref}] ${String(result.described ?? "")}. ${moved}`, {
       ...about(now, ctx),
       navigated: result.load !== undefined,
+      ...(opened ? { openedTab: tabId(opened) } : {}),
+      ...(changes ? { changes } : {}),
     });
   });
 }
@@ -193,14 +202,25 @@ async function clickElement(call: Extract<Call, { name: "click_element" }>, ctx:
 async function fillElement(call: Extract<Call, { name: "fill_element" }>, ctx: RunContext): Promise<ToolResult> {
   return onPage(ctx, call.tab, "Filling in a field on", async (link, tab) => {
     const result = await link.ask("fill", { tab: tab.id, ref: call.ref, text: call.text });
-    return text(`Filled [${call.ref}]: ${String(result.described ?? "")}.`);
+    const value = typeof result.value === "string" ? result.value : null;
+    const kept = value === null || value === call.text ? "" : ` The page changed what was typed: it holds “${value}”.`;
+    return text(`Filled [${call.ref}]: ${String(result.described ?? "")}.${kept}`, { value, asTyped: value === call.text });
   });
 }
 
 async function selectOption(call: Extract<Call, { name: "select_option" }>, ctx: RunContext): Promise<ToolResult> {
   return onPage(ctx, call.tab, "Choosing an option on", async (link, tab) => {
     const result = await link.ask("select", { tab: tab.id, ref: call.ref, value: call.value });
-    return text(`Chose in [${call.ref}]: ${String(result.described ?? "")}.`);
+    const changes = parseChanges(result.changes);
+    const after = result.load
+      ? `A page loaded. ${loadWords(result.load)}`
+      : changes && changes.changed !== "none"
+        ? changeWords({ ...changes, now: undefined })
+        : "";
+    return text(`Chose in [${call.ref}]: ${String(result.described ?? "")}.${after ? ` ${after}` : ""}`, {
+      navigated: result.load !== undefined,
+      ...(changes ? { changes } : {}),
+    });
   });
 }
 
@@ -208,7 +228,10 @@ async function press(call: Extract<Call, { name: "press" }>, ctx: RunContext): P
   return onPage(ctx, call.tab, "Pressing keys on", async (link, tab) => {
     const result = await link.ask("press", { tab: tab.id, chords: call.chords });
     const did = Array.isArray(result.did) ? result.did.map(String).join(", ") : call.keys;
-    return text(`Pressed ${did}. read_page to see what the page did.`);
+    const now = parseTab(result.tab) ?? tab;
+    const changes = parseChanges(result.changes);
+    const after = result.load ? `A page loaded: ${about(now, ctx).url}. ${loadWords(result.load)}` : changeWords(changes);
+    return text(`Pressed ${did}. ${after}`, { ...about(now, ctx), navigated: result.load !== undefined, ...(changes ? { changes } : {}) });
   });
 }
 

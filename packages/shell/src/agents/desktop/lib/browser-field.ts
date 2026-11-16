@@ -9,13 +9,17 @@
  */
 
 import type { BrowserLink } from "../../../browser/bridge.ts";
-import { type FieldReport, parseField, type TabInfo } from "../../../browser/protocol.ts";
+import { type FieldReport, parseField, parseOutcome, type TabInfo } from "../../../browser/index.ts";
 import type { CompositorWindow } from "../../../compositor/index.ts";
 import type { Focused, Placed, Rect } from "../../atspi/index.ts";
 import type { RunContext, ToolResult } from "../../context.ts";
 import { toolError } from "../../context.ts";
 import type { FieldInfo } from "../../secrets/index.ts";
 import { chooseTab, NO_EXTENSION } from "../browser.ts";
+import { outcomeWords } from "./browser-words.ts";
+
+/** How long a sign-in's page is watched after Return. */
+const OUTCOME_MS = 15_000;
 
 /** The browser's window that shows `tab`: its process's, by the tab's title when it has several. */
 export function browserWindowFor(windows: readonly CompositorWindow[], browserPid: number, tab: Pick<TabInfo, "title">): CompositorWindow | null {
@@ -44,6 +48,8 @@ export interface BrowserField {
   filled(field: Placed): void;
   /** What Dashi typed was typed: from now on the check is of the field with the focus (sign-in's Tab moves it). */
   typed(): void;
+  /** After Return: what the page did, watched by the extension (signed in, a wrong password, a code, a CAPTCHA…). */
+  outcome(field: "password" | "code"): Promise<{ words: string; kind: string }>;
 }
 
 /** The field `ref` of a tab, focused and ready for Dashi's check; or why not. */
@@ -100,6 +106,19 @@ export async function browserField(
     },
     typed: () => {
       typed = true;
+    },
+    outcome: async (field) => {
+      try {
+        const result = await link.ask("outcome", { tab: tab.id, field, urlBefore: first.tab.url, timeoutMs: OUTCOME_MS }, OUTCOME_MS + 20_000);
+        const outcome = parseOutcome(result.outcome);
+        if (!outcome) return { words: "It pressed Return; Dashi couldn't tell what the page did: read_page.", kind: "unknown" };
+        return { words: `It pressed Return. ${outcomeWords(outcome, OUTCOME_MS / 1000)}`, kind: outcome.kind };
+      } catch (error) {
+        return {
+          words: `It pressed Return; Dashi couldn't watch the page (${error instanceof Error ? error.message : String(error)}): read_page.`,
+          kind: "unknown",
+        };
+      }
     },
   };
 }

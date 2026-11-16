@@ -63,7 +63,7 @@ export const browserTools: readonly ToolDef[] = [
     title: "Open a web page",
     description:
       "Open an address in the person's browser (Helium, with Dashi's extension) and return once the page has loaded: no waiting, no screenshot. " +
-      "Without `tab` it opens in a new tab, which becomes the tab the other website tools use. The person is asked the first time you use each site. " +
+      "Without `tab` it opens in a new tab, which becomes the tab the other website tools use. Says where it landed: a redirect, a sign-in page, a CAPTCHA. The person is asked the first time you use each site. " +
       "Then read_page to see it.",
     scope: "web",
     readOnly: false,
@@ -97,7 +97,7 @@ export const browserTools: readonly ToolDef[] = [
     name: "click_element",
     title: "Click an element on a web page",
     description:
-      "Click an element read_page numbered (a link, a button, a checkbox, a tab). When the click loads a page, it returns once that page has loaded. Read the page again after.",
+      "Click an element read_page numbered (a link, a button, a checkbox, a tab). Says what happened: a page that loaded (once it has), a new tab, else whether the page changed around it, a dialog that opened, new text, and what the element is now.",
     scope: "web",
     readOnly: false,
     destructive: false,
@@ -108,7 +108,7 @@ export const browserTools: readonly ToolDef[] = [
     name: "fill_element",
     title: "Fill in a field on a web page",
     description:
-      "Replace what a text field read_page numbered holds with `text`, as typing would (the page hears it). Refused on password, card and one-time code fields: " +
+      "Replace what a text field read_page numbered holds with `text`, as typing would (the page hears it), and say what the field holds after. Refused on password, card and one-time code fields: " +
       "sign_in, fill_code and pay fill those, and you never hold the secret.",
     scope: "web",
     readOnly: false,
@@ -147,7 +147,7 @@ export const browserTools: readonly ToolDef[] = [
     title: "Press keys on a web page",
     description:
       'Press keys in a tab\'s page, to whatever has its focus, in Dashi\'s notation: "Return", "Tab", "⇧Tab", "Escape", "↓", "PageDown", "Return Return". ' +
-      "Return in a field submits its form, Tab moves to the next field, arrows and Page keys scroll. Not for typing text (fill_element) or the browser's own shortcuts.",
+      "Return in a field submits its form, Tab moves to the next field, arrows and Page keys scroll. Says what happened (a page that loaded, what changed, where the keyboard went). Not for typing text (fill_element) or the browser's own shortcuts.",
     scope: "web",
     readOnly: false,
     destructive: false,

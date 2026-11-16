@@ -335,7 +335,7 @@ Agent tools (`src/agents/tools/lib/secrets.ts`), carried out by
 | --- | --- | --- |
 | `list_logins {site?}` | Sign in for you | Each saved login's site, account, source, whether it has a code, and whether agents may ask (`ask`/`never`). Never a secret |
 | `pay {ref \| window, site, amount, card?}` | Pay for you | Fills a saved card after dashi-secretd asked the person (finger or password), within the limits (below) |
-| `sign_in {ref \| window, site, account?, submit?}` | Sign in for you | Asks the person which login (the sheet lists every enabled source's, most recently used first, with where each is saved), then types the account (if the user name field is focused), Tab, and the password |
+| `sign_in {ref \| window, site, account?, submit?}` | Sign in for you | Asks the person which login (the sheet lists every enabled source's, most recently used first, with where each is saved), then types the account (if the user name field is focused), Tab, and the password. With `submit` on a browser tab it watches the page after Return (15 s, through Dashi's extension: `browser-extension/src/page/outcome.ts`) and answers `outcome`: `signed-in` (the password field is gone; whether the address changed is said), `wrong` (the site's own error text), `code`, `captcha`, `blocked`, `loading`, `unchanged`; in a window, `unknown` with "take a screenshot". `fill_code` the same, for its code field |
 | `fill_code {ref \| window, site, account?, submit?}` | Sign in for you | Types the login's current TOTP code |
 | `hand_over {window, reason}` | Manage windows and apps | "Your turn: <reason>", Done; the agent waits, the window is blank in its pictures |
 
