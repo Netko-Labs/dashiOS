@@ -280,7 +280,7 @@ checks on its answer are `rewrite/`'s).
 2. **The gate** (`gate`) says whether the rules' text needs the model, and
    why: `cue` (a self-correction after something said: "no, I mean", a
    "no" between two pauses, "actually,", "sorry", "digo", "perdón", "mejor
-   dicho", "o sea, no", "quise decir", "espera", "not … but"; never one
+   dicho", "o sea, no," (with its pause: D196), "quise decir", "espera", "not … but"; never one
    that opens the utterance, "No, I mean it."; or something said twice;
    decisions.md D190), `list` (list
    markers the rules made no list of), `run-on` (twenty words with no

@@ -21,14 +21,13 @@
 import type { Term } from "../types.ts";
 import type { Words } from "../words.ts";
 import { languageScores } from "./language.ts";
-import { AFTER_PLAIN_NO } from "./tidy-words.ts";
 
 export type GateReason = "cue" | "list" | "run-on" | "non-word" | "near-term" | "polish";
 
 /**
  * Said after something else, these take it back. The list covers what the model was scored on in English, Spanish and
  * a mix (docs/dictation-rewrite.md, "The evaluation set"): "no, I mean", "actually", "wait", "sorry", "never mind",
- * "no, digo", "perdón", "mejor dicho", "o sea, no", "quise decir", "miento", and a bare "no" set off by a pause.
+ * "no, digo", "perdón", "mejor dicho", "o sea, no," (with its pause), "quise decir", "miento", and a bare "no" set off by a pause.
  */
 const CUES: readonly RegExp[] = [
   /\bI mean(?:t)?\b/gi,
@@ -37,8 +36,6 @@ const CUES: readonly RegExp[] = [
   /,\s*actually\b|\bactually(?:,|\s+(?:for|to|at|on|in|by|the|a|an|\d))/gi,
   /[,.;]\s+(?:(?:or|o)\s+)?(?:wait|espera|rather|miento|correction|corrijo|never ?mind|olv[ií]dalo|borra eso|en realidad)\b/gi,
   /\b(?:or rather|scratch that|mejor dicho|quise decir|quiero decir)\b/gi,
-  // "o sea, no, pasado mañana"; never "o sea, no sé".
-  new RegExp(`\\bo sea,? no(?:,|\\s+(?!(?:${AFTER_PLAIN_NO})(?![\\p{L}])))`, "giu"),
   /\bno,? no\b|\bbut no\b|\bnot(?: \w+)?,? but\b/gi,
   // A "no" between two pauses: ", no, six", ". No, it's Wednesday". A "no" with no comma after it is left alone: "el
   // azul, no el rojo" is "the blue one, not the red one", and the model does nothing with it either way.
@@ -49,15 +46,13 @@ const CUES: readonly RegExp[] = [
 
 /**
  * The text as the model reads it best (measured: "Saturday, no, Sunday" is mended, "Saturday no Sunday" is not): a
- * comma after a "no" that a second cue says takes something back ("no digo a las seis" → "no, digo, a las seis"; "o
- * sea, no pasado mañana" → "o sea, no, pasado mañana"). Only what the model is sent: if it changes nothing, the rules'
- * text lands as it was. A bare "no" is never given a comma: in Spanish "el azul, no el rojo" means the blue one, and
- * a comma would have the model type the red one (it did, on the evaluation set).
+ * comma after a "no" that a second cue says takes something back ("no digo a las seis" → "no, digo, a las seis"). Only
+ * what the model is sent: if it changes nothing, the rules' text lands as it was. A bare "no" is never given a comma,
+ * nor "o sea, no" (D196): in Spanish "el azul, no el rojo" means the blue one, "mañana, o sea, no podemos hoy" means
+ * what it says, and with a comma the model typed the red one and "hoy" (it did, on the evaluation set and in D196's).
  */
 export function withPauses(text: string): string {
-  return text
-    .replace(/([,.;]\s+no)\s+(digo|perdón|perdon|espera|wait|sorry)\b,?/gi, "$1, $2,")
-    .replace(new RegExp(`\\b(o sea,? no)\\s+(?!(?:${AFTER_PLAIN_NO})(?![\\p{L}]))(?=\\p{L})`, "giu"), "$1, ");
+  return text.replace(/([,.;]\s+no)\s+(digo|perdón|perdon|espera|wait|sorry)(?!\p{L}),?/giu, "$1, $2,");
 }
 
 /** Words a transcript may open with that are not yet something to take back ("No, I mean it.", "Hey, but no"). */

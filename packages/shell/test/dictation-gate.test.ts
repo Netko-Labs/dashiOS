@@ -51,7 +51,7 @@ test("a short clean sentence is not the model's; a self-correction, a repeat, a 
     "She lives in Portland Oregon sorry Portland Maine.",
     // As the recogniser writes Spanish: no comma after the "no", and a second cue says it is a correction.
     "Nos vemos a las cinco, no digo a las seis.",
-    "El paquete llega mañana, o sea, no pasado mañana.",
+    "Mándale el archivo a Marcos, no perdón a Lucía.",
   ])
     expect(why(said)).toContain("cue");
   // A cue that opens what was said takes nothing back, and "te digo" is not "I mean".
@@ -65,6 +65,10 @@ test("a short clean sentence is not the model's; a self-correction, a repeat, a 
   // "X, no Y" with no second pause is "X, not Y" as often as a correction: the words cannot tell, so it is left as said.
   expect(why("Quiero el azul, no el rojo.")).not.toContain("cue");
   expect(why("Tenemos tres opciones, no cuatro opciones.")).not.toContain("cue");
+  // So is "o sea, no" with no pause after it (D196): "that is, not the day after", "that is, we can't today".
+  expect(why("El paquete llega mañana, o sea, no pasado mañana.")).not.toContain("cue");
+  expect(why("Lo hacemos mañana, o sea, no podemos hoy.")).not.toContain("cue");
+  expect(why("Llego tarde, o sea, no llego a la reunión de las nueve.")).not.toContain("cue");
   // A real "no" and an "actually" inside a sentence are not corrections.
   expect(why("No, I see you there.")).toEqual([]);
   expect(why("I actually see you there.")).toEqual([]);
@@ -82,12 +86,14 @@ test("the model's answer keeps the speaker's accents; a change of mind inside qu
 
 test("what the model is sent has the pause the recogniser left out, only where a second cue says it is a correction", () => {
   expect(withPauses("Nos vemos a las cinco, no digo a las seis.")).toBe("Nos vemos a las cinco, no, digo, a las seis.");
-  expect(withPauses("El paquete llega mañana, o sea, no pasado mañana.")).toBe("El paquete llega mañana, o sea, no, pasado mañana.");
+  expect(withPauses("Mándale el archivo a Marcos, no perdón a Lucía.")).toBe("Mándale el archivo a Marcos, no, perdón, a Lucía.");
   // "The blue one, not the red one": a comma here would turn it round.
   for (const same of [
     "Quiero el azul, no el rojo.",
     "Tenemos tres opciones, no cuatro opciones.",
     "No sé si viene, no creo que pueda.",
+    "El paquete llega mañana, o sea, no pasado mañana.",
+    "Lo hacemos mañana, o sea, no podemos hoy.",
     "Let's meet at five, no, I mean six.",
   ])
     expect(withPauses(same)).toBe(same);

@@ -11,9 +11,7 @@
       "row": 2,
       "landed": "Cloud can do that.",
       "by": "model",
-      "gate": [
-        "near-term"
-      ]
+      "gate": ["near-term"]
     },
     {
       "row": 3,
@@ -72,9 +70,7 @@
       "row": 12,
       "landed": "Right now, it does nothing. Right now it cannot follow up.",
       "by": "model",
-      "gate": [
-        "cue"
-      ]
+      "gate": ["cue"]
     },
     {
       "row": 13,
@@ -148,9 +144,7 @@
       "row": 25,
       "landed": "We can fix it with without not but with changing the model.",
       "by": "model",
-      "gate": [
-        "cue"
-      ]
+      "gate": ["cue"]
     },
     {
       "row": 26,
@@ -179,18 +173,13 @@
       "row": 30,
       "landed": "Hey but no, this is dead.",
       "by": "model",
-      "gate": [
-        "near-term"
-      ]
+      "gate": ["near-term"]
     },
     {
       "row": 31,
       "landed": "For example, when I say hey, no, I mean or hey but no, this is dead.",
       "by": "model",
-      "gate": [
-        "cue",
-        "near-term"
-      ]
+      "gate": ["cue", "near-term"]
     },
     {
       "row": 32,

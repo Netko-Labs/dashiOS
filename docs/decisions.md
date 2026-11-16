@@ -4340,3 +4340,33 @@ short words, as the rulebook is written.
 - **Undo:** `withPauses` and `CUES` in `dictation/lib/gate.ts`;
   `repeatsNothing` in `rewrite/checks.ts`; `placesChanged` in
   `dictation/lib/rewrite.ts`.
+
+### D196. "o sea, no" with no pause after it is left as said, like a bare "no"
+
+- **Date:** 2026-11-15. `v09/voicejoin`, reviewing D195 against the
+  evaluation set and sentences it does not hold.
+- **Question:** D195 made "o sea, no" a cue for the model even with no
+  comma after the "no", and put a comma back before asking. The 370
+  pairs hold no plain "o sea, no …" sentence, so nothing measured it.
+  Said through the joined pipeline on the laptop's processor, "Lo
+  hacemos mañana, o sea, no podemos hoy." landed as "Lo hacemos hoy, o
+  sea, no, podemos hoy." (meaning turned round, and the comma meant only
+  for the model typed into the field), and "Llego tarde, o sea, no llego
+  a la reunión de las nueve." lost its "no".
+- **Choice:** "o sea, no" is a cue only with its pause written ("mañana,
+  o sea, no, pasado mañana"), which the cue for a "no" between two
+  pauses already catches; `withPauses` puts a comma back only after
+  "no digo", "no perdón", "no espera", "no sorry", "no wait". "o sea"
+  before an unclear "no" stays in the text (the rules do not take it out
+  as a filler). It is the same reason as D195's bare "no": "El martes, o
+  sea, no el lunes" is "Tuesday, that is, not Monday" as often as a
+  correction, and the words cannot tell.
+- **Measured:** the 370 pairs are unchanged by this (`withPauses` touches
+  three of them, all "no sorry"/"no perdón" chains, and gains one, "3, no
+  4, no sorry 4:30"); restraint 135 of 142 right as heard, the 7 broken
+  by the rules' figures and lists, none by the model; self-corrections
+  99 by rules and model of 138.
+- **Cost:** "El paquete llega mañana, o sea, no pasado mañana." said
+  without a pause after "no" lands as said (in the VM it had been
+  corrected). Raw and Undo stay; saying "no, digo" fixes it.
+- **Undo:** `withPauses` and `CUES` in `dictation/lib/gate.ts`.
