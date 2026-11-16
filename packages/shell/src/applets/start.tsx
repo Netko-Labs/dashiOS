@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { appletDataRoot, appletsRoot, appletsSocketPath, type InstalledApplet, type Placement, SDK_VERSION } from "@dashi/applet";
 import { View } from "@mirinjs/metal";
-import { watchKillSwitch } from "../applet-store/index.ts";
+import { addOnsFor, watchKillSwitch, watchQuietUpdates } from "../applet-store/index.ts";
 import type { Compositor } from "../compositor/index.ts";
 import { screensOf } from "../displays.ts";
 import type { ExtrasStore } from "../extras/index.ts";
@@ -159,8 +159,11 @@ export function startApplets({ compositor, extras, openOverlay, primary, command
   launcher?.start();
   // Pulled versions are turned off even when Software isn't opened.
   const stopKillSwitch = watchKillSwitch();
+  // Add-on updates that ask for nothing new install by themselves (D327); one that asks waits in the Store.
+  const stopQuietUpdates = watchQuietUpdates(addOnsFor());
   return () => {
     stopKillSwitch();
+    stopQuietUpdates();
     stopEveryone();
     launcher?.stop();
   };

@@ -7,6 +7,7 @@
 
 import { type Actions, RadioSource, startActions } from "../actions/index.ts";
 import { type Agents, isVaultWindow } from "../agents/index.ts";
+import { addOnsFor, storeScope, storeSource } from "../applet-store/index.ts";
 import { appFor } from "../apps.ts";
 import { type Clipboard, startClipboard } from "../clipboard/index.ts";
 import type { Compositor } from "../compositor/index.ts";
@@ -100,6 +101,7 @@ export function startRegistry(needs: RegistryNeeds): Registry {
   services.add("actions", () => actions.close());
   addRadios(needs, actions);
   const clipboard = startClipboardHistory(needs, actions);
+  startLauncherStore(needs, actions);
   // What other programs add: applets' commands, your scripts, GNOME's search providers; the registry on D-Bus (extensions/).
   const extensions = late.set(
     "extensions",
@@ -143,6 +145,17 @@ function addRadios({ menus, system, services }: RegistryNeeds, actions: Actions)
     stopRadioSource();
     radioSource.close();
   });
+}
+
+/** The launcher's Store (store-v2 L15, L16): "Store" opens Dashi's add-ons in the launcher, in place. */
+function startLauncherStore({ launcher, services, late }: RegistryNeeds, actions: Actions): void {
+  const scope = storeScope({
+    addOns: addOnsFor(),
+    openStore: (query) => void late.peek("openWith")?.("dev.dashi.software", query ? { DASHI_SOFTWARE_SEARCH: query } : {}),
+  });
+  late.set("storeScope", scope);
+  const stop = actions.registry.add(storeSource((ctx) => launcher.opener.openIn("store", ctx.window)));
+  services.add("launcher-store", stop);
 }
 
 /**

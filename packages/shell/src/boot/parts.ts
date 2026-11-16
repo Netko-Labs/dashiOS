@@ -17,7 +17,7 @@ import type { AutoRefresh } from "../display-config/index.ts";
 import type { Extensions } from "../extensions/index.ts";
 import type { FullscreenBars } from "../fullscreen.ts";
 import type { Laptop } from "../laptop/index.ts";
-import type { LauncherHost, LauncherWorld } from "../launcher/index.ts";
+import type { LauncherHost, LauncherScope, LauncherWorld } from "../launcher/index.ts";
 import type { MenuBars } from "../menubar/index.ts";
 import type { Menus } from "../menus/index.ts";
 import type { OverlaySlots } from "../overlay-slots.ts";
@@ -73,6 +73,8 @@ export interface LateParts {
   openWith: (appId: string, env: Record<string, string>) => boolean;
   openSheet: (pinned?: boolean, appName?: string) => void;
   clipboard: Clipboard;
+  /** The launcher's Store: Dashi's add-ons, got without leaving (applet-store/launcher-store.ts). */
+  storeScope: LauncherScope;
   extensions: Extensions;
   launcherWorld: LauncherWorld;
   launcherHost: LauncherHost;
