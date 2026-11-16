@@ -279,7 +279,7 @@ checks on its answer are `rewrite/`'s).
    numbers stay words, and so do "first" and "second".
 2. **The gate** (`gate`) says whether the rules' text needs the model, and
    why: `cue` (a self-correction after something said: "no, I mean", a
-   "no" set off by a pause, "actually,", "sorry", "digo", "perdón", "mejor
+   "no" between two pauses, "actually,", "sorry", "digo", "perdón", "mejor
    dicho", "o sea, no", "quise decir", "espera", "not … but"; never one
    that opens the utterance, "No, I mean it."; or something said twice;
    decisions.md D190), `list` (list

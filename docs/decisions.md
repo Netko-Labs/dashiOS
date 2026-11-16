@@ -4175,9 +4175,11 @@ short words, as the rulebook is written.
     ". No,", ", no the…"); "digo" never after "te", "le", "que"; "actually"
     with a pause beside it or the thing said again after it. A cue that
     opens the utterance ("No, I mean it.", "No, gracias…", "Sorry, I'm
-    late") takes nothing back and is not a reason. The gate now sends 119
-    of the 134; the 15 left are 7 the rules already carry out, and 8
-    restarts and unpunctuated corrections no candidate fixed (below).
+    late") takes nothing back and is not a reason. The gate now sends 122
+    of the 138 pairs tagged as self-corrections; the 16 left are ones
+    the rules already carry out, and restarts and unpunctuated
+    corrections no candidate fixed (below). D195 narrows one case: a
+    "no" with no pause after it.
   - The model is asked for `cue`, `run-on`, `near-term` and `polish`, as
     D183 chose; `non-word` and `list` stay the rules'. Both reports agree
     on that.
@@ -4196,8 +4198,8 @@ short words, as the rulebook is written.
 - **Why:** the must is the model's job, and a gate narrower than the
   model's training wastes it. Asking costs the wait only (a quarter of a
   second on the laptop); the model's checks hold right sentences (98.6%).
-- **Cost:** more sentences wait for the model: of the 102 sentences in
-  the set that are already right, 20 are sent (they hold a real "no" or
+- **Cost:** more sentences wait for the model: of the sentences in
+  the set that are already right, 21 of 142 are sent (they hold a real "no" or
   "sorry" after other words) and come back unchanged.
 - **Undo:** `CUES` and `OPENERS` in `dictation/lib/gate.ts`.
 
@@ -4303,3 +4305,38 @@ short words, as the rulebook is written.
   "yes" inside those ten seconds is told the question is over.
 - **Undo:** `LATE_MS` in `capsule/lib/voice-mode.ts`; `ABOUT_HEAD` in
   `persona/lib/about.ts`.
+
+### D195. A "no" with no pause after it is left as said; the model's answer may not copy a correction in; a correction is one fix
+
+- **Date:** 2026-11-15. `v09/voicejoin`, from the sentences spoken into
+  the VM's microphone (`27-dictation-join`).
+- **Question:** three things only sound showed. The recogniser writes
+  Spanish corrections without the second comma ("tres opciones, no
+  cuatro opciones", "a las cinco, no digo a las seis"), and the model
+  mends only the form with it. One answer copied the correction in
+  beside itself ("the green one, actually the green one") and passed
+  every check. And the capsule said "4 fixes" for one correction.
+- **Choice:**
+  - A comma is put back for the model only where a **second cue** says
+    it is a correction: "no digo", "no perdón", "no espera", "o sea, no"
+    (not "o sea, no sé", where "o sea" stays a filler the rules take
+    out). A bare "X, no Y" is never touched and no longer a reason to
+    ask: in Spanish it is "X, not Y" as often as a correction. Given
+    the comma, the model turned "Quiero el azul, no el rojo" into
+    "Quiero el rojo" on the evaluation set: the opposite of what was
+    said. The words cannot tell the two apart; the voice's pause can,
+    and when the recogniser writes it (", no, …") the model is asked.
+  - A new check, `repeated`: no word of four letters or more may be
+    said more often in the answer than the speaker said it.
+  - The capsule counts places changed, not words: "1 fix".
+- **Measured** (the whole set through dictation as joined, on the
+  processor: `out/joined-set.txt`): 100 of 138 self-corrections land
+  right (6 by the rules, 94 by the model; 8 more are right but for a
+  number the rules write in figures), no sentence that was right is
+  changed by the model, 156 of 370 sentences are asked, median 0.23 s.
+- **Cost:** a Spanish correction said with no pause after the "no" lands
+  as said. Raw and Undo are on the capsule; saying "no, digo" or
+  pausing fixes it.
+- **Undo:** `withPauses` and `CUES` in `dictation/lib/gate.ts`;
+  `repeatsNothing` in `rewrite/checks.ts`; `placesChanged` in
+  `dictation/lib/rewrite.ts`.

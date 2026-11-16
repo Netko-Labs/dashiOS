@@ -8,7 +8,7 @@
 
 import { expect, test } from "bun:test";
 import { wordsFrom } from "../src/dictation/index.ts";
-import { type GateReason, gate } from "../src/dictation/lib/gate.ts";
+import { type GateReason, gate, withPauses } from "../src/dictation/lib/gate.ts";
 import { languagesOf } from "../src/dictation/lib/language.ts";
 import { keepAccents, placesChanged, wordsChanged } from "../src/dictation/lib/rewrite.ts";
 import { OWN_TERMS } from "../src/dictation/lib/seed.ts";
@@ -49,9 +49,7 @@ test("a short clean sentence is not the model's; a self-correction, a repeat, a 
     "I think it's Tuesday. No, it's Wednesday today.",
     "Book the room for an hour actually for two hours.",
     "She lives in Portland Oregon sorry Portland Maine.",
-    // As the recogniser writes Spanish: no comma after the "no".
-    "Tenemos tres opciones, no cuatro opciones.",
-    "Llámame a las tres, no a las cuatro.",
+    // As the recogniser writes Spanish: no comma after the "no", and a second cue says it is a correction.
     "Nos vemos a las cinco, no digo a las seis.",
     "El paquete llega mañana, o sea, no pasado mañana.",
   ])
@@ -64,6 +62,9 @@ test("a short clean sentence is not the model's; a self-correction, a repeat, a 
   expect(why("Te digo que no voy.")).not.toContain("cue");
   expect(why("No sé si viene, no creo que pueda.")).not.toContain("cue");
   expect(why("I asked him, no answer yet.")).not.toContain("cue");
+  // "X, no Y" with no second pause is "X, not Y" as often as a correction: the words cannot tell, so it is left as said.
+  expect(why("Quiero el azul, no el rojo.")).not.toContain("cue");
+  expect(why("Tenemos tres opciones, no cuatro opciones.")).not.toContain("cue");
   // A real "no" and an "actually" inside a sentence are not corrections.
   expect(why("No, I see you there.")).toEqual([]);
   expect(why("I actually see you there.")).toEqual([]);
@@ -77,6 +78,23 @@ test("the model's answer keeps the speaker's accents; a change of mind inside qu
   expect(keepAccents("See you at five, no, six.", "See you at six.")).toBe("See you at six.");
   const quoted = 'The tool should understand phrases like "scratch that" and "actually".';
   expect(tidy(quoted).typed).toBe(quoted);
+});
+
+test("what the model is sent has the pause the recogniser left out, only where a second cue says it is a correction", () => {
+  expect(withPauses("Nos vemos a las cinco, no digo a las seis.")).toBe("Nos vemos a las cinco, no, digo, a las seis.");
+  expect(withPauses("El paquete llega mañana, o sea, no pasado mañana.")).toBe("El paquete llega mañana, o sea, no, pasado mañana.");
+  // "The blue one, not the red one": a comma here would turn it round.
+  for (const same of [
+    "Quiero el azul, no el rojo.",
+    "Tenemos tres opciones, no cuatro opciones.",
+    "No sé si viene, no creo que pueda.",
+    "Let's meet at five, no, I mean six.",
+  ])
+    expect(withPauses(same)).toBe(same);
+  expect(tidy("El paquete llega mañana, o sea, no pasado mañana.").typed).toBe("El paquete llega mañana, o sea, no pasado mañana.");
+  expect(tidy("O sea, it works.").typed).toBe("It works.");
+  expect(tidy("Es que, o sea, no sé, si llegamos a tiempo.").typed).toBe("Es que, no sé, si llegamos a tiempo.");
+  expect(why("Es que, o sea, no sé si llegamos.")).not.toContain("cue");
 });
 
 test("the language of what was said, with the text before it", () => {

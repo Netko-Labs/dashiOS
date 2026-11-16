@@ -14,6 +14,7 @@ import { parseArgs } from "node:util";
 import { list, maybe, obj, str } from "@dashi/shape";
 import { Lexicon, systemWords } from "../../../src/dictation/index.ts";
 import { compose } from "../../../src/dictation/lib/compose.ts";
+import { withPauses } from "../../../src/dictation/lib/gate.ts";
 import { PROFILES, pickProfile } from "../../../src/dictation/lib/profiles.ts";
 import { reasonsFor, withModel } from "../../../src/dictation/lib/rewrite.ts";
 import { checkAnswer } from "../../../src/rewrite/checks.ts";
@@ -70,12 +71,13 @@ async function rowOf(pair: Pair): Promise<Row> {
   let ms = 0;
   if (values.socket && (values.all || reasons.length > 0)) {
     const vocabulary = made.terms.slice(0, 50).map((each) => each.term);
-    const answer = await ask(made.text, vocabulary);
+    const sent = withPauses(made.text);
+    const answer = await ask(sent, vocabulary);
     ms = answer.ms;
-    const checked = checkAnswer(made.text, answer.text, vocabulary);
+    const checked = checkAnswer(sent, answer.text, vocabulary);
     if (!checked.ok) model = checked.check;
     else {
-      landed = withModel(made, checked.text, composing).text;
+      landed = checked.unchanged ? made.text : withModel(made, checked.text, composing).text;
       model = landed === made.text ? "unchanged" : "text";
     }
   }

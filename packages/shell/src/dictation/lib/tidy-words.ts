@@ -93,3 +93,9 @@ export const isNegation = (word: string): boolean => NEGATIONS.has(word) || /n['
 
 /** Every word tidying may take out by a rule (a change of mind's are named apart). */
 export const DROPPABLE: ReadonlySet<string> = new Set([...FILLERS, ...SET_OFF_FILLERS.flat(), ...SPOKEN.flatMap((spoken) => spoken.words)]);
+
+/**
+ * After "o sea, no" these make it a plain "no" ("o sea, no sé", "o sea, no me gusta"): the "o sea" is then a filler.
+ * Before anything else, or a comma, "o sea, no" takes back what was said ("mañana, o sea, no, pasado mañana").
+ */
+export const AFTER_PLAIN_NO = "sé|se|es|son|creo|puedo|puede|tengo|tiene|hay|quiero|voy|va|está|estoy|era|fue|lo|me|te|le|nos|les|ha|he|sabe|sabemos|funciona";

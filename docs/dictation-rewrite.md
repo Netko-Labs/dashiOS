@@ -191,6 +191,7 @@ person did not take back.
 | `longer` | more than two words longer than the transcript |
 | `lines` | a different number of line breaks (the model does not lay out lists or letters) |
 | `overlap` | under 70% of the answer's words were said (or are one slip from a word that was, or the same number in the other language): it answered, obeyed or translated |
+| `repeated` | a word of four letters or more said more often than the speaker said it ("the blue one, actually the green one" as "the green one, actually the green one"): the correction was copied in, not carried out (found in the VM, `27-dictation-join`) |
 | `opening` | a cue the sentence opens with is gone ("No, thank you" as "Thank you"): nothing came before it, so it took nothing back |
 | `earlier` | what was said after the last cue is not all there: the answer kept the version that was taken back ("at five, no, six" as "at five") |
 | `quotes` | words inside quotation marks changed |

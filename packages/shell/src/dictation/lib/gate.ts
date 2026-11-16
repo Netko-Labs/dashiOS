@@ -21,6 +21,7 @@
 import type { Term } from "../types.ts";
 import type { Words } from "../words.ts";
 import { languageScores } from "./language.ts";
+import { AFTER_PLAIN_NO } from "./tidy-words.ts";
 
 export type GateReason = "cue" | "list" | "run-on" | "non-word" | "near-term" | "polish";
 
@@ -35,32 +36,28 @@ const CUES: readonly RegExp[] = [
   // "I actually like it" is not one: a pause beside it, or the thing said again after it ("an hour actually for two").
   /,\s*actually\b|\bactually(?:,|\s+(?:for|to|at|on|in|by|the|a|an|\d))/gi,
   /[,.;]\s+(?:(?:or|o)\s+)?(?:wait|espera|rather|miento|correction|corrijo|never ?mind|olv[ií]dalo|borra eso|en realidad)\b/gi,
-  /\b(?:or rather|scratch that|mejor dicho|quise decir|quiero decir|o sea,? no)\b/gi,
+  /\b(?:or rather|scratch that|mejor dicho|quise decir|quiero decir)\b/gi,
+  // "o sea, no, pasado mañana"; never "o sea, no sé".
+  new RegExp(`\\bo sea,? no(?:,|\\s+(?!(?:${AFTER_PLAIN_NO})(?![\\p{L}])))`, "giu"),
   /\bno,? no\b|\bbut no\b|\bnot(?: \w+)?,? but\b/gi,
-  // A "no" after a pause that goes on to say the thing again: ", no, six", ". No, it's Wednesday", ", no the blue one".
-  /[,.;]\s+(?:(?:ay|bueno|oh|or|o|espera|wait)\s+)?no(?:,|\s+(?:(?:the|a|an|el|la|los|las|un|una|wait|digo|espera|mejor)\b|\d))/gi,
+  // A "no" between two pauses: ", no, six", ". No, it's Wednesday". A "no" with no comma after it is left alone: "el
+  // azul, no el rojo" is "the blue one, not the red one", and the model does nothing with it either way.
+  /[,.;]\s+(?:(?:ay|bueno|oh|or|o|espera|wait)\s+)?no,/gi,
   // "digo" as "I mean", never "te digo que".
   /(?<!\b(?:te|le|les|os|se|lo|que|yo|como|les)\s)\bdigo\b/gi,
 ];
 
-const SMALL_NUMBER =
-  /^(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce|\d+)$/i;
-
 /**
- * A "no" after a pause with no comma of its own (the recogniser writes Spanish so: "tres opciones, no cuatro opciones",
- * "a las tres, no a las cuatro"): a correction when it goes on to a number, or says again a word said just before it.
- * "No sé, no creo que venga" says nothing again, and is not one.
+ * The text as the model reads it best (measured: "Saturday, no, Sunday" is mended, "Saturday no Sunday" is not): a
+ * comma after a "no" that a second cue says takes something back ("no digo a las seis" → "no, digo, a las seis"; "o
+ * sea, no pasado mañana" → "o sea, no, pasado mañana"). Only what the model is sent: if it changes nothing, the rules'
+ * text lands as it was. A bare "no" is never given a comma: in Spanish "el azul, no el rojo" means the blue one, and
+ * a comma would have the model type the red one (it did, on the evaluation set).
  */
-function restated(text: string): boolean {
-  for (const match of text.matchAll(/([^,.;]*)[,.;]\s+no\s+([^,.;]+)/gi)) {
-    const before = wordsIn(match[1] ?? "").map((word) => word.toLowerCase());
-    const after = wordsIn(match[2] ?? "").map((word) => word.toLowerCase());
-    if (before.length === 0 || before.every((word) => OPENERS.has(word))) continue;
-    if (SMALL_NUMBER.test(after[0] ?? "")) return true;
-    const near = new Set(before.slice(-5));
-    if (after.slice(0, 3).some((word) => word.length > 1 && near.has(word))) return true;
-  }
-  return false;
+export function withPauses(text: string): string {
+  return text
+    .replace(/([,.;]\s+no)\s+(digo|perdón|perdon|espera|wait|sorry)\b,?/gi, "$1, $2,")
+    .replace(new RegExp(`\\b(o sea,? no)\\s+(?!(?:${AFTER_PLAIN_NO})(?![\\p{L}]))(?=\\p{L})`, "giu"), "$1, ");
 }
 
 /** Words a transcript may open with that are not yet something to take back ("No, I mean it.", "Hey, but no"). */
@@ -130,7 +127,7 @@ export interface Gating {
 /** Why the model should be asked; empty when it should not. */
 export function gate({ text, listed, terms, words, polish }: Gating): GateReason[] {
   const reasons: GateReason[] = [];
-  if (cued(text) || restated(text) || repeats(text)) reasons.push("cue");
+  if (cued(text) || repeats(text)) reasons.push("cue");
   if (!listed && (text.match(LIST_MARKERS)?.length ?? 0) >= 2) reasons.push("list");
   if (runOn(text)) reasons.push("run-on");
   if (nonWord(text, terms, words)) reasons.push("non-word");

@@ -14,6 +14,7 @@ export type CheckName =
   | "longer"
   | "lines"
   | "overlap"
+  | "repeated"
   | "opening"
   | "earlier"
   | "dropped"
@@ -134,6 +135,12 @@ function overlap(said: readonly string[], kept: readonly string[], vocabulary: r
   return hits / kept.length;
 }
 
+/** No word of substance is said more often than the speaker said it: "the green one, actually the green one" for "the blue one, actually the green one". */
+function repeatsNothing(said: readonly string[], kept: readonly string[]): boolean {
+  const times = (words: readonly string[], word: string): number => words.filter((each) => each === word).length;
+  return [...new Set(kept)].every((word) => word.length < 4 || isCue(word) || isAside(word) || times(kept, word) <= Math.max(1, times(said, word)));
+}
+
 /** The answer, if it may land in place of `transcript`; else the check it failed. */
 export function checkAnswer(transcript: string, answer: string, vocabulary: readonly string[] = []): Checked {
   const text = unframed(answer);
@@ -145,6 +152,7 @@ export function checkAnswer(transcript: string, answer: string, vocabulary: read
   if (kept.length > said.length + LONGER_BY) return { ok: false, check: "longer" };
   if (lineBreaks(text) !== lineBreaks(transcript.trim())) return { ok: false, check: "lines" };
   if (overlap(said, kept, vocabulary) < OVERLAP_FLOOR) return { ok: false, check: "overlap" };
+  if (!repeatsNothing(said, kept)) return { ok: false, check: "repeated" };
   if (!keepsOpening(said, kept)) return { ok: false, check: "opening" };
   if (!keepsLater(said, kept)) return { ok: false, check: "earlier" };
   if (!keepsQuotes(transcript, text)) return { ok: false, check: "quotes" };

@@ -10,7 +10,9 @@ import type { TidyChange } from "../../shared/pill/index.ts";
 import { keepsMeaning } from "./tidy-check.ts";
 import { changeMind } from "./tidy-mind.ts";
 import { ends, render, settle, type Token, tokens } from "./tidy-tokens.ts";
-import { AFTER_FILLER_LIKE, BEFORE_FILLER_LIKE, FILLERS, SET_OFF_FILLERS, SPOKEN, type Spoken } from "./tidy-words.ts";
+import { AFTER_FILLER_LIKE, AFTER_PLAIN_NO, BEFORE_FILLER_LIKE, FILLERS, SET_OFF_FILLERS, SPOKEN, type Spoken } from "./tidy-words.ts";
+
+const PLAIN_NO = new Set(AFTER_PLAIN_NO.split("|"));
 
 export interface Tidied {
   typed: string;
@@ -94,7 +96,11 @@ function fillerAt(list: readonly Token[], at: number): number {
   if (!token?.word) return 0;
   if (FILLERS.has(lower(token))) return 1;
   for (const words of SET_OFF_FILLERS) {
-    if (wordsAt(list, at, words) && setOff(list, at, words.length)) return words.length;
+    if (!wordsAt(list, at, words) || !setOff(list, at, words.length)) continue;
+    // "o sea, no…" takes back what came before it: it is a change of mind, the model's to carry out, not a filler.
+    const [next, then] = list.slice(at + words.length).filter((token) => token.word);
+    if (words[0] === "o" && lower(next) === "no" && !PLAIN_NO.has(lower(then))) continue;
+    return words.length;
   }
   return fillerLike(list, at) ? 1 : 0;
 }

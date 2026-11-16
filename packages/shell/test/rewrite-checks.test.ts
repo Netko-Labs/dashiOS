@@ -136,3 +136,11 @@ test("words are read without accents or marks, and a slip of one letter is near"
   expect(near("cat", "car")).toBe(false);
   expect(near("monday", "tuesday")).toBe(false);
 });
+
+test("a correction copied in, not carried out, is refused: no word of substance more often than it was said", () => {
+  const said = "I want the blue one, actually the green one.";
+  expect(checkAnswer(said, "I want the green one, actually the green one.")).toEqual({ ok: false, check: "repeated" });
+  expect(checkAnswer(said, "I want the green one.")).toMatchObject({ ok: true, text: "I want the green one." });
+  // Said twice, kept twice; short words are not counted.
+  expect(checkAnswer("The day after the day we met, no, the week after.", "The day after the week after.")).toMatchObject({ ok: true });
+});

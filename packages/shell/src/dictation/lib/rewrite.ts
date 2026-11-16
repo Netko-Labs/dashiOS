@@ -12,7 +12,7 @@
 import type { RewriteReply, RewriteRequest, Rewriter } from "../../rewrite/index.ts";
 import type { DictationDeps } from "../types.ts";
 import { type Composed, type Composing, isShell, restyle } from "./compose.ts";
-import { type GateReason, gate } from "./gate.ts";
+import { type GateReason, gate, withPauses } from "./gate.ts";
 import { languagesOf } from "./language.ts";
 
 /**
@@ -45,7 +45,7 @@ export function reasonsFor(made: Composed, composing: Composing): GateReason[] {
 
 export function requestFor(deps: DictationDeps, asking: Asking, deadlineMs: number, signal?: AbortSignal): RewriteRequest {
   return {
-    transcript: asking.made.text,
+    transcript: withPauses(asking.made.text),
     languages: languagesOf(asking.made.text, asking.before, deps.language),
     vocabulary: asking.made.terms.slice(0, MOST_TERMS).map((each) => each.term),
     before: asking.before.slice(-200),
