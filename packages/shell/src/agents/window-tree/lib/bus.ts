@@ -55,6 +55,14 @@ async function facts(node: A11yNode): Promise<{ element: Element; kids: A11yNode
   ]);
   if (role < 0) return null;
   const p = mapOf(props);
+  // Qt's bridge answers Get but not GetAll (measured in the VM: every name came back empty).
+  if (p.size === 0) {
+    const one = async (name: string) => unwrapped(await call(PROPERTIES, "Get", "ss", [`${ATSPI}Accessible`, name]));
+    const [name, description, count] = await Promise.all([one("Name"), one("Description"), one("ChildCount")]);
+    p.set("Name", name);
+    p.set("Description", description);
+    p.set("ChildCount", count);
+  }
   const ifaces = (Array.isArray(interfaces) ? interfaces : []).map(str).map((name) => name.replace(ATSPI, ""));
   const attrs: Record<string, string> = {};
   for (const [k, v] of mapOf(attributes)) if (typeof v === "string") attrs[k] = v;

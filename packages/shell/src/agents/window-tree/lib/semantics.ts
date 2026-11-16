@@ -46,17 +46,19 @@ export interface Hints {
 const WORDS: ReadonlyArray<[Critical, RegExp]> = [
   [
     "pays",
-    /^(pay|buy|purchase|place (your )?order|check ?out|complete (the )?purchase|subscribe|pagar|comprar|realizar (el )?pedido|finalizar compra|suscribirse)\b/i,
+    /^(pay|buy|purchase|place (your )?order|check ?out|complete (the )?purchase|subscribe|pagar|comprar|realizar (el )?pedido|finalizar compra|suscribirse)(?=$|\s)/i,
   ],
   [
     "loses work",
-    /^(don'?t save|do not save|close without saving|discard( changes| all)?|revert|delete (permanently|immediately|forever)|permanently delete|empty( the)?( trash| bin)?|erase|format|wipe|no guardar|cerrar sin guardar|descartar|eliminar (permanentemente|definitivamente|para siempre)|vaciar( la)?( papelera)?|borrar (todo|definitivamente)|formatear)\b/i,
+    /^(don'?t save|do not save|close without saving|discard( changes| all)?|revert|delete (permanently|immediately|forever)|permanently delete|empty( the)?( trash| bin)?|erase|format|wipe|no guardar|cerrar sin guardar|descartar|eliminar (permanentemente|definitivamente|para siempre)|vaciar( la)?( papelera)?|borrar (todo|definitivamente)|formatear)(?=$|\s)/i,
   ],
-  ["system", /^(install|uninstall|update( all)?|upgrade|restart and update|authenticate|instalar|desinstalar|actualizar( todo)?|autenticar)\b/i],
-  ["sends", /^(send|post|publish|reply( all)?|forward|submit|share|accept|decline|enviar|publicar|responder|reenviar|compartir|aceptar|rechazar)\b/i],
+  ["system", /^(install|uninstall|update( all)?|upgrade|restart and update|authenticate|instalar|desinstalar|actualizar( todo)?|autenticar)(?=$|\s)/i],
+  ["sends", /^(send|post|publish|reply( all)?|submit|accept|decline|enviar|publicar|responder|aceptar|rechazar)(?=$|\s)/i],
 ];
 
-const SIGN_IN = /^(sign in|log ?in|unlock|continue|iniciar sesi[oó]n|ingresar|entrar|desbloquear|continuar)\b/i;
+const SIGN_IN = /^(sign in|log ?in|unlock|continue|iniciar sesi[oó]n|ingresar|entrar|desbloquear|continuar)(?=$|\s)/i;
+/** A command is a few words; a longer name is a row or a document ("install.err Nov 2 …"), never a command. */
+const COMMAND_CHARS = 40;
 
 /** Whether pressing it is critical, and why; null when it just runs. Only what can be pressed is asked about. */
 export function criticalOf(element: Element, hints: Hints): Critical | null {
@@ -65,7 +67,7 @@ export function criticalOf(element: Element, hints: Hints): Critical | null {
   if (told) return told;
   if (element.attributes.destructive === "true") return "loses work";
   const name = element.name.trim();
-  if (!name || FIELDS.has(element.role)) return null;
+  if (!name || name.length > COMMAND_CHARS || FIELDS.has(element.role)) return null;
   for (const [kind, words] of WORDS) if (words.test(name)) return kind;
   return hints.secretFilled && SIGN_IN.test(name) ? "secret" : null;
 }

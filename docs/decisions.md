@@ -3787,7 +3787,8 @@ short words, as the rulebook is written.
 
 - **Date:** 2026-11-15. `v09/windowtree`.
 - **Choice:** a password role, or a field named as a password, PIN, code or
-  card, is never read (its character count says filled or not). The Setup
+  card, is never read (its character count says filled or not; where a
+  toolkit gives no count, as Metal today, it says "filled: can't tell"). The Setup
   Assistant, Settings showing the vault, a window handed over, and the
   shell's and portal's own windows (consent sheets) stay the person's alone
   under the critical-only rule too: named, never read, no numbers given.
@@ -3812,5 +3813,9 @@ short words, as the rulebook is written.
   (`test/pressable-names.test.tsx`). The apps' and shell's 23 nameless ones
   found by an audit got names (Dock icons, month arrows, Eject, Cancel…);
   full-screen backdrops are a group named "Close", not a nameless button.
+  A switch in a settings row takes the row's title (`ControlName`, read by
+  @dashi/ui's `Switch` and the shell's `ControlSwitch`: measured in the VM,
+  every Settings switch was a nameless "toggle button"), and
+  `ToolbarButton` says when it is disabled.
 - **Why:** an unnamed button is unusable for a screen reader and an agent.
 - **Undo:** none needed; the names cost nothing.

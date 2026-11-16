@@ -8,7 +8,7 @@
  * disabled, the whole control is at 40%.
  */
 
-import { CHEVRON_DOWN, DISABLED_OPACITY, useColors } from "@dashi/ui";
+import { CHEVRON_DOWN, ControlName, DISABLED_OPACITY, useColors } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { createContext, useContext } from "react";
 import { useSpring } from "./motion.ts";
@@ -24,16 +24,22 @@ export interface ControlSwitchProps {
   disabled?: boolean;
   /** Tab reaches a switch that can be flipped; `false` leaves it to the pointer. */
   focusable?: boolean;
+  /** What it turns on, for screen readers and agents (a setting's title). */
+  label?: string;
 }
 
-export function ControlSwitch({ on, testID, onChange, disabled, focusable = true }: ControlSwitchProps) {
+export function ControlSwitch({ on, testID, onChange, disabled, focusable = true, label: given }: ControlSwitchProps) {
   const colors = useControlColors();
+  // Named by its row when not given a name (a setting's title: @dashi/ui's control-name.ts).
+  const fromRow = useContext(ControlName);
+  const label = given ?? fromRow;
   const enabled = onChange !== undefined && disabled !== true;
   return (
     <View
       testID={testID}
       focusable={focusable && enabled}
       accessibilityRole="switch"
+      {...(label ? { accessibilityLabel: label } : {})}
       accessibilityState={{ checked: on, disabled: disabled === true }}
       {...(enabled ? { onPress: () => onChange?.(!on) } : {})}
       style={{

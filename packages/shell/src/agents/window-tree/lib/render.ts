@@ -41,7 +41,7 @@ export interface RenderContext {
 export function usable(element: Element): boolean {
   if (FIELDS.has(element.role) || CHECKABLE.has(element.role) || ROWS.has(element.role)) return true;
   if (TEXTUAL.has(element.role) || element.role === R.HEADING) return false;
-  if (LAYOUT.has(element.role) && element.actions.length === 0) return false;
+  if (LAYOUT.has(element.role) && (element.actions.length === 0 || !element.name)) return false;
   if (element.actions.length > 0 || element.interfaces.includes("Value") || element.interfaces.includes("EditableText")) return true;
   return has(element.states, S.SELECTABLE) || has(element.states, S.FOCUSABLE) || element.role === R.LIST_ITEM || element.role === R.PAGE_TAB;
 }
@@ -92,6 +92,7 @@ function moreRows(list: Element, number: number, ctx: RenderContext): string {
   const first = rows.length > 0 ? Math.min(...rows) : 0;
   const last = rows.length > 0 ? Math.max(...rows) + 1 : 0;
   if (list.childCount <= list.children.length && first === 0) return "";
+  if (list.children.length === 0) return ` (${list.childCount} rows, none showing)`;
   const next = last < list.childCount ? `; next: read_window {"window":"w${ctx.window}","list":${number},"from":${last}}` : "";
   return ` (${list.childCount} rows; rows ${first + 1}–${last} here${next})`;
 }
@@ -106,7 +107,7 @@ function walk(element: Element, parent: Element | null, indent: number, out: Out
   }
   if (TEXTUAL.has(element.role) && element.children.length === 0) {
     const words = wordsOf(element);
-    if (words && words !== clean(parent?.name ?? "")) out.line(indent, words);
+    if (words && !clean(parent?.name ?? "").includes(words)) out.line(indent, words);
     return;
   }
   const dialog = DIALOGS.has(element.role) || (isModal(element) && element.role !== R.FRAME);
@@ -119,16 +120,32 @@ function walk(element: Element, parent: Element | null, indent: number, out: Out
     const number = ctx.numberOf(element, parent, said);
     const more = ROWS.has(element.role) ? moreRows(element, number, ctx) : "";
     out.line(indent, `[${number}] ${said}${more}`, true);
-    for (const child of element.children) walk(child, element, indent + 1, out, ctx, hints);
+    children(element.children, element, indent + 1, out, ctx, hints);
     return;
   }
   const named = clean(element.name);
   if (named && !LAYOUT.has(element.role)) {
     out.line(indent, describe(element, hints));
-    for (const child of element.children) walk(child, element, indent + 1, out, ctx, hints);
+    children(element.children, element, indent + 1, out, ctx, hints);
     return;
   }
-  for (const child of element.children) walk(child, parent, indent, out, ctx, hints);
+  children(element.children, parent, indent, out, ctx, hints);
+}
+
+const isWord = (element: Element): boolean => TEXTUAL.has(element.role) && element.children.length === 0 && /^\S+$/.test(wordsOf(element));
+
+/** Children in order; a run of texts of one word each (a line some views publish word by word) is one line. */
+function children(list: readonly Element[], parent: Element | null, indent: number, out: Out, ctx: RenderContext, hints: Hints): void {
+  for (let i = 0; i < list.length; i++) {
+    let end = i;
+    while (end < list.length && isWord(list[end] as Element)) end++;
+    if (end - i >= 3) {
+      out.line(indent, list.slice(i, end).map(wordsOf).join(" "));
+      i = end - 1;
+      continue;
+    }
+    walk(list[i] as Element, parent, indent, out, ctx, hints);
+  }
 }
 
 /** A sheet or dialog: marked, and when it is the person's, named and left closed. */
@@ -141,14 +158,14 @@ function sheet(element: Element, indent: number, out: Out, ctx: RenderContext, h
     return;
   }
   out.line(indent, head);
-  for (const child of element.children) walk(child, element, indent + 1, out, ctx, { ...hints, inSheet: true });
+  children(element.children, element, indent + 1, out, ctx, { ...hints, inSheet: true });
 }
 
 /** The tree under a window's root as lines; `cut` when the limits stopped it. */
 export function renderTree(root: Element, ctx: RenderContext, limits: RenderLimits = RENDER_LIMITS): { text: string; cut: boolean } {
   const out = new Out(limits);
   const hints = { inSheet: false, secretFilled: holdsFilledSecret(root) };
-  for (const child of root.children) walk(child, root, 0, out, ctx, hints);
+  children(root.children, root, 0, out, ctx, hints);
   return { text: out.lines.join("\n"), cut: out.cut };
 }
 
@@ -158,6 +175,6 @@ export function renderRows(list: Element, ctx: RenderContext, limits: RenderLimi
   const number = ctx.numberOf(list, null, describe(list));
   out.line(0, `[${number}] ${describe(list)}${moreRows(list, number, ctx)}`, true);
   const hints = { inSheet: false, secretFilled: holdsFilledSecret(list) };
-  for (const child of list.children) walk(child, list, 1, out, ctx, hints);
+  children(list.children, list, 1, out, ctx, hints);
   return { text: out.lines.join("\n"), cut: out.cut };
 }

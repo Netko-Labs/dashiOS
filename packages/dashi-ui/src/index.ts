@@ -17,6 +17,7 @@ export { Button } from "./button.tsx";
 export { type ButtonKind, type ButtonLook, buttonLook } from "./button-look.ts";
 export { type Choice, Choices } from "./choices.tsx";
 export { type Confirm, type ConfirmRequest, ConfirmSheet, type ConfirmSheetProps, confirmKeyAction, useConfirm } from "./confirm.tsx";
+export { ControlName } from "./control-name.ts";
 export { type ControlState, DISABLED_OPACITY, isHeld, type ShownStates, ShowStates, useControlState } from "./control-state.tsx";
 export { Caption, Group, Note, ROW_INSET, Row } from "./controls.tsx";
 export { EmptyState } from "./empty-state.tsx";

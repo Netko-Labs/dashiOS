@@ -123,6 +123,8 @@ const WORDS: Readonly<Record<number, string>> = {
   [R.CHECK_BOX]: "checkbox",
   [R.CHECK_MENU_ITEM]: "menuitem",
   [R.COLUMN_HEADER]: "column header",
+  57: "column header",
+  58: "row header",
   [R.COMBO_BOX]: "combobox",
   [R.DIALOG]: "dialog",
   [R.DRAWING_AREA]: "canvas",

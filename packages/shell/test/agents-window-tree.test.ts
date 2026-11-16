@@ -213,8 +213,10 @@ test("what is critical: paying, a secret, losing work for good, the system, send
   expect(kinds(["Don't Save", "Delete Immediately", "Empty Trash", "Vaciar papelera", "Discard Changes"])).toEqual(Array(5).fill("loses work"));
   expect(kinds(["Install", "Uninstall", "Update All", "Instalar"])).toEqual(Array(4).fill("system"));
   expect(kinds(["Send", "Reply All", "Enviar", "Decline"])).toEqual(Array(4).fill("sends"));
-  // Into the Trash, closing, removing a device, saving: they just run.
-  expect(kinds(["Delete", "Move to Trash", "Remove", "Close", "Save", "OK", "Cancel"])).toEqual(Array(7).fill(null));
+  // Into the Trash, closing, removing a device, saving, going forward, sharing: they just run.
+  expect(kinds(["Delete", "Move to Trash", "Remove", "Close", "Save", "OK", "Cancel", "Forward", "Share"])).toEqual(Array(9).fill(null));
+  // A file's row is not a command (measured in Files: "install.err Nov 2 …" read as Install).
+  expect(kinds(["install.err Nov 2 at 10:58 PM 921 bytes Plain text document", "Installer.log", "Send-later.txt"])).toEqual([null, null, null]);
   // "Sign in" is a sign-in with a secret only beside a filled password field.
   expect(kinds(["Sign in"])).toEqual([null]);
   expect(kinds(["Sign in", "Iniciar sesión"], { inSheet: false, secretFilled: true })).toEqual(["secret", "secret"]);
@@ -228,4 +230,24 @@ test("after an action: nothing more when only its own line moved, the lines that
   expect(changes(before, '[1] switch "Wi-Fi" (on)\n[2] button "Join"\nOffline', 1)).toBe("");
   expect(changes(before, '[1] switch "Wi-Fi" (on)\n[2] button "Join"\nConnected', 1)).toBe("\n\nAlso changed:\nConnected");
   expect(changes(before, '[1] switch "Wi-Fi" (on)\ndialog "Password" (modal)\n  [3] password field (filled: no)', 1)).toContain("The window changed. Now:");
+});
+
+test("a line some views publish one word a node is one line; a row's words are not read twice", () => {
+  const word = (name: string): Spec => ({ role: R.LABEL, name });
+  const app = new FakeApp({
+    role: R.FRAME,
+    name: "W",
+    children: [
+      { role: R.PANEL, children: ["Hiding", "is", "also", "here."].map(word) },
+      { role: R.PUSH_BUTTON, name: "Notes 1:24 AM — Folder", actions: ["click"], children: [word("Notes"), word("— Folder")] },
+    ],
+  });
+  return (async () => {
+    const { readElements } = await import("../src/agents/window-tree/lib/bus.ts");
+    const { renderTree } = await import("../src/agents/window-tree/lib/render.ts");
+    const { root } = await readElements(app.root.kids[0] as never, { nodes: 100, deadline: Number.POSITIVE_INFINITY, rows: () => ({ from: 0, to: 40 }) });
+    const numbers = new TreeNumbers();
+    const text = renderTree(root as never, { window: 1, numberOf: (e, p, said) => numbers.number(1, e.key, p?.key ?? null, said) }).text;
+    expect(text).toBe('Hiding is also here.\n[1] button "Notes 1:24 AM — Folder"');
+  })();
 });

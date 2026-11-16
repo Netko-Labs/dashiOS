@@ -45,7 +45,8 @@ function valueOf(element: Element): string | null {
 function flags(element: Element, hints: Hints): string[] {
   const s = element.states;
   const out: string[] = [];
-  if (isSecret(element)) out.push(`filled: ${(element.chars ?? 0) > 0 ? "yes" : "no"}`);
+  // Without a character count (Metal publishes none: for-mirin.md) it can't be told, and is not guessed.
+  if (isSecret(element)) out.push(`filled: ${element.chars === undefined ? "can't tell" : element.chars > 0 ? "yes" : "no"}`);
   if (CHECKABLE.has(element.role) || has(s, S.CHECKABLE)) {
     const on = has(s, S.CHECKED) || has(s, S.PRESSED);
     if (has(s, S.INDETERMINATE)) out.push("mixed");

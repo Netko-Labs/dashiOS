@@ -58,7 +58,7 @@ function RegistryControl({ row, testID }: { row: RowDef; testID: string }) {
   const value = useRowValue(row);
   const set = useSetRow(row);
   if (value === null) return null;
-  if (row.kind === "switch") return <ControlSwitch testID={testID} on={value === true} onChange={set} />;
+  if (row.kind === "switch") return <ControlSwitch testID={testID} label={row.name ?? row.title} on={value === true} onChange={set} />;
   if (row.kind === "choice" && row.options && typeof value !== "boolean")
     return <FoldedChoices testID={testID} value={value} options={row.options} onChange={set} />;
   return null;

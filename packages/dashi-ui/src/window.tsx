@@ -207,6 +207,7 @@ export function ToolbarButton({
       focusable={!disabled}
       accessibilityRole="button"
       accessibilityLabel={tooltip ?? label}
+      accessibilityState={{ disabled: disabled === true }}
       onPress={
         disabled
           ? undefined
