@@ -9,7 +9,7 @@
  * each other piece by piece (offsets.ts). Pure.
  */
 
-import { parseTable, type Table } from "../../../src/shared/markdown/index.ts";
+import { parseTable, TASK_BOX, type Table } from "../../../src/shared/markdown/index.ts";
 import { type Block, blocksOf, type Lines } from "./blocks.ts";
 import { BULLET, CHECK, FENCE, HEADING, lineSpans, markup, NUMBER, QUOTE, RULE, type Span } from "./markup.ts";
 import { type Piece, toDisplay } from "./offsets.ts";
@@ -39,9 +39,6 @@ export interface Projection {
   paras: Para[];
   tables: Table[];
 }
-
-/** The box a checklist item is drawn with (Inter has both). */
-export const BOX = { open: "□", done: "■" } as const;
 
 class Out {
   readonly parts: string[] = [];
@@ -117,7 +114,7 @@ function drawnLine(out: Out, line: string, start: number, index: number): void {
   } else if (check) {
     const indent = start + (check[1]?.length ?? 0);
     prefix = start + check[0].length;
-    hides.push({ start: indent, end: prefix, text: check[4] === " " ? BOX.open : BOX.done, kind: "box" });
+    hides.push({ start: indent, end: prefix, text: check[4] === " " ? TASK_BOX.open : TASK_BOX.done, kind: "box" });
   } else if (bullet) {
     const at = start + (bullet[1]?.length ?? 0);
     prefix = start + bullet[0].length;
@@ -141,7 +138,7 @@ function drawnLine(out: Out, line: string, start: number, index: number): void {
     out.keep(at, hide.start, line.slice(at - start, hide.start - start));
     const shown = out.replace(hide.start, hide.end, hide.text);
     if (hide.kind === "bullet") out.shownSpans.push({ kind: "bullet", start: shown, end: shown + 1 });
-    if (hide.kind === "box") out.shownSpans.push({ kind: "box", start: shown, end: shown + 1, line: index, checked: hide.text === BOX.done });
+    if (hide.kind === "box") out.shownSpans.push({ kind: "box", start: shown, end: shown + 1, line: index, checked: hide.text === TASK_BOX.done });
     at = hide.end;
   }
   out.keep(at, end, line.slice(at - start));

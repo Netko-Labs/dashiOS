@@ -1,12 +1,13 @@
 /**
  * The small Markdown a launcher detail draws (a pull request's or an issue's
  * body, GitHub's flavour): headings (`#` and underlined), paragraphs, list
- * items, code blocks, tables (read as Notes reads them), rules (`---`), and
+ * items (a task list's `[ ]` and `[x]` as Notes' boxes), code blocks, tables
+ * (read as Notes reads them), rules (`---`), and
  * quotes, GitHub's alerts (`> [!NOTE]`) among them. Pure: detail-view.tsx
  * draws the blocks.
  */
 
-import { continuesTable, parseTable, startsTable, type Table } from "../../shared/markdown/index.ts";
+import { continuesTable, parseTable, startsTable, type Table, taskOf } from "../../shared/markdown/index.ts";
 
 /** GitHub's five alerts, by the word in `[!…]`. */
 export type Alert = "note" | "tip" | "important" | "warning" | "caution";
@@ -14,6 +15,8 @@ const ALERTS: readonly Alert[] = ["note", "tip", "important", "warning", "cautio
 
 export type MarkdownBlock =
   | { kind: "h1" | "h2" | "p" | "li" | "code"; text: string }
+  /** A task list's item: its box open or done, then its words. */
+  | { kind: "task"; text: string; done: boolean }
   | { kind: "table"; table: Table }
   | { kind: "rule" }
   /** A quote's paragraphs, one a line; an alert's own word is not among them. */
@@ -56,7 +59,11 @@ export function quoteOf(lines: readonly string[]): MarkdownBlock {
 function lineBlock(trimmed: string): MarkdownBlock {
   const heading = /^(#{1,6})\s+(.*)$/.exec(trimmed);
   if (heading) return { kind: (heading[1] ?? "#").length === 1 ? "h1" : "h2", text: inline(heading[2] ?? "") };
-  if (/^[-*+]\s+/.test(trimmed)) return { kind: "li", text: inline(trimmed.replace(/^[-*+]\s+/, "")) };
+  if (/^[-*+]\s+/.test(trimmed)) {
+    const words = trimmed.replace(/^[-*+]\s+/, "");
+    const task = taskOf(words);
+    return task ? { kind: "task", text: inline(task.text), done: task.done } : { kind: "li", text: inline(words) };
+  }
   return { kind: "p", text: inline(trimmed) };
 }
 

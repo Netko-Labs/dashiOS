@@ -5908,3 +5908,17 @@ short words, as the rulebook is written.
   larger text size: nothing is clipped. The window pictures follow its top.
 - **Undo:** `launcherPlace` in `launcher/place.ts`; `launcherRooms` in
   `boot/lib/launcher-view.tsx`; `SurfaceHeight` in `launcher/lib/measures.ts`.
+
+### D388. A launcher detail draws a task list with Notes' boxes
+
+- **Date:** 2026-11-16. `v09/fix-polish-3`, from passes 41 and 42.
+- **Found:** Renovate's `- [ ] If you want to rebase…` was drawn as
+  "• [ ] If you want to rebase…".
+- **Decision:** Notes' checklist box (□ open, ■ done, from Inter) moves to
+  `shared/markdown/task.ts`, with the one reading of `[ ]` / `[x]`; Notes and
+  the launcher's detail both use it, and the detail draws an item as Notes
+  does: the box bold, moss once done, a done item's words muted and struck
+  through. The box is not pressable in a detail: the body is GitHub's, read
+  only.
+- **Undo:** the `task` block in `launcher/lib/detail-markdown.ts` and `Task`
+  in `detail-view.tsx`; `TASK_BOX` back into Notes' `project.ts`.
