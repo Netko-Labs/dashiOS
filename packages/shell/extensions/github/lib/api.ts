@@ -34,6 +34,21 @@ const API = "https://api.github.com";
 const text = (value: unknown): string => (typeof value === "string" ? value : "");
 const record = (value: unknown): Record<string, unknown> => (isRecord(value) ? value : {});
 
+/**
+ * Words as a launcher row takes them: one line, no more than `max` letters (cut with "…"). A row's words are
+ * refused when longer, and a view with one refused row can't be shown at all.
+ */
+export function fit(value: string, max: number): string {
+  const line = value.replace(/[\p{Cc}\s]+/gu, " ").trim();
+  const letters = [...line];
+  return letters.length <= max
+    ? line
+    : `${letters
+        .slice(0, max - 1)
+        .join("")
+        .trimEnd()}…`;
+}
+
 async function get(path: string, token: string | undefined): Promise<unknown> {
   const response = await fetch(`${API}${path}`, {
     headers: { accept: "application/vnd.github+json", "user-agent": "Dashi-GitHub-extension", ...(token ? { authorization: `Bearer ${token}` } : {}) },
@@ -53,7 +68,7 @@ export async function pullRequests(repo: string, token: string | undefined): Pro
     const head = record(item.head);
     return {
       number: typeof item.number === "number" ? item.number : 0,
-      title: text(item.title) || "Untitled",
+      title: fit(text(item.title), 120) || "Untitled",
       author: text(record(item.user).login),
       url: text(item.html_url),
       branch: text(head.ref),
@@ -61,7 +76,7 @@ export async function pullRequests(repo: string, token: string | undefined): Pro
       draft: item.draft === true,
       body: text(item.body),
       updated: text(item.updated_at),
-      labels: (Array.isArray(item.labels) ? item.labels : []).map((label) => text(record(label).name)).filter(Boolean),
+      labels: (Array.isArray(item.labels) ? item.labels : []).map((label) => fit(text(record(label).name), 60)).filter(Boolean),
     };
   });
 }
@@ -73,7 +88,7 @@ export async function searchRepositories(query: string, token: string | undefine
     const item = record(raw);
     return {
       fullName: text(item.full_name),
-      description: text(item.description),
+      description: fit(text(item.description), 120),
       stars: typeof item.stargazers_count === "number" ? item.stargazers_count : 0,
       url: text(item.html_url),
     };

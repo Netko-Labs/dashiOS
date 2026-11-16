@@ -5821,3 +5821,17 @@ short words, as the rulebook is written.
   (their selection and toolbar need the pointer and the keys).
 - **Undo:** `shiftedPast` and `launcherRulesOver` in `launcher/keys.ts`;
   `byKey` in `actions/lib/run.ts` and `Screenshots.run` (`boot/overlays.tsx`).
+
+### D379. GitHub's words are fitted to a row before they reach the launcher
+
+- **Date:** 2026-11-16. `v09/fix-polish-2`, found in this branch's VM pass.
+- **Found:** searching "renovatebot/renovate" showed "This view can't be
+  shown: Item “k:renovatebot-renovate-approve-bot”: subtitle is empty". A
+  row's words are refused when empty (a subtitle) or longer than the tree
+  takes (120 letters for a title or subtitle, 60 a keyword), and one
+  refused row hides the whole view.
+- **Decision:** the extension fits what GitHub sends: a repository without a
+  description has no subtitle; titles, descriptions, labels and the branch
+  keyword are one line, cut with "…" at the tree's limits. The tree's rule
+  stays strict: an extension that sends a bad row is told, by name.
+- **Undo:** `fit` in `extensions/github/lib/api.ts` and its uses.
