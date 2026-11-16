@@ -163,8 +163,12 @@ export function Answer({ text, working, onLink }: { text: string; working: boole
   const colors = useColors();
   const m = useMeasures();
   const blocks = blocksOf(text);
+  // The caret that shows the words are still coming sits at the end of the last line, not on a line of its own.
+  const caret = <View testID="talk:caret" style={{ width: 7, height: 14, borderRadius: 2, backgroundColor: colors.agent, opacity: 0.8, marginLeft: 3 }} />;
+  const lastText = blocks.findLastIndex((block) => block.kind !== "code");
   return (
     <View testID="talk:answer" style={{ flexDirection: "column", gap: 6, paddingLeft: TURN_INDENT }}>
+      {working && blocks.length === 0 && caret}
       {blocks.map((block, index) =>
         block.kind === "code" ? (
           <View key={index} style={{ backgroundColor: colors.button, borderRadius: 6, padding: 8 }}>
@@ -175,11 +179,15 @@ export function Answer({ text, working, onLink }: { text: string; working: boole
             <Text style={{ fontSize: m.title + 0.5, color: colors.textMuted }}>{block.mark}</Text>
             <Line text={block.text} onLink={onLink} />
           </View>
+        ) : working && index === lastText ? (
+          <View key={index} style={{ flexDirection: "row", alignItems: "flex-end", flexWrap: "wrap" }}>
+            <Line text={block.text} onLink={onLink} />
+            {caret}
+          </View>
         ) : (
           <Line key={index} text={block.text} onLink={onLink} />
         ),
       )}
-      {working && <View testID="talk:caret" style={{ width: 7, height: 14, borderRadius: 2, backgroundColor: colors.agent, opacity: 0.8 }} />}
     </View>
   );
 }

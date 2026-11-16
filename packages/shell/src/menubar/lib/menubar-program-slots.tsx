@@ -186,6 +186,14 @@ function micSlot({ micWords, openSound, tip }: ProgramContext): StatusSlot[] {
   ];
 }
 
+/** The mark with Dashi's own work on its own added: the spark and "Working", and words for its tooltip. */
+function withOwnWork(mark: MarkState, working: boolean): MarkState {
+  if (!working) return mark;
+  const tip = "Dashi is working on its own. Click to see it; ⌃❖Esc stops every agent.";
+  if (mark.kind === "none") return { kind: "mark", discs: [], more: 0, working: true, watching: false, tip, label: "Dashi is working" };
+  return mark.kind === "mark" ? { ...mark, working: true, tip: `${tip}\n${mark.tip}` } : mark;
+}
+
 /** The status side's slots, left to right, as the bar draws them. */
 export function useStatusSlots(sources: StatusSources, popover: Popover | null, appName: string, barWidth: number | null): StatusSlot[] {
   const { agents, capture, recorder, system, menus, settings, output, runs, mixer, onTip, accessible = () => false } = sources;
@@ -193,8 +201,12 @@ export function useStatusSlots(sources: StatusSources, popover: Popover | null, 
   const recording = useRecording(recorder);
   // Dashi's own agent in the capsule or the launcher is watched there already: only a turn kept working on its own is the bar's.
   const foreground = sources.pill?.foreground ?? (() => false);
+  const background = sources.pill?.background ?? (() => false);
+  const connected = useAgents(agents).filter((agent) => agent.task === undefined || !foreground(agent.task));
+  // Dashi kept working on its own is Dashi's spark and "Working" (D261), never one of the outside agents' discs.
+  const own = connected.filter((agent) => agent.task !== undefined && background(agent.task));
   const entries = mergeAgents(
-    useAgents(agents).filter((agent) => agent.task === undefined || !foreground(agent.task)),
+    connected.filter((agent) => !own.includes(agent)),
     useRuns(runs ?? NO_RUNS),
   );
   const context: ProgramContext = {
@@ -203,7 +215,7 @@ export function useStatusSlots(sources: StatusSources, popover: Popover | null, 
     appName,
     recording,
     // Every agent, launched or connected, is one mark; an agent's recording is its red dot.
-    mark: markState(entries, agentRecording(recording)),
+    mark: withOwnWork(markState(entries, agentRecording(recording)), own.length > 0),
     outside: outsideAgents(entries), // never a capsule each: the mark counts them
     alone: useSyncExternalStore(sources.alone?.subscribe ?? NEVER, sources.alone ? sources.alone.getSnapshot : () => NOT_ALONE),
     micWords: useMicWords(mixer),

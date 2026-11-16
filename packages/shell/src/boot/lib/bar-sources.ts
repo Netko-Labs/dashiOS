@@ -74,6 +74,7 @@ export function barPill(late: BarsNeeds["late"]): BarPill {
       const assistant = late.peek("assistant");
       return assistant !== undefined && assistant.talk.id === task && !assistant.background(task);
     },
+    background: (task) => late.peek("assistant")?.background(task) === true,
   };
 }
 

@@ -12,8 +12,6 @@ import { join } from "node:path";
 import { Appearance } from "@dashi/ui";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { SiteGrants } from "../src/agents/sites.ts";
-import { AgentSitesSection } from "../src/settings-app/lib/panes/agents-sites.tsx";
 import { switchDetail, VoicePane } from "../src/settings-app/lib/panes/voice.tsx";
 import { ONLY_YOU, personOnly } from "../src/settings-app/lib/person-only.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
@@ -220,25 +218,5 @@ test("an agent can't remove the models or pick the key or the voice; it can turn
   person.is = false;
   await view.press("voice-switch");
   expect(on()).toBe(false);
-  view.root.unmount();
-});
-
-test("only the person adds a site agents may use; anyone removes one", async () => {
-  const sites = new SiteGrants(null);
-  sites.allowAhead("bodytech.com.co");
-  const person = { is: false };
-  const view = await mount(<AgentSitesSection sites={sites} byPerson={async () => person.is} />);
-  await view.press("agents-site-add");
-  await view.type("agents-site-field", "example.com");
-  await view.press("agents-site-add-button");
-  expect(sites.ahead()).toEqual(["bodytech.com.co"]);
-  expect(view.tree()).toContain(ONLY_YOU);
-  person.is = true;
-  await view.press("agents-site-add-button");
-  expect(sites.ahead()).toContain("example.com");
-  expect(view.tree()).not.toContain(ONLY_YOU);
-  person.is = false;
-  await view.press("agents-site-remove:example.com");
-  expect(sites.ahead()).toEqual(["bodytech.com.co"]);
   view.root.unmount();
 });

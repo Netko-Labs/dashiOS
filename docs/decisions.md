@@ -4692,6 +4692,15 @@ short words, as the rulebook is written.
     mode by voice only; typed, it says "Not yet: GPT needs Dashi's loop";
     Settings hides it as an answerer and says so in one line.
   - **The empty view** offers the person's recent asks, else five tries.
+- **After joining the dictation work (D170 to D202):** what is said goes to
+  the assistant through dictation's vocabulary (D198); what is typed goes as
+  typed (it was not misheard). A filler alone starts no turn (D197) and the
+  microphone opens again only after a spoken turn: voice sees the
+  conversation as open only while its last turn was spoken. A turn kept
+  working shows in the bar as Dashi's spark and "Working", not as an outside
+  agent's disc. "Sites agents may use" is gone from Settings › Agents (no
+  site asks, D260); Work alone keeps its sites. A typed settings change
+  offers "Type undo that".
 - **Cost:** the context chips and the grants card are gone from the
   launcher; a hand-off run can no longer be started from it (its machinery
   is still there for runs that exist). A turn kept working lives in the

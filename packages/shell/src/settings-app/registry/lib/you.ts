@@ -190,13 +190,6 @@ export const YOU_ROWS = [
   { id: "agents/key", title: "Key", name: "The agent's API key", keywords: ["api key", "anthropic", "openai"], kind: "value" },
   { id: "agents/history", title: "History", name: "What agents did", keywords: ["agent history", "undo", "activity"], kind: "value" },
   {
-    id: "agents/sites",
-    title: "Sites agents may use",
-    detail: "Agents open these without asking first. Only you can add to it.",
-    keywords: ["websites", "allow sites", "allowed sites", "unattended", "demo", "always allow"],
-    kind: "value",
-  },
-  {
     id: "agents/work-alone",
     title: "Let agents work alone",
     detail: "For a set time, agents use what you pick here without asking. Everything else still asks.",

@@ -159,7 +159,7 @@ class Core {
     try {
       const ask = { options, talk, task: id, words, moment, run, say: both.say, spoke: hears.language, model };
       said = way === "harness" && isHarnessId(choice) ? await viaHarness(ask, choice) : await viaModel(ask, choice === "local", this.allowedPolicy);
-      answer = { say: lastWords(run, said) };
+      answer = { say: lastWords(run, said, by) };
     } catch (error) {
       // Stopped by the person: nothing more is said. Stopped by Dashi at a limit: where it is.
       if (isAbort(error) || run.signal.aborted) answer = { say: run.stopped ? stoppedWords(run) : "" };

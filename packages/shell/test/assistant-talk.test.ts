@@ -130,3 +130,12 @@ test("“Read typed answers aloud” on: a typed answer is said too", async () =
   await until(() => fake.spoken.length === 1);
   expect(fake.spoken).toEqual(["It is 14 degrees."]);
 });
+
+test("a typed settings change offers “Type undo that”; a spoken one “Say undo that”", async () => {
+  const typed = fakeAssistant([{ calls: [{ name: "set_setting", arguments: { name: "dark_mode", value: true } }] }, { say: "" }]);
+  typed.assistant.type("dark mode please");
+  await until(() => !typed.assistant.transcript.getSnapshot().working && typed.sent.length === 2);
+  await settle();
+  const last = typed.assistant.transcript.getSnapshot().turns.at(-1);
+  expect(last?.kind === "dashi" && last.text).toContain("Type undo that to put it back.");
+});

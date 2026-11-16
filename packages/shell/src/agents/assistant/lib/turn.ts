@@ -56,8 +56,10 @@ export function typedGate(turn: () => Turn | null, transcript: Transcript): Pick
 }
 
 /** What Dashi adds after the model's own words: that it is done when the model said nothing, and the offer to undo. */
-export function lastWords(run: Running, said: string): string {
+export function lastWords(run: Running, said: string, by: By = "voice"): string {
   const changed = run.steps.some((step) => step.undo && step.ok);
   const did = run.steps.length > 0 && said.trim() === "" ? (run.steps.every((step) => step.ok !== false) ? "Done." : "That didn't work.") : "";
-  return [did, changed ? "Say undo that to put it back." : ""].filter(Boolean).join(" ");
+  // Said by voice, typed in the launcher: the way back is put in the person's own way of asking.
+  const back = by === "typing" ? "Type undo that to put it back." : "Say undo that to put it back.";
+  return [did, changed ? back : ""].filter(Boolean).join(" ");
 }

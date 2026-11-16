@@ -13,4 +13,6 @@ export interface BarPill {
   hub: Pick<PillHub, "persona">;
   /** A connection of task `task` is Dashi's own agent in front of the person (the capsule, the launcher): not shown in the bar. */
   foreground(task: string): boolean;
+  /** A connection of task `task` is Dashi's own agent kept working on its own: the bar shows Dashi's spark and "Working" for it. */
+  background(task: string): boolean;
 }
