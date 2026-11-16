@@ -15,7 +15,13 @@ test("an agent's text is on the clipboard and in the history as Dashi's; the wat
     const expected: Array<[string, string, string]> = [];
     const ok = await putText("https://lichess.org/abc", "Dashi", {
       history,
-      io: { write: async (_mime: string, text: string | Uint8Array) => (written.push(String(text)), true), read: async () => null } as never,
+      io: {
+        write: async (_mime: string, text: string | Uint8Array) => {
+          written.push(String(text));
+          return true;
+        },
+        read: async () => null,
+      } as never,
       watch: { expect: (kind, content, how) => void expected.push([kind, String(content), how]), nextCopy: async () => true },
       enabled: () => true,
     });

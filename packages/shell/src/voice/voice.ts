@@ -282,9 +282,8 @@ export class Voice {
     else this.rest(true);
   }
 
-  personTalking(): boolean {
-    return this.holding !== null || this.mic.running || this.saying.holding; // tell_person never speaks over them
-  }
+  /** The person holds the key, the microphone is open, or Dashi waits on them: tell_person never speaks over them. */
+  personTalking = (): boolean => this.holding !== null || this.mic.running || this.saying.holding;
 
   /** How the person answers by voice now ("the right ❖ key"), or null when they can't. */
   talkKey(): string | null {

@@ -30,7 +30,15 @@ test("tell_person shows the line either way; notify_person posts one from Dashi"
   const posted: unknown[] = [];
   const ctx = {
     status: (line: string) => void status.push(line),
-    desktop: { tell: { tell: () => ({ said: false, why: "too soon", waitMs: 1200 }) }, notifications: { notify: (input: unknown) => (posted.push(input), 7) } },
+    desktop: {
+      tell: { tell: () => ({ said: false, why: "too soon", waitMs: 1200 }) },
+      notifications: {
+        notify: (input: unknown) => {
+          posted.push(input);
+          return 7;
+        },
+      },
+    },
   } as unknown as RunContext;
   expect(tellPerson("Still looking", ctx).content[0]).toEqual({ type: "text", text: "Shown, not said: too soon. Wait 2 s before the next line." });
   expect(status).toEqual(["Still looking"]);
