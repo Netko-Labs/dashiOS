@@ -27,7 +27,7 @@ import { idleKeymap } from "../keymap/keymap-state.ts";
 import { type Rewriter, startRewriter } from "../rewrite/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import { type Clipboard, systemClipboard } from "../shared/clipboard/index.ts";
-import { type DictationTrouble, isDictationKeyId, isHistoryKeep } from "../shared/pill/index.ts";
+import { type DictationTrouble, isDictationKeyId, isHistoryKeep, type PillHub } from "../shared/pill/index.ts";
 import { basicsHere, isTalkKeyId, listenLanguage, talkKey } from "../voice/index.ts";
 import type { LateParts } from "./parts.ts";
 import type { Late, Services } from "./services.ts";
@@ -209,6 +209,16 @@ function correcting(settingsStore: SettingsStore): Rewriter & { close(): void } 
   });
 }
 
+/**
+ * DASHI_DICTATION_LOG=1: each gesture and each state in the session's log, for a proof with no capsule to look at; each
+ * with the milliseconds since the shell started, so the time from the key going up to the words is read off the log.
+ */
+function logging(hub: PillHub): void {
+  const at = (): string => `at=${Math.round(performance.now())}`;
+  hub.keys.listen((gesture) => console.error(`dashi-shell: dictation key ${gesture.key} ${gesture.gesture} ${at()}`));
+  hub.dictation.subscribe(() => console.error(`dashi-shell: dictation ${at()} ${JSON.stringify(hub.dictation.getSnapshot())}`));
+}
+
 export function startDictating({ compositor, settingsStore, services, late, talking }: DictatingNeeds): DictationParts {
   const hub = late.get("pill");
   const system = systemLayout();
@@ -267,13 +277,7 @@ export function startDictating({ compositor, settingsStore, services, late, talk
     teach: () => taught.now(),
     language: listenLanguage(process.env.LC_ALL || process.env.LC_MESSAGES || process.env.LANG),
   });
-  // DASHI_DICTATION_LOG=1: each gesture and each state in the session's log, for a proof with no capsule to look at.
-  if (process.env.DASHI_DICTATION_LOG === "1") {
-    // Each with the milliseconds since the shell started, so the time from the key going up to the words is read off the log.
-    const at = (): string => `at=${Math.round(performance.now())}`;
-    hub.keys.listen((gesture) => console.error(`dashi-shell: dictation key ${gesture.key} ${gesture.gesture} ${at()}`));
-    hub.dictation.subscribe(() => console.error(`dashi-shell: dictation ${at()} ${JSON.stringify(hub.dictation.getSnapshot())}`));
-  }
+  if (process.env.DASHI_DICTATION_LOG === "1") logging(hub);
   const stopHearing = compositor
     ? compositor.on((event) => {
         if (event.event === "held-key") parts.key(event.name, event.down, event.chord === true);
