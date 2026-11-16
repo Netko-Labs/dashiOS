@@ -127,6 +127,7 @@ fi
 %dir %{_sysconfdir}/anaconda/profile.d
 %{_sysconfdir}/anaconda/profile.d/dashi.conf
 %config(noreplace) %{_sysconfdir}/yum.repos.d/*.repo
+%config(noreplace) %{_sysconfdir}/dnf/plugins/copr.d/dashi.conf
 %dir %{_datadir}/dashi
 %dir %{_datadir}/dashi/zsh
 %{_datadir}/dashi/zsh/dashi.zshrc
@@ -134,6 +135,7 @@ fi
 %changelog
 * Mon Nov 16 2026 PejeDev <hi@peje.dev> - 44-0.9.0
 - Terra on by default without terra-release: a dnf5 vendor repo file and Terra's keys.
+- `dnf copr enable` asks for Fedora's chroot (os-release says "dashi").
 
 * Wed Nov 11 2026 PejeDev <hi@peje.dev> - 44-0.7.0
 - os-release and dashi-release take Dashi's version from the build: 0.7's said 0.4.

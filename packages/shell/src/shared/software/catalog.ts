@@ -34,6 +34,13 @@ export interface CatalogDeps {
   /** Fedora's catalog folder (tests point it elsewhere). */
   swcatalog?: string;
   arch?: string;
+  /** Fetches the metadata of every repository that is on (`pkcon refresh`, no password): for one enabled since dnf last looked. */
+  refreshMetadata?: () => Promise<boolean>;
+}
+
+/** Repositories that are on but have nothing in dnf's cache: a COPR just enabled in Terminal, before anything refreshed. */
+export function emptyRepos(repos: readonly Repo[], packageRepos: ReadonlySet<string>): string[] {
+  return repos.filter((repo) => repo.enabled && !packageRepos.has(repo.id) && !/-(debuginfo|source|testing)/.test(repo.id)).map((repo) => repo.id);
 }
 
 const machineArch = (): string => (process.arch === "arm64" ? "aarch64" : "x86_64");
@@ -51,6 +58,7 @@ export class Catalog {
   private readonly run: Runner;
   private readonly dir: string;
   private readonly now: () => number;
+  private refreshed = false;
 
   constructor(private readonly deps: CatalogDeps = {}) {
     this.run = deps.run ?? defaultRun;
@@ -124,6 +132,13 @@ export class Catalog {
       settle(this.flathub(network), []),
     ]);
     const repos: Repo[] = parseRepoList(repoText);
+    const installed = parseInstalled(installedText);
+    const packages = parsePackages(packagesText, this.deps.arch ?? machineArch());
+    // Once a session, on the network round: a repository with no metadata yet is fetched, then everything is read again.
+    if (network && !this.refreshed && this.deps.refreshMetadata && emptyRepos(repos, new Set(packages.map((pkg) => pkg.repoId))).length > 0) {
+      this.refreshed = true;
+      if (await this.deps.refreshMetadata().catch(() => false)) return this.build(false);
+    }
     const sources = sourcesFrom(repos, flathubEnabled(remoteText));
     let rpmAppStream: AppStreamApp[] = [];
     try {
@@ -135,14 +150,16 @@ export class Catalog {
       sources,
       flathub,
       rpmAppStream,
-      packages: parsePackages(packagesText, this.deps.arch ?? machineArch()),
+      packages,
       rpmApps: parseApps(appsText),
-      installedRpms: parseInstalled(installedText),
+      installedRpms: installed.from,
+      installedAt: installed.at,
       installedFlatpaks: new Set(flatpaks),
     });
     // A network round that found nothing new keeps what the local read had.
     if (network && flathub.length === 0 && this.data !== null) return this.data;
-    this.data = { builtAt: this.now(), sources, entries };
+    const times = [...installed.at.values()];
+    this.data = { builtAt: this.now(), sources, entries, systemInstalledAt: times.length > 0 ? Math.min(...times) : null };
     for (const listener of [...this.listeners]) listener();
     return this.data;
   }

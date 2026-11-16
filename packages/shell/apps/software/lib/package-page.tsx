@@ -69,7 +69,7 @@ export function PackagePage({ entry, offer }: { entry: CatalogEntry; offer: Offe
             {[entry.developer, tool ? "Runs in Terminal" : null].filter(Boolean).join(" · ") || offer.ref}
           </Text>
           <Text style={{ fontSize: 13, color: colors.text, lineHeight: 18 }}>{entry.summary}</Text>
-          {offer.installed && tool && <Text style={{ fontSize: 12, color: colors.textMuted }}>{`Installed. Type ${offer.ref} in Terminal.`}</Text>}
+          {offer.installed && tool && <Text style={{ fontSize: 12, color: colors.textMuted }}>{"Installed. It runs in Terminal."}</Text>}
         </View>
         <View style={{ flexShrink: 0, flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
           <Buttons entry={entry} offer={offer} />

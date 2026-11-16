@@ -5587,3 +5587,44 @@ short words, as the rulebook is written.
   again on installs and removals (auth_admin_keep), as the design drew.
 - **Undo:** the words in `apps/software/lib/source-words.ts` (`packageAsk`),
   `agents/desktop/software-catalog.ts` (`packageDetail`).
+
+### D331. `dnf copr enable` asks for Fedora's chroot on Dashi
+
+- **Date:** 2026-11-16. `v09/store`, found in the VM pass.
+- **Found:** dnf5's COPR plugin names the chroot from os-release's `ID`,
+  which is `dashi`, so `dnf copr enable atim/lazygit` failed: "Chroot not
+  found in the given Copr project (dashi-44-x86_64)". The owner's way to add
+  a COPR (by hand in Terminal) didn't work on Dashi at all.
+- **Decision:** `dashi-release` ships `/etc/dnf/plugins/copr.d/dashi.conf`
+  with `[main] distribution = fedora` (the plugin reads it; tried in the VM:
+  the chroot becomes `fedora-44-x86_64`). `%config(noreplace)`.
+- **Undo:** delete that file from `spin/dashi-release`.
+
+### D332. A source with no metadata yet is fetched once; an install PackageKit can't place is tried again
+
+- **Date:** 2026-11-16. `v09/store`, found in the VM pass.
+- **Found:** a COPR enabled in Terminal has nothing in dnf's cache until
+  something refreshes, so the Store didn't list its packages; and PackageKit
+  keeps its own copy of the metadata, so an install from it failed at once.
+  The Store also read pkcon's "Waiting for authentication" status line as
+  "the password was not given" and showed nothing.
+- **Decision:** the catalog's network round runs `pkcon refresh` once a
+  session when a repository that is on has no packages in the cache, then
+  reads again; an install that fails is tried once more after `pkcon
+  refresh`. PackageKit lets an active session refresh without a password.
+  Only "Failed to obtain authentication", "Not authorized" and the like
+  count as a no.
+- **Undo:** `emptyRepos` and `refreshMetadata` in `shared/software/catalog.ts`,
+  `install` in `shared/software/packages.ts`.
+
+### D333. Installed lists the package apps the person added, not the image's
+
+- **Date:** 2026-11-16. `v09/store`, found in the VM pass (flows/store hole 22).
+- **Found:** every installed RPM with a desktop file showed up, the image's
+  own helpers first (Anaconda, Geoclue, Fcitx's tools).
+- **Decision:** an app counts as added when it was installed more than an
+  hour after the system's oldest package (`%{installtime}`). Tools are not
+  listed (dnf can't tell a person's from the system's).
+- **Cost:** an app the person installed in the first hour after installing
+  the system isn't listed; it is still found by search, installed.
+- **Undo:** `IMAGE_HOUR` in `apps/software/lib/installed-packages.tsx`.

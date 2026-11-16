@@ -58,6 +58,7 @@ export function createServices(restart: () => void, logOut: () => void, env: Rea
   const fake = standIn();
   const software = new Software(fake ?? {});
   const store = new SoftwareStore(software);
+  const packages = new Packages(fake?.run ? { run: fake.run } : {});
   const installedFlatpaks = async (): Promise<string[]> => (software.hasFlatpak ? (await software.installed()).map((app) => app.id) : []);
   const appletCache = storeCacheDir(env);
   const dashi = dashiCatalog(env, keyFrom(env.DASHI_APPLETS_KEY) ?? DASHI_INDEX_KEY);
@@ -80,8 +81,13 @@ export function createServices(restart: () => void, logOut: () => void, env: Rea
   });
   return {
     catalog: new Flathub({ cache: new JsonCache(root) }),
-    index: new Catalog({ root, installedFlatpaks, ...(fake?.run ? { run: fake.run, fetch: () => Promise.reject(new Error("stand-in")) } : {}) }),
-    packages: new Packages(fake?.run ? { run: fake.run } : {}),
+    index: new Catalog({
+      root,
+      installedFlatpaks,
+      refreshMetadata: () => packages.refresh(),
+      ...(fake?.run ? { run: fake.run, fetch: () => Promise.reject(new Error("stand-in")) } : {}),
+    }),
+    packages,
     images: new Images(new ImageCache(root)),
     store,
     applets: new AppletStore(appletCatalogs, installer, () => readMachine(), SDK_VERSION, store),

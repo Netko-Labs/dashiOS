@@ -21,7 +21,8 @@ const KEEP = 20_000;
 const LONG = 3 * 60 * 60_000;
 
 /** PackageKit's own words for "you said no on the password sheet". */
-const REFUSED = /not authorized|authorization|authentication|dismissed|cancelled by user/i;
+/** Only the end of a refused ask, never pkcon's "Waiting for authentication" status line (that misread a failure as a no). */
+const REFUSED = /Failed to obtain authentication|Not authorized|dismissed|cancelled by user/i;
 
 export class Packages {
   private readonly run: Runner;
@@ -31,14 +32,20 @@ export class Packages {
   }
 
   /** Installs a package from the repository its offer names (PackageKit's `name;version;arch;repo` id), else by name. */
-  install(offer: Pick<Offer, "ref" | "version" | "repoId"> & { arch?: string | null }, onProgress: OnProgress, signal?: AbortSignal): Promise<Outcome> {
+  async install(offer: Pick<Offer, "ref" | "version" | "repoId"> & { arch?: string | null }, onProgress: OnProgress, signal?: AbortSignal): Promise<Outcome> {
     let target = offer.ref;
     try {
       if (offer.version && offer.repoId && offer.arch) target = packageId(offer.ref, offer.version, offer.arch, offer.repoId);
-      return this.pkcon(pkconInstall(target), onProgress, signal);
     } catch (error) {
-      return Promise.resolve({ ok: false, message: error instanceof Error ? error.message : "That is not a package." });
+      return { ok: false, message: error instanceof Error ? error.message : "That is not a package." };
     }
+    const first = await this.pkcon(pkconInstall(target), onProgress, signal);
+    if (first.ok || first.cancelled || signal?.aborted) return first;
+    // PackageKit keeps its own copy of the repositories' metadata: one enabled since it last looked (a COPR enabled
+    // in Terminal) isn't in it yet. Fetch it (no password in an active session) and try once more.
+    onProgress({ fraction: null, label: "Looking at the sources" });
+    if (!(await this.refresh())) return first;
+    return this.pkcon(pkconInstall(target), onProgress, signal);
   }
 
   remove(name: string, onProgress: OnProgress, signal?: AbortSignal): Promise<Outcome> {
@@ -53,6 +60,12 @@ export class Packages {
   updateSome(names: readonly string[], onProgress: OnProgress, signal?: AbortSignal): Promise<Outcome> {
     if (names.length === 0) return Promise.resolve({ ok: true, message: "" });
     return this.pkcon(pkconUpdateSome(names), onProgress, signal);
+  }
+
+  /** Fetches every enabled repository's metadata (PackageKit lets an active session do this without a password). */
+  async refresh(): Promise<boolean> {
+    const result = await this.run(["pkcon", "refresh"], { timeoutMs: 300_000 });
+    return result.code === 0 && pkconError(result.output) === null;
   }
 
   /** Turns a source on or off: each of its dnf repositories, or Flathub's remote in each installation that has it. */

@@ -34,7 +34,9 @@ const rows = (fields: string[][]): string => fields.map((each) => `${each.join(F
 const on = (repo: string): boolean => !state.off.has(repo);
 
 function query(command: readonly string[]): string {
-  if (command.includes("--installed")) return rows([...state.installed].map(([name, repo]) => [name, repo]));
+  // Dashi came with the computer (an old time); what the stand-in installs is installed now.
+  if (command.includes("--installed"))
+    return rows([...state.installed].map(([name, repo]) => [name, repo, name === "dashi" ? "1000" : String(Math.floor(Date.now() / 1000))]));
   const live = PACKAGES.filter(([, repo]) => on(repo));
   if (command.some((arg) => arg.startsWith("--whatprovides"))) {
     return rows(

@@ -118,12 +118,20 @@ test("dnf's output is read strictly: other arches, side packages and bad names a
   expect(
     parseInstalled(
       rows([
-        ["htop", "fedora"],
+        ["htop", "fedora", "1763300000"],
         ["dashi", "@commandline"],
         ["x", ""],
       ]),
-    ).get("x"),
+    ).from.get("x"),
   ).toBe("@System");
+  expect(
+    parseInstalled(
+      rows([
+        ["htop", "fedora", "1763300000"],
+        ["y", "fedora", "soon"],
+      ]),
+    ).at,
+  ).toEqual(new Map([["htop", 1763300000]]));
   expect(parseRepoList('[{"id":"fedora","name":"Fedora","is_enabled":true},{"id":"bad id","is_enabled":true},{"id":"x"}]')).toEqual([
     { id: "fedora", name: "Fedora", enabled: true },
   ]);
@@ -194,4 +202,44 @@ test("search: apps by any word; tools only by their package name; exact names fi
   expect(searchCatalog(entries, "search tool").tools).toEqual([]);
   expect(searchCatalog(entries, "image manipulation").apps[0]?.name).toBe("GNU Image Manipulation Program");
   expect(searchCatalog(entries, "   ")).toEqual({ apps: [], tools: [] });
+});
+
+test("a repository that is on with nothing in dnf's cache (a COPR just enabled) is found, so the catalog can fetch it once", async () => {
+  const { emptyRepos } = await import("../src/shared/software/catalog.ts");
+  const repos = [
+    { id: "fedora", name: "F", enabled: true },
+    { id: "copr:copr.fedorainfracloud.org:atim:lazygit", name: "L", enabled: true },
+    { id: "updates-testing", name: "T", enabled: true },
+    { id: "terra", name: "T", enabled: false },
+  ];
+  expect(emptyRepos(repos, new Set(["fedora"]))).toEqual(["copr:copr.fedorainfracloud.org:atim:lazygit"]);
+});
+
+test("an install PackageKit can't place is tried once more after a refresh; a refused password is a no, not a failure", async () => {
+  const { Packages } = await import("../src/shared/software/packages.ts");
+  const calls: string[] = [];
+  let refreshed = false;
+  const packages = new Packages({
+    run: async (command) => {
+      calls.push(command.join(" "));
+      if (command[1] === "refresh") {
+        refreshed = true;
+        return { code: 0, output: "Results:\n" };
+      }
+      return refreshed
+        ? { code: 0, output: "Status: \tWaiting for authentication\nPercentage:\t100\n" }
+        : { code: 4, output: "Status: \tWaiting for authentication\nCommand failed: package not found\n" };
+    },
+  });
+  const offer = { ref: "lazygit", version: "0.47.2-1.fc43", repoId: "copr:copr.fedorainfracloud.org:atim:lazygit", arch: "x86_64" };
+  expect(await packages.install(offer, () => {})).toEqual({ ok: true, message: "" });
+  expect(calls).toEqual([
+    "pkcon -p -y install lazygit;0.47.2-1.fc43;x86_64;copr:copr.fedorainfracloud.org:atim:lazygit",
+    "pkcon refresh",
+    "pkcon -p -y install lazygit;0.47.2-1.fc43;x86_64;copr:copr.fedorainfracloud.org:atim:lazygit",
+  ]);
+  const refused = new Packages({
+    run: async () => ({ code: 1, output: "Status: \tWaiting for authentication\nFatal error: Failed to obtain authentication.\n" }),
+  });
+  expect(await refused.install(offer, () => {})).toMatchObject({ ok: false, cancelled: true });
 });

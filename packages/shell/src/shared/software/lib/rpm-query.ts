@@ -36,7 +36,13 @@ export const appsCommand = (): string[] => [
   `--qf=%{name}${FIELD}%{repoid}${FIELD}%{provides}${RECORD}\n`,
 ];
 
-export const installedCommand = (): string[] => ["dnf5", "repoquery", "--quiet", "--installed", `--qf=%{name}${FIELD}%{from_repo}${RECORD}\n`];
+export const installedCommand = (): string[] => [
+  "dnf5",
+  "repoquery",
+  "--quiet",
+  "--installed",
+  `--qf=%{name}${FIELD}%{from_repo}${FIELD}%{installtime}${RECORD}\n`,
+];
 
 export interface RpmPackage {
   name: string;
@@ -99,11 +105,17 @@ export function parseApps(output: string): RpmApp[] {
   return out;
 }
 
-/** What is installed, name to the repository it came from (`fedora`, or `@commandline` for a file). */
-export function parseInstalled(output: string): Map<string, string> {
-  const out = new Map<string, string>();
-  for (const [name = "", repo = ""] of records(output)) if (NAME.test(name)) out.set(name, repo.trim().slice(0, 200) || "@System");
-  return out;
+/** What is installed: name to the repository it came from (`fedora`, or `@commandline` for a file), and when (Unix seconds). */
+export function parseInstalled(output: string): { from: Map<string, string>; at: Map<string, number> } {
+  const from = new Map<string, string>();
+  const at = new Map<string, number>();
+  for (const [name = "", repo = "", time = ""] of records(output)) {
+    if (!NAME.test(name)) continue;
+    from.set(name, repo.trim().slice(0, 200) || "@System");
+    const seconds = Number(time.trim());
+    if (Number.isFinite(seconds) && seconds > 0) at.set(name, seconds);
+  }
+  return { from, at };
 }
 
 /** `dnf5 repo list --all --json`: every repository, on or off. A bad entry is left out. */

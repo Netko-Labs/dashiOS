@@ -149,7 +149,8 @@ export function storeScope(deps: StoreScopeDeps): LauncherScope {
 export function storeSource(open: (ctx: ActionContext) => void): ActionSource {
   const action: ActionDef = {
     address: STORE_ADDRESS,
-    title: "Store",
+    // Not "Store": the launcher lists no command named as an app is, and the Store app is "Store" (launcher/lib/items.ts).
+    title: "Get Add-ons",
     description: "",
     properties: {},
     scope: null,
