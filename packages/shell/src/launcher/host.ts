@@ -58,6 +58,8 @@ export interface Store<T> {
 export interface LauncherPrefsStore extends Store<LauncherPrefsSnapshot> {
   setAlias(address: string, alias: string | null): void;
   setKey(address: string, when: string | null): void;
+  /** Offer `address` when nothing matches, or stop (quicklinks.ts); a store without it can't. */
+  setFallback?(address: string, on: boolean): void;
 }
 
 export type LauncherWorldStore = Store<WorldSnapshot>;

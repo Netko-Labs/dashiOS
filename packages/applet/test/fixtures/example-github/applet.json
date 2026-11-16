@@ -1,0 +1,19 @@
+{
+  "id": "dev.example.github",
+  "name": "GitHub",
+  "version": "1.4.0",
+  "dashi": ">=0.9",
+  "entry": "main.tsx",
+  "summary": "Your pull requests, issues and repositories, from the launcher.",
+  "author": { "name": "Alex Kim", "url": "https://github.com/alexk" },
+  "license": "MIT",
+  "source": "https://github.com/alexk/dashi-github",
+  "categories": ["developer"],
+  "shows": ["launcher"],
+  "permissions": ["network:api.github.com"],
+  "preferences": [
+    { "name": "token", "type": "secret", "title": "GitHub token", "description": "Your pull requests need one; until accounts come, paste it here." },
+    { "name": "orgs", "type": "text", "title": "Only these organisations", "default": "" }
+  ],
+  "commands": [{ "id": "my-prs", "title": "My Pull Requests", "keywords": ["pr", "review"], "mode": "list" }]
+}

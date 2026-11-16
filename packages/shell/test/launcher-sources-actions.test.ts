@@ -5,6 +5,7 @@ import { LAUNCHER_RULES, LauncherKeys, withLauncher } from "../src/launcher/keys
 import { aliasRows, aliasToKeep, mayKeep, shortcutRows } from "../src/launcher/lib/editing.ts";
 import { launcherIndex } from "../src/launcher/lib/items.ts";
 import { buildSections, type ListInput, selectable } from "../src/launcher/lib/rows.ts";
+import { spaceFlips } from "../src/launcher/lib/space-flips.ts";
 import {
   aliasIndex,
   chordWhen,
@@ -20,7 +21,7 @@ import {
 } from "../src/launcher/person-keys.ts";
 import { LauncherPrefs, type PrefsStore } from "../src/launcher/prefs.ts";
 import { describeBinding } from "../src/launcher/shell-host.ts";
-import { filterVerbs, hintFor, presentedVerbs, spaceFlips, verbsFor } from "../src/launcher/verbs.ts";
+import { filterVerbs, hintFor, presentedVerbs, verbsFor } from "../src/launcher/verbs.ts";
 import type { LauncherSettings } from "../src/settings-app/types.ts";
 import { action, app, darkMode, ICONS, window } from "./support/launcher-fixtures.ts";
 

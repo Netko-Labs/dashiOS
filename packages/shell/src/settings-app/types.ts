@@ -102,6 +102,10 @@ export interface LauncherSettings {
   aliases?: Readonly<Record<string, string>>;
   /** A rule's `when` → address ("super+alt+n" → dashi://app/dev.dashi.notes/menu/new). */
   keys?: Readonly<Record<string, string>>;
+  /** The person's quicklinks (launcher/quicklinks.ts); Search the Web when unset. */
+  quicklinks?: readonly { id: string; name: string; url: string }[];
+  /** The actions offered when nothing matches, in order (addresses); Search the Web when unset. */
+  fallbacks?: readonly string[];
 }
 
 /** Who answers the launcher's Ask (agents/ask/answerer.ts); unset until the person picks. */

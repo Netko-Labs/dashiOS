@@ -6,7 +6,7 @@
  * its kind, or the key that does it, or its control.
  */
 
-import type { ActionState } from "../actions/index.ts";
+import type { ActionDef, ActionState, Args } from "../actions/index.ts";
 import type { Entry } from "../shared/app-entries/index.ts";
 import type { FileHit } from "../shared/files/index.ts";
 import { PANES } from "../shared/settings/index.ts";
@@ -46,7 +46,9 @@ export type RowAction =
   /** Agents' rows: Ask, Now, history (lib/agents/agent-rows.ts). */
   | { kind: "agent"; act: AgentAct }
   /** One of a launcher scope's verbs (scope.ts): the scope runs it. */
-  | { kind: "scope"; verb: string };
+  | { kind: "scope"; verb: string }
+  /** Run a registry action with these arguments (a fallback with the words typed; a link's, filled in). */
+  | { kind: "run-args"; action: ActionDef; args: Args };
 
 /** The section a row goes under once two kinds show. */
 export type RowGroup = "answer" | "window" | "app" | "settings" | "command" | "menu" | "file" | "other";

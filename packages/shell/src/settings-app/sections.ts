@@ -10,6 +10,7 @@ import { isModelName } from "../agents/ask/local.ts";
 import { isModelChoices } from "../agents/assistant/models.ts";
 import { isVrrMode } from "../display-config/monitors.ts";
 import { isAliasMap, isKeyMap } from "../launcher/person-keys.ts";
+import { isFallbackList, isQuicklinkList } from "../launcher/quicklink-list.ts";
 import { isPersonaLanguage, isPersonaNote, isPersonaYou } from "../persona/index.ts";
 import { GRAPHICS_FIELDS, POWER_FIELDS } from "../power/modes/settings.ts";
 import { isCorrectionChoice } from "../rewrite/index.ts";
@@ -62,7 +63,12 @@ export const SECTIONS = {
   graphics: { path: ["graphics"], fields: GRAPHICS_FIELDS },
   launcher: {
     path: ["launcher"],
-    fields: { aliases: guarded(isAliasMap, "aliases, each naming an address"), keys: guarded(isKeyMap, "keys, each naming an address") },
+    fields: {
+      aliases: guarded(isAliasMap, "aliases, each naming an address"),
+      keys: guarded(isKeyMap, "keys, each naming an address"),
+      quicklinks: guarded(isQuicklinkList, "quicklinks, each an id, a name and an https address"),
+      fallbacks: guarded(isFallbackList, "fallbacks, each a dashi:// address"),
+    },
   },
   agents: {
     path: ["agents"],
