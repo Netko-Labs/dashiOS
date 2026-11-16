@@ -1,0 +1,14 @@
+{
+  "id": "dev.dashi.emoji",
+  "name": "Emoji",
+  "version": "0.9.0",
+  "dashi": ">=0.9",
+  "entry": "main.tsx",
+  "summary": "Find an emoji by its name and copy or paste it.",
+  "author": { "name": "Dashi", "url": "https://github.com/Netko-Labs/dashiOS" },
+  "license": "MIT",
+  "source": "https://github.com/Netko-Labs/dashiOS",
+  "categories": ["utilities"],
+  "shows": ["launcher"],
+  "commands": [{ "id": "emoji", "title": "Search Emoji", "keywords": ["emoji", "smiley", "symbol", "character"], "mode": "grid" }]
+}

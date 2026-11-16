@@ -21,8 +21,11 @@ export interface FileRow extends FileHit {
   icon: string;
 }
 
-/** An image file, a one-color glyph drawn on a neutral tile, or none (a verb of the action list). */
-export type RowIcon = { image: string } | { glyph: string } | { none: true };
+/** An image file, a one-color glyph drawn on a neutral tile (in a tone's ink: an extension's), an emoji, or none (a verb of the action list). */
+export type RowIcon = { image: string } | { glyph: string; tone?: Tone } | { text: string } | { none: true };
+
+/** The ink an extension's tag or glyph is drawn in (@dashi/applet's tones: Dashi's tokens for the mode drawn). */
+export type Tone = "primary" | "secondary" | "tertiary" | "accent" | "ume" | "broth" | "moss";
 
 /** What Enter does on a row (verbs.ts adds what the action list and the other keys do). */
 export type RowAction =
@@ -86,6 +89,8 @@ export interface Row {
   stop?: true;
   /** It waits on the person (an agent's question): its detail is broth, the warning's ink. */
   attention?: true;
+  /** An extension's tags at the right end ("Checks pass"), each in its tone's ink. */
+  tags?: readonly { text: string; tone?: Tone }[];
 }
 
 const kindOf = (entry: Entry): string => (isPane(entry) ? "Settings" : "App");

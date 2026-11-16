@@ -104,7 +104,8 @@ export function Launcher(props: LauncherProps) {
               placeholder={placeholder}
               {...(chip ? { chip } : {})}
               hints={hints}
-              notice={s.notice}
+              notice={s.notice ?? s.scope?.notice?.() ?? null}
+              secure={s.scope?.secure?.() === true}
               {...(access ? { access: { ...fieldAccess(typeof placeholder === "string" ? placeholder : (placeholder[0] ?? ""), list !== null) } } : {})}
               onChangeText={keys.onChangeText}
               onSubmit={() => keys.submit()}

@@ -29,6 +29,7 @@ import {
   checkArgs,
   type InstalledApplet,
   isRefusal,
+  isTreeMode,
   type Manifest,
 } from "@dashi/applet";
 import {
@@ -76,6 +77,8 @@ export interface AppletCommandsOptions {
   open(target: string): Promise<Outcome>;
   /** Where the launcher's surface is: its screen, and its top-left corner in that screen's points. */
   launcherOrigin(): Promise<{ output: string | null; x: number; y: number } | null>;
+  /** Views the launcher draws from a tree (modes list, grid, detail: views.ts); it starts the extension when it isn't running. */
+  views?: { open(manifest: Manifest, command: AppletCommand, args: Record<string, string | number | boolean>, dir: string | null): Outcome };
   timers?: CommandTimers;
 }
 
@@ -156,7 +159,7 @@ export class AppletCommands implements ActionSource {
       title: command.title,
       description: "",
       keywords: { en: [...command.keywords, manifest.name] },
-      kind: command.mode === "pick" ? "pick" : command.mode === "view" ? "open" : "run",
+      kind: command.mode === "pick" ? "pick" : command.mode === "instant" ? "run" : "open",
       properties,
       ...(required.length > 0 ? { required } : {}),
       scope: null,
@@ -169,6 +172,10 @@ export class AppletCommands implements ActionSource {
       check: (args) => {
         const values = checkArgs(command, args);
         if (isRefusal(values)) return invalid(values.error);
+        if (isTreeMode(command.mode) && this.options.views) {
+          const views = this.options.views;
+          return ready(async () => views.open(manifest, command, values.values, dir));
+        }
         return ready(() => this.start(manifest, command, values.values));
       },
     };

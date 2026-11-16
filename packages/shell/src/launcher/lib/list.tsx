@@ -20,6 +20,7 @@ import type { ModeLists } from "./mode.ts";
 import { nameIndent, ReservedRows, ResultRow, SectionHead } from "./row-view.tsx";
 import { keepInView, wheelSteps } from "./selection.ts";
 import type { LauncherState, Search } from "./state.ts";
+import { DetailBody, GRID_LINE_ROWS, GridCells } from "./tree-view.tsx";
 import type { Acts } from "./use-acts.ts";
 import { WindowStrip } from "./window-strip.tsx";
 
@@ -29,6 +30,19 @@ export function drawnSections(s: LauncherState, search: Search, m: Measures): { 
   const drawn = (section: Section): Row[] => {
     // A scope's list and All apps (a `window`, as many as fit at the text size) are drawn a window at a time.
     if (section.window === undefined) return section.rows;
+    // An extension's grid: whole lines of cells, the selected one's line in view.
+    if (section.grid) {
+      const lines = Math.ceil(section.rows.length / section.grid);
+      const shownLines = Math.max(1, Math.floor(section.window / GRID_LINE_ROWS));
+      const line = Math.floor(
+        Math.max(
+          0,
+          section.rows.findIndex((row) => row.id === selected),
+        ) / section.grid,
+      );
+      s.offset.current = keepInView(line, s.offset.current, shownLines, lines);
+      return section.rows.slice(s.offset.current * section.grid, (s.offset.current + shownLines) * section.grid);
+    }
     const shown = Math.min(section.window, m.listRows);
     const at = Math.max(
       0,
@@ -133,7 +147,18 @@ function searchList({ s, search, acts, m, onScreen, drawnRows }: ListInput, spok
   return onScreen.map((section) => (
     <View key={section.id} testID={`launcher:section:${section.id}`} style={{ flexDirection: "column" }}>
       {section.title !== undefined && <SectionHead title={section.title} {...(section.aside ? { aside: section.aside } : {})} />}
-      {section.rows.flatMap((row) => {
+      {section.detail && <DetailBody detail={section.detail} height={(1 + (section.reserved ?? 0)) * m.row} m={m} />}
+      {section.grid !== undefined && (
+        <GridCells
+          rows={section.rows}
+          columns={section.grid}
+          selected={selected}
+          m={m}
+          onPress={(row) => acts.doVerb(verbsOf(row)[0], row)}
+          onHover={(row) => s.setHeld(row.id)}
+        />
+      )}
+      {(section.detail || section.grid !== undefined ? [] : section.rows).flatMap((row) => {
         const showing = row.id === pictures.rowId;
         const shownRow = showing && pictures.picked ? { ...row, detail: pictures.picked.title.trim() || pictures.picked.appName } : row;
         const digit = digitOf.get(row.id);
@@ -178,7 +203,7 @@ function searchList({ s, search, acts, m, onScreen, drawnRows }: ListInput, spok
             : []),
         ];
       })}
-      {section.reserved !== undefined && <ReservedRows count={section.reserved} />}
+      {section.reserved !== undefined && !section.detail && <ReservedRows count={section.reserved} />}
     </View>
   ));
 }

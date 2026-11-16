@@ -29,6 +29,7 @@ import { initialMode, type Mode } from "./mode.ts";
 import { selectable } from "./rows.ts";
 import { foundSections, verbContext } from "./search-rows.ts";
 import type { LauncherState, Notice, Search } from "./state.ts";
+import { treeScope } from "./tree-scope.ts";
 import { usePictures } from "./use-pictures.ts";
 
 /**
@@ -163,6 +164,10 @@ export function useSearch(props: LauncherProps, s: LauncherState, m: Measures): 
       restart: (next) => restart(next),
       select: (id) => s.setHeld(id),
       run: (action, args) => void host?.run(action, args).then((outcome) => ran(outcome, false)),
+      enterTree: (title, view) => {
+        s.setScoped({ scope: treeScope(title, view), alone: false });
+        restart("");
+      },
     },
     viewMeasures,
   );
@@ -173,12 +178,15 @@ export function useSearch(props: LauncherProps, s: LauncherState, m: Measures): 
   const verbsOf = (row: Row): Verb[] => (scope ? scope.verbs(row, text) : verbsFor(row, ctx));
   if (working !== null) logTiming("rows worked out", performance.now() - working, BUDGET.instantMs);
   const typedAt = useKeystrokeTiming(query);
+  // A scope the launcher leaves (or closes over) hears it: an extension's view is told to close.
+  useEffect(() => () => scope?.leave?.(), [scope]);
   const rows = selectable(sections);
   const rowIds = rows.map((row) => row.id);
   // With nothing held the first row, but never Ask: it is chosen, not given.
   const selected = held !== null && rowIds.includes(held) ? held : firstChoice(rowIds);
   const selectedRow = rows.find((row) => row.id === selected);
-  const pictures = useRowPictures(props, keys, selectedRow, world, mode.kind === "search" && !scope && !inOutside);
+  const grid = mode.kind === "search" && sections.some((section) => section.grid !== undefined && section.rows.some((row) => row.id === selected));
+  const pictures = useRowPictures(props, keys, selectedRow, world, mode.kind === "search" && !scope && !inOutside, grid);
   const say = (outcome: Outcome) => s.setNotice(outcome.ok ? { text: outcome.text, ok: true } : { text: outcome.error, ok: false });
   const sayDone = (words: string, ok = true) => s.setNotice({ text: words, ok });
   const finish = (stay: boolean) => {
@@ -241,12 +249,20 @@ function useKeystrokeTiming(query: string): { current: number | null } {
 }
 
 /** The selected row's windows, live under it after → (launcher/pictures.ts); not in a scope, whose rows are its own. */
-function useRowPictures(props: LauncherProps, keys: LauncherProps["keys"], selectedRow: Row | undefined, world: WorldSnapshot, searching: boolean) {
+function useRowPictures(
+  props: LauncherProps,
+  keys: LauncherProps["keys"],
+  selectedRow: Row | undefined,
+  world: WorldSnapshot,
+  searching: boolean,
+  grid: boolean,
+) {
   const arrows = useMemo(() => (keys?.arrows ? (want: ArrowsWanted) => keys.arrows?.(want) : undefined), [keys]);
   return usePictures({
     selectedRow,
     windows: world.windows,
     searching,
+    grid,
     ...(arrows ? { arrows } : {}),
     ...(props.onPictures ? { onPictures: props.onPictures } : {}),
   });

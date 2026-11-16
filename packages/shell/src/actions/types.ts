@@ -9,6 +9,7 @@
  * the person types.
  */
 
+import type { ToastStyle, ViewNode } from "@dashi/applet";
 import type { Scope } from "../agents/consent.ts";
 import type { ToolResult } from "../agents/context.ts";
 import type { Call, ToolName } from "../agents/tools/types.ts";
@@ -54,7 +55,50 @@ export type Shown =
   /** Rows for what is typed, asked again on each keystroke (against the 80 ms budget); the one chosen runs. */
   | { kind: "pick"; title: string; ask(query: string): Promise<readonly PickRow[]>; choose(row: PickRow): Promise<Outcome> }
   /** The command draws its answer itself where the rows were, `height` points tall; `place` says where, `close` takes it away. */
-  | { kind: "view"; title: string; height: number; place(frame: ViewFrame): void; close(): void; onClose(listener: () => void): void };
+  | { kind: "view"; title: string; height: number; place(frame: ViewFrame): void; close(): void; onClose(listener: () => void): void }
+  /** The launcher draws the extension's view from its tree (protocol 6; applets/views.ts). */
+  | { kind: "tree"; title: string; view: TreeView };
+
+/** Where an extension's view is: started, its tree on screen, or why not. */
+export interface TreeSnapshot {
+  /** The views, the one shown last (pushed over the others). */
+  stack: readonly ViewNode[];
+  /** `starting` until its first tree: the launcher draws the view's skeleton meanwhile. */
+  phase: "starting" | "shown" | "failed" | "closed";
+  /** Since when it has been starting (ms, the shell's clock): "Loading" after 300 ms. */
+  since: number;
+  error?: string;
+  /** Its last line for the field row. */
+  toast?: { style: ToastStyle; title: string };
+}
+
+/** What choosing one of the view's actions came to. */
+export type TreeActed =
+  | { kind: "done"; notice?: string; close?: boolean }
+  /** A `set` action: ask the person for this preference in the field. */
+  | { kind: "ask"; name: string; title: string; secret: boolean }
+  | { kind: "failed"; error: string };
+
+/** An extension's view as the launcher reaches it (applets/views.ts keeps it). */
+export interface TreeView {
+  /** The extension's name ("GitHub") and icon. */
+  readonly from: string;
+  readonly icon?: string;
+  /** The package's folder: a view's images are its files. */
+  readonly dir: string | null;
+  subscribe(listener: () => void): () => void;
+  snapshot(): TreeSnapshot;
+  /** The field changed: an extension that filters (`filter: "extension"`) hears it. */
+  search(text: string): void;
+  select(node: string): void;
+  more(): void;
+  act(node: string): Promise<TreeActed>;
+  /** The person answered a `set` action. */
+  setPreference(name: string, value: string): Promise<boolean>;
+  /** Esc: the pushed view goes; false when there is none (the launcher leaves the view). */
+  back(): boolean;
+  close(): void;
+}
 
 /** Where a view goes: the launcher's list area, in its screen's own points. */
 export interface ViewFrame {

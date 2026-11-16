@@ -12,10 +12,10 @@
  * else its kind. Keys are drawn as glyphs (@dashi/ui Shortcut).
  */
 
-import { KEY_GLYPHS, Shortcut, Switch, useColors } from "@dashi/ui";
+import { KEY_GLYPHS, type Palette, Shortcut, Switch, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { AppIcon } from "../../shared/apps/index.ts";
-import type { Row, RowIcon } from "../row-model.ts";
+import type { Row, RowIcon, Tone } from "../row-model.ts";
 import { type Measures, STANDARD, useMeasures } from "./measures.ts";
 
 export const ROW_HEIGHT = STANDARD.row;
@@ -29,16 +29,37 @@ const DOT = 6;
 /** The stop square at a running agent's right end, as the menu bar's pill draws it. */
 const STOP = 9;
 
+/** A tone's ink (an extension's tag or glyph); on the selection's wash, the selection's ink. */
+export const toneInk = (colors: Palette, tone: Tone | undefined): string =>
+  tone === "moss"
+    ? colors.moss
+    : tone === "ume"
+      ? colors.criticalInk
+      : tone === "broth"
+        ? colors.broth
+        : tone === "accent"
+          ? colors.accentInk
+          : tone === "secondary" || tone === "tertiary"
+            ? colors.textMuted
+            : colors.text;
+
 function Icon({ icon, m, agent }: { icon: RowIcon; m: Measures; agent?: Row["agent"] }) {
   const colors = useColors();
   if ("none" in icon) return null;
   if ("image" in icon) return <AppIcon source={icon.image} style={{ width: m.icon, height: m.icon }} />;
+  // An emoji is its own picture: no tile behind it.
+  if ("text" in icon)
+    return (
+      <View style={{ width: m.icon, height: m.icon, alignItems: "center", justifyContent: "center" }}>
+        <Text style={{ fontSize: m.glyph + 2 }}>{icon.text}</Text>
+      </View>
+    );
   // A pane's own glyph in ink on a neutral tile: never tinted (CO-2, CO-4). Only Ask's glyph is shiso (CO-3).
   return (
     <View
       style={{ width: m.icon, height: m.icon, borderRadius: m.icon * 0.24, alignItems: "center", justifyContent: "center", backgroundColor: colors.button }}
     >
-      <Svg markup={icon.glyph} size={m.glyph} color={agent === "ask" ? colors.agent : colors.text} />
+      <Svg markup={icon.glyph} size={m.glyph} color={agent === "ask" ? colors.agent : toneInk(colors, icon.tone)} />
       {agent === "dot" && (
         <View
           testID="launcher:agent-dot"
@@ -61,6 +82,31 @@ function StopSquare({ id, onStop }: { id: string; onStop: () => void }) {
     >
       <View style={{ width: STOP, height: STOP, borderRadius: 2, backgroundColor: colors.agentInk }} />
     </View>
+  );
+}
+
+/** An extension's tags at a row's right end, each in its tone's ink (the selection's ink on the wash). */
+function Tags({ tags, selected, m }: { tags: NonNullable<Row["tags"]>; selected: boolean; m: Measures }) {
+  const colors = useColors();
+  return (
+    <>
+      {tags.map((tag) => (
+        <View
+          key={tag.text}
+          style={{
+            flexShrink: 0,
+            paddingLeft: 6,
+            paddingRight: 6,
+            height: Math.round(m.small * 1.6),
+            borderRadius: 5,
+            justifyContent: "center",
+            backgroundColor: colors.button,
+          }}
+        >
+          <Text style={{ fontSize: m.small, color: selected ? colors.onSelection : toneInk(colors, tag.tone) }}>{tag.text}</Text>
+        </View>
+      ))}
+    </>
   );
 }
 
@@ -162,6 +208,7 @@ export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digi
           </View>
         )}
       </View>
+      {row.tags && <Tags tags={row.tags} selected={selected} m={m} />}
       <RightEnd row={row} digit={digit} quiet={quiet} m={m} />
       {row.stop && onStop && <StopSquare id={row.id} onStop={onStop} />}
       {row.more && <Svg markup={KEY_GLYPHS["→"] ?? ""} size={m.detail} color={quiet} />}
