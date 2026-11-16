@@ -71,5 +71,5 @@ export function packageAsk(sources: readonly Source[], offer: Offer, tool: boole
   const from = source?.kind === "fedora" ? "Fedora" : (source?.label ?? "this repository");
   const copr = source?.kind === "copr" && !source.dashi ? ` ${source.label} is a community build, not reviewed by Fedora.` : "";
   const what = tool ? "It runs in Terminal with" : "It runs with";
-  return `From ${from}.${copr} ${what} your account’s full access: packages aren’t sandboxed. You’ll be asked for your password.`;
+  return `From ${from}.${copr} ${what} your account’s full access: packages aren’t sandboxed. It is installed for everyone on this computer.`;
 }

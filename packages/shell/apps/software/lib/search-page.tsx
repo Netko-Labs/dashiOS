@@ -9,12 +9,12 @@
 import { EmptyState, glyphs, Loading } from "@dashi/ui";
 import { ScrollView } from "@mirinjs/metal";
 import { AppletGroup, useAppletState } from "./applets/rows.tsx";
+import { inMenuBar, isExtension } from "./applets/words.ts";
 import { useCatalog } from "./catalog-hooks.ts";
 import { EntryGrid, ToolRows } from "./entry-rows.tsx";
 import { SectionHeader } from "./heading.tsx";
 import { matches } from "./nav.ts";
 import { useServices } from "./services.ts";
-import { isExtension } from "./shelves.tsx";
 
 function useAddOnMatches(query: string) {
   const state = useAppletState();
@@ -22,7 +22,7 @@ function useAddOnMatches(query: string) {
   const found = state.index.applets.filter((entry) =>
     matches(query, { name: entry.manifest.name, summary: entry.manifest.summary, author: entry.manifest.author.name, id: entry.manifest.id }),
   );
-  return { applets: found.filter((entry) => !isExtension(entry)), extensions: found.filter(isExtension) };
+  return { applets: found.filter((entry) => !isExtension(entry) && inMenuBar(entry)), extensions: found.filter(isExtension) };
 }
 
 export function SearchPage({ query }: { query: string }) {

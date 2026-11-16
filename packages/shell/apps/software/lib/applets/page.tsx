@@ -75,9 +75,11 @@ function Manage({ applet }: { applet: InstalledApplet }) {
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12, ...MANAGE_ROW }}>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>Removing it can also delete what it saved.</Text>
+            <Text style={{ fontSize: 12, color: colors.textMuted }}>
+              {applet.record.firstParty === true ? "Part of Dashi: it comes and goes with Dashi." : "Removing it can also delete what it saved."}
+            </Text>
           </View>
-          <Button label="Remove…" testID="remove" onPress={() => actions.removeApplet(applet)} />
+          {applet.record.firstParty !== true && <Button label="Remove…" testID="remove" onPress={() => actions.removeApplet(applet)} />}
         </View>
       </Group>
     </View>

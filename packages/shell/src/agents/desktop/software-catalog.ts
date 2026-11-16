@@ -49,7 +49,7 @@ function describeOffer(sources: readonly Source[], offer: Offer) {
     ...(source?.kind === "copr" && !source.dashi ? { note: COPR_NOTE } : {}),
     sandboxed: offer.kind === "flatpak",
     verified: offer.verified,
-    needsPassword: offer.kind === "rpm",
+    systemWide: offer.kind === "rpm",
     installed: offer.installed,
     ...(offer.version ? { version: offer.version } : {}),
   };
@@ -95,7 +95,7 @@ export function packageDetail(sources: readonly Source[], offer: Offer): string 
   const source = sourceOf(sources, offer.source);
   const from = source?.kind === "fedora" ? "Fedora" : (source?.label ?? offer.source);
   const copr = source?.kind === "copr" && !source.dashi ? ` (${COPR_NOTE.toLowerCase()})` : "";
-  return `The ${offer.ref} package from ${from}${copr}. Packages aren’t sandboxed: it runs with your account’s full access. You’ll be asked for your password.`;
+  return `The ${offer.ref} package from ${from}${copr}. Packages aren’t sandboxed: it runs with your account’s full access, and it is installed for everyone on this computer.`;
 }
 
 /** The package apps on this computer, from the catalog. */
@@ -155,7 +155,7 @@ export async function searchEverySource(b: Partial<CatalogBackend> & { catalog: 
     sourceKind: "flathub",
     sandboxed: true,
     verified: app.verified,
-    needsPassword: false,
+    systemWide: false,
   }));
   return json({ results: [...found.results, ...extra].slice(0, limit) });
 }

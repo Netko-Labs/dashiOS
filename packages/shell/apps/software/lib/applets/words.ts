@@ -1,8 +1,9 @@
 /** The applets in words: their categories (and the tile each wears, shared with Flathub's), and the chip a row shows. Pure. */
 
 import type { Category } from "@dashi/applet";
+import { showsOf } from "@dashi/applet";
 import { TINTS } from "@dashi/ui";
-import type { AppletStatus } from "../../../../src/shared/applet-store/index.ts";
+import type { AppletStatus, StoreApplet } from "../../../../src/shared/applet-store/index.ts";
 import { CATEGORY_GLYPHS, CATEGORY_TINTS, DISCOVER } from "../glyphs.ts";
 import type { Chip, Operation } from "../model.ts";
 
@@ -51,3 +52,9 @@ export function appletChip(status: AppletStatus, operation: Operation | undefine
       return status.good ? { kind: "update", asks } : { kind: "unavailable", detail: "Needs an update" };
   }
 }
+
+/** An add-on that shows in the launcher (its manifest's `shows`, else having commands: @dashi/applet's `showsOf`). */
+export const isExtension = (entry: Pick<StoreApplet, "manifest">): boolean => showsOf(entry.manifest).includes("launcher");
+
+/** An add-on that puts an item in the menu bar. */
+export const inMenuBar = (entry: Pick<StoreApplet, "manifest">): boolean => showsOf(entry.manifest).includes("menu-bar");

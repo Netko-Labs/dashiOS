@@ -122,7 +122,7 @@ export function Question({ ask, onAnswer }: { ask: Ask; onAnswer: (answer: Answe
         <ConfirmSheet
           testID="remove-package-sheet"
           title={`Remove “${ask.entry.name}”?`}
-          message={`It is taken off this computer (the ${ask.offer.ref} package from ${ask.source}), with what only it needed. Your files stay. You’ll be asked for your password.`}
+          message={`It is taken off this computer (the ${ask.offer.ref} package from ${ask.source}), with what only it needed. Your files stay.`}
           confirmLabel="Remove"
           danger
           glyph={WARNING}

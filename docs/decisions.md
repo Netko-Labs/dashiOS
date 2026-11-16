@@ -5568,3 +5568,22 @@ short words, as the rulebook is written.
   `>=0.9`. Every applet in the catalog says `>=0.4` or `>=0.5` and still
   runs; one that said `^0.5` would not (none does).
 - **Undo:** `SDK_VERSION` in `packages/applet/src/package.ts`.
+
+### D330. A wheel user installs and removes packages without a password; the Store's sheet is the ask
+
+- **Date:** 2026-11-16. `v09/store`, found in the VM pass.
+- **Found:** Fedora 44's PackageKit ships
+  `/usr/share/polkit-1/rules.d/org.freedesktop.packagekit.rules`: an active,
+  local member of `wheel` installs, removes and updates packages with no
+  password (`package-install`, `package-remove`, `system-update`). Changing
+  a repository (`system-sources-configure`) still asks. The design assumed a
+  password for every new package and removal ("hole 2", untested then).
+- **Decision:** keep Fedora's rule. Installing system software is critical
+  (D260), and the person is asked every time on the Store's own Get sheet
+  (and an agent's install on the confirm sheet); the sheet no longer
+  promises a password, it says the package isn't sandboxed and is installed
+  for everyone. Someone not in `wheel` still gets polkit's password sheet.
+- **Owner's call, open:** a Dashi polkit rule could ask for the password
+  again on installs and removals (auth_admin_keep), as the design drew.
+- **Undo:** the words in `apps/software/lib/source-words.ts` (`packageAsk`),
+  `agents/desktop/software-catalog.ts` (`packageDetail`).

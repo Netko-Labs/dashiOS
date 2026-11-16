@@ -4,8 +4,7 @@
  * extensions, the add-ons in Dashi's catalog whose point is their commands
  * (today's v3 `commands`); and Widgets, an empty shelf until the widgets
  * release. Every add-on is one kind of signed package and appears on every
- * shelf it contributes to: one with commands is on Menu bar applets and on
- * Launcher extensions. Themes stay hidden until the themes release (D326).
+ * shelf it contributes to (its manifest's `shows`, D352's `showsOf`). Themes stay hidden until the themes release (D326).
  */
 
 import { Choices, EmptyState, Loading } from "@dashi/ui";
@@ -14,12 +13,10 @@ import type { StoreApplet } from "../../../src/shared/applet-store/index.ts";
 import { CATEGORIES, type CategoryId } from "../../../src/shared/software/index.ts";
 import { AppletsProblem } from "./applets/pages.tsx";
 import { AppletGroup, useAppletState } from "./applets/rows.tsx";
+import { isExtension } from "./applets/words.ts";
 import { EXTENSIONS, WIDGETS } from "./glyphs.ts";
 import { useReportStale } from "./hooks.ts";
 import { Listing } from "./listing.tsx";
-
-/** An add-on whose commands go to the launcher. */
-export const isExtension = (entry: StoreApplet): boolean => entry.manifest.commands.length > 0;
 
 /** "6 commands": what an extension adds, for its row. */
 export const commandsWords = (entry: StoreApplet): string =>

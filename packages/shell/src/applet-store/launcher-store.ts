@@ -9,6 +9,7 @@
  * never reach this scope (it is the person's launcher).
  */
 
+import { showsOf } from "@dashi/applet";
 import { type ActionContext, type ActionDef, type ActionSource, ok, ready } from "../actions/index.ts";
 import { KEYS, type LauncherScope, type Row, type ScopeResult, type Section, type Verb } from "../launcher/index.ts";
 import { abilityLines, commandsLine, type StoreApplet } from "../shared/applet-store/index.ts";
@@ -37,7 +38,10 @@ const matches = (entry: StoreApplet, words: string[]): boolean => {
 export function getQuestion(entry: StoreApplet): string {
   const adds = commandsLine(entry.manifest);
   const can = abilityLines(entry.manifest);
-  const reach = can.length > 0 ? `It can: ${can.join("; ").toLowerCase()}.` : "It reaches nothing of yours.";
+  const reach =
+    can.length > 0
+      ? `It can: ${can.map((line, at) => (at === 0 ? line : line.charAt(0).toLowerCase() + line.slice(1))).join("; ")}.`
+      : "It reaches nothing of yours.";
   const review = entry.reviewed ? "" : " Nobody at Dashi has read this version’s code.";
   return `Get “${entry.manifest.name}”? ${adds ? `${adds}. ` : ""}${reach}${review} ↩ again gets it.`;
 }
@@ -69,12 +73,12 @@ export function storeSections(deps: StoreScopeDeps, query: string): Section[] {
       id: "store:extensions",
       title: "Launcher extensions",
       aside: "from the Store",
-      rows: fresh.filter((each) => each.manifest.commands.length > 0).map((each) => row(each, stateOf(each))),
+      rows: fresh.filter((each) => showsOf(each.manifest).includes("launcher")).map((each) => row(each, stateOf(each))),
     },
     {
       id: "store:applets",
       title: "Menu bar applets",
-      rows: fresh.filter((each) => each.manifest.commands.length === 0).map((each) => row(each, stateOf(each))),
+      rows: fresh.filter((each) => !showsOf(each.manifest).includes("launcher")).map((each) => row(each, stateOf(each))),
     },
     { id: "store:installed", title: "Installed", rows: have.map((each) => row(each, "installed")) },
   ].filter((section) => section.rows.length > 0);

@@ -123,7 +123,7 @@ test("the launcher's Store lists extensions, applets and what is installed, and 
   const [get] = scope.verbs(row, "");
   expect(get?.id).toBe("get");
   expect(get?.confirm).toContain("Get “Linear”? Adds 1 command to the launcher.");
-  expect(get?.confirm).toContain("use the network");
+  expect(get?.confirm).toMatch(/It can: .*network/i);
   // Choosing the row itself never installs: it shows the add-on in the Store.
   expect(row.action).toEqual({ kind: "scope", verb: "show" });
   expect(await scope.run("get", row, "")).toEqual({ notice: { text: "Linear is in", ok: true } });
