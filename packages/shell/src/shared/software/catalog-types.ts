@@ -11,6 +11,8 @@ export interface Offer {
   /** The dnf repository it comes from (RPM only). */
   repoId: string | null;
   version: string | null;
+  /** The package's arch (RPM only), for PackageKit's id. */
+  arch: string | null;
   /** Flathub's mark: its developer proved who publishes it. */
   verified: boolean;
   installed: boolean;
@@ -28,6 +30,8 @@ export interface CatalogEntry {
   categories: string[];
   keywords: string[];
   license: string | null;
+  /** The desktop file a package-installed app starts from (without `.desktop`); null for a tool. */
+  desktopId: string | null;
   /** In the default order (installed first, then D321's): `offers[0]` is what Get uses. */
   offers: Offer[];
 }

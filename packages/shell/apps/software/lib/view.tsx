@@ -52,12 +52,12 @@ function useUpdateChecks(store: Services["store"], applets: Services["applets"])
 }
 
 export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuery?: string; initialPage?: string } = {}) {
-  const { store, applets, catalog, appletImages, restart, openUrl } = useServices();
+  const { store, applets, catalog, index, packages, appletImages, restart, logOut, openUrl } = useServices();
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const appletState = useAppletState();
   const { nav, setNav, query, setQuery, filtering, go, goBack } = useNavigation(initialQuery, initialPage);
-  const sheets = useWindowSheets({ store, applets, restart, appletState });
-  const actions = useWindowActions({ store, applets, catalog, openUrl, setNav, enqueue: sheets.enqueue, setPicture: sheets.setPicture });
+  const sheets = useWindowSheets({ store, applets, restart, logOut, appletState, index, packages });
+  const actions = useWindowActions({ store, applets, catalog, index, openUrl, setNav, enqueue: sheets.enqueue, setPicture: sheets.setPicture });
   const [stale, setStale] = useState(0);
   const reportStale = useCallback((delta: 1 | -1) => setStale((n) => Math.max(0, n + delta)), []);
   // The page's width (the window less its sidebar): under 600 the toolbar is compact.
@@ -77,9 +77,10 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
     store,
     applets,
     state,
-    blocked: sheets.asks.length > 0 || state.failure !== null || sheets.catalogs,
+    blocked: sheets.asks.length > 0 || state.failure !== null || sheets.catalogs || sheets.sources,
     actions,
     askSystem,
+    openSources: sheets.openSources,
   });
 
   const leading = canGoBack(nav) ? <ToolbarButton testID="back" glyph={BACK} tooltip="Back" onPress={goBack} /> : undefined;
@@ -88,7 +89,7 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
     <ActionsContext.Provider value={actions}>
       <StaleContext.Provider value={reportStale}>
         <AppWindow
-          title="Software"
+          title="Store"
           leading={leading}
           // Compact: the window's name gives way to the controls (the sidebar says where you are).
           {...(compact ? { center: <View style={{ flex: 1 }} /> } : {})}
@@ -108,6 +109,7 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
               go={go}
               actions={actions}
               openCatalogs={sheets.openCatalogs}
+              openSources={sheets.openSources}
               onCheckUpdates={checkForUpdates}
             />
           }
@@ -119,6 +121,8 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
               query={query}
               onRestart={() => sheets.enqueue({ kind: "restart" })}
               onUpdateSystem={askSystem}
+              onLogOut={() => sheets.enqueue({ kind: "logout" })}
+              replace={(page) => setNav((now) => ({ ...now, page }))}
               onSeeAll={(where) => setNav((now) => push(now, where === "applets" ? { kind: "applets" } : { kind: "collection", id: where }))}
             />
           </View>

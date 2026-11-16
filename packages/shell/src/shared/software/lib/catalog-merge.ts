@@ -67,8 +67,18 @@ function addFlathub(build: Builder, apps: readonly AppStreamApp[], installed: Re
       categories: app.categories,
       keywords: app.keywords,
       license: app.license,
+      desktopId: app.desktopId ?? app.flatpak,
       offers: [
-        { source: "flathub", kind: "flatpak", ref: app.flatpak, repoId: null, version: null, verified: app.verified, installed: installed.has(app.flatpak) },
+        {
+          source: "flathub",
+          kind: "flatpak",
+          ref: app.flatpak,
+          repoId: null,
+          version: null,
+          arch: null,
+          verified: app.verified,
+          installed: installed.has(app.flatpak),
+        },
       ],
     });
     for (const id of [app.flatpak, app.id, app.desktopId]) if (id) build.alias.set(norm(id), key);
@@ -85,7 +95,7 @@ function rpmOffers(name: string, input: MergeInput, byName: ReadonlyMap<string, 
     if (have && !(pkg.repoId === "updates")) continue;
     const from = input.installedRpms.get(name);
     const installed = from !== undefined && (from === pkg.repoId || sourceForRepo(input.sources, from)?.id === source.id);
-    offers.set(source.id, { source: source.id, kind: "rpm", ref: name, repoId: pkg.repoId, version: pkg.evr, verified: false, installed });
+    offers.set(source.id, { source: source.id, kind: "rpm", ref: name, repoId: pkg.repoId, version: pkg.evr, arch: pkg.arch, verified: false, installed });
   }
   return [...offers.values()];
 }
@@ -107,6 +117,7 @@ function addRpmApps(build: Builder, input: MergeInput, byName: ReadonlyMap<strin
     if (entry) {
       entry.offers.push(...offers.filter((offer) => !entry.offers.some((have) => have.source === offer.source)));
       if (entry.icon === null && stream?.icon?.kind === "cached") entry.icon = stream.icon.value;
+      entry.desktopId ??= app.desktopIds[0] ?? null;
       continue;
     }
     const pkg = byName.get(app.name)?.[0];
@@ -122,6 +133,7 @@ function addRpmApps(build: Builder, input: MergeInput, byName: ReadonlyMap<strin
       categories: stream?.categories ?? [],
       keywords: [...(stream?.keywords ?? []), app.name],
       license: stream?.license ?? null,
+      desktopId: app.desktopIds[0] ?? null,
       offers,
     });
     for (const id of ids) build.alias.set(norm(id), key);
@@ -145,6 +157,7 @@ function addTools(build: Builder, input: MergeInput, byName: ReadonlyMap<string,
       categories: [],
       keywords: [],
       license: null,
+      desktopId: null,
       offers,
     });
   }

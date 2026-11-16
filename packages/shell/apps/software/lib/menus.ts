@@ -50,6 +50,7 @@ export interface SoftwareMenuContext {
     checkForUpdates(): void;
     updateAllApps(): void;
     updateSystem(): void;
+    sources(): void;
     open(): void;
     get(): void;
     update(): void;
@@ -95,6 +96,8 @@ export function softwareMenus(context: SoftwareMenuContext): { menus: MenuSpec[]
         { type: "separator" },
         { id: "update-apps", agents: false, label: "Update All Apps", enabled: context.appUpdates > 0 && !context.updatingApps && !blocked },
         { id: "update-system", agents: false, label: "Update System Software…", enabled: context.systemUpdates > 0 && !context.updatingSystem && !blocked },
+        { type: "separator" },
+        { id: "sources", label: "Sources…", enabled: !blocked },
       ],
     },
   ];
@@ -117,6 +120,8 @@ export function softwareMenus(context: SoftwareMenuContext): { menus: MenuSpec[]
         return actions.updateAllApps();
       case "update-system":
         return actions.updateSystem();
+      case "sources":
+        return actions.sources();
       case "item:open":
         return actions.open();
       case "item:get":

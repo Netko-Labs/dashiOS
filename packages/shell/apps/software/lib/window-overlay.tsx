@@ -10,6 +10,7 @@ import { CatalogsSheet } from "./applets/catalogs-sheet.tsx";
 import type { AppletStore } from "./applets/store.ts";
 import { PictureView } from "./gallery.tsx";
 import { FailureSheet, Question } from "./sheets.tsx";
+import { SourcesSheet } from "./sources-sheet.tsx";
 import type { SoftwareState } from "./store.ts";
 import type { WindowSheets } from "./use-window-sheets.ts";
 
@@ -25,6 +26,7 @@ export function windowOverlay({ sheets, failure, applets, appletImages }: Window
   const ask = sheets.asks[0];
   if (sheets.picture) return <PictureView file={sheets.picture} onClose={() => sheets.setPicture(null)} />;
   if (sheets.catalogs) return <CatalogsSheet onClose={sheets.closeCatalogs} />;
+  if (sheets.sources) return <SourcesSheet onClose={sheets.closeSources} />;
   if (ask?.kind === "consent") {
     return (
       <AppletConsentSheet

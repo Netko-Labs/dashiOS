@@ -1,6 +1,8 @@
 /**
- * Software (dev.dashi.software): `bun apps/software/main.tsx [host]`. Apps from
- * Flathub installed with flatpak, and the system's updates through PackageKit.
+ * The Store (dev.dashi.software; called Software until 0.9, D324): `bun
+ * apps/software/main.tsx [host]`. Apps from Flathub (flatpak), Fedora, Terra
+ * and the COPRs enabled on the machine (PackageKit), Dashi's add-ons, and
+ * the system's updates.
  * Nothing installs or updates until the person clicks (or an agent asks and
  * they say yes on screen). `DASHI_SOFTWARE_FAKE=1` stands in for the package
  * tools in checks (src/shared/software/stand-in.ts). `DASHI_SOFTWARE_SEARCH` opens it
@@ -15,10 +17,13 @@ import { runApp } from "../kit/index.ts";
 import { createServices, ServicesContext } from "./lib/services.ts";
 import { SOFTWARE_SIZE, SoftwareWindow } from "./lib/view.tsx";
 
-const services = createServices(() => powerAction("restart", undefined, powerMachine));
+const services = createServices(
+  () => powerAction("restart", undefined, powerMachine),
+  () => powerAction("logout", undefined, powerMachine),
+);
 
 runApp(
-  { id: "dev.dashi.software", title: "Software", size: SOFTWARE_SIZE },
+  { id: "dev.dashi.software", title: "Store", size: SOFTWARE_SIZE },
   <ServicesContext.Provider value={services}>
     <SoftwareWindow initialQuery={process.env.DASHI_SOFTWARE_SEARCH?.trim() ?? ""} initialPage={process.env.DASHI_SOFTWARE_PAGE} />
   </ServicesContext.Provider>,

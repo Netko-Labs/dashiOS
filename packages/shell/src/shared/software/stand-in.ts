@@ -7,6 +7,7 @@
  */
 
 import type { Runner } from "./lib/run.ts";
+import { standInPackages } from "./lib/stand-in-catalog.ts";
 import type { ManagerDeps } from "./manager.ts";
 
 const INSTALLED = [
@@ -48,6 +49,9 @@ const updated = new Set<string>();
 
 const run: Runner = async (command, options = {}) => {
   const [program, verb] = command;
+  const packages = await standInPackages(command, options);
+  if (packages !== null) return packages;
+  if (program === "flatpak" && verb === "remotes") return { code: 0, output: "flathub\tuser\n" };
   if (program === "flatpak" && verb === "list") {
     const rows = INSTALLED.split("\n").filter((row) => !removed.has(row.split("\t")[0] ?? ""));
     for (const id of added) rows.push(`${id}\t${nameOf(id)}\t1.0\tstable\tx86_64\tflathub\tuser\t12.0 MB\t`);

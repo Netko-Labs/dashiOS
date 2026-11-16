@@ -10,9 +10,10 @@
 import { Button, EmptyState, Group, glyphs, Loading, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
-import { type FlatpakUpdate, formatBytes, plainFailure } from "../../../src/shared/software/index.ts";
+import { type FlatpakUpdate, formatBytes, isDashiRepo, plainFailure } from "../../../src/shared/software/index.ts";
 import { AppletGroup } from "./applets/rows.tsx";
 import { StateChip } from "./chip.tsx";
+import { DashiUpdate } from "./dashi-update.tsx";
 import { ago } from "./format.ts";
 import { UPDATES } from "./glyphs.ts";
 import { SectionHeader } from "./heading.tsx";
@@ -104,7 +105,8 @@ function SystemUpdates({ onUpdateSystem }: { onUpdateSystem: () => void }) {
   const { store } = useServices();
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const [all, setAll] = useState(false);
-  const system = state.system?.updates ?? [];
+  // Dashi's own packages are their own row (dashi-update.tsx).
+  const system = (state.system?.updates ?? []).filter((update) => !isDashiRepo(update.repo));
   const systemOp = state.operations.find((operation) => operation.kind === "system-update");
   const restartLikely = (state.system?.restartCauses.length ?? 0) > 0;
   const security = system.filter((update) => update.kind === "Security").length;
@@ -191,7 +193,7 @@ function AppletUpdates() {
   );
 }
 
-export function Updates({ onRestart, onUpdateSystem }: { onRestart: () => void; onUpdateSystem: () => void }) {
+export function Updates({ onRestart, onUpdateSystem, onLogOut }: { onRestart: () => void; onUpdateSystem: () => void; onLogOut: () => void }) {
   const colors = useColors();
   const { store, applets } = useServices();
   const actions = useActions();
@@ -230,6 +232,7 @@ export function Updates({ onRestart, onUpdateSystem }: { onRestart: () => void; 
           />
         </View>
       )}
+      <DashiUpdate onLogOut={onLogOut} />
       <SystemUpdates onUpdateSystem={onUpdateSystem} />
       {appUpdates.length > 0 && (
         <>

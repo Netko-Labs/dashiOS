@@ -50,8 +50,9 @@ export interface SoftwareState {
 const message = (error: unknown): string => (error instanceof Error ? error.message : "Something went wrong.");
 
 /** The failure sheet's words for a change that failed with the tool's `text`: “VLC” wasn’t installed, and why, plainly. */
-export function failureOf(operation: Pick<Operation, "kind" | "name" | "id">, text: string): Failure {
+export function failureOf(operation: Pick<Operation, "kind" | "name" | "id" | "subject">, text: string): Failure {
   const verb = { install: "installed", remove: "removed", update: "updated", "system-update": "updated" }[operation.kind];
+  if (operation.subject === "source") return { title: `“${operation.name}” wasn’t changed`, ...plainFailure(text) };
   const title =
     operation.kind === "system-update"
       ? "The system wasn’t updated"
@@ -199,7 +200,7 @@ export class SoftwareStore {
   private async finished(operation: Omit<Operation, "status" | "progress">, outcome: Outcome): Promise<void> {
     if (!outcome.ok && !outcome.cancelled) this.set({ failure: failureOf(operation, outcome.message) });
     // An applet's change reads its own folder again (its job's `done`); flatpak's lists didn't change.
-    if (operation.subject === "applet") return;
+    if (operation.subject !== undefined) return;
     await this.refreshInstalled();
     if (operation.kind === "update" || operation.kind === "system-update") {
       await this.checkUpdates();

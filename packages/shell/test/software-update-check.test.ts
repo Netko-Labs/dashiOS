@@ -144,6 +144,7 @@ const context = (over: Partial<SoftwareMenuContext> = {}): SoftwareMenuContext =
     checkForUpdates() {},
     updateAllApps() {},
     updateSystem() {},
+    sources() {},
     open() {},
     get() {},
     update() {},

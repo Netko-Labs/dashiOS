@@ -114,3 +114,6 @@ export function sortSources<T extends Pick<Source, "kind" | "dashi" | "label">>(
 
 /** The source a dnf repository id belongs to, among `sources`. */
 export const sourceForRepo = (sources: readonly Source[], repoId: string): Source | undefined => sources.find((source) => source.repoIds.includes(repoId));
+
+/** Whether an update's repository (as PackageKit names it) is Dashi's own COPR. */
+export const isDashiRepo = (repo: string): boolean => coprName(repo) === DASHI_COPR || repo === "pejedev-dashi" || /(^|:)pejedev:dashi$/.test(repo);
