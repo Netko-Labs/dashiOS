@@ -10,8 +10,9 @@ import { expect, test } from "bun:test";
 import { wordsFrom } from "../src/dictation/index.ts";
 import { type GateReason, gate } from "../src/dictation/lib/gate.ts";
 import { languagesOf } from "../src/dictation/lib/language.ts";
-import { wordsChanged } from "../src/dictation/lib/rewrite.ts";
+import { keepAccents, wordsChanged } from "../src/dictation/lib/rewrite.ts";
 import { OWN_TERMS } from "../src/dictation/lib/seed.ts";
+import { tidy } from "../src/dictation/lib/tidy.ts";
 import type { RewriteAdvice, RewriteReply, RewriteRequest, Rewriter, RewriteState } from "../src/rewrite/types.ts";
 import { dictating } from "./support/dictation.ts";
 import { settle } from "./support/time.ts";
@@ -59,6 +60,16 @@ test("a short clean sentence is not the model's; a self-correction, a repeat, a 
   // A real "no" and an "actually" inside a sentence are not corrections.
   expect(why("No, I see you there.")).toEqual([]);
   expect(why("I actually see you there.")).toEqual([]);
+});
+
+test("the model's answer keeps the speaker's accents; a change of mind inside quotation marks is not carried out", () => {
+  expect(keepAccents("Pues, mándame el, el archivo cuando puedas.", "Pues, mandame el archivo cuando puedas.")).toBe("Pues, mándame el archivo cuando puedas.");
+  expect(keepAccents("Pues, mándame el archivo.", "Mandame el archivo.")).toBe("Mándame el archivo.");
+  // A word the model really changed, and one said both ways, are left as it wrote them.
+  expect(keepAccents("Si quieres, sí, a las cinco, no, seis.", "Si quieres, sí, a las seis.")).toBe("Si quieres, sí, a las seis.");
+  expect(keepAccents("See you at five, no, six.", "See you at six.")).toBe("See you at six.");
+  const quoted = 'The tool should understand phrases like "scratch that" and "actually".';
+  expect(tidy(quoted).typed).toBe(quoted);
 });
 
 test("the language of what was said, with the text before it", () => {

@@ -282,7 +282,7 @@ checks on its answer are `rewrite/`'s).
    "no" set off by a pause, "actually,", "sorry", "digo", "perdón", "mejor
    dicho", "o sea, no", "quise decir", "espera", "not … but"; never one
    that opens the utterance, "No, I mean it."; or something said twice;
-   decisions.md D188), `list` (list
+   decisions.md D190), `list` (list
    markers the rules made no list of), `run-on` (twenty words with no
    mark), `non-word` (a word no dictionary knows; English only), `near-term`
    (the first word of what a vocabulary term is heard as: "cloud"),

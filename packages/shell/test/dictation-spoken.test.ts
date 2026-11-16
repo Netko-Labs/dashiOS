@@ -20,6 +20,10 @@ test("numbers from ten up become digits; small ones, and what may start a list, 
   expect(say("one hundred and twenty people")).toBe("120 people");
   expect(say("three thousand four hundred")).toBe("3400");
   expect(say("in twenty twenty six")).toBe("in 2026");
+  // A time said as two numbers stays words: "nine 30" is nobody's way of writing it.
+  expect(say("the standup is at nine thirty")).toBe("the standup is at nine thirty");
+  expect(say("at ten forty five")).toBe("at ten forty five");
+  expect(say("twenty one thirty")).toBe("21 30");
   expect(say("ten percent of it")).toBe("10% of it");
   expect(say("tengo treinta y cinco y dos mil")).toBe("tengo 35 y 2000");
   expect(say("veinticinco por ciento")).toBe("25%");

@@ -4158,7 +4158,7 @@ short words, as the rulebook is written.
 - **Undo:** note every key press again in `input/events.rs`; drop the
   two fields and send chords with `send-keys`.
 
-### D188. Dictation asks the model wherever a cue follows something said: the gate covers what the model was scored on
+### D190. Dictation asks the model wherever a cue follows something said: the gate covers what the model was scored on
 
 - **Date:** 2026-11-15. `v09/voicejoin` (brief d3: dictation joined with
   its model and the assistant).
@@ -4200,3 +4200,58 @@ short words, as the rulebook is written.
   the set that are already right, 18 are sent (they hold a real "no" or
   "sorry" after other words) and come back unchanged.
 - **Undo:** `CUES` and `OPENERS` in `dictation/lib/gate.ts`.
+
+### D191. `dashi-llama` is built for the processor only, from the commit that was measured
+
+- **Date:** 2026-11-15. `v09/voicejoin`; the lead's call for the device,
+  recorded here with what building it settled.
+- **Question:** D172's spec built llama.cpp with Vulkan and was never
+  built: the laptop has no `glslc`, and no agent installs anything there.
+  The model's chosen device is the processor (D171).
+- **Choice:** no Vulkan backend (`-DGGML_VULKAN=OFF`): the build needs
+  `cmake`, `gcc-c++` and `ninja-build` only, and the server can reach no
+  graphics card at all. The source is pinned by commit
+  (`b1b770d90d94…`, tag b12359, the build the measurements ran on) and by
+  the tarball's SHA-256, checked in `%prep`. Three defaults of that tree
+  are turned off because they fetch or link what the server never uses:
+  the prebuilt web UI (a download from a Hugging Face bucket at build
+  time), OpenSSL, and the unified binary. One processor backend a level
+  (`GGML_CPU_ALL_VARIANTS`), chosen when the server starts, as the
+  measured binary had. The licences of what is built in (nlohmann/json,
+  cpp-httplib, xxHash, rotate-bits, stb_image, miniaudio, subprocess.h,
+  sha1, sha256) are in the spec's `License:` and in the package's
+  `LICENSE.dependencies`, kept by hand: llama.cpp has no lockfile for
+  `spin/license-dependencies` to read.
+- **Why:** it builds on the laptop with what is installed, in two
+  minutes, and what is not built cannot wake a graphics card.
+- **Cost:** `DASHI_REWRITE_DEVICE=gpu` does nothing with this package
+  (the server runs on the processor whatever it is told); the integrated
+  card's 0.16 s a sentence against 0.26 s is given up until someone asks.
+  The licence list must be read again by hand when the pin moves.
+- **Undo:** `-DGGML_VULKAN=ON` with `glslc`, `vulkan-headers`,
+  `vulkan-loader-devel` and `spirv-headers-devel` as build requirements
+  (the spec at `d7f63e4a` has them).
+
+### D192. What the model hands back is the speaker's own words: accents kept, and three rules mended by what the joined run showed
+
+- **Date:** 2026-11-15. `v09/voicejoin`.
+- **Question:** the whole set run through dictation as joined (rules,
+  gate, model, checks, the profile's style:
+  `test/support/rewrite-eval/joined.ts`) showed four things neither
+  report had: the model writes "mandame" for "mándame" (its checks read
+  words without accents, so they pass it); the rules carried out a
+  quoted "scratch that" and lost the words before it; "nine thirty"
+  landed as "nine 30"; and "like half" kept its filler (the corpus's
+  row 32).
+- **Choice:** a word of the model's answer that differs from a word that
+  was said only by its accents is written as it was said
+  (`keepAccents`, in dictation, after the checks). A change-of-mind
+  phrase right after an opening quotation mark is not carried out. A
+  time said as two numbers stays words. "like" before "half", "many",
+  "few" and "several" is a filler after the same verbs as before.
+- **Why:** the model's part is taking words back (D174). A Spanish
+  speaker reads a lost accent as a mistake of Dashi's, and it is one.
+- **Cost:** where the model rightly adds an accent the speaker's
+  recogniser left out, the recogniser's spelling stays.
+- **Undo:** drop `keepAccents` from `withModel`
+  (`dictation/lib/rewrite.ts`); `clockAt` in `rules-spoken.ts`.

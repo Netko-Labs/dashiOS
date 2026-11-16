@@ -71,9 +71,29 @@ export function wordsChanged(from: string, to: string): number {
   return Math.max(added, gone);
 }
 
+const plain = (word: string): string => word.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+
+/**
+ * The model's answer with the speaker's own spelling of each word it kept: a word that differs from one that was said
+ * only by its accents ("mandame" for "mándame", "esta" for "está") is written as it was said. The model takes words
+ * back (D174); it does not respell the ones that stay.
+ */
+export function keepAccents(said: string, answer: string): string {
+  const words = said.match(/[\p{L}\p{N}'’]+/gu) ?? [];
+  const spoken = new Map<string, string>();
+  for (const word of words) if (!spoken.has(plain(word))) spoken.set(plain(word), word);
+  const exact = new Set(words.map((word) => word.toLowerCase()));
+  return answer.replace(/[\p{L}\p{N}'’]+/gu, (word) => {
+    const was = spoken.get(plain(word));
+    if (was === undefined || exact.has(word.toLowerCase()) || was.toLowerCase() === word.toLowerCase()) return word;
+    // The answer's own capital stays: the word may start the sentence now.
+    return /^\p{Lu}/u.test(word) ? was.charAt(0).toUpperCase() + was.slice(1) : was.charAt(0).toLowerCase() + was.slice(1);
+  });
+}
+
 /** What the rules made, with the model's answer in place of their text: styled again as the profile wants, and counted. */
 export function withModel(made: Composed, answer: string, composing: Composing): Composed {
-  const text = restyle(answer.trim(), composing, made.terms).text;
+  const text = restyle(keepAccents(made.text, answer.trim()), composing, made.terms).text;
   if (text === "" || text === made.text) return made;
   // Marks alone changed (a comma, a capital): still a fix the person can see.
   const count = Math.max(1, wordsChanged(made.text, text));

@@ -142,6 +142,14 @@ function numberAt(list: readonly Token[], at: number): { length: number; value: 
   return { length: next - at, value };
 }
 
+/** A time said as two numbers ("nine thirty", "ten forty five"): how many tokens. It stays words: "nine 30" is nobody's way of writing it. */
+function clockAt(list: readonly Token[], at: number): number {
+  const hour = UNITS[low(list[at])];
+  if (hour === undefined || hour < 1 || hour > 12 || isNumberWord(low(list[at - 1])) || !(low(list[at + 1]) in TENS)) return 0;
+  const minute = UNITS[low(list[at + 2])];
+  return minute !== undefined && minute < 10 ? 3 : 2;
+}
+
 const join = (list: readonly Token[]): string => list.map((token, index) => (token.gap && index > 0 ? " " : "") + token.text).join("");
 
 /** The text with addresses, file names and numbers written as they are written; how many were changed. */
@@ -157,6 +165,12 @@ export function applySpoken(text: string): { text: string; fixes: number } {
       out.push({ text: address.text, word: true, gap: token.gap });
       at += address.length - 1;
       fixes++;
+      continue;
+    }
+    const clock = token.word ? clockAt(list, at) : 0;
+    if (clock > 0) {
+      out.push(...list.slice(at, at + clock));
+      at += clock - 1;
       continue;
     }
     const number = token.word ? numberAt(list, at) : null;

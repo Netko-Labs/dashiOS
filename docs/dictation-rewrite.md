@@ -134,7 +134,7 @@ afford.
 
 ## The stand-in
 
-Until the real one is merged, and on a machine without a model:
+On a machine without a model, and in tests:
 
 ```ts
 export const noRewriter: Rewriter = {
@@ -166,7 +166,7 @@ this module's (`rewrite/types.ts`); it declares none of its own.
 ## Who calls what, when
 
 1. Key down: dictation calls `warm()`.
-2. Key up: the rules run. The gate (dictation's, `dictation/lib/gate.ts`, D188) decides
+2. Key up: the rules run. The gate (dictation's, `dictation/lib/gate.ts`, D190) decides
    whether the model is asked: when a cue this set was scored on comes after something
    said ("no, I mean", ", no,", "actually", "sorry", "digo", "perdón", "mejor dicho", "o
    sea, no", "quise decir", "espera", "miento"…), something is said twice, a long run has
@@ -250,8 +250,11 @@ candidates, is D170.
 llama.cpp's `llama-server` (MIT), a separate program: Dashi starts it and talks to it,
 and links nothing of it. The package is `dashi-llama` (`spin/rpm/dashi-llama.spec`), which
 installs it at `/usr/libexec/dashi/llama/llama-server`; Fedora's own `llama-cpp` is too
-old for this model and has no Vulkan (D172). `DASHI_REWRITE_SERVER` names another one
-(a checkout).
+old for this model (D172). It is built from the commit the measurements used
+(`b1b770d90d94…`, build 12359, checked by SHA-256), **for the processor only**: no Vulkan
+backend, no web UI, no OpenSSL, nothing fetched while it builds (D191). `spin/build-rpms
+dashi-llama` builds it on the laptop in about two minutes. `DASHI_REWRITE_SERVER` names
+another one (a checkout).
 
 - **A unit of the person's session**, `dashi-rewrite`, started by the shell with
   `systemd-run --user` (`rewrite/lib/service.ts`) when the dictation key first goes down,
@@ -263,9 +266,10 @@ old for this model and has no Vulkan (D172). `DASHI_REWRITE_SERVER` names anothe
   would hold what was said. Its log is kept nowhere (`StandardOutput=null`,
   `StandardError=null`; `DASHI_REWRITE_LOG=1` keeps it in the journal, for a checkout): it
   names no word, but it says when and how much. `NoNewPrivileges`, `Nice=5`.
-- **On the processor**, half the threads and eight at most (D171). `DASHI_REWRITE_DEVICE=gpu`
-  tries a graphics card instead; the NVIDIA card is never used for this
-  (`VK_LOADER_DRIVERS_DISABLE`), so dictating never wakes it.
+- **On the processor**, half the threads and eight at most (D171). The packaged server
+  has no graphics backend, so `DASHI_REWRITE_DEVICE=gpu` changes nothing with it; with a
+  server built with Vulkan (`DASHI_REWRITE_SERVER`) it tries a graphics card, and the
+  NVIDIA card is still never used for this (`VK_LOADER_DRIVERS_DISABLE`).
 - **Warm while in use.** The key going down starts the server (if it is not up), waits
   for the model, and has it read the fixed part of the prompt: about 2 s on the development
   laptop, so a first dictation shorter than that lands by rule (`starting`). After that
@@ -354,4 +358,4 @@ row. `cargo test -p dashi-voice`: the set is pinned and sized.
 - Tone and the text before the caret: taken by the seam, not used by this model (above).
 - Gemma 4 E2B (3.1 GB) cleans more than this model does (non-words, fillers, names) and is
   as careful; it is the one to offer as a second, larger fetch, or to swap to (D170).
-- `dashi-llama` has not been built as a package.
+- The integrated graphics card: the package is built for the processor only (D191).

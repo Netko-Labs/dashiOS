@@ -53,6 +53,8 @@ function phraseAt(list: readonly Token[], at: number): number {
     const before = list[at - 1];
     const after = list[index];
     if (before === undefined || (before.word && !ends(before))) continue;
+    // Inside quotation marks the phrase is being talked about, not said ('phrases like "scratch that"').
+    if (/^["“”«»]$/.test(before.text)) continue;
     // No mark after it ("No wait Wednesday."): only a sentence's start, and only a word or two to its end.
     if (after?.word && !(ends(before) && wordsToEnd(list, index) <= 2)) continue;
     return index - at;
