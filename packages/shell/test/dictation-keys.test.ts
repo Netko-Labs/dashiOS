@@ -292,3 +292,19 @@ test("with Voice off the dictation key says once what dictation needs, then stay
   more();
   expect(caps.at(-1)).toEqual([]);
 });
+
+// Pass 37 (failure 3): Voice turned on while the session ran, by settings.json or Settings › Voice's switch (both reach
+// the shell as a settings change); holding ❖Space must talk at once, with no restart. In the VM both ways worked first time.
+test("Voice turned on mid-session: the Dashi key is held at once, and its hold talks to Dashi", () => {
+  const { parts, did, held, settings, pass, change } = started();
+  settings.voiceOn = false;
+  change();
+  expect(held.at(-1)).not.toContain("dashi:57");
+  settings.voiceOn = true;
+  change();
+  expect(held.at(-1)).toContain("dashi:57");
+  parts.key("dashi", true);
+  pass(400);
+  parts.key("dashi", false);
+  expect(did).toEqual(["voice.hold", "voice.release"]);
+});

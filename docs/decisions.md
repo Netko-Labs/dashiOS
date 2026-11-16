@@ -5658,7 +5658,10 @@ short words, as the rulebook is written.
   line. The question's words are Dashi's English with the add-on's own
   name and commands (which may be Spanish); the launcher's own words are
   not translated in 0.9, so "both languages" is an add-on written in
-  either, and both fit.
+  either, and both fit. The key is said in words inside the sentence
+  ("Return again gets it", as "Return keeps it" elsewhere): a ↩ in running
+  text is drawn as the colour emoji (mirin's text doesn't honour U+FE0E),
+  while the row's end keeps the ↩ glyph.
 - **Undo:** `question` in `launcher/row-model.ts`, `verbRow` in
   `launcher/verbs.ts`, `ResultRow` in `launcher/lib/row-view.tsx`.
 
@@ -5670,7 +5673,11 @@ short words, as the rulebook is written.
   `src/shared/markdown/` (two modules use them: Notes and the launcher's
   detail, H20); the launcher's small Markdown reads a table there as Notes
   does and draws it at its detail size. Inline marks in cells are dropped as
-  in a line.
+  in a line. The table never shrinks in a column shorter than its words (a
+  clipping box's least height is 0: in the VM it shrank to its borders); a
+  column keeps its header's semibold word whole; in the detail a column keeps
+  at most 12 letters of a word whole (`wholeWord`), so a long path wraps and
+  four columns fit beside the facts.
 - **Undo:** move `table.ts` back to `apps/notes/lib/` and inline the view
   in `page-under.tsx`; `markdownBlocks` in `launcher/lib/tree-view.tsx`.
 
@@ -5705,7 +5712,9 @@ short words, as the rulebook is written.
   "Dependency" or "Weak Dependency" (`%{reason}` in the installed query)
   came for another and isn't listed; "User", "Group", "External" or an
   unknown reason is the person's. It is removed with the package that
-  needed it, as dnf removes unused dependencies.
+  needed it, as dnf removes unused dependencies. "Fcitx 5" leaves the list
+  too: its row was `fcitx5-data`, a dependency of the `fcitx5` the person
+  asked for; Fcitx's own settings app (Fcitx5 Configtool) stays.
 - **Undo:** `dependencies` in `shared/software/lib/rpm-query.ts`
   `parseInstalled`, `dependency` on an `Offer` (`catalog-merge.ts`), and
   `apps/software/lib/installed-packages.tsx`.
@@ -5722,3 +5731,18 @@ short words, as the rulebook is written.
   turned off. Cost: about 1 GB held for the first 10 minutes of a session
   in which nobody dictates.
 - **Undo:** `warmWhenWanted` in `boot/corrections.ts`.
+
+### D367. Each tap of the Dashi key says in the log what it did
+
+- **Date:** 2026-11-16. `v09/fix-polish-1`, found in pass 37 (2 of about
+  12 taps "opened nothing").
+- **Found:** in the VM 24 of 24 taps opened the launcher, of every kind
+  pass 37 tried (zero-length, right after `wl-copy`, right after Voice was
+  turned on, typed at once): the misses were not reproduced, and most
+  likely came from keys sent inside the 100 ms the settings file takes to
+  be read again.
+- **Decision:** as D9 says, the session's log says what each tap did ("opens
+  the launcher", "closes the launcher", "the card takes it", "the launcher ❖
+  just opened stays", "no launcher yet"), with the time, so a miss names its
+  cause next time.
+- **Undo:** `did` in `boot/dictation.ts` `dashiTap`.
