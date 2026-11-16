@@ -11,6 +11,8 @@ import type { Words } from "../words.ts";
 /** Dashi's own, each with what Parakeet was seen to hear instead. */
 export const OWN_TERMS: readonly Term[] = [
   { term: "Dashi", heard: ["dashy", "dashie", "dead dash"] },
+  // The owner's rows 41, 42, 52: the product's name cut to "dash" before "agent".
+  { term: "Dashi agent", heard: ["dash agent", "dashing agent", "dashing agen", "dash agen"] },
   { term: "mirin", heard: ["mirren"] },
   { term: "Helium", heard: [] },
   { term: "Claude", heard: [] },

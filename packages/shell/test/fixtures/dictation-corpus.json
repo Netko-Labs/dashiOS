@@ -228,6 +228,101 @@
       "row": 40,
       "landed": "Um.",
       "by": "voice"
+    },
+    {
+      "row": 41,
+      "landed": "Let's Do some improvement firs Let's repamp or redesign the whole dash agent experienc",
+      "by": "model",
+      "gate": ["run-on"],
+      "want": "Let's do some improvements first. Let's revamp or redesign the whole Dashi agent experience."
+    },
+    {
+      "row": 42,
+      "landed": "the dashing agen",
+      "by": "rules",
+      "want": "The Dashi agent"
+    },
+    {
+      "row": 43,
+      "landed": "or candy of the cloud code",
+      "by": "unresolved"
+    },
+    {
+      "row": 44,
+      "landed": "because it's at the point where we do",
+      "by": "unresolved"
+    },
+    {
+      "row": 45,
+      "landed": "I will also like the idea",
+      "by": "voice"
+    },
+    {
+      "row": 46,
+      "landed": "I want widgets in the log screen",
+      "by": "model",
+      "gate": [],
+      "want": "I want widgets on the lock screen"
+    },
+    {
+      "row": 47,
+      "landed": "let's r design that also",
+      "by": "model",
+      "gate": [],
+      "want": "Let's redesign that too"
+    },
+    {
+      "row": 48,
+      "landed": "I would like also the system to some formatting",
+      "by": "model",
+      "gate": [],
+      "want": "I would also like the system to do some formatting"
+    },
+    {
+      "row": 49,
+      "landed": "I like that there are two pads",
+      "by": "unresolved"
+    },
+    {
+      "row": 50,
+      "landed": "asking just one thing to add",
+      "by": "model",
+      "gate": [],
+      "want": "Asking just one thing to AI"
+    },
+    {
+      "row": 51,
+      "landed": "Talking about the launcher dash experience",
+      "by": "model",
+      "gate": ["near-term"],
+      "want": "Talking about the launcher's Dashi experience"
+    },
+    {
+      "row": 52,
+      "landed": "which model is running the dash agent",
+      "by": "rules",
+      "want": "Which model is running the Dashi agent"
+    },
+    {
+      "row": 53,
+      "landed": "for the boys experience",
+      "by": "model",
+      "gate": [],
+      "want": "For the voice experience"
+    },
+    {
+      "row": 54,
+      "landed": "I will I so like to choose",
+      "by": "model",
+      "gate": [],
+      "want": "I would also like to choose"
+    },
+    {
+      "row": 55,
+      "landed": "I see main was being caught",
+      "by": "model",
+      "gate": [],
+      "want": "I see mine was being cut"
     }
   ]
 }

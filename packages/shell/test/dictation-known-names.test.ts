@@ -26,7 +26,7 @@ test("folders and sites become names; ordinary words, versions and short ones do
     words,
   );
   // Dashi's own words come first, so a vocabulary file older than one of them still hears it ("T3 Code").
-  expect(all.slice(0, 3).map((each) => each.term)).toEqual(["Dashi", "mirin", "Helium"]);
+  expect(all.slice(0, OWN_TERMS.length)).toEqual([...OWN_TERMS]);
   expect(all.some((each) => each.term === "T3 Code")).toBe(true);
   const terms = all.slice(OWN_TERMS.length);
   expect(terms.map((each) => each.term)).toEqual(["OBS Studio", "dashiOS", "Bodytech", "Github"]);

@@ -4422,7 +4422,10 @@ short words, as the rulebook is written.
     as "body tech" when it splits into two dictionary words). They are
     kept beside the vocabulary file, never written into it, and looked
     at again every five minutes: a person who removes one in Settings
-    removes it from their file, and it is not put back there.
+    removes it from their file, and it is not put back there. Dashi's
+    own words lead them, so a file written before one was added still
+    hears it ("T3 Code"; "Dashi agent", heard "dash agent" and "dashing
+    agen" in the owner's rows 41, 42 and 52).
 - **Cost:** a misheard word that is not near any name still reaches the
   assistant as heard ("Meeting" for Mirin: an ordinary word is never
   replaced by rule); the names line tells the model to doubt it.
