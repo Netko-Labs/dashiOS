@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { lightColors } from "@dashi/ui";
 import { currentMatch, findMatches, nextMatch } from "../apps/notes/lib/find.ts";
-import { BODY_SIZE, lineSizes, lookOf } from "../apps/notes/lib/look.ts";
+import { lookOf } from "../apps/notes/lib/look.ts";
 import { markup, type Span, spanAt } from "../apps/notes/lib/markup.ts";
 
 /** The spans of `body` as [kind, the text they cover]. */
@@ -99,16 +99,6 @@ describe("look: the spans as a field's runs", () => {
     const box = [...look.pressable.entries()].find(([, span]) => span.kind === "box")?.[0] ?? -1;
     expect(look.runs[box]?.color).toBe(lightColors.moss);
     expect(look.runs.at(-1)).toEqual({ start: 2, end: 7, backgroundColor: lightColors.brothWash });
-  });
-
-  test("the measuring copy sizes each line as the field draws it", () => {
-    expect(lineSizes("# A\nb\n```\n# c\n```")).toEqual([
-      { text: "# A", size: 20 },
-      { text: "b", size: BODY_SIZE },
-      { text: "```", size: BODY_SIZE },
-      { text: "# c", size: BODY_SIZE },
-      { text: "```", size: BODY_SIZE },
-    ]);
   });
 });
 

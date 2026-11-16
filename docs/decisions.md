@@ -4827,3 +4827,101 @@ short words, as the rulebook is written.
 - **Cost:** an app that never sent a focus event since Dashi joined the
   bus says nothing; Chromium-family apps publish focus only once woken.
 - **Undo:** drop `keyboardIn` from `listWindows` and the click.
+
+### D240. Notes draws its Markdown by showing the field a projection of it, laid against the source piece by piece
+
+- **Date:** 2026-11-15. `v09/notesmd` (brief t3, the owner's assistant's
+  feedback of 15 Nov, section 8).
+- **Dilemma:** the note is plain Markdown (an agent and a text editor read
+  and write it), and the owner wants it drawn as what it means: no `##`, dots
+  for dashes, boxes, tables. mirin's `TextInput` draws styled runs over its
+  value but cannot hide or replace a letter, and its runs have no font family.
+- **Decision:** the field's value is not the Markdown but what it means
+  (`apps/notes/lib/project.ts`): markers left out, a dash shown as `•`,
+  `- [ ]` as `□`, a table's row as one space. A list of pieces lays the shown
+  text against the source (`offsets.ts`), and everything the field reports
+  is carried back before the model hears it: an edit is the one stretch that
+  changed, replaced in the source; a caret goes before the letter after it,
+  a range's end after the letter before it, so a selection of drawn words is
+  their source, the markers outside it. The model, Undo, Find, the format
+  commands and the file stay on the Markdown.
+- **Why not** a block editor (a field per block, rendered views between):
+  selection, copy, arrows and IME across blocks would all break. **Why not**
+  wait for mirin: the gap is written for its agent
+  (`dashi-0.9.0-review/30-notesmd/for-mirin.md`).
+- **Cost:** the field's own copy would give the drawn words, so Edit's Copy
+  and Cut write the source themselves (D244); a code block's text is the
+  body's font on a panel, not monospace.
+- **Undo:** give `Page` (`views/body.tsx`) `value={body}` and `markup`'s runs again.
+
+### D241. The caret's block shows its Markdown; a selection keeps what was shown; a body not being edited shows none
+
+- **Date:** 2026-11-15. `v09/notesmd`.
+- **Decision:** a line is a block, and so are a whole table and a whole
+  fenced code block (`blocks.ts`): the caret anywhere in one shows all of its
+  source. While a range is selected the shown lines stay as they were, so a
+  drag never moves the words under the pointer, and a caret shows its block
+  only once it has stayed put 150 ms (`SETTLE_MS`): in the VM a click that
+  changed the text under the still-pressed pointer left a one-letter
+  selection. The body is "being edited"
+  from a caret move or a key in it (or Return in the list) until Esc, the
+  title, the list or the search take the keyboard (`NotesState.editing`); a
+  note just opened is drawn whole.
+- **Cost:** a heading or bullet moves sideways by its marker as the caret
+  comes and goes (its height does not: the size is the paragraph's); a table
+  entered grows to its source lines.
+- **Undo:** `useRevealed` in `views/body.tsx`.
+
+### D242. Tables, rules, code panels and quote bars are drawn under the field, in room the field keeps for them
+
+- **Date:** 2026-11-15. `v09/notesmd`.
+- **Decision:** the copy of the text that measures the field (it was there
+  for its height) is laid out from the shown paragraphs and now draws what a
+  field cannot (`views/page-under.tsx`): a table with its header on a wash,
+  each column as wide as its longest cell asks (4 to 40 letters), cells that
+  wrap, never narrower than its longest word (in the VM "Model" broke into
+  "Mod el" beside a long first column), numbers right-aligned where the
+  dashes say; a rule's line; a code
+  block's panel; a quote's bar in the gutter. A table's rows in the field are
+  spaces sized so their lines add up to the drawn table's height (a probe at
+  100 px gives the line height per px). A cell's Markdown is drawn as plain
+  words.
+- **Cost:** the two layouts agree only as far as the copy wraps like the
+  field (the copy's lines take one weight each).
+- **Undo:** draw the copy in no ink again (`opacity: 0`).
+
+### D243. Drawn markers are glyphs Inter has: `•` for a bullet, `□` and `■` for a box
+
+- **Date:** 2026-11-15. `v09/notesmd`.
+- **Decision:** every level of bullet is `•` in muted ink; an open box `□`
+  muted, a ticked one `■` in moss with its words struck. `☐ ☑` are only in
+  Noto Sans Symbols 2, a fallback the field's measure would not agree with.
+- **Undo:** `BOX` in `project.ts`.
+
+### D244. Copy and Cut in the note give its Markdown; a browser's rich text is pasted as Markdown
+
+- **Date:** 2026-11-15. `v09/notesmd`.
+- **Decision:** with the body being edited and a selection, Edit › Copy and
+  Cut (and ❖C ❖X, which are their rows) write the selection's source with
+  wl-copy, from the first line's marker when the selection starts at that
+  line's words (the drawn page hides the marker, so a selection of the
+  whole page would otherwise start after `## `); Paste reads `text/html` when the clipboard has it and puts its
+  Markdown (`html.ts`: headings, emphasis, links, lists, quotes, rules, code,
+  tables) in place of the selection, as its own Undo step. Plain text is
+  pasted by the field as before. Elsewhere, or without wl-clipboard, the key
+  goes to the field.
+- **Undo:** `clipboardActions` in `hooks/use-notes-menus.ts`.
+
+### D245. Typing makes structure; Tab indents a list item; Outdent is ❖[; Mark as Done is ⇧❖U
+
+- **Date:** 2026-11-15. `v09/notesmd`.
+- **Decision:** "[] " (or "- [] ") at a line's start becomes `- [ ] `; Tab
+  in a list item moves the item a level in (two spaces, or a number's marker
+  and a space) instead of typing a tab; Return after an opening fence puts
+  the closing one under the caret's new line (`structure.ts`). Return in a
+  list and an empty item ending it were already there. ⇧Tab is the field's
+  (it leaves for the title, and mirin tells the app nothing), so Format ›
+  Indent ❖] and Outdent ❖[ move the selected lines.
+  A box ticks with a click or with Format › Mark as Done ⇧❖U (Apple Notes'
+  key for it), on every item the selection touches.
+- **Undo:** `structure()` in `typing.ts`'s `edit`, and the three Format rows.

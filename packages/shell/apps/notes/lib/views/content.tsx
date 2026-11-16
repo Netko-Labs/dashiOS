@@ -53,14 +53,32 @@ function listKey(key: KeyInput, { model, data, focus, setSheet }: { model: Notes
     return;
   }
   if (key.kind === "enter") {
-    if (row && !inTrash) focus.focusBody();
+    if (row && !inTrash) {
+      model.setEditing(true);
+      focus.focusBody();
+    }
     return;
   }
   if (key.kind !== "text") return;
   const letter = key.text.toLowerCase();
   if (letter === "n" && !inTrash) model.newNote();
   else if (letter === "p" && !inTrash) model.togglePin();
-  else if (letter === "/" || letter === "f") focus.search();
+  else if (letter === "/" || letter === "f") {
+    model.setEditing(false);
+    focus.search();
+  }
+}
+
+/** Whether the person is in the note's body, and the ways out of it (Esc, the title): only an edited body shows its caret's Markdown. */
+function editingProps(model: NotesModel, editing: boolean, takeKeys: () => void): { editing: boolean; onTitleCaret: () => void; onLeave: () => void } {
+  return {
+    editing,
+    onTitleCaret: () => model.setEditing(false),
+    onLeave: () => {
+      model.setEditing(false);
+      takeKeys();
+    },
+  };
 }
 
 export function NotesContent({
@@ -98,6 +116,7 @@ export function NotesContent({
           selected={state.selected}
           onSelect={(id) => {
             model.select(id);
+            model.setEditing(false);
             takeKeys();
           }}
           onMenu={actions.openRowMenu}
@@ -119,7 +138,7 @@ export function NotesContent({
             onSelection={(selection) => model.setSelection(selection)}
             onToggleCheck={(line) => model.toggleCheck(line)}
             onOpenLink={host.openLink}
-            onLeave={takeKeys}
+            {...editingProps(model, state.editing, takeKeys)}
             follow={() => host.scroll("editor", 1_000_000)}
             onNew={() => model.newNote()}
             bodyFocus={focus.bodyFocus}
