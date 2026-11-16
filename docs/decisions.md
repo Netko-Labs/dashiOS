@@ -5760,3 +5760,28 @@ short words, as the rulebook is written.
   now it listens. No folder watch for the whole session: a press is the
   only time the answer matters.
 - **Undo:** `recheck` in `voice/start.ts` and `keyDown` in `voice/voice.ts`.
+
+### D376. A launcher detail scrolls, and draws wide tables, rules and GitHub's alerts
+
+- **Date:** 2026-11-16. `v09/fix-polish-2`, seen in passes 38 and 39.
+- **Found:** a long pull request's body was cut at the panel's foot; a
+  table wider than the column was cut at its right ("Confid…"); `---` and
+  `> [!WARNING]` showed as raw text.
+- **Decision:**
+  - The Markdown column is a scroll view: the wheel and touchpad scroll it,
+    and so do the launcher's keys while a detail shows (↑ ↓ by 48 px, Page
+    Up and Page Down by its height less 24, Home and End). A detail has one
+    row, so the keys had nothing else to do there. Up to 120 blocks are
+    drawn (80 before, when nothing scrolled).
+  - A table is as wide as the column; one that is wider at its least (each
+    column its longest word, at most 12 letters) is drawn at that width and
+    scrolls sideways, as GitHub's does. Its cells wrap either way.
+  - `---`, `***`, `___` are a hairline; under a paragraph `---` and `===`
+    make it a heading, as Markdown says.
+  - A quote has a 3 px bar; an alert has its word ("Note", "Tip",
+    "Important", "Warning", "Caution") over it, bar and word in the ink of
+    the launcher's tones: accent for Note and Important (purple is the
+    agents' and the focus ring's, so Important is not purple as GitHub's),
+    moss for Tip, broth for Warning, ume for Caution.
+- **Undo:** `launcher/lib/detail-view.tsx`, `detail-markdown.ts`,
+  `detail-scroll.ts`; `step` in `use-acts.ts`.

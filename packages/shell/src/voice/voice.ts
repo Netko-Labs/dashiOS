@@ -123,7 +123,7 @@ export class Voice {
     if (!trouble) return this.open(holding, turn, waiting);
     // What is missing may be stale (models copied in while the session runs): read once again before saying it.
     const again = this.deps.recheck?.().catch(() => trouble) ?? Promise.resolve(trouble);
-    void again.then((still) => (still ? turn === this.turn && this.notice(still.text, still.go) : this.holding === holding && this.open(holding, turn, waiting)));
+    void again.then((t) => (t ? turn === this.turn && this.notice(t.text, t.go) : this.holding === holding && this.open(holding, turn, waiting)));
   }
 
   private open(holding: Holding, turn: number, waiting: boolean): void {

@@ -122,7 +122,7 @@ Named as Raycast names them, on purpose.
 | `List.Item` | `id` (yours: it keeps the selection when rows move), `title`, `subtitle`, `icon` (`{svg, tone}`, `{src, tone}` a file of the package, `{emoji}`), `keywords`, `accessories` (`{tag, tone}`, `{text}`), `actions`, `detail` | a row: the icon, the title, the subtitle muted, tags and words at the right end |
 | `List.EmptyView` | `title`, `description`, `icon`, `actions` | one row saying it |
 | `Grid`, `Grid.Section`, `Grid.Item` | as List; `columns` (4 to 12, 8 by default); an item's `content` is its picture | cells: the picture, its title under it; ↑ ↓ a line, ← → a cell |
-| `Detail` | `markdown` (headings, paragraphs, lists, code; links show their words; no HTML, no images yet), `loading`, `metadata`, `actions` | the Markdown, and a facts column 200 wide |
+| `Detail` | `markdown` (headings, paragraphs, lists, code, tables, rules, quotes and GitHub's alerts; links show their words; no HTML, no images yet; it scrolls), `loading`, `metadata`, `actions` | the Markdown, and a facts column 200 wide |
 | `Detail.Metadata` with `.Label`, `.Link`, `.TagList` (`.TagList.Item`), `.Separator` | `title`, `text`, `target`, `tone` | the facts column |
 | `ActionPanel`, `ActionPanel.Section` | `title` | ❖K: the actions in place, in sections |
 | `Action` | `title`, `shortcut` (`"mod+c"`, `"shift+mod+enter"`), `danger`, `onAction` | runs `onAction` in the extension |
