@@ -63,7 +63,7 @@ export const browserTools: readonly ToolDef[] = [
     title: "Open a web page",
     description:
       "Open an address in the person's browser (Helium, with Dashi's extension) and return once the page has loaded: no waiting, no screenshot. " +
-      "Without `tab` it opens in a new tab, which becomes the tab the other website tools use. The person is asked the first time you use each site. " +
+      "Without `tab` it opens in a new tab, which becomes the tab the other website tools use. " +
       "Then read_page to see it.",
     scope: "web",
     readOnly: false,

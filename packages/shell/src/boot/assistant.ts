@@ -25,14 +25,18 @@ import {
 import type { Compositor } from "../compositor/index.ts";
 import { loadEntries } from "../entries.ts";
 import { primarySelection } from "../handoff-shell.tsx";
+import { type NotificationStore, type NotifyInput, SHELL_SENDER } from "../notifications/index.ts";
 import { readAbout, rememberAbout } from "../persona/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
+import { iconPath } from "../shared/apps/index.ts";
 import type { LateParts } from "./parts.ts";
 import type { Late, Services } from "./services.ts";
 
 /** What the assistant uses that only main.tsx can hand it, once it exists. */
 export interface AssistantHost {
   ui: Pick<AgentUi, "ask">;
+  /** A turn kept working on its own ended: the notification. */
+  notify(title: string, body: string): void;
   keys: ModelKeys;
   settingNow(name: string): ActionState;
 }
@@ -43,8 +47,28 @@ export function hostAssistant(
   ui: AssistantHost["ui"],
   tokens: Parameters<typeof vaultTokenSource>[0],
   settingNow: AssistantHost["settingNow"],
+  notifications: Pick<NotificationStore, "notify">,
 ): void {
-  late.set("assistantHost", { ui, keys: modelKeys(vaultTokenSource(tokens)), settingNow });
+  const notify = (title: string, body: string): void => void notifications.notify(assistantNotice(title, body), 0, SHELL_SENDER);
+  late.set("assistantHost", { ui, keys: modelKeys(vaultTokenSource(tokens)), settingNow, notify });
+}
+
+/** What Dashi's agent says when a turn kept working on its own is over (decisions.md D261): what it did, and Show. */
+function assistantNotice(title: string, body: string): NotifyInput {
+  return {
+    appName: "Dashi",
+    appIcon: iconPath("agents"),
+    summary: title,
+    body: body.length > 280 ? `${body.slice(0, 279)}…` : body,
+    actions: [],
+    urgency: "normal",
+    expireTimeout: -1,
+    imagePath: "",
+    desktopEntry: "",
+    category: "dashi.agent",
+    transient: false,
+    resident: false,
+  };
 }
 
 type Hooks = TaskHooks & { policy(task: string): TaskPolicy | null };
@@ -66,6 +90,8 @@ interface AssistantNeeds {
   late: Late<LateParts>;
   /** Plan mode: the launcher's planner, as 0.8's voice asked it. */
   planner: { ask(words: string, signal: AbortSignal): Promise<{ say: string; failed?: { go?: "voice" | "agents" | "launcher" } }> };
+  /** Say a typed answer out loud ("Read typed answers aloud"). */
+  speak(text: string): void;
 }
 
 /** How long the list of installed apps is kept before it is read again. */
@@ -116,7 +142,7 @@ function momentReader(compositor: Compositor | null, late: Late<LateParts>): () 
   };
 }
 
-export function startAssistantPiece({ compositor, settingsStore, services, late, planner }: AssistantNeeds): Assistant {
+export function startAssistantPiece({ compositor, settingsStore, services, late, planner, speak }: AssistantNeeds): Assistant {
   let locked = false;
   const offLock = compositor?.on((event) => {
     if (event.event === "lock") locked = event.locked;
@@ -128,11 +154,10 @@ export function startAssistantPiece({ compositor, settingsStore, services, late,
       .find((action) => action.tool === "set_setting")?.address ?? null;
   const assistant = startAssistant({
     settings: () => {
-      const { agents, voice } = settingsStore.getSnapshot().data;
-      return { agents, voice };
+      const { agents } = settingsStore.getSnapshot().data;
+      return { agents };
     },
     agents: () => late.peek("agents") ?? null,
-    ui: () => late.peek("assistantHost")?.ui ?? null,
     planner,
     keys: {
       anthropic: async () => (await late.peek("assistantHost")?.keys.anthropic()) ?? null,
@@ -152,6 +177,8 @@ export function startAssistantPiece({ compositor, settingsStore, services, late,
     },
     history: { add: (record) => late.peek("askAgents")?.history.add(record), undone: (task, step) => late.peek("askAgents")?.history.undone(task, step) },
     remember: (fact) => rememberAbout(fact),
+    done: (title, body) => late.peek("assistantHost")?.notify(title, body),
+    speak,
     log: (line) => console.error(`dashi-shell: ${line}`),
   });
   services.add("assistant", () => {

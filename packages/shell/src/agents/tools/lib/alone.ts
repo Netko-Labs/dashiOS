@@ -9,7 +9,7 @@ export const aloneTools: readonly ToolDef[] = [
     title: "See whether agents work alone",
     description:
       "Whether the person let agents work alone for a set time, how many seconds are left, and what it covers: the kinds of tools and the sites that run without asking until then. " +
-      "Everything else asks the person as usual, and payments, sign-ins, the clipboard history, force quit, the Trash and software installs always ask. " +
+      "Only critical things ask anyway: payments and sign-ins always do; force quit and software installs do unless Work alone covers them. " +
       "It never asks the person, and you can't turn it on, lengthen it or widen it: only the person can, in System Settings.",
     // Named for the registry; the call itself never waits on a permission (lib/session/session-scopes.ts).
     scope: "see",

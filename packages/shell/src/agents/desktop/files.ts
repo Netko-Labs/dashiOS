@@ -70,23 +70,11 @@ export async function trashFile(call: { path: string }, ctx: RunContext): Promis
   const policy = currentPolicy();
   const plan = await planTrash(call.path, policy);
   if ("error" in plan) return toolError(plan.error);
-  // What the person is asked is the real name, cleaned: it is theirs to see, and only they see this sheet.
+  // Not critical (decisions.md D260): the Trash is the undo, so it runs and says where the file went.
   const name = clean(plan.name, 80);
-  const yes = await ctx.confirm({
-    summary: `move “${name}” to the Trash`,
-    detail:
-      plan.kind === "folder"
-        ? "The folder and everything in it go to the Trash. You can put it back from there."
-        : "It goes to the Trash. You can put it back from there.",
-    action: "Move to Trash",
-    danger: true,
-  });
-  if (!yes) return toolError("The person did not allow that file to be moved to the Trash. Don't ask again unless they agree.");
   ctx.status("Moving a file to the Trash");
-  // They may have taken a while: look again, and trash only what they were shown.
-  const again = await planTrash(call.path, policy);
-  if ("error" in again || again.path !== plan.path)
-    return toolError("The file changed while the person was deciding, so nothing was moved. List the folder and try again.");
-  const problem = await trashForAgent(again, quietContext());
-  return problem ? toolError(`It couldn't be moved to the Trash: ${problem}`) : text("It is in the Trash.", { trashed: true });
+  const problem = await trashForAgent(plan, quietContext());
+  return problem
+    ? toolError(`It couldn't be moved to the Trash: ${problem}`)
+    : text(`“${name}” is in the Trash. Tell the person they can put it back from there.`, { trashed: true });
 }

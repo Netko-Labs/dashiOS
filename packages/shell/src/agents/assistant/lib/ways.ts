@@ -29,17 +29,19 @@ export interface WayAsk {
   say(text: string): void;
   /** The language the words were heard in, when they told it. */
   spoke?: string | undefined;
+  /** The model this turn's channel names (lib/channel.ts); null for the answerer's own default. */
+  model?: string | null;
 }
 
 export const isAbort = (error: unknown): boolean => error instanceof DOMException && error.name === "AbortError";
 
 /** Way one: the harness, in the sandbox, on the full server. */
-export async function viaHarness({ options, talk, task, words, moment, run, say, spoke }: WayAsk, harness: HarnessId): Promise<string> {
+export async function viaHarness({ options, talk, task, words, moment, run, say, spoke, model }: WayAsk, harness: HarnessId): Promise<string> {
   const info = HARNESSES[harness];
   const ask = (session: string | null) => {
     const interrupted = session !== null && talk.exchanges.at(-1)?.interrupted ? "(They stopped you before you finished the last one.)\n" : "";
     const prompt = `${interrupted}${words}\n\n${contextBlock(moment, { fresh: session === null, earlier: session === null ? talk.exchanges : [], spoke })}`;
-    return askHarness(options.harness, { harness, task, prompt, system: assistantPrompt(), session, signal: run.signal, say });
+    return askHarness(options.harness, { harness, task, prompt, system: assistantPrompt(), session, signal: run.signal, say, model: model ?? null });
   };
   let end = await ask(talk.session);
   // A session that can't be resumed (it was cleared away): the same ask again, told what was said before.
@@ -58,13 +60,17 @@ export async function viaHarness({ options, talk, task, words, moment, run, say,
 }
 
 /** Way two: the shell's own loop, for a key (`local` false) or a model on this computer. */
-export async function viaModel({ options, talk, task, words, moment, run, say, spoke }: WayAsk, local: boolean, policy: TaskPolicy): Promise<string> {
+export async function viaModel(
+  { options, talk, task, words, moment, run, say, spoke, model: chosen }: WayAsk,
+  local: boolean,
+  policy: TaskPolicy,
+): Promise<string> {
   const agents = options.agents();
   if (!agents) throw new AnswerError("failed", "Dashi's tools aren't running in this session.");
   const fetching = options.fetch ? { fetch: options.fetch } : {};
   const model = local
-    ? localModel({ model: () => options.settings().agents.localModel ?? null, ...fetching })
-    : claudeModel({ key: async () => (await options.keys.anthropic())?.key ?? null, ...fetching });
+    ? localModel({ model: () => chosen ?? null, ...fetching })
+    : claudeModel({ key: async () => (await options.keys.anthropic())?.key ?? null, ...(chosen ? { model: chosen } : {}), ...fetching });
   const system = local ? styledPrompt(SMALL_ASSISTANT_PROMPT, promptStyle.get().small) : assistantPrompt();
   const before = talk.messages;
   const prompt = `${words}\n\n${contextBlock(moment, { fresh: before.length === 0, spoke })}`;

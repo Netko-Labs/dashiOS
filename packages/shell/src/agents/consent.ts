@@ -26,14 +26,14 @@ export const SCOPES = [
     id: "web",
     label: "Use websites",
     detail:
-      "Open pages in your browser, read them as text, and click, fill in and choose things on them, through Dashi's browser extension. You are asked about each site the first time. It never reads a password, card or code field",
+      "Open pages in your browser, read them as text, and click, fill in and choose things on them, through Dashi's browser extension. It never reads a password, card or code field",
   },
   { id: "notifications", label: "See notifications", detail: "Read your recent notifications, and dismiss them" },
   {
     id: "files",
     label: "Browse your files",
     detail:
-      "List and search your folders by name (your home folder and removable drives, not folders that hold secrets), and open files in their apps. Moving a file to the Trash always asks you first. It can't read, change, or delete the files",
+      "List and search your folders by name (your home folder and removable drives, not folders that hold secrets), and open files in their apps. It can move them to the Trash, where you can put them back; it can't read, change, or delete them for good",
   },
   { id: "notes", label: "Read your notes", detail: "List, search, and read your notes" },
   { id: "notes_write", label: "Add to your notes", detail: "Create notes, and add lines to the end of them" },
@@ -49,13 +49,12 @@ export const SCOPES = [
     id: "pay",
     label: "Pay for you",
     detail:
-      "Ask to pay a site with one of your saved cards, within your limits. Every payment asks for your fingerprint or password, and this permission is never kept: Always Allow doesn't cover it",
+      "Ask to pay a site with one of your saved cards, within your limits. Every payment asks for your fingerprint or password, whatever was allowed before",
   },
   {
     id: "clipboard",
     label: "See your clipboard history",
-    detail:
-      "Read what you copied in the last 7 days, never the copies Dashi left out (password fields, password managers). You are asked every time, and Always Allow doesn't cover it",
+    detail: "Read what you copied in the last 7 days, never the copies Dashi left out (password fields, password managers)",
   },
   {
     id: "ask",
@@ -102,8 +101,14 @@ export function kept(stored: ReadonlySet<Scope>, ticked: readonly Scope[], sessi
   return new Set([...stored, ...ticked.filter((scope) => !sessionOnly.has(scope))].filter((scope) => !NEVER_KEPT.has(scope)));
 }
 
-/** Scopes "Always Allow" never keeps: allowed for the connection at most (paying, the clipboard history, which asks every time too). */
-export const NEVER_KEPT: ReadonlySet<Scope> = new Set<Scope>(["pay", "clipboard"]);
+/**
+ * Scopes "Always Allow" never keeps. None since decisions.md D260: the one sheet a program sees allows it all, and
+ * what is critical (a payment, a sign-in, force quit, software) asks on a sheet of its own every time.
+ */
+export const NEVER_KEPT: ReadonlySet<Scope> = new Set<Scope>();
+
+/** Every scope: what the one sheet a program sees the first time it connects allows (decisions.md D260). */
+export const ALL_SCOPES: readonly Scope[] = SCOPES.map((scope) => scope.id);
 
 /** Where the agents' files are: `$XDG_STATE_HOME/dashi/agents/`. */
 export function stateDir(): string {

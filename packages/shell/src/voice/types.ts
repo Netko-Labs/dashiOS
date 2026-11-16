@@ -77,8 +77,6 @@ export interface VoiceSettings {
   voice?: string;
   /** After Dashi speaks in an open conversation, the microphone opens for the reply; on unless false. */
   listenAgain?: boolean;
-  /** "Ask before every step": what is said is planned first and waits for a yes on its card, as it did before 0.9 (agents/assistant/). Off unless true. */
-  askEveryStep?: boolean;
   /**
    * The voice for each other language Dashi speaks, by the language's code (`es: "ef_dora"`);
    * `false` is a language it does not speak. Unset: English and Spanish, by the voice's pairs (tongues.ts).

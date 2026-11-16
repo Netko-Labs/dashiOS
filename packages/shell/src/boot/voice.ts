@@ -63,7 +63,8 @@ export function startTalking({ compositor, settingsStore, services, late }: Talk
     () => spokenContext(late.peek("pill")?.persona.getSnapshot().talk ?? "normal"),
   );
   // What is said goes to Dashi's assistant: one conversation, and the tools any agent has, in a loop (agents/assistant/).
-  const assistant = startAssistantPiece({ compositor, settingsStore, services, late, planner });
+  // A typed answer is said only when "Read typed answers aloud" is on; the voice exists by then (the call comes later).
+  const assistant = startAssistantPiece({ compositor, settingsStore, services, late, planner, speak: (text) => parts.voice.say(text) });
   const parts = startVoice({
     settings: settingsStore,
     hold: (keys) => heldKeys.set("voice", keys),

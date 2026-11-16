@@ -18,6 +18,7 @@ import { HARNESSES, harnessStatuses, hostFiles } from "./harness/index.ts";
 import { HistoryLog } from "./history.ts";
 import { keyPlace } from "./keys.ts";
 import { chosenAnswerer } from "./lib/chosen-answerer.ts";
+import { listClaudeModels } from "./lib/claude-models.ts";
 import { listGptModels } from "./lib/gpt.ts";
 import { cachedHistory, launcherSnapshot } from "./lib/launcher-snapshot.ts";
 import { AskTasks } from "./lib/tasks.ts";
@@ -77,6 +78,10 @@ export function startAsk(options: AskOptions): Ask {
   const status: AnswerStatus = {
     keyPlace: (provider) => keyPlace(options.keys, provider),
     localModels: () => localModels(options.fetch),
+    async claudeModels() {
+      const found = await options.keys.anthropic();
+      return found ? listClaudeModels(found.key, options.fetch) : null;
+    },
     async gptModels() {
       const found = await options.keys.openai();
       if (!found) return null;

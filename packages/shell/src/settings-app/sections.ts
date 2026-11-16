@@ -7,6 +7,7 @@
 import { bool, int, list, str } from "@dashi/shape";
 import { isAnswererChoice, isHarnessId } from "../agents/ask/answerer.ts";
 import { isModelName } from "../agents/ask/local.ts";
+import { isModelChoices } from "../agents/assistant/index.ts";
 import { isVrrMode } from "../display-config/monitors.ts";
 import { isAliasMap, isKeyMap } from "../launcher/person-keys.ts";
 import { isPersonaLanguage, isPersonaNote, isPersonaYou } from "../persona/index.ts";
@@ -59,6 +60,8 @@ export const SECTIONS = {
       answerer: guarded(isAnswererChoice, "an answerer"),
       localModel: guarded(isModelName, "a model's name"),
       gptModel: guarded(isModelName, "a model's name"),
+      models: guarded(isModelChoices, "a model for each answerer, typed and spoken"),
+      readTyped: bool(),
       handOff: guarded(isHarnessId, "a harness"),
       skipGrants: bool(),
     },
@@ -75,7 +78,6 @@ export const SECTIONS = {
       voices: guarded(isVoiceMap, "a voice for each language"),
       byLanguage: bool(),
       listenAgain: bool(),
-      askEveryStep: bool(),
     },
   },
   dictation: { path: ["dictation"], fields: { on: bool(), key: guarded(isDictationKeyId, "a dictation key"), handsFree: bool(), tidy: bool() } },

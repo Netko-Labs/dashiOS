@@ -65,6 +65,8 @@ export interface AnswerStatus {
   /** The models installed here; null when no local model server runs. */
   localModels(): Promise<string[] | null>;
   /** The chat models GPT's key lists, the most capable first; null without a key or an answer. */
+  /** The models the Anthropic key lists; null without a key that answers. */
+  claudeModels(): Promise<string[] | null>;
   gptModels(): Promise<string[] | null>;
   /** Claude Code, Codex and OpenCode: installed or not, and signed in where that's cheap to tell. */
   harnesses(): Promise<HarnessStatus[]>;

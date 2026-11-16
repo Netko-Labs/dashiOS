@@ -2,8 +2,8 @@
  * What Work alone can and can never cover (docs/actions.md, "Working
  * alone"). Pure. Whatever the person picks, and whatever a file or a caller
  * says, these never run without asking: payments, sign-ins and codes (the
- * fingerprint or password, the vault), the clipboard history, force quit,
- * the Trash, and installing or updating software.
+ * fingerprint or password, the vault), force quit, and installing or updating
+ * software: the critical list of decisions.md D260. Nothing else asks at all.
  */
 
 import { ASKS_EVERY_TIME } from "../../actions/tools.ts";
@@ -11,18 +11,11 @@ import { type GrantEntry, isScope, SCOPES, type Scope } from "../consent.ts";
 import { covers as siteCovers, siteFromInput } from "../sites.ts";
 import type { AloneConfig, AloneGate, AloneState, AloneStatus } from "./types.ts";
 
-/** Kinds of tools it never covers: paying, signing in (the vault's secrets), the clipboard history. */
-export const NEVER_ALONE_SCOPES: ReadonlySet<Scope> = new Set<Scope>(["pay", "signin", "clipboard"]);
+/** Kinds of tools it never covers: paying and signing in (the vault's secrets). */
+export const NEVER_ALONE_SCOPES: ReadonlySet<Scope> = new Set<Scope>(["pay", "signin"]);
 
 /** Tools it never covers, whatever their kind: the ones that ask every time, and everything that touches a secret. */
-export const NEVER_ALONE_TOOLS: ReadonlySet<string> = new Set<string>([
-  ...ASKS_EVERY_TIME,
-  "pay",
-  "sign_in",
-  "fill_code",
-  "list_logins",
-  "read_clipboard_history",
-]);
+export const NEVER_ALONE_TOOLS: ReadonlySet<string> = new Set<string>([...ASKS_EVERY_TIME, "pay", "sign_in", "fill_code", "list_logins"]);
 
 /** The kinds the person may pick, in the consent sheet's order. */
 export const ALONE_SCOPES: readonly Scope[] = SCOPES.map((scope) => scope.id).filter((scope) => !NEVER_ALONE_SCOPES.has(scope));

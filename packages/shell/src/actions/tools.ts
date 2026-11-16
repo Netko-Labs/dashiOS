@@ -52,14 +52,12 @@ export const PERSON_TOOLS: Readonly<Partial<Record<ToolName, ActionKind>>> = {
   trash_file: "run",
 };
 
-/** Tools that ask on a sheet every time they run, whoever asked (they call `ctx.confirm`). */
-export const ASKS_EVERY_TIME: ReadonlySet<ToolName> = new Set<ToolName>([
-  "force_quit_app",
-  "trash_file",
-  "request_software_install",
-  "request_software_update",
-  "read_clipboard_history",
-]);
+/**
+ * Tools that ask on a sheet every time they run, whoever asked (they call `ctx.confirm`): the critical list of
+ * decisions.md D260 that has no sheet of its own (`pay`, `sign_in` and `fill_code` have theirs). Losing work for
+ * good (`force_quit_app`) and changing the system (software). A new tool that is critical by D260 goes here.
+ */
+export const ASKS_EVERY_TIME: ReadonlySet<ToolName> = new Set<ToolName>(["force_quit_app", "request_software_install", "request_software_update"]);
 
 /** A tool's address: `dashi://tool/force-quit-app`. */
 export const toolAddress = (name: ToolName): string => formatAddress(["tool", slug(name) ?? name]);
