@@ -83,14 +83,14 @@ export function MenuBar(props: MenuBarProps) {
   const colors = useColors();
   const label = { fontSize: 13, color: colors.text } as const;
   const { popover, focused, frozenName } = useOwnPopover(menus, output);
-  const { barWidth, menusWidth, statusWidth, fullWidth, setBarWidth, setMenusWidth, setStatusWidth, setFullWidth } = useBarWidths();
+  const { barWidth, menusWidth, statusWidth, setBarWidth, setMenusWidth, setStatusWidth, setFullWidth } = useBarWidths();
   const appName = useBarName(apps, toplevels, installed, frozenName);
   const openMenu = popover?.kind === "menu" ? popover.id : null;
   // Held while a popover is open, like the name (app-menus/store.ts).
   const titles = barMenus(useAppMenus(appMenus));
   const { titleBounds, statusStops } = useBarStops(menus, output, appName, titles);
   const room = barWidth === null || menusWidth === null ? null : statusRoom(barWidth, menusWidth, 12);
-  const slots = useStatusSlots(props, popover, appName, barWidth, { room, fullWidth });
+  const slots = useStatusSlots(props, popover, appName, barWidth);
   const menu = (id: BarMenuId, children: ReactNode) => (
     <Title
       key={id}

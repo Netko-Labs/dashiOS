@@ -63,7 +63,7 @@ export function modelWords(models: readonly string[] | null | undefined, named: 
 }
 
 /** Most models offered as pills (UI-2); more are a hand-edit of settings.json. */
-const MODEL_PILLS = 6;
+const _MODEL_PILLS = 6;
 /** An opened row lists this many of its connections, newest first. */
 const PARTS_SHOWN = 20;
 

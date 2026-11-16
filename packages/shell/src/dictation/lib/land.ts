@@ -86,9 +86,6 @@ async function type(deps: DictationDeps, window: number, text: string): Promise<
 }
 
 async function place(deps: DictationDeps, text: string, { at, since }: Meant): Promise<"typed" | "pasted" | WaitReason> {
-  const { hub } = deps;
-  // The bar's row is the field: the words are its, at its caret.
-  if (hub.bar.getSnapshot().mode === "field" && hub.barCommands.send({ do: "insert", text })) return "typed";
   const front = await deps.front();
   if (!front) return "no-field";
   if (at && front.window !== at.window) return "left-window";

@@ -9,7 +9,6 @@ test("a hub starts idle, with Dashi's own persona", () => {
   expect(hub.dictation.getSnapshot()).toEqual({ phase: "idle" });
   expect(hub.voiceMode.getSnapshot()).toEqual({ phase: "idle" });
   expect(hub.asks.getSnapshot()).toEqual([]);
-  expect(hub.bar.getSnapshot()).toEqual({ mode: "rest" });
   expect(hub.persona.getSnapshot()).toBe(DEFAULT_PERSONA);
 });
 

@@ -1,19 +1,16 @@
-/** What a menu bar is given for Dashi's mark, the jobs beside it and the field (boot/bars.tsx makes it). */
+/**
+ * What a menu bar is given of Dashi's own agent (boot/bars.tsx makes it):
+ * nothing of it shows at rest (decisions.md D261). The persona's colour and
+ * mark for the one indicator, and which of the assistant's connections are
+ * its foreground turns (in the capsule or the launcher, where the person
+ * already watches them): those are not in the bar; a turn kept working on
+ * its own is.
+ */
 
 import type { PillHub } from "../shared/pill/index.ts";
-import type { BarField } from "./field.ts";
-import type { BarJobs } from "./jobs.ts";
 
 export interface BarPill {
-  /** Where the night build's pieces meet (shared/pill): the asks, the persona, the commands. */
-  hub: Pick<PillHub, "asks" | "persona" | "voiceCommands">;
-  jobs: BarJobs;
-  field: BarField;
-  /** Stop a launcher Ask task (the square on its capsule). */
-  stopTask(id: string): void;
-  /** A task's plan waits for a yes and no card took it: show it where it can be answered (the launcher). */
-  showTask(id: string): void;
+  hub: Pick<PillHub, "persona">;
+  /** A connection of task `task` is Dashi's own agent in front of the person (the capsule, the launcher): not shown in the bar. */
+  foreground(task: string): boolean;
 }
-
-/** The agents' panel's focus for an Ask task's card (agents-panel/). */
-export const taskFocus = (id: string): string => `task:${id}`;

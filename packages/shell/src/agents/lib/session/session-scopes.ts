@@ -16,7 +16,7 @@ import type * as mcp from "../mcp.ts";
 import type { SessionContext, SessionTask } from "./session-types.ts";
 
 /** How a sheet names a program: the name it claims when it gives one, else its process's. */
-const useName = (who: Who): string => (who.remote ? "An agent on another machine" : (who.claims ?? who.name));
+const sheetName = (who: Who): string => (who.remote ? "An agent on another machine" : (who.claims ?? who.name));
 
 /** What the scopes need of the connection they are for. */
 export interface ScopeHost {
@@ -158,7 +158,7 @@ export class Scopes {
       agent: this.host.id,
       who: this.host.who(),
       scopes: choices(needs, this.granted),
-      title: `${useName(this.host.who())} wants to use this computer`,
+      title: `${sheetName(this.host.who())} wants to use this computer`,
     };
     const controller = new AbortController();
     this.askAbort = controller;

@@ -10,7 +10,6 @@
  *   `handle`, a message is dropped and `send` says so.
  */
 
-import type { BarCommand, BarRowState } from "./bar.ts";
 import type { DictationCommand, DictationState } from "./dictation.ts";
 import type { KeyGesture } from "./keys.ts";
 import { DEFAULT_PERSONA, type Persona } from "./persona.ts";
@@ -87,10 +86,6 @@ export interface PillHub {
   asks: Cell<readonly PillAsk[]>;
   /** The capsule and the bar send; the capsule piece handles. */
   voiceCommands: Port<VoiceModeCommand>;
-  /** The bar sets. */
-  bar: Cell<BarRowState>;
-  /** core and the capsule send; the bar handles. */
-  barCommands: Port<BarCommand>;
   /** The persona piece sets; everyone reads. */
   persona: Cell<Persona>;
 }
@@ -104,8 +99,6 @@ export function createPillHub(): PillHub {
     voiceMode: cell<VoiceModeState>({ phase: "idle" }),
     asks: cell<readonly PillAsk[]>([]),
     voiceCommands: port(),
-    bar: cell<BarRowState>({ mode: "rest" }),
-    barCommands: port(),
     persona: cell(DEFAULT_PERSONA),
   };
 }

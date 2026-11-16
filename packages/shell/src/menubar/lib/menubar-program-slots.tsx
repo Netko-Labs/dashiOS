@@ -8,7 +8,7 @@
 
 import { useColors } from "@dashi/ui";
 import type { Bounds } from "@mirinjs/metal";
-import { useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import {
   type AgentRuns,
   type AgentStore,
@@ -36,8 +36,8 @@ import { formatClock, useClockPrefs, useMinuteClock } from "../../shared/time/in
 import { type AppMixer, MicPill, useMicWords } from "../../sound/index.ts";
 import { type SystemStore, useSystem } from "../../system/store.ts";
 import type { BarPill } from "../pill.ts";
-import { extraGoes, STATUS_GAP } from "./menubar-fit.ts";
-import { agentMarkSlot, jobsSlot, type PillNow, usePill } from "./menubar-pill-slots.tsx";
+import { extraGoes } from "./menubar-fit.ts";
+import { agentMarkSlot, type PillNow, usePill } from "./menubar-pill-slots.tsx";
 import { systemSlots } from "./menubar-slots.tsx";
 import type { StatusSlot } from "./menubar-status.tsx";
 
@@ -64,7 +64,7 @@ export interface StatusSources {
   alone?: Pick<WorkAlone, "subscribe" | "getSnapshot" | "stop">;
   /** The apps' sound: the microphone indicator while one records (sound/apps/). */
   mixer?: AppMixer;
-  /** Dashi's mark, the jobs beside it and the field (pill.ts); without it the mark only shows who watches. */
+  /** Dashi's persona for the one indicator, and which of its own connections are in front of the person (pill.ts). */
   pill?: BarPill;
   /** Show or take down the bar's tooltip (the agent mark's words). */
   onTip?: (tip: BarTip) => void;
@@ -186,29 +186,17 @@ function micSlot({ micWords, openSound, tip }: ProgramContext): StatusSlot[] {
   ];
 }
 
-/** The room the jobs have: what the menus leave the status side, less every other item in it, hidden or not (the jobs' own width as drawn is told back). */
-function useJobsRoom(fit: { room: number | null; fullWidth: number | null }): [number | null, (width: number) => void] {
-  const [jobsWidth, setJobsWidth] = useState(0);
-  // The status side counts a gap with each item, the jobs' included.
-  const others = fit.fullWidth === null ? null : Math.max(0, fit.fullWidth - jobsWidth - STATUS_GAP);
-  const room = fit.room === null || others === null ? null : Math.max(0, fit.room - others - STATUS_GAP);
-  return [room, (width) => setJobsWidth((was) => (Math.abs(was - width) < 0.5 ? was : width))];
-}
-
 /** The status side's slots, left to right, as the bar draws them. */
-export function useStatusSlots(
-  sources: StatusSources,
-  popover: Popover | null,
-  appName: string,
-  barWidth: number | null,
-  /** The room the menus leave the whole status side, and what all its items take: what is left over is the jobs'. */
-  fit: { room: number | null; fullWidth: number | null } = { room: null, fullWidth: null },
-): StatusSlot[] {
+export function useStatusSlots(sources: StatusSources, popover: Popover | null, appName: string, barWidth: number | null): StatusSlot[] {
   const { agents, capture, recorder, system, menus, settings, output, runs, mixer, onTip, accessible = () => false } = sources;
   const colors = useColors();
   const recording = useRecording(recorder);
-  const [jobsRoom, setJobsWidth] = useJobsRoom(fit);
-  const entries = mergeAgents(useAgents(agents), useRuns(runs ?? NO_RUNS));
+  // Dashi's own agent in the capsule or the launcher is watched there already: only a turn kept working on its own is the bar's.
+  const foreground = sources.pill?.foreground ?? (() => false);
+  const entries = mergeAgents(
+    useAgents(agents).filter((agent) => agent.task === undefined || !foreground(agent.task)),
+    useRuns(runs ?? NO_RUNS),
+  );
   const context: ProgramContext = {
     sources,
     popover,
@@ -234,7 +222,7 @@ export function useStatusSlots(
           : null,
       ),
     openSound: () => void menus.toggleControlCenter(appName, "sound", output),
-    pill: usePill(sources.pill, output, colors.agent),
+    pill: usePill(sources.pill, colors.agent),
   };
   const { battery, network, volume } = useSystem(system);
   const { menuBar } = useSettings(settings).data;
@@ -243,8 +231,7 @@ export function useStatusSlots(
   const now = useMinuteClock();
   const clock = useClockPrefs();
   return [
-    // The jobs, then Dashi's mark, lead the status items (never hidden); "work alone" says so beside them.
-    ...jobsSlot(context, jobsRoom, setJobsWidth, accessible()),
+    // The one indicator leads the status items while something acts (never hidden); "work alone" says so beside it.
     ...agentMarkSlot(context, accessible()),
     ...aloneSlot(context),
     ...extraSlots({ ...context, accessible: accessible() }),

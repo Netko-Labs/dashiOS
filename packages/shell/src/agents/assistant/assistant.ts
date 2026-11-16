@@ -137,7 +137,17 @@ class Core {
     const moment = await (this.prepared ?? options.moment());
     this.prepared = null;
     const limits = { ...(options.maxCalls ? { maxCalls: options.maxCalls } : {}), ...(options.maxMs ? { maxMs: options.maxMs } : {}) };
-    const both: Hears = { ...hears, say: (text) => (hears.say(text), pen.say(text)), step: (title) => (hears.step(title), pen.step(title)) };
+    const both: Hears = {
+      ...hears,
+      say: (text) => {
+        hears.say(text);
+        pen.say(text);
+      },
+      step: (title) => {
+        hears.step(title);
+        pen.step(title);
+      },
+    };
     const deps = { timers: this.timers, now: () => this.now(), step: both.step, settled: pen.settle, undoOf: (call: Call) => this.undoOf(call), ...limits };
     const run = new Running(deps, signal);
     const turn = new Turn(run, both, by);
