@@ -52,7 +52,7 @@ test("voice, then typed, then voice again: one conversation, the spoken turns sh
 });
 
 test("Keep working on it: the turn gets room for a longer job, goes on by itself, and a notification says it is done", async () => {
-  const fake = fakeAssistant([{ calls: [{ name: "read_page" }] }, { say: "Found three flights." }]);
+  const fake = fakeAssistant([{ say: "Looking at Avianca first.", calls: [{ name: "read_page" }] }, { say: "Found three flights." }]);
   fake.onCall = () => {
     expect(fake.assistant.keepWorking()).toBe(true);
     expect(fake.assistant.background("talk000001")).toBe(true);
