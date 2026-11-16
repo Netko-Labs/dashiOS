@@ -3907,3 +3907,21 @@ short words, as the rulebook is written.
 - **Cost:** an outside agent's line is said in Dashi's voice: the person
   hears it as Dashi. The menu bar's mark names the agent while it works.
 - **Undo:** take `tellTools` out of `TOOLS`.
+
+### D208. Notes and events can be changed and deleted; each change says what was there, each delete keeps a way back
+
+- **Date:** 2026-11-16. `v09/reach`. "No calendar edit or delete, no note
+  edit or delete (append only)… tasks like 'move my meeting' are
+  impossible."
+- **Choice:** `edit_note` (one way per call: an exact text there once, a
+  range of lines, or an insert; or only a new title), `delete_note` (Notes'
+  Recently Deleted), `edit_event` (the whole event; a repeat's every
+  occurrence; a moved start keeps the length), `delete_event` (an .ics copy
+  to the Trash first, which Calendar imports back). Each result says what
+  was there before. Scopes `notes_write` and `calendar_write`, renamed
+  "Change your notes" and "Change your calendar". None `destructive`.
+- **Cost:** one occurrence of a repeat can't be moved alone yet. The
+  assistant's spoken "Undo that" doesn't reach these: the registry has no
+  Undo for a tool other than `set_setting`, and adding one is
+  `v09/askagent`'s (its README is told).
+- **Undo:** take `editTools` out of `TOOLS`.

@@ -21,6 +21,10 @@ export const documentHandlers = {
   list_calendars: (_call, ctx) => desktop.listCalendars(ctx),
   list_events: (call, ctx) => desktop.listEvents(call, ctx),
   create_event: (call, ctx) => desktop.createEvent(call, ctx),
+  edit_note: (call, ctx) => desktop.editNote(call, ctx),
+  delete_note: (call, ctx) => desktop.deleteNote(call.id, ctx),
+  edit_event: (call, ctx) => desktop.editEvent(call, ctx),
+  delete_event: (call, ctx) => desktop.deleteEvent(call.uid, ctx),
   read_clipboard_history: (call, ctx) => desktop.readClipboardHistory(call.limit, ctx),
   copy_to_clipboard: (call, ctx) => desktop.copyToClipboard(call.text, ctx),
 } satisfies Handlers<
@@ -41,6 +45,10 @@ export const documentHandlers = {
   | "list_calendars"
   | "list_events"
   | "create_event"
+  | "edit_note"
+  | "delete_note"
+  | "edit_event"
+  | "delete_event"
   | "read_clipboard_history"
   | "copy_to_clipboard"
 >;

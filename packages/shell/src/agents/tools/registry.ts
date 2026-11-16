@@ -18,6 +18,7 @@ import { askTools } from "./lib/ask.ts";
 import { browserTools } from "./lib/browser.ts";
 import { calendarTools } from "./lib/calendar.ts";
 import { clipboardTools } from "./lib/clipboard.ts";
+import { editTools } from "./lib/edits.ts";
 import { fileTextTools } from "./lib/file-text.ts";
 import { fileTools } from "./lib/files.ts";
 import { inputTools } from "./lib/input.ts";
@@ -85,6 +86,7 @@ export const TOOLS: readonly ToolDef[] = [
   ...machineTools,
   ...noteTools,
   ...calendarTools,
+  ...editTools,
   ...previewTools,
   ...softwareTools,
   ...fileTools,

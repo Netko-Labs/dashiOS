@@ -73,6 +73,20 @@ export type Call =
   | { name: "read_note"; id: string }
   | { name: "create_note"; title: string; body: string; folder: string }
   | { name: "append_to_note"; id: string; text: string }
+  /** A change to a note's text (or none: only `title`), and a new title. */
+  | { name: "edit_note"; id: string; edit: NoteEdit | null; title: string | null }
+  | { name: "delete_note"; id: string }
+  | {
+      name: "edit_event";
+      uid: string;
+      title: string | null;
+      start: string | null;
+      end: string | null;
+      location: string | null;
+      notes: string | null;
+      calendar: string | null;
+    }
+  | { name: "delete_event"; uid: string }
   | { name: "list_calendars" }
   | { name: "list_events"; from: string; to: string; calendar: string | null; limit: number }
   | {
@@ -128,6 +142,9 @@ export type Call =
   | { name: "ask_person"; question: string; seconds: number }
   | { name: "tell_person"; text: string }
   | { name: "notify_person"; title: string; text: string };
+
+/** edit_note's change: replace the text that is there once, replace lines (from 1), or insert before a line. */
+export type NoteEdit = { find: string; text: string } | { from: number; to: number; text: string } | { at: number; text: string };
 
 /** What wait_for waits for: one thing on a page, a window, or a file. */
 export type WaitUntil =

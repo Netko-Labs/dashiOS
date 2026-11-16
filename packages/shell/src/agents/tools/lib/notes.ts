@@ -1,8 +1,8 @@
 /**
  * Notes: the Markdown files of the Notes app (apps/notes). Listing, searching,
  * and reading are the `notes` scope, which asks: what is in a person's notes
- * can be anything. Creating a note and adding to one are `notes_write`. There
- * is no tool that edits or deletes what is already written.
+ * can be anything. Creating a note and adding to one are `notes_write`, as
+ * are changing and deleting one (edits.ts: deleted notes go to Recently Deleted).
  */
 
 import { optional } from "@dashi/shape";

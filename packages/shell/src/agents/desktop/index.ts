@@ -1,6 +1,7 @@
 export { askPerson } from "./ask-person.ts";
 export { browserCall, frontPage } from "./browser.ts";
 export { createEvent, listCalendars, listEvents } from "./calendar.ts";
+export { deleteEvent, type EventChange, editEvent } from "./calendar-edit.ts";
 export { copyToClipboard, readClipboardHistory } from "./clipboard.ts";
 export { arrangeDisplay, listDisplays, setDisplayMode, setDisplayRotation, setDisplayScale, setPrimaryDisplay } from "./displays.ts";
 export { Elsewhere, type Opening, WorkPlaces, type WorkTarget } from "./elsewhere.ts";
@@ -22,7 +23,7 @@ export {
   setVolume,
 } from "./machine.ts";
 export { chooseMenuItem, listMenus } from "./menus.ts";
-export { appendToNote, createNote, listNotes, readNote, searchNotesTool } from "./notes.ts";
+export { appendToNote, createNote, deleteNote, editNote, listNotes, readNote, searchNotesTool } from "./notes.ts";
 export { clearNotifications, dismissNotification, listNotifications } from "./notifications.ts";
 export { forceQuitApp, lockScreen } from "./quit.ts";
 export { recordScreen } from "./record.ts";

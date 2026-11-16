@@ -2059,6 +2059,159 @@
       }
     },
     {
+      "name": "edit_note",
+      "title": "Change a note",
+      "description": "Change a note's text: replace `find` (exact text that is there once) with `text`; or replace lines `from_line` to `to_line`; or insert `text` before `at_line`. `title` renames it. The result says what was there before. Read the note first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "A note id from list_notes, like \"Work/Plan.md\"."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 100000,
+            "description": "The new text (empty removes)."
+          },
+          "find": {
+            "type": "string",
+            "maxLength": 100000,
+            "description": "Text that is in the note once, to replace."
+          },
+          "from_line": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000000,
+            "description": "The first line to replace (lines of the note's text, from 1)."
+          },
+          "to_line": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000000,
+            "description": "The last line to replace."
+          },
+          "at_line": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000000,
+            "description": "Insert before this line (one past the last line adds at the end)."
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "A new title."
+          }
+        },
+        "required": ["id"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Change a note",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "delete_note",
+      "title": "Delete a note",
+      "description": "Move a note to Recently Deleted in Notes, where the person can put it back.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "A note id from list_notes, like \"Work/Plan.md\"."
+          }
+        },
+        "required": ["id"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Delete a note",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "edit_event",
+      "title": "Change an event",
+      "description": "Change an event by its uid: its title, start, end, place, notes, or calendar; what you leave out stays. A new start keeps its length. A repeating event changes every time it repeats. The result says what it was.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string",
+            "description": "The event's uid from list_events."
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "A new title."
+          },
+          "start": {
+            "type": "string",
+            "description": "A new start: a day (all day) or a time like 2026-11-05T14:00."
+          },
+          "end": {
+            "type": "string",
+            "description": "A new end: a time, or for an all-day event its last day."
+          },
+          "location": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "A new place."
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 20000,
+            "description": "New notes."
+          },
+          "calendar": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Move it to this calendar."
+          }
+        },
+        "required": ["uid"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Change an event",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "delete_event",
+      "title": "Delete an event",
+      "description": "Delete an event (all its occurrences) by its uid. A copy goes to the Trash as an .ics file, which Calendar imports back when opened.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string",
+            "description": "The event's uid from list_events."
+          }
+        },
+        "required": ["uid"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Delete an event",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
       "name": "open_in_preview",
       "title": "Open a file in Preview",
       "description": "Open an image (PNG, JPEG, WebP, GIF, BMP, SVG, TIFF) or a PDF in Preview, Dashi's viewer, by its absolute path, in a new window that the person sees, and return that window (waiting up to 10 seconds). It only shows the file on screen: it cannot read, change, or send it. Use screenshot (with the screen permission) to look at what Preview shows.",

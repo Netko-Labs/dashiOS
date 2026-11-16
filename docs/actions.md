@@ -335,6 +335,23 @@ number and name, and holds for that connection only: nothing is saved
   after it open there. The Space holds for the plan's steps and is let go
   30 s after the last.
 
+### Notes and Calendar
+
+What the person already wrote can be changed and deleted, through the stores
+the apps use (`agents/desktop/notes.ts`, `calendar-edit.ts`):
+
+| Tool | What it does |
+| --- | --- |
+| `edit_note {id, text, find? \| from_line+to_line? \| at_line?, title?}` | Replaces the text that is in the note once, a range of lines, or inserts before a line; `title` renames. Refused in words when `find` is there twice or not at all. The result says what was there before (`was`, `titleWas`) |
+| `delete_note {id}` | To Notes' Recently Deleted, where the person puts it back |
+| `edit_event {uid, title?, start?, end?, location?, notes?, calendar?}` | Changes the whole event (every occurrence of a repeat); a new start keeps its length; the result says what it was |
+| `delete_event {uid}` | First writes the event (with its calendar's zones) as `<title>.ics` and moves that to the Trash; only then deletes it. Opening the file imports it back (its uid is free again). Nothing is deleted when the copy can't be kept |
+
+Scopes `notes_write` and `calendar_write`; none is `destructive` (the
+critical-only rule: each has its way back). The assistant's "Undo that" (D148)
+covers settings only: an Undo entry for these is the consent owner's to add
+(decisions.md D208).
+
 ### Telling the person
 
 - `tell_person {text}` (scope "act") says one line aloud in Dashi's voice
