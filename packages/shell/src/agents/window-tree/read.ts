@@ -9,10 +9,10 @@
 import type { CompositorWindow } from "../../compositor/index.ts";
 import type { RunContext, ToolResult } from "../context.ts";
 import { text, toolError } from "../context.ts";
-import { named, noWindow, subject } from "../lib/subject.ts";
 import { readElements } from "./lib/bus.ts";
 import { locate, noTree } from "./lib/locate.ts";
 import { PAGE, renderRows, renderTree, usable } from "./lib/render.ts";
+import { named, noWindow, subject } from "./lib/windows.ts";
 import type { Element, PersonOnly, TreesRun, WindowTree } from "./types.ts";
 
 /** A walk's budget: a window bigger than this says it was cut. */
@@ -76,7 +76,7 @@ async function header(window: CompositorWindow, tree: WindowTree, ctx: RunContex
 export async function readWindow(call: { window: number; list: number | null; from: number }, ctx: RunContext): Promise<ToolResult> {
   const trees = ctx.trees;
   if (!trees) return toolError(NO_TREES);
-  const window = await named(ctx.compositor, call.window);
+  const window = await named(ctx, call.window);
   if (!window) return noWindow(call.window);
   const theirs = trees.personOnly(window);
   if (theirs) return text(personWords(theirs, window.id));
@@ -90,6 +90,7 @@ export async function readWindow(call: { window: number; list: number | null; fr
   const found = list ? findKey(tree.root, list.key) : null;
   if (list && !found) return toolError(`[${call.list}] is no longer in w${window.id}; read_window w${window.id} again.`);
   const body = found ? renderRows(found, ctxRender) : renderTree(tree.root, ctxRender);
+  if (!found) trees.numbers.swap(window.id, body.text);
   const notes: string[] = [];
   if (!tree.complete || body.cut) notes.push("(The window goes on past what was read: read a list's rows with `list` and `from`, or take a screenshot.)");
   if (thin(tree.root)) notes.push("(Its tree says little: the content is drawn, not described. Take a screenshot of it and click by pixel.)");

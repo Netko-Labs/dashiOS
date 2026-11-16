@@ -9,6 +9,7 @@ import { expect, test } from "bun:test";
 import type { RunContext, ToolResult } from "../src/agents/context.ts";
 import { runCall } from "../src/agents/lib/run/run.ts";
 import { parseCall, scopeOf } from "../src/agents/tools/index.ts";
+import { changes } from "../src/agents/window-tree/act.ts";
 import { TreeNumbers } from "../src/agents/window-tree/index.ts";
 import { R, S } from "../src/agents/window-tree/lib/roles.ts";
 import { criticalOf } from "../src/agents/window-tree/lib/semantics.ts";
@@ -220,4 +221,11 @@ test("what is critical: paying, a secret, losing work for good, the system, send
   // The toolkit's word wins.
   expect(criticalOf(button("Go", { critical: "sends" }), plain)).toBe("sends");
   expect(criticalOf(button("Go", { destructive: "true" }), plain)).toBe("loses work");
+});
+
+test("after an action: nothing more when only its own line moved, the lines that changed, or the new tree when its shape did", () => {
+  const before = '[1] switch "Wi-Fi" (off)\n[2] button "Join"\nOffline';
+  expect(changes(before, '[1] switch "Wi-Fi" (on)\n[2] button "Join"\nOffline', 1)).toBe("");
+  expect(changes(before, '[1] switch "Wi-Fi" (on)\n[2] button "Join"\nConnected', 1)).toBe("\n\nAlso changed:\nConnected");
+  expect(changes(before, '[1] switch "Wi-Fi" (on)\ndialog "Password" (modal)\n  [3] password field (filled: no)', 1)).toContain("The window changed. Now:");
 });

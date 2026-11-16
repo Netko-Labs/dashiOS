@@ -13,7 +13,7 @@
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { Atspi, type Element, readElements, renderTree, roleWord, TreeNumbers } from "../src/agents/index.ts";
+import { Atspi, type Element, readElements, renderTree, roleWord, TreeNumbers } from "../src/agents/window-tree/index.ts";
 
 const arg = (name: string): string | null => {
   const at = process.argv.indexOf(name);

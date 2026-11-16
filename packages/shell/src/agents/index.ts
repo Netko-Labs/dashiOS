@@ -110,4 +110,4 @@ export { DEFAULT_HEADER, placeholder } from "./tokens/swap.ts";
 export { checkToolArgs, isCallError, parseWindowId, type ToolDef } from "./tools/define.ts";
 export { parseCall, TOOL_ACTIONS, TOOLS } from "./tools/registry.ts";
 export type { Call, ToolName } from "./tools/types.ts";
-export { type Element, readElements, renderTree, roleWord, TreeNumbers } from "./window-tree/index.ts";
+export { readWindow, TreeNumbers, type WindowUntil, type WindowWaited, waitOnWindow } from "./window-tree/index.ts";

@@ -1,3 +1,4 @@
+export { Atspi } from "../atspi/index.ts";
 export { actOn, clickOn, type ElementAction, fillIn, scrollTo, selectIn } from "./act.ts";
 export { readElements } from "./lib/bus.ts";
 export { TreeNumbers } from "./lib/numbers.ts";

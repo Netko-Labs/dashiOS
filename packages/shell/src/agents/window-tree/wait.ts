@@ -6,12 +6,12 @@
  */
 
 import type { RunContext } from "../context.ts";
-import { named } from "../lib/subject.ts";
 import { readNode } from "./lib/bus.ts";
 import { locate } from "./lib/locate.ts";
 import { has, S } from "./lib/roles.ts";
 import { mark, settle } from "./lib/settle.ts";
 import { isResult, target } from "./lib/target.ts";
+import { named } from "./lib/windows.ts";
 import { readTree } from "./read.ts";
 import type { Element } from "./types.ts";
 
@@ -43,7 +43,7 @@ async function check(window: number, until: WindowUntil, ctx: RunContext): Promi
   const trees = ctx.trees;
   if (!trees) return null;
   if ("text" in until) {
-    const shown = await named(ctx.compositor, window);
+    const shown = await named(ctx, window);
     if (!shown) return null;
     const tree = await readTree(trees, shown);
     if (typeof tree === "string") return null;
@@ -65,7 +65,7 @@ async function check(window: number, until: WindowUntil, ctx: RunContext): Promi
 export async function waitOnWindow(window: number, until: WindowUntil, timeoutMs: number, ctx: RunContext): Promise<WindowWaited> {
   const started = Date.now();
   const trees = ctx.trees;
-  const shown = await named(ctx.compositor, window);
+  const shown = await named(ctx, window);
   if (!trees || !shown) return { met: false, ms: 0, detail: shown ? "Windows can't be read as elements here." : `There is no window w${window}.` };
   const bus = await trees.bus();
   const where = await locate(bus, shown);

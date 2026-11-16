@@ -1,0 +1,270 @@
+{
+  "pid": 462618,
+  "complete": true,
+  "ms": 3,
+  "root": {
+    "key": ":1.1/dev/example/GtkSample/a11y/86bc5bd4_b464_42b5_a4df_5873aefad5b2",
+    "role": 23,
+    "name": "Empty Trash?",
+    "description": "",
+    "states": [1124139008, 0],
+    "attributes": {
+      "toolkit": "GTK"
+    },
+    "interfaces": ["Accessible", "Component", "Action"],
+    "actions": ["window.close", "default.activate"],
+    "childCount": 2,
+    "children": [
+      {
+        "key": ":1.1/dev/example/GtkSample/a11y/4fdf396d_9e6b_4bb6_b18c_a02cfd60102b",
+        "role": 39,
+        "name": "",
+        "description": "",
+        "states": [1660944384, 0],
+        "attributes": {
+          "toolkit": "GTK"
+        },
+        "interfaces": ["Accessible", "Component", "Action"],
+        "actions": [],
+        "childCount": 3,
+        "children": [
+          {
+            "key": ":1.1/dev/example/GtkSample/a11y/c5180e8b_c036_4bce_a750_64d15f92d156",
+            "role": 29,
+            "name": "Items in the Trash are deleted for good.",
+            "description": "",
+            "states": [1124073472, 0],
+            "attributes": {
+              "toolkit": "GTK"
+            },
+            "interfaces": ["Accessible", "Component", "Text", "Action", "Hypertext"],
+            "actions": [
+              "clipboard.copy",
+              "selection.delete",
+              "clipboard.paste",
+              "link.open",
+              "clipboard.cut",
+              "link.copy",
+              "menu.popup",
+              "selection.select-all"
+            ],
+            "childCount": 0,
+            "children": [],
+            "chars": 40,
+            "text": "Items in the Trash are deleted for good."
+          },
+          {
+            "key": ":1.1/dev/example/GtkSample/a11y/608ca159_0954_436e_aec6_5c64e2cd2924",
+            "role": 43,
+            "name": "Cancel",
+            "description": "",
+            "states": [1124075520, 0],
+            "attributes": {
+              "toolkit": "GTK",
+              "keyshortcuts": ""
+            },
+            "interfaces": ["Accessible", "Component", "Action"],
+            "actions": ["Click"],
+            "childCount": 1,
+            "children": [
+              {
+                "key": ":1.1/dev/example/GtkSample/a11y/68bb0adb_10c1_45be_88df_f8d83e537b35",
+                "role": 29,
+                "name": "Cancel",
+                "description": "",
+                "states": [1124073472, 0],
+                "attributes": {
+                  "toolkit": "GTK"
+                },
+                "interfaces": ["Accessible", "Component", "Text", "Action", "Hypertext"],
+                "actions": [
+                  "clipboard.copy",
+                  "selection.delete",
+                  "clipboard.paste",
+                  "link.open",
+                  "clipboard.cut",
+                  "link.copy",
+                  "menu.popup",
+                  "selection.select-all"
+                ],
+                "childCount": 0,
+                "children": [],
+                "chars": 6,
+                "text": "Cancel"
+              }
+            ]
+          },
+          {
+            "key": ":1.1/dev/example/GtkSample/a11y/9c075297_528b_4e72_bba6_5034dccad3aa",
+            "role": 43,
+            "name": "Empty Trash",
+            "description": "",
+            "states": [1124075520, 0],
+            "attributes": {
+              "toolkit": "GTK",
+              "keyshortcuts": ""
+            },
+            "interfaces": ["Accessible", "Component", "Action"],
+            "actions": ["Click"],
+            "childCount": 1,
+            "children": [
+              {
+                "key": ":1.1/dev/example/GtkSample/a11y/43308f96_f999_4bcd_8070_43e32d50e320",
+                "role": 29,
+                "name": "Empty Trash",
+                "description": "",
+                "states": [1124073472, 0],
+                "attributes": {
+                  "toolkit": "GTK"
+                },
+                "interfaces": ["Accessible", "Component", "Text", "Action", "Hypertext"],
+                "actions": [
+                  "clipboard.copy",
+                  "selection.delete",
+                  "clipboard.paste",
+                  "link.open",
+                  "clipboard.cut",
+                  "link.copy",
+                  "menu.popup",
+                  "selection.select-all"
+                ],
+                "childCount": 0,
+                "children": [],
+                "chars": 11,
+                "text": "Empty Trash"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "key": ":1.1/dev/example/GtkSample/a11y/c11e6f24_c5f0_46e3_814c_ca8516d2c74e",
+        "role": 99,
+        "name": "",
+        "description": "",
+        "states": [1124073472, 0],
+        "attributes": {
+          "toolkit": "GTK"
+        },
+        "interfaces": ["Accessible", "Component", "Action"],
+        "actions": [],
+        "childCount": 1,
+        "children": [
+          {
+            "key": ":1.1/dev/example/GtkSample/a11y/4a0232b0_ac98_4838_b065_147f4759f521",
+            "role": 39,
+            "name": "",
+            "description": "",
+            "states": [1124073472, 0],
+            "attributes": {
+              "toolkit": "GTK"
+            },
+            "interfaces": ["Accessible", "Component", "Action"],
+            "actions": [],
+            "childCount": 1,
+            "children": [
+              {
+                "key": ":1.1/dev/example/GtkSample/a11y/645fae51_985f_4ada_ad89_b038dce8c104",
+                "role": 39,
+                "name": "",
+                "description": "",
+                "states": [1124073472, 0],
+                "attributes": {
+                  "toolkit": "GTK"
+                },
+                "interfaces": ["Accessible", "Component", "Action"],
+                "actions": [],
+                "childCount": 3,
+                "children": [
+                  {
+                    "key": ":1.1/dev/example/GtkSample/a11y/d8406b23_edcf_4f2a_98b6_1dd0114277a5",
+                    "role": 39,
+                    "name": "",
+                    "description": "",
+                    "states": [1124089856, 0],
+                    "attributes": {
+                      "toolkit": "GTK"
+                    },
+                    "interfaces": ["Accessible", "Component", "Action"],
+                    "actions": [],
+                    "childCount": 0,
+                    "children": []
+                  },
+                  {
+                    "key": ":1.1/dev/example/GtkSample/a11y/f7a1302d_9537_4598_9641_2feecb10dac2",
+                    "role": 29,
+                    "name": "Empty Trash?",
+                    "description": "",
+                    "states": [1124073472, 0],
+                    "attributes": {
+                      "toolkit": "GTK"
+                    },
+                    "interfaces": ["Accessible", "Component", "Text", "Action", "Hypertext"],
+                    "actions": [
+                      "clipboard.copy",
+                      "selection.delete",
+                      "clipboard.paste",
+                      "link.open",
+                      "clipboard.cut",
+                      "link.copy",
+                      "menu.popup",
+                      "selection.select-all"
+                    ],
+                    "childCount": 0,
+                    "children": [],
+                    "chars": 12,
+                    "text": "Empty Trash?"
+                  },
+                  {
+                    "key": ":1.1/dev/example/GtkSample/a11y/3423d146_4be3_4a9b_bcb4_4b83e6b9d82b",
+                    "role": 39,
+                    "name": "",
+                    "description": "",
+                    "states": [1124089856, 0],
+                    "attributes": {
+                      "toolkit": "GTK"
+                    },
+                    "interfaces": ["Accessible", "Component", "Action"],
+                    "actions": [],
+                    "childCount": 1,
+                    "children": [
+                      {
+                        "key": ":1.1/dev/example/GtkSample/a11y/831c9f57_b766_4b2d_b50c_49729d2cb203",
+                        "role": 99,
+                        "name": "",
+                        "description": "",
+                        "states": [1124073472, 0],
+                        "attributes": {
+                          "toolkit": "GTK"
+                        },
+                        "interfaces": ["Accessible", "Component", "Action"],
+                        "actions": [],
+                        "childCount": 1,
+                        "children": [
+                          {
+                            "key": ":1.1/dev/example/GtkSample/a11y/34f9762b_7053_4fe1_b2f1_ff3055940e57",
+                            "role": 43,
+                            "name": "Close",
+                            "description": "Close the window",
+                            "states": [1124075520, 0],
+                            "attributes": {
+                              "toolkit": "GTK"
+                            },
+                            "interfaces": ["Accessible", "Component", "Action"],
+                            "actions": ["Click"],
+                            "childCount": 0,
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

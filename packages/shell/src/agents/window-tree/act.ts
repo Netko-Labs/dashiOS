@@ -11,8 +11,6 @@
 
 import type { RunContext, ToolResult } from "../context.ts";
 import { text, toolError } from "../context.ts";
-import { handsCall } from "../desktop/index.ts";
-import { parseKeys } from "../tools/index.ts";
 import { readNode } from "./lib/bus.ts";
 import { describe } from "./lib/describe.ts";
 import { centre, expandAction, focus, press, scrollIntoView, selectChild, setText, stepValue } from "./lib/do.ts";
@@ -58,27 +56,49 @@ async function cleared(t: Target, verb: string): Promise<boolean> {
   });
 }
 
-/** What the element is now and, when the window changed, its tree. */
+/**
+ * What the element is now and, when the window changed, what changed: the
+ * lines that are new beside the last read (a state elsewhere, a row), or the
+ * whole fresh tree (cut at CHANGED_LINES) when its shape changed (a sheet
+ * opened, a view replaced). The element's own line is in "Now:".
+ */
 async function after(t: Target, did: string, from: number): Promise<ToolResult> {
   const changed = await settle(t.bus, t.app, from);
   const now = await readNode(t.node);
   const state = now && !has(now.states, S.DEFUNCT) ? `Now: ${describe(now)}.` : "It is gone now: the view changed.";
-  let tree = "";
-  if (changed) {
-    const fresh = await readTree(t.trees, t.window);
-    if (typeof fresh !== "string") {
-      const lines = renderTree(fresh.root, { window: t.window.id, numberOf: numbering(t.trees, t.window.id) }).text.split("\n");
-      tree = `\n\nThe window changed. Now:\n${lines.slice(0, CHANGED_LINES).join("\n")}${lines.length > CHANGED_LINES ? "\n… (read_window for the rest)" : ""}`;
-    }
-  }
-  return text(`${did} ${state}${tree}`);
+  if (!changed) return text(`${did} ${state}`);
+  const fresh = await readTree(t.trees, t.window);
+  if (typeof fresh === "string") return text(`${did} ${state}`);
+  const lines = renderTree(fresh.root, { window: t.window.id, numberOf: numbering(t.trees, t.window.id) }).text;
+  const before = t.trees.numbers.swap(t.window.id, lines);
+  return text(`${did} ${state}${changes(before, lines, t.number)}`);
 }
+
+/** How the window's lines moved since the last read, in words, without the acted element's own line. */
+export function changes(before: string | null, after: string, own: number): string {
+  const next = after.split("\n");
+  if (before === null) return `\n\nThe window now:\n${cut(next)}`;
+  const old = before.split("\n");
+  const kept = new Set(old.map((line) => line.trim()));
+  const numbered = (lines: readonly string[]) => lines.map((line) => /^\s*\[(\d+)\]/.exec(line)?.[1]).filter(Boolean);
+  const sameShape = numbered(old).join() === numbered(next).join() && old.length === next.length;
+  const fresh = next.filter((line) => !kept.has(line.trim()) && !line.trim().startsWith(`[${own}] `));
+  if (fresh.length === 0) return "";
+  if (sameShape) return `\n\nAlso changed:\n${fresh.map((line) => line.trim()).join("\n")}`;
+  return `\n\nThe window changed. Now:\n${cut(next)}`;
+}
+
+const cut = (lines: readonly string[]): string =>
+  `${lines.slice(0, CHANGED_LINES).join("\n")}${lines.length > CHANGED_LINES ? "\n… (read_window for the rest)" : ""}`;
+
+/** The agent's own pointer and keys (desktop/input.ts), loaded when a fallback first needs them: the window tree alone starts nothing (dashi-a11y-dump). */
+const hands = async () => (await import("../desktop/index.ts")).handsCall;
 
 /** A click at the element's centre with the agent's own pointer (D110): for what has no action of its own. */
 async function pointerClick(t: Target, ctx: RunContext): Promise<string | ToolResult> {
   const point = await centre(t.node);
   if (!point) return toolError(`[${t.number}] has no action of its own and no place on screen; take a screenshot of w${t.window.id} and click by pixel.`);
-  const result = await handsCall({ name: "click", window: t.window.id, x: point.x, y: point.y, button: "left", count: 1 }, ctx);
+  const result = await (await hands())({ name: "click", window: t.window.id, x: point.x, y: point.y, button: "left", count: 1 }, ctx);
   return result.isError ? result : "by the agent's pointer at its centre";
 }
 
@@ -109,8 +129,9 @@ export async function fillIn(call: { ref: number; text: string; window: number |
     const clicked = await pointerClick(t, ctx);
     if (typeof clicked !== "string") return clicked;
   }
-  const all = parseKeys("❖A");
+  const all = (await import("../tools/index.ts")).parseKeys("❖A");
   if (typeof all === "string") return toolError(all);
+  const handsCall = await hands();
   const selected = await handsCall({ name: "press_keys", window: t.window.id, keys: "❖A", chords: all }, ctx);
   if (selected.isError) return selected;
   const typed = await handsCall({ name: "type_text", window: t.window.id, text: call.text }, ctx);

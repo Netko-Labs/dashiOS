@@ -8,13 +8,13 @@
 import type { CompositorWindow } from "../../../compositor/index.ts";
 import type { A11yNode } from "../../atspi/index.ts";
 import { type RunContext, type ToolResult, toolError } from "../../context.ts";
-import { named, noWindow } from "../../lib/subject.ts";
 import { findKey, numbering, personWords, readTree } from "../read.ts";
 import type { Element, TreeBus, TreesRun } from "../types.ts";
 import { readNode } from "./bus.ts";
 import type { Numbered } from "./numbers.ts";
 import { renderRows, renderTree } from "./render.ts";
 import { has, S } from "./roles.ts";
+import { named, noWindow } from "./windows.ts";
 
 export interface Target {
   number: number;
@@ -62,7 +62,7 @@ export async function target(number: number, windowId: number | null, ctx: RunCo
     return toolError(
       `There is no [${number}]${windowId !== null ? ` in w${windowId}` : ""}: read_window${windowId !== null ? ` w${windowId}` : ""} gives the numbers.`,
     );
-  const window = await named(ctx.compositor, entry.window);
+  const window = await named(ctx, entry.window);
   if (!window) {
     trees.numbers.forgetWindow(entry.window);
     return noWindow(entry.window);

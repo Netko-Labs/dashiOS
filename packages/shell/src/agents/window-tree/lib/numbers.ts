@@ -21,6 +21,15 @@ export class TreeNumbers {
   private next = 1;
   private readonly byKey = new Map<string, number>();
   private readonly byNumber = new Map<number, Numbered>();
+  /** Each window's tree as last written out, to say what an action changed. */
+  private readonly written = new Map<number, string>();
+
+  /** The lines last written for `window`, and remember `text` as the new ones. */
+  swap(window: number, text: string): string | null {
+    const before = this.written.get(window) ?? null;
+    this.written.set(window, text);
+    return before;
+  }
 
   /** The number of `key` in `window`, the same every time it is asked. */
   number(window: number, key: string, parent: string | null, said: string): number {
@@ -47,5 +56,6 @@ export class TreeNumbers {
   /** The window closed: its numbers point nowhere now (never reused). */
   forgetWindow(window: number): void {
     for (const [number, entry] of this.byNumber) if (entry.window === window) this.byNumber.delete(number);
+    this.written.delete(window);
   }
 }

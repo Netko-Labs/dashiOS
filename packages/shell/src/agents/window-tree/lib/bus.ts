@@ -9,6 +9,9 @@
 import type { A11yNode } from "../../atspi/index.ts";
 import type { Element, ElementValue } from "../types.ts";
 import { FIELDS, has, R, ROWS, S } from "./roles.ts";
+
+const POPUPS = new Set<number>([R.DIALOG, R.ALERT, R.POPUP_MENU, R.TOOL_TIP, R.WINDOW]);
+
 import { isSecret } from "./semantics.ts";
 
 const ATSPI = "org.a11y.atspi.";
@@ -116,7 +119,10 @@ export async function readNode(node: A11yNode): Promise<Element | null> {
 
 /** Whether a node's subtree is left out: hidden by its toolkit (not visible), or gone. */
 const hidden = (element: Element): boolean =>
-  has(element.states, S.DEFUNCT) || (!has(element.states, S.VISIBLE) && element.role !== R.FRAME && element.role !== R.WINDOW && element.role !== R.DIALOG);
+  has(element.states, S.DEFUNCT) ||
+  !has(element.states, S.VISIBLE) ||
+  // A popup that is not showing (GTK keeps a password field's "Caps Lock is on" popover in the tree, visible but unmapped).
+  (POPUPS.has(element.role) && !has(element.states, S.SHOWING));
 
 /**
  * The tree under `root`, breadth first so a cut leaves the top whole.

@@ -8,7 +8,7 @@
  */
 
 import type { Element } from "../types.ts";
-import { DIALOGS, FIELDS, has, R, S } from "./roles.ts";
+import { FIELDS, has, R, S } from "./roles.ts";
 
 /** Names that say a field holds a password, a code or a card (as the web reader's rules: browser-extension/src/page/node.ts). */
 const SECRET_NAME =
@@ -82,5 +82,5 @@ export function isPrimary(element: Element): boolean {
 
 /** A sheet or dialog that holds the window's keyboard until answered. */
 export function isModal(element: Element): boolean {
-  return has(element.states, S.MODAL) || (DIALOGS.has(element.role) && element.role !== R.FILE_CHOOSER);
+  return has(element.states, S.MODAL) || element.role === R.DIALOG;
 }

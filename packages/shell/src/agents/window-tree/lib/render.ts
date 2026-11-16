@@ -15,7 +15,7 @@
 
 import type { Element } from "../types.ts";
 import { describe } from "./describe.ts";
-import { CHECKABLE, DIALOGS, FIELDS, has, LAYOUT, R, ROWS, S, TEXTUAL } from "./roles.ts";
+import { CHECKABLE, DIALOGS, FIELDS, has, LAYOUT, R, ROWS, roleWord, S, TEXTUAL } from "./roles.ts";
 import { type Hints, holdsFilledSecret, isModal } from "./semantics.ts";
 
 export interface RenderLimits {
@@ -72,6 +72,20 @@ class Out {
   }
 }
 
+/** The words of an element made only of text (a row holding a label), else "". */
+function wordsInside(element: Element): string {
+  if (element.children.length === 0 || FIELDS.has(element.role)) return "";
+  const parts: string[] = [];
+  const only = (node: Element): boolean => {
+    if (TEXTUAL.has(node.role) && node.children.length === 0) {
+      parts.push(wordsOf(node));
+      return true;
+    }
+    return (LAYOUT.has(node.role) || node.role === R.IMAGE || node.role === R.ICON) && !usable(node) && node.children.every(only);
+  };
+  return element.children.every(only) ? clean(parts.join(" ")).slice(0, 120) : "";
+}
+
 /** The line for a list's rows beyond the page given. */
 function moreRows(list: Element, number: number, ctx: RenderContext): string {
   const rows = list.children.map((child) => child.row ?? 0);
@@ -98,6 +112,9 @@ function walk(element: Element, parent: Element | null, indent: number, out: Out
   const dialog = DIALOGS.has(element.role) || (isModal(element) && element.role !== R.FRAME);
   if (dialog) return sheet(element, indent, out, ctx, hints);
   if (usable(element)) {
+    // A row or button with no name of its own is named by the words in it (GTK's list rows), which are not read again.
+    const words = element.name ? "" : wordsInside(element);
+    if (words) element = { ...element, name: words, children: [] };
     const said = describe(element, hints);
     const number = ctx.numberOf(element, parent, said);
     const more = ROWS.has(element.role) ? moreRows(element, number, ctx) : "";
@@ -118,7 +135,7 @@ function walk(element: Element, parent: Element | null, indent: number, out: Out
 function sheet(element: Element, indent: number, out: Out, ctx: RenderContext, hints: Hints): void {
   const theirs = ctx.personOnly?.(element) ?? null;
   const name = clean(element.name);
-  const head = `${DIALOGS.has(element.role) ? "dialog" : "sheet"}${name ? ` ${JSON.stringify(name)}` : ""} (modal)`;
+  const head = `${DIALOGS.has(element.role) ? roleWord(element.role) : "sheet"}${name ? ` ${JSON.stringify(name)}` : ""}${isModal(element) ? " (modal)" : ""}`;
   if (theirs) {
     out.line(indent, `${head}: ${theirs}`);
     return;
