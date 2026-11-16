@@ -3851,3 +3851,30 @@ short words, as the rulebook is written.
 - **Cost:** a tab with unsent typing closed by mistake loses that typing;
   Helium's ⇧❖T brings the tab back.
 - **Undo:** take `tabTools` out of `TOOLS`; `row()` back to `about()`.
+
+### D205. Agents read text files and write, move, copy and rename files; a replaced file goes to the Trash; one list of secret places
+
+- **Date:** 2026-11-15/16. `v09/reach`. "I can list and search files but
+  can't read their contents"; "No writing files outside Notes. No move,
+  copy, rename."
+- **Choice:** `read_text_file`, `write_text_file`, `move_file`,
+  `copy_file`, `rename_file`, all scope "files" (no new scope: the owner's
+  critical-only rule of 16 Nov drops per-scope sheets), none
+  `destructive`: a name already taken is refused unless `replace` is said,
+  and then what is there goes to the Trash first (`gio trash`), which is
+  the Undo. Paths: the home folder and removable drives as `list_folder`,
+  a new path placed by its existing folder. The secret places are one list
+  (`shared/files/secret-places.ts`): `list_folder`'s hidden folders, plus
+  browser profiles and names that say key, password, token or history;
+  `wait_for {file}` keeps to it too. A PDF is read through `pdftotext`
+  (poppler-utils, GPL, run as a separate program, never linked) when it is
+  installed. No command runner: docs/actions.md, "Files", says what one
+  would need.
+- **Why:** the owner's rule puts files the person can get back outside the
+  critical list; the Trash makes every write one they can.
+- **Cost:** `append` changes a file with no copy kept (only what was
+  added can be removed, by hand). A secret kept under another name
+  (`passwords.txt`) is not caught by the names. `trash_file` still asks on
+  a sheet: the registry's ask-every-time list is the `v09/askagent`
+  engineer's to change.
+- **Undo:** take `fileTextTools` out of `TOOLS`.

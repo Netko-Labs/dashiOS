@@ -18,6 +18,7 @@ import { askTools } from "./lib/ask.ts";
 import { browserTools } from "./lib/browser.ts";
 import { calendarTools } from "./lib/calendar.ts";
 import { clipboardTools } from "./lib/clipboard.ts";
+import { fileTextTools } from "./lib/file-text.ts";
 import { fileTools } from "./lib/files.ts";
 import { inputTools } from "./lib/input.ts";
 import { machineTools } from "./lib/machine.ts";
@@ -56,7 +57,7 @@ export const INSTRUCTIONS =
   "A window on a Space that does not show is still yours to work in: click, type, press keys, read its page or menus, and take a window screenshot of it, and the person's screen, pointer and keyboard stay as they are. " +
   "When the person asks you to work on another desktop, or out of their way, call work_in_space first: what you open then lands on that Space and nothing moves on their screen. Only then: otherwise work where they are, so they can watch. " +
   "Prefer list_windows to a screenshot when you only need titles or state. " +
-  "list_folder, search_files, open_file, and trash_file reach the person's files (their home folder and removable drives): trash_file asks them on screen every time, and nothing is deleted for good. " +
+  "list_folder, search_files, read_text_file, write_text_file, move_file, copy_file, rename_file, open_file, and trash_file reach the person's files (their home folder and removable drives, never places that hold secrets): a file replaced goes to the Trash first, and nothing is deleted for good. " +
   "list_menus and choose_menu_item reach an app's menu bar menus (its own, when it publishes them) without clicking. " +
   "Software (apps and updates) is searched, listed, and asked for with the software tools: request_software_install and request_software_update only ask, " +
   "the person answers on screen every time, and nothing is installed or updated without it. " +
@@ -85,6 +86,7 @@ export const TOOLS: readonly ToolDef[] = [
   ...previewTools,
   ...softwareTools,
   ...fileTools,
+  ...fileTextTools,
   ...secretTools,
   ...clipboardTools,
   ...aloneTools,

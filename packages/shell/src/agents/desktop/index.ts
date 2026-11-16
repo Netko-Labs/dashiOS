@@ -4,6 +4,7 @@ export { createEvent, listCalendars, listEvents } from "./calendar.ts";
 export { readClipboardHistory } from "./clipboard.ts";
 export { arrangeDisplay, listDisplays, setDisplayMode, setDisplayRotation, setDisplayScale, setPrimaryDisplay } from "./displays.ts";
 export { Elsewhere, type Opening, WorkPlaces, type WorkTarget } from "./elsewhere.ts";
+export { fileTextCall } from "./file-text.ts";
 export { listFolder, openFile, searchFiles, trashFile } from "./files.ts";
 export { Hands, type Payload } from "./hands.ts";
 export { handsCall } from "./input.ts";

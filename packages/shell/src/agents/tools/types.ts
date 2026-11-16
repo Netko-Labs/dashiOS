@@ -64,6 +64,10 @@ export type Call =
   | { name: "list_folder"; path: string; hidden: boolean; limit: number }
   | { name: "search_files"; query: string; folder: string | null; limit: number }
   | { name: "open_file" | "trash_file"; path: string }
+  | { name: "read_text_file"; path: string; from: number; count: number | null; maxChars: number }
+  | { name: "write_text_file"; path: string; text: string; mode: "create" | "replace" | "append" }
+  | { name: "move_file" | "copy_file"; path: string; to: string; replace: boolean }
+  | { name: "rename_file"; path: string; newName: string; replace: boolean }
   | { name: "list_notes"; folder: string | null; limit: number }
   | { name: "search_notes"; query: string; limit: number }
   | { name: "read_note"; id: string }

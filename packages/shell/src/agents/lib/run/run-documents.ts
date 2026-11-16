@@ -8,6 +8,11 @@ export const documentHandlers = {
   search_files: (call, ctx) => desktop.searchFiles(call, ctx),
   open_file: (call, ctx) => desktop.openFile(call, ctx),
   trash_file: (call, ctx) => desktop.trashFile(call, ctx),
+  read_text_file: (call, ctx) => desktop.fileTextCall(call, ctx),
+  write_text_file: (call, ctx) => desktop.fileTextCall(call, ctx),
+  move_file: (call, ctx) => desktop.fileTextCall(call, ctx),
+  copy_file: (call, ctx) => desktop.fileTextCall(call, ctx),
+  rename_file: (call, ctx) => desktop.fileTextCall(call, ctx),
   list_notes: (call, ctx) => desktop.listNotes(call.folder, call.limit, ctx),
   search_notes: (call, ctx) => desktop.searchNotesTool(call.query, call.limit, ctx),
   read_note: (call, ctx) => desktop.readNote(call.id, ctx),
@@ -22,6 +27,11 @@ export const documentHandlers = {
   | "search_files"
   | "open_file"
   | "trash_file"
+  | "read_text_file"
+  | "write_text_file"
+  | "move_file"
+  | "copy_file"
+  | "rename_file"
   | "list_notes"
   | "search_notes"
   | "read_note"

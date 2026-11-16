@@ -335,6 +335,43 @@ number and name, and holds for that connection only: nothing is saved
   after it open there. The Space holds for the plan's steps and is let go
   30 s after the last.
 
+### Files
+
+Agents reach the person's files under their home folder and removable
+drives (`/run/media/<user>`, `/media/<user>`), resolved through links, all
+in scope "files" (`shared/files/agent.ts`, `agent-place.ts`,
+`agent-text.ts`, `agent-moves.ts`; tools in `agents/tools/lib/files.ts` and
+`file-text.ts`):
+
+| Tool | What it does |
+| --- | --- |
+| `list_folder`, `search_files`, `open_file` | A folder's items, files by name, a file opened in its app on screen |
+| `trash_file {path}` | To the Trash, asked on a sheet every time (until the critical-only rule's owner changes the registry) |
+| `read_text_file {path, from_line?, lines?, max_chars?}` | A text file's lines (20,000 characters by default, 100,000 at most, files up to 20 MB), with the lines given, how many there are, and `next`; a PDF's text through `pdftotext -layout` when poppler-utils is installed, else said so; a file that isn't text is refused in words |
+| `write_text_file {path, text, replace?, append?}` | A new file; with `replace`, the one there goes to the Trash first; with `append`, added at its end; refused when a file is there and neither is said. 5 million characters at most; its folder must exist |
+| `move_file`, `copy_file {path, to, replace?}` | Into `to` when it is a folder, else to that path; a taken name is refused unless `replace`, and then the one there goes to the Trash first. The home folder and the standard folders are never moved |
+| `rename_file {path, name, replace?}` | A new name in the same folder, the same way |
+
+**Never reached**, whatever the tool (`shared/files/secret-places.ts`, the one
+list, tested in `agents-file-text.test.ts`): `.ssh`, `.gnupg`,
+`.password-store`, `.aws`, `.kube`, the keyrings, Dashi's own state and
+config, 1Password's (hidden from listings too); browser profiles (Helium,
+Chromium, Chrome, Brave, Edge, Vivaldi, Firefox, Thunderbird, their
+Flatpaks), `.docker`, `gh`'s and `op`'s config, fish's history; and files
+named like secrets (`.env` and `.env.*`, `.envrc`, SSH keys, `*.pem`,
+`*.key`, `*.p12`, `*.kdbx`, `.netrc`, `.pgpass`, `.git-credentials`,
+`.npmrc`, shell histories, `credentials.*`, `secret(s).*`). None of the
+writing tools is `destructive`: nothing is overwritten without a copy kept
+in the Trash (decisions.md D205).
+
+**No command runner yet.** An agent can't run `git status`, `ls` or
+`grep`. A restricted runner would need: a fixed list of programs with
+argument shapes checked (no shell, no `-c`, no `--exec`), the same roots
+and secret list applied to every path argument, a working folder inside
+them, no network, a time and output limit, the agents' sandbox
+(`dashi-agent`'s bubblewrap profile) with the home folder read-only except
+the folder named, and the log; that is its own piece of work.
+
 ## Websites
 
 Agents use web pages through Dashi's own extension in Helium, not through
