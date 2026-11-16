@@ -142,7 +142,7 @@ export function TalkView(props: TalkViewProps) {
   const { view } = props;
   const scroll = useRef<ViewHandle | null>(null);
   const lastText = view.turns.at(-1);
-  const tick = `${view.turns.length}:${lastText?.kind === "dashi" ? `${lastText.text.length}:${lastText.steps.length}` : ""}:${view.waiting?.id ?? ""}`;
+  const tick = `${view.turns.length}:${lastText?.kind === "dashi" ? `${lastText.text.length}:${lastText.steps.length}` : ""}:${view.waiting?.id ?? ""}:${view.background}`;
   // Kept at the newest line as words and steps come.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `tick` stands for what grew
   useEffect(() => scroll.current?.scrollToEnd(), [tick]);
