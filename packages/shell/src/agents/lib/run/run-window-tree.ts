@@ -24,7 +24,14 @@ async function waitInWindow(call: Extract<Call, { name: "wait_for" }>, window: n
   if (!asked) return toolError('With `window`, wait for `text`, `text_gone`, an `element` or `page: "quiet"`.');
   ctx.status(`Waiting on w${window}`);
   const waited = await waitOnWindow(window, asked, call.seconds * 1000, ctx);
-  return waitAnswer(call.until, waited.met, waited.ms, { window: `w${window}`, detail: waited.detail });
+  const answer = waitAnswer(call.until, waited.met, waited.ms, { window: `w${window}`, ...(waited.detail ? { detail: waited.detail } : {}) });
+  // The page's words, said of the window.
+  return {
+    ...answer,
+    content: answer.content.map((part) =>
+      "text" in part ? { ...part, text: part.text.replace("the page to stop changing", `w${window} to stop changing`) } : part,
+    ),
+  };
 }
 
 export async function windowTreeCall(call: TreeCall, ctx: RunContext): Promise<ToolResult> {

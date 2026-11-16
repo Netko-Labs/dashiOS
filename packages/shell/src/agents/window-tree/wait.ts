@@ -22,7 +22,7 @@ export type WindowUntil = { text: string; gone?: boolean } | { ref: number; stat
 export interface WindowWaited {
   met: boolean;
   ms: number;
-  /** What happened, in words a model reads: "“Saved” appeared", "[12] is enabled". */
+  /** What was seen: the words holding the text (as a page's wait gives them), "[12] is enabled", or "" when there is nothing to add. */
   detail: string;
 }
 
@@ -33,10 +33,18 @@ const IDLE_MS = 300;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-function holds(root: Element, words: string): boolean {
+/** The words of the first element that holds `words` (its name, text or value), cut at 200; null when none does. */
+function holds(root: Element, words: string): string | null {
   const want = words.toLowerCase();
-  const visit = (element: Element): boolean =>
-    `${element.name}\n${element.text ?? ""}\n${element.value?.text ?? ""}`.toLowerCase().includes(want) || element.children.some(visit);
+  const visit = (element: Element): string | null => {
+    const own = [element.name, element.text ?? "", element.value?.text ?? ""].find((each) => each.toLowerCase().includes(want));
+    if (own !== undefined) return own.replace(/\s+/g, " ").trim().slice(0, 200);
+    for (const child of element.children) {
+      const found = visit(child);
+      if (found !== null) return found;
+    }
+    return null;
+  };
   return visit(root);
 }
 
@@ -49,7 +57,8 @@ async function check(window: number, until: WindowUntil, ctx: RunContext): Promi
     const tree = await readTree(trees, shown);
     if (typeof tree === "string") return null;
     const there = holds(tree.root, until.text);
-    return there !== (until.gone === true) ? `“${until.text}” ${until.gone ? "is gone" : "appeared"}` : null;
+    if (until.gone === true) return there === null ? "" : null;
+    return there;
   }
   if ("ref" in until) {
     const t = await target(until.ref, window, ctx);
@@ -76,11 +85,11 @@ export async function waitOnWindow(window: number, until: WindowUntil, timeoutMs
     const from = mark(bus, where.app);
     await settle(bus, where.app, from, timeoutMs);
     const quiet = Date.now() - (bus.changesOf?.(where.app).at ?? 0) >= IDLE_MS;
-    return { met: quiet, ms: Date.now() - started, detail: quiet ? `w${window} is idle` : `w${window} kept changing` };
+    return { met: quiet, ms: Date.now() - started, detail: quiet ? "" : `w${window} kept changing` };
   }
   while (Date.now() - started < timeoutMs && !ctx.signal.aborted) {
     const met = await check(window, until, ctx);
-    if (met) return { met: true, ms: Date.now() - started, detail: met };
+    if (met !== null) return { met: true, ms: Date.now() - started, detail: met };
     const from = mark(bus, where.app);
     const deadline = Math.min(CHECK_MS, timeoutMs - (Date.now() - started));
     for (let waited = 0; waited < deadline && mark(bus, where.app) === from; waited += 25) await sleep(25);
