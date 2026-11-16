@@ -220,7 +220,13 @@ function keyHandler({ props, s, search, acts }: Parts): (key: "Escape" | "ArrowU
     // or closed when it was opened for the scope.
     if (search.ext.escape()) return;
     // A scope's own step back first: an extension's pushed view, a question in the field.
-    if (s.scoped?.scope.back?.()) return search.restart("");
+    if (s.scoped?.scope.back?.()) {
+      // Back on the row that was opened, with what was typed then (an extension's pushed view).
+      const back = s.scoped.scope.returnTo?.() ?? null;
+      search.restart(back?.query ?? "");
+      if (back) s.setHeld(back.row);
+      return;
+    }
     if (s.scoped) return s.scoped.alone ? onClose() : acts.enterScope(null);
     if (s.allApps && !query) return s.setAllApps(false);
     if (query) return search.restart("");

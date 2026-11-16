@@ -208,3 +208,45 @@ describe("a detail's Markdown table", () => {
     expect(drawn).toContain("After the table.");
   });
 });
+
+// Pass 37: Esc back from a pull request's detail put the selection on row 1, not on the one opened.
+test("Esc back from a detail keeps the row that opened it selected, with what was typed then", async () => {
+  const item = (n: number, title: string) => ({
+    t: "Item",
+    i: `k:${n}`,
+    p: { title },
+    c: [{ t: "ActionPanel", i: `p${n}`, c: [action(`push${n}`, "Show Details", "push")] }],
+  });
+  const list = tree({
+    t: "List",
+    i: "root",
+    p: { filter: "launcher" },
+    c: [item(41, "Fix the dock"), item(42, "Fix the grid"), item(43, "Speed up the grid")],
+  });
+  const view = new FakeView([list]);
+  view.act = async (node) => {
+    view.acted.push(node);
+    view.set({ stack: [...view.snapshot().stack, tree({ t: "Detail", i: `d:${node}`, p: { markdown: `# ${node}` } })] });
+    return { kind: "done" };
+  };
+  const scope = treeScope("Pull Requests", view);
+  const ids = ["tree:k:41", "tree:k:42", "tree:k:43"];
+  const launcher = await mount({ entries: [], scopes: [scope], scope: scope.id }, ids);
+  await launcher.key("ArrowDown");
+  await launcher.key("ArrowDown");
+  expect(launcher.rows(ids).selected).toBe("tree:k:43");
+  await launcher.enter();
+  expect(view.acted).toEqual(["push43"]);
+  expect(launcher.has("launcher:detail")).toBe(true);
+  await launcher.key("Escape");
+  expect(launcher.has("launcher:detail")).toBe(false);
+  expect(launcher.rows(ids).selected).toBe("tree:k:43");
+  // Filtered first: the words come back with the row.
+  await launcher.type("grid");
+  await launcher.key("ArrowDown");
+  expect(launcher.rows(ids)).toEqual({ ids: ["tree:k:42", "tree:k:43"], selected: "tree:k:43" });
+  await launcher.enter();
+  await launcher.key("Escape");
+  expect(launcher.rows(ids)).toEqual({ ids: ["tree:k:42", "tree:k:43"], selected: "tree:k:43" });
+  expect(launcher.tree()).toContain('"grid"');
+});
