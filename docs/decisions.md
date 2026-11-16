@@ -5785,3 +5785,18 @@ short words, as the rulebook is written.
     moss for Tip, broth for Warning, ume for Caution.
 - **Undo:** `launcher/lib/detail-view.tsx`, `detail-markdown.ts`,
   `detail-scroll.ts`; `step` in `use-acts.ts`.
+
+### D377. A command found by its own name stays under only the apps found by theirs
+
+- **Date:** 2026-11-16. `v09/fix-polish-2`, seen in passes 38 and 39.
+- **Found:** "emoji" opened GNOME Characters, not the Emoji extension. Both
+  have "emoji" as a keyword, so both matched in the keyword tier, and a
+  command always stayed under an app of its tier.
+- **Decision:** a keyword's match whose item's name matched too (at a
+  word's start or better: "Search Emoji") is marked `named`. A command or
+  a menu row found by its name (or such a keyword) stays under only the
+  apps found by theirs; one found only by a keyword still stays under
+  every app found as well ("math": Calculator and Characters before a
+  command whose keyword it is). An app's own name still wins ("characters"
+  is Characters).
+- **Undo:** `byName` and `namedFloors` in `launcher/ranking/rank.ts`.

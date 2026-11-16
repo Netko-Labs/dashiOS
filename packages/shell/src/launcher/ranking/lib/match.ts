@@ -42,6 +42,8 @@ export interface Hit {
   kind: MatchKind;
   /** Order inside the tier, 0–39: how much of the target the query covers, how early it starts. */
   close: number;
+  /** A keyword's match that the name matched too, at a word's start or better ("emoji" in Search Emoji, whose keyword it also is). */
+  named?: true;
 }
 
 const CLOSE = 39;

@@ -61,6 +61,10 @@ const YIELDS_TO_APPS: ReadonlySet<RankItem["kind"]> = new Set(["command", "menu"
 /** `value`, kept under `ceiling` (Infinity: no app to stay under) and still ordered by itself. */
 const under = (value: number, ceiling: number): number => (value < ceiling ? value : ceiling - 1 + value / 1e6);
 
+/** Whether the name matched: a match of the name's own, or a keyword's that the name matched too (`named`); an intent is a keyword. */
+const byName = (hit: Hit): boolean => hit.named === true || !KEYWORD_KINDS.has(hit.kind);
+const KEYWORD_KINDS: ReadonlySet<Hit["kind"]> = new Set(["intent", "keyword", "keywordPart", "keywordLoose", "keywordTypo"]);
+
 const better = (a: Hit | null, b: Hit | null): Hit | null => {
   if (!a) return b;
   if (!b) return a;
@@ -101,7 +105,8 @@ function bestHit<T extends RankItem>(entry: Prepared<T>, query: Query, missing: 
     // A keyword that wins over the name still owes something to how the name matched: "text" is
     // a keyword of Messages and of Text Editor, and Text Editor's name starts with it.
     if (best && TIER[best.kind] > TIER[name?.kind ?? "keywordTypo"]) {
-      return { kind: best.kind, close: best.close * 0.8 + (name ? (8 * TIER[name.kind]) / TIER.exact : 0) };
+      const named = name !== null && TIER[name.kind] >= TIER.acronym;
+      return { kind: best.kind, close: best.close * 0.8 + (name ? (8 * TIER[name.kind]) / TIER.exact : 0), ...(named ? { named: true as const } : {}) };
     }
     best = better(best, name);
   }
@@ -153,11 +158,14 @@ export function rank<T extends RankItem>(index: RankIndex<T>, query: string, opt
   const strong: Ranked<T>[] = [];
   const weak: Ranked<T>[] = [];
   // The lowest app score in each tier, of the strong matches and the weak: what a command or a menu row stays under.
-  const appFloors = { strong: new Float64Array(TIERS + 2).fill(Number.POSITIVE_INFINITY), weak: new Float64Array(TIERS + 2).fill(Number.POSITIVE_INFINITY) };
+  // A command found by its own name stays under only the apps found by theirs: "emoji" is Characters' keyword, but Search Emoji's name.
+  const floor = (): Float64Array => new Float64Array(TIERS + 2).fill(Number.POSITIVE_INFINITY);
+  const appFloors = { strong: floor(), weak: floor() };
+  const namedFloors = { strong: floor(), weak: floor() };
   // Apps first, so a command's or a menu row's ceiling is known when it is scored.
   for (const apps of [true, false]) {
     if (!apps) {
-      for (const floors of [appFloors.strong, appFloors.weak])
+      for (const floors of [appFloors.strong, appFloors.weak, namedFloors.strong, namedFloors.weak])
         for (let tier = TIERS; tier >= 0; tier--) floors[tier] = Math.min(floors[tier] as number, floors[tier + 1] as number);
     }
     for (const entry of index.prepared) {
@@ -178,9 +186,13 @@ export function rank<T extends RankItem>(index: RankIndex<T>, query: string, opt
       }
       if (!hit) continue;
       const floors = isStrong ? appFloors.strong : appFloors.weak;
+      const named = isStrong ? namedFloors.strong : namedFloors.weak;
+      const tier = TIER[hit.kind];
       let value = score(entry, hit, picks, signals);
-      if (apps) floors[TIER[hit.kind]] = Math.min(floors[TIER[hit.kind]] as number, value);
-      else if (YIELDS_TO_APPS.has(entry.item.kind)) value = under(value, floors[TIER[hit.kind]] as number);
+      if (apps) {
+        floors[tier] = Math.min(floors[tier] as number, value);
+        if (byName(hit)) named[tier] = Math.min(named[tier] as number, value);
+      } else if (YIELDS_TO_APPS.has(entry.item.kind)) value = under(value, (byName(hit) ? named : floors)[tier] as number);
       keep(isStrong ? strong : weak, { item: entry.item, match: hit.kind, score: value, sortName: entry.sortName }, limit);
     }
   }
