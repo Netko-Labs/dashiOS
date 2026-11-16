@@ -5892,3 +5892,19 @@ short words, as the rulebook is written.
   or a tool that edited the file meant it. No file watcher: nothing runs
   while the launcher is not asked.
 - **Undo:** `lookAgain` in `launcher/ranking/store.ts`.
+
+### D387. The launcher fits a short screen: higher first, then shorter
+
+- **Date:** 2026-11-16. `v09/fix-polish-3`, from passes 41 and 42.
+- **Found:** the launcher's surface was 600 tall, 120 under the menu bar, on
+  every screen. On the VM's 1098 × 686 (1922 × 1201 at 175%) that is 748: its
+  foot ran under the screen's edge, and a detail scrolled to its end showed
+  its last line cut. A 1280 × 800 laptop at 125% or more is the same.
+- **Decision:** when it opens, the room under the bar on the person's screen
+  is asked with where the person is (one `outputs` call beside the one
+  already made). The gap above shrinks first, to 12; then the surface is
+  shorter (never under 240), with 12 free under its foot. Its measures take
+  the surface's height (a React context), so fewer rows are listed, as at a
+  larger text size: nothing is clipped. The window pictures follow its top.
+- **Undo:** `launcherPlace` in `launcher/place.ts`; `launcherRooms` in
+  `boot/lib/launcher-view.tsx`; `SurfaceHeight` in `launcher/lib/measures.ts`.

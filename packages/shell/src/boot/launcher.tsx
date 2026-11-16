@@ -42,7 +42,7 @@ import { languagesOf, messageLocales } from "../shared/locale/index.ts";
 import type { Handoff } from "./agents.ts";
 import type { Catalog } from "./apps.ts";
 import { LauncherKeyboard, TYPE_AHEAD_LIMIT_MS } from "./keys.ts";
-import { type LauncherView, launcherElement, type Opening, surfaceOptions } from "./lib/launcher-view.tsx";
+import { type LauncherView, launcherElement, launcherRooms, type Opening, surfaceOptions } from "./lib/launcher-view.tsx";
 import type { Look } from "./look.ts";
 import type { OverlayKind } from "./overlays.tsx";
 import type { LateParts } from "./parts.ts";
@@ -103,10 +103,10 @@ function startFileSearch(services: Services): LauncherFiles {
 
 /**
  * The open launcher's window pictures (launcher/pictures.ts), from its surface's pixels to the
- * screen's: layer-shell puts it centered across the usable area, LAUNCHER.top down. The first
+ * screen's: layer-shell puts it centered across the usable area, its top (launcher/place.ts) down. The first
  * pictures wait for the list to finish growing to make room for them. In order, one at a time.
  */
-function windowPictures(compositor: Compositor | null, output: () => string | undefined, heightMs: () => number | undefined) {
+function windowPictures(compositor: Compositor | null, where: () => { output: string | undefined; top: number }, heightMs: () => number | undefined) {
   let shown = false;
   let queue: Promise<void> = Promise.resolve();
   return (rects: PictureRect[]): void => {
@@ -118,9 +118,10 @@ function windowPictures(compositor: Compositor | null, output: () => string | un
         if (wait > 0) await Bun.sleep(wait);
         if (rects.length === 0) return void (await compositor.windowThumbnails({ rects: [] }));
         const outputs = placedOutputs(await compositor.outputs());
-        const screen = outputs.find((each) => each.name === output()) ?? outputs[0];
+        const { output, top } = where();
+        const screen = outputs.find((each) => each.name === output) ?? outputs[0];
         if (!screen) return;
-        await compositor.windowThumbnails({ rects: picturesOnScreen(rects, launcherOrigin(screen.usable, LAUNCHER.width, LAUNCHER.top)) });
+        await compositor.windowThumbnails({ rects: picturesOnScreen(rects, launcherOrigin(screen.usable, LAUNCHER.width, top)) });
       })
       .catch((error) => console.error("dashi-shell: the launcher's window pictures:", error));
   };
@@ -173,10 +174,10 @@ export function startLauncher(needs: LauncherNeeds): LauncherParts {
   });
   const keyboard = new LauncherKeyboard(compositor, launcherKeys, overlays);
   /** The screen the open launcher is on, for its windows' pictures. */
-  const where: { output: string | undefined } = { output: undefined };
+  const where: { output: string | undefined; top: number } = { output: undefined, top: LAUNCHER.top };
   const pictures = windowPictures(
     compositor,
-    () => where.output,
+    () => where,
     () => heightMs(),
   );
   // The Metal host publishes an accessibility tree (launcher/access.ts): the launcher's rows then say what they are.
@@ -224,9 +225,12 @@ export function startLauncher(needs: LauncherNeeds): LauncherParts {
     heightMs,
     access,
   };
-  const opener = launcherOpener(needs, keyboard, appIndex, (opening) => (onClosed, output) => {
+  const rooms = launcherRooms(compositor, needs.screens.whereIsPerson);
+  const opener = launcherOpener(needs, keyboard, appIndex, rooms.whereIsPerson, (opening) => (onClosed, output) => {
+    const place = rooms.placeOn(output);
     where.output = output;
-    return surface.open(surfaceOptions(output), launcherElement(view, opening), onClosed);
+    where.top = place.top;
+    return surface.open(surfaceOptions(output, place), launcherElement(view, { ...opening, height: place.height }), onClosed);
   });
   return { opener, appIndex, keyboard, prefs, languages };
 }
@@ -234,7 +238,13 @@ export function startLauncher(needs: LauncherNeeds): LauncherParts {
 type Surface = (onClosed: () => void, output: string | undefined) => ReturnType<OpenOverlay>;
 
 /** How the launcher opens and closes: never over the lock screen, its keys with it, its context read first. */
-function launcherOpener(needs: LauncherNeeds, keyboard: LauncherKeyboard, appIndex: AppIndex, surfaceFor: (opening: Opening) => Surface): LauncherOpener {
+function launcherOpener(
+  needs: LauncherNeeds,
+  keyboard: LauncherKeyboard,
+  appIndex: AppIndex,
+  whereIsPerson: () => Promise<string | undefined>,
+  surfaceFor: (opening: Opening) => Surface,
+): LauncherOpener {
   const { overlays, handoff, late } = needs;
   const open = (presented: Presented | null = null, scope: string | null = null, window: number | null = null, conversation = false): void => {
     // Never behind the lock screen (a dashi:// link, Search…): it would hold keys nobody sees.
@@ -254,7 +264,7 @@ function launcherOpener(needs: LauncherNeeds, keyboard: LauncherKeyboard, appInd
       keyboard.closed();
     };
     const surface = surfaceFor({ presented, scope, entries, conversation, close });
-    const showing = overlays.showOn("launcher", needs.screens.whereIsPerson, (onClosed, output) => {
+    const showing = overlays.showOn("launcher", whereIsPerson, (onClosed, output) => {
       opened = true;
       // Its keys come with the surface and go with it, however it closes.
       return surface(() => {

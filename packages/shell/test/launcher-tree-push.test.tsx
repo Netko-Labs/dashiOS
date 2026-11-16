@@ -119,11 +119,11 @@ test("the launcher's own rows (Loading…, Nothing in …) carry none of the vie
   const view = new FakeView([prs(true)]);
   const scope = treeScope("Pull Requests", view);
   expect(scope.sections("").flatMap((section) => section.rows.map((each) => each.id))).toEqual(["tree:loading"]);
-  expect(scope.verbs(row("tree:loading"))).toEqual([]);
+  expect(scope.verbs(row("tree:loading"), "")).toEqual([]);
   expect(scope.hints?.(row("tree:loading"))).toEqual([]);
   view.set({ stack: [prs(false)] });
   expect(scope.sections("nothing like it").flatMap((section) => section.rows.map((each) => each.title))).toEqual(["Nothing in GitHub for “nothing like it”"]);
-  expect(scope.verbs(row("tree:empty"))).toEqual([]);
+  expect(scope.verbs(row("tree:empty"), "")).toEqual([]);
   // An item still has the view's actions after its own (❖K).
-  expect(scope.verbs(row("tree:k:47608")).map((verb) => verb.title)).toEqual(["Choose Repository…", "Use a GitHub Token…"]);
+  expect(scope.verbs(row("tree:k:47608"), "").map((verb) => verb.title)).toEqual(["Choose Repository…", "Use a GitHub Token…"]);
 });
