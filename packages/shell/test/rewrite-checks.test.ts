@@ -144,3 +144,13 @@ test("a correction copied in, not carried out, is refused: no word of substance 
   // Said twice, kept twice; short words are not counted.
   expect(checkAnswer("The day after the day we met, no, the week after.", "The day after the week after.")).toMatchObject({ ok: true });
 });
+
+test("a cue the answer keeps must be followed by what followed it when said (D202, found in the VM installed)", () => {
+  const said = "Quiero un café con leche, mejor dicho, un té.";
+  expect(checkAnswer(said, "Quiero un té con leche, mejor dicho.")).toEqual({ ok: false, check: "after-cue" });
+  expect(checkAnswer(said, "Quiero un té.")).toMatchObject({ ok: true, text: "Quiero un té." });
+  // A cue the speaker meant stays, and so does what follows it.
+  expect(checkAnswer("Um, no, I mean it.", "No, I mean it.")).toMatchObject({ ok: true });
+  // "Quiero" opens many a sentence: in the untouched start it is no cue.
+  expect(checkAnswer("Quiero dos cafés, o sea, no, tres cafés con leche.", "Quiero tres cafés con leche.")).toMatchObject({ ok: true });
+});

@@ -15,6 +15,7 @@ export type CheckName =
   | "lines"
   | "overlap"
   | "repeated"
+  | "after-cue"
   | "opening"
   | "earlier"
   | "dropped"
@@ -72,6 +73,25 @@ function keepsNots(said: readonly string[], kept: readonly string[]): boolean {
 /** What was said after the last cue is the final version: an answer without it kept the earlier one. */
 function keepsLater(said: readonly string[], kept: readonly string[]): boolean {
   return finalWords(said).every((word) => kept.some((other) => same(word, other)));
+}
+
+/**
+ * A cue the answer still holds was not carried out there, so what follows it must be what followed it when said
+ * ("Quiero un café con leche, mejor dicho, un té" answered "Quiero un té con leche, mejor dicho" moved the later
+ * words before the cue and kept it: refused, found in the VM).
+ */
+function keepsAfterCue(said: readonly string[], kept: readonly string[]): boolean {
+  const at = kept.findLastIndex(isCue);
+  if (at < 0) return true;
+  // In the untouched start of the sentence it was no cue ("Quiero tres cafés": "quiero" as in "quiero decir").
+  const start = said.filter((word) => !isAside(word));
+  const head = kept.slice(0, at + 1).filter((word) => !isAside(word));
+  if (head.every((word, index) => same(word, start[index] ?? ""))) return true;
+  const from = said.lastIndexOf(kept[at] ?? "");
+  if (from < 0) return true;
+  const after = kept.slice(at + 1);
+  const before = said.slice(from + 1);
+  return after.length === before.length && after.every((word, index) => same(word, before[index] ?? ""));
 }
 
 /** A cue the transcript opens with takes nothing back: it must still open the answer. */
@@ -155,6 +175,7 @@ export function checkAnswer(transcript: string, answer: string, vocabulary: read
   if (!repeatsNothing(said, kept)) return { ok: false, check: "repeated" };
   if (!keepsOpening(said, kept)) return { ok: false, check: "opening" };
   if (!keepsLater(said, kept)) return { ok: false, check: "earlier" };
+  if (!keepsAfterCue(said, kept)) return { ok: false, check: "after-cue" };
   if (!keepsQuotes(transcript, text)) return { ok: false, check: "quotes" };
   if (!keepsNumbers(said, kept)) return { ok: false, check: "numbers" };
   if (!keepsNots(said, kept)) return { ok: false, check: "negation" };

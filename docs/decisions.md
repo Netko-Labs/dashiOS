@@ -4557,3 +4557,20 @@ short words, as the rulebook is written.
   with SpeakoFlow Mini and gains only its full stop with Gemma: its
   wanted form (a quotation inside it) is beyond both.
 - **Undo:** `RUN_ON_WORDS` in `dictation/lib/gate.ts`.
+
+### D202. An answer that keeps a cue must keep what followed it
+
+- **Date:** 2026-11-16. `v09/voicejoin`, from the installed packages in
+  the VM: "Quiero un café con leche, mejor dicho, un té." landed "Quiero un
+  té con leche, mejor dicho." The model moved the later words before the
+  cue, kept the cue, and every check passed it. (On the laptop the same
+  sentence comes back right; the session's longer vocabulary changes the
+  answer.)
+- **Choice:** a check, `after-cue`: when the answer still holds a cue word
+  past a change, the words after it must be the words that followed it
+  when said. A cue in the untouched start of the sentence is no cue
+  ("Quiero tres cafés": "quiero" as in "quiero decir").
+- **Measured:** the 370 pairs: no right answer refused, restraint 135 of
+  142, self-corrections 101 by the model (99 before; the model's answers
+  vary by one or two between runs).
+- **Undo:** `keepsAfterCue` in `rewrite/checks.ts`.
