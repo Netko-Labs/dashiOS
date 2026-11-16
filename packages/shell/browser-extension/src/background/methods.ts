@@ -7,6 +7,7 @@
 import { renumber } from "../page/refs.ts";
 import { ask, documentsOf, framesOf, tableOf, watchLoad } from "./frames.ts";
 import { outcomeInTab } from "./outcome.ts";
+import { tabMethod } from "./tabs.ts";
 import { waitInTab } from "./wait.ts";
 
 type Params = Record<string, unknown>;
@@ -254,6 +255,10 @@ export const METHODS: Record<string, Method> = {
   field,
   wait: async (params) => waitInTab(idOf(await tabOf(params)), params),
   outcome: async (params) => outcomeInTab(idOf(await tabOf(params)), params),
+  close: async (params) => tabMethod("close", idOf(await tabOf(params))),
+  reload: async (params) => tabMethod("reload", idOf(await tabOf(params))),
+  back: async (params) => tabMethod("back", idOf(await tabOf(params))),
+  forward: async (params) => tabMethod("forward", idOf(await tabOf(params))),
   filled: async (params) => {
     const tab = idOf(await tabOf(params));
     if (typeof params.ref === "number") return (await onElement(params, "filled")).result;

@@ -18,7 +18,9 @@ import { pageWords } from "./lib/page-parts.ts";
 
 type BrowserCall = Extract<
   Call,
-  { name: "open_url" | "read_page" | "click_element" | "fill_element" | "select_option" | "press" | "scroll_page" | "list_tabs" | "switch_tab" }
+  {
+    name: "open_url" | "read_page" | "click_element" | "fill_element" | "select_option" | "press" | "scroll_page";
+  }
 >;
 
 export const NO_EXTENSION =
@@ -28,9 +30,9 @@ export const NO_EXTENSION =
 /** How long open_url waits for a browser it started to connect. */
 const START_MS = 20_000;
 
-const tabId = (tab: TabInfo): string => `t${tab.id}`;
+export const tabId = (tab: TabInfo): string => `t${tab.id}`;
 
-const failed = (error: unknown): ToolResult => toolError(error instanceof Error ? error.message : String(error));
+export const failed = (error: unknown): ToolResult => toolError(error instanceof Error ? error.message : String(error));
 
 /** Whether a window is Dashi's browser's (Helium's app id). */
 const isBrowser = (appId: string): boolean => /^helium/i.test(appId);
@@ -40,7 +42,7 @@ function browserEntry() {
   return loadEntries().find((entry) => /^helium/i.test(entry.id) || entry.wmClass?.toLowerCase() === "helium") ?? null;
 }
 
-async function linkFor(ctx: RunContext, start: boolean): Promise<BrowserLink | ToolResult> {
+export async function linkFor(ctx: RunContext, start: boolean): Promise<BrowserLink | ToolResult> {
   const link = ctx.browser.link();
   if (link) return link;
   const entry = start ? browserEntry() : null;
@@ -69,7 +71,7 @@ export async function frontPage(link: BrowserLink | null): Promise<{ url: string
   }
 }
 
-async function listTabs(link: BrowserLink): Promise<{ tabs: TabInfo[]; focusedWindow: number | null }> {
+export async function listTabs(link: BrowserLink): Promise<{ tabs: TabInfo[]; focusedWindow: number | null }> {
   const result = await link.ask("tabs", {});
   const tabs = (Array.isArray(result.tabs) ? result.tabs : []).map(parseTab).filter((tab): tab is TabInfo => tab !== null);
   return { tabs, focusedWindow: typeof result.focusedWindow === "number" ? result.focusedWindow : null };
@@ -84,7 +86,7 @@ export async function chooseTab(link: BrowserLink, wanted: number | null, ctx: R
   return last ?? front ?? toolError("The browser has no tab open; open_url opens one.");
 }
 
-const isResult = (value: object): value is ToolResult => "content" in value;
+export const isResult = (value: object): value is ToolResult => "content" in value;
 
 /** The tab's site, once the person allowed it for this agent; else why not. */
 async function allowedSite(tab: TabInfo, ctx: RunContext): Promise<string | ToolResult> {
@@ -96,7 +98,7 @@ async function allowedSite(tab: TabInfo, ctx: RunContext): Promise<string | Tool
 const refusedSite = (site: string): ToolResult => toolError(`The person did not allow you to use ${site}. Don't try again unless they ask you to.`);
 
 /** What a page's result says of a tab: its id and address, and its title where the agent may use the site. */
-function about(tab: TabInfo, ctx: RunContext): Record<string, unknown> {
+export function about(tab: TabInfo, ctx: RunContext): Record<string, unknown> {
   const site = siteOf(tab.url);
   const allowed = site !== null && ctx.browser.mayUse(site);
   return { tab: tabId(tab), url: allowed ? tab.url : site, ...(allowed ? { title: tab.title } : {}) };
@@ -152,6 +154,7 @@ async function openUrl(call: Extract<Call, { name: "open_url" }>, ctx: RunContex
     const tab = parseTab(result.tab);
     if (!tab) return toolError("The browser didn't say which tab it opened.");
     ctx.browser.tab = tab.id;
+    if (call.tab === null) ctx.browser.opened?.add(tab.id);
     if (own) ctx.elsewhere.tab = tab.id;
     const shown = about(tab, ctx);
     // Where it really is: a redirect (to a sign-in page, say) is said, the final address only for a site allowed.
@@ -181,7 +184,10 @@ async function clickElement(call: Extract<Call, { name: "click_element" }>, ctx:
   return onPage(ctx, call.tab, "Clicking on", async (link, tab) => {
     const result = await link.ask("click", { tab: tab.id, ref: call.ref });
     const opened = parseTab(result.opened);
-    if (opened) ctx.browser.tab = opened.id;
+    if (opened) {
+      ctx.browser.tab = opened.id;
+      ctx.browser.opened?.add(opened.id);
+    }
     const now = opened ?? parseTab(result.tab) ?? tab;
     const changes = parseChanges(result.changes);
     const moved = opened
@@ -257,32 +263,5 @@ export async function browserCall(call: BrowserCall, ctx: RunContext): Promise<T
       return press(call, ctx);
     case "scroll_page":
       return scrollPage(call, ctx);
-    case "list_tabs": {
-      const link = await linkFor(ctx, false);
-      if (isResult(link)) return link;
-      ctx.status("Looking at your tabs");
-      try {
-        const { tabs } = await listTabs(link);
-        return json({
-          tabs: tabs.map((tab) => ({ ...about(tab, ctx), active: tab.active, window: tab.windowId, ...(tab.id === ctx.browser.tab ? { yours: true } : {}) })),
-        });
-      } catch (error) {
-        return failed(error);
-      }
-    }
-    case "switch_tab": {
-      const link = await linkFor(ctx, false);
-      if (isResult(link)) return link;
-      ctx.status("Switching tabs");
-      try {
-        const result = await link.ask("activate", { tab: call.tab });
-        const tab = parseTab(result.tab);
-        if (!tab) return toolError(`There is no tab t${call.tab}; list_tabs shows them.`);
-        ctx.browser.tab = tab.id;
-        return text(`Tab ${tabId(tab)} is in front: ${String(about(tab, ctx).url)}.`, about(tab, ctx));
-      } catch (error) {
-        return failed(error);
-      }
-    }
   }
 }

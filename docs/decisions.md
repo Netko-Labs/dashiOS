@@ -3831,3 +3831,23 @@ short words, as the rulebook is written.
   page whose grid is built of identical anonymous `div`s inside other
   lists can pick the wrong container; `all` and `find` still work.
 - **Undo:** `PAGE_PART` to 60,000 and the default mode stays `all`.
+
+### D204. Tab tools; closing a tab never asks; list_tabs names every tab to an agent that may see windows
+
+- **Date:** 2026-11-15, changed 16 Nov by the owner's rule ("permissions
+  should be only for critical operations": the `v09/askagent` decision).
+  "I closed Facebook with a ❖W keystroke and hoped it hit the right tab."
+- **Choice:** `close_tab`, `reload_tab`, `go_back`, `go_forward`, all "web",
+  none `destructive`: closing a tab is not on the critical list (no money,
+  secret, lasting loss, system change, or speaking for the person), so it
+  just runs and says so. A connection keeps the tabs it opened (open_url
+  without `tab`, a link that opened one) and `list_tabs` marks them
+  `yours`; the description asks a model to close the person's tabs only
+  when they ask. `list_tabs` gives title and address for every tab when
+  the agent may see windows (Helium's window titles name the tab in front
+  anyway) or was allowed the site; else the site only.
+- **Before the rule (not kept):** a per-call yes for the person's tab
+  (`RunContext.yes`); taken out the same day, so consent has one mechanism.
+- **Cost:** a tab with unsent typing closed by mistake loses that typing;
+  Helium's ⇧❖T brings the tab back.
+- **Undo:** take `tabTools` out of `TOOLS`; `row()` back to `about()`.

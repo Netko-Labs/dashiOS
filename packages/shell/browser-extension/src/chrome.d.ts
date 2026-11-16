@@ -38,13 +38,19 @@ declare namespace chrome {
       pendingUrl?: string;
       status?: "loading" | "complete" | "unloaded";
     }
-    function query(query: { active?: boolean; lastFocusedWindow?: boolean; windowType?: "normal" }): Promise<Tab[]>;
+    function query(query: { active?: boolean; lastFocusedWindow?: boolean; windowType?: "normal"; windowId?: number }): Promise<Tab[]>;
     function get(tabId: number): Promise<Tab>;
     function update(tabId: number, change: { url?: string; active?: boolean }): Promise<Tab>;
     function create(options: { url: string; active?: boolean; windowId?: number }): Promise<Tab>;
     function sendMessage(tabId: number, message: unknown, options: { frameId: number }): Promise<unknown>;
     function getZoom(tabId: number): Promise<number>;
+    function remove(tabId: number): Promise<void>;
+    function reload(tabId: number, options?: { bypassCache?: boolean }): Promise<void>;
+    function goBack(tabId: number): Promise<void>;
+    function goForward(tabId: number): Promise<void>;
+    function captureVisibleTab(windowId: number, options: { format: "png" | "jpeg"; quality?: number }): Promise<string>;
     const onRemoved: Event<(tabId: number) => void>;
+    const onUpdated: Event<(tabId: number, change: { status?: "loading" | "complete"; url?: string }, tab: Tab) => void>;
   }
 
   namespace windows {

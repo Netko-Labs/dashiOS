@@ -430,7 +430,9 @@ The tools (`src/agents/tools/lib/browser.ts`, carried out by
 | `select_option {ref, value, tab?}` | Chooses a `<select>`'s option by value or label, says the choice now, and what changed on the page (a load, `changes`) |
 | `press {keys, tab?}` | Keys in Dashi's notation to the page's focus, with the browser's defaults done when the page doesn't prevent them (Return submits, Tab moves, Page keys scroll); says what followed, as `click_element` does |
 | `scroll_page {direction?, pages?, ref?, tab?}` | Scrolls, or brings an element into view; says whether the page is at its end |
-| `list_tabs`, `switch_tab {tab}` | The browser's tabs (title and address only for allowed sites), and bringing one forward |
+| `list_tabs`, `switch_tab {tab}` | Every tab in every Helium window: id, title and address (for an agent that may see windows, or a site it was allowed; else the site), `front` in its window, `inFrontWindow`, `loading`, `yours` (it opened it), `lastUsed`; and bringing one forward |
+| `close_tab {tab?}` | Closes a tab, with no question: closing a tab loses nothing for good (the consent rule of 16 Nov: only critical operations ask; D204). The tool asks a model to close the person's tabs only when they ask; `list_tabs` marks the agent's own `yours` |
+| `reload_tab {tab?}`, `go_back {tab?}`, `go_forward {tab?}` | The browser's own reload, Back and Forward, waited out by its events (a page from the back-forward cache ends the wait by `tabs.onUpdated`); says where the tab is, or that there was no page to go to |
 | `wait_for {text \| text_gone \| element+state \| page \| window_title \| file, timeout?, tab?}` | Waits for one thing, watched where it happens: in the page by the extension (a MutationObserver, the load events), a window's title by the shell on each compositor event and every 250 ms, a file by its folder. Answers `met`, what it saw (the line the text is in, a window's id) and `ms`. 10 s by default, 60 at most; a wait that runs out is `met: false`, not an error (decisions.md D200) |
 
 Without `tab`, a tool uses the tab the agent used last, else the one in

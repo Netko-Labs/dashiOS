@@ -237,30 +237,4 @@ export const browserTools: readonly ToolDef[] = [
     },
     build: ({ direction, pages, ref, tab }) => ({ name: "scroll_page", direction: direction ?? "down", pages: pages ?? 1, ref: ref ?? null, tab: tab ?? null }),
   }),
-  tool({
-    name: "list_tabs",
-    title: "List the browser's tabs",
-    description:
-      "The browser's tabs: each one's id, whether it is in front in its window, and (for sites you were allowed) its title and address; for others, just the site.",
-    scope: "web",
-    readOnly: true,
-    destructive: false,
-    idempotent: true,
-    args: {},
-    build: () => ({ name: "list_tabs" }),
-  }),
-  tool({
-    name: "switch_tab",
-    title: "Switch to a browser tab",
-    description: "Bring a tab to the front of its window; it becomes the tab the website tools use.",
-    scope: "web",
-    readOnly: false,
-    destructive: false,
-    args: {
-      tab: custom({ type: "string", description: 'A tab id from list_tabs, like "t12".' }, parseTabId, (given) =>
-        given === undefined || given === null ? "`tab` is required: an id from list_tabs." : `\`${String(given)}\` is not a tab id; ids look like "t12".`,
-      ),
-    },
-    build: ({ tab }) => ({ name: "switch_tab", tab }),
-  }),
 ];

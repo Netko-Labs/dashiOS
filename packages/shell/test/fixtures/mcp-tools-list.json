@@ -424,7 +424,7 @@
     {
       "name": "list_tabs",
       "title": "List the browser's tabs",
-      "description": "The browser's tabs: each one's id, whether it is in front in its window, and (for sites you were allowed) its title and address; for others, just the site.",
+      "description": "Every tab in every Helium window: its id, title and address, which is in front of its window and which window is in front, and the tabs you opened.",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -456,6 +456,98 @@
       },
       "annotations": {
         "title": "Switch to a browser tab",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "close_tab",
+      "title": "Close a browser tab",
+      "description": "Close a tab (default: the one you used last). Prefer closing tabs you opened (list_tabs marks them `yours`); close the person's only when they ask.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tab": {
+            "type": "string",
+            "description": "A tab id from list_tabs or open_url, like \"t12\" (default: the tab you used last, else the one in front)."
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Close a browser tab",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "reload_tab",
+      "title": "Reload a browser tab",
+      "description": "Load a tab's page again and return once it has loaded, with its address and title.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tab": {
+            "type": "string",
+            "description": "A tab id from list_tabs or open_url, like \"t12\" (default: the tab you used last, else the one in front)."
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Reload a browser tab",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "go_back",
+      "title": "Go back in a browser tab",
+      "description": "Go back one page in a tab's history, as the Back button, and return once it has loaded, with where it is now.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tab": {
+            "type": "string",
+            "description": "A tab id from list_tabs or open_url, like \"t12\" (default: the tab you used last, else the one in front)."
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Go back in a browser tab",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "go_forward",
+      "title": "Go forward in a browser tab",
+      "description": "Go forward one page in a tab's history, and return once it has loaded, with where it is now.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tab": {
+            "type": "string",
+            "description": "A tab id from list_tabs or open_url, like \"t12\" (default: the tab you used last, else the one in front)."
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Go forward in a browser tab",
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false,

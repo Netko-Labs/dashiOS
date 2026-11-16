@@ -11,7 +11,24 @@
 
 import { isRecord } from "@dashi/shape";
 
-export type BrowserMethod = "tabs" | "activate" | "open" | "read" | "click" | "fill" | "select" | "press" | "scroll" | "field" | "filled" | "wait" | "outcome";
+export type BrowserMethod =
+  | "tabs"
+  | "activate"
+  | "open"
+  | "read"
+  | "click"
+  | "fill"
+  | "select"
+  | "press"
+  | "scroll"
+  | "field"
+  | "filled"
+  | "wait"
+  | "outcome"
+  | "close"
+  | "reload"
+  | "back"
+  | "forward";
 
 export interface BrowserRequest {
   id: number;
