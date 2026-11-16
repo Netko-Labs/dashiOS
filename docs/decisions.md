@@ -4255,3 +4255,51 @@ short words, as the rulebook is written.
   recogniser left out, the recogniser's spelling stays.
 - **Undo:** drop `keepAccents` from `withModel`
   (`dictation/lib/rewrite.ts`); `clockAt` in `rules-spoken.ts`.
+
+### D193. A consent sheet still takes no Return: the keyboard stays with what the person was typing in
+
+- **Date:** 2026-11-15. `v09/voicejoin`. The installed pass
+  (`26-assistant-installed`) found that the real Return does not answer a
+  consent sheet and goes to the app under it; the lead asked why, and
+  that the default button take the real Return.
+- **What it is:** not a fault of the build, and not D187's. The sheet is
+  a layer surface with `keyboard: "on-demand"` and no key handler
+  (`agent-sheets/agent-sheets.tsx`, `consent.tsx`'s header; the applets'
+  and Bluetooth's sheets say the same): it never takes the keyboard by
+  itself, so that "a stray Enter typed elsewhere can't answer it". It has
+  been so since the sheet was written. D187 changed which keys count as
+  the person's *in a window* for Undo; a consent's yes is still checked
+  against the sheet's own layer, where only the real pointer's press
+  lands.
+- **Choice:** keep it. An agent chooses when its sheet appears; a person
+  who is typing presses Return several times a minute. A sheet that took
+  the keyboard and answered "Allow Once" on Return would let any agent
+  get its yes by asking at the right moment, with the person's own real
+  key: the one press `input-origin` cannot tell from consent. The pointer
+  must travel to the button, which nobody does by accident.
+- **Cost:** no keyboard-only way to say yes to an agent (⌃❖Esc stops
+  every agent, which is a no).
+- **If the owner wants a key:** the safe form is a chord nothing else
+  uses, shown on the button, taken by the keymap only while a sheet is
+  up and answered only when the compositor says the keys were real
+  (the capsule's card does this with a tap of the Dashi key and then
+  Return: `capsule/`). That is the owner's call, since it loosens a
+  consent rule; it is not built.
+- **Undo:** `keyboard: "exclusive"` and a Return handler on the sheet's
+  primary button.
+
+### D194. A card that gives up says so; an empty "about you" file opens
+
+- **Date:** 2026-11-15. `v09/voicejoin`; faults 2 and 4 of the installed
+  pass.
+- **Choice:** when a question on the card runs out of time the capsule
+  says "No answer, so nothing was done.", and for ten seconds a few
+  words that only answer it ("No.", "Yes, go ahead.") are not a new ask:
+  the capsule says "That question is over. Nothing was done." Anything
+  else said is an ask as before. `about-you.md` is made with one first
+  line that says what it is for (a `#` line, never read to the assistant
+  or counted), because an empty file has no kind and no app opens it.
+- **Cost:** a person who answers a new, unrelated question with a bare
+  "yes" inside those ten seconds is told the question is over.
+- **Undo:** `LATE_MS` in `capsule/lib/voice-mode.ts`; `ABOUT_HEAD` in
+  `persona/lib/about.ts`.

@@ -29,7 +29,21 @@ export class Asking {
   private step = "";
   private words = "";
 
+  /** A question that just went unanswered: until then, words that only answer it are not a new ask. */
+  private over: { until: number; answers(text: string): boolean } | null = null;
+
   constructor(private readonly host: AskingHost) {}
+
+  late(over: { until: number; answers(text: string): boolean }): void {
+    this.over = over;
+  }
+
+  /** Whether `words` only answer a question that is over: said a moment too late, they ask nothing. */
+  tooLate(words: string, now: number): boolean {
+    const over = this.over;
+    this.over = null;
+    return over !== null && now < over.until && over.answers(words);
+  }
 
   /** An ask is being answered. */
   get active(): boolean {

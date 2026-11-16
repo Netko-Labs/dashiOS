@@ -174,6 +174,23 @@ test("after a question the microphone always opens, the setting off or not, and 
   expect(h.voice.calls.at(-1)).toBe("speak:The work one, then.");
 });
 
+test("after a card gave up, a bare yes or no said a moment too late is not a new ask; other words, and later ones, are", async () => {
+  const h = conversing();
+  const answers = (text: string): boolean => /^(?:yes|no)\b/i.test(text);
+  h.talk.over(10_000, answers);
+  h.voice.replies["listen.stop"] = { text: "Yes, go ahead.", speech_ms: 600 };
+  await h.hold();
+  expect(h.asked).toEqual([]);
+  expect(h.chip()).toEqual({ kind: "notice", text: "That question is over. Nothing was done." });
+  // Once only: the next words are an ask again.
+  await h.hold();
+  expect(h.asked).toEqual(["Yes, go ahead."]);
+  h.talk.over(10_000, answers);
+  h.state.now += 20_000;
+  await h.hold();
+  expect(h.asked).toHaveLength(2);
+});
+
 test("❖Esc ends the conversation; the capsule's square only stops what is said", async () => {
   const { voice, state, talk, hold, chip } = conversing();
   await hold();

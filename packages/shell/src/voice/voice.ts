@@ -181,6 +181,7 @@ export class Voice {
       this.notice(`You said: ${tail(text, 80)}`, undefined, 2500);
       return question(text);
     }
+    if (this.asking.tooLate(text, this.now())) return this.notice("That question is over. Nothing was done.", undefined, 4000);
     void this.asking.ask(text, language);
   }
 
@@ -242,6 +243,9 @@ export class Voice {
     if (all) this.deps.asker.talk?.end("stopped");
     this.rest(true);
   }
+
+  /** A card gave up waiting: for `ms`, words that only answer it (`answers`) are not taken as a new ask. */
+  over = (ms: number, answers: (text: string) => boolean): void => this.asking.late({ until: this.now() + ms, answers });
 
   /**
    * An agent's question (`ask_person`): said out loud after whatever Dashi is saying, and the next words heard are its answer

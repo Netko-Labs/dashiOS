@@ -1,5 +1,7 @@
 /** What voice mode reads of 0.8: the voice controller and the launcher's Ask tasks, as much as it uses. */
 
+import type { PillHub } from "../../shared/pill/index.ts";
+import type { Timers } from "../../shared/time/index.ts";
 import type { Chip } from "../../voice/index.ts";
 import type { OpenCard } from "../types.ts";
 
@@ -14,6 +16,19 @@ export interface VoiceSource {
   ask(words: string, heard: (text: string) => void): (keep?: boolean) => void;
   /** How the person talks ("the right ❖ key"), or null when they can't. */
   talkKey(): string | null;
+  /** A card gave up waiting: for `ms`, words that only answer it are not a new ask. */
+  over?(ms: number, answers: (text: string) => boolean): void;
+}
+
+export interface VoiceModeDeps {
+  hub: PillHub;
+  voice: VoiceSource | null;
+  /** Null until the launcher's agents have started. */
+  tasks(): TaskSource | null;
+  /** The card that is open changed. */
+  onCard(card: OpenCard | null): void;
+  timers?: Timers;
+  now?(): number;
 }
 
 /** A launcher Ask task, as much as voice mode reads of it (agents/ask/types.ts `TaskView`). */
