@@ -5,7 +5,10 @@
  * elements by the numbers it gave them.
  */
 
+import { readItems } from "../page/items.ts";
 import { parseChords } from "../page/keys.ts";
+import { isLandmark, pickMain } from "../page/main.ts";
+import type { PageNode } from "../page/node.ts";
 import { READ_LIMITS, type ReadLimits, readFrame } from "../page/read.ts";
 import { marker } from "../page/refs.ts";
 import { click, field, fill, markFilled, press, Refusal, scroll, select } from "./actions.ts";
@@ -89,9 +92,13 @@ async function handle(message: Message): Promise<Record<string, unknown>> {
   switch (message.op) {
     case "read": {
       await settle();
-      const root = new DomNode(document);
+      const page = new DomNode(document);
       const origin = location.origin === "null" ? null : location.origin;
-      const { text, truncated } = readFrame(root, (node) => refOf((node as DomNode).node), limitsOf(message.limits), origin);
+      const number = (node: PageNode) => refOf((node as DomNode).node);
+      if (message.mode === "items") return { doc: DOC, items: readItems(page, number, origin), title: document.title };
+      const main = message.mode === "main";
+      const root = main ? pickMain(page) : page;
+      const { text, truncated } = readFrame(root, number, limitsOf(message.limits), origin, main ? isLandmark : undefined);
       return { doc: DOC, text, truncated, title: document.title };
     }
     case "focus":

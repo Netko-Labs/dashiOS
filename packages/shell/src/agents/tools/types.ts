@@ -108,7 +108,7 @@ export type Call =
   | { name: "hand_over"; window: number; reason: string }
   | { name: "pay"; target: SecretTarget; site: string; cents: number; card: string | null }
   | { name: "open_url"; url: string; tab: number | null }
-  | { name: "read_page"; tab: number | null }
+  | { name: "read_page"; tab: number | null; mode: "all" | "main" | "find" | "items"; find: string | null; cursor: number; maxChars: number }
   | { name: "click_element"; ref: number; tab: number | null }
   | { name: "fill_element"; ref: number; text: string; tab: number | null }
   | { name: "select_option"; ref: number; value: string; tab: number | null }

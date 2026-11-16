@@ -1,91 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import type { PageNode, PageOption } from "../browser-extension/src/page/node.ts";
 import { roleOf, secrecyOf } from "../browser-extension/src/page/node.ts";
 import { Numbering } from "../browser-extension/src/page/numbering.ts";
 import { readFrame } from "../browser-extension/src/page/read.ts";
 import { marker, RefTable, renumber, unmark } from "../browser-extension/src/page/refs.ts";
+import { node, numbering, type Spec, values } from "./support/page-nodes.ts";
 
-interface Spec {
-  tag: string;
-  attrs?: Record<string, string>;
-  children?: Array<Spec | string>;
-  value?: string;
-  checked?: boolean;
-  options?: PageOption[];
-  label?: string;
-  href?: string;
-  hidden?: boolean;
-  inline?: boolean;
-  wasPassword?: boolean;
-  dashiFilled?: boolean;
-}
-
-const BLOCKS = new Set(["div", "p", "h1", "h2", "h3", "form", "section", "main", "body", "ul", "li", "table", "tr"]);
-
-/** Every value read, so a test can say no secret was. */
-let valuesRead: string[] = [];
-
-function node(spec: Spec | string): PageNode {
-  if (typeof spec === "string") {
-    return {
-      tag: "#text",
-      text: () => spec,
-      attr: () => null,
-      children: () => [],
-      shown: () => true,
-      block: () => false,
-      value: () => "",
-      hasValue: () => false,
-      checked: () => false,
-      options: () => [],
-      labelText: () => null,
-      href: () => null,
-      disabled: () => false,
-      wasPassword: () => false,
-      dashiFilled: () => false,
-      labelsField: () => false,
-    };
-  }
-  const kids = (spec.children ?? []).map(node);
-  const self: PageNode = {
-    tag: spec.tag,
-    text: () => "",
-    attr: (name) => spec.attrs?.[name] ?? null,
-    children: () => kids,
-    shown: () => !spec.hidden,
-    block: () => !spec.inline && BLOCKS.has(spec.tag),
-    value: () => {
-      if (secrecyOf(self)) throw new Error(`a secret field's value was read: ${spec.value}`);
-      valuesRead.push(spec.value ?? "");
-      return spec.value ?? "";
-    },
-    hasValue: () => (spec.value ?? "").length > 0,
-    checked: () => spec.checked === true,
-    options: () => spec.options ?? [],
-    labelText: () => spec.label ?? null,
-    href: () => spec.href ?? null,
-    disabled: () => spec.attrs?.disabled !== undefined,
-    wasPassword: () => spec.wasPassword === true,
-    dashiFilled: () => spec.dashiFilled === true,
-    labelsField: () => spec.tag === "label" && spec.attrs?.for !== undefined,
-  };
-  return self;
-}
-
-/** Numbers as content.ts gives them: the same node, the same number, for the document's life. */
-function numbering() {
-  const numbers = new Map<PageNode, number>();
-  return (n: PageNode) => {
-    let ref = numbers.get(n);
-    if (ref === undefined) {
-      ref = numbers.size + 1;
-      numbers.set(n, ref);
-    }
-    return ref;
-  };
-}
-
-/** A frame's text with its own numbers, as the background renumbers them. */
 const plain = (text: string) => renumber(text, (local) => local);
 
 const loginPage: Spec = {
@@ -191,13 +110,13 @@ describe("secrets never leave the page", () => {
 
   for (const [what, spec, role] of secretFields) {
     test(`${what}: only whether it is filled`, () => {
-      valuesRead = [];
+      values.read = [];
       const page = node({ tag: "body", children: [{ tag: "form", children: [spec] }] });
       const text = plain(readFrame(page, numbering()).text);
       expect(text).toContain(`[1] ${role}`);
       expect(text).toContain("filled: yes");
       expect(text).not.toContain(spec.value ?? "");
-      expect(valuesRead).toEqual([]);
+      expect(values.read).toEqual([]);
     });
   }
 

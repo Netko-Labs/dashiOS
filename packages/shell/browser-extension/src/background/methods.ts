@@ -67,9 +67,27 @@ async function onElement(params: Params, op: string, extra: Params = {}): Promis
   return { tab, result };
 }
 
+/** read_page's `main` and `items`: the page's own frame (frames are mostly ads and widgets), numbered as the tab's. */
+async function readTop(id: number, mode: "main" | "items"): Promise<Record<string, unknown>> {
+  const table = tableOf(id);
+  const result = await ask(id, 0, { op: "read", mode });
+  const doc = String(result.doc);
+  const tabInfo = info(await chrome.tabs.get(id));
+  if (mode === "main") {
+    const text = renumber(String(result.text ?? ""), (local) => table.ref({ frameId: 0, doc, local }));
+    return { tab: tabInfo, text, truncated: result.truncated === true };
+  }
+  const items = (Array.isArray(result.items) ? result.items : []).map((item: unknown) => {
+    if (typeof item !== "object" || item === null || !("ref" in item)) return item;
+    return { ...item, ref: typeof item.ref === "number" ? table.ref({ frameId: 0, doc, local: item.ref }) : null };
+  });
+  return { tab: tabInfo, items };
+}
+
 async function read(params: Params): Promise<Record<string, unknown>> {
   const tab = await tabOf(params);
   const id = idOf(tab);
+  if (params.mode === "main" || params.mode === "items") return readTop(id, params.mode);
   const frames = await framesOf(id);
   const table = tableOf(id);
   const texts = await Promise.all(

@@ -160,6 +160,8 @@ export function readFrame(
   limits: ReadLimits = READ_LIMITS,
   /** The page's origin: links to it are shown by their path. */
   origin: string | null = null,
+  /** Parts left out (read_page's `main` mode: menus, footers, sidebars). */
+  skip: (node: PageNode) => boolean = () => false,
 ): FrameText {
   const out = new Writer(limits);
   const walk = (node: PageNode, quiet: boolean): void => {
@@ -168,7 +170,7 @@ export function readFrame(
       if (!quiet) out.text(node.text());
       return;
     }
-    if (isSkipped(node)) return;
+    if (isSkipped(node) || (node !== root && skip(node))) return;
     if (node.tag === "br") return out.flush();
     const role = roleOf(node);
     if (role && role !== "clickable") {

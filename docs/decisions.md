@@ -3804,3 +3804,30 @@ short words, as the rulebook is written.
   page shows now, which is what was meant.
 - **Undo:** `Numbering.take` always a new number; `target()` in
   `content/main.ts` back to the plain error.
+
+### D203. read_page has modes (all, main, find, items), and every answer is cut at 15,000 characters with a cursor
+
+- **Date:** 2026-11-15. `v09/reach`. "read_page dumps entire long pages
+  (footers, legal links, suggestions)"; "listing Marketplace results meant
+  reading raw link text".
+- **Choice:** `mode` `all` stays the default, but its answer is cut at
+  `max_chars` (15,000, about 4,000 tokens; 1,000 to 60,000) at a line's
+  end, with one line naming the `cursor` (a character offset) for the next
+  part, and pointing at `main` and `find`. `main` reads only the page's
+  own frame: `<main>` or role=main, else its one article (or one article
+  holding 60% of all of them), else from the body down the block holding
+  70% of its parent's text, never one under half the page's or with fewer
+  than two elements; landmarks inside are left out. `find` is done in the
+  shell on the whole text: three lines each side of a match, runs joined.
+  `items` is the container whose children most often share one shape
+  (tag, class, role) and hold a link, scored by count × their text (15 to
+  200 characters); each row's title is its heading, else its first line
+  that is not a price, else its link's words; a price is found by its
+  form (a currency sign or code, or "free"); the rest are details, four
+  at most. No model anywhere.
+- **Why:** the read was the costliest call in the assistant's session.
+- **Cost:** a cursor is an offset into the text of the page as read now;
+  a page that changed between parts may repeat or skip a few lines. A
+  page whose grid is built of identical anonymous `div`s inside other
+  lists can pick the wrong container; `all` and `find` still work.
+- **Undo:** `PAGE_PART` to 60,000 and the default mode stays `all`.

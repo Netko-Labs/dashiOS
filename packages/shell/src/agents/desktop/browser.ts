@@ -14,6 +14,7 @@ import { json, type RunContext, type ToolResult, text, toolError } from "../cont
 import { siteOf } from "../sites.ts";
 import type { Call } from "../tools/index.ts";
 import { changeWords, landingWords } from "./lib/browser-words.ts";
+import { pageWords } from "./lib/page-parts.ts";
 
 type BrowserCall = Extract<
   Call,
@@ -170,11 +171,9 @@ async function openUrl(call: Extract<Call, { name: "open_url" }>, ctx: RunContex
 
 async function readPage(call: Extract<Call, { name: "read_page" }>, ctx: RunContext): Promise<ToolResult> {
   return onPage(ctx, call.tab, "Reading", async (link, tab) => {
-    const result = await link.ask("read", { tab: tab.id });
+    const result = await link.ask("read", { tab: tab.id, ...(call.mode === "main" || call.mode === "items" ? { mode: call.mode } : {}) });
     const now = parseTab(result.tab) ?? tab;
-    const head = `Tab ${tabId(now)} · ${now.url} · “${now.title}”`;
-    const cut = result.truncated === true ? "\n(The page goes on: scroll_page, or read it again later, for the rest.)" : "";
-    return text(`${head}\n\n${String(result.text ?? "")}${cut}`);
+    return text(pageWords(call, `Tab ${tabId(now)} · ${now.url} · “${now.title}”`, result));
   });
 }
 
