@@ -27,7 +27,7 @@ export interface FakeAssistant {
   assistant: Assistant;
   timers: ReturnType<typeof handTimers>;
   /** What the model was sent, a request each: its messages. */
-  sent: Array<{ messages: Array<{ role: string; content: string }>; tools: string[] }>;
+  sent: Array<{ messages: Array<{ role: string; content: string }>; tools: string[]; model?: string }>;
   /** The calls the server carried out, in order. */
   ran: string[];
   /** The model's replies still to give. */
@@ -68,7 +68,7 @@ export function fakeAssistant(script: Reply[], over: Partial<AssistantOptions> =
   const fetching = async (url: string, init: RequestInit): Promise<Response> => {
     if (url.endsWith("/api/tags")) return Response.json({ models: [{ name: "stub:1" }] });
     const body = JSON.parse(String(init.body));
-    fake.sent.push({ messages: body.messages, tools: body.tools.map((tool: { function: { name: string } }) => tool.function.name) });
+    fake.sent.push({ messages: body.messages, tools: body.tools.map((tool: { function: { name: string } }) => tool.function.name), model: body.model });
     const reply = fake.script.shift() ?? { say: "Nothing more." };
     const lines = [
       ...(reply.say ? (reply.say.match(/\S+\s*/g)?.map((word) => ({ message: { role: "assistant", content: word }, done: false })) ?? []) : []),
