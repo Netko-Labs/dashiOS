@@ -5,13 +5,38 @@
  */
 
 import { useUndo } from "@dashi/ui";
-import { useAppMenus } from "../../../kit/index.ts";
+import { systemClipboard, useAppMenus } from "../../../kit/index.ts";
+import { htmlToMarkdown } from "../html.ts";
 import { notesMenus } from "../menus.ts";
 import type { NotesModel } from "../model.ts";
 import type { Focus } from "./use-focus.ts";
 import type { NoteActions } from "./use-note-actions.ts";
 import type { NotesData } from "./use-notes-data.ts";
 import type { Overlays } from "./use-overlays.ts";
+
+const clipboard = systemClipboard();
+
+/**
+ * Edit's Cut, Copy and Paste in the body being edited: the selection's
+ * Markdown goes to the clipboard (the field would copy the drawn words), and
+ * a browser's rich text comes in as Markdown. Elsewhere, and without
+ * wl-clipboard, the key goes to the field with the keyboard.
+ */
+function clipboardActions(model: NotesModel, editing: boolean, press: (keystroke: string) => void): { cut(): void; copy(): void; paste(): void } {
+  const take = (cut: boolean): void => {
+    const text = model.selectedSource();
+    if (!editing || text === "" || !clipboard.canWrite) return press(cut ? "ctrl-x" : "ctrl-c");
+    void clipboard.writeText(text);
+    if (cut) model.replaceSelection("", "Cut");
+  };
+  const paste = async (): Promise<void> => {
+    const html = editing && clipboard.readHtml ? await clipboard.readHtml() : null;
+    const markdown = html ? htmlToMarkdown(html) : "";
+    if (markdown === "") press("ctrl-v");
+    else model.replaceSelection(markdown, "Paste");
+  };
+  return { cut: () => take(true), copy: () => take(false), paste: () => void paste() };
+}
 
 export function useNotesMenus({
   model,
@@ -60,11 +85,12 @@ export function useNotesMenus({
       show: (source) => model.setSource(source),
       undo: () => void model.undoStep("undo"),
       redo: () => void model.undoStep("redo"),
-      cut: () => press("ctrl-x"),
-      copy: () => press("ctrl-c"),
-      paste: () => press("ctrl-v"),
+      ...clipboardActions(model, state.editing, press),
       selectAll: () => press("ctrl-a"),
-      find: focus.search,
+      find: () => {
+        model.setEditing(false);
+        focus.search();
+      },
       findNext: (step) => {
         if (model.findNext(step)) focus.focusBody();
       },

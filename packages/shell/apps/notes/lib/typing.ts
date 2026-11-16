@@ -11,6 +11,7 @@ import { continueList, type Selection, toggleCheck } from "./format.ts";
 import { caretAfter, FORMAT_NAMES, type FormatCommand, formatted } from "./formats.ts";
 import type { Draft, TextState } from "./state.ts";
 import { NotesBase } from "./store-base.ts";
+import { structure } from "./structure.ts";
 
 export abstract class NotesTyping extends NotesBase {
   /** Edit › Undo and Redo: deleted notes. */
@@ -25,28 +26,31 @@ export abstract class NotesTyping extends NotesBase {
 
   // Writing
 
-  // Writing
-
   edit(change: Partial<Draft>): void {
     const { draft, selected, selection } = this.state;
     if (!draft || !selected || this.isDeleted()) return;
-    // Enter at the end of a list item starts the next one, the caret after its marker.
+    // Enter at the end of a list item starts the next one, the caret after its marker; "[] " makes a box, Tab indents an item.
     const caret = selection.start === selection.end ? selection.start : -1;
-    const continued = change.body === undefined ? null : continueList(draft.body, change.body, caret);
+    const continued = change.body === undefined ? null : (continueList(draft.body, change.body, caret) ?? structure(draft.body, change.body, caret));
     const next = { title: change.title ?? draft.title, body: continued?.body ?? change.body ?? draft.body };
     if (next.title === draft.title && next.body === draft.body) return;
     const after = continued?.selection ?? caretAfter(draft.body, next.body, selection);
     // A run of typing is one step for Undo; a new line starts the next.
     const newLine = next.body.split("\n").length !== draft.body.split("\n").length;
     this.record({ draft, selection }, { draft: next, selection: after }, "Typing", newLine ? undefined : "typing");
-    this.set({ draft: next, selection: after });
+    this.set({ draft: next, selection: after, editing: true });
     this.later();
   }
 
-  /** The body's caret moved or its selection changed (the field says so). */
+  /** The body's caret moved or its selection changed (the field says so): the person is in the body. */
   setSelection(selection: Selection): void {
     const { start, end } = this.state.selection;
-    if (selection.start !== start || selection.end !== end) this.set({ selection });
+    if (selection.start !== start || selection.end !== end || !this.state.editing) this.set({ selection, editing: true });
+  }
+
+  /** The person went into the body (Return in the list) or out of it (the title, the list, the search): only the body being edited shows its caret's Markdown. */
+  setEditing(editing: boolean): void {
+    if (this.state.editing !== editing) this.set({ editing });
   }
 
   /** Format › Bold, Italic, Checklist…: the open note's body, changed where the selection is. */
@@ -59,6 +63,26 @@ export abstract class NotesTyping extends NotesBase {
     this.record({ draft, selection }, { draft: next, selection: edited.selection }, FORMAT_NAMES[command]);
     this.set({ draft: next, selection: edited.selection });
     this.later();
+  }
+
+  /** Edit › Paste (rich text made Markdown) or Cut: `text` in place of the selection, the caret after it; a step of its own. */
+  replaceSelection(text: string, name: string): void {
+    const { draft, selection } = this.state;
+    if (!draft || !this.state.selected || this.isDeleted()) return;
+    const start = Math.min(selection.start, selection.end);
+    const end = Math.max(selection.start, selection.end);
+    const next = { ...draft, body: draft.body.slice(0, start) + text + draft.body.slice(end) };
+    if (next.body === draft.body) return;
+    const caret = { start: start + text.length, end: start + text.length };
+    this.record({ draft, selection }, { draft: next, selection: caret }, name);
+    this.set({ draft: next, selection: caret, editing: true });
+    this.later();
+  }
+
+  /** The selection's Markdown (Edit › Copy and Cut: the source, not the drawn words). */
+  selectedSource(): string {
+    const { draft, selection } = this.state;
+    return draft ? draft.body.slice(Math.min(selection.start, selection.end), Math.max(selection.start, selection.end)) : "";
   }
 
   /** Ticks or unticks the checklist item on `line` of the body, and saves it at once; the caret stays. */
