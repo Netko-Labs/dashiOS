@@ -119,7 +119,13 @@ describe("a command found by its own name, over an app found only by a keyword",
       keywords: ["characters", "unicode", "punctuation", "math", "letters", "emoji", "emoticon", "symbols"],
     },
     { id: "dev.dashi.calculator", kind: "app", names: ["Calculator"], keywords: ["math"] },
-    { id: "dashi://extension/dev.dashi.emoji/emoji", kind: "command", names: ["Search Emoji"], keywords: ["emoji", "smiley", "symbol", "character"], foreign: true },
+    {
+      id: "dashi://extension/dev.dashi.emoji/emoji",
+      kind: "command",
+      names: ["Search Emoji"],
+      keywords: ["emoji", "smiley", "symbol", "character"],
+      foreign: true,
+    },
     { id: "dashi://dashi/math-mode", kind: "command", names: ["Toggle Formulas"], keywords: ["math"], own: true },
   ]);
   const ids = (query: string): string[] => rank(items, query).map((result) => result.item.id);
