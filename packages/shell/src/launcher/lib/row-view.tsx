@@ -24,6 +24,8 @@ const BAR = { width: 3, height: 20 };
 /** Left of a row's name: its padding, icon, and the gap after it. */
 export const nameIndent = (m: Measures): number => 10 + m.icon + 10;
 
+/** Beside a long name (an extension's item), its words after it take at most this much, so the name is read first. */
+const DETAIL_BESIDE_LONG = 220;
 /** An agent's dot on its row's icon (Now), 6 across. */
 const DOT = 6;
 /** The stop square at a running agent's right end, as the menu bar's pill draws it. */
@@ -202,7 +204,7 @@ export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digi
           </View>
         )}
         {row.detail !== undefined && (
-          <View style={{ flexShrink: 1, minWidth: 0 }}>
+          <View style={{ flexShrink: 1, minWidth: 0, ...(row.long ? { maxWidth: DETAIL_BESIDE_LONG } : {}) }}>
             <Text numberOfLines={1} style={{ fontSize: m.detail, color: row.attention && !selected ? colors.broth : quiet }}>
               {row.detail}
             </Text>

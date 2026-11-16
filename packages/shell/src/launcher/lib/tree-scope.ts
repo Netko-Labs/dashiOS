@@ -110,13 +110,13 @@ class TreeScope {
     return [...own, ...view.map(({ key: _key, ...verb }) => verb)];
   };
 
+  // ↩ and ❖K only: the field keeps its room for what is typed (an extension's titles are long).
   hints = (row: Row | undefined): Hint[] => {
     const shown = row ? this.verbs(row) : [];
-    const [first, second] = shown;
+    const [first] = shown;
     return [
       ...(first ? [{ keys: first.key ?? KEYS.primary, label: first.title }] : []),
-      ...(second?.key ? [{ keys: second.key, label: second.title }] : []),
-      ...(shown.length > 2 ? [{ keys: KEYS.actions, label: "Actions" }] : []),
+      ...(shown.length > 1 ? [{ keys: KEYS.actions, label: "Actions" }] : []),
     ];
   };
 
