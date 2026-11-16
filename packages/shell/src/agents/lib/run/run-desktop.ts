@@ -27,6 +27,9 @@ export const desktopHandlers = {
   get_work_alone: (_call, ctx) => json({ ...ctx.alone() }),
   // A question in words for the person, said and shown (desktop/ask-person.ts).
   ask_person: (call, ctx) => desktop.askPerson(call, ctx),
+  // A line said while the work goes on, and a notification (desktop/tell.ts).
+  tell_person: (call, ctx) => desktop.tellPerson(call.text, ctx),
+  notify_person: (call, ctx) => desktop.notifyPerson(call.title, call.text, ctx),
 } satisfies Handlers<
   | "force_quit_app"
   | "lock_screen"
@@ -47,4 +50,6 @@ export const desktopHandlers = {
   | "request_software_update"
   | "get_work_alone"
   | "ask_person"
+  | "tell_person"
+  | "notify_person"
 >;

@@ -27,7 +27,7 @@ test("steps say what they will do in Dashi's words, from the action and its argu
   expect(steps.map((step) => step.title)).toEqual(["Turn Dark Mode on", "Hide the Dock automatically", "Add a note “night setup”", "Mute the sound"]);
   expect(steps.map((step) => step.state.kind)).toEqual(["ready", "ready", "ready", "ready"]);
   expect(steps[0]?.scope).toBe("Change settings");
-  expect(steps[2]?.scope).toBe("Add to your notes");
+  expect(steps[2]?.scope).toBe("Change your notes");
 });
 
 test("a call with arguments that don't fit, or a tool no plan may use, never runs", () => {

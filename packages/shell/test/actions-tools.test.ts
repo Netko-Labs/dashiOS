@@ -44,8 +44,8 @@ describe("tools/call", () => {
   test("every tool with no required arguments still parses an empty call", () => {
     for (const tool of fixture.tools.filter((each) => each.inputSchema.required.length === 0)) {
       const call = parseCall({ name: tool.name, arguments: {} });
-      // Some take one of two optional arguments (force_quit_app: window or pid); the rest parse.
-      if ("arguments" in call) expect(["force_quit_app", "set_volume", "request_software_update"]).toContain(tool.name);
+      // Some take one of several optional arguments (force_quit_app: window or pid; wait_for: one thing); the rest parse.
+      if ("arguments" in call) expect(["force_quit_app", "set_volume", "request_software_update", "wait_for"]).toContain(tool.name);
       else expect(call).toMatchObject({ name: tool.name });
     }
   });

@@ -13,7 +13,7 @@ export const windowTools: readonly ToolDef[] = [
     name: "list_windows",
     title: "List windows",
     description:
-      "Every window, front to back: id, app id and name, title, process id, whether it is focused, minimized, or hidden, how it is arranged (`arrangement`: a half, a quarter, or fill, from tile_window, the keys, or a drag; null at its own size), whether it is full screen (covering its whole screen, menu bar and Dock included), and its frame in screen points.",
+      "Every window, front to back: id, app id and name, title, process id, whether it is focused, minimized, or hidden, how it is arranged (`arrangement`: a half, a quarter, or fill, from tile_window, the keys, or a drag; null at its own size), whether it is full screen (covering its whole screen, menu bar and Dock included), and its frame in screen points; the focused one also says `keyboard` (a text field, a password field, or no text field has it) where the app tells accessibility.",
     scope: "see",
     readOnly: true,
     destructive: false,

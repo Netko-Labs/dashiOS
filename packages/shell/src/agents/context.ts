@@ -45,6 +45,8 @@ export interface BrowserRun {
   mayUse(site: string): boolean;
   /** The tab this agent used last: the website tools' tab when none is named. */
   tab: number | null;
+  /** The tabs this agent opened (open_url, a link that opened a tab): list_tabs marks them. Absent: none known. */
+  opened?: Set<number>;
 }
 
 export interface ToolResult {

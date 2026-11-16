@@ -4,7 +4,7 @@
  * and Ask in the launcher.
  */
 
-import { formatAddress, type startActions } from "../actions/index.ts";
+import type { startActions } from "../actions/index.ts";
 import type { ActionState } from "../actions/types.ts";
 import { createAgentUi, type QuestionVoice } from "../agent-sheets/index.ts";
 import type { Ask } from "../agents/ask/types.ts";
@@ -18,10 +18,12 @@ import {
   personAnswered,
   personPressedWindow,
   SHOW_RECORD,
+  type SpokenLines,
   serveTokens,
   startAgents,
   startAsk,
   startPasswords,
+  Teller,
   TOOLS,
   TurnWatch,
   tokensSocketPath,
@@ -47,6 +49,7 @@ import type { Arranging, Desktops } from "./desktop.ts";
 import type { Switches } from "./notices.ts";
 import type { Screenshots } from "./overlays.tsx";
 import type { LateParts } from "./parts.ts";
+import { openTerminal, runAddressAsPerson } from "./person-actions.ts";
 import type { Late, Services } from "./services.ts";
 import type { Stores } from "./session.ts";
 import type { SettingsApps } from "./settings.ts";
@@ -61,10 +64,12 @@ export interface AgentBasics {
   turnWatch: TurnWatch;
   /** Work alone (agents/alone/): Settings › Agents turns it on, the menu bar shows it, the agents' server asks it. */
   alone: WorkAlone;
+  /** tell_person's lines, said in Dashi's voice (agents/desktop/tell.ts). */
+  teller: Teller;
 }
 
 /** Who is connected, passwords and the vault, the token proxy, and the sheets agents ask through. */
-export function startAgentBasics(compositor: Compositor | null, services: Services, voice: QuestionVoice): AgentBasics {
+export function startAgentBasics(compositor: Compositor | null, services: Services, voice: QuestionVoice & SpokenLines): AgentBasics {
   // Agents (MCP) run here too; they start below, once what they reach exists.
   const agentStore = new AgentStore();
   // Passwords: Dashi's vault and the sources agents sign in from (agents/secrets/).
@@ -92,19 +97,7 @@ export function startAgentBasics(compositor: Compositor | null, services: Servic
     records: new AloneRecords(),
   });
   services.add("work alone", () => alone.close());
-  return { agentStore, passwords, agentUi, turnWatch, alone };
-}
-
-/** An action run as the person, by its address; an address with nothing at it is an error, not a throw. */
-function runAddressAsPerson(actions: Actions, address: string, args: Record<string, unknown>) {
-  const action = actions.registry.get(address);
-  return action ? actions.run(action, args) : Promise.resolve({ ok: false as const, error: `Nothing is at ${address}.` });
-}
-
-/** The Terminal, through its action (a harness that isn't signed in signs in there). */
-function openTerminal(actions: Actions): void {
-  const terminal = actions.registry.get(formatAddress(["app", "dev.dashi.terminal"]));
-  if (terminal) void actions.run(terminal, {});
+  return { agentStore, passwords, agentUi, turnWatch, alone, teller: new Teller(voice) };
 }
 
 /** A registry setting's value now, by the name agents know it by (settings-app/registry/). */
@@ -211,7 +204,6 @@ export function startAgentServer(needs: ServerNeeds): Agents | null {
         compositor,
         // A launcher run's questions go to the agents' panel (and the sheets while it is closed).
         ui: handoff.handoffShell.ui(basics.agentUi),
-        // A connection from a sandbox whose scope names a task: Dashi's own assistant's conversation, else a run from the launcher.
         // A task's connection: Dashi's own assistant's conversation, else a run from the launcher.
         tasks: taskHooks(late, handoff.handoffShell.service),
         alone: basics.alone,
@@ -226,6 +218,7 @@ export function startAgentServer(needs: ServerNeeds): Agents | null {
           dock: stores.dockPrefs,
           wifi: system.wifiStore,
           forceQuit: settings.forceQuit,
+          tell: basics.teller,
           rememberScale: (name, scale) => settingsStore.setDisplayScale(name, scale),
           ...(desktops.displays ? { displays: desktops.displays } : {}),
           ...(desktops.spaces ? { spaces: desktops.spaces.controller } : {}),
@@ -241,8 +234,10 @@ export function startAgentServer(needs: ServerNeeds): Agents | null {
           // Late-bound too: ❖ chords an agent presses in Dashi's apps choose their menu items, as the person's do.
           appShortcut: (window, shortcut) => late.get("appShortcut")(window, shortcut),
           ...(screenshots.tools ? { recorder: screenshots.tools.recorder } : {}),
-          // Late-bound too: the clipboard history starts with the launcher's registry (clipboard/).
-          clipboard: { recent: (limit) => late.peek("clipboard")?.recent(limit) ?? [] },
+          clipboard: {
+            recent: (limit) => late.peek("clipboard")?.recent(limit) ?? [], // late-bound: the history starts with the launcher
+            put: async (text, from) => (await late.peek("clipboard")?.put(text, from)) ?? false,
+          },
         },
       })
     : null;

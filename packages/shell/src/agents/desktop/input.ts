@@ -13,12 +13,15 @@ import { type RunContext, type ToolResult, text, toolError } from "../context.ts
 import { named, noWindow, subject } from "../lib/subject.ts";
 import { type Call, keySteps } from "../tools/index.ts";
 import { type Patience, type Payload, PersonBusy } from "./hands.ts";
+import { keyboardIn, keyboardWords } from "./keyboard.ts";
 import { describeCutDrag, describeCutScroll, describePerson, desktopChordRefusal, wheelFlicks } from "./lib/input-words.ts";
 
 type InputCall = Extract<Call, { name: "click" | "scroll" | "drag" | "type_text" | "press_keys" }>;
 
 /** Pause between the clicks of a double click, and between a drag's steps. */
 const CLICK_GAP_MS = 60;
+/** How long after a click the app has to say where its keyboard focus went. */
+const FOCUS_SETTLE_MS = 150;
 const DRAG_STEPS = 8;
 const DRAG_STEP_MS = 30;
 /** A frame between flicks (the flicks themselves: lib/input-words.ts). */
@@ -81,7 +84,12 @@ export async function handsCall(call: InputCall, ctx: RunContext): Promise<ToolR
           if (n > 0) await sleep(CLICK_GAP_MS);
           await send({ pointer: { x: call.x, y: call.y }, action: "click", button: call.button });
         }
-        return text(`Clicked ${call.count > 1 ? `${call.count} times ` : ""}in w${window.id} at ${at(call.x, call.y)}.`);
+        // The app says where its focus went a moment after the click (AT-SPI), where it says at all.
+        await sleep(FOCUS_SETTLE_MS);
+        const keyboard = call.button === "left" ? await keyboardIn(window.pid, ctx) : null;
+        return text(`Clicked ${call.count > 1 ? `${call.count} times ` : ""}in w${window.id} at ${at(call.x, call.y)}.${keyboardWords(keyboard)}`, {
+          ...(keyboard ? { keyboard } : {}),
+        });
       }
       case "scroll": {
         const problem = inside(window, size, [call]);

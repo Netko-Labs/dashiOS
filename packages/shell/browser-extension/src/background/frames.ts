@@ -5,7 +5,7 @@
  * (webNavigation), never by a guessed time.
  */
 
-import { RefTable } from "../page/refs.ts";
+import { RefTable, renumber, unmark } from "../page/refs.ts";
 
 /** Each tab's element numbers; a new page in the tab starts again. */
 export const tables = new Map<number, RefTable>();
@@ -24,7 +24,7 @@ chrome.webNavigation.onCommitted.addListener((details) => {
 });
 chrome.tabs.onRemoved.addListener((tab) => tables.delete(tab));
 
-type Reply = { ok: true; result: Record<string, unknown> } | { ok: false; error: string };
+type Reply = { ok: true; result: Record<string, unknown> } | { ok: false; error: string; doc?: string };
 
 const isReply = (value: unknown): value is Reply => typeof value === "object" && value !== null && "ok" in value;
 
@@ -42,7 +42,11 @@ export async function ask(tab: number, frameId: number, message: Record<string, 
     }
   }
   if (!isReply(reply)) throw new Error("The page didn't answer.");
-  if (!reply.ok) throw new Error(reply.error);
+  if (!reply.ok) {
+    // An error may carry the page's fresh numbers (a stale element's surroundings): the tab's, as read_page gives them.
+    const doc = "doc" in reply && typeof reply.doc === "string" ? reply.doc : null;
+    throw new Error(doc === null ? unmark(reply.error) : renumber(reply.error, (local) => tableOf(tab).ref({ frameId, doc, local })));
+  }
   return reply.result;
 }
 

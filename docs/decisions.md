@@ -4732,3 +4732,256 @@ short words, as the rulebook is written.
   conversation that changes model between turns gives the second model
   the first one's thread.
 - **Undo:** drop `models` from settings; `modelFor` returns null.
+
+### D270. `wait_for` is one tool; the page waits on itself, a window and a file wait in the shell
+
+- **Date:** 2026-11-15. `v09/reach`. The assistant's own report: "I polled
+  read_page over and over while Facebook said Loading."
+- **Question:** a tool per thing to wait for, or one; and who watches?
+- **Choice:** one tool, `wait_for`, with exactly one of `text`,
+  `text_gone`, `element` (+ `state`: present, enabled, gone), `page`
+  (loaded, quiet), `window_title`, `file`; `timeout` 10 s by default, 60 at
+  most. A page's wait is one request to the extension: the content script
+  watches with a MutationObserver (text read again at most every 60 ms,
+  "quiet" is 500 ms with no change), a load with `webNavigation`; a page
+  that navigates mid-wait is waited on again in its new document until the
+  same deadline. The compositor has no title-changed event, so a window's
+  title is looked at on every compositor event and every 250 ms in the
+  shell; a file on every change in its folder (`fs.watch`) and every
+  500 ms. The scope follows what is waited for (`ToolDef.scopeFor`): a page
+  "web", a window "see", a file "files". A wait that runs out is not an
+  error: `met: false`, with what it saw.
+- **Why:** one tool is one line in the model's list (the list must stay
+  readable) and one thing for the prompt to say.
+- **Cost:** a title that changes and changes back within 250 ms is missed.
+- **Undo:** take `waitTools` out of `TOOLS`; the extension's `wait`
+  method stays harmless.
+
+### D271. Acting tools say what changed, read from the page; sign-in's outcome is read from the page after Return
+
+- **Date:** 2026-11-15. `v09/reach`. The assistant: "sign_in said submitted:
+  true even though login never finished"; "click_element navigated: false
+  with no hint whether the click did anything".
+- **Choice:** the content script starts a MutationObserver just before a
+  click, a key or a choice, and reads it once the page has been quiet
+  300 ms (1.5 s at most): changed near the element (its form, list item,
+  row, section or three levels up), elsewhere, or not at all; a dialog
+  that opened (`dialog[open]`, `role=dialog`, `aria-modal`); the first
+  200 characters of new text; the element still there and what it is now;
+  where the focus went. A load, seen by `webNavigation`, wins over these.
+  `fill_element` says the field's value after. `open_url` says the final
+  address and whether it is a sign-in page (a password field shows, or the
+  redirect's path says login/auth/accounts) or a CAPTCHA. `sign_in` and
+  `fill_code` with `submit` on a browser tab watch the page up to 15 s
+  after Return (across navigations) and classify, by rule
+  (`page/outcome.ts`): a CAPTCHA frame or words first, then the site's
+  words for a block, then an error alert while the field still shows
+  (wrong), then a code field or words (a code is asked for), then the
+  field gone once the page is quiet (signed in, saying whether the address
+  changed); at the deadline, still loading or unchanged. In a native
+  window nothing can be seen: it says so and asks for a screenshot.
+- **Why:** a model reads the result as the truth; "submitted" made it wait
+  and poll.
+- **Cost:** a JavaScript `alert()` blocks the page's scripts, so a click
+  that opens one answers after the 1.5 s cap with no change seen. Error
+  words are English and Spanish only; another language reads as
+  "unchanged" with the alert's text, which still says what the site said.
+  A sign-in watched 15 s holds the agent's other calls that long.
+- **Undo:** `after()` in `background/methods.ts`; `afterSubmit` in
+  `secrets/broker.ts`.
+
+### D272. An element keeps its number through a redraw when its key was one element's; a stale number's error carries the page around it
+
+- **Date:** 2026-11-15. `v09/reach`. "Element numbers go stale after small
+  changes, costing an extra read each time."
+- **Choice:** a frame keeps, for each number, its element (as before) and
+  the blocks it sat in (its form, list item, row, section, dialog or three
+  levels up, then two more, then the body). The key of an element is its
+  role, its name and a link's address. A new element takes a gone
+  element's number only when that key was only ever given once in the
+  document; keys shared by several elements ("Add to cart" ×10) never move
+  a number. A call on a gone number reads the nearest of its blocks still
+  in the page (3,000 characters, 40 elements): if that read gives the
+  number back to a redrawn element, the call acts on it; otherwise the
+  error says it is gone and carries that text, renumbered into the tab's
+  numbers by the background. A number whose page navigated carries the new
+  page's top, as much.
+- **Why:** each stale number cost a whole read_page; the region is what
+  the model was working on.
+- **Cost:** a redrawn element whose name changed ("Sign in" → "Signing
+  in…") gets a new number. A click on a redrawn element is the element the
+  page shows now, which is what was meant.
+- **Undo:** `Numbering.take` always a new number; `target()` in
+  `content/main.ts` back to the plain error.
+
+### D273. read_page has modes (all, main, find, items), and every answer is cut at 15,000 characters with a cursor
+
+- **Date:** 2026-11-15. `v09/reach`. "read_page dumps entire long pages
+  (footers, legal links, suggestions)"; "listing Marketplace results meant
+  reading raw link text".
+- **Choice:** `mode` `all` stays the default, but its answer is cut at
+  `max_chars` (15,000, about 4,000 tokens; 1,000 to 60,000) at a line's
+  end, with one line naming the `cursor` (a character offset) for the next
+  part, and pointing at `main` and `find`. `main` reads only the page's
+  own frame: `<main>` or role=main, else its one article (or one article
+  holding 60% of all of them), else from the body down the block holding
+  70% of its parent's text, never one under half the page's or with fewer
+  than two elements; landmarks inside are left out. `find` is done in the
+  shell on the whole text: three lines each side of a match, runs joined.
+  `items` is the container whose children most often share one shape
+  (tag, class, role) and hold a link, scored by count × their text (15 to
+  200 characters); each row's title is its heading, else its first line
+  that is not a price, else its link's words; a price is found by its
+  form (a currency sign or code, or "free"); the rest are details, four
+  at most. No model anywhere.
+- **Why:** the read was the costliest call in the assistant's session.
+- **Cost:** a cursor is an offset into the text of the page as read now;
+  a page that changed between parts may repeat or skip a few lines. A
+  page whose grid is built of identical anonymous `div`s inside other
+  lists can pick the wrong container; `all` and `find` still work.
+- **Undo:** `PAGE_PART` to 60,000 and the default mode stays `all`.
+
+### D274. Tab tools; closing a tab never asks; list_tabs names every tab to an agent that may see windows
+
+- **Date:** 2026-11-15, changed 16 Nov by the owner's rule ("permissions
+  should be only for critical operations": the `v09/askagent` decision).
+  "I closed Facebook with a ❖W keystroke and hoped it hit the right tab."
+- **Choice:** `close_tab`, `reload_tab`, `go_back`, `go_forward`, all "web",
+  none `destructive`: closing a tab is not on the critical list (no money,
+  secret, lasting loss, system change, or speaking for the person), so it
+  just runs and says so. A connection keeps the tabs it opened (open_url
+  without `tab`, a link that opened one) and `list_tabs` marks them
+  `yours`; the description asks a model to close the person's tabs only
+  when they ask. `list_tabs` gives title and address for every tab when
+  the agent may see windows (Helium's window titles name the tab in front
+  anyway) or was allowed the site; else the site only.
+- **Before the rule (not kept):** a per-call yes for the person's tab
+  (`RunContext.yes`); taken out the same day, so consent has one mechanism.
+- **Cost:** a tab with unsent typing closed by mistake loses that typing;
+  Helium's ⇧❖T brings the tab back.
+- **Undo:** take `tabTools` out of `TOOLS`; `row()` back to `about()`.
+
+### D275. Agents read text files and write, move, copy and rename files; a replaced file goes to the Trash; one list of secret places
+
+- **Date:** 2026-11-15/16. `v09/reach`. "I can list and search files but
+  can't read their contents"; "No writing files outside Notes. No move,
+  copy, rename."
+- **Choice:** `read_text_file`, `write_text_file`, `move_file`,
+  `copy_file`, `rename_file`, all scope "files" (no new scope: the owner's
+  critical-only rule of 16 Nov drops per-scope sheets), none
+  `destructive`: a name already taken is refused unless `replace` is said,
+  and then what is there goes to the Trash first (`gio trash`), which is
+  the Undo. Paths: the home folder and removable drives as `list_folder`,
+  a new path placed by its existing folder. The secret places are one list
+  (`shared/files/secret-places.ts`): `list_folder`'s hidden folders, plus
+  browser profiles and names that say key, password, token or history;
+  `wait_for {file}` keeps to it too. A PDF is read through `pdftotext`
+  (poppler-utils, GPL, run as a separate program, never linked) when it is
+  installed. No command runner: docs/actions.md, "Files", says what one
+  would need.
+- **Why:** the owner's rule puts files the person can get back outside the
+  critical list; the Trash makes every write one they can.
+- **Cost:** `append` changes a file with no copy kept (only what was
+  added can be removed, by hand). A secret kept under another name
+  (`passwords.txt`) is not caught by the names. `trash_file` still asks on
+  a sheet: the registry's ask-every-time list is the `v09/askagent`
+  engineer's to change.
+- **Undo:** take `fileTextTools` out of `TOOLS`.
+
+### D276. copy_to_clipboard writes through the clipboard history, named Dashi; it does not ask
+
+- **Date:** 2026-11-16. `v09/reach`. "Clipboard is read-only (and asks
+  every time). No clean way to put text on the clipboard for the person."
+- **Choice:** one tool, scope "act", not destructive: the copy is added to
+  the history as from "Dashi" before it is written, and the watch keeps
+  that entry when the copy comes back. With the history off, it is only
+  written.
+- **Why:** the owner's critical-only rule: what was on the clipboard is
+  still in the history.
+- **Cost:** with the history off, the person's last copy is replaced with
+  no way back.
+- **Undo:** take the tool out of `clipboardTools`.
+
+### D277. tell_person speaks a line without ending the turn; notify_person posts a notification; neither asks
+
+- **Date:** 2026-11-16. `v09/reach`. "During long jobs the person hears
+  nothing until the end"; "No way to notify the person on my own."
+- **Choice:** `tell_person` goes through the voice's own `say` (each
+  sentence its own queued `speak`, D146), at most one every 4 s, and not
+  while the person talks or dictates or the microphone is open; a line it
+  can't say is shown only, never queued (a queued progress line is stale
+  when it plays). It shows as the capsule's step for the assistant, as the
+  status for others. `notify_person` is a plain notification from
+  "Dashi". Scope "act", nothing destructive (the critical-only rule).
+- **Cost:** an outside agent's line is said in Dashi's voice: the person
+  hears it as Dashi. The menu bar's mark names the agent while it works.
+- **Undo:** take `tellTools` out of `TOOLS`.
+
+### D278. Notes and events can be changed and deleted; each change says what was there, each delete keeps a way back
+
+- **Date:** 2026-11-16. `v09/reach`. "No calendar edit or delete, no note
+  edit or delete (append only)… tasks like 'move my meeting' are
+  impossible."
+- **Choice:** `edit_note` (one way per call: an exact text there once, a
+  range of lines, or an insert; or only a new title), `delete_note` (Notes'
+  Recently Deleted), `edit_event` (the whole event; a repeat's every
+  occurrence; a moved start keeps the length), `delete_event` (an .ics copy
+  to the Trash first, which Calendar imports back). Each result says what
+  was there before. Scopes `notes_write` and `calendar_write`, renamed
+  "Change your notes" and "Change your calendar". None `destructive`.
+- **Cost:** one occurrence of a repeat can't be moved alone yet. The
+  assistant's spoken "Undo that" doesn't reach these: the registry has no
+  Undo for a tool other than `set_setting`, and adding one is
+  `v09/askagent`'s (its README is told).
+- **Undo:** take `editTools` out of `TOOLS`.
+
+### D279. Files reach a page's file field with no chooser; downloads are the browser's own list; the extension gains `downloads`
+
+- **Date:** 2026-11-16. `v09/reach`. "No downloads or uploads: can't save a
+  file from a page, attach a file to a form, or see the downloads list."
+- **Choice:** `attach_file` (the shell reads the file under the same rules
+  as `read_text_file`, sends base64 in 512 KB chunks, the content script
+  sets the field's files and fires input and change); `list_downloads`
+  (`chrome.downloads.search`); a click watches `downloads.onCreated` and,
+  when it starts one, answers with where the file landed once complete
+  (60 s at most), instead of waiting for a load that never comes. The
+  manifest gains the `downloads` permission: a policy-installed extension
+  gets new permissions without a prompt. Not destructive: attaching sends
+  nothing; submitting a form to someone stays the critical list's.
+- **Cost:** 25 MB at most per file; a site that reads files only from its
+  own drag-and-drop zone (not an `<input type=file>`) is not reached.
+  The packaged extension's version must move with this change (D117):
+  `bin/dashi-browser-pack.ts --version` for a development build; a
+  release bumps every version together (H14).
+- **Undo:** take `transferTools` out of `TOOLS`; the permission stays harmless.
+
+### D280. A page element with nothing inside: its picture is the tab's, cropped; a point of it is clicked with the agent's real pointer
+
+- **Date:** 2026-11-16. `v09/reach`. "canvas or custom widgets (the Lichess
+  board) are invisible. I played chess by rewriting the whole PGN."
+- **Choice:** `screenshot_element` captures the visible tab in the browser
+  and crops it to the element there (the compositor can't crop a window's
+  picture, and a screen area would show what covers it); since that
+  picture skips the agents' mask, it is refused when any secret field
+  overlaps the box. `click_in_element` takes fractions of the box and
+  clicks with the agent's own pointer in the browser's window (a trusted
+  click, the same `agent-input` as `click`); inside a frame it dispatches
+  page events instead and says some pages ignore them.
+- **What it doesn't solve:** reading the board (the model reads the
+  picture), drags, a frame's trusted click, timing (a game clock).
+- **Undo:** take `canvasTools` out of `TOOLS`.
+
+### D281. list_windows and click say what kind of field has the keyboard, from AT-SPI's focus, never the field's name
+
+- **Date:** 2026-11-16. `v09/reach`. "Can't tell which field has focus in a
+  native window before typing."
+- **Choice:** the focused window in `list_windows`, and a left click's
+  window 150 ms after, ask the accessibility bus Dashi's sign-in already
+  uses: the app's last focus event (`Atspi.focusedIn`), still focused
+  (`fieldAt`), as "text field", "password field" or "no text field".
+  Bounded: 600 ms to the bus, 300 to each answer. The element tree of a
+  window (`read_window`) is `v09/windowtree`'s; this is only the one fact
+  an agent needs before `type_text`.
+- **Cost:** an app that never sent a focus event since Dashi joined the
+  bus says nothing; Chromium-family apps publish focus only once woken.
+- **Undo:** drop `keyboardIn` from `listWindows` and the click.

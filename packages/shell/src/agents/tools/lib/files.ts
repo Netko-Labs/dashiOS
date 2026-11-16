@@ -3,8 +3,8 @@
  * and opening are the `files` scope, which asks once; moving to the Trash asks
  * on screen every time as well (the answer is never kept). Paths are
  * resolved and limited in shared/files/agent.ts: the home folder and removable
- * drives, never the folders that hold secrets. There is no tool that reads a
- * file's content, writes, or deletes for good.
+ * drives, never the folders that hold secrets. Reading text and writing,
+ * moving, copying and renaming are file-text.ts's; nothing deletes for good.
  */
 
 import { bool, optional } from "@dashi/shape";

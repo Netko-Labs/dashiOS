@@ -14,6 +14,7 @@ import { Session } from "../src/agents/lib/session/session.ts";
 import type { SessionContext, TaskPolicy } from "../src/agents/lib/session/session-types.ts";
 import type { Confirm, PersonAnswer, PersonAsk } from "../src/agents/presence.ts";
 import { SiteGrants } from "../src/agents/sites.ts";
+import { TOOLS } from "../src/agents/tools/index.ts";
 import { fakeCompositor } from "./support/compositor.ts";
 import { flush } from "./support/time.ts";
 
@@ -128,6 +129,10 @@ function assistantSession(answer: PersonAnswer = { text: "Yes.", by: "voice" }) 
 
 test("the critical list that asks on a sheet of its own (D260): force quit and software; trash and the clipboard history don't", () => {
   expect([...ASKS_EVERY_TIME].sort()).toEqual(["force_quit_app", "request_software_install", "request_software_update"]);
+});
+
+test("108 tools, and none of the tools engineer's new ones asks on a sheet of its own", () => {
+  expect(TOOLS).toHaveLength(108);
 });
 
 test("reading and ordinary calls just run, with no sheet and no question", async () => {

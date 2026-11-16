@@ -70,6 +70,25 @@ function harness(options: { sources: LoginSource[]; fields: FieldInfo[]; answer?
 
 const everything = (value: unknown) => JSON.stringify(value);
 
+describe("what came of a sign-in", () => {
+  test("a browser tab says what the page did; a window says to look; no Return says so", async () => {
+    const dashi = source("dashi", [login()]);
+    const tab = harness({ sources: [dashi], fields: [field("text"), field("text"), field("password")] });
+    tab.ctx.outcome = async (kind) => ({ words: `It pressed Return. Not signed in: the site says “Wrong password”. (${kind})`, kind: "wrong" });
+    const wrong = await signIn(tab.ctx, "github.com", null, true);
+    expect(everything(wrong)).toContain("Wrong password");
+    expect(wrong.structuredContent).toMatchObject({ submitted: true, outcome: "wrong" });
+    const window = harness({ sources: [dashi], fields: [field("text"), field("text"), field("password")] });
+    const unseen = await signIn(window.ctx, "github.com", null, true);
+    expect(unseen.structuredContent).toMatchObject({ outcome: "unknown" });
+    expect(everything(unseen)).toContain("take a screenshot");
+    const held = harness({ sources: [dashi], fields: [field("text"), field("text"), field("password")] });
+    held.ctx.outcome = async () => ({ words: "never asked", kind: "signed-in" });
+    const notSent = await signIn(held.ctx, "github.com", null, false);
+    expect(notSent.structuredContent).toMatchObject({ submitted: false, outcome: "not-submitted" });
+  });
+});
+
 describe("signing an agent in", () => {
   test("it types the account, Tab, then the password into the password field, and says nothing secret", async () => {
     const dashi = source("dashi", [login()]);
