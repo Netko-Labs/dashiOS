@@ -7,7 +7,7 @@
 
 import type { Actions } from "../actions/index.ts";
 import type { Ask } from "../agents/ask/types.ts";
-import type { Agents } from "../agents/index.ts";
+import type { Agents, Assistant } from "../agents/index.ts";
 import type { AppMenus } from "../app-menus/index.ts";
 import type { BatteryMonitor } from "../battery/index.ts";
 import type { Clipboard } from "../clipboard/index.ts";
@@ -28,6 +28,7 @@ import type { SetupAssistant } from "../setup/index.ts";
 import type { Entry } from "../shared/app-entries/index.ts";
 import type { Clipboard as SystemClipboard } from "../shared/clipboard/index.ts";
 import type { PillHub } from "../shared/pill/index.ts";
+import type { AssistantHost } from "./assistant.ts";
 import type { LauncherOpener } from "./launcher.tsx";
 import type { OverlayKind } from "./overlays.tsx";
 
@@ -41,6 +42,10 @@ export interface LateParts {
   menuBars: MenuBars;
   menus: Menus;
   agents: Agents | null;
+  /** Dashi's assistant, as it is talked to (boot/assistant.ts): made with the voice loop; the agents' server asks it for its connections' policy. */
+  assistant: Assistant;
+  /** The sheets, the keys and the settings' values the assistant uses, once they exist. */
+  assistantHost: AssistantHost;
   actions: Actions;
   settingsApp: SettingsApp;
   setupAssistant: SetupAssistant;

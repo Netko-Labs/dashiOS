@@ -3,7 +3,8 @@
  * keys.ts). The listen the key's press opened goes on after it comes up, and
  * the service ends it once the person has talked and gone quiet
  * (`listen.quiet`); with nothing heard at all it is given up on, so the
- * microphone is never left open.
+ * microphone is never left open. The listen that opens by itself after
+ * Dashi speaks (voice.ts `again`) is one of these, with a shorter wait.
  */
 
 import type { Timers } from "../../shared/time/index.ts";
@@ -25,14 +26,14 @@ export class TapListen {
   }
 
   /** The listen under way ends by itself from here; `waited` runs if nothing was heard in a while. Throws the service's refusal. */
-  async begin(wanted: () => boolean, waited: () => void): Promise<void> {
+  async begin(wanted: () => boolean, waited: () => void, waitMs: number = TAP_WAIT_MS): Promise<void> {
     await this.service.call("listen.quiet", { quiet_ms: TAP_QUIET_MS });
     if (!wanted()) return;
     this.on = true;
     this.giveUp = this.timers.set(() => {
       this.giveUp = null;
       waited();
-    }, TAP_WAIT_MS);
+    }, waitMs);
   }
 
   /** It is over (its words came, a second tap, a stop); whether one was running. */

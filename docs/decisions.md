@@ -3431,6 +3431,161 @@ short words, as the rulebook is written.
   surface, and a login screen that does not open locks the person out).
 - **Undo:** nothing to undo.
 
+### D146. Dashi's speech is never cut: every sentence is handed to `speak`, and each utterance is counted in the log
+
+- **Date:** 2026-11-15. `v09/loop` (the assistant's rebuild, brief b1).
+- **Question:** half of a day's spoken answers stopped in the middle of a
+  sentence. The words were cut to 140 characters for a launcher row
+  (`agents/ask/plan.ts` `spokenWords`) and that cut line was what was
+  spoken. What is spoken, and what else stops speech early?
+- **Choice:**
+  - A task keeps all the model said (`words`, `wholeWords`: every
+    paragraph, uncut, without its tools' chatter). Speech and the card
+    that reads an answer use it. The launcher's row keeps its one line.
+  - The shell cuts the words into sentences and hands each to `speak`
+    queued (`voice/lib/saying.ts`). An utterance is over when the last has
+    played. One line each in the session's log: asked, handed, played, why
+    it ended.
+  - A yes on a card lets Dashi finish its sentence; a no, or a card that
+    goes, stops it.
+  - A dictation that starts while Dashi speaks pauses it: the sentences
+    not played to their end are said after the dictation, and the capsule
+    says "Paused while you dictate." The service still stops the sound
+    when the microphone opens; the shell says the rest again.
+- **Why:** the cut was a launcher's measure used for speech. The other two
+  dropped the part of an answer that says what Dashi could not do.
+- **Cost:** a sentence interrupted by a dictation is said again from its
+  start. One `speak` a sentence opens the speakers once a sentence; the
+  pause between sentences is the service's (about half a second).
+- **Undo:** hand the whole text in one `speak` again (`Saying.add`); the
+  log line then counts pieces, not sentences.
+
+### D147. One conversation while it is open: two minutes after Dashi's last word, and nothing guesses a new subject
+
+- **Date:** 2026-11-15. `v09/loop`.
+- **Question:** every spoken ask was a new conversation ("Each request
+  starts fresh for me"). When does one end, and who decides that a
+  sentence is a follow-up?
+- **Choice:** one conversation at a time (`agents/assistant/conversation.ts`).
+  It is open from the first thing said until two minutes after Dashi's
+  last word with nothing said back (the lead's number; the diagnosis said
+  90 s), or until the person ends it: "that's all", "new topic", "forget
+  that" and their Spanish as the whole of what was said, ❖Esc, the lock.
+  While it is open every ask continues it: a harness is resumed by its
+  session, a model the shell drives gets the messages. No rule guesses a
+  change of subject; the model is good at that and a wrong guess by rule
+  loses the thread. The capsule shows it: one quiet line, "Still with
+  you", with Done. The exchanges go, in words, to
+  `~/.local/state/dashi/agents/conversations.jsonl`.
+- **Why:** the owner tested exactly this and was told no each time.
+- **Cost:** two minutes of a longer context after an unrelated second
+  question. The square in the capsule stops what is said and keeps the
+  conversation; only ❖Esc and Done end it.
+- **Undo:** `TALK_OPEN_MS`; or have `begin()` always start a new one.
+
+### D148. Spoken asks run on the full server in a loop, two ways; the person's voice is the consent, with the registry's exceptions
+
+- **Date:** 2026-11-15. `v09/loop`. The owner: "It should have the same
+  level of access, even if it is running in the sandbox… use the same tools
+  as Claude can with the system MCP."
+- **Question:** the voice path planned with 30 tools and ran nothing
+  until a yes. How does it get the 87, and what replaces the card?
+- **Choice:**
+  - **Way one:** the harness the person set up, in the sandbox with the
+    task profile as a launcher run has, on the full server's socket. Its
+    prompt is Dashi's own (`--system-prompt`, not appended to a coding
+    agent's), `--effort low`, `--include-partial-messages`, `--resume` on
+    every ask after a conversation's first. One process an ask (0.3 s to
+    start, measured in the diagnosis); no process is kept alive.
+  - **Way two:** with a key (Claude) or Ollama, the shell runs the loop
+    over a session of the same server with no socket. Its tools are not
+    strict (all are offered; the server checks every call). A local model
+    is offered a core of ten tools and the ones the words name.
+  - **GPT keeps plan mode**: its loop is not built.
+  - **Consent** is the diagnosis's table. One first-use sheet, then every
+    scope is granted to the assistant's connections. `destructive` tools
+    with no sheet of their own wait for a yes or no on the capsule's card,
+    by voice or typed, and a yes is heard at the start of what was said.
+    The ones that ask every time, sign-in and payments are untouched. A
+    site new to the conversation is used and said in the capsule's line.
+  - **Limits:** 25 calls and two minutes of the ask's own time; the time
+    a call waits on the person is not counted.
+  - **Plan mode is no longer the default for voice.** It stays for typed
+    asks and as "Ask before every step" in Settings › Voice.
+- **Why:** the sandbox was never the limit: Dashi's tools run in the
+  shell. Only the socket and the policy differed from a launcher run.
+- **Cost:** a page can now put words in front of a model that can act on
+  them. The guard is the rows that still ask (logins, payments, the Trash,
+  installs, the clipboard) and the cap, not a card. The assistant shows in
+  the agents' panel as "Dashi" while it works, and Stop there stops it.
+  A second sheet can still appear when the person unticked a kind on the
+  first-use sheet.
+- **Undo:** turn "Ask before every step" on; or make `wayOf` return
+  `plan`.
+
+### D149. What is in front goes with every ask, after the words
+
+- **Date:** 2026-11-15. `v09/loop`.
+- **Question:** a spoken ask carried the words and one sentence. What
+  does the model need of the moment, and where does it go?
+- **Choice:** one block after the words in the user turn
+  (`agents/assistant/context.ts`), read when the microphone opens: the
+  window in front and its title, in Helium the page's address, the
+  selection, the time, the Desktop that shows, and the line that the words
+  are a transcript and names may be misheard, with the names the person
+  uses. The installed apps go once a conversation, not with every ask.
+  After the words, never in the system prompt, so the prompt stays the
+  same and cached.
+- **Why:** "helium", "you tube", "body tech" resolve from the list of
+  apps and names without a correcting model.
+- **Cost:** the title and address of what is in front, and the selection,
+  go to the model the person chose with every spoken ask. The first-use
+  sheet is where that is said.
+- **Undo:** `contextBlock` returns only the transcript line.
+
+### D150. After Dashi speaks, the microphone opens for the reply: after its last sample, never over it
+
+- **Date:** 2026-11-15. `v09/loop`.
+- **Question:** a conversation where the key must be held for every
+  reply is not one. There is no echo cancelling: what keeps Dashi from
+  hearing itself?
+- **Choice:** the simple way (the diagnosis's 9.6 a). When the
+  conversation is open and Dashi's last sentence has played, 300 ms later
+  the microphone opens until the person goes quiet; with nothing said for
+  6 s it closes without a word. After a question (`ask_person`, a spoken
+  yes or no) it always opens. It never opens while a sentence still plays
+  or waits. A setting, Settings › Voice › "Listen again after Dashi
+  speaks", on by default, turns the first kind off. The key and ❖Esc
+  interrupt as before; a key held while a listen that opened by itself has
+  heard nothing takes its place.
+- **Why:** it needs nothing from the service, and it cannot loop on
+  itself.
+- **Cost:** no talking over Dashi by voice. A room's own sound in those
+  six seconds can be taken for a reply.
+- **Undo:** the setting; or `Mic.again` does nothing.
+
+### D151. "What I know about you" is a plain file; Dashi writes a line only when told "remember that…"
+
+- **Date:** 2026-11-15. `v09/loop`.
+- **Question:** Dashi remembered nothing of the person across
+  conversations, and guessed a name from the harness's own account. Where
+  does what it knows live, and who writes it?
+- **Choice:** one text file, `~/.config/dashi/about-you.md`
+  (`persona/lib/about.ts`). Settings › Your Dashi has a row, "What Dashi
+  knows about you", that says how many lines it holds and opens it in the
+  editor: the person reads and changes every word. Its text (2000
+  characters at most) goes with the first ask of each conversation, in the
+  block after the words (D149). Dashi adds a line only when the person
+  says "remember that…" ("recuerda que…") about themselves: their own
+  words, by rule, with no model asked, answered "I'll remember that."
+  "Remember to buy milk" and "can you remember…?" are not this.
+- **Why:** a file is the one form of memory a person can audit whole.
+- **Cost:** the model never offers to remember something (the brief's "or
+  agrees" half is not built: it needs a tool and a card). A transcript's
+  mishearing is written as heard, for the person to fix in the file.
+- **Undo:** delete the file; `remember` left out of the assistant's
+  options turns the rule off.
+
 
 ### D160. Each sentence is said by a voice of its own language, told from its words
 
@@ -3535,3 +3690,36 @@ short words, as the rulebook is written.
 - **Cost:** a short ask ("sí", "OK") gives no language, and the hint
   stays what it was.
 - **Undo:** drop `language_of` in `service/listen.rs`.
+
+### D164. Each sentence keeps its own `speak` and its own language's voice: `speak` answers with the language it chose, and the model is told the language the person spoke
+
+- **Date:** 2026-11-15. `v09/loop` joined with the voice work (brief b3).
+- **Dilemma:** D146 hands an answer to `speak` a sentence at a time, so
+  none is cut; D160 tells each sentence's language inside one `speak`,
+  where a sentence that tells nothing ("OK.") keeps the language of the one
+  before it. Sent one at a time, every sentence is a first sentence, and
+  "OK." after a Spanish one would fall back to the conversation's language
+  and change voice.
+- **Decision:** both stand. `speak`'s reply carries `language`, the
+  language its last sentence is said in, and the shell sends it as the next
+  sentence's `hint` (`voice/lib/speak-params.ts`); the first sentence's
+  hint is the conversation's (what `heard` told, else `persona.language`,
+  else the formats'). A run a dictation paused goes on after the language
+  it stopped in. The switch off sends `by_language: false` with every
+  sentence. And the answer itself: `heard`'s language goes to the
+  assistant with the words, and its context says "They spoke Spanish:
+  answer in Spanish. Keep the names of products, apps and sites as they
+  are written."; the prompt says the same as a rule, for words that told
+  no language.
+- **Why not** one `speak` for the whole answer with `parts`: the answer is
+  spoken as it is written, before its end is known. **Why not** the
+  `sentence` event's language: it comes when the sentence plays, after the
+  next one was queued.
+- **Cost:** the seam's shorter pause (D161) is made inside one `speak`
+  only, so between an answer's sentences the pause is the model's own
+  (about half a second) whether or not the voice changes. A language told
+  for the ask is a detector's guess from the words: a Spanish ask of two
+  names ("YouTube, Helium") tells nothing and the prompt's rule decides.
+- **Undo:** drop `language` from the reply in `service/speak.rs` and
+  `after` in `voice/lib/saying.ts`; drop `spoke` in
+  `agents/assistant/context.ts`.

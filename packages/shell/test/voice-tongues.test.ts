@@ -125,17 +125,20 @@ function started(settings: VoiceSettings, region?: string) {
 test("an answer is sent with the voices and the language last heard; a sample is said in its one voice", async () => {
   const { fake, sent, parts } = started({ on: true }, "es_CO.UTF-8");
   await parts.models.refresh();
-  await parts.voice.say("I found it. Está en la carpeta de descargas.");
-  expect(sent[0]).toEqual({ text: "I found it. Está en la carpeta de descargas.", voices: { "es-CO": "ef_dora" }, hint: "es" });
+  parts.voice.say("Está en la carpeta de descargas.");
+  await settle();
+  expect(sent[0]).toEqual({ text: "Está en la carpeta de descargas.", queue: true, voices: { "es-CO": "ef_dora" }, hint: "es" });
   // The person spoke English: the next answer's first words are taken as English.
   fake.emit({ event: "heard", text: "open the calendar", language: "en" });
-  await parts.voice.say("OK.");
+  parts.voice.say("OK.");
+  await settle();
   expect(sent[1]).toMatchObject({ text: "OK.", hint: "en" });
   parts.sample("em_alex");
   await settle();
-  expect(sent[2]).toEqual({ text: "Hola, soy Dashi. Así es como sueno.", voice: "em_alex", language: "es-CO" });
+  expect(sent[2]).toEqual({ text: "Hola, soy Dashi.", queue: true, voice: "em_alex", language: "es-CO" });
+  expect(sent[3]).toEqual({ text: "Así es como sueno.", queue: true, voice: "em_alex", language: "es-CO" });
   parts.sample("bm_george");
   await settle();
-  expect(sent[3]).toMatchObject({ voice: "bm_george", language: "en-GB" });
+  expect(sent[4]).toMatchObject({ voice: "bm_george", language: "en-GB" });
   parts.close();
 });

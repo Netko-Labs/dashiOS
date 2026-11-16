@@ -45,6 +45,18 @@ function Heard({
   );
 }
 
+/** The conversation is still open: a quiet line, so the person sees that what they say next continues it; Done ends it. */
+function Open({ mark, send, colours }: { mark: PersonaMark; send(command: VoiceModeCommand): void; colours: CapsuleColours }) {
+  return (
+    <>
+      <Lead colours={colours} mark={mark} />
+      <Line color={colours.soft}>Still with you</Line>
+      <Separator color={colours.soft} />
+      <Button label="Done" keys={STOP_KEYS} colours={colours} onPress={() => send({ do: "stop", all: true })} />
+    </>
+  );
+}
+
 type VoiceProps = Common & { state: Exclude<VoiceModeState, { phase: "idle" }>; mark: PersonaMark; send(command: VoiceModeCommand): void };
 
 export function VoiceLine({ state, mark, send, ...common }: VoiceProps): ReactNode {
@@ -92,6 +104,8 @@ export function VoiceLine({ state, mark, send, ...common }: VoiceProps): ReactNo
       );
     case "answer":
       return <AnswerLine words={state.words} at={state.at} chars={Math.max(8, chars - 15)} colours={colours} mark={mark} stop={stop} />;
+    case "open":
+      return <Open mark={mark} send={send} colours={colours} />;
     case "done":
       return (
         <>

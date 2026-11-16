@@ -23,7 +23,8 @@ export const VoicesShape = loose({ default: str(), voices: lenientList(VoiceShap
 
 export const FetchReply = loose({ bytes: num(), fetching: bool() });
 export const HeardReply = loose({ text: str(), language: optional(str()) });
-export const SpeakReply = loose({ id: int() });
+/** `language`: the language its last sentence is said in ("es"). */
+export const SpeakReply = loose({ id: int(), language: optional(str()) });
 
 const Word = loose({ text: str(), start: num(), end: num() });
 export type SpokenWord = Infer<typeof Word>;

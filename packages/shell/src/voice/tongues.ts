@@ -5,7 +5,7 @@
  * `speak` is sent with: the voices, the region each is read by, and the conversation's language.
  */
 
-import type { SpokenVoice, VoiceSettings } from "./types.ts";
+import type { SpeakExtras, SpokenVoice, VoiceSettings } from "./types.ts";
 
 /** The languages dashi-voice has voices for, by their code. */
 export const TONGUES = [
@@ -77,13 +77,6 @@ export function withTongue(settings: VoiceSettings, code: TongueCode, voice: str
   else if (USUAL.includes(code)) next[code] = false;
   else delete next[code];
   return Object.keys(next).length > 0 ? next : undefined;
-}
-
-/** What `speak` is sent beside the text and the voice (`byLanguage` goes as `by_language`). */
-export interface SpeakExtras {
-  voices?: Record<string, string>;
-  hint?: string;
-  byLanguage?: false;
 }
 
 export interface SpeakContext {

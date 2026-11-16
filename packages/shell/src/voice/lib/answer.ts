@@ -11,11 +11,16 @@ export interface SpokenTask {
   phase: "asking" | "planned" | "running" | "done" | "failed" | "stopped";
   steps: ReadonlyArray<{ title: string }>;
   said: string;
+  /** All it said, uncut (agents/ask/plan.ts `wholeWords`); `said` is only a row's one line. */
+  words?: string;
   failure: { kind: string; text: string } | null;
 }
 
 /** What nobody answering sounds like. */
 export const NO_AGENT: Answer = { say: "No agent answers yet. Choose one in Settings, under Agents.", failed: { go: "agents" } };
+
+/** What a task said, whole when it keeps that: speech is never the row's cut line. */
+const wordsOf = (task: SpokenTask): string => task.words || task.said;
 
 const sentence = (text: string): string => {
   const clean = text.replace(/\s+/g, " ").trim();
@@ -50,12 +55,12 @@ export function answerOf(task: SpokenTask): (Answer & { plan?: true }) | null {
     case "running":
       return {
         say: planWords(
-          task.said,
+          wordsOf(task),
           task.steps.map((step) => step.title),
         ),
         plan: true,
       };
     case "done":
-      return { say: sentence(task.said) || "I have nothing to say to that." };
+      return { say: sentence(wordsOf(task)) || "I have nothing to say to that." };
   }
 }

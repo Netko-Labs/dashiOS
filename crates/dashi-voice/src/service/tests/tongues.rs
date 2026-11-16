@@ -53,6 +53,48 @@ fn each_sentence_is_said_in_a_voice_of_its_own_language() {
 }
 
 #[test]
+fn an_answer_sent_a_sentence_at_a_time_keeps_its_voices() {
+    // The shell's way: one queued `speak` a sentence, each hinted with the language the one
+    // before was said in, which the reply tells.
+    let world = world();
+    let mut hint = "en".to_owned();
+    for sentence in [
+        "I found it.",
+        "Está en la carpeta de descargas.",
+        "OK.",
+        "Do you want me to open it?",
+    ] {
+        let params = Speak {
+            text: sentence.into(),
+            voice: Some("af_heart".into()),
+            hint: Some(hint.clone()),
+            queue: true,
+            ..Speak::default()
+        };
+        let reply = world.ask(Request::Speak(params)).unwrap();
+        hint = reply["language"].as_str().unwrap_or_default().to_owned();
+    }
+    world.until("all four are said", |world| spoken(world, 4));
+    let voices: Vec<Value> = told(&world).into_iter().map(|(voice, _)| voice).collect();
+    // "OK." tells nothing: it stays with the Spanish sentence before it.
+    assert_eq!(
+        voices,
+        vec![
+            json!("af_heart"),
+            json!("ef_dora"),
+            json!("ef_dora"),
+            json!("af_heart")
+        ]
+    );
+    let reasons: Vec<Value> = world
+        .events_named("spoken")
+        .iter()
+        .map(|event| event["reason"].clone())
+        .collect();
+    assert_eq!(reasons, vec![json!("done"); 4]);
+}
+
+#[test]
 fn off_everything_is_said_by_the_one_voice() {
     let world = world();
     let params = Speak {

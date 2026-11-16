@@ -22,7 +22,7 @@ import type { Outcome } from "../../../actions/types.ts";
 import { realTimers } from "../../../shared/time/index.ts";
 import { AnswerError } from "../answerer.ts";
 import type { HistoryStep } from "../history.ts";
-import { oneLine, planTools, resultFor, runnable, type Step, settingWords, spokenWords, stepsFrom, type Undo } from "../plan.ts";
+import { oneLine, planTools, resultFor, runnable, type Step, settingWords, spokenWords, stepsFrom, type Undo, wholeWords } from "../plan.ts";
 import type { TaskView } from "../types.ts";
 import { FAILED_STAYS_MS, outcomeOf, type Task, type TaskDeps } from "./task-types.ts";
 
@@ -56,6 +56,7 @@ export class AskTasks {
       phase: task.phase,
       steps: task.steps.map((step) => ({ ...step })),
       said: task.said,
+      words: task.words,
       failure: task.failure,
       ...(task.leftNow ? { leftNow: true as const } : {}),
     }));
@@ -82,6 +83,7 @@ export class AskTasks {
       phase: "asking",
       steps: [],
       said: "",
+      words: "",
       failure: null,
       history: [],
       turn: { text: context?.trim() ? `${text}\n\n${context.trim()}` : text, results: [] },
@@ -120,6 +122,7 @@ export class AskTasks {
     task.phase = "asking";
     task.steps = [];
     task.said = "";
+    task.words = "";
     task.failure = null;
     this.publish();
     const { signal } = task.controller;
@@ -130,8 +133,9 @@ export class AskTasks {
       task.history = history;
       task.serial++;
       task.steps = stepsFrom(reply.calls, actions);
-      // What it says to the person, never its tools' chatter (plan.ts `spokenWords`).
+      // What it says to the person, never its tools' chatter: one line for the row, all of it for speech.
       task.said = spokenWords(reply.text);
+      task.words = wholeWords(reply.text);
       // Nothing to run (it said it can't): the plan view shows its words, and Now lets it go.
       task.phase = task.steps.length > 0 ? "planned" : "done";
     } catch (error) {

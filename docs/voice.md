@@ -38,21 +38,43 @@ Voice are the shell's.
 4. **The key comes up:** send `listen.stop`. Its reply carries the words;
    the state is `thinking` until then. Esc: `listen.cancel` (nothing is
    worked out).
-5. **Say an answer:** send `speak`. For each sentence a `sentence` event
-   comes as its first sound plays, with every word's start and end in
-   milliseconds from that moment: show the sentence as the caption and move
-   the highlight by the shell's own clock. `spoken` ends it. Esc, or the
-   person talking: `speak.stop`. With the voice it sends `voices` (the
-   voice for each other language Dashi speaks, from Settings › Voice) and
-   `hint` (the conversation's language: what `heard` last told, else the
-   language chosen for Dashi, else the region's formats'); the service
-   tells each sentence's language and changes voice (`voice/tongues.ts`).
-6. **`ask_person`:** `speak` the question as its sheet comes up. The person
-   answers as they ask: holding the talk key (`listen`, then `listen.stop`),
-   and the words heard are the answer instead of an ask. The microphone
-   opens only on the person's own press, never because an agent asked.
-   (`"until": "silence"` is there for a listen that ends by itself; the
-   shell does not use it in 0.8.)
+5. **Say an answer:** one `speak` for each sentence, with `queue: true`,
+   in order, as the answer is written (`voice/lib/saying.ts`,
+   `voice/lib/sentences.ts`): the first is heard while the rest is still
+   coming, and none is ever cut, whatever the answer's length. For each a
+   `sentence` event comes as its first sound plays, with every word's start
+   and end in milliseconds from that moment: show the sentence as the
+   caption and move the highlight by the shell's own clock. `spoken` ends
+   each; the answer is over when the last has ended. Esc, or the key held
+   again: `speak.stop`. A dictation that starts while Dashi speaks opens
+   the microphone, which stops the sound (the service's rule): the shell
+   keeps the sentences that had not played to their end and says them once
+   the dictation is over, with "Paused while you dictate." meanwhile. One
+   line an utterance goes to the session's log: `dashi-shell: voice said
+   asked="…" handed=N played=M ended=done|stopped|failed|paused` (the
+   sentences handed to `speak`, and the ones the service said it played).
+   With the voice each `speak` carries `voices` (the voice for each other
+   language Dashi speaks, from Settings › Voice) and `hint`, and the
+   service tells the sentence's language and says it in that language's
+   voice (`voice/tongues.ts`). The first sentence's `hint` is the
+   conversation's language: what `heard` last told, else the language
+   chosen for Dashi, else the region's formats'. Each later sentence's is
+   the language the service said the one before in (`speak`'s reply,
+   `language`), so a sentence whose words tell nothing ("OK.") keeps the
+   voice of the sentence before it, as it would inside one `speak`. With
+   "Speak each language in its own voice" off, `by_language: false` goes
+   instead and one voice says it all. A sample (Settings › Voice) is one
+   voice read as one `language`.
+6. **`ask_person`:** `speak` the question as its card comes up, after
+   whatever Dashi is saying. Once its last sentence has played, and 300 ms
+   more, the shell opens the microphone by itself (`listen`, then
+   `listen.quiet`) and the words heard are the answer instead of an ask;
+   with nothing said for 6 s it closes again. The same happens after an
+   answer while the conversation is open, unless Settings › Voice turns
+   "Listen again after Dashi speaks" off. The microphone never opens while
+   a sample still plays: there is no echo cancelling yet, so Dashi would
+   hear itself. Holding the talk key works as ever, and takes the place of
+   a listen that opened by itself.
 7. **Keep it warm:** when Voice is on and the session starts, send `warm`
    so the first hold answers at once. Models unused for ten minutes are let
    go of (the service is then 33 MB, not 1.8 GB), and loaded again when next
@@ -282,7 +304,7 @@ The same rule as the vault's (`docs/secrets.md`).
 | `listen.stop` | none | `text`, `speech_ms`, `language?` |
 | `listen.quiet` | `quiet_ms?` | `{}`: the listen under way now ends by itself on a quiet |
 | `listen.cancel` | none | `{}` |
-| `speak` | `text` or `parts`, `voice?`, `language?`, `voices?`, `hint?`, `by_language?`, `speed?`, `queue?` | `id` |
+| `speak` | `text` or `parts`, `voice?`, `language?`, `voices?`, `hint?`, `by_language?`, `speed?`, `queue?` | `id`, `language?` |
 | `speak.stop` | none | `{}` |
 
 ### `status`
@@ -428,7 +450,7 @@ event, no words worked out.
 
 ```json
 {"id":12,"method":"speak","params":{"text":"It's ten past four. You have two meetings left."}}
-{"id":12,"result":{"id":1}}
+{"id":12,"result":{"id":1,"language":"en"}}
 {"event":"state","state":"thinking"}
 {"event":"state","state":"speaking"}
 {"event":"sentence","id":1,"index":0,"text":"It's ten past four.","ms":1650,
@@ -478,7 +500,10 @@ event, no words worked out.
   `speak` takes the place of the old one, which ends with
   `"reason":"stopped"`.
 
-The result's `id` names the utterance in its events. `speak.stop` stops the
+The result's `id` names the utterance in its events, and its `language` is
+the language its last sentence is said in, by its code (`"es"`; left out
+when there is nothing to say): an asker that sends an answer a sentence at
+a time gives it as the next one's `hint`. `speak.stop` stops the
 sound at once and forgets what was queued; every utterance it ended gets a
 `spoken` with `"reason":"stopped"`.
 

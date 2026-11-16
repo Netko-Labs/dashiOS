@@ -27,14 +27,15 @@ export {
   promptStyle,
 } from "./ask/answerer.ts";
 export { type AnswererRow, answererRows } from "./ask/choices.ts";
-export { type HarnessStatus, signInCommand } from "./ask/harness/index.ts";
+export { type HarnessStatus, hostFiles, shellPaths, signInCommand } from "./ask/harness/index.ts";
 export { ago, type HistoryEntry } from "./ask/history.ts";
-export { type KeyPlace, modelKeys, type Provider, vaultTokenSource } from "./ask/keys.ts";
+export { type KeyPlace, type ModelKeys, modelKeys, type Provider, vaultTokenSource } from "./ask/keys.ts";
 export { isModelName } from "./ask/local.ts";
 export { type NowItem, TurnWatch } from "./ask/now.ts";
 export { oneLine, type Step, type Undo } from "./ask/plan.ts";
 export { startAsk } from "./ask/service.ts";
 export type { AnswerStatus, TaskView } from "./ask/types.ts";
+export { type Assistant, type Moment, startAssistant, talkLogPath, talkWords, USUAL_NAMES } from "./assistant/index.ts";
 export { Atspi } from "./atspi/client.ts";
 export { type A11yNode, documents, fieldAt, focusedField, hasState, limits, passwordFields, placeAgain, ROLE, STATE } from "./atspi/tree.ts";
 export type { Question } from "./confirm.ts";
@@ -51,6 +52,7 @@ export { startHandoff } from "./handoff/service.ts";
 export { AgentRuns } from "./handoff/store.ts";
 export type { Handoff, HandoffHarness, HandoffOptions } from "./handoff/types.ts";
 export { cut, hostOf } from "./handoff/words.ts";
+export type { TaskHooks, TaskPolicy } from "./lib/session/session-types.ts";
 export { LockWatch } from "./lock.ts";
 export {
   type AgentEntry,

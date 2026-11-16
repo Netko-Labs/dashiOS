@@ -1,6 +1,7 @@
 export { startRegistry } from "./actions.ts";
-export { startAgentBasics, startAgentServer, startAskAgents, startHandoff } from "./agents.ts";
+export { settingNow, startAgentBasics, startAgentServer, startAskAgents, startHandoff } from "./agents.ts";
 export { appQuitting, appShortcut, startCatalog, startKeepingAwake, startPickerAndTray, startPrograms } from "./apps.ts";
+export { hostAssistant } from "./assistant.ts";
 export { startBarHolds, startBars } from "./bars.tsx";
 export { startCapsule } from "./capsule.tsx";
 export { startArranging, startDesktops, startOverview } from "./desktop.ts";

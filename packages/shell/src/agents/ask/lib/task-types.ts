@@ -36,6 +36,8 @@ export interface Task {
   phase: TaskPhase;
   steps: Step[];
   said: string;
+  /** All it said, uncut: what is spoken and what the card reads (plan.ts `wholeWords`). */
+  words: string;
   failure: TaskView["failure"];
   /** What the answerer returned last time: sent with the next turn. */
   history: unknown[];

@@ -8,9 +8,10 @@ export interface VoiceSource {
   subscribe(listener: () => void): () => void;
   getSnapshot(): Chip | null;
   level: { subscribe(listener: () => void): () => void; getSnapshot(): number };
-  stop(): void;
-  /** Say `words`; the next thing heard goes to `heard`. Returns what ends it. */
-  ask(words: string, heard: (text: string) => void): () => void;
+  /** `all` is ❖Esc: the conversation ends too. */
+  stop(all?: boolean): void;
+  /** Say `words`; the next thing heard goes to `heard`. Returns what ends it; `keep` lets what is being said finish. */
+  ask(words: string, heard: (text: string) => void): (keep?: boolean) => void;
   /** How the person talks ("the right ❖ key"), or null when they can't. */
   talkKey(): string | null;
 }
@@ -21,8 +22,10 @@ export interface Task {
   /** The words its plan answers. */
   request: string;
   phase: "asking" | "planned" | "running" | "done" | "failed" | "stopped";
-  /** What the model said besides its calls. */
+  /** What the model said besides its calls, on one line. */
   said: string;
+  /** All it said, uncut; what is read and spoken. */
+  words?: string;
   steps: ReadonlyArray<{ title: string; state: { kind: string } }>;
 }
 

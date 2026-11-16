@@ -1,5 +1,7 @@
 export { contextPrompt, NO_CONTEXT, type TaskContext, taskGrants, windowWords } from "./grants.ts";
 export { harnessGlyph } from "./harness-icons.ts";
+export { taskCommand } from "./lib/commands.ts";
+export { eventsOf, lineObject } from "./lib/stream.ts";
 export { attentionNotice, endedNotice, FOLLOW_UP, logText, SHOW } from "./notices.ts";
 export { harnessOrder } from "./order.ts";
 export { routedUi } from "./questions.ts";

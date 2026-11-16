@@ -92,5 +92,12 @@ export const PERSONA_ROWS = [
     keywords: ["export", "share", "send", "file", "character"],
     kind: "action",
   },
+  {
+    id: "persona/about",
+    title: "What Dashi knows about you",
+    detail: "A file you can read and change.",
+    keywords: ["remember", "memory", "about me", "my name", "facts", "knows"],
+    kind: "action",
+  },
   { id: "persona/reset", title: "Back to Dashi", name: "Put Dashi back as it was", keywords: ["reset", "default", "restore"], kind: "action" },
 ] as const satisfies readonly RowDef[];

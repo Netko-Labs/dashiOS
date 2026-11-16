@@ -30,12 +30,15 @@ export function voiceStateOf(
   if (chip?.kind === "listening") return { phase: "listening", text: chip.text, answering: chip.question };
   if (chip?.kind === "thinking") return { phase: "heard", text: chip.text };
   if (chip?.kind === "speaking") return { phase: "answer", words: chip.words, at: chip.at, full: chip.full };
+  // Dashi's assistant at work: its step, in Dashi's words; how many there will be is not known.
+  if (chip?.kind === "working") return { phase: "step", title: chip.text, index: 0, of: 0, task: "" };
   // "Done" is not kept waiting behind a line that only repeats what was heard ("You said: Yes."): it would be gone before it was read.
   const repeats = chip?.kind === "notice" && !chip.go && own?.phase === "done";
   if (chip?.kind === "notice" && !repeats) return { phase: "notice", line: chip.text, ...(chip.go ? { go: chip.go } : {}), until: noticeUntil };
   if (own) return own;
   const running = tasks.find((task) => task.phase === "running" && spoken.has(task.id));
-  if (!running) return { phase: "idle" };
+  // Nothing else to say, and the conversation is still open: the quiet line that says Dashi has the thread.
+  if (!running) return chip?.kind === "open" ? { phase: "open" } : { phase: "idle" };
   const index = Math.max(
     0,
     running.steps.findIndex((step) => step.state.kind === "running"),

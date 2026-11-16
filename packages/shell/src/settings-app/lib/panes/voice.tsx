@@ -40,6 +40,7 @@ import { Setting } from "../setting.tsx";
 import { MiniButton } from "./parts.tsx";
 import { DictationRows } from "./voice-dictation.tsx";
 import { VoiceLanguages } from "./voice-languages.tsx";
+import { TalkRows } from "./voice-talk.tsx";
 import { offerWords, removeWords, setsWords, voiceChoices, whatFetching } from "./voice-words.ts";
 
 export type VoicePaneSource = Pick<VoiceParts, "models" | "sample">;
@@ -242,6 +243,7 @@ export function VoicePane({ settings, voice, byPerson }: { settings: SettingsSto
       </Group>
       {view.error !== null && <Note testID="voice-error">{view.error}</Note>}
       {on && <KeyAndVoice settings={settings} voice={voice} view={view} guard={guard} />}
+      {on && <TalkRows settings={settings} guard={guard} />}
       {on && <DictationRows settings={settings} guard={guard} />}
       {on && more.length > 0 && (
         <Group testID="voice-more">

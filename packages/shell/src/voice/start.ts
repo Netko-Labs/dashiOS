@@ -73,10 +73,10 @@ export function startVoice(options: VoiceOptions): VoiceParts {
   const formats = (): string | undefined => options.settings.getSnapshot().data.region?.formats ?? options.locale;
   const prefs = () => {
     const data = options.settings.getSnapshot().data;
-    const { on, key, voice } = data.voice;
+    const { on, key, voice, listenAgain } = data.voice;
     const view = models.getSnapshot();
     const speak = speakExtras(data.voice, view.voices, voice ?? view.defaultVoice, { formats: formats(), heard, persona: data.persona?.language });
-    return { on: on === true, key: talkKey(isTalkKeyId(key) ? key : undefined), voice, speak };
+    return { on: on === true, key: talkKey(isTalkKeyId(key) ? key : undefined), voice, listenAgain: listenAgain !== false, speak };
   };
   const voice = new Voice({
     service,
@@ -90,6 +90,7 @@ export function startVoice(options: VoiceOptions): VoiceParts {
     hold: options.hold,
     asker: options.asker,
     locale: options.locale,
+    log: (line) => console.error(`dashi-shell: voice ${line}`),
   });
   // Warm while it is on and can be used, so the first hold answers at once (docs/voice.md).
   let warmed = false;
@@ -117,7 +118,7 @@ export function startVoice(options: VoiceOptions): VoiceParts {
       const language = models.getSnapshot().voices.find((each) => each.id === id)?.language ?? "en";
       // In that voice alone, read as the person's region reads it: a Spanish sample sounds as Spanish answers will.
       const tag = tongueOf(language) === "es" ? tagOf("es", formats()) : language;
-      void voice.say(sampleWords(language), id, tag);
+      voice.say(sampleWords(language), id, tag);
     },
     go: options.go,
     close() {

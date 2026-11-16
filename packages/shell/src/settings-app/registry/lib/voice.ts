@@ -97,6 +97,20 @@ export const VOICE_ROWS = [
     kind: "switch",
   },
   {
+    id: "voice/listen-again",
+    title: "Listen again after Dashi speaks",
+    detail: "While you are talking with Dashi, the microphone opens for your reply once it has finished speaking, and closes after a few seconds of nothing.",
+    keywords: ["conversation", "follow up", "reply", "microphone", "hands free", "keep talking"],
+    kind: "switch",
+  },
+  {
+    id: "voice/ask-every-step",
+    title: "Ask before every step",
+    detail: "Dashi plans what you asked and waits for your yes before it does anything. Off, it does what you ask and tells you what happened.",
+    keywords: ["plan", "confirm", "permission", "approve", "yes", "careful"],
+    kind: "switch",
+  },
+  {
     id: "voice/dictation-key",
     title: "Dictation key",
     detail: "Hold it alone to dictate. Automatic is the right ⌥, or Caps Lock on a layout where the right ⌥ types accents.",

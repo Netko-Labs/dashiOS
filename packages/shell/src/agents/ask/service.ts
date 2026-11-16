@@ -95,6 +95,7 @@ export function startAsk(options: AskOptions): Ask {
   };
 
   return {
+    history,
     launcher,
     status,
     tasks,

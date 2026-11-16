@@ -95,6 +95,11 @@ impl Service {
         if !params.queue {
             self.speak_stop();
         }
+        // The language its last sentence is said in: what the asker hints the next `speak` with.
+        let language = lines
+            .last()
+            .and_then(|line| super::voices::tongue(&line.voice))
+            .map(|tongue| tongue.code());
         let mut queue = self.speech.queue.lock().map_err(|_| "Voice is not well.")?;
         queue.last_id += 1;
         let id = queue.last_id;
@@ -106,7 +111,10 @@ impl Service {
         });
         drop(queue);
         self.speech.wake.notify_all();
-        Ok(json!({ "id": id }))
+        Ok(match language {
+            Some(language) => json!({ "id": id, "language": language }),
+            None => json!({ "id": id }),
+        })
     }
 
     /// Stop what is being said, at once, and forget what was waiting.

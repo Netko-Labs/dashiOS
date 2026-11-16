@@ -24,7 +24,7 @@ fn sentences_are_said_in_order_with_their_words() {
     let world = world();
     assert_eq!(
         world.ask(say("Hello there. How are you today?")).unwrap(),
-        json!({ "id": 1 })
+        json!({ "id": 1, "language": "en" })
     );
     world.until("it is said", |world| spoken(world, 1));
     let sentences = world.events_named("sentence");

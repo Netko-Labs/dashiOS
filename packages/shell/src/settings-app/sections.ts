@@ -74,6 +74,8 @@ export const SECTIONS = {
       voice: guarded(isVoiceId, "a voice's id"),
       voices: guarded(isVoiceMap, "a voice for each language"),
       byLanguage: bool(),
+      listenAgain: bool(),
+      askEveryStep: bool(),
     },
   },
   dictation: { path: ["dictation"], fields: { on: bool(), key: guarded(isDictationKeyId, "a dictation key"), handsFree: bool(), tidy: bool() } },

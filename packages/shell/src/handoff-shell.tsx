@@ -160,7 +160,11 @@ function launcherHandoff(service: Handoff, deps: HandoffShellDeps, open: (run: s
 function questionsUi(sheets: AgentUi, service: Handoff, deps: HandoffShellDeps, notices: Map<number, string>): AgentUi {
   const panelOpen = () => deps.menus()?.getSnapshot().popover?.kind === "agents";
   return routedUi(sheets, {
-    taskOf: (agent) => deps.agents.getSnapshot().find((each) => each.id === agent)?.task ?? null,
+    // Only a run of the launcher's: Dashi's own assistant has a task too (agents/assistant/), and asks in the capsule's card.
+    taskOf: (agent) => {
+      const task = deps.agents.getSnapshot().find((each) => each.id === agent)?.task ?? null;
+      return task !== null && service.runs.get(task) ? task : null;
+    },
     runs: service.runs,
     panelOpen,
     onPanel(listener) {

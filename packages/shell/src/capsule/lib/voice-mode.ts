@@ -132,8 +132,8 @@ export class VoiceMode {
         this.show(ok ? { phase: "done", line, until } : { phase: "notice", line, go: "launcher", until }, STAYS_MS);
       }
       // An answer too long for the line is read whole in the card.
-      if (task.phase === "done" && task.steps.length === 0 && task.said.length > READING_CHARS)
-        this.read({ id: task.id, request: task.request, text: task.said });
+      const words = task.words || task.said;
+      if (task.phase === "done" && task.steps.length === 0 && words.length > READING_CHARS) this.read({ id: task.id, request: task.request, text: words });
     }
   }
 
@@ -178,7 +178,8 @@ export class VoiceMode {
       const id = ask.id;
       return this.hear(id, this.questions.spokenOf(id), (text) => this.questions.answer(id, { text, by: "voice" }));
     }
-    const said = this.watched?.getSnapshot().find((task) => task.id === ask.task)?.said ?? "";
+    const asked = this.watched?.getSnapshot().find((task) => task.id === ask.task);
+    const said = asked?.words || asked?.said || "";
     this.hear(ask.id, planSpoken(said, ask.steps), (text) => this.heardPlan(ask.id, text));
   }
 
@@ -216,7 +217,8 @@ export class VoiceMode {
       return;
     }
     this.opened.delete(id);
-    this.hearing.stop();
+    // A yes lets Dashi finish its sentence (what it can't do is often said last); a no stops it.
+    this.hearing.stop(yes);
     if (!yes) {
       tasks?.stop(id);
       return this.show({ phase: "stopped", until: this.now() + 2500 }, 2500);
@@ -251,7 +253,7 @@ export class VoiceMode {
         const working = command.all ? this.tasks().filter((task) => task.phase === "asking" || task.phase === "running") : [];
         // ❖Esc with nothing speaking or at work is nothing.
         if (command.all && working.length === 0 && !this.deps.voice?.getSnapshot()) return;
-        this.deps.voice?.stop();
+        this.deps.voice?.stop(command.all === true);
         for (const id of [command.task, ...working.map((task) => task.id)]) if (id) this.watched?.stop(id);
         return this.show({ phase: "stopped", until: this.now() + 2500 }, 2500);
       }
