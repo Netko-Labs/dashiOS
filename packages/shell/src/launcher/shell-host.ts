@@ -52,8 +52,11 @@ export function shellLauncherHost(deps: ShellHostDeps): LauncherHost {
     }
     await logged("focus", compositor?.focus({ window: window.id }));
   };
+  // "The focused window" of what is chosen in the launcher is the window in front of it (the launcher is a layer
+  // surface: the window keeps its focus under it), as for a key's binding: Left Third arranges that window.
+  const front = async (): Promise<number | null> => (await compositor?.windows().catch(() => []))?.find((window) => window.focused)?.id ?? null;
   return {
-    run: (action, args) => actions.run(action, args),
+    run: async (action, args) => actions.run(action, args, await front()),
     reveal: ({ pane, row }) => {
       if (isPaneId(pane)) deps.openSettings(pane, row);
     },
