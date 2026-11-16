@@ -113,3 +113,11 @@ inputs (`engine/whisper/mod.rs`) are those of sherpa-onnx's export
 (<https://github.com/k2-fsa/sherpa-onnx>, Apache-2.0); its spectrogram
 (`engine/whisper/mel.rs`) is computed as OpenAI's Whisper computes it
 (<https://github.com/openai/whisper>, MIT).
+
+## Unicode emoji names (Unicode License v3)
+
+The Emoji extension's names (`packages/shell/extensions/emoji/lib/emoji-data.ts`)
+are the CLDR short names from Unicode's `emoji-test.txt` (Emoji 17.0,
+<https://www.unicode.org/Public/emoji/>), © 2025 Unicode®, Inc., used under the
+Unicode License v3 (<https://www.unicode.org/license.txt>): permission is given
+to use, copy and distribute the data files with this notice.
