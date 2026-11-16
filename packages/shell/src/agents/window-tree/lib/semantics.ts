@@ -11,7 +11,8 @@ import type { Element } from "../types.ts";
 import { DIALOGS, FIELDS, has, R, S } from "./roles.ts";
 
 /** Names that say a field holds a password, a code or a card (as the web reader's rules: browser-extension/src/page/node.ts). */
-const SECRET_NAME = /pass(word|phrase|code)|contraseña|clave|\bpin\b|one[- ]?time|\botp\b|2fa|verification code|código|cvv|cvc|card number|número de (la )?tarjeta/i;
+const SECRET_NAME =
+  /pass(word|phrase|code)|contraseña|clave|\bpin\b|one[- ]?time|\botp\b|2fa|verification code|código|cvv|cvc|card number|número de (la )?tarjeta/i;
 
 /** A field whose contents are never read: a password field, or one named as a secret. */
 export function isSecret(element: Pick<Element, "role" | "name" | "description" | "attributes">): boolean {

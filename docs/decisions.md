@@ -3723,3 +3723,90 @@ short words, as the rulebook is written.
 - **Undo:** drop `language` from the reply in `service/speak.rs` and
   `after` in `voice/lib/saying.ts`; drop `spoke` in
   `agents/assistant/context.ts`.
+
+### D220. A native window is read through AT-SPI, as read_page's lines, by `read_window`
+
+- **Date:** 2026-11-15. `v09/windowtree` (brief t2).
+- **Question:** agents read web pages as numbered text and native windows as
+  pictures. Where does a native window's element tree come from, and in
+  what form?
+- **Choice:** AT-SPI, the tree every toolkit publishes for screen readers
+  (mirin Metal's through AccessKit, GTK, Qt, Chromium once woken), read by
+  the shell (`agents/window-tree/`) and written in read_page's words
+  (`[12] button "Save"`, `# Heading`, `(filled: no)`), with the hierarchy
+  kept by indentation and layout-only nodes folded away. One tool,
+  `read_window {window, list?, from?}`, scope "see".
+- **Why:** one source for every toolkit, a window on another Space reads
+  the same, acting needs no pointer; one format means a model learns it once.
+- **Cost:** the tree is only as good as each toolkit's (Metal's gaps are in
+  `29-windowtree/for-mirin.md`); reading turns accessibility on, as the
+  sign-in check already does.
+- **Undo:** drop `windowTreeTools` from the registry.
+
+### D221. The website tools act on a native window's numbers given `window`; a destructive element waits for a yes
+
+- **Date:** 2026-11-15. `v09/windowtree`.
+- **Question:** separate tools for native elements, or the same ones?
+- **Choice:** the same: `click_element`, `fill_element`, `select_option` and
+  `scroll_page` take an optional `window`; with it the call needs "act"
+  (`ToolDef.scopeFor`), not "Use websites". `act_on_element` adds what a page
+  has no word for (expand, collapse, increment, decrement, focus). An
+  element the toolkit marks destructive, or a sheet's (or default) button
+  named Delete, Remove, Send, Pay…, is asked about before it is pressed:
+  the assistant's spoken yes (unless Work alone covers acting), any other
+  agent the sheet (`Scopes.destructiveYes`).
+- **Why:** two more tools instead of six; the consent follows the element,
+  which the registry's static `destructive` can't know.
+- **Cost:** a name rule in two languages decides some yeses; a button
+  named otherwise in a sheet goes unasked until toolkits say "destructive".
+- **Undo:** take `window` out of the four tools' args.
+
+### D222. Element numbers are the connection's and live as long as their node
+
+- **Date:** 2026-11-15. `v09/windowtree`.
+- **Choice:** a number is given to an element's bus name and path and kept
+  across reads (`TreeNumbers`), never reused; one whose node is gone
+  answers with the window's fresh tree around where it was.
+- **Why:** AT-SPI paths are stable while a node lives in every toolkit
+  measured; Metal's are hashes of element ids.
+- **Undo:** renumber per read in `numbering`.
+
+### D223. A list gives 40 rows a read, and the call for the next
+
+- **Date:** 2026-11-15. `v09/windowtree`.
+- **Choice:** lists, tables, trees and menus read only the rows asked for
+  (`PAGE`), and say how many there are and the `read_window` call for the
+  next page; nodes past the walk's budget (3000, 2.5 s) are said to be cut.
+- **Undo:** `PAGE` in `lib/render.ts`.
+
+### D224. What a window says is secret, destructive or the person's
+
+- **Date:** 2026-11-15. `v09/windowtree`.
+- **Choice:** a password role, or a field named as a password, PIN, code or
+  card, is never read (its character count says filled or not). The Setup
+  Assistant, Settings showing the vault, a window handed over, and the
+  shell's and portal's own windows are named and never read; their numbers
+  are never given.
+- **Undo:** `isSecret` and `personOnly`.
+
+### D225. Acting waits for the app's own tree events to settle, never a timer guess
+
+- **Date:** 2026-11-15. `v09/windowtree`.
+- **Choice:** the shell registers for AT-SPI object events once
+  (`Atspi.watchChanges`) and counts them per app; an action settles when no
+  event came for 150 ms (300 ms with none at all, 1.5 s at most), and the
+  result carries the fresh tree when the count moved. `waitOnWindow` is the
+  seam `wait_for` (v09/reach) calls for a window.
+- **Undo:** `settle` returns false at once.
+
+### D226. A Dashi pressable always has a name
+
+- **Date:** 2026-11-15. `v09/windowtree`.
+- **Choice:** `@dashi/ui`'s icon buttons name themselves (Clear, Dismiss),
+  `ToolbarButton` needs a `label` or `tooltip` by type, and a test renders
+  every @dashi/ui pressable and fails on one with neither label nor words
+  (`test/pressable-names.test.tsx`). The apps' and shell's 23 nameless ones
+  found by an audit got names (Dock icons, month arrows, Eject, Cancel…);
+  full-screen backdrops are a group named "Close", not a nameless button.
+- **Why:** an unnamed button is unusable for a screen reader and an agent.
+- **Undo:** none needed; the names cost nothing.

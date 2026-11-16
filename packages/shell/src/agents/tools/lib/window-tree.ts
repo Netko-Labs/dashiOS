@@ -49,9 +49,13 @@ export const windowTreeTools: readonly ToolDef[] = [
     readOnly: false,
     destructive: false,
     args: {
-      window: windowIdArg("The window read_window read, like \"w3\"."),
+      window: windowIdArg('The window read_window read, like "w3".'),
       ref: refArg("An element's number from read_window."),
-      action: custom({ type: "string", enum: [...ACTIONS], description: "What to do." }, (value) => (isAction(value) ? value : null), `\`action\` is one of ${ACTIONS.join(", ")}.`),
+      action: custom(
+        { type: "string", enum: [...ACTIONS], description: "What to do." },
+        (value) => (isAction(value) ? value : null),
+        `\`action\` is one of ${ACTIONS.join(", ")}.`,
+      ),
     },
     build: ({ window, ref, action }) => ({ name: "act_on_element", window, ref, action }),
   }),

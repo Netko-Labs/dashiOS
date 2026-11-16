@@ -16,10 +16,7 @@ import { readTree } from "./read.ts";
 import type { Element } from "./types.ts";
 
 /** What to wait for in a window: words shown (or gone), an element there, enabled or gone, or the tree idle. */
-export type WindowUntil =
-  | { text: string; gone?: boolean }
-  | { ref: number; state: "there" | "enabled" | "gone" }
-  | { idle: true };
+export type WindowUntil = { text: string; gone?: boolean } | { ref: number; state: "there" | "enabled" | "gone" } | { idle: true };
 
 export interface WindowWaited {
   met: boolean;

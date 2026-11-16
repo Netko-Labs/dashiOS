@@ -140,7 +140,12 @@ export class Atspi {
    */
   watchChanges(): Promise<void> {
     this.watching ??= (async () => {
-      const registry = { destination: "org.a11y.atspi.Registry", path: "/org/a11y/atspi/registry", interface: "org.a11y.atspi.Registry", member: "RegisterEvent" };
+      const registry = {
+        destination: "org.a11y.atspi.Registry",
+        path: "/org/a11y/atspi/registry",
+        interface: "org.a11y.atspi.Registry",
+        member: "RegisterEvent",
+      };
       for (const event of CHANGE_EVENTS) {
         await this.bus
           .call({ ...registry, signature: "sass", body: [event, [], ""] }, 1000)

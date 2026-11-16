@@ -50,7 +50,7 @@ export async function readTree(trees: TreesRun, window: CompositorWindow, rows?:
 }
 
 /** The numbering a read gives: each usable element's number, remembered with what it was. */
-export function numbering(trees: TreesRun, window: number) {
+export function numbering(trees: TreesRun, window: number): (element: Element, parent: Element | null, said: string) => number {
   return (element: Element, parent: Element | null, said: string): number => trees.numbers.number(window, element.key, parent?.key ?? null, said);
 }
 
@@ -68,8 +68,7 @@ export function thin(root: Element): boolean {
 }
 
 /** Whether anything in the tree is marked destructive (for the header's line on consent). */
-export const anyDestructive = (root: Element): boolean =>
-  isDestructive(root, false) || root.children.some((child) => anyDestructive(child));
+export const anyDestructive = (root: Element): boolean => isDestructive(root, false) || root.children.some((child) => anyDestructive(child));
 
 async function header(window: CompositorWindow, tree: WindowTree, ctx: RunContext): Promise<string> {
   const sheets = (await ctx.compositor.windows()).filter((each) => each.sheetOf === window.id);
@@ -87,7 +86,8 @@ export async function readWindow(call: { window: number; list: number | null; fr
   if (theirs) return text(personWords(theirs, window.id));
   ctx.status(`Reading ${subject(window, ctx)}`);
   const list = call.list === null ? null : trees.numbers.get(call.list);
-  if (call.list !== null && (!list || list.window !== window.id)) return toolError(`[${call.list}] is not a list of w${window.id}; read_window w${window.id} first.`);
+  if (call.list !== null && (!list || list.window !== window.id))
+    return toolError(`[${call.list}] is not a list of w${window.id}; read_window w${window.id} first.`);
   const tree = await readTree(trees, window, list ? { key: list.key, from: call.from } : undefined);
   if (typeof tree === "string") return toolError(tree);
   const ctxRender = { window: window.id, numberOf: numbering(trees, window.id) };

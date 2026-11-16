@@ -13,13 +13,13 @@ import { watchingOf } from "../../mark.ts";
 import type { Who } from "../../presence.ts";
 import type { SessionSecrets } from "../../secrets/index.ts";
 import { type Call, locksScreen } from "../../tools/index.ts";
+import { personOnly, type TreeNumbers } from "../../window-tree/index.ts";
 import type * as mcp from "../mcp.ts";
 import { runCall } from "../run/run.ts";
 import type { SessionBrowser } from "./session-browser.ts";
 import type { Scopes } from "./session-scopes.ts";
 import type { SessionContext, SessionTask } from "./session-types.ts";
 import type { SessionWatch } from "./session-watch.ts";
-import { personOnly, type TreeNumbers } from "../../window-tree/index.ts";
 
 /** What a call needs of the connection it runs on. */
 export interface CallHost {

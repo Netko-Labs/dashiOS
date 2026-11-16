@@ -81,7 +81,8 @@ export async function fillIn(call: { ref: number; text: string; window: number |
   const t = await target(call.ref, call.window, ctx);
   if (isResult(t)) return t;
   if (isSecret(t.element)) return toolError(`[${t.number}] is a password or code field: sign_in and fill_code fill those, and you never hold the secret.`);
-  if (!FIELDS.has(t.element.role) || t.element.role === R.TERMINAL) return toolError(`[${t.number}] is not a text field; click_element or act_on_element it instead.`);
+  if (!FIELDS.has(t.element.role) || t.element.role === R.TERMINAL)
+    return toolError(`[${t.number}] is not a text field; click_element or act_on_element it instead.`);
   if (has(t.element.states, S.READ_ONLY)) return toolError(`[${t.number}] is read-only.`);
   ctx.status(`Filling in a field in w${t.window.id}`);
   const from = mark(t.bus, t.app);
@@ -113,7 +114,8 @@ export async function selectIn(call: { ref: number; value: string; window: numbe
     const list = findKey(root.root, t.entry.key);
     return list ? [...list.children, ...list.children.flatMap((menu) => (menu.role === R.MENU || menu.role === R.LIST_BOX ? menu.children : []))] : [];
   };
-  let found = options(tree).find((option) => word(option.name) === word(call.value)) ?? options(tree).find((option) => word(option.name).startsWith(word(call.value)));
+  let found =
+    options(tree).find((option) => word(option.name) === word(call.value)) ?? options(tree).find((option) => word(option.name).startsWith(word(call.value)));
   if (!found && (await press(t.node, t.element))) {
     // A combo box shows its options once opened.
     await settle(t.bus, t.app, from);
@@ -121,7 +123,9 @@ export async function selectIn(call: { ref: number; value: string; window: numbe
     found = options(tree).find((option) => word(option.name) === word(call.value));
   }
   if (!found) {
-    const names = options(tree).map((option) => JSON.stringify(option.name)).slice(0, 30);
+    const names = options(tree)
+      .map((option) => JSON.stringify(option.name))
+      .slice(0, 30);
     return toolError(`[${t.number}] has no option “${call.value}”${names.length > 0 ? `; its options: ${names.join(", ")}` : ""}.`);
   }
   const index = t.element.children.findIndex((child) => child.key === found.key);
@@ -155,7 +159,8 @@ export async function actOn(call: { ref: number; window: number | null; action: 
       done = (await expandAction(t.node, t.element)) !== null;
       break;
   }
-  if (!done) return toolError(`[${t.number}] can't ${call.action.replace(/_/g, " ")} through accessibility (its actions: ${t.element.actions.join(", ") || "none"}).`);
+  if (!done)
+    return toolError(`[${t.number}] can't ${call.action.replace(/_/g, " ")} through accessibility (its actions: ${t.element.actions.join(", ") || "none"}).`);
   return after(t, `Did ${call.action.replace(/_/g, " ")} on [${t.number}] ${t.entry.said}.`, from);
 }
 

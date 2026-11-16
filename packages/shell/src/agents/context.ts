@@ -9,8 +9,8 @@ import type { Question } from "./confirm.ts";
 import type { Desktop, Elsewhere, Hands } from "./desktop/index.ts";
 import type { AgentMask } from "./mask.ts";
 import type { AgentUi, PersonAnswer } from "./presence.ts";
-import type { TreesRun } from "./window-tree/index.ts";
 import type { Approval, LoginSource, SheetLogin, SignInAnswer, Vault } from "./secrets/index.ts";
+import type { TreesRun } from "./window-tree/index.ts";
 
 /** What the secrets tools need from the connection (desktop/secrets.ts). */
 export interface SecretsRun {

@@ -7,9 +7,9 @@
  */
 
 import { accept, type OptionalShape, optional, reject, type Shape, shape } from "@dashi/shape";
+import type { Scope } from "../../consent.ts";
 import { fail, type ToolDef } from "../define.ts";
 import { type Chord, parseKeys } from "../keys.ts";
-import type { Scope } from "../../consent.ts";
 import type { Call } from "../types.ts";
 import { custom, optionalWindowId, tool } from "./args.ts";
 
@@ -143,7 +143,7 @@ export const browserTools: readonly ToolDef[] = [
   tool({
     name: "select_option",
     title: "Choose an option on a web page",
-    description: "Choose one of a list's options (a combobox read_page numbered) by its value or its label, as read_page shows them." + ON_WINDOW,
+    description: `Choose one of a list's options (a combobox read_page numbered) by its value or its label, as read_page shows them.${ON_WINDOW}`,
     scope: "web",
     scopeFor,
     readOnly: false,

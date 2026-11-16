@@ -87,7 +87,12 @@ async function actionsOf(element: Element, call: Call): Promise<void> {
 async function valueOf(element: Element, call: Call): Promise<void> {
   const p = mapOf(await call(PROPERTIES, "GetAll", "s", [`${ATSPI}Value`]));
   if (!p.has("CurrentValue")) return;
-  const value: ElementValue = { now: num(p.get("CurrentValue")), min: num(p.get("MinimumValue")), max: num(p.get("MaximumValue")), step: num(p.get("MinimumIncrement")) };
+  const value: ElementValue = {
+    now: num(p.get("CurrentValue")),
+    min: num(p.get("MinimumValue")),
+    max: num(p.get("MaximumValue")),
+    step: num(p.get("MinimumIncrement")),
+  };
   const words = str(p.get("Text"));
   if (words) value.text = words;
   element.value = value;
