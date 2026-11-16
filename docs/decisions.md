@@ -5800,3 +5800,18 @@ short words, as the rulebook is written.
   command whose keyword it is). An app's own name still wins ("characters"
   is Characters).
 - **Undo:** `byName` and `namedFloors` in `launcher/ranking/rank.ts`.
+
+### D378. The screenshot keys work while the launcher is open
+
+- **Date:** 2026-11-16. `v09/fix-polish-2`, seen in passes 31 and 39.
+- **Found:** ⇧❖3 made no file while the launcher was open. The launcher's
+  keymap puts its own rules first, and its ❖3 (pick the third row) matched
+  ⇧❖3 too: a rule that doesn't name Shift matches with Shift held. ⇧❖4 and
+  ⇧❖5 were taken the same way, and so were they in the keys typed right
+  after a ❖ tap.
+- **Decision:** while the launcher is open (and in the type-ahead keymap),
+  any session rule with ⇧ whose chord without ⇧ is one of the launcher's
+  comes before the launcher's rules: today ⇧❖3, ⇧❖4 and ⇧❖5. The launcher's
+  own ⇧ chords (⇧❖A, ⇧❖K, ⇧↩) are unchanged. The screenshot shows the
+  launcher as it is on screen.
+- **Undo:** `shiftedPast` and `launcherRulesOver` in `launcher/keys.ts`.

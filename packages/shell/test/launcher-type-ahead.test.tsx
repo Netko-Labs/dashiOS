@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import { KEYMAP } from "../src/keymap/keymap.ts";
 import { idleKeymap } from "../src/keymap/keymap-state.ts";
-import { LAUNCHER_RULES } from "../src/launcher/keys.ts";
+import { launcherRulesOver } from "../src/launcher/keys.ts";
 import { Launcher } from "../src/launcher/launcher.tsx";
 import { applyEdits, TYPE_BINDING, TypeAhead, type Typed, typedFrom, withTypeAheadOnTap, withTyping } from "../src/launcher/type-ahead.ts";
 import type { Entry } from "../src/shared/app-entries/index.ts";
@@ -38,8 +38,9 @@ describe("typing ahead: the keys", () => {
     expect(idle.rules.filter((rule) => rule.armsAfterTap).map((rule) => rule.bind)).toEqual(["launcher"]);
     expect(idle.rules.find((rule) => rule.when === "super+space")).toEqual({ when: "super+space", bind: "launcher", armsAfterTap: true });
     const after = idle.afterTap ?? [];
-    expect(after.slice(0, LAUNCHER_RULES.length)).toEqual(LAUNCHER_RULES);
-    expect(after.slice(LAUNCHER_RULES.length, -1)).toEqual(KEYMAP.rules);
+    const own = launcherRulesOver(KEYMAP);
+    expect(after.slice(0, own.length)).toEqual(own);
+    expect(after.slice(own.length, -1)).toEqual(KEYMAP.rules);
     expect(after.at(-1)).toEqual({ when: "*", bind: TYPE_BINDING });
     expect(withTyping(KEYMAP).afterTap).toBeUndefined();
     // Only the idle keymap arms: open, its rules have no afterTap to switch to, so ❖Space just closes it.

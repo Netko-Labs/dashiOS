@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { KEYMAP } from "../src/keymap/keymap.ts";
-import { LAUNCHER_RULES, LauncherKeys, withLauncher } from "../src/launcher/keys.ts";
+import { LAUNCHER_RULES, LauncherKeys, launcherRulesOver, withLauncher } from "../src/launcher/keys.ts";
 import { keepInView, moveSelection, resolveSelection, wheelSteps } from "../src/launcher/lib/selection.ts";
 
 describe("selection by id", () => {
@@ -37,8 +37,12 @@ describe("selection by id", () => {
 describe("keys while the launcher is open", () => {
   test("its rules come first and go with it", () => {
     const keymap = withLauncher(KEYMAP);
-    expect(keymap.rules.slice(0, LAUNCHER_RULES.length)).toEqual(LAUNCHER_RULES);
-    expect(keymap.rules.slice(LAUNCHER_RULES.length)).toEqual(KEYMAP.rules);
+    // The screenshot keys (⇧❖3–5) first, as ❖3–5 would take them (keys.ts `shiftedPast`).
+    const own = launcherRulesOver(KEYMAP);
+    expect(own.slice(-LAUNCHER_RULES.length)).toEqual(LAUNCHER_RULES);
+    expect(own.slice(0, -LAUNCHER_RULES.length).map((rule) => rule.when)).toEqual(["super+shift+3", "super+shift+4", "super+shift+5"]);
+    expect(keymap.rules.slice(0, own.length)).toEqual(own);
+    expect(keymap.rules.slice(own.length)).toEqual(KEYMAP.rules);
     expect(LAUNCHER_RULES.map((rule) => rule.when)).toEqual(expect.arrayContaining(["ctrl+n", "ctrl+p", "Home", "End"]));
   });
 

@@ -122,10 +122,20 @@ export const LAUNCHER_RULES: Rule[] = [
   ...Array.from({ length: 9 }, (_, index) => ({ when: `super+${index + 1}`, bind: `launcher-pick-${index + 1}` })),
 ];
 
+/**
+ * The session's ⇧ chords that a launcher rule without ⇧ would take (a rule without Shift matches with it held too):
+ * ⇧❖3, ⇧❖4 and ⇧❖5, the screenshot keys, are the session's still, not ❖3–5's picks.
+ */
+const shiftedPast = (keymap: Keymap): Rule[] =>
+  keymap.rules.filter((rule) => rule.when.includes("shift+") && LAUNCHER_RULES.some((own) => own.when === rule.when.replace("shift+", "")));
+
+/** The launcher's rules over `keymap`'s, but for the session's ⇧ chords they would take (`shiftedPast`). */
+export const launcherRulesOver = (keymap: Keymap): Rule[] => [...shiftedPast(keymap), ...LAUNCHER_RULES];
+
 /** The keymap while the launcher is open: its keys first, and every ❖ chord while it records one. */
 export const withLauncher = (keymap: Keymap, recording = false, arrows: ArrowsWanted = "none", extras: ExtraKeys = NO_EXTRA_KEYS): Keymap => ({
   ...keymap,
-  rules: [...(recording ? RECORD_RULES : []), ...ARROW_RULES[arrows], ...extraRules(extras), ...LAUNCHER_RULES, ...keymap.rules],
+  rules: [...(recording ? RECORD_RULES : []), ...ARROW_RULES[arrows], ...extraRules(extras), ...launcherRulesOver(keymap), ...keymap.rules],
 });
 
 /** Where the open launcher hears those keys. */

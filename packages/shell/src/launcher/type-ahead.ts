@@ -13,7 +13,7 @@
  */
 
 import type { Keymap, Rule } from "../keymap/keymap.ts";
-import { LAUNCHER_RULES } from "./keys.ts";
+import { launcherRulesOver } from "./keys.ts";
 
 export const TYPE_BINDING = "launcher-type";
 
@@ -45,7 +45,7 @@ export function typedFrom(binding: { key: string; text?: string }): Typed | null
 }
 
 /** While the launcher waits for its surface: its keys, the session's, then every other plain key is typing. */
-export const withTyping = (keymap: Keymap): Keymap => ({ ...keymap, rules: [...LAUNCHER_RULES, ...keymap.rules, TYPE_RULE] });
+export const withTyping = (keymap: Keymap): Keymap => ({ ...keymap, rules: [...launcherRulesOver(keymap), ...keymap.rules, TYPE_RULE] });
 
 /** The binding that opens (and closes) the launcher (keymap.ts: ❖Space, or the person's own key for it). */
 const LAUNCHER_BINDING = "launcher";
