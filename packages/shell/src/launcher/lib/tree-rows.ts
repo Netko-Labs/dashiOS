@@ -164,13 +164,16 @@ export function treeSections(root: ViewNode, query: string, ctx: { dir: string |
 /** No item to show: the extension's EmptyView, or the launcher's own words. */
 function emptySection(root: ViewNode, query: string, ctx: { dir: string | null; from: string }): Section {
   const empty = root.c.find((child) => child.t === "EmptyView");
-  const title = empty ? (prop(empty, "title") ?? "") : query.trim() ? `Nothing in ${ctx.from} for “${query.trim()}”` : "Nothing here";
+  // A list still loading says so rather than "Nothing": its rows are on their way (pass 42).
+  const loading = !empty && root.p.loading === true;
+  const nothing = query.trim() ? `Nothing in ${ctx.from} for “${query.trim()}”` : "Nothing here";
+  const title = empty ? (prop(empty, "title") ?? "") : loading ? "Loading…" : nothing;
   const description = empty ? prop(empty, "description") : undefined;
   return {
     id: "tree:empty",
     rows: [
       {
-        id: empty ? rowId(empty) : "tree:empty",
+        id: empty ? rowId(empty) : loading ? "tree:loading" : "tree:empty",
         title,
         ...(description ? { detail: description } : {}),
         kind: "",

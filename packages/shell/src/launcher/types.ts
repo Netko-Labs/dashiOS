@@ -63,6 +63,8 @@ export interface LauncherScope {
   back?(): boolean;
   /** After `back`: the row that opened the view it went back from, and what was typed then, to select it again. */
   returnTo?(): { row: string; query: string } | null;
+  /** After a change of its own (an extension's pushed view came): what the field holds next, or null to keep it. */
+  fieldNow?(query: string): string | null;
   /** The launcher left it (Esc, or the launcher closed). */
   leave?(): void;
   /** What is typed is a secret: the field shows dots. */

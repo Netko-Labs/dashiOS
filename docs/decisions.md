@@ -5860,3 +5860,22 @@ short words, as the rulebook is written.
   the pointer, with a name cell inside) are the launcher's results and an
   extension's tree view.
 - **Undo:** revert the mirin commit; Dashi has nothing to undo.
+
+### D385. A pushed view starts with an empty field; the launcher's own rows have no actions
+
+- **Date:** 2026-11-16. `v09/fix-polish-3`, from passes 41 and 42.
+- **Found:** ↩ on a GitHub repository ("Show Pull Requests") did push its
+  pull requests, but the field kept the repository's name, and the launcher
+  filtered every pull request away with it ("Nothing in GitHub for
+  “renovatebot/renovate47608”"). Keys typed before the view came were sent
+  to the repository search. And the launcher's own rows (the list loading,
+  "Nothing in … for …") took the view's actions as theirs: ↩ there asked for
+  "Repository", ❖↩ for "GitHub token".
+- **Decision:** a `push` action's view starts with an empty field. What was
+  typed after ↩, before the view came, stays (type-ahead is never lost); it
+  is not searched in the view under it. A list that says it is loading and
+  has no row shows "Loading…", not "Nothing". The launcher's own rows have
+  no actions; an extension's EmptyView keeps its own, or the view's.
+- **Undo:** `pushing` and `fieldNow` in `launcher/lib/tree-scope.ts` (and its
+  call in `use-search.ts`); the `if (!node) return []` in its `verbs`; the
+  `loading` row in `tree-rows.ts`.
