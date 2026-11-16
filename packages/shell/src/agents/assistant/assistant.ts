@@ -90,7 +90,7 @@ class Core {
       assistant: {
         refuses: () => (this.turn ? this.turn.run.refuses() : "The person's request is over. Make no more calls."),
         // Said in the step line: the person is watching, and a site is kept for good only by them, in Settings.
-        site: (site) => this.turn?.hears.step(`Using ${site} for the first time`),
+        site: (site) => this.turn?.aside.step(`Using ${site} for the first time`),
         ...typedGate(() => this.turn, this.transcript),
       },
     };
@@ -151,7 +151,7 @@ class Core {
     };
     const deps = { timers: this.timers, now: () => this.now(), step: both.step, settled: pen.settle, undoOf: (call: Call) => this.undoOf(call), ...limits };
     const run = new Running(deps, signal);
-    const turn = new Turn(run, both, by);
+    const turn = new Turn(run, both, by, hears);
     this.turn = turn;
     this.allowedPolicy = this.policy();
     let said = "";

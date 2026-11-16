@@ -5,10 +5,11 @@
  * The lock stops whatever is being heard or said.
  */
 
+import type { Assistant } from "../agents/index.ts";
 import type { Compositor } from "../compositor/index.ts";
 import { spokenContext } from "../persona/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
-import { launcherAsker, STOP, startVoice, talks, type VoiceParts } from "../voice/index.ts";
+import { launcherAsker, STOP, startVoice, type Talk, talks, type VoiceParts } from "../voice/index.ts";
 import { startAssistantPiece } from "./assistant.ts";
 import type { LateParts } from "./parts.ts";
 import type { Late, Services } from "./services.ts";
@@ -45,6 +46,28 @@ export interface Talking extends VoiceParts {
   heldKeys: HeldKeyList;
 }
 
+/**
+ * The conversation as voice sees it: open only while its latest turn was spoken (decisions.md D261), so a typed
+ * conversation in the launcher puts no "Still with you" in the capsule and opens no microphone; a spoken ask still
+ * continues it.
+ */
+function spokenTalk(assistant: Assistant): Talk {
+  const { talk, transcript } = assistant;
+  const spoken = (): boolean => transcript.getSnapshot().turns.findLast((turn) => turn.kind === "person")?.by !== "typing";
+  return {
+    open: () => talk.open() && spoken(),
+    subscribe: (listener) => {
+      const offs = [talk.subscribe(listener), transcript.subscribe(listener)];
+      return () => {
+        for (const off of offs) off();
+      };
+    },
+    rested: () => talk.rested(),
+    busy: () => talk.busy(),
+    end: (why) => talk.end(why),
+  };
+}
+
 export function startTalking({ compositor, settingsStore, services, late }: TalkingNeeds): Talking {
   const heldKeys = new HeldKeyList(compositor);
   const openLauncher = (): void => {
@@ -68,7 +91,7 @@ export function startTalking({ compositor, settingsStore, services, late }: Talk
   const parts = startVoice({
     settings: settingsStore,
     hold: (keys) => heldKeys.set("voice", keys),
-    asker: { ask: (words, signal, hears) => assistant.ask(words, signal, hears), talk: assistant.talk, prepare: () => assistant.prepare() },
+    asker: { ask: (words, signal, hears) => assistant.ask(words, signal, hears), talk: spokenTalk(assistant), prepare: () => assistant.prepare() },
     go: (where) => {
       if (where === "launcher") openLauncher();
       else late.peek("settingsApp")?.open(where);

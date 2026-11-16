@@ -27,6 +27,8 @@ export class Turn {
     readonly run: Running,
     readonly hears: Hears,
     readonly by: By,
+    /** The capsule's own line only (not the launcher's thread): what is said in passing, as a site used the first time. */
+    readonly aside: Hears = hears,
   ) {}
 
   keepWorking(): void {
