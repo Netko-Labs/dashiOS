@@ -210,7 +210,6 @@ export function harness(options: HarnessOptions = {}): Harness {
     appletImages: new StoreImages(join(tree.dir, "applet-images")),
     restart: () => {},
     openUrl: (url) => opened.push(url),
-    unlistedApps: () => new Set(["org.fcitx.fcitx5-qt6-gui-wrapper"]),
     followApplets: (onChange) => {
       following = onChange;
       return () => {
