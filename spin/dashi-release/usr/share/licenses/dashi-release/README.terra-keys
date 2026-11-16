@@ -1,0 +1,6 @@
+usr/share/dashi/pki/RPM-GPG-KEY-terra44 and RPM-GPG-KEY-terra45 are Terra's
+public package-signing keys (Fyra Labs), copied unchanged from the
+terra-gpg-keys package (License: MIT, https://terrapkg.com). They let dnf check
+Terra's packages before terra-release is installed. Terra's repository is a
+place packages come from, not part of Dashi: what Terra hosts keeps its own
+licences, and Dashi itself stays MIT (decisions.md D329).

@@ -1,0 +1,18 @@
+# Terra (Fyra Labs, https://terrapkg.com): on by default on Dashi (decisions.md D329).
+# A vendor file: dnf5 reads /usr/share/dnf5/repos.d after /etc/yum.repos.d, and a
+# file of the same name there (terra-release's own terra.repo) replaces this one
+# whole, so a machine that has terra-release keeps exactly Terra's settings and
+# there is never a second [terra]. Turn it off in the Store's Sources (it writes
+# an override; this file never changes).
+[terra]
+name=Terra $releasever
+metalink=https://tetsudou.fyralabs.com/metalink?repo=terra$releasever&arch=$basearch
+metadata_expire=6h
+type=rpm
+gpgcheck=1
+gpgkey=file:///usr/share/dashi/pki/RPM-GPG-KEY-terra$releasever
+repo_gpgcheck=0
+enabled=1
+enabled_metadata=1
+countme=1
+skip_if_unavailable=True

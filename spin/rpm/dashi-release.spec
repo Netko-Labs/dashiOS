@@ -22,9 +22,12 @@ Conflicts:      power-profiles-daemon
 # needs setup) made a loop rpm could only break by installing filesystem
 # late, and a fresh install root then had no /bin/sh for the first %pre.
 Requires:       zsh
-# Terra (Fyra Labs) is on by default: terra-release owns its repo file and
-# key. Recommends, not Requires: a system without Terra configured can still
-# update this package, and someone who removes Terra keeps Dashi.
+# Terra (Fyra Labs) is on by default (D329): this package ships Terra's
+# repository as a dnf5 vendor file (/usr/share/dnf5/repos.d/terra.repo) with
+# Terra's signing keys, so a Dashi without terra-release still has Terra.
+# terra-release's own /etc/yum.repos.d/terra.repo, when installed, replaces the
+# vendor file by name: no duplicate [terra], no file both packages own.
+# Recommends, not Requires: Terra's own package is welcome, never needed.
 Recommends:     terra-release
 # HEIC decodes through Fedora's FFmpeg plugin (H.265 from the FFmpeg the codecs
 # step installs); RPM Fusion's libheif-freeworld pins the exact libheif it was
@@ -94,6 +97,7 @@ fi
 %license LICENSE
 %license %{_datadir}/licenses/dashi-release/Fedora-Legal-README.txt
 %license %{_datadir}/licenses/dashi-release/LICENSE.fedora-release
+%license %{_datadir}/licenses/dashi-release/README.terra-keys
 %{_prefix}/lib/os-release
 %{_prefix}/lib/dashi-release
 %{_prefix}/lib/fedora-release
@@ -106,6 +110,10 @@ fi
 %{_prefix}/lib/systemd/user.conf.d/50-dashi-stop.conf
 %{_prefix}/lib/systemd/system/user@.service.d/50-dashi-stop.conf
 %{_datadir}/dnf5/libdnf.conf.d/20-fedora-defaults.conf
+%{_datadir}/dnf5/repos.d/terra.repo
+%dir %{_datadir}/dashi/pki
+%{_datadir}/dashi/pki/RPM-GPG-KEY-terra44
+%{_datadir}/dashi/pki/RPM-GPG-KEY-terra45
 %{_sysconfdir}/os-release
 %{_sysconfdir}/dashi-release
 %{_sysconfdir}/fedora-release
@@ -124,6 +132,9 @@ fi
 %{_datadir}/dashi/zsh/dashi.zshrc
 
 %changelog
+* Mon Nov 16 2026 PejeDev <hi@peje.dev> - 44-0.9.0
+- Terra on by default without terra-release: a dnf5 vendor repo file and Terra's keys.
+
 * Wed Nov 11 2026 PejeDev <hi@peje.dev> - 44-0.7.0
 - os-release and dashi-release take Dashi's version from the build: 0.7's said 0.4.
 
