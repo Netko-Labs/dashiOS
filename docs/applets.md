@@ -617,7 +617,9 @@ menu bar has the agents' mark in it only while an agent is connected, and
 every `vm/agent` run connects one, so a screenshot shows the status items
 one place left of where they are once it ends: a bare QMP click
 (`vm/qmp.py click`) made at a screenshot's place lands one item off, and
-on the newest applet (the leftmost) it hits empty bar and nothing happens.
+on the leftmost item it hits empty bar and nothing happens. (The bar's
+extras keep a fixed order: tray icons by their app's name, then applets by
+their id, whichever started first; `src/extras/store.ts`, decisions.md D389.)
 
 `publish` packs and checks the signature against `author.pub` in the
 applet's folder, needs a clean git tree with an `origin`, and in a checkout

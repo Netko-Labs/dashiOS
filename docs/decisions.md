@@ -5922,3 +5922,19 @@ short words, as the rulebook is written.
   only.
 - **Undo:** the `task` block in `launcher/lib/detail-markdown.ts` and `Task`
   in `detail-view.tsx`; `TASK_BOX` back into Notes' `project.ts`.
+
+### D389. The menu bar's extras keep a fixed order
+
+- **Date:** 2026-11-16. `v09/fix-polish-3`, from pass 42.
+- **Found:** after a package downgrade and upgrade, the bar's fan and
+  keyboard items had swapped places. Extras were shown newest leftmost (as
+  on a Mac), so their order was the order their programs connected in, which
+  changes from one start to the next; an applet's key also carries its
+  connection's number.
+- **Decision:** the order is fixed by who each extra is: tray icons by their
+  app's name, then applets by their id (the key without its connection's
+  number), each alphabetically; a tie goes by key. A new extra goes in its
+  place, not at the left. The person can't move them yet (⌘-drag, as on a
+  Mac, is for later); when they can, their order is kept and this is the
+  default.
+- **Undo:** `placeOf` and `byPlace` in `src/extras/store.ts`.
