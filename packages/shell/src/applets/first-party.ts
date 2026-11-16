@@ -3,42 +3,24 @@
  * Emoji, GitHub), written on the same API as anyone's
  * (docs/launcher-extensions.md) and run the same way: installed in the
  * person's applets folder, in the sandbox, with their manifest's permissions.
- * At start the shell builds each one whose source changed (Bun.build, a
- * fraction of a second) and installs it as Dashi's (`firstParty` in
+ * At start the shell builds each one (Bun.build, a few tens of
+ * milliseconds) and, when the bundle changed, installs it as Dashi's (`firstParty` in
  * install.json, consent given: it is part of Dashi, as its own commands are).
  * Nothing is fetched; nothing generated is committed.
  */
 
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { consentNames, type InstallRecord, isRefusal, type Manifest, parseRecord, readManifest, SDK_VERSION, writeRecord } from "@dashi/applet";
+import { consentNames, type InstallRecord, isRefusal, type Manifest, parseRecord, readManifest, writeRecord } from "@dashi/applet";
 
 /** Where Dashi's own extensions' source is, beside the shell's. */
 export const FIRST_PARTY_SOURCE = fileURLToPath(new URL("../../extensions/", import.meta.url));
 
-/** Every source file under `dir`, sorted, relative. */
-function sourceFiles(dir: string, base = dir): string[] {
-  return readdirSync(dir)
-    .sort()
-    .flatMap((name) => {
-      const path = join(dir, name);
-      if (statSync(path).isDirectory()) return sourceFiles(path, base);
-      return /\.(tsx?|json|svg|png)$/.test(name) ? [relative(base, path)] : [];
-    });
-}
-
-/** What the installed copy is built from: its files and the SDK's version. A change rebuilds it. */
-export function sourceHash(dir: string): string {
-  const hash = createHash("sha256").update(SDK_VERSION);
-  for (const file of sourceFiles(dir))
-    hash
-      .update(file)
-      .update("\0")
-      .update(readFileSync(join(dir, file)))
-      .update("\0");
-  return hash.digest("hex");
+/** What is installed: the bundle and the manifest. The same bytes are the same extension. */
+export function bundleHash(mainJs: Uint8Array, manifestText: string): string {
+  return createHash("sha256").update(mainJs).update("\0").update(manifestText).digest("hex");
 }
 
 /** The installed record of a first-party extension: Dashi's, everything it asks for allowed. */
@@ -51,12 +33,11 @@ export async function installFirstParty(dir: string, root: string): Promise<"ins
   const manifestText = readFileSync(join(dir, "applet.json"), "utf8");
   const manifest = readManifest(manifestText);
   if (isRefusal(manifest)) return `${dir}: ${manifest.error}`;
-  const sha256 = sourceHash(dir);
   const target = join(root, manifest.id);
   const installed = existsSync(join(target, "install.json")) ? parseRecord(readFileSync(join(target, "install.json"), "utf8")) : null;
   // One the person installed from elsewhere under the same id is theirs: left alone.
   if (installed && !installed.firstParty) return "current";
-  if (installed?.sha256 === sha256 && existsSync(join(target, "main.js"))) return "current";
+  // Built every start (a few tens of milliseconds): a change to the extension or to the SDK under it is a new bundle.
   const staging = `${target}.building`;
   rmSync(staging, { recursive: true, force: true });
   mkdirSync(staging, { recursive: true });
@@ -70,6 +51,11 @@ export async function installFirstParty(dir: string, root: string): Promise<"ins
   if (!built.success) {
     rmSync(staging, { recursive: true, force: true });
     return `${manifest.id}: ${built.logs.map((log) => String(log)).join("; ")}`;
+  }
+  const sha256 = bundleHash(readFileSync(join(staging, "main.js")), manifestText);
+  if (installed?.sha256 === sha256 && existsSync(join(target, "main.js"))) {
+    rmSync(staging, { recursive: true, force: true });
+    return "current";
   }
   writeFileSync(join(staging, "applet.json"), manifestText);
   if (manifest.icon) writeFileSync(join(staging, manifest.icon), readFileSync(join(dir, manifest.icon)));

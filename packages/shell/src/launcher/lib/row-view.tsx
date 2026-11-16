@@ -178,7 +178,8 @@ export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digi
       )}
       <Icon icon={row.icon} m={m} {...(row.agent ? { agent: row.agent } : {})} />
       <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8 }}>
-        <View style={{ flexShrink: 0 }}>
+        {/* An extension's name may be long (a pull request's title): it gives way too, with its words after it. */}
+        <View style={row.long ? { flexShrink: 1, minWidth: 0 } : { flexShrink: 0 }}>
           <Text numberOfLines={1} style={{ fontSize: m.title, color: ink, ...(row.strong ? { fontWeight: "semibold" } : {}) }}>
             {row.title}
           </Text>
@@ -208,8 +209,10 @@ export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digi
           </View>
         )}
       </View>
-      {row.tags && <Tags tags={row.tags} selected={selected} m={m} />}
-      <RightEnd row={row} digit={digit} quiet={quiet} m={m} />
+      <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 10 }}>
+        {row.tags && <Tags tags={row.tags} selected={selected} m={m} />}
+        <RightEnd row={row} digit={digit} quiet={quiet} m={m} />
+      </View>
       {row.stop && onStop && <StopSquare id={row.id} onStop={onStop} />}
       {row.more && <Svg markup={KEY_GLYPHS["→"] ?? ""} size={m.detail} color={quiet} />}
     </View>

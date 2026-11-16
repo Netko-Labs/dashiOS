@@ -5417,3 +5417,14 @@ short words, as the rulebook is written.
   already holds the hints; ❖K is where the launcher's choices are. The
   preview column is not built.
 - **Undo:** `kindVerbs` in `clipboard/lib/scope.ts`.
+
+### D352. The applet runtime is 0.9: an extension's `"dashi": ">=0.9"` is how it asks for views
+
+- **Date:** 2026-11-16. `v09/launcher-ext`. Found in the VM: Emoji and
+  GitHub (`"dashi": ">=0.9"`) were never run, because `SDK_VERSION`, what
+  `dashi` is checked against, was still 0.5.0.
+- **Decision:** `SDK_VERSION` is 0.9.0: the runtime grew (version 6 of the
+  channel, the launcher module), and an extension that needs it says
+  `>=0.9`. Every applet in the catalog says `>=0.4` or `>=0.5` and still
+  runs; one that said `^0.5` would not (none does).
+- **Undo:** `SDK_VERSION` in `packages/applet/src/package.ts`.

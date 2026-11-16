@@ -13,7 +13,7 @@
 import type { ReactNode } from "react";
 import ReactReconciler from "react-reconciler";
 import { ConcurrentRoot } from "react-reconciler/constants";
-import { ELEMENTS, TREE_LIMITS } from "../../view/elements.ts";
+import { ELEMENTS, type PropSpec, TREE_LIMITS } from "../../view/elements.ts";
 import { diffTrees, type PatchOp, type PropValue, parseTree, toWire, type ViewNode } from "../../view/tree.ts";
 import { type Container, hostConfig, type Instance } from "./host.ts";
 
@@ -40,11 +40,25 @@ export const realViewTimers: ViewTimers = {
 
 const ID = /[^A-Za-z0-9._:-]+/g;
 
-/** A prop as the wire carries it, or undefined when it can't be one. */
-function wireProp(value: unknown): PropValue | undefined {
-  if (typeof value === "string" || typeof value === "boolean") return value;
-  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
-  if (Array.isArray(value)) return value.filter((each): each is string => typeof each === "string");
+/** Words cut to `max` characters, the last one an ellipsis: a long title is shortened, never the whole view refused. */
+function cut(text: string, max: number): string {
+  const chars = [...text.trim()];
+  return chars.length <= max
+    ? text.trim()
+    : `${chars
+        .slice(0, max - 1)
+        .join("")
+        .trimEnd()}…`;
+}
+
+/** A prop as the wire carries it, cut to its limit; undefined when it can't be one. */
+function wireProp(value: unknown, spec: PropSpec): PropValue | undefined {
+  if (typeof value === "boolean" || typeof value === "number") return typeof value === "number" && !Number.isFinite(value) ? undefined : value;
+  if (typeof value === "string") return spec.kind === "text" ? cut(value, spec.max) : spec.kind === "long" ? [...value].slice(0, spec.max).join("") : value;
+  if (Array.isArray(value)) {
+    const words = value.filter((each): each is string => typeof each === "string" && each.trim() !== "");
+    return spec.kind === "words" ? words.slice(0, spec.max).map((word) => cut(word, spec.each)) : words;
+  }
   return undefined;
 }
 
@@ -145,10 +159,10 @@ export class ViewRoot implements Container {
   }
 
   private node(instance: Instance, ids: Map<string, Instance>): ViewNode {
-    const specs: Readonly<Record<string, unknown>> = ELEMENTS[instance.type].props;
+    const specs: Readonly<Record<string, PropSpec>> = ELEMENTS[instance.type].props;
     const props: Record<string, PropValue> = {};
-    for (const name of Object.keys(specs)) {
-      const value = wireProp(instance.props[name]);
+    for (const [name, spec] of Object.entries(specs)) {
+      const value = wireProp(instance.props[name], spec);
       if (value !== undefined) props[name] = value;
     }
     // An item the extension named keeps its name across renders and reorders; anything else, its instance's.

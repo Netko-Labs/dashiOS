@@ -91,6 +91,8 @@ export interface Row {
   stop?: true;
   /** It waits on the person (an agent's question): its detail is broth, the warning's ink. */
   attention?: true;
+  /** Its name may be long (an extension's item): it gives way to the right end instead of running under it. */
+  long?: true;
   /** An extension's tags at the right end ("Checks pass"), each in its tone's ink. */
   tags?: readonly { text: string; tone?: Tone }[];
 }

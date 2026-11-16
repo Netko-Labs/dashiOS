@@ -115,6 +115,8 @@ export class ExtensionViews {
 
   private async start(session: TreeSession, command: AppletCommand, args: Record<string, string | number | boolean>): Promise<void> {
     const { manifest } = session;
+    const asked = this.now();
+    const warm = this.peers.has(manifest.id);
     const peer = this.peers.get(manifest.id) ?? (await this.wake(manifest.id));
     if (!peer) return session.fail(`${manifest.name} didn't start.`);
     session.started(command.id, args, await this.options.preferences(manifest));
@@ -125,6 +127,9 @@ export class ExtensionViews {
       if (session.snapshot().phase === "starting") return;
       this.timers.clear(timer);
       off();
+      // DASHI_LAUNCHER_TIMING=1 (launcher/timing.ts): how long from the command chosen to its first tree, started or running.
+      if (process.env.DASHI_LAUNCHER_TIMING === "1")
+        console.error(`dashi-launcher timing: ${manifest.name} view, ${warm ? "warm" : "cold"}: first tree ${Math.round(this.now() - asked)} ms`);
     });
   }
 

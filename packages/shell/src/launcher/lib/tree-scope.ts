@@ -104,7 +104,10 @@ class TreeScope {
     const nodeId = nodeIdOf(row);
     if (!root || !nodeId) return [];
     const node = nodeId === root.i ? root : root.c.flatMap((child) => [child, ...child.c]).find((each) => each.i === nodeId);
-    return panelVerbs(panelOf(node, root));
+    // The item's own actions, then the view's (its root's ActionPanel), each once.
+    const own = panelVerbs(panelOf(node, root));
+    const view = node === root ? [] : panelVerbs(root.c.find((child) => child.t === "ActionPanel")).filter((verb) => !own.some((each) => each.id === verb.id));
+    return [...own, ...view.map(({ key: _key, ...verb }) => verb)];
   };
 
   hints = (row: Row | undefined): Hint[] => {

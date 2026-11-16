@@ -33,7 +33,6 @@ function Row({ repo, pr }: { repo: string; pr: PullRequest }) {
             <Action.Copy title="Copy Link" content={pr.url} shortcut="mod+c" />
             <Action.Copy title="Copy Branch Name" content={pr.branch} shortcut="shift+mod+c" />
           </ActionPanel.Section>
-          <SettingsActions />
         </ActionPanel>
       }
     />
@@ -66,7 +65,16 @@ function PullRequests({ repo: given }: { repo?: string }) {
     );
   const prs = data ?? [];
   return (
-    <List filter="launcher" loading={loading} placeholder={`Filter ${repo}'s pull requests`}>
+    <List
+      filter="launcher"
+      loading={loading}
+      placeholder={`Filter ${repo}'s pull requests`}
+      actions={
+        <ActionPanel>
+          <SettingsActions />
+        </ActionPanel>
+      }
+    >
       <List.Section title={`Open in ${repo}`} subtitle={loading && !data ? "" : String(prs.length)}>
         {prs.map((pr) => (
           <Row key={pr.number} repo={repo} pr={pr} />

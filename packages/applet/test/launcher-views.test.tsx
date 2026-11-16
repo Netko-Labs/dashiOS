@@ -153,6 +153,32 @@ describe("the reconciler", () => {
     expect(JSON.stringify(shell.top)).toContain("This view can't be shown");
   });
 
+  test("words over an element's limit are cut with an ellipsis, not the view refused", async () => {
+    const shell = new Shell();
+    const long = "A pull request whose title goes on and on well past what the launcher's rows can hold in one line";
+    function Long() {
+      return (
+        <List>
+          <List.Item
+            title={long}
+            actions={
+              <ActionPanel title={long}>
+                <Action title="Open" />
+              </ActionPanel>
+            }
+          />
+        </List>
+      );
+    }
+    const { ViewRoot } = await import("../src/launcher/lib/view-root.ts");
+    new ViewRoot(<Long />, { tree: (root) => shell.receive({ type: "tree", seq: 1, root }), patch: () => {} }, now, () => {});
+    await flush();
+    const text = JSON.stringify(shell.top);
+    expect(text).not.toContain("This view can't be shown");
+    expect(text).toContain("the launcher's rows can hold in one line");
+    expect(text).toContain("the launcher's rows ca…");
+  });
+
   test("close unmounts every view of the command; events after it are dropped", async () => {
     const shell = new Shell();
     const views = new LauncherViews({ counter: Counter }, shell.receive, now);

@@ -47,7 +47,7 @@ async function get(path: string, token: string | undefined): Promise<unknown> {
 }
 
 export async function pullRequests(repo: string, token: string | undefined): Promise<PullRequest[]> {
-  const body = await get(`/repos/${repo}/pulls?state=open&per_page=40&sort=updated&direction=desc`, token);
+  const body = await get(`/repos/${repo}/pulls?state=open&per_page=30&sort=updated&direction=desc`, token);
   return (Array.isArray(body) ? body : []).map((raw) => {
     const item = record(raw);
     const head = record(item.head);

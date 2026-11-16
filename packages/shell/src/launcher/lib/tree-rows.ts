@@ -6,7 +6,7 @@
  */
 
 import { join } from "node:path";
-import type { ViewNode } from "@dashi/applet";
+import { isRefusal, parseGlyph, type ViewNode } from "@dashi/applet";
 import type { Row, RowIcon, Tone } from "../row-model.ts";
 import type { Section } from "../sections.ts";
 import { KEYS, type Verb } from "../verbs.ts";
@@ -34,7 +34,9 @@ export function iconOf(node: ViewNode | undefined, dir: string | null, fallback:
   if (emoji) return { text: emoji };
   const svg = prop(node, "svg");
   const tone = toneOf(node);
-  if (svg) return { glyph: svg, ...(tone ? { tone } : {}) };
+  // The menu bar glyph's rules (one <svg>, nothing that loads, links, styles or runs); one that breaks them isn't drawn.
+  const glyph = svg ? parseGlyph(svg) : null;
+  if (glyph && !isRefusal(glyph)) return { glyph, ...(tone ? { tone } : {}) };
   const src = prop(node, "src");
   // Only the package's own files, never a path outside it (the tree is checked: `src` is a plain path).
   if (src && dir && !src.startsWith("/") && !src.split("/").includes("..")) return { image: join(dir, src) };
@@ -73,9 +75,13 @@ export function itemRow(node: ViewNode, ctx: { dir: string | null; from: string 
       { glyph: EXTENSION_GLYPH },
     ),
     action: { kind: "scope", verb: "first" },
+    long: true,
     ...(tags.length > 0 ? { tags } : {}),
   };
 }
+
+/** Rows a long list shows at once (fewer at a larger text size: list.tsx). */
+export const LIST_WINDOW = 10;
 
 /** Lines of cells a grid shows at once. */
 export const GRID_LINES = 4;
@@ -133,6 +139,21 @@ export function treeSections(root: ViewNode, query: string, ctx: { dir: string |
         rows: sections.flatMap((section) => section.rows),
         grid,
         window: GRID_LINES * 2,
+      },
+    ];
+  }
+  // A long list is one window of rows that scrolls with the selection (as a scope's): cut to the panel, its last rows
+  // could never be reached. One section keeps its head; several become one, under the first's.
+  const count = sections.reduce((sum, section) => sum + section.rows.length, 0);
+  if (count > LIST_WINDOW) {
+    const [first] = sections;
+    return [
+      {
+        id: "tree:list",
+        ...(first?.title ? { title: first.title } : {}),
+        ...(first?.aside && sections.length === 1 ? { aside: first.aside } : {}),
+        rows: sections.flatMap((section) => section.rows),
+        window: LIST_WINDOW,
       },
     ];
   }
