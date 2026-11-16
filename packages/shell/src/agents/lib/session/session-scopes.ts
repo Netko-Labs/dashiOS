@@ -254,6 +254,17 @@ export class Scopes {
     return { confirm: (question) => this.confirm(question, signal), question: (question, seconds) => this.question(question, seconds, signal) };
   }
 
+  /**
+   * A critical element in a native window (window-tree/: it pays, signs in
+   * with a secret, loses work for good, changes the system or sends as the
+   * person): asked on screen every time, for every agent, answered by the
+   * person's own pointer or key (briefs/consent-critical-only.md; the rule is
+   * v09/askagent's, which may move this to its one place).
+   */
+  criticalYes(question: Question, signal: AbortSignal): Promise<boolean> {
+    return this.confirm(question, signal);
+  }
+
   /** Waiting on the person for a question: the status says so, and goes back when the last one is answered. */
   private async whileConfirming<T>(question: () => Promise<T>): Promise<T> {
     this.confirming++;

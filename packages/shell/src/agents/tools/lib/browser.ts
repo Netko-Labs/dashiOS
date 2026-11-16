@@ -7,9 +7,11 @@
  */
 
 import { accept, type OptionalShape, optional, reject, type Shape, shape } from "@dashi/shape";
+import type { Scope } from "../../consent.ts";
 import { fail, type ToolDef } from "../define.ts";
 import { type Chord, parseKeys } from "../keys.ts";
-import { custom, tool } from "./args.ts";
+import type { Call } from "../types.ts";
+import { custom, optionalWindowId, tool } from "./args.ts";
 
 /** read_page's part, by default, and its most, in characters. */
 export const PAGE_PART = 15_000;
@@ -60,6 +62,14 @@ export function parseUrl(value: unknown): string | null {
     return null;
   }
 }
+
+/** A website tool given a native window (read_window's numbers) acts in an app, not on a site: "act". */
+const scopeFor = (call: Call): Scope => ("window" in call && call.window !== null ? "act" : "web");
+
+/** The optional `window`: the element is read_window's, in that native window, not a page's. */
+const windowArg = optionalWindowId;
+
+const ON_WINDOW = " With `window` (an id from list_windows), `ref` is a number read_window gave in that native window instead.";
 
 export const browserTools: readonly ToolDef[] = [
   tool({
@@ -137,20 +147,24 @@ export const browserTools: readonly ToolDef[] = [
     name: "click_element",
     title: "Click an element on a web page",
     description:
-      "Click an element read_page numbered (a link, a button, a checkbox, a tab). Says what happened: a page that loaded (once it has), a new tab, else whether the page changed around it, a dialog that opened, new text, and what the element is now.",
+      "Click an element read_page numbered (a link, a button, a checkbox, a tab). Says what happened: a page that loaded (once it has), a new tab, else whether the page changed around it, a dialog that opened, new text, and what the element is now." +
+      " With `window` (an id from list_windows), `ref` is a number read_window gave in that native window, pressed by the app's own accessibility action (nothing moves on screen), and the answer says the same about the window.",
     scope: "web",
+    scopeFor,
     readOnly: false,
     destructive: false,
-    args: { ref: refArg(), tab: tabArg() },
-    build: ({ ref, tab }) => ({ name: "click_element", ref, tab: tab ?? null }),
+    args: { ref: refArg(), tab: tabArg(), window: windowArg },
+    build: ({ ref, tab, window }) => ({ name: "click_element", ref, tab: tab ?? null, window: window ?? null }),
   }),
   tool({
     name: "fill_element",
     title: "Fill in a field on a web page",
     description:
       "Replace what a text field read_page numbered holds with `text`, as typing would (the page hears it), and say what the field holds after. Refused on password, card and one-time code fields: " +
-      "sign_in, fill_code and pay fill those, and you never hold the secret.",
+      "sign_in, fill_code and pay fill those, and you never hold the secret." +
+      ON_WINDOW,
     scope: "web",
+    scopeFor,
     readOnly: false,
     destructive: false,
     args: {
@@ -161,14 +175,16 @@ export const browserTools: readonly ToolDef[] = [
         "`text` must be a string.",
       ),
       tab: tabArg(),
+      window: windowArg,
     },
-    build: ({ ref, text, tab }) => ({ name: "fill_element", ref, text, tab: tab ?? null }),
+    build: ({ ref, text, tab, window }) => ({ name: "fill_element", ref, text, tab: tab ?? null, window: window ?? null }),
   }),
   tool({
     name: "select_option",
     title: "Choose an option on a web page",
-    description: "Choose one of a list's options (a combobox read_page numbered) by its value or its label, as read_page shows them.",
+    description: `Choose one of a list's options (a combobox read_page numbered) by its value or its label, as read_page shows them.${ON_WINDOW}`,
     scope: "web",
+    scopeFor,
     readOnly: false,
     destructive: false,
     args: {
@@ -179,8 +195,9 @@ export const browserTools: readonly ToolDef[] = [
         "`value` must be an option's label or value.",
       ),
       tab: tabArg(),
+      window: windowArg,
     },
-    build: ({ ref, value, tab }) => ({ name: "select_option", ref, value, tab: tab ?? null }),
+    build: ({ ref, value, tab, window }) => ({ name: "select_option", ref, value, tab: tab ?? null, window: window ?? null }),
   }),
   tool({
     name: "press",
@@ -212,8 +229,10 @@ export const browserTools: readonly ToolDef[] = [
     name: "scroll_page",
     title: "Scroll a web page",
     description:
-      "Scroll a tab's page by pages (or to the top or bottom), or bring an element read_page numbered into view. Says where the page is and whether it is at the end.",
+      "Scroll a tab's page by pages (or to the top or bottom), or bring an element read_page numbered into view. Says where the page is and whether it is at the end." +
+      " With `window` and `ref`, brings an element read_window numbered into view in that native window.",
     scope: "web",
+    scopeFor,
     readOnly: false,
     destructive: false,
     idempotent: false,
@@ -234,7 +253,11 @@ export const browserTools: readonly ToolDef[] = [
       ),
       ref: optional(refArg("An element to bring into view instead.")),
       tab: tabArg(),
+      window: windowArg,
     },
-    build: ({ direction, pages, ref, tab }) => ({ name: "scroll_page", direction: direction ?? "down", pages: pages ?? 1, ref: ref ?? null, tab: tab ?? null }),
+    build: ({ direction, pages, ref, tab, window }) => {
+      if (window !== undefined && ref === undefined) return fail("With `window`, give `ref`: the element to bring into view (read_window's number).");
+      return { name: "scroll_page", direction: direction ?? "down", pages: pages ?? 1, ref: ref ?? null, tab: tab ?? null, window: window ?? null };
+    },
   }),
 ];

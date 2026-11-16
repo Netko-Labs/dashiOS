@@ -192,6 +192,7 @@ function DockPanel(props: DockPanelProps) {
       {pinned.map((entry, index) => (
         <DockIcon
           key={entry.key}
+          label={entry.app.name}
           icon={entry.app.icon}
           running={entry.windows.length > 0 || props.starting.has(entry.key)}
           attention={props.wanting.has(entry.key)}
@@ -208,6 +209,7 @@ function DockPanel(props: DockPanelProps) {
       {running.map((entry, index) => (
         <DockIcon
           key={entry.key}
+          label={entry.app.name}
           icon={entry.app.icon}
           running
           attention={props.wanting.has(entry.key)}
@@ -224,6 +226,7 @@ function DockPanel(props: DockPanelProps) {
       {minimized.map(({ window, app }, index) => (
         <DockIcon
           key={`minimized:${window.id}`}
+          label={window.title ? `${app.name}: ${window.title}` : app.name}
           icon={app.icon}
           running={false}
           opacity={0.82 * dim}

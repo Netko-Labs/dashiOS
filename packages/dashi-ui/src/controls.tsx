@@ -9,6 +9,7 @@
 
 import { Text, View } from "@mirinjs/metal";
 import { Children, Fragment, type ReactNode } from "react";
+import { ControlName } from "./control-name.ts";
 import { Shortcut } from "./shortcut.tsx";
 import { useColors, useSurface } from "./theme/index.ts";
 
@@ -95,7 +96,16 @@ const ROW_MIN = 44;
  * `wraps`: the end is 13 px text that may wrap (a long value in an Info card), so the label sits on its first
  * line, not on the middle of all of them. One line still sits on the row's middle.
  */
-export function Row({
+/** A setting's row: its label, a line under it, and its control, which takes the row's label as its name (control-name.ts). */
+export function Row(props: Parameters<typeof RowBody>[0]) {
+  return (
+    <ControlName.Provider value={props.label}>
+      <RowBody {...props} />
+    </ControlName.Provider>
+  );
+}
+
+function RowBody({
   label,
   detail,
   children,

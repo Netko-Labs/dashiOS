@@ -3724,6 +3724,107 @@ short words, as the rulebook is written.
   `after` in `voice/lib/saying.ts`; drop `spoke` in
   `agents/assistant/context.ts`.
 
+### D220. A native window is read through AT-SPI, as read_page's lines, by `read_window`
+
+- **Date:** 2026-11-15. `v09/windowtree` (brief t2).
+- **Question:** agents read web pages as numbered text and native windows as
+  pictures. Where does a native window's element tree come from, and in
+  what form?
+- **Choice:** AT-SPI, the tree every toolkit publishes for screen readers
+  (mirin Metal's through AccessKit, GTK, Qt, Chromium once woken), read by
+  the shell (`agents/window-tree/`) and written in read_page's words
+  (`[12] button "Save"`, `# Heading`, `(filled: no)`), with the hierarchy
+  kept by indentation and layout-only nodes folded away. One tool,
+  `read_window {window, list?, from?}`, scope "see".
+- **Why:** one source for every toolkit, a window on another Space reads
+  the same, acting needs no pointer; one format means a model learns it once.
+- **Cost:** the tree is only as good as each toolkit's (Metal's gaps are in
+  `29-windowtree/for-mirin.md`); reading turns accessibility on, as the
+  sign-in check already does.
+- **Undo:** drop `windowTreeTools` from the registry.
+
+### D221. The website tools act on a native window's numbers given `window`; only a critical element waits for the person
+
+- **Date:** 2026-11-15, changed 16 Nov by the owner's rule (`briefs/consent-critical-only.md`).
+- **Question:** separate tools for native elements, or the same ones? Which
+  presses are put to the person?
+- **Choice:** the same tools: `click_element`, `fill_element`,
+  `select_option` and `scroll_page` take an optional `window`; with it the
+  call is tagged "act" (`ToolDef.scopeFor`), not "Use websites" (whether a
+  scope asks at all is `v09/askagent`'s). `act_on_element` adds what a page
+  has no word for. read_window flags an element `critical: pays | secret |
+  loses work | system | sends` from the toolkit's attribute, else its words
+  (English and Spanish) and what is around it (a filled password field
+  makes "Sign in" a `secret`); pressing one asks on screen every time
+  (`Scopes.criticalYes`: askagent's `confirm`, its sheet, or the launcher's
+  line in a typed turn, D261), anything else just runs. The kinds are the
+  one critical list, `CRITICAL` in `agents/consent.ts` (D260), from which
+  the registry's `ASKS_EVERY_TIME` is drawn: a tool and an element are
+  critical by the same words. Work alone covers neither.
+- **Why:** two more tools instead of six; the owner: "permissions should be
+  only for critical operations", and only the element tells which it is.
+- **Cost:** words decide, since no toolkit publishes a destructive hint on
+  AT-SPI: a critical button named otherwise ("OK") goes unasked; mirin is
+  asked for the hint (for-mirin.md).
+- **Undo:** take `window` out of the four tools' args; `criticalOf` returns null.
+
+### D222. Element numbers are the connection's and live as long as their node
+
+- **Date:** 2026-11-15. `v09/windowtree`.
+- **Choice:** a number is given to an element's bus name and path and kept
+  across reads (`TreeNumbers`), never reused; one whose node is gone
+  answers with the window's fresh tree around where it was.
+- **Why:** AT-SPI paths are stable while a node lives in every toolkit
+  measured; Metal's are hashes of element ids.
+- **Undo:** renumber per read in `numbering`.
+
+### D223. A list gives 40 rows a read, and the call for the next
+
+- **Date:** 2026-11-15. `v09/windowtree`.
+- **Choice:** lists, tables, trees and menus read only the rows asked for
+  (`PAGE`), and say how many there are and the `read_window` call for the
+  next page; nodes past the walk's budget (3000, 2.5 s) are said to be cut.
+- **Undo:** `PAGE` in `lib/render.ts`.
+
+### D224. What a window says is secret or the person's
+
+- **Date:** 2026-11-15. `v09/windowtree`.
+- **Choice:** a password role, or a field named as a password, PIN, code or
+  card, is never read (its character count says filled or not; where a
+  toolkit gives no count, as Metal today, it says "filled: can't tell"). The Setup
+  Assistant, Settings showing the vault, a window handed over, and the
+  shell's and portal's own windows (consent sheets) stay the person's alone
+  under the critical-only rule too: named, never read, no numbers given.
+- **Undo:** `isSecret` and `personOnly`.
+
+### D225. Acting waits for the app's own tree events to settle, never a timer guess
+
+- **Date:** 2026-11-15. `v09/windowtree`.
+- **Choice:** the shell registers for AT-SPI object events once
+  (`Atspi.watchChanges`) and counts them per app; an action settles when no
+  event came for 150 ms (300 ms with none at all, 1.5 s at most), and the
+  result says what changed in the page's words (`agents/lib/change-words.ts`,
+  shared with reach's D271), with the changed lines. `wait_for` with a
+  `window` (`text`, `text_gone`, an `element`, `page: "quiet"`) waits on the
+  native tree through `waitOnWindow`; its quiet is this same `settle`.
+- **Undo:** `settle` returns false at once.
+
+### D226. A Dashi pressable always has a name
+
+- **Date:** 2026-11-15. `v09/windowtree`.
+- **Choice:** `@dashi/ui`'s icon buttons name themselves (Clear, Dismiss),
+  `ToolbarButton` needs a `label` or `tooltip` by type, and a test renders
+  every @dashi/ui pressable and fails on one with neither label nor words
+  (`test/pressable-names.test.tsx`). The apps' and shell's 23 nameless ones
+  found by an audit got names (Dock icons, month arrows, Eject, Cancel…);
+  full-screen backdrops are a group named "Close", not a nameless button.
+  A switch in a settings row takes the row's title (`ControlName`, read by
+  @dashi/ui's `Switch` and the shell's `ControlSwitch`: measured in the VM,
+  every Settings switch was a nameless "toggle button"), and
+  `ToolbarButton` says when it is disabled.
+- **Why:** an unnamed button is unusable for a screen reader and an agent.
+- **Undo:** none needed; the names cost nothing.
+
 ### D170. The model that corrects dictation is SpeakoFlow Mini, a fine-tuned 0.8B, not a prompted 3 to 4B
 
 - **Date:** 2026-11-15. `d1`, branch `v09/rewrite`. The numbers are in

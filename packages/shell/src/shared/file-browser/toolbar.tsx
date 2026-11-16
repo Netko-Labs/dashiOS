@@ -16,8 +16,8 @@ export function Leading() {
   const state = useFilesState();
   return (
     <View style={{ flexDirection: "row", gap: 2, flexShrink: 0 }}>
-      <ToolbarButton glyph={BACK} testID="back" disabled={!state.canBack} onPress={() => store.goBack()} />
-      <ToolbarButton glyph={FORWARD} testID="forward" disabled={!state.canForward} onPress={() => store.goForward()} />
+      <ToolbarButton glyph={BACK} tooltip="Back" testID="back" disabled={!state.canBack} onPress={() => store.goBack()} />
+      <ToolbarButton glyph={FORWARD} tooltip="Forward" testID="forward" disabled={!state.canForward} onPress={() => store.goForward()} />
     </View>
   );
 }

@@ -8,6 +8,7 @@ import { type ChatModel, linesOf, parsed, send, TIMEOUT_MS, type ToolSpec, type 
 export const LOCAL_CORE = [
   "open_url",
   "read_page",
+  "read_window",
   "click_element",
   "fill_element",
   "press",

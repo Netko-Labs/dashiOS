@@ -12,8 +12,14 @@ const call = (args: Record<string, unknown>) => parseCall({ name: "wait_for", ar
 
 describe("wait_for's arguments", () => {
   test("exactly one thing is waited for, with a timeout of 10 s unless given", () => {
-    expect(call({ text: "Welcome" })).toEqual({ name: "wait_for", until: { text: "Welcome" }, seconds: 10, tab: null });
-    expect(call({ text_gone: "Loading…", timeout: 30, tab: "t4" })).toEqual({ name: "wait_for", until: { textGone: "Loading…" }, seconds: 30, tab: 4 });
+    expect(call({ text: "Welcome" })).toEqual({ name: "wait_for", until: { text: "Welcome" }, seconds: 10, tab: null, window: null });
+    expect(call({ text_gone: "Loading…", timeout: 30, tab: "t4" })).toEqual({
+      name: "wait_for",
+      until: { textGone: "Loading…" },
+      seconds: 30,
+      tab: 4,
+      window: null,
+    });
     expect(call({ element: "[12]", state: "enabled" })).toMatchObject({ until: { ref: 12, state: "enabled" } });
     expect(call({ element: 12 })).toMatchObject({ until: { ref: 12, state: "present" } });
     expect(call({ page: "quiet" })).toMatchObject({ until: { page: "quiet" } });

@@ -83,6 +83,8 @@ export function MonthCard({ now, onOpenDay }: { now: Date; onOpenDay?: (day: str
   const arrow = (markup: string, offset: number, testID: string) => (
     <View
       testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={offset < 0 ? "Previous month" : "Next month"}
       onPress={() => setView((shown) => shiftMonth(shown, offset))}
       style={{ width: 24, height: 24, borderRadius: 6, alignItems: "center", justifyContent: "center" }}
     >

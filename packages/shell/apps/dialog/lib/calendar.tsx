@@ -81,6 +81,8 @@ export function CalendarDialog({ spec, answer }: { spec: CalendarSpec; answer: A
   const arrow = (markup: string, by: number, testID: string) => (
     <View
       testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={by < 0 ? "Previous month" : "Next month"}
       onPress={() => page(by)}
       style={{ width: 24, height: 24, borderRadius: 6, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
     >

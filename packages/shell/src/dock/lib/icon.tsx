@@ -28,7 +28,11 @@ export function Divider() {
   );
 }
 
+/** A Dock icon is a button named by its app (a minimized window's title after it), for screen readers and agents. */
+const asButton = (label: string, onPress: () => void) => ({ accessibilityRole: "button" as const, accessibilityLabel: label, onPress });
+
 export function DockIcon({
+  label,
   icon,
   running,
   attention = false,
@@ -40,6 +44,7 @@ export function DockIcon({
   rise = SETTLED,
   testID,
 }: {
+  label: string;
   icon: string;
   running: boolean;
   /** A window of this app wants attention. */
@@ -70,7 +75,7 @@ export function DockIcon({
         laid.current = bounds;
         onTile?.(bounds);
       }}
-      onPress={onPress}
+      {...asButton(label, onPress)}
       onPointer={onPointer && ((event) => onPointer(event, centerOf(event.bounds)))}
       onContextMenu={onMenu && (() => onMenu(centerOf()))}
       testID={testID}

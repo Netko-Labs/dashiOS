@@ -18,11 +18,13 @@ import type { Volume } from "./lib/mounts.ts";
 import { favorites, folderAt, type GlyphName, type Location, sameLocation } from "./location.ts";
 
 /** The small button at a row's end (Eject, Empty). */
-function RowAction({ testID, glyph, color, onPress }: { testID: string; glyph: string; color: string; onPress: () => void }) {
+function RowAction({ testID, glyph, label, color, onPress }: { testID: string; glyph: string; label: string; color: string; onPress: () => void }) {
   const colors = useColors();
   return (
     <View
       testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       onPress={onPress}
       style={{ width: 22, height: 22, borderRadius: 5, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
     >
@@ -46,7 +48,7 @@ function Row({
   glyph: GlyphName;
   current: boolean;
   onPress: () => void;
-  action?: { glyph: string; id: string; onPress: () => void };
+  action?: { glyph: string; id: string; label: string; onPress: () => void };
   /** The folder files dropped on the row go into, or the Trash. */
   dropInto?: string | "trash" | null;
   /** Only the glyph, centred; the name is the tooltip. */
@@ -92,7 +94,9 @@ function Row({
           </Text>
         </View>
       )}
-      {action && !rail && <RowAction testID={`place:${id}:${action.id}`} glyph={action.glyph} color={look.glyph} onPress={action.onPress} />}
+      {action && !rail && (
+        <RowAction testID={`place:${id}:${action.id}`} glyph={action.glyph} label={action.label} color={look.glyph} onPress={action.onPress} />
+      )}
       {tip.node}
     </View>
   );
@@ -144,7 +148,7 @@ export function Sidebar({ recents = true, rail = false }: { recents?: boolean; r
             }}
             dropInto={volume.mountPoint}
             rail={rail}
-            {...(volume.ejectable && ops ? { action: { glyph: EJECT, id: "eject", onPress: () => void ops.ejectVolume(volume) } } : {})}
+            {...(volume.ejectable && ops ? { action: { glyph: EJECT, id: "eject", label: "Eject", onPress: () => void ops.ejectVolume(volume) } } : {})}
           />
         ))}
         {ops && (

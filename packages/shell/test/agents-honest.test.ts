@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { type PageFacts, readOutcome } from "../browser-extension/src/page/outcome.ts";
-import { changeWords, landingWords, outcomeWords } from "../src/agents/desktop/lib/browser-words.ts";
+import { landingWords, outcomeWords } from "../src/agents/desktop/lib/browser-words.ts";
+import { changeWords } from "../src/agents/lib/change-words.ts";
 import { parseChanges, parseOutcome, parseProbe } from "../src/browser/index.ts";
 
 const facts = (over: Partial<PageFacts>): PageFacts => ({

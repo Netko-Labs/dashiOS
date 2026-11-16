@@ -11,9 +11,10 @@ import type { BrowserLink } from "../../browser/bridge.ts";
 import { parseChanges, parseProbe, parseTab, type TabInfo } from "../../browser/index.ts";
 import { launchEntry, loadEntries } from "../../entries.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
+import { changeWords } from "../lib/change-words.ts";
 import { siteOf } from "../sites.ts";
 import type { Call } from "../tools/index.ts";
-import { changeWords, landingWords } from "./lib/browser-words.ts";
+import { landingWords } from "./lib/browser-words.ts";
 import { downloadWords } from "./lib/download-words.ts";
 import { pageWords } from "./lib/page-parts.ts";
 

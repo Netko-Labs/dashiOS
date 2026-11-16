@@ -45,6 +45,8 @@ export function useNamePress(
 /** The live pictures of the Desktops, framed; the lifted one (a dragged window is over it) is raised. */
 export function RowPictures(props: {
   pictures: readonly Rect[];
+  /** Each Desktop's name, for screen readers and agents. */
+  names: readonly string[];
   lifted: number | null;
   current: number;
   onSwitch(index: number): void;
@@ -57,6 +59,9 @@ export function RowPictures(props: {
       <View
         key={`picture-${index}`}
         testID={`space-${index + 1}-picture`}
+        accessibilityRole="button"
+        accessibilityLabel={props.names[index] || `Desktop ${index + 1}`}
+        accessibilityState={{ selected: index === props.current }}
         onPress={() => props.onSwitch(index)}
         onHoverChange={(over) => props.onOverSpace(index, over)}
         style={{

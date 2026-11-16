@@ -13,6 +13,7 @@ import { watchingOf } from "../../mark.ts";
 import type { Who } from "../../presence.ts";
 import type { SessionSecrets } from "../../secrets/index.ts";
 import { type Call, locksScreen } from "../../tools/index.ts";
+import { personOnly, type TreeNumbers } from "../../window-tree/index.ts";
 import type * as mcp from "../mcp.ts";
 import { runCall } from "../run/run.ts";
 import type { SessionBrowser } from "./session-browser.ts";
@@ -34,6 +35,8 @@ export interface CallHost {
   browser: SessionBrowser;
   /** The Space it works in, when asked to work on another Desktop. */
   elsewhere: Elsewhere;
+  /** Its element numbers in native windows (window-tree/). */
+  trees: TreeNumbers;
   watch: SessionWatch;
   setStatus(text: string): void;
   /** A call that ended without an answer to send (cancelled). */
@@ -95,6 +98,12 @@ export class SessionCalls {
             mayName: () => host.scopes.holds("see"),
             browser: host.browser.run((site) => sites.add(site)),
             alone: () => ctx.alone?.status() ?? NOT_ALONE,
+            trees: {
+              bus: ctx.secrets.atspi,
+              numbers: host.trees,
+              personOnly: (window) => personOnly(window, ctx.secrets.handedOver),
+              yes: (question) => host.scopes.criticalYes(question, signal),
+            },
             ...host.scopes.asks(signal),
             signal,
           }),

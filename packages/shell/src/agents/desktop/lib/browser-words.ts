@@ -5,21 +5,7 @@
  * Pure, so the sentences are tested.
  */
 
-import type { PageChanges, PageProbe, SignInOutcome } from "../../../browser/index.ts";
-
-/** "The page changed near it: “Added to cart” appeared. A dialog opened: “Sign in”." */
-export function changeWords(changes: PageChanges | null): string {
-  if (!changes) return "Dashi couldn't see what the page did: read_page.";
-  const parts: string[] = [];
-  if (changes.dialog) parts.push(`A dialog opened: “${changes.dialog}”.`);
-  if (changes.changed === "none") parts.push("Nothing on the page changed.");
-  else parts.push(changes.changed === "near" ? "The page changed around it." : "The page changed, though not around it.");
-  if (changes.appeared) parts.push(`New text: “${changes.appeared}”.`);
-  if (!changes.still) parts.push("The element is gone from the page now.");
-  else if (changes.now) parts.push(`It is now: ${changes.now}.`);
-  if (changes.focus) parts.push(`The keyboard is on: ${changes.focus}.`);
-  return parts.join(" ");
-}
+import type { PageProbe, SignInOutcome } from "../../../browser/index.ts";
 
 const pathOf = (url: string): string => {
   try {

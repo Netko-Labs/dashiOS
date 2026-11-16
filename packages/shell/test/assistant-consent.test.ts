@@ -132,7 +132,7 @@ test("the critical list that asks on a sheet of its own (D260): force quit and s
 });
 
 test("108 tools, and none of the tools engineer's new ones asks on a sheet of its own", () => {
-  expect(TOOLS).toHaveLength(108);
+  expect(TOOLS).toHaveLength(110);
 });
 
 test("reading and ordinary calls just run, with no sheet and no question", async () => {

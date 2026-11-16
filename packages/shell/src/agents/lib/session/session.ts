@@ -19,6 +19,7 @@ import type { AgentInfo, Who } from "../../presence.ts";
 import { SessionSecrets } from "../../secrets/index.ts";
 import { SiteConsent } from "../../sites.ts";
 import { catalog, parseCall } from "../../tools/index.ts";
+import { TreeNumbers } from "../../window-tree/index.ts";
 import * as mcp from "../mcp.ts";
 import { SessionBrowser } from "./session-browser.ts";
 import { type CallHost, SessionCalls } from "./session-calls.ts";
@@ -47,6 +48,8 @@ export class Session {
   private readonly watch: SessionWatch;
   /** The Space it works in, when the person asked it to work on another Desktop. */
   private readonly elsewhere: Elsewhere;
+  /** This connection's element numbers in native windows. */
+  private readonly trees = new TreeNumbers();
   /** Whether it is in sight: it called a tool a while ago at most, or holds something (session-quiet.ts). */
   private readonly quiet: SessionQuiet;
   /** It called a tool at least once: only then is it in the activity log. */
@@ -222,6 +225,7 @@ export class Session {
       scopes: this.scopes,
       browser: this.browser,
       elsewhere: this.elsewhere,
+      trees: this.trees,
       watch: this.watch,
       setStatus: (text) => this.state.set(text),
       ended: (tool, outcome) => {

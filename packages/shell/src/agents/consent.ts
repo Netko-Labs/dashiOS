@@ -106,6 +106,37 @@ export function kept(stored: ReadonlySet<Scope>, ticked: readonly Scope[], sessi
 }
 
 /**
+ * The critical list (decisions.md D260): what asks every time, by kind, with
+ * the tools that are that kind. The one list: the registry's ASKS_EVERY_TIME
+ * is drawn from it, and a native window's element is flagged by the same
+ * kinds (`critical: loses work`, window-tree/lib/semantics.ts), asked about
+ * on the same sheet or launcher line before it is pressed.
+ */
+export const CRITICAL = {
+  pays: ["pay"],
+  secret: ["sign_in", "fill_code"],
+  "loses work": ["force_quit_app"],
+  system: ["request_software_install", "request_software_update"],
+  sends: [],
+} as const satisfies Record<string, readonly string[]>;
+
+export type Critical = keyof typeof CRITICAL;
+
+export const CRITICAL_KINDS: readonly Critical[] = ["pays", "secret", "loses work", "system", "sends"];
+
+/** Critical tools that ask on a sheet of their own (the payment's, the login sheet), not through `ctx.confirm`. */
+export const OWN_SHEET: ReadonlySet<string> = new Set(["pay", "sign_in", "fill_code"]);
+
+/** Which kind of critical a tool is, if it is one. */
+export function criticalTool(name: string): Critical | null {
+  for (const kind of CRITICAL_KINDS) {
+    const tools: readonly string[] = CRITICAL[kind];
+    if (tools.includes(name)) return kind;
+  }
+  return null;
+}
+
+/**
  * Scopes "Always Allow" never keeps. None since decisions.md D260: the one sheet a program sees allows it all, and
  * what is critical (a payment, a sign-in, force quit, software) asks on a sheet of its own every time.
  */

@@ -10,7 +10,7 @@ import { optional } from "@dashi/shape";
 import type { Scope } from "../../consent.ts";
 import { fail, type ToolDef } from "../define.ts";
 import type { Call, WaitUntil } from "../types.ts";
-import { custom, tool } from "./args.ts";
+import { custom, optionalWindowId, tool } from "./args.ts";
 import { refArg, tabArg } from "./browser.ts";
 
 export const WAIT_DEFAULT_S = 10;
@@ -40,7 +40,8 @@ export const waitTools: readonly ToolDef[] = [
       "Wait, instead of reading again and again, until one thing happens: `text` appears on a web page or `text_gone` leaves it, " +
       "an `element` read_page numbered is there, enabled or gone (`state`), the page has `loaded` or gone `quiet` (nothing changing for half a second), " +
       "a window whose title holds `window_title` is open, or a `file` exists. Give exactly one. Returns `met` (true, or false when `timeout` ran out), " +
-      "what it saw, and how long it took. The page is watched by the browser itself.",
+      "what it saw, and how long it took. The page is watched by the browser itself. " +
+      'With `window` (an id from list_windows), `text`, `text_gone`, `element` (read_window\'s number) and `page: "quiet"` (the window idle) wait on that native window instead.',
     scope: "web",
     readOnly: true,
     destructive: false,
@@ -73,6 +74,7 @@ export const waitTools: readonly ToolDef[] = [
         ),
       ),
       tab: tabArg(),
+      window: optionalWindowId,
     },
     build: (args): Call | ReturnType<typeof fail> => {
       const given: WaitUntil[] = [
@@ -86,8 +88,10 @@ export const waitTools: readonly ToolDef[] = [
       const [until] = given;
       if (given.length !== 1 || until === undefined) return fail("Give exactly one of `text`, `text_gone`, `element`, `page`, `window_title` or `file`.");
       if (args.state !== undefined && args.element === undefined) return fail("`state` goes with `element`.");
-      return { name: "wait_for", until, seconds: args.timeout ?? WAIT_DEFAULT_S, tab: args.tab ?? null };
+      if (args.window !== undefined && ("window" in until || "file" in until || ("page" in until && until.page === "loaded")))
+        return fail('With `window`, wait for `text`, `text_gone`, an `element` or `page: "quiet"`.');
+      return { name: "wait_for", until, seconds: args.timeout ?? WAIT_DEFAULT_S, tab: args.tab ?? null, window: args.window ?? null };
     },
-    scopeFor: (call) => (call.name === "wait_for" && "until" in call ? waitScope(call.until) : "web"),
+    scopeFor: (call) => (call.name !== "wait_for" || !("until" in call) ? "web" : call.window ? "see" : waitScope(call.until)),
   }),
 ];

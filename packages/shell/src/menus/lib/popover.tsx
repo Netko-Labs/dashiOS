@@ -215,7 +215,13 @@ export function PopoverRoot({
       // The keys no open menu or panel takes: the bar's, while its ring is there (a panel without keys of its own: Esc).
       onWindowKeyDown={(event) => (popover === null ? controller.barKey(event.key) : event.key === "escape" && back())}
     >
-      <View testID="popover-backdrop" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} onPress={close} />
+      <View
+        accessibilityRole="group"
+        accessibilityLabel="Close"
+        testID="popover-backdrop"
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        onPress={close}
+      />
       {popover === null && bar !== undefined && <BarAnnouncer label={controller.labelOf(bar)} accessible={accessible} />}
       {popover !== null && (
         <OpenMenu

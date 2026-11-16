@@ -24,6 +24,8 @@ function RoundButton({ working, ready, onStop, onSend }: { working: boolean; rea
     return (
       <View
         testID="talk:stop"
+        accessibilityRole="button"
+        accessibilityLabel="Stop"
         onPress={onStop}
         style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" }}
       >
@@ -33,6 +35,9 @@ function RoundButton({ working, ready, onStop, onSend }: { working: boolean; rea
   return (
     <View
       testID="talk:send"
+      accessibilityRole="button"
+      accessibilityLabel="Send"
+      accessibilityState={{ disabled: !ready }}
       {...(ready ? { onPress: onSend } : {})}
       style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: ready ? colors.agent : colors.button, alignItems: "center", justifyContent: "center" }}
     >

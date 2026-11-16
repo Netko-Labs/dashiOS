@@ -7,7 +7,7 @@
  * (`below`: the charge limit's switch, and its slider while it is on).
  */
 
-import { KeyedText } from "@dashi/ui";
+import { ControlName, KeyedText } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useContext, useLayoutEffect, useRef, useState } from "react";
 import { CARD_RADIUS, CardRowsContext } from "../../shared/cards/index.ts";
@@ -99,6 +99,7 @@ export function Row({ label, detail, glyph, children, stack: asked, below, testI
   useCardRow(glyph !== undefined);
   const fit = useWrapFit(glyph !== undefined);
   const stack = asked === true || fit.under;
+  const named = <ControlName.Provider value={label}>{children}</ControlName.Provider>;
   const words = (
     <View style={{ flex: 1, flexDirection: "column", gap: 1, minWidth: PAGE.words }}>
       <Text style={{ fontSize: 13.5, fontWeight: "semibold", color: colors.offInk }}>{label}</Text>
@@ -111,7 +112,7 @@ export function Row({ label, detail, glyph, children, stack: asked, below, testI
     <View style={{ flexDirection: "row", alignItems: "center", gap: 12, ...(wordsOnly(stack, glyph !== undefined) ? {} : { minHeight: PAGE.row - 16 }) }}>
       {knob}
       {words}
-      {!stack && <PillsWrapped.Provider value={fit.report}>{children}</PillsWrapped.Provider>}
+      {!stack && <PillsWrapped.Provider value={fit.report}>{named}</PillsWrapped.Provider>}
     </View>
   );
   return (
@@ -133,7 +134,7 @@ export function Row({ label, detail, glyph, children, stack: asked, below, testI
       {stack && children !== undefined && children !== null && children !== false && (
         <View style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, paddingLeft: glyph !== undefined ? PAGE.knob + 12 : 0 }}>
           {/* Under the words, the pills still tell their one-line width, so the row knows when they fit beside again. */}
-          {asked === true ? children : <PillsWrapped.Provider value={fit.report}>{children}</PillsWrapped.Provider>}
+          {asked === true ? children : <PillsWrapped.Provider value={fit.report}>{named}</PillsWrapped.Provider>}
         </View>
       )}
       {below !== undefined && below !== null && below !== false && (

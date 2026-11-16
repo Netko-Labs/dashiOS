@@ -13,6 +13,7 @@
  * holds it to the 0.3 list byte for byte).
  */
 
+import { CRITICAL, OWN_SHEET } from "../agents/consent.ts";
 import { checkToolArgs, isCallError, type ToolDef } from "../agents/tools/define.ts";
 import type { ToolName } from "../agents/tools/types.ts";
 import { formatAddress, slug } from "./address.ts";
@@ -55,9 +56,12 @@ export const PERSON_TOOLS: Readonly<Partial<Record<ToolName, ActionKind>>> = {
 /**
  * Tools that ask on a sheet every time they run, whoever asked (they call `ctx.confirm`): the critical list of
  * decisions.md D260 that has no sheet of its own (`pay`, `sign_in` and `fill_code` have theirs). Losing work for
- * good (`force_quit_app`) and changing the system (software). A new tool that is critical by D260 goes here.
+ * good (`force_quit_app`) and changing the system (software). Drawn from `CRITICAL` (agents/consent.ts): a new
+ * critical tool goes there.
  */
-export const ASKS_EVERY_TIME: ReadonlySet<ToolName> = new Set<ToolName>(["force_quit_app", "request_software_install", "request_software_update"]);
+export const ASKS_EVERY_TIME: ReadonlySet<string> = new Set(
+  Object.values(CRITICAL).flatMap((tools: readonly string[]) => tools.filter((tool) => !OWN_SHEET.has(tool))),
+);
 
 /** A tool's address: `dashi://tool/force-quit-app`. */
 export const toolAddress = (name: ToolName): string => formatAddress(["tool", slug(name) ?? name]);

@@ -76,7 +76,13 @@ function popoverCatcher(openOverlay: OpenOverlay): AppletContext["catcher"] {
           ...(placement.output === null ? {} : { output: placement.output }),
         },
       },
-      <View testID="applet-catcher" style={{ flex: 1, backgroundColor: "#00000000" }} onPress={onOutside} />,
+      <View
+        accessibilityRole="group"
+        accessibilityLabel="Close"
+        testID="applet-catcher"
+        style={{ flex: 1, backgroundColor: "#00000000" }}
+        onPress={onOutside}
+      />,
     );
     return () => handle.close();
   };

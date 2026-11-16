@@ -136,6 +136,8 @@ function Marks({ screen, cell, failed, hover, onMark }: { screen: Screen; cell: 
         <View
           key={mark.y}
           testID={`terminal-mark-${mark.y}`}
+          accessibilityRole="button"
+          accessibilityLabel={mark.failed ? "Select a failed command's output" : "Select a command's output"}
           onPress={() => onMark(mark.y)}
           style={{
             position: "absolute",

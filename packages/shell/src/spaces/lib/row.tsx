@@ -75,13 +75,12 @@ export function SpacesRow(props: RowProps) {
     setRenaming(null);
   };
 
+  const shown = { names: labels, lifted: view.lifted, current };
   return (
     <View style={{ width, height: view.open ? SHELF_HEIGHT : ROW.height }} onHoverChange={(hovered) => props.onHover(hovered)}>
       {view.open ? <View style={{ ...at({ x: 0, y: 0, width, height: SHELF_HEIGHT }), backgroundColor: colors.dock }} /> : null}
       {renaming === null ? <KeyCatcher onKey={(key) => key === "Escape" && props.onEscape()} /> : null}
-      {shape.open ? (
-        <RowPictures pictures={shape.layout.pictures} lifted={view.lifted} current={current} onSwitch={props.onSwitch} onOverSpace={props.onOverSpace} />
-      ) : null}
+      {shape.open ? <RowPictures pictures={shape.layout.pictures} {...shown} onSwitch={props.onSwitch} onOverSpace={props.onOverSpace} /> : null}
       {names.map((rect, index) =>
         renaming?.index === index ? (
           <RenameField

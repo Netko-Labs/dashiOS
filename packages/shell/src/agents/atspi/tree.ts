@@ -35,6 +35,10 @@ export interface A11yNode {
   attributes?(): Promise<void>;
   /** Which object it is (its bus name and path), where that can be told. */
   readonly key?: string;
+  /** Any call on its object: window-tree/ reads and acts through it. Absent on made-up nodes. */
+  ask?(iface: string, member: string, signature?: string, body?: unknown[]): Promise<unknown>;
+  /** Another object of the same app, by its path. */
+  at?(path: string): A11yNode;
   /** The text around its caret, up to `span` characters each way (the Text interface); null where it has none. Dictation fits its words to it. */
   caretText?(span: number): Promise<CaretText | null>;
 }

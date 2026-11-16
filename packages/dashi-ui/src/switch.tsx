@@ -6,6 +6,8 @@
  */
 
 import { View } from "@mirinjs/metal";
+import { useContext } from "react";
+import { ControlName } from "./control-name.ts";
 import { useControlState } from "./control-state.tsx";
 import { useColors } from "./theme/index.ts";
 
@@ -19,10 +21,14 @@ export interface SwitchProps {
   focused?: boolean;
   /** Tab reaches a switch that can be flipped (KB-1); `false` leaves it to the pointer. */
   focusable?: boolean;
+  /** What it turns on, for screen readers and agents; by default the label of the `Row` it is in. */
+  label?: string;
 }
 
-export function Switch({ on, testID, onChange, disabled, focused, focusable = true }: SwitchProps) {
+export function Switch({ on, testID, onChange, disabled, focused, focusable = true, label }: SwitchProps) {
   const colors = useColors();
+  const fromRow = useContext(ControlName);
+  const name = label ?? fromRow;
   const state = useControlState({ disabled, focused });
   return (
     <View
@@ -30,6 +36,7 @@ export function Switch({ on, testID, onChange, disabled, focused, focusable = tr
       data-focused={state.focused}
       focusable={focusable && onChange !== undefined && !disabled}
       accessibilityRole="switch"
+      {...(name ? { accessibilityLabel: name } : {})}
       accessibilityState={{ checked: on, disabled: disabled === true }}
       {...(onChange && !disabled ? { onPress: () => onChange(!on) } : {})}
       style={{

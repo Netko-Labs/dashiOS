@@ -110,6 +110,8 @@ function WindowCell({ testID, rect, titleAt, title, badge, chosen, onPoint, onPi
       <View
         testID={testID}
         onHoverChange={(hovered) => hovered && onPoint()}
+        accessibilityRole="button"
+        accessibilityLabel={title}
         onPress={onPick}
         style={{
           ...at({ x: rect.x - RING, y: rect.y - RING, width: rect.width + 2 * RING, height: rect.height + 2 * RING }),
