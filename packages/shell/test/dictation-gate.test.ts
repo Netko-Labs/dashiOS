@@ -12,7 +12,7 @@ import { type GateReason, gate } from "../src/dictation/lib/gate.ts";
 import { languagesOf } from "../src/dictation/lib/language.ts";
 import { wordsChanged } from "../src/dictation/lib/rewrite.ts";
 import { OWN_TERMS } from "../src/dictation/lib/seed.ts";
-import type { RewriteAdvice, RewriteReply, RewriteRequest, Rewriter, RewriteState } from "../src/dictation/types.ts";
+import type { RewriteAdvice, RewriteReply, RewriteRequest, Rewriter, RewriteState } from "../src/rewrite/types.ts";
 import { dictating } from "./support/dictation.ts";
 import { settle } from "./support/time.ts";
 
@@ -33,6 +33,29 @@ test("a short clean sentence is not the model's; a self-correction, a repeat, a 
   expect(why("First we buy milk second we cook", { listed: true })).toEqual([]);
   expect(why(Array.from({ length: 26 }, () => "well").join(" x "))).toContain("run-on");
   expect(why("See you there.", { polish: true })).toEqual(["polish"]);
+  // What the model was scored on, in Spanish and mixed (docs/dictation-rewrite.md): each is a reason to ask it.
+  for (const said of [
+    "Reserva una mesa para cuatro, digo para cinco personas.",
+    "Tenemos tres opciones, no, cuatro opciones.",
+    "El paquete llega mañana, o sea, no, pasado mañana.",
+    "Vamos a usar Postgres, mejor dicho SQLite.",
+    "Le dije a las ocho, quise decir a las nueve.",
+    "Llego en diez minutos, espera, en veinte.",
+    "Le dije que viniera a las ocho, miento, a las nueve.",
+    "Call me a las tres, no, a las cuatro.",
+    "We need el presupuesto by Friday, digo, by Thursday.",
+    "Put the button a la izquierda, I mean a la derecha.",
+    "I think it's Tuesday. No, it's Wednesday today.",
+    "Book the room for an hour actually for two hours.",
+    "She lives in Portland Oregon sorry Portland Maine.",
+  ])
+    expect(why(said)).toContain("cue");
+  // A cue that opens what was said takes nothing back, and "te digo" is not "I mean".
+  expect(why("No, I mean it.")).not.toContain("cue");
+  expect(why("No, gracias, ya he comido.")).not.toContain("cue");
+  expect(why("Sorry, I am late.")).not.toContain("cue");
+  expect(why("Hey, but no.")).not.toContain("cue");
+  expect(why("Te digo que no voy.")).not.toContain("cue");
   // A real "no" and an "actually" inside a sentence are not corrections.
   expect(why("No, I see you there.")).toEqual([]);
   expect(why("I actually see you there.")).toEqual([]);

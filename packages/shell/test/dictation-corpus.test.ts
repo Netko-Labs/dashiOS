@@ -32,7 +32,7 @@ const composing = { place: pickProfile(PROFILES, { window: 1, pid: 1, appId: "de
 const made = (row: Row) => compose(row.landed, composing);
 
 test("every row of the corpus is accounted for", () => {
-  expect(corpus.rows.map((row) => row.row)).toEqual(Array.from({ length: 31 }, (_, index) => index + 1));
+  expect(corpus.rows.map((row) => row.row)).toEqual(Array.from({ length: 33 }, (_, index) => index + 1));
   for (const row of corpus.rows) expect(["rules", "model", "voice", "unresolved"]).toContain(row.by);
 });
 

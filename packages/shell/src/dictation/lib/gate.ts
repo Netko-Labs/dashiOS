@@ -4,8 +4,9 @@
  * make it worse, and it costs the wait. It is asked when the rules' text
  * still holds something only a model can settle:
  *
- * - `cue`: the speaker corrected themselves ("no, I mean", "actually,",
- *   "perdón", "mejor dicho"), said something twice, or started again;
+ * - `cue`: the speaker corrected themselves after saying something ("at
+ *   five, no, six", "I mean", "actually", "perdón", "digo", "mejor dicho"),
+ *   or said something twice;
  * - `list`: list markers the rules did not make a list of;
  * - `run-on`: a long run of words with no mark in it;
  * - `non-word`: a word no dictionary knows (English only: the stem list
@@ -23,23 +24,32 @@ import { languageScores } from "./language.ts";
 
 export type GateReason = "cue" | "list" | "run-on" | "non-word" | "near-term" | "polish";
 
-/** Said in the middle of what is being said, these take something back. */
+/**
+ * Said after something else, these take it back. The list covers what the model was scored on in English, Spanish and
+ * a mix (docs/dictation-rewrite.md, "The evaluation set"): "no, I mean", "actually", "wait", "sorry", "never mind",
+ * "no, digo", "perdón", "mejor dicho", "o sea, no", "quise decir", "miento", and a bare "no" set off by a pause.
+ */
 const CUES: readonly RegExp[] = [
-  /\bno,? I mean\b/i,
-  /\bI mean(?:t)?,/i,
-  /\bI meant\b/i,
-  /,\s*actually\b|\bactually,/i,
-  /\b(?:sorry|wait),/i,
-  /,\s*(?:sorry|wait|rather)\b/i,
-  /\bor rather\b/i,
-  /\bscratch that\b/i,
-  /\bno,? no\b/i,
-  /\bnot(?: \w+)?,? but\b/i,
-  /\bbut no\b/i,
-  /\bno,? (?:digo|espera|perdón|perdon)\b/i,
-  /\b(?:mejor dicho|quise decir|quiero decir|o sea,? no|corrijo)\b/i,
-  /\b(?:perdón|perdon),/i,
+  /\bI mean(?:t)?\b/gi,
+  /\b(?:sorry|perdón|perdon)\b/gi,
+  // "I actually like it" is not one: a pause beside it, or the thing said again after it ("an hour actually for two").
+  /,\s*actually\b|\bactually(?:,|\s+(?:for|to|at|on|in|by|the|a|an|\d))/gi,
+  /[,.;]\s+(?:(?:or|o)\s+)?(?:wait|espera|rather|miento|correction|corrijo|never ?mind|olv[ií]dalo|borra eso|en realidad)\b/gi,
+  /\b(?:or rather|scratch that|mejor dicho|quise decir|quiero decir|o sea,? no)\b/gi,
+  /\bno,? no\b|\bbut no\b|\bnot(?: \w+)?,? but\b/gi,
+  // A "no" after a pause that goes on to say the thing again: ", no, six", ". No, it's Wednesday", ", no the blue one".
+  /[,.;]\s+(?:(?:ay|bueno|oh|or|o|espera|wait)\s+)?no(?:,|\s+(?:the|a|an|el|la|los|las|un|una|wait|digo|espera|mejor|\d))/gi,
+  // "digo" as "I mean", never "te digo que".
+  /(?<!\b(?:te|le|les|os|se|lo|que|yo|como|les)\s)\bdigo\b/gi,
 ];
+
+/** Words a transcript may open with that are not yet something to take back ("No, I mean it.", "Hey, but no"). */
+const OPENERS = new Set("no hey oh well but so and or yes ok okay bueno pues ay um uh y o si sí".split(" "));
+
+/** Whether a cue comes after something said: one that opens the utterance takes nothing back and is what the speaker means. */
+function cued(text: string): boolean {
+  return CUES.some((cue) => [...text.matchAll(cue)].some((match) => wordsIn(text.slice(0, match.index)).some((word) => !OPENERS.has(word.toLowerCase()))));
+}
 
 const LIST_MARKERS = /\b(?:first(?:ly)?|second(?:ly)?|third|bullet point|next item|here(?:'s| is) the list|primero|segundo|tercero|viñeta)\b/gi;
 
@@ -100,7 +110,7 @@ export interface Gating {
 /** Why the model should be asked; empty when it should not. */
 export function gate({ text, listed, terms, words, polish }: Gating): GateReason[] {
   const reasons: GateReason[] = [];
-  if (CUES.some((cue) => cue.test(text)) || repeats(text)) reasons.push("cue");
+  if (cued(text) || repeats(text)) reasons.push("cue");
   if (!listed && (text.match(LIST_MARKERS)?.length ?? 0) >= 2) reasons.push("list");
   if (runOn(text)) reasons.push("run-on");
   if (nonWord(text, terms, words)) reasons.push("non-word");

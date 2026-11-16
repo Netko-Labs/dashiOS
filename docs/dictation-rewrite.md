@@ -149,29 +149,30 @@ export const noRewriter: Rewriter = {
 
 ## Wiring it in
 
-One rewriter for the session, made where dictation is started (`boot/dictation.ts`), and
-handed to dictation:
+One rewriter for the session, made where dictation is started (`boot/dictation.ts`,
+`correcting`), and handed to dictation as `rewriter`:
 
 ```ts
-import { startRewriter } from "../rewrite/index.ts";
-
-const rewriter = startRewriter({ tidy: () => settingsStore.getSnapshot().data.dictation.tidy !== false });
-// … dictation calls rewriter.warm() on the key, rewriter.rewrite(…) after its gate …
-// when Voice is turned off, the screen locks for good, or the shell ends:
-void rewriter.stop();
+const rewriter = startRewriter({ tidy: () => voice.on === true && dictation.tidy !== false });
+// dictation calls rewriter.warm() on the key and rewriter.rewrite(…) after its gate;
+// Voice or "Tidy what I say" turned off, and the shell ending: rewriter.stop().
 ```
 
 `startRewriter` is the real one when llama-server and the model's file are on this
-computer, and answers `no-model` otherwise: dictation needs no test of its own for that.
+computer, and answers `no-model` otherwise: dictation then asks nothing and lands the
+rules' words (`dictation/lib/rewrite.ts`, `usable`). Dictation's types for the seam are
+this module's (`rewrite/types.ts`); it declares none of its own.
 
 ## Who calls what, when
 
 1. Key down: dictation calls `warm()`.
-2. Key up: the rules run. The gate (dictation's) decides whether the model is asked. It
-   should ask when there is a self-correction cue, a list marker, a long run with no
-   punctuation, a word that is not a word, a vocabulary term's near-miss, or a profile
-   that asks for polish; and not ask for a short, clean sentence: the model can only
-   make that worse.
+2. Key up: the rules run. The gate (dictation's, `dictation/lib/gate.ts`, D188) decides
+   whether the model is asked: when a cue this set was scored on comes after something
+   said ("no, I mean", ", no,", "actually", "sorry", "digo", "perdón", "mejor dicho", "o
+   sea, no", "quise decir", "espera", "miento"…), something is said twice, a long run has
+   no punctuation, a word begins a vocabulary term's heard form, or the profile asks for
+   polish. Not for a list marker or a word that is not a word (the rules' own), and not
+   for a short, clean sentence: the model can only make that worse.
 3. Dictation calls `rewrite` with `advice().deadlineMs`, shows "tidying" after 300 ms,
    and lands what the reply says.
 4. Raw, or the person moving on: abort the signal.

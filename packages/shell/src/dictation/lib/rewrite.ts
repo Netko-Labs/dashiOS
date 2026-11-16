@@ -1,24 +1,19 @@
 /**
  * The correction model's seat (land.ts; docs/dictation-rewrite.md; research
- * 3.1, stage 3): after the rules and the gate, the rewriter is asked with
- * the profile's tone, the vocabulary and the text before the caret, under
- * the deadline it advises. Only an answer that is text changes anything;
+ * 3.1, stage 3): after the rules and the gate, the rewriter (rewrite/) is
+ * asked with the vocabulary, under the deadline it advises. The seam also
+ * carries the profile's tone and the text before the caret; the model that
+ * ships is sent neither (it scored lower with them, D173), so the fit to
+ * the field stays a rule made after its answer (fit.ts). Only an answer that is text changes anything;
  * "unchanged", a failure or the deadline land the rules' words. With no
  * rewriter, or no model on this computer, nothing is asked at all.
  */
 
-import type { DictationDeps, RewriteReply, RewriteRequest, Rewriter } from "../types.ts";
+import type { RewriteReply, RewriteRequest, Rewriter } from "../../rewrite/index.ts";
+import type { DictationDeps } from "../types.ts";
 import { type Composed, type Composing, isShell, restyle } from "./compose.ts";
 import { type GateReason, gate } from "./gate.ts";
 import { languagesOf } from "./language.ts";
-
-/** The rewriter of a machine with no model: every transcript comes back unchanged (the seam's stand-in). */
-export const noRewriter: Rewriter = {
-  rewrite: async () => ({ kind: "unchanged", timings: { totalMs: 0, firstTokenMs: null, tokens: 0 } }),
-  warm() {},
-  state: () => "no-model",
-  advice: () => ({ land: "once", deadlineMs: 0 }),
-};
 
 /**
  * The reasons the model is asked for. Measured on its evaluation set (docs/dictation-rewrite.md): it takes back what the

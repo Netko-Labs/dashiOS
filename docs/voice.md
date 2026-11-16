@@ -278,8 +278,11 @@ checks on its answer are `rewrite/`'s).
    up ("twenty five" → 25, "dos mil" → 2000, "ten percent" → 10%). Small
    numbers stay words, and so do "first" and "second".
 2. **The gate** (`gate`) says whether the rules' text needs the model, and
-   why: `cue` (a self-correction: "no, I mean", "actually,", "perdón",
-   "mejor dicho", "not … but"; or something said twice), `list` (list
+   why: `cue` (a self-correction after something said: "no, I mean", a
+   "no" set off by a pause, "actually,", "sorry", "digo", "perdón", "mejor
+   dicho", "o sea, no", "quise decir", "espera", "not … but"; never one
+   that opens the utterance, "No, I mean it."; or something said twice;
+   decisions.md D188), `list` (list
    markers the rules made no list of), `run-on` (twenty words with no
    mark), `non-word` (a word no dictionary knows; English only), `near-term`
    (the first word of what a vocabulary term is heard as: "cloud"),

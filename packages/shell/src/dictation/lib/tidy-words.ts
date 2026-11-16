@@ -29,7 +29,7 @@ export const BEFORE_FILLER_LIKE: ReadonlySet<string> = new Set(
   ).split(" "),
 );
 export const AFTER_FILLER_LIKE: ReadonlySet<string> = new Set(
-  "a an the one two three four five most some this that these those my your our any every all really very just hey".split(" "),
+  "a an the one two three four five most some this that these those my your our any every all half many few several really very just hey".split(" "),
 );
 
 export interface Spoken {

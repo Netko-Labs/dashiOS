@@ -4157,3 +4157,46 @@ short words, as the rulebook is written.
   keyboard does not. The IPC grew two optional fields.
 - **Undo:** note every key press again in `input/events.rs`; drop the
   two fields and send chords with `send-keys`.
+
+### D188. Dictation asks the model wherever a cue follows something said: the gate covers what the model was scored on
+
+- **Date:** 2026-11-15. `v09/voicejoin` (brief d3: dictation joined with
+  its model and the assistant).
+- **Question:** joined, the two halves disagreed. The gate (D183) asked
+  the model for "no, I mean", "actually," and a few Spanish phrases; the
+  model was scored on many more ways of taking words back ("at five, no,
+  six", "digo", "I mean" with no "no", "espera", "miento", "never mind").
+  Of the 134 self-corrections in the model's set the gate sent 70, so
+  half of the owner's must never reached the model.
+- **Choice:**
+  - A cue is any of the phrases the model was scored on, in English,
+    Spanish and mixed, **after something was said**: a bare "no" counts
+    only set off by a pause and going on to say the thing again (", no,",
+    ". No,", ", no the…"); "digo" never after "te", "le", "que"; "actually"
+    with a pause beside it or the thing said again after it. A cue that
+    opens the utterance ("No, I mean it.", "No, gracias…", "Sorry, I'm
+    late") takes nothing back and is not a reason. The gate now sends 119
+    of the 134; the 15 left are 7 the rules already carry out, and 8
+    restarts and unpunctuated corrections no candidate fixed (below).
+  - The model is asked for `cue`, `run-on`, `near-term` and `polish`, as
+    D183 chose; `non-word` and `list` stay the rules'. Both reports agree
+    on that.
+  - The tone and the text before the caret ride the seam and are not sent
+    to this model (D173): the fit to the field (D184) is a rule applied to
+    whatever lands, the model's answer included.
+  - One rewriter a session, made in `boot/dictation.ts`; turning Voice or
+    "Tidy what I say" off takes the model out of memory at once.
+- **What is neither the rules' nor the model's** (written down, not
+  hidden): a phrase started again with no cue ("Can you send, could you
+  forward…", "Lo que pasa es que, el problema es que…"), a correction
+  with no pause ("saturday no sunday"), and chains with no cue (the
+  corpus's rows 11 and 25). They land as said. The capsule shows them
+  like any landing: "Typed", with **Raw** one press away and the heard
+  words kept in the history; nothing claims a fix.
+- **Why:** the must is the model's job, and a gate narrower than the
+  model's training wastes it. Asking costs the wait only (a quarter of a
+  second on the laptop); the model's checks hold right sentences (98.6%).
+- **Cost:** more sentences wait for the model: of the 102 sentences in
+  the set that are already right, 18 are sent (they hold a real "no" or
+  "sorry" after other words) and come back unchanged.
+- **Undo:** `CUES` and `OPENERS` in `dictation/lib/gate.ts`.

@@ -24,6 +24,7 @@ import {
   tapClosesLauncher,
 } from "../dictation/index.ts";
 import { idleKeymap } from "../keymap/keymap-state.ts";
+import { type Rewriter, startRewriter } from "../rewrite/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import { type Clipboard, systemClipboard } from "../shared/clipboard/index.ts";
 import { type DictationTrouble, isDictationKeyId, isHistoryKeep } from "../shared/pill/index.ts";
@@ -186,6 +187,28 @@ function deskDeps(
   };
 }
 
+/**
+ * The model that corrects what was dictated (rewrite/; docs/dictation-rewrite.md): its server and its file where they
+ * are on this computer, the rules alone where they are not. Voice or tidying turned off takes it out of memory at once,
+ * not after its idle time.
+ */
+function correcting(settingsStore: SettingsStore): Rewriter & { close(): void } {
+  const wanted = (): boolean => {
+    const { voice, dictation } = settingsStore.getSnapshot().data;
+    return voice.on === true && dictation.tidy !== false;
+  };
+  const rewriter = startRewriter({ tidy: wanted });
+  const stopWatching = settingsStore.subscribe(() => {
+    if (!wanted()) void rewriter.stop();
+  });
+  return Object.assign(rewriter, {
+    close: (): void => {
+      stopWatching();
+      void rewriter.stop();
+    },
+  });
+}
+
 export function startDictating({ compositor, settingsStore, services, late, talking }: DictatingNeeds): DictationParts {
   const hub = late.get("pill");
   const system = systemLayout();
@@ -205,6 +228,7 @@ export function startDictating({ compositor, settingsStore, services, late, talk
       return isHistoryKeep(keep) ? keep : "day";
     },
   });
+  const rewriter = correcting(settingsStore);
   const stopKeeping = settingsStore.subscribe(() => history.refresh());
   const words = systemWords();
   const lexicon = new Lexicon({ words, seed: () => ({ apps: late.peek("appNames")?.() ?? [], person: realName() }) });
@@ -213,6 +237,7 @@ export function startDictating({ compositor, settingsStore, services, late, talk
     history,
     lexicon,
     words,
+    rewriter,
     terminalAgent: async (front) => front.pid !== null && agentUnder(front.pid),
     service: talking.service,
     settings: () => {
@@ -259,6 +284,7 @@ export function startDictating({ compositor, settingsStore, services, late, talk
     stopHearing();
     stopKeeping();
     parts.close();
+    rewriter.close();
   });
   return parts;
 }

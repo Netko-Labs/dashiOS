@@ -173,13 +173,24 @@
       "row": 30,
       "landed": "Hey but no, this is dead.",
       "by": "model",
-      "gate": ["cue", "near-term"]
+      "gate": ["near-term"]
     },
     {
       "row": 31,
       "landed": "For example, when I say hey, no, I mean or hey but no, this is dead.",
       "by": "model",
       "gate": ["cue", "near-term"]
+    },
+    {
+      "row": 32,
+      "landed": "So I just gather like half the answer always.",
+      "by": "rules",
+      "want": "So I just gather half the answer always."
+    },
+    {
+      "row": 33,
+      "landed": "The speech is being cut.",
+      "by": "voice"
     }
   ]
 }
