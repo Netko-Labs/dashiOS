@@ -1,15 +1,12 @@
 /**
- * The pieces of a note's page: the line over it, its title, and its body, a
- * live Markdown field with the hidden copy that measures it.
+ * The pieces of a note's page over its body (body.tsx): the line over it
+ * and its title.
  */
 
 import { type Palette, useColors } from "@dashi/ui";
 import { Text, TextInput, View } from "@mirinjs/metal";
-import { useMemo, useState } from "react";
-import { findMatches } from "../find.ts";
-import type { Selection } from "../format.ts";
-import { BODY_SIZE, lineSizes, lookOf, type Pressable, TITLE_SIZE } from "../look.ts";
-import { markup } from "../markup.ts";
+import { useState } from "react";
+import { TITLE_SIZE } from "../sizes.ts";
 
 /** The page's inset: the note's words, its title and the line over it share one left edge. */
 export const GUTTER = 28;
@@ -33,6 +30,7 @@ export function Title({
   readOnly,
   onChange,
   onLeave,
+  onCaret,
 }: {
   value: string;
   fieldKey: string;
@@ -40,6 +38,8 @@ export function Title({
   readOnly: boolean;
   onChange: (title: string) => void;
   onLeave: () => void;
+  /** The title has the caret (a click, a key): the body is not being edited. */
+  onCaret?: () => void;
 }) {
   const colors = useColors();
   const [measured, setMeasured] = useState(0);
@@ -68,104 +68,11 @@ export function Title({
         autoFocus={autoFocus}
         onChangeText={(title) => (readOnly ? setRefused((n) => n + 1) : onChange(title.replace(/\n/g, " ")))}
         onKeyPress={(key) => key === "Escape" && onLeave()}
+        {...(onCaret ? { onSelectionChange: onCaret } : {})}
         style={{
           width: "100%",
           height,
           fontSize: TITLE_SIZE,
-          padding: 0,
-          color: colors.text,
-          placeholderColor: colors.textDisabled,
-          backgroundColor: "#00000000",
-        }}
-      />
-    </View>
-  );
-}
-
-/** The body: the live Markdown field, with the copy that measures it. */
-/** The body laid out unseen, line by line at each line's size, to learn how tall the field must be. */
-function BodyMeasure({ body, onHeight }: { body: string; onHeight: (height: number) => void }) {
-  const lines = useMemo(() => lineSizes(body), [body]);
-  return (
-    <View
-      testID="body-measure"
-      onLayout={(bounds) => onHeight(bounds.height)}
-      style={{ position: "absolute", left: 0, top: 0, right: 0, opacity: 0, flexDirection: "column" }}
-    >
-      {lines.map((line, index) => (
-        // Lines have no identity beyond their place; the copy is laid out whole on every change.
-        <Text key={index} style={{ fontSize: line.size, fontWeight: line.size === BODY_SIZE ? "normal" : "bold" }}>
-          {line.text === "" ? " " : line.text}
-        </Text>
-      ))}
-    </View>
-  );
-}
-
-export function Page({
-  body,
-  selection,
-  query,
-  fieldKey,
-  wantsFocus,
-  minHeight,
-  readOnly,
-  onChange,
-  onSelection,
-  onPress,
-  onLeave,
-  onMeasured,
-}: {
-  body: string;
-  selection: Selection;
-  query: string;
-  fieldKey: string;
-  wantsFocus: boolean;
-  minHeight: number;
-  readOnly: boolean;
-  onChange: (body: string) => void;
-  onSelection: (selection: Selection) => void;
-  onPress: (span: Pressable, offset: number, modified: boolean) => void;
-  onLeave: () => void;
-  onMeasured: () => void;
-}) {
-  const colors = useColors();
-  const [measured, setMeasured] = useState(0);
-  // A read-only page takes no typing: the field is given its text back.
-  const [refused, setRefused] = useState(0);
-  const look = useMemo(() => lookOf(markup(body), colors, findMatches(body, query)), [body, colors, query]);
-  return (
-    <View style={{ position: "relative", flexDirection: "column", flexShrink: 0, width: "100%" }}>
-      <BodyMeasure
-        body={body}
-        onHeight={(height) => {
-          setMeasured(height);
-          onMeasured();
-        }}
-      />
-      <TextInput
-        key={fieldKey}
-        testID="body"
-        multiline
-        // Tab types a tab in a note's words; Shift+Tab still leaves for the title.
-        tabBehavior="insert"
-        value={body}
-        valueRevision={refused}
-        placeholder={readOnly ? "" : "Start writing…"}
-        autoFocus={wantsFocus}
-        selection={selection}
-        runs={look.runs}
-        onChangeText={(next) => (readOnly ? setRefused((n) => n + 1) : onChange(next))}
-        onSelectionChange={onSelection}
-        onRunPress={(event) => {
-          const span = look.pressable.get(event.run);
-          if (span) onPress(span, event.offset, event.modifiers.control || event.modifiers.super);
-        }}
-        onKeyPress={(key) => key === "Escape" && onLeave()}
-        style={{
-          width: "100%",
-          height: Math.max(minHeight, Math.ceil(measured) + 4),
-          fontSize: BODY_SIZE,
           padding: 0,
           color: colors.text,
           placeholderColor: colors.textDisabled,

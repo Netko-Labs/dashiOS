@@ -15,13 +15,13 @@ export type Span =
   | { kind: "box"; start: number; end: number; line: number; checked: boolean }
   | { kind: "link"; start: number; end: number; url: string };
 
-const HEADING = /^(#{1,6})([ \t]+)/;
-const CHECK = /^([ \t]*)([-*+])([ \t]+)\[([ xX])\]/;
-const BULLET = /^([ \t]*)([-*+])[ \t]+/;
-const NUMBER = /^([ \t]*)(\d{1,9}[.)])[ \t]+/;
-const QUOTE = /^>[ \t]?/;
-const RULE = /^ {0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})$/;
-const FENCE = /^[ \t]*(```|~~~)/;
+export const HEADING = /^(#{1,6})([ \t]+)/;
+export const CHECK = /^([ \t]*)([-*+])([ \t]+)\[([ xX])\]/;
+export const BULLET = /^([ \t]*)([-*+])[ \t]+/;
+export const NUMBER = /^([ \t]*)(\d{1,9}[.)])[ \t]+/;
+export const QUOTE = /^>[ \t]?/;
+export const RULE = /^ {0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})$/;
+export const FENCE = /^[ \t]*(```|~~~)/;
 
 /** The spans of `body`, in the order they are drawn (a later one over an earlier). */
 export function markup(body: string): Span[] {
@@ -45,8 +45,8 @@ export function markup(body: string): Span[] {
   return spans;
 }
 
-/** One line's spans: what it is (a heading, an item, a quote) and then its words. */
-function lineSpans(line: string, start: number, index: number): Span[] {
+/** One line's spans (outside a fence): what it is (a heading, an item, a quote) and then its words. */
+export function lineSpans(line: string, start: number, index: number): Span[] {
   const spans: Span[] = [];
   const end = start + line.length;
   if (RULE.test(line) && line.trim() !== "") return [{ kind: "marker", start, end }];

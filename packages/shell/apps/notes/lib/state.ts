@@ -35,6 +35,8 @@ export interface NotesState {
   session: number;
   /** The title field asks for the keyboard (a new note). */
   focusTitle: boolean;
+  /** The person is in the body (they typed or moved its caret since it was last left): its caret's block shows its Markdown. */
+  editing: boolean;
   /** The last thing that went wrong, for a line in the window. */
   error: string | null;
   /** Something the person should know that isn't an error (a conflict copy was saved); cleared when another note opens. */
