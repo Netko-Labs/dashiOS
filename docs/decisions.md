@@ -4370,3 +4370,61 @@ short words, as the rulebook is written.
   without a pause after "no" lands as said (in the VM it had been
   corrected). Raw and Undo stay; saying "no, digo" fixes it.
 - **Undo:** `withPauses` and `CUES` in `dictation/lib/gate.ts`.
+
+### D197. A filler tells no language and starts no turn
+
+- **Date:** 2026-11-15. `v09/voicejoin`, from the assistant's own report
+  of a session on the owner's laptop (`assistant-feedback-2026-11-15.md`,
+  section 4): "Um" and "Uh uh" were told as Portuguese, and "Um", "Okay"
+  heard when Dashi listened by itself woke the agent for a whole turn.
+- **Choice:**
+  - The shell keeps the conversation's language (`voice/lib/fillers.ts`,
+    `KeptTongue`): the language the service tells is taken only when
+    it is one the person turned on (English and Spanish by default,
+    D160; `tonguesOn` in `voice/tongues.ts`) and the words hold three or
+    more real words; otherwise the last confident one stays. Before any,
+    a short reply in a language that is on is taken as told. The
+    speaking side reads the same kept language (it already kept it for
+    "OK."); a held key's words now count too (before, only listens that
+    ended by themselves did). The service's own detector no longer
+    weighs fillers either (`6fce6858`).
+  - A listen Dashi opened by itself (after it speaks, D150) that hears
+    only sounds ("um", "uh", "eh", "hmm") or a nod ("okay", "ok",
+    "vale") ends there, as silence does: no turn of the model. A nod
+    after an answer that ended in a question is the answer, and goes.
+    An agent's question (`ask_person`) always takes what is heard. With
+    the key held, what is said is always sent.
+- **Why:** a turn costs a model call and an answer the person did not
+  ask for; a language no one turned on cannot be the answer's.
+- **Undo:** `fillerOnly` and `KeptTongue` in `voice/lib/fillers.ts`;
+  the `heard` case in `voice/voice.ts`.
+
+### D198. The assistant hears the person's words as dictation writes them; the computer's names join the vocabulary
+
+- **Date:** 2026-11-15. `v09/voicejoin`, from the same report: the session
+  heard "D tree code" for T3 Code, "SBODYDECH" for Bodytech, "Meeting"
+  for Mirin.
+- **Choice:**
+  - What the Dashi key's listen hears goes through dictation's
+    replacements and vocabulary (`Lexicon.spell`: whole-word forms,
+    capitals, a near non-word; no tidying) before the assistant is
+    asked. The context's "The person uses:" line names dictation's
+    vocabulary (the person's file, then the computer's names), the apps
+    left to their own line, at most 60.
+  - The computer's names (`knownTerms`, `boot/known-names.ts`): the
+    installed apps that are names, the folders at the top of the home
+    and at the top of a folder that holds projects (`~/Developer`,
+    `~/Projects`, `~/code`…; the owner keeps every project one level
+    down, so the home's top alone names none of them), one word of
+    three letters or more and no dictionary word ("dashiOS", "mirin";
+    not "Documents", "v09", "smoke-0.9"); and every site the person
+    allowed agents, by its name ("bodytech.com.co" → "Bodytech", heard
+    as "body tech" when it splits into two dictionary words). They are
+    kept beside the vocabulary file, never written into it, and looked
+    at again every five minutes: a person who removes one in Settings
+    removes it from their file, and it is not put back there.
+- **Cost:** a misheard word that is not near any name still reaches the
+  assistant as heard ("Meeting" for Mirin: an ordinary word is never
+  replaced by rule); the names line tells the model to doubt it.
+- **Undo:** the `asker` in `boot/voice.ts`; `names` in `boot/assistant.ts`;
+  the `known` option of `Lexicon`.

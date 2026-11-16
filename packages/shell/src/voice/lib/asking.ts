@@ -45,6 +45,9 @@ export class Asking {
     return over !== null && now < over.until && over.answers(words);
   }
 
+  /** Dashi's last answer ended in a question: a bare "Okay" heard next answers it. */
+  asked = false;
+
   /** An ask is being answered. */
   get active(): boolean {
     return this.controller !== null;
@@ -100,6 +103,7 @@ export class Asking {
     if (!live()) return;
     this.controller = null;
     this.step = "";
+    this.asked = answer.say.trim().endsWith("?");
     if (answer.failed) host.saying.keep({ kind: "notice", text: head(answer.say, 90), ...(answer.failed.go ? { go: answer.failed.go } : {}) });
     if (answer.say.trim() !== "") this.say(words, `\n\n${answer.say}\n\n`);
     // A stopped ask, or one that only did things, says nothing more.

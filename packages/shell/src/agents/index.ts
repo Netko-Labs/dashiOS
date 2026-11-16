@@ -102,7 +102,7 @@ export { type AgentUse, type CardSummary, type LoginSummary, Vault, VaultTokens 
 export { isVaultWindow, vaultShown } from "./secrets/vault-view.ts";
 export { type Agents, socketPath, startAgents } from "./server.ts";
 export { DENY, type QueuedSheet, SheetQueue } from "./sheet-queue.ts";
-export { type SiteGrants, siteFromInput } from "./sites.ts";
+export { allowedSites, type SiteGrants, siteFromInput } from "./sites.ts";
 export { relay, requestProxy } from "./tokens/client.ts";
 export { MODEL_KEYS, modelKey } from "./tokens/model-keys.ts";
 export { type ProxyGrant, serveTokens, tokensSocketPath } from "./tokens/server.ts";

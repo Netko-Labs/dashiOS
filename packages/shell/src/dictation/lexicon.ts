@@ -12,15 +12,18 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { pairsText, parsePairs, parseProfile, parseVocabulary, profileText, vocabularyText } from "./lib/lexicon-files.ts";
 import { PROFILE_ABOUT, PROFILES } from "./lib/profiles.ts";
-import { seedTerms } from "./lib/seed.ts";
+import { applyTerms } from "./lib/rules-terms.ts";
+import { type KnownNames, knownTerms, seedTerms } from "./lib/seed.ts";
 import type { Pair, Profile, Term } from "./types.ts";
-import type { Words } from "./words.ts";
+import { NO_WORDS, type Words } from "./words.ts";
 
 export interface LexiconView {
   vocabulary: readonly Term[];
   replacements: readonly Pair[];
   snippets: readonly Pair[];
   profiles: readonly Profile[];
+  /** Names Dashi knows from the computer (installed apps, project folders, allowed sites), not in the file (lib/seed.ts). */
+  known?: readonly Term[];
 }
 
 export interface LexiconOptions {
@@ -31,7 +34,12 @@ export interface LexiconOptions {
   seed?(): { apps: readonly string[]; person: string };
   /** Which words are ordinary words: an app called "Notes" is not seeded as a name. */
   words?: Words;
+  /** The names the computer knows now, looked at again every few minutes: written as the vocabulary is, never into its file. */
+  known?(): KnownNames;
 }
+
+/** How long the names the computer knows are kept before they are looked at again. */
+const KNOWN_FRESH_MS = 300_000;
 
 export const lexiconDir = (): string => join(process.env.XDG_CONFIG_HOME || join(homedir(), ".config"), "dashi", "dictation");
 
@@ -41,6 +49,7 @@ export class Lexicon {
   readonly dir: string;
   private view: LexiconView | null = null;
   private stamp = "";
+  private knownAt = 0;
   private readonly listeners = new Set<() => void>();
 
   constructor(private readonly options: LexiconOptions = {}) {
@@ -104,7 +113,10 @@ export class Lexicon {
     }
     this.seed();
     this.stamp = this.stampNow();
+    this.knownAt = Date.now();
+    const known = this.options.known;
     return {
+      known: known ? knownTerms(known(), this.options.words) : [],
       vocabulary: parseVocabulary(this.text("vocabulary")),
       replacements: parsePairs(this.text("replacements")),
       snippets: parsePairs(this.text("snippets"), true),
@@ -114,7 +126,8 @@ export class Lexicon {
 
   /** Read again if a file changed (the person edited one); cheap enough for every press of the key. */
   refresh(): void {
-    if (this.view && (this.options.memory || this.stampNow() === this.stamp)) return;
+    const stale = Date.now() - this.knownAt > KNOWN_FRESH_MS;
+    if (this.view && (this.options.memory || (this.stampNow() === this.stamp && !stale))) return;
     this.view = this.read();
     for (const listener of [...this.listeners]) listener();
   }
@@ -134,6 +147,24 @@ export class Lexicon {
     this.write(name, text);
     this.view = null;
     this.refresh();
+  }
+
+  /** The person's names, then the computer's (lib/seed.ts), as they are written: what Dashi's assistant is told they use. */
+  names(): string[] {
+    this.refresh();
+    const view = this.getSnapshot();
+    return [...new Set([...view.vocabulary, ...(view.known ?? [])].map((each) => each.term))];
+  }
+
+  /**
+   * What the recogniser gave, with the person's words written their way: replacements and the vocabulary only, no tidying
+   * ("d tree code" → "T3 Code"). What Dashi's assistant hears (D198).
+   */
+  spell(text: string): string {
+    this.refresh();
+    const view = this.getSnapshot();
+    const terms = [...view.vocabulary, ...(view.known ?? [])];
+    return applyTerms(text, { terms, replacements: view.replacements }, this.options.words ?? NO_WORDS).text;
   }
 
   /** A word to write this way from now on; `heard` is what the recogniser gives instead, when known. */

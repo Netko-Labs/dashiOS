@@ -67,7 +67,12 @@ export function startTalking({ compositor, settingsStore, services, late }: Talk
   const parts = startVoice({
     settings: settingsStore,
     hold: (keys) => heldKeys.set("voice", keys),
-    asker: { ask: (words, signal, hears) => assistant.ask(words, signal, hears), talk: assistant.talk, prepare: () => assistant.prepare() },
+    // Dashi hears the person's words as dictation writes them ("d tree code" → "T3 Code"; D198).
+    asker: {
+      ask: (words, signal, hears) => assistant.ask(late.peek("dictation")?.lexicon?.spell(words) ?? words, signal, hears),
+      talk: assistant.talk,
+      prepare: () => assistant.prepare(),
+    },
     go: (where) => {
       if (where === "launcher") openLauncher();
       else late.peek("settingsApp")?.open(where);

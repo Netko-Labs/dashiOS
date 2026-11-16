@@ -52,6 +52,8 @@ export function spokeWords(language: string | undefined): string | null {
 /** The most of the app list that goes with an ask. */
 const APPS_MAX = 80;
 const SELECTION_MAX = 600;
+/** The most of the person's names that go with an ask. */
+const NAMES_MAX = 60;
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const two = (value: number): string => String(value).padStart(2, "0");
@@ -95,7 +97,10 @@ export function contextBlock(moment: Moment, options: { fresh: boolean; earlier?
     if (moment.about.trim()) lines.push(`What the person had you remember:\n${moment.about.trim()}`);
     if (options.earlier && options.earlier.length > 0) lines.push("Earlier in this conversation:", ...exchangesWords(options.earlier));
   }
-  const names = moment.names.length > 0 ? ` The person uses: ${moment.names.join(", ")}.` : "";
+  // The apps are listed once, at the start: the rest of the person's words go with every ask, the nearest first.
+  const apps = new Set(moment.apps.map((app) => app.toLowerCase()));
+  const used = moment.names.filter((name) => !apps.has(name.toLowerCase())).slice(0, NAMES_MAX);
+  const names = used.length > 0 ? ` The person uses: ${used.join(", ")}.` : "";
   lines.push(`Their words are a transcript of speech and may be wrong; names of apps and sites may be misheard.${names}`);
   const spoke = spokeWords(options.spoke);
   if (spoke) lines.push(spoke);

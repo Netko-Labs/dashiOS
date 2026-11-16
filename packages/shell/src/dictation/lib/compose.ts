@@ -46,11 +46,11 @@ export interface Composed {
   terms: readonly Term[];
 }
 
-/** The vocabulary for one dictation, the nearest first: the profile's words, the project's, then the person's. */
+/** The vocabulary for one dictation, the nearest first: the profile's words, the project's, the person's, then the computer's. */
 export function activeTerms({ place, lexicon, project = [] }: Pick<Composing, "place" | "lexicon" | "project">): Term[] {
   const seen = new Set<string>();
   const terms: Term[] = [];
-  for (const each of [...place.profile.words.map((term) => ({ term, heard: [] })), ...project, ...lexicon.vocabulary]) {
+  for (const each of [...place.profile.words.map((term) => ({ term, heard: [] })), ...project, ...lexicon.vocabulary, ...(lexicon.known ?? [])]) {
     const key = each.term.toLowerCase();
     if (seen.has(key)) {
       // The person's own entry may know what it is heard as.

@@ -425,6 +425,17 @@ address. The landing is then the person's: Undo no longer takes it back.
   not hold the words land as heard, and the line says "As you said it."
 - `dictation.tidy: false` types the words as heard.
 
+### Fillers and the assistant's ears
+
+"Um", "uh" and their like tell no language, and a reply of fewer than
+three real words keeps the conversation's: only languages turned on are
+chosen (decisions.md D197). Heard alone by a listen Dashi opened itself,
+a filler or a bare "okay" starts no turn; a held key's words always go.
+What the Dashi key hears is spelled with dictation's replacements and
+vocabulary before the assistant reads it, and the vocabulary holds the
+computer's names too: installed apps, project folders, allowed sites
+(D198).
+
 ## The shell's side
 
 `packages/shell/src/voice/` (started by `boot/voice.ts`; tests

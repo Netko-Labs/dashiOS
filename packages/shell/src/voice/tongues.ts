@@ -70,6 +70,14 @@ export function spokenTongues(settings: VoiceSettings, voices: readonly SpokenVo
   });
 }
 
+/** The codes of the languages the person has turned on: the voice's own and each other one that has a voice (D160). */
+export function tonguesOn(settings: VoiceSettings, voices: readonly SpokenVoice[], own: string): string[] {
+  const mine = tongueOf(voices.find((voice) => voice.id === own)?.language ?? "en");
+  // Before the voices are known: the usual ones, unless turned off.
+  if (voices.length === 0) return [...new Set([mine, ...USUAL.filter((code) => settings.voices?.[code] !== false)])];
+  return [mine, ...spokenTongues(settings, voices, own).flatMap((tongue) => (tongue.voice !== null ? [tongue.code] : []))];
+}
+
 /** What `voice.voices` becomes when a language is given a voice, or turned off (`null`). */
 export function withTongue(settings: VoiceSettings, code: TongueCode, voice: string | null): Record<string, string | false> | undefined {
   const next: Record<string, string | false> = { ...settings.voices };

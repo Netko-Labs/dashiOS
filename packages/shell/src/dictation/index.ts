@@ -13,6 +13,7 @@ export {
   usesAltGr,
 } from "./keys.ts";
 export { Lexicon, type LexiconView, lexiconDir } from "./lexicon.ts";
+export { type KnownNames, knownTerms } from "./lib/seed.ts";
 export { type DictationOptions, type DictationParts, startDictation } from "./start.ts";
 export { agentUnder } from "./terminal.ts";
 export type { DictationDeps, DictationPrefs, FieldRead, Front, Hearing, HearingEvent, Pair, Profile, Term } from "./types.ts";

@@ -2,6 +2,7 @@
 
 import type { Timers } from "../shared/time/index.ts";
 import type { heldKeys, TalkKey } from "./keys.ts";
+import type { KeptTongue } from "./lib/fillers.ts";
 import type { VoiceService } from "./lib/service.ts";
 import type { ModelSet as WireModelSet, SpokenVoice as WireSpokenVoice } from "./lib/wire.ts";
 
@@ -124,6 +125,8 @@ export interface VoiceDeps {
   asker: Asker;
   /** The session's locale, for a language only Whisper hears. */
   locale?: string | undefined;
+  /** The conversation's language, kept across fillers and short replies (lib/fillers.ts); unset, each ask's own. */
+  tongue?: KeptTongue | undefined;
   timers?: Timers;
   now?(): number;
   /** One line for the shell's log (an utterance, a failed ask). */

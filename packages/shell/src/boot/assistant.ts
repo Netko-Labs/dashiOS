@@ -108,7 +108,8 @@ function momentReader(compositor: Compositor | null, late: Late<LateParts>): () 
         ? { index: shown + 1, of: Math.max(shown + 1, spaces.length), windows: windows.filter((window) => (window.space ?? 0) === shown).length }
         : null,
       apps: appNames(),
-      names: USUAL_NAMES,
+      // Dictation's vocabulary, the person's and the computer's (D198): what a transcript gets wrong.
+      names: [...new Set([...USUAL_NAMES, ...(late.peek("dictation")?.lexicon?.names() ?? [])])],
       talk: talkWords(persona?.talk ?? "normal"),
       // "What I know about you": read each time, so what the person just wrote in it counts.
       about: readAbout(),

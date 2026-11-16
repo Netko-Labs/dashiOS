@@ -4,9 +4,8 @@
  * stops Dashi at once. A tap listens to nothing: it stops Dashi if it was speaking, and otherwise says how to talk; the Copilot
  * key is the one whose tap talks (keys.ts). An agent's question (`ask_person`) is said the same way, and the next thing heard
  * is its answer instead of an ask. While the conversation is open (`Asker.talk`), the microphone opens by itself once Dashi's
- * last sentence has played, for the reply; after a question it always does (lib/mic.ts).
- *
- * The chip (chip.tsx) shows `getSnapshot()`; nothing here draws.
+ * last sentence has played, for the reply; after a question it always does (lib/mic.ts). The chip (chip.tsx) shows
+ * `getSnapshot()`; nothing here draws. "Um" or "Okay" alone, heard by such a listen, is no ask (lib/fillers.ts).
  */
 
 import { maybe } from "@dashi/shape";
@@ -15,6 +14,7 @@ import { heldKeys, STOP, TALK_TAP, TAP_MS, talks } from "./keys.ts";
 import { Asking } from "./lib/asking.ts";
 import { tail } from "./lib/captions.ts";
 import { ChipStore } from "./lib/chip-store.ts";
+import { fillerOnly } from "./lib/fillers.ts";
 import { Mic } from "./lib/mic.ts";
 import { type RunEnd, Saying } from "./lib/saying.ts";
 import { Captions, LevelStore } from "./lib/speech.ts";
@@ -172,8 +172,9 @@ export class Voice {
     this.heard(text, reply.language);
   }
 
-  /** The words are here, and the language they tell: an agent's question gets them, else Dashi's assistant is asked. */
-  private heard(text: string, language?: string): void {
+  /** The words, and the language the service told (kept across fillers): an agent's question gets them, else an ask. */
+  private heard(text: string, told?: string): void {
+    const language = this.deps.tongue ? this.deps.tongue.tell(text, told) : told;
     this.deps.asker.talk?.busy();
     const question = this.question;
     if (question) {
@@ -200,7 +201,7 @@ export class Voice {
       case "heard":
         // A listen that ends by itself ended: these are its words. (A held key's come in `listen.stop`'s reply.)
         if (!this.mic.end()) return;
-        if (event.text.trim() === "")
+        if (event.text.trim() === "" || (!this.question && fillerOnly(event.text, this.asking.asked)))
           return this.question || this.deps.asker.talk?.open() ? this.rest(true) : this.notice("I didn't hear anything.", undefined, 2500);
         return this.heard(event.text.trim(), event.language);
       case "sentence":
@@ -247,10 +248,7 @@ export class Voice {
   /** A card gave up waiting: for `ms`, words that only answer it (`answers`) are not taken as a new ask. */
   over = (ms: number, answers: (text: string) => boolean): void => this.asking.late({ until: this.now() + ms, answers });
 
-  /**
-   * An agent's question (`ask_person`): said out loud after whatever Dashi is saying, and the next words heard are its answer
-   * (the microphone opens for them by itself). Returns what ends it: `keep` lets what is being said finish (a card answered by a press).
-   */
+  /** An agent's question (`ask_person`), said after what Dashi says; the next words heard answer it. `keep`: let speech finish. */
   ask(words: string, heard: (text: string) => void): (keep?: boolean) => void {
     this.question = heard;
     const spoken = this.deps.trouble() === null && this.deps.prefs().on;

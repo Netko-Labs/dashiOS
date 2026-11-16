@@ -29,6 +29,7 @@ import type { SettingsStore } from "../settings-app/index.ts";
 import { type Clipboard, systemClipboard } from "../shared/clipboard/index.ts";
 import { type DictationTrouble, isDictationKeyId, isHistoryKeep, type PillHub } from "../shared/pill/index.ts";
 import { basicsHere, isTalkKeyId, listenLanguage, talkKey } from "../voice/index.ts";
+import { knownNames } from "./known-names.ts";
 import type { LateParts } from "./parts.ts";
 import type { Late, Services } from "./services.ts";
 import type { Talking } from "./voice.ts";
@@ -241,7 +242,8 @@ export function startDictating({ compositor, settingsStore, services, late, talk
   const rewriter = correcting(settingsStore);
   const stopKeeping = settingsStore.subscribe(() => history.refresh());
   const words = systemWords();
-  const lexicon = new Lexicon({ words, seed: () => ({ apps: late.peek("appNames")?.() ?? [], person: realName() }) });
+  const apps = (): string[] => late.peek("appNames")?.() ?? [];
+  const lexicon = new Lexicon({ words, seed: () => ({ apps: apps(), person: realName() }), known: knownNames(apps) });
   const parts = startDictation({
     hub,
     history,
