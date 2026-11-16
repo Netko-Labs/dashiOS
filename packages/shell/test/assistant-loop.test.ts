@@ -12,6 +12,7 @@ import { wayOf } from "../src/agents/assistant/assistant.ts";
 import { CAP_WORDS } from "../src/agents/assistant/lib/running.ts";
 import { asksUndo, endsTalk } from "../src/agents/assistant/lib/words.ts";
 import { fakeAssistant } from "./support/assistant.ts";
+import { settle } from "./support/time.ts";
 
 const YOUTUBE = [
   { say: "Opening YouTube in Helium.", calls: [{ name: "open_url", arguments: { url: "https://www.youtube.com" } }] },
@@ -140,34 +141,25 @@ test("a settings change offers undo, and “undo that” puts it back without as
   expect(await fake.ask("undo that")).toEqual({ say: "There is nothing to undo." });
 });
 
-test("“Ask before every step”, GPT and no answerer keep plan mode; a harness and a key or a local model loop", async () => {
-  expect([wayOf("claude-code", false), wayOf("codex", false), wayOf("claude", false), wayOf("local", false)]).toEqual(["harness", "harness", "model", "model"]);
-  expect([wayOf("claude-code", true), wayOf("gpt", false), wayOf(undefined, false), wayOf("none", false)]).toEqual(["plan", "plan", "plan", "plan"]);
+test("GPT keeps plan mode by voice only; no answerer asks nothing; a harness and a key or a local model loop (D261)", async () => {
+  expect([wayOf("claude-code"), wayOf("codex"), wayOf("claude"), wayOf("local")]).toEqual(["harness", "harness", "model", "model"]);
+  expect([wayOf("gpt"), wayOf(undefined), wayOf("none")]).toEqual(["plan", "none", "none"]);
   const fake = fakeAssistant([]);
-  fake.state.askEveryStep = true;
+  fake.state.answerer = "gpt";
   expect(await fake.ask("open Helium")).toEqual({ say: "planned: open Helium" });
   expect(fake.sent).toHaveLength(0);
-  expect(fake.assistant.talk.open()).toBe(false);
+  expect(fake.assistant.type("open Helium")).toBe(true);
+  await settle();
+  const last = fake.assistant.transcript.getSnapshot().turns.at(-1);
+  expect(last?.kind === "dashi" && last.text).toContain("Not yet: GPT needs Dashi's loop");
 });
 
-test("locked, nothing is asked; the first use asks once, and a no does nothing", async () => {
+test("locked, nothing is asked; no first-use sheet: the first ask just runs (D260)", async () => {
   const locked = fakeAssistant([{ say: "never" }]);
   locked.state.locked = true;
   expect(await locked.ask("open Helium")).toEqual({ say: "" });
   expect(locked.sent).toHaveLength(0);
-  const refused = fakeAssistant([{ say: "never" }]);
-  refused.state.allow = "deny";
-  expect((await refused.ask("open Helium")).failed).toEqual({ go: "agents" });
-  expect(refused.sent).toHaveLength(0);
-  let sheets = 0;
-  const ui = {
-    ask: async (ask: { scopes: Array<{ id: string }> }) => {
-      sheets++;
-      return { allow: "once" as const, scopes: ask.scopes.map((scope) => scope.id) };
-    },
-  };
-  const again = fakeAssistant([{ say: "Hello." }, { say: "Hello." }], { ui: () => ui as never });
-  await again.ask("hello");
-  await again.ask("hello");
-  expect(sheets).toBe(1);
+  const first = fakeAssistant([{ say: "Hello." }]);
+  await first.ask("hello");
+  expect(first.sent).toHaveLength(1);
 });

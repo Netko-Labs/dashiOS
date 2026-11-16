@@ -20,15 +20,17 @@ const dir = mkdtempSync(join(tmpdir(), "dashi-privacy-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 describe("the agents' kept answers", () => {
-  test("version 1's lists read without dates; version 2 keeps a date per scope; pay and the clipboard are never kept", () => {
+  test("version 1's lists read without dates; version 2 keeps a date per scope; pay and the clipboard may be kept (D260)", () => {
     const old = parseGrants({ agents: { "/usr/bin/claude": ["see", "pay", "act"] } });
     expect([...(old.get("/usr/bin/claude") ?? [])]).toEqual([
       ["see", null],
+      ["pay", null],
       ["act", null],
     ]);
     const now = parseGrants({ version: 2, agents: { "ssh:alexk": { screen: 1_760_000_000, clipboard: 5, nope: 3, see: -1 } } });
     expect([...(now.get("ssh:alexk") ?? [])]).toEqual([
       ["screen", 1_760_000_000],
+      ["clipboard", 5],
       ["see", null],
     ]);
     expect(parseGrants("nonsense").size).toBe(0);

@@ -32,7 +32,10 @@ export interface FakeAssistant {
   ran: string[];
   /** The model's replies still to give. */
   script: Reply[];
-  state: { now: number; locked: boolean; answerer: string | undefined; askEveryStep: boolean; allow: "always" | "once" | "deny" | null };
+  state: { now: number; locked: boolean; answerer: string | undefined; models?: Record<string, { typed?: string; spoken?: string }>; readTyped?: boolean };
+  /** Notifications of turns kept working, and typed answers said out loud. */
+  done: Array<{ title: string; body: string }>;
+  spoken: string[];
   said: string[];
   steps: string[];
   log: string[];
@@ -51,7 +54,9 @@ export function fakeAssistant(script: Reply[], over: Partial<AssistantOptions> =
     sent: [],
     ran: [],
     script,
-    state: { now: 1_000_000, locked: false, answerer: "local", askEveryStep: false, allow: null },
+    state: { now: 1_000_000, locked: false, answerer: "local" },
+    done: [],
+    spoken: [],
     said: [],
     steps: [],
     log: [],
@@ -102,9 +107,14 @@ export function fakeAssistant(script: Reply[], over: Partial<AssistantOptions> =
     close() {},
   });
   const assistant: Assistant = startAssistant({
-    settings: () => ({ agents: { answerer: fake.state.answerer as never }, voice: { askEveryStep: fake.state.askEveryStep } }),
+    settings: () => ({
+      agents: {
+        answerer: fake.state.answerer as never,
+        ...(fake.state.models ? { models: fake.state.models } : {}),
+        ...(fake.state.readTyped ? { readTyped: true } : {}),
+      },
+    }),
     agents: () => ({ connect, stopTask: () => {}, grants: { get: () => new Set(), set: () => {} } as never }),
-    ui: () => (fake.state.allow === null ? null : { ask: async (ask) => ({ allow: fake.state.allow ?? "deny", scopes: ask.scopes.map((scope) => scope.id) }) }),
     planner: { ask: async (words) => ({ say: `planned: ${words}` }) },
     keys: { anthropic: async () => null, openai: async () => null, place: async () => "none" } as never,
     harness: { env: {}, shell: { bun: "bun", bridge: "bridge", dashiAgent: "agent" }, files: { exists: () => false } as never },
@@ -134,6 +144,8 @@ export function fakeAssistant(script: Reply[], over: Partial<AssistantOptions> =
     now: () => fake.state.now,
     newId: () => "talk000001",
     log: (line) => fake.log.push(line),
+    done: (title, body) => fake.done.push({ title, body }),
+    speak: (text) => fake.spoken.push(text),
     ...over,
   });
   const ask = (words: string, signal: AbortSignal = new AbortController().signal) =>

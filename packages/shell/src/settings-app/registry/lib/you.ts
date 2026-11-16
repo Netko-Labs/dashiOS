@@ -188,7 +188,6 @@ export const YOU_ROWS = [
     kind: "switch",
   },
   { id: "agents/key", title: "Key", name: "The agent's API key", keywords: ["api key", "anthropic", "openai"], kind: "value" },
-  { id: "agents/model", title: "Model", name: "The agent's model", keywords: ["model"], kind: "choice" },
   { id: "agents/history", title: "History", name: "What agents did", keywords: ["agent history", "undo", "activity"], kind: "value" },
   {
     id: "agents/sites",

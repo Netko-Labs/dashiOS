@@ -1,11 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { type ActionDef, ok, ready } from "../src/actions/types.ts";
-import { withHandoff } from "../src/launcher/lib/agents/handoff-rows.ts";
 import { launcherIndex } from "../src/launcher/lib/items.ts";
 import { buildSections, type ListInput } from "../src/launcher/lib/rows.ts";
 import { commandCore, startsWithCommand } from "../src/launcher/ranking/index.ts";
 import type { Section } from "../src/launcher/sections.ts";
-import type { HandoffSnapshot } from "../src/launcher/types.ts";
 import { spaceFlips } from "../src/launcher/verbs.ts";
 import type { Entry } from "../src/shared/app-entries/index.ts";
 import { ENTRIES } from "./ranking-fixture.ts";
@@ -45,18 +43,10 @@ const entries: Entry[] = [...ENTRIES, { id: "dev.dashi.calendar", name: "Calenda
 const index = launcherIndex({ entries, actions: ACTIONS });
 const ICONS = { calculator: "/calc.svg", files: "/files.svg", software: "/software.svg", command: "/dashi.svg" };
 
-const snapshot: HandoffSnapshot = {
-  harnesses: [
-    { id: "claude-code", name: "Claude Code", uses: "your Claude subscription", signedIn: true },
-    { id: "codex", name: "Codex", uses: "your ChatGPT plan", signedIn: true },
-  ],
-  runs: [],
-};
-
-/** What the launcher lists for `query`, with a harness installed: the sections as main.tsx puts them together. */
+/** What the launcher lists for `query` (Ask Dashi, added last by agent-rows.ts, is not here). */
 function launcher(query: string): Section[] {
   const input: ListInput = { query, entries, recent: [], files: { kind: "none" }, icons: ICONS, index };
-  return withHandoff(buildSections(input), { query, allApps: false, snapshot, tabbed: false });
+  return buildSections(input);
 }
 const firstRow = (sections: readonly Section[]) => sections[0]?.rows[0];
 
@@ -75,11 +65,8 @@ describe("a short command finds what it names", () => {
     expect(commandCore("open the invoices from last week and email them")).toBeNull();
   });
 
-  test('"turn on dark mode" finds the setting first, not "Hand it off"', () => {
-    const sections = launcher("turn on dark mode");
-    expect(firstRow(sections)?.title).toBe("Dark Mode");
-    expect(sections.map((section) => section.id)).toContain("handoff");
-    expect(sections[0]?.id).not.toBe("handoff");
+  test('"turn on dark mode" finds the setting first', () => {
+    expect(firstRow(launcher("turn on dark mode"))?.title).toBe("Dark Mode");
   });
 
   test('"dark mode" finds the setting first', () => {
@@ -89,20 +76,10 @@ describe("a short command finds what it names", () => {
   test('"set volume to 30" finds the volume first', () => {
     const sections = launcher("set volume to 30");
     expect(firstRow(sections)?.title).toBe("Output volume");
-    expect(sections[0]?.id).not.toBe("handoff");
   });
 
   test('"switch off bluetooth" finds Bluetooth first', () => {
     expect(firstRow(launcher("switch off bluetooth"))?.title).toBe("Bluetooth");
-  });
-
-  test("a real task still hands off first", () => {
-    const sections = launcher("find me a hotel in SF next week and add it to my calendar");
-    expect(sections[0]?.id).toBe("handoff");
-    expect(firstRow(sections)?.title).toBe("Start Claude Code");
-    // A task that starts with a command's verb is still a task.
-    expect(launcher("turn on dark mode and email alexk the report")[0]?.id).toBe("handoff");
-    expect(launcher("book a spinning class at bodytech thursday 7am")[0]?.id).toBe("handoff");
   });
 
   test("in words that start with a command's verb, Space types a space: it never flips the switch found", () => {

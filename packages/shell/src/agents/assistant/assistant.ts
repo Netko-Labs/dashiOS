@@ -88,7 +88,7 @@ class Core {
       name: this.options.name(),
       sites: this.talk.sites,
       assistant: {
-        refuses: () => this.turn?.run.refuses() ?? "The person's request is over. Make no more calls.",
+        refuses: () => (this.turn ? this.turn.run.refuses() : "The person's request is over. Make no more calls."),
         // Said in the step line: the person is watching, and a site is kept for good only by them, in Settings.
         site: (site) => this.turn?.hears.step(`Using ${site} for the first time`),
         ...typedGate(() => this.turn, this.transcript),

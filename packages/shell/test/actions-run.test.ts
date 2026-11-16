@@ -137,7 +137,8 @@ describe("a link from outside", () => {
     expect(linkDecision(tool("create_note"), { title: "x" })).toBe("present");
     expect(linkDecision(tool("close_window"), { window: "w3" })).toBe("present");
     expect(linkDecision(tool("force_quit_app"), { pid: 4 })).toBe("run");
-    expect(linkDecision(tool("trash_file"), { path: "/home/alexk/a" })).toBe("run");
+    // Trash no longer asks every time (D260), so a link presents it first, as any destructive action.
+    expect(linkDecision(tool("trash_file"), { path: "/home/alexk/a" })).toBe("present");
   });
 
   test("a settings address opens Settings at its row; with a value it sets it", async () => {

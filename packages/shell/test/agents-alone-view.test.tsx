@@ -97,7 +97,7 @@ test("Settings starts from what was already allowed, and the switch turns it on 
   expect(view.tree()).toContain(NEVER_WORDS);
   // No tick for what it never covers.
   expect(view.has("alone-tools:see")).toBe(true);
-  for (const never of ["pay", "signin", "clipboard"]) expect(view.has(`alone-tools:${never}`)).toBe(false);
+  for (const never of ["pay", "signin"]) expect(view.has(`alone-tools:${never}`)).toBe(false);
   // Sites show once Use websites is ticked: the person's list and the agents' kept ones.
   expect(view.has("alone-sites")).toBe(false);
   await view.press("alone-tools:web");
