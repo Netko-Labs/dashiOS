@@ -12,21 +12,26 @@ import { contextBlock, type Moment } from "../src/agents/assistant/context.ts";
 import { allowedSites } from "../src/agents/sites.ts";
 import { knownNames } from "../src/boot/index.ts";
 import { knownTerms, Lexicon, wordsFrom } from "../src/dictation/index.ts";
+import { OWN_TERMS } from "../src/dictation/lib/seed.ts";
 
 const words = wordsFrom(["body\ntech\nmeeting\ndeveloper\ndocuments\nmusic\nnotes\nexperience"]);
 
 test("folders and sites become names; ordinary words, versions and short ones do not", () => {
-  const terms = knownTerms(
+  const all = knownTerms(
     {
       apps: ["Notes", "OBS Studio"],
       folders: ["mirin", "dashiOS", "Documents", "v09", "smoke-0.9", "Music"],
-      sites: ["bodytech.com.co", "github.com", "192.168.1.1"],
+      sites: ["bodytech.com.co", "github.com", "192.168.1.1", "localhost"],
     },
     words,
   );
+  // Dashi's own words come first, so a vocabulary file older than one of them still hears it ("T3 Code").
+  expect(all.slice(0, 3).map((each) => each.term)).toEqual(["Dashi", "mirin", "Helium"]);
+  expect(all.some((each) => each.term === "T3 Code")).toBe(true);
+  const terms = all.slice(OWN_TERMS.length);
   expect(terms.map((each) => each.term)).toEqual(["OBS Studio", "dashiOS", "Bodytech", "Github"]);
-  // "mirin" is Dashi's own already.
-  expect(terms.some((each) => each.term === "mirin")).toBe(false);
+  // "mirin" is Dashi's own already: not twice.
+  expect(all.filter((each) => each.term === "mirin").length).toBe(1);
   expect(terms.find((each) => each.term === "Bodytech")?.heard).toEqual(["body tech"]);
 });
 

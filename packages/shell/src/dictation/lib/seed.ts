@@ -72,7 +72,7 @@ function siteTerm(site: string, words: Words | undefined): Term | null {
   const labels = site.toLowerCase().split(".");
   while (labels.length > 1 && SUFFIX.test(labels.at(-1) ?? "")) labels.pop();
   const label = labels.at(-1) ?? "";
-  if (!/^[a-z][a-z0-9]{2,29}$/.test(label) || /^\d/.test(site)) return null;
+  if (!/^[a-z][a-z0-9]{2,29}$/.test(label) || /^\d/.test(site) || site === "localhost") return null;
   const heard: string[] = [];
   for (let at = 3; at <= label.length - 3; at++) {
     const [one, two] = [label.slice(0, at), label.slice(at)];
@@ -86,7 +86,8 @@ function siteTerm(site: string, words: Words | undefined): Term | null {
  * dictation writes them and the assistant hears them, and they follow what is installed and allowed.
  */
 export function knownTerms(names: KnownNames, words?: Words): Term[] {
-  const terms: Term[] = [];
+  // Dashi's own words first: a vocabulary file written before one was added ("T3 Code") still hears it.
+  const terms: Term[] = [...OWN_TERMS];
   const have = new Set(OWN_TERMS.map((each) => each.term.toLowerCase()));
   const add = (term: Term | null): void => {
     if (!term || have.has(term.term.toLowerCase())) return;
