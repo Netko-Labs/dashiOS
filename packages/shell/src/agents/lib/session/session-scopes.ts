@@ -270,15 +270,14 @@ export class Scopes {
   }
 
   /**
-   * An element that deletes, sends or pays (window-tree/, D221): Dashi's
-   * assistant gets its spoken yes, as for a destructive tool, unless Work
-   * alone covers acting; any other agent the sheet, every time.
+   * A critical element in a native window (window-tree/: it pays, signs in
+   * with a secret, loses work for good, changes the system or sends as the
+   * person): asked on screen every time, for every agent, answered by the
+   * person's own pointer or key (briefs/consent-critical-only.md; the rule is
+   * v09/askagent's, which may move this to its one place).
    */
-  async destructiveYes(tool: string, question: Question, signal: AbortSignal): Promise<boolean> {
-    if (!this.task?.policy.assistant) return this.confirm(question, signal);
-    if (this.worksAlone(tool, "act")) return true;
-    const answer = await this.question(`${question.summary.charAt(0).toUpperCase()}${question.summary.slice(1)}?`, SPOKEN_YES_SECONDS, signal);
-    return "text" in answer && yesOrNo(answer.text) === true;
+  criticalYes(question: Question, signal: AbortSignal): Promise<boolean> {
+    return this.confirm(question, signal);
   }
 
   /** Waiting on the person for a question: the status says so, and goes back when the last one is answered. */

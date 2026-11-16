@@ -16,7 +16,7 @@
 import type { Element } from "../types.ts";
 import { describe } from "./describe.ts";
 import { CHECKABLE, DIALOGS, FIELDS, has, LAYOUT, R, ROWS, S, TEXTUAL } from "./roles.ts";
-import { isModal } from "./semantics.ts";
+import { type Hints, holdsFilledSecret, isModal } from "./semantics.ts";
 
 export interface RenderLimits {
   chars: number;
@@ -82,7 +82,7 @@ function moreRows(list: Element, number: number, ctx: RenderContext): string {
   return ` (${list.childCount} rows; rows ${first + 1}–${last} here${next})`;
 }
 
-function walk(element: Element, parent: Element | null, indent: number, out: Out, ctx: RenderContext, inSheet = false): void {
+function walk(element: Element, parent: Element | null, indent: number, out: Out, ctx: RenderContext, hints: Hints): void {
   if (out.cut) return;
   if (element.role === R.HEADING) {
     const level = Math.min(6, Math.max(1, Number(element.attributes.level) || 2));
@@ -96,26 +96,26 @@ function walk(element: Element, parent: Element | null, indent: number, out: Out
     return;
   }
   const dialog = DIALOGS.has(element.role) || (isModal(element) && element.role !== R.FRAME);
-  if (dialog) return sheet(element, indent, out, ctx);
+  if (dialog) return sheet(element, indent, out, ctx, hints);
   if (usable(element)) {
-    const said = describe(element, inSheet);
+    const said = describe(element, hints);
     const number = ctx.numberOf(element, parent, said);
     const more = ROWS.has(element.role) ? moreRows(element, number, ctx) : "";
     out.line(indent, `[${number}] ${said}${more}`, true);
-    for (const child of element.children) walk(child, element, indent + 1, out, ctx, inSheet);
+    for (const child of element.children) walk(child, element, indent + 1, out, ctx, hints);
     return;
   }
   const named = clean(element.name);
   if (named && !LAYOUT.has(element.role)) {
-    out.line(indent, describe(element, inSheet));
-    for (const child of element.children) walk(child, element, indent + 1, out, ctx, inSheet);
+    out.line(indent, describe(element, hints));
+    for (const child of element.children) walk(child, element, indent + 1, out, ctx, hints);
     return;
   }
-  for (const child of element.children) walk(child, parent, indent, out, ctx, inSheet);
+  for (const child of element.children) walk(child, parent, indent, out, ctx, hints);
 }
 
 /** A sheet or dialog: marked, and when it is the person's, named and left closed. */
-function sheet(element: Element, indent: number, out: Out, ctx: RenderContext): void {
+function sheet(element: Element, indent: number, out: Out, ctx: RenderContext, hints: Hints): void {
   const theirs = ctx.personOnly?.(element) ?? null;
   const name = clean(element.name);
   const head = `${DIALOGS.has(element.role) ? "dialog" : "sheet"}${name ? ` ${JSON.stringify(name)}` : ""} (modal)`;
@@ -124,21 +124,23 @@ function sheet(element: Element, indent: number, out: Out, ctx: RenderContext): 
     return;
   }
   out.line(indent, head);
-  for (const child of element.children) walk(child, element, indent + 1, out, ctx, true);
+  for (const child of element.children) walk(child, element, indent + 1, out, ctx, { ...hints, inSheet: true });
 }
 
 /** The tree under a window's root as lines; `cut` when the limits stopped it. */
 export function renderTree(root: Element, ctx: RenderContext, limits: RenderLimits = RENDER_LIMITS): { text: string; cut: boolean } {
   const out = new Out(limits);
-  for (const child of root.children) walk(child, root, 0, out, ctx);
+  const hints = { inSheet: false, secretFilled: holdsFilledSecret(root) };
+  for (const child of root.children) walk(child, root, 0, out, ctx, hints);
   return { text: out.lines.join("\n"), cut: out.cut };
 }
 
 /** Only a list's rows (read_window's `list` and `from`), as lines under it. */
 export function renderRows(list: Element, ctx: RenderContext, limits: RenderLimits = RENDER_LIMITS): { text: string; cut: boolean } {
   const out = new Out(limits);
-  const number = ctx.numberOf(list, null, describe(list, false));
-  out.line(0, `[${number}] ${describe(list, false)}${moreRows(list, number, ctx)}`, true);
-  for (const child of list.children) walk(child, list, 1, out, ctx);
+  const number = ctx.numberOf(list, null, describe(list));
+  out.line(0, `[${number}] ${describe(list)}${moreRows(list, number, ctx)}`, true);
+  const hints = { inSheet: false, secretFilled: holdsFilledSecret(list) };
+  for (const child of list.children) walk(child, list, 1, out, ctx, hints);
   return { text: out.lines.join("\n"), cut: out.cut };
 }

@@ -1,8 +1,8 @@
 /**
  * read_window and acting on its numbers (agents/window-tree/), on a made-up
  * AT-SPI app shaped like Settings' Bluetooth pane: the lines, the numbers
- * kept across reads, a long list in pages, a secret never read, a sheet's
- * destructive button asked about, and a number that is gone.
+ * kept across reads, a long list in pages, a secret never read, only a
+ * critical button asked about, and a number that is gone.
  */
 
 import { expect, test } from "bun:test";
@@ -11,6 +11,8 @@ import { runCall } from "../src/agents/lib/run/run.ts";
 import { parseCall, scopeOf } from "../src/agents/tools/index.ts";
 import { TreeNumbers } from "../src/agents/window-tree/index.ts";
 import { R, S } from "../src/agents/window-tree/lib/roles.ts";
+import { criticalOf } from "../src/agents/window-tree/lib/semantics.ts";
+import type { Element } from "../src/agents/window-tree/types.ts";
 import type { CompositorWindow } from "../src/compositor/index.ts";
 import { FakeApp, fakeBus, LIVE, type Spec } from "./support/window-tree.ts";
 
@@ -48,6 +50,7 @@ const pane = (): Spec => ({
         { role: R.LABEL, name: "You can pair it again later." },
         { role: R.PUSH_BUTTON, name: "Cancel", actions: ["click"] },
         { role: R.PUSH_BUTTON, name: "Remove", actions: ["click"], states: [...LIVE, S.IS_DEFAULT] },
+        { role: R.PUSH_BUTTON, name: "Erase All Pairings", actions: ["click"] },
       ],
     },
   ],
@@ -105,9 +108,10 @@ test("a window reads as read_page's lines, nested, with what each element is and
   expect(text).toContain('password field "PIN" (filled: yes)');
   expect(text).not.toContain("hunter2");
   expect(app.asked.filter((call) => call.startsWith("PIN") && call.includes("GetText"))).toEqual([]);
-  // A sheet is marked; its default button that removes is destructive.
+  // A sheet is marked; its default button is primary, and only what loses work for good is critical.
   expect(text).toContain('dialog "Remove “AirPods”?" (modal)');
-  expect(text).toMatch(/\[\d+\] button "Remove" \(primary, destructive\)/);
+  expect(text).toMatch(/\[\d+\] button "Remove" \(primary\)\n/);
+  expect(text).toMatch(/\[\d+\] button "Erase All Pairings" \(critical: loses work\)/);
   expect(text).toMatch(/\[\d+\] button "Cancel"\n/);
 });
 
@@ -142,14 +146,16 @@ test("a click uses the element's own action; one with none is clicked at its cen
   expect(sent).toEqual([{ pointer: { x: 60, y: 35 }, action: "click", button: "left" }]);
 });
 
-test("a sheet's destructive button waits for the person's yes", async () => {
+test("only a critical button waits for the person's yes; the rest just runs", async () => {
   const { ctx, app, asked } = setup(false);
   const text = words(await runCall({ name: "read_window", window: 3, list: null, from: 0 }, ctx));
-  const remove = numberOf(text, 'button "Remove"');
-  const refused = await runCall({ name: "click_element", ref: remove, tab: null, window: 3 }, ctx);
-  expect(refused.isError).toBe(true);
-  expect(asked).toEqual(["press “Remove” in “Bluetooth”"]);
-  expect(app.asked.some((call) => call.startsWith("Remove Action.DoAction"))).toBe(false);
+  const remove = await runCall({ name: "click_element", ref: numberOf(text, 'button "Remove"'), tab: null, window: 3 }, ctx);
+  expect(remove.isError).toBeUndefined();
+  expect(asked).toEqual([]);
+  const erase = await runCall({ name: "click_element", ref: numberOf(text, 'button "Erase All Pairings"'), tab: null, window: 3 }, ctx);
+  expect(erase.isError).toBe(true);
+  expect(asked).toEqual(["press “Erase All Pairings” in “Bluetooth”"]);
+  expect(app.asked.some((call) => call.startsWith("Erase All Pairings Action.DoAction"))).toBe(false);
 });
 
 test("a number whose element is gone says so, with the tree around where it was", async () => {
@@ -184,4 +190,34 @@ test("with a window the website tools need “act”, and read_window “see”"
   expect(read).toEqual({ name: "read_window", window: 3, list: 7, from: 40 });
   if ("name" in read) expect(scopeOf(read)).toBe("see");
   expect(parseCall({ name: "scroll_page", arguments: { window: "w3" } })).toHaveProperty("arguments");
+});
+
+const button = (name: string, attributes: Record<string, string> = {}): Element => ({
+  key: name,
+  role: R.PUSH_BUTTON,
+  name,
+  description: "",
+  states: [],
+  attributes,
+  interfaces: [],
+  actions: ["click"],
+  childCount: 0,
+  children: [],
+});
+
+test("what is critical: paying, a secret, losing work for good, the system, sending as the person", () => {
+  const plain = { inSheet: false, secretFilled: false };
+  const kinds = (names: string[], hints = plain) => names.map((name) => criticalOf(button(name), hints));
+  expect(kinds(["Pay $12.00", "Buy", "Comprar"])).toEqual(["pays", "pays", "pays"]);
+  expect(kinds(["Don't Save", "Delete Immediately", "Empty Trash", "Vaciar papelera", "Discard Changes"])).toEqual(Array(5).fill("loses work"));
+  expect(kinds(["Install", "Uninstall", "Update All", "Instalar"])).toEqual(Array(4).fill("system"));
+  expect(kinds(["Send", "Reply All", "Enviar", "Decline"])).toEqual(Array(4).fill("sends"));
+  // Into the Trash, closing, removing a device, saving: they just run.
+  expect(kinds(["Delete", "Move to Trash", "Remove", "Close", "Save", "OK", "Cancel"])).toEqual(Array(7).fill(null));
+  // "Sign in" is a sign-in with a secret only beside a filled password field.
+  expect(kinds(["Sign in"])).toEqual([null]);
+  expect(kinds(["Sign in", "Iniciar sesión"], { inSheet: false, secretFilled: true })).toEqual(["secret", "secret"]);
+  // The toolkit's word wins.
+  expect(criticalOf(button("Go", { critical: "sends" }), plain)).toBe("sends");
+  expect(criticalOf(button("Go", { destructive: "true" }), plain)).toBe("loses work");
 });

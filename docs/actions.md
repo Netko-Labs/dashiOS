@@ -469,7 +469,7 @@ show reads the same, and acting moves nothing on screen.
 
 | Tool | What it does |
 | --- | --- |
-| `read_window {window, list?, from?}` | The window as lines: headings (`#`), text in reading order, and each element one can use with a number, its role, name, value and states, indented under what holds it: `[2] switch "Wi-Fi" (on)`, `[7] textbox "Name" value="Alex" (focused, caret 4)`, `[9] password field "Password" (filled: no)`, `[4] button "Delete" (primary, destructive)`, `dialog "Delete 3 items?" (modal)`. A list gives 40 rows and the call for the next (`list`, `from`). Scope "see". |
+| `read_window {window, list?, from?}` | The window as lines: headings (`#`), text in reading order, and each element one can use with a number, its role, name, value and states, indented under what holds it: `[2] switch "Wi-Fi" (on)`, `[7] textbox "Name" value="Alex" (focused, caret 4)`, `[9] password field "Password" (filled: no)`, `[4] button "Empty Trash" (primary, critical: loses work)`, `dialog "Delete 3 items?" (modal)`. A list gives 40 rows and the call for the next (`list`, `from`). Scope "see". |
 | `click_element {ref, window}` | The element's own action ("click", "press", "activate", "toggle"); where it has none, a click at its centre by the agent's pointer (D110). Says what the element is after, and the window's fresh tree when it changed. |
 | `fill_element {ref, text, window}` | The field's editable text (`SetTextContents`); where it has none (Metal's fields), its focus, then ❖A and the text by the agent's own keys. Refused on a secret field. |
 | `select_option {ref, value, window}` | An option of a list or combo box by its name: the list's Selection, else the option's own action (a combo box is opened first). |
@@ -484,11 +484,23 @@ fresh tree around where it was. **Secret fields** (a password field, or a
 field named as a password, PIN, code or card) say only whether they are
 filled. **The person's windows** (the Setup Assistant, Settings showing the
 vault, a window handed over, Dashi's own sheets and the portal's pickers)
-are named and never read. **Destructive**: what the toolkit marks so, or a
-sheet's or dialog's button (or a default button) named Delete, Send, Pay…
-waits for the person's yes before it is pressed (spoken, for the assistant;
-the sheet for other agents). A tree that says almost nothing (a canvas, a
-game) says to take a screenshot.
+are named and never read. **Critical** (the owner's rule,
+`briefs/consent-critical-only.md`): an element whose press would pay
+(`pays`), sign in with a saved secret (`secret`: a "Sign in" beside a filled
+password field), lose work for good (`loses work`: Don't Save, Delete
+Immediately, Empty Trash, Discard), change the system (`system`: Install,
+Uninstall, Update) or send something as the person (`sends`: Send, Reply,
+Post, Submit, Accept or Decline) says `(critical: …)`, and is put to the
+person on screen before it is pressed (`TreesRun.yes`; the rule is
+`v09/askagent`'s). Everything else, "Delete" into the Trash and "Remove"
+included, just runs. The flag comes from the toolkit's own `critical` or
+`destructive` attribute first, but no toolkit measured publishes one (GTK's
+`destructive-action` style and Qt's DestructiveRole stay inside the
+toolkit; Metal has no field), so in practice the button's words decide, in
+English and Spanish: reliable for the usual words, blind to a button named
+otherwise ("OK" on a sheet that deletes), and an icon with no name is never
+critical. A tree that says almost nothing (a canvas, a game) says to take a
+screenshot.
 
 **`wait_for` on a window (the seam with `v09/reach`).** `wait_for` takes a
 `window` and calls `waitOnWindow(window, until, timeoutMs, ctx)` from

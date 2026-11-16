@@ -1,14 +1,15 @@
 /**
  * One element's line after its number, in read_page's words:
  * `switch "Bluetooth" (on)`, `textbox "Name" value="Alex" (focused, caret 4)`,
- * `password field "Password" (filled: no)`, `button "Delete" (destructive)`.
+ * `password field "Password" (filled: no)`, `button "Empty Trash" (critical: loses work)`.
  */
 
 import type { Element } from "../types.ts";
 import { CHECKABLE, FIELDS, has, R, roleWord, S } from "./roles.ts";
-import { isDestructive, isPrimary, isSecret } from "./semantics.ts";
+import { criticalOf, type Hints, isPrimary, isSecret } from "./semantics.ts";
 
 const MAX_VALUE = 200;
+const NO_HINTS: Hints = { inSheet: false, secretFilled: false };
 const MAX_NAME = 120;
 
 const clip = (text: string, max: number): string => {
@@ -41,7 +42,7 @@ function valueOf(element: Element): string | null {
   return null;
 }
 
-function flags(element: Element, inSheet: boolean): string[] {
+function flags(element: Element, hints: Hints): string[] {
   const s = element.states;
   const out: string[] = [];
   if (isSecret(element)) out.push(`filled: ${(element.chars ?? 0) > 0 ? "yes" : "no"}`);
@@ -60,18 +61,19 @@ function flags(element: Element, inSheet: boolean): string[] {
   if (has(s, S.REQUIRED)) out.push("required");
   if (!has(s, S.ENABLED) && !has(s, S.SENSITIVE)) out.push("disabled");
   if (isPrimary(element)) out.push("primary");
-  if (isDestructive(element, inSheet)) out.push("destructive");
+  const critical = criticalOf(element, hints);
+  if (critical) out.push(`critical: ${critical}`);
   if (has(s, S.BUSY)) out.push("busy");
   return out;
 }
 
-/** The line for `element` after its number; `inSheet` when it is inside a dialog or sheet. */
-export function describe(element: Element, inSheet: boolean): string {
+/** The line for `element` after its number; `hints` say what around it decides what it is. */
+export function describe(element: Element, hints: Hints = NO_HINTS): string {
   const role = isSecret(element) && element.role !== R.PASSWORD_TEXT ? "password field" : roleWord(element.role);
   const name = clip(element.name || element.attributes["placeholder-text"] || "", MAX_NAME);
   const parts = [name ? `${role} ${quote(name)}` : role];
   const value = isSecret(element) ? null : valueOf(element);
   if (value) parts.push(value);
-  const list = flags(element, inSheet);
+  const list = flags(element, hints);
   return `${parts.join(" ")}${list.length > 0 ? ` (${list.join(", ")})` : ""}`;
 }

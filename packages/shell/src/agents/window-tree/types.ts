@@ -78,6 +78,6 @@ export interface TreesRun {
   numbers: TreeNumbers;
   /** Whether a window is the person's alone, and why. */
   personOnly(window: CompositorWindow): PersonOnly | null;
-  /** Ask before an action that deletes, sends or pays: the assistant's spoken yes, else a sheet (D221). */
+  /** Ask the person before pressing a critical element (consent-critical-only.md): on screen, their own pointer or key. */
   yes(question: Question): Promise<boolean>;
 }

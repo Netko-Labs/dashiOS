@@ -3743,23 +3743,27 @@ short words, as the rulebook is written.
   sign-in check already does.
 - **Undo:** drop `windowTreeTools` from the registry.
 
-### D221. The website tools act on a native window's numbers given `window`; a destructive element waits for a yes
+### D221. The website tools act on a native window's numbers given `window`; only a critical element waits for the person
 
-- **Date:** 2026-11-15. `v09/windowtree`.
-- **Question:** separate tools for native elements, or the same ones?
-- **Choice:** the same: `click_element`, `fill_element`, `select_option` and
-  `scroll_page` take an optional `window`; with it the call needs "act"
-  (`ToolDef.scopeFor`), not "Use websites". `act_on_element` adds what a page
-  has no word for (expand, collapse, increment, decrement, focus). An
-  element the toolkit marks destructive, or a sheet's (or default) button
-  named Delete, Remove, Send, Pay…, is asked about before it is pressed:
-  the assistant's spoken yes (unless Work alone covers acting), any other
-  agent the sheet (`Scopes.destructiveYes`).
-- **Why:** two more tools instead of six; the consent follows the element,
-  which the registry's static `destructive` can't know.
-- **Cost:** a name rule in two languages decides some yeses; a button
-  named otherwise in a sheet goes unasked until toolkits say "destructive".
-- **Undo:** take `window` out of the four tools' args.
+- **Date:** 2026-11-15, changed 16 Nov by the owner's rule (`briefs/consent-critical-only.md`).
+- **Question:** separate tools for native elements, or the same ones? Which
+  presses are put to the person?
+- **Choice:** the same tools: `click_element`, `fill_element`,
+  `select_option` and `scroll_page` take an optional `window`; with it the
+  call is tagged "act" (`ToolDef.scopeFor`), not "Use websites" (whether a
+  scope asks at all is `v09/askagent`'s). `act_on_element` adds what a page
+  has no word for. read_window flags an element `critical: pays | secret |
+  loses work | system | sends` from the toolkit's attribute, else its words
+  (English and Spanish) and what is around it (a filled password field
+  makes "Sign in" a `secret`); pressing one asks on screen every time
+  (`Scopes.criticalYes`, the sheet), anything else just runs. This module
+  sets flags; the policy is the consent rule's.
+- **Why:** two more tools instead of six; the owner: "permissions should be
+  only for critical operations", and only the element tells which it is.
+- **Cost:** words decide, since no toolkit publishes a destructive hint on
+  AT-SPI: a critical button named otherwise ("OK") goes unasked; mirin is
+  asked for the hint (for-mirin.md).
+- **Undo:** take `window` out of the four tools' args; `criticalOf` returns null.
 
 ### D222. Element numbers are the connection's and live as long as their node
 
@@ -3779,14 +3783,14 @@ short words, as the rulebook is written.
   next page; nodes past the walk's budget (3000, 2.5 s) are said to be cut.
 - **Undo:** `PAGE` in `lib/render.ts`.
 
-### D224. What a window says is secret, destructive or the person's
+### D224. What a window says is secret or the person's
 
 - **Date:** 2026-11-15. `v09/windowtree`.
 - **Choice:** a password role, or a field named as a password, PIN, code or
   card, is never read (its character count says filled or not). The Setup
   Assistant, Settings showing the vault, a window handed over, and the
-  shell's and portal's own windows are named and never read; their numbers
-  are never given.
+  shell's and portal's own windows (consent sheets) stay the person's alone
+  under the critical-only rule too: named, never read, no numbers given.
 - **Undo:** `isSecret` and `personOnly`.
 
 ### D225. Acting waits for the app's own tree events to settle, never a timer guess

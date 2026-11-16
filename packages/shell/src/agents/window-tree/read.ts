@@ -13,7 +13,6 @@ import { named, noWindow, subject } from "../lib/subject.ts";
 import { readElements } from "./lib/bus.ts";
 import { locate, noTree } from "./lib/locate.ts";
 import { PAGE, renderRows, renderTree, usable } from "./lib/render.ts";
-import { isDestructive } from "./lib/semantics.ts";
 import type { Element, PersonOnly, TreesRun, WindowTree } from "./types.ts";
 
 /** A walk's budget: a window bigger than this says it was cut. */
@@ -66,9 +65,6 @@ export function thin(root: Element): boolean {
   visit(root);
   return usableCount < 2 && words < 40;
 }
-
-/** Whether anything in the tree is marked destructive (for the header's line on consent). */
-export const anyDestructive = (root: Element): boolean => isDestructive(root, false) || root.children.some((child) => anyDestructive(child));
 
 async function header(window: CompositorWindow, tree: WindowTree, ctx: RunContext): Promise<string> {
   const sheets = (await ctx.compositor.windows()).filter((each) => each.sheetOf === window.id);

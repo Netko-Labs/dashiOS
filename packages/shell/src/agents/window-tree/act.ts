@@ -5,7 +5,8 @@
  * has them (no pointer moved, the person's seat untouched), else the agent's
  * own pointer and keys at the element (D110). Each result says what the
  * element is now, and gives the window's fresh tree when it changed.
- * Something that deletes, sends or pays is asked about first (D221).
+ * Only a critical element (it pays, signs in with a secret, loses work for
+ * good, changes the system, sends as the person) is put to the person first.
  */
 
 import type { RunContext, ToolResult } from "../context.ts";
@@ -17,7 +18,7 @@ import { describe } from "./lib/describe.ts";
 import { centre, expandAction, focus, press, scrollIntoView, selectChild, setText, stepValue } from "./lib/do.ts";
 import { renderTree } from "./lib/render.ts";
 import { FIELDS, has, R, S } from "./lib/roles.ts";
-import { isDestructive, isSecret } from "./lib/semantics.ts";
+import { criticalOf, isSecret } from "./lib/semantics.ts";
 import { mark, settle } from "./lib/settle.ts";
 import { isResult, type Target, target } from "./lib/target.ts";
 import { findKey, numbering, readTree } from "./read.ts";
@@ -27,17 +28,33 @@ export type ElementAction = "press" | "focus" | "toggle" | "expand" | "collapse"
 /** Lines of the fresh tree a result carries when the window changed. */
 const CHANGED_LINES = 120;
 
-const DESTRUCTIVE_SAID = /\((?:[^)]*, )?destructive[,)]/;
+/** The critical flag read_window gave it ("critical: pays"), which knew what was around it. */
+const CRITICAL_SAID = /critical: (pays|secret|loses work|system|sends)/;
 
-/** Ask first when the element deletes, sends or pays; false when the person did not say yes. */
+const ASK_WORDS = {
+  pays: "It may pay for something.",
+  secret: "It signs in with a saved password.",
+  "loses work": "It may lose work for good: it can't be undone.",
+  system: "It changes the system: software or an administrator's setting.",
+  sends: "It sends something to someone as the person.",
+} as const;
+
+/**
+ * Critical (briefs/consent-critical-only.md): pays, signs in with a secret,
+ * loses work for good, changes the system, or sends as the person. Only those
+ * are put to the person (how is the consent rule's: `TreesRun.yes`); false
+ * when they did not say yes. Everything else just runs.
+ */
 async function cleared(t: Target, verb: string): Promise<boolean> {
-  if (!DESTRUCTIVE_SAID.test(t.entry.said) && !isDestructive(t.element, false)) return true;
+  const kind = CRITICAL_SAID.exec(t.entry.said)?.[1] ?? criticalOf(t.element, { inSheet: false, secretFilled: false });
+  const detail = Object.entries(ASK_WORDS).find(([each]) => each === kind)?.[1];
+  if (!detail) return true;
   const name = t.element.name || t.entry.said;
   return t.trees.yes({
     summary: `${verb} “${name}” in ${t.window.title ? `“${t.window.title}”` : `w${t.window.id}`}`,
-    detail: "It may delete, send or pay for something, and it may not be undone.",
+    detail,
     action: name.slice(0, 24) || "Go Ahead",
-    danger: true,
+    danger: kind === "loses work",
   });
 }
 
@@ -45,7 +62,7 @@ async function cleared(t: Target, verb: string): Promise<boolean> {
 async function after(t: Target, did: string, from: number): Promise<ToolResult> {
   const changed = await settle(t.bus, t.app, from);
   const now = await readNode(t.node);
-  const state = now && !has(now.states, S.DEFUNCT) ? `Now: ${describe(now, false)}.` : "It is gone now: the view changed.";
+  const state = now && !has(now.states, S.DEFUNCT) ? `Now: ${describe(now)}.` : "It is gone now: the view changed.";
   let tree = "";
   if (changed) {
     const fresh = await readTree(t.trees, t.window);

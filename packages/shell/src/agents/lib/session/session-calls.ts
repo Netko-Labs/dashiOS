@@ -102,7 +102,7 @@ export class SessionCalls {
               bus: ctx.secrets.atspi,
               numbers: host.trees,
               personOnly: (window) => personOnly(window, ctx.secrets.handedOver),
-              yes: (question) => host.scopes.destructiveYes(call.name, question, signal),
+              yes: (question) => host.scopes.criticalYes(question, signal),
             },
             ...host.scopes.asks(signal),
             signal,
