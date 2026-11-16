@@ -52,7 +52,12 @@ export function finishTurn(deps: RecordDeps, id: string, words: string, run: Run
   talk.record(id, { time: now, asked: words, said: all, steps, ...(interrupted ? { interrupted: true as const } : {}) });
   keepHistory(deps, id, words, run);
   // A notification is one glance: the conclusion, the last paragraph of what was said.
-  const conclusion = all.split(/\n\s*\n/).filter((part) => part.trim()).at(-1)?.trim() ?? "";
+  const conclusion =
+    all
+      .split(/\n\s*\n/)
+      .filter((part) => part.trim())
+      .at(-1)
+      ?.trim() ?? "";
   if (turn.background) options.done?.(interrupted ? "Stopped" : answer.failed ? "That didn't work" : "Done", conclusion || words);
   else if (turn.by === "typing" && all && options.settings().agents.readTyped === true) options.speak?.(all);
   const ended = interrupted ? "stopped" : (run.stopped ?? (answer.failed ? "failed" : "done"));

@@ -81,7 +81,9 @@ describe("the rows and their order", () => {
       { id: "codex", installed: true, signedIn: false },
       { id: "opencode", installed: false, signedIn: null },
     ]);
-    expect(rows.map((row) => row.value)).toEqual(["claude-code", "codex", "local", "claude", "gpt", "opencode", "none"]);
+    // GPT is not offered until Dashi's loop drives it (D261), unless it is the one chosen.
+    expect(rows.map((row) => row.value)).toEqual(["claude-code", "codex", "local", "claude", "opencode", "none"]);
+    expect(answererRows([], "gpt").map((row) => row.value)).toContain("gpt");
     expect(rows[0]?.detail).toBe("Your Claude subscription. Signed in.");
     expect(rows[1]?.detail).toBe("Your ChatGPT plan. Not signed in: run codex login in Terminal.");
     expect(rows.find((row) => row.value === "opencode")).toMatchObject({
