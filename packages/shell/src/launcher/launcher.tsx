@@ -80,7 +80,8 @@ export function Launcher(props: LauncherProps) {
           width: LAUNCHER.width,
           flexDirection: "column",
           borderRadius: LAUNCHER.radius,
-          backgroundColor: colors.launcher,
+          // The conversation's thread is read over whatever window is under it: its glass is the launcher's colour, solid (D261).
+          backgroundColor: mode.kind === "talk" ? colors.launcher.slice(0, 7) : colors.launcher,
           borderWidth: 1,
           borderColor: colors.separator,
           shadow: "xl",
