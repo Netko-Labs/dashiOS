@@ -5,7 +5,7 @@
  * listens on a Unix socket in the runtime directory and may use no network.
  */
 
-import { existsSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { MODEL } from "./model.ts";
@@ -108,10 +108,15 @@ export function unitService(env: Env = process.env): RewriteService | null {
   return {
     socket,
     // A unit left from before (a shell that crashed) still serves: starting it again fails and that is fine.
-    start: async () =>
-      (await run(serverCommand(program, modelPath(env), socket, undefined, deviceOf(env), env.DASHI_REWRITE_LOG === "1"))) || existsSync(socket),
+    start: async () => {
+      // Asked only when nothing answers on the socket: one that is there was left by a server that was stopped.
+      if (!(await run(["systemctl", "--user", "--quiet", "is-active", `${UNIT}.service`]))) rmSync(socket, { force: true });
+      return (await run(serverCommand(program, modelPath(env), socket, undefined, deviceOf(env), env.DASHI_REWRITE_LOG === "1"))) || existsSync(socket);
+    },
     stop: async () => {
       await run(["systemctl", "--user", "stop", `${UNIT}.service`]);
+      // The server does not take its socket with it.
+      rmSync(socket, { force: true });
     },
   };
 }
