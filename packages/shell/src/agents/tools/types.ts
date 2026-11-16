@@ -123,6 +123,7 @@ export type Call =
   | { name: "switch_tab"; tab: number }
   | { name: "close_tab" | "reload_tab" | "go_back" | "go_forward"; tab: number | null }
   | { name: "read_clipboard_history"; limit: number }
+  | { name: "copy_to_clipboard"; text: string }
   | { name: "get_work_alone" }
   | { name: "ask_person"; question: string; seconds: number };
 

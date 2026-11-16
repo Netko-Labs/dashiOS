@@ -1,7 +1,7 @@
 export { askPerson } from "./ask-person.ts";
 export { browserCall, frontPage } from "./browser.ts";
 export { createEvent, listCalendars, listEvents } from "./calendar.ts";
-export { readClipboardHistory } from "./clipboard.ts";
+export { copyToClipboard, readClipboardHistory } from "./clipboard.ts";
 export { arrangeDisplay, listDisplays, setDisplayMode, setDisplayRotation, setDisplayScale, setPrimaryDisplay } from "./displays.ts";
 export { Elsewhere, type Opening, WorkPlaces, type WorkTarget } from "./elsewhere.ts";
 export { fileTextCall } from "./file-text.ts";

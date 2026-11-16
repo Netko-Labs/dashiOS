@@ -22,6 +22,7 @@ export const documentHandlers = {
   list_events: (call, ctx) => desktop.listEvents(call, ctx),
   create_event: (call, ctx) => desktop.createEvent(call, ctx),
   read_clipboard_history: (call, ctx) => desktop.readClipboardHistory(call.limit, ctx),
+  copy_to_clipboard: (call, ctx) => desktop.copyToClipboard(call.text, ctx),
 } satisfies Handlers<
   | "list_folder"
   | "search_files"
@@ -41,4 +42,5 @@ export const documentHandlers = {
   | "list_events"
   | "create_event"
   | "read_clipboard_history"
+  | "copy_to_clipboard"
 >;

@@ -335,6 +335,16 @@ number and name, and holds for that connection only: nothing is saved
   after it open there. The Space holds for the plan's steps and is let go
   30 s after the last.
 
+### The clipboard, written
+
+`copy_to_clipboard {text}` (scope "act", 100,000 characters) puts text on
+the clipboard for the person to paste. It is kept in the clipboard history
+first, as Dashi's ("Dashi" where the app goes), then written with
+`wl-copy`; the watch is told to expect it (`bump`), so the copy the
+compositor reports keeps Dashi's name instead of the window in front's
+(`clipboard/lib/put.ts`). What was there stays in the history, which is the
+Undo. Reading the history is unchanged (`read_clipboard_history`).
+
 ### Files
 
 Agents reach the person's files under their home folder and removable

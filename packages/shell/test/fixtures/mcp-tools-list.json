@@ -2708,6 +2708,29 @@
       }
     },
     {
+      "name": "copy_to_clipboard",
+      "title": "Copy text to the clipboard",
+      "description": "Put text on the clipboard for the person to paste (an address, a summary, a code snippet). It shows in their clipboard history as from Dashi, and what was there before stays in the history.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "The text, at most 100,000 characters."
+          }
+        },
+        "required": ["text"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Copy text to the clipboard",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
       "name": "get_work_alone",
       "title": "See whether agents work alone",
       "description": "Whether the person let agents work alone for a set time, how many seconds are left, and what it covers: the kinds of tools and the sites that run without asking until then. Everything else asks the person as usual, and payments, sign-ins, the clipboard history, force quit, the Trash and software installs always ask. It never asks the person, and you can't turn it on, lengthen it or widen it: only the person can, in System Settings.",

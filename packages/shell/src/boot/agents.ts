@@ -241,8 +241,10 @@ export function startAgentServer(needs: ServerNeeds): Agents | null {
           // Late-bound too: ❖ chords an agent presses in Dashi's apps choose their menu items, as the person's do.
           appShortcut: (window, shortcut) => late.get("appShortcut")(window, shortcut),
           ...(screenshots.tools ? { recorder: screenshots.tools.recorder } : {}),
-          // Late-bound too: the clipboard history starts with the launcher's registry (clipboard/).
-          clipboard: { recent: (limit) => late.peek("clipboard")?.recent(limit) ?? [] },
+          clipboard: {
+            recent: (limit) => late.peek("clipboard")?.recent(limit) ?? [], // late-bound: the history starts with the launcher
+            put: async (text, from) => (await late.peek("clipboard")?.put(text, from)) ?? false,
+          },
         },
       })
     : null;

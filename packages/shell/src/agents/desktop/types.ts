@@ -64,7 +64,7 @@ export interface Desktop {
   /** The shell's screen recorder, for record_screen (recorder/). Absent without a compositor. */
   recorder?: ScreenRecorder;
   /** The clipboard history, newest first (clipboard/); absent where it isn't kept. */
-  clipboard?: { recent(limit: number): ClipboardCopy[] };
+  clipboard?: { recent(limit: number): ClipboardCopy[]; put?(text: string, from: string): Promise<boolean> };
   /** Choose the item of `window`'s app menus that shows `shortcut` ("⇧❖N"); false when none does (app-menus/). */
   appShortcut?(window: number, shortcut: string): Promise<boolean>;
   /** The menu bar's menus for a window (its app's own included), and choosing a row. Absent where there is no menu bar. */

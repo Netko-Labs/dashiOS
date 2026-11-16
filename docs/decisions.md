@@ -3878,3 +3878,17 @@ short words, as the rulebook is written.
   a sheet: the registry's ask-every-time list is the `v09/askagent`
   engineer's to change.
 - **Undo:** take `fileTextTools` out of `TOOLS`.
+
+### D206. copy_to_clipboard writes through the clipboard history, named Dashi; it does not ask
+
+- **Date:** 2026-11-16. `v09/reach`. "Clipboard is read-only (and asks
+  every time). No clean way to put text on the clipboard for the person."
+- **Choice:** one tool, scope "act", not destructive: the copy is added to
+  the history as from "Dashi" before it is written, and the watch keeps
+  that entry when the copy comes back. With the history off, it is only
+  written.
+- **Why:** the owner's critical-only rule: what was on the clipboard is
+  still in the history.
+- **Cost:** with the history off, the person's last copy is replaced with
+  no way back.
+- **Undo:** take the tool out of `clipboardTools`.
