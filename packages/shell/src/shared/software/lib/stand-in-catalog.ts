@@ -26,9 +26,19 @@ const PACKAGES: Array<[string, string, string, string, string]> = [
   ["ripgrep", "terra", "15.1.0-2.fc44", "Line-oriented search tool", ""],
   ["dashi", "copr:copr.fedorainfracloud.org:pejedev:dashi", "0.9.0-1.fc44", "Dashi's shell and apps", ""],
   ["cowsay-plus", "copr:copr.fedorainfracloud.org:alexk:tiny-tools", "1.0-1.fc44", "A cow that says more", ""],
+  ["fcitx5-qt-qt6gui", "fedora", "5.1.16-1.fc44", "Fcitx5 Qt6 GUI Wrapper", "org.fcitx.fcitx5-qt6-gui-wrapper"],
 ];
 
-const state = { installed: new Map<string, string>([["dashi", "copr:copr.fedorainfracloud.org:pejedev:dashi"]]), off: new Set<string>() };
+/** Installed only because another package needed it (dnf's reason): never listed as an app the person added. */
+const DEPENDENCIES = new Set(["fcitx5-qt-qt6gui"]);
+
+const state = {
+  installed: new Map<string, string>([
+    ["dashi", "copr:copr.fedorainfracloud.org:pejedev:dashi"],
+    ["fcitx5-qt-qt6gui", "fedora"],
+  ]),
+  off: new Set<string>(),
+};
 
 const rows = (fields: string[][]): string => fields.map((each) => `${each.join(FIELD)}${RECORD}\n`).join("");
 const on = (repo: string): boolean => !state.off.has(repo);
@@ -36,7 +46,14 @@ const on = (repo: string): boolean => !state.off.has(repo);
 function query(command: readonly string[]): string {
   // Dashi came with the computer (an old time); what the stand-in installs is installed now.
   if (command.includes("--installed"))
-    return rows([...state.installed].map(([name, repo]) => [name, repo, name === "dashi" ? "1000" : String(Math.floor(Date.now() / 1000))]));
+    return rows(
+      [...state.installed].map(([name, repo]) => [
+        name,
+        repo,
+        name === "dashi" ? "1000" : String(Math.floor(Date.now() / 1000)),
+        DEPENDENCIES.has(name) ? "Dependency" : "User",
+      ]),
+    );
   const live = PACKAGES.filter(([, repo]) => on(repo));
   if (command.some((arg) => arg.startsWith("--whatprovides"))) {
     return rows(

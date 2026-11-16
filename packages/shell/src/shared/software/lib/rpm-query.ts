@@ -41,7 +41,7 @@ export const installedCommand = (): string[] => [
   "repoquery",
   "--quiet",
   "--installed",
-  `--qf=%{name}${FIELD}%{from_repo}${FIELD}%{installtime}${RECORD}\n`,
+  `--qf=%{name}${FIELD}%{from_repo}${FIELD}%{installtime}${FIELD}%{reason}${RECORD}\n`,
 ];
 
 export interface RpmPackage {
@@ -105,17 +105,26 @@ export function parseApps(output: string): RpmApp[] {
   return out;
 }
 
-/** What is installed: name to the repository it came from (`fedora`, or `@commandline` for a file), and when (Unix seconds). */
-export function parseInstalled(output: string): { from: Map<string, string>; at: Map<string, number> } {
+/** Why dnf says a package is here: one it brought for another (a library, a plugin) rather than one asked for. */
+const BROUGHT = new Set(["Dependency", "Weak Dependency"]);
+
+/**
+ * What is installed: name to the repository it came from (`fedora`, or `@commandline` for a file), when (Unix seconds),
+ * and the ones dnf installed only because another package needed them (`dependencies`: its reason is "Dependency" or
+ * "Weak Dependency"; "User", "Group", "External" and an unknown reason are the person's).
+ */
+export function parseInstalled(output: string): { from: Map<string, string>; at: Map<string, number>; dependencies: Set<string> } {
   const from = new Map<string, string>();
   const at = new Map<string, number>();
-  for (const [name = "", repo = "", time = ""] of records(output)) {
+  const dependencies = new Set<string>();
+  for (const [name = "", repo = "", time = "", reason = ""] of records(output)) {
     if (!NAME.test(name)) continue;
     from.set(name, repo.trim().slice(0, 200) || "@System");
     const seconds = Number(time.trim());
     if (Number.isFinite(seconds) && seconds > 0) at.set(name, seconds);
+    if (BROUGHT.has(reason.trim())) dependencies.add(name);
   }
-  return { from, at };
+  return { from, at, dependencies };
 }
 
 /** `dnf5 repo list --all --json`: every repository, on or off. A bad entry is left out. */

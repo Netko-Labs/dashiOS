@@ -25,6 +25,8 @@ export interface MergeInput {
   installedRpms: ReadonlyMap<string, string>;
   /** The packages the system's first transaction installed (the image's). */
   imagePackages?: ReadonlySet<string>;
+  /** Installed only because another package needed them (dnf's reason): not an app the person added. */
+  dependencies?: ReadonlySet<string>;
   installedFlatpaks: ReadonlySet<string>;
 }
 
@@ -108,6 +110,7 @@ function rpmOffers(name: string, input: MergeInput, byName: ReadonlyMap<string, 
       verified: false,
       installed,
       cameWithSystem: input.imagePackages?.has(name) ?? false,
+      ...(input.dependencies?.has(name) ? { dependency: true as const } : {}),
     });
   }
   return [...offers.values()];

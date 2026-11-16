@@ -111,6 +111,8 @@ test("an app got as a package is on Installed with its source, Open and Removeâ€
   await press("nav:installed");
   await settle(120);
   expect(view.nodeId("installed-package:neohtop")).toBeDefined();
+  // What dnf brought for another package is installed, but not an app the person added (pass 37).
+  expect(view.nodeId("installed-package:fcitx5-qt-qt6gui")).toBeUndefined();
   expect(view.lastTree()).toContain("1.2.0-1.fc44 Â· Terra");
   await press("remove-package:neohtop");
   await settle(40);

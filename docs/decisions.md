@@ -5693,17 +5693,22 @@ short words, as the rulebook is written.
   Unicode's data licence is in `THIRD-PARTY-NOTICES.md`.
 - **Undo:** the names in `extensions/emoji/lib/emoji-data.ts`.
 
-### D365. Installed leaves out a package whose desktop file is no app
+### D365. Installed leaves out what dnf brought only for another package
 
 - **Date:** 2026-11-16. `v09/fix-polish-1`, found in pass 37.
-- **Found:** "Fcitx5 qt Qt6gui" (a library's helper: its desktop file is
-  `NoDisplay`) was listed as an app the person added.
-- **Decision:** a package app is listed only when its desktop file, as the
-  launcher reads it, is one a person opens: not `NoDisplay`, `Hidden`, a
-  `Link`, or another desktop's. A desktop id with no file on disk is still
-  listed (nothing says it isn't an app). Read once per catalog load.
-- **Undo:** `unlistedDesktopIds` in `shared/apps/unlisted.ts` and
-  `packageRows` in `apps/software/lib/installed-packages.tsx`.
+- **Found:** "Fcitx5 qt Qt6gui" (a GUI wrapper library dnf installed for
+  Fcitx) was listed as an app the person added. Its desktop file is
+  `NoDisplay`, but so is Orca's, which the person installed and must be
+  able to find and remove: hiding `NoDisplay` apps was tried and reverted
+  in the VM.
+- **Decision:** dnf's own reason decides. A package whose reason is
+  "Dependency" or "Weak Dependency" (`%{reason}` in the installed query)
+  came for another and isn't listed; "User", "Group", "External" or an
+  unknown reason is the person's. It is removed with the package that
+  needed it, as dnf removes unused dependencies.
+- **Undo:** `dependencies` in `shared/software/lib/rpm-query.ts`
+  `parseInstalled`, `dependency` on an `Offer` (`catalog-merge.ts`), and
+  `apps/software/lib/installed-packages.tsx`.
 
 ### D366. The correcting model loads after login and when Voice turns on
 

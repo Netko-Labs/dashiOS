@@ -165,6 +165,7 @@ export class Catalog {
       packages,
       rpmApps: parseApps(appsText),
       installedRpms: installed.from,
+      dependencies: installed.dependencies,
       imagePackages: parseTransactionNames(imageText),
       installedFlatpaks: new Set(flatpaks),
     });
