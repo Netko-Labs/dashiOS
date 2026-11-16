@@ -5746,3 +5746,25 @@ short words, as the rulebook is written.
   just opened stays", "no launcher yet"), with the time, so a miss names its
   cause next time.
 - **Undo:** `did` in `boot/dictation.ts` `dashiTap`.
+
+### D370. Activity Monitor's lost and stacked names are fixed in mirin, not here
+
+- **Date:** 2026-11-16. `v09/fix-monitor-scroll`, the owner's screenshot
+  (Dashi `6f12a69`, Metal host `50241ea`, scale 1.75).
+- **Found:** Dashi's list is right: rows are keyed by PID or app, and
+  the tree it sends matches the order on screen. The fault is in the Metal
+  host's retained drawings (sumi). A row hears the pointer, so it is drawn
+  even out of view, but its name cell is left out and parked. When the row
+  was then copied lower (rows above it changed), the copy also moved the
+  record of the name inside the parked cell, but not the parked drawing.
+  Back in view, the name was copied by that record and landed rows away from
+  its row: over another name, or out of sight. Reproduced in the VM's
+  installed session, in a replay of the patches Dashi sent there, and in a
+  30-row test.
+- **Decision:** fixed at the source (mirin branch `v09-fix-monitor-scroll`,
+  `each_told_drawn` in sumi's `retained.rs`, with a test). Nothing changes in
+  Dashi: no workaround, no `MIRIN_METAL_RETAIN=0`. Every Metal list gets the
+  fix with the host. The ones built like Activity Monitor's (rows that hear
+  the pointer, with a name cell inside) are the launcher's results and an
+  extension's tree view.
+- **Undo:** revert the mirin commit; Dashi has nothing to undo.
