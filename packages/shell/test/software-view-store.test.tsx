@@ -97,3 +97,23 @@ test("Widgets is an empty shelf, and Launcher extensions says when there are non
   expect(view.nodeId("no-extensions")).toBeDefined();
   view.unmount();
 });
+
+test("an app got as a package is on Installed with its source, Open and Remove…", async () => {
+  const { view, type, press, log } = harness();
+  await settle(120);
+  await type("search", "neohtop");
+  await settle(120);
+  await press("entry-pill:app:neohtop");
+  await press("get-package-sheet:get");
+  await settle(400);
+  expect(log).toContain("pkcon -p -y install neohtop;1.2.0-1.fc44;x86_64;terra");
+  for (let step = 0; step < 6; step++) await settle(100);
+  await press("nav:installed");
+  await settle(120);
+  expect(view.nodeId("installed-package:neohtop")).toBeDefined();
+  expect(view.lastTree()).toContain("1.2.0-1.fc44 · Terra");
+  await press("remove-package:neohtop");
+  await settle(40);
+  expect(view.nodeId("remove-package-sheet")).toBeDefined();
+  view.unmount();
+});
