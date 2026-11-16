@@ -10,11 +10,12 @@ use super::vad::{FRAME, FRAME_MS};
 
 /// Speech begins at this chance, and goes on until it falls below `OFF`.
 const ON: f32 = 0.5;
-const OFF: f32 = 0.35;
+pub(crate) const OFF: f32 = 0.35;
 /// Frames in a row above `ON` before it counts: a click is not a word.
 const ONSET: usize = 2;
-/// Frames kept before speech begins (256 ms): the first consonant is quiet.
-const LEAD: usize = 8;
+/// Frames kept before speech begins (480 ms): the first consonant is quiet, and a quiet voice's first syllable
+/// ("re" of "redesign") is heard as speech late.
+const LEAD: usize = 15;
 /// Quiet frames kept after speech (480 ms) before the gate closes.
 const HANG: usize = 15;
 
@@ -28,18 +29,33 @@ pub(crate) struct Gate {
     heard: bool,
     lead: VecDeque<Vec<f32>>,
     kept: Vec<f32>,
+    /// Every frame is kept, quiet ones too: a held key's listen, where the person marks what they said.
+    whole: bool,
 }
 
 impl Gate {
+    /// A gate that keeps every frame and only tells whether, and when, someone spoke.
+    pub(crate) fn whole() -> Self {
+        Self {
+            whole: true,
+            ..Self::default()
+        }
+    }
+
     /// One frame and its chance of being speech.
     pub(crate) fn push(&mut self, frame: &[f32], probability: f32) {
+        if self.whole {
+            self.kept.extend_from_slice(frame);
+        }
         if probability < OFF {
             self.quiet += 1;
         } else if probability >= ON || self.open {
             self.quiet = 0;
         }
         if self.open {
-            self.kept.extend_from_slice(frame);
+            if !self.whole {
+                self.kept.extend_from_slice(frame);
+            }
             if self.quiet > HANG {
                 self.open = false;
                 self.loud = 0;
@@ -52,7 +68,9 @@ impl Gate {
             self.open = true;
             self.heard = true;
             for frame in self.lead.drain(..) {
-                self.kept.extend_from_slice(&frame);
+                if !self.whole {
+                    self.kept.extend_from_slice(&frame);
+                }
             }
         } else if self.lead.len() > LEAD {
             self.lead.pop_front();
@@ -132,6 +150,20 @@ mod tests {
         // The hang after, and no more however long the silence.
         assert_eq!(gate.speech().len(), (20 + LEAD - 1 + HANG + 1) * FRAME);
         assert_eq!(gate.quiet_ms(), 100 * FRAME_MS);
+    }
+
+    #[test]
+    fn a_whole_gate_keeps_every_frame_and_still_says_whether_anyone_spoke() {
+        let mut gate = Gate::whole();
+        feed(&mut gate, 30, 0.01, 0.0);
+        assert!(!gate.heard());
+        // A quiet voice the detector hears late: its first syllable is kept all the same.
+        feed(&mut gate, 10, 0.3, 0.1);
+        feed(&mut gate, 20, 0.95, 0.5);
+        feed(&mut gate, 40, 0.01, 0.0);
+        assert!(gate.heard());
+        assert_eq!(gate.speech().len(), 100 * FRAME);
+        assert_eq!(gate.quiet_ms(), 40 * FRAME_MS);
     }
 
     #[test]

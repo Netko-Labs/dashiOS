@@ -8,8 +8,29 @@
 /** Never words: out wherever they are. */
 export const FILLERS: ReadonlySet<string> = new Set(["um", "umm", "uh", "uhh", "uhm", "erm", "hm", "hmm", "mm", "mmm", "eh", "ehm"]);
 
-/** Fillers only between two commas, where they can be nothing else ("…, este, …", "…, o sea, …"). */
-export const SET_OFF_FILLERS: readonly (readonly string[])[] = [["o", "sea"], ["este"]];
+/**
+ * Fillers only where they are set off, where they can be nothing else: between two commas ("…, este, …", "…, o sea, …"),
+ * or starting a sentence before a comma ("Like, I said…", "O sea, no sé").
+ */
+export const SET_OFF_FILLERS: readonly (readonly string[])[] = [["o", "sea"], ["you", "know"], ["este"], ["like"]];
+
+/**
+ * "like" with no commas round it is a filler only by its place: after a word that "like" cannot follow as a verb or a
+ * comparison (a verb that takes its object straight away, a joining word, an article), and before a word that starts what
+ * was meant ("give like an instruction", "gather like most of them", "the like describing"). "looks like a", "I like the"
+ * and "something like that" stay.
+ */
+export const BEFORE_FILLER_LIKE: ReadonlySet<string> = new Set(
+  (
+    "give gives gave giving start starts started starting make makes made making write writes wrote writing gather gathers gathered " +
+    "use uses used using have has had having get gets got getting need needs needed want wants wanted put puts take takes took add adds added " +
+    "create creates created open opens opened see saw find found show shows showed say says said tell tells told build builds built " +
+    "and so but then because when if the a an with for in of about just"
+  ).split(" "),
+);
+export const AFTER_FILLER_LIKE: ReadonlySet<string> = new Set(
+  "a an the one two three four five most some this that these those my your our any every all half many few several really very just hey".split(" "),
+);
 
 export interface Spoken {
   words: readonly string[];
@@ -72,3 +93,9 @@ export const isNegation = (word: string): boolean => NEGATIONS.has(word) || /n['
 
 /** Every word tidying may take out by a rule (a change of mind's are named apart). */
 export const DROPPABLE: ReadonlySet<string> = new Set([...FILLERS, ...SET_OFF_FILLERS.flat(), ...SPOKEN.flatMap((spoken) => spoken.words)]);
+
+/**
+ * After "o sea, no" these make it a plain "no" ("o sea, no sé", "o sea, no me gusta"): the "o sea" is then a filler.
+ * Before anything else, or a comma, "o sea, no" takes back what was said ("mañana, o sea, no, pasado mañana").
+ */
+export const AFTER_PLAIN_NO = "sé|se|es|son|creo|puedo|puede|tengo|tiene|hay|quiero|voy|va|está|estoy|era|fue|lo|me|te|le|nos|les|ha|he|sabe|sabemos|funciona";

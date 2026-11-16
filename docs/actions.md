@@ -68,6 +68,7 @@ Sources on day one (`actions/start.ts`, in this order):
 | `windows` | `dashi://window/w3`; `dashi://window/arrange/<left\|right\|up\|down\|fill\|center\|restore>`, `dashi://window/full-screen` | brings the window forward; arranges the focused window (or `?window=w3`) |
 | `menus` | `dashi://app/<app id>/menu/<item id>` | brings the app's window forward and sends the menu's own `select` |
 | `controls` | `dashi://settings/network/wi-fi`, `dashi://settings/bluetooth/bluetooth` | the radios, read from and switched through Control Center's own store (`actions/radios.ts`); no hardware, no action |
+| `dictation` | `dashi://dictation/undo` (⌃❖Z), `dashi://dictation/paste-last` (⌃❖V) | asks dictation to take back what it typed last, or to type its last words again where the keyboard is (`dictation/actions.ts`; docs/voice.md, "The insertion record"); the person's alone |
 | `applets` | `dashi://applet/<applet id>/<command id>` (`dashi://applet/dev.example.weather/now`) | the applet's command, run in its sandbox over protocol 3 (docs/applets.md, "Version 3: commands", `applets/commands.ts`) |
 | `scripts` | `dashi://script/<file name>` (`dashi://script/hello.sh`) | one of your own scripts, run as you ([below](#your-own-scripts)) |
 

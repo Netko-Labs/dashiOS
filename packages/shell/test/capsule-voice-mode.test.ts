@@ -241,7 +241,7 @@ test("an agent's question opens by itself, is said, and the next words heard ans
 });
 
 test("a question can be skipped, typed elsewhere, or run out of time", async () => {
-  const { hub, mode, advance } = stage();
+  const { hub, mode, voice, advance } = stage();
   const question = { who: "Codex", text: "Which one?", spoken: "", seconds: 30 };
   const skipped = mode.questions.ask(question);
   hub.voiceCommands.send({ do: "answer-question", id: hub.asks.getSnapshot()[0]?.id ?? "", text: "" });
@@ -253,6 +253,11 @@ test("a question can be skipped, typed elsewhere, or run out of time", async () 
   advance(30_000);
   expect(await late).toEqual({ none: "no-answer" });
   expect(hub.asks.getSnapshot()).toEqual([]);
+  // Giving up is said, and for a moment a bare yes or no answers nothing (it is not a new ask).
+  expect(hub.voiceMode.getSnapshot()).toMatchObject({ phase: "notice", line: "No answer, so nothing was done." });
+  expect(voice.late?.ms).toBe(10_000);
+  for (const said of ["No.", "Yes, go ahead.", "sí", "ok"]) expect(voice.late?.answers(said)).toBe(true);
+  for (const said of ["No, open the other window and close this one.", "What can you do?", "Notes"]) expect(voice.late?.answers(said)).toBe(false);
 });
 
 test("Done after a spoken yes has its four seconds: a line that repeats what was heard does not keep it waiting", async () => {

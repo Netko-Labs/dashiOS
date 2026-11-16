@@ -29,7 +29,24 @@ export class Asking {
   private step = "";
   private words = "";
 
+  /** A question that just went unanswered: until then, words that only answer it are not a new ask. */
+  private over: { until: number; answers(text: string): boolean } | null = null;
+
   constructor(private readonly host: AskingHost) {}
+
+  late(over: { until: number; answers(text: string): boolean }): void {
+    this.over = over;
+  }
+
+  /** Whether `words` only answer a question that is over: said a moment too late, they ask nothing. */
+  tooLate(words: string, now: number): boolean {
+    const over = this.over;
+    this.over = null;
+    return over !== null && now < over.until && over.answers(words);
+  }
+
+  /** Dashi's last answer ended in a question: a bare "Okay" heard next answers it. */
+  asked = false;
 
   /** An ask is being answered. */
   get active(): boolean {
@@ -86,6 +103,7 @@ export class Asking {
     if (!live()) return;
     this.controller = null;
     this.step = "";
+    this.asked = answer.say.trim().endsWith("?");
     if (answer.failed) host.saying.keep({ kind: "notice", text: head(answer.say, 90), ...(answer.failed.go ? { go: answer.failed.go } : {}) });
     if (answer.say.trim() !== "") this.say(words, `\n\n${answer.say}\n\n`);
     // A stopped ask, or one that only did things, says nothing more.

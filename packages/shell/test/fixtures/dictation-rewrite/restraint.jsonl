@@ -1,0 +1,102 @@
+{"id": "plain-en-01", "lang": "en", "tags": ["restraint"], "heard": "I'll send you the report by the end of the day.", "want": "I'll send you the report by the end of the day."}
+{"id": "plain-en-02", "lang": "en", "tags": ["restraint"], "heard": "Can you check whether the tests pass on the release branch?", "want": "Can you check whether the tests pass on the release branch?"}
+{"id": "plain-en-03", "lang": "en", "tags": ["restraint"], "heard": "Thanks for the update. I'll review it tonight.", "want": "Thanks for the update. I'll review it tonight."}
+{"id": "plain-en-04", "lang": "en", "tags": ["restraint"], "heard": "The meeting is at three in the main room.", "want": "The meeting is at three in the main room."}
+{"id": "plain-en-05", "lang": "en", "tags": ["restraint"], "heard": "Please add a note that the invoice was paid on March 3.", "want": "Please add a note that the invoice was paid on March 3."}
+{"id": "plain-en-06", "lang": "en", "tags": ["restraint"], "heard": "We sold 90 units in May and 120 in June.", "want": "We sold 90 units in May and 120 in June."}
+{"id": "plain-en-07", "lang": "en", "tags": ["restraint"], "heard": "I don't think that's a good idea, but I'm happy to try it.", "want": "I don't think that's a good idea, but I'm happy to try it."}
+{"id": "plain-en-08", "lang": "en", "tags": ["restraint"], "heard": "Open the terminal and run the build again.", "want": "Open the terminal and run the build again."}
+{"id": "plain-en-09", "lang": "en", "tags": ["restraint"], "heard": "It works on my machine.", "want": "It works on my machine."}
+{"id": "plain-en-10", "lang": "en", "tags": ["restraint"], "heard": "Yes.", "want": "Yes."}
+{"id": "plain-en-11", "lang": "en", "tags": ["restraint"], "heard": "Sounds good, see you then.", "want": "Sounds good, see you then."}
+{"id": "plain-en-12", "lang": "en", "tags": ["restraint"], "heard": "The parser reads the header first, then the body, and stops at the first empty line.", "want": "The parser reads the header first, then the body, and stops at the first empty line."}
+{"id": "plain-en-13", "lang": "en", "tags": ["restraint"], "heard": "What time does the train to Lyon leave tomorrow?", "want": "What time does the train to Lyon leave tomorrow?"}
+{"id": "plain-en-14", "lang": "en", "tags": ["restraint"], "heard": "If the cache is cold, the first request takes about two seconds; after that it is instant.", "want": "If the cache is cold, the first request takes about two seconds; after that it is instant."}
+{"id": "plain-en-15", "lang": "en", "tags": ["restraint"], "heard": "Her email is ana@example.com and her extension is 4417.", "want": "Her email is ana@example.com and her extension is 4417."}
+{"id": "real-no-en-01", "lang": "en", "tags": ["restraint", "real-no"], "heard": "No, I mean it.", "want": "No, I mean it."}
+{"id": "real-no-en-02", "lang": "en", "tags": ["restraint", "real-no"], "heard": "I said no, actually.", "want": "I said no, actually."}
+{"id": "real-no-en-03", "lang": "en", "tags": ["restraint", "real-no"], "heard": "I actually enjoyed the movie.", "want": "I actually enjoyed the movie."}
+{"id": "real-no-en-04", "lang": "en", "tags": ["restraint", "real-no"], "heard": "No, that's not what I asked for.", "want": "No, that's not what I asked for."}
+{"id": "real-no-en-05", "lang": "en", "tags": ["restraint", "real-no"], "heard": "Sorry, I can't make it on Friday.", "want": "Sorry, I can't make it on Friday."}
+{"id": "real-no-en-06", "lang": "en", "tags": ["restraint", "real-no"], "heard": "Wait for me at the entrance.", "want": "Wait for me at the entrance."}
+{"id": "real-no-en-07", "lang": "en", "tags": ["restraint", "real-no"], "heard": "I mean, it's fine, but it could be faster.", "want": "I mean, it's fine, but it could be faster."}
+{"id": "real-no-en-08", "lang": "en", "tags": ["restraint", "real-no"], "heard": "Actually, that's a great point.", "want": "Actually, that's a great point."}
+{"id": "real-no-en-09", "lang": "en", "tags": ["restraint", "real-no"], "heard": "No, thank you, I've already eaten.", "want": "No, thank you, I've already eaten."}
+{"id": "real-no-en-10", "lang": "en", "tags": ["restraint", "real-no"], "heard": "Do you know what I mean?", "want": "Do you know what I mean?"}
+{"id": "real-no-en-11", "lang": "en", "tags": ["restraint", "real-no"], "heard": "The answer is no, and it will stay no.", "want": "The answer is no, and it will stay no."}
+{"id": "real-no-en-12", "lang": "en", "tags": ["restraint", "real-no"], "heard": "Sorry about the delay, the train was late.", "want": "Sorry about the delay, the train was late."}
+{"id": "real-no-en-13", "lang": "en", "tags": ["restraint", "real-no"], "heard": "I meant every word of it.", "want": "I meant every word of it."}
+{"id": "real-no-en-14", "lang": "en", "tags": ["restraint", "real-no"], "heard": "Wait, is the server down again?", "want": "Wait, is the server down again?"}
+{"id": "real-no-en-15", "lang": "en", "tags": ["restraint", "real-no"], "heard": "Never mind the noise, the neighbours are moving out.", "want": "Never mind the noise, the neighbours are moving out."}
+{"id": "real-no-en-16", "lang": "en", "tags": ["restraint", "real-no"], "heard": "No, we shouldn't merge it; yes, we should test it more.", "want": "No, we shouldn't merge it; yes, we should test it more."}
+{"id": "real-no-en-17", "lang": "en", "tags": ["restraint", "real-no"], "heard": "It's not five, it's six.", "want": "It's not five, it's six."}
+{"id": "real-no-en-18", "lang": "en", "tags": ["restraint", "real-no"], "heard": "I want the blue one, not the red one.", "want": "I want the blue one, not the red one."}
+{"id": "real-no-en-19", "lang": "en", "tags": ["restraint", "real-no"], "heard": "Scratch that itch and you'll only make it worse.", "want": "Scratch that itch and you'll only make it worse."}
+{"id": "quoted-en-01", "lang": "en", "tags": ["restraint", "quoted"], "heard": "When I say \"no, I mean\", the earlier words should go.", "want": "When I say \"no, I mean\", the earlier words should go."}
+{"id": "quoted-en-02", "lang": "en", "tags": ["restraint", "quoted"], "heard": "The tool should understand phrases like \"scratch that\" and \"actually\".", "want": "The tool should understand phrases like \"scratch that\" and \"actually\"."}
+{"id": "quoted-en-03", "lang": "en", "tags": ["restraint", "quoted"], "heard": "If someone says \"meet me at five, no, six\", it should type \"meet me at six\".", "want": "If someone says \"meet me at five, no, six\", it should type \"meet me at six\"."}
+{"id": "quoted-en-04", "lang": "en", "tags": ["restraint", "quoted"], "heard": "She told me, \"wait, sorry, I meant Tuesday\", and then hung up.", "want": "She told me, \"wait, sorry, I meant Tuesday\", and then hung up."}
+{"id": "quoted-en-05", "lang": "en", "tags": ["restraint", "quoted"], "heard": "The test case is the sentence \"at five, no, I mean six\".", "want": "The test case is the sentence \"at five, no, I mean six\"."}
+{"id": "quoted-en-06", "lang": "en", "tags": ["restraint", "quoted"], "heard": "He kept saying \"no, no, no\" during the whole call.", "want": "He kept saying \"no, no, no\" during the whole call."}
+{"id": "voice-en-01", "lang": "en", "tags": ["restraint", "voice"], "heard": "It's made on purpose.", "want": "It's made on purpose."}
+{"id": "voice-en-02", "lang": "en", "tags": ["restraint", "voice"], "heard": "That will be cool.", "want": "That will be cool."}
+{"id": "voice-en-03", "lang": "en", "tags": ["restraint", "voice"], "heard": "I have 30 years and I work as a developer since 2015.", "want": "I have 30 years and I work as a developer since 2015."}
+{"id": "voice-en-04", "lang": "en", "tags": ["restraint", "voice"], "heard": "We discussed about the new design yesterday.", "want": "We discussed about the new design yesterday."}
+{"id": "voice-en-05", "lang": "en", "tags": ["restraint", "voice"], "heard": "Can you explain me how the cache works?", "want": "Can you explain me how the cache works?"}
+{"id": "voice-en-06", "lang": "en", "tags": ["restraint", "voice"], "heard": "I am agree with the plan.", "want": "I am agree with the plan."}
+{"id": "voice-en-07", "lang": "en", "tags": ["restraint", "voice"], "heard": "The people is waiting for the release.", "want": "The people is waiting for the release."}
+{"id": "voice-en-08", "lang": "en", "tags": ["restraint", "voice"], "heard": "I will do a party on Saturday.", "want": "I will do a party on Saturday."}
+{"id": "plain-es-01", "lang": "es", "tags": ["restraint"], "heard": "Te mando el informe antes de que acabe el día.", "want": "Te mando el informe antes de que acabe el día."}
+{"id": "plain-es-02", "lang": "es", "tags": ["restraint"], "heard": "¿Puedes mirar si las pruebas pasan en la rama de la versión?", "want": "¿Puedes mirar si las pruebas pasan en la rama de la versión?"}
+{"id": "plain-es-03", "lang": "es", "tags": ["restraint"], "heard": "Gracias por avisar. Lo reviso esta noche.", "want": "Gracias por avisar. Lo reviso esta noche."}
+{"id": "plain-es-04", "lang": "es", "tags": ["restraint"], "heard": "La reunión es a las tres en la sala grande.", "want": "La reunión es a las tres en la sala grande."}
+{"id": "plain-es-05", "lang": "es", "tags": ["restraint"], "heard": "Vendimos 90 unidades en mayo y 120 en junio.", "want": "Vendimos 90 unidades en mayo y 120 en junio."}
+{"id": "plain-es-06", "lang": "es", "tags": ["restraint"], "heard": "No creo que sea buena idea, pero podemos probar.", "want": "No creo que sea buena idea, pero podemos probar."}
+{"id": "plain-es-07", "lang": "es", "tags": ["restraint"], "heard": "Abre la terminal y vuelve a compilar.", "want": "Abre la terminal y vuelve a compilar."}
+{"id": "plain-es-08", "lang": "es", "tags": ["restraint"], "heard": "Sí.", "want": "Sí."}
+{"id": "plain-es-09", "lang": "es", "tags": ["restraint"], "heard": "Vale, nos vemos entonces.", "want": "Vale, nos vemos entonces."}
+{"id": "plain-es-10", "lang": "es", "tags": ["restraint"], "heard": "¿A qué hora sale mañana el tren a Sevilla?", "want": "¿A qué hora sale mañana el tren a Sevilla?"}
+{"id": "plain-es-11", "lang": "es", "tags": ["restraint"], "heard": "Si la caché está fría, la primera petición tarda unos dos segundos.", "want": "Si la caché está fría, la primera petición tarda unos dos segundos."}
+{"id": "plain-es-12", "lang": "es", "tags": ["restraint"], "heard": "Su correo es ana@example.com y su extensión es la 4417.", "want": "Su correo es ana@example.com y su extensión es la 4417."}
+{"id": "plain-es-13", "lang": "es", "tags": ["restraint"], "heard": "Muy complicada.", "want": "Muy complicada."}
+{"id": "plain-es-14", "lang": "es", "tags": ["restraint"], "heard": "El médico me dijo que volviera en quince días con los análisis.", "want": "El médico me dijo que volviera en quince días con los análisis."}
+{"id": "real-no-es-01", "lang": "es", "tags": ["restraint", "real-no"], "heard": "No, lo digo en serio.", "want": "No, lo digo en serio."}
+{"id": "real-no-es-02", "lang": "es", "tags": ["restraint", "real-no"], "heard": "Ya te dije que no.", "want": "Ya te dije que no."}
+{"id": "real-no-es-03", "lang": "es", "tags": ["restraint", "real-no"], "heard": "Perdón por el retraso, el tren llegó tarde.", "want": "Perdón por el retraso, el tren llegó tarde."}
+{"id": "real-no-es-04", "lang": "es", "tags": ["restraint", "real-no"], "heard": "Espera en la entrada, ahora bajo.", "want": "Espera en la entrada, ahora bajo."}
+{"id": "real-no-es-05", "lang": "es", "tags": ["restraint", "real-no"], "heard": "O sea que al final no vienes.", "want": "O sea que al final no vienes."}
+{"id": "real-no-es-06", "lang": "es", "tags": ["restraint", "real-no"], "heard": "No, gracias, ya he comido.", "want": "No, gracias, ya he comido."}
+{"id": "real-no-es-07", "lang": "es", "tags": ["restraint", "real-no"], "heard": "Yo digo que lo probemos mañana.", "want": "Yo digo que lo probemos mañana."}
+{"id": "real-no-es-08", "lang": "es", "tags": ["restraint", "real-no"], "heard": "No son las cinco, son las seis.", "want": "No son las cinco, son las seis."}
+{"id": "real-no-es-09", "lang": "es", "tags": ["restraint", "real-no"], "heard": "Quiero el azul, no el rojo.", "want": "Quiero el azul, no el rojo."}
+{"id": "real-no-es-10", "lang": "es", "tags": ["restraint", "real-no"], "heard": "La respuesta es no, y va a seguir siendo no.", "want": "La respuesta es no, y va a seguir siendo no."}
+{"id": "real-no-es-11", "lang": "es", "tags": ["restraint", "real-no"], "heard": "En realidad me gustó mucho la película.", "want": "En realidad me gustó mucho la película."}
+{"id": "real-no-es-12", "lang": "es", "tags": ["restraint", "real-no"], "heard": "Mejor dicho imposible.", "want": "Mejor dicho imposible."}
+{"id": "real-no-es-13", "lang": "es", "tags": ["restraint", "real-no"], "heard": "¿Sabes lo que quiero decir?", "want": "¿Sabes lo que quiero decir?"}
+{"id": "real-no-es-14", "lang": "es", "tags": ["restraint", "real-no"], "heard": "Perdón, ¿me puede repetir la pregunta?", "want": "Perdón, ¿me puede repetir la pregunta?"}
+{"id": "real-no-es-15", "lang": "es", "tags": ["restraint", "real-no"], "heard": "No, no lo fusionemos todavía; sí, hay que probarlo más.", "want": "No, no lo fusionemos todavía; sí, hay que probarlo más."}
+{"id": "real-no-es-16", "lang": "es", "tags": ["restraint", "real-no"], "heard": "Bueno, no está mal para ser el primer intento.", "want": "Bueno, no está mal para ser el primer intento."}
+{"id": "quoted-es-01", "lang": "es", "tags": ["restraint", "quoted"], "heard": "Cuando digo \"no, digo\", lo anterior se tiene que borrar.", "want": "Cuando digo \"no, digo\", lo anterior se tiene que borrar."}
+{"id": "quoted-es-02", "lang": "es", "tags": ["restraint", "quoted"], "heard": "Tiene que entender frases como \"mejor dicho\" y \"perdón\".", "want": "Tiene que entender frases como \"mejor dicho\" y \"perdón\"."}
+{"id": "quoted-es-03", "lang": "es", "tags": ["restraint", "quoted"], "heard": "Si alguien dice \"a las cinco, no, a las seis\", debe escribir \"a las seis\".", "want": "Si alguien dice \"a las cinco, no, a las seis\", debe escribir \"a las seis\"."}
+{"id": "quoted-es-04", "lang": "es", "tags": ["restraint", "quoted"], "heard": "Me dijo \"espera, quise decir el martes\" y colgó.", "want": "Me dijo \"espera, quise decir el martes\" y colgó."}
+{"id": "plain-mix-01", "lang": "mix", "tags": ["restraint"], "heard": "Mañana tengo una call con el cliente a las diez.", "want": "Mañana tengo una call con el cliente a las diez."}
+{"id": "plain-mix-02", "lang": "mix", "tags": ["restraint"], "heard": "Hay que hacer deploy antes del viernes.", "want": "Hay que hacer deploy antes del viernes."}
+{"id": "plain-mix-03", "lang": "mix", "tags": ["restraint"], "heard": "El pull request ya está listo para review.", "want": "El pull request ya está listo para review."}
+{"id": "plain-mix-04", "lang": "mix", "tags": ["restraint"], "heard": "I told her que no se preocupe, we'll fix it.", "want": "I told her que no se preocupe, we'll fix it."}
+{"id": "plain-mix-05", "lang": "mix", "tags": ["restraint"], "heard": "Pásame el link del meeting, please.", "want": "Pásame el link del meeting, please."}
+{"id": "plain-mix-06", "lang": "mix", "tags": ["restraint"], "heard": "The build falla en el paso de tests, no en el de lint.", "want": "The build falla en el paso de tests, no en el de lint."}
+{"id": "plain-mix-07", "lang": "mix", "tags": ["restraint"], "heard": "Muy complicada. Let's keep it simple.", "want": "Muy complicada. Let's keep it simple."}
+{"id": "plain-mix-08", "lang": "mix", "tags": ["restraint"], "heard": "Voy a hacer push y luego abro el ticket.", "want": "Voy a hacer push y luego abro el ticket."}
+{"id": "plain-mix-09", "lang": "mix", "tags": ["restraint"], "heard": "El bug solo pasa en producción, never in staging.", "want": "El bug solo pasa en producción, never in staging."}
+{"id": "plain-mix-10", "lang": "mix", "tags": ["restraint"], "heard": "Nos vemos en el coworking after lunch.", "want": "Nos vemos en el coworking after lunch."}
+{"id": "real-no-mix-01", "lang": "mix", "tags": ["restraint", "real-no"], "heard": "No, en serio, I mean it.", "want": "No, en serio, I mean it."}
+{"id": "real-no-mix-02", "lang": "mix", "tags": ["restraint", "real-no"], "heard": "Sorry, no puedo el viernes.", "want": "Sorry, no puedo el viernes."}
+{"id": "real-no-mix-03", "lang": "mix", "tags": ["restraint", "real-no"], "heard": "Actually, me parece buena idea.", "want": "Actually, me parece buena idea."}
+{"id": "real-no-mix-04", "lang": "mix", "tags": ["restraint", "real-no"], "heard": "Le dije que no, and that's final.", "want": "Le dije que no, and that's final."}
+{"id": "real-no-mix-05", "lang": "mix", "tags": ["restraint", "real-no"], "heard": "Wait, ¿el server está caído otra vez?", "want": "Wait, ¿el server está caído otra vez?"}
+{"id": "real-no-mix-06", "lang": "mix", "tags": ["restraint", "real-no"], "heard": "O sea, it works, pero es lento.", "want": "O sea, it works, pero es lento."}
+{"id": "quoted-mix-01", "lang": "mix", "tags": ["restraint", "quoted"], "heard": "Cuando digo \"no, I mean\", it should delete lo anterior.", "want": "Cuando digo \"no, I mean\", it should delete lo anterior."}
+{"id": "quoted-mix-02", "lang": "mix", "tags": ["restraint", "quoted"], "heard": "She said \"perdón, quise decir el martes\" and left.", "want": "She said \"perdón, quise decir el martes\" and left."}
+{"id": "voice-mix-01", "lang": "mix", "tags": ["restraint", "voice"], "heard": "Hey, ¿cómo vas? Everything good?", "want": "Hey, ¿cómo vas? Everything good?"}
+{"id": "voice-mix-02", "lang": "mix", "tags": ["restraint", "voice"], "heard": "I am agree, hagámoslo así.", "want": "I am agree, hagámoslo así."}

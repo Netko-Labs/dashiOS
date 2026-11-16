@@ -148,6 +148,9 @@ export const KEYMAP: Keymap = {
     { when: "super+ctrl+Return|KP_Enter", bind: "dashi://window/arrange/fill" },
     { when: "super+ctrl+c", bind: "dashi://window/arrange/center" },
     { when: "super+ctrl+r", bind: "dashi://window/arrange/restore" },
+    // ⌃❖Z takes back what dictation typed last, ⌃❖V types it again (dictation/actions.ts).
+    { when: "super+ctrl+z", bind: "dashi://dictation/undo" },
+    { when: "super+ctrl+v", bind: "dashi://dictation/paste-last" },
     // ⌃❖F: full screen (arrange.ts), for any window, as on the Mac.
     { when: "super+ctrl+f", bind: "dashi://window/full-screen" },
     // ⌃❖Q: lock the screen, as on the Mac.

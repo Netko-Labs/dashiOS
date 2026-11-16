@@ -24,6 +24,8 @@ export class Questions {
     private readonly timers: Timers,
     private readonly now: () => number,
     private readonly changed: () => void,
+    /** A question's time ran out with no answer (not one its asker gave up). */
+    private readonly gaveUp: () => void = () => {},
   ) {}
 
   /** Ask it in the card; resolves with the answer, or "elsewhere" when the person would type it. */
@@ -31,7 +33,10 @@ export class Questions {
     if (signal?.aborted) return Promise.resolve({ none: "no-answer" });
     const id = `question-${++this.next}`;
     return new Promise((resolve) => {
-      const timer = this.timers.set(() => this.settle(id, { none: "no-answer" }), question.seconds * 1000);
+      const timer = this.timers.set(() => {
+        this.settle(id, { none: "no-answer" });
+        this.gaveUp();
+      }, question.seconds * 1000);
       const ask = {
         kind: "question" as const,
         id,

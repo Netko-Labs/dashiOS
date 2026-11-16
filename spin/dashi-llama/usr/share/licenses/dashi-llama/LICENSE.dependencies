@@ -1,0 +1,19 @@
+# dashi-llama: what is built into llama.cpp's server, and each part's license.
+# Kept by hand from the source tree of the pinned commit (spin/rpm/dashi-llama.spec):
+# when the pin moves, read vendor/ and licenses/ there again and bring this up to date.
+# The texts the parts carry are installed beside this file, each under its part's name.
+
+llama.cpp b12359 (b1b770d90d94cad9e9ea5b993bdbc383a522fb28), with ggml: MIT (LICENSE)
+nlohmann/json 3.12.0 (vendor/nlohmann): MIT (LICENSE-jsonhpp)
+cpp-httplib (vendor/cpp-httplib): MIT (LICENSE-cpp-httplib)
+xxHash (vendor/hash/xxhash): BSD-2-Clause (LICENSE-xxhash)
+rotate-bits (vendor/hash/rotate-bits): MIT (LICENSE-rotate-bits)
+sha256, Igor Pavlov (vendor/hash/sha256): public domain (LICENSE-sha256)
+sha1, Steve Reid (vendor/hash/sha1): public domain (said in its source)
+stb_image 2.30 (vendor/stb): MIT OR public domain, used as MIT (the text is at the end of stb_image.h; LICENSE-stb)
+miniaudio (vendor/miniaudio): MIT-0 OR public domain, used as MIT-0 (the text is at the end of miniaudio.h; LICENSE-miniaudio)
+subprocess.h, sheredom (vendor/sheredom): Unlicense (the text is at the top of subprocess.h; LICENSE-subprocess)
+
+# Not built in: the Vulkan backend, the web UI, OpenSSL, curl, llguidance.
+# Loaded from the system at run time, never bundled: glibc, libstdc++ and libgomp
+# (GCC's runtime libraries, GPL-3.0-or-later WITH GCC-exception-3.1).

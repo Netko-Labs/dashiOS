@@ -7,17 +7,29 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { homedir, userInfo } from "node:os";
 import { join } from "node:path";
 import { runningCapsule } from "../capsule/index.ts";
 import { atspiFieldCheck } from "../clipboard/index.ts";
 import type { Compositor } from "../compositor/index.ts";
-import { type DictationParts, type Layout, startDictation, tapClosesLauncher } from "../dictation/index.ts";
+import {
+  agentUnder,
+  DictationHistory,
+  type DictationOptions,
+  type DictationParts,
+  type Layout,
+  Lexicon,
+  startDictation,
+  systemWords,
+  tapClosesLauncher,
+} from "../dictation/index.ts";
 import { idleKeymap } from "../keymap/keymap-state.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import { type Clipboard, systemClipboard } from "../shared/clipboard/index.ts";
-import { type DictationTrouble, isDictationKeyId } from "../shared/pill/index.ts";
-import { basicsHere, isTalkKeyId, listenLanguage, talkKey } from "../voice/index.ts";
+import { type DictationTrouble, isDictationKeyId, isHistoryKeep, type PillHub } from "../shared/pill/index.ts";
+import { basicsHere, isTalkKeyId, listenLanguage, listenModel, talkKey } from "../voice/index.ts";
+import { correcting } from "./corrections.ts";
+import { knownNames } from "./known-names.ts";
 import type { LateParts } from "./parts.ts";
 import type { Late, Services } from "./services.ts";
 import type { Talking } from "./voice.ts";
@@ -51,6 +63,19 @@ async function microphoneMuted(): Promise<boolean> {
     return (await child.exited) === 0 && text.includes("[MUTED]");
   } catch {
     return false;
+  }
+}
+
+/** The person's own name, as the account has it (the passwd entry's first field), "" when it has none. */
+function realName(): string {
+  try {
+    const { username } = userInfo();
+    const line = readFileSync("/etc/passwd", "utf8")
+      .split("\n")
+      .find((each) => each.startsWith(`${username}:`));
+    return line?.split(":")[4]?.split(",")[0]?.trim() ?? "";
+  } catch {
+    return "";
   }
 }
 
@@ -129,12 +154,52 @@ function dashiTap(compositor: Compositor | null, late: Late<LateParts>, sinceSup
   late.peek("launcher")?.toggle();
 }
 
-export function startDictating({ compositor, settingsStore, services, late, talking }: DictatingNeeds): DictationParts {
-  const hub = late.get("pill");
+/** The desktop, as dictation reaches it: the window in front and its field, typing and keys into it, the clipboard. */
+function deskDeps(
+  compositor: Compositor | null,
+  late: Late<LateParts>,
+): Pick<DictationOptions, "muted" | "front" | "secret" | "field" | "sendKeys" | "appName" | "pressed" | "typeText" | "paste" | "copy"> {
   const clipboard = systemClipboard();
   // Accessibility is turned on at the first hold (as snippets do at their first keyword: clipboard/lib/fields.ts), so a
   // password field can be told: asked again at the landing, by when an app that only then published its fields has.
   const fields = atspiFieldCheck({ turnOn: true });
+  return {
+    muted: microphoneMuted,
+    front: async () => {
+      const windows = await compositor?.windows().catch(() => null);
+      const front = windows?.find((window) => window.focused);
+      return front ? { window: front.id, pid: front.pid, appId: front.appId, title: front.title } : null;
+    },
+    // Read as the landing reads it, so a browser's page is woken before the microphone opens over a password field.
+    secret: async (front) => (front.pid !== null && (await fields.read(front.pid, 0))?.kind === "password" ? true : null),
+    field: async (front) => (front.pid === null ? null : fields.read(front.pid)),
+    sendKeys: async (window, chord) => {
+      if (!compositor) throw new Error("no compositor");
+      await compositor.sendKeys({ window, chord });
+    },
+    appName: (front) => (front.appId ? (late.peek("installedApp")?.(front.appId)?.name ?? front.appId) : ""),
+    pressed: async (window) => (compositor ? (await compositor.inputOrigin({ window })).person : null),
+    typeText: async (window, text, how = {}) => {
+      if (!compositor) throw new Error("no compositor");
+      await compositor.typeText({ window, text, ...(how.erase ? { erase: how.erase } : {}), ...(how.breaks ? { breaks: how.breaks } : {}) });
+    },
+    paste: (window, text) => paste(compositor, clipboard, window, text),
+    copy: (text) => clipboard.writeText(text),
+  };
+}
+
+/**
+ * DASHI_DICTATION_LOG=1: each gesture and each state in the session's log, for a proof with no capsule to look at; each
+ * with the milliseconds since the shell started, so the time from the key going up to the words is read off the log.
+ */
+function logging(hub: PillHub): void {
+  const at = (): string => `at=${Math.round(performance.now())}`;
+  hub.keys.listen((gesture) => console.error(`dashi-shell: dictation key ${gesture.key} ${gesture.gesture} ${at()}`));
+  hub.dictation.subscribe(() => console.error(`dashi-shell: dictation ${at()} ${JSON.stringify(hub.dictation.getSnapshot())}`));
+}
+
+export function startDictating({ compositor, settingsStore, services, late, talking }: DictatingNeeds): DictationParts {
+  const hub = late.get("pill");
   const system = systemLayout();
   const taught = teaching();
   let superTapAt = Number.NEGATIVE_INFINITY;
@@ -146,8 +211,24 @@ export function startDictating({ compositor, settingsStore, services, late, talk
     if (view.service === "missing") return "voice-gone";
     return basicsHere(view.sets) ? null : "no-model";
   };
+  const history = new DictationHistory({
+    keep: () => {
+      const { history: keep } = settings().dictation;
+      return isHistoryKeep(keep) ? keep : "day";
+    },
+  });
+  const rewriter = correcting(settingsStore, late);
+  const stopKeeping = settingsStore.subscribe(() => history.refresh());
+  const words = systemWords();
+  const apps = (): string[] => late.peek("appNames")?.() ?? [];
+  const lexicon = new Lexicon({ words, seed: () => ({ apps: apps(), person: realName() }), known: knownNames(apps) });
   const parts = startDictation({
     hub,
+    history,
+    lexicon,
+    words,
+    rewriter,
+    terminalAgent: async (front) => front.pid !== null && agentUnder(front.pid),
     service: talking.service,
     settings: () => {
       const { voice, dictation, keyboard } = settings();
@@ -170,30 +251,14 @@ export function startDictating({ compositor, settingsStore, services, late, talk
     launcher: () => dashiTap(compositor, late, performance.now() - superTapAt),
     trouble,
     busy: () => talking.voice.getSnapshot()?.kind === "listening",
-    muted: microphoneMuted,
-    front: async () => {
-      const windows = await compositor?.windows().catch(() => null);
-      const front = windows?.find((window) => window.focused);
-      return front ? { window: front.id, pid: front.pid } : null;
-    },
-    secret: async (front) => (front.pid !== null && (await fields.passwordFocused(front.pid)) ? true : null),
-    pressed: async (window) => (compositor ? (await compositor.inputOrigin({ window })).person : null),
-    typeText: async (window, text) => {
-      if (!compositor) throw new Error("no compositor");
-      await compositor.typeText({ window, text });
-    },
-    paste: (window, text) => paste(compositor, clipboard, window, text),
-    copy: (text) => clipboard.writeText(text),
+    ...deskDeps(compositor, late),
     chime,
     taught: () => taught.known,
     teach: () => taught.now(),
     language: listenLanguage(process.env.LC_ALL || process.env.LC_MESSAGES || process.env.LANG),
+    listenWith: () => listenModel(settings().voice.recognizer),
   });
-  // DASHI_DICTATION_LOG=1: each gesture and each state in the session's log, for a proof with no capsule to look at.
-  if (process.env.DASHI_DICTATION_LOG === "1") {
-    hub.keys.listen((gesture) => console.error(`dashi-shell: key ${gesture.key} ${gesture.gesture}`));
-    hub.dictation.subscribe(() => console.error(`dashi-shell: dictation ${JSON.stringify(hub.dictation.getSnapshot())}`));
-  }
+  if (process.env.DASHI_DICTATION_LOG === "1") logging(hub);
   const stopHearing = compositor
     ? compositor.on((event) => {
         if (event.event === "held-key") parts.key(event.name, event.down, event.chord === true);
@@ -201,9 +266,12 @@ export function startDictating({ compositor, settingsStore, services, late, talk
         if (event.event === "lock" && event.locked) parts.dictation.stop();
       })
     : () => {};
+  late.set("dictation", parts);
   services.add("dictation", () => {
     stopHearing();
+    stopKeeping();
     parts.close();
+    rewriter.close();
   });
   return parts;
 }

@@ -1,0 +1,55 @@
+{"id": "nonword-en-01", "lang": "en", "tags": ["nonword"], "heard": "I dot like the new layout.", "want": "I don't like the new layout."}
+{"id": "nonword-en-02", "lang": "en", "tags": ["nonword"], "heard": "It shouldt have that button.", "want": "It shouldn't have that button."}
+{"id": "nonword-en-03", "lang": "en", "tags": ["nonword"], "heard": "Just give me idead for the name.", "want": "Just give me ideas for the name."}
+{"id": "nonword-en-04", "lang": "en", "tags": ["nonword"], "heard": "We cant ship it like this.", "want": "We can't ship it like this."}
+{"id": "nonword-en-05", "lang": "en", "tags": ["nonword"], "heard": "It doesnt start when I press the key.", "want": "It doesn't start when I press the key."}
+{"id": "nonword-en-06", "lang": "en", "tags": ["nonword"], "heard": "They wouldt answer the phone.", "want": "They wouldn't answer the phone."}
+{"id": "nonword-en-07", "lang": "en", "tags": ["nonword"], "heard": "I havent seen the the new build yet.", "want": "I haven't seen the new build yet."}
+{"id": "nonword-en-08", "lang": "en", "tags": ["nonword"], "heard": "Thats not what I ment.", "want": "That's not what I meant."}
+{"id": "nonword-en-09", "lang": "en", "tags": ["nonword"], "heard": "She isnt comming to the meeting.", "want": "She isn't coming to the meeting."}
+{"id": "nonword-en-10", "lang": "en", "tags": ["nonword"], "heard": "You dont need to restart the the computer.", "want": "You don't need to restart the computer."}
+{"id": "nonword-en-11", "lang": "en", "tags": ["nonword"], "heard": "I wont be abel to join tomorrow.", "want": "I won't be able to join tomorrow."}
+{"id": "nonword-en-12", "lang": "en", "tags": ["nonword"], "heard": "Lets see if it it works now.", "want": "Let's see if it works now."}
+{"id": "nonword-es-01", "lang": "es", "tags": ["nonword"], "heard": "No se si va a funcinar mañana.", "want": "No sé si va a funcionar mañana."}
+{"id": "nonword-es-02", "lang": "es", "tags": ["nonword"], "heard": "Tenemos que revizar el presupesto.", "want": "Tenemos que revisar el presupuesto."}
+{"id": "nonword-es-03", "lang": "es", "tags": ["nonword"], "heard": "Esta muy bien, pero falta la la última parte.", "want": "Está muy bien, pero falta la última parte."}
+{"id": "nonword-es-04", "lang": "es", "tags": ["nonword"], "heard": "Mañana ablamos con el el cliente.", "want": "Mañana hablamos con el cliente."}
+{"id": "nonword-es-05", "lang": "es", "tags": ["nonword"], "heard": "No a llegado el paqete todavía.", "want": "No ha llegado el paquete todavía."}
+{"id": "nonword-es-06", "lang": "es", "tags": ["nonword"], "heard": "Que hora es la reunion?", "want": "¿Qué hora es la reunión?", "also": ["¿Que hora es la reunión?"], "unsure": true}
+{"id": "filler-en-01", "lang": "en", "tags": ["filler"], "heard": "Um, I think we should, uh, start with the login page.", "want": "I think we should start with the login page."}
+{"id": "filler-en-02", "lang": "en", "tags": ["filler"], "heard": "So you gather like most of the issues in one place.", "want": "So you gather most of the issues in one place."}
+{"id": "filler-en-03", "lang": "en", "tags": ["filler"], "heard": "When I give like an instruction, it should follow it.", "want": "When I give an instruction, it should follow it."}
+{"id": "filler-en-04", "lang": "en", "tags": ["filler"], "heard": "It only used like one single voice.", "want": "It only used one single voice."}
+{"id": "filler-en-05", "lang": "en", "tags": ["filler"], "heard": "I was, you know, kind of hoping we could, um, finish today.", "want": "I was kind of hoping we could finish today.", "also": ["I was hoping we could finish today."], "unsure": true}
+{"id": "filler-en-06", "lang": "en", "tags": ["filler"], "heard": "Uh, can you, like, send me the the file?", "want": "Can you send me the file?"}
+{"id": "filler-en-07", "lang": "en", "tags": ["filler"], "heard": "So basically, um, the server, uh, crashed at midnight.", "want": "So basically, the server crashed at midnight.", "also": ["So basically the server crashed at midnight.", "Basically, the server crashed at midnight."]}
+{"id": "filler-en-08", "lang": "en", "tags": ["filler", "restraint"], "heard": "I like the new design.", "want": "I like the new design."}
+{"id": "filler-en-09", "lang": "en", "tags": ["filler", "restraint"], "heard": "It looks like a bug in the parser.", "want": "It looks like a bug in the parser."}
+{"id": "filler-en-10", "lang": "en", "tags": ["filler", "restraint"], "heard": "Make it like the old one, but faster.", "want": "Make it like the old one, but faster."}
+{"id": "filler-en-11", "lang": "en", "tags": ["filler"], "heard": "Er, hmm, let me think. We could, uh, cache the result.", "want": "Let me think. We could cache the result."}
+{"id": "filler-en-12", "lang": "en", "tags": ["filler"], "heard": "It's, like, really slow when, like, you open two windows.", "want": "It's really slow when you open two windows."}
+{"id": "filler-es-01", "lang": "es", "tags": ["filler"], "heard": "Eh, creo que deberíamos, este, empezar por la página de inicio.", "want": "Creo que deberíamos empezar por la página de inicio."}
+{"id": "filler-es-02", "lang": "es", "tags": ["filler"], "heard": "O sea, el servidor, eh, se cayó a medianoche.", "want": "El servidor se cayó a medianoche.", "also": ["O sea, el servidor se cayó a medianoche."]}
+{"id": "filler-es-03", "lang": "es", "tags": ["filler"], "heard": "Pues, eh, mándame el, este, el archivo cuando puedas.", "want": "Pues mándame el archivo cuando puedas.", "also": ["Pues, mándame el archivo cuando puedas.", "Mándame el archivo cuando puedas."]}
+{"id": "filler-es-04", "lang": "es", "tags": ["filler"], "heard": "Es que, o sea, no sé, eh, si llegamos a tiempo.", "want": "Es que no sé si llegamos a tiempo."}
+{"id": "filler-es-05", "lang": "es", "tags": ["filler", "restraint"], "heard": "Este libro es el que te dije.", "want": "Este libro es el que te dije."}
+{"id": "filler-es-06", "lang": "es", "tags": ["filler", "restraint"], "heard": "Me gusta este diseño más que el otro.", "want": "Me gusta este diseño más que el otro."}
+{"id": "filler-es-07", "lang": "es", "tags": ["filler"], "heard": "Mmm, a ver, eh, podríamos guardar el resultado.", "want": "A ver, podríamos guardar el resultado."}
+{"id": "filler-es-08", "lang": "es", "tags": ["filler"], "heard": "Bueno, este, la verdad es que, eh, no lo he probado.", "want": "Bueno, la verdad es que no lo he probado."}
+{"id": "filler-mix-01", "lang": "mix", "tags": ["filler"], "heard": "Um, vamos a hacer, like, un deploy rápido.", "want": "Vamos a hacer un deploy rápido."}
+{"id": "filler-mix-02", "lang": "mix", "tags": ["filler"], "heard": "El build, eh, falla, like, every time.", "want": "El build falla every time."}
+{"id": "filler-mix-03", "lang": "mix", "tags": ["filler"], "heard": "O sea, the client, este, wants it el lunes.", "want": "The client wants it el lunes.", "also": ["O sea, the client wants it el lunes."]}
+{"id": "runon-en-01", "lang": "en", "tags": ["runon"], "heard": "so i was thinking we could move the settings into the sidebar and then the main page would have more room for the list what do you think", "want": "So I was thinking we could move the settings into the sidebar, and then the main page would have more room for the list. What do you think?", "also": ["So I was thinking we could move the settings into the sidebar and then the main page would have more room for the list. What do you think?"]}
+{"id": "runon-en-02", "lang": "en", "tags": ["runon"], "heard": "the build failed again i checked the logs and it looks like the cache is full can you clear it", "want": "The build failed again. I checked the logs and it looks like the cache is full. Can you clear it?", "also": ["The build failed again. I checked the logs, and it looks like the cache is full. Can you clear it?"]}
+{"id": "runon-en-03", "lang": "en", "tags": ["runon"], "heard": "hey how are you i wanted to ask if you are free on friday", "want": "Hey, how are you? I wanted to ask if you are free on Friday."}
+{"id": "runon-en-04", "lang": "en", "tags": ["runon"], "heard": "first we load the file then we parse it and finally we write the result", "want": "First we load the file, then we parse it, and finally we write the result.", "also": ["First we load the file, then we parse it and finally we write the result.", "First, we load the file, then we parse it, and finally we write the result."]}
+{"id": "runon-en-05", "lang": "en", "tags": ["runon"], "heard": "i tried it twice it did not work so i restarted the service and now it is fine", "want": "I tried it twice. It did not work, so I restarted the service and now it is fine.", "also": ["I tried it twice, it did not work, so I restarted the service and now it is fine.", "I tried it twice. It did not work, so I restarted the service, and now it is fine.", "I tried it twice, it did not work, so I restarted the service, and now it is fine."]}
+{"id": "runon-en-06", "lang": "en", "tags": ["runon"], "heard": "thanks for the review i fixed the two comments and pushed again", "want": "Thanks for the review. I fixed the two comments and pushed again."}
+{"id": "runon-en-07", "lang": "en", "tags": ["runon"], "heard": "is the server up i cannot reach it from here", "want": "Is the server up? I cannot reach it from here."}
+{"id": "runon-es-01", "lang": "es", "tags": ["runon"], "heard": "hola qué tal quería preguntarte si estás libre el viernes", "want": "Hola, ¿qué tal? Quería preguntarte si estás libre el viernes."}
+{"id": "runon-es-02", "lang": "es", "tags": ["runon"], "heard": "la compilación falló otra vez miré los registros y parece que la caché está llena puedes vaciarla", "want": "La compilación falló otra vez. Miré los registros y parece que la caché está llena. ¿Puedes vaciarla?"}
+{"id": "runon-es-03", "lang": "es", "tags": ["runon"], "heard": "gracias por la revisión arreglé los dos comentarios y lo subí otra vez", "want": "Gracias por la revisión. Arreglé los dos comentarios y lo subí otra vez."}
+{"id": "runon-es-04", "lang": "es", "tags": ["runon"], "heard": "está el servidor encendido no puedo entrar desde aquí", "want": "¿Está el servidor encendido? No puedo entrar desde aquí."}
+{"id": "runon-es-05", "lang": "es", "tags": ["runon"], "heard": "lo probé dos veces no funcionó así que reinicié el servicio y ahora va bien", "want": "Lo probé dos veces. No funcionó, así que reinicié el servicio y ahora va bien.", "also": ["Lo probé dos veces, no funcionó, así que reinicié el servicio y ahora va bien."]}
+{"id": "runon-mix-01", "lang": "mix", "tags": ["runon"], "heard": "hola how are you quería preguntarte si puedes hacer el review hoy", "want": "Hola, how are you? Quería preguntarte si puedes hacer el review hoy."}
+{"id": "runon-mix-02", "lang": "mix", "tags": ["runon"], "heard": "el build falló again miré los logs y the cache is full puedes limpiarlo", "want": "El build falló again. Miré los logs y the cache is full. ¿Puedes limpiarlo?"}

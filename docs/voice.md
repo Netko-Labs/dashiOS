@@ -135,8 +135,11 @@ the capsule one `DictationState` at a time (`shared/pill/dictation.ts`).
    (below) and typed.
 4. **Typing** is the compositor's `type-text {window, text}`: one step, into
    the window the key went down in, through a keymap made for the text, so ñ
-   and é type on any layout. The clipboard is not touched and no BackSpace is
-   ever sent. An X11 window can't take it (`x11`): there the words are pasted
+   and é type on any layout. The clipboard is not touched. A BackSpace is
+   sent only to take back what Dashi itself typed ("The insertion record"),
+   and a line break is the chord the place wants; both ride in the same
+   `type-text` request (`erase`, `breaks`), because a chord sent apart
+   (`send-keys`) goes through the input method and arrives after the text. An X11 window can't take it (`x11`): there the words are pasted
    (the clipboard is put back 300 ms later) and the line says "Pasted."
    While the bar's row is the field the words go to it (`barCommands` `insert`). A space is typed after the words (none after a
    line break), so the next words do not join them.
@@ -157,9 +160,237 @@ the capsule one `DictationState` at a time (`shared/pill/dictation.ts`).
    minutes, or when a sentence has nowhere to land; each time with a short
    sound (`pw-play`, a freedesktop sound) and a line that stays.
 
-Whether a field is a password field is asked of AT-SPI, and only where
-accessibility is already on (`clipboard/lib/fields.ts`): dictation does not
-turn it on. Where it can't be told the window is trusted.
+Whether a field is a password field, and the text around its caret, are
+asked of AT-SPI (`clipboard/lib/fields.ts`), which dictation turns on at its
+first hold. Where it can't be told the window is trusted.
+
+### The insertion record
+
+`dictation/lib/record.ts`, `erase.ts`, `after.ts`, `landings.ts`;
+`dictation/history.ts`. Dashi remembers what it typed: the window, the
+field as far as AT-SPI tells (its role, and the site of a web page), when,
+the recogniser's words and the words that landed, and exactly the
+characters it sent. The newest forty, in memory; the words alone also go to
+the history on disk.
+
+- **Undo** (the capsule's button after a landing, `dashi://dictation/undo`,
+  ⌃❖Z) takes the newest insertion of the window in front back with
+  BackSpace, once for each character Dashi sent (`type-text`'s `erase`,
+  one request; `send-keys` one key at a time only in an X11 window), and
+  only when those characters are still the last thing in the field
+  (decisions.md D180, D187):
+  - where the field's text can be read (AT-SPI's Text interface, the walk
+    the password check uses), the text before the caret must end with them;
+  - where it can't (most terminals), the person's own hands must not have
+    pressed a key or a button in that window since they landed
+    (`input-origin`; the dictation key, ❖ and a chord the keymap takes,
+    ⌃❖Z among them, are not keys in the window), and the text must hold
+    no line break;
+  - otherwise nothing is touched, and the capsule says "That text has
+    changed, so I left it." Never the person's own text.
+- **Raw** (after a landing that tidying changed) takes the insertion back
+  the same way and types the recogniser's own words in its place.
+- **Paste last** (`dashi://dictation/paste-last`, ⌃❖V) types the last
+  dictation again where the keyboard is now, also one that never landed
+  (the words that waited).
+- **The history** (Settings › Voice, "Dictation history"): each landing's
+  time, app, the words as heard beside the words as typed, Copy, Delete,
+  Delete all. `$XDG_STATE_HOME/dashi/dictation/history.jsonl`, mode 600,
+  one JSON line each. Kept a day by default (`dictation.history`: `day`,
+  `week`, `none`); "Nothing" writes nothing and removes the file. No sound
+  is kept, and nothing from a password field (nothing lands there).
+
+The capsule's states for these: `landed` carries `undo` and `raw` (which
+buttons show), and `told` is one line of what was done or not ("Removed 14
+words.", "That text has changed, so I left it.") `offer` is the
+question of "Learning from a fix".
+
+### Vocabulary and profiles
+
+`dictation/lexicon.ts`, `dictation/lib/lexicon-files.ts`, `profiles.ts`,
+`compose.ts`, `rules-terms.ts`, `rules-code.ts`, `rules-style.ts`,
+`seed.ts`; `dictation/words.ts`, `terminal.ts`.
+
+**The files**, in `~/.config/dashi/dictation/`, plain text a person can
+read and edit; read again at each press of the key when one changed:
+
+| File | A line | Means |
+| --- | --- | --- |
+| `vocabulary` | `Dashi: dashy, dead dash` | a term as it is written; after the colon, what the recogniser tends to hear instead |
+| `replacements` | `cloud code -> Claude Code` | heard → typed: whole words, any capitals, the longest first |
+| `snippets` | `my address -> 12 Example Street\nSpringfield` | said → text (`\n` is a line break) |
+| `profiles/<id>` | `key: value` | one profile: `name`, `apps`, `sites`, `tone`, `polish`, `tidy`, `capitals`, `final period`, `line breaks`, `lists`, `code`, `greeting`, and its own `word:` and `replace:` lines |
+
+A `#` starts a comment; a line that can't be read is skipped. A file that
+is missing is written with Dashi's own; one that is there is never written
+over. The first run seeds `vocabulary` with Dashi's and mirin's own words
+(with what Parakeet was seen to hear: "dashy", "dead dash", "cloud code",
+"whisperflow"), the person's own name (the passwd entry), and the installed
+apps' names that are names (an inner capital, a digit, or a word the
+dictionary does not have: "Kdenlive", not "Notes").
+
+**The five profiles**, chosen with no setup (`pickProfile`): a terminal
+(the field's AT-SPI role, or a terminal's app id) is Developer; else the
+site of the page the field is in (the web document around it, from AT-SPI;
+a page nobody claims is Writing, whatever the browser); else the app; else
+Writing.
+
+| Profile | Where | What it does |
+| --- | --- | --- |
+| Developer | terminals, editors, T3 Code, code hosts | casing by voice ("camel case user id" → `userId`; pascal, snake, kebab, constant, dot), flags and symbols by voice ("dash dash help" → `--help`, "open paren", "underscore", "equals sign"; "pipe" in a terminal only), backticks round identifiers outside a shell; at a shell's prompt no capital and no full stop; its own words (GitHub, TypeScript, …) |
+| Writing | documents, notes, anything unclaimed | sentences as tidied |
+| Chat | messaging apps and sites | no full stop after a single sentence; a line break is ⇧Return, so Return does not send |
+| Email | mail apps and sites | full sentences; "Hi Alex," goes on a line of its own |
+| Verbatim | chosen by hand | nothing changed but spacing |
+
+A terminal with an agent's program under its process (`terminal.ts`
+`agentUnder`: claude, codex, aider, …, read from /proc) is an agent's
+prompt, where words are prose: capitals and full stops stay, identifiers
+get backticks, and a line break is ⌃J. A bare shell's words are a command.
+
+The capsule shows the profile's name, small, while it listens and after
+the words land; a press on it takes the next profile for that window until
+it closes (`DictationCommand` `profile`). Settings › Voice lists the
+profiles, the words and the replacements, with add and remove, and opens
+the folder.
+
+**The rules, in order** (`compose`): names and terms (a replacement or a
+"heard as" form; a term's own capitals; a word no dictionary knows that is
+within 0.8 of a term, 0.86 with no dictionary; a contraction that lost its
+ending: "shouldt" → "shouldn't", "I dot like" → "I don't like"), then
+tidying with its check (below), then snippets, the Developer profile's
+casing and symbols, and the profile's style. The vocabulary for one
+dictation is the profile's words, then the project's (a place kept for the
+repository in front; nothing fills it yet), then the person's.
+`words.ts` reads the system's hunspell dictionaries (English and Spanish
+stems) the first time it is asked; with none installed, the rules that need
+one stand down.
+
+### The gate and the correction model
+
+`dictation/lib/gate.ts`, `rewrite.ts`, `language.ts`, `rules-spoken.ts`;
+the seam is `docs/dictation-rewrite.md` (the model, its server and the
+checks on its answer are `rewrite/`'s).
+
+1. **Rules first** (above), with what is said aloud written as it is
+   written: an email ("alex at example dot com"), a web address ("example
+   dot com slash docs"), a file's name ("index dot ts"), numbers from ten
+   up ("twenty five" → 25, "dos mil" → 2000, "ten percent" → 10%). Small
+   numbers stay words, and so do "first" and "second".
+2. **The gate** (`gate`) says whether the rules' text needs the model, and
+   why: `cue` (a self-correction after something said: "no, I mean", a
+   "no" between two pauses, "actually,", "sorry", "digo", "perdón", "mejor
+   dicho", "o sea, no," (with its pause: D196), "quise decir", "espera", "not … but"; never one
+   that opens the utterance, "No, I mean it."; or something said twice;
+   decisions.md D190), `list` (list
+   markers the rules made no list of), `run-on` (twenty words with no
+   mark), `non-word` (a word no dictionary knows; English only), `near-term`
+   (the first word of what a vocabulary term is heard as: "cloud"),
+   `polish` (the profile asks for every utterance). A short clean sentence
+   has no reason and is never sent: the model can only make it worse.
+   Never at a shell's prompt, in Verbatim, or with tidying off. Of these,
+   the model is asked for `cue`, `run-on`, `near-term` and `polish` only
+   (`HELPED` in `rewrite.ts`): measured on its evaluation set it does not
+   mend a non-word, and its checks refuse an answer that adds a line
+   break, so non-words and lists stay the rules' work.
+3. **The call**: `Rewriter.rewrite` with the rules' text as `transcript`,
+   the languages of what was said (little words and Spanish letters, in
+   the words and in the text before the caret; the session's locale when
+   they do not say), the first fifty names of the active vocabulary, the
+   last 200 characters before the caret, the profile's tone line, and the
+   deadline `advice()` gives. `warm()` is called when the key goes down.
+   Only an answer that is `text` changes anything: it gets the profile's
+   style again and lands. `unchanged`, any failure or the deadline land
+   the rules' words. A rewriter whose state is `off`, `no-model` or
+   `too-slow`, or no rewriter at all, is not asked: everything above works
+   with no model.
+4. **The wait**: the capsule shows the dots and the last words at once,
+   and says "Tidying" only once 300 ms have passed (`tidying.said`).
+5. **Land, then refine** (`advice().land === "refine"`, a machine that
+   cannot answer in time): the rules' words land at once and the model is
+   asked with the longer deadline; its words take their place only if the
+   field still ends with what landed (the insertion record's check), and
+   the line says "Refined." A new dictation, Undo or Raw drops the answer.
+6. **After**: the line counts what changed ("Typed. 2 fixes."), with Undo
+   and Raw. The history keeps what the model said (`model`: "text",
+   "unchanged", or the failure's kind).
+
+Until `rewrite/` is merged, `dictation/types.ts` declares the seam's
+shapes and nothing passes a rewriter: `boot/dictation.ts` gives
+`rewriter: startRewriter(…)` when it is.
+
+### Fitting the field
+
+`dictation/lib/fit.ts`. At the landing the text before and after the caret
+is read (AT-SPI's Text interface on the focused field; up to 400
+characters each way; never in a password field), and the words are made to
+continue it:
+
+- **A space before** them unless the caret is at the start, after a space
+  or a line break, or after an opening mark (`(`, `“`, `/`, `-`, …).
+- **No capital** when the line before the caret is a sentence already
+  begun (it does not end with `.`, `!`, `?`, `…` or `:`), unless the first
+  word is a name: one the vocabulary writes with a capital, "I", or a word
+  the dictionary lists only with a capital.
+- **No full stop** of Dashi's when text follows on the same line: the
+  words went into a sentence that has its own end.
+- **A space after** them unless what follows starts with a space or a
+  closing mark.
+
+Where the field can't be read (Dashi's own apps and most terminals do not
+give their text to AT-SPI) the words land as said, with a space after, as
+before. Undo's check uses exactly what was typed, the spaces included.
+
+### Instructions and lists
+
+`dictation/lib/instruction.ts`, `instructed.ts`, `lists.ts`.
+
+**An instruction is the whole utterance** (one press, one phrase), from a
+short fixed grammar in English and Spanish; sounds and "please" round it
+do not count. The same words inside a longer sentence are words and are
+typed ("Tell him to scratch that idea.").
+
+| Said alone | Does |
+| --- | --- |
+| "scratch that", "delete that", "undo that", "remove that", "erase that", "remove (or delete) the previous text", "remove the last text", "remove what I just said"; "borra eso", "quita eso", "elimina eso", "deshaz eso", "borra (or quita) lo anterior", "borra el texto anterior" | takes back Dashi's newest insertion in the window in front, checked as Undo checks it; said again, the one before |
+| "new line", "nueva línea", "punto y aparte"; "new paragraph", "nuevo párrafo" | a line break, or two, typed as the place breaks lines (Return, ⇧Return where Return sends, ⌃J in an agent's prompt) |
+
+The capsule says "Took that as an instruction", what it did ("Removed 14
+words.") and **Undo**, which puts back what was removed (or takes back the
+break) and types the words themselves, as heard. Where nothing of Dashi's
+is there, or the field changed, it says so and touches nothing; Undo still
+types the words. With "Tidy what I say" off nothing is an instruction.
+
+**Lists**, by rule where the markers are plain (`makeList`):
+
+- "first… second… third…" ("primero… segundo…"), two or more in order,
+  not after an article or a preposition ("the first time") and not before
+  "of", "time", "thoughts"…: a numbered list.
+- "one, … two, … three, …" ("uno… dos… tres…"), three or more, each at the
+  start or after a mark: a numbered list.
+- "bullet point … bullet point …", "next item", "viñeta", twice or more:
+  bullets.
+
+The markers go, each item gets a line and a capital, and what came before
+the first is the line that introduces them, ending with a colon. Bullets
+are `- ` where the profile's lists are Markdown (Chat, Developer) or the
+app is a Markdown editor (`MARKDOWN_APPS`: Notes, Obsidian, …), and bare
+lines in a plain field. Never at a shell's prompt. The line says "A list
+of 3." Anything less plain is left as said, and the gate sends it to the
+model (`list`).
+
+### Learning from a fix
+
+`dictation/lib/learn.ts`. After words land in a field whose text can be
+read, the field is read again every 2.5 seconds, four times. If one word
+or a short run (three at most) changed, with at least two of Dashi's words
+still round it, and the next read finds the same change (the person has
+finished typing it), the capsule offers "Always write “Kōji” for “Koji”?" for
+eight seconds. Yes is a press on **Always** or a tap of the dictation key
+(the one key that is dictation's own; no plain key is taken); it becomes a
+line in `replacements`, or a word in `vocabulary` when only its capitals
+changed. Nothing is learned silently, and never a number, a path or an
+address. The landing is then the person's: Undo no longer takes it back.
 
 ### Tidying by rule
 
@@ -167,7 +398,13 @@ turn it on. Where it can't be told the window is trusted.
 
 - **Fillers out:** "um", "uh", "uhm", "erm", "hm", "hmm", "mm", "eh", "ehm"
   wherever they are, with the comma that was only theirs. "este" and "o sea"
-  only between two commas, where they can be nothing else.
+  only where they are set off: between two commas, or starting a sentence
+  before a comma. So are "like" and "you know". "like" with no commas is a
+  filler only by its place: after a word it cannot follow as a verb or a
+  comparison (a verb that takes its object at once, a joining word, an
+  article) and before what was meant ("give like an instruction", "gather
+  like most of them"); "looks like a", "I like the" and "something like
+  that" stay.
 - **Punctuation said out loud:** "comma" / "coma", "period" / "full stop" /
   "punto", "question mark", "exclamation mark", "punto y coma", "new line" /
   "nueva línea", "new paragraph" / "nuevo párrafo". Not after a word that
@@ -187,6 +424,17 @@ turn it on. Where it can't be told the window is trusted.
   part taken back and what replaced it must say "not" as often. When it does
   not hold the words land as heard, and the line says "As you said it."
 - `dictation.tidy: false` types the words as heard.
+
+### Fillers and the assistant's ears
+
+"Um", "uh" and their like tell no language, and a reply of fewer than
+three real words keeps the conversation's: only languages turned on are
+chosen (decisions.md D197). Heard alone by a listen Dashi opened itself,
+a filler or a bare "okay" starts no turn; a held key's words always go.
+What the Dashi key hears is spelled with dictation's replacements and
+vocabulary before the assistant reads it, and the vocabulary holds the
+computer's names too: installed apps, project folders, allowed sites
+(D198).
 
 ## The shell's side
 
@@ -247,8 +495,9 @@ turn it on. Where it can't be told the window is trusted.
   sample", which says a line in that language in that voice (`voice.voices`;
   `panes/voice-languages.tsx`). English and Spanish are spoken unless turned
   off; French, Hindi, Italian and Portuguese are turned on from "Speak
-  another language". "More
-  languages" (Whisper) as its own fetch; Remove. Each set's `credit` shows
+  another language". "Corrections" (the model that corrects dictation,
+  `docs/dictation-rewrite.md`) and "More languages" (Whisper), each its own
+  fetch; Remove. Each set's `credit` shows
   under the page. Only the person's own press turns Voice on, fetches,
   removes, or picks the key or the voice: the pane asks the compositor whose
   press it was (`input-origin`, `settings-app/lib/person-only.ts`), and an
@@ -333,7 +582,8 @@ computer. Voice can be used when `listen` and `speak` are true.
    "credit":"Parakeet TDT 0.6B v3 by NVIDIA (CC BY 4.0), ONNX export by Ilya Stupakov; Silero VAD by the Silero team (MIT).",
    "basic":true,"bytes":672862728,"have":0,"installed":false},
   {"id":"speak","name":"Speaking", "…":"…","basic":true,"bytes":334932491,"have":0,"installed":false},
-  {"id":"whisper","name":"More languages","…":"…","basic":false,"bytes":1036613791,"have":0,"installed":false}]}}
+  {"id":"whisper","name":"More languages","…":"…","basic":false,"bytes":1036613791,"have":0,"installed":false},
+  {"id":"rewrite","name":"Corrections","…":"…","basic":false,"bytes":541903616,"have":0,"installed":false}]}}
 ```
 
 `bytes` is the set's size and `have` what is already here (whole files, and
@@ -404,9 +654,9 @@ Loads the models now. `language` picks which listening model (see
 {"event":"partial","text":"Open the"}
 {"id":11,"method":"listen.stop"}
 {"event":"state","state":"thinking"}
-{"event":"heard","text":"Open the calendar.","speech_ms":1632,"language":"en"}
+{"event":"heard","text":"Open the calendar.","speech_ms":1632,"language":"en","ended":"key-up(224)","model":"parakeet-v3"}
 {"event":"state","state":"idle"}
-{"id":11,"result":{"text":"Open the calendar.","speech_ms":1632,"language":"en"}}
+{"id":11,"result":{"text":"Open the calendar.","speech_ms":1632,"language":"en","ended":"key-up(224)","model":"parakeet-v3"}}
 ```
 
 - `language`: what is spoken, as a BCP 47 tag (`"en"`, `"pt-BR"`); only its
@@ -416,11 +666,20 @@ Loads the models now. `language` picks which listening model (see
   `"silence"` (it ends by itself once the person has spoken and then been
   quiet for `quiet_ms`, 1200 unless given, 300 to 10000).
 - `partials`: `false` turns the `partial` events off.
+- `model`: `"parakeet"` (the default) or `"whisper"`, the model that hears
+  (Settings › Voice, "Recogniser"); Whisper only when its set is here, and
+  always for a language Parakeet lacks.
 
-`listen.stop` hears a last eighth of a second (the key comes up as the last
-word ends), then answers with the words. `text` is `""` when nothing was
-said: silence is never turned into words. `speech_ms` is how long the speech
-was once the silence was dropped. `language` is the language of the words
+A held key's listen keeps every sample between the key going down and
+coming up (the detector only says whether anyone spoke): a quiet voice
+that the detector hears late keeps its first syllable (decisions.md D199).
+A listen that ends by itself keeps only the speech, with 480 ms before
+each phrase. `listen.stop` hears at least 192 ms more (the key comes up as
+the last word ends), and goes on while the detector still hears the
+voice, up to 384 ms, then answers with the words. Each listen's end is
+written to the service's log: `listen ended reason=… heard_ms=… model=…`. `text` is `""` when nothing was
+said: silence is never turned into words. `speech_ms` is how long the sound
+the model heard was. `language` is the language of the words
 (`"en"`, `"es"`, `"fr"`, `"hi"`, `"it"`, `"pt"`), in the reply and in
 `heard`, when the words tell it: Parakeet picks the language it hears by
 itself and does not say which (its decoder gives words only), so the
@@ -513,8 +772,9 @@ sound at once and forgets what was queued; every utterance it ended gets a
 | --- | --- | --- |
 | `state` | `state` | The state changed (see "States"). |
 | `level` | `level`, 0 to 1 | About 31 times a second while listening: the microphone's loudness (RMS on a decibel scale, −60 dBFS is 0). |
+| `speech` | none | Once a listen, when the detector hears the person begin: a listen that ends by itself is never given up on after it. |
 | `partial` | `text` | While listening: all the words so far. Each replaces the one before; `heard` replaces the last. |
-| `heard` | `text`, `speech_ms`, `language?` | A listen ended (by `listen.stop`, by silence, by the microphone ending, or at five minutes). Not after `listen.cancel`. |
+| `heard` | `text`, `speech_ms`, `language?`, `ended`, `model` | A listen ended (by `listen.stop`, by silence, by the microphone ending, or at five minutes). Not after `listen.cancel`. `ended` says why (`key-up(224)`, `silence(1824)`, `max`, `closed`), `model` what heard it (`parakeet-v3`, `whisper-turbo`). |
 | `sentence` | `id`, `index`, `text`, `ms`, `words[]` (`text`, `start`, `end`), `voice`, `language` | A sentence's (or, for a long first one, each of its two pieces') first sound plays now. `ms` is how long it lasts; a word's `start` and `end` are milliseconds from now. `voice` says it, read as `language` (`"en-US"`, `"es-419"`). |
 | `spoken` | `id`, `reason` (`done`, `stopped`, `failed`), `error?` | An utterance ended. |
 | `fetch` | `set?`, `file?`, `received`, `bytes`, `done`, `error?` | A fetch's progress, about five times a second: `received` of `bytes` over every file asked for. `done: true` ends it; with `error`, it failed or was cancelled. |
@@ -707,6 +967,14 @@ Nothing else is ever written to disk: no sound, no words, no log of either.
 | `whisper` (1037 MB) | `turbo-tokens.txt` | 816 730 | `csukuangfj/sherpa-onnx-whisper-turbo` | MIT (OpenAI's weights) |
 | | `turbo-decoder.int8.onnx` | 361 080 764 | | |
 | | `turbo-encoder.int8.onnx` | 674 716 297 | | |
+| `rewrite` (542 MB) | `SpeakoFlow-Mini-0.8B-Q4_K_M.gguf` | 541 903 616 | `SpeakoFlow/speakoflow-mini` | Apache-2.0 (a fine-tune of Qwen3.5 0.8B, Apache-2.0) |
+| `rewrite-gemma` (3107 MB) | `gemma-4-E2B-it-Q4_K_M.gguf` | 3 106 738 272 | `unsloth/gemma-4-E2B-it-GGUF` | Apache-2.0 (Google DeepMind's Gemma 4) |
+
+The `rewrite` set is the model that corrects dictation, and `rewrite-gemma`
+the larger one the person may choose instead (decisions.md D200)
+(`docs/dictation-rewrite.md`). This service only fetches, verifies and removes
+it, as any other set (it is not `basic`): it is never loaded here. The shell
+starts llama.cpp's server on it.
 
 `crates/dashi-voice/src/models/manifest.rs` is the list: each file's address
 on Hugging Face names a commit, so it can't change under its SHA-256, which
