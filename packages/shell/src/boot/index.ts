@@ -4,6 +4,7 @@ export { appQuitting, appShortcut, startCatalog, startKeepingAwake, startPickerA
 export { hostAssistant } from "./assistant.ts";
 export { startBarHolds, startBars } from "./bars.tsx";
 export { startCapsule } from "./capsule.tsx";
+export { WARM_AFTER_LOGIN_MS, warmWhenWanted } from "./corrections.ts";
 export { startArranging, startDesktops, startOverview } from "./desktop.ts";
 export { startDictating } from "./dictation.ts";
 export { startKeys } from "./keys.ts";

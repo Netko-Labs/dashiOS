@@ -113,6 +113,7 @@ packages/shell/apps/notes/main.tsx	packages/shell/src/shared/files
 packages/shell/apps/notes/main.tsx	packages/shell/src/shared/fs
 packages/shell/apps/notes/main.tsx	packages/shell/src/shared/io
 packages/shell/apps/notes/main.tsx	packages/shell/src/shared/locale
+packages/shell/apps/notes/main.tsx	packages/shell/src/shared/markdown
 packages/shell/apps/notes/main.tsx	packages/shell/src/shared/metal
 packages/shell/apps/notes/main.tsx	packages/shell/src/shared/notes
 packages/shell/apps/portal/main.tsx	packages/shell/apps/kit
@@ -417,6 +418,7 @@ packages/shell/src/main.tsx	packages/shell/src/shared/io
 packages/shell/src/main.tsx	packages/shell/src/shared/links
 packages/shell/src/main.tsx	packages/shell/src/shared/locale
 packages/shell/src/main.tsx	packages/shell/src/shared/logind
+packages/shell/src/main.tsx	packages/shell/src/shared/markdown
 packages/shell/src/main.tsx	packages/shell/src/shared/metal
 packages/shell/src/main.tsx	packages/shell/src/shared/notes
 packages/shell/src/main.tsx	packages/shell/src/shared/pill

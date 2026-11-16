@@ -151,6 +151,43 @@ function RightEnd({ row, digit, quiet, m }: { row: Row; digit: number | undefine
   return null;
 }
 
+/** The selected row's 3 px bar at its left edge (CO-6), centred on a row's height (a question's first line). */
+function SelectionBar({ m }: { m: Measures }) {
+  const colors = useColors();
+  return (
+    <View
+      style={{
+        position: "absolute",
+        left: 0,
+        top: (m.row - BAR.height) / 2,
+        width: BAR.width,
+        height: BAR.height,
+        borderRadius: 1.5,
+        backgroundColor: colors.selectionBar,
+      }}
+    />
+  );
+}
+
+/** A row's name: one line, or a question's words wrapped. An extension's name may be long (a pull request's title): it gives way too, with its words after it. */
+function Title({ row, ink, m }: { row: Row; ink: string; m: Measures }) {
+  return (
+    <View style={row.long || row.question ? { flexShrink: 1, minWidth: 0 } : { flexShrink: 0 }}>
+      <Text
+        {...(row.question ? {} : { numberOfLines: 1 as const })}
+        style={{
+          fontSize: m.title,
+          color: ink,
+          ...(row.question ? { lineHeight: Math.round(m.title * 1.38) } : {}),
+          ...(row.strong ? { fontWeight: "semibold" } : {}),
+        }}
+      >
+        {row.title}
+      </Text>
+    </View>
+  );
+}
+
 export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digit, onStop, access }: ResultRowProps) {
   const colors = useColors();
   const m = useMeasures();
@@ -180,35 +217,10 @@ export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digi
         ...(selected ? { backgroundColor: colors.selectionWash } : {}),
       }}
     >
-      {selected && (
-        <View
-          style={{
-            position: "absolute",
-            left: 0,
-            top: (m.row - BAR.height) / 2,
-            width: BAR.width,
-            height: BAR.height,
-            borderRadius: 1.5,
-            backgroundColor: colors.selectionBar,
-          }}
-        />
-      )}
+      {selected && <SelectionBar m={m} />}
       <Icon icon={row.icon} m={m} {...(row.agent ? { agent: row.agent } : {})} />
       <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8 }}>
-        {/* An extension's name may be long (a pull request's title): it gives way too, with its words after it. */}
-        <View style={row.long || row.question ? { flexShrink: 1, minWidth: 0 } : { flexShrink: 0 }}>
-          <Text
-            {...(row.question ? {} : { numberOfLines: 1 as const })}
-            style={{
-              fontSize: m.title,
-              color: ink,
-              ...(row.question ? { lineHeight: Math.round(m.title * 1.38) } : {}),
-              ...(row.strong ? { fontWeight: "semibold" } : {}),
-            }}
-          >
-            {row.title}
-          </Text>
-        </View>
+        <Title row={row} ink={ink} m={m} />
         {row.chord !== undefined && <Shortcut keys={row.chord} color={ink} size={m.detail} />}
         {row.badge !== undefined && (
           <View

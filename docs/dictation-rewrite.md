@@ -274,7 +274,7 @@ another one (a checkout).
 - **Warm while in use.** The server starts (if it is not up), waits for the model, and has
   it read the fixed part of the prompt 15 s after login when Voice and tidying are on, as
   soon as they are turned on, and when the key goes down (`boot/corrections.ts`
-  `warmWhenWanted`; D360): about 2 s on the development laptop, which a cold first
+  `warmWhenWanted`; D366): about 2 s on the development laptop, which a cold first
   dictation could not wait for (pass 37: `why=deadline`). It is dropped after 10 minutes
   with no call, as before; the next key down loads it again. After that each dictation
   costs its own words only.

@@ -2,7 +2,7 @@
 // model only began to load at the key's press. It loads a little after login, and when Voice and tidying turn on.
 
 import { expect, test } from "bun:test";
-import { WARM_AFTER_LOGIN_MS, warmWhenWanted } from "../src/boot/corrections.ts";
+import { WARM_AFTER_LOGIN_MS, warmWhenWanted } from "../src/boot/index.ts";
 
 function rig(on: boolean) {
   const state = { on, warmed: 0 };
