@@ -1,4 +1,6 @@
 export { ImageCache, JsonCache } from "./cache.ts";
+export { Catalog, flathubEnabled } from "./catalog.ts";
+export type { CatalogData, CatalogEntry, Offer, SearchResult } from "./catalog-types.ts";
 export { plainFailure } from "./failure-words.ts";
 export type { FetchLike } from "./fetch.ts";
 export { getBytes, NetworkError } from "./fetch.ts";
@@ -14,6 +16,8 @@ export { displayUrl, httpsUrl } from "./parse-values.ts";
 export { cacheRoot, digest } from "./paths.ts";
 export type { RecommendedApp } from "./recommended.ts";
 export { RECOMMENDED_APPS, RECOMMENDED_DEFAULTS } from "./recommended.ts";
+export type { Repo, Source, SourceKind } from "./sources.ts";
+export { COPR_NOTE, sortSources, sourceRank } from "./sources.ts";
 export { standIn } from "./stand-in.ts";
 export { formatBytes, tidy } from "./text.ts";
 export type { AppDetails, AppSummary, FlatpakUpdate, InstalledApp, Page } from "./types.ts";
