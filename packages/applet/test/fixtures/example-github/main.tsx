@@ -21,7 +21,7 @@ export async function myPullRequests(token: string, orgs: string[]): Promise<Pul
         headers: { authorization: `Bearer ${token}`, accept: "application/vnd.github+json", "user-agent": "dashi-example" },
       });
       if (!response.ok) throw new Error(response.status === 401 ? "GitHub didn't take the token" : `GitHub said ${response.status}`);
-      const body: { items?: Array<Record<string, unknown>> } = await response.json();
+      const body = (await response.json()) as { items?: Array<Record<string, unknown>> };
       return (body.items ?? []).map((item) => ({
         number: Number(item.number),
         title: String(item.title),
