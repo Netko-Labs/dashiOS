@@ -48,6 +48,7 @@ export {
   USUAL_NAMES,
   type Waiting,
 } from "./assistant/index.ts";
+export { isModelChoices } from "./assistant/models.ts";
 export { Atspi } from "./atspi/client.ts";
 export { type A11yNode, documents, fieldAt, focusedField, hasState, limits, passwordFields, placeAgain, ROLE, STATE } from "./atspi/tree.ts";
 export type { Question } from "./confirm.ts";

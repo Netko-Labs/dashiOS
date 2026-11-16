@@ -79,23 +79,23 @@ test("❖Esc in the launcher stops the typed turn; the conversation stays open",
 
 test("a typed turn's critical question waits on the launcher's line; Return's yes answers it", async () => {
   const fake = fakeAssistant([{ calls: [{ name: "read_page" }] }, { say: "Done." }]);
-  let answered: boolean | null = null;
+  const answered: { value: boolean | null } = { value: null };
   fake.onCall = async () => {
     const gate = fake.assistant.policy("talk000001")?.assistant;
     const line = gate?.confirm?.({ summary: "force quit Helium", detail: "", action: "Force Quit", danger: true }, new AbortController().signal) ?? null;
     expect(line).not.toBeNull();
     expect(fake.assistant.transcript.getSnapshot().waiting).toMatchObject({ kind: "yes-no", text: "Force quit Helium?", yes: "Force Quit" });
     fake.assistant.reply({ text: "yes", by: "typing" });
-    answered = (await line) ?? null;
+    answered.value = (await line) ?? null;
   };
   fake.assistant.type("quit Helium, it's stuck");
-  await until(() => answered !== null);
-  expect(answered).toBe(true);
+  await until(() => answered.value !== null);
+  expect(answered.value).toBe(true);
 });
 
 test("a spoken turn's question is not the launcher's: it goes to the capsule and the sheets as before", async () => {
   const fake = fakeAssistant([{ calls: [{ name: "read_page" }] }, { say: "Done." }]);
-  let line: unknown = "unset";
+  let line: Promise<boolean> | null | "unset" = "unset";
   fake.onCall = () => {
     line = fake.assistant.policy("talk000001")?.assistant?.confirm?.({ summary: "x", detail: "", action: "Do it" }, new AbortController().signal) ?? null;
   };

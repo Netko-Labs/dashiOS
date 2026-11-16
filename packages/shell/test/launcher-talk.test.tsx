@@ -154,8 +154,8 @@ test("an empty ⇥ shows what can be asked: the person's recent asks, else a few
   expect(launcher.tree()).toContain(FIRST_TRIES[0] ?? "");
   await launcher.key("ArrowDown");
   await launcher.enter();
-  expect(fresh.typed).toEqual([FIRST_TRIES[1]]);
-  expect(tries(["turn on dark mode", "turn on dark mode", " "])).toEqual(["turn on dark mode"]);
+  expect(fresh.typed).toEqual([FIRST_TRIES[1] ?? ""]);
+  expect([...tries(["turn on dark mode", "turn on dark mode", " "])]).toEqual(["turn on dark mode"]);
 });
 
 test("a conversation started by voice shows its spoken turns as said", async () => {
