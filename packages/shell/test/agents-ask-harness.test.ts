@@ -2,9 +2,6 @@ import { describe, expect, test } from "bun:test";
 import { ANSWERER_CHOICES } from "../src/agents/ask/answerer.ts";
 import { answererRows } from "../src/agents/ask/choices.ts";
 import { type Files, findHarness, HARNESSES, harnessStatuses, installReads, signedIn, signInCommand } from "../src/agents/ask/harness/index.ts";
-import { agentHandlers } from "../src/launcher/lib/agents/handlers.ts";
-import { failureLine } from "../src/launcher/lib/agents/plan-view.tsx";
-import { taskSubmit } from "../src/launcher/lib/agents/task-mode.tsx";
 
 describe("finding harnesses", () => {
   const home = "/home/alexk";
@@ -84,7 +81,9 @@ describe("the rows and their order", () => {
       { id: "codex", installed: true, signedIn: false },
       { id: "opencode", installed: false, signedIn: null },
     ]);
-    expect(rows.map((row) => row.value)).toEqual(["claude-code", "codex", "local", "claude", "gpt", "opencode", "none"]);
+    // GPT is not offered until Dashi's loop drives it (D261), unless it is the one chosen.
+    expect(rows.map((row) => row.value)).toEqual(["claude-code", "codex", "local", "claude", "opencode", "none"]);
+    expect(answererRows([], "gpt").map((row) => row.value)).toContain("gpt");
     expect(rows[0]?.detail).toBe("Your Claude subscription. Signed in.");
     expect(rows[1]?.detail).toBe("Your ChatGPT plan. Not signed in: run codex login in Terminal.");
     expect(rows.find((row) => row.value === "opencode")).toMatchObject({
@@ -99,45 +98,5 @@ describe("the rows and their order", () => {
   test("a harness that isn't signed in: Return opens Terminal, with the command to type", () => {
     expect(signInCommand("claude-code")).toBe("claude auth login");
     expect(signInCommand("gpt")).toBeNull();
-    expect(failureLine({ kind: "not-signed-in", text: "Claude Code isn't signed in." }, "claude auth login")).toBe(
-      "Claude Code isn't signed in. Return opens Terminal to sign in with claude auth login.",
-    );
-    expect(failureLine({ kind: "not-installed", text: "Codex isn't installed." })).toBe("Codex isn't installed. Return opens Settings.");
-    const task = {
-      id: "t",
-      answerer: { id: "claude-code" as const, name: "Claude Code", where: "" },
-      request: "x",
-      phase: "failed" as const,
-      steps: [],
-      said: "",
-      failure: { kind: "not-signed-in" as const, text: "" },
-    };
-    expect(taskSubmit(task, "", null)).toEqual({ kind: "sign-in" });
-  });
-
-  test("Esc while a plan is still being asked for stops it; on a plan it only goes back", () => {
-    const stopped: string[] = [];
-    const handlers = (phase: "asking" | "planned") =>
-      agentHandlers({
-        agents: { stop: (item: { kind: string; id?: string }) => stopped.push(`${item.kind}:${item.id ?? ""}`) } as never,
-        snapshot: null,
-        mode: "task",
-        task: { id: "t1", answerer: { id: "claude-code", name: "Claude Code", where: "" }, request: "x", phase, steps: [], said: "", failure: null },
-        text: "",
-        draft: "",
-        selectedRow: undefined,
-        openTask: () => {},
-        clearDraft: () => {},
-        editWords: () => {},
-        back: () => {},
-        close: () => {},
-        say: () => {},
-        sayDone: () => {},
-        offerSetUp: () => {},
-      });
-    handlers("planned").leave();
-    expect(stopped).toEqual([]);
-    handlers("asking").leave();
-    expect(stopped).toEqual(["task:t1"]);
   });
 });

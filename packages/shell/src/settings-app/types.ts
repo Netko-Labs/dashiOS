@@ -5,6 +5,7 @@
  * store.ts.
  */
 
+import type { ModelChoices } from "../agents/assistant/index.ts";
 import type { AnswererChoice, HarnessId } from "../agents/index.ts";
 import type { RefreshChoice, VrrMode } from "../display-config/index.ts";
 import type { DockSettings } from "../dock/settings.ts";
@@ -114,6 +115,10 @@ export interface AgentsSettings {
   handOff?: HarnessId;
   /** "Don't ask for these again": a task starts without its grants card (agents/handoff/grants.ts). */
   skipGrants?: boolean;
+  /** The model Dashi's agent runs with, per answerer, when typed and when spoken (Settings › Agents; decisions.md D262). */
+  models?: ModelChoices;
+  /** Typed answers are said out loud too; off unless true. */
+  readTyped?: boolean;
 }
 
 /** `clipboard`: clipboard history and snippets (clipboard/; Settings › Keyboard). */

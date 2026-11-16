@@ -42,7 +42,7 @@ const personalHandlers = {
   reload_tab: desktop.tabsCall,
   go_back: desktop.tabsCall,
   go_forward: desktop.tabsCall,
-  wait_for: desktop.waitFor,
+  wait_for: (call, ctx) => (call.window !== null ? windowTreeCall(call, ctx) : desktop.waitFor(call, ctx)),
   attach_file: desktop.attachFile,
   click_in_element: desktop.clickInElement,
   screenshot_element: desktop.screenshotElement,

@@ -38,5 +38,5 @@ export { tabsCall } from "./tabs.ts";
 export { notifyPerson, type SpokenLines, Teller, type Told, tellPerson } from "./tell.ts";
 export { attachFile, listDownloads } from "./transfer.ts";
 export type { ClipboardCopy, Desktop } from "./types.ts";
-export { waitFor } from "./wait.ts";
+export { waitAnswer, waitFor } from "./wait.ts";
 export { joinWifi, listWifi } from "./wifi.ts";

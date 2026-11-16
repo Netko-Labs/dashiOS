@@ -11,7 +11,6 @@ import { lstat } from "node:fs/promises";
 import { placeForAgent } from "../../shared/files/index.ts";
 import { type RunContext, type ToolResult, text, toolError } from "../context.ts";
 import type { Call, WaitUntil } from "../tools/index.ts";
-import { type WindowUntil, waitOnWindow } from "../window-tree/index.ts";
 import { onPage } from "./browser.ts";
 import { currentPolicy } from "./files.ts";
 
@@ -129,27 +128,7 @@ async function waitForFile(call: WaitCall, path: string, ctx: RunContext): Promi
   return waitAnswer(call.until, met, Date.now() - started, { path: place.path });
 }
 
-/** A native window's tree (window-tree/wait.ts), with the page's words for the answer. */
-async function waitInWindow(call: WaitCall, window: number, ctx: RunContext): Promise<ToolResult> {
-  const u = call.until;
-  const asked: WindowUntil | null =
-    "text" in u
-      ? { text: u.text }
-      : "textGone" in u
-        ? { text: u.textGone, gone: true }
-        : "ref" in u
-          ? { ref: u.ref, state: u.state }
-          : "page" in u
-            ? { idle: true }
-            : null;
-  if (!asked) return toolError('With `window`, wait for `text`, `text_gone`, an `element` or `page: "quiet"`.');
-  ctx.status(`Waiting on w${window}`);
-  const waited = await waitOnWindow(window, asked, call.seconds * 1000, ctx);
-  return waitAnswer(call.until, waited.met, waited.ms, { window: `w${window}`, detail: waited.detail });
-}
-
 export async function waitFor(call: WaitCall, ctx: RunContext): Promise<ToolResult> {
-  if (call.window !== null) return waitInWindow(call, call.window, ctx);
   if ("window" in call.until) return waitForWindow(call, call.until.window, ctx);
   if ("file" in call.until) return waitForFile(call, call.until.file, ctx);
   return waitOnPage(call, ctx);

@@ -39,7 +39,7 @@ const RECORDS_SHOWN = 3;
 export const ONLY_YOU_PICK = "Only you can change what is picked. Press it yourself, here.";
 
 export const NEVER_WORDS =
-  "Payments, sign-ins, your clipboard history, force quit, the Trash, and installing or updating software always ask. Only you can turn this on, here; agents can't, and can't make it longer or wider.";
+  "Payments, sign-ins, force quit, and installing or updating software always ask. Only you can turn this on, here; agents can't, and can't make it longer or wider.";
 
 type Time = "custom" | `${(typeof ALONE_MINUTES)[number]}`;
 const TIMES: ReadonlyArray<{ value: Time; label: string }> = [

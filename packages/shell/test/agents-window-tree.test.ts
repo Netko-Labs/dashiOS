@@ -6,6 +6,8 @@
  */
 
 import { expect, test } from "bun:test";
+import { ASKS_EVERY_TIME } from "../src/actions/tools.ts";
+import { CRITICAL, CRITICAL_KINDS, criticalTool } from "../src/agents/consent.ts";
 import type { RunContext, ToolResult } from "../src/agents/context.ts";
 import { runCall } from "../src/agents/lib/run/run.ts";
 import { parseCall, scopeOf } from "../src/agents/tools/index.ts";
@@ -255,4 +257,25 @@ test("a line some views publish one word a node is one line; a row's words are n
     const text = renderTree(root as never, { window: 1, numberOf: (e, p, said) => numbers.number(1, e.key, p?.key ?? null, said) }).text;
     expect(text).toBe('Hiding is also here.\n[1] button "Notes 1:24 AM — Folder"');
   })();
+});
+
+test("one critical list: the tools' and the elements' kinds are the same, and ASKS_EVERY_TIME is drawn from it", () => {
+  expect(Object.keys(CRITICAL).sort()).toEqual([...CRITICAL_KINDS].sort());
+  expect([...ASKS_EVERY_TIME].sort()).toEqual(["force_quit_app", "request_software_install", "request_software_update"]);
+  expect(criticalTool("pay")).toBe("pays");
+  expect(criticalTool("trash_file")).toBeNull();
+  const plain = { inSheet: false, secretFilled: false };
+  const words: Record<string, string> = { pays: "Pay", secret: "Sign in", "loses work": "Empty Trash", system: "Install", sends: "Send" };
+  for (const kind of CRITICAL_KINDS) expect(criticalOf(button(words[kind] ?? ""), kind === "secret" ? { ...plain, secretFilled: true } : plain)).toBe(kind);
+});
+
+test("wait_for takes a window: its text, an element of read_window's, or quiet; a page's load or a file is not a window's", () => {
+  const quiet = parseCall({ name: "wait_for", arguments: { window: "w3", page: "quiet" } });
+  expect(quiet).toEqual({ name: "wait_for", until: { page: "quiet" }, seconds: 10, tab: null, window: 3 });
+  if ("name" in quiet) expect(scopeOf(quiet)).toBe("see");
+  expect(parseCall({ name: "wait_for", arguments: { window: "w3", element: 7, state: "enabled" } })).toMatchObject({
+    until: { ref: 7, state: "enabled" },
+    window: 3,
+  });
+  expect(parseCall({ name: "wait_for", arguments: { window: "w3", page: "loaded" } })).toHaveProperty("arguments");
 });

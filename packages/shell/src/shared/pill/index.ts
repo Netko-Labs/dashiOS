@@ -1,4 +1,3 @@
-export { BAR_DRAFT_CHARS, type BarCommand, type BarRowState } from "./bar.ts";
 export {
   DICTATION_LIMITS,
   type DictationCommand,

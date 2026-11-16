@@ -54,14 +54,8 @@ export type LauncherCommand =
   | { kind: "tab" }
   /** ← or →, while they are the launcher's (the windows' live pictures). */
   | { kind: "arrow"; to: "left" | "right" }
-  /** ⌥1–9: another harness for the words ("Hand it off"; launcher/lib/agents/handoff-rows.ts). */
-  | { kind: "option-pick"; digit: number }
-  /** ❖⌫ on a run's row: stop it. */
-  | { kind: "stop" }
-  /** ⌫ in an empty field with a context chip on: drop the chip. */
-  | { kind: "backspace" }
-  /** ❖, on the grants card: what it may use, in Settings. */
-  | { kind: "settings" };
+  /** ❖Esc in the conversation: the turn at work stops (lib/talk/). */
+  | { kind: "stop-work" };
 
 const COMMANDS: Readonly<Record<string, LauncherCommand>> = {
   "launcher-actions": { kind: "actions" },
@@ -75,37 +69,23 @@ const COMMANDS: Readonly<Record<string, LauncherCommand>> = {
   "launcher-tab": { kind: "tab" },
   "launcher-right": { kind: "arrow", to: "right" },
   "launcher-left": { kind: "arrow", to: "left" },
-  "launcher-stop": { kind: "stop" },
-  "launcher-backspace": { kind: "backspace" },
-  "launcher-settings": { kind: "settings" },
+  "launcher-stop-work": { kind: "stop-work" },
 };
 
-/** Keys the launcher takes only while they mean something there: elsewhere they are the field's (agents' rows, the grants card). */
+/** Keys the launcher takes only while they mean something there: elsewhere they are the session's. */
 export interface ExtraKeys {
-  /** ⌥1–9, while "Hand it off" lists more than one harness. */
-  option: boolean;
-  /** ❖⌫, while a run's row is selected. */
-  stop: boolean;
-  /** ⌫, while the field is empty and a context chip is on. */
-  backspace: boolean;
-  /** ❖,, on the grants card. */
-  settings: boolean;
+  /** ❖Esc, while the conversation shows a turn at work: it stops that turn, not every agent. */
+  stopWork: boolean;
 }
 
-export const NO_EXTRA_KEYS: ExtraKeys = { option: false, stop: false, backspace: false, settings: false };
+export const NO_EXTRA_KEYS: ExtraKeys = { stopWork: false };
 
 /** The rules for the extra keys wanted now. */
 export function extraRules(want: ExtraKeys): Rule[] {
-  return [
-    ...(want.option ? Array.from({ length: 9 }, (_, index) => ({ when: `alt+${index + 1}`, bind: `launcher-option-${index + 1}` })) : []),
-    ...(want.stop ? [{ when: "super+BackSpace", bind: "launcher-stop" }] : []),
-    ...(want.backspace ? [{ when: "BackSpace", bind: "launcher-backspace" }] : []),
-    ...(want.settings ? [{ when: "super+comma", bind: "launcher-settings" }] : []),
-  ];
+  return want.stopWork ? [{ when: "super+Escape", bind: "launcher-stop-work" }] : [];
 }
 
-const sameKeys = (a: ExtraKeys, b: ExtraKeys): boolean =>
-  a.option === b.option && a.stop === b.stop && a.backspace === b.backspace && a.settings === b.settings;
+const sameKeys = (a: ExtraKeys, b: ExtraKeys): boolean => a.stopWork === b.stopWork;
 
 /** ← and → while the pictures want them (pictures.ts `arrowsWanted`). */
 export const ARROW_RULES: Readonly<Record<ArrowsWanted, Rule[]>> = {
@@ -225,11 +205,6 @@ export class LauncherKeys {
     const pick = /^launcher-pick-([1-9])$/.exec(name);
     if (pick) {
       this.command({ kind: "pick", digit: Number(pick[1]) });
-      return true;
-    }
-    const option = /^launcher-option-([1-9])$/.exec(name);
-    if (option) {
-      this.command({ kind: "option-pick", digit: Number(option[1]) });
       return true;
     }
     const command = COMMANDS[name];

@@ -6,15 +6,17 @@
  */
 
 import type { Question } from "../../confirm.ts";
-import { choices, isScope, kept, label, type Scope } from "../../consent.ts";
+import { ALL_SCOPES, choices, isScope, kept, label, type Scope } from "../../consent.ts";
 import { type ToolResult, toolError } from "../../context.ts";
 import { LOCKED } from "../../lock.ts";
 import { type PersonAnswer, WAITING_STATUS, type Who } from "../../presence.ts";
 import type { SiteAnswer } from "../../sites.ts";
 import { type Call, scopeOf } from "../../tools/index.ts";
 import type * as mcp from "../mcp.ts";
-import { needsSpokenYes, SAID_NO, SPOKEN_YES_SECONDS, spokenYesWords, yesOrNo } from "./session-assistant.ts";
 import type { SessionContext, SessionTask } from "./session-types.ts";
+
+/** How a sheet names a program: the name it claims when it gives one, else its process's. */
+const sheetName = (who: Who): string => (who.remote ? "An agent on another machine" : (who.claims ?? who.name));
 
 /** What the scopes need of the connection they are for. */
 export interface ScopeHost {
@@ -45,8 +47,6 @@ export class Scopes {
   private sheet = false;
   /** Questions about single actions or sites on screen now (`confirm`, `askSite`). */
   private confirming = 0;
-  /** The assistant's calls waiting for a spoken yes, each given up on when the agent cancels it. */
-  private readonly saying = new Map<mcp.Id, AbortController>();
 
   constructor(
     granted: Set<Scope>,
@@ -107,8 +107,6 @@ export class Scopes {
     // Whether Work alone is on is no secret, and an agent left alone must be able to plan: it never asks.
     const asksAboutAlone = call.name === "get_work_alone";
     if (this.granted.has(scope) || handsOwnWindow || asksAboutAlone) {
-      // The assistant's destructive call waits for a spoken yes, unless Work alone covers it.
-      if (this.task?.policy.assistant && needsSpokenYes(call.name) && !this.worksAlone(call.name, scope)) return void this.spokenYes(id, call);
       this.host.run(id, call);
     } else if (this.worksAlone(call.name, scope)) {
       this.host.run(id, call, true);
@@ -144,15 +142,24 @@ export class Scopes {
     return this.granted.has(scope) || (!this.task?.policy.refused.includes(scope) && this.ctx.alone?.holds(scope) === true);
   }
 
-  /** Put up the sheet for what the waiting calls need. */
+  /**
+   * The one sheet a program sees (decisions.md D260): the first time it calls, "<it> wants to use this computer",
+   * every kind of tool at once, kept for the program on Always Allow. What is critical asks on its own sheet anyway.
+   */
   private async ask(): Promise<void> {
     if (this.sheet) return;
     if (this.ctx.lock.isLocked) return this.failWaiting();
-    const needs = new Set(this.waiting.map(({ call }) => scopeOf(call)).filter((s) => !this.granted.has(s) && !this.refused.has(s)));
-    if (needs.size === 0) return;
+    const wanted = this.waiting.some(({ call }) => !this.granted.has(scopeOf(call)) && !this.refused.has(scopeOf(call)));
+    if (!wanted) return;
+    const needs = new Set(ALL_SCOPES.filter((s) => !this.granted.has(s) && !this.refused.has(s)));
     this.sheet = true;
     this.host.setStatus(WAITING_STATUS);
-    const ask = { agent: this.host.id, who: this.host.who(), scopes: choices(needs, this.granted) };
+    const ask = {
+      agent: this.host.id,
+      who: this.host.who(),
+      scopes: choices(needs, this.granted),
+      title: `${sheetName(this.host.who())} wants to use this computer`,
+    };
     const controller = new AbortController();
     this.askAbort = controller;
     // The sheet's own clock (sheet-queue.ts) turns an unanswered one into "Don't Allow".
@@ -200,25 +207,8 @@ export class Scopes {
     for (const { id, call } of waiting) this.host.reply(id, call.name, toolError(LOCKED));
   }
 
-  /** "Close the Terminal window?": the assistant's destructive call runs on a yes, said or typed; anything else is a no. */
-  private async spokenYes(id: mcp.Id, call: Call): Promise<void> {
-    const controller = new AbortController();
-    this.saying.set(id, controller);
-    const words = await spokenYesWords(call, this.ctx.compositor);
-    const answer = await this.question(words, SPOKEN_YES_SECONDS, controller.signal);
-    if (!this.saying.delete(id) || this.host.closed() || controller.signal.aborted) return;
-    if ("text" in answer && yesOrNo(answer.text) === true) return this.host.run(id, call);
-    this.host.reply(id, call.name, toolError(SAID_NO));
-  }
-
   /** The agent gave up on request `id` while it waited: it is dropped, and the sheet comes down when nothing needs it. True when it was waiting. */
   drop(id: mcp.Id): boolean {
-    const saying = this.saying.get(id);
-    if (saying) {
-      this.saying.delete(id);
-      saying.abort();
-      return true;
-    }
     const before = this.waiting.length;
     this.waiting = this.waiting.filter((entry) => entry.id !== id);
     if (this.waiting.length === 0) this.askAbort?.abort();
@@ -228,16 +218,9 @@ export class Scopes {
   /** "<agent> wants to use <site>": the person's answer, or null when there was none (locked, the agent gone). */
   async askSite(site: string): Promise<SiteAnswer | null> {
     if (this.host.closed() || this.ctx.lock.isLocked) return null;
-    // Dashi's assistant uses the site and says so: the person is watching, and only they keep a site for good, in Settings.
-    const gate = this.task?.policy.assistant;
-    if (gate) {
-      gate.site(site);
-      return "once";
-    }
-    return this.whileConfirming(async () => {
-      const answer = await this.ctx.ui.allowSite({ agent: this.host.id, who: this.host.who(), site });
-      return this.host.closed() || this.ctx.lock.isLocked ? null : answer;
-    });
+    // No per-site asks (decisions.md D260): a site is used, the activity shows it, and Dashi's assistant says so in its step line.
+    this.task?.policy.assistant?.site(site);
+    return "once";
   }
 
   /**
@@ -249,7 +232,8 @@ export class Scopes {
   async confirm(question: Question, signal: AbortSignal): Promise<boolean> {
     if (this.host.closed() || this.ctx.lock.isLocked || signal.aborted) return false;
     return this.whileConfirming(async () => {
-      const yes = await this.ctx.ui.confirm({ agent: this.host.id, who: this.host.who(), ...question }, signal);
+      const line = this.task?.policy.assistant?.confirm?.(question, signal) ?? null;
+      const yes = line ? await line : await this.ctx.ui.confirm({ agent: this.host.id, who: this.host.who(), ...question }, signal);
       return yes && !this.host.closed() && !this.ctx.lock.isLocked && !signal.aborted;
     });
   }
@@ -259,7 +243,8 @@ export class Scopes {
     const none: PersonAnswer = { none: "no-answer" };
     if (this.host.closed() || this.ctx.lock.isLocked || signal.aborted) return none;
     return this.whileConfirming(async () => {
-      const answer = await this.ctx.ui.question({ agent: this.host.id, who: this.host.who(), question, seconds }, signal);
+      const line = this.task?.policy.assistant?.question?.(question, seconds, signal) ?? null;
+      const answer = line ? await line : await this.ctx.ui.question({ agent: this.host.id, who: this.host.who(), question, seconds }, signal);
       return this.host.closed() || this.ctx.lock.isLocked || signal.aborted ? none : answer;
     });
   }

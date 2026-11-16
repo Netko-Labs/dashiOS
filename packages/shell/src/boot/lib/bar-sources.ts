@@ -6,13 +6,14 @@
 
 import type { ReactElement } from "react";
 import { panelTasks, withPanelTasks } from "../../agents-panel/index.ts";
-import { type BarPill, frontWatch, type startBarPill } from "../../menubar/index.ts";
-import { openOverlay } from "../../overlay.tsx";
+import type { BarPill, MenuBarProps } from "../../menubar/index.ts";
+
+/** What a bar's status side is built from: its props, less the app's own. */
+type StatusSources = Omit<MenuBarProps, "apps" | "toplevels" | "appMenus" | "installed" | "voice">;
+
 import type { PillHub } from "../../shared/pill/index.ts";
 import type { ChipSource, VoiceParts } from "../../voice/index.ts";
 import type { BarsNeeds } from "../bars.tsx";
-
-type PillNeeds = Parameters<typeof startBarPill>[0];
 
 /** What the bars' chip reads of the voice: the one object for every bar. It stops showing once the capsule piece takes voice commands: the capsule says the same words. */
 const chipSources = new WeakMap<VoiceParts, ChipSource>();
@@ -65,30 +66,20 @@ export function agentsPanelWithTasks<Props>(
   );
 }
 
-/** What Dashi's mark, the jobs and the field need of the session (menubar/start-pill.tsx). */
-export function pillNeeds(needs: BarsNeeds, bar: PillNeeds["bar"]): PillNeeds {
-  const { late } = needs;
+/** What the bars are given of Dashi's own agent (menubar/pill.ts): its persona, and which of its connections are in front of the person. */
+export function barPill(late: BarsNeeds["late"]): BarPill {
   return {
     hub: late.get("pill"),
-    open: openOverlay,
-    tasks: () => late.peek("askAgents")?.tasks ?? null,
-    asker: () => {
-      const ask = late.peek("askAgents");
-      return ask ? { ready: () => ask.launcher.getSnapshot().answerer !== null, send: (text) => ask.tasks.ask(text), setUp: () => ask.launcher.setUp() } : null;
+    foreground: (task) => {
+      const assistant = late.peek("assistant");
+      return assistant !== undefined && assistant.talk.id === task && !assistant.background(task);
     },
-    agents: needs.agents.agentStore,
-    runs: needs.handoff.handoffShell.service.runs,
-    menus: needs.menus.controller,
-    primary: () => late.peek("menuBars")?.primaryName ?? needs.primaryScreen,
-    onLock: (listener) => needs.compositor?.on((event) => void (event.event === "lock" && event.locked && listener())) ?? (() => {}),
-    onFront: (listener) => needs.compositor?.on(frontWatch(listener)) ?? (() => {}),
-    showLauncher: () => showLauncher(late),
-    bar,
+    background: (task) => late.peek("assistant")?.background(task) === true,
   };
 }
 
 /** What a bar's status side is built from, on that screen. */
-export function barSources(needs: BarsNeeds, output: string | undefined, pill: BarPill): ReturnType<PillNeeds["bar"]> {
+export function barSources(needs: BarsNeeds, output: string | undefined, pill: BarPill): StatusSources {
   const { stores, programs, late } = needs;
   return {
     agents: needs.agents.agentStore,

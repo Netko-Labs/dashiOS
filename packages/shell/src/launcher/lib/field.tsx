@@ -9,7 +9,7 @@
 
 import { SEARCH, Shortcut, useColors } from "@dashi/ui";
 import { Svg, Text, TextInput, View } from "@mirinjs/metal";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { AppIcon } from "../../shared/apps/index.ts";
 import { noticeAccess } from "../access.ts";
 import type { RowIcon } from "../row-model.ts";
@@ -30,8 +30,10 @@ export interface FieldProps {
   hints: readonly Hint[];
   /** A word on what just happened; it takes the hints' place. */
   notice?: { text: string; ok: boolean } | null;
-  /** In place of the magnifier: an agent's plan wears the shiso spark (agents/plan-view.tsx). */
+  /** In place of the magnifier: the conversation wears the persona's spark (lib/talk/). */
   glyph?: { markup: string; color: string };
+  /** After the hints: the conversation's round Stop or Send (lib/talk/). */
+  trailing?: ReactNode;
   /** Props for the accessibility tree (access.ts): the field's role and name; none on a host without one. */
   access?: Record<string, unknown>;
   onChangeText(text: string): void;
@@ -94,7 +96,7 @@ function Hints({ hints }: { hints: readonly Hint[] }) {
   );
 }
 
-export function Field({ value, revision, placeholder, chip, hints, notice, glyph, access, onChangeText, onSubmit, onKey }: FieldProps) {
+export function Field({ value, revision, placeholder, chip, hints, notice, glyph, trailing, access, onChangeText, onSubmit, onKey }: FieldProps) {
   const colors = useColors();
   const m = useMeasures();
   const [room, setRoom] = useState<number | null>(null);
@@ -151,6 +153,7 @@ export function Field({ value, revision, placeholder, chip, hints, notice, glyph
       ) : (
         hints.length > 0 && <Hints hints={hints} />
       )}
+      {trailing}
     </View>
   );
 }

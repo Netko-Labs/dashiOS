@@ -60,6 +60,7 @@ export function claudeCommand(turn: HarnessTurn): HarnessCommand {
       "--no-chrome",
       "--effort",
       "low",
+      ...(turn.model ? ["--model", turn.model] : []),
       ...(turn.session ? ["--resume", turn.session] : []),
     ],
     stdin: turn.prompt,
@@ -128,6 +129,8 @@ export interface HarnessHost {
 }
 
 export interface HarnessAsk {
+  /** The model to run with; its own default when null or unset. */
+  model?: string | null;
   harness: HarnessId;
   /** The conversation's id: its sandbox's scope is `task-<id>`. */
   task: string;
@@ -207,7 +210,13 @@ export async function askHarness(host: HarnessHost, ask: HarnessAsk): Promise<Ha
   const { shell } = host;
   const bridgeEnv: Record<string, string> = host.direct ? { DASHI_MCP_SOCKET: taskSocket(runtime) } : {};
   const mcp = { command: shell.bun, args: host.direct ? [shell.bridge] : [shell.bridge, "--reconnect"], env: bridgeEnv };
-  const command = assistantCommand(ask.harness, { prompt: ask.prompt, system: ask.system, session: ask.session, mcp });
+  const command = assistantCommand(ask.harness, {
+    prompt: ask.prompt,
+    system: ask.system,
+    session: ask.session,
+    mcp,
+    ...(ask.model ? { model: ask.model } : {}),
+  });
   const profile = {
     socket: taskSocket(runtime),
     readOnly: [...where.readOnly, ...[shell.bun, shell.bridge].filter((path) => path.startsWith(`${home}/`))],

@@ -15,6 +15,7 @@ import type { LauncherKeyboard } from "../keys.ts";
 import type { LateParts } from "../parts.ts";
 import type { Late } from "../services.ts";
 import { onScreen } from "../session.ts";
+import { launcherDashi } from "./launcher-dashi.ts";
 
 /** The launcher's surface: centered at the top, over everything, with the keyboard. */
 export function surfaceOptions(output: string | undefined): Parameters<OpenOverlay>[0] {
@@ -53,17 +54,20 @@ export interface Opening {
   presented: Presented | null;
   scope: string | null;
   entries: readonly Entry[];
-  talkTo: string | null;
+  /** It opens on the conversation with Dashi's agent. */
+  conversation: boolean;
   close: () => void;
 }
 
 /** The launcher's view for one opening, with what the session has now (the registry, the clipboard, agents). */
-export function launcherElement(view: LauncherView, { presented, scope, entries, talkTo, close }: Opening) {
-  const { late, handoff, keyboard, launchFromLauncher, openWith } = view;
+export function launcherElement(view: LauncherView, { presented, scope, entries, conversation, close }: Opening) {
+  const { late, keyboard, launchFromLauncher, openWith } = view;
   const world = late.peek("launcherWorld");
   const host = late.peek("launcherHost");
   const clipboard = late.peek("clipboard");
   const ask = late.peek("askAgents");
+  const assistant = late.peek("assistant");
+  const persona = late.peek("pill")?.persona.getSnapshot();
   const heightMs = view.heightMs();
   return (
     <Launcher
@@ -97,9 +101,9 @@ export function launcherElement(view: LauncherView, { presented, scope, entries,
       languages={view.languages}
       typeAhead={keyboard.typeAhead}
       {...(ask ? { agents: ask.launcher } : {})}
-      handoff={handoff.handoffShell.launcher}
-      context={handoff.launcherContext}
-      talkTo={talkTo}
+      {...(assistant ? { dashi: launcherDashi(assistant, late) } : {})}
+      conversation={conversation}
+      {...(persona && persona.colour.toLowerCase() !== "#6e56cf" ? { colour: persona.colour } : {})}
       extensions={late.get("extensions").session}
       {...(heightMs ? { heightTransitionMs: heightMs } : {})}
       onPictures={view.pictures}

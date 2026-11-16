@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
+import { ASKS_EVERY_TIME } from "../src/actions/tools.ts";
 import type { RunContext } from "../src/agents/context.ts";
 import { tabsCall } from "../src/agents/desktop/tabs.ts";
 import { parseCall } from "../src/agents/index.ts";
-import { needsSpokenYes } from "../src/agents/lib/session/session-assistant.ts";
 
 const TABS = [
   { id: 1, windowId: 10, active: true, title: "Inbox", url: "https://mail.example/inbox", loading: false },
@@ -69,7 +69,8 @@ describe("the browser's tabs", () => {
     expect(theirs.asked).toEqual([]);
     expect(theirs.sent.at(-1)).toEqual(["close", { tab: 1 }]);
     expect(theirs.browser.tab).toBeNull();
-    expect(needsSpokenYes("close_tab")).toBe(false);
+    // Closing a tab never asks (D274, D260): it is not on the critical list.
+    expect(ASKS_EVERY_TIME.has("close_tab" as never)).toBe(false);
   });
 
   test("back, forward and reload say where the tab is, and that there was nowhere to go", async () => {

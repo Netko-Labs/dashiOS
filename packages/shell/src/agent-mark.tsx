@@ -1,8 +1,9 @@
 /**
  * Dashi's mark in the menu bar (docs/design.html, "The mark"; the design's
- * b-01, b-12, b-14): the spark on a small disc, always there, leading the
- * status items so the jobs can sit against it (menubar/lib/job-capsule.tsx).
- * A click turns the bar's row into the field (menubar/field.ts). While
+ * b-01, b-12, b-14): the spark on a small disc, in the bar only while
+ * something acts that the person is not already watching (decisions.md
+ * D261): an agent from outside, a run, Dashi kept working on its own. A
+ * click opens the agents' panel. While
  * something waits on the person it turns amber with an ink line and counts
  * them; the red dot shows while an agent sees or records the screen or uses
  * its own pointer. It is the one sign of the agents connected from outside,
@@ -102,13 +103,30 @@ function Outside({ sessions, harness, ink }: { sessions: number; harness: string
   );
 }
 
+/** Dashi's spark, and "Working" beside it while something works on its own. */
+function Working({ ink, glyph, working }: { ink: string; glyph: string; working: boolean }) {
+  const colors = useColors();
+  return (
+    <>
+      <Spark ink={ink} glyph={glyph} />
+      {working && (
+        <View testID="agent-mark-working">
+          <Text style={{ fontSize: 11.5, fontWeight: "semibold", color: colors.agentInk }}>Working</Text>
+        </View>
+      )}
+    </>
+  );
+}
+
 export interface AgentMarkProps {
   /** How many things wait on the person: the mark turns amber and counts them. */
   need: number;
   /** An agent sees or records the screen, or uses its own pointer: the red dot. */
   watching: boolean;
-  /** The bar's row is the field, opened from it: drawn pressed. */
+  /** Drawn pressed (its panel is open). */
   open: boolean;
+  /** Something works on its own (a run, Dashi kept working): "Working" beside the mark, with its ring. */
+  working?: boolean;
   /** Dashi's colour (the persona's); the agents' purple unless set. */
   colour?: string;
   /** Dashi's glyph (the persona's mark, as SVG); the spark unless set. */
@@ -130,7 +148,7 @@ export interface AgentMarkProps {
 }
 
 export function AgentMark(props: AgentMarkProps) {
-  const { need, watching, open, colour, glyph = SPARK, label, tip, agents, onAgents, onPress, onTip, accessible = false } = props;
+  const { need, watching, open, working = false, colour, glyph = SPARK, label, tip, agents, onAgents, onPress, onTip, accessible = false } = props;
   const colors = useColors();
   const laid = useRef<Bounds | null>(null);
   // A press or the mark going takes its tooltip down (the latest `onTip`: the bar passes a new one each render).
@@ -180,7 +198,7 @@ export function AgentMark(props: AgentMarkProps) {
         gap: 5,
         height: MARK.height,
         paddingLeft: asking ? 3 : MARK.padding,
-        paddingRight: asking || (outside && outside.sessions > 1) ? 8 : MARK.padding,
+        paddingRight: asking || working || (outside && outside.sessions > 1) ? 8 : MARK.padding,
         borderRadius: MARK.height / 2,
         position: "relative",
         backgroundColor: asking ? NEED.fill : open ? ink : colors.agentWash,
@@ -203,7 +221,7 @@ export function AgentMark(props: AgentMarkProps) {
           </View>
         </>
       ) : (
-        <Spark ink={ink} glyph={glyph} />
+        <Working ink={ink} glyph={glyph} working={working} />
       )}
       {watching && <RedDot />}
     </View>

@@ -92,6 +92,6 @@ export const waitTools: readonly ToolDef[] = [
         return fail('With `window`, wait for `text`, `text_gone`, an `element` or `page: "quiet"`.');
       return { name: "wait_for", until, seconds: args.timeout ?? WAIT_DEFAULT_S, tab: args.tab ?? null, window: args.window ?? null };
     },
-    scopeFor: (call) => (call.name !== "wait_for" ? "web" : call.window !== null ? "see" : waitScope(call.until)),
+    scopeFor: (call) => (call.name !== "wait_for" || !("until" in call) ? "web" : call.window ? "see" : waitScope(call.until)),
   }),
 ];

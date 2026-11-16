@@ -6,16 +6,15 @@
  * Types only: nothing here loads at start.
  */
 
-import type { TaskContext } from "../agents/index.ts";
 import type { Entry } from "../shared/app-entries/index.ts";
 import type { ExtensionSession } from "./extension-state.ts";
-import type { LauncherHost, LauncherPrefsStore, LauncherRanking, LauncherWorldStore, Presented, Store } from "./host.ts";
+import type { LauncherHost, LauncherPrefsStore, LauncherRanking, LauncherWorldStore, Presented } from "./host.ts";
 import type { ExtraKeys, LauncherCommand } from "./keys.ts";
 import type { Move } from "./lib/selection.ts";
 import type { TypeAheadSource } from "./lib/use-type-ahead.ts";
 import type { ArrowsWanted, PictureRect } from "./pictures.ts";
 import type { FileRow } from "./row-model.ts";
-import type { LauncherAgents, LauncherHandoff, LauncherScope } from "./types.ts";
+import type { LauncherAgents, LauncherDashi, LauncherScope } from "./types.ts";
 
 /** Files for the launcher: whether it can look now (the placeholder says), and the looking; null when it couldn't. */
 export interface LauncherFiles {
@@ -75,17 +74,16 @@ export interface LauncherReach {
 
 /** Agents in the launcher. */
 export interface LauncherAgentProps {
-  /** Agents: Ask, the plan, Now, history (launcher/lib/agents/); without it the launcher knows none. */
+  /** Agents: Now, history, and who answers (launcher/lib/agents/); without it the launcher knows none. */
   agents?: LauncherAgents;
-  /** Agents from the launcher: "Hand it off", the grants card, the runs (launcher/lib/agents/handoff-rows.ts). */
-  handoff?: LauncherHandoff;
-  /** The window in front when the launcher opened, and what was selected: the context chips (filled in as it opens). */
-  context?: Store<TaskContext>;
-  /** Open talking to this run (a done notification's Follow up). */
-  talkTo?: string | null;
+  /** Dashi's agent: Ask Dashi, and the conversation's view (launcher/lib/talk/). */
+  dashi?: LauncherDashi;
+  /** Open on the conversation (a notification's Show, ⇥ on an empty field does it too). */
+  conversation?: boolean;
+  /** The persona's colour, for its mark at the top of Dashi's turns; the agents' purple unless set. */
+  colour?: string;
 }
 
-/** How this opening looks and hears keys. */
 export interface LauncherOpening {
   keys?: LauncherKeySource;
   /** A link's action, waiting for Return. */

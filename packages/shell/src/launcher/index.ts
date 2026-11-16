@@ -17,6 +17,6 @@ export { FILE_ROWS, type Section } from "./sections.ts";
 export { shellLauncherHost } from "./shell-host.ts";
 export { logTiming, markOpen, sinceOpen } from "./timing.ts";
 export { TYPE_BINDING, TypeAhead, typedFrom, withTypeAheadOnTap, withTyping } from "./type-ahead.ts";
-export type { HandoffSnapshot, LauncherAgents, LauncherAgentsSnapshot, LauncherHandoff, LauncherScope, ScopeResult, SlowRow } from "./types.ts";
+export type { HandoffSnapshot, LauncherAgents, LauncherAgentsSnapshot, LauncherDashi, LauncherHandoff, LauncherScope, ScopeResult, SlowRow } from "./types.ts";
 export { KEYS, type Verb } from "./verbs.ts";
 export { desktopWord, LauncherWorld } from "./world.ts";

@@ -40,6 +40,8 @@ export interface HarnessTurn {
   system: string;
   /** The harness's own session to continue, from its last turn; null on the first. */
   session: string | null;
+  /** The model to run with (`--model`), as Settings › Agents names it; its own default when unset. */
+  model?: string;
   /** Dashi's plan-mode server, as a stdio MCP server the harness starts: the bridge and its socket. */
   mcp: { command: string; args: readonly string[]; env: Readonly<Record<string, string>> };
 }

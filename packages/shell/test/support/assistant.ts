@@ -39,12 +39,15 @@ export interface FakeAssistant {
   assistant: Assistant;
   timers: ReturnType<typeof handTimers>;
   /** What the model was sent, a request each: its messages. */
-  sent: Array<{ messages: Array<{ role: string; content: string }>; tools: string[] }>;
+  sent: Array<{ messages: Array<{ role: string; content: string }>; tools: string[]; model?: string }>;
   /** The calls the server carried out, in order. */
   ran: string[];
   /** The model's replies still to give. */
   script: Reply[];
-  state: { now: number; locked: boolean; answerer: string | undefined; askEveryStep: boolean; allow: "always" | "once" | "deny" | null };
+  state: { now: number; locked: boolean; answerer: string | undefined; models?: Record<string, { typed?: string; spoken?: string }>; readTyped?: boolean };
+  /** Notifications of turns kept working, and typed answers said out loud. */
+  done: Array<{ title: string; body: string }>;
+  spoken: string[];
   said: string[];
   steps: string[];
   log: string[];
@@ -63,7 +66,9 @@ export function fakeAssistant(script: Reply[], over: Partial<AssistantOptions> =
     sent: [],
     ran: [],
     script,
-    state: { now: 1_000_000, locked: false, answerer: "local", askEveryStep: false, allow: null },
+    state: { now: 1_000_000, locked: false, answerer: "local" },
+    done: [],
+    spoken: [],
     said: [],
     steps: [],
     log: [],
@@ -75,7 +80,7 @@ export function fakeAssistant(script: Reply[], over: Partial<AssistantOptions> =
   const fetching = async (url: string, init: RequestInit): Promise<Response> => {
     if (url.endsWith("/api/tags")) return Response.json({ models: [{ name: "stub:1" }] });
     const body = JSON.parse(String(init.body));
-    fake.sent.push({ messages: body.messages, tools: body.tools.map((tool: { function: { name: string } }) => tool.function.name) });
+    fake.sent.push({ messages: body.messages, tools: body.tools.map((tool: { function: { name: string } }) => tool.function.name), model: body.model });
     const reply = fake.script.shift() ?? { say: "Nothing more." };
     const lines = [
       ...(reply.say ? (reply.say.match(/\S+\s*/g)?.map((word) => ({ message: { role: "assistant", content: word }, done: false })) ?? []) : []),
@@ -114,9 +119,14 @@ export function fakeAssistant(script: Reply[], over: Partial<AssistantOptions> =
     close() {},
   });
   const assistant: Assistant = startAssistant({
-    settings: () => ({ agents: { answerer: fake.state.answerer as never }, voice: { askEveryStep: fake.state.askEveryStep } }),
+    settings: () => ({
+      agents: {
+        answerer: fake.state.answerer as never,
+        ...(fake.state.models ? { models: fake.state.models } : {}),
+        ...(fake.state.readTyped ? { readTyped: true } : {}),
+      },
+    }),
     agents: () => ({ connect, stopTask: () => {}, grants: { get: () => new Set(), set: () => {} } as never }),
-    ui: () => (fake.state.allow === null ? null : { ask: async (ask) => ({ allow: fake.state.allow ?? "deny", scopes: ask.scopes.map((scope) => scope.id) }) }),
     planner: { ask: async (words) => ({ say: `planned: ${words}` }) },
     keys: { anthropic: async () => null, openai: async () => null, place: async () => "none" } as never,
     harness: { env: {}, shell: { bun: "bun", bridge: "bridge", dashiAgent: "agent" }, files: { exists: () => false } as never },
@@ -146,6 +156,8 @@ export function fakeAssistant(script: Reply[], over: Partial<AssistantOptions> =
     now: () => fake.state.now,
     newId: () => "talk000001",
     log: (line) => fake.log.push(line),
+    done: (title, body) => fake.done.push({ title, body }),
+    speak: (text) => fake.spoken.push(text),
     ...over,
   });
   const ask = (words: string, signal: AbortSignal = new AbortController().signal) =>

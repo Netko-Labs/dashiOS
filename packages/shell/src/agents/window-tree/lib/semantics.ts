@@ -7,6 +7,7 @@
  * button's role and words, in English and Spanish.
  */
 
+import { CRITICAL_KINDS, type Critical } from "../../consent.ts";
 import type { Element } from "../types.ts";
 import { FIELDS, has, R, S } from "./roles.ts";
 
@@ -26,10 +27,10 @@ export function isSecret(element: Pick<Element, "role" | "name" | "description" 
  * What pressing an element would do that the owner's consent rule calls
  * critical (briefs/consent-critical-only.md): pay, sign in with a saved
  * secret, lose work for good, change the system, or send something to
- * someone as the person. These are flags; whether and how to ask is the
- * consent rule's (`TreesRun.yes`).
+ * someone as the person: the kinds of the one critical list (agents/
+ * consent.ts `CRITICAL`, D260). These are flags; asking is the consent
+ * rule's (`TreesRun.yes` → `Scopes.criticalYes`, its sheet or launcher line).
  */
-export type Critical = "pays" | "secret" | "loses work" | "system" | "sends";
 
 /** What around an element decides it: inside a sheet or dialog, and whether a password field near it is filled. */
 export interface Hints {
@@ -63,7 +64,7 @@ const COMMAND_CHARS = 40;
 /** Whether pressing it is critical, and why; null when it just runs. Only what can be pressed is asked about. */
 export function criticalOf(element: Element, hints: Hints): Critical | null {
   const said = element.attributes.critical ?? element.attributes["dashi-critical"];
-  const told = WORDS.find(([kind]) => kind === said)?.[0];
+  const told = CRITICAL_KINDS.find((kind) => kind === said);
   if (told) return told;
   if (element.attributes.destructive === "true") return "loses work";
   const name = element.name.trim();

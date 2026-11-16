@@ -23,8 +23,6 @@ export interface PerformDeps {
   enterScope(next: LauncherScope | null): void;
   scopeDone(result: ScopeResult, stay: boolean): void;
   backToSearch(): void;
-  /** Agents from the launcher's own acts; false for the rest. */
-  handoffAct(act: AgentAct): boolean;
   agentAct(act: AgentAct): void;
 }
 
@@ -143,7 +141,6 @@ function performInPlace(effect: Of<"copy" | "type" | "search-files" | "find-soft
       s.setHeld(null);
       return;
     case "agent":
-      if (d.handoffAct(effect.act)) return;
       return d.agentAct(effect.act);
   }
 }

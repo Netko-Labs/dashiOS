@@ -83,7 +83,7 @@ export const fileTools: readonly ToolDef[] = [
     name: "trash_file",
     title: "Move a file or folder to the Trash",
     description:
-      "Move one file or folder (with everything in it) to the Trash, where the person can put it back. The person is asked on screen every time, whatever they have allowed before; nothing is deleted for good. " +
+      "Move one file or folder (with everything in it) to the Trash, where the person can put it back. It runs without asking (the Trash is the undo): tell the person what you moved. Nothing is deleted for good. " +
       "The home folder, the standard folders (Documents, Downloads, and so on), and system folders can't be trashed. A symbolic link is trashed as the link.",
     scope: "files",
     readOnly: false,

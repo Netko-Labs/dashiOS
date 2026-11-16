@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Outcome } from "../../actions/index.ts";
-import { NO_CONTEXT, type TaskContext } from "../../agents/index.ts";
+import type { TranscriptView } from "../../agents/index.ts";
 import type { Entry } from "../../shared/app-entries/index.ts";
 import { useClockPrefs } from "../../shared/time/index.ts";
 import { BUDGET } from "../budget.ts";
@@ -17,12 +17,10 @@ import type { LauncherAgentProps, LauncherOpening, LauncherProps, LauncherSource
 import { type FileRow, fileNameMatches, type Row } from "../row-model.ts";
 import { FILE_ROWS, filesStateFor, type Section } from "../sections.ts";
 import { logTiming, timingNow } from "../timing.ts";
-import type { HandoffSnapshot, LauncherAgentsSnapshot, LauncherScope } from "../types.ts";
+import type { LauncherAgentsSnapshot, LauncherScope } from "../types.ts";
 import { type Verb, verbsFor } from "../verbs.ts";
 import type { WorldSnapshot } from "../world.ts";
 import { firstChoice, withAgents } from "./agents/agent-rows.ts";
-import { showsContext, withHandoff } from "./agents/handoff-rows.ts";
-import { type ChipsOn, chipsHeight } from "./agents/handoff-views.tsx";
 import { type Extensions, useExtensions } from "./extensions.ts";
 import { fitToRoom } from "./fit.ts";
 import { launcherIndex } from "./items.ts";
@@ -47,8 +45,8 @@ const NO_PREFS: LauncherPrefsSnapshot = { aliases: new Map(), aliasOf: () => und
 const noStore = { subscribe: () => () => {}, getSnapshot: () => NO_WORLD };
 const noPrefs = { subscribe: () => () => {}, getSnapshot: () => NO_PREFS };
 const noAgents = { subscribe: () => () => {}, getSnapshot: (): LauncherAgentsSnapshot | null => null };
-const noHandoff = { subscribe: () => () => {}, getSnapshot: (): HandoffSnapshot | null => null };
-const noContext = { subscribe: () => () => {}, getSnapshot: (): TaskContext => NO_CONTEXT };
+const NO_TALK: TranscriptView = { conversation: null, turns: [], working: false, background: false, waiting: null };
+const noTalk = { subscribe: () => () => {}, getSnapshot: (): TranscriptView => NO_TALK };
 
 /** The scope the launcher opens in, if it was opened for one. */
 const scopeNamed = (scopes: readonly LauncherScope[] | undefined, id: string | null | undefined) =>
@@ -71,13 +69,10 @@ export function useLauncherState(props: LauncherSources & LauncherAgentProps & L
   const [lastFileCount, setLastFileCount] = useState(FILE_ROWS);
   const [copied, setCopied] = useState<{ query: string; ok: boolean } | null>(null);
   const [failed, setFailed] = useState<Entry | null>(null);
-  const handoff = useSyncExternalStore(props.handoff?.subscribe ?? noHandoff.subscribe, props.handoff?.getSnapshot ?? noHandoff.getSnapshot);
-  const context = useSyncExternalStore(props.context?.subscribe ?? noContext.subscribe, props.context?.getSnapshot ?? noContext.getSnapshot);
-  // The context chips: the window in front is on until dropped; the selection only when chosen. Once shown they stay.
-  const [chipsOn, setChipsOn] = useState<ChipsOn>({ window: true, selection: false });
-  const [chipsShown, setChipsShown] = useState(false);
-  const [grantsRow, setGrantsRow] = useState<0 | 1>(0);
-  const [mode, setMode] = useState<Mode>(() => initialMode(props.presented, props.talkTo));
+  // The conversation with Dashi's agent, spoken and typed turns alike (lib/talk/).
+  const talk = useSyncExternalStore(props.dashi?.subscribe ?? noTalk.subscribe, props.dashi?.getSnapshot ?? noTalk.getSnapshot);
+  const [tryAt, setTryAt] = useState(0);
+  const [mode, setMode] = useState<Mode>(() => initialMode(props.presented, props.conversation));
   const [filter, setFilter] = useState("");
   const [heldVerb, setHeldVerb] = useState<string | null>(null);
   const [asking, setAsking] = useState<string | null>(null);
@@ -93,9 +88,9 @@ export function useLauncherState(props: LauncherSources & LauncherAgentProps & L
   useSyncExternalStore(scope?.subscribe ?? noStore.subscribe, scope?.getSnapshot ?? noStore.getSnapshot);
   const verbOffset = useRef(0);
   return {
-    ...{ world, prefs, agents, handoff, context, tabbed, setTabbed, query, setQuery, held, setHeld, allApps, setAllApps, found, setFound },
-    ...{ filesOff, setFilesOff, lastFileCount, setLastFileCount, copied, setCopied, failed, setFailed, chipsOn, setChipsOn },
-    ...{ chipsShown, setChipsShown, grantsRow, setGrantsRow, mode, setMode, filter, setFilter, heldVerb, setHeldVerb },
+    ...{ world, prefs, agents, talk, tryAt, setTryAt, tabbed, setTabbed, query, setQuery, held, setHeld, allApps, setAllApps, found, setFound },
+    ...{ filesOff, setFilesOff, lastFileCount, setLastFileCount, copied, setCopied, failed, setFailed },
+    ...{ mode, setMode, filter, setFilter, heldVerb, setHeldVerb },
     ...{ asking, setAsking, digits, setDigits, notice, setNotice, offset, wheelRest, scoped, setScoped, scope, verbOffset },
   };
 }
@@ -172,12 +167,9 @@ export function useSearch(props: LauncherProps, s: LauncherState, m: Measures): 
     viewMeasures,
   );
   const searched = foundSections({ props, s, m, clock, files: filesState, index });
-  const { assembled, inOutside, contextShown } = assemble(props, s, ext, searched, text);
-  useEffect(() => {
-    if (contextShown && !s.chipsShown) s.setChipsShown(true);
-  }, [contextShown, s.chipsShown, s.setChipsShown]);
-  // Whatever added rows (providers, agents), the list fits the panel at the text size (launcher/lib/fit.ts), under the chips.
-  const sections = fitToRoom(assembled, { height: m.room - (contextShown ? chipsHeight(m.textSize) : 0), row: m.row, head: m.head });
+  const { assembled, inOutside } = assemble(props, s, ext, searched);
+  // Whatever added rows (providers, agents), the list fits the panel at the text size (launcher/lib/fit.ts).
+  const sections = fitToRoom(assembled, { height: m.room, row: m.row, head: m.head });
   const verbsOf = (row: Row): Verb[] => (scope ? scope.verbs(row, text) : verbsFor(row, ctx));
   if (working !== null) logTiming("rows worked out", performance.now() - working, BUDGET.instantMs);
   const typedAt = useKeystrokeTiming(query);
@@ -186,7 +178,6 @@ export function useSearch(props: LauncherProps, s: LauncherState, m: Measures): 
   // With nothing held the first row, but never Ask: it is chosen, not given.
   const selected = held !== null && rowIds.includes(held) ? held : firstChoice(rowIds);
   const selectedRow = rows.find((row) => row.id === selected);
-  const task = mode.kind === "task" ? s.agents?.tasks.find((each) => each.id === mode.id) : undefined;
   const pictures = useRowPictures(props, keys, selectedRow, world, mode.kind === "search" && !scope && !inOutside);
   const say = (outcome: Outcome) => s.setNotice(outcome.ok ? { text: outcome.text, ok: true } : { text: outcome.error, ok: false });
   const sayDone = (words: string, ok = true) => s.setNotice({ text: words, ok });
@@ -207,43 +198,34 @@ export function useSearch(props: LauncherProps, s: LauncherState, m: Measures): 
     s.setFailed(null);
     s.setNotice(null);
   };
-  return { text, ctx, ext, inOutside, contextShown, sections, rows, selected, selectedRow, task, pictures, verbsOf, restart, ran, say, sayDone, finish };
+  return { text, ctx, ext, inOutside, sections, rows, selected, selectedRow, pictures, verbsOf, restart, ran, say, sayDone, finish };
 }
 
 /**
  * From outside Dashi: a command's answer on top and providers' rows below the rest; in a command's own
  * scope (a pick, a view, its words) only its rows (launcher/lib/extensions.ts). A scope has its own rows only,
  * and so does a command from outside. Otherwise agents' rows go around the rest, never between them: Now on
- * top of an empty field, Ask last (launcher/lib/agents/agent-rows.ts).
+ * top of an empty field, Ask Dashi last (launcher/lib/agents/agent-rows.ts).
  */
-function assemble(props: LauncherProps, s: LauncherState, ext: Extensions, searched: Section[], text: string) {
-  const { query, scope, allApps, handoff, agents, mode, context } = s;
+function assemble(props: LauncherProps, s: LauncherState, ext: Extensions, searched: Section[]) {
+  const { query, scope, allApps, agents } = s;
   const outside = ext.sections(searched);
   const inOutside = ext.chip !== undefined;
-  const isTabbed = s.tabbed !== null && s.tabbed === text;
   const assembled = scope
     ? scope.sections(query)
     : inOutside
       ? outside
-      : withHandoff(
-          withAgents(outside, {
-            query,
-            allApps,
-            snapshot: agents,
-            tabbed: isTabbed,
-            ...(props.agents ? { history: props.agents.history } : {}),
-            now: Math.floor(Date.now() / 1000),
-          }),
-          { query, allApps, snapshot: handoff, tabbed: isTabbed },
-        );
-  // The context chips show once the words read as a request, and stay for this opening (⌫ in an empty field drops one).
-  const contextShown =
-    mode.kind === "search" &&
-    !scope &&
-    !inOutside &&
-    (context.window !== null || context.selection !== null) &&
-    (s.chipsShown || showsContext(text, handoff, Boolean(agents?.answerer)));
-  return { assembled, inOutside, contextShown };
+      : withAgents(outside, {
+          query,
+          allApps,
+          snapshot: agents,
+          tabbed: s.tabbed !== null && s.tabbed === query.trim(),
+          ...(props.agents ? { history: props.agents.history } : {}),
+          now: Math.floor(Date.now() / 1000),
+          model: props.dashi?.model() ?? null,
+          ...(props.dashi ? { name: props.dashi.name() } : {}),
+        });
+  return { assembled, inOutside };
 }
 
 /** Keystroke → its rows committed (and so sent to the host), with DASHI_LAUNCHER_TIMING=1 (launcher/timing.ts). */

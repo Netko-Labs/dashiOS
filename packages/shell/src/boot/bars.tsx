@@ -8,7 +8,7 @@ import { joinShellMenus } from "../applets/index.ts";
 import { appFor } from "../apps.ts";
 import type { Compositor } from "../compositor/index.ts";
 import { AnimationTargets, dockScreen, startDock, TileStore } from "../dock/index.ts";
-import { type BarPill, barHold, MenuBar, MenuBars, startBarPill, startBarTips } from "../menubar/index.ts";
+import { type BarPill, barHold, MenuBar, MenuBars, startBarTips } from "../menubar/index.ts";
 import type { Menus } from "../menus/index.ts";
 import type { NotifyInput } from "../notifications/index.ts";
 import { openOverlay } from "../overlay.tsx";
@@ -20,7 +20,7 @@ import { startXwaylandScaling } from "../xwayland-scale.ts";
 import type { AgentBasics, Handoff } from "./agents.ts";
 import type { Catalog, KeepingAwake, Programs } from "./apps.ts";
 import type { Arranging } from "./desktop.ts";
-import { barSources, chipSource, pillNeeds } from "./lib/bar-sources.ts";
+import { barPill, barSources, chipSource } from "./lib/bar-sources.ts";
 import type { Look } from "./look.ts";
 import type { BarMenus } from "./menus.tsx";
 import type { Notices } from "./notices.ts";
@@ -132,8 +132,8 @@ export interface BarsNeeds {
  */
 export function startBars(needs: BarsNeeds): MenuBars {
   const { compositor, screens, stores, catalog, services, late } = needs;
-  const { pill, stop: stopPill } = startBarPill(pillNeeds(needs, (output) => barSources(needs, output, pill)));
-  services.add("bar pill", stopPill);
+  // Nothing of Dashi's agent in the bar at rest (decisions.md D261): its persona for the one indicator, and which of its turns are watched elsewhere.
+  const pill: BarPill = barPill(late);
   const dockTiles = new TileStore();
   const dockRuntime = startDock({
     tiles: dockTiles,

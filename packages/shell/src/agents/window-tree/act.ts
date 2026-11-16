@@ -10,6 +10,7 @@
  */
 
 import type { PageChanges } from "../../browser/index.ts";
+import { CRITICAL_KINDS, type Critical } from "../consent.ts";
 import type { RunContext, ToolResult } from "../context.ts";
 import { text, toolError } from "../context.ts";
 import { changeWords } from "../lib/change-words.ts";
@@ -29,18 +30,19 @@ export type ElementAction = "press" | "focus" | "toggle" | "expand" | "collapse"
 const CHANGED_LINES = 120;
 
 /** The critical flag read_window gave it ("critical: pays"), which knew what was around it. */
-const CRITICAL_SAID = /critical: (pays|secret|loses work|system|sends)/;
+const CRITICAL_SAID = new RegExp(`critical: (${CRITICAL_KINDS.join("|")})`);
 
-const ASK_WORDS = {
+/** Why the person is asked, by kind of the one critical list (consent.ts). */
+const ASK_WORDS: Record<Critical, string> = {
   pays: "It may pay for something.",
   secret: "It signs in with a saved password.",
   "loses work": "It may lose work for good: it can't be undone.",
   system: "It changes the system: software or an administrator's setting.",
   sends: "It sends something to someone as the person.",
-} as const;
+};
 
 /**
- * Critical (briefs/consent-critical-only.md): pays, signs in with a secret,
+ * Critical (consent.ts `CRITICAL`, D260): pays, signs in with a secret,
  * loses work for good, changes the system, or sends as the person. Only those
  * are put to the person (how is the consent rule's: `TreesRun.yes`); false
  * when they did not say yes. Everything else just runs.
