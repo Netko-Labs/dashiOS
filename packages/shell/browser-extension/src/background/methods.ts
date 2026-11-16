@@ -4,6 +4,7 @@
  * (RefTable), each pointing at a frame's document and its own number there.
  */
 
+import { parseChords } from "../page/keys.ts";
 import { renumber } from "../page/refs.ts";
 import { watchDownload } from "./downloads.ts";
 import { ask, documentsOf, framesOf, tableOf, watchLoad } from "./frames.ts";
@@ -223,7 +224,9 @@ export const METHODS: Record<string, Method> = {
       watch.cancel();
       throw error;
     });
-    return { ...result, ...(await after(tab, frameId, watch, true)) };
+    // Only Return submits a form: other keys get the short wait for a load.
+    const submits = (parseChords(params.chords) ?? []).some((chord) => /^(Return|KP_Enter)$/.test(chord.key));
+    return { ...result, ...(await after(tab, frameId, watch, submits)) };
   },
   scroll: async (params) => {
     if (typeof params.ref === "number") return (await onElement(params, "scroll", { how: params.how })).result;
