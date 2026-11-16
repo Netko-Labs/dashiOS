@@ -269,8 +269,10 @@ export function startDictating({ compositor, settingsStore, services, late, talk
   });
   // DASHI_DICTATION_LOG=1: each gesture and each state in the session's log, for a proof with no capsule to look at.
   if (process.env.DASHI_DICTATION_LOG === "1") {
-    hub.keys.listen((gesture) => console.error(`dashi-shell: key ${gesture.key} ${gesture.gesture}`));
-    hub.dictation.subscribe(() => console.error(`dashi-shell: dictation ${JSON.stringify(hub.dictation.getSnapshot())}`));
+    // Each with the milliseconds since the shell started, so the time from the key going up to the words is read off the log.
+    const at = (): string => `at=${Math.round(performance.now())}`;
+    hub.keys.listen((gesture) => console.error(`dashi-shell: dictation key ${gesture.key} ${gesture.gesture} ${at()}`));
+    hub.dictation.subscribe(() => console.error(`dashi-shell: dictation ${at()} ${JSON.stringify(hub.dictation.getSnapshot())}`));
   }
   const stopHearing = compositor
     ? compositor.on((event) => {
