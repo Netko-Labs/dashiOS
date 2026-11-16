@@ -127,7 +127,7 @@
       "row": 22,
       "landed": "when I start like a bullet point list like hey here's the list first for example that will be cool",
       "by": "model",
-      "gate": []
+      "gate": ["run-on"]
     },
     {
       "row": 23,

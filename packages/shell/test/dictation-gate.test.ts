@@ -34,6 +34,9 @@ test("a short clean sentence is not the model's; a self-correction, a repeat, a 
   expect(why("First we buy milk second we cook", { listed: true })).toEqual([]);
   expect(why(Array.from({ length: 26 }, () => "well").join(" x "))).toContain("run-on");
   expect(why("See you there.", { polish: true })).toEqual(["polish"]);
+  // Fourteen words with no mark is a run-on (D201): the owner's row 22 is nineteen.
+  expect(why("so tomorrow we review the budget with the team and then we call the client")).toContain("run-on");
+  expect(why("So tomorrow we review the budget, and then we call the client.")).not.toContain("run-on");
   // What the model was scored on, in Spanish and mixed (docs/dictation-rewrite.md): each is a reason to ask it.
   for (const said of [
     "Reserva una mesa para cuatro, digo para cinco personas.",

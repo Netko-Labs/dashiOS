@@ -4523,3 +4523,34 @@ short words, as the rulebook is written.
 - **Undo:** `voice-choice.tsx`; `dictation.corrections` and
   `voice.recognizer` in `settings-app/sections.ts`; `startRewriter` in
   `rewrite/start.ts`; `REWRITE_GEMMA` in dashi-voice's manifest.
+
+### D201. Formatting: what the rules do, what each model does, and a run-on is fourteen words
+
+- **Date:** 2026-11-15. `v09/voicejoin`, from the owner: "I would like also
+  the system to do some formatting." The test is corpus row 22, a whole
+  message with no punctuation.
+- **What does what** (measured on the laptop's processor, through
+  dictation as joined, Writing, Email, Chat and Developer profiles):
+  - **By rule, every model:** a list from "first… second… third…" (and
+    "primero…", "one, two, three") is a numbered list in Writing, Email
+    and Chat, never in a terminal; a spoken "new paragraph" / "nuevo
+    párrafo" is a paragraph; Email puts the greeting on its own line;
+    spoken punctuation, capitals, fillers.
+  - **By the model:** a run-on broken into sentences. **Gemma 4 E2B does
+    it** ("…confirm the delivery date. After that, send the contract…",
+    and in Spanish a comma where the thought turns); **SpeakoFlow Mini
+    does not**, with or without examples in the prompt: two examples of
+    a run-on made into sentences changed none and cost three
+    self-corrections of the 370, so the prompt stays as scored.
+  - **Not done:** a paragraph where the subject changes. The checks refuse
+    any line the model adds (D174, so an answer cannot lay a message out
+    on three lines in a field that sends on Return), and no model was
+    measured placing them. Say "new paragraph".
+- **Choice:** the gate's run-on mark goes from twenty words with no mark
+  to fourteen. Row 22 (nineteen words after the rules) is now sent; with
+  SpeakoFlow Mini the 370 pairs score the same (restraint 135 of 142,
+  none broken by the model; self-corrections 99), 8 more sentences wait
+  for the model (164 of 370, median 0.39 s). Row 22 still lands as said
+  with SpeakoFlow Mini and gains only its full stop with Gemma: its
+  wanted form (a quotation inside it) is beyond both.
+- **Undo:** `RUN_ON_WORDS` in `dictation/lib/gate.ts`.

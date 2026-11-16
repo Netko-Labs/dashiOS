@@ -66,7 +66,7 @@ function cued(text: string): boolean {
 const LIST_MARKERS = /\b(?:first(?:ly)?|second(?:ly)?|third|bullet point|next item|here(?:'s| is) the list|primero|segundo|tercero|viñeta)\b/gi;
 
 /** A run of this many words with no mark in it was said without a pause. */
-const RUN_ON_WORDS = 20;
+const RUN_ON_WORDS = 14;
 
 const wordsIn = (text: string): string[] => text.match(/[\p{L}\p{N}'’]+/gu) ?? [];
 
