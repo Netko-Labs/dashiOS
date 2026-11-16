@@ -2,10 +2,11 @@
 // (nothing is installed anywhere), and the applets from a test catalog signed with throwaway keys.
 
 import { expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { generateKeys, readInstalled } from "@dashi/applet";
+import { followFolder, SETTLE_MS } from "../apps/software/lib/applets/follow.ts";
 import { harness, isolateRuntime } from "./support/software-view.tsx";
 import { settle } from "./support/time.ts";
 
@@ -102,4 +103,65 @@ test("an applet this Dashi can't read is left out and counted under the list; on
   await settle(150);
   expect(existsSync(join(root, "dev.example.clock"))).toBe(false);
   view.unmount();
+});
+
+test("the open Store follows the applets folder: one got or removed elsewhere shows on Installed without reopening (pass 37)", async () => {
+  const { view, press, root, appletsChanged } = harness();
+  await settle(150);
+  await press("nav:installed");
+  expect(view.nodeId("installed:dev.example.clock")).toBeUndefined();
+  // The launcher's Get (another process) writes the folder; the watcher says so.
+  mkdirSync(join(root, "dev.example.clock"));
+  writeFileSync(
+    join(root, "dev.example.clock", "applet.json"),
+    JSON.stringify({
+      id: "dev.example.clock",
+      name: "Clock",
+      version: "0.1.0",
+      dashi: ">=0.4",
+      entry: "src/main.tsx",
+      summary: "x",
+      author: { name: "Alex Kim" },
+    }),
+  );
+  writeFileSync(
+    join(root, "dev.example.clock", "install.json"),
+    JSON.stringify({ version: "0.1.0", sha256: "0".repeat(64), authorKey: null, source: "local", consent: [] }),
+  );
+  await appletsChanged();
+  expect(view.nodeId("installed:dev.example.clock")).toBeDefined();
+  rmSync(join(root, "dev.example.clock"), { recursive: true });
+  await appletsChanged();
+  expect(view.nodeId("installed:dev.example.clock")).toBeUndefined();
+  view.unmount();
+});
+
+test("a burst of writes in the applets folder is one look, after it settles; stopping ends it", () => {
+  let changed: () => void = () => {};
+  let closed = false;
+  const pending: { run: () => void; ms: number; cancelled: boolean }[] = [];
+  let looks = 0;
+  const stop = followFolder("/nowhere", () => looks++, {
+    watch: (_root, onChange) => {
+      changed = onChange;
+      return { close: () => (closed = true) };
+    },
+    later: (run, ms) => {
+      const timer = { run, ms, cancelled: false };
+      pending.push(timer);
+      return () => (timer.cancelled = true);
+    },
+  });
+  changed();
+  changed();
+  changed();
+  expect(pending.filter((each) => !each.cancelled)).toHaveLength(1);
+  expect(pending[2]?.ms).toBe(SETTLE_MS);
+  for (const each of pending) if (!each.cancelled) each.run();
+  expect(looks).toBe(1);
+  changed();
+  stop();
+  for (const each of pending) if (!each.cancelled) each.run();
+  expect(looks).toBe(1);
+  expect(closed).toBe(true);
 });

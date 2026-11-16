@@ -105,10 +105,11 @@ export class AppletStore {
     for (const listener of [...this.listeners]) listener();
   }
 
-  /** Reads the applets folder again (after a change, or a look). */
+  /** Reads the applets folder again (after a change here or elsewhere, or a look); the list is merged again over the catalogs already read. */
   readInstalled(): void {
     const { applets, unreadable } = this.installer.scan();
-    this.set({ installed: applets, unreadable });
+    const { index, catalogs } = this.state;
+    this.set({ installed: applets, unreadable, ...(index ? { index: { applets: mergeCatalogs(catalogs, applets, this.catalogs.dashiUrl) } } : {}) });
   }
 
   /** Loads every catalog (and applies each one's kill switch to what came from it), what is installed, and this machine. */
