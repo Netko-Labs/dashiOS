@@ -5812,6 +5812,12 @@ short words, as the rulebook is written.
 - **Decision:** while the launcher is open (and in the type-ahead keymap),
   any session rule with ⇧ whose chord without ⇧ is one of the launcher's
   comes before the launcher's rules: today ⇧❖3, ⇧❖4 and ⇧❖5. The launcher's
-  own ⇧ chords (⇧❖A, ⇧❖K, ⇧↩) are unchanged. The screenshot shows the
-  launcher as it is on screen.
-- **Undo:** `shiftedPast` and `launcherRulesOver` in `launcher/keys.ts`.
+  own ⇧ chords (⇧❖A, ⇧❖K, ⇧↩) are unchanged.
+- **Then, in the VM:** ⇧❖3 made a file but the launcher wasn't in it: the
+  screenshot closed the launcher first, as a Screenshot row chosen in it
+  must. A run asked by a key now says so (`byKey` in the action's
+  context), and ⇧❖3 by key takes the screen as it is, the launcher in it.
+  A row still takes the launcher down first; ⇧❖4 and ⇧❖5 by key do too
+  (their selection and toolbar need the pointer and the keys).
+- **Undo:** `shiftedPast` and `launcherRulesOver` in `launcher/keys.ts`;
+  `byKey` in `actions/lib/run.ts` and `Screenshots.run` (`boot/overlays.tsx`).

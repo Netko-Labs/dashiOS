@@ -13,7 +13,7 @@ import { keyFor } from "../../keys.ts";
 import { type ActionDef, type ActionKind, type CaptureKind, ok, ready } from "../../types.ts";
 
 /** Carries a screenshot out (main.tsx: screenshots.ts, screenshot-area.tsx, recorder/); `window` is the one focused when it was asked. */
-export type RunCapture = (what: CaptureKind, window: number | null) => Promise<void>;
+export type RunCapture = (what: CaptureKind, window: number | null, byKey?: boolean) => Promise<void>;
 
 type Command = {
   id: string;
@@ -138,7 +138,7 @@ export function commandActions(run: (action: MenuAction) => Promise<void>, keyma
       ...(shortcut ? { shortcut } : {}),
       check: () =>
         ready(async (ctx) => {
-          if ("capture" in command) await capture?.(command.capture, ctx.window);
+          if ("capture" in command) await capture?.(command.capture, ctx.window, ctx.byKey === true);
           else await run(command.action);
           return ok(command.done);
         }),

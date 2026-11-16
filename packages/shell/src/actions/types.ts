@@ -113,6 +113,8 @@ export interface ViewFrame {
 export interface ActionContext {
   /** The window that had the keyboard when the person asked (a key's binding): what "the focused window" means. */
   window: number | null;
+  /** Asked by a key (a binding), not by a row or a link: a screenshot then takes the screen as it is (D378). */
+  byKey?: true;
   /** Carry out an agent tool's call as the person (agents/server.ts `runAsPerson`); absent without a compositor. */
   tool?(call: Call): Promise<ToolResult>;
 }
