@@ -9,6 +9,7 @@ import type { Question } from "./confirm.ts";
 import type { Desktop, Elsewhere, Hands } from "./desktop/index.ts";
 import type { AgentMask } from "./mask.ts";
 import type { AgentUi, PersonAnswer } from "./presence.ts";
+import type { TreesRun } from "./window-tree/index.ts";
 import type { Approval, LoginSource, SheetLogin, SignInAnswer, Vault } from "./secrets/index.ts";
 
 /** What the secrets tools need from the connection (desktop/secrets.ts). */
@@ -20,7 +21,7 @@ export interface SecretsRun {
   /** The enabled login sources, in order. */
   sources(): readonly LoginSource[];
   /** The accessibility bus (null where there is none). */
-  atspi(): Promise<(Pick<Atspi, "appFor" | "focusedIn"> & Partial<Pick<Atspi, "wake">>) | null>;
+  atspi(): Promise<(Pick<Atspi, "appFor" | "focusedIn"> & Partial<Pick<Atspi, "wake" | "watchChanges" | "changesOf">>) | null>;
   /** Ask the person which login, on the sheet. */
   ask(summary: string, logins: readonly SheetLogin[]): Promise<SignInAnswer>;
   /** A field Dashi typed a secret into (a code, a card): agents' pictures blank it for a while. */
@@ -78,6 +79,8 @@ export interface RunContext {
   secrets: SecretsRun;
   /** Websites, through Dashi's browser extension (desktop/browser.ts). */
   browser: BrowserRun;
+  /** Native windows as numbered elements (window-tree/); absent where there is no accessibility bus to read them. */
+  trees?: TreesRun;
   /** What the agent's cursor is called on screen: its process name. */
   agent: string;
   /** What the menu bar says the agent is doing. Nothing the agent could not read itself goes in it. */

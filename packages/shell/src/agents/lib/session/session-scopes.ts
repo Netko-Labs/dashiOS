@@ -269,6 +269,18 @@ export class Scopes {
     return { confirm: (question) => this.confirm(question, signal), question: (question, seconds) => this.question(question, seconds, signal) };
   }
 
+  /**
+   * An element that deletes, sends or pays (window-tree/, D221): Dashi's
+   * assistant gets its spoken yes, as for a destructive tool, unless Work
+   * alone covers acting; any other agent the sheet, every time.
+   */
+  async destructiveYes(tool: string, question: Question, signal: AbortSignal): Promise<boolean> {
+    if (!this.task?.policy.assistant) return this.confirm(question, signal);
+    if (this.worksAlone(tool, "act")) return true;
+    const answer = await this.question(`${question.summary.charAt(0).toUpperCase()}${question.summary.slice(1)}?`, SPOKEN_YES_SECONDS, signal);
+    return "text" in answer && yesOrNo(answer.text) === true;
+  }
+
   /** Waiting on the person for a question: the status says so, and goes back when the last one is answered. */
   private async whileConfirming<T>(question: () => Promise<T>): Promise<T> {
     this.confirming++;

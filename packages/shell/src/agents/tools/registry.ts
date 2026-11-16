@@ -31,6 +31,7 @@ import { secretTools } from "./lib/secrets.ts";
 import { settingsTools } from "./lib/settings.ts";
 import { softwareTools } from "./lib/software.ts";
 import { spaceTools } from "./lib/spaces.ts";
+import { windowTreeTools } from "./lib/window-tree.ts";
 import { windowTools } from "./lib/windows.ts";
 import type { Call, CallError, ToolName } from "./types.ts";
 
@@ -67,6 +68,7 @@ export const INSTRUCTIONS =
 /** Every tool, in the order `tools/list` shows them. */
 export const TOOLS: readonly ToolDef[] = [
   ...windowTools,
+  ...windowTreeTools,
   ...browserTools,
   ...spaceTools,
   ...inputTools,
@@ -99,7 +101,7 @@ export const catalog = (): McpTool[] => mcpListing(TOOL_ACTIONS);
 export function scopeOf(call: Call): Scope {
   const tool = byName.get(call.name);
   if (!tool) throw new Error(`tool ${call.name} is not in the registry`);
-  return tool.scope;
+  return tool.scopeFor?.(call) ?? tool.scope;
 }
 
 /** `tools/call` params: `{"name": …, "arguments": {…}}`. Names the tool doesn't declare are refused, not ignored. */

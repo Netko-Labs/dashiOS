@@ -17,6 +17,7 @@ import { documentHandlers } from "./run-documents.ts";
 import { screenHandlers } from "./run-screen.ts";
 import { systemHandlers } from "./run-system.ts";
 import type { Handlers } from "./run-types.ts";
+import { windowTreeCall } from "./run-window-tree.ts";
 import { windowHandlers } from "./run-windows.ts";
 
 /** Signing in and paying, the websites, and the agent's own pointer and keyboard. */
@@ -26,13 +27,15 @@ const personalHandlers = {
   fill_code: signInCall,
   pay: payCall,
   hand_over: handOver,
+  read_window: windowTreeCall,
+  act_on_element: windowTreeCall,
   open_url: browserCall,
   read_page: browserCall,
-  click_element: browserCall,
-  fill_element: browserCall,
-  select_option: browserCall,
+  click_element: (call, ctx) => (call.window !== null ? windowTreeCall(call, ctx) : browserCall(call, ctx)),
+  fill_element: (call, ctx) => (call.window !== null ? windowTreeCall(call, ctx) : browserCall(call, ctx)),
+  select_option: (call, ctx) => (call.window !== null ? windowTreeCall(call, ctx) : browserCall(call, ctx)),
   press: browserCall,
-  scroll_page: browserCall,
+  scroll_page: (call, ctx) => (call.window !== null ? windowTreeCall(call, ctx) : browserCall(call, ctx)),
   list_tabs: browserCall,
   switch_tab: browserCall,
   click: desktop.handsCall,
@@ -46,6 +49,8 @@ const personalHandlers = {
   | "fill_code"
   | "pay"
   | "hand_over"
+  | "read_window"
+  | "act_on_element"
   | "open_url"
   | "read_page"
   | "click_element"

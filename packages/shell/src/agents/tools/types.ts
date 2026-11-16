@@ -109,11 +109,20 @@ export type Call =
   | { name: "pay"; target: SecretTarget; site: string; cents: number; card: string | null }
   | { name: "open_url"; url: string; tab: number | null }
   | { name: "read_page"; tab: number | null }
-  | { name: "click_element"; ref: number; tab: number | null }
-  | { name: "fill_element"; ref: number; text: string; tab: number | null }
-  | { name: "select_option"; ref: number; value: string; tab: number | null }
+  /** With `window`, an element read_window numbered in a native window; else one read_page numbered in a tab. */
+  | { name: "click_element"; ref: number; tab: number | null; window: number | null }
+  | { name: "fill_element"; ref: number; text: string; tab: number | null; window: number | null }
+  | { name: "select_option"; ref: number; value: string; tab: number | null; window: number | null }
   | { name: "press"; keys: string; chords: Chord[]; tab: number | null }
-  | { name: "scroll_page"; direction: "down" | "up" | "top" | "bottom"; pages: number; ref: number | null; tab: number | null }
+  | { name: "scroll_page"; direction: "down" | "up" | "top" | "bottom"; pages: number; ref: number | null; tab: number | null; window: number | null }
+  /** A native window as numbered elements (window-tree/): a list's rows from `from` when `list` names one. */
+  | { name: "read_window"; window: number; list: number | null; from: number }
+  | {
+      name: "act_on_element";
+      window: number | null;
+      ref: number;
+      action: "press" | "focus" | "toggle" | "expand" | "collapse" | "increment" | "decrement" | "scroll_into_view";
+    }
   | { name: "list_tabs" }
   | { name: "switch_tab"; tab: number }
   | { name: "read_clipboard_history"; limit: number }

@@ -24,6 +24,8 @@ export interface ToolDef {
   description: string;
   /** What the person must have allowed before it runs. */
   scope: Scope;
+  /** Where one call needs another scope than the tool's (a website tool given a native `window`: "act"). */
+  scopeFor?(call: Call): Scope;
   readOnly: boolean;
   destructive: boolean;
   /** Calling again with the same arguments changes nothing more; read-only tools are. */

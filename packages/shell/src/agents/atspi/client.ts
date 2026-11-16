@@ -14,6 +14,8 @@ const ACCESSIBLE = "org.a11y.atspi.Accessible";
 const CALL_MS = 300;
 /** ATSPI_COORD_TYPE_WINDOW. */
 const WINDOW_COORDS = 1;
+/** The tree events window-tree/ counts (watchChanges). */
+const CHANGE_EVENTS = ["object:children-changed", "object:property-change", "object:state-changed", "object:text-changed"] as const;
 /** How long a woken app takes to publish its views (Chromium: measured well under this in the VM). */
 const WAKE_MS = 400;
 
@@ -41,6 +43,16 @@ class Node implements A11yNode {
       CALL_MS,
     );
     return value;
+  }
+
+  /** Any call on this object (window-tree/ reads names, actions, values and text, and acts). */
+  ask(iface: string, member: string, signature?: string, body?: unknown[]): Promise<unknown> {
+    return this.call(iface, member, signature, body);
+  }
+
+  /** The node at `path` in the same app (a relation's target, an action's result). */
+  at(path: string): A11yNode {
+    return new Node(this.bus, this.name, path);
   }
 
   async role(): Promise<number> {
@@ -94,6 +106,9 @@ export class Atspi {
   private readonly focus = new Map<string, string>();
   /** Apps asked to publish their whole tree already (wake). */
   private readonly woken = new Set<string>();
+  /** How many tree events each app (by its bus name) sent since `watchChanges`, and when the last came. */
+  private readonly changes = new Map<string, { count: number; at: number }>();
+  private watching: Promise<void> | null = null;
 
   private constructor(private readonly bus: DBusConnection) {}
 
@@ -115,6 +130,38 @@ export class Atspi {
       if (detail !== "focused" || gained !== 1 || typeof message.sender !== "string" || typeof message.path !== "string") return;
       this.focus.set(message.sender, message.path);
     });
+  }
+
+  /**
+   * Count each app's tree events (children added or gone, names, states,
+   * text): what tells a tree changed or settled (window-tree/wait.ts) without
+   * reading it again. Apps send them once someone registered for them, as a
+   * screen reader does; joined once, on the first read of a window.
+   */
+  watchChanges(): Promise<void> {
+    this.watching ??= (async () => {
+      const registry = { destination: "org.a11y.atspi.Registry", path: "/org/a11y/atspi/registry", interface: "org.a11y.atspi.Registry", member: "RegisterEvent" };
+      for (const event of CHANGE_EVENTS) {
+        await this.bus
+          .call({ ...registry, signature: "sass", body: [event, [], ""] }, 1000)
+          .catch(() => this.bus.call({ ...registry, signature: "s", body: [event] }, 1000).catch(() => {}));
+      }
+      await this.bus.subscribe({ type: "signal", interface: "org.a11y.atspi.Event.Object" }, (message) => {
+        if (typeof message.sender !== "string") return;
+        const [detail] = message.body;
+        // Focus moving is not the tree changing.
+        if (message.member === "StateChanged" && detail === "focused") return;
+        const seen = this.changes.get(message.sender);
+        this.changes.set(message.sender, { count: (seen?.count ?? 0) + 1, at: Date.now() });
+      });
+    })().catch(() => {});
+    return this.watching;
+  }
+
+  /** The events counted for the app `node` is in (watchChanges): a count that moved means its tree did. */
+  changesOf(node: A11yNode): { count: number; at: number } {
+    const name = node instanceof Node ? node.name : "";
+    return this.changes.get(name) ?? { count: 0, at: 0 };
   }
 
   /** The node that last took the focus in the app that runs as `pid`, if one did. */

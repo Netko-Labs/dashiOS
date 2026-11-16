@@ -106,8 +106,8 @@ describe("the website tools' arguments", () => {
   });
 
   test("refs and tabs", () => {
-    expect(parseCall({ name: "click_element", arguments: { ref: 12, tab: "t4" } })).toEqual({ name: "click_element", ref: 12, tab: 4 });
-    expect(parseCall({ name: "click_element", arguments: { ref: "[12]" } })).toEqual({ name: "click_element", ref: 12, tab: null });
+    expect(parseCall({ name: "click_element", arguments: { ref: 12, tab: "t4" } })).toEqual({ name: "click_element", ref: 12, tab: 4, window: null });
+    expect(parseCall({ name: "click_element", arguments: { ref: "[12]" } })).toEqual({ name: "click_element", ref: 12, tab: null, window: null });
     expect(parseCall({ name: "click_element", arguments: { ref: -1 } })).toHaveProperty("arguments");
     expect(parseCall({ name: "press", arguments: { keys: "⇧Tab Return" } })).toMatchObject({ name: "press", chords: [{ key: "Tab" }, { key: "Return" }] });
   });

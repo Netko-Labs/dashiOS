@@ -458,6 +458,51 @@ Dashi)`. `fill_element` and typed characters (`press`) are refused there.
 When no extension is connected (another browser), these tools say so, and
 the screenshot tools work as before.
 
+## Native windows
+
+Agents read an app's window as text with numbered elements, as `read_page`
+gives a web page, and act on the numbers (`agents/window-tree/`,
+decisions.md D220 to D226). It is AT-SPI underneath: the tree every toolkit
+publishes for screen readers (GTK, Qt, Chromium and Electron once woken,
+and mirin Metal's through AccessKit), so a window on a Space that does not
+show reads the same, and acting moves nothing on screen.
+
+| Tool | What it does |
+| --- | --- |
+| `read_window {window, list?, from?}` | The window as lines: headings (`#`), text in reading order, and each element one can use with a number, its role, name, value and states, indented under what holds it: `[2] switch "Wi-Fi" (on)`, `[7] textbox "Name" value="Alex" (focused, caret 4)`, `[9] password field "Password" (filled: no)`, `[4] button "Delete" (primary, destructive)`, `dialog "Delete 3 items?" (modal)`. A list gives 40 rows and the call for the next (`list`, `from`). Scope "see". |
+| `click_element {ref, window}` | The element's own action ("click", "press", "activate", "toggle"); where it has none, a click at its centre by the agent's pointer (D110). Says what the element is after, and the window's fresh tree when it changed. |
+| `fill_element {ref, text, window}` | The field's editable text (`SetTextContents`); where it has none (Metal's fields), its focus, then ❖A and the text by the agent's own keys. Refused on a secret field. |
+| `select_option {ref, value, window}` | An option of a list or combo box by its name: the list's Selection, else the option's own action (a combo box is opened first). |
+| `scroll_page {ref, window}` | Brings the element into view (Component `ScrollTo`). |
+| `act_on_element {ref, window, action}` | `press`, `toggle`, `expand`, `collapse`, `increment`, `decrement` (a Value stepped), `focus`, `scroll_into_view`. Scope "act". |
+
+With `window` the website tools need "act", not "Use websites"
+(`scopeFor`, tools/define.ts). The numbers are the connection's: an
+element keeps its number while its node lives (its bus name and path),
+across reads; a number whose element is gone answers with the window's
+fresh tree around where it was. **Secret fields** (a password field, or a
+field named as a password, PIN, code or card) say only whether they are
+filled. **The person's windows** (the Setup Assistant, Settings showing the
+vault, a window handed over, Dashi's own sheets and the portal's pickers)
+are named and never read. **Destructive**: what the toolkit marks so, or a
+sheet's or dialog's button (or a default button) named Delete, Send, Pay…
+waits for the person's yes before it is pressed (spoken, for the assistant;
+the sheet for other agents). A tree that says almost nothing (a canvas, a
+game) says to take a screenshot.
+
+**`wait_for` on a window (the seam with `v09/reach`).** `wait_for` takes a
+`window` and calls `waitOnWindow(window, until, timeoutMs, ctx)` from
+`agents/window-tree/index.ts`, with `until` one of `{text, gone?}` (words
+in any name, text or value appear, or go), `{ref, state: "there" |
+"enabled" | "gone"}` (a number read_window gave) or `{idle: true}` (no tree
+event for 300 ms). It answers `{met, ms, detail}`, woken by the app's own
+tree events (`Atspi.watchChanges`: children, names, states, text) and
+checked at least every 250 ms; it never polls from the model's side.
+`wait_for` owns the tool's arguments, timeout and result words.
+
+What each toolkit gives, measured in the VM, and what mirin Metal must add,
+are in `dashi-0.9.0-review/29-windowtree/` (`for-mirin.md`).
+
 ## Working alone
 
 Agents stall on consent sheets when nobody is at the screen. **Let agents

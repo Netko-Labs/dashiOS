@@ -19,6 +19,7 @@ import type { SessionBrowser } from "./session-browser.ts";
 import type { Scopes } from "./session-scopes.ts";
 import type { SessionContext, SessionTask } from "./session-types.ts";
 import type { SessionWatch } from "./session-watch.ts";
+import { personOnly, type TreeNumbers } from "../../window-tree/index.ts";
 
 /** What a call needs of the connection it runs on. */
 export interface CallHost {
@@ -34,6 +35,8 @@ export interface CallHost {
   browser: SessionBrowser;
   /** The Space it works in, when asked to work on another Desktop. */
   elsewhere: Elsewhere;
+  /** Its element numbers in native windows (window-tree/). */
+  trees: TreeNumbers;
   watch: SessionWatch;
   setStatus(text: string): void;
   /** A call that ended without an answer to send (cancelled). */
@@ -95,6 +98,12 @@ export class SessionCalls {
             mayName: () => host.scopes.holds("see"),
             browser: host.browser.run((site) => sites.add(site)),
             alone: () => ctx.alone?.status() ?? NOT_ALONE,
+            trees: {
+              bus: ctx.secrets.atspi,
+              numbers: host.trees,
+              personOnly: (window) => personOnly(window, ctx.secrets.handedOver),
+              yes: (question) => host.scopes.destructiveYes(call.name, question, signal),
+            },
             ...host.scopes.asks(signal),
             signal,
           }),
