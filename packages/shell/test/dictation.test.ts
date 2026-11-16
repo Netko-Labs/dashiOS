@@ -153,20 +153,6 @@ test("nothing said: one line, nothing typed; a held key with nothing said ends b
   expect(held.state()).toMatchObject({ phase: "notice", trouble: "nothing-said" });
 });
 
-test("while the bar's row is the field the words go to it", async () => {
-  const { typed, hub, key, hold, state } = dictating();
-  const inserted: string[] = [];
-  hub.bar.set({ mode: "field", text: "" });
-  hub.barCommands.handle((command) => {
-    if (command.do === "insert") inserted.push(command.text);
-  });
-  await hold();
-  await key("up");
-  expect(inserted).toEqual(["Hello there. "]);
-  expect(typed).toEqual([]);
-  expect(state().phase).toBe("landed");
-});
-
 test("tidying off types the words as heard; Type it instead lands words as a dictation would", async () => {
   const { typed, world, hub, key, hold, state } = dictating();
   world.tidy = false;

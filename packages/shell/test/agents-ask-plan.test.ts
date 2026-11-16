@@ -39,7 +39,7 @@ test("a call with arguments that don't fit, or a tool no plan may use, never run
 });
 
 test("a step that asks every time says so", () => {
-  const [step] = stepsFrom([call("trash_file", { path: "/home/alexk/old.txt" })], TOOL_ACTIONS);
+  const [step] = stepsFrom([call("force_quit_app", { window: "w3" })], TOOL_ACTIONS);
   expect(step?.asks).toBe(true);
   expect(step?.state.kind).toBe("ready");
 });

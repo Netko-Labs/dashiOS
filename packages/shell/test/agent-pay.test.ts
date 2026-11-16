@@ -96,9 +96,9 @@ describe("paying for the person", () => {
     expect(dollars(4890)).toBe("$48.90");
   });
 
-  test('"Pay for you" is never kept, by Always Allow or in the file', () => {
-    expect(NEVER_KEPT.has("pay")).toBe(true);
+  test('"Pay for you" may be kept (D260): every payment asks with the fingerprint or password anyway', () => {
+    expect(NEVER_KEPT.has("pay")).toBe(false);
     const allowed = kept(new Set<Scope>(["see"]), ["pay", "screen"], new Set());
-    expect([...allowed].sort()).toEqual(["screen", "see"]);
+    expect([...allowed].sort()).toEqual(["pay", "screen", "see"]);
   });
 });

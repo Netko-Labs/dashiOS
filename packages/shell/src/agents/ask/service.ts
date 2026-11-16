@@ -18,6 +18,7 @@ import { HARNESSES, harnessStatuses, hostFiles } from "./harness/index.ts";
 import { HistoryLog } from "./history.ts";
 import { keyPlace } from "./keys.ts";
 import { chosenAnswerer } from "./lib/chosen-answerer.ts";
+import { listClaudeModels } from "./lib/claude-models.ts";
 import { listGptModels } from "./lib/gpt.ts";
 import { cachedHistory, launcherSnapshot } from "./lib/launcher-snapshot.ts";
 import { AskTasks } from "./lib/tasks.ts";
@@ -25,6 +26,12 @@ import { localModels } from "./local.ts";
 import type { NowItem } from "./now.ts";
 import type { Undo } from "./plan.ts";
 import type { AnswerStatus, Ask, AskOptions, HarnessHost } from "./types.ts";
+
+/** The models the Anthropic key lists (Settings › Agents' model rows); null without a key that answers. */
+async function keyModels(options: AskOptions): Promise<string[] | null> {
+  const found = await options.keys.anthropic();
+  return found ? listClaudeModels(found.key, options.fetch) : null;
+}
 
 export function startAsk(options: AskOptions): Ask {
   const history = options.history ?? new HistoryLog();
@@ -77,6 +84,7 @@ export function startAsk(options: AskOptions): Ask {
   const status: AnswerStatus = {
     keyPlace: (provider) => keyPlace(options.keys, provider),
     localModels: () => localModels(options.fetch),
+    claudeModels: () => keyModels(options),
     async gptModels() {
       const found = await options.keys.openai();
       if (!found) return null;

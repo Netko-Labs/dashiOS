@@ -534,7 +534,10 @@ front. The menu bar's agent mark says what it does in words when pointed
 at, and on its row in the agents' panel: "Opening wikipedia.org", "Reading
 bodytech.com.co", "Clicking on auth.wikimedia.org".
 
-**Each site is asked about** the first time an agent touches it
+**No site is asked about any more** (decisions.md D260): a site is used,
+the activity and the step line show it. What follows describes the sheet as
+it was, and the list it kept, which still reads; nothing asks for it now.
+Before D260 each site was asked about the first time an agent touched it
 (`src/agents/sites.ts`): "Claude wants to use bodytech.com.co" with Don't
 Allow, Allow Once (this connection) and Always Allow (kept in
 `~/.local/state/dashi/agents/sites.json` by the agent's grant key). A site
@@ -835,6 +838,39 @@ the reason for one that didn't run).
 busctl --user call dev.dashi.Shell /dev/dashi/Shell dev.dashi.Shell.Actions1 Run 'sa{sv}' dashi://dashi/lock-screen 0
 ```
 
+## Dashi's agent in the launcher
+
+decisions.md D260 to D262 (they replace what the next two sections say of
+the Ask row, the plan view, "Hand it off", the context chips and the grants
+card; Now, the history and who answers are as they say). Code:
+`launcher/lib/talk/` (the view, its keys and words), `agents/assistant/`
+(`transcript.ts`, `lib/turn.ts`, `lib/channel.ts`), `boot/lib/launcher-dashi.ts`.
+Tests: `test/launcher-talk.test.tsx`, `test/assistant-talk.test.ts`,
+`test/bar-at-rest.test.tsx`.
+
+- **One path.** Typed words get one **Ask Dashi** row, last, never
+  selected for you (⇥, or the row); ⇥ in an empty field opens the
+  conversation's empty view (the person's recent asks, else five tries).
+  The words go to `assistant.type()`: the same loop, server, policy and
+  conversation as a spoken ask (D147 to D149). Nothing plans; the launcher
+  hands nothing off.
+- **The view.** The launcher's panel becomes the conversation: the thread
+  above (the model on its first line; the person's words; Dashi's under
+  its mark, step lines, then words as they stream), the field at the
+  bottom. Spoken turns of the same conversation show too.
+- **Keys.** Return sends (or answers the line that waits); Esc closes the
+  launcher and the turn goes on; ❖Esc stops it (`launcher-stop-work`,
+  bound only while a turn works); ❖↩ keeps it working on its own: more
+  room (200 calls, 30 minutes), the bar's one indicator, a notification
+  with Show when it ends.
+- **Questions.** While the turn at work was typed, a critical step's yes
+  and an agent's question in words wait on one line in the thread
+  (`AssistantGate.confirm`, `.question`); otherwise the sheets and the
+  capsule, as before.
+- **The model** (D262): `agents.models[answerer].typed` / `.spoken`;
+  Claude Code `--model`, Codex `--model`, OpenCode `--model`, a key's
+  model, Ollama's model; the log line says `by=typing model="…"`.
+
 ## Agents in the launcher
 
 Local first (docs/betterments.html, "Agents in the launcher",
@@ -984,8 +1020,8 @@ What is said to Dashi is not planned first (decisions.md D147 to D150;
   is stopped (its scope too), the task's connections are cut and no key or
   button stays down. What was said so far stays in the conversation, marked
   interrupted.
-- **Plan mode stays** for the launcher's typed asks, and for voice when
-  Settings › Voice's "Ask before every step" is on.
+- **Plan mode** is left only for GPT by voice, which has no loop yet
+  (D261): the launcher never plans, and "Ask before every step" is gone.
 
 ### Plan mode
 

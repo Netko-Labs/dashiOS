@@ -61,6 +61,7 @@ function claudeCode(turn: HarnessTurn): HarnessCommand {
       "",
       "--disable-slash-commands",
       "--no-chrome",
+      ...(turn.model ? ["--model", turn.model] : []),
       ...(turn.session ? ["--resume", turn.session] : []),
     ],
     stdin: turn.prompt,
@@ -92,6 +93,8 @@ function codex(turn: HarnessTurn): HarnessCommand {
       "read-only",
       "--ignore-user-config",
       ...overrides.flatMap((value) => ["-c", value]),
+      // Codex's `--model` (its documented flag; untested here: Codex isn't on the laptop).
+      ...(turn.model ? ["--model", turn.model] : []),
       ...(turn.session ? ["resume", turn.session] : []),
       "-",
     ],
@@ -109,7 +112,17 @@ function opencode(turn: HarnessTurn): HarnessCommand {
     agent: { "dashi-task": { description: "Works on a task on Dashi", mode: "primary", prompt: turn.system, tools } },
   };
   return {
-    args: ["run", "--format", "json", "--agent", "dashi-task", ...(turn.session ? ["--session", turn.session] : []), "--", turn.prompt],
+    args: [
+      "run",
+      "--format",
+      "json",
+      "--agent",
+      "dashi-task",
+      ...(turn.model ? ["--model", turn.model] : []),
+      ...(turn.session ? ["--session", turn.session] : []),
+      "--",
+      turn.prompt,
+    ],
     stdin: "",
     env: { OPENCODE_CONFIG_CONTENT: JSON.stringify(config) },
   };

@@ -193,14 +193,8 @@ export async function breaksIn(
 }
 
 export async function land(deps: DictationDeps, ctx: LandContext, heard: string, meant: Meant): Promise<Landing> {
-  const { hub } = deps;
   const lexicon = ctx.lexicon();
   const composing = { lexicon, words: ctx.words, tidy: deps.prefs().tidy };
-  // The bar's row is the field: the words are its, at its caret, as Writing has them.
-  if (hub.bar.getSnapshot().mode === "field") {
-    const made = compose(heard, { ...composing, ...(await placeOf(deps, ctx, null, null)) });
-    if (hub.barCommands.send({ do: "insert", text: withSpace(made.text) })) return landed(deps, made, "typed", null, "");
-  }
   const where = await placeFor(deps, meant);
   if (typeof where === "string") return waiting(deps, compose(heard, { ...composing, ...(await placeOf(deps, ctx, null, null)) }), where);
   const { place, agent } = await placeOf(deps, ctx, where.front, where.field);

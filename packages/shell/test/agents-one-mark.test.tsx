@@ -12,7 +12,6 @@ import { AgentMark } from "../src/agent-mark.tsx";
 import { AgentRuns } from "../src/agents/handoff/store.ts";
 import type { AgentInfo } from "../src/agents/index.ts";
 import { mergeAgents, outsideAgents } from "../src/agents/mark.ts";
-import { agentJobs, needCount } from "../src/menubar/lib/bar-jobs.ts";
 import { settle } from "./support/time.ts";
 
 const claude = (id: number, extra: Partial<AgentInfo> = {}): AgentInfo => ({
@@ -32,17 +31,13 @@ const claude = (id: number, extra: Partial<AgentInfo> = {}): AgentInfo => ({
 const idle = (id: number, extra: Partial<AgentInfo> = {}): AgentInfo => claude(id, { status: "Connected", quiet: true, acted: undefined, ...extra });
 
 describe("one sign in the bar (D138)", () => {
-  test("an agent from outside is never a job capsule, whatever it does; a run from the launcher still is", () => {
+  test("agents from outside are counted on the one mark, whatever they do", () => {
     const runs = new AgentRuns({ now: () => 0 });
     runs.start({ id: "r1", request: "Cut the demo video", harness: "claude-code", harnessName: "Claude Code", started: 1 });
     const five = [1, 2, 3, 4, 5].map((id) => claude(id, { status: "Taking a screenshot", watching: "screen" }));
     const codex = claude(6, { name: "codex", key: "/usr/bin/codex", claims: "codex", harness: "codex", waiting: true });
     const entries = mergeAgents([...five, codex], runs.getSnapshot());
-    expect(agentJobs(entries).map((job) => job.key)).toEqual(["run:r1"]);
     expect(outsideAgents(entries)).toEqual({ sessions: 6, harness: "codex", waiting: 1 });
-    // Two consents at once are one amber mark that counts them.
-    expect(needCount([], [], 2)).toBe(2);
-    expect(needCount(agentJobs(entries), [], outsideAgents(entries).waiting)).toBe(1);
   });
 
   function host() {

@@ -6,15 +6,14 @@
 
 import type { Dispatch, SetStateAction } from "react";
 import type { Outcome } from "../../actions/index.ts";
-import type { TaskContext } from "../../agents/index.ts";
+import type { TranscriptView } from "../../agents/index.ts";
 import type { Entry } from "../../shared/app-entries/index.ts";
 import type { LauncherPrefsSnapshot } from "../prefs.ts";
 import type { FileRow, Row } from "../row-model.ts";
 import type { Section } from "../sections.ts";
-import type { HandoffSnapshot, LauncherAgentsSnapshot, LauncherScope } from "../types.ts";
+import type { LauncherAgentsSnapshot, LauncherScope } from "../types.ts";
 import type { Verb, VerbContext } from "../verbs.ts";
 import type { WorldSnapshot } from "../world.ts";
-import type { ChipsOn } from "./agents/handoff-views.tsx";
 import type { Extensions } from "./extensions.ts";
 import type { Mode } from "./mode.ts";
 import type { PicturesState } from "./use-pictures.ts";
@@ -32,8 +31,11 @@ export interface LauncherState {
   world: WorldSnapshot;
   prefs: LauncherPrefsSnapshot;
   agents: LauncherAgentsSnapshot | null;
-  handoff: HandoffSnapshot | null;
-  context: TaskContext;
+  /** The conversation with Dashi's agent (lib/talk/). */
+  talk: TranscriptView;
+  /** The empty conversation's try that is selected. */
+  tryAt: number;
+  setTryAt: Setter<number>;
   /** The words ⇥ was pressed for: Ask (or "Set up an agent…") is offered for them. */
   tabbed: string | null;
   setTabbed: Setter<string | null>;
@@ -53,12 +55,6 @@ export interface LauncherState {
   setCopied: Setter<{ query: string; ok: boolean } | null>;
   failed: Entry | null;
   setFailed: Setter<Entry | null>;
-  chipsOn: ChipsOn;
-  setChipsOn: Setter<ChipsOn>;
-  chipsShown: boolean;
-  setChipsShown: Setter<boolean>;
-  grantsRow: 0 | 1;
-  setGrantsRow: Setter<0 | 1>;
   mode: Mode;
   setMode: Setter<Mode>;
   /** The action list's own field and selection, and the destructive verb asking to be pressed again. */
@@ -88,12 +84,10 @@ export interface Search {
   ctx: VerbContext;
   ext: Extensions;
   inOutside: boolean;
-  contextShown: boolean;
   sections: Section[];
   rows: Row[];
   selected: string | null;
   selectedRow: Row | undefined;
-  task: LauncherAgentsSnapshot["tasks"][number] | undefined;
   pictures: PicturesState;
   /** A row's verbs: its scope's, or what verbs.ts gives it. */
   verbsOf: (row: Row) => Verb[];

@@ -761,7 +761,7 @@ Replaced by D51: 0.9 builds on mirin's `main`.
   long as Dashi listens or speaks. It shows on every screen's bar.
 - **Undo:** a status slot `goes: null` in `menubar-program-slots.tsx`.
 
-### D38. Nothing said runs a plan: a spoken ask waits for the person's Return
+### D38. Nothing said runs a plan: a spoken ask waits for the person's Return (superseded by D261: plans are left only for GPT by voice)
 
 - **Date:** 2026-11-11 (`packages/shell/src/voice/asker.ts`).
 - **Question:** the launcher's agent answers with a plan that runs on the
@@ -1384,7 +1384,7 @@ Replaced by D51: 0.9 builds on mirin's `main`.
 - **Undo:** `capsule/lib/surface.ts` is the only file that knows; a
   compositor-placed surface can replace it behind `show` and `hide`.
 
-### D65. A spoken plan asks in the card; a typed plan keeps the launcher; a question is typed in the sheet
+### D65. A spoken plan asks in the card; a typed plan keeps the launcher; a question is typed in the sheet (the typed plan: superseded by D261)
 
 - **Date:** 2026-11-13. The `n2-capsule` agent's.
 - **Question:** which of 0.8's asks go to the card tonight, and what is a yes?
@@ -1446,7 +1446,7 @@ Replaced by D51: 0.9 builds on mirin's `main`.
 - **Cost:** a light colour shows darker in the capsule than in Settings.
 - **Undo:** `dashiFill` and `dashiColours` in `capsule/lib/measures.ts`.
 
-### D68. The bar's field is a surface of its own, laid over the bar's row
+### D68. The bar's field is a surface of its own, laid over the bar's row (superseded by D261: the field is gone)
 
 - **Date:** 2026-11-13. The `bar` agent's (night build).
 - **Question:** a click on Dashi's mark turns the menu bar's row into a
@@ -1468,7 +1468,7 @@ Replaced by D51: 0.9 builds on mirin's `main`.
   compositor, draw the field in `menubar.tsx`, and delete
   `menubar/lib/field-row.tsx` and the surface in `menubar/start-pill.tsx`.
 
-### D69. A job in the bar opens 0.8's panel; the jobs give way before a status item does
+### D69. A job in the bar opens 0.8's panel; the jobs give way before a status item does (superseded by D261: no job capsules)
 
 - **Date:** 2026-11-13. The `bar` agent's (night build).
 - **Question:** the design turns the row into the job on a click (b-10,
@@ -1494,7 +1494,7 @@ Replaced by D51: 0.9 builds on mirin's `main`.
   already a surface with the keyboard) and send the capsule's click there
   instead of to `toggleAgents` (`menubar/lib/menubar-pill-slots.tsx`).
 
-### D70. Until the card exists, a plan that waits is answered in the launcher
+### D70. Until the card exists, a plan that waits is answered in the launcher (superseded by D261)
 
 - **Date:** 2026-11-13. The `bar` agent's (night build).
 - **Question:** a task typed in the bar becomes a plan that waits for a
@@ -3483,7 +3483,7 @@ short words, as the rulebook is written.
   conversation; only ❖Esc and Done end it.
 - **Undo:** `TALK_OPEN_MS`; or have `begin()` always start a new one.
 
-### D148. Spoken asks run on the full server in a loop, two ways; the person's voice is the consent, with the registry's exceptions
+### D148. Spoken asks run on the full server in a loop, two ways; the person's voice is the consent, with the registry's exceptions (its consent table, the first-use sheet and the spoken yes: superseded by D260)
 
 - **Date:** 2026-11-15. `v09/loop`. The owner: "It should have the same
   level of access, even if it is running in the sandbox… use the same tools
@@ -4574,6 +4574,164 @@ short words, as the rulebook is written.
   142, self-corrections 101 by the model (99 before; the model's answers
   vary by one or two between runs).
 - **Undo:** `keepsAfterCue` in `rewrite/checks.ts`.
+
+### D260. Only critical operations ask; everything else runs, says what it did, and offers Undo
+
+- **Date:** 2026-11-16. `v09/askagent`. The owner: "we are over asking
+  for permissions, permissions should be only for critical operations"
+  (`v09/briefs/consent-critical-only.md`). One rule for Dashi's own
+  assistant (voice and the launcher) and for agents from outside.
+- **Question:** D148's table asked a spoken yes for closing a window,
+  dismissing a notification or choosing a menu item; a first-use sheet
+  named every scope; each site was asked about the first time; Trash and
+  the clipboard history asked every time; an outside agent met a sheet per
+  kind of tool. What asks now?
+- **Choice:**
+  - **Critical, asks every time, on screen, answered by the person's own
+    pointer or key:** money (`pay`, fingerprint or password, as before);
+    identity and secrets (`sign_in`, `fill_code`: the login sheet, as
+    before); losing work for good (`force_quit_app`); changing the system
+    (`request_software_install`, `request_software_update`); speaking for
+    the person to others (no such tool yet: one that comes is marked
+    critical). The registry's `ASKS_EVERY_TIME` (`actions/tools.ts`) is
+    now exactly the critical tools without a sheet of their own: force
+    quit and the two software tools. **A new tool that is critical by this
+    list goes there; the engineers adding tools (`v09/reach`,
+    `v09/windowtree`) mark theirs by this rule.**
+  - **Everything else runs:** seeing, opening, clicking and typing,
+    closing a window (the app asks to save if it must), notifications,
+    menus, Spaces, settings (with Undo), notes and events, moving files to
+    the Trash (`trash_file` no longer asks: the Trash is the undo, and the
+    tool tells the model to say what it moved), the clipboard history, a
+    site used for the first time (`askSite` no longer asks anyone; Dashi's
+    assistant still says it in its step line).
+  - **No first-use sheet for Dashi's own assistant**
+    (`agents/assistant/lib/first-use.ts` is gone): choosing who answers in
+    Settings is the consent. Its policy holds every scope.
+  - **Outside agents: one sheet, the first time a program calls a tool**:
+    "<it> wants to use this computer", every scope at once, kept for that
+    program on Always Allow (`session-scopes.ts` `ask`). No per-scope and
+    no per-site sheets after it. `NEVER_KEPT` is empty: a payment asks with
+    the fingerprint or password whatever was kept.
+  - **The spoken yes is gone** (`session-assistant.ts`): what it covered
+    is not critical. A critical step of a **typed** turn asks on the
+    launcher's line (No, Yes, Return for yes: D261); of a spoken one, on
+    its sheet, as before.
+  - **Work alone** is for unattended runs; with nothing else asking it
+    matters only for the critical list. It still never covers payments and
+    sign-ins; force quit and software stay out of it too (the brief allows
+    covering installs; not built: stricter is the safe side).
+  - The instructions agents read on connect and the tools' words say so;
+    the tools/list golden (`test/fixtures/mcp-tools-list.json`) is new.
+- **Why:** a sheet for ordinary work trains the person to press Allow
+  without reading, which makes the sheets that matter weaker.
+- **Cost:** an agent the person allowed once can close windows, read the
+  clipboard history and move files to the Trash without another word; the
+  activity list, the one bar indicator and Undo are what the person has.
+  Return on the launcher's line is a yes from the keyboard (D193 keeps the
+  sheets off Return; this line is in the launcher the person typed into,
+  which holds the keyboard and which no agent's key reaches).
+- **Undo:** put the tools back in `ASKS_EVERY_TIME`; restore
+  `needs`'s per-call scopes in `Scopes.ask` and `askSite`'s sheet; bring
+  back `first-use.ts` and `session-assistant.ts` from `143d88ab`.
+
+### D261. One Dashi agent, by voice or typed in the launcher; nothing of it in the bar at rest; no plans
+
+- **Date:** 2026-11-16. `v09/askagent`. The owner: "I don't like the
+  applet that is in the top, it's useless"; "if I'm using the launcher to
+  ask something to AI, it's specifically to the Dashi agent"; "we need a
+  unified experience … and not these plan things". The design's direction
+  A (`dashi-0.9.0-design/askagent/`), chosen by the owner, with his
+  answers to its seven questions.
+- **Choice:**
+  - **The bar:** the field (D68) and the job capsules (D69) are gone, with
+    `menubar/field.ts`, `jobs.ts`, `start-pill.tsx`, `lib/field-row.tsx`,
+    `lib/job-capsule.tsx`, `lib/bar-jobs.ts` and the hub's bar cell and
+    port. D138's one indicator stays, shown only while something acts that
+    the person is not already watching: an agent from outside, a run, or
+    Dashi kept working on its own (`menubar/pill.ts` `foreground`): a turn
+    in the capsule or the launcher is not in the bar. A click opens the
+    agents' panel. "Working" stands beside the spark for a run.
+  - **One path in the launcher:** one Ask Dashi row (⇥, or the row; an
+    empty ⇥ opens the conversation's empty view). No plan, no hand-off
+    rows, no harness to pick, no grants card, no context chips (what is in
+    front goes with every ask anyway, D149). The machinery underneath
+    stays: runs, outside agents.
+  - **The launcher is the conversation's view** (`launcher/lib/talk/`):
+    the same panel, the field moves to the bottom (the one chrome row),
+    the thread above grows to the launcher's surface (540 points of thread)
+    then scrolls, kept at its newest line. Its first line names the model.
+    Each Dashi turn is under the persona's mark and name; step lines are
+    one line each (a ring, then ✓ or ✗), folded into "N steps" when the
+    answer has come, a press opens them; the words stream in as written,
+    paragraphs, lists, code and pressable links. Spoken turns are marked
+    "Said" and "spoken".
+  - **One transcript** (`agents/assistant/transcript.ts`) holds every
+    turn of the one conversation, spoken or typed; a typed ask is
+    `assistant.type()`, the same loop, the same conversation and the same
+    server as voice.
+  - **Keys:** Return sends; Esc closes the launcher and the turn carries
+    on, the conversation open (D147); ❖Esc stops the turn at work (the
+    launcher takes it only while one works); ❖↩ is **Keep working on it**.
+  - **Keep working on it** gives the turn at work room for a longer job
+    (200 calls and 30 minutes more), lets the launcher close, shows it in
+    the bar's indicator, and a notification says when it is done, with
+    Show (the launcher on the conversation). **It is not the hand-off
+    machinery:** the turn goes on in the same process and the same
+    conversation, so the harness's session, the model's messages and the
+    transcript are not lost, and it works for a key or a local model too,
+    which a hand-off run (a harness only) does not.
+  - **Questions in the launcher:** while the turn at work was typed, a
+    critical step's yes (D260) and an agent's question in words wait on one
+    line in the thread; Return is yes; words typed instead are a no and the
+    next turn.
+  - **Spoken answers are spoken; typed ones are not**, unless Settings ›
+    Agents › Read typed answers aloud is on (off by default).
+  - **Plans:** the launcher never shows one. "Ask before every step" is
+    gone from Settings and from voice. GPT, which has no loop, keeps plan
+    mode by voice only; typed, it says "Not yet: GPT needs Dashi's loop";
+    Settings hides it as an answerer and says so in one line.
+  - **The empty view** offers the person's recent asks, else five tries.
+- **After joining the dictation work (D170 to D202):** what is said goes to
+  the assistant through dictation's vocabulary (D198); what is typed goes as
+  typed (it was not misheard). A filler alone starts no turn (D197) and the
+  microphone opens again only after a spoken turn: voice sees the
+  conversation as open only while its last turn was spoken. A turn kept
+  working shows in the bar as Dashi's spark and "Working", not as an outside
+  agent's disc. "Sites agents may use" is gone from Settings › Agents (no
+  site asks, D260); Work alone keeps its sites. A typed settings change
+  offers "Type undo that".
+- **Cost:** the context chips and the grants card are gone from the
+  launcher; a hand-off run can no longer be started from it (its machinery
+  is still there for runs that exist). A turn kept working lives in the
+  shell's process: a shell restart ends it (a hand-off run would have gone
+  on). Dictated words no longer land in a bar field (there is none).
+- **Undo:** the commits on `v09/askagent` after `143d88ab`, by part.
+
+### D262. The model Dashi's agent runs with: chosen per answerer, for typing and for speaking
+
+- **Date:** 2026-11-16. `v09/askagent`. The owner: "I would like to have
+  the option to choose which model is running the Dashi agent … for the
+  voice experience I would also like to choose the model".
+- **Choice:** Settings › Agents has two pop-ups, **When you type** and
+  **When you speak** ("Same as typed" unless chosen), kept per answerer in
+  `agents.models` (`{ "claude-code": { typed: "opus", spoken: "haiku" } }`).
+  Claude Code's are its own aliases (`claude --help` 2.1.325: `--model`
+  takes an alias such as fable, opus or sonnet, or a full name; Haiku is
+  offered as an alias too) and its own default; Codex's its `--model`
+  (from its documented flag, **untested**: Codex is not on the laptop);
+  an Anthropic key's the provider's own `/v1/models` list; Ollama's what
+  `/api/tags` lists. **Each turn uses its own channel's model**, read when
+  it starts, so a change in Settings applies from the next turn of an open
+  conversation; for Claude Code that is `--resume` with the new `--model`
+  (the flag is taken with `--resume`; not run with a real prompt here).
+  The launcher's thread names the model on its first line; the log line
+  says `model="Claude Code · opus"`, so the owner can compare.
+- **Cost:** a full model name typed by hand ("A model's full name…") is
+  not built: a name that is not offered can be put in settings.json. A
+  conversation that changes model between turns gives the second model
+  the first one's thread.
+- **Undo:** drop `models` from settings; `modelFor` returns null.
 
 ### D270. `wait_for` is one tool; the page waits on itself, a window and a file wait in the shell
 

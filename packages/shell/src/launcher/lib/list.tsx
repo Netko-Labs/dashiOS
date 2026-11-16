@@ -1,8 +1,8 @@
 /**
  * The launcher's list under the field (launcher.tsx), as each mode draws it:
  * the search's sections (a window at a time, a row's windows' pictures under
- * it), a row's action list, the alias and shortcut rows, a plan, the grants
- * card, a run being written to.
+ * it), a row's action list, the alias and shortcut rows. The conversation is
+ * drawn by lib/talk/view.tsx.
  */
 
 import type { Palette } from "@dashi/ui";
@@ -14,9 +14,6 @@ import type { LauncherProps } from "../props.ts";
 import type { Row } from "../row-model.ts";
 import type { Section } from "../sections.ts";
 import { withStop } from "./agents/agent-rows.ts";
-import { runRow } from "./agents/handoff-rows.ts";
-import { chosenContext, GrantsCard } from "./agents/handoff-views.tsx";
-import { PlanList, stepAct } from "./agents/plan-view.tsx";
 import type { LauncherKeys } from "./commands.ts";
 import { type Measures, PANEL } from "./measures.ts";
 import type { ModeLists } from "./mode.ts";
@@ -120,15 +117,6 @@ export function listFor(input: ListInput): ReactNode {
         ))}
       </View>,
     );
-  else if (mode.kind === "task" && search.task) list = listBox(planList(input));
-  if (mode.kind === "grants") list = listBox(grantsCard(input));
-  const messaged = mode.kind === "message" ? s.handoff?.runs.find((each) => each.id === mode.run) : undefined;
-  if (messaged)
-    list = listBox(
-      <View testID="launcher:section:message" style={{ flexDirection: "column" }}>
-        <ResultRow row={runRow(messaged)} selected={false} onPress={() => props.handoff?.open(messaged.id)} onHover={() => {}} />
-      </View>,
-    );
   return list;
 }
 
@@ -193,44 +181,4 @@ function searchList({ s, search, acts, m, onScreen, drawnRows }: ListInput, spok
       {section.reserved !== undefined && <ReservedRows count={section.reserved} />}
     </View>
   ));
-}
-
-/** An Ask's plan: its steps, a step that can act acting on a press. */
-function planList({ s, search, lists, acts }: ListInput): ReactNode {
-  const task = search.task;
-  if (!task) return null;
-  return (
-    <PlanList
-      task={task}
-      selected={lists.heldStep}
-      onStep={(at) => {
-        const step = task.steps[at];
-        if (step && stepAct(step)) acts.agentKeys.submit(at);
-      }}
-      onHover={(at) => s.setHeldVerb(`step:${at}`)}
-    />
-  );
-}
-
-/** The grants card before a hand-off starts: Start, or Change in Settings. */
-function grantsCard({ props, s, keys }: ListInput): ReactNode {
-  const { mode } = s;
-  if (mode.kind !== "grants") return null;
-  const harness = s.handoff?.harnesses.find((each) => each.id === mode.harness);
-  return (
-    <GrantsCard
-      harness={harness?.name ?? "The agent"}
-      context={chosenContext(s.context, s.chipsOn)}
-      selected={s.grantsRow}
-      onStart={() => {
-        s.setGrantsRow(0);
-        keys.submit();
-      }}
-      onChange={() => {
-        props.handoff?.settings();
-        props.onClose();
-      }}
-      onHover={s.setGrantsRow}
-    />
-  );
 }

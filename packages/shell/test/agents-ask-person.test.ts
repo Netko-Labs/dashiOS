@@ -50,7 +50,7 @@ test("it is a permission like the others: kept by Always Allow, and Work alone m
   // A question's answer is words, never a permission: what always asks still does, alone or not.
   expect(NEVER_ALONE_TOOLS.has("ask_person")).toBe(false);
   expect(ASKS_EVERY_TIME.has("ask_person")).toBe(false);
-  for (const tool of ["pay", "sign_in", "fill_code", "force_quit_app", "trash_file"]) expect(coversTool(alone, tool, "ask", 5_000)).toBe(false);
+  for (const tool of ["pay", "sign_in", "fill_code", "force_quit_app"]) expect(coversTool(alone, tool, "ask", 5_000)).toBe(false);
 });
 
 const context = (answer: PersonAnswer, asked: Array<[string, number]> = []): RunContext =>

@@ -18,5 +18,5 @@ export {
   tongueOf,
   withTongue,
 } from "./tongues.ts";
-export type { Answer, Asker, Chip, ChipGo, ModelSet, ModelsView, SpeakExtras, SpokenVoice, VoiceSettings } from "./types.ts";
+export type { Answer, Asker, Chip, ChipGo, ModelSet, ModelsView, SpeakExtras, SpokenVoice, Talk, VoiceSettings } from "./types.ts";
 export { Voice } from "./voice.ts";

@@ -1,16 +1,16 @@
 /**
  * Consent when the assistant is the person's own (agents/lib/session/;
- * decisions.md D148, the diagnosis's table): on a real connection with the
- * assistant's policy, what reads and what is ordinary just runs; a
- * destructive call gets one yes or no by voice; the tools that ask every
- * time keep their own sheet; a site new to the conversation is used and
- * said; the cap refuses in words; and nothing runs while locked.
+ * decisions.md D260): on a real connection with the assistant's policy,
+ * only the critical list asks; closing a window, reading, ordinary calls
+ * just run; the critical tools keep their own sheet, or ask on the
+ * launcher's line while the turn was typed; the cap refuses in words; and
+ * nothing runs while locked.
  */
 
 import { expect, test } from "bun:test";
+import { ASKS_EVERY_TIME } from "../src/actions/tools.ts";
 import { SCOPES } from "../src/agents/consent.ts";
 import { Session } from "../src/agents/lib/session/session.ts";
-import { needsSpokenYes, SAID_NO, yesOrNo } from "../src/agents/lib/session/session-assistant.ts";
 import type { SessionContext, TaskPolicy } from "../src/agents/lib/session/session-types.ts";
 import type { Confirm, PersonAnswer, PersonAsk } from "../src/agents/presence.ts";
 import { SiteGrants } from "../src/agents/sites.ts";
@@ -35,7 +35,8 @@ function assistantSession(answer: PersonAnswer = { text: "Yes.", by: "voice" }) 
   const confirms: Confirm[] = [];
   const sheets: string[] = [];
   const said: string[] = [];
-  const state = { refuses: null as string | null, locked: false };
+  const state = { refuses: null as string | null, locked: false, line: null as boolean | null };
+  const lines: string[] = [];
   const requests: string[] = [];
   const ui = {
     ask: async () => {
@@ -91,7 +92,15 @@ function assistantSession(answer: PersonAnswer = { text: "Yes.", by: "voice" }) 
     window: null,
     name: "Dashi",
     sites: new Set(),
-    assistant: { refuses: () => state.refuses, site: (site) => said.push(site) },
+    assistant: {
+      refuses: () => state.refuses,
+      site: (site) => said.push(site),
+      confirm: (question) => {
+        if (state.line === null) return null;
+        lines.push(question.summary);
+        return Promise.resolve(state.line);
+      },
+    },
   };
   const session = new Session(
     1,
@@ -115,23 +124,15 @@ function assistantSession(answer: PersonAnswer = { text: "Yes.", by: "voice" }) 
     await flush();
     return sent.find((message) => message.id === id)?.result ?? null;
   };
-  return { call, questions, confirms, sheets, said, state, requests, policy };
+  return { call, questions, confirms, sheets, said, state, requests, policy, lines };
 }
 
-test("the tools that wait for a spoken yes are the destructive ones with no sheet of their own: four of 108", () => {
-  expect(TOOLS).toHaveLength(108);
-  expect(
-    TOOLS.filter((tool) => needsSpokenYes(tool.name))
-      .map((tool) => tool.name)
-      .sort(),
-  ).toEqual(["choose_menu_item", "clear_notifications", "close_window", "dismiss_notification"]);
-  expect(["force_quit_app", "trash_file", "pay", "read_page", "open_url", "set_setting"].some(needsSpokenYes)).toBe(false);
+test("the critical list that asks on a sheet of its own (D260): force quit and software; trash and the clipboard history don't", () => {
+  expect([...ASKS_EVERY_TIME].sort()).toEqual(["force_quit_app", "request_software_install", "request_software_update"]);
 });
 
-test("a yes is heard at the start of what was said, in English and Spanish; anything else is not a yes", () => {
-  expect(["yes", "Yes, go ahead and do it.", "yeah sure", "OK", "sí, dale", "claro"].map(yesOrNo)).toEqual([true, true, true, true, true, true]);
-  expect(["no", "No, wait.", "don't", "cancela", "mejor no", "no, yes"].map(yesOrNo)).toEqual([false, false, false, false, false, false]);
-  expect(["the blue one", "yesterday", "", "nothing"].map(yesOrNo)).toEqual([null, null, null, null]);
+test("108 tools, and none of the tools engineer's new ones asks on a sheet of its own", () => {
+  expect(TOOLS).toHaveLength(108);
 });
 
 test("reading and ordinary calls just run, with no sheet and no question", async () => {
@@ -142,17 +143,20 @@ test("reading and ordinary calls just run, with no sheet and no question", async
   expect(h.questions).toEqual([]);
 });
 
-test("closing a window asks once by voice, naming it; a yes closes it and a no does not", async () => {
-  const yes = assistantSession({ text: "Yes, go ahead.", by: "voice" });
-  expect((await yes.call("close_window", { window: "w3" }))?.isError).toBeUndefined();
-  expect(yes.questions.map((ask) => [ask.question, ask.who.name])).toEqual([["Close the window “Terminal”?", "Dashi"]]);
-  expect(yes.requests).toContain("close");
-  for (const answer of [{ text: "no", by: "voice" as const }, { text: "hmm, which one?", by: "voice" as const }, { none: "no-answer" as const }]) {
-    const no = assistantSession(answer);
-    const result = await no.call("close_window", { window: "w3" });
-    expect(result).toMatchObject({ isError: true, content: [{ text: SAID_NO }] });
-    expect(no.requests).not.toContain("close");
-  }
+test("closing a window just runs: no question, no sheet (D260)", async () => {
+  const h = assistantSession();
+  expect((await h.call("close_window", { window: "w3" }))?.isError).toBeUndefined();
+  expect(h.questions).toEqual([]);
+  expect(h.confirms).toEqual([]);
+  expect(h.requests).toContain("close");
+});
+
+test("a critical step of a typed turn asks on the launcher's line, not the sheet", async () => {
+  const h = assistantSession();
+  h.state.line = false;
+  await h.call("force_quit_app", { window: "w3" });
+  expect(h.lines).toHaveLength(1);
+  expect(h.confirms).toEqual([]);
 });
 
 test("a tool that asks every time keeps its own sheet, never the spoken yes", async () => {

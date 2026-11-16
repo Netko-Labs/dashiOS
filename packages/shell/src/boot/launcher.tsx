@@ -6,12 +6,10 @@
  */
 
 import { homedir } from "node:os";
-import { type AgentStore, type Agents, NO_CONTEXT } from "../agents/index.ts";
-import { appFor } from "../apps.ts";
+import type { AgentStore, Agents } from "../agents/index.ts";
 import { placedOutputs } from "../arrange/index.ts";
 import type { Compositor } from "../compositor/index.ts";
 import { launchEntry } from "../entries.ts";
-import { primarySelection, readContext } from "../handoff-shell.tsx";
 import type { LauncherFiles, PictureRect, Presented } from "../launcher/index.ts";
 import {
   AppIndex,
@@ -61,6 +59,8 @@ export interface LauncherOpener {
   open(presented?: Presented | null, scope?: string | null, window?: number | null): void;
   /** ❖ tapped: closes an open launcher, else opens one. */
   toggle(): void;
+  /** The launcher on the conversation with Dashi's agent (a notification's Show); one already open gives way. */
+  conversation(): void;
 }
 
 export interface LauncherParts {
@@ -235,8 +235,8 @@ type Surface = (onClosed: () => void, output: string | undefined) => ReturnType<
 
 /** How the launcher opens and closes: never over the lock screen, its keys with it, its context read first. */
 function launcherOpener(needs: LauncherNeeds, keyboard: LauncherKeyboard, appIndex: AppIndex, surfaceFor: (opening: Opening) => Surface): LauncherOpener {
-  const { compositor, overlays, handoff, late } = needs;
-  const open = (presented: Presented | null = null, scope: string | null = null, window: number | null = null): void => {
+  const { overlays, handoff, late } = needs;
+  const open = (presented: Presented | null = null, scope: string | null = null, window: number | null = null, conversation = false): void => {
     // Never behind the lock screen (a dashi:// link, Search…): it would hold keys nobody sees.
     if (needs.screenLocked()) return;
     markOpen();
@@ -246,20 +246,14 @@ function launcherOpener(needs: LauncherNeeds, keyboard: LauncherKeyboard, appInd
     const limit = setTimeout(keyboard.ready, TYPE_AHEAD_LIMIT_MS);
     const close = () => overlays.close("launcher");
     const entries = appIndex.entries();
-    // The run this launcher opens talking to (a notification's Follow up), once.
-    const talkTo = handoff.talk.run;
-    handoff.talk.run = null;
-    // The context chips: the window in front and the selection, read before the launcher takes the keyboard.
-    handoff.launcherContext.set(NO_CONTEXT);
     handoff.handoffShell.service.refresh();
-    if (compositor && !presented && !scope) readFrontContext(needs, compositor);
     void late.peek("launcherWorld")?.refresh();
     let opened = false;
     const finished = () => {
       clearTimeout(limit);
       keyboard.closed();
     };
-    const surface = surfaceFor({ presented, scope, entries, talkTo, close });
+    const surface = surfaceFor({ presented, scope, entries, conversation, close });
     const showing = overlays.showOn("launcher", needs.screens.whereIsPerson, (onClosed, output) => {
       opened = true;
       // Its keys come with the surface and go with it, however it closes.
@@ -283,17 +277,9 @@ function launcherOpener(needs: LauncherNeeds, keyboard: LauncherKeyboard, appInd
     },
     open,
     toggle: () => (overlays.has("launcher") ? overlays.close("launcher") : open()),
-  };
-}
-
-/** The window in front, the page in Helium and the selection, for the launcher's context chips. */
-function readFrontContext({ apps, catalog, agents, handoff }: LauncherNeeds, compositor: Compositor): void {
-  void readContext({
-    window: async () => {
-      const front = (await compositor.windows()).find((each) => each.focused && each.state === "normal");
-      return front ? { id: front.id, app: appFor(apps, front, catalog.installedApp).name, appId: front.appId, title: front.title } : null;
+    conversation: () => {
+      if (overlays.has("launcher")) overlays.close("launcher");
+      open(null, null, null, true);
     },
-    page: () => agents?.frontPage() ?? Promise.resolve(null),
-    selection: primarySelection,
-  }).then((context) => handoff.launcherContext.set(context));
+  };
 }

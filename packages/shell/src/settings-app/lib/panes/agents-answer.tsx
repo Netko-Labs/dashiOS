@@ -13,17 +13,16 @@ import { ANSWERERS, type AnswererChoice, isHarnessId } from "../../../agents/ask
 import { ago, type HistoryEntry } from "../../../agents/ask/history.ts";
 import type { KeyPlace, Provider } from "../../../agents/ask/keys.ts";
 import type { AnswerStatus } from "../../../agents/ask/types.ts";
-import { harnessOrder } from "../../../agents/handoff/order.ts";
 import { Button, Caption, Group, Note } from "../../../shared/cards/index.ts";
 import { AnswererList, useHarnesses } from "../../answerer-list.tsx";
 import { useColors } from "../../colors.ts";
 import { useSettings } from "../../hooks.ts";
 import { Spot } from "../../spot.tsx";
 import type { SettingsStore } from "../../store.ts";
-import { Choices, Switch } from "../../ui.tsx";
-import { type ByPerson, ONLY_YOU, usePersonOnly } from "../person-only.ts";
+import type { ByPerson } from "../person-only.ts";
 import { Row as Item } from "../row.tsx";
 import { Setting } from "../setting.tsx";
+import { ModelRows } from "./agents-models.tsx";
 import { ListRow } from "./parts.tsx";
 
 const KEY_NAMES: Readonly<Record<Provider, { who: string; variable: string; host: string }>> = {
@@ -64,7 +63,7 @@ export function modelWords(models: readonly string[] | null | undefined, named: 
 }
 
 /** Most models offered as pills (UI-2); more are a hand-edit of settings.json. */
-const MODEL_PILLS = 6;
+const _MODEL_PILLS = 6;
 /** An opened row lists this many of its connections, newest first. */
 const PARTS_SHOWN = 20;
 
@@ -121,91 +120,26 @@ export function HistoryRow({ entry, onUndo }: { entry: HistoryEntry; onUndo: (in
   );
 }
 
-/** What the chosen answerer needs said: where its key is, and which model answers. */
-function AnswererDetail({ choice, settings, answers }: { choice: AnswererChoice; settings: SettingsStore; answers: AnswerStatus }) {
-  const { data } = useSettings(settings);
+/** Where the chosen answerer's key is (the model is its own rows: agents-models.tsx). */
+function AnswererDetail({ choice, answers }: { choice: AnswererChoice; answers: AnswerStatus }) {
   const [place, setPlace] = useState<KeyPlace | null>(null);
-  const [models, setModels] = useState<string[] | null | undefined>(undefined);
-  const [gptModels, setGptModels] = useState<string[] | null | undefined>(undefined);
   useEffect(() => {
     let current = true;
     setPlace(null);
     if (choice === "claude") void answers.keyPlace("anthropic").then((found) => current && setPlace(found));
-    if (choice === "gpt") void answers.keyPlace("openai").then((found) => current && setPlace(found));
-    if (choice === "gpt") void answers.gptModels().then((found) => current && setGptModels(found));
-    if (choice === "local") void answers.localModels().then((found) => current && setModels(found));
     return () => {
       current = false;
     };
   }, [choice, answers]);
-  const gptPills = gptModels && gptModels.length > 1 ? gptModels.slice(0, MODEL_PILLS) : [];
-  const pills = models && models.length > 1 ? models.slice(0, MODEL_PILLS) : [];
+  if (choice !== "claude") return null;
   return (
     <Group testID="agents-answerer-detail">
-      {choice === "claude" && <Setting id="agents/key" testID="agents-key" detail={keyWords(place, "anthropic")} />}
-      {choice === "gpt" && <Setting id="agents/key" testID="agents-key" detail={keyWords(place, "openai")} />}
-      {choice === "gpt" && (
-        <Setting id="agents/model" testID="agents-gpt-model" detail={gptModelWords(gptModels, data.agents.gptModel)} stack={gptPills.length > 0}>
-          {gptPills.length > 0 && (
-            <Choices
-              testID="agents-gpt-model-choice"
-              options={gptPills.map((name) => ({ value: name, label: name }))}
-              value={data.agents.gptModel ?? gptPills[0] ?? ""}
-              onChange={(name) => settings.patch("agents", { gptModel: name })}
-            />
-          )}
-        </Setting>
-      )}
-      {choice === "local" && (
-        <Setting id="agents/model" testID="agents-model" detail={modelWords(models, data.agents.localModel)} stack={pills.length > 0}>
-          {pills.length > 0 && (
-            <Choices
-              testID="agents-model-choice"
-              options={pills.map((name) => ({ value: name, label: name }))}
-              value={data.agents.localModel ?? pills[0] ?? ""}
-              onChange={(name) => settings.patch("agents", { localModel: name })}
-            />
-          )}
-        </Setting>
-      )}
+      <Setting id="agents/key" testID="agents-key" detail={keyWords(place, "anthropic")} />
     </Group>
   );
 }
 
-/** "Hand off to": the harness a plan goes to, and whether its steps skip the asking. */
-function HandOffGroup({ installed, settings, byPerson }: { installed: ReturnType<typeof harnessOrder>; settings: SettingsStore; byPerson?: ByPerson }) {
-  const { data } = useSettings(settings);
-  const guard = usePersonOnly(byPerson);
-  const handOff = installed[0] ?? "claude-code";
-  return (
-    <Group testID="agents-hand-off">
-      <Setting id="agents/hand-off-to" testID="agents-hand-off-to" stack={installed.length > 1}>
-        {installed.length > 1 ? (
-          <Choices
-            testID="agents-hand-off-choice"
-            options={installed.map((id) => ({ value: id, label: ANSWERERS[id].name }))}
-            value={handOff}
-            onChange={(id) => settings.patch("agents", { handOff: id })}
-          />
-        ) : (
-          <Note>{ANSWERERS[handOff].name}</Note>
-        )}
-      </Setting>
-      <Setting id="agents/skip-grants" {...(guard.refused === "agents/skip-grants" ? { detail: ONLY_YOU } : {})}>
-        <Switch
-          testID="agents-skip-grants"
-          on={data.agents.skipGrants === true}
-          // On, a task starts without showing what its agent may use: the person's alone. Off only narrows.
-          onChange={(on) =>
-            on ? guard.mine("agents/skip-grants", () => settings.patch("agents", { skipGrants: true })) : settings.patch("agents", { skipGrants: undefined })
-          }
-        />
-      </Setting>
-    </Group>
-  );
-}
-
-export function AnswerSettings({ settings, answers, byPerson }: { settings: SettingsStore; answers: AnswerStatus; byPerson?: ByPerson }) {
+export function AnswerSettings({ settings, answers }: { settings: SettingsStore; answers: AnswerStatus; byPerson?: ByPerson }) {
   const { data } = useSettings(settings);
   const choice = data.agents.answerer;
   const [entries, setEntries] = useState<readonly HistoryEntry[]>(() => answers.history());
@@ -221,12 +155,6 @@ export function AnswerSettings({ settings, answers, byPerson }: { settings: Sett
     void answers.undo(entry.id, index, step.undo).then((outcome) => setNotice(outcome.ok ? `Undone: ${step.undo?.title}` : outcome.error));
   };
   const harnessName = isHarnessId(choice) ? ANSWERERS[choice].name : null;
-  // "Hand off to": the harnesses installed, the one named first (else the answerer, else the first).
-  const installed = harnessOrder(
-    (harnesses ?? []).filter((each) => each.installed).map((each) => each.id),
-    data.agents.handOff,
-    choice,
-  );
 
   return (
     <>
@@ -234,14 +162,15 @@ export function AnswerSettings({ settings, answers, byPerson }: { settings: Sett
         <Setting id="agents/answer-with" />
         <AnswererList testID="agents-answerer-choice" chosen={choice} harnesses={harnesses} onChoose={choose} />
       </Group>
-      {(choice === "claude" || choice === "gpt" || choice === "local") && <AnswererDetail choice={choice} settings={settings} answers={answers} />}
-      {installed.length > 0 && <HandOffGroup installed={installed} settings={settings} {...(byPerson ? { byPerson } : {})} />}
+      <Caption>Not yet: needs Dashi's loop for GPT.</Caption>
+      {choice === "claude" && <AnswererDetail choice={choice} answers={answers} />}
+      <ModelRows settings={settings} answers={answers} />
       {harnessName !== null && (
-        <Caption>{`${harnessName} runs in Dashi's agent sandbox with only its own sign-in, and its own tools are off: it can only plan.`}</Caption>
+        <Caption>{`${harnessName} runs in Dashi's agent sandbox with only its own sign-in; its own tools are off and Dashi's are on.`}</Caption>
       )}
       <Caption>
-        Only what you type is sent, with the window or selection you leave beside it, and only when you ask. Ask runs nothing until you see the plan and press
-        Return.
+        What you say or type goes to it with what is in front (the window, its page, your selection). It does what you ask; only paying, signing in, losing work
+        for good, changing the system and speaking for you ask first.
       </Caption>
       <Spot id="agents/history" cards>
         <Caption above>History</Caption>

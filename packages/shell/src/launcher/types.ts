@@ -16,7 +16,18 @@
  */
 
 import type { Outcome } from "../actions/types.ts";
-import type { AnswererInfo, HandoffHarness, HarnessId, HistoryEntry, NowItem, RunView, TaskContext, TaskView } from "../agents/index.ts";
+import type {
+  AnswererInfo,
+  HandoffHarness,
+  HarnessId,
+  HistoryEntry,
+  NowItem,
+  PersonAnswer,
+  RunView,
+  TaskContext,
+  TaskView,
+  TranscriptView,
+} from "../agents/index.ts";
 import type { Store } from "./host.ts";
 import type { AgentAct } from "./lib/agents/acts.ts";
 import type { Row, RowIcon } from "./row-model.ts";
@@ -95,6 +106,29 @@ export interface LauncherAgents extends Store<LauncherAgentsSnapshot> {
 }
 
 type AgentUndo = Extract<AgentAct, { kind: "undo" }>["undo"];
+
+/**
+ * Dashi's agent, as the launcher reaches it (decisions.md D261): the one
+ * conversation, spoken and typed turns alike, and what can be done with it.
+ */
+export interface LauncherDashi extends Store<TranscriptView> {
+  /** Send typed words as the next turn; false when nothing can take them. */
+  type(words: string): boolean;
+  /** ❖Esc: the turn at work stops; the conversation stays open. */
+  stop(): void;
+  /** ❖↩: the turn at work goes on by itself; false when nothing works. */
+  keepWorking(): boolean;
+  /** The question waiting in the view is answered. */
+  reply(answer: PersonAnswer): boolean;
+  /** What answers typed asks now, as the header and the Ask row name it ("Claude Code · opus"); null with no answerer. */
+  model(): string | null;
+  /** What the persona is called ("Dashi"). */
+  name(): string;
+  /** The person's recent asks, newest first: the empty view's tries. */
+  recent(): readonly string[];
+  /** A link in an answer was pressed. */
+  openLink(url: string): void;
+}
 
 /** What the launcher reads about handing off: the harnesses installed (the first is Return's) and the runs. */
 export interface HandoffSnapshot {

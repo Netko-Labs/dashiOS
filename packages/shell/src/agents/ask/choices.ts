@@ -40,7 +40,8 @@ function harnessDetail(status: HarnessStatus | null | undefined, uses: string, i
  * unless it is the one chosen (it stays where the person left it).
  */
 export function answererRows(harnesses: readonly HarnessStatus[] | null, chosen: AnswererChoice | undefined = undefined): AnswererRow[] {
-  const rows = ANSWERER_CHOICES.map((value): AnswererRow => {
+  // GPT is not offered until Dashi's loop drives it (decisions.md D261), unless it is the one chosen.
+  const rows = ANSWERER_CHOICES.filter((value) => value !== "gpt" || chosen === "gpt").map((value): AnswererRow => {
     if (value === "none") return { value, name: "None", detail: DETAILS.none, available: true };
     const name = ANSWERERS[value].name;
     if (!isHarnessId(value)) return { value, name, detail: DETAILS[value], available: true };

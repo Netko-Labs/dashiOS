@@ -109,7 +109,7 @@ const screenshots = new Screenshots(compositor, { capture: guards.capture, notif
 startSpoken({ notifications, toplevels: stores.toplevels, system: system.system, developmentRun: radios.developmentRun, services, late });
 const switches = startSwitches(compositor, { settingsStore, dockPrefs: stores.dockPrefs, notifications, look }, services);
 const { registryStores } = switches;
-hostAssistant(late, basics.agentUi, basics.passwords.vault.tokens, (name) => settingNow(name, registryStores));
+hostAssistant(late, basics.agentUi, basics.passwords.vault.tokens, (name) => settingNow(name, registryStores), notifications.store);
 
 // Force Quit, agents from the launcher and their server, System Settings and the Setup Assistant.
 const settingsApps = startSettingsApps(compositor, system, services, late);

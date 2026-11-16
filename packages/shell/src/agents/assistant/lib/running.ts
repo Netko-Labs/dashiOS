@@ -37,6 +37,8 @@ export interface RunningDeps {
   now(): number;
   /** The capsule's line. */
   step(title: string): void;
+  /** The step that started last ended. */
+  settled?(ok: boolean): void;
   /** What would put a settings change back; null for anything else. */
   undoOf(call: Call): Undo | null;
   maxCalls?: number;
@@ -54,12 +56,14 @@ export class Running {
   private timer: unknown = null;
   private waiting = 0;
   private readonly controller = new AbortController();
+  private most: number;
 
   constructor(
     private readonly deps: RunningDeps,
     outer: AbortSignal,
   ) {
     this.left = deps.maxMs ?? MAX_MS;
+    this.most = deps.maxCalls ?? MAX_CALLS;
     outer.addEventListener("abort", () => this.controller.abort(), { once: true });
     if (outer.aborted) this.controller.abort();
     this.run();
@@ -78,7 +82,7 @@ export class Running {
   /** Why a call may not start now, in words for the model; null when it may (and it counts). */
   refuses(): string | null {
     if (this.controller.signal.aborted) return "The person stopped this. Make no more calls.";
-    if (this.calls < (this.deps.maxCalls ?? MAX_CALLS)) {
+    if (this.calls < this.most) {
       this.calls++;
       return null;
     }
@@ -102,6 +106,7 @@ export class Running {
     const step = this.steps.findLast((each) => each.ok === null);
     if (!step) return;
     step.ok = ok;
+    this.deps.settled?.(ok);
     if (step.waits && --this.waiting === 0) this.run();
   }
 
@@ -120,6 +125,22 @@ export class Running {
     if (this.controller.signal.aborted) return;
     this.stopped = why;
     this.controller.abort();
+  }
+
+  /** The person stopped it (❖Esc in the launcher). */
+  abort(): void {
+    this.controller.abort();
+  }
+
+  /** Keep working on it (decisions.md D261): it may make `calls` more calls and take `ms` more of its own time. */
+  extend(calls: number, ms: number): void {
+    this.most = this.calls + calls;
+    this.over = 0;
+    this.left += ms;
+    if (this.timer !== null) {
+      this.pause();
+      this.run();
+    }
   }
 
   /** It is over: its clock stops. */

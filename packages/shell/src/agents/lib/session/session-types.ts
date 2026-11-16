@@ -5,10 +5,11 @@ import type { Compositor } from "../../../compositor/index.ts";
 import type { Arrange, Tile } from "../../../layout.ts";
 import type { AloneGate } from "../../alone/index.ts";
 import type { Undo } from "../../ask/index.ts";
+import type { Question } from "../../confirm.ts";
 import type { Grants, Scope } from "../../consent.ts";
 import type { Desktop, Hands, WorkPlaces } from "../../desktop/index.ts";
 import type { AgentMask } from "../../mask.ts";
-import type { AgentUi } from "../../presence.ts";
+import type { AgentUi, PersonAnswer } from "../../presence.ts";
 import type { SecretsShared } from "../../secrets/index.ts";
 import type { SiteGrants } from "../../sites.ts";
 import type { Call } from "../../tools/index.ts";
@@ -59,14 +60,19 @@ export interface TaskPolicy {
 /**
  * Dashi's own assistant on a connection: the person asked by voice and is
  * at the screen. Its calls run without a scope sheet (its policy grants
- * every scope); a destructive one waits for a spoken yes
- * (session-assistant.ts); a site new to the conversation is used and said.
+ * every scope); only the critical list asks, on its own sheet or in the
+ * launcher's line (decisions.md D260); a site new to the conversation is
+ * used and said.
  */
 export interface AssistantGate {
   /** Why a call may not start now (the ask's cap, a stop), in words for the model; null when it may. */
   refuses(tool: string): string | null;
   /** A site is used for the first time in this conversation: it is said in a line, and allowed for the conversation. */
   site(site: string): void;
+  /** An agent's question in words, asked on the launcher's line while the turn at work was typed there; null to ask as usual. */
+  question?(text: string, seconds: number, signal: AbortSignal): Promise<PersonAnswer> | null;
+  /** A critical step's yes or no, on the launcher's line while the turn at work was typed there; null for its sheet. */
+  confirm?(question: Question, signal: AbortSignal): Promise<boolean> | null;
 }
 
 /** The launcher's runs' side of a call: what would put it back, and that it went well. */

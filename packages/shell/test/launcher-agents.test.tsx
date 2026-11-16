@@ -3,16 +3,11 @@ import type { Outcome } from "../src/actions/types.ts";
 import { ANSWERERS } from "../src/agents/ask/answerer.ts";
 import type { HistoryEntry } from "../src/agents/ask/history.ts";
 import type { NowItem } from "../src/agents/ask/now.ts";
-import { stepsFrom } from "../src/agents/ask/plan.ts";
-import type { TaskView } from "../src/agents/ask/types.ts";
-import { TOOL_ACTIONS } from "../src/agents/index.ts";
-import { LAUNCHER_RULES, LauncherKeys } from "../src/launcher/keys.ts";
+import { LAUNCHER_RULES } from "../src/launcher/keys.ts";
 import { ASK_ROW, agentVerbs, firstChoice, readsLikeSentence, SET_UP_ROW, withAgents } from "../src/launcher/lib/agents/agent-rows.ts";
-import { agentField, taskSubmit } from "../src/launcher/lib/agents/task-mode.tsx";
 import type { Section } from "../src/launcher/sections.ts";
 import type { LauncherAgents, LauncherAgentsSnapshot } from "../src/launcher/types.ts";
 import { app, mount, unmountLauncher } from "./launcher-harness.tsx";
-import { settle } from "./support/time.ts";
 
 afterEach(unmountLauncher);
 
@@ -40,14 +35,15 @@ test("a sentence: three words or more, a verb first, or a question; never a name
   expect(ids(withAgents(sum, input("15% of 80", snap(), true)))).toEqual(["answer", ASK_ROW]);
 });
 
-test("Ask is the last row, only for a sentence or after ⇥, and says where the words go", () => {
+test("Ask Dashi is the last row, only for a sentence or after ⇥, and says what answers (D261)", () => {
   expect(ids(withAgents(LOCAL, input("ter", snap())))).toEqual(["entry:app.terminal"]);
   expect(ids(withAgents(LOCAL, input("dark mode", snap())))).toEqual(["entry:app.terminal"]);
   const sentence = withAgents(LOCAL, input("dark mode and hide the dock", snap()));
   expect(ids(sentence)).toEqual(["entry:app.terminal", ASK_ROW]);
   const ask = sentence.at(-1)?.rows[0];
-  expect(ask).toMatchObject({ title: "Ask: dark mode and hide the dock", kind: "Claude · Anthropic, your key", agent: "ask" });
-  expect(withAgents(LOCAL, input("ter", snap({ answerer: ANSWERERS.local }), true)).at(-1)?.rows[0]?.kind).toBe("Local · stays on this computer");
+  expect(ask).toMatchObject({ title: "Ask Dashi", detail: "“dark mode and hide the dock”", kind: "Claude", agent: "ask" });
+  const named = withAgents(LOCAL, { ...input("ter", snap({ answerer: ANSWERERS.local }), true), model: "Local model · qwen3:8b" }).at(-1)?.rows[0];
+  expect(named).toMatchObject({ detail: "“ter” · Local model · qwen3:8b", kind: "" });
 });
 
 test("never picked: ⇥ offers Set up an agent…; None hides Ask entirely", () => {
@@ -81,7 +77,8 @@ test("Now sits on top of an empty launcher, at most three, each with a shiso dot
   expect(withAgents(LOCAL, { ...input("", snap({ now: [turn] })), allApps: true })[0]?.id).toBe("results");
   // Enter on a Your turn goes to its window; Stop is there too.
   expect(agentVerbs({ kind: "now", item: turn }).map((verb) => verb.title)).toEqual(["Go to window", "Stop claude"]);
-  expect(agentVerbs({ kind: "now", item: running }).map((verb) => verb.title)).toEqual(["Show plan", "Stop"]);
+  // A plan (GPT by voice) has no view in the launcher any more: its row only stops it.
+  expect(agentVerbs({ kind: "now", item: running }).map((verb) => verb.title)).toEqual(["Stop"]);
 });
 
 test("history lists what agents did, with Undo for a settings change", () => {
@@ -103,35 +100,6 @@ test("history lists what agents did, with Undo for a settings change", () => {
   expect(sections.map((section) => section.id)).toEqual(["history"]);
   expect(sections[0]?.rows[0]).toMatchObject({ title: "Claude: dark mode", detail: "Turn Dark Mode on · 10 min ago" });
   expect(agentVerbs({ kind: "history", entry }).map((verb) => verb.title)).toEqual(["Show in Settings", "Undo: Turn Dark Mode off"]);
-});
-
-const planned = (): TaskView => ({
-  id: "ask-1",
-  answerer: ANSWERERS.claude,
-  request: "dark mode and hide the dock",
-  phase: "planned",
-  steps: stepsFrom(
-    [
-      { id: "a", name: "set_setting", input: { name: "dark_mode", value: true } },
-      { id: "b", name: "set_setting", input: { name: "dock_autohide", value: true } },
-    ],
-    TOOL_ACTIONS,
-  ),
-  said: "",
-  failure: null,
-});
-
-test("Return on a plan: run it; with words typed, a follow-up; on a refused step, Allow once; failed, Retry or Settings", () => {
-  const task = planned();
-  expect(taskSubmit(task, "", null)).toEqual({ kind: "run" });
-  expect(taskSubmit(task, " and lock ", null)).toEqual({ kind: "follow-up", text: "and lock" });
-  const refused = { ...task, steps: task.steps.map((step) => ({ ...step, state: { kind: "not-allowed" as const } })) };
-  expect(taskSubmit(refused, "", 1)).toEqual({ kind: "allow-once", step: 1 });
-  expect(taskSubmit({ ...task, phase: "failed", failure: { kind: "no-answer", text: "Claude didn't answer." } }, "", null)).toEqual({ kind: "retry" });
-  expect(taskSubmit({ ...task, phase: "failed", failure: { kind: "no-key", text: "No key." } }, "", null)).toEqual({ kind: "settings" });
-  expect(taskSubmit({ ...task, phase: "running" }, "more", null)).toEqual({ kind: "none" });
-  expect(agentField(task, "", "#6E56CF").hints.map((hint) => hint.label)).toEqual(["Run 2", "Edit", "back"]);
-  expect(agentField(task, "", "#6E56CF").chip).toEqual({ title: "dark mode and hide the dock" });
 });
 
 test("⇥ is the launcher's while it is open, but ❖⇥ still switches apps", () => {
@@ -184,56 +152,4 @@ test("view: ter ↩ opens Terminal at once with an answerer set, and a sentence 
   await launcher.enter();
   expect(launcher.opened).toEqual(["Terminal"]);
   expect(agents.asked).toEqual([]);
-});
-
-test("view: ⇥ asks, the plan shows its steps under the spark, and Return runs it", async () => {
-  const agents = fakeAgents(snap());
-  const keys = new LauncherKeys();
-  const launcher = await mount({ entries: [app("Terminal")], agents, keys }, [ASK_ROW]);
-  await launcher.type("dark mode and hide the dock");
-  expect(launcher.rows().ids).toEqual([ASK_ROW]);
-  expect(launcher.rows().selected).toBeNull();
-  keys.binding("launcher-tab");
-  await settle();
-  expect(agents.asked).toEqual(["dark mode and hide the dock"]);
-  agents.set(snap({ tasks: [planned()] }));
-  await settle();
-  expect(launcher.has("launcher:section:plan")).toBe(true);
-  expect(launcher.has("launcher:step:0")).toBe(true);
-  expect(launcher.has("launcher:chip:1")).toBe(true);
-  expect(launcher.tree()).toContain("Turn Dark Mode on");
-  expect(launcher.tree()).toContain("Change settings · allowed");
-  await launcher.enter();
-  expect(agents.runs).toEqual(["ask-1"]);
-  // Esc goes back to searching; the task keeps going.
-  await launcher.key("Escape");
-  expect(launcher.has("launcher:section:plan")).toBe(false);
-});
-
-test("view: after a plan ran, the field takes the next words alone; the plan's never come back into it", async () => {
-  const agents = fakeAgents(snap());
-  const keys = new LauncherKeys();
-  const launcher = await mount({ entries: [app("Terminal")], agents, keys }, [ASK_ROW]);
-  const value = (): string | undefined => /"value":"([^"]*)"/.exec(launcher.tree())?.[1];
-  await launcher.type("dark mode and hide the dock");
-  keys.binding("launcher-tab");
-  await settle();
-  agents.set(snap({ tasks: [{ ...planned(), phase: "done" }] }));
-  await settle();
-  // On the plan the words are its chip; the field is empty for a follow-up.
-  expect(value()).toBe("");
-  await launcher.key("Escape");
-  // Back to searching: an empty field, not the plan's words for "history" to be typed after.
-  expect(value()).toBe("");
-  await launcher.type("history");
-  expect(value()).toBe("history");
-  // ⇥ on a plan still edits its words.
-  agents.set(snap({ tasks: [planned()] }));
-  await launcher.type("");
-  await launcher.type("dark mode and hide the dock");
-  keys.binding("launcher-tab");
-  await settle();
-  keys.binding("launcher-tab");
-  await settle();
-  expect(value()).toBe("dark mode and hide the dock");
 });

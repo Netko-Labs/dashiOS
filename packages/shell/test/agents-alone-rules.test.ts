@@ -38,30 +38,20 @@ const person = (alone = true) => new WorkAlone({ personPressed: async () => alon
 const _pick = { scopes: ["see", "screen"], sites: ["example.com"], minutes: 1 };
 
 describe("never allowed, whatever is picked", () => {
-  test("payments, sign-ins and the clipboard history are not kinds a person can pick", () => {
-    expect([...NEVER_ALONE_SCOPES].sort()).toEqual(["clipboard", "pay", "signin"]);
+  test("payments and sign-ins are not kinds a person can pick (D260: the clipboard history is not critical)", () => {
+    expect([...NEVER_ALONE_SCOPES].sort()).toEqual(["pay", "signin"]);
     for (const scope of NEVER_ALONE_SCOPES) expect(ALONE_SCOPES).not.toContain(scope);
     const clean = cleanConfig({ scopes: EVERY_SCOPE, sites: [], minutes: 60 });
     expect("problem" in clean).toBe(false);
     if (!("problem" in clean)) for (const scope of NEVER_ALONE_SCOPES) expect(clean.scopes).not.toContain(scope);
     // Picking only those leaves nothing to allow.
-    expect(cleanConfig({ scopes: ["pay", "signin", "clipboard"], sites: [], minutes: 60 })).toEqual({ problem: "Pick at least one thing agents may do." });
+    expect(cleanConfig({ scopes: ["pay", "signin"], sites: [], minutes: 60 })).toEqual({ problem: "Pick at least one thing agents may do." });
   });
 
   test("with every kind forced on, the tools that pay, use a secret, or ask every time still aren't covered", () => {
     const now = clock.now();
     const state = everything(now);
-    const never = [
-      "pay",
-      "sign_in",
-      "fill_code",
-      "list_logins",
-      "read_clipboard_history",
-      "force_quit_app",
-      "trash_file",
-      "request_software_install",
-      "request_software_update",
-    ];
+    const never = ["pay", "sign_in", "fill_code", "list_logins", "force_quit_app", "request_software_install", "request_software_update"];
     for (const name of never) {
       const tool = TOOLS.find((each) => each.name === name);
       expect(tool).toBeDefined();
@@ -84,7 +74,7 @@ describe("never allowed, whatever is picked", () => {
     for (const scope of NEVER_ALONE_SCOPES) expect(alone.holds(scope)).toBe(false);
     expect(alone.covers("pay", "pay")).toBe(false);
     expect(alone.covers("force_quit_app", "act")).toBe(false);
-    expect(alone.covers("trash_file", "files")).toBe(false);
+    expect(alone.covers("request_software_install", "act")).toBe(false);
     expect(alone.status().scopes).not.toContain("pay");
   });
 
