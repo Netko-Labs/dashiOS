@@ -12,11 +12,12 @@ import type { Exec } from "../src/shared/files/index.ts";
 
 const ctx = { status: () => {} } as unknown as RunContext;
 let dir = "";
-const saved = { notes: process.env.DASHI_NOTES_DIR, calendars: process.env.DASHI_CALENDAR_DIR };
+const saved = { notes: process.env.DASHI_NOTES_DIR, calendars: process.env.DASHI_CALENDAR_DIR, cache: process.env.XDG_CACHE_HOME };
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "dashi-edits-"));
   process.env.DASHI_NOTES_DIR = join(dir, "Notes");
   process.env.DASHI_CALENDAR_DIR = join(dir, "calendars");
+  process.env.XDG_CACHE_HOME = join(dir, "cache");
 });
 afterEach(() => {
   rmSync(dir, { recursive: true, force: true });

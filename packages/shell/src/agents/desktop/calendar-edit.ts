@@ -8,7 +8,7 @@
  */
 
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import {
   addDays,
@@ -110,7 +110,8 @@ export function editEvent(change: EventChange, ctx: RunContext): ToolResult {
 
 /** The event as an .ics file in the Trash: opening it in Calendar brings it back (its uid is free again). */
 async function keepInTrash(calendar: Calendar, event: CalEvent, run: Exec): Promise<boolean> {
-  const dir = join(process.env.XDG_RUNTIME_DIR || tmpdir(), `dashi-deleted-${process.pid}`);
+  // On the home folder's disk: `gio trash` can't move a file from /run (tmpfs) into the home Trash.
+  const dir = join(process.env.XDG_CACHE_HOME || join(process.env.HOME || homedir(), ".cache"), "dashi", "deleted-events");
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const name = `${(event.title || "Event").replace(/[/\0]/g, "-").slice(0, 80)}.ics`;
   const path = join(dir, name);
