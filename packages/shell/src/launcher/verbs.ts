@@ -236,9 +236,11 @@ export function presentedVerbs(action: ActionDef, args: Args, ctx: VerbContext):
 
 /** A verb as a row of the action list: its title, its key at the right. */
 export function verbRow(each: Verb, asking: boolean): Row {
+  const question = asking ? each.confirm : undefined;
   return {
     id: `verb:${each.id}`,
-    title: asking && each.confirm ? each.confirm : each.title,
+    title: question ?? each.title,
+    ...(question !== undefined ? { question: true as const } : {}),
     kind: "",
     icon: { none: true },
     action: { kind: "type", query: "" },

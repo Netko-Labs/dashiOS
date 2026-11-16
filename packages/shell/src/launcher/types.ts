@@ -61,6 +61,8 @@ export interface LauncherScope {
   run(verb: string, row: Row | undefined, query: string): ScopeResult | Promise<ScopeResult>;
   /** Esc inside it (an extension's pushed view, a question in the field): true when it went back itself. */
   back?(): boolean;
+  /** After `back`: the row that opened the view it went back from, and what was typed then, to select it again. */
+  returnTo?(): { row: string; query: string } | null;
   /** The launcher left it (Esc, or the launcher closed). */
   leave?(): void;
   /** What is typed is a secret: the field shows dots. */

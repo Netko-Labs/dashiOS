@@ -78,7 +78,7 @@ export function Installed({ query }: { query: string }) {
       (entry) =>
         entry.kind === "app" &&
         (needle === "" || entry.name.toLowerCase().includes(needle)) &&
-        entry.offers.some((offer) => offer.kind === "rpm" && offer.installed && !offer.cameWithSystem),
+        entry.offers.some((offer) => offer.kind === "rpm" && offer.installed && !offer.cameWithSystem && !offer.dependency),
     ) ?? false;
   if (state.installed === null && state.hasFlatpak) return <Loading label="Looking at your apps…" />;
   const apps = [...(state.installed ?? [])]

@@ -25,6 +25,7 @@ import {
 import { spawnDetached } from "../../../src/shared/apps/index.ts";
 import { settingsPath } from "../../../src/shared/settings/index.ts";
 import { Catalog, cacheRoot, displayUrl, Flathub, ImageCache, Images, JsonCache, Packages, Software, standIn } from "../../../src/shared/software/index.ts";
+import { followFolder } from "./applets/follow.ts";
 import { AppletStore } from "./applets/store.ts";
 import { SoftwareStore } from "./store.ts";
 
@@ -45,6 +46,8 @@ export interface Services {
   logOut(): void;
   /** Opens an https address in the browser (an app's website, an applet's source). */
   openUrl(url: string): void;
+  /** Calls `onChange` when the applets folder changes from anywhere (the launcher's Get, `dashi-applet`); returns what stops it. */
+  followApplets(onChange: () => void): () => void;
 }
 
 /** Hands an https address to the desktop's browser; anything else is ignored. */
@@ -95,6 +98,7 @@ export function createServices(restart: () => void, logOut: () => void, env: Rea
     restart,
     logOut,
     openUrl: (url) => openInBrowser(url),
+    followApplets: (onChange) => followFolder(appletsRoot(), onChange),
   };
 }
 

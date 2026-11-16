@@ -5632,3 +5632,117 @@ short words, as the rulebook is written.
   again is listed as theirs, which it now is.
 - **Undo:** `cameWithSystem` in `shared/software/lib/catalog-merge.ts` and
   `apps/software/lib/installed-packages.tsx`.
+
+### D360. The open Store follows the applets folder
+
+- **Date:** 2026-11-16. `v09/fix-polish-1`, found in pass 37.
+- **Found:** an add-on got from the launcher (another process) didn't show
+  on the open Store's Installed until the window was reopened.
+- **Decision:** while the window is open it watches the applets folder with
+  its subfolders, as the shell's applet runner does, and reads Installed
+  again 300 ms after a burst of writes settles; the list is merged again
+  over the catalogs already read (no network). The launcher's scope already
+  read the folder each time it opened.
+- **Undo:** `apps/software/lib/applets/follow.ts` and `followApplets` in
+  `services.ts` and `view.tsx`.
+
+### D361. A question asked in place wraps; every other row stays one line
+
+- **Date:** 2026-11-16. `v09/fix-polish-1`, found in pass 37 (33b).
+- **Found:** "Get “ASUS Control”? It can: …" ran under the ↩ key and off
+  the panel.
+- **Decision:** a verb's `confirm` line (the add-on's question, "Quit Files
+  and close its 2 windows?") wraps and its row grows; the key stays at the
+  right end. Not cut with "…": what an add-on can reach is the consent, and
+  a consent read in part is not one. Every other row keeps VS-2's one
+  line. The question's words are Dashi's English with the add-on's own
+  name and commands (which may be Spanish); the launcher's own words are
+  not translated in 0.9, so "both languages" is an add-on written in
+  either, and both fit. The key is said in words inside the sentence
+  ("Return again gets it", as "Return keeps it" elsewhere): a ↩ in running
+  text is drawn as the colour emoji (mirin's text doesn't honour U+FE0E),
+  while the row's end keeps the ↩ glyph.
+- **Undo:** `question` in `launcher/row-model.ts`, `verbRow` in
+  `launcher/verbs.ts`, `ResultRow` in `launcher/lib/row-view.tsx`.
+
+### D362. Markdown tables are drawn by one view, Notes' and the launcher's
+
+- **Date:** 2026-11-16. `v09/fix-polish-1`, found in pass 37.
+- **Found:** a pull request's body showed its table as `| --- |` lines.
+- **Decision:** Notes' table reader and its table view move to
+  `src/shared/markdown/` (two modules use them: Notes and the launcher's
+  detail, H20); the launcher's small Markdown reads a table there as Notes
+  does and draws it at its detail size. Inline marks in cells are dropped as
+  in a line. The table never shrinks in a column shorter than its words (a
+  clipping box's least height is 0: in the VM it shrank to its borders); a
+  column keeps its header's semibold word whole; in the detail a column keeps
+  at most 12 letters of a word whole (`wholeWord`), so a long path wraps and
+  four columns fit beside the facts.
+- **Undo:** move `table.ts` back to `apps/notes/lib/` and inline the view
+  in `page-under.tsx`; `markdownBlocks` in `launcher/lib/tree-view.tsx`.
+
+### D363. Esc back from a pushed view selects the row that pushed it
+
+- **Date:** 2026-11-16. `v09/fix-polish-1`, found in pass 37.
+- **Decision:** an extension's scope remembers, per depth of its stack, the
+  row that ran an action and what was typed then; Esc back restores both
+  (`returnTo` beside `back` in `LauncherScope`). A row that is no longer
+  in the list falls to the first, as any held selection does.
+- **Undo:** `returnTo` in `launcher/types.ts`, `lib/tree-scope.ts` and
+  `lib/commands.ts`.
+
+### D364. Emoji are named as Unicode names them today
+
+- **Date:** 2026-11-16. `v09/fix-polish-1`, found in pass 37.
+- **Decision:** the Emoji extension's names are the CLDR short names from
+  `emoji-test.txt` (Emoji 17.0; "red heart", "thumbs up"), not the old
+  character names ("heavy black heart"); the set of emoji is unchanged.
+  Unicode's data licence is in `THIRD-PARTY-NOTICES.md`.
+- **Undo:** the names in `extensions/emoji/lib/emoji-data.ts`.
+
+### D365. Installed leaves out what dnf brought only for another package
+
+- **Date:** 2026-11-16. `v09/fix-polish-1`, found in pass 37.
+- **Found:** "Fcitx5 qt Qt6gui" (a GUI wrapper library dnf installed for
+  Fcitx) was listed as an app the person added. Its desktop file is
+  `NoDisplay`, but so is Orca's, which the person installed and must be
+  able to find and remove: hiding `NoDisplay` apps was tried and reverted
+  in the VM.
+- **Decision:** dnf's own reason decides. A package whose reason is
+  "Dependency" or "Weak Dependency" (`%{reason}` in the installed query)
+  came for another and isn't listed; "User", "Group", "External" or an
+  unknown reason is the person's. It is removed with the package that
+  needed it, as dnf removes unused dependencies. "Fcitx 5" leaves the list
+  too: its row was `fcitx5-data`, a dependency of the `fcitx5` the person
+  asked for; Fcitx's own settings app (Fcitx5 Configtool) stays.
+- **Undo:** `dependencies` in `shared/software/lib/rpm-query.ts`
+  `parseInstalled`, `dependency` on an `Offer` (`catalog-merge.ts`), and
+  `apps/software/lib/installed-packages.tsx`.
+
+### D366. The correcting model loads after login and when Voice turns on
+
+- **Date:** 2026-11-16. `v09/fix-polish-1`, found in pass 37.
+- **Found:** the first dictation after the model started landed by rule
+  (`why=deadline ms=1200`): the model began loading at the key's press.
+- **Decision:** with Voice and tidying on it loads 15 s after login (so it
+  doesn't compete with the session coming up), and at once when either is
+  turned on; still at each key down. The rewriter's own rule keeps it: out
+  of memory after 10 minutes with no call, at once when Voice or tidying is
+  turned off. Cost: about 1 GB held for the first 10 minutes of a session
+  in which nobody dictates.
+- **Undo:** `warmWhenWanted` in `boot/corrections.ts`.
+
+### D367. Each tap of the Dashi key says in the log what it did
+
+- **Date:** 2026-11-16. `v09/fix-polish-1`, found in pass 37 (2 of about
+  12 taps "opened nothing").
+- **Found:** in the VM 24 of 24 taps opened the launcher, of every kind
+  pass 37 tried (zero-length, right after `wl-copy`, right after Voice was
+  turned on, typed at once): the misses were not reproduced, and most
+  likely came from keys sent inside the 100 ms the settings file takes to
+  be read again.
+- **Decision:** as D9 says, the session's log says what each tap did ("opens
+  the launcher", "closes the launcher", "the card takes it", "the launcher ❖
+  just opened stays", "no launcher yet"), with the time, so a miss names its
+  cause next time.
+- **Undo:** `did` in `boot/dictation.ts` `dashiTap`.

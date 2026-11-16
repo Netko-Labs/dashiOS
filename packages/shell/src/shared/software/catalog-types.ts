@@ -18,6 +18,8 @@ export interface Offer {
   installed: boolean;
   /** Installed by the system's first transaction: it came with the computer (the image), the person didn't add it. */
   cameWithSystem: boolean;
+  /** Installed only because another package needed it (dnf's reason "Dependency"): a library's piece, not an app the person added. */
+  dependency?: true;
 }
 
 export interface CatalogEntry {

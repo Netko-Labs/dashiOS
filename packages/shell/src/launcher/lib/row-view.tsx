@@ -3,7 +3,8 @@
  * LA-1, TY-1, RA-1): rows 40 tall with 28 px icons, a 7 px radius inside the
  * panel's 5 px padding and 12 px corners, the name at 13, what follows it at
  * 12, the kind at 11, all times the person's text size (measures.ts). One
- * line each (VS-2). The selected row is a kombu wash behind ink, with a 3 px
+ * line each (VS-2), except a question asked in place (an add-on's "Get …?",
+ * which says what it can reach): it wraps, and the row grows to hold it. The selected row is a kombu wash behind ink, with a 3 px
  * kombu bar at its left edge (CO-6).
  *
  * At the right end a row shows one thing: a setting's control (its switch,
@@ -23,6 +24,9 @@ export const HEAD_HEIGHT = STANDARD.head;
 const BAR = { width: 3, height: 20 };
 /** Left of a row's name: its padding, icon, and the gap after it. */
 export const nameIndent = (m: Measures): number => 10 + m.icon + 10;
+
+/** Above and below a wrapped question, so its lines sit in the row as one line sits in a 40 one. */
+const QUESTION_PAD = 9;
 
 /** Beside a long name (an extension's item), its words after it take at most this much, so the name is read first. */
 const DETAIL_BESIDE_LONG = 220;
@@ -147,6 +151,43 @@ function RightEnd({ row, digit, quiet, m }: { row: Row; digit: number | undefine
   return null;
 }
 
+/** The selected row's 3 px bar at its left edge (CO-6), centred on a row's height (a question's first line). */
+function SelectionBar({ m }: { m: Measures }) {
+  const colors = useColors();
+  return (
+    <View
+      style={{
+        position: "absolute",
+        left: 0,
+        top: (m.row - BAR.height) / 2,
+        width: BAR.width,
+        height: BAR.height,
+        borderRadius: 1.5,
+        backgroundColor: colors.selectionBar,
+      }}
+    />
+  );
+}
+
+/** A row's name: one line, or a question's words wrapped. An extension's name may be long (a pull request's title): it gives way too, with its words after it. */
+function Title({ row, ink, m }: { row: Row; ink: string; m: Measures }) {
+  return (
+    <View style={row.long || row.question ? { flexShrink: 1, minWidth: 0 } : { flexShrink: 0 }}>
+      <Text
+        {...(row.question ? {} : { numberOfLines: 1 as const })}
+        style={{
+          fontSize: m.title,
+          color: ink,
+          ...(row.question ? { lineHeight: Math.round(m.title * 1.38) } : {}),
+          ...(row.strong ? { fontWeight: "semibold" } : {}),
+        }}
+      >
+        {row.title}
+      </Text>
+    </View>
+  );
+}
+
 export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digit, onStop, access }: ResultRowProps) {
   const colors = useColors();
   const m = useMeasures();
@@ -167,7 +208,8 @@ export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digi
         flexDirection: "row",
         alignItems: "center",
         gap: 10,
-        height: m.row,
+        // A question wraps: the row grows with it (the list follows its rows' height), and its key stays at the right end.
+        ...(row.question ? { minHeight: m.row, paddingTop: QUESTION_PAD, paddingBottom: QUESTION_PAD } : { height: m.row }),
         paddingLeft: 10,
         paddingRight: 12,
         borderRadius: 7,
@@ -175,27 +217,10 @@ export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digi
         ...(selected ? { backgroundColor: colors.selectionWash } : {}),
       }}
     >
-      {selected && (
-        <View
-          style={{
-            position: "absolute",
-            left: 0,
-            top: (m.row - BAR.height) / 2,
-            width: BAR.width,
-            height: BAR.height,
-            borderRadius: 1.5,
-            backgroundColor: colors.selectionBar,
-          }}
-        />
-      )}
+      {selected && <SelectionBar m={m} />}
       <Icon icon={row.icon} m={m} {...(row.agent ? { agent: row.agent } : {})} />
       <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8 }}>
-        {/* An extension's name may be long (a pull request's title): it gives way too, with its words after it. */}
-        <View style={row.long ? { flexShrink: 1, minWidth: 0 } : { flexShrink: 0 }}>
-          <Text numberOfLines={1} style={{ fontSize: m.title, color: ink, ...(row.strong ? { fontWeight: "semibold" } : {}) }}>
-            {row.title}
-          </Text>
-        </View>
+        <Title row={row} ink={ink} m={m} />
         {row.chord !== undefined && <Shortcut keys={row.chord} color={ink} size={m.detail} />}
         {row.badge !== undefined && (
           <View

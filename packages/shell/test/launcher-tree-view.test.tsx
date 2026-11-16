@@ -3,6 +3,7 @@ import { parseTree, type ViewNode } from "@dashi/applet";
 import type { TreeActed, TreeSnapshot, TreeView } from "../src/actions/index.ts";
 import { keyOf, panelVerbs, treeSections } from "../src/launcher/lib/tree-rows.ts";
 import { treeScope } from "../src/launcher/lib/tree-scope.ts";
+import { markdownBlocks } from "../src/launcher/lib/tree-view.tsx";
 import { mount, unmountLauncher } from "./launcher-harness.tsx";
 
 // An extension's view in the launcher: drawn by the launcher from the tree, in its own rows,
@@ -168,4 +169,86 @@ describe("the view in the launcher", () => {
     await launcher.key("Escape");
     expect(launcher.closed.length).toBe(1);
   });
+});
+
+// Pass 37: a pull request's body drew its Markdown table as raw `| --- |` lines.
+describe("a detail's Markdown table", () => {
+  const Body = "## Checks\n\n| Check | Result |\n| --- | :-: |\n| **lint** | pass |\n| [tests](https://x) | 2 failed |\nAfter the table.";
+
+  test("is read as a table (header, alignment, rows), its cells' marks dropped as a line's are", () => {
+    const blocks = markdownBlocks(Body);
+    expect(blocks.map((block) => block.kind)).toEqual(["h2", "table", "p"]);
+    expect(blocks[1]).toEqual({
+      kind: "table",
+      table: {
+        header: ["Check", "Result"],
+        align: ["left", "center"],
+        rows: [
+          ["**lint**", "pass"],
+          ["[tests](https://x)", "2 failed"],
+        ],
+      },
+    });
+    // Not a table: dashes with no header above them, or a header whose dashes don't match.
+    expect(markdownBlocks("| a | b |\n| --- |").map((block) => block.kind)).toEqual(["p", "p"]);
+  });
+
+  test("is drawn as a table in the launcher, with no pipes left", async () => {
+    const view = new FakeView([]);
+    const scope = treeScope("Pull Requests", view);
+    const launcher = await mount({ entries: [], scopes: [scope], scope: scope.id }, ["tree:k:42", "tree:k:43"]);
+    view.set({ stack: [PRS, tree({ t: "Detail", i: "d", p: { markdown: Body } })], phase: "shown" });
+    await launcher.type("");
+    expect(launcher.has("launcher:detail:table")).toBe(true);
+    // A detail longer than its room clips: the table keeps its height (it shrank to its borders in the VM).
+    expect(launcher.tree()).toMatch(/"id":"[^"]+","direction":"column","shrink":false[^}]*"cornerRadius":6/);
+    const drawn = launcher.tree();
+    expect(drawn).toContain('"lint"');
+    expect(drawn).toContain('"tests"');
+    expect(drawn).not.toContain("| --- |");
+    expect(drawn).not.toContain("**lint**");
+    expect(drawn).toContain("After the table.");
+  });
+});
+
+// Pass 37: Esc back from a pull request's detail put the selection on row 1, not on the one opened.
+test("Esc back from a detail keeps the row that opened it selected, with what was typed then", async () => {
+  const item = (n: number, title: string) => ({
+    t: "Item",
+    i: `k:${n}`,
+    p: { title },
+    c: [{ t: "ActionPanel", i: `p${n}`, c: [action(`push${n}`, "Show Details", "push")] }],
+  });
+  const list = tree({
+    t: "List",
+    i: "root",
+    p: { filter: "launcher" },
+    c: [item(41, "Fix the dock"), item(42, "Fix the grid"), item(43, "Speed up the grid")],
+  });
+  const view = new FakeView([list]);
+  view.act = async (node) => {
+    view.acted.push(node);
+    view.set({ stack: [...view.snapshot().stack, tree({ t: "Detail", i: `d:${node}`, p: { markdown: `# ${node}` } })] });
+    return { kind: "done" };
+  };
+  const scope = treeScope("Pull Requests", view);
+  const ids = ["tree:k:41", "tree:k:42", "tree:k:43"];
+  const launcher = await mount({ entries: [], scopes: [scope], scope: scope.id }, ids);
+  await launcher.key("ArrowDown");
+  await launcher.key("ArrowDown");
+  expect(launcher.rows(ids).selected).toBe("tree:k:43");
+  await launcher.enter();
+  expect(view.acted).toEqual(["push43"]);
+  expect(launcher.has("launcher:detail")).toBe(true);
+  await launcher.key("Escape");
+  expect(launcher.has("launcher:detail")).toBe(false);
+  expect(launcher.rows(ids).selected).toBe("tree:k:43");
+  // Filtered first: the words come back with the row.
+  await launcher.type("grid");
+  await launcher.key("ArrowDown");
+  expect(launcher.rows(ids)).toEqual({ ids: ["tree:k:42", "tree:k:43"], selected: "tree:k:43" });
+  await launcher.enter();
+  await launcher.key("Escape");
+  expect(launcher.rows(ids)).toEqual({ ids: ["tree:k:42", "tree:k:43"], selected: "tree:k:43" });
+  expect(launcher.tree()).toContain('"grid"');
 });

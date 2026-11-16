@@ -5,7 +5,8 @@
  * tools aren't listed: dnf can't tell the ones the person added from the
  * thousands the system came with. What the system's first transaction
  * installed (the image: its helpers, Firefox) came with the computer and
- * isn't listed (dnf's history; D333).
+ * isn't listed (dnf's history; D333), nor what dnf brought only because
+ * another package needed it ("Fcitx5 qt Qt6gui" with Fcitx; D365).
  */
 
 import { Button, Group, useColors } from "@dashi/ui";
@@ -55,7 +56,7 @@ export function InstalledPackages({ needle }: { needle: string }) {
     if (entry.kind !== "app") return [];
     const offer = entry.offers.find((each) => each.kind === "rpm" && each.installed);
     if (!offer) return [];
-    if (offer.cameWithSystem) return [];
+    if (offer.cameWithSystem || offer.dependency) return [];
     if (needle !== "" && !`${entry.name} ${offer.ref}`.toLowerCase().includes(needle)) return [];
     const dashi = data.sources.find((source) => source.id === offer.source)?.dashi === true;
     return [{ entry, offer, dashi, label: offerLabel(data.sources, offer) }];

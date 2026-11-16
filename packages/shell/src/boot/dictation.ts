@@ -146,12 +146,19 @@ async function keysBackToCard(compositor: Compositor | null, late: Late<LatePart
 /** A tap of the Dashi key: the launcher, as ❖Space always did. `sinceSuperTap` is how long ago ❖ alone was tapped. */
 function dashiTap(compositor: Compositor | null, late: Late<LateParts>, sinceSuperTap: number): void {
   const launcherOpen = late.peek("overlays")?.has("launcher") === true;
+  // What the tap did, in the session's log, so a tap that "opened nothing" says why (pass 37: 2 of about 12).
+  const did = (what: string): void => console.error(`dashi-shell: dashi key tap: ${what} at=${Math.round(performance.now())}`);
   // A card that is on screen takes the tap (capsule/), never an ask that is not shown. The compositor began sending plain
   // keys the launcher's way the moment the key was tapped (launcher/type-ahead.ts): they go back to whoever has the keyboard.
-  if (runningCapsule.getSnapshot()?.cardUp() && !launcherOpen) return void keysBackToCard(compositor, late);
+  if (runningCapsule.getSnapshot()?.cardUp() && !launcherOpen) {
+    did("the card takes it");
+    return void keysBackToCard(compositor, late);
+  }
   // A launcher that a tap of ❖ alone just opened stays: ❖ and then ❖Space is one habit, not two wishes.
-  if (launcherOpen && !tapClosesLauncher(sinceSuperTap)) return;
-  late.peek("launcher")?.toggle();
+  if (launcherOpen && !tapClosesLauncher(sinceSuperTap)) return did("the launcher ❖ just opened stays");
+  const launcher = late.peek("launcher");
+  did(launcher ? (launcherOpen ? "closes the launcher" : "opens the launcher") : "no launcher yet");
+  launcher?.toggle();
 }
 
 /** The desktop, as dictation reaches it: the window in front and its field, typing and keys into it, the clipboard. */

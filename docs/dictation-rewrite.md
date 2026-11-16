@@ -271,10 +271,13 @@ another one (a checkout).
   has no graphics backend, so `DASHI_REWRITE_DEVICE=gpu` changes nothing with it; with a
   server built with Vulkan (`DASHI_REWRITE_SERVER`) it tries a graphics card, and the
   NVIDIA card is still never used for this (`VK_LOADER_DRIVERS_DISABLE`).
-- **Warm while in use.** The key going down starts the server (if it is not up), waits
-  for the model, and has it read the fixed part of the prompt: about 2 s on the development
-  laptop, so a first dictation shorter than that lands by rule (`starting`). After that
-  each dictation costs its own words only.
+- **Warm while in use.** The server starts (if it is not up), waits for the model, and has
+  it read the fixed part of the prompt 15 s after login when Voice and tidying are on, as
+  soon as they are turned on, and when the key goes down (`boot/corrections.ts`
+  `warmWhenWanted`; D366): about 2 s on the development laptop, which a cold first
+  dictation could not wait for (pass 37: `why=deadline`). It is dropped after 10 minutes
+  with no call, as before; the next key down loads it again. After that each dictation
+  costs its own words only.
 - **What it holds:** 1 GB of memory while it is up, none of the graphics card's, no
   processor time while idle; nothing once it is stopped.
 - The protocol is llama-server's own (`POST /v1/chat/completions`, streamed, temperature

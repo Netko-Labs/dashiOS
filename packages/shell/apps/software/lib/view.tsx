@@ -39,12 +39,13 @@ export const SOFTWARE_SIZE = { width: 1020, height: 640 } as const;
 /** `initialQuery`: open on a search for these words (the launcher's "Find … in Software"); `initialPage`: on a sidebar place (the update notice's Show). */
 type Services = ReturnType<typeof useServices>;
 
-/** Looks for updates when the window opens, and gives the toolbar's "check now". */
-function useUpdateChecks(store: Services["store"], applets: Services["applets"]): () => void {
+/** Looks for updates when the window opens (and follows the applets folder while it is open), and gives the toolbar's "check now". */
+function useUpdateChecks(store: Services["store"], applets: Services["applets"], followApplets: Services["followApplets"]): () => void {
   useEffect(() => {
     void store.refreshInstalled().then(() => store.checkUpdates());
     void applets.refresh();
   }, [store, applets]);
+  useEffect(() => followApplets(() => applets.readInstalled()), [applets, followApplets]);
   return () => {
     void store.checkUpdates(true);
     void applets.refresh();
@@ -52,7 +53,7 @@ function useUpdateChecks(store: Services["store"], applets: Services["applets"])
 }
 
 export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuery?: string; initialPage?: string } = {}) {
-  const { store, applets, catalog, index, packages, appletImages, restart, logOut, openUrl } = useServices();
+  const { store, applets, catalog, index, packages, appletImages, restart, logOut, openUrl, followApplets } = useServices();
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const appletState = useAppletState();
   const { nav, setNav, query, setQuery, filtering, go, goBack } = useNavigation(initialQuery, initialPage);
@@ -64,7 +65,7 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
   const [pageWidth, setPageWidth] = useState(820);
   const compact = isCompact(pageWidth);
 
-  const checkForUpdates = useUpdateChecks(store, applets);
+  const checkForUpdates = useUpdateChecks(store, applets, followApplets);
 
   const systemUpdates = state.system?.updates.length ?? 0;
   const updateCount = (state.appUpdates?.length ?? 0) + systemUpdates + applets.updates().length;

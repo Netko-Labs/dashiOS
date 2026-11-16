@@ -156,6 +156,8 @@ type Harness = {
   opened: string[];
   services: Services;
   saved: () => CatalogSetting[];
+  /** What the applets folder's watcher says when something else changed it. */
+  appletsChanged: () => Promise<void>;
 };
 
 export function harness(options: HarnessOptions = {}): Harness {
@@ -185,6 +187,7 @@ export function harness(options: HarnessOptions = {}): Harness {
   });
   const g14 = { vendor: "ASUSTeK COMPUTER INC.", product: "ROG Zephyrus G14", laptop: true };
   const opened: string[] = [];
+  let following: (() => void) | null = null;
   // dnf and PackageKit from the stand-in's small computer (Fedora, Terra, Dashi's COPR, one COPR enabled by hand).
   const packageRun: Runner = async (command, runOptions) => {
     log.push(command.join(" "));
@@ -207,6 +210,12 @@ export function harness(options: HarnessOptions = {}): Harness {
     appletImages: new StoreImages(join(tree.dir, "applet-images")),
     restart: () => {},
     openUrl: (url) => opened.push(url),
+    followApplets: (onChange) => {
+      following = onChange;
+      return () => {
+        following = null;
+      };
+    },
   };
   const listeners: ((event: NativeEvent) => void)[] = [];
   const transport: NativeTransport = { send() {}, onEvent: (listener) => listeners.push(listener), onClose() {}, simulate() {}, close() {} };
@@ -228,5 +237,9 @@ export function harness(options: HarnessOptions = {}): Harness {
     for (const listener of listeners) listener({ type: "change", nodeId, value });
     await settle();
   };
-  return { view, press, type, store, root, log, opened, services, saved: () => saved };
+  const appletsChanged = async (): Promise<void> => {
+    following?.();
+    await settle();
+  };
+  return { view, press, type, store, root, log, opened, services, saved: () => saved, appletsChanged };
 }

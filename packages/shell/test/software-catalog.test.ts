@@ -132,6 +132,18 @@ test("dnf's output is read strictly: other arches, side packages and bad names a
       ]),
     ).at,
   ).toEqual(new Map([["htop", 1763300000]]));
+  // dnf's reason: what it brought for another package is a dependency; what was asked for (or is unknown) is not.
+  expect(
+    parseInstalled(
+      rows([
+        ["fcitx5", "updates", "1763300000", "User"],
+        ["fcitx5-qt-qt6gui", "updates", "1763300000", "Dependency"],
+        ["fcitx5-qt", "updates", "1763300000", "Weak Dependency"],
+        ["orca", "updates", "1763300000", "User"],
+        ["old", "fedora", "1763300000"],
+      ]),
+    ).dependencies,
+  ).toEqual(new Set(["fcitx5-qt-qt6gui", "fcitx5-qt"]));
   expect([
     ...parseTransactionNames('[{"nevra":"firefox-0:160.0-1.fc44.x86_64"},{"nevra":"python3-pip-0:25.1-2.fc44.noarch"},{"nevra":"x y-0:1-1.x"}]'),
   ]).toEqual(["firefox", "python3-pip"]);
@@ -262,4 +274,22 @@ test("what the image installed came with the computer, even when dnf names its r
     cameWithSystem: true,
   });
   expect(entries.find((entry) => entry.key === "app:htop")?.offers[0]).toMatchObject({ installed: true, cameWithSystem: false });
+});
+
+// Pass 37: "Fcitx5 qt Qt6gui", which dnf brought for Fcitx, was listed on Installed as an app the person added.
+test("a package dnf installed only for another is marked a dependency; one the person asked for is not", () => {
+  const entries = mergeCatalog(
+    input({
+      installedRpms: new Map([
+        ["gimp", "fedora"],
+        ["htop", "fedora"],
+      ]),
+      dependencies: new Set(["gimp"]),
+    }),
+  );
+  expect(entries.find((entry) => entry.key === "app:org.gimp.gimp")?.offers.find((offer) => offer.kind === "rpm")).toMatchObject({
+    installed: true,
+    dependency: true,
+  });
+  expect(entries.find((entry) => entry.key === "app:htop")?.offers[0]?.dependency).toBeUndefined();
 });

@@ -1,6 +1,6 @@
 /**
  * Finding emoji by name: every word typed starts a word of the emoji's name
- * ("thumb up" finds 👍 "thumbs up sign"), in the groups' order. With nothing
+ * ("thumb up" finds 👍 "thumbs up"), in the groups' order. With nothing
  * typed, the first group. At most `LIMIT`: a view is sent whole, and 160
  * cells (20 lines of 8) is plenty to scroll through.
  */

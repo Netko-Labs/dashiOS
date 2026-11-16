@@ -93,6 +93,8 @@ export interface Row {
   attention?: true;
   /** Its name may be long (an extension's item): it gives way to the right end instead of running under it. */
   long?: true;
+  /** A question asked in place (a verb's `confirm`): its words wrap, and the row grows to hold them (what it can reach is never cut). */
+  question?: true;
   /** An extension's tags at the right end ("Checks pass"), each in its tone's ink. */
   tags?: readonly { text: string; tone?: Tone }[];
 }

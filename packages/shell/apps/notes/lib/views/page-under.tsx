@@ -11,9 +11,9 @@
 import { type Palette, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactElement, useMemo } from "react";
+import { type Table, TableView } from "../../../../src/shared/markdown/index.ts";
 import { BOX, type Para, type Projection, project } from "../project.ts";
 import { BODY_SIZE } from "../sizes.ts";
-import { columnsOf, type Table } from "../table.ts";
 
 /** About the width of a letter of the body, for a column's least width. */
 const LETTER = 7.6;
@@ -28,56 +28,9 @@ function Line({ para, text }: { para: Para; text: string }) {
 /** A cell's words as drawn: its Markdown's markers gone, a box as a box. */
 const cellText = (cell: string): string => project(cell, null).display.replace(BOX.open, "☐").replace(BOX.done, "☑");
 
-/** A table: the header row on a wash, columns as wide as their words ask (columnWeights), cells that wrap. */
-function TableView({ table, colors, onHeight }: { table: Table; colors: Palette; onHeight: (height: number) => void }) {
-  const columns = columnsOf(table);
-  const row = (cells: readonly string[], index: number, header: boolean) => (
-    <View
-      key={index}
-      style={{
-        flexDirection: "row",
-        backgroundColor: header ? colors.button : CLEAR,
-        borderTopWidth: index === 0 ? 0 : 1,
-        borderColor: colors.separator,
-      }}
-    >
-      {cells.map((cell, column) => (
-        // Cells have no identity beyond their place: a cell is its column.
-        <View
-          key={column}
-          style={{
-            flex: columns[column]?.weight ?? 1,
-            minWidth: Math.ceil((columns[column]?.floor ?? 0) * LETTER) + 16,
-            paddingTop: 5,
-            paddingBottom: 5,
-            paddingLeft: 8,
-            paddingRight: 8,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: BODY_SIZE,
-              fontWeight: header ? "semibold" : "normal",
-              color: colors.text,
-              textAlign: table.align[column] ?? "left",
-            }}
-          >
-            {cellText(cell)}
-          </Text>
-        </View>
-      ))}
-    </View>
-  );
-  return (
-    <View
-      testID="note-table"
-      onLayout={(bounds) => onHeight(bounds.height)}
-      style={{ flexDirection: "column", borderWidth: 1, borderColor: colors.separator, borderRadius: 6, overflow: "hidden" }}
-    >
-      {row(table.header, 0, true)}
-      {table.rows.map((cells, index) => row(cells, index + 1, false))}
-    </View>
-  );
+/** A table, as the shared view draws it (shared/markdown), at the body's size. */
+function NoteTable({ table, onHeight }: { table: Table; onHeight: (height: number) => void }) {
+  return <TableView testID="note-table" table={table} cellText={cellText} size={BODY_SIZE} letter={LETTER} onLayout={(bounds) => onHeight(bounds.height)} />;
 }
 
 /** The paragraphs of one code block on their panel, or one quote's line beside its bar. */
@@ -106,7 +59,7 @@ function pieces(projection: Projection, colors: Palette, lineHeight: number, onT
     let end = index + 1;
     while (para.deco !== "none" && para.deco !== "quote" && para.deco !== "rule" && paras[end]?.deco === para.deco && paras[end]?.group === para.group) end++;
     const table = projection.tables[para.group];
-    if (para.deco === "table" && table) out.push(<TableView key={key} table={table} colors={colors} onHeight={(height) => onTable(para.group, height)} />);
+    if (para.deco === "table" && table) out.push(<NoteTable key={key} table={table} onHeight={(height) => onTable(para.group, height)} />);
     else if (para.deco === "code") {
       const lines = paras.slice(index, end).map((each, at) => <Line key={`c${index + at}`} para={each} text={texts[index + at] ?? ""} />);
       out.push(

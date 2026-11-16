@@ -36,8 +36,18 @@ function numberOf(snapshot: object): number {
   return counter;
 }
 
+/** A row that ran an action at a depth of the view's stack (the view it may have pushed is one deeper). */
+interface Opened {
+  depth: number;
+  row: string;
+  query: string;
+}
+
 class TreeScope {
   asking: Asking | null = null;
+  /** The rows that opened the views on the stack, so Esc back selects the one that was opened (pass 37). */
+  private opened: Opened[] = [];
+  private wentBack: Opened | null = null;
   private searched: string | null = null;
   private serial = 0;
   private readonly own = new Set<() => void>();
@@ -130,6 +140,10 @@ class TreeScope {
     }
     // ↩ on a row is its first action.
     const id = verb === "first" ? (row ? this.verbs(row)[0]?.id : undefined) : verb;
+    if (id && row) {
+      const depth = this.view.snapshot().stack.length;
+      this.opened = [...this.opened.filter((each) => each.depth < depth), { depth, row: row.id, query }];
+    }
     return id ? this.acted(await this.view.act(id)) : {};
   };
 
@@ -144,10 +158,24 @@ class TreeScope {
   }
 
   back = (): boolean => {
-    if (!this.asking) return this.view.back();
+    this.wentBack = null;
+    if (!this.asking) {
+      const depth = this.view.snapshot().stack.length;
+      if (!this.view.back()) return false;
+      // The view went back to the one a level up: the row that opened it there is selected again.
+      this.wentBack = this.opened.find((each) => each.depth === depth - 1) ?? null;
+      this.opened = this.opened.filter((each) => each.depth < depth - 1);
+      return true;
+    }
     this.asking = null;
     this.changed();
     return true;
+  };
+
+  returnTo = (): { row: string; query: string } | null => {
+    const back = this.wentBack;
+    this.wentBack = null;
+    return back ? { row: back.row, query: back.query } : null;
   };
 }
 
@@ -168,6 +196,7 @@ export function treeScope(title: string, view: TreeView, now: () => number = () 
     hints: scope.hints,
     run: scope.run,
     back: scope.back,
+    returnTo: scope.returnTo,
     leave: () => view.close(),
     secure: () => scope.asking?.secret === true,
     notice: () => {
