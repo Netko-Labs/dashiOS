@@ -70,7 +70,8 @@
             ]
           },
           { "type": "string", "pattern": "^dbus\\.(system|session):[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)+$" },
-          { "type": "string", "pattern": "^files\\.(downloads|documents|pictures|music|videos|desktop)(:read)?$" }
+          { "type": "string", "pattern": "^files\\.(downloads|documents|pictures|music|videos|desktop)(:read)?$" },
+          { "type": "string", "pattern": "^network:[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$" }
         ]
       }
     },
@@ -104,9 +105,34 @@
             }
           },
           "mode": {
-            "description": "instant: it runs and answers; pick: rows as the person types; view: it draws its answer itself.",
-            "enum": ["instant", "pick", "view"]
+            "description": "instant: it runs and answers; pick: rows as the person types; view: it draws its answer itself; list, grid, detail: the launcher draws the view from the tree it sends (protocol 6, docs/launcher-extensions.md).",
+            "enum": ["instant", "pick", "view", "list", "grid", "detail"]
           }
+        }
+      }
+    },
+    "shows": {
+      "description": "Where it shows: its shelves in the store. launcher alone: started when one of its commands opens, stopped a minute after (docs/launcher-extensions.md).",
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 3,
+      "items": { "enum": ["menu-bar", "launcher", "widgets"] }
+    },
+    "preferences": {
+      "description": "What the person may set, drawn and kept by Dashi; a secret in the Secret Service (docs/launcher-extensions.md, Preferences).",
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "type", "title"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,31}$" },
+          "type": { "enum": ["text", "secret", "checkbox"] },
+          "title": { "type": "string", "minLength": 1, "maxLength": 40 },
+          "description": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "required": { "type": "boolean" },
+          "default": { "type": ["string", "boolean"] }
         }
       }
     },
