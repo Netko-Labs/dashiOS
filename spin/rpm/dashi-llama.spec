@@ -53,7 +53,8 @@ it after ten idle minutes. It has no graphics backend and no web page.
 # The source is the commit the measurements used, to the byte.
 echo "%{llama_sha256}  %{SOURCE0}" | sha256sum -c -
 %setup -q -n llama.cpp-%{llama_commit}
-tar -xzf %{SOURCE1} --strip-components=1 --one-top-level=dashi \
+mkdir dashi
+tar -xzf %{SOURCE1} -C dashi --strip-components=1 \
   %{dashi_source}/spin/dashi-llama/usr/share/licenses/dashi-llama/LICENSE.dependencies
 
 %build
