@@ -22,7 +22,7 @@ import {
   storeCacheDir,
   writeSavedCatalogs,
 } from "../../../src/shared/applet-store/index.ts";
-import { spawnDetached } from "../../../src/shared/apps/index.ts";
+import { spawnDetached, unlistedDesktopIds } from "../../../src/shared/apps/index.ts";
 import { settingsPath } from "../../../src/shared/settings/index.ts";
 import { Catalog, cacheRoot, displayUrl, Flathub, ImageCache, Images, JsonCache, Packages, Software, standIn } from "../../../src/shared/software/index.ts";
 import { followFolder } from "./applets/follow.ts";
@@ -48,6 +48,8 @@ export interface Services {
   openUrl(url: string): void;
   /** Calls `onChange` when the applets folder changes from anywhere (the launcher's Get, `dashi-applet`); returns what stops it. */
   followApplets(onChange: () => void): () => void;
+  /** The desktop ids that are no app to open (a library's helper, NoDisplay): Installed leaves their packages out. */
+  unlistedApps(): ReadonlySet<string>;
 }
 
 /** Hands an https address to the desktop's browser; anything else is ignored. */
@@ -99,6 +101,7 @@ export function createServices(restart: () => void, logOut: () => void, env: Rea
     logOut,
     openUrl: (url) => openInBrowser(url),
     followApplets: (onChange) => followFolder(appletsRoot(), onChange),
+    unlistedApps: () => unlistedDesktopIds(),
   };
 }
 

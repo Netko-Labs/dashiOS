@@ -23,3 +23,4 @@ export {
 } from "./first-party.ts";
 export { cachedIcon, dataDirs, entryIcon, fileIcon, iconRoots, resolveIcon, themeIcon } from "./icons.ts";
 export { type App, dockDefaults, iconPath, inTerminal, METAL_HOST, resolvePinned, spawnDetached } from "./list.ts";
+export { unlistedDesktopIds } from "./unlisted.ts";

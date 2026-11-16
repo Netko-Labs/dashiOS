@@ -16,7 +16,7 @@ import { StateChip } from "./chip.tsx";
 import { INSTALLED } from "./glyphs.ts";
 import { SectionHeader } from "./heading.tsx";
 import { useAppState, useInstalledIcon } from "./hooks.ts";
-import { InstalledPackages } from "./installed-packages.tsx";
+import { InstalledPackages, packageRows, useUnlisted } from "./installed-packages.tsx";
 import { whereInstalled } from "./model.ts";
 import { AppIcon, ROW, useActions } from "./parts.tsx";
 import { useServices } from "./services.ts";
@@ -73,13 +73,8 @@ export function Installed({ query }: { query: string }) {
   const applets = useAppletState();
   const needle = query.trim().toLowerCase();
   const catalog = useCatalog();
-  const hasPackages =
-    catalog?.entries.some(
-      (entry) =>
-        entry.kind === "app" &&
-        (needle === "" || entry.name.toLowerCase().includes(needle)) &&
-        entry.offers.some((offer) => offer.kind === "rpm" && offer.installed && !offer.cameWithSystem),
-    ) ?? false;
+  const unlisted = useUnlisted(catalog);
+  const hasPackages = catalog !== null && packageRows(catalog, needle, unlisted).length > 0;
   if (state.installed === null && state.hasFlatpak) return <Loading label="Looking at your apps…" />;
   const apps = [...(state.installed ?? [])]
     .filter((app) => needle === "" || app.name.toLowerCase().includes(needle) || app.id.toLowerCase().includes(needle))
