@@ -158,28 +158,31 @@ export function treeSections(root: ViewNode, query: string, ctx: { dir: string |
     ];
   }
   if (sections.length > 0) return sections;
+  return [emptySection(root, query, ctx)];
+}
+
+/** No item to show: the extension's EmptyView, or the launcher's own words. */
+function emptySection(root: ViewNode, query: string, ctx: { dir: string | null; from: string }): Section {
   const empty = root.c.find((child) => child.t === "EmptyView");
   const title = empty ? (prop(empty, "title") ?? "") : query.trim() ? `Nothing in ${ctx.from} for “${query.trim()}”` : "Nothing here";
   const description = empty ? prop(empty, "description") : undefined;
-  return [
-    {
-      id: "tree:empty",
-      rows: [
-        {
-          id: empty ? rowId(empty) : "tree:empty",
-          title,
-          ...(description ? { detail: description } : {}),
-          kind: "",
-          icon: iconOf(
-            empty?.c.find((child) => child.t === "Image"),
-            ctx.dir,
-            { glyph: EXTENSION_GLYPH },
-          ),
-          action: { kind: "scope", verb: "first" },
-        },
-      ],
-    },
-  ];
+  return {
+    id: "tree:empty",
+    rows: [
+      {
+        id: empty ? rowId(empty) : "tree:empty",
+        title,
+        ...(description ? { detail: description } : {}),
+        kind: "",
+        icon: iconOf(
+          empty?.c.find((child) => child.t === "Image"),
+          ctx.dir,
+          { glyph: EXTENSION_GLYPH },
+        ),
+        action: { kind: "scope", verb: "first" },
+      },
+    ],
+  };
 }
 
 /** "mod+c" → ❖C, "shift+mod+enter" → ⇧❖↩: an action's key as the launcher draws keys. */

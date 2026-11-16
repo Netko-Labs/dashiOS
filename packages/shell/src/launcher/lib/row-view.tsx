@@ -112,6 +112,16 @@ function Tags({ tags, selected, m }: { tags: NonNullable<Row["tags"]>; selected:
   );
 }
 
+/** The right end: an extension's tags, then the one thing a row shows there; it never gives way. */
+function RowEnd({ row, digit, quiet, selected, m }: { row: Row; digit: number | undefined; quiet: string; selected: boolean; m: Measures }) {
+  return (
+    <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 10 }}>
+      {row.tags && <Tags tags={row.tags} selected={selected} m={m} />}
+      <RightEnd row={row} digit={digit} quiet={quiet} m={m} />
+    </View>
+  );
+}
+
 export interface ResultRowProps {
   row: Row;
   selected: boolean;
@@ -211,10 +221,7 @@ export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digi
           </View>
         )}
       </View>
-      <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 10 }}>
-        {row.tags && <Tags tags={row.tags} selected={selected} m={m} />}
-        <RightEnd row={row} digit={digit} quiet={quiet} m={m} />
-      </View>
+      <RowEnd row={row} digit={digit} quiet={quiet} selected={selected} m={m} />
       {row.stop && onStop && <StopSquare id={row.id} onStop={onStop} />}
       {row.more && <Svg markup={KEY_GLYPHS["→"] ?? ""} size={m.detail} color={quiet} />}
     </View>
