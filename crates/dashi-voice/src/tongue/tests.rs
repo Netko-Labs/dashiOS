@@ -86,6 +86,16 @@ fn a_sentence_with_no_evidence_tells_nothing() {
     }
 }
 
+#[test]
+fn a_filler_tells_no_language_even_where_it_is_a_word() {
+    // The owner's corpus, row 40: "Um", "Uh uh" were told as Portuguese ("um" is "a" there).
+    for sentence in ["Um.", "Uh uh.", "Um, uh.", "Hmm."] {
+        assert_eq!(evidence(sentence, &Tongue::ALL), None, "{sentence}");
+    }
+    assert_eq!(evidence("Um, I found it.", &Tongue::ALL), Some(English));
+    assert_eq!(evidence("Eh, está en la carpeta.", &Tongue::ALL), Some(Spanish));
+}
+
 fn told(text: &[&str], first: Tongue) -> Vec<Tongue> {
     let sentences: Vec<String> = text.iter().map(|each| (*each).to_owned()).collect();
     tell(&sentences, &BOTH, first)

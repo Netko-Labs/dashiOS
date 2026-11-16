@@ -113,6 +113,16 @@ fn shape(word: &str, scores: &mut Scores) {
     }
 }
 
+/// A sound said while thinking ("um", "uh", "eh"): every language has it, so
+/// it tells none. "um" is also Portuguese for "a", and a dictation of "Um."
+/// was told as Portuguese (the owner's corpus, row 40).
+fn is_filler(word: &str) -> bool {
+    matches!(
+        word,
+        "um" | "umm" | "uh" | "uhh" | "uhm" | "eh" | "ehm" | "ah" | "er" | "erm" | "hm" | "hmm" | "mm" | "mhm"
+    )
+}
+
 /// One word's evidence. `named` is a capital inside the sentence: a name
 /// (Helium, YouTube, Settings), which says nothing of the sentence's tongue.
 fn weigh(written: &str, named: bool, scores: &mut Scores) {
@@ -130,7 +140,7 @@ fn weigh(written: &str, named: bool, scores: &mut Scores) {
         }
     }
     let word = word.trim_matches(['\'', '¿', '¡']);
-    if named {
+    if named || is_filler(word) {
         return;
     }
     if let Some(listed) = lexicon().get(word) {

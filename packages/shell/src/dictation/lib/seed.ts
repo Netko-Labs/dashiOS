@@ -18,6 +18,7 @@ export const OWN_TERMS: readonly Term[] = [
   { term: "Wispr Flow", heard: ["whisper flow", "whisperflow", "wisper flow"] },
   { term: "Siri", heard: [] },
   { term: "Codex", heard: [] },
+  { term: "T3 Code", heard: ["d tree code", "t three code", "tea three code", "t tree code", "d three code"] },
   { term: "Parakeet", heard: [] },
   { term: "Washi", heard: ["washy"] },
 ];

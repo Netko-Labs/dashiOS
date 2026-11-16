@@ -11,7 +11,9 @@
       "row": 2,
       "landed": "Cloud can do that.",
       "by": "model",
-      "gate": ["near-term"]
+      "gate": [
+        "near-term"
+      ]
     },
     {
       "row": 3,
@@ -70,7 +72,9 @@
       "row": 12,
       "landed": "Right now, it does nothing. Right now it cannot follow up.",
       "by": "model",
-      "gate": ["cue"]
+      "gate": [
+        "cue"
+      ]
     },
     {
       "row": 13,
@@ -144,7 +148,9 @@
       "row": 25,
       "landed": "We can fix it with without not but with changing the model.",
       "by": "model",
-      "gate": ["cue"]
+      "gate": [
+        "cue"
+      ]
     },
     {
       "row": 26,
@@ -173,13 +179,18 @@
       "row": 30,
       "landed": "Hey but no, this is dead.",
       "by": "model",
-      "gate": ["near-term"]
+      "gate": [
+        "near-term"
+      ]
     },
     {
       "row": 31,
       "landed": "For example, when I say hey, no, I mean or hey but no, this is dead.",
       "by": "model",
-      "gate": ["cue", "near-term"]
+      "gate": [
+        "cue",
+        "near-term"
+      ]
     },
     {
       "row": 32,
@@ -190,6 +201,43 @@
     {
       "row": 33,
       "landed": "The speech is being cut.",
+      "by": "voice"
+    },
+    {
+      "row": 34,
+      "landed": "Move the knight to C tree.",
+      "by": "unresolved"
+    },
+    {
+      "row": 35,
+      "landed": "Open D tree code.",
+      "by": "rules",
+      "want": "Open T3 Code."
+    },
+    {
+      "row": 36,
+      "landed": "I go to SBODYDECH on Mondays.",
+      "by": "model",
+      "gate": []
+    },
+    {
+      "row": 37,
+      "landed": "Meeting has a new release.",
+      "by": "voice"
+    },
+    {
+      "row": 38,
+      "landed": "Move the power to E one.",
+      "by": "unresolved"
+    },
+    {
+      "row": 39,
+      "landed": "Take the pump.",
+      "by": "unresolved"
+    },
+    {
+      "row": 40,
+      "landed": "Um.",
       "by": "voice"
     }
   ]
