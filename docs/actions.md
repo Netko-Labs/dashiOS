@@ -424,6 +424,7 @@ The tools (`src/agents/tools/lib/browser.ts`, carried out by
 | `press {keys, tab?}` | Keys in Dashi's notation to the page's focus, with the browser's defaults done when the page doesn't prevent them (Return submits, Tab moves, Page keys scroll) |
 | `scroll_page {direction?, pages?, ref?, tab?}` | Scrolls, or brings an element into view; says whether the page is at its end |
 | `list_tabs`, `switch_tab {tab}` | The browser's tabs (title and address only for allowed sites), and bringing one forward |
+| `wait_for {text \| text_gone \| element+state \| page \| window_title \| file, timeout?, tab?}` | Waits for one thing, watched where it happens: in the page by the extension (a MutationObserver, the load events), a window's title by the shell on each compositor event and every 250 ms, a file by its folder. Answers `met`, what it saw (the line the text is in, a window's id) and `ms`. 10 s by default, 60 at most; a wait that runs out is `met: false`, not an error (decisions.md D200) |
 
 Without `tab`, a tool uses the tab the agent used last, else the one in
 front. The menu bar's agent mark says what it does in words when pointed

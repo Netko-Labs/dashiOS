@@ -101,7 +101,7 @@ function about(tab: TabInfo, ctx: RunContext): Record<string, unknown> {
 }
 
 /** The tool's work with the tab it is for, its site allowed; the tab becomes the agent's. */
-async function onPage(
+export async function onPage(
   ctx: RunContext,
   wanted: number | null,
   verb: string,

@@ -24,6 +24,7 @@ const FIXED: Readonly<Record<string, string>> = {
   scroll_page: "Scrolling the page",
   list_tabs: "Looking at the tabs",
   switch_tab: "Switching tabs",
+  wait_for: "Waiting",
   click: "Clicking",
   type_text: "Typing",
   press_keys: "Pressing keys",

@@ -1,5 +1,7 @@
 export type { AgentPolicy } from "./agent.ts";
 export { DEFAULT_LIMIT, listFolder, MAX_LIMIT, openForAgent, planTrash, searchFor, trashForAgent } from "./agent.ts";
+export type { Placed } from "./agent-place.ts";
+export { placeForAgent } from "./agent-place.ts";
 export type { Outcome, Picked } from "./chooser/accept.ts";
 export { accept, startFolder, startName } from "./chooser/accept.ts";
 export { filterExtension, passes, untakenName, withExtension } from "./chooser/filters.ts";
@@ -22,6 +24,7 @@ export type { OpContext } from "./ops.ts";
 export { Cancelled, copyInto, duplicate, freeName, makeFolder, moveInto, NEW_FOLDER_NAME, OpError, quietContext, renamePath } from "./ops.ts";
 export { baseName, checkName, crumbs, expandHome, isInside, normalizePath, parentOf, splitName, tilde, uniqueName } from "./paths.ts";
 export { searchComputer, searchFolder } from "./search.ts";
+export { OFF_LIMITS, PROFILE_FOLDERS, SECRET_NAMES, secretReason } from "./secret-places.ts";
 export { looksLikeText } from "./sniff.ts";
 export { parseTrashInfo } from "./trash.ts";
 export type { TrashPlaces } from "./trashops.ts";

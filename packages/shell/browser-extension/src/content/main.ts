@@ -7,8 +7,10 @@
 
 import { parseChords } from "../page/keys.ts";
 import { readFrame } from "../page/read.ts";
+import { parseWait } from "../page/wait.ts";
 import { click, field, fill, markFilled, press, Refusal, scroll, select } from "./actions.ts";
 import { DOC, DomNode, deepActive, elementOf, refOf, watchPasswordFields } from "./dom.ts";
+import { waitInPage } from "./wait.ts";
 
 /** The DOM is quiet once nothing has changed for this long (a page drawing itself after load). */
 const QUIET_MS = 150;
@@ -58,6 +60,13 @@ async function handle(message: Message): Promise<Record<string, unknown>> {
       const origin = location.origin === "null" ? null : location.origin;
       const { text, truncated } = readFrame(root, (node) => refOf((node as DomNode).node), undefined, origin);
       return { doc: DOC, text, truncated, title: document.title };
+    }
+    case "wait": {
+      const wait = parseWait(message);
+      if (!wait) throw new Refusal("Unknown wait.");
+      if (wait.kind === "element" && message.doc !== DOC) return { met: wait.state === "gone", ms: 0, gone: true };
+      const left = typeof message.until === "number" ? message.until - Date.now() : 10_000;
+      return { ...(await waitInPage(wait, Math.max(0, Math.min(left, 60_000)))) };
     }
     case "focus":
       return { doc: DOC, hasFocus: document.hasFocus(), inFrame: document.activeElement instanceof HTMLIFrameElement };

@@ -31,4 +31,5 @@ export { getSettings, setSetting } from "./settings.ts";
 export { getSoftware, listInstalledSoftware, listSoftwareUpdates, requestInstall, requestUpdate, searchSoftware } from "./software.ts";
 export { listSpaces, moveWindowToSpace, switchSpace } from "./spaces.ts";
 export type { ClipboardCopy, Desktop } from "./types.ts";
+export { waitFor } from "./wait.ts";
 export { joinWifi, listWifi } from "./wifi.ts";

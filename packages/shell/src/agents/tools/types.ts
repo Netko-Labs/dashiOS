@@ -114,11 +114,21 @@ export type Call =
   | { name: "select_option"; ref: number; value: string; tab: number | null }
   | { name: "press"; keys: string; chords: Chord[]; tab: number | null }
   | { name: "scroll_page"; direction: "down" | "up" | "top" | "bottom"; pages: number; ref: number | null; tab: number | null }
+  | { name: "wait_for"; until: WaitUntil; seconds: number; tab: number | null }
   | { name: "list_tabs" }
   | { name: "switch_tab"; tab: number }
   | { name: "read_clipboard_history"; limit: number }
   | { name: "get_work_alone" }
   | { name: "ask_person"; question: string; seconds: number };
+
+/** What wait_for waits for: one thing on a page, a window, or a file. */
+export type WaitUntil =
+  | { text: string }
+  | { textGone: string }
+  | { ref: number; state: "present" | "enabled" | "gone" }
+  | { page: "loaded" | "quiet" }
+  | { window: string }
+  | { file: string };
 
 /** Where Dashi types a secret: the focused field of a window, or an element of a browser tab. */
 export type SecretTarget = { window: number } | { ref: number; tab: number | null };

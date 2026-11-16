@@ -6,6 +6,7 @@
 
 import { renumber } from "../page/refs.ts";
 import { ask, documentsOf, framesOf, tableOf, watchLoad } from "./frames.ts";
+import { waitInTab } from "./wait.ts";
 
 type Params = Record<string, unknown>;
 type Method = (params: Params) => Promise<Record<string, unknown>>;
@@ -197,6 +198,7 @@ export const METHODS: Record<string, Method> = {
     return ask(tab, 0, { op: "scroll", how: params.how, pages: params.pages });
   },
   field,
+  wait: async (params) => waitInTab(idOf(await tabOf(params)), params),
   filled: async (params) => {
     const tab = idOf(await tabOf(params));
     if (typeof params.ref === "number") return (await onElement(params, "filled")).result;

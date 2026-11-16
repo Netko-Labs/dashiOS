@@ -3723,3 +3723,27 @@ short words, as the rulebook is written.
 - **Undo:** drop `language` from the reply in `service/speak.rs` and
   `after` in `voice/lib/saying.ts`; drop `spoke` in
   `agents/assistant/context.ts`.
+
+### D200. `wait_for` is one tool; the page waits on itself, a window and a file wait in the shell
+
+- **Date:** 2026-11-15. `v09/reach`. The assistant's own report: "I polled
+  read_page over and over while Facebook said Loading."
+- **Question:** a tool per thing to wait for, or one; and who watches?
+- **Choice:** one tool, `wait_for`, with exactly one of `text`,
+  `text_gone`, `element` (+ `state`: present, enabled, gone), `page`
+  (loaded, quiet), `window_title`, `file`; `timeout` 10 s by default, 60 at
+  most. A page's wait is one request to the extension: the content script
+  watches with a MutationObserver (text read again at most every 60 ms,
+  "quiet" is 500 ms with no change), a load with `webNavigation`; a page
+  that navigates mid-wait is waited on again in its new document until the
+  same deadline. The compositor has no title-changed event, so a window's
+  title is looked at on every compositor event and every 250 ms in the
+  shell; a file on every change in its folder (`fs.watch`) and every
+  500 ms. The scope follows what is waited for (`ToolDef.scopeFor`): a page
+  "web", a window "see", a file "files". A wait that runs out is not an
+  error: `met: false`, with what it saw.
+- **Why:** one tool is one line in the model's list (the list must stay
+  readable) and one thing for the prompt to say.
+- **Cost:** a title that changes and changes back within 250 ms is missed.
+- **Undo:** take `waitTools` out of `TOOLS`; the extension's `wait`
+  method stays harmless.

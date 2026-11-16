@@ -16,6 +16,7 @@ import { mayOpen, openDefault } from "./open.ts";
 import type { OpContext } from "./ops.ts";
 import { baseName, expandHome, isInside, normalizePath, parentOf, tilde } from "./paths.ts";
 import { searchComputer, searchFolder } from "./search.ts";
+import { OFF_LIMITS } from "./secret-places.ts";
 import { protectedReason, trashPaths } from "./trashops.ts";
 
 export interface AgentPolicy {
@@ -24,19 +25,6 @@ export interface AgentPolicy {
   /** Standard folders, which can't be trashed. */
   userDirs: readonly string[];
 }
-
-/** Folders under home whose names, contents, and presence are not an agent's business. */
-export const OFF_LIMITS = [
-  ".ssh",
-  ".gnupg",
-  ".password-store",
-  ".aws",
-  ".kube",
-  ".local/share/keyrings",
-  ".local/state/dashi",
-  ".config/dashi",
-  ".config/1Password",
-] as const;
 
 const PATH_MAX = 4096;
 

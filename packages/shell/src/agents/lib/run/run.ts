@@ -35,6 +35,7 @@ const personalHandlers = {
   scroll_page: browserCall,
   list_tabs: browserCall,
   switch_tab: browserCall,
+  wait_for: desktop.waitFor,
   click: desktop.handsCall,
   scroll: desktop.handsCall,
   drag: desktop.handsCall,
@@ -55,6 +56,7 @@ const personalHandlers = {
   | "scroll_page"
   | "list_tabs"
   | "switch_tab"
+  | "wait_for"
   | "click"
   | "scroll"
   | "drag"
