@@ -33,6 +33,8 @@ const base = (address: string, title: string, words: readonly string[]): Omit<Ac
   destructive: false,
   who: "person",
   source: "quicklinks",
+  // Whose it is: the row says "Quicklink", and its words are asked for in the field (extension-state.ts `interceptRun`).
+  from: "Quicklink",
 });
 
 /** One quicklink as an action: its words asked in the field when its address has a `{Query}`. */
