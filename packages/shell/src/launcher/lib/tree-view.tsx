@@ -16,6 +16,8 @@ import { type DetailPart, toneOf } from "./tree-rows.ts";
 
 /** A grid line is two rows tall: the picture, and its title under it. */
 export const GRID_LINE_ROWS = 2;
+/** In a detail's table a column keeps at most this many letters of a word whole, so four columns fit beside the facts. */
+const DETAIL_WHOLE_WORD = 12;
 /** The facts column's width. */
 const FACTS = 200;
 
@@ -131,7 +133,9 @@ export function markdownBlocks(markdown: string): MarkdownBlock[] {
 function Block({ block, m }: { block: MarkdownBlock; m: Measures }) {
   const colors = useColors();
   if (block.kind === "table")
-    return <TableView testID="launcher:detail:table" table={block.table} cellText={inline} size={m.detail} letter={m.detail * 0.58} />;
+    return (
+      <TableView testID="launcher:detail:table" table={block.table} cellText={inline} size={m.detail} letter={m.detail * 0.58} wholeWord={DETAIL_WHOLE_WORD} />
+    );
   return (
     <Text
       style={{

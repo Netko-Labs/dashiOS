@@ -23,9 +23,11 @@ export interface TableViewProps {
   letter: number;
   onLayout?: (bounds: Bounds) => void;
   testID?: string;
+  /** The most letters a column keeps whole however narrow the table (columnsOf's 24 unless less): a narrow place passes less, and a longer word wraps. */
+  wholeWord?: number;
 }
 
-export function TableView({ table, cellText, size, letter, onLayout, testID }: TableViewProps) {
+export function TableView({ table, cellText, size, letter, onLayout, testID, wholeWord }: TableViewProps) {
   const colors = useColors();
   const columns = columnsOf(table);
   const row = (cells: readonly string[], index: number, header: boolean) => (
@@ -44,7 +46,7 @@ export function TableView({ table, cellText, size, letter, onLayout, testID }: T
           key={column}
           style={{
             flex: columns[column]?.weight ?? 1,
-            minWidth: Math.ceil((columns[column]?.floor ?? 0) * letter * BOLD) + 16,
+            minWidth: Math.ceil(Math.min(columns[column]?.floor ?? 0, wholeWord ?? Number.POSITIVE_INFINITY) * letter * BOLD) + 16,
             paddingTop: 5,
             paddingBottom: 5,
             paddingLeft: 8,
