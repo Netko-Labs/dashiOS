@@ -19,6 +19,11 @@
 # The model is never in the package: dashi-voice fetches it when the person
 # asks for it in Settings › Voice.
 %global debug_package %{nil}
+# Its libraries are its own, beside the server: they are not the system's
+# libllama or libggml, so the package neither offers them to others nor asks
+# the system for them.
+%global __provides_exclude_from ^%{_libexecdir}/dashi/llama/.*$
+%global __requires_exclude ^lib(llama|ggml|mtmd).*\\.so.*$
 %global llama_build 12359
 %global llama_commit b1b770d90d94cad9e9ea5b993bdbc383a522fb28
 %global llama_short b1b770d90
