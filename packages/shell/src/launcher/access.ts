@@ -45,6 +45,7 @@ const SPOKEN_KIND: Readonly<Record<string, string>> = {
   Folder: "folder",
   Files: "Files",
   Software: "Software",
+  Store: "Store",
 };
 
 /** The words a screen reader says for `row`, the `position`th (from 1) of `count`. */

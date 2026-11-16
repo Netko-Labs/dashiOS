@@ -15,9 +15,9 @@ test("the daily look's words: a short title, the counts in the body, and a Show 
   expect(updatesWords(3, 0)).toBe("3 app updates");
   expect(updatesWords(0, 40)).toBe("A system update");
   expect(updatesWords(12, 40)).toBe("12 app updates and a system update");
-  expect(updatesNotice(1, 0)).toMatchObject({ summary: "An update is ready", body: "An app update waits in Software. Nothing installs on its own." });
+  expect(updatesNotice(1, 0)).toMatchObject({ summary: "An update is ready", body: "An app update waits in the Store. Nothing installs on its own." });
   const notice = updatesNotice(2, 4);
-  expect(notice).toMatchObject({ summary: "Updates are ready", body: "2 app updates and a system update wait in Software. Nothing installs on its own." });
+  expect(notice).toMatchObject({ summary: "Updates are ready", body: "2 app updates and a system update wait in the Store. Nothing installs on its own." });
   expect(notice?.actions.map((action) => action.key)).toEqual(["default", "show"]);
 });
 

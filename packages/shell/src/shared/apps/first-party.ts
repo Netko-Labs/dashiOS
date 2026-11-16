@@ -109,11 +109,13 @@ export const FIRST_PARTY: readonly FirstPartySpec[] = [
   },
   {
     id: "dev.dashi.software",
-    name: "Software",
+    // The Store (D324): called Software until 0.9, so the old name still finds it.
+    name: "Store",
     icon: "software",
     dir: "software",
-    // Menu bar applets are a section of Software (the Applet Store folded in), so their words find it too.
+    // Add-ons (menu bar applets, launcher extensions) are shelves of the Store, so their words find it too.
     keywords: [
+      "software",
       "app store",
       "store",
       "apps",

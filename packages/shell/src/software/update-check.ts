@@ -97,10 +97,10 @@ export function updatesNotice(apps: number, system: number): NotifyInput | null 
   if (words === null) return null;
   const one = apps + (system > 0 ? 1 : 0) === 1;
   return {
-    appName: "Software",
+    appName: "Store",
     appIcon: iconPath("software"),
     summary: one ? "An update is ready" : "Updates are ready",
-    body: `${words} ${one ? "waits" : "wait"} in Software. Nothing installs on its own.`,
+    body: `${words} ${one ? "waits" : "wait"} in the Store. Nothing installs on its own.`,
     actions: [
       { key: CLICK, label: "Show" },
       { key: SHOW, label: "Show" },

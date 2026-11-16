@@ -19,7 +19,7 @@ import type { PageId } from "../../setup/index.ts";
 import type { FlagsStore } from "../../shared/control-center/index.ts";
 import type { SpaceRef } from "../../spaces/index.ts";
 import type { WifiStore } from "../../wifi/index.ts";
-import type { SoftwareBackend } from "./software.ts";
+import type { SoftwareBackend } from "./software-backend.ts";
 import type { Teller } from "./tell.ts";
 
 /** One copy as an agent reads it: the text, or what a picture or files were. */

@@ -216,8 +216,8 @@ function nothingFound(input: ListInput, query: string, suggestion: LauncherItem 
       ? [
           {
             id: "find-software",
-            title: `Find “${query}” in Software`,
-            kind: "Software",
+            title: `Find “${query}” in the Store`,
+            kind: "Store",
             icon: { image: software.icon },
             action: { kind: "find-software", query },
           } satisfies Row,
