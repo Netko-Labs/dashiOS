@@ -1,14 +1,17 @@
 /**
  * The ranking's history on disk: `$XDG_STATE_HOME/dashi/ranking.json`, next
  * to recents.json, readable by its owner only (0600). It stays on this
- * computer. Read once when the shell starts; written a moment after the last
+ * computer. Read when the shell starts, and again when the file changed under
+ * it (looked at no more than once a second, when the ranking is asked: an edit
+ * by hand, a reset from elsewhere; pass 42); written a moment after the last
  * change (so a burst of openings is one write) and when the shell quits, by
- * a temporary file renamed over the old one. A missing, damaged or oversized
+ * a temporary file renamed over the old one. A change on disk wins over one
+ * not yet written. A missing, damaged or oversized
  * file is an empty history; a failed write is logged and the history lives
  * on in memory for the session.
  */
 
-import { mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, renameSync, type Stats, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { recentsPath } from "../../recents.ts";
 import type { RankSignals } from "./item.ts";
@@ -28,6 +31,18 @@ import {
 } from "./lib/memory.ts";
 
 const WRITE_DELAY_MS = 2000;
+/** The file is looked at again no more often than this. */
+const LOOK_EVERY_MS = 1000;
+
+/** What says the file changed: another file renamed over it, or the same one written. */
+const stamp = (stats: Stats | undefined): string => (stats ? `${stats.ino}:${stats.size}:${stats.mtimeMs}` : "none");
+const statOf = (path: string): Stats | undefined => {
+  try {
+    return statSync(path);
+  } catch {
+    return undefined;
+  }
+};
 
 export function rankingPath(env: Record<string, string | undefined> = process.env): string {
   return join(dirname(recentsPath(env)), "ranking.json");
@@ -47,12 +62,32 @@ export class RankingMemory implements RankSignals {
   private readonly path: string;
   private readonly now: () => number;
   private readonly delayMs: number;
+  /** The file as last read or written, and when it was last looked at. */
+  private seen = "none";
+  private lookedAt = 0;
 
   constructor(options: RankingMemoryOptions = {}) {
     this.path = options.path ?? rankingPath();
     this.now = options.now ?? Date.now;
     this.delayMs = options.delayMs ?? WRITE_DELAY_MS;
-    this.memory = readMemory(this.path, this.now());
+    this.memory = this.read();
+  }
+
+  private read(): Memory {
+    this.seen = stamp(statOf(this.path));
+    this.lookedAt = this.now();
+    return readMemory(this.path, this.now());
+  }
+
+  /** The file changed under the shell (not by its own write): read it again. */
+  private lookAgain(): void {
+    if (this.now() - this.lookedAt < LOOK_EVERY_MS) return;
+    this.lookedAt = this.now();
+    if (stamp(statOf(this.path)) === this.seen) return;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
+    this.dirty = false;
+    this.memory = this.read();
   }
 
   /** Something was opened, from anywhere (the Dock, the switcher, a file, the launcher). */
@@ -80,10 +115,12 @@ export class RankingMemory implements RankSignals {
   }
 
   picks(query: string): ReadonlyMap<string, number> {
+    this.lookAgain();
     return pickWeights(this.memory, query, this.now());
   }
 
   frecency(id: string): number {
+    this.lookAgain();
     return decayed(this.memory.opened.get(id), this.now(), OPEN_HALF_LIFE);
   }
 
@@ -95,6 +132,7 @@ export class RankingMemory implements RankSignals {
     this.dirty = false;
     prune(this.memory, this.now());
     writeMemory(this.path, serializeMemory(this.memory));
+    this.seen = stamp(statOf(this.path));
   }
 
   close(): void {

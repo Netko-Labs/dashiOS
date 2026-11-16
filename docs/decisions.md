@@ -5879,3 +5879,16 @@ short words, as the rulebook is written.
 - **Undo:** `pushing` and `fieldNow` in `launcher/lib/tree-scope.ts` (and its
   call in `use-search.ts`); the `if (!node) return []` in its `verbs`; the
   `loading` row in `tree-rows.ts`.
+
+### D386. The ranking history is read again when its file changes
+
+- **Date:** 2026-11-16. `v09/fix-polish-3`, from pass 42.
+- **Found:** `ranking.json` was read only when the shell started: picks
+  taken out of it by hand changed nothing until the session restarted.
+- **Decision:** when the ranking is asked, the file is looked at (no more
+  than once a second: one `stat`) and read again when it is not the file the
+  shell last read or wrote (inode, size, time). A change on disk wins over
+  the shell's own not yet written (at most two seconds of picks): the person
+  or a tool that edited the file meant it. No file watcher: nothing runs
+  while the launcher is not asked.
+- **Undo:** `lookAgain` in `launcher/ranking/store.ts`.
