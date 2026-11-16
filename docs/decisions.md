@@ -5938,3 +5938,14 @@ short words, as the rulebook is written.
   Mac, is for later); when they can, their order is kept and this is the
   default.
 - **Undo:** `placeOf` and `byPlace` in `src/extras/store.ts`.
+
+### D390. GitHub's pull requests send no count until they have come
+
+- **Date:** 2026-11-16. `v09/fix-polish-3`, found in this branch's VM pass.
+- **Found:** with D385 the pushed pull requests showed while they loaded, and
+  showed "This view can't be shown: Section “n1”: subtitle is empty": the
+  section's count was "" until the list came, and the tree refuses an empty
+  subtitle (D379), so the whole loading view was refused.
+- **Decision:** the section has no subtitle while it loads; the launcher
+  shows "Loading…" under it (D385). The tree's rule stays strict.
+- **Undo:** the `subtitle` spread in `extensions/github/main.tsx`.
