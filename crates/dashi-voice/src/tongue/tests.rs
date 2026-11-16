@@ -93,7 +93,10 @@ fn a_filler_tells_no_language_even_where_it_is_a_word() {
         assert_eq!(evidence(sentence, &Tongue::ALL), None, "{sentence}");
     }
     assert_eq!(evidence("Um, I found it.", &Tongue::ALL), Some(English));
-    assert_eq!(evidence("Eh, está en la carpeta.", &Tongue::ALL), Some(Spanish));
+    assert_eq!(
+        evidence("Eh, está en la carpeta.", &Tongue::ALL),
+        Some(Spanish)
+    );
 }
 
 fn told(text: &[&str], first: Tongue) -> Vec<Tongue> {

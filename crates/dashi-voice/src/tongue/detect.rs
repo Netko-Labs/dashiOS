@@ -119,7 +119,19 @@ fn shape(word: &str, scores: &mut Scores) {
 fn is_filler(word: &str) -> bool {
     matches!(
         word,
-        "um" | "umm" | "uh" | "uhh" | "uhm" | "eh" | "ehm" | "ah" | "er" | "erm" | "hm" | "hmm" | "mm" | "mhm"
+        "um" | "umm"
+            | "uh"
+            | "uhh"
+            | "uhm"
+            | "eh"
+            | "ehm"
+            | "ah"
+            | "er"
+            | "erm"
+            | "hm"
+            | "hmm"
+            | "mm"
+            | "mhm"
     )
 }
 
