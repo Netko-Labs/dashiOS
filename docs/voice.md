@@ -968,8 +968,10 @@ Nothing else is ever written to disk: no sound, no words, no log of either.
 | | `turbo-decoder.int8.onnx` | 361 080 764 | | |
 | | `turbo-encoder.int8.onnx` | 674 716 297 | | |
 | `rewrite` (542 MB) | `SpeakoFlow-Mini-0.8B-Q4_K_M.gguf` | 541 903 616 | `SpeakoFlow/speakoflow-mini` | Apache-2.0 (a fine-tune of Qwen3.5 0.8B, Apache-2.0) |
+| `rewrite-gemma` (3107 MB) | `gemma-4-E2B-it-Q4_K_M.gguf` | 3 106 738 272 | `unsloth/gemma-4-E2B-it-GGUF` | Apache-2.0 (Google DeepMind's Gemma 4) |
 
-The `rewrite` set is the model that corrects dictation
+The `rewrite` set is the model that corrects dictation, and `rewrite-gemma`
+the larger one the person may choose instead (decisions.md D200)
 (`docs/dictation-rewrite.md`). This service only fetches, verifies and removes
 it, as any other set (it is not `basic`): it is never loaded here. The shell
 starts llama.cpp's server on it.

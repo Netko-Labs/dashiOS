@@ -358,5 +358,7 @@ row. `cargo test -p dashi-voice`: the set is pinned and sized.
   owner's rows 11 and 25. A Dashi fine-tune is the plan for these (D176).
 - Tone and the text before the caret: taken by the seam, not used by this model (above).
 - Gemma 4 E2B (3.1 GB) cleans more than this model does (non-words, fillers, names) and is
-  as careful; it is the one to offer as a second, larger fetch, or to swap to (D170).
+  as careful: the person may choose it in Settings › Voice, "Corrected by", as a second,
+  larger fetch (set `rewrite-gemma`), or the rules alone, or Claude with their own key
+  (D200).
 - The integrated graphics card: the package is built for the processor only (D191).

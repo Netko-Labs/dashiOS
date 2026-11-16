@@ -215,6 +215,7 @@ pub(crate) const LISTEN_SET: &str = "listen";
 pub(crate) const SPEAK_SET: &str = "speak";
 pub(crate) const WHISPER_SET: &str = "whisper";
 pub(crate) const REWRITE_SET: &str = "rewrite";
+pub(crate) const REWRITE_GEMMA_SET: &str = "rewrite-gemma";
 
 /// The model that corrects dictation (docs/dictation-rewrite.md): one GGUF file,
 /// read by llama.cpp's server, which the shell starts. This service only fetches it.
@@ -229,7 +230,19 @@ const REWRITE: &[File] = &[File {
     sha256: "530e0a5d4e9314e3bae2c92aecf3ab39ca48e8cfecac41372058f9fcb742329d",
 }];
 
-pub(crate) const SETS: [Set; 4] = [
+/// The larger model that corrects dictation, chosen in Settings › Voice (decisions.md D200): Gemma 4 E2B, Q4.
+const REWRITE_GEMMA: &[File] = &[File {
+    path: "gemma-4-E2B-it-Q4_K_M.gguf",
+    url: hf!(
+        "unsloth/gemma-4-E2B-it-GGUF",
+        "0314792d7f1f7e229411f620751375812bb9faf2",
+        "gemma-4-E2B-it-Q4_K_M.gguf"
+    ),
+    bytes: 3_106_738_272,
+    sha256: "740185b21d22ceb83a11c3aa62ad5842ef32c70f6096d756bbee85a1e4ec34b8",
+}];
+
+pub(crate) const SETS: [Set; 5] = [
     Set {
         id: LISTEN_SET,
         name: "Listening",
@@ -261,6 +274,14 @@ pub(crate) const SETS: [Set; 4] = [
         credit: "SpeakoFlow Mini by SpeakoFlow (Apache 2.0), made from Qwen3.5 0.8B by Alibaba Cloud (Apache 2.0).",
         basic: false,
         files: REWRITE,
+    },
+    Set {
+        id: REWRITE_GEMMA_SET,
+        name: "Corrections, larger",
+        about: "Fixes what you take back as you dictate, and cleans fillers and names better, in English and Spanish, on this computer.",
+        credit: "Gemma 4 E2B by Google DeepMind (Apache 2.0), GGUF by Unsloth.",
+        basic: false,
+        files: REWRITE_GEMMA,
     },
 ];
 

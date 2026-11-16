@@ -1,6 +1,8 @@
 /** Settings › Voice's words: the sets by name and size, the voices as choices, and which sets a button names. */
 
+import type { CorrectionChoice } from "../../../rewrite/index.ts";
 import type { SpeedWord } from "../../../rewrite/speed-word.ts";
+import type { Recognizer } from "../../../voice/index.ts";
 import { type ModelSet, type SpokenVoice, sizeWords } from "../../../voice/index.ts";
 
 /** "Listening and Speaking", or with sizes: "Listening (673 MB), Speaking (335 MB)". */
@@ -38,6 +40,8 @@ export function voiceChoices(voices: readonly SpokenVoice[], own: string): Array
 
 /** The set dashi-voice fetches for the model that corrects dictation (docs/dictation-rewrite.md). */
 export const REWRITE_SET = "rewrite";
+/** The larger one the person may choose instead (decisions.md D200). */
+export const REWRITE_GEMMA_SET = "rewrite-gemma";
 
 /** What the corrections row offers: what it does, its size, and its licence in words. */
 export function correctionsOffer(sets: readonly ModelSet[]): string {
@@ -52,3 +56,28 @@ export function speedWords(speed: SpeedWord): string {
   if (speed === "refines") return " It takes a moment here: your words land first, and are corrected right after.";
   return "";
 }
+
+/** The recognisers by name, and what each was measured to do (decisions.md D200). */
+export const RECOGNIZER_LABELS: Readonly<Record<Recognizer, string>> = { parakeet: "Parakeet v3", whisper: "Whisper turbo" };
+export const RECOGNIZER_LINES: Readonly<Record<Recognizer, string>> = {
+  parakeet:
+    "Parakeet TDT 0.6B v3 by NVIDIA (CC BY 4.0), 673 MB: 25 European languages, the one Dashi is tuned on; 16 words in about a third of a second on the VM's processor.",
+  whisper:
+    "Whisper large-v3-turbo by OpenAI (MIT), 1.04 GB with More languages: 99 languages; larger and slower on the processor than Parakeet (not timed on Dashi's set yet).",
+};
+
+/** What corrects dictation, by name, and the rewrite engineer's measures for each (docs/dictation-rewrite.md, 24-rewrite). */
+export const CORRECTION_LABELS: Readonly<Record<CorrectionChoice, string>> = {
+  speakoflow: "SpeakoFlow Mini",
+  gemma: "Gemma 4 E2B",
+  rules: "Rules only",
+  key: "Claude (your key)",
+};
+export const CORRECTION_LINES: Readonly<Record<CorrectionChoice, string>> = {
+  speakoflow:
+    "On this computer, 542 MB (Apache 2.0). Fixes about three self-corrections in four (76% English, 75% Spanish, 88% mixed), leaves 98.6% of right sentences alone, 0.26 s a sentence.",
+  gemma:
+    "On this computer, 3.1 GB (Apache 2.0), 4.3 GB of memory while it runs. Self-corrections 72% / 69% / 84%, far better with fillers, odd words and names, 98.6% left alone, 0.5 s a sentence: long ones land first and are corrected after.",
+  rules: "Nothing to fetch: fillers, spacing, capitals, spoken punctuation and a plain change of mind. About one self-correction in ten.",
+  key: "Claude Haiku 5.5 with the Claude key in Settings › Agents. What you dictate is sent to Anthropic; your words land first and are corrected a moment later. Not yet measured on Dashi's set.",
+};

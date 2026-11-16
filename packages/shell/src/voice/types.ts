@@ -78,6 +78,8 @@ export interface VoiceSettings {
   voice?: string;
   /** After Dashi speaks in an open conversation, the microphone opens for the reply; on unless false. */
   listenAgain?: boolean;
+  /** The model that hears (recognizers.ts): Parakeet unless `whisper` (decisions.md D200). */
+  recognizer?: string;
   /** "Ask before every step": what is said is planned first and waits for a yes on its card, as it did before 0.9 (agents/assistant/). Off unless true. */
   askEveryStep?: boolean;
   /**
@@ -117,7 +119,7 @@ export type Trouble = { text: string; go?: ChipGo } | null;
 export interface VoiceDeps {
   service: VoiceService;
   /** Voice is on (settings.json), its key and voice, whether it listens again after it speaks, and what `speak` is sent (tongues.ts). */
-  prefs(): { on: boolean; key: TalkKey; voice: string | undefined; listenAgain?: boolean; speak?: SpeakExtras };
+  prefs(): { on: boolean; key: TalkKey; voice: string | undefined; listenAgain?: boolean; speak?: SpeakExtras; recognizer?: string | undefined };
   /** What stops Voice from being used now (models.ts, the service), or null. */
   trouble(): Trouble;
   /** The keys the compositor holds for the shell (`held-keys`). */

@@ -40,13 +40,14 @@ import { Page, Switch } from "../../ui.tsx";
 import { type ByPerson, ONLY_YOU, type PersonOnly, usePersonOnly } from "../person-only.ts";
 import { Setting } from "../setting.tsx";
 import { MiniButton } from "./parts.tsx";
+import { ModelChoiceRows } from "./voice-choice.tsx";
 import { DictationRows } from "./voice-dictation.tsx";
 import { DictationHistoryRows } from "./voice-dictation-history.tsx";
 import { DictationWordsRows } from "./voice-dictation-words.tsx";
 import { Progress, Remove } from "./voice-fetch-parts.tsx";
 import { VoiceLanguages } from "./voice-languages.tsx";
 import { TalkRows } from "./voice-talk.tsx";
-import { correctionsOffer, offerWords, REWRITE_SET, removeWords, setsWords, speedWords, voiceChoices, whatFetching } from "./voice-words.ts";
+import { correctionsOffer, offerWords, REWRITE_GEMMA_SET, REWRITE_SET, removeWords, setsWords, speedWords, voiceChoices, whatFetching } from "./voice-words.ts";
 
 export type VoicePaneSource = Pick<VoiceParts, "models" | "sample">;
 
@@ -156,8 +157,11 @@ function KeyAndVoice({ settings, voice, view, guard }: { settings: SettingsStore
  * The model that corrects dictation (docs/dictation-rewrite.md), in a row of its own: it is fetched for another
  * reason than a language, so never with "More languages". Once here, the row says what the speed test found.
  */
-function Corrections({ voice, view, guard }: { voice: VoicePaneSource; view: ModelsView; guard: PersonOnly }) {
-  const sets = view.sets.filter((set) => set.id === REWRITE_SET);
+function Corrections({ voice, view, guard, settings }: { voice: VoicePaneSource; view: ModelsView; guard: PersonOnly; settings: SettingsStore }) {
+  const chosen = useSettings(settings).data.dictation.corrections;
+  // The chosen model on this computer, if it is one; the rules and Claude need nothing fetched.
+  const id = chosen === "gemma" ? REWRITE_GEMMA_SET : chosen === "rules" || chosen === "key" ? null : REWRITE_SET;
+  const sets = view.sets.filter((set) => set.id === id);
   if (sets.length === 0) return null;
   return (
     <Group testID="voice-corrections">
@@ -215,7 +219,8 @@ export function VoicePane({ settings, voice, dictation, byPerson }: VoicePanePro
     );
   }
   const basics = basicSets(view.sets);
-  const more = view.sets.filter((set) => !set.basic && set.id !== REWRITE_SET);
+  const more = view.sets.filter((set) => !set.basic && set.id !== REWRITE_SET && set.id !== REWRITE_GEMMA_SET);
+  const whisperHere = view.sets.some((set) => set.id === "whisper" && set.installed);
   const usable = basicsHere(view.sets);
   const on = wanted && usable;
   const turn = (next: boolean): void => {
@@ -251,7 +256,8 @@ export function VoicePane({ settings, voice, dictation, byPerson }: VoicePanePro
       {on && <DictationRows settings={settings} guard={guard} />}
       {on && dictation && <DictationWordsRows source={dictation} guard={guard} />}
       {on && dictation && <DictationHistoryRows settings={settings} source={dictation} guard={guard} />}
-      {on && <Corrections voice={voice} view={view} guard={guard} />}
+      {on && <ModelChoiceRows settings={settings} guard={guard} whisperHere={whisperHere} />}
+      {on && <Corrections voice={voice} view={view} guard={guard} settings={settings} />}
       {on && more.length > 0 && (
         <Group testID="voice-more">
           <ModelsRow

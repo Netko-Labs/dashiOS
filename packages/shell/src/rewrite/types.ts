@@ -51,3 +51,13 @@ export interface Rewriter {
   /** How dictation should wait on this machine; for this transcript, when given (a long one is refined, not waited for). */
   advice(transcript?: string): RewriteAdvice;
 }
+
+/**
+ * What corrects dictation (settings.json `dictation.corrections`, Settings › Voice): a model on this computer
+ * (SpeakoFlow Mini, the default; Gemma 4 E2B), the rules alone, or Claude with the person's own key (decisions.md D200).
+ */
+export type CorrectionChoice = "speakoflow" | "gemma" | "rules" | "key";
+
+export const CORRECTION_CHOICES: readonly CorrectionChoice[] = ["speakoflow", "gemma", "rules", "key"];
+
+export const isCorrectionChoice = (value: unknown): value is CorrectionChoice => CORRECTION_CHOICES.some((choice) => choice === value);

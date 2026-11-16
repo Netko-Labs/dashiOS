@@ -24,11 +24,11 @@ import {
   tapClosesLauncher,
 } from "../dictation/index.ts";
 import { idleKeymap } from "../keymap/keymap-state.ts";
-import { type Rewriter, startRewriter } from "../rewrite/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
 import { type Clipboard, systemClipboard } from "../shared/clipboard/index.ts";
 import { type DictationTrouble, isDictationKeyId, isHistoryKeep, type PillHub } from "../shared/pill/index.ts";
-import { basicsHere, isTalkKeyId, listenLanguage, talkKey } from "../voice/index.ts";
+import { basicsHere, isTalkKeyId, listenLanguage, listenModel, talkKey } from "../voice/index.ts";
+import { correcting } from "./corrections.ts";
 import { knownNames } from "./known-names.ts";
 import type { LateParts } from "./parts.ts";
 import type { Late, Services } from "./services.ts";
@@ -189,28 +189,6 @@ function deskDeps(
 }
 
 /**
- * The model that corrects what was dictated (rewrite/; docs/dictation-rewrite.md): its server and its file where they
- * are on this computer, the rules alone where they are not. Voice or tidying turned off takes it out of memory at once,
- * not after its idle time.
- */
-function correcting(settingsStore: SettingsStore): Rewriter & { close(): void } {
-  const wanted = (): boolean => {
-    const { voice, dictation } = settingsStore.getSnapshot().data;
-    return voice.on === true && dictation.tidy !== false;
-  };
-  const rewriter = startRewriter({ tidy: wanted });
-  const stopWatching = settingsStore.subscribe(() => {
-    if (!wanted()) void rewriter.stop();
-  });
-  return Object.assign(rewriter, {
-    close: (): void => {
-      stopWatching();
-      void rewriter.stop();
-    },
-  });
-}
-
-/**
  * DASHI_DICTATION_LOG=1: each gesture and each state in the session's log, for a proof with no capsule to look at; each
  * with the milliseconds since the shell started, so the time from the key going up to the words is read off the log.
  */
@@ -239,7 +217,7 @@ export function startDictating({ compositor, settingsStore, services, late, talk
       return isHistoryKeep(keep) ? keep : "day";
     },
   });
-  const rewriter = correcting(settingsStore);
+  const rewriter = correcting(settingsStore, late);
   const stopKeeping = settingsStore.subscribe(() => history.refresh());
   const words = systemWords();
   const apps = (): string[] => late.peek("appNames")?.() ?? [];
@@ -278,6 +256,7 @@ export function startDictating({ compositor, settingsStore, services, late, talk
     taught: () => taught.known,
     teach: () => taught.now(),
     language: listenLanguage(process.env.LC_ALL || process.env.LC_MESSAGES || process.env.LANG),
+    listenWith: () => listenModel(settings().voice.recognizer),
   });
   if (process.env.DASHI_DICTATION_LOG === "1") logging(hub);
   const stopHearing = compositor

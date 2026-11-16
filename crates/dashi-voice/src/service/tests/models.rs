@@ -19,9 +19,11 @@ fn status_and_models_say_what_is_here() {
     );
     let models = world.ask(Request::Models).unwrap();
     let sets = models["sets"].as_array().unwrap();
-    assert_eq!(sets.len(), 4);
+    assert_eq!(sets.len(), 5);
     assert_eq!(sets[3]["id"], "rewrite");
     assert_eq!(sets[3]["basic"], false);
+    assert_eq!(sets[4]["id"], "rewrite-gemma");
+    assert_eq!(sets[4]["basic"], false);
     assert_eq!(sets[0]["id"], "listen");
     assert_eq!(sets[0]["bytes"], 672_862_728u64);
     assert_eq!(

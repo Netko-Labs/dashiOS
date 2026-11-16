@@ -164,6 +164,22 @@ export const VOICE_ROWS = [
     kind: "action",
   },
   {
+    id: "voice/recognizer",
+    title: "Recogniser",
+    name: "Speech recogniser",
+    detail: "The model that hears what you say, to dictate and to talk to Dashi.",
+    keywords: ["parakeet", "whisper", "speech to text", "transcription", "model", "accuracy", "experiment"],
+    kind: "choice",
+  },
+  {
+    id: "voice/corrections-model",
+    title: "Corrected by",
+    name: "Model that corrects dictation",
+    detail: "What fixes what you take back as you dictate, after the rules.",
+    keywords: ["speakoflow", "gemma", "claude", "api key", "rules only", "rewrite", "model", "experiment", "autocorrect"],
+    kind: "choice",
+  },
+  {
     id: "voice/corrections",
     title: "Corrections",
     name: "Dictation corrections",

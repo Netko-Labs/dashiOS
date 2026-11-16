@@ -38,5 +38,6 @@ fn the_sizes_are_what_settings_will_say() {
     assert_eq!(set(SPEAK_SET).map(Set::bytes), Some(334_932_491));
     assert_eq!(set(WHISPER_SET).map(Set::bytes), Some(1_036_613_791));
     assert_eq!(set(REWRITE_SET).map(Set::bytes), Some(541_903_616));
+    assert_eq!(set(REWRITE_GEMMA_SET).map(Set::bytes), Some(3_106_738_272));
     assert!(set("other").is_none());
 }

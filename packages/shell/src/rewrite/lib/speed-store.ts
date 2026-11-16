@@ -10,7 +10,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { maybe, num, obj, str } from "@dashi/shape";
 import type { RewriteAdvice } from "../types.ts";
-import { MODEL } from "./model.ts";
+import { type LocalModel, MODEL } from "./model.ts";
 
 /** The sentence timed: sixteen words, one correction in it. */
 export const TEST_SENTENCE = "Tell Marcus the meeting moved to Thursday, no, I mean Friday, at ten in the morning.";
@@ -57,13 +57,15 @@ export interface SpeedStore {
 type Env = Readonly<Record<string, string | undefined>>;
 
 /** `$XDG_STATE_HOME/dashi/rewrite-speed.json`. */
-export function speedFile(env: Env = process.env): SpeedStore {
-  const file = join(env.XDG_STATE_HOME || join(env.HOME || homedir(), ".local", "state"), "dashi", "rewrite-speed.json");
+export function speedFile(env: Env = process.env, model: LocalModel = MODEL): SpeedStore {
+  // The first model keeps the file it always had; another has one of its own, so a switch back is not timed again.
+  const name = model === MODEL ? "rewrite-speed.json" : `rewrite-speed-${model.choice}.json`;
+  const file = join(env.XDG_STATE_HOME || join(env.HOME || homedir(), ".local", "state"), "dashi", name);
   return {
     read: () => {
       try {
         const speed = existsSync(file) ? maybe(SpeedShape, JSON.parse(readFileSync(file, "utf8"))) : null;
-        return speed && speed.model === MODEL.file ? speed : null;
+        return speed && speed.model === model.file ? speed : null;
       } catch {
         return null;
       }

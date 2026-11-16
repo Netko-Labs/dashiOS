@@ -46,6 +46,7 @@ async function pane(rewriteHave: number) {
         set("speak", "Speaking", true, 400, 400),
         set("whisper", "More languages", false, 1_000_000_000, 0),
         set("rewrite", "Corrections", false, 541_903_616, rewriteHave),
+        set("rewrite-gemma", "Corrections, larger", false, 3_106_738_272, 0),
       ],
     }),
     voices: { default: "af_heart", voices: [] },
@@ -72,7 +73,7 @@ async function pane(rewriteHave: number) {
     for (const listener of listeners) listener({ type: "press", nodeId });
     await settle();
   };
-  return { voice, press, tree: (): string => root.lastTree() ?? "", has: (testID: string): boolean => Boolean(root.nodeId(testID)) };
+  return { voice, press, settings, tree: (): string => root.lastTree() ?? "", has: (testID: string): boolean => Boolean(root.nodeId(testID)) };
 }
 
 test("the row offers the model with its size and its licence in words, and its press fetches that set alone", async () => {
@@ -123,4 +124,25 @@ test("the speed test's word: nothing when it is quick or not timed, a sentence w
   expect(speedWord(env)).toBe("untimed");
   writeFileSync(join(state, "dashi", "rewrite-speed.json"), "not json");
   expect(speedWord(env)).toBe("untimed");
+});
+
+test("the models are the person's to choose: each says its size, licence and measures; the chosen one is the one fetched (D200)", async () => {
+  const { voice, press, settings, tree } = await pane(541_903_616);
+  expect(tree()).toContain("Parakeet TDT 0.6B v3 by NVIDIA (CC BY 4.0), 673 MB");
+  expect(tree()).toContain("On this computer, 542 MB (Apache 2.0). Fixes about three self-corrections in four");
+  settings.patch("dictation", { corrections: "gemma" });
+  await settle();
+  expect(tree()).toContain("On this computer, 3.1 GB (Apache 2.0)");
+  expect(tree()).toContain("About rewrite-gemma. Optional: 3.11 GB, fetched once.");
+  await press("voice-corrections-fetch");
+  expect(voice.calls).toContain("fetch:rewrite-gemma");
+  settings.patch("dictation", { corrections: "key" });
+  await settle();
+  expect(tree()).toContain("What you dictate is sent to Anthropic");
+  expect(tree()).not.toContain("About rewrite-gemma.");
+  settings.patch("voice", { recognizer: "whisper" });
+  await settle();
+  expect(tree()).toContain("Fetch More languages, below, first: until then Parakeet hears.");
+  // "More languages" never offers either model that corrects.
+  expect(tree()).toContain("About whisper. Optional: More languages (1.00 GB).");
 });

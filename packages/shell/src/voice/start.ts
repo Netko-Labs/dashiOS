@@ -78,11 +78,11 @@ export function startVoice(options: VoiceOptions): VoiceParts {
   const formats = (): string | undefined => options.settings.getSnapshot().data.region?.formats ?? options.locale;
   const prefs = () => {
     const data = options.settings.getSnapshot().data;
-    const { on, key, voice, listenAgain } = data.voice;
+    const { on, key, voice, listenAgain, recognizer } = data.voice;
     const view = models.getSnapshot();
     const heard = tongue.language;
     const speak = speakExtras(data.voice, view.voices, voice ?? view.defaultVoice, { formats: formats(), heard, persona: data.persona?.language });
-    return { on: on === true, key: talkKey(isTalkKeyId(key) ? key : undefined), voice, listenAgain: listenAgain !== false, speak };
+    return { on: on === true, key: talkKey(isTalkKeyId(key) ? key : undefined), voice, listenAgain: listenAgain !== false, speak, recognizer };
   };
   const voice = new Voice({
     service,

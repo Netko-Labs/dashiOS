@@ -8,7 +8,7 @@
 import { existsSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { MODEL } from "./model.ts";
+import { type LocalModel, MODEL } from "./model.ts";
 
 type Env = Readonly<Record<string, string | undefined>>;
 
@@ -28,9 +28,9 @@ export function rewriteSocket(env: Env = process.env): string | null {
 }
 
 /** Where the model's file is kept: beside the speech models, in the set dashi-voice fetches (docs/voice.md, "The models"). */
-export function modelPath(env: Env = process.env): string {
+export function modelPath(env: Env = process.env, model: LocalModel = MODEL): string {
   const folder = env.DASHI_VOICE_MODELS || join(env.XDG_DATA_HOME || join(env.HOME || homedir(), ".local", "share"), "dashi", "voice");
-  return join(folder, MODEL.set, MODEL.file);
+  return join(folder, model.set, model.file);
 }
 
 /** Half the threads, eight at most: the person is using the machine. */
@@ -101,7 +101,7 @@ async function run(command: string[]): Promise<boolean> {
 }
 
 /** The real service, or null when this session has no runtime directory or no server program. */
-export function unitService(env: Env = process.env): RewriteService | null {
+export function unitService(env: Env = process.env, model: LocalModel = MODEL): RewriteService | null {
   const socket = rewriteSocket(env);
   const program = serverProgram(env);
   if (!socket || !program) return null;
@@ -111,7 +111,7 @@ export function unitService(env: Env = process.env): RewriteService | null {
     start: async () => {
       // Asked only when nothing answers on the socket: one that is there was left by a server that was stopped.
       if (!(await run(["systemctl", "--user", "--quiet", "is-active", `${UNIT}.service`]))) rmSync(socket, { force: true });
-      return (await run(serverCommand(program, modelPath(env), socket, undefined, deviceOf(env), env.DASHI_REWRITE_LOG === "1"))) || existsSync(socket);
+      return (await run(serverCommand(program, modelPath(env, model), socket, undefined, deviceOf(env), env.DASHI_REWRITE_LOG === "1"))) || existsSync(socket);
     },
     stop: async () => {
       await run(["systemctl", "--user", "stop", `${UNIT}.service`]);

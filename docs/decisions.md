@@ -4488,3 +4488,38 @@ short words, as the rulebook is written.
   `TAIL`, `TAIL_MOST` in `service/capture.rs`; `LEAD` in `engine/gate.rs`;
   `sentence` in `dictation/lib/hands-free.ts`; `spoke` in
   `voice/lib/mic.ts`; `TAP_QUIET_MS` in `voice/keys.ts`.
+
+### D200. The person chooses the models: the recogniser, and what corrects dictation
+
+- **Date:** 2026-11-15. `v09/voicejoin`, from the owner: "I would also like
+  to choose the model, because I want to experiment what will give the
+  best results."
+- **Choice:** two rows in Settings › Voice, each choice with its size,
+  its licence and what it was measured to do:
+  - **Recogniser** (`voice.recognizer`): Parakeet TDT 0.6B v3 (the
+    default) or Whisper large-v3-turbo, which dashi-voice already had
+    for the languages Parakeet lacks. `listen` takes `model`; Whisper
+    hears only when its set ("More languages", 1.04 GB, MIT) is here,
+    else Parakeet does and the row says why. Nothing new is fetched.
+  - **Corrected by** (`dictation.corrections`): SpeakoFlow Mini Q4 (the
+    default, 542 MB), Gemma 4 E2B Q4 (3.1 GB; the rewrite engineer's
+    second, a set of its own, `rewrite-gemma`, pinned by commit and
+    checksum, Apache 2.0 since Gemma 4), the rules alone, or Claude
+    Haiku 5.5 with the person's own key from Settings › Agents. A local
+    choice is fetched by the row under it; a change stops the server
+    that ran (one at a time), and the next dictation starts the chosen
+    one, with its own speed test. Claude is sent the same prompt and its
+    answer passes the same checks; the words land first and are
+    corrected after (`refine`), and the row says that what is dictated
+    goes to Anthropic. Thinking off, effort low, no sampling parameters.
+  - Every listen and every correction says its model in the session's
+    log (`listen ended … model=parakeet-v3`, `dictation corrected
+    model=gemma-4-e2b-q4 result=text ms=…`), so experiments compare.
+- **Why:** the measures disagree by kind of mistake (SpeakoFlow Mini for
+  self-corrections, Gemma for fillers and names), and the owner's own
+  speech is the test no set has.
+- **Cost:** Claude's choice is not scored on Dashi's set yet; Whisper's
+  speed on the processor is not timed. Gemma holds 4.3 GB while it runs.
+- **Undo:** `voice-choice.tsx`; `dictation.corrections` and
+  `voice.recognizer` in `settings-app/sections.ts`; `startRewriter` in
+  `rewrite/start.ts`; `REWRITE_GEMMA` in dashi-voice's manifest.

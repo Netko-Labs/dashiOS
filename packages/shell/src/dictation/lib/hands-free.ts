@@ -85,7 +85,8 @@ export class HandsFree {
   private async open(turn: number): Promise<boolean> {
     const language = this.deps.language;
     try {
-      await this.deps.service.call("listen", { until: "silence", quiet_ms: SENTENCE_QUIET_MS, ...(language ? { language } : {}) });
+      const params = { until: "silence", quiet_ms: SENTENCE_QUIET_MS, ...(language ? { language } : {}), ...this.deps.listenWith?.() };
+      await this.deps.service.call("listen", params);
     } catch (error) {
       if (turn !== this.turn) return false;
       this.running = false;

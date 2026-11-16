@@ -144,6 +144,8 @@ export interface DictationSettings {
   tidy?: boolean;
   /** How long the history is kept: `day` unless set; `week`, or `none` (dictation/history.ts). */
   history?: string;
+  /** What corrects it after the rules (rewrite/types.ts `CorrectionChoice`): SpeakoFlow Mini unless set (decisions.md D200). */
+  corrections?: string;
 }
 
 /** How long dictation's history is kept (Settings › Voice › Dictation): a day unless the person says otherwise. */

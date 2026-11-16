@@ -48,14 +48,13 @@ export class Voice {
     this.mic = new Mic({
       service: deps.service,
       timers: this.timers,
-      locale: deps.locale,
+      deps,
       turn: () => this.turn,
       chip: () => this.chip,
       listening: () => this.listening(),
       notice: (text, go, ms) => this.notice(text, go, ms),
       rest: () => this.rest(true),
       mayOpen: () => !this.holding && !this.saying.speaking && !this.deps.trouble() && this.deps.prefs().on,
-      log: deps.log,
     });
     const { show } = this;
     this.saying = new Saying({

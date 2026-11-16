@@ -100,6 +100,8 @@ export interface DictationDeps {
   trouble(): DictationTrouble | null;
   /** Dashi itself is listening or speaking. */
   busy(): boolean;
+  /** The listen's parameters beside the language: the recogniser chosen in Settings › Voice (`{ model: "whisper" }`), or none. */
+  listenWith?(): Record<string, string>;
   /** Whether the microphone is muted; false when it can't be told. */
   muted(): Promise<boolean>;
   /** The window with the keyboard, or null when none has it (the desktop). */

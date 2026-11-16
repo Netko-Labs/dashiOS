@@ -161,7 +161,7 @@ export class Dictation {
       return this.notice(trouble);
     }
     const language = this.deps.language;
-    hold.opened = this.deps.service.call("listen", language ? { language } : {}).then(
+    hold.opened = this.deps.service.call("listen", { ...(language ? { language } : {}), ...this.deps.listenWith?.() }).then(
       () => true,
       (error) => {
         if (turn === this.turn) {
