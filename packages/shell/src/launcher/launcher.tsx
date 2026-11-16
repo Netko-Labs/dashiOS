@@ -29,15 +29,13 @@
 
 import { useColors } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
-import { harnessGlyph } from "../agents/index.ts";
 import { fieldAccess } from "./access.ts";
-import { ContextChips } from "./lib/agents/handoff-views.tsx";
-import { agentField } from "./lib/agents/task-mode.tsx";
 import { useCommands, useExtraKeys } from "./lib/commands.ts";
 import { Field } from "./lib/field.tsx";
 import { drawnSections, listFor } from "./lib/list.tsx";
 import { PANEL, SURFACE, useMeasures } from "./lib/measures.ts";
 import { chipFor, hintsOf, modeLists, placeholderOf } from "./lib/mode.ts";
+import { TalkPanel } from "./lib/talk/panel.tsx";
 import { useActs } from "./lib/use-acts.ts";
 import { useLauncherState, useSearch } from "./lib/use-search.ts";
 import type { LauncherProps } from "./props.ts";
@@ -59,23 +57,17 @@ export function Launcher(props: LauncherProps) {
   const { mode, filter } = s;
   const lists = modeLists({
     ...{ mode, filter, ctx: search.ctx, prefs: s.prefs, host: props.host, asking: s.asking, heldVerb: s.heldVerb, verbOffset: s.verbOffset },
-    ...{ listRows: m.listRows, rowIds: search.rows.map((row) => row.id), task: search.task, verbsOf: search.verbsOf },
+    ...{ listRows: m.listRows, rowIds: search.rows.map((row) => row.id), verbsOf: search.verbsOf },
   });
   const acts = useActs(props, s, search, lists);
   const { onScreen, drawnRows } = drawnSections(s, search, m);
   const keys = useCommands({ props, s, search, lists, acts }, drawnRows);
-  useExtraKeys(props, s, search);
+  useExtraKeys(props, s);
   const list = listFor({ props, s, search, lists, acts, keys, m, colors, onScreen, drawnRows });
-  const messaged = mode.kind === "message" ? s.handoff?.runs.find((each) => each.id === mode.run) : undefined;
-  // An Ask's plan: the spark in place of the magnifier, the request as the chip, the field for a follow-up.
-  const taskField = mode.kind === "task" ? agentField(search.task, filter, colors.agent) : null;
-  // The grants card and words to a run: that harness's mark, in shiso, where the magnifier was.
-  const fieldHarness = mode.kind === "grants" ? mode.harness : mode.kind === "message" ? messaged?.harness : undefined;
-  const sparkGlyph = { markup: harnessGlyph(fieldHarness), color: colors.agent };
-  const field = { mode, scope: s.scope, ext: search.ext, taskField, messaged };
+  const field = { mode, scope: s.scope, ext: search.ext };
   const chip = chipFor(field);
   const placeholder = placeholderOf(field, s.agents, props.files !== undefined && !s.filesOff);
-  const hints = hintsOf({ ...field, ...search, agents: s.agents, handoff: s.handoff });
+  const hints = hintsOf({ ...field, ...search, agents: s.agents });
   const access = props.accessible === true;
   return (
     // The focus ring is kombu in every control inside (KB-2).
@@ -95,23 +87,26 @@ export function Launcher(props: LauncherProps) {
           overflow: "hidden",
         }}
       >
-        <Field
-          value={mode.kind === "search" ? s.query : filter}
-          revision={acts.fieldRevision}
-          placeholder={placeholder}
-          {...(taskField ? { glyph: taskField.glyph } : mode.kind === "grants" || mode.kind === "message" ? { glyph: sparkGlyph } : {})}
-          {...(chip ? { chip } : {})}
-          hints={hints}
-          notice={s.notice}
-          {...(access ? { access: { ...fieldAccess(typeof placeholder === "string" ? placeholder : (placeholder[0] ?? ""), list !== null) } } : {})}
-          onChangeText={keys.onChangeText}
-          onSubmit={() => keys.submit()}
-          onKey={keys.onKey}
-        />
-        {search.contextShown && (
-          <ContextChips context={s.context} on={s.chipsOn} onToggle={(which) => s.setChipsOn({ ...s.chipsOn, [which]: !s.chipsOn[which] })} />
+        {mode.kind === "talk" ? (
+          // The conversation (lib/talk/): the thread, then the field at the bottom.
+          <TalkPanel props={props} s={s} keys={keys} revision={acts.fieldRevision} colour={props.colour ?? colors.agent} />
+        ) : (
+          <>
+            <Field
+              value={mode.kind === "search" ? s.query : filter}
+              revision={acts.fieldRevision}
+              placeholder={placeholder}
+              {...(chip ? { chip } : {})}
+              hints={hints}
+              notice={s.notice}
+              {...(access ? { access: { ...fieldAccess(typeof placeholder === "string" ? placeholder : (placeholder[0] ?? ""), list !== null) } } : {})}
+              onChangeText={keys.onChangeText}
+              onSubmit={() => keys.submit()}
+              onKey={keys.onKey}
+            />
+            {list}
+          </>
         )}
-        {list}
       </View>
     </View>
   );

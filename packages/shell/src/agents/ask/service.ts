@@ -27,6 +27,12 @@ import type { NowItem } from "./now.ts";
 import type { Undo } from "./plan.ts";
 import type { AnswerStatus, Ask, AskOptions, HarnessHost } from "./types.ts";
 
+/** The models the Anthropic key lists (Settings › Agents' model rows); null without a key that answers. */
+async function keyModels(options: AskOptions): Promise<string[] | null> {
+  const found = await options.keys.anthropic();
+  return found ? listClaudeModels(found.key, options.fetch) : null;
+}
+
 export function startAsk(options: AskOptions): Ask {
   const history = options.history ?? new HistoryLog();
   const host: HarnessHost = options.harnesses ?? { env: process.env };
@@ -78,10 +84,7 @@ export function startAsk(options: AskOptions): Ask {
   const status: AnswerStatus = {
     keyPlace: (provider) => keyPlace(options.keys, provider),
     localModels: () => localModels(options.fetch),
-    async claudeModels() {
-      const found = await options.keys.anthropic();
-      return found ? listClaudeModels(found.key, options.fetch) : null;
-    },
+    claudeModels: () => keyModels(options),
     async gptModels() {
       const found = await options.keys.openai();
       if (!found) return null;

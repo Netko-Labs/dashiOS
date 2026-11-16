@@ -26,6 +26,7 @@ import type { Call } from "../tools/index.ts";
 import type { Moment } from "./context.ts";
 import { Conversation, fileTalkLog } from "./conversation.ts";
 import { modelFor, modelLabel } from "./lib/channel.ts";
+import { type Ended, finishTurn } from "./lib/record.ts";
 import { Running, stoppedWords } from "./lib/running.ts";
 import { lastWords, Turn, typedGate } from "./lib/turn.ts";
 import { isAbort, viaHarness, viaModel } from "./lib/ways.ts";
@@ -174,41 +175,9 @@ class Core {
     return answer;
   }
 
-  /** What an ask leaves: the exchange in the conversation, the history, the log line, and the notification of a turn kept working. */
-  private finish(
-    id: string,
-    words: string,
-    run: Running,
-    end: { said: string; answer: SpokenAnswer; interrupted: boolean; turn: Turn; label: string; way: string },
-  ): void {
-    const { said, answer, interrupted, turn, label, way } = end;
-    const steps = run.steps.map((step) => step.title);
-    const all = [said.trim(), answer.failed ? "" : answer.say].filter(Boolean).join(" ");
-    this.talk.record(id, { time: this.now(), asked: words, said: all, steps, ...(interrupted ? { interrupted: true as const } : {}) });
-    this.keepHistory(id, words, run);
-    if (turn.background) this.options.done?.(interrupted ? "Stopped" : answer.failed ? "That didn't work" : "Done", all || words);
-    else if (turn.by === "typing" && all && this.options.settings().agents.readTyped === true) this.options.speak?.(all);
-    const ended = interrupted ? "stopped" : (run.stopped ?? (answer.failed ? "failed" : "done"));
-    this.log(
-      `assistant asked=${JSON.stringify(words.slice(0, 80))} by=${turn.by} way=${way} model=${JSON.stringify(label)} calls=${steps.length} ended=${ended}${turn.background ? " background" : ""}`,
-    );
-  }
-
-  /** The ask's steps in the launcher's history, with what each settings change would be put back to. */
-  private keepHistory(id: string, words: string, run: Running): void {
-    if (run.steps.length === 0) return;
-    for (const step of run.steps) if (step.undo && step.ok) this.talk.undos.push({ undo: step.undo, undone: false });
-    this.options.history?.add({
-      task: `talk-${id}.${++this.asks}`,
-      time: Math.floor(this.now() / 1000),
-      agent: this.options.name(),
-      request: words,
-      steps: run.steps.map((step) => ({
-        title: step.title,
-        outcome: step.ok === false ? ("failed" as const) : ("done" as const),
-        ...(step.undo && step.ok ? { undo: step.undo } : {}),
-      })),
-    });
+  /** What an ask leaves (lib/record.ts): the exchange, the history, the log line, the notification or the voice. */
+  private finish(id: string, words: string, run: Running, end: Ended): void {
+    finishTurn({ options: this.options, talk: this.talk, now: this.now(), serial: ++this.asks }, id, words, run, end);
   }
 
   prepare(): void {
@@ -286,6 +255,12 @@ class Core {
     return this.transcript.reply(answer);
   }
 
+  model(by: By): string | null {
+    const { agents } = this.options.settings();
+    if (wayOf(agents.answerer) === "none") return null;
+    return modelLabel(agents.answerer, modelFor(agents.models, agents.answerer, by, agents.localModel));
+  }
+
   background(task: string): boolean {
     return task === this.talk.id && this.turn?.background === true;
   }
@@ -315,6 +290,7 @@ export function startAssistant(options: AssistantOptions): Assistant {
     keepWorking: () => core.keepWorking(),
     reply: (answer) => core.reply(answer),
     background: (task) => core.background(task),
+    model: (by) => core.model(by),
     policy: (task) => core.policyOf(task),
     before: (task, call) => core.before(task, call),
     after: (task, _undo, ok) => core.after(task, ok),

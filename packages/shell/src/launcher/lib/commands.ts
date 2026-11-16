@@ -5,17 +5,16 @@
  */
 
 import { useEffect, useRef } from "react";
-import { type ExtraKeys, type LauncherCommand, NO_EXTRA_KEYS } from "../keys.ts";
+import { type LauncherCommand, NO_EXTRA_KEYS } from "../keys.ts";
 import { chordWhen } from "../person-keys.ts";
 import type { LauncherProps } from "../props.ts";
 import type { Row } from "../row-model.ts";
 import { applyEdits } from "../type-ahead.ts";
 import { KEYS, spaceFlips } from "../verbs.ts";
-import { harnessByDigit } from "./agents/handoff-rows.ts";
-import { chosenContext } from "./agents/handoff-views.tsx";
 import { aliasToKeep, mayKeep } from "./editing.ts";
 import type { ModeLists } from "./mode.ts";
 import type { LauncherState, Search } from "./state.ts";
+import { talkSubmit, tries } from "./talk/talk-mode.ts";
 import type { Acts } from "./use-acts.ts";
 import { useTypeAhead } from "./use-type-ahead.ts";
 
@@ -33,10 +32,55 @@ interface Parts {
   acts: Acts;
 }
 
-/** Return: the selected row's first verb, the chosen verb, the alias or key kept, the plan's step, the hand-off, the words sent. */
+/** How long the conversation stays after Keep working on it, so its line is read, before the launcher closes. */
+export const KEPT_CLOSE_MS = 900;
+
+/** Return in the conversation (lib/talk/talk-mode.ts): the words sent, a question answered, a failure's way on, or a try. */
+function talkReturn({ props, s }: Parts): void {
+  const dashi = props.dashi;
+  if (!dashi) return;
+  const choice = talkSubmit(s.talk, s.filter);
+  switch (choice.kind) {
+    case "send":
+      if (dashi.type(choice.text)) s.setFilter("");
+      return;
+    case "yes":
+      dashi.reply({ text: "yes", by: "typing" });
+      return;
+    case "answer":
+      dashi.reply({ text: choice.text, by: "typing" });
+      return s.setFilter("");
+    case "instead":
+      dashi.reply({ text: "no", by: "typing" });
+      if (dashi.type(choice.text)) s.setFilter("");
+      return;
+    case "sign-in":
+      props.agents?.signIn();
+      return props.onClose();
+    case "settings":
+      props.agents?.setUp();
+      return props.onClose();
+    case "none": {
+      // The empty view: Return sends the try that is selected.
+      const shown = tries(dashi.recent());
+      const chosen = s.talk.turns.length === 0 ? shown[Math.min(s.tryAt, shown.length - 1)] : undefined;
+      if (chosen) dashi.type(chosen);
+    }
+  }
+}
+
+/** ❖↩ in the conversation: what is typed goes first, then the turn at work goes on by itself and the launcher closes a moment later. */
+function keepWorking({ props, s }: Parts): void {
+  const dashi = props.dashi;
+  if (!dashi) return;
+  const words = s.filter.trim();
+  if (words && dashi.type(words)) s.setFilter("");
+  if (dashi.keepWorking()) setTimeout(props.onClose, KEPT_CLOSE_MS);
+}
+
+/** Return: the selected row's first verb, the chosen verb, the alias or key kept, the words to Dashi's agent. */
 function submitter({ props, s, search, lists, acts }: Parts): (stay?: boolean) => void {
   const { mode, filter } = s;
-  const { onClose } = props;
   return (stay = false) => {
     switch (mode.kind) {
       case "search":
@@ -63,29 +107,8 @@ function submitter({ props, s, search, lists, acts }: Parts): (stay?: boolean) =
         props.prefs?.setKey(mode.address, mode.when);
         search.sayDone("Shortcut kept");
         return acts.backToSearch();
-      case "task":
-        return acts.agentKeys.submit(lists.heldStep);
-      case "grants": {
-        if (s.grantsRow === 1) {
-          props.handoff?.settings();
-          return onClose();
-        }
-        const request = filter.trim();
-        if (!request || !props.handoff) return;
-        props.handoff.start({ harness: mode.harness, request, context: chosenContext(s.context, s.chipsOn) }, mode.watch);
-        return onClose();
-      }
-      case "message": {
-        const words = filter.trim();
-        if (!words) return;
-        const run = s.handoff?.runs.find((each) => each.id === mode.run);
-        if (props.handoff?.tell(mode.run, words)) {
-          s.setFilter("");
-          search.sayDone(`Sent to ${run?.harnessName ?? "the agent"}`);
-          setTimeout(onClose, 600);
-        } else search.sayDone("That agent is gone", false);
-        return;
-      }
+      case "talk":
+        return talkReturn({ props, s, search, lists, acts });
     }
   };
 }
@@ -93,7 +116,7 @@ function submitter({ props, s, search, lists, acts }: Parts): (stay?: boolean) =
 /** The compositor's commands for the launcher (launcher/keys.ts). */
 function commander(parts: Parts, submit: (stay?: boolean) => void, drawnRows: () => Row[]): (cmd: LauncherCommand) => void {
   const { props, s, search, acts } = parts;
-  const { mode, chipsOn } = s;
+  const { mode } = s;
   const { selectedRow, verbsOf } = search;
   /** The row the keys act on: the action list's row, or the selected one. */
   const target = (): Row | undefined => (mode.kind === "actions" ? mode.row : mode.kind === "search" ? selectedRow : undefined);
@@ -114,6 +137,9 @@ function commander(parts: Parts, submit: (stay?: boolean) => void, drawnRows: ()
     shortcut: KEYS.shortcut,
   };
   return (cmd) => {
+    // In the conversation ❖↩ is Keep working on it, and ❖Esc stops the turn at work.
+    if (mode.kind === "talk" && cmd.kind === "secondary") return keepWorking(parts);
+    if (cmd.kind === "stop-work") return props.dashi?.stop();
     const key = keyed[cmd.kind];
     if (key !== undefined) return byKey(key);
     switch (cmd.kind) {
@@ -133,32 +159,9 @@ function commander(parts: Parts, submit: (stay?: boolean) => void, drawnRows: ()
         return;
       case "tab": {
         // In a scope (the clipboard, snippets, a command from outside) ⇥ asks no one: the rows are the scope's own.
-        if (s.scope || search.inOutside || mode.kind === "grants" || mode.kind === "message") return;
-        // On a run's row, ⇥ turns the field into words to it.
-        const act = selectedRow?.action.kind === "agent" ? selectedRow.action.act : null;
-        if (mode.kind === "search" && !search.text && act?.kind === "run") return acts.talkTo(act.run);
+        if (s.scope || search.inOutside) return;
         return acts.agentKeys.tab();
       }
-      case "option-pick": {
-        const harness = mode.kind === "search" ? harnessByDigit(s.handoff, cmd.digit) : null;
-        if (harness) acts.handOff(harness, search.text, false);
-        return;
-      }
-      case "stop": {
-        const act = selectedRow?.action.kind === "agent" ? selectedRow.action.act : null;
-        if (mode.kind === "search" && act?.kind === "run") acts.handoffAct({ kind: "stop-run", run: act.run });
-        return;
-      }
-      case "backspace":
-        if (chipsOn.selection) s.setChipsOn({ ...chipsOn, selection: false });
-        else if (chipsOn.window) s.setChipsOn({ ...chipsOn, window: false });
-        return;
-      case "settings":
-        if (mode.kind === "grants") {
-          props.handoff?.settings();
-          props.onClose();
-        }
-        return;
       case "arrow":
         search.pictures.arrow(cmd.to);
         return;
@@ -199,9 +202,8 @@ function keyHandler({ props, s, search, acts }: Parts): (key: "Escape" | "ArrowU
     if (key === "ArrowUp") return acts.move.current("up");
     // A link opened the launcher for its action alone: Esc closes it. Windows' pictures fold first.
     if (search.pictures.fold()) return;
-    if (mode.kind === "presented") return onClose();
-    // Esc while an answer is still coming gives up on it (launcher/lib/agents/handlers.ts `leave`).
-    if (mode.kind === "task") acts.agentKeys.leave();
+    // The conversation: Esc closes the launcher; a turn at work carries on, and the conversation stays open (❖Esc stops it).
+    if (mode.kind === "presented" || mode.kind === "talk") return onClose();
     if (mode.kind !== "search") return acts.backToSearch();
     // A command from outside's own scope first, then a launcher scope's chip: back to the whole launcher,
     // or closed when it was opened for the scope.
@@ -239,20 +241,10 @@ export function useCommands(parts: Parts, drawnRows: () => Row[]): LauncherKeys 
   return { submit, onChangeText, onKey };
 }
 
-/** The agents' keys the launcher takes now (launcher/keys.ts `ExtraKeys`), told again only when they change. */
-export function useExtraKeys(props: LauncherProps, s: LauncherState, search: Search): void {
+/** The keys the launcher takes now (launcher/keys.ts `ExtraKeys`), told again only when they change: ❖Esc while a turn works. */
+export function useExtraKeys(props: LauncherProps, s: LauncherState): void {
   const { keys } = props;
-  const { mode, handoff, chipsOn } = s;
-  const { selectedRow } = search;
-  const selectedAct = mode.kind === "search" && selectedRow?.action.kind === "agent" ? selectedRow.action.act : null;
-  const extraKeys: ExtraKeys = {
-    option: mode.kind === "search" && search.sections.some((section) => section.id === "handoff") && (handoff?.harnesses.length ?? 0) > 1,
-    stop: selectedAct?.kind === "run" && selectedRow?.stop === true,
-    backspace: search.contextShown && !s.query && (chipsOn.window || chipsOn.selection),
-    settings: mode.kind === "grants",
-  };
-  const extrasKey = JSON.stringify(extraKeys);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the key stands for the object, which is new each render
-  useEffect(() => keys?.extras?.(extraKeys), [keys, extrasKey]);
+  const stopWork = s.mode.kind === "talk" && s.talk.working && !s.talk.background;
+  useEffect(() => keys?.extras?.({ stopWork }), [keys, stopWork]);
   useEffect(() => () => keys?.extras?.(NO_EXTRA_KEYS), [keys]);
 }

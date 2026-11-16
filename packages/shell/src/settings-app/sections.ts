@@ -7,7 +7,7 @@
 import { bool, int, list, str } from "@dashi/shape";
 import { isAnswererChoice, isHarnessId } from "../agents/ask/answerer.ts";
 import { isModelName } from "../agents/ask/local.ts";
-import { isModelChoices } from "../agents/assistant/index.ts";
+import { isModelChoices } from "../agents/assistant/models.ts";
 import { isVrrMode } from "../display-config/monitors.ts";
 import { isAliasMap, isKeyMap } from "../launcher/person-keys.ts";
 import { isPersonaLanguage, isPersonaNote, isPersonaYou } from "../persona/index.ts";

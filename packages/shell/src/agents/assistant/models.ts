@@ -1,7 +1,7 @@
 /** settings.json `agents.models`, read from the file (decisions.md D262): per answerer, a model's name when typed and when spoken. */
 
 import { isRecord } from "@dashi/shape";
-import { isModelName } from "../ask/index.ts";
+import { isModelName } from "../ask/local.ts";
 import type { ModelChoices } from "./types.ts";
 
 const isPair = (value: unknown): boolean =>

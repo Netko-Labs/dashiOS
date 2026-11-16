@@ -92,6 +92,8 @@ export interface Assistant extends TaskHooks {
   keepWorking(): boolean;
   /** The person answered the question waiting in the launcher. */
   reply(answer: PersonAnswer): boolean;
+  /** What a turn asked this way would be answered with now ("Claude Code · opus"); null with no answerer. */
+  model(by: By): string | null;
   /** Whether conversation `task`'s turn goes on by itself now: the bar's one indicator shows it then, and only then. */
   background(task: string): boolean;
   /** The policy for a connection of the conversation's own task; null for any other task. */

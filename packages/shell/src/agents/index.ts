@@ -35,7 +35,19 @@ export { type NowItem, TurnWatch } from "./ask/now.ts";
 export { oneLine, type Step, type Undo } from "./ask/plan.ts";
 export { startAsk } from "./ask/service.ts";
 export type { AnswerStatus, TaskView } from "./ask/types.ts";
-export { type Assistant, type Moment, startAssistant, talkLogPath, talkWords, USUAL_NAMES } from "./assistant/index.ts";
+export {
+  type Assistant,
+  type DashiTurn,
+  type Moment,
+  type PersonTurn,
+  startAssistant,
+  type TranscriptView,
+  type TurnStep,
+  talkLogPath,
+  talkWords,
+  USUAL_NAMES,
+  type Waiting,
+} from "./assistant/index.ts";
 export { Atspi } from "./atspi/client.ts";
 export { type A11yNode, documents, fieldAt, focusedField, hasState, limits, passwordFields, placeAgain, ROLE, STATE } from "./atspi/tree.ts";
 export type { Question } from "./confirm.ts";

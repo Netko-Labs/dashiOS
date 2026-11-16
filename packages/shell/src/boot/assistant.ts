@@ -47,11 +47,18 @@ export function hostAssistant(
   ui: AssistantHost["ui"],
   tokens: Parameters<typeof vaultTokenSource>[0],
   settingNow: AssistantHost["settingNow"],
-  notifications: Pick<NotificationStore, "notify">,
+  notifications: Pick<NotificationStore, "notify" | "onEvent">,
 ): void {
-  const notify = (title: string, body: string): void => void notifications.notify(assistantNotice(title, body), 0, SHELL_SENDER);
+  // Show (or a press on the notification) opens the launcher on the conversation.
+  const posted = new Set<number>();
+  const notify = (title: string, body: string): void => void posted.add(notifications.notify(assistantNotice(title, body), 0, SHELL_SENDER));
+  notifications.onEvent((event) => {
+    if (event.type === "action" && posted.has(event.id) && (event.key === SHOW_CONVERSATION || event.key === "default")) late.peek("launcher")?.conversation();
+  });
   late.set("assistantHost", { ui, keys: modelKeys(vaultTokenSource(tokens)), settingNow, notify });
 }
+
+const SHOW_CONVERSATION = "show-conversation";
 
 /** What Dashi's agent says when a turn kept working on its own is over (decisions.md D261): what it did, and Show. */
 function assistantNotice(title: string, body: string): NotifyInput {
@@ -60,7 +67,7 @@ function assistantNotice(title: string, body: string): NotifyInput {
     appIcon: iconPath("agents"),
     summary: title,
     body: body.length > 280 ? `${body.slice(0, 279)}…` : body,
-    actions: [],
+    actions: [{ key: SHOW_CONVERSATION, label: "Show" }],
     urgency: "normal",
     expireTimeout: -1,
     imagePath: "",

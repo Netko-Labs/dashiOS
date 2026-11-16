@@ -103,6 +103,21 @@ function Outside({ sessions, harness, ink }: { sessions: number; harness: string
   );
 }
 
+/** Dashi's spark, and "Working" beside it while something works on its own. */
+function Working({ ink, glyph, working }: { ink: string; glyph: string; working: boolean }) {
+  const colors = useColors();
+  return (
+    <>
+      <Spark ink={ink} glyph={glyph} />
+      {working && (
+        <View testID="agent-mark-working">
+          <Text style={{ fontSize: 11.5, fontWeight: "semibold", color: colors.agentInk }}>Working</Text>
+        </View>
+      )}
+    </>
+  );
+}
+
 export interface AgentMarkProps {
   /** How many things wait on the person: the mark turns amber and counts them. */
   need: number;
@@ -206,14 +221,7 @@ export function AgentMark(props: AgentMarkProps) {
           </View>
         </>
       ) : (
-        <>
-          <Spark ink={ink} glyph={glyph} />
-          {working && (
-            <View testID="agent-mark-working">
-              <Text style={{ fontSize: 11.5, fontWeight: "semibold", color: colors.agentInk }}>Working</Text>
-            </View>
-          )}
-        </>
+        <Working ink={ink} glyph={glyph} working={working} />
       )}
       {watching && <RedDot />}
     </View>

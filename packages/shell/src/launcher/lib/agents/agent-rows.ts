@@ -3,10 +3,11 @@
  * launcher", recommendation B everywhere). Pure: the launcher draws them,
  * the tests read them.
  *
- * - Local first: the rows the ranking found never wait for anything. An Ask
- *   row is added last, never selected for you, only for a sentence (three or
+ * - Local first: the rows the ranking found never wait for anything. One
+ *   Ask Dashi row is added last (decisions.md D261: one path, no plan, no
+ *   hand-off rows), never selected for you, only for a sentence (three or
  *   more words, a verb first, or a "?") or after ⇥, and only when an
- *   answerer is chosen. It says where the words go.
+ *   answerer is chosen. It says what answers.
  * - With nothing picked yet, ⇥ offers "Set up an agent…" instead; "None"
  *   chosen hides Ask altogether.
  * - An empty launcher shows "Now" on top: a "Your turn" first, then the
@@ -44,12 +45,13 @@ export const SET_UP_ROW = "set-up-agent";
 
 const act = (value: AgentAct) => ({ kind: "agent" as const, act: value });
 
-/** The Ask row: shiso glyph and words, and where they go. */
-export function askRow(query: string, answerer: AnswererInfo): Row {
+/** The Ask Dashi row: the persona's spark, the words, and what answers them. */
+export function askRow(query: string, answerer: AnswererInfo, model: string | null = null, name = "Dashi"): Row {
   return {
     id: ASK_ROW,
-    title: `Ask: ${query.trim()}`,
-    kind: answerer.where,
+    title: `Ask ${name}`,
+    detail: `“${query.trim()}”${model ? ` · ${model}` : ""}`,
+    kind: model ? "" : answerer.name,
     icon: { glyph: SPARKLE },
     action: act({ kind: "ask", query: query.trim() }),
     agent: "ask",
@@ -106,6 +108,9 @@ export interface AgentRowsInput {
   history?: () => readonly HistoryEntry[];
   /** Seconds, for "5 min ago". */
   now: number;
+  /** What answers typed asks, and the persona's name, for the Ask row. */
+  model?: string | null;
+  name?: string;
 }
 
 /** The launcher's sections with agents' added: Now on top of an empty field, history, then Ask last. */
@@ -125,25 +130,25 @@ export function withAgents(sections: readonly Section[], input: AgentRowsInput):
   }
   // A sum or a conversion is answered here already ("15% of 80"): Ask only if ⇥ asks for it.
   const answered = sections.some((section) => section.rows.some((row) => row.id === "answer"));
-  if (snapshot.answerer && (input.tabbed || (readsLikeSentence(query) && !answered))) return [...out, { id: "ask", rows: [askRow(query, snapshot.answerer)] }];
+  if (snapshot.answerer && (input.tabbed || (readsLikeSentence(query) && !answered)))
+    return [...out, { id: "ask", rows: [askRow(query, snapshot.answerer, input.model ?? null, input.name)] }];
   if (!snapshot.answerer && snapshot.unset && input.tabbed) return [...out, { id: "set-up", rows: [setUpRow] }];
   return out;
 }
 
 /** "⇥ Ask" at the field's right end, for words that read like a request, when someone answers. */
 export function askHint(query: string, snapshot: LauncherAgentsSnapshot | null): Hint[] {
-  return snapshot?.answerer && readsLikeSentence(query) ? [{ keys: "⇥", label: "Ask" }] : [];
+  return snapshot?.answerer && readsLikeSentence(query) ? [{ keys: "⇥", label: "Ask Dashi" }] : [];
 }
 
 /** The placeholder when someone answers: the field takes words to do, not only names. */
-export const ASK_PLACEHOLDER = "Search, or say what to do";
+export const ASK_PLACEHOLDER = "Search, or ask Dashi";
 
 /** The stop square's press for a row that has one (a Now row, a run), as ResultRow props. */
 export function withStop(row: Row, run: (act: AgentAct) => void): { onStop?: () => void } {
   const action = row.action;
   if (!row.stop || action.kind !== "agent") return {};
   const act = action.act;
-  if (act.kind === "run") return { onStop: () => run({ kind: "stop-run", run: act.run }) };
   if (act.kind !== "now") return {};
   const item = act.item;
   return { onStop: () => run({ kind: "stop", item }) };
@@ -163,7 +168,7 @@ export function agentVerbs(value: AgentAct): Verb[] {
       const { item } = value;
       const stop = verb("stop", item.kind === "task" ? "Stop" : `Stop ${item.name}`, { kind: "stop", item }, { danger: true });
       if (item.kind === "turn") return [verb("go", "Go to window", value, { key: "↩" }), stop];
-      if (item.kind === "task") return [verb("plan", "Show plan", value, { key: "↩" }), stop];
+      if (item.kind === "task") return [{ ...stop, key: "↩" }];
       return [verb("history", "Show in Settings", { kind: "set-up" }, { key: "↩" }), stop];
     }
     case "history": {
@@ -175,16 +180,6 @@ export function agentVerbs(value: AgentAct): Verb[] {
       );
       return [verb("show", "Show in Settings", value, { key: "↩" }), ...undos];
     }
-    case "hand-off":
-      return [verb("start", "Start", value, { key: "↩" }), verb("watch", "Start and watch", { ...value, watch: true }, { key: "⌥↩" })];
-    case "run":
-      return [
-        verb("open", "Open", value, { key: "↩" }),
-        verb("tell", "Tell it something", { kind: "tell", run: value.run }, { key: "⇥" }),
-        verb("stop", "Stop", { kind: "stop-run", run: value.run }, { key: "❖⌫", danger: true }),
-      ];
-    case "sign-in-harness":
-      return [verb("sign-in", "Sign in in Terminal", value, { key: "↩" })];
     default:
       return [verb("do", value.kind === "ask" ? "Ask" : "Set up an agent…", value, { key: "↩" })];
   }
