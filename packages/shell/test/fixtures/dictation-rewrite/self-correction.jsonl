@@ -1,0 +1,134 @@
+{"id": "sc-en-01", "lang": "en", "tags": ["self-correction"], "heard": "meet me at five, no, I mean six.", "want": "Meet me at six."}
+{"id": "sc-en-02", "lang": "en", "tags": ["self-correction"], "heard": "Let's do coffee at 2, actually 3.", "want": "Let's do coffee at 3."}
+{"id": "sc-en-03", "lang": "en", "tags": ["self-correction"], "heard": "Send it to Ana on Monday, no, Tuesday.", "want": "Send it to Ana on Tuesday."}
+{"id": "sc-en-04", "lang": "en", "tags": ["self-correction"], "heard": "The meeting is on Thursday, sorry, Friday at noon.", "want": "The meeting is on Friday at noon."}
+{"id": "sc-en-05", "lang": "en", "tags": ["self-correction"], "heard": "I'll be there in ten minutes, wait, make that twenty.", "want": "I'll be there in twenty minutes."}
+{"id": "sc-en-06", "lang": "en", "tags": ["self-correction"], "heard": "Can you book a table for four, I mean five people?", "want": "Can you book a table for five people?"}
+{"id": "sc-en-07", "lang": "en", "tags": ["self-correction"], "heard": "We need to ship the build by Wednesday. Scratch that, by Friday.", "want": "We need to ship the build by Friday."}
+{"id": "sc-en-08", "lang": "en", "tags": ["self-correction"], "heard": "Tell Marcus the budget is 4000, no, 4500 dollars.", "want": "Tell Marcus the budget is 4500 dollars."}
+{"id": "sc-en-09", "lang": "en", "tags": ["self-correction"], "heard": "I think we should use Postgres, actually no, SQLite is enough for this.", "want": "I think SQLite is enough for this.", "also": ["I think we should use SQLite, it is enough for this.", "SQLite is enough for this.", "I think we should use SQLite is enough for this."], "unsure": true}
+{"id": "sc-en-10", "lang": "en", "tags": ["self-correction"], "heard": "Open the file in the editor, I meant in the terminal.", "want": "Open the file in the terminal."}
+{"id": "sc-en-11", "lang": "en", "tags": ["self-correction"], "heard": "The flight leaves at 7 a.m., no wait, 7 p.m.", "want": "The flight leaves at 7 p.m."}
+{"id": "sc-en-12", "lang": "en", "tags": ["self-correction"], "heard": "Please rename the branch to feature login, sorry, feature sign in.", "want": "Please rename the branch to feature sign in."}
+{"id": "sc-en-13", "lang": "en", "tags": ["self-correction"], "heard": "It costs about thirty, no, I mean thirteen euros.", "want": "It costs about thirteen euros."}
+{"id": "sc-en-14", "lang": "en", "tags": ["self-correction"], "heard": "Give it to John, I mean to Joan, before lunch.", "want": "Give it to Joan before lunch.", "also": ["Give it to Joan, before lunch."]}
+{"id": "sc-en-15", "lang": "en", "tags": ["self-correction"], "heard": "The bug is in the parser, well, actually in the lexer.", "want": "The bug is in the lexer."}
+{"id": "sc-en-16", "lang": "en", "tags": ["self-correction"], "heard": "We have three options, no, four options to consider.", "want": "We have four options to consider."}
+{"id": "sc-en-17", "lang": "en", "tags": ["self-correction"], "heard": "Call me tomorrow morning, or rather tomorrow afternoon.", "want": "Call me tomorrow afternoon."}
+{"id": "sc-en-18", "lang": "en", "tags": ["self-correction"], "heard": "I want the button to be blue. No, wait, green.", "want": "I want the button to be green."}
+{"id": "sc-en-19", "lang": "en", "tags": ["self-correction"], "heard": "Let's merge it today, actually let's wait until the tests pass.", "want": "Let's wait until the tests pass."}
+{"id": "sc-en-20", "lang": "en", "tags": ["self-correction"], "heard": "My address is 42 Oak Street, sorry, 24 Oak Street.", "want": "My address is 24 Oak Street."}
+{"id": "sc-en-21", "lang": "en", "tags": ["self-correction"], "heard": "Add a retry after two seconds, I mean two hundred milliseconds.", "want": "Add a retry after two hundred milliseconds."}
+{"id": "sc-en-22", "lang": "en", "tags": ["self-correction"], "heard": "She said she would arrive on the 5th, no, the 15th of March.", "want": "She said she would arrive on the 15th of March."}
+{"id": "sc-en-23", "lang": "en", "tags": ["self-correction"], "heard": "Make the font bigger, no, smaller, in the sidebar.", "want": "Make the font smaller in the sidebar.", "also": ["Make the font smaller, in the sidebar."]}
+{"id": "sc-en-24", "lang": "en", "tags": ["self-correction"], "heard": "Reply to Sam and say yes, actually say maybe.", "want": "Reply to Sam and say maybe."}
+{"id": "sc-en-25", "lang": "en", "tags": ["self-correction"], "heard": "The deadline is next week. Actually, scratch that. The deadline is in two weeks.", "want": "The deadline is in two weeks."}
+{"id": "sc-en-26", "lang": "en", "tags": ["self-correction"], "heard": "I ordered two pizzas, wait, three pizzas and a salad.", "want": "I ordered three pizzas and a salad."}
+{"id": "sc-en-27", "lang": "en", "tags": ["self-correction"], "heard": "Turn left at the bank, no sorry, turn right at the bank.", "want": "Turn right at the bank."}
+{"id": "sc-en-28", "lang": "en", "tags": ["self-correction"], "heard": "We should hire one more designer, I mean engineer.", "want": "We should hire one more engineer."}
+{"id": "sc-en-29", "lang": "en", "tags": ["self-correction"], "heard": "The password reset email goes out after an hour, no, I mean after a minute.", "want": "The password reset email goes out after a minute."}
+{"id": "sc-en-30", "lang": "en", "tags": ["self-correction"], "heard": "It was a good, no, a great presentation.", "want": "It was a great presentation."}
+{"id": "sc-en-31", "lang": "en", "tags": ["self-correction"], "heard": "with without not but with changing the model", "want": "by changing the model", "also": ["with changing the model", "With changing the model.", "By changing the model."], "unsure": true, "note": "the shape of corpus row 25"}
+{"id": "sc-en-32", "lang": "en", "tags": ["self-correction"], "heard": "I'll take the red one, no the blue one, no actually the red one.", "want": "I'll take the red one."}
+{"id": "sc-en-33", "lang": "en", "tags": ["self-correction"], "heard": "Move the meeting to 3, no 4, no sorry 4:30.", "want": "Move the meeting to 4:30."}
+{"id": "sc-en-34", "lang": "en", "tags": ["self-correction"], "heard": "The total is 120, I mean 210, wait no, 201 dollars.", "want": "The total is 201 dollars."}
+{"id": "sc-en-35", "lang": "en", "tags": ["self-correction"], "heard": "Put it on the left, I mean the right, sorry, the left side of the page.", "want": "Put it on the left side of the page."}
+{"id": "sc-en-36", "lang": "en", "tags": ["self-correction"], "heard": "So what about we can make, so what if we make the capsule smaller?", "want": "So what if we make the capsule smaller?"}
+{"id": "sc-en-37", "lang": "en", "tags": ["self-correction"], "heard": "I was going to, I think we should just delete the old tests.", "want": "I think we should just delete the old tests."}
+{"id": "sc-en-38", "lang": "en", "tags": ["self-correction"], "heard": "Can you send, could you forward the invoice to accounting?", "want": "Could you forward the invoice to accounting?"}
+{"id": "sc-en-39", "lang": "en", "tags": ["self-correction"], "heard": "The thing is that we, the problem is that we never measured it.", "want": "The problem is that we never measured it."}
+{"id": "sc-en-40", "lang": "en", "tags": ["self-correction"], "heard": "make him or make her whatever it is use the same voice", "want": "Make it use the same voice.", "also": ["make it use the same voice", "Make it use the same voice"], "unsure": true, "note": "the shape of corpus row 11"}
+{"id": "sc-en-41", "lang": "en", "tags": ["self-correction"], "heard": "Right now, right now it cannot open a second window.", "want": "Right now it cannot open a second window.", "also": ["Right now, it cannot open a second window."]}
+{"id": "sc-en-42", "lang": "en", "tags": ["self-correction"], "heard": "We we need to to check the logs first.", "want": "We need to check the logs first."}
+{"id": "sc-en-43", "lang": "en", "tags": ["self-correction"], "heard": "The the release is is planned for June.", "want": "The release is planned for June."}
+{"id": "sc-en-44", "lang": "en", "tags": ["self-correction"], "heard": "I'd like a flat white. Never mind, an espresso.", "want": "I'd like an espresso."}
+{"id": "sc-en-45", "lang": "en", "tags": ["self-correction"], "heard": "Set the timeout to 30 seconds. Actually, never mind, leave it as it is.", "want": "Leave the timeout as it is.", "also": ["Leave it as it is."], "unsure": true}
+{"id": "sc-en-46", "lang": "en", "tags": ["self-correction"], "heard": "Dear Mr. Lopez, sorry, Dear Dr. Lopez, thank you for your letter.", "want": "Dear Dr. Lopez, thank you for your letter."}
+{"id": "sc-en-47", "lang": "en", "tags": ["self-correction"], "heard": "the function returns a string i mean a list of strings", "want": "The function returns a list of strings."}
+{"id": "sc-en-48", "lang": "en", "tags": ["self-correction"], "heard": "i'll see you on saturday no sunday at the usual place", "want": "I'll see you on Sunday at the usual place."}
+{"id": "sc-en-49", "lang": "en", "tags": ["self-correction"], "heard": "she lives in portland oregon sorry portland maine", "want": "She lives in Portland, Maine."}
+{"id": "sc-en-50", "lang": "en", "tags": ["self-correction"], "heard": "book the room for an hour actually for two hours and invite the whole team", "want": "Book the room for two hours and invite the whole team."}
+{"id": "sc-en-51", "lang": "en", "tags": ["self-correction"], "heard": "The cache holds 100 entries, correction, 1000 entries.", "want": "The cache holds 1000 entries."}
+{"id": "sc-en-52", "lang": "en", "tags": ["self-correction"], "heard": "Use the staging server, not, I mean, use the production server for this.", "want": "Use the production server for this."}
+{"id": "sc-en-53", "lang": "en", "tags": ["self-correction"], "heard": "I think it's Tuesday. No, it's Wednesday today.", "want": "It's Wednesday today.", "also": ["I think it's Wednesday today."], "unsure": true}
+{"id": "sc-en-54", "lang": "en", "tags": ["self-correction"], "heard": "We sold 80 units in May, or wait, was it 90? Yes, 90 units in May.", "want": "We sold 90 units in May."}
+{"id": "sc-es-01", "lang": "es", "tags": ["self-correction"], "heard": "Nos vemos a las cinco, no, digo a las seis.", "want": "Nos vemos a las seis."}
+{"id": "sc-es-02", "lang": "es", "tags": ["self-correction"], "heard": "La reunión es el jueves, perdón, el viernes a mediodía.", "want": "La reunión es el viernes a mediodía."}
+{"id": "sc-es-03", "lang": "es", "tags": ["self-correction"], "heard": "Mándale el informe a Laura, mejor dicho a Lucía, antes de las tres.", "want": "Mándale el informe a Lucía antes de las tres.", "also": ["Mándale el informe a Lucía, antes de las tres."]}
+{"id": "sc-es-04", "lang": "es", "tags": ["self-correction"], "heard": "Quiero dos cafés, o sea, no, tres cafés con leche.", "want": "Quiero tres cafés con leche."}
+{"id": "sc-es-05", "lang": "es", "tags": ["self-correction"], "heard": "El vuelo sale a las siete de la mañana, quise decir de la tarde.", "want": "El vuelo sale a las siete de la tarde."}
+{"id": "sc-es-06", "lang": "es", "tags": ["self-correction"], "heard": "Cuesta treinta euros, no, perdón, trece euros.", "want": "Cuesta trece euros."}
+{"id": "sc-es-07", "lang": "es", "tags": ["self-correction"], "heard": "Llego en diez minutos, espera, en veinte.", "want": "Llego en veinte minutos.", "also": ["Llego en veinte."]}
+{"id": "sc-es-08", "lang": "es", "tags": ["self-correction"], "heard": "Dile a Marcos que el presupuesto es de 4000, digo, de 4500 euros.", "want": "Dile a Marcos que el presupuesto es de 4500 euros."}
+{"id": "sc-es-09", "lang": "es", "tags": ["self-correction"], "heard": "Vamos a usar Postgres, bueno no, mejor SQLite.", "want": "Vamos a usar SQLite.", "also": ["Vamos a usar mejor SQLite.", "Mejor SQLite."]}
+{"id": "sc-es-10", "lang": "es", "tags": ["self-correction"], "heard": "Abre el archivo en el editor, quise decir en la terminal.", "want": "Abre el archivo en la terminal."}
+{"id": "sc-es-11", "lang": "es", "tags": ["self-correction"], "heard": "Mi dirección es calle Mayor 42, perdón, calle Mayor 24.", "want": "Mi dirección es calle Mayor 24."}
+{"id": "sc-es-12", "lang": "es", "tags": ["self-correction"], "heard": "Hay que entregarlo el miércoles. Borra eso, el viernes.", "want": "Hay que entregarlo el viernes."}
+{"id": "sc-es-13", "lang": "es", "tags": ["self-correction"], "heard": "Reserva una mesa para cuatro, digo para cinco personas.", "want": "Reserva una mesa para cinco personas."}
+{"id": "sc-es-14", "lang": "es", "tags": ["self-correction"], "heard": "El error está en el servidor, mejor dicho, en la base de datos.", "want": "El error está en la base de datos."}
+{"id": "sc-es-15", "lang": "es", "tags": ["self-correction"], "heard": "Tenemos tres opciones, no, cuatro opciones.", "want": "Tenemos cuatro opciones."}
+{"id": "sc-es-16", "lang": "es", "tags": ["self-correction"], "heard": "Llámame mañana por la mañana, o mejor mañana por la tarde.", "want": "Llámame mañana por la tarde."}
+{"id": "sc-es-17", "lang": "es", "tags": ["self-correction"], "heard": "Quiero el botón azul. No, espera, verde.", "want": "Quiero el botón verde."}
+{"id": "sc-es-18", "lang": "es", "tags": ["self-correction"], "heard": "Lo fusionamos hoy, en realidad esperemos a que pasen las pruebas.", "want": "Esperemos a que pasen las pruebas."}
+{"id": "sc-es-19", "lang": "es", "tags": ["self-correction"], "heard": "Ella llega el día 5, no, el 15 de marzo.", "want": "Ella llega el 15 de marzo.", "also": ["Ella llega el día 15 de marzo."]}
+{"id": "sc-es-20", "lang": "es", "tags": ["self-correction"], "heard": "Pon la letra más grande, no, más pequeña, en la barra lateral.", "want": "Pon la letra más pequeña en la barra lateral.", "also": ["Pon la letra más pequeña, en la barra lateral."]}
+{"id": "sc-es-21", "lang": "es", "tags": ["self-correction"], "heard": "Contéstale a Sam que sí, mejor dicho que tal vez.", "want": "Contéstale a Sam que tal vez."}
+{"id": "sc-es-22", "lang": "es", "tags": ["self-correction"], "heard": "Pedí dos pizzas, espera, tres pizzas y una ensalada.", "want": "Pedí tres pizzas y una ensalada."}
+{"id": "sc-es-23", "lang": "es", "tags": ["self-correction"], "heard": "Gira a la izquierda en el banco, no perdón, a la derecha en el banco.", "want": "Gira a la derecha en el banco."}
+{"id": "sc-es-24", "lang": "es", "tags": ["self-correction"], "heard": "Deberíamos contratar a otro diseñador, digo, ingeniero.", "want": "Deberíamos contratar a otro ingeniero."}
+{"id": "sc-es-25", "lang": "es", "tags": ["self-correction"], "heard": "Fue una buena, no, una gran presentación.", "want": "Fue una gran presentación."}
+{"id": "sc-es-26", "lang": "es", "tags": ["self-correction"], "heard": "Me quedo con el rojo, no el azul, no, mejor el rojo.", "want": "Me quedo con el rojo."}
+{"id": "sc-es-27", "lang": "es", "tags": ["self-correction"], "heard": "Pasa la reunión a las 3, no a las 4, no perdón, a las 4 y media.", "want": "Pasa la reunión a las 4 y media."}
+{"id": "sc-es-28", "lang": "es", "tags": ["self-correction"], "heard": "El total es 120, digo 210, espera no, 201 euros.", "want": "El total es 201 euros."}
+{"id": "sc-es-29", "lang": "es", "tags": ["self-correction"], "heard": "Iba a decirte que, creo que deberíamos borrar las pruebas viejas.", "want": "Creo que deberíamos borrar las pruebas viejas."}
+{"id": "sc-es-30", "lang": "es", "tags": ["self-correction"], "heard": "¿Puedes mandar, podrías reenviar la factura a contabilidad?", "want": "¿Podrías reenviar la factura a contabilidad?"}
+{"id": "sc-es-31", "lang": "es", "tags": ["self-correction"], "heard": "Lo que pasa es que, el problema es que nunca lo medimos.", "want": "El problema es que nunca lo medimos."}
+{"id": "sc-es-32", "lang": "es", "tags": ["self-correction"], "heard": "Ahora mismo, ahora mismo no puede abrir otra ventana.", "want": "Ahora mismo no puede abrir otra ventana.", "also": ["Ahora mismo, no puede abrir otra ventana."]}
+{"id": "sc-es-33", "lang": "es", "tags": ["self-correction"], "heard": "Tenemos que que revisar los los registros primero.", "want": "Tenemos que revisar los registros primero."}
+{"id": "sc-es-34", "lang": "es", "tags": ["self-correction"], "heard": "Quiero un cortado. Olvídalo, un café solo.", "want": "Quiero un café solo."}
+{"id": "sc-es-35", "lang": "es", "tags": ["self-correction"], "heard": "Estimado señor López, perdón, estimado doctor López, gracias por su carta.", "want": "Estimado doctor López, gracias por su carta."}
+{"id": "sc-es-36", "lang": "es", "tags": ["self-correction"], "heard": "la función devuelve una cadena digo una lista de cadenas", "want": "La función devuelve una lista de cadenas."}
+{"id": "sc-es-37", "lang": "es", "tags": ["self-correction"], "heard": "nos vemos el sábado no el domingo en el sitio de siempre", "want": "Nos vemos el domingo en el sitio de siempre."}
+{"id": "sc-es-38", "lang": "es", "tags": ["self-correction"], "heard": "ella vive en santiago de chile perdón santiago de compostela", "want": "Ella vive en Santiago de Compostela."}
+{"id": "sc-es-39", "lang": "es", "tags": ["self-correction"], "heard": "reserva la sala una hora mejor dicho dos horas e invita a todo el equipo", "want": "Reserva la sala dos horas e invita a todo el equipo."}
+{"id": "sc-es-40", "lang": "es", "tags": ["self-correction"], "heard": "La caché guarda 100 entradas, corrijo, 1000 entradas.", "want": "La caché guarda 1000 entradas."}
+{"id": "sc-es-41", "lang": "es", "tags": ["self-correction"], "heard": "Vendimos 80 unidades en mayo, o espera, ¿eran 90? Sí, 90 unidades en mayo.", "want": "Vendimos 90 unidades en mayo."}
+{"id": "sc-es-42", "lang": "es", "tags": ["self-correction"], "heard": "El paquete llega mañana, o sea, no, pasado mañana.", "want": "El paquete llega pasado mañana."}
+{"id": "sc-es-43", "lang": "es", "tags": ["self-correction"], "heard": "Compra pan, leche y huevos, no, huevos no, queso.", "want": "Compra pan, leche y queso."}
+{"id": "sc-es-44", "lang": "es", "tags": ["self-correction"], "heard": "Le dije que viniera a las ocho, miento, a las nueve.", "want": "Le dije que viniera a las nueve."}
+{"id": "sc-es-45", "lang": "es", "tags": ["self-correction"], "heard": "Súbelo a la rama principal, no, a la rama de pruebas.", "want": "Súbelo a la rama de pruebas."}
+{"id": "sc-es-46", "lang": "es", "tags": ["self-correction"], "heard": "La contraseña caduca cada mes, quiero decir, cada tres meses.", "want": "La contraseña caduca cada tres meses."}
+{"id": "sc-es-47", "lang": "es", "tags": ["self-correction"], "heard": "Hablamos con el cliente el lunes, ay no, el martes.", "want": "Hablamos con el cliente el martes."}
+{"id": "sc-es-48", "lang": "es", "tags": ["self-correction"], "heard": "Necesito el coche para el fin de semana, bueno, solo para el sábado.", "want": "Necesito el coche solo para el sábado.", "also": ["Necesito el coche para el sábado."], "unsure": true}
+{"id": "sc-mix-01", "lang": "mix", "tags": ["self-correction"], "heard": "Nos vemos a las cinco, no, I mean six.", "want": "Nos vemos a las six.", "also": ["Nos vemos a las seis."], "unsure": true, "note": "the research's example; either number word is accepted"}
+{"id": "sc-mix-02", "lang": "mix", "tags": ["self-correction"], "heard": "Meet me at five, no, digo, at six.", "want": "Meet me at six."}
+{"id": "sc-mix-03", "lang": "mix", "tags": ["self-correction"], "heard": "La reunión es el jueves, sorry, el viernes.", "want": "La reunión es el viernes."}
+{"id": "sc-mix-04", "lang": "mix", "tags": ["self-correction"], "heard": "Send it to Ana on Monday, perdón, on Tuesday.", "want": "Send it to Ana on Tuesday."}
+{"id": "sc-mix-05", "lang": "mix", "tags": ["self-correction"], "heard": "Vamos a hacer el deploy hoy, actually mañana.", "want": "Vamos a hacer el deploy mañana."}
+{"id": "sc-mix-06", "lang": "mix", "tags": ["self-correction"], "heard": "The standup is at nine, mejor dicho at nine thirty.", "want": "The standup is at nine thirty."}
+{"id": "sc-mix-07", "lang": "mix", "tags": ["self-correction"], "heard": "Hay que arreglar el bug del login, I mean del sign up.", "want": "Hay que arreglar el bug del sign up."}
+{"id": "sc-mix-08", "lang": "mix", "tags": ["self-correction"], "heard": "Dile al equipo que el release es el lunes, wait, el miércoles.", "want": "Dile al equipo que el release es el miércoles."}
+{"id": "sc-mix-09", "lang": "mix", "tags": ["self-correction"], "heard": "I'll push the fix tonight, o sea, no, tomorrow morning.", "want": "I'll push the fix tomorrow morning."}
+{"id": "sc-mix-10", "lang": "mix", "tags": ["self-correction"], "heard": "El pull request tiene tres commits, no, I mean four commits.", "want": "El pull request tiene four commits.", "also": ["El pull request tiene cuatro commits."], "unsure": true}
+{"id": "sc-mix-11", "lang": "mix", "tags": ["self-correction"], "heard": "Pásame el link del meeting, perdón, del documento.", "want": "Pásame el link del documento."}
+{"id": "sc-mix-12", "lang": "mix", "tags": ["self-correction"], "heard": "We need el presupuesto by Friday, digo, by Thursday.", "want": "We need el presupuesto by Thursday."}
+{"id": "sc-mix-13", "lang": "mix", "tags": ["self-correction"], "heard": "Voy a usar el branch main, scratch that, el branch develop.", "want": "Voy a usar el branch develop."}
+{"id": "sc-mix-14", "lang": "mix", "tags": ["self-correction"], "heard": "Call me a las tres, no, a las cuatro.", "want": "Call me a las cuatro."}
+{"id": "sc-mix-15", "lang": "mix", "tags": ["self-correction"], "heard": "El server está en Madrid, sorry, en Frankfurt.", "want": "El server está en Frankfurt."}
+{"id": "sc-mix-16", "lang": "mix", "tags": ["self-correction"], "heard": "Put the button a la izquierda, I mean a la derecha.", "want": "Put the button a la derecha."}
+{"id": "sc-mix-17", "lang": "mix", "tags": ["self-correction"], "heard": "Mañana tengo dentist a las diez, actually a las once.", "want": "Mañana tengo dentist a las once."}
+{"id": "sc-mix-18", "lang": "mix", "tags": ["self-correction"], "heard": "The invoice is for doscientos, perdón, trescientos euros.", "want": "The invoice is for trescientos euros."}
+{"id": "sc-mix-19", "lang": "mix", "tags": ["self-correction"], "heard": "Reinicia el container, no wait, el pod entero.", "want": "Reinicia el pod entero."}
+{"id": "sc-mix-20", "lang": "mix", "tags": ["self-correction"], "heard": "Let's order paella, mejor dicho, tacos for everyone.", "want": "Let's order tacos for everyone."}
+{"id": "sc-mix-21", "lang": "mix", "tags": ["self-correction"], "heard": "El feedback del cliente fue bueno, well, actually fue regular.", "want": "El feedback del cliente fue regular."}
+{"id": "sc-mix-22", "lang": "mix", "tags": ["self-correction"], "heard": "Agenda la call para el martes, I meant el jueves, a las cinco.", "want": "Agenda la call para el jueves a las cinco.", "also": ["Agenda la call para el jueves, a las cinco."]}
+{"id": "sc-mix-23", "lang": "mix", "tags": ["self-correction"], "heard": "Tell Lucía que llego tarde, no, que no voy.", "want": "Tell Lucía que no voy."}
+{"id": "sc-mix-24", "lang": "mix", "tags": ["self-correction"], "heard": "vamos a mergear hoy no sorry mañana after the review", "want": "Vamos a mergear mañana after the review."}
+{"id": "sc-mix-25", "lang": "mix", "tags": ["self-correction"], "heard": "el ticket es el 482 i mean el 428 del sprint actual", "want": "El ticket es el 428 del sprint actual."}
+{"id": "sc-mix-26", "lang": "mix", "tags": ["self-correction"], "heard": "Compra dos tickets, wait, three tickets para el concierto.", "want": "Compra three tickets para el concierto.", "also": ["Compra tres tickets para el concierto."], "unsure": true}
+{"id": "sc-mix-27", "lang": "mix", "tags": ["self-correction"], "heard": "Es un problema de frontend, I mean, de backend.", "want": "Es un problema de backend."}
+{"id": "sc-mix-28", "lang": "mix", "tags": ["self-correction"], "heard": "The demo is el viernes, no, el lunes que viene.", "want": "The demo is el lunes que viene."}
+{"id": "sc-mix-29", "lang": "mix", "tags": ["self-correction"], "heard": "Mándame el screenshot por Slack, perdón, por email.", "want": "Mándame el screenshot por email."}
+{"id": "sc-mix-30", "lang": "mix", "tags": ["self-correction"], "heard": "Quedamos en el coworking, never mind, en la cafetería.", "want": "Quedamos en la cafetería."}
+{"id": "sc-mix-31", "lang": "mix", "tags": ["self-correction"], "heard": "I think la base de datos, no, el cache is the problem.", "want": "I think el cache is the problem."}
+{"id": "sc-mix-32", "lang": "mix", "tags": ["self-correction"], "heard": "Súbele el volumen, digo, bájale el volumen to the music.", "want": "Bájale el volumen to the music."}

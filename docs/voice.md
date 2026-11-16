@@ -481,8 +481,9 @@ address. The landing is then the person's: Undo no longer takes it back.
   sample", which says a line in that language in that voice (`voice.voices`;
   `panes/voice-languages.tsx`). English and Spanish are spoken unless turned
   off; French, Hindi, Italian and Portuguese are turned on from "Speak
-  another language". "More
-  languages" (Whisper) as its own fetch; Remove. Each set's `credit` shows
+  another language". "Corrections" (the model that corrects dictation,
+  `docs/dictation-rewrite.md`) and "More languages" (Whisper), each its own
+  fetch; Remove. Each set's `credit` shows
   under the page. Only the person's own press turns Voice on, fetches,
   removes, or picks the key or the voice: the pane asks the compositor whose
   press it was (`input-origin`, `settings-app/lib/person-only.ts`), and an
@@ -567,7 +568,8 @@ computer. Voice can be used when `listen` and `speak` are true.
    "credit":"Parakeet TDT 0.6B v3 by NVIDIA (CC BY 4.0), ONNX export by Ilya Stupakov; Silero VAD by the Silero team (MIT).",
    "basic":true,"bytes":672862728,"have":0,"installed":false},
   {"id":"speak","name":"Speaking", "…":"…","basic":true,"bytes":334932491,"have":0,"installed":false},
-  {"id":"whisper","name":"More languages","…":"…","basic":false,"bytes":1036613791,"have":0,"installed":false}]}}
+  {"id":"whisper","name":"More languages","…":"…","basic":false,"bytes":1036613791,"have":0,"installed":false},
+  {"id":"rewrite","name":"Corrections","…":"…","basic":false,"bytes":541903616,"have":0,"installed":false}]}}
 ```
 
 `bytes` is the set's size and `have` what is already here (whole files, and
@@ -941,6 +943,12 @@ Nothing else is ever written to disk: no sound, no words, no log of either.
 | `whisper` (1037 MB) | `turbo-tokens.txt` | 816 730 | `csukuangfj/sherpa-onnx-whisper-turbo` | MIT (OpenAI's weights) |
 | | `turbo-decoder.int8.onnx` | 361 080 764 | | |
 | | `turbo-encoder.int8.onnx` | 674 716 297 | | |
+| `rewrite` (542 MB) | `SpeakoFlow-Mini-0.8B-Q4_K_M.gguf` | 541 903 616 | `SpeakoFlow/speakoflow-mini` | Apache-2.0 (a fine-tune of Qwen3.5 0.8B, Apache-2.0) |
+
+The `rewrite` set is the model that corrects dictation
+(`docs/dictation-rewrite.md`). This service only fetches, verifies and removes
+it, as any other set (it is not `basic`): it is never loaded here. The shell
+starts llama.cpp's server on it.
 
 `crates/dashi-voice/src/models/manifest.rs` is the list: each file's address
 on Hugging Face names a commit, so it can't change under its SHA-256, which

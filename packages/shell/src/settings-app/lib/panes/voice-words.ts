@@ -1,5 +1,6 @@
 /** Settings › Voice's words: the sets by name and size, the voices as choices, and which sets a button names. */
 
+import type { SpeedWord } from "../../../rewrite/speed-word.ts";
 import { type ModelSet, type SpokenVoice, sizeWords } from "../../../voice/index.ts";
 
 /** "Listening and Speaking", or with sizes: "Listening (673 MB), Speaking (335 MB)". */
@@ -33,4 +34,21 @@ export function voiceChoices(voices: readonly SpokenVoice[], own: string): Array
   const first = listed.filter((voice) => voice.id === own);
   const rest = listed.filter((voice) => voice.id !== own);
   return [...first, ...rest].map((voice) => ({ value: voice.id, label: `${voice.name} · ${voice.language_name}` }));
+}
+
+/** The set dashi-voice fetches for the model that corrects dictation (docs/dictation-rewrite.md). */
+export const REWRITE_SET = "rewrite";
+
+/** What the corrections row offers: what it does, its size, and its licence in words. */
+export function correctionsOffer(sets: readonly ModelSet[]): string {
+  const bytes = sets.reduce((sum, set) => sum + set.bytes - set.have, 0);
+  const about = sets.map((set) => set.about).join(" ");
+  return `${about} Optional: ${sizeWords(bytes)}, fetched once. The model is free to use and to share (Apache 2.0). Until it is here, dictation tidies by rule.`;
+}
+
+/** The speed test's word, after "On this computer: Corrections." */
+export function speedWords(speed: SpeedWord): string {
+  if (speed === "too-slow") return " This computer is too slow for it, so dictation tidies by rule.";
+  if (speed === "refines") return " It takes a moment here: your words land first, and are corrected right after.";
+  return "";
 }

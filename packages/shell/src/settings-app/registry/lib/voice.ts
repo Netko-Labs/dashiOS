@@ -163,4 +163,11 @@ export const VOICE_ROWS = [
     keywords: ["whisper", "japanese", "chinese", "korean", "arabic", "hindi", "turkish", "language model", "download"],
     kind: "action",
   },
+  {
+    id: "voice/corrections",
+    title: "Corrections",
+    name: "Dictation corrections",
+    keywords: ["self-correction", "no i mean", "scratch that", "actually", "autocorrect", "rewrite", "model", "download", "dictation", "perdón", "mejor dicho"],
+    kind: "action",
+  },
 ] as const satisfies readonly RowDef[];

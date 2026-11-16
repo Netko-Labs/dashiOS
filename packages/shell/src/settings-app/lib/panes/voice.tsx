@@ -4,7 +4,8 @@
  * Pause and Resume; nothing is fetched before that, and never at install.
  * Then the talk key, Dashi's voice (with a sample) and the voice for each
  * other language it speaks (voice-languages.tsx), dictation and its key
- * (voice-dictation.tsx), the optional model for
+ * (voice-dictation.tsx), the optional model that corrects dictation
+ * (docs/dictation-rewrite.md), the optional model for
  * more languages, and removing the models. What is missing is said here in
  * words, with the one thing to do.
  *
@@ -14,8 +15,9 @@
  * (person-only.ts): an agent's press changes nothing and the row says so.
  */
 
-import { Text, View } from "@mirinjs/metal";
+import { View } from "@mirinjs/metal";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { speedWord } from "../../../rewrite/speed-word.ts";
 import { Caption, Group, Note } from "../../../shared/cards/index.ts";
 import { FoldedChoices } from "../../../shared/controls/folded.tsx";
 import {
@@ -31,7 +33,6 @@ import {
   talkKey,
   type VoiceParts,
 } from "../../../voice/index.ts";
-import { useColors } from "../../colors.ts";
 import type { PaneContext } from "../../context.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
@@ -42,45 +43,12 @@ import { MiniButton } from "./parts.tsx";
 import { DictationRows } from "./voice-dictation.tsx";
 import { DictationHistoryRows } from "./voice-dictation-history.tsx";
 import { DictationWordsRows } from "./voice-dictation-words.tsx";
+import { Progress, Remove } from "./voice-fetch-parts.tsx";
 import { VoiceLanguages } from "./voice-languages.tsx";
 import { TalkRows } from "./voice-talk.tsx";
-import { offerWords, removeWords, setsWords, voiceChoices, whatFetching } from "./voice-words.ts";
+import { correctionsOffer, offerWords, REWRITE_SET, removeWords, setsWords, speedWords, voiceChoices, whatFetching } from "./voice-words.ts";
 
 export type VoicePaneSource = Pick<VoiceParts, "models" | "sample">;
-
-/** A fetch's progress: a bar, and "412 MB of 1.01 GB". */
-function Progress({ received, bytes, testID }: { received: number; bytes: number; testID: string }) {
-  const colors = useColors();
-  const part = bytes > 0 ? Math.min(1, received / bytes) : 0;
-  return (
-    <View testID={testID} accessibilityLabel={`${Math.round(part * 100)}% fetched`} style={{ alignSelf: "stretch", flexDirection: "column", gap: 5 }}>
-      <View style={{ alignSelf: "stretch", height: 6, borderRadius: 3, backgroundColor: colors.button, overflow: "hidden" }}>
-        <View style={{ width: `${Math.round(part * 100)}%`, height: 6, borderRadius: 3, backgroundColor: colors.text }} />
-      </View>
-      <Text style={{ fontSize: 11.5, color: colors.textMuted }}>{bytes > 0 ? `${sizeWords(received)} of ${sizeWords(bytes)}` : "Starting…"}</Text>
-    </View>
-  );
-}
-
-/** "Remove…" that asks first, in place. */
-function Remove({ testID, onRemove }: { testID: string; onRemove: () => void }) {
-  const [asking, setAsking] = useState(false);
-  if (!asking) return <MiniButton testID={testID} label="Remove…" tone="critical" onPress={() => setAsking(true)} />;
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-      <MiniButton testID={`${testID}:cancel`} label="Cancel" onPress={() => setAsking(false)} />
-      <MiniButton
-        testID={`${testID}:confirm`}
-        label="Remove"
-        tone="critical"
-        onPress={() => {
-          setAsking(false);
-          onRemove();
-        }}
-      />
-    </View>
-  );
-}
 
 /** One group of model sets: what a fetch would bring, its progress with Pause, going on with Resume, or Remove once here. */
 function ModelsRow({
@@ -89,15 +57,18 @@ function ModelsRow({
   view,
   voice,
   offer,
+  hereNote = "",
   onFetch,
   guard,
 }: {
-  id: "voice/models" | "voice/more-languages";
+  id: "voice/models" | "voice/more-languages" | "voice/corrections";
   sets: readonly ModelSet[];
   view: ModelsView;
   voice: VoicePaneSource;
   /** What the row says while nothing is here. */
   offer: string;
+  /** Said after "On this computer: …" once it is here. */
+  hereNote?: string;
   onFetch: () => void;
   /** Fetching and removing are the person's alone. */
   guard: PersonOnly;
@@ -116,7 +87,7 @@ function ModelsRow({
       : fetching
         ? `Fetching ${setsWords(sets)}.`
         : here
-          ? `On this computer: ${setsWords(sets)}.`
+          ? `On this computer: ${setsWords(sets)}.${hereNote}`
           : part
             ? `Paused at ${sizeWords(have)} of ${sizeWords(bytes)}. What came is kept.`
             : offer;
@@ -181,6 +152,29 @@ function KeyAndVoice({ settings, voice, view, guard }: { settings: SettingsStore
   );
 }
 
+/**
+ * The model that corrects dictation (docs/dictation-rewrite.md), in a row of its own: it is fetched for another
+ * reason than a language, so never with "More languages". Once here, the row says what the speed test found.
+ */
+function Corrections({ voice, view, guard }: { voice: VoicePaneSource; view: ModelsView; guard: PersonOnly }) {
+  const sets = view.sets.filter((set) => set.id === REWRITE_SET);
+  if (sets.length === 0) return null;
+  return (
+    <Group testID="voice-corrections">
+      <ModelsRow
+        id="voice/corrections"
+        sets={sets}
+        view={view}
+        voice={voice}
+        offer={correctionsOffer(sets)}
+        hereNote={speedWords(speedWord())}
+        onFetch={() => void voice.models.fetch(sets.map((set) => set.id))}
+        guard={guard}
+      />
+    </Group>
+  );
+}
+
 /** What the key's row says: how it talks, how a tap of it talks where one does, and what it no longer does. */
 export function keyWords(key: TalkKey): string {
   return [`Hold ${key.hold} to talk, and let go to hear the answer.`, key.tap, key.cost].filter(Boolean).join(" ");
@@ -221,7 +215,7 @@ export function VoicePane({ settings, voice, dictation, byPerson }: VoicePanePro
     );
   }
   const basics = basicSets(view.sets);
-  const more = view.sets.filter((set) => !set.basic);
+  const more = view.sets.filter((set) => !set.basic && set.id !== REWRITE_SET);
   const usable = basicsHere(view.sets);
   const on = wanted && usable;
   const turn = (next: boolean): void => {
@@ -257,6 +251,7 @@ export function VoicePane({ settings, voice, dictation, byPerson }: VoicePanePro
       {on && <DictationRows settings={settings} guard={guard} />}
       {on && dictation && <DictationWordsRows source={dictation} guard={guard} />}
       {on && dictation && <DictationHistoryRows settings={settings} source={dictation} guard={guard} />}
+      {on && <Corrections voice={voice} view={view} guard={guard} />}
       {on && more.length > 0 && (
         <Group testID="voice-more">
           <ModelsRow
@@ -270,7 +265,7 @@ export function VoicePane({ settings, voice, dictation, byPerson }: VoicePanePro
           />
         </Group>
       )}
-      <Caption>{[...basics, ...(on ? more : [])].map((set) => set.credit).join(" ")}</Caption>
+      <Caption>{[...basics, ...(on ? view.sets.filter((set) => !set.basic) : [])].map((set) => set.credit).join(" ")}</Caption>
     </Page>
   );
 }
