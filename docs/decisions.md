@@ -5746,3 +5746,17 @@ short words, as the rulebook is written.
   just opened stays", "no launcher yet"), with the time, so a miss names its
   cause next time.
 - **Undo:** `did` in `boot/dictation.ts` `dashiTap`.
+
+### D375. The Dashi key reads the voice models again before saying they are missing
+
+- **Date:** 2026-11-16. `v09/fix-polish-2`, seen in pass 39.
+- **Found:** models copied into the voice folder while the session runs
+  were seen only when Settings › Voice opened (it watches the folder only
+  while open), so the Dashi key said "Voice needs its models" over models
+  that were there.
+- **Decision:** when the key finds something missing, it asks the service
+  for its models once more (one `models` and one `voices` call, a few
+  milliseconds) and only then says what is missing; if the models are there
+  now it listens. No folder watch for the whole session: a press is the
+  only time the answer matters.
+- **Undo:** `recheck` in `voice/start.ts` and `keyDown` in `voice/voice.ts`.
