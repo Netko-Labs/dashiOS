@@ -3780,3 +3780,27 @@ short words, as the rulebook is written.
   A sign-in watched 15 s holds the agent's other calls that long.
 - **Undo:** `after()` in `background/methods.ts`; `afterSubmit` in
   `secrets/broker.ts`.
+
+### D202. An element keeps its number through a redraw when its key was one element's; a stale number's error carries the page around it
+
+- **Date:** 2026-11-15. `v09/reach`. "Element numbers go stale after small
+  changes, costing an extra read each time."
+- **Choice:** a frame keeps, for each number, its element (as before) and
+  the blocks it sat in (its form, list item, row, section, dialog or three
+  levels up, then two more, then the body). The key of an element is its
+  role, its name and a link's address. A new element takes a gone
+  element's number only when that key was only ever given once in the
+  document; keys shared by several elements ("Add to cart" ×10) never move
+  a number. A call on a gone number reads the nearest of its blocks still
+  in the page (3,000 characters, 40 elements): if that read gives the
+  number back to a redrawn element, the call acts on it; otherwise the
+  error says it is gone and carries that text, renumbered into the tab's
+  numbers by the background. A number whose page navigated carries the new
+  page's top, as much.
+- **Why:** each stale number cost a whole read_page; the region is what
+  the model was working on.
+- **Cost:** a redrawn element whose name changed ("Sign in" → "Signing
+  in…") gets a new number. A click on a redrawn element is the element the
+  page shows now, which is what was meant.
+- **Undo:** `Numbering.take` always a new number; `target()` in
+  `content/main.ts` back to the plain error.

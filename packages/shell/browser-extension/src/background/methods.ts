@@ -48,15 +48,21 @@ const idOf = (tab: chrome.tabs.Tab): number => {
 };
 
 /** Where a tab's number points, or why it points nowhere. */
-function targetOf(tab: number, ref: unknown) {
+/** At most this much of a new page goes with an error about a number from the old one. */
+const TOP_LIMITS = { chars: 3000, elements: 40 };
+
+/** Where a tab's number points; a number from a page that has gone is an error with the new page's top, freshly numbered. */
+async function targetOf(tab: number, ref: unknown) {
   const target = typeof ref === "number" ? tableOf(tab).target(ref) : null;
-  if (!target) throw new Error(`There is no element ${String(ref)} on this page now; read_page again.`);
-  return target;
+  if (target) return target;
+  const top = await ask(tab, 0, { op: "read", limits: TOP_LIMITS }).catch(() => null);
+  const text = top ? renumber(String(top.text ?? ""), (local) => tableOf(tab).ref({ frameId: 0, doc: String(top.doc), local })) : "";
+  throw new Error(`There is no element ${String(ref)} on this page now: the page changed.${text ? ` Its top now reads:\n${text}` : " read_page again."}`);
 }
 
 async function onElement(params: Params, op: string, extra: Params = {}): Promise<{ tab: number; result: Record<string, unknown> }> {
   const tab = idOf(await tabOf(params));
-  const target = targetOf(tab, params.ref);
+  const target = await targetOf(tab, params.ref);
   const result = await ask(tab, target.frameId, { op, doc: target.doc, ref: target.local, ...extra });
   return { tab, result };
 }
@@ -121,7 +127,7 @@ const probe = (tab: number): Promise<Record<string, unknown> | null> => ask(tab,
 
 async function click(params: Params): Promise<Record<string, unknown>> {
   const tab = idOf(await tabOf(params));
-  const target = targetOf(tab, params.ref);
+  const target = await targetOf(tab, params.ref);
   const watch = watchLoad(tab, LOAD_MS);
   let result: Record<string, unknown>;
   try {
@@ -176,7 +182,7 @@ async function field(params: Params): Promise<Record<string, unknown>> {
   let frameId = typeof params.frameId === "number" ? params.frameId : 0;
   let message: Params = { op: "field", focus: params.focus === true };
   if (typeof params.ref === "number") {
-    const target = targetOf(id, params.ref);
+    const target = await targetOf(id, params.ref);
     frameId = target.frameId;
     message = { ...message, doc: target.doc, ref: target.local };
   }
@@ -202,7 +208,7 @@ export const METHODS: Record<string, Method> = {
   fill: async (params) => (await onElement(params, "fill", { text: String(params.text ?? "") })).result,
   select: async (params) => {
     const tab = idOf(await tabOf(params));
-    const target = targetOf(tab, params.ref);
+    const target = await targetOf(tab, params.ref);
     const watch = watchLoad(tab, LOAD_MS);
     const result = await ask(tab, target.frameId, { op: "select", doc: target.doc, ref: target.local, value: String(params.value ?? "") }).catch(
       (error: unknown) => {

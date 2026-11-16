@@ -355,6 +355,13 @@ agent ──MCP──> shell ──dashi-browser.sock──> dashi-browser-host 
   frame from the document's start; the background keeps each tab's element
   numbers (`page/refs.ts`: a frame's document and its own number), reads
   every frame, and waits for loads through `webNavigation`, never a timer.
+  A number stays with its element while it lives; an element the page
+  redraws takes its old number back when its key (role, name, address)
+  was only ever one element's (`page/numbering.ts`). A number that is gone
+  is an error that carries the page around where it was (its block, read
+  again: 3,000 characters and 40 elements at most), freshly numbered; a
+  number from a page that navigated carries the new page's top. The next
+  call needs no read of its own (decisions.md D202).
 - **The host** (`session/dashi-browser-host`, installed at
   `/usr/libexec/dashi/`) is started by the browser for Dashi's extension
   only: its manifest's `allowed_origins` is the extension's id, and the host

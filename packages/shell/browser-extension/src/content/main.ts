@@ -6,10 +6,11 @@
  */
 
 import { parseChords } from "../page/keys.ts";
-import { readFrame } from "../page/read.ts";
+import { READ_LIMITS, type ReadLimits, readFrame } from "../page/read.ts";
+import { marker } from "../page/refs.ts";
 import { click, field, fill, markFilled, press, Refusal, scroll, select } from "./actions.ts";
 import { startWatch } from "./changes.ts";
-import { DOC, DomNode, deepActive, elementOf, refOf, watchPasswordFields } from "./dom.ts";
+import { DOC, DomNode, deepActive, elementOf, refOf, watchPasswordFields, whereItWas } from "./dom.ts";
 import { handleMore } from "./more.ts";
 
 /** The DOM is quiet once nothing has changed for this long (a page drawing itself after load). */
@@ -45,11 +46,37 @@ type Message = Record<string, unknown> & { op?: unknown };
 
 const isMessage = (value: unknown): value is Message => typeof value === "object" && value !== null && !Array.isArray(value);
 
+/** Limits a request asked for (a stale number's surroundings), never above read_page's own. */
+function limitsOf(value: unknown): ReadLimits {
+  if (typeof value !== "object" || value === null) return READ_LIMITS;
+  const chars = "chars" in value ? value.chars : undefined;
+  const elements = "elements" in value ? value.elements : undefined;
+  return {
+    chars: typeof chars === "number" ? Math.min(chars, READ_LIMITS.chars) : READ_LIMITS.chars,
+    elements: typeof elements === "number" ? Math.min(elements, READ_LIMITS.elements) : READ_LIMITS.elements,
+  };
+}
+
+/** Around a stale number, read again: at most this much. */
+const AROUND_LIMITS = { chars: 3000, elements: 40 };
+
 function target(message: Message): Element {
   if (message.doc !== DOC) throw new Refusal("That number is from a page that has gone; read_page again.");
-  const element = typeof message.ref === "number" ? elementOf(message.ref) : null;
-  if (!element) throw new Refusal("That element is no longer on the page; read_page again.");
-  return element;
+  const ref = typeof message.ref === "number" ? message.ref : null;
+  const element = ref === null ? null : elementOf(ref);
+  if (element || ref === null) {
+    if (!element) throw new Refusal("That element is no longer on the page; read_page again.");
+    return element;
+  }
+  // Gone: read the part of the page where it was. A redrawn element with its key takes its number back (dom.ts refOf);
+  // otherwise the error carries the fresh numbers there, so the next call needs no read of its own.
+  const region = whereItWas(ref);
+  if (!region) throw new Refusal("That element is no longer on the page; read_page again.");
+  const origin = location.origin === "null" ? null : location.origin;
+  const { text } = readFrame(new DomNode(region), (node) => refOf((node as DomNode).node), AROUND_LIMITS, origin);
+  const redrawn = elementOf(ref);
+  if (redrawn) return redrawn;
+  throw new Refusal(`Element [${marker(ref)}] is no longer on the page. Where it was, the page now reads:\n${text || "(nothing)"}`);
 }
 
 /** A field's value after fill_element: what the page kept (it may format or cut what was typed). Never asked of a secret field: fill refuses those. */
@@ -64,7 +91,7 @@ async function handle(message: Message): Promise<Record<string, unknown>> {
       await settle();
       const root = new DomNode(document);
       const origin = location.origin === "null" ? null : location.origin;
-      const { text, truncated } = readFrame(root, (node) => refOf((node as DomNode).node), undefined, origin);
+      const { text, truncated } = readFrame(root, (node) => refOf((node as DomNode).node), limitsOf(message.limits), origin);
       return { doc: DOC, text, truncated, title: document.title };
     }
     case "focus":
@@ -123,7 +150,7 @@ if (!globalThis.__dashiContent) {
     if (sender.id !== chrome.runtime.id || !isMessage(message)) return undefined;
     handle(message).then(
       (result) => respond({ ok: true, result }),
-      (error: unknown) => respond({ ok: false, error: error instanceof Error ? error.message : String(error) }),
+      (error: unknown) => respond({ ok: false, doc: DOC, error: error instanceof Error ? error.message : String(error) }),
     );
     return true;
   });

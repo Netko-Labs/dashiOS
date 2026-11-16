@@ -9,7 +9,7 @@
 
 import { roleOf } from "../page/node.ts";
 import { describeElement } from "../page/read.ts";
-import { DomNode, deepActive } from "./dom.ts";
+import { blockOf, DomNode, deepActive } from "./dom.ts";
 
 const QUIET_MS = 300;
 const MAX_MS = 1500;
@@ -51,12 +51,6 @@ const describe = (element: Element): string => {
   const role = roleOf(node);
   return role ? describeElement(node, role) : element.localName;
 };
-
-/** The block an element sits in: a form, a list item, a section, else three levels up. */
-function blockOf(element: Element): Element {
-  const block = element.closest("form, li, tr, section, article, [role=dialog], [role=listitem], [role=row]");
-  return block ?? element.parentElement?.parentElement?.parentElement ?? element;
-}
 
 /** Start watching, just before an action on `element` (null: the page's focus, for keys). */
 export function startWatch(element: Element | null): void {

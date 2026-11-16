@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { PageNode, PageOption } from "../browser-extension/src/page/node.ts";
 import { roleOf, secrecyOf } from "../browser-extension/src/page/node.ts";
+import { Numbering } from "../browser-extension/src/page/numbering.ts";
 import { readFrame } from "../browser-extension/src/page/read.ts";
 import { marker, RefTable, renumber, unmark } from "../browser-extension/src/page/refs.ts";
 
@@ -252,5 +253,42 @@ describe("element numbers", () => {
     // A document that went: its numbers point nowhere.
     table.forgetDocument(0, "doc-a");
     expect(table.target(Number(button))).toBeNull();
+  });
+});
+
+describe("numbers that outlive a redraw", () => {
+  test("an element with a key only it had takes its number back once its element is gone", () => {
+    const numbers = new Numbering();
+    const live = new Set<number>();
+    const take = (key: string | null) => {
+      const ref = numbers.take(key, (n) => live.has(n));
+      live.add(ref);
+      return ref;
+    };
+    const signIn = take("button|Sign in|");
+    const email = take("textbox|Email|");
+    expect([signIn, email]).toEqual([1, 2]);
+    // The page redraws the button: the old one is gone, the new one is "the same" button.
+    live.delete(signIn);
+    expect(take("button|Sign in|")).toBe(1);
+    // While the old one is still there, a second one with its key is a new element.
+    expect(take("button|Sign in|")).toBe(3);
+  });
+
+  test("keys more than one element had never move a number; no key, no reuse", () => {
+    const numbers = new Numbering();
+    const live = new Set<number>();
+    const take = (key: string | null) => {
+      const ref = numbers.take(key, (n) => live.has(n));
+      live.add(ref);
+      return ref;
+    };
+    const first = take("button|Add to cart|");
+    take("button|Add to cart|");
+    live.delete(first);
+    expect(take("button|Add to cart|")).toBe(3);
+    const plain = take(null);
+    live.delete(plain);
+    expect(take(null)).toBe(5);
   });
 });
