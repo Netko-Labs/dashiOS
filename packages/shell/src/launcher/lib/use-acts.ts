@@ -7,6 +7,7 @@
 import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from "react";
 import type { LauncherProps } from "../props.ts";
 import type { Row } from "../row-model.ts";
+import type { Section } from "../sections.ts";
 import type { LauncherScope, ScopeResult } from "../types.ts";
 import { type Effect, historyId, type Verb } from "../verbs.ts";
 import { SET_UP_ROW } from "./agents/agent-rows.ts";
@@ -34,6 +35,16 @@ export interface Acts {
   doVerb(verb: Verb | undefined, row: Row | undefined, stay?: boolean): void;
 }
 
+/** ↑ and ↓ in an extension's grid: a whole line of cells; null outside one (the usual step). */
+export function gridStep(sections: readonly Section[], ids: readonly string[], now: string | null, how: Move): string | null {
+  if (how !== "up" && how !== "down") return null;
+  const held = now ?? ids[0] ?? null;
+  const grid = sections.find((section) => section.grid !== undefined && section.rows.some((row) => row.id === held))?.grid;
+  if (!grid || held === null) return null;
+  const at = ids.indexOf(held) + (how === "down" ? grid : -grid);
+  return ids[Math.max(0, Math.min(ids.length - 1, at))] ?? held;
+}
+
 /** The selection moves through what the list holds now; `latest` is read when the compositor's keys come. */
 function useMove(props: LauncherProps, s: LauncherState, search: Search, lists: ModeLists): { current: (how: Move) => void } {
   const { keys } = props;
@@ -42,7 +53,7 @@ function useMove(props: LauncherProps, s: LauncherState, search: Search, lists: 
   latest.current = lists.listIds;
   const mover = (how: Move) => {
     search.pictures.fold();
-    if (mode.kind === "search") s.setHeld((now) => moveSelection(latest.current, now, how));
+    if (mode.kind === "search") s.setHeld((now) => gridStep(search.sections, latest.current, now, how) ?? moveSelection(latest.current, now, how));
     // The empty conversation's tries: ↑ and ↓ choose one.
     else if (mode.kind === "talk") s.setTryAt((now) => (how === "up" || how === "page-up" || how === "first" ? Math.max(0, now - 1) : now + 1));
     else s.setHeldVerb((now) => moveSelection(latest.current, now, how));

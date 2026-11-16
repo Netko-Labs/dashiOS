@@ -9,7 +9,7 @@
 import { KEYS, type LauncherScope, type ScopeResult, type Verb } from "../../launcher/index.ts";
 import { CLIPBOARD, SNIPPET } from "../glyphs.ts";
 import type { ClipboardHistory, ClipEntry } from "../history.ts";
-import { historySections, snippetSections } from "./rows.ts";
+import { CLIP_KIND_WORDS, CLIP_KINDS, type ClipKind, historySections, snippetSections } from "./rows.ts";
 import { parseAdd, type SnippetStore } from "./snippets.ts";
 
 export const HISTORY_ADDRESS = "dashi://clipboard/history";
@@ -67,22 +67,34 @@ function versioned(read: () => readonly unknown[]): () => number {
   };
 }
 
+/** ❖K's kind filter: every kind but the one shown ("Show Links Only", "Show All Kinds"). */
+const kindVerbs = (shown: ClipKind): Verb[] =>
+  CLIP_KINDS.filter((kind) => kind !== shown).map((kind) => verb(`kind:${kind}`, kind === "all" ? "Show All Kinds" : `Show ${CLIP_KIND_WORDS[kind]} Only`));
+
 export function historyScope(deps: ScopeDeps): LauncherScope {
   const changes = { subscribe: deps.onChange };
   const entryOf = (rowId: string | undefined) => (rowId?.startsWith("clip:") ? deps.history.get(rowId.slice(5)) : undefined);
+  // The kind shown (L11): every kind until the person picks one in ❖K; a new open starts with every kind again.
+  let kind: ClipKind = "all";
+  const kindChanged = new Set<() => void>();
   return {
     id: "clipboard",
     address: HISTORY_ADDRESS,
     chip: { title: "Clipboard", icon: { glyph: CLIPBOARD } },
-    placeholder: "Search copies",
-    subscribe: joined([deps.history, changes]),
-    getSnapshot: versioned(() => [deps.history.getSnapshot(), deps.target(), deps.enabled()]),
+    get placeholder() {
+      return kind === "all" ? "Search copies" : `Search ${CLIP_KIND_WORDS[kind].toLowerCase()}`;
+    },
+    subscribe: joined([deps.history, changes, { subscribe: (listener: () => void) => (kindChanged.add(listener), () => kindChanged.delete(listener)) }]),
+    getSnapshot: versioned(() => [deps.history.getSnapshot(), deps.target(), deps.enabled(), kind]),
     sections: (query) =>
-      historySections(deps.history.getSnapshot(), query, { now: deps.now?.() ?? Date.now(), enabled: deps.enabled(), imagePath: deps.imagePath }),
+      historySections(deps.history.getSnapshot(), query, { now: deps.now?.() ?? Date.now(), enabled: deps.enabled(), imagePath: deps.imagePath, kind }),
+    leave: () => {
+      kind = "all";
+    },
     verbs(row) {
       if (row.id === "clip:off") return [verb("settings", "Open Keyboard Settings", { key: KEYS.primary })];
       const entry = entryOf(row.id);
-      if (!entry) return [];
+      if (!entry) return row.id === "clip:none" ? kindVerbs(kind) : [];
       const count = deps.history.getSnapshot().entries.length;
       return [
         verb("paste", pasteTitle(deps.target()), { key: KEYS.primary }),
@@ -90,6 +102,7 @@ export function historyScope(deps: ScopeDeps): LauncherScope {
         verb(entry.pinned ? "unpin" : "pin", entry.pinned ? "Unpin" : "Pin"),
         verb("delete", "Delete", { danger: true }),
         verb("clear", "Clear History", { danger: true, confirm: count === 1 ? "Clear the one copy kept?" : `Clear all ${count} copies, pinned ones too?` }),
+        ...kindVerbs(kind),
       ];
     },
     hints(row) {
@@ -100,6 +113,12 @@ export function historyScope(deps: ScopeDeps): LauncherScope {
       ];
     },
     async run(id, row): Promise<ScopeResult> {
+      const picked = CLIP_KINDS.find((each) => id === `kind:${each}`);
+      if (picked) {
+        kind = picked;
+        for (const listener of [...kindChanged]) listener();
+        return { notice: { text: picked === "all" ? "All kinds" : `${CLIP_KIND_WORDS[picked]} only`, ok: true } };
+      }
       if (id === "settings") {
         deps.openSettings();
         return { close: true };

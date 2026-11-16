@@ -43,9 +43,11 @@ export {
   type CommandResult,
   type CommandRow,
   checkArgs,
+  isTreeMode,
   parseCommands,
   parseResult,
   parseRows,
+  TREE_MODES,
 } from "./commands.ts";
 export {
   type AppletControl,
@@ -115,6 +117,7 @@ export {
   parsePermission,
   permissionName,
   REACH,
+  usesNetwork,
   widens,
 } from "./permissions.ts";
 export { metalHost, type OpenPopover, openPopoverWindow, POPOVER_RADIUS, PopoverGround, type PopoverKeyboard, popoverSurface } from "./popover.tsx";
@@ -129,6 +132,17 @@ export {
   parsePowerAsk,
   parsePowerState,
 } from "./power.ts";
+export {
+  launcherOnly,
+  PREFERENCE_TYPES,
+  type Preference,
+  type PreferenceType,
+  parsePreferences,
+  parseShows,
+  SHOWS,
+  type Shows,
+  showsOf,
+} from "./preferences.ts";
 export {
   APPLET_LIMITS,
   APPLETS_SOCKET,
@@ -148,4 +162,32 @@ export {
 } from "./protocol.ts";
 export { generateKeys, type KeyPair, parsePublicKey, publicKeyLine, sign, verify } from "./signing/index.ts";
 export { readTar, writeTar } from "./tar.ts";
+export {
+  ACTION_KINDS,
+  type ActionKind,
+  applyPatch,
+  diffTrees,
+  ELEMENTS,
+  type ElementType,
+  findNode,
+  isViewType,
+  nodeAt,
+  type PatchOp,
+  type PreferenceValue,
+  parseTree,
+  parseViewMessage,
+  ROOTS,
+  TOAST_STYLES,
+  TONES,
+  type ToastStyle,
+  type Tone,
+  TREE_LIMITS,
+  textProp,
+  toWire,
+  VIEW_PROTOCOL,
+  type ViewEvent,
+  type ViewMessage,
+  type ViewNode,
+  type ViewShellMessage,
+} from "./view/index.ts";
 export { describeWhen, fits, type Machine, parseWhen, type When } from "./when.ts";

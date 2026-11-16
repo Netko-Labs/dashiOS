@@ -16,7 +16,7 @@
  * permission (test/applets-sandbox.test.ts). launcher.ts runs them.
  */
 
-import type { Folder, HardwareScope, Manifest, Permission } from "@dashi/applet";
+import { type Folder, type HardwareScope, type Manifest, type Permission, usesNetwork } from "@dashi/applet";
 
 /** dashi-hardware's name and object (docs/hardware.md). */
 export const HARDWARE_BUS_NAME = "dev.dashi.Hardware1";
@@ -131,7 +131,7 @@ export function proxyPlan(id: string, permissions: readonly Permission[], paths:
 export function sandboxPlan(manifest: Manifest, paths: SandboxPaths): SandboxPlan {
   const { permissions } = manifest;
   const has = (kind: Permission["kind"]): boolean => permissions.some((each) => each.kind === kind);
-  const network = has("network");
+  const network = permissions.some(usesNetwork);
   const proxy = proxyPlan(manifest.id, permissions, paths);
   const sessionSocket = proxy?.sockets.find((socket) => socket.endsWith(".session"));
   const systemSocket = proxy?.sockets.find((socket) => socket.endsWith(".system"));

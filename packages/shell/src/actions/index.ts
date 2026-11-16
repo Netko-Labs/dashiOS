@@ -8,5 +8,19 @@ export { ActionRegistry } from "./registry.ts";
 export { ScriptSource, scriptsDir } from "./scripts.ts";
 export { type Actions, type ActionsOptions, startActions } from "./start.ts";
 export { type McpTool, mcpListing, toolAction } from "./tools.ts";
-export type { ActionContext, ActionDef, ActionSource, ActionState, Args, CaptureKind, Outcome, PickRow, Shown, ViewFrame } from "./types.ts";
+export type {
+  ActionContext,
+  ActionDef,
+  ActionSource,
+  ActionState,
+  Args,
+  CaptureKind,
+  Outcome,
+  PickRow,
+  Shown,
+  TreeActed,
+  TreeSnapshot,
+  TreeView,
+  ViewFrame,
+} from "./types.ts";
 export { failed, invalid, ok, ready } from "./types.ts";

@@ -21,6 +21,7 @@ export function verbContext(s: LauncherState, host: LauncherProps["host"]): Verb
     actions: world.actions,
     aliasOf: prefs.aliasOf,
     keyOf: prefs.keyOf,
+    ...(prefs.fallbacks ? { fallbacks: prefs.fallbacks } : {}),
     ...(host ? { pinned: (entry: Entry) => host.pinned(entry) } : {}),
   };
 }
@@ -49,6 +50,7 @@ export function foundSections({ props, s, m, clock, files, index }: FoundParts):
     index,
     windows: world.windows,
     aliases: prefs.aliases,
+    fallbacks: (prefs.fallbacks ?? []).flatMap((address) => world.actions.filter((action) => action.address === address)),
     ...(props.ranking ? { signals: props.ranking } : {}),
     ...{ allApps: s.allApps, copied: s.copied, failed: s.failed, icons: ICONS },
   });

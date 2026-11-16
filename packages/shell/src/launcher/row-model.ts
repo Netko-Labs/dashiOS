@@ -6,7 +6,7 @@
  * its kind, or the key that does it, or its control.
  */
 
-import type { ActionState } from "../actions/index.ts";
+import type { ActionDef, ActionState, Args } from "../actions/index.ts";
 import type { Entry } from "../shared/app-entries/index.ts";
 import type { FileHit } from "../shared/files/index.ts";
 import { PANES } from "../shared/settings/index.ts";
@@ -21,8 +21,11 @@ export interface FileRow extends FileHit {
   icon: string;
 }
 
-/** An image file, a one-color glyph drawn on a neutral tile, or none (a verb of the action list). */
-export type RowIcon = { image: string } | { glyph: string } | { none: true };
+/** An image file, a one-color glyph drawn on a neutral tile (in a tone's ink: an extension's), an emoji, or none (a verb of the action list). */
+export type RowIcon = { image: string } | { glyph: string; tone?: Tone } | { text: string } | { none: true };
+
+/** The ink an extension's tag or glyph is drawn in (@dashi/applet's tones: Dashi's tokens for the mode drawn). */
+export type Tone = "primary" | "secondary" | "tertiary" | "accent" | "ume" | "broth" | "moss";
 
 /** What Enter does on a row (verbs.ts adds what the action list and the other keys do). */
 export type RowAction =
@@ -43,7 +46,9 @@ export type RowAction =
   /** Agents' rows: Ask, Now, history (lib/agents/agent-rows.ts). */
   | { kind: "agent"; act: AgentAct }
   /** One of a launcher scope's verbs (scope.ts): the scope runs it. */
-  | { kind: "scope"; verb: string };
+  | { kind: "scope"; verb: string }
+  /** Run a registry action with these arguments (a fallback with the words typed; a link's, filled in). */
+  | { kind: "run-args"; action: ActionDef; args: Args };
 
 /** The section a row goes under once two kinds show. */
 export type RowGroup = "answer" | "window" | "app" | "settings" | "command" | "menu" | "file" | "other";
@@ -86,6 +91,10 @@ export interface Row {
   stop?: true;
   /** It waits on the person (an agent's question): its detail is broth, the warning's ink. */
   attention?: true;
+  /** Its name may be long (an extension's item): it gives way to the right end instead of running under it. */
+  long?: true;
+  /** An extension's tags at the right end ("Checks pass"), each in its tone's ink. */
+  tags?: readonly { text: string; tone?: Tone }[];
 }
 
 const kindOf = (entry: Entry): string => (isPane(entry) ? "Settings" : "App");

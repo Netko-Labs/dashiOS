@@ -36,6 +36,8 @@ export interface FieldProps {
   trailing?: ReactNode;
   /** Props for the accessibility tree (access.ts): the field's role and name; none on a host without one. */
   access?: Record<string, unknown>;
+  /** A secret is typed (an extension's token): the field shows dots. */
+  secure?: boolean;
   onChangeText(text: string): void;
   onSubmit(): void;
   onKey(key: "Escape" | "ArrowUp" | "ArrowDown"): void;
@@ -96,7 +98,7 @@ function Hints({ hints }: { hints: readonly Hint[] }) {
   );
 }
 
-export function Field({ value, revision, placeholder, chip, hints, notice, glyph, trailing, access, onChangeText, onSubmit, onKey }: FieldProps) {
+export function Field({ value, revision, placeholder, chip, hints, notice, glyph, trailing, access, secure, onChangeText, onSubmit, onKey }: FieldProps) {
   const colors = useColors();
   const m = useMeasures();
   const [room, setRoom] = useState<number | null>(null);
@@ -136,6 +138,7 @@ export function Field({ value, revision, placeholder, chip, hints, notice, glyph
           value={value}
           {...(revision === undefined ? {} : { valueRevision: revision })}
           placeholder={shown}
+          {...(secure ? { secureTextEntry: true } : {})}
           autoFocus
           onChangeText={onChangeText}
           onSubmitEditing={onSubmit}

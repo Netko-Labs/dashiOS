@@ -20,6 +20,7 @@ function manifest(id: string, name: string, patch: Partial<Manifest> = {}): Mani
     screenshots: [],
     commands: [],
     controls: [],
+    preferences: [],
     ...patch,
   };
 }

@@ -6,6 +6,7 @@ import type { AppletCommands } from "../commands.ts";
 import type { AppletControls } from "../controls.ts";
 import type { AppletPopovers } from "../popovers.ts";
 import type { AppletPower } from "../power.ts";
+import type { ExtensionViews } from "../views.ts";
 import type { AppletGrants } from "./grants.ts";
 import type { PopoverScreen } from "./placement.ts";
 
@@ -33,6 +34,8 @@ export interface AppletContext {
   power?: AppletPower;
   /** Control Center's applet controls (controls.ts): a version 5 connection whose manifest declares them says their state. */
   controls?: Pick<AppletControls, "attach">;
+  /** The launcher's views (views.ts): a version 6 connection sends its commands' trees. */
+  views?: Pick<ExtensionViews, "attach">;
   now?: () => number;
   parse?: typeof parseAppletMessage;
 }

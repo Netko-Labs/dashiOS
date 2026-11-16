@@ -37,6 +37,8 @@ export interface InstallRecord {
   /** Permission names the person allowed. */
   consent: string[];
   disabled?: { reason: "pulled" | "off"; detail?: string };
+  /** Part of Dashi (its first-party extensions, built from the shell's own source at start): the store shows it as Dashi's. */
+  firstParty?: true;
 }
 
 export interface InstalledApplet {
@@ -83,6 +85,7 @@ export function parseRecord(text: string): InstallRecord | null {
     source: fields.source,
     ...(typeof fields.catalog === "string" ? { catalog: fields.catalog } : {}),
     consent: fields.consent,
+    ...(fields.firstParty === true ? { firstParty: true as const } : {}),
     ...(reason === "pulled" || reason === "off" ? { disabled: { reason, ...(typeof disabled?.detail === "string" ? { detail: disabled.detail } : {}) } } : {}),
   };
 }

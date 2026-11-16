@@ -33,6 +33,12 @@
  *   shell → applet  {"type":"controls","shown":[…]}                          (which of its controls are in Control Center)
  *                   {"type":"control-action","id","action",…}               (one was pressed)
  *   applet → shell  {"type":"control","id","on"?,"detail"?,"choice"?,"value"?,"glyph"?}  (its state)
+ * Version 6 adds views the launcher draws from a tree, for commands whose
+ * mode is `list`, `grid` or `detail` (view/wire.ts has the messages):
+ *   shell → applet  {"type":"open","seq","command","args","query","preferences"}
+ *   applet → shell  {"type":"tree"|"push","seq","root"}  {"type":"patch","seq","ops"}  {"type":"pop"|"close","seq"}
+ *                   {"type":"toast","seq","style","title"}
+ *   shell → applet  {"type":"event","seq","on","node"?,"text"?}  {"type":"prefs","seq","preferences"}
  * A connection that starts with anything but `hello` is version 1, and
  * stays so. A hello's protocol is the newest the applet speaks; the
  * connection speaks the older of it and the shell's.

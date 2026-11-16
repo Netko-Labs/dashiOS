@@ -16,6 +16,7 @@
  * - Nothing found is a way forward, never an empty panel.
  */
 
+import type { ActionDef } from "../../actions/index.ts";
 import type { Entry } from "../../shared/app-entries/index.ts";
 import { iconPath } from "../../shared/apps/index.ts";
 import { commandCore } from "../ranking/commands.ts";
@@ -26,6 +27,7 @@ import type { RankIndex } from "../ranking/rank-index.ts";
 import { actionRow, entryRow, type Row, type RowGroup, shownName, windowRow } from "../row-model.ts";
 import { type FilesState, filesSection, type Section } from "../sections.ts";
 import { type Answer, type AnswerContext, answerFor } from "./answers/index.ts";
+import { LINK_GLYPH } from "./command-glyphs.ts";
 import { isPane, type LauncherItem, type LauncherWindow, launcherIndex, windowsOf } from "./items.ts";
 import { calculate } from "./math.ts";
 
@@ -55,6 +57,8 @@ export interface ListInput {
   icons: { calculator: string; files: string; software: string; command?: string };
   /** The Region, the clock and the zone answers are worked out in (answers/). */
   answers?: AnswerContext;
+  /** What the person chose to offer when nothing matches, in their order (quicklinks.ts); each takes the words as `query`. */
+  fallbacks?: readonly ActionDef[];
   /** Rows that fit at the person's text size (measures.ts); LOCAL_ROWS, FILE_ROWS and ALL_APPS_ROWS when left out. */
   limits?: { local: number; files: number; allApps?: number };
 }
@@ -199,8 +203,17 @@ function nothingFound(input: ListInput, query: string, suggestion: LauncherItem 
   const files = byId(FILES_ID);
   const software = byId(SOFTWARE_ID);
   const suggested = suggestion ? rowFor(suggestion, input, "suggest") : null;
+  const fallbacks: Row[] = (input.fallbacks ?? []).map((action) => ({
+    id: `fallback:${action.address}`,
+    title: action.title,
+    detail: `“${query}”`,
+    kind: action.source === "quicklinks" ? "Quicklink" : (action.from ?? ""),
+    icon: { glyph: LINK_GLYPH },
+    action: { kind: "run-args", action, args: { query } },
+  }));
   const rows: Row[] = [
     ...(suggested ? [{ ...suggested, title: `Did you mean ${suggested.title}?` }] : []),
+    ...fallbacks,
     ...(files
       ? [
           {

@@ -7,6 +7,7 @@
 import { INFO } from "@dashi/ui";
 import { MIN_QUERY } from "../shared/files/index.ts";
 import { answerFor } from "./lib/answers/index.ts";
+import type { DetailPart } from "./lib/tree-rows.ts";
 import { type FileRow, fileNameMatches, fileRow, type Row } from "./row-model.ts";
 
 /** File rows drawn below the instant rows. */
@@ -22,6 +23,10 @@ export interface Section {
   reserved?: number;
   /** Draw this many rows at once, scrolled with the selection (a scope's long list: scope.ts; All apps). */
   window?: number;
+  /** An extension's grid: its rows drawn as cells, this many a row (lib/tree-rows.ts). */
+  grid?: number;
+  /** An extension's detail: its one row is drawn as this Markdown and its facts. */
+  detail?: DetailPart;
 }
 
 /** Where file rows stand for the query being shown. */

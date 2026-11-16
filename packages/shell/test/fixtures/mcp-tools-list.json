@@ -142,7 +142,24 @@
           },
           "tile": {
             "type": "string",
-            "enum": ["left", "right", "top", "bottom", "top-left", "top-right", "bottom-left", "bottom-right", "fill", "center", "restore"]
+            "enum": [
+              "left",
+              "right",
+              "top",
+              "bottom",
+              "top-left",
+              "top-right",
+              "bottom-left",
+              "bottom-right",
+              "left-third",
+              "center-third",
+              "right-third",
+              "left-two-thirds",
+              "right-two-thirds",
+              "fill",
+              "center",
+              "restore"
+            ]
           }
         },
         "required": ["window", "tile"],

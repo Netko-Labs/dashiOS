@@ -66,6 +66,38 @@ export const FULL_SCREEN = svg(
   stroke("M2.6 6V3.4a.8.8 0 0 1 .8-.8H6M10 2.6h2.6a.8.8 0 0 1 .8.8V6M13.4 10v2.6a.8.8 0 0 1-.8.8H10M6 13.4H3.4a.8.8 0 0 1-.8-.8V10"),
 );
 
+/** A quicklink: two links of a chain. */
+export const LINK_GLYPH = svg(
+  stroke("M6.8 9.2a2.6 2.6 0 0 0 3.7 0l2.1-2.1a2.6 2.6 0 0 0-3.7-3.7l-.9.9") + stroke("M9.2 6.8a2.6 2.6 0 0 0-3.7 0L3.4 8.9a2.6 2.6 0 0 0 3.7 3.7l.9-.9"),
+);
+
+/** Where a tile puts the window, as the share of the screen it fills (x, width; y, height), for its glyph. */
+const TILE_SHARES: Readonly<Record<string, readonly [number, number, number, number]>> = {
+  left: [0, 1 / 2, 0, 1],
+  right: [1 / 2, 1 / 2, 0, 1],
+  top: [0, 1, 0, 1 / 2],
+  bottom: [0, 1, 1 / 2, 1 / 2],
+  "top-left": [0, 1 / 2, 0, 1 / 2],
+  "top-right": [1 / 2, 1 / 2, 0, 1 / 2],
+  "bottom-left": [0, 1 / 2, 1 / 2, 1 / 2],
+  "bottom-right": [1 / 2, 1 / 2, 1 / 2, 1 / 2],
+  "left-third": [0, 1 / 3, 0, 1],
+  "center-third": [1 / 3, 1 / 3, 0, 1],
+  "right-third": [2 / 3, 1 / 3, 0, 1],
+  "left-two-thirds": [0, 2 / 3, 0, 1],
+  "right-two-thirds": [1 / 3, 2 / 3, 0, 1],
+};
+
+/** A tile's glyph: the screen's outline, and the part the window takes, filled (store-v2 frame L10). */
+export function tileGlyph(tile: string): string | undefined {
+  const share = TILE_SHARES[tile];
+  if (!share) return undefined;
+  const [x, width, y, height] = share;
+  const inner = { x: 3, y: 4.2, width: 10, height: 7.6 };
+  const fill = `<rect x="${(inner.x + x * inner.width).toFixed(2)}" y="${(inner.y + y * inner.height).toFixed(2)}" width="${(width * inner.width).toFixed(2)}" height="${(height * inner.height).toFixed(2)}" rx="0.6" fill="#000"/>`;
+  return svg(`<rect x="1.8" y="3" width="12.4" height="10" rx="1.6" stroke="#000" stroke-width="1.4" fill="none"/>${fill}`);
+}
+
 /** The glyph for `dashi://dashi/<command>`, by its command id; undefined for one without (System Settings is its app). */
 export const COMMAND_GLYPHS: Readonly<Record<string, string>> = {
   about: LOGO,
@@ -104,5 +136,7 @@ const OWN_SOURCES = new Set(["clipboard", "windows", "tools"]);
 /** The glyph of one of Dashi's own commands; undefined for an app's, an applet's, a script's, or one without. */
 export function commandGlyph(action: { source: string; address: string }): string | undefined {
   if (action.source === "dashi") return COMMAND_GLYPHS[action.address.split("/").pop() ?? ""];
+  if (action.source === "quicklinks") return LINK_GLYPH;
+  if (action.source === "windows" && action.address.startsWith("dashi://window/tile/")) return tileGlyph(action.address.split("/").pop() ?? "");
   return OWN_SOURCES.has(action.source) ? ADDRESS_GLYPHS[action.address] : undefined;
 }

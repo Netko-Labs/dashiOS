@@ -16,7 +16,6 @@ import type { ActionDef, Args } from "../actions/index.ts";
 import type { Entry } from "../shared/app-entries/index.ts";
 import { agentVerbs } from "./lib/agents/agent-rows.ts";
 import { isPane, type LauncherItem, type LauncherWindow, windowsOf } from "./lib/items.ts";
-import { startsWithCommand } from "./ranking/commands.ts";
 import { type FileRow, type Row, type RowAction, shownName } from "./row-model.ts";
 
 /** The keys, as rows show them. */
@@ -41,8 +40,6 @@ export type Effect =
   | { kind: "quit"; name: string; windows: readonly LauncherWindow[] }
   /** Flip a setting's switch in the row. */
   | { kind: "toggle"; item: LauncherItem }
-  /** Run a registry action with these arguments (a link's, filled in). */
-  | { kind: "run-args"; action: ActionDef; args: Args }
   | { kind: "show-in-files"; file: FileRow }
   | { kind: "trash"; file: FileRow }
   | { kind: "pin"; entry: Entry; pin: boolean }
@@ -50,6 +47,8 @@ export type Effect =
   | { kind: "unalias"; address: string }
   | { kind: "shortcut"; address: string; title: string }
   | { kind: "unshortcut"; address: string }
+  /** Offer it when nothing matches, or stop (quicklinks.ts). */
+  | { kind: "fallback"; address: string; title: string; on: boolean }
   | { kind: "forget"; id: string }
   | { kind: "forget-all" };
 
@@ -76,6 +75,8 @@ export interface VerbContext {
   keyOf?(address: string): string | undefined;
   /** Whether the app is kept in the Dock; null when the Dock can't keep it. */
   pinned?(entry: Entry): boolean | null;
+  /** What is offered when nothing matches (addresses), when the launcher can change it. */
+  fallbacks?: readonly string[];
 }
 
 const verb = (id: string, title: string, effect: Effect, extra: Partial<Verb> = {}): Verb => ({ id, title, effect, ...extra });
@@ -170,6 +171,21 @@ function fileVerbs(file: FileRow, row: Row): Verb[] {
   ];
 }
 
+/** An action that takes the typed words (a quicklink) may be offered when nothing matches: Use When Nothing Matches (L13). */
+function fallbackVerbs(action: ActionDef, ctx: VerbContext): Verb[] {
+  const words = Object.keys(action.properties);
+  if (!ctx.fallbacks || words.length !== 1 || words[0] !== "query") return [];
+  const on = ctx.fallbacks.includes(action.address);
+  return [
+    verb("fallback", on ? "Don't Use When Nothing Matches" : "Use When Nothing Matches", {
+      kind: "fallback",
+      address: action.address,
+      title: action.title,
+      on: !on,
+    }),
+  ];
+}
+
 /** A registry action's verbs: a setting opens at its row and flips with Space; a command or menu item runs. */
 function actionVerbs(item: LauncherItem, row: Row, ctx: VerbContext): Verb[] {
   const action = item.action as ActionDef;
@@ -182,7 +198,7 @@ function actionVerbs(item: LauncherItem, row: Row, ctx: VerbContext): Verb[] {
             : []),
         ]
       : [verb("run", action.title.split(" › ").at(-1) ?? action.title, { kind: "run", item }, { key: KEYS.primary })];
-  return [...lead, ...addressVerbs(action.address, action.title, ctx), ...resetVerbs(row)];
+  return [...lead, ...fallbackVerbs(action, ctx), ...addressVerbs(action.address, action.title, ctx), ...resetVerbs(row)];
 }
 
 /** Every verb for `row`, the first being what ↩ does. */
@@ -230,22 +246,6 @@ export function verbRow(each: Verb, asking: boolean): Row {
     ...(each.chord ? { chord: each.chord } : {}),
     ...(each.danger ? { danger: true as const } : {}),
   };
-}
-
-/**
- * Whether Space flips the selected row's switch rather than typing a space:
- * when the row has a switch and a space can't be the next letter of its
- * name or words ("wif" then Space flips Wi-Fi; "dark" then Space types on
- * to "dark mode"; "dark mode" then Space flips it). Never in words that
- * start with a command's verb ("turn on dark", "turn on dark mode", which
- * may go on "and email alexk"): that is a sentence being typed, and Return
- * flips it (ranking/commands.ts).
- */
-export function spaceFlips(row: Row | undefined, query: string): boolean {
-  if (row?.control?.kind !== "switch" || query.trim() === "" || startsWithCommand(query)) return false;
-  const typed = `${query.toLowerCase()} `;
-  const words = [row.title, ...(row.item?.keywords ?? [])].map((word) => word.toLowerCase());
-  return !words.some((word) => word.startsWith(typed));
 }
 
 /** The verb `key` does on `row` without the list, if it does one. */

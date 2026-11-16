@@ -8,6 +8,7 @@
 
 import type { LauncherSettings } from "../settings-app/types.ts";
 import { aliasIndex, keyOf, personRules, withAlias, withKey } from "./person-keys.ts";
+import { DEFAULT_FALLBACKS, DEFAULT_QUICKLINKS, type Quicklink, type QuicklinkStore } from "./quicklink-list.ts";
 
 /** The part of the Settings store this needs (settings-app/store.ts `SettingsStore`). */
 export interface PrefsStore {
@@ -22,6 +23,8 @@ export interface LauncherPrefsSnapshot {
   aliasOf(address: string): string | undefined;
   /** The key bound to an address, as glyphs. */
   keyOf(address: string): string | undefined;
+  /** What is offered when nothing matches, in order (addresses: quicklinks.ts). */
+  fallbacks?: readonly string[];
 }
 
 export class LauncherPrefs {
@@ -40,6 +43,7 @@ export class LauncherPrefs {
       aliases: aliasIndex(aliases),
       aliasOf: (address) => Object.entries(aliases).find(([, target]) => target === address)?.[0],
       keyOf: (address) => keyOf(keys, address),
+      fallbacks: settings.fallbacks ?? DEFAULT_FALLBACKS,
     };
   }
 
@@ -64,6 +68,19 @@ export class LauncherPrefs {
     const aliases = withAlias(this.store.getSnapshot().data.launcher.aliases ?? {}, address, alias);
     this.store.patch("launcher", { aliases: Object.keys(aliases).length > 0 ? aliases : undefined });
   }
+
+  /** Offer `address` when nothing matches (last in the list), or stop offering it. */
+  setFallback(address: string, on: boolean): void {
+    const now = this.store.getSnapshot().data.launcher.fallbacks ?? DEFAULT_FALLBACKS;
+    this.store.patch("launcher", { fallbacks: on ? [...now.filter((each) => each !== address), address] : now.filter((each) => each !== address) });
+  }
+
+  /** The person's quicklinks, kept beside the aliases (quicklinks.ts). */
+  readonly quicklinks: QuicklinkStore = {
+    list: (): readonly Quicklink[] => this.store.getSnapshot().data.launcher.quicklinks ?? DEFAULT_QUICKLINKS,
+    set: (list) => this.store.patch("launcher", { quicklinks: [...list] }),
+    subscribe: (listener) => this.store.subscribe(listener),
+  };
 
   /** Bind `address` to the chord `when`, or unbind it (null). */
   setKey(address: string, when: string | null): void {

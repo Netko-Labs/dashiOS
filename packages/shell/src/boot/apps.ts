@@ -5,9 +5,10 @@
  * screen sharing picker.
  */
 
+import { appletDataRoot } from "@dashi/applet";
 import { AppCatalog } from "../app-catalog.ts";
 import { type AppMenus, ownerPids, startAppMenus } from "../app-menus/index.ts";
-import { AppletCommands, AppletControls, AppletPopovers, AppletPower, popoverScreen, startApplets } from "../applets/index.ts";
+import { AppletCommands, AppletControls, AppletPopovers, AppletPower, ExtensionViews, PreferenceStore, popoverScreen, startApplets } from "../applets/index.ts";
 import { appFor, launch } from "../apps.ts";
 import { startBatteryMonitor } from "../battery/index.ts";
 import type { Compositor, CompositorWindow } from "../compositor/index.ts";
@@ -195,9 +196,20 @@ export function startPrograms({ compositor, apps, catalog, toplevels, screens, s
   late.set("batteryMonitor", batteryMonitor);
   services.add("battery monitor", () => batteryMonitor.stop());
   // Applets' commands in the launcher (applets/commands.ts): answered on their connections, listed in the registry (extensions/).
+  const copy = (text: string) => late.get("launcherClipboard").writeText(text);
+  const open = (target: string) => openTarget(target, { openUrl: openFile, openLink: (url) => late.get("actions").openLink(url) });
+  // Extensions' views, drawn by the launcher from their trees (applets/views.ts); their preferences kept by Dashi.
+  const preferences = new PreferenceStore(appletDataRoot());
+  const views = new ExtensionViews({
+    copy,
+    open,
+    preferences: (manifest) => preferences.read(manifest),
+    setPreference: (manifest, name, value) => preferences.write(manifest, name, value),
+  });
   const appletCommands = new AppletCommands({
-    copy: (text) => late.get("launcherClipboard").writeText(text),
-    open: (target) => openTarget(target, { openUrl: openFile, openLink: (url) => late.get("actions").openLink(url) }),
+    copy,
+    open,
+    views,
     launcherOrigin: async () => {
       const screen = await popoverScreen(compositor, (await screens.whereIsPerson()) ?? null, late.get("menuBars").primaryName);
       return screen ? { output: screen.name, x: Math.round((screen.width - LAUNCHER.width) / 2), y: screen.barHeight + LAUNCHER.top } : null;
@@ -220,6 +232,7 @@ export function startPrograms({ compositor, apps, catalog, toplevels, screens, s
     power: appletPower,
     controls: appletControls,
     popovers: appletPopovers,
+    views,
   });
   services.add("applets", stopApplets);
   return { appMenus, extras, batteryMonitor, appletCommands, appletPower, controlLayout, appletControls, appletPopovers };
