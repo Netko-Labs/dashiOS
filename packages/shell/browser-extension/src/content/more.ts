@@ -6,7 +6,7 @@
 
 import { parseWait } from "../page/wait.ts";
 import { changes } from "./changes.ts";
-import { DOC } from "./dom.ts";
+import { DOC, elementOf } from "./dom.ts";
 import { pageFacts, watchOutcome } from "./outcome.ts";
 import { waitInPage } from "./wait.ts";
 
@@ -32,6 +32,8 @@ export async function handleMore(message: Message): Promise<Record<string, unkno
       const until = Date.now() + left(message, 15_000);
       return { outcome: await watchOutcome(String(message.urlBefore ?? ""), field, until), url: location.href, title: document.title };
     }
+    case "attach":
+      return attach(message);
     case "probe": {
       const facts = pageFacts(location.href, "password");
       return { url: location.href, title: document.title, password: facts.fieldShows, captcha: facts.captcha };
@@ -39,4 +41,24 @@ export async function handleMore(message: Message): Promise<Record<string, unkno
     default:
       return null;
   }
+}
+
+/** A file put into a page's file field as if the person had chosen it: no chooser, the page hears input and change. */
+function attach(message: Message): Record<string, unknown> {
+  const element = message.doc === DOC && typeof message.ref === "number" ? elementOf(message.ref) : null;
+  if (!element) throw new Error("That element is no longer on the page; read_page again.");
+  if (!(element instanceof HTMLInputElement) || element.type !== "file") throw new Error("That isn't a file field (a file chooser read_page numbered).");
+  if (element.disabled) throw new Error("That file field is disabled.");
+  const binary = atob(String(message.data ?? ""));
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+  const file = new File([bytes], String(message.name ?? "file"), { type: String(message.type ?? "") });
+  const transfer = new DataTransfer();
+  if (element.multiple) for (const kept of element.files ?? []) transfer.items.add(kept);
+  transfer.items.add(file);
+  element.files = transfer.files;
+  element.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+  element.dispatchEvent(new Event("change", { bubbles: true }));
+  const accept = element.accept.trim();
+  return { files: element.files?.length ?? 0, ...(accept ? { accept } : {}) };
 }

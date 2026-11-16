@@ -14,6 +14,7 @@ import { json, type RunContext, type ToolResult, text, toolError } from "../cont
 import { siteOf } from "../sites.ts";
 import type { Call } from "../tools/index.ts";
 import { changeWords, landingWords } from "./lib/browser-words.ts";
+import { downloadWords } from "./lib/download-words.ts";
 import { pageWords } from "./lib/page-parts.ts";
 
 type BrowserCall = Extract<
@@ -192,14 +193,17 @@ async function clickElement(call: Extract<Call, { name: "click_element" }>, ctx:
     const changes = parseChanges(result.changes);
     const moved = opened
       ? `It opened tab ${tabId(opened)}: ${about(opened, ctx).url}. ${loadWords(result.load)}`
-      : result.load
-        ? `A page loaded: ${about(now, ctx).url}. ${loadWords(result.load)}`
-        : changeWords(changes);
+      : result.download !== undefined
+        ? downloadWords(result.download)
+        : result.load
+          ? `A page loaded: ${about(now, ctx).url}. ${loadWords(result.load)}`
+          : changeWords(changes);
     return text(`Clicked [${call.ref}] ${String(result.described ?? "")}. ${moved}`, {
       ...about(now, ctx),
       navigated: result.load !== undefined,
       ...(opened ? { openedTab: tabId(opened) } : {}),
       ...(changes ? { changes } : {}),
+      ...(result.download !== undefined ? { download: result.download } : {}),
     });
   });
 }

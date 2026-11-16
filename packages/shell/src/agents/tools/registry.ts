@@ -35,6 +35,7 @@ import { softwareTools } from "./lib/software.ts";
 import { spaceTools } from "./lib/spaces.ts";
 import { tabTools } from "./lib/tabs.ts";
 import { tellTools } from "./lib/tell.ts";
+import { transferTools } from "./lib/transfer.ts";
 import { waitTools } from "./lib/wait.ts";
 import { windowTools } from "./lib/windows.ts";
 import type { Call, CallError, ToolName } from "./types.ts";
@@ -75,6 +76,7 @@ export const TOOLS: readonly ToolDef[] = [
   ...windowTools,
   ...browserTools,
   ...tabTools,
+  ...transferTools,
   ...waitTools,
   ...spaceTools,
   ...inputTools,

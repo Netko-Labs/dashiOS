@@ -84,6 +84,26 @@ declare namespace chrome {
     const onReferenceFragmentUpdated: Event<(details: Details) => void>;
   }
 
+  namespace downloads {
+    interface DownloadItem {
+      id: number;
+      url: string;
+      finalUrl?: string;
+      filename: string;
+      mime?: string;
+      state: "in_progress" | "interrupted" | "complete";
+      error?: string;
+      bytesReceived: number;
+      totalBytes: number;
+      startTime: string;
+      endTime?: string;
+      exists: boolean;
+    }
+    function search(query: { orderBy?: string[]; limit?: number; id?: number }): Promise<DownloadItem[]>;
+    const onCreated: Event<(item: DownloadItem) => void>;
+    const onChanged: Event<(delta: { id: number; state?: { current?: string }; filename?: { current?: string } }) => void>;
+  }
+
   namespace alarms {
     function create(name: string, info: { periodInMinutes: number }): void;
     const onAlarm: Event<(alarm: { name: string }) => void>;

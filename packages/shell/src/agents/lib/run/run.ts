@@ -40,6 +40,8 @@ const personalHandlers = {
   go_back: desktop.tabsCall,
   go_forward: desktop.tabsCall,
   wait_for: desktop.waitFor,
+  attach_file: desktop.attachFile,
+  list_downloads: desktop.listDownloads,
   click: desktop.handsCall,
   scroll: desktop.handsCall,
   drag: desktop.handsCall,
@@ -65,6 +67,8 @@ const personalHandlers = {
   | "go_back"
   | "go_forward"
   | "wait_for"
+  | "attach_file"
+  | "list_downloads"
   | "click"
   | "scroll"
   | "drag"

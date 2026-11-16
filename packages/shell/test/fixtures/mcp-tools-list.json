@@ -555,6 +555,63 @@
       }
     },
     {
+      "name": "attach_file",
+      "title": "Attach a file on a web page",
+      "description": "Put a file into a page's file field (a `file chooser` read_page numbered), as if the person had chosen it, with no chooser window. The path follows read_text_file's rules (home folder and removable drives, never secrets); 25 MB at most. Nothing is sent until the form is submitted.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "integer",
+            "description": "The file chooser's number from read_page."
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 4096,
+            "description": "The file's absolute path (or ~/…)."
+          },
+          "tab": {
+            "type": "string",
+            "description": "A tab id from list_tabs or open_url, like \"t12\" (default: the tab you used last, else the one in front)."
+          }
+        },
+        "required": ["ref", "path"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Attach a file on a web page",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "list_downloads",
+      "title": "List downloads",
+      "description": "The browser's downloads, newest first: where each file is, its address, its type, whether it is complete, and its size.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "How many, default 20."
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "List downloads",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
       "name": "wait_for",
       "title": "Wait for something",
       "description": "Wait, instead of reading again and again, until one thing happens: `text` appears on a web page or `text_gone` leaves it, an `element` read_page numbered is there, enabled or gone (`state`), the page has `loaded` or gone `quiet` (nothing changing for half a second), a window whose title holds `window_title` is open, or a `file` exists. Give exactly one. Returns `met` (true, or false when `timeout` ran out), what it saw, and how long it took. The page is watched by the browser itself.",

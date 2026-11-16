@@ -3925,3 +3925,23 @@ short words, as the rulebook is written.
   Undo for a tool other than `set_setting`, and adding one is
   `v09/askagent`'s (its README is told).
 - **Undo:** take `editTools` out of `TOOLS`.
+
+### D209. Files reach a page's file field with no chooser; downloads are the browser's own list; the extension gains `downloads`
+
+- **Date:** 2026-11-16. `v09/reach`. "No downloads or uploads: can't save a
+  file from a page, attach a file to a form, or see the downloads list."
+- **Choice:** `attach_file` (the shell reads the file under the same rules
+  as `read_text_file`, sends base64 in 512 KB chunks, the content script
+  sets the field's files and fires input and change); `list_downloads`
+  (`chrome.downloads.search`); a click watches `downloads.onCreated` and,
+  when it starts one, answers with where the file landed once complete
+  (60 s at most), instead of waiting for a load that never comes. The
+  manifest gains the `downloads` permission: a policy-installed extension
+  gets new permissions without a prompt. Not destructive: attaching sends
+  nothing; submitting a form to someone stays the critical list's.
+- **Cost:** 25 MB at most per file; a site that reads files only from its
+  own drag-and-drop zone (not an `<input type=file>`) is not reached.
+  The packaged extension's version must move with this change (D117):
+  `bin/dashi-browser-pack.ts --version` for a development build; a
+  release bumps every version together (H14).
+- **Undo:** take `transferTools` out of `TOOLS`; the permission stays harmless.

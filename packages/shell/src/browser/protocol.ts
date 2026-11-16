@@ -28,7 +28,9 @@ export type BrowserMethod =
   | "close"
   | "reload"
   | "back"
-  | "forward";
+  | "forward"
+  | "downloads"
+  | "attach";
 
 export interface BrowserRequest {
   id: number;

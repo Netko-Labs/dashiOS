@@ -4,7 +4,9 @@
  * (RefTable), each pointing at a frame's document and its own number there.
  */
 
+import { takeChunk } from "../page/chunks.ts";
 import { renumber } from "../page/refs.ts";
+import { listDownloads, watchDownload } from "./downloads.ts";
 import { ask, documentsOf, framesOf, tableOf, watchLoad } from "./frames.ts";
 import { outcomeInTab } from "./outcome.ts";
 import { tabMethod } from "./tabs.ts";
@@ -14,6 +16,8 @@ type Params = Record<string, unknown>;
 type Method = (params: Params) => Promise<Record<string, unknown>>;
 
 const LOAD_MS = 30_000;
+/** How long a click waits for the file it started downloading to be whole. */
+const DOWNLOAD_MS = 60_000;
 /** After a click on a link or a submit button, how long a load has to begin; after another click, less. */
 const MAY_NAVIGATE_MS = 1_000;
 const CLICK_NAVIGATE_MS = 250;
@@ -147,30 +151,46 @@ const probe = (tab: number): Promise<Record<string, unknown> | null> => ask(tab,
 async function click(params: Params): Promise<Record<string, unknown>> {
   const tab = idOf(await tabOf(params));
   const target = await targetOf(tab, params.ref);
+  const download = watchDownload();
   const watch = watchLoad(tab, LOAD_MS);
   let result: Record<string, unknown>;
   try {
     result = await ask(tab, target.frameId, { op: "click", doc: target.doc, ref: target.local });
   } catch (error) {
     watch.cancel();
+    download.cancel();
     throw error;
   }
   if (typeof result.openTab === "string") {
     watch.cancel();
+    download.cancel();
     const created = await chrome.tabs.create({ url: result.openTab, active: true });
     const load = await watchLoad(idOf(created), LOAD_MS).done;
     return { described: result.described, opened: info(await chrome.tabs.get(idOf(created))), load };
   }
-  return { described: result.described, ...(await after(tab, target.frameId, watch, result.mayNavigate === true)) };
+  return { described: result.described, ...(await after(tab, target.frameId, watch, result.mayNavigate === true, download)) };
 }
 
 /**
  * What an action led to: a page that loaded (the browser's events say so), else what changed in
  * the page, read by the content script once it was quiet (content/changes.ts).
  */
-async function after(tab: number, frameId: number, watch: ReturnType<typeof watchLoad>, mayNavigate: boolean): Promise<Record<string, unknown>> {
+async function after(
+  tab: number,
+  frameId: number,
+  watch: ReturnType<typeof watchLoad>,
+  mayNavigate: boolean,
+  download: ReturnType<typeof watchDownload> | null = null,
+): Promise<Record<string, unknown>> {
   const grace = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), mayNavigate ? MAY_NAVIGATE_MS : CLICK_NAVIGATE_MS));
-  const started = await Promise.race([watch.started, grace]);
+  const downloading = download ? download.created.then((yes) => (yes ? "download" : false)) : new Promise<false>(() => {});
+  const started = await Promise.race([watch.started, grace, downloading]);
+  if (started === "download" && download) {
+    // A download's navigation never loads a page: what landed is the answer.
+    watch.cancel();
+    return { tab: info(await chrome.tabs.get(tab)), download: await download.finished(DOWNLOAD_MS) };
+  }
+  download?.cancel();
   if (!started) {
     watch.cancel();
     const changes = await ask(tab, frameId, { op: "changes" }).catch(() => null);
@@ -256,6 +276,14 @@ export const METHODS: Record<string, Method> = {
   wait: async (params) => waitInTab(idOf(await tabOf(params)), params),
   outcome: async (params) => outcomeInTab(idOf(await tabOf(params)), params),
   close: async (params) => tabMethod("close", idOf(await tabOf(params))),
+  downloads: async (params) => listDownloads(typeof params.limit === "number" ? params.limit : 20),
+  attach: async (params) => {
+    const whole = takeChunk(String(params.id ?? ""), Number(params.index ?? 0), Number(params.total ?? 1), String(params.chunk ?? ""));
+    if (whole === null) return { received: params.index };
+    const tab = idOf(await tabOf(params));
+    const target = await targetOf(tab, params.ref);
+    return ask(tab, target.frameId, { op: "attach", doc: target.doc, ref: target.local, name: params.name, type: params.type, data: whole });
+  },
   reload: async (params) => tabMethod("reload", idOf(await tabOf(params))),
   back: async (params) => tabMethod("back", idOf(await tabOf(params))),
   forward: async (params) => tabMethod("forward", idOf(await tabOf(params))),
