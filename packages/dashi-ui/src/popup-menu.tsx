@@ -179,6 +179,9 @@ function MenuCard({
  * toolbar's "…" at the window's right), at the width it is drawn, and it
  * keeps under the button, its rows scrolling, while four rows fit there.
  */
+/** A press around the menu closes it: a group named so, not a nameless button holding the menu. */
+const closesAround = (onClose: () => void) => ({ accessibilityRole: "group" as const, accessibilityLabel: "Close menu", onPress: onClose });
+
 export function PopupMenu({
   x,
   y,
@@ -232,7 +235,7 @@ export function PopupMenu({
     <View
       occlude
       testID={`${testID}:away`}
-      onPress={onClose}
+      {...closesAround(onClose)}
       onLayout={(bounds) =>
         setRoom((now) => (now.width === bounds.width && now.height === bounds.height ? now : { width: bounds.width, height: bounds.height }))
       }

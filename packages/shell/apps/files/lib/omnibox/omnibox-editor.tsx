@@ -62,6 +62,8 @@ function ClearButton({ onPress }: { onPress: () => void }) {
   return (
     <View
       testID="omnibox:clear"
+      accessibilityRole="button"
+      accessibilityLabel="Clear"
       onPress={onPress}
       style={{ width: 18, height: 18, borderRadius: 9, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
     >

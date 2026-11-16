@@ -203,7 +203,7 @@ export function FieldRow({ field, persona, bar }: FieldRowProps) {
         <View testID="bar-field-edge" style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: FIELD_ROW.edge, backgroundColor: colour }} />
       </View>
       {/* Under the row: a click anywhere closes the field and the menus are back. */}
-      <View testID="bar-field-backdrop" style={{ flex: 1 }} onPress={() => field.close()} />
+      <View accessibilityRole="group" accessibilityLabel="Close" testID="bar-field-backdrop" style={{ flex: 1 }} onPress={() => field.close()} />
     </View>
   );
 }

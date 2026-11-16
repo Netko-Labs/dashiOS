@@ -96,7 +96,7 @@ export function Crumbs({ onEdit }: { onEdit: (text: string) => void }) {
         ))}
       </View>
       {/* The empty end is a search too, but the whole field already is one: in a narrow window it gives its room to the crumbs. */}
-      <View testID="omnibox:edit" onPress={search} style={{ flex: 1, height: HEIGHT, minWidth: 0 }} />
+      <View testID="omnibox:edit" accessibilityRole="button" accessibilityLabel="Search" onPress={search} style={{ flex: 1, height: HEIGHT, minWidth: 0 }} />
       {showsStatus && (
         <View testID="status" style={{ flexShrink: 0 }}>
           <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>

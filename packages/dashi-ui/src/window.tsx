@@ -168,6 +168,13 @@ export function SidebarSection({ title, children }: { title?: string; children: 
 }
 
 /**
+ * What names a toolbar button, one or both: a glyph-only button is named by
+ * its tooltip, a worded one by its label. Without either a screen reader and
+ * an agent's read_window could not say what it is, so the type asks for one.
+ */
+export type ToolbarButtonName = { label: string; tooltip?: string } | { tooltip: string; label?: string };
+
+/**
  * A glyph button in a toolbar: square, quiet until hovered. A glyph-only
  * button names itself with `tooltip`, shown under it when the pointer rests
  * on it (UI-3); one with a `label` shows its words instead. A toolbar's
@@ -189,12 +196,9 @@ export function ToolbarButton({
   onPress: (event: PressInfo) => void;
   testID: string;
   disabled?: boolean;
-  label?: string;
-  /** The button's name, in sentence case ("New note"); shown after a rest. */
-  tooltip?: string;
   /** Held lit, as under the pointer: the menu it opened is open ("…"'s). */
   active?: boolean;
-}) {
+} & ToolbarButtonName) {
   const colors = useColors();
   const tip = useTooltip(tooltip);
   return (
@@ -202,7 +206,7 @@ export function ToolbarButton({
       testID={testID}
       focusable={!disabled}
       accessibilityRole="button"
-      {...(tooltip !== undefined || label !== undefined ? { accessibilityLabel: tooltip ?? label } : {})}
+      accessibilityLabel={tooltip ?? label}
       onPress={
         disabled
           ? undefined

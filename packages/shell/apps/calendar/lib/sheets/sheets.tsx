@@ -71,6 +71,9 @@ export function CalendarSheet({
           <View
             key={each}
             testID={`calendar-color:${each}`}
+            accessibilityRole="option"
+            accessibilityLabel={`Colour ${each}`}
+            accessibilityState={{ selected: each === color }}
             onPress={() => setColor(each)}
             style={{
               width: 24,

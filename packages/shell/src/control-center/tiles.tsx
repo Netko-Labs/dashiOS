@@ -71,6 +71,9 @@ export function WideTile({ look, onToggle, onOpen }: { look: TileLook } & TilePr
     >
       <View
         testID={`${look.testID}-knob`}
+        accessibilityRole={onToggle ? "switch" : "button"}
+        accessibilityLabel={look.title}
+        {...(onToggle ? { accessibilityState: { checked: look.on } } : {})}
         onPress={onToggle ?? onOpen}
         style={{
           width: 44,

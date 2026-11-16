@@ -54,6 +54,8 @@ export function Notice({ text, tone = "info", action, onDismiss, children, testI
           {onDismiss !== undefined && (
             <View
               testID={`${testID}:close`}
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss"
               onPress={onDismiss}
               style={{ width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
             >

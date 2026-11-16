@@ -23,6 +23,8 @@ function JobRow({ job }: { job: Job }) {
       )}
       <View
         testID={`job:${job.id}:cancel`}
+        accessibilityRole="button"
+        accessibilityLabel="Cancel"
         onPress={() => ops.jobs.cancel(job.id)}
         style={{ width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
       >

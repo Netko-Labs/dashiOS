@@ -52,7 +52,13 @@ function Icon({ icon, m, agent }: { icon: RowIcon; m: Measures; agent?: Row["age
 function StopSquare({ id, onStop }: { id: string; onStop: () => void }) {
   const colors = useColors();
   return (
-    <View testID={`launcher:stop:${id}`} onPress={onStop} style={{ width: 20, height: 20, alignItems: "center", justifyContent: "center" }}>
+    <View
+      testID={`launcher:stop:${id}`}
+      accessibilityRole="button"
+      accessibilityLabel="Stop"
+      onPress={onStop}
+      style={{ width: 20, height: 20, alignItems: "center", justifyContent: "center" }}
+    >
       <View style={{ width: STOP, height: STOP, borderRadius: 2, backgroundColor: colors.agentInk }} />
     </View>
   );

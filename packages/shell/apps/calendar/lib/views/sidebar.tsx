@@ -32,6 +32,9 @@ function ShownCheck({ calendar, visible, onToggle }: { calendar: Calendar; visib
   return (
     <View
       testID={`calendar-check:${calendar.id}`}
+      accessibilityRole="checkbox"
+      accessibilityLabel={`Show ${calendar.name}`}
+      accessibilityState={{ checked: visible }}
       onPress={onToggle}
       style={{ width: 22, height: 22, marginLeft: -4, marginRight: -4, alignItems: "center", justifyContent: "center" }}
     >
@@ -100,6 +103,8 @@ function CalendarRow({
       </View>
       <View
         testID={`calendar-menu:${calendar.id}`}
+        accessibilityRole="button"
+        accessibilityLabel={`${calendar.name} options`}
         onPress={(event) => onMenu(event.bounds?.x ?? 0, (event.bounds?.y ?? 0) + (event.bounds?.height ?? 0))}
         style={{
           width: 22,

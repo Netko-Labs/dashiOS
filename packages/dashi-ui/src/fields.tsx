@@ -202,7 +202,13 @@ export function SearchField({
         </View>
       ) : null}
       {value !== "" && (
-        <View testID={`${testID}:clear`} onPress={() => onChangeText("")} style={{ width: 18, height: 18, alignItems: "center", justifyContent: "center" }}>
+        <View
+          testID={`${testID}:clear`}
+          accessibilityRole="button"
+          accessibilityLabel="Clear"
+          onPress={() => onChangeText("")}
+          style={{ width: 18, height: 18, alignItems: "center", justifyContent: "center" }}
+        >
           <Svg markup={CLEAR} size={13} color={colors.textMuted} />
         </View>
       )}

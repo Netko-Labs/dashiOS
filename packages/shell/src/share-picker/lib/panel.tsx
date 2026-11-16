@@ -73,6 +73,9 @@ function Picture({ testID, rect, chosen, caption, onPress }: { testID: string; r
     <View>
       <View
         testID={testID}
+        accessibilityRole="option"
+        accessibilityLabel={caption}
+        accessibilityState={{ selected: chosen }}
         onPress={onPress}
         style={{
           ...at({ x: rect.x - RING, y: rect.y - RING, width: rect.width + 2 * RING, height: rect.height + 2 * RING }),

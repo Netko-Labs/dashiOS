@@ -148,6 +148,8 @@ export function JobCapsule({ job, form, dashi, glyph = SPARK, onOpen, onStop, re
     >
       <View
         testID={`job-disc:${job.key}`}
+        accessibilityRole="button"
+        accessibilityLabel={stop ? `Stop ${job.title}` : job.title}
         onPress={stop ? () => onStop?.(job) : open}
         style={{ height: CAPSULE.height, paddingLeft: CAPSULE.left, paddingRight: speaks ? 0 : CAPSULE.left, justifyContent: "center" }}
       >

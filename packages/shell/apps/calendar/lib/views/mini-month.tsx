@@ -109,6 +109,8 @@ export function MiniMonth({ anchor, today, firstDay, prefs, shown, busy, onPick,
   const arrow = (markup: string, by: number, testID: string) => (
     <View
       testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={by < 0 ? "Previous month" : "Next month"}
       onPress={() => setPage(addMonths(page, by))}
       style={{ width: 22, height: 22, borderRadius: 6, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
     >

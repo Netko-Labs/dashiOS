@@ -24,7 +24,7 @@ export const PageOrigin = createContext<{ left: number; top: number; width: numb
 const INNER = GRID.width - 2 * GRID.padding;
 
 /** The header's switch: 42 × 24, its knob at the right when on. */
-function HeaderSwitch({ testID, on, onChange }: { testID: string; on: boolean; onChange: (on: boolean) => void }) {
+function HeaderSwitch({ testID, label, on, onChange }: { testID: string; label: string; on: boolean; onChange: (on: boolean) => void }) {
   const colors = useControlColors();
   const key = usePageKey(testID, () => onChange(!on));
   return (
@@ -33,6 +33,7 @@ function HeaderSwitch({ testID, on, onChange }: { testID: string; on: boolean; o
       onPress={() => onChange(!on)}
       onLayout={key.onLayout}
       accessibilityRole="switch"
+      accessibilityLabel={label}
       accessibilityState={{ checked: on }}
       style={{
         width: 42,
@@ -112,7 +113,7 @@ export function PageHeader({ testID, title, detail, on, onBack, toggle }: PageHe
           </Text>
         ) : null}
       </View>
-      {toggle && <HeaderSwitch testID={`${testID}-switch`} on={toggle.on} onChange={toggle.onChange} />}
+      {toggle && <HeaderSwitch testID={`${testID}-switch`} label={title} on={toggle.on} onChange={toggle.onChange} />}
     </View>
   );
 }

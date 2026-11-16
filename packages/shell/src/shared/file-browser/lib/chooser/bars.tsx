@@ -20,8 +20,14 @@ export function ChooserLeading({ model, input }: { model: ChooserModel; input: C
   const { files } = input;
   return (
     <>
-      <ToolbarButton testID="chooser:back" glyph={BACK} disabled={!files.canBack} onPress={() => store.goBack()} />
-      <ToolbarButton testID="chooser:up" glyph={UP} disabled={files.location.kind === "folder" && files.location.path === "/"} onPress={() => store.goUp()} />
+      <ToolbarButton testID="chooser:back" glyph={BACK} tooltip="Back" disabled={!files.canBack} onPress={() => store.goBack()} />
+      <ToolbarButton
+        testID="chooser:up"
+        glyph={UP}
+        tooltip="Enclosing folder"
+        disabled={files.location.kind === "folder" && files.location.path === "/"}
+        onPress={() => store.goUp()}
+      />
     </>
   );
 }
@@ -42,7 +48,7 @@ export function ChooserTools({ model, input }: { model: ChooserModel; input: Cho
         />
       )}
       <ViewSwitch />
-      {model.canMakeFolder() && <ToolbarButton testID="chooser:new-folder" glyph={FOLDER_PLUS} onPress={() => void model.newFolder()} />}
+      {model.canMakeFolder() && <ToolbarButton testID="chooser:new-folder" glyph={FOLDER_PLUS} tooltip="New folder" onPress={() => void model.newFolder()} />}
       <SearchField
         testID="chooser:search"
         autoFocus={model.request.mode !== "save"}
