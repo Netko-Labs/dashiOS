@@ -6,7 +6,7 @@
  * throws what went wrong.
  */
 
-import { AnswerError, HARNESSES, type HarnessId, promptStyle, styledPrompt } from "../../ask/index.ts";
+import { ANSWERERS, AnswerError, HARNESSES, type HarnessId, promptStyle, styledPrompt } from "../../ask/index.ts";
 import type { TaskPolicy } from "../../lib/session/session-types.ts";
 import { contextBlock, type Moment } from "../context.ts";
 import type { Conversation } from "../conversation.ts";
@@ -53,7 +53,7 @@ export async function viaHarness({ options, talk, task, words, moment, run, say,
   if (end.error && (end.said === "" || run.steps.length === 0)) {
     options.log?.(`assistant harness: ${end.error}`);
     throw info.signedOut(end.error)
-      ? new AnswerError("not-signed-in", "It isn't signed in. Sign in from the launcher.")
+      ? new AnswerError("not-signed-in", `${ANSWERERS[harness].name} isn't signed in, so I can't do that yet. Sign in once in Terminal, then ask again.`)
       : new AnswerError("failed", "It stopped before it answered.");
   }
   return end.said;

@@ -108,7 +108,11 @@ export class Transcript {
         edit((turn) => ({
           ...turn,
           state,
-          text: [turn.text.trim(), extra.text?.trim() ?? ""].filter(Boolean).join(turn.text.trim() ? " " : ""),
+          // A failure says only why, in Dashi's words: what was printed before it (a harness's "Not logged in") is not an answer.
+          text:
+            state === "failed" && extra.text
+              ? extra.text.trim()
+              : [turn.text.trim(), extra.text?.trim() ?? ""].filter(Boolean).join(turn.text.trim() ? " " : ""),
           steps: turn.steps.map((step) => (step.ok === null ? { ...step, ok: state === "done" } : step)),
           ...(extra.failed ? { failed: extra.failed } : {}),
         }));
