@@ -3723,3 +3723,225 @@ short words, as the rulebook is written.
 - **Undo:** drop `language` from the reply in `service/speak.rs` and
   `after` in `voice/lib/saying.ts`; drop `spoke` in
   `agents/assistant/context.ts`.
+
+### D180. Dictation remembers what it typed, and Undo is BackSpace on exactly that
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's (the research's first
+  list, 3.1; briefs/d2-dictate.md).
+- **Question:** the night's cut said "never send backspaces into an app".
+  Undo, Raw and "scratch that" all need Dashi to take back its own words.
+  Three ways: the app's own undo (Ctrl+Z), a range delete through AT-SPI's
+  EditableText, or BackSpace.
+- **Choice:** BackSpace, once for each character Dashi sent
+  (`type-text`'s `erase` since D187), and only when those characters are
+  still the last thing in the field. Where AT-SPI gives the field's text, the text before the
+  caret must end with them. Where it does not (most terminals), the
+  person's own hands must not have pressed a key or a button in that
+  window since the words landed (`input-origin`, which the compositor
+  knows for certain) and the words must hold no line break. Anything else
+  touches nothing and says so. Dashi keeps the newest forty insertions in
+  memory (`dictation/lib/record.ts`) and never reasons about text it did
+  not write. Undo is on the capsule and at ⌃❖Z, "paste last" at ⌃❖V:
+  ❖Z stays the app's own.
+- **Why:** the app's undo is unpredictable (a web editor groups typed keys
+  as it likes; a terminal has none), and EditableText is missing in
+  Chromium's editors and in every terminal. BackSpace works everywhere a
+  key does, and the check makes it exact: what it deletes is what Dashi
+  typed, or nothing.
+- **Cost:** an editor that changes what was typed (auto-indent, a closed
+  bracket, autocomplete) no longer ends with Dashi's characters, so Undo
+  refuses there: the safe failure.
+- **Undo:** `erase()` in `dictation/lib/erase.ts` is the one place; a
+  range delete can replace the loop where a field offers one.
+
+### D181. The history keeps a day of raw and final words, on this computer, and no sound
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's.
+- **Question:** how long, where, and what.
+- **Choice:** `$XDG_STATE_HOME/dashi/dictation/history.jsonl`, mode 600:
+  the time, the app, the profile, the words as heard and as typed. A day
+  by default; a week, or nothing (`dictation.history`), in Settings ›
+  Voice, where each row has Copy and Delete. "Nothing" writes nothing and
+  removes the file. No audio in this slice. Reading the text around the
+  caret needed two optional additions to `agents/atspi` (`caretText` on a
+  node, `role` and `text` on a focused field): small, and nothing there
+  changed its behaviour.
+- **Why:** the raw words must never be lost (the corpus's rows 8 and 16
+  could not be read back), and a day is what someone needs to recover a
+  dictation without keeping a diary of everything said.
+- **Cost:** a file with the person's words in their home folder.
+- **Undo:** Settings › Voice, "Nothing"; or delete the file.
+
+### D182. Five profiles chosen by what is in front; the person's words are plain files
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's.
+- **Question:** the owner asked for "profiles like a developer profile with
+  a subset of names". Who picks the profile, where do the words live, and
+  what may a rule change without a model?
+- **Choice:**
+  - Five profiles (Developer, Writing, Chat, Email, Verbatim), picked by
+    the field's role, then the site, then the app, else Writing: no setup.
+    The site comes from the web document around the focused field
+    (AT-SPI), so it needs neither the browser's extension nor a
+    permission. The capsule names the profile and a press changes it for
+    that window only; nothing is remembered per app yet.
+  - `~/.config/dashi/dictation/`: `vocabulary`, `replacements`, `snippets`
+    and `profiles/<id>`, plain text, seeded once and never written over.
+    Settings edits the first two; the rest is edited as files.
+  - Rules are exact: a replacement needs its words said whole; a near miss
+    is taken only for a word no dictionary knows (hunspell's stems, read
+    lazily; a system package Dashi only reads); casing and symbols need
+    their own names ("camel case…", "dash dash…", "equals sign"), never a
+    bare "plus", "star" or "colon".
+  - A shell's prompt is told from an agent's prompt by the processes under
+    the terminal (`/proc`), not by asking the terminal. In an agent's
+    prompt a line break is ⌃J, which Claude Code and Codex take as a new
+    line; at a bare shell Dashi adds none of its own.
+- **Why:** Wispr's four fixed categories are what people find easiest;
+  files are what a developer can keep in a repository and what a person
+  can repair by hand. A rule that guesses is worse than no rule: typing
+  "+" for "plus" in a sentence costs trust.
+- **Cost:** a name that is also a word ("Notes", "Files") is not seeded and
+  is never fuzzy-matched; "cloud can do" for "Claude can do" waits for the
+  model. A Spanish verb form is unknown to the stem list, so near misses
+  are English-leaning. ⌃J and ⇧Return are conventions, not guarantees: an
+  app that sends on ⇧Return would send.
+- **Undo:** a profile's file changes any of it (`line breaks: return`,
+  `code: no`); `PROFILES` in `dictation/lib/profiles.ts` holds Dashi's own.
+
+### D183. The model is asked only where the rules' text says it is needed
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's (the seam is D170's,
+  `docs/dictation-rewrite.md`).
+- **Question:** when is the correction model asked, and what lands when it
+  does not answer?
+- **Choice:** the rules always run and their text is what lands by
+  default. A gate of plain patterns decides: a self-correction cue or a
+  repeat, list markers the rules did not use, twenty words with no mark, a
+  word no dictionary knows, the first word of a term's "heard as" form, or
+  a profile that asks for polish. A sentence with no reason is never
+  sent. The answer changes the text only when it is `text`; it is styled
+  again by the profile. "Tidying" is said after 300 ms. Where the
+  rewriter advises `refine`, the rules' words land and are replaced later
+  only if the field still ends with them. Numbers from ten up become
+  digits by rule; one to nine, and ordinals, stay words. "like" is a
+  filler by rule only in the places the corpus shows (after a verb that
+  takes its object, before an article or an -ing word).
+- **Why:** restraint is measured in what is not touched. The owner's
+  corpus has more sentences that are right than wrong; a model that reads
+  every one of them will damage some, and each ask is a wait.
+- **Cost:** a mishearing that leaves real words and no cue ("through
+  boys", "it just start") is not sent: 10 of the corpus's 15 model rows
+  have no reason worth asking for. The gate also names `non-word` and
+  `list`, but the model is not asked for them: `v09/rewrite` measured that
+  it mends 5% of non-words and never lays out a list (its checks refuse a
+  new line break), so those stay the rules'. A profile with `polish: yes`
+  sends everything.
+- **Undo:** `gate()` in `dictation/lib/gate.ts`; `polish: yes` in a
+  profile's file asks for every utterance today.
+
+### D184. Dictated words are fitted to the text around the caret, read through AT-SPI
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's.
+- **Question:** every landing began with a capital and ended with a full
+  stop and a space, wherever the caret was.
+- **Choice:** the field's text before and after the caret is read at the
+  landing, by the walk the password check already makes (no second
+  round-trip to find the field), and four things follow from it: a
+  leading space or none, a capital or none, a final full stop or none, a
+  trailing space or none (`dictation/lib/fit.ts`). After a colon the
+  words are left as said. A name keeps its capital mid-sentence. Where
+  the text can't be read nothing changes from before.
+- **Why:** it is the difference between words that continue a sentence
+  and words pasted into it; Wispr does this part on the device for the
+  same reason.
+- **Cost:** accessibility is on from the first hold (it was already, for
+  the password check). Dashi's own apps and terminals give no text, so
+  they get no fit yet: mirin would have to publish its fields to AT-SPI.
+- **Undo:** `fit()` returning the words with a space after.
+
+### D185. An instruction is the whole utterance; lists are made only from plain markers
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's (research 1.9).
+- **Question:** the owner wants "remove the previous text" and "here's the
+  list: first…" to be understood. How is an instruction told from words,
+  and how much structure may a rule make?
+- **Choice:** an instruction must be everything that was said in one
+  press, from a fixed list in English and Spanish; it acts on the
+  insertion record only (D180's check). The capsule says it took it as an
+  instruction and offers Undo, which restores and types the words as
+  heard. With nothing of Dashi's to remove, nothing is typed either: the
+  line says so and Undo types the words. A list is made from ordinals in
+  order, counted items that each start a clause, or repeated "bullet
+  point"; numbered when counted, Markdown bullets in chat, at an agent's
+  prompt and in Markdown editors, bare lines elsewhere, nothing at a
+  shell's prompt.
+- **Why:** deleting by mistake costs trust and typing "scratch that" by
+  mistake costs one press; the whole-utterance rule removes the quoting
+  failures without a classifier. "Tell him to scratch that" is typed.
+- **Cost:** "scratch that" at the end of a longer utterance is not an
+  instruction (inside an utterance it is tidying's change of mind, or the
+  model's). "delete the last sentence" and "replace X with Y" are not
+  built. A list said without clear markers waits for the model.
+- **Undo:** `ERASE` and `BREAKS` in `dictation/lib/instruction.ts`;
+  `makeList` in `lists.ts`.
+
+### D186. A fix made by hand is offered as a replacement; a tap of the dictation key says yes
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's (the research's
+  second list, item 8).
+- **Question:** how does Dashi learn the person's words without learning
+  the wrong thing?
+- **Choice:** the field is read again every 2.5 seconds, four times,
+  after a landing (no AT-SPI events: reads of the focused field). One
+  changed run of up to three words, with two of Dashi's words still round
+  it, seen the same at two reads in a row (in the VM the offer came at
+  the first read, when a person could still be typing), is offered on the
+  capsule; a press on Always, or a tap of the
+  dictation key, stores it in `replacements` (or `vocabulary` when only
+  capitals changed). Numbers, paths and addresses are never offered.
+- **Why:** the owner's corpus is names; each fix made once by hand should
+  be the last. An offer cannot learn a mistake silently, and the
+  dictation key is the only key Dashi may take.
+- **Cost:** four more reads of the field per landing where it is
+  readable; nothing in terminals or Dashi's own apps, whose text AT-SPI
+  does not give. A word swapped for meaning ("there" to "here") is
+  offered too; saying nothing lets it pass.
+- **Undo:** `Landings.watch` in `dictation/lib/landings.ts`.
+
+### D187. `type-text` carries the BackSpaces and the line-break chord; a key the shell takes is not a press in the window
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's, from what the VM
+  showed.
+- **Question:** two things failed in the VM that the unit tests could not
+  see. (1) Undo by ⌃❖Z, and "scratch that", refused in every field that
+  can't be read (Terminal, Text Editor): `input-origin` counted the
+  shortcut's own keys, and the dictation key itself, as "the person
+  pressed a key in this window". (2) A list in Helium landed as "1. Buy
+  milk2. Call Alex": the ⇧Return sent by `send-keys` goes through the
+  input method (fcitx5), which hands it on later, while `type-text`'s
+  keys go straight to the window; the break arrived after the next line.
+  The same would let an Undo's BackSpaces arrive after the words typed
+  next.
+- **Choice:** both fixed where they start, in the compositor.
+  - A key is noted as the person's press where it is given to what has
+    the keyboard (`keys/handler.rs` `note_person_key`): not a modifier
+    alone, not a key the shell holds (`held-keys`, ❖), not a chord the
+    keymap binds or swallows. A chord the keymap turns into other keys
+    for the window (❖C as Ctrl+C) still counts. Pointer presses are as
+    before.
+  - `type-text` takes `erase` (that many BackSpaces before the text) and
+    `breaks` (the chord a line break is typed as: its modifier is a key
+    of the made keymap, held while Return goes). One request, one route,
+    in order. Dictation no longer uses `send-keys` except for BackSpace
+    in an X11 window, where `type-text` is refused.
+- **Why:** the alternative for (1) was to let Undo trust a window the
+  person may have typed in, which breaks the one promise Undo makes; for
+  (2) a wait between requests, which is a guess about another program's
+  timing.
+- **Cost:** consent that counts a person's key (`input-origin` on a
+  sheet's layer) now counts only keys the sheet is given: a Return on a
+  sheet still counts; a chord the keymap binds while a sheet has the
+  keyboard does not. The IPC grew two optional fields.
+- **Undo:** note every key press again in `input/events.rs`; drop the
+  two fields and send chords with `send-keys`.

@@ -12,6 +12,12 @@ export type TidyChange =
   | { kind: "spacing"; count: number }
   | { kind: "capital"; count: number }
   | { kind: "punctuation"; count: number }
+  /** A name, a term or a symbol written the person's way ("cloud code" → "Claude Code", "dash dash help" → "--help"). */
+  | { kind: "fix"; count: number }
+  /** A list made of what was said ("first… second…"): how many items. */
+  | { kind: "list"; count: number }
+  /** The correction model changed this many words. */
+  | { kind: "model"; count: number }
   | { kind: "change-of-mind"; from: string; to: string };
 
 /** Why the words were not typed and wait in the capsule with Copy. */
@@ -50,11 +56,29 @@ export type DictationState =
   /** A hold, and the microphone is not open yet: never drawn as listening. */
   | { phase: "opening" }
   /** d-03, d-04, d-29, d-30. The microphone is open. `hint` is a line to teach the key the first time ("Hold to dictate. Let go to type."), else null. `text` is everything heard so far ("" at first; partials come about every 0.8 s). `handsFree` with when it ends by itself. */
-  | { phase: "listening"; text: string; handsFree: boolean; endsAt: number | null; hint: string | null }
-  /** d-05. The key came up: the words are worked out and tidied. `text` is the last partial. */
-  | { phase: "tidying"; text: string }
-  /** d-06, d-09, d-14. The words landed. `line` is the capsule's one line ("Typed. 2 fillers out."); `changes` is why; `heard` differs from `typed` when tidying changed something. */
-  | { phase: "landed"; typed: string; heard: string; changes: readonly TidyChange[]; line: string; until: number }
+  | { phase: "listening"; text: string; handsFree: boolean; endsAt: number | null; hint: string | null; profile?: string | undefined }
+  /** d-05. The key came up: the words are worked out and tidied. `text` is the last partial. `said` once it has taken 300 ms: only then does the capsule say "Tidying". */
+  | { phase: "tidying"; text: string; said?: boolean | undefined }
+  /**
+   * d-06, d-09, d-14. The words landed. `line` is the capsule's one line ("Typed. 2 fixes."); `changes` is why; `heard` differs from
+   * `typed` when tidying changed something. `undo`: Dashi can take them back (Undo). `raw`: the recogniser's words differ and can land
+   * instead (Raw). `profile` is the profile that tidied them ("Developer"), shown small; a press on it changes it for this window.
+   */
+  | {
+      phase: "landed";
+      typed: string;
+      heard: string;
+      changes: readonly TidyChange[];
+      line: string;
+      until: number;
+      undo?: boolean | undefined;
+      raw?: boolean | undefined;
+      profile?: string | undefined;
+    }
+  /** Something Dashi did or would not do, in one line ("Removed 14 words.", "That text has changed, so I left it."). `undo` offers to put it back. */
+  | { phase: "told"; line: string; tone: "ok" | "warn"; undo?: boolean | undefined; until: number }
+  /** The person fixed a word after it landed: an offer to always write it their way ("Always write “Claude Code” for “cloud code”?"). A press, or a tap of the dictation key, takes it. */
+  | { phase: "offer"; from: string; to: string; line: string; until: number }
   /** d-17, d-18, d-20. Not typed: the words wait here, in memory, until `until` (ten minutes), with Copy. */
   | { phase: "waiting"; text: string; heard: string; reason: WaitReason; line: string; until: number }
   /** d-23, d-25 to d-28, d-32, d-33. One line, then idle at `until`. */
@@ -74,7 +98,17 @@ export type DictationCommand =
   /** Close: drop what waits or shows. Nothing is typed. */
   | { do: "dismiss" }
   /** Land these words as a dictation would (tidied, typed or waiting): Dashi's capsule's "Type it instead". */
-  | { do: "type"; text: string };
+  | { do: "type"; text: string }
+  /** Undo: take back what Dashi typed last, if the field still ends with it; after an instruction, put back what it removed and type its words. */
+  | { do: "undo" }
+  /** Raw: the recogniser's own words land in place of the tidied ones. */
+  | { do: "raw" }
+  /** Type the last dictation again, where the keyboard is now ("paste last"). */
+  | { do: "paste-last" }
+  /** The next profile, for the window in front, until it closes. */
+  | { do: "profile" }
+  /** Yes to the offer that shows: the fix becomes a replacement. */
+  | { do: "learn" };
 
 /** The limits (pill-v2 README, "What tidying may do"), in ms. */
 export const DICTATION_LIMITS = {
@@ -92,6 +126,10 @@ export const DICTATION_LIMITS = {
   landed: 6_000,
   /** How long a notice stays. */
   notice: 4_000,
+  /** How long an offer to learn a fix stays. */
+  offer: 8_000,
+  /** The key came up this long ago and the words are not there yet: the capsule says "Tidying". */
+  tidyingSaid: 300,
 } as const;
 
 /** settings.json `dictation` (Settings › Voice). */
@@ -104,4 +142,11 @@ export interface DictationSettings {
   handsFree?: boolean;
   /** Tidy by rule; on unless false. Off types the words as heard. */
   tidy?: boolean;
+  /** How long the history is kept: `day` unless set; `week`, or `none` (dictation/history.ts). */
+  history?: string;
 }
+
+/** How long dictation's history is kept (Settings › Voice › Dictation): a day unless the person says otherwise. */
+export type HistoryKeep = "none" | "day" | "week";
+export const HISTORY_KEEPS: readonly HistoryKeep[] = ["day", "week", "none"];
+export const isHistoryKeep = (value: unknown): value is HistoryKeep => value === "none" || value === "day" || value === "week";

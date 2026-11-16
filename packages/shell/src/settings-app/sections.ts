@@ -13,7 +13,16 @@ import { isPersonaLanguage, isPersonaNote, isPersonaYou } from "../persona/index
 import { GRAPHICS_FIELDS, POWER_FIELDS } from "../power/modes/settings.ts";
 import { APPEARANCE, DOCK, guarded, IDLE, INPUT_METHOD, KEYBOARD, MENU_BAR, MOUSE, SPACES, TOUCHPAD, WALLPAPER } from "../settings/index.ts";
 import { isCatalogList } from "../shared/applet-store/catalogs.ts";
-import { isCharacterId, isDictationKeyId, isPersonaColour, isPersonaDots, isPersonaMark, isPersonaName, isPersonaTalk } from "../shared/pill/index.ts";
+import {
+  isCharacterId,
+  isDictationKeyId,
+  isHistoryKeep,
+  isPersonaColour,
+  isPersonaDots,
+  isPersonaMark,
+  isPersonaName,
+  isPersonaTalk,
+} from "../shared/pill/index.ts";
 import { dig, type Fields, isRaw, type Raw, readFields, type SectionOf } from "../shared/settings/index.ts";
 import { CLOCK_SECTION, REGION_SECTION } from "../shared/time/index.ts";
 import { isTalkKeyId, isVoiceId, isVoiceMap } from "../voice/index.ts";
@@ -78,7 +87,16 @@ export const SECTIONS = {
       askEveryStep: bool(),
     },
   },
-  dictation: { path: ["dictation"], fields: { on: bool(), key: guarded(isDictationKeyId, "a dictation key"), handsFree: bool(), tidy: bool() } },
+  dictation: {
+    path: ["dictation"],
+    fields: {
+      on: bool(),
+      key: guarded(isDictationKeyId, "a dictation key"),
+      handsFree: bool(),
+      tidy: bool(),
+      history: guarded(isHistoryKeep, "day, week or none"),
+    },
+  },
   persona: {
     path: ["persona"],
     fields: {

@@ -98,10 +98,12 @@ impl Dashi {
 
         // Locked: keys go to the lock screen, and nothing else hears them (locked.rs).
         if self.lock.locked {
+            self.note_person_key(&keyboard);
             return self.on_locked_key(&keyboard, keycode, &info, mods, serial, time, mods_changed);
         }
         // A remote desktop or VM with the keyboard gets the keys the keymap would take.
         if self.shortcuts_inhibited() {
+            self.note_person_key(&keyboard);
             return keyboard.input_forward(self, keycode, state, serial, time, mods_changed);
         }
         let app_id = self.focused_app_id();
@@ -129,6 +131,7 @@ impl Dashi {
         }
         match action {
             None => {
+                self.note_person_key(&keyboard);
                 keyboard.input_forward(self, keycode, state, serial, time, mods_changed);
                 self.watch_snippets(&info, mods);
             }
@@ -136,8 +139,22 @@ impl Dashi {
                 self.keys.taken.insert(keycode, Taken::Swallowed);
                 self.emit_binding(name, &info, mods, arms_after_tap);
             }
-            Some(action) => self.replay_action(keycode, &action, info.mods.shift, time),
+            Some(action) => {
+                // What the window gets in the key's place (❖C as Ctrl+C) is the person's press too; a swallowed key is not.
+                if !matches!(action, Action::Swallow) {
+                    self.note_person_key(&keyboard);
+                }
+                self.replay_action(keycode, &action, info.mods.shift, time);
+            }
         }
+    }
+
+    /// The person pressed a key that what has the keyboard is given (session/origin.rs).
+    /// Not noted: a modifier alone, a key the shell holds (the dictation key, ❖), and a chord
+    /// the keymap binds or swallows. None of those is a key in the window, so "the person has
+    /// not typed here since" stays true across them (dictation's Undo, docs/voice.md).
+    fn note_person_key(&mut self, keyboard: &KeyboardHandle<Dashi>) {
+        self.note_person_press(keyboard.current_focus());
     }
 
     /// A key came up: to the client, if the press went there; else what its press left held.

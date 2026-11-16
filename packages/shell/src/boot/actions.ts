@@ -10,6 +10,7 @@ import { type Agents, isVaultWindow } from "../agents/index.ts";
 import { appFor } from "../apps.ts";
 import { type Clipboard, startClipboard } from "../clipboard/index.ts";
 import type { Compositor } from "../compositor/index.ts";
+import { dictationActions } from "../dictation/index.ts";
 import { launchEntry } from "../entries.ts";
 import { type Extensions, openTarget, startExtensions } from "../extensions/index.ts";
 import { openFile } from "../file-manager.ts";
@@ -164,8 +165,10 @@ function startClipboardHistory({ compositor, stores, guards, basics, settingsWin
     }),
   );
   const stopClipboardSource = actions.registry.add(clipboard.source);
+  const stopDictationSource = actions.registry.add(dictationActions(late.get("pill")));
   services.add("clipboard", () => {
     stopClipboardSource();
+    stopDictationSource();
     clipboard.close();
   });
   return clipboard;

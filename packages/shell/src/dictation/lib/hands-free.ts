@@ -11,7 +11,7 @@ import { DICTATION_LIMITS, type DictationPhase, type DictationState, type Dictat
 import type { Timers } from "../../shared/time/index.ts";
 import type { DictationDeps, Front, HearingEvent } from "../types.ts";
 import { HeardText } from "./heard.ts";
-import { land } from "./land.ts";
+import type { Landing, Meant } from "./land.ts";
 import { troubleOf } from "./lines.ts";
 
 /** A pause this long ends a sentence. */
@@ -23,6 +23,8 @@ export interface HandsFreeHost {
   /** What stops the microphone from opening, or null. */
   ready(at: Front | null): Promise<DictationTrouble | null>;
   phase(): DictationPhase;
+  /** The words land (lib/land.ts). */
+  land(heard: string, meant: Meant): Promise<Landing>;
 }
 
 export class HandsFree {
@@ -121,7 +123,7 @@ export class HandsFree {
     const words = heard.trim();
     if (words === "") return this.listen(turn);
     this.rearmQuiet();
-    const landing = await land(this.deps, words, { at: this.at, since: this.since });
+    const landing = await this.host.land(words, { at: this.at, since: this.since });
     if (turn !== this.turn) return;
     if (!landing.typed) {
       // Nowhere to type any more: the words wait, and hands-free is over.
@@ -151,7 +153,7 @@ export class HandsFree {
     this.deps.chime();
     if (text !== "") {
       // The tap that ends it is itself a key pressed in the window: it can't be told from another, so it is not asked.
-      const landing = await land(this.deps, text, { at: this.at, since: byKey ? null : this.since });
+      const landing = await this.host.land(text, { at: this.at, since: byKey ? null : this.since });
       if (!landing.typed) return this.host.show(landing.state);
     }
     this.host.notice(trouble, true);
