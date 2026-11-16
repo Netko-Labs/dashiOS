@@ -5321,9 +5321,10 @@ short words, as the rulebook is written.
 - **Measured first** (spec § 6): Bun in bubblewrap, a bare script, reaches
   its first message in 6 ms (median of 10, the laptop); the GitHub
   extension's bundle (580 KB: React, the reconciler, the SDK) says hello in
-  17 ms; a 40-row tree rendered and sent in 18 ms. The VM's numbers, with
-  systemd and the shell around it, are in
-  `dashi-0.9.0-review/36-launcher-ext/README.md`.
+  17 ms; a 40-row tree rendered and sent in 18 ms. In the VM, from the
+  command chosen to its first tree, systemd and the runner included: cold
+  73 to 204 ms (nine opens), warm 11 to 24 ms
+  (`dashi-0.9.0-review/36-launcher-ext/README.md`).
 - **Decision:** `"shows": ["launcher"]` is not started at login
   (`AppletLauncher.reconcile` skips it); opening one of its commands starts
   it (`ensure`), the launcher draws the skeleton at once, "Loading…" after

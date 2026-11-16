@@ -213,12 +213,12 @@ empty rows), "Loading…" after 300 ms, and the tree when it comes; "GitHub
 didn't start." or "GitHub isn't answering." after 10 s. A minute after its
 last view closed it is stopped.
 
-Measured (`dashi-0.9.0-review/36-launcher-ext/README.md`): Bun in
-bubblewrap reaches its first message in about 6 ms; the GitHub extension's
-whole bundle (React, the reconciler, the SDK; 580 KB) says hello in about
-17 ms and has rendered and sent a 40-row tree in about 18 ms, on the
-laptop. So it is not kept warm (store-v2 spec § 6 asked for that only past
-~250 ms).
+Measured (`dashi-0.9.0-review/36-launcher-ext/README.md`). On the laptop, Bun in bubblewrap
+reaches its first message in about 6 ms, and the GitHub extension's whole bundle (React, the
+reconciler, the SDK; 580 KB) says hello in about 17 ms. In the VM, from the command chosen to its
+first tree in the launcher, with systemd starting the unit, the runner, bubblewrap and the
+extension: **cold 73 to 204 ms** (nine opens), **warm 11 to 24 ms**. So it is not kept warm
+(store-v2 spec § 6 asked for that only past ~250 ms); the skeleton covers the cold start.
 
 ## Permissions, shown before install
 
