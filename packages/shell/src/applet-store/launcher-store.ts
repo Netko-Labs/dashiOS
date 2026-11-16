@@ -4,7 +4,7 @@
  * applets, then what is installed), and an add-on installs without leaving.
  * ↩ on one that isn't installed asks in place, in one line that says what it
  * adds and what it can reach (D328: the launcher's question, not the
- * Store's sheet; ↩ again gets it), and "Find in the Store" opens the Store
+ * Store's sheet; Return again gets it), and "Find in the Store" opens the Store
  * window on the words for apps. A grant is the person's own press: agents
  * never reach this scope (it is the person's launcher).
  */
@@ -43,8 +43,9 @@ export function getQuestion(entry: StoreApplet): string {
       ? `It can: ${can.map((line, at) => (at === 0 ? line : line.charAt(0).toLowerCase() + line.slice(1))).join("; ")}.`
       : "It reaches nothing of yours.";
   const review = entry.reviewed ? "" : " Nobody at Dashi has read this version’s code.";
-  // ↩ as text, not the colour emoji a font would draw for it inside a sentence (U+FE0E asks for the text form).
-  return `Get “${entry.manifest.name}”? ${adds ? `${adds}. ` : ""}${reach}${review} ↩\uFE0E again gets it.`;
+  // "Return" in words, as the launcher's other questions say it ("Return keeps it"): a ↩ inside a sentence is drawn as
+  // the colour emoji (mirin's text doesn't take U+FE0E's text form), while the key at the row's end is the glyph.
+  return `Get “${entry.manifest.name}”? ${adds ? `${adds}. ` : ""}${reach}${review} Return again gets it.`;
 }
 
 function row(entry: StoreApplet, state: "get" | "installed" | "update" | "busy"): Row {

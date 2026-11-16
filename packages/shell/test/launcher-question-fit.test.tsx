@@ -14,10 +14,10 @@ interface Node {
 }
 
 const ENGLISH =
-  "Get “ASUS Control”? It can: Change the power mode, battery charge limit and processor boost; change the keyboard’s lights; send you notifications. ↩ again gets it.";
+  "Get “ASUS Control”? It can: Change the power mode, battery charge limit and processor boost; change the keyboard’s lights; send you notifications. Return again gets it.";
 // An add-on whose own words are Spanish (its name and what it adds come from its manifest).
 const SPANISH =
-  "Get “Control de ASUS”? Añade 3 órdenes al lanzador: Cambiar el modo de energía, el límite de carga de la batería y el impulso del procesador. It can: Change the power mode; send you notifications. ↩ again gets it.";
+  "Get “Control de ASUS”? Añade 3 órdenes al lanzador: Cambiar el modo de energía, el límite de carga de la batería y el impulso del procesador. It can: Change the power mode; send you notifications. Return again gets it.";
 
 async function drawn(verb: Verb, asking: boolean): Promise<Node> {
   const transport: NativeTransport = { send() {}, onEvent() {}, onClose() {}, simulate() {}, close() {} };

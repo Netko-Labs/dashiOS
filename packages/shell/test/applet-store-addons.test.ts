@@ -124,6 +124,9 @@ test("the launcher's Store lists extensions, applets and what is installed, and 
   expect(get?.id).toBe("get");
   expect(get?.confirm).toContain("Get “Linear”? Adds 1 command to the launcher.");
   expect(get?.confirm).toMatch(/It can: .*network/i);
+  // The key in words: a ↩ inside the sentence is drawn as a colour emoji (pass 38's still); the row's end has the glyph.
+  expect(get?.confirm).toEndWith("Return again gets it.");
+  expect(get?.confirm).not.toContain("↩");
   // Choosing the row itself never installs: it shows the add-on in the Store.
   expect(row.action).toEqual({ kind: "scope", verb: "show" });
   expect(await scope.run("get", row, "")).toEqual({ notice: { text: "Linear is in", ok: true } });
