@@ -6,7 +6,8 @@
  */
 
 import type { Timers } from "../../shared/time/index.ts";
-import type { Chip, ChipGo } from "../types.ts";
+import { listenModel } from "../recognizers.ts";
+import type { Chip, ChipGo, VoiceDeps } from "../types.ts";
 import { listenLanguage } from "./captions.ts";
 import type { VoiceService } from "./service.ts";
 import { TapListen } from "./tap-listen.ts";
@@ -25,7 +26,8 @@ const message = (error: unknown): string => (error instanceof Error ? error.mess
 export interface MicHost {
   service: VoiceService;
   timers: Timers;
-  locale: string | undefined;
+  /** The session's locale, the chosen recogniser (`prefs().recognizer`), the log. */
+  deps: Pick<VoiceDeps, "locale" | "prefs" | "log">;
   /** The press this belongs to: a newer one makes it stale. */
   turn(): number;
   chip(): Chip | null;
@@ -64,6 +66,11 @@ export class Mic {
     return this.byItself && this.tapped.running && chip?.kind === "listening" && chip.text === "";
   }
 
+  /** The detector heard the person begin: a self-ending listen is not given up on now (D199). */
+  spoke(): void {
+    this.tapped.spoke();
+  }
+
   /** The self-ending listen is over (its words came, a tap, a stop); whether one ran. */
   end(): boolean {
     if (this.timer !== null) this.host.timers.clear(this.timer);
@@ -85,8 +92,9 @@ export class Mic {
 
   /** Ask the service to listen; its refusal in words, or null when the microphone is open. */
   private listen(): Promise<string | null> {
-    const language = listenLanguage(this.host.locale);
-    return this.host.service.call("listen", language ? { language } : {}).then(
+    const language = listenLanguage(this.host.deps.locale);
+    const params = { ...(language ? { language } : {}), ...listenModel(this.host.deps.prefs().recognizer) };
+    return this.host.service.call("listen", params).then(
       () => null,
       (error) => message(error),
     );
@@ -119,6 +127,7 @@ export class Mic {
     const nothing = (): void => {
       const chip = host.chip();
       if (chip?.kind === "listening" && chip.text !== "") return;
+      host.deps.log?.("listen ended reason=gave-up heard_ms=0");
       this.tapped.end();
       void this.cancel();
       // Nothing came after Dashi spoke: no complaint, the conversation just rests.

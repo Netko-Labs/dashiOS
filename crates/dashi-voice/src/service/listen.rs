@@ -4,7 +4,7 @@
 //! the speech; when the listen ends, the model turns it into words.
 
 use std::sync::atomic::{AtomicU8, AtomicU64, AtomicUsize, Ordering};
-use std::sync::mpsc::{Receiver, sync_channel};
+use std::sync::mpsc::sync_channel;
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
 
@@ -12,12 +12,10 @@ use serde_json::{Value, json};
 
 use super::Service;
 use super::capture::{TAIL, capture, quiet_of};
-use crate::audio::LISTEN_RATE;
+use super::recognize::Heard;
 use crate::audio::pipewire::{Closer, Microphone};
-use crate::engine::gate::Gate;
 use crate::engine::vad::SpeechDetector;
 use crate::protocol::{Event, Listen, Quiet, Until};
-use crate::tongue::{self, Tongue};
 
 pub(super) const RUNNING: u8 = 0;
 pub(super) const STOPPING: u8 = 1;
@@ -29,20 +27,6 @@ const PATIENCE: Duration = Duration::from_millis(600);
 const DEAF: Duration = Duration::from_secs(3);
 /// How long it waits for the words.
 const THINK: Duration = Duration::from_secs(120);
-
-#[derive(Clone)]
-struct Heard {
-    text: String,
-    speech_ms: u64,
-    /// The language of the words, when they tell it.
-    language: Option<String>,
-}
-
-/// Parakeet picks the language itself and does not say which, so the words
-/// tell: one of the languages Dashi speaks, or none when they give too little.
-fn language_of(text: &str) -> Option<String> {
-    tongue::evidence(text, &Tongue::ALL).map(|tongue| tongue.code().to_owned())
-}
 
 pub(super) struct Run {
     owner: u64,
@@ -116,15 +100,23 @@ impl Service {
         params: &Listen,
     ) {
         let language = params.language.clone();
+        let model = params.model.clone();
         let (partials, speech) = sync_channel::<Vec<f32>>(1);
         let worker = (params.partials != Some(false)).then(|| {
-            let (service, run, language) = (self.clone(), run.clone(), language.clone());
-            std::thread::spawn(move || service.partials(&run, &speech, language.as_deref()))
+            let (service, run, language, model) =
+                (self.clone(), run.clone(), language.clone(), model.clone());
+            std::thread::spawn(move || {
+                service.partials(&run, &speech, language.as_deref(), model.as_deref())
+            })
         });
         // The model is loaded while the person talks, not after.
         let warm = self.clone();
-        let warm_language = language.clone();
-        std::thread::spawn(move || warm.engines.recognizer(warm_language.as_deref()).is_ok());
+        let (warm_language, warm_model) = (language.clone(), model.clone());
+        std::thread::spawn(move || {
+            warm.engines
+                .recognizer_for(warm_language.as_deref(), warm_model.as_deref())
+                .is_ok()
+        });
         // A microphone that gives nothing in three seconds is closed, so the listen ends in words.
         let watched = run.clone();
         std::thread::spawn(move || {
@@ -133,7 +125,9 @@ impl Service {
                 (watched.close)();
             }
         });
-        let captured = capture(self, run, microphone, detector, &partials);
+        // A held key marks what was said: every frame of it is heard (the gate only says whether anyone spoke).
+        let whole = params.until == Until::Stop;
+        let captured = capture(self, run, microphone, detector, &partials, whole);
         drop(partials);
         if let Some(worker) = worker {
             let _ = worker.join();
@@ -146,7 +140,16 @@ impl Service {
         let result = if cancelled {
             Err("The listen was cancelled.".to_owned())
         } else {
-            captured.and_then(|gate| self.words(&gate, language.as_deref()))
+            captured.and_then(|(gate, ended)| {
+                let heard = self.words(&gate, language.as_deref(), model.as_deref(), ended);
+                if let Ok(heard) = &heard {
+                    eprintln!(
+                        "dashi-voice: listen ended reason={} heard_ms={} model={}",
+                        heard.ended, heard.speech_ms, heard.model
+                    );
+                }
+                heard
+            })
         };
         // The slot is freed before anyone is told: a listen asked for on `heard` is never refused.
         if let Ok(mut slot) = self.listening.run.lock()
@@ -162,6 +165,8 @@ impl Service {
                     text: heard.text.clone(),
                     speech_ms: heard.speech_ms,
                     language: heard.language.clone(),
+                    ended: Some(heard.ended.clone()),
+                    model: Some(heard.model.to_owned()),
                 }),
                 Err(error) => self.hub.emit(&Event::Error {
                     message: error.clone(),
@@ -173,47 +178,6 @@ impl Service {
             *done = Some(result);
         }
         run.told.notify_all();
-    }
-
-    /// The speech as words.
-    fn words(&self, gate: &Gate, language: Option<&str>) -> Result<Heard, String> {
-        let speech_ms = gate.speech().len() as u64 * 1000 / u64::from(LISTEN_RATE);
-        if !gate.heard() {
-            return Ok(Heard {
-                text: String::new(),
-                speech_ms: 0,
-                language: None,
-            });
-        }
-        let recognizer = self.engines.recognizer(language)?;
-        let mut recognizer = recognizer.lock().map_err(|_| "Voice is not well.")?;
-        let text = crate::engine::transcribe(&mut *recognizer, gate.speech(), language)?;
-        let language = language_of(&text);
-        Ok(Heard {
-            text,
-            speech_ms,
-            language,
-        })
-    }
-
-    /// Words as they come: the speech so far, each time the listen hands some over.
-    fn partials(&self, run: &Run, speech: &Receiver<Vec<f32>>, language: Option<&str>) {
-        let mut last = String::new();
-        for speech in speech {
-            let Ok(recognizer) = self.engines.recognizer(language) else {
-                return;
-            };
-            let Ok(mut recognizer) = recognizer.lock() else {
-                return;
-            };
-            let Ok(text) = crate::engine::transcribe(&mut *recognizer, &speech, language) else {
-                continue;
-            };
-            if run.mode.load(Ordering::SeqCst) == RUNNING && !text.is_empty() && text != last {
-                self.hub.emit(&Event::Partial { text: text.clone() });
-                last = text;
-            }
-        }
     }
 
     pub(super) fn listen_stop(&self) -> Result<Value, String> {
@@ -239,7 +203,7 @@ impl Service {
             .map_err(|_| "Voice is not well.")?;
         match done.clone() {
             Some(Ok(heard)) => {
-                let mut reply = json!({ "text": heard.text, "speech_ms": heard.speech_ms });
+                let mut reply = json!({ "text": heard.text, "speech_ms": heard.speech_ms, "ended": heard.ended, "model": heard.model });
                 if let Some(language) = heard.language {
                     reply["language"] = json!(language);
                 }

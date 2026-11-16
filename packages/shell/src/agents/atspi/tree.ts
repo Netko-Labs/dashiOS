@@ -9,7 +9,7 @@
 import { DBusError } from "../../shared/dbus/index.ts";
 
 /** AT-SPI roles (AtspiRole) the walk cares about. */
-export const ROLE = { FRAME: 23, PASSWORD_TEXT: 40, TEXT: 61, APPLICATION: 75, ENTRY: 79, DOCUMENT_WEB: 95 } as const;
+export const ROLE = { FRAME: 23, PASSWORD_TEXT: 40, TERMINAL: 60, TEXT: 61, APPLICATION: 75, ENTRY: 79, DOCUMENT_WEB: 95 } as const;
 /** AT-SPI states (AtspiStateType), as bit numbers in GetState's two words. */
 export const STATE = { DEFUNCT: 6, EDITABLE: 7, FOCUSED: 12, SHOWING: 25 } as const;
 
@@ -39,6 +39,13 @@ export interface A11yNode {
   ask?(iface: string, member: string, signature?: string, body?: unknown[]): Promise<unknown>;
   /** Another object of the same app, by its path. */
   at?(path: string): A11yNode;
+  /** The text around its caret, up to `span` characters each way (the Text interface); null where it has none. Dictation fits its words to it. */
+  caretText?(span: number): Promise<CaretText | null>;
+}
+
+export interface CaretText {
+  before: string;
+  after: string;
 }
 
 /** How far up a field's documents are looked for. */
@@ -61,7 +68,7 @@ export async function fieldAt(node: A11yNode): Promise<Focused | null> {
     }
     if (up === ROLE.APPLICATION) break;
   }
-  return { kind: kindOf(role, states), ...(await placed(node, page)), documents, again: () => placeAgain(node, page) };
+  return { kind: kindOf(role, states), role, ...(await placed(node, page)), documents, again: () => placeAgain(node, page), text: textOf(node) };
 }
 
 /** A node's extents, with its page's (the outermost web document around it) to place it by. */
@@ -236,8 +243,18 @@ export function toWindow(rect: Rect, page: Rect | null, window: { width: number;
   };
 }
 
+/** A field's text around its caret, asked when wanted; null where the app gives none. */
+const textOf =
+  (node: A11yNode): NonNullable<Focused["text"]> =>
+  (span) =>
+    node.caretText?.(span).catch(() => null) ?? Promise.resolve(null);
+
 export interface Focused extends Placed {
   kind: "password" | "text" | "other";
+  /** Its AT-SPI role (`ROLE`), where the walk told it. */
+  role?: number;
+  /** The text around its caret, up to `span` characters each way; null where it can't be read. */
+  text?(span: number): Promise<CaretText | null>;
   /** The addresses of the web documents it is in, innermost first ("" when one has none). */
   documents: readonly string[];
 }
@@ -256,5 +273,13 @@ export async function focusedField(root: A11yNode, limit: Limits = limits()): Pr
   const found = hit as Visit | null;
   if (!found) return null;
   const { node, page } = found;
-  return { kind: kindOf(found.role, found.states), ...(await placed(node, page)), documents: found.documents, again: () => placeAgain(node, page) };
+  const text = textOf(node);
+  return {
+    kind: kindOf(found.role, found.states),
+    role: found.role,
+    ...(await placed(node, page)),
+    documents: found.documents,
+    again: () => placeAgain(node, page),
+    text,
+  };
 }

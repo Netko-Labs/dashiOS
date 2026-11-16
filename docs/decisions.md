@@ -3819,3 +3819,1205 @@ short words, as the rulebook is written.
   `ToolbarButton` says when it is disabled.
 - **Why:** an unnamed button is unusable for a screen reader and an agent.
 - **Undo:** none needed; the names cost nothing.
+
+### D170. The model that corrects dictation is SpeakoFlow Mini, a fine-tuned 0.8B, not a prompted 3 to 4B
+
+- **Date:** 2026-11-15. `d1`, branch `v09/rewrite`. The numbers are in
+  `dashi-0.9.0-review/24-rewrite/README.md`; the contract is
+  `docs/dictation-rewrite.md`.
+- **Question:** which small model rewrites a transcript on this computer
+  (the owner's must: "no, I mean…" lands as the corrected words), at which
+  quantisation? The research's order of testing put prompted 3 to 4B models
+  first and a fine-tune of a 0.6 to 1B model as a later goal.
+- **Choice:** **SpeakoFlow Mini** (`SpeakoFlow/speakoflow-mini`,
+  Apache-2.0, a fine-tune of Qwen3.5 0.8B, itself Apache-2.0), at **Q4_K_M**
+  (542 MB). Seven candidates were run through 370 pairs (192 English, 114
+  Spanish, 64 mixed), all with Dashi's prompt and checks:
+
+  | Q4 unless said | Size | Right sentences left alone | Self-corrections fixed: en / es / mixed | All edits | Damage | 16 words on the processor |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | Do nothing | – | 100.0% | 0% / 0% / 0% | 9% | 0.0% | – |
+  | The rules alone | – | 98.6% | 5% / 4% / 6% | 17% | 0.3% | – |
+  | **SpeakoFlow Mini 0.8B** (fine-tuned) | 542 MB | 98.6% | 76% / 75% / 88% | 61% | 2.4% | 0.26 s |
+  | Gemma 4 E2B | 3.11 GB | 98.6% | 72% / 69% / 84% | 76% | 1.1% | 0.49 s |
+  | SmolLM3-3B | 1.92 GB | 96.5% | 67% / 69% / 69% | 65% | 1.6% | 0.65 s |
+  | Qwen3-4B | 2.50 GB | 92.3% | 74% / 69% / 78% | 68% | 2.7% | 1.02 s |
+  | Qwen3-0.6B (Q8) | 639 MB | 94.4% | 66% / 48% / 56% | 52% | 3.8% | 0.28 s |
+  | Granite 4.0 H 1B | 901 MB | 93.7% | 66% / 25% / 38% | 46% | 3.2% | 0.42 s |
+  | Qwen3.5-0.8B (the base, prompted) | 533 MB | 97.2% | 9% / 8% / 9% | 18% | 2.4% | 0.34 s |
+
+- **Why:**
+  1. It is the best at the must in each language, and it leaves right
+     sentences alone as often as the rules do (98.6%).
+  2. It is the smallest and the fastest: a sentence in a quarter of a
+     second on the processor alone, holding 1 GB, so the default needs no
+     graphics card and fits a small machine.
+  3. Q8 (834 MB) scores the same within the set's noise, and is slower.
+  4. The research's guess held for the base: the same 0.8B, only prompted,
+     fixes one self-correction in ten; fine-tuned, three in four.
+  5. **Gemma 4 E2B is the one that could have been chosen instead**, and
+     this is a judgement, not a clear win: prompted, it is as careful
+     (98.6%), nearly as good at the must, and far better at everything
+     else (non-words 86%, fillers 86%, names 61%, the owner's corpus 57%
+     against 24%). It costs 3.1 GB to fetch, 4.3 GB of memory while up,
+     half a second for a sentence and 1.4 s for forty words on the
+     processor (so it would refine, or need the integrated card: D171). What
+     it does better is what rules do for nothing (D174); what SpeakoFlow
+     Mini does better is the one thing rules cannot. On the 60 held-out
+     pairs: SpeakoFlow Mini 33 of 34 left alone and 17 of 22 fixed; Gemma
+     33 of 34 and 16 of 22.
+- **Cost:** one developer's fine-tune, published in 2026: if the repository
+  goes, the fetch breaks (the file is pinned by commit and SHA-256, and the
+  licence lets Dashi mirror it). It does not fix non-words or names heard as
+  other words: the rules do (D174). If stage 1's rules do not land, Gemma 4
+  E2B is the better model for the owner's corpus, and the lead should swap.
+- **Undo:** the model is three lines in `rewrite/lib/model.ts` and one
+  `File` in `crates/dashi-voice/src/models/manifest.rs`; the prompt and the
+  checks do not change with the model. Run the set first
+  (`docs/dictation-rewrite.md`, "The evaluation set").
+
+### D171. The model runs on the processor, and never on the NVIDIA card
+
+- **Date:** 2026-11-15. `d1`.
+- **Question:** the laptop has an integrated Radeon 890M (the desktop is
+  drawn on it), an NVIDIA card (asleep, or the owner's games) and 24
+  threads. Where does the model run by default?
+- **Choice:** on the processor: `-ngl 0`, half the threads and eight at
+  most, `Nice=5`. `DASHI_REWRITE_DEVICE=gpu` tries a graphics card through
+  Vulkan; the NVIDIA driver is disabled for the server either way.
+- **Why:** measured on the laptop with the chosen model: sixteen words in
+  0.26 s on the processor and 0.16 s on the integrated card; forty-two
+  in 0.63 s and 0.41 s. The card is faster by a tenth of a second, which
+  nobody sees under a 1.2 s limit, and it costs what could not be measured
+  without touching the session: the compositor draws on the same card, and
+  a burst of compute may drop its frames. The processor path works on every
+  machine, with no Vulkan driver to go wrong. The NVIDIA card: measured once, 0.07 s and 0.26 s, but its first request took 20 s and the server then kept a processor thread spinning while idle; it is the owner's gaming card, and is left alone.
+- **Cost:** on a weak processor the speed test will say "refine" or "too
+  slow" where an integrated card might have been quick enough. Eight
+  threads are busy for a fifth of a second per dictation.
+- **Undo:** `deviceOf` in `rewrite/lib/service.ts`; to make the card the
+  default, first measure dropped frames in the VM's session and on the
+  laptop with the owner.
+
+### D172. llama.cpp's server, as a separate program on a Unix socket, in a package of Dashi's own
+
+- **Date:** 2026-11-15. `d1`.
+- **Question:** how does the shell reach the model: linked into
+  dashi-voice, a child of dashi-voice, Fedora's `llama-cpp` package, or a
+  unit of its own?
+- **Choice:** `llama-server` (llama.cpp, MIT) runs as the user unit
+  `dashi-rewrite`, started by the shell with `systemd-run --user` on the
+  first dictation and stopped after ten idle minutes, listening on
+  `$XDG_RUNTIME_DIR/dashi-rewrite.sock` (0600) with
+  `RestrictAddressFamilies=AF_UNIX`, `NoNewPrivileges`, `LimitCORE=0`. It
+  comes from a new package, `dashi-llama`, at
+  `/usr/libexec/dashi/llama/`, which `dashi` recommends.
+- **Why:**
+  - Not linked: llama.cpp is C++ with its own GPU backends; as a program it
+    keeps its licence to itself, crashes alone, and is stopped to free its
+    memory.
+  - Not a child of dashi-voice: that service hears the microphone and holds
+    1.8 GB of speech models; the rewrite model has another life (ten idle
+    minutes) and another owner (the shell decides when to rewrite).
+  - Not Fedora's `llama-cpp`: Fedora 44 has build 6153, which predates
+    Qwen3.5, is built for ROCm (`hipblas`) and has no Vulkan.
+  - A transient unit, not a unit file: its whole definition is one function
+    (`serverCommand`), tested, and it carries the model's path and the
+    device, which a static unit would need a wrapper for.
+- **Cost:** a package to build and keep current (the spec is written and
+  **not built**: it needs `glslc`, which the laptop lacks). The server's
+  HTTP dialect is llama.cpp's and has changed before: `rewrite/lib/complete.ts`
+  is the only code that speaks it.
+- **Undo:** `unitService` returns null when the program is not there, and
+  dictation tidies by rule: removing the package is the undo.
+
+### D173. Dashi's own prompt and checks around the model, not the prompt it was trained with
+
+- **Date:** 2026-11-15. `d1`.
+- **Question:** SpeakoFlow Mini's card says to send its own system prompt
+  and the bare transcript, "with nothing added". Dashi has a vocabulary, a
+  tone and the text before the caret to pass, and its own idea of what must
+  never be changed.
+- **Choice:** Dashi's prompt (`rewrite/prompt.ts`: seven rules, fifteen
+  example turns, then the vocabulary, the tone, the text before the caret
+  and the transcript in tags) and Dashi's checks (`rewrite/checks.ts`,
+  twelve of them) on every answer.
+- **Why:** measured both ways, on the 370 pairs and then on 60 written
+  after the prompt and the checks were frozen:
+
+  | | Right sentences left alone | Self-corrections fixed (en / es / mixed) | Damage | Names from the vocabulary |
+  | --- | --- | --- | --- | --- |
+  | Its own prompt, no checks | 85.9% (held-out: 73.5%) | 81% / 85% / 94% | 13.2% (18.3%) | 4% |
+  | Its own prompt, Dashi's checks | 98.6% (94.1%) | 79% / 81% / 94% | 2.7% (3.3%) | 13% |
+  | Dashi's prompt, no checks | 96.5% (94.1%) | 78% / 79% / 88% | 6.5% (8.3%) | 35% |
+  | **Dashi's prompt, Dashi's checks** | **98.6% (100%)** | **76% / 75% / 88%** | **1.6% (0%)** | **43%** |
+
+  (These rows ran on the integrated card. On the processor, which ships,
+  the last row reads 98.6% (97.1%: 33 of 34), 76% / 75% / 88%, 2.4% (1.7%):
+  the same weights answer a few sentences differently on the two devices.)
+
+  With its own prompt the model fixes a few more corrections and drops a
+  real "No," or "Actually," from one right sentence in seven (one in four
+  on sentences it had not been tuned around): the checks then carry the
+  whole weight, and they were written against this set. With Dashi's
+  examples the model itself is careful, and the checks are a second line.
+  What a person forgives least is their own words changed.
+- **Cost:** three to six self-corrections in a hundred that the model's own
+  prompt would have fixed. The fifteen examples are about 1,100 tokens,
+  read once when the server comes up. The tone and the text before the
+  caret have a place in the prompt but are **not sent to this model**
+  (`MODEL.context`): with them it fixed 67% / 71% / 84% of
+  self-corrections instead of 76% / 75% / 88%. The vocabulary is sent.
+- **Undo:** `rewriteMessages(request, rules)` takes other rules; the runner
+  has `--system speakoflow` to measure the model's own prompt again.
+
+### D174. The model takes words back; the rules keep everything else
+
+- **Date:** 2026-11-15. `d1`.
+- **Question:** the same model could also lay out lists, fix words that are
+  not words, take out "like", and write names from the vocabulary. Should
+  dictation ask it to?
+- **Choice:** no. The model is there for what a rule cannot decide: what
+  the speaker took back. Lists are the rules' and the profile's (the checks
+  refuse an answer that adds or removes a line break); non-words, dropped
+  contractions, fillers and names are stage 1's.
+- **Why:** measured: this model fixes 5% of non-words, 9% of "like", 39% of
+  names heard as other real words, and turned "shouldt" into "should" (the
+  `negation` check now refuses that). A rule does each of these every time,
+  and for nothing.
+- **Cost:** until stage 1 has the contraction rule, replacements and "like"
+  by position (`v09/dictate`), rows 1 to 6, 9, 10, 17, 19 and 21 of the
+  owner's corpus land as heard.
+- **Undo:** the `lines` check in `rewrite/checks.ts` is what keeps lists
+  out; the prompt's rule 5 already asks for non-words and names, for a
+  model that does them.
+
+### D175. A sentence lands once, under 1.2 s; a long dictation lands by rule and is refined
+
+- **Date:** 2026-11-15. `d1`.
+- **Question:** wait for the model and land once, or land the rules' text
+  and replace it (research 3.1, "the wait")? Under which deadline?
+- **Choice:** by a one-time speed test (sixteen words, three times, the
+  middle time kept in `rewrite-speed.json`): when a transcript is expected
+  to take under 0.8 s, dictation waits and lands **once**, with 1.2 s as
+  the limit; a longer one, or any on a slower machine, lands by rule and is
+  **refined** (limit: twice the expected time, 8 s at most); over 2.5 s for
+  the test sentence the model is not used. The server starts on the key
+  going down and stops after ten idle minutes.
+- **Why:** on the laptop the test says 236 ms, so everything up to
+  about 54 words lands once, in 212 ms at the median and
+  341 ms nine times in ten: under the 300 ms at which the capsule would say
+  "tidying". Text that lands and then changes is worse than text that lands
+  right a moment later, but only for a moment that short.
+- **Cost:** the first dictation after ten idle minutes: the server needs
+  about 2 s (3 s the very first time, when the speed test runs) to come up, so a first hold shorter than that lands by rule
+  (`starting`). While it is up it holds 1 GB of memory.
+- **Undo:** `ONCE_MS`, `TOO_SLOW_MS`, `REFINE_MOST_MS` in
+  `rewrite/lib/speed-store.ts`; `IDLE_MS` in `rewrite/rewriter.ts`.
+
+### D176. A Dashi fine-tune is written down, not started
+
+- **Date:** 2026-11-15. `d1`.
+- **Question:** the plan's third step is a Dashi fine-tune of a sub-1B
+  model for English, Spanish and mixed repairs. Is it still needed, and
+  what does it take?
+- **Choice:** not started, and not needed to ship: a fine-tune that does
+  the job exists under Apache-2.0 (D170). What a Dashi one would be for,
+  and what it needs, is in `dashi-0.9.0-review/24-rewrite/README.md`,
+  "A Dashi fine-tune".
+- **Why:** what is left after D170 is one self-correction in four (a
+  phrase started again with no cue word, the owner's rows 11 and 25), and
+  the caution Dashi now gets from fifteen examples and twelve checks, which
+  a model trained on Dashi's own pairs would have by itself.
+- **Cost:** none now.
+- **Undo:** nothing to undo.
+
+### D180. Dictation remembers what it typed, and Undo is BackSpace on exactly that
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's (the research's first
+  list, 3.1; briefs/d2-dictate.md).
+- **Question:** the night's cut said "never send backspaces into an app".
+  Undo, Raw and "scratch that" all need Dashi to take back its own words.
+  Three ways: the app's own undo (Ctrl+Z), a range delete through AT-SPI's
+  EditableText, or BackSpace.
+- **Choice:** BackSpace, once for each character Dashi sent
+  (`type-text`'s `erase` since D187), and only when those characters are
+  still the last thing in the field. Where AT-SPI gives the field's text, the text before the
+  caret must end with them. Where it does not (most terminals), the
+  person's own hands must not have pressed a key or a button in that
+  window since the words landed (`input-origin`, which the compositor
+  knows for certain) and the words must hold no line break. Anything else
+  touches nothing and says so. Dashi keeps the newest forty insertions in
+  memory (`dictation/lib/record.ts`) and never reasons about text it did
+  not write. Undo is on the capsule and at ⌃❖Z, "paste last" at ⌃❖V:
+  ❖Z stays the app's own.
+- **Why:** the app's undo is unpredictable (a web editor groups typed keys
+  as it likes; a terminal has none), and EditableText is missing in
+  Chromium's editors and in every terminal. BackSpace works everywhere a
+  key does, and the check makes it exact: what it deletes is what Dashi
+  typed, or nothing.
+- **Cost:** an editor that changes what was typed (auto-indent, a closed
+  bracket, autocomplete) no longer ends with Dashi's characters, so Undo
+  refuses there: the safe failure.
+- **Undo:** `erase()` in `dictation/lib/erase.ts` is the one place; a
+  range delete can replace the loop where a field offers one.
+
+### D181. The history keeps a day of raw and final words, on this computer, and no sound
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's.
+- **Question:** how long, where, and what.
+- **Choice:** `$XDG_STATE_HOME/dashi/dictation/history.jsonl`, mode 600:
+  the time, the app, the profile, the words as heard and as typed. A day
+  by default; a week, or nothing (`dictation.history`), in Settings ›
+  Voice, where each row has Copy and Delete. "Nothing" writes nothing and
+  removes the file. No audio in this slice. Reading the text around the
+  caret needed two optional additions to `agents/atspi` (`caretText` on a
+  node, `role` and `text` on a focused field): small, and nothing there
+  changed its behaviour.
+- **Why:** the raw words must never be lost (the corpus's rows 8 and 16
+  could not be read back), and a day is what someone needs to recover a
+  dictation without keeping a diary of everything said.
+- **Cost:** a file with the person's words in their home folder.
+- **Undo:** Settings › Voice, "Nothing"; or delete the file.
+
+### D182. Five profiles chosen by what is in front; the person's words are plain files
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's.
+- **Question:** the owner asked for "profiles like a developer profile with
+  a subset of names". Who picks the profile, where do the words live, and
+  what may a rule change without a model?
+- **Choice:**
+  - Five profiles (Developer, Writing, Chat, Email, Verbatim), picked by
+    the field's role, then the site, then the app, else Writing: no setup.
+    The site comes from the web document around the focused field
+    (AT-SPI), so it needs neither the browser's extension nor a
+    permission. The capsule names the profile and a press changes it for
+    that window only; nothing is remembered per app yet.
+  - `~/.config/dashi/dictation/`: `vocabulary`, `replacements`, `snippets`
+    and `profiles/<id>`, plain text, seeded once and never written over.
+    Settings edits the first two; the rest is edited as files.
+  - Rules are exact: a replacement needs its words said whole; a near miss
+    is taken only for a word no dictionary knows (hunspell's stems, read
+    lazily; a system package Dashi only reads); casing and symbols need
+    their own names ("camel case…", "dash dash…", "equals sign"), never a
+    bare "plus", "star" or "colon".
+  - A shell's prompt is told from an agent's prompt by the processes under
+    the terminal (`/proc`), not by asking the terminal. In an agent's
+    prompt a line break is ⌃J, which Claude Code and Codex take as a new
+    line; at a bare shell Dashi adds none of its own.
+- **Why:** Wispr's four fixed categories are what people find easiest;
+  files are what a developer can keep in a repository and what a person
+  can repair by hand. A rule that guesses is worse than no rule: typing
+  "+" for "plus" in a sentence costs trust.
+- **Cost:** a name that is also a word ("Notes", "Files") is not seeded and
+  is never fuzzy-matched; "cloud can do" for "Claude can do" waits for the
+  model. A Spanish verb form is unknown to the stem list, so near misses
+  are English-leaning. ⌃J and ⇧Return are conventions, not guarantees: an
+  app that sends on ⇧Return would send.
+- **Undo:** a profile's file changes any of it (`line breaks: return`,
+  `code: no`); `PROFILES` in `dictation/lib/profiles.ts` holds Dashi's own.
+
+### D183. The model is asked only where the rules' text says it is needed
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's (the seam is D170's,
+  `docs/dictation-rewrite.md`).
+- **Question:** when is the correction model asked, and what lands when it
+  does not answer?
+- **Choice:** the rules always run and their text is what lands by
+  default. A gate of plain patterns decides: a self-correction cue or a
+  repeat, list markers the rules did not use, twenty words with no mark, a
+  word no dictionary knows, the first word of a term's "heard as" form, or
+  a profile that asks for polish. A sentence with no reason is never
+  sent. The answer changes the text only when it is `text`; it is styled
+  again by the profile. "Tidying" is said after 300 ms. Where the
+  rewriter advises `refine`, the rules' words land and are replaced later
+  only if the field still ends with them. Numbers from ten up become
+  digits by rule; one to nine, and ordinals, stay words. "like" is a
+  filler by rule only in the places the corpus shows (after a verb that
+  takes its object, before an article or an -ing word).
+- **Why:** restraint is measured in what is not touched. The owner's
+  corpus has more sentences that are right than wrong; a model that reads
+  every one of them will damage some, and each ask is a wait.
+- **Cost:** a mishearing that leaves real words and no cue ("through
+  boys", "it just start") is not sent: 10 of the corpus's 15 model rows
+  have no reason worth asking for. The gate also names `non-word` and
+  `list`, but the model is not asked for them: `v09/rewrite` measured that
+  it mends 5% of non-words and never lays out a list (its checks refuse a
+  new line break), so those stay the rules'. A profile with `polish: yes`
+  sends everything.
+- **Undo:** `gate()` in `dictation/lib/gate.ts`; `polish: yes` in a
+  profile's file asks for every utterance today.
+
+### D184. Dictated words are fitted to the text around the caret, read through AT-SPI
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's.
+- **Question:** every landing began with a capital and ended with a full
+  stop and a space, wherever the caret was.
+- **Choice:** the field's text before and after the caret is read at the
+  landing, by the walk the password check already makes (no second
+  round-trip to find the field), and four things follow from it: a
+  leading space or none, a capital or none, a final full stop or none, a
+  trailing space or none (`dictation/lib/fit.ts`). After a colon the
+  words are left as said. A name keeps its capital mid-sentence. Where
+  the text can't be read nothing changes from before.
+- **Why:** it is the difference between words that continue a sentence
+  and words pasted into it; Wispr does this part on the device for the
+  same reason.
+- **Cost:** accessibility is on from the first hold (it was already, for
+  the password check). Dashi's own apps and terminals give no text, so
+  they get no fit yet: mirin would have to publish its fields to AT-SPI.
+- **Undo:** `fit()` returning the words with a space after.
+
+### D185. An instruction is the whole utterance; lists are made only from plain markers
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's (research 1.9).
+- **Question:** the owner wants "remove the previous text" and "here's the
+  list: first…" to be understood. How is an instruction told from words,
+  and how much structure may a rule make?
+- **Choice:** an instruction must be everything that was said in one
+  press, from a fixed list in English and Spanish; it acts on the
+  insertion record only (D180's check). The capsule says it took it as an
+  instruction and offers Undo, which restores and types the words as
+  heard. With nothing of Dashi's to remove, nothing is typed either: the
+  line says so and Undo types the words. A list is made from ordinals in
+  order, counted items that each start a clause, or repeated "bullet
+  point"; numbered when counted, Markdown bullets in chat, at an agent's
+  prompt and in Markdown editors, bare lines elsewhere, nothing at a
+  shell's prompt.
+- **Why:** deleting by mistake costs trust and typing "scratch that" by
+  mistake costs one press; the whole-utterance rule removes the quoting
+  failures without a classifier. "Tell him to scratch that" is typed.
+- **Cost:** "scratch that" at the end of a longer utterance is not an
+  instruction (inside an utterance it is tidying's change of mind, or the
+  model's). "delete the last sentence" and "replace X with Y" are not
+  built. A list said without clear markers waits for the model.
+- **Undo:** `ERASE` and `BREAKS` in `dictation/lib/instruction.ts`;
+  `makeList` in `lists.ts`.
+
+### D186. A fix made by hand is offered as a replacement; a tap of the dictation key says yes
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's (the research's
+  second list, item 8).
+- **Question:** how does Dashi learn the person's words without learning
+  the wrong thing?
+- **Choice:** the field is read again every 2.5 seconds, four times,
+  after a landing (no AT-SPI events: reads of the focused field). One
+  changed run of up to three words, with two of Dashi's words still round
+  it, seen the same at two reads in a row (in the VM the offer came at
+  the first read, when a person could still be typing), is offered on the
+  capsule; a press on Always, or a tap of the
+  dictation key, stores it in `replacements` (or `vocabulary` when only
+  capitals changed). Numbers, paths and addresses are never offered.
+- **Why:** the owner's corpus is names; each fix made once by hand should
+  be the last. An offer cannot learn a mistake silently, and the
+  dictation key is the only key Dashi may take.
+- **Cost:** four more reads of the field per landing where it is
+  readable; nothing in terminals or Dashi's own apps, whose text AT-SPI
+  does not give. A word swapped for meaning ("there" to "here") is
+  offered too; saying nothing lets it pass.
+- **Undo:** `Landings.watch` in `dictation/lib/landings.ts`.
+
+### D187. `type-text` carries the BackSpaces and the line-break chord; a key the shell takes is not a press in the window
+
+- **Date:** 2026-11-15. The `v09/dictate` engineer's, from what the VM
+  showed.
+- **Question:** two things failed in the VM that the unit tests could not
+  see. (1) Undo by ⌃❖Z, and "scratch that", refused in every field that
+  can't be read (Terminal, Text Editor): `input-origin` counted the
+  shortcut's own keys, and the dictation key itself, as "the person
+  pressed a key in this window". (2) A list in Helium landed as "1. Buy
+  milk2. Call Alex": the ⇧Return sent by `send-keys` goes through the
+  input method (fcitx5), which hands it on later, while `type-text`'s
+  keys go straight to the window; the break arrived after the next line.
+  The same would let an Undo's BackSpaces arrive after the words typed
+  next.
+- **Choice:** both fixed where they start, in the compositor.
+  - A key is noted as the person's press where it is given to what has
+    the keyboard (`keys/handler.rs` `note_person_key`): not a modifier
+    alone, not a key the shell holds (`held-keys`, ❖), not a chord the
+    keymap binds or swallows. A chord the keymap turns into other keys
+    for the window (❖C as Ctrl+C) still counts. Pointer presses are as
+    before.
+  - `type-text` takes `erase` (that many BackSpaces before the text) and
+    `breaks` (the chord a line break is typed as: its modifier is a key
+    of the made keymap, held while Return goes). One request, one route,
+    in order. Dictation no longer uses `send-keys` except for BackSpace
+    in an X11 window, where `type-text` is refused.
+- **Why:** the alternative for (1) was to let Undo trust a window the
+  person may have typed in, which breaks the one promise Undo makes; for
+  (2) a wait between requests, which is a guess about another program's
+  timing.
+- **Cost:** consent that counts a person's key (`input-origin` on a
+  sheet's layer) now counts only keys the sheet is given: a Return on a
+  sheet still counts; a chord the keymap binds while a sheet has the
+  keyboard does not. The IPC grew two optional fields.
+- **Undo:** note every key press again in `input/events.rs`; drop the
+  two fields and send chords with `send-keys`.
+
+### D190. Dictation asks the model wherever a cue follows something said: the gate covers what the model was scored on
+
+- **Date:** 2026-11-15. `v09/voicejoin` (brief d3: dictation joined with
+  its model and the assistant).
+- **Question:** joined, the two halves disagreed. The gate (D183) asked
+  the model for "no, I mean", "actually," and a few Spanish phrases; the
+  model was scored on many more ways of taking words back ("at five, no,
+  six", "digo", "I mean" with no "no", "espera", "miento", "never mind").
+  Of the 134 self-corrections in the model's set the gate sent 70, so
+  half of the owner's must never reached the model.
+- **Choice:**
+  - A cue is any of the phrases the model was scored on, in English,
+    Spanish and mixed, **after something was said**: a bare "no" counts
+    only set off by a pause and going on to say the thing again (", no,",
+    ". No,", ", no the…"); "digo" never after "te", "le", "que"; "actually"
+    with a pause beside it or the thing said again after it. A cue that
+    opens the utterance ("No, I mean it.", "No, gracias…", "Sorry, I'm
+    late") takes nothing back and is not a reason. The gate now sends 122
+    of the 138 pairs tagged as self-corrections; the 16 left are ones
+    the rules already carry out, and restarts and unpunctuated
+    corrections no candidate fixed (below). D195 narrows one case: a
+    "no" with no pause after it.
+  - The model is asked for `cue`, `run-on`, `near-term` and `polish`, as
+    D183 chose; `non-word` and `list` stay the rules'. Both reports agree
+    on that.
+  - The tone and the text before the caret ride the seam and are not sent
+    to this model (D173): the fit to the field (D184) is a rule applied to
+    whatever lands, the model's answer included.
+  - One rewriter a session, made in `boot/dictation.ts`; turning Voice or
+    "Tidy what I say" off takes the model out of memory at once.
+- **What is neither the rules' nor the model's** (written down, not
+  hidden): a phrase started again with no cue ("Can you send, could you
+  forward…", "Lo que pasa es que, el problema es que…"), a correction
+  with no pause ("saturday no sunday"), and chains with no cue (the
+  corpus's rows 11 and 25). They land as said. The capsule shows them
+  like any landing: "Typed", with **Raw** one press away and the heard
+  words kept in the history; nothing claims a fix.
+- **Why:** the must is the model's job, and a gate narrower than the
+  model's training wastes it. Asking costs the wait only (a quarter of a
+  second on the laptop); the model's checks hold right sentences (98.6%).
+- **Cost:** more sentences wait for the model: of the sentences in
+  the set that are already right, 21 of 142 are sent (they hold a real "no" or
+  "sorry" after other words) and come back unchanged.
+- **Undo:** `CUES` and `OPENERS` in `dictation/lib/gate.ts`.
+
+### D191. `dashi-llama` is built for the processor only, from the commit that was measured
+
+- **Date:** 2026-11-15. `v09/voicejoin`; the lead's call for the device,
+  recorded here with what building it settled.
+- **Question:** D172's spec built llama.cpp with Vulkan and was never
+  built: the laptop has no `glslc`, and no agent installs anything there.
+  The model's chosen device is the processor (D171).
+- **Choice:** no Vulkan backend (`-DGGML_VULKAN=OFF`): the build needs
+  `cmake`, `gcc-c++` and `ninja-build` only, and the server can reach no
+  graphics card at all. The source is pinned by commit
+  (`b1b770d90d94…`, tag b12359, the build the measurements ran on) and by
+  the tarball's SHA-256, checked in `%prep`. Three defaults of that tree
+  are turned off because they fetch or link what the server never uses:
+  the prebuilt web UI (a download from a Hugging Face bucket at build
+  time), OpenSSL, and the unified binary. One processor backend a level
+  (`GGML_CPU_ALL_VARIANTS`), chosen when the server starts, as the
+  measured binary had. The licences of what is built in (nlohmann/json,
+  cpp-httplib, xxHash, rotate-bits, stb_image, miniaudio, subprocess.h,
+  sha1, sha256) are in the spec's `License:` and in the package's
+  `LICENSE.dependencies`, kept by hand: llama.cpp has no lockfile for
+  `spin/license-dependencies` to read.
+- **Why:** it builds on the laptop with what is installed, in two
+  minutes, and what is not built cannot wake a graphics card.
+- **Cost:** `DASHI_REWRITE_DEVICE=gpu` does nothing with this package
+  (the server runs on the processor whatever it is told); the integrated
+  card's 0.16 s a sentence against 0.26 s is given up until someone asks.
+  The licence list must be read again by hand when the pin moves.
+- **Undo:** `-DGGML_VULKAN=ON` with `glslc`, `vulkan-headers`,
+  `vulkan-loader-devel` and `spirv-headers-devel` as build requirements
+  (the spec at `d7f63e4a` has them).
+
+### D192. What the model hands back is the speaker's own words: accents kept, and three rules mended by what the joined run showed
+
+- **Date:** 2026-11-15. `v09/voicejoin`.
+- **Question:** the whole set run through dictation as joined (rules,
+  gate, model, checks, the profile's style:
+  `test/support/rewrite-eval/joined.ts`) showed four things neither
+  report had: the model writes "mandame" for "mándame" (its checks read
+  words without accents, so they pass it); the rules carried out a
+  quoted "scratch that" and lost the words before it; "nine thirty"
+  landed as "nine 30"; and "like half" kept its filler (the corpus's
+  row 32).
+- **Choice:** a word of the model's answer that differs from a word that
+  was said only by its accents is written as it was said
+  (`keepAccents`, in dictation, after the checks). A change-of-mind
+  phrase right after an opening quotation mark is not carried out. A
+  time said as two numbers stays words. "like" before "half", "many",
+  "few" and "several" is a filler after the same verbs as before.
+- **Why:** the model's part is taking words back (D174). A Spanish
+  speaker reads a lost accent as a mistake of Dashi's, and it is one.
+- **Cost:** where the model rightly adds an accent the speaker's
+  recogniser left out, the recogniser's spelling stays.
+- **Undo:** drop `keepAccents` from `withModel`
+  (`dictation/lib/rewrite.ts`); `clockAt` in `rules-spoken.ts`.
+
+### D193. A consent sheet still takes no Return: the keyboard stays with what the person was typing in
+
+- **Date:** 2026-11-15. `v09/voicejoin`. The installed pass
+  (`26-assistant-installed`) found that the real Return does not answer a
+  consent sheet and goes to the app under it; the lead asked why, and
+  that the default button take the real Return.
+- **What it is:** not a fault of the build, and not D187's. The sheet is
+  a layer surface with `keyboard: "on-demand"` and no key handler
+  (`agent-sheets/agent-sheets.tsx`, `consent.tsx`'s header; the applets'
+  and Bluetooth's sheets say the same): it never takes the keyboard by
+  itself, so that "a stray Enter typed elsewhere can't answer it". It has
+  been so since the sheet was written. D187 changed which keys count as
+  the person's *in a window* for Undo; a consent's yes is still checked
+  against the sheet's own layer, where only the real pointer's press
+  lands.
+- **Choice:** keep it. An agent chooses when its sheet appears; a person
+  who is typing presses Return several times a minute. A sheet that took
+  the keyboard and answered "Allow Once" on Return would let any agent
+  get its yes by asking at the right moment, with the person's own real
+  key: the one press `input-origin` cannot tell from consent. The pointer
+  must travel to the button, which nobody does by accident.
+- **Cost:** no keyboard-only way to say yes to an agent (⌃❖Esc stops
+  every agent, which is a no).
+- **If the owner wants a key:** the safe form is a chord nothing else
+  uses, shown on the button, taken by the keymap only while a sheet is
+  up and answered only when the compositor says the keys were real
+  (the capsule's card does this with a tap of the Dashi key and then
+  Return: `capsule/`). That is the owner's call, since it loosens a
+  consent rule; it is not built.
+- **Undo:** `keyboard: "exclusive"` and a Return handler on the sheet's
+  primary button.
+
+### D194. A card that gives up says so; an empty "about you" file opens
+
+- **Date:** 2026-11-15. `v09/voicejoin`; faults 2 and 4 of the installed
+  pass.
+- **Choice:** when a question on the card runs out of time the capsule
+  says "No answer, so nothing was done.", and for ten seconds a few
+  words that only answer it ("No.", "Yes, go ahead.") are not a new ask:
+  the capsule says "That question is over. Nothing was done." Anything
+  else said is an ask as before. `about-you.md` is made with one first
+  line that says what it is for (a `#` line, never read to the assistant
+  or counted), because an empty file has no kind and no app opens it.
+- **Cost:** a person who answers a new, unrelated question with a bare
+  "yes" inside those ten seconds is told the question is over.
+- **Undo:** `LATE_MS` in `capsule/lib/voice-mode.ts`; `ABOUT_HEAD` in
+  `persona/lib/about.ts`.
+
+### D195. A "no" with no pause after it is left as said; the model's answer may not copy a correction in; a correction is one fix
+
+- **Date:** 2026-11-15. `v09/voicejoin`, from the sentences spoken into
+  the VM's microphone (`27-dictation-join`).
+- **Question:** three things only sound showed. The recogniser writes
+  Spanish corrections without the second comma ("tres opciones, no
+  cuatro opciones", "a las cinco, no digo a las seis"), and the model
+  mends only the form with it. One answer copied the correction in
+  beside itself ("the green one, actually the green one") and passed
+  every check. And the capsule said "4 fixes" for one correction.
+- **Choice:**
+  - A comma is put back for the model only where a **second cue** says
+    it is a correction: "no digo", "no perdón", "no espera", "o sea, no"
+    (not "o sea, no sé", where "o sea" stays a filler the rules take
+    out). A bare "X, no Y" is never touched and no longer a reason to
+    ask: in Spanish it is "X, not Y" as often as a correction. Given
+    the comma, the model turned "Quiero el azul, no el rojo" into
+    "Quiero el rojo" on the evaluation set: the opposite of what was
+    said. The words cannot tell the two apart; the voice's pause can,
+    and when the recogniser writes it (", no, …") the model is asked.
+  - A new check, `repeated`: no word of four letters or more may be
+    said more often in the answer than the speaker said it.
+  - The capsule counts places changed, not words: "1 fix".
+- **Measured** (the whole set through dictation as joined, on the
+  processor: `out/joined-set.txt`): 100 of 138 self-corrections land
+  right (6 by the rules, 94 by the model; 8 more are right but for a
+  number the rules write in figures), no sentence that was right is
+  changed by the model, 156 of 370 sentences are asked, median 0.23 s.
+- **Cost:** a Spanish correction said with no pause after the "no" lands
+  as said. Raw and Undo are on the capsule; saying "no, digo" or
+  pausing fixes it.
+- **Undo:** `withPauses` and `CUES` in `dictation/lib/gate.ts`;
+  `repeatsNothing` in `rewrite/checks.ts`; `placesChanged` in
+  `dictation/lib/rewrite.ts`.
+
+### D196. "o sea, no" with no pause after it is left as said, like a bare "no"
+
+- **Date:** 2026-11-15. `v09/voicejoin`, reviewing D195 against the
+  evaluation set and sentences it does not hold.
+- **Question:** D195 made "o sea, no" a cue for the model even with no
+  comma after the "no", and put a comma back before asking. The 370
+  pairs hold no plain "o sea, no …" sentence, so nothing measured it.
+  Said through the joined pipeline on the laptop's processor, "Lo
+  hacemos mañana, o sea, no podemos hoy." landed as "Lo hacemos hoy, o
+  sea, no, podemos hoy." (meaning turned round, and the comma meant only
+  for the model typed into the field), and "Llego tarde, o sea, no llego
+  a la reunión de las nueve." lost its "no".
+- **Choice:** "o sea, no" is a cue only with its pause written ("mañana,
+  o sea, no, pasado mañana"), which the cue for a "no" between two
+  pauses already catches; `withPauses` puts a comma back only after
+  "no digo", "no perdón", "no espera", "no sorry", "no wait". "o sea"
+  before an unclear "no" stays in the text (the rules do not take it out
+  as a filler). It is the same reason as D195's bare "no": "El martes, o
+  sea, no el lunes" is "Tuesday, that is, not Monday" as often as a
+  correction, and the words cannot tell.
+- **Measured:** the 370 pairs are unchanged by this (`withPauses` touches
+  three of them, all "no sorry"/"no perdón" chains, and gains one, "3, no
+  4, no sorry 4:30"); restraint 135 of 142 right as heard, the 7 broken
+  by the rules' figures and lists, none by the model; self-corrections
+  99 by rules and model of 138.
+- **Cost:** "El paquete llega mañana, o sea, no pasado mañana." said
+  without a pause after "no" lands as said (in the VM it had been
+  corrected). Raw and Undo stay; saying "no, digo" fixes it.
+- **Undo:** `withPauses` and `CUES` in `dictation/lib/gate.ts`.
+
+### D197. A filler tells no language and starts no turn
+
+- **Date:** 2026-11-15. `v09/voicejoin`, from the assistant's own report
+  of a session on the owner's laptop (`assistant-feedback-2026-11-15.md`,
+  section 4): "Um" and "Uh uh" were told as Portuguese, and "Um", "Okay"
+  heard when Dashi listened by itself woke the agent for a whole turn.
+- **Choice:**
+  - The shell keeps the conversation's language (`voice/lib/fillers.ts`,
+    `KeptTongue`): the language the service tells is taken only when
+    it is one the person turned on (English and Spanish by default,
+    D160; `tonguesOn` in `voice/tongues.ts`) and the words hold three or
+    more real words; otherwise the last confident one stays. Before any,
+    a short reply in a language that is on is taken as told. The
+    speaking side reads the same kept language (it already kept it for
+    "OK."); a held key's words now count too (before, only listens that
+    ended by themselves did). The service's own detector no longer
+    weighs fillers either (`6fce6858`).
+  - A listen Dashi opened by itself (after it speaks, D150) that hears
+    only sounds ("um", "uh", "eh", "hmm") or a nod ("okay", "ok",
+    "vale") ends there, as silence does: no turn of the model. A nod
+    after an answer that ended in a question is the answer, and goes.
+    An agent's question (`ask_person`) always takes what is heard. With
+    the key held, what is said is always sent.
+- **Why:** a turn costs a model call and an answer the person did not
+  ask for; a language no one turned on cannot be the answer's.
+- **Undo:** `fillerOnly` and `KeptTongue` in `voice/lib/fillers.ts`;
+  the `heard` case in `voice/voice.ts`.
+
+### D198. The assistant hears the person's words as dictation writes them; the computer's names join the vocabulary
+
+- **Date:** 2026-11-15. `v09/voicejoin`, from the same report: the session
+  heard "D tree code" for T3 Code, "SBODYDECH" for Bodytech, "Meeting"
+  for Mirin.
+- **Choice:**
+  - What the Dashi key's listen hears goes through dictation's
+    replacements and vocabulary (`Lexicon.spell`: whole-word forms,
+    capitals, a near non-word; no tidying) before the assistant is
+    asked. The context's "The person uses:" line names dictation's
+    vocabulary (the person's file, then the computer's names), the apps
+    left to their own line, at most 60.
+  - The computer's names (`knownTerms`, `boot/known-names.ts`): the
+    installed apps that are names, the folders at the top of the home
+    and at the top of a folder that holds projects (`~/Developer`,
+    `~/Projects`, `~/code`…; the owner keeps every project one level
+    down, so the home's top alone names none of them), one word of
+    three letters or more and no dictionary word ("dashiOS", "mirin";
+    not "Documents", "v09", "smoke-0.9"); and every site the person
+    allowed agents, by its name ("bodytech.com.co" → "Bodytech", heard
+    as "body tech" when it splits into two dictionary words). They are
+    kept beside the vocabulary file, never written into it, and looked
+    at again every five minutes: a person who removes one in Settings
+    removes it from their file, and it is not put back there. Dashi's
+    own words lead them, so a file written before one was added still
+    hears it ("T3 Code"; "Dashi agent", heard "dash agent" and "dashing
+    agen" in the owner's rows 41, 42 and 52).
+- **Cost:** a misheard word that is not near any name still reaches the
+  assistant as heard ("Meeting" for Mirin: an ordinary word is never
+  replaced by rule); the names line tells the model to doubt it.
+- **Undo:** the `asker` in `boot/voice.ts`; `names` in `boot/assistant.ts`;
+  the `known` option of `Lexicon`.
+
+### D199. A listen never ends while the person still speaks: the held span is heard whole, the key-up waits for the voice, a turn needs a real pause
+
+- **Date:** 2026-11-15. `v09/voicejoin`, from the owner: "mine was being
+  cut even though I'm talking to the microphone", and corpus rows 41, 42
+  and 47 ("firs", "experienc", "agen", "r design").
+- **What was found**, every way a listen ended while the person spoke:
+  - **The gate dropped quiet speech.** Every listen gave the recogniser
+    only what the voice detector called speech, with 256 ms before each
+    phrase. Fed a sentence at -30 dB under -50 dBFS of noise (a laptop's
+    microphone at arm's length), "Ask the agent." came back empty and
+    "We need a redesign." as "Yeah."; the same sound given whole came
+    back "Ask the agent." and "We need a design." Clean speech at any
+    level was heard right either way. This is the "r design" shape.
+  - **The key-up tail** was four frames (128 ms) whatever the voice did.
+    Parakeet itself fills a clean ending cut 130 ms short ("first",
+    "experience", "agent" all whole on the processor), so what is lost
+    is what is still being said after those frames.
+  - **Hands-free** listened for the next sentence only after the last one
+    had landed, which waits for the model (up to 1.2 s): what was said
+    meanwhile was never heard.
+  - **The 6 s give-up** after Dashi speaks looked for words on the chip;
+    the first words come up to 0.8 s after the voice begins, so a person
+    who began at 5.5 s was cut off.
+  - **A turn ended at 1.5 s of quiet**, short for someone who stops to
+    think mid-sentence, as the owner does.
+  - Not cuts: five minutes is the most a listen runs (logged as `max`);
+    Dashi's own speech never ends a listen (a listen stops Dashi's
+    speech, not the other way round).
+- **Choice:**
+  - A held key's listen hears every sample from key down to key up; the
+    detector only says whether anyone spoke (with no speech, nothing is
+    sent: silence is never turned into words). A listen that ends by
+    itself keeps the gate, now with 480 ms before each phrase.
+  - After key up, at least 192 ms more, then on while the detector still
+    hears the voice (until two quiet frames), up to 384 ms.
+  - Hands-free opens the next listen at once, then lands the sentence.
+  - The service tells `speech` once the detector hears the person begin;
+    from then a listen that ends by itself is never given up on.
+  - The end of a turn: 1.8 s of quiet after Dashi speaks or after a tap
+    (was 1.5); a hands-free sentence stays 1.2 s, since a pause there
+    only starts the next sentence and loses nothing now. The quiet is
+    counted only in frames the detector calls quiet (under 0.35): a
+    voice it still hears never ends a listen.
+  - Every listen's end is logged, by the service and the shell:
+    `listen ended reason=key-up(224)|silence(1824)|max|stopped|closed|gave-up heard_ms=… model=parakeet-v3`.
+- **An end-of-turn model:** worth it next, not here. Smart Turn (Pipecat,
+  BSD 2-Clause, about 8 MB, a few ms a turn on the processor) tells a
+  finished sentence from a thinking pause by its sound, so a turn could
+  end at 0.6 s when it is finished and wait 3 s when it is not. It
+  needs its own measurement on the owner's Spanish and English; the
+  fixed 1.8 s is the safe side meanwhile.
+- **Cost:** a held key's dictation sends the silence it held to the
+  recogniser (Parakeet does not make words of it; measured on fed
+  silence and quiet rooms); 64 to 256 ms more after key up; an
+  assistant's turn starts 0.3 s later.
+- **Undo:** `whole` in `service/capture.rs` and `engine/gate.rs`;
+  `TAIL`, `TAIL_MOST` in `service/capture.rs`; `LEAD` in `engine/gate.rs`;
+  `sentence` in `dictation/lib/hands-free.ts`; `spoke` in
+  `voice/lib/mic.ts`; `TAP_QUIET_MS` in `voice/keys.ts`.
+
+### D200. The person chooses the models: the recogniser, and what corrects dictation
+
+- **Date:** 2026-11-15. `v09/voicejoin`, from the owner: "I would also like
+  to choose the model, because I want to experiment what will give the
+  best results."
+- **Choice:** two rows in Settings › Voice, each choice with its size,
+  its licence and what it was measured to do:
+  - **Recogniser** (`voice.recognizer`): Parakeet TDT 0.6B v3 (the
+    default) or Whisper large-v3-turbo, which dashi-voice already had
+    for the languages Parakeet lacks. `listen` takes `model`; Whisper
+    hears only when its set ("More languages", 1.04 GB, MIT) is here,
+    else Parakeet does and the row says why. Nothing new is fetched.
+  - **Corrected by** (`dictation.corrections`): SpeakoFlow Mini Q4 (the
+    default, 542 MB), Gemma 4 E2B Q4 (3.1 GB; the rewrite engineer's
+    second, a set of its own, `rewrite-gemma`, pinned by commit and
+    checksum, Apache 2.0 since Gemma 4), the rules alone, or Claude
+    Haiku 5.5 with the person's own key from Settings › Agents. A local
+    choice is fetched by the row under it; a change stops the server
+    that ran (one at a time), and the next dictation starts the chosen
+    one, with its own speed test. Claude is sent the same prompt and its
+    answer passes the same checks; the words land first and are
+    corrected after (`refine`), and the row says that what is dictated
+    goes to Anthropic. Thinking off, effort low, no sampling parameters.
+  - Every listen and every correction says its model in the session's
+    log (`listen ended … model=parakeet-v3`, `dictation corrected
+    model=gemma-4-e2b-q4 result=text ms=…`), so experiments compare.
+- **Why:** the measures disagree by kind of mistake (SpeakoFlow Mini for
+  self-corrections, Gemma for fillers and names), and the owner's own
+  speech is the test no set has.
+- **Cost:** Claude's choice is not scored on Dashi's set yet; Whisper's
+  speed on the processor is not timed. Gemma holds 4.3 GB while it runs.
+- **Undo:** `voice-choice.tsx`; `dictation.corrections` and
+  `voice.recognizer` in `settings-app/sections.ts`; `startRewriter` in
+  `rewrite/start.ts`; `REWRITE_GEMMA` in dashi-voice's manifest.
+
+### D201. Formatting: what the rules do, what each model does, and a run-on is fourteen words
+
+- **Date:** 2026-11-15. `v09/voicejoin`, from the owner: "I would like also
+  the system to do some formatting." The test is corpus row 22, a whole
+  message with no punctuation.
+- **What does what** (measured on the laptop's processor, through
+  dictation as joined, Writing, Email, Chat and Developer profiles):
+  - **By rule, every model:** a list from "first… second… third…" (and
+    "primero…", "one, two, three") is a numbered list in Writing, Email
+    and Chat, never in a terminal; a spoken "new paragraph" / "nuevo
+    párrafo" is a paragraph; Email puts the greeting on its own line;
+    spoken punctuation, capitals, fillers.
+  - **By the model:** a run-on broken into sentences. **Gemma 4 E2B does
+    it** ("…confirm the delivery date. After that, send the contract…",
+    and in Spanish a comma where the thought turns); **SpeakoFlow Mini
+    does not**, with or without examples in the prompt: two examples of
+    a run-on made into sentences changed none and cost three
+    self-corrections of the 370, so the prompt stays as scored.
+  - **Not done:** a paragraph where the subject changes. The checks refuse
+    any line the model adds (D174, so an answer cannot lay a message out
+    on three lines in a field that sends on Return), and no model was
+    measured placing them. Say "new paragraph".
+- **Choice:** the gate's run-on mark goes from twenty words with no mark
+  to fourteen. Row 22 (nineteen words after the rules) is now sent; with
+  SpeakoFlow Mini the 370 pairs score the same (restraint 135 of 142,
+  none broken by the model; self-corrections 99), 8 more sentences wait
+  for the model (164 of 370, median 0.39 s). Row 22 still lands as said
+  with SpeakoFlow Mini and gains only its full stop with Gemma: its
+  wanted form (a quotation inside it) is beyond both.
+- **Undo:** `RUN_ON_WORDS` in `dictation/lib/gate.ts`.
+
+### D202. An answer that keeps a cue must keep what followed it
+
+- **Date:** 2026-11-16. `v09/voicejoin`, from the installed packages in
+  the VM: "Quiero un café con leche, mejor dicho, un té." landed "Quiero un
+  té con leche, mejor dicho." The model moved the later words before the
+  cue, kept the cue, and every check passed it. (On the laptop the same
+  sentence comes back right; the session's longer vocabulary changes the
+  answer.)
+- **Choice:** a check, `after-cue`: when the answer still holds a cue word
+  past a change, the words after it must be the words that followed it
+  when said. A cue in the untouched start of the sentence is no cue
+  ("Quiero tres cafés": "quiero" as in "quiero decir").
+- **Measured:** the 370 pairs: no right answer refused, restraint 135 of
+  142, self-corrections 101 by the model (99 before; the model's answers
+  vary by one or two between runs).
+- **Undo:** `keepsAfterCue` in `rewrite/checks.ts`.
+
+### D270. `wait_for` is one tool; the page waits on itself, a window and a file wait in the shell
+
+- **Date:** 2026-11-15. `v09/reach`. The assistant's own report: "I polled
+  read_page over and over while Facebook said Loading."
+- **Question:** a tool per thing to wait for, or one; and who watches?
+- **Choice:** one tool, `wait_for`, with exactly one of `text`,
+  `text_gone`, `element` (+ `state`: present, enabled, gone), `page`
+  (loaded, quiet), `window_title`, `file`; `timeout` 10 s by default, 60 at
+  most. A page's wait is one request to the extension: the content script
+  watches with a MutationObserver (text read again at most every 60 ms,
+  "quiet" is 500 ms with no change), a load with `webNavigation`; a page
+  that navigates mid-wait is waited on again in its new document until the
+  same deadline. The compositor has no title-changed event, so a window's
+  title is looked at on every compositor event and every 250 ms in the
+  shell; a file on every change in its folder (`fs.watch`) and every
+  500 ms. The scope follows what is waited for (`ToolDef.scopeFor`): a page
+  "web", a window "see", a file "files". A wait that runs out is not an
+  error: `met: false`, with what it saw.
+- **Why:** one tool is one line in the model's list (the list must stay
+  readable) and one thing for the prompt to say.
+- **Cost:** a title that changes and changes back within 250 ms is missed.
+- **Undo:** take `waitTools` out of `TOOLS`; the extension's `wait`
+  method stays harmless.
+
+### D271. Acting tools say what changed, read from the page; sign-in's outcome is read from the page after Return
+
+- **Date:** 2026-11-15. `v09/reach`. The assistant: "sign_in said submitted:
+  true even though login never finished"; "click_element navigated: false
+  with no hint whether the click did anything".
+- **Choice:** the content script starts a MutationObserver just before a
+  click, a key or a choice, and reads it once the page has been quiet
+  300 ms (1.5 s at most): changed near the element (its form, list item,
+  row, section or three levels up), elsewhere, or not at all; a dialog
+  that opened (`dialog[open]`, `role=dialog`, `aria-modal`); the first
+  200 characters of new text; the element still there and what it is now;
+  where the focus went. A load, seen by `webNavigation`, wins over these.
+  `fill_element` says the field's value after. `open_url` says the final
+  address and whether it is a sign-in page (a password field shows, or the
+  redirect's path says login/auth/accounts) or a CAPTCHA. `sign_in` and
+  `fill_code` with `submit` on a browser tab watch the page up to 15 s
+  after Return (across navigations) and classify, by rule
+  (`page/outcome.ts`): a CAPTCHA frame or words first, then the site's
+  words for a block, then an error alert while the field still shows
+  (wrong), then a code field or words (a code is asked for), then the
+  field gone once the page is quiet (signed in, saying whether the address
+  changed); at the deadline, still loading or unchanged. In a native
+  window nothing can be seen: it says so and asks for a screenshot.
+- **Why:** a model reads the result as the truth; "submitted" made it wait
+  and poll.
+- **Cost:** a JavaScript `alert()` blocks the page's scripts, so a click
+  that opens one answers after the 1.5 s cap with no change seen. Error
+  words are English and Spanish only; another language reads as
+  "unchanged" with the alert's text, which still says what the site said.
+  A sign-in watched 15 s holds the agent's other calls that long.
+- **Undo:** `after()` in `background/methods.ts`; `afterSubmit` in
+  `secrets/broker.ts`.
+
+### D272. An element keeps its number through a redraw when its key was one element's; a stale number's error carries the page around it
+
+- **Date:** 2026-11-15. `v09/reach`. "Element numbers go stale after small
+  changes, costing an extra read each time."
+- **Choice:** a frame keeps, for each number, its element (as before) and
+  the blocks it sat in (its form, list item, row, section, dialog or three
+  levels up, then two more, then the body). The key of an element is its
+  role, its name and a link's address. A new element takes a gone
+  element's number only when that key was only ever given once in the
+  document; keys shared by several elements ("Add to cart" ×10) never move
+  a number. A call on a gone number reads the nearest of its blocks still
+  in the page (3,000 characters, 40 elements): if that read gives the
+  number back to a redrawn element, the call acts on it; otherwise the
+  error says it is gone and carries that text, renumbered into the tab's
+  numbers by the background. A number whose page navigated carries the new
+  page's top, as much.
+- **Why:** each stale number cost a whole read_page; the region is what
+  the model was working on.
+- **Cost:** a redrawn element whose name changed ("Sign in" → "Signing
+  in…") gets a new number. A click on a redrawn element is the element the
+  page shows now, which is what was meant.
+- **Undo:** `Numbering.take` always a new number; `target()` in
+  `content/main.ts` back to the plain error.
+
+### D273. read_page has modes (all, main, find, items), and every answer is cut at 15,000 characters with a cursor
+
+- **Date:** 2026-11-15. `v09/reach`. "read_page dumps entire long pages
+  (footers, legal links, suggestions)"; "listing Marketplace results meant
+  reading raw link text".
+- **Choice:** `mode` `all` stays the default, but its answer is cut at
+  `max_chars` (15,000, about 4,000 tokens; 1,000 to 60,000) at a line's
+  end, with one line naming the `cursor` (a character offset) for the next
+  part, and pointing at `main` and `find`. `main` reads only the page's
+  own frame: `<main>` or role=main, else its one article (or one article
+  holding 60% of all of them), else from the body down the block holding
+  70% of its parent's text, never one under half the page's or with fewer
+  than two elements; landmarks inside are left out. `find` is done in the
+  shell on the whole text: three lines each side of a match, runs joined.
+  `items` is the container whose children most often share one shape
+  (tag, class, role) and hold a link, scored by count × their text (15 to
+  200 characters); each row's title is its heading, else its first line
+  that is not a price, else its link's words; a price is found by its
+  form (a currency sign or code, or "free"); the rest are details, four
+  at most. No model anywhere.
+- **Why:** the read was the costliest call in the assistant's session.
+- **Cost:** a cursor is an offset into the text of the page as read now;
+  a page that changed between parts may repeat or skip a few lines. A
+  page whose grid is built of identical anonymous `div`s inside other
+  lists can pick the wrong container; `all` and `find` still work.
+- **Undo:** `PAGE_PART` to 60,000 and the default mode stays `all`.
+
+### D274. Tab tools; closing a tab never asks; list_tabs names every tab to an agent that may see windows
+
+- **Date:** 2026-11-15, changed 16 Nov by the owner's rule ("permissions
+  should be only for critical operations": the `v09/askagent` decision).
+  "I closed Facebook with a ❖W keystroke and hoped it hit the right tab."
+- **Choice:** `close_tab`, `reload_tab`, `go_back`, `go_forward`, all "web",
+  none `destructive`: closing a tab is not on the critical list (no money,
+  secret, lasting loss, system change, or speaking for the person), so it
+  just runs and says so. A connection keeps the tabs it opened (open_url
+  without `tab`, a link that opened one) and `list_tabs` marks them
+  `yours`; the description asks a model to close the person's tabs only
+  when they ask. `list_tabs` gives title and address for every tab when
+  the agent may see windows (Helium's window titles name the tab in front
+  anyway) or was allowed the site; else the site only.
+- **Before the rule (not kept):** a per-call yes for the person's tab
+  (`RunContext.yes`); taken out the same day, so consent has one mechanism.
+- **Cost:** a tab with unsent typing closed by mistake loses that typing;
+  Helium's ⇧❖T brings the tab back.
+- **Undo:** take `tabTools` out of `TOOLS`; `row()` back to `about()`.
+
+### D275. Agents read text files and write, move, copy and rename files; a replaced file goes to the Trash; one list of secret places
+
+- **Date:** 2026-11-15/16. `v09/reach`. "I can list and search files but
+  can't read their contents"; "No writing files outside Notes. No move,
+  copy, rename."
+- **Choice:** `read_text_file`, `write_text_file`, `move_file`,
+  `copy_file`, `rename_file`, all scope "files" (no new scope: the owner's
+  critical-only rule of 16 Nov drops per-scope sheets), none
+  `destructive`: a name already taken is refused unless `replace` is said,
+  and then what is there goes to the Trash first (`gio trash`), which is
+  the Undo. Paths: the home folder and removable drives as `list_folder`,
+  a new path placed by its existing folder. The secret places are one list
+  (`shared/files/secret-places.ts`): `list_folder`'s hidden folders, plus
+  browser profiles and names that say key, password, token or history;
+  `wait_for {file}` keeps to it too. A PDF is read through `pdftotext`
+  (poppler-utils, GPL, run as a separate program, never linked) when it is
+  installed. No command runner: docs/actions.md, "Files", says what one
+  would need.
+- **Why:** the owner's rule puts files the person can get back outside the
+  critical list; the Trash makes every write one they can.
+- **Cost:** `append` changes a file with no copy kept (only what was
+  added can be removed, by hand). A secret kept under another name
+  (`passwords.txt`) is not caught by the names. `trash_file` still asks on
+  a sheet: the registry's ask-every-time list is the `v09/askagent`
+  engineer's to change.
+- **Undo:** take `fileTextTools` out of `TOOLS`.
+
+### D276. copy_to_clipboard writes through the clipboard history, named Dashi; it does not ask
+
+- **Date:** 2026-11-16. `v09/reach`. "Clipboard is read-only (and asks
+  every time). No clean way to put text on the clipboard for the person."
+- **Choice:** one tool, scope "act", not destructive: the copy is added to
+  the history as from "Dashi" before it is written, and the watch keeps
+  that entry when the copy comes back. With the history off, it is only
+  written.
+- **Why:** the owner's critical-only rule: what was on the clipboard is
+  still in the history.
+- **Cost:** with the history off, the person's last copy is replaced with
+  no way back.
+- **Undo:** take the tool out of `clipboardTools`.
+
+### D277. tell_person speaks a line without ending the turn; notify_person posts a notification; neither asks
+
+- **Date:** 2026-11-16. `v09/reach`. "During long jobs the person hears
+  nothing until the end"; "No way to notify the person on my own."
+- **Choice:** `tell_person` goes through the voice's own `say` (each
+  sentence its own queued `speak`, D146), at most one every 4 s, and not
+  while the person talks or dictates or the microphone is open; a line it
+  can't say is shown only, never queued (a queued progress line is stale
+  when it plays). It shows as the capsule's step for the assistant, as the
+  status for others. `notify_person` is a plain notification from
+  "Dashi". Scope "act", nothing destructive (the critical-only rule).
+- **Cost:** an outside agent's line is said in Dashi's voice: the person
+  hears it as Dashi. The menu bar's mark names the agent while it works.
+- **Undo:** take `tellTools` out of `TOOLS`.
+
+### D278. Notes and events can be changed and deleted; each change says what was there, each delete keeps a way back
+
+- **Date:** 2026-11-16. `v09/reach`. "No calendar edit or delete, no note
+  edit or delete (append only)… tasks like 'move my meeting' are
+  impossible."
+- **Choice:** `edit_note` (one way per call: an exact text there once, a
+  range of lines, or an insert; or only a new title), `delete_note` (Notes'
+  Recently Deleted), `edit_event` (the whole event; a repeat's every
+  occurrence; a moved start keeps the length), `delete_event` (an .ics copy
+  to the Trash first, which Calendar imports back). Each result says what
+  was there before. Scopes `notes_write` and `calendar_write`, renamed
+  "Change your notes" and "Change your calendar". None `destructive`.
+- **Cost:** one occurrence of a repeat can't be moved alone yet. The
+  assistant's spoken "Undo that" doesn't reach these: the registry has no
+  Undo for a tool other than `set_setting`, and adding one is
+  `v09/askagent`'s (its README is told).
+- **Undo:** take `editTools` out of `TOOLS`.
+
+### D279. Files reach a page's file field with no chooser; downloads are the browser's own list; the extension gains `downloads`
+
+- **Date:** 2026-11-16. `v09/reach`. "No downloads or uploads: can't save a
+  file from a page, attach a file to a form, or see the downloads list."
+- **Choice:** `attach_file` (the shell reads the file under the same rules
+  as `read_text_file`, sends base64 in 512 KB chunks, the content script
+  sets the field's files and fires input and change); `list_downloads`
+  (`chrome.downloads.search`); a click watches `downloads.onCreated` and,
+  when it starts one, answers with where the file landed once complete
+  (60 s at most), instead of waiting for a load that never comes. The
+  manifest gains the `downloads` permission: a policy-installed extension
+  gets new permissions without a prompt. Not destructive: attaching sends
+  nothing; submitting a form to someone stays the critical list's.
+- **Cost:** 25 MB at most per file; a site that reads files only from its
+  own drag-and-drop zone (not an `<input type=file>`) is not reached.
+  The packaged extension's version must move with this change (D117):
+  `bin/dashi-browser-pack.ts --version` for a development build; a
+  release bumps every version together (H14).
+- **Undo:** take `transferTools` out of `TOOLS`; the permission stays harmless.
+
+### D280. A page element with nothing inside: its picture is the tab's, cropped; a point of it is clicked with the agent's real pointer
+
+- **Date:** 2026-11-16. `v09/reach`. "canvas or custom widgets (the Lichess
+  board) are invisible. I played chess by rewriting the whole PGN."
+- **Choice:** `screenshot_element` captures the visible tab in the browser
+  and crops it to the element there (the compositor can't crop a window's
+  picture, and a screen area would show what covers it); since that
+  picture skips the agents' mask, it is refused when any secret field
+  overlaps the box. `click_in_element` takes fractions of the box and
+  clicks with the agent's own pointer in the browser's window (a trusted
+  click, the same `agent-input` as `click`); inside a frame it dispatches
+  page events instead and says some pages ignore them.
+- **What it doesn't solve:** reading the board (the model reads the
+  picture), drags, a frame's trusted click, timing (a game clock).
+- **Undo:** take `canvasTools` out of `TOOLS`.
+
+### D281. list_windows and click say what kind of field has the keyboard, from AT-SPI's focus, never the field's name
+
+- **Date:** 2026-11-16. `v09/reach`. "Can't tell which field has focus in a
+  native window before typing."
+- **Choice:** the focused window in `list_windows`, and a left click's
+  window 150 ms after, ask the accessibility bus Dashi's sign-in already
+  uses: the app's last focus event (`Atspi.focusedIn`), still focused
+  (`fieldAt`), as "text field", "password field" or "no text field".
+  Bounded: 600 ms to the bus, 300 to each answer. The element tree of a
+  window (`read_window`) is `v09/windowtree`'s; this is only the one fact
+  an agent needs before `type_text`.
+- **Cost:** an app that never sent a focus event since Dashi joined the
+  bus says nothing; Chromium-family apps publish focus only once woken.
+- **Undo:** drop `keyboardIn` from `listWindows` and the click.
+
+### D240. Notes draws its Markdown by showing the field a projection of it, laid against the source piece by piece
+
+- **Date:** 2026-11-15. `v09/notesmd` (brief t3, the owner's assistant's
+  feedback of 15 Nov, section 8).
+- **Dilemma:** the note is plain Markdown (an agent and a text editor read
+  and write it), and the owner wants it drawn as what it means: no `##`, dots
+  for dashes, boxes, tables. mirin's `TextInput` draws styled runs over its
+  value but cannot hide or replace a letter, and its runs have no font family.
+- **Decision:** the field's value is not the Markdown but what it means
+  (`apps/notes/lib/project.ts`): markers left out, a dash shown as `•`,
+  `- [ ]` as `□`, a table's row as one space. A list of pieces lays the shown
+  text against the source (`offsets.ts`), and everything the field reports
+  is carried back before the model hears it: an edit is the one stretch that
+  changed, replaced in the source; a caret goes before the letter after it,
+  a range's end after the letter before it, so a selection of drawn words is
+  their source, the markers outside it. The model, Undo, Find, the format
+  commands and the file stay on the Markdown.
+- **Why not** a block editor (a field per block, rendered views between):
+  selection, copy, arrows and IME across blocks would all break. **Why not**
+  wait for mirin: the gap is written for its agent
+  (`dashi-0.9.0-review/30-notesmd/for-mirin.md`).
+- **Cost:** the field's own copy would give the drawn words, so Edit's Copy
+  and Cut write the source themselves (D244); a code block's text is the
+  body's font on a panel, not monospace.
+- **Undo:** give `Page` (`views/body.tsx`) `value={body}` and `markup`'s runs again.
+
+### D241. The caret's block shows its Markdown; a selection keeps what was shown; a body not being edited shows none
+
+- **Date:** 2026-11-15. `v09/notesmd`.
+- **Decision:** a line is a block, and so are a whole table and a whole
+  fenced code block (`blocks.ts`): the caret anywhere in one shows all of its
+  source. While a range is selected the shown lines stay as they were, so a
+  drag never moves the words under the pointer, and a caret shows its block
+  only once it has stayed put 150 ms (`SETTLE_MS`): in the VM a click that
+  changed the text under the still-pressed pointer left a one-letter
+  selection. The body is "being edited"
+  from a caret move or a key in it (or Return in the list) until Esc, the
+  title, the list or the search take the keyboard (`NotesState.editing`); a
+  note just opened is drawn whole.
+- **Cost:** a heading or bullet moves sideways by its marker as the caret
+  comes and goes (its height does not: the size is the paragraph's); a table
+  entered grows to its source lines.
+- **Undo:** `useRevealed` in `views/body.tsx`.
+
+### D242. Tables, rules, code panels and quote bars are drawn under the field, in room the field keeps for them
+
+- **Date:** 2026-11-15. `v09/notesmd`.
+- **Decision:** the copy of the text that measures the field (it was there
+  for its height) is laid out from the shown paragraphs and now draws what a
+  field cannot (`views/page-under.tsx`): a table with its header on a wash,
+  each column as wide as its longest cell asks (4 to 40 letters), cells that
+  wrap, never narrower than its longest word (in the VM "Model" broke into
+  "Mod el" beside a long first column), numbers right-aligned where the
+  dashes say; a rule's line; a code
+  block's panel; a quote's bar in the gutter. A table's rows in the field are
+  spaces sized so their lines add up to the drawn table's height (a probe at
+  100 px gives the line height per px). A cell's Markdown is drawn as plain
+  words.
+- **Cost:** the two layouts agree only as far as the copy wraps like the
+  field (the copy's lines take one weight each).
+- **Undo:** draw the copy in no ink again (`opacity: 0`).
+
+### D243. Drawn markers are glyphs Inter has: `•` for a bullet, `□` and `■` for a box
+
+- **Date:** 2026-11-15. `v09/notesmd`.
+- **Decision:** every level of bullet is `•` in muted ink; an open box `□`
+  muted, a ticked one `■` in moss with its words struck. `☐ ☑` are only in
+  Noto Sans Symbols 2, a fallback the field's measure would not agree with.
+- **Undo:** `BOX` in `project.ts`.
+
+### D244. Copy and Cut in the note give its Markdown; a browser's rich text is pasted as Markdown
+
+- **Date:** 2026-11-15. `v09/notesmd`.
+- **Decision:** with the body being edited and a selection, Edit › Copy and
+  Cut (and ❖C ❖X, which are their rows) write the selection's source with
+  wl-copy, from the first line's marker when the selection starts at that
+  line's words (the drawn page hides the marker, so a selection of the
+  whole page would otherwise start after `## `); Paste reads `text/html` when the clipboard has it and puts its
+  Markdown (`html.ts`: headings, emphasis, links, lists, quotes, rules, code,
+  tables) in place of the selection, as its own Undo step. Plain text is
+  pasted by the field as before. Elsewhere, or without wl-clipboard, the key
+  goes to the field.
+- **Undo:** `clipboardActions` in `hooks/use-notes-menus.ts`.
+
+### D245. Typing makes structure; Tab indents a list item; Outdent is ❖[; Mark as Done is ⇧❖U
+
+- **Date:** 2026-11-15. `v09/notesmd`.
+- **Decision:** "[] " (or "- [] ") at a line's start becomes `- [ ] `; Tab
+  in a list item moves the item a level in (two spaces, or a number's marker
+  and a space) instead of typing a tab; Return after an opening fence puts
+  the closing one under the caret's new line (`structure.ts`). Return in a
+  list and an empty item ending it were already there. ⇧Tab is the field's
+  (it leaves for the title, and mirin tells the app nothing), so Format ›
+  Indent ❖] and Outdent ❖[ move the selected lines.
+  A box ticks with a click or with Format › Mark as Done ⇧❖U (Apple Notes'
+  key for it), on every item the selection touches.
+- **Undo:** `structure()` in `typing.ts`'s `edit`, and the three Format rows.

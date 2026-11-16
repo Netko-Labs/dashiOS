@@ -64,11 +64,29 @@ export type Call =
   | { name: "list_folder"; path: string; hidden: boolean; limit: number }
   | { name: "search_files"; query: string; folder: string | null; limit: number }
   | { name: "open_file" | "trash_file"; path: string }
+  | { name: "read_text_file"; path: string; from: number; count: number | null; maxChars: number }
+  | { name: "write_text_file"; path: string; text: string; mode: "create" | "replace" | "append" }
+  | { name: "move_file" | "copy_file"; path: string; to: string; replace: boolean }
+  | { name: "rename_file"; path: string; newName: string; replace: boolean }
   | { name: "list_notes"; folder: string | null; limit: number }
   | { name: "search_notes"; query: string; limit: number }
   | { name: "read_note"; id: string }
   | { name: "create_note"; title: string; body: string; folder: string }
   | { name: "append_to_note"; id: string; text: string }
+  /** A change to a note's text (or none: only `title`), and a new title. */
+  | { name: "edit_note"; id: string; edit: NoteEdit | null; title: string | null }
+  | { name: "delete_note"; id: string }
+  | {
+      name: "edit_event";
+      uid: string;
+      title: string | null;
+      start: string | null;
+      end: string | null;
+      location: string | null;
+      notes: string | null;
+      calendar: string | null;
+    }
+  | { name: "delete_event"; uid: string }
   | { name: "list_calendars" }
   | { name: "list_events"; from: string; to: string; calendar: string | null; limit: number }
   | {
@@ -108,7 +126,7 @@ export type Call =
   | { name: "hand_over"; window: number; reason: string }
   | { name: "pay"; target: SecretTarget; site: string; cents: number; card: string | null }
   | { name: "open_url"; url: string; tab: number | null }
-  | { name: "read_page"; tab: number | null }
+  | { name: "read_page"; tab: number | null; mode: "all" | "main" | "find" | "items"; find: string | null; cursor: number; maxChars: number }
   /** With `window`, an element read_window numbered in a native window; else one read_page numbered in a tab. */
   | { name: "click_element"; ref: number; tab: number | null; window: number | null }
   | { name: "fill_element"; ref: number; text: string; tab: number | null; window: number | null }
@@ -123,11 +141,33 @@ export type Call =
       ref: number;
       action: "press" | "focus" | "toggle" | "expand" | "collapse" | "increment" | "decrement" | "scroll_into_view";
     }
+  /** With `window`, `text`, `textGone`, `ref` and `page: "quiet"` are the native window's (window-tree/wait.ts). */
+  | { name: "wait_for"; until: WaitUntil; seconds: number; tab: number | null; window: number | null }
+  | { name: "screenshot_element"; ref: number; tab: number | null }
+  | { name: "click_in_element"; ref: number; x: number; y: number; tab: number | null }
+  | { name: "attach_file"; ref: number; path: string; tab: number | null }
+  | { name: "list_downloads"; limit: number }
   | { name: "list_tabs" }
   | { name: "switch_tab"; tab: number }
+  | { name: "close_tab" | "reload_tab" | "go_back" | "go_forward"; tab: number | null }
   | { name: "read_clipboard_history"; limit: number }
+  | { name: "copy_to_clipboard"; text: string }
   | { name: "get_work_alone" }
-  | { name: "ask_person"; question: string; seconds: number };
+  | { name: "ask_person"; question: string; seconds: number }
+  | { name: "tell_person"; text: string }
+  | { name: "notify_person"; title: string; text: string };
+
+/** edit_note's change: replace the text that is there once, replace lines (from 1), or insert before a line. */
+export type NoteEdit = { find: string; text: string } | { from: number; to: number; text: string } | { at: number; text: string };
+
+/** What wait_for waits for: one thing on a page, a window, or a file. */
+export type WaitUntil =
+  | { text: string }
+  | { textGone: string }
+  | { ref: number; state: "present" | "enabled" | "gone" }
+  | { page: "loaded" | "quiet" }
+  | { window: string }
+  | { file: string };
 
 /** Where Dashi types a secret: the focused field of a window, or an element of a browser tab. */
 export type SecretTarget = { window: number } | { ref: number; tab: number | null };

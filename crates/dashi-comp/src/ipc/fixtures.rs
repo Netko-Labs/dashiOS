@@ -132,7 +132,7 @@ fn chrome_and_spaces(into: &mut BTreeMap<&'static str, Value>) {
     let spaces = json!({ "count": 3, "current": 1 });
     example!(into, "chrome", Chrome, json!({ "dark": true, "radius": 12, "reduceMotion": false }), Done, none.clone());
     example!(into, "window-style", WindowStyle, json!({ "shadow": { "focused": [{ "y": 18, "blur": 40, "spread": -8, "alpha": 0.38 }] }, "edge": { "color": "#0000002b", "width": 1, "filled": false }, "ring": { "on": false }, "fade": 150 }), Done, none.clone());
-    example!(into, "type-text", TypeText, json!({ "window": 7, "text": "señor, ¿qué tal?" }), Done, none.clone());
+    example!(into, "type-text", TypeText, json!({ "window": 7, "text": "señor, ¿qué tal?", "erase": 4, "breaks": "shift+Return" }), Done, none.clone());
     example!(into, "held-keys", HeldKeysParams, json!({ "keys": [{ "name": "talk", "code": 126 }, { "name": "stop", "code": 1, "bare": true }, { "name": "dictation", "code": 100, "alone": true }, { "name": "dashi", "code": 57, "super": true, "tapMs": 300 }] }), Done, none.clone());
     example!(into, "keymap", KeymapParams, json!({ "apps": { "terminal": ["foot"] }, "tapMs": 300, "holdMs": 700, "rules": [{ "when": "super+space", "bind": "launcher", "armsAfterTap": true }, { "when": "super+c", "app": "terminal", "send": "ctrl+shift+c" }], "afterTap": [{ "when": "letter", "bind": "type" }], "locked": [{ "when": "super+a", "send": "ctrl+a" }, { "when": "super+*", "swallow": true }] }), Done, none.clone());
     example!(into, "bars", Bars, json!({ "show": true, "output": "eDP-1" }), Done, none.clone());

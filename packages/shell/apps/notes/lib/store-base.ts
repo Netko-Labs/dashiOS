@@ -21,6 +21,7 @@ export abstract class NotesBase {
     selection: { start: 0, end: 0 },
     session: 0,
     focusTitle: false,
+    editing: false,
     error: null,
     notice: null,
   };

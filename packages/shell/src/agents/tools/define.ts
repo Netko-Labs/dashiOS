@@ -32,6 +32,8 @@ export interface ToolDef {
   idempotent?: boolean;
   properties: Record<string, unknown>;
   required?: readonly string[];
+  /** What one call needs, where it depends on its arguments (wait_for: a page, a window, a file); else `scope`. */
+  scopeFor?(call: Call): Scope;
   /** `args` holds only names in `properties`; the values are still untrusted. */
   parse(args: Args): Call | CallError;
 }

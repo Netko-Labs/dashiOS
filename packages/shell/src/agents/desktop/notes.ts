@@ -8,6 +8,8 @@
 
 import { DEFAULT_FOLDER_NAME, defaultRoot, fold, listOrder, type Note, NotesError, NotesStore, searchNotes, wordCount } from "../../shared/notes/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
+import type { NoteEdit } from "../tools/index.ts";
+import { editBody } from "./lib/note-edit.ts";
 
 /** The longest note text one read returns. */
 export const READ_CHARS = 50_000;
@@ -84,5 +86,35 @@ export function appendToNote(id: string, added: string, ctx: RunContext): ToolRe
   return attempt((store) => {
     const note = store.append(id, added);
     return text(`Added to ${note.id}; it now has ${wordCount(`${note.title} ${note.body}`)} words.`, { id: note.id });
+  });
+}
+
+const WAS_MAX = 2000;
+
+/** edit_note: the change made through the store the app uses; the result says what was there before. */
+export function editNote(call: { id: string; edit: NoteEdit | null; title: string | null }, ctx: RunContext): ToolResult {
+  ctx.status("Changing a note");
+  return attempt((store) => {
+    const note = store.read(call.id);
+    const edited = call.edit === null ? { body: note.body, was: "", where: "(its title)" } : editBody(note.body, call.edit);
+    if ("error" in edited) return toolError(edited.error);
+    const saved = store.save(call.id, { title: call.title ?? note.title, body: edited.body });
+    const was = edited.was.length > WAS_MAX ? `${edited.was.slice(0, WAS_MAX)}…` : edited.was;
+    return text(`Changed ${saved.id} ${edited.where}.${was ? ` It said before: “${was}”.` : ""}`, {
+      id: saved.id,
+      where: edited.where,
+      was,
+      ...(call.title ? { titleWas: note.title } : {}),
+    });
+  });
+}
+
+/** delete_note: to Notes' Recently Deleted, where the person (or Notes' Undo) puts it back. */
+export function deleteNote(id: string, ctx: RunContext): ToolResult {
+  ctx.status("Deleting a note");
+  return attempt((store) => {
+    const note = store.read(id);
+    store.trash(id);
+    return text(`Moved “${note.title}” to Recently Deleted in Notes; it can be put back from there.`, { id, deleted: true });
   });
 }

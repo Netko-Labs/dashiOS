@@ -19,16 +19,29 @@ fn a_held_key_is_heard_when_it_is_let_go() {
     world.until("the frames are read", |world| {
         world.events_named("level").len() >= 30
     });
-    // The stop reads four more frames, then the model is asked.
+    // The stop reads six more frames (the last word's end), and stops once two of them are quiet.
     world.feed(4, true);
+    world.feed(4, false);
     let heard = world.ask(Request::ListenStop).unwrap();
-    // 20 + 4 frames of speech and the 7 before them: the silence before was dropped.
-    assert_eq!(heard, json!({ "text": "31 frames", "speech_ms": 992 }));
-    assert_eq!(world.states(), vec!["listening", "thinking", "idle"]);
-    assert_eq!(
-        world.events_named("heard"),
-        vec![json!({ "event": "heard", "text": "31 frames", "speech_ms": 992 })]
+    // A held key keeps every frame it held, the quiet before the speech too: 10 + 20 and what came after the stop (the
+    // frames fed before it may be read before it).
+    let frames = |text: &serde_json::Value| -> usize {
+        text.as_str()
+            .unwrap()
+            .split(' ')
+            .next()
+            .unwrap()
+            .parse()
+            .unwrap()
+    };
+    assert!((34..=38).contains(&frames(&heard["text"])), "{heard}");
+    assert!(
+        heard["ended"].as_str().unwrap().starts_with("key-up("),
+        "{heard}"
     );
+    assert_eq!(heard["model"], "parakeet-v3");
+    assert_eq!(world.states(), vec!["listening", "thinking", "idle"]);
+    assert_eq!(world.events_named("heard")[0]["text"], heard["text"]);
     let levels = world.events_named("level");
     assert_eq!(levels[0]["level"], 0.0);
     assert!(levels[29]["level"].as_f64().unwrap() > 0.8);
@@ -68,7 +81,9 @@ fn a_listen_can_end_itself_when_the_person_goes_quiet() {
     world.until("it is heard", |world| {
         !world.events_named("heard").is_empty()
     });
-    assert_eq!(world.events_named("heard")[0]["text"], "27 frames");
+    // The 10 of speech, the 15 before them (less the one that began it), and the quiet up to the end.
+    assert_eq!(world.events_named("heard")[0]["text"], "34 frames");
+    assert_eq!(world.events_named("heard")[0]["ended"], "silence(320)");
     world.until("it is idle", |world| {
         world.states().last().map(String::as_str) == Some("idle")
     });
@@ -140,13 +155,18 @@ fn nothing_said_is_no_words_and_the_model_is_not_asked() {
             ..Listen::default()
         }))
         .unwrap();
-    world.feed(40, false);
+    world.feed(46, false);
     world.until("the frames are read", |world| {
         world.events_named("level").len() >= 36
     });
+    let heard = world.ask(Request::ListenStop).unwrap();
     assert_eq!(
-        world.ask(Request::ListenStop).unwrap(),
-        json!({ "text": "", "speech_ms": 0 })
+        (&heard["text"], &heard["speech_ms"]),
+        (&json!(""), &json!(0))
+    );
+    assert!(
+        heard["ended"].as_str().unwrap().starts_with("key-up("),
+        "{heard}"
     );
     assert!(world.counter.lock().unwrap().asked.is_empty());
 }

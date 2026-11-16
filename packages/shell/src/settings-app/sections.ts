@@ -11,12 +11,22 @@ import { isVrrMode } from "../display-config/monitors.ts";
 import { isAliasMap, isKeyMap } from "../launcher/person-keys.ts";
 import { isPersonaLanguage, isPersonaNote, isPersonaYou } from "../persona/index.ts";
 import { GRAPHICS_FIELDS, POWER_FIELDS } from "../power/modes/settings.ts";
+import { isCorrectionChoice } from "../rewrite/index.ts";
 import { APPEARANCE, DOCK, guarded, IDLE, INPUT_METHOD, KEYBOARD, MENU_BAR, MOUSE, SPACES, TOUCHPAD, WALLPAPER } from "../settings/index.ts";
 import { isCatalogList } from "../shared/applet-store/catalogs.ts";
-import { isCharacterId, isDictationKeyId, isPersonaColour, isPersonaDots, isPersonaMark, isPersonaName, isPersonaTalk } from "../shared/pill/index.ts";
+import {
+  isCharacterId,
+  isDictationKeyId,
+  isHistoryKeep,
+  isPersonaColour,
+  isPersonaDots,
+  isPersonaMark,
+  isPersonaName,
+  isPersonaTalk,
+} from "../shared/pill/index.ts";
 import { dig, type Fields, isRaw, type Raw, readFields, type SectionOf } from "../shared/settings/index.ts";
 import { CLOCK_SECTION, REGION_SECTION } from "../shared/time/index.ts";
-import { isTalkKeyId, isVoiceId, isVoiceMap } from "../voice/index.ts";
+import { isRecognizer, isTalkKeyId, isVoiceId, isVoiceMap } from "../voice/index.ts";
 import type { DisplaySettings, SettingsData } from "./types.ts";
 
 /** A program `screenSharing.clients` may name: an absolute path, no NUL. */
@@ -76,9 +86,20 @@ export const SECTIONS = {
       byLanguage: bool(),
       listenAgain: bool(),
       askEveryStep: bool(),
+      recognizer: guarded(isRecognizer, "parakeet or whisper"),
     },
   },
-  dictation: { path: ["dictation"], fields: { on: bool(), key: guarded(isDictationKeyId, "a dictation key"), handsFree: bool(), tidy: bool() } },
+  dictation: {
+    path: ["dictation"],
+    fields: {
+      on: bool(),
+      key: guarded(isDictationKeyId, "a dictation key"),
+      handsFree: bool(),
+      tidy: bool(),
+      history: guarded(isHistoryKeep, "day, week or none"),
+      corrections: guarded(isCorrectionChoice, "speakoflow, gemma, rules or key"),
+    },
+  },
   persona: {
     path: ["persona"],
     fields: {

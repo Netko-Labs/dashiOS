@@ -96,3 +96,18 @@ test("hands-free: a click in the window while a sentence is said keeps it out; t
   expect(moved.world.chimes).toBe(1);
   expect(moved.state()).toMatchObject({ phase: "waiting", reason: "moved", text: "For Marta." });
 });
+
+test("hands-free: the next sentence is listened for before this one lands, so nothing said meanwhile is lost (D199)", async () => {
+  const { voice, typed, key } = dictating({ heard: "" });
+  const listensWhenTyped: number[] = [];
+  // Each time words are typed: how many listens had been asked for by then.
+  typed.push = (...items: string[]): number => {
+    listensWhenTyped.push(voice.calls.filter((call) => call === "listen").length);
+    return Array.prototype.push.apply(typed, items);
+  };
+  await key("double-tap");
+  voice.emit({ event: "heard", text: "First sentence." });
+  await settle();
+  expect(typed).toEqual(["7:First sentence. "]);
+  expect(listensWhenTyped).toEqual([2]);
+});

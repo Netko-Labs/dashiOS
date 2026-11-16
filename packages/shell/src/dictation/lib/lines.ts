@@ -16,8 +16,15 @@ export function landedLine(changes: readonly TidyChange[], how: "typed" | "paste
     if (mind.to === "") return `${start} Took back “${cut(mind.from)}”.`;
     return `${start} “${cut(mind.from, 16)}” is now “${cut(mind.to, 16)}”.`;
   }
-  const fillers = changes.find((change) => change.kind === "filler");
-  if (fillers && fillers.kind === "filler") return `${start} ${fillers.count} ${fillers.count === 1 ? "filler" : "fillers"} out.`;
+  const count = (kind: "filler" | "fix" | "model" | "list"): number =>
+    changes.reduce((sum, change) => (change.kind === kind && "count" in change ? sum + change.count : sum), 0);
+  const fillers = count("filler");
+  const fixes = count("fix") + count("model");
+  const items = count("list");
+  if (items > 0) return `${start} A list of ${items}.`;
+  // Names put right and words the model corrected are fixes; fillers alone are said as fillers.
+  if (fixes > 0) return `${start} ${fixes + fillers} ${fixes + fillers === 1 ? "fix" : "fixes"}.`;
+  if (fillers > 0) return `${start} ${fillers} ${fillers === 1 ? "filler" : "fillers"} out.`;
   return start;
 }
 

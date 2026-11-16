@@ -1,12 +1,16 @@
 export { askPerson } from "./ask-person.ts";
 export { browserCall, frontPage } from "./browser.ts";
 export { createEvent, listCalendars, listEvents } from "./calendar.ts";
-export { readClipboardHistory } from "./clipboard.ts";
+export { deleteEvent, type EventChange, editEvent } from "./calendar-edit.ts";
+export { clickInElement, screenshotElement } from "./canvas.ts";
+export { copyToClipboard, readClipboardHistory } from "./clipboard.ts";
 export { arrangeDisplay, listDisplays, setDisplayMode, setDisplayRotation, setDisplayScale, setPrimaryDisplay } from "./displays.ts";
 export { Elsewhere, type Opening, WorkPlaces, type WorkTarget } from "./elsewhere.ts";
+export { fileTextCall } from "./file-text.ts";
 export { listFolder, openFile, searchFiles, trashFile } from "./files.ts";
 export { Hands, type Payload } from "./hands.ts";
 export { handsCall } from "./input.ts";
+export { type KeyboardAt, keyboardIn } from "./keyboard.ts";
 export {
   getAccount,
   getNetwork,
@@ -21,7 +25,7 @@ export {
   setVolume,
 } from "./machine.ts";
 export { chooseMenuItem, listMenus } from "./menus.ts";
-export { appendToNote, createNote, listNotes, readNote, searchNotesTool } from "./notes.ts";
+export { appendToNote, createNote, deleteNote, editNote, listNotes, readNote, searchNotesTool } from "./notes.ts";
 export { clearNotifications, dismissNotification, listNotifications } from "./notifications.ts";
 export { forceQuitApp, lockScreen } from "./quit.ts";
 export { recordScreen } from "./record.ts";
@@ -30,5 +34,9 @@ export { handOver, listLogins, payCall, signInCall } from "./secrets.ts";
 export { getSettings, setSetting } from "./settings.ts";
 export { getSoftware, listInstalledSoftware, listSoftwareUpdates, requestInstall, requestUpdate, searchSoftware } from "./software.ts";
 export { listSpaces, moveWindowToSpace, switchSpace } from "./spaces.ts";
+export { tabsCall } from "./tabs.ts";
+export { notifyPerson, type SpokenLines, Teller, type Told, tellPerson } from "./tell.ts";
+export { attachFile, listDownloads } from "./transfer.ts";
 export type { ClipboardCopy, Desktop } from "./types.ts";
+export { waitFor } from "./wait.ts";
 export { joinWifi, listWifi } from "./wifi.ts";

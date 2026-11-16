@@ -19,6 +19,7 @@ import { expandSnippet } from "./lib/expand.ts";
 import { atspiFieldCheck, type FieldCheck } from "./lib/fields.ts";
 import { type ClipboardIo, wlClipboard } from "./lib/io.ts";
 import { copyEntry, type PasteDeps, pasteChord, pasteEntry } from "./lib/paste.ts";
+import { putText } from "./lib/put.ts";
 import { historyScope, type PasteTarget, snippetsScope } from "./lib/scope.ts";
 import { expand, SnippetStore } from "./lib/snippets.ts";
 import { ClipboardWatch, fileUris } from "./lib/watch.ts";
@@ -56,6 +57,8 @@ export interface Clipboard {
   opening(window: number | null): void;
   /** For agents, after the person said yes (agents/desktop/clipboard.ts). */
   recent(limit: number): ClipboardCopy[];
+  /** Text an agent puts there for the person, kept in the history as `from`'s (lib/put.ts); false when nothing could write it. */
+  put(text: string, from: string): Promise<boolean>;
   close(): void;
 }
 
@@ -276,6 +279,7 @@ export function startClipboard(options: ClipboardOptions): Clipboard {
     source,
     opening: front.opening,
     recent: (limit) => (enabled() ? history.getSnapshot().entries.slice(0, limit).map(forAgent) : []),
+    put: (text, from) => putText(text, from, { history, io, watch: pasting.watch, enabled }),
     close() {
       watch?.close();
       stopSettings();

@@ -72,6 +72,7 @@ export class NotesModel extends NotesSaving {
       selection: { start: end, end },
       session: this.state.session + 1,
       focusTitle: options.focusTitle ?? false,
+      editing: false,
       error: null,
       notice,
     });

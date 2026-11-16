@@ -40,6 +40,9 @@ the same change.
 - `docs/voice.md` - dashi-voice's contract (the socket, every method and
   event, the states, the models and their sizes, what the shell does); the
   service and the shell change with it.
+- `docs/dictation-rewrite.md` - the model that corrects dictation: the seam
+  dictation calls (request, reply, deadline), the checks on its answers, the
+  model and its server, the evaluation set and the scores.
 - `docs/hardware.md` - dashi-hardware's contract (the hardware helper's D-Bus
   interface, the model database, and cardwire's API); the service and its
   callers change with it.

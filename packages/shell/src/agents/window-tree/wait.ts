@@ -1,6 +1,7 @@
 /**
- * Waiting on a native window's tree: the seam `wait_for` (v09/reach, docs/
- * actions.md "Native windows") calls with a window. Woken by the app's own
+ * Waiting on a native window's tree: `wait_for` with a `window`
+ * (desktop/wait.ts; docs/actions.md "Native windows"). Its idle is the same
+ * `settle` an action waits on after it acts (act.ts). Woken by the app's own
  * tree events (Atspi.watchChanges), checked again on each, and at most every
  * CHECK_MS without one; never a loop on the model's side.
  */
@@ -16,7 +17,7 @@ import { readTree } from "./read.ts";
 import type { Element } from "./types.ts";
 
 /** What to wait for in a window: words shown (or gone), an element there, enabled or gone, or the tree idle. */
-export type WindowUntil = { text: string; gone?: boolean } | { ref: number; state: "there" | "enabled" | "gone" } | { idle: true };
+export type WindowUntil = { text: string; gone?: boolean } | { ref: number; state: "present" | "enabled" | "gone" } | { idle: true };
 
 export interface WindowWaited {
   met: boolean;
@@ -54,7 +55,7 @@ async function check(window: number, until: WindowUntil, ctx: RunContext): Promi
     const t = await target(until.ref, window, ctx);
     if (isResult(t)) return until.state === "gone" ? `[${until.ref}] is gone` : null;
     const now = await readNode(t.node);
-    if (until.state === "there") return now ? `[${until.ref}] is there` : null;
+    if (until.state === "present") return now ? `[${until.ref}] is there` : null;
     if (until.state === "enabled") return now && (has(now.states, S.ENABLED) || has(now.states, S.SENSITIVE)) ? `[${until.ref}] is enabled` : null;
     return now ? null : `[${until.ref}] is gone`;
   }

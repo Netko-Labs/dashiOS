@@ -25,7 +25,7 @@ mod speak;
 
 pub(crate) const USAGE: &str = "dashi-voice [--models DIR] <command>
   serve [--socket PATH]                          the service (docs/voice.md)
-  transcribe [--language LANG] [--json] FILE.wav the words in a WAV file
+  transcribe [--language LANG] [--json] [--whole] FILE.wav the words in a WAV file (--whole: every sample, as a held key)
   speak [--voice ID] [--language LANG] [--voices LANG=ID,…] [--hint LANG] [--one-voice]
         [--same-voice | --mix] [--speed N] [--json] --out FILE.wav TEXT…
                                                  say TEXT into a WAV file
@@ -175,6 +175,8 @@ fn serve(store: Store, socket: Option<PathBuf>) -> Result<(), String> {
 fn transcribe(store: Store, mut rest: Vec<String>) -> Result<(), String> {
     let language = option(&mut rest, "--language")?;
     let as_json = flag(&mut rest, "--json");
+    // Every sample kept, as a held key's listen keeps them (the gate only says whether anyone spoke).
+    let whole = flag(&mut rest, "--whole");
     let [file] = rest.as_slice() else {
         return Err(USAGE.into());
     };
@@ -186,7 +188,11 @@ fn transcribe(store: Store, mut rest: Vec<String>) -> Result<(), String> {
     let recognizer = engines.recognizer(language.as_deref())?;
     let load_ms = ms(started);
     let started = Instant::now();
-    let mut gate = Gate::default();
+    let mut gate = if whole {
+        Gate::whole()
+    } else {
+        Gate::default()
+    };
     for frame in samples.chunks(FRAME) {
         let mut frame = frame.to_vec();
         frame.resize(FRAME, 0.0);

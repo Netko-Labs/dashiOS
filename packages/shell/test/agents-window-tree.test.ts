@@ -9,7 +9,7 @@ import { expect, test } from "bun:test";
 import type { RunContext, ToolResult } from "../src/agents/context.ts";
 import { runCall } from "../src/agents/lib/run/run.ts";
 import { parseCall, scopeOf } from "../src/agents/tools/index.ts";
-import { changes } from "../src/agents/window-tree/act.ts";
+import { windowChanges } from "../src/agents/window-tree/act.ts";
 import { TreeNumbers } from "../src/agents/window-tree/index.ts";
 import { R, S } from "../src/agents/window-tree/lib/roles.ts";
 import { criticalOf } from "../src/agents/window-tree/lib/semantics.ts";
@@ -139,7 +139,7 @@ test("a click uses the element's own action; one with none is clicked at its cen
   const toggle = numberOf(text, 'switch "Bluetooth"');
   const clicked = words(await runCall({ name: "click_element", ref: toggle, tab: null, window: 3 }, ctx));
   expect(clicked).toContain("by its “click” action; nothing moved on screen");
-  expect(clicked).toContain('Now: switch "Bluetooth" (on)');
+  expect(clicked).toContain('Nothing in the window changed. It is now: switch "Bluetooth" (on).');
   expect(app.asked).toContain("Bluetooth Action.DoAction [0]");
   expect(sent).toEqual([]);
   const drawn = numberOf(text, 'list item "Drawn row"');
@@ -225,11 +225,16 @@ test("what is critical: paying, a secret, losing work for good, the system, send
   expect(criticalOf(button("Go", { destructive: "true" }), plain)).toBe("loses work");
 });
 
-test("after an action: nothing more when only its own line moved, the lines that changed, or the new tree when its shape did", () => {
+test("after an action: what changed, in the page's words, and the lines with their numbers", () => {
   const before = '[1] switch "Wi-Fi" (off)\n[2] button "Join"\nOffline';
-  expect(changes(before, '[1] switch "Wi-Fi" (on)\n[2] button "Join"\nOffline', 1)).toBe("");
-  expect(changes(before, '[1] switch "Wi-Fi" (on)\n[2] button "Join"\nConnected', 1)).toBe("\n\nAlso changed:\nConnected");
-  expect(changes(before, '[1] switch "Wi-Fi" (on)\ndialog "Password" (modal)\n  [3] password field (filled: no)', 1)).toContain("The window changed. Now:");
+  expect(windowChanges(before, '[1] switch "Wi-Fi" (on)\n[2] button "Join"\nOffline', 1)).toEqual({ changes: { changed: "none" }, lines: "" });
+  expect(windowChanges(before, '[1] switch "Wi-Fi" (on)\n[2] button "Join"\nConnected', 1)).toEqual({
+    changes: { changed: "near", appeared: "Connected" },
+    lines: "\n\nChanged lines:\nConnected",
+  });
+  const sheet = windowChanges(before, '[1] switch "Wi-Fi" (on)\ndialog "Password" (modal)\n  [3] password field (filled: no) (focused)', 1);
+  expect(sheet.changes).toMatchObject({ dialog: "Password" });
+  expect(sheet.lines).toContain("The window now:");
 });
 
 test("a line some views publish one word a node is one line; a row's words are not read twice", () => {

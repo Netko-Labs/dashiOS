@@ -7,6 +7,8 @@ import type { SiteConsent } from "../../sites.ts";
 export class SessionBrowser {
   /** The browser tab the website tools use when none is named: the agent's last. */
   tab: number | null = null;
+  /** The tabs this connection opened: list_tabs marks them. */
+  readonly opened = new Set<number>();
 
   constructor(
     private readonly bridge: BrowserBridge,
@@ -25,6 +27,7 @@ export class SessionBrowser {
         return allowed;
       },
       mayUse: (site) => this.sites.has(site),
+      opened: this.opened,
       get tab() {
         return session.tab;
       },

@@ -11,7 +11,7 @@ import { DICTATION_LIMITS, type DictationPhase, type DictationState, type Dictat
 import type { Timers } from "../../shared/time/index.ts";
 import type { DictationDeps, Front, HearingEvent } from "../types.ts";
 import { HeardText } from "./heard.ts";
-import { land } from "./land.ts";
+import type { Landing, Meant } from "./land.ts";
 import { troubleOf } from "./lines.ts";
 
 /** A pause this long ends a sentence. */
@@ -23,6 +23,8 @@ export interface HandsFreeHost {
   /** What stops the microphone from opening, or null. */
   ready(at: Front | null): Promise<DictationTrouble | null>;
   phase(): DictationPhase;
+  /** The words land (lib/land.ts). */
+  land(heard: string, meant: Meant): Promise<Landing>;
 }
 
 export class HandsFree {
@@ -76,17 +78,28 @@ export class HandsFree {
 
   /** Listen for the next sentence: the service ends it at the pause. */
   private async listen(turn: number): Promise<void> {
+    if (await this.open(turn)) this.listening();
+  }
+
+  /** The microphone, open for the next sentence; false when it would not open (said) or this run is over. */
+  private async open(turn: number): Promise<boolean> {
     const language = this.deps.language;
     try {
-      await this.deps.service.call("listen", { until: "silence", quiet_ms: SENTENCE_QUIET_MS, ...(language ? { language } : {}) });
+      const params = { until: "silence", quiet_ms: SENTENCE_QUIET_MS, ...(language ? { language } : {}), ...this.deps.listenWith?.() };
+      await this.deps.service.call("listen", params);
     } catch (error) {
-      if (turn !== this.turn) return;
+      if (turn !== this.turn) return false;
       this.running = false;
       this.stopTimers();
       if (this.sentences > 0) this.deps.chime();
-      return this.host.notice(troubleOf(error), true);
+      this.host.notice(troubleOf(error), true);
+      return false;
     }
-    if (turn !== this.turn) return void this.deps.service.call("listen.cancel").catch(() => {});
+    if (turn !== this.turn) void this.deps.service.call("listen.cancel").catch(() => {});
+    return turn === this.turn;
+  }
+
+  private listening(): void {
     this.text = "";
     this.since = null;
     this.host.show({ phase: "listening", text: "", handsFree: true, endsAt: this.endsAt, hint: null });
@@ -121,18 +134,22 @@ export class HandsFree {
     const words = heard.trim();
     if (words === "") return this.listen(turn);
     this.rearmQuiet();
-    const landing = await land(this.deps, words, { at: this.at, since: this.since });
+    const since = this.since;
+    // The next sentence is listened for at once: what is said while this one lands is heard, not lost (D199).
+    const next = this.open(turn);
+    const landing = await this.host.land(words, { at: this.at, since });
     if (turn !== this.turn) return;
     if (!landing.typed) {
       // Nowhere to type any more: the words wait, and hands-free is over.
       this.turn++;
       this.running = false;
       this.stopTimers();
+      void next.then((opened) => opened && this.deps.service.call("listen.cancel").catch(() => {}));
       this.deps.chime();
       return this.host.show(landing.state);
     }
     this.sentences++;
-    await this.listen(turn);
+    if ((await next) && turn === this.turn) this.listening();
   }
 
   /** It ends, heard: what was being said lands, a short sound, and a line that says why. */
@@ -151,7 +168,7 @@ export class HandsFree {
     this.deps.chime();
     if (text !== "") {
       // The tap that ends it is itself a key pressed in the window: it can't be told from another, so it is not asked.
-      const landing = await land(this.deps, text, { at: this.at, since: byKey ? null : this.since });
+      const landing = await this.host.land(text, { at: this.at, since: byKey ? null : this.since });
       if (!landing.typed) return this.host.show(landing.state);
     }
     this.host.notice(trouble, true);

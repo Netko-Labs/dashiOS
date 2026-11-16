@@ -9,8 +9,10 @@
  * good, changes the system, sends as the person) is put to the person first.
  */
 
+import type { PageChanges } from "../../browser/index.ts";
 import type { RunContext, ToolResult } from "../context.ts";
 import { text, toolError } from "../context.ts";
+import { changeWords } from "../lib/change-words.ts";
 import { readNode } from "./lib/bus.ts";
 import { describe } from "./lib/describe.ts";
 import { centre, expandAction, focus, press, scrollIntoView, selectChild, setText, stepValue } from "./lib/do.ts";
@@ -65,28 +67,55 @@ async function cleared(t: Target, verb: string): Promise<boolean> {
 async function after(t: Target, did: string, from: number): Promise<ToolResult> {
   const changed = await settle(t.bus, t.app, from);
   const now = await readNode(t.node);
-  const state = now && !has(now.states, S.DEFUNCT) ? `Now: ${describe(now)}.` : "It is gone now: the view changed.";
-  if (!changed) return text(`${did} ${state}`);
+  const still = now !== null && !has(now.states, S.DEFUNCT);
+  const nowSaid = still && now ? describe(now) : undefined;
+  const reread = `read_window w${t.window.id}`;
+  if (!changed) return text(`${did} ${changeWords({ changed: "none", still, ...(nowSaid ? { now: nowSaid } : {}) }, "window", reread)}`);
   const fresh = await readTree(t.trees, t.window);
-  if (typeof fresh === "string") return text(`${did} ${state}`);
+  if (typeof fresh === "string") return text(`${did} ${changeWords(null, "window", reread)}`);
   const lines = renderTree(fresh.root, { window: t.window.id, numberOf: numbering(t.trees, t.window.id) }).text;
   const before = t.trees.numbers.swap(t.window.id, lines);
-  return text(`${did} ${state}${changes(before, lines, t.number)}`);
+  const seen = windowChanges(before, lines, t.number);
+  const words = changeWords({ ...seen.changes, still, ...(nowSaid ? { now: nowSaid } : {}) }, "window", reread);
+  return text(`${did} ${words}${seen.lines}`, { changes: { ...seen.changes, still } });
 }
 
-/** How the window's lines moved since the last read, in words, without the acted element's own line. */
-export function changes(before: string | null, after: string, own: number): string {
+/**
+ * How the window's lines moved since the last read, as the page's changes
+ * are told (lib/change-words.ts): around the element or elsewhere, a dialog
+ * that opened, new text, where the keyboard went; and the lines themselves,
+ * with their numbers: those that changed, or the whole window when its shape
+ * did (a sheet opened, a view replaced).
+ */
+export function windowChanges(before: string | null, after: string, own: number): { changes: Omit<PageChanges, "still">; lines: string } {
   const next = after.split("\n");
-  if (before === null) return `\n\nThe window now:\n${cut(next)}`;
+  if (before === null) return { changes: { changed: "elsewhere" }, lines: `\n\nThe window now:\n${cut(next)}` };
   const old = before.split("\n");
   const kept = new Set(old.map((line) => line.trim()));
   const numbered = (lines: readonly string[]) => lines.map((line) => /^\s*\[(\d+)\]/.exec(line)?.[1]).filter(Boolean);
   const sameShape = numbered(old).join() === numbered(next).join() && old.length === next.length;
-  const fresh = next.filter((line) => !kept.has(line.trim()) && !line.trim().startsWith(`[${own}] `));
-  if (fresh.length === 0) return "";
-  if (sameShape) return `\n\nAlso changed:\n${fresh.map((line) => line.trim()).join("\n")}`;
-  return `\n\nThe window changed. Now:\n${cut(next)}`;
+  const at = next.findIndex((line) => line.trim().startsWith(`[${own}] `));
+  const freshAt = next.flatMap((line, index) => (!kept.has(line.trim()) && index !== at ? [index] : []));
+  if (freshAt.length === 0) return { changes: { changed: "none" }, lines: "" };
+  const fresh = freshAt.map((index) => (next[index] ?? "").trim());
+  const near = at >= 0 && freshAt.every((index) => Math.abs(index - at) <= NEAR_LINES);
+  const dialog = /^(?:dialog|alert|sheet) "(.+?)"/.exec(fresh.find((line) => /^(dialog|alert|sheet) /.test(line)) ?? "")?.[1];
+  const words = fresh
+    .filter((line) => !line.startsWith("[") && !/^(dialog|alert|sheet) /.test(line))
+    .join(" ")
+    .slice(0, 200);
+  const focus = fresh.find((line) => /\((?:[^)]*, )?focused[,)]/.test(line));
+  const changes: Omit<PageChanges, "still"> = {
+    changed: near ? "near" : "elsewhere",
+    ...(dialog ? { dialog } : {}),
+    ...(words ? { appeared: words } : {}),
+    ...(focus ? { focus } : {}),
+  };
+  return { changes, lines: sameShape ? `\n\nChanged lines:\n${fresh.join("\n")}` : `\n\nThe window now:\n${cut(next)}` };
 }
+
+/** Lines either side of the element that count as "around it". */
+const NEAR_LINES = 6;
 
 const cut = (lines: readonly string[]): string =>
   `${lines.slice(0, CHANGED_LINES).join("\n")}${lines.length > CHANGED_LINES ? "\n… (read_window for the rest)" : ""}`;
@@ -111,7 +140,7 @@ export async function clickOn(call: { ref: number; window: number | null }, ctx:
   const action = await press(t.node, t.element);
   const how = action ? `by its “${action}” action; nothing moved on screen` : await pointerClick(t, ctx);
   if (typeof how !== "string") return how;
-  return after(t, `Pressed [${t.number}] ${t.entry.said} (${how}).`, from);
+  return after(t, `Clicked [${t.number}] ${t.entry.said} (${how}).`, from);
 }
 
 export async function fillIn(call: { ref: number; text: string; window: number | null }, ctx: RunContext): Promise<ToolResult> {

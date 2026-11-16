@@ -51,6 +51,16 @@ function pair(tool: string, input: Input): readonly [string, string] | null {
       return ["Looking at the tabs", "Looked at the tabs"];
     case "switch_tab":
       return ["Switching tabs", "Switched tabs"];
+    case "wait_for":
+      return ["Waiting", "Waited"];
+    case "close_tab":
+      return ["Closing a tab", "Closed a tab"];
+    case "reload_tab":
+      return ["Reloading the page", "Reloaded the page"];
+    case "go_back":
+      return ["Going back", "Went back"];
+    case "go_forward":
+      return ["Going forward", "Went forward"];
     case "list_logins":
       return ["Looking at your logins", "Looked at your logins"];
     case "sign_in":

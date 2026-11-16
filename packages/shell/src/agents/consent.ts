@@ -33,12 +33,16 @@ export const SCOPES = [
     id: "files",
     label: "Browse your files",
     detail:
-      "List and search your folders by name (your home folder and removable drives, not folders that hold secrets), and open files in their apps. Moving a file to the Trash always asks you first. It can't read, change, or delete the files",
+      "List and search your folders by name, read text files, write, move, copy and rename files, and open them in their apps (your home folder and removable drives, never folders or files that hold keys, passwords or browser profiles). A file replaced goes to the Trash first; nothing is deleted for good",
   },
   { id: "notes", label: "Read your notes", detail: "List, search, and read your notes" },
-  { id: "notes_write", label: "Add to your notes", detail: "Create notes, and add lines to the end of them" },
+  { id: "notes_write", label: "Change your notes", detail: "Create notes, add to them, change their text, and delete them (to Recently Deleted in Notes)" },
   { id: "calendar", label: "Read your calendar", detail: "List your calendars and the events in them: their titles, times, places, and notes" },
-  { id: "calendar_write", label: "Add to your calendar", detail: "Add events to your calendar (it can't change or delete the ones there)" },
+  {
+    id: "calendar_write",
+    label: "Change your calendar",
+    detail: "Add, change and delete events (a deleted one goes to the Trash as a file Calendar can import back)",
+  },
   {
     id: "signin",
     label: "Sign in for you",

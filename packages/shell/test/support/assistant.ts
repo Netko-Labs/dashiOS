@@ -17,7 +17,19 @@ export interface Reply {
   calls?: Array<{ name: string; arguments?: Record<string, unknown> }>;
 }
 
-const TOOLS = ["open_url", "read_page", "fill_element", "press", "set_setting", "close_window", "list_windows", "ask_person"].map((name) => ({
+const TOOLS = [
+  "open_url",
+  "read_page",
+  "fill_element",
+  "press",
+  "set_setting",
+  "close_window",
+  "list_windows",
+  "ask_person",
+  "wait_for",
+  "tell_person",
+  "click_element",
+].map((name) => ({
   name,
   description: name,
   inputSchema: { type: "object", properties: {}, required: [], additionalProperties: false },

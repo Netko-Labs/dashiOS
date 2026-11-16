@@ -13,9 +13,10 @@
 import { maybe } from "@dashi/shape";
 import { DICTATION_LIMITS, type DictationCommand, type DictationState, type DictationTrouble, type KeyGesture } from "../shared/pill/index.ts";
 import { realTimers, type Timers } from "../shared/time/index.ts";
+import { runCommand } from "./lib/commands.ts";
 import { HandsFree } from "./lib/hands-free.ts";
 import { HeardText } from "./lib/heard.ts";
-import { land } from "./lib/land.ts";
+import { Landings } from "./lib/landings.ts";
 import { HINT, troubleLine, troubleOf } from "./lib/lines.ts";
 import type { DictationDeps, Front, HearingEvent } from "./types.ts";
 
@@ -28,11 +29,21 @@ export class Dictation {
   private at: Promise<Front | null> = Promise.resolve(null);
   private readonly handsFree: HandsFree;
   private timer: unknown = null;
+  private saying: unknown = null;
   private limits: unknown[] = [];
+  /** What landed: what Undo, Raw and "paste last" act on. */
+  private readonly landings: Landings;
   private readonly offs: Array<() => void>;
 
   constructor(private readonly deps: DictationDeps) {
     this.timers = deps.timers ?? realTimers;
+    this.landings = new Landings(
+      { ...deps, timers: this.timers },
+      // The model's words took the place of words that landed: said only while their line still shows.
+      (state) => this.state.phase === "landed" && this.show(state),
+      // The person fixed a word: offered only while nothing else needs the line.
+      (state) => ["idle", "landed", "told"].includes(this.state.phase) && this.show(state),
+    );
     this.handsFree = new HandsFree(
       { ...deps, timers: this.timers },
       {
@@ -40,6 +51,7 @@ export class Dictation {
         notice: (trouble, handsFree) => this.notice(trouble, undefined, handsFree),
         ready: (at) => this.ready(at),
         phase: () => this.state.phase,
+        land: (heard, meant) => this.landings.land(heard, meant),
       },
     );
     this.offs = [deps.service.on((event) => this.event(event)), deps.hub.dictationCommands.handle((command) => this.command(command))];
@@ -56,10 +68,21 @@ export class Dictation {
   /** One state at a time; one that ends by itself (`until`) goes back to idle then. */
   private show(state: DictationState): void {
     if (this.timer !== null) this.timers.clear(this.timer);
+    if (this.saying !== null) this.timers.clear(this.saying);
     this.timer = null;
+    this.saying = null;
     if (state.phase !== "listening") this.deps.hub.level.set(0);
     this.deps.hub.dictation.set(state);
     if ("until" in state) this.timer = this.timers.set(() => this.show({ phase: "idle" }), Math.max(0, state.until - this.now()));
+  }
+
+  /** The key came up: nothing is said for a moment, then "Tidying". */
+  private tidying(text: string): void {
+    this.show({ phase: "tidying", text });
+    this.saying = this.timers.set(() => {
+      this.saying = null;
+      if (this.state.phase === "tidying") this.deps.hub.dictation.set({ ...this.state, said: true });
+    }, DICTATION_LIMITS.tidyingSaid);
   }
 
   private notice(trouble: DictationTrouble, line?: string, handsFree = false): void {
@@ -87,8 +110,9 @@ export class Dictation {
     switch (gesture) {
       case "down":
         this.at = this.deps.prefs().on ? this.deps.front() : Promise.resolve(null);
+        if (this.deps.prefs().on) this.landings.refresh();
         // Words that wait stay until a hold replaces them.
-        if (this.deps.prefs().on && this.state.phase !== "waiting") this.show({ phase: "key-down" });
+        if (this.deps.prefs().on && this.state.phase !== "waiting" && this.state.phase !== "offer") this.show({ phase: "key-down" });
         return;
       case "hold":
         return void this.begin();
@@ -99,6 +123,8 @@ export class Dictation {
         if (!this.deps.prefs().on || !this.deps.prefs().handsFree) return this.rest();
         return void this.handsFree.start(this.deps.front());
       case "tap":
+        // A tap while an offer shows is its yes: the one key that is dictation's own.
+        if (this.state.phase === "offer") return this.command({ do: "learn" });
         return this.rest();
       case "chord":
         return this.cancel();
@@ -135,7 +161,7 @@ export class Dictation {
       return this.notice(trouble);
     }
     const language = this.deps.language;
-    hold.opened = this.deps.service.call("listen", language ? { language } : {}).then(
+    hold.opened = this.deps.service.call("listen", { ...(language ? { language } : {}), ...this.deps.listenWith?.() }).then(
       () => true,
       (error) => {
         if (turn === this.turn) {
@@ -149,6 +175,7 @@ export class Dictation {
     const hint = this.deps.taught() ? null : HINT;
     if (hint) this.deps.teach();
     this.show({ phase: "listening", text: "", handsFree: false, endsAt: this.now() + DICTATION_LIMITS.hold, hint });
+    this.named(turn, hold.at);
     this.limits = [
       // A held key with nothing said ends by itself.
       this.timers.set(() => {
@@ -173,7 +200,7 @@ export class Dictation {
     const since = this.now();
     const turn = ++this.turn;
     if (!hold.opened) return this.show({ phase: "idle" });
-    this.show({ phase: "tidying", text: this.state.phase === "listening" ? this.state.text : "" });
+    this.tidying(this.state.phase === "listening" ? this.state.text : "");
     if (!(await hold.opened) || turn !== this.turn) return;
     let text: string;
     try {
@@ -184,7 +211,7 @@ export class Dictation {
     }
     if (turn !== this.turn) return;
     if (text === "") return this.notice(limit ?? "nothing-said");
-    const landing = await land({ ...this.deps, timers: this.timers }, text, { at: await hold.at, since });
+    const landing = await this.landings.land(text, { at: await hold.at, since });
     if (turn !== this.turn) return;
     this.show(limit && landing.state.phase === "landed" ? { ...landing.state, line: `${landing.state.line} Time limit.` } : landing.state);
   }
@@ -210,26 +237,34 @@ export class Dictation {
     }
   }
 
-  /** What the capsule asks (shared/pill/dictation.ts `DictationCommand`). */
+  /** What the capsule asks (lib/commands.ts). */
   private command(command: DictationCommand): void {
-    const state = this.state;
-    switch (command.do) {
-      case "copy": {
-        if (state.phase !== "waiting" && state.phase !== "landed") return;
-        const text = command.heard ? state.heard : state.phase === "waiting" ? state.text : state.typed;
-        void this.deps.copy(text);
-        // Copied, the words need not wait any longer.
-        if (state.phase === "waiting") this.show({ phase: "idle" });
-        return;
-      }
-      case "finish":
-        if (this.handsFree.running) return void this.handsFree.end("ended");
-        return void this.finish();
-      case "dismiss":
-        return this.stop();
-      case "type":
-        return void this.type(command.text);
-    }
+    runCommand(
+      {
+        deps: this.deps,
+        landings: this.landings,
+        state: () => this.state,
+        show: (state) => this.show(state),
+        hearing: () => this.hold !== null || this.handsFree.running,
+        turn: () => this.turn,
+        nextTurn: () => ++this.turn,
+        finish: () => void (this.handsFree.running ? this.handsFree.end("ended") : this.finish()),
+        stop: () => this.stop(),
+        type: (text) => void this.type(text),
+        named: (turn, at) => this.named(turn, at),
+      },
+      command,
+    );
+  }
+
+  /** The listening line says which profile will tidy the words. */
+  private named(turn: number, at: Promise<Front | null>): void {
+    void at
+      .then((front) => this.landings.profileName(front))
+      .then((profile) => {
+        if (turn === this.turn && this.state.phase === "listening" && profile !== "") this.deps.hub.dictation.set({ ...this.state, profile });
+      })
+      .catch(() => {});
   }
 
   /** Words from elsewhere (Dashi's capsule's "Type it instead") land as a dictation would. */
@@ -238,8 +273,8 @@ export class Dictation {
     if (text === "") return;
     this.stop();
     const turn = this.turn;
-    this.show({ phase: "tidying", text });
-    const landing = await land({ ...this.deps, timers: this.timers }, text, { at: null, since: this.now() });
+    this.tidying(text);
+    const landing = await this.landings.land(text, { at: null, since: this.now() });
     if (turn === this.turn) this.show(landing.state);
   }
 

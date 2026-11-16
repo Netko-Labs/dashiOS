@@ -75,6 +75,9 @@ const FORMATS: ReadonlyArray<{ command: FormatCommand; label: string; shortcut?:
   { command: "body", label: "Body Text", shortcut: "❖0" },
   null,
   { command: "checklist", label: "Checklist", shortcut: "⇧❖L" },
+  { command: "tick", label: "Mark as Done", shortcut: "⇧❖U" },
+  { command: "indent", label: "Indent", shortcut: "❖]" },
+  { command: "outdent", label: "Outdent", shortcut: "❖[" },
 ];
 
 /** The folder the open source is, when it is a folder of its own (not All Notes, not the default folder). */

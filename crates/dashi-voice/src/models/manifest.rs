@@ -214,8 +214,35 @@ const WHISPER: &[File] = &[
 pub(crate) const LISTEN_SET: &str = "listen";
 pub(crate) const SPEAK_SET: &str = "speak";
 pub(crate) const WHISPER_SET: &str = "whisper";
+pub(crate) const REWRITE_SET: &str = "rewrite";
+pub(crate) const REWRITE_GEMMA_SET: &str = "rewrite-gemma";
 
-pub(crate) const SETS: [Set; 3] = [
+/// The model that corrects dictation (docs/dictation-rewrite.md): one GGUF file,
+/// read by llama.cpp's server, which the shell starts. This service only fetches it.
+const REWRITE: &[File] = &[File {
+    path: "SpeakoFlow-Mini-0.8B-Q4_K_M.gguf",
+    url: hf!(
+        "SpeakoFlow/speakoflow-mini",
+        "835431771f72820251fe6c6b4b07f12b000e2647",
+        "SpeakoFlow-Mini-0.8B-Q4_K_M.gguf"
+    ),
+    bytes: 541_903_616,
+    sha256: "530e0a5d4e9314e3bae2c92aecf3ab39ca48e8cfecac41372058f9fcb742329d",
+}];
+
+/// The larger model that corrects dictation, chosen in Settings › Voice (decisions.md D200): Gemma 4 E2B, Q4.
+const REWRITE_GEMMA: &[File] = &[File {
+    path: "gemma-4-E2B-it-Q4_K_M.gguf",
+    url: hf!(
+        "unsloth/gemma-4-E2B-it-GGUF",
+        "0314792d7f1f7e229411f620751375812bb9faf2",
+        "gemma-4-E2B-it-Q4_K_M.gguf"
+    ),
+    bytes: 3_106_738_272,
+    sha256: "740185b21d22ceb83a11c3aa62ad5842ef32c70f6096d756bbee85a1e4ec34b8",
+}];
+
+pub(crate) const SETS: [Set; 5] = [
     Set {
         id: LISTEN_SET,
         name: "Listening",
@@ -240,6 +267,22 @@ pub(crate) const SETS: [Set; 3] = [
         basic: false,
         files: WHISPER,
     },
+    Set {
+        id: REWRITE_SET,
+        name: "Corrections",
+        about: "Fixes what you take back as you dictate (“at five, no, six”), in English and Spanish, on this computer.",
+        credit: "SpeakoFlow Mini by SpeakoFlow (Apache 2.0), made from Qwen3.5 0.8B by Alibaba Cloud (Apache 2.0).",
+        basic: false,
+        files: REWRITE,
+    },
+    Set {
+        id: REWRITE_GEMMA_SET,
+        name: "Corrections, larger",
+        about: "Fixes what you take back as you dictate, and cleans fillers and names better, in English and Spanish, on this computer.",
+        credit: "Gemma 4 E2B by Google DeepMind (Apache 2.0), GGUF by Unsloth.",
+        basic: false,
+        files: REWRITE_GEMMA,
+    },
 ];
 
 pub(crate) fn set(id: &str) -> Option<&'static Set> {
@@ -253,47 +296,5 @@ impl Set {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn every_file_is_pinned_to_a_commit_and_a_hash() {
-        let mut paths = std::collections::HashSet::new();
-        for set in &SETS {
-            assert!(!set.files.is_empty());
-            for file in set.files {
-                // "resolve/<40 hex>/": a commit, never a branch that can move.
-                let commit = file
-                    .url
-                    .split("/resolve/")
-                    .nth(1)
-                    .and_then(|rest| rest.split('/').next());
-                assert!(
-                    commit
-                        .is_some_and(|c| c.len() == 40 && c.chars().all(|x| x.is_ascii_hexdigit())),
-                    "{}",
-                    file.url
-                );
-                assert!(file.url.starts_with("https://huggingface.co/"));
-                assert_eq!(file.sha256.len(), 64, "{}", file.path);
-                assert!(
-                    file.sha256
-                        .chars()
-                        .all(|x| x.is_ascii_hexdigit() && !x.is_ascii_uppercase())
-                );
-                assert!(file.bytes > 0);
-                // A path stays inside its set's folder, and is used once.
-                assert!(!file.path.starts_with('/') && !file.path.contains(".."));
-                assert!(paths.insert((set.id, file.path)), "{} twice", file.path);
-            }
-        }
-    }
-
-    #[test]
-    fn the_sizes_are_what_settings_will_say() {
-        assert_eq!(set(LISTEN_SET).map(Set::bytes), Some(672_862_728));
-        assert_eq!(set(SPEAK_SET).map(Set::bytes), Some(334_932_491));
-        assert_eq!(set(WHISPER_SET).map(Set::bytes), Some(1_036_613_791));
-        assert!(set("other").is_none());
-    }
-}
+#[path = "manifest_tests.rs"]
+mod tests;

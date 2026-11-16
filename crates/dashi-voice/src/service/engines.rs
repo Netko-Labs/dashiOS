@@ -21,6 +21,18 @@ pub(crate) trait Engines: Send + Sync {
     fn deaf_to(&self, language: Option<&str>) -> Option<String>;
     fn detector(&self) -> Result<Box<dyn SpeechDetector>, String>;
     fn recognizer(&self, language: Option<&str>) -> Result<Shared<dyn Recognizer>, String>;
+    /// The recogniser the person chose ("whisper"), where it can hear this language; else as `recognizer`.
+    fn recognizer_for(
+        &self,
+        language: Option<&str>,
+        _model: Option<&str>,
+    ) -> Result<Shared<dyn Recognizer>, String> {
+        self.recognizer(language)
+    }
+    /// The name of the model `recognizer_for` gives, for the logs.
+    fn recognizer_name(&self, _language: Option<&str>, _model: Option<&str>) -> &'static str {
+        "parakeet-v3"
+    }
     /// Why nothing can be said in this voice now; none when it can.
     fn mute_in(&self, voice: &str) -> Option<String>;
     fn synthesizer(&self) -> Result<Shared<dyn Synthesizer>, String>;
@@ -96,6 +108,20 @@ impl Loaded {
     fn wants_whisper(language: Option<&str>) -> bool {
         language.is_some_and(|language| !parakeet::LANGUAGES.contains(&primary(language).as_str()))
     }
+
+    /// Whisper hears it: the language needs it, or the person chose it and its set is here.
+    fn whisper_hears(&self, language: Option<&str>, model: Option<&str>) -> bool {
+        Self::wants_whisper(language)
+            || (model == Some("whisper") && self.store.installed_id(WHISPER_SET))
+    }
+
+    fn whisper(&self) -> Result<Shared<dyn Recognizer>, String> {
+        held_or_open(&self.held.whisper, || {
+            let whisper: Shared<dyn Recognizer> =
+                Arc::new(Mutex::new(Whisper::open(&self.folder(WHISPER_SET))?));
+            Ok(whisper)
+        })
+    }
 }
 
 impl Engines for Loaded {
@@ -126,17 +152,35 @@ impl Engines for Loaded {
             return Err(why);
         }
         if Self::wants_whisper(language) {
-            return held_or_open(&self.held.whisper, || {
-                let whisper: Shared<dyn Recognizer> =
-                    Arc::new(Mutex::new(Whisper::open(&self.folder(WHISPER_SET))?));
-                Ok(whisper)
-            });
+            return self.whisper();
         }
         held_or_open(&self.held.parakeet, || {
             let folder = self.folder(LISTEN_SET).join("parakeet");
             let parakeet: Shared<dyn Recognizer> = Arc::new(Mutex::new(Parakeet::open(&folder)?));
             Ok(parakeet)
         })
+    }
+
+    fn recognizer_for(
+        &self,
+        language: Option<&str>,
+        model: Option<&str>,
+    ) -> Result<Shared<dyn Recognizer>, String> {
+        if let Some(why) = self.deaf_to(language) {
+            return Err(why);
+        }
+        if self.whisper_hears(language, model) {
+            return self.whisper();
+        }
+        self.recognizer(language)
+    }
+
+    fn recognizer_name(&self, language: Option<&str>, model: Option<&str>) -> &'static str {
+        if self.whisper_hears(language, model) {
+            "whisper-turbo"
+        } else {
+            "parakeet-v3"
+        }
     }
 
     fn mute_in(&self, voice: &str) -> Option<String> {

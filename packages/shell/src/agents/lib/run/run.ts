@@ -36,8 +36,17 @@ const personalHandlers = {
   select_option: (call, ctx) => (call.window !== null ? windowTreeCall(call, ctx) : browserCall(call, ctx)),
   press: browserCall,
   scroll_page: (call, ctx) => (call.window !== null ? windowTreeCall(call, ctx) : browserCall(call, ctx)),
-  list_tabs: browserCall,
-  switch_tab: browserCall,
+  list_tabs: desktop.tabsCall,
+  switch_tab: desktop.tabsCall,
+  close_tab: desktop.tabsCall,
+  reload_tab: desktop.tabsCall,
+  go_back: desktop.tabsCall,
+  go_forward: desktop.tabsCall,
+  wait_for: desktop.waitFor,
+  attach_file: desktop.attachFile,
+  click_in_element: desktop.clickInElement,
+  screenshot_element: desktop.screenshotElement,
+  list_downloads: desktop.listDownloads,
   click: desktop.handsCall,
   scroll: desktop.handsCall,
   drag: desktop.handsCall,
@@ -60,6 +69,15 @@ const personalHandlers = {
   | "scroll_page"
   | "list_tabs"
   | "switch_tab"
+  | "close_tab"
+  | "reload_tab"
+  | "go_back"
+  | "go_forward"
+  | "wait_for"
+  | "attach_file"
+  | "click_in_element"
+  | "screenshot_element"
+  | "list_downloads"
   | "click"
   | "scroll"
   | "drag"

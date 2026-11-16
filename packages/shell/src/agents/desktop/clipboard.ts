@@ -5,7 +5,16 @@
  * marked secret) was never kept, so it can't be read.
  */
 
-import { json, type RunContext, type ToolResult, toolError } from "../context.ts";
+import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
+
+/** copy_to_clipboard: the text on the clipboard, kept in the history as Dashi's. */
+export async function copyToClipboard(value: string, ctx: RunContext): Promise<ToolResult> {
+  const put = ctx.desktop.clipboard?.put;
+  if (!put) return toolError("The clipboard can't be written in this session.");
+  ctx.status("Copying to the clipboard");
+  if (!(await put(value, "Dashi"))) return toolError("Nothing could write the clipboard (wl-copy is missing).");
+  return text(`It is on the clipboard (${value.length} characters): the person can paste it.`, { copied: value.length });
+}
 
 export async function readClipboardHistory(limit: number, ctx: RunContext): Promise<ToolResult> {
   const clipboard = ctx.desktop.clipboard;

@@ -8,6 +8,11 @@ export const documentHandlers = {
   search_files: (call, ctx) => desktop.searchFiles(call, ctx),
   open_file: (call, ctx) => desktop.openFile(call, ctx),
   trash_file: (call, ctx) => desktop.trashFile(call, ctx),
+  read_text_file: (call, ctx) => desktop.fileTextCall(call, ctx),
+  write_text_file: (call, ctx) => desktop.fileTextCall(call, ctx),
+  move_file: (call, ctx) => desktop.fileTextCall(call, ctx),
+  copy_file: (call, ctx) => desktop.fileTextCall(call, ctx),
+  rename_file: (call, ctx) => desktop.fileTextCall(call, ctx),
   list_notes: (call, ctx) => desktop.listNotes(call.folder, call.limit, ctx),
   search_notes: (call, ctx) => desktop.searchNotesTool(call.query, call.limit, ctx),
   read_note: (call, ctx) => desktop.readNote(call.id, ctx),
@@ -16,12 +21,22 @@ export const documentHandlers = {
   list_calendars: (_call, ctx) => desktop.listCalendars(ctx),
   list_events: (call, ctx) => desktop.listEvents(call, ctx),
   create_event: (call, ctx) => desktop.createEvent(call, ctx),
+  edit_note: (call, ctx) => desktop.editNote(call, ctx),
+  delete_note: (call, ctx) => desktop.deleteNote(call.id, ctx),
+  edit_event: (call, ctx) => desktop.editEvent(call, ctx),
+  delete_event: (call, ctx) => desktop.deleteEvent(call.uid, ctx),
   read_clipboard_history: (call, ctx) => desktop.readClipboardHistory(call.limit, ctx),
+  copy_to_clipboard: (call, ctx) => desktop.copyToClipboard(call.text, ctx),
 } satisfies Handlers<
   | "list_folder"
   | "search_files"
   | "open_file"
   | "trash_file"
+  | "read_text_file"
+  | "write_text_file"
+  | "move_file"
+  | "copy_file"
+  | "rename_file"
   | "list_notes"
   | "search_notes"
   | "read_note"
@@ -30,5 +45,10 @@ export const documentHandlers = {
   | "list_calendars"
   | "list_events"
   | "create_event"
+  | "edit_note"
+  | "delete_note"
+  | "edit_event"
+  | "delete_event"
   | "read_clipboard_history"
+  | "copy_to_clipboard"
 >;

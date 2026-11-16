@@ -118,8 +118,8 @@ function assistantSession(answer: PersonAnswer = { text: "Yes.", by: "voice" }) 
   return { call, questions, confirms, sheets, said, state, requests, policy };
 }
 
-test("the tools that wait for a spoken yes are the destructive ones with no sheet of their own: four of 89", () => {
-  expect(TOOLS).toHaveLength(89);
+test("the tools that wait for a spoken yes are the destructive ones with no sheet of their own: four of 108", () => {
+  expect(TOOLS).toHaveLength(108);
   expect(
     TOOLS.filter((tool) => needsSpokenYes(tool.name))
       .map((tool) => tool.name)

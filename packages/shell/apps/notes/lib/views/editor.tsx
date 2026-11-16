@@ -1,10 +1,11 @@
 /**
  * The note on the right, as one live page: when it was edited, the title
  * (the first line), and the body, a Metal text field that draws its
- * Markdown formatted as it is typed (markup.ts, look.ts). Headings are
- * larger, `**bold**` is bold with its stars faded, a checklist's box is
- * ticked by clicking it, and a link opens with ❖-click (a plain click puts
- * the caret in its words); the file stays the plain Markdown typed. The
+ * Markdown as what it means and the caret's block as its source (body.tsx).
+ * Headings are larger with no `#`, bullets are dots, tables are tables, a
+ * checklist's box is ticked by clicking it, and a link opens with ❖-click
+ * (a plain click puts the caret in its words); the file stays the plain
+ * Markdown typed. The
  * field has Metal's caret and selection, and the window keeps them
  * (`selection`), so Format, Undo and Find can put the caret back where it
  * belongs. Metal lays a multiline field out at its minimum height, so a
@@ -26,7 +27,8 @@ import { type DateForm, fitLine } from "../layout.ts";
 import type { Row } from "../list.ts";
 import type { Pressable } from "../look.ts";
 import type { Draft } from "../state.ts";
-import { GUTTER, MetaLine, Page, Title } from "./note-page.tsx";
+import { Page } from "./body.tsx";
+import { GUTTER, MetaLine, Title } from "./note-page.tsx";
 
 export interface EditorProps {
   draft: Draft | null;
@@ -39,6 +41,10 @@ export interface EditorProps {
   /** Changes when the fields must start over. */
   session: number;
   focusTitle: boolean;
+  /** The person is in the body: the caret's block shows its Markdown. */
+  editing: boolean;
+  /** The title took the caret. */
+  onTitleCaret: () => void;
   onEdit: (change: Partial<Draft>) => void;
   onSelection: (selection: Selection) => void;
   onToggleCheck: (line: number) => void;
@@ -121,6 +127,7 @@ function DeletedNote({
           wantsFocus={false}
           minHeight={0}
           readOnly
+          editing={false}
           onChange={() => {}}
           onSelection={() => {}}
           onPress={() => {}}
@@ -199,6 +206,7 @@ export function Editor(props: EditorProps) {
           readOnly={false}
           onChange={(title) => onEdit({ title })}
           onLeave={onLeave}
+          onCaret={props.onTitleCaret}
         />
         <Page
           body={draft.body}
@@ -208,6 +216,7 @@ export function Editor(props: EditorProps) {
           wantsFocus={wantsFocus}
           minHeight={Math.max(200, height - 130)}
           readOnly={false}
+          editing={props.editing}
           onChange={(body) => {
             if (body.length > draft.body.length && body.startsWith(draft.body)) followEnd();
             onEdit({ body });
