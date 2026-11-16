@@ -5241,3 +5241,26 @@ short words, as the rulebook is written.
   Markdown until the typing pauses.
 - **Undo:** `useSettled` and `useRevealed` in `apps/notes/lib/views/body.tsx`.
 
+
+### D310. One start or one ❖N, one window: Text Editor brings back one draft
+
+- **Date:** 2026-11-16. `v09/fix-new-window` (reviews 26, 27, 32, 33).
+- **Dilemma:** Text Editor opened five windows on a launch and several on
+  ❖N. A window started without a file brought back every kept draft no open
+  window held, one window each (`main.tsx`), and New (❖N, the toolbar)
+  started exactly such a window. Untitled text in a closed window is kept as
+  a draft, so drafts piled up over passes, and every start or ❖N opened all
+  of them again. The keys were handled once: the shell chooses one row of
+  one process, and `launch_app` of an open app only brings it forward.
+- **Decision:** New's window is started with `--new` and takes no draft. A
+  plain start takes the newest draft only. The others stay kept, and File ›
+  Open Drafts (enabled while there are any) brings them back, one window
+  each, when the person asks. Nothing is lost and nothing opens unasked.
+- **Cost:** a draft beyond the newest is one menu row away instead of on
+  screen at the next start.
+- **Undo:** `startingDraft` and `KeptDrafts` in `apps/editor/lib/drafts.ts`.
+- **Notes, the same pass:** after ❖N the typing went to Search when the open
+  note was an empty "Untitled": leaving it discarded its file, the new note
+  took the same name, and `select` took it for the note already open (no new
+  session, no focus on the title). `newNote` now forgets the note it left
+  before opening the new one, so its title always takes the keyboard.

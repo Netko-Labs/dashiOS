@@ -1,9 +1,10 @@
 /**
- * Text Editor's command line: `[--host <path>] [--recover <file>] [file…]`.
+ * Text Editor's command line: `[--host <path>] [--recover <file> | --new] [file…]`.
  * A file may be a path or, as `%f` launchers and `gio open` pass it, a
  * `file://` URL; another scheme (a web address) is left out. `--recover`
  * names a recovery file this app wrote (recovery.ts), for a window opened to
- * show one.
+ * show one; `--new`, a window New opened, which brings back no draft
+ * (drafts.ts).
  */
 
 import { fileURLToPath } from "node:url";
@@ -13,6 +14,8 @@ export interface Args {
   /** Paths, in the order given. */
   files: string[];
   recover: string | null;
+  /** A new Untitled window (❖N): no draft comes back in it. */
+  fresh: boolean;
 }
 
 /** A path from a path or a `file://` URL; null for any other URL or an empty or odd value. */
@@ -32,6 +35,7 @@ export function pathFromArg(arg: string): string | null {
 export function parseArgs(argv: readonly string[]): Args {
   let host: string | null = null;
   let recover: string | null = null;
+  let fresh = false;
   const files: string[] = [];
   const add = (arg: string): void => {
     const path = pathFromArg(arg);
@@ -41,10 +45,11 @@ export function parseArgs(argv: readonly string[]): Args {
     const arg = argv[i] as string;
     if (arg === "--host") host = argv[++i] ?? null;
     else if (arg === "--recover") recover = argv[++i] ?? null;
+    else if (arg === "--new") fresh = true;
     else if (arg === "--") {
       for (const rest of argv.slice(i + 1)) add(rest);
       break;
     } else if (!arg.startsWith("--")) add(arg);
   }
-  return { host, files, recover };
+  return { host, files, recover, fresh };
 }

@@ -24,7 +24,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import type { EditorModel } from "../model.ts";
 import { displayName, folderLabel } from "../names.ts";
 import { titleDetail } from "../status.ts";
-import { useEditorMenus } from "../use-editor-menus.ts";
+import { type Drafts, useEditorMenus } from "../use-editor-menus.ts";
 import { useEditorSheets } from "../use-editor-sheets.ts";
 import { useSelection } from "../use-selection.ts";
 import { EditorContent, useLineCount } from "./content.tsx";
@@ -44,6 +44,8 @@ export interface EditorWindowProps {
   quit: (discard: boolean) => void;
   /** Opens another window, with these files (none: Untitled). */
   newWindow: (files: readonly string[]) => void;
+  /** The drafts no window holds, and opening them (File › Open Drafts; drafts.ts). */
+  drafts?: Drafts;
   /** Types a chord into the window (GPUI's spelling, "ctrl-v"): Cut, Copy, Paste, and Select All reach the input this way. */
   press: (keystroke: string) => void;
   scroll: (dy: number, fromTop: boolean) => void;
@@ -53,7 +55,7 @@ export interface EditorWindowProps {
   setTitle: (title: string) => void;
 }
 
-export function EditorWindow({ model, quit, newWindow, press, scroll, focusText, setTitle }: EditorWindowProps) {
+export function EditorWindow({ model, quit, newWindow, drafts, press, scroll, focusText, setTitle }: EditorWindowProps) {
   const state = useSyncExternalStore(model.subscribe, model.getSnapshot);
   // Bumped to give the keyboard to the Find field (it is mounted again).
   const [findFocus, setFindFocus] = useState(0);
@@ -64,7 +66,7 @@ export function EditorWindow({ model, quit, newWindow, press, scroll, focusText,
   useEffect(() => {
     setTitle(name);
   }, [name, setTitle]);
-  useEditorMenus({ model, state, selection, sheets, newWindow, press, focusFind: () => setFindFocus((n) => n + 1) });
+  useEditorMenus({ model, state, selection, sheets, newWindow, drafts, press, focusFind: () => setFindFocus((n) => n + 1) });
 
   // One chrome row: the folder is the muted words after the title, and Find's place is in its field. The counts
   // wait in a chip at the text's foot; a notice floats over the text until dismissed, and the chip makes way for it.

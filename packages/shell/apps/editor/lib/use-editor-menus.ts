@@ -2,13 +2,22 @@
  * The window's menu bar menus (menus.ts) and what each command does here.
  */
 
-import { useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { useAppMenus } from "../../kit/index.ts";
+import type { KeptDrafts } from "./drafts.ts";
 import { editorMenus } from "./menus.ts";
 import type { EditorModel } from "./model.ts";
 import type { EditorState } from "./state.ts";
 import type { EditorSheets } from "./use-editor-sheets.ts";
 import type { Selection } from "./use-selection.ts";
+
+/** The kept drafts no window holds (File › Open Drafts), and opening them one window each. */
+export interface Drafts {
+  kept: KeptDrafts;
+  open(): void;
+}
+
+const NO_DRAFTS = { subscribe: () => () => {}, getSnapshot: () => 0 };
 
 export function useEditorMenus({
   model,
@@ -16,6 +25,7 @@ export function useEditorMenus({
   selection,
   sheets,
   newWindow,
+  drafts,
   press,
   focusFind,
 }: {
@@ -24,6 +34,7 @@ export function useEditorMenus({
   selection: Selection;
   sheets: EditorSheets;
   newWindow: (files: readonly string[]) => void;
+  drafts?: Drafts | undefined;
   /** Types a chord into the window (GPUI's spelling, "ctrl-v"). */
   press: (keystroke: string) => void;
   /** Gives the keyboard to the Find field. */
@@ -34,7 +45,9 @@ export function useEditorMenus({
   // Versions are kept as the file is written over, which changes `saved`: looked up then, not on every keystroke.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `saved` stands for "a version may have been kept".
   const hasVersions = useMemo(() => model.hasVersions, [model, state.path, state.saved]);
+  const keptDrafts = useSyncExternalStore((drafts?.kept ?? NO_DRAFTS).subscribe, (drafts?.kept ?? NO_DRAFTS).getSnapshot);
   const { menus, run } = editorMenus({
+    keptDrafts,
     hasFile: state.path !== null,
     pristine: model.isPristine,
     hasVersions,
@@ -51,6 +64,7 @@ export function useEditorMenus({
     actions: {
       newWindow: () => newWindow([]),
       open: () => setSheet({ kind: "open" }),
+      openDrafts: () => drafts?.open(),
       close: sheets.requestClose,
       save: sheets.save,
       saveAs: () => setSheet({ kind: "save-as" }),

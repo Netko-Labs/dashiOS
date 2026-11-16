@@ -3,8 +3,9 @@
  * Plain text in one window per document (model.ts is the document,
  * view.tsx the window). The first file opens here and each other one in a
  * window of its own, with the changes kept for it if an earlier window
- * couldn't write them; without a file, every draft comes back (recovery.ts),
- * else an Untitled document.
+ * couldn't write them; without a file, the newest draft comes back
+ * (recovery.ts, drafts.ts), else an Untitled document. New's window takes no
+ * draft, and File › Open Drafts brings back the others.
  *
  * Nothing is ever lost and nothing asks: a moment after typing stops (and as
  * the window goes, however it goes) a document with a file is written to it,
@@ -17,6 +18,7 @@ import { resolve } from "node:path";
 import { METAL_HOST } from "../../src/shared/apps/index.ts";
 import { runApp } from "../kit/index.ts";
 import { parseArgs } from "./lib/args.ts";
+import { KeptDrafts, startingDraft } from "./lib/drafts.ts";
 import { EditorModel } from "./lib/model.ts";
 import { moveOldRecovery, RecoveryKeeper, recoveryFiles, recoveryFor, takeRecovery } from "./lib/recovery.ts";
 import { VersionStore } from "./lib/versions.ts";
@@ -47,6 +49,8 @@ const setTitle = (title: string): void => handle.setTitle(title);
 let discard = false;
 /** How often the window looks at its file and the View settings. */
 const DISK_CHECK_MS = 2000;
+/** The drafts no window holds, for File › Open Drafts (this window's own is not one of them). */
+const drafts = new KeptDrafts(() => recoveryFiles().filter((name) => name !== keeper.name));
 
 const app = runApp(
   // Its Edit rows already act on whichever field has the keyboard, and its Undo is the document's.
@@ -58,6 +62,7 @@ const app = runApp(
       app.quit();
     }}
     newWindow={(paths) => openWindow(windowCommand(launch, paths), cwd)}
+    drafts={{ kept: drafts, open: () => drafts.openAll((name) => openWindow(windowCommand(launch, [], name), cwd)) }}
     press={(keystroke) => handle.press(keystroke)}
     scroll={(dy, fromTop) => handle.scroll(dy, fromTop)}
     focusText={() => handle.focusText()}
@@ -87,15 +92,14 @@ if (first !== undefined) {
   else model.open(first);
   for (const file of rest) openWindow(windowCommand(launch, [file]), cwd);
 } else {
-  // A window opened for one kept file takes that one; a plain one takes them all, one per window.
-  const kept = args.recover !== null ? [args.recover] : recoveryFiles();
-  const [mine, ...others] = kept;
-  const recovery = mine !== undefined ? takeRecovery(mine) : null;
+  // One window, one draft at most: the newest no window keeps, or the one it was opened for; New takes none (drafts.ts).
+  const mine = startingDraft(args, args.recover !== null || args.fresh ? [] : recoveryFiles());
+  const recovery = mine !== null ? takeRecovery(mine) : null;
   if (recovery) model.recover(recovery);
-  if (args.recover === null) for (const name of others) openWindow(windowCommand(launch, [], name), cwd);
 }
 // What was taken is this window's to keep now; then every change is saved (or kept) a moment after typing stops.
 keeper.flush();
+drafts.refresh();
 let seen = model.getSnapshot();
 model.subscribe(() => {
   const now = model.getSnapshot();
@@ -105,6 +109,7 @@ model.subscribe(() => {
 setInterval(() => {
   model.checkDisk();
   model.reloadPrefs();
+  drafts.refresh();
 }, DISK_CHECK_MS);
 
 // However the window goes (File › Close, its close button, ❖Q, logging out, a signal), what isn't written is

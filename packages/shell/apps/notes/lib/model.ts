@@ -98,6 +98,9 @@ export class NotesModel extends NotesSaving {
   /** A new note in the open folder (the default folder from All Notes or a search). */
   newNote(): void {
     this.leave();
+    // The note left is done with: an empty "Untitled" was just discarded, and the new note may take its very
+    // name, which must open as a new note (its title taking the keyboard), not be taken for the one left (D310).
+    this.set({ selected: null, draft: null });
     const { source } = this.state;
     const folder = source.kind === "folder" ? source.name : "";
     try {
