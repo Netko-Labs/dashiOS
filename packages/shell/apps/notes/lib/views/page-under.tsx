@@ -11,8 +11,8 @@
 import { type Palette, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactElement, useMemo } from "react";
-import { type Table, TableView } from "../../../../src/shared/markdown/index.ts";
-import { BOX, type Para, type Projection, project } from "../project.ts";
+import { TASK_BOX, type Table, TableView } from "../../../../src/shared/markdown/index.ts";
+import { type Para, type Projection, project } from "../project.ts";
 import { BODY_SIZE } from "../sizes.ts";
 
 /** About the width of a letter of the body, for a column's least width. */
@@ -26,7 +26,7 @@ function Line({ para, text }: { para: Para; text: string }) {
 }
 
 /** A cell's words as drawn: its Markdown's markers gone, a box as a box. */
-const cellText = (cell: string): string => project(cell, null).display.replace(BOX.open, "☐").replace(BOX.done, "☑");
+const cellText = (cell: string): string => project(cell, null).display.replace(TASK_BOX.open, "☐").replace(TASK_BOX.done, "☑");
 
 /** A table, as the shared view draws it (shared/markdown), at the body's size. */
 function NoteTable({ table, onHeight }: { table: Table; onHeight: (height: number) => void }) {

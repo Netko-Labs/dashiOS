@@ -180,6 +180,11 @@ export function useSearch(props: LauncherProps, s: LauncherState, m: Measures): 
   const typedAt = useKeystrokeTiming(query);
   // A scope the launcher leaves (or closes over) hears it: an extension's view is told to close.
   useEffect(() => () => scope?.leave?.(), [scope]);
+  // A scope that changes the field itself, after any render (an extension's pushed view starts empty: tree-scope.ts).
+  useEffect(() => {
+    const next = scope?.fieldNow?.(query);
+    if (next !== null && next !== undefined) restart(next);
+  });
   const rows = selectable(sections);
   const rowIds = rows.map((row) => row.id);
   // With nothing held the first row, but never Ask: it is chosen, not given.

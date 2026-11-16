@@ -92,6 +92,8 @@ export interface LauncherOpening {
   typeAhead?: TypeAheadSource;
   /** Open in this scope (its id), for it alone: Esc closes. */
   scope?: string | null;
+  /** The surface's height, when the screen is too short for the whole of it (place.ts `launcherPlace`). */
+  height?: number;
   /** The list's height follows its rows over this many ms (a host that can: launcher/resident.tsx); unset jumps (Reduce Motion). */
   heightTransitionMs?: number;
   /** The host publishes an accessibility tree (launcher/access.ts): the rows say what they are. */

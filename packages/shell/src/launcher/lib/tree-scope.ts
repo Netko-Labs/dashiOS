@@ -9,8 +9,12 @@
  *   after 300 ms, "<it> isn't answering" after 10 s.
  * - A `set` action asks for its preference in the field (a secret's field
  *   shows dots) and Return keeps it.
+ * - A `push` action's view starts with an empty field: what was typed to
+ *   find the row goes, what was typed after ↩ (before the view came) stays
+ *   (pass 42: the repository's name filtered its pull requests away).
  */
 
+import { findNode } from "@dashi/applet";
 import type { TreeActed, TreeView } from "../../actions/index.ts";
 import type { Row, RowIcon } from "../row-model.ts";
 import type { Section } from "../sections.ts";
@@ -49,6 +53,8 @@ class TreeScope {
   private opened: Opened[] = [];
   private wentBack: Opened | null = null;
   private searched: string | null = null;
+  /** A push asked for and not yet come: the depth it was asked at, and what the field held then. */
+  private pushing: { depth: number; query: string } | null = null;
   private serial = 0;
   private readonly own = new Set<() => void>();
   readonly icon: RowIcon;
@@ -101,7 +107,8 @@ class TreeScope {
     const root = this.top();
     if (!root) return this.now() - state.since > LOADING_AFTER_MS ? this.note("tree:loading", "Loading…") : [{ id: "tree:skeleton", rows: [], reserved: 3 }];
     // An extension that filters itself hears what is typed; the launcher filters the rest.
-    if (root.p.filter === "extension" && this.searched !== query) {
+    // Nor while a view it pushes is on its way: keys typed for that view are not a new search here.
+    if (root.p.filter === "extension" && this.searched !== query && !this.pushing) {
       this.searched = query;
       view.search(query);
     }
@@ -114,6 +121,9 @@ class TreeScope {
     const nodeId = nodeIdOf(row);
     if (!root || !nodeId) return [];
     const node = nodeId === root.i ? root : root.c.flatMap((child) => [child, ...child.c]).find((each) => each.i === nodeId);
+    // The launcher's own rows (Loading…, "Nothing in … for …") have no actions: ↩ or ❖↩ typed before the
+    // list came used to run the view's own (Choose Repository…, Use a GitHub Token…; passes 41 and 42).
+    if (!node) return [];
     // The item's own actions, then the view's (its root's ActionPanel), each once.
     const own = panelVerbs(panelOf(node, root));
     const view = node === root ? [] : panelVerbs(root.c.find((child) => child.t === "ActionPanel")).filter((verb) => !own.some((each) => each.id === verb.id));
@@ -140,9 +150,12 @@ class TreeScope {
     }
     // ↩ on a row is its first action.
     const id = verb === "first" ? (row ? this.verbs(row)[0]?.id : undefined) : verb;
+    this.pushing = null;
     if (id && row) {
       const depth = this.view.snapshot().stack.length;
       this.opened = [...this.opened.filter((each) => each.depth < depth), { depth, row: row.id, query }];
+      const top = this.top();
+      if (top && findNode(top, id)?.p.kind === "push") this.pushing = { depth, query };
     }
     return id ? this.acted(await this.view.act(id)) : {};
   };
@@ -157,8 +170,17 @@ class TreeScope {
     return { ...(done.close ? { close: true as const } : {}), ...(done.notice ? { notice: { text: done.notice, ok: true } } : {}) };
   }
 
+  /** What the field holds once a pushed view came: what was typed after ↩; null while nothing changes it. */
+  fieldNow = (query: string): string | null => {
+    const pushing = this.pushing;
+    if (!pushing || this.view.snapshot().stack.length <= pushing.depth) return null;
+    this.pushing = null;
+    return query.startsWith(pushing.query) ? query.slice(pushing.query.length) : "";
+  };
+
   back = (): boolean => {
     this.wentBack = null;
+    this.pushing = null;
     if (!this.asking) {
       const depth = this.view.snapshot().stack.length;
       if (!this.view.back()) return false;
@@ -197,6 +219,7 @@ export function treeScope(title: string, view: TreeView, now: () => number = () 
     run: scope.run,
     back: scope.back,
     returnTo: scope.returnTo,
+    fieldNow: scope.fieldNow,
     leave: () => view.close(),
     secure: () => scope.asking?.secret === true,
     notice: () => {

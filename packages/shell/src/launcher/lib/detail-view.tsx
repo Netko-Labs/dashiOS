@@ -10,7 +10,7 @@ import type { ViewNode } from "@dashi/applet";
 import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { leastWidth, type Table, TableView } from "../../shared/markdown/index.ts";
+import { leastWidth, TASK_BOX, type Table, TableView } from "../../shared/markdown/index.ts";
 import type { Tone } from "../row-model.ts";
 import { type Alert, inline, type MarkdownBlock, markdownBlocks } from "./detail-markdown.ts";
 import { detailScroll } from "./detail-scroll.ts";
@@ -65,6 +65,23 @@ function DetailTable({ table, m }: { table: Table; m: Measures }) {
   );
 }
 
+/** A task list's item as Notes draws one: its box bold, moss once done; a done item's words muted and struck through. */
+function Task({ block, m }: { block: Extract<MarkdownBlock, { kind: "task" }>; m: Measures }) {
+  const colors = useColors();
+  return (
+    <View testID={`launcher:detail:task:${block.done ? "done" : "open"}`} style={{ flexDirection: "row", gap: 6, alignItems: "flex-start" }}>
+      <Text style={{ fontSize: m.title, fontWeight: "bold", color: block.done ? colors.moss : colors.textMuted }}>
+        {block.done ? TASK_BOX.done : TASK_BOX.open}
+      </Text>
+      <View style={{ flexShrink: 1 }}>
+        <Text style={{ fontSize: m.title, color: block.done ? colors.textMuted : colors.text, ...(block.done ? { textDecorationLine: "line-through" } : {}) }}>
+          {block.text}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 /** One block of a detail's Markdown. */
 function Block({ block, m }: { block: MarkdownBlock; m: Measures }) {
   const colors = useColors();
@@ -72,6 +89,7 @@ function Block({ block, m }: { block: MarkdownBlock; m: Measures }) {
     return <View testID="launcher:detail:rule" style={{ flexShrink: 0, height: 1, backgroundColor: colors.separator, marginTop: 4, marginBottom: 4 }} />;
   if (block.kind === "quote") return <Quote block={block} m={m} />;
   if (block.kind === "table") return <DetailTable table={block.table} m={m} />;
+  if (block.kind === "task") return <Task block={block} m={m} />;
   return (
     <Text
       style={{

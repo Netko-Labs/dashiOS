@@ -5860,3 +5860,92 @@ short words, as the rulebook is written.
   the pointer, with a name cell inside) are the launcher's results and an
   extension's tree view.
 - **Undo:** revert the mirin commit; Dashi has nothing to undo.
+
+### D385. A pushed view starts with an empty field; the launcher's own rows have no actions
+
+- **Date:** 2026-11-16. `v09/fix-polish-3`, from passes 41 and 42.
+- **Found:** ↩ on a GitHub repository ("Show Pull Requests") did push its
+  pull requests, but the field kept the repository's name, and the launcher
+  filtered every pull request away with it ("Nothing in GitHub for
+  “renovatebot/renovate47608”"). Keys typed before the view came were sent
+  to the repository search. And the launcher's own rows (the list loading,
+  "Nothing in … for …") took the view's actions as theirs: ↩ there asked for
+  "Repository", ❖↩ for "GitHub token".
+- **Decision:** a `push` action's view starts with an empty field. What was
+  typed after ↩, before the view came, stays (type-ahead is never lost); it
+  is not searched in the view under it. A list that says it is loading and
+  has no row shows "Loading…", not "Nothing". The launcher's own rows have
+  no actions; an extension's EmptyView keeps its own, or the view's.
+- **Undo:** `pushing` and `fieldNow` in `launcher/lib/tree-scope.ts` (and its
+  call in `use-search.ts`); the `if (!node) return []` in its `verbs`; the
+  `loading` row in `tree-rows.ts`.
+
+### D386. The ranking history is read again when its file changes
+
+- **Date:** 2026-11-16. `v09/fix-polish-3`, from pass 42.
+- **Found:** `ranking.json` was read only when the shell started: picks
+  taken out of it by hand changed nothing until the session restarted.
+- **Decision:** when the ranking is asked, the file is looked at (no more
+  than once a second: one `stat`) and read again when it is not the file the
+  shell last read or wrote (inode, size, time). A change on disk wins over
+  the shell's own not yet written (at most two seconds of picks): the person
+  or a tool that edited the file meant it. No file watcher: nothing runs
+  while the launcher is not asked.
+- **Undo:** `lookAgain` in `launcher/ranking/store.ts`.
+
+### D387. The launcher fits a short screen: higher first, then shorter
+
+- **Date:** 2026-11-16. `v09/fix-polish-3`, from passes 41 and 42.
+- **Found:** the launcher's surface was 600 tall, 120 under the menu bar, on
+  every screen. On the VM's 1098 × 686 (1922 × 1201 at 175%) that is 748: its
+  foot ran under the screen's edge, and a detail scrolled to its end showed
+  its last line cut. A 1280 × 800 laptop at 125% or more is the same.
+- **Decision:** when it opens, the room under the bar on the person's screen
+  is asked with where the person is (one `outputs` call beside the one
+  already made). The gap above shrinks first, to 12; then the surface is
+  shorter (never under 240), with 12 free under its foot. Its measures take
+  the surface's height (a React context), so fewer rows are listed, as at a
+  larger text size: nothing is clipped. The window pictures follow its top.
+- **Undo:** `launcherPlace` in `launcher/place.ts`; `launcherRooms` in
+  `boot/lib/launcher-view.tsx`; `SurfaceHeight` in `launcher/lib/measures.ts`.
+
+### D388. A launcher detail draws a task list with Notes' boxes
+
+- **Date:** 2026-11-16. `v09/fix-polish-3`, from passes 41 and 42.
+- **Found:** Renovate's `- [ ] If you want to rebase…` was drawn as
+  "• [ ] If you want to rebase…".
+- **Decision:** Notes' checklist box (□ open, ■ done, from Inter) moves to
+  `shared/markdown/task.ts`, with the one reading of `[ ]` / `[x]`; Notes and
+  the launcher's detail both use it, and the detail draws an item as Notes
+  does: the box bold, moss once done, a done item's words muted and struck
+  through. The box is not pressable in a detail: the body is GitHub's, read
+  only.
+- **Undo:** the `task` block in `launcher/lib/detail-markdown.ts` and `Task`
+  in `detail-view.tsx`; `TASK_BOX` back into Notes' `project.ts`.
+
+### D389. The menu bar's extras keep a fixed order
+
+- **Date:** 2026-11-16. `v09/fix-polish-3`, from pass 42.
+- **Found:** after a package downgrade and upgrade, the bar's fan and
+  keyboard items had swapped places. Extras were shown newest leftmost (as
+  on a Mac), so their order was the order their programs connected in, which
+  changes from one start to the next; an applet's key also carries its
+  connection's number.
+- **Decision:** the order is fixed by who each extra is: tray icons by their
+  app's name, then applets by their id (the key without its connection's
+  number), each alphabetically; a tie goes by key. A new extra goes in its
+  place, not at the left. The person can't move them yet (⌘-drag, as on a
+  Mac, is for later); when they can, their order is kept and this is the
+  default.
+- **Undo:** `placeOf` and `byPlace` in `src/extras/store.ts`.
+
+### D390. GitHub's pull requests send no count until they have come
+
+- **Date:** 2026-11-16. `v09/fix-polish-3`, found in this branch's VM pass.
+- **Found:** with D385 the pushed pull requests showed while they loaded, and
+  showed "This view can't be shown: Section “n1”: subtitle is empty": the
+  section's count was "" until the list came, and the tree refuses an empty
+  subtitle (D379), so the whole loading view was refused.
+- **Decision:** the section has no subtitle while it loads; the launcher
+  shows "Loading…" under it (D385). The tree's rule stays strict.
+- **Undo:** the `subtitle` spread in `extensions/github/main.tsx`.

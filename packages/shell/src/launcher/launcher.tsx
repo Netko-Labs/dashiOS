@@ -33,15 +33,16 @@ import { fieldAccess } from "./access.ts";
 import { useCommands, useExtraKeys } from "./lib/commands.ts";
 import { Field } from "./lib/field.tsx";
 import { drawnSections, listFor } from "./lib/list.tsx";
-import { PANEL, SURFACE, useMeasures } from "./lib/measures.ts";
+import { PANEL, SURFACE, SurfaceHeight, useMeasures } from "./lib/measures.ts";
 import { chipFor, hintsOf, modeLists, placeholderOf } from "./lib/mode.ts";
 import { TalkPanel } from "./lib/talk/panel.tsx";
 import { useActs } from "./lib/use-acts.ts";
 import { useLauncherState, useSearch } from "./lib/use-search.ts";
+import { LAUNCHER_TOP } from "./place.ts";
 import type { LauncherProps } from "./props.ts";
 
 /** The surface, and the measures of the panel on it at text size 1 (docs/design.html LA-1, TY-1, RA-1: the launcher's row; launcher/lib/measures.ts). */
-export const LAUNCHER = { ...SURFACE, top: 120, field: 48, fieldText: 17, radius: PANEL.radius, padding: PANEL.padding } as const;
+export const LAUNCHER = { ...SURFACE, top: LAUNCHER_TOP, field: 48, fieldText: 17, radius: PANEL.radius, padding: PANEL.padding } as const;
 
 /**
  * The launcher: its state and search (launcher/lib/use-search.ts), what each mode lists and shows in the field
@@ -49,6 +50,15 @@ export const LAUNCHER = { ...SURFACE, top: 120, field: 48, fieldText: 17, radius
  * (launcher/lib/commands.ts) and its list (launcher/lib/list.tsx).
  */
 export function Launcher(props: LauncherProps) {
+  // On a short screen the surface is shorter (place.ts), and every part measures with its height.
+  return (
+    <SurfaceHeight.Provider value={props.height ?? SURFACE.height}>
+      <LauncherPanel {...props} />
+    </SurfaceHeight.Provider>
+  );
+}
+
+function LauncherPanel(props: LauncherProps) {
   const colors = useColors();
   // Type and rows at the person's text size, and how many rows fit (launcher/lib/measures.ts).
   const m = useMeasures();

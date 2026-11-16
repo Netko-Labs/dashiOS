@@ -3,12 +3,14 @@
  * docs/design.html LA-1, TY-1): the field 48 tall with 17 px type, rows 40
  * with the name at 13, what follows at 12 and the kind at 11, heads 22, and
  * every one of them times the text size, so rows grow with their type. The
- * surface is 600 tall at every size; as rows grow, fewer of them are listed,
- * so nothing is ever clipped. `measuresFor` is pure; `useMeasures` is what
+ * surface is 600 tall at every size, or shorter on a short screen (place.ts);
+ * as rows grow or the surface shrinks, fewer of them are listed, so nothing
+ * is ever clipped. `measuresFor` is pure; `useMeasures` is what
  * the panel's parts draw with.
  */
 
 import { scaled, useTextSize } from "@dashi/ui";
+import { createContext, useContext } from "react";
 
 /** The launcher's surface: the panel's width, and as tall as its most rows at any text size. */
 export const SURFACE = { width: 620, height: 600 } as const;
@@ -56,13 +58,16 @@ export function tallest(local: number, files: number, row: number, head: number)
   return (local + files) * row + (local + 1) * head;
 }
 
-/** The measures at `textSize` (1 is the standard). */
-export function measuresFor(textSize: number): Measures {
+/** The surface's height on the screen it opened on (place.ts), for the measures of everything drawn in it. */
+export const SurfaceHeight = createContext<number>(SURFACE.height);
+
+/** The measures at `textSize` (1 is the standard), on a surface `height` tall. */
+export function measuresFor(textSize: number, height: number = SURFACE.height): Measures {
   const at = (px: number) => scaled(px, textSize);
   const field = at(BASE.field);
   const row = at(BASE.row);
   const head = at(BASE.head);
-  const room = SURFACE.height - field - PANEL.border * 3 - PANEL.padding * 2;
+  const room = height - field - PANEL.border * 3 - PANEL.padding * 2;
   // The most rows that fit, then the most of them instant.
   let best: { local: number; files: number } = { local: FEWEST.local, files: FEWEST.files };
   for (let local = MOST.local; local >= FEWEST.local; local--) {
@@ -96,15 +101,17 @@ export function measuresFor(textSize: number): Measures {
 /** The measures at text size 1. */
 export const STANDARD = measuresFor(1);
 
-const known = new Map<number, Measures>([[1, STANDARD]]);
+const known = new Map<string, Measures>([[`1:${SURFACE.height}`, STANDARD]]);
 
-/** The measures at the person's text size now; redraws the caller when it changes. */
+/** The measures at the person's text size now, on the surface's height; redraws the caller when it changes. */
 export function useMeasures(): Measures {
   const textSize = useTextSize();
-  let measures = known.get(textSize);
+  const height = useContext(SurfaceHeight);
+  const key = `${textSize}:${height}`;
+  let measures = known.get(key);
   if (!measures) {
-    measures = measuresFor(textSize);
-    known.set(textSize, measures);
+    measures = measuresFor(textSize, height);
+    known.set(key, measures);
   }
   return measures;
 }

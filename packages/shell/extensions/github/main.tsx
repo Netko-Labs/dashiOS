@@ -40,7 +40,7 @@ function Row({ repo, pr }: { repo: string; pr: PullRequest }) {
 }
 
 /** One repository's open pull requests: the preference's, or one a search pushed. */
-function PullRequests({ repo: given }: { repo?: string }) {
+export function PullRequests({ repo: given }: { repo?: string }) {
   const { repo: preferred, token } = usePreferences<Prefs>();
   const repo = given ?? (preferred && isRepo(preferred) ? preferred.trim() : "oven-sh/bun");
   const { data, loading, error, reload } = useQuery(() => pullRequests(repo, token), [repo, token]);
@@ -75,7 +75,8 @@ function PullRequests({ repo: given }: { repo?: string }) {
         </ActionPanel>
       }
     >
-      <List.Section title={`Open in ${repo}`} subtitle={loading && !data ? "" : String(prs.length)}>
+      {/* No count until the list came: an empty subtitle is refused, and the whole view with it (pass 43). */}
+      <List.Section title={`Open in ${repo}`} {...(loading && !data ? {} : { subtitle: String(prs.length) })}>
         {prs.map((pr) => (
           <Row key={pr.number} repo={repo} pr={pr} />
         ))}

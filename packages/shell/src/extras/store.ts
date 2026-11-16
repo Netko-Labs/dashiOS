@@ -1,12 +1,24 @@
 /**
  * Every menu bar extra on the desktop, from every source, in the order the
- * bar shows them: newest leftmost, as on a Mac, where a new extra appears at
- * the left of the others. Sources put and drop their extras; each source
- * answers for its own (`owner`).
+ * bar shows them: a fixed order, by who each is, never by which program
+ * started first (pass 42: after a package downgrade and upgrade the fan and
+ * the keyboard swapped). Tray icons by their app's name, then applets by
+ * their id, each alphabetically. Sources put and drop their extras; each
+ * source answers for its own (`owner`).
  */
 
 import { useSyncExternalStore } from "react";
 import type { ExtraActions, ExtraMenuRow, MenuBarExtra } from "./types.ts";
+
+/** An applet's key without its connection's number (`applet:3/dev.example.weather` → `dev.example.weather`). */
+const APPLET_CONNECTION = /^applet:\d+\//;
+
+/** What places an extra in the bar: who it is, the same in every session (a key's connection or bus name is not). */
+export function placeOf(extra: MenuBarExtra): string {
+  return extra.source === "applet" ? `1:${extra.key.replace(APPLET_CONNECTION, "")}` : `0:${extra.title.toLowerCase()}`;
+}
+
+const byPlace = (a: MenuBarExtra, b: MenuBarExtra): number => placeOf(a).localeCompare(placeOf(b), "en") || a.key.localeCompare(b.key, "en");
 
 export class ExtrasStore implements ExtraActions {
   private extras: readonly MenuBarExtra[] = [];
@@ -20,15 +32,15 @@ export class ExtrasStore implements ExtraActions {
 
   getSnapshot = (): readonly MenuBarExtra[] => this.extras;
 
-  /** Add or replace an extra; `owner` carries out what is asked of it. A replaced extra keeps its place. */
+  /** Add or replace an extra; `owner` carries out what is asked of it. Each goes in its place (`placeOf`). */
   put(extra: MenuBarExtra, owner: ExtraActions): void {
     this.owners.set(extra.key, owner);
     const at = this.extras.findIndex((each) => each.key === extra.key);
     if (at >= 0) {
       if (JSON.stringify(this.extras[at]) === JSON.stringify(extra)) return;
-      this.extras = this.extras.map((each, index) => (index === at ? extra : each));
+      this.extras = this.extras.map((each, index) => (index === at ? extra : each)).sort(byPlace);
     } else {
-      this.extras = [extra, ...this.extras];
+      this.extras = [...this.extras, extra].sort(byPlace);
     }
     this.changed();
   }

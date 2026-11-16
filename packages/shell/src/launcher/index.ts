@@ -8,6 +8,7 @@ export { LauncherKeys, withLauncher } from "./keys.ts";
 export { LAUNCHER, Launcher } from "./launcher.tsx";
 export { isAliasMap, isKeyMap } from "./person-keys.ts";
 export { launcherOrigin, type PictureRect, picturesOnScreen } from "./pictures.ts";
+export { LAUNCHER_GAP, LAUNCHER_TOP, type LauncherPlace, launcherPlace } from "./place.ts";
 export { LauncherPrefs } from "./prefs.ts";
 export type { LauncherFiles } from "./props.ts";
 export { isFallbackList, isQuicklinkList } from "./quicklink-list.ts";
