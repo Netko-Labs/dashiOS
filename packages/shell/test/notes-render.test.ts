@@ -4,8 +4,8 @@ import { blocksOf, revealedLines } from "../apps/notes/lib/blocks.ts";
 import { lookOf } from "../apps/notes/lib/look.ts";
 import { displaySelection, sourceEdit, sourceSelection, toDisplay } from "../apps/notes/lib/offsets.ts";
 import { project } from "../apps/notes/lib/project.ts";
-import { indentLines, structure } from "../apps/notes/lib/structure.ts";
-import { columnWeights, parseTable, splitRow } from "../apps/notes/lib/table.ts";
+import { indentLines, structure, tickLines } from "../apps/notes/lib/structure.ts";
+import { columnsOf, parseTable, splitRow } from "../apps/notes/lib/table.ts";
 
 const NOTE = [
   "# Plan",
@@ -63,7 +63,12 @@ describe("tables", () => {
     expect(table.align).toEqual(["left", "left", "right", "right"]);
     expect(table.rows[1]).toEqual(["Heavy", "Opus", "90,000", "$4.20"]);
     expect(parseTable(["| a | b |", "|:-:|-|", "| only |"]).rows).toEqual([["only", ""]]);
-    expect(columnWeights(table)).toEqual([8, 5, 6, 5]);
+    expect(columnsOf(table)).toEqual([
+      { weight: 8, floor: 8 },
+      { weight: 5, floor: 5 },
+      { weight: 6, floor: 6 },
+      { weight: 5, floor: 5 },
+    ]);
   });
 });
 
@@ -183,5 +188,11 @@ describe("typing makes structure", () => {
     expect(indentLines("- a\n- b", { start: 2, end: 6 }, 1)).toEqual({ body: "  - a\n  - b", selection: { start: 4, end: 10 } });
     expect(indentLines("  - a", { start: 4, end: 4 }, -1)).toEqual({ body: "- a", selection: { start: 2, end: 2 } });
     expect(indentLines("- a", { start: 2, end: 2 }, -1).body).toBe("- a");
+  });
+
+  test("Mark as Done ticks the selected items, or unticks them when all are", () => {
+    expect(tickLines("- [ ] a\nwords\n- [x] b", { start: 0, end: 20 }).body).toBe("- [x] a\nwords\n- [x] b");
+    expect(tickLines("- [x] a\n  * [X] b", { start: 0, end: 14 }).body).toBe("- [ ] a\n  * [ ] b");
+    expect(tickLines("plain", { start: 2, end: 2 }).body).toBe("plain");
   });
 });

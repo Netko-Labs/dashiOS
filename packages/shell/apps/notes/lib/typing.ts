@@ -13,6 +13,9 @@ import type { Draft, TextState } from "./state.ts";
 import { NotesBase } from "./store-base.ts";
 import { structure } from "./structure.ts";
 
+/** What a line's words start after: a heading's, an item's or a quote's marker (the drawn page hides it). */
+const LINE_MARKER = /^(?:#{1,6}[ \t]+|>[ \t]?|[ \t]*(?:[-*+]|\d{1,9}[.)])[ \t]+(?:\[[ xX]\][ \t]?)?)$/;
+
 export abstract class NotesTyping extends NotesBase {
   /** Edit › Undo and Redo: deleted notes. */
   readonly undo = new UndoStack();
@@ -79,10 +82,15 @@ export abstract class NotesTyping extends NotesBase {
     this.later();
   }
 
-  /** The selection's Markdown (Edit › Copy and Cut: the source, not the drawn words). */
+  /** The selection's Markdown (Edit › Copy and Cut: the source, not the drawn words), from its first line's marker when it starts at that line's words. */
   selectedSource(): string {
     const { draft, selection } = this.state;
-    return draft ? draft.body.slice(Math.min(selection.start, selection.end), Math.max(selection.start, selection.end)) : "";
+    if (!draft) return "";
+    const end = Math.max(selection.start, selection.end);
+    let start = Math.min(selection.start, selection.end);
+    const lineStart = draft.body.lastIndexOf("\n", start - 1) + 1;
+    if (start < end && LINE_MARKER.test(draft.body.slice(lineStart, start))) start = lineStart;
+    return draft.body.slice(start, end);
   }
 
   /** Ticks or unticks the checklist item on `line` of the body, and saves it at once; the caret stays. */

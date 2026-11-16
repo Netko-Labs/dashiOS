@@ -13,7 +13,10 @@ import { Text, View } from "@mirinjs/metal";
 import { type ReactElement, useMemo } from "react";
 import { BOX, type Para, type Projection, project } from "../project.ts";
 import { BODY_SIZE } from "../sizes.ts";
-import { columnWeights, type Table } from "../table.ts";
+import { columnsOf, type Table } from "../table.ts";
+
+/** About the width of a letter of the body, for a column's least width. */
+const LETTER = 7.6;
 
 const CLEAR = "#00000000";
 
@@ -27,7 +30,7 @@ const cellText = (cell: string): string => project(cell, null).display.replace(B
 
 /** A table: the header row on a wash, columns as wide as their words ask (columnWeights), cells that wrap. */
 function TableView({ table, colors, onHeight }: { table: Table; colors: Palette; onHeight: (height: number) => void }) {
-  const weights = columnWeights(table);
+  const columns = columnsOf(table);
   const row = (cells: readonly string[], index: number, header: boolean) => (
     <View
       key={index}
@@ -40,7 +43,17 @@ function TableView({ table, colors, onHeight }: { table: Table; colors: Palette;
     >
       {cells.map((cell, column) => (
         // Cells have no identity beyond their place: a cell is its column.
-        <View key={column} style={{ flex: weights[column] ?? 1, minWidth: 0, paddingTop: 5, paddingBottom: 5, paddingLeft: 8, paddingRight: 8 }}>
+        <View
+          key={column}
+          style={{
+            flex: columns[column]?.weight ?? 1,
+            minWidth: Math.ceil((columns[column]?.floor ?? 0) * LETTER) + 16,
+            paddingTop: 5,
+            paddingBottom: 5,
+            paddingLeft: 8,
+            paddingRight: 8,
+          }}
+        >
           <Text
             style={{
               fontSize: BODY_SIZE,

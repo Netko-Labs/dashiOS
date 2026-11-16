@@ -73,6 +73,17 @@ describe("the live page's model", () => {
     expect(model.undoState().undoName).toBe("Checkbox");
   });
 
+  test("Copy takes the selection's Markdown, its first line's marker too when it starts at that line's words", () => {
+    const model = open("## Plan\n- milk **now**");
+    model.setSelection({ start: 3, end: 22 });
+    expect(model.selectedSource()).toBe("## Plan\n- milk **now**");
+    model.setSelection({ start: 4, end: 7 });
+    expect(model.selectedSource()).toBe("lan");
+    model.setSelection({ start: 10, end: 14 });
+    expect(model.selectedSource()).toBe("- milk");
+    model.dispose();
+  });
+
   test("Find Next selects the search's words in the note, and says when there are none", () => {
     const model = open("milk, then more milk");
     model.setQuery("milk");

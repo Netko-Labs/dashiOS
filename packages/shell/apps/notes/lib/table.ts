@@ -65,10 +65,17 @@ export function parseTable(lines: readonly string[]): Table {
   return { header, align: fit(align) as Align[], rows: lines.slice(2).map((line) => fit(splitRow(line))) };
 }
 
-/** Each column's share of the width: its longest cell, between 4 and 40 letters, so a short column stays narrow and a long one wraps. */
-export function columnWeights(table: Table): number[] {
+/** A column's share of the width (its longest cell, between 4 and 40 letters, so a long one wraps) and the letters it never goes under (its longest word, so no word breaks). */
+export interface Column {
+  weight: number;
+  floor: number;
+}
+
+export function columnsOf(table: Table): Column[] {
   return table.header.map((cell, column) => {
-    const longest = Math.max(cell.length, ...table.rows.map((row) => (row[column] ?? "").length));
-    return Math.min(40, Math.max(4, longest));
+    const cells = [cell, ...table.rows.map((row) => row[column] ?? "")];
+    const longest = Math.max(...cells.map((each) => each.length));
+    const word = Math.max(...cells.flatMap((each) => each.split(/\s+/).map((part) => part.length)));
+    return { weight: Math.min(40, Math.max(4, longest)), floor: Math.min(24, word) };
   });
 }

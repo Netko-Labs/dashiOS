@@ -1,9 +1,22 @@
 /** Format's commands by name (the menu's and the model's), what Undo calls each, and where the caret goes after typing. Pure. */
 
 import { type Edited, insertLink, type Selection, setHeading, toggleChecklist, toggleWrap } from "./format.ts";
-import { indentLines } from "./structure.ts";
+import { indentLines, tickLines } from "./structure.ts";
 
-export type FormatCommand = "bold" | "italic" | "code" | "strike" | "link" | "checklist" | "heading1" | "heading2" | "heading3" | "body" | "indent" | "outdent";
+export type FormatCommand =
+  | "bold"
+  | "italic"
+  | "code"
+  | "strike"
+  | "link"
+  | "checklist"
+  | "heading1"
+  | "heading2"
+  | "heading3"
+  | "body"
+  | "indent"
+  | "outdent"
+  | "tick";
 
 /** What Edit › Undo calls a format command's step ("Undo Bold"). */
 export const FORMAT_NAMES: Readonly<Record<FormatCommand, string>> = {
@@ -19,6 +32,7 @@ export const FORMAT_NAMES: Readonly<Record<FormatCommand, string>> = {
   body: "Body Text",
   indent: "Indent",
   outdent: "Outdent",
+  tick: "Checkbox",
 };
 
 /** `body` with `command` applied where `selection` is. */
@@ -48,6 +62,8 @@ export function formatted(body: string, selection: Selection, command: FormatCom
       return indentLines(body, selection, 1);
     case "outdent":
       return indentLines(body, selection, -1);
+    case "tick":
+      return tickLines(body, selection);
   }
 }
 

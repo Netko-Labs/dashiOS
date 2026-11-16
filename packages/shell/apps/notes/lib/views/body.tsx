@@ -5,13 +5,14 @@
  * cannot. The note is the Markdown: what the field reports (its text, its
  * caret) is carried back to the source (offsets.ts) before the model hears
  * of it. While a range is selected the shown lines stay as they were, so a
- * drag never moves the words under the pointer; a caret shows its block.
+ * drag never moves the words under the pointer; a caret shows its block once
+ * it has stayed put a moment (past a click's release).
  * When the body is not being edited, every block is drawn.
  */
 
 import { useColors } from "@dashi/ui";
 import { TextInput, View } from "@mirinjs/metal";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type Lines, revealedLines } from "../blocks.ts";
 import { findMatches } from "../find.ts";
 import type { Selection } from "../format.ts";
@@ -38,8 +39,23 @@ export interface PageProps {
   onMeasured: () => void;
 }
 
-/** The lines that show their source: the caret's block; kept as they were while a range is selected. */
-function useRevealed(body: string, selection: Selection, shows: boolean): Lines | null {
+/** How long the caret must stay put before its block shows its source: past a click's release, so no words move under a pressed pointer. */
+export const SETTLE_MS = 150;
+
+/** The caret, and whether the body is edited, once they have stayed put for `SETTLE_MS`. */
+function useSettled(selection: Selection, editing: boolean): { selection: Selection; editing: boolean } {
+  const [settled, setSettled] = useState({ selection, editing });
+  const { start, end } = selection;
+  useEffect(() => {
+    const timer = setTimeout(() => setSettled({ selection: { start, end }, editing }), SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [start, end, editing]);
+  return settled;
+}
+
+/** The lines that show their source: the caret's block once it settled; kept as they were while a range is selected. */
+function useRevealed(body: string, current: Selection, editing: boolean): Lines | null {
+  const { selection, editing: shows } = useSettled(current, editing);
   const kept = useRef<Lines | null>(null);
   if (!shows) {
     kept.current = null;

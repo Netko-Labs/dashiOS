@@ -3756,7 +3756,10 @@ short words, as the rulebook is written.
 - **Decision:** a line is a block, and so are a whole table and a whole
   fenced code block (`blocks.ts`): the caret anywhere in one shows all of its
   source. While a range is selected the shown lines stay as they were, so a
-  drag never moves the words under the pointer. The body is "being edited"
+  drag never moves the words under the pointer, and a caret shows its block
+  only once it has stayed put 150 ms (`SETTLE_MS`): in the VM a click that
+  changed the text under the still-pressed pointer left a one-letter
+  selection. The body is "being edited"
   from a caret move or a key in it (or Return in the list) until Esc, the
   title, the list or the search take the keyboard (`NotesState.editing`); a
   note just opened is drawn whole.
@@ -3772,7 +3775,9 @@ short words, as the rulebook is written.
   for its height) is laid out from the shown paragraphs and now draws what a
   field cannot (`views/page-under.tsx`): a table with its header on a wash,
   each column as wide as its longest cell asks (4 to 40 letters), cells that
-  wrap, numbers right-aligned where the dashes say; a rule's line; a code
+  wrap, never narrower than its longest word (in the VM "Model" broke into
+  "Mod el" beside a long first column), numbers right-aligned where the
+  dashes say; a rule's line; a code
   block's panel; a quote's bar in the gutter. A table's rows in the field are
   spaces sized so their lines add up to the drawn table's height (a probe at
   100 px gives the line height per px). A cell's Markdown is drawn as plain
@@ -3794,14 +3799,16 @@ short words, as the rulebook is written.
 - **Date:** 2026-11-15. `v09/notesmd`.
 - **Decision:** with the body being edited and a selection, Edit › Copy and
   Cut (and ❖C ❖X, which are their rows) write the selection's source with
-  wl-copy; Paste reads `text/html` when the clipboard has it and puts its
+  wl-copy, from the first line's marker when the selection starts at that
+  line's words (the drawn page hides the marker, so a selection of the
+  whole page would otherwise start after `## `); Paste reads `text/html` when the clipboard has it and puts its
   Markdown (`html.ts`: headings, emphasis, links, lists, quotes, rules, code,
   tables) in place of the selection, as its own Undo step. Plain text is
   pasted by the field as before. Elsewhere, or without wl-clipboard, the key
   goes to the field.
 - **Undo:** `clipboardActions` in `hooks/use-notes-menus.ts`.
 
-### D245. Typing makes structure; Tab indents a list item; Outdent is ❖[
+### D245. Typing makes structure; Tab indents a list item; Outdent is ❖[; Mark as Done is ⇧❖U
 
 - **Date:** 2026-11-15. `v09/notesmd`.
 - **Decision:** "[] " (or "- [] ") at a line's start becomes `- [ ] `; Tab
@@ -3811,4 +3818,6 @@ short words, as the rulebook is written.
   list and an empty item ending it were already there. ⇧Tab is the field's
   (it leaves for the title, and mirin tells the app nothing), so Format ›
   Indent ❖] and Outdent ❖[ move the selected lines.
-- **Undo:** `structure()` in `typing.ts`'s `edit`, and the two Format rows.
+  A box ticks with a click or with Format › Mark as Done ⇧❖U (Apple Notes'
+  key for it), on every item the selection touches.
+- **Undo:** `structure()` in `typing.ts`'s `edit`, and the three Format rows.

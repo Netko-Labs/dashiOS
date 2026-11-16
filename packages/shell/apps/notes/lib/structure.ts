@@ -3,7 +3,7 @@
  * `continueList`): "[] " at a line's start becomes a checklist item, Tab in a
  * list item indents the item (not a tab in its words), Return after an
  * opening fence closes it below, and Format › Indent and Outdent move the
- * lines a level. Each takes what the body was, what typing made it, and
+ * lines a level, and Mark as Done ticks the boxes. Each takes what the body was, what typing made it, and
  * where the caret was, and gives back the body and caret, or null when the
  * typing was no such thing. Pure.
  */
@@ -97,4 +97,20 @@ export function indentLines(body: string, selection: Selection, way: 1 | -1): Ed
     return at + shift;
   };
   return { body: out, selection: { start: move(selection.start), end: move(selection.end) } };
+}
+
+/** Format › Mark as Done: the checklist items the selection touches are ticked, or unticked when they all are; other lines stay. */
+export function tickLines(body: string, selection: Selection): Edited {
+  const from = lineStart(body, Math.min(selection.start, selection.end));
+  const to = lineEnd(body, Math.max(selection.start, selection.end));
+  const lines = body.slice(from, to).split("\n");
+  const items = lines.map((line) => CHECK.exec(line));
+  const allDone = items.every((item) => item === null || item[4] !== " ");
+  const changed = lines.map((line, index) => {
+    const item = items[index];
+    if (!item) return line;
+    const at = item[0].length - 2;
+    return line.slice(0, at) + (allDone ? " " : "x") + line.slice(at + 1);
+  });
+  return { body: body.slice(0, from) + changed.join("\n") + body.slice(to), selection };
 }
