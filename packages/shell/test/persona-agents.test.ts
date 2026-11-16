@@ -14,7 +14,8 @@ import type { Exists, SandboxEnv } from "../src/agents/sandbox-types.ts";
 import { charactersDir, startPersona } from "../src/persona/index.ts";
 import { AGENT_ROWS, agentRow, SETTINGS_ROWS } from "../src/settings-app/registry/index.ts";
 import { SettingsStore } from "../src/settings-app/store.ts";
-import { OFF_LIMITS, resolveForAgent } from "../src/shared/files/agent.ts";
+import { resolveForAgent } from "../src/shared/files/agent.ts";
+import { OFF_LIMITS } from "../src/shared/files/secret-places.ts";
 import { DEFAULT_PERSONA, type Persona } from "../src/shared/pill/index.ts";
 
 const env: SandboxEnv = { home: "/home/alexk", runtime: "/run/user/1000", state: "/home/alexk/.local/state", config: "/home/alexk/.config" };

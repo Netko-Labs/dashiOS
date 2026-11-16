@@ -71,7 +71,7 @@ export const inputTools: readonly ToolDef[] = [
     title: "Click in a window",
     description:
       "Click at a point in a window, with the agent's own pointer: the person's pointer and focus don't move, and the window doesn't come forward (focus_window does that). " +
-      "`count` 2 double-clicks, 3 triple-clicks. If the person is using that window, it answers so and does nothing; wait a moment or work elsewhere.",
+      "`count` 2 double-clicks, 3 triple-clicks. Says whether a text field has the keyboard there after, where the app tells accessibility. If the person is using that window, it answers so and does nothing; wait a moment or work elsewhere.",
     scope: "act",
     readOnly: false,
     destructive: false,

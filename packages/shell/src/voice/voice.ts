@@ -282,6 +282,10 @@ export class Voice {
     else this.rest(true);
   }
 
+  personTalking(): boolean {
+    return this.holding !== null || this.mic.running || this.saying.holding; // tell_person never speaks over them
+  }
+
   /** How the person answers by voice now ("the right ❖ key"), or null when they can't. */
   talkKey(): string | null {
     const { on, key } = this.deps.prefs();

@@ -5,22 +5,51 @@
  * here except as "is there anything" (`hasValue`).
  */
 
-import type { PageNode, PageOption } from "../page/node.ts";
+import { nameOf, type PageNode, type PageOption, roleOf } from "../page/node.ts";
+import { Numbering } from "../page/numbering.ts";
 
 /** This document's name for the background: numbers from another document are refused. */
 export const DOC = Math.random().toString(36).slice(2, 10);
 
 const numbers = new WeakMap<Node, number>();
 const byNumber = new Map<number, WeakRef<Element>>();
-let next = 1;
+/** Where each number's element sat: its block and the blocks around it, outermost last (the stale error reads the nearest still there). */
+const around = new Map<number, Array<WeakRef<Element>>>();
+const numbering = new Numbering();
 
-/** The element's number in this document, the same every time. */
+/** An element's key: what it is to a person. A key that only one element ever had keeps its number when the page redraws it. */
+function keyOf(element: Element): string | null {
+  const node = new DomNode(element);
+  const role = roleOf(node);
+  if (!role) return null;
+  const href = element instanceof HTMLAnchorElement ? element.href : "";
+  return `${role}|${nameOf(node, role)}|${href}`;
+}
+
+/** The block an element sits in: a form, a list item, a row, a section, a dialog, else three levels up. */
+export function blockOf(element: Element): Element {
+  const block = element.closest("form, li, tr, section, article, nav, aside, [role=dialog], [role=listitem], [role=row]");
+  return block ?? element.parentElement?.parentElement?.parentElement ?? element;
+}
+
+/**
+ * The element's number in this document, the same every time; a redrawn
+ * element may take its old number back (page/numbering.ts).
+ */
 export function refOf(node: Node): number {
   let ref = numbers.get(node);
-  if (ref === undefined) {
-    ref = next++;
-    numbers.set(node, ref);
-    if (node instanceof Element) byNumber.set(ref, new WeakRef(node));
+  if (ref !== undefined) return ref;
+  ref = numbering.take(node instanceof Element ? keyOf(node) : null, (taken) => elementOf(taken) !== null);
+  numbers.set(node, ref);
+  if (node instanceof Element) {
+    byNumber.set(ref, new WeakRef(node));
+    const block = blockOf(node);
+    around.set(
+      ref,
+      [block, block.parentElement, block.parentElement?.parentElement, document.body]
+        .filter((each): each is Element => each instanceof Element)
+        .map((each) => new WeakRef(each)),
+    );
   }
   return ref;
 }
@@ -29,6 +58,15 @@ export function refOf(node: Node): number {
 export function elementOf(ref: number): Element | null {
   const element = byNumber.get(ref)?.deref() ?? null;
   return element?.isConnected ? element : null;
+}
+
+/** The nearest block around where number `ref`'s element was that is still in the page (null: never numbered here). */
+export function whereItWas(ref: number): Element | null {
+  for (const weak of around.get(ref) ?? []) {
+    const element = weak.deref();
+    if (element?.isConnected) return element;
+  }
+  return null;
 }
 
 /** Fields that were password fields (a "show password" button turns them to text): they stay secret. */

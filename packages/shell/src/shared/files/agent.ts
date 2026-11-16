@@ -3,9 +3,10 @@
  * names paths as text, which is untrusted: a path must be absolute (or `~/…`),
  * is resolved through symbolic links (`realpath`), and must end up inside the
  * person's home folder or a removable drive's mount, and outside the folders
- * that hold secrets and Dashi's own state. Only listing, searching, opening
- * (in the default app, on screen), and moving to the Trash exist: there is no
- * tool that reads a file's content, writes, or deletes for good.
+ * that hold secrets and Dashi's own state (secret-places.ts). Listing,
+ * searching, opening and the Trash are here; reading and writing text,
+ * moving and copying are agent-text.ts's and agent-moves.ts's. Nothing
+ * deletes for good.
  */
 
 import { lstat, realpath, stat } from "node:fs/promises";
@@ -16,6 +17,7 @@ import { mayOpen, openDefault } from "./open.ts";
 import type { OpContext } from "./ops.ts";
 import { baseName, expandHome, isInside, normalizePath, parentOf, tilde } from "./paths.ts";
 import { searchComputer, searchFolder } from "./search.ts";
+import { OFF_LIMITS } from "./secret-places.ts";
 import { protectedReason, trashPaths } from "./trashops.ts";
 
 export interface AgentPolicy {
@@ -24,19 +26,6 @@ export interface AgentPolicy {
   /** Standard folders, which can't be trashed. */
   userDirs: readonly string[];
 }
-
-/** Folders under home whose names, contents, and presence are not an agent's business. */
-export const OFF_LIMITS = [
-  ".ssh",
-  ".gnupg",
-  ".password-store",
-  ".aws",
-  ".kube",
-  ".local/share/keyrings",
-  ".local/state/dashi",
-  ".config/dashi",
-  ".config/1Password",
-] as const;
 
 const PATH_MAX = 4096;
 

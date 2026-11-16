@@ -23,6 +23,7 @@ export {
 } from "./dates.ts";
 export type { EventInput } from "./event.ts";
 export { makeEvent, makeOverride } from "./event.ts";
+export { eventIcs } from "./export.ts";
 export { isColor, MAX_ICS_BYTES, newUid, parseIcs } from "./ics.ts";
 export { formatDuration } from "./ics-lines.ts";
 export { PALETTE, paletteColor } from "./ids.ts";

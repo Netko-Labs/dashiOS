@@ -286,6 +286,15 @@ compositor's `agent-input`), and never fight the person:
   question); a pause needs nothing from them, and it would flash amber every
   time they typed while an agent worked.
 
+- **Where typing will go.** `list_windows` says, for the focused window,
+  which kind of field has its keyboard (`keyboard`: "text field", "password
+  field", "no text field"), and a left `click` says it of its window a
+  moment after (150 ms): the app's last AT-SPI focus event, checked to still
+  hold the focus (`agents/desktop/keyboard.ts`). Never the field's name or
+  value. Nothing is said where accessibility can't tell (an app that sends
+  no focus events, an X11 app, no bus), and a second at most is spent
+  asking (decisions.md D281).
+
 ### Working on another Desktop
 
 `work_in_space {space}` (scope "act") lets an agent work on a Space that does
@@ -336,6 +345,86 @@ number and name, and holds for that connection only: nothing is saved
   after it open there. The Space holds for the plan's steps and is let go
   30 s after the last.
 
+### Notes and Calendar
+
+What the person already wrote can be changed and deleted, through the stores
+the apps use (`agents/desktop/notes.ts`, `calendar-edit.ts`):
+
+| Tool | What it does |
+| --- | --- |
+| `edit_note {id, text, find? \| from_line+to_line? \| at_line?, title?}` | Replaces the text that is in the note once, a range of lines, or inserts before a line; `title` renames. Refused in words when `find` is there twice or not at all. The result says what was there before (`was`, `titleWas`) |
+| `delete_note {id}` | To Notes' Recently Deleted, where the person puts it back |
+| `edit_event {uid, title?, start?, end?, location?, notes?, calendar?}` | Changes the whole event (every occurrence of a repeat); a new start keeps its length; the result says what it was |
+| `delete_event {uid}` | First writes the event (with its calendar's zones) as `<title>.ics` and moves that to the Trash; only then deletes it. Opening the file imports it back (its uid is free again). Nothing is deleted when the copy can't be kept |
+
+Scopes `notes_write` and `calendar_write`; none is `destructive` (the
+critical-only rule: each has its way back). The assistant's "Undo that" (D148)
+covers settings only: an Undo entry for these is the consent owner's to add
+(decisions.md D278).
+
+### Telling the person
+
+- `tell_person {text}` (scope "act") says one line aloud in Dashi's voice
+  while the agent keeps working, and shows it where the agent's status
+  shows (the capsule's line for Dashi's assistant, the menu bar for
+  others). At most one every 4 s; never over the person's own speech (the
+  talk key held, the microphone open, speech paused for a dictation:
+  `Voice.personTalking`). A line that can't be said is not queued: the
+  answer says "Shown, not said" and why (`agents/desktop/tell.ts`).
+- `notify_person {title, text}` (scope "act") posts a notification from
+  "Dashi" with the agents' icon; it stays in Notification Center.
+
+The assistant's prompt says when: a progress line now and then during a
+long job; a notification only when the work is done or needs them and they
+may have stepped away (decisions.md D277).
+
+### The clipboard, written
+
+`copy_to_clipboard {text}` (scope "act", 100,000 characters) puts text on
+the clipboard for the person to paste. It is kept in the clipboard history
+first, as Dashi's ("Dashi" where the app goes), then written with
+`wl-copy`; the watch is told to expect it (`bump`), so the copy the
+compositor reports keeps Dashi's name instead of the window in front's
+(`clipboard/lib/put.ts`). What was there stays in the history, which is the
+Undo. Reading the history is unchanged (`read_clipboard_history`).
+
+### Files
+
+Agents reach the person's files under their home folder and removable
+drives (`/run/media/<user>`, `/media/<user>`), resolved through links, all
+in scope "files" (`shared/files/agent.ts`, `agent-place.ts`,
+`agent-text.ts`, `agent-moves.ts`; tools in `agents/tools/lib/files.ts` and
+`file-text.ts`):
+
+| Tool | What it does |
+| --- | --- |
+| `list_folder`, `search_files`, `open_file` | A folder's items, files by name, a file opened in its app on screen |
+| `trash_file {path}` | To the Trash, asked on a sheet every time (until the critical-only rule's owner changes the registry) |
+| `read_text_file {path, from_line?, lines?, max_chars?}` | A text file's lines (20,000 characters by default, 100,000 at most, files up to 20 MB), with the lines given, how many there are, and `next`; a PDF's text through `pdftotext -layout` when poppler-utils is installed, else said so; a file that isn't text is refused in words |
+| `write_text_file {path, text, replace?, append?}` | A new file; with `replace`, the one there goes to the Trash first; with `append`, added at its end; refused when a file is there and neither is said. 5 million characters at most; its folder must exist |
+| `move_file`, `copy_file {path, to, replace?}` | Into `to` when it is a folder, else to that path; a taken name is refused unless `replace`, and then the one there goes to the Trash first. The home folder and the standard folders are never moved |
+| `rename_file {path, name, replace?}` | A new name in the same folder, the same way |
+
+**Never reached**, whatever the tool (`shared/files/secret-places.ts`, the one
+list, tested in `agents-file-text.test.ts`): `.ssh`, `.gnupg`,
+`.password-store`, `.aws`, `.kube`, the keyrings, Dashi's own state and
+config, 1Password's (hidden from listings too); browser profiles (Helium,
+Chromium, Chrome, Brave, Edge, Vivaldi, Firefox, Thunderbird, their
+Flatpaks), `.docker`, `gh`'s and `op`'s config, fish's history; and files
+named like secrets (`.env` and `.env.*`, `.envrc`, SSH keys, `*.pem`,
+`*.key`, `*.p12`, `*.kdbx`, `.netrc`, `.pgpass`, `.git-credentials`,
+`.npmrc`, shell histories, `credentials.*`, `secret(s).*`). None of the
+writing tools is `destructive`: nothing is overwritten without a copy kept
+in the Trash (decisions.md D275).
+
+**No command runner yet.** An agent can't run `git status`, `ls` or
+`grep`. A restricted runner would need: a fixed list of programs with
+argument shapes checked (no shell, no `-c`, no `--exec`), the same roots
+and secret list applied to every path argument, a working folder inside
+them, no network, a time and output limit, the agents' sandbox
+(`dashi-agent`'s bubblewrap profile) with the home folder read-only except
+the folder named, and the log; that is its own piece of work.
+
 ## Websites
 
 Agents use web pages through Dashi's own extension in Helium, not through
@@ -356,6 +445,13 @@ agent ──MCP──> shell ──dashi-browser.sock──> dashi-browser-host 
   frame from the document's start; the background keeps each tab's element
   numbers (`page/refs.ts`: a frame's document and its own number), reads
   every frame, and waits for loads through `webNavigation`, never a timer.
+  A number stays with its element while it lives; an element the page
+  redraws takes its old number back when its key (role, name, address)
+  was only ever one element's (`page/numbering.ts`). A number that is gone
+  is an error that carries the page around where it was (its block, read
+  again: 3,000 characters and 40 elements at most), freshly numbered; a
+  number from a page that navigated carries the new page's top. The next
+  call needs no read of its own (decisions.md D272).
 - **The host** (`session/dashi-browser-host`, installed at
   `/usr/libexec/dashi/`) is started by the browser for Dashi's extension
   only: its manifest's `allowed_origins` is the extension's id, and the host
@@ -417,14 +513,21 @@ The tools (`src/agents/tools/lib/browser.ts`, carried out by
 
 | Tool | What it does |
 | --- | --- |
-| `open_url {url, tab?}` | Opens an http(s) address in a new tab (or `tab`), starting Helium if no extension is connected, and returns once the page has loaded |
-| `read_page {tab?}` | The page as text: headings (`#`), text in reading order, links in their sentence with their address (a path on the page's own site), every other control on its own line: `[7] textbox "Correo electrónico" value="…"`, `[9] password field "Contraseña" (filled: no)`, `[12] button "Ingresar"` |
-| `click_element {ref, tab?}` | Clicks an element; when that loads a page, returns once it has |
-| `fill_element {ref, text, tab?}` | Replaces a text field's value as typing would (`insertText`, else the value's setter and `input`/`change`); refused on password, card and code fields |
-| `select_option {ref, value, tab?}` | Chooses a `<select>`'s option by value or label |
-| `press {keys, tab?}` | Keys in Dashi's notation to the page's focus, with the browser's defaults done when the page doesn't prevent them (Return submits, Tab moves, Page keys scroll) |
+| `open_url {url, tab?}` | Opens an http(s) address in a new tab (or `tab`), starting Helium if no extension is connected, and returns once the page has loaded, with where it landed: the final address and title (for an allowed site), `redirected`, `signInPage` (a password field shows, or a redirect to a login path), and a CAPTCHA |
+| `read_page {mode?, text?, cursor?, max_chars?, tab?}` | `mode`: `all` (default), `main` (the page's `<main>`, its one article, else the block holding most of its text; nav, header, footer, aside and search left out: `page/main.ts`), `find` (the lines around each line holding `text`, three each side, joined when they touch), `items` (the page's repeated structure as rows: title, price, details, the link and its number, by the DOM's own shape, at most 100: `page/items.ts`). Every answer is cut at `max_chars` (15,000 by default, 60,000 at most) on a line's end, with a line naming the `cursor` for the next part (decisions.md D273). The page as text: headings (`#`), text in reading order, links in their sentence with their address (a path on the page's own site), every other control on its own line: `[7] textbox "Correo electrónico" value="…"`, `[9] password field "Contraseña" (filled: no)`, `[12] button "Ingresar"` |
+| `click_element {ref, tab?}` | Clicks an element; when that loads a page, returns once it has, else says what the click did (`changes`: the DOM changed `near` the element, `elsewhere` or `none`, a dialog that opened, text that appeared, whether the element is `still` there and what it is `now`, where the keyboard went), read by the content script once the page is quiet (300 ms, at most 1.5 s) |
+| `fill_element {ref, text, tab?}` | Replaces a text field's value as typing would (`insertText`, else the value's setter and `input`/`change`) and says what it holds after (`value`, `asTyped`: a page that formats or cuts a value is said); refused on password, card and code fields |
+| `select_option {ref, value, tab?}` | Chooses a `<select>`'s option by value or label, says the choice now, and what changed on the page (a load, `changes`) |
+| `press {keys, tab?}` | Keys in Dashi's notation to the page's focus, with the browser's defaults done when the page doesn't prevent them (Return submits, Tab moves, Page keys scroll); says what followed, as `click_element` does |
 | `scroll_page {direction?, pages?, ref?, tab?}` | Scrolls, or brings an element into view; says whether the page is at its end |
-| `list_tabs`, `switch_tab {tab}` | The browser's tabs (title and address only for allowed sites), and bringing one forward |
+| `list_tabs`, `switch_tab {tab}` | Every tab in every Helium window: id, title and address (for an agent that may see windows, or a site it was allowed; else the site), `front` in its window, `inFrontWindow`, `loading`, `yours` (it opened it), `lastUsed`; and bringing one forward |
+| `close_tab {tab?}` | Closes a tab, with no question: closing a tab loses nothing for good (the consent rule of 16 Nov: only critical operations ask; D274). The tool asks a model to close the person's tabs only when they ask; `list_tabs` marks the agent's own `yours` |
+| `reload_tab {tab?}`, `go_back {tab?}`, `go_forward {tab?}` | The browser's own reload, Back and Forward, waited out by its events (a page from the back-forward cache ends the wait by `tabs.onUpdated`); says where the tab is, or that there was no page to go to |
+| `attach_file {ref, path, tab?}` | Puts a file into a page's file field as if the person chose it: no chooser (the portal's is never shown). The shell reads the file under `read_text_file`'s rules (roots, the secret list), 25 MB at most, and sends it in 512 KB chunks (native messaging carries 1 MB a message); the content script sets `input.files` through a `DataTransfer` and fires `input` and `change`. Nothing is sent until the form is |
+| `list_downloads {limit?}` | The browser's downloads, newest first (`chrome.downloads`): path, address, type, state, size. A `click_element` that starts a download waits for it to be whole (60 s at most) and says where it landed |
+| `screenshot_element {ref, tab?}` | A PNG of one element: the tab brought to the front of its window, the element into view, the visible tab captured (`tabs.captureVisibleTab`) and cropped to its box on an OffscreenCanvas. Refused when a password, card or code field is inside or across the box (this picture doesn't go through the agents' mask), and inside a frame |
+| `click_in_element {ref, x, y, tab?}` | A click at a point of an element, `x` and `y` fractions of its box: placed in the browser's window (`viewportToWindow`) and clicked with the agent's own pointer, a trusted click; inside a frame, by page events (pointer, mouse and click events at the point), which some pages ignore. **Not solved:** what a drawing means (the picture must be read by the model), drags (a board that only takes drags; Lichess takes a click on each square), and real-time play |
+| `wait_for {text \| text_gone \| element+state \| page \| window_title \| file, timeout?, tab?}` | Waits for one thing, watched where it happens: in the page by the extension (a MutationObserver, the load events), a window's title by the shell on each compositor event and every 250 ms, a file by its folder. Answers `met`, what it saw (the line the text is in, a window's id) and `ms`. 10 s by default, 60 at most; a wait that runs out is `met: false`, not an error (decisions.md D270) |
 
 Without `tab`, a tool uses the tab the agent used last, else the one in
 front. The menu bar's agent mark says what it does in words when pointed

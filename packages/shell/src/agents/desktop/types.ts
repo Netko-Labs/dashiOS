@@ -20,6 +20,7 @@ import type { FlagsStore } from "../../shared/control-center/index.ts";
 import type { SpaceRef } from "../../spaces/index.ts";
 import type { WifiStore } from "../../wifi/index.ts";
 import type { SoftwareBackend } from "./software.ts";
+import type { Teller } from "./tell.ts";
 
 /** One copy as an agent reads it: the text, or what a picture or files were. */
 export interface ClipboardCopy {
@@ -59,12 +60,14 @@ export interface Desktop {
   setup: { open(page?: PageId): void };
   /** The app catalog and the package tools; absent means the real ones (shared/software/). */
   software?: SoftwareBackend;
+  /** tell_person's spoken lines (tell.ts); absent where there is no voice. */
+  tell?: Pick<Teller, "tell">;
   /** Show the lock screen. */
   lock(): void;
   /** The shell's screen recorder, for record_screen (recorder/). Absent without a compositor. */
   recorder?: ScreenRecorder;
   /** The clipboard history, newest first (clipboard/); absent where it isn't kept. */
-  clipboard?: { recent(limit: number): ClipboardCopy[] };
+  clipboard?: { recent(limit: number): ClipboardCopy[]; put?(text: string, from: string): Promise<boolean> };
   /** Choose the item of `window`'s app menus that shows `shortcut` ("⇧❖N"); false when none does (app-menus/). */
   appShortcut?(window: number, shortcut: string): Promise<boolean>;
   /** The menu bar's menus for a window (its app's own included), and choosing a row. Absent where there is no menu bar. */

@@ -38,13 +38,19 @@ declare namespace chrome {
       pendingUrl?: string;
       status?: "loading" | "complete" | "unloaded";
     }
-    function query(query: { active?: boolean; lastFocusedWindow?: boolean; windowType?: "normal" }): Promise<Tab[]>;
+    function query(query: { active?: boolean; lastFocusedWindow?: boolean; windowType?: "normal"; windowId?: number }): Promise<Tab[]>;
     function get(tabId: number): Promise<Tab>;
     function update(tabId: number, change: { url?: string; active?: boolean }): Promise<Tab>;
     function create(options: { url: string; active?: boolean; windowId?: number }): Promise<Tab>;
     function sendMessage(tabId: number, message: unknown, options: { frameId: number }): Promise<unknown>;
     function getZoom(tabId: number): Promise<number>;
+    function remove(tabId: number): Promise<void>;
+    function reload(tabId: number, options?: { bypassCache?: boolean }): Promise<void>;
+    function goBack(tabId: number): Promise<void>;
+    function goForward(tabId: number): Promise<void>;
+    function captureVisibleTab(windowId: number, options: { format: "png" | "jpeg"; quality?: number }): Promise<string>;
     const onRemoved: Event<(tabId: number) => void>;
+    const onUpdated: Event<(tabId: number, change: { status?: "loading" | "complete"; url?: string }, tab: Tab) => void>;
   }
 
   namespace windows {
@@ -76,6 +82,26 @@ declare namespace chrome {
     const onErrorOccurred: Event<(details: Details & { error: string }) => void>;
     const onHistoryStateUpdated: Event<(details: Details) => void>;
     const onReferenceFragmentUpdated: Event<(details: Details) => void>;
+  }
+
+  namespace downloads {
+    interface DownloadItem {
+      id: number;
+      url: string;
+      finalUrl?: string;
+      filename: string;
+      mime?: string;
+      state: "in_progress" | "interrupted" | "complete";
+      error?: string;
+      bytesReceived: number;
+      totalBytes: number;
+      startTime: string;
+      endTime?: string;
+      exists: boolean;
+    }
+    function search(query: { orderBy?: string[]; limit?: number; id?: number }): Promise<DownloadItem[]>;
+    const onCreated: Event<(item: DownloadItem) => void>;
+    const onChanged: Event<(delta: { id: number; state?: { current?: string }; filename?: { current?: string } }) => void>;
   }
 
   namespace alarms {

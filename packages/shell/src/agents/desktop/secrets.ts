@@ -119,6 +119,7 @@ async function brokerAt(target: SecretTarget, ctx: RunContext): Promise<{ broker
       field.typed();
     },
     filled: field.filled,
+    outcome: field.outcome,
   };
   return { broker, window };
 }

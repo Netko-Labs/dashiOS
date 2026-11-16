@@ -20,7 +20,7 @@ import {
 } from "../../shared/files/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 
-function currentPolicy(): AgentPolicy {
+export function currentPolicy(): AgentPolicy {
   const home = process.env.HOME || homedir();
   let user = process.env.USER ?? "user";
   try {

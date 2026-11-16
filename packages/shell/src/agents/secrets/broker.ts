@@ -56,6 +56,8 @@ export interface BrokerContext {
   cancelled?(): boolean;
   /** Run the typing with this agent's other calls held. */
   exclusive?<T>(work: () => Promise<T>): Promise<T>;
+  /** After Return: what the page did (a browser tab only; a window's page can't be seen), in words and a kind. */
+  outcome?(field: "password" | "code"): Promise<{ words: string; kind: string }>;
   status(text: string): void;
   now(): number;
   sleep(ms: number): Promise<void>;
@@ -132,10 +134,22 @@ async function typeLogin(ctx: BrokerContext, chosen: Login, site: string, submit
   ctx.filled?.(now.focused);
   await typeSecret(ctx, await source.password(chosen));
   if (submit) await ctx.type({ keys: [{ name: "Return" }] });
-  return text(
-    `Dashi typed the password for ${chosen.account} on ${site} (from ${SOURCE_LABELS[chosen.source]}); you never see it.${submit ? " It pressed Return." : ""} Take a screenshot to see what the page did.`,
-    { site, account: chosen.account, source: SOURCE_LABELS[chosen.source], submitted: submit },
-  );
+  const after = await afterSubmit(ctx, submit, "password");
+  return text(`Dashi typed the password for ${chosen.account} on ${site} (from ${SOURCE_LABELS[chosen.source]}); you never see it. ${after.words}`, {
+    site,
+    account: chosen.account,
+    source: SOURCE_LABELS[chosen.source],
+    submitted: submit,
+    outcome: after.kind,
+  });
+}
+
+/** What came of pressing Return: the page's outcome where Dashi can see it (a browser tab), else what to do to find out. */
+async function afterSubmit(ctx: BrokerContext, submit: boolean, field: "password" | "code"): Promise<{ words: string; kind: string }> {
+  if (!submit) return { words: "It didn't press Return (`submit` was false).", kind: "not-submitted" };
+  if (!ctx.outcome) return { words: "It pressed Return. Dashi can't see inside this window's page: take a screenshot to see what happened.", kind: "unknown" };
+  ctx.status("Seeing whether it worked");
+  return ctx.outcome(field);
 }
 
 export async function fillCode(ctx: BrokerContext, site: string, account: string | null, submit: boolean): Promise<ToolResult> {
@@ -159,9 +173,11 @@ async function typeCode(ctx: BrokerContext, chosen: Login, site: string, submit:
   ctx.filled?.(now.focused);
   await typeSecret(ctx, code);
   if (submit) await ctx.type({ keys: [{ name: "Return" }] });
-  return text(`Dashi entered the one-time code for ${chosen.account} on ${site}; you never see it.${submit ? " It pressed Return." : ""}`, {
+  const after = await afterSubmit(ctx, submit, "code");
+  return text(`Dashi entered the one-time code for ${chosen.account} on ${site}; you never see it. ${after.words}`, {
     site,
     account: chosen.account,
     submitted: submit,
+    outcome: after.kind,
   });
 }

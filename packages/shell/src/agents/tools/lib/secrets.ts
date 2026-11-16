@@ -85,6 +85,7 @@ export const secretTools: readonly ToolDef[] = [
       "elsewhere, click into the field first and name the window. " +
       "The person is asked on screen which login, and whether for this once or the whole task; then Dashi types the account name (when the user name field is focused), " +
       "presses Tab, and types the password, only into a real password field on a page of that site. You never see the password, in results or screenshots (they show a blank). " +
+      "With `submit` in a browser tab, it watches the page after Return and says what happened: signed in, a wrong password (the site's words), a code asked for, a CAPTCHA, blocked, or still loading. " +
       'A login marked "Never", a bank, or a CAPTCHA: use hand_over.',
     scope: "signin",
     readOnly: false,
