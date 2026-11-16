@@ -17,6 +17,7 @@ import { aloneTools } from "./lib/alone.ts";
 import { askTools } from "./lib/ask.ts";
 import { browserTools } from "./lib/browser.ts";
 import { calendarTools } from "./lib/calendar.ts";
+import { canvasTools } from "./lib/canvas.ts";
 import { clipboardTools } from "./lib/clipboard.ts";
 import { editTools } from "./lib/edits.ts";
 import { fileTextTools } from "./lib/file-text.ts";
@@ -77,6 +78,7 @@ export const TOOLS: readonly ToolDef[] = [
   ...browserTools,
   ...tabTools,
   ...transferTools,
+  ...canvasTools,
   ...waitTools,
   ...spaceTools,
   ...inputTools,

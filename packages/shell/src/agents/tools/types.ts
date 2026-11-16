@@ -133,6 +133,8 @@ export type Call =
   | { name: "press"; keys: string; chords: Chord[]; tab: number | null }
   | { name: "scroll_page"; direction: "down" | "up" | "top" | "bottom"; pages: number; ref: number | null; tab: number | null }
   | { name: "wait_for"; until: WaitUntil; seconds: number; tab: number | null }
+  | { name: "screenshot_element"; ref: number; tab: number | null }
+  | { name: "click_in_element"; ref: number; x: number; y: number; tab: number | null }
   | { name: "attach_file"; ref: number; path: string; tab: number | null }
   | { name: "list_downloads"; limit: number }
   | { name: "list_tabs" }

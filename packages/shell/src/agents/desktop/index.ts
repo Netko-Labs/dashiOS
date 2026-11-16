@@ -2,6 +2,7 @@ export { askPerson } from "./ask-person.ts";
 export { browserCall, frontPage } from "./browser.ts";
 export { createEvent, listCalendars, listEvents } from "./calendar.ts";
 export { deleteEvent, type EventChange, editEvent } from "./calendar-edit.ts";
+export { clickInElement, screenshotElement } from "./canvas.ts";
 export { copyToClipboard, readClipboardHistory } from "./clipboard.ts";
 export { arrangeDisplay, listDisplays, setDisplayMode, setDisplayRotation, setDisplayScale, setPrimaryDisplay } from "./displays.ts";
 export { Elsewhere, type Opening, WorkPlaces, type WorkTarget } from "./elsewhere.ts";

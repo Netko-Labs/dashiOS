@@ -30,7 +30,10 @@ export type BrowserMethod =
   | "back"
   | "forward"
   | "downloads"
-  | "attach";
+  | "attach"
+  | "box"
+  | "shot"
+  | "point";
 
 export interface BrowserRequest {
   id: number;

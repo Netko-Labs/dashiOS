@@ -4,15 +4,15 @@
  * (RefTable), each pointing at a frame's document and its own number there.
  */
 
-import { takeChunk } from "../page/chunks.ts";
 import { renumber } from "../page/refs.ts";
-import { listDownloads, watchDownload } from "./downloads.ts";
+import { watchDownload } from "./downloads.ts";
 import { ask, documentsOf, framesOf, tableOf, watchLoad } from "./frames.ts";
+import { MORE_METHODS } from "./more-methods.ts";
 import { outcomeInTab } from "./outcome.ts";
 import { tabMethod } from "./tabs.ts";
+import { idOf, info, type Params, tabOf, targetOf } from "./targets.ts";
 import { waitInTab } from "./wait.ts";
 
-type Params = Record<string, unknown>;
 type Method = (params: Params) => Promise<Record<string, unknown>>;
 
 const LOAD_MS = 30_000;
@@ -21,49 +21,6 @@ const DOWNLOAD_MS = 60_000;
 /** After a click on a link or a submit button, how long a load has to begin; after another click, less. */
 const MAY_NAVIGATE_MS = 1_000;
 const CLICK_NAVIGATE_MS = 250;
-
-function info(tab: chrome.tabs.Tab): Record<string, unknown> {
-  return {
-    id: tab.id,
-    windowId: tab.windowId,
-    active: tab.active,
-    title: tab.title ?? "",
-    url: tab.url || tab.pendingUrl || "",
-    loading: tab.status === "loading",
-  };
-}
-
-/** The tab asked for, else the one in front in the window last used. */
-async function tabOf(params: Params): Promise<chrome.tabs.Tab> {
-  if (typeof params.tab === "number") {
-    try {
-      return await chrome.tabs.get(params.tab);
-    } catch {
-      throw new Error(`There is no tab ${params.tab}; list_tabs shows them.`);
-    }
-  }
-  const [front] = await chrome.tabs.query({ active: true, lastFocusedWindow: true, windowType: "normal" });
-  if (!front?.id) throw new Error("The browser has no window open.");
-  return front;
-}
-
-const idOf = (tab: chrome.tabs.Tab): number => {
-  if (tab.id === undefined) throw new Error("That tab has no id.");
-  return tab.id;
-};
-
-/** Where a tab's number points, or why it points nowhere. */
-/** At most this much of a new page goes with an error about a number from the old one. */
-const TOP_LIMITS = { chars: 3000, elements: 40 };
-
-/** Where a tab's number points; a number from a page that has gone is an error with the new page's top, freshly numbered. */
-async function targetOf(tab: number, ref: unknown) {
-  const target = typeof ref === "number" ? tableOf(tab).target(ref) : null;
-  if (target) return target;
-  const top = await ask(tab, 0, { op: "read", limits: TOP_LIMITS }).catch(() => null);
-  const text = top ? renumber(String(top.text ?? ""), (local) => tableOf(tab).ref({ frameId: 0, doc: String(top.doc), local })) : "";
-  throw new Error(`There is no element ${String(ref)} on this page now: the page changed.${text ? ` Its top now reads:\n${text}` : " read_page again."}`);
-}
 
 async function onElement(params: Params, op: string, extra: Params = {}): Promise<{ tab: number; result: Record<string, unknown> }> {
   const tab = idOf(await tabOf(params));
@@ -233,6 +190,7 @@ async function field(params: Params): Promise<Record<string, unknown>> {
 }
 
 export const METHODS: Record<string, Method> = {
+  ...MORE_METHODS,
   tabs: async () => {
     const front = await chrome.windows.getLastFocused().catch(() => null);
     return { tabs: (await chrome.tabs.query({ windowType: "normal" })).map(info), focusedWindow: front?.id ?? null };
@@ -276,14 +234,7 @@ export const METHODS: Record<string, Method> = {
   wait: async (params) => waitInTab(idOf(await tabOf(params)), params),
   outcome: async (params) => outcomeInTab(idOf(await tabOf(params)), params),
   close: async (params) => tabMethod("close", idOf(await tabOf(params))),
-  downloads: async (params) => listDownloads(typeof params.limit === "number" ? params.limit : 20),
-  attach: async (params) => {
-    const whole = takeChunk(String(params.id ?? ""), Number(params.index ?? 0), Number(params.total ?? 1), String(params.chunk ?? ""));
-    if (whole === null) return { received: params.index };
-    const tab = idOf(await tabOf(params));
-    const target = await targetOf(tab, params.ref);
-    return ask(tab, target.frameId, { op: "attach", doc: target.doc, ref: target.local, name: params.name, type: params.type, data: whole });
-  },
+
   reload: async (params) => tabMethod("reload", idOf(await tabOf(params))),
   back: async (params) => tabMethod("back", idOf(await tabOf(params))),
   forward: async (params) => tabMethod("forward", idOf(await tabOf(params))),

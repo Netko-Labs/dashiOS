@@ -5,6 +5,7 @@
  */
 
 import { parseWait } from "../page/wait.ts";
+import { boxOf, clickAt } from "./canvas.ts";
 import { changes } from "./changes.ts";
 import { DOC, elementOf } from "./dom.ts";
 import { pageFacts, watchOutcome } from "./outcome.ts";
@@ -34,6 +35,10 @@ export async function handleMore(message: Message): Promise<Record<string, unkno
     }
     case "attach":
       return attach(message);
+    case "box":
+      return { ...boxOf(elementFor(message), message.picture === true) };
+    case "point":
+      return { target: clickAt(elementFor(message), Number(message.x ?? 0.5), Number(message.y ?? 0.5)) };
     case "probe": {
       const facts = pageFacts(location.href, "password");
       return { url: location.href, title: document.title, password: facts.fieldShows, captcha: facts.captcha };
@@ -43,10 +48,16 @@ export async function handleMore(message: Message): Promise<Record<string, unkno
   }
 }
 
-/** A file put into a page's file field as if the person had chosen it: no chooser, the page hears input and change. */
-function attach(message: Message): Record<string, unknown> {
+/** The element a message names, in this document. */
+function elementFor(message: Message): Element {
   const element = message.doc === DOC && typeof message.ref === "number" ? elementOf(message.ref) : null;
   if (!element) throw new Error("That element is no longer on the page; read_page again.");
+  return element;
+}
+
+/** A file put into a page's file field as if the person had chosen it: no chooser, the page hears input and change. */
+function attach(message: Message): Record<string, unknown> {
+  const element = elementFor(message);
   if (!(element instanceof HTMLInputElement) || element.type !== "file") throw new Error("That isn't a file field (a file chooser read_page numbered).");
   if (element.disabled) throw new Error("That file field is disabled.");
   const binary = atob(String(message.data ?? ""));

@@ -612,6 +612,72 @@
       }
     },
     {
+      "name": "screenshot_element",
+      "title": "Picture one element of a web page",
+      "description": "A PNG of one element read_page numbered (a canvas, a game board, a chart), not the whole screen: brought into view, cropped to its box. Refused when a password, card or code field is inside it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "integer",
+            "description": "An element's number from read_page, like 12 for [12]."
+          },
+          "tab": {
+            "type": "string",
+            "description": "A tab id from list_tabs or open_url, like \"t12\" (default: the tab you used last, else the one in front)."
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Picture one element of a web page",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "click_in_element",
+      "title": "Click a point of a web page element",
+      "description": "Click inside an element at `x`, `y` as fractions of its box (0,0 its top left, 1,1 its bottom right): a square of a board, a spot on a canvas. A real click with Dashi's pointer when it can be placed; by page events inside frames. For a chess board from White's side, file a is x 0.0625, rank 1 is y 0.9375.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "integer",
+            "description": "An element's number from read_page, like 12 for [12]."
+          },
+          "x": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Across, 0 to 1."
+          },
+          "y": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Down, 0 to 1."
+          },
+          "tab": {
+            "type": "string",
+            "description": "A tab id from list_tabs or open_url, like \"t12\" (default: the tab you used last, else the one in front)."
+          }
+        },
+        "required": ["ref", "x", "y"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "title": "Click a point of a web page element",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
       "name": "wait_for",
       "title": "Wait for something",
       "description": "Wait, instead of reading again and again, until one thing happens: `text` appears on a web page or `text_gone` leaves it, an `element` read_page numbered is there, enabled or gone (`state`), the page has `loaded` or gone `quiet` (nothing changing for half a second), a window whose title holds `window_title` is open, or a `file` exists. Give exactly one. Returns `met` (true, or false when `timeout` ran out), what it saw, and how long it took. The page is watched by the browser itself.",

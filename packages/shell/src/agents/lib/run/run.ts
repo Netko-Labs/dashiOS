@@ -41,6 +41,8 @@ const personalHandlers = {
   go_forward: desktop.tabsCall,
   wait_for: desktop.waitFor,
   attach_file: desktop.attachFile,
+  click_in_element: desktop.clickInElement,
+  screenshot_element: desktop.screenshotElement,
   list_downloads: desktop.listDownloads,
   click: desktop.handsCall,
   scroll: desktop.handsCall,
@@ -68,6 +70,8 @@ const personalHandlers = {
   | "go_forward"
   | "wait_for"
   | "attach_file"
+  | "click_in_element"
+  | "screenshot_element"
   | "list_downloads"
   | "click"
   | "scroll"

@@ -3945,3 +3945,19 @@ short words, as the rulebook is written.
   `bin/dashi-browser-pack.ts --version` for a development build; a
   release bumps every version together (H14).
 - **Undo:** take `transferTools` out of `TOOLS`; the permission stays harmless.
+
+### D210. A page element with nothing inside: its picture is the tab's, cropped; a point of it is clicked with the agent's real pointer
+
+- **Date:** 2026-11-16. `v09/reach`. "canvas or custom widgets (the Lichess
+  board) are invisible. I played chess by rewriting the whole PGN."
+- **Choice:** `screenshot_element` captures the visible tab in the browser
+  and crops it to the element there (the compositor can't crop a window's
+  picture, and a screen area would show what covers it); since that
+  picture skips the agents' mask, it is refused when any secret field
+  overlaps the box. `click_in_element` takes fractions of the box and
+  clicks with the agent's own pointer in the browser's window (a trusted
+  click, the same `agent-input` as `click`); inside a frame it dispatches
+  page events instead and says some pages ignore them.
+- **What it doesn't solve:** reading the board (the model reads the
+  picture), drags, a frame's trusted click, timing (a game clock).
+- **Undo:** take `canvasTools` out of `TOOLS`.
