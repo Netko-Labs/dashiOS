@@ -35,8 +35,10 @@ describe("args", () => {
       host: "/h",
       files: ["a.txt", "/tmp/b c.txt"],
       recover: null,
+      fresh: false,
     });
-    expect(parseArgs(["--recover", "1-2.json"])).toEqual({ host: null, files: [], recover: "1-2.json" });
+    expect(parseArgs(["--recover", "1-2.json"])).toEqual({ host: null, files: [], recover: "1-2.json", fresh: false });
+    expect(parseArgs(["--new"])).toEqual({ host: null, files: [], recover: null, fresh: true });
     expect(parseArgs(["--", "--odd-name"]).files).toEqual(["--odd-name"]);
     expect(pathFromArg("")).toBeNull();
     expect(pathFromArg("a\0b")).toBeNull();
@@ -46,7 +48,7 @@ describe("args", () => {
   test("another window's command line reads back the same", () => {
     const command = windowCommand({ bun: "/bun", main: "/m.tsx", host: "/host" }, ["--x.txt"]);
     expect(command).toEqual(["/bun", "/m.tsx", "--host", "/host", "--", "--x.txt"]);
-    expect(parseArgs(command.slice(2))).toEqual({ host: "/host", files: ["--x.txt"], recover: null });
+    expect(parseArgs(command.slice(2))).toEqual({ host: "/host", files: ["--x.txt"], recover: null, fresh: false });
     expect(parseArgs(windowCommand({ bun: "/bun", main: "/m.tsx", host: "/host" }, [], "1-2.json").slice(2)).recover).toBe("1-2.json");
   });
 });

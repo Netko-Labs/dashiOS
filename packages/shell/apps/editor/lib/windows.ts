@@ -10,9 +10,10 @@ export interface Launch {
   host: string;
 }
 
-/** The command line for a window on `files` (none: Untitled), or on a kept recovery file. */
+/** The command line for a window on `files` (none: a new Untitled one, which takes no draft), or on a kept recovery file. */
 export function windowCommand(launch: Launch, files: readonly string[], recover: string | null = null): string[] {
-  return [launch.bun, launch.main, "--host", launch.host, ...(recover !== null ? ["--recover", recover] : []), ...(files.length > 0 ? ["--", ...files] : [])];
+  const which = recover !== null ? ["--recover", recover] : files.length > 0 ? ["--", ...files] : ["--new"];
+  return [launch.bun, launch.main, "--host", launch.host, ...which];
 }
 
 /** Starts it, not waiting on it: it lives on when this window goes. */

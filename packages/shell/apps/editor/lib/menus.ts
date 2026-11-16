@@ -1,6 +1,6 @@
 /**
  * Text Editor's menus in the menu bar (the kit's `useAppMenus`): File (new
- * window, open, close, save, earlier versions, deleting a draft), Edit (Undo
+ * window, open, the kept drafts no window holds, close, save, earlier versions, deleting a draft), Edit (Undo
  * on the app's own history; Cut, Copy, Paste, and Select All typed into the
  * field with the keyboard, as its own keys would be; Find, Replace, Go to
  * Line), and View (line numbers, the font). The ❖ shortcuts are real: the
@@ -36,9 +36,12 @@ export interface MenuContext {
   /** How far apart the tab stops are (prefs.ts `TAB_WIDTHS`). */
   tabWidth: TabWidth;
   caseSensitive: boolean;
+  /** Kept drafts no window holds (drafts.ts): File › Open Drafts brings them back. */
+  keptDrafts?: number;
   actions: {
     newWindow(): void;
     open(): void;
+    openDrafts?(): void;
     close(): void;
     save(): void;
     saveAs(): void;
@@ -67,6 +70,7 @@ function menuHandlers(actions: MenuContext["actions"]): Readonly<Record<string, 
   return {
     new: actions.newWindow,
     open: actions.open,
+    "open-drafts": () => actions.openDrafts?.(),
     close: actions.close,
     save: actions.save,
     "save-as": actions.saveAs,
@@ -101,6 +105,7 @@ export function editorMenus(context: MenuContext): { menus: MenuSpec[]; run: (id
       items: [
         { id: "new", label: "New", shortcut: "❖N" },
         { id: "open", label: "Open…", shortcut: "❖O" },
+        { id: "open-drafts", label: "Open Drafts", enabled: (context.keptDrafts ?? 0) > 0 },
         { type: "separator" },
         { id: "close", label: "Close", shortcut: "❖W" },
         { id: "save", label: context.hasFile ? "Save" : "Save…", shortcut: "❖S", enabled: context.hasFile || !context.pristine },
