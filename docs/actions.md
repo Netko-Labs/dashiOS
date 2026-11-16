@@ -335,6 +335,22 @@ number and name, and holds for that connection only: nothing is saved
   after it open there. The Space holds for the plan's steps and is let go
   30 s after the last.
 
+### Telling the person
+
+- `tell_person {text}` (scope "act") says one line aloud in Dashi's voice
+  while the agent keeps working, and shows it where the agent's status
+  shows (the capsule's line for Dashi's assistant, the menu bar for
+  others). At most one every 4 s; never over the person's own speech (the
+  talk key held, the microphone open, speech paused for a dictation:
+  `Voice.personTalking`). A line that can't be said is not queued: the
+  answer says "Shown, not said" and why (`agents/desktop/tell.ts`).
+- `notify_person {title, text}` (scope "act") posts a notification from
+  "Dashi" with the agents' icon; it stays in Notification Center.
+
+The assistant's prompt says when: a progress line now and then during a
+long job; a notification only when the work is done or needs them and they
+may have stepped away (decisions.md D207).
+
 ### The clipboard, written
 
 `copy_to_clipboard {text}` (scope "act", 100,000 characters) puts text on

@@ -62,6 +62,8 @@ export function stepWords(call: Call): string {
       return `Opening ${oneLine(call.app, 32)}`;
     case "set_setting":
       return settingWords(call.setting, call.value);
+    case "tell_person":
+      return oneLine(call.text, 80);
     default:
       return FIXED[call.name] ?? TOOLS.find((tool) => tool.name === call.name)?.title ?? "Working";
   }

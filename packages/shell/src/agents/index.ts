@@ -41,6 +41,7 @@ export { type A11yNode, documents, fieldAt, focusedField, hasState, limits, pass
 export type { Question } from "./confirm.ts";
 export { type GrantEntry, Grants, label, logActivity, SCOPES, type Scope, stateDir } from "./consent.ts";
 export type { ToolResult } from "./context.ts";
+export { type SpokenLines, Teller } from "./desktop/tell.ts";
 export type { ClipboardCopy } from "./desktop/types.ts";
 export { contextPrompt, NO_CONTEXT, type TaskContext, taskGrants, windowWords } from "./handoff/grants.ts";
 export { harnessGlyph } from "./handoff/harness-icons.ts";

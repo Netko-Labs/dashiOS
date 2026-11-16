@@ -3892,3 +3892,18 @@ short words, as the rulebook is written.
 - **Cost:** with the history off, the person's last copy is replaced with
   no way back.
 - **Undo:** take the tool out of `clipboardTools`.
+
+### D207. tell_person speaks a line without ending the turn; notify_person posts a notification; neither asks
+
+- **Date:** 2026-11-16. `v09/reach`. "During long jobs the person hears
+  nothing until the end"; "No way to notify the person on my own."
+- **Choice:** `tell_person` goes through the voice's own `say` (each
+  sentence its own queued `speak`, D146), at most one every 4 s, and not
+  while the person talks or dictates or the microphone is open; a line it
+  can't say is shown only, never queued (a queued progress line is stale
+  when it plays). It shows as the capsule's step for the assistant, as the
+  status for others. `notify_person` is a plain notification from
+  "Dashi". Scope "act", nothing destructive (the critical-only rule).
+- **Cost:** an outside agent's line is said in Dashi's voice: the person
+  hears it as Dashi. The menu bar's mark names the agent while it works.
+- **Undo:** take `tellTools` out of `TOOLS`.

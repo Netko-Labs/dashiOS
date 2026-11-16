@@ -20,6 +20,7 @@ import type { FlagsStore } from "../../shared/control-center/index.ts";
 import type { SpaceRef } from "../../spaces/index.ts";
 import type { WifiStore } from "../../wifi/index.ts";
 import type { SoftwareBackend } from "./software.ts";
+import type { Teller } from "./tell.ts";
 
 /** One copy as an agent reads it: the text, or what a picture or files were. */
 export interface ClipboardCopy {
@@ -59,6 +60,8 @@ export interface Desktop {
   setup: { open(page?: PageId): void };
   /** The app catalog and the package tools; absent means the real ones (shared/software/). */
   software?: SoftwareBackend;
+  /** tell_person's spoken lines (tell.ts); absent where there is no voice. */
+  tell?: Pick<Teller, "tell">;
   /** Show the lock screen. */
   lock(): void;
   /** The shell's screen recorder, for record_screen (recorder/). Absent without a compositor. */

@@ -125,7 +125,9 @@ export type Call =
   | { name: "read_clipboard_history"; limit: number }
   | { name: "copy_to_clipboard"; text: string }
   | { name: "get_work_alone" }
-  | { name: "ask_person"; question: string; seconds: number };
+  | { name: "ask_person"; question: string; seconds: number }
+  | { name: "tell_person"; text: string }
+  | { name: "notify_person"; title: string; text: string };
 
 /** What wait_for waits for: one thing on a page, a window, or a file. */
 export type WaitUntil =
