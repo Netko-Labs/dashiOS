@@ -654,9 +654,9 @@ Loads the models now. `language` picks which listening model (see
 {"event":"partial","text":"Open the"}
 {"id":11,"method":"listen.stop"}
 {"event":"state","state":"thinking"}
-{"event":"heard","text":"Open the calendar.","speech_ms":1632,"language":"en"}
+{"event":"heard","text":"Open the calendar.","speech_ms":1632,"language":"en","ended":"key-up(224)","model":"parakeet-v3"}
 {"event":"state","state":"idle"}
-{"id":11,"result":{"text":"Open the calendar.","speech_ms":1632,"language":"en"}}
+{"id":11,"result":{"text":"Open the calendar.","speech_ms":1632,"language":"en","ended":"key-up(224)","model":"parakeet-v3"}}
 ```
 
 - `language`: what is spoken, as a BCP 47 tag (`"en"`, `"pt-BR"`); only its
@@ -666,11 +666,20 @@ Loads the models now. `language` picks which listening model (see
   `"silence"` (it ends by itself once the person has spoken and then been
   quiet for `quiet_ms`, 1200 unless given, 300 to 10000).
 - `partials`: `false` turns the `partial` events off.
+- `model`: `"parakeet"` (the default) or `"whisper"`, the model that hears
+  (Settings › Voice, "Recogniser"); Whisper only when its set is here, and
+  always for a language Parakeet lacks.
 
-`listen.stop` hears a last eighth of a second (the key comes up as the last
-word ends), then answers with the words. `text` is `""` when nothing was
-said: silence is never turned into words. `speech_ms` is how long the speech
-was once the silence was dropped. `language` is the language of the words
+A held key's listen keeps every sample between the key going down and
+coming up (the detector only says whether anyone spoke): a quiet voice
+that the detector hears late keeps its first syllable (decisions.md D199).
+A listen that ends by itself keeps only the speech, with 480 ms before
+each phrase. `listen.stop` hears at least 192 ms more (the key comes up as
+the last word ends), and goes on while the detector still hears the
+voice, up to 384 ms, then answers with the words. Each listen's end is
+written to the service's log: `listen ended reason=… heard_ms=… model=…`. `text` is `""` when nothing was
+said: silence is never turned into words. `speech_ms` is how long the sound
+the model heard was. `language` is the language of the words
 (`"en"`, `"es"`, `"fr"`, `"hi"`, `"it"`, `"pt"`), in the reply and in
 `heard`, when the words tell it: Parakeet picks the language it hears by
 itself and does not say which (its decoder gives words only), so the
@@ -763,8 +772,9 @@ sound at once and forgets what was queued; every utterance it ended gets a
 | --- | --- | --- |
 | `state` | `state` | The state changed (see "States"). |
 | `level` | `level`, 0 to 1 | About 31 times a second while listening: the microphone's loudness (RMS on a decibel scale, −60 dBFS is 0). |
+| `speech` | none | Once a listen, when the detector hears the person begin: a listen that ends by itself is never given up on after it. |
 | `partial` | `text` | While listening: all the words so far. Each replaces the one before; `heard` replaces the last. |
-| `heard` | `text`, `speech_ms`, `language?` | A listen ended (by `listen.stop`, by silence, by the microphone ending, or at five minutes). Not after `listen.cancel`. |
+| `heard` | `text`, `speech_ms`, `language?`, `ended`, `model` | A listen ended (by `listen.stop`, by silence, by the microphone ending, or at five minutes). Not after `listen.cancel`. `ended` says why (`key-up(224)`, `silence(1824)`, `max`, `closed`), `model` what heard it (`parakeet-v3`, `whisper-turbo`). |
 | `sentence` | `id`, `index`, `text`, `ms`, `words[]` (`text`, `start`, `end`), `voice`, `language` | A sentence's (or, for a long first one, each of its two pieces') first sound plays now. `ms` is how long it lasts; a word's `start` and `end` are milliseconds from now. `voice` says it, read as `language` (`"en-US"`, `"es-419"`). |
 | `spoken` | `id`, `reason` (`done`, `stopped`, `failed`), `error?` | An utterance ended. |
 | `fetch` | `set?`, `file?`, `received`, `bytes`, `done`, `error?` | A fetch's progress, about five times a second: `received` of `bytes` over every file asked for. `done: true` ends it; with `error`, it failed or was cancelled. |

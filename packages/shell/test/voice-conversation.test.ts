@@ -229,3 +229,19 @@ test("the key held while a listen that opened by itself has heard nothing takes 
   await settle();
   expect(asked).toEqual(["open Helium and go to YouTube", "search for lo-fi"]);
 });
+
+test("once the detector hears the person begin, the 6 s give-up never cuts them off; the quiet after them ends the turn (D199)", async () => {
+  const { voice, timers, hold, chip } = conversing();
+  await hold();
+  voice.emit({ event: "spoken", id: 1, reason: "done" });
+  timers.advance(300);
+  await settle();
+  // They begin at 5.9 s: no words yet (partials lag), but the detector heard them.
+  timers.advance(5900);
+  voice.emit({ event: "speech" });
+  timers.advance(5000);
+  await settle();
+  expect(voice.calls).not.toContain("listen.cancel");
+  expect(chip()?.kind).toBe("listening");
+  expect(voice.calls).toContain("listen.quiet");
+});

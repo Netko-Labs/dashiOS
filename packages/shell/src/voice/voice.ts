@@ -55,6 +55,7 @@ export class Voice {
       notice: (text, go, ms) => this.notice(text, go, ms),
       rest: () => this.rest(true),
       mayOpen: () => !this.holding && !this.saying.speaking && !this.deps.trouble() && this.deps.prefs().on,
+      log: deps.log,
     });
     const { show } = this;
     this.saying = new Saying({
@@ -198,6 +199,8 @@ export class Voice {
       case "partial":
         if (this.chip?.kind === "listening") this.show({ ...this.chip, text: event.text });
         return;
+      case "speech": // The person began: a listen that ends by itself is not given up on now.
+        return this.mic.spoke();
       case "heard":
         // A listen that ends by itself ended: these are its words. (A held key's come in `listen.stop`'s reply.)
         if (!this.mic.end()) return;
@@ -221,17 +224,14 @@ export class Voice {
     this.turn++;
     this.mic.end();
   }
-
   /** Stop the sound, not the ask under way; whether Dashi was speaking. */
   private quiet(): boolean {
     this.unlisten();
     return this.saying.halt();
   }
-
-  /** Stop what is under way without touching the chip; whether there was anything. */
+  /** Stop what is under way without touching the chip (the sound first, then the ask); whether there was anything. */
   private halt(): boolean {
-    const speaking = this.quiet();
-    return this.asking.abort() || speaking;
+    return [this.quiet(), this.asking.abort()].some(Boolean);
   }
 
   /** A press on the chip or the capsule's square: Dashi stops speaking, thinking or listening, at once. `all` (❖Esc) ends the conversation too. */

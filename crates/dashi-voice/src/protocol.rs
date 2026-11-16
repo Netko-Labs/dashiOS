@@ -58,6 +58,9 @@ pub(crate) struct Listen {
     /// Words as they come (`partial` events); on unless false.
     #[serde(default)]
     pub(crate) partials: Option<bool>,
+    /// The model that hears: "parakeet" (the default) or "whisper" (when its set is here).
+    #[serde(default)]
+    pub(crate) model: Option<String>,
 }
 
 /// `listen.quiet`: the listen under way ends by itself from now on.

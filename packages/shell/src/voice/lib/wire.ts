@@ -22,7 +22,8 @@ export type SpokenVoice = Infer<typeof VoiceShape>;
 export const VoicesShape = loose({ default: str(), voices: lenientList(VoiceShape, { max: 64 }) });
 
 export const FetchReply = loose({ bytes: num(), fetching: bool() });
-export const HeardReply = loose({ text: str(), language: optional(str()) });
+/** `ended`: why the listen ended ("key-up(224)", "silence(1824)"); `model`: what heard it ("parakeet-v3"). */
+export const HeardReply = loose({ text: str(), language: optional(str()), ended: optional(str()), model: optional(str()), speech_ms: optional(num()) });
 /** `language`: the language its last sentence is said in ("es"). */
 export const SpeakReply = loose({ id: int(), language: optional(str()) });
 
@@ -33,7 +34,9 @@ const EVENTS = {
   state: loose({ state: State }),
   level: loose({ level: num() }),
   partial: loose({ text: str() }),
-  heard: loose({ text: str(), language: optional(str()) }),
+  heard: loose({ text: str(), language: optional(str()), ended: optional(str()), model: optional(str()), speech_ms: optional(num()) }),
+  /** The detector heard the person begin to speak, once a listen. */
+  speech: loose({}),
   sentence: loose({
     id: int(),
     index: int(),
@@ -51,3 +54,7 @@ const EVENTS = {
 
 export const VoiceEventShape = tagged("event", EVENTS);
 export type VoiceEvent = Infer<typeof VoiceEventShape>;
+
+/** The line each listen leaves in the shell's log: why it ended, how much speech, and what heard it. */
+export const endedLine = (heard: Infer<typeof HeardReply>): string =>
+  `listen ended reason=${heard.ended ?? "?"} heard_ms=${heard.speech_ms ?? 0} model=${heard.model ?? "?"}`;

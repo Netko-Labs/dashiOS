@@ -36,6 +36,12 @@ export class TapListen {
     }, waitMs);
   }
 
+  /** The person began to speak: it is never given up on now; the quiet after them ends it. */
+  spoke(): void {
+    if (this.giveUp !== null) this.timers.clear(this.giveUp);
+    this.giveUp = null;
+  }
+
   /** It is over (its words came, a second tap, a stop); whether one was running. */
   end(): boolean {
     const was = this.on;

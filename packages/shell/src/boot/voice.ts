@@ -8,7 +8,7 @@
 import type { Compositor } from "../compositor/index.ts";
 import { spokenContext } from "../persona/index.ts";
 import type { SettingsStore } from "../settings-app/index.ts";
-import { launcherAsker, STOP, startVoice, talks, type VoiceParts } from "../voice/index.ts";
+import { endedLine, launcherAsker, STOP, startVoice, talks, type VoiceParts } from "../voice/index.ts";
 import { startAssistantPiece } from "./assistant.ts";
 import type { LateParts } from "./parts.ts";
 import type { Late, Services } from "./services.ts";
@@ -79,6 +79,10 @@ export function startTalking({ compositor, settingsStore, services, late }: Talk
     },
     locale: process.env.LC_ALL || process.env.LC_MESSAGES || process.env.LANG,
   });
+  // Every listen's end, the Dashi key's and dictation's: why, how much speech, and what heard it (D199).
+  const offEnded = parts.service.on((event) => {
+    if (event.event === "heard") console.error(`dashi-shell: voice ${endedLine(event)}`);
+  });
   const stopHearing = compositor
     ? compositor.on((event) => {
         // The Dashi key and the dictation key are boot/dictation.ts's.
@@ -98,6 +102,7 @@ export function startTalking({ compositor, settingsStore, services, late }: Talk
     else parts.voice.resumeSpeech();
   });
   services.add("voice", () => {
+    offEnded();
     stopHearing();
     offDictation?.();
     parts.close();

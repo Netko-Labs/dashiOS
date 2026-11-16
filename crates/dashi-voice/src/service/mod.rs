@@ -10,6 +10,7 @@ mod fetching;
 mod lines;
 mod listen;
 mod player;
+mod recognize;
 mod seam;
 mod speak;
 mod voices;

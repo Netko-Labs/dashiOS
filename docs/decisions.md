@@ -4428,3 +4428,63 @@ short words, as the rulebook is written.
   replaced by rule); the names line tells the model to doubt it.
 - **Undo:** the `asker` in `boot/voice.ts`; `names` in `boot/assistant.ts`;
   the `known` option of `Lexicon`.
+
+### D199. A listen never ends while the person still speaks: the held span is heard whole, the key-up waits for the voice, a turn needs a real pause
+
+- **Date:** 2026-11-15. `v09/voicejoin`, from the owner: "mine was being
+  cut even though I'm talking to the microphone", and corpus rows 41, 42
+  and 47 ("firs", "experienc", "agen", "r design").
+- **What was found**, every way a listen ended while the person spoke:
+  - **The gate dropped quiet speech.** Every listen gave the recogniser
+    only what the voice detector called speech, with 256 ms before each
+    phrase. Fed a sentence at -30 dB under -50 dBFS of noise (a laptop's
+    microphone at arm's length), "Ask the agent." came back empty and
+    "We need a redesign." as "Yeah."; the same sound given whole came
+    back "Ask the agent." and "We need a design." Clean speech at any
+    level was heard right either way. This is the "r design" shape.
+  - **The key-up tail** was four frames (128 ms) whatever the voice did.
+    Parakeet itself fills a clean ending cut 130 ms short ("first",
+    "experience", "agent" all whole on the processor), so what is lost
+    is what is still being said after those frames.
+  - **Hands-free** listened for the next sentence only after the last one
+    had landed, which waits for the model (up to 1.2 s): what was said
+    meanwhile was never heard.
+  - **The 6 s give-up** after Dashi speaks looked for words on the chip;
+    the first words come up to 0.8 s after the voice begins, so a person
+    who began at 5.5 s was cut off.
+  - **A turn ended at 1.5 s of quiet**, short for someone who stops to
+    think mid-sentence, as the owner does.
+  - Not cuts: five minutes is the most a listen runs (logged as `max`);
+    Dashi's own speech never ends a listen (a listen stops Dashi's
+    speech, not the other way round).
+- **Choice:**
+  - A held key's listen hears every sample from key down to key up; the
+    detector only says whether anyone spoke (with no speech, nothing is
+    sent: silence is never turned into words). A listen that ends by
+    itself keeps the gate, now with 480 ms before each phrase.
+  - After key up, at least 192 ms more, then on while the detector still
+    hears the voice (until two quiet frames), up to 384 ms.
+  - Hands-free opens the next listen at once, then lands the sentence.
+  - The service tells `speech` once the detector hears the person begin;
+    from then a listen that ends by itself is never given up on.
+  - The end of a turn: 1.8 s of quiet after Dashi speaks or after a tap
+    (was 1.5); a hands-free sentence stays 1.2 s, since a pause there
+    only starts the next sentence and loses nothing now. The quiet is
+    counted only in frames the detector calls quiet (under 0.35): a
+    voice it still hears never ends a listen.
+  - Every listen's end is logged, by the service and the shell:
+    `listen ended reason=key-up(224)|silence(1824)|max|stopped|closed|gave-up heard_ms=… model=parakeet-v3`.
+- **An end-of-turn model:** worth it next, not here. Smart Turn (Pipecat,
+  BSD 2-Clause, about 8 MB, a few ms a turn on the processor) tells a
+  finished sentence from a thinking pause by its sound, so a turn could
+  end at 0.6 s when it is finished and wait 3 s when it is not. It
+  needs its own measurement on the owner's Spanish and English; the
+  fixed 1.8 s is the safe side meanwhile.
+- **Cost:** a held key's dictation sends the silence it held to the
+  recogniser (Parakeet does not make words of it; measured on fed
+  silence and quiet rooms); 64 to 256 ms more after key up; an
+  assistant's turn starts 0.3 s later.
+- **Undo:** `whole` in `service/capture.rs` and `engine/gate.rs`;
+  `TAIL`, `TAIL_MOST` in `service/capture.rs`; `LEAD` in `engine/gate.rs`;
+  `sentence` in `dictation/lib/hands-free.ts`; `spoke` in
+  `voice/lib/mic.ts`; `TAP_QUIET_MS` in `voice/keys.ts`.

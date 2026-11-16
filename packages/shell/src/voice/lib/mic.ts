@@ -36,6 +36,8 @@ export interface MicHost {
   rest(): void;
   /** Whether a listen may open by itself now: nothing held, nothing said, Voice usable. */
   mayOpen(): boolean;
+  /** One line for the shell's log. */
+  log?: ((line: string) => void) | undefined;
 }
 
 export class Mic {
@@ -62,6 +64,11 @@ export class Mic {
   get waiting(): boolean {
     const chip = this.host.chip();
     return this.byItself && this.tapped.running && chip?.kind === "listening" && chip.text === "";
+  }
+
+  /** The detector heard the person begin: a self-ending listen is not given up on now (D199). */
+  spoke(): void {
+    this.tapped.spoke();
   }
 
   /** The self-ending listen is over (its words came, a tap, a stop); whether one ran. */
@@ -119,6 +126,7 @@ export class Mic {
     const nothing = (): void => {
       const chip = host.chip();
       if (chip?.kind === "listening" && chip.text !== "") return;
+      host.log?.("listen ended reason=gave-up heard_ms=0");
       this.tapped.end();
       void this.cancel();
       // Nothing came after Dashi spoke: no complaint, the conversation just rests.
