@@ -200,6 +200,8 @@ describe("a detail's Markdown table", () => {
     view.set({ stack: [PRS, tree({ t: "Detail", i: "d", p: { markdown: Body } })], phase: "shown" });
     await launcher.type("");
     expect(launcher.has("launcher:detail:table")).toBe(true);
+    // A detail longer than its room clips: the table keeps its height (it shrank to its borders in the VM).
+    expect(launcher.tree()).toMatch(/"id":"[^"]+","direction":"column","shrink":false[^}]*"cornerRadius":6/);
     const drawn = launcher.tree();
     expect(drawn).toContain('"lint"');
     expect(drawn).toContain('"tests"');

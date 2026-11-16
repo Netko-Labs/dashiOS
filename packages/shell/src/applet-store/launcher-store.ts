@@ -43,7 +43,8 @@ export function getQuestion(entry: StoreApplet): string {
       ? `It can: ${can.map((line, at) => (at === 0 ? line : line.charAt(0).toLowerCase() + line.slice(1))).join("; ")}.`
       : "It reaches nothing of yours.";
   const review = entry.reviewed ? "" : " Nobody at Dashi has read this version’s code.";
-  return `Get “${entry.manifest.name}”? ${adds ? `${adds}. ` : ""}${reach}${review} ↩ again gets it.`;
+  // ↩ as text, not the colour emoji a font would draw for it inside a sentence (U+FE0E asks for the text form).
+  return `Get “${entry.manifest.name}”? ${adds ? `${adds}. ` : ""}${reach}${review} ↩\uFE0E again gets it.`;
 }
 
 function row(entry: StoreApplet, state: "get" | "installed" | "update" | "busy"): Row {

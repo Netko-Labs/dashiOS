@@ -10,6 +10,8 @@ import { type Bounds, Text, View } from "@mirinjs/metal";
 import { columnsOf, type Table } from "./table.ts";
 
 const CLEAR = "#00000000";
+/** The header's words are semibold, about this much wider than a row's: a column never breaks its header's longest word. */
+const BOLD = 1.12;
 
 export interface TableViewProps {
   table: Table;
@@ -42,7 +44,7 @@ export function TableView({ table, cellText, size, letter, onLayout, testID }: T
           key={column}
           style={{
             flex: columns[column]?.weight ?? 1,
-            minWidth: Math.ceil((columns[column]?.floor ?? 0) * letter) + 16,
+            minWidth: Math.ceil((columns[column]?.floor ?? 0) * letter * BOLD) + 16,
             paddingTop: 5,
             paddingBottom: 5,
             paddingLeft: 8,
@@ -60,7 +62,9 @@ export function TableView({ table, cellText, size, letter, onLayout, testID }: T
     <View
       {...(testID ? { testID } : {})}
       {...(onLayout ? { onLayout } : {})}
-      style={{ flexDirection: "column", borderWidth: 1, borderColor: colors.separator, borderRadius: 6, overflow: "hidden" }}
+      // Never squeezed: in a column shorter than its words (the launcher's detail), a box that clips (its corners) would
+      // otherwise shrink to its borders, as its least height is 0 where a text's is its lines.
+      style={{ flexShrink: 0, flexDirection: "column", borderWidth: 1, borderColor: colors.separator, borderRadius: 6, overflow: "hidden" }}
     >
       {row(table.header, 0, true)}
       {table.rows.map((cells, index) => row(cells, index + 1, false))}
