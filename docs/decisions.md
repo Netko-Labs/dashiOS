@@ -4986,8 +4986,6 @@ short words, as the rulebook is written.
   bus says nothing; Chromium-family apps publish focus only once woken.
 - **Undo:** drop `keyboardIn` from `listWindows` and the click.
 
-- **Undo:** drop `keyboardIn` from `listWindows` and the click.
-
 ### D240. Notes draws its Markdown by showing the field a projection of it, laid against the source piece by piece
 
 - **Date:** 2026-11-15. `v09/notesmd` (brief t3, the owner's assistant's
