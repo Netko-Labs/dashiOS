@@ -93,6 +93,8 @@ export function startVoice(options: VoiceOptions): VoiceParts {
       if (trouble && models.getSnapshot().service !== "ready") void models.refresh();
       return trouble;
     },
+    // Models copied in while the session runs are seen only on a read (Settings › Voice watches the folder only while open).
+    recheck: () => models.refresh().then(() => troubleOf(models)),
     hold: options.hold,
     asker: options.asker,
     locale: options.locale,

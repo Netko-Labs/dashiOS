@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { parseTree, type ViewNode } from "@dashi/applet";
 import type { TreeActed, TreeSnapshot, TreeView } from "../src/actions/index.ts";
+import { markdownBlocks } from "../src/launcher/lib/detail-markdown.ts";
 import { keyOf, panelVerbs, treeSections } from "../src/launcher/lib/tree-rows.ts";
 import { treeScope } from "../src/launcher/lib/tree-scope.ts";
-import { markdownBlocks } from "../src/launcher/lib/tree-view.tsx";
 import { mount, unmountLauncher } from "./launcher-harness.tsx";
 
 // An extension's view in the launcher: drawn by the launcher from the tree, in its own rows,
@@ -201,7 +201,7 @@ describe("a detail's Markdown table", () => {
     await launcher.type("");
     expect(launcher.has("launcher:detail:table")).toBe(true);
     // A detail longer than its room clips: the table keeps its height (it shrank to its borders in the VM).
-    expect(launcher.tree()).toMatch(/"id":"[^"]+","direction":"column","shrink":false[^}]*"cornerRadius":6/);
+    expect(launcher.tree()).toMatch(/"id":"[^"]+","direction":"column"(,"width":\d+)?,"shrink":false[^}]*"cornerRadius":6/);
     const drawn = launcher.tree();
     expect(drawn).toContain('"lint"');
     expect(drawn).toContain('"tests"');

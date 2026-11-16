@@ -120,6 +120,8 @@ export interface VoiceDeps {
   prefs(): { on: boolean; key: TalkKey; voice: string | undefined; listenAgain?: boolean; speak?: SpeakExtras; recognizer?: string | undefined };
   /** What stops Voice from being used now (models.ts, the service), or null. */
   trouble(): Trouble;
+  /** The same, read again first (what it reads may be stale); unset, `trouble` is final. */
+  recheck?(): Promise<Trouble>;
   /** The keys the compositor holds for the shell (`held-keys`). */
   hold(keys: ReturnType<typeof heldKeys>): void;
   asker: Asker;

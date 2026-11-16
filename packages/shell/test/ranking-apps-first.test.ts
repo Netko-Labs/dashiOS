@@ -108,3 +108,36 @@ describe("menu rows and commands never outrank an app that matches as well (the 
     }
   });
 });
+
+// Passes 38 and 39: "emoji" opened GNOME Characters (a keyword of its), not the Emoji extension (a word of its name).
+describe("a command found by its own name, over an app found only by a keyword", () => {
+  const items = buildIndex([
+    {
+      id: "org.gnome.Characters",
+      kind: "app",
+      names: ["Characters"],
+      keywords: ["characters", "unicode", "punctuation", "math", "letters", "emoji", "emoticon", "symbols"],
+    },
+    { id: "dev.dashi.calculator", kind: "app", names: ["Calculator"], keywords: ["math"] },
+    {
+      id: "dashi://extension/dev.dashi.emoji/emoji",
+      kind: "command",
+      names: ["Search Emoji"],
+      keywords: ["emoji", "smiley", "symbol", "character"],
+      foreign: true,
+    },
+    { id: "dashi://dashi/math-mode", kind: "command", names: ["Toggle Formulas"], keywords: ["math"], own: true },
+  ]);
+  const ids = (query: string): string[] => rank(items, query).map((result) => result.item.id);
+
+  test('"emoji" is the Emoji extension first, Characters next', () => {
+    expect(ids("emoji")).toEqual(["dashi://extension/dev.dashi.emoji/emoji", "org.gnome.Characters"]);
+    expect(ids("search emoji")[0]).toBe("dashi://extension/dev.dashi.emoji/emoji");
+  });
+
+  test("a command found only by a keyword still yields to apps found by the same keyword", () => {
+    expect(ids("math")).toEqual(["dev.dashi.calculator", "org.gnome.Characters", "dashi://dashi/math-mode"]);
+    // An app's own name still wins over the command: "characters" is Characters.
+    expect(ids("characters")[0]).toBe("org.gnome.Characters");
+  });
+});

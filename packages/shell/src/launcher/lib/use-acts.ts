@@ -12,6 +12,7 @@ import type { LauncherScope, ScopeResult } from "../types.ts";
 import { type Effect, historyId, type Verb } from "../verbs.ts";
 import { SET_UP_ROW } from "./agents/agent-rows.ts";
 import { type AgentHandlers, agentHandlers } from "./agents/handlers.ts";
+import { detailScroll } from "./detail-scroll.ts";
 import type { ModeLists } from "./mode.ts";
 import { perform } from "./perform.ts";
 import { type Move, moveSelection } from "./selection.ts";
@@ -53,6 +54,8 @@ function useMove(props: LauncherProps, s: LauncherState, search: Search, lists: 
   latest.current = lists.listIds;
   const mover = (how: Move) => {
     search.pictures.fold();
+    // A detail is one long page: the keys scroll it (detail-scroll.ts).
+    if (mode.kind === "search" && search.sections.some((section) => section.detail) && detailScroll.step(how)) return;
     if (mode.kind === "search") s.setHeld((now) => gridStep(search.sections, latest.current, now, how) ?? moveSelection(latest.current, now, how));
     // The empty conversation's tries: ↑ and ↓ choose one.
     else if (mode.kind === "talk") s.setTryAt((now) => (how === "up" || how === "page-up" || how === "first" ? Math.max(0, now - 1) : now + 1));

@@ -99,3 +99,20 @@ describe("resolveLocked (the lock screen's keys)", () => {
     }
   });
 });
+
+// Passes 31 and 39: ⇧❖3 made no screenshot while the launcher was open; its ❖3 (pick the third row) took it.
+test("with the launcher open, ⇧❖3, ⇧❖4 and ⇧❖5 are still the screenshot keys, and ❖3 is still its pick", () => {
+  const open = withLauncher(currentKeymap());
+  const bound = (mods: KeyChord["mods"], key: string): string | null => {
+    const resolved = resolveChord(chord(mods, key), "", open);
+    return resolved.kind === "bind" ? resolved.name : null;
+  };
+  expect(bound(["super", "shift"], "3")).toBe("dashi://dashi/screenshot");
+  expect(bound(["super", "shift"], "4")).toBe("dashi://dashi/screenshot-area");
+  expect(bound(["super", "shift"], "5")).toBe("dashi://dashi/capture");
+  expect(bound(["super"], "3")).toBe("launcher-pick-3");
+  // The launcher's own ⇧ chords stay its own.
+  expect(bound(["super", "shift"], "k")).toBe("launcher-shortcut");
+  // And in the keys typed right after a ❖ tap, before the launcher's own keymap comes.
+  expect(resolveChord(chord(["super", "shift"], "3"), "", withTyping(currentKeymap()))).toEqual({ kind: "bind", name: "dashi://dashi/screenshot" });
+});

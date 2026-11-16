@@ -10,7 +10,7 @@
 import { defineApplet } from "@dashi/applet";
 import { Action, ActionPanel, List, useLauncher, usePreferences, useQuery } from "@dashi/applet/launcher";
 import { useEffect, useState } from "react";
-import { ago, isRepo, type PullRequest, pullRequests, type Repository, searchRepositories } from "./lib/api.ts";
+import { ago, fit, isRepo, type PullRequest, pullRequests, type Repository, searchRepositories } from "./lib/api.ts";
 import { PullRequestDetail, SettingsActions } from "./lib/detail.tsx";
 import { PULL_REQUEST } from "./lib/glyphs.ts";
 
@@ -23,7 +23,7 @@ function Row({ repo, pr }: { repo: string; pr: PullRequest }) {
       icon={{ svg: PULL_REQUEST, tone: pr.draft ? "tertiary" : "moss" }}
       title={pr.title}
       subtitle={`#${pr.number} · ${pr.author}`}
-      keywords={[String(pr.number), pr.author, pr.branch, ...pr.labels]}
+      keywords={[String(pr.number), pr.author, fit(pr.branch, 60), ...pr.labels].filter(Boolean).slice(0, 16)}
       accessories={[...(pr.draft ? [{ tag: "Draft", tone: "secondary" as const }] : []), { text: ago(pr.updated) }]}
       actions={
         <ActionPanel title={`#${pr.number} · ${pr.title}`}>
@@ -90,7 +90,8 @@ function RepoRow({ repo }: { repo: Repository }) {
     <List.Item
       id={repo.fullName}
       title={repo.fullName}
-      subtitle={repo.description}
+      // A repository without a description has no subtitle: an empty one is refused, and the whole search with it.
+      {...(repo.description ? { subtitle: repo.description } : {})}
       accessories={[{ text: `★ ${repo.stars.toLocaleString("en")}` }]}
       actions={
         <ActionPanel title={repo.fullName}>

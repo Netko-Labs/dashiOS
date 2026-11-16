@@ -91,13 +91,14 @@ export class Screenshots {
   /**
    * ⇧❖3, ⇧❖4 and ⇧❖5, and the launcher's Screenshot rows (actions/lib/sources/commands.ts). Chosen in the launcher,
    * it is taken down first and the capture waits until it is gone, so it isn't in the picture; "the focused
-   * window" is then the one it was over (Space in ⇧❖4, Capture Window in the toolbar).
+   * window" is then the one it was over (Space in ⇧❖4, Capture Window in the toolbar). ⇧❖3 pressed over the open
+   * launcher (`byKey`) takes the screen as it is, the launcher in it (D378).
    */
-  run = async (what: CaptureKind, window: number | null): Promise<void> => {
+  run = async (what: CaptureKind, window: number | null, byKey = false): Promise<void> => {
     const compositor = this.compositor;
     if (!compositor) return;
     const overlays = this.late.get("overlays");
-    if (overlays.has("launcher")) {
+    if (overlays.has("launcher") && !(byKey && what === "screen")) {
       await overlays.closeAndWait("launcher");
       await Bun.sleep(LAUNCHER_GONE_MS);
     }

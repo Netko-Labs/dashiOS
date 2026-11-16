@@ -1,11 +1,10 @@
 /**
- * Talking to Dashi (docs/voice.md, "What the shell does"): the talk key held is a listen, let go it is the words, which go to
- * Dashi's assistant (`Asker`) and come back said in Dashi's voice as they are written, with captions. ❖Esc, or the key again,
- * stops Dashi at once. A tap listens to nothing: it stops Dashi if it was speaking, and otherwise says how to talk; the Copilot
- * key is the one whose tap talks (keys.ts). An agent's question (`ask_person`) is said the same way, and the next thing heard
- * is its answer instead of an ask. While the conversation is open (`Asker.talk`), the microphone opens by itself once Dashi's
- * last sentence has played, for the reply; after a question it always does (lib/mic.ts). The chip (chip.tsx) shows
- * `getSnapshot()`; nothing here draws. "Um" or "Okay" alone, heard by such a listen, is no ask (lib/fillers.ts).
+ * Talking to Dashi (docs/voice.md, "What the shell does"): the talk key held is a listen, let go it is the words, which go to Dashi's assistant (`Asker`) and
+ * come back said in Dashi's voice as they are written, with captions. ❖Esc, or the key again, stops Dashi at once. A tap listens to nothing: it stops Dashi
+ * if it was speaking, and otherwise says how to talk; the Copilot key is the one whose tap talks (keys.ts). An agent's question (`ask_person`) is said the
+ * same way, and the next thing heard is its answer instead of an ask. While the conversation is open (`Asker.talk`), the microphone opens by itself once
+ * Dashi's last sentence has played, for the reply; after a question it always does (lib/mic.ts). The chip (chip.tsx) shows `getSnapshot()`; nothing here
+ * draws. "Um" or "Okay" alone, heard by such a listen, is no ask (lib/fillers.ts).
  */
 
 import { maybe } from "@dashi/shape";
@@ -22,6 +21,7 @@ import { HeardReply, type VoiceEvent } from "./lib/wire.ts";
 import type { Chip, ChipGo, VoiceDeps } from "./types.ts";
 
 const message = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+type Holding = { since: number; stopped: boolean; opened: Promise<boolean> | null; tap: boolean; sure: boolean };
 
 export class Voice {
   readonly level = new LevelStore();
@@ -31,7 +31,7 @@ export class Voice {
   private readonly captions: Captions;
   /** Bumped by every press and stop: what an older press was waiting for is no longer wanted. */
   private turn = 0;
-  private holding: { since: number; stopped: boolean; opened: Promise<boolean> | null; tap: boolean; sure: boolean } | null = null;
+  private holding: Holding | null = null;
   /** The microphone: a key's listen, and the ones that end by themselves (lib/mic.ts). */
   private readonly mic: Mic;
   /** The ask being answered (lib/asking.ts), and what is being said (lib/saying.ts). */
@@ -118,10 +118,17 @@ export class Voice {
     const stopped = this.question && this.asking.active ? this.quiet() : this.halt();
     const turn = this.turn;
     const trouble = this.deps.trouble();
-    this.holding = { since: this.now(), stopped, opened: null, tap, sure };
-    if (trouble) return this.notice(trouble.text, trouble.go);
+    const holding: Holding = { since: this.now(), stopped, opened: null, tap, sure };
+    this.holding = holding;
+    if (!trouble) return this.open(holding, turn, waiting);
+    // What is missing may be stale (models copied in while the session runs): read once again before saying it.
+    const again = this.deps.recheck?.().catch(() => trouble) ?? Promise.resolve(trouble);
+    void again.then((t) => (t ? turn === this.turn && this.notice(t.text, t.go) : this.holding === holding && this.open(holding, turn, waiting)));
+  }
+
+  private open(holding: Holding, turn: number, waiting: boolean): void {
     this.listening();
-    this.holding.opened = waiting ? this.mic.reopen(turn) : this.mic.open(turn);
+    holding.opened = waiting ? this.mic.reopen(turn) : this.mic.open(turn);
     // The speaking model loads while the person talks, so the answer never waits for it (docs/voice.md, "Keep it warm").
     if (this.question === null) void this.deps.service.call("warm", { speak: true }).catch(() => {});
   }
@@ -187,9 +194,7 @@ export class Voice {
   }
 
   /** Say `text` in Dashi's voice, each sentence in a voice of its language; or all in `voice`, read as `language` (a sample). */
-  say(text: string, voice?: string, language?: string): void {
-    this.saying.say(text, "", voice ? { voice, language } : undefined);
-  }
+  say = (text: string, voice?: string, language?: string): void => this.saying.say(text, "", voice ? { voice, language } : undefined);
 
   private event(event: VoiceEvent): void {
     switch (event.event) {
@@ -229,9 +234,7 @@ export class Voice {
     return this.saying.halt();
   }
   /** Stop what is under way without touching the chip (the sound first, then the ask); whether there was anything. */
-  private halt(): boolean {
-    return [this.quiet(), this.asking.abort()].some(Boolean);
-  }
+  private readonly halt = (): boolean => [this.quiet(), this.asking.abort()].some(Boolean);
 
   /** A press on the chip or the capsule's square: Dashi stops speaking, thinking or listening, at once. `all` (❖Esc) ends the conversation too. */
   stop(all = false): void {
@@ -286,10 +289,7 @@ export class Voice {
   personTalking = (): boolean => this.holding !== null || this.mic.running || this.saying.holding;
 
   /** How the person answers by voice now ("the right ❖ key"), or null when they can't. */
-  talkKey(): string | null {
-    const { on, key } = this.deps.prefs();
-    return on && this.deps.trouble() === null ? key.hold : null;
-  }
+  talkKey = (): string | null => (this.deps.prefs().on && this.deps.trouble() === null ? this.deps.prefs().key.hold : null);
 
   close(): void {
     for (const off of this.offs) off();

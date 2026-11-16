@@ -5746,3 +5746,95 @@ short words, as the rulebook is written.
   just opened stays", "no launcher yet"), with the time, so a miss names its
   cause next time.
 - **Undo:** `did` in `boot/dictation.ts` `dashiTap`.
+
+### D375. The Dashi key reads the voice models again before saying they are missing
+
+- **Date:** 2026-11-16. `v09/fix-polish-2`, seen in pass 39.
+- **Found:** models copied into the voice folder while the session runs
+  were seen only when Settings › Voice opened (it watches the folder only
+  while open), so the Dashi key said "Voice needs its models" over models
+  that were there.
+- **Decision:** when the key finds something missing, it asks the service
+  for its models once more (one `models` and one `voices` call, a few
+  milliseconds) and only then says what is missing; if the models are there
+  now it listens. No folder watch for the whole session: a press is the
+  only time the answer matters.
+- **Undo:** `recheck` in `voice/start.ts` and `keyDown` in `voice/voice.ts`.
+
+### D376. A launcher detail scrolls, and draws wide tables, rules and GitHub's alerts
+
+- **Date:** 2026-11-16. `v09/fix-polish-2`, seen in passes 38 and 39.
+- **Found:** a long pull request's body was cut at the panel's foot; a
+  table wider than the column was cut at its right ("Confid…"); `---` and
+  `> [!WARNING]` showed as raw text.
+- **Decision:**
+  - The Markdown column is a scroll view: the wheel and touchpad scroll it,
+    and so do the launcher's keys while a detail shows (↑ ↓ by 48 px, Page
+    Up and Page Down by its height less 24, Home and End). A detail has one
+    row, so the keys had nothing else to do there. Up to 120 blocks are
+    drawn (80 before, when nothing scrolled).
+  - A table is as wide as the column; one that is wider at its least (each
+    column its longest word, at most 12 letters) is drawn at that width and
+    scrolls sideways, as GitHub's does (the wheel across, or ⇧ and the
+    wheel). Its cells wrap either way. A column is measured by its words as
+    drawn (Notes' tables too): a link's address used to count, so
+    Renovate's four short columns ran off the side.
+  - `---`, `***`, `___` are a hairline; under a paragraph `---` and `===`
+    make it a heading, as Markdown says.
+  - A quote has a 3 px bar; an alert has its word ("Note", "Tip",
+    "Important", "Warning", "Caution") over it, bar and word in the ink of
+    the launcher's tones: accent for Note and Important (purple is the
+    agents' and the focus ring's, so Important is not purple as GitHub's),
+    moss for Tip, broth for Warning, ume for Caution.
+- **Undo:** `launcher/lib/detail-view.tsx`, `detail-markdown.ts`,
+  `detail-scroll.ts`; `step` in `use-acts.ts`.
+
+### D377. A command found by its own name stays under only the apps found by theirs
+
+- **Date:** 2026-11-16. `v09/fix-polish-2`, seen in passes 38 and 39.
+- **Found:** "emoji" opened GNOME Characters, not the Emoji extension. Both
+  have "emoji" as a keyword, so both matched in the keyword tier, and a
+  command always stayed under an app of its tier.
+- **Decision:** a keyword's match whose item's name matched too (at a
+  word's start or better: "Search Emoji") is marked `named`. A command or
+  a menu row found by its name (or such a keyword) stays under only the
+  apps found by theirs; one found only by a keyword still stays under
+  every app found as well ("math": Calculator and Characters before a
+  command whose keyword it is). An app's own name still wins ("characters"
+  is Characters).
+- **Undo:** `byName` and `namedFloors` in `launcher/ranking/rank.ts`.
+
+### D378. The screenshot keys work while the launcher is open
+
+- **Date:** 2026-11-16. `v09/fix-polish-2`, seen in passes 31 and 39.
+- **Found:** ⇧❖3 made no file while the launcher was open. The launcher's
+  keymap puts its own rules first, and its ❖3 (pick the third row) matched
+  ⇧❖3 too: a rule that doesn't name Shift matches with Shift held. ⇧❖4 and
+  ⇧❖5 were taken the same way, and so were they in the keys typed right
+  after a ❖ tap.
+- **Decision:** while the launcher is open (and in the type-ahead keymap),
+  any session rule with ⇧ whose chord without ⇧ is one of the launcher's
+  comes before the launcher's rules: today ⇧❖3, ⇧❖4 and ⇧❖5. The launcher's
+  own ⇧ chords (⇧❖A, ⇧❖K, ⇧↩) are unchanged.
+- **Then, in the VM:** ⇧❖3 made a file but the launcher wasn't in it: the
+  screenshot closed the launcher first, as a Screenshot row chosen in it
+  must. A run asked by a key now says so (`byKey` in the action's
+  context), and ⇧❖3 by key takes the screen as it is, the launcher in it.
+  A row still takes the launcher down first; ⇧❖4 and ⇧❖5 by key do too
+  (their selection and toolbar need the pointer and the keys).
+- **Undo:** `shiftedPast` and `launcherRulesOver` in `launcher/keys.ts`;
+  `byKey` in `actions/lib/run.ts` and `Screenshots.run` (`boot/overlays.tsx`).
+
+### D379. GitHub's words are fitted to a row before they reach the launcher
+
+- **Date:** 2026-11-16. `v09/fix-polish-2`, found in this branch's VM pass.
+- **Found:** searching "renovatebot/renovate" showed "This view can't be
+  shown: Item “k:renovatebot-renovate-approve-bot”: subtitle is empty". A
+  row's words are refused when empty (a subtitle) or longer than the tree
+  takes (120 letters for a title or subtitle, 60 a keyword), and one
+  refused row hides the whole view.
+- **Decision:** the extension fits what GitHub sends: a repository without a
+  description has no subtitle; titles, descriptions, labels and the branch
+  keyword are one line, cut with "…" at the tree's limits. The tree's rule
+  stays strict: an extension that sends a bad row is told, by name.
+- **Undo:** `fit` in `extensions/github/lib/api.ts` and its uses.

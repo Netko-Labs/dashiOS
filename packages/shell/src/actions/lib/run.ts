@@ -76,13 +76,20 @@ export async function runAction(action: ActionDef, args: Args, origin: Origin, d
   }
   const checked = action.check(args);
   if (!checked.ok) return failed(checked.error);
-  return finish(action, checked.run, deps, window, origin !== "key");
+  return finish(action, checked.run, deps, window, origin);
 }
 
-async function finish(action: ActionDef, run: (ctx: ActionContext) => Promise<Outcome>, deps: RunDeps, window: number | null, logged = true): Promise<Outcome> {
+async function finish(
+  action: ActionDef,
+  run: (ctx: ActionContext) => Promise<Outcome>,
+  deps: RunDeps,
+  window: number | null,
+  origin: Origin = "person",
+): Promise<Outcome> {
   let outcome: Outcome;
+  const logged = origin !== "key";
   try {
-    outcome = await run(deps.context(window));
+    outcome = await run(origin === "key" ? { ...deps.context(window), byKey: true } : deps.context(window));
   } catch (error) {
     outcome = failed(`${action.title} failed: ${error instanceof Error ? error.message : String(error)}`);
   }

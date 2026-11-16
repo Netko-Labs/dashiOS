@@ -7,7 +7,7 @@
 
 import { useColors } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
-import { columnsOf, type Table } from "./table.ts";
+import { type Column, columnsOf, type Table } from "./table.ts";
 
 const CLEAR = "#00000000";
 /** The header's words are semibold, about this much wider than a row's: a column never breaks its header's longest word. */
@@ -25,11 +25,22 @@ export interface TableViewProps {
   testID?: string;
   /** The most letters a column keeps whole however narrow the table (columnsOf's 24 unless less): a narrow place passes less, and a longer word wraps. */
   wholeWord?: number;
+  /** A width of its own (in a view that scrolls sideways); unset, the room it is given. */
+  width?: number;
 }
 
-export function TableView({ table, cellText, size, letter, onLayout, testID, wholeWord }: TableViewProps) {
+/** A column's least width: its longest word (no more than `wholeWord` letters) in the header's weight, and its padding. */
+const columnFloor = (column: Column | undefined, letter: number, wholeWord: number | undefined): number =>
+  Math.ceil(Math.min(column?.floor ?? 0, wholeWord ?? Number.POSITIVE_INFINITY) * letter * BOLD) + 16;
+
+/** The least width `table` takes with its words wrapped (its borders too): wider than the room, a caller scrolls it sideways. */
+export function leastWidth(table: Table, letter: number, wholeWord?: number, words?: (cell: string) => string): number {
+  return columnsOf(table, words).reduce((sum, column) => sum + columnFloor(column, letter, wholeWord), 2);
+}
+
+export function TableView({ table, cellText, size, letter, onLayout, testID, wholeWord, width }: TableViewProps) {
   const colors = useColors();
-  const columns = columnsOf(table);
+  const columns = columnsOf(table, cellText);
   const row = (cells: readonly string[], index: number, header: boolean) => (
     <View
       key={index}
@@ -46,7 +57,7 @@ export function TableView({ table, cellText, size, letter, onLayout, testID, who
           key={column}
           style={{
             flex: columns[column]?.weight ?? 1,
-            minWidth: Math.ceil(Math.min(columns[column]?.floor ?? 0, wholeWord ?? Number.POSITIVE_INFINITY) * letter * BOLD) + 16,
+            minWidth: columnFloor(columns[column], letter, wholeWord),
             paddingTop: 5,
             paddingBottom: 5,
             paddingLeft: 8,
@@ -66,7 +77,15 @@ export function TableView({ table, cellText, size, letter, onLayout, testID, who
       {...(onLayout ? { onLayout } : {})}
       // Never squeezed: in a column shorter than its words (the launcher's detail), a box that clips (its corners) would
       // otherwise shrink to its borders, as its least height is 0 where a text's is its lines.
-      style={{ flexShrink: 0, flexDirection: "column", borderWidth: 1, borderColor: colors.separator, borderRadius: 6, overflow: "hidden" }}
+      style={{
+        flexShrink: 0,
+        flexDirection: "column",
+        borderWidth: 1,
+        borderColor: colors.separator,
+        borderRadius: 6,
+        overflow: "hidden",
+        ...(width === undefined ? {} : { width }),
+      }}
     >
       {row(table.header, 0, true)}
       {table.rows.map((cells, index) => row(cells, index + 1, false))}

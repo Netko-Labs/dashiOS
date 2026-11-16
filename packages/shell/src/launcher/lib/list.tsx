@@ -15,12 +15,13 @@ import type { Row } from "../row-model.ts";
 import type { Section } from "../sections.ts";
 import { withStop } from "./agents/agent-rows.ts";
 import type { LauncherKeys } from "./commands.ts";
+import { DetailBody } from "./detail-view.tsx";
 import { type Measures, PANEL } from "./measures.ts";
 import type { ModeLists } from "./mode.ts";
 import { nameIndent, ReservedRows, ResultRow, SectionHead } from "./row-view.tsx";
 import { keepInView, wheelSteps } from "./selection.ts";
 import type { LauncherState, Search } from "./state.ts";
-import { DetailBody, GRID_LINE_ROWS, GridCells } from "./tree-view.tsx";
+import { GRID_LINE_ROWS, GridCells } from "./tree-view.tsx";
 import type { Acts } from "./use-acts.ts";
 import { WindowStrip } from "./window-strip.tsx";
 
