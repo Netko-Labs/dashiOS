@@ -55,6 +55,13 @@ test("the same sentence lands differently in a terminal, a document, a chat and 
 
 test("an agent's prompt in a terminal takes prose; a bare shell takes a command", () => {
   expect(land("Git status.", "dev.dashi.terminal", null)).toBe("git status");
+  // A flag of two words said is written as one (D302); a word after it that is not part of it stays.
+  expect(land("git log dash dash one line", "dev.dashi.terminal", null)).toBe("git log --oneline");
+  expect(land("git log dash dash one line dash dash graph", "dev.dashi.terminal", null)).toBe("git log --oneline --graph");
+  expect(land("git push dash dash force with lease", "dev.dashi.terminal", null)).toBe("git push --force-with-lease");
+  expect(land("git commit dash dash no verify", "dev.dashi.terminal", null)).toBe("git commit --no-verify");
+  expect(land("git diff dash dash name dash only", "dev.dashi.terminal", null)).toBe("git diff --name-only");
+  expect(land("git commit dash dash amend message", "dev.dashi.terminal", null)).toBe("git commit --amend message");
   expect(land("Please run the tests.", "dev.dashi.terminal", null, true)).toBe("Please run the tests.");
   expect(land("GitHub is down.", "dev.dashi.terminal", null)).toBe("GitHub is down");
 });

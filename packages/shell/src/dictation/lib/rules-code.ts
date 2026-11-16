@@ -111,12 +111,51 @@ function symbols(text: string, terminal: boolean, count: { fixes: number }): str
   return out;
 }
 
-/** "dash dash help" → --help, "dash v" → -v. */
+/**
+ * Flags said as two or three words, written as one: "dash dash one line" → --oneline, "dash dash dry run" → --dry-run
+ * (D302). A word said after a flag joins it only from this list, or as "no" does ("dash dash no verify" → --no-verify),
+ * or with "dash" said between ("dash dash name dash only"): "git commit dash dash amend message" keeps its "message".
+ */
+const JOINED: Readonly<Record<string, string>> = {
+  "one line": "oneline",
+  "no confirm": "noconfirm",
+  "no capture": "nocapture",
+  "no deps": "nodeps",
+  "dry run": "dry-run",
+  "name only": "name-only",
+  "name status": "name-status",
+  "force with lease": "force-with-lease",
+  "set upstream": "set-upstream",
+  "save dev": "save-dev",
+  "frozen lockfile": "frozen-lockfile",
+  "ignore scripts": "ignore-scripts",
+  "all targets": "all-targets",
+  "allow empty": "allow-empty",
+};
+const MOST_JOINED = 3;
+
+/** The flag's name from "dash dash <words>": which words it takes and how it is written. */
+function flagName(words: readonly string[]): { taken: number; name: string } {
+  for (let count = Math.min(MOST_JOINED, words.length); count >= 2; count--) {
+    const known = JOINED[words.slice(0, count).join(" ")];
+    if (known) return { taken: count, name: known };
+  }
+  const [first = "", second, third] = words;
+  if (first === "no" && second !== undefined && !STOPS.has(second)) return { taken: 2, name: `no-${second}` };
+  // "name dash only": a dash said inside the flag.
+  if (second === "dash" && third !== undefined && !STOPS.has(third)) return { taken: 3, name: `${first}-${third}` };
+  return { taken: 1, name: first };
+}
+
+/** "dash dash help" → --help, "dash dash one line" → --oneline, "dash v" → -v. */
 function flags(text: string, count: { fixes: number }): string {
   return text
-    .replace(/\bdash dash ([\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*)/giu, (_whole, name: string) => {
+    .replace(/\bdash dash ([\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*(?: (?!dash dash\b)[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*){0,2})/giu, (_whole, said: string) => {
       count.fixes++;
-      return `--${name.toLowerCase()}`;
+      const words = said.toLowerCase().split(" ");
+      const { taken, name } = flagName(words);
+      const left = said.split(" ").slice(taken).join(" ");
+      return `--${name}${left ? ` ${left}` : ""}`;
     })
     .replace(/(?<!\b(?:a|the|one|this|that) )\bdash ([\p{L}\p{N}]{1,2})\b(?![-'’])/giu, (whole, name: string) => {
       // "a dash of salt" is not a flag.

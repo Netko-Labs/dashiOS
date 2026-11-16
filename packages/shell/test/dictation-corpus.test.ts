@@ -15,7 +15,10 @@ import { compose } from "../src/dictation/lib/compose.ts";
 import { PROFILES, pickProfile } from "../src/dictation/lib/profiles.ts";
 import { reasonsFor } from "../src/dictation/lib/rewrite.ts";
 
-const Corpus = obj({ source: str(), rows: list(obj({ row: num(), landed: str(), by: str(), want: optional(str()), gate: optional(list(str())) })) });
+const Corpus = obj({
+  source: str(),
+  rows: list(obj({ row: num(), landed: str(), by: str(), want: optional(str()), app: optional(str()), gate: optional(list(str())) })),
+});
 type Row = Infer<typeof Corpus>["rows"][number];
 
 const read = maybe(Corpus, JSON.parse(readFileSync(join(import.meta.dir, "fixtures/dictation-corpus.json"), "utf8")));
@@ -27,12 +30,13 @@ const real = new Set(corpus.rows.flatMap((row) => row.landed.toLowerCase().match
 for (const not of ["shouldt", "idead", "dashy", "whisperflow", "muy", "complicada"]) real.delete(not);
 const words = wordsFrom([[...real].join("\n")]);
 const lexicon = new Lexicon({ memory: true }).getSnapshot();
-const composing = { place: pickProfile(PROFILES, { window: 1, pid: 1, appId: "dev.dashi.editor" }, null), lexicon, words, tidy: true, agent: false };
+const said = (appId: string) => ({ place: pickProfile(PROFILES, { window: 1, pid: 1, appId }, null), lexicon, words, tidy: true, agent: false });
+const composing = said("dev.dashi.editor");
 
-const made = (row: Row) => compose(row.landed, composing);
+const made = (row: Row) => compose(row.landed, row.app ? said(row.app) : composing);
 
 test("every row of the corpus is accounted for", () => {
-  expect(corpus.rows.map((row) => row.row)).toEqual(Array.from({ length: 55 }, (_, index) => index + 1));
+  expect(corpus.rows.map((row) => row.row)).toEqual(Array.from({ length: 61 }, (_, index) => index + 1));
   for (const row of corpus.rows) expect(["rules", "model", "voice", "unresolved"]).toContain(row.by);
 });
 

@@ -25,6 +25,14 @@ test("a leading space only where one is needed", () => {
   expect(typed("Hello.", "path/")).toBe("hello. ");
 });
 
+test("a lone list item starts its own line, unless the caret already starts one", () => {
+  expect(typed("\n- Passport", "Things to pack")).toBe("\n- Passport ");
+  expect(typed("\n- Passport", "Things to pack:\n")).toBe("- Passport ");
+  expect(typed("\n• Passport", "")).toBe("• Passport ");
+  // A line break said alone stays one.
+  expect(typed("\nThanks", "")).toBe("\nThanks ");
+});
+
 test("continuing a sentence: no capital, unless the word is a name", () => {
   expect(typed("And then it works.", "We meet tomorrow, ")).toBe("and then it works. ");
   expect(typed("And then it works.", "We meet tomorrow. ")).toBe("And then it works. ");

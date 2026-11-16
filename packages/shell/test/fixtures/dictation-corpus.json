@@ -1,5 +1,5 @@
 {
-  "source": "dashi-0.9.0-design/assistant-v2/dictation-corpus.md: what Dashi's dictation got wrong in the owner's own messages. Each row is what landed then; `by` says what puts it right now: `rules` (it lands as `want` with no model), `model` (it waits for the correction model; `gate` is why the gate sends it, empty when nothing in the words says so), `voice` (the speaker's own phrasing: it must land untouched), `unresolved` (the lead could not tell what was meant).",
+  "source": "dashi-0.9.0-design/assistant-v2/dictation-corpus.md: what Dashi's dictation got wrong in the owner's own messages. Each row is what landed then; `by` says what puts it right now: `rules` (it lands as `want` with no model), `model` (it waits for the correction model; `gate` is why the gate sends it, empty when nothing in the words says so), `voice` (the speaker's own phrasing: it must land untouched), `unresolved` (the lead could not tell what was meant). `app` is the window the row was said into, Text Editor when it is not given.",
   "rows": [
     {
       "row": 1,
@@ -323,6 +323,43 @@
       "by": "model",
       "gate": [],
       "want": "I see mine was being cut"
+    },
+    {
+      "row": 56,
+      "landed": "Things to pack New Bullet Point Passport New Bullet Point Charger",
+      "by": "rules",
+      "want": "Things to pack:\n• Passport\n• Charger"
+    },
+    {
+      "row": 57,
+      "landed": "Cosas para empacar nueva viñeta pasaporte nueva viñeta cargador",
+      "by": "rules",
+      "want": "Cosas para empacar:\n• Pasaporte\n• Cargador"
+    },
+    {
+      "row": 58,
+      "landed": "Cosas para empacar punto nuevo pasaporte punto nuevo cargador",
+      "by": "rules",
+      "want": "Cosas para empacar:\n• Pasaporte\n• Cargador"
+    },
+    {
+      "row": 59,
+      "landed": "Dear Alex new line thanks for the notes new paragraph see you",
+      "by": "rules",
+      "want": "Dear Alex\nThanks for the notes\n\nSee you"
+    },
+    {
+      "row": 60,
+      "landed": "Hola Ana nueva línea gracias por las notas",
+      "by": "rules",
+      "want": "Hola Ana\nGracias por las notas"
+    },
+    {
+      "row": 61,
+      "landed": "git log dash dash one line",
+      "by": "rules",
+      "want": "git log --oneline",
+      "app": "dev.dashi.terminal"
     }
   ]
 }

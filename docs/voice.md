@@ -237,7 +237,7 @@ Writing.
 
 | Profile | Where | What it does |
 | --- | --- | --- |
-| Developer | terminals, editors, T3 Code, code hosts | casing by voice ("camel case user id" → `userId`; pascal, snake, kebab, constant, dot), flags and symbols by voice ("dash dash help" → `--help`, "open paren", "underscore", "equals sign"; "pipe" in a terminal only), backticks round identifiers outside a shell; at a shell's prompt no capital and no full stop; its own words (GitHub, TypeScript, …) |
+| Developer | terminals, editors, T3 Code, code hosts | casing by voice ("camel case user id" → `userId`; pascal, snake, kebab, constant, dot), flags and symbols by voice ("dash dash help" → `--help`, "dash dash one line" → `--oneline`, "dash dash no verify" → `--no-verify`, D302, "open paren", "underscore", "equals sign"; "pipe" in a terminal only), backticks round identifiers outside a shell; at a shell's prompt no capital and no full stop; its own words (GitHub, TypeScript, …) |
 | Writing | documents, notes, anything unclaimed | sentences as tidied |
 | Chat | messaging apps and sites | no full stop after a single sentence; a line break is ⇧Return, so Return does not send |
 | Email | mail apps and sites | full sentences; "Hi Alex," goes on a line of its own |
@@ -370,12 +370,18 @@ types the words. With "Tidy what I say" off nothing is an instruction.
   start or after a mark: a numbered list.
 - "bullet point … bullet point …", "next item", "viñeta", twice or more:
   bullets.
+- "new bullet point", "next bullet", "nueva viñeta", "otra viñeta",
+  "punto nuevo": a formatting command said inline, with or without a pause,
+  taken whole ("new" and all); one is enough. Said with nothing before it,
+  the item starts a line of its own (none where the caret already starts
+  one). After an article it is words ("a new bullet point").
 
 The markers go, each item gets a line and a capital, and what came before
 the first is the line that introduces them, ending with a colon. Bullets
 are `- ` where the profile's lists are Markdown (Chat, Developer) or the
-app is a Markdown editor (`MARKDOWN_APPS`: Notes, Obsidian, …), and bare
-lines in a plain field. Never at a shell's prompt. The line says "A list
+app is a Markdown editor (`MARKDOWN_APPS`: Notes, Obsidian, …), and `• `
+in a plain field (D301). A line said with "new line" is its own: a list is
+made inside it. Never at a shell's prompt. The line says "A list
 of 3." Anything less plain is left as said, and the gate sends it to the
 model (`list`).
 
