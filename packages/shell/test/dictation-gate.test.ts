@@ -10,7 +10,7 @@ import { expect, test } from "bun:test";
 import { wordsFrom } from "../src/dictation/index.ts";
 import { type GateReason, gate } from "../src/dictation/lib/gate.ts";
 import { languagesOf } from "../src/dictation/lib/language.ts";
-import { keepAccents, wordsChanged } from "../src/dictation/lib/rewrite.ts";
+import { keepAccents, placesChanged, wordsChanged } from "../src/dictation/lib/rewrite.ts";
 import { OWN_TERMS } from "../src/dictation/lib/seed.ts";
 import { tidy } from "../src/dictation/lib/tidy.ts";
 import type { RewriteAdvice, RewriteReply, RewriteRequest, Rewriter, RewriteState } from "../src/rewrite/types.ts";
@@ -49,6 +49,11 @@ test("a short clean sentence is not the model's; a self-correction, a repeat, a 
     "I think it's Tuesday. No, it's Wednesday today.",
     "Book the room for an hour actually for two hours.",
     "She lives in Portland Oregon sorry Portland Maine.",
+    // As the recogniser writes Spanish: no comma after the "no".
+    "Tenemos tres opciones, no cuatro opciones.",
+    "Llámame a las tres, no a las cuatro.",
+    "Nos vemos a las cinco, no digo a las seis.",
+    "El paquete llega mañana, o sea, no pasado mañana.",
   ])
     expect(why(said)).toContain("cue");
   // A cue that opens what was said takes nothing back, and "te digo" is not "I mean".
@@ -57,6 +62,8 @@ test("a short clean sentence is not the model's; a self-correction, a repeat, a 
   expect(why("Sorry, I am late.")).not.toContain("cue");
   expect(why("Hey, but no.")).not.toContain("cue");
   expect(why("Te digo que no voy.")).not.toContain("cue");
+  expect(why("No sé si viene, no creo que pueda.")).not.toContain("cue");
+  expect(why("I asked him, no answer yet.")).not.toContain("cue");
   // A real "no" and an "actually" inside a sentence are not corrections.
   expect(why("No, I see you there.")).toEqual([]);
   expect(why("I actually see you there.")).toEqual([]);
@@ -79,6 +86,11 @@ test("the language of what was said, with the text before it", () => {
   expect(languagesOf("ok", "Hola, ¿cómo estás?", undefined)).toEqual(["es"]);
   expect(languagesOf("ok", "", "es_CO.UTF-8")).toEqual(["es"]);
   expect(wordsChanged("at five no I mean six", "at six")).toBe(4);
+  // The capsule counts places, not words: one correction is one fix.
+  expect(placesChanged("Let's meet at five, no, I mean six.", "Let's meet at six.")).toBe(1);
+  expect(placesChanged("Send it to Ana on Monday, sorry, on Tuesday, at five, no, six.", "Send it to Ana on Tuesday, at six.")).toBe(2);
+  expect(placesChanged("See you there.", "See you there.")).toBe(0);
+  expect(placesChanged("I think it is fine", "It is fine")).toBe(1);
 });
 
 /** A rewriter a test scripts: what it answers, how it advises, and what it was asked. */
@@ -111,7 +123,7 @@ test("a self-correction goes to the model with the tone, the vocabulary and the 
   expect(asked[0]).toMatchObject({ transcript: CUE, languages: ["en"], before: "Hi Alex. ", tone: "Clear written sentences.", deadlineMs: 1200 });
   expect(asked[0]?.vocabulary).toEqual(expect.arrayContaining(["Dashi", "Claude Code"]));
   expect(typed).toEqual(["7:The meeting is at six. "]);
-  expect(state()).toMatchObject({ phase: "landed", typed: "The meeting is at six.", heard: CUE, line: "Typed. 4 fixes.", undo: true, raw: true });
+  expect(state()).toMatchObject({ phase: "landed", typed: "The meeting is at six.", heard: CUE, line: "Typed. 1 fix.", undo: true, raw: true });
   hub.dictationCommands.send({ do: "raw" });
   await settle();
   expect(world.before).toBe(`Hi Alex. ${CUE} `);

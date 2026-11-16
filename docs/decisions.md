@@ -4197,7 +4197,7 @@ short words, as the rulebook is written.
   model's training wastes it. Asking costs the wait only (a quarter of a
   second on the laptop); the model's checks hold right sentences (98.6%).
 - **Cost:** more sentences wait for the model: of the 102 sentences in
-  the set that are already right, 18 are sent (they hold a real "no" or
+  the set that are already right, 20 are sent (they hold a real "no" or
   "sorry" after other words) and come back unchanged.
 - **Undo:** `CUES` and `OPENERS` in `dictation/lib/gate.ts`.
 

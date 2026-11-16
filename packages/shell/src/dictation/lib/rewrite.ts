@@ -91,12 +91,40 @@ export function keepAccents(said: string, answer: string): string {
   });
 }
 
+/**
+ * How many places differ between two texts: each run of words taken out, put in or changed is one. "At five, no, I
+ * mean six" made "at six" is one fix, not the four words that went.
+ */
+export function placesChanged(from: string, to: string): number {
+  const a = wordsOf(from);
+  const b = wordsOf(to);
+  // How many words both keep, in order, from each pair of places on (the texts are a dictation long: a table is cheap).
+  const table = new Map<number, number>();
+  const kept = (i: number, j: number): number => table.get(i * (b.length + 1) + j) ?? 0;
+  for (let i = a.length - 1; i >= 0; i--)
+    for (let j = b.length - 1; j >= 0; j--)
+      table.set(i * (b.length + 1) + j, a[i] === b[j] ? kept(i + 1, j + 1) + 1 : Math.max(kept(i + 1, j), kept(i, j + 1)));
+  let places = 0;
+  let inside = false;
+  for (let i = 0, j = 0; i < a.length || j < b.length; ) {
+    const same = i < a.length && j < b.length && a[i] === b[j];
+    if (same) {
+      i++;
+      j++;
+    } else if (j >= b.length || (i < a.length && kept(i + 1, j) >= kept(i, j + 1))) i++;
+    else j++;
+    if (!same && !inside) places++;
+    inside = !same;
+  }
+  return places;
+}
+
 /** What the rules made, with the model's answer in place of their text: styled again as the profile wants, and counted. */
 export function withModel(made: Composed, answer: string, composing: Composing): Composed {
   const text = restyle(keepAccents(made.text, answer.trim()), composing, made.terms).text;
   if (text === "" || text === made.text) return made;
   // Marks alone changed (a comma, a capital): still a fix the person can see.
-  const count = Math.max(1, wordsChanged(made.text, text));
+  const count = Math.max(1, placesChanged(made.text, text));
   return { ...made, text, changes: [...made.changes, { kind: "model", count }] };
 }
 

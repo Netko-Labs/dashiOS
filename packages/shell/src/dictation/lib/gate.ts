@@ -38,10 +38,30 @@ const CUES: readonly RegExp[] = [
   /\b(?:or rather|scratch that|mejor dicho|quise decir|quiero decir|o sea,? no)\b/gi,
   /\bno,? no\b|\bbut no\b|\bnot(?: \w+)?,? but\b/gi,
   // A "no" after a pause that goes on to say the thing again: ", no, six", ". No, it's Wednesday", ", no the blue one".
-  /[,.;]\s+(?:(?:ay|bueno|oh|or|o|espera|wait)\s+)?no(?:,|\s+(?:the|a|an|el|la|los|las|un|una|wait|digo|espera|mejor|\d))/gi,
+  /[,.;]\s+(?:(?:ay|bueno|oh|or|o|espera|wait)\s+)?no(?:,|\s+(?:(?:the|a|an|el|la|los|las|un|una|wait|digo|espera|mejor)\b|\d))/gi,
   // "digo" as "I mean", never "te digo que".
   /(?<!\b(?:te|le|les|os|se|lo|que|yo|como|les)\s)\bdigo\b/gi,
 ];
+
+const SMALL_NUMBER =
+  /^(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce|\d+)$/i;
+
+/**
+ * A "no" after a pause with no comma of its own (the recogniser writes Spanish so: "tres opciones, no cuatro opciones",
+ * "a las tres, no a las cuatro"): a correction when it goes on to a number, or says again a word said just before it.
+ * "No sé, no creo que venga" says nothing again, and is not one.
+ */
+function restated(text: string): boolean {
+  for (const match of text.matchAll(/([^,.;]*)[,.;]\s+no\s+([^,.;]+)/gi)) {
+    const before = wordsIn(match[1] ?? "").map((word) => word.toLowerCase());
+    const after = wordsIn(match[2] ?? "").map((word) => word.toLowerCase());
+    if (before.length === 0 || before.every((word) => OPENERS.has(word))) continue;
+    if (SMALL_NUMBER.test(after[0] ?? "")) return true;
+    const near = new Set(before.slice(-5));
+    if (after.slice(0, 3).some((word) => word.length > 1 && near.has(word))) return true;
+  }
+  return false;
+}
 
 /** Words a transcript may open with that are not yet something to take back ("No, I mean it.", "Hey, but no"). */
 const OPENERS = new Set("no hey oh well but so and or yes ok okay bueno pues ay um uh y o si sí".split(" "));
@@ -110,7 +130,7 @@ export interface Gating {
 /** Why the model should be asked; empty when it should not. */
 export function gate({ text, listed, terms, words, polish }: Gating): GateReason[] {
   const reasons: GateReason[] = [];
-  if (cued(text) || repeats(text)) reasons.push("cue");
+  if (cued(text) || restated(text) || repeats(text)) reasons.push("cue");
   if (!listed && (text.match(LIST_MARKERS)?.length ?? 0) >= 2) reasons.push("list");
   if (runOn(text)) reasons.push("run-on");
   if (nonWord(text, terms, words)) reasons.push("non-word");
