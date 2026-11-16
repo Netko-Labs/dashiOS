@@ -84,11 +84,33 @@ function bestGroup(node: PageNode): PageNode[] {
   return best;
 }
 
+/** Every link in a node (itself included), in order. */
+function links(node: PageNode, out: PageNode[] = [], depth = 0): PageNode[] {
+  if (depth > 40 || node.tag === "#text" || isSkipped(node)) return out;
+  if (isLink(node)) out.push(node);
+  for (const child of node.children()) links(child, out, depth + 1);
+  return out;
+}
+
+const wordsOf = (node: PageNode): string => texts(node).join(" ").replace(/\s+/g, " ").trim();
+
+/** An item's main link: the one with the most words (a story's title, not its author or "hide"). */
+function mainLink(node: PageNode): PageNode | null {
+  let best: { link: PageNode; length: number } | null = null;
+  for (const link of links(node)) {
+    const length = wordsOf(link).length;
+    if (!best || length > best.length) best = { link, length };
+  }
+  return best?.link ?? null;
+}
+
+/** A group scores by how many it has and how much its main links say: rows of titles beat rows of "3 hours ago · hide". */
 function score(group: PageNode[]): number {
   if (group.length < MIN_ITEMS) return 0;
   const sample = group.slice(0, 10);
-  const length = sample.reduce((sum, item) => sum + texts(item).join(" ").length, 0) / sample.length;
-  return length < 15 ? 0 : group.length * Math.min(length, 200);
+  const length =
+    sample.reduce((sum, item) => sum + Math.min(wordsOf(item).length, 200) + 2 * Math.min(wordsOf(mainLink(item) ?? item).length, 120), 0) / sample.length;
+  return length < 15 ? 0 : group.length * length;
 }
 
 function findList(root: PageNode): PageNode[] {
@@ -105,7 +127,8 @@ function findList(root: PageNode): PageNode[] {
 }
 
 function itemOf(node: PageNode, refOf: (node: PageNode) => number, origin: string | null): Item {
-  const link = isLink(node) ? node : first(node, isLink);
+  const link = mainLink(node);
+  const several = links(node).length > 1;
   const heading = first(node, isHeading);
   const lines = texts(node)
     .map((line) => line.trim())
@@ -113,7 +136,9 @@ function itemOf(node: PageNode, refOf: (node: PageNode) => number, origin: strin
   const headingText = heading ? texts(heading).join(" ").trim() : "";
   const linkText = link ? texts(link).join(" ").replace(/\s+/g, " ").trim() : "";
   const price = lines.map((line) => line.match(PRICE)?.[0]).find((match) => match !== undefined);
-  const title = headingText || lines.find((line) => line !== price && !PRICE.test(line) && line.length > 3) || linkText || (lines[0] ?? "");
+  // A heading names it; else, among several links, the main one's words (a card that is one link reads by its first line that is no price).
+  const title =
+    headingText || (several && linkText) || lines.find((line) => line !== price && !PRICE.test(line) && line.length > 3) || linkText || (lines[0] ?? "");
   const details = lines.filter((line) => line !== title && line !== price && !title.includes(line) && line.length <= 120).slice(0, 4);
   const href = link?.href() ?? null;
   return {

@@ -33,6 +33,12 @@ export async function handleMore(message: Message): Promise<Record<string, unkno
       const until = Date.now() + left(message, 15_000);
       return { outcome: await watchOutcome(String(message.urlBefore ?? ""), field, until), url: location.href, title: document.title };
     }
+    case "history": {
+      // A step in the page's own history, after this answer is on its way (the page may go at once).
+      const by = message.by === 1 ? 1 : -1;
+      setTimeout(() => history.go(by), 0);
+      return { length: history.length };
+    }
     case "attach":
       return attach(message);
     case "box":

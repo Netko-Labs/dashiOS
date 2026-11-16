@@ -17,6 +17,8 @@ export interface SpokenLines {
   say(text: string): void;
   /** The person is talking to Dashi or dictating now. */
   personTalking(): boolean;
+  /** How the person talks to Dashi, or null when Voice is off or can't speak (no models, no service). */
+  talkKey(): string | null;
 }
 
 export type Told = { said: true } | { said: false; why: "too soon"; waitMs: number } | { said: false; why: "the person is talking" | "Voice is off" };
@@ -32,7 +34,7 @@ export class Teller {
   tell(line: string): Told {
     const now = this.now();
     if (now - this.last < TELL_GAP_MS) return { said: false, why: "too soon", waitMs: Math.ceil(TELL_GAP_MS - (now - this.last)) };
-    if (!this.voice) return { said: false, why: "Voice is off" };
+    if (!this.voice || this.voice.talkKey() === null) return { said: false, why: "Voice is off" };
     if (this.voice.personTalking()) return { said: false, why: "the person is talking" };
     this.last = now;
     this.voice.say(line);

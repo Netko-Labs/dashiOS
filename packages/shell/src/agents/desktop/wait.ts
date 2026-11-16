@@ -55,7 +55,7 @@ async function waitOnPage(call: WaitCall, ctx: RunContext): Promise<ToolResult> 
     const ms = typeof result.ms === "number" ? result.ms : 0;
     const extra: Record<string, unknown> = { tab: `t${tab.id}` };
     if (typeof result.detail === "string") extra.detail = result.detail;
-    if (result.gone === true) extra.detail = "that number is from a page that has gone";
+    if (result.gone === true) extra.detail = "no element has that number on this page (read_page gives the numbers)";
     return waitAnswer(call.until, result.met === true, ms, extra);
   });
 }

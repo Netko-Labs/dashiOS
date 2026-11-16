@@ -131,3 +131,48 @@ describe("parts, a cursor, and find", () => {
     expect(plain("x")).toBe("x");
   });
 });
+
+test("find cuts a paragraph-long line to the match and its neighbours to their start", () => {
+  const long = `${"a ".repeat(400)}the price is $120 ${"b ".repeat(400)}`;
+  const found = findInPage(`${"n ".repeat(300)}\n${long}\nend`, "price", 1);
+  const [before, match, after] = found.text.split("\n");
+  expect(before?.length).toBe(201);
+  expect(match).toContain("the price is $120");
+  expect(match?.length).toBeLessThan(620);
+  expect(after).toBe("end");
+});
+
+test("a story's row beats the row of points under it: the title link is the main one", () => {
+  const story = (n: number): Spec => ({
+    tag: "tr",
+    attrs: { class: "athing" },
+    children: [
+      {
+        tag: "td",
+        children: [
+          `${n}.`,
+          { tag: "a", href: `https://example.com/story${n}`, attrs: { href: "x" }, children: [`A rather long story title number ${n}`] },
+          " (example.com)",
+        ],
+      },
+    ],
+  });
+  const sub = (n: number): Spec => ({
+    tag: "tr",
+    children: [
+      {
+        tag: "td",
+        children: [
+          `${n * 10} points by `,
+          { tag: "a", href: `https://news.example/user?id=u${n}`, attrs: { href: "x" }, children: [`u${n}`] },
+          " 3 hours ago | ",
+          { tag: "a", href: "https://news.example/hide", attrs: { href: "x" }, children: ["hide"] },
+        ],
+      },
+    ],
+  });
+  const rows = [1, 2, 3, 4].flatMap((n) => [story(n), sub(n)]);
+  const items = readItems(node({ tag: "body", children: [{ tag: "table", children: rows }] }), numbering());
+  expect(items).toHaveLength(4);
+  expect(items[0]).toMatchObject({ title: "A rather long story title number 1", href: "https://example.com/story1" });
+});

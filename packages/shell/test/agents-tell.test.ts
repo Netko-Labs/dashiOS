@@ -5,7 +5,7 @@ import { parseCall } from "../src/agents/index.ts";
 
 function voice(talking = false) {
   const said: string[] = [];
-  return { said, voice: { say: (text: string) => void said.push(text), personTalking: () => talking } };
+  return { said, voice: { say: (text: string) => void said.push(text), personTalking: () => talking, talkKey: () => "❖Space" } };
 }
 
 test("a line is said at most once every 4 s, never over the person, and the answer says why not", () => {
@@ -21,6 +21,8 @@ test("a line is said at most once every 4 s, never over the person, and the answ
   const busy = new Teller(voice(true).voice, () => 0);
   expect(busy.tell("x")).toEqual({ said: false, why: "the person is talking" });
   expect(new Teller(null).tell("x")).toEqual({ said: false, why: "Voice is off" });
+  // Voice that can't speak (off, or no models): shown only, not claimed said.
+  expect(new Teller({ ...voice().voice, talkKey: () => null }, () => 0).tell("x")).toEqual({ said: false, why: "Voice is off" });
 });
 
 test("tell_person shows the line either way; notify_person posts one from Dashi", () => {

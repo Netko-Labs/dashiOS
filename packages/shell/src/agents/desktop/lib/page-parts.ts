@@ -47,7 +47,23 @@ export function findInPage(text: string, needle: string, around = 3): { text: st
     if (last && from <= last[1] + 1) last[1] = Math.max(last[1], to);
     else runs.push([from, to]);
   }
-  return { text: runs.map(([from, to]) => lines.slice(from, to + 1).join("\n")).join("\n…\n"), matches: hits.length };
+  // A line of a whole paragraph is cut: the match with 300 characters each side, the lines around it to their first 200.
+  const shown = (line: string, index: number): string => {
+    if (!hits.includes(index)) return line.length > 200 ? `${line.slice(0, 200)}…` : line;
+    const at = fold(line).indexOf(wanted);
+    const from = Math.max(0, at - 300);
+    const to = Math.min(line.length, at + wanted.length + 300);
+    return `${from > 0 ? "…" : ""}${line.slice(from, to)}${to < line.length ? "…" : ""}`;
+  };
+  const joined = runs
+    .map(([from, to]) =>
+      lines
+        .slice(from, to + 1)
+        .map((line, offset) => shown(line, from + offset))
+        .join("\n"),
+    )
+    .join("\n…\n");
+  return { text: joined, matches: hits.length };
 }
 
 export interface ItemRow {
