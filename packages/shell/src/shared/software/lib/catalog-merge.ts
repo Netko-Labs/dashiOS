@@ -107,7 +107,7 @@ function rpmOffers(name: string, input: MergeInput, byName: ReadonlyMap<string, 
       arch: pkg.arch,
       verified: false,
       installed,
-      cameWithSystem: installed && (input.imagePackages?.has(name) ?? false),
+      cameWithSystem: input.imagePackages?.has(name) ?? false,
     });
   }
   return [...offers.values()];

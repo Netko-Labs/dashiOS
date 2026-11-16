@@ -246,3 +246,20 @@ test("an install PackageKit can't place is tried once more after a refresh; a re
   });
   expect(await refused.install(offer, () => {})).toMatchObject({ ok: false, cancelled: true });
 });
+
+test("what the image installed came with the computer, even when dnf names its repository as the installer's", () => {
+  const entries = mergeCatalog(
+    input({
+      installedRpms: new Map([
+        ["gimp", "anaconda"],
+        ["htop", "fedora"],
+      ]),
+      imagePackages: new Set(["gimp"]),
+    }),
+  );
+  expect(entries.find((entry) => entry.key === "app:org.gimp.gimp")?.offers.find((offer) => offer.kind === "rpm")).toMatchObject({
+    installed: true,
+    cameWithSystem: true,
+  });
+  expect(entries.find((entry) => entry.key === "app:htop")?.offers[0]).toMatchObject({ installed: true, cameWithSystem: false });
+});
