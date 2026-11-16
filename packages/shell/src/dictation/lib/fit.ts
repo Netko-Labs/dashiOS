@@ -27,6 +27,8 @@ export interface Fitting {
 const OPENERS = /[\s([{"'“‘«¿¡/@#_`-]$/u;
 /** Before one of these no space is typed after the words, and a full stop of ours would be one too many. */
 const CLOSERS = /^[\s.,;:!?)\]}"'”’»…]/u;
+/** A list's first item put on a line of its own. */
+const LIST_ITEM = /^\n(?:[-•] |\d+\. )/u;
 const ENDS_SENTENCE = /[.!?…]["'”’)\]]*$/u;
 
 /** The line the caret is on, up to the caret. */
@@ -54,7 +56,8 @@ export function fit(text: string, field: Pick<FieldRead, "before" | "after"> | n
   if (!field || field.before === null) return { text, typed: `${text}${trail}` };
   const { before } = field;
   const after = field.after ?? "";
-  let words = text;
+  // A lone "new bullet point" starts its own line, unless the caret already starts one (lists.ts).
+  let words = (before === "" || before.endsWith("\n")) && LIST_ITEM.test(text) ? text.slice(1) : text;
   if (continues(before)) words = lowerFirst(words, fitting);
   // Text follows on the same line: the words go into a sentence, which has its own end.
   const follows = after !== "" && !after.startsWith("\n");

@@ -5184,3 +5184,60 @@ short words, as the rulebook is written.
   A box ticks with a click or with Format › Mark as Done ⇧❖U (Apple Notes'
   key for it), on every item the selection touches.
 - **Undo:** `structure()` in `typing.ts`'s `edit`, and the three Format rows.
+
+### D301. "New bullet point" is an inline command; a spoken bullet is `•` in a plain field
+
+- **Date:** 2026-11-16. `v09/fix-bullets-tables` (brief f1, review 32).
+- **Dilemma:** said with no pause, "Things to pack new bullet point
+  passport new bullet point charger" landed as "Things to pack New:" /
+  "Passport New" / "Charger": the rule took "bullet point" and left "new",
+  and Text Editor (Writing, plain lists) got bare lines, so nothing read as
+  a list. D185 makes an instruction the whole utterance; Wispr Flow treats
+  "new line", "new paragraph", "bullet point", "next bullet" inline.
+- **Decision:** a formatting command is not an instruction: "new line",
+  "new paragraph" (tidying already did) and now "new bullet point", "next
+  bullet", "nueva viñeta", "otra viñeta", "punto nuevo" are taken inline,
+  whole. One explicit form is enough for an item; a bare "bullet point"
+  still needs a second. Never after an article. A lone one said first
+  starts its own line, dropped where the caret is already at a line's start
+  (`fit.ts`). A list is made inside each line said, so "new line" and
+  bullets mix. Spoken bullets in a plain field are `• ` (the glyph Notes
+  draws, D243), not bare lines: the person asked for bullets.
+- **Cost:** "next bullet" at a sentence's end in prose becomes an item; a
+  plain field gets a character Markdown does not read as a list.
+- **Undo:** `BULLET`, `EXPLICIT` and `bulletMark` in
+  `dictation/lib/lists.ts`; `LIST_ITEM` in `fit.ts`.
+
+### D302. A spoken flag joins the words that make one flag, from a list
+
+- **Date:** 2026-11-16. `v09/fix-bullets-tables` (review 32).
+- **Dilemma:** "dash dash one line" typed `--one line`. Joining every
+  word after a flag breaks `git commit --amend message`.
+- **Decision:** the Developer profile joins the words after "dash dash"
+  only where they make a known flag (`--oneline`, `--dry-run`,
+  `--force-with-lease`, `--name-only`, …), after "no" (`--no-verify`), or
+  where "dash" is said between them (`--name-only`). A second "dash dash"
+  starts a flag of its own.
+- **Cost:** a flag of two words not on the list still needs "dash" said
+  inside it.
+- **Undo:** `JOINED` and `flagName` in `dictation/lib/rules-code.ts`.
+
+### D303. While keys come, what Notes shows as source stays source
+
+- **Date:** 2026-11-16. `v09/fix-bullets-tables` (review 32).
+- **Dilemma:** a table typed at 50 ms a key was saved as
+  `| --- | ------ -- |`. The caret's block shows its source only once the
+  caret stays put 150 ms (D241); typed fast it never does, so the revealed
+  block was the one from before the burst, and the moment the dashes made
+  a table it was drawn (each row one space) while keys still went into it.
+  The field took the new text and typed the next keys into a row's space.
+- **Decision:** a caret moved by the text changing is taken at once; the
+  wait is only for a caret a click put down. While the text keeps changing,
+  the lines that show their source only grow (a block the caret left by
+  Return stays source) until the caret settles, then it is drawn. So the
+  field's text is the typed text under the keys, at any speed, and an
+  agent's typing is the same.
+- **Cost:** during a fast burst over many lines, all of them show their
+  Markdown until the typing pauses.
+- **Undo:** `useSettled` and `useRevealed` in `apps/notes/lib/views/body.tsx`.
+

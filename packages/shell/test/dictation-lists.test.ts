@@ -22,9 +22,26 @@ test("one, two, three count a list only when each stands at a start; bullet poin
   expect(list("We need three things: one, milk. Two, bread. Three, eggs.")).toBe("We need three things:\n1. Milk\n2. Bread\n3. Eggs");
   expect(list("I have one or two ideas and three hours.")).toBeNull();
   expect(list("Shopping. Bullet point milk, bullet point bread, next item eggs.")).toBe("Shopping:\n- Milk\n- Bread\n- Eggs");
-  expect(list("bullet point milk bullet point bread", "plain")).toBe("Milk\nBread");
+  expect(list("bullet point milk bullet point bread", "plain")).toBe("• Milk\n• Bread");
   expect(list("Viñeta leche, viñeta pan.")).toBe("- Leche\n- Pan");
   expect(list("Use a bullet point here.")).toBeNull();
+});
+
+test("'new bullet point' is a command said inline: taken whole, 'new' and all, in English and Spanish (D301)", () => {
+  // The 32 pass: said with no pauses, it landed as "Things to pack New:" / "Passport New" / "Charger".
+  expect(list("Things to pack new bullet point passport new bullet point charger", "plain")).toBe("Things to pack:\n• Passport\n• Charger");
+  expect(list("Things to pack. New bullet point. Passport. New bullet point. Charger.")).toBe("Things to pack:\n- Passport\n- Charger");
+  expect(list("Shopping next bullet milk next bullet bread")).toBe("Shopping:\n- Milk\n- Bread");
+  expect(list("Cosas para empacar nueva viñeta pasaporte nueva viñeta cargador")).toBe("Cosas para empacar:\n- Pasaporte\n- Cargador");
+  expect(list("Cosas para empacar punto nuevo pasaporte punto nuevo cargador")).toBe("Cosas para empacar:\n- Pasaporte\n- Cargador");
+  // One is enough: it starts an item on a line of its own (fit.ts drops the break at a line's start).
+  expect(list("new bullet point passport")).toBe("\n- Passport");
+  expect(list("Things to pack new bullet point passport")).toBe("Things to pack:\n- Passport");
+  // A line said with "new line" is its own: the list is made in it.
+  expect(list("Dear Alex\nThings to pack new bullet point passport new bullet point charger")).toBe("Dear Alex\nThings to pack:\n- Passport\n- Charger");
+  // After an article it is words.
+  expect(list("I added a new bullet point to the slide.")).toBeNull();
+  expect(list("Es un punto nuevo para la reunión.")).toBeNull();
 });
 
 test("an instruction is the whole utterance, in English or Spanish; inside a sentence the words are words", () => {
@@ -115,7 +132,7 @@ test("a list lands as Markdown in a chat with ⇧Return between its lines, and a
   document.world.front = { window: 7, pid: 70, appId: "dev.dashi.editor" };
   await document.hold();
   await document.key("up");
-  expect(document.typed).toEqual(["7:Shopping:\nMilk\nBread "]);
+  expect(document.typed).toEqual(["7:Shopping:\n• Milk\n• Bread "]);
 
   // A shell's prompt gets no list: a line break there runs what was typed.
   const shell = dictating({ heard: said });
