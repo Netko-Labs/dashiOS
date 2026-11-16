@@ -23,6 +23,7 @@ import { isInsidePath, isRefusal, list, optionalText, type Refusal, record, refu
 import { type AppletCommand, parseCommands } from "./commands.ts";
 import { type AppletControl, needsControlsPermission, parseControls } from "./controls.ts";
 import { type Permission, parsePermission, permissionName } from "./permissions.ts";
+import { type Preference, parsePreferences, parseShows, type Shows } from "./preferences.ts";
 import { parseWhen, type When } from "./when.ts";
 
 export const CATEGORIES = ["hardware", "productivity", "network", "status", "media", "developer", "utilities"] as const;
@@ -59,6 +60,10 @@ export interface Manifest {
   commands: AppletCommand[];
   /** What it adds to Control Center (controls.ts); none is the default. */
   controls: AppletControl[];
+  /** Where it shows (preferences.ts): the store's shelves; `["launcher"]` alone runs only while a command is open. */
+  shows?: Shows[];
+  /** What the person may set, drawn and kept by Dashi (preferences.ts); none is the default. */
+  preferences: Preference[];
 }
 
 /** Reverse-DNS, lowercase: `dev.netko.asus-control`. Also a folder name and a systemd unit's. */
@@ -105,6 +110,8 @@ const FIELDS = [
   "icon",
   "commands",
   "controls",
+  "shows",
+  "preferences",
 ] as const;
 
 export function parseManifest(value: unknown): Manifest | Refusal {
@@ -156,6 +163,10 @@ export function parseManifest(value: unknown): Manifest | Refusal {
   if (isRefusal(controls)) return controls;
   const unpermitted = needsControlsPermission(controls, names);
   if (unpermitted) return refuse(unpermitted);
+  const shows = fields.shows === undefined ? undefined : parseShows(fields.shows);
+  if (isRefusal(shows)) return shows;
+  const preferences = fields.preferences === undefined ? [] : parsePreferences(fields.preferences);
+  if (isRefusal(preferences)) return preferences;
   return {
     id: fields.id,
     name,
@@ -174,6 +185,8 @@ export function parseManifest(value: unknown): Manifest | Refusal {
     ...(icon === undefined ? {} : { icon }),
     commands,
     controls,
+    ...(shows === undefined ? {} : { shows }),
+    preferences,
   };
 }
 
@@ -188,12 +201,13 @@ export function readManifest(json: string): Manifest | Refusal {
 
 /** The manifest as applet.json writes it (permissions by name; no `commands` or `controls` when it has none). */
 export function manifestJson(manifest: Manifest): Record<string, unknown> {
-  const { commands, controls, ...rest } = manifest;
+  const { commands, controls, preferences, ...rest } = manifest;
   return {
     ...rest,
     permissions: manifest.permissions.map(permissionName),
     ...(commands.length > 0 ? { commands } : {}),
     ...(controls.length > 0 ? { controls: controls.map(controlJson) } : {}),
+    ...(preferences.length > 0 ? { preferences } : {}),
   };
 }
 

@@ -9,6 +9,7 @@ import { parseManifest } from "./manifest.ts";
 import { parseMenu } from "./menu.ts";
 import { parsePowerAsk } from "./power.ts";
 import { APPLET_LIMITS, type Applet, type AppletMessage, MAX_SEQ } from "./protocol-types.ts";
+import { isViewType, parseViewMessage } from "./view/wire.ts";
 
 /** What a glyph may not contain: anything that loads, links, or runs. */
 const GLYPH_FORBIDDEN = /<\s*(image|script|style|foreignObject|use|a)\b|href\s*=|<!(ENTITY|DOCTYPE)|url\s*\(/i;
@@ -149,16 +150,19 @@ export function parseAppletMessage(line: string, stat: Stat = fileStat, version 
       return isRefusal(size) ? size : { type: "popover", id: appletId, ...size };
     }
     default:
+      if (isViewType(type)) return version < 6 ? refuse(`“${type}” needs protocol 6: say hello with "protocol":6`) : parseViewMessage(type, raw);
       return refuse(
-        version >= 5
-          ? 'type must be "applet", "remove", "popover", "dismiss", "result", "items", "view", "power", or "control"'
-          : version >= 4
-            ? 'type must be "applet", "remove", "popover", "dismiss", "result", "items", "view", or "power"'
-            : version >= 3
-              ? 'type must be "applet", "remove", "popover", "dismiss", "result", "items", or "view"'
-              : version >= 2
-                ? 'type must be "applet", "remove", "popover", or "dismiss"'
-                : 'type must be "applet" or "remove"',
+        version >= 6
+          ? 'type must be "applet", "remove", "popover", "dismiss", "result", "items", "view", "power", "control", "tree", "patch", "push", "pop", "toast", or "close"'
+          : version >= 5
+            ? 'type must be "applet", "remove", "popover", "dismiss", "result", "items", "view", "power", or "control"'
+            : version >= 4
+              ? 'type must be "applet", "remove", "popover", "dismiss", "result", "items", "view", or "power"'
+              : version >= 3
+                ? 'type must be "applet", "remove", "popover", "dismiss", "result", "items", or "view"'
+                : version >= 2
+                  ? 'type must be "applet", "remove", "popover", or "dismiss"'
+                  : 'type must be "applet" or "remove"',
       );
   }
 }

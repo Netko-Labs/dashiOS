@@ -1,18 +1,12 @@
 /**
  * The applet's end of the channel (protocol.ts, docs/applets.md): one
  * connection per process, each applet sent whole whenever it changes, the
- * shell's clicks, chosen rows, and popover placements handed back. With a
- * manifest it speaks version 2 (hello first, then popovers and submenus);
- * without one, version 1, as the app kit's client always has. When the shell
- * restarts, the client connects again, says hello again, and sends every
- * applet again; an open popover is dismissed (the shell that placed it is gone).
- *
- *   const applets = new AppletsClient({ path: appletsSocketPath(), manifest });
- *   applets.show({ id: "timer", title: "Timer", glyph: TIMER_SVG, label: "4:59" }, {
- *     onActivate: () => applets.requestPopover("timer", { width: 280, height: 190 }),
- *     onPopover: (placement) => openMyWindowThere(placement),
- *     onDismiss: () => closeMyWindow(),
- *   });
+ * shell's clicks, chosen rows, popover placements and views' events handed
+ * back. With a manifest it says hello and speaks the newest version; without
+ * one, version 1, as the app kit's client always has. A restarted shell is
+ * connected to again, told hello and every applet again; an open popover is
+ * dismissed (the shell that placed it is gone).
+ * Example: docs/applets.md, "From TypeScript (Bun)".
  */
 
 import { ControlSender } from "./client-controls.ts";
@@ -23,6 +17,7 @@ import { CONTROLS_PROTOCOL, type ControlUpdate } from "./controls.ts";
 import { manifestJson } from "./manifest.ts";
 import { POWER_PROTOCOL, type PowerChoice, type PowerState } from "./power.ts";
 import { type AppletShellMessage, PROTOCOL, parseApplet, parseAppletShellMessage } from "./protocol.ts";
+import type { ViewMessage, ViewShellMessage } from "./view/wire.ts";
 
 export class AppletsClient {
   private readonly lines = new Map<string, string>();
@@ -30,6 +25,7 @@ export class AppletsClient {
   /** Popovers asked for or open, by applet id. */
   private readonly popovers = new Set<string>();
   private commands: CommandHandlers | null = null;
+  private viewHandler: ((message: ViewShellMessage) => void) | null = null;
   /** The protocol the shell answered with; 0 before its welcome. */
   private shellProtocol = 0;
   /** Views asked for or open, by run. */
@@ -44,7 +40,8 @@ export class AppletsClient {
 
   constructor(private readonly options: AppletsClientOptions) {
     this.wire = new Wire(options, {
-      wanted: () => this.lines.size > 0,
+      // An applet with only commands (the launcher's) connects too.
+      wanted: () => this.lines.size > 0 || this.commands !== null,
       opened: () => this.opened(),
       line: (line) => this.receive(line),
       lost: () => this.lost(),
@@ -109,9 +106,16 @@ export class AppletsClient {
     return this.popovers.has(id);
   }
 
-  /** Answer the launcher's commands (the manifest's `commands`; protocol 3). */
-  onCommands(handlers: CommandHandlers | null): void {
+  /** Answer the launcher's commands (the manifest's `commands`; protocol 3), and its views (protocol 6). */
+  onCommands(handlers: CommandHandlers | null, views?: (message: ViewShellMessage) => void): void {
     this.commands = handlers;
+    this.viewHandler = views ?? null;
+    if (handlers) this.wire.start();
+  }
+
+  /** A view's tree, patch, push, pop, toast or close (protocol 6). */
+  sendView(message: ViewMessage): void {
+    if (this.shellProtocol >= 6) this.answer(message);
   }
 
   /** Whether the shell speaks protocol 3 (it runs commands). */
@@ -140,11 +144,7 @@ export class AppletsClient {
     if (this.views.delete(seq)) this.answer({ type: "dismiss", seq });
   }
 
-  /**
-   * Dashi's power mode (protocol 4, with `power.mode` in applet.json): the
-   * choice, the mode in effect and why. Null while not connected, on an older
-   * Dashi, or without the permission: feature-detect with it.
-   */
+  /** Dashi's power mode (protocol 4, `power.mode`): null while not connected, on an older Dashi, or without the permission. */
   get powerMode(): PowerState | null {
     return this.power;
   }
@@ -164,13 +164,7 @@ export class AppletsClient {
     return true;
   }
 
-  /**
-   * A control's state (protocol 5, the manifest's `controls`): what is given
-   * replaces those parts, the rest stays. Sent at most 4 times a second per
-   * control (a newer one waiting replaces the one before), and again
-   * whenever the shell says welcome. False for a control the manifest
-   * doesn't declare.
-   */
+  /** A control's state (protocol 5, `controls`): what is given replaces those parts; at most 4 a second per control, again on welcome. */
   updateControl(update: ControlUpdate): boolean {
     const declared = this.options.manifest?.controls.some((control) => control.id === update.id) ?? false;
     if (!declared) {
@@ -202,7 +196,7 @@ export class AppletsClient {
     for (const listener of [...this.powerListeners]) listener(state);
   }
 
-  private answer(message: Record<string, unknown>): void {
+  private answer(message: object): void {
     if (this.wire.connected && this.runsCommands) this.wire.write(`${JSON.stringify(message)}\n`);
   }
 
@@ -241,6 +235,7 @@ export class AppletsClient {
   }
 
   private handle(message: AppletShellMessage): void {
+    if (message.type === "open" || message.type === "event" || message.type === "prefs") return this.viewHandler?.(message);
     switch (message.type) {
       case "welcome":
         this.shellProtocol = message.protocol;

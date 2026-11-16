@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import type { AppletsClient } from "./client.ts";
 import type { CommandResult, CommandRow } from "./commands.ts";
 import type { ControlsApi } from "./controls-api.ts";
+import type { ViewCommand } from "./launcher/views.ts";
 import type { Manifest } from "./manifest.ts";
 import type { MenuRowSpec } from "./menu.ts";
 import type { WarmHost } from "./warm-host.ts";
@@ -22,7 +23,8 @@ export interface AppletDefinition<S> {
   id?: string;
   /** Who it is; the manifest's name by default. */
   title?: string;
-  initial: S;
+  /** Its state at the start; an extension with only launcher views needs none. */
+  initial?: S;
   glyph?: Of<S, string | undefined>;
   icon?: Of<S, string | undefined>;
   label?: Of<S, string | undefined>;
@@ -60,13 +62,17 @@ export interface ViewProps<S> {
   close(): void;
 }
 
-/** One command, by its manifest mode: `run` for instant, `items` and `choose` for pick, `view` for view. */
+/**
+ * One command, by its manifest mode: `run` for instant, `items` and `choose` for pick, `view` for the rest:
+ * a component for `list`, `grid` and `detail` (the launcher draws what it renders: @dashi/applet/launcher),
+ * or `{height, component}` for `view` (its own pixels, on a Metal host).
+ */
 export interface CommandDefinition<S> {
   run?(args: Args, applet: AppletHandle<S>): CommandAnswer | Promise<CommandAnswer>;
   /** The rows for what is typed; asked again on every keystroke, and the launcher waits 80 ms before it says “slow”. */
   items?(query: string, args: Args, applet: AppletHandle<S>): readonly CommandRow[] | Promise<readonly CommandRow[]>;
   choose?(item: string, args: Args, applet: AppletHandle<S>): CommandAnswer | Promise<CommandAnswer>;
-  view?: { height: number; component: ComponentType<ViewProps<S>> };
+  view?: { height: number; component: ComponentType<ViewProps<S>> } | ViewCommand;
 }
 
 export interface AppletHandle<S> {

@@ -10,8 +10,9 @@ import type { ControlAction, ControlUpdate } from "./controls.ts";
 import type { Manifest } from "./manifest.ts";
 import type { AppletMenuRow } from "./menu.ts";
 import type { PowerChoice, PowerState } from "./power.ts";
+import type { ViewMessage, ViewShellMessage } from "./view/wire.ts";
 
-export const PROTOCOL = 5;
+export const PROTOCOL = 6;
 export const APPLETS_SOCKET = "dashi-applets.sock";
 
 /** Where the shell listens; null without a runtime directory. `DASHI_APPLETS_SOCKET` puts it elsewhere (the sandbox's own). */
@@ -66,7 +67,9 @@ export type AppletMessage =
   /** Version 4: Automatic or a mode, asked for (`power.mode`). */
   | { type: "power"; choice: PowerChoice }
   /** Version 5: a control's state (`controls`). */
-  | ({ type: "control" } & ControlUpdate);
+  | ({ type: "control" } & ControlUpdate)
+  /** Version 6: a command's view, drawn by the launcher from a tree (view/wire.ts). */
+  | ViewMessage;
 
 /** A command run's number: the shell counts them up from 1. */
 export const MAX_SEQ = 2 ** 31;
@@ -95,4 +98,6 @@ export type AppletShellMessage =
   /** Version 5: which of its controls are in Control Center. */
   | { type: "controls"; shown: string[] }
   /** Version 5: one of its controls was pressed. */
-  | ({ type: "control-action"; id: string } & ControlAction);
+  | ({ type: "control-action"; id: string } & ControlAction)
+  /** Version 6: a view opened, its events, its preferences (view/wire.ts). */
+  | ViewShellMessage;
