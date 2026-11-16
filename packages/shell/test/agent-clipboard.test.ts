@@ -2,9 +2,8 @@ import { expect, test } from "bun:test";
 import { kept, NEVER_KEPT } from "../src/agents/consent.ts";
 import type { RunContext } from "../src/agents/context.ts";
 import { readClipboardHistory } from "../src/agents/desktop/clipboard.ts";
-import { type ClipboardCopy, type Question, TOOL_ACTIONS } from "../src/agents/index.ts";
+import { type ClipboardCopy, TOOL_ACTIONS } from "../src/agents/index.ts";
 import { parseCall, scopeOf } from "../src/agents/tools/registry.ts";
-import { goAheadLook } from "../src/consent.tsx";
 
 // Agents read the clipboard history only with "See your clipboard history",
 // which Always Allow never keeps, and the person says yes to every call.

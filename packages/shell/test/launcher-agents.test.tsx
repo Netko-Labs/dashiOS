@@ -8,7 +8,6 @@ import { ASK_ROW, agentVerbs, firstChoice, readsLikeSentence, SET_UP_ROW, withAg
 import type { Section } from "../src/launcher/sections.ts";
 import type { LauncherAgents, LauncherAgentsSnapshot } from "../src/launcher/types.ts";
 import { app, mount, unmountLauncher } from "./launcher-harness.tsx";
-import { settle } from "./support/time.ts";
 
 afterEach(unmountLauncher);
 
