@@ -3,6 +3,7 @@ import { parseTree, type ViewNode } from "@dashi/applet";
 import type { TreeActed, TreeSnapshot, TreeView } from "../src/actions/index.ts";
 import { keyOf, panelVerbs, treeSections } from "../src/launcher/lib/tree-rows.ts";
 import { treeScope } from "../src/launcher/lib/tree-scope.ts";
+import { markdownBlocks } from "../src/launcher/lib/tree-view.tsx";
 import { mount, unmountLauncher } from "./launcher-harness.tsx";
 
 // An extension's view in the launcher: drawn by the launcher from the tree, in its own rows,
@@ -167,5 +168,43 @@ describe("the view in the launcher", () => {
     expect(launcher.has("launcher:detail")).toBe(false);
     await launcher.key("Escape");
     expect(launcher.closed.length).toBe(1);
+  });
+});
+
+// Pass 37: a pull request's body drew its Markdown table as raw `| --- |` lines.
+describe("a detail's Markdown table", () => {
+  const Body = "## Checks\n\n| Check | Result |\n| --- | :-: |\n| **lint** | pass |\n| [tests](https://x) | 2 failed |\nAfter the table.";
+
+  test("is read as a table (header, alignment, rows), its cells' marks dropped as a line's are", () => {
+    const blocks = markdownBlocks(Body);
+    expect(blocks.map((block) => block.kind)).toEqual(["h2", "table", "p"]);
+    expect(blocks[1]).toEqual({
+      kind: "table",
+      table: {
+        header: ["Check", "Result"],
+        align: ["left", "center"],
+        rows: [
+          ["**lint**", "pass"],
+          ["[tests](https://x)", "2 failed"],
+        ],
+      },
+    });
+    // Not a table: dashes with no header above them, or a header whose dashes don't match.
+    expect(markdownBlocks("| a | b |\n| --- |").map((block) => block.kind)).toEqual(["p", "p"]);
+  });
+
+  test("is drawn as a table in the launcher, with no pipes left", async () => {
+    const view = new FakeView([]);
+    const scope = treeScope("Pull Requests", view);
+    const launcher = await mount({ entries: [], scopes: [scope], scope: scope.id }, ["tree:k:42", "tree:k:43"]);
+    view.set({ stack: [PRS, tree({ t: "Detail", i: "d", p: { markdown: Body } })], phase: "shown" });
+    await launcher.type("");
+    expect(launcher.has("launcher:detail:table")).toBe(true);
+    const drawn = launcher.tree();
+    expect(drawn).toContain('"lint"');
+    expect(drawn).toContain('"tests"');
+    expect(drawn).not.toContain("| --- |");
+    expect(drawn).not.toContain("**lint**");
+    expect(drawn).toContain("After the table.");
   });
 });

@@ -5,7 +5,7 @@ import { lookOf } from "../apps/notes/lib/look.ts";
 import { displaySelection, sourceEdit, sourceSelection, toDisplay } from "../apps/notes/lib/offsets.ts";
 import { project } from "../apps/notes/lib/project.ts";
 import { indentLines, structure, tickLines } from "../apps/notes/lib/structure.ts";
-import { columnsOf, parseTable, splitRow } from "../apps/notes/lib/table.ts";
+import { columnsOf, parseTable, splitRow } from "../src/shared/markdown/index.ts";
 
 const NOTE = [
   "# Plan",

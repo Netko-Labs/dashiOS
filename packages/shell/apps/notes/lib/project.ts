@@ -9,11 +9,11 @@
  * each other piece by piece (offsets.ts). Pure.
  */
 
+import { parseTable, type Table } from "../../../src/shared/markdown/index.ts";
 import { type Block, blocksOf, type Lines } from "./blocks.ts";
 import { BULLET, CHECK, FENCE, HEADING, lineSpans, markup, NUMBER, QUOTE, RULE, type Span } from "./markup.ts";
 import { type Piece, toDisplay } from "./offsets.ts";
 import { BODY_SIZE, headingSize } from "./sizes.ts";
-import { parseTable, type Table } from "./table.ts";
 
 /** What is drawn differently in the shown text: the source's spans, and the drawn page's own. */
 export type Shown =

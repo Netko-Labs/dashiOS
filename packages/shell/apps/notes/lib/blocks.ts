@@ -5,8 +5,8 @@
  * blocks the caret or the selection touches. Pure.
  */
 
+import { continuesTable, startsTable } from "../../../src/shared/markdown/index.ts";
 import { FENCE } from "./markup.ts";
-import { continuesTable, startsTable } from "./table.ts";
 
 export type BlockKind = "line" | "fence" | "table";
 
