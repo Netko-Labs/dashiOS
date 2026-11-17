@@ -5949,3 +5949,50 @@ short words, as the rulebook is written.
 - **Decision:** the section has no subtitle while it loads; the launcher
   shows "Loading…" under it (D385). The tree's rule stays strict.
 - **Undo:** the `subtitle` spread in `extensions/github/main.tsx`.
+
+### D400. The inks are their own tokens, and the timer's is wakame, a teal
+
+- **Date:** 2026-11-17. `v09/inks` (brief b5).
+- **Question:** where the widgets' inks live beside the accent colour being
+  built at the same time (`v09/accent`), and the exact teal the owner chose
+  for the timer on 16 Nov ("about H200").
+- **Decision:** the inks are in `packages/dashi-ui/src/theme/inks.ts`, not in
+  `palette.ts`: six fixed OKLCH inks (miso, mizu, matcha, wakame, shiso,
+  album), the tally (one vermilion), the paper, the words on a flood, and the
+  two transforms (house lights, the lock's shift), turned into hex once per
+  mode. The accent never reads or writes them. The timer's ink is named
+  wakame (Dashi's sea-teal tint already has the name): Light L0.545 C0.10
+  H205 (#067F8A, 4.6:1 on paper), Dark L0.88 C0.10 H200 (#80ECF1). It stays
+  the lightest of the four glanceable inks, as kabocha was. Light values:
+  miso #633C2E, mizu #006485, matcha #6B6F03, shiso #5949A3, album #8B467F,
+  tally #D9471B; Dark: #B78D7F, #68BDE4, #B3D76D, #B0A4F8, #CF8AC1, #FD6A3A.
+  Closest pairs: Light mizu/wakame ΔE 0.083, Dark shiso/album 0.096.
+- **Why:** a file of their own means the accent's commits to `palette.ts`
+  never collide with these, and the test (`dashi-ui/test/inks.test.ts`)
+  checks the distance table, contrast, lightness order and dimming.
+- **Cost:** Light wakame sits ΔE 0.057 from kombu's selection green. Kombu
+  (and the accent that replaces it) is never drawn inside a widget, so the
+  two never meet on a card.
+- **Undo:** the `wakame` entry in `INKS`; the file is imported only through
+  `@dashi/ui`.
+
+### D401. How the tally's cut rules read where the design leaves a gap
+
+- **Date:** 2026-11-17. `v09/inks`.
+- **Question:** round five's rules (≥60 s hold, 10 min no-retake, earliest
+  deadline, pin loses to asking, 2 min for a due item and house lights)
+  leave four cases open.
+- **Decision:** (1) The 10-minute lock-out holds only while something else
+  could take the tally; alone, a loser holds again, so a running timer is
+  never left unlit. (2) A loser that became more urgent since it lost (a
+  running timer reaching zero) may retake at once. (3) A due item spent after
+  its two minutes leaves the air entirely (it is in its notification now),
+  not back to running. (4) A pin is the person's own act and cuts at once,
+  inside the minute's hold. House lights count one stretch: they go down when
+  an asking or due holder takes the tally and come up after two minutes or
+  when the holder stops being urgent, whichever is first; a new urgent holder
+  inside the same stretch does not start a new two minutes.
+- **Why:** each reading keeps the tally's one job (one honest "now") with
+  the fewest cuts.
+- **Undo:** `locked`, `spentNow` and `settle` in `shell/src/tally/lib/rules.ts`;
+  the tests in `shell/test/tally.test.ts` say each case.
