@@ -8,7 +8,7 @@
  * the copies and says, when it happened, how many were not kept and why.
  */
 
-import type { Row, Section } from "../../launcher/index.ts";
+import type { Row, RowPreview, Section } from "../../launcher/index.ts";
 import { CLIPBOARD, FILES, SNIPPET } from "../glyphs.ts";
 import type { ClipEntry, HistorySnapshot, Skip } from "../history.ts";
 import type { SkipReason } from "./privacy.ts";
@@ -73,7 +73,31 @@ export function entryRow(entry: ClipEntry, now: number, imagePath: (entry: ClipE
     kind: entry.pinned ? "Pinned" : age(entry.copiedAt, now),
     icon: image ? { image } : { glyph: entry.kind === "files" ? FILES : CLIPBOARD },
     action: { kind: "scope", verb: "paste" },
+    preview: entryPreview(entry, now, image),
   };
+}
+
+/** "Today, 9:37 AM", "Yesterday, 6:02 PM", else "Nov 12, 6:02 PM": when it was copied, for the preview. */
+export function copiedWhen(at: number, now: number): string {
+  const time = new Date(at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  const day = (when: number): string => new Date(when).toDateString();
+  if (day(at) === day(now)) return `Today, ${time}`;
+  if (day(at) === day(now - 86_400_000)) return `Yesterday, ${time}`;
+  return `${new Date(at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}, ${time}`;
+}
+
+/** A copy in the preview column beside the history (frame L11): what it holds, where from, when, and what kind. */
+export function entryPreview(entry: ClipEntry, now: number, image: string | null): RowPreview {
+  const names = entry.kind === "files" ? fileUris(entry.text ?? "").map(fileName) : [];
+  const kind =
+    entry.kind === "image"
+      ? `Image${entry.size ? ` · ${entry.size.width} × ${entry.size.height}` : ""}`
+      : entry.kind === "files"
+        ? `Files · ${names.length}`
+        : `Text · ${[...(entry.text ?? "")].length} characters`;
+  const facts = [...(entry.app ? [{ title: "From", text: entry.app }] : []), { title: "Copied", text: copiedWhen(entry.copiedAt, now) }, { title: "Kind", text: kind }];
+  if (image) return { image, facts };
+  return { text: entry.kind === "files" ? names.join("\n") : (entry.text ?? ""), facts };
 }
 
 /** Whether `entry` answers every word typed (its text, its files' names, its app; "image" finds pictures). */

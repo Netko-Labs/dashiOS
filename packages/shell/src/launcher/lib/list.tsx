@@ -17,6 +17,7 @@ import { withStop } from "./agents/agent-rows.ts";
 import type { LauncherKeys } from "./commands.ts";
 import { DetailBody } from "./detail-view.tsx";
 import { FormBody } from "./form-view.tsx";
+import { PreviewColumn } from "./preview-view.tsx";
 import { type Measures, PANEL } from "./measures.ts";
 import type { ModeLists } from "./mode.ts";
 import { nameIndent, ReservedRows, ResultRow, SectionHead } from "./row-view.tsx";
@@ -109,7 +110,7 @@ export function listFor(input: ListInput): ReactNode {
     </View>
   );
   let list: ReactNode = null;
-  if (mode.kind === "search" && search.sections.length > 0) list = listBox(searchList(input, spoken, access));
+  if (mode.kind === "search" && search.sections.length > 0) list = listBox(withPreview(input, searchList(input, spoken, access)));
   else if (mode.kind === "actions" || mode.kind === "presented")
     list = listBox(
       <View testID="launcher:section:actions" style={{ flexDirection: "column" }}>
@@ -134,6 +135,22 @@ export function listFor(input: ListInput): ReactNode {
       </View>,
     );
   return list;
+}
+
+/**
+ * A list whose rows have previews (the clipboard, an extension's items with a detail: frame L11): the rows at the
+ * left, the selected one's preview in a column at the right; else the rows alone.
+ */
+function withPreview({ search, m, onScreen }: ListInput, rows: ReactNode): ReactNode {
+  const shown = onScreen.flatMap((section) => section.rows);
+  if (!shown.some((row) => row.preview)) return rows;
+  const selected = shown.find((row) => row.id === search.selected);
+  return (
+    <View style={{ flexDirection: "row" }}>
+      <View style={{ flex: 1, minWidth: 0, flexDirection: "column" }}>{rows}</View>
+      <PreviewColumn preview={selected?.preview} m={m} />
+    </View>
+  );
 }
 
 /** The search's sections: each row, and under the one whose windows show, their live pictures. */
