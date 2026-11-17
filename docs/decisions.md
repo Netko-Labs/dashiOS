@@ -6380,3 +6380,18 @@ short words, as the rulebook is written.
   "21° sample", its popover "A sample reading, not the weather", so an
   example can never pass for a reading beside Dashi's own.
 - **Undo:** `label` in the template (`packages/applet/src/cli/lib/templates.ts`).
+
+### D483. A plan with a critical step is a critical ask
+
+- **Date:** 2026-11-17. `v09/fix-inks-1`.
+- **Decision:** The capsule marks a plan that waits for a yes `critical`
+  when one of its ready steps calls a tool in `CRITICAL`
+  (`agents/consent.ts`: paying, a secret, force quit, installing or
+  updating software); so it takes the tally as asking (D402), over a song
+  or a timer that holds it. A plan that only changes settings or moves
+  files stays a running item and waits in its card. An agent's question
+  (`ask_person`) is not critical by itself: it waits in its card.
+- **Why:** D402 left the flag to whoever makes the ask, and the capsule set
+  it nowhere; the critical list is the one D260 keeps, so nothing is
+  guessed from words.
+- **Undo:** `permissionsOf` in `capsule/lib/told.ts`.

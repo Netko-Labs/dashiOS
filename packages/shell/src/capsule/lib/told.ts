@@ -1,16 +1,34 @@
 /** What 0.8's chip and tasks say, as the hub is told it: the plans that wait for a yes, and voice mode's one state. */
 
+import { criticalTool } from "../../agents/index.ts";
 import type { PillAsk, VoiceModeState } from "../../shared/pill/index.ts";
 import type { Chip } from "../../voice/index.ts";
 import type { Task } from "./sources.ts";
 
-/** The plans that wait for a yes: a task in phase `planned` with steps ready to run. `since` remembers when each was first seen. */
+/**
+ * The plans that wait for a yes: a task in phase `planned` with steps ready to run. `since` remembers when each was first seen.
+ * A plan with a critical step (paying, a secret, losing work, a system change, speaking for the person: D260) is marked
+ * `critical`, so it takes the tally as asking (D402); the rest wait in their card.
+ */
 export function permissionsOf(tasks: readonly Task[], spoken: ReadonlySet<string>, since: Map<string, number>, now: number): PillAsk[] {
   return tasks.flatMap((task): PillAsk[] => {
-    const steps = task.steps.filter((step) => step.state.kind === "ready").map((step) => step.title);
-    if (task.phase !== "planned" || steps.length === 0) return [];
+    const ready = task.steps.filter((step) => step.state.kind === "ready");
+    if (task.phase !== "planned" || ready.length === 0) return [];
     if (!since.has(task.id)) since.set(task.id, now);
-    return [{ kind: "permission", id: task.id, task: task.id, request: task.request, steps, spoken: spoken.has(task.id), since: since.get(task.id) ?? now }];
+    const critical = ready.some((step) => step.tool !== undefined && criticalTool(step.tool) !== null);
+    const steps = ready.map((step) => step.title);
+    return [
+      {
+        kind: "permission",
+        id: task.id,
+        task: task.id,
+        request: task.request,
+        steps,
+        spoken: spoken.has(task.id),
+        since: since.get(task.id) ?? now,
+        ...(critical ? { critical } : {}),
+      },
+    ];
   });
 }
 
