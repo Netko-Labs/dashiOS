@@ -14,10 +14,10 @@ import { useControlColors } from "../../../shared/controls/palette.ts";
 
 const COLUMN = { flex: 1, minWidth: 0, flexDirection: "column", gap: 10, padding: 12, borderRadius: 16 } as const;
 
-function Column({ children, testID }: { children: ReactNode; testID: string }) {
+function Column({ children, testID, grow = 1 }: { children: ReactNode; testID: string; grow?: number }) {
   const surface = useControlColors();
   return (
-    <View style={{ ...COLUMN, backgroundColor: surface.surface }} testID={testID}>
+    <View style={{ ...COLUMN, flex: grow, backgroundColor: surface.surface }} testID={testID}>
       {children}
     </View>
   );
@@ -36,16 +36,21 @@ function ListRow({ label, selected }: { label: string; selected: boolean }) {
   );
 }
 
-/** "Dinner at Alex Kim's on Friday", the name selected as a field selects it. */
+/** "Dinner at Alex Kim's", the name selected as a field selects it. */
 function SelectedText() {
   const colors = useColors();
   return (
     <View style={{ height: 28, flexDirection: "row", alignItems: "center", paddingHorizontal: 8, borderRadius: 6, backgroundColor: colors.button }}>
-      <Text style={{ fontSize: 12.5, color: colors.text }}>Dinner at </Text>
-      <View style={{ backgroundColor: colors.textSelection, borderRadius: 2 }}>
-        <Text style={{ fontSize: 12.5, color: colors.text }}>Alex Kim's</Text>
+      <View style={{ flexShrink: 0 }}>
+        <Text numberOfLines={1} style={{ fontSize: 12.5, color: colors.text }}>
+          Dinner at{" "}
+        </Text>
       </View>
-      <Text style={{ fontSize: 12.5, color: colors.text }}> on Friday</Text>
+      <View style={{ flexShrink: 0, backgroundColor: colors.textSelection, borderRadius: 2 }}>
+        <Text numberOfLines={1} style={{ fontSize: 12.5, color: colors.text }}>
+          Alex Kim's
+        </Text>
+      </View>
     </View>
   );
 }
@@ -83,7 +88,7 @@ export function AccentPreview() {
         <ListRow label="Kitchen list.md" selected={false} />
         <SelectedText />
       </Column>
-      <Column testID="accent-preview-controls">
+      <Column testID="accent-preview-controls" grow={1.3}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Switch on testID="accent-preview-on" focusable={false} />
           <View style={{ flex: 1 }}>
@@ -99,7 +104,7 @@ export function AccentPreview() {
         <Choices options={SPAN} value={span} onChange={setSpan} testID="accent-preview-span" />
       </Column>
       <Column testID="accent-preview-more">
-        <MenuRow label="Open With Notes" testID="accent-preview-menu" keys="❖O" ticks={false} lit />
+        <MenuRow label="Open in Notes" testID="accent-preview-menu" keys="❖O" ticks={false} lit />
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <Text style={{ fontSize: 12, color: colors.text }}>Copying 41 files</Text>
           <Text style={{ fontSize: 11, color: colors.textMuted }}>62%</Text>
@@ -111,7 +116,9 @@ export function AccentPreview() {
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Button label="Save" primary onPress={() => {}} testID="accent-preview-save" focusable={false} />
-          <Text style={{ fontSize: 11, color: colors.textMuted }}>Buttons stay ink</Text>
+          <View style={{ flexShrink: 1 }}>
+            <Text style={{ fontSize: 11, color: colors.textMuted }}>Buttons stay ink</Text>
+          </View>
         </View>
       </Column>
     </View>

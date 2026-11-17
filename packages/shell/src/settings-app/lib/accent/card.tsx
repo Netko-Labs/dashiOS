@@ -52,7 +52,7 @@ function GuardLine({ seed, dark }: { seed: string; dark: boolean }) {
   return (
     <View testID="accent-guard" style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
       <Chip color={seed} label={seed.toUpperCase()} />
-      <Text style={{ fontSize: 12, color: colors.muted }}>→</Text>
+      <Text style={{ fontSize: 15, color: colors.muted }}>→</Text>
       <Chip color={drawn} label={drawn.toUpperCase()} />
       <View style={{ flexShrink: 1, minWidth: 160 }}>
         <Text style={{ fontSize: 12, color: colors.text }}>{sentence}</Text>

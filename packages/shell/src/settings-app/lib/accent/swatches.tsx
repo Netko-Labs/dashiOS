@@ -59,9 +59,14 @@ function Swatch({
       >
         {children}
       </View>
-      <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: chosen ? "semibold" : "normal", color: chosen ? colors.text : colors.muted }}>
-        {label}
-      </Text>
+      <View style={{ width: SWATCH.cell, alignItems: "center" }}>
+        <Text
+          numberOfLines={1}
+          style={{ fontSize: 11, textAlign: "center", fontWeight: chosen ? "semibold" : "normal", color: chosen ? colors.text : colors.muted }}
+        >
+          {label}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -121,7 +126,7 @@ export function Swatches({ dark, choice, seed, wallpaper, onChoose, onCustom }: 
       </Swatch>
       <Swatch id="wallpaper" label="Wallpaper" chosen={chosen === "wallpaper"} onPress={() => onChoose({ wallpaper: true })}>
         <View style={{ width: SWATCH.size, height: SWATCH.size, borderRadius: SWATCH.size / 2, overflow: "hidden", backgroundColor: colors.line }}>
-          {wallpaper && <Image source={wallpaper} resizeMode="cover" style={{ width: SWATCH.size, height: SWATCH.size }} />}
+          {wallpaper && <Image source={wallpaper} resizeMode="cover" style={{ width: SWATCH.size, height: SWATCH.size, borderRadius: SWATCH.size / 2 }} />}
         </View>
       </Swatch>
     </View>

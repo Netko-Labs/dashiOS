@@ -77,6 +77,19 @@ function Field({ hsv, onChange }: { hsv: { h: number; s: number; v: number }; on
   );
 }
 
+/** The whole strip as stretches, kept or clear, left to right. */
+function stretches(bands: readonly { from: number; to: number }[]): { from: number; to: number; kept: boolean }[] {
+  const out: { from: number; to: number; kept: boolean }[] = [];
+  let at = 0;
+  for (const band of bands) {
+    if (band.from > at) out.push({ from: at, to: band.from, kept: false });
+    out.push({ ...band, kept: true });
+    at = band.to;
+  }
+  if (at < 1) out.push({ from: at, to: 1, kept: false });
+  return out;
+}
+
 function Strip({ hue, onChange }: { hue: number; onChange: (hue: number) => void }) {
   const colors = useControlColors();
   const strip = hueStrip();
@@ -93,19 +106,12 @@ function Strip({ hue, onChange }: { hue: number; onChange: (hue: number) => void
         </View>
         <Knob left={(hue / 360) * STRIP.width} top={(STRIP.height + 8) / 2} color={hexOf(hsvToRgb(hue, 1, 1))} />
       </View>
-      <View style={{ width: STRIP.width, height: 3 }}>
-        {bands.map((band) => (
+      {/* The marks as a row of stretches: each kept band in grey, the gaps clear. */}
+      <View style={{ width: STRIP.width, height: 4, flexDirection: "row" }}>
+        {stretches(bands).map((part) => (
           <View
-            key={band.from}
-            style={{
-              position: "absolute",
-              left: band.from * STRIP.width,
-              width: (band.to - band.from) * STRIP.width,
-              top: 0,
-              height: 3,
-              borderRadius: 1.5,
-              backgroundColor: colors.muted,
-            }}
+            key={part.from}
+            style={{ width: (part.to - part.from) * STRIP.width, height: 4, borderRadius: 2, backgroundColor: part.kept ? colors.muted : "#00000000" }}
           />
         ))}
       </View>
