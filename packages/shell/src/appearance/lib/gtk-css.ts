@@ -164,7 +164,8 @@ export type GtkVersion = 3 | 4;
 /** Dashi's block for one GTK major version, markers included, without a trailing newline. */
 export function dashiBlock(version: GtkVersion, style: GtkStyle = DEFAULT_STYLE): string {
   const inactive = style.dark ? INACTIVE_DARK : INACTIVE_LIGHT;
-  const body = version === 4 ? `${gtk4Colors(style.radius)}\n${gtk4Rules(inactive)}` : `${gtk3Colors(style.dark)}\n${gtk3Rules(inactive)}`;
+  const body =
+    version === 4 ? `${gtk4Colors(style.radius, style.accent)}\n${gtk4Rules(inactive)}` : `${gtk3Colors(style.dark, style.accent)}\n${gtk3Rules(inactive)}`;
   return `${BEGIN}\n${body}\n${END}`;
 }
 

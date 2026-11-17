@@ -14,7 +14,7 @@
 
 import { existsSync, mkdirSync, readFileSync, watch, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import {
   consentNames,
   dashiSatisfies,
@@ -161,6 +161,8 @@ export class AppletLauncher {
       wayland: env.WAYLAND_DISPLAY ?? "wayland-0",
       bun: this.options.bun,
       metalHost: this.options.metalHost,
+      // Beside the runner: what an extension held to its hosts runs first, inside its sandbox (lib/sandbox.ts).
+      netBridge: join(dirname(this.options.runScript), "dashi-net-bridge.ts"),
       appearance: join(env.XDG_STATE_HOME || join(home, ".local/state"), "dashi/control-center.json"),
       sessionBus: env.DBUS_SESSION_BUS_ADDRESS ?? null,
       systemBus: env.DBUS_SYSTEM_BUS_ADDRESS ?? "unix:path=/run/dbus/system_bus_socket",

@@ -47,7 +47,7 @@ function Checkbox({ label, on, onToggle }: { label: string; on: boolean; onToggl
           justifyContent: "center",
         }}
       >
-        {on && <Svg markup={glyphs.CHECK} size={12} color="#ffffff" />}
+        {on && <Svg markup={glyphs.CHECK} size={12} color={colors.onAccent} />}
       </View>
       <Text style={{ fontSize: 13, color: colors.text }}>{label}</Text>
     </View>

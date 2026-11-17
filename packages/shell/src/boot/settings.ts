@@ -5,6 +5,7 @@
  */
 
 import { mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   type AgentStore,
@@ -17,11 +18,14 @@ import {
   stateDir,
   type WorkAlone,
 } from "../agents/index.ts";
-import { AutoAppearance } from "../appearance/index.ts";
+import { AutoAppearance, readPixels } from "../appearance/index.ts";
 import { SETTINGS_APP_ID } from "../apps.ts";
 import type { Compositor } from "../compositor/index.ts";
+import { eyedropper } from "../eyedropper/index.ts";
 import { openFile } from "../file-manager.ts";
 import { type ForceQuit, startForceQuit } from "../force-quit/index.ts";
+import { openOverlay } from "../overlay.tsx";
+import { captureScreenNear } from "../screenshots/index.ts";
 import { type PaneContext, type SettingsApp, startSettingsApp } from "../settings-app/index.ts";
 import { registerPaneEntries } from "../settings-app/search.ts";
 import { createPaneServices, type PaneServices } from "../settings-app/services.ts";
@@ -104,6 +108,20 @@ function showAloneRecord(record: AloneRecord): void {
   }
 }
 
+/** Custom…'s eyedropper (eyedropper/): on the screen Settings is on, one pixel captured and read. */
+function settingsEyedropper(compositor: Compositor): () => Promise<string | null> {
+  return eyedropper({
+    open: openOverlay,
+    screen: async () => {
+      const [outputs, windows] = await Promise.all([compositor.outputs(), compositor.windows().catch(() => [])]);
+      return captureScreenNear(outputs, windows.find((each) => each.appId === SETTINGS_APP_ID)?.frame ?? null);
+    },
+    capture: (path, at) => compositor.capture({ path, rect: { x: at.x, y: at.y, width: 1, height: 1 } }),
+    read: (path) => readPixels({ image: path }),
+    dir: process.env.XDG_RUNTIME_DIR?.startsWith("/") ? process.env.XDG_RUNTIME_DIR : tmpdir(),
+  });
+}
+
 export interface SettingsWindows {
   settingsApp: SettingsApp;
   setupAssistant: SetupAssistant;
@@ -147,7 +165,7 @@ export function startSettingsWindows(needs: SettingsWindowNeeds): SettingsWindow
     // Work alone needs the agents' server: without it nothing asks, and nothing is there to switch.
     ...(agents ? { alone: needs.alone, showAloneRecord } : {}),
     // Whose press it was in Settings' window (`input-origin`): an agent that may click changes nothing a wrong press pays for.
-    ...(compositor ? { byPerson: () => personPressedWindow(compositor, SETTINGS_APP_ID) } : {}),
+    ...(compositor ? { byPerson: () => personPressedWindow(compositor, SETTINGS_APP_ID), pickPixel: settingsEyedropper(compositor) } : {}),
     ...(guards.privacy ? { privacy: guards.privacy.store } : {}),
     answers: () => late.peek("askAgents")?.status ?? null,
     lock: () => guards.lockScreen?.lock(),

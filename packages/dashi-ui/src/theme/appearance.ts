@@ -9,14 +9,21 @@
  * Dark Mode says: the Components gallery shows each control in Light and
  * Dark side by side with it. Apps don't use it (every window follows Dark
  * Mode, CO-8); it is for showing both.
+ *
+ * The same source says the person's accent (accent/: the seed, already
+ * resolved, the wallpaper's included); a source without one, or null, is
+ * Kombu, Dashi's own.
  */
 
 import { createContext, createElement, type ReactNode, useContext, useSyncExternalStore } from "react";
-import { type Palette, paletteFor } from "./palette.ts";
+import type { Palette } from "./palette.ts";
+import { paletteFor } from "./palette-for.ts";
 
 export interface AppearanceSource {
   subscribe(listener: () => void): () => void;
   isDark(): boolean;
+  /** The accent's seed (`#RRGGBB`), or null for Kombu. */
+  accent?(): string | null;
 }
 
 const LIGHT: AppearanceSource = { subscribe: () => () => {}, isDark: () => false };
@@ -43,7 +50,14 @@ export function useDark(): boolean {
   return fixed ?? live;
 }
 
+const noAccent = (): null => null;
+
+/** The accent's seed right now (null: Kombu); repaints the caller when it changes. */
+export function useAccent(): string | null {
+  return useSyncExternalStore(source.subscribe, source.accent ?? noAccent);
+}
+
 /** The palette to paint with right now. */
 export function useColors(): Palette {
-  return paletteFor(useDark());
+  return paletteFor(useDark(), useAccent());
 }

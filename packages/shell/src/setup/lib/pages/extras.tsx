@@ -42,7 +42,7 @@ function AppRow({ app, ticked, onToggle }: { app: RecommendedApp; ticked: boolea
           backgroundColor: ticked ? colors.selection : colors.button,
         }}
       >
-        {ticked && <Svg markup={CHECK} size={11} color="#ffffff" />}
+        {ticked && <Svg markup={CHECK} size={11} color={colors.onAccent} />}
       </View>
       <View style={{ flex: 1, flexDirection: "column", gap: 1, minWidth: 0 }}>
         <Text style={{ fontSize: 13, color: colors.text }}>{app.name}</Text>

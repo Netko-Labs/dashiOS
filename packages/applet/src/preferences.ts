@@ -8,13 +8,14 @@
  *
  *   "preferences": [
  *     { "name": "token", "type": "secret", "title": "GitHub token", "description": "Only for your private repositories." },
- *     { "name": "repo", "type": "text", "title": "Repository", "default": "Netko-Labs/dashiOS" }
+ *     { "name": "repo", "type": "text", "title": "Repository", "default": "Netko-Labs/dashiOS" },
+ *     { "name": "open_in", "type": "dropdown", "title": "Open pull requests in", "options": [{ "title": "Helium", "value": "browser" }, { "title": "Dashi", "value": "dashi" }], "default": "browser" }
  *   ]
  */
 
 import { isRefusal, list, optionalText, type Refusal, record, refuse, text } from "@dashi/shape/kit";
 
-export const PREFERENCE_TYPES = ["text", "secret", "checkbox"] as const;
+export const PREFERENCE_TYPES = ["text", "secret", "checkbox", "dropdown"] as const;
 export type PreferenceType = (typeof PREFERENCE_TYPES)[number];
 
 export interface Preference {
@@ -24,6 +25,8 @@ export interface Preference {
   description?: string;
   required: boolean;
   default?: string | boolean;
+  /** A dropdown's choices: what it shows, and the value kept. */
+  options?: { title: string; value: string }[];
 }
 
 /** Where an extension shows: its shelves in the store, known before it ever runs. */
@@ -33,7 +36,7 @@ export type Shows = (typeof SHOWS)[number];
 const NAME = /^[a-z][a-z0-9_]{0,31}$/;
 
 function parsePreference(value: unknown, where: string): Preference | Refusal {
-  const fields = record(value, where, ["name", "type", "title", "description", "required", "default"]);
+  const fields = record(value, where, ["name", "type", "title", "description", "required", "default", "options"]);
   if (isRefusal(fields)) return fields;
   if (typeof fields.name !== "string" || !NAME.test(fields.name)) return refuse(`${where}: name must be lowercase letters, digits and _ (32 at most)`);
   const type = PREFERENCE_TYPES.find((each) => each === fields.type);
@@ -43,7 +46,16 @@ function parsePreference(value: unknown, where: string): Preference | Refusal {
   const description = optionalText(fields.description, `${where}: description`, 120);
   if (isRefusal(description)) return description;
   if (fields.required !== undefined && typeof fields.required !== "boolean") return refuse(`${where}: required must be true or false`);
+  const options =
+    type === "dropdown"
+      ? parseOptions(fields.options, `${where}: options`)
+      : fields.options === undefined
+        ? undefined
+        : refuse(`${where}: only a dropdown has options`);
+  if (isRefusal(options)) return options;
   const fallback = fields.default;
+  if (options && typeof fallback === "string" && !options.some((each) => each.value === fallback))
+    return refuse(`${where}: default must be one of its options`);
   if (fallback !== undefined) {
     if (type === "secret") return refuse(`${where}: a secret has no default`);
     if (type === "checkbox" ? typeof fallback !== "boolean" : typeof fallback !== "string" || fallback.length > 200)
@@ -56,7 +68,19 @@ function parsePreference(value: unknown, where: string): Preference | Refusal {
     ...(description === undefined ? {} : { description }),
     required: fields.required === true,
     ...(typeof fallback === "string" || typeof fallback === "boolean" ? { default: fallback } : {}),
+    ...(options ? { options } : {}),
   };
+}
+
+function parseOptions(value: unknown, where: string): { title: string; value: string }[] | Refusal {
+  return list(value, where, 24, (entry, at) => {
+    const fields = record(entry, at, ["title", "value"]);
+    if (isRefusal(fields)) return fields;
+    const title = text(fields.title, `${at}: title`, 40);
+    if (isRefusal(title)) return title;
+    const kept = text(fields.value, `${at}: value`, 60);
+    return isRefusal(kept) ? kept : { title, value: kept };
+  });
 }
 
 /** applet.json's `preferences`: up to 12, each named once. */

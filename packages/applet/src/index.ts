@@ -3,6 +3,7 @@
 
 export { isRefusal, type Refusal } from "@dashi/shape";
 export { isInsidePath } from "@dashi/shape/kit";
+export { type AccountWanted, accountsOf, parseAccounts } from "./accounts.ts";
 export { type Appearance, appearance, appearancePath, darkFrom } from "./appearance.ts";
 export {
   type CatalogIndex,
@@ -116,7 +117,9 @@ export {
   POWER_MODE_PERMISSION,
   parsePermission,
   permissionName,
+  proxiedHosts,
   REACH,
+  refusedProvider,
   usesNetwork,
   widens,
 } from "./permissions.ts";
@@ -164,11 +167,16 @@ export { generateKeys, type KeyPair, parsePublicKey, publicKeyLine, sign, verify
 export { readTar, writeTar } from "./tar.ts";
 export {
   ACTION_KINDS,
+  type AccountGiven,
   type ActionKind,
   applyPatch,
   diffTrees,
   ELEMENTS,
   type ElementType,
+  FIELDS,
+  type FieldType,
+  type FieldValue,
+  fieldValueOf,
   findNode,
   isViewType,
   nodeAt,

@@ -1,10 +1,10 @@
 /**
  * How the session looks and idles (main.tsx): the blank-and-sleep clock, the
- * compositor's window chrome, the wallpaper, the pointer, the text size, the
+ * compositor's window chrome, the wallpaper, the accent, the pointer, the text size, the
  * input method and X11 scaling, all applied from settings.json.
  */
 
-import { type AppearanceDeps, ChromeStyle, CornerFeed, sessionDeps, WindowStyleSync } from "../appearance/index.ts";
+import { AccentSync, type AppearanceDeps, ChromeStyle, CornerFeed, readPixels, sessionDeps, WindowStyleSync } from "../appearance/index.ts";
 import type { Compositor } from "../compositor/index.ts";
 import type { DockPrefs } from "../dock/index.ts";
 import { IdlePolicy } from "../idle.ts";
@@ -13,6 +13,7 @@ import { PointerSync } from "../pointer.ts";
 import { idleOffReason } from "../power/index.ts";
 import { type Settings, startSettings } from "../settings/index.ts";
 import { DEFAULT_POINTER_SIZE } from "../shared/appearance/index.ts";
+import { controlFlags } from "../shared/control-center/index.ts";
 import type { System } from "../system/index.ts";
 import { TextSize } from "../text-size.ts";
 import { reportWallpaper, type WallpaperChoice, WallpaperSync } from "../wallpaper/index.ts";
@@ -49,6 +50,7 @@ interface Applied extends Look {
   pointer: PointerSync | null;
   textSize: TextSize;
   inputMethod: InputMethodRunner | null;
+  accent: AccentSync;
 }
 
 /** Idle, the window chrome, the wallpaper, the pointer, the text size and the input method; settings.json applied to them. */
@@ -106,7 +108,9 @@ function makeLook(compositor: Compositor | null, services: Services): Applied {
         })
       : null;
   services.add("input method", () => inputMethod?.stop());
-  return { state, idle, chromeStyle, windowStyle, gtkCorners, wallpaper, appearanceDeps, pointer, textSize, inputMethod };
+  // The accent's seed, the wallpaper's included, for every process to paint from (appearance/accent.ts).
+  const accent = new AccentSync({ flags: controlFlags(), pixels: readPixels });
+  return { state, idle, chromeStyle, windowStyle, gtkCorners, wallpaper, appearanceDeps, pointer, textSize, inputMethod, accent };
 }
 
 /** settings.json, read or changed: every piece it drives follows. */
@@ -116,6 +120,7 @@ function applySettings(look: Applied, settings: Settings, desktops: Desktops, do
   state.reduceMotion = settings.appearance.reduceMotion;
   void look.pointer?.apply(settings.appearance.pointerSize);
   void look.textSize.apply(settings.appearance.textSize);
+  void look.accent.apply(settings.appearance.accent, settings.appearance.wallpaper);
   look.inputMethod?.apply(settings.inputMethod.engine);
   const choice = { scaling: settings.appearance.x11Apps, pointerSize: settings.appearance.pointerSize };
   if (choice.scaling !== state.xwaylandChoice.scaling || choice.pointerSize !== state.xwaylandChoice.pointerSize) {

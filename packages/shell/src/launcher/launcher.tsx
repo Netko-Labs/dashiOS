@@ -116,6 +116,7 @@ function LauncherPanel(props: LauncherProps) {
               hints={hints}
               notice={s.notice ?? s.scope?.notice?.() ?? null}
               secure={s.scope?.secure?.() === true}
+              yields={mode.kind === "search" && s.scope?.form?.() === true}
               {...(access ? { access: { ...fieldAccess(typeof placeholder === "string" ? placeholder : (placeholder[0] ?? ""), list !== null) } } : {})}
               onChangeText={keys.onChangeText}
               onSubmit={() => keys.submit()}

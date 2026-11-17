@@ -46,11 +46,11 @@ export function CalendarChoice({ calendars, chosenId, onChoose }: { calendars: r
                   borderRadius: 5,
                   backgroundColor: calendar.color,
                   borderWidth: chosen ? 1 : 0,
-                  borderColor: "#ffffff",
+                  borderColor: colors.onAccent,
                 }}
               />
               <View style={{ flexShrink: 1, minWidth: 0 }}>
-                <Text numberOfLines={1} style={{ fontSize: 12, color: chosen ? "#ffffff" : colors.text }}>
+                <Text numberOfLines={1} style={{ fontSize: 12, color: chosen ? colors.onAccent : colors.text }}>
                   {calendar.name}
                 </Text>
               </View>

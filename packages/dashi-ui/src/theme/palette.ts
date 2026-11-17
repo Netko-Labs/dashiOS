@@ -71,6 +71,8 @@ export interface Palette {
   selectionBar: string;
   /** Text on `selectionWash`. */
   onSelection: string;
+  /** Words and glyphs on a `selection` fill (a menu highlight, a tick, a chosen pill): white, or near-black on a light accent. */
+  onAccent: string;
   /**
    * The focus ring (KB-2), and a text field's edge while it has the
    * keyboard: shiso purple, the one ring in every app, the shell, the
@@ -173,6 +175,7 @@ export const lightColors: Palette = {
   textSelection: "#3E8A7240",
   selectionBar: "#357A64",
   onSelection: "#1d1d1f",
+  onAccent: "#ffffff",
   focusRing: "#6E56CF",
   switcherSelection: "#1d1d1f24",
   button: "#1d1d1f12",
@@ -262,6 +265,7 @@ export const darkColors: Palette = {
   textSelection: "#3E8A7280",
   selectionBar: "#3E8A72",
   onSelection: INK,
+  onAccent: "#ffffff",
   focusRing: "#8B76E8",
   switcherSelection: "#ffffff24",
   button: "#ffffff1f",
@@ -292,8 +296,3 @@ export const darkColors: Palette = {
   microphone: "#F0954A",
   microphoneWash: "#F0954A3d",
 };
-
-/** The palette for the Dark Mode switch. */
-export function paletteFor(dark: boolean): Palette {
-  return dark ? darkColors : lightColors;
-}

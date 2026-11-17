@@ -1,12 +1,15 @@
 /**
- * Dark Mode's reach beyond the shell. The shell's own surfaces repaint from
- * the palette on their own (theme.ts `useColors`); `startAppearance` also
- * tells installed apps, once at startup and on every change of the switch.
+ * Dark Mode's and the accent's reach beyond the shell. The shell's own
+ * surfaces repaint from the palette on their own (theme.ts `useColors`);
+ * `startAppearance` also tells installed apps, once at startup and on every
+ * change: GTK 3 and 4 get the accent exactly through gtk.css (when an app
+ * reopens), libadwaita and Qt through the portal and gsettings' nearest named
+ * accent (live, apps/portal), Helium through GTK.
  */
 
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { type AppLook, DEFAULT_STYLE, detectLook, type GtkStyle, realProbes } from "../shared/appearance/index.ts";
+import { type AppLook, accentFill, DEFAULT_STYLE, detectLook, type GtkStyle, nearestAccent, realProbes } from "../shared/appearance/index.ts";
 import type { FlagsStore } from "../shared/control-center/index.ts";
 import { hasProgram, type Run, run } from "../system/exec.ts";
 import { type AppCommand, appThemeCommands, appThemeGate, type Gate, readCompositorEnviron } from "./apps.ts";
@@ -54,16 +57,19 @@ export function sessionDeps(): AppearanceDeps {
  * finish before the next toggle's start, so the last switch wins.
  */
 export class AppThemeSync {
-  private applied: boolean | null = null;
+  private applied: string | null = null;
   private queue: Promise<void> = Promise.resolve();
 
   constructor(private readonly deps: Pick<AppearanceDeps, "has" | "run" | "look">) {}
 
-  /** Resolves when the commands for this value (and any before it) have finished. */
-  apply(dark: boolean): Promise<void> {
-    if (this.applied === dark) return this.queue;
-    this.applied = dark;
-    const commands = appThemeCommands(dark, this.deps.has, this.deps.look);
+  /** Resolves when the commands for these values (and any before them) have finished. `accent` is the seed; null is Kombu. */
+  apply(dark: boolean, accent: string | null = null): Promise<void> {
+    // The portal's and gsettings' accent is a name: the GNOME accent nearest the accent as Light draws it.
+    const look: AppLook | undefined = this.deps.look?.accent ? { ...this.deps.look, accent: nearestAccent(accentFill(accent)) } : this.deps.look;
+    const key = `${dark}|${look?.accent ?? ""}`;
+    if (this.applied === key) return this.queue;
+    this.applied = key;
+    const commands = appThemeCommands(dark, this.deps.has, look);
     this.queue = this.queue.then(() => this.runAll(commands));
     return this.queue;
   }
@@ -96,15 +102,15 @@ export function startAppearance(flags: Pick<FlagsStore, "subscribe" | "getSnapsh
   const sync = new AppThemeSync(deps);
   let styled: GtkStyle | null = null;
   const follow = () => {
-    const dark = flags.getSnapshot().dark;
-    const style: GtkStyle = { dark, radius: deps.corners?.getSnapshot() ?? DEFAULT_STYLE.radius };
+    const { dark, accent = null } = flags.getSnapshot();
+    const style: GtkStyle = { dark, radius: deps.corners?.getSnapshot() ?? DEFAULT_STYLE.radius, accent };
     try {
-      if (styled?.dark !== style.dark || styled.radius !== style.radius) deps.gtkCss?.(style);
+      if (styled?.dark !== style.dark || styled.radius !== style.radius || styled.accent !== style.accent) deps.gtkCss?.(style);
       styled = style;
     } catch (error) {
       console.error("dashi-shell: GTK apps keep their own colors and window buttons:", error);
     }
-    void sync.apply(dark);
+    void sync.apply(dark, accent);
   };
   follow();
   const stops = [flags.subscribe(follow), deps.corners?.subscribe(follow)];

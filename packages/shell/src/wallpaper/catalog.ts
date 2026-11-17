@@ -74,3 +74,20 @@ export function wallpaperRequest(choice: WallpaperChoice, dir: string = WALLPAPE
 
 /** The ref the pane shows as selected. */
 export const selectedRef = (choice: WallpaperChoice): string => choice.path ?? DEFAULT_WALLPAPER;
+
+/** A still of what is behind the windows, to take colours from: a picture, or a video's first frame. */
+export type WallpaperStill = { image: string } | { video: string };
+
+/**
+ * The still of `choice` (the accent's From wallpaper reads it): a bundled
+ * wallpaper's small thumbnail, a photo itself, a shader's thumbnail, or a
+ * video. The built-in gradient is Dusk's picture, which it draws.
+ */
+export function wallpaperStill(choice: WallpaperChoice, dir: string = WALLPAPER_DIR): WallpaperStill {
+  const live = resolveLive(choice);
+  if (live.wallpaper.kind === "shader") return { image: join(dir, `live-${live.wallpaper.shader}.thumb.png`) };
+  if (live.wallpaper.kind === "video") return { video: live.wallpaper.video };
+  const { path } = choice;
+  if (path !== undefined && isPhotoPath(path)) return { image: path };
+  return { image: join(dir, `${path !== undefined && isBundled(path) ? path : DEFAULT_WALLPAPER}.thumb.png`) };
+}

@@ -25,7 +25,7 @@ export interface MenuHighlight {
 }
 
 /**
- * Menus inside it light their rows with this instead of kombu under white:
+ * Menus inside it light their rows with this instead of the accent under `onAccent`:
  * Settings and Control Center give their own "on" green and its ink, so a
  * menu opened from a row of pills lights in the chosen pill's green
  * (docs/design.html CO-9). Portals keep it: a menu in the window's layer
@@ -33,9 +33,9 @@ export interface MenuHighlight {
  */
 export const MenuHighlightContext = createContext<MenuHighlight | null>(null);
 
-/** The lit row's look: the surface's (`MenuHighlightContext`), else kombu under white. */
-export function menuHighlight(own: MenuHighlight | null, selection: string): MenuHighlight {
-  return own ?? { fill: selection, ink: "#ffffff", keysInk: "#ffffffcc" };
+/** The lit row's look: the surface's (`MenuHighlightContext`), else the accent under its own words (`onAccent`). */
+export function menuHighlight(own: MenuHighlight | null, selection: string, onAccent = "#ffffff"): MenuHighlight {
+  return own ?? { fill: selection, ink: onAccent, keysInk: `${onAccent}cc` };
 }
 
 export interface MenuRowProps {
@@ -57,7 +57,7 @@ export interface MenuRowProps {
 
 export function MenuRow({ label, testID, keys, ticks, checked, disabled = false, lit, focusable = false, onHoverChange, onPress }: MenuRowProps) {
   const colors = useColors();
-  const look = menuHighlight(useContext(MenuHighlightContext), colors.selection);
+  const look = menuHighlight(useContext(MenuHighlightContext), colors.selection, colors.onAccent);
   const shown = lit && !disabled;
   const ink = disabled ? colors.textDisabled : shown ? look.ink : colors.text;
   const keysInk = disabled ? colors.textDisabled : shown ? look.keysInk : colors.textMuted;

@@ -21,11 +21,11 @@
 
 import { id, isRefusal, list, type Refusal, record, refuse, text } from "@dashi/shape/kit";
 
-export const COMMAND_MODES = ["instant", "pick", "view", "list", "grid", "detail"] as const;
+export const COMMAND_MODES = ["instant", "pick", "view", "list", "grid", "detail", "form"] as const;
 export type CommandMode = (typeof COMMAND_MODES)[number];
 
 /** The modes whose view the launcher draws from a tree the extension sends (protocol 6, view/wire.ts). */
-export const TREE_MODES = ["list", "grid", "detail"] as const;
+export const TREE_MODES = ["list", "grid", "detail", "form"] as const;
 export const isTreeMode = (mode: CommandMode): mode is (typeof TREE_MODES)[number] => (TREE_MODES as readonly string[]).includes(mode);
 
 export const ARG_TYPES = ["string", "number", "boolean"] as const;

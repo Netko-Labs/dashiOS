@@ -24,7 +24,7 @@ function CheckBox({ on }: { on: boolean }) {
         justifyContent: "center",
       }}
     >
-      {on && <Svg markup={CHECK} size={12} color="#ffffff" />}
+      {on && <Svg markup={CHECK} size={12} color={colors.onAccent} />}
     </View>
   );
 }

@@ -37,8 +37,15 @@ const src = join(import.meta.dir, "../src/settings-app");
 /** Every pane's source, and the parts they are drawn from. */
 const paneSources = (): Map<string, string> => {
   const sources = new Map<string, string>();
-  // The panes are private, in lib/panes/, but for four that the Setup Assistant also draws from.
-  const files = [...new Bun.Glob("lib/panes/*.tsx").scanSync(src), "answerer-list.tsx", "appearance.tsx", "control-center.tsx", "keyboard.tsx"];
+  // The panes are private, in lib/panes/ (and Appearance's accent card, lib/accent/), but for four that the Setup Assistant also draws from.
+  const files = [
+    ...new Bun.Glob("lib/panes/*.tsx").scanSync(src),
+    ...new Bun.Glob("lib/accent/*.tsx").scanSync(src),
+    "answerer-list.tsx",
+    "appearance.tsx",
+    "control-center.tsx",
+    "keyboard.tsx",
+  ];
   for (const file of files) sources.set(file, readFileSync(join(src, file), "utf8"));
   return sources;
 };

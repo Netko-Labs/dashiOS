@@ -4,7 +4,8 @@
  * `applet-data/<id>.prefs.json`, beside its data folder and outside its
  * sandbox (it can't write them itself), and a `secret` in the Secret Service
  * under the extension's id (`secret-tool`, libsecret's), never on disk.
- * The extension reads them as `open` gives them (protocol 6).
+ * The extension reads them as `open` gives them (protocol 6). The shell's
+ * views and the Store's Settings… (S5) both keep them here.
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -12,35 +13,7 @@ import { dirname, join } from "node:path";
 import type { Manifest, PreferenceValue } from "@dashi/applet";
 import { isRecord } from "@dashi/shape";
 
-/** What keeps secrets: the Secret Service, or a stand-in in tests. */
-export interface Secrets {
-  get(extension: string, name: string): Promise<string | null>;
-  set(extension: string, name: string, label: string, value: string): Promise<boolean>;
-  clear(extension: string, name: string): Promise<void>;
-}
-
-async function run(argv: readonly string[], input?: string): Promise<{ code: number; out: string }> {
-  try {
-    const child = Bun.spawn([...argv], { stdin: input === undefined ? "ignore" : new TextEncoder().encode(input), stdout: "pipe", stderr: "ignore" });
-    const out = await new Response(child.stdout).text();
-    return { code: await child.exited, out };
-  } catch {
-    return { code: 127, out: "" };
-  }
-}
-
-/** The Secret Service through `secret-tool`: attributes `dashi-extension` (its id) and `preference` (the name). */
-export const secretTool: Secrets = {
-  get: async (extension, name) => {
-    const { code, out } = await run(["secret-tool", "lookup", "dashi-extension", extension, "preference", name]);
-    return code === 0 && out !== "" ? out : null;
-  },
-  set: async (extension, name, label, value) =>
-    (await run(["secret-tool", "store", `--label=${label}`, "dashi-extension", extension, "preference", name], value)).code === 0,
-  clear: async (extension, name) => {
-    await run(["secret-tool", "clear", "dashi-extension", extension, "preference", name]);
-  },
-};
+import { type Secrets, secretTool } from "./secrets.ts";
 
 export class PreferenceStore {
   constructor(
@@ -95,6 +68,7 @@ export class PreferenceStore {
       return this.secrets.set(manifest.id, name, `${manifest.name}: ${preference.title}`, value);
     }
     if ((preference.type === "checkbox") !== (typeof value === "boolean")) return false;
+    if (preference.type === "dropdown" && !preference.options?.some((each) => each.value === value)) return false;
     const path = this.file(manifest.id);
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
     writeFileSync(path, JSON.stringify({ ...this.stored(manifest.id), [name]: value }), { mode: 0o600 });
