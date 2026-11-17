@@ -30,7 +30,7 @@ export function startInks({ notifications, system, handoff, services, late }: In
     notices: { subscribe: notifications.store.subscribe, getSnapshot: () => notifications.store.getSnapshot().history },
     openAsk: (id) => void pill.voiceCommands.send({ do: "open-ask", id }),
     stopRun: (id) => handoff.handoffShell.service.stop(id),
-    openArea: () => void late.peek("menus")?.controller.toggleNotificationCenter(""),
+    openArea: () => void late.peek("menus")?.controller.openNotificationCenter(),
   });
   setWidgetHub(hub);
   const stop = hub.start();
