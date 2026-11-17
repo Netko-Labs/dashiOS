@@ -9,6 +9,7 @@
  */
 
 import { LoginScreen, type PowerAction } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useState } from "react";
 import { formatLongDay, formatTimeBare, useClockPrefs } from "../../shared/time/index.ts";
 import {
@@ -95,35 +96,38 @@ export function LockScreen({ name, picture, onSubmit, waitMs, onPower }: LockScr
     }
   };
 
+  // One view at the root: Metal draws only a tree's first root, so Glance beside the login screen was never drawn (pass 50).
   return (
     <WidgetEnvProvider value={env}>
-      <LoginScreen
-        day={formatLongDay(now, clock)}
-        time={formatTimeBare(now, clock)}
-        name={name}
-        picture={picture}
-        value={password}
-        onChangeText={(text) => {
-          setTouched((n) => n + 1);
-          setPassword(text);
-          if (status === "wrong") setStatus("idle");
-        }}
-        onSubmit={() => void submit()}
-        hint={status === "idle" ? unlockHint(pending, HINTS.idle) : HINTS[status]}
-        error={status === "wrong"}
-        {...(onPower ? { onPower } : {})}
-        head={<LockHead onPress={(kind) => press({ kind })} />}
-        around={<LockSide placements={placements} onPress={press} />}
-        above={<NowBar />}
-      />
-      {resting ? (
-        <Glance
-          onWake={() => {
+      <View testID="lock-screen" style={{ flex: 1 }}>
+        <LoginScreen
+          day={formatLongDay(now, clock)}
+          time={formatTimeBare(now, clock)}
+          name={name}
+          picture={picture}
+          value={password}
+          onChangeText={(text) => {
             setTouched((n) => n + 1);
-            wake();
+            setPassword(text);
+            if (status === "wrong") setStatus("idle");
           }}
+          onSubmit={() => void submit()}
+          hint={status === "idle" ? unlockHint(pending, HINTS.idle) : HINTS[status]}
+          error={status === "wrong"}
+          {...(onPower ? { onPower } : {})}
+          head={<LockHead onPress={(kind) => press({ kind })} />}
+          around={<LockSide placements={placements} onPress={press} />}
+          above={<NowBar />}
         />
-      ) : null}
+        {resting ? (
+          <Glance
+            onWake={() => {
+              setTouched((n) => n + 1);
+              wake();
+            }}
+          />
+        ) : null}
+      </View>
     </WidgetEnvProvider>
   );
 }

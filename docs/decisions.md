@@ -6443,3 +6443,16 @@ short words, as the rulebook is written.
   ("Unlock to open Weather in Notifications").
 - **Undo:** `lockOpenerOf` in `widgets/openers.ts`, `press` in
   `lock/lib/screen.tsx`.
+
+### D487. A surface's tree has one root view
+
+- **Date:** 2026-11-17. `v09/fix-inks-1`.
+- **Found:** on the real lock screen (pictured for the first time, D485)
+  Glance never came: the lock screen's root was two siblings, the login
+  screen and Glance, and Metal draws only the first root of a tree
+  (mirin's `rootOf` in `tree-sync.ts`), silently.
+- **Decision:** the lock screen wraps both in one view. A surface's
+  component returns one root view, never a fragment of several; mirin is
+  asked to say so when it drops a second root (patch in the pass's
+  report), not changed here.
+- **Undo:** the `lock-screen` view in `lock/lib/screen.tsx`.
