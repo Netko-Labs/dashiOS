@@ -38,6 +38,8 @@ export interface FieldProps {
   access?: Record<string, unknown>;
   /** A secret is typed (an extension's token): the field shows dots. */
   secure?: boolean;
+  /** An extension's form has the keyboard: the field doesn't take it, and takes it back when the form goes (D468). */
+  yields?: boolean;
   onChangeText(text: string): void;
   onSubmit(): void;
   onKey(key: "Escape" | "ArrowUp" | "ArrowDown"): void;
@@ -98,7 +100,22 @@ function Hints({ hints }: { hints: readonly Hint[] }) {
   );
 }
 
-export function Field({ value, revision, placeholder, chip, hints, notice, glyph, trailing, access, secure, onChangeText, onSubmit, onKey }: FieldProps) {
+export function Field({
+  value,
+  revision,
+  placeholder,
+  chip,
+  hints,
+  notice,
+  glyph,
+  trailing,
+  access,
+  secure,
+  yields,
+  onChangeText,
+  onSubmit,
+  onKey,
+}: FieldProps) {
   const colors = useColors();
   const m = useMeasures();
   const [room, setRoom] = useState<number | null>(null);
@@ -133,13 +150,15 @@ export function Field({ value, revision, placeholder, chip, hints, notice, glyph
           </View>
         ))}
         {/* Metal draws a focused empty field's placeholder, muted, right after the caret. */}
+        {/* Mounted again when a form comes or goes: autoFocus is the only way to take the keyboard back. */}
         <TextInput
+          key={yields ? "yields" : "field"}
           testID="launcher:field"
           value={value}
           {...(revision === undefined ? {} : { valueRevision: revision })}
           placeholder={shown}
           {...(secure ? { secureTextEntry: true } : {})}
-          autoFocus
+          autoFocus={!yields}
           onChangeText={onChangeText}
           onSubmitEditing={onSubmit}
           onKeyPress={onKey}

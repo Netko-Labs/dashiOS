@@ -36,6 +36,9 @@ const PAGE = (words: string): Response =>
     headers: { "content-type": "text/html; charset=utf-8" },
   });
 
+/** Words ending as a sentence ends ("Not Found" → "Not Found."). */
+const sentence = (words: string): string => (/[.!?]$/.test(words.trim()) ? words.trim() : `${words.trim()}.`);
+
 /** Who the token belongs to, by the provider's own answer; null when it isn't a working token. */
 export async function loginOf(provider: Provider, token: string, fetcher: typeof fetch = fetch): Promise<string | null> {
   try {
@@ -92,7 +95,7 @@ export function signIn(provider: Provider, scopes: readonly string[], needs: Sig
         const tokens = await exchange(provider, answer.code, redirect, verifier, needs);
         if ("error" in tokens) {
           finish(tokens);
-          return PAGE(`${provider.name} didn't connect: ${tokens.error} You can close this tab.`);
+          return PAGE(`${provider.name} didn't connect: ${sentence(tokens.error)} You can close this tab.`);
         }
         const login = await loginOf(provider, tokens.token, needs.fetch);
         finish(login ? { ...tokens, login } : { error: `${provider.name} gave a token that doesn't work.` });

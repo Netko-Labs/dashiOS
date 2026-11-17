@@ -146,7 +146,7 @@ export function FormBody({ form, m, submit, escape }: { form: FormPart; m: Measu
           return (
             <Line key={node.i} label={words(node, "title") ?? ""} m={m} testID={`launcher:form:${node.i}`}>
               <View style={{ paddingTop: 5 }}>
-                <Text style={{ fontSize: m.title, color: colors.text }}>{words(node, "text") ?? ""}</Text>
+                <Text style={{ fontSize: m.detail, color: colors.textMuted }}>{words(node, "text") ?? ""}</Text>
               </View>
             </Line>
           );

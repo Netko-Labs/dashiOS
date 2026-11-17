@@ -30,7 +30,9 @@ export function connectAsked(manifest: Manifest, provider: string, accounts: Ses
   if (row.login) return { kind: "done", notice: `Connected to ${known.name} as ${row.login}` };
   // No app registered for this build: a token pasted is the way (it is checked with the provider before it is kept).
   if (!canSignIn(known)) return { kind: "ask", name: `${ACCOUNT_ASK}${provider}`, title: `${known.name} token`, secret: true };
-  if (!row.asked) return { kind: "confirm", provider, question: `Sign in to ${known.name} for ${manifest.name}? ${known.kept}`, yes: "Sign In" };
+  // "Sign in to GitHub for GitHub?" says the name twice: the extension is named only when it isn't the provider's.
+  const which = manifest.name === known.name ? "" : ` for ${manifest.name}`;
+  if (!row.asked) return { kind: "confirm", provider, question: `Sign in to ${known.name}${which}? ${known.kept}`, yes: "Sign In" };
   return known;
 }
 

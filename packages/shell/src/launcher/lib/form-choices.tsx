@@ -34,11 +34,26 @@ function Choice({ title, chosen, onPress, testID, m }: { title: string; chosen: 
   );
 }
 
-function Options({ children }: { children: React.ReactNode }) {
+/** The most options shown at once; more scroll (a repository has dozens of labels). */
+const OPTIONS_SHOWN = 6;
+
+function Options({ count, children }: { count: number; children: React.ReactNode }) {
   const colors = useColors();
   const surface = useSurface();
+  const tall = count > OPTIONS_SHOWN;
   return (
-    <View style={{ flexDirection: "column", padding: 3, borderRadius: 7, borderWidth: 1, borderColor: colors.separator, backgroundColor: surface.card }}>
+    <View
+      testID="launcher:form:options"
+      style={{
+        flexDirection: "column",
+        padding: 3,
+        borderRadius: 7,
+        borderWidth: 1,
+        borderColor: colors.separator,
+        backgroundColor: surface.card,
+        ...(tall ? { height: OPTIONS_SHOWN * 24 + 6, overflow: "scroll" as const } : {}),
+      }}
+    >
       {children}
     </View>
   );
@@ -79,7 +94,7 @@ export function DropdownField({ field, value, change, m }: { field: ViewNode; va
         <Svg markup={CHEVRON_DOWN} size={14} color={colors.textMuted} />
       </View>
       {open && (
-        <Options>
+        <Options count={options.length}>
           {options.map((option) => (
             <Choice
               key={option.value}
@@ -134,7 +149,7 @@ export function TagPickerField({ field, value, change, m }: { field: ViewNode; v
         </View>
       </View>
       {open && (
-        <Options>
+        <Options count={options.length}>
           {options.map((option) => (
             <Choice
               key={option.value}

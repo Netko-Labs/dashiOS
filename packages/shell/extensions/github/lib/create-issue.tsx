@@ -6,7 +6,7 @@
  * request is shown, nothing is sent, and Connect GitHub… is offered.
  */
 
-import { Action, ActionPanel, Detail, Form, type FormValues, useAccount, useLauncher, useNavigation, usePreferences, useQuery } from "@dashi/applet/launcher";
+import { Action, ActionPanel, Detail, Form, type FormValues, useLauncher, useNavigation, usePreferences, useQuery } from "@dashi/applet/launcher";
 import { useState } from "react";
 import { isRepo } from "./api.ts";
 import { SettingsActions, useGitHubToken } from "./detail.tsx";
@@ -37,7 +37,6 @@ function DryRun({ draft }: { draft: IssueDraft }) {
 }
 
 export function CreateIssue() {
-  const account = useAccount("github.com");
   const { repo: preferred } = usePreferences<{ repo?: string }>();
   const token = useGitHubToken();
   const last = lastRepository() ?? (preferred && isRepo(preferred) ? preferred.trim() : "oven-sh/bun");
@@ -78,11 +77,7 @@ export function CreateIssue() {
           <Form.TagPicker.Item key={label} title={label} value={label} />
         ))}
       </Form.TagPicker>
-      {!token && (
-        <Form.Description
-          text={`Not connected to GitHub: ❖↩ shows what would be sent, and sends nothing.${account.connected ? "" : " ❖K › Connect GitHub…"}`}
-        />
-      )}
+      {!token && <Form.Description text="Not connected to GitHub: sending shows what would go, and sends nothing. Connect GitHub… is on ❖K." />}
     </Form>
   );
 }
