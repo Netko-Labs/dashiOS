@@ -1,4 +1,13 @@
-export { DEFAULT_WALLPAPER_MODE, isWallpaperRef, selectedRef, WALLPAPER_MODES, type WallpaperChoice, type WallpaperMode } from "./catalog.ts";
+export {
+  DEFAULT_WALLPAPER_MODE,
+  isWallpaperRef,
+  selectedRef,
+  WALLPAPER_MODES,
+  type WallpaperChoice,
+  type WallpaperMode,
+  type WallpaperStill,
+  wallpaperStill,
+} from "./catalog.ts";
 export { type PhotoChooser, portalChooser } from "./chooser.ts";
 export {
   DEFAULT_FRAME_RATE,

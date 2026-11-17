@@ -7,7 +7,7 @@
  */
 
 import { accept, bool, int, isRecord, literal, num, reject, type Shape, shape, str } from "@dashi/shape";
-import { TEXT_SIZES } from "@dashi/ui";
+import { isAccentChoice, TEXT_SIZES } from "@dashi/ui";
 import { DOCK_STYLES } from "../dock/settings.ts";
 import { INPUT_METHODS } from "../input-method.ts";
 import { SCROLL_SPEED_MAX, SCROLL_SPEED_MIN } from "../scroll-speed.ts";
@@ -76,6 +76,11 @@ export const APPEARANCE = {
   pointerSize: POINTER_SIZE,
   textSize: literal(...TEXT_SIZES),
   x11Apps: literal(...X11_SCALINGS),
+  /** The accent (@dashi/ui theme/accent): `{preset}`, `{custom: "#RRGGBB"}` or `{wallpaper: true}`; none is Kombu. */
+  accent: guarded(isAccentChoice, 'a preset ({"preset": "momo"}), a colour ({"custom": "#E0508F"}) or {"wallpaper": true}', {
+    type: "object",
+    maxProperties: 1,
+  }),
 };
 
 const isPhotoList = (value: unknown): value is string[] => Array.isArray(value) && value.length <= MAX_PHOTOS && value.every(isPhotoPath);

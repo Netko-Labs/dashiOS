@@ -37,7 +37,7 @@ export function buttonLook(
   if (kind !== "secondary") {
     const fills = {
       danger: { rest: colors.umeFill, over: colors.umeFillHover, held: colors.umeFillPressed, ink: "#ffffff" },
-      chosen: { rest: colors.selection, over: colors.selectionHover, held: colors.selectionPressed, ink: "#ffffff" },
+      chosen: { rest: colors.selection, over: colors.selectionHover, held: colors.selectionPressed, ink: colors.onAccent },
       primary: { rest: colors.primary, over: colors.primaryHover, held: colors.primaryPressed, ink: colors.onPrimary },
     } as const;
     const { rest, over, held, ink } = fills[kind];

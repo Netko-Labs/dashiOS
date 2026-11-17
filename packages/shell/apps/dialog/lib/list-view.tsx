@@ -35,9 +35,9 @@ function Toggle({ on, radio, testID }: { on: boolean; radio: boolean; testID: st
     >
       {on &&
         (radio ? (
-          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#ffffff" }} />
+          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.onAccent }} />
         ) : (
-          <Svg markup={glyphs.CHECK} size={11} color="#ffffff" />
+          <Svg markup={glyphs.CHECK} size={11} color={colors.onAccent} />
         ))}
     </View>
   );

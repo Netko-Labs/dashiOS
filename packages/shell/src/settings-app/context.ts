@@ -41,6 +41,8 @@ export interface PaneContext {
    * no compositor runs, and so no agent's pointer.
    */
   byPerson?: ByPerson;
+  /** Appearance › Custom…'s eyedropper: one colour from the screen (eyedropper/); absent without a compositor. */
+  pickPixel?: () => Promise<string | null>;
   /** Opens one record of Work alone, whole, as text. */
   showAloneRecord?: (record: AloneRecord) => void;
   /** The apps' permissions the portal keeps (Privacy & Security); absent where the shell runs none. */

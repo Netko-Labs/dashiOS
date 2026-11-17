@@ -110,7 +110,7 @@ function QuietOption({ rect, quiet, onToggle }: { rect: Rect; quiet: boolean; on
           justifyContent: "center",
         }}
       >
-        {quiet ? <Text style={{ fontSize: 11, color: "#ffffff" }}>✓</Text> : null}
+        {quiet ? <Text style={{ fontSize: 11, color: colors.onAccent }}>✓</Text> : null}
       </View>
       <Text style={{ fontSize: 13, color: colors.text }}>Hide notifications while sharing</Text>
     </View>

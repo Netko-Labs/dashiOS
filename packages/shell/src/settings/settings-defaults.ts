@@ -3,7 +3,7 @@
  * and the defaults every key falls back to (settings.ts documents the file).
  */
 
-import { DEFAULT_TEXT_SIZE } from "@dashi/ui";
+import { type AccentChoice, DEFAULT_TEXT_SIZE } from "@dashi/ui";
 import { DOCK_DEFAULTS, type DockSettings } from "../dock/settings.ts";
 import { DEFAULT_INPUT_METHOD, type InputMethodName } from "../input-method.ts";
 import { type CornerName, DEFAULT_CORNERS, DEFAULT_POINTER_SIZE } from "../shared/appearance/index.ts";
@@ -29,6 +29,8 @@ export interface Settings {
     textSize: number;
     x11Apps: X11Scaling;
     wallpaper: WallpaperChoice;
+    /** The person's accent (appearance/accent.ts); none is Kombu. */
+    accent?: AccentChoice | undefined;
   };
   /** The Dock (dock/settings.ts); every key has a value. */
   dock: DockSettings;

@@ -1,6 +1,6 @@
 /**
  * Where the Settings interface's values come from in this process: Control
- * Center's Dark Mode, followed from the shell's file (apps/kit/appearance.ts),
+ * Center's Dark Mode and the accent, followed from the shell's file (apps/kit/appearance.ts),
  * settings.json's Reduce Motion and pointer size (read and followed the way
  * the shell does, src/shared/appearance/motion.ts), and
  * what this machine has to dress GTK apps with (src/shared/appearance/look.ts).
@@ -33,7 +33,10 @@ export function followLook(onChange: () => void): LookSource {
   });
   const unsubscribe = flags.subscribe(onChange);
   return {
-    current: () => ({ dark: flags.getSnapshot().dark, reduceMotion: appearance.reduceMotion, pointerSize: appearance.pointerSize, look }),
+    current: () => {
+      const { dark, accent = null } = flags.getSnapshot();
+      return { dark, accent, reduceMotion: appearance.reduceMotion, pointerSize: appearance.pointerSize, look };
+    },
     stop() {
       unsubscribe();
       stopFlags();

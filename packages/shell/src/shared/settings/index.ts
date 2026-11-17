@@ -16,6 +16,7 @@ export {
   DISK,
   DISPLAY,
   DOCK,
+  DROP,
   GAUGE,
   GLOBE,
   GPU,

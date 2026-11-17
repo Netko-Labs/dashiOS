@@ -52,7 +52,7 @@ const settings = new SettingsStore(join(mkdtempSync(join(tmpdir(), "dashi-settin
 settings.patch("power", { chargeLimit: 80 });
 const flags = new FlagsStore(null);
 flags.set({ dark: args.includes("--dark") });
-setAppearanceSource({ subscribe: flags.subscribe, isDark: () => flags.getSnapshot().dark });
+setAppearanceSource({ subscribe: flags.subscribe, isDark: () => flags.getSnapshot().dark, accent: () => flags.getSnapshot().accent ?? null });
 
 // The laptop: the power modes and the charge limit from dashi-hardware, writes kept in memory.
 const hardware = shadowHardware(hardwareClient(hardwareBus()));

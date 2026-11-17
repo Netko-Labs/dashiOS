@@ -98,7 +98,7 @@ export function CheckBox({ label, checked, onChange, testID }: { label: string; 
           justifyContent: "center",
         }}
       >
-        {checked && <Text style={{ fontSize: 10, color: "#ffffff", fontWeight: "bold" }}>✓</Text>}
+        {checked && <Text style={{ fontSize: 10, color: colors.onAccent, fontWeight: "bold" }}>✓</Text>}
       </View>
       <Text style={{ fontSize: 12, color: colors.text }}>{label}</Text>
     </View>

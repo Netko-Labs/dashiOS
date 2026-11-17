@@ -70,7 +70,7 @@ function UserPills({ users, chosen, onPick }: { users: SheetState["users"]; chos
             backgroundColor: user.uid === chosen ? colors.selection : colors.button,
           }}
         >
-          <Text style={{ fontSize: 12, color: user.uid === chosen ? "#ffffff" : colors.text }}>{user.label}</Text>
+          <Text style={{ fontSize: 12, color: user.uid === chosen ? colors.onAccent : colors.text }}>{user.label}</Text>
         </View>
       ))}
     </View>

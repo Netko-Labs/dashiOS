@@ -353,6 +353,7 @@ packages/shell/src/main.tsx	packages/shell/src/dock
 packages/shell/src/main.tsx	packages/shell/src/entries.ts
 packages/shell/src/main.tsx	packages/shell/src/extensions
 packages/shell/src/main.tsx	packages/shell/src/extras
+packages/shell/src/main.tsx	packages/shell/src/eyedropper
 packages/shell/src/main.tsx	packages/shell/src/file-manager.ts
 packages/shell/src/main.tsx	packages/shell/src/force-quit
 packages/shell/src/main.tsx	packages/shell/src/front-window.ts

@@ -19,7 +19,7 @@
  *     "idle": { "blankAfterSeconds": 300 },
  *     "appearance": { "cornerRadius": "medium", "reduceMotion": false,
  *                     "highlightActiveWindow": false,
- *                     "pointerSize": 24, "textSize": 1, "x11Apps": "sharp",
+ *                     "pointerSize": 24, "textSize": 1, "x11Apps": "sharp", "accent": { "preset": "momo" },
  *                     "wallpaper": { "path": "midnight", "mode": "fill" } },
  *     "dock": { "style": "dock", "autohide": false, "visible": true },
  *     "spaces": { "count": 3, "names": ["Work", null, "Games"], "switchOnActivate": true,
@@ -48,7 +48,8 @@
  * window with the keyboard in the accent color (appearance/window-style.ts). `pointerSize` is 24 (the default), 32, 40, or 48
  * points (pointer.ts); `textSize` is 1 (the default), 1.15, 1.3, or 1.5, what the
  * shell's type is multiplied by (text-size.ts); `x11Apps` is "sharp" (the default) or "stretched",
- * how X11 apps meet a scaled screen (xwayland-scale.ts). `wallpaper.path` is a bundled wallpaper's id or an
+ * how X11 apps meet a scaled screen (xwayland-scale.ts). `accent` is `{"preset": id}`, `{"custom": "#RRGGBB"}`
+ * or `{"wallpaper": true}`, the colour of what is on or chosen (appearance/accent.ts); none is Kombu. `wallpaper.path` is a bundled wallpaper's id or an
  * absolute path to a PNG or JPEG (none is the built-in gradient);
  * `wallpaper.mode` is "fill" (the default), "fit", or "center"
  * (wallpaper/catalog.ts). `wallpaper.kind` ("picture", "shader", or "video")
@@ -173,6 +174,7 @@ export function parseSettings(value: unknown): Loaded {
   settings.appearance.pointerSize = appearance.pointerSize ?? DEFAULT_POINTER_SIZE;
   settings.appearance.textSize = appearance.textSize ?? DEFAULT_TEXT_SIZE;
   settings.appearance.x11Apps = appearance.x11Apps ?? DEFAULT_X11_SCALING;
+  if (appearance.accent) settings.appearance.accent = appearance.accent;
   settings.appearance.wallpaper = wallpaperOf(isRecord(value.appearance) ? value.appearance.wallpaper : undefined, problems);
   // Software and the kill switch read the catalogs themselves (shared/applet-store/); here only what is wrong with them is said.
   readSection("applets", value.applets, {}, problems, ["catalogs"]);

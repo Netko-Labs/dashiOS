@@ -2,7 +2,8 @@
  * Appearance (docs/design.html, "Settings"): its hero is the themes, Light,
  * Dark and Automatic (dark in the evening), as pictures to pick from (the
  * one Dark Mode control here; Control Center's tile is the same switch).
- * Automatic is chosen there and only there; while it is, its hours show as
+ * Under them, the accent (lib/accent/: presets, Custom…, the wallpaper's,
+ * and a live preview). Automatic is chosen there and only there; while it is, its hours show as
  * the card's first row ("Dark from 7 PM to 7 AM"). Then how it looks: the
  * text size of the shell's surfaces and GTK apps (`appearance.textSize`,
  * text-size.ts), how round windows are (`appearance.cornerRadius`; the
@@ -20,6 +21,7 @@ import { Caption, Group } from "../shared/cards/index.ts";
 import { type FlagsStore, useFlags } from "../shared/control-center/index.ts";
 import { DARK_CONTROLS, LIGHT_CONTROLS, useControlColors } from "../shared/controls/palette.ts";
 import { useSettings } from "./hooks.ts";
+import { AccentCard } from "./lib/accent/card.tsx";
 import { clockLabel } from "./lib/night.ts";
 import { Setting } from "./lib/setting.tsx";
 import { CORNER_OPTIONS } from "./registry/appearance.ts";
@@ -157,7 +159,7 @@ export function CornerChoices({ settings }: { settings: SettingsStore }) {
 /** Automatic's hours, as its row says them: "Dark from 7 PM to 7 AM". */
 export const automaticHours = (): string => `Dark from ${clockLabel(AUTO_DARK_FROM)} to ${clockLabel(AUTO_DARK_TO)}`;
 
-export function AppearancePane({ flags, settings }: { flags: FlagsStore; settings: SettingsStore }) {
+export function AppearancePane({ flags, settings, pick }: { flags: FlagsStore; settings: SettingsStore; pick?: () => Promise<string | null> }) {
   const auto = useSettings(settings).data.appearance.auto === true;
   const hero = (
     <Hero testID="appearance-hero">
@@ -168,6 +170,7 @@ export function AppearancePane({ flags, settings }: { flags: FlagsStore; setting
     <Page title="Appearance">
       {/* The themes are Dark Mode's only control, and Automatic's: a link or the launcher's rows land here (on the hours while Automatic is chosen). */}
       <Spot id="appearance/dark-mode">{auto ? hero : <Spot id="appearance/automatic">{hero}</Spot>}</Spot>
+      <AccentCard flags={flags} settings={settings} {...(pick ? { pick } : {})} />
       <Group testID="appearance-look">
         {auto && (
           <Setting
@@ -187,7 +190,10 @@ export function AppearancePane({ flags, settings }: { flags: FlagsStore; setting
         <Setting id="appearance/reduce-motion" detail="Fades instead of springs." control="appearance-reduce-motion" />
         <Setting id="appearance/highlight-active-window" control="appearance-highlight-window" />
       </Group>
-      <Caption>Light and Dark are the same choice as Control Center's Dark Mode.</Caption>
+      <Caption>
+        Light and Dark are the same choice as Control Center's Dark Mode. The accent never colours the tally, a widget's number, the agents' purple, the
+        microphone or an error: those keep their meaning whatever you pick. Other apps follow it where they can.
+      </Caption>
     </Page>
   );
 }

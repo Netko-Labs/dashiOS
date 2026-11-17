@@ -1,5 +1,6 @@
 /**
- * OKLCH and sRGB, the arithmetic the inks are made with (inks.ts): a colour
+ * OKLCH and sRGB, the arithmetic the inks (inks.ts) and the accent's guard
+ * (accent/) are both made with, one copy: a colour
  * from lightness, chroma and hue, brought into the screen's gamut by lowering
  * chroma only (never hue or lightness), and the distance between two colours
  * in OKLab. Metal is handed the hex; nothing here runs per frame.
@@ -74,4 +75,27 @@ export function deltaE(first: string, second: string): number {
   const a = hexToOklab(first);
   const b = hexToOklab(second);
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+}
+
+const luminance = (hex: string): number => {
+  const n = Number.parseInt(hex.slice(1, 7), 16);
+  return 0.2126 * toLinear(((n >> 16) & 255) / 255) + 0.7152 * toLinear(((n >> 8) & 255) / 255) + 0.0722 * toLinear((n & 255) / 255);
+};
+
+/** WCAG contrast of two opaque colours (the accent's guard; contrast.ts's `contrastRatio` takes alpha too). */
+export function contrast(a: string, b: string): number {
+  const x = luminance(a);
+  const y = luminance(b);
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+}
+
+/** `hex` (opaque) laid at `alpha` over `ground`, as an opaque `#rrggbb`. */
+export function over(hex: string, alpha: number, ground: string): string {
+  const part = (h: string, i: number): number => Number.parseInt(h.slice(1 + 2 * i, 3 + 2 * i), 16);
+  const mixed = [0, 1, 2].map((i) =>
+    Math.round(part(hex, i) * alpha + part(ground, i) * (1 - alpha))
+      .toString(16)
+      .padStart(2, "0"),
+  );
+  return `#${mixed.join("")}`;
 }

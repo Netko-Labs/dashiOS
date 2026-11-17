@@ -120,7 +120,7 @@ export const storedNumber = <S extends SectionName>(
  * They live outside settings.json, so a change made through the registry is
  * told to the change log here (Settings › Recently changed, ❖Z).
  */
-export function flag(key: keyof Flags): Binding {
+export function flag(key: Exclude<keyof Flags, "accent">): Binding {
   return {
     schema: { type: "boolean" },
     key: `flags.${key}`,
