@@ -89,7 +89,7 @@ export function MediaWidget({ size, air }: { size: WidgetSize; air: boolean }) {
     <View style={{ flexDirection: "row", gap: 14, flex: 1 }}>
       <Halftone print={print} size={144} sleeve={sleeve} />
       <View style={{ flex: 1, flexDirection: "column" }}>
-        <Head left={<Lab>Music</Lab>} right={air ? <NowTag tally={inks.tally} /> : <Meta>{playing.player.replace("org.mpris.MediaPlayer2.", "")}</Meta>} />
+        <Head left={<Lab>Music</Lab>} right={air ? <NowTag tally={inks.tally} /> : <Meta max={16}>{playing.name}</Meta>} />
         <View style={{ height: 10 }} />
         <Title size={15}>{playing.title}</Title>
         <Words>{playing.artist}</Words>

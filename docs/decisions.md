@@ -6354,3 +6354,14 @@ short words, as the rulebook is written.
 - **Why:** pass 49 found every advertised key did nothing in the installed
   build; the tests had fed browser names to the pure helper only.
 - **Undo:** `EditKeys` in `notifications/area.tsx`.
+
+### D481. A player is named by its desktop entry, then its Identity, never its bus name
+
+- **Date:** 2026-11-17. `v09/fix-inks-1`.
+- **Decision:** The Music card's small line names the player from MPRIS's
+  root interface: the Name in the desktop entry it gives (`DesktopEntry`,
+  so Helium is "Helium" even when its Identity says Chromium), else its
+  `Identity`, else its bus name without the prefix and the instance number
+  ("Chromium"). The line is one line, cut at 16 characters with an
+  ellipsis; `Meta` lines are one line everywhere.
+- **Undo:** `playerName` in `widgets/lib/sources/player-name.ts`.
