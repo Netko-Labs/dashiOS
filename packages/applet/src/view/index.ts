@@ -10,6 +10,7 @@ export {
   TONES,
   type Tone,
   TREE_LIMITS,
+  WIDGET_ROOTS,
 } from "./elements.ts";
 export {
   applyPatch,
@@ -21,6 +22,7 @@ export {
   type PropValue,
   parseSubtree,
   parseTree,
+  parseWidgetTree,
   textProp,
   toWire,
   type ViewNode,

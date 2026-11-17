@@ -11,8 +11,8 @@
  * purple, the microphone, errors, buttons (ink) or the Dock's dot.
  */
 
+import { hexToOklch } from "../lib/oklch.ts";
 import { derive, FIXED, type GuardOptions, hueGap, type Mode, type Move, RULE, steps } from "./lib/guard.ts";
-import { hexToOklch } from "./lib/oklch.ts";
 
 export interface AccentPreset {
   id: string;

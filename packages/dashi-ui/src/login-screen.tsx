@@ -72,10 +72,31 @@ export interface LoginScreenProps {
   below?: ReactNode;
   /** Sleep, restart, or shut down; without it there are no power buttons. */
   onPower?: (what: PowerAction) => void;
+  /** In place of the day and the time: the lock screen's own clock and the widgets under it. */
+  head?: ReactNode;
+  /** Drawn over the whole screen, behind nothing it covers: the lock screen's side column. */
+  around?: ReactNode;
 }
 
 export function LoginScreen(props: LoginScreenProps): ReactNode {
-  const { day, time, name, picture, value, onChangeText, onSubmit, placeholder = "Password", secure = true, hint, error, above, below, onPower } = props;
+  const {
+    day,
+    time,
+    name,
+    picture,
+    value,
+    onChangeText,
+    onSubmit,
+    placeholder = "Password",
+    secure = true,
+    hint,
+    error,
+    above,
+    below,
+    onPower,
+    head,
+    around,
+  } = props;
   const [arming, setArming] = useState<PowerAction | null>(null);
   useEffect(() => {
     if (!arming) return;
@@ -90,10 +111,13 @@ export function LoginScreen(props: LoginScreenProps): ReactNode {
 
   return (
     <View style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: BACKGROUND, focusRingColor: LOGIN_FOCUS_RING }}>
-      <View style={{ marginTop: 90, flexDirection: "column", alignItems: "center", gap: 4 }}>
-        <Text style={{ fontSize: 20, fontWeight: "semibold", color: MUTED }}>{day}</Text>
-        <Text style={{ fontSize: 88, fontWeight: "bold", color: TEXT }}>{time}</Text>
-      </View>
+      {around}
+      {head ?? (
+        <View style={{ marginTop: 90, flexDirection: "column", alignItems: "center", gap: 4 }}>
+          <Text style={{ fontSize: 20, fontWeight: "semibold", color: MUTED }}>{day}</Text>
+          <Text style={{ fontSize: 88, fontWeight: "bold", color: TEXT }}>{time}</Text>
+        </View>
+      )}
       <View style={{ flex: 1, minHeight: 16 }} />
       <View style={{ flexDirection: "column", alignItems: "center", gap: 10 }}>
         {above}
@@ -115,36 +139,41 @@ export function LoginScreen(props: LoginScreenProps): ReactNode {
       </View>
       {/* In the flow, not pinned: on a short screen the buttons move down instead of over the field. */}
       <View style={{ flex: 0.6, minHeight: 24 }} />
-      {onPower && (
-        <View testID="login-power" style={{ marginBottom: 24, flexDirection: "row", justifyContent: "center", gap: POWER_GAP }}>
-          {POWER.map(({ what, label, confirm, glyph }) => (
-            // Tab reaches each after the field, and Space or Return presses it: the first press arms it, as a click does.
-            <View
-              key={what}
-              testID={`login-${what}`}
-              focusable
-              accessibilityRole="button"
-              accessibilityLabel={arming === what ? confirm : label}
-              onPress={() => press(what)}
-              style={{ flexDirection: "column", alignItems: "center", gap: 6, width: POWER_WIDTH, paddingVertical: 4, borderRadius: 12 }}
-            >
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: arming === what ? "#ffffff59" : "#ffffff26",
-                }}
-              >
-                <Svg markup={glyph} size={18} color={TEXT} />
-              </View>
-              <Text style={{ fontSize: 11, color: arming === what ? TEXT : MUTED }}>{arming === what ? confirm : label}</Text>
-            </View>
-          ))}
+      {onPower && <PowerRow arming={arming} press={press} />}
+    </View>
+  );
+}
+
+/** Sleep, Restart and Shut Down along the bottom, each asking for a second click. */
+function PowerRow({ arming, press }: { arming: PowerAction | null; press: (what: PowerAction) => void }): ReactNode {
+  return (
+    <View testID="login-power" style={{ marginBottom: 24, flexDirection: "row", justifyContent: "center", gap: POWER_GAP }}>
+      {POWER.map(({ what, label, confirm, glyph }) => (
+        // Tab reaches each after the field, and Space or Return presses it: the first press arms it, as a click does.
+        <View
+          key={what}
+          testID={`login-${what}`}
+          focusable
+          accessibilityRole="button"
+          accessibilityLabel={arming === what ? confirm : label}
+          onPress={() => press(what)}
+          style={{ flexDirection: "column", alignItems: "center", gap: 6, width: POWER_WIDTH, paddingVertical: 4, borderRadius: 12 }}
+        >
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: arming === what ? "#ffffff59" : "#ffffff26",
+            }}
+          >
+            <Svg markup={glyph} size={18} color={TEXT} />
+          </View>
+          <Text style={{ fontSize: 11, color: arming === what ? TEXT : MUTED }}>{arming === what ? confirm : label}</Text>
         </View>
-      )}
+      ))}
     </View>
   );
 }

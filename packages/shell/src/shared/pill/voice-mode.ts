@@ -32,9 +32,11 @@ export type VoiceModePhase = VoiceModeState["phase"];
 /** Something that waits for the person: shown as the card on the Dock, the oldest first, one at a time. */
 export type PillAsk =
   /** v-08, v-13, b-13. A plan that waits for a yes (a launcher Ask task in phase `planned`; `task` is its id, `request` its words). `spoken` when it was asked by voice: its card opens by itself. */
-  | { kind: "permission"; id: string; task: string; request: string; steps: readonly string[]; spoken: boolean; since: number }
+  | { kind: "permission"; id: string; task: string; request: string; steps: readonly string[]; spoken: boolean; since: number; critical?: boolean }
   /** v-06, b-15. A question (`ask_person`): its words and, when it has them, its choices. `who` asks; `about` is the task it answers in a few words ("" when there is none). */
-  | { kind: "question"; id: string; text: string; choices: readonly string[]; who: string; about: string; since: number };
+  | { kind: "question"; id: string; text: string; choices: readonly string[]; who: string; about: string; since: number; critical?: boolean };
+/* `critical`: one of the five things that may ask (money, a secret, losing work for good, a system change, speaking for the person: D260).
+   Only a critical ask takes the tally as asking (decisions.md D402); the rest wait in their card. */
 
 /** What the capsule and the bar ask of the voice loop. */
 export type VoiceModeCommand =

@@ -6,10 +6,12 @@
  */
 
 import { useMemo, useSyncExternalStore } from "react";
-import type { Day } from "../shared/calendar/index.ts";
+import type { Day, Occurrence } from "../shared/calendar/index.ts";
 
 export interface CalendarBridge {
   busyDays(from: Day, to: Day): Set<Day>;
+  /** The occurrences in [from, to), hidden calendars left out, in time order. */
+  occurrences(from: Day, to: Day): Occurrence[];
   subscribe(listener: () => void): () => void;
   getVersion(): number;
   openDay(day: Day): void;

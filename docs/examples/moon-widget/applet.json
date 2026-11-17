@@ -1,0 +1,13 @@
+{
+  "id": "dev.example.moon",
+  "name": "Moon",
+  "version": "0.1.0",
+  "dashi": ">=0.9",
+  "entry": "main.ts",
+  "summary": "The moon's phase tonight, as a widget.",
+  "description": "An example of an outside extension's widget (docs/decisions.md D404): its tree is a file of Dashi's elements, first the package's own, then the one its process writes in its data folder. No network, no permissions.",
+  "author": { "name": "Alex Kim" },
+  "license": "MIT",
+  "shows": ["widgets"],
+  "widgets": [{ "id": "moon", "title": "Moon", "sizes": ["small", "compact"], "privacy": "none" }]
+}

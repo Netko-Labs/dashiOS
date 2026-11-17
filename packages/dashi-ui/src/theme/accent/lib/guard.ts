@@ -6,7 +6,7 @@
  * every window ground (4.5:1 and 7:1 with Increase contrast).
  */
 
-import { contrast, deltaE, hexToOklch, oklchToHex, over } from "./oklch.ts";
+import { contrast, deltaE, hexToOklch, oklchToHex, over } from "../../lib/oklch.ts";
 
 export type Mode = "light" | "dark";
 

@@ -54,4 +54,15 @@ export const notificationTools: readonly ToolDef[] = [
     args: {},
     build: () => ({ name: "clear_notifications" }),
   }),
+  tool({
+    name: "list_widgets",
+    title: "List widgets",
+    description: `The person's widgets in the notification area, in their order: id, name, size, ink, and what each shows now (the weather, the battery, timers, what plays, the day's next things, agents' runs); and what is on air, the one thing the tally lights, with what waits on standby. Widgets from extensions say what their trees say. ${WARNING}`,
+    scope: "notifications",
+    readOnly: true,
+    destructive: false,
+    idempotent: true,
+    args: {},
+    build: () => ({ name: "list_widgets" }),
+  }),
 ];

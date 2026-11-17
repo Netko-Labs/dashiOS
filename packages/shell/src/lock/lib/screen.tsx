@@ -1,13 +1,19 @@
 /**
  * The lock screen: @dashi/ui's LoginScreen with the lock's own rules. Enter
  * checks the password (the controller enforces the waits after misses); a
- * wrong one says so and clears the field.
+ * wrong one says so and clears the field. Round five's widgets sit round it
+ * (widgets/lock.tsx): the stacked clock and its row, the side column, the
+ * Now Bar. A press on a widget asks for the password first and says what it
+ * will open ("Unlock to open Notes"), then does exactly that. Untouched for
+ * a while it rests into Glance; any key or press wakes it.
  */
 
 import { LoginScreen, type PowerAction } from "@dashi/ui";
 import { type ReactNode, useEffect, useState } from "react";
 import { formatLongDay, formatTimeBare, useClockPrefs } from "../../shared/time/index.ts";
+import { Glance, LockHead, LockSide, NowBar, openerOf, usePlacements, useWidgetEnvFor, WidgetEnvProvider, widgetHub, widgetInfo } from "../../widgets/index.ts";
 import type { Verdict } from "./attempts.ts";
+import { unlockHint, useResting } from "./rest.ts";
 
 export type LockPower = PowerAction;
 
@@ -39,6 +45,12 @@ export function LockScreen({ name, picture, onSubmit, waitMs, onPower }: LockScr
   const clock = useClockPrefs();
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<keyof typeof HINTS>("idle");
+  const [pending, setPending] = useState<{ label: string; run: () => void } | null>(null);
+  const [touched, setTouched] = useState(0);
+  const [resting, wake] = useResting(touched);
+  const hub = widgetHub();
+  const placements = usePlacements(hub);
+  const env = useWidgetEnvFor(hub, { locked: true, placements, open: setPending, dark: true, lock: true });
 
   const submit = async (): Promise<void> => {
     if ((status !== "idle" && status !== "wrong") || password === "") return;
@@ -56,23 +68,51 @@ export function LockScreen({ name, picture, onSubmit, waitMs, onPower }: LockScr
     }
     setPassword("");
     setStatus(verdict === "right" ? "idle" : "wrong");
+    // Unlocked: what the press asked for, and nothing else.
+    if (verdict === "right" && pending) {
+      pending.run();
+      setPending(null);
+    }
   };
 
   return (
-    <LoginScreen
-      day={formatLongDay(now, clock)}
-      time={formatTimeBare(now, clock)}
-      name={name}
-      picture={picture}
-      value={password}
-      onChangeText={(text) => {
-        setPassword(text);
-        if (status === "wrong") setStatus("idle");
-      }}
-      onSubmit={() => void submit()}
-      hint={HINTS[status]}
-      error={status === "wrong"}
-      {...(onPower ? { onPower } : {})}
-    />
+    <WidgetEnvProvider value={env}>
+      <LoginScreen
+        day={formatLongDay(now, clock)}
+        time={formatTimeBare(now, clock)}
+        name={name}
+        picture={picture}
+        value={password}
+        onChangeText={(text) => {
+          setTouched((n) => n + 1);
+          setPassword(text);
+          if (status === "wrong") setStatus("idle");
+        }}
+        onSubmit={() => void submit()}
+        hint={status === "idle" ? unlockHint(pending, HINTS.idle) : HINTS[status]}
+        error={status === "wrong"}
+        {...(onPower ? { onPower } : {})}
+        head={<LockHead />}
+        around={
+          <LockSide
+            placements={placements}
+            onPress={(placement) => {
+              setTouched((n) => n + 1);
+              const run = openerOf(placement);
+              if (run) setPending({ label: widgetInfo(placement.kind)?.name ?? "it", run });
+            }}
+          />
+        }
+        above={<NowBar />}
+      />
+      {resting ? (
+        <Glance
+          onWake={() => {
+            setTouched((n) => n + 1);
+            wake();
+          }}
+        />
+      ) : null}
+    </WidgetEnvProvider>
   );
 }

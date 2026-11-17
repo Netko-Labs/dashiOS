@@ -182,6 +182,28 @@
           "max": { "type": "integer" }
         }
       }
+    },
+    "widgets": {
+      "description": "Widgets the shell draws in the notification area and on the lock screen from a tree of Dashi's elements (decisions.md D404): assets/widgets/<id>.json, then the extension's own widgets/<id>.json in its data folder. Printed in plain ink.",
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title"],
+        "properties": {
+          "id": { "type": "string", "maxLength": 40, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 40 },
+          "sizes": {
+            "type": "array",
+            "uniqueItems": true,
+            "minItems": 1,
+            "maxItems": 7,
+            "items": { "enum": ["mini", "compact", "small", "strip", "wide", "tall", "large"] }
+          },
+          "privacy": { "enum": ["none", "some", "all"] }
+        }
+      }
     }
   },
   "$defs": {

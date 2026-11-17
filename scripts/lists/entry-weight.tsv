@@ -419,6 +419,7 @@ packages/shell/src/main.tsx	packages/shell/src/shared/extension-settings
 packages/shell/src/main.tsx	packages/shell/src/shared/face
 packages/shell/src/main.tsx	packages/shell/src/shared/files
 packages/shell/src/main.tsx	packages/shell/src/shared/fs
+packages/shell/src/main.tsx	packages/shell/src/shared/inks
 packages/shell/src/main.tsx	packages/shell/src/shared/io
 packages/shell/src/main.tsx	packages/shell/src/shared/links
 packages/shell/src/main.tsx	packages/shell/src/shared/locale
@@ -443,12 +444,14 @@ packages/shell/src/main.tsx	packages/shell/src/spaces
 packages/shell/src/main.tsx	packages/shell/src/suspend.ts
 packages/shell/src/main.tsx	packages/shell/src/switcher
 packages/shell/src/main.tsx	packages/shell/src/system
+packages/shell/src/main.tsx	packages/shell/src/tally
 packages/shell/src/main.tsx	packages/shell/src/text-size.ts
 packages/shell/src/main.tsx	packages/shell/src/theme.ts
 packages/shell/src/main.tsx	packages/shell/src/toplevels.ts
 packages/shell/src/main.tsx	packages/shell/src/tray
 packages/shell/src/main.tsx	packages/shell/src/voice
 packages/shell/src/main.tsx	packages/shell/src/wallpaper
+packages/shell/src/main.tsx	packages/shell/src/widgets
 packages/shell/src/main.tsx	packages/shell/src/wifi
 packages/shell/src/main.tsx	packages/shell/src/xwayland-scale.ts
 packages/shell/src/session.ts	packages/shell/src/session

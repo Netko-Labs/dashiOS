@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { ACCENT_PRESETS, accentSentence, drawAccent, isAccentChoice, KOMBU_SEED, seedFromPixels, seedOf } from "../src/theme/accent/index.ts";
 import { derive, FIXED, GROUNDS, hueGap, INK, type Mode, minContrast, RULE, steps } from "../src/theme/accent/lib/guard.ts";
-import { contrast, deltaE, hexToOklch, over } from "../src/theme/accent/lib/oklch.ts";
+import { contrast, deltaE, hexToOklch, over } from "../src/theme/lib/oklch.ts";
 
 // The themes spec's B3, as the accent's design measured it (dashi-0.9.0-design/accent/src/check.js):
 // any seed, in either mode, with and without Increase contrast, keeps fills at 3:1 (4.5:1) on every

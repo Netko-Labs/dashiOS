@@ -11,7 +11,7 @@
 
 import { isRecord } from "@dashi/shape";
 import { isRefusal, id as parseId, text as parseText, type Refusal, refuse } from "@dashi/shape/kit";
-import { ELEMENTS, type ElementType, isElementType, type PropSpec, ROOTS, TREE_LIMITS } from "./elements.ts";
+import { ELEMENTS, type ElementType, isElementType, type PropSpec, ROOTS, TREE_LIMITS, WIDGET_ROOTS } from "./elements.ts";
 
 export type PropValue = string | number | boolean | readonly string[];
 
@@ -77,6 +77,8 @@ function parseProps(type: ElementType, value: unknown, where: string): Record<st
 interface Budget {
   nodes: number;
   ids: Set<string>;
+  /** What the root may be: a launcher view's or a widget's. */
+  roots?: readonly ElementType[];
 }
 
 function parseNode(value: unknown, parent: ElementType | null, depth: number, budget: Budget): ViewNode | Refusal {
@@ -88,8 +90,9 @@ function parseNode(value: unknown, parent: ElementType | null, depth: number, bu
   const nodeId = parseId(value.i, `${type}: i`, 128);
   if (isRefusal(nodeId)) return nodeId;
   const where = `${type} “${nodeId}”`;
-  if (parent === null ? !ROOTS.includes(type) : !(ELEMENTS[parent].holds as readonly string[]).includes(type))
-    return refuse(parent === null ? `a view is a ${ROOTS.join(", ")}, not a ${type}` : `${parent} can't hold ${where}`);
+  const roots = budget.roots ?? ROOTS;
+  if (parent === null ? !roots.includes(type) : !(ELEMENTS[parent].holds as readonly string[]).includes(type))
+    return refuse(parent === null ? `a view is a ${roots.join(", ")}, not a ${type}` : `${parent} can't hold ${where}`);
   if (budget.ids.has(nodeId)) return refuse(`two nodes are “${nodeId}”`);
   budget.ids.add(nodeId);
   if (++budget.nodes > TREE_LIMITS.nodes) return refuse(`a view has more than ${TREE_LIMITS.nodes} nodes`);
@@ -110,6 +113,11 @@ function parseNode(value: unknown, parent: ElementType | null, depth: number, bu
 /** A whole view's tree, checked: its root a List, Grid or Detail, every node allowed where it is, the limits held. */
 export function parseTree(value: unknown): ViewNode | Refusal {
   return parseNode(value, null, 1, { nodes: 0, ids: new Set() });
+}
+
+/** A widget's tree (decisions.md D404): its root a Widget, the same limits and checks as a view. */
+export function parseWidgetTree(value: unknown): ViewNode | Refusal {
+  return parseNode(value, null, 1, { nodes: 0, ids: new Set(), roots: WIDGET_ROOTS });
 }
 
 /** One node to put under `parent` (a patch's), checked as part of a tree. */

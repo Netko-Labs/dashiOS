@@ -11,8 +11,9 @@ import { type AppMenuStore, useAppMenus } from "../../app-menus/index.ts";
 import { BatteryPopover, type BatteryPopoverSources } from "../../battery/index.ts";
 import { ControlCenterPanel, type ControlCenterProps } from "../../control-center/index.ts";
 import type { DockMenuAction } from "../../dock/types.ts";
-import { NotificationCenterPanel, type NotificationStore } from "../../notifications/index.ts";
+import { NotificationArea, type NotificationStore } from "../../notifications/index.ts";
 import { DOCK, DOCK_HEIGHT, MENU_BAR_HEIGHT } from "../../theme.ts";
+import { openerOf, widgetHub } from "../../widgets/index.ts";
 import { type MenuController, useMenus } from "../controller.ts";
 import { buildMenu } from "../model.ts";
 import type { StatusMenuAction } from "../status-menu.ts";
@@ -251,7 +252,7 @@ export function PopoverRoot({
       {popover?.kind === "agents" && agentsPanel?.({ right: popover.right, focus: popover.focus, close: back })}
       {popover?.kind === "overflow" && overflowRow?.({ right: popover.right, keys: popover.keys, close, escape: back })}
       {popover?.kind === "notification-center" && (
-        <NotificationCenterPanel store={notifications} dockInset={dockInset(output)} onClose={close} onEscape={back} />
+        <NotificationArea store={notifications} dockInset={dockInset(output)} onClose={close} onEscape={back} hub={widgetHub()} openerOf={openerOf} />
       )}
     </View>
   );

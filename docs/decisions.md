@@ -5950,6 +5950,117 @@ short words, as the rulebook is written.
   shows "Loading…" under it (D385). The tree's rule stays strict.
 - **Undo:** the `subtitle` spread in `extensions/github/main.tsx`.
 
+### D400. The inks are their own tokens, and the timer's is wakame, a teal
+
+- **Date:** 2026-11-17. `v09/inks` (brief b5).
+- **Question:** where the widgets' inks live beside the accent colour being
+  built at the same time (`v09/accent`), and the exact teal the owner chose
+  for the timer on 16 Nov ("about H200").
+- **Decision:** the inks are in `packages/dashi-ui/src/theme/inks.ts`, not in
+  `palette.ts`: six fixed OKLCH inks (miso, mizu, matcha, wakame, shiso,
+  album), the tally (one vermilion), the paper, the words on a flood, and the
+  two transforms (house lights, the lock's shift), turned into hex once per
+  mode. The accent never reads or writes them. The timer's ink is named
+  wakame (Dashi's sea-teal tint already has the name): Light L0.545 C0.10
+  H205 (#067F8A, 4.6:1 on paper), Dark L0.88 C0.10 H200 (#80ECF1). It stays
+  the lightest of the four glanceable inks, as kabocha was. Light values:
+  miso #633C2E, mizu #006485, matcha #6B6F03, shiso #5949A3, album #8B467F,
+  tally #D9471B; Dark: #B78D7F, #68BDE4, #B3D76D, #B0A4F8, #CF8AC1, #FD6A3A.
+  Closest pairs: Light mizu/wakame ΔE 0.083, Dark shiso/album 0.096.
+- **Why:** a file of their own means the accent's commits to `palette.ts`
+  never collide with these, and the test (`dashi-ui/test/inks.test.ts`)
+  checks the distance table, contrast, lightness order and dimming.
+- **Cost:** Light wakame sits ΔE 0.057 from kombu's selection green. Kombu
+  (and the accent that replaces it) is never drawn inside a widget, so the
+  two never meet on a card.
+- **Undo:** the `wakame` entry in `INKS`; the file is imported only through
+  `@dashi/ui`.
+
+### D401. How the tally's cut rules read where the design leaves a gap
+
+- **Date:** 2026-11-17. `v09/inks`.
+- **Question:** round five's rules (≥60 s hold, 10 min no-retake, earliest
+  deadline, pin loses to asking, 2 min for a due item and house lights)
+  leave four cases open.
+- **Decision:** (1) The 10-minute lock-out holds only while something else
+  could take the tally; alone, a loser holds again, so a running timer is
+  never left unlit. (2) A loser that became more urgent since it lost (a
+  running timer reaching zero) may retake at once. (3) A due item spent after
+  its two minutes leaves the air entirely (it is in its notification now),
+  not back to running. (4) A pin is the person's own act and cuts at once,
+  inside the minute's hold. House lights count one stretch: they go down when
+  an asking or due holder takes the tally and come up after two minutes or
+  when the holder stops being urgent, whichever is first; a new urgent holder
+  inside the same stretch does not start a new two minutes.
+- **Why:** each reading keeps the tally's one job (one honest "now") with
+  the fewest cuts.
+- **Undo:** `locked`, `spentNow` and `settle` in `shell/src/tally/lib/rules.ts`;
+  the tests in `shell/test/tally.test.ts` say each case.
+
+### D402. Only an ask marked critical takes the tally as asking
+
+- **Date:** 2026-11-17. `v09/inks`.
+- **Question:** round five says only a critical question may "ask" (D260's
+  five: money, a secret, losing work for good, a system change, speaking
+  for the person); Dashi's asks (`PillAsk`) and agents' run questions did
+  not say whether they are critical.
+- **Decision:** `PillAsk` gains an optional `critical` flag, set by whoever
+  makes the ask; an ask without it counts as running and waits in its card.
+  An agent run's question asks only when it is a sign-in (a secret). The
+  capsule does not set the flag yet, so today only sign-ins and anything
+  that sets it go on air as asking.
+- **Why:** the tally's house lights must never go down for a plan that only
+  moves files; guessing criticality from words would get it wrong both ways.
+- **Undo:** `asksOnAir` and `runsOnAir` in `shell/src/widgets/lib/on-air.ts`.
+
+### D403. Pinning is a right-click on a live card
+
+- **Date:** 2026-11-17. `v09/inks`.
+- **Question:** the design pins with a long press; mirin's View has no long
+  press (it has `onContextMenu` and `onPointer`).
+- **Decision:** a right-click on a live card pins it; another unpins.
+- **Why:** a long press from `onPointer` would need a timer per card; the
+  right-click is where every other "more" lives in Dashi.
+- **Undo:** `onContext` on `LiveCard` in `shell/src/widgets/live.tsx`.
+
+### D404. An extension's widget is a tree in a file, not a new message
+
+- **Date:** 2026-11-17. `v09/inks`.
+- **Question:** the widget API (`widgets/api.md` § 5, 12) plans a channel
+  version 7 with timelines and budgets; the brief wants one outside widget
+  now.
+- **Decision:** applet.json declares `widgets` (id, title, sizes, privacy);
+  the tree is `assets/widgets/<id>.json` in the package until the extension
+  writes `widgets/<id>.json` in its own data folder (its sandbox home),
+  which the shell watches and redraws. The tree is Dashi's elements: the six
+  shared ones, plus widget-only `Widget` (the root), `Row`, `Column`,
+  `Value`, `Dots`, `Spacer`, which the launcher refuses. `Text` and `Value`
+  may be `private`. Only installed, allowed, not disabled extensions show,
+  always in plain ink.
+- **Why:** no process needs to run for a widget to show, nothing new is
+  added to the protocol, and the file is as checked as a message would be.
+- **Cost:** no budgets and no press actions to the extension yet; a widget
+  updates as often as its extension writes the file.
+- **Undo:** `packages/applet/src/widgets.ts`, the widget elements in
+  `view/elements.ts`, `shell/src/widgets/lib/sources/extensions.ts`.
+
+### D405. One OKLCH for the inks and the accent; the lock keeps one look
+
+- **Date:** 2026-11-17. `v09/inks`, at the merge of `v09/accent`.
+- **Question:** the inks (`theme/lib/oklch.ts`) and the accent's guard
+  (`theme/accent/lib/oklch.ts`) carried the same OKLCH maths twice; and the
+  design draws a light lock screen on a light wallpaper (frame 5), while
+  Dashi's lock has one look, Dark's, over a darkened wallpaper.
+- **Decision:** one copy, `theme/lib/oklch.ts`, with the guard's `contrast`
+  and `over` moved in; `theme/accent/` imports it. The lock keeps its one
+  look: its widgets are glass (`#00000047`) with the Dark inks shifted for the
+  lock, and the Now Bar floods. Frame 5's light lock is not built.
+- **Why:** two copies of colour maths drift; a light lock needs the
+  wallpaper's luminance behind the clock, which the shell does not measure,
+  and the login screen shares the lock's one look.
+- **Undo:** the lock's `useWidgetEnvFor(..., { dark: true, lock: true })` in
+  `shell/src/lock/lib/screen.tsx`.
+
 ### D430. The accent is a seed the guard draws from, Kombu its absence
 
 - **Date:** 2026-11-17. `v09/accent`, the owner's design

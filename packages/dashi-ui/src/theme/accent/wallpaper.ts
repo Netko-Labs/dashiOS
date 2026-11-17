@@ -7,7 +7,7 @@
  * the seed their weighted lightness, chroma and hue.
  */
 
-import { hexToOklch, oklchToHex } from "./lib/oklch.ts";
+import { hexToOklch, oklchToHex } from "../lib/oklch.ts";
 
 const BINS = 36;
 /** Below this a pixel is grey, and below `DARK` lightness near black: neither votes. */

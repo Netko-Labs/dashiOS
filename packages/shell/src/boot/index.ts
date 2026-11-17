@@ -7,6 +7,7 @@ export { startCapsule } from "./capsule.tsx";
 export { WARM_AFTER_LOGIN_MS, warmWhenWanted } from "./corrections.ts";
 export { startArranging, startDesktops, startOverview } from "./desktop.ts";
 export { startDictating } from "./dictation.ts";
+export { startInks } from "./inks.ts";
 export { startKeys } from "./keys.ts";
 export { knownNames } from "./known-names.ts";
 export { startLauncher } from "./launcher.tsx";
