@@ -6,8 +6,9 @@
  * re-colors every GNOME app at once, so Files or Text Editor beside a
  * Dashi-decorated window read as one desktop: the headerbar is the very color
  * comp's render/titlebar.rs paints a title bar (#EEEBE4 / #141417 active,
- * #F6F4EF / #0B0B0D inactive), the accent is the shell's kombu (theme.ts `selection`),
- * and destructive is ume.
+ * #F6F4EF / #0B0B0D inactive), the accent is the person's (theme.ts
+ * `selection`, as the guard draws it in each mode, with its `onAccent` words;
+ * Kombu by default), and destructive is ume.
  *
  * Two spellings, because versions differ: `@define-color window_bg_color`
  * (every libadwaita, and GTK 3) and the custom property `--window-bg-color`
@@ -15,17 +16,19 @@
  * there; both are written so a version that reads only one still follows).
  */
 
-import { TRUE_BLACK as BLACK, lightColors } from "@dashi/ui";
+import { TRUE_BLACK as BLACK, drawAccent, isKombu, lightColors } from "@dashi/ui";
 import { CORNER_RADIUS, DEFAULT_CORNERS } from "./corners.ts";
 
-/** What the block depends on: Dark Mode and the Appearance setting's window corners. */
+/** What the block depends on: Dark Mode, the Appearance setting's window corners, and the accent. */
 export interface GtkStyle {
   dark: boolean;
   /** Logical pixels; the compositor rounds every window to the same radius (IPC `chrome {radius}`). */
   radius: number;
+  /** The accent's seed (appearance/accent.ts); null is Kombu. */
+  accent: string | null;
 }
 
-export const DEFAULT_STYLE: GtkStyle = { dark: false, radius: CORNER_RADIUS[DEFAULT_CORNERS] };
+export const DEFAULT_STYLE: GtkStyle = { dark: false, radius: CORNER_RADIUS[DEFAULT_CORNERS], accent: null };
 
 /** The libadwaita named colors Dashi sets; the custom property is the same name with dashes. */
 type Surface = "window" | "view" | "headerbar" | "sidebar" | "secondary_sidebar" | "card" | "dialog" | "popover" | "thumbnail";
@@ -34,8 +37,18 @@ type ColorName = `${Status}_${"bg" | "fg"}_color` | `${Surface}_${"bg" | "fg"}_c
 export type NamedColors = Readonly<Record<ColorName, string>>;
 type StatusColors = Pick<NamedColors, `${Status}_${"bg" | "fg"}_color`>;
 
-/** The accent: the shell's kombu green, the color of a selected row in every Dashi list. */
+/** Kombu, Dashi's own accent: the colour of a selected row in every Dashi list until the person picks another. */
 export const ACCENT = lightColors.selection;
+
+/** The accent's fill as Light draws it, the one colour toolkits that take a single accent get; Kombu with no seed. */
+export const accentFill = (seed: string | null): string => (seed === null || isKombu(seed) ? ACCENT : drawAccent(seed, false).fill);
+
+/** The accent pair in a mode: Kombu's as it always was, else the guard's fill and the words on it. */
+function accentPair(seed: string | null, dark: boolean): Pick<NamedColors, "accent_bg_color" | "accent_fg_color"> {
+  if (seed === null || isKombu(seed)) return { accent_bg_color: ACCENT, accent_fg_color: "#ffffff" };
+  const drawn = drawAccent(seed, dark);
+  return { accent_bg_color: drawn.fill, accent_fg_color: drawn.on };
+}
 
 /**
  * Same in both modes: the accent, the destructive ume (comp's close light),
@@ -114,8 +127,8 @@ const DARK: NamedColors = {
   thumbnail_fg_color: BLACK.ink,
 };
 
-export function gtkColors(dark: boolean): NamedColors {
-  return dark ? DARK : LIGHT;
+export function gtkColors(dark: boolean, accent: string | null = null): NamedColors {
+  return { ...(dark ? DARK : LIGHT), ...accentPair(accent, dark) };
 }
 
 /**
@@ -163,18 +176,20 @@ toolbarview > .top-bar:not(.raised):backdrop { background-color: var(--headerbar
  * rewriting anything. `--window-radius` is the corner libadwaita draws on a
  * window it decorates itself; it is the compositor's radius so the two agree.
  */
-export function gtk4Colors(radius: number): string {
-  return `${defineColors(LIGHT)}
+export function gtk4Colors(radius: number, accent: string | null = null): string {
+  const light = gtkColors(false, accent);
+  const dark = gtkColors(true, accent);
+  return `${defineColors(light)}
 @media (prefers-color-scheme: dark) {
-${defineColors(DARK, "  ")}
+${defineColors(dark, "  ")}
 }
 :root {
-${customProperties(LIGHT, "  ")}
+${customProperties(light, "  ")}
   --window-radius: ${radius}px;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-${customProperties(DARK, "    ")}
+${customProperties(dark, "    ")}
   }
 }
 ${FLAT_TOP_BARS}`;
@@ -184,8 +199,8 @@ ${FLAT_TOP_BARS}`;
  * GTK 3: no media queries, so the mode in force. `adw-gtk3` and
  * `adw-gtk3-dark` are the theme (apps.ts); these names recolor either.
  */
-export function gtk3Colors(dark: boolean): string {
-  return defineColors(gtkColors(dark));
+export function gtk3Colors(dark: boolean, accent: string | null = null): string {
+  return defineColors(gtkColors(dark, accent));
 }
 
 /**
