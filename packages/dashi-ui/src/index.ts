@@ -85,6 +85,7 @@ export {
   drawAccent,
   isAccentChoice,
   isAccentHex,
+  isGuardedHue,
   isKombu,
   isTextSize,
   KOMBU_SEED,

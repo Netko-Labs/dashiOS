@@ -118,7 +118,7 @@ function Privacy({ ctx }: { ctx: PaneContext }) {
 function Pane({ id, ctx }: { id: PaneId; ctx: PaneContext }) {
   switch (id) {
     case "appearance":
-      return <AppearancePane flags={ctx.flags} settings={ctx.settings} />;
+      return <AppearancePane flags={ctx.flags} settings={ctx.settings} {...(ctx.pickPixel ? { pick: ctx.pickPixel } : {})} />;
     case "wallpaper":
       return <WallpaperPane settings={ctx.settings} chooser={ctx.chooser} />;
     case "displays":

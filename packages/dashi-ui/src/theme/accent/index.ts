@@ -10,6 +10,7 @@ export {
   drawAccent,
   isAccentChoice,
   isAccentHex,
+  isGuardedHue,
   isKombu,
   KOMBU_SEED,
   seedOf,

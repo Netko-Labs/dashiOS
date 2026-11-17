@@ -11,7 +11,7 @@
  * purple, the microphone, errors, buttons (ink) or the Dock's dot.
  */
 
-import { derive, type GuardOptions, type Mode, type Move, steps } from "./lib/guard.ts";
+import { derive, FIXED, type GuardOptions, hueGap, type Mode, type Move, RULE, steps } from "./lib/guard.ts";
 import { hexToOklch } from "./lib/oklch.ts";
 
 export interface AccentPreset {
@@ -133,4 +133,12 @@ export function accentSentence(seed: string, dark: boolean): string {
   if (moved.includes("agent")) return `Purple is the agents' and the keyboard's, so yours is moved toward ${hexToOklch(drawn).H > 288 ? "pink" : "blue"}.`;
   if (moved.includes("contrast")) return `${dark ? "Drawn lighter on Dark" : "Drawn deeper on Light"} so words and switches stay readable.`;
   return "";
+}
+
+const SHISO_HUE = hexToOklch(FIXED.shiso.light).H;
+
+/** Whether a loud colour of this hue would be moved by the guard (the tally's band, or near the agents' purple): the picker marks these. */
+export function isGuardedHue(hex: string): boolean {
+  const { H } = hexToOklch(hex);
+  return (H >= RULE.signal[0] && H <= RULE.signal[1]) || hueGap(H, SHISO_HUE) < RULE.agentGap;
 }

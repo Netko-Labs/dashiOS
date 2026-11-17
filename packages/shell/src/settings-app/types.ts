@@ -1,3 +1,4 @@
+import type { AccentChoice } from "@dashi/ui";
 /**
  * What Settings reads out of the settings file: one interface per section, and
  * `SettingsData`, the whole file as Settings understands it. The file's layout
@@ -58,6 +59,8 @@ export interface AppearanceSettings {
   textSize?: number;
   /** How X11 apps meet a scaled screen (xwayland-scale.ts); sharp when not set. */
   x11Apps?: X11Scaling;
+  /** The colour of what is on or chosen (appearance/accent.ts); Kombu when not set. */
+  accent?: AccentChoice;
 }
 
 /** `appearance.wallpaper`: what the desktop shows behind everything, and the photos the person added. */

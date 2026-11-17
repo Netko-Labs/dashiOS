@@ -1,12 +1,12 @@
 /** The rows of Appearance and Wallpaper. */
 
-import { DEFAULT_TEXT_SIZE, TEXT_SIZES } from "@dashi/ui";
+import { ACCENT_PRESETS, type AccentChoice, DEFAULT_TEXT_SIZE, isAccentChoice, TEXT_SIZES } from "@dashi/ui";
 import { CORNER_NAMES, type CornerName, DEFAULT_CORNERS, DEFAULT_POINTER_SIZE, POINTER_SIZES } from "../../shared/appearance/index.ts";
-import { BATTERY, CONTRAST, CORNER, DISPLAY, IMAGE, MOON, MOTION, POINTER, RING, TEXT, VIDEO } from "../../shared/settings/index.ts";
+import { BATTERY, CONTRAST, CORNER, DISPLAY, DROP, IMAGE, MOON, MOTION, POINTER, RING, TEXT, VIDEO } from "../../shared/settings/index.ts";
 import { DEFAULT_WALLPAPER_MODE } from "../../wallpaper/catalog.ts";
 import { DEFAULT_FRAME_RATE, FRAME_RATES } from "../../wallpaper/live/choice.ts";
-import type { ChoiceOption, RowDef } from "./types.ts";
-import { flag, storedChoice, storedSwitch } from "./values.ts";
+import type { Binding, ChoiceOption, RowDef } from "./types.ts";
+import { choiceSchema, flag, storedChoice, storedSwitch } from "./values.ts";
 
 const CORNER_LABELS: Record<CornerName, string> = { none: "None", small: "Small", medium: "Medium", large: "Large" };
 export const CORNER_OPTIONS: readonly ChoiceOption[] = CORNER_NAMES.map((value) => ({ value, label: CORNER_LABELS[value] }));
@@ -20,6 +20,27 @@ const WALLPAPER_MODE_OPTIONS: readonly ChoiceOption[] = [
   { value: "fit", label: "Fit" },
   { value: "center", label: "Center" },
 ];
+/** The accent's named picks, as agents and links give them: a preset, or the wallpaper's (a colour of their own is the person's, in the pane). */
+export const ACCENT_OPTIONS: readonly ChoiceOption[] = [
+  ...ACCENT_PRESETS.map((preset) => ({ value: preset.id, label: preset.name })),
+  { value: "wallpaper", label: "Wallpaper" },
+];
+
+/** `appearance.accent`: Kombu is no setting; a colour reads as its hex. */
+const ACCENT: Binding = {
+  schema: choiceSchema(ACCENT_OPTIONS),
+  key: "appearance.accent",
+  fallback: "kombu",
+  get: (stores) => {
+    const accent: unknown = stores.settings.getSnapshot().data.appearance.accent;
+    if (!isAccentChoice(accent)) return "kombu";
+    return "preset" in accent ? accent.preset : "custom" in accent ? accent.custom : "wallpaper";
+  },
+  set: (stores, value) => {
+    const accent: AccentChoice | undefined = value === "kombu" ? undefined : value === "wallpaper" ? { wallpaper: true } : { preset: String(value) };
+    stores.settings.patch("appearance", { accent });
+  },
+};
 const FRAME_RATE_OPTIONS: readonly ChoiceOption[] = FRAME_RATES.map((rate) => ({ value: rate, label: `${rate} fps` }));
 export const APPEARANCE_ROWS = [
   {
@@ -31,6 +52,18 @@ export const APPEARANCE_ROWS = [
     kind: "switch",
     value: flag("dark"),
     agent: "dark_mode",
+  },
+  {
+    id: "appearance/accent",
+    glyph: DROP,
+    title: "Accent colour",
+    detail: "Selection, switches, links and the active window's ring.",
+    keywords: ["accent", "accent color", "color", "colour", "highlight color", "selection color", "theme color"],
+    kind: "choice",
+    stack: true,
+    options: ACCENT_OPTIONS,
+    value: ACCENT,
+    agent: "accent_colour",
   },
   {
     id: "appearance/automatic",
@@ -57,7 +90,7 @@ export const APPEARANCE_ROWS = [
     id: "appearance/highlight-active-window",
     glyph: RING,
     title: "Highlight the active window",
-    detail: "A ring around the window you're typing in.",
+    detail: "A ring in the accent colour around the window you're typing in.",
     keywords: ["active window", "focus ring", "highlight"],
     kind: "switch",
     value: storedSwitch("appearance", "highlightActiveWindow", false),
