@@ -26,7 +26,7 @@ export {
 } from "./machine.ts";
 export { chooseMenuItem, listMenus } from "./menus.ts";
 export { appendToNote, createNote, deleteNote, editNote, listNotes, readNote, searchNotesTool } from "./notes.ts";
-export { clearNotifications, dismissNotification, listNotifications } from "./notifications.ts";
+export { clearNotifications, dismissNotification, listNotifications, listWidgets } from "./notifications.ts";
 export { forceQuitApp, lockScreen } from "./quit.ts";
 export { recordScreen } from "./record.ts";
 export { getRegionSettings, openSetupAssistant, setClock24Hour, setRegionFormats, setTimeZone } from "./region.ts";

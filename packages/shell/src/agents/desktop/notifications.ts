@@ -1,6 +1,7 @@
 /** Notifications as agents see them: cut short and cleaned, newest first. */
 
 import { clean, type HistoryEntry, plainBody, type Urgency } from "../../notifications/index.ts";
+import { widgetFacts, widgetHub } from "../../widgets/index.ts";
 import { json, type RunContext, type ToolResult, text, toolError } from "../context.ts";
 
 /** How much of a body an agent gets; the store keeps up to a thousand characters. */
@@ -56,4 +57,11 @@ export function clearNotifications(ctx: RunContext): ToolResult {
   ctx.status("Clearing your notifications");
   const count = ctx.desktop.notifications.remove();
   return text(count === 0 ? "There were no notifications to clear." : `Cleared ${count} ${count === 1 ? "notification" : "notifications"}.`);
+}
+
+/** The person's widgets in words, and what is on air (the tally): what the notification area shows them. */
+export function listWidgets(ctx: RunContext): ToolResult {
+  ctx.status("Reading your widgets");
+  const hub = widgetHub();
+  return hub ? json(widgetFacts(hub)) : toolError("The widgets aren't running in this session.");
 }

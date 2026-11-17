@@ -6160,3 +6160,20 @@ short words, as the rulebook is written.
   window was installed to look at.
 - **Undo:** `accentPair` in `shared/appearance/gtk-colors.ts`, `accentFill`
   in the portal's `settingsTable`, `AppThemeSync.apply`'s accent.
+
+### D405. One OKLCH for the inks and the accent; the lock keeps one look
+
+- **Date:** 2026-11-17. `v09/inks`, at the merge of `v09/accent`.
+- **Question:** the inks (`theme/lib/oklch.ts`) and the accent's guard
+  (`theme/accent/lib/oklch.ts`) carried the same OKLCH maths twice; and the
+  design draws a light lock screen on a light wallpaper (frame 5), while
+  Dashi's lock has one look, Dark's, over a darkened wallpaper.
+- **Decision:** one copy, `theme/lib/oklch.ts`, with the guard's `contrast`
+  and `over` moved in; `theme/accent/` imports it. The lock keeps its one
+  look: its widgets are glass (`#00000047`) with the Dark inks shifted for the
+  lock, and the Now Bar floods. Frame 5's light lock is not built.
+- **Why:** two copies of colour maths drift; a light lock needs the
+  wallpaper's luminance behind the clock, which the shell does not measure,
+  and the login screen shares the lock's one look.
+- **Undo:** the lock's `useWidgetEnvFor(..., { dark: true, lock: true })` in
+  `shell/src/lock/lib/screen.tsx`.

@@ -1,0 +1,10 @@
+{
+  "t": "Widget",
+  "i": "moon",
+  "p": { "title": "Moon", "detail": "tonight" },
+  "c": [
+    { "t": "Spacer", "i": "s" },
+    { "t": "Value", "i": "v", "p": { "text": "–", "unit": "%" } },
+    { "t": "Text", "i": "n", "p": { "text": "Waiting for the first look" } }
+  ]
+}

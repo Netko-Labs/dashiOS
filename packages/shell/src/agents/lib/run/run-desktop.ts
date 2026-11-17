@@ -15,6 +15,7 @@ export const desktopHandlers = {
   list_notifications: (call, ctx) => desktop.listNotifications(call.limit, ctx),
   dismiss_notification: (call, ctx) => desktop.dismissNotification(call.id, ctx),
   clear_notifications: (_call, ctx) => desktop.clearNotifications(ctx),
+  list_widgets: (_call, ctx) => desktop.listWidgets(ctx),
   list_menus: (call, ctx) => desktop.listMenus(call.window, ctx),
   choose_menu_item: (call, ctx) => desktop.chooseMenuItem(call.window, call.menu, call.item, ctx),
   search_software: (call, ctx) => desktop.searchSoftware(call, ctx),
@@ -40,6 +41,7 @@ export const desktopHandlers = {
   | "list_notifications"
   | "dismiss_notification"
   | "clear_notifications"
+  | "list_widgets"
   | "list_menus"
   | "choose_menu_item"
   | "search_software"

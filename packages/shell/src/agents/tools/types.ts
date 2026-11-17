@@ -40,6 +40,7 @@ export type Call =
   | { name: "list_notifications"; limit: number }
   | { name: "dismiss_notification"; id: number }
   | { name: "clear_notifications" }
+  | { name: "list_widgets" }
   | { name: "get_settings" }
   /** A row of System Settings agents may change, by its registry name (settings-app/registry/), with a value its schema took. */
   | { name: "set_setting"; setting: string; value: boolean | string | number }

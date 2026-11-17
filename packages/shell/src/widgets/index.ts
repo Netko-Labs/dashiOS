@@ -4,6 +4,7 @@ export { DASHI_WIDGETS, inkWhat, printsIn, resizeTag, widgetInfo } from "./catal
 export { WidgetColumn, type WidgetColumnProps } from "./column.tsx";
 export { EDIT_HINT, EditWidgets, GalleryPanel } from "./edit.tsx";
 export { type WidgetEnv, WidgetEnvProvider } from "./env.tsx";
+export { type WidgetFacts, widgetFacts } from "./facts.ts";
 export { GALLERY } from "./gallery.tsx";
 export { Glance, glanceNudge } from "./glance.tsx";
 export { type HubNeeds, type HubNotice, setWidgetHub, WidgetHub, widgetHub } from "./hub.ts";
