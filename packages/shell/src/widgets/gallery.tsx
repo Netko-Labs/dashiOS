@@ -17,7 +17,7 @@ import { SIZE_ORDER, SPANS, sizeWord, span } from "./layout.ts";
 import { WidgetTile } from "./lib/views/widget.tsx";
 import type { WidgetInfo, WidgetSize } from "./types.ts";
 
-export const GALLERY = { width: 640, list: 240 } as const;
+export const GALLERY = { width: 700, list: 240 } as const;
 
 /** "Mini – Wide", or "Small · Wide" for two. */
 export function sizeRange(sizes: readonly WidgetSize[]): string {

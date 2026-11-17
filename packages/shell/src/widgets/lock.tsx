@@ -9,6 +9,7 @@
  */
 
 import { Svg, Text, View } from "@mirinjs/metal";
+import { useState } from "react";
 import { glyph, isGlyphName } from "../shared/inks/index.ts";
 import { onAirWords, useSecondTick } from "../tally/index.ts";
 import { Card } from "./card.tsx";
@@ -61,7 +62,8 @@ function DateRow({ now }: { now: number }) {
 /** The clock, its hours over its minutes (Metal draws Regular: Inter Display's thin cut waits on mirin, docs: for-mirin.md). */
 function StackedClock({ now, hour24 }: { now: number; hour24: boolean }) {
   const [hours, minutes] = clockText(now, hour24).split(":");
-  const line = (text: string) => <Text style={{ fontSize: 168, lineHeight: 160, color: INK }}>{text.padStart(2, "0")}</Text>;
+  // Two lines of 120 points: the design's 196 on the laptop's 1029-point screen leaves no room on a smaller one.
+  const line = (text: string) => <Text style={{ fontSize: 120, lineHeight: 112, color: INK }}>{hour24 ? text.padStart(2, "0") : text}</Text>;
   return (
     <View testID="lock-clock" style={{ flexDirection: "column", alignItems: "center" }}>
       {line(hours ?? "")}
@@ -76,7 +78,7 @@ export function LockHead() {
   const width = span(SPANS.compact.cols);
   const height = span(SPANS.compact.rows);
   return (
-    <View style={{ marginTop: 40, flexDirection: "column", alignItems: "center", gap: 14 }}>
+    <View style={{ marginTop: 28, flexDirection: "column", alignItems: "center", gap: 12 }}>
       <DateRow now={now} />
       <StackedClock now={now} hour24={hour24} />
       <View testID="lock-row" style={{ flexDirection: "row", gap: 12 }}>
@@ -96,12 +98,30 @@ export function LockHead() {
   );
 }
 
-/** The side column, on the left: the person's widgets in small, two by two. */
+/** How many of the side column's columns fit beside the clock's row on a screen `width` wide: two, one, or none. */
+export function sideColumns(width: number): 0 | 1 | 2 {
+  const row = 3 * span(SPANS.compact.cols) + 24;
+  const room = (width - row) / 2 - 48;
+  const small = span(SPANS.small.cols);
+  return room >= 2 * small + 16 ? 2 : room >= small ? 1 : 0;
+}
+
+/** The side column, on the left: the person's widgets in small, two by two where the screen has room, else one column of two. */
 export function LockSide({ placements, onPress }: { placements: readonly Placement[]; onPress: (placement: Placement) => void }) {
-  const side = lockSide(placements);
+  const [width, setWidth] = useState(0);
+  const columns = sideColumns(width);
+  const side = lockSide(placements).slice(0, columns * 2);
   const size = span(SPANS.small.cols);
   return (
-    <View testID="lock-side" style={{ position: "absolute", left: 48, top: 170, width: size * 2 + 16, flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
+    <View style={{ position: "absolute", left: 0, top: 0, right: 0, height: 1 }} onLayout={(bounds) => setWidth(bounds.width)}>
+      {columns === 0 ? null : <SideCards side={side} size={size} columns={columns} onPress={onPress} />}
+    </View>
+  );
+}
+
+function SideCards({ side, size, columns, onPress }: { side: readonly Placement[]; size: number; columns: 1 | 2; onPress: (placement: Placement) => void }) {
+  return (
+    <View testID="lock-side" style={{ position: "absolute", left: 48, top: 170, width: size * columns + 16 * (columns - 1), flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
       {side.map((each) => (
         <WidgetTile
           key={each.id}

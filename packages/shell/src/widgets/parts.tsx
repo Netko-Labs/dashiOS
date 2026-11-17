@@ -22,7 +22,7 @@ export function cut(text: string, max: number): string {
 export function Lab({ children, strong, max = 30 }: { children: string; strong?: boolean; max?: number }) {
   const c = useCard();
   return (
-    <Text numberOfLines={1} style={{ fontSize: 10.5, fontWeight: "semibold", color: strong ? c.ink : c.secondary }}>
+    <Text style={{ fontSize: 10.5, fontWeight: "semibold", color: strong ? c.ink : c.secondary }}>
       {cut(children.toUpperCase(), max)}
     </Text>
   );
@@ -31,7 +31,7 @@ export function Lab({ children, strong, max = 30 }: { children: string; strong?:
 export function Meta({ children, max = 32 }: { children: string; max?: number }) {
   const c = useCard();
   return (
-    <Text numberOfLines={1} style={{ fontSize: 11.5, color: c.tertiary }}>
+    <Text style={{ fontSize: 11.5, color: c.tertiary }}>
       {cut(children, max)}
     </Text>
   );

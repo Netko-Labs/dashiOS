@@ -78,10 +78,11 @@ export function TimerFace({ timer, size, air, live }: { timer: Timer; size: Widg
 }
 
 export function TimerWidget({ size }: { size: WidgetSize }) {
-  const { hub, tally } = useWidgetEnv();
+  const { hub } = useWidgetEnv();
   const timers = useSource(hub?.timers, []);
   const shown = timers.at(-1);
-  if (shown) return <TimerFace timer={shown} size={size} air={tally.holder === `timer:${shown.id}`} />;
+  // A running timer is the live card at the top of the area: it floods there, not here too.
+  if (shown) return <TimerFace timer={shown} size={size} air={false} />;
   return (
     <>
       <Head left={<Lab>Timer</Lab>} />
@@ -89,7 +90,7 @@ export function TimerWidget({ size }: { size: WidgetSize }) {
       <Words>Start one</Words>
       <View style={{ flexDirection: "row", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
         {QUICK_TIMERS.slice(0, size === "compact" ? 2 : 4).map((minutes) => (
-          <Btn key={minutes} label={`${minutes} min`} onPress={() => hub?.timers.start("Timer", minutes)} testID={`timer-start:${minutes}`} />
+          <Btn key={minutes} label={`${minutes} min`} onPress={() => hub?.timers.start(`${minutes} min`, minutes)} testID={`timer-start:${minutes}`} />
         ))}
       </View>
     </>
