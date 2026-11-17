@@ -139,36 +139,41 @@ export function LoginScreen(props: LoginScreenProps): ReactNode {
       </View>
       {/* In the flow, not pinned: on a short screen the buttons move down instead of over the field. */}
       <View style={{ flex: 0.6, minHeight: 24 }} />
-      {onPower && (
-        <View testID="login-power" style={{ marginBottom: 24, flexDirection: "row", justifyContent: "center", gap: POWER_GAP }}>
-          {POWER.map(({ what, label, confirm, glyph }) => (
-            // Tab reaches each after the field, and Space or Return presses it: the first press arms it, as a click does.
-            <View
-              key={what}
-              testID={`login-${what}`}
-              focusable
-              accessibilityRole="button"
-              accessibilityLabel={arming === what ? confirm : label}
-              onPress={() => press(what)}
-              style={{ flexDirection: "column", alignItems: "center", gap: 6, width: POWER_WIDTH, paddingVertical: 4, borderRadius: 12 }}
-            >
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: arming === what ? "#ffffff59" : "#ffffff26",
-                }}
-              >
-                <Svg markup={glyph} size={18} color={TEXT} />
-              </View>
-              <Text style={{ fontSize: 11, color: arming === what ? TEXT : MUTED }}>{arming === what ? confirm : label}</Text>
-            </View>
-          ))}
+      {onPower && <PowerRow arming={arming} press={press} />}
+    </View>
+  );
+}
+
+/** Sleep, Restart and Shut Down along the bottom, each asking for a second click. */
+function PowerRow({ arming, press }: { arming: PowerAction | null; press: (what: PowerAction) => void }): ReactNode {
+  return (
+    <View testID="login-power" style={{ marginBottom: 24, flexDirection: "row", justifyContent: "center", gap: POWER_GAP }}>
+      {POWER.map(({ what, label, confirm, glyph }) => (
+        // Tab reaches each after the field, and Space or Return presses it: the first press arms it, as a click does.
+        <View
+          key={what}
+          testID={`login-${what}`}
+          focusable
+          accessibilityRole="button"
+          accessibilityLabel={arming === what ? confirm : label}
+          onPress={() => press(what)}
+          style={{ flexDirection: "column", alignItems: "center", gap: 6, width: POWER_WIDTH, paddingVertical: 4, borderRadius: 12 }}
+        >
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: arming === what ? "#ffffff59" : "#ffffff26",
+            }}
+          >
+            <Svg markup={glyph} size={18} color={TEXT} />
+          </View>
+          <Text style={{ fontSize: 11, color: arming === what ? TEXT : MUTED }}>{arming === what ? confirm : label}</Text>
         </View>
-      )}
+      ))}
     </View>
   );
 }
