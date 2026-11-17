@@ -81,7 +81,14 @@ export class LauncherViews {
         if (action?.type !== "Action") return;
         return void Promise.resolve()
           .then(() => call(action.props.onSubmit, message.values))
-          .catch((error: unknown) => this.send({ type: "toast", seq: view.seq, style: "failed", title: String(error instanceof Error ? error.message : error).slice(0, 80) || "Failed" }));
+          .catch((error: unknown) =>
+            this.send({
+              type: "toast",
+              seq: view.seq,
+              style: "failed",
+              title: String(error instanceof Error ? error.message : error).slice(0, 80) || "Failed",
+            }),
+          );
       }
     }
   }

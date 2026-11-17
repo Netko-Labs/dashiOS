@@ -75,7 +75,13 @@ describe("PKCE", () => {
 
   test("the page's address carries the challenge and the state; the exchange the verifier, never a secret", () => {
     const url = new URL(authorizeUrl(PROVIDER, { redirect: "http://127.0.0.1:4000/callback", scopes: ["repo"], state: "s1", challenge: "c1" }));
-    expect(Object.fromEntries(url.searchParams)).toMatchObject({ client_id: "Iv1.dashi-example", code_challenge: "c1", code_challenge_method: "S256", state: "s1", scope: "repo" });
+    expect(Object.fromEntries(url.searchParams)).toMatchObject({
+      client_id: "Iv1.dashi-example",
+      code_challenge: "c1",
+      code_challenge_method: "S256",
+      state: "s1",
+      scope: "repo",
+    });
     const body = exchangeBody(PROVIDER, "the-code", "http://127.0.0.1:4000/callback", "v1");
     expect(body.get("code_verifier")).toBe("v1");
     expect(body.has("client_secret")).toBe(false);
@@ -88,7 +94,12 @@ describe("PKCE", () => {
     expect(tokensOf({ error: "bad_verification_code", error_description: "The code passed is incorrect or expired." }, 0)).toEqual({
       error: "The code passed is incorrect or expired.",
     });
-    expect(tokensOf({ access_token: "t", scope: "repo,read:org", refresh_token: "r", expires_in: 60 }, 1000)).toEqual({ token: "t", scopes: ["repo", "read:org"], refresh: "r", expires: 61_000 });
+    expect(tokensOf({ access_token: "t", scope: "repo,read:org", refresh_token: "r", expires_in: 60 }, 1000)).toEqual({
+      token: "t",
+      scopes: ["repo", "read:org"],
+      refresh: "r",
+      expires: 61_000,
+    });
   });
 });
 

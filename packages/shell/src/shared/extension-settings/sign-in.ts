@@ -96,7 +96,9 @@ export function signIn(provider: Provider, scopes: readonly string[], needs: Sig
         }
         const login = await loginOf(provider, tokens.token, needs.fetch);
         finish(login ? { ...tokens, login } : { error: `${provider.name} gave a token that doesn't work.` });
-        return PAGE(login ? `Connected to ${provider.name} as ${login}. You can close this tab and go back to Dashi.` : "That didn't work. You can close this tab.");
+        return PAGE(
+          login ? `Connected to ${provider.name} as ${login}. You can close this tab and go back to Dashi.` : "That didn't work. You can close this tab.",
+        );
       },
     });
     redirect = `http://127.0.0.1:${server.port}/callback`;

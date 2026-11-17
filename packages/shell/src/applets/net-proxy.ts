@@ -66,7 +66,9 @@ export interface NetProxy {
 
 function answer(socket: Socket<Link>, status: number, why: string): void {
   const body = `dashi: ${why}\n`;
-  socket.write(`HTTP/1.1 ${status} ${status === 405 ? "Method Not Allowed" : "Forbidden"}\r\nContent-Type: text/plain\r\nContent-Length: ${body.length}\r\nConnection: close\r\n\r\n${body}`);
+  socket.write(
+    `HTTP/1.1 ${status} ${status === 405 ? "Method Not Allowed" : "Forbidden"}\r\nContent-Type: text/plain\r\nContent-Length: ${body.length}\r\nConnection: close\r\n\r\n${body}`,
+  );
   socket.end();
 }
 

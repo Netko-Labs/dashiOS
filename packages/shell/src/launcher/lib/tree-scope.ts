@@ -145,7 +145,9 @@ class TreeScope {
     if (!node) return [];
     // The item's own actions, then the view's (its root's ActionPanel), each once.
     // A form's first action (its send) is ❖↩: Return in its fields moves to the next one (L8).
-    const own = panelVerbs(panelOf(node, root)).map((verb, at) => (root.t === "Form" && at === 0 && verb.key === KEYS.primary ? { ...verb, key: KEYS.secondary } : verb));
+    const own = panelVerbs(panelOf(node, root)).map((verb, at) =>
+      root.t === "Form" && at === 0 && verb.key === KEYS.primary ? { ...verb, key: KEYS.secondary } : verb,
+    );
     const view = node === root ? [] : panelVerbs(root.c.find((child) => child.t === "ActionPanel")).filter((verb) => !own.some((each) => each.id === verb.id));
     return [...own, ...view.map(({ key: _key, ...verb }) => verb)];
   };

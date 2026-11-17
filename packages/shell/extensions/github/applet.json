@@ -12,16 +12,9 @@
   },
   "license": "MIT",
   "source": "https://github.com/Netko-Labs/dashiOS",
-  "categories": [
-    "developer"
-  ],
-  "shows": [
-    "launcher"
-  ],
-  "permissions": [
-    "network:api.github.com",
-    "account:github.com"
-  ],
+  "categories": ["developer"],
+  "shows": ["launcher"],
+  "permissions": ["network:api.github.com", "account:github.com"],
   "preferences": [
     {
       "name": "repo",
@@ -41,41 +34,26 @@
     {
       "id": "pull-requests",
       "title": "Pull Requests",
-      "keywords": [
-        "github",
-        "pr",
-        "review"
-      ],
+      "keywords": ["github", "pr", "review"],
       "mode": "list"
     },
     {
       "id": "search-repos",
       "title": "Search GitHub Repositories",
-      "keywords": [
-        "github",
-        "repo",
-        "repository"
-      ],
+      "keywords": ["github", "repo", "repository"],
       "mode": "list"
     },
     {
       "id": "create-issue",
       "title": "Create Issue",
-      "keywords": [
-        "github",
-        "issue",
-        "bug",
-        "new"
-      ],
+      "keywords": ["github", "issue", "bug", "new"],
       "mode": "form"
     }
   ],
   "accounts": [
     {
       "provider": "github.com",
-      "scopes": [
-        "repo"
-      ]
+      "scopes": ["repo"]
     }
   ]
 }

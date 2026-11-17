@@ -96,7 +96,12 @@ export class TreeSession implements TreeView {
   }
 
   /** The extension is connected: it is sent `open`, with its accounts. */
-  started(command: string, args: Record<string, string | number | boolean>, preferences: Record<string, PreferenceValue>, accounts: Record<string, AccountGiven> = {}): void {
+  started(
+    command: string,
+    args: Record<string, string | number | boolean>,
+    preferences: Record<string, PreferenceValue>,
+    accounts: Record<string, AccountGiven> = {},
+  ): void {
     this.sent = true;
     this.command = command;
     this.draft = this.deps.drafts?.read(this.manifest.id, command) ?? {};
@@ -226,7 +231,9 @@ export class TreeSession implements TreeView {
       case "connect": {
         const asked = connectAsked(this.manifest, target, this.deps.accounts);
         if ("kind" in asked) return asked;
-        return this.deps.accounts ? startSignIn(this.manifest, asked, this.deps.accounts, () => void this.sendAccounts()) : { kind: "failed", error: "No accounts here" };
+        return this.deps.accounts
+          ? startSignIn(this.manifest, asked, this.deps.accounts, () => void this.sendAccounts())
+          : { kind: "failed", error: "No accounts here" };
       }
       case "set": {
         const preference = this.manifest.preferences.find((each) => each.name === target);

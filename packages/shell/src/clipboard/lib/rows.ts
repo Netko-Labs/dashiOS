@@ -95,7 +95,11 @@ export function entryPreview(entry: ClipEntry, now: number, image: string | null
       : entry.kind === "files"
         ? `Files · ${names.length}`
         : `Text · ${[...(entry.text ?? "")].length} characters`;
-  const facts = [...(entry.app ? [{ title: "From", text: entry.app }] : []), { title: "Copied", text: copiedWhen(entry.copiedAt, now) }, { title: "Kind", text: kind }];
+  const facts = [
+    ...(entry.app ? [{ title: "From", text: entry.app }] : []),
+    { title: "Copied", text: copiedWhen(entry.copiedAt, now) },
+    { title: "Kind", text: kind },
+  ];
   if (image) return { image, facts };
   return { text: entry.kind === "files" ? names.join("\n") : (entry.text ?? ""), facts };
 }

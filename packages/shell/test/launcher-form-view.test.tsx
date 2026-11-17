@@ -11,10 +11,10 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { type Manifest, parseManifest, parseTree, type ViewShellMessage } from "@dashi/applet";
 import { draftsInMemory } from "../src/applets/drafts.ts";
 import type { SessionAccounts } from "../src/applets/lib/tree-accounts.ts";
-import { TreeSession } from "../src/applets/lib/tree-session.ts";
 import { problemsOf, valuesOf } from "../src/applets/lib/tree-form.ts";
-import { treeScope } from "../src/launcher/lib/tree-scope.ts";
+import { TreeSession } from "../src/applets/lib/tree-session.ts";
 import { withLauncher } from "../src/launcher/keys.ts";
+import { treeScope } from "../src/launcher/lib/tree-scope.ts";
 import { mount, unmountLauncher } from "./launcher-harness.tsx";
 
 afterEach(() => unmountLauncher());
@@ -43,17 +43,26 @@ const FORM = (() => {
     i: "f",
     p: { draft: true },
     c: [
-      { t: "Dropdown", i: "repo", p: { name: "repo", title: "Repository", info: "The last one you used" }, c: [
-        { t: "Option", i: "o1", p: { title: "alexk/dotfiles", value: "alexk/dotfiles" } },
-        { t: "Option", i: "o2", p: { title: "alexk/notes", value: "alexk/notes" } },
-      ] },
+      {
+        t: "Dropdown",
+        i: "repo",
+        p: { name: "repo", title: "Repository", info: "The last one you used" },
+        c: [
+          { t: "Option", i: "o1", p: { title: "alexk/dotfiles", value: "alexk/dotfiles" } },
+          { t: "Option", i: "o2", p: { title: "alexk/notes", value: "alexk/notes" } },
+        ],
+      },
       { t: "TextField", i: "title", p: { name: "title", title: "Title", required: true, max: 20 } },
       { t: "TextArea", i: "body", p: { name: "body", title: "Description" } },
       { t: "TagPicker", i: "labels", p: { name: "labels", title: "Labels", value: ["bug"] }, c: [{ t: "Option", i: "o3", p: { title: "bug", value: "bug" } }] },
-      { t: "ActionPanel", i: "ap", c: [
-        { t: "Action", i: "send", p: { title: "Create Issue", kind: "submit" } },
-        { t: "Action", i: "connect", p: { title: "Connect GitHub…", kind: "connect", target: "github.com" } },
-      ] },
+      {
+        t: "ActionPanel",
+        i: "ap",
+        c: [
+          { t: "Action", i: "send", p: { title: "Create Issue", kind: "submit" } },
+          { t: "Action", i: "connect", p: { title: "Connect GitHub…", kind: "connect", target: "github.com" } },
+        ],
+      },
     ],
   });
   if ("error" in parsed) throw new Error(parsed.error);
@@ -93,7 +102,14 @@ describe("the form in the launcher", () => {
     const { view } = session();
     const scope = treeScope("Create Issue", view);
     const launcher = await mount({ entries: [], scopes: [scope], scope: scope.id });
-    for (const id of ["launcher:form", "launcher:form:repo:button", "launcher:form:title:input", "launcher:form:body:input", "launcher:form:labels:tag:bug", "launcher:form:draft"])
+    for (const id of [
+      "launcher:form",
+      "launcher:form:repo:button",
+      "launcher:form:title:input",
+      "launcher:form:body:input",
+      "launcher:form:labels:tag:bug",
+      "launcher:form:draft",
+    ])
       expect(launcher.has(id)).toBe(true);
     expect(launcher.tree()).toContain("The last one you used");
     expect(launcher.tree()).toContain("Create Issue");
@@ -152,7 +168,15 @@ describe("the form in the launcher", () => {
     const asked: string[] = [];
     const accounts: SessionAccounts = {
       given: async () => ({}),
-      rows: () => [{ provider: { id: "github.com", name: "GitHub", authorize: "", token: "", user: "", clientId: "Iv1.example", kept: "The key is in your keyring." }, id: "github.com", scopes: ["repo"], login: null, asked: asked.length > 0 }],
+      rows: () => [
+        {
+          provider: { id: "github.com", name: "GitHub", authorize: "", token: "", user: "", clientId: "Iv1.example", kept: "The key is in your keyring." },
+          id: "github.com",
+          scopes: ["repo"],
+          login: null,
+          asked: asked.length > 0,
+        },
+      ],
       agreed: (_, provider) => void asked.push(provider),
       connect: async () => ({ login: "alexk" }),
       paste: async () => ({ login: "alexk" }),

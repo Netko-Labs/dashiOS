@@ -39,7 +39,12 @@ export const providerOf = (manifest: Manifest, provider: string, accounts: Sessi
   accounts?.rows(manifest).find((each) => each.id === provider)?.provider ?? null;
 
 /** Signs in (the browser opens) and says how it went when it is done; the launcher closes meanwhile. */
-export function startSignIn(manifest: Manifest, provider: Provider, accounts: SessionAccounts, done: (outcome: { login: string } | { error: string }) => void): TreeActed {
+export function startSignIn(
+  manifest: Manifest,
+  provider: Provider,
+  accounts: SessionAccounts,
+  done: (outcome: { login: string } | { error: string }) => void,
+): TreeActed {
   accounts.agreed(manifest, provider.id);
   void accounts.connect(manifest, provider).then(done, (error: unknown) => done({ error: String(error) }));
   return { kind: "done", close: true, notice: `Sign in to ${provider.name} in Helium` };

@@ -78,7 +78,11 @@ export function CreateIssue() {
           <Form.TagPicker.Item key={label} title={label} value={label} />
         ))}
       </Form.TagPicker>
-      {!token && <Form.Description text={`Not connected to GitHub: ❖↩ shows what would be sent, and sends nothing.${account.connected ? "" : " ❖K › Connect GitHub…"}`} />}
+      {!token && (
+        <Form.Description
+          text={`Not connected to GitHub: ❖↩ shows what would be sent, and sends nothing.${account.connected ? "" : " ❖K › Connect GitHub…"}`}
+        />
+      )}
     </Form>
   );
 }

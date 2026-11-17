@@ -13,8 +13,8 @@ import type { FieldValue, ViewNode } from "@dashi/applet";
 import { useColors, useSurface } from "@dashi/ui";
 import { Text, TextInput, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { nameOf } from "./form-fields.ts";
 import { CheckboxField, DropdownField, TagPickerField } from "./form-choices.tsx";
+import { nameOf } from "./form-fields.ts";
 import type { Measures } from "./measures.ts";
 import type { FormPart } from "./tree-rows.ts";
 
@@ -27,10 +27,35 @@ const words = (node: ViewNode, name: string): string | undefined => {
 };
 
 /** A label, the field, and the line under it. */
-function Line({ label, under, wrong, m, children, testID }: { label: string; under?: string; wrong?: boolean; m: Measures; children: ReactNode; testID: string }) {
+function Line({
+  label,
+  under,
+  wrong,
+  m,
+  children,
+  testID,
+}: {
+  label: string;
+  under?: string;
+  wrong?: boolean;
+  m: Measures;
+  children: ReactNode;
+  testID: string;
+}) {
   const colors = useColors();
   return (
-    <View testID={testID} style={{ flexDirection: "row", gap: FORM.gap, alignItems: "flex-start", paddingLeft: FORM.padX, paddingRight: FORM.padX, paddingTop: FORM.padY, paddingBottom: FORM.padY }}>
+    <View
+      testID={testID}
+      style={{
+        flexDirection: "row",
+        gap: FORM.gap,
+        alignItems: "flex-start",
+        paddingLeft: FORM.padX,
+        paddingRight: FORM.padX,
+        paddingTop: FORM.padY,
+        paddingBottom: FORM.padY,
+      }}
+    >
       <View style={{ width: FORM.label, paddingTop: 6, alignItems: "flex-end" }}>
         <Text numberOfLines={1} style={{ fontSize: m.detail, color: colors.textMuted }}>
           {label}

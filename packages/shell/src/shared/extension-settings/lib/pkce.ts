@@ -12,7 +12,10 @@ import type { Provider } from "../providers.ts";
 const base64url = (bytes: Uint8Array): string => Buffer.from(bytes).toString("base64url");
 
 /** A verifier (43 characters of 32 random bytes) and its S256 challenge. */
-export function pkcePair(random: (size: number) => Uint8Array = (size) => crypto.getRandomValues(new Uint8Array(size))): { verifier: string; challenge: string } {
+export function pkcePair(random: (size: number) => Uint8Array = (size) => crypto.getRandomValues(new Uint8Array(size))): {
+  verifier: string;
+  challenge: string;
+} {
   const verifier = base64url(random(32));
   return { verifier, challenge: challengeOf(verifier) };
 }

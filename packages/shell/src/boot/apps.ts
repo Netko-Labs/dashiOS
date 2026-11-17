@@ -9,7 +9,6 @@ import { appletDataRoot } from "@dashi/applet";
 import { AppCatalog } from "../app-catalog.ts";
 import { type AppMenus, ownerPids, startAppMenus } from "../app-menus/index.ts";
 import { AppletCommands, AppletControls, AppletPopovers, AppletPower, DraftFiles, ExtensionViews, popoverScreen, startApplets } from "../applets/index.ts";
-import { ExtensionAccounts, PreferenceStore } from "../shared/extension-settings/index.ts";
 import { appFor, launch } from "../apps.ts";
 import { startBatteryMonitor } from "../battery/index.ts";
 import type { Compositor, CompositorWindow } from "../compositor/index.ts";
@@ -26,6 +25,7 @@ import { PortalSheets, pinNextLauncher, startPortalHost } from "../portal-host/i
 import { startSharePicker } from "../share-picker/index.ts";
 import type { Entry } from "../shared/app-entries/index.ts";
 import { type App, dockDefaults } from "../shared/apps/index.ts";
+import { ExtensionAccounts, PreferenceStore } from "../shared/extension-settings/index.ts";
 import { mayServeTray } from "../system/index.ts";
 import type { ToplevelStore } from "../toplevels.ts";
 import { startTray } from "../tray/index.ts";

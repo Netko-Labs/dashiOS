@@ -3,6 +3,7 @@
 
 export { isRefusal, type Refusal } from "@dashi/shape";
 export { isInsidePath } from "@dashi/shape/kit";
+export { type AccountWanted, accountsOf, parseAccounts } from "./accounts.ts";
 export { type Appearance, appearance, appearancePath, darkFrom } from "./appearance.ts";
 export {
   type CatalogIndex,
@@ -116,13 +117,12 @@ export {
   POWER_MODE_PERMISSION,
   parsePermission,
   permissionName,
-  REACH,
   proxiedHosts,
+  REACH,
   refusedProvider,
   usesNetwork,
   widens,
 } from "./permissions.ts";
-export { type AccountWanted, accountsOf, parseAccounts } from "./accounts.ts";
 export { metalHost, type OpenPopover, openPopoverWindow, POPOVER_RADIUS, PopoverGround, type PopoverKeyboard, popoverSurface } from "./popover.tsx";
 export {
   isPowerChoice,
@@ -166,8 +166,8 @@ export {
 export { generateKeys, type KeyPair, parsePublicKey, publicKeyLine, sign, verify } from "./signing/index.ts";
 export { readTar, writeTar } from "./tar.ts";
 export {
-  type AccountGiven,
   ACTION_KINDS,
+  type AccountGiven,
   type ActionKind,
   applyPatch,
   diffTrees,

@@ -45,7 +45,19 @@ export function PreviewColumn({ preview, m }: { preview: RowPreview | undefined;
   return (
     <View
       testID="launcher:preview"
-      style={{ width: PREVIEW_WIDTH, flexShrink: 0, flexDirection: "column", gap: 10, borderLeftWidth: 1, borderColor: colors.separator, paddingTop: 8, paddingBottom: 8, paddingLeft: 14, paddingRight: 12, overflow: "hidden" }}
+      style={{
+        width: PREVIEW_WIDTH,
+        flexShrink: 0,
+        flexDirection: "column",
+        gap: 10,
+        borderLeftWidth: 1,
+        borderColor: colors.separator,
+        paddingTop: 8,
+        paddingBottom: 8,
+        paddingLeft: 14,
+        paddingRight: 12,
+        overflow: "hidden",
+      }}
     >
       {preview && <Words preview={preview} m={m} />}
       {preview?.facts.map((fact) => (

@@ -28,7 +28,11 @@ export function startOf(field: ViewNode): FieldValue {
 }
 
 /** Each field's value by name: typed (`held`), else kept (`draft`), else where it starts. A kept value of the wrong kind is dropped. */
-export function valuesOf(root: ViewNode, held: Readonly<Record<string, FieldValue>>, draft: Readonly<Record<string, FieldValue>> = {}): Record<string, FieldValue> {
+export function valuesOf(
+  root: ViewNode,
+  held: Readonly<Record<string, FieldValue>>,
+  draft: Readonly<Record<string, FieldValue>> = {},
+): Record<string, FieldValue> {
   const out: Record<string, FieldValue> = {};
   for (const field of fieldsOf(root)) {
     const name = nameOf(field);

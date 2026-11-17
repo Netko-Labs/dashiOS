@@ -71,7 +71,8 @@ if (plan.proxy) {
 }
 
 // Held to its hosts: the proxy listens before the sandbox binds its folder (this process is outside it, with the network).
-const net = plan.net ? (mkdirSync(dirname(plan.net.socket), { recursive: true, mode: 0o700 }), startNetProxy({ socket: plan.net.socket, hosts: plan.net.hosts })) : null;
+if (plan.net) mkdirSync(dirname(plan.net.socket), { recursive: true, mode: 0o700 });
+const net = plan.net ? startNetProxy({ socket: plan.net.socket, hosts: plan.net.hosts }) : null;
 
 const sandbox = Bun.spawn([bwrap, ...plan.bwrap], { stdout: "inherit", stderr: "inherit", stdin: "ignore" });
 for (const signal of ["SIGTERM", "SIGINT", "SIGHUP"] as const) process.on(signal, () => sandbox.kill(signal));

@@ -18,6 +18,7 @@ import { AppWindow, ToolbarButton } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useAppletState } from "./applets/rows.tsx";
+import { useSettingsOpen } from "./applets/settings-open.ts";
 import { BACK } from "./glyphs.ts";
 import { StaleContext } from "./hooks.ts";
 import { canGoBack, push } from "./nav.ts";
@@ -57,6 +58,7 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const appletState = useAppletState();
   const { nav, setNav, query, setQuery, filtering, go, goBack } = useNavigation(initialQuery, initialPage);
+  const settings = useSettingsOpen();
   const sheets = useWindowSheets({ store, applets, restart, logOut, appletState, index, packages });
   const actions = useWindowActions({ store, applets, catalog, index, openUrl, setNav, enqueue: sheets.enqueue, setPicture: sheets.setPicture });
   const [stale, setStale] = useState(0);
@@ -64,7 +66,6 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
   // The page's width (the window less its sidebar): under 600 the toolbar is compact.
   const [pageWidth, setPageWidth] = useState(820);
   const compact = isCompact(pageWidth);
-
   const checkForUpdates = useUpdateChecks(store, applets, followApplets);
 
   const systemUpdates = state.system?.updates.length ?? 0;
@@ -78,7 +79,7 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
     store,
     applets,
     state,
-    blocked: sheets.asks.length > 0 || state.failure !== null || sheets.catalogs || sheets.sources,
+    blocked: sheets.asks.length > 0 || state.failure !== null || sheets.catalogs || sheets.sources || settings !== null,
     actions,
     askSystem,
     openSources: sheets.openSources,
@@ -114,7 +115,7 @@ export function SoftwareWindow({ initialQuery = "", initialPage }: { initialQuer
               onCheckUpdates={checkForUpdates}
             />
           }
-          overlay={windowOverlay({ sheets, failure: state.failure, applets, appletImages })}
+          overlay={windowOverlay({ sheets, settings, openUrl, failure: state.failure, applets, appletImages })}
         >
           <View testID="page-room" onLayout={(bounds) => setPageWidth(bounds.width)} style={{ flex: 1, minHeight: 0, flexDirection: "column" }}>
             <PageView

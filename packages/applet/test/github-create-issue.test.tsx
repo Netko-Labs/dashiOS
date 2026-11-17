@@ -74,7 +74,13 @@ test("without an account: the form is taken by the shell, and a send is a dry ru
   expect(parseTree(JSON.parse(JSON.stringify(form)))).not.toHaveProperty("error");
   expect(findNode(form, "k:title") ?? form.c.find((node) => node.p.name === "title")).toBeDefined();
   expect(JSON.stringify(form)).toContain("Create Issue (Dry Run)");
-  views.receive({ type: "event", seq: 1, on: "submit", node: submitOf(form), values: { repo: "alexk/notes", title: "The filter forgets", body: "", labels: ["bug"] } });
+  views.receive({
+    type: "event",
+    seq: 1,
+    on: "submit",
+    node: submitOf(form),
+    values: { repo: "alexk/notes", title: "The filter forgets", body: "", labels: ["bug"] },
+  });
   await flush(40);
   const pushed = sent.findLast((message) => message.type === "push");
   expect(pushed?.type === "push" && pushed.root.t).toBe("Detail");

@@ -1,4 +1,16 @@
-export { ACTION_KINDS, type ActionKind, ELEMENTS, type ElementType, FIELDS, type FieldType, isElementType, ROOTS, TONES, type Tone, TREE_LIMITS } from "./elements.ts";
+export {
+  ACTION_KINDS,
+  type ActionKind,
+  ELEMENTS,
+  type ElementType,
+  FIELDS,
+  type FieldType,
+  isElementType,
+  ROOTS,
+  TONES,
+  type Tone,
+  TREE_LIMITS,
+} from "./elements.ts";
 export {
   applyPatch,
   diffTrees,

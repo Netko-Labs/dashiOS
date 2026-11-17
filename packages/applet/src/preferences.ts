@@ -46,10 +46,16 @@ function parsePreference(value: unknown, where: string): Preference | Refusal {
   const description = optionalText(fields.description, `${where}: description`, 120);
   if (isRefusal(description)) return description;
   if (fields.required !== undefined && typeof fields.required !== "boolean") return refuse(`${where}: required must be true or false`);
-  const options = type === "dropdown" ? parseOptions(fields.options, `${where}: options`) : fields.options === undefined ? undefined : refuse(`${where}: only a dropdown has options`);
+  const options =
+    type === "dropdown"
+      ? parseOptions(fields.options, `${where}: options`)
+      : fields.options === undefined
+        ? undefined
+        : refuse(`${where}: only a dropdown has options`);
   if (isRefusal(options)) return options;
   const fallback = fields.default;
-  if (options && typeof fallback === "string" && !options.some((each) => each.value === fallback)) return refuse(`${where}: default must be one of its options`);
+  if (options && typeof fallback === "string" && !options.some((each) => each.value === fallback))
+    return refuse(`${where}: default must be one of its options`);
   if (fallback !== undefined) {
     if (type === "secret") return refuse(`${where}: a secret has no default`);
     if (type === "checkbox" ? typeof fallback !== "boolean" : typeof fallback !== "string" || fallback.length > 200)

@@ -17,9 +17,9 @@ import { withStop } from "./agents/agent-rows.ts";
 import type { LauncherKeys } from "./commands.ts";
 import { DetailBody } from "./detail-view.tsx";
 import { FormBody } from "./form-view.tsx";
-import { PreviewColumn } from "./preview-view.tsx";
 import { type Measures, PANEL } from "./measures.ts";
 import type { ModeLists } from "./mode.ts";
+import { PreviewColumn } from "./preview-view.tsx";
 import { nameIndent, ReservedRows, ResultRow, SectionHead } from "./row-view.tsx";
 import { keepInView, wheelSteps } from "./selection.ts";
 import type { LauncherState, Search } from "./state.ts";
@@ -156,6 +156,7 @@ function withPreview({ search, m, onScreen }: ListInput, rows: ReactNode): React
 /** The search's sections: each row, and under the one whose windows show, their live pictures. */
 function searchList({ s, search, acts, keys, m, onScreen, drawnRows }: ListInput, spoken: Spoken, access: boolean): ReactNode {
   const { pictures, selected, rows, verbsOf } = search;
+  const firstVerb = (section: Section) => (section.rows[0] ? verbsOf(section.rows[0])[0] : undefined);
   const digitOf = new Map(
     s.digits && s.mode.kind === "search"
       ? drawnRows()
@@ -168,15 +169,7 @@ function searchList({ s, search, acts, keys, m, onScreen, drawnRows }: ListInput
       {section.title !== undefined && <SectionHead title={section.title} {...(section.aside ? { aside: section.aside } : {})} />}
       {section.detail && <DetailBody detail={section.detail} height={(1 + (section.reserved ?? 0)) * m.row} m={m} />}
       {section.form && (
-        <FormBody
-          form={section.form}
-          m={m}
-          submit={() => {
-            const row = section.rows[0];
-            if (row) acts.doVerb(verbsOf(row)[0], row);
-          }}
-          escape={() => keys.onKey("Escape")}
-        />
+        <FormBody form={section.form} m={m} submit={() => acts.doVerb(firstVerb(section), section.rows[0])} escape={() => keys.onKey("Escape")} />
       )}
       {section.grid !== undefined && (
         <GridCells

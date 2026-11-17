@@ -1,9 +1,10 @@
 export { AppletCommands } from "./commands.ts";
 export { AppletControls } from "./controls.ts";
+export { DraftFiles, type Drafts, draftsInMemory } from "./drafts.ts";
 export { AppletLauncher } from "./launcher.ts";
+export { connectVerdict, type Dial, dialer, type Link, type NetProxy, PROXY_PORT_ALLOWED, startNetProxy } from "./net-proxy.ts";
 export { AppletPopovers, joinShellMenus } from "./popovers.ts";
 export { AppletPower } from "./power.ts";
 export { popoverScreen, startApplets } from "./start.tsx";
 export { UNIT_LIMITS } from "./units.ts";
 export { ExtensionViews } from "./views.ts";
-export { DraftFiles, type Drafts, draftsInMemory } from "./drafts.ts";
