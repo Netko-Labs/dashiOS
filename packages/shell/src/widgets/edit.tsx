@@ -10,14 +10,14 @@
 import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useRef, useState } from "react";
-import { DASHI_WIDGETS, resizeTag, widgetInfo } from "./catalog.ts";
+import { resizeTag, widgetInfo } from "./catalog.ts";
 import { WidgetColumn } from "./column.tsx";
 import { EditBar } from "./edit-bar.tsx";
+import type { EditSession } from "./edit-session.tsx";
 import { useWidgetEnv } from "./env.tsx";
 import { Gallery } from "./gallery.tsx";
 import { packColumn, sizeWord } from "./layout.ts";
-import { useSource } from "./lib/data.ts";
-import { cycleSize, dropIndex, editKey } from "./lib/edit-keys.ts";
+import { cycleSize, dropIndex } from "./lib/edit-keys.ts";
 import type { Placed, Placement, WidgetInfo, WidgetSize } from "./types.ts";
 
 export const EDIT_HINT = "Tab · ⌥ arrows move · ⌥⇧ arrows resize";
@@ -125,49 +125,10 @@ function useDragToMove(placements: readonly Placement[], move: (id: string, to: 
   return { onDrag, offset };
 }
 
-/** Which widget is chosen, the size it had before a resize, and what the keys and handles do to the store. */
-function useEditing(placements: readonly Placement[], onDone: () => void) {
-  const { hub } = useWidgetEnv();
-  const infos = useSource(hub?.extensions, []).map((each) => each.info);
-  const store = hub?.store;
-  const [chosen, setChosen] = useState<string | null>(null);
-  const [from, setFrom] = useState<WidgetSize | null>(null);
-  const sizesOf = (placement: Placement) => widgetInfo(placement.kind, infos)?.sizes ?? [placement.size];
-  const choose = (id: string | null) => {
-    setChosen(id);
-    setFrom(null);
-  };
-  const resize = (placement: Placement, size: WidgetSize) => {
-    if (from === null || chosen !== placement.id) setFrom(placement.size);
-    setChosen(placement.id);
-    store?.update(placement.id, { size });
-  };
-  const key = (pressed: { key: string; alt: boolean; shift: boolean }) => {
-    const said = editKey(placements, chosen, pressed, sizesOf);
-    if (said.do === "done") onDone();
-    else if (said.do === "select") choose(said.id);
-    else if (said.do === "move") store?.move(said.id, said.to);
-    else if (said.do === "remove") store?.remove(said.id);
-    else if (said.do === "resize") {
-      const placement = placements.find((each) => each.id === said.id);
-      if (placement) resize(placement, said.size);
-    }
-  };
-  return { infos, store, chosen, from, sizesOf, choose, resize, key };
-}
-
-export function EditWidgets({
-  placements,
-  onDone,
-  onGallery,
-}: {
-  placements: readonly Placement[];
-  onDone: () => void /** Add: the gallery opens or closes beside the column. */;
-  onGallery: () => void;
-}) {
+/** The column while editing; `session` (edit-session.tsx) holds what is chosen and hears the keys. Add opens or closes the gallery. */
+export function EditWidgets({ placements, session: edit, onDone }: { placements: readonly Placement[]; session: EditSession; onDone: () => void }) {
   const { inks } = useWidgetEnv();
-  const edit = useEditing(placements, onDone);
-  const { onDrag, offset } = useDragToMove(placements, (id, to) => edit.store?.move(id, to));
+  const { onDrag, offset } = useDragToMove(placements, (id, to) => edit.move(id, to));
   const decorate = (placed: Placed, tile: ReactNode) => {
     const { placement } = placed;
     const moved = offset(placement.id);
@@ -181,7 +142,7 @@ export function EditWidgets({
           resizable={(info?.sizes.length ?? 0) > 1}
           chosen={edit.chosen === placement.id}
           onChoose={() => edit.choose(placement.id)}
-          onRemove={() => edit.store?.remove(placement.id)}
+          onRemove={() => edit.remove(placement.id)}
           onResize={() => edit.resize(placement, cycleSize(edit.sizesOf(placement), placement.size))}
           onDrag={(phase, y) => onDrag(placed, phase, y)}
         />
@@ -190,7 +151,6 @@ export function EditWidgets({
   };
   return (
     <View style={{ flexDirection: "column", gap: 10 }}>
-      <View onKeyDown={edit.key} style={{ position: "absolute", left: 0, top: 0, width: 1, height: 1, opacity: 0 }} />
       <View
         style={{
           flexDirection: "row",
@@ -215,22 +175,23 @@ export function EditWidgets({
         </View>
       </View>
       <WidgetColumn placements={placements} testID="widget-column-edit" decorate={decorate} />
-      <EditBar onAdd={onGallery} onDone={onDone} />
+      <EditBar onAdd={edit.gallery.toggle} onDone={onDone} />
     </View>
   );
 }
 
 /** The gallery beside the column, for every widget there is; a press on a size adds it. */
-export function GalleryPanel({ placements, onClose }: { placements: readonly Placement[]; onClose: () => void }) {
+export function GalleryPanel({ placements, session }: { placements: readonly Placement[]; session: EditSession }) {
   const { hub } = useWidgetEnv();
-  const extensions = useSource(hub?.extensions, []);
   const store = hub?.store;
   const weather = placements.find((each) => each.kind === "weather");
   return (
     <Gallery
-      infos={[...DASHI_WIDGETS, ...extensions.map((each) => each.info)]}
+      infos={session.gallery.all}
+      chosen={session.gallery.kind}
+      onChoose={session.gallery.pick}
+      sizeAt={session.gallery.sizeAt}
       onAdd={(info, size) => void store?.add(info.kind, size)}
-      onClose={onClose}
       mayGoOnAir={{ on: weather?.mayGoOnAir === true, set: (on) => weather && store?.update(weather.id, { mayGoOnAir: on }) }}
     />
   );

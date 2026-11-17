@@ -5,11 +5,12 @@
  * mizu": the ingredient shows only here and on the edit tag, #19), what it
  * shows, and a real preview of each size. A press on a preview adds it in
  * that size. Weather's "May go on air" is here, off by default. It has no
- * buttons of its own: the area's bar (Add · Done) and Esc close it.
+ * buttons of its own: the area's bar (Add · Done) and Esc close it; ↑ ↓
+ * choose in the list, ← → pick a size (ringed) and Return adds it.
  */
 
+import { useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import { useState } from "react";
 import { glyph } from "../shared/inks/index.ts";
 import { printsIn } from "./catalog.ts";
 import { useWidgetEnv } from "./env.tsx";
@@ -62,16 +63,23 @@ function ListRow({ info, chosen, onPress }: { info: WidgetInfo; chosen: boolean;
   );
 }
 
+/** The sizes a widget's previews show, in order: those up to Wide. */
+export function previewSizes(info: WidgetInfo): WidgetSize[] {
+  return info.sizes.filter((size) => SPANS[size].cols <= 4 && SPANS[size].rows <= 2);
+}
+
 export interface GalleryProps {
   infos: readonly WidgetInfo[];
+  /** The widget chosen in the list, and the size picked among its previews (the keys move them: edit-session.tsx). */
+  chosen: string | undefined;
+  onChoose: (kind: string) => void;
+  sizeAt: number;
   onAdd: (info: WidgetInfo, size: WidgetSize) => void;
-  onClose: () => void;
   mayGoOnAir?: { on: boolean; set(on: boolean): void };
 }
 
-export function Gallery({ infos, onAdd, onClose, mayGoOnAir }: GalleryProps) {
+export function Gallery({ infos, chosen, onChoose, sizeAt, onAdd, mayGoOnAir }: GalleryProps) {
   const { inks } = useWidgetEnv();
-  const [chosen, setChosen] = useState(infos.find((info) => info.kind === "weather")?.kind ?? infos[0]?.kind);
   const info = infos.find((each) => each.kind === chosen) ?? null;
   const section = (title: string) => (
     <View style={{ marginTop: 10, marginBottom: 4, marginLeft: 4 }}>
@@ -79,7 +87,7 @@ export function Gallery({ infos, onAdd, onClose, mayGoOnAir }: GalleryProps) {
     </View>
   );
   const rows = (list: readonly WidgetInfo[]) =>
-    list.map((each) => <ListRow key={each.kind} info={each} chosen={each.kind === chosen} onPress={() => setChosen(each.kind)} />);
+    list.map((each) => <ListRow key={each.kind} info={each} chosen={each.kind === chosen} onPress={() => onChoose(each.kind)} />);
   const theirs = infos.filter((each) => each.kind.startsWith("ext:"));
   return (
     <View
@@ -95,7 +103,6 @@ export function Gallery({ infos, onAdd, onClose, mayGoOnAir }: GalleryProps) {
         borderColor: inks.text.hairline,
       }}
     >
-      <View onKeyDown={(key) => key.key === "Escape" && onClose()} style={{ position: "absolute", left: 0, top: 0, width: 1, height: 1, opacity: 0 }} />
       <View style={{ width: GALLERY.list, flexDirection: "column" }}>
         {section("DASHI")}
         {rows(infos.filter((each) => !each.kind.startsWith("ext:")))}
@@ -103,15 +110,26 @@ export function Gallery({ infos, onAdd, onClose, mayGoOnAir }: GalleryProps) {
         {rows(theirs)}
       </View>
       <View style={{ width: 1, alignSelf: "stretch", backgroundColor: inks.text.hairline }} />
-      {info ? <Detail info={info} onAdd={onAdd} {...(mayGoOnAir ? { mayGoOnAir } : {})} /> : null}
+      {info ? <Detail info={info} sizeAt={sizeAt} onAdd={onAdd} {...(mayGoOnAir ? { mayGoOnAir } : {})} /> : null}
     </View>
   );
 }
 
 /** The chosen widget: its ink, what it shows, and a real preview of each size it offers (up to Wide). */
-function Detail({ info, onAdd, mayGoOnAir }: { info: WidgetInfo; onAdd: GalleryProps["onAdd"]; mayGoOnAir?: GalleryProps["mayGoOnAir"] }) {
+function Detail({
+  info,
+  sizeAt,
+  onAdd,
+  mayGoOnAir,
+}: {
+  info: WidgetInfo;
+  sizeAt: number;
+  onAdd: GalleryProps["onAdd"];
+  mayGoOnAir?: GalleryProps["mayGoOnAir"];
+}) {
   const { inks } = useWidgetEnv();
-  const previews = info.sizes.filter((size) => SPANS[size].cols <= 4 && SPANS[size].rows <= 2);
+  const colors = useColors();
+  const previews = previewSizes(info);
   return (
     <View style={{ flex: 1, flexDirection: "column", gap: 10 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -123,8 +141,23 @@ function Detail({ info, onAdd, mayGoOnAir }: { info: WidgetInfo; onAdd: GalleryP
       </View>
       <Text style={{ fontSize: 13, lineHeight: 18, color: inks.text.ink }}>{`${info.blurb}. Press a size to add it.`}</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
-        {previews.map((size) => (
+        {previews.map((size, at) => (
           <View key={size} testID={`add:${info.kind}:${size}`} onPress={() => onAdd(info, size)} style={{ flexDirection: "column", gap: 6 }}>
+            {at === Math.min(sizeAt, previews.length - 1) ? (
+              <View
+                testID={`picked:${info.kind}:${size}`}
+                style={{
+                  position: "absolute",
+                  left: -4,
+                  top: -4,
+                  width: span(SPANS[size].cols) + 8,
+                  height: span(SPANS[size].rows) + 8,
+                  borderRadius: 17,
+                  borderWidth: 2,
+                  borderColor: colors.focusRing,
+                }}
+              />
+            ) : null}
             <WidgetTile kind={info.kind} size={size} width={span(SPANS[size].cols)} height={span(SPANS[size].rows)} air={false} />
             <Text style={{ fontSize: 11.5, color: inks.text.secondary }}>{sizeWord(size)}</Text>
           </View>

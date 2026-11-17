@@ -41,7 +41,8 @@ export interface Task {
   said: string;
   /** All it said, uncut; what is read and spoken. */
   words?: string;
-  steps: ReadonlyArray<{ title: string; state: { kind: string } }>;
+  /** `tool`: the action's tool name, which says whether the plan is critical (agents/consent.ts `CRITICAL`). */
+  steps: ReadonlyArray<{ title: string; tool?: string; state: { kind: string } }>;
 }
 
 /** The launcher's Ask tasks (agents/ask/lib/tasks.ts). */

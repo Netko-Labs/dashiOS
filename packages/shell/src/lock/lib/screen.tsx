@@ -9,9 +9,22 @@
  */
 
 import { LoginScreen, type PowerAction } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useState } from "react";
 import { formatLongDay, formatTimeBare, useClockPrefs } from "../../shared/time/index.ts";
-import { Glance, LockHead, LockSide, NowBar, openerOf, usePlacements, useWidgetEnvFor, WidgetEnvProvider, widgetHub, widgetInfo } from "../../widgets/index.ts";
+import {
+  Glance,
+  LockHead,
+  LockSide,
+  lockOpenerOf,
+  NowBar,
+  type Placement,
+  usePlacements,
+  useWidgetEnvFor,
+  WidgetEnvProvider,
+  widgetHub,
+  widgetInfo,
+} from "../../widgets/index.ts";
 import type { Verdict } from "./attempts.ts";
 import { unlockHint, useResting } from "./rest.ts";
 
@@ -52,6 +65,14 @@ export function LockScreen({ name, picture, onSubmit, waitMs, onPower }: LockScr
   const placements = usePlacements(hub);
   const env = useWidgetEnvFor(hub, { locked: true, placements, open: setPending, dark: true, lock: true });
 
+  // A press on any card: its app, or the notification area, once the password is in.
+  const press = (placement: Pick<Placement, "kind">): void => {
+    setTouched((n) => n + 1);
+    const opener = lockOpenerOf(placement, () => hub?.openArea());
+    const name = widgetInfo(placement.kind)?.name ?? "it";
+    setPending({ label: opener.where === "app" ? name : `${name} in Notifications`, run: opener.run });
+  };
+
   const submit = async (): Promise<void> => {
     if ((status !== "idle" && status !== "wrong") || password === "") return;
     const wait = waitMs();
@@ -75,44 +96,38 @@ export function LockScreen({ name, picture, onSubmit, waitMs, onPower }: LockScr
     }
   };
 
+  // One view at the root: Metal draws only a tree's first root, so Glance beside the login screen was never drawn (pass 50).
   return (
     <WidgetEnvProvider value={env}>
-      <LoginScreen
-        day={formatLongDay(now, clock)}
-        time={formatTimeBare(now, clock)}
-        name={name}
-        picture={picture}
-        value={password}
-        onChangeText={(text) => {
-          setTouched((n) => n + 1);
-          setPassword(text);
-          if (status === "wrong") setStatus("idle");
-        }}
-        onSubmit={() => void submit()}
-        hint={status === "idle" ? unlockHint(pending, HINTS.idle) : HINTS[status]}
-        error={status === "wrong"}
-        {...(onPower ? { onPower } : {})}
-        head={<LockHead />}
-        around={
-          <LockSide
-            placements={placements}
-            onPress={(placement) => {
+      <View testID="lock-screen" style={{ flex: 1 }}>
+        <LoginScreen
+          day={formatLongDay(now, clock)}
+          time={formatTimeBare(now, clock)}
+          name={name}
+          picture={picture}
+          value={password}
+          onChangeText={(text) => {
+            setTouched((n) => n + 1);
+            setPassword(text);
+            if (status === "wrong") setStatus("idle");
+          }}
+          onSubmit={() => void submit()}
+          hint={status === "idle" ? unlockHint(pending, HINTS.idle) : HINTS[status]}
+          error={status === "wrong"}
+          {...(onPower ? { onPower } : {})}
+          head={<LockHead onPress={(kind) => press({ kind })} />}
+          around={<LockSide placements={placements} onPress={press} />}
+          above={<NowBar />}
+        />
+        {resting ? (
+          <Glance
+            onWake={() => {
               setTouched((n) => n + 1);
-              const run = openerOf(placement);
-              if (run) setPending({ label: widgetInfo(placement.kind)?.name ?? "it", run });
+              wake();
             }}
           />
-        }
-        above={<NowBar />}
-      />
-      {resting ? (
-        <Glance
-          onWake={() => {
-            setTouched((n) => n + 1);
-            wake();
-          }}
-        />
-      ) : null}
+        ) : null}
+      </View>
     </WidgetEnvProvider>
   );
 }

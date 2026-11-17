@@ -15,10 +15,12 @@ import {
   Btn,
   Card,
   COLUMN_WIDTH,
+  EditKeys,
   EditWidgets,
   GalleryPanel,
   LiveCards,
   type Placement,
+  useEditSession,
   usePlacements,
   useWidgetEnvFor,
   WidgetColumn,
@@ -44,9 +46,13 @@ const AREA = { right: 12, top: 8, gap: 10 } as const;
 
 export function NotificationArea({ store, onClose, onEscape = onClose, dockInset, hub, openerOf }: NotificationAreaProps) {
   const [editing, setEditing] = useState(false);
-  const [gallery, setGallery] = useState(false);
   const now = useMinuteClock().getTime();
   const placements = usePlacements(hub);
+  const session = useEditSession(hub, placements, () => done());
+  const done = () => {
+    setEditing(false);
+    session.gallery.close();
+  };
   const env = useWidgetEnvFor(hub, {
     locked: false,
     placements,
@@ -57,7 +63,7 @@ export function NotificationArea({ store, onClose, onEscape = onClose, dockInset
   });
   return (
     <>
-      {editing ? null : <KeyCatcher onKey={(key) => key === "Escape" && onEscape()} />}
+      {editing ? <EditKeys session={session} /> : <KeyCatcher onKey={(key) => key === "Escape" && onEscape()} />}
       <WidgetEnvProvider value={env}>
         <View
           occlude
@@ -67,14 +73,7 @@ export function NotificationArea({ store, onClose, onEscape = onClose, dockInset
           <View testID="nc-list" style={{ flex: 1, overflow: "scroll" }}>
             <View style={{ flexDirection: "column", gap: AREA.gap, paddingLeft: 4, paddingRight: 4, paddingTop: 4, paddingBottom: 8 }}>
               {editing ? (
-                <EditWidgets
-                  placements={placements}
-                  onDone={() => {
-                    setEditing(false);
-                    setGallery(false);
-                  }}
-                  onGallery={() => setGallery(!gallery)}
-                />
+                <EditWidgets placements={placements} session={session} onDone={done} />
               ) : (
                 <>
                   <LiveCards />
@@ -88,9 +87,9 @@ export function NotificationArea({ store, onClose, onEscape = onClose, dockInset
             </View>
           </View>
         </View>
-        {editing && gallery ? (
+        {editing && session.gallery.open ? (
           <View style={{ position: "absolute", right: AREA.right + COLUMN_WIDTH + 26, top: AREA.top + 30 }}>
-            <GalleryPanel placements={placements} onClose={() => setGallery(false)} />
+            <GalleryPanel placements={placements} session={session} />
           </View>
         ) : null}
       </WidgetEnvProvider>

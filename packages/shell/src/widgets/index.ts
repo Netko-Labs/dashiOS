@@ -3,6 +3,7 @@ export { Card, type CardProps } from "./card.tsx";
 export { DASHI_WIDGETS, inkWhat, printsIn, resizeTag, widgetInfo } from "./catalog.ts";
 export { WidgetColumn, type WidgetColumnProps } from "./column.tsx";
 export { EDIT_HINT, EditWidgets, GalleryPanel } from "./edit.tsx";
+export { EditKeys, type EditSession, useEditSession } from "./edit-session.tsx";
 export { type WidgetEnv, WidgetEnvProvider } from "./env.tsx";
 export { type WidgetFacts, widgetFacts } from "./facts.ts";
 export { GALLERY } from "./gallery.tsx";
@@ -12,7 +13,7 @@ export { COLUMN_WIDTH, columnHeight, GRID, packColumn, SIZE_ORDER, SPANS, sizeWo
 export { LiveCards } from "./live.tsx";
 export { LOCK_ROW, LockHead, LockSide, lockSide, NowBar } from "./lock.tsx";
 export { alpha, type CardColours, type CardLook, cardColours, useCard } from "./look.tsx";
-export { openerOf } from "./openers.ts";
+export { lockOpenerOf, openerOf } from "./openers.ts";
 export { Blank, Btn, Glyph, Grow, Head, Lab, Meta, NowTag, Num, Private, Rule, Standby, Title, VRule, Words } from "./parts.tsx";
 export { DEFAULT_WIDGETS, MAX_WIDGETS, readWidgets, WidgetStore, widgetsPath } from "./store.ts";
 export type { HubRun, Placed, Placement, WidgetInfo, WidgetKind, WidgetSize } from "./types.ts";

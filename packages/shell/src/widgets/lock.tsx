@@ -72,7 +72,8 @@ function StackedClock({ now, hour24 }: { now: number; hour24: boolean }) {
   );
 }
 
-export function LockHead() {
+/** The date row, the clock, the row of compacts (a press on one asks for the password first: `onPress`), the counts. */
+export function LockHead({ onPress }: { onPress?: (kind: WidgetKind) => void }) {
   const { now, hour24, hub } = useWidgetEnv();
   const counts = noticeCounts(useSource(hub?.notices, []));
   const width = span(SPANS.compact.cols);
@@ -83,7 +84,16 @@ export function LockHead() {
       <StackedClock now={now} hour24={hour24} />
       <View testID="lock-row" style={{ flexDirection: "row", gap: 12 }}>
         {LOCK_ROW.map((kind) => (
-          <WidgetTile key={kind} kind={kind} size="compact" width={width} height={height} air={false} testID={`lock-widget:${kind}`} />
+          <WidgetTile
+            key={kind}
+            kind={kind}
+            size="compact"
+            width={width}
+            height={height}
+            air={false}
+            testID={`lock-widget:${kind}`}
+            {...(onPress ? { onPress: () => onPress(kind) } : {})}
+          />
         ))}
       </View>
       {counts.length > 0 ? (

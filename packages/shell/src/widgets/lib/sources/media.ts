@@ -6,15 +6,20 @@
  */
 
 import { BusLink, DBusConnection, getAllProperties, listNames, onPropertiesChanged, unwrap } from "../../../shared/dbus/index.ts";
+import { busWord, playerName } from "./player-name.ts";
 import { Source } from "./source.ts";
 
+const ROOT = "org.mpris.MediaPlayer2";
 const PLAYER = "org.mpris.MediaPlayer2.Player";
 const PATH = "/org/mpris/MediaPlayer2";
 const PREFIX = "org.mpris.MediaPlayer2.";
 const LOOK_MS = 10_000;
 
 export interface Playing {
+  /** The player's bus name, where commands go. */
   player: string;
+  /** The player as a person knows it: "Helium", "Spotify" (player-name.ts). */
+  name: string;
   title: string;
   artist: string;
   playing: boolean;
@@ -30,7 +35,13 @@ export interface Playing {
 }
 
 /** A player's properties as `Playing`; null without a title. */
-export function readPlaying(player: string, properties: ReadonlyMap<string, unknown>, now: number, before: Playing | null): Playing | null {
+export function readPlaying(
+  player: string,
+  properties: ReadonlyMap<string, unknown>,
+  now: number,
+  before: Playing | null,
+  name: string = busWord(player),
+): Playing | null {
   const metadata = properties.get("Metadata");
   const meta = metadata instanceof Map ? new Map([...metadata].map(([key, value]) => [String(key), unwrap(value)])) : new Map<string, unknown>();
   const title = typeof meta.get("xesam:title") === "string" ? String(meta.get("xesam:title")) : "";
@@ -44,6 +55,7 @@ export function readPlaying(player: string, properties: ReadonlyMap<string, unkn
   const since = before && before.playing === playing && before.title === title ? before.since : now;
   return {
     player,
+    name,
     title,
     artist,
     playing,
@@ -59,6 +71,16 @@ export function readPlaying(player: string, properties: ReadonlyMap<string, unkn
 export function positionAt(playing: Playing, now: number): number {
   const at = playing.playing ? playing.position + (now - playing.positionAt) : playing.position;
   return playing.length > 0 ? Math.min(playing.length, at) : at;
+}
+
+/** The player's name from its root interface (Identity, DesktopEntry); its bus name cleaned when it says neither. */
+async function knownAs(bus: Parameters<typeof getAllProperties>[0], player: string): Promise<string> {
+  const root = await getAllProperties(bus, { destination: player, path: PATH, interface: ROOT }).catch(() => null);
+  const text = (key: string): string => {
+    const value = root ? unwrap(root.get(key)) : "";
+    return typeof value === "string" ? value : "";
+  };
+  return playerName({ bus: player, identity: text("Identity"), desktopEntry: text("DesktopEntry") });
 }
 
 export class Media extends Source<Playing | null> {
@@ -97,9 +119,10 @@ export class Media extends Source<Playing | null> {
       const entry: { state: Playing | null; stop: (() => Promise<void>) | null } = { state: null, stop: null };
       this.players.set(name, entry);
       const target = { destination: name, path: PATH, interface: PLAYER };
+      const known = await knownAs(bus, name);
       const read = async () => {
         const properties = await getAllProperties(bus, target);
-        if (properties) entry.state = readPlaying(name, properties, Date.now(), entry.state);
+        if (properties) entry.state = readPlaying(name, properties, Date.now(), entry.state, known);
         this.choose();
       };
       entry.stop = await onPropertiesChanged(bus, target, () => void read().catch(() => {}));

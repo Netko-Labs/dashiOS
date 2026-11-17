@@ -101,3 +101,13 @@ test("one applet's popover replacing another's keeps the key; the last one closi
   second();
   expect(heard).toEqual([true, false]);
 });
+
+test("the lock screen's press opens the notification area with the bar's own app name, and never closes it", async () => {
+  const { controller } = shell();
+  controller.setBar(undefined, { appName: "Files", stops: [] });
+  await controller.openNotificationCenter();
+  expect(controller.getSnapshot().popover?.kind).toBe("notification-center");
+  expect(controller.getSnapshot().appName).toBe("Files");
+  await controller.openNotificationCenter();
+  expect(controller.getSnapshot().popover?.kind).toBe("notification-center");
+});

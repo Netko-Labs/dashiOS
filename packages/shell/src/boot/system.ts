@@ -94,6 +94,8 @@ export function startGuards({ compositor, look, settingsStore, developmentRun, s
   // The lock screen; a session left locked by an earlier shell gets it back.
   const lockScreen = compositor ? new LockController(compositor) : null;
   void lockScreen?.resume();
+  // Only a checkout's session can ask for it: the installed dashi-session clears the variable.
+  lockScreen?.devCapture();
 
   // Sleep, the lid, and the power key, through logind (power/): the screen locks
   // before the machine sleeps, `loginctl lock-session` locks it, and the power

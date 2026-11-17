@@ -1,7 +1,7 @@
 /**
  * Installed: every Flatpak app on the machine (the person's own and the
- * system's) with Open, Update and Remove…, and the menu bar applets below
- * them, from the catalog or added by hand. A change in progress is the
+ * system's) with Open, Update and Remove…, and the add-ons below them under
+ * what they are (launcher extensions, then menu bar applets), from the catalog or added by hand. A change in progress is the
  * state chip, with its ×.
  */
 
@@ -9,7 +9,7 @@ import { Button, EmptyState, Group, glyphs, Loading, useColors } from "@dashi/ui
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import { formatBytes, type InstalledApp } from "../../../src/shared/software/index.ts";
-import { InstalledApplets } from "./applets/pages.tsx";
+import { ADD_ON_HEADINGS, ADD_ON_KINDS, type AddOnKind, InstalledApplets, kindOfInstalled } from "./applets/pages.tsx";
 import { useAppletState } from "./applets/rows.tsx";
 import { useCatalog } from "./catalog-hooks.ts";
 import { StateChip } from "./chip.tsx";
@@ -67,6 +67,15 @@ export function InstalledRow({ app }: { app: InstalledApp }) {
   );
 }
 
+/** How many add-ons of each kind match `needle`. */
+function addOnCounts(applets: ReturnType<typeof useAppletState>, needle: string): Record<AddOnKind, number> {
+  const hit = (words: string) => needle === "" || words.toLowerCase().includes(needle);
+  const counts: Record<AddOnKind, number> = { extensions: 0, applets: 0, widgets: 0 };
+  for (const applet of applets.installed) if (hit(`${applet.manifest.name} ${applet.manifest.id}`)) counts[kindOfInstalled(applet)]++;
+  counts.applets += applets.unreadable.filter((applet) => hit(`${applet.name ?? ""} ${applet.id}`)).length;
+  return counts;
+}
+
 export function Installed({ query }: { query: string }) {
   const { store } = useServices();
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
@@ -84,10 +93,8 @@ export function Installed({ query }: { query: string }) {
   const apps = [...(state.installed ?? [])]
     .filter((app) => needle === "" || app.name.toLowerCase().includes(needle) || app.id.toLowerCase().includes(needle))
     .sort((a, b) => a.name.localeCompare(b.name));
-  const appletCount = [
-    ...applets.installed.map((applet) => `${applet.manifest.name} ${applet.manifest.id}`),
-    ...applets.unreadable.map((applet) => `${applet.name ?? ""} ${applet.id}`),
-  ].filter((words) => needle === "" || words.toLowerCase().includes(needle)).length;
+  const counts = addOnCounts(applets, needle);
+  const appletCount = counts.extensions + counts.applets + counts.widgets;
   if (apps.length === 0 && appletCount === 0 && !hasPackages) {
     return (
       <EmptyState
@@ -115,8 +122,14 @@ export function Installed({ query }: { query: string }) {
         </Group>
       )}
       <InstalledPackages needle={needle} />
-      {appletCount > 0 && <SectionHeader title="Menu bar applets" />}
-      <InstalledApplets needle={needle} />
+      {ADD_ON_KINDS.map((kind) =>
+        counts[kind] > 0 ? (
+          <View key={kind} style={{ flexDirection: "column", gap: 12 }}>
+            <SectionHeader title={ADD_ON_HEADINGS[kind]} />
+            <InstalledApplets needle={needle} kind={kind} />
+          </View>
+        ) : null,
+      )}
     </ScrollView>
   );
 }

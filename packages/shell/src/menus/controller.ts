@@ -230,6 +230,13 @@ export class MenuController extends PopoverHost {
     if (open.keys.join("\n") !== keys.join("\n")) this.set({ ...this.state, popover: { ...open, keys } });
   }
 
+  /** Open the notification area (never closes it), with the bar's own app name: the lock screen's press, after the password. */
+  openNotificationCenter(output?: string): Promise<void> {
+    if (this.state.popover?.kind === "notification-center" && this.isOn(output)) return Promise.resolve();
+    const bar = this.bars.get(output ?? "") ?? this.bars.values().next().value;
+    return this.show({ kind: "notification-center" }, bar?.appName ?? "Desktop", output ?? bar?.output);
+  }
+
   /** A click on the clock. */
   toggleNotificationCenter(appName: string, output?: string): Promise<void> {
     if (this.state.popover?.kind === "notification-center" && this.isOn(output)) {

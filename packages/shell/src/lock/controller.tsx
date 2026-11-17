@@ -13,6 +13,7 @@ import { spawnShellHost } from "../shared/metal/index.ts";
 import { runPower } from "../shutdown.ts";
 import { Attempts, type Verdict } from "./lib/attempts.ts";
 import { accountPicture, checkPassword, displayName, lockedUser } from "./lib/auth.ts";
+import { startDevCapture } from "./lib/dev-capture.ts";
 import { LockScreen } from "./lib/screen.tsx";
 
 /** A lock screen that died comes back after this. */
@@ -38,6 +39,11 @@ export class LockController {
   async resume(): Promise<void> {
     const session = await this.compositor.session().catch(() => null);
     if (session?.locked) this.lock();
+  }
+
+  /** The VM's picture of the real lock screen, when a checkout's session asks for it (lib/dev-capture.ts); never in an installed one. */
+  devCapture(env: Readonly<Record<string, string | undefined>> = process.env): (() => void) | null {
+    return startDevCapture(env, { locked: () => this.isLocked, capture: (path) => this.compositor.capture({ path }) });
   }
 
   get isLocked(): boolean {

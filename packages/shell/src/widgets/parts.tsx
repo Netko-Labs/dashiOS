@@ -24,9 +24,14 @@ export function Lab({ children, strong, max = 30 }: { children: string; strong?:
   return <Text style={{ fontSize: 10.5, fontWeight: "semibold", color: strong ? c.ink : c.secondary }}>{cut(children.toUpperCase(), max)}</Text>;
 }
 
+/** A small line in the tertiary ink: one line, cut with an ellipsis at `max`. */
 export function Meta({ children, max = 32 }: { children: string; max?: number }) {
   const c = useCard();
-  return <Text style={{ fontSize: 11.5, color: c.tertiary }}>{cut(children, max)}</Text>;
+  return (
+    <Text numberOfLines={1} style={{ fontSize: 11.5, color: c.tertiary }}>
+      {cut(children, max)}
+    </Text>
+  );
 }
 
 /** A title line: 13, semibold, ink; one line with an ellipsis. */

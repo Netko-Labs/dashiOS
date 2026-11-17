@@ -52,7 +52,7 @@ export { isModelChoices } from "./assistant/models.ts";
 export { Atspi } from "./atspi/client.ts";
 export { type A11yNode, documents, type Focused, fieldAt, focusedField, hasState, limits, passwordFields, placeAgain, ROLE, STATE } from "./atspi/tree.ts";
 export type { Question } from "./confirm.ts";
-export { type GrantEntry, Grants, label, logActivity, SCOPES, type Scope, stateDir } from "./consent.ts";
+export { criticalTool, type GrantEntry, Grants, label, logActivity, SCOPES, type Scope, stateDir } from "./consent.ts";
 export type { ToolResult } from "./context.ts";
 export { type SpokenLines, Teller } from "./desktop/tell.ts";
 export type { ClipboardCopy } from "./desktop/types.ts";

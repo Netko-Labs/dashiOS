@@ -6338,3 +6338,121 @@ short words, as the rulebook is written.
   and the draft stays. That is also how its VM pass runs without the owner's
   GitHub.
 - **Undo:** `send` in `extensions/github/lib/create-issue.tsx`.
+
+### D480. Editing widgets has one key view for the session, and reads the host's key names
+
+- **Date:** 2026-11-17. `v09/fix-inks-1`.
+- **Decision:** While widgets are edited, the area draws one `onKeyDown`
+  view (`widgets/edit-session.tsx`) for the column and the gallery
+  together; the gallery has no key view of its own. Metal gives such a view
+  the keyboard when it appears, so the gallery's took it from the column's
+  and kept it after the gallery went. Keys arrive with GPUI's names
+  ("tab", "up", "escape"); `hostKey` turns them into the names the edit
+  keys are written with. In the gallery ↑ ↓ choose in the list, ← → pick a
+  size (ringed in the focus purple), Return adds it, Esc closes the gallery
+  (a second Esc ends editing); ⌥ arrows and Tab still work the column.
+- **Why:** pass 49 found every advertised key did nothing in the installed
+  build; the tests had fed browser names to the pure helper only.
+- **Undo:** `EditKeys` in `notifications/area.tsx`.
+
+### D481. A player is named by its desktop entry, then its Identity, never its bus name
+
+- **Date:** 2026-11-17. `v09/fix-inks-1`.
+- **Decision:** The Music card's small line names the player from MPRIS's
+  root interface: the Name in the desktop entry it gives (`DesktopEntry`,
+  so Helium is "Helium" even when its Identity says Chromium), else its
+  `Identity`, else its bus name without the prefix and the instance number
+  ("Chromium"). The line is one line, cut at 16 characters with an
+  ellipsis; `Meta` lines are one line everywhere.
+- **Undo:** `playerName` in `widgets/lib/sources/player-name.ts`.
+
+### D482. Dashi's weather has one source; the applet template's reading says it is a sample
+
+- **Date:** 2026-11-17. `v09/fix-inks-1`.
+- **Found:** the bar's "☀ 21°" that disagreed with the Weather card (20°,
+  then 19°) is not Dashi's weather: it is `dev.example.weather`, the applet
+  `dashi-applet new` writes, installed in the VM by an earlier pass, whose
+  state starts at a made-up `celsius: 21` and never changes. Everything
+  Dashi shows of the weather (the card, the lock's date row, Glance, the
+  agents' facts) already reads the hub's one `Weather` (Open-Meteo, rounded
+  once in `take`, asked every 30 minutes); 20 and 19 were two real answers.
+- **Decision:** no second weather in the bar. The template's bar label says
+  "21° sample", its popover "A sample reading, not the weather", so an
+  example can never pass for a reading beside Dashi's own.
+- **Undo:** `label` in the template (`packages/applet/src/cli/lib/templates.ts`).
+
+### D483. A plan with a critical step is a critical ask
+
+- **Date:** 2026-11-17. `v09/fix-inks-1`.
+- **Decision:** The capsule marks a plan that waits for a yes `critical`
+  when one of its ready steps calls a tool in `CRITICAL`
+  (`agents/consent.ts`: paying, a secret, force quit, installing or
+  updating software); so it takes the tally as asking (D402), over a song
+  or a timer that holds it. A plan that only changes settings or moves
+  files stays a running item and waits in its card. An agent's question
+  (`ask_person`) is not critical by itself: it waits in its card.
+- **Why:** D402 left the flag to whoever makes the ask, and the capsule set
+  it nowhere; the critical list is the one D260 keeps, so nothing is
+  guessed from words.
+- **Undo:** `permissionsOf` in `capsule/lib/told.ts`.
+
+### D484. Installed names each add-on by what it is
+
+- **Date:** 2026-11-17. `v09/fix-inks-1`.
+- **Decision:** The Store's Installed page lists add-ons under three
+  headings, each shown only when it has one: Launcher extensions (an
+  add-on that shows in the launcher), Menu bar applets (one that puts an
+  item in the bar and is not an extension), Widgets (one that only gives
+  widgets). Search groups them the same way (`isExtension`, `inMenuBar`).
+  One Dashi can't read stays with the applets: nothing says what it is.
+- **Undo:** `kindOfInstalled` in `apps/software/lib/applets/pages.tsx`.
+
+### D485. The VM pictures the real lock screen through a checkout's session only
+
+- **Date:** 2026-11-17. `v09/fix-inks-1`.
+- **Question:** pass 49 could not see the lock screen: agents are refused
+  while locked, the person's ⇧❖3 never reaches the shell then (dashi-comp
+  sends no binding), and QEMU cannot read the Venus GPU's screen.
+- **Decision:** a shell started with `DASHI_DEV_LOCK_CAPTURE=<folder>`
+  takes a picture of the screen while it is locked each time a file named
+  `ask` appears in that folder (`lock/lib/dev-capture.ts`), through the
+  compositor's own capture, which while locked draws only the wallpaper
+  and the lock surface. The installed `dashi-session` unsets the variable
+  before it starts anything, so only a checkout's session
+  (`vm/dev-session`) can have it; the folder must be absolute, a real
+  directory, the user's own and mode 0700, or it is refused and logged.
+- **Why it is no path in:** an installed session has no code that reads
+  the variable's folder; a person at a locked screen cannot set a
+  session's environment; and what it pictures is what anyone at the
+  screen already sees (the lock, its widgets redacted).
+- **Undo:** `devCapture` in `lock/controller.tsx` and the `unset` in
+  `session/dashi-session`.
+
+### D486. Every card on the lock screen can be pressed; one without an app opens the notification area
+
+- **Date:** 2026-11-17. `v09/fix-inks-1`.
+- **Found:** pass 49's blind press on the lock opened nothing after the
+  unlock, and that was a bug, not a miss: the row under the clock
+  (Weather, Battery, what is next) had no press at all, and in the side
+  column only Calendar, Rundown, Notes and System had something to open.
+  On the first-run layout no card on the lock could open anything.
+- **Decision:** the row's cards are pressed like the side column's. A press
+  asks for the password and says what it will open; once the password is
+  in, a card with an app of its own opens it (Battery now opens Settings)
+  and every other card opens the notification area, where it lives
+  ("Unlock to open Weather in Notifications").
+- **Undo:** `lockOpenerOf` in `widgets/openers.ts`, `press` in
+  `lock/lib/screen.tsx`.
+
+### D487. A surface's tree has one root view
+
+- **Date:** 2026-11-17. `v09/fix-inks-1`.
+- **Found:** on the real lock screen (pictured for the first time, D485)
+  Glance never came: the lock screen's root was two siblings, the login
+  screen and Glance, and Metal draws only the first root of a tree
+  (mirin's `rootOf` in `tree-sync.ts`), silently.
+- **Decision:** the lock screen wraps both in one view. A surface's
+  component returns one root view, never a fragment of several; mirin is
+  asked to say so when it drops a second root (patch in the pass's
+  report), not changed here.
+- **Undo:** the `lock-screen` view in `lock/lib/screen.tsx`.

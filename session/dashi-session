@@ -53,6 +53,9 @@ elif [ -f "$base/packages/shell/src/session.ts" ]; then
 else
   die "can't find the shell next to $self"
 fi
+# The VM's picture of the real lock screen (packages/shell/src/lock/lib/dev-capture.ts) is
+# for a checkout's session only: an installed session never has it, whatever its environment.
+[ "$layout" = installed ] && unset DASHI_DEV_LOCK_CAPTURE
 [ -x "${comp:-}" ] || die "no dashi-comp to run (looked for ${comp:-a build in $base/target}); build it or set DASHI_COMP"
 [ -f "$shell_dir/src/session.ts" ] || die "no shell at $shell_dir"
 
