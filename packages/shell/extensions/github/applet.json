@@ -5,19 +5,77 @@
   "dashi": ">=0.9",
   "entry": "main.tsx",
   "summary": "Pull requests and repositories on GitHub, from the launcher.",
-  "description": "Reads public repositories without an account. Paste a GitHub token in its preferences for private ones and a higher rate limit: Dashi keeps it in the Secret Service. Connecting a GitHub account comes later.",
-  "author": { "name": "Dashi", "url": "https://github.com/Netko-Labs/dashiOS" },
+  "description": "Reads public repositories without an account. Connect your GitHub account (Dashi signs in, in Helium, and keeps the key in your keyring) or paste a token for private ones, a higher rate limit, and Create Issue.",
+  "author": {
+    "name": "Dashi",
+    "url": "https://github.com/Netko-Labs/dashiOS"
+  },
   "license": "MIT",
   "source": "https://github.com/Netko-Labs/dashiOS",
-  "categories": ["developer"],
-  "shows": ["launcher"],
-  "permissions": ["network:api.github.com"],
+  "categories": [
+    "developer"
+  ],
+  "shows": [
+    "launcher"
+  ],
+  "permissions": [
+    "network:api.github.com",
+    "account:github.com"
+  ],
   "preferences": [
-    { "name": "repo", "type": "text", "title": "Repository", "description": "owner/name, for Pull Requests", "default": "oven-sh/bun" },
-    { "name": "token", "type": "secret", "title": "GitHub token", "description": "Only for private repositories and a higher rate limit." }
+    {
+      "name": "repo",
+      "type": "text",
+      "title": "Repository",
+      "description": "owner/name, for Pull Requests",
+      "default": "oven-sh/bun"
+    },
+    {
+      "name": "token",
+      "type": "secret",
+      "title": "GitHub token",
+      "description": "Instead of connecting an account: for private repositories and a higher rate limit."
+    }
   ],
   "commands": [
-    { "id": "pull-requests", "title": "Pull Requests", "keywords": ["github", "pr", "review"], "mode": "list" },
-    { "id": "search-repos", "title": "Search GitHub Repositories", "keywords": ["github", "repo", "repository"], "mode": "list" }
+    {
+      "id": "pull-requests",
+      "title": "Pull Requests",
+      "keywords": [
+        "github",
+        "pr",
+        "review"
+      ],
+      "mode": "list"
+    },
+    {
+      "id": "search-repos",
+      "title": "Search GitHub Repositories",
+      "keywords": [
+        "github",
+        "repo",
+        "repository"
+      ],
+      "mode": "list"
+    },
+    {
+      "id": "create-issue",
+      "title": "Create Issue",
+      "keywords": [
+        "github",
+        "issue",
+        "bug",
+        "new"
+      ],
+      "mode": "form"
+    }
+  ],
+  "accounts": [
+    {
+      "provider": "github.com",
+      "scopes": [
+        "repo"
+      ]
+    }
   ]
 }
