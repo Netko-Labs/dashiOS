@@ -9,7 +9,7 @@
 
 import { SEARCH, Shortcut, useColors } from "@dashi/ui";
 import { Svg, Text, TextInput, View } from "@mirinjs/metal";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { AppIcon } from "../../shared/apps/index.ts";
 import { noticeAccess } from "../access.ts";
 import type { RowIcon } from "../row-model.ts";
@@ -38,7 +38,7 @@ export interface FieldProps {
   access?: Record<string, unknown>;
   /** A secret is typed (an extension's token): the field shows dots. */
   secure?: boolean;
-  /** An extension's form has the keyboard: the field doesn't take it, and takes it back when the form goes (D468). */
+  /** An extension's form has the keyboard: when the form goes, the field takes it back (D468). */
   yields?: boolean;
   onChangeText(text: string): void;
   onSubmit(): void;
@@ -50,6 +50,17 @@ function ChipIcon({ icon, size }: { icon: RowIcon; size: number }) {
   if ("image" in icon) return <AppIcon source={icon.image} style={{ width: size + 2, height: size + 2 }} />;
   if ("glyph" in icon) return <Svg markup={icon.glyph} size={size} color={colors.text} />;
   return null;
+}
+
+/** A number that grows each time `yielding` turns false: the form that had the keyboard went. */
+function useRegained(yielding: boolean): number {
+  const [count, setCount] = useState(0);
+  const was = useRef(yielding);
+  useEffect(() => {
+    if (was.current && !yielding) setCount((n) => n + 1);
+    was.current = yielding;
+  }, [yielding]);
+  return count;
 }
 
 /** Words measured as the field draws them, by size: the same words at the same size are measured once a session. */
@@ -119,6 +130,7 @@ export function Field({
   const colors = useColors();
   const m = useMeasures();
   const [room, setRoom] = useState<number | null>(null);
+  const regained = useRegained(yields === true);
   const [, setMeasuredCount] = useState(0);
   const choices = typeof placeholder === "string" ? [placeholder] : placeholder;
   const widthOf = (text: string): number | undefined => measured.get(widthKey(text, m.fieldText));
@@ -150,15 +162,15 @@ export function Field({
           </View>
         ))}
         {/* Metal draws a focused empty field's placeholder, muted, right after the caret. */}
-        {/* Mounted again when a form comes or goes: autoFocus is the only way to take the keyboard back. */}
+        {/* Mounted again when a form goes: autoFocus is the only way to take the keyboard back (never as it comes: its own first field takes it). */}
         <TextInput
-          key={yields ? "yields" : "field"}
+          key={`field:${regained}`}
           testID="launcher:field"
           value={value}
           {...(revision === undefined ? {} : { valueRevision: revision })}
           placeholder={shown}
           {...(secure ? { secureTextEntry: true } : {})}
-          autoFocus={!yields}
+          autoFocus
           onChangeText={onChangeText}
           onSubmitEditing={onSubmit}
           onKeyPress={onKey}
