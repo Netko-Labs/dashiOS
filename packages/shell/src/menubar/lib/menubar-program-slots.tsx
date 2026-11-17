@@ -40,6 +40,7 @@ import { extraGoes } from "./menubar-fit.ts";
 import { agentMarkSlot, type PillNow, usePill } from "./menubar-pill-slots.tsx";
 import { systemSlots } from "./menubar-slots.tsx";
 import type { StatusSlot } from "./menubar-status.tsx";
+import { useTallySlots } from "./menubar-tally-slots.tsx";
 
 /** The bar's tooltip (bar-tip.tsx): words under a point of this bar (as wide as `barWidth`), or none. */
 export type BarTip = { text: string; x: number; barWidth?: number; output?: string } | null;
@@ -242,6 +243,7 @@ export function useStatusSlots(sources: StatusSources, popover: Popover | null, 
   const { dnd } = useFlags(controlFlags());
   const now = useMinuteClock();
   const clock = useClockPrefs();
+  const onAir = useTallySlots(() => void menus.toggleNotificationCenter(appName, output));
   return [
     // The one indicator leads the status items while something acts (never hidden); "work alone" says so beside it.
     ...agentMarkSlot(context, accessible()),
@@ -252,6 +254,7 @@ export function useStatusSlots(sources: StatusSources, popover: Popover | null, 
     ...recordingSlot(context),
     // Never hidden either: an app using the microphone.
     ...micSlot(context),
+    ...onAir.slots,
     ...systemSlots({
       ...{ battery, network, volume },
       batteryPercent: menuBar.batteryPercent === true,
@@ -259,18 +262,16 @@ export function useStatusSlots(sources: StatusSources, popover: Popover | null, 
       dnd,
       popover,
       clock: formatClock(now, clock),
+      clockDot: onAir.clockDot,
       colors,
       accessible: accessible(),
       on: {
-        battery: (bounds?: Bounds) => {
-          if (!battery || !bounds) return;
-          // The battery panel (battery/lib/panel.tsx) under the item, its right edge at the item's.
-          void menus.toggleBattery(bounds.x + bounds.width, appName, output);
-        },
+        // The battery panel (battery/lib/panel.tsx) under the item, its right edge at the item's.
+        battery: (bounds?: Bounds) => void (battery && bounds && menus.toggleBattery(bounds.x + bounds.width, appName, output)),
         controlCenter: () => void menus.toggleControlCenter(appName, "main", output),
         wifi: () => void menus.toggleControlCenter(appName, "wifi", output),
         sound: context.openSound,
-        clock: () => void menus.toggleNotificationCenter(appName, output),
+        clock: onAir.openArea,
       },
     }),
   ];

@@ -6,7 +6,7 @@
  * days that have events from it.
  */
 
-import { busyDays, type Calendar, CalendarStore, type Day, readSidecar, watchCalendars } from "../../shared/calendar/index.ts";
+import { busyDays, type Calendar, CalendarStore, type Day, type Occurrence, occurrencesIn, readSidecar, watchCalendars } from "../../shared/calendar/index.ts";
 
 export class CalendarFeed {
   private calendars: Calendar[] = [];
@@ -45,6 +45,11 @@ export class CalendarFeed {
   /** The days in [from, to) that have an event in a calendar the person has not hidden. */
   busyDays(from: Day, to: Day): Set<Day> {
     return busyDays(this.calendars, from, to, this.hidden);
+  }
+
+  /** The occurrences in [from, to) in the calendars the person has not hidden, in time order (the widgets' calendar and Rundown). */
+  occurrences(from: Day, to: Day): Occurrence[] {
+    return occurrencesIn(this.calendars, from, to, this.hidden);
   }
 
   subscribe = (listener: () => void): (() => void) => {

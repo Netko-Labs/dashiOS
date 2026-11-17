@@ -21,8 +21,10 @@ export interface OnAirItem {
   since: number;
   /** For `due`: when it is due (ms): among due items the earliest wins. */
   deadline?: number;
-  /** Its words in the bar's capsule and Glance ("Tea 3:12", "Dashi asks"). */
+  /** Its words in the bar's capsule and Glance ("Tea", "Dashi asks"). */
   label: string;
+  /** When its countdown reaches zero (ms): the capsule and Glance show the time left beside the label. */
+  countdown?: number;
   /** The category glyph it carries wherever colour would have to. */
   glyph: string;
   /** The ink its card floods with; null for plain ink (extensions, notifications). */

@@ -93,3 +93,11 @@ function same(a: TallyView, b: TallyView): boolean {
     a.standby.every((item, i) => item === b.standby[i])
   );
 }
+
+let system: TallyStore | null = null;
+
+/** The one tally for the whole shell: the bar, the area, the lock screen and Glance read it. */
+export function systemTally(): TallyStore {
+  system ??= new TallyStore();
+  return system;
+}

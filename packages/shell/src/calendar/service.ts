@@ -58,6 +58,7 @@ export function startCalendar(options: CalendarOptions): CalendarService {
   const stopReminders = reminders.start();
   setCalendarBridge({
     busyDays: (from, to) => feed.busyDays(from, to),
+    occurrences: (from, to) => feed.occurrences(from, to),
     subscribe: feed.subscribe,
     getVersion: feed.getVersion,
     openDay: (day) => void openDay(day),

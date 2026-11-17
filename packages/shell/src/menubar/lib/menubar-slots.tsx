@@ -26,6 +26,8 @@ export interface SystemSlotsInput extends Pick<SystemSnapshot, "battery" | "netw
   /** The popover this bar has open, if any. */
   popover: Popover | null;
   clock: string;
+  /** The tally's colour when the holder has no capsule of its own (music): a dot before the clock. */
+  clockDot?: string | null;
   colors: Palette;
   on: { battery: (bounds?: Bounds) => void; controlCenter: () => void; wifi: () => void; sound: () => void; clock: () => void };
   /** The Metal host takes accessibility props: each item is named. */
@@ -148,7 +150,7 @@ function controlCenterSlot({ colors, on, named, toCenter }: SlotContext): Status
   };
 }
 
-function clockSlot({ clock, popover, colors, on, accessible = false }: SlotContext): StatusSlot {
+function clockSlot({ clock, clockDot, popover, colors, on, accessible = false }: SlotContext): StatusSlot {
   const label = `Notification Center, ${clock}`;
   return {
     key: "clock",
@@ -161,6 +163,9 @@ function clockSlot({ clock, popover, colors, on, accessible = false }: SlotConte
         onPress={on.clock}
         {...(accessible ? { accessibilityRole: "button" as const, accessibilityLabel: label } : {})}
         style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
           justifyContent: "center",
           height: 22,
           paddingLeft: 8,
@@ -169,6 +174,7 @@ function clockSlot({ clock, popover, colors, on, accessible = false }: SlotConte
           backgroundColor: popover?.kind === "notification-center" ? colors.switcherSelection : "#00000000",
         }}
       >
+        {clockDot ? <View testID="clock-tally" style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: clockDot }} /> : null}
         <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
           {clock}
         </Text>
