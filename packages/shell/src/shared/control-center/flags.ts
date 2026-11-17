@@ -11,7 +11,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { isRecord } from "@dashi/shape";
-import { setAppearanceSource } from "@dashi/ui";
+import { isAccentHex, setAppearanceSource } from "@dashi/ui";
 import { useSyncExternalStore } from "react";
 
 export interface Flags {
@@ -21,6 +21,14 @@ export interface Flags {
   dark: boolean;
   /** Night Shift: the screens' colors are warmed. */
   night: boolean;
+  /**
+   * The accent's seed as the shell resolved it (appearance/accent.ts: a
+   * preset's, a picked colour, or the wallpaper's), so every app's process
+   * paints the same accent without finding the wallpaper's itself. Absent:
+   * Kombu. settings.json's `appearance.accent` is the person's choice; this
+   * is only what it came to.
+   */
+  accent?: string | undefined;
 }
 
 const DEFAULTS: Flags = { dnd: false, dark: false, night: false };
@@ -34,9 +42,11 @@ export function parseFlags(text: string): Flags {
     return DEFAULTS;
   }
   if (!isRecord(value)) return DEFAULTS;
-  const { dnd, dark, night } = value;
-  return { dnd: dnd === true, dark: dark === true, night: night === true };
+  const { dnd, dark, night, accent } = value;
+  return { dnd: dnd === true, dark: dark === true, night: night === true, ...(isAccentHex(accent) ? { accent: accent.toUpperCase() } : {}) };
 }
+
+const same = (a: Flags, b: Flags): boolean => a.dnd === b.dnd && a.dark === b.dark && a.night === b.night && a.accent === b.accent;
 
 export function flagsPath(env: Record<string, string | undefined> = process.env): string {
   const state = env.XDG_STATE_HOME || join(env.HOME || homedir(), ".local", "state");
@@ -69,7 +79,8 @@ export class FlagsStore {
   /** Sets flags; the snapshot is replaced only when one changed. */
   set(patch: Partial<Flags>): void {
     const next = { ...this.snapshot, ...patch };
-    if (next.dnd === this.snapshot.dnd && next.dark === this.snapshot.dark && next.night === this.snapshot.night) return;
+    if (next.accent === undefined) delete next.accent;
+    if (same(next, this.snapshot)) return;
     this.snapshot = next;
     this.save();
     for (const listener of this.listeners) listener();
@@ -80,8 +91,7 @@ export class FlagsStore {
    * apps/kit/appearance.ts): listeners hear of a change, nothing is written.
    */
   adopt(flags: Flags): void {
-    const now = this.snapshot;
-    if (flags.dnd === now.dnd && flags.dark === now.dark && flags.night === now.night) return;
+    if (same(flags, this.snapshot)) return;
     this.snapshot = { ...flags };
     for (const listener of this.listeners) listener();
   }
@@ -114,11 +124,11 @@ export function useFlags(store: FlagsStore): Flags {
 }
 
 /**
- * Control Center's Dark Mode switch is what @dashi/ui paints by: each process
+ * Control Center's Dark Mode switch (and the accent the shell resolved) is what @dashi/ui paints by: each process
  * that renders (the shell, every first-party app) connects it once, before
  * its first render.
  */
 export function connectDarkMode(): void {
   const flags = controlFlags();
-  setAppearanceSource({ subscribe: flags.subscribe, isDark: () => flags.getSnapshot().dark });
+  setAppearanceSource({ subscribe: flags.subscribe, isDark: () => flags.getSnapshot().dark, accent: () => flags.getSnapshot().accent ?? null });
 }

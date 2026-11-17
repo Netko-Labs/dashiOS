@@ -15,7 +15,7 @@
  * of its inputs changes it.
  */
 
-import { darkColors, lightColors } from "@dashi/ui";
+import { paletteFor } from "@dashi/ui";
 import type { Compositor } from "../compositor/index.ts";
 
 /** One shadow, in logical pixels, as CSS `box-shadow` has it: black at `alpha`. */
@@ -46,6 +46,8 @@ export interface WindowStyleInputs {
   /** Settings › Appearance › "Highlight the active window". */
   highlight: boolean;
   reduceMotion: boolean;
+  /** The accent's seed (appearance/accent.ts), the ring's colour; null is Kombu. */
+  accent?: string | null;
 }
 
 const layer = (y: number, blur: number, spread: number, alpha: number): ShadowLayer => ({ x: 0, y, blur, spread, alpha });
@@ -67,8 +69,8 @@ export const FOCUS_FADE_MS = 150;
 
 const round = (value: number): number => Math.round(value * 1000) / 1000;
 
-export function windowStyle({ dark, highlight, reduceMotion }: WindowStyleInputs): WindowStyle {
-  const palette = dark ? darkColors : lightColors;
+export function windowStyle({ dark, highlight, reduceMotion, accent = null }: WindowStyleInputs): WindowStyle {
+  const palette = paletteFor(dark, accent);
   const tone = (layers: readonly ShadowLayer[]): ShadowLayer[] =>
     layers.map((each) => ({ ...each, alpha: dark ? round(Math.min(1, each.alpha * DARK_ALPHA)) : each.alpha }));
   return {
@@ -94,10 +96,10 @@ export class WindowStyleSync {
 
   set(change: Partial<WindowStyleInputs>): void {
     this.inputs = { ...this.inputs, ...change };
-    const { dark, highlight, reduceMotion } = this.inputs;
+    const { dark, highlight, reduceMotion, accent } = this.inputs;
     // Until Dark Mode and the settings are both known, nothing is sent (no flash of the wrong look).
     if (dark === undefined || highlight === undefined || reduceMotion === undefined) return;
-    const style = windowStyle({ dark, highlight, reduceMotion });
+    const style = windowStyle({ dark, highlight, reduceMotion, accent: accent ?? null });
     const key = JSON.stringify(style);
     if (key === this.sent) return;
     this.sent = key;

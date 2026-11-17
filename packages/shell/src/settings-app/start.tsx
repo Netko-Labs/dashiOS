@@ -63,6 +63,7 @@ export interface SettingsAppOptions {
   showAloneRecord?: PaneContext["showAloneRecord"];
   /** Whose press it was in this window, for the changes only the person makes (lib/person-only.ts). */
   byPerson?: PaneContext["byPerson"];
+  pickPixel?: PaneContext["pickPixel"];
   /** The apps' permissions (Privacy & Security), followed from login (privacy/). */
   privacy?: Pick<PrivacyStore, "subscribe" | "getSnapshot" | "revoke" | "refresh">;
   /** Dashi's vault and the login sources (Settings › Passwords). */
@@ -147,6 +148,7 @@ function paneContext(
     ...(options.alone ? { alone: options.alone } : {}),
     ...(options.showAloneRecord ? { showAloneRecord: options.showAloneRecord } : {}),
     ...(options.byPerson ? { byPerson: options.byPerson } : {}),
+    ...(options.pickPixel ? { pickPixel: options.pickPixel } : {}),
     ...(options.privacy ? { privacy: options.privacy } : {}),
     ...(options.passwords ? { passwords: options.passwords } : {}),
     ...answersOf(options),

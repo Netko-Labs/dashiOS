@@ -7,7 +7,7 @@
  * its sidebar, and a knob's resting circle (docs/design.html "Settings").
  */
 
-import { darkColors, lightColors, type MenuHighlight, TRUE_BLACK, useDark } from "@dashi/ui";
+import { darkColors, drawAccent, isKombu, lightColors, type MenuHighlight, TRUE_BLACK, useAccent, useDark } from "@dashi/ui";
 
 export interface ControlPalette {
   /** The panel. */
@@ -15,7 +15,7 @@ export interface ControlPalette {
   /** An off tile, a page row, a slider's track. */
   off: string;
   offInk: string;
-  /** An on tile: Dashi green. */
+  /** An on tile, a chosen pill, a ring round a chosen picture: the accent (Kombu's own green by default). */
   on: string;
   onInk: string;
   /** The knob on an on tile, and on an off one. */
@@ -92,10 +92,29 @@ export const DARK_CONTROLS: ControlPalette = {
   lit: `${TRUE_BLACK.ink}1f`,
 };
 
-export const controlPalette = (dark: boolean): ControlPalette => (dark ? DARK_CONTROLS : LIGHT_CONTROLS);
+const accented = new Map<string, ControlPalette>();
+
+/**
+ * The tokens in a mode, with the person's accent (@dashi/ui theme/accent) as
+ * `on`, the words on it and the knob's wash on it; Kombu, or none, keeps the
+ * hand-set green above.
+ */
+export function controlPalette(dark: boolean, accent: string | null = null): ControlPalette {
+  const base = dark ? DARK_CONTROLS : LIGHT_CONTROLS;
+  if (accent === null || isKombu(accent)) return base;
+  const key = `${accent.toUpperCase()}|${dark}`;
+  let palette = accented.get(key);
+  if (!palette) {
+    const { fill, on } = drawAccent(accent, dark);
+    palette = { ...base, on: fill, onInk: on, knobOn: `${on}${on === "#FFFFFF" ? "2e" : "1f"}` };
+    if (accented.size > 32) accented.clear();
+    accented.set(key, palette);
+  }
+  return palette;
+}
 
 export function useControlColors(): ControlPalette {
-  return controlPalette(useDark());
+  return controlPalette(useDark(), useAccent());
 }
 
 /**

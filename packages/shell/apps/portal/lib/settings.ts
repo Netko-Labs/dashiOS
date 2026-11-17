@@ -2,7 +2,7 @@
  * The portal's Settings (org.freedesktop.impl.portal.Settings, version 2):
  * what apps read about the desktop's look, from Dashi's own settings, not
  * read back from gsettings. `org.freedesktop.appearance` (color scheme,
- * accent, contrast, reduced motion) for every toolkit, and the
+ * accent, the person's, contrast, reduced motion) for every toolkit, and the
  * `org.gnome.desktop.interface` and `wm.preferences` keys GTK reads when it
  * is sandboxed or told to ask the portal (GTK_USE_PORTAL, GDK_DEBUG=portals).
  * The sources are Control Center's Dark Mode (control-center.json) and
@@ -10,7 +10,7 @@
  * key by key.
  */
 
-import { ACCENT, type AppLook, gtkThemeName, INTERFACE_FONT, WINDOW_BUTTONS } from "../../../src/shared/appearance/index.ts";
+import { type AppLook, accentFill, gtkThemeName, INTERFACE_FONT, nearestAccent, WINDOW_BUTTONS } from "../../../src/shared/appearance/index.ts";
 import { DBusError, type InterfaceSpec, type Variant, variant } from "../../../src/shared/dbus/index.ts";
 
 export const SETTINGS = "org.freedesktop.impl.portal.Settings";
@@ -22,6 +22,8 @@ export interface LookState {
   reduceMotion: boolean;
   pointerSize: number;
   look: AppLook;
+  /** The accent's seed, as the shell resolved it (control-center.json); null is Kombu. */
+  accent?: string | null;
 }
 
 export type SettingsTable = Map<string, Map<string, Variant>>;
@@ -34,7 +36,9 @@ export function accentTriple(hex: string): [number, number, number] | null {
 }
 
 export function settingsTable(state: LookState): SettingsTable {
-  const accent = accentTriple(ACCENT);
+  // The accent as Light draws it: libadwaita snaps it to the nearest of its named accents; Qt 6.6+ takes it as is.
+  const fill = accentFill(state.accent ?? null);
+  const accent = accentTriple(fill);
   const appearance = new Map<string, Variant>([
     // 1 prefer dark; light is Dashi's default look, which the portal calls "no preference" (0), as GNOME does.
     ["color-scheme", variant("u", state.dark ? 1 : 0)],
@@ -49,7 +53,7 @@ export function settingsTable(state: LookState): SettingsTable {
     ["enable-animations", variant("b", !state.reduceMotion)],
     ["text-scaling-factor", variant("d", 1)],
   ]);
-  if (state.look.accent) gnome.set("accent-color", variant("s", state.look.accent));
+  if (state.look.accent) gnome.set("accent-color", variant("s", nearestAccent(fill)));
   if (state.look.interFont) {
     gnome.set("font-name", variant("s", INTERFACE_FONT));
     gnome.set("document-font-name", variant("s", INTERFACE_FONT));

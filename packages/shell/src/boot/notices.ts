@@ -110,11 +110,11 @@ export function startSwitches(
   services.add("night shift", compositor ? startNightShift(compositor, flags) : () => {});
   // Dark Mode repaints the shell by itself (theme.ts); apps are told here (appearance/).
   services.add("appearance", startAppearance(flags, { ...look.appearanceDeps, corners: look.gtkCorners }));
-  // The compositor's title bars and the windows' depth follow Dark Mode too (IPC `chrome`, `window-style`).
+  // The compositor's title bars and the windows' depth follow Dark Mode too (the ring, the accent) (IPC `chrome`, `window-style`).
   const tellChrome = () => {
-    const { dark } = flags.getSnapshot();
+    const { dark, accent } = flags.getSnapshot();
     look.chromeStyle?.setDark(dark);
-    look.windowStyle?.set({ dark });
+    look.windowStyle?.set({ dark, accent: accent ?? null });
   };
   tellChrome();
   services.add("chrome", flags.subscribe(tellChrome));

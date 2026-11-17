@@ -42,7 +42,7 @@ function MonthDay({ date, day, busy, onPress }: { date: string; day: GridDay; bu
           style={{
             fontSize: 12,
             fontWeight: day.today ? "bold" : "normal",
-            color: day.today ? "#ffffff" : day.inMonth ? colors.text : colors.textMuted,
+            color: day.today ? colors.onAccent : day.inMonth ? colors.text : colors.textMuted,
             opacity: day.inMonth || day.today ? 1 : 0.5,
           }}
         >
@@ -57,7 +57,7 @@ function MonthDay({ date, day, busy, onPress }: { date: string; day: GridDay; bu
               width: 4,
               height: 4,
               borderRadius: 2,
-              backgroundColor: day.today ? "#ffffff" : colors.selection,
+              backgroundColor: day.today ? colors.onAccent : colors.selection,
               opacity: day.inMonth || day.today ? 1 : 0.5,
             }}
           />

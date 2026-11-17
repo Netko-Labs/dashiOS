@@ -26,7 +26,7 @@ const AVATAR = 72;
 function Avatar({ account }: { account: Account }) {
   const colors = useColors();
   // With no picture, or one the host cannot draw (a TIFF, an AVIF).
-  const initials = <Text style={{ fontSize: 28, fontWeight: "semibold", color: "#ffffff" }}>{initialsOf(account)}</Text>;
+  const initials = <Text style={{ fontSize: 28, fontWeight: "semibold", color: colors.onAccent }}>{initialsOf(account)}</Text>;
   return (
     <View
       testID="account-avatar"

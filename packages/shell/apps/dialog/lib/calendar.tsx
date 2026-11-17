@@ -54,7 +54,7 @@ function MonthDays({ chosen, today, onPick }: { chosen: Day; today: Day; onPick:
                   ...(same(cell, today) && !picked ? { borderWidth: 1, borderColor: colors.selection } : {}),
                 }}
               >
-                <Text style={{ fontSize: 12, fontWeight: picked ? "semibold" : "normal", color: picked ? "#ffffff" : colors.text }}>{String(day)}</Text>
+                <Text style={{ fontSize: 12, fontWeight: picked ? "semibold" : "normal", color: picked ? colors.onAccent : colors.text }}>{String(day)}</Text>
               </View>
             );
           })}
