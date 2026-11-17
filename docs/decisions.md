@@ -6427,3 +6427,19 @@ short words, as the rulebook is written.
   screen already sees (the lock, its widgets redacted).
 - **Undo:** `devCapture` in `lock/controller.tsx` and the `unset` in
   `session/dashi-session`.
+
+### D486. Every card on the lock screen can be pressed; one without an app opens the notification area
+
+- **Date:** 2026-11-17. `v09/fix-inks-1`.
+- **Found:** pass 49's blind press on the lock opened nothing after the
+  unlock, and that was a bug, not a miss: the row under the clock
+  (Weather, Battery, what is next) had no press at all, and in the side
+  column only Calendar, Rundown, Notes and System had something to open.
+  On the first-run layout no card on the lock could open anything.
+- **Decision:** the row's cards are pressed like the side column's. A press
+  asks for the password and says what it will open; once the password is
+  in, a card with an app of its own opens it (Battery now opens Settings)
+  and every other card opens the notification area, where it lives
+  ("Unlock to open Weather in Notifications").
+- **Undo:** `lockOpenerOf` in `widgets/openers.ts`, `press` in
+  `lock/lib/screen.tsx`.

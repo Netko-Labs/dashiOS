@@ -13,7 +13,7 @@ export { COLUMN_WIDTH, columnHeight, GRID, packColumn, SIZE_ORDER, SPANS, sizeWo
 export { LiveCards } from "./live.tsx";
 export { LOCK_ROW, LockHead, LockSide, lockSide, NowBar } from "./lock.tsx";
 export { alpha, type CardColours, type CardLook, cardColours, useCard } from "./look.tsx";
-export { openerOf } from "./openers.ts";
+export { lockOpenerOf, openerOf } from "./openers.ts";
 export { Blank, Btn, Glyph, Grow, Head, Lab, Meta, NowTag, Num, Private, Rule, Standby, Title, VRule, Words } from "./parts.tsx";
 export { DEFAULT_WIDGETS, MAX_WIDGETS, readWidgets, WidgetStore, widgetsPath } from "./store.ts";
 export type { HubRun, Placed, Placement, WidgetInfo, WidgetKind, WidgetSize } from "./types.ts";

@@ -48,6 +48,8 @@ export interface HubNeeds {
   openAsk?(id: string): void;
   /** Stop an agent's run, from its live card. */
   stopRun?(id: string): void;
+  /** Open the notification area, where the widgets live (a press on the lock screen's card with no app of its own). */
+  openArea?(): void;
   runs?: { subscribe(listener: () => void): () => void; getSnapshot(): readonly HubRun[] };
   asks?: { subscribe(listener: () => void): () => void; getSnapshot(): readonly PillAsk[] };
   tally?: TallyStore;
@@ -85,6 +87,10 @@ export class WidgetHub {
         resident: false,
       }),
     );
+  }
+
+  openArea(): void {
+    this.needs.openArea?.();
   }
 
   openAsk(id: string): void {
