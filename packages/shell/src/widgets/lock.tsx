@@ -11,6 +11,7 @@
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { glyph, isGlyphName } from "../shared/inks/index.ts";
+import { useHostAbilities } from "../shared/metal/index.ts";
 import { onAirWords, useSecondTick } from "../tally/index.ts";
 import { Card } from "./card.tsx";
 import { widgetInfo } from "./catalog.ts";
@@ -18,6 +19,7 @@ import { useWidgetEnv } from "./env.tsx";
 import { SPANS, span } from "./layout.ts";
 import { noticeCounts } from "./lib/counts.ts";
 import { clockText, useSource } from "./lib/data.ts";
+import { clockFace } from "./lib/numerals.ts";
 import { weatherLook } from "./lib/sources/weather.ts";
 import { WidgetTile } from "./lib/views/widget.tsx";
 import { Btn, Lab, NowTag, Num } from "./parts.tsx";
@@ -59,11 +61,12 @@ function DateRow({ now }: { now: number }) {
   );
 }
 
-/** The clock, its hours over its minutes (Metal draws Regular: Inter Display's thin cut waits on mirin, docs: for-mirin.md). */
+/** The clock, its hours over its minutes, in Inter Display ExtraLight (Regular on a host from before mirin PR #55). */
 function StackedClock({ now, hour24 }: { now: number; hour24: boolean }) {
+  const face = clockFace(useHostAbilities());
   const [hours, minutes] = clockText(now, hour24).split(":");
   // Two lines of 120 points: the design's 196 on the laptop's 1029-point screen leaves no room on a smaller one.
-  const line = (text: string) => <Text style={{ fontSize: 120, lineHeight: 112, color: INK }}>{hour24 ? text.padStart(2, "0") : text}</Text>;
+  const line = (text: string) => <Text style={{ fontSize: 120, lineHeight: 112, color: INK, ...face }}>{hour24 ? text.padStart(2, "0") : text}</Text>;
   return (
     <View testID="lock-clock" style={{ flexDirection: "column", alignItems: "center" }}>
       {line(hours ?? "")}

@@ -14,6 +14,7 @@ import { idleOffReason } from "../power/index.ts";
 import { type Settings, startSettings } from "../settings/index.ts";
 import { DEFAULT_POINTER_SIZE } from "../shared/appearance/index.ts";
 import { controlFlags } from "../shared/control-center/index.ts";
+import { hostAbilities } from "../shared/metal/index.ts";
 import type { System } from "../system/index.ts";
 import { TextSize } from "../text-size.ts";
 import { reportWallpaper, type WallpaperChoice, WallpaperSync } from "../wallpaper/index.ts";
@@ -132,6 +133,7 @@ function applySettings(look: Applied, settings: Settings, desktops: Desktops, do
   chromeStyle?.setCorners(settings.appearance.cornerRadius);
   gtkCorners.set(settings.appearance.cornerRadius);
   chromeStyle?.setReduceMotion(settings.appearance.reduceMotion);
+  hostAbilities.setReduceMotion(settings.appearance.reduceMotion);
   windowStyle?.set({ highlight: settings.appearance.highlightActiveWindow, reduceMotion: settings.appearance.reduceMotion });
   state.wallpaperChoice = settings.appearance.wallpaper;
   if (state.liveWallpaper) state.liveWallpaper.apply(state.wallpaperChoice);

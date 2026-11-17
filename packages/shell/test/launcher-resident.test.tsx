@@ -42,6 +42,7 @@ function fakeHosts() {
       setTitle() {},
       setSize() {},
       setMinSize() {},
+      setReduceMotion() {},
       open: (window: NativeWindowOptions) => lines.push(`open ${window.title}`),
     };
     return host as NativeHostTransport;

@@ -63,9 +63,12 @@ function ListRow({ info, chosen, onPress }: { info: WidgetInfo; chosen: boolean;
   );
 }
 
-/** The sizes a widget's previews show, in order: those up to Wide. */
+/**
+ * The sizes a widget's previews show, those up to Wide, smallest first as
+ * its line in the list reads ("Small · Wide"): Return adds the first.
+ */
 export function previewSizes(info: WidgetInfo): WidgetSize[] {
-  return info.sizes.filter((size) => SPANS[size].cols <= 4 && SPANS[size].rows <= 2);
+  return info.sizes.filter((size) => SPANS[size].cols <= 4 && SPANS[size].rows <= 2).sort((a, b) => SIZE_ORDER.indexOf(a) - SIZE_ORDER.indexOf(b));
 }
 
 export interface GalleryProps {

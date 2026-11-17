@@ -2,7 +2,7 @@
  * The album print (round five, #28): the real cover, read once per track
  * as 22 × 22 pixels through FFmpeg (a separate program Dashi runs, under its
  * own licence: LGPL/GPL), turned into a two-ink halftone and kept, so Metal
- * is handed two masks and never the cover itself. The sleeve's colour is the
+ * is handed dots (or two masks, on an older host) and never the cover itself. The sleeve's colour is the
  * cover's dominant hue clamped to H300–335 and chroma ≤ 0.12, else plain
  * ink; its bright shape stays under 40 % of the square.
  */
@@ -86,8 +86,48 @@ export function stockPrint(seed: string): Print {
   return { cells, sleeve: null };
 }
 
+/** How many sizes of dot a print in `<Dots>` has: one radius per node, so the halftone's sizes are rounded to these. */
+export const HALFTONE_SIZES = 5;
+
+/** One node of the print in `<Dots>`: the cells (`1` drawn) with one radius, as a share of the pitch, in ink or the sleeve's colour. */
+export interface HalftoneLayer {
+  radius: number;
+  colour: "ink" | "sleeve";
+  cells: string;
+}
+
+/** A cell's dot: its radius as a share of the pitch, and whether it is in the disc (the sleeve's colour). */
+function halftoneDot(print: Print, x: number, y: number): { r: number; disc: boolean } {
+  const v = print.cells[y * ART_GRID + x] ?? 0;
+  const d = Math.hypot(x - ART_GRID * 0.62, y - ART_GRID * 0.7) / ART_GRID;
+  return { r: 0.48 * Math.min(1, Math.max(0.12, 1 - v + (d < 0.3 ? 0.2 : 0))), disc: d < 0.3 };
+}
+
 /**
- * The halftone as two masks: the disc (radius 0.3 of the square, about 28 %,
+ * The halftone for `<Dots>` (rows of `ART_GRID`, `cells`): each dot's size
+ * rounded to one of `HALFTONE_SIZES`, one layer per size and colour that has
+ * a dot, at most ten nodes for 484 dots.
+ */
+export function halftoneLayers(print: Print): HalftoneLayer[] {
+  const layers = new Map<string, { radius: number; colour: "ink" | "sleeve"; cells: string[] }>();
+  for (let y = 0; y < ART_GRID; y++)
+    for (let x = 0; x < ART_GRID; x++) {
+      const { r, disc } = halftoneDot(print, x, y);
+      const size = Math.max(1, Math.round((r / 0.48) * HALFTONE_SIZES));
+      const colour = disc ? "sleeve" : "ink";
+      const key = `${colour}:${size}`;
+      let layer = layers.get(key);
+      if (!layer) {
+        layer = { radius: (0.48 * size) / HALFTONE_SIZES, colour, cells: Array(ART_GRID * ART_GRID).fill("0") };
+        layers.set(key, layer);
+      }
+      layer.cells[y * ART_GRID + x] = "1";
+    }
+  return [...layers.values()].map(({ radius, colour, cells }) => ({ radius, colour, cells: cells.join("") }));
+}
+
+/**
+ * The halftone as two masks (a host from before `<Dots>`): the disc (radius 0.3 of the square, about 28 %,
  * under the 40 % the design allows) in the sleeve's colour, the rest in ink.
  */
 export function halftone(print: Print): { ink: string; sleeve: string } {
@@ -96,10 +136,8 @@ export function halftone(print: Print): { ink: string; sleeve: string } {
   const sleeve: string[] = [];
   for (let y = 0; y < ART_GRID; y++)
     for (let x = 0; x < ART_GRID; x++) {
-      const v = print.cells[y * ART_GRID + x] ?? 0;
-      const d = Math.hypot(x - ART_GRID * 0.62, y - ART_GRID * 0.7) / ART_GRID;
-      const r = p * 0.48 * Math.min(1, Math.max(0.12, 1 - v + (d < 0.3 ? 0.2 : 0)));
-      (d < 0.3 ? sleeve : ink).push(`<circle cx="${(x + 0.5) * p}" cy="${(y + 0.5) * p}" r="${r.toFixed(1)}" fill="#000"/>`);
+      const { r, disc } = halftoneDot(print, x, y);
+      (disc ? sleeve : ink).push(`<circle cx="${(x + 0.5) * p}" cy="${(y + 0.5) * p}" r="${(r * p).toFixed(1)}" fill="#000"/>`);
     }
   const svg = (body: string[]) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${ART_GRID * p} ${ART_GRID * p}">${body.join("")}</svg>`;
   return { ink: svg(ink), sleeve: svg(sleeve) };

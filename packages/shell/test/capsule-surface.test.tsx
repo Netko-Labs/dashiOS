@@ -27,6 +27,7 @@ function hosts() {
       setTitle() {},
       setSize() {},
       setMinSize() {},
+      setReduceMotion() {},
       open: (window) => {
         const surface: { output?: string; keyboard?: string } = window.surface ?? {};
         log.push(`open ${surface.output ?? "any"} ${surface.keyboard}`);

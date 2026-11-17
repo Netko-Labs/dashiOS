@@ -16,7 +16,7 @@ import { EditBar } from "./edit-bar.tsx";
 import type { EditSession } from "./edit-session.tsx";
 import { useWidgetEnv } from "./env.tsx";
 import { Gallery } from "./gallery.tsx";
-import { packColumn, sizeWord } from "./layout.ts";
+import { packColumn, sizeWord, tagOnEdge } from "./layout.ts";
 import { cycleSize, dropIndex } from "./lib/edit-keys.ts";
 import type { Placed, Placement, WidgetInfo, WidgetSize } from "./types.ts";
 
@@ -87,7 +87,7 @@ function Decoration({ placed, tag, resizable, chosen, onChoose, onRemove, onResi
           style={{
             position: "absolute",
             left: 10,
-            bottom: 8,
+            bottom: tagOnEdge(placed.placement.size) ? -10 : 8,
             height: 20,
             paddingLeft: 8,
             paddingRight: 8,

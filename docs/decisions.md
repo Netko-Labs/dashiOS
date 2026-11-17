@@ -6456,3 +6456,74 @@ short words, as the rulebook is written.
   asked to say so when it drops a second root (patch in the pass's
   report), not changed here.
 - **Undo:** the `lock-screen` view in `lock/lib/screen.tsx`.
+
+### D490. Surfaces ask what the session's Metal hosts say
+
+- **Date:** 2026-11-17. `v09/inks-metal`.
+- **Found:** mirin PR #55 (mirin `main` `cde7c24`) adds light weights, the
+  display cut, `<Dots>` and `pulse`, each behind a flag on the host's
+  `protocol` line; a host from before refuses a whole tree that uses one.
+  Nothing in the shell told a component what its host had said.
+- **Decision:** `shared/metal/abilities.ts` keeps one record for the shell:
+  every host it spawns (`spawnShellHost`, the warm hosts, the launcher's
+  resident host) is noted, and a flag is on only while every live host that
+  has spoken says it (`useHostAbilities`). The hosts are one binary in a
+  session, so the shell's answer stands for each surface; until a host has
+  spoken the answer is no and today's look is drawn. Apps and applets run
+  their own processes and do not use the new props yet.
+- **Undo:** drop `noteHost` from the three spawns; components then see
+  `NO_ABILITIES` and draw as before.
+
+### D491. The Inks' numbers in Inter Display, by their style
+
+- **Date:** 2026-11-17. `v09/inks-metal`.
+- **Decision:** `Num` sets `fontFamily: "display"` and the weight from
+  round five's rule (300–500 by value, 400 under 40 points, units Regular);
+  the lock's and Glance's clocks 200. Set in the style directly:
+  `@mirinjs/metal-ui`'s Tailwind `font-light` still maps to normal, since it
+  cannot see the host's flags. On an older host: Regular, Medium when big and
+  near its end, as before (`widgets/lib/numerals.ts`).
+- **Undo:** `numberFace` and `clockFace` return `{}`.
+
+### D492. Dot rows and the album print through `<Dots>`
+
+- **Date:** 2026-11-17. `v09/inks-metal`.
+- **Decision:** a `DotRow` is one `<Dots>`, padded by `pitch/2 − r` all
+  round so its box stays `count·pitch` by `pitch` and no layout moves; the
+  mark is the `head`, ringed. The album print keeps its halftone by rounding
+  each dot to one of five sizes: one `<Dots>` (`rows` 22, `cells`) per size
+  and colour, at most ten nodes for 484 dots, instead of two 484-circle SVG
+  masks rasterised per track. An older host keeps the masks.
+- **Cost:** the print has five dot sizes where the masks had any.
+- **Undo:** `DotRow` and `Halftone` without their `dots` branch.
+
+### D493. The "Now" tag breathes, and Reduce Motion reaches every shell host
+
+- **Date:** 2026-11-17. `v09/inks-metal`.
+- **Decision:** `NowTag` carries `pulse` `{ from 0.4, to 1, periodMs 2000,
+  fps 4 }` where the host says `pulse`. Reduce Motion goes to each host the
+  shell spawns: at spawn (`reduceMotion` in `shellHostOptions`, an
+  environment variable an old host ignores), and as a line on each change
+  and when a host first says `pulse` (never to a host that did not say it).
+  Applets' and apps' hosts are not reached: none of them breathes yet.
+- **Undo:** `NOW_BREATH` off in `widgets/parts.tsx`; the
+  `hostAbilities.setReduceMotion` line in `boot/look.ts`.
+
+### D494. The gallery's previews read as its list does
+
+- **Date:** 2026-11-17. `v09/inks-metal`. Pass 52.
+- **Found:** Music's line reads "Small · Wide" but its previews came in the
+  catalog's order (Wide first), so ↓ to Music and Return added it Wide.
+- **Decision:** previews are sorted smallest first (`SIZE_ORDER`), as the
+  line is; Return adds the first, the size the line names first.
+- **Undo:** drop the sort in `previewSizes` (`widgets/gallery.tsx`).
+
+### D495. A chosen one-row card wears its tag across its bottom edge
+
+- **Date:** 2026-11-17. `v09/inks-metal`. Pass 52.
+- **Found:** a chosen Weather at Compact had "Weather · mizu · Compact"
+  drawn over its temperature: a one-row card has no room under its number.
+- **Decision:** on a card one row high (Mini, Compact, Strip) the tag sits
+  across the bottom edge, half outside, over the gap; taller cards keep it
+  inside at the bottom (`tagOnEdge`, `widgets/layout.ts`).
+- **Undo:** `bottom: 8` for every size in `widgets/edit.tsx`.

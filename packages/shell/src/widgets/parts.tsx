@@ -3,6 +3,8 @@
 import { Svg, Text, View, type ViewStyle } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { type GlyphName, glyph } from "../shared/inks/index.ts";
+import { useHostAbilities } from "../shared/metal/index.ts";
+import { numberFace, unitFace } from "./lib/numerals.ts";
 import { useCard, useRedacted } from "./look.tsx";
 
 /**
@@ -66,9 +68,9 @@ export function Words({ children, lines = 1, ink, max = 40 }: { children: string
 
 /**
  * The one number (role "value"): printed in the card's ink, its unit beside
- * it at max(14, 0.3 em) in the same ink, weight 400 (#12). Its weight follows
- * the value (#14: `weight` 0–1 → 300 to 500); Metal draws only Regular and
- * Medium, so 300 and 400 are Regular and 500 is Medium (docs: for-mirin.md).
+ * it at max(14, 0.3 em) in the same ink, weight 400 (#12). Inter Display,
+ * its weight following the value (#14: `weight` 0–1 → 300 to 500) where the
+ * host draws it, Regular or Medium on an older one (lib/numerals.ts).
  */
 export function Num({
   value,
@@ -87,13 +89,13 @@ export function Num({
 }) {
   const c = useCard();
   const colour = ink ?? (plain ? c.ink : c.value);
-  const medium = size >= 40 && weight >= 0.75;
+  const abilities = useHostAbilities();
   return (
     <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-      <Text style={{ fontSize: size, lineHeight: Math.round(size * 0.95), color: colour, ...(medium ? { fontWeight: "500" as const } : {}) }}>{value}</Text>
+      <Text style={{ fontSize: size, lineHeight: Math.round(size * 0.95), color: colour, ...numberFace(abilities, size, weight) }}>{value}</Text>
       {unit ? (
         <View style={{ marginLeft: 2, marginTop: Math.round(size * 0.06) }}>
-          <Text style={{ fontSize: Math.max(14, size * 0.3), color: colour }}>{unit}</Text>
+          <Text style={{ fontSize: Math.max(14, size * 0.3), color: colour, ...unitFace(abilities) }}>{unit}</Text>
         </View>
       ) : null}
     </View>
@@ -186,11 +188,16 @@ export function Private({ what, width, children }: { what: string; width: number
   return useRedacted() ? <Blank what={what} width={width} /> : children;
 }
 
-/** The "Now" tag on the card on air: vermilion, its words white. */
+/** How the "Now" tag breathes, where the host can (round five: one opacity loop, still under Reduce Motion). */
+export const NOW_BREATH = { from: 0.4, to: 1, periodMs: 2000, fps: 4 } as const;
+
+/** The "Now" tag on the card on air: vermilion, its words white; it breathes on a host that takes `pulse`. */
 export function NowTag({ tally }: { tally: string }) {
+  const { pulse } = useHostAbilities();
   return (
     <View
       testID="now-tag"
+      {...(pulse ? { pulse: NOW_BREATH } : {})}
       style={{ flexDirection: "row", alignItems: "center", gap: 5, height: 18, paddingLeft: 6, paddingRight: 8, borderRadius: 9, backgroundColor: tally }}
     >
       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#FFFFFF" }} />

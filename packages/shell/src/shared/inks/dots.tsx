@@ -2,14 +2,17 @@
  * Dots for indicators only (round five, #1): progress, histories, the
  * battery's limit, a run's steps, the tally. Never for letters or numbers.
  *
- * mirin Metal has no dot primitive yet (`docs/for-mirin.md` in the review
- * folder asks for one), so a row is two `Svg` masks stacked: the lit dots in
- * the ink and the unlit ones in the quiet tone, three nodes whatever the
- * count, not one View per dot. The markup is built once per value step.
+ * On a host that draws `<Dots>` (mirin PR #55, its `protocol` line says
+ * `dots`) a row is one leaf the host paints in one go. Its box is
+ * `(count − 1)·pitch + 2r`; Dashi's is `count·pitch`, each dot centred in its
+ * cell, so it is padded by `pitch/2 − r` all round and every layout stays as
+ * it was. On an older host a row is two `Svg` masks stacked: the lit dots in
+ * the ink and the unlit ones in the quiet tone, built once per value step.
  */
 
-import { Svg, View } from "@mirinjs/metal";
+import { Dots, Svg, View } from "@mirinjs/metal";
 import { memo } from "react";
+import { useHostAbilities } from "../metal/index.ts";
 
 export interface DotRowProps {
   /** How many dots. */
@@ -43,9 +46,25 @@ export function dotRowMarkup(count: number, value: number, pitch: number, radius
   return { lit: svg(on), unlit: svg(off) };
 }
 
-/** A row of dots filling from the left, in two colours, as three nodes. */
+/** The padding that makes `<Dots>`' box Dashi's: `count·pitch` across, `pitch` down. */
+export function dotsInset(pitch: number, r: number): number {
+  return Math.max(0, pitch / 2 - r);
+}
+
+/** A row of dots filling from the left, in two colours: one `<Dots>`, or three nodes on an older host. */
 export const DotRow = memo(function DotRow({ count, value, pitch = 7, radius = 0.36, lit, unlit, mark }: DotRowProps) {
   const step = Math.round(count * Math.min(1, Math.max(0, value)));
+  const { dots } = useHostAbilities();
+  if (dots) {
+    const r = radius * pitch;
+    const markAt = mark === undefined ? -1 : Math.round(count * mark) - 1;
+    const head = markAt >= 0 ? { head: markAt, headRing: true, headColor: markAt < step ? lit : unlit } : {};
+    return (
+      <View style={{ padding: dotsInset(pitch, r) }}>
+        <Dots count={count} pitch={pitch} radius={r} lit={step} color={lit} unlitColor={unlit} {...head} />
+      </View>
+    );
+  }
   const markup = dotRowMarkup(count, step / count, pitch, radius, mark);
   const width = count * pitch;
   return (
