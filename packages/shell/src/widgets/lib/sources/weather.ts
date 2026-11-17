@@ -92,7 +92,8 @@ export class Weather extends Source<WeatherState> {
     this.fetch = options.fetch ?? ((url) => fetch(url, { signal: AbortSignal.timeout(10_000) }));
     this.now = options.now ?? Date.now;
     this.place = options.place ?? zoneCity(hereZone());
-    this.cachePath = options.cachePath === undefined ? join(process.env.XDG_CACHE_HOME ?? join(homedir(), ".cache"), "dashi", "weather.json") : options.cachePath;
+    this.cachePath =
+      options.cachePath === undefined ? join(process.env.XDG_CACHE_HOME ?? join(homedir(), ".cache"), "dashi", "weather.json") : options.cachePath;
     const cached = this.readCache();
     if (cached) this.set({ status: this.now() - cached.at > WEATHER_STALE_MS ? "stale" : "ok", now: cached });
   }

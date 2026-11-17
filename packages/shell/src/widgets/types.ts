@@ -7,7 +7,19 @@ import type { GlyphName } from "../shared/inks/index.ts";
 export type WidgetSize = "mini" | "compact" | "small" | "strip" | "wide" | "tall" | "large";
 
 /** Dashi's own widgets, and an outside extension's by its id ("ext:<extension>/<widget>"). */
-export type WidgetKind = "rundown" | "clock" | "world" | "calendar" | "weather" | "battery" | "system" | "media" | "timer" | "notes" | "agents" | `ext:${string}`;
+export type WidgetKind =
+  | "rundown"
+  | "clock"
+  | "world"
+  | "calendar"
+  | "weather"
+  | "battery"
+  | "system"
+  | "media"
+  | "timer"
+  | "notes"
+  | "agents"
+  | `ext:${string}`;
 
 /** One placed widget (an instance): what, how big, and its own settings. */
 export interface Placement {

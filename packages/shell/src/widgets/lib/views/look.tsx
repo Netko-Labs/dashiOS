@@ -46,7 +46,17 @@ export function cardColours(look: CardLook): CardColours {
   if (look.air) {
     const on = inks.onInk;
     const ground = look.ink ? inks.ink[look.ink] : inks.text.ink;
-    return { paper: ground, value: on, ink: on, secondary: alpha(on, 0.92), tertiary: alpha(on, 0.8), hairline: alpha(on, 0.32), off: alpha(on, 0.34), fill: on, onFill: ground };
+    return {
+      paper: ground,
+      value: on,
+      ink: on,
+      secondary: alpha(on, 0.92),
+      tertiary: alpha(on, 0.8),
+      hairline: alpha(on, 0.32),
+      off: alpha(on, 0.34),
+      fill: on,
+      onFill: ground,
+    };
   }
   const text = inks.text;
   return {

@@ -42,7 +42,17 @@ export function readPlaying(player: string, properties: ReadonlyMap<string, unkn
   const playing = properties.get("PlaybackStatus") === "Playing";
   const art = typeof meta.get("mpris:artUrl") === "string" ? String(meta.get("mpris:artUrl")) : "";
   const since = before && before.playing === playing && before.title === title ? before.since : now;
-  return { player, title, artist, playing, length: Number.isFinite(length) ? length : 0, position: Number.isFinite(position) ? position : 0, positionAt: now, art, since };
+  return {
+    player,
+    title,
+    artist,
+    playing,
+    length: Number.isFinite(length) ? length : 0,
+    position: Number.isFinite(position) ? position : 0,
+    positionAt: now,
+    art,
+    since,
+  };
 }
 
 /** Where a track is at `now`, counting on while it plays. */

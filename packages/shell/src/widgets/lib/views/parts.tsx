@@ -157,7 +157,10 @@ export function Private({ what, width, children }: { what: string; width: number
 /** The "Now" tag on the card on air: vermilion, its words white. */
 export function NowTag({ tally }: { tally: string }) {
   return (
-    <View testID="now-tag" style={{ flexDirection: "row", alignItems: "center", gap: 5, height: 18, paddingLeft: 6, paddingRight: 8, borderRadius: 9, backgroundColor: tally }}>
+    <View
+      testID="now-tag"
+      style={{ flexDirection: "row", alignItems: "center", gap: 5, height: 18, paddingLeft: 6, paddingRight: 8, borderRadius: 9, backgroundColor: tally }}
+    >
       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#FFFFFF" }} />
       <Text style={{ fontSize: 10, fontWeight: "bold", color: "#FFFFFF" }}>NOW</Text>
     </View>

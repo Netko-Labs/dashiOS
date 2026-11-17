@@ -17,7 +17,17 @@ export function eventsOnAir(occurrences: readonly Occurrence[], now: number): On
     if (occurrence.event.allDay) return [];
     const start = instantOf(occurrence.start).getTime();
     if (now < start - EVENT_DUE_MS || now >= start) return [];
-    return [{ key: `event:${occurrence.event.uid}:${occurrence.start}`, reason: "due", since: start - EVENT_DUE_MS, deadline: start, label: occurrence.event.title || "Event", glyph: "cal", ink: "miso" }];
+    return [
+      {
+        key: `event:${occurrence.event.uid}:${occurrence.start}`,
+        reason: "due",
+        since: start - EVENT_DUE_MS,
+        deadline: start,
+        label: occurrence.event.title || "Event",
+        glyph: "cal",
+        ink: "miso",
+      },
+    ];
   });
 }
 

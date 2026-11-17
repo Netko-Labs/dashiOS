@@ -73,7 +73,9 @@ export class Timers extends Source<readonly Timer[]> {
     const now = this.clock.now();
     this.change(id, (timer) => {
       const left = timeLeft(timer, now) + 60_000;
-      return timer.endsAt === null ? { ...timer, left, total: timer.total + 60_000 } : { ...timer, endsAt: now + left, total: Math.max(timer.total, left), since: now };
+      return timer.endsAt === null
+        ? { ...timer, left, total: timer.total + 60_000 }
+        : { ...timer, endsAt: now + left, total: Math.max(timer.total, left), since: now };
     });
   }
 

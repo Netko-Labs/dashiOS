@@ -414,6 +414,7 @@ packages/shell/src/main.tsx	packages/shell/src/shared/dbus
 packages/shell/src/main.tsx	packages/shell/src/shared/face
 packages/shell/src/main.tsx	packages/shell/src/shared/files
 packages/shell/src/main.tsx	packages/shell/src/shared/fs
+packages/shell/src/main.tsx	packages/shell/src/shared/inks
 packages/shell/src/main.tsx	packages/shell/src/shared/io
 packages/shell/src/main.tsx	packages/shell/src/shared/links
 packages/shell/src/main.tsx	packages/shell/src/shared/locale
@@ -438,6 +439,7 @@ packages/shell/src/main.tsx	packages/shell/src/spaces
 packages/shell/src/main.tsx	packages/shell/src/suspend.ts
 packages/shell/src/main.tsx	packages/shell/src/switcher
 packages/shell/src/main.tsx	packages/shell/src/system
+packages/shell/src/main.tsx	packages/shell/src/tally
 packages/shell/src/main.tsx	packages/shell/src/text-size.ts
 packages/shell/src/main.tsx	packages/shell/src/theme.ts
 packages/shell/src/main.tsx	packages/shell/src/toplevels.ts

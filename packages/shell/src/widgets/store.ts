@@ -34,7 +34,9 @@ export function widgetsPath(env: NodeJS.ProcessEnv = process.env): string {
 }
 
 function isKind(kind: string): kind is WidgetKind {
-  return kind.startsWith("ext:") || ["rundown", "clock", "world", "calendar", "weather", "battery", "system", "media", "timer", "notes", "agents"].includes(kind);
+  return (
+    kind.startsWith("ext:") || ["rundown", "clock", "world", "calendar", "weather", "battery", "system", "media", "timer", "notes", "agents"].includes(kind)
+  );
 }
 
 function cleanPlacement(entry: Infer<typeof PLACEMENT>): Placement | null {
