@@ -6406,3 +6406,24 @@ short words, as the rulebook is written.
   widgets). Search groups them the same way (`isExtension`, `inMenuBar`).
   One Dashi can't read stays with the applets: nothing says what it is.
 - **Undo:** `kindOfInstalled` in `apps/software/lib/applets/pages.tsx`.
+
+### D485. The VM pictures the real lock screen through a checkout's session only
+
+- **Date:** 2026-11-17. `v09/fix-inks-1`.
+- **Question:** pass 49 could not see the lock screen: agents are refused
+  while locked, the person's ⇧❖3 never reaches the shell then (dashi-comp
+  sends no binding), and QEMU cannot read the Venus GPU's screen.
+- **Decision:** a shell started with `DASHI_DEV_LOCK_CAPTURE=<folder>`
+  takes a picture of the screen while it is locked each time a file named
+  `ask` appears in that folder (`lock/lib/dev-capture.ts`), through the
+  compositor's own capture, which while locked draws only the wallpaper
+  and the lock surface. The installed `dashi-session` unsets the variable
+  before it starts anything, so only a checkout's session
+  (`vm/dev-session`) can have it; the folder must be absolute, a real
+  directory, the user's own and mode 0700, or it is refused and logged.
+- **Why it is no path in:** an installed session has no code that reads
+  the variable's folder; a person at a locked screen cannot set a
+  session's environment; and what it pictures is what anyone at the
+  screen already sees (the lock, its widgets redacted).
+- **Undo:** `devCapture` in `lock/controller.tsx` and the `unset` in
+  `session/dashi-session`.
