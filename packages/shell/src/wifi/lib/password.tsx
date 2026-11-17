@@ -31,7 +31,7 @@ function ShowPassword({ shown, onToggle }: { shown: boolean; onToggle: () => voi
           borderColor: shown ? colors.selection : colors.checkbox,
         }}
       >
-        {shown && <Svg markup={CHECK} size={10} color="#ffffff" />}
+        {shown && <Svg markup={CHECK} size={10} color={colors.onAccent} />}
       </View>
       <Text style={{ fontSize: 12, color: colors.text }}>Show password</Text>
     </View>

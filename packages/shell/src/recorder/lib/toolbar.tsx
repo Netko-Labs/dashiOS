@@ -61,7 +61,7 @@ function ToolButton({ testID, chosen, glyph, onPress }: { testID: string; chosen
         hoverBackgroundColor: chosen ? colors.selection : colors.button,
       }}
     >
-      <Svg markup={glyph} size={18} color={chosen ? "#ffffff" : colors.text} />
+      <Svg markup={glyph} size={18} color={chosen ? colors.onAccent : colors.text} />
     </View>
   );
 }

@@ -45,7 +45,7 @@ export function Tick({ label, on, testID, onChange }: { label: string; on: boole
           justifyContent: "center",
         }}
       >
-        {on && <Svg markup={CHECK} size={12} color="#ffffff" />}
+        {on && <Svg markup={CHECK} size={12} color={colors.onAccent} />}
       </View>
       <Text numberOfLines={1} style={{ fontSize: 12.5, color: colors.text }}>
         {label}

@@ -53,7 +53,7 @@ function Weekdays({ draft, prefs, firstDay, change }: RepeatFieldsProps) {
                 focusRingColor: colors.focusRing,
               }}
             >
-              <Text style={{ fontSize: 11, fontWeight: "semibold", color: on ? "#ffffff" : colors.text }}>
+              <Text style={{ fontSize: 11, fontWeight: "semibold", color: on ? colors.onAccent : colors.text }}>
                 {(names[index] ?? "").slice(0, 1).toUpperCase()}
               </Text>
             </View>
