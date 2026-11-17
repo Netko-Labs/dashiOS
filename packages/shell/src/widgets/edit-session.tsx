@@ -38,7 +38,7 @@ export interface EditSession {
     sizeAt: number;
     pick(kind: string): void;
   };
-  key(event: { key: string; alt: boolean; shift: boolean }): void;
+  key(event: { key: string; alt: boolean; shift: boolean; ctrl?: boolean }): void;
 }
 
 /** The gallery's list order: Dashi's widgets, then those from extensions. */
@@ -81,7 +81,7 @@ export function useEditSession(hub: WidgetHub | null, placements: readonly Place
       if (placement) resize(placement, said.size);
     }
   };
-  const key = (event: { key: string; alt: boolean; shift: boolean }) => {
+  const key = (event: { key: string; alt: boolean; shift: boolean; ctrl?: boolean }) => {
     const pressed = hostKey(event);
     if (!open) return editing(pressed);
     const info = all.find((each) => each.kind === kind);

@@ -42,6 +42,12 @@ describe("editing from the keyboard", () => {
     expect(editKey(placements, "b", hostKey({ key: "right", alt: true, shift: true }), sizesOf)).toEqual({ do: "resize", id: "b", size: "wide" });
   });
 
+  test("⌥← and ⌥→ arrive as Ctrl← and Ctrl→ (the keymap's word moves) and are read as ⌥; Ctrl on ↑ ↓ is not", () => {
+    expect(hostKey({ key: "right", alt: false, shift: true, ctrl: true })).toEqual(key("ArrowRight", true, true));
+    expect(hostKey({ key: "left", alt: false, shift: false, ctrl: true })).toEqual(key("ArrowLeft", true));
+    expect(hostKey({ key: "down", alt: false, shift: false, ctrl: true })).toEqual(key("ArrowDown"));
+  });
+
   test("the gallery: ↑ ↓ through the list, ← → through the sizes, Return adds, Esc closes; ⌥ arrows are the column's", () => {
     const kinds = ["weather", "timer", "music"];
     expect(galleryKey(kinds, "weather", ["small", "wide"], 0, key("ArrowDown"))).toEqual({ do: "choose", kind: "timer", sizeAt: 0 });

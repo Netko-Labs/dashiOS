@@ -82,7 +82,8 @@ describe("editing widgets by keyboard, with the host's key names", () => {
     const smaller = stepSize(info.sizes, moved.size, -1);
     await key("left", { alt: true, shift: true });
     expect(kinds()[1]).toBe(`${moved.kind}:${smaller}`);
-    await key("right", { alt: true, shift: true });
+    // ⌥⇧→ as the host sends it: the keymap made it Ctrl⇧→ (a word move) on the way.
+    await emit({ type: "keydown", nodeId: id("widget-edit-keys"), key: "right", ctrl: true, alt: false, shift: true, meta: false, repeat: false });
     expect(kinds()[1]).toBe(`${moved.kind}:${stepSize(info.sizes, smaller, 1)}`);
     const count = kinds().length;
     await key("delete");

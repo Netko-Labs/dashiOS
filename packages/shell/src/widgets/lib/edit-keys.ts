@@ -33,8 +33,15 @@ const HOST_NAMES: Readonly<Record<string, string>> = {
   backspace: "Backspace",
 };
 
-export function hostKey(event: { key: string; alt: boolean; shift: boolean }): EditKey {
-  return { key: HOST_NAMES[event.key] ?? event.key, alt: event.alt, shift: event.shift };
+/**
+ * A key from the host as the edit keys read it. ⌥← and ⌥→ come as Ctrl← and Ctrl→: the keymap turns them into
+ * word moves for every client, the shell's surfaces too (keymap.ts, "⌥ moves and deletes by word"), so a Ctrl
+ * on ← or → is read as the ⌥ the person pressed.
+ */
+export function hostKey(event: { key: string; alt: boolean; shift: boolean; ctrl?: boolean }): EditKey {
+  const key = HOST_NAMES[event.key] ?? event.key;
+  const sideways = key === "ArrowLeft" || key === "ArrowRight";
+  return { key, alt: event.alt || (sideways && event.ctrl === true), shift: event.shift };
 }
 
 export type EditAnswer =
