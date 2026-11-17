@@ -16,6 +16,7 @@ import type { Section } from "../sections.ts";
 import { withStop } from "./agents/agent-rows.ts";
 import type { LauncherKeys } from "./commands.ts";
 import { DetailBody } from "./detail-view.tsx";
+import { FormBody } from "./form-view.tsx";
 import { type Measures, PANEL } from "./measures.ts";
 import type { ModeLists } from "./mode.ts";
 import { nameIndent, ReservedRows, ResultRow, SectionHead } from "./row-view.tsx";
@@ -136,7 +137,7 @@ export function listFor(input: ListInput): ReactNode {
 }
 
 /** The search's sections: each row, and under the one whose windows show, their live pictures. */
-function searchList({ s, search, acts, m, onScreen, drawnRows }: ListInput, spoken: Spoken, access: boolean): ReactNode {
+function searchList({ s, search, acts, keys, m, onScreen, drawnRows }: ListInput, spoken: Spoken, access: boolean): ReactNode {
   const { pictures, selected, rows, verbsOf } = search;
   const digitOf = new Map(
     s.digits && s.mode.kind === "search"
@@ -149,6 +150,17 @@ function searchList({ s, search, acts, m, onScreen, drawnRows }: ListInput, spok
     <View key={section.id} testID={`launcher:section:${section.id}`} style={{ flexDirection: "column" }}>
       {section.title !== undefined && <SectionHead title={section.title} {...(section.aside ? { aside: section.aside } : {})} />}
       {section.detail && <DetailBody detail={section.detail} height={(1 + (section.reserved ?? 0)) * m.row} m={m} />}
+      {section.form && (
+        <FormBody
+          form={section.form}
+          m={m}
+          submit={() => {
+            const row = section.rows[0];
+            if (row) acts.doVerb(verbsOf(row)[0], row);
+          }}
+          escape={() => keys.onKey("Escape")}
+        />
+      )}
       {section.grid !== undefined && (
         <GridCells
           rows={section.rows}
@@ -159,7 +171,7 @@ function searchList({ s, search, acts, m, onScreen, drawnRows }: ListInput, spok
           onHover={(row) => s.setHeld(row.id)}
         />
       )}
-      {(section.detail || section.grid !== undefined ? [] : section.rows).flatMap((row) => {
+      {(section.detail || section.form || section.grid !== undefined ? [] : section.rows).flatMap((row) => {
         const showing = row.id === pictures.rowId;
         const shownRow = showing && pictures.picked ? { ...row, detail: pictures.picked.title.trim() || pictures.picked.appName } : row;
         const digit = digitOf.get(row.id);

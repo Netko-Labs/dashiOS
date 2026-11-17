@@ -107,7 +107,7 @@
           },
           "mode": {
             "description": "instant: it runs and answers; pick: rows as the person types; view: it draws its answer itself; list, grid, detail: the launcher draws the view from the tree it sends (protocol 6, docs/launcher-extensions.md).",
-            "enum": ["instant", "pick", "view", "list", "grid", "detail"]
+            "enum": ["instant", "pick", "view", "list", "grid", "detail", "form"]
           }
         }
       }

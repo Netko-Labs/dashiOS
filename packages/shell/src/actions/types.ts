@@ -9,7 +9,7 @@
  * the person types.
  */
 
-import type { ToastStyle, ViewNode } from "@dashi/applet";
+import type { FieldValue, ToastStyle, ViewNode } from "@dashi/applet";
 import type { Scope } from "../agents/consent.ts";
 import type { ToolResult } from "../agents/context.ts";
 import type { Call, ToolName } from "../agents/tools/types.ts";
@@ -70,13 +70,17 @@ export interface TreeSnapshot {
   error?: string;
   /** Its last line for the field row. */
   toast?: { style: ToastStyle; title: string };
+  /** A form on top: what each field holds now (the launcher's, by name), and what is wrong with them after a send was tried. */
+  form?: { values: Readonly<Record<string, FieldValue>>; problems: Readonly<Record<string, string>> };
 }
 
 /** What choosing one of the view's actions came to. */
 export type TreeActed =
   | { kind: "done"; notice?: string; close?: boolean }
-  /** A `set` action: ask the person for this preference in the field. */
+  /** A `set` action: ask the person for this preference in the field (`account:PROVIDER`: a token for that account). */
   | { kind: "ask"; name: string; title: string; secret: boolean }
+  /** A `connect` action the first time: the one question before signing in (D260: secrets and identity). */
+  | { kind: "confirm"; provider: string; question: string; yes: string }
   | { kind: "failed"; error: string };
 
 /** An extension's view as the launcher reaches it (applets/views.ts keeps it). */
@@ -95,6 +99,10 @@ export interface TreeView {
   act(node: string): Promise<TreeActed>;
   /** The person answered a `set` action. */
   setPreference(name: string, value: string): Promise<boolean>;
+  /** The person said yes to signing in at `provider` (a `confirm`): it starts, in the browser. */
+  connect(provider: string): Promise<TreeActed>;
+  /** A form's field changed (by its `name`). */
+  change(name: string, value: FieldValue): void;
   /** Esc: the pushed view goes; false when there is none (the launcher leaves the view). */
   back(): boolean;
   close(): void;

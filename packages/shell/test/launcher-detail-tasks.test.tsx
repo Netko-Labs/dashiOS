@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 import { parseTree, type ViewNode } from "@dashi/applet";
-import type { TreeSnapshot, TreeView } from "../src/actions/index.ts";
+import type { TreeActed, TreeSnapshot, TreeView } from "../src/actions/index.ts";
 import { markdownBlocks } from "../src/launcher/lib/detail-markdown.ts";
 import { treeScope } from "../src/launcher/lib/tree-scope.ts";
 import { TASK_BOX, taskOf } from "../src/shared/markdown/index.ts";
@@ -30,6 +30,8 @@ class OneDetail implements TreeView {
   more = () => {};
   act = async () => ({ kind: "done" as const });
   setPreference = async () => true;
+  connect = async (): Promise<TreeActed> => ({ kind: "done" });
+  change = (): void => {};
   back = () => false;
   close = () => {};
 }

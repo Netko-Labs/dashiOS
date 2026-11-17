@@ -83,6 +83,8 @@ class FakeView implements TreeView {
     return node.startsWith("repo") || node.startsWith("token") ? { kind: "ask", name: node, title: node, secret: false } : { kind: "done" };
   };
   setPreference = async () => true;
+  connect = async (): Promise<TreeActed> => ({ kind: "done" });
+  change = (): void => {};
   back = () => false;
   close = () => {};
 }

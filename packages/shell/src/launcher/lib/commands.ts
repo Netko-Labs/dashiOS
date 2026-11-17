@@ -264,6 +264,7 @@ export function useCommands(parts: Parts, drawnRows: () => Row[]): LauncherKeys 
 export function useExtraKeys(props: LauncherProps, s: LauncherState): void {
   const { keys } = props;
   const stopWork = s.mode.kind === "talk" && s.talk.working && !s.talk.background;
-  useEffect(() => keys?.extras?.({ stopWork }), [keys, stopWork]);
+  const form = s.mode.kind === "search" && s.scope?.form?.() === true;
+  useEffect(() => keys?.extras?.({ stopWork, form }), [keys, stopWork, form]);
   useEffect(() => () => keys?.extras?.(NO_EXTRA_KEYS), [keys]);
 }
