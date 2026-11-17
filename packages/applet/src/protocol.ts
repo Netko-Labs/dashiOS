@@ -38,7 +38,7 @@
  *   shell → applet  {"type":"open","seq","command","args","query","preferences"}
  *   applet → shell  {"type":"tree"|"push","seq","root"}  {"type":"patch","seq","ops"}  {"type":"pop"|"close","seq"}
  *                   {"type":"toast","seq","style","title"}
- *   shell → applet  {"type":"event","seq","on","node"?,"text"?}  {"type":"prefs","seq","preferences"}
+ *   shell → applet  {"type":"event","seq","on","node"?,"text"?,"value"?,"values"?}  {"type":"prefs","seq","preferences"}  {"type":"accounts","seq","accounts"}
  * A connection that starts with anything but `hello` is version 1, and
  * stays so. A hello's protocol is the newest the applet speaks; the
  * connection speaks the older of it and the shell's.

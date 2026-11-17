@@ -153,6 +153,7 @@ packages/shell/apps/software/main.tsx	packages/shell/src/shared/apps
 packages/shell/apps/software/main.tsx	packages/shell/src/shared/clipboard
 packages/shell/apps/software/main.tsx	packages/shell/src/shared/control-center
 packages/shell/apps/software/main.tsx	packages/shell/src/shared/dbus
+packages/shell/apps/software/main.tsx	packages/shell/src/shared/extension-settings
 packages/shell/apps/software/main.tsx	packages/shell/src/shared/io
 packages/shell/apps/software/main.tsx	packages/shell/src/shared/locale
 packages/shell/apps/software/main.tsx	packages/shell/src/shared/logind
@@ -189,6 +190,7 @@ packages/shell/bin/dashi-agent.ts	packages/shell/bin/dashi-agent.ts
 packages/shell/bin/dashi-agent.ts	packages/shell/src/agents
 packages/shell/bin/dashi-agent.ts	packages/shell/src/shared/io
 packages/shell/bin/dashi-applet-run.ts	packages/shell/bin/dashi-applet-run.ts
+packages/shell/bin/dashi-applet-run.ts	packages/shell/src/applets
 packages/shell/bin/dashi-browser-host.ts	packages/shell/bin/dashi-browser-host.ts
 packages/shell/bin/dashi-browser-host.ts	packages/shell/src/browser
 packages/shell/bin/dashi-browser-pack.ts	packages/shell/bin/dashi-browser-pack.ts
@@ -240,6 +242,7 @@ packages/shell/bin/dashi-mcp.ts	packages/shell/src/spaces
 packages/shell/bin/dashi-mcp.ts	packages/shell/src/system
 packages/shell/bin/dashi-mcp.ts	packages/shell/src/wallpaper
 packages/shell/bin/dashi-mcp.ts	packages/shell/src/xwayland-scale.ts
+packages/shell/bin/dashi-net-bridge.ts	packages/shell/bin/dashi-net-bridge.ts
 packages/shell/bin/dashi-open.ts	packages/shell/bin/dashi-open.ts
 packages/shell/bin/dashi-open.ts	packages/shell/src/shared/links
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/bin/dashi-settings-preview.tsx
@@ -412,6 +415,7 @@ packages/shell/src/main.tsx	packages/shell/src/shared/clipboard
 packages/shell/src/main.tsx	packages/shell/src/shared/control-center
 packages/shell/src/main.tsx	packages/shell/src/shared/controls
 packages/shell/src/main.tsx	packages/shell/src/shared/dbus
+packages/shell/src/main.tsx	packages/shell/src/shared/extension-settings
 packages/shell/src/main.tsx	packages/shell/src/shared/face
 packages/shell/src/main.tsx	packages/shell/src/shared/files
 packages/shell/src/main.tsx	packages/shell/src/shared/fs

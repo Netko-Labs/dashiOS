@@ -14,6 +14,8 @@ import { useReportStale } from "../hooks.ts";
 import { AppIcon, ROW, useActions } from "../parts.tsx";
 import { useServices } from "../services.ts";
 import { AppletGroup, useAppletState } from "./rows.tsx";
+import { settingsSheet } from "./settings-open.ts";
+import { hasSettings } from "./settings-sheet.tsx";
 import { CATEGORY_LABELS, inMenuBar, skippedWords } from "./words.ts";
 
 const byName = (a: StoreApplet, b: StoreApplet): number => a.manifest.name.localeCompare(b.manifest.name);
@@ -123,6 +125,8 @@ function InstalledAppletRow({ applet, entry }: { applet: InstalledApplet; entry:
           </Text>
         </View>
       </View>
+      {/* Its accounts and preferences (S5): what Dashi keeps for it. */}
+      {hasSettings(applet) && <Button label="Settings…" testID={`settings:${applet.manifest.id}`} onPress={() => settingsSheet.open(applet.manifest.id)} />}
       {/* Dashi's own extensions (GitHub, Emoji) come with Dashi and go with it (D347): no Remove. */}
       {!dashis && <Button label="Remove…" testID={`remove:${applet.manifest.id}`} onPress={() => actions.removeApplet(applet)} />}
     </View>

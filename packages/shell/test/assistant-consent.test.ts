@@ -131,8 +131,8 @@ test("the critical list that asks on a sheet of its own (D260): force quit and s
   expect([...ASKS_EVERY_TIME].sort()).toEqual(["force_quit_app", "request_software_install", "request_software_update"]);
 });
 
-test("108 tools, and none of the tools engineer's new ones asks on a sheet of its own", () => {
-  expect(TOOLS).toHaveLength(110);
+test("111 tools (list_widgets the newest), and none of the tools engineer's new ones asks on a sheet of its own", () => {
+  expect(TOOLS).toHaveLength(111);
 });
 
 test("reading and ordinary calls just run, with no sheet and no question", async () => {

@@ -13,6 +13,7 @@
 
 import { createElement, type ReactElement, type ReactNode } from "react";
 import type { Tone } from "../view/elements.ts";
+import type { FormValues } from "./form.tsx";
 
 /** A picture: the package's own file, an SVG glyph drawn in a tone's ink, or an emoji. */
 export type Icon = { src: string; tone?: Tone } | { svg: string; tone?: Tone } | { emoji: string };
@@ -189,7 +190,20 @@ function SetPreference({ name, ...rest }: ActionProps & { name: string }) {
   return h("Action", { ...rest, kind: "set", target: name });
 }
 
-export const Action = Object.assign(ActionRun, { Open, Copy, Paste, Push, SetPreference });
+/** Sends the form it is on: the launcher checks the fields first, then `onSubmit` gets their values. */
+function SubmitForm({ onSubmit, ...rest }: Omit<ActionProps, "onAction"> & { onSubmit: (values: FormValues) => void | Promise<void> }) {
+  return h("Action", { ...rest, kind: "submit", onSubmit });
+}
+
+/**
+ * Connects the person's account at `provider` (applet.json `accounts`): the shell signs in, in Helium, and
+ * keeps the token; `useAccount` has it once it is done. The first sign-in asks the person once.
+ */
+function ConnectAccount({ provider, ...rest }: ActionProps & { provider: string }) {
+  return h("Action", { ...rest, kind: "connect", target: provider });
+}
+
+export const Action = Object.assign(ActionRun, { Open, Copy, Paste, Push, SetPreference, SubmitForm, ConnectAccount });
 
 function ActionSection({ title, children }: { title?: string; children?: ReactNode }) {
   return h("ActionSection", { title }, children);

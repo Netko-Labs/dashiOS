@@ -7,6 +7,8 @@
 import type { ReactNode } from "react";
 import { AppletConsentSheet, type StoreImages } from "../../../src/shared/applet-store/index.ts";
 import { CatalogsSheet } from "./applets/catalogs-sheet.tsx";
+import { settingsSheet } from "./applets/settings-open.ts";
+import { ExtensionSettingsSheet } from "./applets/settings-sheet.tsx";
 import type { AppletStore } from "./applets/store.ts";
 import { PictureView } from "./gallery.tsx";
 import { FailureSheet, Question } from "./sheets.tsx";
@@ -16,14 +18,19 @@ import type { WindowSheets } from "./use-window-sheets.ts";
 
 export interface WindowOverlayInput {
   sheets: WindowSheets;
+  /** The extension whose Settings… is open (applets/settings-open.ts), or null. */
+  settings: string | null;
+  openUrl: (url: string) => void;
   failure: SoftwareState["failure"];
   applets: AppletStore;
   appletImages: StoreImages;
 }
 
 /** A plain function, not a component: the overlay is the sheet's element or nothing. */
-export function windowOverlay({ sheets, failure, applets, appletImages }: WindowOverlayInput): ReactNode {
+export function windowOverlay({ sheets, settings, openUrl, failure, applets, appletImages }: WindowOverlayInput): ReactNode {
   const ask = sheets.asks[0];
+  const extension = settings ? applets.getSnapshot().installed.find((applet) => applet.manifest.id === settings) : undefined;
+  if (extension) return <ExtensionSettingsSheet applet={extension} openUrl={openUrl} onClose={settingsSheet.close} />;
   if (sheets.picture) return <PictureView file={sheets.picture} onClose={() => sheets.setPicture(null)} />;
   if (sheets.catalogs) return <CatalogsSheet onClose={sheets.closeCatalogs} />;
   if (sheets.sources) return <SourcesSheet onClose={sheets.closeSources} />;

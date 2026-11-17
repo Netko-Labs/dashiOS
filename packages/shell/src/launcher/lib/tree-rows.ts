@@ -6,8 +6,8 @@
  */
 
 import { join } from "node:path";
-import { isRefusal, parseGlyph, type ViewNode } from "@dashi/applet";
-import type { Row, RowIcon, Tone } from "../row-model.ts";
+import { type FieldValue, isRefusal, parseGlyph, type ViewNode } from "@dashi/applet";
+import type { Row, RowIcon, RowPreview, Tone } from "../row-model.ts";
 import type { Section } from "../sections.ts";
 import { KEYS, type Verb } from "../verbs.ts";
 import { EXTENSION_GLYPH } from "./extension-rows.ts";
@@ -64,6 +64,7 @@ export function itemRow(node: ViewNode, ctx: { dir: string | null; from: string 
     .map((child) => prop(child, "text") ?? "")
     .join(" · ");
   const subtitle = prop(node, "subtitle");
+  const preview = previewOf(children.find((child) => child.t === "Detail"));
   return {
     id: rowId(node),
     title: prop(node, "title") ?? "",
@@ -77,7 +78,19 @@ export function itemRow(node: ViewNode, ctx: { dir: string | null; from: string 
     action: { kind: "scope", verb: "first" },
     long: true,
     ...(tags.length > 0 ? { tags } : {}),
+    ...(preview ? { preview } : {}),
   };
+}
+
+/** An item's Detail as the preview column beside the list shows it (L11): its Markdown and its facts' words. */
+function previewOf(detail: ViewNode | undefined): RowPreview | undefined {
+  if (!detail) return undefined;
+  const facts = (detail.c.find((child) => child.t === "Metadata")?.c ?? []).flatMap((fact) => {
+    const title = prop(fact, "title");
+    const text = fact.t === "TagList" ? fact.c.map((tag) => prop(tag, "text") ?? "").join(", ") : prop(fact, "text");
+    return title && text ? [{ title, text }] : [];
+  });
+  return { markdown: prop(detail, "markdown") ?? "", facts };
 }
 
 /** Rows a long list shows at once (fewer at a larger text size: list.tsx). */
@@ -92,8 +105,28 @@ export interface DetailPart {
   facts: readonly ViewNode[];
 }
 
+/** A form as the launcher draws it (form-view.tsx): its tree, what each field holds, what is wrong, and where a change goes. */
+export interface FormPart {
+  root: ViewNode;
+  values: Readonly<Record<string, FieldValue>>;
+  problems: Readonly<Record<string, string>>;
+  change(name: string, value: FieldValue): void;
+}
+
+/** What a view's sections are drawn with besides its tree: the package's folder, its name, and a form's state. */
+export interface TreeContext {
+  dir: string | null;
+  from: string;
+  form?: Omit<FormPart, "root">;
+}
+
 /** A view as sections, for what is typed (the launcher filters a List or Grid that says `filter: "launcher"`). */
-export function treeSections(root: ViewNode, query: string, ctx: { dir: string | null; from: string }): Section[] {
+export function treeSections(root: ViewNode, query: string, ctx: TreeContext): Section[] {
+  if (root.t === "Form") {
+    // One row stands for the form (↩, ❖↩ and ❖K act on it); the fields are drawn in its place.
+    const form: FormPart = { root, values: ctx.form?.values ?? {}, problems: ctx.form?.problems ?? {}, change: ctx.form?.change ?? (() => {}) };
+    return [{ id: "tree:form", rows: [{ id: rowId(root), title: "", kind: "", icon: { none: true }, action: { kind: "scope", verb: "first" } }], form }];
+  }
   if (root.t === "Detail") {
     const metadata = root.c.find((child) => child.t === "Metadata");
     const detail: DetailPart = { markdown: prop(root, "markdown") ?? "", facts: metadata?.c ?? [] };

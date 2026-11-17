@@ -6,6 +6,9 @@
  * applets socket. Nothing else unless asked:
  *
  *   network          the network namespace is shared (and /etc's resolver and certificates shown)
+ *   network:HOST     no network: a socket to the proxy outside (net-proxy.ts) that lets through HTTPS to
+ *                    those hosts only, a bridge inside on loopback (bin/dashi-net-bridge.ts) that Bun's
+ *                    fetch finds through HTTPS_PROXY, and the certificates for TLS
  *   notifications    the session bus, through xdg-dbus-proxy, talking only to org.freedesktop.Notifications
  *   hardware.*       the system bus, through xdg-dbus-proxy, calling only dashi-hardware's methods for that
  *                    scope (docs/hardware.md); dashi-hardware's polkit actions still decide; never /sys writes
@@ -16,7 +19,7 @@
  * permission (test/applets-sandbox.test.ts). launcher.ts runs them.
  */
 
-import { type Folder, type HardwareScope, type Manifest, type Permission, usesNetwork } from "@dashi/applet";
+import { type Folder, type HardwareScope, type Manifest, type Permission, proxiedHosts } from "@dashi/applet";
 
 /** dashi-hardware's name and object (docs/hardware.md). */
 export const HARDWARE_BUS_NAME = "dev.dashi.Hardware1";
@@ -39,7 +42,13 @@ export const INSIDE = {
   /** The folder the shell's socket for this applet is in (a folder, so a restarted shell's new socket shows). */
   socketDir: "/run/applet/socket",
   systemBus: "/run/dbus/system_bus_socket",
+  /** The folder holding the network proxy's socket (net-proxy.ts), and the bridge that reaches it. */
+  netDir: "/run/applet/net",
+  netBridge: "/run/applet/net-bridge.ts",
 } as const;
+
+/** Where the bridge listens inside (bin/dashi-net-bridge.ts): the sandbox's own loopback. */
+export const NET_BRIDGE_PROXY = "http://127.0.0.1:3128";
 
 export interface SandboxPaths {
   /** ~/.local/share/dashi/applets/<id> */
@@ -57,6 +66,8 @@ export interface SandboxPaths {
   wayland: string;
   bun: string;
   metalHost: string;
+  /** bin/dashi-net-bridge.ts, for an extension held to its hosts. */
+  netBridge: string;
   /** The shell's Dark Mode switch (control-center.json), shown read-only. */
   appearance: string;
   /** The session bus's address, for the proxy. */
@@ -78,6 +89,8 @@ export interface ProxyPlan {
 
 export interface SandboxPlan {
   proxy: ProxyPlan | null;
+  /** The network proxy the runner starts first (net-proxy.ts): its socket outside, and the hosts it lets through. */
+  net: { socket: string; hosts: string[] } | null;
   bwrap: string[];
 }
 
@@ -131,7 +144,9 @@ export function proxyPlan(id: string, permissions: readonly Permission[], paths:
 export function sandboxPlan(manifest: Manifest, paths: SandboxPaths): SandboxPlan {
   const { permissions } = manifest;
   const has = (kind: Permission["kind"]): boolean => permissions.some((each) => each.kind === kind);
-  const network = permissions.some(usesNetwork);
+  const network = permissions.some((each) => each.kind === "network");
+  const hosts = proxiedHosts(permissions);
+  const netDir = hosts.length > 0 ? `${paths.proxyDir}/${manifest.id}.net` : null;
   const proxy = proxyPlan(manifest.id, permissions, paths);
   const sessionSocket = proxy?.sockets.find((socket) => socket.endsWith(".session"));
   const systemSocket = proxy?.sockets.find((socket) => socket.endsWith(".system"));
@@ -152,6 +167,8 @@ export function sandboxPlan(manifest: Manifest, paths: SandboxPaths): SandboxPla
   if (network)
     for (const path of ["/etc/resolv.conf", "/etc/hosts", "/etc/nsswitch.conf", "/etc/pki", "/etc/ssl", "/etc/crypto-policies"])
       args.push("--ro-bind-try", path, path);
+  // Held to its hosts: no resolver (the proxy resolves outside), only the certificates its TLS checks.
+  else if (netDir) for (const path of ["/etc/pki", "/etc/ssl", "/etc/crypto-policies"]) args.push("--ro-bind-try", path, path);
   args.push("--proc", "/proc", "--dev", "/dev", "--dev-bind-try", "/dev/dri", "/dev/dri");
   // The GPU's driver finds its device here; read-only, and nothing is written through it.
   args.push("--ro-bind-try", "/sys/dev/char", "/sys/dev/char", "--ro-bind-try", "/sys/devices", "/sys/devices");
@@ -160,6 +177,7 @@ export function sandboxPlan(manifest: Manifest, paths: SandboxPaths): SandboxPla
   args.push("--tmpfs", "/tmp", "--perms", "0700", "--dir", runtime);
   args.push("--ro-bind", `${runtime}/${paths.wayland}`, `${runtime}/${paths.wayland}`);
   args.push("--ro-bind", paths.socketDir, INSIDE.socketDir);
+  if (netDir) args.push("--ro-bind", netDir, INSIDE.netDir, "--ro-bind", paths.netBridge, INSIDE.netBridge);
   if (sessionSocket) args.push("--ro-bind", sessionSocket, `${runtime}/bus`);
   if (systemSocket) args.push("--ro-bind", systemSocket, INSIDE.systemBus);
   args.push("--ro-bind", paths.appletDir, INSIDE.app);
@@ -184,9 +202,10 @@ export function sandboxPlan(manifest: Manifest, paths: SandboxPaths): SandboxPla
   ];
   if (sessionSocket) env.push(["DBUS_SESSION_BUS_ADDRESS", `unix:path=${runtime}/bus`]);
   if (systemSocket) env.push(["DBUS_SYSTEM_BUS_ADDRESS", `unix:path=${INSIDE.systemBus}`]);
+  if (netDir) for (const key of ["HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy"]) env.push([key, NET_BRIDGE_PROXY]);
   for (const [key, value] of env) args.push("--setenv", key, value);
-  args.push("--chdir", INSIDE.app, "--", INSIDE.bun, `${INSIDE.app}/main.js`);
-  return { proxy, bwrap: args };
+  args.push("--chdir", INSIDE.app, "--", INSIDE.bun, ...(netDir ? [INSIDE.netBridge] : []), `${INSIDE.app}/main.js`);
+  return { proxy, net: netDir ? { socket: `${netDir}/proxy.sock`, hosts } : null, bwrap: args };
 }
 
 /** A systemd unit name for an applet: its id is already safe (reverse-DNS, lowercase). */

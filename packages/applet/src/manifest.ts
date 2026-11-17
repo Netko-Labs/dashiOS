@@ -20,6 +20,7 @@
  */
 
 import { isInsidePath, isRefusal, list, optionalText, type Refusal, record, refuse, text } from "@dashi/shape/kit";
+import { type AccountWanted, parseAccounts } from "./accounts.ts";
 import { type AppletCommand, parseCommands } from "./commands.ts";
 import { type AppletControl, needsControlsPermission, parseControls } from "./controls.ts";
 import { type Permission, parsePermission, permissionName } from "./permissions.ts";
@@ -67,6 +68,8 @@ export interface Manifest {
   shows?: Shows[];
   /** What the person may set, drawn and kept by Dashi (preferences.ts); none is the default. */
   preferences: Preference[];
+  /** The accounts it may use (accounts.ts), each with its `account:` permission. */
+  accounts?: AccountWanted[];
 }
 
 /** Reverse-DNS, lowercase: `dev.netko.asus-control`. Also a folder name and a systemd unit's. */
@@ -116,6 +119,7 @@ const FIELDS = [
   "widgets",
   "shows",
   "preferences",
+  "accounts",
 ] as const;
 
 export function parseManifest(value: unknown): Manifest | Refusal {
@@ -167,12 +171,10 @@ export function parseManifest(value: unknown): Manifest | Refusal {
   if (isRefusal(controls)) return controls;
   const unpermitted = needsControlsPermission(controls, names);
   if (unpermitted) return refuse(unpermitted);
-  const widgets = fields.widgets === undefined ? undefined : parseWidgets(fields.widgets);
-  if (isRefusal(widgets)) return widgets;
-  const shows = fields.shows === undefined ? undefined : parseShows(fields.shows);
-  if (isRefusal(shows)) return shows;
   const preferences = fields.preferences === undefined ? [] : parsePreferences(fields.preferences);
   if (isRefusal(preferences)) return preferences;
+  const optional = optionalParts(fields, permissions);
+  if (isRefusal(optional)) return optional;
   return {
     id: fields.id,
     name,
@@ -191,9 +193,23 @@ export function parseManifest(value: unknown): Manifest | Refusal {
     ...(icon === undefined ? {} : { icon }),
     commands,
     controls,
+    ...optional,
+    preferences,
+  };
+}
+
+/** The parts a manifest may leave out entirely: its widgets, where it shows, its accounts. */
+function optionalParts(fields: Readonly<Record<string, unknown>>, permissions: Permission[]): Pick<Manifest, "widgets" | "shows" | "accounts"> | Refusal {
+  const widgets = fields.widgets === undefined ? undefined : parseWidgets(fields.widgets);
+  if (isRefusal(widgets)) return widgets;
+  const shows = fields.shows === undefined ? undefined : parseShows(fields.shows);
+  if (isRefusal(shows)) return shows;
+  const accounts = fields.accounts === undefined ? undefined : parseAccounts(fields.accounts, permissions);
+  if (isRefusal(accounts)) return accounts;
+  return {
     ...(widgets === undefined || widgets.length === 0 ? {} : { widgets }),
     ...(shows === undefined ? {} : { shows }),
-    preferences,
+    ...(accounts === undefined ? {} : { accounts }),
   };
 }
 

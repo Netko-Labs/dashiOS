@@ -235,7 +235,7 @@ export class AppletsClient {
   }
 
   private handle(message: AppletShellMessage): void {
-    if (message.type === "open" || message.type === "event" || message.type === "prefs") return this.viewHandler?.(message);
+    if (message.type === "open" || message.type === "event" || message.type === "prefs" || message.type === "accounts") return this.viewHandler?.(message);
     switch (message.type) {
       case "welcome":
         this.shellProtocol = message.protocol;

@@ -51,7 +51,7 @@ test("the guide's example draws its pull requests", async () => {
     },
     now: () => 0,
   });
-  views.receive({ type: "open", seq: 1, command: "my-prs", args: {}, query: "", preferences: { token: "ghp_example" } });
+  views.receive({ type: "open", seq: 1, command: "my-prs", args: {}, query: "", preferences: { token: "ghp_example" }, accounts: {} });
   await flush(60);
   const last = sent.filter((message) => message.type === "tree").at(-1);
   if (last?.type !== "tree") throw new Error("no tree");

@@ -42,7 +42,7 @@ describe("parseTree", () => {
   });
 
   test("refuses what a view can't be", () => {
-    expect(parseTree({ t: "Item", i: "x", p: { title: "a" } })).toEqual({ error: "a view is a List, Grid, Detail, not a Item" });
+    expect(parseTree({ t: "Item", i: "x", p: { title: "a" } })).toEqual({ error: "a view is a List, Grid, Detail, Form, not a Item" });
     expect(parseTree(list({ t: "Tag", i: "t", p: { text: "x" } }))).toEqual({ error: "Section can't hold Tag “t”" });
     expect(parseTree(list(item("a", "")))).toEqual({ error: "Item “a”: title is empty" });
     expect(parseTree(list(item("a", "one"), item("a", "two")))).toEqual({ error: "two nodes are “a”" });
@@ -87,7 +87,7 @@ describe("the wire", () => {
   test("a tree message is checked as a tree", () => {
     expect(parseViewMessage("tree", { type: "tree", seq: 3, root: list(item("a", "A")) })).toMatchObject({ type: "tree", seq: 3 });
     expect(parseViewMessage("tree", { type: "tree", seq: 3, root: { t: "Text", i: "x", p: { text: "hi" } } })).toEqual({
-      error: "tree: a view is a List, Grid, Detail, not a Text",
+      error: "tree: a view is a List, Grid, Detail, Form, not a Text",
     });
     expect(parseViewMessage("toast", { type: "toast", seq: 3, style: "done", title: "Copied" })).toEqual({
       type: "toast",

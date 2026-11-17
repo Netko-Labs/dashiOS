@@ -71,7 +71,8 @@
           },
           { "type": "string", "pattern": "^dbus\\.(system|session):[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)+$" },
           { "type": "string", "pattern": "^files\\.(downloads|documents|pictures|music|videos|desktop)(:read)?$" },
-          { "type": "string", "pattern": "^network:[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$" }
+          { "type": "string", "pattern": "^network:[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$" },
+          { "type": "string", "pattern": "^account:[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$" }
         ]
       }
     },
@@ -106,7 +107,7 @@
           },
           "mode": {
             "description": "instant: it runs and answers; pick: rows as the person types; view: it draws its answer itself; list, grid, detail: the launcher draws the view from the tree it sends (protocol 6, docs/launcher-extensions.md).",
-            "enum": ["instant", "pick", "view", "list", "grid", "detail"]
+            "enum": ["instant", "pick", "view", "list", "grid", "detail", "form"]
           }
         }
       }
@@ -128,11 +129,37 @@
         "required": ["name", "type", "title"],
         "properties": {
           "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,31}$" },
-          "type": { "enum": ["text", "secret", "checkbox"] },
+          "type": { "enum": ["text", "secret", "checkbox", "dropdown"] },
           "title": { "type": "string", "minLength": 1, "maxLength": 40 },
           "description": { "type": "string", "minLength": 1, "maxLength": 120 },
           "required": { "type": "boolean" },
-          "default": { "type": ["string", "boolean"] }
+          "default": { "type": ["string", "boolean"] },
+          "options": {
+            "description": "A dropdown's choices: what it shows and the value kept.",
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 24,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["title", "value"],
+              "properties": { "title": { "type": "string", "minLength": 1, "maxLength": 40 }, "value": { "type": "string", "minLength": 1, "maxLength": 60 } }
+            }
+          }
+        }
+      }
+    },
+    "accounts": {
+      "description": "Accounts it may use once the person connects them: the shell signs in (OAuth with PKCE) and keeps the token; each needs its account:PROVIDER permission (docs/launcher-extensions.md, Accounts).",
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider"],
+        "properties": {
+          "provider": { "type": "string", "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$" },
+          "scopes": { "type": "array", "maxItems": 12, "items": { "type": "string", "pattern": "^[a-z][a-z0-9_.:-]{0,39}$" } }
         }
       }
     },

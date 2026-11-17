@@ -8,7 +8,7 @@
 import { appletDataRoot } from "@dashi/applet";
 import { AppCatalog } from "../app-catalog.ts";
 import { type AppMenus, ownerPids, startAppMenus } from "../app-menus/index.ts";
-import { AppletCommands, AppletControls, AppletPopovers, AppletPower, ExtensionViews, PreferenceStore, popoverScreen, startApplets } from "../applets/index.ts";
+import { AppletCommands, AppletControls, AppletPopovers, AppletPower, DraftFiles, ExtensionViews, popoverScreen, startApplets } from "../applets/index.ts";
 import { appFor, launch } from "../apps.ts";
 import { startBatteryMonitor } from "../battery/index.ts";
 import type { Compositor, CompositorWindow } from "../compositor/index.ts";
@@ -25,6 +25,7 @@ import { PortalSheets, pinNextLauncher, startPortalHost } from "../portal-host/i
 import { startSharePicker } from "../share-picker/index.ts";
 import type { Entry } from "../shared/app-entries/index.ts";
 import { type App, dockDefaults } from "../shared/apps/index.ts";
+import { ExtensionAccounts, PreferenceStore } from "../shared/extension-settings/index.ts";
 import { mayServeTray } from "../system/index.ts";
 import type { ToplevelStore } from "../toplevels.ts";
 import { startTray } from "../tray/index.ts";
@@ -200,11 +201,21 @@ export function startPrograms({ compositor, apps, catalog, toplevels, screens, s
   const open = (target: string) => openTarget(target, { openUrl: openFile, openLink: (url) => late.get("actions").openLink(url) });
   // Extensions' views, drawn by the launcher from their trees (applets/views.ts); their preferences kept by Dashi.
   const preferences = new PreferenceStore(appletDataRoot());
+  // Their accounts: the shell signs in (PKCE, in Helium) and keeps the token (shared/extension-settings).
+  const accounts = new ExtensionAccounts(appletDataRoot());
   const views = new ExtensionViews({
     copy,
     open,
     preferences: (manifest) => preferences.read(manifest),
     setPreference: (manifest, name, value) => preferences.write(manifest, name, value),
+    accounts: {
+      given: (manifest) => accounts.given(manifest),
+      rows: (manifest) => accounts.rows(manifest),
+      agreed: (manifest, provider) => accounts.agreed(manifest, provider),
+      connect: (manifest, provider) => accounts.connect(manifest, provider, { open: async (url) => (await open(url)).ok }),
+      paste: (manifest, provider, token) => accounts.paste(manifest, provider, token),
+    },
+    drafts: new DraftFiles(appletDataRoot()),
   });
   const appletCommands = new AppletCommands({
     copy,

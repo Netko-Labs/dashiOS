@@ -76,16 +76,21 @@ const COMMANDS: Readonly<Record<string, LauncherCommand>> = {
 export interface ExtraKeys {
   /** ❖Esc, while the conversation shows a turn at work: it stops that turn, not every agent. */
   stopWork: boolean;
+  /** An extension's form shows: ⇥, ⇧⇥, Home, End, the page keys and ⌃N ⌃P are its fields' (FORM_KEYS). */
+  form?: boolean;
 }
 
-export const NO_EXTRA_KEYS: ExtraKeys = { stopWork: false };
+export const NO_EXTRA_KEYS: ExtraKeys = { stopWork: false, form: false };
+
+/** The bindings a form gives back to its fields: ⇥ moves between them, the rest move the caret. */
+const FORM_KEYS = new Set(["launcher-tab", "launcher-first", "launcher-last", "launcher-page-up", "launcher-page-down", "launcher-down", "launcher-up"]);
 
 /** The rules for the extra keys wanted now. */
 export function extraRules(want: ExtraKeys): Rule[] {
   return want.stopWork ? [{ when: "super+Escape", bind: "launcher-stop-work" }] : [];
 }
 
-const sameKeys = (a: ExtraKeys, b: ExtraKeys): boolean => a.stopWork === b.stopWork;
+const sameKeys = (a: ExtraKeys, b: ExtraKeys): boolean => a.stopWork === b.stopWork && (a.form ?? false) === (b.form ?? false);
 
 /** ← and → while the pictures want them (pictures.ts `arrowsWanted`). */
 export const ARROW_RULES: Readonly<Record<ArrowsWanted, Rule[]>> = {
@@ -135,7 +140,13 @@ export const launcherRulesOver = (keymap: Keymap): Rule[] => [...shiftedPast(key
 /** The keymap while the launcher is open: its keys first, and every ❖ chord while it records one. */
 export const withLauncher = (keymap: Keymap, recording = false, arrows: ArrowsWanted = "none", extras: ExtraKeys = NO_EXTRA_KEYS): Keymap => ({
   ...keymap,
-  rules: [...(recording ? RECORD_RULES : []), ...ARROW_RULES[arrows], ...extraRules(extras), ...launcherRulesOver(keymap), ...keymap.rules],
+  rules: [
+    ...(recording ? RECORD_RULES : []),
+    ...ARROW_RULES[arrows],
+    ...extraRules(extras),
+    ...launcherRulesOver(keymap).filter((rule) => !extras.form || !FORM_KEYS.has(rule.bind ?? "")),
+    ...keymap.rules,
+  ],
 });
 
 /** Where the open launcher hears those keys. */
