@@ -12,7 +12,15 @@ export const DASHI_WIDGETS: readonly WidgetInfo[] = [
   { kind: "rundown", name: "Rundown", ink: null, glyph: "cal", sizes: ["large", "wide"], holdsPrivate: true, blurb: "Your day in time order, one row a thing" },
   { kind: "clock", name: "Clock", ink: null, glyph: "timer", sizes: ["small", "mini", "compact"], holdsPrivate: false, blurb: "The time, large" },
   { kind: "world", name: "World Clocks", ink: null, glyph: "globe", sizes: ["wide", "small"], holdsPrivate: false, blurb: "The time in the cities you add" },
-  { kind: "calendar", name: "Calendar", ink: "miso", glyph: "cal", sizes: ["small", "wide", "large"], holdsPrivate: true, blurb: "Today and what is next" },
+  {
+    kind: "calendar",
+    name: "Calendar",
+    ink: "miso",
+    glyph: "cal",
+    sizes: ["small", "compact", "wide", "large"],
+    holdsPrivate: true,
+    blurb: "Today and what is next",
+  },
   {
     kind: "weather",
     name: "Weather",

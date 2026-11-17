@@ -71,6 +71,7 @@ export function CalendarWidget({ size }: { size: WidgetSize }) {
   const next = upcoming[0] ?? null;
   const day = new Date(now);
   const weekday = day.toLocaleDateString(undefined, { weekday: "long" });
+  if (size === "compact") return <CompactNext next={next} now={now} hour24={hour24} />;
   if (size === "large")
     return (
       <>
@@ -149,5 +150,27 @@ function EventRows({ events, hour24 }: { events: readonly Occurrence[]; hour24: 
         </View>
       ))}
     </View>
+  );
+}
+
+/** The lock's row, and a compact anywhere: the next event's time, its title a blank while locked. */
+function CompactNext({ next, now, hour24 }: { next: Occurrence | null; now: number; hour24: boolean }) {
+  return (
+    <>
+      <Head left={<Lab>Next</Lab>} right={next?.event.location ? <Meta>{next.event.location}</Meta> : undefined} />
+      <Grow />
+      <View style={{ flexDirection: "row", gap: 9, alignItems: "flex-end" }}>
+        <Num value={next ? clockText(startOf(next), hour24) : String(new Date(now).getDate())} size={30} />
+        <View style={{ flex: 1, marginBottom: 2 }}>
+          {next ? (
+            <Private what="Event" width={48}>
+              <Words ink>{next.event.title || "Event"}</Words>
+            </Private>
+          ) : (
+            <Words>Nothing else</Words>
+          )}
+        </View>
+      </View>
+    </>
   );
 }

@@ -18,6 +18,8 @@ export interface CardLook {
   houseDown: boolean;
   /** Private nodes are blanks (locked, and not allowed for this one). */
   redact: boolean;
+  /** On the lock screen's wash: a translucent paper over the wallpaper, words in the lock's ink. */
+  glass?: boolean;
 }
 
 export interface CardColours {
@@ -60,12 +62,12 @@ export function cardColours(look: CardLook): CardColours {
   }
   const text = inks.text;
   return {
-    paper: inks.paper,
+    paper: look.glass ? "#00000047" : inks.paper,
     value: inkOf(inks, look.ink, { down: look.houseDown, onAir: false }),
     ink: text.ink,
     secondary: text.secondary,
     tertiary: text.tertiary,
-    hairline: text.hairline,
+    hairline: look.glass ? "#FFFFFF33" : text.hairline,
     off: alpha(text.ink, 0.19),
     fill: text.ink,
     onFill: inks.paper,

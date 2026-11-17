@@ -83,6 +83,7 @@ export function WidgetTile({ kind, size, width, height, showPrivate, air, testID
         air,
         houseDown: env.tally.houseDown && !air,
         redact: env.locked && !showPrivate && info?.holdsPrivate === true,
+        glass: env.locked,
       }}
       width={width}
       height={height}

@@ -27,6 +27,7 @@ export function startInks({ notifications, system, handoff, services, late }: In
     runs,
     asks: pill.asks,
     system: system.store,
+    notices: { subscribe: notifications.store.subscribe, getSnapshot: () => notifications.store.getSnapshot().history },
     openAsk: (id) => void pill.voiceCommands.send({ do: "open-ask", id }),
     stopRun: (id) => handoff.handoffShell.service.stop(id),
   });

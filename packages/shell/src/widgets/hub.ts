@@ -42,6 +42,8 @@ export interface HubNotice {
 
 export interface HubNeeds {
   notify(input: HubNotice): void;
+  /** The notifications as counts by app, for the lock screen (no words: "Messages 3"). */
+  notices?: { subscribe(listener: () => void): () => void; getSnapshot(): readonly { appName: string; desktopEntry: string; closed?: unknown }[] };
   /** Show a waiting ask's card (the capsule's own), from its live card's Open. */
   openAsk?(id: string): void;
   /** Stop an agent's run, from its live card. */
@@ -91,6 +93,10 @@ export class WidgetHub {
 
   stopRun(id: string): void {
     this.needs.stopRun?.(id);
+  }
+
+  get notices(): HubNeeds["notices"] {
+    return this.needs.notices;
   }
 
   get runs(): HubNeeds["runs"] {

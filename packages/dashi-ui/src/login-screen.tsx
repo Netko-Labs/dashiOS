@@ -72,10 +72,31 @@ export interface LoginScreenProps {
   below?: ReactNode;
   /** Sleep, restart, or shut down; without it there are no power buttons. */
   onPower?: (what: PowerAction) => void;
+  /** In place of the day and the time: the lock screen's own clock and the widgets under it. */
+  head?: ReactNode;
+  /** Drawn over the whole screen, behind nothing it covers: the lock screen's side column. */
+  around?: ReactNode;
 }
 
 export function LoginScreen(props: LoginScreenProps): ReactNode {
-  const { day, time, name, picture, value, onChangeText, onSubmit, placeholder = "Password", secure = true, hint, error, above, below, onPower } = props;
+  const {
+    day,
+    time,
+    name,
+    picture,
+    value,
+    onChangeText,
+    onSubmit,
+    placeholder = "Password",
+    secure = true,
+    hint,
+    error,
+    above,
+    below,
+    onPower,
+    head,
+    around,
+  } = props;
   const [arming, setArming] = useState<PowerAction | null>(null);
   useEffect(() => {
     if (!arming) return;
@@ -90,10 +111,13 @@ export function LoginScreen(props: LoginScreenProps): ReactNode {
 
   return (
     <View style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: BACKGROUND, focusRingColor: LOGIN_FOCUS_RING }}>
-      <View style={{ marginTop: 90, flexDirection: "column", alignItems: "center", gap: 4 }}>
-        <Text style={{ fontSize: 20, fontWeight: "semibold", color: MUTED }}>{day}</Text>
-        <Text style={{ fontSize: 88, fontWeight: "bold", color: TEXT }}>{time}</Text>
-      </View>
+      {around}
+      {head ?? (
+        <View style={{ marginTop: 90, flexDirection: "column", alignItems: "center", gap: 4 }}>
+          <Text style={{ fontSize: 20, fontWeight: "semibold", color: MUTED }}>{day}</Text>
+          <Text style={{ fontSize: 88, fontWeight: "bold", color: TEXT }}>{time}</Text>
+        </View>
+      )}
       <View style={{ flex: 1, minHeight: 16 }} />
       <View style={{ flexDirection: "column", alignItems: "center", gap: 10 }}>
         {above}
