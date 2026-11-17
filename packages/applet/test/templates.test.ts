@@ -38,3 +38,13 @@ describe("a new applet's package.json", () => {
     for (const [name] of workspace) expect(overrides).toHaveProperty([name], `file:${paths.shape}`);
   });
 });
+
+describe("the weather template", () => {
+  // Pass 49 saw the template's made-up 21° in the bar beside Dashi's own Weather (20°): a sample says it is one.
+  test("its bar label and its popover call the reading a sample", () => {
+    const main = templateFiles("weather", sdkPaths("/home/alexk/Developer/dashiOS/packages/applet"))["src/main.tsx"] ?? "";
+    expect(main).toContain("const label = (state: State): string => `${shown(state)} sample`;");
+    expect(main).toMatch(/^\s+label,$/m);
+    expect(main).toContain("A sample reading, not the weather");
+  });
+});

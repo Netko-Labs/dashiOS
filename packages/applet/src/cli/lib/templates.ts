@@ -103,6 +103,10 @@ const MAIN = `/**
  * It also adds three commands to the launcher (applet.json's \`commands\`):
  * one that answers at once, one that offers rows as you type, and one that
  * draws its answer itself where the launcher's rows were.
+ *
+ * Its reading is a sample, and says so in the bar ("21° sample"): a made-up
+ * temperature beside Dashi's own Weather would disagree with it. Put your
+ * own source in \`refresh\` and drop the word.
  */
 
 import { defineApplet, type PopoverProps, type ViewProps } from "@dashi/applet";
@@ -117,6 +121,8 @@ interface State {
 }
 
 const shown = (state: State): string => \`\${state.unit === "C" ? state.celsius : Math.round((state.celsius * 9) / 5 + 32)}°\`;
+/** What the bar shows: the sample says it is one. */
+const label = (state: State): string => \`\${shown(state)} sample\`;
 
 const CITIES = [
   { id: "lisbon", name: "Lisbon", celsius: 19, sky: "clear" },
@@ -132,7 +138,7 @@ function Glance({ state }: ViewProps<State>) {
     <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 16, padding: 16, backgroundColor: colors.launcher }}>
       <Text style={{ fontSize: 40, fontWeight: "bold", color: colors.text }}>{shown(state)}</Text>
       <View style={{ flexDirection: "column", gap: 4 }}>
-        <Text style={{ fontSize: 15, color: colors.text }}>Clear all day</Text>
+        <Text style={{ fontSize: 15, color: colors.text }}>A sample reading</Text>
         <Text style={{ fontSize: 13, color: colors.textMuted }}>Esc goes back</Text>
       </View>
     </View>
@@ -144,7 +150,7 @@ function Panel({ state, set, close }: PopoverProps<State>) {
   return (
     <View style={{ flex: 1, flexDirection: "column", gap: 6, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.menuEdge }}>
       <Text style={{ fontSize: 30, fontWeight: "bold", color: colors.text }}>{shown(state)}</Text>
-      <Text style={{ fontSize: 13, color: colors.textMuted }}>Clear</Text>
+      <Text style={{ fontSize: 13, color: colors.textMuted }}>A sample reading, not the weather</Text>
       <View
         onPress={() => set({ unit: state.unit === "C" ? "F" : "C" })}
         style={{ marginTop: "auto", height: 28, borderRadius: 7, alignItems: "center", justifyContent: "center", backgroundColor: colors.button }}
@@ -161,7 +167,7 @@ function Panel({ state, set, close }: PopoverProps<State>) {
 export default defineApplet<State>({
   initial: { celsius: 21, unit: "C" },
   glyph: SUN,
-  label: shown,
+  label,
   menu: (state) => [
     { id: "refresh", label: "Refresh" },
     { type: "separator" },
@@ -181,7 +187,7 @@ export default defineApplet<State>({
   popover: { width: 260, height: 170, component: Panel },
   commands: {
     // instant: the launcher shows the line; Return copies it.
-    now: { run: (_args, applet) => \`\${shown(applet.state)} and clear\` },
+    now: { run: (_args, applet) => \`\${shown(applet.state)}, a sample\` },
     // pick: rows for what is typed, then what the chosen one comes to (here, text on the clipboard).
     city: {
       items: (query) =>

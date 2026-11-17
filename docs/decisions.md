@@ -6365,3 +6365,18 @@ short words, as the rulebook is written.
   ("Chromium"). The line is one line, cut at 16 characters with an
   ellipsis; `Meta` lines are one line everywhere.
 - **Undo:** `playerName` in `widgets/lib/sources/player-name.ts`.
+
+### D482. Dashi's weather has one source; the applet template's reading says it is a sample
+
+- **Date:** 2026-11-17. `v09/fix-inks-1`.
+- **Found:** the bar's "☀ 21°" that disagreed with the Weather card (20°,
+  then 19°) is not Dashi's weather: it is `dev.example.weather`, the applet
+  `dashi-applet new` writes, installed in the VM by an earlier pass, whose
+  state starts at a made-up `celsius: 21` and never changes. Everything
+  Dashi shows of the weather (the card, the lock's date row, Glance, the
+  agents' facts) already reads the hub's one `Weather` (Open-Meteo, rounded
+  once in `take`, asked every 30 minutes); 20 and 19 were two real answers.
+- **Decision:** no second weather in the bar. The template's bar label says
+  "21° sample", its popover "A sample reading, not the weather", so an
+  example can never pass for a reading beside Dashi's own.
+- **Undo:** `label` in the template (`packages/applet/src/cli/lib/templates.ts`).
