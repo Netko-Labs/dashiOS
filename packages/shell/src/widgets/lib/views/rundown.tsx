@@ -36,16 +36,19 @@ function ReceiptRow({ row, hour24 }: { row: RundownRow; hour24: boolean }) {
       <View style={{ width: 40 }}>
         <Title size={12.5}>{clockText(row.at, hour24)}</Title>
       </View>
-      <View style={{ flex: 1 }}>
-        {row.private ? (
-          <Private what="Event" width={100}>
-            <Title weight="500">{row.title}</Title>
-          </Private>
-        ) : (
-          <Title weight="500">{row.title}</Title>
-        )}
-      </View>
-      <Meta>{row.detail}</Meta>
+      {row.private ? (
+        <Private what="Event" width={100}>
+          <Title weight="500" max={24}>
+            {row.title}
+          </Title>
+        </Private>
+      ) : (
+        <Title weight="500" max={24}>
+          {row.title}
+        </Title>
+      )}
+      <Grow />
+      <Meta max={16}>{row.detail}</Meta>
     </View>
   );
 }
@@ -55,7 +58,8 @@ export function RundownWidget({ size }: { size: WidgetSize }) {
   const all = hub?.rundown(now) ?? [];
   const hero = rundownHero(all, now, (at) => clockText(at, hour24));
   const rows = rundownRows(all, placedKinds, hero, now, size === "large" ? 4 : 2);
-  const day = new Date(now).toLocaleDateString(undefined, { weekday: "long", day: "numeric" });
+  const date = new Date(now);
+  const day = `${date.toLocaleDateString(undefined, { weekday: "long" })} ${date.getDate()}`;
   const heroInk = hero.ink ? (tally.houseDown ? inks.dimmed[hero.ink] : inks.ink[hero.ink]) : undefined;
   return (
     <>

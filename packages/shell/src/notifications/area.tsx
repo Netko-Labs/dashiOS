@@ -7,7 +7,7 @@
  * notification center's panel; the month card is the Calendar widget now.
  */
 
-import { View } from "@mirinjs/metal";
+import { Text, View } from "@mirinjs/metal";
 import { useMemo, useState } from "react";
 import { KeyCatcher } from "../overlay.tsx";
 import { useMinuteClock } from "../shared/time/index.ts";
@@ -100,19 +100,22 @@ export function NotificationArea({ store, onClose, onEscape = onClose, dockInset
 
 function EditButton({ inks, onPress }: { inks: WidgetEnv["inks"]; onPress: () => void }) {
   return (
-    <Card
-      look={{ inks, ink: null, air: false, houseDown: false, redact: false }}
-      width={110}
-      height={28}
-      compact
-      padding={0}
+    <View
       testID="edit-widgets"
       onPress={onPress}
+      style={{
+        height: 28,
+        paddingLeft: 14,
+        paddingRight: 14,
+        borderRadius: 14,
+        justifyContent: "center",
+        backgroundColor: inks.paper,
+        borderWidth: 1,
+        borderColor: inks.text.hairline,
+      }}
     >
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <Words ink>Edit widgets</Words>
-      </View>
-    </Card>
+      <Text style={{ fontSize: 12, fontWeight: "semibold", color: inks.text.ink }}>Edit widgets</Text>
+    </View>
   );
 }
 
@@ -158,9 +161,8 @@ function AreaNotes({ store, env, now, onClose }: { store: NotificationAreaProps[
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1, paddingLeft: 14, paddingRight: 8 }}>
             <Words ink>{`${folded.more.count} more`}</Words>
-            <View style={{ flex: 1 }}>
-              <Words>{folded.more.apps.join(", ")}</Words>
-            </View>
+            <Words max={26}>{folded.more.apps.join(", ")}</Words>
+            <View style={{ flex: 1 }} />
             <Btn label="Show all" onPress={() => setAll(true)} testID="nc-all" />
           </View>
         </Card>

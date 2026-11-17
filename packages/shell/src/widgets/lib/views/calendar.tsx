@@ -161,15 +161,15 @@ function CompactNext({ next, now, hour24 }: { next: Occurrence | null; now: numb
       <Grow />
       <View style={{ flexDirection: "row", gap: 9, alignItems: "flex-end" }}>
         <Num value={next ? clockText(startOf(next), hour24) : String(new Date(now).getDate())} size={30} />
-        <View style={{ flex: 1, marginBottom: 2 }}>
-          {next ? (
-            <Private what="Event" width={48}>
-              <Words ink>{next.event.title || "Event"}</Words>
-            </Private>
-          ) : (
-            <Words>Nothing else</Words>
-          )}
-        </View>
+        {next ? (
+          <Private what="Event" width={48}>
+            <Words ink max={10}>
+              {next.event.title || "Event"}
+            </Words>
+          </Private>
+        ) : (
+          <Words>Nothing else</Words>
+        )}
       </View>
     </>
   );

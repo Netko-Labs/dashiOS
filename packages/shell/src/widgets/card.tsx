@@ -57,6 +57,7 @@ export function Card({ look, width, height, compact, padding, testID, onPress, o
             style={{
               flex: 1,
               flexDirection: "column",
+              alignItems: "stretch",
               padding: padding ?? (compact ? 12 : 14),
               borderRadius: radius,
               backgroundColor: colours.paper,

@@ -42,7 +42,7 @@ const GEO = obj({ results: lenientList(obj({ name: str(), latitude: num(), longi
 const FORECAST = obj(
   {
     current: obj({ temperature_2m: num(), weather_code: num() }, { strict: false }),
-    hourly: obj({ time: list(str()), precipitation_probability: list(nullable(num())) }, { strict: false }),
+    hourly: obj({ time: list(num()), precipitation_probability: list(nullable(num())) }, { strict: false }),
     daily: obj({ temperature_2m_max: list(num()), temperature_2m_min: list(num()) }, { strict: false }),
   },
   { strict: false },
@@ -122,8 +122,8 @@ export class Weather extends Source<WeatherState> {
 
   private take(place: string, body: Infer<typeof FORECAST>): void {
     const now = this.now();
-    // With timeformat=unixtime the hours are seconds: as ms strings for firstRain.
-    const times = body.hourly.time.map((time) => (/^\d+$/.test(time) ? new Date(Number(time) * 1000).toISOString() : time));
+    // With timeformat=unixtime the hours are seconds since the epoch.
+    const times = body.hourly.time.map((time) => new Date(time * 1000).toISOString());
     const answer: WeatherNow = {
       place,
       temperature: Math.round(body.current.temperature_2m),

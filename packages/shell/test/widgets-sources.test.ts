@@ -94,6 +94,29 @@ describe("weather", () => {
   });
 });
 
+test("an answer as Open-Meteo sends it (unixtime hours) is read: temperature, range, rain's hour", async () => {
+  const now = Date.parse("2026-11-17T14:00:00Z");
+  const hour = (h: number) => Date.parse(`2026-11-17T${String(h).padStart(2, "0")}:00:00Z`) / 1000;
+  const weather = new Weather({
+    cachePath: null,
+    place: "Lisbon",
+    now: () => now,
+    fetch: async (url) =>
+      url.includes("geocoding")
+        ? { ok: true, json: async () => ({ results: [{ name: "Lisbon", latitude: 38.7, longitude: -9.1 }] }) }
+        : {
+            ok: true,
+            json: async () => ({
+              current: { time: hour(14), temperature_2m: 19.4, weather_code: 2 },
+              hourly: { time: [hour(14), hour(17), hour(18)], precipitation_probability: [5, 30, 80] },
+              daily: { time: [hour(0)], temperature_2m_max: [21.2], temperature_2m_min: [12.8] },
+            }),
+          },
+  });
+  await weather.refresh();
+  expect(weather.getSnapshot()).toEqual({ status: "ok", now: { place: "Lisbon", temperature: 19, code: 2, high: 21, low: 13, rainFrom: hour(18) * 1000, at: now } });
+});
+
 describe("system numbers", () => {
   test("processor and memory from /proc", () => {
     expect(cpuTimes("cpu  100 0 100 700 100 0 0 0 0 0\n")).toEqual({ busy: 200, total: 1000 });

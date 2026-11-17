@@ -5,41 +5,64 @@ import type { ReactNode } from "react";
 import { type GlyphName, glyph } from "../shared/inks/index.ts";
 import { useCard, useRedacted } from "./look.tsx";
 
+/**
+ * A line cut to `max` characters at a word, with an ellipsis: mirin's host
+ * draws nothing for a one-line text squeezed by a flexible box, so the words
+ * are cut here and a text is never wrapped in `flex: 1` (as the
+ * notifications' cards do).
+ */
+export function cut(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const head = text.slice(0, max - 1);
+  const space = head.lastIndexOf(" ");
+  return `${(space > max / 2 ? head.slice(0, space) : head).trimEnd()}…`;
+}
+
 /** A label: small capitals in the secondary ink ("LISBON"). Metal has no letter-spacing, so it is upper-cased only. */
-export function Lab({ children, strong }: { children: string; strong?: boolean }) {
+export function Lab({ children, strong, max = 30 }: { children: string; strong?: boolean; max?: number }) {
   const c = useCard();
   return (
     <Text numberOfLines={1} style={{ fontSize: 10.5, fontWeight: "semibold", color: strong ? c.ink : c.secondary }}>
-      {children.toUpperCase()}
+      {cut(children.toUpperCase(), max)}
     </Text>
   );
 }
 
-export function Meta({ children }: { children: string }) {
+export function Meta({ children, max = 32 }: { children: string; max?: number }) {
   const c = useCard();
   return (
     <Text numberOfLines={1} style={{ fontSize: 11.5, color: c.tertiary }}>
-      {children}
+      {cut(children, max)}
     </Text>
   );
 }
 
 /** A title line: 13, semibold, ink; one line with an ellipsis. */
-export function Title({ children, size = 13, weight = "semibold" }: { children: string; size?: number; weight?: "semibold" | "500" | "normal" }) {
+export function Title({
+  children,
+  size = 13,
+  weight = "semibold",
+  max = 34,
+}: {
+  children: string;
+  size?: number;
+  weight?: "semibold" | "500" | "normal";
+  max?: number;
+}) {
   const c = useCard();
   return (
     <Text numberOfLines={1} style={{ fontSize: size, fontWeight: weight, color: c.ink }}>
-      {children}
+      {cut(children, max)}
     </Text>
   );
 }
 
 /** Body words: 12.5 in the secondary ink. */
-export function Words({ children, lines = 1, ink }: { children: string; lines?: number; ink?: boolean }) {
+export function Words({ children, lines = 1, ink, max = 40 }: { children: string; lines?: number; ink?: boolean; max?: number }) {
   const c = useCard();
   return (
     <Text {...(lines === 1 ? { numberOfLines: 1 as const } : {})} style={{ fontSize: 12.5, lineHeight: 17, color: ink ? c.ink : c.secondary }}>
-      {children}
+      {lines === 1 ? cut(children, max) : children}
     </Text>
   );
 }
@@ -70,9 +93,7 @@ export function Num({
   const medium = size >= 40 && weight >= 0.75;
   return (
     <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-      <Text numberOfLines={1} style={{ fontSize: size, lineHeight: Math.round(size * 0.95), color: colour, ...(medium ? { fontWeight: "500" as const } : {}) }}>
-        {value}
-      </Text>
+      <Text style={{ fontSize: size, lineHeight: Math.round(size * 0.95), color: colour, ...(medium ? { fontWeight: "500" as const } : {}) }}>{value}</Text>
       {unit ? (
         <View style={{ marginLeft: 2, marginTop: Math.round(size * 0.06) }}>
           <Text style={{ fontSize: Math.max(14, size * 0.3), color: colour }}>{unit}</Text>
@@ -90,9 +111,9 @@ export function Glyph({ name, size = 14, tone = "ink" }: { name: GlyphName; size
 /** The header row: a label at the left, something at the right. */
 export function Head({ left, right }: { left: ReactNode; right?: ReactNode }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 14, gap: 8 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", alignSelf: "stretch", justifyContent: "space-between", height: 14, gap: 8 }}>
       {left}
-      {right ?? null}
+      {right ? <View style={{ marginLeft: "auto" }}>{right}</View> : null}
     </View>
   );
 }
