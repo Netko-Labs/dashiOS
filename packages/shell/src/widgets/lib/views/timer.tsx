@@ -24,6 +24,7 @@ export function TimerFace({ timer, size, air, live }: { timer: Timer; size: Widg
   const timers = hub?.timers;
   const pause = timer.endsAt === null ? () => timers?.resume(timer.id) : () => timers?.pause(timer.id);
   const done = left === 0 && timer.endsAt !== null;
+  const text = countdownText(timer.endsAt ?? now + left, now);
   const ends = timer.endsAt === null ? "paused" : done ? "done" : `ends ${clockText(timer.endsAt, hour24)}`;
   const buttons = done ? (
     <>
@@ -42,7 +43,7 @@ export function TimerFace({ timer, size, air, live }: { timer: Timer; size: Widg
         <Head
           left={
             <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-              <Lab>{`Timer · ${timer.label}`}</Lab>
+              <Lab>{timer.label === "Timer" ? "Timer" : `Timer · ${timer.label}`}</Lab>
               <Meta>{ends}</Meta>
             </View>
           }
@@ -65,7 +66,7 @@ export function TimerFace({ timer, size, air, live }: { timer: Timer; size: Widg
     <>
       <Head left={<Lab>{timer.label}</Lab>} right={air ? <NowTag tally={inks.tally} /> : <Meta>{ends}</Meta>} />
       <Grow />
-      <Num value={countdownText(timer.endsAt ?? now + left, now)} size={size === "compact" ? 40 : 64} weight={weight} />
+      <Num value={text} size={size === "compact" ? 40 : text.length > 4 ? 48 : 64} weight={weight} />
       {size === "compact" ? null : (
         <>
           <Grow />
@@ -90,7 +91,7 @@ export function TimerWidget({ size }: { size: WidgetSize }) {
       <Words>Start one</Words>
       <View style={{ flexDirection: "row", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
         {QUICK_TIMERS.slice(0, size === "compact" ? 2 : 4).map((minutes) => (
-          <Btn key={minutes} label={`${minutes} min`} onPress={() => hub?.timers.start(`${minutes} min`, minutes)} testID={`timer-start:${minutes}`} />
+          <Btn key={minutes} label={`${minutes} min`} onPress={() => hub?.timers.start("Timer", minutes)} testID={`timer-start:${minutes}`} />
         ))}
       </View>
     </>

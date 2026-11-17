@@ -121,7 +121,10 @@ export function LockSide({ placements, onPress }: { placements: readonly Placeme
 
 function SideCards({ side, size, columns, onPress }: { side: readonly Placement[]; size: number; columns: 1 | 2; onPress: (placement: Placement) => void }) {
   return (
-    <View testID="lock-side" style={{ position: "absolute", left: 48, top: 170, width: size * columns + 16 * (columns - 1), flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
+    <View
+      testID="lock-side"
+      style={{ position: "absolute", left: 48, top: 170, width: size * columns + 16 * (columns - 1), flexDirection: "row", flexWrap: "wrap", gap: 16 }}
+    >
       {side.map((each) => (
         <WidgetTile
           key={each.id}

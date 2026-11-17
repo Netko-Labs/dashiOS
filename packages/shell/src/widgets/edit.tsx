@@ -192,7 +192,18 @@ export function EditWidgets({
     <View style={{ flexDirection: "column", gap: 10 }}>
       <View onKeyDown={edit.key} style={{ position: "absolute", left: 0, top: 0, width: 1, height: 1, opacity: 0 }} />
       <View
-        style={{ flexDirection: "row", alignItems: "center", gap: 10, height: 26, paddingLeft: 12, paddingRight: 12, borderRadius: 13, backgroundColor: inks.paper, borderWidth: 1, borderColor: inks.text.hairline }}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 10,
+          height: 26,
+          paddingLeft: 12,
+          paddingRight: 12,
+          borderRadius: 13,
+          backgroundColor: inks.paper,
+          borderWidth: 1,
+          borderColor: inks.text.hairline,
+        }}
       >
         <Text numberOfLines={1} style={{ fontSize: 10.5, fontWeight: "semibold", color: inks.text.ink }}>
           EDIT WIDGETS

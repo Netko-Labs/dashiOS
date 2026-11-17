@@ -59,6 +59,20 @@ export class SystemLoad extends Source<SystemNumbers | null> {
   private last: { busy: number; total: number } | null = null;
   private history: number[] = [];
   private timer: ReturnType<typeof setInterval> | null = null;
+  private watchers = 0;
+
+  /** A System widget came on screen: read while at least one is; the returned function says it went. */
+  see(): () => void {
+    this.watchers++;
+    this.watch(true);
+    let gone = false;
+    return () => {
+      if (gone) return;
+      gone = true;
+      this.watchers = Math.max(0, this.watchers - 1);
+      if (this.watchers === 0) this.watch(false);
+    };
+  }
 
   /** Reads while `seen`, every 2 s; stops when not. */
   watch(seen: boolean): void {

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { parseWidgetTree } from "@dashi/applet";
 import { extensionWidgets } from "../src/widgets/lib/sources/extensions.ts";
-import { cpuTimes, memory } from "../src/widgets/lib/sources/system.ts";
+import { cpuTimes, memory, SystemLoad } from "../src/widgets/lib/sources/system.ts";
 import { type TimerClock, Timers, timeLeft } from "../src/widgets/lib/sources/timer.ts";
 import { firstRain, roundCoordinate, Weather, weatherLook } from "../src/widgets/lib/sources/weather.ts";
 
@@ -114,10 +114,26 @@ test("an answer as Open-Meteo sends it (unixtime hours) is read: temperature, ra
           },
   });
   await weather.refresh();
-  expect(weather.getSnapshot()).toEqual({ status: "ok", now: { place: "Lisbon", temperature: 19, code: 2, high: 21, low: 13, rainFrom: hour(18) * 1000, at: now } });
+  expect(weather.getSnapshot()).toEqual({
+    status: "ok",
+    now: { place: "Lisbon", temperature: 19, code: 2, high: 21, low: 13, rainFrom: hour(18) * 1000, at: now },
+  });
 });
 
 describe("system numbers", () => {
+  test("read only while a System widget is on screen: two seen, one gone keeps reading, both gone stops", () => {
+    const load = new SystemLoad(null);
+    const watched: boolean[] = [];
+    load.watch = (seen: boolean) => void watched.push(seen);
+    const first = load.see();
+    const second = load.see();
+    first();
+    first();
+    expect(watched).toEqual([true, true]);
+    second();
+    expect(watched).toEqual([true, true, false]);
+  });
+
   test("processor and memory from /proc", () => {
     expect(cpuTimes("cpu  100 0 100 700 100 0 0 0 0 0\n")).toEqual({ busy: 200, total: 1000 });
     expect(memory("MemTotal: 33554432 kB\nMemAvailable: 20971520 kB\n")).toEqual({ used: 12, total: 32 });

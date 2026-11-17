@@ -21,20 +21,12 @@ export function cut(text: string, max: number): string {
 /** A label: small capitals in the secondary ink ("LISBON"). Metal has no letter-spacing, so it is upper-cased only. */
 export function Lab({ children, strong, max = 30 }: { children: string; strong?: boolean; max?: number }) {
   const c = useCard();
-  return (
-    <Text style={{ fontSize: 10.5, fontWeight: "semibold", color: strong ? c.ink : c.secondary }}>
-      {cut(children.toUpperCase(), max)}
-    </Text>
-  );
+  return <Text style={{ fontSize: 10.5, fontWeight: "semibold", color: strong ? c.ink : c.secondary }}>{cut(children.toUpperCase(), max)}</Text>;
 }
 
 export function Meta({ children, max = 32 }: { children: string; max?: number }) {
   const c = useCard();
-  return (
-    <Text style={{ fontSize: 11.5, color: c.tertiary }}>
-      {cut(children, max)}
-    </Text>
-  );
+  return <Text style={{ fontSize: 11.5, color: c.tertiary }}>{cut(children, max)}</Text>;
 }
 
 /** A title line: 13, semibold, ink; one line with an ellipsis. */

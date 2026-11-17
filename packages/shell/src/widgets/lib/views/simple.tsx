@@ -1,6 +1,7 @@
 /** Clock and World Clocks (plain ink), Battery (matcha) and System (plain ink). */
 
 import { View } from "@mirinjs/metal";
+import { useEffect } from "react";
 import { hereZone, zoneCity } from "../../../shared/calendar/index.ts";
 import { DotRow } from "../../../shared/inks/index.ts";
 import { useWidgetEnv } from "../../env.tsx";
@@ -139,6 +140,8 @@ export function SystemWidget({ size }: { size: WidgetSize }) {
   const { hub } = useWidgetEnv();
   const c = useCard();
   const load = useSource(hub?.load, null);
+  // Read only while this widget is on screen (the area open, the lock showing it).
+  useEffect(() => hub?.load.see(), [hub]);
   if (!load)
     return (
       <>
