@@ -107,7 +107,8 @@ class TreeScope {
 
   sections = (query: string): Section[] => {
     const { asking, view } = this;
-    if (asking?.kind === "confirm") return this.note(`tree:${ANSWER}`, asking.question, `Return: ${asking.yes}`);
+    // The question alone: its ↩ is in the field row's hint (Sign In).
+    if (asking?.kind === "confirm") return this.note(`tree:${ANSWER}`, asking.question);
     if (asking) {
       const typed = query.trim() ? (asking.secret ? "•".repeat(Math.min(query.length, 24)) : query.trim()) : asking.title;
       return this.note(`tree:${ANSWER}`, typed, "Return keeps it");

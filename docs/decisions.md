@@ -6081,8 +6081,13 @@ short words, as the rulebook is written.
   Return in a line moves to the next field (`focusNextOnSubmit`) and is a new
   line in a long one; ❖↩ (a binding the launcher keeps) sends, and so does
   ↩ in the launcher's own field and ⌃↩ in a long one. The first field of
-  words takes the keyboard when the form comes (L8: the title).
-- **Undo:** `FORM_KEYS` in `launcher/keys.ts`.
+  words takes the keyboard when the form comes (L8: the title). Found in the
+  VM: when the form went (a dry run pushed over it), nothing had the
+  keyboard and ↩ did nothing; the launcher's field is now mounted again when
+  a form goes (autoFocus is mirin's only way to give a field the keyboard),
+  and only then: mounted again as the form came, it left the keyboard with
+  no one.
+- **Undo:** `FORM_KEYS` in `launcher/keys.ts`; `useRegained` in `launcher/lib/field.tsx`.
 
 ### D469. A form's choices open in place, not in a popover
 
@@ -6090,7 +6095,8 @@ short words, as the rulebook is written.
 - **Decision:** a Dropdown is a button with its choice and a chevron; pressed,
   its options open under it inside the launcher (⇥ reaches each, Space or
   Return picks). A TagPicker shows the tags chosen ("+ Add" opens the rest,
-  a chosen tag pressed goes). The launcher is one layer surface; a popover
+  a chosen tag pressed goes). An open list shows six options and scrolls
+  (oven-sh/bun's 50 labels ran off the panel in the VM). The launcher is one layer surface; a popover
   over it would be a second surface for one list.
 - **Undo:** `launcher/lib/form-choices.tsx`.
 
