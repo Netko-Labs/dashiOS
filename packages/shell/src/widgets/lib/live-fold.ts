@@ -13,6 +13,7 @@ export function liveItems(view: TallyView, placedKinds: readonly string[]): OnAi
     if (item.key.startsWith("timer:") || item.key.startsWith("run:") || item.key.startsWith("ask:")) return true;
     if (item.key.startsWith("media:")) return !placedKinds.includes("media");
     if (item.key.startsWith("event:")) return !placedKinds.includes("calendar");
+    if (item.key.startsWith("weather:")) return !placedKinds.includes("weather");
     return true;
   };
   return [...(view.item ? [view.item] : []), ...view.standby].filter(card);

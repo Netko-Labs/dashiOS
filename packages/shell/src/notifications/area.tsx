@@ -15,6 +15,8 @@ import {
   Btn,
   Card,
   COLUMN_WIDTH,
+  EditWidgets,
+  GalleryPanel,
   LiveCards,
   type Placement,
   usePlacements,
@@ -36,13 +38,13 @@ export interface NotificationAreaProps extends NotificationCenterProps {
   hub: WidgetHub | null;
   /** What a press on a widget opens; the area closes first. */
   openerOf?: (placement: Placement) => (() => void) | null;
-  /** "Edit widgets": the area turns into its editing state (edit.tsx). */
-  onEdit?: () => void;
 }
 
 const AREA = { right: 12, top: 8, gap: 10 } as const;
 
-export function NotificationArea({ store, onClose, onEscape = onClose, dockInset, hub, openerOf, onEdit }: NotificationAreaProps) {
+export function NotificationArea({ store, onClose, onEscape = onClose, dockInset, hub, openerOf }: NotificationAreaProps) {
+  const [editing, setEditing] = useState(false);
+  const [gallery, setGallery] = useState(false);
   const now = useMinuteClock().getTime();
   const placements = usePlacements(hub);
   const env = useWidgetEnvFor(hub, {
@@ -55,7 +57,7 @@ export function NotificationArea({ store, onClose, onEscape = onClose, dockInset
   });
   return (
     <>
-      <KeyCatcher onKey={(key) => key === "Escape" && onEscape()} />
+      {editing ? null : <KeyCatcher onKey={(key) => key === "Escape" && onEscape()} />}
       <WidgetEnvProvider value={env}>
         <View
           occlude
@@ -64,17 +66,33 @@ export function NotificationArea({ store, onClose, onEscape = onClose, dockInset
         >
           <View testID="nc-list" style={{ flex: 1, overflow: "scroll" }}>
             <View style={{ flexDirection: "column", gap: AREA.gap, paddingLeft: 4, paddingRight: 4, paddingTop: 4, paddingBottom: 8 }}>
-              <LiveCards />
-              <AreaNotes store={store} env={env} now={now} onClose={onClose} />
-              <WidgetColumn placements={placements} {...(openerOf ? { openerOf } : {})} />
-              {onEdit ? (
-                <View style={{ alignItems: "center", paddingTop: 2 }}>
-                  <EditButton inks={env.inks} onPress={onEdit} />
-                </View>
-              ) : null}
+              {editing ? (
+                <EditWidgets
+                  placements={placements}
+                  onDone={() => {
+                    setEditing(false);
+                    setGallery(false);
+                  }}
+                  onGallery={() => setGallery(!gallery)}
+                />
+              ) : (
+                <>
+                  <LiveCards />
+                  <AreaNotes store={store} env={env} now={now} onClose={onClose} />
+                  <WidgetColumn placements={placements} {...(openerOf ? { openerOf } : {})} />
+                  <View style={{ alignItems: "center", paddingTop: 2 }}>
+                    <EditButton inks={env.inks} onPress={() => setEditing(true)} />
+                  </View>
+                </>
+              )}
             </View>
           </View>
         </View>
+        {editing && gallery ? (
+          <View style={{ position: "absolute", right: AREA.right + COLUMN_WIDTH + 26, top: AREA.top + 30 }}>
+            <GalleryPanel placements={placements} onClose={() => setGallery(false)} />
+          </View>
+        ) : null}
       </WidgetEnvProvider>
     </>
   );

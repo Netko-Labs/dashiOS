@@ -18,7 +18,7 @@ import { WeatherWidget } from "./weather.tsx";
 /** The widget kind a tally key belongs to: "timer:t1" → timer. */
 export function kindOfKey(key: string): WidgetKind | null {
   const prefix = key.slice(0, key.indexOf(":"));
-  return ({ timer: "timer", media: "media", event: "calendar", run: "agents", ask: "agents" } as const)[prefix as "timer"] ?? null;
+  return ({ timer: "timer", media: "media", event: "calendar", run: "agents", ask: "agents", weather: "weather" } as const)[prefix as "timer"] ?? null;
 }
 
 function Body({ kind, size, air }: { kind: WidgetKind; size: WidgetSize; air: boolean }) {

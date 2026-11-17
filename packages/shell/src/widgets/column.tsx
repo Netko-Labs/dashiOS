@@ -28,7 +28,7 @@ export function WidgetColumn({ placements, openerOf, decorate, testID = "widget-
   const placed = packColumn(placements);
   const holderKind = env.tally.holder ? kindOfKey(env.tally.holder) : null;
   // A holder drawn as a live card above does not flood its widget too: timers, runs and asks are live cards.
-  const floods = holderKind === "media" || holderKind === "calendar";
+  const floods = holderKind === "media" || holderKind === "calendar" || holderKind === "weather";
   let flooded = false;
   return (
     <View testID={testID} style={{ width: COLUMN_WIDTH, height: columnHeight(placed) }}>

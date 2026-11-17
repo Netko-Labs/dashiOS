@@ -8,6 +8,7 @@ import { instantOf } from "../../shared/calendar/index.ts";
 import type { PillAsk } from "../../shared/pill/index.ts";
 import type { OnAirItem } from "../../tally/index.ts";
 import type { Playing } from "./sources/media.ts";
+import type { WeatherState } from "./sources/weather.ts";
 
 /** An event is due from 5 minutes before it starts until it starts (round three's rule 2). */
 export const EVENT_DUE_MS = 5 * 60_000;
@@ -60,4 +61,12 @@ export function asksOnAir(asks: readonly PillAsk[]): OnAirItem[] {
     glyph: "spark",
     ink: "shiso",
   }));
+}
+
+/** Rain within 15 minutes, only when the person let this Weather go on air (off by default, round five frame 3). */
+export function weatherOnAir(weather: WeatherState, allowed: boolean, now: number): OnAirItem[] {
+  if (!allowed || weather.status !== "ok" || weather.now.rainFrom === null) return [];
+  const at = weather.now.rainFrom;
+  if (now < at - 15 * 60_000 || now > at) return [];
+  return [{ key: "weather:rain", reason: "due", since: at - 15 * 60_000, deadline: at, label: "Rain", glyph: "rain", ink: "mizu" }];
 }
