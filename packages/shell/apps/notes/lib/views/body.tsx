@@ -95,6 +95,13 @@ function useMeasures(): {
   return { lineFactor, tableHeights, setLineFactor, setTableHeight };
 }
 
+/** Shift+Tab: the caret's list items move out a level, as Format › Outdent does. */
+function outdent(body: string, selection: Selection, onChange: (body: string) => void, onSelection: (selection: Selection) => void): void {
+  const edited = formatted(body, selection, "outdent");
+  onChange(edited.body);
+  onSelection(edited.selection);
+}
+
 export function Page(props: PageProps) {
   const { body, selection, query, readOnly, onChange, onSelection, onPress, onLeave, onMeasured } = props;
   const colors = useColors();
@@ -161,12 +168,7 @@ export function Page(props: PageProps) {
           if (span) onPress(span, sourceStart(projection.pieces, event.offset), event.modifiers.control || event.modifiers.super);
         }}
         onKeyPress={(key) => key === "Escape" && onLeave()}
-        onShiftTab={() => {
-          if (readOnly) return;
-          const edited = formatted(body, selection, "outdent");
-          onChange(edited.body);
-          onSelection(edited.selection);
-        }}
+        onShiftTab={() => readOnly || outdent(body, selection, onChange, onSelection)}
         style={{
           width: "100%",
           height: Math.max(props.minHeight, Math.ceil(measured) + 4),
