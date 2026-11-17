@@ -16,7 +16,7 @@ import { useServices } from "../services.ts";
 import { AppletGroup, useAppletState } from "./rows.tsx";
 import { settingsSheet } from "./settings-open.ts";
 import { hasSettings } from "./settings-sheet.tsx";
-import { CATEGORY_LABELS, inMenuBar, skippedWords } from "./words.ts";
+import { CATEGORY_LABELS, inMenuBar, isExtension, skippedWords } from "./words.ts";
 
 const byName = (a: StoreApplet, b: StoreApplet): number => a.manifest.name.localeCompare(b.manifest.name);
 
@@ -166,19 +166,32 @@ function UnreadableAppletRow({ applet, entry }: { applet: UnreadableApplet; entr
   );
 }
 
-/** The applets on Installed (filtered by `needle`); nothing when there are none. */
-export function InstalledApplets({ needle }: { needle: string }) {
+/** What an installed add-on is, for Installed's headings: a launcher extension, a menu bar applet (as Search groups them), or widgets only. */
+export type AddOnKind = "extensions" | "applets" | "widgets";
+
+export const ADD_ON_KINDS: readonly AddOnKind[] = ["extensions", "applets", "widgets"];
+
+/** The heading for each kind, named for what they are. */
+export const ADD_ON_HEADINGS: Readonly<Record<AddOnKind, string>> = { extensions: "Launcher extensions", applets: "Menu bar applets", widgets: "Widgets" };
+
+/** An installed add-on's kind; one Dashi can't read is listed with the applets (nothing says otherwise). */
+export const kindOfInstalled = (applet: Pick<InstalledApplet, "manifest">): AddOnKind =>
+  isExtension(applet) ? "extensions" : inMenuBar(applet) ? "applets" : "widgets";
+
+/** Installed's add-ons of one kind (filtered by `needle`); nothing when there are none. */
+export function InstalledApplets({ needle, kind }: { needle: string; kind: AddOnKind }) {
   const { applets } = useServices();
   const state = useAppletState();
   const shown = state.installed
+    .filter((applet) => kindOfInstalled(applet) === kind)
     .filter((applet) => needle === "" || `${applet.manifest.name} ${applet.manifest.id}`.toLowerCase().includes(needle))
     .sort((a, b) => a.manifest.name.localeCompare(b.manifest.name));
-  const unreadable = state.unreadable
+  const unreadable = (kind === "applets" ? state.unreadable : [])
     .filter((applet) => needle === "" || `${applet.name ?? ""} ${applet.id}`.toLowerCase().includes(needle))
     .sort((a, b) => (a.name ?? a.id).localeCompare(b.name ?? b.id));
   if (shown.length === 0 && unreadable.length === 0) return null;
   return (
-    <Group testID="installed-applets">
+    <Group testID={`installed-${kind}`}>
       {shown.map((applet) => (
         <InstalledAppletRow key={applet.manifest.id} applet={applet} entry={applets.entry(applet.manifest.id)} />
       ))}

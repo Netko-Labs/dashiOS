@@ -165,3 +165,32 @@ test("a burst of writes in the applets folder is one look, after it settles; sto
   expect(looks).toBe(1);
   expect(closed).toBe(true);
 });
+
+test("Installed files each add-on under what it is: launcher extensions and menu bar applets apart (pass 49)", async () => {
+  const { view, press, root, appletsChanged } = harness();
+  await settle(150);
+  const add = (id: string, name: string, extra: Record<string, unknown>) => {
+    mkdirSync(join(root, id));
+    const manifest = { id, name, version: "0.1.0", dashi: ">=0.4", entry: "src/main.tsx", summary: "x", author: { name: "Alex Kim" }, ...extra };
+    writeFileSync(join(root, id, "applet.json"), JSON.stringify(manifest));
+    writeFileSync(join(root, id, "install.json"), JSON.stringify({ version: "0.1.0", sha256: "0".repeat(64), authorKey: null, source: "local", consent: [] }));
+  };
+  add("dev.example.github", "GitHub", { shows: ["launcher"] });
+  add("dev.example.clock", "Clock", {});
+  await appletsChanged();
+  await press("nav:installed");
+  const tree = view.lastTree() ?? "";
+  expect(tree).toContain("Launcher extensions");
+  expect(tree).toContain("Menu bar applets");
+  const extensions = view.nodeId("installed-extensions");
+  const applets = view.nodeId("installed-applets");
+  expect(extensions).toBeDefined();
+  expect(applets).toBeDefined();
+  // GitHub sits under Launcher extensions, before the applets' heading; Clock after it (the sidebar names both first).
+  const page = tree.slice(tree.indexOf('"Installed"', tree.indexOf("Menu bar applets")));
+  const heading = (words: string) => page.lastIndexOf(`"${words}"`);
+  expect(heading("Launcher extensions")).toBeLessThan(page.indexOf('"GitHub"'));
+  expect(page.indexOf('"GitHub"')).toBeLessThan(heading("Menu bar applets"));
+  expect(heading("Menu bar applets")).toBeLessThan(page.indexOf('"Clock"'));
+  view.unmount();
+});

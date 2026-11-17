@@ -6395,3 +6395,14 @@ short words, as the rulebook is written.
   it nowhere; the critical list is the one D260 keeps, so nothing is
   guessed from words.
 - **Undo:** `permissionsOf` in `capsule/lib/told.ts`.
+
+### D484. Installed names each add-on by what it is
+
+- **Date:** 2026-11-17. `v09/fix-inks-1`.
+- **Decision:** The Store's Installed page lists add-ons under three
+  headings, each shown only when it has one: Launcher extensions (an
+  add-on that shows in the launcher), Menu bar applets (one that puts an
+  item in the bar and is not an extension), Widgets (one that only gives
+  widgets). Search groups them the same way (`isExtension`, `inMenuBar`).
+  One Dashi can't read stays with the applets: nothing says what it is.
+- **Undo:** `kindOfInstalled` in `apps/software/lib/applets/pages.tsx`.
