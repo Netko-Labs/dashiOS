@@ -11,6 +11,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { type Manifest, parseManifest } from "@dashi/applet";
 import { userFolders } from "../src/applets/launcher.ts";
 import { type SandboxPaths, sandboxPlan } from "../src/applets/lib/sandbox.ts";
@@ -72,6 +73,7 @@ function world(): { paths: SandboxPaths; secret: string; documents: string; own:
     wayland: "wayland-0",
     bun: process.execPath,
     metalHost: process.execPath,
+    netBridge: fileURLToPath(new URL("../bin/dashi-net-bridge.ts", import.meta.url)),
     appearance: join(home, ".local/state/dashi/control-center.json"),
     sessionBus: null,
     systemBus: "unix:path=/run/dbus/system_bus_socket",
@@ -112,12 +114,15 @@ describe.skipIf(!works)("an extension in its sandbox", () => {
     expect(seen[secret]).toBe(false);
   });
 
-  test("network:HOST is the network, said so on the sheet; no network without it", () => {
+  test("network:HOST shares no network: no resolver inside, the proxy's socket and the bridge instead", () => {
     const { paths } = world();
     const without = sandboxPlan(manifest([]), paths).bwrap;
-    const host = sandboxPlan(manifest(["network:api.github.com"]), paths).bwrap;
+    const held = sandboxPlan(manifest(["network:api.github.com"]), paths);
+    const whole = sandboxPlan(manifest(["network"]), paths).bwrap;
     expect(without).not.toContain("--share-net");
-    expect(host).toContain("--share-net");
-    expect(run(host, ["/etc/resolv.conf"])["/etc/resolv.conf"]).toBe(true);
+    expect(held.bwrap).not.toContain("--share-net");
+    expect(held.net).toEqual({ socket: `${paths.proxyDir}/dev.example.peek.net/proxy.sock`, hosts: ["api.github.com"] });
+    expect(whole).toContain("--share-net");
+    expect(run(whole, ["/etc/resolv.conf"])["/etc/resolv.conf"]).toBe(true);
   });
 });

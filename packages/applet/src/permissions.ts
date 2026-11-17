@@ -6,8 +6,9 @@
  * socket and its own Wayland surfaces.
  *
  *   network                   the network
- *   network:HOST              the network, said as "it only talks to HOST": until Dashi's proxy can hold it to
- *                             that address (store-v2 spec § 5, slice 4), the sandbox gives the network whole
+ *   network:HOST              only HOST: no network in the sandbox, one socket to a proxy outside it that lets
+ *                             through only HTTPS to the hosts named (shell's src/applets/lib/net-proxy.ts)
+ *   account:PROVIDER          the person's account there, once they connect it: the token comes over the channel
  *   notifications             org.freedesktop.Notifications on the session bus
  *   hardware.sensors          dashi-hardware: read the machine (Describe, Get, the Changed signal)
  *   hardware.power            dashi-hardware: everyday knobs (mode, charge limit, boost, EPP)
@@ -35,8 +36,10 @@ export type HardwareScope = (typeof HARDWARE)[number];
 
 export type Permission =
   | { kind: "network" }
-  /** The network for one address (`network:api.github.com`): given as `network` until the proxy is built, and said so. */
+  /** Only these addresses (`network:api.github.com`), through Dashi's proxy: the sandbox has no network of its own. */
   | { kind: "host"; host: string }
+  /** The person's account at a provider (`account:github.com`), once connected; the shell keeps the token. */
+  | { kind: "account"; provider: string }
   | { kind: "notifications" }
   | { kind: "hardware"; scope: HardwareScope }
   /** Dashi's own power mode, Automatic included (power.ts): the shell checks it; the sandbox gives nothing more. */
@@ -50,6 +53,15 @@ export type Permission =
 /** A host name: letters, digits and `-` between dots, lowercase. */
 const HOST = /^(?=.{1,253}$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/;
 
+/**
+ * Subscriptions Dashi never signs anyone in to, for anything (decisions.md D460): Claude's and ChatGPT's.
+ * A key the person pastes into an extension's own preference is theirs to give; an account sign-in is not offered.
+ */
+const REFUSED_PROVIDERS = ["claude.ai", "anthropic.com", "chatgpt.com", "openai.com"];
+
+/** Whether `provider` is (or is under) one Dashi never signs in to. */
+export const refusedProvider = (provider: string): boolean => REFUSED_PROVIDERS.some((each) => provider === each || provider.endsWith(`.${each}`));
+
 const BUS_NAME = /^[A-Za-z_][A-Za-z0-9_-]*(\.[A-Za-z_][A-Za-z0-9_-]*)+$/;
 
 /** Names an applet may not ask for by name: they are the system's to grant, or Dashi's own channels. */
@@ -62,6 +74,11 @@ export function parsePermission(value: unknown): Permission | { error: string } 
   if (value.startsWith("network:")) {
     const host = value.slice("network:".length);
     return HOST.test(host) ? { kind: "host", host } : { error: `“${host}” is not a host name` };
+  }
+  if (value.startsWith("account:")) {
+    const provider = value.slice("account:".length);
+    if (!HOST.test(provider)) return { error: `“${provider}” is not a provider's host name` };
+    return refusedProvider(provider) ? { error: `Dashi never signs in to ${provider} for an extension` } : { kind: "account", provider };
   }
   if (value === POWER_MODE_PERMISSION) return { kind: "power-mode" };
   if (value === CONTROLS_PERMISSION) return { kind: "controls" };
@@ -96,6 +113,8 @@ export function permissionName(permission: Permission): string {
       return permission.kind;
     case "host":
       return `network:${permission.host}`;
+    case "account":
+      return `account:${permission.provider}`;
     case "hardware":
       return `hardware.${permission.scope}`;
     case "power-mode":
@@ -162,7 +181,9 @@ export function describePermission(permission: Permission): string {
     case "network":
       return REACH.network;
     case "host":
-      return `${REACH.network}: it says it only talks to ${permission.host}`;
+      return `Talk to ${permission.host}, and no other address`;
+    case "account":
+      return `Use your ${permission.provider} account, once you connect it`;
     case "notifications":
       return REACH.notifications;
     case "hardware":
@@ -182,17 +203,23 @@ export function describePermission(permission: Permission): string {
 export const asksForPassword = (permission: Permission): boolean =>
   permission.kind === "hardware" && (permission.scope === "fans" || permission.scope === "tuning");
 
-/** What the sheet says it can't do: the reassuring line under the list. */
+/** What the sheet says it can't do: the reassuring line under the list. Held to hosts, it can't reach any other. */
 export function cannotDo(permissions: readonly Permission[]): string | null {
   const files = permissions.some((each) => each.kind === "files");
-  const network = permissions.some(usesNetwork);
+  const network = permissions.some((each) => each.kind === "network");
+  const held = !network && permissions.some((each) => each.kind === "host");
   if (files && network) return null;
-  if (!files && !network) return "It can't read your files or use the network.";
-  return files ? "It can't use the network." : "It can't read your files.";
+  if (files) return held ? "It can't reach any other address." : "It can't use the network.";
+  if (network) return "It can't read your files.";
+  return held ? "It can't read your files or reach any other address." : "It can't read your files or use the network.";
 }
 
-/** Whether it reaches the network: `network`, or `network:HOST` (the sandbox can't yet hold it to the host). */
+/** Whether it reaches the network: `network`, or `network:HOST` (then only through the proxy, to those hosts). */
 export const usesNetwork = (permission: Permission): boolean => permission.kind === "network" || permission.kind === "host";
+
+/** The hosts it may reach through the proxy (`network:HOST`); none when it has the whole network or no network. */
+export const proxiedHosts = (permissions: readonly Permission[]): string[] =>
+  permissions.some((each) => each.kind === "network") ? [] : permissions.flatMap((each) => (each.kind === "host" ? [each.host] : []));
 
 /** The consent sheet's list: plain words, in the manifest's order, each once. */
 export function consentLines(permissions: readonly Permission[]): string[] {

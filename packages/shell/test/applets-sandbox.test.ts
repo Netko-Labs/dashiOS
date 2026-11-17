@@ -19,6 +19,7 @@ const PATHS: SandboxPaths = {
   wayland: "wayland-1",
   bun: "/usr/libexec/dashi/bin/bun",
   metalHost: "/usr/libexec/dashi/mirin-metal-host",
+  netBridge: "/usr/share/dashi/shell/bin/dashi-net-bridge.ts",
   appearance: `${HOME}/.local/state/dashi/control-center.json`,
   sessionBus: "unix:path=/run/user/1000/bus",
   systemBus: "unix:path=/run/dbus/system_bus_socket",

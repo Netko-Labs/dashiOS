@@ -5494,7 +5494,7 @@ short words, as the rulebook is written.
   and says "Public data only: no GitHub account yet" without one.
 - **Undo:** `src/applets/preferences.ts`.
 
-### D346. `network:HOST` gives the network until the proxy exists, and the sheet says so
+### D346. `network:HOST` gives the network until the proxy exists, and the sheet says so (replaced by D463)
 
 - **Date:** 2026-11-16. `v09/launcher-ext`.
 - **Decision:** the permission parses and is shown as "Use the network: it
@@ -6066,3 +6066,164 @@ short words, as the rulebook is written.
   window was installed to look at.
 - **Undo:** `accentPair` in `shared/appearance/gtk-colors.ts`, `accentFill`
   in the portal's `settingsTable`, `AppThemeSync.apply`'s accent.
+
+### D460. Claude's and ChatGPT's subscriptions are never an extension's account
+
+- **Date:** 2026-11-17. `v09/launcher-forms` (launcher slice 4).
+- **Decision:** `account:` and `accounts` refuse claude.ai, anthropic.com,
+  chatgpt.com and openai.com, and any host under them, when the manifest is
+  parsed (`refusedProvider` in `@dashi/applet` permissions.ts), and the
+  shell's `providerFor` knows none of them. The owner's rule: Dashi never
+  signs anyone in to those subscriptions. An extension may still take an
+  API key the person pastes into its own `secret` preference: that is the
+  person's to give, not a sign-in Dashi offers.
+- **Undo:** `REFUSED_PROVIDERS` in permissions.ts (do not, without the owner).
+
+### D461. A form's values are the launcher's; it checks `required` and `max` before anything is sent
+
+- **Date:** 2026-11-17. `v09/launcher-forms`.
+- **Decision:** a `Form` tree's fields (`TextField`, `TextArea`, `Dropdown`,
+  `TagPicker`, `Checkbox`, with `Option` and `Description`) are drawn by the
+  launcher, which holds what is typed (the shell's `TreeSession`): the
+  extension's `value` is where a field starts, a kept draft wins over it, and
+  each change is sent as `change` so `onChange` can set its own `invalid`.
+  ❖↩ (the form's first action, `Action.SubmitForm`) is refused with the
+  missing field's words under it and in the field row while a `required`
+  field is empty, a field is over its `max`, or one carries `invalid`; only
+  then is `submit` sent with every value by name. The extension's own
+  complaint is `invalid` on the wire (the SDK keeps Raycast's `error`): a
+  prop named `error` made a node's props look like a refusal to
+  `isRefusal` and the whole view was refused, found by the first test.
+- **Why:** the launcher keeps the keyboard and the draft; validation that
+  needs no round trip doesn't wait for one.
+- **Undo:** `lib/tree-form.ts`, the `submit` branch of `TreeSession.act`.
+
+### D462. A form's draft is a file beside the extension's data, gone once sent and closed
+
+- **Date:** 2026-11-17. `v09/launcher-forms`.
+- **Decision:** a form whose root says `draft` keeps its values as they are
+  typed in `applet-data/<id>.drafts.json`, by command, outside the sandbox
+  (the extension can't read or write it); the next open of that command
+  starts from it. It goes when the extension closes the view after a
+  `submit`. A failed send keeps it.
+- **Undo:** `src/applets/drafts.ts`; without `drafts` in `ExtensionViews`, nothing is kept.
+
+### D463. `network:HOST` is no network and a proxy that lets through HTTPS to those hosts only
+
+- **Date:** 2026-11-17. `v09/launcher-forms`. Replaces D346.
+- **Decision:** an extension that names hosts (and not `network`) gets
+  bubblewrap's own network namespace (only loopback), the certificates, and
+  one Unix socket to a CONNECT proxy that runs outside the sandbox in its
+  unit (`src/applets/net-proxy.ts`, started by `dashi-applet-run`). The proxy
+  answers CONNECT to port 443 of a named host (any case, a trailing dot
+  ignored) and 403 to anything else, resolving names itself. Inside, a bridge
+  (`bin/dashi-net-bridge.ts`, run before the extension's `main.js` in the same
+  process, its listener `unref`ed) listens on the sandbox's own 127.0.0.1:3128
+  and passes each connection to the socket; `HTTPS_PROXY` points Bun's
+  `fetch` at it. Proved with real bubblewrap (`applets-net-proxy.test.ts`):
+  the named host goes through, another is refused (raw CONNECT and `fetch`),
+  and around the bridge there is no network. The consent sheet now says
+  "Talk to HOST, and no other address", and "It can't reach any other address".
+- **Cost:** HTTPS only (plain HTTP and other ports are refused); an extension
+  that ignores `HTTPS_PROXY` (a raw socket, a WebSocket library that doesn't
+  read it) has no network. Both are what the permission says.
+- **Undo:** `proxiedHosts` and the `netDir` branches in `lib/sandbox.ts`.
+
+### D464. Accounts sign in with PKCE on a loopback address; Dashi ships its client id and never a secret
+
+- **Date:** 2026-11-17. `v09/launcher-forms`.
+- **Decision:** the shell (or the Store, for Settings…) runs OAuth for a
+  native app (RFC 8252, RFC 7636): a server on 127.0.0.1 on a free port for
+  this one sign-in, the provider's page opened in Helium, `state` checked,
+  the code traded with the S256 verifier, then the provider asked who the
+  token belongs to. Dashi registers its own OAuth app per provider and keeps
+  only its client id in `src/shared/extension-settings/providers.ts`
+  (`GITHUB_CLIENT_ID`, empty until the owner registers it;
+  `DASHI_GITHUB_CLIENT_ID` overrides it for a test). No client secret is in
+  the package: one shipped to every computer is not a secret, and PKCE is
+  what binds the code to this sign-in. Until the id is set, Connect asks for a
+  pasted token instead, checked with the provider before it is kept.
+- **Risk, said plainly:** GitHub added PKCE for OAuth apps in July 2025, but
+  its documents still list `client_secret` for the token exchange; whether
+  github.com takes a secret-less exchange for an OAuth app is not proved here
+  (that needs the owner's app). If it refuses, the next step is GitHub's
+  device flow (no secret, no redirect), not a secret in the package.
+- **Undo:** `providers.ts`; `sign-in.ts`.
+
+### D465. An account is the extension's: its token in the keyring, who it is on disk, asked once
+
+- **Date:** 2026-11-17. `v09/launcher-forms`.
+- **Decision:** an account is kept per extension, as the spec's § 4.4 has
+  it: the tokens (and a refresh token, when a provider gives one) in the
+  Secret Service as `dashi-extension <id> account <provider>`, and only the
+  login and whether the person said yes once in
+  `applet-data/<id>.accounts.json`. The extension gets
+  `{login, token}` with `open` and an `accounts` message when it changes
+  (`useAccount`). Signing in is "secrets and identity" (D260): the first
+  Connect asks one question (the launcher's one line, ↩ Sign In; the Store
+  row's Sign In and Cancel), never again for that extension and provider,
+  Disconnect included. Nothing else about accounts asks.
+- **Not built:** refreshing an expiring token (GitHub's OAuth apps' tokens
+  don't expire); one sign-in shared by several extensions.
+- **Undo:** `accounts.ts`.
+
+### D466. The preview column is a row's, drawn beside any list that has one
+
+- **Date:** 2026-11-17. `v09/launcher-forms`.
+- **Decision:** a launcher row may carry a `preview` (words in a block, a
+  picture or Markdown, then facts). A list whose rows on screen have one draws
+  them at the left and the selected one's preview in a 236-wide column at the
+  right (frame L11). The clipboard's copies carry theirs (the text, From,
+  Copied, Kind) and an extension's `List.Item` with a `detail` carries its
+  Markdown and its facts' words, so the same column serves both.
+- **Undo:** `withPreview` in `launcher/lib/list.tsx`.
+
+### D467. Settings… in the Store keeps what the shell reads; a running extension sees it at its next open
+
+- **Date:** 2026-11-17. `v09/launcher-forms`.
+- **Decision:** the Store's Settings… (frame S5, on an installed extension's
+  row when it has preferences or an account) reads and writes the same
+  stores the shell's views do (`src/shared/extension-settings`), in its own
+  process; the account's sign-in runs there too, with the same one question.
+  An open view doesn't hear a change made in the Store; the next open of a
+  command does. Commands' keys ("Keys…") are not in it yet.
+- **Undo:** `apps/software/lib/applets/settings-*.ts(x)`.
+
+### D468. While a form shows, ⇥ and the caret keys are its fields'; ❖↩ sends
+
+- **Date:** 2026-11-17. `v09/launcher-forms`.
+- **Decision:** the launcher's keymap takes ⇥, Home, End, the page keys and
+  ⌃N ⌃P for its list; while a form shows (`LauncherScope.form`, `ExtraKeys.form`)
+  those rules are left out so they reach the fields: ⇥ moves between them.
+  Return in a line moves to the next field (`focusNextOnSubmit`) and is a new
+  line in a long one; ❖↩ (a binding the launcher keeps) sends, and so does
+  ↩ in the launcher's own field and ⌃↩ in a long one. The first field of
+  words takes the keyboard when the form comes (L8: the title). Found in the
+  VM: when the form went (a dry run pushed over it), nothing had the
+  keyboard and ↩ did nothing; the launcher's field is now mounted again when
+  a form goes (autoFocus is mirin's only way to give a field the keyboard),
+  and only then: mounted again as the form came, it left the keyboard with
+  no one.
+- **Undo:** `FORM_KEYS` in `launcher/keys.ts`; `useRegained` in `launcher/lib/field.tsx`.
+
+### D469. A form's choices open in place, not in a popover
+
+- **Date:** 2026-11-17. `v09/launcher-forms`.
+- **Decision:** a Dropdown is a button with its choice and a chevron; pressed,
+  its options open under it inside the launcher (⇥ reaches each, Space or
+  Return picks). A TagPicker shows the tags chosen ("+ Add" opens the rest,
+  a chosen tag pressed goes). An open list shows six options and scrolls
+  (oven-sh/bun's 50 labels ran off the panel in the VM). The launcher is one layer surface; a popover
+  over it would be a second surface for one list.
+- **Undo:** `launcher/lib/form-choices.tsx`.
+
+### D470. Create Issue without an account is a dry run
+
+- **Date:** 2026-11-17. `v09/launcher-forms`.
+- **Decision:** Dashi's GitHub extension files an issue with the connected
+  account's token (or one pasted in its preferences). With neither, the
+  form still works and checks; ❖↩ pushes a detail with the exact request it
+  would send (POST and the JSON) and offers Connect GitHub…; nothing is sent,
+  and the draft stays. That is also how its VM pass runs without the owner's
+  GitHub.
+- **Undo:** `send` in `extensions/github/lib/create-issue.tsx`.

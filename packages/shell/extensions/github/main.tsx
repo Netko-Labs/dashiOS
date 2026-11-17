@@ -4,17 +4,19 @@
  * frame L5), their actions (L6) and a pull request's detail (L7), and a
  * search for repositories. Public data without an account; a token the
  * person pastes (Use a GitHub Token…) is kept by Dashi in the Secret
- * Service. Connecting an account is the next slice: until then it says so.
+ * Service, or a GitHub account connected (Dashi signs in; the token comes
+ * over the channel). Create Issue is a form (frame L8).
  */
 
 import { defineApplet } from "@dashi/applet";
 import { Action, ActionPanel, List, useLauncher, usePreferences, useQuery } from "@dashi/applet/launcher";
 import { useEffect, useState } from "react";
 import { ago, fit, isRepo, type PullRequest, pullRequests, type Repository, searchRepositories } from "./lib/api.ts";
-import { PullRequestDetail, SettingsActions } from "./lib/detail.tsx";
+import { CreateIssue } from "./lib/create-issue.tsx";
+import { PullRequestDetail, SettingsActions, useGitHubToken } from "./lib/detail.tsx";
 import { PULL_REQUEST } from "./lib/glyphs.ts";
 
-type Prefs = { repo?: string; token?: string };
+type Prefs = { repo?: string };
 
 function Row({ repo, pr }: { repo: string; pr: PullRequest }) {
   return (
@@ -41,12 +43,13 @@ function Row({ repo, pr }: { repo: string; pr: PullRequest }) {
 
 /** One repository's open pull requests: the preference's, or one a search pushed. */
 export function PullRequests({ repo: given }: { repo?: string }) {
-  const { repo: preferred, token } = usePreferences<Prefs>();
+  const { repo: preferred } = usePreferences<Prefs>();
+  const token = useGitHubToken();
   const repo = given ?? (preferred && isRepo(preferred) ? preferred.trim() : "oven-sh/bun");
   const { data, loading, error, reload } = useQuery(() => pullRequests(repo, token), [repo, token]);
   const { toast } = useLauncher();
   useEffect(() => {
-    if (!token) toast("done", "Public data only: no GitHub account yet");
+    if (!token) toast("done", "Public data only: ❖K › Connect GitHub…");
   }, [token, toast]);
   if (error)
     return (
@@ -106,7 +109,7 @@ function RepoRow({ repo }: { repo: Repository }) {
 }
 
 function SearchRepositories() {
-  const { token } = usePreferences<Prefs>();
+  const token = useGitHubToken();
   const [query, setQuery] = useState("");
   const [asked, setAsked] = useState("");
   // Asked a moment after the typing stops, so GitHub isn't asked for every letter.
@@ -130,5 +133,6 @@ export default defineApplet({
   commands: {
     "pull-requests": { view: () => <PullRequests /> },
     "search-repos": { view: SearchRepositories },
+    "create-issue": { view: () => <CreateIssue /> },
   },
 });

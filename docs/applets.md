@@ -391,7 +391,7 @@ the authority; `packages/applet/manifest.schema.json` is the same for editors.
 | Permission | In the consent sheet | What the sandbox gives |
 | --- | --- | --- |
 | `network` | Use the network | the network namespace, the resolver, the certificates |
-| `network:HOST` | Use the network: it says it only talks to HOST | the same as `network` until a proxy holds it to HOST (the next slice), which is why the sheet says it that way |
+| `network:HOST` | Talk to HOST, and no other address | no network of its own: a proxy outside the sandbox lets through HTTPS to HOST only (docs/launcher-extensions.md, "Permissions"; decisions.md D463) |
 | `notifications` | Show notifications | the session bus through `xdg-dbus-proxy`, talking only to `org.freedesktop.Notifications` |
 | `hardware.sensors` | Read temperatures, fan speeds and power draw | the system bus through the proxy, calling only dashi-hardware's `Describe`, `Get`, `GetFanCurve`, `CurveOptimizer`, `BootGuard`, `Slash`, and hearing `Changed` |
 | `hardware.power` | Change the power mode, battery charge limit and processor boost | the above, and `Set`, `SetMany` |

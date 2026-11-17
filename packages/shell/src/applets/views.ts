@@ -15,6 +15,8 @@
 import { type AppletCommand, launcherOnly, type Manifest, type PreferenceValue, type ViewMessage, type ViewShellMessage } from "@dashi/applet";
 import type { Outcome, Shown } from "../actions/index.ts";
 import { realTimers, type Timers } from "../shared/time/index.ts";
+import type { Drafts } from "./drafts.ts";
+import type { SessionAccounts } from "./lib/tree-accounts.ts";
 import { TreeSession } from "./lib/tree-session.ts";
 
 /** How long an extension may take to start and connect, and then to send its first tree. */
@@ -36,6 +38,10 @@ export interface ExtensionViewsOptions {
   paste?(text: string): Promise<boolean>;
   preferences(manifest: Manifest): Promise<Record<string, PreferenceValue>>;
   setPreference(manifest: Manifest, name: string, value: PreferenceValue): Promise<boolean>;
+  /** Extensions' accounts (lib/tree-accounts.ts); none: Connect says it can't. */
+  accounts?: SessionAccounts;
+  /** Forms' drafts (drafts.ts); none: nothing is kept. */
+  drafts?: Drafts;
   timers?: Timers;
   now?: () => number;
 }
@@ -101,6 +107,8 @@ export class ExtensionViews {
       setPreference: this.options.setPreference,
       closed: (gone) => this.closed(gone),
       now: this.now,
+      ...(this.options.accounts ? { accounts: this.options.accounts } : {}),
+      ...(this.options.drafts ? { drafts: this.options.drafts } : {}),
     });
     this.sessions.set(seq, session);
     const idle = this.idle.get(manifest.id);
@@ -119,7 +127,7 @@ export class ExtensionViews {
     const warm = this.peers.has(manifest.id);
     const peer = this.peers.get(manifest.id) ?? (await this.wake(manifest.id));
     if (!peer) return session.fail(`${manifest.name} didn't start.`);
-    session.started(command.id, args, await this.options.preferences(manifest));
+    session.started(command.id, args, await this.options.preferences(manifest), (await this.options.accounts?.given(manifest)) ?? {});
     const timer = this.timers.set(() => {
       if (session.snapshot().phase === "starting") session.fail(`${manifest.name} isn't answering.`);
     }, START_TIMEOUT_MS);

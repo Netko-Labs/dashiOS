@@ -56,6 +56,20 @@ export type RowGroup = "answer" | "window" | "app" | "settings" | "command" | "m
 /** A setting's state, drawn in the row: a switch Space flips, or the value it has. */
 export type RowControl = { kind: "switch"; on: boolean } | { kind: "value"; text: string };
 
+/**
+ * What the preview column beside a list shows for the selected row (store-v2 frame L11): its words in a
+ * block (a copy's text), a picture, or Markdown, and facts under them (From, Copied, Kind).
+ */
+export interface RowPreview {
+  /** Words shown as they are, in a block (a copied line, a path). */
+  text?: string;
+  /** Markdown (an extension item's detail). */
+  markdown?: string;
+  /** A picture's path (a copied image). */
+  image?: string;
+  facts: readonly { title: string; text: string }[];
+}
+
 export interface Row {
   id: string;
   title: string;
@@ -95,6 +109,8 @@ export interface Row {
   long?: true;
   /** A question asked in place (a verb's `confirm`): its words wrap, and the row grows to hold them (what it can reach is never cut). */
   question?: true;
+  /** Shown in the preview column beside the list while it is selected (lib/preview-view.tsx). */
+  preview?: RowPreview;
   /** An extension's tags at the right end ("Checks pass"), each in its tone's ink. */
   tags?: readonly { text: string; tone?: Tone }[];
 }

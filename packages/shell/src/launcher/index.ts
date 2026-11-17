@@ -15,7 +15,7 @@ export { isFallbackList, isQuicklinkList } from "./quicklink-list.ts";
 export { QuicklinkSource } from "./quicklinks.ts";
 export { RankingMemory } from "./ranking/index.ts";
 export { LAUNCHER_MOTION, ResidentHost } from "./resident.tsx";
-export type { Row } from "./row-model.ts";
+export type { Row, RowPreview } from "./row-model.ts";
 export { FILE_ROWS, type Section } from "./sections.ts";
 export { shellLauncherHost } from "./shell-host.ts";
 export { logTiming, markOpen, sinceOpen } from "./timing.ts";

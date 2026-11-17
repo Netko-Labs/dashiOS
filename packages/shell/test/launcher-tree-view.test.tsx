@@ -81,6 +81,8 @@ class FakeView implements TreeView {
     return node === "copy42" ? { kind: "done", notice: "Copied" } : { kind: "done" };
   };
   setPreference = async () => true;
+  connect = async (): Promise<TreeActed> => ({ kind: "done" });
+  change = (): void => {};
   back = () => {
     if (this.state.stack.length <= 1) return false;
     this.set({ stack: this.state.stack.slice(0, -1) });

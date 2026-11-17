@@ -69,6 +69,8 @@ export interface LauncherScope {
   leave?(): void;
   /** What is typed is a secret: the field shows dots. */
   secure?(): boolean;
+  /** An extension's form shows: its fields want ⇥ and the caret keys (keys.ts `ExtraKeys.form`). */
+  form?(): boolean;
   /** Its own word at the field's right end (an extension's toast), when the launcher has none. */
   notice?(): { text: string; ok: boolean } | null;
 }

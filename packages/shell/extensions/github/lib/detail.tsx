@@ -1,6 +1,6 @@
 /** A pull request's detail (store-v2 frame L7): its description, and a facts column with its checks, branch and link. */
 
-import { Action, ActionPanel, Detail, usePreferences, useQuery } from "@dashi/applet/launcher";
+import { Action, ActionPanel, Detail, useAccount, usePreferences, useQuery } from "@dashi/applet/launcher";
 import { ago, type Checks, checksOf, type PullRequest } from "./api.ts";
 
 const CHECKS: Record<Checks, { text: string; tone: "moss" | "ume" | "secondary" }> = {
@@ -10,18 +10,27 @@ const CHECKS: Record<Checks, { text: string; tone: "moss" | "ume" | "secondary" 
   none: { text: "No checks", tone: "secondary" },
 };
 
-/** Where the person sets what the extension uses: the repository, and a token (kept in the Secret Service). */
+/** The token GitHub is asked with: the connected account's, else one pasted in its preferences, else none (public data). */
+export function useGitHubToken(): string | undefined {
+  const account = useAccount("github.com");
+  const { token } = usePreferences<{ token?: string }>();
+  return account.connected ? account.token : token;
+}
+
+/** Where the person sets what the extension uses: the account (or a token, kept in the Secret Service), the repository. */
 export function SettingsActions() {
+  const account = useAccount("github.com");
   return (
     <ActionPanel.Section title="GitHub">
+      {!account.connected && <Action.ConnectAccount title="Connect GitHub…" provider="github.com" />}
       <Action.SetPreference title="Choose Repository…" name="repo" />
-      <Action.SetPreference title="Use a GitHub Token…" name="token" />
+      {!account.connected && <Action.SetPreference title="Use a GitHub Token…" name="token" />}
     </ActionPanel.Section>
   );
 }
 
 export function PullRequestDetail({ repo, pr }: { repo: string; pr: PullRequest }) {
-  const { token } = usePreferences<{ token?: string }>();
+  const token = useGitHubToken();
   const { data: checks } = useQuery(() => checksOf(repo, pr.sha, token), [repo, pr.sha, token]);
   const shown = CHECKS[checks ?? "running"];
   return (

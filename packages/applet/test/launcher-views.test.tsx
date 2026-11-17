@@ -68,7 +68,7 @@ function Counter() {
 }
 
 function open(views: LauncherViews, seq = 1): void {
-  views.receive({ type: "open", seq, command: "counter", args: {}, query: "", preferences: { greeting: "Hi" } });
+  views.receive({ type: "open", seq, command: "counter", args: {}, query: "", preferences: { greeting: "Hi" }, accounts: {} });
 }
 
 const actionId = (shell: Shell, title: string): string => {

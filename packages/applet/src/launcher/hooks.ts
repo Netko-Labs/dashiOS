@@ -5,11 +5,13 @@
  */
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import type { PreferenceValue, ToastStyle } from "../view/wire.ts";
+import type { AccountGiven, PreferenceValue, ToastStyle } from "../view/wire.ts";
 
 /** What views.ts gives each command's views. */
 export interface ViewContextValue {
   preferences(): Readonly<Record<string, PreferenceValue>>;
+  /** Its connected accounts, by provider (the same object until one changes). */
+  accounts(): Readonly<Record<string, AccountGiven>>;
   subscribe(listener: () => void): () => void;
   push(element: React.ReactNode): void;
   pop(): void;
@@ -24,6 +26,7 @@ const missing = (): never => {
 
 export const ViewContext = createContext<ViewContextValue>({
   preferences: missing,
+  accounts: missing,
   subscribe: missing,
   push: missing,
   pop: missing,
@@ -36,6 +39,21 @@ export function usePreferences<T extends Record<string, PreferenceValue | undefi
   const view = useContext(ViewContext);
   const values = useSyncExternalStore(view.subscribe, view.preferences);
   return values as T;
+}
+
+/** An account as a view sees it: connected (who, and the token for its provider's API) or not. */
+export type Account = { connected: true; login: string; token: string } | { connected: false };
+
+/**
+ * The person's account at `provider` (applet.json `accounts`), re-rendered when they connect or disconnect it
+ * (in the launcher with `Action.ConnectAccount`, or in the Store's Settings…). The token is the shell's to keep:
+ * use it, never write it down.
+ */
+export function useAccount(provider: string): Account {
+  const view = useContext(ViewContext);
+  const accounts = useSyncExternalStore(view.subscribe, view.accounts);
+  const given = accounts[provider];
+  return given ? { connected: true, login: given.login, token: given.token } : { connected: false };
 }
 
 /** Show a view over this one (`push`), or go back (`pop`); Esc pops too. */

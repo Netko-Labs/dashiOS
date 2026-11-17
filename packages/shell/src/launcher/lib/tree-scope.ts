@@ -8,7 +8,11 @@
  * - Until the first tree, the view's skeleton: three empty rows, "Loading…"
  *   after 300 ms, "<it> isn't answering" after 10 s.
  * - A `set` action asks for its preference in the field (a secret's field
- *   shows dots) and Return keeps it.
+ *   shows dots) and Return keeps it; so does `connect` where Dashi can only
+ *   take a pasted token. The first sign-in asks its one question in the
+ *   field; Return signs in, in Helium.
+ * - A form's fields are drawn in place of rows (form-view.tsx); ❖↩ sends
+ *   it, ⇥ moves between fields (keys.ts gives ⇥ back while it shows).
  * - A `push` action's view starts with an empty field: what was typed to
  *   find the row goes, what was typed after ↩ (before the view came) stays
  *   (pass 42: the repository's name filtered its pull requests away).
@@ -26,7 +30,7 @@ import { nodeIdOf, panelOf, panelVerbs, treeSections } from "./tree-rows.ts";
 /** "Loading" shows after this long without a tree. */
 export const LOADING_AFTER_MS = 300;
 
-type Asking = Extract<TreeActed, { kind: "ask" }>;
+type Asking = Extract<TreeActed, { kind: "ask" } | { kind: "confirm" }>;
 
 const ANSWER = "answer";
 
@@ -93,11 +97,18 @@ class TreeScope {
 
   placeholder(): string {
     const words = this.top()?.p.placeholder;
-    return this.asking ? this.asking.title : typeof words === "string" ? words : `Search ${this.title}`;
+    if (this.asking) return this.asking.kind === "ask" ? this.asking.title : "";
+    if (this.top()?.t === "Form") return "";
+    return typeof words === "string" ? words : `Search ${this.title}`;
   }
+
+  /** A form shows, and no question is asked over it. */
+  formShown = (): boolean => !this.asking && this.top()?.t === "Form";
 
   sections = (query: string): Section[] => {
     const { asking, view } = this;
+    // The question alone: its ↩ is in the field row's hint (Sign In).
+    if (asking?.kind === "confirm") return this.note(`tree:${ANSWER}`, asking.question);
     if (asking) {
       const typed = query.trim() ? (asking.secret ? "•".repeat(Math.min(query.length, 24)) : query.trim()) : asking.title;
       return this.note(`tree:${ANSWER}`, typed, "Return keeps it");
@@ -112,11 +123,20 @@ class TreeScope {
       this.searched = query;
       view.search(query);
     }
-    return treeSections(root, query, { dir: view.dir, from: view.from });
+    const form = state.form;
+    return treeSections(root, query, { dir: view.dir, from: view.from, ...(form ? { form: { ...form, change: view.change } } : {}) });
   };
 
   verbs = (row: Row): Verb[] => {
-    if (this.asking) return [{ id: ANSWER, title: `Keep ${this.asking.title}`, effect: { kind: "scope", verb: ANSWER }, key: KEYS.primary }];
+    if (this.asking)
+      return [
+        {
+          id: ANSWER,
+          title: this.asking.kind === "confirm" ? this.asking.yes : `Keep ${this.asking.title}`,
+          effect: { kind: "scope", verb: ANSWER },
+          key: KEYS.primary,
+        },
+      ];
     const root = this.top();
     const nodeId = nodeIdOf(row);
     if (!root || !nodeId) return [];
@@ -125,7 +145,10 @@ class TreeScope {
     // list came used to run the view's own (Choose Repository…, Use a GitHub Token…; passes 41 and 42).
     if (!node) return [];
     // The item's own actions, then the view's (its root's ActionPanel), each once.
-    const own = panelVerbs(panelOf(node, root));
+    // A form's first action (its send) is ❖↩: Return in its fields moves to the next one (L8).
+    const own = panelVerbs(panelOf(node, root)).map((verb, at) =>
+      root.t === "Form" && at === 0 && verb.key === KEYS.primary ? { ...verb, key: KEYS.secondary } : verb,
+    );
     const view = node === root ? [] : panelVerbs(root.c.find((child) => child.t === "ActionPanel")).filter((verb) => !own.some((each) => each.id === verb.id));
     return [...own, ...view.map(({ key: _key, ...verb }) => verb)];
   };
@@ -142,6 +165,11 @@ class TreeScope {
 
   run = async (verb: string, row: Row | undefined, query: string): Promise<ScopeResult> => {
     const wanted = this.asking;
+    if (wanted?.kind === "confirm") {
+      this.asking = null;
+      this.changed();
+      return this.acted(await this.view.connect(wanted.provider));
+    }
     if (wanted) {
       this.asking = null;
       this.changed();
@@ -162,7 +190,7 @@ class TreeScope {
 
   private acted(done: TreeActed): ScopeResult {
     if (done.kind === "failed") return { notice: { text: done.error, ok: false } };
-    if (done.kind === "ask") {
+    if (done.kind === "ask" || done.kind === "confirm") {
       this.asking = done;
       this.changed();
       return { query: "" };
@@ -221,7 +249,8 @@ export function treeScope(title: string, view: TreeView, now: () => number = () 
     returnTo: scope.returnTo,
     fieldNow: scope.fieldNow,
     leave: () => view.close(),
-    secure: () => scope.asking?.secret === true,
+    secure: () => scope.asking?.kind === "ask" && scope.asking.secret,
+    form: scope.formShown,
     notice: () => {
       const toast = view.snapshot().toast;
       return toast ? { text: toast.title, ok: toast.style !== "failed" } : null;
