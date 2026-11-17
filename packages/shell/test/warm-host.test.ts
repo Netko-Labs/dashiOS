@@ -32,6 +32,7 @@ function fakeHosts() {
       setTitle() {},
       setSize() {},
       setMinSize() {},
+      setReduceMotion() {},
       open: (window) => record.opened.push(window),
     };
   };

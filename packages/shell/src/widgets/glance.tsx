@@ -7,9 +7,11 @@
  */
 
 import { Text, View } from "@mirinjs/metal";
+import { useHostAbilities } from "../shared/metal/index.ts";
 import { onAirWords, useSecondTick } from "../tally/index.ts";
 import { useWidgetEnv } from "./env.tsx";
 import { clockText } from "./lib/data.ts";
+import { clockFace } from "./lib/numerals.ts";
 
 /** The burn-in nudge: where the content sits this minute, a few points from the middle, round a small square. */
 export function glanceNudge(now: number): { x: number; y: number } {
@@ -33,6 +35,7 @@ export function Glance({ onWake }: { onWake: () => void }) {
   const item = tally.item;
   const tick = useSecondTick(item?.countdown !== undefined);
   const nudge = glanceNudge(now);
+  const face = clockFace(useHostAbilities());
   return (
     <View
       testID="glance"
@@ -40,7 +43,7 @@ export function Glance({ onWake }: { onWake: () => void }) {
       style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, backgroundColor: "#000000", alignItems: "center", justifyContent: "center" }}
     >
       <View style={{ flexDirection: "column", alignItems: "center", gap: 14, marginLeft: nudge.x * 2, marginTop: nudge.y * 2 }}>
-        <Text style={{ fontSize: 120, color: "#8E8E8C" }}>{clockText(now, hour24)}</Text>
+        <Text style={{ fontSize: 120, color: "#8E8E8C", ...face }}>{clockText(now, hour24)}</Text>
         {item ? (
           <View testID="glance-now" style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: inks.tally }} />

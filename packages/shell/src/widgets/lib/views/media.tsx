@@ -1,16 +1,17 @@
 /** Music (the sleeve's colour): the album print, title and artist, where it is, and play, pause, next, previous. */
 
 import { useDark } from "@dashi/ui";
-import { Svg, View } from "@mirinjs/metal";
-import { useEffect, useState } from "react";
-import { DotRow } from "../../../shared/inks/index.ts";
+import { Dots, Svg, View } from "@mirinjs/metal";
+import { useEffect, useMemo, useState } from "react";
+import { DotRow, dotsInset } from "../../../shared/inks/index.ts";
+import { useHostAbilities } from "../../../shared/metal/index.ts";
 import { useSecondTick } from "../../../tally/index.ts";
 import { useWidgetEnv } from "../../env.tsx";
 import { useCard } from "../../look.tsx";
 import { Btn, Grow, Head, Lab, Meta, NowTag, Title, Words } from "../../parts.tsx";
 import type { WidgetSize } from "../../types.ts";
 import { useSource } from "../data.ts";
-import { coverPrint, halftone, type Print, stockPrint } from "../sources/art.ts";
+import { ART_GRID, coverPrint, halftone, halftoneLayers, type Print, stockPrint } from "../sources/art.ts";
 import { positionAt } from "../sources/media.ts";
 
 const mmss = (ms: number): string => `${Math.floor(ms / 60_000)}:${String(Math.floor((ms % 60_000) / 1000)).padStart(2, "0")}`;
@@ -29,9 +30,38 @@ function usePrint(art: string, title: string): Print {
   return print;
 }
 
-function Halftone({ print, size, sleeve }: { print: Print; size: number; sleeve: string }) {
+/** The print in `<Dots>`: a layer per dot size and colour, each padded so its dots sit in their cells. */
+function DotPrint({ print, size, sleeve }: { print: Print; size: number; sleeve: string }) {
   const c = useCard();
-  const masks = halftone(print);
+  const layers = useMemo(() => halftoneLayers(print), [print]);
+  const pitch = size / ART_GRID;
+  return (
+    <View style={{ width: size, height: size, borderRadius: 12, backgroundColor: c.off }}>
+      {layers.map((layer) => (
+        <View key={`${layer.colour}:${layer.radius}`} style={{ position: "absolute", left: 0, top: 0, padding: dotsInset(pitch, layer.radius * pitch) }}>
+          <Dots
+            count={ART_GRID}
+            rows={ART_GRID}
+            pitch={pitch}
+            radius={layer.radius * pitch}
+            cells={layer.cells}
+            color={layer.colour === "sleeve" ? sleeve : c.ink}
+          />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function Halftone({ print, size, sleeve }: { print: Print; size: number; sleeve: string }) {
+  const { dots } = useHostAbilities();
+  return dots ? <DotPrint print={print} size={size} sleeve={sleeve} /> : <MaskPrint print={print} size={size} sleeve={sleeve} />;
+}
+
+/** The print as two masks, on a host from before `<Dots>`. */
+function MaskPrint({ print, size, sleeve }: { print: Print; size: number; sleeve: string }) {
+  const c = useCard();
+  const masks = useMemo(() => halftone(print), [print]);
   return (
     <View style={{ width: size, height: size, borderRadius: 12, backgroundColor: c.off }}>
       <View style={{ position: "absolute", left: 0, top: 0 }}>

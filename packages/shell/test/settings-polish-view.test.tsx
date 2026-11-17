@@ -2,7 +2,7 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type NativeEvent, type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
+import { type NativeEvent, type NativeRoot, type NativeTransport, render, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { readHistory } from "../src/agents/ask/history.ts";
 import { DEFAULT_LEFT_OUT } from "../src/clipboard/left-out.ts";
@@ -19,7 +19,8 @@ afterAll(() => rmSync(dir, { recursive: true, force: true }));
 async function mount(tree: ReactNode) {
   const listeners: ((event: NativeEvent) => void)[] = [];
   const transport: NativeTransport = { send() {}, onEvent: (listener) => listeners.push(listener), onClose() {}, simulate() {}, close() {} };
-  const root: NativeRoot = render(tree, transport);
+  // A section is a fragment of rows in its pane: one root here, as in the window.
+  const root: NativeRoot = render(<View>{tree}</View>, transport);
   await settle();
   const has = (testID: string): boolean => root.nodeId(testID) !== null && root.nodeId(testID) !== undefined;
   return {

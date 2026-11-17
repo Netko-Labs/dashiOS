@@ -9,6 +9,7 @@
 import { hostTextAntialiasing } from "@dashi/ui";
 import { type NativeHostOptions, type NativeHostTransport, type NativeWindowOptions, spawnNativeHost } from "@mirinjs/metal";
 import { METAL_HOST } from "../apps/list.ts";
+import { hostAbilities, noteHost } from "./abilities.ts";
 
 /** What Orca says for the shell's surfaces. */
 export const SHELL_APP_NAME = "Dashi";
@@ -18,14 +19,18 @@ export function appNameEnv(name: string): Record<string, string> {
   return { MIRIN_METAL_APP_NAME: name };
 }
 
-/** `options` for one of the shell's hosts: named Dashi, its text in grays unless the environment opted in (D142), keeping any environment the caller gave. */
+/**
+ * `options` for one of the shell's hosts: named Dashi, its text in grays unless the environment opted in (D142),
+ * Reduce Motion as Settings says (a host from before it ignores the variable), keeping any environment the caller gave.
+ */
 export function shellHostOptions(options: NativeHostOptions): NativeHostOptions {
-  return { textAntialiasing: hostTextAntialiasing(), ...options, env: { ...appNameEnv(SHELL_APP_NAME), ...options.env } };
+  const motion = hostAbilities.reducesMotion() ? { reduceMotion: true } : {};
+  return { textAntialiasing: hostTextAntialiasing(), ...motion, ...options, env: { ...appNameEnv(SHELL_APP_NAME), ...options.env } };
 }
 
 /** Spawn one of the shell's hosts (`METAL_HOST` unless `binary` says otherwise). */
 export function spawnShellHost(options: NativeHostOptions, binary: string = METAL_HOST): NativeHostTransport {
-  return spawnNativeHost(binary, shellHostOptions(options));
+  return noteHost(spawnNativeHost(binary, shellHostOptions(options)));
 }
 
 // A Metal host kept started with no window, so the next menu, sheet, or the
@@ -88,7 +93,7 @@ export class WarmHost {
 
   private warm(): void {
     if (this.spare || this.stopped) return;
-    const host = this.spawn(this.binary, shellHostOptions({ appId: "dev.dashi.shell", deferred: true }));
+    const host = noteHost(this.spawn(this.binary, shellHostOptions({ appId: "dev.dashi.shell", deferred: true })));
     this.spare = host;
     // A warm host that dies (a crash, a GPU reset) is replaced, not handed out.
     host.onClose(() => {

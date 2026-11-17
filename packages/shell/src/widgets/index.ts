@@ -6,7 +6,7 @@ export { EDIT_HINT, EditWidgets, GalleryPanel } from "./edit.tsx";
 export { EditKeys, type EditSession, useEditSession } from "./edit-session.tsx";
 export { type WidgetEnv, WidgetEnvProvider } from "./env.tsx";
 export { type WidgetFacts, widgetFacts } from "./facts.ts";
-export { GALLERY } from "./gallery.tsx";
+export { GALLERY, previewSizes } from "./gallery.tsx";
 export { Glance, glanceNudge } from "./glance.tsx";
 export { type HubNeeds, type HubNotice, setWidgetHub, WidgetHub, widgetHub } from "./hub.ts";
 export { COLUMN_WIDTH, columnHeight, GRID, packColumn, SIZE_ORDER, SPANS, sizeWord, span } from "./layout.ts";

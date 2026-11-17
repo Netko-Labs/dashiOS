@@ -104,10 +104,14 @@ describe("editing widgets by keyboard, with the host's key names", () => {
     await press("edit-widgets");
     await press("edit-add");
     expect(root.nodeId("widget-gallery")).toBeDefined();
-    // Weather is chosen first; the next in the list is chosen by ↓.
-    expect(root.nodeId("picked:weather:small")).toBeDefined();
+    // Weather is chosen first, at the size its line names first (Compact); the next in the list is chosen by ↓.
+    const weather = DASHI_WIDGETS.find((each) => each.kind === "weather");
+    if (!weather) throw new Error("no weather");
+    const first = `picked:weather:${previewSizes(weather)[0]}`;
+    expect(first).toBe("picked:weather:compact");
+    expect(root.nodeId(first)).toBeDefined();
     await key("down");
-    expect(root.nodeId("picked:weather:small")).toBeUndefined();
+    expect(root.nodeId(first)).toBeUndefined();
     const next = DASHI_WIDGETS[DASHI_WIDGETS.findIndex((each) => each.kind === "weather") + 1];
     if (!next) throw new Error("weather is last");
     const sizes = previewSizes(next);
