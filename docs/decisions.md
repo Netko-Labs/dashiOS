@@ -6055,5 +6055,14 @@ short words, as the rulebook is written.
   initial preferences): no `BrowserThemeColor` policy, which would be a root
   write on every pick. KDE colour schemes are not written (Plasma is not on
   Dashi).
+- **Found in the VM (Fedora 44, libadwaita 1.9.4, Helium on Chromium 157):**
+  a libadwaita app (zenity) takes the exact fill and `onAccent` words when
+  it opens; while it runs it keeps the colour it opened with (gtk.css's
+  exact colour outranks the portal's live, nearest-named one). Helium in
+  GTK mode takes the accent on restart and makes its own tonal palette from
+  it: Kombu green, Momo pink, Ai blue, but Kuri comes out orange and Wasabi
+  near-black; web pages' own controls keep Chromium's blue. gsettings' name
+  is not what Helium reads (set alone, nothing changed). No Qt app with a
+  window was installed to look at.
 - **Undo:** `accentPair` in `shared/appearance/gtk-colors.ts`, `accentFill`
   in the portal's `settingsTable`, `AppThemeSync.apply`'s accent.
