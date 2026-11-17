@@ -5949,3 +5949,109 @@ short words, as the rulebook is written.
 - **Decision:** the section has no subtitle while it loads; the launcher
   shows "Loading…" under it (D385). The tree's rule stays strict.
 - **Undo:** the `subtitle` spread in `extensions/github/main.tsx`.
+
+### D430. The accent is a seed the guard draws from, Kombu its absence
+
+- **Date:** 2026-11-17. `v09/accent`, the owner's design
+  (`dashi-0.9.0-design/accent/`, approved "as designed: buttons stay ink").
+- **Decision:** settings.json `appearance.accent` holds a preset, a colour
+  or `{wallpaper: true}`; no key is Kombu, so palette.ts's constants stay
+  byte for byte (a test says so). @dashi/ui `theme/accent/` is the design's
+  `accent.js` in TypeScript: rules 1–2 move the seed (tally's band capped at
+  chroma 0.07 and kept ΔE 0.10 from the tally and the microphone; 40° from
+  shiso), rules 3–4 move only the drawn tokens (fills 3:1, words 4.5:1 on
+  every window ground; the washes thin until the page's ink is AA; 4.5 and
+  7 with Increase contrast, which Dashi has no switch for yet). A test runs
+  2,000 seeded random seeds per mode, with and without Increase contrast,
+  and asks for 0 failures.
+- **Owns:** `selection`, its hover and pressed steps, `selectionWash`,
+  `textSelection`, `selectionBar`, `accentInk`, and the new `onAccent`
+  (white or #111113: a lime fill gets dark words). Control Center's and
+  Settings' `on`, `onInk`, `knobOn`. Never `primary` (buttons stay ink,
+  D44), `focusRing`, `agent`, the tally or any widget ink, `microphone`,
+  `ume`, `broth`, `moss`, `dot`.
+- **Steps:** hover and pressed move 0.04 and 0.08 of OKLCH lightness away
+  from the words on the fill (deeper under white, lighter under near-black),
+  not "deeper in Light, lighter in Dark" as the design said, so the words
+  can only gain contrast on them.
+- **Undo:** drop the `accent` key; `paletteFor(dark)` without a seed is the
+  constants.
+
+### D431. The shell resolves the accent; every process reads the seed from Control Center's file
+
+- **Date:** 2026-11-17. `v09/accent`.
+- **Decision:** the shell turns the choice into one seed (a preset's, the
+  colour, or the wallpaper's) and writes it as `accent` in
+  `control-center.json`, which every app already follows for Dark Mode
+  (apps/kit/appearance.ts); `setAppearanceSource` gained an optional
+  `accent()`. Apps never decode the wallpaper themselves, and a pick
+  repaints everything on the Dark Mode path. settings.json stays the
+  person's choice; the file only holds what it came to.
+- **Cost:** the flags file is no longer only Control Center's switches.
+- **Undo:** each process reads settings.json and resolves alone (and the
+  wallpaper's seed would have to be found in each).
+
+### D432. From wallpaper: a 96 × 60 still, read with ImageMagick or FFmpeg, again only when the wallpaper changes
+
+- **Date:** 2026-11-17. `v09/accent`.
+- **Decision:** the shell never decoded the wallpaper (the compositor does).
+  The still is a bundled wallpaper's or a shader's thumbnail, a photo
+  itself, or a video's first frame; `magick` (the dashi package requires
+  ImageMagick) or `ffmpeg` prints 96 × 60 packed RGB; each pixel votes for
+  its hue in 10° bins weighted by its chroma (greys don't vote); the winning
+  bin's chroma-weighted lightness, chroma and hue are the seed, and the guard
+  draws it like any pick. Dusk comes out magenta (#84227F on Light), as the
+  design's. A picture with no colour keeps Kombu and says so in the log.
+- **Undo:** `appearance/accent.ts` (`AccentSync`, `readPixels`);
+  `seedFromPixels` in @dashi/ui.
+
+### D433. Custom… is a popover in the window's layer; its pictures are PNGs made on the CPU
+
+- **Date:** 2026-11-17. `v09/accent`.
+- **Decision:** Metal's `Svg` tints its markup as a mask, so gradients don't
+  show; the field (per 2° of hue), the hue strip and the Custom… swatch's
+  ring are small PNGs drawn in TypeScript (a 60-line encoder on
+  `node:zlib`) into `$XDG_CACHE_HOME/dashi/accent/`, as the design asked
+  ("cached Images, not gradients"). The popover is drawn in Settings' window
+  layer (as a row's More menu); a press outside, Esc or Cancel leaves the
+  accent as it was. The hue strip is HSV (what people know from pickers);
+  the guard's bands are marked under it from the guard's own `isGuardedHue`.
+- **Undo:** `settings-app/lib/accent/`.
+
+### D434. The eyedropper is in: a clear overlay and a 1 × 1 capture
+
+- **Date:** 2026-11-17. `v09/accent`.
+- **Decision:** dashi-comp's `capture` already takes a `rect`; a 1 × 1 rect
+  is one point, cheap. The shell shows a clear overlay on Settings' screen
+  ("Click a colour to use it. Esc cancels."), closes it, waits a frame,
+  captures the point into the runtime folder, reads it with ImageMagick and
+  removes the file. No new IPC. `eyedropper/`.
+- **Undo:** leave `pickPixel` out of Settings' options: the button is not
+  drawn.
+
+### D435. Agents set the accent by name: a preset or the wallpaper
+
+- **Date:** 2026-11-17. `v09/accent`.
+- **Decision:** `appearance/accent` is a registry row, so the launcher,
+  links and agents' `set_setting` (`accent_colour`) reach it with one of
+  kombu, ai, momo, wasabi, kuri, nori, wallpaper. A colour of the person's
+  own is the person's, in the pane: the registry's schema has only enums and
+  ranges, and widening it for one row was not worth it. `get_settings` reads
+  a custom accent as its hex.
+- **Undo:** `ACCENT` in `settings-app/registry/appearance.ts`.
+
+### D436. Outside apps: exact in GTK, nearest named through the portal, Helium through GTK
+
+- **Date:** 2026-11-17. `v09/accent`.
+- **Decision:** gtk.css's block gets the guarded fill per mode
+  (`accent_bg_color`, `--accent-bg-color`, GTK 3's `theme_selected_*`) and
+  `onAccent` as `accent_fg_color`, rewritten when the accent changes (an app
+  takes it when reopened). The portal's `accent-color` is the Light fill
+  (libadwaita snaps it to the nearest of its nine; Qt 6.6+ takes it as is),
+  and gsettings' `accent-color` the nearest GNOME name, both live. Helium
+  stays in GTK theme mode (`system_theme: 1`, already in dashi-helium's
+  initial preferences): no `BrowserThemeColor` policy, which would be a root
+  write on every pick. KDE colour schemes are not written (Plasma is not on
+  Dashi).
+- **Undo:** `accentPair` in `shared/appearance/gtk-colors.ts`, `accentFill`
+  in the portal's `settingsTable`, `AppThemeSync.apply`'s accent.
