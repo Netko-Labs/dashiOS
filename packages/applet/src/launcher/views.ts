@@ -7,7 +7,7 @@
  */
 
 import { type ComponentType, createElement, isValidElement, type ReactNode } from "react";
-import type { ViewMessage, ViewShellMessage } from "../view/wire.ts";
+import type { AccountGiven, ViewMessage, ViewShellMessage } from "../view/wire.ts";
 import { ViewContext, type ViewContextValue } from "./hooks.ts";
 import type { Instance } from "./lib/host.ts";
 import { realViewTimers, ViewRoot, type ViewTimers } from "./lib/view-root.ts";
@@ -24,6 +24,7 @@ interface Open {
   seq: number;
   stack: ViewRoot[];
   preferences: Readonly<Record<string, string | boolean>>;
+  accounts: Readonly<Record<string, AccountGiven>>;
   listeners: Set<() => void>;
 }
 
@@ -50,8 +51,9 @@ export class LauncherViews {
     if (message.type === "open") return this.start(message);
     const view = this.open.get(message.seq);
     if (!view) return;
-    if (message.type === "prefs") {
-      view.preferences = message.preferences;
+    if (message.type === "prefs" || message.type === "accounts") {
+      if (message.type === "prefs") view.preferences = message.preferences;
+      else view.accounts = message.accounts;
       for (const listener of view.listeners) listener();
       return;
     }
@@ -71,6 +73,16 @@ export class LauncherViews {
       }
       case "action":
         return this.action(view, top?.instance(message.node));
+      case "change":
+        // The launcher holds the value; the field's own callback hears it.
+        return call(top?.instance(message.node)?.props.onChange, message.value);
+      case "submit": {
+        const action = top?.instance(message.node);
+        if (action?.type !== "Action") return;
+        return void Promise.resolve()
+          .then(() => call(action.props.onSubmit, message.values))
+          .catch((error: unknown) => this.send({ type: "toast", seq: view.seq, style: "failed", title: String(error instanceof Error ? error.message : error).slice(0, 80) || "Failed" }));
+      }
     }
   }
 
@@ -82,7 +94,7 @@ export class LauncherViews {
   private start(message: Extract<ViewShellMessage, { type: "open" }>): void {
     const component = this.commands[message.command];
     if (!component) return;
-    const view: Open = { seq: message.seq, stack: [], preferences: message.preferences, listeners: new Set() };
+    const view: Open = { seq: message.seq, stack: [], preferences: message.preferences, accounts: message.accounts, listeners: new Set() };
     this.open.set(message.seq, view);
     this.mount(view, createElement(component, { query: message.query, args: message.args }), "tree");
   }
@@ -90,6 +102,7 @@ export class LauncherViews {
   private context(view: Open): ViewContextValue {
     return {
       preferences: () => view.preferences,
+      accounts: () => view.accounts,
       subscribe: (listener) => {
         view.listeners.add(listener);
         return () => view.listeners.delete(listener);

@@ -98,7 +98,7 @@ describe("an extension's view", () => {
     const sent: ViewShellMessage[] = [];
     const peer = views.attach({ manifest: m, send: (message) => sent.push(message) });
     await flush();
-    expect(sent[0]).toEqual({ type: "open", seq: 1, command: "prs", args: {}, query: "", preferences: { token: "ghp_example" } });
+    expect(sent[0]).toEqual({ type: "open", seq: 1, command: "prs", args: {}, query: "", preferences: { token: "ghp_example" }, accounts: {} });
     expect(peer.receive({ type: "tree", seq: 1, root: { t: "List", i: "root", p: {}, c: [] } })).toBeNull();
     expect(view.snapshot().phase).toBe("shown");
   });

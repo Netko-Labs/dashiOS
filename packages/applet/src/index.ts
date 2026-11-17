@@ -117,9 +117,12 @@ export {
   parsePermission,
   permissionName,
   REACH,
+  proxiedHosts,
+  refusedProvider,
   usesNetwork,
   widens,
 } from "./permissions.ts";
+export { type AccountWanted, accountsOf, parseAccounts } from "./accounts.ts";
 export { metalHost, type OpenPopover, openPopoverWindow, POPOVER_RADIUS, PopoverGround, type PopoverKeyboard, popoverSurface } from "./popover.tsx";
 export {
   isPowerChoice,
@@ -163,12 +166,17 @@ export {
 export { generateKeys, type KeyPair, parsePublicKey, publicKeyLine, sign, verify } from "./signing/index.ts";
 export { readTar, writeTar } from "./tar.ts";
 export {
+  type AccountGiven,
   ACTION_KINDS,
   type ActionKind,
   applyPatch,
   diffTrees,
   ELEMENTS,
   type ElementType,
+  FIELDS,
+  type FieldType,
+  type FieldValue,
+  fieldValueOf,
   findNode,
   isViewType,
   nodeAt,

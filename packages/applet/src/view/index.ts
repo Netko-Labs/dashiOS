@@ -1,4 +1,4 @@
-export { ACTION_KINDS, type ActionKind, ELEMENTS, type ElementType, isElementType, ROOTS, TONES, type Tone, TREE_LIMITS } from "./elements.ts";
+export { ACTION_KINDS, type ActionKind, ELEMENTS, type ElementType, FIELDS, type FieldType, isElementType, ROOTS, TONES, type Tone, TREE_LIMITS } from "./elements.ts";
 export {
   applyPatch,
   diffTrees,
@@ -14,7 +14,10 @@ export {
   type ViewNode,
 } from "./tree.ts";
 export {
+  type AccountGiven,
   EVENTS,
+  type FieldValue,
+  fieldValueOf,
   isViewType,
   type PreferenceValue,
   parseViewMessage,

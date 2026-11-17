@@ -40,7 +40,7 @@ test("the pull requests' view is taken while it loads and once it has loaded", a
     },
     now: () => 0,
   });
-  views.receive({ type: "open", seq: 1, command: "prs", args: {}, query: "", preferences: { token: "ghp_example" } });
+  views.receive({ type: "open", seq: 1, command: "prs", args: {}, query: "", preferences: { token: "ghp_example" }, accounts: {} });
   await flush(30);
   const trees = () => sent.flatMap((message) => (message.type === "tree" ? [message.root] : []));
   const loading = trees().at(-1);

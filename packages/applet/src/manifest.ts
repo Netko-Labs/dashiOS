@@ -22,6 +22,7 @@
 import { isInsidePath, isRefusal, list, optionalText, type Refusal, record, refuse, text } from "@dashi/shape/kit";
 import { type AppletCommand, parseCommands } from "./commands.ts";
 import { type AppletControl, needsControlsPermission, parseControls } from "./controls.ts";
+import { type AccountWanted, parseAccounts } from "./accounts.ts";
 import { type Permission, parsePermission, permissionName } from "./permissions.ts";
 import { type Preference, parsePreferences, parseShows, type Shows } from "./preferences.ts";
 import { parseWhen, type When } from "./when.ts";
@@ -64,6 +65,8 @@ export interface Manifest {
   shows?: Shows[];
   /** What the person may set, drawn and kept by Dashi (preferences.ts); none is the default. */
   preferences: Preference[];
+  /** The accounts it may use (accounts.ts), each with its `account:` permission. */
+  accounts?: AccountWanted[];
 }
 
 /** Reverse-DNS, lowercase: `dev.netko.asus-control`. Also a folder name and a systemd unit's. */
@@ -112,6 +115,7 @@ const FIELDS = [
   "controls",
   "shows",
   "preferences",
+  "accounts",
 ] as const;
 
 export function parseManifest(value: unknown): Manifest | Refusal {
@@ -167,6 +171,8 @@ export function parseManifest(value: unknown): Manifest | Refusal {
   if (isRefusal(shows)) return shows;
   const preferences = fields.preferences === undefined ? [] : parsePreferences(fields.preferences);
   if (isRefusal(preferences)) return preferences;
+  const accounts = fields.accounts === undefined ? undefined : parseAccounts(fields.accounts, permissions);
+  if (isRefusal(accounts)) return accounts;
   return {
     id: fields.id,
     name,
@@ -187,6 +193,7 @@ export function parseManifest(value: unknown): Manifest | Refusal {
     controls,
     ...(shows === undefined ? {} : { shows }),
     preferences,
+    ...(accounts === undefined ? {} : { accounts }),
   };
 }
 

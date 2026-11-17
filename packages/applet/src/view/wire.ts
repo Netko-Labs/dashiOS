@@ -15,11 +15,15 @@
  *                {"type":"event","seq":12,"on":"more"}                          the end of a list that has more
  *                {"type":"event","seq":12,"on":"pop"}                           Esc on a pushed view: it went
  *                {"type":"event","seq":12,"on":"close"}                         the launcher left the view
+ *                {"type":"event","seq":12,"on":"change","node":"f3","value":"Fix"}  a form's field changed
+ *                {"type":"event","seq":12,"on":"submit","node":"a7","values":{…}}   a form sent (its fields checked)
  *                {"type":"prefs","seq":12,"preferences":{…}}                    the person changed one
+ *                {"type":"accounts","seq":12,"accounts":{"github.com":{…}}}   one connected or disconnected
  *
- * `open`, `copy`, `paste` and `set` actions run in the shell; the extension
- * hears `action` for them too, after they ran, and runs `push` and `run`
- * itself.
+ * `open`, `copy`, `paste`, `set` and `connect` actions run in the shell; the
+ * extension hears `action` for them too, after they ran, and runs `push` and
+ * `run` itself. A `submit` is heard as `submit`, with the form's values, once
+ * the launcher found every field filled as it says.
  */
 
 import { isRecord } from "@dashi/shape";
@@ -37,6 +41,15 @@ export type ToastStyle = (typeof TOAST_STYLES)[number];
 /** A preference's value as the extension reads it: words, or a switch. */
 export type PreferenceValue = string | boolean;
 
+/** A form field's value: words (a text, a choice), a switch, or tags. */
+export type FieldValue = string | boolean | readonly string[];
+
+/** A connected account as the extension gets it (accounts.ts): who, and the token to send its provider. */
+export interface AccountGiven {
+  login: string;
+  token: string;
+}
+
 export type ViewMessage =
   | { type: "tree"; seq: number; root: ViewNode }
   /** Checked by the shell against the tree it holds (tree.ts `applyPatch`). */
@@ -46,10 +59,15 @@ export type ViewMessage =
   | { type: "toast"; seq: number; style: ToastStyle; title: string }
   | { type: "close"; seq: number };
 
-export const EVENTS = ["action", "search", "select", "more", "pop", "close"] as const;
+export const EVENTS = ["action", "search", "select", "more", "pop", "close", "change", "submit"] as const;
 export type ViewEventName = (typeof EVENTS)[number];
 
-export type ViewEvent = { on: "action" | "select"; node: string } | { on: "search"; text: string } | { on: "more" | "pop" | "close" };
+export type ViewEvent =
+  | { on: "action" | "select"; node: string }
+  | { on: "search"; text: string }
+  | { on: "more" | "pop" | "close" }
+  | { on: "change"; node: string; value: FieldValue }
+  | { on: "submit"; node: string; values: Record<string, FieldValue> };
 
 export type ViewShellMessage =
   | {
@@ -59,9 +77,12 @@ export type ViewShellMessage =
       args: Record<string, string | number | boolean>;
       query: string;
       preferences: Record<string, PreferenceValue>;
+      /** Its accounts that are connected, by provider. */
+      accounts: Record<string, AccountGiven>;
     }
   | ({ type: "event"; seq: number } & ViewEvent)
-  | { type: "prefs"; seq: number; preferences: Record<string, PreferenceValue> };
+  | { type: "prefs"; seq: number; preferences: Record<string, PreferenceValue> }
+  | { type: "accounts"; seq: number; accounts: Record<string, AccountGiven> };
 
 export const VIEW_TYPES = ["tree", "patch", "push", "pop", "toast", "close"] as const;
 export const isViewType = (type: string): type is ViewMessage["type"] => (VIEW_TYPES as readonly string[]).includes(type);
@@ -115,6 +136,54 @@ function preferencesOf(value: unknown): Record<string, PreferenceValue> | null {
   return out;
 }
 
+function accountsOf(value: unknown): Record<string, AccountGiven> | null {
+  if (!isRecord(value)) return null;
+  const out: Record<string, AccountGiven> = {};
+  for (const [provider, each] of Object.entries(value)) {
+    if (!isRecord(each) || typeof each.login !== "string" || typeof each.token !== "string") return null;
+    out[provider] = { login: each.login, token: each.token };
+  }
+  return out;
+}
+
+/** A field's value as the wire carries it; null for anything else. */
+export function fieldValueOf(value: unknown): FieldValue | null {
+  if (typeof value === "string") return value.slice(0, 8 * 1024);
+  if (typeof value === "boolean") return value;
+  if (Array.isArray(value) && value.length <= 24 && value.every((each) => typeof each === "string")) return value.map((each) => String(each).slice(0, 120));
+  return null;
+}
+
+function valuesOf(value: unknown): Record<string, FieldValue> | null {
+  if (!isRecord(value)) return null;
+  const out: Record<string, FieldValue> = {};
+  for (const [name, each] of Object.entries(value)) {
+    const parsed = fieldValueOf(each);
+    if (parsed === null) return null;
+    out[name] = parsed;
+  }
+  return out;
+}
+
+const nodeOf = (value: unknown): string | null => (typeof value === "string" && !isRefusal(id(value, "node", 128)) ? value : null);
+
+function parseEvent(fields: Record<string, unknown>, seq: number): ViewShellMessage | null {
+  const on = fields.on;
+  const node = nodeOf(fields.node);
+  if ((on === "action" || on === "select") && node) return { type: "event", seq, on, node };
+  if (on === "search" && typeof fields.text === "string") return { type: "event", seq, on, text: fields.text.slice(0, 500) };
+  if (on === "more" || on === "pop" || on === "close") return { type: "event", seq, on };
+  if (on === "change" && node) {
+    const value = fieldValueOf(fields.value);
+    return value === null ? null : { type: "event", seq, on, node, value };
+  }
+  if (on === "submit" && node) {
+    const values = valuesOf(fields.values);
+    return values ? { type: "event", seq, on, node, values } : null;
+  }
+  return null;
+}
+
 /** One of version 6's messages from the shell (the extension's side); null for anything else. */
 export function parseViewShellMessage(type: string, fields: Record<string, unknown>, seq: number): ViewShellMessage | null {
   if (type === "open") {
@@ -122,18 +191,17 @@ export function parseViewShellMessage(type: string, fields: Record<string, unkno
     const args: Record<string, string | number | boolean> = {};
     for (const [name, value] of Object.entries(isRecord(fields.args) ? fields.args : {})) if (isArgValue(value)) args[name] = value;
     const preferences = preferencesOf(fields.preferences ?? {});
-    if (!preferences) return null;
-    return { type, seq, command: fields.command, args, query: typeof fields.query === "string" ? fields.query : "", preferences };
+    const accounts = accountsOf(fields.accounts ?? {});
+    if (!preferences || !accounts) return null;
+    return { type, seq, command: fields.command, args, query: typeof fields.query === "string" ? fields.query : "", preferences, accounts };
   }
   if (type === "prefs") {
     const preferences = preferencesOf(fields.preferences);
     return preferences ? { type, seq, preferences } : null;
   }
-  if (type !== "event") return null;
-  const on = fields.on;
-  if ((on === "action" || on === "select") && typeof fields.node === "string" && !isRefusal(id(fields.node, "node", 128)))
-    return { type, seq, on, node: fields.node };
-  if (on === "search" && typeof fields.text === "string") return { type, seq, on, text: fields.text.slice(0, 500) };
-  if (on === "more" || on === "pop" || on === "close") return { type, seq, on };
-  return null;
+  if (type === "accounts") {
+    const accounts = accountsOf(fields.accounts);
+    return accounts ? { type, seq, accounts } : null;
+  }
+  return type === "event" ? parseEvent(fields, seq) : null;
 }
