@@ -7,7 +7,7 @@
 
 import type { InkName, InkTokens } from "@dashi/ui";
 import { createContext, useContext } from "react";
-import { inkOf } from "../../../shared/inks/index.ts";
+import { inkOf } from "../shared/inks/index.ts";
 
 export interface CardLook {
   inks: InkTokens;

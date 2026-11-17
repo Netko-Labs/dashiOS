@@ -56,3 +56,17 @@ export interface Placed {
   width: number;
   height: number;
 }
+
+/** What the widgets read of an agent's run (agents-panel's `RunView` has it all). */
+export interface HubRun {
+  id: string;
+  request: string;
+  harnessName: string;
+  started: number;
+  ended: number | null;
+  phase: string;
+  steps: readonly unknown[];
+  about: number | null;
+  said: string;
+  question: { kind: string; title: string } | null;
+}

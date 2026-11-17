@@ -176,6 +176,7 @@ export {
   type PreferenceValue,
   parseTree,
   parseViewMessage,
+  parseWidgetTree,
   ROOTS,
   TOAST_STYLES,
   TONES,
@@ -189,5 +190,7 @@ export {
   type ViewMessage,
   type ViewNode,
   type ViewShellMessage,
+  WIDGET_ROOTS,
 } from "./view/index.ts";
 export { describeWhen, fits, type Machine, parseWhen, type When } from "./when.ts";
+export { type AppletWidget, type AppletWidgetSize, parseWidgets, WIDGET_PRIVACY, WIDGET_SIZES } from "./widgets.ts";

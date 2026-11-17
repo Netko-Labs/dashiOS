@@ -39,8 +39,10 @@ export type PropSpec =
   | { kind: "count"; min: number; max: number };
 
 export interface ElementSpec {
-  /** Shared with widgets, or the launcher's own. */
+  /** Shared with widgets, or the launcher's own (or, with `widget`, a widget's own). */
   shared: boolean;
+  /** A widget's own element (decisions.md D404): only a widget's tree may hold it, so the launcher refuses it. */
+  widget?: true;
   props: Readonly<Record<string, PropSpec>>;
   /** The elements it may hold; empty: none. */
   holds: readonly string[];
@@ -52,10 +54,12 @@ const tone: PropSpec = { kind: "word", of: TONES };
 const shortcut: PropSpec = { kind: "text", max: 32 };
 
 const ACCESSORIES = ["Tag", "Text"] as const;
+/** What a widget's containers may hold: its own elements and the shared ones. */
+const WIDGET_PARTS = ["Row", "Column", "Value", "Dots", "Spacer", "Text", "Image", "Tag", "Label", "Action"] as const;
 
 export const ELEMENTS = {
   // Shared with widgets.
-  Text: { shared: true, props: { text: text(400, true), tone }, holds: [] },
+  Text: { shared: true, props: { text: text(400, true), tone, private: { kind: "flag" } }, holds: [] },
   /** A picture: one of the package's own files (`src`, PNG or SVG), an SVG glyph drawn in a tone's ink (the menu bar glyph's rules), or an emoji. */
   Image: { shared: true, props: { src: text(200), svg: { kind: "long", max: 16 * 1024 }, emoji: text(16), tone }, holds: [] },
   Tag: { shared: true, props: { text: text(40, true), tone }, holds: [] },
@@ -76,6 +80,16 @@ export const ELEMENTS = {
     },
     holds: [],
   },
+  // A widget's own (widgets/api.md § 4, round five's build notes): a root, rows and columns, the one number, a dot row.
+  /** A widget's root: its header's words and, optionally, a glyph (an `Image` child). Extensions print in plain ink. */
+  Widget: { shared: false, widget: true, props: { title: text(40, true), detail: text(40) }, holds: WIDGET_PARTS },
+  Row: { shared: false, widget: true, props: { gap: { kind: "count", min: 0, max: 24 } }, holds: WIDGET_PARTS },
+  Column: { shared: false, widget: true, props: { gap: { kind: "count", min: 0, max: 24 } }, holds: WIDGET_PARTS },
+  /** The widget's number (role "value"): drawn large; inked only for Dashi's own widgets. */
+  Value: { shared: false, widget: true, props: { text: text(12, true), unit: text(8), private: { kind: "flag" } }, holds: [] },
+  /** A row of dots, `value` of `count` lit (an indicator; never letters or numbers). */
+  Dots: { shared: false, widget: true, props: { count: { kind: "count", min: 1, max: 40 }, value: { kind: "count", min: 0, max: 40 } }, holds: [] },
+  Spacer: { shared: false, widget: true, props: {}, holds: [] },
   // The launcher's own.
   List: {
     shared: false,
@@ -115,6 +129,8 @@ export type ElementType = keyof typeof ELEMENTS;
 
 /** The elements a view's root may be. */
 export const ROOTS: readonly ElementType[] = ["List", "Grid", "Detail"];
+/** A widget's root. */
+export const WIDGET_ROOTS: readonly ElementType[] = ["Widget"];
 
 export const isElementType = (value: unknown): value is ElementType => typeof value === "string" && Object.hasOwn(ELEMENTS, value);
 

@@ -8,7 +8,7 @@
 
 import { Svg, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { glyph } from "../../../shared/inks/index.ts";
+import { glyph } from "../shared/inks/index.ts";
 import { type CardLook, cardColours, LookProvider, RedactProvider } from "./look.tsx";
 
 export const CARD_RING = 3;

@@ -6,25 +6,51 @@
  * read the same sources.
  */
 
-import { calendarBridge } from "../calendar/index.ts";
-import type { NotifyInput } from "../notifications/index.ts";
+// The calendar's index would load its service, which loads notifications, which load the area and these widgets: a cycle.
+import { calendarBridge } from "../calendar/bridge.ts";
 import { addDays, dayOf, type Occurrence } from "../shared/calendar/index.ts";
+import { type Note, NotesStore, defaultRoot as notesRoot } from "../shared/notes/index.ts";
 import type { PillAsk } from "../shared/pill/index.ts";
+import type { SystemSnapshot } from "../system/index.ts";
 import { systemTally, type TallyStore } from "../tally/index.ts";
+import { gatherRundown } from "./lib/gather.ts";
 import { asksOnAir, eventsOnAir, mediaOnAir, runsOnAir } from "./lib/on-air.ts";
+import type { RundownRow } from "./lib/rundown.ts";
+import { ExtensionWidgets } from "./lib/sources/extensions.ts";
 import { Media } from "./lib/sources/media.ts";
 import { SystemLoad } from "./lib/sources/system.ts";
 import { Timers } from "./lib/sources/timer.ts";
 import { Weather } from "./lib/sources/weather.ts";
 import { WidgetStore } from "./store.ts";
+import type { HubRun } from "./types.ts";
 
-type RunLike = Parameters<typeof runsOnAir>[0][number];
+/** A notification as the hub sends it (notifications' `NotifyInput`; named here so the two modules don't import each other). */
+export interface HubNotice {
+  appName: string;
+  appIcon: string;
+  summary: string;
+  body: string;
+  actions: { key: string; label: string }[];
+  urgency: "low" | "normal" | "critical";
+  expireTimeout: number;
+  imagePath: string;
+  desktopEntry: string;
+  category: string;
+  transient: boolean;
+  resident: boolean;
+}
 
 export interface HubNeeds {
-  notify(input: NotifyInput): void;
-  runs?: { subscribe(listener: () => void): () => void; getSnapshot(): readonly RunLike[] };
+  notify(input: HubNotice): void;
+  /** Show a waiting ask's card (the capsule's own), from its live card's Open. */
+  openAsk?(id: string): void;
+  /** Stop an agent's run, from its live card. */
+  stopRun?(id: string): void;
+  runs?: { subscribe(listener: () => void): () => void; getSnapshot(): readonly HubRun[] };
   asks?: { subscribe(listener: () => void): () => void; getSnapshot(): readonly PillAsk[] };
   tally?: TallyStore;
+  /** The machine (battery), from the shell's system store. */
+  system?: { subscribe(listener: () => void): () => void; getSnapshot(): Pick<SystemSnapshot, "battery"> };
   /** Off in tests: no network, no bus. */
   live?: boolean;
 }
@@ -35,6 +61,7 @@ export class WidgetHub {
   readonly weather = new Weather();
   readonly media = new Media(null);
   readonly load = new SystemLoad(null);
+  readonly extensions = new ExtensionWidgets();
   readonly tally: TallyStore;
   private readonly stops: (() => void)[] = [];
 
@@ -56,6 +83,43 @@ export class WidgetHub {
         resident: false,
       }),
     );
+  }
+
+  openAsk(id: string): void {
+    this.needs.openAsk?.(id);
+  }
+
+  stopRun(id: string): void {
+    this.needs.stopRun?.(id);
+  }
+
+  get runs(): HubNeeds["runs"] {
+    return this.needs.runs;
+  }
+
+  get system(): HubNeeds["system"] {
+    return this.needs.system;
+  }
+
+  /** The notes, read when asked (the area opened): the folder is small and nothing watches it here. */
+  notes(): Note[] {
+    try {
+      return new NotesStore(notesRoot()).scan().notes;
+    } catch {
+      return [];
+    }
+  }
+
+  /** Every fact of the day the Rundown can show, in time order. */
+  rundown(now: number): RundownRow[] {
+    return gatherRundown({
+      occurrences: this.occurrences(),
+      timers: this.timers.getSnapshot(),
+      weather: this.weather.getSnapshot(),
+      runs: this.needs.runs?.getSnapshot() ?? [],
+      battery: this.needs.system?.getSnapshot().battery ?? null,
+      now,
+    });
   }
 
   /** Today's and tomorrow's occurrences, hidden calendars left out. */
@@ -82,7 +146,7 @@ export class WidgetHub {
     const minute = setInterval(feed, 30_000);
     this.stops.push(() => clearInterval(minute));
     if (this.needs.live !== false) {
-      this.stops.push(this.weather.start(), this.media.start());
+      this.stops.push(this.weather.start(), this.media.start(), this.extensions.start());
     }
     feed();
     return () => {

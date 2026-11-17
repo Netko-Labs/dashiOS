@@ -1,5 +1,13 @@
+export { usePlacements, useWidgetEnvFor } from "./area-env.tsx";
+export { Card, type CardProps } from "./card.tsx";
 export { DASHI_WIDGETS, inkWhat, printsIn, resizeTag, widgetInfo } from "./catalog.ts";
-export { type HubNeeds, setWidgetHub, WidgetHub, widgetHub } from "./hub.ts";
+export { WidgetColumn, type WidgetColumnProps } from "./column.tsx";
+export { type WidgetEnv, WidgetEnvProvider } from "./env.tsx";
+export { type HubNeeds, type HubNotice, setWidgetHub, WidgetHub, widgetHub } from "./hub.ts";
 export { COLUMN_WIDTH, columnHeight, GRID, packColumn, SIZE_ORDER, SPANS, sizeWord, span } from "./layout.ts";
+export { LiveCards } from "./live.tsx";
+export { alpha, type CardColours, type CardLook, cardColours, useCard } from "./look.tsx";
+export { openerOf } from "./openers.ts";
+export { Blank, Btn, Glyph, Grow, Head, Lab, Meta, NowTag, Num, Private, Rule, Standby, Title, VRule, Words } from "./parts.tsx";
 export { DEFAULT_WIDGETS, MAX_WIDGETS, readWidgets, WidgetStore, widgetsPath } from "./store.ts";
-export type { Placed, Placement, WidgetInfo, WidgetKind, WidgetSize } from "./types.ts";
+export type { HubRun, Placed, Placement, WidgetInfo, WidgetKind, WidgetSize } from "./types.ts";

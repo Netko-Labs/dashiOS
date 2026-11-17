@@ -1,0 +1,86 @@
+/**
+ * The Rundown: a striped receipt (round five, #17). The hero is what is
+ * next and how long until it; each row under it is a pale wash of its
+ * source's ink with a 3-point strip and the source's glyph, the time and the
+ * words in plain ink. It leaves out what a placed widget already shows (#24).
+ */
+
+import { Svg, View } from "@mirinjs/metal";
+import { glyph } from "../../../shared/inks/index.ts";
+import { useWidgetEnv } from "../../env.tsx";
+import { alpha } from "../../look.tsx";
+import { Grow, Head, Lab, Meta, Num, Private, Title, Words } from "../../parts.tsx";
+import type { WidgetSize } from "../../types.ts";
+import { clockText } from "../data.ts";
+import { type RundownRow, rundownHero, rundownRows } from "../rundown.ts";
+
+function ReceiptRow({ row, hour24 }: { row: RundownRow; hour24: boolean }) {
+  const { inks, tally } = useWidgetEnv();
+  const ink = tally.houseDown ? inks.dimmed[row.ink] : inks.ink[row.ink];
+  return (
+    <View
+      testID={`rundown-row:${row.source}`}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        height: 30,
+        paddingLeft: 11,
+        paddingRight: 10,
+        borderRadius: 6,
+        backgroundColor: alpha(ink, tally.houseDown ? 0.08 : 0.12),
+      }}
+    >
+      <View style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2, backgroundColor: ink }} />
+      <Svg markup={glyph(row.glyph)} size={13} color={ink} />
+      <View style={{ width: 40 }}>
+        <Title size={12.5}>{clockText(row.at, hour24)}</Title>
+      </View>
+      <View style={{ flex: 1 }}>
+        {row.private ? (
+          <Private what="Event" width={100}>
+            <Title weight="500">{row.title}</Title>
+          </Private>
+        ) : (
+          <Title weight="500">{row.title}</Title>
+        )}
+      </View>
+      <Meta>{row.detail}</Meta>
+    </View>
+  );
+}
+
+export function RundownWidget({ size }: { size: WidgetSize }) {
+  const { hub, now, hour24, placedKinds, inks, tally } = useWidgetEnv();
+  const all = hub?.rundown(now) ?? [];
+  const hero = rundownHero(all, now, (at) => clockText(at, hour24));
+  const rows = rundownRows(all, placedKinds, hero, now, size === "large" ? 4 : 2);
+  const day = new Date(now).toLocaleDateString(undefined, { weekday: "long", day: "numeric" });
+  const heroInk = hero.ink ? (tally.houseDown ? inks.dimmed[hero.ink] : inks.ink[hero.ink]) : undefined;
+  return (
+    <>
+      <Head left={<Lab>{`Rundown · ${day}`}</Lab>} right={<Meta>today</Meta>} />
+      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12, marginTop: 12 }}>
+        <Num value={hero.value} unit={hero.unit} size={58} weight={hero.near} {...(heroInk ? { ink: heroInk } : { plain: true })} />
+        <View style={{ flex: 1, flexDirection: "column", marginBottom: 3 }}>
+          {hero.private ? (
+            <Private what="Event" width={110}>
+              <Title>{hero.title}</Title>
+            </Private>
+          ) : (
+            <Title>{hero.title}</Title>
+          )}
+          <Words>{hero.detail}</Words>
+        </View>
+      </View>
+      <Grow />
+      <View style={{ flexDirection: "column", gap: 4 }}>
+        {rows.length === 0 ? (
+          <Words>Nothing else today</Words>
+        ) : (
+          rows.map((row) => <ReceiptRow key={`${row.source}${row.at}${row.title}`} row={row} hour24={hour24} />)
+        )}
+      </View>
+    </>
+  );
+}

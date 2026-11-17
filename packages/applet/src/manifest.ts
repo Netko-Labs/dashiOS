@@ -25,6 +25,7 @@ import { type AppletControl, needsControlsPermission, parseControls } from "./co
 import { type Permission, parsePermission, permissionName } from "./permissions.ts";
 import { type Preference, parsePreferences, parseShows, type Shows } from "./preferences.ts";
 import { parseWhen, type When } from "./when.ts";
+import { type AppletWidget, parseWidgets } from "./widgets.ts";
 
 export const CATEGORIES = ["hardware", "productivity", "network", "status", "media", "developer", "utilities"] as const;
 export type Category = (typeof CATEGORIES)[number];
@@ -60,6 +61,8 @@ export interface Manifest {
   commands: AppletCommand[];
   /** What it adds to Control Center (controls.ts); none is the default. */
   controls: AppletControl[];
+  /** Widgets the shell draws from its trees (widgets.ts); none is the default. */
+  widgets?: AppletWidget[];
   /** Where it shows (preferences.ts): the store's shelves; `["launcher"]` alone runs only while a command is open. */
   shows?: Shows[];
   /** What the person may set, drawn and kept by Dashi (preferences.ts); none is the default. */
@@ -110,6 +113,7 @@ const FIELDS = [
   "icon",
   "commands",
   "controls",
+  "widgets",
   "shows",
   "preferences",
 ] as const;
@@ -163,6 +167,8 @@ export function parseManifest(value: unknown): Manifest | Refusal {
   if (isRefusal(controls)) return controls;
   const unpermitted = needsControlsPermission(controls, names);
   if (unpermitted) return refuse(unpermitted);
+  const widgets = fields.widgets === undefined ? undefined : parseWidgets(fields.widgets);
+  if (isRefusal(widgets)) return widgets;
   const shows = fields.shows === undefined ? undefined : parseShows(fields.shows);
   if (isRefusal(shows)) return shows;
   const preferences = fields.preferences === undefined ? [] : parsePreferences(fields.preferences);
@@ -185,6 +191,7 @@ export function parseManifest(value: unknown): Manifest | Refusal {
     ...(icon === undefined ? {} : { icon }),
     commands,
     controls,
+    ...(widgets === undefined || widgets.length === 0 ? {} : { widgets }),
     ...(shows === undefined ? {} : { shows }),
     preferences,
   };

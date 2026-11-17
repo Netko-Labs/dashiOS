@@ -5996,3 +5996,50 @@ short words, as the rulebook is written.
   the fewest cuts.
 - **Undo:** `locked`, `spentNow` and `settle` in `shell/src/tally/lib/rules.ts`;
   the tests in `shell/test/tally.test.ts` say each case.
+
+### D402. Only an ask marked critical takes the tally as asking
+
+- **Date:** 2026-11-17. `v09/inks`.
+- **Question:** round five says only a critical question may "ask" (D260's
+  five: money, a secret, losing work for good, a system change, speaking
+  for the person); Dashi's asks (`PillAsk`) and agents' run questions did
+  not say whether they are critical.
+- **Decision:** `PillAsk` gains an optional `critical` flag, set by whoever
+  makes the ask; an ask without it counts as running and waits in its card.
+  An agent run's question asks only when it is a sign-in (a secret). The
+  capsule does not set the flag yet, so today only sign-ins and anything
+  that sets it go on air as asking.
+- **Why:** the tally's house lights must never go down for a plan that only
+  moves files; guessing criticality from words would get it wrong both ways.
+- **Undo:** `asksOnAir` and `runsOnAir` in `shell/src/widgets/lib/on-air.ts`.
+
+### D403. Pinning is a right-click on a live card
+
+- **Date:** 2026-11-17. `v09/inks`.
+- **Question:** the design pins with a long press; mirin's View has no long
+  press (it has `onContextMenu` and `onPointer`).
+- **Decision:** a right-click on a live card pins it; another unpins.
+- **Why:** a long press from `onPointer` would need a timer per card; the
+  right-click is where every other "more" lives in Dashi.
+- **Undo:** `onContext` on `LiveCard` in `shell/src/widgets/live.tsx`.
+
+### D404. An extension's widget is a tree in a file, not a new message
+
+- **Date:** 2026-11-17. `v09/inks`.
+- **Question:** the widget API (`widgets/api.md` § 5, 12) plans a channel
+  version 7 with timelines and budgets; the brief wants one outside widget
+  now.
+- **Decision:** applet.json declares `widgets` (id, title, sizes, privacy);
+  the tree is `assets/widgets/<id>.json` in the package until the extension
+  writes `widgets/<id>.json` in its own data folder (its sandbox home),
+  which the shell watches and redraws. The tree is Dashi's elements: the six
+  shared ones, plus widget-only `Widget` (the root), `Row`, `Column`,
+  `Value`, `Dots`, `Spacer`, which the launcher refuses. `Text` and `Value`
+  may be `private`. Only installed, allowed, not disabled extensions show,
+  always in plain ink.
+- **Why:** no process needs to run for a widget to show, nothing new is
+  added to the protocol, and the file is as checked as a message would be.
+- **Cost:** no budgets and no press actions to the extension yet; a widget
+  updates as often as its extension writes the file.
+- **Undo:** `packages/applet/src/widgets.ts`, the widget elements in
+  `view/elements.ts`, `shell/src/widgets/lib/sources/extensions.ts`.

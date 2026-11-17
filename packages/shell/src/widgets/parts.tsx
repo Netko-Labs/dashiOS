@@ -2,7 +2,7 @@
 
 import { Svg, Text, View, type ViewStyle } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { type GlyphName, glyph } from "../../../shared/inks/index.ts";
+import { type GlyphName, glyph } from "../shared/inks/index.ts";
 import { useCard, useRedacted } from "./look.tsx";
 
 /** A label: small capitals in the secondary ink ("LISBON"). Metal has no letter-spacing, so it is upper-cased only. */
@@ -50,9 +50,23 @@ export function Words({ children, lines = 1, ink }: { children: string; lines?: 
  * the value (#14: `weight` 0–1 → 300 to 500); Metal draws only Regular and
  * Medium, so 300 and 400 are Regular and 500 is Medium (docs: for-mirin.md).
  */
-export function Num({ value, unit, size, weight = 0, plain }: { value: string; unit?: string; size: number; weight?: number; plain?: boolean }) {
+export function Num({
+  value,
+  unit,
+  size,
+  weight = 0,
+  plain,
+  ink,
+}: {
+  value: string;
+  unit?: string;
+  size: number;
+  weight?: number;
+  plain?: boolean;
+  ink?: string;
+}) {
   const c = useCard();
-  const colour = plain ? c.ink : c.value;
+  const colour = ink ?? (plain ? c.ink : c.value);
   const medium = size >= 40 && weight >= 0.75;
   return (
     <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
@@ -151,7 +165,7 @@ export function Blank({ what, width }: { what?: string; width: number }) {
 
 /** Words that are the person's (an event, a note): a blank while the card is redacted. */
 export function Private({ what, width, children }: { what: string; width: number; children: ReactNode }) {
-  return useRedacted() ? <Blank what={what} width={width} /> : <>{children}</>;
+  return useRedacted() ? <Blank what={what} width={width} /> : children;
 }
 
 /** The "Now" tag on the card on air: vermilion, its words white. */

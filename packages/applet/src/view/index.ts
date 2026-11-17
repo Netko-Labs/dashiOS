@@ -1,4 +1,4 @@
-export { ACTION_KINDS, type ActionKind, ELEMENTS, type ElementType, isElementType, ROOTS, TONES, type Tone, TREE_LIMITS } from "./elements.ts";
+export { ACTION_KINDS, type ActionKind, ELEMENTS, type ElementType, isElementType, ROOTS, TONES, type Tone, TREE_LIMITS, WIDGET_ROOTS } from "./elements.ts";
 export {
   applyPatch,
   diffTrees,
@@ -9,6 +9,7 @@ export {
   type PropValue,
   parseSubtree,
   parseTree,
+  parseWidgetTree,
   textProp,
   toWire,
   type ViewNode,
