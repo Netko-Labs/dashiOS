@@ -56,7 +56,7 @@ function runOf(span: Shown, ink: Ink, rowSize: RowSize): TextRun | null {
     case "strike":
       return { ...at, textDecorationLine: "line-through" };
     case "code":
-      return { ...at, backgroundColor: ink.button };
+      return { ...at, backgroundColor: ink.button, fontFamily: "monospace" };
     case "quote":
       return { ...at, color: ink.textMuted, fontStyle: "italic" };
     case "done":

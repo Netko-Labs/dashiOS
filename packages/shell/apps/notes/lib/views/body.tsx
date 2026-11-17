@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type Lines, revealedLines } from "../blocks.ts";
 import { findMatches } from "../find.ts";
 import type { Selection } from "../format.ts";
+import { formatted } from "../formats.ts";
 import { lookOf, type Pressable } from "../look.ts";
 import { displaySelection, sourceEdit, sourceSelection, sourceStart } from "../offsets.ts";
 import { project } from "../project.ts";
@@ -136,7 +137,7 @@ export function Page(props: PageProps) {
         key={props.fieldKey}
         testID="body"
         multiline
-        // Tab types a tab in a note's words (a list item takes it as indenting); Shift+Tab still leaves for the title.
+        // Tab types a tab in a note's words (a list item takes it as indenting); Shift+Tab outdents (onShiftTab).
         tabBehavior="insert"
         value={projection.display}
         valueRevision={refused}
@@ -160,6 +161,12 @@ export function Page(props: PageProps) {
           if (span) onPress(span, sourceStart(projection.pieces, event.offset), event.modifiers.control || event.modifiers.super);
         }}
         onKeyPress={(key) => key === "Escape" && onLeave()}
+        onShiftTab={() => {
+          if (readOnly) return;
+          const edited = formatted(body, selection, "outdent");
+          onChange(edited.body);
+          onSelection(edited.selection);
+        }}
         style={{
           width: "100%",
           height: Math.max(props.minHeight, Math.ceil(measured) + 4),
