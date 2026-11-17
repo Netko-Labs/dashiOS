@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ACCENT_PRESETS, accentSentence, drawAccent, isAccentChoice, KOMBU_SEED, seedOf } from "../src/theme/accent/index.ts";
+import { ACCENT_PRESETS, accentSentence, drawAccent, isAccentChoice, KOMBU_SEED, seedFromPixels, seedOf } from "../src/theme/accent/index.ts";
 import { derive, FIXED, GROUNDS, hueGap, INK, type Mode, minContrast, RULE, steps } from "../src/theme/accent/lib/guard.ts";
 import { contrast, deltaE, hexToOklch, over } from "../src/theme/accent/lib/oklch.ts";
 
@@ -99,5 +99,32 @@ describe("the presets and the drawn picks", () => {
     expect(isAccentChoice({ custom: "#12345" })).toBe(false);
     expect(isAccentChoice({ wallpaper: false })).toBe(false);
     expect(isAccentChoice({ preset: "ai", custom: "#000000" })).toBe(false);
+  });
+});
+
+describe("From wallpaper", () => {
+  const picture = (parts: Array<[number, [number, number, number]]>): Uint8Array =>
+    Uint8Array.from(parts.flatMap(([count, rgb]) => Array.from({ length: count }, () => rgb).flat()));
+
+  test("a band of colour outvotes a wide, quiet sky", () => {
+    const seed = seedFromPixels(
+      picture([
+        [4000, [70, 80, 110]],
+        [600, [200, 40, 150]],
+      ]),
+    );
+    expect(seed).not.toBeNull();
+    expect(Math.abs(hexToOklch(seed ?? "#000000").H - hexToOklch("#C82896").H)).toBeLessThan(6);
+  });
+
+  test("greys and near-blacks give no seed", () => {
+    expect(
+      seedFromPixels(
+        picture([
+          [3000, [128, 128, 128]],
+          [3000, [10, 12, 30]],
+        ]),
+      ),
+    ).toBeNull();
   });
 });

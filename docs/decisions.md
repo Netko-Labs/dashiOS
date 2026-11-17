@@ -5998,10 +5998,12 @@ short words, as the rulebook is written.
   The still is a bundled wallpaper's or a shader's thumbnail, a photo
   itself, or a video's first frame; `magick` (the dashi package requires
   ImageMagick) or `ffmpeg` prints 96 × 60 packed RGB; each pixel votes for
-  its hue in 10° bins weighted by its chroma (greys don't vote); the winning
-  bin's chroma-weighted lightness, chroma and hue are the seed, and the guard
-  draws it like any pick. Dusk comes out magenta (#84227F on Light), as the
-  design's. A picture with no colour keeps Kombu and says so in the log.
+  its hue in 10° bins weighted by its chroma squared (greys and near-blacks
+  don't vote: the VM pass found a plain chroma vote let Aurora's dark sky
+  win); the winning bin's weighted lightness, chroma and hue are the seed,
+  and the guard draws it like any pick. Dusk comes out magenta (#862281 on
+  Light), as the design's; Aurora blue. A picture with no colour keeps Kombu
+  and says so in the log.
 - **Undo:** `appearance/accent.ts` (`AccentSync`, `readPixels`);
   `seedFromPixels` in @dashi/ui.
 
