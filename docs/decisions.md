@@ -6338,3 +6338,19 @@ short words, as the rulebook is written.
   and the draft stays. That is also how its VM pass runs without the owner's
   GitHub.
 - **Undo:** `send` in `extensions/github/lib/create-issue.tsx`.
+
+### D480. Editing widgets has one key view for the session, and reads the host's key names
+
+- **Date:** 2026-11-17. `v09/fix-inks-1`.
+- **Decision:** While widgets are edited, the area draws one `onKeyDown`
+  view (`widgets/edit-session.tsx`) for the column and the gallery
+  together; the gallery has no key view of its own. Metal gives such a view
+  the keyboard when it appears, so the gallery's took it from the column's
+  and kept it after the gallery went. Keys arrive with GPUI's names
+  ("tab", "up", "escape"); `hostKey` turns them into the names the edit
+  keys are written with. In the gallery ↑ ↓ choose in the list, ← → pick a
+  size (ringed in the focus purple), Return adds it, Esc closes the gallery
+  (a second Esc ends editing); ⌥ arrows and Tab still work the column.
+- **Why:** pass 49 found every advertised key did nothing in the installed
+  build; the tests had fed browser names to the pure helper only.
+- **Undo:** `EditKeys` in `notifications/area.tsx`.

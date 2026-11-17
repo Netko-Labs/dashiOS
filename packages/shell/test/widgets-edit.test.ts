@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { DASHI_WIDGETS } from "../src/widgets/catalog.ts";
 import { tagOf } from "../src/widgets/edit.tsx";
 import { type Placement, WidgetStore } from "../src/widgets/index.ts";
-import { cycleSize, dropIndex, editKey, stepSize } from "../src/widgets/lib/edit-keys.ts";
+import { cycleSize, dropIndex, editKey, galleryKey, hostKey, stepSize } from "../src/widgets/lib/edit-keys.ts";
 import { weatherOnAir } from "../src/widgets/lib/on-air.ts";
 
 const placements: Placement[] = [
@@ -34,6 +34,22 @@ describe("editing from the keyboard", () => {
   test("Delete takes it away; Esc and Return are Done", () => {
     expect(editKey(placements, "c", key("Delete"), sizesOf)).toEqual({ do: "remove", id: "c" });
     expect(editKey(placements, null, key("Escape"), sizesOf)).toEqual({ do: "done" });
+  });
+
+  test("the host's key names (GPUI's) are read as the browser's", () => {
+    expect(hostKey({ key: "up", alt: true, shift: false })).toEqual(key("ArrowUp", true));
+    expect(hostKey({ key: "escape", alt: false, shift: false })).toEqual(key("Escape"));
+    expect(editKey(placements, "b", hostKey({ key: "right", alt: true, shift: true }), sizesOf)).toEqual({ do: "resize", id: "b", size: "wide" });
+  });
+
+  test("the gallery: ↑ ↓ through the list, ← → through the sizes, Return adds, Esc closes; ⌥ arrows are the column's", () => {
+    const kinds = ["weather", "timer", "music"];
+    expect(galleryKey(kinds, "weather", ["small", "wide"], 0, key("ArrowDown"))).toEqual({ do: "choose", kind: "timer", sizeAt: 0 });
+    expect(galleryKey(kinds, "weather", ["small", "wide"], 0, key("ArrowUp"))).toEqual({ do: "choose", kind: "weather", sizeAt: 0 });
+    expect(galleryKey(kinds, "weather", ["small", "wide"], 0, key("ArrowRight"))).toEqual({ do: "size", sizeAt: 1 });
+    expect(galleryKey(kinds, "weather", ["small", "wide"], 1, key("Enter"))).toEqual({ do: "add", kind: "weather", size: "wide" });
+    expect(galleryKey(kinds, "weather", ["small", "wide"], 0, key("Escape"))).toEqual({ do: "close" });
+    expect(galleryKey(kinds, "weather", ["small", "wide"], 0, key("ArrowDown", true))).toEqual({ do: "nothing" });
   });
 
   test("sizes stay inside what a widget offers; the edge handle goes round", () => {

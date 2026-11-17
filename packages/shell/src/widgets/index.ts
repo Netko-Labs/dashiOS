@@ -3,6 +3,7 @@ export { Card, type CardProps } from "./card.tsx";
 export { DASHI_WIDGETS, inkWhat, printsIn, resizeTag, widgetInfo } from "./catalog.ts";
 export { WidgetColumn, type WidgetColumnProps } from "./column.tsx";
 export { EDIT_HINT, EditWidgets, GalleryPanel } from "./edit.tsx";
+export { EditKeys, type EditSession, useEditSession } from "./edit-session.tsx";
 export { type WidgetEnv, WidgetEnvProvider } from "./env.tsx";
 export { type WidgetFacts, widgetFacts } from "./facts.ts";
 export { GALLERY } from "./gallery.tsx";

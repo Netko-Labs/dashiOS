@@ -2,7 +2,9 @@
  * Editing from the keyboard (round five, #26, written in the editing
  * header): Tab and ⇧Tab go from widget to widget, ⌥ arrows move the one
  * chosen, ⌥⇧ arrows step its size through the sizes it offers, Delete takes
- * it away, Esc or Return is Done. Pure: the edit view applies the answer.
+ * it away, Esc or Return is Done. In the gallery ↑ ↓ go through the list,
+ * ← → through the chosen widget's sizes, Return adds that size, Esc closes
+ * it. Pure: the edit view applies the answer.
  */
 
 import { SIZE_ORDER } from "../layout.ts";
@@ -12,6 +14,27 @@ export interface EditKey {
   key: string;
   alt: boolean;
   shift: boolean;
+}
+
+/**
+ * The Metal host names keys as GPUI does ("escape", "enter", "tab", "up"),
+ * not as a browser does; the edit keys are matched by the browser's names,
+ * so a key from the host goes through here first.
+ */
+const HOST_NAMES: Readonly<Record<string, string>> = {
+  escape: "Escape",
+  enter: "Enter",
+  tab: "Tab",
+  up: "ArrowUp",
+  down: "ArrowDown",
+  left: "ArrowLeft",
+  right: "ArrowRight",
+  delete: "Delete",
+  backspace: "Backspace",
+};
+
+export function hostKey(event: { key: string; alt: boolean; shift: boolean }): EditKey {
+  return { key: HOST_NAMES[event.key] ?? event.key, alt: event.alt, shift: event.shift };
 }
 
 export type EditAnswer =
@@ -63,4 +86,33 @@ export function cycleSize(offered: readonly WidgetSize[], size: WidgetSize): Wid
   const bigger = stepSize(offered, size, 1);
   if (bigger !== size) return bigger;
   return [...offered].sort((a, b) => SIZE_ORDER.indexOf(a) - SIZE_ORDER.indexOf(b))[0] ?? size;
+}
+
+export type GalleryAnswer =
+  | { do: "choose"; kind: string; sizeAt: number }
+  | { do: "size"; sizeAt: number }
+  | { do: "add"; kind: string; size: WidgetSize }
+  | { do: "close" }
+  | { do: "nothing" };
+
+/** A key while the gallery is open: `kinds` in the list's order, `sizes` what the chosen one offers, in the previews' order. */
+export function galleryKey(kinds: readonly string[], chosen: string | undefined, sizes: readonly WidgetSize[], sizeAt: number, key: EditKey): GalleryAnswer {
+  if (key.key === "Escape") return { do: "close" };
+  // ⌥ arrows still move and resize in the column beside it.
+  if (key.alt) return { do: "nothing" };
+  const at = Math.max(0, kinds.indexOf(chosen ?? ""));
+  if (key.key === "ArrowUp" || key.key === "ArrowDown") {
+    const next = Math.max(0, Math.min(kinds.length - 1, at + (key.key === "ArrowUp" ? -1 : 1)));
+    const kind = kinds[next];
+    return kind === undefined ? { do: "nothing" } : { do: "choose", kind, sizeAt: 0 };
+  }
+  if (key.key === "ArrowLeft" || key.key === "ArrowRight") {
+    if (sizes.length === 0) return { do: "nothing" };
+    return { do: "size", sizeAt: Math.max(0, Math.min(sizes.length - 1, sizeAt + (key.key === "ArrowLeft" ? -1 : 1))) };
+  }
+  if (key.key === "Enter" || key.key === "Return") {
+    const size = sizes[Math.min(sizeAt, sizes.length - 1)];
+    return chosen !== undefined && size !== undefined ? { do: "add", kind: chosen, size } : { do: "nothing" };
+  }
+  return { do: "nothing" };
 }
