@@ -18,7 +18,7 @@ import { BODY_SIZE, headingSize } from "./sizes.ts";
 /** What is drawn differently in the shown text: the source's spans, and the drawn page's own. */
 export type Shown =
   | Span
-  | { kind: "bullet" | "label" | "rule"; start: number; end: number }
+  | { kind: "bullet" | "label" | "rule" | "fenced"; start: number; end: number }
   | { kind: "row"; start: number; end: number; table: number; rows: number };
 
 export type Deco = "none" | "quote" | "code" | "rule" | "table";
@@ -152,6 +152,8 @@ function drawnFence(out: Out, lines: readonly string[], starts: readonly number[
     const start = starts[index] ?? 0;
     const edge = index === block.from || (index === block.to && FENCE.test(line));
     if (!edge) {
+      // A fenced line is drawn monospace, on the panel the page draws under it.
+      if (line !== "") out.shownSpans.push({ kind: "fenced", start: out.disp, end: out.disp + line.length });
       out.keep(start, start + line.length, line);
       out.para(BODY_SIZE, false, "code", group);
     } else {

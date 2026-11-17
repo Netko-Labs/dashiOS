@@ -41,6 +41,8 @@ function runOf(span: Shown, ink: Ink, rowSize: RowSize): TextRun | null {
       return { ...at, color: ink.textMuted };
     case "label":
       return { ...at, color: ink.textMuted, fontSize: 11 };
+    case "fenced":
+      return { ...at, fontFamily: "monospace" };
     case "rule":
       return { ...at, color: CLEAR };
     case "row":
@@ -56,7 +58,7 @@ function runOf(span: Shown, ink: Ink, rowSize: RowSize): TextRun | null {
     case "strike":
       return { ...at, textDecorationLine: "line-through" };
     case "code":
-      return { ...at, backgroundColor: ink.button };
+      return { ...at, backgroundColor: ink.button, fontFamily: "monospace" };
     case "quote":
       return { ...at, color: ink.textMuted, fontStyle: "italic" };
     case "done":
