@@ -4,7 +4,7 @@
  * Motion to every host; and today's look on a host that does not say so.
  */
 
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { inkTokens } from "@dashi/ui";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { DotRow } from "../src/shared/inks/index.ts";
@@ -49,8 +49,11 @@ function sessionSays(said: Said): void {
   alive.push(fake.die);
 }
 
+// Other tests' hosts (warm hosts, the launcher's) may have spoken to the shell's record: start from none.
+beforeEach(() => hostAbilities.forget());
 afterEach(() => {
   for (const die of alive.splice(0)) die();
+  hostAbilities.forget();
 });
 
 async function print(node: React.ReactNode): Promise<string> {

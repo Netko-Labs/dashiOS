@@ -72,6 +72,12 @@ export class HostRegistry {
     return this.reduceMotion;
   }
 
+  /** Forget every host heard so far (tests: one test's hosts never reach the next). */
+  forget(): void {
+    this.said.clear();
+    this.recount();
+  }
+
   getSnapshot = (): HostAbilities => this.abilities;
 
   subscribe = (listener: () => void): (() => void) => {
