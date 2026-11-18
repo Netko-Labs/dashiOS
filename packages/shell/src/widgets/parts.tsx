@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { type GlyphName, glyph } from "../shared/inks/index.ts";
 import { useHostAbilities } from "../shared/metal/index.ts";
 import { numberFace, unitFace } from "./lib/numerals.ts";
-import { useCard, useRedacted } from "./look.tsx";
+import { REDACT_LOCK, useCard, useRedacted } from "./look.tsx";
 
 /**
  * A line cut to `max` characters at a word, with an ellipsis: mirin's host
@@ -172,19 +172,29 @@ export function Btn({
   );
 }
 
-/** A private value on the lock screen: a form's blank, labelled with what it hides (EVENT, NOTE). */
-export function Blank({ what, width }: { what?: string; width: number }) {
+/** The shortest a blank that fills its row may get: still a line, never a dot. */
+export const BLANK_LEAST = 12;
+/** What a filling blank leaves at its right, so its line ends before the card's corner lock (card padding 14). */
+export const BLANK_LOCK_ROOM = REDACT_LOCK.inset + REDACT_LOCK.size + 4 - 14;
+
+/**
+ * A private value on the lock screen: a form's blank, labelled with what it
+ * hides (EVENT, NOTE). `width: "fill"` takes what is left of its row and no
+ * more, for a row whose room depends on the number beside it (D500).
+ */
+export function Blank({ what, width }: { what?: string; width: number | "fill" }) {
   const c = useCard();
+  const fill = width === "fill";
   return (
-    <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 6, height: 15 }}>
+    <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 6, height: 15, ...(fill ? { flex: 1, minWidth: 0, marginRight: BLANK_LOCK_ROOM } : {}) }}>
       {what ? <Text style={{ fontSize: 9.5, fontWeight: "semibold", color: c.tertiary }}>{what.toUpperCase()}</Text> : null}
-      <View style={{ width, height: 1, marginBottom: 3, backgroundColor: c.tertiary }} />
+      <View style={{ height: 1, marginBottom: 3, backgroundColor: c.tertiary, ...(fill ? { flex: 1, minWidth: BLANK_LEAST } : { width }) }} />
     </View>
   );
 }
 
 /** Words that are the person's (an event, a note): a blank while the card is redacted. */
-export function Private({ what, width, children }: { what: string; width: number; children: ReactNode }) {
+export function Private({ what, width, children }: { what: string; width: number | "fill"; children: ReactNode }) {
   return useRedacted() ? <Blank what={what} width={width} /> : children;
 }
 

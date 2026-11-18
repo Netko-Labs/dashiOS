@@ -10,23 +10,47 @@
 import { useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useRef, useState } from "react";
+import { textWidth } from "../shared/file-browser/tile-name.ts";
 import { resizeTag, widgetInfo } from "./catalog.ts";
 import { WidgetColumn } from "./column.tsx";
 import { EditBar } from "./edit-bar.tsx";
 import type { EditSession } from "./edit-session.tsx";
 import { useWidgetEnv } from "./env.tsx";
 import { Gallery } from "./gallery.tsx";
-import { packColumn, sizeWord, tagOnEdge } from "./layout.ts";
+import { packColumn, sizeWord } from "./layout.ts";
 import { cycleSize, dropIndex } from "./lib/edit-keys.ts";
 import type { Placed, Placement, WidgetInfo, WidgetSize } from "./types.ts";
 
 export const EDIT_HINT = "Tab · ⌥ arrows move · ⌥⇧ arrows resize";
 
-/** The chosen widget's tag: "Weather · mizu · Small", or "Small → Wide" right after a resize. */
+/** The chosen widget's tag: "Weather · mizu · Small", or "Weather · mizu · Small → Wide" right after a resize. */
 export function tagOf(info: WidgetInfo | null, from: WidgetSize | null, size: WidgetSize): string {
-  if (!info) return "";
-  if (from && from !== size) return resizeTag(info, from, size);
-  return [info.name, ...(info.ink ? [info.ink] : []), sizeWord(size)].join(" · ");
+  return tagChoices(info, from, size)[0] ?? "";
+}
+
+/**
+ * The tag's measures. It sits across the card's bottom edge at every size,
+ * so it never covers a line of the card (a one-row card's number, pass 52; a
+ * Rundown Large's last line, pass 54): the card's own 14-point padding is
+ * under its top half (D500).
+ */
+export const TAG = { left: 10, right: 10, padding: 8, height: 20, fontSize: 11, below: -10 } as const;
+/** Semibold runs a little wider than `textWidth`'s estimate. */
+const SEMIBOLD = 1.1;
+
+/** The tag's words, fullest first: with the ink, without it, then the size alone. */
+function tagChoices(info: WidgetInfo | null, from: WidgetSize | null, size: WidgetSize): string[] {
+  if (!info) return [];
+  const sizes = from && from !== size ? `${sizeWord(from)} → ${sizeWord(size)}` : sizeWord(size);
+  const full = from && from !== size ? resizeTag(info, from, size) : [info.name, ...(info.ink ? [info.ink] : []), sizes].join(" · ");
+  return [...new Set([full, `${info.name} · ${sizes}`, sizes, sizeWord(size)])];
+}
+
+/** The fullest tag that fits a card `width` wide whole: never cut ("Weather · mizu · Small →…", pass 54). */
+export function fittedTag(info: WidgetInfo | null, from: WidgetSize | null, size: WidgetSize, width: number): string {
+  const choices = tagChoices(info, from, size);
+  const room = width - TAG.left - TAG.right - 2 * TAG.padding;
+  return choices.find((words) => textWidth(words) * TAG.fontSize * SEMIBOLD <= room) ?? choices.at(-1) ?? "";
 }
 
 interface DecorationProps {
@@ -86,17 +110,17 @@ function Decoration({ placed, tag, resizable, chosen, onChoose, onRemove, onResi
         <View
           style={{
             position: "absolute",
-            left: 10,
-            bottom: tagOnEdge(placed.placement.size) ? -10 : 8,
-            height: 20,
-            paddingLeft: 8,
-            paddingRight: 8,
-            borderRadius: 10,
+            left: TAG.left,
+            bottom: TAG.below,
+            height: TAG.height,
+            paddingLeft: TAG.padding,
+            paddingRight: TAG.padding,
+            borderRadius: TAG.height / 2,
             backgroundColor: inks.text.ink,
             justifyContent: "center",
           }}
         >
-          <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: "semibold", color: inks.paper }}>
+          <Text numberOfLines={1} style={{ fontSize: TAG.fontSize, fontWeight: "semibold", color: inks.paper }}>
             {tag}
           </Text>
         </View>
@@ -138,7 +162,7 @@ export function EditWidgets({ placements, session: edit, onDone }: { placements:
         {tile}
         <Decoration
           placed={placed}
-          tag={tagOf(info, edit.chosen === placement.id ? edit.from : null, placement.size)}
+          tag={fittedTag(info, edit.chosen === placement.id ? edit.from : null, placement.size, placed.width)}
           resizable={(info?.sizes.length ?? 0) > 1}
           chosen={edit.chosen === placement.id}
           onChoose={() => edit.choose(placement.id)}

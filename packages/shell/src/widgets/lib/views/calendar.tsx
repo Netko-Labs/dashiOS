@@ -162,7 +162,7 @@ function CompactNext({ next, now, hour24 }: { next: Occurrence | null; now: numb
       <View style={{ flexDirection: "row", gap: 9, alignItems: "flex-end" }}>
         <Num value={next ? clockText(startOf(next), hour24) : String(new Date(now).getDate())} size={30} />
         {next ? (
-          <Private what="Event" width={48}>
+          <Private what="Event" width="fill">
             <Words ink max={10}>
               {next.event.title || "Event"}
             </Words>

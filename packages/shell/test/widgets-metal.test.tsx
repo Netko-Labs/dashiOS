@@ -10,7 +10,6 @@ import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { DotRow } from "../src/shared/inks/index.ts";
 import { HostRegistry, hostAbilities, NO_ABILITIES } from "../src/shared/metal/index.ts";
 import { Card, NowTag, Num, previewSizes, SIZE_ORDER, widgetInfo } from "../src/widgets/index.ts";
-import { tagOnEdge } from "../src/widgets/layout.ts";
 import { numberFace, numberWeight } from "../src/widgets/lib/numerals.ts";
 import { ART_GRID, halftoneLayers, stockPrint } from "../src/widgets/lib/sources/art.ts";
 import { settle } from "./support/time.ts";
@@ -173,11 +172,5 @@ describe("pass 52", () => {
     const sizes = previewSizes(music ?? { kind: "media", name: "", ink: null, glyph: "spark", sizes: [], holdsPrivate: false, blurb: "" });
     expect(sizes[0]).toBe("small");
     expect([...sizes].sort((a, b) => SIZE_ORDER.indexOf(a) - SIZE_ORDER.indexOf(b))).toEqual(sizes);
-  });
-
-  test("a chosen card one row high has its tag across its edge, off the number", () => {
-    expect(tagOnEdge("compact")).toBe(true);
-    expect(tagOnEdge("mini")).toBe(true);
-    expect(tagOnEdge("small")).toBe(false);
   });
 });
