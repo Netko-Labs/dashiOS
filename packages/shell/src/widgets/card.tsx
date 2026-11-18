@@ -9,7 +9,7 @@
 import { Svg, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { glyph } from "../shared/inks/index.ts";
-import { type CardLook, cardColours, LookProvider, RedactProvider } from "./look.tsx";
+import { type CardLook, cardColours, LookProvider, REDACT_LOCK, RedactProvider } from "./look.tsx";
 
 export const CARD_RING = 3;
 
@@ -67,8 +67,8 @@ export function Card({ look, width, height, compact, padding, testID, onPress, o
             {children}
           </View>
           {look.redact ? (
-            <View style={{ position: "absolute", right: 12, bottom: 12 }}>
-              <Svg markup={glyph("lock")} size={11} color={colours.tertiary} />
+            <View style={{ position: "absolute", right: REDACT_LOCK.inset, bottom: REDACT_LOCK.inset }}>
+              <Svg markup={glyph("lock")} size={REDACT_LOCK.size} color={colours.tertiary} />
             </View>
           ) : null}
         </View>

@@ -1,9 +1,9 @@
 /**
  * The tally in the bar (round five, #25): only the holder's capsule keeps
  * its words, a vermilion dot before them ("● Tea 3:12"); what is live on
- * standby shrinks to its glyph, two at most, then folds into "+n". A holder
- * with no capsule of its own (music) is a dot beside the clock instead. A
- * click opens the notification area, where the item's card is.
+ * standby shrinks to its glyph, two at most, then folds into "+n". Music
+ * on air has its capsule too ("● Slow Tide"), never a bare dot by the clock
+ * (D500). A click opens the notification area, where the item's card is.
  */
 
 import { useColors } from "@dashi/ui";
@@ -73,11 +73,6 @@ function StandbyCapsule({ items, onPress }: { items: readonly OnAirItem[]; onPre
   );
 }
 
-/** Whether the holder draws a capsule of its own; music does not (its dot sits by the clock). */
-export function hasCapsule(item: OnAirItem): boolean {
-  return !item.key.startsWith("media:");
-}
-
 /** The bar's tally slots, left of the system's own items. */
 export function tallySlots(view: TallyView, tally: string, openArea: () => void): StatusSlot[] {
   const slots: StatusSlot[] = [];
@@ -89,7 +84,7 @@ export function tallySlots(view: TallyView, tally: string, openArea: () => void)
       open: { kind: "panel", run: openArea },
       node: <StandbyCapsule items={view.standby} onPress={openArea} />,
     });
-  if (view.item && hasCapsule(view.item)) {
+  if (view.item) {
     const item = view.item;
     slots.push({
       key: "tally-holder",
@@ -103,9 +98,9 @@ export function tallySlots(view: TallyView, tally: string, openArea: () => void)
   return slots;
 }
 
-/** The one thing on air and what waits on standby, as the bar's slots, and the clock's dot for a holder without a capsule. */
-export function useTallySlots(openArea: () => void): { slots: StatusSlot[]; clockDot: string | null; openArea: () => void } {
+/** The one thing on air and what waits on standby, as the bar's slots. */
+export function useTallySlots(openArea: () => void): { slots: StatusSlot[]; openArea: () => void } {
   const view = useTally();
   const inks = useInks();
-  return { openArea, slots: tallySlots(view, inks.tally, openArea), clockDot: view.item && !hasCapsule(view.item) ? inks.tally : null };
+  return { openArea, slots: tallySlots(view, inks.tally, openArea) };
 }

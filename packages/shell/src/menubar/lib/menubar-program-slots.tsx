@@ -262,7 +262,6 @@ export function useStatusSlots(sources: StatusSources, popover: Popover | null, 
       dnd,
       popover,
       clock: formatClock(now, clock),
-      clockDot: onAir.clockDot,
       colors,
       accessible: accessible(),
       on: {

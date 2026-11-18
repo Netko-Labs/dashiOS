@@ -87,3 +87,6 @@ export function useCard(): CardColours {
 }
 
 export const useRedacted = (): boolean => useContext(Redact);
+
+/** The lock a redacted card wears in its corner (card.tsx): inset from the card's edges, and its size. */
+export const REDACT_LOCK = { inset: 12, size: 11 } as const;

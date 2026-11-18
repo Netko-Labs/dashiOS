@@ -14,6 +14,10 @@ import { useSource } from "../data.ts";
 import { ART_GRID, coverPrint, halftone, halftoneLayers, type Print, stockPrint } from "../sources/art.ts";
 import { positionAt } from "../sources/media.ts";
 
+/** What the header's label holds beside the "Now" tag: the player's name at Small (no room for "Music ·"), both at Wide (D500). */
+const SMALL_NAME_MAX = 12;
+const WIDE_ON_AIR_MAX = 20;
+
 const mmss = (ms: number): string => `${Math.floor(ms / 60_000)}:${String(Math.floor((ms % 60_000) / 1000)).padStart(2, "0")}`;
 
 /** The print for a track: the cover's when it can be read, else a stock one, kept per address. */
@@ -103,6 +107,12 @@ export function MediaWidget({ size, air }: { size: WidgetSize; air: boolean }) {
   if (size === "small")
     return (
       <>
+        {air ? (
+          <>
+            <Head left={<Lab max={SMALL_NAME_MAX}>{playing.name || "Music"}</Lab>} right={<NowTag tally={inks.tally} />} />
+            <View style={{ height: 8 }} />
+          </>
+        ) : null}
         <View style={{ flexDirection: "row", gap: 10 }}>
           <Halftone print={print} size={56} sleeve={sleeve} />
           <View style={{ flex: 1, flexDirection: "column" }}>
@@ -119,7 +129,11 @@ export function MediaWidget({ size, air }: { size: WidgetSize; air: boolean }) {
     <View style={{ flexDirection: "row", gap: 14, flex: 1 }}>
       <Halftone print={print} size={144} sleeve={sleeve} />
       <View style={{ flex: 1, flexDirection: "column" }}>
-        <Head left={<Lab>Music</Lab>} right={air ? <NowTag tally={inks.tally} /> : <Meta max={16}>{playing.name}</Meta>} />
+        {air ? (
+          <Head left={<Lab max={WIDE_ON_AIR_MAX}>{playing.name ? `Music · ${playing.name}` : "Music"}</Lab>} right={<NowTag tally={inks.tally} />} />
+        ) : (
+          <Head left={<Lab>Music</Lab>} right={<Meta max={16}>{playing.name}</Meta>} />
+        )}
         <View style={{ height: 10 }} />
         <Title size={15}>{playing.title}</Title>
         <Words>{playing.artist}</Words>

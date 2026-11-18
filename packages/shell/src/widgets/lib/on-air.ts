@@ -32,9 +32,15 @@ export function eventsOnAir(occurrences: readonly Occurrence[], now: number): On
   });
 }
 
+/** The most a track's title takes in the bar's capsule, so a long one never pushes the bar's items off. */
+export const MEDIA_LABEL_MAX = 24;
+
+/** Music playing is on air; its capsule says the track ("Slow Tide"), cut with an ellipsis (D500). */
 export function mediaOnAir(playing: Playing | null): OnAirItem[] {
   if (!playing?.playing) return [];
-  return [{ key: `media:${playing.player}`, reason: "running", since: playing.since, label: playing.title, glyph: "music", ink: "album" }];
+  const title = playing.title.trim() || playing.name || "Music";
+  const label = title.length <= MEDIA_LABEL_MAX ? title : `${title.slice(0, MEDIA_LABEL_MAX - 1).trimEnd()}…`;
+  return [{ key: `media:${playing.player}`, reason: "running", since: playing.since, label, glyph: "music", ink: "album" }];
 }
 
 /** What an agent's run puts on air: running while it works; asking only for a sign-in (a secret). */

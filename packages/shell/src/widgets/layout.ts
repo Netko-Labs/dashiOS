@@ -63,12 +63,3 @@ export function packColumn(placements: readonly Placement[]): Placed[] {
 export function columnHeight(placed: readonly Placed[]): number {
   return placed.reduce((most, each) => Math.max(most, each.y + each.height), 0);
 }
-
-/**
- * Whether a chosen widget's tag ("Weather · mizu · Compact") sits across the
- * card's bottom edge rather than inside it: a card one row high has no room
- * under its number, and the tag drawn inside covered it (pass 52).
- */
-export function tagOnEdge(size: WidgetSize): boolean {
-  return SPANS[size].rows === 1;
-}

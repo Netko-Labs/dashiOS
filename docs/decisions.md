@@ -6527,3 +6527,48 @@ short words, as the rulebook is written.
   across the bottom edge, half outside, over the gap; taller cards keep it
   inside at the bottom (`tagOnEdge`, `widgets/layout.ts`).
 - **Undo:** `bottom: 8` for every size in `widgets/edit.tsx`.
+
+### D500. Music on air has words in the bar, and its name and "Now" at Small
+
+- **Date:** 2026-11-17. `v09/fix-inks-2`. Passes 53 and 54.
+- **Found:** with Music on air the bar showed only a vermilion dot beside
+  the clock (music had no capsule by design), and Music at Small has no
+  header, so neither the player's name nor the "Now" tag showed on the card
+  that held the tally. A timer on air says "● Timer 24:58".
+- **Decision:** music on air takes the holder's capsule like everything else:
+  "● Slow Tide", the title cut at 24 characters (`MEDIA_LABEL_MAX`,
+  `widgets/lib/on-air.ts`); the clock's dot is gone. At Small, on air, the
+  card gets a header: the player's name (12 characters) and the "Now" tag.
+  Off air the Small card stays as drawn, with no header. At Wide, on air, the
+  label says "Music · Helium" beside the tag instead of losing the name.
+- **Cost:** the Small card's print and title sit 22 points lower on air.
+- **Undo:** `hasCapsule` and `clockDot` back in
+  `menubar/lib/menubar-tally-slots.tsx` and `menubar-slots.tsx`; drop the
+  `air` header in `widgets/lib/views/media.tsx`.
+
+### D501. The chosen card's tag sits across its bottom edge at every size, and is never cut
+
+- **Date:** 2026-11-17. `v09/fix-inks-2`. Pass 54. Replaces D495's split.
+- **Found:** a chosen Rundown Large wore "Rundown · Large" over its last line
+  ("Nothing else today"); D495 had moved only one-row cards' tags. A chosen
+  Compact Weather's tag read "Weather · mizu · Small →…": the tag is as wide
+  as the card at most, and the host cut the words.
+- **Decision:** the tag sits across the bottom edge for every size (half
+  over the card's 14-point padding, half over the gap), so it never covers a
+  line. Its words are the fullest of "Weather · mizu · Small → Compact",
+  "Weather · Small → Compact", "Small → Compact", "Compact" that fit the card
+  whole, by `textWidth` at 11 points × 1.1 for semibold (`fittedTag`,
+  `widgets/edit.tsx`). The full words stay in `tagOf`.
+- **Undo:** `TAG.below` back to 8 for cards taller than a row; `tagOf` in
+  place of `fittedTag`.
+
+### D502. A blank beside a number fills its row
+
+- **Date:** 2026-11-17. `v09/fix-inks-2`. Passes 53 and 54.
+- **Found:** the lock's compact "Next 10:00 EVENT ___" ran past its card's
+  right edge: the blank's line was 48 points whatever the time beside it took.
+- **Decision:** `Blank` (and `Private`) take `width: "fill"`: the line takes
+  what is left of its row, 12 points at least, and ends before the card's
+  corner lock (`REDACT_LOCK`, `widgets/look.tsx`). The compact "Next" uses it;
+  the other blanks keep their fixed widths (they sit in a column, alone).
+- **Undo:** `width={48}` back in `CompactNext` (`widgets/lib/views/calendar.tsx`).
