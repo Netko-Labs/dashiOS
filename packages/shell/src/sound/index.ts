@@ -1,4 +1,4 @@
-export { MuteKnob } from "./app-rows.tsx";
+export { Mute, Mute as MuteKnob } from "./app-rows.tsx";
 export {
   AppMixer,
   type AppRecording,
@@ -17,7 +17,7 @@ export { inputsOf, soundBackendFor } from "./backend.ts";
 export { followOutputVolume, shadowLevels, wpctlLevels } from "./levels.ts";
 export { LevelsStore, useLevels } from "./levels-store.ts";
 export { fakeMeter, type LevelMeter, pipewireMeter } from "./meter.ts";
-export { MicPill } from "./mic-pill.tsx";
+export { MicIndicator, MicIndicator as MicPill } from "./mic-pill.tsx";
 export { SoundPage } from "./page.tsx";
 export { type SoundState, SoundStore, useSound } from "./store.ts";
 export { meterShown, type StreamMeters, streamMeters, useMeterLevel } from "./stream-meters.ts";

@@ -13,7 +13,7 @@ import { AppSections, foldApps } from "../src/sound/app-rows.tsx";
 import { AppMixer, type AppSound, fixedGraph, parseGraph, useMicWords } from "../src/sound/apps/index.ts";
 import { heldControl } from "../src/sound/apps/lib/commands.ts";
 import { streamApp } from "../src/sound/apps/lib/identity.ts";
-import { MicPill } from "../src/sound/mic-pill.tsx";
+import { MicIndicator } from "../src/sound/mic-pill.tsx";
 import { vmGraph } from "./fixtures/pw-graph.ts";
 import { fakeClockEachTest, settle } from "./support/time.ts";
 
@@ -62,7 +62,7 @@ const app = (key: string, extra: Partial<AppSound> = {}): AppSound => ({
 describe("the microphone pill", () => {
   test("nothing while nobody records", async () => {
     const { trees, transport } = host();
-    const root = render(<MicPill words="" onPress={() => {}} />, transport);
+    const root = render(<MicIndicator words="" onPress={() => {}} />, transport);
     await settle();
     expect(root.nodeId("mic-indicator")).toBeUndefined();
     expect(trees.at(-1) ?? "").not.toContain("microphone");
@@ -74,7 +74,7 @@ describe("the microphone pill", () => {
     const tips: (string | null)[] = [];
     const presses: number[] = [];
     const root = render(
-      <MicPill words="Signal is using the microphone." onPress={(right) => presses.push(right)} onTip={(tip) => tips.push(tip?.text ?? null)} />,
+      <MicIndicator words="Signal is using the microphone." onPress={(right) => presses.push(right)} onTip={(tip) => tips.push(tip?.text ?? null)} />,
       transport,
     );
     await settle();

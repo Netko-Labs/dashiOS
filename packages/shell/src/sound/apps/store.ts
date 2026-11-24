@@ -39,6 +39,9 @@ export const LINGER_MS = 5000;
 /** How long a change made here is shown over what PipeWire says, once it is made. */
 export const HOLD_MS = 1500;
 
+/** How far past the first end due the update runs, so that end has passed. */
+const PAST_DUE = { ms: 1 } as const;
+
 export interface AppMixerOptions {
   graph: GraphWatch;
   control: MixerControl;
@@ -255,7 +258,9 @@ export class AppMixer {
     clearTimeout(this.timer);
     const times = [...[...this.lingering.values()].map((each) => each.until), ...this.holds.ends()].filter(Number.isFinite);
     if (times.length === 0) return;
-    this.timer = setTimeout(() => this.update(), Math.max(Math.min(...times) - now, 0) + 1);
+    // Just past the first one due, so it has ended when this runs.
+    const due = Math.max(Math.min(...times) - now, 0) + PAST_DUE.ms;
+    this.timer = setTimeout(() => this.update(), due);
   }
 
   private publish(next: MixerState): void {
