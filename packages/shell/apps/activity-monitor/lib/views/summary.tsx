@@ -11,7 +11,7 @@
  * using the most.
  */
 
-import { useColors, useSurface } from "@dashi/ui";
+import { CLEAR, RADIUS, SPACE, TYPE, useColors, useSurface, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { sparkline } from "../graph.ts";
 import type { Line } from "../lines.ts";
@@ -27,7 +27,7 @@ const GRAPH = { max: 260, min: 120, height: 74 } as const;
 /** Above the graph's box: its title row and the gap under it. */
 const GRAPH_HEAD = 19;
 /** The strip's sides, the room between its three parts, and the least a figure column keeps. */
-const STRIP = { side: 20, gap: 24, figures: 150 } as const;
+const STRIP = { side: 20, gap: SPACE.xl, figures: 150 } as const;
 /** One figure's row: 4 rows fill the graph's box. */
 const FIGURE_ROW = 19;
 
@@ -42,13 +42,16 @@ function Figures({ figures, testID }: { figures: readonly Figure[]; testID: stri
   const swatches = figures.some((figure) => figure.color !== undefined);
   return (
     // Centred on the graph's box, whatever the tab: the labels in one column, the values in another.
-    <View testID={testID} style={{ flex: 1, minWidth: 0, height: GRAPH.height + 2, marginTop: GRAPH_HEAD, flexDirection: "row", alignItems: "center", gap: 8 }}>
+    <View
+      testID={testID}
+      style={{ flex: 1, minWidth: 0, height: GRAPH.height + 2, marginTop: GRAPH_HEAD, flexDirection: "row", alignItems: "center", gap: SPACE.m }}
+    >
       <View style={{ flexShrink: 0, flexDirection: "column" }}>
         {figures.map((figure) => (
-          <View key={figure.label} style={{ height: FIGURE_ROW, flexDirection: "row", alignItems: "center", gap: 6 }}>
-            {swatches && <View style={{ width: 8, height: 8, flexShrink: 0, borderRadius: 2, backgroundColor: figure.color ?? "#00000000" }} />}
+          <View key={figure.label} style={{ height: FIGURE_ROW, flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
+            {swatches && <View style={{ width: 8, height: 8, flexShrink: 0, borderRadius: RADIUS.thumb, backgroundColor: figure.color ?? CLEAR }} />}
             <View style={{ flexShrink: 0 }}>
-              <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+              <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
                 {figure.label}
               </Text>
             </View>
@@ -58,7 +61,7 @@ function Figures({ figures, testID }: { figures: readonly Figure[]; testID: stri
       <View style={{ flexShrink: 1, minWidth: 0, flexDirection: "column" }}>
         {figures.map((figure) => (
           <View key={figure.label} style={{ height: FIGURE_ROW, justifyContent: "center", minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>
+            <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
               {figure.value}
             </Text>
           </View>
@@ -72,16 +75,16 @@ function Figures({ figures, testID }: { figures: readonly Figure[]; testID: stri
 function Brief({ figures }: { figures: readonly Figure[] }) {
   const colors = useColors();
   return (
-    <View testID="summary-brief" style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 20 }}>
+    <View testID="summary-brief" style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: SPACE.sheet }}>
       {figures.map((figure) => (
-        <View key={figure.label} style={{ flexShrink: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 6 }}>
+        <View key={figure.label} style={{ flexShrink: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
           <View style={{ flexShrink: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+            <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
               {figure.label}
             </Text>
           </View>
           <View style={{ flexShrink: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>
+            <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
               {figure.value}
             </Text>
           </View>
@@ -95,10 +98,10 @@ function Graph({ title, series, max, scale, width }: GraphSpec & { width: number
   const colors = useColors();
   const surface = useSurface();
   return (
-    <View testID="summary-graph" style={{ width: width + 2, flexShrink: 0, flexDirection: "column", gap: 4 }}>
+    <View testID="summary-graph" style={{ width: width + 2, flexShrink: 0, flexDirection: "column", gap: SPACE.xs }}>
       <View style={{ height: GRAPH_HEAD - 4, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>{title}</Text>
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>{scale}</Text>
+        <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>{title}</Text>
+        <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>{scale}</Text>
       </View>
       <View
         style={{
@@ -107,7 +110,7 @@ function Graph({ title, series, max, scale, width }: GraphSpec & { width: number
           position: "relative",
           borderWidth: 1,
           borderColor: colors.separator,
-          borderRadius: 4,
+          borderRadius: RADIUS.check,
           backgroundColor: surface.field,
           overflow: "hidden",
         }}

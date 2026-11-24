@@ -20,6 +20,9 @@ export type Target = Pick<ProcessRow, "pid" | "starttime" | "name">;
 /** How long a quit app has to end before Activity Monitor offers to force quit it. */
 export const STILL_RUNNING_MS = 3000;
 
+/** How soon after a quit the list is read again, so the line goes as the process does. */
+export const REFRESH_AFTER_QUIT_MS = 300;
+
 export interface Guard {
   /** The shell, the compositor, the session, and Activity Monitor itself. */
   protectedPids: ReadonlySet<number>;

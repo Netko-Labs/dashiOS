@@ -10,7 +10,7 @@ import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from 
 import type { MonitorActions } from "../actions.ts";
 import type { Line } from "../lines.ts";
 import type { Monitor, MonitorState } from "../monitor.ts";
-import { STILL_RUNNING_MS } from "../policy.ts";
+import { REFRESH_AFTER_QUIT_MS, STILL_RUNNING_MS } from "../policy.ts";
 import { lineRefusal, sendQuit } from "../quit.ts";
 
 export type SheetState =
@@ -72,7 +72,7 @@ export function useSheets(input: SheetsInput): Sheets {
     const outcome = sendQuit(line, rows, signal, actions);
     if (outcome.kind === "refused") return setSheet({ kind: "refused", name: line.name, reason: outcome.reason });
     closeSheet();
-    setTimeout(() => void monitor.refresh(), 300);
+    setTimeout(() => void monitor.refresh(), REFRESH_AFTER_QUIT_MS);
     if (outcome.kind !== "sent" || signal === "SIGKILL") return;
     if (stillTimer.current) clearTimeout(stillTimer.current);
     stillTimer.current = setTimeout(() => {

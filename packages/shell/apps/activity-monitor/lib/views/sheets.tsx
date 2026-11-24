@@ -8,7 +8,7 @@
  * too short for them, its Done always in reach.
  */
 
-import { ALERT_WINDOW, AlertSheet, alertWordsWidth, glyphs, useColors } from "@dashi/ui";
+import { ALERT_WINDOW, AlertSheet, alertWordsWidth, glyphs, SPACE, TYPE, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import { formatBytes, formatCpuTime, formatPercent, formatState, middleCut } from "../format.ts";
 import type { Line } from "../lines.ts";
@@ -84,12 +84,12 @@ export function RefusedSheet({ name, reason, onClose }: { name: string; reason: 
 function Fact({ label, value }: { label: string; value: string }) {
   const colors = useColors();
   return (
-    <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
+    <View style={{ flexDirection: "row", gap: SPACE.gap, alignItems: "flex-start" }}>
       <View style={{ width: 92, flexShrink: 0 }}>
-        <Text style={{ fontSize: 12, color: colors.textMuted }}>{label}</Text>
+        <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>{label}</Text>
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ fontSize: 12, color: colors.text }}>{value}</Text>
+        <Text style={{ fontSize: TYPE.secondary.size, color: colors.text }}>{value}</Text>
       </View>
     </View>
   );
@@ -138,7 +138,7 @@ export function InspectSheet({ line, parentName, onClose, maxFacts }: { line: Li
       glyph={glyphs.INFO}
       buttons={[{ label: "Done", testID: "inspect-sheet:done", onPress: onClose, kind: "primary" }]}
     >
-      <ScrollView testID="inspect-sheet:facts" style={{ maxHeight: maxFacts, flexDirection: "column", gap: 8 }}>
+      <ScrollView testID="inspect-sheet:facts" style={{ maxHeight: maxFacts, flexDirection: "column", gap: SPACE.m }}>
         {facts.map(([label, value]) => (
           <Fact key={label} label={label} value={value} />
         ))}

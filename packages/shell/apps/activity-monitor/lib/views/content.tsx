@@ -5,7 +5,7 @@
  * → and Return act on the selected line, unless a sheet or a menu has them.
  */
 
-import { EmptyState, glyphs, Table } from "@dashi/ui";
+import { EmptyState, Loading, NoResults, Table } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { fitColumns } from "../columns.ts";
 import type { MonitorModel } from "../hooks/use-monitor-window.ts";
@@ -50,10 +50,13 @@ export function MonitorContent({ model }: { model: MonitorModel }) {
         onSort={listing.sortBy}
         muted={(line) => !line.own}
         empty={
+          // PA-5: a wait is the one progress control, after 200 ms; PA-17: a search that finds nothing says so one way.
           state.rows.length === 0 ? (
-            <EmptyState title="Reading processes…" />
+            <Loading label="Reading processes…" />
+          ) : query.trim() ? (
+            <NoResults query={query} />
           ) : (
-            <EmptyState title="No matches" message={query ? `Nothing matches “${query.trim()}”.` : "Nothing in this view."} glyph={glyphs.SEARCH} />
+            <EmptyState title="Nothing in this view" />
           )
         }
       />
