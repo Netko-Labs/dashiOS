@@ -140,8 +140,8 @@ function Field({ value, onChangeText, onSubmit, placeholder = "Password", secure
       style={{
         width,
         height,
-        paddingLeft: SPACE.button,
-        paddingRight: SPACE.button,
+        // One line in a set height takes padding at its sides only; paddingLeft and paddingRight need a newer host.
+        padding: SPACE.button,
         borderRadius: pill(height),
         backgroundColor: colors.field,
         borderColor: colors.fieldEdge,
