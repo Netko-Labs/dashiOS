@@ -18,7 +18,7 @@ import { LIGHT_CONTROLS } from "../src/theme/controls.ts";
 import { lightColors } from "../src/theme/palette.ts";
 import { noop } from "./support/controls-view.ts";
 import { fakeClockEachTest } from "./support/time.ts";
-import { sent, words } from "./support/tree.ts";
+import { type SentNode, sent, words } from "./support/tree.ts";
 
 fakeClockEachTest();
 
@@ -214,5 +214,19 @@ test("InlineField: no box at rest, the focus ring's edge while it has the keyboa
   expect(node("shown")?.props).toMatchObject({ access: { role: "checkbox", label: "Show Work" } });
   expect(words(node("shown"))).toEqual([]);
   expect(words(node("more"))).toEqual(["3 more"]);
+  root.unmount();
+});
+
+test("Button: a label shorter than the least width sits in the middle, in both looks", async () => {
+  const { node, root } = await sent(
+    <View>
+      <Button testID="ok" label="OK" primary onPress={noop} />
+      <Button testID="go" label="Go" look="panel" onPress={noop} />
+    </View>,
+  );
+  for (const id of ["ok", "go"]) {
+    const label = node(id)?.children?.find((child): child is SentNode => typeof child === "object" && child !== null && "props" in child);
+    expect(JSON.stringify(label?.props)).toContain('"center"');
+  }
   root.unmount();
 });
