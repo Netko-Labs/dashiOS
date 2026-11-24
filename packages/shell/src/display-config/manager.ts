@@ -11,11 +11,13 @@
 
 import type { Compositor } from "../compositor/index.ts";
 import { leavesRoom } from "../displays.ts";
+import { firstTaken, nonEmpty } from "./lib/restore.ts";
 import { type AskToKeep, askToKeep, later } from "./lib/trial.ts";
 import type { LidSource } from "./lid.ts";
-import { type Mode, type Monitor, modeFor, monitorsOf, type Rotation, setKey } from "./monitors.ts";
-import { type ConfigRequest, configOf, layoutOf, planRestore, type ScaleFor, toWire } from "./plan.ts";
+import { identityOf, type Mode, type Monitor, modeFor, monitorsOf, type Rotation, setKey } from "./monitors.ts";
+import { type ConfigRequest, configOf, layoutOf, planRestore, type ScaleFor, settled, toWire } from "./plan.ts";
 import type { DisplayStore } from "./saved.ts";
+import type { ScreenScales } from "./scale.ts";
 
 export interface ApplyResult {
   /** The change stands. False: it was refused, or the person did not keep it. */
@@ -31,6 +33,8 @@ export interface DisplayManagerOptions {
   store: DisplayStore;
   scaleFor: ScaleFor;
   lid?: LidSource | null;
+  /** Where a scale chosen through `setScale` is kept, by monitor (scale.ts); without it, for the session only. */
+  scales?: Pick<ScreenScales, "remember">;
   /** Without it changes are kept without asking (headless runs). */
   ask?: AskToKeep;
   now?: () => number;
@@ -114,14 +118,19 @@ export class DisplayManager {
       const key = setKey(monitors);
       if (!force && key === this.restoredFor) return;
       this.restoredFor = key;
-      const plan = planRestore(monitors, this.options.store.get(key), { lidClosed: this.lidClosed, scaleFor: this.options.scaleFor });
+      const saved = this.options.store.get(key);
+      const options = {
+        lidClosed: this.lidClosed,
+        scaleFor: this.options.scaleFor,
+        lastMode: (monitor: Monitor) => this.options.store.lastMode(identityOf(monitor)),
+      };
+      const plans = [planRestore(monitors, saved, options), planRestore(monitors, saved, { ...options, defaultModes: false })];
+      // Even with nothing to restore, screens that overlap or stand apart are put right.
+      const plan = await firstTaken(
+        this.options.compositor,
+        plans.map((each) => nonEmpty(settled(each ?? { outputs: [] }, monitors))),
+      );
       if (!plan) return;
-      try {
-        await this.options.compositor.outputsConfig(toWire(plan));
-      } catch (error) {
-        console.error("dashi-shell: could not restore the display arrangement:", error instanceof Error ? error.message : error);
-        return;
-      }
       const names = plan.outputs.filter((output) => output.mode !== undefined || output.enabled === true).map((output) => output.name);
       if (names.length > 0) this.tellMode({ cause: "restore", names });
     }).catch((error) => console.error("dashi-shell: displays:", error instanceof Error ? error.message : error));
@@ -136,7 +145,7 @@ export class DisplayManager {
     return this.serial(async (): Promise<ApplyResult> => {
       const before = await this.monitors();
       try {
-        await this.options.compositor.outputsConfig(toWire(request));
+        await this.options.compositor.outputsConfig(toWire(settled(request, before)));
       } catch (error) {
         return { kept: false, reverted: false, error: error instanceof Error ? error.message : String(error) };
       }
@@ -184,6 +193,18 @@ export class DisplayManager {
       options,
     );
     if (result.kept) this.tellMode({ cause: options.by === "automatic" ? "automatic" : "manual", names: [monitor.name] });
+    return result;
+  }
+
+  /** Show the screen at another scale, its neighbours moved to keep touching (D553); never asked about, as it never leaves a screen unusable. */
+  async setScale(name: string, scale: number): Promise<ApplyResult> {
+    const monitor = await this.find(name);
+    if (typeof monitor === "string") return refused(monitor);
+    if (!monitor.enabled || !monitor.mode) return refused(`${monitor.name} is off`);
+    const upright = monitor.rotation === 90 || monitor.rotation === 270 ? { width: monitor.mode.height, height: monitor.mode.width } : monitor.mode;
+    if (!leavesRoom(upright, scale)) return refused(`scale ${scale} leaves ${monitor.name} too little room`);
+    const result = await this.apply({ outputs: [{ name: monitor.name, scale }] }, `Scale of ${monitor.name}`, { confirm: false });
+    if (result.kept) this.options.scales?.remember(monitor, scale);
     return result;
   }
 

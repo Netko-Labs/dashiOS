@@ -46,11 +46,18 @@ export interface StartDockOptions {
   onLost(output: string | undefined): void;
   /** Reduce Motion is on: the Dock appears and leaves without its entrance and exit. */
   reduceMotion?(): boolean;
+  /** The screen under the pointer, when it reaches a bottom edge: the Dock follows the person there (presenter.ts, D555). */
+  pointerScreen?(): Promise<string | undefined>;
 }
 
 export interface DockRuntime {
-  /** The Dock goes on this screen (the primary); `undefined` leaves it to the compositor. */
-  place(output: string | undefined): void;
+  /**
+   * The Dock's home is this screen (the main display; `undefined` leaves it to the compositor): it goes
+   * there when that changes, or when the screen it followed the person to is not among `screens`.
+   */
+  place(output: string | undefined, screens?: readonly string[]): void;
+  /** The screen it is on now. */
+  readonly screen: string | undefined;
   close(): void;
 }
 
@@ -173,10 +180,11 @@ export function startDock(options: StartDockOptions): DockRuntime {
     onLost: options.onLost,
   });
 
-  const presenter = new DockPresenter({ prefs, autohide, slide, view, edges: options.compositor && compositorEdges(options.compositor) });
+  const edges = options.compositor && compositorEdges(options.compositor);
+  const presenter = new DockPresenter({ prefs, autohide, slide, view, edges, ...(options.pointerScreen ? { pointerScreen: options.pointerScreen } : {}) });
   presenter.start();
   // The pointer entering or leaving the band the presenter claims along the bottom edge.
-  const stopEdges = options.compositor?.on((event) => event.event === "edge" && autohide.edge(event.inside));
+  const stopEdges = options.compositor?.on((event) => event.event === "edge" && presenter.edge(event.inside));
   // An icon's menu opens on a surface of its own, so the pointer leaves the Dock: it stays out while the menu is up.
   const stopMenus = options.menus.subscribe(() => autohide.hold("menu", options.menus.getSnapshot().popover?.kind === "dock-menu"));
 
@@ -184,7 +192,10 @@ export function startDock(options: StartDockOptions): DockRuntime {
   const stopAsking = dockSign.asking.subscribe(() => autohide.hold("ask", dockSign.asking.getSnapshot()));
 
   return {
-    place: (output) => presenter.place(output),
+    place: (output, screens) => presenter.place(output, screens),
+    get screen() {
+      return presenter.screen;
+    },
     close() {
       stopAsking();
       stopMenus();

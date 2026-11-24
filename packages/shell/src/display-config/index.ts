@@ -26,5 +26,5 @@ export {
 export { toWire } from "./plan.ts";
 export { isRefreshChoice, type RefreshChoice } from "./refresh-policy.ts";
 export { DisplayStore } from "./saved.ts";
-export { scaleForMonitor } from "./scale.ts";
+export { type PortScales, ScreenScales, scaleForMonitor } from "./scale.ts";
 export type { Later } from "./steady.ts";

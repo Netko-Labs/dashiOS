@@ -28,6 +28,34 @@ const OutputConfig = obj({
   vrr: optional(literal("off", "on", "fullscreen")),
 });
 
+/** A spread of times, in milliseconds. */
+const Ms = obj({ mean: num(), max: num() }, { strict: false });
+
+/** One screen's frames over its last 10 s (`frame-stats`; decisions.md D510). */
+const ScreenFrames = obj(
+  {
+    output: str(),
+    drawnBy: str(),
+    shownBy: str(),
+    path: str(),
+    refreshMhz: num(),
+    vrr: bool(),
+    seconds: num(),
+    frames: num(),
+    late: num(),
+    missedVblanks: num(),
+    idle: num(),
+    failed: num(),
+    waited: num(),
+    composeMs: Ms,
+    commitMs: Ms,
+    gpuMs: nullable(Ms),
+    flipMs: Ms,
+    startMs: num(),
+  },
+  { strict: false },
+);
+
 export const SCREENS = {
   outputs: method("anyone", Nothing, OutputsShape),
   mirror: method("shell", obj({ output: str(), source: optional(nullable(str())) }), Done),
@@ -48,5 +76,10 @@ export const SCREENS = {
     map(obj({ gpus: lenientList(GpuShape) }, { strict: false }), ({ gpus }) => gpus),
   ),
   "gpu-keep": method("shell", obj({ card: str(), on: bool() }), Done),
+  "frame-stats": method(
+    "anyone",
+    Nothing,
+    map(obj({ screens: lenientList(ScreenFrames) }, { strict: false }), ({ screens }) => screens),
+  ),
   wallpaper: method("shell", Wallpaper, Done),
 };

@@ -6,7 +6,7 @@
 
 import type { Compositor } from "../compositor/index.ts";
 import { AutoRefresh, MirrorStore, rateOnPower } from "../display-config/index.ts";
-import { bottomInset } from "../dock/index.ts";
+import { bottomInset, dockSign } from "../dock/index.ts";
 import { startLostCardWatch } from "../graphics/index.ts";
 import { keepAwake, keepAwakeEntries } from "../inhibit/index.ts";
 import { type Laptop, laptopEntries, startLaptop } from "../laptop/index.ts";
@@ -220,9 +220,9 @@ export function startBarMenus(needs: MenusNeeds): BarMenus {
     // Search… in the Dashi menu (launcher.tsx).
     openSearch: () => late.get("launcher").show(),
     // Without a compositor the Dock cannot hear the pointer, so it never autohides (dock/presenter.ts).
-    // The Dock is on the primary screen only.
+    // The Dock is on one screen: the main display, or the one it followed the person to (D555).
     dockInset: (output) =>
-      output === undefined || output === late.get("menuBars").primaryName
+      output === undefined || output === (dockSign.place.getSnapshot()?.output ?? late.get("menuBars").primaryName)
         ? bottomInset({ ...dockPrefs.snapshot, autohide: dockPrefs.snapshot.autohide && compositor !== null })
         : 0,
     runDock: (action) => catalog.dock.run(action).catch((error) => console.error(`dashi-shell: Dock “${action.kind}” failed:`, error)),

@@ -3,6 +3,7 @@
 //! others), its gamma and identity (EDID).
 
 use super::*;
+use super::{report, stats};
 use crate::ipc::protocol::Event;
 
 pub(super) fn scan_connectors(state: &mut Dashi, node: DrmNode) {
@@ -139,6 +140,11 @@ fn connector_connected(
                 modes: connector.modes().to_vec(),
                 vrr,
                 feedback,
+                stats: stats::FrameStats::new(report::first_path(
+                    node,
+                    device.render_node,
+                    primary_gpu,
+                )),
             },
         );
         Some(output)

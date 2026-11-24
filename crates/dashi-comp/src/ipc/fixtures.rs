@@ -122,6 +122,7 @@ fn windows_and_screens(into: &mut BTreeMap<&'static str, Value>) {
     example!(into, "power", Power, json!({ "on": false, "output": "eDP-1" }), Done, none.clone());
     example!(into, "gamma", Gamma, json!({ "red": 1, "green": 0.8, "blue": 0.6 }), Done, none.clone());
     example!(into, "gpus", Nothing, none.clone(), Gpus, json!({ "gpus": [{ "card": "card1", "open": true, "draws": true, "kept": false, "screens": ["eDP-1"], "buffers": 0, "answering": true }] }));
+    example!(into, "frame-stats", Nothing, none.clone(), FrameStats, json!({ "screens": [{ "output": "HDMI-A-1", "drawnBy": "card1", "shownBy": "card0", "path": "gpu-copy", "refreshMhz": 60000, "vrr": false, "seconds": 10.0, "frames": 598, "late": 2, "missedVblanks": 2, "idle": 3, "failed": 0, "waited": 0, "composeMs": { "mean": 1.25, "max": 4.5 }, "commitMs": { "mean": 0.25, "max": 0.5 }, "gpuMs": { "mean": 3.5, "max": 9.0 }, "flipMs": { "mean": 6.5, "max": 23.5 }, "startMs": 10.0 }] }));
     example!(into, "gpu-keep", GpuKeep, json!({ "card": "card0", "on": true }), Done, none.clone());
     example!(into, "wallpaper", WallpaperParams, json!({ "shader": "aurora", "fps": 30, "mode": "fill" }), Done, none);
 }

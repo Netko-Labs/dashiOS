@@ -6,11 +6,11 @@
 //! good; a dark screen still paces its clients (pace.rs).
 
 use super::pace::{dark_pace, schedule, unschedule};
+use super::queue::{queue, watch_fence};
 use super::watchdog::watch;
 use super::*;
 use crate::wakes::Woke;
 use flip::Vblank;
-use planes::Used;
 
 pub(super) fn render_device(state: &mut Dashi, node: DrmNode) {
     let crtcs = with_udev(state, |_, data| {
@@ -26,9 +26,13 @@ pub(super) fn render_device(state: &mut Dashi, node: DrmNode) {
 }
 
 /// What a turn of a screen's loop did.
-enum Turn {
-    /// A frame is queued: its vblank draws the next.
-    Queued,
+pub(super) enum Turn {
+    /// A frame is queued: its vblank draws the next. `watch`: set the
+    /// watchdog (flip.rs); `fence`: the frame's number and fence, to time the GPUs.
+    Queued {
+        watch: bool,
+        fence: Option<(u64, std::os::fd::OwnedFd)>,
+    },
     /// The display refused the frame: draw it again, another way (planes.rs), next frame.
     Refused,
     /// Nothing new, or it failed: look again in about a frame, or sleep
@@ -44,87 +48,18 @@ enum Turn {
 pub(super) fn render_screen(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle) {
     unschedule(state, node, crtc);
     set_asleep(state, node, crtc, false);
-    let outcome = with_udev(state, |state, data| -> Option<(Output, Turn)> {
-        let primary_gpu = data.primary_gpu;
-        let device = data.devices.get_mut(&node)?;
-        let render_node = device.render_node.unwrap_or(primary_gpu);
-        let screen = device.screens.get_mut(&crtc)?;
-        if screen.flip.is_queued() {
-            return None;
-        }
-        if !screen.powered {
-            return Some((screen.output.clone(), Turn::Dark));
-        }
-        let output = screen.output.clone();
-        let fullscreen = state.fullscreen_on(&output).is_some();
-        vrr::follow(screen, state.vrr_mode(&output), fullscreen);
-        let renderer = if render_node == primary_gpu {
-            data.gpus.single_renderer(&render_node)
-        } else {
-            data.gpus
-                .renderer(&primary_gpu, &render_node, screen.scanout.format())
-        };
-        let mut renderer = match renderer {
-            Ok(renderer) => renderer,
-            Err(error) => {
-                // Not a reason for the screen to stop for good: it tries again in a second.
-                tracing::warn!(?error, "no renderer for a screen");
-                return Some((output, Turn::Later));
-            }
-        };
-        let elements = render::output_elements(state, &mut renderer, &output, true);
-        let now = monotonic_now();
-        let flags = screen.planes.flags(now, || planes::scene(&elements));
-        let turn = match screen
-            .scanout
-            .render_frame(&mut renderer, &elements, BACKGROUND, flags)
-        {
-            Ok(result) if !result.is_empty => {
-                let used = Used::of(&result);
-                match screen.scanout.queue_frame(Some(state.after_render(
-                    &output,
-                    &result.states,
-                    screen.feedback.as_ref().map(|f| (&f.render, &f.scanout)),
-                ))) {
-                    Ok(()) => {
-                        if let Some(recovered) = screen.planes.taken(now) {
-                            planes::tell_recovered(&output, &recovered);
-                        }
-                        if screen.flip.queue(now) {
-                            watch(&state.loop_handle, node, crtc);
-                        }
-                        Turn::Queued
-                    }
-                    Err(error) if planes::refused(&error) => {
-                        let refusal = screen.planes.refused(now, used, planes::scene(&elements));
-                        planes::tell_refused(&output, &refusal, used, &error);
-                        Turn::Refused
-                    }
-                    // Waiting out a stalled flip, the commits fail (busy) each frame: once is enough.
-                    Err(error) if screen.flip.is_stalled() => {
-                        tracing::debug!(?error, "queueing a frame");
-                        Turn::Idle
-                    }
-                    Err(error) => {
-                        tracing::warn!(?error, "queueing a frame");
-                        Turn::Idle
-                    }
-                }
-            }
-            Ok(_) => Turn::Idle,
-            Err(error) => {
-                tracing::warn!(?error, "drawing a frame");
-                Turn::Idle
-            }
-        };
-        Some((output, turn))
-    })
-    .flatten();
+    let outcome = with_udev(state, |state, data| draw(state, data, node, crtc)).flatten();
     let Some((output, turn)) = outcome else {
         return;
     };
     match turn {
-        Turn::Queued => {
+        Turn::Queued { watch: set, fence } => {
+            if set {
+                watch(&state.loop_handle, node, crtc);
+            }
+            if let Some((frame, fence)) = fence {
+                watch_fence(state, node, crtc, frame, fence);
+            }
             stir(state, node, crtc);
             state.send_frames(&output);
         }
@@ -153,6 +88,65 @@ pub(super) fn render_screen(state: &mut Dashi, node: DrmNode, crtc: crtc::Handle
     }
 }
 
+/// One turn of a screen's loop: draw it if anything changed, and queue the frame.
+fn draw(
+    state: &mut Dashi,
+    data: &mut UdevData,
+    node: DrmNode,
+    crtc: crtc::Handle,
+) -> Option<(Output, Turn)> {
+    let primary_gpu = data.primary_gpu;
+    let measure = report::reporting(data);
+    let device = data.devices.get_mut(&node)?;
+    let render_node = device.render_node.unwrap_or(primary_gpu);
+    let screen = device.screens.get_mut(&crtc)?;
+    if screen.flip.is_queued() {
+        return None;
+    }
+    let output = screen.output.clone();
+    if !screen.powered {
+        return Some((output, Turn::Dark));
+    }
+    let fullscreen = state.fullscreen_on(&output).is_some();
+    vrr::follow(screen, state.vrr_mode(&output), fullscreen);
+    let renderer = if render_node == primary_gpu {
+        data.gpus.single_renderer(&render_node)
+    } else {
+        data.gpus
+            .renderer(&primary_gpu, &render_node, screen.scanout.format())
+    };
+    let mut renderer = match renderer {
+        Ok(renderer) => renderer,
+        Err(error) => {
+            // Not a reason for the screen to stop for good: it tries again in a second.
+            tracing::warn!(?error, "no renderer for a screen");
+            return Some((output, Turn::Later));
+        }
+    };
+    let elements = render::output_elements(state, &mut renderer, &output, true);
+    let now = monotonic_now();
+    screen.stats.drawing(now, frame_time(&output));
+    let flags = screen.planes.flags(now, || planes::scene(&elements));
+    let rendered = screen
+        .scanout
+        .render_frame(&mut renderer, &elements, BACKGROUND, flags);
+    let took = monotonic_now().saturating_sub(now);
+    screen.stats.drawn(took, copy_path::take_seen());
+    let turn = match rendered {
+        Ok(result) if !result.is_empty => queue(state, screen, &output, &elements, result, measure),
+        Ok(_) => {
+            screen.stats.idle();
+            Turn::Idle
+        }
+        Err(error) => {
+            screen.stats.failed();
+            tracing::warn!(?error, "drawing a frame");
+            Turn::Idle
+        }
+    };
+    Some((output, turn))
+}
+
 /// A vblank: the queued frame is on screen; its clients hear when. Draw the
 /// next a little before the following one.
 pub(super) fn frame_finished(
@@ -162,16 +156,21 @@ pub(super) fn frame_finished(
     metadata: Option<DrmEventMetadata>,
 ) {
     state.wakes.frame_turn();
-    let output = with_udev(state, |_, data| {
-        let screen = data.devices.get_mut(&node)?.screens.get_mut(&crtc)?;
+    let start = with_udev(state, |_, data| {
+        let reporting = report::reporting(data);
+        let drawn_by = report::drawing_card(data);
+        let device = data.devices.get_mut(&node)?;
+        let shown_by = device.card.clone();
+        let screen = device.screens.get_mut(&crtc)?;
         let (time, seq) = vblank_time(metadata);
         if screen.flip.vblank(time) == Vblank::Stale {
             tracing::debug!(output = screen.output.name(), "a given-up frame's vblank");
             return None;
         }
+        let frame = frame_time(&screen.output);
         match screen.scanout.frame_submitted() {
             Ok(Some(Some(mut feedback))) => {
-                let refresh = Refresh::fixed(frame_time(&screen.output));
+                let refresh = Refresh::fixed(frame);
                 let flags = wp_presentation_feedback::Kind::Vsync
                     | wp_presentation_feedback::Kind::HwClock
                     | wp_presentation_feedback::Kind::HwCompletion;
@@ -180,12 +179,21 @@ pub(super) fn frame_finished(
             Ok(_) => {}
             Err(error) => tracing::debug!(?error, "frame submitted"),
         }
-        Some(screen.output.clone())
+        let vrr = screen
+            .scanout
+            .with_compositor(|compositor| compositor.vrr_enabled());
+        screen.stats.shown(time, frame, vrr);
+        if let Some(closed) = screen.stats.roll(monotonic_now())
+            && reporting
+        {
+            report::log(screen, &closed, &drawn_by, &shown_by);
+        }
+        // Leave the clients most of the frame to draw, then compose (pacing.rs).
+        Some(screen.stats.pacing.start(frame))
     })
     .flatten();
-    let Some(output) = output else { return };
-    // Leave the clients most of the frame to draw, then compose.
-    schedule(state, node, crtc, frame_time(&output).mul_f64(0.6));
+    let Some(start) = start else { return };
+    schedule(state, node, crtc, start);
 }
 
 /// How often a sleeping screen still looks (and paces its clients' frame callbacks).
@@ -260,7 +268,7 @@ fn vblank_time(metadata: Option<DrmEventMetadata>) -> (Duration, u64) {
     }
 }
 
-fn frame_time(output: &Output) -> Duration {
+pub(super) fn frame_time(output: &Output) -> Duration {
     let refresh = output
         .current_mode()
         .map(|mode| mode.refresh)

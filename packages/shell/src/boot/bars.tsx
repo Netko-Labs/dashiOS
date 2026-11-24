@@ -4,10 +4,12 @@
  * keeps the bar's menus up, and what Restart and Shut Down say while they wait.
  */
 
+import { placedScreens } from "../active-screen.ts";
 import { joinShellMenus } from "../applets/index.ts";
 import { appFor } from "../apps.ts";
 import type { Compositor } from "../compositor/index.ts";
 import { AnimationTargets, dockScreen, startDock, TileStore } from "../dock/index.ts";
+import { screenAt } from "../layout.ts";
 import { type BarPill, barHold, MenuBar, MenuBars, startBarTips } from "../menubar/index.ts";
 import type { Menus } from "../menus/index.ts";
 import type { NotifyInput } from "../notifications/index.ts";
@@ -148,6 +150,8 @@ export function startBars(needs: BarsNeeds): MenuBars {
     compositor,
     onLost: (output) => void primaryHostLost(output),
     reduceMotion: () => needs.look.state.reduceMotion,
+    // The Dock follows the person to the screen whose bottom edge the pointer rests on (D555).
+    ...(compositor ? { pointerScreen: () => pointerScreen(compositor) } : {}),
   });
   services.add("dock", () => dockRuntime.close());
   dockRuntime.place(needs.primaryScreen);
@@ -158,7 +162,7 @@ export function startBars(needs: BarsNeeds): MenuBars {
         catalog: catalog.catalog,
         tiles: dockTiles,
         placement: async () => {
-          const screen = dockScreen(await compositor.outputs(), menuBars.primaryName ?? needs.primaryScreen);
+          const screen = dockScreen(await compositor.outputs(), dockRuntime.screen ?? menuBars.primaryName ?? needs.primaryScreen);
           return screen ? { screen, style: stores.dockPrefs.snapshot.style } : null;
         },
       }).start()
@@ -177,7 +181,7 @@ export function startBars(needs: BarsNeeds): MenuBars {
   function followScreens(names: string[]): void {
     menuBars.sync(names, screens.mainDisplay);
     const primary = menuBars.primaryName;
-    if (primary !== null) dockRuntime.place(primary);
+    if (primary !== null) dockRuntime.place(primary, names);
   }
 
   // One bar per screen, all of the same MenuBar. The primary's host dying with
@@ -205,6 +209,12 @@ export function startBars(needs: BarsNeeds): MenuBars {
   state.xwaylandScaling = compositor ? startXwaylandScaling({ compositor, choice: () => state.xwaylandChoice }) : null;
   services.add("xwayland-scale", () => state.xwaylandScaling?.stop());
   return menuBars;
+}
+
+/** The screen under the pointer now, if the compositor says. */
+async function pointerScreen(compositor: Pick<Compositor, "outputs" | "session">): Promise<string | undefined> {
+  const [outputs, session] = await Promise.all([compositor.outputs().catch(() => []), compositor.session().catch(() => null)]);
+  return session?.pointer ? (screenAt(session.pointer, placedScreens(outputs)) ?? undefined) : undefined;
 }
 
 /** One screen's menu bar; the primary's host also reports the windows. */

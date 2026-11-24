@@ -231,7 +231,8 @@ export function chooseCaptureScreen(outputs: readonly Output[], options: { near?
   return chosen ? { output: chosen.name, origin: { x: chosen.frame.x, y: chosen.frame.y } } : { origin: { x: 0, y: 0 } };
 }
 
-/** The screen a capture goes on: the one holding `near` (its window's frame), else the primary. */
+/** The screen a capture goes on: the one holding `near` (the pointer, or a window's frame), else the main display. */
 export function captureScreenNear(outputs: readonly Output[], near: Area | null): CaptureScreen {
-  return chooseCaptureScreen(outputs, { near, prefer: choosePrimary(screensOf(outputs).map((screen) => screen.name)) });
+  const main = outputs.find((each) => each.primary && each.frame)?.name ?? choosePrimary(screensOf(outputs).map((screen) => screen.name));
+  return chooseCaptureScreen(outputs, { near, prefer: main });
 }

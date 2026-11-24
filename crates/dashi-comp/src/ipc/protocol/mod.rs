@@ -6,6 +6,7 @@
 //! with its shapes (H9).
 
 mod events;
+mod frames;
 mod make;
 mod numbers;
 mod output;
@@ -16,6 +17,7 @@ mod window;
 pub(crate) use events::{
     Bottom, Control, Event, Grab, Placing, Position, ScreenEdge, SuperPhase, Swipe, SwipePhase,
 };
+pub(crate) use frames::{FrameStats, ScreenFrames, Spread as FrameSpread};
 pub(crate) use make::Asked;
 pub(crate) use numbers::{Coord, Count, Finite, Int, Millis, Pid, Real, Wide, WindowId};
 pub(crate) use output::{Gpu, Gpus, Mode, ModeInfo, Output, Outputs, Rotation, Vrr};
