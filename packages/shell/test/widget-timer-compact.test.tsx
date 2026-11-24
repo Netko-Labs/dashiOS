@@ -21,7 +21,12 @@ async function tree(size: "compact" | "small"): Promise<string> {
   const env = { hub: { timers } as unknown as WidgetHub, now: 0, hour24: true, tally: QUIET, inks, locked: false, placedKinds: [], open() {} };
   const root = render(
     <WidgetEnvProvider value={env}>
-      <Card look={{ inks, ink: "wakame", air: false, houseDown: false, redact: false }} width={172} height={size === "compact" ? 80 : 172} compact={size === "compact"}>
+      <Card
+        look={{ inks, ink: "wakame", air: false, houseDown: false, redact: false }}
+        width={172}
+        height={size === "compact" ? 80 : 172}
+        compact={size === "compact"}
+      >
         <TimerWidget size={size} />
       </Card>
     </WidgetEnvProvider>,

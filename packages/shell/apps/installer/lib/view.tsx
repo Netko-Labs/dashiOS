@@ -25,10 +25,12 @@ export const INSTALLER_SIZE = { width: 720, height: 600 };
 export const INSTALLER_LEAST = { width: 600, height: 480 };
 
 /**
- * The frame's measures (its sides are the kit's `WIZARD_PAGE.inset`, as Setup's): the mark on the welcome and
- * on the other pages, and the room above the head without window controls.
+ * The frame's measures: the mark on the welcome and on the other pages, and
+ * the room above the head without window controls.
  * A line under a card starts where Settings' captions do (`Caption`), 10 in.
  */
+/** The page's sides: the kit's wizard inset. */
+const SIDE = WIZARD_PAGE.inset;
 const FRAME = { mark: 72, smallMark: 40, top: SPACE.sheet, caption: SPACE.gap } as const;
 
 interface PageProps {
@@ -51,7 +53,7 @@ function Frame({ page, children, footer }: { page: Page; children: ReactNode; fo
           alignItems: "center",
           gap: SPACE.s,
           paddingTop: controls ? SPACE.xs : FRAME.top,
-          paddingHorizontal: WIZARD_PAGE.inset,
+          paddingHorizontal: SIDE,
         }}
       >
         {/* The mark in ink: a logo never wears the accent (CO-2). */}
@@ -65,14 +67,7 @@ function Frame({ page, children, footer }: { page: Page; children: ReactNode; fo
       </View>
       <ScrollView
         testID={`installer-page:${page}`}
-        style={{
-          flex: 1,
-          flexDirection: "column",
-          gap: SPACE.button,
-          paddingHorizontal: WIZARD_PAGE.inset,
-          paddingTop: SPACE.sheet,
-          paddingBottom: SPACE.inset,
-        }}
+        style={{ flex: 1, flexDirection: "column", gap: SPACE.button, paddingHorizontal: SIDE, paddingTop: SPACE.sheet, paddingBottom: SPACE.inset }}
       >
         {children}
       </ScrollView>
@@ -85,7 +80,7 @@ function Frame({ page, children, footer }: { page: Page; children: ReactNode; fo
           alignItems: "center",
           justifyContent: "flex-end",
           gap: SPACE.m,
-          paddingHorizontal: WIZARD_PAGE.inset,
+          paddingHorizontal: SIDE,
           paddingTop: SPACE.inset,
           paddingBottom: SPACE.xl,
         }}

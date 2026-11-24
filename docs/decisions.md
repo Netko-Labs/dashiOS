@@ -8312,3 +8312,29 @@ short words, as the rulebook is written.
 - **Cost:** in Light the sunk field is lighter than its card, not darker (CO-8 speaks of the app
   look); it is the same as the lists Settings sinks already.
 - **Undo:** drop the provider in `shared/cards/cards.tsx`; pass `look="window"` to the pickers.
+
+### D682. The widget gallery stays on a narrow screen: its list gives way, then its place
+
+- **Date:** 2026-11-24. The `design-finish` agent's (W8; LA-3, VS-7).
+- **Question:** the gallery was 700 wide, 394 from the screen's right edge: it needs 1094
+  points, so a 1024-wide screen (1280 × 800 at 1.25, a VM at 1792 × 1344 at 1.75) cut it at its
+  left edge. Shrink it, move it, or lay it over the column?
+- **Choice:** `galleryPlace` (notifications/lib/place.ts) keeps it beside the column and narrows
+  it to the room there (`galleryFit`): the list gives way first, from 240 to at least 180, and the
+  previews never, so a whole Wide preview (356 and its ring) always fits. A screen too narrow even
+  for that (under 1015) moves it left over the column, 12 from the screen's left edge.
+- **Why:** the previews are what the gallery is for, and the list's names already end in an
+  ellipsis; covering the column only when there is no other way keeps what was added in sight.
+- **Cost:** on a very narrow screen the gallery covers part of the column (its Add · Done bar is
+  at the column's foot, under it; Esc still closes the gallery).
+- **Undo:** `galleryPlace` returns the old place (`right: 394`, 700 wide).
+
+### D683. The Timer at Compact says "Start one" in its head
+
+- **Date:** 2026-11-24. The `design-finish` agent's (W8).
+- **Question:** a Compact Timer with none running stacked its head (14), "Start one" (17) and two
+  26-tall buttons in 56 points of room, so the line slid under the buttons.
+- **Choice:** at Compact "Start one" is the head's right side (where a running timer says when
+  it ends), and the row under it is the buttons'. Small and up keep their own line.
+- **Why:** one row of cells has room for a head and one row of controls, not three rows.
+- **Undo:** from git (`widgets/lib/views/timer.tsx`).
