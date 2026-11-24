@@ -9,7 +9,7 @@
  */
 
 import { TextInput } from "@mirinjs/metal";
-import type { Look } from "./button.tsx";
+import type { Look } from "./button-measures.ts";
 import { RADIUS, SPACE, TYPE, useColors, useSurface } from "./theme/index.ts";
 
 /** The area's measures: a field's padding (TEXT_FIELD) and the least height of two lines and their padding. */

@@ -11,7 +11,7 @@
 
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { createContext, useContext } from "react";
-import type { Look } from "./button.tsx";
+import type { Look } from "./button-measures.ts";
 import type { Choice } from "./choices.tsx";
 import { useControlState } from "./control-state.tsx";
 import { CHEVRON_DOWN } from "./glyphs.ts";

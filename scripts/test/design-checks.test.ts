@@ -75,6 +75,8 @@ describe("H22 controls from the kit", () => {
     expect(kinds('function DoneButton() { return <Button label="Done" />; }')).toEqual([]);
     // A status built on the kit's Chip (D634): the agents' access chip, the bar's "Screen is being shared".
     expect(kinds('function AccessChip() { return <Chip label="Connected" tone="agent" />; }')).toEqual([]);
+    // The menu bar's item built on the kit's BarItem (UI-18).
+    expect(kinds('function AloneChip() { return <BarItem tone="agent" label="Stop" />; }')).toEqual([]);
   });
 });
 

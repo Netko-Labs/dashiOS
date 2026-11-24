@@ -15,7 +15,7 @@
 
 import { Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { Look } from "./button.tsx";
+import type { Look } from "./button-measures.ts";
 import { CLEAR as CLEAR_GLYPH, SEARCH } from "./glyphs.ts";
 import { useControlColors } from "./panel/index.ts";
 import { CLEAR, pill, RADIUS, SPACE, TYPE, useColors } from "./theme/index.ts";

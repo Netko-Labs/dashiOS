@@ -11,7 +11,7 @@
 
 import { View } from "@mirinjs/metal";
 import { useContext } from "react";
-import type { Look } from "./button.tsx";
+import type { Look } from "./button-measures.ts";
 import { ControlName } from "./control-name.ts";
 import { useControlState } from "./control-state.tsx";
 import { useControlColors } from "./panel/index.ts";

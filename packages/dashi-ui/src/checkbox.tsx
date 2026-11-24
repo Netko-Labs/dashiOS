@@ -8,7 +8,7 @@
  */
 
 import { Svg, Text, View } from "@mirinjs/metal";
-import type { Look } from "./button.tsx";
+import type { Look } from "./button-measures.ts";
 import { useControlState } from "./control-state.tsx";
 import { CHECK } from "./glyphs.ts";
 import { CLEAR, onOf, pill, RADIUS, SPACE, TYPE, useColors, useSurface } from "./theme/index.ts";

@@ -10,7 +10,7 @@
  */
 
 import { Svg, Text, TextInput, View } from "@mirinjs/metal";
-import type { Look } from "./button.tsx";
+import type { Look } from "./button-measures.ts";
 import { OPACITY, RADIUS, SPACE, TYPE, useColors, useSurface } from "./theme/index.ts";
 
 /** The field's measures (design.html "Text field"). */

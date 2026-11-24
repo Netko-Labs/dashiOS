@@ -5,7 +5,7 @@
  */
 
 import { Text, View } from "@mirinjs/metal";
-import type { Look } from "./button.tsx";
+import type { Look } from "./button-measures.ts";
 import { useControlState } from "./control-state.tsx";
 import { useControlColors } from "./panel/index.ts";
 import { RADIUS, TYPE, useColors, WEIGHT } from "./theme/index.ts";
