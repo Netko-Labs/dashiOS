@@ -25,6 +25,21 @@ export type GtkStatusColors = Pick<GtkNamedColors, `${GtkStatus}_${"bg" | "fg"}_
  * (`accent_color`, `warning_color`, ...) from these, darker on light and
  * lighter on dark, so they are not set here.
  */
+/**
+ * The window lights as the compositor paints them (comp/src/theme.rs), for
+ * GTK's own title bars (shell/src/appearance/lib/gtk-css.ts): close,
+ * minimize and zoom in both modes, and an unfocused window's lights a step
+ * stronger than comp's `control_inactive` (#CECBC6 / #525256), since
+ * libadwaita fades an unfocused headerbar to half.
+ */
+export const WINDOW_LIGHTS = {
+  close: "#D0596F",
+  minimize: "#E5B13F",
+  zoom: "#4A9A7E",
+  inactiveLight: "#B9B5AD",
+  inactiveDark: "#66666C",
+} as const;
+
 export const GTK_STATUS: GtkStatusColors = {
   accent_bg_color: lightColors.selection,
   accent_fg_color: "#ffffff",

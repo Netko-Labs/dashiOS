@@ -250,6 +250,7 @@ export {
   useTextSize,
   useType,
   WEIGHT,
+  WINDOW_LIGHTS,
 } from "./theme/index.ts";
 export { TILE_SIZE, Tile } from "./tile.tsx";
 export { TOOLTIP_DELAY_MS, type Tooltip, TooltipLayer, tooltipOrigin, useTooltip, useWindowLayer } from "./tooltip.tsx";
