@@ -11,7 +11,7 @@
 
 import { Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import type { Look } from "./button.tsx";
+import type { Look } from "./button-measures.ts";
 import { useControlColors } from "./panel/index.ts";
 import { CLEAR, OPACITY, SPACE, TYPE, useColors, WEIGHT } from "./theme/index.ts";
 
