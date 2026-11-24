@@ -1128,8 +1128,13 @@ plan server and prints each CLI's output):
      prompt (Dashi's words first) on stdin as `-`; a follow-up is `exec …
      resume <thread_id> -`. Output: JSONL, `thread.started` (`thread_id`),
      `item.completed` (`agent_message`), `turn.failed`/`error`.
-   - OpenCode (from its docs; not yet run): `opencode run --format json
-     --agent dashi-plan [--session <id>] -- <prompt>` with its config in
+   - OpenCode (`agents/ask/harness/opencode.ts`, the one command line for
+     plan mode, hand-offs and the assistant; decisions.md D691): `opencode
+     run [--standalone --archived] --format json --agent dashi-plan
+     [--session <id>] -- <prompt>`, the two flags for OpenCode 2 (asked
+     `--version` before a turn, once per install): a private server inside
+     the sandbox, never the person's background service, and Dashi's turns
+     out of their session list. Its config in
      `OPENCODE_CONFIG_CONTENT`: the `dashi` server (`type: local`), tools
      `{"*": false, "dashi_*": true}`, `permission` denying edits, shell and
      fetches, and a `dashi-plan` agent with Dashi's prompt. Output: JSON
@@ -1221,17 +1226,15 @@ restarts"), `test/agents-mcp-relay.test.ts` (the bridge connecting again).
     --skip-git-repo-check --sandbox read-only --ignore-user-config` with the
     shell tool and web search off and `mcp_servers.dashi` approved, the
     prompt on stdin as `-`; a follow-up is `exec … resume <thread_id> -`.
-  - OpenCode (checked against opencode 1.19.5's `--help`; run in the VM with
-    no account, it makes its session with the `dashi-task` agent and its free
-    model's limit stops it, printing no JSON event and not exiting; never run
-    signed in): `opencode run --format json
-    --agent dashi-task [--session <id>] -- <prompt>`, its config in
+  - OpenCode (opencode.ts, as plan mode runs it; OpenCode 2 run end to end
+    in the VM, D691): `opencode run [--standalone --archived] --format json
+    --agent dashi-task [--model <m>] [--session <id>] -- <prompt>`, its config in
     `OPENCODE_CONFIG_CONTENT` (only `dashi_*` tools; edits, shell and
     fetches denied).
   A turn that prints no event for 30 s is stuck (`quiet.ts`): its card asks,
   in plain words from its errors and whether it is signed in, "OpenCode
-  isn't signed in" (with what to type in Terminal), "… is at its limit" or
-  "… isn't answering", with Sign In… (opens Terminal and stops the run) and
+  isn’t signed in" (with what to type in Terminal), "… is at its limit" or
+  "… isn’t answering", with Sign In… (opens Terminal and stops the run) and
   Keep Waiting (asks again 30 s later), the card's Stop under them. A run that ends with a
   sign-in or limit error says so the same way.
   Their events become steps (`stream.ts`): the session, each tool call in

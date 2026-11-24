@@ -8357,3 +8357,46 @@ short words, as the rulebook is written.
 - **Cost:** a private server starts for each turn (well under a second on the laptop); an OpenCode
   older than 2 has no `--standalone` and refuses the turn (the installer gives 2.x).
 - **Undo:** drop the two flags in `agents/ask/harness/catalog.ts`.
+
+### D691. One place says how Dashi runs OpenCode, by the version the program says it is
+
+- **Date:** 2026-11-24. `v10/opencode-v2`.
+- **Question:** D690 put `--standalone --archived` in plan mode's command line only. The launcher's
+  assistant and hand-offs build their own (`handoff/lib/commands.ts`, which the assistant takes), so the
+  installed 0.10 still ended every OpenCode 2 question with "Location not found". And OpenCode 1 (1.19,
+  which `opencode.ai/install` still gives) has neither flag.
+- **Decision:** `agents/ask/harness/opencode.ts` builds the one `opencode run` (Dashi's agent in
+  `OPENCODE_CONFIG_CONTENT`, every tool off but `dashi_*`) for plan mode (`dashi-plan`), hand-offs and the
+  assistant (`dashi-task`). Before a turn the found program is asked `--version` (`version.ts`): once per
+  file, kept by its path, modified time, size and inode (OpenCode's installer gives every release the same
+  modified time), never at the shell's start, 3 s at most. 2.x gets `--standalone --archived`; 1.x runs
+  as before. A version that can't be told (no answer in time, words without a number) is taken as 2, the
+  current release and the one Dashi's install line gives (D692), and asked again next turn.
+- **Cost:** one `opencode --version` (about 50 ms) the first time a turn runs after an install or update.
+  An OpenCode 2 that doesn't answer `--version` in 3 s runs as 2, which is right; a 1.x that doesn't
+  would get flags it doesn't know.
+- **Undo:** from git (`agents/ask/harness/opencode.ts`, `version.ts`); `opencodeFlags` is the switch.
+
+### D692. Dashi's install line for OpenCode is opencode.ai's own, for the current release
+
+- **Date:** 2026-11-24. `v10/opencode-v2`.
+- **Question:** Settings › Agents said "Install it with `curl -fsSL https://opencode.ai/install | bash`".
+  That installer now gives OpenCode 1 only (it refuses a 2.x version and names `/v2/install`), so someone
+  following Dashi's line got the old release.
+- **Decision:** `curl -fsSL https://opencode.ai/v2/install | bash`. On 24 Nov 2026 opencode.ai's home
+  page and its docs both give exactly this line, and it installs 2.x (2.4.1 then) into
+  `~/.opencode/bin`, where Dashi already looks. OpenCode 1 still works when it is what is installed (D691).
+- **Cost:** when opencode.ai moves its installer again, the line goes stale until it is changed here.
+- **Undo:** `install` in `agents/ask/harness/opencode.ts`.
+
+### D693. A message that names a harness names it as Dashi shows it, with curly apostrophes
+
+- **Date:** 2026-11-24. `v10/opencode-v2`.
+- **Question:** the assistant said "opencode isn't installed." (the program's name, a straight
+  apostrophe) where plan mode and hand-offs said "OpenCode isn't installed."
+- **Decision:** every message that names a harness takes its display name (`ANSWERERS[id].name`), and
+  its apostrophes are curly (design.html VO-3): "OpenCode isn’t installed.", "… isn’t signed in",
+  "… isn’t answering", "OpenCode’s model is at its limit", "OpenCode’s configured provider",
+  "… didn’t answer.", "… can’t start without a session.", "Claude Code’s own default".
+- **Cost:** none; the rest of Dashi's straight apostrophes wait for VO-3's check.
+- **Undo:** from git.
