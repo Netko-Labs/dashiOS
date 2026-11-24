@@ -135,9 +135,9 @@ function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value
       </Group>
       {/* The printer's problem, under the card that holds it, in ume ink (PA-6). */}
       {printer && !printer.accepting && (
-        <Text testID="print:not-accepting" style={{ fontSize: TYPE.secondary.size, color: colors.critical }}>
-          This printer isn’t taking jobs right now.
-        </Text>
+        <View testID="print:not-accepting">
+          <Text style={{ fontSize: TYPE.secondary.size, color: colors.critical }}>This printer isn’t taking jobs right now.</Text>
+        </View>
       )}
       {twoSided && <Checkbox testID="print:two-sided" label="Two-sided" checked={choice.twoSided} onChange={(on) => update({ twoSided: on })} />}
       <MoreButton testID="print:more" open={more} more="More options" less="Fewer options" onPress={() => setMore(!more)} />
