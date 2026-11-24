@@ -1,5 +1,6 @@
 /** The sidebar's measures (docs/design.html, "Settings") and the two sums the window's layout needs from them. */
 
+import { SPACE } from "@dashi/ui";
 import type { Bounds } from "@mirinjs/metal";
 
 /** The sidebar's measures (docs/design.html, "Settings"). */
@@ -9,11 +10,12 @@ export const SIDEBAR = {
   bar: 46,
   /** The search pill: a toolbar field's height, so centred on the lights it keeps 5 under the window's top. */
   search: 28,
-  paddingTop: 5,
-  paddingX: 10,
-  paddingBottom: 10,
+  /** Above the top band: 5, so the search centred on the lights keeps its place. */
+  top: 5,
+  paddingX: SPACE.gap,
+  paddingBottom: SPACE.gap,
   row: 30,
-  rowGap: 1,
+  rowGap: SPACE.px,
   knob: 26,
   /** A group's label: 10.5 SemiBold, 7 over and 2 under. */
   label: 22,
@@ -33,8 +35,8 @@ export function sidebarListHeight(groups: readonly number[]): number {
  * lights the row is the whole band.
  */
 export function topBand(controls: Bounds | null): { row: number; below: number } {
-  const band = SIDEBAR.bar - SIDEBAR.paddingTop;
+  const band = SIDEBAR.bar - SIDEBAR.top;
   if (!controls) return { row: band, below: 0 };
-  const row = Math.max(Math.round(2 * (controls.y + controls.height / 2 - SIDEBAR.paddingTop)), SIDEBAR.search);
+  const row = Math.max(Math.round(2 * (controls.y + controls.height / 2 - SIDEBAR.top)), SIDEBAR.search);
   return { row, below: Math.max(band - row, 0) };
 }

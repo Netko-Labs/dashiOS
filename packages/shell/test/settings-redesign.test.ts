@@ -37,7 +37,7 @@ test("search: a pane's name first, then a row whose name starts with the words, 
 });
 
 test("search: every typed word must start a word, and the old pane names still find the renamed panes", () => {
-  expect(findSettings("wi fi")[0]).toMatchObject({ pane: "network", label: "Wi-Fi" });
+  expect(findSettings("wi fi")[0]).toMatchObject({ pane: "network", label: "Network" });
   expect(findSettings("network")[0]).toMatchObject({ pane: "network" });
   expect(findSettings("security")[0]).toMatchObject({ pane: "privacy", label: "Privacy" });
   expect(findSettings("accounts")[0]).toMatchObject({ pane: "users", label: "Users" });

@@ -23,14 +23,14 @@ describe("the reports' examples", () => {
     ["first run", "Setup Assistant"],
     ["ter", "Terminal"],
     ["term", "Terminal"],
-    ["wif", "Wi-Fi"],
-    ["wifi", "Wi-Fi"],
-    ["wi fi", "Wi-Fi"],
-    ["wi-fi", "Wi-Fi"],
+    ["wif", "Network"],
+    ["wifi", "Network"],
+    ["wi fi", "Network"],
+    ["wi-fi", "Network"],
     ["dark mode", "Appearance"],
     ["dark", "Appearance"],
     ["display", "Displays"],
-    ["language", "Language & Region"],
+    ["language", "Language & region"],
     ["fierfox", "Firefox"],
     ["firefx", "Firefox"],
     ["firefox", "Firefox"],
@@ -41,13 +41,13 @@ describe("the reports' examples", () => {
     ["tedit", "Text Editor"],
     ["files", "Files"],
     ["calc", "Calculator"],
-    ["tery", "Battery & Power"],
+    ["tery", "Battery & power"],
   ];
   for (const [query, expected] of First) test(`"${query}" finds ${expected} first`, () => expect(first(query)).toBe(expected));
 
-  test('"ter" no longer finds Battery & Power: a bare substring inside a word counts from four letters', () => {
-    expect(names("ter")).not.toContain("Battery & Power");
-    expect(names("tery")).toContain("Battery & Power");
+  test('"ter" no longer finds Battery & power: a bare substring inside a word counts from four letters', () => {
+    expect(names("ter")).not.toContain("Battery & power");
+    expect(names("tery")).toContain("Battery & power");
   });
 
   test('"set" puts the Setup Assistant last, under everything it ties with', () => {

@@ -6,6 +6,7 @@
  * known is left out, never made up.
  */
 
+import { SPACE } from "@dashi/ui";
 import { formatWatts, statusLine } from "../../battery/panel-numbers.ts";
 import type { Placed } from "../../control-center/layout.ts";
 import { type Monitor, monitorLabel, refreshLabel, sizeLabel, uprightSize } from "../../display-config/monitors.ts";
@@ -125,24 +126,24 @@ export function scaleOffer(choices: readonly number[], current: number, count = 
 }
 
 /** The miniature of the panel: 300 wide, 10 in, tiles 7 apart, rows 44. */
-export const MINIATURE = { width: 300, padding: 10, gap: 7, row: 44, columns: 4 } as const;
+export const MINIATURE = { width: 300, padding: SPACE.gap, tileGap: 7, row: 44, columns: 4 } as const;
 
-const MINI_COLUMN = (MINIATURE.width - 2 * MINIATURE.padding - (MINIATURE.columns - 1) * MINIATURE.gap) / MINIATURE.columns;
+const MINI_COLUMN = (MINIATURE.width - 2 * MINIATURE.padding - (MINIATURE.columns - 1) * MINIATURE.tileGap) / MINIATURE.columns;
 
 /** Where a placed tile sits in the miniature, from its top left. */
 export function miniatureFrame(tile: Pick<Placed, "col" | "row" | "cols" | "rows">): { left: number; top: number; width: number; height: number } {
   return {
-    left: Math.round(tile.col * (MINI_COLUMN + MINIATURE.gap)),
-    top: tile.row * (MINIATURE.row + MINIATURE.gap),
-    width: Math.round(tile.cols * MINI_COLUMN + (tile.cols - 1) * MINIATURE.gap),
-    height: tile.rows * MINIATURE.row + (tile.rows - 1) * MINIATURE.gap,
+    left: Math.round(tile.col * (MINI_COLUMN + MINIATURE.tileGap)),
+    top: tile.row * (MINIATURE.row + MINIATURE.tileGap),
+    width: Math.round(tile.cols * MINI_COLUMN + (tile.cols - 1) * MINIATURE.tileGap),
+    height: tile.rows * MINIATURE.row + (tile.rows - 1) * MINIATURE.tileGap,
   };
 }
 
 /** The miniature's height for the placed tiles, its padding included. */
 export function miniatureHeight(placed: readonly Pick<Placed, "row" | "rows">[]): number {
   const rows = Math.max(0, ...placed.map((tile) => tile.row + tile.rows));
-  return 2 * MINIATURE.padding + (rows === 0 ? 0 : rows * MINIATURE.row + (rows - 1) * MINIATURE.gap);
+  return 2 * MINIATURE.padding + (rows === 0 ? 0 : rows * MINIATURE.row + (rows - 1) * MINIATURE.tileGap);
 }
 
 /** An applet's controls, as Settings › Control Center lists them: "Lid light · Fans · CPU", and how many. */

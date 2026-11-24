@@ -6,16 +6,19 @@
  * `region`).
  */
 
+import { SPACE, TYPE } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { LocalePickers } from "../../../region/pickers.tsx";
 import { describeFailure, type RegionStore, useRegion } from "../../../region/store.ts";
 import { Caption, Group } from "../../../shared/cards/index.ts";
+import { paneTitle } from "../../../shared/settings/index.ts";
 import { firstDayIndex, previewFormats, useClockPrefs, useMinuteClock, weekdayNames } from "../../../shared/time/index.ts";
 import { useColors } from "../../colors.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
 import { Page } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";
+import { Failure } from "./parts.tsx";
 
 export function LanguageRegionPane({ region, settings }: { region: RegionStore; settings: SettingsStore }) {
   const colors = useColors();
@@ -28,7 +31,7 @@ export function LanguageRegionPane({ region, settings }: { region: RegionStore; 
   const preview = previewFormats(prefs, now);
   const days = weekdayNames(prefs.locale, firstDayIndex(prefs.locale, chosen.firstWeekday));
   return (
-    <Page title="Language & Region">
+    <Page title={paneTitle("language-region")}>
       <Group>
         <Setting id="language-region/language" detail={`Language: ${language?.label ?? state.language ?? "not set"} · Formats: ${formatsLabel}`}>
           <LocalePickers
@@ -44,21 +47,17 @@ export function LanguageRegionPane({ region, settings }: { region: RegionStore; 
       <Group>
         <Setting id="language-region/first-day-of-week" stack={false} control="region-first-day" />
         <Setting id="language-region/formats">
-          <View testID="region-preview" style={{ flexDirection: "column", gap: 3 }}>
-            <Text style={{ fontSize: 12, color: colors.text }}>{`${preview.date}, ${preview.time}`}</Text>
-            <Text style={{ fontSize: 12, color: colors.text }}>{preview.number}</Text>
+          <View testID="region-preview" style={{ flexDirection: "column", gap: SPACE.xxs }}>
+            <Text style={{ fontSize: TYPE.panel.body.size, color: colors.text }}>{`${preview.date}, ${preview.time}`}</Text>
+            <Text style={{ fontSize: TYPE.panel.body.size, color: colors.text }}>{preview.number}</Text>
             <View testID="region-week">
-              <Text style={{ fontSize: 12, color: colors.textMuted }}>{days.join("  ")}</Text>
+              <Text style={{ fontSize: TYPE.panel.body.size, color: colors.textMuted }}>{days.join("  ")}</Text>
             </View>
           </View>
         </Setting>
       </Group>
       {state.busy === "language" && <Caption>Changing it. If a password sheet appears, enter your password there.</Caption>}
-      {state.error !== null && (
-        <View testID="region-error" style={{ flexShrink: 0, paddingHorizontal: 10 }}>
-          <Text style={{ fontSize: 11, color: colors.critical }}>{describeFailure(state.error)}</Text>
-        </View>
-      )}
+      {state.error !== null && <Failure testID="region-error">{describeFailure(state.error)}</Failure>}
       <Caption>
         The language applies to apps you open after you log in again. Dashi's own menus are English for now. Region formats apply to apps you open from now on.
       </Caption>
