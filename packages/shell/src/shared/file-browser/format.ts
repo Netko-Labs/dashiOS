@@ -96,6 +96,13 @@ export function statusLine(total: number, selected: readonly { size: number; kin
 export function formatPlace(folder: string, home: string): string {
   if (folder === home) return "Home";
   if (folder === "/") return "Computer";
-  if (home !== "/" && folder.startsWith(`${home}/`)) return ["Home", ...folder.slice(home.length + 1).split("/").filter(Boolean)].join(" › ");
+  if (home !== "/" && folder.startsWith(`${home}/`))
+    return [
+      "Home",
+      ...folder
+        .slice(home.length + 1)
+        .split("/")
+        .filter(Boolean),
+    ].join(" › ");
   return folder;
 }

@@ -58,7 +58,8 @@ function WindowButton({
       onPress={disabled ? undefined : onPress}
       onPointer={state.onPointer}
       style={{
-        ...(fill ? { flex: 1 } : { minWidth: small ? 0 : m.least }),
+        // Never narrower than its words: a short row (a toolbar at 1024 pt) gives way elsewhere, never "To…".
+        ...(fill ? { flex: 1 } : { minWidth: small ? 0 : m.least, flexShrink: 0 }),
         height: small ? m.smallHeight : m.height,
         paddingHorizontal: small ? m.smallInset : m.inset,
         borderRadius: RADIUS.control,

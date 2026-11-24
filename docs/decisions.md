@@ -8416,3 +8416,36 @@ short words, as the rulebook is written.
   minimized, hidden or full-screen window can't take a tile, and `tile_window` now says so as an
   error instead of "is arranged" (`agents/lib/run/run-windows.ts`).
 - **Undo:** from git (`arrange/arrange.ts` `frameOf`, `run-windows.ts`).
+
+### D700. A window-look button never shrinks below its words
+
+- **Date:** 2026-11-24. `v10/fix-installed` (the installed pass: Calendar's Today read "To…" in a
+  half tile on a 1024-pt screen).
+- **Choice:** `@dashi/ui`'s window-look `Button` keeps `flexShrink: 0` unless it fills its row, as the
+  panel look already did: a short toolbar gives way at its title, never inside a button's label
+  (`dashi-ui/src/button.tsx`; `kit-controls.test.tsx`).
+- **Cost:** a row of buttons wider than its room now overflows instead of cutting labels; rows that can
+  be that narrow wrap (the alert's) or have a title that gives way (a toolbar's).
+- **Undo:** drop `flexShrink: 0`.
+
+### D701. The chooser's Cancel and Open sit on a strip of their own
+
+- **Date:** 2026-11-24. `v10/fix-installed` (the installed pass, P3).
+- **Question:** the listing was cut at its edge, as a scroll view is, but its last row's icons showed
+  and their names fell under Cancel and Open, with no edge between them: the names looked hidden by
+  the buttons.
+- **Choice:** the footer is a strip under a hairline (`separator`), padded like the listing, in both
+  forms (`ChooserSheet`, `ChooserView`): the listing ends at a visible edge.
+- **Undo:** from git (`shared/file-browser/chooser-view.tsx` `FooterStrip`).
+
+### D702. Small fixes from the installed pass, each with a test
+
+- **Date:** 2026-11-24. `v10/fix-installed`.
+- Get Info's Where names the folder in words (`formatPlace`: "Home", "Home › Documents", "Computer"),
+  in Files and Preview: a bare `~` read as a dash.
+- The This Computer widget without a battery wraps "No battery: it runs on the wall." onto two lines,
+  and says "No battery" at Compact.
+- Components' "Pick rows, months and forms" is "Picks, months and forms": every page name keeps to
+  the longest that showed whole in the 200-wide sidebar (25 characters).
+- A slider's stops are named "15%" (a level from 0 to 1) or at the step's places, never
+  "0.15000000000000002" (`notchLabel`, `slider-math.ts`; Control Center's ink slider too).

@@ -4,8 +4,8 @@ import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { itemRows } from "../apps/files/lib/views/sheets.tsx";
 import { infoRows } from "../apps/preview/lib/views/sheets.tsx";
-import { formatPlace } from "../src/shared/file-browser/format.ts";
 import { firstChoice, InfoSheet, type OpenWithChoice, OpenWithSheet } from "../src/shared/file-browser/file-sheets.tsx";
+import { formatPlace } from "../src/shared/file-browser/format.ts";
 import { settle } from "./support/time.ts";
 
 function mount(element: ReactElement) {

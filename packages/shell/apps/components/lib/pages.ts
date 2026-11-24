@@ -47,7 +47,7 @@ export const PAGES: readonly Page[] = [
   { id: "lists", label: "Sidebars and tables", section: "Controls" },
   { id: "notices", label: "Notices and empty states", section: "Controls" },
   { id: "states", label: "Errors, empty and loading", section: "Controls" },
-  { id: "picks", label: "Pick rows, months and forms", section: "Controls" },
+  { id: "picks", label: "Picks, months and forms", section: "Controls" },
   { id: "apps", label: "Tabs, keys and text", section: "Controls" },
   { id: "panel", label: "The panel look", section: "Controls" },
   { id: "tinted", label: "Tinted looks and the bar", section: "Controls" },

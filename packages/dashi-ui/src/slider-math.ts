@@ -64,9 +64,23 @@ export function keyValues(range: SliderRange): number[] {
   const span = max - min;
   const stride = step > 0 ? step * Math.max(1, Math.ceil(span / step / (KEY_NOTCHES - 1))) : span / (KEY_NOTCHES - 1);
   const count = Math.floor(span / stride + 1e-9);
-  const values = Array.from({ length: count + 1 }, (_, index) => valueAt((index * stride) / span, range));
+  // A free slider's notches lose a float's noise (0.15000000000000002 is 0.15).
+  const values = Array.from({ length: count + 1 }, (_, index) => clean(valueAt((index * stride) / span, range)));
   if (values.at(-1) !== max) values.push(max);
   return values;
+}
+
+/** `value` without a float's noise: twelve significant digits are more than any setting holds. */
+const clean = (value: number): number => Number(value.toPrecision(12));
+
+/**
+ * What a screen reader says for a notch: a level from 0 to 1 as a percent
+ * ("15%"), anything else as its number at the step's places, never
+ * "0.30000000000000004".
+ */
+export function notchLabel(value: number, range: SliderRange): string {
+  if (range.min === 0 && range.max === 1 && range.step <= 0) return `${Math.round(value * 100)}%`;
+  return String(range.step > 0 ? Number(value.toFixed(places(range.step))) : clean(value));
 }
 
 /** Where in `values` the one nearest `value` is: the arrows step on from there. */

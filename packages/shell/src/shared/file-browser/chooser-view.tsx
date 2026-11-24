@@ -15,7 +15,7 @@
 import { existsSync } from "node:fs";
 import { AppWindow, SHEET_MARGIN, Sheet, SPACE, useColors, useSurface } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
-import { useEffect, useMemo } from "react";
+import { type ReactNode, useEffect, useMemo } from "react";
 import type { ChooserRequest } from "../files/index.ts";
 import { Listing } from "./browser.tsx";
 import { openChooser } from "./chooser.ts";
@@ -23,6 +23,20 @@ import { Files } from "./context.ts";
 import type { Env } from "./env.ts";
 import { useChooserParts } from "./lib/chooser/parts.tsx";
 import type { ChooserViewProps } from "./types.ts";
+
+/**
+ * Cancel and Open on a strip of their own under a hairline, so the listing
+ * ends at an edge: a row it cuts reads as one to scroll to, never as names
+ * hidden behind the buttons (the installed pass, 22-fix-installed).
+ */
+function FooterStrip({ inset, children }: { inset: number; children: ReactNode }) {
+  const colors = useColors();
+  return (
+    <View testID="chooser:footer" style={{ flexShrink: 0, padding: inset, borderTopWidth: SPACE.px, borderColor: colors.separator }}>
+      {children}
+    </View>
+  );
+}
 
 /** The chooser as a whole window: the portal's (hung from the asking app) and `dashi-dialog`'s. */
 export function ChooserView(props: ChooserViewProps & { title: string }) {
@@ -39,11 +53,13 @@ export function ChooserView(props: ChooserViewProps & { title: string }) {
         overlay={parts.overlay}
       >
         {parts.keys}
-        <View style={{ flex: 1, flexDirection: "column", gap: SPACE.gap, padding: SPACE.button, paddingTop: SPACE.gap, minHeight: 0 }}>
-          {parts.nameRow}
-          {parts.problem}
-          <Listing />
-          {parts.footer}
+        <View style={{ flex: 1, flexDirection: "column", minHeight: 0 }}>
+          <View style={{ flex: 1, flexDirection: "column", gap: SPACE.gap, padding: SPACE.button, paddingTop: SPACE.gap, paddingBottom: 0, minHeight: 0 }}>
+            {parts.nameRow}
+            {parts.problem}
+            <Listing />
+          </View>
+          <FooterStrip inset={SPACE.button}>{parts.footer}</FooterStrip>
         </View>
       </AppWindow>
     </Files.Provider>
@@ -108,11 +124,13 @@ export function ChooserSheet(props: ChooserViewProps & { title: string }) {
           <View style={{ width: m.sidebar, flexShrink: 0, flexDirection: "column", paddingHorizontal: SPACE.m, backgroundColor: surface.sidebar }}>
             {parts.sidebar}
           </View>
-          <View style={{ flex: 1, flexDirection: "column", gap: SPACE.gap, padding: SPACE.inset, minWidth: 0, minHeight: 0 }}>
-            {parts.nameRow}
-            {parts.problem}
-            <Listing />
-            {parts.footer}
+          <View style={{ flex: 1, flexDirection: "column", minWidth: 0, minHeight: 0 }}>
+            <View style={{ flex: 1, flexDirection: "column", gap: SPACE.gap, padding: SPACE.inset, paddingBottom: 0, minHeight: 0 }}>
+              {parts.nameRow}
+              {parts.problem}
+              <Listing />
+            </View>
+            <FooterStrip inset={SPACE.inset}>{parts.footer}</FooterStrip>
           </View>
         </View>
         {parts.overlay}

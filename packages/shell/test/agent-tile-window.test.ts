@@ -20,7 +20,8 @@ function context(window: CompositorWindow, tiled: number[]): RunContext {
   } as unknown as RunContext;
 }
 
-const tile = (window: CompositorWindow, tiled: number[]) => windowHandlers.tile_window({ name: "tile_window", window: window.id, tile: "left" }, context(window, tiled));
+const tile = (window: CompositorWindow, tiled: number[]) =>
+  windowHandlers.tile_window({ name: "tile_window", window: window.id, tile: "left" }, context(window, tiled));
 
 test("a window waiting on another Desktop is arranged there", async () => {
   const tiled: number[] = [];

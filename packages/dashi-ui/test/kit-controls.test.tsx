@@ -38,6 +38,10 @@ test("Button: 28, a small 24 in 12 SemiBold, fill takes the row; the panel look 
   expect(node("regular")?.props).toMatchObject({ height: 28, cornerRadius: 7, focusable: true, access: { role: "button", label: "Save" } });
   expect(node("small")?.props).toMatchObject({ height: 24 });
   expect(node("fill")?.props.flex).toBe(1);
+  // A button never shrinks below its words (Calendar's Today read "To…" in a half tile at 1024 pt).
+  expect(node("regular")?.props.shrink).toBe(false);
+  expect(node("small")?.props.shrink).toBe(false);
+  expect(node("pill")?.props.shrink).toBe(false);
   expect(node("pill")?.props).toMatchObject({ height: 36, cornerRadius: 18, background: LIGHT_CONTROLS.text });
   expect(node("pill-small")?.props).toMatchObject({ height: 28, cornerRadius: 14 });
   // Disabled: dimmed whole, never a Tab stop, and still ume.

@@ -160,11 +160,7 @@ export class Arranger {
     return this.arranged.get(window)?.tile ?? null;
   }
 
-  /**
-   * The frame of a window that can be arranged (not minimized or full screen),
-   * or null: on screen, or where it waits on a Desktop that isn't showing
-   * (it takes its tile there, and has it when that Desktop shows; D699).
-   */
+  /** The frame of a window that can be arranged, on screen or where it waits on another Desktop (D699); else null. */
   private async frameOf(id: number): Promise<Rect | null> {
     await this.ready;
     const window = (await this.compositor.windows()).find((candidate) => candidate.id === id);

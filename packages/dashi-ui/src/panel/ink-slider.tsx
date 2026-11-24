@@ -12,7 +12,7 @@
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { DISABLED_OPACITY } from "../control-state.tsx";
-import { fillLength, fractionOf, keyValues, levelAt, nearestIndex, type SliderRange, UNIT_RANGE, valueAt } from "../slider-math.ts";
+import { fillLength, fractionOf, keyValues, levelAt, nearestIndex, notchLabel, type SliderRange, UNIT_RANGE, valueAt } from "../slider-math.ts";
 import { StepKeys } from "../step-keys.tsx";
 import { SPACE, TYPE, WEIGHT } from "../theme/index.ts";
 import { useControlColors } from "./colors.ts";
@@ -128,7 +128,7 @@ export function InkSlider({ value, range = UNIT_RANGE, testID, glyph, format, wi
             }
       }
       accessibilityRole="group"
-      accessibilityLabel={words ?? String(shown)}
+      accessibilityLabel={words ?? notchLabel(shown, range)}
       style={{ ...TRACK, width, backgroundColor: colors.line, opacity: disabled ? DISABLED_OPACITY : 1 }}
     >
       <InkFill length={fill} total={width} standing={false} radius={radius} />
@@ -141,7 +141,7 @@ export function InkSlider({ value, range = UNIT_RANGE, testID, glyph, format, wi
       {!disabled && (
         <StepKeys
           testID={testID}
-          labels={notches.map((notch) => format?.(notch) ?? String(notch))}
+          labels={notches.map((notch) => format?.(notch) ?? notchLabel(notch, range))}
           index={nearestIndex(notches, shown)}
           onStep={(at) => {
             const next = notches[at];
