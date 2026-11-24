@@ -1,7 +1,8 @@
 /**
  * What the Calculator remembers between launches, in
- * `$XDG_STATE_HOME/dashi/calculator.json`: the tape (the last 200 sums),
- * whether it is shown, and the window's size. History, not a setting, so
+ * `$XDG_STATE_HOME/dashi/calculator.json`: the tape (the last 200 sums) and
+ * whether it is shown (the window's frame is the shell's to remember; a
+ * `size` an older Calculator wrote is left unread). History, not a setting, so
  * state rather than config. Written whole, atomically (a temporary file
  * renamed over the old one), 0600; a missing or damaged file is a fresh
  * start, never an error.
@@ -10,7 +11,6 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import type { Size } from "../../kit/index.ts";
 import type { TapeEntry } from "./line.ts";
 
 /** Sums the tape keeps; older ones fall off its top. */
@@ -19,11 +19,9 @@ export const TAPE_LIMIT = 200;
 export interface Remembered {
   tape: TapeEntry[];
   showsTape: boolean;
-  /** The window's last size, when one was seen. */
-  size: Size | null;
 }
 
-export const FRESH: Remembered = { tape: [], showsTape: false, size: null };
+export const FRESH: Remembered = { tape: [], showsTape: false };
 
 export function storePath(env: Readonly<Record<string, string | undefined>> = process.env): string {
   const state = env.XDG_STATE_HOME || join(env.HOME || homedir(), ".local", "state");
@@ -40,18 +38,11 @@ function entryFrom(value: unknown): TapeEntry | null {
   return { expression, value: result };
 }
 
-function sizeFrom(value: unknown): Size | null {
-  if (!isRecord(value)) return null;
-  const { width, height } = value;
-  const isSide = (side: unknown): side is number => typeof side === "number" && Number.isFinite(side) && side >= 100 && side <= 10_000;
-  return isSide(width) && isSide(height) ? { width: Math.round(width), height: Math.round(height) } : null;
-}
-
 /** The file's contents read, keeping what is well formed and dropping the rest. */
 export function parseRemembered(value: unknown): Remembered {
   if (!isRecord(value) || value.version !== 1) return FRESH;
   const tape = Array.isArray(value.tape) ? value.tape.map(entryFrom).filter((entry): entry is TapeEntry => entry !== null) : [];
-  return { tape: tape.slice(-TAPE_LIMIT), showsTape: value.showsTape === true, size: sizeFrom(value.size) };
+  return { tape: tape.slice(-TAPE_LIMIT), showsTape: value.showsTape === true };
 }
 
 export function readRemembered(path: string = storePath()): Remembered {

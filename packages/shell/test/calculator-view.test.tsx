@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { fitFontSize, textEms } from "../apps/calculator/lib/format.ts";
-import { MIN_SIZE, PAD, TAPE_WIDTH } from "../apps/calculator/lib/layout.ts";
+import { MIN_SIZE, PAD } from "../apps/calculator/lib/layout.ts";
 import { EN_US } from "../apps/calculator/lib/locale.ts";
 import type { Remembered } from "../apps/calculator/lib/store.ts";
 import { CalculatorWindow } from "../apps/calculator/lib/view.tsx";
@@ -90,7 +90,7 @@ async function mount(remembered: Remembered, pasted = "Total: 1,234.50") {
 }
 
 test("typing, the keypad and Return edit one line, with the result under it", async () => {
-  const calc = await mount({ tape: [], showsTape: false, size: null });
+  const calc = await mount({ tape: [], showsTape: false });
   await calc.emit({ type: "change", nodeId: calc.node("line"), value: "1250*12" });
   expect(calc.tree()).toContain('"value":"1,250 × 12"');
   await calc.press("key:plus");
@@ -107,7 +107,7 @@ test("typing, the keypad and Return edit one line, with the result under it", as
 });
 
 test("the tape shows beside the keypad; a click on a row puts its result in the line", async () => {
-  const calc = await mount({ tape: [{ expression: "2 + 3", value: 5 }], showsTape: true, size: { width: 274 + TAPE_WIDTH, height: 440 } });
+  const calc = await mount({ tape: [{ expression: "2 + 3", value: 5 }], showsTape: true });
   expect(calc.tree()).toContain("Tape");
   expect(calc.tree()).toContain("= 5");
   // A row's lines take its width, right-aligned in it: never squeezed to nothing ("…").
@@ -125,7 +125,7 @@ test("the tape shows beside the keypad; a click on a row puts its result in the 
 });
 
 test("the window's size comes from its layout: square keys, centred, and one right edge for the line (review 16, 22)", async () => {
-  const calc = await mount({ tape: [], showsTape: true, size: null });
+  const calc = await mount({ tape: [], showsTape: true });
   // Tiled to fill the screen after it opened at 498 × 440: the root hears it.
   await calc.emit({ type: "resize", nodeId: calc.node("calculator"), bounds: { x: 0, y: 0, width: 1097, height: 658 } });
   const tree = JSON.parse(calc.tree());
@@ -141,14 +141,14 @@ test("the window's size comes from its layout: square keys, centred, and one rig
   // = is ink, not kombu: kombu means on.
   const equals = findView(tree, (node) => node.props?.id === calc.node("key:equals"));
   expect(equals?.props?.background).toBe("#1d1d1f");
-  // And the size it remembers is the window's.
+  // The size is not the Calculator's to remember (the shell keeps the frame): nothing is written for it.
   await settle(450);
-  expect(calc.kept.at(-1)?.size).toEqual({ width: 1097, height: 658 });
+  expect(calc.kept.at(-1)).not.toHaveProperty("size");
   calc.root.unmount();
 });
 
 test("a paste in the line reads one number; a refused one never lands; Esc clears it", async () => {
-  const calc = await mount({ tape: [], showsTape: false, size: null });
+  const calc = await mount({ tape: [], showsTape: false });
   await calc.emit({ type: "change", nodeId: calc.node("line"), value: "Total: 1,234.50" });
   expect(calc.tree()).toContain('"value":"1,234.5"');
   // Text the field put in itself and the line refuses: the field takes the line back (a new revision), at once.
@@ -162,7 +162,7 @@ test("a paste in the line reads one number; a refused one never lands; Esc clear
 });
 
 test("Paste from the menu is read the line's way; refused, the line stays and the note fits", async () => {
-  const calc = await mount({ tape: [], showsTape: false, size: null }, "calc 3x4");
+  const calc = await mount({ tape: [], showsTape: false }, "calc 3x4");
   await calc.press("key:1");
   await calc.emit({ type: "contextmenu", nodeId: calc.node("display"), x: 100, y: 40 });
   await calc.press("calculator-menu:Paste");

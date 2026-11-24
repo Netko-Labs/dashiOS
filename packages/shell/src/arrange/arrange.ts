@@ -6,7 +6,9 @@
  * Window menu, agents, and full screen do. It remembers how each window is
  * arranged (a tile or Fill) and the frame it had before: what Back to
  * Previous Size gives back. A drag or a resize by the person ends the
- * arrangement: the compositor reports the grab, the shell decides. Full
+ * arrangement: the compositor reports the grab, the shell decides. Where a
+ * new window opens, and an app's memory of its last window, are placing.ts
+ * and remember.ts; a screen that goes or comes back, screens-gone.ts. Full
  * screen is on top of all that: leaving it gives back the frame from before
  * (its tile, if it was tiled or filled), and a full-screen window may get a
  * Desktop of its own (`desktops`, spaces/fullscreen.ts), which also says
@@ -19,20 +21,21 @@
 import type { Compositor, Placing } from "../compositor/index.ts";
 import { type Arrange, centerFrame, fitFrame, type Output, type Rect, sameOutputs, type Tile, tileFrame, usableFor } from "../layout.ts";
 import {
-  type ArrangeContext,
   type Arranged,
   arrowPlan,
   askFrame,
   configuredFrame,
-  DragTiling,
-  DWELL_MS,
   type EventOf,
   type FullscreenDesktopsHook,
   fitWindows,
   fullscreenWindow,
-  placeWindow,
-  zonesOf,
+  screenPlan,
 } from "./lib/arrange-frames.ts";
+import { DragTiling } from "./lib/drags.ts";
+import { MemoryFile } from "./lib/memory-file.ts";
+import { placeWindow } from "./lib/placing.ts";
+import { Remembering } from "./lib/remember.ts";
+import { type Displaced, type ScreensContext, screensChanged } from "./lib/screens-gone.ts";
 import { placedOutputs } from "./outputs.ts";
 import type { Arrow } from "./tiling.ts";
 
@@ -41,9 +44,19 @@ export class Arranger {
   private opened = 0;
   private readonly arranged = new Map<number, Arranged>();
   /** The drag-to-tile zones and where each dragged window was as its drag began. */
-  private readonly drags = new DragTiling();
+  private readonly drags = new DragTiling({
+    arranged: this.arranged,
+    forget: (id) => this.forget(id),
+    frame: (id, frame) => this.frame(id, frame),
+    frameOf: (id) => this.frameOf(id),
+    tileIn: (id, tile, usable, own) => this.tileIn(id, tile, usable, own),
+  });
   /** The frame each full-screen window had before: given back when it leaves. */
   private readonly beforeFullscreen = new Map<number, Rect>();
+  /** Windows moved off a screen that went, until it comes back (screens-gone.ts). */
+  private readonly displaced = new Map<number, Displaced>();
+  /** Each app's last window: what a window leaves as it closes, and what a first window opens by. */
+  private readonly remembering: Remembering;
   /** The arranging under way, the next waits for. */
   private queue: Promise<unknown> = Promise.resolve();
   /** The first refresh; placing and arranging wait for it, since they need the screens. */
@@ -58,7 +71,13 @@ export class Arranger {
   /** A new window someone else places (a portal dialog that is a sheet: portal-host/sheets.ts); true takes it. */
   claim: ((window: Placing) => boolean) | null = null;
 
-  constructor(private readonly compositor: Pick<Compositor, "on" | "session" | "outputs" | "windows" | "layout" | "place" | "frame" | "fullscreen">) {}
+  constructor(
+    private readonly compositor: Pick<Compositor, "on" | "session" | "outputs" | "windows" | "layout" | "place" | "frame" | "fullscreen">,
+    /** Where apps' last windows are kept: "on" for the person's file, a file of its own (tests), or none. */
+    memory: MemoryFile | "on" | null = null,
+  ) {
+    this.remembering = new Remembering(memory === "on" ? new MemoryFile() : memory);
+  }
 
   /** Take over placing windows and send the drag zones; returns a stop function. */
   async start(): Promise<() => void> {
@@ -71,9 +90,9 @@ export class Arranger {
       else if (event.event === "window-control") run(this.control(event.window, event.alt));
       else if (event.event === "zoom") run(this.zoom(event.window, event.on));
       else if (event.event === "fullscreen") run(this.fullscreen(event.window, event.on));
-      else if (event.event === "window-grab") run(this.serial(() => this.grabbed(event)));
-      else if (event.event === "window-drop") run(this.serial(() => this.dropped(event)));
-      else if (event.event === "window-closed") this.closed(event.id);
+      else if (event.event === "window-grab") run(this.serial(() => this.drags.grab(event)));
+      else if (event.event === "window-drop") run(this.serial(() => this.drags.drop(event)));
+      else if (event.event === "window-closed") this.closed(event);
     });
     this.ready = this.serial(() => this.refresh());
     try {
@@ -92,36 +111,27 @@ export class Arranger {
     // with the screens as they were, nothing needs fitting (and a window just
     // out of full screen still reports its full-screen size).
     const changed = !sameOutputs(before, this.outputs);
-    const zones = zonesOf(this.outputs);
-    this.drags.zones = zones.map(({ tile, frame, usable }) => ({ tile, frame, usable }));
-    // Drag-to-tile is the compositor's to offer; without it, windows still fit their screens.
-    await this.compositor
-      .layout({ zones: zones.map(({ area, frame }) => ({ area, frame })), dwellMs: DWELL_MS })
-      .catch((error) => console.error("dashi-shell: drag-to-tile is off:", error instanceof Error ? error.message : error));
-    if (changed) await this.fitWindows();
-  }
-
-  /**
-   * Windows that no longer fit their screen's usable area (a screen shrank,
-   * or its scale grew) are moved in, and shrunk if they must; a tiled or
-   * filled window takes its tile on the screen as it is now.
-   */
-  private async fitWindows(): Promise<void> {
+    await this.drags.send(this.compositor, this.outputs);
+    if (!changed) return;
+    // Windows of a screen that went move to one left, and back when it returns; then
+    // windows that no longer fit their screen's usable area (it shrank, or its scale
+    // grew) are moved in, and shrunk if they must, a tile taking its tile there.
+    await screensChanged(this.context(), before);
     await fitWindows(this.context());
   }
 
   /** Where a new window goes, as any other (also for a claimed one that could not be placed its own way). */
   async place(window: Placing): Promise<void> {
     await this.ready;
-    await placeWindow(this.context(), window, () => this.opened++);
+    const placed = await placeWindow(this.context(), window, this.remembering.recall(window), () => this.opened++);
+    this.remembering.placed(window);
+    if (!placed?.recalled) return;
+    // Back as it was: tiled or filled (its own frame, for Back, its size centered), or full screen.
+    if (placed.tile) this.arranged.set(window.id, { tile: placed.tile, own: centerFrame(window, usableFor(placed.frame, this.outputs) ?? placed.frame) });
+    if (placed.fullscreen) await this.fullscreen(window.id, true, true);
   }
 
-  /**
-   * Ask for a frame (Fill also tells the app it is maximized; a tile says so for its
-   * shadow, appearance/window-style.ts). Its size shows in `configuring` until the app has drawn it.
-   * Never smaller than the app allows (`minSize`): a half too narrow for System Settings
-   * takes its least width, grown away from the screen's edge.
-   */
+  /** Ask for a frame, a tile's or Fill's said so, never smaller than the app allows (arrange-frames.ts `askFrame`). */
   private async frame(id: number, frame: Rect, tile: Tile | null = null): Promise<void> {
     await askFrame(this.compositor, this.outputs, id, frame, tile);
   }
@@ -134,8 +144,9 @@ export class Arranger {
   }
 
   /** What the placing and full-screen steps (arrange-frames.ts) need of this arranger, as it is now. */
-  private context(): ArrangeContext {
+  private context(): ScreensContext {
     return {
+      displaced: this.displaced,
       compositor: this.compositor,
       desktops: this.desktops,
       elsewhere: this.elsewhere,
@@ -188,8 +199,21 @@ export class Arranger {
     if (plan) await this.tileIn(id, plan.tile, plan.usable, plan.own);
   }
 
+  /** To another screen, by its name (the Window menu): the same place there, the same tile if it is one. */
+  toScreen(id: number, name: string): Promise<void> {
+    return this.serial(async () => {
+      const frame = await this.frameOf(id);
+      const plan = frame && screenPlan(frame, this.arranged.get(id), name, this.outputs);
+      if (!plan) return;
+      if (plan.tile) return this.tileIn(id, plan.tile, plan.usable, plan.own);
+      this.forget(id);
+      await this.frame(id, plan.frame);
+    });
+  }
+
   /** Frame a window as `tile` in `usable`, remembering `own` to go back to. */
   private async tileIn(id: number, tile: Tile, usable: Rect, own: Rect): Promise<void> {
+    this.displaced.delete(id);
     this.arranged.set(id, { tile, own });
     await this.frame(id, tileFrame(tile, usable), tile);
   }
@@ -203,14 +227,17 @@ export class Arranger {
     await this.frame(id, usable ? fitFrame(arranged.own, usable) : arranged.own);
   }
 
+  /** Its arrangement is over: moved, resized or arranged anew, it no longer goes back to a screen that returns either. */
   private forget(id: number): void {
     this.arranged.delete(id);
     this.drags.forget(id);
+    this.displaced.delete(id);
   }
 
-  private closed(id: number): void {
-    this.forget(id);
-    this.beforeFullscreen.delete(id);
+  private closed(event: EventOf<"window-closed">): void {
+    this.remembering.closed(event.id, event, this.arranged.get(event.id)?.tile ?? null, this.outputs);
+    this.forget(event.id);
+    this.beforeFullscreen.delete(event.id);
   }
 
   /**
@@ -223,7 +250,7 @@ export class Arranger {
       await this.ready;
       const window = (await this.compositor.windows()).find((candidate) => candidate.id === id);
       if (!window || window.state !== "normal") return;
-      if (alt || window.fullscreen) return this.fullscreenNow(id, !(window.fullscreen ?? false));
+      if (alt || window.fullscreen) return this.fullscreenNow(id, !(window.fullscreen ?? false), true);
       if (this.arranged.has(id)) return this.back(id);
       await this.arrangeNow(id, "fill");
     });
@@ -242,41 +269,21 @@ export class Arranger {
   }
 
   /**
-   * The person began to drag or resize a window. Dragged out of a tile or
-   * Fill, it gets its own size back under the pointer; either way the
-   * arrangement is over.
-   */
-  private async grabbed(event: EventOf<"window-grab">): Promise<void> {
-    const arranged = this.arranged.get(event.window);
-    this.forget(event.window);
-    if (event.kind === "resize") return;
-    // At the size it is being asked to take, if its app has not drawn that yet (the compositor says so).
-    const frame = this.drags.grabbed(event.window, event.frame, arranged?.own, event.pointer);
-    if (frame) await this.frame(event.window, frame);
-  }
-
-  /** A drag let go in a drag-to-tile zone: that tile, going back to where the drag began. */
-  private async dropped(event: EventOf<"window-drop">): Promise<void> {
-    const drop = this.drags.dropped(event);
-    if (!drop) return;
-    const frame = await this.frameOf(event.window);
-    if (frame) await this.tileIn(event.window, drop.tile, drop.usable, drop.from ?? frame);
-  }
-
-  /**
    * Full screen: the window covers its whole screen, over the menu bar and
    * Dock, and leaving gives the frame back (⌥ and the square, ⌃❖F, the View
    * menu, an app's own F11 or video button). Leaving gives back the frame it
    * had before, or its tile on that screen if it was tiled or filled. The
    * compositor picks the screen the window is mostly on.
    */
-  fullscreen(id: number, on: boolean): Promise<void> {
-    return this.serial(() => this.fullscreenNow(id, on));
+  fullscreen(id: number, on: boolean, byPerson = false): Promise<void> {
+    return this.serial(() => this.fullscreenNow(id, on, byPerson));
   }
 
-  private async fullscreenNow(id: number, on: boolean): Promise<void> {
+  /** `byPerson`: the person asked (not the app), so it comes back full screen if it closes so (remember.ts). */
+  private async fullscreenNow(id: number, on: boolean, byPerson = false): Promise<void> {
     await this.ready;
     const changed = await fullscreenWindow(this.context(), id, on);
+    if (changed && (byPerson || !on)) this.remembering.fullscreen(id, on);
     if (changed) this.afterFullscreen?.();
   }
 
@@ -285,7 +292,7 @@ export class Arranger {
     return this.serial(async () => {
       await this.ready;
       const window = (await this.compositor.windows()).find((candidate) => candidate.id === id);
-      if (window) await this.fullscreenNow(id, !(window.fullscreen ?? false));
+      if (window) await this.fullscreenNow(id, !(window.fullscreen ?? false), true);
     });
   }
 }

@@ -48,6 +48,7 @@ const WindowFields = obj(
     state: WindowStateShape,
     frame: map(optional(nullable(FrameShape)), (frame) => frame ?? null),
     away: map(optional(nullable(FrameShape)), (frame) => frame ?? undefined),
+    parked: map(optional(nullable(FrameShape)), (frame) => frame ?? undefined),
     configuring: positive,
     minSize: positive,
     titleBar: map(optional(num()), (bar) => bar ?? 0),
@@ -73,6 +74,7 @@ export const WindowShape = map(WindowFields, (w) => ({
   state: w.state,
   frame: w.frame,
   ...(w.away ? { away: w.away } : {}),
+  ...(w.parked ? { parked: w.parked } : {}),
   ...(w.configuring ? { configuring: w.configuring } : {}),
   ...(w.minSize ? { minSize: w.minSize } : {}),
   titleBar: w.titleBar,
@@ -97,6 +99,8 @@ export interface CompositorWindow {
   frame: Frame | null;
   /** Its frame where it waits on a Space that does not show (`frame` is null then). */
   away?: Frame;
+  /** Where it comes back from the Dock, while it is minimized or hidden (`frame` is null then). */
+  parked?: Frame;
   configuring?: { width: number; height: number };
   minSize?: { width: number; height: number };
   titleBar: number;

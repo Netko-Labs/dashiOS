@@ -31,6 +31,36 @@ pub(crate) fn away_frame(state: &Dashi, window: &Window) -> Option<Rectangle<i32
     Some(frame)
 }
 
+/// Where a minimized or hidden window comes back: its outer frame at the
+/// place it was parked; None for a window that shows or waits on a Space.
+pub(crate) fn parked_frame(
+    state: &Dashi,
+    entry: &super::windows::Entry,
+) -> Option<Rectangle<i32, Logical>> {
+    if entry.shown == super::Shown::Normal {
+        return None;
+    }
+    let at = entry.parked_at?;
+    let size = entry.window.geometry().size;
+    let bar = bar_of(state, &entry.window);
+    Some(Rectangle::new(at, (size.w, size.h + bar).into()))
+}
+
+/// Where a window last was, as it closes: a full-screen window's frame from
+/// before, else its frame on screen, where it waits on another Space, or
+/// where it comes back from the Dock.
+pub(crate) fn last_frame(
+    state: &Dashi,
+    entry: &super::windows::Entry,
+) -> Option<Rectangle<i32, Logical>> {
+    if let Some((_, before)) = &entry.fullscreen {
+        return Some(*before);
+    }
+    frame_of(state, &entry.window)
+        .or_else(|| away_frame(state, &entry.window))
+        .or_else(|| parked_frame(state, entry))
+}
+
 /// The height of the title bar dashi-comp draws above `window` (0 for none).
 pub(crate) fn bar_of(state: &Dashi, window: &Window) -> i32 {
     state.bar_height(window)

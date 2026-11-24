@@ -21,6 +21,8 @@ export interface Output {
   /** What the menu bar and the Dock leave free. */
   usable: Rect;
   scale: number;
+  /** Which screen it is across ports and sessions (display-config's `identityOf`): what a window's memory names. */
+  identity?: string;
 }
 
 /** A drag target: the pointer in `area` aims the window at `frame`. */
@@ -201,15 +203,22 @@ export function keepLeast(frame: Rect, least: { width: number; height: number } 
   return fitFrame(grown, usable);
 }
 
-/** The screen holding `frame`'s center (else the first). */
+/**
+ * The screen holding `frame`'s center; when none does (the center is in the
+ * gap beside a shorter screen, or past every edge), the screen nearest it.
+ */
 export function screenFor<S extends { frame: Rect }>(frame: Rect, screens: readonly S[]): S | null {
   const cx = frame.x + frame.width / 2;
   const cy = frame.y + frame.height / 2;
   const holding = screens.find(({ frame: screen }) => cx >= screen.x && cx < screen.x + screen.width && cy >= screen.y && cy < screen.y + screen.height);
-  return holding ?? screens[0] ?? null;
+  if (holding) return holding;
+  // How far the center is from each screen's nearest edge.
+  const away = ({ frame: screen }: S): number =>
+    Math.hypot(Math.max(screen.x - cx, 0, cx - (screen.x + screen.width)), Math.max(screen.y - cy, 0, cy - (screen.y + screen.height)));
+  return screens.reduce<S | null>((nearest, screen) => (nearest === null || away(screen) < away(nearest) ? screen : nearest), null);
 }
 
-/** The usable area of the screen holding `frame`'s center (else the first screen's). */
+/** The usable area of the screen holding `frame`'s center (else the nearest screen's). */
 export function usableFor(frame: Rect, screens: readonly { frame: Rect; usable: Rect }[]): Rect | null {
   return screenFor(frame, screens)?.usable ?? null;
 }
@@ -229,3 +238,28 @@ export const sameOutputs = (a: readonly Output[], b: readonly Output[]): boolean
       sameRect(output.usable, other.usable)
     );
   });
+
+/** The screen holding `point` (its left and top edges belong to it, its right and bottom do not); null when none does. */
+export function screenAt(point: { x: number; y: number }, screens: readonly { name: string; frame: Rect }[]): string | null {
+  const holding = screens.find(({ frame }) => point.x >= frame.x && point.x < frame.x + frame.width && point.y >= frame.y && point.y < frame.y + frame.height);
+  return holding?.name ?? null;
+}
+
+/**
+ * Where things should open: the pointer's screen, else the screen holding
+ * the center of the focused window, else `undefined` (the compositor's
+ * choice). With one screen there is nothing to choose, so `undefined` too.
+ */
+export function chooseScreen(
+  screens: readonly { name: string; frame: Rect }[],
+  pointer: { x: number; y: number } | null,
+  focused: Rect | null,
+): string | undefined {
+  if (screens.length < 2) return undefined;
+  if (pointer) {
+    const found = screenAt(pointer, screens);
+    if (found) return found;
+  }
+  if (focused) return screenAt({ x: focused.x + focused.width / 2, y: focused.y + focused.height / 2 }, screens) ?? undefined;
+  return undefined;
+}

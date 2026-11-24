@@ -1,12 +1,13 @@
 /**
  * Calculator (dev.dashi.calculator): `bun apps/calculator/main.tsx [host]`.
  * The line's words are expression.ts and line.ts; the window is view.tsx. It
- * opens at the size it was last left at (with the tape, when that showed),
- * never under the keypad's smallest, with the tape's room while it shows (LA-3).
+ * opens at the keypad's smallest, with the tape's room while it shows (LA-3);
+ * the shell gives it back the frame it was last left at, as for every app
+ * (arrange/lib/memory.ts, decisions.md D534).
  */
 
 import { runApp, type Size } from "../kit/index.ts";
-import { leastSize, openingSize } from "./lib/layout.ts";
+import { leastSize } from "./lib/layout.ts";
 import { readRemembered } from "./lib/store.ts";
 import { CalculatorWindow } from "./lib/view.tsx";
 
@@ -17,7 +18,7 @@ const app = runApp(
   {
     id: "dev.dashi.calculator",
     title: "Calculator",
-    size: openingSize(remembered.size, remembered.showsTape),
+    size: leastSize(remembered.showsTape),
     minSize: leastSize(remembered.showsTape),
     // ❖V is the app's Paste (one reader for every paste), and ❖A ❖C ❖X its rows: the line always has the keyboard.
     textChordsToFields: false,

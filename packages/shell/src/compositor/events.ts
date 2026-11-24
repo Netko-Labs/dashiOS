@@ -65,7 +65,11 @@ const onlyTrue = map(optional(nullable(bool())), (on) => on === true);
 
 const EVENTS = {
   "window-opened": loose({ window: WindowShape }),
-  "window-closed": loose({ id: num() }),
+  "window-closed": map(loose({ id: num(), frame: optional(nullable(FrameShape)), fullscreen: onlyTrue }), ({ id, frame, fullscreen }) => ({
+    id,
+    ...(frame ? { frame } : {}),
+    ...(fullscreen ? { fullscreen: true as const } : {}),
+  })),
   shortcut: loose({ name: str() }),
   binding: Binding,
   super: loose({ phase: literal("tap", "hold", "chord", "up") }),

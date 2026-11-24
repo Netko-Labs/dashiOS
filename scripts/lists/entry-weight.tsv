@@ -214,6 +214,7 @@ packages/shell/bin/dashi-mcp.ts	packages/shell/bin/dashi-mcp.ts
 packages/shell/bin/dashi-mcp.ts	packages/shell/src/actions
 packages/shell/bin/dashi-mcp.ts	packages/shell/src/agents
 packages/shell/bin/dashi-mcp.ts	packages/shell/src/arrange
+packages/shell/bin/dashi-mcp.ts	packages/shell/src/display-config
 packages/shell/bin/dashi-mcp.ts	packages/shell/src/dock
 packages/shell/bin/dashi-mcp.ts	packages/shell/src/input-method.ts
 packages/shell/bin/dashi-mcp.ts	packages/shell/src/layout.ts

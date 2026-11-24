@@ -8,8 +8,8 @@
  * share one right edge. The display itself is display.tsx; the state and what
  * it remembers are use-calculator-state.ts, the commands are
  * use-calculator-commands.ts. Numbers are written the way the person's region
- * writes them (locale.ts). The tape, whether it shows, and the window's size
- * are remembered (store.ts).
+ * writes them (locale.ts). The tape and whether it shows are remembered
+ * (store.ts); the window's frame is the shell's to remember.
  */
 
 import { PopupMenu, useSurface, useTitleBarInset } from "@dashi/ui";
@@ -31,7 +31,7 @@ import { resultWords } from "./words.ts";
 export interface CalculatorWindowProps {
   clipboard?: Clipboard;
   locale?: NumberLocale;
-  /** What the last launch left: the tape, whether it showed, the window's size. */
+  /** What the last launch left: the tape, and whether it showed. */
   remembered?: Remembered;
   /** Asks for a window size and the least it may be made: the tape widens both when it shows. */
   resizeWindow?: (size: Size, least: Size) => void;

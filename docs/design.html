@@ -650,9 +650,20 @@
       <tr><td>⌃❖F</td><td>Full screen on or off</td></tr>
       <tr><td>Drag against a side</td><td>The half on that side; the side's top or bottom 48 px give the quarters; the menu bar's edge gives Fill. A preview shows after 150 ms.</td></tr>
       <tr><td>Drag a tiled or filled window</td><td>It gets its own size back under the pointer once it moves 4 pt, and is no longer tiled. Resizing it by hand ends the tile too.</td></tr>
-      <tr><td>Window menu</td><td>Fill, Center, the four halves and four quarters, Back to Previous Size (only when there is one to go back to), each with its keys; the tile the window is in is checked. View (or Window): Enter Full Screen.</td></tr>
+      <tr><td>Window menu</td><td>Fill, Center, the four halves and four quarters, Back to Previous Size (only when there is one to go back to), each with its keys; the tile the window is in is checked. With two screens, Move to each other screen by the name Displays gives it ("Move to Built-in Display"): the same place there, or the same tile. View (or Window): Enter Full Screen.</td></tr>
     </table>
     <p class="small muted"><code>TILES</code> in <code>layout.ts</code> has the four halves, the four quarters, and fill. Tiles keep a 6 px gap between them and around them; Fill keeps none (on a 1646 × 937 screen with the Dock: x 0, y 28, 1646 × 838).</p>
+    <h3 id="window-placement">Where windows open, and come back</h3>
+    <p>Placing is the shell's (<code>packages/shell/src/arrange/lib/placing.ts</code>, <code>memory.ts</code>, <code>screens-gone.ts</code>; decisions.md D530 to D535). Every frame stays inside what the menu bar and the Dock leave free.</p>
+    <table>
+      <tr><th>When</th><th>Where</th></tr>
+      <tr><td>An app opens (the Dock, the launcher, a link, a file, an agent)</td><td>Its first window where its last one was: the same screen (by the monitor, not the port), place, size, tile or Fill, and full screen if the person put it there. Its screen gone: on the screen the person works on, at the same size. Never known: on the screen the person works on (the pointer's, else the focused window's), centered, a third of the way down, cascading.</td></tr>
+      <tr><td>A dialog</td><td>Over its parent window, on the parent's screen.</td></tr>
+      <tr><td>An app's next window</td><td>28 pt down and right from the app's front window, on its screen.</td></tr>
+      <tr><td>A screen goes (unplugged, off, the lid shut on it)</td><td>Every window on it, minimized, on another Desktop or full screen included, moves to the nearest screen left at the same place (a tile to its tile there).</td></tr>
+      <tr><td>The screen comes back</td><td>Its windows go back where they were, unless the person moved or arranged them meanwhile.</td></tr>
+    </table>
+    <p class="small muted">Kept per app in <code>~/.config/dashi/windows.json</code>: the frame from the screen's top left, the screen's identity, the tile, and full screen; the newest 256 apps. Dialogs, windows that asked for a spot (X11), the portal's sheets and wl-copy's window keep nothing.</p>
     <h3 id="fullscreen-desktops">Full screen gets its own Desktop</h3>
     <p>As on a Mac, a window in full screen moves to a Desktop of its own, so a game or a video sits one swipe away from everything else (<code>packages/shell/src/spaces/fullscreen.ts</code>; Desktop &amp; Dock › "Give full-screen apps their own desktop", settings.json <code>spaces.fullscreenDesktop</code>, on by default; turned off, full screen stays on the Desktop it is on).</p>
     <table>
@@ -675,6 +686,7 @@
       <li id="wi-6"><b class="rid">WI-6</b><div>A full-screen window has a Desktop to itself, next to the one it came from, and goes back there when it leaves full screen. Entering and leaving are each one motion: the window changes size where it is and stays on screen while the Desktops slide under it (<code>space-switch {carry}</code>); no Desktop is ever shown without it, and no picture of it at the wrong size.</div></li>
       <li id="wi-7"><b class="rid">WI-7</b><div>Nothing but the app's own dialogs and sheets opens over a full-screen window; any other window opens on the Desktop it came from, and the screen goes there to show it.</div></li>
       <li id="wi-8"><b class="rid">WI-8</b><div>A window's controls never go missing. A unified window keeps them in full screen, and every picture of a window, small or moving, shows its controls or title bar shrunk with it.</div></li>
+      <li id="wi-9"><b class="rid">WI-9</b><div>A window opens where the person works, a dialog over its parent, and an app's first window where its last one was. No window is ever left where a screen used to be: when a screen goes, its windows come to one that is there, and go back when it returns.</div></li>
     </ol>
 
     <h3 id="screens">More than one screen</h3>

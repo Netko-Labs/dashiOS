@@ -32,13 +32,6 @@ export function leastSize(showsTape: boolean): Size {
   return { width: MIN_SIZE.width + (showsTape ? TAPE_WIDTH : 0), height: MIN_SIZE.height };
 }
 
-/** The size to open at: the one last seen, never under the least (with the tape's room when it shows). */
-export function openingSize(remembered: Size | null, showsTape: boolean): Size {
-  const least = leastSize(showsTape);
-  if (!remembered) return least;
-  return { width: Math.max(least.width, remembered.width), height: Math.max(least.height, remembered.height) };
-}
-
 /** The window after the tape shows or hides: wider or narrower by the tape, never under the least. */
 export function sizeWithTape(size: Size, showsTape: boolean): Size {
   const least = leastSize(showsTape);

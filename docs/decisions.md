@@ -6798,3 +6798,121 @@ short words, as the rulebook is written.
   choice; a wallpaper per screen needs the compositor to take one each).
 - **Cost:** ⇧❖3 with two screens makes two files.
 - **Undo:** `screenNames` back to one `undefined`.
+
+### D530. A new window opens where the person works; a dialog over its parent; an app's next window beside its front one
+
+- **Date:** 2026-11-23. `v10/screens-windows`. The owner: "windows go to the
+  wrong place" on two screens.
+- **Found:** placing read the pointer's screen for every window. A dialog
+  (a window with a parent) opened on the pointer's screen, cascaded, even
+  when its parent was on the other one; an app's second window (❖N) did the
+  same, wherever the app's window was.
+- **Decision:** `arrange/lib/placing.ts` decides in this order: a window that
+  has a parent opens over it (centered across, a third of the way down its
+  height), on the parent's screen; an app that asked for a spot (X11) gets
+  it, kept inside the screen holding it; an app's further window steps 28
+  points down and right from its front window, on that window's screen; an
+  app's first window where its last one was (D531); anything else on the
+  screen the person works on (the pointer's, else the focused window's:
+  `chooseScreen`, now in `layout.ts` so placing and `active-screen.ts` choose
+  alike), centered a third of the way down and cascading as before. Every
+  frame is kept inside what the bar and the Dock leave free.
+- **Cost:** a further window no longer follows the pointer to the other
+  screen; ⌃❖ arrows or Window › Move to (D535) take it there.
+- **Undo:** `placement` back to the pointer's screen for every window.
+
+### D531. The shell remembers each app's last window, and gives it to the app's next first window
+
+- **Date:** 2026-11-23. `v10/screens-windows`. The owner: "why does Dashi
+  not remember window position and size before closing the app".
+- **Decision:** when a window closes, the compositor says where it last was
+  (`window-closed {frame, fullscreen}`: on screen, waiting on another
+  Desktop, or minimized; a full-screen window's frame from before). The shell
+  keeps, per app id, that frame from its screen's top left, the screen by its
+  identity (EDID make, model and serial: `identityOf`, so the same monitor on
+  another port is the same screen), and its tile or Fill, in
+  `~/.config/dashi/windows.json` (0600, written atomically once per turn of
+  the loop, parsed as outside data: a damaged entry is dropped alone; 256
+  apps at most, the longest closed forgotten first). An app's **first** window
+  (none of its windows open, on any Desktop, minimized or not) opens there,
+  pulled inside the usable area if the bar, the Dock or the screen changed,
+  tiled or filled again if it was; if that screen is not here, on the screen
+  the person works on at the same size. Never for a dialog, a window that
+  asked for a spot (X11), the portal's sheets or the clipboard helper: they
+  neither take a memory nor leave one.
+- **Why the shell:** placing is the shell's decision, so it works for every
+  app at once, without each keeping its own size (D534).
+- **Cost:** one small file; an app that sizes itself on purpose each launch is
+  resized to its last frame once it is placed (the app may still resize).
+- **Undo:** drop `Remembering` from `arrange/arrange.ts` (pass no memory); the
+  file can stay, unread.
+
+### D532. Full screen comes back only when the person chose it
+
+- **Date:** 2026-11-23. `v10/screens-windows`.
+- **Decision:** a window that closes in full screen comes back full screen
+  only if the person put it there (⌥ and the square, ⌃❖F, the View or Window
+  menu). One that went full screen by itself (a game, a player, F11 in an
+  app) comes back at its frame from before: it goes full screen again by
+  itself if it wants, and a game that sizes itself is not fought.
+- **Undo:** `Remembering.closed` keeps `closed.fullscreen` whoever asked.
+
+### D533. A screen that goes takes no window with it, and its windows go back when it returns
+
+- **Date:** 2026-11-23. `v10/screens-windows`.
+- **Found:** on an unplug the shell moved in only the windows that showed:
+  `fitWindows` skips a window with no frame. A minimized window, one waiting
+  on another Desktop and a full-screen one stayed where the screen had been,
+  out of reach; and nothing went back when the screen returned.
+- **Decision:** the compositor reports where a minimized or hidden window
+  comes back (`Window.parked`), as it does `away` for another Desktop's.
+  When a screen goes (unplugged, off, the lid closed on it, mirroring), every
+  window on it (on screen, `away` or `parked`) moves to the nearest screen
+  left at the same place in its usable area (`carryFrame`), a tile to its
+  tile there, a full-screen one full screen there (out, framed, in); each is
+  remembered as displaced. When that screen comes back (by identity), each
+  displaced window still as it was moved goes back: a drag, a resize, a tile,
+  Fill, Center, Back or Move to by the person forgets it
+  (`arrange/lib/screens-gone.ts`). Each change logs one line ("screens: gone
+  eDP-1, came none; 5 windows moved off, 0 back"), so a report from the
+  laptop says what happened.
+- **Cost:** a window the app moved by itself meanwhile still goes back.
+- **Undo:** drop `screensChanged` from `Arranger.refresh`; `fitWindows` alone
+  is what was.
+
+### D534. Calculator no longer remembers its own size
+
+- **Date:** 2026-11-23. `v10/screens-windows`.
+- **Decision:** the Calculator opened at the size it kept in
+  `calculator.json`; the shell's memory (D531) now gives every app's first
+  window its frame, place included, so the Calculator opens at its least
+  size (with the tape's room when it shows) and the shell frames it. It
+  still keeps the tape and whether it shows. A `size` an older Calculator
+  wrote is left unread.
+- **Undo:** `openingSize` and `Remembered.size` back (`apps/calculator/lib/`).
+
+### D535. Window › Move to a screen, by the name Displays gives it
+
+- **Date:** 2026-11-23. `v10/screens-windows`.
+- **Found:** a window went to the other screen only by dragging it, or by
+  ⌃❖ arrows past a half (which tiles it).
+- **Decision:** with two screens or more, the Window menu lists "Move to
+  Built-in Display" / "Move to LS49AG95" (the model, as Displays names it)
+  for each screen the window is not on, after Back to Previous Size. The
+  window keeps its place in the usable area there (`carryFrame`), or its
+  tile; Back to Previous Size gives its own frame back on the new screen
+  (`Arranger.toScreen`). None for a full-screen window.
+- **Undo:** drop `screenItems` from `menus/model.ts`.
+
+### D536. A window off every screen belongs to the nearest one, not the first
+
+- **Date:** 2026-11-23. `v10/screens-windows`.
+- **Found:** `screenFor` gave the first screen when no screen held a
+  window's center. With a laptop (1029 tall) beside a taller monitor, a
+  window whose center sat in the gap below the laptop, next to the monitor,
+  was tiled, filled, centered and fitted on the laptop.
+- **Decision:** the screen nearest the center (by the distance to its
+  nearest edge) when none holds it (`layout.ts`). Everything that asks which
+  screen a frame is on (tiles, Fill, Center, Back, fitting, placing, Move to)
+  follows.
+- **Undo:** `screens[0]` back as `screenFor`'s fallback.

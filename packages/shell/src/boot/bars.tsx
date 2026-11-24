@@ -4,11 +4,12 @@
  * keeps the bar's menus up, and what Restart and Shut Down say while they wait.
  */
 
-import { placedScreens, screenAt } from "../active-screen.ts";
+import { placedScreens } from "../active-screen.ts";
 import { joinShellMenus } from "../applets/index.ts";
 import { appFor } from "../apps.ts";
 import type { Compositor } from "../compositor/index.ts";
 import { AnimationTargets, dockScreen, startDock, TileStore } from "../dock/index.ts";
+import { screenAt } from "../layout.ts";
 import { type BarPill, barHold, MenuBar, MenuBars, startBarTips } from "../menubar/index.ts";
 import type { Menus } from "../menus/index.ts";
 import type { NotifyInput } from "../notifications/index.ts";

@@ -1,11 +1,13 @@
 /** What the menus are wired to: Control Center's props, what choosing a row does, the popover's content, and the context the bar's menus are built from. */
 
+import { isBuiltIn } from "@dashi/ui";
 import type { ReactElement } from "react";
 import pkg from "../../../package.json" with { type: "json" };
 import { type AppMenuStore, ownerPids } from "../../app-menus/index.ts";
 import { appFor } from "../../apps.ts";
-import type { CompositorWindow } from "../../compositor/index.ts";
+import type { CompositorWindow, Output } from "../../compositor/index.ts";
 import { LayoutStore } from "../../control-center/index.ts";
+import { monitorLabel } from "../../display-config/monitors.ts";
 import { launchEntry } from "../../entries.ts";
 import { iconPath } from "../../shared/apps/index.ts";
 import { controlFlags } from "../../shared/control-center/index.ts";
@@ -152,6 +154,15 @@ export interface MenuContexts {
   menusOf(window: CompositorWindow): Promise<WindowMenu[]>;
 }
 
+/** The screens with a desktop of their own (on, not mirroring, placed), each named as Displays names it. */
+export function menuScreens(outputs: readonly Output[]): NonNullable<MenuContext["screens"]> {
+  return outputs.flatMap((output) =>
+    output.enabled && output.mirrorOf === null && output.frame
+      ? [{ name: output.name, label: monitorLabel({ ...output, builtIn: isBuiltIn(output.name) }), frame: output.frame }]
+      : [],
+  );
+}
+
 export function menuContexts(options: MenusOptions, appMenus: AppMenuStore, entryFor: EntryFor): MenuContexts {
   const { compositor } = options;
   const desktopsNow = (): Pick<MenuContext, "desktops"> => {
@@ -161,8 +172,14 @@ export function menuContexts(options: MenusOptions, appMenus: AppMenuStore, entr
       : {};
   };
 
+  /** The screens for the Window menu's "Move to" rows, named as Displays names them. */
+  const screensNow = async (): Promise<Pick<MenuContext, "screens">> => {
+    const outputs = await (compositor?.outputs() ?? Promise.resolve([])).catch(() => []);
+    return { screens: menuScreens(outputs) };
+  };
+
   const context = async (appName: string): Promise<MenuContext> => {
-    const windows = await (compositor?.windows() ?? Promise.resolve([])).catch(() => []);
+    const [windows, screens] = await Promise.all([(compositor?.windows() ?? Promise.resolve([])).catch(() => []), screensNow()]);
     const focused = windows.find((window) => window.focused) ?? null;
     return {
       appName,
@@ -172,11 +189,12 @@ export function menuContexts(options: MenusOptions, appMenus: AppMenuStore, entr
       canOpenHelp: helpCommand() !== null,
       arrangement: focused ? (options.arranger?.arrangement(focused.id) ?? null) : null,
       ...desktopsNow(),
+      ...screens,
     };
   };
 
   const menusOf = async (window: CompositorWindow): Promise<WindowMenu[]> => {
-    const windows = await (compositor?.windows() ?? Promise.resolve([])).catch(() => []);
+    const [windows, screens] = await Promise.all([(compositor?.windows() ?? Promise.resolve([])).catch(() => []), screensNow()]);
     const appName = appFor(options.apps, window, entryFor).name;
     const app = appMenus.menusFor(ownerPids(window.pid));
     const ctx: MenuContext = {
@@ -188,6 +206,7 @@ export function menuContexts(options: MenusOptions, appMenus: AppMenuStore, entr
       app,
       arrangement: options.arranger?.arrangement(window.id) ?? null,
       ...desktopsNow(),
+      ...screens,
     };
     return windowMenus(ctx);
   };

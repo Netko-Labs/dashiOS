@@ -171,8 +171,13 @@ mod tests {
         assert_eq!(reply(2, Ok(json!({}))), "{\"id\":2,\"result\":{}}\n");
         assert_eq!(reply(2, Err("no".into())), "{\"id\":2,\"error\":\"no\"}\n");
         assert_eq!(
-            event(&Event::WindowClosed { id: 9 }).as_deref(),
-            Some("{\"event\":\"window-closed\",\"id\":9}\n")
+            event(&Event::WindowClosed {
+                id: 9,
+                frame: None,
+                fullscreen: false
+            })
+            .as_deref(),
+            Some("{\"event\":\"window-closed\",\"id\":9,\"frame\":null,\"fullscreen\":false}\n")
         );
     }
 }

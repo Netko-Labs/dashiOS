@@ -6,7 +6,7 @@ import { evaluate, hasOperation, repeatOf } from "../apps/calculator/lib/evaluat
 import { tokenize } from "../apps/calculator/lib/expression.ts";
 import { fromField } from "../apps/calculator/lib/field.ts";
 import { keyForChar } from "../apps/calculator/lib/keys.ts";
-import { GAP, KEY, keypadLayout, keySide, leastSize, MIN_SIZE, openingSize, PAD, sizeWithTape, TAPE_WIDTH } from "../apps/calculator/lib/layout.ts";
+import { GAP, KEY, keypadLayout, keySide, leastSize, MIN_SIZE, PAD, sizeWithTape, TAPE_WIDTH } from "../apps/calculator/lib/layout.ts";
 import { EMPTY_LINE, equals, type Line, liveResult, negate, recall, tidy, typeChar } from "../apps/calculator/lib/line.ts";
 import { EN_US, numberLocale } from "../apps/calculator/lib/locale.ts";
 import { calculatorMenus } from "../apps/calculator/lib/menus.ts";
@@ -192,9 +192,8 @@ describe("state", () => {
 describe("window size (LA-3)", () => {
   test("the minimum holds the keypad at its smallest; the tape widens the window by its own width", () => {
     expect(MIN_SIZE).toEqual({ width: 274, height: 440 });
-    expect(openingSize(null, false)).toEqual(MIN_SIZE);
-    expect(openingSize(null, true)).toEqual({ width: 274 + TAPE_WIDTH, height: 440 });
-    expect(openingSize({ width: 100, height: 900 }, false)).toEqual({ width: 274, height: 900 });
+    expect(leastSize(false)).toEqual(MIN_SIZE);
+    expect(leastSize(true)).toEqual({ width: 274 + TAPE_WIDTH, height: 440 });
     expect(sizeWithTape({ width: 400, height: 500 }, true)).toEqual({ width: 400 + TAPE_WIDTH, height: 500 });
     expect(sizeWithTape({ width: 300, height: 500 }, false)).toEqual({ width: 274, height: 500 });
   });
@@ -234,12 +233,12 @@ describe("window size (LA-3)", () => {
 });
 
 describe("remembered", () => {
-  test("the file keeps the tape, whether it shows, and the size; damage is a fresh start", () => {
+  test("the file keeps the tape and whether it shows; damage is a fresh start", () => {
     const dir = mkdtempSync(join(tmpdir(), "calc-store-"));
     try {
       const path = join(dir, "dashi", "calculator.json");
-      writeRemembered({ tape: [{ expression: "2 + 3", value: 5 }], showsTape: true, size: { width: 498, height: 440 } }, path);
-      expect(readRemembered(path)).toEqual({ tape: [{ expression: "2 + 3", value: 5 }], showsTape: true, size: { width: 498, height: 440 } });
+      writeRemembered({ tape: [{ expression: "2 + 3", value: 5 }], showsTape: true }, path);
+      expect(readRemembered(path)).toEqual({ tape: [{ expression: "2 + 3", value: 5 }], showsTape: true });
       expect(statSync(path).mode & 0o777).toBe(0o600);
       expect(JSON.parse(readFileSync(path, "utf8")).version).toBe(1);
       writeFileSync(path, "{ broken");
@@ -256,7 +255,8 @@ describe("remembered", () => {
       showsTape: "yes",
       size: { width: 20, height: 400 },
     });
-    expect(parsed).toEqual({ tape: [{ expression: "1 + 1", value: 2 }], showsTape: false, size: null });
+    // An older Calculator's `size` is left unread: the shell gives the window its frame back.
+    expect(parsed).toEqual({ tape: [{ expression: "1 + 1", value: 2 }], showsTape: false });
     const long = Array.from({ length: TAPE_LIMIT + 5 }, (_, at) => ({ expression: `${at} + 0`, value: at }));
     expect(withEntry(long, { expression: "x", value: 1 })).toHaveLength(TAPE_LIMIT);
   });
