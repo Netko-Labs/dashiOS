@@ -11,8 +11,8 @@
  */
 
 import {
-  CLEAR as CLEAR_GLYPH,
   EmptyState,
+  glyphs,
   MENU_SEPARATOR,
   type MenuEntry,
   RADIUS,
@@ -117,7 +117,7 @@ function TapeHead({ height, canClear, onClear }: { height: number; canClear: boo
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.bold, color: colors.text }}>Tape</Text>
       </View>
-      {canClear && <ToolbarButton testID="tape-clear" glyph={CLEAR_GLYPH} tooltip="Clear Tape" onPress={onClear} />}
+      {canClear && <ToolbarButton testID="tape-clear" glyph={glyphs.CLEAR} tooltip="Clear Tape" onPress={onClear} />}
     </View>
   );
 }

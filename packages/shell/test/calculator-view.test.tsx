@@ -117,6 +117,9 @@ test("the tape shows beside the keypad; a click on a row puts its result in the 
   expect(lines.map((line) => line.align ?? line.textAlign)).toEqual(["right", "right"]);
   // Neither line is clamped: the clamped result drew only "…" in the host (review 21).
   expect(lines.map((line) => line.truncate)).toEqual([undefined, undefined]);
+  // Clear Tape draws its glyph (it once drew the transparent colour CLEAR as markup).
+  const clear = findView(JSON.parse(calc.tree()), (node) => node.props?.id === calc.node("tape-clear"));
+  expect(JSON.stringify(clear)).toContain("<svg");
   await calc.press("key:1");
   await calc.press("key:plus");
   await calc.emit({ type: "press", nodeId: calc.node("tape-clear") });

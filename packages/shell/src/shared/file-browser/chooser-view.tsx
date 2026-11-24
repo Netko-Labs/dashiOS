@@ -13,7 +13,7 @@
  */
 
 import { existsSync } from "node:fs";
-import { AppWindow, SHEET_MARGIN, Sheet, SPACE, useSurface } from "@dashi/ui";
+import { AppWindow, SHEET_MARGIN, Sheet, SPACE, useColors, useSurface } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useEffect, useMemo } from "react";
 import type { ChooserRequest } from "../files/index.ts";
@@ -78,6 +78,7 @@ export function AppChooser({ request, answer, env }: { request: ChooserRequest; 
 
 /** The chooser over an app's own window (pass it as `AppWindow`'s overlay): Text Editor's and Preview's Open, Save As and Export. */
 export function ChooserSheet(props: ChooserViewProps & { title: string }) {
+  const colors = useColors();
   const surface = useSurface();
   const parts = useChooserParts(props);
   const m = CHOOSER_SHEET;
@@ -86,7 +87,18 @@ export function ChooserSheet(props: ChooserViewProps & { title: string }) {
       <Sheet testID="chooser" width={m.width} height={m.height} bare label={props.title}>
         {parts.keys}
         {/* The window's own toolbar row, 38 tall (VS-1): Back and Up, Files' omnibox in the title's place, the view switch. */}
-        <View style={{ height: m.toolbar, flexShrink: 0, flexDirection: "row", alignItems: "center", gap: SPACE.s, paddingHorizontal: SPACE.gap }}>
+        <View
+          style={{
+            height: m.toolbar,
+            flexShrink: 0,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: SPACE.s,
+            paddingHorizontal: SPACE.gap,
+            borderBottomWidth: SPACE.px,
+            borderColor: colors.separator,
+          }}
+        >
           {parts.leading}
           {/* The title's place is the omnibox's (VS-8); the sheet is named by its title for screen readers. */}
           <View style={{ flex: 1, minWidth: 0, flexDirection: "row", paddingHorizontal: SPACE.s }}>{parts.omnibox}</View>
