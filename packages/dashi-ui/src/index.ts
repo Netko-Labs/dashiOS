@@ -120,6 +120,7 @@ export { Table, type TableProps } from "./table.tsx";
 export type { Column } from "./table-parts.tsx";
 export { holdOrder, moveSelection, nextSort, type SortableColumn, type SortState, sortRows } from "./table-sort.ts";
 export { hostTextAntialiasing, type TextAntialiasing } from "./text-antialiasing.ts";
+export { TEXT_AREA, TextArea, type TextAreaProps } from "./text-area.tsx";
 export { TEXT_FIELD, TextField, type TextFieldProps } from "./text-field.tsx";
 export { TextLink } from "./text-link.tsx";
 export {

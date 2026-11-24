@@ -11,6 +11,7 @@ import {
   Segmented,
   Slider,
   Switch,
+  TextArea,
   TextField,
   ToolbarButton,
 } from "@dashi/ui";
@@ -202,6 +203,7 @@ export function SwitchesPage() {
 export function FieldsPage() {
   const [text, setText] = useState("Groceries");
   const [query, setQuery] = useState("");
+  const [notes, setNotes] = useState("Bring the projector.\nRoom 4 is booked until noon.");
   return (
     <PageBody>
       <Exhibit
@@ -222,6 +224,11 @@ export function FieldsPage() {
         <TextField testID="field:invalid" value="12" label="Code" invalid message="Six digits." onChangeText={noop} width={220} />
         <TextField testID="field:disabled" value="alexk" disabled onChangeText={noop} width={220} />
         <TextField testID="field:panel" look="panel" value="Alex Kim" onChangeText={noop} width={220} />
+      </Exhibit>
+      <Exhibit title="Text area" note="A text field's edge, ground and focus over many lines: an event's notes, a text a dialog lets the person edit.">
+        <View style={{ width: 260, height: 84, flexDirection: "column" }}>
+          <TextArea testID="field:area" value={notes} label="Notes" onChangeText={setNotes} />
+        </View>
       </Exhibit>
       <Exhibit title="Search field" note="210, shrinking to 96; its words shorten to Search under 140 and end in an ellipsis. Esc empties it first.">
         <SearchField testID="field:search" value={query} onChangeText={setQuery} placeholder="Search apps and add-ons" />

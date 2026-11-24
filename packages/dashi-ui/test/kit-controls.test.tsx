@@ -10,6 +10,7 @@ import { SEARCH } from "../src/glyphs.ts";
 import { placeholderAt, SEARCH_FIELD, SearchField } from "../src/search-field.tsx";
 import { SEGMENTED, Segmented } from "../src/segmented.tsx";
 import { PANEL_SWITCH, Switch } from "../src/switch.tsx";
+import { TextArea } from "../src/text-area.tsx";
 import { TextField } from "../src/text-field.tsx";
 import { TextLink } from "../src/text-link.tsx";
 import { LIGHT_CONTROLS } from "../src/theme/controls.ts";
@@ -155,5 +156,25 @@ test("TextLink: ink and underlined, a link for screen readers (Q3)", async () =>
   expect(node("other")?.props).toMatchObject({ focusable: true, access: { role: "link", label: "Other…" } });
   expect(json()).toContain('"underline"');
   expect(json()).not.toContain(lightColors.accentInk);
+  root.unmount();
+});
+
+test("TextArea: a field's edge, ground and focus over many lines; it fills its column, or stands its height", async () => {
+  const { node, root } = await sent(
+    <View>
+      <TextArea testID="notes" value="Milk" label="Notes" onChangeText={noop} />
+      <TextArea testID="file" value="" placeholder="Text" small height={120} onChangeText={noop} />
+    </View>,
+  );
+  expect(node("notes")?.props).toMatchObject({
+    multiline: true,
+    cornerRadius: 7,
+    size: 13,
+    flex: 1,
+    borderColor: lightColors.controlEdge,
+    focusBorderColor: lightColors.focusRing,
+    access: { label: "Notes" },
+  });
+  expect(node("file")?.props).toMatchObject({ height: 120, size: 12, access: { label: "Text" } });
   root.unmount();
 });
