@@ -13,6 +13,7 @@ import {
   glyphs,
   InkSlider,
   Knob,
+  KnobButton,
   LimitBar,
   Loading,
   MonthGrid,
@@ -149,6 +150,12 @@ export function PanelPage() {
         </View>
         <View style={{ flexDirection: "row", height: 56, width: 344 }}>
           <BatteryTile look={{ percent: 64, charging: false, limit: 80, time: "5 h 10 min", glyph: glyphs.INFO }} onOpen={noop} />
+        </View>
+        <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+          <KnobButton testID="knob:back" glyph={glyphs.CHEVRON_LEFT} label="Back" onPress={noop} />
+          <KnobButton testID="knob:mute" glyph={glyphs.STOP} label="Mute" checked={!on} onPress={() => setOn(!on)} />
+          <KnobButton testID="knob:add" glyph={glyphs.CLOSE} label="Add" inked size={22} glyphSize={12} onPress={noop} />
+          <Switch testID="pswitch:lit" look="panel" lit label="Wi-Fi" on={on} onChange={setOn} />
         </View>
       </Exhibit>
     </PageBody>

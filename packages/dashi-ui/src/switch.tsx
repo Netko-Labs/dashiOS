@@ -33,21 +33,24 @@ export interface SwitchProps {
   /** What it turns on, for screen readers and agents; by default the label of the `Row` it is in. */
   label?: string;
   look?: Look;
+  /** The panel look on a lit tile (Control Center's page header, on): on, its track the on ink and its knob the on colour. */
+  lit?: boolean;
 }
 
-export function Switch({ on, testID, onChange, disabled, focused, focusable = true, label, look = "window" }: SwitchProps) {
+export function Switch({ on, testID, onChange, disabled, focused, focusable = true, label, look = "window", lit = false }: SwitchProps) {
   const colors = useColors();
   const panel = useControlColors();
   const fromRow = useContext(ControlName);
   const name = label ?? fromRow;
   const state = useControlState({ disabled, focused });
   const enabled = onChange !== undefined && disabled !== true;
-  const lit = onOf(colors);
-  const onFill = state.pressed ? colors.selectionPressed : lit.on;
+  const shade = onOf(colors);
+  const onFill = state.pressed ? colors.selectionPressed : shade.on;
   const m = look === "panel" ? PANEL_SWITCH : SWITCH;
   const offEdge = look === "panel" && !on;
-  const track = on ? onFill : look === "panel" ? (state.pressed ? panel.knobOff : CLEAR) : state.pressed ? colors.pressed : colors.track;
-  const knob = look === "panel" ? (on ? lit.onInk : panel.muted) : KNOB;
+  const onLit = lit && on;
+  const track = onLit ? shade.onInk : on ? onFill : look === "panel" ? (state.pressed ? panel.knobOff : CLEAR) : state.pressed ? colors.pressed : colors.track;
+  const knob = onLit ? shade.on : look === "panel" ? (on ? shade.onInk : panel.muted) : KNOB;
   return (
     <View
       testID={testID}
