@@ -81,9 +81,7 @@ function StepLine({ step, open, onPress }: { step: TurnStep; open: boolean; onPr
     <View testID="talk:step" onPress={onPress} style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m, height: 24 }}>
       <View style={{ width: 14, height: 14, alignItems: "center", justifyContent: "center" }}>
         {running ? (
-          <View
-            style={{ width: WHO.ring, height: WHO.ring, borderRadius: pill(WHO.ring), borderWidth: 2, borderColor: colors.agent, opacity: OPACITY.half }}
-          />
+          <View style={{ width: WHO.ring, height: WHO.ring, borderRadius: pill(WHO.ring), borderWidth: 2, borderColor: colors.agent, opacity: OPACITY.half }} />
         ) : (
           <Svg markup={step.ok ? CHECK : CROSS} size={13} color={step.ok ? colors.moss : colors.ume} />
         )}

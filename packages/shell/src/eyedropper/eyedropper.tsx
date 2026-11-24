@@ -9,7 +9,7 @@
 
 import { rmSync } from "node:fs";
 import { join } from "node:path";
-import { CAPTURE_AREA, CLEAR, HIT_AREA, RADIUS, SPACE, TYPE } from "@dashi/ui";
+import { CAPTURE_AREA, HIT_AREA, RADIUS, SPACE, TYPE } from "@dashi/ui";
 import { type NativeHostOptions, Text, View } from "@mirinjs/metal";
 import { KeyCatcher, type OpenOverlay } from "../overlay.tsx";
 
