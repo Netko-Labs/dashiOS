@@ -49,6 +49,9 @@ export function Checkbox({ label, checked, onChange, testID, disabled, focused, 
         flexDirection: "row",
         alignItems: "center",
         alignSelf: "flex-start",
+        // Short of room its words end in an ellipsis, never run under what is beside it.
+        flexShrink: 1,
+        minWidth: 0,
         gap: CHECKBOX.gap,
         minHeight: CHECKBOX.height,
         borderRadius: RADIUS.row,
@@ -73,9 +76,11 @@ export function Checkbox({ label, checked, onChange, testID, disabled, focused, 
         {checked && <Svg markup={CHECK} size={CHECKBOX.tick} color={onInk} />}
       </View>
       {!hideLabel && (
-        <Text numberOfLines={1} style={{ fontSize: look === "panel" ? TYPE.panel.body.size : TYPE.body.size, color: colors.text }}>
-          {label}
-        </Text>
+        <View style={{ flexShrink: 1, minWidth: 0 }}>
+          <Text numberOfLines={1} style={{ fontSize: look === "panel" ? TYPE.panel.body.size : TYPE.body.size, color: colors.text }}>
+            {label}
+          </Text>
+        </View>
       )}
     </View>
   );

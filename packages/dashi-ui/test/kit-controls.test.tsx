@@ -230,3 +230,9 @@ test("Button: a label shorter than the least width sits in the middle, in both l
   }
   root.unmount();
 });
+
+test("Checkbox: short of room it gives way and its words are cut, never run under what is beside it", async () => {
+  const { node, root } = await sent(<Checkbox testID="always" label="Always use for PDF documents" checked={false} onChange={noop} />);
+  expect(node("always")?.props).toMatchObject({ shrink: true, minWidth: 0 });
+  root.unmount();
+});
