@@ -1,6 +1,6 @@
 /** The capsule's small parts: the five dots, a one-line text, a button, Dashi's disc. */
 
-import { AMBER, CAPSULE as CAPSULE_INKS, CLEAR, KeyedText, MOTION, OPACITY, RADIUS, Shortcut, SPACE, WEIGHT } from "@dashi/ui";
+import { AMBER, CAPSULE as CAPSULE_INKS, CLEAR, KeyedText, MOTION, OPACITY, QUESTION, RADIUS, Shortcut, SPACE, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Cell } from "../../shared/pill/index.ts";
@@ -156,7 +156,7 @@ export function Disc({ colours, size = CAPSULE.disc, asks = false }: { colours: 
       }}
     >
       {asks ? (
-        <Text style={{ fontSize: size * 0.62, fontWeight: WEIGHT.bold, color: AMBER.ink }}>?</Text>
+        <Svg markup={QUESTION} size={Math.round(size * 0.62)} color={AMBER.ink} />
       ) : (
         <Svg markup={mark} size={Math.round(size * 0.58)} color={colours.fill} />
       )}

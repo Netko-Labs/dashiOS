@@ -11,7 +11,7 @@
  * all" stops them all, as ⌃❖Esc does.
  */
 
-import { OPACITY, RADIUS, SHADOW, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { CHECK, CLOSE, OPACITY, RADIUS, SHADOW, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useContext, useSyncExternalStore } from "react";
 import {
@@ -35,6 +35,9 @@ import { panelTaskList, TaskCard, taskCardFocus, taskWorks } from "./lib/task-ca
 import { type PanelTasks, PanelTasksContext } from "./tasks.tsx";
 
 export const AGENTS_PANEL = { width: 380, padding: SPACE.s, radius: RADIUS.sheet } as const;
+/** A step's done or failed mark: a glyph on the 16 grid (IC-3). */
+const STEP_MARK = 11;
+
 /** The panel's ground: the menu's tint without its alpha. */
 const PANEL_GROUND = (colors: ReturnType<typeof useColors>): string => colors.menu.slice(0, 7);
 
@@ -105,9 +108,7 @@ function StepRow({ step }: { step: RunView["steps"][number] }) {
         {step.state === "running" ? (
           <View style={{ width: 7, height: 7, borderRadius: RADIUS.check, backgroundColor: colors.agent }} />
         ) : (
-          <Text style={{ fontSize: TYPE.caption.size, color: step.state === "done" ? colors.textMuted : colors.criticalInk }}>
-            {step.state === "done" ? "✓" : "✕"}
-          </Text>
+          <Svg markup={step.state === "done" ? CHECK : CLOSE} size={STEP_MARK} color={step.state === "done" ? colors.textMuted : colors.criticalInk} />
         )}
       </View>
       <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: step.state === "running" ? colors.text : colors.textMuted }}>

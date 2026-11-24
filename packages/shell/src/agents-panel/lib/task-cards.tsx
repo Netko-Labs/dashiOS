@@ -7,7 +7,7 @@
  * the launcher).
  */
 
-import { OPACITY, RADIUS, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { CHECK, CLOSE, OPACITY, RADIUS, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { cut, type TaskView } from "../../agents/index.ts";
 import { SPARK } from "../../shared/settings/index.ts";
@@ -42,17 +42,21 @@ export function taskLine(task: TaskView): string {
   return `${task.answerer.name} · ${how}`;
 }
 
+/** A step's mark: a glyph on the 16 grid (IC-3), the dash a skipped step's. */
+const STEP_MARK = 11;
+const SKIPPED = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M4.5 8h7" stroke="#000" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+
 function TaskStep({ step }: { step: TaskView["steps"][number] }) {
   const colors = useColors();
   const kind = step.state.kind;
-  const mark = kind === "done" ? "✓" : kind === "failed" || kind === "invalid" || kind === "not-allowed" ? "✕" : kind === "skipped" ? "–" : "";
+  const mark = kind === "done" ? CHECK : kind === "failed" || kind === "invalid" || kind === "not-allowed" ? CLOSE : kind === "skipped" ? SKIPPED : "";
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s, height: 18 }}>
       <View style={{ width: 12, alignItems: "center" }}>
         {mark === "" ? (
           <View style={{ width: 7, height: 7, borderRadius: RADIUS.check, backgroundColor: kind === "running" ? colors.agent : colors.separator }} />
         ) : (
-          <Text style={{ fontSize: TYPE.caption.size, color: kind === "done" ? colors.textMuted : colors.criticalInk }}>{mark}</Text>
+          <Svg markup={mark} size={STEP_MARK} color={kind === "done" || kind === "skipped" ? colors.textMuted : colors.criticalInk} />
         )}
       </View>
       <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: kind === "running" || kind === "ready" ? colors.text : colors.textMuted }}>

@@ -9,7 +9,7 @@
  * Dashi, or goes where a notice points.
  */
 
-import { KeyedText, MOTION, OPACITY, pill, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { BarItem, KeyedText, MOTION, OPACITY, pill, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { MIC, SPARK, VOLUME } from "../shared/settings/index.ts";
@@ -227,27 +227,9 @@ export function VoiceChip({ voice, bar, menus, status, reduceMotion = () => fals
     >
       {/* The bar's own color under the wash: over a neighbour's edge it still reads. */}
       <View style={{ flexShrink: 1, minWidth: 0, borderRadius: VOICE_CHIP.height / 2, backgroundColor: colors.menuBar }}>
-        <View
-          testID={`voice-chip:${chip.kind}`}
-          onPress={press}
-          accessibilityRole="button"
-          accessibilityLabel={chipLabel(chip)}
-          style={{
-            flexShrink: 1,
-            minWidth: 0,
-            overflow: "hidden",
-            flexDirection: "row",
-            alignItems: "center",
-            gap: VOICE_CHIP.gap,
-            height: VOICE_CHIP.height,
-            paddingLeft: VOICE_CHIP.padding,
-            paddingRight: VOICE_CHIP.padding + SPACE.xxs,
-            borderRadius: VOICE_CHIP.height / 2,
-            backgroundColor: colors.agentWash,
-          }}
-        >
+        <BarItem testID={`voice-chip:${chip.kind}`} tone="agent" label={chipLabel(chip)} onPress={press} shrink endInset={SPACE.xxs}>
           <Words chip={chip} chars={chipChars(place.width)} still={reduceMotion()} level={voice.level} />
-        </View>
+        </BarItem>
       </View>
     </View>
   );

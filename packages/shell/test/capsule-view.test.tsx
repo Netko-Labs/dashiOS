@@ -188,7 +188,6 @@ test("a persona's mark and colour show on Dashi's capsule, never on dictation's"
 test("the card shows the whole plan, names its task, and has both buttons", async () => {
   const shown = await drawn(card({ ask: permission(["Turn Dark Mode on", "Open “Notes”"]) }, { hears: true }));
   expect(shown.words).toEqual([
-    "?",
     "Dashi asks",
     "“Turn on Dark Mode”",
     "Do these 2 things?",
@@ -241,7 +240,8 @@ test("a card with the keyboard says so; a question says how to answer; a long an
   const question = await drawn(
     card({ ask: { kind: "question", id: "q", text: "Which branch?", choices: [], who: "Claude Code", about: "fix the test", since: 0 } }, { hears: true }),
   );
-  expect(question.words).toEqual(["?", "Claude Code asks", "“fix the test”", "Which branch?", "Hold the Dashi key and answer, or type it.", "Skip", "Type it"]);
+  // The disc's ? is a glyph now (IC-3), not a word.
+  expect(question.words).toEqual(["Claude Code asks", "“fix the test”", "Which branch?", "Hold the Dashi key and answer, or type it.", "Skip", "Type it"]);
   const reading = await drawn(card({ reading: { id: "r", request: "what is new", text: "Three things.\nThe assistant." } }));
   expect(reading.words).toEqual(["Dashi says", "“what is new”", "Three things.", "The assistant.", "Close"]);
   expect(reading.has("capsule-disc")).toBe(true);
