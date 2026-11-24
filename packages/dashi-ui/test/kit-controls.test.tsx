@@ -44,6 +44,19 @@ test("Button: 28, a small 24 in 12 SemiBold, fill takes the row; the panel look 
   root.unmount();
 });
 
+test("Button: the inks look is a 28 pill on the Inks' paper with ink words; never the accent", async () => {
+  const { node, root } = await sent(
+    <View>
+      <Button testID="inks" label="Edit widgets" look="inks" onPress={noop} />
+      <Button testID="inks-ink" label="Done" look="inks" primary onPress={noop} />
+    </View>,
+  );
+  expect(node("inks")?.props).toMatchObject({ height: 28, cornerRadius: 14, background: INK_PAPER.light, borderColor: INK_TEXT.light.hairline });
+  expect(node("inks")?.props).toMatchObject({ focusable: true, access: { role: "button", label: "Edit widgets" } });
+  expect(node("inks-ink")?.props.background).toBe(INK_TEXT.light.ink);
+  root.unmount();
+});
+
 test("Switch: the panel look is 46 × 28, its off track an outline; on is the one on in both looks", async () => {
   const { node, root } = await sent(
     <View>

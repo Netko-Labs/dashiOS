@@ -58,6 +58,16 @@ export function ButtonsPage() {
           )}
         </States>
       </Exhibit>
+      <Exhibit title="Button, inks" note="The widget area's (Edit widgets): a pill on the Inks' paper, ink words; the one that goes ahead is ink.">
+        <States>
+          {({ state, disabled }) => (
+            <>
+              <Button testID={`button-inks:${state}:edit`} label="Edit widgets" look="inks" disabled={disabled} onPress={noop} />
+              <Button testID={`button-inks:${state}:done`} label="Done" look="inks" primary disabled={disabled} onPress={noop} />
+            </>
+          )}
+        </States>
+      </Exhibit>
       <Exhibit title="Glyph button" note="One glyph, round, named for screen readers: a notification's ✕ (filled, small), the overview's + and ×.">
         <States>
           {({ state, disabled }) => (
