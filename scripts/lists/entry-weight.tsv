@@ -1,5 +1,6 @@
 # Entry weight: the modules each entry point loads when it starts (scripts/entry-weight.ts; a module is a folder, or a file outside one). A module not listed for its entry fails `bun run check`; so does a listed one it no longer loads (--shrink). For a module an entry is meant to load from now on: --update, and say why in the commit.
 packages/greeter/src/main.tsx	packages/greeter/src/clock.ts
+packages/greeter/src/main.tsx	packages/greeter/src/display.ts
 packages/greeter/src/main.tsx	packages/greeter/src/greetd
 packages/greeter/src/main.tsx	packages/greeter/src/main.tsx
 packages/greeter/src/main.tsx	packages/greeter/src/memory.ts

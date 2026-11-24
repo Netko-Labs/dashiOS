@@ -1,19 +1,18 @@
 /**
  * The login screen: pick who (when there is more than one person), then
  * @dashi/ui's LoginScreen with what greetd asks, and under it the session to
- * start. The clock ticks every second.
+ * start. The clock ticks every second; it is the lock's clock (D670), and
+ * the screen is Dark's look whatever anyone's mode (D671).
  */
 
-import { Avatar, LOGIN_FOCUS_RING, LOGIN_GROUND, LOGIN_INK, LOGIN_MUTED, LoginScreen, type PowerAction } from "@dashi/ui";
+import { ClockHead, LOGIN, LOGIN_PARTS, LoginBackLink, LoginChip, LoginPerson, LoginScreen, type PowerAction, TYPE } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useState, useSyncExternalStore } from "react";
 import { formatDay, formatTime } from "./clock.ts";
+import { useDisplay } from "./display.ts";
 import type { LoginState } from "./greetd/index.ts";
 import type { Session } from "./sessions.ts";
 import type { User } from "./users.ts";
-
-const TEXT = LOGIN_INK;
-const MUTED = LOGIN_MUTED;
 
 export interface LoginStore {
   subscribe(listener: () => void): () => void;
@@ -32,10 +31,13 @@ export interface GreeterProps {
   onPower: (what: PowerAction) => void;
 }
 
+/** The clock reads the time this often. */
+const TICK_MS = 1000;
+
 function useNow(): Date {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
+    const timer = setInterval(() => setNow(new Date()), TICK_MS);
     return () => clearInterval(timer);
   }, []);
   return now;
@@ -73,8 +75,9 @@ export function Greeter({ users, sessions, initialUser, initialSession, login, o
 
   const day = formatDay(now);
   const time = formatTime(now);
+  const display = useDisplay();
 
-  if (!user) return <UserPicker day={day} time={time} users={users} onPick={setUser} />;
+  if (!user) return <UserPicker day={day} time={time} display={display} users={users} onPick={setUser} />;
 
   const { hint, error } = hintFor(state, session);
   const nextSession = (): void => {
@@ -100,31 +103,11 @@ export function Greeter({ users, sessions, initialUser, initialSession, login, o
       secure={state.kind !== "prompt" || state.secret}
       hint={hint}
       error={error}
-      above={
-        users.length > 1 ? (
-          <View
-            testID="greeter-other-users"
-            focusable
-            accessibilityRole="button"
-            onPress={() => setUser(null)}
-            style={{ marginBottom: 6, paddingHorizontal: 6, borderRadius: 6 }}
-          >
-            <Text style={{ fontSize: 12, color: MUTED }}>‹ Other Users</Text>
-          </View>
-        ) : undefined
-      }
+      display={display}
+      above={users.length > 1 ? <LoginBackLink testID="greeter-other-users" label="Other users" onPress={() => setUser(null)} /> : undefined}
       below={
         sessions.length > 1 ? (
-          <View
-            testID="greeter-session"
-            focusable
-            accessibilityRole="button"
-            accessibilityLabel={`Session: ${session.name}`}
-            onPress={nextSession}
-            style={{ marginTop: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, backgroundColor: "#ffffff1a" }}
-          >
-            <Text style={{ fontSize: 12, color: MUTED }}>{session.name}</Text>
-          </View>
+          <LoginChip testID="greeter-session" label={session.name} accessibilityLabel={`Session: ${session.name}`} onPress={nextSession} />
         ) : undefined
       }
       onPower={onPower}
@@ -132,47 +115,32 @@ export function Greeter({ users, sessions, initialUser, initialSession, login, o
   );
 }
 
-/** What the screens without the login form show: the time, dimmed like the form's. */
+/** What the screens without the login form show: the day and the clock, on the form's ground. */
 export function Backdrop(): ReactNode {
   const now = useNow();
+  const display = useDisplay();
   return (
-    <View style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: LOGIN_GROUND }}>
-      <View style={{ marginTop: 90, flexDirection: "column", alignItems: "center", gap: 4 }}>
-        <Text style={{ fontSize: 20, fontWeight: "semibold", color: MUTED }}>{formatDay(now)}</Text>
-        <Text style={{ fontSize: 88, fontWeight: "bold", color: TEXT }}>{formatTime(now)}</Text>
-      </View>
+    <View style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: LOGIN.ground }}>
+      <ClockHead day={formatDay(now)} time={formatTime(now)} ink={LOGIN.ink} display={display} />
     </View>
   );
 }
 
-function UserPicker(props: { day: string; time: string; users: User[]; onPick: (user: User) => void }): ReactNode {
-  const { day, time, users, onPick } = props;
+function UserPicker(props: { day: string; time: string; display: boolean; users: User[]; onPick: (user: User) => void }): ReactNode {
+  const { day, time, display, users, onPick } = props;
   return (
     <View
       testID="greeter-users"
-      style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: LOGIN_GROUND, focusRingColor: LOGIN_FOCUS_RING }}
+      style={{ flex: 1, flexDirection: "column", alignItems: "center", backgroundColor: LOGIN.ground, focusRingColor: LOGIN.focusRing }}
     >
-      <View style={{ marginTop: 90, flexDirection: "column", alignItems: "center", gap: 4 }}>
-        <Text style={{ fontSize: 20, fontWeight: "semibold", color: MUTED }}>{day}</Text>
-        <Text style={{ fontSize: 88, fontWeight: "bold", color: TEXT }}>{time}</Text>
-      </View>
+      <ClockHead day={day} time={time} ink={LOGIN.ink} display={display} />
       <View style={{ flex: 1 }} />
-      <View style={{ marginBottom: 140, flexDirection: "row", gap: 32 }}>
+      <View style={{ marginBottom: LOGIN_PARTS.pickerBottom, flexDirection: "row", gap: LOGIN_PARTS.pickerGap }}>
         {users.length === 0 ? (
-          <Text style={{ fontSize: 14, color: MUTED }}>No one can log in on this computer.</Text>
+          <Text style={{ fontSize: TYPE.body.size, color: LOGIN.muted }}>No one can log in on this computer.</Text>
         ) : (
           users.map((user) => (
-            <View
-              key={user.name}
-              testID={`greeter-user-${user.name}`}
-              focusable
-              accessibilityRole="button"
-              onPress={() => onPick(user)}
-              style={{ flexDirection: "column", alignItems: "center", gap: 10, width: 110, paddingVertical: 6, borderRadius: 12 }}
-            >
-              <Avatar name={user.displayName} picture={user.picture} size={72} />
-              <Text style={{ fontSize: 14, fontWeight: "semibold", color: TEXT }}>{user.displayName}</Text>
-            </View>
+            <LoginPerson key={user.name} testID={`greeter-user-${user.name}`} name={user.displayName} picture={user.picture} onPress={() => onPick(user)} />
           ))
         )}
       </View>

@@ -56,13 +56,17 @@ export const INK_TEXT: Readonly<Record<InkMode, { ink: string; secondary: string
   dark: { ink: "#ECECEE", secondary: "#B4B4B2", tertiary: "#8E8E8C", hairline: "#FFFFFF1F" },
 };
 
-/** The transforms' numbers, in one place. */
-export const INK_RULE = { houseChroma: 0.15, houseL: 0.62, lockL: { light: 0.05, dark: -0.04 } } as const;
+/**
+ * The transforms' numbers, in one place. The lock follows the mode (Q2), so
+ * its wash is the mode's: Dark's smoked wash lifts the inks 5 points, Light's
+ * milky one sinks them 4 (inks round five, frames 4 and 5).
+ */
+export const INK_RULE = { houseChroma: 0.15, houseL: 0.62, lockL: { dark: 0.05, light: -0.04 } } as const;
 
 export interface InkOptions {
   /** House lights are down: something critical asks or something is due, and this is not it. */
   dim?: boolean;
-  /** Drawn on the lock screen's wash, whose ink is the opposite of the mode's paper. */
+  /** Drawn on the lock screen's wash, the mode's (Dark's smoked, Light's milky). */
   lock?: boolean;
 }
 
@@ -84,6 +88,8 @@ export function tallyHex(mode: InkMode): string {
 
 /** What a surface paints its widgets with: each ink, its dimmed twin, the tally, and the flood's words. */
 export interface InkTokens {
+  /** Which mode's inks these are (the lock's glass is the mode's, LOCK_GLASS). */
+  mode: InkMode;
   ink: Readonly<Record<InkName, string>>;
   dimmed: Readonly<Record<InkName, string>>;
   tally: string;
@@ -108,7 +114,7 @@ export function inkTokens(mode: InkMode, options: Pick<InkOptions, "lock"> = {})
     dimmed[name] = inkHex(name, mode, { ...options, dim: true });
   }
   const tally = tallyHex(mode);
-  const tokens: InkTokens = { ink, dimmed, tally, tallyWash: `${tally}24`, onInk: ON_INK[mode], paper: INK_PAPER[mode], text: INK_TEXT[mode] };
+  const tokens: InkTokens = { mode, ink, dimmed, tally, tallyWash: `${tally}24`, onInk: ON_INK[mode], paper: INK_PAPER[mode], text: INK_TEXT[mode] };
   cache.set(key, tokens);
   return tokens;
 }
