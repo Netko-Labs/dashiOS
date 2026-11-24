@@ -69,7 +69,7 @@ fn window() -> Value {
     json!({
         "id": 7, "appId": "dev.dashi.notes", "title": "Notes", "pid": 4242, "focused": true,
         "state": "normal", "frame": { "x": 100, "y": 80, "width": 800, "height": 600 },
-        "away": null, "configuring": null, "minSize": { "width": 300, "height": 200 }, "titleBar": 38,
+        "away": null, "parked": null, "configuring": null, "minSize": { "width": 300, "height": 200 }, "titleBar": 38,
         "fullscreen": false, "space": 0, "attention": false, "x11": false, "sheetOf": null,
         "parent": null, "icon": { "name": "accessories-text-editor", "path": null },
         "toplevel": "a1b2c3"
@@ -184,7 +184,7 @@ fn events() -> Vec<Event> {
     let swipe = |phase| Event::Gesture { kind: Swipe::Swipe, phase };
     vec![
         Event::WindowOpened { window },
-        Event::WindowClosed { id: 7 },
+        Event::WindowClosed { id: 7, frame: Some(Frame { x: 100, y: 80, width: 800, height: 600 }), fullscreen: false },
         Event::WindowPlacing { window: Placing { id: 7, app_id: "dev.dashi.notes".into(), title: "Notes".into(), width: 800, height: 638, position: Some(Position { x: 100, y: 80 }), parent: None, pid: Some(4242) } },
         Event::WindowAttention { window: 7 },
         Event::window_space(7, 1),

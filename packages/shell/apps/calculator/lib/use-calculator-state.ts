@@ -1,14 +1,14 @@
 /**
  * The Calculator's state and what it remembers: the reducer (state.ts), the
  * timers that fade a lit key and the word under the line, the rewriting of
- * the line when the number region changes, and the saving of the tape,
- * whether it shows and the window's size (store.ts) once the window has
- * stopped changing size.
+ * the line when the number region changes, and the saving of the tape and
+ * whether it shows (store.ts), a moment after they change. The window's size
+ * is the shell's to remember (decisions.md D534).
  */
 
 import { type Dispatch, type SetStateAction, useEffect, useReducer, useRef, useState } from "react";
 import type { Size } from "../../kit/index.ts";
-import { openingSize } from "./layout.ts";
+import { leastSize } from "./layout.ts";
 import type { NumberLocale } from "./locale.ts";
 import { type CalcAction, type CalcState, calculate, initialState } from "./state.ts";
 import type { Remembered } from "./store.ts";
@@ -17,7 +17,7 @@ import type { Remembered } from "./store.ts";
 const LIT_MS = 120;
 /** How long a word under the line ("Copied") stays. */
 const NOTICE_MS = 2000;
-/** Saving waits for the window to stop changing size. */
+/** Saving waits for a burst of sums to end. */
 const SAVE_MS = 400;
 
 export interface CalculatorState {
@@ -33,7 +33,7 @@ export function useCalculatorState(remembered: Remembered, locale: NumberLocale,
   const [state, dispatch] = useReducer(calculate, remembered.tape, initialState);
   const [showsTape, setShowsTape] = useState(remembered.showsTape);
   // What the window opened at, until the window says (the root's layout, on every change).
-  const [size, setSize] = useState<Size>(() => openingSize(remembered.size, remembered.showsTape));
+  const [size, setSize] = useState<Size>(() => leastSize(remembered.showsTape));
 
   useEffect(() => {
     if (state.lit === null) return;
@@ -54,7 +54,7 @@ export function useCalculatorState(remembered: Remembered, locale: NumberLocale,
   }, [locale]);
   const saved = useRef<string | null>(null);
   useEffect(() => {
-    const next: Remembered = { tape: state.tape, showsTape, size };
+    const next: Remembered = { tape: state.tape, showsTape };
     const key = JSON.stringify(next);
     if (saved.current === null) {
       // What was just read needs no writing back.
@@ -66,7 +66,7 @@ export function useCalculatorState(remembered: Remembered, locale: NumberLocale,
       remember(next);
     }, SAVE_MS);
     return () => clearTimeout(timer);
-  }, [state.tape, showsTape, size, remember, remembered]);
+  }, [state.tape, showsTape, remember, remembered]);
 
   return { state, dispatch, showsTape, setShowsTape, size, setSize };
 }

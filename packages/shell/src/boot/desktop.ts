@@ -96,7 +96,7 @@ export interface Arranging {
 /** Where windows open, tiles, Fill, drag zones, and the square (arrange.ts, layout.ts); the menu bar over full screen. */
 export async function startArranging(compositor: Compositor | null, desktops: Desktops, services: Services, late: Late<LateParts>): Promise<Arranging> {
   const { spaces, fullscreenDesktops } = desktops;
-  const arranger = compositor ? new Arranger(compositor) : null;
+  const arranger = compositor ? new Arranger(compositor, "on") : null;
   services.add("arranging", arranger ? await arranger.start() : () => {});
   const tile = (window: number, to: Arrange): Promise<void> => arranger?.arrange(window, to) ?? Promise.resolve();
   const arrangement = (window: number): ReturnType<Arranger["arrangement"]> | null => arranger?.arrangement(window) ?? null;

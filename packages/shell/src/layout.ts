@@ -21,6 +21,8 @@ export interface Output {
   /** What the menu bar and the Dock leave free. */
   usable: Rect;
   scale: number;
+  /** Which screen it is across ports and sessions (display-config's `identityOf`): what a window's memory names. */
+  identity?: string;
 }
 
 /** A drag target: the pointer in `area` aims the window at `frame`. */
@@ -229,3 +231,28 @@ export const sameOutputs = (a: readonly Output[], b: readonly Output[]): boolean
       sameRect(output.usable, other.usable)
     );
   });
+
+/** The screen holding `point` (its left and top edges belong to it, its right and bottom do not); null when none does. */
+export function screenAt(point: { x: number; y: number }, screens: readonly { name: string; frame: Rect }[]): string | null {
+  const holding = screens.find(({ frame }) => point.x >= frame.x && point.x < frame.x + frame.width && point.y >= frame.y && point.y < frame.y + frame.height);
+  return holding?.name ?? null;
+}
+
+/**
+ * Where things should open: the pointer's screen, else the screen holding
+ * the center of the focused window, else `undefined` (the compositor's
+ * choice). With one screen there is nothing to choose, so `undefined` too.
+ */
+export function chooseScreen(
+  screens: readonly { name: string; frame: Rect }[],
+  pointer: { x: number; y: number } | null,
+  focused: Rect | null,
+): string | undefined {
+  if (screens.length < 2) return undefined;
+  if (pointer) {
+    const found = screenAt(pointer, screens);
+    if (found) return found;
+  }
+  if (focused) return screenAt({ x: focused.x + focused.width / 2, y: focused.y + focused.height / 2 }, screens) ?? undefined;
+  return undefined;
+}

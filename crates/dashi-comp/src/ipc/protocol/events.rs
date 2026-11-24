@@ -95,8 +95,12 @@ pub(crate) enum Event {
     WindowOpened {
         window: Window,
     },
+    /// `frame`: where it last was (on screen, waiting on another Space, or where it
+    /// would come back from the Dock; a full-screen window's frame from before).
     WindowClosed {
         id: u64,
+        frame: Option<Frame>,
+        fullscreen: bool,
     },
     WindowPlacing {
         window: Placing,

@@ -791,6 +791,7 @@
             "width": 300
           },
           "parent": null,
+          "parked": null,
           "pid": 4242,
           "sheetOf": null,
           "space": 0,

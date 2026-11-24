@@ -22,6 +22,7 @@ export interface ActionDeps {
   arranger: {
     arrange(window: number, to: Arrange): Promise<void>;
     toggleFullscreen?(window: number): Promise<void>;
+    toScreen?(window: number, screen: string): Promise<void>;
   } | null;
   /** Waits before typing into the window, so the menu's surface has let go of the keyboard; tests pass none. */
   settle?(): Promise<void>;
@@ -100,6 +101,9 @@ export async function runMenuAction(action: MenuAction, deps: ActionDeps): Promi
       return toWindow("focus", action.window);
     case "tile":
       await deps.arranger?.arrange(action.window, action.tile);
+      return;
+    case "move-to-screen":
+      await deps.arranger?.toScreen?.(action.window, action.screen);
       return;
     case "move-to-space":
       await deps.moveToSpace?.(action.window, action.space);

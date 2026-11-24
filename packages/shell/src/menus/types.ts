@@ -4,7 +4,7 @@
  * (controller.ts holds them).
  */
 
-import type { CompositorWindow } from "../compositor/index.ts";
+import type { CompositorWindow, Frame } from "../compositor/index.ts";
 import type { ControlPage } from "../control-center/index.ts";
 import type { DockMenuAction } from "../dock/types.ts";
 import type { Arrange, Tile } from "../layout.ts";
@@ -49,6 +49,8 @@ export type MenuAction =
   | { kind: "edit"; window: number; command: EditCommand }
   /** Tile, fill, center, or back to its own frame (arrange.ts). */
   | { kind: "tile"; window: number; tile: Arrange }
+  /** Put the window on the screen named `screen`, at the same place there (arrange.ts `toScreen`). */
+  | { kind: "move-to-screen"; window: number; screen: string }
   /** Put the window on Desktop `space` (from 0), or on a new one. */
   | { kind: "move-to-space"; window: number; space: number | "new" }
   | { kind: "bring-to-front"; window: number }
@@ -86,6 +88,8 @@ export interface MenuContext {
   app?: PublishedMenus | null;
   /** The Desktops, by what each is called (spaces/names.ts), and the one that shows; absent without them. `fullscreen` says which are full-screen windows' own (spaces/lib/slots.ts). */
   desktops?: { labels: readonly string[]; current: number; fullscreen?: readonly (number | null)[] };
+  /** The screens with a desktop of their own, named as Displays names them; absent or one, no "Move to" a screen. */
+  screens?: readonly { name: string; label: string; frame: Frame }[];
   /** How the focused window is arranged (arrange.ts): a tile or Fill; absent or null at its own frame. */
   arrangement?: Tile | null;
 }

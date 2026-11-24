@@ -98,11 +98,13 @@ session) gets the `anyone` methods.
 | `attach` | shell | `{window, parent: int\|null, top?: int}` | `{}`; `window` becomes a sheet of `parent` (null: an ordinary window again): no title bar, centred under the parent's title bar (or `top` points, 0 to 512, below the top of the parent's frame: for a parent that draws its own title bar and toolbar, whose height only the shell can guess), moved only as far as it takes to stay inside the usable area of the parent's screen (a sheet taller than the room below a small parent rises over it), and kept there, above it, on its Space, off screen with it; the keyboard goes to the sheet when the parent would get it, and a press inside the parent only brings the sheet forward. A window not yet placed is placed there (an answer to `window-placing`). A sheet whose parent closes becomes an ordinary window. Refused for a parent that is itself a sheet.; *see* `src/portal-host/sheets.ts` |
 
 `Window` is `{id, appId, title, pid: int|null, focused, state:
-"normal"|"minimized"|"hidden", frame: Frame|null, away: Frame|null, configuring: {width, height}|null, minSize: {width, height}|null, titleBar: int,
+"normal"|"minimized"|"hidden", frame: Frame|null, away: Frame|null, parked: Frame|null, configuring: {width, height}|null, minSize: {width, height}|null, titleBar: int,
 attention?: true, x11?: true, fullscreen?: true, space?: int, icon?: {name:
 string|null, path: string|null}, toplevel?: string, sheetOf?: int, parent?: int}`;
 `away` is the frame a window has where it waits on a Space that does not show
-(`frame` is null then; null on screen, minimized or hidden).
+(`frame` is null then; null on screen, minimized or hidden); `parked` is the
+frame a minimized or hidden window comes back at (null otherwise): the shell
+moves it with `frame` when its screen goes (`src/arrange/lib/screens-gone.ts`).
 `parent` is the window it is a dialog of (its xdg parent, or the X11 window
 it is transient for), absent for a window of its own; `toplevel` is the
 window's ext-foreign-toplevel-list identifier (what a screen-share picker
@@ -266,7 +268,7 @@ it again before it is sent (`keys/locked.rs`).
 | Event | Fields |
 | --- | --- |
 | `window-opened` | `window: Window` |
-| `window-closed` | `id` |
+| `window-closed` | `id, frame: Frame\|null, fullscreen`: `frame` is where it last was (on screen, where it waits on another Space, or where it comes back from the Dock; a full-screen window's frame from before, and `fullscreen` true); the shell keeps it as its app's memory (`src/arrange/lib/memory.ts`) |
 | `window-placing` | `window: {id, appId, title, width, height, position?: {x, y}, parent?, pid?}`; answer with `place` or `frame`. `parent` as in `Window` (a dialog's own window); `pid` is its app's process when known (the shell puts an agent's launch on the Space it works in by it, `src/agents/desktop/elsewhere.ts`) |
 | `window-attention` | `window` |
 | `window-space` | `window, space` |

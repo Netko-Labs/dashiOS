@@ -6,11 +6,13 @@
  *
  * The compositor answers `session` with `pointer` {x, y} in global logical
  * pixels (null while the session is locked); the screens' frames come from
- * `outputs` (displays.ts), in the same space.
+ * `outputs` (displays.ts), in the same space. The choice itself is layout.ts's
+ * `chooseScreen`, pure, so placing a window (arrange/) makes it the same way.
  */
 
-import type { Compositor, Frame, Output, Point } from "./compositor/index.ts";
+import type { Compositor, Frame, Output } from "./compositor/index.ts";
 import { screensOf } from "./displays.ts";
+import { chooseScreen, screenAt } from "./layout.ts";
 
 /** A screen's name and where it sits, in the space the pointer is reported in. */
 export interface Placed {
@@ -21,27 +23,6 @@ export interface Placed {
 /** The screens that say where they are. */
 export function placedScreens(outputs: readonly Output[]): Placed[] {
   return screensOf(outputs).flatMap((screen) => (screen.frame ? [{ name: screen.name, frame: screen.frame }] : []));
-}
-
-/** The screen holding `point` (its left and top edges belong to it, its right and bottom do not); null when none does. */
-export function screenAt(point: Point, screens: readonly Placed[]): string | null {
-  const holding = screens.find(({ frame }) => point.x >= frame.x && point.x < frame.x + frame.width && point.y >= frame.y && point.y < frame.y + frame.height);
-  return holding?.name ?? null;
-}
-
-/**
- * Where things should open: the pointer's screen, else the screen holding
- * the center of the focused window, else `undefined` (the compositor's
- * choice). With one screen there is nothing to choose, so `undefined` too.
- */
-export function chooseScreen(screens: readonly Placed[], pointer: Point | null, focused: Frame | null): string | undefined {
-  if (screens.length < 2) return undefined;
-  if (pointer) {
-    const found = screenAt(pointer, screens);
-    if (found) return found;
-  }
-  if (focused) return screenAt({ x: focused.x + focused.width / 2, y: focused.y + focused.height / 2 }, screens) ?? undefined;
-  return undefined;
 }
 
 /** The screen the person is on now (see `chooseScreen`); `undefined` when the compositor can't say. */

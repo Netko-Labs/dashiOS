@@ -7,7 +7,7 @@
  */
 
 import type { CompositorWindow } from "../compositor/index.ts";
-import type { Arrange, Tile } from "../layout.ts";
+import { type Arrange, screenFor, type Tile } from "../layout.ts";
 import type { AppMenu, PublishedMenus } from "../shared/app-menus/index.ts";
 import { sameApp } from "../shortcuts.ts";
 import type { AppMenuKey, BarMenuId, EditCommand, MenuAction, MenuContext, MenuEntry, MenuId, WindowMenu } from "./types.ts";
@@ -154,6 +154,21 @@ const moveToItems = (ctx: MenuContext): MenuEntry[] => {
   return [SEPARATOR, ...others, ...fresh];
 };
 
+/**
+ * "Move to" each other screen, by the name Displays gives it ("Built-in
+ * Display", "SAMSUNG"), with two screens or more; none for a full-screen
+ * window. The window keeps its place there, and its tile.
+ */
+const screenItems = (ctx: MenuContext): MenuEntry[] => {
+  const { focused, screens = [] } = ctx;
+  if (!focused?.frame || focused.state !== "normal" || focused.fullscreen || screens.length < 2) return [];
+  const own = screenFor(focused.frame, screens);
+  const rows = screens.flatMap((screen) =>
+    screen === own ? [] : [item(`Move to ${screen.label}`, { kind: "move-to-screen", window: focused.id, screen: screen.name })],
+  );
+  return rows.length > 0 ? [SEPARATOR, ...rows] : [];
+};
+
 const windowLabel = (window: CompositorWindow, ctx: MenuContext): string => {
   const title = window.title.trim() || ctx.appName;
   return window.state === "normal" ? title : `${title} (${window.state})`;
@@ -171,6 +186,7 @@ const windowMenu = (ctx: MenuContext): MenuEntry[] => {
     ...arrange.tiles,
     SEPARATOR,
     arrange.back,
+    ...screenItems(ctx),
     ...moveToItems(ctx),
     SEPARATOR,
     item("Bring All to Front", focused && { kind: "bring-to-front", window: focused.id }),

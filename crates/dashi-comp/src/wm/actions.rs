@@ -111,6 +111,10 @@ impl Dashi {
 
     /// Window `id` is gone (its client destroyed it, or an X11 window unmapped).
     pub(crate) fn window_gone(&mut self, id: WindowId) {
+        let last = self
+            .windows
+            .get(id)
+            .and_then(|entry| super::geometry::last_frame(self, entry));
         let Some(entry) = self.windows.remove(id) else {
             return;
         };
@@ -122,7 +126,11 @@ impl Dashi {
         self.foreign_closed(entry.id);
         crate::handlers::toplevel_meta::forget_icon_file(entry.icon.path.clone());
         if entry.announced {
-            self.ipc.emit(Event::WindowClosed { id: entry.id });
+            self.ipc.emit(Event::WindowClosed {
+                id: entry.id,
+                frame: last.map(crate::ipc::protocol::Frame::from),
+                fullscreen: entry.fullscreen.is_some(),
+            });
         }
     }
 
