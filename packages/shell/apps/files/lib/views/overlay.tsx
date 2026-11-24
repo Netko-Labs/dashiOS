@@ -29,7 +29,7 @@ function DeleteSheet({ sheet, count, ops, close }: { sheet: DeleteAsk; count: nu
       <ConfirmSheet
         testID="empty-trash"
         title="Empty the Trash?"
-        message={`${formatCount(count)} will be deleted for good.`}
+        message={`${formatCount(count)} will be deleted. You can’t undo this.`}
         confirmLabel="Empty Trash"
         danger
         onCancel={close}
@@ -45,7 +45,7 @@ function DeleteSheet({ sheet, count, ops, close }: { sheet: DeleteAsk; count: nu
     <ConfirmSheet
       testID="delete-forever"
       title={`Delete ${names} immediately?`}
-      message="You can’t undo this."
+      message={`${sheet.items.length === 1 ? "It" : "They"} will be deleted. You can’t undo this.`}
       confirmLabel="Delete"
       danger
       onCancel={close}

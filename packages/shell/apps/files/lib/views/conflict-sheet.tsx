@@ -69,7 +69,7 @@ export function ConflictSheet({ conflict, folderName, onAnswer }: { conflict: Co
       message={conflictMessage(conflict)}
       buttons={[
         { label: "Skip", testID: "conflict:skip", onPress: answer("skip"), cancel: true },
-        { label: "Keep Both", testID: "conflict:keep", onPress: answer("keep-both"), isDefault: true },
+        { label: "Keep both", testID: "conflict:keep", onPress: answer("keep-both"), isDefault: true },
         { label: "Replace", testID: "conflict:replace", onPress: answer("replace"), kind: "danger" },
       ]}
     >

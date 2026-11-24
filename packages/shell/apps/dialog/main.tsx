@@ -88,5 +88,5 @@ if (problem) {
   process.exit(255);
 }
 const size = dialogSize(spec, spec.kind === "list" ? Math.ceil(spec.cells.length / spec.columns.length) : 0);
-app = runApp({ id: "dev.dashi.dialog", title: spec.title, size, host, closeCode: 1 }, dialogFor(spec, answer, size));
+app = runApp({ id: "dev.dashi.dialog", title: spec.title, size, minSize: size, host, closeCode: 1 }, dialogFor(spec, answer, size));
 if (spec.timeout !== null) setTimeout(() => answer(TIMED_OUT), spec.timeout * 1000);

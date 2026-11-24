@@ -23,7 +23,7 @@ const services = createServices(
 );
 
 runApp(
-  { id: "dev.dashi.software", title: "Store", size: SOFTWARE_SIZE },
+  { id: "dev.dashi.software", title: "Store", size: SOFTWARE_SIZE, minSize: { width: 520, height: 360 } },
   <ServicesContext.Provider value={services}>
     <SoftwareWindow initialQuery={process.env.DASHI_SOFTWARE_SEARCH?.trim() ?? ""} initialPage={process.env.DASHI_SOFTWARE_PAGE} />
   </ServicesContext.Provider>,

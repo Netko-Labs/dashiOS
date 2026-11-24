@@ -28,6 +28,12 @@ import { Footer } from "./footer.tsx";
 import { filesOverlay } from "./overlay.tsx";
 
 export const FILES_SIZE = { width: 1000, height: 660 } as const;
+/**
+ * The least window (LA-3): its toolbar's one row still fits once New Folder has gone to "…" and the
+ * sidebar is a rail (chrome.ts): the window's buttons, Back and Forward, the omnibox at its least 96,
+ * the view switch and "…"; a listing a few rows tall under it.
+ */
+export const FILES_LEAST = { width: 420, height: 300 } as const;
 
 export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Operations; info?: string }) {
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
