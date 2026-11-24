@@ -7550,7 +7550,7 @@ short words, as the rulebook is written.
 - **Why:** fixing a surface nobody sees would leave two cards and a dead month grid to maintain.
 - **Cost:** no centre to fall back to without the widget area; design.html's Notifications
   section is rewritten to say so.
-- **Undo:** restore the three files from 2d115e0e^ and point `menus/lib/popover.tsx` at the panel.
+- **Undo:** restore the three files from cd2f7a44^ and point `menus/lib/popover.tsx` at the panel.
 
 ### D631. The widget area's controls are the kit's, in an inks look
 
