@@ -5,14 +5,17 @@
  * was dropped. The main display carries a thin bar on top, as the menu bar.
  */
 
-import { useControlColors } from "@dashi/ui";
+import { RADIUS, TYPE, useControlColors, WEIGHT } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { type Box, beginDrag, type Drag, dropSpot, type View as FitView, fitView, moveDrag, type Spot } from "../../../display-config/layout.ts";
-import { type Monitor, monitorLabel } from "../../../display-config/monitors.ts";
+import type { Monitor } from "../../../display-config/monitors.ts";
+import { displayName } from "../heroes.ts";
 
 export const ARRANGEMENT_HEIGHT = 190;
 const MARGIN = 14;
+/** A screen's box: its edge (3 while lifted), the main one's menu bar on top. */
+const BOX_EDGE = { rest: 2, lifted: 3, bar: 5 } as const;
 
 /** The screens that are on and say where they are, as boxes in points. */
 export function boxesOf(monitors: readonly Monitor[]): Box[] {
@@ -27,7 +30,19 @@ export function boxesOf(monitors: readonly Monitor[]): Box[] {
 export const ARRANGEMENT_WIDTH = 560;
 
 /** One screen in the arrangement, drawn to scale at where it sits (or where it is being dragged to). */
-function ArrangementBox({ box, monitor, view, lifted }: { box: Box; monitor: Monitor | undefined; view: FitView; lifted: boolean }) {
+function ArrangementBox({
+  box,
+  monitor,
+  monitors,
+  view,
+  lifted,
+}: {
+  box: Box;
+  monitor: Monitor | undefined;
+  monitors: readonly Monitor[];
+  view: FitView;
+  lifted: boolean;
+}) {
   const colors = useControlColors();
   return (
     <View
@@ -38,8 +53,8 @@ function ArrangementBox({ box, monitor, view, lifted }: { box: Box; monitor: Mon
         top: view.originY + box.y * view.scale,
         width: box.width * view.scale,
         height: box.height * view.scale,
-        borderRadius: 8,
-        borderWidth: lifted ? 3 : 2,
+        borderRadius: RADIUS.control,
+        borderWidth: lifted ? BOX_EDGE.lifted : BOX_EDGE.rest,
         borderColor: lifted ? colors.text : colors.muted,
         backgroundColor: colors.surface,
         overflow: "hidden",
@@ -47,14 +62,25 @@ function ArrangementBox({ box, monitor, view, lifted }: { box: Box; monitor: Mon
         justifyContent: "center",
       }}
     >
-      {monitor?.primary && <View style={{ position: "absolute", left: 0, top: 0, width: box.width * view.scale, height: 5, backgroundColor: colors.text }} />}
-      <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.offInk }}>{monitor ? monitorLabel(monitor) : box.name}</Text>
-      <Text style={{ fontSize: 10, color: colors.muted }}>{box.name}</Text>
+      {monitor?.primary && (
+        <View style={{ position: "absolute", left: 0, top: 0, width: box.width * view.scale, height: BOX_EDGE.bar, backgroundColor: colors.text }} />
+      )}
+      {/* Its plain name only: a connector ("Virtual-1") is no one's word for a screen (VO-11). */}
+      <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.offInk }}>
+        {monitor ? displayName(monitor, monitors) : "Display"}
+      </Text>
     </View>
   );
 }
 
-const AREA = { width: ARRANGEMENT_WIDTH, height: ARRANGEMENT_HEIGHT, flexShrink: 0, position: "relative", overflow: "hidden", borderRadius: 16 } as const;
+const AREA = {
+  width: ARRANGEMENT_WIDTH,
+  height: ARRANGEMENT_HEIGHT,
+  flexShrink: 0,
+  position: "relative",
+  overflow: "hidden",
+  borderRadius: RADIUS.sheet,
+} as const;
 
 export function ArrangementView({ monitors, onMove }: { monitors: readonly Monitor[]; onMove: (name: string, spot: Spot) => void }) {
   const colors = useControlColors();
@@ -121,6 +147,7 @@ export function ArrangementView({ monitors, onMove }: { monitors: readonly Monit
             key={box.name}
             box={place(box)}
             monitor={monitors.find((candidate) => candidate.name === box.name)}
+            monitors={monitors}
             view={view}
             lifted={drag?.name === box.name}
           />

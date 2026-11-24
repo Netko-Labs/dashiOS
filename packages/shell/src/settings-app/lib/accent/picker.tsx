@@ -86,7 +86,8 @@ export interface AccentPickerProps {
   pick?: (() => Promise<string | null>) | undefined;
 }
 
-function Field({ hsv, onChange }: { hsv: { h: number; s: number; v: number }; onChange: (s: number, v: number) => void }) {
+/** The saturation and brightness area: a press or a drag moves the colour there. */
+function ColorArea({ hsv, onChange }: { hsv: { h: number; s: number; v: number }; onChange: (s: number, v: number) => void }) {
   const field = hueField(hsv.h);
   const at = (event: PointerInfo) => onChange(fraction(event, "x"), 1 - fraction(event, "y"));
   return (
@@ -212,7 +213,7 @@ export function AccentPicker({ start, dark, anchor, onUse, onCancel, pick }: Acc
     >
       <Popover anchor={anchor} room={room}>
         <Text style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.bold, color: colors.text }}>Custom accent</Text>
-        <Field hsv={hsv} onChange={(s, v) => moveTo({ ...hsv, s, v })} />
+        <ColorArea hsv={hsv} onChange={(s, v) => moveTo({ ...hsv, s, v })} />
         <Strip hue={hsv.h} onChange={(h) => moveTo({ ...hsv, h })} />
         <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
           <View style={{ flex: 1 }}>

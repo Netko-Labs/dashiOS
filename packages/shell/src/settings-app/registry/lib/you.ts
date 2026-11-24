@@ -258,6 +258,7 @@ export const YOU_ROWS = [
     kind: "value",
   },
 
+  { id: "about/version", title: "Dashi", name: "Dashi's version", keywords: ["version", "build", "release"], kind: "value" },
   { id: "about/name", title: "Name", name: "Computer name", keywords: ["hostname", "computer name"], kind: "value" },
   { id: "about/based-on", title: "Based on", keywords: ["fedora", "distribution"], kind: "value" },
   { id: "about/kernel", title: "Kernel", keywords: ["linux", "kernel version"], kind: "value" },

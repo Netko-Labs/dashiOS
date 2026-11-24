@@ -134,12 +134,12 @@ export const APPEARANCE_ROWS = [
   {
     id: "wallpaper/add-photo",
     glyph: IMAGE,
-    title: "Add Photo…",
+    title: "Your photos",
+    name: "Add a photo as wallpaper",
     detail: "A PNG or JPEG from your files; it stays where it is.",
     keywords: ["photo", "picture"],
     kind: "action",
   },
-  { id: "wallpaper/photo-path", glyph: IMAGE, title: "Path of a photo", detail: "Press Return to use it.", kind: "value", stack: true },
   {
     id: "wallpaper/picture",
     glyph: DISPLAY,
@@ -155,12 +155,12 @@ export const APPEARANCE_ROWS = [
   {
     id: "wallpaper/add-video",
     glyph: VIDEO,
-    title: "Add Video…",
+    title: "Your videos",
+    name: "Add a video as wallpaper",
     detail: "An MP4, WebM, MKV, or MOV from your files; it plays muted, in a loop, and stays where it is.",
     keywords: ["video wallpaper", "live wallpaper"],
     kind: "action",
   },
-  { id: "wallpaper/video-path", glyph: VIDEO, title: "Path of a video", detail: "Press Return to use it.", kind: "value", stack: true },
   {
     id: "wallpaper/pause-on-battery",
     glyph: BATTERY,
