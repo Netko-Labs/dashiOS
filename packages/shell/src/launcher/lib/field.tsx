@@ -90,7 +90,8 @@ function Hints({ hints }: { hints: readonly Hint[] }) {
   );
 }
 
-export function Field({
+/** The launcher's one chrome row: the magnifier (or the persona's spark), the scope, the kit's bare field, the hints. */
+export function FieldRow({
   value,
   revision,
   placeholder,

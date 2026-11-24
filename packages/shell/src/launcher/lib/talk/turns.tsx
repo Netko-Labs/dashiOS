@@ -9,7 +9,7 @@
  * waits is one line with its buttons; a failure says why with its one way on.
  */
 
-import { ON_AGENT, OPACITY, pill, RADIUS, SPACE, useColors, WEIGHT } from "@dashi/ui";
+import { Button, ON_AGENT, OPACITY, pill, RADIUS, SPACE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { DashiTurn, PersonTurn, TurnStep, Waiting } from "../../../agents/index.ts";
@@ -202,7 +202,7 @@ export function Answer({ text, working, onLink }: { text: string; working: boole
   );
 }
 
-/** A small button on a line: No, Yes, Open Terminal. */
+/** A small button on a line: No, Yes, Open Terminal; the kit's small Button, its keys after the words. */
 export function LineButton({
   label,
   keys,
@@ -216,27 +216,7 @@ export function LineButton({
   testID: string;
   onPress: () => void;
 }) {
-  const colors = useColors();
-  const m = useMeasures();
-  return (
-    <View
-      testID={testID}
-      onPress={onPress}
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: SPACE.s,
-        height: 24,
-        paddingLeft: SPACE.inset,
-        paddingRight: SPACE.inset,
-        borderRadius: RADIUS.control,
-        backgroundColor: primary ? colors.primary : colors.button,
-      }}
-    >
-      <Text style={{ fontSize: m.line, fontWeight: WEIGHT.semibold, color: primary ? colors.onPrimary : colors.text }}>{label}</Text>
-      {keys && <Text style={{ fontSize: m.micro, color: primary ? colors.onPrimary : colors.textMuted }}>{keys}</Text>}
-    </View>
-  );
+  return <Button testID={testID} label={label} size="small" {...(primary ? { primary } : {})} {...(keys ? { keys } : {})} onPress={onPress} />;
 }
 
 /** A question that waits: one line, its words, No and Yes (↩ is yes); a question in words waits for the field. */

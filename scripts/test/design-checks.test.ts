@@ -77,6 +77,9 @@ describe("H22 controls from the kit", () => {
     expect(kinds('function AccessChip() { return <Chip label="Connected" tone="agent" />; }')).toEqual([]);
     // The menu bar's item built on the kit's BarItem (UI-18).
     expect(kinds('function AloneChip() { return <BarItem tone="agent" label="Stop" />; }')).toEqual([]);
+    // A form's field that is the kit's control in place (the launcher's Dropdown and Checkbox).
+    expect(kinds('function CheckboxField() { return <Checkbox label="Draft" checked onChange={go} />; }')).toEqual([]);
+    expect(kinds('function DropdownField() { return <PopUpButton options={[]} value="a" onChange={go} />; }')).toEqual([]);
   });
 });
 

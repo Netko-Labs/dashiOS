@@ -31,7 +31,7 @@ import { SHADOW, useColors } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { fieldAccess } from "./access.ts";
 import { useCommands, useExtraKeys } from "./lib/commands.ts";
-import { Field } from "./lib/field.tsx";
+import { FieldRow } from "./lib/field.tsx";
 import { drawnSections, listFor } from "./lib/list.tsx";
 import { PANEL, SURFACE, SurfaceHeight, useMeasures } from "./lib/measures.ts";
 import { chipFor, hintsOf, modeLists, placeholderOf } from "./lib/mode.ts";
@@ -108,7 +108,7 @@ function LauncherPanel(props: LauncherProps) {
           <TalkPanel props={props} s={s} keys={keys} revision={acts.fieldRevision} colour={props.colour ?? colors.agent} />
         ) : (
           <>
-            <Field
+            <FieldRow
               value={mode.kind === "search" ? s.query : filter}
               revision={acts.fieldRevision}
               placeholder={placeholder}
