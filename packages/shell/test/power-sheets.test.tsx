@@ -33,9 +33,20 @@ async function sheet(what: PowerKind) {
 for (const what of ["logout", "restart", "shutdown"] as const) {
   test(`Return presses the ${what} sheet's default button, and Esc cancels`, async () => {
     const view = await sheet(what);
-    await view.emit({ type: "submit", nodeId: view.node("sheet-keys"), value: "" });
+    // The sheet's keys are a KeySink: the window's keys while nothing has the keyboard.
+    const key = (name: string) => ({
+      type: "windowkey" as const,
+      nodeId: view.node("sheet-keys"),
+      key: name,
+      ctrl: false,
+      alt: false,
+      shift: false,
+      meta: false,
+      repeat: false,
+    });
+    await view.emit(key("enter"));
     expect(view.answers).toEqual(["confirm"]);
-    await view.emit({ type: "key", nodeId: view.node("sheet-keys"), value: "Escape" });
+    await view.emit(key("escape"));
     expect(view.answers).toEqual(["confirm", "cancel"]);
     // The buttons still answer a click.
     await view.emit({ type: "press", nodeId: view.node("sheet-confirm") });

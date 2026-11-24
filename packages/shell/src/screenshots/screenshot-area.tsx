@@ -7,8 +7,8 @@
  * isn't in the picture.
  */
 
-import { CAPTURE_AREA, CLEAR, HIT_AREA, RADIUS, SPACE, TYPE } from "@dashi/ui";
-import { type NativeHostOptions, Text, TextInput, View } from "@mirinjs/metal";
+import { CAPTURE_AREA, HIT_AREA, KeySink, RADIUS, SPACE, TYPE } from "@dashi/ui";
+import { type NativeHostOptions, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Output } from "../compositor/index.ts";
 import { screensOf } from "../displays.ts";
@@ -70,20 +70,14 @@ function Selector({ onDone }: { onDone: (choice: Choice) => void }) {
         }
       }}
     >
-      {/* Keys reach Metal only through a focused text input. */}
-      <View style={{ position: "absolute", left: 0, top: 0, width: 1, height: 1, opacity: 0, overflow: "hidden" }}>
-        <TextInput
-          value=""
-          autoFocus
-          onChangeText={(text) => {
-            if (text.includes(" ")) onDone({ kind: "window" });
-          }}
-          onKeyPress={(key) => {
-            if (key === "Escape") onDone({ kind: "cancel" });
-          }}
-          style={{ width: 1, height: 1, backgroundColor: CLEAR }}
-        />
-      </View>
+      {/* The window's keys (the kit's KeySink): Space takes the focused window instead, Esc cancels. */}
+      <KeySink
+        testID="screenshot-area-keys"
+        onKey={(key) => {
+          if (key.kind === "text" && key.text === " ") onDone({ kind: "window" });
+          else if (key.kind === "escape") onDone({ kind: "cancel" });
+        }}
+      />
       {selection ? (
         <View
           style={{
