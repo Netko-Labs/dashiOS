@@ -4,12 +4,14 @@
  * Wi-Fi password sheet and polkit's), not a window, so nothing an agent can
  * aim at (an agent's pointer and keyboard work in a window it names) reaches
  * it. What is typed goes to `PasswordChanger` and is forgotten with the sheet.
+ * A form sheet (UI-15) in the app look (SE-15): solid, over the scrim, hung
+ * from Settings' title row when the shell knows where Settings is (prompt.tsx),
+ * centred on the screen when it doesn't.
  */
 
-import { useColors } from "@dashi/ui";
-import { Text, TextInput, View } from "@mirinjs/metal";
+import { ALERT_WINDOW, FormSheet, RADIUS, TextField, TYPE, useColors } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { Button, Panel } from "../../menus/sheets.tsx";
 import type { PasswordChanger, PasswordFailure } from "../../shared/accounts/index.ts";
 
 const FAILURE: Record<PasswordFailure, string> = {
@@ -28,61 +30,20 @@ export function passwordProblem(current: string, next: string, again: string, ne
   return null;
 }
 
-function Field({
-  label,
-  testID,
-  placeholder,
-  value,
-  onChange,
-  onSubmit,
-  onCancel,
-  autoFocus,
-  invalid,
-}: {
-  label: string;
-  testID: string;
-  placeholder: string;
-  value: string;
-  onChange: (text: string) => void;
-  onSubmit: () => void;
-  onCancel: () => void;
-  autoFocus?: boolean;
-  invalid?: boolean;
-}) {
-  const colors = useColors();
-  return (
-    <View style={{ alignSelf: "stretch", flexDirection: "column", gap: 3 }}>
-      <Text style={{ fontSize: 11, color: colors.textMuted }}>{label}</Text>
-      <View
-        style={{
-          alignSelf: "stretch",
-          height: 30,
-          justifyContent: "center",
-          paddingLeft: 10,
-          paddingRight: 10,
-          borderRadius: 7,
-          backgroundColor: colors.tile,
-          borderWidth: 1,
-          borderColor: invalid ? colors.critical : colors.separator,
-        }}
-      >
-        <TextInput
-          testID={testID}
-          value={value}
-          {...(autoFocus ? { autoFocus: true } : {})}
-          secureTextEntry
-          placeholder={placeholder}
-          onChangeText={onChange}
-          onSubmitEditing={onSubmit}
-          onKeyPress={(key) => key === "Escape" && onCancel()}
-          style={{ fontSize: 13, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: "#00000000" }}
-        />
-      </View>
-    </View>
-  );
-}
+/** Where the sheet is: over Settings' window (`window`), or on the screen when Settings can't be found. */
+export type PasswordSheetPlace = "window" | "screen";
 
-export function PasswordChangeSheet({ changer, needsCurrent, onClose }: { changer: PasswordChanger; needsCurrent: boolean; onClose: () => void }) {
+export function PasswordChangeSheet({
+  changer,
+  needsCurrent,
+  onClose,
+  place = "screen",
+}: {
+  changer: PasswordChanger;
+  needsCurrent: boolean;
+  onClose: () => void;
+  place?: PasswordSheetPlace;
+}) {
   const colors = useColors();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -106,46 +67,54 @@ export function PasswordChangeSheet({ changer, needsCurrent, onClose }: { change
     set(text);
     if (refusal) setRefusal(null);
   };
+  const keys = (key: string) => key === "Escape" && onClose();
 
   const refused = refusal ? `${FAILURE[refusal.reason]}${refusal.message ? ` ${refusal.message}.` : ""}` : null;
   const hint = working
     ? "Changing the password…"
     : (refused ?? (problem !== null && (next !== "" || current !== "") ? problem : "Choose a password you will remember."));
-  return (
-    <Panel>
-      <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text, textAlign: "center" }}>Change Password</Text>
+  const sheet = (
+    <FormSheet
+      testID="pw-sheet"
+      title="Change password"
+      place={place}
+      // Over Settings: under its title row, the strip its window controls sit in.
+      {...(place === "window" ? { hang: ALERT_WINDOW.strip } : {})}
+      buttons={[
+        { label: "Cancel", testID: "pw-cancel", onPress: onClose, cancel: true },
+        { label: working ? "Changing…" : "Change password", testID: "pw-change", onPress: submit, kind: "primary", disabled: working || problem !== null },
+      ]}
+    >
       {needsCurrent && (
-        <Field
-          label="Current password"
+        <TextField
           testID="pw-current"
-          placeholder=""
           value={current}
-          onChange={edit(setCurrent)}
-          onSubmit={submit}
-          onCancel={onClose}
+          secure
           autoFocus
+          placeholder="Current password"
+          onChangeText={edit(setCurrent)}
+          onSubmit={submit}
+          onKeyPress={keys}
           invalid={refusal?.reason === "wrong-current"}
         />
       )}
-      <Field
-        label="New password"
+      <TextField
         testID="pw-new"
-        placeholder=""
         value={next}
-        onChange={edit(setNext)}
-        onSubmit={submit}
-        onCancel={onClose}
+        secure
         {...(needsCurrent ? {} : { autoFocus: true })}
+        placeholder="New password"
+        onChangeText={edit(setNext)}
+        onSubmit={submit}
+        onKeyPress={keys}
         invalid={refusal?.reason === "rejected"}
       />
-      <Field label="Verify new password" testID="pw-again" placeholder="" value={again} onChange={edit(setAgain)} onSubmit={submit} onCancel={onClose} />
-      <View testID="pw-hint" style={{ alignSelf: "stretch" }}>
-        <Text style={{ fontSize: 12, color: refusal ? colors.critical : colors.textMuted }}>{hint}</Text>
+      <TextField testID="pw-again" value={again} secure placeholder="Verify new password" onChangeText={edit(setAgain)} onSubmit={submit} onKeyPress={keys} />
+      <View testID="pw-hint">
+        <Text style={{ fontSize: TYPE.caption.size, lineHeight: TYPE.caption.line, color: refusal ? colors.ume : colors.textMuted }}>{hint}</Text>
       </View>
-      <View style={{ flexDirection: "row", alignSelf: "stretch", gap: 10, marginTop: 4 }}>
-        <Button testID="pw-cancel" label="Cancel" onPress={onClose} />
-        <Button testID="pw-change" label={working ? "Changing…" : "Change Password"} primary disabled={working || problem !== null} onPress={submit} />
-      </View>
-    </Panel>
+    </FormSheet>
   );
+  // Over Settings the scrim takes the window's rounded corners.
+  return place === "window" ? <View style={{ flex: 1, borderRadius: RADIUS.sheet, overflow: "hidden" }}>{sheet}</View> : sheet;
 }

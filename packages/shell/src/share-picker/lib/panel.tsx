@@ -6,7 +6,7 @@
  * and Return shares the chosen one.
  */
 
-import { Button, isBuiltIn, useColors } from "@dashi/ui";
+import { Button, Checkbox, isBuiltIn, RADIUS, SHADOW, TYPE, useColors, useSurface, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useRef, useSyncExternalStore } from "react";
 import type { Rect } from "../../layout.ts";
@@ -79,13 +79,13 @@ function Picture({ testID, rect, chosen, caption, onPress }: { testID: string; r
         onPress={onPress}
         style={{
           ...at({ x: rect.x - RING, y: rect.y - RING, width: rect.width + 2 * RING, height: rect.height + 2 * RING }),
-          borderRadius: 8,
+          borderRadius: RADIUS.control,
           borderWidth: RING,
           borderColor: chosen ? colors.selection : colors.separator,
         }}
       />
       <View style={{ ...at(captionOf(rect)), alignItems: "center", justifyContent: "center" }}>
-        <Text numberOfLines={1} style={{ fontSize: 11, color: chosen ? colors.text : colors.textMuted }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: chosen ? colors.text : colors.textMuted }}>
           {caption}
         </Text>
       </View>
@@ -93,32 +93,18 @@ function Picture({ testID, rect, chosen, caption, onPress }: { testID: string; r
   );
 }
 
-/** "Hide notifications while sharing", ticked or not. */
+/** "Hide notifications while sharing", ticked or not: the kit's check box (UI-10). */
 function QuietOption({ rect, quiet, onToggle }: { rect: Rect; quiet: boolean; onToggle: () => void }) {
-  const colors = useColors();
   return (
-    <View testID="share-quiet" onPress={onToggle} style={{ ...at(rect), flexDirection: "row", alignItems: "center", gap: 8 }}>
-      <View
-        style={{
-          width: 16,
-          height: 16,
-          borderRadius: 4,
-          borderWidth: 1,
-          borderColor: quiet ? colors.selection : colors.checkbox,
-          backgroundColor: quiet ? colors.selection : "#00000000",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {quiet ? <Text style={{ fontSize: 11, color: colors.onAccent }}>✓</Text> : null}
-      </View>
-      <Text style={{ fontSize: 13, color: colors.text }}>Hide notifications while sharing</Text>
+    <View style={{ ...at(rect), justifyContent: "center" }}>
+      <Checkbox testID="share-quiet" label="Hide notifications while sharing" checked={quiet} onChange={onToggle} />
     </View>
   );
 }
 
 export function SharePicker({ store, layout, screens, windows, onDone }: PickerProps) {
   const colors = useColors();
+  const surface = useSurface();
   const { chosen, quiet } = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const lastPress = useRef<{ choice: ShareChoice; at: number } | null>(null);
   const press = (choice: ShareChoice) => {
@@ -134,13 +120,23 @@ export function SharePicker({ store, layout, screens, windows, onDone }: PickerP
     <Picture key={key} testID={key} rect={rect} chosen={same(chosen, choice)} caption={caption} onPress={() => press(choice)} />
   );
   return (
-    <View style={{ width: layout.size.width, height: layout.size.height, borderRadius: 14, backgroundColor: colors.menu, shadow: "xl" }}>
+    <View
+      style={{
+        width: layout.size.width,
+        height: layout.size.height,
+        borderRadius: RADIUS.sheet,
+        backgroundColor: surface.card,
+        borderWidth: 1,
+        borderColor: colors.separator,
+        shadow: SHADOW.xl,
+      }}
+    >
       <KeyCatcher onKey={(key) => key === "Escape" && onDone(null)} onSubmit={() => onDone(chosen)} />
       <View style={{ ...at(layout.title), justifyContent: "center" }}>
-        <Text style={{ fontSize: 15, fontWeight: "semibold", color: colors.text }}>Choose what to share</Text>
+        <Text style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.bold, color: colors.text }}>Choose what to share</Text>
       </View>
       <View style={{ ...at(layout.screensHeading), justifyContent: "center" }}>
-        <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.textMuted }}>Screens</Text>
+        <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>Screens</Text>
       </View>
       {screens.map((screen, index) => {
         const rect = layout.screens[index];
@@ -148,7 +144,7 @@ export function SharePicker({ store, layout, screens, windows, onDone }: PickerP
       })}
       {layout.windowsHeading ? (
         <View style={{ ...at(layout.windowsHeading), justifyContent: "center" }}>
-          <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.textMuted }}>Windows</Text>
+          <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>Windows</Text>
         </View>
       ) : null}
       {windows.map((window, index) => {

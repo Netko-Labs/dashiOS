@@ -5,53 +5,47 @@
  * app that holds a log out while it asks its own question.
  */
 
-import { LOGO, Notice, Button as UiButton, useColors } from "@dashi/ui";
+import { AlertSheet, Button, LOGO, Notice, RESTART, SHUT_DOWN, Sheet, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { holdingCopy } from "../../closing-apps.ts";
 import { KeyCatcher } from "../../overlay.tsx";
 import { AppIcon } from "../../shared/apps/index.ts";
-import { Button, Panel } from "../sheets.tsx";
 import type { PowerKind } from "../types.ts";
 import { HOLDING, type HoldingPlace } from "./holding-place.ts";
 
-const COPY: Record<PowerKind, { question: string; detail: string; button: string }> = {
-  restart: {
-    question: "Are you sure you want to restart your computer now?",
-    detail: "Apps will be asked to close first. One with unsaved changes asks you.",
-    button: "Restart",
-  },
-  shutdown: {
-    question: "Are you sure you want to shut down your computer now?",
-    detail: "Apps will be asked to close first. One with unsaved changes asks you.",
-    button: "Shut Down",
-  },
-  logout: {
-    question: "Are you sure you want to log out now?",
-    detail: "Apps will be asked to close first. One with unsaved changes asks you.",
-    button: "Log Out",
-  },
+/** What each sheet asks (VO-10: what will happen, never "Are you sure"), its glyph, and the button that names the act. */
+const COPY: Record<PowerKind, { question: string; button: string; glyph: string }> = {
+  restart: { question: "Restart now?", button: "Restart", glyph: RESTART },
+  shutdown: { question: "Shut down now?", button: "Shut down", glyph: SHUT_DOWN },
+  logout: { question: "Log out now?", button: "Log out", glyph: LOGO },
 };
+
+const DETAIL = "Apps will be asked to close first. One with unsaved changes asks you.";
+
+/** The About card's icon: an app's at 64, Dashi's mark at 56. */
+const ABOUT_ICON = { app: 64, logo: 56 } as const;
 
 /**
  * Esc cancels and Return presses the default button, the one that goes ahead (decisions.md D24):
  * going ahead loses nothing, since an app with unsaved changes asks first and the person can
  * still cancel there. The Return that chose the menu's row can't reach it: a held key does not
- * repeat into a surface that got the keyboard after it went down.
+ * repeat into a surface that got the keyboard after it went down. The alert frame (UI-5),
+ * centred on its own surface: the shell has no window to hang it from.
  */
 export function ConfirmSheet({ what, onConfirm, onCancel }: { what: PowerKind; onConfirm: () => void; onCancel: () => void }) {
-  const colors = useColors();
   const copy = COPY[what];
   return (
-    <Panel>
-      <KeyCatcher testID="sheet-keys" onKey={(key) => key === "Escape" && onCancel()} onSubmit={onConfirm} />
-      <Svg markup={LOGO} size={34} color={colors.text} />
-      <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{copy.question}</Text>
-      <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>{copy.detail}</Text>
-      <View style={{ flexDirection: "row", alignSelf: "stretch", gap: 10, marginTop: 6 }}>
-        <Button testID="sheet-cancel" label="Cancel" onPress={onCancel} />
-        <Button testID="sheet-confirm" label={copy.button} primary onPress={onConfirm} />
-      </View>
-    </Panel>
+    <AlertSheet
+      testID="sheet"
+      place="screen"
+      question={copy.question}
+      message={DETAIL}
+      glyph={copy.glyph}
+      buttons={[
+        { label: "Cancel", testID: "sheet-cancel", onPress: onCancel, cancel: true },
+        { label: copy.button, testID: "sheet-confirm", onPress: onConfirm, kind: "primary" },
+      ]}
+    />
   );
 }
 
@@ -85,8 +79,8 @@ export function HoldingNotice({
         justifyContent: edge === "bottom" ? "flex-end" : "flex-start",
         // The card sits at its edge; the shadow falls into the rest.
         padding: HOLDING.shadow,
-        paddingTop: edge === "top" ? 8 : HOLDING.shadow,
-        paddingBottom: edge === "bottom" ? 8 : HOLDING.shadow,
+        paddingTop: edge === "top" ? SPACE.m : HOLDING.shadow,
+        paddingBottom: edge === "bottom" ? SPACE.m : HOLDING.shadow,
       }}
     >
       <KeyCatcher onKey={(key) => key === "Escape" && onCancel()} />
@@ -94,9 +88,9 @@ export function HoldingNotice({
         testID="holding"
         text={copy.line}
         action={
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <UiButton testID="holding-cancel" label="Cancel" onPress={onCancel} />
-            <UiButton testID="holding-anyway" label={copy.anyway} onPress={onAnyway} />
+          <View style={{ flexDirection: "row", gap: SPACE.m }}>
+            <Button testID="holding-cancel" label="Cancel" onPress={onCancel} />
+            <Button testID="holding-anyway" label={copy.anyway} onPress={onAnyway} />
           </View>
         }
       />
@@ -112,23 +106,31 @@ export interface AboutInfo {
   icon?: string;
 }
 
+/** About: an app's icon or Dashi's mark, its name as a page's title (TY-1), its lines, and OK, on the sheet card. */
 export function AboutWindow({ info, onClose }: { info: AboutInfo; onClose: () => void }) {
   const colors = useColors();
   return (
-    <Panel>
-      <KeyCatcher onKey={(key) => key === "Escape" && onClose()} onSubmit={onClose} />
-      {info.icon ? <AppIcon source={info.icon} style={{ width: 64, height: 64 }} /> : <Svg markup={LOGO} size={56} color={colors.text} />}
-      <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{info.title}</Text>
-      <View style={{ flexDirection: "column", alignItems: "center", gap: 2 }}>
-        {info.lines.map((line) => (
-          <Text key={line} style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>
-            {line}
-          </Text>
-        ))}
+    <Sheet testID="about" place="screen" onCancel={onClose} onConfirm={onClose}>
+      <View style={{ flexDirection: "column", alignItems: "center", gap: SPACE.gap }}>
+        {info.icon ? (
+          <AppIcon source={info.icon} style={{ width: ABOUT_ICON.app, height: ABOUT_ICON.app }} />
+        ) : (
+          <Svg markup={LOGO} size={ABOUT_ICON.logo} color={colors.text} />
+        )}
+        <Text style={{ fontSize: TYPE.title.size, lineHeight: TYPE.title.line, fontWeight: WEIGHT.bold, color: colors.text, textAlign: "center" }}>
+          {info.title}
+        </Text>
+        <View style={{ flexDirection: "column", alignItems: "center", gap: SPACE.xxs }}>
+          {info.lines.map((line) => (
+            <Text key={line} style={{ fontSize: TYPE.secondary.size, lineHeight: TYPE.secondary.line, color: colors.textMuted, textAlign: "center" }}>
+              {line}
+            </Text>
+          ))}
+        </View>
       </View>
-      <View style={{ alignSelf: "stretch", flexDirection: "row", marginTop: 6 }}>
+      <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: SPACE.s }}>
         <Button testID="about-ok" label="OK" primary onPress={onClose} />
       </View>
-    </Panel>
+    </Sheet>
   );
 }

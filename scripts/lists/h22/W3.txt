@@ -13,7 +13,6 @@
 1	packages/shell/src/launcher/lib/talk/view.tsx
 2	packages/shell/src/menus/lib/popover.tsx
 1	packages/shell/src/menus/lib/view.tsx
-1	packages/shell/src/menus/sheets.tsx
 1	packages/shell/src/notifications/area.tsx
 1	packages/shell/src/notifications/lib/banner.tsx
 1	packages/shell/src/notifications/lib/center-parts.tsx

@@ -12,7 +12,7 @@ import type { NativeHostOptions } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { type AppWindow, ClosingChoice, closeApps } from "../../closing-apps.ts";
 import type { OpenOverlay, OverlayHandle } from "../../overlay.tsx";
-import { SHEET_SIZE } from "../sheets.tsx";
+import { sheetSurfaceWidth } from "../sheets.tsx";
 import type { PowerKind } from "../types.ts";
 import { HOLDING_SURFACE, type HoldingPlace } from "./holding-place.ts";
 import { type AboutInfo, AboutWindow, ConfirmSheet, HoldingNotice } from "./power-sheets.tsx";
@@ -28,7 +28,7 @@ export interface DialogApps {
   withdraw?(window: number): void;
 }
 
-const WIDTH = SHEET_SIZE.width + 2 * SHEET_SIZE.margin;
+const WIDTH = sheetSurfaceWidth();
 
 export class Dialogs {
   private current: OverlayHandle | null = null;

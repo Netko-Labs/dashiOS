@@ -87,7 +87,7 @@ export function WifiPage({ wifi, radio, onRadio, onChoose, onBack, onSettings }:
       <PageHeader
         testID="wifi-header"
         title="Wi-Fi"
-        detail={!on ? "Off" : (state.current?.ssid ?? "Not Connected")}
+        detail={!on ? "Off" : (state.current?.ssid ?? "Not connected")}
         on={on}
         onBack={onBack}
         toggle={{ on, onChange: onRadio }}

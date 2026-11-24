@@ -8,8 +8,8 @@
  * person types elsewhere must not answer it.
  */
 
-import { buttonLook, Shortcut, useColors } from "@dashi/ui";
-import { ScrollView, Svg, Text, View, type ViewStyle } from "@mirinjs/metal";
+import { Alert, type AlertButton, MoreButton, Notice, SheetCard, Shortcut, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { ScrollView, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Allow, Ask } from "./agents/index.ts";
 import { NeededScopes, ScopeGrid } from "./consent-scopes.tsx";
@@ -18,72 +18,46 @@ import { NeededScopes, ScopeGrid } from "./consent-scopes.tsx";
 export const CONSENT = { width: 500, height: 640 } as const;
 export const STOPPED = { width: 380, height: 130 } as const;
 
-/** A sheet's card: the launcher's glass made solid, so the page under a question can't be read through it. */
+/** A surface's ground made solid, so the page under a question can't be read through it. */
 export function opaque(color: string): string {
   return /^#[0-9a-f]{8}$/i.test(color) ? color.slice(0, 7) : color;
 }
 
-const SPARK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z" fill="#000"/></svg>`;
+/** The agents' mark, the glyph on an agent's sheet's shiso tile (UI-5: `tone="agent"`). */
+export const AGENT_GLYPH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z" fill="#000"/></svg>`;
 
-export function AgentMark({ size }: { size: number }) {
+/** The kind of a sheet's go-ahead button: ume only for what loses work or can't be undone, else the ink primary. */
+export function goAheadKind(danger: boolean | undefined): "danger" | "primary" {
+  return danger === true ? "danger" : "primary";
+}
+
+/** Who asks, as a sheet names it: the agent's name, or "an agent on another machine" (`lead`: at a sentence's start). */
+export function agentSubject(who: Ask["who"], lead = false): string {
+  if (!who.remote) return who.name;
+  return lead ? "An agent on another machine" : "an agent on another machine";
+}
+
+/** Where it connects from, and what it says it is: the line under an agent's question. */
+export function agentOrigin(who: Ask["who"]): string {
+  return [who.detail, who.claims ? `says it is “${who.claims}”` : null].filter(Boolean).join(" · ");
+}
+
+/** "Stop every agent at any time with ⌃❖Esc": the line under an agent's question. */
+export function StopLine({ words }: { words: string }) {
   const colors = useColors();
   return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size * 0.28,
-        backgroundColor: colors.agent,
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <Svg markup={SPARK} size={size * 0.55} color="#ffffff" />
-    </View>
-  );
-}
-
-/** The look of a sheet's go-ahead button: red only for what loses work or can't be taken back, else the primary one. */
-export function goAheadLook(danger: boolean | undefined): { danger: true } | { primary: true } {
-  return danger === true ? { danger: true } : { primary: true };
-}
-
-/** A sheet's button: `primary` is the ink one, `danger` the ume one for what can't be undone. */
-export function Button({
-  label,
-  primary,
-  danger,
-  testID,
-  onPress,
-}: {
-  label: string;
-  primary?: boolean;
-  danger?: boolean;
-  testID?: string;
-  onPress: () => void;
-}) {
-  const look = buttonLook(useColors(), danger ? "danger" : primary ? "primary" : "secondary");
-  return (
-    <View
-      {...(testID ? { testID } : {})}
-      style={{
-        paddingLeft: 14,
-        paddingRight: 14,
-        height: 30,
-        borderRadius: 8,
-        justifyContent: "center",
-        backgroundColor: look.fill,
-        hoverBackgroundColor: look.hover,
-      }}
-      onPress={onPress}
-    >
-      <Text style={{ fontSize: 13, fontWeight: "semibold", color: look.ink }}>{label}</Text>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs }}>
+      <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>{words}</Text>
+      <Shortcut keys="⌃❖Esc" color={colors.textMuted} size={TYPE.caption.size} />
     </View>
   );
 }
 
 /** Room under the card: it sits on its bottom edge, so opening the other permissions grows it upward and the buttons stay put. */
 const BELOW = 80;
+/** The card's width on its surface, and the most its permissions take before they scroll. */
+const CARD_WIDTH = CONSENT.width - 60;
+const SCOPES_MAX = 300;
 /** The line under the grid that says what the pointed-at permission allows: always this tall, so nothing moves. */
 const ABOUT_LINES = 2;
 const ABOUT_CHARS = 150;
@@ -96,38 +70,13 @@ function cut(text: string, max: number): string {
   return `${(space > max / 2 ? head.slice(0, space) : head).replace(/[\s,;:]+$/, "")}…`;
 }
 
-/** The three answers, and how to stop every agent. */
-function ConsentFoot({ onAnswer }: { onAnswer: (allow: Allow) => void }) {
-  const colors = useColors();
-  return (
-    <>
-      <View style={{ alignSelf: "stretch", flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 14 }}>
-        <Button label="Don't Allow" testID="consent-deny" onPress={() => onAnswer("deny")} />
-        <Button label="Always Allow" testID="consent-always" onPress={() => onAnswer("always")} />
-        <Button label="Allow Once" testID="consent-once" primary onPress={() => onAnswer("once")} />
-      </View>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 12 }}>
-        <Text style={{ fontSize: 11.5, color: colors.textMuted }}>Stop every agent at any time with</Text>
-        <Shortcut keys="⌃❖Esc" color={colors.textMuted} size={11.5} />
-      </View>
-    </>
-  );
-}
-
-function cardStyle(colors: ReturnType<typeof useColors>): ViewStyle {
-  return {
-    width: CONSENT.width - 60,
-    maxHeight: CONSENT.height - 12 - BELOW,
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 4,
-    padding: 22,
-    borderRadius: 18,
-    backgroundColor: opaque(colors.launcher),
-    borderWidth: 1,
-    borderColor: colors.dockBorder,
-    shadow: "xl",
-  };
+/** The three answers. A grant: Enter never says yes (UI-6), and the sheet never takes the keyboard by itself. */
+function answers(onAnswer: (allow: Allow) => void): AlertButton[] {
+  return [
+    { label: "Don’t allow", testID: "consent-deny", onPress: () => onAnswer("deny"), cancel: true },
+    { label: "Always allow", testID: "consent-always", onPress: () => onAnswer("always") },
+    { label: "Allow once", testID: "consent-once", onPress: () => onAnswer("once"), kind: "primary", isDefault: false },
+  ];
 }
 
 export function ConsentSheet({ ask, onAnswer }: { ask: Ask; onAnswer: (allow: Allow, scopes: string[]) => void }) {
@@ -151,74 +100,65 @@ export function ConsentSheet({ ask, onAnswer }: { ask: Ask; onAnswer: (allow: Al
   const lined = more ? [...allowed, ...others] : allowed;
   const about = lined.find((scope) => scope.id === pointed);
   const { who } = ask;
-  const title = ask.title ?? (who.remote ? "An agent on another machine wants to use Dashi" : `${who.name} wants to use Dashi`);
-  const origin = [who.detail, who.claims ? `says it is “${who.claims}”` : null].filter(Boolean).join(" · ");
+  const question = ask.title ?? `Allow ${agentSubject(who)} to use Dashi?`;
+  const origin = agentOrigin(who);
   const point = (id: string, hovered: boolean): void => setPointed((now) => (hovered ? id : now === id ? null : now));
 
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", paddingTop: 12, paddingBottom: BELOW }}>
-      <View occlude testID="consent-sheet" style={cardStyle(colors)}>
-        <AgentMark size={46} />
-        <View style={{ marginTop: 8 }}>
-          <Text style={{ fontSize: 16, fontWeight: "bold", color: colors.text }}>{title}</Text>
-        </View>
-        <Text style={{ fontSize: 12, color: colors.textMuted }}>{origin}</Text>
-        {/* Scrolls only when even this can't fit (a long need on a small sheet); it gives way before anything else. */}
-        <ScrollView style={{ alignSelf: "stretch", marginTop: 12, flexShrink: 1, minHeight: 0 }}>
-          <View style={{ flexDirection: "column", flexShrink: 0 }}>
-            <NeededScopes scopes={needed} checked={checked} onToggle={toggle} />
-            {lined.length > 0 && (
-              <View style={{ flexDirection: "column", flexShrink: 0, borderTopWidth: needed.length > 0 ? 1 : 0, borderColor: colors.separator, paddingTop: 6 }}>
-                {allowed.length > 0 && (
-                  <View style={{ height: 18, justifyContent: "center" }}>
-                    <Text style={{ fontSize: 11, color: colors.textMuted }}>Already allowed</Text>
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", paddingTop: SPACE.inset, paddingBottom: BELOW }}>
+      <SheetCard testID="consent-sheet" width={CARD_WIDTH}>
+        <Alert question={question} message={origin} glyph={AGENT_GLYPH} tone="agent" buttons={answers(answer)}>
+          {/* Scrolls only when even this can't fit (a long need on a small sheet); it gives way before anything else. */}
+          <ScrollView style={{ maxHeight: SCOPES_MAX, flexShrink: 1, minHeight: 0 }}>
+            <View style={{ flexDirection: "column", flexShrink: 0 }}>
+              <NeededScopes scopes={needed} checked={checked} onToggle={toggle} />
+              {lined.length > 0 && (
+                <View
+                  style={{
+                    flexDirection: "column",
+                    flexShrink: 0,
+                    borderTopWidth: needed.length > 0 ? 1 : 0,
+                    borderColor: colors.separator,
+                    paddingTop: SPACE.s,
+                  }}
+                >
+                  {allowed.length > 0 && (
+                    <Text style={{ fontSize: TYPE.caption.size, lineHeight: TYPE.caption.line, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>
+                      Already allowed
+                    </Text>
+                  )}
+                  {allowed.length > 0 && <ScopeGrid scopes={allowed} testID="consent-allowed" checked={checked} onToggle={toggle} onPoint={point} />}
+                  {more && others.length > 0 && <ScopeGrid scopes={others} testID="consent-others" checked={checked} onToggle={toggle} onPoint={point} />}
+                  <View testID="consent-about" style={{ height: ABOUT_LINES * TYPE.secondary.line, marginTop: SPACE.xs, overflow: "hidden" }}>
+                    <Text style={{ fontSize: TYPE.secondary.size, lineHeight: TYPE.secondary.line, color: colors.textMuted }}>
+                      {about ? cut(about.detail, ABOUT_CHARS) : "Point at one to see what it allows."}
+                    </Text>
                   </View>
-                )}
-                {allowed.length > 0 && <ScopeGrid scopes={allowed} testID="consent-allowed" checked={checked} onToggle={toggle} onPoint={point} />}
-                {more && others.length > 0 && <ScopeGrid scopes={others} testID="consent-others" checked={checked} onToggle={toggle} onPoint={point} />}
-                <View testID="consent-about" style={{ height: ABOUT_LINES * 16, marginTop: 4, overflow: "hidden" }}>
-                  <Text style={{ fontSize: 12, lineHeight: 16, color: colors.textMuted }}>
-                    {about ? cut(about.detail, ABOUT_CHARS) : "Point at one to see what it allows."}
-                  </Text>
                 </View>
-              </View>
-            )}
-          </View>
-        </ScrollView>
-        {others.length > 0 && (
-          <View testID="consent-more" style={{ alignSelf: "stretch", paddingTop: 6 }} onPress={() => setMore((open) => !open)}>
-            <Text style={{ fontSize: 12, color: colors.selection }}>{more ? "Fewer permissions" : `Other permissions (${others.length})…`}</Text>
-          </View>
-        )}
-        <ConsentFoot onAnswer={answer} />
-      </View>
+              )}
+            </View>
+          </ScrollView>
+          {others.length > 0 && (
+            <MoreButton
+              testID="consent-more"
+              open={more}
+              more={`Other permissions (${others.length})`}
+              less="Fewer permissions"
+              onPress={() => setMore((open) => !open)}
+            />
+          )}
+          <StopLine words="Stop every agent at any time with" />
+        </Alert>
+      </SheetCard>
     </View>
   );
 }
 
+/** After a stop: a notice that only informs (UI-5), centred on its surface, gone by itself. */
 export function StoppedNote({ names }: { names: readonly string[] }) {
-  const colors = useColors();
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <View
-        style={{
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 3,
-          paddingTop: 14,
-          paddingBottom: 14,
-          paddingLeft: 24,
-          paddingRight: 24,
-          borderRadius: 16,
-          backgroundColor: opaque(colors.launcher),
-          borderWidth: 1,
-          borderColor: colors.dockBorder,
-          shadow: "xl",
-        }}
-      >
-        <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>Stopped {names.join(", ")}</Text>
-        <Text style={{ fontSize: 12, color: colors.textMuted }}>It can connect again later.</Text>
-      </View>
+      <Notice testID="stopped" text={`Stopped ${names.join(", ")}. It can connect again later.`} />
     </View>
   );
 }

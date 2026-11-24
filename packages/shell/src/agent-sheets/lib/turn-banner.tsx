@@ -5,12 +5,14 @@
  * until Done is pressed by the person.
  */
 
-import { useColors } from "@dashi/ui";
+import { Button, pill, RADIUS, SHADOW, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { Turn } from "../../agents/index.ts";
-import { Button, opaque } from "../../consent.tsx";
+import { opaque } from "../../consent.tsx";
 
 export const TURN = { width: 560, height: 96 } as const;
+/** The agents' dot beside the words: an indicator, in shiso. */
+const DOT = 10;
 
 export function TurnBanner({ turn, onDone }: { turn: Turn; onDone: () => void }) {
   const colors = useColors();
@@ -20,27 +22,31 @@ export function TurnBanner({ turn, onDone }: { turn: Turn; onDone: () => void })
       <View
         occlude
         style={{
-          width: TURN.width - 40,
+          width: TURN.width - 2 * SPACE.sheet,
           flexDirection: "row",
           alignItems: "center",
-          gap: 12,
-          paddingTop: 10,
-          paddingBottom: 10,
-          paddingLeft: 16,
-          paddingRight: 10,
-          borderRadius: 14,
+          gap: SPACE.inset,
+          paddingTop: SPACE.gap,
+          paddingBottom: SPACE.gap,
+          paddingLeft: SPACE.page,
+          paddingRight: SPACE.gap,
+          borderRadius: RADIUS.sheet,
           backgroundColor: opaque(colors.launcher),
           borderWidth: 1,
           borderColor: colors.agent,
-          shadow: "xl",
+          shadow: SHADOW.lg,
         }}
       >
-        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.agent }} />
-        <View style={{ flex: 1, flexDirection: "column", gap: 1 }}>
-          <Text style={{ fontSize: 13.5, fontWeight: "bold", color: colors.text }}>{`Your turn: ${turn.reason}`}</Text>
-          <Text style={{ fontSize: 11.5, color: colors.textMuted }}>{`${subject} is paused and can't see this window until you press Done.`}</Text>
+        <View style={{ width: DOT, height: DOT, borderRadius: pill(DOT), backgroundColor: colors.agent }} />
+        <View style={{ flex: 1, flexDirection: "column", gap: SPACE.px }}>
+          <Text
+            style={{ fontSize: TYPE.body.size, lineHeight: TYPE.body.line, fontWeight: WEIGHT.bold, color: colors.text }}
+          >{`Your turn: ${turn.reason}`}</Text>
+          <Text style={{ fontSize: TYPE.secondary.size, lineHeight: TYPE.secondary.line, color: colors.textMuted }}>
+            {`${subject} is paused and can’t see this window until you press Done.`}
+          </Text>
         </View>
-        <Button label="Done" primary onPress={onDone} />
+        <Button testID="turn-done" label="Done" primary onPress={onDone} />
       </View>
     </View>
   );
