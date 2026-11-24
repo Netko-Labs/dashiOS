@@ -54,8 +54,8 @@ export interface SettingsSnapshot {
   error: string | null;
 }
 
-/** How long the file is left to settle after a change before it is read again (an editor writes in steps). */
-const WATCH = { settleMs: 100 } as const;
+/** How long, in ms, the file is left to settle after a change before it is read again (an editor writes in steps). */
+const WATCH = { settle: 100 } as const;
 
 export class SettingsStore {
   private snapshot: SettingsSnapshot;
@@ -189,7 +189,7 @@ export class SettingsStore {
       const watcher = watch(dirname(this.path), (_event, name) => {
         if (name && name !== basename(this.path)) return;
         clearTimeout(timer);
-        timer = setTimeout(() => this.reload(), WATCH.settleMs);
+        timer = setTimeout(() => this.reload(), WATCH.settle);
       });
       watcher.on("error", () => {});
       return () => {
