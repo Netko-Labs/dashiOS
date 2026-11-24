@@ -13,7 +13,7 @@
  * muted words at its end about what it found ("2 of 4").
  */
 
-import { type Bounds, Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { type Bounds, Svg, Text, TextInput, View, type ViewStyle } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import type { Look } from "./button.tsx";
 import { CLEAR as CLEAR_GLYPH, SEARCH } from "./glyphs.ts";
@@ -97,66 +97,21 @@ export function SearchField({
   const size = look === "panel" ? TYPE.panel.body.size : TYPE.body.size;
   const words = placeholderAt(placeholder, laid);
   const radius = look === "panel" ? pill(m.height) : RADIUS.control;
-  const box = fill
-    ? { flex: 1, minWidth: minWidth ?? m.least, height: m.height }
-    : { width, height: m.height, ...(minWidth === undefined ? { flexShrink: 0 as const } : { flexShrink: 1 as const, minWidth }) };
+  const box = boxOf(fill === true, width, minWidth);
   const laidOut = (bounds: Bounds): void => {
     setLaid((was) => (Math.abs(was - bounds.width) < 0.5 ? was : bounds.width));
     onLayout?.(bounds);
   };
   if (rest !== undefined) {
     return (
-      <View
-        testID={testID}
-        onLayout={laidOut}
-        focusable
-        accessibilityRole="button"
-        accessibilityLabel={restLabel ?? placeholder}
-        onPress={onPressRest}
-        style={{
-          ...box,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: SPACE.xxs,
-          paddingLeft: SPACE.xs,
-          paddingRight: SPACE.m,
-          borderRadius: radius,
-          backgroundColor: ground,
-          focusRingColor: colors.focusRing,
-        }}
-      >
+      <RestBox testID={testID} box={box} radius={radius} ground={ground} label={restLabel ?? placeholder} onPress={onPressRest} onLayout={laidOut}>
         {rest}
-      </View>
+      </RestBox>
     );
   }
   return (
     <View onLayout={laidOut} style={{ ...box, flexDirection: "row", position: "relative" }}>
-      <TextInput
-        testID={testID}
-        value={value}
-        accessibilityLabel={placeholder}
-        autoFocus={autoFocus}
-        onChangeText={onChangeText}
-        onSubmitEditing={onSubmit}
-        onKeyPress={(key) => {
-          // A search's Esc empties the field first, as on the Mac; a find's leaves it.
-          if (key === "Escape" && value !== "" && variant === "search") onChangeText("");
-          else onKeyPress?.(key);
-        }}
-        style={{
-          flex: 1,
-          height: m.height,
-          padding: SPACE.xs,
-          paddingLeft: lead,
-          paddingRight: SPACE.xs + trailing,
-          fontSize: size,
-          borderRadius: radius,
-          color: colors.text,
-          backgroundColor: ground,
-          borderColor: CLEAR,
-          focusBorderColor: colors.focusRing,
-        }}
-      />
+      <Input props={{ testID, value, onChangeText, placeholder, autoFocus, variant, onKeyPress, onSubmit }} look={{ lead, trailing, size, radius, ground }} />
       <Lead testID={testID} glyph={glyph} words={value === "" ? words : null} size={size} right={SPACE.xs + trailing} />
       <Trailing
         testID={testID}
@@ -169,6 +124,99 @@ export function SearchField({
         }}
         onWidth={(width) => setTrailing((was) => (Math.abs(was - width) < 0.5 ? was : width))}
       />
+    </View>
+  );
+}
+
+/** The text input itself: the whole box, its edge turning to the ring with the keyboard, its words clear of the glyph and the end. */
+function Input({
+  props,
+  look,
+}: {
+  props: Pick<SearchFieldProps, "testID" | "value" | "onChangeText" | "placeholder" | "autoFocus" | "variant" | "onKeyPress" | "onSubmit">;
+  look: { lead: number; trailing: number; size: number; radius: number; ground: string };
+}) {
+  const colors = useColors();
+  const { testID, value, onChangeText, placeholder, autoFocus, variant, onKeyPress, onSubmit } = props;
+  return (
+    <TextInput
+      testID={testID}
+      value={value}
+      accessibilityLabel={placeholder}
+      autoFocus={autoFocus}
+      onChangeText={onChangeText}
+      onSubmitEditing={onSubmit}
+      onKeyPress={(key) => {
+        // A search's Esc empties the field first, as on the Mac; a find's leaves it.
+        if (key === "Escape" && value !== "" && variant !== "find") onChangeText("");
+        else onKeyPress?.(key);
+      }}
+      style={{
+        flex: 1,
+        height: SEARCH_FIELD.height,
+        padding: SPACE.xs,
+        paddingLeft: look.lead,
+        paddingRight: SPACE.xs + look.trailing,
+        fontSize: look.size,
+        borderRadius: look.radius,
+        color: colors.text,
+        backgroundColor: look.ground,
+        borderColor: CLEAR,
+        focusBorderColor: colors.focusRing,
+      }}
+    />
+  );
+}
+
+/** The field's box: its row's room (`fill`), or its width, shrinking toward `minWidth` when one is given. */
+function boxOf(fill: boolean, width: number, minWidth: number | undefined): ViewStyle {
+  const m = SEARCH_FIELD;
+  if (fill) return { flex: 1, minWidth: minWidth ?? m.least, height: m.height };
+  return { width, height: m.height, ...(minWidth === undefined ? { flexShrink: 0 as const } : { flexShrink: 1 as const, minWidth }) };
+}
+
+/** The field at rest as something else (Files' crumbs): the same box, pressable, one Tab stop. */
+function RestBox({
+  testID,
+  box,
+  radius,
+  ground,
+  label,
+  onPress,
+  onLayout,
+  children,
+}: {
+  testID: string;
+  box: ViewStyle;
+  radius: number;
+  ground: string;
+  label: string;
+  onPress?: () => void;
+  onLayout: (bounds: Bounds) => void;
+  children: ReactNode;
+}) {
+  const colors = useColors();
+  return (
+    <View
+      testID={testID}
+      onLayout={onLayout}
+      focusable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={{
+        ...box,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: SPACE.xxs,
+        paddingLeft: SPACE.xs,
+        paddingRight: SPACE.m,
+        borderRadius: radius,
+        backgroundColor: ground,
+        focusRingColor: colors.focusRing,
+      }}
+    >
+      {children}
     </View>
   );
 }
