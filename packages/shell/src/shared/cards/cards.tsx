@@ -6,11 +6,9 @@
  * draw with them.
  */
 
-import { KeyedText, Shortcut, type Surface } from "@dashi/ui";
+import { KeyedText, Button as KitButton, Shortcut, type Surface, useControlColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { Children, createContext, Fragment, isValidElement, type ReactNode, useContext, useMemo } from "react";
-import { PillButton } from "../controls/inputs.tsx";
-import { useControlColors } from "../controls/palette.ts";
 import { CardRowsContext, cardRows } from "./edge.ts";
 
 /** A card's corner radius (Settings' PAGE.cardRadius). */
@@ -141,6 +139,14 @@ export function Button({
   disabled?: boolean;
 }) {
   return (
-    <PillButton label={label} onPress={onPress} testID={testID} tone={danger ? "danger" : primary ? "ink" : "plain"} {...(disabled ? { disabled } : {})} />
+    <KitButton
+      look="panel"
+      label={label}
+      onPress={onPress}
+      testID={testID}
+      primary={primary === true && !danger}
+      danger={danger === true}
+      {...(disabled ? { disabled } : {})}
+    />
   );
 }

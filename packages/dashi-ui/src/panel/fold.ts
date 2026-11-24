@@ -5,10 +5,7 @@
  * of the hidden choices, it takes the fourth pill's place, chosen.
  */
 
-export interface Choice<T> {
-  value: T;
-  label: string;
-}
+import type { Choice } from "../choices.tsx";
 
 /** A row folds past this many choices. */
 export const FOLD_PAST = 5;

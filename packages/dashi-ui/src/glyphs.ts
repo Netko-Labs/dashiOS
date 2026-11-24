@@ -17,6 +17,16 @@ export const MORE = svg(
   '<circle cx="3.5" cy="8" r="1.3" fill="#000"/><circle cx="8" cy="8" r="1.3" fill="#000"/><circle cx="12.5" cy="8" r="1.3" fill="#000"/>',
 );
 /** A chevron up over a chevron down: a pop-up button, whose menu opens over it. */
+export const CHEVRON_LEFT = svg(stroke("M10 4.5L6.5 8l3.5 3.5", 1.6));
+export const CHEVRON_RIGHT = svg(stroke("M6 4.5L9.5 8 6 11.5", 1.6));
+/** Something went wrong: an exclamation in a circle (ErrorState). */
+export const PROBLEM = svg(
+  `<circle cx="8" cy="8" r="6.2" stroke="#000" stroke-width="1.3" fill="none"/>${stroke("M8 4.8v3.8", 1.6)}<circle cx="8" cy="11.1" r=".95" fill="#000"/>`,
+);
+/** No connection: a cloud crossed out (ErrorState's offline kind). */
+export const OFFLINE = svg(
+  `${stroke("M4.6 12.2h6.6a2.7 2.7 0 0 0 .4-5.4 3.8 3.8 0 0 0-7.2-.6A2.9 2.9 0 0 0 4.6 12.2z", 1.3)}${stroke("M2.4 2.4l11.2 11.2", 1.4)}`,
+);
 export const CHEVRON_UP_DOWN = svg(stroke("M5.2 6.2L8 3.4l2.8 2.8", 1.5) + stroke("M5.2 9.8L8 12.6l2.8-2.8", 1.5));
 /** An octagon with an x: stop (quit) a process. */
 export const STOP = svg(`${stroke("M5.5 1.8h5l3.7 3.7v5l-3.7 3.7h-5l-3.7-3.7v-5z", 1.4)}${stroke("M6 6l4 4M10 6l-4 4", 1.5)}`);

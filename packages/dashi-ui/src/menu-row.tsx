@@ -15,7 +15,7 @@ import { createContext, useContext } from "react";
 import { CHECK } from "./glyphs.ts";
 import { MENU } from "./menu-place.ts";
 import { Shortcut } from "./shortcut.tsx";
-import { useColors } from "./theme/index.ts";
+import { CLEAR, lightColors, useColors } from "./theme/index.ts";
 
 /** How a lit row is drawn: its fill, the words on it, and its shortcut's ink. */
 export interface MenuHighlight {
@@ -34,7 +34,7 @@ export interface MenuHighlight {
 export const MenuHighlightContext = createContext<MenuHighlight | null>(null);
 
 /** The lit row's look: the surface's (`MenuHighlightContext`), else the accent under its own words (`onAccent`). */
-export function menuHighlight(own: MenuHighlight | null, selection: string, onAccent = "#ffffff"): MenuHighlight {
+export function menuHighlight(own: MenuHighlight | null, selection: string, onAccent = lightColors.onAccent): MenuHighlight {
   return own ?? { fill: selection, ink: onAccent, keysInk: `${onAccent}cc` };
 }
 
@@ -79,7 +79,7 @@ export function MenuRow({ label, testID, keys, ticks, checked, disabled = false,
         gap: MENU.keysGap,
         paddingHorizontal: MENU.inset,
         borderRadius: MENU.rowRadius,
-        backgroundColor: shown ? look.fill : "#00000000",
+        backgroundColor: shown ? look.fill : CLEAR,
         focusRingColor: colors.focusRing,
       }}
     >

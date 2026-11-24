@@ -1,10 +1,9 @@
 import { expect, test } from "bun:test";
-import { Caption, Group, ROW_INSET, Row, SidebarItem, TILE_SIZE } from "@dashi/ui";
+import { Caption, Group, pillsWrapped, ROW_INSET, Row, SEGMENTED, Segmented, SidebarItem, TILE_SIZE } from "@dashi/ui";
 import { type NativeEvent, type NativeTransport, render, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { PAGE, pillsUnder, roomBeside, Row as SettingsRow, wordsOnly } from "../src/settings-app/lib/row.tsx";
 import { titleLine } from "../src/settings-app/ui.tsx";
-import { pillsWrapped, SEGMENTED, Segmented } from "../src/shared/controls/inputs.tsx";
 import { settle } from "./support/time.ts";
 
 // Shared edges (review 0.6 04-align-b): one line for the lights, the search
@@ -105,7 +104,7 @@ test("pills squeezed while the window narrows go back beside the words when it w
   const options = ["Default", "Large", "Larger", "Largest"].map((label) => ({ value: label, label }));
   const root = render(
     <SettingsRow testID="row" label="Text size" glyph="<svg/>">
-      <Segmented testID="pills" options={options} value="Default" onChange={() => {}} />
+      <Segmented look="panel" testID="pills" options={options} value="Default" onChange={() => {}} />
     </SettingsRow>,
     transport,
   );

@@ -1,11 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { drawAccent, KOMBU_SEED } from "@dashi/ui";
+import { controlPalette, DARK_CONTROLS, drawAccent, KOMBU_SEED, LIGHT_CONTROLS } from "@dashi/ui";
 import { AccentSync, pixelsCommand, type ReadPixels } from "../src/appearance/index.ts";
 import { parseSettings } from "../src/settings/settings.ts";
 import { gtk4Colors, gtkColors } from "../src/shared/appearance/gtk-colors.ts";
 import { accentFill, nearestAccent } from "../src/shared/appearance/index.ts";
 import { FlagsStore, parseFlags } from "../src/shared/control-center/index.ts";
-import { controlPalette, DARK_CONTROLS, LIGHT_CONTROLS } from "../src/shared/controls/palette.ts";
 
 /** A still that is all one colour. */
 const solid = (r: number, g: number, b: number): Uint8Array => Uint8Array.from({ length: 96 * 60 * 3 }, (_, i) => [r, g, b][i % 3] ?? 0);

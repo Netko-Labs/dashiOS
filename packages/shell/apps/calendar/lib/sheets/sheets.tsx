@@ -141,7 +141,7 @@ export function ScopeSheet({
             : "Its repeat changed, so the change is for this event and the ones after it, or for every time it happens."
       }
       glyph={WARNING}
-      tone={deleting ? "danger" : "accent"}
+      tone={deleting ? "danger" : "neutral"}
       buttons={[
         { label: CANCEL, testID: "scope:cancel", onPress: onCancel, cancel: true },
         ...(allowThis ? [{ label: THIS, testID: "scope:this", onPress: () => onChoose("this"), isDefault: true }] : []),

@@ -136,7 +136,7 @@ function Terminal({
         onCloseMenu: closeMenu,
         onCloseTabsMenu: closeTabsMenu,
       })}
-      center={titleCenter({
+      titleSlot={titleCenter({
         tabs,
         names,
         onSelect: selectTabId,

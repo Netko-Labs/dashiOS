@@ -10,6 +10,7 @@
  * (`DISABLED_OPACITY`), so a disabled primary still reads as primary.
  */
 
+import { ON_DANGER } from "./theme/colors.ts";
 import type { Palette } from "./theme/palette.ts";
 
 /** `chosen` is a pill that is the one picked (choices.tsx): kombu, since it is on, not a button that goes ahead. */
@@ -36,7 +37,7 @@ export function buttonLook(
 ): ButtonLook {
   if (kind !== "secondary") {
     const fills = {
-      danger: { rest: colors.umeFill, over: colors.umeFillHover, held: colors.umeFillPressed, ink: "#ffffff" },
+      danger: { rest: colors.umeFill, over: colors.umeFillHover, held: colors.umeFillPressed, ink: ON_DANGER },
       chosen: { rest: colors.selection, over: colors.selectionHover, held: colors.selectionPressed, ink: colors.onAccent },
       primary: { rest: colors.primary, over: colors.primaryHover, held: colors.primaryPressed, ink: colors.onPrimary },
     } as const;

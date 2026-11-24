@@ -7,31 +7,14 @@
  * capsule and the bar read (shared/pill/persona.ts).
  */
 
-export interface Colour {
-  id: ColourId;
-  /** As the pane's swatch is called. */
-  name: string;
-  /** The fill, from one end to the other. */
-  from: string;
-  to: string;
-  /** Words on white buttons, and the mark in the white disc. */
-  deep: string;
-  /** Quiet words on the fill. */
-  soft: string;
-  glow: string;
-}
+import { PERSONA_COLORS, type PersonaColor } from "@dashi/ui";
+
+export type Colour = PersonaColor;
 
 export const COLOUR_IDS = ["violet", "blue", "teal", "moss", "berry", "cocoa"] as const;
 export type ColourId = (typeof COLOUR_IDS)[number];
 
-export const COLOURS: readonly Colour[] = [
-  { id: "violet", name: "Violet", from: "#3f2a9e", to: "#5b41c4", deep: "#2f2080", soft: "#d9d2fb", glow: "#a58bff80" },
-  { id: "blue", name: "Blue", from: "#17479e", to: "#2558b8", deep: "#123a82", soft: "#d3e2fb", glow: "#7fb0ff80" },
-  { id: "teal", name: "Teal", from: "#0c5560", to: "#136770", deep: "#0a4750", soft: "#cdeef0", glow: "#6fd3dc80" },
-  { id: "moss", name: "Moss", from: "#3f5220", to: "#4d6326", deep: "#34451a", soft: "#e1edc8", glow: "#b5d67a80" },
-  { id: "berry", name: "Berry", from: "#8a1f4f", to: "#9f2a5f", deep: "#701840", soft: "#fbd5e4", glow: "#ff8fbc80" },
-  { id: "cocoa", name: "Cocoa", from: "#4e3629", to: "#6f4d3c", deep: "#432e23", soft: "#f1dfd3", glow: "#e0b29880" },
-];
+export const COLOURS: readonly Colour[] = PERSONA_COLORS;
 
 /** Violet: Dashi's own, and what the capsule wears while nothing is chosen. */
 export const VIOLET: Colour = COLOURS[0] as Colour;

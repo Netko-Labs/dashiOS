@@ -6,8 +6,8 @@
  * ink: Done filled, as the button that goes ahead, the others outlined.
  */
 
+import { useControlColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import { useControlColors } from "../../shared/controls/palette.ts";
 import { DEFAULT_LAYOUT } from "../catalog.ts";
 import { PLUS } from "../glyphs.ts";
 import { addItem, COLUMN, GRID, type Layout, type TileSize } from "../layout.ts";

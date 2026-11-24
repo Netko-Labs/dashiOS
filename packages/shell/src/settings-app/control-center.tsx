@@ -13,6 +13,7 @@
  * at once.
  */
 
+import { Button, InkFill, useControlColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import { type AppletTile, isAppletTile } from "../control-center/applet-tiles.ts";
@@ -22,9 +23,6 @@ import { PUZZLE } from "../control-center/glyphs.ts";
 import { ControlCenterPanel, type ControlCenterProps, useLayout } from "../control-center/index.ts";
 import { type Layout, type Placed, pack, shown } from "../control-center/layout.ts";
 import { Caption, Group } from "../shared/cards/index.ts";
-import { PillButton } from "../shared/controls/inputs.tsx";
-import { useControlColors } from "../shared/controls/palette.ts";
-import { InkFill } from "../shared/controls/parts.tsx";
 import { appletOffers, MINIATURE, miniatureFrame, miniatureHeight } from "./lib/heroes.ts";
 import { Row as Item } from "./lib/row.tsx";
 import { Setting } from "./lib/setting.tsx";
@@ -165,7 +163,7 @@ function EditorPane({ editor }: { editor: ControlCenterEditor }) {
       </Hero>
       <Group testID="cc-settings">
         <Setting id="control-center/edit">
-          <PillButton testID="cc-edit" label={editing ? "Editing" : "Edit"} tone="ink" disabled={editing} onPress={() => setEditing(true)} />
+          <Button look="panel" testID="cc-edit" label={editing ? "Editing" : "Edit"} primary disabled={editing} onPress={() => setEditing(true)} />
         </Setting>
         {hasSliders && (
           <Setting id="control-center/sliders" detail={null}>

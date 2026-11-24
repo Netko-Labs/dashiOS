@@ -18,9 +18,9 @@ const QUESTION =
 function glyphFor(kind: MessageKind): { glyph: string; tone: AlertTone } {
   switch (kind) {
     case "info":
-      return { glyph: glyphs.INFO, tone: "accent" };
+      return { glyph: glyphs.INFO, tone: "neutral" };
     case "question":
-      return { glyph: QUESTION, tone: "accent" };
+      return { glyph: QUESTION, tone: "neutral" };
     case "warning":
       return { glyph: glyphs.WARNING, tone: "warning" };
     case "error":

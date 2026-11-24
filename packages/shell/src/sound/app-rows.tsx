@@ -13,7 +13,7 @@
  * a twentieth, Space or Return mutes it.
  */
 
-import { useColors } from "@dashi/ui";
+import { fillLength, InkFill, levelAt, useColors, useControlColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { percentText } from "../control-center/catalog.ts";
 import { GRID } from "../control-center/layout.ts";
@@ -21,9 +21,6 @@ import { PageRow, PageSection } from "../control-center/page-parts.tsx";
 import { usePageKey } from "../control-center/page-stops.ts";
 import { speakerGlyph } from "../glyphs.ts";
 import { AppIcon } from "../shared/apps/index.ts";
-import { useControlColors } from "../shared/controls/palette.ts";
-import { FocusRing, InkFill } from "../shared/controls/parts.tsx";
-import { fillLength, levelAt } from "../shared/controls/slider-math.ts";
 import type { AppRecording, AppSound } from "./apps/index.ts";
 
 /** A row 48 tall; the mute knob 48 across, 6 from the slider. */
@@ -150,6 +147,7 @@ export function steppedLevel(level: number, direction: "left" | "right"): number
 
 /** One app: its slider and its mute knob, one stop of the page's keys. */
 function AppRow({ app, onLevel, onMute }: { app: AppSound; onLevel: (level: number) => void; onMute: (muted: boolean) => void }) {
+  const colors = useControlColors();
   const key = usePageKey(
     `sound-app-row:${app.key}`,
     () => onMute(!app.muted),
@@ -159,11 +157,19 @@ function AppRow({ app, onLevel, onMute }: { app: AppSound; onLevel: (level: numb
     <View
       testID={`sound-app-row:${app.key}`}
       onLayout={key.onLayout}
-      style={{ height: APP_ROW.height, flexDirection: "row", alignItems: "center", gap: APP_ROW.gap, position: "relative" }}
+      focusRingShown={key.focused}
+      style={{
+        height: APP_ROW.height,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: APP_ROW.gap,
+        position: "relative",
+        borderRadius: APP_ROW.height / 2,
+        focusRingColor: colors.focus,
+      }}
     >
       <AppSlider app={app} onLevel={onLevel} />
       <MuteKnob testID={`sound-app-mute:${app.key}`} label={`Mute ${app.name}`} muted={app.muted} size={APP_ROW.knob} onPress={() => onMute(!app.muted)} />
-      {key.focused && <FocusRing radius={APP_ROW.height / 2} testID="cc-page-focus-ring" />}
     </View>
   );
 }

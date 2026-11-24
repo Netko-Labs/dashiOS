@@ -1,10 +1,8 @@
 import { expect, test } from "bun:test";
-import { Appearance, contrastRatio, darkColors, LOGIN_FOCUS_RING, lightColors } from "@dashi/ui";
+import { Appearance, Button, contrastRatio, DARK_CONTROLS, darkColors, LIGHT_CONTROLS, LOGIN_FOCUS_RING, lightColors } from "@dashi/ui";
 import { type NativeEvent, type NativeTransport, render, View } from "@mirinjs/metal";
 import { Button as ConsentButton } from "../src/consent.tsx";
 import { Button as SheetButton } from "../src/menus/sheets.tsx";
-import { PillButton } from "../src/shared/controls/inputs.tsx";
-import { DARK_CONTROLS, LIGHT_CONTROLS } from "../src/shared/controls/palette.ts";
 import { settle } from "./support/time.ts";
 
 // One purple ring and ink primary buttons (docs/design.html KB-2, UI-4;
@@ -54,7 +52,7 @@ test("the buttons sheets draw themselves go ahead in ink, never green, Light and
         <View>
           <ConsentButton label="Allow" primary testID="consent" onPress={() => {}} />
           <SheetButton label="Restart" primary testID="sheet" onPress={() => {}} />
-          <PillButton label="Continue" tone="ink" testID="pill" onPress={() => {}} />
+          <Button look="panel" label="Continue" primary testID="pill" onPress={() => {}} />
         </View>
       </Appearance>,
       host.transport,

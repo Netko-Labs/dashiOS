@@ -1,0 +1,5 @@
+# H23 (scripts/check-design-colours.ts): colours off their one job, per file. Shrink-only, to empty:
+# fix the code (CO-1, CO-2, CO-10, CO-13, KB-2), then `bun scripts/check-design-colours.ts --shrink`.
+1	packages/shell/src/setup/lib/pages/welcome.tsx
+1	packages/shell/src/widgets/edit.tsx
+1	packages/shell/src/widgets/gallery.tsx

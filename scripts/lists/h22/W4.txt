@@ -1,0 +1,35 @@
+# H22 (scripts/check-design-kit.ts): controls drawn outside @dashi/ui, per file. Shrink-only: move each
+# onto the kit's control (UI-1, UI-8 to UI-15), then `bun scripts/check-design-kit.ts --shrink`.
+1	packages/shell/src/battery/lib/panel.tsx
+3	packages/shell/src/control-center/lib/edit.tsx
+1	packages/shell/src/control-center/lib/grid.tsx
+3	packages/shell/src/control-center/page-parts.tsx
+2	packages/shell/src/control-center/tiles.tsx
+1	packages/shell/src/settings-app/appearance.tsx
+1	packages/shell/src/settings-app/keyboard.tsx
+1	packages/shell/src/settings-app/lib/accent/card.tsx
+3	packages/shell/src/settings-app/lib/accent/picker.tsx
+1	packages/shell/src/settings-app/lib/accent/preview.tsx
+1	packages/shell/src/settings-app/lib/accent/swatches.tsx
+3	packages/shell/src/settings-app/lib/panes/agents-alone-parts.tsx
+1	packages/shell/src/settings-app/lib/panes/agents-alone.tsx
+1	packages/shell/src/settings-app/lib/panes/agents-consent.tsx
+1	packages/shell/src/settings-app/lib/panes/battery.tsx
+1	packages/shell/src/settings-app/lib/panes/clipboard-parts.tsx
+1	packages/shell/src/settings-app/lib/panes/display-hero.tsx
+2	packages/shell/src/settings-app/lib/panes/passwords.tsx
+2	packages/shell/src/settings-app/lib/panes/payments.tsx
+1	packages/shell/src/settings-app/lib/panes/persona-look.tsx
+3	packages/shell/src/settings-app/lib/panes/persona-parts.tsx
+1	packages/shell/src/settings-app/lib/panes/sound-mixer-parts.tsx
+2	packages/shell/src/settings-app/lib/panes/tokens.tsx
+1	packages/shell/src/settings-app/lib/panes/users.tsx
+2	packages/shell/src/settings-app/lib/panes/voice-dictation-words.tsx
+1	packages/shell/src/settings-app/lib/panes/voice-fetch-parts.tsx
+3	packages/shell/src/settings-app/lib/panes/wallpaper-live.tsx
+2	packages/shell/src/settings-app/lib/panes/wallpaper.tsx
+2	packages/shell/src/settings-app/lib/sidebar-pill.tsx
+2	packages/shell/src/settings-app/lib/sidebar-search.tsx
+2	packages/shell/src/settings-app/ui.tsx
+3	packages/shell/src/sound/app-rows.tsx
+2	packages/shell/src/sound/mic-pill.tsx

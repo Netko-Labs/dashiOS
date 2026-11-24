@@ -13,10 +13,10 @@
  * purple stays the keyboard ring's and the agents'), gone after `LIT_MS`.
  */
 
+import { useControlColors } from "@dashi/ui";
 import { type Bounds, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useSyncExternalStore } from "react";
 import { CardLit } from "../shared/cards/index.ts";
-import { useControlColors } from "../shared/controls/palette.ts";
 import type { AppSpotId } from "./lib/find.ts";
 import { rowPlace, type SettingId } from "./registry/index.ts";
 

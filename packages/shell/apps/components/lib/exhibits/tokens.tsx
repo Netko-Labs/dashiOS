@@ -4,7 +4,7 @@
  * its column, with its name and its value.
  */
 
-import { contrastRatio, type Palette, type Surface, TEXT_SIZES, TINT_ORDER, TINTS, useColors, useSurface } from "@dashi/ui";
+import { contrastRatio, ON_TINT, type Palette, type Surface, TEXT_SIZES, TINT_ORDER, TINTS, useColors, useSurface } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { Exhibit, Inked, PageBody } from "../specimen.tsx";
 
@@ -86,7 +86,7 @@ export function TintsPage() {
               {TINT_ORDER.map((name) => (
                 <View key={name} style={{ width: 72, flexDirection: "column", alignItems: "center", gap: 4 }}>
                   <View style={{ width: 44, height: 44, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: TINTS[name] }}>
-                    <Text style={{ fontSize: 15, fontWeight: "bold", color: "#ffffff" }}>{name.slice(0, 1).toUpperCase()}</Text>
+                    <Text style={{ fontSize: 15, fontWeight: "bold", color: ON_TINT }}>{name.slice(0, 1).toUpperCase()}</Text>
                   </View>
                   <Text style={{ fontSize: 11, color: colors.text }}>{name}</Text>
                   <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: "monospace" }}>{TINTS[name]}</Text>

@@ -88,7 +88,7 @@ function AccountSheet({ request, account, answer }: { request: AccountRequest; a
       question={shareQuestion(request)}
       {...(reason !== undefined ? { message: reason } : {})}
       glyph={PERSON}
-      tone="accent"
+      tone="neutral"
       buttons={[
         { label: "Don’t Share", testID: "account:deny", onPress: () => answer(false), cancel: true },
         // Sharing is a click, never a stray Enter.

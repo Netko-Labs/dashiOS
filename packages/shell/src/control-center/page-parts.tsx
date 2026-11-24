@@ -7,13 +7,10 @@
  * Sound, power mode, keyboard light and graphics pages are built from these.
  */
 
-import { useColors } from "@dashi/ui";
+import { useColors, useControlColors, useGrow } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext } from "react";
 import { AppIcon } from "../shared/apps/index.ts";
-import { useGrow } from "../shared/controls/motion.ts";
-import { useControlColors } from "../shared/controls/palette.ts";
-import { FocusRing } from "../shared/controls/parts.tsx";
 import { CHEVRON_LEFT as BACK } from "./glyphs.ts";
 import { GRID } from "./layout.ts";
 import { usePageKey } from "./page-stops.ts";
@@ -35,6 +32,7 @@ function HeaderSwitch({ testID, label, on, onChange }: { testID: string; label: 
       accessibilityRole="switch"
       accessibilityLabel={label}
       accessibilityState={{ checked: on }}
+      focusRingShown={key.focused}
       style={{
         width: 42,
         height: 24,
@@ -44,10 +42,10 @@ function HeaderSwitch({ testID, label, on, onChange }: { testID: string; label: 
         justifyContent: on ? "flex-end" : "flex-start",
         backgroundColor: on ? colors.onInk : colors.line,
         position: "relative",
+        focusRingColor: colors.focus,
       }}
     >
       <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: on ? colors.on : colors.offInk }} />
-      {key.focused && <FocusRing radius={12} testID="cc-page-focus-ring" />}
     </View>
   );
 }
@@ -156,6 +154,7 @@ export function PageRow({ testID, label, glyph, icon, detail, trailing, checked 
       {...(onPress ? { onPress } : {})}
       accessibilityRole={onPress ? "button" : "text"}
       accessibilityState={{ checked }}
+      focusRingShown={key.focused}
       style={{
         height: 48,
         flexDirection: "row",
@@ -166,9 +165,9 @@ export function PageRow({ testID, label, glyph, icon, detail, trailing, checked 
         borderRadius: radius,
         backgroundColor: checked ? colors.on : colors.off,
         position: "relative",
+        focusRingColor: colors.focus,
       }}
     >
-      {key.focused && <FocusRing radius={radius} testID="cc-page-focus-ring" />}
       {(glyph || icon) && (
         <View
           style={{

@@ -7,10 +7,9 @@
  * registry's would not do (a slider, a picker, a live reading).
  */
 
+import { FoldedChoices, Switch } from "@dashi/ui";
 import { createContext, type ReactNode, useCallback, useContext, useSyncExternalStore } from "react";
 import type { FlagsStore } from "../../shared/control-center/index.ts";
-import { FoldedChoices } from "../../shared/controls/folded.tsx";
-import { ControlSwitch } from "../../shared/controls/inputs.tsx";
 import { type RowDef, type SettingId, type SettingValue, settingRow, valueOf } from "../registry/index.ts";
 import { Spot } from "../spot.tsx";
 import type { SettingsStore } from "../store.ts";
@@ -58,7 +57,7 @@ function RegistryControl({ row, testID }: { row: RowDef; testID: string }) {
   const value = useRowValue(row);
   const set = useSetRow(row);
   if (value === null) return null;
-  if (row.kind === "switch") return <ControlSwitch testID={testID} label={row.name ?? row.title} on={value === true} onChange={set} />;
+  if (row.kind === "switch") return <Switch look="panel" testID={testID} label={row.name ?? row.title} on={value === true} onChange={set} />;
   if (row.kind === "choice" && row.options && typeof value !== "boolean")
     return <FoldedChoices testID={testID} value={value} options={row.options} onChange={set} />;
   return null;

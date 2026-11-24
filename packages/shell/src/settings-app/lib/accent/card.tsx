@@ -8,11 +8,10 @@
  * repaints with it, this card included.
  */
 
-import { type AccentChoice, accentSentence, choiceName, isAccentHex, KOMBU_SEED } from "@dashi/ui";
+import { type AccentChoice, accentSentence, choiceName, controlPalette, isAccentHex, KOMBU_SEED, useControlColors } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { type FlagsStore, useFlags } from "../../../shared/control-center/index.ts";
-import { controlPalette, useControlColors } from "../../../shared/controls/palette.ts";
 import { wallpaperStill } from "../../../wallpaper/index.ts";
 import { useSettings } from "../../hooks.ts";
 import { Spot } from "../../spot.tsx";

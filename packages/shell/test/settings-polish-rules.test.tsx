@@ -1,11 +1,11 @@
 import { expect, test } from "bun:test";
+import { FOLD_PAST, foldChoices, moreMenuOrigin } from "@dashi/ui";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { layoutName, layoutWords, variantWords } from "../src/settings-app/layouts.ts";
 import { BLANK_CHOICES, BLANK_COMMON, blankChoice, SLEEP_CHOICES, SLEEP_COMMON, timePills } from "../src/settings-app/lib/controls.ts";
 import { findSettings } from "../src/settings-app/lib/find.ts";
 import { chargeLimitTitle } from "../src/settings-app/lib/panes/battery-laptop.tsx";
 import { SETTINGS_ROWS } from "../src/settings-app/registry/index.ts";
-import { FOLD_PAST, foldChoices, moreMenuOrigin } from "../src/shared/controls/fold.ts";
 import { settle } from "./support/time.ts";
 
 // The settings polish (47-settings-roast): folded pill rows, the charge limit's title, one search result per setting,
@@ -50,9 +50,8 @@ test("the timers show their four usual times; 20 minutes, set, stands fourth", (
 });
 
 test("More opens every choice in Dashi's menu, and a hidden one picked there takes the fourth pill", async () => {
-  const { TooltipLayer } = await import("@dashi/ui");
+  const { FoldedChoices, TooltipLayer } = await import("@dashi/ui");
   const { View } = await import("@mirinjs/metal");
-  const { FoldedChoices } = await import("../src/shared/controls/folded.tsx");
   const listeners: ((event: NativeEvent) => void)[] = [];
   const transport: NativeTransport = { send() {}, onEvent: (listener) => listeners.push(listener), onClose() {}, simulate() {}, close() {} };
   let value = "a";

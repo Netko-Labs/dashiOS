@@ -1,8 +1,7 @@
 /** The sidebar's rows: a pane as a pill, and a group's plain label. */
 
+import { Knob, useControlColors } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
-import { useControlColors } from "../../shared/controls/palette.ts";
-import { Knob } from "../../shared/controls/parts.tsx";
 import { SIDEBAR } from "./sidebar-measures.ts";
 
 /** The badge's purple: the agents' and the keyboard ring's. */

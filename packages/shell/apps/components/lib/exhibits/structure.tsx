@@ -15,6 +15,7 @@ import {
   Table,
   TINTS,
   Tile,
+  ToolbarButton,
 } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
@@ -95,6 +96,35 @@ export function ListsPage() {
             </View>
           )}
         </States>
+      </Exhibit>
+      <Exhibit
+        title="Sidebar rail and accessory"
+        note="Folded to a 56 rail, a row is its glyph, named “Name — count” in a tooltip; its own action shows only in the full sidebar (LA-5)."
+      >
+        <View style={{ flexDirection: "row", gap: 16, alignItems: "flex-start" }}>
+          <View style={{ width: 56, flexDirection: "column", gap: 2 }}>
+            <SidebarItem
+              testID="rail:inbox"
+              label="Inbox"
+              badge="3"
+              glyph={glyphs.INFO}
+              rail
+              selected={chosen === "inbox"}
+              onPress={() => setChosen("inbox")}
+            />
+            <SidebarItem testID="rail:drive" label="USB drive" glyph={glyphs.LOCK} rail selected={chosen === "drive"} onPress={() => setChosen("drive")} />
+          </View>
+          <View style={{ width: 200, flexDirection: "column", gap: 2 }}>
+            <SidebarItem
+              testID="accessory:drive"
+              label="USB drive"
+              glyph={glyphs.LOCK}
+              selected={chosen === "drive"}
+              onPress={() => setChosen("drive")}
+              accessory={<ToolbarButton testID="accessory:eject" glyph={glyphs.CHEVRON_UP} tooltip="Eject" onPress={() => {}} />}
+            />
+          </View>
+        </View>
       </Exhibit>
       <Exhibit title="Table" note="Sortable columns, alternating rows, the one selection look.">
         <View style={{ height: 150, flexDirection: "column" }}>

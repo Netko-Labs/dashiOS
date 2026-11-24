@@ -7,6 +7,7 @@
  * switch, a screen with a lower rate.
  */
 
+import { TextLink, useControlColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useCallback, useSyncExternalStore } from "react";
 import { type AutoRefresh, builtInScreen, type RefreshScreen } from "../../../display-config/auto-refresh.ts";
@@ -14,8 +15,6 @@ import { refreshLabel } from "../../../display-config/monitors.ts";
 import type { GraphicsSnapshot } from "../../../graphics/controller.ts";
 import { GRAPHICS_LABEL } from "../../../graphics/policy.ts";
 import type { Laptop } from "../../../laptop/start.ts";
-import { TextLink } from "../../../shared/controls/inputs.tsx";
-import { useControlColors } from "../../../shared/controls/palette.ts";
 import { type PaneId, paneTitle } from "../../../shared/settings/index.ts";
 import { Spot } from "../../spot.tsx";
 import { Setting } from "../setting.tsx";

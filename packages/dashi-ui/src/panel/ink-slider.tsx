@@ -9,12 +9,13 @@
  * @dashi/ui's slider does (`StepKeys`).
  */
 
-import { DISABLED_OPACITY, fractionOf, keyValues, nearestIndex, type SliderRange, StepKeys, UNIT_RANGE, valueAt } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
-import { useControlColors } from "./palette.ts";
-import { Chip, InkFill } from "./parts.tsx";
-import { fillLength, levelAt } from "./slider-math.ts";
+import { DISABLED_OPACITY } from "../control-state.tsx";
+import { fillLength, fractionOf, keyValues, levelAt, nearestIndex, type SliderRange, UNIT_RANGE, valueAt } from "../slider-math.ts";
+import { StepKeys } from "../step-keys.tsx";
+import { useControlColors } from "./colors.ts";
+import { GlyphDisc, InkFill } from "./parts.tsx";
 
 /** 40 tall, round ends; the chip 4 in. */
 export const INK_SLIDER = { height: 40, width: 260 } as const;
@@ -121,7 +122,7 @@ export function InkSlider({ value, range = UNIT_RANGE, testID, glyph, format, wi
       <InkFill length={fill} total={width} standing={false} radius={radius} />
       {glyph !== undefined && (
         <View style={{ position: "absolute", left: 4, top: 4 }}>
-          <Chip glyph={glyph} />
+          <GlyphDisc glyph={glyph} />
         </View>
       )}
       {words !== undefined && <Words words={words} width={width} fill={fill} />}

@@ -13,13 +13,13 @@
  * (`appearance.highlightActiveWindow`, appearance/window-style.ts).
  */
 
+import { DARK_CONTROLS, LIGHT_CONTROLS, useControlColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { AUTO_DARK_FROM, AUTO_DARK_TO } from "../appearance/auto.ts";
 import { DEFAULT_CORNERS, isCornerName } from "../shared/appearance/index.ts";
 import { Caption, Group } from "../shared/cards/index.ts";
 import { type FlagsStore, useFlags } from "../shared/control-center/index.ts";
-import { DARK_CONTROLS, LIGHT_CONTROLS, useControlColors } from "../shared/controls/palette.ts";
 import { useSettings } from "./hooks.ts";
 import { AccentCard } from "./lib/accent/card.tsx";
 import { clockLabel } from "./lib/night.ts";

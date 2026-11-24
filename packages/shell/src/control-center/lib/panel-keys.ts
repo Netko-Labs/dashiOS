@@ -5,8 +5,8 @@
  * it, ⌫ removes it. On a tile's page the keys go to the page instead.
  */
 
+import { type Direction, stepLevel } from "@dashi/ui";
 import type { KeyDownInfo } from "@mirinjs/metal";
-import { type Direction, stepLevel } from "../../shared/controls/slider-math.ts";
 import type { ControlPage } from "../catalog.ts";
 import type { Controls } from "../controls.tsx";
 import { type Layout, moveToward, neighbor, nextSize, type Placed, removeItem } from "../layout.ts";

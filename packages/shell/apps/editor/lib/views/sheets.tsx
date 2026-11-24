@@ -52,7 +52,7 @@ export function VersionsSheet({
       question={`Revert “${name}” to an earlier version?`}
       message="Edit › Undo brings back the text you have now."
       glyph={RESTART}
-      tone="accent"
+      tone="neutral"
       buttons={[
         { label: "Cancel", testID: "versions:cancel", cancel: true, onPress: onCancel },
         { label: "Revert", testID: "versions:revert", kind: "primary", disabled: !version, onPress: () => version && onRevert(version) },

@@ -6,10 +6,9 @@
  * and its name is bold. One Tab stop: the arrows move along it (KB-1).
  */
 
-import { ACCENT_PRESETS, type AccentChoice, KOMBU_SEED } from "@dashi/ui";
+import { ACCENT_PRESETS, type AccentChoice, controlPalette, KOMBU_SEED, useControlColors } from "@dashi/ui";
 import { type Bounds, Image, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useRef } from "react";
-import { controlPalette, useControlColors } from "../../../shared/controls/palette.ts";
 import { rainbowRing } from "./images.ts";
 
 export const SWATCH = { size: 34, cell: 54, ring: 2.5 } as const;

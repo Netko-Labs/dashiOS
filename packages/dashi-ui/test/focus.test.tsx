@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test";
 import { render, View, type WindowKeyInfo } from "@mirinjs/metal";
 import { Button } from "../src/button.tsx";
-import { Segmented } from "../src/fields.tsx";
 import { KeySink } from "../src/key-sink.tsx";
 import { type KeyInput, keyInputFor } from "../src/keys.ts";
+import { Segmented } from "../src/segmented.tsx";
 import { Sheet } from "../src/sheet.tsx";
 import { Switch } from "../src/switch.tsx";
 import { contrastRatio } from "../src/theme/contrast.ts";

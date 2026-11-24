@@ -2,7 +2,7 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Caption as UiCaption, Group as UiGroup, Row as UiRow } from "@dashi/ui";
+import { INK_SLIDER, Caption as UiCaption, Group as UiGroup, Row as UiRow } from "@dashi/ui";
 import { type NativeTransport, render, ScrollView } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { INITIAL_REGION, type RegionStore } from "../src/region/store.ts";
@@ -22,7 +22,6 @@ import { AgentsPage } from "../src/setup/lib/pages/agents.tsx";
 import { ExtrasPage } from "../src/setup/lib/pages/extras.tsx";
 import { Caption, Group } from "../src/shared/cards/index.ts";
 import { FlagsStore } from "../src/shared/control-center/flags.ts";
-import { INK_SLIDER } from "../src/shared/controls/ink-slider.tsx";
 import { Nav, type PaneId } from "../src/shared/settings/panes.ts";
 import { settle } from "./support/time.ts";
 

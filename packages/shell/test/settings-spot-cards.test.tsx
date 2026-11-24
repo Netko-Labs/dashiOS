@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test";
+import { LIGHT_CONTROLS } from "@dashi/ui";
 import { type NativeRoot, type NativeTransport, render } from "@mirinjs/metal";
 import { RowFocus, Spot, SpotContext } from "../src/settings-app/spot.tsx";
 import { Caption, Group, Note } from "../src/shared/cards/index.ts";
-import { LIGHT_CONTROLS } from "../src/shared/controls/palette.ts";
 import { settle } from "./support/time.ts";
 
 // A link to a section (Privacy & Security › Apps) lights its card, not the strip behind its heading.

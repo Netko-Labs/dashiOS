@@ -4,11 +4,10 @@
  * menubar.tsx lays out the titles, menubar-status.tsx the status side.
  */
 
-import { MORE, useColors } from "@dashi/ui";
+import { MORE, useColors, useControlColors } from "@dashi/ui";
 import { type Bounds, Svg, View } from "@mirinjs/metal";
 import { type ReactNode, useRef } from "react";
 import type { BarMenuId } from "../../menus/index.ts";
-import { useControlColors } from "../../shared/controls/palette.ts";
 import { MORE_WIDTH } from "./menubar-fit.ts";
 
 /** "…"'s name for a screen reader. */

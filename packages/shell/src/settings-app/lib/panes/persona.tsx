@@ -8,7 +8,7 @@
  * and an agent's changes nothing. Choosing a character is one change and one Undo.
  */
 
-import { type Confirm, useConfirm } from "@dashi/ui";
+import { type Confirm, FoldedChoices, useConfirm } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import {
@@ -25,7 +25,6 @@ import {
   YOU_MAX,
 } from "../../../persona/index.ts";
 import { Caption, Group, Note } from "../../../shared/cards/index.ts";
-import { FoldedChoices } from "../../../shared/controls/folded.tsx";
 import { PERSONA_TALK } from "../../../shared/pill/index.ts";
 import { basicsHere } from "../../../voice/index.ts";
 import type { PaneContext } from "../../context.ts";

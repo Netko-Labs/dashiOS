@@ -99,7 +99,6 @@ packages/shell/apps/installer/main.tsx	packages/shell/src/shared/apps
 packages/shell/apps/installer/main.tsx	packages/shell/src/shared/cards
 packages/shell/apps/installer/main.tsx	packages/shell/src/shared/clipboard
 packages/shell/apps/installer/main.tsx	packages/shell/src/shared/control-center
-packages/shell/apps/installer/main.tsx	packages/shell/src/shared/controls
 packages/shell/apps/installer/main.tsx	packages/shell/src/shared/io
 packages/shell/apps/installer/main.tsx	packages/shell/src/shared/locale
 packages/shell/apps/installer/main.tsx	packages/shell/src/shared/metal
@@ -227,7 +226,6 @@ packages/shell/bin/dashi-mcp.ts	packages/shell/src/shared/appearance
 packages/shell/bin/dashi-mcp.ts	packages/shell/src/shared/apps
 packages/shell/bin/dashi-mcp.ts	packages/shell/src/shared/calendar
 packages/shell/bin/dashi-mcp.ts	packages/shell/src/shared/cards
-packages/shell/bin/dashi-mcp.ts	packages/shell/src/shared/controls
 packages/shell/bin/dashi-mcp.ts	packages/shell/src/shared/dbus
 packages/shell/bin/dashi-mcp.ts	packages/shell/src/shared/files
 packages/shell/bin/dashi-mcp.ts	packages/shell/src/shared/fs
@@ -289,7 +287,6 @@ packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/applet-s
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/apps
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/cards
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/control-center
-packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/controls
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/dbus
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/face
 packages/shell/bin/dashi-settings-preview.tsx	packages/shell/src/shared/io
@@ -414,7 +411,6 @@ packages/shell/src/main.tsx	packages/shell/src/shared/calendar
 packages/shell/src/main.tsx	packages/shell/src/shared/cards
 packages/shell/src/main.tsx	packages/shell/src/shared/clipboard
 packages/shell/src/main.tsx	packages/shell/src/shared/control-center
-packages/shell/src/main.tsx	packages/shell/src/shared/controls
 packages/shell/src/main.tsx	packages/shell/src/shared/dbus
 packages/shell/src/main.tsx	packages/shell/src/shared/extension-settings
 packages/shell/src/main.tsx	packages/shell/src/shared/face

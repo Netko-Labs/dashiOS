@@ -11,7 +11,7 @@
 
 import { Svg, Text, View } from "@mirinjs/metal";
 import { CHEVRON_DOWN, CHEVRON_UP } from "./glyphs.ts";
-import { useColors } from "./theme/index.ts";
+import { RADIUS, useColors } from "./theme/index.ts";
 
 /** Its height, the wash's reach past the words, and the words' size. */
 export const MORE_BUTTON = { height: 24, inset: 6, size: 12 } as const;
@@ -48,7 +48,7 @@ export function MoreButton({
         marginLeft: -MORE_BUTTON.inset,
         paddingLeft: MORE_BUTTON.inset,
         paddingRight: MORE_BUTTON.inset - 2,
-        borderRadius: 6,
+        borderRadius: RADIUS.row,
         hoverBackgroundColor: colors.button,
         focusRingColor: colors.focusRing,
       }}

@@ -7,12 +7,11 @@
  * dashed (battery/chart.ts `chargeLine`), left out with no history yet.
  */
 
+import { LimitBar, useControlColors } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { chargeLine } from "../../../battery/chart.ts";
 import type { Sample } from "../../../battery/history.ts";
-import { useControlColors } from "../../../shared/controls/palette.ts";
-import { LimitBar } from "../../../shared/controls/parts.tsx";
 import { formatTime, useClockPrefs } from "../../../shared/time/index.ts";
 import type { Battery } from "../../../system/battery.ts";
 import { batteryHero, chargeScale } from "../heroes.ts";

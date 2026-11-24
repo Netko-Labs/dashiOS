@@ -1,0 +1,27 @@
+# H21a (scripts/check-design-values.ts): colours outside the theme and sizes, radii, weights and
+# shadows off the scales, per file. Shrink-only: fix the code (the token is in the plan's
+# raw-values-mapped.tsv), then `bun scripts/check-design-values.ts --shrink`.
+1	packages/shell/apps/calculator/lib/display.tsx
+1	packages/shell/apps/calculator/lib/keypad.tsx
+1	packages/shell/apps/editor/lib/views/sheets.tsx
+1	packages/shell/apps/editor/lib/views/text-area.tsx
+1	packages/shell/apps/files/lib/omnibox/omnibox-field.tsx
+1	packages/shell/apps/files/lib/omnibox/omnibox.tsx
+1	packages/shell/apps/notes/lib/look.ts
+1	packages/shell/apps/notes/lib/views/body.tsx
+1	packages/shell/apps/notes/lib/views/note-page.tsx
+3	packages/shell/apps/notes/lib/views/page-under.tsx
+1	packages/shell/apps/notes/lib/views/rows.tsx
+1	packages/shell/apps/preview/lib/views/sheets.tsx
+1	packages/shell/apps/preview/lib/views/states.tsx
+3	packages/shell/apps/preview/lib/views/strip.tsx
+1	packages/shell/apps/preview/lib/views/view.tsx
+1	packages/shell/apps/terminal/lib/views/grid.tsx
+2	packages/shell/apps/terminal/lib/views/tab-strip.tsx
+1	packages/shell/src/shared/file-browser/chooser-view.tsx
+3	packages/shell/src/shared/file-browser/file-icon.tsx
+1	packages/shell/src/shared/file-browser/lib/file-icons.ts
+6	packages/shell/src/shared/file-browser/lib/views/grid.tsx
+2	packages/shell/src/shared/file-browser/peek.tsx
+4	packages/shell/src/shared/file-browser/toolbar.tsx
+2	packages/shell/src/shared/markdown/table-view.tsx

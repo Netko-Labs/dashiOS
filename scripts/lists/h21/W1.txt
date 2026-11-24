@@ -1,0 +1,3 @@
+# H21a (scripts/check-design-values.ts): colours outside the theme and sizes, radii, weights and
+# shadows off the scales, per file. Shrink-only: fix the code (the token is in the plan's
+# raw-values-mapped.tsv), then `bun scripts/check-design-values.ts --shrink`.

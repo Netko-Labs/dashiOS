@@ -69,7 +69,9 @@ test("a progress bar fills to its value; without one it slides", async () => {
   );
   await settle();
   expect(root.nodeId("half")).toBeDefined();
-  expect(host.last()).toContain(lightColors.selection);
+  // Q3: progress is ink on its track, never the accent.
+  expect(host.last()).toContain(`"background":"${lightColors.text}"`);
+  expect(host.last()).not.toContain(lightColors.selection);
   root.unmount();
 });
 

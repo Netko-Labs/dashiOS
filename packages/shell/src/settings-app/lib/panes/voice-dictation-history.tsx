@@ -6,11 +6,11 @@
  * how long, or deletes.
  */
 
+import { FoldedChoices } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import type { HistoryEntry } from "../../../dictation/index.ts";
 import { Caption, Group, Note } from "../../../shared/cards/index.ts";
-import { FoldedChoices } from "../../../shared/controls/folded.tsx";
 import { HISTORY_KEEPS, type HistoryKeep, isHistoryKeep } from "../../../shared/pill/index.ts";
 import { useColors } from "../../colors.ts";
 import type { PaneContext } from "../../context.ts";

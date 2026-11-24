@@ -5,6 +5,7 @@
 
 export type PageId =
   | "buttons"
+  | "checks"
   | "pickers"
   | "switches"
   | "fields"
@@ -14,11 +15,15 @@ export type PageId =
   | "rows"
   | "lists"
   | "notices"
+  | "states"
+  | "picks"
+  | "panel"
   | "shortcuts"
   | "colors"
   | "grounds"
   | "tints"
-  | "type";
+  | "type"
+  | "measures";
 
 export interface Page {
   id: PageId;
@@ -29,6 +34,7 @@ export interface Page {
 export const PAGES: readonly Page[] = [
   { id: "buttons", label: "Buttons", section: "Controls" },
   { id: "pickers", label: "Pickers", section: "Controls" },
+  { id: "checks", label: "Checkboxes and chips", section: "Controls" },
   { id: "switches", label: "Switches and sliders", section: "Controls" },
   { id: "fields", label: "Fields", section: "Controls" },
   { id: "progress", label: "Progress", section: "Controls" },
@@ -37,10 +43,14 @@ export const PAGES: readonly Page[] = [
   { id: "rows", label: "Rows and groups", section: "Controls" },
   { id: "lists", label: "Sidebars and tables", section: "Controls" },
   { id: "notices", label: "Notices and empty states", section: "Controls" },
+  { id: "states", label: "Errors, empty and loading", section: "Controls" },
+  { id: "picks", label: "Pick rows, months and forms", section: "Controls" },
+  { id: "panel", label: "The panel look", section: "Controls" },
   { id: "shortcuts", label: "Shortcuts and glyphs", section: "Controls" },
   { id: "colors", label: "Colors", section: "Tokens" },
   { id: "grounds", label: "Grounds", section: "Tokens" },
   { id: "tints", label: "Tints", section: "Tokens" },
+  { id: "measures", label: "Measures", section: "Tokens" },
   { id: "type", label: "Type", section: "Tokens" },
 ];
 

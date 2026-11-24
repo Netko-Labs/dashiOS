@@ -5,11 +5,9 @@
  * first, and a failure's sentence.
  */
 
-import { CHECK } from "@dashi/ui";
+import { Button, CHECK, Knob } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { PillButton } from "../../../shared/controls/inputs.tsx";
-import { Knob } from "../../../shared/controls/parts.tsx";
 import { useColors } from "../../colors.ts";
 import { PAGE, useCardRow } from "../row.tsx";
 
@@ -44,12 +42,14 @@ export function MiniButton({
   disabled?: boolean;
 }) {
   return (
-    <PillButton
-      small
+    <Button
+      look="panel"
+      size="small"
       label={label}
       onPress={onPress}
       testID={testID}
-      tone={tone === "critical" ? "danger" : tone === "primary" ? "ink" : "plain"}
+      primary={tone === "primary"}
+      danger={tone === "critical"}
       {...(disabled ? { disabled } : {})}
     />
   );
