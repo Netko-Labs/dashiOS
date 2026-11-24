@@ -7,7 +7,7 @@
  * and the StoppedNote says so (consent.tsx).
  */
 
-import { Button, Chip, type ChipTone, ON_AGENT, RADIUS, Shortcut, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { Button, Chip, type ChipTone, ON_AGENT, pill, RADIUS, Shortcut, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { type AgentEntry, accessWords, discGlyph, watchTime } from "../../agents/index.ts";
@@ -53,6 +53,9 @@ export function AccessChip({ entry }: { entry: Pick<AgentEntry, "watching" | "wa
   return <Chip testID="agents-access" tone={tone} label={time ? `${accessWords(entry)} · ${time}` : accessWords(entry)} />;
 }
 
+/** The red dot's size. */
+const TILE_DOT = 11;
+
 /** The red dot on a tile: this agent sees or records the screen, or uses its pointer. */
 export function TileDot({ ring }: { ring: string }) {
   const colors = useColors();
@@ -63,9 +66,9 @@ export function TileDot({ ring }: { ring: string }) {
         position: "absolute",
         top: -2,
         right: -2,
-        width: 11,
-        height: 11,
-        borderRadius: RADIUS.row,
+        width: TILE_DOT,
+        height: TILE_DOT,
+        borderRadius: pill(TILE_DOT),
         borderWidth: 2,
         borderColor: ring,
         backgroundColor: colors.critical,
@@ -216,6 +219,18 @@ export function StopAllFooter({ onStopAll }: { onStopAll: () => void }) {
         <Shortcut keys="⌃❖Esc" color={colors.textMuted} size={12} />
       </View>
       <Small testID="agents-stop-all" label="Stop all" danger onPress={onStopAll} />
+    </View>
+  );
+}
+
+/** A panel's empty state: one line, 12 muted, what lands here and how (SH-31). */
+export function NoAgents() {
+  const colors = useColors();
+  return (
+    <View testID="agents-empty" style={{ padding: SPACE.inset }}>
+      <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
+        No agents in the last hour. Click Dashi’s mark in the menu bar to give it a job.
+      </Text>
     </View>
   );
 }

@@ -9,8 +9,9 @@
 
 import { rmSync } from "node:fs";
 import { join } from "node:path";
-import { type NativeHostOptions, Text, TextInput, View } from "@mirinjs/metal";
-import type { OpenOverlay } from "../overlay.tsx";
+import { CAPTURE_AREA, CLEAR, HIT_AREA, RADIUS, SPACE, TYPE } from "@dashi/ui";
+import { type NativeHostOptions, Text, View } from "@mirinjs/metal";
+import { KeyCatcher, type OpenOverlay } from "../overlay.tsx";
 
 export interface Point {
   x: number;
@@ -31,24 +32,24 @@ const SETTLE_MS = 60;
 function Dropper({ onDone }: { onDone: (at: Point | null) => void }) {
   return (
     <View
-      style={{ flex: 1, alignItems: "center", backgroundColor: "#00000001" }}
+      style={{ flex: 1, alignItems: "center", backgroundColor: HIT_AREA }}
       onPointer={(event) => {
         if (event.phase === "up") onDone({ x: event.x, y: event.y });
       }}
     >
-      {/* Keys reach Metal only through a focused text input. */}
-      <View style={{ position: "absolute", left: 0, top: 0, width: 1, height: 1, opacity: 0, overflow: "hidden" }}>
-        <TextInput
-          value=""
-          autoFocus
-          onKeyPress={(key) => {
-            if (key === "Escape") onDone(null);
-          }}
-          style={{ width: 1, height: 1, backgroundColor: "#00000000" }}
-        />
-      </View>
-      <View style={{ marginTop: 48, paddingLeft: 12, paddingRight: 12, paddingTop: 6, paddingBottom: 6, borderRadius: 14, backgroundColor: "#000000b3" }}>
-        <Text style={{ fontSize: 13, color: "#ffffff" }}>Click a colour to use it. Esc cancels.</Text>
+      <KeyCatcher onKey={(key) => key === "Escape" && onDone(null)} />
+      <View
+        style={{
+          marginTop: 48,
+          paddingLeft: SPACE.inset,
+          paddingRight: SPACE.inset,
+          paddingTop: SPACE.s,
+          paddingBottom: SPACE.s,
+          borderRadius: RADIUS.sheet,
+          backgroundColor: CAPTURE_AREA.labelGround,
+        }}
+      >
+        <Text style={{ fontSize: TYPE.body.size, color: CAPTURE_AREA.labelInk }}>Click a colour to use it. Esc cancels.</Text>
       </View>
     </View>
   );

@@ -4,7 +4,7 @@
  * pill while the capture is the recorder's own (screen-capture.tsx).
  */
 
-import { useColors } from "@dashi/ui";
+import { RADIUS, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { elapsedText } from "../shared/time/index.ts";
@@ -27,16 +27,18 @@ export function RecordingButton({ recorder }: { recorder: ScreenRecorder }) {
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 6,
+        gap: SPACE.s,
         height: 20,
-        paddingLeft: 8,
-        paddingRight: 9,
+        paddingLeft: SPACE.m,
+        paddingRight: SPACE.m,
         borderRadius: 10,
         backgroundColor: colors.captureWash,
       }}
     >
-      <View style={{ width: 9, height: 9, borderRadius: 2, backgroundColor: colors.critical }} />
-      <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>{state.kind === "saving" ? "Saving…" : elapsedText(now - state.since)}</Text>
+      <View style={{ width: 9, height: 9, borderRadius: RADIUS.thumb, backgroundColor: colors.critical }} />
+      <Text style={{ fontSize: TYPE.secondary.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
+        {state.kind === "saving" ? "Saving…" : elapsedText(now - state.since)}
+      </Text>
     </View>
   );
 }

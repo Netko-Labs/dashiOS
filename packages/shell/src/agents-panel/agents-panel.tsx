@@ -30,7 +30,7 @@ import {
   type TaskView,
 } from "../agents/index.ts";
 import { KeyCatcher } from "../overlay.tsx";
-import { AccessChip, ConnectionRow, IdleLine, Small, StopAllFooter, TileDot } from "./lib/agents-rows.tsx";
+import { AccessChip, ConnectionRow, IdleLine, NoAgents, Small, StopAllFooter, TileDot } from "./lib/agents-rows.tsx";
 import { panelTaskList, TaskCard, taskCardFocus, taskWorks } from "./lib/task-cards.tsx";
 import { type PanelTasks, PanelTasksContext } from "./tasks.tsx";
 
@@ -262,12 +262,7 @@ export function AgentsPanel({
     >
       <KeyCatcher onKey={(key) => key === "Escape" && onClose()} />
       {count === 0 ? (
-        // A panel's empty state: one line, 12 muted, what lands here and how (SH-31).
-        <View testID="agents-empty" style={{ padding: SPACE.inset }}>
-          <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
-            No agents in the last hour. Click Dashi’s mark in the menu bar to give it a job.
-          </Text>
-        </View>
+        <NoAgents />
       ) : (
         <ScrollView style={{ flexShrink: 1 }}>
           {source && <TaskCards tasks={tasks} source={source} focus={count > 1 ? focus : null} />}
