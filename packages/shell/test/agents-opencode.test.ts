@@ -171,7 +171,10 @@ describe("every path runs it by its version", () => {
     ] as const) {
       const started: TurnStart[] = [];
       const runner: TaskRunner = {
-        start: async (start) => void started.push(start) ?? null,
+        start: async (start) => {
+          started.push(start);
+          return null;
+        },
         stop: () => {},
         watch: () => () => {},
         forget: () => {},
