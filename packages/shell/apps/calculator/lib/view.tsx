@@ -50,6 +50,18 @@ function useMenu(): { menu: MenuAt | null; setMenu: (menu: MenuAt | null) => voi
   return { menu, setMenu, closeMenu, fieldKey };
 }
 
+/** The root's laid-out size, rounded: the old one while it hasn't changed, so nothing re-renders for it. */
+function sameSize(old: Size, bounds: { width: number; height: number }): Size {
+  const next = { width: Math.round(bounds.width), height: Math.round(bounds.height) };
+  return old.width === next.width && old.height === next.height ? old : next;
+}
+
+/** The tape's chosen entry: the one last pressed, while it is on the tape (Clear Tape forgets it). */
+function useChosenEntry(tapeLength: number): [number | null, (index: number) => void] {
+  const [picked, setPicked] = useState<number | null>(null);
+  return [picked !== null && picked < tapeLength ? picked : null, setPicked];
+}
+
 /** The keys' layout, and the line's room: the column less the keys' inset each side, so it ends where the keys do. */
 function layoutOf(size: Size, showsTape: boolean): { keys: ReturnType<typeof keypadLayout>; room: number } {
   const keypadWidth = size.width - (showsTape ? TAPE_WIDTH : 0);
@@ -72,6 +84,7 @@ export function CalculatorWindow({
   const locale = given ?? followed;
   const { state, dispatch, showsTape, setShowsTape, size, setSize } = useCalculatorState(remembered, locale, remember);
   const { menu, setMenu, closeMenu, fieldKey } = useMenu();
+  const [chosenEntry, setPicked] = useChosenEntry(state.tape.length);
   const { line } = state;
   const outcome = liveResult(line, locale);
   const resultValue = outcome.kind === "value" ? outcome.value : line.carry && line.text === line.carry.text ? line.carry.value : null;
@@ -85,17 +98,14 @@ export function CalculatorWindow({
     size,
     resizeWindow,
     resultValue,
+    chosenEntry,
   });
   const { keys, room } = layoutOf(size, showsTape);
   const words = resultWords(state.notice ? { kind: "notice", notice: state.notice } : outcome, locale);
-
   return (
     <View
       testID="calculator"
-      onLayout={(bounds) => {
-        const next = { width: Math.round(bounds.width), height: Math.round(bounds.height) };
-        setSize((old) => (old.width === next.width && old.height === next.height ? old : next));
-      }}
+      onLayout={(bounds) => setSize((old) => sameSize(old, bounds))}
       style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window, position: "relative" }}
     >
       <View style={{ flex: 1, flexDirection: "column" }}>
@@ -123,6 +133,8 @@ export function CalculatorWindow({
           locale={locale}
           headHeight={inset.top}
           canCopy={clipboard.canWrite}
+          chosen={chosenEntry}
+          onChoose={setPicked}
           onUse={(entry) => dispatch({ type: "use", value: entry.value, locale })}
           onEdit={(index) => dispatch({ type: "recall-entry", index, locale })}
           onCopy={copy}

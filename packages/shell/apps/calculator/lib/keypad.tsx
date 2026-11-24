@@ -1,16 +1,16 @@
 /**
  * The keypad: a grid of rounded squares under the display, centred in its
  * column; the keys grow with the window and stay square (`keypadLayout`).
- * Digits on the card ground, functions and operators on a quiet wash, and =,
- * the one primary key, in ink (the Expressive fill): kombu means on (CO-2),
- * and = turns nothing on. A key deepens while it is held (UI-4), and flashes
- * when the keyboard types it, so typing shows on the keys too. The keys type
+ * The keys are the kit's `KeypadKey`: digits on the card ground, functions
+ * and operators on a quiet wash, and =, the one primary key, in ink: kombu
+ * means on (CO-2), and = turns nothing on. A key deepens while it is held
+ * (UI-4), and flashes when the keyboard types it, so typing shows on the keys
+ * too. Every label is 400 (TY-2). The keys type
  * into the expression line as the keyboard does.
  */
 
-import { type Palette, type Surface, useColors, useSurface } from "@dashi/ui";
-import { type PointerInfo, Text, View } from "@mirinjs/metal";
-import { useState } from "react";
+import { KeypadKey } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import type { KeyId } from "./keys.ts";
 import { COLUMNS, GAP, type KeypadLayout, keyFontSize, ROWS } from "./layout.ts";
 import type { NumberLocale } from "./locale.ts";
@@ -27,34 +27,6 @@ const LABELS: Partial<Record<KeyId, string>> = {
   equals: "Equals",
   decimal: "Decimal point",
 };
-
-/** A key's corners: the window's radius, so the keys read as tiles of the window. */
-const KEY_RADIUS = 12;
-
-interface KeyLook {
-  ground: string;
-  hover: string;
-  pressed: string;
-  ink: string;
-  edge?: string;
-}
-
-interface Looks {
-  digit: KeyLook;
-  /** C, ±, % and the operators. */
-  quiet: KeyLook;
-  /** =: ink, the ground's color for its label. */
-  strong: KeyLook;
-}
-
-/** The keys' colors, all from the palette and the surfaces. */
-function looksFrom(colors: Palette, surface: Surface): Looks {
-  return {
-    digit: { ground: surface.card, hover: surface.field, pressed: colors.pressed, ink: colors.text, edge: colors.separator },
-    quiet: { ground: colors.button, hover: colors.separator, pressed: colors.pressed, ink: colors.text },
-    strong: { ground: colors.text, hover: colors.text, pressed: colors.textMuted, ink: surface.window },
-  };
-}
 
 interface KeySpec {
   id: KeyId;
@@ -91,32 +63,14 @@ export function keySpecs(locale: NumberLocale): KeySpec[] {
   ];
 }
 
-function Key({ spec, look, side, lit, onPress }: { spec: KeySpec; look: KeyLook; side: number; lit: boolean; onPress: () => void }) {
-  const [held, setHeld] = useState(false);
+/** How much larger an operator's words are than a digit's, and how much smaller the function row's (C ± %). */
+const OP_STEP = 2;
+const FN_STEP = 4;
+
+/** Each key's words: one size per kind, fitted to the key (all 400, TY-2). */
+function labelSize(spec: KeySpec, side: number): number {
   const font = keyFontSize(side);
-  // One size per kind: the function row (C ± %) matches itself, the operators a touch larger and heavier.
-  const fontSize = spec.kind === "op" ? font + 2 : spec.kind === "fn" ? font - 4 : font;
-  return (
-    <View
-      testID={`key:${spec.id}`}
-      onPress={onPress}
-      onPointer={(event: PointerInfo) => setHeld(event.phase !== "up")}
-      accessibilityRole="button"
-      accessibilityLabel={LABELS[spec.id] ?? spec.label}
-      style={{
-        ...(spec.span === 2 ? { gridColumn: { span: 2 } } : {}),
-        borderRadius: KEY_RADIUS,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: held || lit ? look.pressed : look.ground,
-        hoverBackgroundColor: held || lit ? look.pressed : look.hover,
-        ...(look.edge ? { borderWidth: 1, borderColor: look.edge } : {}),
-      }}
-    >
-      <Text style={{ fontSize, fontWeight: spec.kind === "op" ? "medium" : "normal", color: look.ink }}>{spec.label}</Text>
-    </View>
-  );
+  return spec.kind === "op" ? font + OP_STEP : spec.kind === "fn" ? font - FN_STEP : font;
 }
 
 export interface KeypadProps {
@@ -129,7 +83,6 @@ export interface KeypadProps {
 }
 
 export function Keypad({ locale, layout, lit, onKey }: KeypadProps) {
-  const looks = looksFrom(useColors(), useSurface());
   const { side, inset, height } = layout;
   return (
     <View
@@ -148,12 +101,15 @@ export function Keypad({ locale, layout, lit, onKey }: KeypadProps) {
       }}
     >
       {keySpecs(locale).map((spec) => (
-        <Key
+        <KeypadKey
           key={spec.id}
-          spec={spec}
-          look={spec.id === "equals" ? looks.strong : spec.kind === "digit" ? looks.digit : looks.quiet}
-          side={side}
+          testID={`key:${spec.id}`}
+          label={spec.label}
+          accessibilityLabel={LABELS[spec.id] ?? spec.label}
+          tone={spec.id === "equals" ? "strong" : spec.kind === "digit" ? "digit" : "quiet"}
+          fontSize={labelSize(spec, side)}
           lit={lit === spec.id}
+          {...(spec.span ? { span: spec.span } : {})}
           onPress={() => onKey(spec.id)}
         />
       ))}

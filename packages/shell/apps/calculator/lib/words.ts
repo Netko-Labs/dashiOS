@@ -1,6 +1,6 @@
 /**
  * The words under the expression line: what it works out to ("= 15,340"),
- * why it can't be worked out ("Can't divide by 0"), or for a moment what just
+ * why it can’t be worked out ("Can’t divide by 0"), or for a moment what just
  * happened ("Copied"). Pure; the result's number comes formatted.
  */
 
@@ -28,7 +28,7 @@ export function resultWords(shown: Outcome | { kind: "notice"; notice: Notice },
     case "none":
       return { text: "", tone: "result" };
     case "error":
-      if (shown.reason === "divide-by-zero") return { text: "Can't divide by 0", tone: "error" };
+      if (shown.reason === "divide-by-zero") return { text: "Can’t divide by 0", tone: "error" };
       if (shown.reason === "too-large") return { text: "Too large to work out", tone: "error" };
       return { text: "", tone: "result" };
   }
