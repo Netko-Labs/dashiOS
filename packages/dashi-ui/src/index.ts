@@ -23,6 +23,7 @@ export { type Confirm, type ConfirmRequest, ConfirmSheet, type ConfirmSheetProps
 export { ControlName } from "./control-name.ts";
 export { type ControlState, DISABLED_OPACITY, isHeld, type ShownStates, ShowStates, useControlState } from "./control-state.tsx";
 export { Caption, Group, Note, ROW_INSET, Row } from "./controls.tsx";
+export { EDITABLE_TEXT, EditableText, type EditableTextProps, type EditableTextStyle } from "./editable-text.tsx";
 export { EMPTY_STATE, EmptyState, NoResults, noResultsMessage } from "./empty-state.tsx";
 export { ERROR_STATE, ErrorState } from "./error-state.tsx";
 export { FoldedChoices, type FoldedChoicesProps } from "./folded.tsx";
@@ -51,6 +52,7 @@ export {
 } from "./glyphs.ts";
 export { KeySink, type KeySinkProps } from "./key-sink.tsx";
 export { KeyedText, type KeyedTextStyle, keyGlyphSize, namesKeys } from "./keyed-text.tsx";
+export { KEYPAD_KEY, KeypadKey, type KeypadKeyProps, type KeypadKeyTone } from "./keypad-key.tsx";
 export { type KeyInput, keyName } from "./keys.ts";
 export { Avatar, LOGIN_FOCUS_RING, LOGIN_GROUND, LOGIN_INK, LOGIN_MUTED, LoginScreen, type LoginScreenProps, type PowerAction } from "./login-screen.tsx";
 export { MENU, type MenuRowKind, menuHeight, menuLabelLeft, placeMenu, rowTop, type Size } from "./menu-place.ts";
@@ -239,6 +241,7 @@ export {
   WEIGHT,
 } from "./theme/index.ts";
 export { TILE_SIZE, Tile } from "./tile.tsx";
+export { TITLE_TAB, TitleTab, TitleTabMore, type TitleTabProps } from "./title-tab.tsx";
 export { TOOLTIP_DELAY_MS, type Tooltip, TooltipLayer, tooltipOrigin, useTooltip, useWindowLayer } from "./tooltip.tsx";
 export { JOIN_MS as UNDO_JOIN_MS, redoLabel, UNDO_LIMIT, type UndoAction, UndoStack, type UndoState, undoLabel, undoMenuItems, useUndo } from "./undo.ts";
 export {

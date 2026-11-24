@@ -17,6 +17,7 @@ export type PageId =
   | "notices"
   | "states"
   | "picks"
+  | "apps"
   | "panel"
   | "shortcuts"
   | "colors"
@@ -45,6 +46,7 @@ export const PAGES: readonly Page[] = [
   { id: "notices", label: "Notices and empty states", section: "Controls" },
   { id: "states", label: "Errors, empty and loading", section: "Controls" },
   { id: "picks", label: "Pick rows, months and forms", section: "Controls" },
+  { id: "apps", label: "Tabs, keys and text", section: "Controls" },
   { id: "panel", label: "The panel look", section: "Controls" },
   { id: "shortcuts", label: "Shortcuts and glyphs", section: "Controls" },
   { id: "colors", label: "Colors", section: "Tokens" },

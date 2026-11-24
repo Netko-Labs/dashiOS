@@ -11,6 +11,7 @@ import { AppWindow, KeySink, Segmented, SidebarItem, SidebarSection } from "@das
 import { ScrollView } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { useAppMenus } from "../../kit/index.ts";
+import { AppsPage } from "./exhibits/apps.tsx";
 import { ButtonsPage, FieldsPage, PickersPage, SwitchesPage } from "./exhibits/controls.tsx";
 import { AlertsPage, MenusPage, NoticesPage, ProgressPage } from "./exhibits/feedback.tsx";
 import { ChecksPage, PanelPage, PicksPage, StatesPage } from "./exhibits/kit.tsx";
@@ -37,6 +38,7 @@ const PAGE_VIEWS: Readonly<Record<PageId, () => ReactNode>> = {
   notices: () => <NoticesPage />,
   states: () => <StatesPage />,
   picks: () => <PicksPage />,
+  apps: () => <AppsPage />,
   panel: () => <PanelPage />,
   shortcuts: () => <ShortcutsPage />,
   colors: () => <ColorsPage />,

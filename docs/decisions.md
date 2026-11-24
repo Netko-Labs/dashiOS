@@ -7420,3 +7420,19 @@ short words, as the rulebook is written.
 - **Why:** each follows a rule already written (UI-12, UI-14, PA-6, PA-7, PA-17, VS-8, LA-5).
 - **Cost:** none beyond each line.
 - **Undo:** per component.
+
+### D650. Three kit pieces for the apps: words edited in place, title tabs, keypad keys
+
+- **Date:** 2026-11-24. The `design-apps-a` agent's (W5; H22, UI-1).
+- **Question:** H22 leaves no bare `TextInput` and no role-drawn control outside `@dashi/ui`. Text
+  Editor's page, a note's body and title, Calculator's line and a rename in place are `TextInput`s
+  with no box; Terminal's tabs and Calculator's keys are buttons drawn by hand. The kit had nothing
+  for any of them.
+- **Choice:** the kit gains `EditableText` (`plain`: no ground, no edge; `inline`: the rename look,
+  the card inside the ring's edge at radius 4), `TitleTab` and `TitleTabMore` (VS-4's tabs, role
+  `tab`, the attention dot an indicator) and `KeypadKey` (digit, quiet and strong tones; = is the
+  primary's ink; every label 400, TY-2; a card's radius 10, since a key is a tile of its keypad,
+  not 12, a window's). Each has a test and a page in the Components app ("Tabs, keys and text").
+- **Why:** a control has one home (UI-1); the apps keep their layout and lose their copies.
+- **Cost:** three components with one user each today.
+- **Undo:** move them back into Terminal, Calculator and the editors, and list them on H22.
