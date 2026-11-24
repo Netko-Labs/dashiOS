@@ -2,8 +2,20 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { titleRoom } from "@dashi/ui";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
-import { FOLD_ORDER, foldTools, planToolbar, TITLE_FLOOR, TITLE_MAX, TOOLS, titleWidth, toolbarWidth, toolWidths } from "../apps/preview/lib/fold.ts";
+import {
+  FOLD_ORDER,
+  foldTools,
+  planToolbar,
+  TITLE_FLOOR,
+  TITLE_GAP,
+  TITLE_MAX,
+  TOOLS,
+  titleWidth,
+  toolbarWidth,
+  toolWidths,
+} from "../apps/preview/lib/fold.ts";
 import { Viewer } from "../apps/preview/lib/viewer.ts";
 import { PreviewWindow } from "../apps/preview/lib/views/view.tsx";
 import { settle } from "./support/time.ts";
@@ -15,7 +27,7 @@ const widths = toolWidths({ position: null, zoomLevel: "43%" });
 test("a wide toolbar shows every tool; narrower, the least important fold first, and what's left always fits", () => {
   const full = toolbarWidth(TOOLS, widths);
   // ‹ › | − 43% + ⛶ ⊡ | ↺ ↻ | ⓘ …: the buttons, the label, the gaps and three dividers.
-  expect(full).toBe(32 * 2 + 10 + 10 + (32 + 10 + 46 + 10 + 32) + 10 + 32 + 10 + 32 + 10 + (7 + 10) + (32 * 2 + 10) + 10 + (7 + 10) + 32 + 10 + (7 + 10) + 32);
+  expect(full).toBe(32 * 2 + 10 + 10 + (32 + 10 + 46 + 10 + 32) + 10 + 32 + 10 + 32 + 10 + (5 + 10) + (32 * 2 + 10) + 10 + (5 + 10) + 32 + 10 + (5 + 10) + 32);
   expect(foldTools(null, widths).shown).toEqual([...TOOLS]);
   expect(foldTools(full, widths)).toEqual({ shown: [...TOOLS], folded: [], width: full });
   let previous = [...TOOLS];
@@ -46,20 +58,20 @@ test("the row: the words give way first, then the name down to a floor, and only
   // Room for all: the whole name (up to TITLE_MAX), every tool, the fullest words.
   expect(plan(2000)).toMatchObject({ title: TITLE_MAX, folded: [], detail: detail[0] });
   // A little less: the words go, the name and the tools stay.
-  expect(plan(TITLE_MAX + 10 + full + 40)).toMatchObject({ title: TITLE_MAX, folded: [], detail: null });
+  expect(plan(TITLE_MAX + TITLE_GAP + full + 40)).toMatchObject({ title: TITLE_MAX, folded: [], detail: null });
   // Less again: the name shortens, every tool stays (the default window with a long name: 1000 less the strip and the lights).
-  const shorter = plan(TITLE_FLOOR + 10 + full + 30);
+  const shorter = plan(TITLE_FLOOR + TITLE_GAP + full + 30);
   expect(shorter.folded).toEqual([]);
   expect(shorter.title).toBe(TITLE_FLOOR + 30);
   // At its floor the name stops giving way; past it, tools fold, least important first, and the name takes back the rest.
-  const folding = plan(TITLE_FLOOR + 10 + full - 1);
+  const folding = plan(TITLE_FLOOR + TITLE_GAP + full - 1);
   expect(folding.folded).toEqual(["actual"]);
-  expect(folding.title + 10 + folding.width).toBeLessThanOrEqual(TITLE_FLOOR + 10 + full - 1);
+  expect(folding.title + TITLE_GAP + folding.width).toBeLessThanOrEqual(TITLE_FLOOR + TITLE_GAP + full - 1);
   expect(folding.title).toBeGreaterThanOrEqual(TITLE_FLOOR);
   // Whatever the room, what is drawn fits it.
   for (let room = 2000; room >= 60; room -= 9) {
     const each = plan(room);
-    expect(each.title + 10 + each.width).toBeLessThanOrEqual(Math.max(room, 10 + 32));
+    expect(each.title + TITLE_GAP + each.width).toBeLessThanOrEqual(Math.max(room, 10 + 32));
   }
   // A short name is never cut to make room it doesn't need; with the compositor's title bar there is none.
   expect(plan(320, "a.png").title).toBe(titleWidth("a.png"));
@@ -75,7 +87,7 @@ test("a narrow window (359 pt, no strip) keeps the name whole, the arrows, and �
   expect(fold.shown).toEqual(["move"]);
   // The name is drawn about 128 pt wide (the before-still); it gets more than that, and the row still fits.
   expect(fold.title).toBeGreaterThan(130);
-  expect(fold.title + 10 + fold.width).toBeLessThanOrEqual(359 - 82 - 12);
+  expect(fold.title + TITLE_GAP + fold.width).toBeLessThanOrEqual(359 - 82 - 12);
 });
 
 test("a PDF's wide page count is measured, not assumed", () => {
@@ -120,7 +132,8 @@ test("in a narrow window the turns and Info are in “…”, not cut at the edg
   expect(root.nodeId("rotate-left")).toBeDefined();
 
   // The row holds the name too: what is left for the tools is 280.
-  emit({ type: "resize", nodeId: node("toolbar-room"), bounds: { x: 300, y: 0, width: 280 + titleWidth("pixel.png") + 10, height: 40 } });
+  // WindowTitle keeps its row at least titleRoom wide, a short name too.
+  emit({ type: "resize", nodeId: node("toolbar-room"), bounds: { x: 300, y: 0, width: 280 + titleRoom(titleWidth("pixel.png")) + TITLE_GAP, height: 40 } });
   await settle();
   for (const id of ["previous", "next", "zoom-out", "zoom-in"]) expect(root.nodeId(id)).toBeDefined();
   for (const id of ["fit", "actual", "rotate-left", "rotate-right", "info"]) expect(root.nodeId(id)).toBeUndefined();

@@ -4,8 +4,8 @@
  * the keyboard agree. In a PDF ↑ ↓ scroll, Page Up and Page Down, Space and
  * ⇧Space scroll a screen, Home and End go to the ends, and ← → go to the
  * previous and next page; among pictures every arrow steps through the
- * folder. ⌫ asks to move the file to the Trash (File › Move to Trash shows
- * it), and Esc lets go of selected text. Pure: the window does what this says.
+ * folder, and Esc lets go of selected text. Move to Trash is ❖⌫, File's row
+ * (menus.ts): a bare ⌫ does nothing, so a stray key never moves a file. Pure: the window does what this says.
  */
 
 import type { WindowKeyInfo } from "@mirinjs/metal";
@@ -14,7 +14,6 @@ export type KeyAction =
   | { kind: "scroll"; by: "line" | "screen"; direction: 1 | -1 }
   | { kind: "end"; direction: 1 | -1 }
   | { kind: "step"; direction: 1 | -1 }
-  | { kind: "trash" }
   | { kind: "unselect" };
 
 export function keyAction(key: Pick<WindowKeyInfo, "key" | "ctrl" | "alt" | "meta" | "shift">, isPdf: boolean): KeyAction | null {
@@ -39,9 +38,6 @@ export function keyAction(key: Pick<WindowKeyInfo, "key" | "ctrl" | "alt" | "met
       return isPdf ? { kind: "end", direction: -1 } : null;
     case "end":
       return isPdf ? { kind: "end", direction: 1 } : null;
-    case "backspace":
-    case "delete":
-      return { kind: "trash" };
     case "escape":
       return { kind: "unselect" };
     default:

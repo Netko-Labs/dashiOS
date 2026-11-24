@@ -24,10 +24,10 @@ export const MESSAGES = {
   shownSmaller: "Shown smaller than it is, to save memory",
   notUpright: "Shown as stored: its camera rotation isn’t applied",
   clipboard: "Couldn’t copy. Try again.",
-  noChooser: "Open the file from Files, or drag it onto this window.",
   noPrinting: "No printer is set up. Add one in Settings, then try again.",
   printFailed: "The printer didn’t take it. Check the printer, then try again.",
   exportFailed: "The copy couldn’t be written. Check there’s room and that you can write there.",
   trashFailed: "Check that the file is still there and that you can change its folder.",
+  notInTrash: "Couldn’t put it back: it isn’t in the Trash any more.",
   exportUnrotated: "Its pages are saved as they are, without the rotation.",
 } as const;

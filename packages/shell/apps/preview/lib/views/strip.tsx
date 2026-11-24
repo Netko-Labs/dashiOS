@@ -1,13 +1,15 @@
 /**
  * The page strip in the sidebar: a thumbnail per page of a PDF, or per
- * picture in the open picture's folder, the open one marked; a click goes
+ * picture in the open picture's folder, the open one chosen in the one
+ * selection look (CO-9: its tile washed whole, its label in onSelection, as
+ * Files' icon view draws a chosen icon); a click goes
  * there. Only the rows near the strip's window are drawn (a PDF may have
  * thousands of pages), each at its own page's shape, and the strip scrolls
  * itself to keep the open one in view as you move. Metal has no scroll offset
  * to set, so the scroll is ours, as on the document surface.
  */
 
-import { Picture, useColors, useSurface } from "@dashi/ui";
+import { CLEAR, Picture, RADIUS, SPACE, TYPE, useColors, useSurface, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LINE_PX } from "../document.ts";
@@ -28,10 +30,12 @@ export const STRIP = { share: 0.2, least: 132, most: 200, hideBelow: 480, margin
 const FADE = { bands: 16, band: 1 } as const;
 /** The label under a thumbnail, the gap between rows, and the room above the first and below the last. */
 const LABEL = 18;
-const GAP = 10;
-const PAD = 6;
-/** The marked frame around a thumbnail. */
-const FRAME = 4;
+const GAP = SPACE.gap;
+const PAD = SPACE.s;
+/** The tile's room around a thumbnail, where the chosen one's wash shows. */
+const FRAME = SPACE.xs;
+/** A page not drawn yet: its hairline. */
+const HAIRLINE = 1;
 
 export interface StripItem {
   key: string;
@@ -93,14 +97,23 @@ interface StripRowProps {
   onPress: () => void;
 }
 
-/** One page or picture: its thumbnail in a frame, and its label under it. */
+/** One page or picture: its thumbnail and its label under it, on a tile the selection washes whole when it is the open one. */
 function StripRow({ testID, item, row, top, thumbWide, marked, onPress }: StripRowProps) {
   const colors = useColors();
   const surface = useSurface();
   const thumb = row.height - FRAME * 2 - LABEL;
   // A page not drawn yet, or a file the host cannot draw: the card ground, quiet in both modes.
   const empty = (
-    <View style={{ width: thumbWide, height: thumb, backgroundColor: surface.card, borderRadius: 2, borderWidth: 1, borderColor: colors.separator }} />
+    <View
+      style={{
+        width: thumbWide,
+        height: thumb,
+        backgroundColor: surface.card,
+        borderRadius: RADIUS.thumb,
+        borderWidth: HAIRLINE,
+        borderColor: colors.separator,
+      }}
+    />
   );
   return (
     <View
@@ -112,31 +125,37 @@ function StripRow({ testID, item, row, top, thumbWide, marked, onPress }: StripR
       style={{ position: "absolute", left: 0, right: 0, top, height: row.height, alignItems: "center" }}
     >
       <View
+        testID={`${testID}:tile`}
         style={{
           width: thumbWide + FRAME * 2,
-          height: thumb + FRAME * 2,
+          height: row.height,
           alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 6,
-          borderWidth: 2,
-          borderColor: marked ? colors.selection : "#00000000",
-          hoverBackgroundColor: marked ? "#00000000" : colors.button,
+          borderRadius: RADIUS.control,
+          backgroundColor: marked ? colors.selectionWash : CLEAR,
+          hoverBackgroundColor: marked ? colors.selectionWash : colors.button,
         }}
       >
-        {item.source !== null ? (
-          <Picture source={item.source} resizeMode="contain" style={{ width: thumbWide, height: thumb, borderRadius: 2 }} fallback={empty} />
-        ) : (
-          empty
-        )}
-      </View>
-      {/* One line, centred, with an ellipsis when it is longer than the thumbnail is wide. */}
-      <View style={{ height: LABEL, justifyContent: "center", paddingHorizontal: 4, width: thumbWide + FRAME * 2 }}>
-        <Text
-          numberOfLines={1}
-          style={{ fontSize: 11, fontWeight: marked ? "semibold" : "normal", color: marked ? colors.accentInk : colors.textMuted, textAlign: "center" }}
-        >
-          {item.label}
-        </Text>
+        <View style={{ height: thumb + FRAME * 2, alignItems: "center", justifyContent: "center" }}>
+          {item.source !== null ? (
+            <Picture source={item.source} resizeMode="contain" style={{ width: thumbWide, height: thumb, borderRadius: RADIUS.thumb }} fallback={empty} />
+          ) : (
+            empty
+          )}
+        </View>
+        {/* One line, centred, with an ellipsis when it is longer than the thumbnail is wide. */}
+        <View style={{ height: LABEL, justifyContent: "center", paddingHorizontal: SPACE.xs, width: thumbWide + FRAME * 2 }}>
+          <Text
+            numberOfLines={1}
+            style={{
+              fontSize: TYPE.caption.size,
+              fontWeight: marked ? WEIGHT.semibold : WEIGHT.regular,
+              color: marked ? colors.onSelection : colors.textMuted,
+              textAlign: "center",
+            }}
+          >
+            {item.label}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -188,7 +207,7 @@ export function Strip({
       testID={testID}
       onLayout={(bounds) => setHeight(bounds.height)}
       onWheel={(wheel) => setScroll((now) => clampScroll(clampScroll(now, content, height) - wheel.dy * LINE_PX, content, height))}
-      style={{ flex: 1, position: "relative", overflow: "hidden", marginLeft: -10, marginRight: -10 }}
+      style={{ flex: 1, position: "relative", overflow: "hidden", marginLeft: -SPACE.gap, marginRight: -SPACE.gap }}
     >
       {shown.map((index) => {
         const item = items[index];

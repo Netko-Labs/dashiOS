@@ -5,10 +5,11 @@
  * itself is toolbar.tsx's ToolbarRow.
  */
 
-import { LOADING_DELAY_MS, MENU_SEPARATOR, type MenuEntry, useShownAfter, useTitleBarInset } from "@dashi/ui";
+import { LOADING_DELAY_MS, MENU_SEPARATOR, type MenuEntry, placeOf, useShownAfter, useTitleBarInset } from "@dashi/ui";
 import { useMemo, useState } from "react";
 import { detailChoices } from "../detail.ts";
 import { planToolbar, type ToolbarPlan, type ToolId, toolWidths } from "../fold.ts";
+import { KEYS } from "../menus.ts";
 import type { Snapshot } from "../snapshot.ts";
 import { foldedItems, type ToolbarProps, toolsFor } from "../views/toolbar.tsx";
 import { turned } from "../zoom.ts";
@@ -21,6 +22,8 @@ const BUSY_DELAY_MS = LOADING_DELAY_MS;
 
 export interface ToolbarView {
   title: string;
+  /** The row draws the name (the unified title bar); else the compositor does. */
+  titled: boolean;
   props: ToolbarProps;
   plan: ToolbarPlan;
   /** The tools drawn in the row, after the ones a file that can't be shown loses. */
@@ -60,7 +63,7 @@ export function useToolbar({
     canNext: commands.canNext,
     onPrevious: () => commands.step(-1),
     onNext: () => commands.step(1),
-    position: pdf ? `${page} / ${pdf.pages}` : null,
+    position: pdf ? placeOf(page - 1, pdf.pages) : null,
     zoomLabel,
     onZoomOut: zoom.out,
     onZoomIn: zoom.in,
@@ -98,12 +101,12 @@ export function useToolbar({
     { label: "Open With…", onPress: commands.openWithSheet, disabled: !snap.path || !snap.mime },
     { label: "Show in Files", onPress: () => actions.showInFiles(), disabled: !snap.path },
     MENU_SEPARATOR,
-    { label: "Export…", keys: "⇧❖E", onPress: () => actions.exportFile(), disabled: commands.formats.length === 0 || !hasPicture },
-    { label: "Print…", keys: "❖P", onPress: actions.print, disabled: !commands.canPrint || !hasPicture },
+    { label: "Export…", keys: KEYS.export, onPress: () => actions.exportFile(), disabled: commands.formats.length === 0 || !hasPicture },
+    { label: "Print…", keys: KEYS.print, onPress: actions.print, disabled: !commands.canPrint || !hasPicture },
     MENU_SEPARATOR,
-    { label: "Move to Trash…", keys: "⌫", onPress: () => chrome.setSheet({ kind: "trash" }), disabled: !snap.path },
+    { label: "Move to Trash", keys: KEYS.trash, onPress: actions.trash, disabled: !snap.path },
   ];
-  return { title, props, plan, shown: toolsFor(plan.shown, toolsNow), busy, moreItems, setRoom };
+  return { title, titled: inset.unified, props, plan, shown: toolsFor(plan.shown, toolsNow), busy, moreItems, setRoom };
 }
 
 /** The picture's size and place in its folder, or a PDF's pages and title: the words the row may show (detail.ts). */

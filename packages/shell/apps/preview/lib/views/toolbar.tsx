@@ -1,17 +1,17 @@
 /**
- * Preview's chrome row: the name, the size words, the busy spinner and the
- * toolbar buttons (moving, zooming, rotating, and the rest; what doesn't fit
+ * Preview's chrome row: the window's title and its size words (the kit's
+ * WindowTitle), the busy spinner and the toolbar buttons (moving, zooming, rotating, and the rest; what doesn't fit
  * is in "…", fold.ts). Every glyph names itself in a tooltip and to a screen
  * reader (UI-3), with the menu bar's words. The row is measured, so what it
  * holds is planned to fit (fold.ts), never cut at the edge.
  */
 
-import { INFO, type MenuItem, MORE, Spinner, ToolbarButton, useColors } from "@dashi/ui";
+import { INFO, type MenuItem, MORE, Spinner, ToolbarButton, TYPE, useColors, WindowTitle } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { Fragment } from "react";
-import { DETAIL_SIZE } from "../detail.ts";
-import { dividerBefore, MEASURES, TOOLS, type ToolbarPlan, type ToolId } from "../fold.ts";
+import { DIVIDER, dividerBefore, MEASURES, SPINNER_SIZE, TOOLS, type ToolbarPlan, type ToolId } from "../fold.ts";
 import * as glyphs from "../glyphs.ts";
+import { KEYS } from "../menus.ts";
 
 export interface ToolbarProps {
   /** Previous and next: the folder's images, or a PDF's pages. */
@@ -19,7 +19,7 @@ export interface ToolbarProps {
   canNext: boolean;
   onPrevious: () => void;
   onNext: () => void;
-  /** "3 / 12" beside the arrows, for a PDF. */
+  /** "3 of 12" beside the arrows, for a PDF (VS-8: a place is written one way). */
   position: string | null;
   zoomLabel: string;
   onZoomOut: () => void;
@@ -44,7 +44,11 @@ export interface ToolbarProps {
 
 function Divider() {
   const colors = useColors();
-  return <View style={{ width: 1, height: 18, marginLeft: 3, marginRight: 3, backgroundColor: colors.separator }} />;
+  return (
+    <View
+      style={{ width: DIVIDER.width, height: DIVIDER.height, marginLeft: DIVIDER.margin, marginRight: DIVIDER.margin, backgroundColor: colors.separator }}
+    />
+  );
 }
 
 function Tool({ tool, props }: { tool: ToolId; props: ToolbarProps }) {
@@ -57,8 +61,8 @@ function Tool({ tool, props }: { tool: ToolId; props: ToolbarProps }) {
         <>
           <ToolbarButton glyph={glyphs.CHEVRON_LEFT} testID="previous" tooltip={`Previous ${unit}`} disabled={!props.canPrevious} onPress={props.onPrevious} />
           {props.position !== null && (
-            <View testID="position" style={{ minWidth: 44, alignItems: "center" }}>
-              <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>
+            <View testID="position" style={{ minWidth: MEASURES.position, alignItems: "center" }}>
+              <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.textMuted, textAlign: "center" }}>
                 {props.position}
               </Text>
             </View>
@@ -72,8 +76,8 @@ function Tool({ tool, props }: { tool: ToolId; props: ToolbarProps }) {
           <ToolbarButton glyph={glyphs.ZOOM_OUT} testID="zoom-out" tooltip="Zoom out" disabled={!hasPicture} onPress={props.onZoomOut} />
           {props.zoomLabel !== "" && (
             // Centred between − and +, as the PDF's "3 / 12" is between the arrows.
-            <View testID="zoom-level" style={{ minWidth: 46, alignItems: "center" }}>
-              <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text, textAlign: "center" }}>
+            <View testID="zoom-level" style={{ minWidth: MEASURES.zoomLevel, alignItems: "center" }}>
+              <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.text, textAlign: "center" }}>
                 {props.zoomLabel}
               </Text>
             </View>
@@ -106,32 +110,27 @@ export function toolsFor(tools: readonly ToolId[], { failed, canMove }: { failed
   return failed ? tools.filter((tool) => tool === "move" && canMove) : [...tools];
 }
 
-/** The tools that didn't fit, as the first rows of "…", in drawing order, with their keys from the menu bar (menus.ts). */
+/** The tools that didn't fit, as the first rows of "…", in drawing order, with their keys from the menu bar's table (menus.ts KEYS, UI-17). */
 export function foldedItems(folded: readonly ToolId[], props: ToolbarProps): MenuItem[] {
   const noPicture = !props.hasPicture;
   const rows: Readonly<Record<ToolId, MenuItem[]>> = {
     move: [
-      { label: `Previous ${props.unit}`, keys: "←", onPress: props.onPrevious, disabled: !props.canPrevious },
-      { label: `Next ${props.unit}`, keys: "→", onPress: props.onNext, disabled: !props.canNext },
+      { label: `Previous ${props.unit}`, keys: KEYS.previous, onPress: props.onPrevious, disabled: !props.canPrevious },
+      { label: `Next ${props.unit}`, keys: KEYS.next, onPress: props.onNext, disabled: !props.canNext },
     ],
     zoom: [
-      { label: "Zoom Out", keys: "❖-", onPress: props.onZoomOut, disabled: noPicture },
-      { label: "Zoom In", keys: "❖=", onPress: props.onZoomIn, disabled: noPicture },
+      { label: "Zoom Out", keys: KEYS["zoom-out"], onPress: props.onZoomOut, disabled: noPicture },
+      { label: "Zoom In", keys: KEYS["zoom-in"], onPress: props.onZoomIn, disabled: noPicture },
     ],
-    fit: [{ label: "Zoom to Fit", keys: "❖9", onPress: props.onFit, disabled: noPicture }],
-    actual: [{ label: "Actual Size", keys: "❖0", onPress: props.onActual, disabled: noPicture }],
+    fit: [{ label: "Zoom to Fit", keys: KEYS.fit, onPress: props.onFit, disabled: noPicture }],
+    actual: [{ label: "Actual Size", keys: KEYS.actual, onPress: props.onActual, disabled: noPicture }],
     turn: [
-      { label: "Rotate Left", keys: "❖L", onPress: props.onTurnLeft, disabled: !props.canTurn },
-      { label: "Rotate Right", keys: "❖R", onPress: props.onTurnRight, disabled: !props.canTurn },
+      { label: "Rotate Left", keys: KEYS["rotate-left"], onPress: props.onTurnLeft, disabled: !props.canTurn },
+      { label: "Rotate Right", keys: KEYS["rotate-right"], onPress: props.onTurnRight, disabled: !props.canTurn },
     ],
-    info: [{ label: "Get Info", keys: "❖I", onPress: props.onInfo, disabled: noPicture }],
+    info: [{ label: "Get Info", keys: KEYS.info, onPress: props.onInfo, disabled: noPicture }],
   };
   return folded.flatMap((tool) => rows[tool]);
-}
-
-/** "…": the rest of the commands, in a menu that hangs from it, lit while it is open. */
-function MoreButton({ onMore, open }: { onMore: ToolbarProps["onMore"]; open: boolean }) {
-  return <ToolbarButton glyph={MORE} testID="more" tooltip="More" active={open} onPress={(event) => onMore(event.bounds)} />;
 }
 
 export function PreviewToolbar(props: ToolbarProps) {
@@ -146,18 +145,23 @@ export function PreviewToolbar(props: ToolbarProps) {
           <Tool tool={tool} props={props} />
         </Fragment>
       ))}
-      <MoreButton onMore={props.onMore} open={props.moreOpen === true} />
+      {/* "…": the rest of the commands, in a menu that hangs from it, lit while it is open. */}
+      <ToolbarButton glyph={MORE} testID="more" tooltip="More" active={props.moreOpen === true} onPress={(event) => props.onMore(event.bounds)} />
     </>
   );
 }
 
 /**
- * The chrome row, as planned (fold.ts): the name (`title`, when the plan
- * gives it room), the spinner while `busy`, the size words, then the tools
- * that fit. `onRoom` reports the row's measured width, the plan's input.
+ * The chrome row, as planned (fold.ts): the window's title through the kit's
+ * `WindowTitle` (the name 13 Bold, the size words 13 muted after " — ", VS-2,
+ * VS-8), then the spinner while `busy` and the tools that fit, as the
+ * title's `after`, which keep their width while the words give way.
+ * `onRoom` reports the row's measured width, the plan's input. With the
+ * compositor's own title bar (`titled` false) the row holds the tools alone.
  */
 export function ToolbarRow({
   title,
+  titled,
   plan,
   busy,
   props,
@@ -165,6 +169,8 @@ export function ToolbarRow({
   onRoom,
 }: {
   title: string;
+  /** The row draws the name (the unified title bar). */
+  titled: boolean;
   plan: ToolbarPlan;
   busy: boolean;
   props: ToolbarProps;
@@ -172,41 +178,21 @@ export function ToolbarRow({
   shown: readonly ToolId[];
   onRoom: (width: number) => void;
 }) {
-  const colors = useColors();
+  const tools = (
+    <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: MEASURES.gap }}>
+      {busy && <Spinner testID="busy" size={SPINNER_SIZE} />}
+      <PreviewToolbar {...props} shown={shown} />
+    </View>
+  );
   return (
     // The whole row after the window controls, measured (from a zero basis, so what it holds never moves it):
-    // the name, then the words and the tools that fit what it leaves, whole: never "320 × 18…", never a button
-    // cut at the edge, never the name under "…".
+    // the name, then the words and the tools that fit what it leaves, whole: never a button cut at the edge.
     <View
       testID="toolbar-room"
       onLayout={(bounds) => onRoom(bounds.width)}
-      style={{
-        flex: 1,
-        minWidth: 0,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: plan.title > 0 ? "space-between" : "flex-end",
-        gap: MEASURES.gap,
-      }}
+      style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", justifyContent: "flex-end" }}
     >
-      {plan.title > 0 && (
-        <View testID="title" style={{ flexShrink: 0, maxWidth: plan.title }}>
-          <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
-            {title}
-          </Text>
-        </View>
-      )}
-      <View style={{ flexShrink: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: MEASURES.gap }}>
-        {busy && <Spinner testID="busy" size={16} />}
-        {plan.detail !== null && (
-          <View testID="detail" style={{ flexShrink: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: DETAIL_SIZE, color: colors.textMuted }}>
-              {plan.detail}
-            </Text>
-          </View>
-        )}
-        <PreviewToolbar {...props} shown={shown} />
-      </View>
+      {titled ? <WindowTitle title={title} {...(plan.detail !== null ? { detail: plan.detail } : {})} after={tools} /> : tools}
     </View>
   );
 }

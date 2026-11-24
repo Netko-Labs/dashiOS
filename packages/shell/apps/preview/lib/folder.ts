@@ -18,6 +18,9 @@ import { HEADER_BYTES, jpegOrientation, readSize, swapsSides } from "./dimension
 import { orderSiblings } from "./siblings.ts";
 import { type RunOptions, type RunResult, runTool } from "./tools.ts";
 
+/** How long a burst of changes in the folder settles before it is listed again (ms): a timer, not a motion. */
+const RELIST_MS = 300;
+
 /** A folder this large is listed up to here; the rest is not reachable with the arrow keys. */
 const MAX_ENTRIES = 20_000;
 /** A picture drawn as its own thumbnail when ImageMagick can't make one: at most this many bytes. */
@@ -114,7 +117,7 @@ export class Folder {
       // A burst of changes (a copy of many files) is listed once.
       this.stopWatching = (this.options.watchDir ?? watchFolder)(dir, () => {
         if (timer) clearTimeout(timer);
-        timer = setTimeout(() => void this.show(dir, true), 300);
+        timer = setTimeout(() => void this.show(dir, true), RELIST_MS);
       });
     }
     const listing = ++this.listing;

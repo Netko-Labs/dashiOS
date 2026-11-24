@@ -1,7 +1,6 @@
-/** Preview's sheets: file info, the Open With list, Export, and a plain message. */
+/** Preview's sheet of its own, Export (a form sheet, UI-15), and the rows its Info shows (the sheet is shared: file-sheets.tsx). */
 
-import { AlertSheet, Button, Group, INFO, PopUpButton, Row, Sheet, Slider, useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { FormSheet, Group, PopUpButton, Row, Slider } from "@dashi/ui";
 import { useState } from "react";
 import type { InfoRow } from "../../../../src/shared/file-browser/file-sheets.tsx";
 import { formatDate, formatSize } from "../../../../src/shared/file-browser/format.ts";
@@ -44,6 +43,9 @@ export function pdfRows(pages: number, title: string | null, page: { width: numb
   ];
 }
 
+/** Export's widths: the sheet, the format's pop-up, the quality's slider. */
+const EXPORT_SHEET = { width: 400, format: 120, quality: 160 } as const;
+
 export interface ExportChoice {
   format: ExportFormat;
   /** 1 to 100, for JPEG. */
@@ -51,8 +53,8 @@ export interface ExportChoice {
 }
 
 /**
- * Export: which format, and for JPEG how good, then Export… asks where (the
- * desktop's save dialog). A PDF exports whole as a PDF, or the page in view
+ * Export: which format, and for JPEG how good, then Export… asks where (Files'
+ * chooser, in this sheet's place). A PDF exports whole as a PDF, or the page in view
  * as a picture.
  */
 export function ExportSheet({
@@ -67,18 +69,25 @@ export function ExportSheet({
   onExport: (choice: ExportChoice) => void;
   onClose: () => void;
 }) {
-  const colors = useColors();
   const [format, setFormat] = useState<ExportFormat>(formats[0] ?? "png");
   const [quality, setQuality] = useState(0.9);
   const asPage = pageNote !== null && format !== "pdf";
+  const go = (): void => onExport({ format, quality: Math.round(quality * 100) });
   return (
-    <Sheet testID="export" width={400} onCancel={onClose} onConfirm={() => onExport({ format, quality: Math.round(quality * 100) })}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Export</Text>
+    <FormSheet
+      testID="export"
+      title="Export"
+      width={EXPORT_SHEET.width}
+      buttons={[
+        { label: "Cancel", testID: "export:cancel", cancel: true, onPress: onClose },
+        { label: "Export…", testID: "export:go", kind: "primary", onPress: go },
+      ]}
+    >
       <Group>
         <Row label="Format" detail={asPage ? pageNote : undefined}>
           <PopUpButton
             testID="export:format"
-            width={120}
+            width={EXPORT_SHEET.format}
             options={formats.map((each) => ({ value: each, label: EXPORT_FORMATS[each].label }))}
             value={format}
             onChange={setFormat}
@@ -86,28 +95,10 @@ export function ExportSheet({
         </Row>
         {format === "jpeg" && (
           <Row label="Quality" detail={`${Math.round(quality * 100)}%`}>
-            <Slider testID="export:quality" width={160} value={quality} onChange={setQuality} range={{ min: 0.4, max: 1, step: 0.05 }} />
+            <Slider testID="export:quality" width={EXPORT_SHEET.quality} value={quality} onChange={setQuality} range={{ min: 0.4, max: 1, step: 0.05 }} />
           </Row>
         )}
       </Group>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-        <Button label="Cancel" testID="export:cancel" onPress={onClose} />
-        <Button label="Export…" testID="export:go" primary onPress={() => onExport({ format, quality: Math.round(quality * 100) })} />
-      </View>
-    </Sheet>
-  );
-}
-
-export function MessageSheet({ title, message, onClose }: { title: string; message: string; onClose: () => void }) {
-  // It only informs: one button, which Esc and Enter press too (UI-5).
-  return (
-    <AlertSheet
-      testID="message"
-      width={400}
-      question={title}
-      message={message}
-      glyph={INFO}
-      buttons={[{ label: "OK", testID: "message:ok", onPress: onClose, kind: "primary" }]}
-    />
+    </FormSheet>
   );
 }

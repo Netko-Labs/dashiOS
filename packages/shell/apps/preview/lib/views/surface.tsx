@@ -10,7 +10,7 @@
  * surface, so it outlives a bar that comes and goes.
  */
 
-import { useColors, useSurface } from "@dashi/ui";
+import { pill, useColors, useSurface } from "@dashi/ui";
 import { Image, View } from "@mirinjs/metal";
 import { type MutableRefObject, useRef } from "react";
 import { type DocumentView, LINE_PX } from "../document.ts";
@@ -24,6 +24,8 @@ import { turned } from "../zoom.ts";
 const BAR = { width: 7, least: 28, inset: 3 } as const;
 /** A drag that moved less than this is a click (it lets go of the selection). */
 const CLICK_SLOP = 3;
+/** Paper's hairline before its page is drawn. */
+const PAPER_EDGE = 1;
 
 type Box = DocumentView["layout"]["boxes"][number];
 
@@ -97,7 +99,7 @@ function PageCard({ page, box, pdf, doc, turns, paper }: { page: number; box: Bo
         // Paper before the page is drawn: the card ground with a hairline, quiet in both modes. The drawn
         // page fills the box whole, so the hairline goes with the paper (a border would inset the picture).
         backgroundColor: paper,
-        ...(render ? {} : { borderWidth: 1, borderColor: colors.separator }),
+        ...(render ? {} : { borderWidth: PAPER_EDGE, borderColor: colors.separator }),
       }}
     >
       {render && <Image source={render.source} resizeMode="contain" style={{ width: box.width, height: box.height }} />}
@@ -157,7 +159,7 @@ function ScrollBar({
         top: barTop,
         width: BAR.width,
         height: barLength,
-        borderRadius: BAR.width / 2,
+        borderRadius: pill(BAR.width),
         backgroundColor: colors.track,
         hoverBackgroundColor: colors.pressed,
       }}
