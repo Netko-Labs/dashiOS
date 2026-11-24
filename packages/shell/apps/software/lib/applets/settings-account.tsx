@@ -6,7 +6,7 @@
  */
 
 import type { Manifest } from "@dashi/applet";
-import { Button, SPACE, TextField, TYPE, useColors } from "@dashi/ui";
+import { Button, SPACE, TextField, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { type AccountRow, canSignIn, type ExtensionAccounts } from "../../../../src/shared/extension-settings/index.ts";
@@ -63,7 +63,7 @@ export function AccountSetting({
     <View style={{ flexDirection: "column", gap: SPACE.s }}>
       <View style={{ flexDirection: "row", alignItems: "flex-start", gap: SPACE.gap }}>
         <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.xxs }}>
-          <Text style={{ fontSize: TYPE.body.size, fontWeight: row.login ? "semibold" : "normal", color: colors.text }}>{words.title}</Text>
+          <Text style={{ fontSize: TYPE.body.size, fontWeight: row.login ? WEIGHT.semibold : WEIGHT.regular, color: colors.text }}>{words.title}</Text>
           <Text style={{ fontSize: TYPE.caption.size, color: step.kind === "failed" ? colors.critical : colors.textMuted }}>{words.detail}</Text>
         </View>
         {row.login !== null ? (
