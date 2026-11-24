@@ -3,6 +3,7 @@ import { expect, test } from "bun:test";
 import { View } from "@mirinjs/metal";
 import { EDITABLE_TEXT, EditableText } from "../src/editable-text.tsx";
 import { KEYPAD_KEY, KeypadKey } from "../src/keypad-key.tsx";
+import { SearchField } from "../src/search-field.tsx";
 import { SHEET_MARGIN, Sheet } from "../src/sheet.tsx";
 import { CLEAR, RADIUS } from "../src/theme/index.ts";
 import { lightColors } from "../src/theme/palette.ts";
@@ -74,5 +75,19 @@ test("Sheet, tall and bare: the window's ground, no padding, its height giving w
   expect(card).toMatchObject({ height: 470, minHeight: 0 });
   expect(card.padding).toBeUndefined();
   expect(node("chooser:scrim")?.props).toMatchObject({ paddingBottom: SHEET_MARGIN });
+  root.unmount();
+});
+
+test("SearchField with crumbs: at rest the box holds them and is one Tab stop; editing, it fills its row with its tools at the end", async () => {
+  const { node, root } = await sent(
+    <View>
+      <SearchField testID="rest" value="" onChangeText={noop} fill rest={<View testID="crumbs" />} restLabel="Path" onPressRest={noop} />
+      <SearchField testID="edit" value="rep" onChangeText={noop} fill minWidth={96} accessory={<View testID="scope" />} />
+    </View>,
+  );
+  expect(node("rest")?.props).toMatchObject({ focusable: true, access: { role: "button", label: "Path" } });
+  expect(node("crumbs")).not.toBeNull();
+  expect(node("scope")).not.toBeNull();
+  expect(node("edit:clear")).not.toBeNull();
   root.unmount();
 });

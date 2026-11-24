@@ -13,8 +13,8 @@
  * muted words at its end about what it found ("2 of 4").
  */
 
-import { Svg, Text, TextInput, View } from "@mirinjs/metal";
-import { useState } from "react";
+import { type Bounds, Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { type ReactNode, useState } from "react";
 import type { Look } from "./button.tsx";
 import { CLEAR as CLEAR_GLYPH, SEARCH } from "./glyphs.ts";
 import { useControlColors } from "./panel/index.ts";
@@ -45,6 +45,24 @@ export interface SearchFieldProps {
   /** Muted words at the field's end, before the clear button: Find's place ("2 of 4", "Not found"). */
   status?: string | null;
   look?: Look;
+  /** Take the row's room (Files' omnibox in the title's place), never under `minWidth`. */
+  fill?: boolean;
+  /** The glyph over its start, in place of the magnifier (a folder while a path is typed). */
+  glyph?: string;
+  /** Controls at its end, before the status and the clear button (where a search looks). */
+  accessory?: ReactNode;
+  /** What the clear button does besides emptying the field. */
+  onClear?: () => void;
+  /**
+   * The field at rest, as something else in the same box (Files' crumbs): no text
+   * input, the box pressable and the window's Tab stop; a press, Space or Return
+   * calls `onPressRest`, which gives the text back. Named by `restLabel`.
+   */
+  rest?: ReactNode;
+  onPressRest?: () => void;
+  restLabel?: string;
+  /** The box's bounds, for a list hung under it (suggestions). */
+  onLayout?: (bounds: Bounds) => void;
 }
 
 export function SearchField({
@@ -60,6 +78,14 @@ export function SearchField({
   onSubmit,
   status,
   look = "window",
+  fill,
+  glyph = SEARCH,
+  accessory,
+  onClear,
+  rest,
+  onPressRest,
+  restLabel,
+  onLayout,
 }: SearchFieldProps) {
   const colors = useColors();
   const panel = useControlColors();
@@ -70,17 +96,41 @@ export function SearchField({
   const ground = look === "panel" ? panel.off : colors.button;
   const size = look === "panel" ? TYPE.panel.body.size : TYPE.body.size;
   const words = placeholderAt(placeholder, laid);
+  const radius = look === "panel" ? pill(m.height) : RADIUS.control;
+  const box = fill
+    ? { flex: 1, minWidth: minWidth ?? m.least, height: m.height }
+    : { width, height: m.height, ...(minWidth === undefined ? { flexShrink: 0 as const } : { flexShrink: 1 as const, minWidth }) };
+  const laidOut = (bounds: Bounds): void => {
+    setLaid((was) => (Math.abs(was - bounds.width) < 0.5 ? was : bounds.width));
+    onLayout?.(bounds);
+  };
+  if (rest !== undefined) {
+    return (
+      <View
+        testID={testID}
+        onLayout={laidOut}
+        focusable
+        accessibilityRole="button"
+        accessibilityLabel={restLabel ?? placeholder}
+        onPress={onPressRest}
+        style={{
+          ...box,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: SPACE.xxs,
+          paddingLeft: SPACE.xs,
+          paddingRight: SPACE.m,
+          borderRadius: radius,
+          backgroundColor: ground,
+          focusRingColor: colors.focusRing,
+        }}
+      >
+        {rest}
+      </View>
+    );
+  }
   return (
-    <View
-      onLayout={(bounds) => setLaid((was) => (Math.abs(was - bounds.width) < 0.5 ? was : bounds.width))}
-      style={{
-        width,
-        height: m.height,
-        ...(minWidth === undefined ? { flexShrink: 0 as const } : { flexShrink: 1 as const, minWidth }),
-        flexDirection: "row",
-        position: "relative",
-      }}
-    >
+    <View onLayout={laidOut} style={{ ...box, flexDirection: "row", position: "relative" }}>
       <TextInput
         testID={testID}
         value={value}
@@ -100,19 +150,23 @@ export function SearchField({
           paddingLeft: lead,
           paddingRight: SPACE.xs + trailing,
           fontSize: size,
-          borderRadius: look === "panel" ? pill(m.height) : RADIUS.control,
+          borderRadius: radius,
           color: colors.text,
           backgroundColor: ground,
           borderColor: CLEAR,
           focusBorderColor: colors.focusRing,
         }}
       />
-      <Lead testID={testID} words={value === "" ? words : null} size={size} right={SPACE.xs + trailing} />
+      <Lead testID={testID} glyph={glyph} words={value === "" ? words : null} size={size} right={SPACE.xs + trailing} />
       <Trailing
         testID={testID}
         value={value}
         status={status}
-        onClear={() => onChangeText("")}
+        accessory={accessory}
+        onClear={() => {
+          onChangeText("");
+          onClear?.();
+        }}
         onWidth={(width) => setTrailing((was) => (Math.abs(was - width) < 0.5 ? was : width))}
       />
     </View>
@@ -124,12 +178,14 @@ function Trailing({
   testID,
   value,
   status,
+  accessory,
   onClear,
   onWidth,
 }: {
   testID: string;
   value: string;
   status?: string | null;
+  accessory?: ReactNode;
   onClear: () => void;
   onWidth: (width: number) => void;
 }) {
@@ -140,6 +196,7 @@ function Trailing({
       onLayout={(bounds) => onWidth(bounds.width)}
       style={{ position: "absolute", right: SPACE.xs, top: 0, bottom: 0, flexDirection: "row", alignItems: "center", gap: SPACE.xs }}
     >
+      {accessory}
       {status ? (
         <View testID={`${testID}:status`} style={{ flexShrink: 0 }}>
           <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
@@ -171,12 +228,12 @@ function Trailing({
 }
 
 /** The magnifier over the field's start, and the placeholder after it while nothing is typed, cut with an ellipsis. */
-function Lead({ testID, words, size, right }: { testID: string; words: string | null; size: number; right: number }) {
+function Lead({ testID, glyph, words, size, right }: { testID: string; glyph: string; words: string | null; size: number; right: number }) {
   const colors = useColors();
   const m = SEARCH_FIELD;
   return (
     <View style={{ position: "absolute", left: m.inset, top: 0, bottom: 0, right, flexDirection: "row", alignItems: "center", gap: m.gap }}>
-      <Svg markup={SEARCH} size={m.glyph} color={colors.textMuted} />
+      <Svg markup={glyph} size={m.glyph} color={colors.textMuted} />
       {words !== null && (
         <View testID={`${testID}:placeholder`} style={{ flex: 1, minWidth: 0 }}>
           <Text numberOfLines={1} style={{ fontSize: size, color: colors.textMuted }}>
