@@ -1,21 +1,20 @@
 /**
  * Keyboard: how fast keys repeat, and the layout. The layout list is every
  * layout xkb knows (searchable), with the chosen layout's variants beside it,
- * each name whole (a long one wraps), and the layout has one name in the
- * row and the picker (layouts.ts `layoutName`).
+ * the kit's pick rows in the selection look (SE-10), and the layout has one
+ * name in the row and the picker (layouts.ts `layoutName`).
  * Choices go to settings.json `keyboard`, which the shell sends to dashi-comp.
  * The input method (settings.json `inputMethod.engine`) is what the session
  * runs to type other scripts (input-method.ts).
  * Clipboard history and snippets are here too (clipboard-parts.tsx).
  */
 
-import { rowLook, SEARCH, SelectionBar } from "@dashi/ui";
-import { ScrollView, Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { PickList, PickRow, RADIUS, SEARCH_FIELD, SearchField, SPACE } from "@dashi/ui";
+import { ScrollView, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import type { Laptop } from "../laptop/start.ts";
 import { Caption, Group, Note, useSurface } from "../shared/cards/index.ts";
 import { KEYBOARD as KEYBOARD_KNOB, REPEAT } from "../shared/settings/index.ts";
-import { useColors } from "./colors.ts";
 import { useSettings } from "./hooks.ts";
 import { layoutName, primaryLayout, searchLayouts, variantsOf, type XkbLayouts } from "./layouts.ts";
 import { DEFAULTS, describeDelay, describeRate, REPEAT_DELAY, REPEAT_RATE } from "./lib/controls.ts";
@@ -26,47 +25,32 @@ import { Spot } from "./spot.tsx";
 import type { SettingsStore } from "./store.ts";
 import { Page, Slider } from "./ui.tsx";
 
-const LIST_HEIGHT = 196;
-
-/** A layout or a variant: its whole name, wrapping onto a second line rather than cut. */
-function ListRow({ label, chosen, testID, onPress }: { label: string; chosen: boolean; testID: string; onPress: () => void }) {
-  const look = rowLook(useColors(), chosen);
-  return (
-    <View
-      testID={testID}
-      onPress={onPress}
-      style={{
-        minHeight: 28,
-        flexShrink: 0,
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 8,
-        paddingVertical: 5,
-        borderRadius: 6,
-        backgroundColor: look.ground,
-        hoverBackgroundColor: look.hover,
-      }}
-    >
-      {chosen && <SelectionBar />}
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ fontSize: 12, color: look.ink }}>{label}</Text>
-      </View>
-    </View>
-  );
-}
+/** The two lists sunk in the field's ground, side by side, each scrolling on its own. */
+const LIST = { height: 196, padding: SPACE.xs, gap: SPACE.gap } as const;
 
 function List({ children, testID }: { children: ReactNode; testID: string }) {
   const surface = useSurface();
   return (
-    <ScrollView testID={testID} style={{ flex: 1, height: LIST_HEIGHT, flexDirection: "column", padding: 4, borderRadius: 8, backgroundColor: surface.field }}>
-      {children}
+    <ScrollView
+      testID={`${testID}:scroll`}
+      style={{ flex: 1, height: LIST.height, flexDirection: "column", padding: LIST.padding, borderRadius: RADIUS.control, backgroundColor: surface.field }}
+    >
+      <PickList testID={testID}>{children}</PickList>
     </ScrollView>
   );
 }
 
+/** The search over the layouts, as wide as its row. */
+function LayoutSearch({ query, onQuery }: { query: string; onQuery: (query: string) => void }) {
+  const [width, setWidth] = useState<number>(SEARCH_FIELD.width);
+  return (
+    <View style={{ alignSelf: "stretch" }} onLayout={(laid) => setWidth((was) => (Math.abs(was - laid.width) < 0.5 ? was : laid.width))}>
+      <SearchField look="panel" testID="keyboard-search" value={query} placeholder="Search layouts" width={width} onChangeText={onQuery} />
+    </View>
+  );
+}
+
 export function LayoutPicker({ layouts, settings }: { layouts: XkbLayouts; settings: SettingsStore }) {
-  const colors = useColors();
-  const surface = useSurface();
   const [query, setQuery] = useState("");
   const { keyboard } = useSettings(settings).data;
   const current = primaryLayout(keyboard.layout);
@@ -78,33 +62,13 @@ export function LayoutPicker({ layouts, settings }: { layouts: XkbLayouts; setti
   const name = layoutName(layouts, keyboard.layout, keyboard.variant);
   const plain = layouts.layouts.find((layout) => layout.id === current)?.name ?? current;
   return (
-    <Setting id="keyboard/layout" detail={`${name}${several ? " (several layouts set in settings.json)" : ""}`}>
-      <View
-        style={{
-          alignSelf: "stretch",
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 6,
-          height: 28,
-          paddingHorizontal: 8,
-          borderRadius: 8,
-          backgroundColor: surface.field,
-        }}
-      >
-        <Svg markup={SEARCH} size={13} color={colors.textMuted} />
-        <TextInput
-          testID="keyboard-search"
-          value={query}
-          placeholder="Search layouts"
-          onChangeText={setQuery}
-          style={{ flex: 1, fontSize: 12, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: "#00000000" }}
-        />
-      </View>
-      <View style={{ alignSelf: "stretch", flexDirection: "row", gap: 10 }}>
+    <Setting id="keyboard/layout" detail={`${name}${several ? " (and other layouts; picking one here replaces them)" : ""}`}>
+      <LayoutSearch query={query} onQuery={setQuery} />
+      <View style={{ alignSelf: "stretch", flexDirection: "row", gap: LIST.gap }}>
         <List testID="keyboard-layouts">
-          {shown.length === 0 && <Note>No layout matches.</Note>}
+          {shown.length === 0 && <Note>No layouts found.</Note>}
           {shown.map((layout) => (
-            <ListRow
+            <PickRow
               key={layout.id}
               testID={`keyboard-layout:${layout.id}`}
               label={layout.name}
@@ -116,17 +80,17 @@ export function LayoutPicker({ layouts, settings }: { layouts: XkbLayouts; setti
         </List>
         <List testID="keyboard-variants">
           {variants.length === 0 ? (
-            <Note>No variants</Note>
+            <Note>No variants.</Note>
           ) : (
             <>
-              <ListRow
+              <PickRow
                 testID="keyboard-variant:default"
                 label={plain}
                 chosen={!keyboard.variant}
                 onPress={() => settings.patch("keyboard", { variant: undefined })}
               />
               {variants.map((variant) => (
-                <ListRow
+                <PickRow
                   key={variant.id}
                   testID={`keyboard-variant:${variant.id}`}
                   label={variant.name}
@@ -150,7 +114,7 @@ function InputMethodRow({ installed }: { installed: boolean }) {
   if (!installed)
     return (
       <Spot id="keyboard/input-method">
-        <Note testID="keyboard-no-input-method">To type Chinese, Japanese, Korean and other scripts, install Fcitx 5 (fcitx5) and its input methods.</Note>
+        <Note testID="keyboard-no-input-method">To type Chinese, Japanese, Korean and other scripts, install Fcitx 5 from the Store.</Note>
       </Spot>
     );
   return <Setting id="keyboard/input-method" control="keyboard-input-method" />;
@@ -199,7 +163,7 @@ export function KeyboardPane({
       </Group>
       <Group>
         {layouts.layouts.length === 0 ? (
-          <Note testID="keyboard-no-layouts">The list of layouts is not installed on this system.</Note>
+          <Note testID="keyboard-no-layouts">No keyboard layouts found on this computer.</Note>
         ) : (
           <LayoutPicker layouts={layouts} settings={settings} />
         )}

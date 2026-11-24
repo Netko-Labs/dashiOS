@@ -78,6 +78,8 @@ export { addMonths, type Day, dayKey, type GridDay, monthWeeks, sameDay, weekday
 export { MORE_BUTTON, MoreButton } from "./more.tsx";
 export { Notice, type NoticeProps } from "./notice.tsx";
 export {
+  type BatteryLook,
+  BatteryTile,
   CONTROL_MOTION_MS,
   controlMenuHighlight,
   FOLD_PAST,
@@ -89,22 +91,33 @@ export {
   InkFill,
   InkSlider,
   type InkSliderProps,
+  KNOB_BUTTON,
   Knob,
+  KnobButton,
+  type KnobButtonProps,
   LimitBar,
   LOW_CHARGE,
   moreMenuOrigin,
   PANEL_EDGE_WIDTH,
   type PanelEdge,
   panelEdge,
+  RoundTile,
+  type SliderLook,
+  SliderTile,
   setControlMotion,
   springAt,
+  TILE,
+  type TileLook,
+  type TilePress,
   useControlColors,
   useGrow,
   usePanelEdge,
   useSpring,
+  WideTile,
 } from "./panel/index.ts";
 export { PICK_ROW, PickList, PickRow, type PickRowProps } from "./pick-row.tsx";
 export { Picture, type PictureProps } from "./picture.tsx";
+export { PICTURE_CHOICE, PictureChoice, type PictureChoiceProps, pictureRingRadius } from "./picture-choice.tsx";
 export { PopUpButton, type PopUpButtonProps, type PopUpOption, popUpMenuWidth, popUpOrigin } from "./popup-button.tsx";
 export { isSeparator, MENU_SEPARATOR, type MenuEntry, type MenuItem, MenuList, type MenuSeparator, PopupMenu, tidyEntries } from "./popup-menu.tsx";
 export { LOADING_DELAY_MS, Loading, PROGRESS_BAR, ProgressBar, type ProgressBarProps, Spinner, useShownAfter } from "./progress.tsx";
@@ -259,6 +272,7 @@ export {
   useTextSize,
   useType,
   WEIGHT,
+  WINDOW_LIGHTS,
 } from "./theme/index.ts";
 export { TILE_SIZE, Tile } from "./tile.tsx";
 export { inksButtonColors } from "./tinted-button.tsx";

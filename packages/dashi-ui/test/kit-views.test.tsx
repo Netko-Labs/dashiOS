@@ -9,7 +9,9 @@ import { SEARCH } from "../src/glyphs.ts";
 import { MonthGrid } from "../src/month-grid.tsx";
 import { addMonths, dayKey, monthWeeks, weekdayLetters } from "../src/month-math.ts";
 import { PICK_ROW, PickList, PickRow } from "../src/pick-row.tsx";
+import { PICTURE_CHOICE, PictureChoice, pictureRingRadius } from "../src/picture-choice.tsx";
 import { railTip, SidebarItem } from "../src/sidebar.tsx";
+import { controlPalette } from "../src/theme/controls.ts";
 import { lightColors } from "../src/theme/palette.ts";
 import { AppWindow } from "../src/window.tsx";
 import { placeOf } from "../src/window-title.tsx";
@@ -80,6 +82,30 @@ test("PickRow: 30 tall at radius 7, chosen in the selection look, its detail sai
   expect(node("apps")?.props).toMatchObject({ focusGroup: true, selectsOnFocus: true });
   expect(node("preview")?.props).toMatchObject({ height: PICK_ROW.height, cornerRadius: 7, background: lightColors.selectionWash });
   expect(node("preview")?.props.access).toMatchObject({ role: "option", label: "Preview, Default", selected: true });
+  root.unmount();
+});
+
+test("PictureChoice: one concentric ring, the on colour or ink, an option named by its caption", async () => {
+  expect(pictureRingRadius(14, 8)).toBe(14 + 8 + PICTURE_CHOICE.ring);
+  const { node, root } = await sent(
+    <View>
+      <PictureChoice testID="dusk" label="Dusk" caption="Dusk" chosen radius={6} onPress={noop}>
+        <View style={{ width: 40, height: 20 }} />
+      </PictureChoice>
+      <PictureChoice testID="ink" label="Ume" chosen ring="ink" radius={17} onPress={noop}>
+        <View style={{ width: 34, height: 34 }} />
+      </PictureChoice>
+      <PictureChoice testID="dawn" label="Dawn" chosen={false} radius={6} onPress={noop}>
+        <View style={{ width: 40, height: 20 }} />
+      </PictureChoice>
+    </View>,
+  );
+  expect(node("dusk")?.props.access).toMatchObject({ role: "option", label: "Dusk", selected: true });
+  expect(node("dawn")?.props.access).toMatchObject({ selected: false });
+  expect(node("dusk:ring")?.props).toMatchObject({ cornerRadius: pictureRingRadius(6), borderWidth: PICTURE_CHOICE.ring });
+  expect(words(node("dusk"))).toEqual(["Dusk"]);
+  expect(node("dusk:ring")?.props.borderColor).toBe(controlPalette(false).on);
+  expect(node("ink:ring")?.props.borderColor).toBe(controlPalette(false).text);
   root.unmount();
 });
 

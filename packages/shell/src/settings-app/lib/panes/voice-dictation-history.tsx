@@ -1,16 +1,17 @@
 /**
  * Settings › Voice › Dictation's history (voice.tsx; dictation/history.ts):
- * what was dictated in the last day, the newest first, the words as they
- * were heard beside the words that were typed, each with Copy and Delete;
- * how long it is kept, and "Nothing". Only the person's own press changes
- * how long, or deletes.
+ * what was dictated in the last day, the newest first, the words that were
+ * typed over when, and what was heard when that differs, each with Copy and
+ * Delete (at once, with Undo); Delete all confirms in place (SE-12); how long
+ * it is kept, and "Nothing". Only the person's own press changes how long,
+ * or deletes.
  */
 
-import { FoldedChoices } from "@dashi/ui";
+import { FoldedChoices, MoreButton, SPACE, TYPE, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { HistoryEntry } from "../../../dictation/index.ts";
-import { Caption, Group, Note } from "../../../shared/cards/index.ts";
+import { Caption, Group, Note, TUCK } from "../../../shared/cards/index.ts";
 import { HISTORY_KEEPS, type HistoryKeep, isHistoryKeep } from "../../../shared/pill/index.ts";
 import { useColors } from "../../colors.ts";
 import type { PaneContext } from "../../context.ts";
@@ -19,7 +20,7 @@ import type { SettingsStore } from "../../store.ts";
 import { ONLY_YOU, type PersonOnly } from "../person-only.ts";
 import { PAGE } from "../row.tsx";
 import { Setting } from "../setting.tsx";
-import { MiniButton } from "./parts.tsx";
+import { ConfirmDelete, MiniButton } from "./parts.tsx";
 
 type Source = NonNullable<PaneContext["dictation"]>;
 
@@ -38,53 +39,78 @@ export function whenWords(entry: HistoryEntry, now = Date.now()): string {
   return [`${day}${time}`, entry.app, entry.profile, after].filter(Boolean).join(" · ");
 }
 
-function Words({ label, text, testID }: { label: string; text: string; testID: string }) {
-  const colors = useColors();
-  return (
-    <View testID={testID} style={{ flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
-      <Text style={{ fontSize: 10.5, fontWeight: "semibold", color: colors.textMuted }}>{label}</Text>
-      <Text style={{ fontSize: 13, color: colors.text }}>{text}</Text>
-    </View>
-  );
-}
-
-function Entry({ entry, source, guard }: { entry: HistoryEntry; source: Source; guard: PersonOnly }) {
+/** An entry: what was typed as its name (it wraps: a history is read whole), then when and where, then what was heard when that differs. */
+function Entry({ entry, source, onDelete }: { entry: HistoryEntry; source: Source; onDelete: () => void }) {
   const colors = useColors();
   const same = entry.heard === entry.typed;
+  const quiet = { fontSize: TYPE.panel.detail.size, color: colors.textMuted } as const;
   return (
     <View
       testID={`dictation-history:${entry.id}`}
-      style={{ flexDirection: "column", gap: 6, paddingLeft: PAGE.inset, paddingRight: PAGE.inset, paddingVertical: 10 }}
+      style={{ flexDirection: "row", alignItems: "center", gap: PAGE.gap, minHeight: PAGE.row, paddingHorizontal: PAGE.inset, paddingVertical: PAGE.pad }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text numberOfLines={1} style={{ fontSize: 11.5, color: colors.textMuted }}>
-            {whenWords(entry)}
-          </Text>
+      <View style={{ flex: 1, flexDirection: "column", gap: SPACE.px, minWidth: 0 }}>
+        <View testID={`dictation-history-typed:${entry.id}`}>
+          <Text style={{ fontSize: TYPE.panel.name.size, fontWeight: WEIGHT.semibold, color: colors.text }}>{entry.typed}</Text>
         </View>
-        <MiniButton testID={`dictation-history-copy:${entry.id}`} label="Copy" onPress={() => source.copy(entry.typed)} />
-        {!same && <MiniButton testID={`dictation-history-copy-heard:${entry.id}`} label="Copy as heard" onPress={() => source.copy(entry.heard)} />}
-        <MiniButton
-          testID={`dictation-history-delete:${entry.id}`}
-          label="Delete"
-          tone="critical"
-          onPress={() => guard.mine("voice/dictation-history", () => source.history.remove(entry.id))}
-        />
+        <Text numberOfLines={1} style={quiet}>
+          {whenWords(entry)}
+        </Text>
+        {!same && (
+          <View testID={`dictation-history-heard:${entry.id}`}>
+            <Text style={quiet}>{`Heard: ${entry.heard}`}</Text>
+          </View>
+        )}
       </View>
-      <View style={{ flexDirection: "row", gap: 14 }}>
-        {!same && <Words label="Heard" text={entry.heard} testID={`dictation-history-heard:${entry.id}`} />}
-        <Words label={same ? "Typed as heard" : "Typed"} text={entry.typed} testID={`dictation-history-typed:${entry.id}`} />
-      </View>
+      <MiniButton testID={`dictation-history-copy:${entry.id}`} label="Copy" onPress={() => source.copy(entry.typed)} />
+      {!same && <MiniButton testID={`dictation-history-copy-heard:${entry.id}`} label="Copy as heard" onPress={() => source.copy(entry.heard)} />}
+      <MiniButton testID={`dictation-history-delete:${entry.id}`} label="Delete" tone="critical" onPress={onDelete} />
     </View>
   );
 }
 
+/**
+ * One entry deleted, with Undo (SE-12: what can be undone acts at once). It
+ * leaves the list now and the history when the next one is deleted, when
+ * everything is, or when the pane closes; Undo brings it back untouched.
+ */
+function usePendingDelete(source: Source): { pending: HistoryEntry | null; remove: (entry: HistoryEntry) => void; undo: () => void; settle: () => void } {
+  const [pending, setPending] = useState<HistoryEntry | null>(null);
+  const held = useRef<HistoryEntry | null>(null);
+  const settle = (): void => {
+    if (held.current) source.history.remove(held.current.id);
+    held.current = null;
+    setPending(null);
+  };
+  useEffect(
+    () => () => {
+      if (held.current) source.history.remove(held.current.id);
+    },
+    [source],
+  );
+  return {
+    pending,
+    remove: (entry) => {
+      settle();
+      held.current = entry;
+      setPending(entry);
+    },
+    undo: () => {
+      held.current = null;
+      setPending(null);
+    },
+    settle,
+  };
+}
+
 export function DictationHistoryRows({ settings, source, guard }: { settings: SettingsStore; source: Source; guard: PersonOnly }) {
-  const entries = useSyncExternalStore(source.history.subscribe, source.history.getSnapshot);
+  const all = useSyncExternalStore(source.history.subscribe, source.history.getSnapshot);
   const chosen = useSettings(settings).data.dictation.history;
   const keep: HistoryKeep = isHistoryKeep(chosen) ? chosen : "day";
-  const [all, setAll] = useState(false);
-  const shown = all ? entries : entries.slice(0, FIRST);
+  const [open, setOpen] = useState(false);
+  const deleting = usePendingDelete(source);
+  const entries = all.filter((entry) => entry.id !== deleting.pending?.id);
+  const shown = open ? entries : entries.slice(0, FIRST);
   return (
     <>
       <Caption above>Dictation history</Caption>
@@ -97,25 +123,45 @@ export function DictationHistoryRows({ settings, source, guard }: { settings: Se
             onChange={(next) => guard.mine("voice/dictation-history", () => settings.patch("dictation", { history: next === "day" ? undefined : next }))}
           />
         </Setting>
-        {keep !== "none" && entries.length === 0 && <Note testID="dictation-history-empty">Nothing dictated yet.</Note>}
-        {shown.map((entry) => (
-          <Entry key={entry.id} entry={entry} source={source} guard={guard} />
-        ))}
-        {entries.length > 0 && (
-          <View style={{ flexDirection: "row", gap: 8, paddingLeft: PAGE.inset, paddingRight: PAGE.inset, paddingVertical: 8 }}>
-            {entries.length > FIRST && (
-              <MiniButton testID="dictation-history-all" label={all ? "Show fewer" : `Show all ${entries.length}`} onPress={() => setAll(!all)} />
-            )}
-            <MiniButton
-              testID="dictation-history-clear"
-              label="Delete all"
-              tone="critical"
-              onPress={() => guard.mine("voice/dictation-history", () => source.history.clear())}
-            />
-          </View>
-        )}
       </Group>
-      <Caption>Kept on this computer only, never the sound. Nothing is kept from a password field.</Caption>
+      {keep !== "none" && (
+        // The entries are a list of things, on a card of their own: no knobs beside the setting's (SE-6, SE-13).
+        <Group testID="voice-dictation-entries">
+          {entries.length === 0 && <Note testID="dictation-history-empty">Nothing dictated yet. What you dictate is listed here.</Note>}
+          {shown.map((entry) => (
+            <Entry key={entry.id} entry={entry} source={source} onDelete={() => guard.mine("voice/dictation-history", () => deleting.remove(entry))} />
+          ))}
+          {entries.length > 0 && (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m, minHeight: PAGE.row, paddingHorizontal: PAGE.inset }}>
+              <View style={{ flex: 1 }}>
+                {entries.length > FIRST && (
+                  <MoreButton testID="dictation-history-all" open={open} more={`Show all ${entries.length}`} less="Show fewer" onPress={() => setOpen(!open)} />
+                )}
+              </View>
+              <ConfirmDelete
+                testID="dictation-history-clear"
+                verb="Delete all"
+                onDelete={() =>
+                  guard.mine("voice/dictation-history", () => {
+                    deleting.settle();
+                    source.history.clear();
+                  })
+                }
+              />
+            </View>
+          )}
+        </Group>
+      )}
+      {deleting.pending !== null ? (
+        <View testID="dictation-history-deleted" style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m, paddingRight: PAGE.inset, ...TUCK }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Caption>{`Deleted “${deleting.pending.typed}”.`}</Caption>
+          </View>
+          <MiniButton testID="dictation-history-undo" label="Undo" onPress={() => guard.mine("voice/dictation-history", deleting.undo)} />
+        </View>
+      ) : (
+        <Caption>Kept on this computer only, never the sound. Nothing is kept from a password field.</Caption>
+      )}
     </>
   );
 }

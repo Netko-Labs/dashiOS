@@ -14,15 +14,15 @@
  * or the arrows).
  */
 
-import { useControlColors } from "@dashi/ui";
+import { noResultsMessage, SPACE, TYPE, useControlColors } from "@dashi/ui";
 import { type Bounds, ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
 import { useContext, useEffect, useRef } from "react";
 import { type PaneId, paneGroups, SIDEBAR_PANES } from "../../shared/settings/index.ts";
 import { SpotContext, scrollFor } from "../spot.tsx";
 import type { Found } from "./find.ts";
 import { SIDEBAR, topBand } from "./sidebar-measures.ts";
-import { GroupLabel, NavPill } from "./sidebar-pill.tsx";
-import { SearchPill, type SearchProps } from "./sidebar-search.tsx";
+import { GroupLabel, PaneRow } from "./sidebar-pill.tsx";
+import { type SearchProps, SidebarSearch } from "./sidebar-search.tsx";
 
 /** What the search found, for the sidebar to list. */
 export interface SidebarResults {
@@ -38,16 +38,18 @@ function Results({ results }: { results: SidebarResults }) {
   const colors = useControlColors();
   if (results.found.length === 0) {
     return (
-      <View testID="settings-search-none" style={{ flexShrink: 0, padding: 12 }}>
-        {/* One line: a long query is cut, never its closing quote left alone on a second line. */}
-        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.muted }}>{`No setting matches “${results.query.trim()}”.`}</Text>
+      <View testID="settings-search-none" style={{ flexShrink: 0, padding: SPACE.inset }}>
+        {/* One line: a long query is cut, never its closing quote left alone on a second line (PA-17's words). */}
+        <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.muted }}>
+          {noResultsMessage(results.query)}
+        </Text>
       </View>
     );
   }
   return (
-    <View testID="settings-search-results" style={{ flexDirection: "column", gap: SIDEBAR.rowGap, flexShrink: 0 }}>
+    <View testID="settings-search-results" accessibilityRole="listbox" style={{ flexDirection: "column", gap: SIDEBAR.rowGap, flexShrink: 0 }}>
       {results.found.map((found, index) => (
-        <NavPill
+        <PaneRow
           key={found.id}
           testID={`found:${found.id}`}
           label={found.label}
@@ -105,11 +107,11 @@ function TopBand({ search }: { search: SearchProps }) {
         flexDirection: "row",
         alignItems: "center",
         paddingLeft: SIDEBAR.paddingX + lights,
-        paddingRight: SIDEBAR.paddingX + 4,
-        marginBottom: 2 + band.below,
+        paddingRight: SIDEBAR.paddingX + SPACE.xs,
+        marginBottom: SPACE.xxs + band.below,
       }}
     >
-      <SearchPill search={search} />
+      <SidebarSearch search={search} />
     </View>
   );
 }
@@ -124,7 +126,7 @@ export function Sidebar({ current, onSelect, shown, results, search, waiting = 0
         width: SIDEBAR.width,
         flexShrink: 0,
         flexDirection: "column",
-        paddingTop: SIDEBAR.paddingTop,
+        paddingTop: SIDEBAR.top,
         backgroundColor: colors.sidebar,
       }}
     >
@@ -144,12 +146,13 @@ export function Sidebar({ current, onSelect, shown, results, search, waiting = 0
             testID="settings-sidebar-panes"
             focusGroup
             selectsOnFocus
+            accessibilityRole="listbox"
             style={{ flexDirection: "column", gap: SIDEBAR.rowGap, flexShrink: 0, focusRingColor: colors.focus }}
           >
             {paneGroups(SIDEBAR_PANES.filter((pane) => !pane.optional || shown?.has(pane.id))).flatMap((group) => [
               ...(group.label ? [<GroupLabel key={`label:${group.group}`}>{group.label}</GroupLabel>] : []),
               ...group.panes.map((pane) => (
-                <NavPill
+                <PaneRow
                   key={pane.id}
                   testID={`sidebar:${pane.id}`}
                   label={pane.title}

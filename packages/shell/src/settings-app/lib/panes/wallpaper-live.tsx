@@ -6,8 +6,9 @@
  */
 
 import { statSync } from "node:fs";
-import { Image, Text, TextInput, View } from "@mirinjs/metal";
-import { useMemo, useState } from "react";
+import { PictureChoice, RADIUS, SPACE, TYPE } from "@dashi/ui";
+import { Image, Text, View } from "@mirinjs/metal";
+import { type ReactNode, useMemo, useState } from "react";
 import { Button, Caption, Group, useSurface } from "../../../shared/cards/index.ts";
 import type { PhotoChooser } from "../../../wallpaper/chooser.ts";
 import { isVideoPath } from "../../../wallpaper/live/choice.ts";
@@ -16,44 +17,61 @@ import { useColors } from "../../colors.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
 import { Setting } from "../setting.tsx";
+import { Failure } from "./parts.tsx";
 
-const TILE = { width: 148, height: 83 };
+/** A wallpaper's tile: its picture 148 × 83 at radius 5, in a grid 12 apart, 14 in from its card. */
+const TILE = { width: 148, height: 83, gap: SPACE.inset, inset: SPACE.button } as const;
 
-function LiveTileView({ tile, selected, onPress }: { tile: LiveTile; selected: boolean; onPress: () => void }) {
+/**
+ * What Wallpaper and its Live section say when the desktop's file chooser
+ * doesn't answer (SE-A30): never a typed path; the one thing to do.
+ */
+export const NO_CHOOSER = "The file chooser isn't running. Log out and in again to start it, then try again.";
+
+/** A wallpaper to pick: its picture (or a play mark while a video has none yet), its name under it, the one ring when chosen (CO-9). */
+export function WallpaperTile({
+  testID,
+  title,
+  image,
+  selected,
+  onPress,
+}: {
+  testID: string;
+  title: string;
+  image: string | null;
+  selected: boolean;
+  onPress: () => void;
+}) {
   const colors = useColors();
   const surface = useSurface();
   return (
-    <View
-      testID={`live:${tile.ref}`}
-      focusable
-      accessibilityRole="button"
-      accessibilityLabel={tile.title}
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={{ flexDirection: "column", alignItems: "center", gap: 5, width: TILE.width + 8, borderRadius: 9 }}
-    >
-      <View style={{ padding: 2, borderRadius: 9, borderWidth: 2, borderColor: selected ? colors.selection : "#00000000" }}>
-        <View
-          style={{
-            width: TILE.width,
-            height: TILE.height,
-            borderRadius: 6,
-            overflow: "hidden",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: surface.field,
-          }}
-        >
-          {tile.image !== null ? (
-            <Image source={tile.image} resizeMode="cover" style={{ width: TILE.width, height: TILE.height }} />
-          ) : (
-            <Text style={{ fontSize: 22, color: colors.textMuted }}>▶</Text>
-          )}
-        </View>
+    <PictureChoice testID={testID} label={title} caption={title} chosen={selected} radius={RADIUS.row} width={TILE.width + 2 * SPACE.s} onPress={onPress}>
+      <View
+        style={{
+          width: TILE.width,
+          height: TILE.height,
+          borderRadius: RADIUS.row,
+          overflow: "hidden",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: surface.field,
+        }}
+      >
+        {image !== null ? (
+          <Image source={image} resizeMode="cover" style={{ width: TILE.width, height: TILE.height }} />
+        ) : (
+          <Text style={{ fontSize: TYPE.title.size, color: colors.textMuted }}>▶</Text>
+        )}
       </View>
-      <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: selected ? "semibold" : "normal", color: colors.text }}>
-        {tile.title}
-      </Text>
+    </PictureChoice>
+  );
+}
+
+/** Wallpapers as one Tab stop, entered at the chosen tile; the arrows move between tiles, Space or Return picks one (KB-1). */
+export function TileGrid({ children }: { children: ReactNode }) {
+  return (
+    <View focusGroup accessibilityRole="listbox" style={{ flexDirection: "row", flexWrap: "wrap", gap: TILE.gap, padding: TILE.inset }}>
+      {children}
     </View>
   );
 }
@@ -82,33 +100,12 @@ export function videoProblem(typed: string, exists: (path: string) => boolean = 
   return exists(path) ? null : "There is no such file.";
 }
 
-/** A video's path, typed where there is no file chooser; it empties once the path is taken. */
-function VideoPathField({ onSubmit }: { onSubmit: (path: string) => boolean }) {
-  const colors = useColors();
-  const surface = useSurface();
-  const [typed, setTyped] = useState("");
-  return (
-    <TextInput
-      testID="live-video-path"
-      value={typed}
-      placeholder="/home/you/Videos/loop.mp4"
-      autoFocus
-      onChangeText={setTyped}
-      onSubmitEditing={(text) => {
-        if (onSubmit(text)) setTyped("");
-      }}
-      style={{ width: "100%", fontSize: 13, padding: 8, borderRadius: 7, color: colors.text, backgroundColor: surface.field }}
-    />
-  );
-}
-
 export function LiveSection({ settings, chooser }: { settings: SettingsStore; chooser: PhotoChooser }) {
-  const colors = useColors();
+  const _colors = useColors();
   const { wallpaper } = useSettings(settings).data;
   const chosen = chosenRef(wallpaper);
   const videos = wallpaper.videos ?? [];
   const clips = useVideoTiles(videos);
-  const [typing, setTyping] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
   const choose = (ref: string) => {
@@ -129,21 +126,24 @@ export function LiveSection({ settings, chooser }: { settings: SettingsStore; ch
       .then((path) => {
         if (path !== null) adopt(path);
       })
-      .catch(() => {
-        setTyping(true);
-        setNote("There is no file chooser here. Type the path of a video instead.");
-      });
+      .catch(() => setNote(NO_CHOOSER));
   };
 
   const shaders = shaderTiles();
   const grid = (tiles: LiveTile[], testID: string) => (
     <Group testID={testID}>
-      {/* One Tab stop, entered at the chosen tile; the arrows move between tiles, Space or Return picks one (KB-1). */}
-      <View focusGroup accessibilityRole="group" style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, padding: 14 }}>
+      <TileGrid>
         {tiles.map((tile) => (
-          <LiveTileView key={tile.ref} tile={tile} selected={tile.ref === chosen} onPress={() => choose(tile.ref)} />
+          <WallpaperTile
+            key={tile.ref}
+            testID={`live:${tile.ref}`}
+            title={tile.title}
+            image={tile.image}
+            selected={tile.ref === chosen}
+            onPress={() => choose(tile.ref)}
+          />
         ))}
-      </View>
+      </TileGrid>
     </Group>
   );
 
@@ -159,21 +159,12 @@ export function LiveSection({ settings, chooser }: { settings: SettingsStore; ch
       )}
       <Group>
         <Setting id="wallpaper/add-video">
-          <Button testID="live-add-video" label="Add Video…" onPress={addVideo} />
+          <Button testID="live-add-video" label="Add video…" onPress={addVideo} />
         </Setting>
-        {typing && (
-          <Setting id="wallpaper/video-path">
-            <VideoPathField onSubmit={adopt} />
-          </Setting>
-        )}
         <Setting id="wallpaper/pause-on-battery" control="live-pause-battery" />
         <Setting id="wallpaper/frame-rate" stack={false} control="live-fps" />
       </Group>
-      {note !== null && (
-        <View testID="live-note" style={{ flexShrink: 0 }}>
-          <Text style={{ fontSize: 12, color: colors.critical }}>{note}</Text>
-        </View>
-      )}
+      {note !== null && <Failure testID="live-note">{note}</Failure>}
     </>
   );
 }

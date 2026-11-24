@@ -15,7 +15,7 @@
  */
 
 import { isRecord } from "@dashi/shape";
-import type { Direction } from "@dashi/ui";
+import { type Direction, RADIUS, SPACE } from "@dashi/ui";
 
 export const TILE_SIZES = ["round", "wide", "tall", "flat"] as const;
 export type TileSize = (typeof TILE_SIZES)[number];
@@ -31,7 +31,7 @@ export const SPAN: Readonly<Record<TileSize, { cols: number; rows: number }>> = 
 };
 
 /** The panel's measures (docs/design.html): 344 wide, 12 in, 8 apart, rows 56. */
-export const GRID = { columns: 4, width: 344, padding: 12, gap: 8, row: 56, radius: 28 } as const;
+export const GRID = { columns: 4, width: 344, padding: SPACE.inset, gap: SPACE.m, row: 56, radius: RADIUS.panel } as const;
 
 /** One column's width: (344 − 2 × 12 − 3 × 8) / 4 = 74. */
 export const COLUMN = (GRID.width - 2 * GRID.padding - (GRID.columns - 1) * GRID.gap) / GRID.columns;

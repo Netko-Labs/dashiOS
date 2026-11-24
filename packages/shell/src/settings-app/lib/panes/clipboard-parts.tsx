@@ -1,20 +1,21 @@
 /**
  * Settings › Keyboard › Clipboard: the history's switch (off deletes what
- * it kept), Clear History, the apps whose copies are never kept (password
+ * it kept), Clear history (confirmed in place), the apps whose copies are never kept (password
  * managers: privacy.ts DEFAULT_LEFT_OUT until the person changes the list),
  * and whether snippets expand in terminals. settings.json `clipboard`.
  */
 
-import { Text, TextInput, View } from "@mirinjs/metal";
+import { SPACE, TextField } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import type { ClipboardHistory, HistorySnapshot } from "../../../clipboard/history.ts";
 import { DEFAULT_LEFT_OUT, leftOutApps, withoutApp } from "../../../clipboard/left-out.ts";
-import { AppIcon, iconPath } from "../../../shared/apps/index.ts";
-import { Button, Caption, Group, useSurface } from "../../../shared/cards/index.ts";
-import { useColors } from "../../colors.ts";
+import { Caption, Group } from "../../../shared/cards/index.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
 import { Setting } from "../setting.tsx";
+import { AppDisc } from "./app-disc.tsx";
+import { ConfirmDelete, ListRow, MiniButton } from "./parts.tsx";
 
 /** What Settings reaches of the history: how much it holds, and clearing it. */
 export type HistoryControl = Pick<ClipboardHistory, "subscribe" | "getSnapshot" | "clear">;
@@ -28,12 +29,11 @@ export const isAppEntry = (value: string): boolean => /^[A-Za-z0-9][A-Za-z0-9._-
 /** The installed app an id stands for: its name and icon (Settings' `installedApp`). */
 export type InstalledApp = (id: string) => { name: string; icon: string } | undefined;
 
-const APP_ICON = 20;
-const GENERIC_ICON = iconPath("generic");
+/** The field that adds one, and its Add, on a row of their own under the apps. */
+const ADD_ROW = { gap: SPACE.m } as const;
 
-function LeftOutList({ settings, list, installed }: { settings: SettingsStore; list: readonly string[]; installed: InstalledApp }) {
-  const colors = useColors();
-  const surface = useSurface();
+/** The field that adds an app by its program's name, under the row's words. */
+function AddLeftOut({ settings, list }: { settings: SettingsStore; list: readonly string[] }) {
   const [adding, setAdding] = useState("");
   const add = () => {
     const id = adding.trim();
@@ -41,44 +41,41 @@ function LeftOutList({ settings, list, installed }: { settings: SettingsStore; l
     settings.patch("clipboard", { leftOut: [...list, id] });
     setAdding("");
   };
-  // One row per app, whatever ids the list keeps for it (KeePassXC's app id and program); Remove takes them all.
-  const apps = leftOutApps(list, installed);
   return (
-    <View style={{ flexDirection: "column", gap: 4 }}>
-      {apps.map((app) => {
-        const icon = app.ids.map((id) => installed(id)?.icon).find((found) => found !== undefined) ?? GENERIC_ICON;
-        const key = app.ids[0] ?? app.name;
-        return (
-          <View key={key} testID={`clipboard-left-out:${key}`} style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 28 }}>
-            <AppIcon source={icon} style={{ width: APP_ICON, height: APP_ICON }} />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
-                {app.name}
-              </Text>
-            </View>
-            <Button
-              testID={`clipboard-left-out-remove:${key}`}
-              label="Remove"
-              onPress={() => settings.patch("clipboard", { leftOut: withoutApp(list, app) })}
-            />
-          </View>
-        );
-      })}
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-        <View style={{ flex: 1, height: 28, justifyContent: "center", paddingHorizontal: 8, borderRadius: 8, backgroundColor: surface.field }}>
-          <TextInput
-            testID="clipboard-left-out-add"
-            value={adding}
-            placeholder="An app id or program, like org.keepassxc.KeePassXC"
-            onChangeText={setAdding}
-            onSubmitEditing={add}
-            style={{ flex: 1, fontSize: 12, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: "#00000000" }}
-          />
-        </View>
-        <Button testID="clipboard-left-out-add-button" label="Add" disabled={!isAppEntry(adding.trim())} onPress={add} />
-      </View>
+    <View style={{ alignSelf: "stretch", flexDirection: "row", alignItems: "center", gap: ADD_ROW.gap }}>
+      <TextField
+        look="panel"
+        testID="clipboard-left-out-add"
+        value={adding}
+        placeholder="Another app's program, like keepassxc"
+        label="Leave out another app"
+        onChangeText={setAdding}
+        onSubmit={add}
+      />
+      <MiniButton testID="clipboard-left-out-add-button" label="Add" disabled={!isAppEntry(adding.trim())} onPress={add} />
     </View>
   );
+}
+
+/**
+ * The apps whose copies are never kept: one ListRow each (its icon on the
+ * knob, or its letter on a tint), Remove at the row's end (SE-11, SE-A43).
+ */
+function LeftOutRows({ settings, list, installed }: { settings: SettingsStore; list: readonly string[]; installed: InstalledApp }) {
+  // One row per app, whatever ids the list keeps for it (KeePassXC's app id and program); Remove takes them all.
+  return leftOutApps(list, installed).map((app) => {
+    const icon = app.ids.map((id) => installed(id)?.icon).find((found) => found !== undefined);
+    const key = app.ids[0] ?? app.name;
+    return (
+      <ListRow key={key} testID={`clipboard-left-out:${key}`} name={app.name} leading={<AppDisc icon={icon} name={app.name} />}>
+        <MiniButton
+          testID={`clipboard-left-out-remove:${key}`}
+          label="Remove"
+          onPress={() => settings.patch("clipboard", { leftOut: withoutApp(list, app) })}
+        />
+      </ListRow>
+    );
+  });
 }
 
 const NOT_INSTALLED: InstalledApp = () => undefined;
@@ -86,28 +83,17 @@ const NOT_INSTALLED: InstalledApp = () => undefined;
 export function ClipboardSection({ settings, history, installed }: { settings: SettingsStore; history?: HistoryControl | null; installed?: InstalledApp }) {
   const { clipboard } = useSettings(settings).data;
   const snapshot = useSyncExternalStore(history?.subscribe ?? none, history?.getSnapshot ?? (() => EMPTY));
-  const [asking, setAsking] = useState(false);
   const count = snapshot.entries.length;
+  const leftOut = clipboard.leftOut ?? DEFAULT_LEFT_OUT;
   return (
     <>
       <Group testID="clipboard-settings">
         <Setting id="keyboard/clipboard-history" control="clipboard-history" />
         <Setting id="keyboard/clipboard-kept" detail={count === 0 ? "Nothing" : count === 1 ? "1 copy" : `${count} copies, pinned ones included`}>
-          <Button
-            testID="clipboard-clear"
-            label={asking ? "Clear All?" : "Clear History"}
-            danger={asking}
-            disabled={count === 0 || !history}
-            onPress={() => {
-              if (!asking) return setAsking(true);
-              history?.clear();
-              setAsking(false);
-            }}
-          />
+          <ConfirmDelete testID="clipboard-clear" verb="Clear history" disabled={count === 0 || !history} onDelete={() => history?.clear()} />
         </Setting>
-        <Setting id="keyboard/clipboard-left-out">
-          <LeftOutList settings={settings} list={clipboard.leftOut ?? DEFAULT_LEFT_OUT} installed={installed ?? NOT_INSTALLED} />
-        </Setting>
+        <Setting id="keyboard/clipboard-left-out" below={<AddLeftOut settings={settings} list={leftOut} />} />
+        <LeftOutRows settings={settings} list={leftOut} installed={installed ?? NOT_INSTALLED} />
         <Setting id="keyboard/snippets-in-terminals" control="snippets-in-terminals" />
       </Group>
       <Caption keys="⌥❖V">Type “snippet” in the launcher to add one. The history opens with</Caption>

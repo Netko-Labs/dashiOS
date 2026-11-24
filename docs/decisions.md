@@ -7793,4 +7793,148 @@ short words, as the rulebook is written.
   hidden `TextInput` (moving every overlay to `KeySink` wants a VM pass of its own); the
   capsule's buttons keep their pill-v2 look (the kit has no persona-coloured button); the
   agents' Stop is the danger Button; panels' empty lines are 12 muted (SH-31).
+
+### D640. One list row in Settings, and how the current item shows
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, SE-8, SE-10, SE-A4, SE-A12, SE-A18).
+- **Question:** Settings drew a card's rows seven ways and marked the current item four ways
+  (bold, a tick at either end, the selection wash); pressable rows had no focus or role.
+- **Choice:** every row of a thing is `ListRow` (56, 13.5 SemiBold over 11.5 muted). A list you
+  pick one from (Sound's outputs, the answerers) shows its chosen row in CO-9's selection look
+  (`chosen`), its rows options of one listbox; a list of things that connect says "Connected" in
+  the row's line and nothing else marks it. A pressable row is a Tab stop with a role (option, or
+  button), and a card of them is one focus group (`Group list`, `RowList` for rows under a
+  setting). Keyboard's layout list is the kit's `PickList`. Agents' head row is a `ListRow` with
+  the kit's `Chip`.
+- **Why:** SE-8 and SE-10 as written; one look per job (CO-9).
+- **Cost:** a long layout name is cut instead of wrapping (PickRow is one line); names that were
+  Regular are SemiBold.
+- **Undo:** `ListRow`'s `chosen` and `Group`'s `list` in `settings-app/lib/panes/parts.tsx` and
+  `shared/cards/cards.tsx`.
+
+### D641. A row's destructive action confirms in place, or acts and offers Undo
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, SE-12, PA-1, SE-A7, SE-A8).
+- **Question:** deleting asked five ways in Settings, two of them in one pane, and Voice's history
+  deleted with no ask at all.
+- **Choice:** `ConfirmDelete` takes the row's verb (Delete, Forget, Remove, Delete all, Clear
+  history) and is the only in-place confirm: Network, Bluetooth, Passwords, Payments, Tokens (its
+  sheet goes; the row's line says what will be lost), Voice's models, Clipboard. One dictation
+  entry acts at once and offers Undo (it stays in the file until the next delete, Delete all, or
+  the pane closing, so no history API changed); Delete all confirms in place. Agents' Revoke
+  keeps acting with Undo.
+- **Why:** PA-1 and SE-12: what can be undone acts; what can't confirms where it is.
+- **Cost:** Bluetooth can show two rows asking at once (each row keeps its own question).
+- **Undo:** per pane.
+
+### D642. Settings' own Slider and Switch are the kit's, set in the panel look
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, H22, Q4).
+- **Question:** `settings-app/ui.tsx` wrapped the kit's slider and switch, so H22 counted two
+  controls named like the kit's.
+- **Choice:** `Slider` is `InkSlider` itself and `Switch` the kit's Switch with the panel look set
+  in place (`inPanelLook`); the 20 callers keep their imports. "Still looking" is the kit's
+  `Loading` with "Looking for ‹things›…"; an empty list says "No ‹things› yet." or "No ‹things›
+  found.", then one sentence on what to do. Voice's fetch is the kit's `ProgressBar` (ink, Q3).
+  `InkSlider` draws its value in one colour, on the ink once the fill reaches its start
+  (`valueOnInk`, SE-A44).
+- **Why:** one kit (Q4); PA-5's wait before Loading shows.
+- **Cost:** none seen.
+- **Undo:** restore the wrappers.
+
+### D643. Control Center's tiles and the round knob button are the kit's
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, UI-1, CC-1, H22).
+- **Question:** Control Center, Settings' miniature and Sound's page drew the same tiles, and the
+  mute button, the page header's switch and edit mode's marks were role-drawn Views.
+- **Choice:** `WideTile`, `RoundTile`, `SliderTile` (with a `lead`) and `BatteryTile` move into
+  `@dashi/ui`'s `panel/tiles.tsx`; `KnobButton` is the panel look's round glyph button (a switch
+  when given `checked`); the panel `Switch` takes `lit` for a lit header, at the kit's 46 × 28
+  (was 42 × 24). Edit mode's footer is panel Buttons, 36 tall (was 34), and "ADD" reads "Add".
+  The battery panel is radius 28 (RA-2's panel; was 26) and "Battery Settings…" is the panel
+  Button (36, was 40). `MuteKnob` is `Mute` and `MicPill` `MicIndicator`; `sound/index.ts`
+  re-exports the old names until the menu bar (W3) moves its import.
+- **Why:** UI-1: a second user moves it into the kit; RA-1's named panel radius.
+- **Cost:** the switch and footer are a few points larger.
+- **Undo:** move the tiles back into `control-center/`.
+
+### D644. Battery's charts are readings, and battery rows need a battery
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, CO-13, SE-17, SE-A1, SE-A3, SE-A46).
+- **Choice:** the draw series is mizu, time on power matcha (`TINTS.matcha`, not `#30d158`), the
+  charge line and each app's share ink on the line colour, the tip's glyph muted (a warning keeps
+  `batteryLow`). The charge limit and Battery health show only while a battery is present. The
+  power button is said once, in its row; the lid's caption says the lid is set for everyone. The
+  hero's figure is `TYPE.figure` (28, was 30). Charts take the card's width.
+- **Why:** CO-13; SE-7, each fact once; SE-17.
+- **Undo:** `battery-usage.tsx`, `battery-laptop.tsx`.
+
+### D645. One ring for a chosen picture; Settings' popovers are the app look
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, SE-15, SE-A19, SE-A22).
+- **Choice:** `PictureChoice` (`@dashi/ui`): a 2.5 ring around the picture, at its radius plus
+  the room plus the ring, in the on colour, or ink where the choices are colours (Your Dashi, the
+  swatches); an option inside a listbox group (Metal has no radio role); its name under the ring.
+  Appearance's themes use room 4, so their ring's outer radius is 20.5. Displays' chosen screen
+  is ringed and the others no longer dim. The Custom accent popover is the app look (radius 12,
+  shadow xl, the window's Buttons), its eyedropper the kit's `ToolbarButton`.
+- **Why:** one look per job (CO-9); SE-15: a sheet or pop-up is the same wherever it opens.
+- **Undo:** per pane.
+
+### D646. Plain names in Settings, and no typed paths
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, VO-11, SE-A10, SE-A26, SE-A28, SE-A30, SE-A33).
+- **Choice:** a display is its EDID name, "Built-in", or "Display" ("Display N" by connector
+  order) when it has none, never its connector; a time zone is its city and offset, its id a
+  search word. Wallpaper never asks for a typed path: the registry rows `wallpaper/photo-path` and
+  `wallpaper/video-path` go (they were the typed path, not a setting), and when the file chooser
+  doesn't answer, Wallpaper and Users show one `Failure` (`NO_CHOOSER`). About and Users open with
+  their first card: About's version is a row (`about/version`), Users' account type is in its
+  title ("Users · Administrator"), the avatar 40 on `knobRest` with ink initials beside "Change
+  picture…". About leaves out a reading it doesn't have. No service, package or file name shows
+  (AccountsService, fcitx5, NetworkManager, settings.json, the compositor); Keyboard says to
+  install Fcitx 5 from the Store.
+- **Why:** VO-11; SE-17: "Unknown" never shows.
+- **Cost:** two addresses stop existing; they held a field, not a setting.
+- **Undo:** per pane.
+
+### D647. Pane names and headings in sentence case, one spelling
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, SE-16, VO-9, SE-A6, SE-A32, SE-A45).
+- **Choice:** Network (it holds Ethernet and VPN; "Wi-Fi" a search word, the address
+  `dashi://settings/network` kept), Battery & power, Lock screen, Date & time, Language &
+  region; every pane page takes its title from `paneTitle`. Captions and buttons are sentence
+  case except names (Wi-Fi, Bluetooth, Control Center, "Battery Settings…" in the panel, as the
+  menu bar's style). American spelling in the UI (color, recognizer), the British spelling kept
+  as a search word.
+- **Why:** VO-9 and SE-16.
+- **Undo:** `shared/settings/panes.ts` and the registry.
+
+### D648. Voice's and Your Dashi's rows wear their knobs
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, SE-13, SE-A17).
+- **Choice:** Voice: on WAVE, models and corrections DISK, talk key KEY, Dashi's voice VOLUME,
+  each, add and more languages LANGUAGE, In ‹language› GLOBE, dictation MIC, listen again REFRESH,
+  dictation key KEYBOARD, hands-free TAP, tidy SLIDERS, words TEXT, replacements REPEAT, history
+  HISTORY, recognizer CHIP, corrected by SPARK. Your Dashi: name PERSONA, character SPARK, you
+  USER, talk WAVE, language LANGUAGE, voice VOLUME, colour DROP, mark GRID, dots MOTION, note
+  TEXT, own SLIDERS, share AT, about HISTORY, reset REFRESH. Dictation history is two cards (the
+  keep setting with its knob, then the entries), so each card keeps one left edge (SE-6).
+- **Why:** SE-13; Appearance's rows keep theirs (D585).
+- **Undo:** the glyphs in `registry/lib/voice.ts` and `registry/lib/persona.ts`.
+
+### D649. Small calls made bringing Settings and Control Center onto the tokens
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, TK-1, H21).
+- **Choice:** every measure in W4's files is a token or a named constant beside its component
+  (658 literals to 1: Caption's tuck, `-SPACE.xs`, which H21b should read as the negative step).
+  Snaps: a tile's setting at 0.75 (`OPACITY.soft`, was 0.74 and 0.7); Sound's app slider takes the
+  kit's spacing; the battery figure 28. Timers live in named objects (`TIMING`, `SOUND_POLL`,
+  `GRAPHICS_REFRESH`, `NIGHT_LOOK`, `AUTO_LOOK`, `SPOT_TIMES`, `MONITOR.slowMs`). `PAGE.margin`
+  is `PAGE.sides` (a style name in a constant reads as a literal). The vault's forms share one
+  field width, 240. Clipboard's left-out apps are `ListRow`s with an `AppDisc` (the app's icon,
+  or its letter on its tint), a small Remove at the end; its field asks for a program's name until
+  the installed-apps list reaches Settings. Window lights' colours for GTK are
+  `WINDOW_LIGHTS` in the theme.
+- **Why:** TK-1; the plan's snap rule (tokens.md).
 - **Undo:** per file.

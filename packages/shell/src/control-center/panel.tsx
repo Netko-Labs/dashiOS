@@ -11,7 +11,7 @@
  * presses one (page-keys.ts), with the same ring.
  */
 
-import { useControlColors, usePanelEdge } from "@dashi/ui";
+import { SHADOW, TILE, useControlColors, usePanelEdge } from "@dashi/ui";
 import { type KeyDownInfo, View, type ViewStyle } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import type { BluetoothStore } from "../bluetooth/store.ts";
@@ -33,7 +33,6 @@ import { PageView } from "./lib/pages.tsx";
 import { panelKey } from "./lib/panel-keys.ts";
 import { PageOrigin } from "./page-parts.tsx";
 import { PageKeysContext, usePageKeys } from "./page-stops.ts";
-import { TILE_RADIUS } from "./tiles.tsx";
 
 export const CONTROL_CENTER_PANEL = { width: GRID.width, padding: GRID.padding, gap: GRID.gap } as const;
 
@@ -81,7 +80,7 @@ function panelStyle(embedded: boolean, surface: string, edge: ReturnType<typeof 
     flexDirection: "column",
     borderRadius: GRID.radius,
     backgroundColor: surface,
-    ...(embedded ? { padding: GRID.padding } : { shadow: "xl" as const, ...edge }),
+    ...(embedded ? { padding: GRID.padding } : { shadow: SHADOW.xl, ...edge }),
   };
 }
 
@@ -151,7 +150,7 @@ export function ControlCenterPanel(props: ControlCenterProps) {
             placed={placed}
             focused={focus}
             editing={editHandlers}
-            radiusOf={(id) => (controls.isOn(id) ? TILE_RADIUS.on : TILE_RADIUS.off)}
+            radiusOf={(id) => (controls.isOn(id) ? TILE.radius.on : TILE.radius.off)}
             renderTile={(tile, frame) => controls.render(tile, frame, editing, (next) => openPage(tile.id, next))}
           />
           {draft && <PanelEditor draft={draft} layout={props.layout} controls={controls} embedded={embedded} setDraft={setDraft} onClose={onClose} />}

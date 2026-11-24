@@ -34,10 +34,13 @@ export interface SearchFieldProps {
   testID: string;
   /** "Search ‹what›". */
   placeholder?: string;
-  width?: number;
+  /** Pixels, or "fill": as wide as its row gives it (Settings' sidebar). */
+  width?: number | "fill";
   /** With it, the field shrinks toward this width when its toolbar row is short of room; without, it keeps `width`. */
   minWidth?: number;
   autoFocus?: boolean;
+  /** Made with what it holds selected, so new words replace it (❖F coming back to a search). */
+  selectAll?: boolean;
   /** "search" (default): Esc empties the field first. "find": Esc leaves the query and goes to `onKeyPress`. */
   variant?: "search" | "find";
   onKeyPress?: (key: "Escape" | "ArrowUp" | "ArrowDown") => void;
@@ -55,6 +58,7 @@ export function SearchField({
   width = SEARCH_FIELD.width,
   minWidth,
   autoFocus,
+  selectAll,
   variant = "search",
   onKeyPress,
   onSubmit,
@@ -66,6 +70,8 @@ export function SearchField({
   const m = SEARCH_FIELD;
   const [laid, setLaid] = useState(0);
   const [trailing, setTrailing] = useState(0);
+  // Taken once, when the field is made.
+  const [selected] = useState(() => (selectAll ? { start: 0, end: value.length } : null));
   const lead = m.inset + m.glyph + m.gap;
   const ground = look === "panel" ? panel.off : colors.button;
   const size = look === "panel" ? TYPE.panel.body.size : TYPE.body.size;
@@ -74,9 +80,9 @@ export function SearchField({
     <View
       onLayout={(bounds) => setLaid((was) => (Math.abs(was - bounds.width) < 0.5 ? was : bounds.width))}
       style={{
-        width,
         height: m.height,
-        ...(minWidth === undefined ? { flexShrink: 0 as const } : { flexShrink: 1 as const, minWidth }),
+        ...(width === "fill" ? { flex: 1, minWidth: 0 } : { width }),
+        ...(width === "fill" ? {} : minWidth === undefined ? { flexShrink: 0 as const } : { flexShrink: 1 as const, minWidth }),
         flexDirection: "row",
         position: "relative",
       }}
@@ -86,6 +92,7 @@ export function SearchField({
         value={value}
         accessibilityLabel={placeholder}
         autoFocus={autoFocus}
+        {...(selected ? { selection: selected } : {})}
         onChangeText={onChangeText}
         onSubmitEditing={onSubmit}
         onKeyPress={(key) => {

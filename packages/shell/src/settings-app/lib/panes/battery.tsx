@@ -11,9 +11,10 @@
  * battery's health and cycles and whether the menu bar shows its
  * percentage, a full charge for a trip, the processor (battery-laptop.tsx),
  * the usage (battery-usage.tsx), and what the lid and power button do.
- * Parts that do not apply are left out: a desktop has no battery, and a
- * machine without the daemon has no power modes. The lid is logind's
- * configuration (/etc/systemd/logind.conf), shown as it is.
+ * Parts that do not apply are left out: a desktop has no battery (nor a
+ * charge limit or battery health), and a machine without the daemon has no
+ * power modes. The lid is logind's configuration (/etc/systemd/logind.conf),
+ * shown as it is.
  */
 
 import { useEffect, useSyncExternalStore } from "react";
@@ -22,6 +23,7 @@ import type { Laptop } from "../../../laptop/start.ts";
 import { useLaptop } from "../../../laptop/store.ts";
 import { describeAction } from "../../../power/policy.ts";
 import { Caption, Group } from "../../../shared/cards/index.ts";
+import { paneTitle } from "../../../shared/settings/index.ts";
 import { useEnergy } from "../../../system/energy.ts";
 import { isProfileId, PROFILE_LABEL } from "../../../system/profiles.ts";
 import { useSettings } from "../../hooks.ts";
@@ -118,11 +120,11 @@ function BatteryStatus({ battery }: { battery: NonNullable<EnergyState["battery"
   );
 }
 
-/** What the lid and the power button do: read from the system, not set here. */
-function LidAndButton({ lid }: { lid: EnergyState["lid"] }) {
+/** What the lid and the power button do: read from the system, not set here; each said once (SE-7). */
+function LidAndPower({ lid }: { lid: EnergyState["lid"] }) {
   return (
     <>
-      <Caption above>{lid ? "Lid and Power Button" : "Power Button"}</Caption>
+      <Caption above>{lid ? "Lid and power button" : "Power button"}</Caption>
       <Group testID="power-lid">
         {lid && (
           <>
@@ -141,9 +143,7 @@ function LidAndButton({ lid }: { lid: EnergyState["lid"] }) {
           <Value testID="power-button">Asks before shutting down</Value>
         </Setting>
       </Group>
-      <Caption>
-        {lid ? "The lid is set by the system (logind.conf), not per user. The power button always asks first." : "The power button always asks first."}
-      </Caption>
+      {lid && <Caption>What the lid does is set for everyone on this computer, not for each person.</Caption>}
     </>
   );
 }
@@ -162,7 +162,7 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
   // The monitor's reading carries the watts and the history; the energy store's, the health.
   const reading = monitor?.battery ?? battery;
   return (
-    <Page title="Battery & Power">
+    <Page title={paneTitle("battery")}>
       {reading && (
         // The hero is the "Battery" row: it says the charge and what the battery does, so search lands here.
         <Spot id="battery/battery" cards>
@@ -183,7 +183,8 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
             />
           </Setting>
         )}
-        {services.laptop && limit !== null && <ChargeLimitRow laptop={services.laptop} settings={settings} />}
+        {/* The charge limit and battery health only while a battery is there (SE-17). */}
+        {services.laptop && battery && limit !== null && <ChargeLimitRow laptop={services.laptop} settings={settings} />}
       </Group>
       {!services.laptop && state.failed !== null && <Failure testID="power-failure">{`Couldn’t switch to ${PROFILE_LABEL[state.failed]}.`}</Failure>}
       <Group testID="power-timers">
@@ -193,12 +194,12 @@ export function BatteryPane({ services, settings, show }: { services: PaneServic
       {battery && <BatteryStatus battery={battery} />}
       {services.laptop && (
         <>
-          <FullChargeGroup laptop={services.laptop} settings={settings} />
+          {battery && <FullChargeGroup laptop={services.laptop} settings={settings} />}
           <ProcessorGroup laptop={services.laptop} settings={settings} />
         </>
       )}
       {battery && services.battery && <BatteryUsage monitor={services.battery} />}
-      <LidAndButton lid={lid} />
+      <LidAndPower lid={lid} />
     </Page>
   );
 }

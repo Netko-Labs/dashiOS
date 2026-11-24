@@ -6,6 +6,7 @@
  * while it is open and stops when it closes.
  */
 
+import { Loading, TYPE } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { failureLine } from "../../../bluetooth/failures.ts";
@@ -19,7 +20,7 @@ import { useColors } from "../../colors.ts";
 import type { PaneServices } from "../../services.ts";
 import { Page, Switch } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";
-import { Failure, KindMark, ListRow, MiniButton } from "./parts.tsx";
+import { ConfirmDelete, Failure, KindMark, ListRow, MiniButton } from "./parts.tsx";
 
 const BUSY = { connecting: "Connecting…", disconnecting: "Disconnecting…", pairing: "Pairing…", forgetting: "Forgetting…" } as const;
 
@@ -29,56 +30,36 @@ function Battery({ percent, name }: { percent: number; name: string }) {
     <>
       <Svg markup={batteryGlyph(percent, false)} width={18} height={9} color={colors.textMuted} />
       <View testID={`bt-battery:${name}`}>
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>{`${percent}%`}</Text>
+        <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>{`${percent}%`}</Text>
       </View>
     </>
   );
 }
 
-function MyDevice({
-  device,
-  state,
-  confirming,
-  onConfirm,
-  services,
-}: {
-  device: BluetoothDevice;
-  state: BluetoothState;
-  confirming: boolean;
-  onConfirm: (asking: boolean) => void;
-  services: PaneServices;
-}) {
+function MyDevice({ device, state, services }: { device: BluetoothDevice; state: BluetoothState; services: PaneServices }) {
   const { bluetooth } = services;
   const busy = state.busy[device.path];
-  const detail = busy ? BUSY[busy] : device.connected ? "Connected" : "Not Connected";
+  const [asking, setAsking] = useState(false);
+  const detail = busy ? BUSY[busy] : device.connected ? "Connected" : "Not connected";
   return (
-    <ListRow testID={`bt-device:${device.name}`} name={device.name} detail={detail} bold={device.connected}>
+    <ListRow testID={`bt-device:${device.name}`} name={device.name} detail={detail}>
       <KindMark glyph={deviceGlyph(device.kind)} />
       {device.battery !== null && !busy && <Battery percent={device.battery} name={device.name} />}
-      {confirming ? (
-        <>
-          <MiniButton testID={`bt-forget-cancel:${device.name}`} label="Cancel" onPress={() => onConfirm(false)} />
-          <MiniButton
-            testID={`bt-forget-confirm:${device.name}`}
-            label="Forget"
-            tone="critical"
-            onPress={() => {
-              onConfirm(false);
-              void bluetooth.forget(device);
-            }}
-          />
-        </>
-      ) : (
-        <>
-          <MiniButton
-            testID={`bt-toggle:${device.name}`}
-            label={device.connected ? "Disconnect" : "Connect"}
-            disabled={busy !== undefined}
-            onPress={() => void (device.connected ? bluetooth.disconnect(device) : bluetooth.connect(device))}
-          />
-          <MiniButton testID={`bt-forget:${device.name}`} label="Forget…" tone="critical" disabled={busy !== undefined} onPress={() => onConfirm(true)} />
-        </>
+      {!asking && (
+        <MiniButton
+          testID={`bt-toggle:${device.name}`}
+          label={device.connected ? "Disconnect" : "Connect"}
+          disabled={busy !== undefined}
+          onPress={() => void (device.connected ? bluetooth.disconnect(device) : bluetooth.connect(device))}
+        />
       )}
+      <ConfirmDelete
+        testID={`bt-forget:${device.name}`}
+        verb="Forget"
+        disabled={busy !== undefined}
+        onAsking={setAsking}
+        onDelete={() => void bluetooth.forget(device)}
+      />
     </ListRow>
   );
 }
@@ -86,29 +67,21 @@ function MyDevice({
 function Devices({ services }: { services: PaneServices }) {
   const { bluetooth } = services;
   const state = useBluetooth(bluetooth);
-  const [asking, setAsking] = useState<string | null>(null);
   const searching = state.discovering || state.available === null;
   const { failure } = state;
   return (
     <>
       {state.mine.length > 0 && (
         <>
-          <Caption above>My Devices</Caption>
+          <Caption above>My devices</Caption>
           <Group testID="bt-mine">
             {state.mine.map((device) => (
-              <MyDevice
-                key={device.path}
-                device={device}
-                state={state}
-                services={services}
-                confirming={asking === device.path}
-                onConfirm={(on) => setAsking(on ? device.path : null)}
-              />
+              <MyDevice key={device.path} device={device} state={state} services={services} />
             ))}
           </Group>
         </>
       )}
-      <Caption above>{searching ? "Nearby Devices — Searching…" : "Nearby Devices"}</Caption>
+      <Caption above>Nearby devices</Caption>
       <Group testID="bt-nearby">
         {state.nearby.map((device) => (
           <ListRow
@@ -127,7 +100,12 @@ function Devices({ services }: { services: PaneServices }) {
             />
           </ListRow>
         ))}
-        {state.nearby.length === 0 && <Note testID="bt-none">{searching ? "Looking for devices…" : "No devices found."}</Note>}
+        {state.nearby.length === 0 &&
+          (searching ? (
+            <Loading testID="bt-none" label="Looking for devices…" />
+          ) : (
+            <Note testID="bt-none">No devices found. Put the device in pairing mode, then search again.</Note>
+          ))}
       </Group>
       {!searching && (
         <Group>
@@ -160,24 +138,16 @@ export function BluetoothPane({ services }: { services: PaneServices }) {
   const on = radios.bluetooth !== false;
   // No adapter: BlueZ says so, or the radio cannot be read at all.
   const missing = state.available === false || (loaded && radios.bluetooth === null && state.available !== true);
+  // Each fact once (SE-7, SE-17): a missing adapter or the radio being off is the row's own line, no card under it.
+  const detail = missing ? "This computer has no Bluetooth adapter." : on ? "On" : "Off. Turn it on to connect to devices.";
   return (
     <Page title="Bluetooth">
       <Group testID="bt-power">
-        <Setting id="bluetooth/bluetooth" detail={missing ? "No Bluetooth adapter" : on ? "On" : "Off"}>
+        <Setting id="bluetooth/bluetooth" detail={detail}>
           {!missing && <Switch testID="bt-radio" on={on} onChange={(next) => void devices.setBluetooth(next)} />}
         </Setting>
       </Group>
-      {missing ? (
-        <Group>
-          <Note testID="bt-unavailable">Bluetooth isn't available on this computer.</Note>
-        </Group>
-      ) : on ? (
-        <Devices services={services} />
-      ) : (
-        <Group>
-          <Note testID="bt-off">Bluetooth is off. Turn it on to connect to devices.</Note>
-        </Group>
-      )}
+      {!missing && on && <Devices services={services} />}
     </Page>
   );
 }

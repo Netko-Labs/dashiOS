@@ -16,7 +16,7 @@ import { type BoostChoice, CHARGE_LIMIT_MIN, type EppChoice } from "../../../pow
 import { useModes } from "../../../power/modes/store.ts";
 import { MODE_LABEL, MODE_SHORT, type ModeChoice } from "../../../power/modes/types.ts";
 import { Button, Caption, Group } from "../../../shared/cards/index.ts";
-import { PLUG } from "../../../shared/settings/index.ts";
+import { GAUGE, PLUG } from "../../../shared/settings/index.ts";
 import { useSettings } from "../../hooks.ts";
 import { Spot } from "../../spot.tsx";
 import type { SettingsStore } from "../../store.ts";
@@ -117,12 +117,12 @@ export function FullChargeGroup({ laptop, settings }: { laptop: Laptop; settings
   const target = chargeTarget(power, new Date());
   return (
     <>
-      <Caption above>Battery Health</Caption>
+      <Caption above>Battery health</Caption>
       <Group testID="battery-health-limit">
         <Setting id="battery/full-charge-once" detail={power.fullChargeOnce ? (target.why ?? "") : undefined}>
           <Button
             testID="battery-full-once"
-            label={power.fullChargeOnce ? "Charging" : "Charge Now"}
+            label={power.fullChargeOnce ? "Charging" : "Charge now"}
             disabled={power.fullChargeOnce === true || limit >= 100}
             onPress={() => settings.patch("power", { fullChargeOnce: true })}
           />
@@ -205,6 +205,7 @@ export function ProcessorGroup({ laptop, settings }: { laptop: Laptop; settings:
           <Setting id="battery/top-speed">
             <Slider
               testID="power-battery-cap"
+              glyph={GAUGE}
               value={cap}
               range={{ min: low, max: top, step: 100_000 }}
               format={(value) => (value >= top ? "No limit" : `${(value / 1_000_000).toFixed(1)} GHz`)}

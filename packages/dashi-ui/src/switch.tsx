@@ -38,9 +38,11 @@ export interface SwitchProps {
   label?: string;
   /** The window look, the panel look, or the widget area's inks. */
   look?: Look | "inks";
+  /** The panel look on a lit tile (Control Center's page header, on): on, its track the on ink and its knob the on colour. */
+  lit?: boolean;
 }
 
-export function Switch({ on, testID, onChange, disabled, focused, focusable = true, label, look = "window" }: SwitchProps) {
+export function Switch({ on, testID, onChange, disabled, focused, focusable = true, label, look = "window", lit = false }: SwitchProps) {
   const colors = useColors();
   const panel = useControlColors();
   const fromRow = useContext(ControlName);
@@ -48,14 +50,16 @@ export function Switch({ on, testID, onChange, disabled, focused, focusable = tr
   const state = useControlState({ disabled, focused });
   const enabled = onChange !== undefined && disabled !== true;
   const mode = useDark() ? "dark" : "light";
-  const lit = onOf(colors);
-  const onFill = state.pressed ? colors.selectionPressed : lit.on;
+  const shade = onOf(colors);
+  const onFill = state.pressed ? colors.selectionPressed : shade.on;
   const m = look === "panel" ? PANEL_SWITCH : look === "inks" ? INKS_SWITCH : SWITCH;
   const offEdge = look === "panel" && !on;
+  const onLit = lit && on;
   const panelTrack = state.pressed ? panel.knobOff : CLEAR;
   const windowTrack = state.pressed ? colors.pressed : colors.track;
-  const track = look === "inks" ? (on ? INK_TEXT[mode].ink : INK_TEXT[mode].hairline) : on ? onFill : look === "panel" ? panelTrack : windowTrack;
-  const knob = look === "panel" ? (on ? lit.onInk : panel.muted) : look === "inks" ? INK_PAPER[mode] : KNOB;
+  const track =
+    look === "inks" ? (on ? INK_TEXT[mode].ink : INK_TEXT[mode].hairline) : onLit ? shade.onInk : on ? onFill : look === "panel" ? panelTrack : windowTrack;
+  const knob = look === "inks" ? INK_PAPER[mode] : onLit ? shade.on : look === "panel" ? (on ? shade.onInk : panel.muted) : KNOB;
   return (
     <View
       testID={testID}

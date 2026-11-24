@@ -11,6 +11,9 @@ import { inSchedule } from "../night-shift.ts";
 import type { Flags } from "../shared/control-center/index.ts";
 
 /** Minutes since midnight: dark from here... */
+/** How often Automatic looks at the clock. */
+const AUTO_LOOK = { everyMs: 30_000 } as const;
+
 export const AUTO_DARK_FROM = 19 * 60;
 /** ...until here. */
 export const AUTO_DARK_TO = 7 * 60;
@@ -36,7 +39,8 @@ export class AutoAppearance {
 
   start(): () => void {
     this.tick();
-    this.timer = setInterval(() => this.tick(), this.options.everyMs ?? 30_000);
+    const every = this.options.everyMs ?? AUTO_LOOK.everyMs;
+    this.timer = setInterval(() => this.tick(), every);
     return () => clearInterval(this.timer);
   }
 

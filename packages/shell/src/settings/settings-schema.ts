@@ -77,7 +77,7 @@ export const APPEARANCE = {
   textSize: literal(...TEXT_SIZES),
   x11Apps: literal(...X11_SCALINGS),
   /** The accent (@dashi/ui theme/accent): `{preset}`, `{custom: "#RRGGBB"}` or `{wallpaper: true}`; none is Kombu. */
-  accent: guarded(isAccentChoice, 'a preset ({"preset": "momo"}), a colour ({"custom": "#E0508F"}) or {"wallpaper": true}', {
+  accent: guarded(isAccentChoice, 'a preset ({"preset": "momo"}), a colour ({"custom": "#RRGGBB"}) or {"wallpaper": true}', {
     type: "object",
     maxProperties: 1,
   }),

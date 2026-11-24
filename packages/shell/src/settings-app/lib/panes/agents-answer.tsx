@@ -6,16 +6,15 @@
  * Undo for settings changes.
  */
 
-import { CHEVRON_DOWN, CHEVRON_UP } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
+import { MoreButton, SPACE } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { ANSWERERS, type AnswererChoice, isHarnessId } from "../../../agents/ask/answerer.ts";
 import { ago, type HistoryEntry } from "../../../agents/ask/history.ts";
 import type { KeyPlace, Provider } from "../../../agents/ask/keys.ts";
 import type { AnswerStatus } from "../../../agents/ask/types.ts";
-import { Button, Caption, Group, Note } from "../../../shared/cards/index.ts";
+import { Caption, Group, Note } from "../../../shared/cards/index.ts";
 import { AnswererList, useHarnesses } from "../../answerer-list.tsx";
-import { useColors } from "../../colors.ts";
 import { useSettings } from "../../hooks.ts";
 import { Spot } from "../../spot.tsx";
 import type { SettingsStore } from "../../store.ts";
@@ -23,7 +22,7 @@ import type { ByPerson } from "../person-only.ts";
 import { Row as Item } from "../row.tsx";
 import { Setting } from "../setting.tsx";
 import { ModelRows } from "./agents-models.tsx";
-import { ListRow } from "./parts.tsx";
+import { ListRow, MiniButton } from "./parts.tsx";
 
 const KEY_NAMES: Readonly<Record<Provider, { who: string; variable: string; host: string }>> = {
   anthropic: { who: "Claude", variable: "ANTHROPIC_API_KEY", host: "api.anthropic.com" },
@@ -71,23 +70,22 @@ const now = (): number => Math.floor(Date.now() / 1000);
 
 /** One agent's connections in quick succession (agents/ask/lib/sessions.ts): one row, opened to list each. */
 function SessionsRow({ entry, parts }: { entry: HistoryEntry; parts: readonly HistoryEntry[] }) {
-  const colors = useColors();
   const [opened, setOpened] = useState(false);
   const shown = parts.slice(-PARTS_SHOWN).reverse();
   const earlier = parts.length - shown.length;
   return (
     <View testID={`agents-history:${entry.id}`} style={{ flexDirection: "column" }}>
-      <ListRow
-        testID={`agents-history-open:${entry.id}`}
-        name={entry.who}
-        detail={`${entry.summary} · ${ago(entry.time, now())}`}
-        onPress={() => setOpened((open) => !open)}
-      >
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>{`${parts.length} connections`}</Text>
-        <Svg markup={opened ? CHEVRON_UP : CHEVRON_DOWN} size={12} color={colors.textMuted} />
+      <ListRow name={entry.who} detail={`${entry.summary} · ${ago(entry.time, now())}`}>
+        <MoreButton
+          testID={`agents-history-open:${entry.id}`}
+          open={opened}
+          more={`${parts.length} connections`}
+          less="Hide connections"
+          onPress={() => setOpened((open) => !open)}
+        />
       </ListRow>
       {opened && (
-        <View testID={`agents-history-parts:${entry.id}`} style={{ flexDirection: "column", paddingLeft: 24, paddingBottom: 6 }}>
+        <View testID={`agents-history-parts:${entry.id}`} style={{ flexDirection: "column", paddingLeft: SPACE.xl, paddingBottom: SPACE.s }}>
           {shown.map((part) => (
             <ListRow key={part.id} testID={`agents-history-part:${part.id}`} name={part.summary} detail={ago(part.time, now())} />
           ))}
@@ -110,9 +108,9 @@ export function HistoryRow({ entry, onUndo }: { entry: HistoryEntry; onUndo: (in
       detail={`${entry.summary} · ${ago(entry.time, now())}`}
     >
       {undos.length > 0 && (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: SPACE.s }}>
           {undos.map((undo) => (
-            <Button key={undo.index} testID={`agents-undo:${entry.id}:${undo.index}`} label={`Undo: ${undo.title}`} onPress={() => onUndo(undo.index)} />
+            <MiniButton key={undo.index} testID={`agents-undo:${entry.id}:${undo.index}`} label={`Undo: ${undo.title}`} onPress={() => onUndo(undo.index)} />
           ))}
         </View>
       )}
@@ -176,7 +174,7 @@ export function AnswerSettings({ settings, answers }: { settings: SettingsStore;
         <Caption above>History</Caption>
         <Group testID="agents-history">
           {entries.length === 0 ? (
-            <Note testID="agents-history-none">Nothing yet. What agents do for you is listed here.</Note>
+            <Note testID="agents-history-none">No agent work yet. What agents do for you is listed here.</Note>
           ) : (
             entries.map((entry) => <HistoryRow key={entry.id} entry={entry} onUndo={(index) => undo(entry, index)} />)
           )}

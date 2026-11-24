@@ -1,10 +1,29 @@
 /** Settings › Voice's rows (lib/panes/voice.tsx): the switch, the models, the talk key, Dashi's voice and the voice for each other language, dictation, and more languages. The person's alone: no agent turns the microphone's feature on. */
 
+import {
+  CHIP,
+  DISK,
+  GLOBE,
+  HISTORY,
+  KEY,
+  KEYBOARD,
+  LANGUAGE,
+  MIC,
+  REFRESH,
+  REPEAT,
+  SLIDERS,
+  SPARK,
+  TAP,
+  TEXT,
+  VOLUME,
+  WAVE,
+} from "../../../shared/settings/index.ts";
 import type { RowDef } from "../types.ts";
 
 export const VOICE_ROWS = [
   {
     id: "voice/on",
+    glyph: WAVE,
     title: "Voice",
     name: "Talk to Dashi",
     detail: "Hold a key and talk to Dashi; it answers out loud. Nothing you say leaves this computer.",
@@ -13,6 +32,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/models",
+    glyph: DISK,
     title: "Models",
     name: "Voice's models",
     keywords: ["download", "fetch", "remove", "parakeet", "kokoro", "disk space", "pause", "resume"],
@@ -20,6 +40,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/key",
+    glyph: KEY,
     title: "Talk key",
     detail: "Hold it to talk, let go to hear the answer.",
     keywords: ["copilot key", "command space", "dashi key", "hold to talk", "push to talk", "shortcut", "caps lock", "menu key"],
@@ -27,6 +48,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/dashis-voice",
+    glyph: VOLUME,
     title: "Dashi's voice",
     detail: "The voice answers and questions are said in.",
     keywords: ["speaker", "accent", "sample", "text to speech", "tts", "play", "language"],
@@ -34,6 +56,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/each-language",
+    glyph: LANGUAGE,
     title: "Speak each language in its own voice",
     detail: "Spanish sentences in a Spanish voice, English ones in an English voice. Off: all in the one voice.",
     keywords: ["bilingual", "spanish", "english", "accent", "language", "switch voice", "multilingual", "pronunciation"],
@@ -41,6 +64,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/in-en",
+    glyph: GLOBE,
     title: "In English",
     name: "Dashi's voice in English",
     keywords: ["english", "voice", "accent", "language", "sample"],
@@ -48,6 +72,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/in-es",
+    glyph: GLOBE,
     title: "In Spanish",
     name: "Dashi's voice in Spanish",
     keywords: ["spanish", "voice", "accent", "language", "sample"],
@@ -55,6 +80,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/in-fr",
+    glyph: GLOBE,
     title: "In French",
     name: "Dashi's voice in French",
     keywords: ["french", "voice", "accent", "language", "sample"],
@@ -62,6 +88,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/in-hi",
+    glyph: GLOBE,
     title: "In Hindi",
     name: "Dashi's voice in Hindi",
     keywords: ["hindi", "voice", "accent", "language", "sample"],
@@ -69,6 +96,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/in-it",
+    glyph: GLOBE,
     title: "In Italian",
     name: "Dashi's voice in Italian",
     keywords: ["italian", "voice", "accent", "language", "sample"],
@@ -76,6 +104,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/in-pt",
+    glyph: GLOBE,
     title: "In Portuguese",
     name: "Dashi's voice in Portuguese",
     keywords: ["portuguese", "voice", "accent", "language", "sample"],
@@ -83,6 +112,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/add-language",
+    glyph: LANGUAGE,
     title: "Speak another language",
     detail: "Turns on a voice for a language Dashi does not speak yet.",
     keywords: ["french", "hindi", "italian", "portuguese", "add language", "voice", "multilingual"],
@@ -90,6 +120,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/dictation",
+    glyph: MIC,
     title: "Dictation",
     name: "Dictate into any text field",
     detail: "Hold the dictation key and talk; let go and your words are typed where the keyboard is. Nothing you say leaves this computer.",
@@ -98,6 +129,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/listen-again",
+    glyph: REFRESH,
     title: "Listen again after Dashi speaks",
     detail: "While you are talking with Dashi, the microphone opens for your reply once it has finished speaking, and closes after a few seconds of nothing.",
     keywords: ["conversation", "follow up", "reply", "microphone", "hands free", "keep talking"],
@@ -105,6 +137,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/dictation-key",
+    glyph: KEYBOARD,
     title: "Dictation key",
     detail: "Hold it alone to dictate. Automatic is the right ⌥, or Caps Lock on a layout where the right ⌥ types accents.",
     keywords: ["right option", "alt gr", "caps lock", "right control", "menu key", "hold to dictate", "shortcut"],
@@ -112,6 +145,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/hands-free",
+    glyph: TAP,
     title: "Hands-free",
     name: "Hands-free dictation",
     detail: "Tap the dictation key twice to keep dictating without holding it. Each sentence is typed at its pause; a tap ends it.",
@@ -120,6 +154,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/tidy",
+    glyph: SLIDERS,
     title: "Tidy what I say",
     detail: "Leaves out “um” and “uh”, sets spaces and capitals, and types “comma” or “new line” as said. Off types the words as heard.",
     keywords: ["filler", "punctuation", "capitals", "clean up", "new line", "comma", "scratch that"],
@@ -127,6 +162,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/dictation-words",
+    glyph: TEXT,
     title: "Words",
     name: "Dictation's words",
     detail: "Names and terms dictation writes your way. Add what it is heard as, if you know.",
@@ -135,6 +171,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/dictation-replacements",
+    glyph: REPEAT,
     title: "Replacements",
     name: "Dictation's replacements",
     detail: "What is heard, and what is typed for it.",
@@ -143,6 +180,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/dictation-history",
+    glyph: HISTORY,
     title: "Keep what I dictate for",
     name: "Dictation history",
     detail: "What you dictated, as heard and as typed, to copy or delete. Kept on this computer only.",
@@ -151,6 +189,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/more-languages",
+    glyph: LANGUAGE,
     title: "More languages",
     name: "Voice in more languages",
     keywords: ["whisper", "japanese", "chinese", "korean", "arabic", "hindi", "turkish", "language model", "download"],
@@ -158,14 +197,16 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/recognizer",
-    title: "Recogniser",
+    glyph: CHIP,
+    title: "Recognizer",
     name: "Speech recogniser",
     detail: "The model that hears what you say, to dictate and to talk to Dashi.",
-    keywords: ["parakeet", "whisper", "speech to text", "transcription", "model", "accuracy", "experiment"],
+    keywords: ["recogniser", "parakeet", "whisper", "speech to text", "transcription", "model", "accuracy", "experiment"],
     kind: "choice",
   },
   {
     id: "voice/corrections-model",
+    glyph: SPARK,
     title: "Corrected by",
     name: "Model that corrects dictation",
     detail: "What fixes what you take back as you dictate, after the rules.",
@@ -174,6 +215,7 @@ export const VOICE_ROWS = [
   },
   {
     id: "voice/corrections",
+    glyph: DISK,
     title: "Corrections",
     name: "Dictation corrections",
     keywords: ["self-correction", "no i mean", "scratch that", "actually", "autocorrect", "rewrite", "model", "download", "dictation", "perdón", "mejor dicho"],

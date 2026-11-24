@@ -13,7 +13,7 @@
  * at once.
  */
 
-import { Button, InkFill, useControlColors } from "@dashi/ui";
+import { Button, InkFill, OPACITY, RADIUS, SPACE, TYPE, useControlColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import { type AppletTile, isAppletTile } from "../control-center/applet-tiles.ts";
@@ -31,8 +31,12 @@ import { Choices, Hero, Page } from "./ui.tsx";
 
 export type ControlCenterEditor = Omit<ControlCenterProps, "page" | "onPage" | "onClose" | "embedded">;
 
-/** The miniature's glyph and word: 14 and 10.5 SemiBold; a word keeps 8 clear of its tile's edges. */
-export const MINI_TILE = { glyph: 14, word: 10.5, inset: 8 } as const;
+/**
+ * The miniature's glyph and word: 14 and 10.5 SemiBold; a word keeps 8 clear
+ * of its tile's edges; its tiles' corners, on and off, the panel's scaled
+ * down; the hero's room around it.
+ */
+export const MINI_TILE = { glyph: 14, word: TYPE.panel.micro.size, inset: SPACE.m, radius: { on: 14, off: 22 }, hero: 18 } as const;
 
 /** One tile of the miniature, in the panel's own colors and shapes, smaller: its glyph and its word, as the panel draws them. */
 function MiniTile({ tile, controls }: { tile: Placed; controls: Controls }) {
@@ -46,7 +50,7 @@ function MiniTile({ tile, controls }: { tile: Placed; controls: Controls }) {
   const words = battery ? `${battery.percent}% · battery` : (look?.title ?? "");
   const round = tile.size === "round";
   const ink = on ? colors.onInk : colors.offInk;
-  const radius = on ? 14 : 22;
+  const radius = on ? MINI_TILE.radius.on : MINI_TILE.radius.off;
   const glyph = look?.glyph;
   if (slider) {
     const standing = tile.size === "tall";
@@ -57,9 +61,9 @@ function MiniTile({ tile, controls }: { tile: Placed; controls: Controls }) {
     return (
       <View
         testID={`cc-mini:${tile.id}`}
-        style={{ position: "absolute", ...frame, borderRadius: radius, backgroundColor: colors.off, overflow: "hidden", opacity: look?.dim ? 0.5 : 1 }}
+        style={{ position: "absolute", ...frame, borderRadius: radius, backgroundColor: colors.off, overflow: "hidden", opacity: look?.dim ? OPACITY.half : 1 }}
       >
-        <InkFill length={fill} total={total} standing={standing} radius={22} />
+        <InkFill length={fill} total={total} standing={standing} radius={MINI_TILE.radius.off} />
         {glyph && (
           <View
             style={{
@@ -84,17 +88,17 @@ function MiniTile({ tile, controls }: { tile: Placed; controls: Controls }) {
         flexDirection: round ? "column" : "row",
         alignItems: "center",
         justifyContent: round ? "center" : "flex-start",
-        gap: round ? 2 : 6,
-        paddingLeft: round ? MINI_TILE.inset : 10,
+        gap: round ? SPACE.xxs : SPACE.s,
+        paddingLeft: round ? MINI_TILE.inset : SPACE.gap,
         paddingRight: MINI_TILE.inset,
         overflow: "hidden",
-        opacity: look?.dim ? 0.5 : 1,
+        opacity: look?.dim ? OPACITY.half : 1,
       }}
     >
       {glyph && <Svg markup={glyph} size={MINI_TILE.glyph} color={ink} />}
       {/* A round tile's word is centred across it, a wide tile's follows its glyph. */}
       <View style={{ ...(round ? { alignSelf: "stretch" } : { flex: 1 }), minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: MINI_TILE.word, fontWeight: "semibold", color: ink, textAlign: round ? "center" : "left" }}>
+        <Text numberOfLines={1} style={{ fontSize: MINI_TILE.word, fontWeight: WEIGHT.semibold, color: ink, textAlign: round ? "center" : "left" }}>
           {words}
         </Text>
       </View>
@@ -113,7 +117,13 @@ function Miniature({ editor, controls }: { editor: ControlCenterEditor; controls
       testID="cc-miniature"
       accessibilityRole="group"
       accessibilityLabel="Control Center as it is now"
-      style={{ width: MINIATURE.width, height: miniatureHeight(placed), padding: MINIATURE.padding, borderRadius: 24, backgroundColor: colors.surface }}
+      style={{
+        width: MINIATURE.width,
+        height: miniatureHeight(placed),
+        padding: MINIATURE.padding,
+        borderRadius: RADIUS.panelCard,
+        backgroundColor: colors.surface,
+      }}
     >
       <View style={{ flex: 1, position: "relative" }}>
         {placed.map((tile) => (
@@ -150,7 +160,7 @@ function EditorPane({ editor }: { editor: ControlCenterEditor }) {
   const hasSliders = shown(layout, here).some((item) => isSlider(item.id));
   return (
     <>
-      <Hero testID="cc-hero" padding={18}>
+      <Hero testID="cc-hero" padding={MINI_TILE.hero}>
         <View style={{ flex: 1, alignItems: "center" }}>
           {editing ? (
             <View testID="control-center-editor">
@@ -190,7 +200,9 @@ function EditorPane({ editor }: { editor: ControlCenterEditor }) {
                 detail={offer.titles.join(" · ")}
                 glyph={applets.find((tile) => tile.appletName === offer.applet)?.glyph ?? PUZZLE}
               >
-                <Text style={{ fontSize: 12.5, color: colors.muted }}>{offer.titles.length === 1 ? "1 control" : `${offer.titles.length} controls`}</Text>
+                <Text style={{ fontSize: TYPE.panel.body.size, color: colors.muted }}>
+                  {offer.titles.length === 1 ? "1 control" : `${offer.titles.length} controls`}
+                </Text>
               </Item>
             ))}
           </Group>

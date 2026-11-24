@@ -17,7 +17,7 @@ import { useSyncExternalStore } from "react";
 import type { Output, SoundBackend } from "./types.ts";
 
 /** How often the list is read while the page is open, where it can't be followed. */
-export const SOUND_POLL_MS = 3000;
+export const SOUND_POLL = { ms: 3000 } as const;
 
 export interface SoundState {
   /** Null until the first read; false when PipeWire cannot be asked. */
@@ -60,7 +60,10 @@ export class SoundStore {
   open(): void {
     const { follow } = this.backend;
     if (follow) this.stopFollow ??= follow((outputs) => this.followed(outputs));
-    else this.timer ??= setInterval(() => void this.refresh(), this.options.pollMs ?? SOUND_POLL_MS);
+    else {
+      const every = this.options.pollMs ?? SOUND_POLL.ms;
+      this.timer ??= setInterval(() => void this.refresh(), every);
+    }
     void this.refresh();
   }
 

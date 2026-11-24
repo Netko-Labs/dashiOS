@@ -102,6 +102,9 @@ export function pipewireMeter(spawn: Spawn = bunSpawn, target?: number): LevelMe
   };
 }
 
+/** The fake meter's step, in ms. */
+const FAKE_METER = { step: 100 } as const;
+
 /** A level that rises and falls like speech, for a run that must not listen to the machine; `offset` sets several apart. */
 export function fakeMeter(offset = 0): LevelMeter {
   return {
@@ -111,7 +114,7 @@ export function fakeMeter(offset = 0): LevelMeter {
         step++;
         const syllable = Math.max(0, Math.sin(step / 3)) * 0.6 + Math.max(0, Math.sin(step / 1.3)) * 0.25;
         onLevel(Math.min(1, syllable));
-      }, 100);
+      }, FAKE_METER.step);
       return () => clearInterval(timer);
     },
   };
