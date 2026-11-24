@@ -1,6 +1,20 @@
 /** The gallery's tinted looks (UI-8, UI-18, TK-2): the widget area's buttons in a card's colours, the capsule's in a persona's, and the menu bar's item. */
 
-import { BarItem, Button, type ButtonInks, CAPSULE, GlyphButton, inksButtonColors, SPACE, SQUARE, TYPE, useColors, useDark, WEIGHT } from "@dashi/ui";
+import {
+  BarItem,
+  Button,
+  type ButtonInks,
+  barItemColors,
+  CAPSULE,
+  GlyphButton,
+  inksButtonColors,
+  SPACE,
+  SQUARE,
+  TYPE,
+  useColors,
+  useDark,
+  WEIGHT,
+} from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { Exhibit, PageBody } from "../specimen.tsx";
 
@@ -33,11 +47,13 @@ function InksRow() {
 /** The menu bar's ground under two bar items, in the column's mode. */
 function BarRow() {
   const colors = useColors();
+  // The agents' tone, as the bar item gives it (its mark and words take its ink).
+  const agentTone = barItemColors("agent", colors);
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m, padding: SPACE.inset, backgroundColor: colors.menuBar }}>
       <BarItem testID="tinted:bar:alone" label="Agents work alone, 59:12 left. Stop" tone="agent" onPress={noop}>
-        <Svg markup={SQUARE} size={SPACE.m} color={colors.agent} />
-        <Text style={{ fontSize: TYPE.secondary.size, fontWeight: WEIGHT.semibold, color: colors.agentInk }}>59:12</Text>
+        <Svg markup={SQUARE} size={SPACE.m} color={agentTone.ink} />
+        <Text style={{ fontSize: TYPE.secondary.size, fontWeight: WEIGHT.semibold, color: agentTone.ink }}>59:12</Text>
       </BarItem>
       <BarItem testID="tinted:bar:recording" label="Recording, 0:42. Stop" tone="capture" onPress={noop}>
         <Svg markup={SQUARE} size={SPACE.m} color={colors.critical} />
