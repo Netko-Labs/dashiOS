@@ -7,7 +7,7 @@
 import { describe, expect, test } from "bun:test";
 import { type PlacingWorld, placement, remembers } from "../src/arrange/lib/placing.ts";
 import type { CompositorWindow, Placing } from "../src/compositor/index.ts";
-import type { Output } from "../src/layout.ts";
+import { type Output, screenFor } from "../src/layout.ts";
 import { PORTAL_APP_ID } from "../src/shared/portal-host/index.ts";
 import { CLIPBOARD_HELPER_APP_ID } from "../src/toplevels.ts";
 import { rect } from "./support/window-arrange.ts";
@@ -108,4 +108,11 @@ test("the portal's dialogs and wl-copy's window neither take nor leave a memory,
   expect(remembers(opening({ appId: PORTAL_APP_ID }))).toBe(false);
   expect(remembers(opening({ appId: CLIPBOARD_HELPER_APP_ID }))).toBe(false);
   expect(remembers(opening())).toBe(true);
+});
+
+test("a frame whose center is off every screen belongs to the nearest, not the first (the gap below a shorter screen)", () => {
+  // The laptop is 1029 tall and the Samsung 1080: below the laptop's bottom edge, beside the Samsung.
+  expect(screenFor(rect(1540, 1000, 200, 100), SCREENS)?.name).toBe("HDMI-A-1");
+  expect(screenFor(rect(1000, 1040, 200, 20), SCREENS)?.name).toBe("eDP-1");
+  expect(screenFor(rect(9000, 100, 200, 100), SCREENS)?.name).toBe("HDMI-A-1");
 });

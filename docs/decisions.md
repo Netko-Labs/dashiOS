@@ -6675,3 +6675,16 @@ short words, as the rulebook is written.
   tile; Back to Previous Size gives its own frame back on the new screen
   (`Arranger.toScreen`). None for a full-screen window.
 - **Undo:** drop `screenItems` from `menus/model.ts`.
+
+### D536. A window off every screen belongs to the nearest one, not the first
+
+- **Date:** 2026-11-23. `v10/screens-windows`.
+- **Found:** `screenFor` gave the first screen when no screen held a
+  window's center. With a laptop (1029 tall) beside a taller monitor, a
+  window whose center sat in the gap below the laptop, next to the monitor,
+  was tiled, filled, centered and fitted on the laptop.
+- **Decision:** the screen nearest the center (by the distance to its
+  nearest edge) when none holds it (`layout.ts`). Everything that asks which
+  screen a frame is on (tiles, Fill, Center, Back, fitting, placing, Move to)
+  follows.
+- **Undo:** `screens[0]` back as `screenFor`'s fallback.

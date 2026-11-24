@@ -203,15 +203,22 @@ export function keepLeast(frame: Rect, least: { width: number; height: number } 
   return fitFrame(grown, usable);
 }
 
-/** The screen holding `frame`'s center (else the first). */
+/**
+ * The screen holding `frame`'s center; when none does (the center is in the
+ * gap beside a shorter screen, or past every edge), the screen nearest it.
+ */
 export function screenFor<S extends { frame: Rect }>(frame: Rect, screens: readonly S[]): S | null {
   const cx = frame.x + frame.width / 2;
   const cy = frame.y + frame.height / 2;
   const holding = screens.find(({ frame: screen }) => cx >= screen.x && cx < screen.x + screen.width && cy >= screen.y && cy < screen.y + screen.height);
-  return holding ?? screens[0] ?? null;
+  if (holding) return holding;
+  // How far the center is from each screen's nearest edge.
+  const away = ({ frame: screen }: S): number =>
+    Math.hypot(Math.max(screen.x - cx, 0, cx - (screen.x + screen.width)), Math.max(screen.y - cy, 0, cy - (screen.y + screen.height)));
+  return screens.reduce<S | null>((nearest, screen) => (nearest === null || away(screen) < away(nearest) ? screen : nearest), null);
 }
 
-/** The usable area of the screen holding `frame`'s center (else the first screen's). */
+/** The usable area of the screen holding `frame`'s center (else the nearest screen's). */
 export function usableFor(frame: Rect, screens: readonly { frame: Rect; usable: Rect }[]): Rect | null {
   return screenFor(frame, screens)?.usable ?? null;
 }
