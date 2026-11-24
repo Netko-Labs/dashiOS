@@ -3,6 +3,7 @@ import { expect, test } from "bun:test";
 import { View } from "@mirinjs/metal";
 import { EDITABLE_TEXT, EditableText } from "../src/editable-text.tsx";
 import { KEYPAD_KEY, KeypadKey } from "../src/keypad-key.tsx";
+import { SHEET_MARGIN, Sheet } from "../src/sheet.tsx";
 import { CLEAR, RADIUS } from "../src/theme/index.ts";
 import { lightColors } from "../src/theme/palette.ts";
 import { TitleTab, TitleTabMore } from "../src/title-tab.tsx";
@@ -60,5 +61,18 @@ test("KeypadKey: = in the primary's ink, a digit edged on the card, every label 
   expect(JSON.stringify(node("seven"))).toContain(`"cornerRadius":${KEYPAD_KEY.radius}`);
   expect(JSON.stringify(node("plus"))).toContain(`"background":"${lightColors.pressed}"`);
   for (const id of ["equals", "seven", "plus"]) expect(JSON.stringify(node(id))).not.toContain('"medium"');
+  root.unmount();
+});
+
+test("Sheet, tall and bare: the window's ground, no padding, its height giving way to a short window", async () => {
+  const { node, root } = await sent(
+    <Sheet testID="chooser" width={760} height={470} bare>
+      <View />
+    </Sheet>,
+  );
+  const card = node("chooser")?.props ?? {};
+  expect(card).toMatchObject({ height: 470, minHeight: 0 });
+  expect(card.padding).toBeUndefined();
+  expect(node("chooser:scrim")?.props).toMatchObject({ paddingBottom: SHEET_MARGIN });
   root.unmount();
 });

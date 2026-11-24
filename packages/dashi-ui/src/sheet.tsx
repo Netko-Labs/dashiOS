@@ -19,6 +19,10 @@ export interface SheetProps {
   onCancel?: () => void;
   /** Enter, when the sheet has no field of its own to type into. */
   onConfirm?: () => void;
+  /** A tall sheet's height (the file chooser's): shorter when the window is, SHEET_MARGIN from its foot. */
+  height?: number;
+  /** The card as the window's ground with no padding: a sheet laid out like a window inside (the file chooser). */
+  bare?: boolean;
 }
 
 /** The least room a sheet keeps from the window's sides and foot. */
@@ -40,9 +44,24 @@ export function sheetBodyRoom(windowHeight: number, top: number, rest: number): 
  * shadow): `Sheet` hangs one from a window; a surface of its own (the
  * shell's applet consent) shows one with no window to hang from.
  */
-export function SheetCard({ children, testID, width = 380, marginTop = 0 }: { children: ReactNode; testID: string; width?: number; marginTop?: number }) {
+export function SheetCard({
+  children,
+  testID,
+  width = 380,
+  marginTop = 0,
+  height,
+  bare = false,
+}: {
+  children: ReactNode;
+  testID: string;
+  width?: number;
+  marginTop?: number;
+  height?: number;
+  bare?: boolean;
+}) {
   const colors = useColors();
   const surface = useSurface();
+  const tall = height !== undefined ? { height, flexShrink: 1 as const, minHeight: 0 } : {};
   return (
     <View
       testID={testID}
@@ -53,11 +72,11 @@ export function SheetCard({ children, testID, width = 380, marginTop = 0 }: { ch
       style={{
         width,
         marginTop,
+        ...tall,
         flexDirection: "column",
-        gap: 10,
-        padding: 20,
+        ...(bare ? { overflow: "hidden" as const } : { gap: 10, padding: 20 }),
         borderRadius: 12,
-        backgroundColor: surface.card,
+        backgroundColor: bare ? surface.window : surface.card,
         borderWidth: 1,
         borderColor: colors.separator,
         shadow: "xl",
@@ -73,7 +92,7 @@ export function sheetWidth(width: number, room: number): number {
   return room > 0 ? Math.max(0, Math.min(width, room - 2 * SHEET_MARGIN)) : width;
 }
 
-export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: SheetProps) {
+export function Sheet({ children, testID, width = 380, onCancel, onConfirm, height, bare }: SheetProps) {
   const colors = useColors();
   const dark = useDark();
   const inset = useTitleBarInset();
@@ -96,6 +115,7 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: Sh
         bottom: 0,
         flexDirection: "column",
         alignItems: "center",
+        ...(height !== undefined ? { paddingBottom: SHEET_MARGIN } : {}),
         backgroundColor: dark ? SCRIM.dark : SCRIM.light,
         focusRingColor: colors.focusRing,
       }}
@@ -109,7 +129,13 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm }: Sh
           }}
         />
       )}
-      <SheetCard testID={testID} width={sheetWidth(width, room)} marginTop={Math.max(inset.top, 0) + 8}>
+      <SheetCard
+        testID={testID}
+        width={sheetWidth(width, room)}
+        marginTop={Math.max(inset.top, 0) + 8}
+        {...(height !== undefined ? { height } : {})}
+        bare={bare === true}
+      >
         {children}
       </SheetCard>
     </View>
