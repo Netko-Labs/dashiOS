@@ -7,7 +7,7 @@
  */
 
 import type { ViewNode } from "@dashi/applet";
-import { useColors } from "@dashi/ui";
+import { RADIUS, SPACE, useColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { leastWidth, TASK_BOX, type Table, TableView } from "../../shared/markdown/index.ts";
@@ -42,8 +42,8 @@ function Quote({ block, m }: { block: Extract<MarkdownBlock, { kind: "quote" }>;
   const alert = block.alert ? ALERT[block.alert] : null;
   const ink = alert ? toneInk(colors, alert.tone) : colors.separator;
   return (
-    <View testID="launcher:detail:quote" style={{ flexDirection: "column", gap: 2, borderLeftWidth: 3, borderColor: ink, paddingLeft: 10 }}>
-      {alert && <Text style={{ fontSize: m.title, fontWeight: "semibold", color: ink }}>{alert.word}</Text>}
+    <View testID="launcher:detail:quote" style={{ flexDirection: "column", gap: SPACE.xxs, borderLeftWidth: 3, borderColor: ink, paddingLeft: SPACE.gap }}>
+      {alert && <Text style={{ fontSize: m.title, fontWeight: WEIGHT.semibold, color: ink }}>{alert.word}</Text>}
       {block.text !== "" && <Text style={{ fontSize: m.title, color: alert ? colors.text : colors.textMuted }}>{block.text}</Text>}
     </View>
   );
@@ -69,8 +69,8 @@ function DetailTable({ table, m }: { table: Table; m: Measures }) {
 function Task({ block, m }: { block: Extract<MarkdownBlock, { kind: "task" }>; m: Measures }) {
   const colors = useColors();
   return (
-    <View testID={`launcher:detail:task:${block.done ? "done" : "open"}`} style={{ flexDirection: "row", gap: 6, alignItems: "flex-start" }}>
-      <Text style={{ fontSize: m.title, fontWeight: "bold", color: block.done ? colors.moss : colors.textMuted }}>
+    <View testID={`launcher:detail:task:${block.done ? "done" : "open"}`} style={{ flexDirection: "row", gap: SPACE.s, alignItems: "flex-start" }}>
+      <Text style={{ fontSize: m.title, fontWeight: WEIGHT.bold, color: block.done ? colors.moss : colors.textMuted }}>
         {block.done ? TASK_BOX.done : TASK_BOX.open}
       </Text>
       <View style={{ flexShrink: 1 }}>
@@ -86,16 +86,21 @@ function Task({ block, m }: { block: Extract<MarkdownBlock, { kind: "task" }>; m
 function Block({ block, m }: { block: MarkdownBlock; m: Measures }) {
   const colors = useColors();
   if (block.kind === "rule")
-    return <View testID="launcher:detail:rule" style={{ flexShrink: 0, height: 1, backgroundColor: colors.separator, marginTop: 4, marginBottom: 4 }} />;
+    return (
+      <View
+        testID="launcher:detail:rule"
+        style={{ flexShrink: 0, height: 1, backgroundColor: colors.separator, marginTop: SPACE.xs, marginBottom: SPACE.xs }}
+      />
+    );
   if (block.kind === "quote") return <Quote block={block} m={m} />;
   if (block.kind === "table") return <DetailTable table={block.table} m={m} />;
   if (block.kind === "task") return <Task block={block} m={m} />;
   return (
     <Text
       style={{
-        fontSize: block.kind === "h1" ? m.title + 4 : block.kind === "h2" ? m.title + 1 : block.kind === "code" ? m.detail : m.title,
+        fontSize: block.kind === "h1" ? m.h1 : block.kind === "h2" ? m.h2 : block.kind === "code" ? m.detail : m.title,
         color: colors.text,
-        ...(block.kind === "h1" || block.kind === "h2" ? { fontWeight: "semibold" } : {}),
+        ...(block.kind === "h1" || block.kind === "h2" ? { fontWeight: WEIGHT.semibold } : {}),
         ...(block.kind === "code" ? { fontFamily: "monospace", backgroundColor: colors.button } : {}),
       }}
     >
@@ -106,18 +111,18 @@ function Block({ block, m }: { block: MarkdownBlock; m: Measures }) {
 
 function Fact({ node, m }: { node: ViewNode; m: Measures }) {
   const colors = useColors();
-  if (node.t === "Separator") return <View style={{ height: 1, backgroundColor: colors.separator, marginTop: 4, marginBottom: 4 }} />;
+  if (node.t === "Separator") return <View style={{ height: 1, backgroundColor: colors.separator, marginTop: SPACE.xs, marginBottom: SPACE.xs }} />;
   const value =
     node.t === "TagList" ? (
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: SPACE.xs }}>
         {node.c.map((tag) => (
           <View
             key={tag.i}
             style={{
-              paddingLeft: 6,
-              paddingRight: 6,
+              paddingLeft: SPACE.s,
+              paddingRight: SPACE.s,
               height: Math.round(m.small * 1.6),
-              borderRadius: 5,
+              borderRadius: RADIUS.row,
               justifyContent: "center",
               backgroundColor: colors.button,
             }}
@@ -132,8 +137,8 @@ function Fact({ node, m }: { node: ViewNode; m: Measures }) {
       </Text>
     );
   return (
-    <View style={{ flexDirection: "column", gap: 2, marginBottom: 6 }}>
-      <Text style={{ fontSize: m.small, fontWeight: "semibold", color: colors.textMuted }}>{prop(node, "title")}</Text>
+    <View style={{ flexDirection: "column", gap: SPACE.xxs, marginBottom: SPACE.s }}>
+      <Text style={{ fontSize: m.small, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>{prop(node, "title")}</Text>
       {value}
     </View>
   );
@@ -143,7 +148,10 @@ export function DetailBody({ detail, height, m }: { detail: DetailPart; height: 
   const colors = useColors();
   const blocks = markdownBlocks(detail.markdown);
   return (
-    <View testID="launcher:detail" style={{ flexDirection: "row", height, gap: 12, paddingLeft: 12, paddingRight: 8, paddingTop: 6 }}>
+    <View
+      testID="launcher:detail"
+      style={{ flexDirection: "row", height, gap: SPACE.inset, paddingLeft: SPACE.inset, paddingRight: SPACE.m, paddingTop: SPACE.s }}
+    >
       <View
         testID="launcher:detail:scroll"
         ref={detailScroll.attach}
@@ -151,7 +159,7 @@ export function DetailBody({ detail, height, m }: { detail: DetailPart; height: 
         scrollEventThrottle={50}
         style={{ flex: 1, minWidth: 0, overflow: "scroll" }}
       >
-        <View style={{ flexDirection: "column", gap: 6, paddingBottom: 8 }}>
+        <View style={{ flexDirection: "column", gap: SPACE.s, paddingBottom: SPACE.m }}>
           {blocks.map((block, at) => (
             // Blocks have no ids of their own, and the order is the document's.
             <Block key={at} block={block} m={m} />
@@ -159,7 +167,7 @@ export function DetailBody({ detail, height, m }: { detail: DetailPart; height: 
         </View>
       </View>
       {detail.facts.length > 0 && (
-        <View style={{ width: FACTS, flexDirection: "column", borderLeftWidth: 1, borderColor: colors.separator, paddingLeft: 12 }}>
+        <View style={{ width: FACTS, flexDirection: "column", borderLeftWidth: 1, borderColor: colors.separator, paddingLeft: SPACE.inset }}>
           {detail.facts.map((node) => (
             <Fact key={node.i} node={node} m={m} />
           ))}

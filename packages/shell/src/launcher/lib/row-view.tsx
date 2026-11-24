@@ -13,7 +13,7 @@
  * else its kind. Keys are drawn as glyphs (@dashi/ui Shortcut).
  */
 
-import { KEY_GLYPHS, type Palette, Shortcut, Switch, useColors } from "@dashi/ui";
+import { KEY_GLYPHS, type Palette, RADIUS, Shortcut, SPACE, Switch, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { AppIcon } from "../../shared/apps/index.ts";
 import type { Row, RowIcon, Tone } from "../row-model.ts";
@@ -26,7 +26,7 @@ const BAR = { width: 3, height: 20 };
 export const nameIndent = (m: Measures): number => 10 + m.icon + 10;
 
 /** Above and below a wrapped question, so its lines sit in the row as one line sits in a 40 one. */
-const QUESTION_PAD = 9;
+const QUESTION_PAD = SPACE.m;
 
 /** Beside a long name (an extension's item), its words after it take at most this much, so the name is read first. */
 const DETAIL_BESIDE_LONG = 220;
@@ -57,7 +57,7 @@ function Icon({ icon, m, agent }: { icon: RowIcon; m: Measures; agent?: Row["age
   if ("text" in icon)
     return (
       <View style={{ width: m.icon, height: m.icon, alignItems: "center", justifyContent: "center" }}>
-        <Text style={{ fontSize: m.glyph + 2 }}>{icon.text}</Text>
+        <Text style={{ fontSize: m.emoji }}>{icon.text}</Text>
       </View>
     );
   // A pane's own glyph in ink on a neutral tile: never tinted (CO-2, CO-4). Only Ask's glyph is shiso (CO-3).
@@ -86,7 +86,7 @@ function StopSquare({ id, onStop }: { id: string; onStop: () => void }) {
       onPress={onStop}
       style={{ width: 20, height: 20, alignItems: "center", justifyContent: "center" }}
     >
-      <View style={{ width: STOP, height: STOP, borderRadius: 2, backgroundColor: colors.agentInk }} />
+      <View style={{ width: STOP, height: STOP, borderRadius: RADIUS.thumb, backgroundColor: colors.agentInk }} />
     </View>
   );
 }
@@ -101,10 +101,10 @@ function Tags({ tags, selected, m }: { tags: NonNullable<Row["tags"]>; selected:
           key={tag.text}
           style={{
             flexShrink: 0,
-            paddingLeft: 6,
-            paddingRight: 6,
+            paddingLeft: SPACE.s,
+            paddingRight: SPACE.s,
             height: Math.round(m.small * 1.6),
-            borderRadius: 5,
+            borderRadius: RADIUS.row,
             justifyContent: "center",
             backgroundColor: colors.button,
           }}
@@ -119,7 +119,7 @@ function Tags({ tags, selected, m }: { tags: NonNullable<Row["tags"]>; selected:
 /** The right end: an extension's tags, then the one thing a row shows there; it never gives way. */
 function RowEnd({ row, digit, quiet, selected, m }: { row: Row; digit: number | undefined; quiet: string; selected: boolean; m: Measures }) {
   return (
-    <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 10 }}>
+    <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: SPACE.gap }}>
       {row.tags && <Tags tags={row.tags} selected={selected} m={m} />}
       <RightEnd row={row} digit={digit} quiet={quiet} m={m} />
     </View>
@@ -162,7 +162,7 @@ function SelectionBar({ m }: { m: Measures }) {
         top: (m.row - BAR.height) / 2,
         width: BAR.width,
         height: BAR.height,
-        borderRadius: 1.5,
+        borderRadius: RADIUS.thumb,
         backgroundColor: colors.selectionBar,
       }}
     />
@@ -179,7 +179,7 @@ function Title({ row, ink, m }: { row: Row; ink: string; m: Measures }) {
           fontSize: m.title,
           color: ink,
           ...(row.question ? { lineHeight: Math.round(m.title * 1.38) } : {}),
-          ...(row.strong ? { fontWeight: "semibold" } : {}),
+          ...(row.strong ? { fontWeight: WEIGHT.semibold } : {}),
         }}
       >
         {row.title}
@@ -207,19 +207,19 @@ export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digi
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
+        gap: SPACE.gap,
         // A question wraps: the row grows with it (the list follows its rows' height), and its key stays at the right end.
         ...(row.question ? { minHeight: m.row, paddingTop: QUESTION_PAD, paddingBottom: QUESTION_PAD } : { height: m.row }),
-        paddingLeft: 10,
-        paddingRight: 12,
-        borderRadius: 7,
+        paddingLeft: SPACE.gap,
+        paddingRight: SPACE.inset,
+        borderRadius: RADIUS.control,
         // One mark only: the pointer moves the selection, so a row has no hover tint of its own.
         ...(selected ? { backgroundColor: colors.selectionWash } : {}),
       }}
     >
       {selected && <SelectionBar m={m} />}
       <Icon icon={row.icon} m={m} {...(row.agent ? { agent: row.agent } : {})} />
-      <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
         <Title row={row} ink={ink} m={m} />
         {row.chord !== undefined && <Shortcut keys={row.chord} color={ink} size={m.detail} />}
         {row.badge !== undefined && (
@@ -227,10 +227,10 @@ export function ResultRow({ row, selected, onPress, onHover, onContextMenu, digi
             testID={`launcher:badge:${row.id}`}
             style={{
               flexShrink: 0,
-              paddingLeft: 5,
-              paddingRight: 5,
+              paddingLeft: SPACE.xs,
+              paddingRight: SPACE.xs,
               height: Math.round(m.small * 1.45),
-              borderRadius: 4,
+              borderRadius: RADIUS.check,
               justifyContent: "center",
               backgroundColor: colors.button,
             }}
@@ -269,9 +269,9 @@ export function SectionHead({ title, aside }: { title: string; aside?: string })
   const colors = useColors();
   const m = useMeasures();
   return (
-    <View style={{ height: m.head, flexDirection: "row", alignItems: "center", paddingLeft: 12, paddingRight: 12, gap: 8 }}>
+    <View style={{ height: m.head, flexDirection: "row", alignItems: "center", paddingLeft: SPACE.inset, paddingRight: SPACE.inset, gap: SPACE.m }}>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: m.small, fontWeight: "semibold", color: colors.textMuted }}>
+        <Text numberOfLines={1} style={{ fontSize: m.small, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>
           {title}
         </Text>
       </View>

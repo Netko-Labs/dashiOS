@@ -5,7 +5,7 @@
  * facts, each a muted title over its value. In the launcher's own type.
  */
 
-import { useColors } from "@dashi/ui";
+import { RADIUS, SPACE, useColors, WEIGHT } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import type { RowPreview } from "../row-model.ts";
 import { markdownBlocks } from "./detail-markdown.ts";
@@ -19,19 +19,22 @@ const MOST_TEXT = 600;
 
 function Words({ preview, m }: { preview: RowPreview; m: Measures }) {
   const colors = useColors();
-  if (preview.image) return <Image source={preview.image} resizeMode="contain" style={{ width: PREVIEW_WIDTH - 28, height: 132, borderRadius: 6 }} />;
+  if (preview.image) return <Image source={preview.image} resizeMode="contain" style={{ width: PREVIEW_WIDTH - 28, height: 132, borderRadius: RADIUS.row }} />;
   if (preview.text !== undefined)
     return (
-      <View testID="launcher:preview:text" style={{ padding: 8, borderRadius: 6, backgroundColor: colors.button }}>
+      <View testID="launcher:preview:text" style={{ padding: SPACE.m, borderRadius: RADIUS.row, backgroundColor: colors.button }}>
         <Text style={{ fontSize: m.detail, fontFamily: "monospace", color: colors.text }}>{[...preview.text].slice(0, MOST_TEXT).join("")}</Text>
       </View>
     );
   if (preview.markdown)
     return (
-      <View style={{ flexDirection: "column", gap: 4 }}>
+      <View style={{ flexDirection: "column", gap: SPACE.xs }}>
         {markdownBlocks(preview.markdown).map((block, at) => (
           // Blocks have no ids of their own; the order is the document's.
-          <Text key={at} style={{ fontSize: m.detail, color: colors.text, ...(block.kind === "h1" || block.kind === "h2" ? { fontWeight: "semibold" } : {}) }}>
+          <Text
+            key={at}
+            style={{ fontSize: m.detail, color: colors.text, ...(block.kind === "h1" || block.kind === "h2" ? { fontWeight: WEIGHT.semibold } : {}) }}
+          >
             {"text" in block ? (block.kind === "li" ? `•  ${block.text}` : block.text) : ""}
           </Text>
         ))}
@@ -49,19 +52,19 @@ export function PreviewColumn({ preview, m }: { preview: RowPreview | undefined;
         width: PREVIEW_WIDTH,
         flexShrink: 0,
         flexDirection: "column",
-        gap: 10,
+        gap: SPACE.gap,
         borderLeftWidth: 1,
         borderColor: colors.separator,
-        paddingTop: 8,
-        paddingBottom: 8,
-        paddingLeft: 14,
-        paddingRight: 12,
+        paddingTop: SPACE.m,
+        paddingBottom: SPACE.m,
+        paddingLeft: SPACE.button,
+        paddingRight: SPACE.inset,
         overflow: "hidden",
       }}
     >
       {preview && <Words preview={preview} m={m} />}
       {preview?.facts.map((fact) => (
-        <View key={fact.title} style={{ flexDirection: "column", gap: 1 }}>
+        <View key={fact.title} style={{ flexDirection: "column", gap: SPACE.px }}>
           <Text style={{ fontSize: m.small, color: colors.textMuted }}>{fact.title}</Text>
           <Text numberOfLines={1} style={{ fontSize: m.detail, color: colors.text }}>
             {fact.text}

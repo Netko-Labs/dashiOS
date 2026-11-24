@@ -8,7 +8,7 @@
  */
 
 import type { ViewNode } from "@dashi/applet";
-import { CHECK, CHEVRON_DOWN, useColors, useSurface } from "@dashi/ui";
+import { CHECK, CHEVRON_DOWN, pill, RADIUS, SPACE, useColors, useSurface, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { nameOf, optionsOf } from "./form-fields.ts";
@@ -24,7 +24,7 @@ function Choice({ title, chosen, onPress, testID, m }: { title: string; chosen: 
       accessibilityRole="button"
       accessibilityLabel={title}
       onPress={onPress}
-      style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 24, paddingLeft: 8, paddingRight: 8, borderRadius: 5 }}
+      style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s, height: 24, paddingLeft: SPACE.m, paddingRight: SPACE.m, borderRadius: RADIUS.row }}
     >
       <View style={{ width: 12 }}>{chosen && <Svg markup={CHECK} size={12} color={colors.text} />}</View>
       <Text numberOfLines={1} style={{ fontSize: m.title, color: colors.text }}>
@@ -46,8 +46,8 @@ function Options({ count, children }: { count: number; children: React.ReactNode
       testID="launcher:form:options"
       style={{
         flexDirection: "column",
-        padding: 3,
-        borderRadius: 7,
+        padding: SPACE.xxs,
+        borderRadius: RADIUS.control,
         borderWidth: 1,
         borderColor: colors.separator,
         backgroundColor: surface.card,
@@ -67,7 +67,7 @@ export function DropdownField({ field, value, change, m }: { field: ViewNode; va
   const name = nameOf(field);
   const shown = options.find((option) => option.value === value)?.title ?? value;
   return (
-    <View style={{ flexDirection: "column", gap: 4 }}>
+    <View style={{ flexDirection: "column", gap: SPACE.xs }}>
       <View
         testID={`launcher:form:${name}:button`}
         focusable
@@ -78,9 +78,9 @@ export function DropdownField({ field, value, change, m }: { field: ViewNode; va
           flexDirection: "row",
           alignItems: "center",
           height: 28,
-          paddingLeft: 8,
-          paddingRight: 8,
-          borderRadius: 7,
+          paddingLeft: SPACE.m,
+          paddingRight: SPACE.m,
+          borderRadius: RADIUS.control,
           borderWidth: 1,
           borderColor: colors.separator,
           backgroundColor: surface.card,
@@ -115,6 +115,9 @@ export function DropdownField({ field, value, change, m }: { field: ViewNode; va
 }
 
 /** A chosen tag: pressed, it goes. */
+/** A chosen tag: a 20 pill. */
+const CHOSEN = { height: 20 } as const;
+
 function Chosen({ title, onPress, testID, m }: { title: string; onPress(): void; testID: string; m: Measures }) {
   const colors = useColors();
   return (
@@ -124,9 +127,16 @@ function Chosen({ title, onPress, testID, m }: { title: string; onPress(): void;
       accessibilityRole="button"
       accessibilityLabel={`Remove ${title}`}
       onPress={onPress}
-      style={{ height: 20, paddingLeft: 8, paddingRight: 8, borderRadius: 10, justifyContent: "center", backgroundColor: colors.button }}
+      style={{
+        height: CHOSEN.height,
+        paddingLeft: SPACE.m,
+        paddingRight: SPACE.m,
+        borderRadius: pill(CHOSEN.height),
+        justifyContent: "center",
+        backgroundColor: colors.button,
+      }}
     >
-      <Text style={{ fontSize: m.small, fontWeight: "semibold", color: colors.text }}>{title}</Text>
+      <Text style={{ fontSize: m.small, fontWeight: WEIGHT.semibold, color: colors.text }}>{title}</Text>
     </View>
   );
 }
@@ -139,8 +149,8 @@ export function TagPickerField({ field, value, change, m }: { field: ViewNode; v
   const titleOf = (each: string): string => options.find((option) => option.value === each)?.title ?? each;
   const toggle = (each: string): void => change(value.includes(each) ? value.filter((one) => one !== each) : [...value, each]);
   return (
-    <View style={{ flexDirection: "column", gap: 4 }}>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, minHeight: 28 }}>
+    <View style={{ flexDirection: "column", gap: SPACE.xs }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: SPACE.s, minHeight: 28 }}>
         {value.map((each) => (
           <Chosen key={each} title={titleOf(each)} onPress={() => toggle(each)} testID={`launcher:form:${name}:tag:${each}`} m={m} />
         ))}
@@ -175,13 +185,13 @@ export function CheckboxField({ label, on, change, testID, m }: { label: string;
       accessibilityRole="checkbox"
       accessibilityLabel={label}
       onPress={() => change(!on)}
-      style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 28 }}
+      style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m, height: 28 }}
     >
       <View
         style={{
           width: 16,
           height: 16,
-          borderRadius: 4,
+          borderRadius: RADIUS.check,
           borderWidth: 1,
           borderColor: on ? colors.primary : colors.controlEdge,
           backgroundColor: on ? colors.primary : colors.checkbox,

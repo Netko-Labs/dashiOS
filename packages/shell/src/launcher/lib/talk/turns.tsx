@@ -9,7 +9,7 @@
  * waits is one line with its buttons; a failure says why with its one way on.
  */
 
-import { useColors } from "@dashi/ui";
+import { ON_AGENT, OPACITY, pill, RADIUS, SPACE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { DashiTurn, PersonTurn, TurnStep, Waiting } from "../../../agents/index.ts";
@@ -22,8 +22,11 @@ const CROSS = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 const CHEVRON_RIGHT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>`;
 const CHEVRON_DOWN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`;
 const MIC = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg>`;
-/** The indent of Dashi's lines under its name: the mark's disc and its gap. */
-export const TURN_INDENT = 27;
+/** The mark over Dashi's turn: a 20 disc in the persona's colour, its spark 12; a step's running ring 12. */
+const WHO = { disc: 20, glyph: 12, ring: 12 } as const;
+
+/** The indent of Dashi's lines under its name: the mark's disc and its gap (27). */
+export const TURN_INDENT = WHO.disc + SPACE.s + SPACE.px;
 
 export function PersonBubble({ turn }: { turn: PersonTurn }) {
   const colors = useColors();
@@ -35,20 +38,20 @@ export function PersonBubble({ turn }: { turn: PersonTurn }) {
         alignSelf: "flex-end",
         maxWidth: 460,
         backgroundColor: colors.button,
-        borderRadius: 13,
-        paddingLeft: 12,
-        paddingRight: 12,
-        paddingTop: 7,
-        paddingBottom: 8,
+        borderRadius: RADIUS.sheet,
+        paddingLeft: SPACE.inset,
+        paddingRight: SPACE.inset,
+        paddingTop: SPACE.s,
+        paddingBottom: SPACE.m,
       }}
     >
       {turn.by === "voice" && (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 2 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs, marginBottom: SPACE.xxs }}>
           <Svg markup={MIC} size={11} color={colors.textMuted} />
-          <Text style={{ fontSize: m.small - 0.5, color: colors.textMuted }}>Said</Text>
+          <Text style={{ fontSize: m.micro, color: colors.textMuted }}>Said</Text>
         </View>
       )}
-      <Text style={{ fontSize: m.title + 0.5, color: colors.text }}>{turn.text}</Text>
+      <Text style={{ fontSize: m.talk, color: colors.text }}>{turn.text}</Text>
     </View>
   );
 }
@@ -58,11 +61,13 @@ export function Who({ name, colour, spoken }: { name: string; colour: string; sp
   const colors = useColors();
   const m = useMeasures();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
-      <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: colour, alignItems: "center", justifyContent: "center" }}>
-        <Svg markup={SPARKLE} size={12} color="#ffffff" />
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
+      <View
+        style={{ width: WHO.disc, height: WHO.disc, borderRadius: pill(WHO.disc), backgroundColor: colour, alignItems: "center", justifyContent: "center" }}
+      >
+        <Svg markup={SPARKLE} size={WHO.glyph} color={ON_AGENT} />
       </View>
-      <Text style={{ fontSize: m.title - 1, fontWeight: "bold", color: colors.agentInk }}>{name}</Text>
+      <Text style={{ fontSize: m.line, fontWeight: WEIGHT.bold, color: colors.agentInk }}>{name}</Text>
       {spoken && <Text style={{ fontSize: m.small, color: colors.textMuted }}>spoken</Text>}
     </View>
   );
@@ -73,16 +78,18 @@ function StepLine({ step, open, onPress }: { step: TurnStep; open: boolean; onPr
   const m = useMeasures();
   const running = step.ok === null;
   return (
-    <View testID="talk:step" onPress={onPress} style={{ flexDirection: "row", alignItems: "center", gap: 8, height: 24 }}>
+    <View testID="talk:step" onPress={onPress} style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m, height: 24 }}>
       <View style={{ width: 14, height: 14, alignItems: "center", justifyContent: "center" }}>
         {running ? (
-          <View style={{ width: 12, height: 12, borderRadius: 6, borderWidth: 2, borderColor: colors.agent, opacity: 0.55 }} />
+          <View
+            style={{ width: WHO.ring, height: WHO.ring, borderRadius: pill(WHO.ring), borderWidth: 2, borderColor: colors.agent, opacity: OPACITY.half }}
+          />
         ) : (
           <Svg markup={step.ok ? CHECK : CROSS} size={13} color={step.ok ? colors.moss : colors.ume} />
         )}
       </View>
       <View style={{ flexShrink: 1 }}>
-        <Text numberOfLines={1} style={{ fontSize: m.title - 0.5, color: running ? colors.text : colors.textMuted }}>
+        <Text numberOfLines={1} style={{ fontSize: m.talkDetail, color: running ? colors.text : colors.textMuted }}>
           {step.title}
         </Text>
       </View>
@@ -104,10 +111,10 @@ export function Steps({ turn }: { turn: DashiTurn }) {
       <View
         testID="talk:steps-folded"
         onPress={() => setShown(true)}
-        style={{ flexDirection: "row", alignItems: "center", gap: 7, height: 22, paddingLeft: TURN_INDENT }}
+        style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s, height: 22, paddingLeft: TURN_INDENT }}
       >
         <Svg markup={CHEVRON_RIGHT} size={10} color={colors.textMuted} />
-        <Text style={{ fontSize: m.title - 1, color: colors.textMuted }}>{turn.steps.length === 1 ? "1 step" : `${turn.steps.length} steps`}</Text>
+        <Text style={{ fontSize: m.line, color: colors.textMuted }}>{turn.steps.length === 1 ? "1 step" : `${turn.steps.length} steps`}</Text>
       </View>
     );
   return (
@@ -116,7 +123,7 @@ export function Steps({ turn }: { turn: DashiTurn }) {
         <View key={`${index}:${step.title}`} style={{ flexDirection: "column" }}>
           <StepLine step={step} open={opened === index} onPress={() => setOpened(opened === index ? null : index)} />
           {opened === index && (
-            <View style={{ marginLeft: 22, marginBottom: 4, paddingLeft: 10, borderLeftWidth: 2, borderColor: colors.separator }}>
+            <View style={{ marginLeft: SPACE.sheet, marginBottom: SPACE.xs, paddingLeft: SPACE.gap, borderLeftWidth: 2, borderColor: colors.separator }}>
               <Text style={{ fontSize: m.small, color: colors.textMuted }}>{step.ok === false ? "It didn't work." : "Done."}</Text>
             </View>
           )}
@@ -134,7 +141,7 @@ function Line({ text, onLink }: { text: string; onLink: (url: string) => void })
   if (spans.every((span) => !span.url && !span.code))
     return (
       <View style={{ flexShrink: 1 }}>
-        <Text style={{ fontSize: m.title + 0.5, color: colors.text }}>{text}</Text>
+        <Text style={{ fontSize: m.talk, color: colors.text }}>{text}</Text>
       </View>
     );
   return (
@@ -142,14 +149,14 @@ function Line({ text, onLink }: { text: string; onLink: (url: string) => void })
       {spans.map((span, index) =>
         span.url ? (
           <View key={index} testID="talk:link" onPress={() => onLink(span.url ?? "")}>
-            <Text style={{ fontSize: m.title + 0.5, color: colors.accentInk, textDecorationLine: "underline" }}>{span.text}</Text>
+            <Text style={{ fontSize: m.talk, color: colors.accentInk, textDecorationLine: "underline" }}>{span.text}</Text>
           </View>
         ) : span.code ? (
-          <View key={index} style={{ backgroundColor: colors.button, borderRadius: 4, paddingLeft: 3, paddingRight: 3 }}>
-            <Text style={{ fontSize: m.title - 1, color: colors.text, fontFamily: "monospace" }}>{span.text}</Text>
+          <View key={index} style={{ backgroundColor: colors.button, borderRadius: RADIUS.check, paddingLeft: SPACE.xxs, paddingRight: SPACE.xxs }}>
+            <Text style={{ fontSize: m.line, color: colors.text, fontFamily: "monospace" }}>{span.text}</Text>
           </View>
         ) : (
-          <Text key={index} style={{ fontSize: m.title + 0.5, color: colors.text }}>
+          <Text key={index} style={{ fontSize: m.talk, color: colors.text }}>
             {span.text}
           </Text>
         ),
@@ -164,19 +171,24 @@ export function Answer({ text, working, onLink }: { text: string; working: boole
   const m = useMeasures();
   const blocks = blocksOf(text);
   // The caret that shows the words are still coming sits at the end of the last line, not on a line of its own.
-  const caret = <View testID="talk:caret" style={{ width: 7, height: 14, borderRadius: 2, backgroundColor: colors.agent, opacity: 0.8, marginLeft: 3 }} />;
+  const caret = (
+    <View
+      testID="talk:caret"
+      style={{ width: 7, height: 14, borderRadius: RADIUS.thumb, backgroundColor: colors.agent, opacity: OPACITY.soft, marginLeft: SPACE.xxs }}
+    />
+  );
   const lastText = blocks.findLastIndex((block) => block.kind !== "code");
   return (
-    <View testID="talk:answer" style={{ flexDirection: "column", gap: 6, paddingLeft: TURN_INDENT }}>
+    <View testID="talk:answer" style={{ flexDirection: "column", gap: SPACE.s, paddingLeft: TURN_INDENT }}>
       {working && blocks.length === 0 && caret}
       {blocks.map((block, index) =>
         block.kind === "code" ? (
-          <View key={index} style={{ backgroundColor: colors.button, borderRadius: 6, padding: 8 }}>
+          <View key={index} style={{ backgroundColor: colors.button, borderRadius: RADIUS.row, padding: SPACE.m }}>
             <Text style={{ fontSize: m.small, fontFamily: "monospace", color: colors.text }}>{block.text}</Text>
           </View>
         ) : block.kind === "item" ? (
-          <View key={index} style={{ flexDirection: "row", gap: 6, paddingLeft: 4 }}>
-            <Text style={{ fontSize: m.title + 0.5, color: colors.textMuted }}>{block.mark}</Text>
+          <View key={index} style={{ flexDirection: "row", gap: SPACE.s, paddingLeft: SPACE.xs }}>
+            <Text style={{ fontSize: m.talk, color: colors.textMuted }}>{block.mark}</Text>
             <Line text={block.text} onLink={onLink} />
           </View>
         ) : working && index === lastText ? (
@@ -215,16 +227,16 @@ export function LineButton({
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 6,
+        gap: SPACE.s,
         height: 24,
-        paddingLeft: 11,
-        paddingRight: 11,
-        borderRadius: 7,
+        paddingLeft: SPACE.inset,
+        paddingRight: SPACE.inset,
+        borderRadius: RADIUS.control,
         backgroundColor: primary ? colors.primary : colors.button,
       }}
     >
-      <Text style={{ fontSize: m.small + 1, fontWeight: "semibold", color: primary ? colors.onPrimary : colors.text }}>{label}</Text>
-      {keys && <Text style={{ fontSize: m.small - 1, color: primary ? colors.onPrimary : colors.textMuted }}>{keys}</Text>}
+      <Text style={{ fontSize: m.line, fontWeight: WEIGHT.semibold, color: primary ? colors.onPrimary : colors.text }}>{label}</Text>
+      {keys && <Text style={{ fontSize: m.micro, color: primary ? colors.onPrimary : colors.textMuted }}>{keys}</Text>}
     </View>
   );
 }
@@ -240,10 +252,10 @@ export function WaitingLine({ waiting, onAnswer }: { waiting: Waiting; onAnswer:
         marginLeft: TURN_INDENT,
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
-        padding: 8,
-        paddingLeft: 12,
-        borderRadius: 10,
+        gap: SPACE.gap,
+        padding: SPACE.m,
+        paddingLeft: SPACE.inset,
+        borderRadius: RADIUS.card,
         backgroundColor: colors.brothWash,
       }}
     >
@@ -272,10 +284,10 @@ export function FailedLine({ turn, onGo }: { turn: DashiTurn; onGo: (go: "launch
         marginLeft: TURN_INDENT,
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
-        padding: 8,
-        paddingLeft: 12,
-        borderRadius: 10,
+        gap: SPACE.gap,
+        padding: SPACE.m,
+        paddingLeft: SPACE.inset,
+        borderRadius: RADIUS.card,
         backgroundColor: colors.umeWash,
       }}
     >

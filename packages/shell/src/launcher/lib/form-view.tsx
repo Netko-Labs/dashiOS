@@ -10,7 +10,7 @@
  */
 
 import type { FieldValue, ViewNode } from "@dashi/applet";
-import { useColors, useSurface } from "@dashi/ui";
+import { RADIUS, SPACE, useColors, useSurface } from "@dashi/ui";
 import { Text, TextInput, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { CheckboxField, DropdownField, TagPickerField } from "./form-choices.tsx";
@@ -19,7 +19,7 @@ import type { Measures } from "./measures.ts";
 import type { FormPart } from "./tree-rows.ts";
 
 /** The labels' column, and a long field's height (L8). */
-export const FORM = { label: 96, gap: 14, line: 28, area: 88, padX: 16, padY: 7 } as const;
+export const FORM = { label: 96, gap: SPACE.button, line: 28, area: 88, padX: 16, padY: 7 } as const;
 
 const words = (node: ViewNode, name: string): string | undefined => {
   const value = node.p[name];
@@ -56,12 +56,12 @@ function Line({
         paddingBottom: FORM.padY,
       }}
     >
-      <View style={{ width: FORM.label, paddingTop: 6, alignItems: "flex-end" }}>
+      <View style={{ width: FORM.label, paddingTop: SPACE.s, alignItems: "flex-end" }}>
         <Text numberOfLines={1} style={{ fontSize: m.detail, color: colors.textMuted }}>
           {label}
         </Text>
       </View>
-      <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 3 }}>
+      <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.xxs }}>
         {children}
         {under !== undefined && (
           <View testID={`${testID}:under`}>
@@ -102,9 +102,9 @@ function Words({ field, value, change, keys, m }: { field: ViewNode; value: stri
       }}
       style={{
         ...(long ? { height: FORM.area } : { height: FORM.line }),
-        padding: 6,
+        padding: SPACE.s,
         fontSize: m.title,
-        borderRadius: 7,
+        borderRadius: RADIUS.control,
         color: colors.text,
         placeholderColor: colors.textDisabled,
         backgroundColor: surface.card,
@@ -139,13 +139,14 @@ export function FormBody({ form, m, submit, escape }: { form: FormPart; m: Measu
   const colors = useColors();
   const firstWords = form.root.c.find((node) => node.t === "TextField" || node.t === "TextArea");
   return (
-    <View testID="launcher:form" style={{ flexDirection: "column", paddingTop: 4, paddingBottom: 6 }}>
+    <View testID="launcher:form" style={{ flexDirection: "column", paddingTop: SPACE.xs, paddingBottom: SPACE.s }}>
       {form.root.c.map((node) => {
-        if (node.t === "Separator") return <View key={node.i} style={{ height: 1, marginTop: 4, marginBottom: 4, backgroundColor: colors.separator }} />;
+        if (node.t === "Separator")
+          return <View key={node.i} style={{ height: 1, marginTop: SPACE.xs, marginBottom: SPACE.xs, backgroundColor: colors.separator }} />;
         if (node.t === "Description")
           return (
             <Line key={node.i} label={words(node, "title") ?? ""} m={m} testID={`launcher:form:${node.i}`}>
-              <View style={{ paddingTop: 5 }}>
+              <View style={{ paddingTop: SPACE.xs }}>
                 <Text style={{ fontSize: m.detail, color: colors.textMuted }}>{words(node, "text") ?? ""}</Text>
               </View>
             </Line>

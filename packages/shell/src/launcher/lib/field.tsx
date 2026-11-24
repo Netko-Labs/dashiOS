@@ -7,7 +7,7 @@
  * here.
  */
 
-import { SEARCH, Shortcut, useColors } from "@dashi/ui";
+import { RADIUS, SEARCH, Shortcut, SPACE, useColors } from "@dashi/ui";
 import { Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { AppIcon } from "../../shared/apps/index.ts";
@@ -79,11 +79,11 @@ function Chip({ chip }: { chip: NonNullable<FieldProps["chip"]> }) {
         minWidth: 0,
         flexDirection: "row",
         alignItems: "center",
-        gap: 6,
+        gap: SPACE.s,
         height: m.chip,
-        paddingLeft: 8,
-        paddingRight: 8,
-        borderRadius: 7,
+        paddingLeft: SPACE.m,
+        paddingRight: SPACE.m,
+        borderRadius: RADIUS.control,
         backgroundColor: colors.button,
       }}
     >
@@ -100,9 +100,9 @@ function Hints({ hints }: { hints: readonly Hint[] }) {
   const colors = useColors();
   const m = useMeasures();
   return (
-    <View testID="launcher:hints" style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 10 }}>
+    <View testID="launcher:hints" style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: SPACE.gap }}>
       {hints.map((hint) => (
-        <View key={hint.keys} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+        <View key={hint.keys} style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs }}>
           <Shortcut keys={hint.keys} color={colors.textMuted} size={m.small} />
           <Text style={{ fontSize: m.small, color: colors.textMuted }}>{hint.label}</Text>
         </View>
@@ -137,7 +137,7 @@ export function Field({
   const shown = choices.length > 1 ? fitWords(choices, room, widthOf) : (choices[0] ?? "");
   const toMeasure = choices.length > 1 ? unmeasured(choices, widthOf) : [];
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 16, paddingRight: 16, height: m.field }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.gap, paddingLeft: SPACE.page, paddingRight: SPACE.page, height: m.field }}>
       <Svg markup={glyph?.markup ?? SEARCH} size={m.searchGlyph} color={glyph?.color ?? colors.textMuted} />
       {chip && <Chip chip={chip} />}
       <View

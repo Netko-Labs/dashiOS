@@ -5,7 +5,7 @@
  * now, and a round button: Stop while a turn works, Send otherwise.
  */
 
-import { useColors } from "@dashi/ui";
+import { ON_AGENT, pill, RADIUS, SPACE, useColors } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import { SPARKLE } from "../../../settings-app/glyphs.ts";
 import type { LauncherProps } from "../../props.ts";
@@ -17,6 +17,9 @@ import { TalkView } from "./view.tsx";
 
 const UP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>`;
 
+/** The round button: 28 across, Stop's square 9. */
+const ROUND = { size: 28, stop: 9, glyph: 14 } as const;
+
 /** Stop while a turn works; Send when there are words; nothing else. */
 function RoundButton({ working, ready, onStop, onSend }: { working: boolean; ready: boolean; onStop: () => void; onSend: () => void }) {
   const colors = useColors();
@@ -27,9 +30,16 @@ function RoundButton({ working, ready, onStop, onSend }: { working: boolean; rea
         accessibilityRole="button"
         accessibilityLabel="Stop"
         onPress={onStop}
-        style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" }}
+        style={{
+          width: ROUND.size,
+          height: ROUND.size,
+          borderRadius: pill(ROUND.size),
+          backgroundColor: colors.primary,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
       >
-        <View style={{ width: 9, height: 9, borderRadius: 2, backgroundColor: colors.onPrimary }} />
+        <View style={{ width: ROUND.stop, height: ROUND.stop, borderRadius: RADIUS.thumb, backgroundColor: colors.onPrimary }} />
       </View>
     );
   return (
@@ -39,9 +49,16 @@ function RoundButton({ working, ready, onStop, onSend }: { working: boolean; rea
       accessibilityLabel="Send"
       accessibilityState={{ disabled: !ready }}
       {...(ready ? { onPress: onSend } : {})}
-      style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: ready ? colors.agent : colors.button, alignItems: "center", justifyContent: "center" }}
+      style={{
+        width: ROUND.size,
+        height: ROUND.size,
+        borderRadius: pill(ROUND.size),
+        backgroundColor: ready ? colors.agent : colors.button,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
     >
-      <Svg markup={UP} size={14} color={ready ? "#ffffff" : colors.textDisabled} />
+      <Svg markup={UP} size={ROUND.glyph} color={ready ? ON_AGENT : colors.textDisabled} />
     </View>
   );
 }
@@ -84,7 +101,7 @@ export function TalkPanel({
         }}
         onLink={(url) => dashi?.openLink(url)}
       />
-      <View style={{ borderTopWidth: view.turns.length > 0 || shown.length > 0 ? 1 : 0, borderColor: colors.separator, paddingRight: 8 }}>
+      <View style={{ borderTopWidth: view.turns.length > 0 || shown.length > 0 ? 1 : 0, borderColor: colors.separator, paddingRight: SPACE.m }}>
         <Field
           value={s.filter}
           revision={revision}
