@@ -1,6 +1,7 @@
 /** The gallery's 0.10 kit pages: checks and chips, the panel look, states, and picking (UI-8 to UI-15, TK-2). */
 
 import {
+  BatteryTile,
   Button,
   Checkbox,
   Chip,
@@ -20,11 +21,14 @@ import {
   PickRow,
   PictureChoice,
   RADIUS,
+  RoundTile,
   Segmented,
+  SliderTile,
   SPACE,
   Switch,
   TextLink,
   useColors,
+  WideTile,
 } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useState } from "react";
@@ -126,6 +130,26 @@ export function PanelPage() {
           </View>
         </View>
         <TextLink testID="link:panel" look="panel" label="Other…" onPress={noop} />
+      </Exhibit>
+      <Exhibit
+        title="Control Center's tiles"
+        note="A wide tile's knob toggles and its label opens; a round one toggles; on is the one on. The battery is a reading, its bar ink (CC-1)."
+      >
+        <View style={{ flexDirection: "row", gap: 8, height: 56, width: 344 }}>
+          <WideTile look={{ testID: "tile:wide", title: "Wi-Fi", detail: "Home", glyph: glyphs.SEARCH, on }} onToggle={() => setOn(!on)} onOpen={noop} />
+          <RoundTile look={{ testID: "tile:round", title: "Focus", detail: null, glyph: glyphs.LOCK, on: !on }} onToggle={() => setOn(!on)} />
+          <RoundTile look={{ testID: "tile:dim", title: "Applet", detail: null, glyph: glyphs.INFO, on: false, dim: true }} onToggle={noop} />
+        </View>
+        <View style={{ flexDirection: "row", gap: 8, height: 56, width: 344 }}>
+          <SliderTile
+            look={{ testID: "tile:slider", title: "Display", glyph: glyphs.SEARCH, level, value: `${Math.round(level * 100)}%`, width: 344, height: 56 }}
+            standing={false}
+            onLevel={setLevel}
+          />
+        </View>
+        <View style={{ flexDirection: "row", height: 56, width: 344 }}>
+          <BatteryTile look={{ percent: 64, charging: false, limit: 80, time: "5 h 10 min", glyph: glyphs.INFO }} onOpen={noop} />
+        </View>
       </Exhibit>
     </PageBody>
   );

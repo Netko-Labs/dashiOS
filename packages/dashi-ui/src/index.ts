@@ -60,6 +60,8 @@ export { addMonths, type Day, dayKey, type GridDay, monthWeeks, sameDay, weekday
 export { MORE_BUTTON, MoreButton } from "./more.tsx";
 export { Notice, type NoticeProps } from "./notice.tsx";
 export {
+  type BatteryLook,
+  BatteryTile,
   CONTROL_MOTION_MS,
   controlMenuHighlight,
   FOLD_PAST,
@@ -78,12 +80,19 @@ export {
   PANEL_EDGE_WIDTH,
   type PanelEdge,
   panelEdge,
+  RoundTile,
+  type SliderLook,
+  SliderTile,
   setControlMotion,
   springAt,
+  TILE,
+  type TileLook,
+  type TilePress,
   useControlColors,
   useGrow,
   usePanelEdge,
   useSpring,
+  WideTile,
 } from "./panel/index.ts";
 export { PICK_ROW, PickList, PickRow, type PickRowProps } from "./pick-row.tsx";
 export { Picture, type PictureProps } from "./picture.tsx";
