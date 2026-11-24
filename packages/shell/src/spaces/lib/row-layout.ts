@@ -3,6 +3,7 @@
  * tested without a compositor.
  */
 
+import { SPACE } from "@dashi/ui";
 import { MAX_SPACES } from "../model.ts";
 
 /** A rectangle in the row's own pixels, or the screen's. */
@@ -14,7 +15,7 @@ export interface Rect {
 }
 
 /** The Spaces row in the overview: its height, and the labels' size and spacing. */
-export const ROW = { height: 64, label: { width: 132, height: 34 }, gap: 14, add: 34, edge: 20 } as const;
+export const ROW = { height: 64, label: { width: 132, height: 34 }, gap: SPACE.button, add: 34, edge: 20 } as const;
 
 export interface RowLayout {
   /** One per Space, left to right. */

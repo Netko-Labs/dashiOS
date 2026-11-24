@@ -8,11 +8,13 @@
  * come from the same numbers.
  */
 
+import { SPACE } from "@dashi/ui";
 import type { Rect } from "../layout.ts";
 
 export const ICON = 64;
 export const CELL = ICON + 16;
-const GAP = 12;
+/** Between the apps' cells. */
+const GAP = SPACE.inset;
 const PAD = 14;
 /** The chosen app's name under the row. */
 const NAME = 26;

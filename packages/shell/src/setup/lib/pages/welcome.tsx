@@ -2,6 +2,7 @@ import { Button, KOMBU_SEED, LOGO, SPACE, TYPE, useColors, WEIGHT } from "@dashi
 import { Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
 import { useMemo } from "react";
 import { PAGE_INFO } from "../../flow.ts";
+import { SETUP_PAGE } from "../frame.tsx";
 import { startInstaller, systemLiveInstaller } from "../live.ts";
 
 /** The first page: Dashi's bowl, its name, and what is coming. Laid out by hand, so the frame draws no heading for it. */
@@ -12,7 +13,16 @@ export function WelcomePage() {
   // Booted from the live ISO: the installer is one click away.
   const installer = useMemo(systemLiveInstaller, []);
   return (
-    <View style={{ flex: 1, flexDirection: "column", alignItems: "center", justifyContent: "center", gap: SPACE.gap, paddingTop: controls ? 0 : 40 }}>
+    <View
+      style={{
+        flex: 1,
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: SPACE.gap,
+        paddingTop: controls ? 0 : SETUP_PAGE.welcomeTop,
+      }}
+    >
       {/* The mark is Kombu's own constant, never the person's accent (CO-2). */}
       <Svg markup={LOGO} size={96} color={KOMBU_SEED} />
       <View testID="setup-title">
