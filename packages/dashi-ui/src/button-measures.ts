@@ -47,7 +47,7 @@ export interface ButtonProps {
   inks?: ButtonInks;
   /** A glyph before the words (glyphs.ts), in the words' colour: a widget's ▶, the capsule's stop square. Tinted looks only. */
   glyph?: string;
-  /** Keys that do the same, after the words, soft (the capsule's "Done ⌃❖Space"). Tinted looks only. */
+  /** Keys that do the same, after the words (the capsule's "Done ⌃❖Space", a conversation's "Yes ↩"); the window and tinted looks. */
   keys?: string;
   /** Keyboard focus is on it (`data-focused`, the gallery's state rows); real keyboard focus is Metal's ring (KB-2). */
   focused?: boolean;

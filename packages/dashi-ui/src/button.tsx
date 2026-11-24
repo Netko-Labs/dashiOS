@@ -17,7 +17,8 @@ import { buttonLook } from "./button-look.ts";
 import { BUTTON, type ButtonProps } from "./button-measures.ts";
 import { useControlState } from "./control-state.tsx";
 import { useControlColors } from "./panel/index.ts";
-import { CLEAR, pill, RADIUS, TYPE, useColors, WEIGHT } from "./theme/index.ts";
+import { Shortcut } from "./shortcut.tsx";
+import { CLEAR, pill, RADIUS, SPACE, TYPE, useColors, WEIGHT } from "./theme/index.ts";
 import { CapsuleButton, InksButton } from "./tinted-button.tsx";
 
 export function Button(props: ButtonProps) {
@@ -39,6 +40,7 @@ function WindowButton({
   focused,
   focusable = true,
   accessibilityLabel,
+  keys,
 }: ButtonProps) {
   const colors = useColors();
   const state = useControlState({ disabled, focused });
@@ -60,6 +62,8 @@ function WindowButton({
         height: small ? m.smallHeight : m.height,
         paddingHorizontal: small ? m.smallInset : m.inset,
         borderRadius: RADIUS.control,
+        flexDirection: "row",
+        gap: SPACE.s,
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: look.fill,
@@ -81,6 +85,7 @@ function WindowButton({
       >
         {label}
       </Text>
+      {keys && <Shortcut keys={keys} color={look.ink} size={TYPE.caption.size} />}
     </View>
   );
 }

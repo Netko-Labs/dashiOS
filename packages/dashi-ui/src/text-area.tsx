@@ -26,12 +26,14 @@ export interface TextAreaProps {
   height?: number;
   autoFocus?: boolean;
   onKeyPress?: (key: "Escape" | "ArrowUp" | "ArrowDown") => void;
+  /** ⌃↩ (and ❖↩) sends; Return stays a new line. */
+  onSubmit?: () => void;
   /** Secondary words (12): a file's text in a dialog. */
   small?: boolean;
   look?: Look;
 }
 
-export function TextArea({ value, onChangeText, testID, placeholder, label, height, autoFocus, onKeyPress, small, look = "window" }: TextAreaProps) {
+export function TextArea({ value, onChangeText, testID, placeholder, label, height, autoFocus, onKeyPress, onSubmit, small, look = "window" }: TextAreaProps) {
   const colors = useColors();
   const surface = useSurface();
   const role = look === "panel" ? TYPE.panel.body : small ? TYPE.secondary : TYPE.body;
@@ -45,6 +47,7 @@ export function TextArea({ value, onChangeText, testID, placeholder, label, heig
       autoFocus={autoFocus}
       onChangeText={onChangeText}
       onKeyPress={onKeyPress}
+      {...(onSubmit ? { submitBehavior: "newline" as const, onSubmitEditing: onSubmit } : {})}
       style={{
         ...(height !== undefined ? { height } : { flex: 1, minHeight: TEXT_AREA.least }),
         borderRadius: RADIUS.control,

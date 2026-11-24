@@ -28,6 +28,8 @@ export interface TextFieldProps {
   autoFocus?: boolean;
   secure?: boolean;
   onSubmit?: (text: string) => void;
+  /** Return moves to the next field (a form's line) instead of submitting. */
+  focusNextOnSubmit?: boolean;
   onKeyPress?: (key: "Escape" | "ArrowUp" | "ArrowDown") => void;
   /** A glyph over the field's start (a person, a link). */
   glyph?: string;
@@ -49,6 +51,7 @@ export function TextField({
   autoFocus,
   secure,
   onSubmit,
+  focusNextOnSubmit,
   onKeyPress,
   glyph,
   message,
@@ -77,6 +80,7 @@ export function TextField({
       secureTextEntry={secure}
       onChangeText={onChangeText}
       onSubmitEditing={onSubmit}
+      {...(focusNextOnSubmit ? { focusNextOnSubmit: true } : {})}
       onKeyPress={onKeyPress}
       style={{
         ...box,

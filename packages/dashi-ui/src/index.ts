@@ -15,6 +15,7 @@ export {
 } from "./alert.tsx";
 export { ALERT_WINDOW, type AlertContent, alertButtonsWidth, alertWindowHeight, alertWordsWidth, wrappedLines } from "./alert-size.ts";
 export { BAR_ITEM, BarItem, type BarItemProps, type BarItemTone, barItemColors } from "./bar-item.tsx";
+export { BareField, type BareFieldProps } from "./bare-field.tsx";
 export { Button } from "./button.tsx";
 export { type ButtonKind, type ButtonLook, buttonLook } from "./button-look.ts";
 export { BUTTON, type ButtonInks, type ButtonProps, type ButtonSize, type Look } from "./button-measures.ts";

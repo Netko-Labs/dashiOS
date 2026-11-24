@@ -11,11 +11,17 @@
 import { Svg, View } from "@mirinjs/metal";
 import type { ButtonInks } from "./button-measures.ts";
 import { useControlState } from "./control-state.tsx";
-import { CLEAR, onOf, pill, useColors, useDark } from "./theme/index.ts";
+import { CLEAR, ON_AGENT, onOf, pill, useColors, useDark } from "./theme/index.ts";
 import { inksButtonColors } from "./tinted-button.tsx";
 
 /** Its sizes: the target and the glyph in it. */
-export const GLYPH_BUTTON = { regular: { target: 24, glyph: 14 }, small: { target: 18, glyph: 10 }, inks: { target: 30, glyph: 13 }, edge: 1 } as const;
+export const GLYPH_BUTTON = {
+  regular: { target: 24, glyph: 14 },
+  small: { target: 18, glyph: 10 },
+  large: { target: 28, glyph: 14 },
+  inks: { target: 30, glyph: 13 },
+  edge: 1,
+} as const;
 
 export interface GlyphButtonProps {
   /** A glyph from glyphs.ts (drawn in #000, tinted here). */
@@ -25,7 +31,9 @@ export interface GlyphButtonProps {
   onPress: () => void;
   testID: string;
   /** The window look's sizes; the inks look is always 30. */
-  size?: "regular" | "small";
+  size?: "regular" | "small" | "large";
+  /** Filled as a button that goes ahead: `primary` in ink (Stop), `agent` in the agents' shiso (the conversation's Send). */
+  tone?: "primary" | "agent";
   /** A disc under it at rest (the track's grey): a ✕ on a card. */
   filled?: boolean;
   /** The glyph muted: a secondary tool. */
@@ -48,13 +56,27 @@ export function GlyphButton(props: GlyphButtonProps) {
   return props.look === "inks" ? <InksGlyphButton {...props} /> : <WindowGlyphButton {...props} />;
 }
 
-function WindowGlyphButton({ glyph, label, onPress, testID, size = "regular", filled, quiet, on, disabled, focusable = true, focused }: GlyphButtonProps) {
+function WindowGlyphButton({
+  glyph,
+  label,
+  onPress,
+  testID,
+  size = "regular",
+  filled,
+  quiet,
+  on,
+  tone,
+  disabled,
+  focusable = true,
+  focused,
+}: GlyphButtonProps) {
   const colors = useColors();
   const state = useControlState({ disabled, focused });
   const m = GLYPH_BUTTON[size];
   const lit = onOf(colors);
-  const rest = on ? lit.on : filled ? colors.track : CLEAR;
-  const ink = on ? lit.onInk : quiet ? colors.textMuted : colors.text;
+  const toned = tone === "primary" ? { fill: colors.primary, ink: colors.onPrimary } : tone === "agent" ? { fill: colors.agent, ink: ON_AGENT } : null;
+  const rest = toned ? toned.fill : on ? lit.on : filled ? colors.track : CLEAR;
+  const ink = toned ? toned.ink : on ? lit.onInk : quiet ? colors.textMuted : colors.text;
   return (
     <View
       testID={testID}
@@ -73,7 +95,7 @@ function WindowGlyphButton({ glyph, label, onPress, testID, size = "regular", fi
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: state.pressed ? (on ? colors.selectionPressed : colors.pressed) : rest,
-        hoverBackgroundColor: disabled || on ? rest : filled ? colors.checkbox : colors.button,
+        hoverBackgroundColor: disabled || on || toned ? rest : filled ? colors.checkbox : colors.button,
         opacity: state.opacity,
         focusRingColor: colors.focusRing,
       }}
