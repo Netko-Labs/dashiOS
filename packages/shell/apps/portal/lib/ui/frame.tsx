@@ -10,7 +10,7 @@
  * under the app's title bar.
  */
 
-import { AppWindow, Button, type KeyInput, KeySink, SPACE } from "@dashi/ui";
+import { ALERT_WINDOW, AppWindow, Button, type KeyInput, KeySink, SPACE } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 
@@ -43,7 +43,7 @@ export interface PortalFrameProps {
 }
 
 /** The frame's padding: the alert window's (ALERT_WINDOW), so a portal's dialog and its alerts sit alike. */
-const FRAME_PADDING = 18;
+const FRAME_PADDING = ALERT_WINDOW.padding;
 
 /** The button Enter presses: the default one, unless it is disabled or grants something (then none). */
 export function enterButton(buttons: readonly FrameButton[]): FrameButton | undefined {

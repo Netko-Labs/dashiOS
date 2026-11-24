@@ -7,7 +7,7 @@
  * (`alertWindowHeight`).
  */
 
-import { alertWindowHeight, SPACE } from "@dashi/ui";
+import { ALERT_WINDOW, alertWindowHeight, SPACE } from "@dashi/ui";
 import { splitMessage } from "./markup.ts";
 import type { DialogSpec } from "./spec.ts";
 
@@ -15,7 +15,7 @@ export const LAYOUT = {
   /** AppWindow's toolbar, the one row of chrome (the title). */
   toolbar: 40,
   /** The alert window's padding (ALERT_WINDOW), so a dialog and an alert sit alike. */
-  padding: 18,
+  padding: ALERT_WINDOW.padding,
   icon: 40,
   gap: SPACE.button,
   button: 28,
