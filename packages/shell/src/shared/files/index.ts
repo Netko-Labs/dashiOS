@@ -19,7 +19,7 @@ export { describeError, itemAt, kindText, readFolder } from "./items.ts";
 export type { Format, Kind } from "./kinds.ts";
 export { FORMATS, formatFromName, kindOf, otherMime, sniff } from "./kinds.ts";
 export type { Category, MimeIndex } from "./mime.ts";
-export { categoryOf, INODE_DIRECTORY, mimeOf, systemMimeIndex } from "./mime.ts";
+export { categoryOf, INODE_DIRECTORY, kindOf as mimeKind, mimeOf, systemMimeIndex } from "./mime.ts";
 export type { OpenWithApp } from "./open.ts";
 export { appsFor, mayOpen, OPEN_TIMEOUT_MS, openWith, openWithDefault } from "./open.ts";
 export type { OpContext } from "./ops.ts";

@@ -88,8 +88,8 @@ test("an access sheet opens as tall as its alert, check boxes and all", () => {
     { id: "a", label: "Remember", options: [], initial: "true" },
     { id: "b", label: "Also the microphone", options: [], initial: "false" },
   ];
-  // Two check boxes, 16 each and 8 apart, 6 under the line: the words outgrow the tile.
-  expect(accessHeight({ ...request, choices: boxes }, app)).toBe(38 + 6 + (17 + 4 + 16 + 4 + 6 + 40) + 10 + 6 + 28 + 18);
+  // Two check boxes, 8 apart, 6 under the line: the words outgrow the tile. The kit's box stands 26 (CHECKBOX.height), 10 more than the 16 drawn here before.
+  expect(accessHeight({ ...request, choices: boxes }, app)).toBe(38 + 6 + (17 + 4 + 16 + 4 + 6 + 40) + 2 * 10 + 10 + 6 + 28 + 18);
 });
 
 test("the print sheet: Copies keeps what is typed, Enter prints from the field, Esc cancels", async () => {

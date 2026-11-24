@@ -16,6 +16,6 @@ test("an app that gives up while the shell is asked about the sheet gets no dial
   };
   // No Metal host at this path: opening a window would throw, so getting `closed` back means none was opened.
   const show = dialogWindows(shell, "/nonexistent/mirin-metal-host");
-  const window = { parent: "wayland:abc", title: "Open", width: 400, height: 300 };
+  const window = { parent: "wayland:abc", title: "Open", width: 400, height: 300, least: { width: 320, height: 240 } };
   expect(await show(window, () => createElement("view"), controller.signal, "closed")).toBe("closed");
 });

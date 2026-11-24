@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { alwaysUse, orderChoices, parseAppChooser, parseGioDefault, subjectOf } from "../apps/portal/lib/app-chooser/choices.ts";
+import { alwaysLabel, alwaysUse, orderChoices, parseAppChooser, parseGioDefault, subjectOf } from "../apps/portal/lib/app-chooser/choices.ts";
 import { installReply, launcherName, parseInstall } from "../apps/portal/lib/dynamic-launcher.tsx";
 import { composeEmail, mailtoUri, parseDraft, thunderbirdCompose } from "../apps/portal/lib/email.ts";
 import { NotificationBackend, notifyCall, parseIcon, parseNotification, withFdIcon } from "../apps/portal/lib/notification.ts";
@@ -152,4 +152,11 @@ test("Notification v2: a picture sent as a descriptor is read as bytes", () => {
   const read = withFdIcon(value, [42], (fd) => (fd === 42 ? new Uint8Array([1, 2, 3]) : null));
   expect(parseNotification(read).icon).toEqual({ bytes: new Uint8Array([1, 2, 3]) });
   expect(parseNotification(withFdIcon(value, [], () => null)).icon).toBeNull();
+});
+
+test("Always use names the kind as the MIME database does, never its type (VO-11)", () => {
+  expect(alwaysLabel("PDF document")).toBe("Always use for PDF documents");
+  expect(alwaysLabel("Text document")).toBe("Always use for text documents");
+  expect(alwaysLabel("JPEG image")).toBe("Always use for JPEG images");
+  expect(alwaysLabel("Images")).toBe("Always use for images");
 });
