@@ -49,17 +49,27 @@ export function valueOnInk(fill: number, width: number, words: number): boolean 
   return words > 0 && fill >= width - VALUE.inset - words;
 }
 
-/** The value at the slider's right, muted on the track or the ink's own colour once the fill reaches it. */
+/** The box the value is right-aligned in: the whole slider, or, on the ink, the fill (so the value ends inside it). Pure. */
+export function valueBoxWidth(fill: number, width: number, onInk: boolean): number {
+  return onInk ? Math.min(width, fill) : width;
+}
+
+/**
+ * The value at the slider's right, muted on the track; once the fill reaches
+ * its start, the ink's own colour, ending where the fill ends, so no part of
+ * it is ever drawn across the fill's edge (SE-A44).
+ */
 function Words({ words, width, fill }: { words: string; width: number; fill: number }) {
   const colors = useControlColors();
   const [wide, setWide] = useState(0);
+  const onInk = valueOnInk(fill, width, wide);
   return (
     <View
       style={{
         position: "absolute",
         left: 0,
         top: 0,
-        width,
+        width: valueBoxWidth(fill, width, onInk),
         height: INK_SLIDER.height,
         flexDirection: "row",
         alignItems: "center",
@@ -68,7 +78,7 @@ function Words({ words, width, fill }: { words: string; width: number; fill: num
       }}
     >
       <View testID="ink-slider-value" style={{ flexShrink: 0 }} onLayout={(laid) => setWide((was) => (Math.abs(was - laid.width) < 0.5 ? was : laid.width))}>
-        <Text style={{ fontSize: TYPE.panel.detail.size, fontWeight: WEIGHT.semibold, color: valueOnInk(fill, width, wide) ? colors.fillInk : colors.muted }}>
+        <Text style={{ fontSize: TYPE.panel.detail.size, fontWeight: WEIGHT.semibold, color: onInk ? colors.fillInk : colors.muted }}>
           {words}
         </Text>
       </View>

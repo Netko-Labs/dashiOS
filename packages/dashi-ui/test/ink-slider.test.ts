@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { INK_SLIDER, valueOnInk } from "../src/panel/ink-slider.tsx";
+import { INK_SLIDER, valueBoxWidth, valueOnInk } from "../src/panel/ink-slider.tsx";
 
 // The ink slider's value takes one colour, never two halves split at the fill's edge (SE-A44).
 
@@ -15,4 +15,14 @@ test("the value turns to the ink's colour, all of it, once the fill reaches its 
 
 test("before its words are measured, the value stays muted", () => {
   expect(valueOnInk(INK_SLIDER.width, INK_SLIDER.width, 0)).toBe(false);
+});
+
+test("on the ink, the value ends where the fill ends, so none of it lies past the fill's edge", () => {
+  const width = INK_SLIDER.width;
+  // Muted on the track: the whole slider, the value at its right.
+  expect(valueBoxWidth(150, width, false)).toBe(width);
+  // On the ink, part way: the box is the fill, the value right-aligned inside it.
+  expect(valueBoxWidth(200, width, true)).toBe(200);
+  // Full: the whole slider again.
+  expect(valueBoxWidth(width, width, true)).toBe(width);
 });
