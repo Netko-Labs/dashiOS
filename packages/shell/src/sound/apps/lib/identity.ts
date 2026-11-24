@@ -1,6 +1,6 @@
 /**
  * Which app a sound stream is, named as the Dock and Activity Monitor name
- * it (shared/processes/, CP-6), first that answers:
+ * it (shared/processes/, VO-6), first that answers:
  *
  * 1. A Flatpak, by the portal's app id. Its claimed pid comes from inside
  *    its sandbox, so it is never trusted.

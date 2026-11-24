@@ -35,7 +35,7 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
   - Settings: left for later (docs/roast/settings.md, "Where it went"): Appearance's previews over your wallpaper and Auto's times; a "Let agents connect" switch and denied agents; Passwords split from Payments with reveal, copy, edit and search; one `Failure` in @dashi/ui; a View menu of panes, Back and Forward (❖[ ❖]); Setup's Return and Esc; a Dashi name for Night Shift; one "Menu bar" group; slider values, headings and button copies; the rest of the Title Case pass; per-app Notifications, password delay, shortcuts, manual time, renaming the computer; Battery & Power's live value, Charge Now's reason, the lid summary; settings.json written off the shell's thread and an error boundary; Setup's dots, Install as primary, a shorter Agents page
 - [x] Software as a trust card, applets folded in; permissions block, daily update check, one queue, the state chip (L; VS-5)
 - [x] More than one applet catalog: Catalogs… in Menu bar applets adds a team's or your own (checked with its key before it is saved), merged with Dashi's ("From <name>", never reviewed), updates and the kill switch per catalog (M; `feat/0.5-catalogs`, VM: 24-catalogs)
-- [x] Activity Monitor app-first: rows by app, an Energy tab (M; CP-6; `feat/0.5-activity`, VM: not yet). Apps by their folder, Flatpak scope or desktop entry (`src/process-apps/`, shared with the battery monitor), helpers folded under them; Energy (% CPU, % GPU from DRM fdinfo, wakeups); the battery menu opens it at the app (`open` on the menus channel); the roast's rest in `docs/roast/activity-monitor.md`
+- [x] Activity Monitor app-first: rows by app, an Energy tab (M; VO-6; `feat/0.5-activity`, VM: not yet). Apps by their folder, Flatpak scope or desktop entry (`src/process-apps/`, shared with the battery monitor), helpers folded under them; Energy (% CPU, % GPU from DRM fdinfo, wakeups); the battery menu opens it at the app (`open` on the menus channel); the roast's rest in `docs/roast/activity-monitor.md`
 - [x] Calendar's grid as the editor: drag, the clicked occurrence, time zones (L; PA-11; `feat/0.5-calendar`, VM: not yet)
 - [x] Notes as a live page; an Edit menu, ❖B and ❖I (L; PA-8; `feat/0.5-notes`, needs mirin's styled-runs patch, VM: not yet)
 - [x] Editor's document surface with versioned autosave (L; `feat/0.5-editor`, mirin patch `mirin-editor.patch`: `TextInput` `highlights` and `lineNumbers`; VM: not yet)
@@ -132,9 +132,9 @@ page's end. Each area is its own branch, reviewed in the VM on video, as in
 - [ ] CO-6: 3:1 control edges (S)
 - [ ] UI-6: Enter on a bare Sheet follows the risk (S)
 - [x] PA-12: the chooser's drives and real icons; dashi-dialog --file-selection (M; with the file browser, `feat/0.5-files`)
-- [ ] CP-7: pane names from the pane list (S)
+- [ ] VO-7: pane names from the pane list (S)
 - [ ] Text size beyond the launcher (M; TY-1)
-- [ ] The rest of the tagged rules: CO-2, CO-5, CO-8, TY-1, LA-1, RA-1, DE-1, MO-3, UI-3, KB-4, PA-14, CP-1, CP-3, CP-5 (M)
+- [ ] The rest of the tagged rules: CO-2, CO-5, CO-8, TY-1, LA-1, RA-1, DE-1, MO-3, UI-3, KB-4, PA-14, VO-1, VO-3, VO-5 (M)
 
 ## Verification (alongside)
 - [x] Before 0.5 ships: the Applet Store skips an applet whose manifest it can't read (a permission it doesn't know) instead of refusing the whole index ("1 applet needs a newer Dashi" under the list; the kill switch still reads its pulled list), and an installed applet whose manifest no longer reads is listed as "Needs an update", not left out (`night/0.5-store`, VM: 57-applet-store)

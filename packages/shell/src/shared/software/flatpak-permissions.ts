@@ -94,7 +94,7 @@ function fileAccess(entry: string, appId?: string): FileAccess | null {
   if (entry.startsWith("!")) return null;
   const [where = "", mode] = entry.split(":");
   const write = mode !== "ro";
-  // Where Flatpak apps keep their settings and data: a path no one reads (CP-6).
+  // Where Flatpak apps keep their settings and data: a path no one reads (VO-6).
   const appData = /^~\/\.var\/app\/([^/]+)/.exec(where);
   if (appData) {
     if (appData[1] === appId) return null;
