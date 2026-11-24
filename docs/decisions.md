@@ -7486,6 +7486,8 @@ short words, as the rulebook is written.
   "Allow once", "Allow for this task", "Don’t answer", "Log out", "Shut down", "Go back",
   "Change password", "Forget this device", "Search again", and "My devices", "Nearby devices",
   "Not connected" in Control Center's Bluetooth and Wi-Fi pages. Questions say what will happen:
+  the first consent sheet's heading, set in `agents/lib/session/session-scopes.ts` (a W3 file, one
+  line), is "Allow an agent on another machine to use this computer?";
   "Log out now?", "Restart now?", "Shut down now?"; an agent's: "Allow Claude to use Dashi?",
   "Allow Claude to force “Notes” to quit?"; "Join “Home”?"; "Force “Notes” to quit?" with "Its
   unsaved changes will be lost."; the Force Quit list "Force quit an app". Names keep their
@@ -7542,7 +7544,8 @@ short words, as the rulebook is written.
   code is the named figure (28) with the digits the device has taken in ink and the rest muted
   (not the accent: it is progress, not a choice); the agents' "Your turn" banner is radius 12 on
   `lg`; the time zone and language pickers use the kit's `SearchField` (`width="fill"`, a kit
-  addition) and `PickRow`; Control Center's Bluetooth "…" is a `ToolbarButton` and its Forget
+  addition; the window look, since the panel look's ground is Settings' card's and the field
+  vanished on it, seen in the VM) and `PickRow`; Control Center's Bluetooth "…" is a `ToolbarButton` and its Forget
   question in place has an ume Forget; Force Quit's list rows are 30 (the pick row's height).
 - **Why:** each follows a rule already written (TY-1, CO-1, RA-2, DE-1, UI-11, UI-13, UI-6).
 - **Undo:** per line.

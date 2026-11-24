@@ -41,7 +41,7 @@ export function TimezonePicker({
   const shown = rows.slice(0, MAX_ROWS);
   return (
     <View testID="timezone-picker" style={{ alignSelf: "stretch", flexDirection: "column", gap: SPACE.m }}>
-      <SearchField testID="timezone-search" width="fill" look="panel" value={query} onChangeText={setQuery} placeholder="Search for a city or country" />
+      <SearchField testID="timezone-search" width="fill" value={query} onChangeText={setQuery} placeholder="Search for a city or country" />
       {!searching && areas.length > 0 && (
         <Choices testID="timezone-area" value={area ?? ""} options={areas.map((each) => ({ value: each, label: each }))} onChange={setArea} />
       )}
@@ -104,7 +104,7 @@ export function LocalePickers({
   const heading = (text: string) => <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>{text}</Text>;
   return (
     <View testID="locale-pickers" style={{ alignSelf: "stretch", flexDirection: "column", gap: SPACE.m }}>
-      <SearchField testID="locale-search" width="fill" look="panel" value={query} onChangeText={setQuery} placeholder="Search languages and regions" />
+      <SearchField testID="locale-search" width="fill" value={query} onChangeText={setQuery} placeholder="Search languages and regions" />
       <View style={{ flexDirection: "row", gap: SPACE.gap }}>
         <View style={{ flex: 1, flexDirection: "column", gap: SPACE.xs, minWidth: 0 }}>
           {heading("Language")}
