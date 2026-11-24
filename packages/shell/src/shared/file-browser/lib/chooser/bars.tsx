@@ -5,7 +5,7 @@
  * a save that would replace a file asks.
  */
 
-import { AlertSheet, Button, glyphs, PopUpButton, Switch, TextField, ToolbarButton, TYPE, useColors } from "@dashi/ui";
+import { AlertSheet, Button, glyphs, PopUpButton, SPACE, Switch, TextField, ToolbarButton, TYPE, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { filterExtension, withExtension } from "../../../files/index.ts";
 import { type ChooserModel, folderName } from "../../chooser-model.ts";
@@ -68,9 +68,9 @@ export function NameRow({ model, input }: { model: ChooserModel; input: ChooserI
   const colors = useColors();
   const folder = model.folder();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 0 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m, flexShrink: 0 }}>
       <View style={{ flexShrink: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: colors.text }}>
           Save as
         </Text>
       </View>
@@ -85,7 +85,10 @@ export function NameRow({ model, input }: { model: ChooserModel; input: ChooserI
           onKeyPress={input.fieldKeys}
         />
       </View>
-      <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>{`in ${folderName(folder ?? model.store.env.home, model.home)}`}</Text>
+      <Text
+        numberOfLines={1}
+        style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}
+      >{`in ${folderName(folder ?? model.store.env.home, model.home)}`}</Text>
     </View>
   );
 }
@@ -109,7 +112,7 @@ export function ChooserFooter({ model, input, cancel }: { model: ChooserModel; i
   const filterOptions = request.filters.map((filter, index) => ({ value: index, label: filter.name }));
   const filterIndex = state.filter ? Math.max(0, request.filters.indexOf(state.filter)) : 0;
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flexShrink: 0, minWidth: 0 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.inset, flexShrink: 0, minWidth: 0 }}>
       {filterOptions.length > 1 && (
         // File types are a list of unknown length: a pop-up button (UI-2).
         <PopUpButton
@@ -125,13 +128,13 @@ export function ChooserFooter({ model, input, cancel }: { model: ChooserModel; i
       )}
       {request.choices.map((choice) =>
         choice.options.length === 0 ? (
-          <View key={choice.id} style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <View key={choice.id} style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s, flexShrink: 0 }}>
             <Switch
               testID={`chooser:choice:${choice.id}`}
               on={state.choices[choice.id] === "true"}
               onChange={(on) => model.setChoice(choice.id, on ? "true" : "false")}
             />
-            <Text style={{ fontSize: 12, color: colors.text }}>{choice.label}</Text>
+            <Text style={{ fontSize: TYPE.secondary.size, color: colors.text }}>{choice.label}</Text>
           </View>
         ) : (
           <PopUpButton

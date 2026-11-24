@@ -28,6 +28,9 @@ import type { Location } from "./location.ts";
 import { DEFAULT_PREFS } from "./prefs.ts";
 import { type FilesState, initialState, NOTICE_FADE_MS, type SearchScope, type StoreHost, type StoreOptions, type ViewMode } from "./store-state.ts";
 
+/** How often the drives are looked at again (ms): one plugged in shows within this. */
+const VOLUMES_EVERY_MS = 4000;
+
 export class FilesStore implements StoreHost {
   private state: FilesState;
   private readonly listeners = new Set<() => void>();
@@ -79,7 +82,7 @@ export class FilesStore implements StoreHost {
   start(): void {
     void this.loader.load();
     void this.refreshVolumes();
-    this.volumeTimer = setInterval(() => void this.refreshVolumes(), 4000);
+    this.volumeTimer = setInterval(() => void this.refreshVolumes(), VOLUMES_EVERY_MS);
   }
 
   stop(): void {
