@@ -28,9 +28,6 @@
 1	packages/shell/src/menubar/lib/menubar-status.tsx
 1	packages/shell/src/menus/lib/popover.tsx
 1	packages/shell/src/menus/sheets.tsx
-1	packages/shell/src/notifications/lib/banner.tsx
-1	packages/shell/src/notifications/lib/center-parts.tsx
-3	packages/shell/src/notifications/lib/month-card.tsx
 1	packages/shell/src/overlay.tsx
 2	packages/shell/src/recorder/lib/toolbar.tsx
 6	packages/shell/src/screenshots/screenshot-area.tsx

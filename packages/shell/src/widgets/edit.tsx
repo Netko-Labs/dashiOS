@@ -85,9 +85,7 @@ function Decoration({ placed, tag, resizable, chosen, onChoose, onRemove, onResi
       onPointer={(event) => onDrag(event.phase, event.y)}
       onPress={onChoose}
     >
-      {chosen ? (
-        <View style={{ position: "absolute", ...CHOSEN_RING, borderColor: inks.text.ink }} />
-      ) : null}
+      {chosen ? <View style={{ position: "absolute", ...CHOSEN_RING, borderColor: inks.text.ink }} /> : null}
       {hover || chosen ? (
         <View style={{ position: "absolute", top: 8, left: width / 2 - 14, width: 28, height: 4, borderRadius: 2, backgroundColor: inks.text.tertiary }} />
       ) : null}

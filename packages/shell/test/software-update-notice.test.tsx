@@ -71,7 +71,8 @@ test("the banner draws the notice's Show button, and it opens Software too", asy
   const { store, notice, launched } = await posted();
   expect(buttonsFor(notice).map((action) => action.label)).toEqual(["Show"]);
   // Room for the button row under the two lines of body.
-  expect(bannerHeight(notice)).toBe(12 * 2 + 18 + 4 + 2 * 16 + 8 + 26);
+  // Room for the button row (the kit's small Button, 24) under the two lines of body (NO-1, NO-2).
+  expect(bannerHeight(notice)).toBe(12 * 2 + 18 + 4 + 2 * 16 + 8 + 24);
   const { press } = banner(store, notice.id);
   await press("banner-action:show");
   expect(launched.map((each) => each.appId)).toEqual(["dev.dashi.software"]);

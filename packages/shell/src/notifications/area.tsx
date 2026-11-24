@@ -7,6 +7,7 @@
  * notification center's panel; the month card is the Calendar widget now.
  */
 
+import { Button, SPACE } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useMemo, useState } from "react";
 import { KeyCatcher } from "../overlay.tsx";
@@ -29,20 +30,20 @@ import {
   type WidgetHub,
   Words,
 } from "../widgets/index.ts";
-import { centerBottom, type NotificationCenterProps } from "./center.tsx";
 import { foldGroups } from "./lib/ceiling.ts";
 import { groupByApp } from "./lib/group.ts";
 import { PaperNote } from "./lib/paper-note.tsx";
+import { type AreaPlace, areaBottom } from "./lib/place.ts";
 import { useNotifications } from "./store.ts";
 import type { HistoryEntry } from "./types.ts";
 
-export interface NotificationAreaProps extends NotificationCenterProps {
+export interface NotificationAreaProps extends AreaPlace {
   hub: WidgetHub | null;
   /** What a press on a widget opens; the area closes first. */
   openerOf?: (placement: Placement) => (() => void) | null;
 }
 
-const AREA = { right: 12, top: 8, gap: 10 } as const;
+const AREA = { right: 12, top: 8, gap: SPACE.gap } as const;
 
 export function NotificationArea({ store, onClose, onEscape = onClose, dockInset, hub, openerOf }: NotificationAreaProps) {
   const [editing, setEditing] = useState(false);
@@ -68,10 +69,12 @@ export function NotificationArea({ store, onClose, onEscape = onClose, dockInset
         <View
           occlude
           testID="notification-center"
-          style={{ position: "absolute", right: AREA.right, top: AREA.top, bottom: centerBottom(dockInset), width: COLUMN_WIDTH + 8 }}
+          style={{ position: "absolute", right: AREA.right, top: AREA.top, bottom: areaBottom(dockInset), width: COLUMN_WIDTH + 8 }}
         >
           <View testID="nc-list" style={{ flex: 1, overflow: "scroll" }}>
-            <View style={{ flexDirection: "column", gap: AREA.gap, paddingLeft: 4, paddingRight: 4, paddingTop: 4, paddingBottom: 8 }}>
+            <View
+              style={{ flexDirection: "column", gap: AREA.gap, paddingLeft: SPACE.xs, paddingRight: SPACE.xs, paddingTop: SPACE.xs, paddingBottom: SPACE.m }}
+            >
               {editing ? (
                 <EditWidgets placements={placements} session={session} onDone={done} />
               ) : (
@@ -79,8 +82,8 @@ export function NotificationArea({ store, onClose, onEscape = onClose, dockInset
                   <LiveCards />
                   <AreaNotes store={store} env={env} now={now} onClose={onClose} />
                   <WidgetColumn placements={placements} {...(openerOf ? { openerOf } : {})} />
-                  <View style={{ alignItems: "center", paddingTop: 2 }}>
-                    <EditButton inks={env.inks} onPress={() => setEditing(true)} />
+                  <View style={{ alignItems: "center", paddingTop: SPACE.xxs }}>
+                    <Button testID="edit-widgets" label="Edit widgets" look="inks" onPress={() => setEditing(true)} />
                   </View>
                 </>
               )}
@@ -94,27 +97,6 @@ export function NotificationArea({ store, onClose, onEscape = onClose, dockInset
         ) : null}
       </WidgetEnvProvider>
     </>
-  );
-}
-
-function EditButton({ inks, onPress }: { inks: WidgetEnv["inks"]; onPress: () => void }) {
-  return (
-    <View
-      testID="edit-widgets"
-      onPress={onPress}
-      style={{
-        height: 28,
-        paddingLeft: 14,
-        paddingRight: 14,
-        borderRadius: 14,
-        justifyContent: "center",
-        backgroundColor: inks.paper,
-        borderWidth: 1,
-        borderColor: inks.text.hairline,
-      }}
-    >
-      <Text style={{ fontSize: 12, fontWeight: "semibold", color: inks.text.ink }}>Edit widgets</Text>
-    </View>
   );
 }
 
@@ -158,7 +140,7 @@ function AreaNotes({ store, env, now, onClose }: { store: NotificationAreaProps[
           padding={0}
           testID="nc-show-all"
         >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1, paddingLeft: 14, paddingRight: 8 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.gap, flex: 1, paddingLeft: SPACE.button, paddingRight: SPACE.m }}>
             <Words ink>{`${folded.more.count} more`}</Words>
             <Words max={26}>{folded.more.apps.join(", ")}</Words>
             <View style={{ flex: 1 }} />

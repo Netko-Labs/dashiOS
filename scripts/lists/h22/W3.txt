@@ -14,10 +14,6 @@
 2	packages/shell/src/menus/lib/popover.tsx
 1	packages/shell/src/menus/lib/view.tsx
 1	packages/shell/src/menus/sheets.tsx
-1	packages/shell/src/notifications/area.tsx
-1	packages/shell/src/notifications/lib/banner.tsx
-1	packages/shell/src/notifications/lib/center-parts.tsx
-1	packages/shell/src/notifications/lib/month-card.tsx
 1	packages/shell/src/overlay.tsx
 1	packages/shell/src/recorder/indicator.tsx
 3	packages/shell/src/recorder/lib/toolbar.tsx

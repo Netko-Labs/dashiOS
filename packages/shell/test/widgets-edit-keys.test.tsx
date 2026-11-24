@@ -7,8 +7,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { type NativeEvent, type NativeRoot, type NativeTransport, render, View } from "@mirinjs/metal";
 import { INK_TEXT, lightColors } from "@dashi/ui";
+import { type NativeEvent, type NativeRoot, type NativeTransport, render, View } from "@mirinjs/metal";
 import { NotificationArea } from "../src/notifications/area.tsx";
 import { NotificationStore } from "../src/notifications/index.ts";
 import { previewSizes } from "../src/widgets/gallery.tsx";

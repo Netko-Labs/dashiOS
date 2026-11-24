@@ -1,5 +1,4 @@
 export { NotificationArea, type NotificationAreaProps } from "./area.tsx";
-export { NotificationCenterPanel } from "./center.tsx";
 export { type Notifications, startNotifications } from "./service.ts";
 export { BannerStack } from "./stack.tsx";
 export { NotificationStore, SHELL_SENDER } from "./store.ts";

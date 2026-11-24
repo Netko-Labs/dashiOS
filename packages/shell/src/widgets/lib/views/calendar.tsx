@@ -1,7 +1,9 @@
 /** Calendar (miso): today's date large and what is next; on the lock screen, the events are blanks and the month has no busy marks (#27). */
 
+import { weekdayLetters } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { instantOf, type Occurrence } from "../../../shared/calendar/index.ts";
+import { firstDayIndex, useClockPrefs } from "../../../shared/time/index.ts";
 import { useWidgetEnv } from "../../env.tsx";
 import { useCard } from "../../look.tsx";
 import { Grow, Head, Lab, Meta, Num, Private, Rule, Title, VRule, Words } from "../../parts.tsx";
@@ -17,12 +19,17 @@ export function inWords(at: number, now: number): string {
   return minutes < 90 ? `in ${minutes} min` : `in ${Math.round(minutes / 60)} h`;
 }
 
-/** The month; it never marks busy days (the area has the Calendar widget's own list, and the lock screen must not, #27). */
+/**
+ * The month, its week from the region's first day (UI-14); it never marks busy days (the area has the
+ * Calendar widget's own list, and the lock screen must not, #27).
+ */
 function MonthGrid({ now, cell }: { now: number; cell: number }) {
   const c = useCard();
+  const prefs = useClockPrefs();
+  const firstDay = firstDayIndex(prefs.locale, prefs.firstWeekday);
   const date = new Date(now);
   const first = new Date(date.getFullYear(), date.getMonth(), 1);
-  const lead = (first.getDay() + 6) % 7;
+  const lead = (first.getDay() - firstDay + 7) % 7;
   const days = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   const cells: (number | null)[] = [...Array.from({ length: lead }, () => null), ...Array.from({ length: days }, (_, i) => i + 1)];
   const rows: (number | null)[][] = [];
@@ -31,7 +38,7 @@ function MonthGrid({ now, cell }: { now: number; cell: number }) {
   return (
     <View style={{ flexDirection: "column" }}>
       <View style={{ flexDirection: "row" }}>
-        {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+        {weekdayLetters(firstDay, prefs.locale).map((d, i) => (
           <View key={`${d}${i}`} style={{ width: cell, alignItems: "center" }}>
             <Text style={{ fontSize: 9.5, fontWeight: "semibold", color: c.tertiary }}>{d}</Text>
           </View>
