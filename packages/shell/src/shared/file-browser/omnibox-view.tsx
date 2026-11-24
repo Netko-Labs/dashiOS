@@ -11,7 +11,7 @@
  * switch). Escape gives the crumbs back.
  */
 
-import { MENU, rowLook, SelectionBar, SHADOW, SPACE, TYPE, useColors } from "@dashi/ui";
+import { MENU, rowLook, SEARCH_FIELD, SelectionBar, SHADOW, SPACE, TYPE, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useFilesState } from "./context.ts";
 import { sidebarGlyph } from "./glyphs.ts";
@@ -33,9 +33,17 @@ export function editText(location: Location, home: string): string {
 
 export function Omnibox(props: OmniboxProps) {
   const state = useFilesState();
-  if (props.editing === null && state.query === "") return <Crumbs onEdit={props.onEdit} />;
-  // A new edit starts from its own text; a search left standing shows its query.
-  return <Editor key={`${props.session ?? 0}:${props.editing ?? "query"}`} {...props} />;
+  // Its own row in the toolbar's, so the field ("fill", stretched across) stays centred on the row's height.
+  return (
+    <View style={{ flex: 1, minWidth: SEARCH_FIELD.least, flexDirection: "row", alignItems: "center" }}>
+      {props.editing === null && state.query === "" ? (
+        <Crumbs onEdit={props.onEdit} />
+      ) : (
+        // A new edit starts from its own text; a search left standing shows its query.
+        <Editor key={`${props.session ?? 0}:${props.editing ?? "query"}`} {...props} />
+      )}
+    </View>
+  );
 }
 
 /** The folders a typed path could go on to, under the field: a menu (LA-4), its rows the selection look while picked. */
