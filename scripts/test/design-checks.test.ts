@@ -2,6 +2,8 @@
 import { describe, expect, test } from "bun:test";
 import { STEPS } from "../check.ts";
 import { colorJobs } from "../check-design-colours.ts";
+import { kitControls } from "../check-design-kit.ts";
+import { bindings, disagreement } from "../check-design-sync.ts";
 import { countByFile } from "../check-design-values.ts";
 import { ownerOf, splitByOwner } from "../design-lists.ts";
 import { isOffScale, isScanned, scanText } from "../design-scan.ts";
@@ -60,6 +62,40 @@ describe("H23 colours keep their job", () => {
   });
 });
 
+describe("H22 controls from the kit", () => {
+  const kinds = (text: string): string[] => kitControls("packages/shell/src/a.tsx", text).map((hit) => `${hit.kind}:${hit.name}`);
+  test("a View drawn as a button, a bare TextInput, and a control named outside the kit", () => {
+    expect(kinds('const a = <View accessibilityRole="button" style={{ backgroundColor: x }} />;')).toEqual(["role:button:View"]);
+    expect(kinds('const a = <View accessibilityRole="button" onPress={go} />;')).toEqual([]);
+    expect(kinds("const a = <TextInput value={v} />;")).toEqual(["text-input:TextInput"]);
+    expect(kinds("function SaveButton() { return <View />; }")).toEqual(["defines:SaveButton"]);
+  });
+  test("a sheet of its own built on the kit's Sheet or Button is not a new control", () => {
+    expect(kinds('function RenameSheet() { return <FormSheet title="Rename" buttons={[]} />; }')).toEqual([]);
+    expect(kinds('function DoneButton() { return <Button label="Done" />; }')).toEqual([]);
+  });
+});
+
+describe("H24 design.html in sync", () => {
+  const tokens = { TYPE: { body: { size: 13, line: 17 } }, WEIGHT: { bold: "bold" }, SHADOW: { lg: "lg" }, MENU: { padding: 5 } };
+  test("reads each bound element's text", () => {
+    const html = '<td><span data-token="TYPE.body">13 / 17</span></td>\n<span class="x" data-token="MENU.padding"><b>5</b></span>';
+    expect(bindings(html)).toEqual([
+      { token: "TYPE.body", text: "13 / 17", line: 1 },
+      { token: "MENU.padding", text: "5", line: 2 },
+    ]);
+  });
+  test("a role's size, then its line; a weight's number; a shadow's name; a wrong or missing token fails", () => {
+    expect(disagreement({ token: "TYPE.body", text: "13", line: 1 }, tokens)).toBeNull();
+    expect(disagreement({ token: "TYPE.body", text: "13 / 17", line: 1 }, tokens)).toBeNull();
+    expect(disagreement({ token: "TYPE.body", text: "13 / 18", line: 1 }, tokens)).toContain("13 / 18");
+    expect(disagreement({ token: "WEIGHT.bold", text: "700", line: 1 }, tokens)).toBeNull();
+    expect(disagreement({ token: "SHADOW.lg", text: "lg", line: 1 }, tokens)).toBeNull();
+    expect(disagreement({ token: "MENU.padding", text: "6", line: 1 }, tokens)).not.toBeNull();
+    expect(disagreement({ token: "MENU.gap", text: "6", line: 1 }, tokens)).toContain("no @dashi/ui export");
+  });
+});
+
 describe("the lists, one per workstream", () => {
   test("a file lands on the list of the workstream that owns it", () => {
     expect(ownerOf("packages/dashi-ui/src/button.tsx")).toBe("W1");
@@ -77,5 +113,7 @@ describe("the lists, one per workstream", () => {
     const fast = STEPS.filter((step) => step.fast).map((step) => step.command.join(" "));
     expect(fast).toContain("bun scripts/check-design-values.ts");
     expect(fast).toContain("bun scripts/check-design-colours.ts");
+    expect(fast).toContain("bun scripts/check-design-kit.ts");
+    expect(fast).toContain("bun scripts/check-design-sync.ts");
   });
 });

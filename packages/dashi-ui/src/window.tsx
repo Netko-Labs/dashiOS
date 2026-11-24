@@ -121,7 +121,7 @@ export function AppWindow({
           </WindowSidebar>
         )}
         <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
-          {(inset.unified || toolbar !== undefined) && (
+          {(inset.unified || toolbar !== undefined || titleSlot !== undefined) && (
             <View
               testID="window-toolbar"
               dragRegion
