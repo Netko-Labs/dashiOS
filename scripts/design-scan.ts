@@ -24,6 +24,8 @@ export interface Hit {
   category: Category;
   /** The literal as written, without quotes. */
   value: string;
+  /** The module-level named constant (`MENU`, `ROW_HEIGHT`) it is written in or reached through, if any. */
+  named?: string;
 }
 
 const COLOUR_PROPS = new Set([
@@ -77,6 +79,29 @@ function leaves(node: ts.Expression, out: ts.Expression[]): void {
   out.push(node);
 }
 
+/** A named constant's name: SCREAMING_CASE. */
+const CONSTANT_NAME = /^[A-Z][A-Z0-9_]*$/;
+
+/** What a value is under `as const` and `satisfies`. */
+function bare(node: ts.Expression): ts.Expression {
+  return ts.isAsExpression(node) || ts.isSatisfiesExpression(node) || ts.isParenthesizedExpression(node) ? bare(node.expression) : node;
+}
+
+/** The SCREAMING_CASE `const`s at a file's top level holding a value or a table of them (not a function), by declaration. */
+function namedConstants(source: ts.SourceFile): Map<ts.Node, string> {
+  const found = new Map<ts.Node, string>();
+  for (const statement of source.statements) {
+    if (!ts.isVariableStatement(statement) || !(statement.declarationList.flags & ts.NodeFlags.Const)) continue;
+    for (const declaration of statement.declarationList.declarations) {
+      const value = declaration.initializer && bare(declaration.initializer);
+      const table =
+        value && (ts.isObjectLiteralExpression(value) || ts.isNumericLiteral(value) || ts.isPrefixUnaryExpression(value) || ts.isStringLiteral(value));
+      if (ts.isIdentifier(declaration.name) && CONSTANT_NAME.test(declaration.name.text) && table) found.set(declaration, declaration.name.text);
+    }
+  }
+  return found;
+}
+
 /** Names bound to a bare literal in the file: `const PAD = 12`. */
 function localLiterals(source: ts.SourceFile): Map<string, ts.Expression> {
   const locals = new Map<string, ts.Expression>();
@@ -111,6 +136,9 @@ export function scanText(file: string, text: string): Hit[] {
   const kind = file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
   const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, kind);
   const locals = localLiterals(source);
+  const constants = namedConstants(source);
+  const topLevel = new Set(constants.values());
+  let within: string | undefined;
   const inTheme = file.startsWith(THEME);
   const hits: Hit[] = [];
   const lineOf = (node: ts.Node): number => source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1;
@@ -128,7 +156,9 @@ export function scanText(file: string, text: string): Hit[] {
       const raw = ts.isStringLiteralLike(literal) ? literal.text : literal.getText(source);
       if (raw === "0" || raw === "-0") continue;
       const category = categoryOf(key, raw);
-      if (category && !(inTheme && category === "colour")) hits.push({ file, line: lineOf(value === literal ? value : at), category, value: raw });
+      if (!category || (inTheme && category === "colour")) continue;
+      const through = ts.isIdentifier(value) && topLevel.has(value.text) ? value.text : within;
+      hits.push({ file, line: lineOf(value === literal ? value : at), category, value: raw, ...(through ? { named: through } : {}) });
     }
   };
   const visit = (node: ts.Node): void => {
@@ -148,7 +178,10 @@ export function scanText(file: string, text: string): Hit[] {
         for (const match of words.matchAll(FUNC_COLOUR)) hits.push({ file, line: lineOf(node), category: "colour", value: match[0] });
       }
     }
+    const outer = within;
+    within = constants.get(node) ?? within;
     ts.forEachChild(node, visit);
+    within = outer;
   };
   visit(source);
   return hits;

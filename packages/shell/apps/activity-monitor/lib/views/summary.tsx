@@ -24,8 +24,9 @@ export const SUMMARY_BRIEF_HEIGHT = 36;
 export const SHORT_WINDOW = 480;
 /** The graph's drawing: as wide as `graphWidth` leaves it, between `min` and `max`. */
 const GRAPH = { max: 260, min: 120, height: 74 } as const;
-/** Above the graph's box: its title row and the gap under it. */
-const GRAPH_HEAD = 19;
+/** Above the graph's box: its title row, and with the gap under it. */
+const HEAD_ROW = 15;
+const GRAPH_HEAD = HEAD_ROW + SPACE.xs;
 /** The strip's sides, the room between its three parts, and the least a figure column keeps. */
 const STRIP = { side: 20, gap: SPACE.xl, figures: 150 } as const;
 /** One figure's row: 4 rows fill the graph's box. */
@@ -99,7 +100,7 @@ function Graph({ title, series, max, scale, width }: GraphSpec & { width: number
   const surface = useSurface();
   return (
     <View testID="summary-graph" style={{ width: width + 2, flexShrink: 0, flexDirection: "column", gap: SPACE.xs }}>
-      <View style={{ height: GRAPH_HEAD - 4, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+      <View style={{ height: HEAD_ROW, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
         <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>{title}</Text>
         <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>{scale}</Text>
       </View>

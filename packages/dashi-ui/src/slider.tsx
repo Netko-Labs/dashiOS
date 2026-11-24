@@ -20,13 +20,15 @@ import { useEffect, useRef, useState } from "react";
 import { useControlState } from "./control-state.tsx";
 import { fractionAt, fractionOf, keyValues, knobLeft, nearestIndex, type SliderRange, UNIT_RANGE, valueAt } from "./slider-math.ts";
 import { StepKeys } from "./step-keys.tsx";
-import { KNOB as KNOB_INK, lightColors, useColors } from "./theme/index.ts";
+import { KNOB as KNOB_INK, lightColors, SHADOW, useColors } from "./theme/index.ts";
 
 /** A setting's slider: the knob, and the track it runs on. */
 const KNOB = 18;
 const TRACK = 4;
 /** Control Center's: the bar is as tall as its round end. */
 const BAR = 28;
+/** The glyph in its round end, centred there. */
+const GLYPH = 14;
 /** A drag that stops moving for this long is committed, in case the release never arrives. */
 const SETTLE_MS = 300;
 /** A press on the bar's key stop this soon after the pointer let go is the click that ended a drag, not a key. */
@@ -69,7 +71,7 @@ function PlainBar({ height, width, left }: { height: number; width: number; left
           backgroundColor: colors.selection,
         }}
       />
-      <View style={{ position: "absolute", left, top: 2, width: KNOB, height: KNOB, borderRadius: KNOB / 2, backgroundColor: KNOB_INK, shadow: "sm" }} />
+      <View style={{ position: "absolute", left, top: 2, width: KNOB, height: KNOB, borderRadius: KNOB / 2, backgroundColor: KNOB_INK, shadow: SHADOW.sm }} />
     </>
   );
 }
@@ -87,11 +89,11 @@ function GlyphBar({ glyph, width, left }: { glyph: string; width: number; left: 
           backgroundColor: KNOB_INK,
           flexDirection: "row",
           alignItems: "center",
-          paddingLeft: 7,
+          paddingLeft: (BAR - GLYPH) / 2,
         }}
       >
         {/* Ink on the white fill in both modes. */}
-        <Svg markup={glyph} size={14} color={lightColors.text} />
+        <Svg markup={glyph} size={GLYPH} color={lightColors.text} />
       </View>
     </View>
   );

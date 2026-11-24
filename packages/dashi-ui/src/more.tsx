@@ -11,7 +11,7 @@
 
 import { Svg, Text, View } from "@mirinjs/metal";
 import { CHEVRON_DOWN, CHEVRON_UP } from "./glyphs.ts";
-import { RADIUS, useColors } from "./theme/index.ts";
+import { RADIUS, SPACE, useColors, WEIGHT } from "./theme/index.ts";
 
 /** Its height, the wash's reach past the words, and the words' size. */
 export const MORE_BUTTON = { height: 24, inset: 6, size: 12 } as const;
@@ -43,17 +43,17 @@ export function MoreButton({
         height: MORE_BUTTON.height,
         flexDirection: "row",
         alignItems: "center",
-        gap: 2,
+        gap: SPACE.xxs,
         // The words on the column's edge; the wash reaches past them.
         marginLeft: -MORE_BUTTON.inset,
         paddingLeft: MORE_BUTTON.inset,
-        paddingRight: MORE_BUTTON.inset - 2,
+        paddingRight: MORE_BUTTON.inset - SPACE.xxs,
         borderRadius: RADIUS.row,
         hoverBackgroundColor: colors.button,
         focusRingColor: colors.focusRing,
       }}
     >
-      <Text numberOfLines={1} style={{ fontSize: MORE_BUTTON.size, fontWeight: "semibold", color: colors.text }}>
+      <Text numberOfLines={1} style={{ fontSize: MORE_BUTTON.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
         {open ? less : more}
       </Text>
       <Svg markup={open ? CHEVRON_UP : CHEVRON_DOWN} size={12} color={colors.textMuted} />

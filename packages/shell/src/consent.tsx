@@ -14,8 +14,8 @@ import { useState } from "react";
 import type { Allow, Ask } from "./agents/index.ts";
 import { NeededScopes, ScopeGrid } from "./consent-scopes.tsx";
 
-/** Short enough for a 1280×720-point screen, with room for its shadow; the card sits `BELOW` above its foot. */
-export const CONSENT = { width: 500, height: 640 } as const;
+/** Short enough for a 1280×720-point screen, with room for its shadow; the card sits `below` above its foot, on its bottom edge, so opening the other permissions grows it upward and the buttons stay put. */
+export const CONSENT = { width: 500, height: 640, below: 80 } as const;
 export const STOPPED = { width: 380, height: 130 } as const;
 
 /** A surface's ground made solid, so the page under a question can't be read through it. */
@@ -53,8 +53,6 @@ export function StopLine({ words }: { words: string }) {
   );
 }
 
-/** Room under the card: it sits on its bottom edge, so opening the other permissions grows it upward and the buttons stay put. */
-const BELOW = 80;
 /** The card's width on its surface, and the most its permissions take before they scroll. */
 const CARD_WIDTH = CONSENT.width - 60;
 const SCOPES_MAX = 300;
@@ -105,7 +103,7 @@ export function ConsentSheet({ ask, onAnswer }: { ask: Ask; onAnswer: (allow: Al
   const point = (id: string, hovered: boolean): void => setPointed((now) => (hovered ? id : now === id ? null : now));
 
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", paddingTop: SPACE.inset, paddingBottom: BELOW }}>
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", paddingTop: SPACE.inset, paddingBottom: CONSENT.below }}>
       <SheetCard testID="consent-sheet" width={CARD_WIDTH}>
         <Alert question={question} message={origin} glyph={AGENT_GLYPH} tone="agent" buttons={answers(answer)}>
           {/* Scrolls only when even this can't fit (a long need on a small sheet); it gives way before anything else. */}

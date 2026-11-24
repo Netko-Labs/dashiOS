@@ -12,7 +12,7 @@ import type { ReactNode } from "react";
 
 /** An item's icon on its page; the head's gap beside it. */
 export const PAGE_ICON = 80;
-const ICON_GAP = 18;
+const ICON_GAP = SPACE.page;
 
 /** The page's own measures: its padding and the gap between its sections. */
 export const ITEM_PAGE = { padding: SPACE.xl, gap: SPACE.sheet } as const;

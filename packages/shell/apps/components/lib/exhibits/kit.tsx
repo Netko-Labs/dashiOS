@@ -71,7 +71,7 @@ export function ChecksPage() {
         <Checkbox testID="check:hidden-label" label="Show Work" checked={checked} onChange={setChecked} hideLabel />
       </Exhibit>
       <Exhibit title="Check mark" note="The box alone, for a list whose row is the control (dashi-dialog's checklist); a pick-one list's is round.">
-        <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+        <View style={{ flexDirection: "row", gap: SPACE.m, alignItems: "center" }}>
           <CheckMark testID="mark:on" checked />
           <CheckMark testID="mark:off" checked={false} />
           <CheckMark testID="mark:round" checked round />
@@ -79,7 +79,7 @@ export function ChecksPage() {
         </View>
       </Exhibit>
       <Exhibit title="Status chip" note="A state in a few words, never a control (UI-12): 18 tall on its tone's wash; a toolbar's is 24.">
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: SPACE.m, alignItems: "center" }}>
           <Chip testID="chip:neutral" label="Not connected" />
           <Chip testID="chip:agent" label="Connected" tone="agent" />
           <Chip testID="chip:danger" label="Failed" tone="danger" />
@@ -99,12 +99,12 @@ function TilesExhibit({ on, setOn, level, setLevel }: { on: boolean; setOn: (on:
       title="Control Center's tiles"
       note="A wide tile's knob toggles and its label opens; a round one toggles; on is the one on. The battery is a reading, its bar ink (CC-1)."
     >
-      <View style={{ flexDirection: "row", gap: 8, height: 56, width: 344 }}>
+      <View style={{ flexDirection: "row", gap: SPACE.m, height: 56, width: 344 }}>
         <WideTile look={{ testID: "tile:wide", title: "Wi-Fi", detail: "Home", glyph: glyphs.SEARCH, on }} onToggle={() => setOn(!on)} onOpen={noop} />
         <RoundTile look={{ testID: "tile:round", title: "Focus", detail: null, glyph: glyphs.LOCK, on: !on }} onToggle={() => setOn(!on)} />
         <RoundTile look={{ testID: "tile:dim", title: "Applet", detail: null, glyph: glyphs.INFO, on: false, dim: true }} onToggle={noop} />
       </View>
-      <View style={{ flexDirection: "row", gap: 8, height: 56, width: 344 }}>
+      <View style={{ flexDirection: "row", gap: SPACE.m, height: 56, width: 344 }}>
         <SliderTile
           look={{ testID: "tile:slider", title: "Display", glyph: glyphs.SEARCH, level, value: `${Math.round(level * 100)}%`, width: 344, height: 56 }}
           standing={false}
@@ -114,7 +114,7 @@ function TilesExhibit({ on, setOn, level, setLevel }: { on: boolean; setOn: (on:
       <View style={{ flexDirection: "row", height: 56, width: 344 }}>
         <BatteryTile look={{ percent: 64, charging: false, limit: 80, time: "5 h 10 min", glyph: glyphs.INFO }} onOpen={noop} />
       </View>
-      <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+      <View style={{ flexDirection: "row", gap: SPACE.m, alignItems: "center" }}>
         <KnobButton testID="knob:back" glyph={glyphs.CHEVRON_LEFT} label="Back" onPress={noop} />
         <KnobButton testID="knob:mute" glyph={glyphs.STOP} label="Mute" checked={!on} onPress={() => setOn(!on)} />
         <KnobButton testID="knob:add" glyph={glyphs.CLOSE} label="Add" inked size={22} glyphSize={12} onPress={noop} />
@@ -163,7 +163,7 @@ export function PanelPage() {
       </Exhibit>
       <Exhibit title="Ink slider, knobs and a reading" note="The flat slider fills with ink; a reading's bar is ink too, ume under 10% (CO-13).">
         <InkSlider testID="ink-slider" value={level} glyph={glyphs.SEARCH} format={(value) => `${Math.round(value * 100)}%`} onChange={setLevel} />
-        <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+        <View style={{ flexDirection: "row", gap: SPACE.gap, alignItems: "center" }}>
           <Knob glyph={glyphs.LOCK} />
           <Knob glyph={glyphs.LOCK} on />
           <GlyphDisc glyph={glyphs.SEARCH} />

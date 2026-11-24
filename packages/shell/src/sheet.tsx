@@ -36,7 +36,7 @@ const WINDOW_KEYS: Rows = [
 ];
 /** A shortcut's row, and the room between the columns. */
 const ROW = 22;
-const COLUMN_GAP = 22;
+const COLUMN_GAP = SPACE.xl;
 
 /** Rows a column holds at most, so the sheet never grows. */
 export const MAX_ROWS = 11;

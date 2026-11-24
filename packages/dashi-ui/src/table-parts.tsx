@@ -5,7 +5,7 @@ import { type ReactNode, useState } from "react";
 import { CHEVRON_DOWN, CHEVRON_UP } from "./glyphs.ts";
 import { SelectionBar } from "./selection.tsx";
 import { nextSort, type SortableColumn, type SortState } from "./table-sort.ts";
-import { CLEAR, useColors, useSurface } from "./theme/index.ts";
+import { CLEAR, RADIUS, TYPE, useColors, useSurface, WEIGHT } from "./theme/index.ts";
 
 export interface Column<T> extends SortableColumn<T> {
   title: string;
@@ -17,6 +17,8 @@ export interface Column<T> extends SortableColumn<T> {
 }
 
 export const TABLE_PAD = 10;
+/** Between a column's title and its sort arrow. */
+const SORT_GAP = 3;
 
 function cellBox(width: number | undefined, align: "left" | "right" | undefined) {
   return {
@@ -46,7 +48,11 @@ export function TableHeader<T>({
       {columns.map((column, index) => {
         const sorted = sort?.key === column.key;
         const arrow = sorted && <Svg markup={sort.ascending ? CHEVRON_UP : CHEVRON_DOWN} size={10} color={colors.textMuted} />;
-        const ink = { fontSize: 11, fontWeight: sorted ? "bold" : "semibold", color: sorted ? colors.text : colors.textMuted } as const;
+        const ink = {
+          fontSize: TYPE.caption.size,
+          fontWeight: sorted ? WEIGHT.bold : WEIGHT.semibold,
+          color: sorted ? colors.text : colors.textMuted,
+        } as const;
         return (
           <View
             key={column.key}
@@ -54,7 +60,7 @@ export function TableHeader<T>({
             onPress={() => onSort(nextSort(sort, column))}
             style={{
               ...cellBox(column.width, column.align),
-              gap: 3,
+              gap: SORT_GAP,
               // The divider takes its 1 from the padding, so a title starts on its values' edge.
               borderLeftWidth: index > 0 ? 1 : 0,
               ...(index > 0 ? { paddingLeft: TABLE_PAD / 2 - 1 } : {}),
@@ -131,7 +137,7 @@ export function TableRow<T>({ row, columns, testID, striped, chosen, muted, heig
         height,
         flexShrink: 0,
         flexDirection: "row",
-        borderRadius: 5,
+        borderRadius: RADIUS.row,
         backgroundColor: chosen ? colors.selectionWash : striped ? surface.stripe : CLEAR,
         ...(dropOver ? { borderWidth: 2, borderColor: colors.selection } : {}),
       }}
@@ -142,7 +148,7 @@ export function TableRow<T>({ row, columns, testID, striped, chosen, muted, heig
           {column.cell ? (
             column.cell(row, chosen)
           ) : (
-            <Text numberOfLines={1} style={{ fontSize: 12, color: ink, textAlign: column.align ?? "left" }}>
+            <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: ink, textAlign: column.align ?? "left" }}>
               {column.text(row)}
             </Text>
           )}

@@ -10,12 +10,14 @@ import {
   Shortcut,
   SidebarItem,
   type SortState,
+  SPACE,
   Switch,
   sortRows,
   Table,
   TINTS,
   Tile,
   ToolbarButton,
+  TYPE,
 } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
@@ -32,14 +34,14 @@ export function RowsPage() {
             <Switch testID="group:switch" on={on} onChange={setOn} />
           </Row>
           <Row label="Charge limit">
-            <Inked>{(colors) => <Text style={{ fontSize: 12, color: colors.textMuted }}>80%</Text>}</Inked>
+            <Inked>{(colors) => <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>80%</Text>}</Inked>
           </Row>
         </Group>
         <GroupCaption>The battery lasts longest kept below full.</GroupCaption>
       </Exhibit>
       <Exhibit title="Note and tile" note="A line where there is nothing to show; a glyph on a tile of its tint.">
         <Note testID="note:demo">No devices nearby.</Note>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
           <Tile glyph={glyphs.LOCK} tint={TINTS.mizu} />
           <Tile glyph={glyphs.INFO} tint={TINTS.kabocha} />
           <Tile glyph={glyphs.SEARCH} tint={TINTS.nori} size={32} />
@@ -75,7 +77,7 @@ export function ListsPage() {
       <Exhibit title="Sidebar row" note="The selected row is a kombu wash with a 3 px bar; its words and glyph are ink.">
         <States states={["enabled", "selected"]}>
           {({ state, selected }) => (
-            <View style={{ width: 200, flexDirection: "column", gap: 2 }}>
+            <View style={{ width: 200, flexDirection: "column", gap: SPACE.xxs }}>
               <SidebarItem
                 testID={`sidebar:${state}:glyph`}
                 label="Documents"
@@ -101,8 +103,8 @@ export function ListsPage() {
         title="Sidebar rail and accessory"
         note="Folded to a 56 rail, a row is its glyph, named “Name — count” in a tooltip; its own action shows only in the full sidebar (LA-5)."
       >
-        <View style={{ flexDirection: "row", gap: 16, alignItems: "flex-start" }}>
-          <View style={{ width: 56, flexDirection: "column", gap: 2 }}>
+        <View style={{ flexDirection: "row", gap: SPACE.page, alignItems: "flex-start" }}>
+          <View style={{ width: 56, flexDirection: "column", gap: SPACE.xxs }}>
             <SidebarItem
               testID="rail:inbox"
               label="Inbox"
@@ -114,7 +116,7 @@ export function ListsPage() {
             />
             <SidebarItem testID="rail:drive" label="USB drive" glyph={glyphs.LOCK} rail selected={chosen === "drive"} onPress={() => setChosen("drive")} />
           </View>
-          <View style={{ width: 200, flexDirection: "column", gap: 2 }}>
+          <View style={{ width: 200, flexDirection: "column", gap: SPACE.xxs }}>
             <SidebarItem
               testID="accessory:drive"
               label="USB drive"
@@ -150,17 +152,17 @@ export function ShortcutsPage() {
   return (
     <PageBody>
       <Exhibit title="Shortcut" note="Keys are drawn, never typed: fonts don't have ❖. Mac order: ⌃ ⌥ ⇧ ❖, then the key.">
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: SPACE.button }}>
           {SHORTCUTS.map((keys) => (
             <Inked key={keys}>{(colors) => <Shortcut keys={keys} color={colors.text} />}</Inked>
           ))}
         </View>
       </Exhibit>
       <Exhibit title="Glyphs" note="@dashi/ui's own, on a 16-unit grid, tinted by the ink they are drawn in.">
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: SPACE.inset }}>
           {Object.entries(glyphs).map(([name, markup]) => (
             // As wide as the longest name (CHEVRON_UP_DOWN), so no name runs past its cell into the card's edge.
-            <View key={name} style={{ width: 124, flexDirection: "column", alignItems: "center", gap: 4 }}>
+            <View key={name} style={{ width: 124, flexDirection: "column", alignItems: "center", gap: SPACE.xs }}>
               <Inked>{(colors) => <Svg markup={markup} size={18} color={colors.text} />}</Inked>
               <Caption>{name}</Caption>
             </View>

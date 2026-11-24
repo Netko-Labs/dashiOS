@@ -15,7 +15,7 @@ import { createContext, useContext } from "react";
 import { CHECK } from "./glyphs.ts";
 import { MENU } from "./menu-place.ts";
 import { Shortcut } from "./shortcut.tsx";
-import { CLEAR, lightColors, useColors } from "./theme/index.ts";
+import { CLEAR, lightColors, TYPE, useColors } from "./theme/index.ts";
 
 /** How a lit row is drawn: its fill, the words on it, and its shortcut's ink. */
 export interface MenuHighlight {
@@ -91,7 +91,7 @@ export function MenuRow({ label, testID, keys, ticks, checked, disabled = false,
           </View>
         )}
         <View style={{ flexShrink: 1, minWidth: 0 }}>
-          <Text numberOfLines={1} style={{ fontSize: 13, color: ink }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: ink }}>
             {label}
           </Text>
         </View>

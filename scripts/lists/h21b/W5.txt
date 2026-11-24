@@ -1,0 +1,3 @@
+# H21b (scripts/check-design-measures.ts): literal measures in a style (size, line height, spacing,
+# radius, opacity, weight, shadow), per file. Shrink-only: use the token, or a named constant beside
+# the component in @dashi/ui, then `bun scripts/check-design-measures.ts --shrink`.

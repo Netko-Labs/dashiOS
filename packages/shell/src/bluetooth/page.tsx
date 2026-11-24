@@ -12,7 +12,7 @@
 import { Button, MORE, SPACE, ToolbarButton, TYPE, useControlColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
-import { PageBody, PageHeader, PageNote, PageRow, PageSection } from "../control-center/page-parts.tsx";
+import { PAGE_ROW, PageBody, PageHeader, PageNote, PageRow, PageSection } from "../control-center/page-parts.tsx";
 import { batteryGlyph } from "../glyphs.ts";
 import { failureLine } from "./failures.ts";
 import { deviceGlyph } from "./glyphs.ts";
@@ -20,7 +20,7 @@ import { type BluetoothStore, useBluetooth } from "./store.ts";
 import type { BluetoothDevice, BluetoothState, Busy } from "./types.ts";
 
 /** The question under a row starts under its name, clear of its glyph. */
-const FORGET_INSET = 40;
+const FORGET_INSET = SPACE.s + PAGE_ROW.knob + SPACE.gap;
 
 /** The list shows this many points of rows, then scrolls. */
 const LIST_HEIGHT = 380;

@@ -8265,3 +8265,32 @@ short words, as the rulebook is written.
 - **Cost:** a stray ⌫ no longer offers to trash; the chooser is Files' even on a desktop that has
   another portal.
 - **Undo:** per item, from git.
+
+### D680. What H21b reads as a literal measure, and how its last offenders became tokens
+
+- **Date:** 2026-11-24. The `design-finish` agent's (W8; H21b, TK-1, TY-3).
+- **Question:** H21b ("every measure in a style is a token or a named constant beside its
+  component in `@dashi/ui`") came last, after W2–W7's token swaps. What exactly is a literal, and
+  should the 140 left be listed or fixed?
+- **Choice:** `scripts/check-design-measures.ts` counts a literal font size, line height,
+  spacing, radius, opacity, weight or shadow, written in a style or reached through a name bound
+  to a bare literal (the scanner H21a shares, `scripts/design-scan.ts`). A named constant is a
+  SCREAMING_CASE `const` at a file's top level holding a value or a table of them (not a
+  function); it is fine in the kit and still a literal elsewhere. No measure: 0, `"auto"`, a
+  percentage, spacing ±1 (a hairline's offset), a negated token or constant (`-SPACE.xs`),
+  arithmetic on a name (`KNOB / 2`). Timers (setTimeout's delay, `…Ms`, `…Duration`) are their
+  module's named constants and not style measures: H21b leaves them alone. Weight and shadow
+  count too, as TK-1 names `WEIGHT` and `SHADOW` (Metal's words were H21a's only). All 140 were
+  fixed, so every `h21b/Wn` list starts empty: the kit's and the Components app's were the
+  token they already equalled; Setup's and the Installer's 56 became the kit's `WIZARD_PAGE.inset`
+  (UI-1: a second user); the Dock's table is `SPACE` and `RADIUS.dock`; Activity Monitor's graph
+  head is its 15 row plus `SPACE.xs`; the consent card's 80 is `CONSENT.below`, beside its
+  surface's size. Three moved a little to land on the scale: the shortcuts sheet's columns 22 → 24,
+  the Store page's icon gap 18 → 16, Calendar's cell padding 3 → 2; and Bluetooth's Forget question
+  now starts under the row's name, as its comment said (40 → 52).
+- **Why:** a rule with an empty list protects every file at once; a list of 140 would have been
+  a hole. Timers are not drawn, so a token set for them would be a list of every delay.
+- **Cost:** a module's table of its own sizes (`FORM.padX`, `PAGE_ROW.knob`) is not followed into
+  where it is used: 81 such uses outside the kit (most are a circle's `size / 2`), so a spacing
+  written in a table under a key that is not a style's name still slips past.
+- **Undo:** drop the step from `scripts/check.ts`; the moved measures, per file, from git.

@@ -291,5 +291,6 @@ export {
   type TitleBarInset,
   ToolbarButton,
   useTitleBarInset,
+  WIZARD_PAGE,
 } from "./window.tsx";
 export { placeOf, TITLE_KEEP, titleRoom, WindowTitle } from "./window-title.tsx";

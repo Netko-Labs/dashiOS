@@ -17,13 +17,15 @@
 import { type PressInfo, Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { SIDEBAR } from "./sidebar.tsx";
-import { CLEAR, useColors, useSurface } from "./theme/index.ts";
+import { CLEAR, RADIUS, SPACE, TYPE, useColors, useSurface, WEIGHT } from "./theme/index.ts";
 import { TooltipLayer, useTooltip } from "./tooltip.tsx";
 import { WindowTitle } from "./window-title.tsx";
 
 /** The toolbar's height when the compositor reports no window controls to line up with. */
 const TOOLBAR_HEIGHT = 38;
 export const SIDEBAR_WIDTH = 200;
+/** A wizard's page (VS-3: Setup, the Installer): its words this far in from the window's sides. */
+export const WIZARD_PAGE = { inset: 56 } as const;
 
 export interface TitleBarInset {
   /** The window has the unified title bar, with the controls over the content. */
@@ -130,9 +132,9 @@ export function AppWindow({
                 flexShrink: 0,
                 flexDirection: "row",
                 alignItems: "center",
-                gap: 10,
+                gap: SPACE.gap,
                 paddingLeft: toolbarInset(inset.leading, sidebar === undefined ? 0 : sidebarWidth),
-                paddingRight: 12,
+                paddingRight: SPACE.inset,
                 borderBottomWidth: 1,
                 borderColor: colors.separator,
               }}
@@ -169,10 +171,10 @@ export function AppWindow({
 export function SidebarSection({ title, children }: { title?: string; children: ReactNode }) {
   const colors = useColors();
   return (
-    <View focusGroup selectsOnFocus style={{ flexDirection: "column", gap: 2, flexShrink: 0, marginBottom: 10 }}>
+    <View focusGroup selectsOnFocus style={{ flexDirection: "column", gap: SPACE.xxs, flexShrink: 0, marginBottom: SPACE.gap }}>
       {title !== undefined && (
-        <View style={{ paddingHorizontal: 8, paddingBottom: 2 }}>
-          <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>{title}</Text>
+        <View style={{ paddingHorizontal: SPACE.m, paddingBottom: SPACE.xxs }}>
+          <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>{title}</Text>
         </View>
       )}
       {children}
@@ -235,10 +237,10 @@ export function ToolbarButton({
         minWidth: 32,
         // Its words never wrap and it never shrinks: a toolbar's one row gives way elsewhere.
         flexShrink: 0,
-        paddingHorizontal: label ? 10 : 0,
+        paddingHorizontal: label ? SPACE.gap : 0,
         flexDirection: "row",
-        gap: 6,
-        borderRadius: 7,
+        gap: SPACE.s,
+        borderRadius: RADIUS.control,
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: active && !disabled ? colors.button : CLEAR,
@@ -248,7 +250,7 @@ export function ToolbarButton({
     >
       <Svg markup={glyph} size={16} color={disabled ? colors.textDisabled : colors.textMuted} />
       {label !== undefined && (
-        <Text numberOfLines={1} style={{ fontSize: 12, color: disabled ? colors.textDisabled : colors.text }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: disabled ? colors.textDisabled : colors.text }}>
           {label}
         </Text>
       )}
@@ -271,15 +273,15 @@ function WindowSidebar({ width, top, children }: { width: number; top: number; c
         width,
         flexShrink: 0,
         flexDirection: "column",
-        gap: 2,
-        paddingHorizontal: 10,
-        paddingBottom: 10,
+        gap: SPACE.xxs,
+        paddingHorizontal: SPACE.gap,
+        paddingBottom: SPACE.gap,
         backgroundColor: surface.sidebar,
         borderRightWidth: 1,
         borderColor: colors.separator,
       }}
     >
-      <View dragRegion style={{ height: top, flexShrink: 0, marginLeft: -10, marginRight: -10 }} />
+      <View dragRegion style={{ height: top, flexShrink: 0, marginLeft: -SPACE.gap, marginRight: -SPACE.gap }} />
       {children}
     </View>
   );

@@ -8,7 +8,7 @@
 import { View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { KeySink } from "./key-sink.tsx";
-import { SCRIM, useColors, useDark, useSurface } from "./theme/index.ts";
+import { RADIUS, SCRIM, SHADOW, SPACE, useColors, useDark, useSurface } from "./theme/index.ts";
 import { useTitleBarInset } from "./window.tsx";
 
 export interface SheetProps {
@@ -94,12 +94,12 @@ export function SheetCard({
         marginTop,
         ...tall,
         flexDirection: "column",
-        ...(bare ? { overflow: "hidden" as const } : { gap: 10, padding: 20 }),
-        borderRadius: 12,
+        ...(bare ? { overflow: "hidden" as const } : { gap: SPACE.gap, padding: SPACE.sheet }),
+        borderRadius: RADIUS.sheet,
         backgroundColor: bare ? surface.window : surface.card,
         borderWidth: 1,
         borderColor: colors.separator,
-        shadow: "xl",
+        shadow: SHADOW.xl,
       }}
     >
       {children}
@@ -175,7 +175,7 @@ function WindowSheet({ children, testID, width = 380, onCancel, onConfirm, hang,
       <SheetCard
         testID={testID}
         width={sheetWidth(width, room)}
-        marginTop={Math.max(hang ?? inset.top, 0) + 8}
+        marginTop={Math.max(hang ?? inset.top, 0) + SPACE.m}
         {...(height !== undefined ? { height } : {})}
         bare={bare === true}
         {...(label !== undefined ? { label } : {})}
