@@ -1,7 +1,7 @@
 /**
- * What the chooser does with the keyboard and the search field: accept the
- * choice, keys on the listing and in the fields, a path typed in the search,
- * and ⇧❖. for hidden files. Which of the frames draws it does not matter.
+ * What the chooser does with the keyboard: accept the choice, keys on the
+ * listing and in a save's name field, and ⇧❖. for hidden files (the path and
+ * the search are Files' omnibox's). Which of the frames draws it does not matter.
  */
 
 import type { WindowKeyInfo } from "@mirinjs/metal";
@@ -10,7 +10,6 @@ import type { ChooserAnswer } from "../../../files/index.ts";
 import type { ChooserModel, ChooserState } from "../../chooser-model.ts";
 import { useChooser } from "../../chooser-model.ts";
 import type { BrowserKey } from "../../keys.ts";
-import { intentOf } from "../../omnibox.ts";
 import { recordRecents } from "../recent-file.ts";
 
 /** Whether a key is ⇧❖. (Show Hidden Files), as it reaches a window with no menus: Ctrl+Shift with the period. */
@@ -26,15 +25,10 @@ export interface ChooserInput {
   refocus: () => void;
   peek: boolean;
   setPeek: (peek: boolean) => void;
-  /** A path typed in the search (`~/…`, `/…`), as Files' path field takes one: Return goes there. */
-  typedPath: string | null;
   /** The choice is made: answer with it (a file that a save would replace asks first). */
   go: () => void;
   onKey: (key: BrowserKey) => void;
   fieldKeys: (key: FieldKey) => void;
-  searchKeys: (key: FieldKey) => void;
-  search: (text: string) => void;
-  submitSearch: (text: string) => void;
   hiddenChord: (info: WindowKeyInfo) => boolean;
 }
 
@@ -78,7 +72,6 @@ export function useChooserInput({
   // The listing takes the keyboard from the start, but in a save, where the name field has it.
   const [focus, setFocus] = useState(model.request.mode === "save" ? 0 : 1);
   const [peek, setPeek] = useState(false);
-  const [typedPath, setTypedPath] = useState<string | null>(null);
   const refocus = useCallback(() => setFocus((n) => n + 1), []);
 
   const go = (): void => {
@@ -106,29 +99,11 @@ export function useChooserInput({
     store.move(key === "ArrowUp" ? "up" : "down");
     refocus();
   };
-  const searchKeys = (key: FieldKey): void => {
-    if (key === "Escape" && typedPath !== null) return setTypedPath(null);
-    fieldKeys(key);
-  };
-  const search = (text: string): void => {
-    const isPath = intentOf(text) === "path";
-    setTypedPath(isPath ? text : null);
-    // A path isn't a name to look for: the folder stays listed while it is typed.
-    store.setQuery(isPath ? "" : text);
-  };
-  const submitSearch = (text: string): void => {
-    if (intentOf(text) !== "path") return go();
-    const problem = store.goToPath(text);
-    model.say(problem);
-    if (problem !== null) return;
-    setTypedPath(null);
-    refocus();
-  };
   // ⇧❖. shows hidden files: the chooser has no menu bar to take it, so it arrives as a key.
   const hiddenChord = (info: WindowKeyInfo): boolean => {
     if (!isHiddenChord(info)) return false;
     store.toggleHidden();
     return true;
   };
-  return { state, files, focus, refocus, peek, setPeek, typedPath, go, onKey, fieldKeys, searchKeys, search, submitSearch, hiddenChord };
+  return { state, files, focus, refocus, peek, setPeek, go, onKey, fieldKeys, hiddenChord };
 }
