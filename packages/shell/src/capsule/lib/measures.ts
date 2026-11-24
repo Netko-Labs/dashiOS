@@ -4,14 +4,14 @@
  * its 41 px being 28 points.
  */
 
-import { AMBER as AMBER_SET, CAPSULE as CAPSULE_INKS } from "@dashi/ui";
+import { AMBER as AMBER_SET, CAPSULE as CAPSULE_INKS, SPACE, TYPE } from "@dashi/ui";
 
 /** The one line. */
 export const CAPSULE = {
   height: 31,
   paddingX: 13,
-  gap: 8,
-  fontSize: 13,
+  gap: SPACE.m,
+  fontSize: TYPE.body.size,
   rim: 1.5,
   /** The widest the capsule gets at home, and the most of the words it shows. */
   maxWidth: 700,
@@ -26,7 +26,7 @@ export const CAPSULE = {
   dot: 4,
   dotGap: 4,
   dotsHeight: 19,
-  button: { height: 22, paddingX: 9, fontSize: 11.5, gap: 5 },
+  button: { height: 22, paddingX: 9, fontSize: TYPE.panel.detail.size, gap: SPACE.xs },
   stop: 8,
   /** The amber ring of something that needs the person. */
   ring: 3,
@@ -46,15 +46,19 @@ export const CARD = {
   focusLine: 1.5,
   focusInk: CAPSULE_INKS.ink,
   paddingX: 12,
-  paddingTop: 9,
-  paddingBottom: 10,
-  fontSize: 13,
-  headSize: 11,
-  questionSize: 13.5,
-  messageSize: 12.5,
-  hintSize: 10.5,
+  paddingTop: SPACE.m,
+  paddingBottom: SPACE.gap,
+  fontSize: TYPE.body.size,
+  headSize: TYPE.caption.size,
+  /** Who speaks: the head's 11 and a half step (pill-v2). */
+  whoSize: TYPE.panel.detail.size,
+  /** A choice's words, a step under the card's 13. */
+  choiceSize: TYPE.secondary.size,
+  questionSize: TYPE.panel.name.size,
+  messageSize: TYPE.panel.body.size,
+  hintSize: TYPE.panel.micro.size,
   disc: 20,
-  button: { height: 24, paddingX: 12, fontSize: 12 },
+  button: { height: 24, paddingX: 12, fontSize: TYPE.secondary.size },
   choice: 27,
   /** How far it stands over the Dock's top edge. */
   onDock: 8,

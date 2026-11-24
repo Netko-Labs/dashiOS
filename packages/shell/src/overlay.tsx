@@ -5,7 +5,7 @@
  * host that dies by itself is the same close.
  */
 
-import { TextSelectionLook } from "@dashi/ui";
+import { CLEAR, TextSelectionLook } from "@dashi/ui";
 import { type NativeHostOptions, type NativeHostTransport, render, TextInput, View } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { METAL_HOST } from "./shared/apps/index.ts";
@@ -93,7 +93,7 @@ export function KeyCatcher({ onKey, onSubmit, testID }: { onKey: (key: Navigatio
         onChangeText={() => {}}
         onKeyPress={onKey}
         onSubmitEditing={() => onSubmit?.()}
-        style={{ width: 1, height: 1, backgroundColor: "#00000000" }}
+        style={{ width: 1, height: 1, backgroundColor: CLEAR }}
       />
     </View>
   );

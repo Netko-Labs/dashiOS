@@ -5,7 +5,7 @@
  * this only draws them. Dashi's line is voice-line.tsx.
  */
 
-import { CHECK, CLOSE } from "@dashi/ui";
+import { CHECK, CLOSE, pill, SHADOW, SPACE } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import type { Cell, DictationCommand, DictationState } from "../../shared/pill/index.ts";
@@ -72,9 +72,12 @@ function Profile({ name, colours, send }: { name: string; colours: CapsuleColour
   );
 }
 
+/** The amber dot's size. */
+const AMBER_DOT = 7;
+
 /** An amber dot (something was not done), or the check. */
 const Amber = ({ colours }: { colours: CapsuleColours }) => (
-  <View style={{ flexShrink: 0, width: 7, height: 7, borderRadius: 3.5, backgroundColor: colours.amber }} />
+  <View style={{ flexShrink: 0, width: AMBER_DOT, height: AMBER_DOT, borderRadius: pill(AMBER_DOT), backgroundColor: colours.amber }} />
 );
 
 type After = Extract<DictationState, { phase: "landed" | "told" | "offer" }>;
@@ -210,13 +213,13 @@ export function Capsule({
         maxWidth,
         overflow: "hidden",
         // Dashi's disc leads from closer to the edge.
-        paddingLeft: dashi ? 5 : CAPSULE.paddingX,
-        paddingRight: tight ? 5 : CAPSULE.paddingX,
+        paddingLeft: dashi ? SPACE.xs : CAPSULE.paddingX,
+        paddingRight: tight ? SPACE.xs : CAPSULE.paddingX,
         borderRadius: CAPSULE.height / 2,
         backgroundColor: colours.fill,
         borderWidth: CAPSULE.rim,
         borderColor: colours.rim,
-        shadow: "lg",
+        shadow: SHADOW.lg,
       }}
     >
       {children}

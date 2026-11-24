@@ -4,11 +4,14 @@
  * pill while the capture is the recorder's own (screen-capture.tsx).
  */
 
-import { RADIUS, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { pill, RADIUS, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { elapsedText } from "../shared/time/index.ts";
 import { type ScreenRecorder, useRecorder } from "./recorder.ts";
+
+/** The stop pill's height, in the bar's row. */
+const STOP_PILL = 20;
 
 export function RecordingButton({ recorder }: { recorder: ScreenRecorder }) {
   const colors = useColors();
@@ -28,10 +31,10 @@ export function RecordingButton({ recorder }: { recorder: ScreenRecorder }) {
         flexDirection: "row",
         alignItems: "center",
         gap: SPACE.s,
-        height: 20,
+        height: STOP_PILL,
         paddingLeft: SPACE.m,
         paddingRight: SPACE.m,
-        borderRadius: 10,
+        borderRadius: pill(STOP_PILL),
         backgroundColor: colors.captureWash,
       }}
     >

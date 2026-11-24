@@ -9,7 +9,7 @@
  * Dashi, or goes where a notice points.
  */
 
-import { KeyedText, useColors } from "@dashi/ui";
+import { KeyedText, MOTION, OPACITY, pill, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { MIC, SPARK, VOLUME } from "../shared/settings/index.ts";
@@ -18,7 +18,21 @@ import type { LevelStore } from "./lib/speech.ts";
 import type { Chip, ChipGo } from "./types.ts";
 
 /** The chip's measures: the agent mark's height; at most 440 wide, and never under 150. */
-export const VOICE_CHIP = { height: 22, padding: 8, gap: 6, glyph: 13, fontSize: 12, maxWidth: 440, minWidth: 150, margin: 12, bars: 5, bar: 2.5 } as const;
+/** The listening dots' size. */
+const VOICE_DOT = 4;
+
+export const VOICE_CHIP = {
+  height: 22,
+  padding: SPACE.m,
+  gap: SPACE.s,
+  glyph: 13,
+  fontSize: TYPE.secondary.size,
+  maxWidth: 440,
+  minWidth: 150,
+  margin: SPACE.inset,
+  bars: 5,
+  bar: 2.5,
+} as const;
 
 /** What the bar's chip reads: the voice controller (voice.ts). */
 export interface ChipSource {
@@ -82,7 +96,7 @@ function Meter({ level }: { level: ChipSource["level"] }) {
   const colors = useColors();
   const now = useSyncExternalStore(level.subscribe, level.getSnapshot);
   return (
-    <View testID="voice-meter" style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 2, height: 14 }}>
+    <View testID="voice-meter" style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: SPACE.xxs, height: 14 }}>
       {barHeights(now).map((height, index) => (
         // The bars never reorder.
         <View key={index} style={{ width: VOICE_CHIP.bar, height, borderRadius: VOICE_CHIP.bar / 2, backgroundColor: colors.agent }} />
@@ -97,13 +111,22 @@ function Dots({ still }: { still: boolean }) {
   const [lit, setLit] = useState(0);
   useEffect(() => {
     if (still) return;
-    const timer = setInterval(() => setLit((now) => (now + 1) % 3), 320);
+    const timer = setInterval(() => setLit((now) => (now + 1) % 3), MOTION.pulse);
     return () => clearInterval(timer);
   }, [still]);
   return (
-    <View testID="voice-dots" style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 3 }}>
+    <View testID="voice-dots" style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: SPACE.xxs }}>
       {[0, 1, 2].map((dot) => (
-        <View key={dot} style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.agent, opacity: still || dot === lit ? 1 : 0.35 }} />
+        <View
+          key={dot}
+          style={{
+            width: VOICE_DOT,
+            height: VOICE_DOT,
+            borderRadius: pill(VOICE_DOT),
+            backgroundColor: colors.agent,
+            opacity: still || dot === lit ? 1 : OPACITY.disabled,
+          }}
+        />
       ))}
     </View>
   );
@@ -119,9 +142,9 @@ function Dots({ still }: { still: boolean }) {
 function Line({ children, bold, faint }: { children: string; bold?: boolean; faint?: boolean }) {
   const colors = useColors();
   return (
-    <View style={{ flexShrink: 0, ...(faint ? { opacity: 0.6 } : {}) }}>
+    <View style={{ flexShrink: 0, ...(faint ? { opacity: OPACITY.faint } : {}) }}>
       {/* A notice may name the key ("Hold ❖Space or the Copilot key to talk."): drawn at the text's size. */}
-      <KeyedText oneLine style={{ fontSize: VOICE_CHIP.fontSize, color: colors.agentInk, fontWeight: bold ? "semibold" : "normal" }}>
+      <KeyedText oneLine style={{ fontSize: VOICE_CHIP.fontSize, color: colors.agentInk, fontWeight: bold ? WEIGHT.semibold : WEIGHT.regular }}>
         {children}
       </KeyedText>
     </View>
@@ -218,7 +241,7 @@ export function VoiceChip({ voice, bar, menus, status, reduceMotion = () => fals
             gap: VOICE_CHIP.gap,
             height: VOICE_CHIP.height,
             paddingLeft: VOICE_CHIP.padding,
-            paddingRight: VOICE_CHIP.padding + 2,
+            paddingRight: VOICE_CHIP.padding + SPACE.xxs,
             borderRadius: VOICE_CHIP.height / 2,
             backgroundColor: colors.agentWash,
           }}
