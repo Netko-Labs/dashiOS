@@ -6,12 +6,14 @@
  * keeps its name, never a lone ×.
  */
 
+import { SPACE } from "@dashi/ui";
+
 /** A tab's least width: the ×, about eight letters of its name, and the dot's room. */
 export const TAB_MIN = 96;
 /** And its most: two tabs don't stretch across a wide window; the group sits centred. */
 export const TAB_MAX = 260;
 /** The space between two tabs, and before the count. */
-export const TAB_GAP = 4;
+export const TAB_GAP = SPACE.xs;
 /** The count's width ("+5"). */
 export const MORE_WIDTH = 34;
 

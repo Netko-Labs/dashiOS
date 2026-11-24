@@ -8,6 +8,7 @@
  * A row redraws only when its spans, the look or the cell change (`memo`).
  */
 
+import { OPACITY, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { memo } from "react";
 import type { TerminalPalette } from "../palette.ts";
@@ -38,10 +39,15 @@ export interface Look {
   cursor: string;
 }
 
-/** What the grid paints with: the terminal's own ground and ink (a program may have set them), else the palette's; the selection washed in the accent, the cursor in the palette's kombu. */
-export function lookFor(palette: TerminalPalette, dark: boolean, accent: string, ownInk: string | undefined, ownGround: string | undefined): Look {
+/**
+ * What the grid paints with: the terminal's own ground and ink (a program may
+ * have set them), else the palette's; the selection on the fields'
+ * `textSelection` (CO-9, the one text selection); the cursor and the bell in
+ * the grid's ink, whatever it is (R5, CO-9: a caret is in its text's ink).
+ */
+export function lookFor(palette: TerminalPalette, selection: string, ownInk: string | undefined, ownGround: string | undefined): Look {
   const ink = ownInk ?? palette.ink;
-  return { ground: ownGround ?? palette.ground, ink, selection: `${accent}${dark ? "66" : "40"}`, cursor: palette.cursor };
+  return { ground: ownGround ?? palette.ground, ink, selection, cursor: ink };
 }
 
 export function color(value: string | undefined, look: Look, fallback: string): string {
@@ -86,10 +92,10 @@ export const Line = memo(function Line({ spans, look, cell }: { spans: Span[]; l
                   fontSize: cell.fontSize,
                   lineHeight: cell.height,
                   color: color(span.fg, look, look.ink),
-                  fontWeight: span.b ? "bold" : "normal",
+                  fontWeight: span.b ? WEIGHT.bold : WEIGHT.regular,
                   fontStyle: span.i ? "italic" : "normal",
                   textDecorationLine: span.u ? "underline" : span.st ? "line-through" : "none",
-                  opacity: span.dim ? 0.6 : 1,
+                  opacity: span.dim ? OPACITY.faint : 1,
                 }}
               >
                 {span.s}
