@@ -13,7 +13,7 @@
  * purple stays the keyboard ring's and the agents'), gone after `LIT_MS`.
  */
 
-import { useControlColors } from "@dashi/ui";
+import { CLEAR, SPACE, useControlColors } from "@dashi/ui";
 import { type Bounds, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useSyncExternalStore } from "react";
 import { CardLit } from "../shared/cards/index.ts";
@@ -21,12 +21,14 @@ import type { AppSpotId } from "./lib/find.ts";
 import { rowPlace, type SettingId } from "./registry/index.ts";
 
 /** How long a row stays lit. */
-export const LIT_MS = 2_500;
+/** How long a row a link lands on stays lit; how often, and how many times, the page is asked whether it is laid out yet. */
+const SPOT_TIMES = { lit: 2_500, poll: 50, polls: 20 } as const;
+export const LIT_MS = SPOT_TIMES.lit;
 /** Room left above the row once it is scrolled to. */
 const ABOVE = 24;
 /** The row and its page report their layout in either order: look again this often, this many times. */
-const LAYOUT_POLL_MS = 50;
-const LAYOUT_POLLS = 20;
+const LAYOUT_POLL_MS = SPOT_TIMES.poll;
+const LAYOUT_POLLS = SPOT_TIMES.polls;
 
 export interface RowTarget {
   pane: string;
@@ -86,7 +88,7 @@ export const PageContext = createContext<{ testID: string; bounds: { current: Bo
 const NO_FOCUS = { subscribe: () => () => {}, getSnapshot: (): RowTarget | null => null };
 
 /** The page's gap between its parts (ui.tsx `Page`), kept inside a Spot that holds several. */
-export const PAGE_GAP = 10;
+export const PAGE_GAP = SPACE.gap;
 
 /**
  * A row with an address: scrolled to and lit when it is asked for. A
@@ -136,7 +138,7 @@ export function Spot({ id, cards = false, children }: { id: SettingId | AppSpotI
         bounds.current = laid;
         reveal();
       }}
-      style={cards ? { flexDirection: "column", gap: PAGE_GAP } : { flexDirection: "column", backgroundColor: lit ? colors.lit : "#00000000" }}
+      style={cards ? { flexDirection: "column", gap: PAGE_GAP } : { flexDirection: "column", backgroundColor: lit ? colors.lit : CLEAR }}
     >
       {cards ? <CardLit.Provider value={lit !== null}>{children}</CardLit.Provider> : children}
     </View>

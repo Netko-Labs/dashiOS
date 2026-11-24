@@ -7,7 +7,7 @@
  * memory (system/stand-in.ts), as Wi-Fi and Bluetooth do.
  */
 
-import { AccountStore, type AccountsSetup, chooseAccounts, PasswordChangePrompt } from "../accounts/index.ts";
+import { AccountStore, type AccountsSetup, chooseAccounts, PasswordChangePrompt, type WindowPlace } from "../accounts/index.ts";
 import type { BatteryMonitor } from "../battery/index.ts";
 import type { BluetoothStore } from "../bluetooth/index.ts";
 import type { DeviceStore } from "../control-center/index.ts";
@@ -90,6 +90,8 @@ export interface ServicesOptions {
   laptop?: Laptop | null;
   /** The shell's Automatic refresh rate. */
   refresh?: AutoRefresh | null;
+  /** Where Settings' window is, for the password sheet to hang from (accounts/prompt.tsx). */
+  settingsPlace?: () => Promise<WindowPlace | null>;
 }
 
 export function createPaneServices(options: ServicesOptions): PaneServices {
@@ -103,7 +105,7 @@ export function createPaneServices(options: ServicesOptions): PaneServices {
     lid: fake ? fakeLid() : logindLid(),
   });
   // Settings' sheet: while it has the keyboard the bar still says System Settings (bar-hold.ts).
-  const prompt = new PasswordChangePrompt(holdingBar(openOverlay), accounts.passwords);
+  const prompt = new PasswordChangePrompt(holdingBar(openOverlay), accounts.passwords, options.settingsPlace);
   return {
     ...shared,
     battery: options.battery ?? null,

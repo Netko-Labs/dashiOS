@@ -9,7 +9,7 @@
  * another package needed it ("Fcitx5 qt Qt6gui" with Fcitx; D365).
  */
 
-import { Button, Group, useColors } from "@dashi/ui";
+import { Button, Group, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { CatalogEntry, Offer } from "../../../src/shared/software/index.ts";
 import { useCatalog } from "./catalog-hooks.ts";
@@ -24,21 +24,28 @@ function PackageRow({ entry, offer, label, dashi }: { entry: CatalogEntry; offer
   return (
     <View
       testID={`installed-package:${offer.ref}`}
-      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: ROW.minHeight, paddingHorizontal: 12, paddingVertical: 8 }}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: SPACE.inset,
+        minHeight: ROW.minHeight,
+        paddingHorizontal: SPACE.inset,
+        paddingVertical: SPACE.m,
+      }}
     >
       <View
         focusable
         accessibilityRole="button"
         accessibilityLabel={entry.name}
         onPress={() => actions.openEntry(entry.key, offer.source)}
-        style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 12 }}
+        style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: SPACE.inset }}
       >
         <AppIcon {...icon} name={entry.name} size={ROW.icon} />
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
-          <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.px }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
             {entry.name}
           </Text>
-          <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
             {[offer.version, label, dashi ? "part of Dashi · updates with Dashi" : null].filter(Boolean).join(" · ")}
           </Text>
         </View>

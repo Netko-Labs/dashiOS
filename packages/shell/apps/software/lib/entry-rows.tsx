@@ -6,7 +6,7 @@
  * others.
  */
 
-import { Group, useColors, useSurface } from "@dashi/ui";
+import { Group, INK_TILE, ON_TINT, RADIUS, SPACE, TYPE, useColors, useSurface, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { CatalogEntry, Source } from "../../../src/shared/software/index.ts";
@@ -14,9 +14,9 @@ import { columnsFor } from "./cards.tsx";
 import { useOfferState } from "./catalog-hooks.ts";
 import { StateChip } from "./chip.tsx";
 import { TERMINAL } from "./glyphs.ts";
-import { VerifiedBadge } from "./marks.tsx";
+import { VerifiedMark } from "./marks.tsx";
 import { appChip, type Chip } from "./model.ts";
-import { AppIcon, ROW, useActions } from "./parts.tsx";
+import { AppIcon, iconRadius, ROW, useActions } from "./parts.tsx";
 import { sourceLine } from "./source-words.ts";
 
 /** The chip for a row's default source, and what pressing it does. */
@@ -42,6 +42,11 @@ function useEntryChip(entry: CatalogEntry): { chip: Chip | null; press: () => vo
   return { chip: { kind: "get", asks: true }, press: () => actions.getPackage(entry, offer) };
 }
 
+/** A card's icon; a tool's graphite tile and its glyph (the terminal tools' tile, INK_TILE). */
+const ENTRY_ICON = 48;
+const TOOL_TILE = 36;
+const TOOL_GLYPH = 18;
+
 export function EntryCard({ entry, sources }: { entry: CatalogEntry; sources: readonly Source[] }) {
   const colors = useColors();
   const surface = useSurface();
@@ -52,37 +57,37 @@ export function EntryCard({ entry, sources }: { entry: CatalogEntry; sources: re
     <View
       testID={`entry:${entry.key}`}
       focusable
-      accessibilityRole="button"
+      accessibilityRole="listitem"
       accessibilityLabel={entry.name}
       onPress={() => actions.openEntry(entry.key)}
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 12,
-        padding: 12,
+        gap: SPACE.inset,
+        padding: SPACE.inset,
         minWidth: 0,
-        borderRadius: 10,
+        borderRadius: RADIUS.card,
         backgroundColor: surface.card,
         borderWidth: 1,
         borderColor: colors.separator,
         hoverBackgroundColor: colors.tileHover,
       }}
     >
-      <AppIcon {...icon} name={entry.name} size={48} />
-      <View style={{ flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 5, minWidth: 0 }}>
+      <AppIcon {...icon} name={entry.name} size={ENTRY_ICON} />
+      <View style={{ flex: 1, flexDirection: "column", gap: SPACE.xxs, minWidth: 0 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs, minWidth: 0 }}>
           <View style={{ flexShrink: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+            <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
               {entry.name}
             </Text>
           </View>
-          {entry.offers[0]?.verified && <VerifiedBadge size={12} />}
+          {entry.offers[0]?.verified && <VerifiedMark size={TYPE.secondary.size} />}
         </View>
-        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
           {entry.summary}
         </Text>
         <View testID={`entry-source:${entry.key}`} style={{ minWidth: 0 }}>
-          <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
             {sourceLine(sources, entry)}
           </Text>
         </View>
@@ -99,8 +104,9 @@ export function EntryGrid({ entries, sources }: { entries: readonly CatalogEntry
     <View
       testID="entry-grid"
       focusGroup
+      accessibilityRole="list"
       onLayout={(bounds) => setWidth(bounds.width)}
-      style={{ display: "grid", gridTemplateColumns: Array.from({ length: count }, () => "1fr" as const), gap: 12, flexShrink: 0 }}
+      style={{ display: "grid", gridTemplateColumns: Array.from({ length: count }, () => "1fr" as const), gap: SPACE.inset, flexShrink: 0 }}
     >
       {entries.map((entry) => (
         <EntryCard key={entry.key} entry={entry} sources={sources} />
@@ -116,7 +122,14 @@ function ToolRow({ entry, sources }: { entry: CatalogEntry; sources: readonly So
   return (
     <View
       testID={`tool:${entry.name}`}
-      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: ROW.minHeight - 8, paddingHorizontal: 12, paddingVertical: 6 }}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: SPACE.inset,
+        minHeight: ROW.minHeight - SPACE.m,
+        paddingHorizontal: SPACE.inset,
+        paddingVertical: SPACE.s,
+      }}
     >
       <View
         testID={`tool-open:${entry.name}`}
@@ -124,16 +137,26 @@ function ToolRow({ entry, sources }: { entry: CatalogEntry; sources: readonly So
         accessibilityRole="button"
         accessibilityLabel={entry.name}
         onPress={() => actions.openEntry(entry.key)}
-        style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 12 }}
+        style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: SPACE.inset }}
       >
-        <View style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: "#1f1f1f", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <Svg markup={TERMINAL} size={18} color="#ffffff" />
+        <View
+          style={{
+            width: TOOL_TILE,
+            height: TOOL_TILE,
+            borderRadius: iconRadius(TOOL_TILE),
+            backgroundColor: INK_TILE,
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <Svg markup={TERMINAL} size={TOOL_GLYPH} color={ON_TINT} />
         </View>
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
-          <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.px }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
             {entry.name}
           </Text>
-          <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
             {[entry.summary, sourceLine(sources, entry)].filter(Boolean).join(" · ")}
           </Text>
         </View>

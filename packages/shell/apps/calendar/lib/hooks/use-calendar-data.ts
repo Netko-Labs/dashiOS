@@ -37,14 +37,17 @@ export function useCalendarData(model: CalendarModel, firstDay: number): Calenda
   return { state, occurrences, days, colorOf, destination, choose, undo };
 }
 
-/** The time now, moved every 30 s (which is also when the model checks its alerts). */
+/** How often the now line moves and the model checks its alerts, in ms: a timer, not a motion. */
+const NOW_TICK = 30_000;
+
+/** The time now, moved every `NOW_TICK` (which is also when the model checks its alerts). */
 export function useNow(model: CalendarModel): Date {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const tick = setInterval(() => {
       setNow(new Date());
       model.tick();
-    }, 30_000);
+    }, NOW_TICK);
     return () => clearInterval(tick);
   }, [model]);
   return now;

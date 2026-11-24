@@ -78,7 +78,7 @@ export interface ChangeLogOptions {
 /** How many entries are kept. */
 export const CHANGES_KEPT = 50;
 /** How long after a change the file is written. */
-const SAVE_MS = 400;
+const SAVE = { ms: 400 } as const;
 
 /** "claude" acted, "claude" again; or you twice. */
 const sameActor = (a: Actor | null, b: Actor | null): boolean => (a === null || b === null ? a === b : a.agent === b.agent && a.key === b.key);
@@ -265,7 +265,7 @@ export class ChangeLog {
     this.saveTimer = setTimeout(() => {
       this.saveTimer = null;
       void this.save();
-    }, SAVE_MS);
+    }, SAVE.ms);
   }
 
   private async save(): Promise<void> {

@@ -15,24 +15,22 @@
  * show comes back by itself.
  */
 
-import { Text, View } from "@mirinjs/metal";
+import { View } from "@mirinjs/metal";
 import { useCallback, useState, useSyncExternalStore } from "react";
 import { DeviceStore, useDevices } from "../../../control-center/devices.ts";
 import type { AutoRefresh, RefreshScreen } from "../../../display-config/auto-refresh.ts";
 import { mirrorSource } from "../../../display-config/mirror.ts";
-import { type Mode, type Monitor, monitorLabel, rateOf, ratesOf, sizeLabel } from "../../../display-config/monitors.ts";
+import { type Mode, type Monitor, rateOf, ratesOf, sizeLabel } from "../../../display-config/monitors.ts";
 import type { ScreenInfo } from "../../../displays.ts";
 import type { Laptop } from "../../../laptop/start.ts";
-import { Button, Caption, Group, Note } from "../../../shared/cards/index.ts";
+import { Button, Caption, Group } from "../../../shared/cards/index.ts";
 import { SUN } from "../../../shared/settings/index.ts";
 import { selectedRef } from "../../../wallpaper/catalog.ts";
 import { wallpaperTiles } from "../../../wallpaper/tiles.ts";
-import { useColors } from "../../colors.ts";
 import { useScreens, useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
 import { Choices, Hero, Page, Slider, Switch } from "../../ui.tsx";
-import { chosenMonitor, displayHero, scaleOffer } from "../heroes.ts";
-import { describeSchedule } from "../night.ts";
+import { chosenMonitor, displayHero, displayName, scaleOffer } from "../heroes.ts";
 import { isCurrentScale, logicalSize, type ScreensStore, scaleChoices, scaleLabel } from "../screens.ts";
 import { Setting } from "../setting.tsx";
 import { ArrangementView } from "./arrangement.tsx";
@@ -40,6 +38,7 @@ import { OffScreenCard, ScreenDetails, X11AppsSection } from "./display-cards.ts
 import { DisplayHero } from "./display-hero.tsx";
 import { PanelOverdriveSection } from "./laptop-parts.tsx";
 import { NightShiftSection } from "./night-shift.tsx";
+import { Failure } from "./parts.tsx";
 
 /** What Automatic refresh rate says of this screen; null without it (no built-in screen, a test). */
 function useRefreshScreen(refresh: AutoRefresh | null, name: string): RefreshScreen | null {
@@ -111,10 +110,9 @@ function Brightness({ devices, brightness }: { devices: DeviceStore; brightness:
   );
 }
 
-/** Night Shift's switch, the same as Control Center's tile, with its schedule in words. */
-function NightShiftRow({ settings }: { settings: SettingsStore }) {
-  const { nightShift } = useSettings(settings).data;
-  return <Setting id="displays/night-shift" detail={describeSchedule(nightShift.from, nightShift.to)} control="night-switch" />;
+/** Night Shift's switch, the same as Control Center's tile; its schedule is said once, on Night Shift's card (SE-7). */
+function NightShiftRow() {
+  return <Setting id="displays/night-shift" control="night-switch" />;
 }
 
 /** Mirroring: the other displays show the built-in one (the main one without it), as Control Center's tile does. */
@@ -123,7 +121,7 @@ function MirrorRow({ monitors, store }: { monitors: readonly Monitor[]; store: S
   const sourceName = mirrored?.mirrorOf ?? mirrorSource(monitors);
   const source = monitors.find((monitor) => monitor.name === sourceName);
   if (!source) return null;
-  const label = monitorLabel(source);
+  const label = displayName(source, monitors);
   return (
     <Setting id="displays/mirror" detail={mirrored ? `The others show ${label}` : `The others would show ${label}`}>
       <Switch testID="displays-mirror-switch" on={mirrored !== undefined} onChange={(on) => void store.setMirroring(on)} />
@@ -152,7 +150,6 @@ export function DisplaysPane({
   refresh?: AutoRefresh | null;
   devices?: DeviceStore | null;
 }) {
-  const colors = useColors();
   const state = useScreens(screens);
   const wallpaper = useWallpaperPicture(settings);
   const [asked, setAsked] = useState<string | null>(null);
@@ -162,16 +159,14 @@ export function DisplaysPane({
   const monitor = chosenMonitor(state.monitors, asked);
   const screen = monitor ? state.screens.find((each) => each.name === monitor.name) : undefined;
   const several = on.length > 1;
-  const name = monitor ? displayHero(monitor, { width: 1, height: 1 }).name : undefined;
+  const name = monitor ? displayHero(monitor, { width: 1, height: 1 }, { all: state.monitors }).name : undefined;
   // A row that has nothing to show is left out here, so the card draws no hairline for it.
   const { brightness } = useDevices(devices ?? NO_DEVICES);
   const rates = monitor?.mode ? ratesOf(monitor.modes, monitor.mode).length : 0;
   return (
     <Page title="Displays" {...(name ? { detail: name } : {})}>
       {state.loaded && state.screens.length === 0 && state.monitors.length === 0 && (
-        <Group>
-          <Note testID="displays-none">No displays are reported by the compositor.</Note>
-        </Group>
+        <Failure testID="displays-none">Dashi can't see a display right now. Log out and in again.</Failure>
       )}
       {monitor && (
         <Hero testID="displays-hero-card">
@@ -189,26 +184,23 @@ export function DisplaysPane({
           {monitor.builtIn && devices && brightness !== null && <Brightness devices={devices} brightness={brightness} />}
           {rates > 1 && <RefreshRate monitor={{ ...monitor, mode: monitor.mode }} store={screens} refresh={refresh ?? null} />}
           {screen && <Scale monitor={monitor} screen={screen} store={screens} />}
-          <NightShiftRow settings={settings} />
+          <NightShiftRow />
         </Group>
       )}
-      {monitor && (
+      {monitor && several && (
         <Group testID="displays-arrange">
-          <Setting id="displays/arrange" detail={several ? `${on.length} displays connected` : "One display connected"}>
-            <Button testID="displays-arrange-button" label={arranging ? "Done" : "Arrange"} disabled={!several} onPress={() => setArranging((now) => !now)} />
+          <Setting id="displays/arrange" detail={`${on.length} displays connected`}>
+            {/* Done is ink while arranging (SE-2). */}
+            <Button testID="displays-arrange-button" label={arranging ? "Done" : "Arrange"} primary={arranging} onPress={() => setArranging((now) => !now)} />
           </Setting>
-          {several && <MirrorRow monitors={state.monitors} store={screens} />}
+          <MirrorRow monitors={state.monitors} store={screens} />
         </Group>
       )}
       {monitor?.mode && <ScreenDetails monitor={monitor} store={screens} canTurnOff={several} />}
       {off.map((each) => (
         <OffScreenCard key={each.name} monitor={each} store={screens} />
       ))}
-      {state.error !== null && (
-        <View testID="displays-error" style={{ flexShrink: 0, paddingLeft: 10 }}>
-          <Text style={{ fontSize: 11.5, color: colors.critical }}>The displays didn't answer, so nothing changed. Try again in a moment.</Text>
-        </View>
-      )}
+      {state.error !== null && <Failure testID="displays-error">The displays didn't answer, so nothing changed. Try again in a moment.</Failure>}
       <Caption>
         Windows move with the screen when its scale changes. The choice is kept for the next login. A new resolution or rotation goes back by itself unless you
         keep it.

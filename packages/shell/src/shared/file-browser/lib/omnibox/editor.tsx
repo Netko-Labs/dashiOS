@@ -5,7 +5,7 @@
  * this folder or everywhere (a two-way switch). Escape gives the crumbs back.
  */
 
-import { SEARCH, SearchField, Segmented, TYPE, useColors } from "@dashi/ui";
+import { SEARCH, SEARCH_FIELD, SearchField, Segmented, TYPE, useColors } from "@dashi/ui";
 import { type Bounds, Text } from "@mirinjs/metal";
 import { useEffect, useMemo, useState } from "react";
 import { useFiles, useFilesState } from "../../context.ts";
@@ -85,7 +85,8 @@ export function Editor({ editing, onDone, onSuggest }: OmniboxProps) {
   return (
     <SearchField
       testID="omnibox"
-      fill
+      width="fill"
+      minWidth={SEARCH_FIELD.least}
       variant="find"
       value={text}
       glyph={intent === "path" ? sidebarGlyph("folder") : SEARCH}

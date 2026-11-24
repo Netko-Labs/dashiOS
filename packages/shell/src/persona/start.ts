@@ -46,6 +46,9 @@ export interface PersonaOptions {
   watch?: boolean;
 }
 
+/** Timers, in ms (not design measures): how long a burst of file events settles before the folder is read again. */
+const TIMERS = { settle: 150 } as const;
+
 /** Follows the characters folder once it exists: a file saved there shows at once. */
 function followFolder(dir: string, changed: () => void, on: boolean): { follow(): void; stop(): void } {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -55,7 +58,7 @@ function followFolder(dir: string, changed: () => void, on: boolean): { follow()
     try {
       watcher = watch(dir, () => {
         clearTimeout(timer);
-        timer = setTimeout(changed, 150);
+        timer = setTimeout(changed, TIMERS.settle);
       });
       watcher.on("error", () => {});
     } catch {

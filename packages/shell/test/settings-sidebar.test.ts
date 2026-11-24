@@ -25,7 +25,7 @@ test("every pane is in the sidebar once, Recently changed included, and named as
   expect(new Set(ids(SIDEBAR_PANES)).size).toBe(SIDEBAR_PANES.length);
   expect(paneGroups().flatMap((group) => ids(group.panes))).toEqual(ids(PANES));
   const title = (id: string) => PANES.find((pane) => pane.id === id)?.title;
-  expect([title("network"), title("users"), title("privacy"), title("recent")]).toEqual(["Wi-Fi", "Users", "Privacy", "Recently changed"]);
+  expect([title("network"), title("users"), title("privacy"), title("recent")]).toEqual(["Network", "Users", "Privacy", "Recently changed"]);
 });
 
 test("without a graphics card, This laptop has no Graphics and the order holds", () => {
@@ -47,15 +47,15 @@ test("the window is the design's height, so the sidebar scrolls; the chosen pane
 });
 
 test("the search row is centred on the window lights; the band stays the design's height", () => {
-  expect(topBand(null)).toEqual({ row: SIDEBAR.bar - SIDEBAR.paddingTop, below: 0 });
+  expect(topBand(null)).toEqual({ row: SIDEBAR.bar - SIDEBAR.top, below: 0 });
   // dashi-comp's lights: a 12 row 13 down, centred at 19; the search's row centres there too.
   const band = topBand({ x: 14, y: 13, width: 56, height: 12 });
-  expect(SIDEBAR.paddingTop + band.row / 2).toBe(19);
-  expect(SIDEBAR.paddingTop + band.row + band.below).toBe(SIDEBAR.bar);
+  expect(SIDEBAR.top + band.row / 2).toBe(19);
+  expect(SIDEBAR.top + band.row + band.below).toBe(SIDEBAR.bar);
   // The pill fits its row, so it is centred on the lights, not pushed down.
   expect(band.row).toBeGreaterThanOrEqual(SIDEBAR.search);
   // Lights lower down: a taller row, still centred on them, and nothing below.
   const low = topBand({ x: 14, y: 30, width: 56, height: 12 });
-  expect(SIDEBAR.paddingTop + low.row / 2).toBe(36);
+  expect(SIDEBAR.top + low.row / 2).toBe(36);
   expect(low.below).toBe(0);
 });

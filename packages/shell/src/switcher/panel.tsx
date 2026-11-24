@@ -7,7 +7,7 @@
  * titles, and badges. The pointer chooses too: hover selects, a click picks.
  */
 
-import { useColors } from "@dashi/ui";
+import { Chip, CLEAR, OPACITY, pill, RADIUS, SHADOW, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import type { Rect } from "../layout.ts";
@@ -54,23 +54,35 @@ interface CellProps {
   onPick: () => void;
 }
 
-/** An app in the row: its icon, lit when it is the one chosen, with how many windows it has. */
-function AppCell({ testID, app, icon, cell, lit, onPoint, onPick }: CellProps & { app: SwitcherApp; icon: string; cell: Rect; lit: boolean }) {
+/** An app in the row: its icon, on the selection's wash when it is the one chosen (CO-9: an icon view washes the whole tile), with how many windows it has. */
+function AppCell({
+  testID,
+  app,
+  name,
+  icon,
+  cell,
+  lit,
+  onPoint,
+  onPick,
+}: CellProps & { app: SwitcherApp; name: string; icon: string; cell: Rect; lit: boolean }) {
   const colors = useColors();
   return (
     <View
       testID={testID}
       onHoverChange={(hovered) => hovered && onPoint()}
       onPress={onPick}
+      accessibilityRole="option"
+      accessibilityLabel={name}
+      accessibilityState={{ selected: lit }}
       style={{
         ...at(cell),
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: 16,
-        backgroundColor: lit ? colors.switcherSelection : "#00000000",
+        borderRadius: RADIUS.card,
+        backgroundColor: lit ? colors.selectionWash : CLEAR,
       }}
     >
-      <AppIcon source={icon} style={{ width: ICON, height: ICON, opacity: app.away ? 0.45 : 1 }} />
+      <AppIcon source={icon} style={{ width: ICON, height: ICON, opacity: app.away ? OPACITY.half : 1 }} />
       {app.count > 1 ? (
         <View
           style={{
@@ -79,14 +91,14 @@ function AppCell({ testID, app, icon, cell, lit, onPoint, onPick }: CellProps & 
             top: 4,
             minWidth: BADGE,
             height: BADGE,
-            borderRadius: BADGE / 2,
-            paddingHorizontal: 5,
+            borderRadius: pill(BADGE),
+            paddingHorizontal: SPACE.xs,
             alignItems: "center",
             justifyContent: "center",
             backgroundColor: colors.osdOn,
           }}
         >
-          <Text style={{ fontSize: 11, fontWeight: "bold", color: colors.menu }}>{String(app.count)}</Text>
+          <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.bold, color: colors.menu }}>{String(app.count)}</Text>
         </View>
       ) : null}
     </View>
@@ -110,23 +122,20 @@ function WindowCell({ testID, rect, titleAt, title, badge, chosen, onPoint, onPi
       <View
         testID={testID}
         onHoverChange={(hovered) => hovered && onPoint()}
-        accessibilityRole="button"
+        accessibilityRole="option"
         accessibilityLabel={title}
+        accessibilityState={{ selected: chosen }}
         onPress={onPick}
         style={{
           ...at({ x: rect.x - RING, y: rect.y - RING, width: rect.width + 2 * RING, height: rect.height + 2 * RING }),
-          borderRadius: 8,
+          borderRadius: RADIUS.control,
           borderWidth: RING,
           borderColor: chosen ? colors.selection : colors.dockBorder,
         }}
       />
-      <View style={{ ...at(titleAt), flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }}>
-        {badge ? (
-          <View style={{ paddingHorizontal: 6, height: 16, borderRadius: 8, justifyContent: "center", backgroundColor: colors.button }}>
-            <Text style={{ fontSize: 10, color: colors.textMuted }}>{badge}</Text>
-          </View>
-        ) : null}
-        <Text numberOfLines={1} style={{ fontSize: 11, color: chosen ? colors.text : colors.textMuted, textAlign: "center" }}>
+      <View style={{ ...at(titleAt), flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACE.s }}>
+        {badge ? <Chip label={badge} /> : null}
+        <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: chosen ? colors.text : colors.textMuted, textAlign: "center" }}>
           {title}
         </Text>
       </View>
@@ -145,11 +154,11 @@ export function SwitcherPanel({ store, identify, onPoint, onPick }: PanelProps) 
       <View
         style={{
           ...at(layout.panel),
-          borderRadius: 22,
+          borderRadius: RADIUS.sheet,
           backgroundColor: colors.launcher,
           borderWidth: 1,
           borderColor: colors.dockBorder,
-          shadow: "xl",
+          shadow: SHADOW.xl,
         }}
       />
       {apps.map((app, index) => {
@@ -160,6 +169,7 @@ export function SwitcherPanel({ store, identify, onPoint, onPick }: PanelProps) 
             key={`${index}:${app.appId}`}
             testID={`switcher-app-${index}`}
             app={app}
+            name={identify(app).name}
             icon={identify(app).icon}
             cell={cell}
             lit={index === selected && selectedWindow === null}
@@ -169,7 +179,7 @@ export function SwitcherPanel({ store, identify, onPoint, onPick }: PanelProps) 
         );
       })}
       <View style={{ ...at(layout.name), alignItems: "center", justifyContent: "center" }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text, textAlign: "center" }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text, textAlign: "center" }}>
           {query ? `${name}  ·  “${query}”` : name}
         </Text>
       </View>

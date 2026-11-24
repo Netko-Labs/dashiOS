@@ -20,24 +20,11 @@
 
 import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { WINDOW_LIGHTS } from "@dashi/ui";
 import { DEFAULT_STYLE, type GtkStyle, gtk3Colors, gtk4Colors } from "../../shared/appearance/index.ts";
 
 export const BEGIN = "/* >>> dashi window buttons (managed by Dashi; edit outside this block) */";
 export const END = "/* <<< dashi window buttons */";
-
-/** The traffic lights' colors, as comp/src/theme.rs paints them in both modes. */
-const CLOSE = "#D0596F";
-const MINIMIZE = "#E5B13F";
-const ZOOM = "#4A9A7E";
-/**
- * Unfocused windows. comp paints #CECBC6 / #525256 (`control_inactive`), but
- * libadwaita fades an unfocused headerbar to half opacity (not inside a
- * toolbar view, where it does not), so the same gray would all but vanish
- * there. These are a step stronger: they read as the compositor's gray where
- * the fade applies and as a slightly firmer one where it does not.
- */
-const INACTIVE_LIGHT = "#B9B5AD";
-const INACTIVE_DARK = "#66666C";
 
 /**
  * The "Shapes" controls, as comp/src/theme.rs draws them on Dashi's own title
@@ -55,7 +42,8 @@ const REACH = 3;
 /** comp's CONTROL_HOVER_SCALE. */
 const HOVER_SCALE = 1.18;
 
-const COLORS = { close: CLOSE, minimize: MINIMIZE, maximize: ZOOM } as const;
+/** The traffic lights' colors, as comp/src/theme.rs paints them, from the theme (an unfocused one's too: WINDOW_LIGHTS). */
+const COLORS = { close: WINDOW_LIGHTS.close, minimize: WINDOW_LIGHTS.minimize, maximize: WINDOW_LIGHTS.zoom } as const;
 type Control = keyof typeof SHAPES;
 const CONTROLS: readonly Control[] = ["close", "minimize", "maximize"];
 
@@ -163,7 +151,7 @@ export type GtkVersion = 3 | 4;
 
 /** Dashi's block for one GTK major version, markers included, without a trailing newline. */
 export function dashiBlock(version: GtkVersion, style: GtkStyle = DEFAULT_STYLE): string {
-  const inactive = style.dark ? INACTIVE_DARK : INACTIVE_LIGHT;
+  const inactive = style.dark ? WINDOW_LIGHTS.inactiveDark : WINDOW_LIGHTS.inactiveLight;
   const body =
     version === 4 ? `${gtk4Colors(style.radius, style.accent)}\n${gtk4Rules(inactive)}` : `${gtk3Colors(style.dark, style.accent)}\n${gtk3Rules(inactive)}`;
   return `${BEGIN}\n${body}\n${END}`;

@@ -7,6 +7,7 @@
  * isn't in the picture.
  */
 
+import { CAPTURE_AREA, CLEAR, HIT_AREA, RADIUS, SPACE, TYPE } from "@dashi/ui";
 import { type NativeHostOptions, Text, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Output } from "../compositor/index.ts";
@@ -55,7 +56,7 @@ function Selector({ onDone }: { onDone: (choice: Choice) => void }) {
   const selection = start && end ? areaBetween(start, end) : null;
   return (
     <View
-      style={{ flex: 1, backgroundColor: "#00000001" }}
+      style={{ flex: 1, backgroundColor: HIT_AREA }}
       onPointer={(event) => {
         const at = { x: event.x, y: event.y };
         if (event.phase === "down") {
@@ -80,7 +81,7 @@ function Selector({ onDone }: { onDone: (choice: Choice) => void }) {
           onKeyPress={(key) => {
             if (key === "Escape") onDone({ kind: "cancel" });
           }}
-          style={{ width: 1, height: 1, backgroundColor: "#00000000" }}
+          style={{ width: 1, height: 1, backgroundColor: CLEAR }}
         />
       </View>
       {selection ? (
@@ -91,9 +92,9 @@ function Selector({ onDone }: { onDone: (choice: Choice) => void }) {
             top: selection.y,
             width: selection.width,
             height: selection.height,
-            backgroundColor: "#ffffff26",
+            backgroundColor: CAPTURE_AREA.wash,
             borderWidth: 1,
-            borderColor: "#ffffffd9",
+            borderColor: CAPTURE_AREA.edge,
           }}
         />
       ) : null}
@@ -103,15 +104,15 @@ function Selector({ onDone }: { onDone: (choice: Choice) => void }) {
             position: "absolute",
             left: selection.x + selection.width + 6,
             top: selection.y + selection.height + 6,
-            paddingLeft: 6,
-            paddingRight: 6,
-            paddingTop: 2,
-            paddingBottom: 2,
-            borderRadius: 4,
-            backgroundColor: "#000000a6",
+            paddingLeft: SPACE.s,
+            paddingRight: SPACE.s,
+            paddingTop: SPACE.xxs,
+            paddingBottom: SPACE.xxs,
+            borderRadius: RADIUS.check,
+            backgroundColor: CAPTURE_AREA.labelGround,
           }}
         >
-          <Text style={{ fontSize: 11, color: "#ffffff" }}>{`${selection.width} × ${selection.height}`}</Text>
+          <Text style={{ fontSize: TYPE.caption.size, color: CAPTURE_AREA.labelInk }}>{`${selection.width} × ${selection.height}`}</Text>
         </View>
       ) : null}
     </View>

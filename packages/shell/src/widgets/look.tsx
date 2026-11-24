@@ -5,7 +5,7 @@
  * private parts. Every part below reads it, so a widget never picks a colour.
  */
 
-import type { InkName, InkTokens } from "@dashi/ui";
+import { type InkName, type InkTokens, LOCK_GLASS } from "@dashi/ui";
 import { createContext, useContext } from "react";
 import { inkOf } from "../shared/inks/index.ts";
 
@@ -18,7 +18,7 @@ export interface CardLook {
   houseDown: boolean;
   /** Private nodes are blanks (locked, and not allowed for this one). */
   redact: boolean;
-  /** On the lock screen's wash: a translucent paper over the wallpaper, words in the lock's ink. */
+  /** On the lock screen's wash: the mode's glass over the wallpaper (LOCK_GLASS), words in the lock's ink. */
   glass?: boolean;
 }
 
@@ -62,12 +62,12 @@ export function cardColours(look: CardLook): CardColours {
   }
   const text = inks.text;
   return {
-    paper: look.glass ? "#00000047" : inks.paper,
+    paper: look.glass ? LOCK_GLASS[inks.mode].paper : inks.paper,
     value: inkOf(inks, look.ink, { down: look.houseDown, onAir: false }),
     ink: text.ink,
     secondary: text.secondary,
     tertiary: text.tertiary,
-    hairline: look.glass ? "#FFFFFF33" : text.hairline,
+    hairline: look.glass ? LOCK_GLASS[inks.mode].hairline : text.hairline,
     off: alpha(text.ink, 0.19),
     fill: text.ink,
     onFill: inks.paper,

@@ -9,6 +9,9 @@ import { join } from "node:path";
 import type { Machine } from "@dashi/applet";
 import { lenientList, literal, map, maybe, obj, record, type Shape, unknown } from "@dashi/shape";
 
+/** How long a probe of the machine may run before it is stopped (ms). */
+const TIMERS = { probe: 3000 } as const;
+
 /** DMI chassis types that are portable (SMBIOS 3.x: laptop, notebook, sub-notebook, convertible, detachable, tablet…). */
 const PORTABLE = new Set([8, 9, 10, 11, 14, 30, 31, 32]);
 
@@ -68,7 +71,7 @@ async function describeHardware(): Promise<unknown> {
       stdout: "pipe",
       stderr: "ignore",
     });
-    const timer = setTimeout(() => child.kill(), 3000);
+    const timer = setTimeout(() => child.kill(), TIMERS.probe);
     const [code, out] = await Promise.all([child.exited, new Response(child.stdout).text()]);
     clearTimeout(timer);
     return code === 0 ? parseBusctlString(out) : null;

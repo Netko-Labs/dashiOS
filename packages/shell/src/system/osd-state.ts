@@ -4,6 +4,7 @@
  * and it goes away a moment after the last one.
  */
 
+import { SPACE } from "@dashi/ui";
 import { useSyncExternalStore } from "react";
 
 export type OsdState =
@@ -24,7 +25,7 @@ export const OSD = {
   /** The rounded square. */
   size: 200,
   /** Room around it for the shadow. */
-  margin: 24,
+  margin: SPACE.xl,
   /** Level bar segments: one per key step. */
   segments: 16,
   /** It stays this long after the last change. */

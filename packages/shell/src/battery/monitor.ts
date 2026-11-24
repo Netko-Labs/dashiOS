@@ -22,6 +22,8 @@ export const MONITOR = {
   sampleMs: 60_000,
   /** A look at the apps. */
   appsMs: 30_000,
+  /** Health and the power mode, which change rarely: every ten minutes. */
+  slowMs: 600_000,
   /** The looks averaged for "the last minutes": ten minutes' worth. */
   appWindow: 20,
 } as const;
@@ -96,8 +98,7 @@ export class BatteryMonitor {
     this.timers.push(
       setInterval(() => void this.sample(), MONITOR.sampleMs),
       setInterval(() => this.look(), MONITOR.appsMs),
-      // Health and the power mode change rarely: every ten minutes.
-      setInterval(() => void this.refreshSlow(), 10 * MONITOR.sampleMs),
+      setInterval(() => void this.refreshSlow(), MONITOR.slowMs),
     );
   }
 

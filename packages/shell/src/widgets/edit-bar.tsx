@@ -1,9 +1,13 @@
 /** Editing's one bar, at the bottom (round five, #26): Add · Done. */
 
+import { CLEAR, pill, SPACE, TYPE, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { glyph } from "../shared/inks/index.ts";
 import { useWidgetEnv } from "./env.tsx";
 import { COLUMN_WIDTH } from "./layout.ts";
+
+/** The bar's measures: its two pill buttons 28 tall, 2 in from the bar's edge. */
+const EDIT_BAR = { button: 28, inset: SPACE.xxs } as const;
 
 export function EditBar({ onAdd, onDone }: { onAdd: () => void; onDone: () => void }) {
   const { inks } = useWidgetEnv();
@@ -14,16 +18,16 @@ export function EditBar({ onAdd, onDone }: { onAdd: () => void; onDone: () => vo
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 5,
-        height: 28,
-        paddingLeft: 14,
-        paddingRight: 14,
-        borderRadius: 14,
-        backgroundColor: fill ? inks.text.ink : "#00000000",
+        gap: SPACE.xs,
+        height: EDIT_BAR.button,
+        paddingLeft: SPACE.button,
+        paddingRight: SPACE.button,
+        borderRadius: pill(EDIT_BAR.button),
+        backgroundColor: fill ? inks.text.ink : CLEAR,
       }}
     >
       {fill ? null : <Svg markup={glyph("plus")} size={11} color={inks.text.ink} />}
-      <Text style={{ fontSize: 12, fontWeight: "semibold", color: fill ? inks.paper : inks.text.ink }}>{label}</Text>
+      <Text style={{ fontSize: TYPE.secondary.size, fontWeight: WEIGHT.semibold, color: fill ? inks.paper : inks.text.ink }}>{label}</Text>
     </View>
   );
   return (
@@ -32,9 +36,9 @@ export function EditBar({ onAdd, onDone }: { onAdd: () => void; onDone: () => vo
         style={{
           flexDirection: "row",
           alignItems: "center",
-          gap: 4,
-          padding: 3,
-          borderRadius: 17,
+          gap: SPACE.xs,
+          padding: EDIT_BAR.inset,
+          borderRadius: pill(EDIT_BAR.button + 2 * EDIT_BAR.inset),
           backgroundColor: inks.paper,
           borderWidth: 1,
           borderColor: inks.text.hairline,

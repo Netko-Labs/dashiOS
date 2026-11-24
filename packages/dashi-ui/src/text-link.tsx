@@ -16,12 +16,15 @@ export function TextLink({
   testID,
   disabled,
   look = "window",
+  size = "regular",
 }: {
   label: string;
   onPress: () => void;
   testID: string;
   disabled?: boolean;
   look?: Look;
+  /** `small`: 11, for a link in a list of captions (a day's "3 more"). */
+  size?: "regular" | "small";
 }) {
   const colors = useColors();
   const panel = useControlColors();
@@ -40,7 +43,7 @@ export function TextLink({
     >
       <Text
         style={{
-          fontSize: look === "panel" ? TYPE.panel.body.size : TYPE.body.size,
+          fontSize: size === "small" ? TYPE.caption.size : look === "panel" ? TYPE.panel.body.size : TYPE.body.size,
           fontWeight: WEIGHT.semibold,
           color: state.pressed ? colors.textMuted : ink,
           textDecorationLine: "underline",

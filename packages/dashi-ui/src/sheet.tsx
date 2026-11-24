@@ -25,7 +25,22 @@ export interface SheetProps {
   bare?: boolean;
   /** What screen readers call it when no heading in it does (the chooser, whose title's place is the path). */
   label?: string;
+  /**
+   * `window` (the default): hung from the top of its window over the scrim.
+   * `screen`: a shell sheet with no window to hang from (polkit, the power
+   * sheets, an agent's question), centred on its own surface, no scrim (UI-5).
+   */
+  place?: SheetPlace;
+  /**
+   * The window's title strip the card hangs under, when the sheet is drawn
+   * over a window from a surface of its own (the shell's Change Password over
+   * Settings): the window's controls are not this surface's to report. By
+   * default the window's own (`useTitleBarInset`).
+   */
+  hang?: number;
 }
+
+export type SheetPlace = "window" | "screen";
 
 /** The least room a sheet keeps from the window's sides and foot. */
 export const SHEET_MARGIN = 16;
@@ -97,7 +112,38 @@ export function sheetWidth(width: number, room: number): number {
   return room > 0 ? Math.max(0, Math.min(width, room - 2 * SHEET_MARGIN)) : width;
 }
 
-export function Sheet({ children, testID, width = 380, onCancel, onConfirm, height, bare, label }: SheetProps) {
+/** The keys a sheet answers: Esc and Enter, while nothing in it that takes them (a field) has the keyboard. */
+function SheetKeys({ testID, onCancel, onConfirm }: Pick<SheetProps, "testID" | "onCancel" | "onConfirm">) {
+  if (!onCancel && !onConfirm) return null;
+  return (
+    <KeySink
+      testID={`${testID}:keys`}
+      onKey={(key) => {
+        if (key.kind === "escape") onCancel?.();
+        else if (key.kind === "enter") onConfirm?.();
+      }}
+    />
+  );
+}
+
+/** A sheet on a surface of its own, with no window: the card centred on it (its shadow falls in the rest). */
+function ScreenSheet({ children, testID, width = 380, onCancel, onConfirm }: SheetProps) {
+  const colors = useColors();
+  return (
+    <View testID={`${testID}:place`} style={{ flex: 1, alignItems: "center", justifyContent: "center", focusRingColor: colors.focusRing }}>
+      <SheetKeys testID={testID} onCancel={onCancel} onConfirm={onConfirm} />
+      <SheetCard testID={testID} width={width}>
+        {children}
+      </SheetCard>
+    </View>
+  );
+}
+
+export function Sheet(props: SheetProps) {
+  return props.place === "screen" ? <ScreenSheet {...props} /> : <WindowSheet {...props} />;
+}
+
+function WindowSheet({ children, testID, width = 380, onCancel, onConfirm, hang, height, bare, label }: SheetProps) {
   const colors = useColors();
   const dark = useDark();
   const inset = useTitleBarInset();
@@ -125,19 +171,11 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm, heig
         focusRingColor: colors.focusRing,
       }}
     >
-      {(onCancel || onConfirm) && (
-        <KeySink
-          testID={`${testID}:keys`}
-          onKey={(key) => {
-            if (key.kind === "escape") onCancel?.();
-            else if (key.kind === "enter") onConfirm?.();
-          }}
-        />
-      )}
+      <SheetKeys testID={testID} onCancel={onCancel} onConfirm={onConfirm} />
       <SheetCard
         testID={testID}
         width={sheetWidth(width, room)}
-        marginTop={Math.max(inset.top, 0) + 8}
+        marginTop={Math.max(hang ?? inset.top, 0) + 8}
         {...(height !== undefined ? { height } : {})}
         bare={bare === true}
         {...(label !== undefined ? { label } : {})}

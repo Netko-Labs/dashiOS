@@ -5,7 +5,7 @@
  * the event there (the days it would cover are washed in its color).
  */
 
-import { useColors } from "@dashi/ui";
+import { SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { type Day, monthOf, type Occurrence } from "../../../../src/shared/calendar/index.ts";
@@ -14,6 +14,11 @@ import { monthDayAt } from "../grid/drag.ts";
 import type { GridHandlers, GridState } from "../grid/grid-props.ts";
 import { CHIP_TIME_FROM, chipCapacity, monthGrid } from "../layout.ts";
 import { DayCell, type MonthShared } from "./day-cell.tsx";
+
+/** The weekdays' row over the weeks, its hairline, and the grid's height before it is laid out. */
+const NAMES_ROW = 26;
+const RULE = 1;
+const FIRST_HEIGHT = 494;
 
 export interface MonthViewProps {
   anchor: Day;
@@ -30,7 +35,7 @@ export function MonthView({ anchor, today, firstDay, prefs, occurrences, colorOf
   const colors = useColors();
   const weeks = monthGrid(anchor, firstDay);
   const { month } = monthOf(anchor);
-  const [grid, setGrid] = useState<Bounds>({ x: 0, y: 0, width: 0, height: 494 });
+  const [grid, setGrid] = useState<Bounds>({ x: 0, y: 0, width: 0, height: FIRST_HEIGHT });
   const capacity = chipCapacity(grid.height / weeks.length);
   const names = weekdayNames(prefs.locale, firstDay);
   // A narrow cell gives its chips' room to their titles: the time goes first.
@@ -41,10 +46,10 @@ export function MonthView({ anchor, today, firstDay, prefs, occurrences, colorOf
 
   return (
     <View testID="month-view" style={{ flex: 1, flexDirection: "column", minHeight: 0 }}>
-      <View style={{ height: 26, flexShrink: 0, flexDirection: "row", borderBottomWidth: 1, borderColor: colors.separator }}>
+      <View style={{ height: NAMES_ROW, flexShrink: 0, flexDirection: "row", borderBottomWidth: RULE, borderColor: colors.separator }}>
         {names.map((name) => (
-          <View key={name} style={{ flex: 1, alignItems: "flex-end", justifyContent: "center", paddingRight: 8 }}>
-            <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>{name}</Text>
+          <View key={name} style={{ flex: 1, alignItems: "flex-end", justifyContent: "center", paddingRight: SPACE.m }}>
+            <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>{name}</Text>
           </View>
         ))}
       </View>

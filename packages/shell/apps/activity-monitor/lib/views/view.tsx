@@ -23,7 +23,6 @@
  */
 
 import { AppWindow } from "@dashi/ui";
-import { View } from "@mirinjs/metal";
 import type { MonitorActions } from "../actions.ts";
 import type { OpenRequest } from "../args.ts";
 import { useMonitorWindow } from "../hooks/use-monitor-window.ts";
@@ -41,7 +40,7 @@ export function MonitorWindow({ monitor, actions, initial = {} }: { monitor: Mon
       <AppWindow
         title="Activity Monitor"
         // In a narrow window the title gives its room to the controls first (toolbar-fit.ts).
-        {...(model.fit.title ? {} : { center: <View style={{ flex: 1 }} /> })}
+        hideTitle={!model.fit.title}
         toolbar={<MonitorBar model={model} />}
         overlay={monitorOverlay(model)}
       >

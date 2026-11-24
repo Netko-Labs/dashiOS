@@ -28,7 +28,7 @@ export function useNotice({
 }): CalendarNotice {
   const [hiddenProblems, setHiddenProblems] = useState<string | null>(null);
   const [deleted, setDeleted] = useState<{ text: string; step: number | null } | null>(null);
-  const noteDeleted = (title: string): void => setDeleted({ text: `Deleted “${title || "New Event"}”.`, step: model.undo.state.undoStep });
+  const noteDeleted = (title: string): void => setDeleted({ text: `Deleted “${title || "New event"}”.`, step: model.undo.state.undoStep });
   const problemsKey = state.problems.join("\n");
   const undoable = deleted !== null && deleted.step !== null && undo.undoStep === deleted.step;
   const notice = state.error ? (

@@ -12,11 +12,13 @@
  * `revealed` says.
  */
 
+import { DELAY, MOTION } from "@dashi/ui";
+
 export const AUTOHIDE = {
   /** The pointer must rest at the edge this long before the Dock comes (a brush past the edge does nothing). */
-  revealMs: 120,
+  revealMs: MOTION.quick,
   /** The pointer must be away this long before the Dock goes (a slip off the Dock's top does not hide it). */
-  hideMs: 600,
+  hideMs: DELAY.tooltip,
 } as const;
 
 export interface AutohideClock {

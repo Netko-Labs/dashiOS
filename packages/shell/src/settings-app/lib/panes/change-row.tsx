@@ -7,14 +7,15 @@
  * Pressing the words opens the setting's pane at its row.
  */
 
+import { SPACE, TYPE, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { Actor } from "../../../acting.ts";
 import { ago } from "../../../agents/ask/history.ts";
-import { Button } from "../../../shared/cards/index.ts";
 import { useColors } from "../../colors.ts";
 import type { ChangeEntry } from "../changes/log.ts";
 import { changeLine } from "../changes/words.ts";
 import { PAGE } from "../row.tsx";
+import { MiniButton } from "./parts.tsx";
 
 /** Who changed it, in words: "you", or the agent by its name. */
 export function changedBy(by: Pick<Actor, "agent"> | null): string {
@@ -29,21 +30,30 @@ export function changeDetail(entry: Pick<ChangeEntry, "words" | "at">, now: numb
 /** "by you · was on, 10 min ago", the agent's name in shiso. */
 function ChangeLine({ entry }: { entry: ChangeEntry }) {
   const colors = useColors();
+  const words = { fontSize: TYPE.panel.detail.size, color: colors.textMuted } as const;
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 4, minWidth: 0 }}>
-      <Text style={{ fontSize: 11.5, color: colors.textMuted }}>by</Text>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs, minWidth: 0 }}>
+      <Text style={words}>by</Text>
       <View {...(entry.by ? { testID: "change-by-agent" } : {})} style={{ flexShrink: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 11.5, fontWeight: entry.by ? "semibold" : "normal", color: entry.by ? colors.agentInk : colors.textMuted }}>
+        <Text
+          numberOfLines={1}
+          style={{ ...words, fontWeight: entry.by ? WEIGHT.semibold : WEIGHT.regular, color: entry.by ? colors.agentInk : colors.textMuted }}
+        >
           {changedBy(entry.by)}
         </Text>
       </View>
       <View style={{ flexShrink: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 11.5, color: colors.textMuted }}>{`· ${changeDetail(entry)}`}</Text>
+        <Text numberOfLines={1} style={words}>{`· ${changeDetail(entry)}`}</Text>
       </View>
     </View>
   );
 }
 
+/**
+ * A change as a card's row (SE-8): what it is now, 13.5 SemiBold, over who
+ * and when, 11.5; Undo at the row's end (the 28 pill, SE-11). A row that
+ * opens its setting is a Tab stop, a link (SE-A18).
+ */
 export function ChangeRow({
   entry,
   canUndo,
@@ -58,18 +68,27 @@ export function ChangeRow({
   testID: string;
 }) {
   const colors = useColors();
+  const line = changeLine(entry.words);
   return (
-    <View testID={testID} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44, paddingHorizontal: PAGE.inset, paddingVertical: 6 }}>
-      <View {...(onOpen ? { onPress: onOpen, accessibilityRole: "link" as const } : {})} style={{ flex: 1, flexDirection: "column", gap: 3, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, color: entry.undone ? colors.textMuted : colors.text }}>
-          {changeLine(entry.words)}
+    <View
+      testID={testID}
+      style={{ flexDirection: "row", alignItems: "center", gap: PAGE.gap, minHeight: PAGE.row, paddingHorizontal: PAGE.inset, paddingVertical: PAGE.pad }}
+    >
+      <View
+        {...(onOpen
+          ? { onPress: onOpen, focusable: true, accessibilityRole: "link" as const, accessibilityLabel: line, focusRingColor: colors.focusRing }
+          : {})}
+        style={{ flex: 1, flexDirection: "column", gap: SPACE.px, minWidth: 0 }}
+      >
+        <Text numberOfLines={1} style={{ fontSize: TYPE.panel.name.size, fontWeight: WEIGHT.semibold, color: entry.undone ? colors.textMuted : colors.text }}>
+          {line}
         </Text>
         <ChangeLine entry={entry} />
       </View>
       {entry.undone ? (
-        <Text style={{ fontSize: 11, color: colors.textMuted }}>Undone</Text>
+        <Text style={{ fontSize: TYPE.panel.detail.size, color: colors.textMuted }}>Undone</Text>
       ) : (
-        canUndo && <Button testID={`${testID}:undo`} label="Undo" onPress={onUndo} />
+        canUndo && <MiniButton testID={`${testID}:undo`} label="Undo" onPress={onUndo} />
       )}
     </View>
   );

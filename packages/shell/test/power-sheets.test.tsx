@@ -5,7 +5,20 @@ import { ConfirmSheet } from "../src/menus/lib/power-sheets.tsx";
 import type { PowerKind } from "../src/menus/types.ts";
 import { settle } from "./support/time.ts";
 
-// The Log Out, Restart and Shut Down sheets: Return presses the default button, Esc cancels.
+/** A key the surface got, as Metal hands it to a KeySink. */
+const windowKey = (nodeId: string, key: string): NativeEvent => ({
+  type: "windowkey",
+  nodeId,
+  key,
+  ctrl: false,
+  alt: false,
+  shift: false,
+  meta: false,
+  repeat: false,
+});
+
+// The Log out, Restart and Shut down sheets: the alert frame on the shell's surface; Return presses
+// the default button, Esc cancels; they ask what will happen (VO-10), never "Are you sure".
 
 async function sheet(what: PowerKind) {
   const answers: string[] = [];
@@ -33,14 +46,17 @@ async function sheet(what: PowerKind) {
 for (const what of ["logout", "restart", "shutdown"] as const) {
   test(`Return presses the ${what} sheet's default button, and Esc cancels`, async () => {
     const view = await sheet(what);
-    await view.emit({ type: "submit", nodeId: view.node("sheet-keys"), value: "" });
+    await view.emit(windowKey(view.node("sheet:keys"), "enter"));
     expect(view.answers).toEqual(["confirm"]);
-    await view.emit({ type: "key", nodeId: view.node("sheet-keys"), value: "Escape" });
+    await view.emit(windowKey(view.node("sheet:keys"), "escape"));
     expect(view.answers).toEqual(["confirm", "cancel"]);
     // The buttons still answer a click.
     await view.emit({ type: "press", nodeId: view.node("sheet-confirm") });
     await view.emit({ type: "press", nodeId: view.node("sheet-cancel") });
     expect(view.answers).toEqual(["confirm", "cancel", "confirm", "cancel"]);
+    const tree = view.root.lastTree() ?? "";
+    expect(tree).toContain(`${{ logout: "Log out", restart: "Restart", shutdown: "Shut down" }[what]} now?`);
+    expect(tree).not.toContain("Are you sure");
     view.root.unmount();
   });
 }

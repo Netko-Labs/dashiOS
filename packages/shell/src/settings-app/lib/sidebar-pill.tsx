@@ -1,14 +1,23 @@
-/** The sidebar's rows: a pane as a pill, and a group's plain label. */
+/**
+ * The sidebar's rows: a pane as a pill-shaped row, and a group's plain
+ * label. A pane's row is an option of the sidebar's list (one Tab stop, the
+ * arrows choose as they go: KB-1), not a button.
+ */
 
-import { Knob, useControlColors } from "@dashi/ui";
+import { CLEAR, Knob, ON_AGENT, pill, SPACE, TYPE, useColors, useControlColors, WEIGHT } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { SIDEBAR } from "./sidebar-measures.ts";
 
-/** The badge's purple: the agents' and the keyboard ring's. */
-const BADGE = "#6e56cf";
+/** A row's measures beyond SIDEBAR's: the gap after the knob, its end, the place word's width, the agents' count. */
+const PANE_ROW = { afterKnob: 9, end: SPACE.gap, where: 84, badge: 18, glyph: 15 } as const;
 
-/** A pane as a pill: its knob, its name, a count at the end; chosen, the knob is green and tighter. A search result says its pane at the end (`where`). */
-export function NavPill({
+/**
+ * A pane: its knob, its name, a count at the end; chosen, the knob is the
+ * on colour and tighter. A search result says its pane at the end (`where`).
+ * The count of agents waiting is shiso under its own ink: purple is the
+ * agents' (CO-3).
+ */
+export function PaneRow({
   testID,
   label,
   glyph,
@@ -28,11 +37,13 @@ export function NavPill({
   onLayout?: (bounds: Bounds) => void;
 }) {
   const colors = useControlColors();
+  const palette = useColors();
   return (
     <View
       testID={testID}
       focusable
-      accessibilityRole="button"
+      accessibilityRole="option"
+      accessibilityLabel={badge !== undefined && badge > 0 ? `${label} — ${badge}` : label}
       accessibilityState={{ selected }}
       onPress={onPress}
       {...(onLayout ? { onLayout } : {})}
@@ -41,24 +52,24 @@ export function NavPill({
         flexShrink: 0,
         flexDirection: "row",
         alignItems: "center",
-        gap: 9,
+        gap: PANE_ROW.afterKnob,
         paddingLeft: PILL_INSET,
-        paddingRight: 10,
-        borderRadius: SIDEBAR.row / 2,
-        backgroundColor: selected ? colors.off : "#00000000",
+        paddingRight: PANE_ROW.end,
+        borderRadius: pill(SIDEBAR.row),
+        backgroundColor: selected ? colors.off : CLEAR,
         hoverBackgroundColor: selected ? colors.off : colors.knobOff,
         focusRingColor: colors.focus,
       }}
     >
-      <Knob glyph={glyph} size={SIDEBAR.knob} glyphSize={15} on={selected} />
+      <Knob glyph={glyph} size={SIDEBAR.knob} glyphSize={PANE_ROW.glyph} on={selected} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: selected ? "semibold" : "normal", color: colors.text }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: selected ? WEIGHT.semibold : WEIGHT.regular, color: colors.text }}>
           {label}
         </Text>
       </View>
       {where !== undefined && (
-        <View testID={`${testID}:where`} style={{ flexShrink: 0, maxWidth: 84 }}>
-          <Text numberOfLines={1} style={{ fontSize: 11, color: colors.muted }}>
+        <View testID={`${testID}:where`} style={{ flexShrink: 0, maxWidth: PANE_ROW.where }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.muted }}>
             {where}
           </Text>
         </View>
@@ -67,17 +78,17 @@ export function NavPill({
         <View
           testID={`${testID}:badge`}
           style={{
-            height: 18,
-            minWidth: 18,
-            paddingLeft: 6,
-            paddingRight: 6,
-            borderRadius: 9,
+            height: PANE_ROW.badge,
+            minWidth: PANE_ROW.badge,
+            paddingLeft: SPACE.s,
+            paddingRight: SPACE.s,
+            borderRadius: pill(PANE_ROW.badge),
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: BADGE,
+            backgroundColor: palette.agent,
           }}
         >
-          <Text style={{ fontSize: 10.5, fontWeight: "semibold", color: "#ffffff" }}>{String(badge)}</Text>
+          <Text style={{ fontSize: TYPE.panel.micro.size, fontWeight: WEIGHT.semibold, color: ON_AGENT }}>{String(badge)}</Text>
         </View>
       )}
     </View>
@@ -85,14 +96,16 @@ export function NavPill({
 }
 
 /** A pill's inset before its knob: a group's label starts there too, on the knobs' left edge. */
-export const PILL_INSET = 3;
+export const PILL_INSET = SIDEBAR.pillInset;
+/** A group's label: 10.5 SemiBold, 2 over its first pane. */
+const GROUP_LABEL = { below: SPACE.xxs } as const;
 
 /** A group's plain label, on the knobs' left edge. */
 export function GroupLabel({ children }: { children: string }) {
   const colors = useControlColors();
   return (
-    <View style={{ height: SIDEBAR.label, flexShrink: 0, justifyContent: "flex-end", paddingLeft: PILL_INSET, paddingBottom: 2 }}>
-      <Text style={{ fontSize: 10.5, fontWeight: "semibold", color: colors.muted }}>{children.toUpperCase()}</Text>
+    <View style={{ height: SIDEBAR.label, flexShrink: 0, justifyContent: "flex-end", paddingLeft: PILL_INSET, paddingBottom: GROUP_LABEL.below }}>
+      <Text style={{ fontSize: TYPE.panel.micro.size, fontWeight: WEIGHT.semibold, color: colors.muted }}>{children.toUpperCase()}</Text>
     </View>
   );
 }

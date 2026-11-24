@@ -2,7 +2,7 @@
  * Every portal dialog's frame: the one toolbar row (the title, and what the
  * dialog puts beside it: Back, Up, the folder pop-up and the search field
  * for the file chooser), the content, and the buttons at the bottom right,
- * the default one in the accent. Esc is Cancel and Enter the default button,
+ * the default one ink (primary). Esc is Cancel and Enter the default button,
  * through the KeySink, when nothing in the dialog takes the keyboard; a
  * button that grants something (Allow, Share) is never pressed by Enter, so
  * a Return meant for the app can't give away the camera. As a sheet the
@@ -10,8 +10,8 @@
  * under the app's title bar.
  */
 
-import { AppWindow, Button, type KeyInput, KeySink, useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { ALERT_WINDOW, AppWindow, Button, type KeyInput, KeySink, SPACE } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 
 export interface FrameButton {
@@ -42,6 +42,9 @@ export interface PortalFrameProps {
   children: ReactNode;
 }
 
+/** The frame's padding: the alert window's (ALERT_WINDOW), so a portal's dialog and its alerts sit alike. */
+const FRAME_PADDING = ALERT_WINDOW.padding;
+
 /** The button Enter presses: the default one, unless it is disabled or grants something (then none). */
 export function enterButton(buttons: readonly FrameButton[]): FrameButton | undefined {
   return buttons.find((button) => button.primary && !button.disabled && !button.grants);
@@ -61,10 +64,10 @@ export function PortalFrame({ title, leading, toolbar, buttons, onCancel, keys =
           }}
         />
       )}
-      <View style={{ flex: 1, flexDirection: "column", gap: 14, padding: 18, paddingTop: 14, minHeight: 0 }}>
-        <View style={{ flex: 1, flexDirection: "column", gap: 10, minHeight: 0 }}>{children}</View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8, minWidth: 0 }}>{footer}</View>
+      <View style={{ flex: 1, flexDirection: "column", gap: SPACE.button, padding: FRAME_PADDING, paddingTop: SPACE.button, minHeight: 0 }}>
+        <View style={{ flex: 1, flexDirection: "column", gap: SPACE.gap, minHeight: 0 }}>{children}</View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m, flexShrink: 0 }}>
+          <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: SPACE.m, minWidth: 0 }}>{footer}</View>
           {buttons.map((button) => (
             <Button
               key={button.testID}
@@ -78,29 +81,5 @@ export function PortalFrame({ title, leading, toolbar, buttons, onCancel, keys =
         </View>
       </View>
     </AppWindow>
-  );
-}
-
-/** A check box with its label: "Always use for PDFs", "Two-sided". */
-export function CheckBox({ label, checked, onChange, testID }: { label: string; checked: boolean; onChange: (checked: boolean) => void; testID: string }) {
-  const colors = useColors();
-  return (
-    <View testID={testID} onPress={() => onChange(!checked)} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-      <View
-        style={{
-          width: 14,
-          height: 14,
-          borderRadius: 4,
-          borderWidth: 1,
-          borderColor: checked ? colors.selection : colors.separator,
-          backgroundColor: checked ? colors.selection : colors.button,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {checked && <Text style={{ fontSize: 10, color: colors.onAccent, fontWeight: "bold" }}>✓</Text>}
-      </View>
-      <Text style={{ fontSize: 12, color: colors.text }}>{label}</Text>
-    </View>
   );
 }

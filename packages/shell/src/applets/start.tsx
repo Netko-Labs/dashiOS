@@ -9,6 +9,7 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { appletDataRoot, appletsRoot, appletsSocketPath, type InstalledApplet, type Placement, SDK_VERSION } from "@dashi/applet";
+import { CLEAR } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { addOnsFor, watchKillSwitch, watchQuietUpdates } from "../applet-store/index.ts";
 import type { Compositor } from "../compositor/index.ts";
@@ -80,13 +81,7 @@ function popoverCatcher(openOverlay: OpenOverlay): AppletContext["catcher"] {
           ...(placement.output === null ? {} : { output: placement.output }),
         },
       },
-      <View
-        accessibilityRole="group"
-        accessibilityLabel="Close"
-        testID="applet-catcher"
-        style={{ flex: 1, backgroundColor: "#00000000" }}
-        onPress={onOutside}
-      />,
+      <View accessibilityRole="group" accessibilityLabel="Close" testID="applet-catcher" style={{ flex: 1, backgroundColor: CLEAR }} onPress={onOutside} />,
     );
     return () => handle.close();
   };

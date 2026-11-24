@@ -243,10 +243,11 @@ test("the pure pieces: slow sections, a view's room and place, and an argument's
   expect(sections[0]?.rows[0]?.icon).toEqual({ glyph: expect.stringContaining("<svg") });
   expect(viewRows(160)).toBe(4);
   expect(viewRows(900)).toBe(10);
-  expect(viewFrame(4, LAUNCHER)).toEqual({ x: 6, y: 55, width: 608, height: 160 });
+  // The list's padding is SPACE.xs (4).
+  expect(viewFrame(4, LAUNCHER)).toEqual({ x: 5, y: 54, width: 610, height: 160 });
   // At a larger text size the view sits under the taller field, in rows of the taller height.
   expect(viewRows(160, 50)).toBe(4);
-  expect(viewFrame(4, { width: LAUNCHER.width, padding: LAUNCHER.padding, field: 60, row: 50 })).toEqual({ x: 6, y: 67, width: 608, height: 200 });
+  expect(viewFrame(4, { width: LAUNCHER.width, padding: LAUNCHER.padding, field: 60, row: 50 })).toEqual({ x: 5, y: 66, width: 610, height: 200 });
   expect(readArg(" 3 ", { type: "number" })).toBe(3);
   expect(readArg("x", { type: "number" })).toBeNull();
   expect(readArg("yes", { type: "boolean" })).toBe(true);

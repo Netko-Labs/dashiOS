@@ -7,7 +7,7 @@
  * (`below`: the charge limit's switch, and its slider while it is on).
  */
 
-import { ControlName, KeyedText, Knob, type PillsLaid, PillsWrapped, useControlColors } from "@dashi/ui";
+import { ControlName, KeyedText, Knob, type PillsLaid, PillsWrapped, RADIUS, SPACE, TYPE, useControlColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useContext, useLayoutEffect, useRef, useState } from "react";
 import { CARD_RADIUS, CardRowsContext } from "../../shared/cards/index.ts";
@@ -25,7 +25,23 @@ export function useCardRow(knob: boolean): void {
  * control (in a narrow window the control's pills wrap first, so the words
  * never break letter by letter).
  */
-export const PAGE = { title: 56, margin: 22, cardRadius: CARD_RADIUS, heroRadius: 28, row: 56, knob: 40, words: 120, inset: 16, knobInset: 8 } as const;
+export const PAGE = {
+  title: 56,
+  /** The page's sides and the title row's inset. */
+  sides: 22,
+  cardRadius: CARD_RADIUS,
+  heroRadius: RADIUS.panel,
+  row: 56,
+  knob: 40,
+  words: 120,
+  inset: SPACE.page,
+  knobInset: SPACE.m,
+  /** Between a row's knob, words and control. */
+  gap: SPACE.inset,
+  /** Above and below a row's line; under a stacked row's control. */
+  pad: SPACE.m,
+  under: SPACE.inset,
+} as const;
 
 export interface RowProps {
   label: string;
@@ -51,8 +67,8 @@ export function pillsUnder(room: number, natural: number | null): boolean {
 
 /** The room a row `width` wide leaves its control beside the words: its insets, the knob and its gap, the words' least width and the gap after them. */
 export function roomBeside(width: number, knob: boolean): number {
-  const inset = (knob ? PAGE.knobInset + PAGE.knob + 12 : PAGE.inset) + PAGE.inset;
-  return width - inset - PAGE.words - 12;
+  const inset = (knob ? PAGE.knobInset + PAGE.knob + PAGE.gap : PAGE.inset) + PAGE.inset;
+  return width - inset - PAGE.words - PAGE.gap;
 }
 
 /**
@@ -98,15 +114,22 @@ export function Row({ label, detail, glyph, children, stack: asked, below, testI
   const stack = asked === true || fit.under;
   const named = <ControlName.Provider value={label}>{children}</ControlName.Provider>;
   const words = (
-    <View style={{ flex: 1, flexDirection: "column", gap: 1, minWidth: PAGE.words }}>
-      <Text style={{ fontSize: 13.5, fontWeight: "semibold", color: colors.offInk }}>{label}</Text>
+    <View style={{ flex: 1, flexDirection: "column", gap: SPACE.px, minWidth: PAGE.words }}>
+      <Text style={{ fontSize: TYPE.panel.name.size, fontWeight: WEIGHT.semibold, color: colors.offInk }}>{label}</Text>
       {/* A detail may name keys ("Hold ❖Space…"): drawn at the text's size (`KeyedText`). */}
-      {detail !== undefined && detail !== "" && <KeyedText style={{ fontSize: 11.5, color: colors.muted }}>{detail}</KeyedText>}
+      {detail !== undefined && detail !== "" && <KeyedText style={{ fontSize: TYPE.panel.detail.size, color: colors.muted }}>{detail}</KeyedText>}
     </View>
   );
   const knob = glyph !== undefined ? <Knob glyph={glyph} size={PAGE.knob} /> : null;
   const top = (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, ...(wordsOnly(stack, glyph !== undefined) ? {} : { minHeight: PAGE.row - 16 }) }}>
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: PAGE.gap,
+        ...(wordsOnly(stack, glyph !== undefined) ? {} : { minHeight: PAGE.row - 2 * PAGE.pad }),
+      }}
+    >
       {knob}
       {words}
       {!stack && <PillsWrapped.Provider value={fit.report}>{named}</PillsWrapped.Provider>}
@@ -120,22 +143,24 @@ export function Row({ label, detail, glyph, children, stack: asked, below, testI
         minHeight: PAGE.row,
         flexDirection: "column",
         justifyContent: "center",
-        gap: 10,
-        paddingTop: 8,
-        paddingBottom: stack || below ? 12 : 8,
+        gap: SPACE.gap,
+        paddingTop: PAGE.pad,
+        paddingBottom: stack || below ? PAGE.under : PAGE.pad,
         paddingLeft: glyph !== undefined ? PAGE.knobInset : PAGE.inset,
         paddingRight: PAGE.inset,
       }}
     >
       {top}
       {stack && children !== undefined && children !== null && children !== false && (
-        <View style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, paddingLeft: glyph !== undefined ? PAGE.knob + 12 : 0 }}>
+        <View style={{ flexDirection: "column", alignItems: "flex-start", gap: SPACE.m, paddingLeft: glyph !== undefined ? PAGE.knob + PAGE.gap : 0 }}>
           {/* Under the words, the pills still tell their one-line width, so the row knows when they fit beside again. */}
           {asked === true ? children : <PillsWrapped.Provider value={fit.report}>{named}</PillsWrapped.Provider>}
         </View>
       )}
       {below !== undefined && below !== null && below !== false && (
-        <View style={{ flexDirection: "column", alignItems: "flex-start", gap: 8, paddingLeft: glyph !== undefined ? PAGE.knob + 12 : 0 }}>{below}</View>
+        <View style={{ flexDirection: "column", alignItems: "flex-start", gap: SPACE.m, paddingLeft: glyph !== undefined ? PAGE.knob + PAGE.gap : 0 }}>
+          {below}
+        </View>
       )}
     </View>
   );

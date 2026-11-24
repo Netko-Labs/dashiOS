@@ -1,8 +1,10 @@
 /** The gallery's 0.10 kit pages: checks and chips, the panel look, states, and picking (UI-8 to UI-15, TK-2). */
 
 import {
+  BatteryTile,
   Button,
   Checkbox,
+  CheckMark,
   Chip,
   EmptyState,
   ErrorState,
@@ -12,21 +14,32 @@ import {
   glyphs,
   InkSlider,
   Knob,
+  KnobButton,
   LimitBar,
   Loading,
   MonthGrid,
   NoResults,
   PickList,
   PickRow,
+  PictureChoice,
+  RADIUS,
+  RoundTile,
   Segmented,
+  SliderTile,
+  SPACE,
   Switch,
   TextLink,
+  useColors,
+  WideTile,
 } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useState } from "react";
 import { Exhibit, PageBody, States, useOverlay } from "../specimen.tsx";
 
 const noop = (): void => {};
+
+/** The picture choice's stand-in pictures. */
+const PICTURE = { width: 96, height: 54, dot: 34 } as const;
 
 const SIZES = [
   { value: "s", label: "Small" },
@@ -54,6 +67,17 @@ export function ChecksPage() {
           {({ state, disabled }) => <Checkbox testID={`check:panel:${state}`} look="panel" label="Websites" checked onChange={noop} disabled={disabled} />}
         </States>
       </Exhibit>
+      <Exhibit title="Checkbox, its box alone" note="A row that names it already: its label is only read aloud (Calendar's Show ‹name›).">
+        <Checkbox testID="check:hidden-label" label="Show Work" checked={checked} onChange={setChecked} hideLabel />
+      </Exhibit>
+      <Exhibit title="Check mark" note="The box alone, for a list whose row is the control (dashi-dialog's checklist); a pick-one list's is round.">
+        <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+          <CheckMark testID="mark:on" checked />
+          <CheckMark testID="mark:off" checked={false} />
+          <CheckMark testID="mark:round" checked round />
+          <CheckMark testID="mark:round-off" checked={false} round />
+        </View>
+      </Exhibit>
       <Exhibit title="Status chip" note="A state in a few words, never a control (UI-12): 18 tall on its tone's wash; a toolbar's is 24.">
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
           <Chip testID="chip:neutral" label="Not connected" />
@@ -65,6 +89,38 @@ export function ChecksPage() {
         </View>
       </Exhibit>
     </PageBody>
+  );
+}
+
+/** Control Center's tiles, on the panel page's own state. */
+function TilesExhibit({ on, setOn, level, setLevel }: { on: boolean; setOn: (on: boolean) => void; level: number; setLevel: (level: number) => void }) {
+  return (
+    <Exhibit
+      title="Control Center's tiles"
+      note="A wide tile's knob toggles and its label opens; a round one toggles; on is the one on. The battery is a reading, its bar ink (CC-1)."
+    >
+      <View style={{ flexDirection: "row", gap: 8, height: 56, width: 344 }}>
+        <WideTile look={{ testID: "tile:wide", title: "Wi-Fi", detail: "Home", glyph: glyphs.SEARCH, on }} onToggle={() => setOn(!on)} onOpen={noop} />
+        <RoundTile look={{ testID: "tile:round", title: "Focus", detail: null, glyph: glyphs.LOCK, on: !on }} onToggle={() => setOn(!on)} />
+        <RoundTile look={{ testID: "tile:dim", title: "Applet", detail: null, glyph: glyphs.INFO, on: false, dim: true }} onToggle={noop} />
+      </View>
+      <View style={{ flexDirection: "row", gap: 8, height: 56, width: 344 }}>
+        <SliderTile
+          look={{ testID: "tile:slider", title: "Display", glyph: glyphs.SEARCH, level, value: `${Math.round(level * 100)}%`, width: 344, height: 56 }}
+          standing={false}
+          onLevel={setLevel}
+        />
+      </View>
+      <View style={{ flexDirection: "row", height: 56, width: 344 }}>
+        <BatteryTile look={{ percent: 64, charging: false, limit: 80, time: "5 h 10 min", glyph: glyphs.INFO }} onOpen={noop} />
+      </View>
+      <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+        <KnobButton testID="knob:back" glyph={glyphs.CHEVRON_LEFT} label="Back" onPress={noop} />
+        <KnobButton testID="knob:mute" glyph={glyphs.STOP} label="Mute" checked={!on} onPress={() => setOn(!on)} />
+        <KnobButton testID="knob:add" glyph={glyphs.CLOSE} label="Add" inked size={22} glyphSize={12} onPress={noop} />
+        <Switch testID="pswitch:lit" look="panel" lit label="Wi-Fi" on={on} onChange={setOn} />
+      </View>
+    </Exhibit>
   );
 }
 
@@ -119,7 +175,9 @@ export function PanelPage() {
           </View>
         </View>
         <TextLink testID="link:panel" look="panel" label="Other…" onPress={noop} />
+        <TextLink testID="link:small" size="small" label="3 more" onPress={noop} />
       </Exhibit>
+      <TilesExhibit on={on} setOn={setOn} level={level} setLevel={setLevel} />
     </PageBody>
   );
 }
@@ -166,6 +224,8 @@ export function StatesPage() {
 
 export function PicksPage() {
   const [app, setApp] = useState("preview");
+  const [picture, setPicture] = useState("dusk");
+  const colors = useColors();
   const [day, setDay] = useState({ year: 2026, month: 10, date: 26 });
   const [month, setMonth] = useState({ year: 2026, month: 10 });
   const show = useOverlay();
@@ -190,6 +250,29 @@ export function PicksPage() {
           <PickRow testID="pick:editor" label="Text Editor" glyph={glyphs.INFO} chosen={app === "editor"} onPress={() => setApp("editor")} />
           <PickRow testID="pick:off" label="Terminal" glyph={glyphs.INFO} chosen={false} disabled onPress={noop} />
         </PickList>
+      </Exhibit>
+      <Exhibit
+        title="Picture choice"
+        note="A picture to pick (CO-9): the chosen one ringed 2.5 in the on colour, concentric with it; ink where the choices are colours."
+      >
+        <View testID="pictures" focusGroup accessibilityRole="listbox" style={{ flexDirection: "row", gap: SPACE.inset, alignItems: "flex-start" }}>
+          {["dawn", "dusk"].map((name) => (
+            <PictureChoice
+              key={name}
+              testID={`picture:${name}`}
+              label={name}
+              caption={name}
+              chosen={picture === name}
+              radius={RADIUS.row}
+              onPress={() => setPicture(name)}
+            >
+              <View style={{ width: PICTURE.width, height: PICTURE.height, borderRadius: RADIUS.row, backgroundColor: colors.separator }} />
+            </PictureChoice>
+          ))}
+          <PictureChoice testID="picture:ink" label="Ume" caption="Ume" small ring="ink" chosen radius={PICTURE.dot / 2} onPress={noop}>
+            <View style={{ width: PICTURE.dot, height: PICTURE.dot, borderRadius: PICTURE.dot / 2, backgroundColor: colors.separator }} />
+          </PictureChoice>
+        </View>
       </Exhibit>
       <Exhibit title="Month grid" note="The one month (UI-14): today an ink disc, the chosen day the selection wash, a day with something on it an ink dot.">
         <MonthGrid

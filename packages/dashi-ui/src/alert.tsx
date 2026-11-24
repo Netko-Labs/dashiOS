@@ -18,7 +18,7 @@ import { Button } from "./button.tsx";
 import type { ButtonKind } from "./button-look.ts";
 import { KeySink } from "./key-sink.tsx";
 import type { KeyInput } from "./keys.ts";
-import { Sheet } from "./sheet.tsx";
+import { Sheet, type SheetPlace } from "./sheet.tsx";
 import { RADIUS, SPACE, TYPE, useColors, useSurface, WEIGHT } from "./theme/index.ts";
 
 /** The glyph's tile: 40 at radius 10, its glyph 22. */
@@ -90,6 +90,11 @@ export interface AlertProps {
   /** What it means, or what happens next: "You can't undo this." */
   message?: string;
   glyph: string;
+  /**
+   * What stands in the tile's place, 40 square, when the asker has a picture
+   * of its own (an app's icon, an applet's): the glyph is then not drawn.
+   */
+  icon?: ReactNode;
   tone?: AlertTone;
   buttons: readonly AlertButton[];
   /** What the answer needs under the message: a check box, a card. */
@@ -99,7 +104,7 @@ export interface AlertProps {
 }
 
 /** The tile, the words, and anything the answer needs, side by side. */
-function AlertBody({ question, message, glyph, tone = "neutral", children, scroll }: Omit<AlertProps, "buttons"> & { scroll?: boolean }) {
+function AlertBody({ question, message, glyph, icon, tone = "neutral", children, scroll }: Omit<AlertProps, "buttons"> & { scroll?: boolean }) {
   const colors = useColors();
   const { wash, ink } = toneColors(tone, colors);
   const words = (
@@ -113,19 +118,23 @@ function AlertBody({ question, message, glyph, tone = "neutral", children, scrol
   );
   return (
     <View style={{ flexDirection: "row", gap: SPACE.button, alignItems: "flex-start", ...(scroll ? { flex: 1, minHeight: 0 } : {}) }}>
-      <View
-        style={{
-          width: ALERT_TILE.size,
-          height: ALERT_TILE.size,
-          flexShrink: 0,
-          borderRadius: RADIUS.card,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: wash,
-        }}
-      >
-        <Svg markup={glyph} size={ALERT_TILE.glyph} color={ink} />
-      </View>
+      {icon !== undefined ? (
+        <View style={{ width: ALERT_TILE.size, height: ALERT_TILE.size, flexShrink: 0, alignItems: "center", justifyContent: "center" }}>{icon}</View>
+      ) : (
+        <View
+          style={{
+            width: ALERT_TILE.size,
+            height: ALERT_TILE.size,
+            flexShrink: 0,
+            borderRadius: RADIUS.card,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: wash,
+          }}
+        >
+          <Svg markup={glyph} size={ALERT_TILE.glyph} color={ink} />
+        </View>
+      )}
       {scroll ? (
         <ScrollView style={{ flex: 1, flexDirection: "column", gap: SPACE.xs, minWidth: 0 }}>{words}</ScrollView>
       ) : (
@@ -167,14 +176,27 @@ export function Alert(props: AlertProps) {
   );
 }
 
-/** The alert as a sheet over a window's content (pass it as `AppWindow`'s `overlay`). */
-export function AlertSheet({ testID = "alert", width, ...props }: AlertProps & { testID?: string; width?: number }) {
+export interface AlertSheetProps extends AlertProps {
+  testID?: string;
+  width?: number;
+  /** `screen`: a shell sheet on a surface of its own, centred, with no window to hang from (sheet.tsx). */
+  place?: SheetPlace;
+  /**
+   * Esc and Enter answer it (the default). False for a sheet that must never
+   * take the keyboard by itself (an agent's consent: a stray Enter typed
+   * elsewhere must not answer it); its buttons still take a click and Tab.
+   */
+  keys?: boolean;
+}
+
+/** The alert as a sheet over a window's content (pass it as `AppWindow`'s `overlay`), or centred on a shell surface. */
+export function AlertSheet({ testID = "alert", width, place, keys = true, ...props }: AlertSheetProps) {
   return (
     <Sheet
       testID={testID}
       width={width}
-      onCancel={() => pressForKey({ kind: "escape" }, props.buttons)}
-      onConfirm={() => pressForKey({ kind: "enter" }, props.buttons)}
+      place={place}
+      {...(keys ? { onCancel: () => pressForKey({ kind: "escape" }, props.buttons), onConfirm: () => pressForKey({ kind: "enter" }, props.buttons) } : {})}
     >
       <AlertBody {...props} />
       <AlertButtons buttons={props.buttons} footer={props.footer} />

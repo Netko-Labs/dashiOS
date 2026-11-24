@@ -1,5 +1,6 @@
 /** The pieces every widget is printed from (round five's chrome.js): labels, words, the one number, buttons, rules and blanks. */
 
+import { CLEAR, ON_TINT, pill, RADIUS, SPACE, TYPE, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View, type ViewStyle } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { type GlyphName, glyph } from "../shared/inks/index.ts";
@@ -23,14 +24,16 @@ export function cut(text: string, max: number): string {
 /** A label: small capitals in the secondary ink ("LISBON"). Metal has no letter-spacing, so it is upper-cased only. */
 export function Lab({ children, strong, max = 30 }: { children: string; strong?: boolean; max?: number }) {
   const c = useCard();
-  return <Text style={{ fontSize: 10.5, fontWeight: "semibold", color: strong ? c.ink : c.secondary }}>{cut(children.toUpperCase(), max)}</Text>;
+  return (
+    <Text style={{ fontSize: TYPE.inks.small.size, fontWeight: WEIGHT.semibold, color: strong ? c.ink : c.secondary }}>{cut(children.toUpperCase(), max)}</Text>
+  );
 }
 
 /** A small line in the tertiary ink: one line, cut with an ellipsis at `max`. */
 export function Meta({ children, max = 32 }: { children: string; max?: number }) {
   const c = useCard();
   return (
-    <Text numberOfLines={1} style={{ fontSize: 11.5, color: c.tertiary }}>
+    <Text numberOfLines={1} style={{ fontSize: TYPE.panel.detail.size, color: c.tertiary }}>
       {cut(children, max)}
     </Text>
   );
@@ -60,11 +63,17 @@ export function Title({
 export function Words({ children, lines = 1, ink, max = 40 }: { children: string; lines?: number; ink?: boolean; max?: number }) {
   const c = useCard();
   return (
-    <Text {...(lines === 1 ? { numberOfLines: 1 as const } : {})} style={{ fontSize: 12.5, lineHeight: 17, color: ink ? c.ink : c.secondary }}>
+    <Text
+      {...(lines === 1 ? { numberOfLines: 1 as const } : {})}
+      style={{ fontSize: TYPE.inks.body.size, lineHeight: TYPE.body.line, color: ink ? c.ink : c.secondary }}
+    >
       {lines === 1 ? cut(children, max) : children}
     </Text>
   );
 }
+
+/** The unit beside the one number: max(14, 0.3 em) (#12). */
+const NUM = { unitLeast: 14, unitScale: 0.3 } as const;
 
 /**
  * The one number (role "value"): printed in the card's ink, its unit beside
@@ -94,8 +103,8 @@ export function Num({
     <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
       <Text style={{ fontSize: size, lineHeight: Math.round(size * 0.95), color: colour, ...numberFace(abilities, size, weight) }}>{value}</Text>
       {unit ? (
-        <View style={{ marginLeft: 2, marginTop: Math.round(size * 0.06) }}>
-          <Text style={{ fontSize: Math.max(14, size * 0.3), color: colour, ...unitFace(abilities) }}>{unit}</Text>
+        <View style={{ marginLeft: SPACE.xxs, marginTop: Math.round(size * 0.06) }}>
+          <Text style={{ fontSize: Math.max(NUM.unitLeast, size * NUM.unitScale), color: colour, ...unitFace(abilities) }}>{unit}</Text>
         </View>
       ) : null}
     </View>
@@ -110,7 +119,7 @@ export function Glyph({ name, size = 14, tone = "ink" }: { name: GlyphName; size
 /** The header row: a label at the left, something at the right. */
 export function Head({ left, right }: { left: ReactNode; right?: ReactNode }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", alignSelf: "stretch", justifyContent: "space-between", height: 14, gap: 8 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", alignSelf: "stretch", justifyContent: "space-between", height: 14, gap: SPACE.m }}>
       {left}
       {right ? <View style={{ marginLeft: "auto" }}>{right}</View> : null}
     </View>
@@ -128,6 +137,9 @@ export function VRule({ margin = 12 }: { margin?: number }) {
   const c = useCard();
   return <View style={{ width: 1, alignSelf: "stretch", backgroundColor: c.hairline, marginLeft: margin, marginRight: margin }} />;
 }
+
+/** A widget's button: 26 tall, or a 30 round one (60 wide when filled). */
+const BTN = { height: 26, round: 30 } as const;
 
 export function Btn({
   label,
@@ -149,22 +161,22 @@ export function Btn({
   const c = useCard();
   const fg = fill ? c.onFill : c.ink;
   const style: ViewStyle = {
-    height: round ? 30 : 26,
-    ...(round ? { width: fill ? 60 : 30 } : { paddingLeft: 12, paddingRight: 12 }),
+    height: round ? BTN.round : BTN.height,
+    ...(round ? { width: fill ? 2 * BTN.round : BTN.round } : { paddingLeft: SPACE.inset, paddingRight: SPACE.inset }),
     ...(grow ? { flex: 1 } : {}),
-    borderRadius: round ? 15 : 13,
+    borderRadius: pill(round ? BTN.round : BTN.height),
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    backgroundColor: fill ? c.fill : "#00000000",
+    gap: SPACE.s,
+    backgroundColor: fill ? c.fill : CLEAR,
     ...(fill ? {} : { borderWidth: 1, borderColor: c.hairline }),
   };
   return (
     <View testID={testID} onPress={onPress} style={style}>
       {icon ? <Svg markup={glyph(icon)} size={round ? 13 : 11} color={fg} /> : null}
       {label ? (
-        <Text numberOfLines={1} style={{ fontSize: 11.5, fontWeight: "semibold", color: fg }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.panel.detail.size, fontWeight: WEIGHT.semibold, color: fg }}>
           {label}
         </Text>
       ) : null}
@@ -186,9 +198,17 @@ export function Blank({ what, width }: { what?: string; width: number | "fill" }
   const c = useCard();
   const fill = width === "fill";
   return (
-    <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 6, height: 15, ...(fill ? { flex: 1, minWidth: 0, marginRight: BLANK_LOCK_ROOM } : {}) }}>
-      {what ? <Text style={{ fontSize: 9.5, fontWeight: "semibold", color: c.tertiary }}>{what.toUpperCase()}</Text> : null}
-      <View style={{ height: 1, marginBottom: 3, backgroundColor: c.tertiary, ...(fill ? { flex: 1, minWidth: BLANK_LEAST } : { width }) }} />
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "flex-end",
+        gap: SPACE.s,
+        height: 15,
+        ...(fill ? { flex: 1, minWidth: 0, marginRight: BLANK_LOCK_ROOM } : {}),
+      }}
+    >
+      {what ? <Text style={{ fontSize: TYPE.inks.label.size, fontWeight: WEIGHT.semibold, color: c.tertiary }}>{what.toUpperCase()}</Text> : null}
+      <View style={{ height: 1, marginBottom: SPACE.xxs, backgroundColor: c.tertiary, ...(fill ? { flex: 1, minWidth: BLANK_LEAST } : { width }) }} />
     </View>
   );
 }
@@ -197,6 +217,9 @@ export function Blank({ what, width }: { what?: string; width: number | "fill" }
 export function Private({ what, width, children }: { what: string; width: number | "fill"; children: ReactNode }) {
   return useRedacted() ? <Blank what={what} width={width} /> : children;
 }
+
+/** The "Now" tag: 18 tall, its dot 6. */
+const NOW_TAG = { height: 18, dot: 6 } as const;
 
 /** How the "Now" tag breathes, where the host can (round five: one opacity loop, still under Reduce Motion). */
 export const NOW_BREATH = { from: 0.4, to: 1, periodMs: 2000, fps: 4 } as const;
@@ -208,10 +231,19 @@ export function NowTag({ tally }: { tally: string }) {
     <View
       testID="now-tag"
       {...(pulse ? { pulse: NOW_BREATH } : {})}
-      style={{ flexDirection: "row", alignItems: "center", gap: 5, height: 18, paddingLeft: 6, paddingRight: 8, borderRadius: 9, backgroundColor: tally }}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: SPACE.xs,
+        height: NOW_TAG.height,
+        paddingLeft: SPACE.s,
+        paddingRight: SPACE.m,
+        borderRadius: pill(NOW_TAG.height),
+        backgroundColor: tally,
+      }}
     >
-      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#FFFFFF" }} />
-      <Text style={{ fontSize: 10, fontWeight: "bold", color: "#FFFFFF" }}>NOW</Text>
+      <View style={{ width: NOW_TAG.dot, height: NOW_TAG.dot, borderRadius: pill(NOW_TAG.dot), backgroundColor: ON_TINT }} />
+      <Text style={{ fontSize: TYPE.inks.small.size, fontWeight: WEIGHT.bold, color: ON_TINT }}>NOW</Text>
     </View>
   );
 }
@@ -219,5 +251,5 @@ export function NowTag({ tally }: { tally: string }) {
 /** A live item on standby: a hollow ring in the tertiary ink. */
 export function Standby() {
   const c = useCard();
-  return <View testID="standby" style={{ width: 8, height: 8, borderRadius: 4, borderWidth: 1.3, borderColor: c.tertiary }} />;
+  return <View testID="standby" style={{ width: 8, height: 8, borderRadius: RADIUS.check, borderWidth: 1.3, borderColor: c.tertiary }} />;
 }

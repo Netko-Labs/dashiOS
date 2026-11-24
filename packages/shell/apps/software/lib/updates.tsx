@@ -7,8 +7,9 @@
  * the core libraries, a note says to restart.
  */
 
-import { Button, EmptyState, Group, glyphs, Loading, useColors } from "@dashi/ui";
+import { Button, Chip, type ChipTone, EmptyState, ErrorState, Group, Loading, MoreButton, Notice, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
+import type { ReactNode } from "react";
 import { useState, useSyncExternalStore } from "react";
 import { type FlatpakUpdate, formatBytes, isDashiRepo, plainFailure } from "../../../src/shared/software/index.ts";
 import { AppletGroup } from "./applets/rows.tsx";
@@ -21,10 +22,43 @@ import { useInstalledIcon } from "./hooks.ts";
 import type { Operation } from "./model.ts";
 import { AppIcon, ROW, useActions } from "./parts.tsx";
 import { useServices } from "./services.ts";
+import type { SoftwareState } from "./store.ts";
 
 const SHOWN_PACKAGES = 8;
+/** The room an empty or failed page's state takes under Dashi's own row. */
+const STATE_HEIGHT = 300;
+
+/** What couldn't be checked, a sentence each. */
+function checkErrors(state: SoftwareState): string[] {
+  return [
+    state.appUpdatesError && `Apps: ${plainFailure(state.appUpdatesError).message}`,
+    state.systemError && `System: ${plainFailure(state.systemError).message}`,
+  ].filter((line): line is string => !!line);
+}
+
+/**
+ * The window's notice on Updates when part of the check failed but there are
+ * updates to show (VS-3: a failure in the background floats, the page keeps
+ * its content); with nothing to show, the page is the error state instead.
+ */
+export function updatesNotice(state: SoftwareState, updates: number, onCheck: () => void): ReactNode {
+  const errors = checkErrors(state);
+  if (errors.length === 0 || updates === 0) return null;
+  return (
+    <Notice
+      testID="updates-errors"
+      tone="error"
+      text={`Not everything could be checked. ${errors.join(" ")}`}
+      action={<Button label="Try again" testID="updates-errors:retry" size="small" onPress={onCheck} />}
+    />
+  );
+}
 /** A system package's name keeps at least this much of its row; its version gives way first. */
 const SYSTEM_NAME_MIN = 110;
+/** A system package's row, its version's column and its kind's. */
+const SYSTEM_ROW = 28;
+const VERSION_WIDTH = 180;
+const KIND_WIDTH = 84;
 
 function Busy({ operation, testID }: { operation: Operation; testID: string }) {
   const actions = useActions();
@@ -49,21 +83,28 @@ function AppUpdateRow({ update, operation }: { update: FlatpakUpdate; operation:
   return (
     <View
       testID={`app-update:${update.id}`}
-      style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: ROW.minHeight, paddingHorizontal: 12, paddingVertical: 8 }}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: SPACE.inset,
+        minHeight: ROW.minHeight,
+        paddingHorizontal: SPACE.inset,
+        paddingVertical: SPACE.m,
+      }}
     >
       <View
         focusable
         accessibilityRole="button"
         accessibilityLabel={update.name}
         onPress={() => actions.openApp(update.id)}
-        style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 12 }}
+        style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: SPACE.inset }}
       >
         <AppIcon file={icon.file} url={icon.url} name={update.name} size={ROW.icon} />
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
-          <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.px }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
             {update.name}
           </Text>
-          <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
             {detail}
           </Text>
         </View>
@@ -77,28 +118,9 @@ function AppUpdateRow({ update, operation }: { update: FlatpakUpdate; operation:
   );
 }
 
-/** "Security" in broth, as a chip: it says why to update, it isn't an error. */
-function KindChip({ kind }: { kind: string }) {
-  const colors = useColors();
-  if (kind === "Available" || kind === "Normal" || kind === "") return null;
-  const security = kind === "Security";
-  return (
-    <View
-      style={{
-        flexShrink: 0,
-        paddingHorizontal: 6,
-        height: 18,
-        justifyContent: "center",
-        borderRadius: 9,
-        backgroundColor: security ? colors.brothWash : colors.button,
-      }}
-    >
-      <Text numberOfLines={1} style={{ fontSize: 11, color: security ? colors.broth : colors.textMuted }}>
-        {kind}
-      </Text>
-    </View>
-  );
-}
+/** A package's kind as a status chip: "Security" in broth (it says why to update, it isn't an error); the plain kinds say nothing. */
+const kindTone = (kind: string): ChipTone | null =>
+  kind === "Available" || kind === "Normal" || kind === "" ? null : kind === "Security" ? "warning" : "neutral";
 
 function SystemUpdates({ onUpdateSystem }: { onUpdateSystem: () => void }) {
   const colors = useColors();
@@ -121,32 +143,29 @@ function SystemUpdates({ onUpdateSystem }: { onUpdateSystem: () => void }) {
       />
       <Group testID="system-updates">
         {shown.map((update) => (
-          <View key={`${update.name}.${update.arch}`} style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 28, paddingHorizontal: 12 }}>
+          <View
+            key={`${update.name}.${update.arch}`}
+            style={{ flexDirection: "row", alignItems: "center", gap: SPACE.inset, minHeight: SYSTEM_ROW, paddingHorizontal: SPACE.inset }}
+          >
             {/* The name keeps room for itself; the version gives way first, with an ellipsis. */}
             <View style={{ flex: 1, minWidth: SYSTEM_NAME_MIN }}>
-              <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
+              <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.text }}>
                 {update.name}
               </Text>
             </View>
-            <View style={{ width: 180, flexShrink: 1, minWidth: 0 }}>
-              <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+            <View style={{ width: VERSION_WIDTH, flexShrink: 1, minWidth: 0 }}>
+              <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
                 {update.version}
               </Text>
             </View>
-            <View style={{ width: 84, flexShrink: 0, alignItems: "flex-start" }}>
-              <KindChip kind={update.kind} />
+            <View style={{ width: KIND_WIDTH, flexShrink: 0, alignItems: "flex-start" }}>
+              {kindTone(update.kind) !== null && <Chip label={update.kind} tone={kindTone(update.kind) ?? "neutral"} />}
             </View>
           </View>
         ))}
         {system.length > SHOWN_PACKAGES && (
-          <View
-            testID="system-updates:more"
-            focusable
-            accessibilityRole="button"
-            onPress={() => setAll((now) => !now)}
-            style={{ minHeight: 28, justifyContent: "center", paddingHorizontal: 12, hoverBackgroundColor: colors.button }}
-          >
-            <Text style={{ fontSize: 12, color: colors.accentInk }}>{all ? "Show fewer" : `Show all ${system.length}`}</Text>
+          <View style={{ minHeight: SYSTEM_ROW, justifyContent: "center", paddingHorizontal: SPACE.inset }}>
+            <MoreButton testID="system-updates:more" open={all} more={`Show all ${system.length}`} less="Show fewer" onPress={() => setAll((now) => !now)} />
           </View>
         )}
       </Group>
@@ -158,10 +177,10 @@ function RestartNote({ onRestart }: { onRestart: () => void }) {
   const colors = useColors();
   return (
     <Group testID="restart-note">
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 52, paddingHorizontal: 12, paddingVertical: 8 }}>
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 1 }}>
-          <Text style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>Restart to finish updating</Text>
-          <Text style={{ fontSize: 11, color: colors.textMuted }}>The kernel or core system libraries changed. Restart when it suits you.</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.inset, minHeight: 52, paddingHorizontal: SPACE.inset, paddingVertical: SPACE.m }}>
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.px }}>
+          <Text style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text }}>Restart to finish updating</Text>
+          <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>The kernel or core system libraries changed. Restart when it suits you.</Text>
         </View>
         <Button label="Restart…" testID="restart" primary onPress={onRestart} />
       </View>
@@ -193,8 +212,15 @@ function AppletUpdates() {
   );
 }
 
-export function Updates({ onRestart, onUpdateSystem, onLogOut }: { onRestart: () => void; onUpdateSystem: () => void; onLogOut: () => void }) {
-  const colors = useColors();
+export interface UpdatesProps {
+  onRestart: () => void;
+  onUpdateSystem: () => void;
+  onLogOut: () => void;
+  /** Check again now (the toolbar's Check for updates). */
+  onCheck: () => void;
+}
+
+export function Updates({ onRestart, onUpdateSystem, onLogOut, onCheck }: UpdatesProps) {
   const { store, applets } = useServices();
   const actions = useActions();
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot);
@@ -204,10 +230,7 @@ export function Updates({ onRestart, onUpdateSystem, onLogOut }: { onRestart: ()
   const systemCount = state.system?.updates.length ?? 0;
 
   if (state.checkedAt === null && state.checking) return <Loading label="Checking for updates…" />;
-  const errors = [
-    state.appUpdatesError && `Apps: ${plainFailure(state.appUpdatesError).message}`,
-    state.systemError && `System: ${plainFailure(state.systemError).message}`,
-  ].filter((line): line is string => !!line);
+  const errors = checkErrors(state);
   const appsOp = (installation: string): Operation | undefined =>
     state.operations.find((operation) => operation.kind === "update" && operation.id === undefined && operation.key === `update:${installation}:*`);
   const nothing = appUpdates.length === 0 && systemCount === 0 && appletUpdates.length === 0;
@@ -215,21 +238,25 @@ export function Updates({ onRestart, onUpdateSystem, onLogOut }: { onRestart: ()
   const allAppsOp = installations.map(appsOp).find((operation) => operation !== undefined);
 
   return (
-    <ScrollView testID="updates" style={{ flex: 1, flexDirection: "column", gap: 14, padding: 22 }}>
+    <ScrollView testID="updates" style={{ flex: 1, flexDirection: "column", gap: SPACE.button, padding: SPACE.sheet }}>
       {state.restartNeeded === true && <RestartNote onRestart={onRestart} />}
-      {errors.length > 0 && (
-        <View testID="updates-errors" style={{ flexShrink: 0 }}>
-          <Text style={{ fontSize: 12, color: colors.broth }}>{`Not everything could be checked. ${errors.join(" ")}`}</Text>
-        </View>
-      )}
       {nothing && (
-        <View style={{ height: 300, flexShrink: 0 }}>
-          <EmptyState
-            testID="up-to-date"
-            glyph={errors.length > 0 ? glyphs.WARNING : UPDATES}
-            title={errors.length > 0 ? "Updates couldn’t be checked" : "Everything is up to date"}
-            message={errors.length > 0 ? undefined : `Checked ${ago(state.checkedAt, Date.now())}. Dashi looks once a day. Updates never install on their own.`}
-          />
+        <View style={{ height: STATE_HEIGHT, flexShrink: 0 }}>
+          {errors.length > 0 ? (
+            <ErrorState
+              testID="up-to-date"
+              title="Updates couldn’t be checked"
+              message={errors.join(" ")}
+              actions={<Button label="Try again" testID="retry" onPress={onCheck} />}
+            />
+          ) : (
+            <EmptyState
+              testID="up-to-date"
+              glyph={UPDATES}
+              title="Everything is up to date"
+              message={`Checked ${ago(state.checkedAt, Date.now())}. Dashi looks once a day. Updates never install on their own.`}
+            />
+          )}
         </View>
       )}
       <DashiUpdate onLogOut={onLogOut} />

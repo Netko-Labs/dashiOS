@@ -21,6 +21,9 @@ import { type CatalogIndex, verifyIndex } from "@dashi/applet";
 import { type FetchLike, getBytes, NetworkError } from "../software/fetch.ts";
 import { digest } from "../software/paths.ts";
 
+/** How long a download may take before it is given up (ms): an applet's image or package. */
+const TIMERS = { image: 120_000 } as const;
+
 export const DEFAULT_INDEX = "https://raw.githubusercontent.com/Netko-Labs/dashi-applets/index/index.json";
 /** Where packages, icons, and screenshots may come from. */
 export const CATALOG_HOSTS = ["raw.githubusercontent.com", "github.com", "objects.githubusercontent.com", "release-assets.githubusercontent.com"] as const;
@@ -177,6 +180,6 @@ export class Catalog {
       return Promise.resolve(new Uint8Array(readFileSync(new URL(url))));
     }
     const hosts = hostsFor(this.options.url);
-    return getBytes(url, { hosts, maxBytes: size, timeoutMs: 120_000, ...(this.options.fetch ? { fetch: this.options.fetch } : {}) });
+    return getBytes(url, { hosts, maxBytes: size, timeoutMs: TIMERS.image, ...(this.options.fetch ? { fetch: this.options.fetch } : {}) });
   }
 }

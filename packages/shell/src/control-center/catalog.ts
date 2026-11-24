@@ -181,7 +181,7 @@ export function tileState(id: string, snap: ControlSnapshot): TileState | null {
     case "night":
       return { title, detail: onOff(snap.night), glyph: SUNSET, on: snap.night };
     case "lock":
-      return { title, detail: "Lock Screen", glyph: PADLOCK, on: false };
+      return { title, detail: "Lock screen", glyph: PADLOCK, on: false };
     case "power": {
       const power = snap.power;
       if (!power) return null;

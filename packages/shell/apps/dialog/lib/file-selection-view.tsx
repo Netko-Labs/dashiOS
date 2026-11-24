@@ -9,7 +9,7 @@ import { selectionOutput, selectionRequest } from "./file-selection.ts";
 import type { Answer } from "./frame.tsx";
 import type { FileSelectionSpec } from "./spec.ts";
 
-export function FileSelectionDialog({ spec, answer, env, cwd = process.cwd() }: { spec: FileSelectionSpec; answer: Answer; env?: Env; cwd?: string }) {
+export function FileSelectionView({ spec, answer, env, cwd = process.cwd() }: { spec: FileSelectionSpec; answer: Answer; env?: Env; cwd?: string }) {
   const request = useMemo(() => selectionRequest(spec.title, spec, cwd), [spec, cwd]);
   const model = useMemo(() => openChooser(request, env), [request, env]);
   useEffect(() => () => model.stop(), [model]);

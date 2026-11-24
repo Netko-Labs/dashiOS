@@ -6,7 +6,7 @@
  * (D500). A click opens the notification area, where the item's card is.
  */
 
-import { useColors } from "@dashi/ui";
+import { SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { glyph, isGlyphName, useInks } from "../../shared/inks/index.ts";
 import { type OnAirItem, onAirWords, type TallyView, useSecondTick, useTally } from "../../tally/index.ts";
@@ -14,7 +14,7 @@ import type { StatusSlot } from "./menubar-status.tsx";
 
 /** Standby glyphs shown before the rest fold into "+n". */
 const STANDBY_SHOWN = 2;
-const CAPSULE = { height: 20, padding: 8, dot: 7, glyph: 13 } as const;
+const CAPSULE = { height: 20, padding: SPACE.m, dot: 7, glyph: 13 } as const;
 
 function TallyDot({ color }: { color: string }) {
   return <View style={{ width: CAPSULE.dot, height: CAPSULE.dot, borderRadius: CAPSULE.dot / 2, backgroundColor: color }} />;
@@ -31,7 +31,7 @@ function HolderCapsule({ item, tally, onPress }: { item: OnAirItem; tally: strin
         flexShrink: 0,
         flexDirection: "row",
         alignItems: "center",
-        gap: 6,
+        gap: SPACE.s,
         height: CAPSULE.height,
         paddingLeft: CAPSULE.padding,
         paddingRight: CAPSULE.padding,
@@ -40,7 +40,7 @@ function HolderCapsule({ item, tally, onPress }: { item: OnAirItem; tally: strin
       }}
     >
       <TallyDot color={tally} />
-      <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
+      <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: colors.text }}>
         {onAirWords(item, now)}
       </Text>
     </View>
@@ -52,7 +52,7 @@ function StandbyCapsule({ items, onPress }: { items: readonly OnAirItem[]; onPre
   const shown = items.slice(0, STANDBY_SHOWN);
   const more = items.length - shown.length;
   return (
-    <View testID="tally-standby" onPress={onPress} style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 4 }}>
+    <View testID="tally-standby" onPress={onPress} style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: SPACE.xs }}>
       {shown.map((item) => (
         <View
           key={item.key}
@@ -68,7 +68,7 @@ function StandbyCapsule({ items, onPress }: { items: readonly OnAirItem[]; onPre
           <Svg markup={glyph(isGlyphName(item.glyph) ? item.glyph : "spark")} size={CAPSULE.glyph} color={colors.text} />
         </View>
       ))}
-      {more > 0 && <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.textMuted }}>{`+${more}`}</Text>}
+      {more > 0 && <Text style={{ fontSize: TYPE.secondary.size, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>{`+${more}`}</Text>}
     </View>
   );
 }

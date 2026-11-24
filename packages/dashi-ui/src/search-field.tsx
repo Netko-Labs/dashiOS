@@ -13,11 +13,12 @@
  * muted words at its end about what it found ("2 of 4").
  */
 
-import { type Bounds, Svg, Text, TextInput, View, type ViewStyle } from "@mirinjs/metal";
+import { type Bounds, Svg, Text, TextInput, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import type { Look } from "./button.tsx";
 import { CLEAR as CLEAR_GLYPH, SEARCH } from "./glyphs.ts";
 import { useControlColors } from "./panel/index.ts";
+import { boxOf, RestBox } from "./search-rest.tsx";
 import { CLEAR, pill, RADIUS, SPACE, TYPE, useColors } from "./theme/index.ts";
 
 /** The field's measures (VS-7, UI-11): 210 wide, shrinking to 96; the placeholder turns short under 140. */
@@ -34,10 +35,13 @@ export interface SearchFieldProps {
   testID: string;
   /** "Search ‹what›". */
   placeholder?: string;
-  width?: number;
+  /** Points, or "fill": as wide as its row (Settings' sidebar, Files' omnibox in the title's place) or its column (a picker's search over its list) gives it, never under `minWidth`. */
+  width?: number | "fill";
   /** With it, the field shrinks toward this width when its toolbar row is short of room; without, it keeps `width`. */
   minWidth?: number;
   autoFocus?: boolean;
+  /** Made with what it holds selected, so new words replace it (❖F coming back to a search). */
+  selectAll?: boolean;
   /** "search" (default): Esc empties the field first. "find": Esc leaves the query and goes to `onKeyPress`. */
   variant?: "search" | "find";
   onKeyPress?: (key: "Escape" | "ArrowUp" | "ArrowDown") => void;
@@ -45,8 +49,6 @@ export interface SearchFieldProps {
   /** Muted words at the field's end, before the clear button: Find's place ("2 of 4", "Not found"). */
   status?: string | null;
   look?: Look;
-  /** Take the row's room (Files' omnibox in the title's place), never under `minWidth`. */
-  fill?: boolean;
   /** The glyph over its start, in place of the magnifier (a folder while a path is typed). */
   glyph?: string;
   /** Controls at its end, before the status and the clear button (where a search looks). */
@@ -73,12 +75,12 @@ export function SearchField({
   width = SEARCH_FIELD.width,
   minWidth,
   autoFocus,
+  selectAll,
   variant = "search",
   onKeyPress,
   onSubmit,
   status,
   look = "window",
-  fill,
   glyph = SEARCH,
   accessory,
   onClear,
@@ -92,12 +94,14 @@ export function SearchField({
   const m = SEARCH_FIELD;
   const [laid, setLaid] = useState(0);
   const [trailing, setTrailing] = useState(0);
+  // Taken once, when the field is made.
+  const [selected] = useState(() => (selectAll ? { start: 0, end: value.length } : null));
   const lead = m.inset + m.glyph + m.gap;
   const ground = look === "panel" ? panel.off : colors.button;
   const size = look === "panel" ? TYPE.panel.body.size : TYPE.body.size;
   const words = placeholderAt(placeholder, laid);
   const radius = look === "panel" ? pill(m.height) : RADIUS.control;
-  const box = boxOf(fill === true, width, minWidth);
+  const box = boxOf(width, minWidth, m.height);
   const laidOut = (bounds: Bounds): void => {
     setLaid((was) => (Math.abs(was - bounds.width) < 0.5 ? was : bounds.width));
     onLayout?.(bounds);
@@ -111,7 +115,11 @@ export function SearchField({
   }
   return (
     <View onLayout={laidOut} style={{ ...box, flexDirection: "row", position: "relative" }}>
-      <Input props={{ testID, value, onChangeText, placeholder, autoFocus, variant, onKeyPress, onSubmit }} look={{ lead, trailing, size, radius, ground }} />
+      <Input
+        props={{ testID, value, onChangeText, placeholder, autoFocus, variant, onKeyPress, onSubmit }}
+        selected={selected}
+        look={{ lead, trailing, size, radius, ground }}
+      />
       <Lead testID={testID} glyph={glyph} words={value === "" ? words : null} size={size} right={SPACE.xs + trailing} />
       <Trailing
         testID={testID}
@@ -132,9 +140,12 @@ export function SearchField({
 function Input({
   props,
   look,
+  selected,
 }: {
   props: Pick<SearchFieldProps, "testID" | "value" | "onChangeText" | "placeholder" | "autoFocus" | "variant" | "onKeyPress" | "onSubmit">;
   look: { lead: number; trailing: number; size: number; radius: number; ground: string };
+  /** What it holds selected when it is made (`selectAll`). */
+  selected: { start: number; end: number } | null;
 }) {
   const colors = useColors();
   const { testID, value, onChangeText, placeholder, autoFocus, variant, onKeyPress, onSubmit } = props;
@@ -144,6 +155,7 @@ function Input({
       value={value}
       accessibilityLabel={placeholder}
       autoFocus={autoFocus}
+      {...(selected ? { selection: selected } : {})}
       onChangeText={onChangeText}
       onSubmitEditing={onSubmit}
       onKeyPress={(key) => {
@@ -165,59 +177,6 @@ function Input({
         focusBorderColor: colors.focusRing,
       }}
     />
-  );
-}
-
-/** The field's box: its row's room (`fill`), or its width, shrinking toward `minWidth` when one is given. */
-function boxOf(fill: boolean, width: number, minWidth: number | undefined): ViewStyle {
-  const m = SEARCH_FIELD;
-  if (fill) return { flex: 1, minWidth: minWidth ?? m.least, height: m.height };
-  return { width, height: m.height, ...(minWidth === undefined ? { flexShrink: 0 as const } : { flexShrink: 1 as const, minWidth }) };
-}
-
-/** The field at rest as something else (Files' crumbs): the same box, pressable, one Tab stop. */
-function RestBox({
-  testID,
-  box,
-  radius,
-  ground,
-  label,
-  onPress,
-  onLayout,
-  children,
-}: {
-  testID: string;
-  box: ViewStyle;
-  radius: number;
-  ground: string;
-  label: string;
-  onPress?: () => void;
-  onLayout: (bounds: Bounds) => void;
-  children: ReactNode;
-}) {
-  const colors = useColors();
-  return (
-    <View
-      testID={testID}
-      onLayout={onLayout}
-      focusable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={{
-        ...box,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: SPACE.xxs,
-        paddingLeft: SPACE.xs,
-        paddingRight: SPACE.m,
-        borderRadius: radius,
-        backgroundColor: ground,
-        focusRingColor: colors.focusRing,
-      }}
-    >
-      {children}
-    </View>
   );
 }
 

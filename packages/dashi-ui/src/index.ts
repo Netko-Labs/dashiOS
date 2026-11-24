@@ -6,6 +6,7 @@ export {
   AlertButtons,
   type AlertProps,
   AlertSheet,
+  type AlertSheetProps,
   type AlertTone,
   AlertWindow,
   type AlertWindowProps,
@@ -16,7 +17,7 @@ export {
 export { ALERT_WINDOW, type AlertContent, alertButtonsWidth, alertWindowHeight, alertWordsWidth, wrappedLines } from "./alert-size.ts";
 export { BUTTON, Button, type ButtonProps, type ButtonSize, type Look } from "./button.tsx";
 export { type ButtonKind, type ButtonLook, buttonLook } from "./button-look.ts";
-export { CHECKBOX, Checkbox, type CheckboxProps } from "./checkbox.tsx";
+export { CHECKBOX, Checkbox, type CheckboxProps, CheckMark } from "./checkbox.tsx";
 export { CHIP, Chip, type ChipTone, chipColors } from "./chip.tsx";
 export { type Choice, Choices } from "./choices.tsx";
 export { type Confirm, type ConfirmRequest, ConfirmSheet, type ConfirmSheetProps, confirmKeyAction, useConfirm } from "./confirm.tsx";
@@ -28,8 +29,10 @@ export { EMPTY_STATE, EmptyState, NoResults, noResultsMessage } from "./empty-st
 export { ERROR_STATE, ErrorState } from "./error-state.tsx";
 export { FoldedChoices, type FoldedChoicesProps } from "./folded.tsx";
 export { FormSheet, type FormSheetProps } from "./form-sheet.tsx";
+export { GLYPH_BUTTON, GlyphButton, type GlyphButtonProps } from "./glyph-button.tsx";
 export * as glyphs from "./glyphs.ts";
 export {
+  ADD,
   CHECK,
   CHEVRON_DOWN,
   CHEVRON_LEFT,
@@ -50,11 +53,23 @@ export {
   STOP,
   WARNING,
 } from "./glyphs.ts";
+export { CLOCK_DAY, ClockHead, type ClockHeadProps, clockFace, clockParts, InksClock, type InksClockProps } from "./inks-clock.tsx";
+export { InlineField, type InlineFieldProps } from "./inline-field.tsx";
 export { KeySink, type KeySinkProps } from "./key-sink.tsx";
 export { KeyedText, type KeyedTextStyle, keyGlyphSize, namesKeys } from "./keyed-text.tsx";
 export { KEYPAD_KEY, KeypadKey, type KeypadKeyProps, type KeypadKeyTone } from "./keypad-key.tsx";
 export { type KeyInput, keyName } from "./keys.ts";
-export { Avatar, LOGIN_FOCUS_RING, LOGIN_GROUND, LOGIN_INK, LOGIN_MUTED, LoginScreen, type LoginScreenProps, type PowerAction } from "./login-screen.tsx";
+export { Avatar, LOGIN_PARTS, LoginBackLink, LoginChip, LoginPerson } from "./login-parts.tsx";
+export {
+  LOGIN_FOCUS_RING,
+  LOGIN_GROUND,
+  LOGIN_INK,
+  LOGIN_MUTED,
+  LOGIN_SCREEN,
+  LoginScreen,
+  type LoginScreenProps,
+  type PowerAction,
+} from "./login-screen.tsx";
 export { MENU, type MenuRowKind, menuHeight, menuLabelLeft, placeMenu, rowTop, type Size } from "./menu-place.ts";
 export { type MenuHighlight, MenuHighlightContext, MenuLine, MenuRow, type MenuRowProps, menuHighlight } from "./menu-row.tsx";
 export { MONTH_GRID, MonthGrid, type MonthGridProps } from "./month-grid.tsx";
@@ -62,6 +77,8 @@ export { addMonths, type Day, dayKey, type GridDay, monthWeeks, sameDay, weekday
 export { MORE_BUTTON, MoreButton } from "./more.tsx";
 export { Notice, type NoticeProps } from "./notice.tsx";
 export {
+  type BatteryLook,
+  BatteryTile,
   CONTROL_MOTION_MS,
   controlMenuHighlight,
   FOLD_PAST,
@@ -73,22 +90,33 @@ export {
   InkFill,
   InkSlider,
   type InkSliderProps,
+  KNOB_BUTTON,
   Knob,
+  KnobButton,
+  type KnobButtonProps,
   LimitBar,
   LOW_CHARGE,
   moreMenuOrigin,
   PANEL_EDGE_WIDTH,
   type PanelEdge,
   panelEdge,
+  RoundTile,
+  type SliderLook,
+  SliderTile,
   setControlMotion,
   springAt,
+  TILE,
+  type TileLook,
+  type TilePress,
   useControlColors,
   useGrow,
   usePanelEdge,
   useSpring,
+  WideTile,
 } from "./panel/index.ts";
 export { PICK_ROW, PickList, PickRow, type PickRowProps } from "./pick-row.tsx";
 export { Picture, type PictureProps } from "./picture.tsx";
+export { PICTURE_CHOICE, PictureChoice, type PictureChoiceProps, pictureRingRadius } from "./picture-choice.tsx";
 export { PopUpButton, type PopUpButtonProps, type PopUpOption, popUpMenuWidth, popUpOrigin } from "./popup-button.tsx";
 export { isSeparator, MENU_SEPARATOR, type MenuEntry, type MenuItem, MenuList, type MenuSeparator, PopupMenu, tidyEntries } from "./popup-menu.tsx";
 export { LOADING_DELAY_MS, Loading, PROGRESS_BAR, ProgressBar, type ProgressBarProps, Spinner, useShownAfter } from "./progress.tsx";
@@ -97,7 +125,7 @@ export { defaultScale, isBuiltIn, SCALES, type ScreenSize } from "./scale.ts";
 export { placeholderAt, SEARCH_FIELD, SearchField, type SearchFieldProps } from "./search-field.tsx";
 export { type MorePill, type PillsLaid, PillsWrapped, pillsWrapped, SEGMENTED, SEGMENTED_WINDOW, Segmented, type SegmentedProps } from "./segmented.tsx";
 export { type RowLook, rowLook, SELECTION_BAR, SelectionBar, selectionBarHeight, TextSelectionLook } from "./selection.tsx";
-export { SHEET_MARGIN, Sheet, SheetCard, type SheetProps, sheetBodyRoom, sheetWidth } from "./sheet.tsx";
+export { SHEET_MARGIN, Sheet, SheetCard, type SheetPlace, type SheetProps, sheetBodyRoom, sheetWidth } from "./sheet.tsx";
 export { KEY_GLYPHS, Shortcut, shortcutParts } from "./shortcut.tsx";
 export { railTip, SIDEBAR, SIDEBAR_ROW_HEIGHT, SidebarItem, type SidebarItemProps } from "./sidebar.tsx";
 export { Slider, type SliderProps } from "./slider.tsx";
@@ -117,11 +145,12 @@ export {
   valueAt,
 } from "./slider-math.ts";
 export { StepKeys, type StepKeysProps } from "./step-keys.tsx";
-export { PANEL_SWITCH, SWITCH, Switch, type SwitchProps } from "./switch.tsx";
+export { INKS_SWITCH, PANEL_SWITCH, SWITCH, Switch, type SwitchProps } from "./switch.tsx";
 export { Table, type TableProps } from "./table.tsx";
 export type { Column } from "./table-parts.tsx";
 export { holdOrder, moveSelection, nextSort, type SortableColumn, type SortState, sortRows } from "./table-sort.ts";
 export { hostTextAntialiasing, type TextAntialiasing } from "./text-antialiasing.ts";
+export { TEXT_AREA, TextArea, type TextAreaProps } from "./text-area.tsx";
 export { TEXT_FIELD, TextField, type TextFieldProps } from "./text-field.tsx";
 export { TextLink } from "./text-link.tsx";
 export {
@@ -186,7 +215,10 @@ export {
   LIGHT_SURFACE,
   LOCK_GLASS,
   LOGIN,
+  LOGIN_LIGHT,
+  type LoginColors,
   lightColors,
+  loginColors,
   MEDIA_SCRIM,
   MOTION,
   type Oklch,
@@ -239,6 +271,7 @@ export {
   useTextSize,
   useType,
   WEIGHT,
+  WINDOW_LIGHTS,
 } from "./theme/index.ts";
 export { TILE_SIZE, Tile } from "./tile.tsx";
 export { TITLE_TAB, TitleTab, TitleTabMore, type TitleTabProps } from "./title-tab.tsx";

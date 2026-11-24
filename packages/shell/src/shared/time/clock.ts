@@ -127,6 +127,9 @@ export const clockPrefs = new ClockPrefsStore();
 
 export const useClockPrefs = (): ClockPrefs => useSyncExternalStore(clockPrefs.subscribe, clockPrefs.getSnapshot);
 
+/** How far past the minute the clock looks, so a timer that fires a little early still sees the new minute. */
+const PAST_THE_MINUTE_MS = 20;
+
 /** The current time, re-rendered once a minute on the minute. */
 export function useMinuteClock(): Date {
   const [now, setNow] = useState(() => new Date());
@@ -138,7 +141,7 @@ export function useMinuteClock(): Date {
       timer = setTimeout(() => {
         setNow(new Date());
         schedule();
-      }, untilNextMinute + 20);
+      }, untilNextMinute + PAST_THE_MINUTE_MS);
     };
     schedule();
     return () => clearTimeout(timer);

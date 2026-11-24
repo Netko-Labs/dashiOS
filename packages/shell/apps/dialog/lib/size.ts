@@ -7,16 +7,17 @@
  * (`alertWindowHeight`).
  */
 
-import { alertWindowHeight } from "@dashi/ui";
+import { ALERT_WINDOW, alertWindowHeight, SPACE } from "@dashi/ui";
 import { splitMessage } from "./markup.ts";
 import type { DialogSpec } from "./spec.ts";
 
 export const LAYOUT = {
   /** AppWindow's toolbar, the one row of chrome (the title). */
   toolbar: 40,
-  padding: 18,
+  /** The alert window's padding (ALERT_WINDOW), so a dialog and an alert sit alike. */
+  padding: ALERT_WINDOW.padding,
   icon: 40,
-  gap: 14,
+  gap: SPACE.button,
   button: 28,
   line: 17,
   /** A 13 px character's width, on average. */
@@ -32,6 +33,13 @@ export interface Size {
 }
 
 const MAX_HEIGHT = 640;
+/** The least a dialog may be squeezed to (LA-3): the title row, a line of its content, and Cancel and OK side by side. */
+const LEAST = { width: 320, height: 160 } as const;
+
+/** A dialog's least size: LEAST, or the size it opened at when that is smaller (`--width`, `--height`). */
+export function dialogLeast(size: Size): Size {
+  return { width: Math.min(size.width, LEAST.width), height: Math.min(size.height, LEAST.height) };
+}
 const MAX_WIDTH = 1000;
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 

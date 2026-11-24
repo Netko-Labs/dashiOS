@@ -1,92 +1,48 @@
 /**
  * Parts of the event sheet that are more than a text box: the calendar to
- * put the event in (a pill for each), the alert choices, the notes, and the
+ * put the event in (a pop-up button), the alert choices, the notes, and the
  * buttons under the form.
  */
 
-import { Button, useColors, useSurface } from "@dashi/ui";
-import { Text, TextInput, View } from "@mirinjs/metal";
+import { Button, PopUpButton, SPACE, TextArea } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import type { Calendar } from "../../../../src/shared/calendar/index.ts";
 import type { Draft } from "../draft.ts";
 import { ALL_DAY_ALERTS, alertLabel, TIMED_ALERTS } from "../format.ts";
 import { FormRow } from "./form-fields.tsx";
 
+/** The calendar to put the event in: a list of any length, so a pop-up button (UI-2). */
 export function CalendarChoice({ calendars, chosenId, onChoose }: { calendars: readonly Calendar[]; chosenId: string; onChoose: (id: string) => void }) {
-  const colors = useColors();
   return (
-    <FormRow label="Calendar" pills>
-      <View testID="event-calendar" focusGroup style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-        {calendars.map((calendar) => {
-          const chosen = calendar.id === chosenId;
-          return (
-            <View
-              key={calendar.id}
-              testID={`event-calendar:${calendar.id}`}
-              focusable
-              accessibilityRole="option"
-              onPress={() => onChoose(calendar.id)}
-              style={{
-                height: 26,
-                flexShrink: 1,
-                minWidth: 0,
-                paddingHorizontal: 10,
-                borderRadius: 13,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                backgroundColor: chosen ? colors.selection : colors.button,
-                focusRingColor: colors.focusRing,
-              }}
-            >
-              <View
-                style={{
-                  width: 9,
-                  height: 9,
-                  flexShrink: 0,
-                  borderRadius: 5,
-                  backgroundColor: calendar.color,
-                  borderWidth: chosen ? 1 : 0,
-                  borderColor: colors.onAccent,
-                }}
-              />
-              <View style={{ flexShrink: 1, minWidth: 0 }}>
-                <Text numberOfLines={1} style={{ fontSize: 12, color: chosen ? colors.onAccent : colors.text }}>
-                  {calendar.name}
-                </Text>
-              </View>
-            </View>
-          );
-        })}
-      </View>
+    <FormRow label="Calendar">
+      <PopUpButton
+        testID="event-calendar"
+        options={calendars.map((calendar) => ({ value: calendar.id, label: calendar.name }))}
+        value={chosenId}
+        onChange={onChoose}
+      />
     </FormRow>
   );
 }
 
-export function NotesField({ value, onChange, onCancel }: { value: string; onChange: (notes: string) => void; onCancel: () => void }) {
-  const colors = useColors();
-  const surface = useSurface();
+/** The notes' box: three lines of 13. */
+const NOTES_HEIGHT = 64;
+
+/** The notes: the kit's many-line field (TextArea) across the form's column. */
+export function NotesRow({ value, onChange, onCancel }: { value: string; onChange: (notes: string) => void; onCancel: () => void }) {
   return (
     <FormRow label="Notes">
-      <TextInput
-        testID="event-notes"
-        multiline
-        value={value}
-        placeholder="Add notes"
-        onChangeText={onChange}
-        onKeyPress={(key) => key === "Escape" && onCancel()}
-        style={{
-          width: "100%",
-          height: 64,
-          padding: 6,
-          fontSize: 13,
-          borderRadius: 7,
-          color: colors.text,
-          placeholderColor: colors.textDisabled,
-          backgroundColor: surface.card,
-          borderColor: colors.separator,
-          focusBorderColor: colors.focusRing,
-        }}
-      />
+      <View style={{ width: "100%", flexDirection: "column" }}>
+        <TextArea
+          testID="event-notes"
+          value={value}
+          placeholder="Add notes"
+          label="Notes"
+          height={NOTES_HEIGHT}
+          onChangeText={onChange}
+          onKeyPress={(key) => key === "Escape" && onCancel()}
+        />
+      </View>
     </FormRow>
   );
 }
@@ -114,7 +70,7 @@ export function SheetButtons({
   onSave: () => void;
 }) {
   return (
-    <View style={{ flexDirection: "row", flexShrink: 0, gap: 8, marginTop: 2 }}>
+    <View style={{ flexDirection: "row", flexShrink: 0, gap: SPACE.m, marginTop: SPACE.xxs }}>
       {editing && <Button label="Delete" testID="event-delete" danger onPress={onDelete} />}
       <View style={{ flex: 1 }} />
       <Button label="Cancel" testID="event-cancel" onPress={onCancel} />

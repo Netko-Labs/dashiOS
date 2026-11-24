@@ -10,6 +10,7 @@
  * again the next time it is needed.
  */
 
+import { TextLink } from "@dashi/ui";
 import { useState, useSyncExternalStore } from "react";
 import { byApp } from "../../../privacy/portal-grants.ts";
 import type { AppGrant, AppGrants } from "../../../privacy/store.ts";
@@ -51,7 +52,7 @@ function AgentsSection({ grants, home, show }: Pick<PaneContext, "grants" | "hom
       <Caption above>Agents</Caption>
       <Group testID="privacy-agents">
         <Item label={agentsSummary(agentPermissions(entries, home))} detail="What each may do, what it did lately, and Revoke.">
-          <Button testID="privacy-agents-open" label={`${paneTitle("agents")}…`} onPress={() => show("agents", "permissions")} />
+          <TextLink look="panel" testID="privacy-agents-open" label={paneTitle("agents")} onPress={() => show("agents", "permissions")} />
         </Item>
       </Group>
     </Spot>

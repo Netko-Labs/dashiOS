@@ -24,6 +24,7 @@ export function useCalendarFiles({ model, chooser, overlays }: { model: Calendar
       x,
       y,
       items: [
+        { label: model.isVisible(calendar.id) ? "Hide Calendar" : "Show Calendar", onPress: () => model.toggle(calendar.id) },
         { label: "Edit Calendar…", onPress: () => setSheet({ kind: "edit-calendar", id: calendar.id, name: calendar.name, color: calendar.color }) },
         { label: "Export…", onPress: () => setSheet({ kind: "export", calendarId: calendar.id }) },
         {

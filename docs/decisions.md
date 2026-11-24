@@ -7421,6 +7421,653 @@ short words, as the rulebook is written.
 - **Cost:** none beyond each line.
 - **Undo:** per component.
 
+### D541. A surface opens on the screen it names or not at all; the Dock opens again as the bars do
+
+- **Date:** 2026-11-24. `v10/screens-fix`, mirin `v10-screens-fix`.
+- **Found:** replugged, the second screen's menu bar opened on the first
+  (two bars there, none on the second), every time with a debug compositor.
+  Plain overlays (the bars after the first, the Dock) open on the warm
+  spare Metal host, started before the screen came. Its registry hears of
+  the new `wl_output` when it comes and binds it, and the name arrives a
+  round trip later; asked at once for `output: "Virtual-2"`, the host
+  didn't know that name, opened with no screen named, and the compositor
+  put it on its first screen. A slow compositor (or a screen that wakes
+  slowly, NVIDIA's) widens the gap. The lock screen's hosts and the Dock
+  name their screen the same way.
+- **Decision:** fixed where it starts, in mirin's host (`screen.rs`): a
+  layer or lock surface that names a screen the host doesn't know waits for
+  it, up to 3 s, and if it never comes opens nothing and ends, saying why;
+  it never opens on another screen. The shell's side was there for the bars
+  (a bar whose host died opens again a second later, three times a minute)
+  and the lock (a lock host that died is put back a second later); the Dock
+  now does the same (`dock/lib/surface.ts`) before it reports the loss that
+  ends the session.
+- **Cost:** a surface for a screen that never becomes known shows 3 s late,
+  or not at all; a Dock that dies four times in a minute still ends the
+  session, as one that died once did before.
+- **Undo:** mirin's `with_role` back to dropping an unknown name;
+  `DockSurface` reporting the first death.
+
+### D670. One clock for the lock, the login screen and Glance, in @dashi/ui
+
+- **Date:** 2026-11-24. The `design-lock` agent's (W7), on the owner's Q1.
+- **Question:** the lock drew its stacked 120 ExtraLight clock, Glance one line of 120, and the login
+  screen 88 Bold. Where does the one clock live, and how does a host that cannot draw Inter Display
+  get it?
+- **Choice:** `@dashi/ui`'s `InksClock` (hours over minutes, `TYPE.clock`, `WEIGHT.display.extraLight`
+  in the display family) and `ClockHead` (the day's row in the Inks' body size, upper case, then the
+  clock, then what the host hangs under it). The lock's head, the login screen's default head, the
+  greeter's other screens and its picker, and Glance all draw them; Glance is stacked too, as inks
+  frame 7 draws it. The face is asked only where the host says `fontWeights` and `displayFont`: the
+  shell reads its hosts' registry (`useClockDisplay`), the greeter its own hosts' protocol lines
+  (`greeter/src/display.ts`); until a host says, the clock is Regular.
+- **Why:** design.html says the two screens have one look, and the inks clock is the newer, approved
+  drawing; one component cannot drift.
+- **Cost:** on the login screen the clock takes two lines (about 224 points) where it took one; the
+  layout still fits a 617-point-tall screen.
+- **Undo:** give `ClockHead` a one-line variant and pass it from the greeter.
+
+### D671. The lock follows the person's mode; its Light look
+
+- **Date:** 2026-11-24. The `design-lock` agent's (W7), on the owner's Q2.
+- **Question:** what are the lock's colours in Light, and what stays Dark?
+- **Choice:** `LoginScreen` takes `mode`; the lock passes the person's (`useDark()`), the greeter
+  always Dark. `LOGIN_LIGHT` (beside `LOGIN`, `loginColors(mode)`): the wallpaper lightened to 82% of
+  the Inks' Light paper, Light's ink and 70% of it, the washes 10% to 25% of the ink, the light
+  palette's `criticalInk` and focus ring. The widgets on it sit on `LOCK_GLASS.light` (`#FFFFFF5C`,
+  a 22% ink hairline), the inks' frame 5 values; Dark keeps `LOCK_GLASS.dark`. Glance stays black in
+  both modes, in Dark's inks (fewer lit pixels at rest).
+- **Why:** the frames' lighter wash (15% to 53% white) leaves dark words unreadable over a dark
+  wallpaper in Light Mode; at 82% the ink reads 4.5:1, the error 4:1 and the ring 3:1 over a black
+  wallpaper, as Dark's 72% does over a white one (`dashi-ui/test/inks-clock.test.tsx`).
+- **Cost:** a milkier lock in Light than frame 5 shows.
+- **Undo:** lower `LOGIN_LIGHT.ground`'s alpha in `theme/colors.ts`.
+
+### D672. The lock's ink shift follows its wash: lighter on Dark's, darker on Light's
+
+- **Date:** 2026-11-24. The `design-lock` agent's (W7).
+- **Question:** `INK_RULE.lockL` was `{ light: +0.05, dark: -0.04 }`, so the always-Dark lock printed its
+  inks 4 points darker on a dark wash, the opposite of inks frame 4 ("5 points lighter for the dark
+  wash") and frame 5 ("4 points darker for the milky wash").
+- **Choice:** `{ dark: +0.05, light: -0.04 }`, keyed by the mode the lock now follows.
+- **Why:** the frames are the approved design, and the lock now has both washes.
+- **Cost:** none: the lock was the only reader.
+- **Undo:** swap the two numbers back.
+
+### D673. The login screen on the tokens
+
+- **Date:** 2026-11-24. The `design-lock` agent's (W7), closing AB-5, AB-6, AB-42, AB-43.
+- **Question:** the login screen's raw values: a pink error, white alphas, 16 and 14 point words, a 32
+  tall field with no edge, a typed chevron.
+- **Choice:** the name 15 SemiBold (`TYPE.heading`), the field 13 (`TYPE.body`) and 28 tall, a pill,
+  its 1 px edge the glass hairline at rest and the focus ring while it has the keyboard (KB-2); the
+  hint 12, the power labels 11, the people on the picker 13 SemiBold, the initials 28
+  (`TYPE.figure`) at both picture sizes; a wrong password in the mode's `criticalInk`. "Other users"
+  in sentence case after a drawn `CHEVRON_LEFT` at 12; the session a chip 22 tall, radius half of it.
+  The login screen's own measures are `LOGIN_SCREEN` and `LOGIN_PARTS` beside it in `@dashi/ui`.
+- **Why:** TY-1, CO-5, CO-7, KB-2, CP-4, RA-1.
+- **Cost:** none.
+- **Undo:** per value.
+
+### D674. The login screen's controls live in the kit
+
+- **Date:** 2026-11-24. The `design-lock` agent's (W7).
+- **Question:** the greeter drew "Other users", the session pill and the people on its picker as
+  hand-made buttons (H22's three hits); the kit's `Button` and `Chip` are the window palette's, not the
+  login screen's look on the darkened wallpaper.
+- **Choice:** `@dashi/ui`'s `login-parts.tsx`: `Avatar`, `LoginBackLink`, `LoginChip`, `LoginPerson`, each
+  taking the look's `LoginColors`, each with a name for screen readers; the Components app shows them
+  on its new "Login and lock" page.
+- **Why:** a control is never drawn in a module (H22, UI-1); these have one look and one user, the login
+  screen, which itself lives in the kit.
+- **Cost:** three small components only the greeter uses.
+- **Undo:** none needed; fold them into `Button` if it gains a login look.
+
+### D675. The day's upper case is ClockHead's, on the shared formatter's string
+
+- **Date:** 2026-11-24. The `design-lock` agent's (W7), closing SH-13.
+- **Question:** the lock wrote its day with `toLocaleDateString(…).toUpperCase()`, beside the shared
+  formatter; Metal has no `textTransform`.
+- **Choice:** the lock passes `shared/time`'s `formatLongDay` and `ClockHead` upper-cases that string
+  (`toLocaleUpperCase`) in one place. The greeter runs before the shell and anyone's Region settings,
+  so it keeps its own `formatDay` with the same options in the machine's locale.
+- **Why:** PA-14: one formatter; upper case is presentation, not a second format.
+- **Cost:** a screen reader reads the day in capitals, as it did.
+- **Undo:** a `textTransform` in mirin Metal, then drop the call.
+
+### D660. The Installer is the panel look, a wizard with no footer bar
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; AB-4, AB-7, AB-8, AB-9, AB-10, VS-3, CO-2, CO-9, TK-2).
+- **Question:** the Installer put Back and Continue on a 64-tall bar with a hairline, titled its
+  pages 28/22 in Title Case, tinted its mark, ticks and running dot with the accent, drew its
+  disks as radio cards, and mixed the window look's `Row`, `Switch` and `TextField` into Settings'
+  cards.
+- **Choice:** the buttons sit on the window's ground at the content's foot; every title is
+  `TYPE.title` (20 Bold) in sentence case with curly apostrophes; the mark is ink, a done step a
+  moss `CHECK`, the running one the kit's `Spinner`; the disks are one list (`listbox`, each disk an
+  `option` in the selection look, a focus group whose arrows choose); fields and the switch are the
+  kit's `look="panel"`, in rows of Settings' geometry (56 tall, 16 in, the name 13.5 SemiBold, its
+  line 11.5) kept in `installer/lib/rows.tsx`, since Settings' own row lives in `settings-app`
+  (W4's) and an app may not import it. Least size 600 × 480.
+- **Why:** VS-3 (no footer bar, a wizard's buttons on the ground), TY-1, VO-1, CO-2, CO-9, TK-2.
+- **Cost:** a second copy of Settings' row geometry, small; it should become one row in
+  `shared/cards` once W4's work lands.
+- **Undo:** `apps/installer/lib/{view,rows}.tsx`.
+
+### D661. Activity Monitor's view is a pop-up of four views; the field shrinks before it folds
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; AB-2, AB-20, AB-27, AB-28, AB-37, UI-2, UI-11).
+- **Question:** the view button was hand-drawn ("Apps ▼", a typed ▼ at 9, no edge or Tab stop, its
+  menu 40 pt left of it) and held toggles as well as the view.
+- **Choice:** the kit's `PopUpButton` with the four views a person picks between (Apps, My apps,
+  All processes, My processes); Kernel Threads and Show Summary stay in the menu bar's View menu,
+  where they always were. In a narrow window its glyph opens the same four as a menu hung from it.
+  The search field is the kit's 210, shrinking to its least 96 before it becomes a glyph, so the
+  window opens 1000 wide (was 940) to show the whole row. Waiting is `Loading`, a search that finds
+  nothing `NoResults`; the title gives way through `AppWindow`'s `hideTitle` (the old `center`
+  prop no longer existed, so it had silently stopped giving way). The app's disclosure chevron is
+  bare (the row lights under the pointer), and the right-click menu is the kit's `PopupMenu` with
+  the menu bar's keys.
+- **Why:** UI-2 (a pick of one of several is a pop-up), UI-8, UI-11, VS-7, PA-5, PA-17, VS-8.
+- **Cost:** the two toggles are one menu away; the window opens 60 wider.
+- **Undo:** `apps/activity-monitor/lib/views/view-menus.tsx`, `toolbar-fit.ts`, `sizes.ts`.
+
+### D662. The kit gains TextArea, InlineField and CheckMark; Checkbox can hide its words; a small TextLink
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; UI-1, UI-9, UI-10, KB-2).
+- **Question:** dashi-dialog's editable text and Calendar's notes needed a field of many lines,
+  Calendar's new event an in-place name, dashi-dialog's checklist a box in a row that is itself
+  the control, Calendar's calendar rows a checkbox whose words the row already says, and a day's
+  "3 more" a link at 11; the kit had none, and each module drew its own.
+- **Choice:** `TextArea` (a text field's edge, ground and focus over many lines, 13, 12 `small`),
+  `InlineField` (no box; a 1 px focus-ring edge while it has the keyboard), `CheckMark` (the box
+  alone, no role or Tab stop, round for a pick-one list), `Checkbox hideLabel` (its words only for
+  screen readers) and `TextLink size="small"` (11). Each has a test, a Components app entry and a
+  row in design.html.
+- **Why:** UI-1: a second user moves it into the kit before a second copy ships.
+- **Cost:** five more names in the kit.
+- **Undo:** the files in `packages/dashi-ui/src/`.
+
+### D663. A window's own view is named for what it is, not as a control
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; H22).
+- **Question:** H22 counts a component named like a control (`…Dialog`, `…Sheet`, `…Chip`,
+  `…Field`) that does not render a kit frame. dashi-dialog's nine Zenity modes and the portal's
+  Open With and Add to Dock were such names, and so were Calendar's event bars and its sheet's
+  rows of kit controls.
+- **Choice:** a name says what the thing is. dashi-dialog's modes are views of a window built on
+  `AppWindow` and the kit's `Button`s (`EntryView`, `ListView`, …); Open With is `OpenWith`; Add
+  to Dock moved onto the kit's `AlertWindow` (it asks a question) with the launcher's icon and its
+  name field under the words; Calendar's event bars are options you pick (`EventBar`,
+  `EventLine`, `AllDayBar`, role `option`) and its sheet's rows (`DayInput`, `TimeInput`,
+  `ZoneInput`, `NotesRow`) only combine kit controls. A component that draws a control is moved
+  onto the kit's control, never renamed.
+- **Why:** H22 is about controls drawn outside the kit; these draw none.
+- **Cost:** none.
+- **Undo:** the names.
+
+### D664. Every portal and dialog window states its least size
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; AB-25, LA-3).
+- **Question:** the Store, the Installer, Open With, Print and dashi-dialog's windows could be
+  squeezed past where their one row and buttons fit.
+- **Choice:** the portal's `least` is required. Open With 360 × 240, Print 400 × 300, an alert
+  (access, share your name, Add to Dock) opens at its least; dashi-dialog's least is 320 × 160, or
+  the size it opened at when `--width`/`--height` make that smaller; the Installer 600 × 480; the
+  Store 610 × 400, from its compact row's parts.
+- **Why:** LA-3.
+- **Cost:** none.
+- **Undo:** each `least` / `minSize`.
+
+### D665. Open With: the kit's pick rows, More apps, and the kind's name
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; AB-24, AB-29, AB-38, VO-8, VO-11, PA-18).
+- **Question:** Open With's rows were 34 tall and its own; "Other…" showed the rest in place; the
+  box said "Always use for application/pdf" and was hand-drawn with a typed ✓.
+- **Choice:** the kit's `PickRow`s in a `PickList` (30, the selection look, a focus group,
+  "Default" at the row's end); `MoreButton` "More apps" / "Fewer apps"; the kit's `Checkbox`
+  reading "Always use for PDF documents", the MIME database's description in the plural, its
+  first word lowered unless it is an initialism (`shared/files` now exports `mimeKind`, the
+  existing `kindOf` of `mime.ts`). The print sheet's and the access sheet's boxes are the kit's
+  too.
+- **Why:** PA-18 (one pick row), VO-8, VO-11, UI-10.
+- **Cost:** an app icon that fails to load shows no generic icon in Open With (`PickRow` draws an
+  `Image`, not `AppIcon`).
+- **Undo:** `apps/portal/lib/app-chooser/`.
+
+### D666. The Store's cards are list items, its links ink, its failures ume
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; AB-17 to AB-21, AB-27 to AB-31, AB-37, AB-40, AB-41, AB-48, AB-49, CD-15).
+- **Question:** the Store drew its own chips, disclosures, links, error and empty pages, sheet
+  titles and search width.
+- **Choice:** app and entry cards are `listitem`s in a `list` grid, not buttons (moving the role to a
+  plain outer view would square their focus ring); screenshot thumbnails are options in a
+  listbox, the chosen one with the accent edge (chosen); Get, Open and Update are the kit's small
+  `Button`; chips are the kit's `Chip` (the stale one broth, like the offline state); "See all"
+  and the facts' links are `TextLink` (ink); disclosures `MoreButton`; offline, Flathub, the applet
+  catalogs, Flatpak missing and "couldn't check" are `ErrorState`, a partial failure a `Notice`;
+  no results `NoResults`, an empty category "No apps here yet"; Sources, Catalogs, Add a catalog
+  and an extension's settings are `FormSheet`s (its title "‹name› settings"); the failure sheet's
+  tile is danger (ume); one `PageHeader` for an app's, a package's and an applet's page, the
+  byline 12 muted; the placeholder "Search apps and add-ons" on the kit's 210 → 96.
+- **Why:** UI-8 to UI-15, PA-6, PA-17, VO-8, CO-1, Q3.
+- **Cost:** the activity chip's words are not cut with an ellipsis yet (the kit's `Chip` has no
+  width cap).
+- **Undo:** `apps/software/lib/`.
+
+### D667. Calendar: the lit calendar, the rail, and its commands in the menu bar
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; AB-11, AB-12, AB-13, LA-5, UI-17).
+- **Question:** Calendar's rows were hand-made and unfocusable, with a round tick of their own; the
+  sidebar menu's commands were nowhere else.
+- **Choice:** each calendar is a `SidebarItem` whose tile wears its colour, in the section's focus
+  group; the lit row is where new events go; its accessory holds the kit's `Checkbox`
+  (`hideLabel`, "Show ‹name›" for screen readers) and the `MORE` button; the sidebar folds to the
+  kit's rail. File gains Edit Calendar…, Hide or Show Calendar and Delete Calendar…, acting on the
+  lit calendar (UI-17, PA-8). The event sheet's calendar is a `PopUpButton` and its weekdays the
+  kit's `Checkbox`es with the region's short names; Today is the kit's small `Button`; Find is a
+  `SearchField` (`variant="find"`: Esc closes Find and keeps the query); the steppers' ‹ › are
+  drawn chevrons on `ToolbarButton`s with tooltips.
+- **Why:** UI-2, UI-8, UI-10, UI-11, KB-1, LA-5, IC-3, UI-17.
+- **Cost:** the pop-up's options carry no colour dot; the week's shown days are no longer washed
+  in the sidebar's month.
+- **Undo:** `apps/calendar/lib/views/sidebar.tsx`, `menus.ts`, `sheets/`.
+
+### D668. Calendar's grid and floating panels
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's (W6; AB-1, AB-14, AB-15, AB-27, AB-34, AB-36, CD-16).
+- **Question:** the now line wore the accent, captions were 10, the floating panels were three
+  cards, and the sheets were bare `Sheet`s.
+- **Choice:** the now line is ink (2 px on today with its dot, 1 px muted elsewhere); every caption
+  `TYPE.caption`, the week's day number 13 Bold, the popover's title 13 Bold; Find's answers hang
+  as a menu (`MENU`, `menuEdge`, `SHADOW.xl`, "No results" in its one row); the popover is radius
+  12, padding 14, `menuEdge`, `SHADOW.xl`; the drag ghost `SHADOW.xl`; the sidebar's month and the
+  sheet's date picker are `MonthGrid` (six weeks tall, so the list under it never jumps); New and
+  Edit calendar, Import and Export are `FormSheet`s, the problems sheet an `AlertSheet` (broth);
+  "3 more" a small `TextLink`; days outside the month on `surface.field`.
+- **Why:** CO-2, TY-1, LA-4, DE-1, UI-14, UI-15, PA-17.
+- **Cost:** none beyond each line.
+- **Undo:** `apps/calendar/lib/grid/`, `views/`, `sheets/`.
+
+### D669. Small calls made in W6
+
+- **Date:** 2026-11-24. The `design-apps-b` agent's.
+- **Question:** small choices, recorded together.
+- **Choice:** sentence case for buttons, headings and window titles that are not commands
+  ("Start over", "Erase and install", "Don’t share", "Share your name", "More options");
+  menu-bar and context-menu rows keep Title Case; line heights snap to their size's role and
+  spacing by tokens.md (3 → 2, 5 → 4, 22 → 20); process timers are named where they are used;
+  dashi-dialog's month is drawn in the region's first weekday and names while `--date-format`
+  stays Zenity's C locale; the portal's and dashi-dialog's frames pad by `ALERT_WINDOW.padding`.
+- **Why:** VO-1, TK-1, UI-14.
+- **Cost:** none.
+- **Undo:** per line.
+
+### D630. The notification centre panel goes; the widget area is where notifications are kept
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3; NO-1 to NO-3, SH-6, SH-34, CD-29).
+- **Question:** the plan asks for one notification card, the month card on `MonthGrid` and an
+  ink today in "the notification centre". `NotificationCenterPanel` (`notifications/center.tsx`,
+  its cards and its month card) has drawn nothing since 17 Nov: the menu bar opens
+  `NotificationArea`, the widget area with paper notes (95ab3a61).
+- **Choice:** delete the dead panel, its parts and its month card. The one card is
+  `notifications/lib/card.tsx` (`NOTE_CARD`: radius 12, padding 12, icon 28 at radius 7, the
+  kit's small Buttons): the banner draws it; the area's paper note takes its measures on a
+  widget's paper and corner (CO-11) with the kit's inks Buttons. The month beside the notes is
+  the Calendar widget's, which now starts its week on the region's first day.
+- **Why:** fixing a surface nobody sees would leave two cards and a dead month grid to maintain.
+- **Cost:** no centre to fall back to without the widget area; design.html's Notifications
+  section is rewritten to say so.
+- **Undo:** restore the three files from cd2f7a44^ and point `menus/lib/popover.tsx` at the panel.
+
+### D631. The widget area's controls are the kit's, in an inks look
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3; CO-2, CO-11, TK-2).
+- **Question:** the widget area never wears the accent, so the kit's Switch (the one on) and
+  Button (window or panel look) can't be dropped in; the gallery's "May go on air" and "Edit
+  widgets" were drawn by hand.
+- **Choice:** `look="inks"` on the kit's `Switch` (36 × 20, ink on, hairline off, a paper knob)
+  and `Button` (a 28 pill on the Inks' paper under a hairline; the one that goes ahead is ink),
+  from `INK_TEXT`/`INK_PAPER` by the mode. A chosen widget, size or gallery row is an ink wash
+  under a 2 px ink edge (CO-9, D588).
+- **Why:** TK-2 names three looks; the kit had two.
+- **Cost:** the widgets' own `Btn` (inside cards, filled with a widget's ink) is still hand-drawn;
+  it is the next to move onto the inks Button.
+- **Undo:** drop the `inks` branches in `switch.tsx` and `button.tsx`.
+
+### D632. A button that is one glyph is the kit's GlyphButton
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3; IC-3, SH-29).
+- **Question:** the overview's × and +, a notification's ✕ and the capture toolbar's tools were
+  font characters or hand-drawn discs, unnamed for screen readers.
+- **Choice:** `GlyphButton` in `@dashi/ui`: round, 24 (18 small), `filled` for a disc at rest,
+  `quiet`, and `on` for one that turns something on (the one on, read as checked). A
+  toolbar's square glyph button stays `ToolbarButton`. `ADD` joins the glyphs.
+- **Why:** UI-8's one-button rule, for buttons without words.
+- **Cost:** the overview's + is a 24 target in its 34 disc (the disc takes the press too).
+- **Undo:** per caller.
+
+### D633. The switcher's pick is a selection; `switcherSelection` is `openWash`
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3; CO-9, SH-12, SH-26).
+- **Choice:** the chosen app's tile is `selectionWash`, named, an option; the soft ink wash keeps
+  its other jobs (an open bar item, the "…" row, the taskbar's open button) under the name
+  `openWash`, in the palette (W1's file: a rename only).
+- **Undo:** the palette key and five callers.
+
+### D634. H22 lets a status built on the kit's Chip keep its name
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3; UI-12, D609).
+- **Question:** the agents' `AccessChip` and the bar's `CapturePill` now render the kit's
+  `Chip`; H22 still counted their names.
+- **Choice:** `Chip` joins `KIT_FRAMES`, as Sheet and Button did in D609.
+- **Undo:** take it out of `scripts/check-design-kit.ts`.
+
+### D635. In the two-screen folders, tokens only: their hand-drawn controls wait
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3).
+- **Question:** the lead's brief: the menu bar, Dock, launcher and lock were just reworked for
+  two screens, and a fix for their hosts is merging, so in those folders swap tokens and
+  restructure nothing. H22 lists 15 hand-drawn controls in the launcher (its field and chip, the
+  form's choices, the conversation's buttons and empty line).
+- **Choice:** the launcher, menu bar and Dock get token swaps only (and the launcher's sizes on
+  `typeAt()`); their H22 entries stay listed. The bar's own pressable items in other folders
+  (work alone, the voice chip, the recording stop) wait for the same move: a kit bar item.
+- **Why:** the owner's instruction for this round outranks emptying the list now.
+- **Cost:** `h22/W3` ends at 28, not 0.
+- **Undo:** none needed: the next round moves them.
+
+### D636. Setup's progress dots and running mark are ink
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3; SH-30, CO-2, Q3).
+- **Choice:** the mark is Kombu's constant (`KOMBU_SEED`), a done step moss, a running step and
+  the current page's dot ink (progress is ink, Q3), titles at `TYPE.title` 20.
+- **Undo:** the colours in `setup/lib/`.
+
+### D637. Small calls made in W3's token swap
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3).
+- **Choice:** the plan's snapping everywhere (5→4, 7→6, 9→8, 11/13→12, 18→16, 22→20, radius
+  6→5, 8→7, 9→10, 14/16/18→12 outside the Inks); timers stay named constants in objects
+  (`TIMERS`, `KEPT.closeMs`), not MOTION; a hit area's key catcher (`KeyCatcher`) is still a
+  hidden `TextInput` (moving every overlay to `KeySink` wants a VM pass of its own); the
+  capsule's buttons keep their pill-v2 look (the kit has no persona-coloured button); the
+  agents' Stop is the danger Button; panels' empty lines are 12 muted (SH-31).
+
+### D640. One list row in Settings, and how the current item shows
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, SE-8, SE-10, SE-A4, SE-A12, SE-A18).
+- **Question:** Settings drew a card's rows seven ways and marked the current item four ways
+  (bold, a tick at either end, the selection wash); pressable rows had no focus or role.
+- **Choice:** every row of a thing is `ListRow` (56, 13.5 SemiBold over 11.5 muted). A list you
+  pick one from (Sound's outputs, the answerers) shows its chosen row in CO-9's selection look
+  (`chosen`), its rows options of one listbox; a list of things that connect says "Connected" in
+  the row's line and nothing else marks it. A pressable row is a Tab stop with a role (option, or
+  button), and a card of them is one focus group (`Group list`, `RowList` for rows under a
+  setting). Keyboard's layout list is the kit's `PickList`. Agents' head row is a `ListRow` with
+  the kit's `Chip`.
+- **Why:** SE-8 and SE-10 as written; one look per job (CO-9).
+- **Cost:** a long layout name is cut instead of wrapping (PickRow is one line); names that were
+  Regular are SemiBold.
+- **Undo:** `ListRow`'s `chosen` and `Group`'s `list` in `settings-app/lib/panes/parts.tsx` and
+  `shared/cards/cards.tsx`.
+
+### D641. A row's destructive action confirms in place, or acts and offers Undo
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, SE-12, PA-1, SE-A7, SE-A8).
+- **Question:** deleting asked five ways in Settings, two of them in one pane, and Voice's history
+  deleted with no ask at all.
+- **Choice:** `ConfirmDelete` takes the row's verb (Delete, Forget, Remove, Delete all, Clear
+  history) and is the only in-place confirm: Network, Bluetooth, Passwords, Payments, Tokens (its
+  sheet goes; the row's line says what will be lost), Voice's models, Clipboard. One dictation
+  entry acts at once and offers Undo (it stays in the file until the next delete, Delete all, or
+  the pane closing, so no history API changed); Delete all confirms in place. Agents' Revoke
+  keeps acting with Undo.
+- **Why:** PA-1 and SE-12: what can be undone acts; what can't confirms where it is.
+- **Cost:** Bluetooth can show two rows asking at once (each row keeps its own question).
+- **Undo:** per pane.
+
+### D642. Settings' own Slider and Switch are the kit's, set in the panel look
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, H22, Q4).
+- **Question:** `settings-app/ui.tsx` wrapped the kit's slider and switch, so H22 counted two
+  controls named like the kit's.
+- **Choice:** `Slider` is `InkSlider` itself and `Switch` the kit's Switch with the panel look set
+  in place (`inPanelLook`); the 20 callers keep their imports. "Still looking" is the kit's
+  `Loading` with "Looking for ‹things›…"; an empty list says "No ‹things› yet." or "No ‹things›
+  found.", then one sentence on what to do. Voice's fetch is the kit's `ProgressBar` (ink, Q3).
+  `InkSlider` draws its value in one colour, on the ink once the fill reaches its start
+  (`valueOnInk`, SE-A44).
+- **Why:** one kit (Q4); PA-5's wait before Loading shows.
+- **Cost:** none seen.
+- **Undo:** restore the wrappers.
+
+### D643. Control Center's tiles and the round knob button are the kit's
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, UI-1, CC-1, H22).
+- **Question:** Control Center, Settings' miniature and Sound's page drew the same tiles, and the
+  mute button, the page header's switch and edit mode's marks were role-drawn Views.
+- **Choice:** `WideTile`, `RoundTile`, `SliderTile` (with a `lead`) and `BatteryTile` move into
+  `@dashi/ui`'s `panel/tiles.tsx`; `KnobButton` is the panel look's round glyph button (a switch
+  when given `checked`); the panel `Switch` takes `lit` for a lit header, at the kit's 46 × 28
+  (was 42 × 24). Edit mode's footer is panel Buttons, 36 tall (was 34), and "ADD" reads "Add".
+  The battery panel is radius 28 (RA-2's panel; was 26) and "Battery Settings…" is the panel
+  Button (36, was 40). `MuteKnob` is `Mute` and `MicPill` `MicIndicator`; `sound/index.ts`
+  re-exports the old names until the menu bar (W3) moves its import.
+- **Why:** UI-1: a second user moves it into the kit; RA-1's named panel radius.
+- **Cost:** the switch and footer are a few points larger.
+- **Undo:** move the tiles back into `control-center/`.
+
+### D644. Battery's charts are readings, and battery rows need a battery
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, CO-13, SE-17, SE-A1, SE-A3, SE-A46).
+- **Choice:** the draw series is mizu, time on power matcha (`TINTS.matcha`, not `#30d158`), the
+  charge line and each app's share ink on the line colour, the tip's glyph muted (a warning keeps
+  `batteryLow`). The charge limit and Battery health show only while a battery is present. The
+  power button is said once, in its row; the lid's caption says the lid is set for everyone. The
+  hero's figure is `TYPE.figure` (28, was 30). Charts take the card's width.
+- **Why:** CO-13; SE-7, each fact once; SE-17.
+- **Undo:** `battery-usage.tsx`, `battery-laptop.tsx`.
+
+### D645. One ring for a chosen picture; Settings' popovers are the app look
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, SE-15, SE-A19, SE-A22).
+- **Choice:** `PictureChoice` (`@dashi/ui`): a 2.5 ring around the picture, at its radius plus
+  the room plus the ring, in the on colour, or ink where the choices are colours (Your Dashi, the
+  swatches); an option inside a listbox group (Metal has no radio role); its name under the ring.
+  Appearance's themes use room 4, so their ring's outer radius is 20.5. Displays' chosen screen
+  is ringed and the others no longer dim. The Custom accent popover is the app look (radius 12,
+  shadow xl, the window's Buttons), its eyedropper the kit's `ToolbarButton`.
+- **Why:** one look per job (CO-9); SE-15: a sheet or pop-up is the same wherever it opens.
+- **Undo:** per pane.
+
+### D646. Plain names in Settings, and no typed paths
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, VO-11, SE-A10, SE-A26, SE-A28, SE-A30, SE-A33).
+- **Choice:** a display is its EDID name, "Built-in", or "Display" ("Display N" by connector
+  order) when it has none, never its connector; a time zone is its city and offset, its id a
+  search word. Wallpaper never asks for a typed path: the registry rows `wallpaper/photo-path` and
+  `wallpaper/video-path` go (they were the typed path, not a setting), and when the file chooser
+  doesn't answer, Wallpaper and Users show one `Failure` (`NO_CHOOSER`). About and Users open with
+  their first card: About's version is a row (`about/version`), Users' account type is in its
+  title ("Users · Administrator"), the avatar 40 on `knobRest` with ink initials beside "Change
+  picture…". About leaves out a reading it doesn't have. No service, package or file name shows
+  (AccountsService, fcitx5, NetworkManager, settings.json, the compositor); Keyboard says to
+  install Fcitx 5 from the Store.
+- **Why:** VO-11; SE-17: "Unknown" never shows.
+- **Cost:** two addresses stop existing; they held a field, not a setting.
+- **Undo:** per pane.
+
+### D647. Pane names and headings in sentence case, one spelling
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, SE-16, VO-9, SE-A6, SE-A32, SE-A45).
+- **Choice:** Network (it holds Ethernet and VPN; "Wi-Fi" a search word, the address
+  `dashi://settings/network` kept), Battery & power, Lock screen, Date & time, Language &
+  region; every pane page takes its title from `paneTitle`. Captions and buttons are sentence
+  case except names (Wi-Fi, Bluetooth, Control Center, "Battery Settings…" in the panel, as the
+  menu bar's style). American spelling in the UI (color, recognizer), the British spelling kept
+  as a search word.
+- **Why:** VO-9 and SE-16.
+- **Undo:** `shared/settings/panes.ts` and the registry.
+
+### D648. Voice's and Your Dashi's rows wear their knobs
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, SE-13, SE-A17).
+- **Choice:** Voice: on WAVE, models and corrections DISK, talk key KEY, Dashi's voice VOLUME,
+  each, add and more languages LANGUAGE, In ‹language› GLOBE, dictation MIC, listen again REFRESH,
+  dictation key KEYBOARD, hands-free TAP, tidy SLIDERS, words TEXT, replacements REPEAT, history
+  HISTORY, recognizer CHIP, corrected by SPARK. Your Dashi: name PERSONA, character SPARK, you
+  USER, talk WAVE, language LANGUAGE, voice VOLUME, colour DROP, mark GRID, dots MOTION, note
+  TEXT, own SLIDERS, share AT, about HISTORY, reset REFRESH. Dictation history is two cards (the
+  keep setting with its knob, then the entries), so each card keeps one left edge (SE-6).
+- **Why:** SE-13; Appearance's rows keep theirs (D585).
+- **Undo:** the glyphs in `registry/lib/voice.ts` and `registry/lib/persona.ts`.
+
+### D649. Small calls made bringing Settings and Control Center onto the tokens
+
+- **Date:** 2026-11-24. The `design-settings` agent's (W4, TK-1, H21).
+- **Choice:** every measure in W4's files is a token or a named constant beside its component
+  (658 literals to 1: Caption's tuck, `-SPACE.xs`, which H21b should read as the negative step).
+  Snaps: a tile's setting at 0.75 (`OPACITY.soft`, was 0.74 and 0.7); Sound's app slider takes the
+  kit's spacing; the battery figure 28. Timers live in named objects (`TIMING`, `SOUND_POLL`,
+  `GRAPHICS_REFRESH`, `NIGHT_LOOK`, `AUTO_LOOK`, `SPOT_TIMES`, `MONITOR.slowMs`). `PAGE.margin`
+  is `PAGE.sides` (a style name in a constant reads as a literal). The vault's forms share one
+  field width, 240. Clipboard's left-out apps are `ListRow`s with an `AppDisc` (the app's icon,
+  or its letter on its tint), a small Remove at the end; its field asks for a program's name until
+  the installed-apps list reaches Settings. Window lights' colours for GTK are
+  `WINDOW_LIGHTS` in the theme.
+- **Why:** TK-1; the plan's snap rule (tokens.md).
+- **Undo:** per file.
+
+### D620. A shell sheet with no window is the kit's sheet, centred on its own surface, without a scrim
+
+- **Date:** 2026-11-24. The `design-sheets` agent's (W2; UI-5, T17).
+- **Question:** the shell's sheets (power, polkit, Wi-Fi, Bluetooth, the agents', Force Quit,
+  Displays' keep) are layer surfaces with no window to hang from. Copy the alert frame in the
+  shell, or teach the kit's sheet to stand alone?
+- **Choice:** the kit's `Sheet`, `AlertSheet` and `FormSheet` take `place="screen"`: the same card
+  (radius 12, padding 20, solid, `xl`) centred on the surface, its keys the same, no scrim (there
+  is no window to dim; the screen is not the asker's). `AlertSheet` also takes `keys={false}` for a
+  sheet that must never take the keyboard by itself, and `icon` puts the asker's own picture (an
+  app's, an applet's) in the tile's place. The menus' `Panel` and the three hand-made `Button`s
+  are gone; `menus/sheets.tsx` keeps only the surface's size.
+- **Why:** UI-5 says one frame, "centred on the screen only when it has none"; a second frame in
+  the shell is what T17 found.
+- **Cost:** two small kit commits (with tests and a Components app entry).
+- **Undo:** drop the props; the shell would need its own frame again.
+
+### D621. Change Password hangs from Settings: its own surface laid exactly over Settings' window
+
+- **Date:** 2026-11-24. The `design-sheets` agent's (SE-A47, SE-15).
+- **Question:** the sheet was see-through, centred on the screen, with no scrim. Drawing it inside
+  Settings' window would let an agent's pointer (which works in a window it names) reach the
+  password fields.
+- **Choice:** it stays a surface of its own that holds the keyboard, but the prompt asks the
+  compositor for Settings' frame and lays the surface over it exactly (anchored top left, margins
+  from the screen's corner, `exclusiveZone: -1`): the kit's `FormSheet` hangs under Settings'
+  title row (`hang`, the 38 strip) over the scrim, clipped to the window's radius. Without a
+  compositor or a Settings window, it is centred as before. `settings-app/services.ts` and
+  `boot/settings.ts` (W4's and W3's files) each gained one line to pass where Settings is.
+- **Why:** SE-15 and UI-5: a sheet is the same sheet wherever it opens; the safety stays.
+- **Cost:** the surface covers Settings' window, so the window can't be moved or reached while
+  the sheet is open (as a sheet holds its window); a window moved by other means (an agent, a
+  screen unplugged) leaves the sheet where it was.
+- **Undo:** pass no `settingsPlace`.
+
+### D622. What a shell sheet's tile shows
+
+- **Date:** 2026-11-24. The `design-sheets` agent's (UI-5, R4).
+- **Choice:** the power sheets: Dashi's mark for Log out, `RESTART`, `SHUT_DOWN`; the agents'
+  sheets (consent, confirm, question, sign-in, approval): the shiso tile with the agents' spark
+  (`tone="agent"`); polkit: the requesting app's icon, else `LOCK`; Force Quit's question: the
+  app's icon; the person's confirm sheet: `WARNING` in ume when it destroys, else `INFO`; Wi-Fi:
+  its bars; Bluetooth: its glyph; Displays' keep sheet: `INFO`.
+- **Why:** R4: the tile says the job; the accent never washes one.
+- **Undo:** per sheet.
+
+### D623. Who answers a shell sheet's keys
+
+- **Date:** 2026-11-24. The `design-sheets` agent's (UI-6, SH-5, CD-18).
+- **Choice:** Force Quit's question: Force Quit is ume and Cancel the default, so Enter cancels
+  (the controller's `submit` too). A grant or an agent's sheet (consent, confirm, sign-in,
+  question, approval, the person's confirm, Displays' keep) has `keys={false}`: only a click or a
+  field's own Enter answers it, as before. Bluetooth: Pair is never Enter's; the sheets that
+  show a code to type on the device leave Enter alone and only Esc cancels. A field takes Enter
+  and Esc while it has the keyboard; the sheet's keys take them otherwise.
+- **Why:** a stray Enter must not end an app, pair a device or grant anything.
+- **Undo:** per sheet, the button's `isDefault`.
+
+### D624. The shell sheets' words
+
+- **Date:** 2026-11-24. The `design-sheets` agent's (T34 for W2: SH-15, SH-36; VO-10, VO-1).
+- **Choice:** answers in sentence case with the curly apostrophe: "Don’t allow", "Always allow",
+  "Allow once", "Allow for this task", "Don’t answer", "Log out", "Shut down", "Go back",
+  "Change password", "Forget this device", "Search again", and "My devices", "Nearby devices",
+  "Not connected" in Control Center's Bluetooth and Wi-Fi pages. Questions say what will happen:
+  the first consent sheet's heading, set in `agents/lib/session/session-scopes.ts` (a W3 file, one
+  line), is "Allow an agent on another machine to use this computer?";
+  "Log out now?", "Restart now?", "Shut down now?"; an agent's: "Allow Claude to use Dashi?",
+  "Allow Claude to force “Notes” to quit?"; "Join “Home”?"; "Force “Notes” to quit?" with "Its
+  unsaved changes will be lost."; the Force Quit list "Force quit an app". Names keep their
+  capitals ("Force Quit" the command). The stop note is a `Notice`: "Stopped Claude. It can
+  connect again later."
+- **Why:** VO-1, VO-10, and UI-5's question as the first line.
+- **Undo:** strings only.
+
+### D625. `menus/sheets.tsx` is W2's
+
+- **Date:** 2026-11-24. The `design-sheets` agent's.
+- **Question:** the plan gives W2 "menus/lib/sheets.tsx", which does not exist; the file is
+  `menus/sheets.tsx`, which the owners map then filed under W3, with one entry on each of W3's
+  H21 and H22 lists.
+- **Choice:** the owners map names `menus/sheets` for W2; with the file down to a size constant,
+  its two entries leave W3's lists (one line each).
+- **Cost:** W3's branch may meet those two removed lines when it merges.
+- **Undo:** none wanted.
+
+### D626. Polkit's people are a segmented control; its details a MoreButton
+
+- **Date:** 2026-11-24. The `design-sheets` agent's (R3, VO-8).
+- **Choice:** who to authenticate as, when polkitd offers more than one, is the kit's
+  `Segmented` (one of a few), not pills in the accent; "Details" is `MoreButton` ("Details" /
+  "Hide details"), its rows captions over secondary words.
+- **Why:** R3 (pick one is one control) and VO-8; the accent means chosen, and the segment's own
+  look says that.
+- **Undo:** per control.
+
+### D627. The sign-in sheet's logins are pick rows
+
+- **Date:** 2026-11-24. The `design-sheets` agent's (UI-13).
+- **Choice:** each login is the kit's `PickRow` (the account, "site · where it is saved" as its
+  detail) in a `PickList`; the hand-drawn radio and the row of dots are gone (the message says
+  the agent sees dots).
+- **Why:** UI-13: one row to pick one from; the radio was a pick-one drawn by hand.
+- **Undo:** the old rows in git.
+
+### D628. The applet consent sheet is the alert frame with the applet's icon
+
+- **Date:** 2026-11-24. The `design-sheets` agent's (UI-5, VO-8).
+- **Choice:** `AlertSheet` with `icon` (the applet's icon, or its letter on its tint in
+  `ON_TINT`), in Software's window and centred on the shell's surface (`place="screen"`); "Already
+  allowed (n)" is a `MoreButton`.
+- **Why:** UI-5's one frame; the hand-made disclosure and the `#ffffffee` letter were H21 and H22
+  offenders.
+- **Undo:** per part.
+
+### D629. Small calls made while moving the sheets
+
+- **Date:** 2026-11-24. The `design-sheets` agent's.
+- **Choice:** About's name is a page's title (TY-1, 20 Bold) on the sheet card; the shortcut
+  sheet's column heads are captions (11, 600, sentence case) under a 13 Bold title; Bluetooth's
+  code is the named figure (28) with the digits the device has taken in ink and the rest muted
+  (not the accent: it is progress, not a choice); the agents' "Your turn" banner is radius 12 on
+  `lg`; the time zone and language pickers use the kit's `SearchField` (`width="fill"`, a kit
+  addition; the window look, since the panel look's ground is Settings' card's and the field
+  vanished on it, seen in the VM) and `PickRow`; Control Center's Bluetooth "…" is a `ToolbarButton` and its Forget
+  question in place has an ume Forget; Force Quit's list rows are 30 (the pick row's height).
+- **Why:** each follows a rule already written (TY-1, CO-1, RA-2, DE-1, UI-11, UI-13, UI-6).
+- **Undo:** per line.
+
 ### D650. Three kit pieces for the apps: words edited in place, title tabs, keypad keys
 
 - **Date:** 2026-11-24. The `design-apps-a` agent's (W5; H22, UI-1).

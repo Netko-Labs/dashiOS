@@ -1,19 +1,20 @@
 /**
  * An app in a list: its icon, name, a line about it, who made it, and the
- * state chip; a click (or Return) opens its page. Cards sit in a grid that
+ * state chip; a click (or Return) opens its page. A card is an item of the
+ * grid's list (content, not a control: CO-9's rows), not a button. Cards sit in a grid that
  * fits its width (1 column below 600 px, so a narrow window keeps every
  * card's words; 2 below 900, 3 below 1300, then 4), one Tab
  * stop whose arrows move from card to card. Each card follows its own app's
  * state, so a progress tick redraws one card, not the grid.
  */
 
-import { useColors, useSurface } from "@dashi/ui";
+import { RADIUS, SPACE, TYPE, useColors, useSurface, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { AppSummary } from "../../../src/shared/software/index.ts";
 import { StateChip } from "./chip.tsx";
 import { useAppState } from "./hooks.ts";
-import { VerifiedBadge } from "./marks.tsx";
+import { VerifiedMark } from "./marks.tsx";
 import { appChip } from "./model.ts";
 import { AppIcon, useActions } from "./parts.tsx";
 import { useServices } from "./services.ts";
@@ -26,6 +27,9 @@ export function columnsFor(width: number): number {
   if (width < 1300) return 3;
   return 4;
 }
+
+/** A card's icon. */
+const CARD_ICON = 52;
 
 export function AppCard({ app }: { app: AppSummary }) {
   const colors = useColors();
@@ -40,38 +44,38 @@ export function AppCard({ app }: { app: AppSummary }) {
     <View
       testID={`card:${app.id}`}
       focusable
-      accessibilityRole="button"
+      accessibilityRole="listitem"
       accessibilityLabel={app.name}
       onPress={() => actions.openApp(app.id)}
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 12,
-        padding: 12,
+        gap: SPACE.inset,
+        padding: SPACE.inset,
         minWidth: 0,
-        borderRadius: 10,
+        borderRadius: RADIUS.card,
         backgroundColor: surface.card,
         borderWidth: 1,
         borderColor: colors.separator,
         hoverBackgroundColor: colors.tileHover,
       }}
     >
-      <AppIcon url={app.icon} name={app.name} size={52} />
+      <AppIcon url={app.icon} name={app.name} size={CARD_ICON} />
       {/* Each line ends in an ellipsis where it runs out of room (numberOfLines 1). */}
-      <View style={{ flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 5, minWidth: 0 }}>
+      <View style={{ flex: 1, flexDirection: "column", gap: SPACE.xxs, minWidth: 0 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs, minWidth: 0 }}>
           <View style={{ flexShrink: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+            <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
               {app.name}
             </Text>
           </View>
-          {app.verified && <VerifiedBadge size={12} />}
+          {app.verified && <VerifiedMark size={TYPE.secondary.size} />}
         </View>
-        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
           {app.summary || app.developer || ""}
         </Text>
         {app.developer !== null && app.summary !== "" && (
-          <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
             {app.developer}
           </Text>
         )}
@@ -102,8 +106,9 @@ export function CardGrid({ apps, columns }: { apps: readonly AppSummary[]; colum
     <View
       testID="card-grid"
       focusGroup
+      accessibilityRole="list"
       onLayout={(bounds) => setWidth(bounds.width)}
-      style={{ display: "grid", gridTemplateColumns: Array.from({ length: count }, () => "1fr" as const), gap: 12, flexShrink: 0 }}
+      style={{ display: "grid", gridTemplateColumns: Array.from({ length: count }, () => "1fr" as const), gap: SPACE.inset, flexShrink: 0 }}
     >
       {apps.map((app) => (
         <AppCard key={app.id} app={app} />

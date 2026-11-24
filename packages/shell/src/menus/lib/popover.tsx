@@ -20,6 +20,9 @@ import type { StatusMenuAction } from "../status-menu.ts";
 import type { MenuAction, MenuEntry } from "../types.ts";
 import { DropdownMenu } from "./view.tsx";
 
+/** The live region's words: read by screen readers, never seen. */
+const SPOKEN = { size: 1 } as const;
+
 /** A status item's menu: the dropdown, telling its owner when it goes, however it went. */
 function StatusMenu({
   entries,
@@ -61,7 +64,7 @@ function BarAnnouncer({ label, accessible }: { label: string | null; accessible:
       accessibilityLabel={`${label}, menu bar`}
       style={{ position: "absolute", left: 0, top: 0, width: 1, height: 1, opacity: 0 }}
     >
-      <Text style={{ fontSize: 1 }}>{`${label}, menu bar`}</Text>
+      <Text style={{ fontSize: SPOKEN.size }}>{`${label}, menu bar`}</Text>
     </View>
   );
 }

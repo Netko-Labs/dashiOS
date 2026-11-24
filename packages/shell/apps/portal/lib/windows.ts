@@ -26,8 +26,8 @@ export interface DialogWindow {
   title: string;
   width: number;
   height: number;
-  /** The least the person may make it: its toolbar's one row still fits (the file chooser's). */
-  least?: { width: number; height: number };
+  /** The least the person may make it (LA-3): where its one row and its buttons still fit. */
+  least: { width: number; height: number };
 }
 
 /** Shows a dialog until it answers, its window is closed, or `signal` aborts (the app gave up); `closed` is the answer then. */

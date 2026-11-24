@@ -2,16 +2,35 @@
  * The accent's live preview, under its row (the accent's design frame 1):
  * Dashi's real controls, drawn by @dashi/ui with the palette every app paints
  * with, so it shows what a pick does before anything else is opened: a list
- * with its selected row, selected text, switches, a tick, a radio, a slider,
- * a chosen pill, a menu highlight, progress, a link, and an ink Save button
- * ("Buttons stay ink"). Nothing in it does anything.
+ * with its selected row, selected text, switches, a tick, a slider, a chosen
+ * pill, a menu highlight, and what stays ink whatever the pick (Q3): progress,
+ * a link and the Save button. Nothing in it does anything.
  */
 
-import { Button, CHECK, Choices, MenuRow, ProgressBar, rowLook, SelectionBar, Slider, Switch, useColors, useControlColors } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
+import {
+  Button,
+  Checkbox,
+  Choices,
+  MenuRow,
+  ProgressBar,
+  RADIUS,
+  rowLook,
+  SelectionBar,
+  Slider,
+  SPACE,
+  Switch,
+  TextLink,
+  TYPE,
+  useColors,
+  useControlColors,
+} from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 
-const COLUMN = { flex: 1, minWidth: 0, flexDirection: "column", gap: 10, padding: 12, borderRadius: 16 } as const;
+const COLUMN = { flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.gap, padding: SPACE.inset, borderRadius: RADIUS.sheet } as const;
+/** A row of the preview's list, and its slider. */
+const PREVIEW = { row: 28, slider: 180 } as const;
+const noop = (): void => {};
 
 function Column({ children, testID, grow = 1 }: { children: ReactNode; testID: string; grow?: number }) {
   const surface = useControlColors();
@@ -22,13 +41,22 @@ function Column({ children, testID, grow = 1 }: { children: ReactNode; testID: s
   );
 }
 
-function ListRow({ label, selected }: { label: string; selected: boolean }) {
+function PreviewRow({ label, selected }: { label: string; selected: boolean }) {
   const colors = useColors();
   const look = rowLook(colors, selected);
   return (
-    <View style={{ height: 28, flexDirection: "row", alignItems: "center", paddingLeft: 10, borderRadius: 6, backgroundColor: look.ground }}>
-      {selected && <SelectionBar rowHeight={28} />}
-      <Text numberOfLines={1} style={{ fontSize: 12.5, color: look.ink }}>
+    <View
+      style={{
+        height: PREVIEW.row,
+        flexDirection: "row",
+        alignItems: "center",
+        paddingLeft: SPACE.gap,
+        borderRadius: RADIUS.row,
+        backgroundColor: look.ground,
+      }}
+    >
+      {selected && <SelectionBar rowHeight={PREVIEW.row} />}
+      <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: look.ink }}>
         {label}
       </Text>
     </View>
@@ -39,33 +67,26 @@ function ListRow({ label, selected }: { label: string; selected: boolean }) {
 function SelectedText() {
   const colors = useColors();
   return (
-    <View style={{ height: 28, flexDirection: "row", alignItems: "center", paddingHorizontal: 8, borderRadius: 6, backgroundColor: colors.button }}>
+    <View
+      style={{
+        height: PREVIEW.row,
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: SPACE.m,
+        borderRadius: RADIUS.control,
+        backgroundColor: colors.button,
+      }}
+    >
       <View style={{ flexShrink: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 12.5, color: colors.text }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: colors.text }}>
           Dinner at{" "}
         </Text>
       </View>
-      <View style={{ flexShrink: 0, backgroundColor: colors.textSelection, borderRadius: 2 }}>
-        <Text numberOfLines={1} style={{ fontSize: 12.5, color: colors.text }}>
+      <View style={{ flexShrink: 0, backgroundColor: colors.textSelection, borderRadius: RADIUS.thumb }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: colors.text }}>
           Alex Kim's
         </Text>
       </View>
-    </View>
-  );
-}
-
-function Tick({ label, round }: { label: string; round?: boolean }) {
-  const colors = useColors();
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
-      <View style={{ width: 16, height: 16, borderRadius: round ? 8 : 4, alignItems: "center", justifyContent: "center", backgroundColor: colors.selection }}>
-        {round ? (
-          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.onAccent }} />
-        ) : (
-          <Svg markup={CHECK} size={11} color={colors.onAccent} />
-        )}
-      </View>
-      <Text style={{ fontSize: 12.5, color: colors.text }}>{label}</Text>
     </View>
   );
 }
@@ -80,43 +101,40 @@ export function AccentPreview() {
   const colors = useColors();
   const [span, setSpan] = useState<string>("week");
   return (
-    <View testID="accent-preview" style={{ flexDirection: "row", gap: 10 }}>
+    <View testID="accent-preview" style={{ flexDirection: "row", gap: SPACE.gap }}>
       <Column testID="accent-preview-list">
-        <ListRow label="Documents" selected={false} />
-        <ListRow label="Pictures" selected />
-        <ListRow label="Kitchen list.md" selected={false} />
+        <PreviewRow label="Documents" selected={false} />
+        <PreviewRow label="Pictures" selected />
+        <PreviewRow label="Kitchen list.md" selected={false} />
         <SelectedText />
       </Column>
       <Column testID="accent-preview-controls" grow={1.3}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
           <Switch on testID="accent-preview-on" focusable={false} />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12.5, color: colors.text }}>Wi-Fi</Text>
+            <Text style={{ fontSize: TYPE.body.size, color: colors.text }}>Wi-Fi</Text>
           </View>
           <Switch on={false} testID="accent-preview-off" focusable={false} />
         </View>
-        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          <Tick label="Keep a copy" />
-          <Tick label="Daily" round />
-        </View>
-        <Slider value={0.62} testID="accent-preview-slider" width={180} />
+        <Checkbox testID="accent-preview-tick" label="Keep a copy" checked onChange={noop} />
+        <Slider value={0.62} testID="accent-preview-slider" width={PREVIEW.slider} />
         <Choices options={SPAN} value={span} onChange={setSpan} testID="accent-preview-span" />
       </Column>
       <Column testID="accent-preview-more">
         <MenuRow label="Open in Notes" testID="accent-preview-menu" keys="❖O" ticks={false} lit />
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          <Text style={{ fontSize: 12, color: colors.text }}>Copying 41 files</Text>
-          <Text style={{ fontSize: 11, color: colors.textMuted }}>62%</Text>
+          <Text style={{ fontSize: TYPE.secondary.size, color: colors.text }}>Copying 41 files</Text>
+          <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>62%</Text>
         </View>
         <ProgressBar value={0.62} testID="accent-preview-progress" />
-        <View style={{ flexDirection: "row", gap: 4 }}>
-          <Text style={{ fontSize: 12, color: colors.text }}>Read the</Text>
-          <Text style={{ fontSize: 12, color: colors.accentInk, textDecorationLine: "underline" }}>release notes</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs }}>
+          <Text style={{ fontSize: TYPE.secondary.size, color: colors.text }}>Read the</Text>
+          <TextLink testID="accent-preview-link" label="release notes" onPress={noop} />
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Button label="Save" primary onPress={() => {}} testID="accent-preview-save" focusable={false} />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
+          <Button label="Save" primary onPress={noop} testID="accent-preview-save" focusable={false} />
           <View style={{ flexShrink: 1 }}>
-            <Text style={{ fontSize: 11, color: colors.textMuted }}>Buttons stay ink</Text>
+            <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>Buttons and links stay ink</Text>
           </View>
         </View>
       </Column>

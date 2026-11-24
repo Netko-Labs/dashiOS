@@ -15,7 +15,7 @@
  * close.
  */
 
-import { TextSelectionLook } from "@dashi/ui";
+import { MOTION, TextSelectionLook } from "@dashi/ui";
 import { type NativeHostOptions, type NativeHostTransport, type NativeRoot, type NativeWindowOptions, render, spawnNativeHost } from "@mirinjs/metal";
 import { type ReactElement, useEffect, useSyncExternalStore } from "react";
 import type { OverlayHandle } from "../overlay.tsx";
@@ -28,12 +28,12 @@ type Spawn = (binary: string, options: NativeHostOptions) => NativeHostTransport
  * 160 ms (the compositor's `layer-motion`), and its list follows its rows' height over 120 ms
  * (a resident host's `heightTransitionMs`), both ease-out cubic, both off with Reduce Motion.
  */
-export const LAUNCHER_MOTION = { namespace: "dashi.launcher", openMs: 160, fromScale: 0.96, heightMs: 120 } as const;
+export const LAUNCHER_MOTION = { namespace: "dashi.launcher", openMs: MOTION.open, fromScale: 0.96, heightMs: MOTION.quick } as const;
 
 /** What a host binary that can hide and open again names. */
 export const RESIDENT_MARKER = "MIRIN_METAL_RESIDENT";
 /** A host that died is replaced after this long. */
-const RESPAWN_MS = 1500;
+const RESPAWN = { afterMs: 1500 } as const;
 
 /** Whether the host binary keeps a deferred host resident: it names `MIRIN_METAL_RESIDENT`. */
 export async function hostIsResident(binary: string): Promise<boolean> {
@@ -217,7 +217,7 @@ export class ResidentHost {
       this.shown = null;
       void this.slot.set(null, 0);
       shown?.onClosed?.();
-      if (!this.stopped) this.timer = setTimeout(() => this.restart(), RESPAWN_MS);
+      if (!this.stopped) this.timer = setTimeout(() => this.restart(), RESPAWN.afterMs);
     });
   }
 

@@ -7,7 +7,7 @@
  * when it becomes Get… and asks first.
  */
 
-import { Button, Group, Loading, useColors } from "@dashi/ui";
+import { Button, Group, Loading, SPACE, TextLink, TYPE, useColors } from "@dashi/ui";
 import { ScrollView, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { type AppDetails, formatBytes } from "../../../src/shared/software/index.ts";
@@ -16,8 +16,9 @@ import { StateChip } from "./chip.tsx";
 import { Gallery } from "./gallery.tsx";
 import { SectionHeader } from "./heading.tsx";
 import { useAppState, useLoad } from "./hooks.ts";
-import { VerifiedBadge } from "./marks.tsx";
+import { VerifiedMark } from "./marks.tsx";
 import { whereInstalled } from "./model.ts";
+import { HeaderLine, ITEM_PAGE, PAGE_ICON, PageHeader } from "./page-header.tsx";
 import { AppIcon, ROW, useActions } from "./parts.tsx";
 import { useServices } from "./services.ts";
 import { getAllowed, SourcePicker } from "./source-picker.tsx";
@@ -32,24 +33,37 @@ interface FactRow {
   link?: string;
 }
 
+/** A fact's row in the facts card: its least height. */
+export const FACT_ROW = 34;
+
 function Fact({ fact }: { fact: FactRow }) {
   const colors = useColors();
   const actions = useActions();
   const { link } = fact;
   return (
     <View
-      style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 16, minHeight: 34, paddingHorizontal: 12, paddingVertical: 6 }}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: SPACE.page,
+        minHeight: FACT_ROW,
+        paddingHorizontal: SPACE.inset,
+        paddingVertical: SPACE.s,
+      }}
     >
-      <Text style={{ fontSize: 13, color: colors.text }}>{fact.label}</Text>
-      <View style={{ flexShrink: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 6 }}>
-        <View
-          {...(link ? { testID: `link:${fact.label}`, focusable: true, accessibilityRole: "link" as const, onPress: () => actions.openUrl(link) } : {})}
-          style={{ flexShrink: 1, minWidth: 0 }}
-        >
-          <Text numberOfLines={1} style={{ fontSize: 13, color: link ? colors.accentInk : colors.textMuted }}>
-            {fact.value}
-          </Text>
-        </View>
+      <Text style={{ fontSize: TYPE.body.size, color: colors.text }}>{fact.label}</Text>
+      <View style={{ flexShrink: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
+        {/* A link is ink and underlined (Q3), never the accent. */}
+        {link ? (
+          <TextLink testID={`link:${fact.label}`} label={fact.value} onPress={() => actions.openUrl(link)} />
+        ) : (
+          <View style={{ flexShrink: 1, minWidth: 0 }}>
+            <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: colors.textMuted }}>
+              {fact.value}
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -87,7 +101,7 @@ function Buttons({ app, asks }: { app: AppDetails; asks: boolean }) {
   if (state.kind === "busy")
     return <StateChip chip={{ kind: "busy", operation: state.operation }} testID="app" wide onCancel={() => actions.cancel(state.operation.key)} />;
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 0 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m, flexShrink: 0 }}>
       {state.kind === "get" && (
         <Button label={asks ? "Get…" : "Get"} testID="install" primary disabled={!allowed} onPress={() => actions.install(app.id, app.name)} />
       )}
@@ -108,13 +122,13 @@ function Page({ app }: { app: AppDetails }) {
   if (app.screenshots.length > 0) sections.push(<Gallery key="gallery" shots={app.screenshots} />);
   if (app.description.length > 0) {
     sections.push(
-      <View key="about" testID="description" style={{ flexShrink: 0, flexDirection: "column", gap: 8 }}>
+      <View key="about" testID="description" style={{ flexShrink: 0, flexDirection: "column", gap: SPACE.m }}>
         <SectionHeader title="About" />
         {/* Inset as the heading and the facts' rows are. */}
-        <View style={{ flexShrink: 0, flexDirection: "column", gap: 8, paddingHorizontal: ROW.inset }}>
+        <View style={{ flexShrink: 0, flexDirection: "column", gap: SPACE.m, paddingHorizontal: ROW.inset }}>
           {app.description.map((block, index) => (
             // Paragraphs never reorder.
-            <Text key={index} style={{ fontSize: 13, lineHeight: 19, color: colors.text }}>
+            <Text key={index} style={{ fontSize: TYPE.body.size, lineHeight: TYPE.body.line, color: colors.text }}>
               {block}
             </Text>
           ))}
@@ -123,24 +137,23 @@ function Page({ app }: { app: AppDetails }) {
     );
   }
   return (
-    <ScrollView testID="app-page" style={{ flex: 1, flexDirection: "column", gap: 20, padding: 24 }}>
-      <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "flex-start", gap: 18 }}>
-        <AppIcon url={app.icon} name={app.name} size={80} />
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 4 }}>
-          <Text style={{ fontSize: 20, fontWeight: "bold", color: colors.text }}>{app.name}</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            {app.developer !== null && <Text style={{ fontSize: 13, color: colors.textMuted }}>{app.developer}</Text>}
-            {app.verified && <VerifiedBadge size={14} />}
-          </View>
-          <Text style={{ fontSize: 13, color: colors.text, lineHeight: 18 }}>{app.summary}</Text>
-          {installedNote !== null && <Text style={{ fontSize: 12, color: colors.textMuted }}>{installedNote}</Text>}
-          {app.eol && <Text style={{ fontSize: 12, color: colors.ume }}>This app is no longer maintained.</Text>}
-        </View>
-        <View style={{ flexShrink: 0, flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-          <Buttons app={app} asks={reasons.length > 0} />
-          {found && <SourcePicker entry={found.entry} offer={found.offer} />}
-        </View>
-      </View>
+    <ScrollView testID="app-page" style={{ flex: 1, flexDirection: "column", gap: ITEM_PAGE.gap, padding: ITEM_PAGE.padding }}>
+      <PageHeader
+        icon={<AppIcon url={app.icon} name={app.name} size={PAGE_ICON} />}
+        title={app.name}
+        byline={app.developer ?? ""}
+        {...(app.verified ? { mark: <VerifiedMark size={TYPE.body.size} /> } : {})}
+        summary={app.summary}
+        actions={
+          <>
+            <Buttons app={app} asks={reasons.length > 0} />
+            {found && <SourcePicker entry={found.entry} offer={found.offer} />}
+          </>
+        }
+      >
+        {installedNote !== null && <HeaderLine>{installedNote}</HeaderLine>}
+        {app.eol && <HeaderLine warning>This app is no longer maintained.</HeaderLine>}
+      </PageHeader>
       <TrustCard facts={appTrust(app)} strong={reasons} />
       {sections}
       <Group testID="facts">

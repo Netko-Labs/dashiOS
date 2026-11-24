@@ -4,6 +4,7 @@
  * agents, the run to talk to).
  */
 
+import { CAPSULE } from "@dashi/ui";
 import { placedOutputs } from "../../arrange/index.ts";
 import type { Compositor } from "../../compositor/index.ts";
 import { openFile } from "../../file-manager.ts";
@@ -141,7 +142,7 @@ export function launcherElement(view: LauncherView, { presented, scope, entries,
       {...(ask ? { agents: ask.launcher } : {})}
       {...(assistant ? { dashi: launcherDashi(assistant, late) } : {})}
       conversation={conversation}
-      {...(persona && persona.colour.toLowerCase() !== "#6e56cf" ? { colour: persona.colour } : {})}
+      {...(persona && persona.colour.toLowerCase() !== CAPSULE.defaultPurple ? { colour: persona.colour } : {})}
       extensions={late.get("extensions").session}
       {...(heightMs ? { heightTransitionMs: heightMs } : {})}
       {...(height !== undefined ? { height } : {})}

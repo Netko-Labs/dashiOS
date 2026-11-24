@@ -78,9 +78,9 @@ test('a pane answers to "settings" only when nothing else does', () => {
   expect(found).not.toContain("Setup Assistant");
 });
 
-test('no bare in-word match under four letters: "ter" is Terminal, not Battery & Power or Characters', () => {
+test('no bare in-word match under four letters: "ter" is Terminal, not Battery & power or Characters', () => {
   expect(names("ter")[0]).toBe("Terminal");
-  expect(names("ter")).not.toContain("Battery & Power");
+  expect(names("ter")).not.toContain("Battery & power");
   expect(names("ter")).not.toContain("Characters");
   // From four letters a match inside a word counts: "ract" is in Characters.
   expect(names("ract")[0]).toBe("Characters");
@@ -90,8 +90,8 @@ test("exact name, then keyword, then prefix, word start and keyword prefix", () 
   expect(names("firefox")[0]).toBe("Firefox");
   expect(names("web browser")[0]).toBe("Firefox");
   expect(names("fire")[0]).toBe("Firefox");
-  expect(names("power")[0]).toBe("Battery & Power");
-  expect(names("wif")).toEqual(["Wi-Fi"]);
+  expect(names("power")[0]).toBe("Battery & power");
+  expect(names("wif")).toEqual(["Network"]);
   expect(names("dark mode")).toEqual(["Appearance"]);
 });
 

@@ -3,7 +3,7 @@
  * display's resolution (its usual sizes, "More" for the rest, "native" on
  * the native size's own pill where the screen has one), variable refresh
  * rate, rotation, the main display and turning it off; a card for each
- * display that is off, with Turn On; and how X11 apps meet a scaled screen.
+ * display that is off, with Turn on; and how X11 apps meet a scaled screen.
  */
 
 import {
@@ -75,24 +75,24 @@ export function ScreenDetails({ monitor, store, canTurnOff }: { monitor: Monitor
         />
       </Setting>
       <Setting id="displays/main-display" detail={monitor.primary ? "The menu bar and Dock are here." : undefined}>
-        {!monitor.primary && <Button testID={`display-main:${name}`} label="Use as Main Display" onPress={() => void store.setPrimary(name)} />}
+        {!monitor.primary && <Button testID={`display-main:${name}`} label="Use as main display" onPress={() => void store.setPrimary(name)} />}
       </Setting>
       {canTurnOff && (
         <Setting id="displays/turn-off">
-          <Button testID={`display-off:${name}`} label="Turn Off" onPress={() => void store.setEnabled(name, false)} />
+          <Button testID={`display-off:${name}`} label="Turn off" onPress={() => void store.setEnabled(name, false)} />
         </Setting>
       )}
     </Group>
   );
 }
 
-/** A display that is plugged in but off: its name, and Turn On. */
+/** A display that is plugged in but off: its name, and Turn on. */
 export function OffScreenCard({ monitor, store }: { monitor: Monitor; store: ScreensStore }) {
   const facts = displayHero(monitor, { width: 1, height: 1 }).name;
   return (
     <Group testID={`display:${monitor.name}`}>
       <Setting id="displays/turned-off" detail={`${facts}. It stays plugged in; its windows are on the other screens.`}>
-        <Button testID={`display-on:${monitor.name}`} label="Turn On" onPress={() => void store.setEnabled(monitor.name, true)} />
+        <Button testID={`display-on:${monitor.name}`} label="Turn on" onPress={() => void store.setEnabled(monitor.name, true)} />
       </Setting>
     </Group>
   );

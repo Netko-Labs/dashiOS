@@ -20,6 +20,7 @@ export type PageId =
   | "apps"
   | "panel"
   | "shortcuts"
+  | "login"
   | "colors"
   | "grounds"
   | "tints"
@@ -49,6 +50,7 @@ export const PAGES: readonly Page[] = [
   { id: "apps", label: "Tabs, keys and text", section: "Controls" },
   { id: "panel", label: "The panel look", section: "Controls" },
   { id: "shortcuts", label: "Shortcuts and glyphs", section: "Controls" },
+  { id: "login", label: "Login and lock", section: "Controls" },
   { id: "colors", label: "Colors", section: "Tokens" },
   { id: "grounds", label: "Grounds", section: "Tokens" },
   { id: "tints", label: "Tints", section: "Tokens" },

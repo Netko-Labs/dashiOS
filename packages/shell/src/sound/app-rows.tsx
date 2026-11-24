@@ -13,8 +13,8 @@
  * a twentieth, Space or Return mutes it.
  */
 
-import { fillLength, InkFill, levelAt, useColors, useControlColors } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
+import { KnobButton, pill, SliderTile, SPACE, useColors, useControlColors } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { percentText } from "../control-center/catalog.ts";
 import { GRID } from "../control-center/layout.ts";
 import { PageRow, PageSection } from "../control-center/page-parts.tsx";
@@ -24,7 +24,7 @@ import { AppIcon } from "../shared/apps/index.ts";
 import type { AppRecording, AppSound } from "./apps/index.ts";
 
 /** A row 48 tall; the mute knob 48 across, 6 from the slider. */
-export const APP_ROW = { height: 48, knob: 48, gap: 6, chip: 36, icon: 22, shown: 4 } as const;
+export const APP_ROW = { height: 48, knob: 48, gap: SPACE.s, chip: 36, icon: 22, glyph: 16, shown: 4, mark: 8 } as const;
 
 const SLIDER_WIDTH = GRID.width - 2 * GRID.padding - APP_ROW.knob - APP_ROW.gap;
 
@@ -37,61 +37,49 @@ export function foldApps<T>(apps: readonly T[], max: number = APP_ROW.shown): { 
 /** What a row's level reads: "Muted", or the percent. */
 export const appLevelText = (app: Pick<AppSound, "level" | "muted">): string => (app.muted ? "Muted" : percentText(app.level));
 
-function AppSlider({ app, onLevel }: { app: AppSound; onLevel: (level: number) => void }) {
+/** An app's level: the kit's flat slider tile, the app's icon on its chip. */
+function AppLevel({ app, onLevel }: { app: AppSound; onLevel: (level: number) => void }) {
   const colors = useControlColors();
-  const level = app.muted ? 0 : Math.min(app.level, 1);
-  const fill = fillLength(level, SLIDER_WIDTH);
-  const radius = APP_ROW.height / 2;
-  const onInk = fill > SLIDER_WIDTH - 48;
-  return (
+  const icon = (
     <View
-      testID={`sound-app:${app.key}`}
-      onPointer={(event) => event.bounds && onLevel(levelAt(event.bounds, event.x, event.y, false))}
-      accessibilityRole="group"
-      accessibilityLabel={`${app.name}, ${appLevelText(app)}`}
-      style={{ width: SLIDER_WIDTH, height: APP_ROW.height, position: "relative", borderRadius: radius, backgroundColor: colors.off, overflow: "hidden" }}
+      style={{
+        width: APP_ROW.chip,
+        height: APP_ROW.chip,
+        borderRadius: pill(APP_ROW.chip),
+        flexShrink: 0,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: colors.chip,
+      }}
     >
-      <InkFill length={fill} total={SLIDER_WIDTH} standing={false} radius={radius} />
-      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 6, paddingRight: 14 }}>
-        <View
-          style={{
-            width: APP_ROW.chip,
-            height: APP_ROW.chip,
-            borderRadius: APP_ROW.chip / 2,
-            flexShrink: 0,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: colors.chip,
-          }}
-        >
-          <AppIcon source={app.icon} style={{ width: APP_ROW.icon, height: APP_ROW.icon }} />
-        </View>
-        <View
-          style={{
-            flexShrink: 1,
-            minWidth: 0,
-            paddingLeft: 8,
-            paddingRight: 8,
-            paddingTop: 2,
-            paddingBottom: 2,
-            borderRadius: 10,
-            backgroundColor: colors.chip,
-          }}
-        >
-          <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>
-            {app.name}
-          </Text>
-        </View>
-        <View style={{ marginLeft: "auto", flexShrink: 0 }}>
-          <Text style={{ fontSize: 11, fontWeight: "semibold", color: onInk ? colors.fillInk : colors.muted }}>{appLevelText(app)}</Text>
-        </View>
-      </View>
+      <AppIcon source={app.icon} style={{ width: APP_ROW.icon, height: APP_ROW.icon }} />
+    </View>
+  );
+  return (
+    <View style={{ width: SLIDER_WIDTH, height: APP_ROW.height, flexDirection: "row" }}>
+      <SliderTile
+        look={{
+          testID: `sound-app:${app.key}`,
+          title: app.name,
+          glyph: "",
+          level: app.muted ? 0 : Math.min(app.level, 1),
+          value: appLevelText(app),
+          width: SLIDER_WIDTH,
+          height: APP_ROW.height,
+        }}
+        standing={false}
+        onLevel={onLevel}
+        lead={icon}
+      />
     </View>
   );
 }
 
-/** The mute knob: the speaker on `ground` (the row's color unless said); muted, the crossed speaker on ink. */
-export function MuteKnob({
+/**
+ * The mute knob: the speaker on `ground` (the row's color unless said);
+ * muted, the crossed speaker on ink (the kit's KnobButton, a switch).
+ */
+export function Mute({
   testID,
   muted,
   size,
@@ -112,26 +100,17 @@ export function MuteKnob({
 }) {
   const colors = useControlColors();
   return (
-    <View
+    <KnobButton
       testID={testID}
-      onPress={onPress}
+      glyph={speakerGlyph(muted ? 0 : 1, muted)}
+      label={label}
+      checked={muted}
+      size={size}
+      glyphSize={APP_ROW.glyph}
+      ground={ground ?? colors.off}
       focusable={focusable}
-      accessibilityRole="switch"
-      accessibilityLabel={label}
-      accessibilityState={{ checked: muted }}
-      style={{
-        width: size,
-        height: size,
-        flexShrink: 0,
-        borderRadius: size / 2,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: muted ? colors.fill : (ground ?? colors.off),
-        focusRingColor: colors.focus,
-      }}
-    >
-      <Svg markup={speakerGlyph(muted ? 0 : 1, muted)} size={16} color={muted ? colors.fillInk : colors.offInk} />
-    </View>
+      onPress={onPress}
+    />
   );
 }
 
@@ -164,12 +143,12 @@ function AppRow({ app, onLevel, onMute }: { app: AppSound; onLevel: (level: numb
         alignItems: "center",
         gap: APP_ROW.gap,
         position: "relative",
-        borderRadius: APP_ROW.height / 2,
+        borderRadius: pill(APP_ROW.height),
         focusRingColor: colors.focus,
       }}
     >
-      <AppSlider app={app} onLevel={onLevel} />
-      <MuteKnob testID={`sound-app-mute:${app.key}`} label={`Mute ${app.name}`} muted={app.muted} size={APP_ROW.knob} onPress={() => onMute(!app.muted)} />
+      <AppLevel app={app} onLevel={onLevel} />
+      <Mute testID={`sound-app-mute:${app.key}`} label={`Mute ${app.name}`} muted={app.muted} size={APP_ROW.knob} onPress={() => onMute(!app.muted)} />
     </View>
   );
 }
@@ -203,7 +182,7 @@ export function AppSections({ apps, recording, onLevel, onMute, onMore }: AppSec
           label={each.name}
           icon={each.icon}
           detail={each.input}
-          trailing={<View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: microphone }} />}
+          trailing={<View style={{ width: APP_ROW.mark, height: APP_ROW.mark, borderRadius: pill(APP_ROW.mark), backgroundColor: microphone }} />}
         />
       ))}
     </>

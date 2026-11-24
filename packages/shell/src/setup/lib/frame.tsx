@@ -4,7 +4,7 @@
  * the page, and the row of buttons with the progress dots.
  */
 
-import { Button, Tile, useColors, useSurface } from "@dashi/ui";
+import { Button, RADIUS, SPACE, Tile, TYPE, useColors, useSurface, WEIGHT } from "@dashi/ui";
 import { ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import type { FlowView, PageInfo } from "../flow.ts";
@@ -34,9 +34,9 @@ export interface FrameProps {
 function Dots({ index, count }: { index: number; count: number }) {
   const colors = useColors();
   return (
-    <View testID="setup-dots" style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+    <View testID="setup-dots" style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
       {Array.from({ length: count }, (_, at) => (
-        <View key={at} style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: at === index ? colors.selection : colors.track }} />
+        <View key={at} style={{ width: 7, height: 7, borderRadius: RADIUS.check, backgroundColor: at === index ? colors.text : colors.track }} />
       ))}
     </View>
   );
@@ -50,19 +50,31 @@ export function Frame({ info, view, glyph, tint, children, continueLabel, contin
     <View style={{ flex: 1, flexDirection: "column", backgroundColor: surface.window, position: "relative" }}>
       {controls && <View testID="setup-toolbar" dragRegion style={{ height: Math.ceil(controls.y + controls.height), flexShrink: 0 }} />}
       {!bare && (
-        <View style={{ flexShrink: 0, flexDirection: "column", alignItems: "center", gap: 6, paddingTop: controls ? 4 : 22, paddingHorizontal: 56 }}>
+        <View
+          style={{
+            flexShrink: 0,
+            flexDirection: "column",
+            alignItems: "center",
+            gap: SPACE.s,
+            paddingTop: controls ? SPACE.xs : SPACE.sheet,
+            paddingHorizontal: 56,
+          }}
+        >
           {glyph && tint && <Tile glyph={glyph} tint={tint} size={44} />}
           <View testID="setup-title">
-            <Text style={{ fontSize: 22, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{info.title}</Text>
+            <Text style={{ fontSize: TYPE.title.size, fontWeight: WEIGHT.bold, color: colors.text, textAlign: "center" }}>{info.title}</Text>
           </View>
           <View testID="setup-subtitle">
-            <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: "center" }}>{info.subtitle}</Text>
+            <Text style={{ fontSize: TYPE.body.size, color: colors.textMuted, textAlign: "center" }}>{info.subtitle}</Text>
           </View>
         </View>
       )}
-      <ScrollView testID={`setup-page:${info.id}`} style={{ flex: 1, flexDirection: "column", paddingHorizontal: 56, paddingTop: 18, paddingBottom: 12 }}>
+      <ScrollView
+        testID={`setup-page:${info.id}`}
+        style={{ flex: 1, flexDirection: "column", paddingHorizontal: 56, paddingTop: SPACE.page, paddingBottom: SPACE.inset }}
+      >
         {/* Never shorter than its content: the scroll range is this column's height (as Settings' pages, settings-app/ui.tsx). */}
-        <View testID={`setup-page:${info.id}:content`} style={{ flexShrink: 0, flexDirection: "column", gap: 14 }}>
+        <View testID={`setup-page:${info.id}:content`} style={{ flexShrink: 0, flexDirection: "column", gap: SPACE.button }}>
           {children}
         </View>
       </ScrollView>
@@ -72,7 +84,7 @@ export function Frame({ info, view, glyph, tint, children, continueLabel, contin
           height: 64,
           flexDirection: "row",
           alignItems: "center",
-          paddingHorizontal: 28,
+          paddingHorizontal: SPACE.xl,
           borderTopWidth: 1,
           borderColor: colors.separator,
         }}
@@ -83,7 +95,7 @@ export function Frame({ info, view, glyph, tint, children, continueLabel, contin
         <View style={{ flex: 1, alignItems: "center" }}>
           <Dots index={view.index} count={view.count} />
         </View>
-        <View style={{ width: 210, flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
+        <View style={{ width: 210, flexDirection: "row", justifyContent: "flex-end", gap: SPACE.m }}>
           {!view.first && !hideBack && <Button testID="setup-back" label="Back" onPress={onBack} />}
           <Button testID="setup-continue" label={continueLabel ?? "Continue"} primary disabled={continueDisabled === true} onPress={onContinue} />
         </View>

@@ -10,7 +10,7 @@
 import { Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { type AlertButton, AlertButtons, pressForKey } from "./alert.tsx";
-import { Sheet } from "./sheet.tsx";
+import { Sheet, type SheetPlace } from "./sheet.tsx";
 import { SPACE, TYPE, useColors, WEIGHT } from "./theme/index.ts";
 
 export interface FormSheetProps {
@@ -24,14 +24,20 @@ export interface FormSheetProps {
   width?: number;
   /** False while a field of its own handles Enter and Esc (its onSubmit does). */
   keys?: boolean;
+  /** `screen`: a shell sheet on a surface of its own, centred, with no window to hang from (sheet.tsx). */
+  place?: SheetPlace;
+  /** The title strip it hangs under, drawn over a window from outside it (sheet.tsx). */
+  hang?: number;
 }
 
-export function FormSheet({ title, children, buttons, footer, testID = "form", width, keys = true }: FormSheetProps) {
+export function FormSheet({ title, children, buttons, footer, testID = "form", width, keys = true, place, hang }: FormSheetProps) {
   const colors = useColors();
   return (
     <Sheet
       testID={testID}
       width={width}
+      place={place}
+      hang={hang}
       {...(keys ? { onCancel: () => pressForKey({ kind: "escape" }, buttons), onConfirm: () => pressForKey({ kind: "enter" }, buttons) } : {})}
     >
       <View testID={`${testID}:title`}>

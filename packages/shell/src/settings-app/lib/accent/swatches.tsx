@@ -3,15 +3,16 @@
  * Kombu and the five presets, a gap, then Custom… and Wallpaper. Each preset
  * is drawn with the fill it will really have in this mode, so a swatch
  * cannot promise a colour it will not show; the chosen one is ringed in ink
- * and its name is bold. One Tab stop: the arrows move along it (KB-1).
+ * (the choices are colours themselves: PictureChoice's ink ring) and its name
+ * is SemiBold. One Tab stop: the arrows move along it (KB-1).
  */
 
-import { ACCENT_PRESETS, type AccentChoice, controlPalette, KOMBU_SEED, useControlColors } from "@dashi/ui";
-import { type Bounds, Image, Text, View } from "@mirinjs/metal";
+import { ACCENT_PRESETS, type AccentChoice, controlPalette, KOMBU_SEED, PictureChoice, SPACE, useControlColors } from "@dashi/ui";
+import { type Bounds, Image, View } from "@mirinjs/metal";
 import { type ReactNode, useRef } from "react";
 import { rainbowRing } from "./images.ts";
 
-export const SWATCH = { size: 34, cell: 54, ring: 2.5 } as const;
+export const SWATCH = { size: 34, cell: 54, dot: 16 } as const;
 
 /** Which swatch a choice lights: a preset's id, "custom" or "wallpaper"; no choice is Kombu. */
 export const chosenSwatch = (choice: AccentChoice | undefined): string =>
@@ -32,42 +33,23 @@ function Swatch({
   onLayout?: (bounds: Bounds) => void;
   children: ReactNode;
 }) {
-  const colors = useControlColors();
-  const outer = SWATCH.size + 2 * (SWATCH.ring + 2);
-  return (
-    <View
+  const swatch = (
+    <PictureChoice
       testID={`accent-${id}`}
-      focusable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected: chosen }}
+      label={label}
+      caption={label}
+      small
+      ring="ink"
+      chosen={chosen}
+      radius={SWATCH.size / 2}
+      width={SWATCH.cell}
       onPress={onPress}
-      {...(onLayout ? { onLayout } : {})}
-      style={{ width: SWATCH.cell, flexDirection: "column", alignItems: "center", gap: 4, borderRadius: 10, focusRingColor: colors.focus }}
     >
-      <View
-        style={{
-          width: outer,
-          height: outer,
-          borderRadius: outer / 2,
-          borderWidth: SWATCH.ring,
-          borderColor: chosen ? colors.text : "#00000000",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {children}
-      </View>
-      <View style={{ width: SWATCH.cell, alignItems: "center" }}>
-        <Text
-          numberOfLines={1}
-          style={{ fontSize: 11, textAlign: "center", fontWeight: chosen ? "semibold" : "normal", color: chosen ? colors.text : colors.muted }}
-        >
-          {label}
-        </Text>
-      </View>
-    </View>
+      {children}
+    </PictureChoice>
   );
+  // Custom… opens its picker under itself: it says where it is.
+  return onLayout ? <View onLayout={onLayout}>{swatch}</View> : swatch;
 }
 
 const Dot = ({ color, size = SWATCH.size }: { color: string; size?: number }) => (
@@ -92,7 +74,7 @@ export function Swatches({ dark, choice, seed, wallpaper, onChoose, onCustom }: 
   const ring = rainbowRing();
   const customAt = useRef<Bounds | null>(null);
   return (
-    <View testID="accent-swatches" focusGroup accessibilityRole="group" style={{ flexDirection: "row", alignItems: "flex-start", flexWrap: "wrap" }}>
+    <View testID="accent-swatches" focusGroup accessibilityRole="listbox" style={{ flexDirection: "row", alignItems: "flex-start", flexWrap: "wrap" }}>
       {ACCENT_PRESETS.map((preset) => (
         <Swatch
           key={preset.id}
@@ -104,7 +86,7 @@ export function Swatches({ dark, choice, seed, wallpaper, onChoose, onCustom }: 
           <Dot color={controlPalette(dark, preset.seed).on} />
         </Swatch>
       ))}
-      <View style={{ width: 1, height: SWATCH.size, marginTop: 6, marginLeft: 6, marginRight: 6, backgroundColor: colors.line }} />
+      <View style={{ width: 1, height: SWATCH.size, marginTop: SPACE.s, marginLeft: SPACE.s, marginRight: SPACE.s, backgroundColor: colors.line }} />
       <Swatch
         id="custom"
         label="Custom…"
@@ -117,8 +99,8 @@ export function Swatches({ dark, choice, seed, wallpaper, onChoose, onCustom }: 
         <View style={{ width: SWATCH.size, height: SWATCH.size, alignItems: "center", justifyContent: "center" }}>
           {ring && <Image source={ring} resizeMode="contain" style={{ width: SWATCH.size, height: SWATCH.size }} />}
           {chosen === "custom" && seed && (
-            <View style={{ position: "absolute", left: (SWATCH.size - 16) / 2, top: (SWATCH.size - 16) / 2 }}>
-              <Dot color={controlPalette(dark, seed).on} size={16} />
+            <View style={{ position: "absolute", left: (SWATCH.size - SWATCH.dot) / 2, top: (SWATCH.size - SWATCH.dot) / 2 }}>
+              <Dot color={controlPalette(dark, seed).on} size={SWATCH.dot} />
             </View>
           )}
         </View>

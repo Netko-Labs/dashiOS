@@ -5,8 +5,8 @@
  * plain words, with the tool's own text behind Details.
  */
 
-import { AlertSheet, CHEVRON_DOWN, CHEVRON_UP, ConfirmSheet, Switch, useColors, WARNING } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
+import { AlertSheet, Checkbox, ConfirmSheet, MoreButton, SPACE, TYPE, useColors, WARNING, WEIGHT } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { CatalogEntry, InstalledApp, Offer } from "../../../src/shared/software/index.ts";
 import { RESTART, SHIELD } from "./glyphs.ts";
@@ -32,7 +32,6 @@ export interface Answer {
 
 /** Remove…, for an app or an applet: what goes, what stays, and the choice to delete what it saved. */
 function RemoveSheet({ name, system, applet, onAnswer }: { name: string; system: boolean; applet: boolean; onAnswer: (answer: Answer) => void }) {
-  const colors = useColors();
   const [deleteData, setDeleteData] = useState(false);
   const what = applet ? "what it saved" : "its settings and data";
   const message = deleteData
@@ -57,10 +56,8 @@ function RemoveSheet({ name, system, applet, onAnswer }: { name: string; system:
         },
       ]}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        <Switch testID="remove-sheet:delete-data" on={deleteData} onChange={setDeleteData} />
-        <Text style={{ fontSize: 12, color: colors.text }}>{`Also delete ${what}`}</Text>
-      </View>
+      {/* A yes or no beside the sheet's buttons: a checkbox, not a switch (UI-10's checkbox, R13). */}
+      <Checkbox testID="remove-sheet:delete-data" label={`Also delete ${what}`} checked={deleteData} onChange={setDeleteData} />
     </AlertSheet>
   );
 }
@@ -85,7 +82,7 @@ function GetSheet({ ask, onAnswer }: { ask: Extract<Ask, { kind: "get" }>; onAns
       <ReachLines lines={ask.reasons} strong={ask.reasons} />
       {others.length > 0 && (
         <>
-          <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>It can also</Text>
+          <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>It can also</Text>
           <ReachLines lines={others} />
         </>
       )}
@@ -148,7 +145,7 @@ export function Question({ ask, onAnswer }: { ask: Ask; onAnswer: (answer: Answe
           testID="logout-sheet"
           title="Log out to finish updating Dashi?"
           message="Save your work first: open apps are asked to quit, and their windows aren’t reopened. Dashi starts in its new version when you log back in."
-          confirmLabel="Log Out"
+          confirmLabel="Log out"
           glyph={RESTART}
           onConfirm={() => onAnswer({ yes: true })}
           onCancel={() => onAnswer({ yes: false })}
@@ -173,7 +170,7 @@ export function Question({ ask, onAnswer }: { ask: Ask; onAnswer: (answer: Answe
 export function FailureSheet({ failure, onClose }: { failure: Failure; onClose: () => void }) {
   const colors = useColors();
   const [open, setOpen] = useState(false);
-  // It only informs: one button, which Esc and Enter press too (UI-5).
+  // It only informs: one button, which Esc and Enter press too (UI-5). A change that failed is ume (CO-7).
   return (
     <AlertSheet
       testID="failure-sheet"
@@ -181,22 +178,13 @@ export function FailureSheet({ failure, onClose }: { failure: Failure; onClose: 
       question={failure.title}
       message={failure.message}
       glyph={WARNING}
-      tone="warning"
+      tone="danger"
       buttons={[{ label: "OK", testID: "failure-sheet:ok", onPress: onClose, kind: "primary" }]}
     >
       {failure.details !== null && (
-        <View style={{ flexDirection: "column", gap: 4 }}>
-          <View
-            testID="failure-sheet:details"
-            focusable
-            accessibilityRole="button"
-            onPress={() => setOpen((now) => !now)}
-            style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
-          >
-            <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>Details</Text>
-            <Svg markup={open ? CHEVRON_UP : CHEVRON_DOWN} size={10} color={colors.textMuted} />
-          </View>
-          {open && <Text style={{ fontSize: 11, color: colors.textMuted, lineHeight: 15 }}>{failure.details}</Text>}
+        <View style={{ flexDirection: "column", gap: SPACE.xs }}>
+          <MoreButton testID="failure-sheet:details" open={open} more="Details" less="Hide details" onPress={() => setOpen((now) => !now)} />
+          {open && <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted, lineHeight: TYPE.caption.line }}>{failure.details}</Text>}
         </View>
       )}
     </AlertSheet>

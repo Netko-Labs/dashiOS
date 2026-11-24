@@ -5,7 +5,7 @@
  * selection (CO-6).
  */
 
-import { useColors } from "@dashi/ui";
+import { RADIUS, SPACE, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { Row } from "../row-model.ts";
 import { type Measures, PANEL, SURFACE } from "./measures.ts";
@@ -50,10 +50,10 @@ export function GridCells({
                 style={{
                   width,
                   height,
-                  borderRadius: 8,
+                  borderRadius: RADIUS.control,
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: 2,
+                  gap: SPACE.xxs,
                   ...(isSelected ? { backgroundColor: colors.selectionWash, borderWidth: 2, borderColor: colors.selectionBar } : {}),
                 }}
               >

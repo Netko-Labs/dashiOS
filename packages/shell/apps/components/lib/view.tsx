@@ -15,6 +15,7 @@ import { AppsPage } from "./exhibits/apps.tsx";
 import { ButtonsPage, FieldsPage, PickersPage, SwitchesPage } from "./exhibits/controls.tsx";
 import { AlertsPage, MenusPage, NoticesPage, ProgressPage } from "./exhibits/feedback.tsx";
 import { ChecksPage, PanelPage, PicksPage, StatesPage } from "./exhibits/kit.tsx";
+import { LoginPage } from "./exhibits/login.tsx";
 import { MeasuresPage } from "./exhibits/measures.tsx";
 import { ListsPage, RowsPage, ShortcutsPage } from "./exhibits/structure.tsx";
 import { ColorsPage, GroundsPage, TintsPage, TypePage } from "./exhibits/tokens.tsx";
@@ -41,6 +42,7 @@ const PAGE_VIEWS: Readonly<Record<PageId, () => ReactNode>> = {
   apps: () => <AppsPage />,
   panel: () => <PanelPage />,
   shortcuts: () => <ShortcutsPage />,
+  login: () => <LoginPage />,
   colors: () => <ColorsPage />,
   grounds: () => <GroundsPage />,
   tints: () => <TintsPage />,

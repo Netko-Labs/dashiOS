@@ -5,7 +5,7 @@
  * way when the field is narrow.
  */
 
-import { RADIUS, SEARCH, SearchField, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { RADIUS, SEARCH, SEARCH_FIELD, SearchField, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { useFiles, useFilesState } from "../../context.ts";
@@ -119,7 +119,8 @@ export function Crumbs({ onEdit }: { onEdit: (text: string) => void }) {
   return (
     <SearchField
       testID="omnibox"
-      fill
+      width="fill"
+      minWidth={SEARCH_FIELD.least}
       value=""
       onChangeText={search}
       rest={crumbs}

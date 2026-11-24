@@ -7,7 +7,7 @@
  * stretches one (drag.ts).
  */
 
-import { useColors, useSurface } from "@dashi/ui";
+import { CLEAR, pill, SPACE, TYPE, useColors, useSurface, WEIGHT } from "@dashi/ui";
 import { ScrollView, Text, View, type ViewHandle } from "@mirinjs/metal";
 import { type RefObject, useEffect, useRef, useState } from "react";
 import type { Day, Occurrence } from "../../../../src/shared/calendar/index.ts";
@@ -19,6 +19,14 @@ import { DayColumn } from "./day-column.tsx";
 import type { GridHandlers, GridState } from "./grid-props.ts";
 
 const GUTTER = 58;
+/** The heads' row: taller over one day. A day's number on its disc (today's in ink). */
+const HEAD = { one: 52, many: 46 } as const;
+const NUMBER_DISC = 26;
+/** An hour's label, centred on its rule; where the hours open, a little above the working day's first. */
+const HOUR_LABEL = 14;
+const OPEN_ABOVE = 14;
+/** The hairline under the heads. */
+const RULE = 1;
 /** Below this column width a day's name sits over its number, so the two never print over a neighbour's. */
 export const STACK_HEAD_BELOW = 76;
 
@@ -78,29 +86,29 @@ function DayHead({
         flexDirection: stacked ? "column" : "row",
         alignItems: "center",
         justifyContent: "center",
-        gap: stacked ? 1 : 7,
+        gap: stacked ? SPACE.px : SPACE.s,
         overflow: "hidden",
       }}
     >
       <View style={{ flexShrink: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "semibold", color: isToday ? colors.text : colors.textMuted }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, fontWeight: WEIGHT.semibold, color: isToday ? colors.text : colors.textMuted }}>
           {weekdayShort(day, prefs)}
         </Text>
       </View>
       {/* Today is an ink mark: green means "on". */}
       <View
         style={{
-          minWidth: 26,
-          height: 26,
+          minWidth: NUMBER_DISC,
+          height: NUMBER_DISC,
           flexShrink: 0,
-          paddingHorizontal: 3,
-          borderRadius: 13,
+          paddingHorizontal: SPACE.xxs,
+          borderRadius: pill(NUMBER_DISC),
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: isToday ? colors.text : picked ? colors.button : "#00000000",
+          backgroundColor: isToday ? colors.text : picked ? colors.button : CLEAR,
         }}
       >
-        <Text style={{ fontSize: 16, fontWeight: isToday ? "bold" : "normal", color: isToday ? surface.window : colors.text }}>{dayNumber(day)}</Text>
+        <Text style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.bold, color: isToday ? surface.window : colors.text }}>{dayNumber(day)}</Text>
       </View>
     </View>
   );
@@ -113,11 +121,19 @@ export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, state,
   const showsToday = days.includes(today);
   const nowMinutes = showsToday ? now.getHours() * 60 + now.getMinutes() : null;
 
-  const hours = useHoursScroll(days.length, HOUR_HEIGHT * firstHour(showsToday, now.getHours()) - 14, state.reveal);
+  const hours = useHoursScroll(days.length, HOUR_HEIGHT * firstHour(showsToday, now.getHours()) - OPEN_ABOVE, state.reveal);
 
   return (
     <View testID="time-grid" style={{ flex: 1, flexDirection: "column", minHeight: 0 }}>
-      <View style={{ flexShrink: 0, flexDirection: "row", height: days.length === 1 ? 52 : 46, borderBottomWidth: 1, borderColor: colors.separator }}>
+      <View
+        style={{
+          flexShrink: 0,
+          flexDirection: "row",
+          height: days.length === 1 ? HEAD.one : HEAD.many,
+          borderBottomWidth: RULE,
+          borderColor: colors.separator,
+        }}
+      >
         <View style={{ width: GUTTER, flexShrink: 0 }} />
         {days.map((day) => (
           <DayHead
@@ -136,8 +152,11 @@ export function TimeGrid({ days, today, now, prefs, occurrences, colorOf, state,
         <View style={{ flexDirection: "row", height: GRID_HEIGHT, flexShrink: 0 }}>
           <View style={{ width: GUTTER, flexShrink: 0, position: "relative" }}>
             {Array.from({ length: 24 }, (_, hour) => (
-              <View key={hour} style={{ position: "absolute", top: hour * HOUR_HEIGHT - 7, right: 8, height: 14, justifyContent: "center" }}>
-                {hour > 0 && <Text style={{ fontSize: 10, color: colors.textMuted }}>{hourLabel(hour, prefs)}</Text>}
+              <View
+                key={hour}
+                style={{ position: "absolute", top: hour * HOUR_HEIGHT - HOUR_LABEL / 2, right: SPACE.m, height: HOUR_LABEL, justifyContent: "center" }}
+              >
+                {hour > 0 && <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>{hourLabel(hour, prefs)}</Text>}
               </View>
             ))}
           </View>

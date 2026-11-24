@@ -25,7 +25,7 @@ const OWNERS: ReadonlyArray<[Workstream, readonly string[]]> = [
   [
     "W2",
     [
-      ...["consent", "force-quit/", "menus/lib/sheets", "menus/lib/power-sheets", "polkit/", "wifi/", "bluetooth/", "agent-sheets/"].map((p) => SHELL + p),
+      ...["consent", "force-quit/", "menus/sheets", "menus/lib/power-sheets", "polkit/", "wifi/", "bluetooth/", "agent-sheets/"].map((p) => SHELL + p),
       ...["approval-sheet", "confirm-sheet", "actions/", "sheet.tsx", "accounts/", "shared/applet-store/consent-sheet", "region/"].map((p) => SHELL + p),
       ...["share-picker/", "display-config/"].map((p) => SHELL + p),
     ],

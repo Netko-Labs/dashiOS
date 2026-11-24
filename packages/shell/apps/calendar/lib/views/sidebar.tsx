@@ -1,18 +1,19 @@
 /**
- * The sidebar: the mini month, the calendars with their colors and
- * checkboxes, and New Calendar and Import. The checkbox shows or hides a
- * calendar; pressing the row picks it as the one new events go to (it is
- * lit), so hiding one takes aiming. The month and the calendars scroll in a
- * short window; Import and New calendar stay at its foot. In a narrow window
- * it is a rail (`CalendarRail`): each calendar's dot shows or hides it, and
- * names itself after a rest.
+ * The sidebar: the mini month, the calendars, and Import and New calendar.
+ * Each calendar is a sidebar row (`SidebarItem`) on a tile of its colour:
+ * pressing it picks it as the one new events go to (it is lit), and ↑ ↓ move
+ * between them, one Tab stop for the list (KB-1). Its check box shows or
+ * hides it, and the lit row's More opens its menu (as a right-click on any
+ * row does). The month and the calendars scroll in a short window; Import
+ * and New calendar stay at its foot. In a narrow window it is the rail
+ * (LA-5): the tiles alone, each named by a tooltip, and the two actions as
+ * glyphs.
  */
 
-import { CHECK, rowLook, SelectionBar, SidebarSection, useColors, useTooltip } from "@dashi/ui";
-import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
-import { useState } from "react";
+import { Checkbox, MORE, SidebarItem, SidebarSection, SPACE, ToolbarButton } from "@dashi/ui";
+import { ScrollView, View } from "@mirinjs/metal";
 import type { Calendar } from "../../../../src/shared/calendar/index.ts";
-import { ELLIPSIS, IMPORT, PLUS } from "../glyphs.ts";
+import { CALENDAR, IMPORT, PLUS } from "../glyphs.ts";
 import { MiniMonth, type MiniMonthProps } from "./mini-month.tsx";
 
 export interface SidebarProps extends MiniMonthProps {
@@ -25,41 +26,25 @@ export interface SidebarProps extends MiniMonthProps {
   onMenu: (calendar: Calendar, x: number, y: number) => void;
   onNewCalendar: () => void;
   onImport: () => void;
+  /** The rail: the calendars' tiles alone (LA-5). */
+  rail?: boolean;
 }
 
-/** The round check that shows or hides a calendar's events, in its colour. */
-function ShownCheck({ calendar, visible, onToggle }: { calendar: Calendar; visible: boolean; onToggle: () => void }) {
-  return (
-    <View
-      testID={`calendar-check:${calendar.id}`}
-      accessibilityRole="checkbox"
-      accessibilityLabel={`Show ${calendar.name}`}
-      accessibilityState={{ checked: visible }}
-      onPress={onToggle}
-      style={{ width: 22, height: 22, marginLeft: -4, marginRight: -4, alignItems: "center", justifyContent: "center" }}
-    >
-      <View
-        style={{
-          width: 14,
-          height: 14,
-          borderRadius: 7,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: visible ? calendar.color : "#00000000",
-          borderWidth: 1.5,
-          borderColor: calendar.color,
-        }}
-      >
-        {visible && <Svg markup={CHECK} size={9} color="#ffffff" />}
-      </View>
-    </View>
-  );
+/**
+ * The kit's check box that shows or hides a calendar, its box only: the row
+ * says the name, so the words ("Show Work", what a screen reader reads) are
+ * kept out of sight.
+ */
+function ShownBox({ calendar, visible, onToggle }: { calendar: Calendar; visible: boolean; onToggle: () => void }) {
+  // The row names the calendar: the box alone, its words for screen readers.
+  return <Checkbox testID={`calendar-check:${calendar.id}`} label={`Show ${calendar.name}`} checked={visible} onChange={onToggle} hideLabel />;
 }
 
 function CalendarRow({
   calendar,
   visible,
   chosen,
+  rail,
   onToggle,
   onChoose,
   onMenu,
@@ -67,93 +52,63 @@ function CalendarRow({
   calendar: Calendar;
   visible: boolean;
   chosen: boolean;
+  rail: boolean;
   onToggle: () => void;
   onChoose: () => void;
   onMenu: (x: number, y: number) => void;
 }) {
-  const colors = useColors();
-  // The "⋯" shows while the pointer is on the row (or it is the one picked), not on every row at rest.
-  const [hovered, setHovered] = useState(false);
   return (
-    // The whole row picks the calendar; the check and the menu inside it take their own presses
-    // (Metal gives a press to the innermost view that handles it).
-    <View
-      testID={`calendar-row:${calendar.id}`}
-      onPress={onChoose}
-      onContextMenu={(event) => onMenu(event.x, event.y)}
-      onHoverChange={setHovered}
-      style={{
-        height: 28,
-        flexShrink: 0,
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 8,
-        borderRadius: 7,
-        backgroundColor: rowLook(colors, chosen).ground,
-        hoverBackgroundColor: rowLook(colors, chosen).hover,
-      }}
-    >
-      {chosen && <SelectionBar rowHeight={28} />}
-      <ShownCheck calendar={calendar} visible={visible} onToggle={onToggle} />
-      {/* The name ends in an ellipsis, 8 clear of the "⋯". */}
-      <View style={{ flex: 1, minWidth: 0, justifyContent: "center", paddingLeft: 8, marginRight: 4 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, color: chosen ? colors.onSelection : visible ? colors.text : colors.textMuted }}>
-          {calendar.name}
-        </Text>
-      </View>
-      <View
-        testID={`calendar-menu:${calendar.id}`}
-        accessibilityRole="button"
-        accessibilityLabel={`${calendar.name} options`}
-        onPress={(event) => onMenu(event.bounds?.x ?? 0, (event.bounds?.y ?? 0) + (event.bounds?.height ?? 0))}
-        style={{
-          width: 22,
-          height: 22,
-          flexShrink: 0,
-          borderRadius: 6,
-          alignItems: "center",
-          justifyContent: "center",
-          hoverBackgroundColor: colors.separator,
-        }}
-      >
-        {(hovered || chosen) && <Svg markup={ELLIPSIS} size={14} color={rowLook(colors, chosen).glyph} />}
-      </View>
+    <View testID={`calendar-row:${calendar.id}`} onContextMenu={(event) => onMenu(event.x, event.y)} style={{ flexDirection: "column", flexShrink: 0 }}>
+      <SidebarItem
+        testID={`calendar:${calendar.id}`}
+        label={calendar.name}
+        selected={chosen}
+        rail={rail}
+        tile={{ glyph: CALENDAR, tint: calendar.color }}
+        {...(rail && !visible ? { badge: "Hidden" } : {})}
+        onPress={onChoose}
+        accessory={
+          <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs }}>
+            {chosen && (
+              <ToolbarButton
+                testID={`calendar-menu:${calendar.id}`}
+                glyph={MORE}
+                tooltip={`${calendar.name} options`}
+                onPress={(event) => onMenu(event.bounds?.x ?? 0, (event.bounds?.y ?? 0) + (event.bounds?.height ?? 0))}
+              />
+            )}
+            <ShownBox calendar={calendar} visible={visible} onToggle={onToggle} />
+          </View>
+        }
+      />
     </View>
   );
 }
 
-export function Sidebar({ calendars, hidden, target, onToggle, onChoose, onMenu, onNewCalendar, onImport, ...month }: SidebarProps) {
-  const colors = useColors();
-  const action = (testID: string, glyph: string, label: string, onPress: () => void) => (
-    <View
-      testID={testID}
-      onPress={onPress}
-      style={{
-        height: 28,
-        flexShrink: 0,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 9,
-        paddingHorizontal: 8,
-        borderRadius: 7,
-        hoverBackgroundColor: colors.button,
-      }}
-    >
-      <Svg markup={glyph} size={14} color={colors.textMuted} />
-      <Text style={{ fontSize: 13, color: colors.textMuted }}>{label}</Text>
+/** Import and New calendar, at the sidebar's foot: worded in the full sidebar, glyphs named by tooltips in the rail. */
+function SidebarActions({ rail, onImport, onNewCalendar }: { rail: boolean; onImport: () => void; onNewCalendar: () => void }) {
+  const words = (label: string) => (rail ? { tooltip: label } : { label });
+  return (
+    <View style={{ flexShrink: 0, flexDirection: "column", alignItems: rail ? "center" : "flex-start", gap: SPACE.xxs }}>
+      <ToolbarButton testID="import" glyph={IMPORT} {...words("Import…")} onPress={onImport} />
+      <ToolbarButton testID="new-calendar" glyph={PLUS} {...words("New calendar…")} onPress={onNewCalendar} />
     </View>
   );
+}
+
+export function Sidebar({ calendars, hidden, target, onToggle, onChoose, onMenu, onNewCalendar, onImport, rail = false, ...month }: SidebarProps) {
   return (
     <>
       <ScrollView testID="sidebar-list" style={{ flex: 1, minHeight: 0, flexDirection: "column" }}>
-        <MiniMonth {...month} />
-        <SidebarSection title="Calendars">
+        {!rail && <MiniMonth {...month} />}
+        <SidebarSection {...(rail ? {} : { title: "Calendars" })}>
           {calendars.map((calendar) => (
             <CalendarRow
               key={calendar.id}
               calendar={calendar}
               visible={!hidden.includes(calendar.id)}
               chosen={calendar.id === target}
+              rail={rail}
               onToggle={() => onToggle(calendar.id)}
               onChoose={() => onChoose(calendar.id)}
               onMenu={(x, y) => onMenu(calendar, x, y)}
@@ -161,104 +116,7 @@ export function Sidebar({ calendars, hidden, target, onToggle, onChoose, onMenu,
           ))}
         </SidebarSection>
       </ScrollView>
-      {action("import", IMPORT, "Import…", onImport)}
-      {action("new-calendar", PLUS, "New calendar…", onNewCalendar)}
-    </>
-  );
-}
-
-/** A glyph in the rail that names itself after a rest. */
-function RailButton({ testID, glyph, name, onPress }: { testID: string; glyph: string; name: string; onPress: () => void }) {
-  const colors = useColors();
-  const tip = useTooltip(name);
-  return (
-    <View
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityLabel={name}
-      onPress={() => {
-        tip.hide();
-        onPress();
-      }}
-      onHoverChange={tip.onHoverChange}
-      style={{ height: 28, flexShrink: 0, borderRadius: 7, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
-    >
-      <Svg markup={glyph} size={14} color={colors.textMuted} />
-      {tip.node}
-    </View>
-  );
-}
-
-/** One calendar in the rail: its dot shows or hides it, a right-click opens its menu, and it names itself after a rest. */
-function RailCalendar({
-  calendar,
-  visible,
-  onToggle,
-  onMenu,
-}: {
-  calendar: Calendar;
-  visible: boolean;
-  onToggle: () => void;
-  onMenu: (x: number, y: number) => void;
-}) {
-  const colors = useColors();
-  const tip = useTooltip(calendar.name);
-  return (
-    <View
-      testID={`calendar-check:${calendar.id}`}
-      accessibilityRole="checkbox"
-      accessibilityLabel={calendar.name}
-      accessibilityState={{ checked: visible }}
-      onPress={() => {
-        tip.hide();
-        onToggle();
-      }}
-      onContextMenu={(event) => onMenu(event.x, event.y)}
-      onHoverChange={tip.onHoverChange}
-      style={{ height: 28, flexShrink: 0, borderRadius: 7, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
-    >
-      <View
-        style={{
-          width: 14,
-          height: 14,
-          borderRadius: 7,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: visible ? calendar.color : "#00000000",
-          borderWidth: 1.5,
-          borderColor: calendar.color,
-        }}
-      >
-        {visible && <Svg markup={CHECK} size={9} color="#ffffff" />}
-      </View>
-      {tip.node}
-    </View>
-  );
-}
-
-export function CalendarRail({
-  calendars,
-  hidden,
-  onToggle,
-  onMenu,
-  onNewCalendar,
-  onImport,
-}: Pick<SidebarProps, "calendars" | "hidden" | "onToggle" | "onMenu" | "onNewCalendar" | "onImport">) {
-  return (
-    <>
-      <ScrollView testID="sidebar-list" style={{ flex: 1, minHeight: 0, flexDirection: "column", gap: 2 }}>
-        {calendars.map((calendar) => (
-          <RailCalendar
-            key={calendar.id}
-            calendar={calendar}
-            visible={!hidden.includes(calendar.id)}
-            onToggle={() => onToggle(calendar.id)}
-            onMenu={(x, y) => onMenu(calendar, x, y)}
-          />
-        ))}
-      </ScrollView>
-      <RailButton testID="import" glyph={IMPORT} name="Import…" onPress={onImport} />
-      <RailButton testID="new-calendar" glyph={PLUS} name="New calendar…" onPress={onNewCalendar} />
+      <SidebarActions rail={rail} onImport={onImport} onNewCalendar={onNewCalendar} />
     </>
   );
 }

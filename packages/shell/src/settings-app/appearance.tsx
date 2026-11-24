@@ -13,8 +13,8 @@
  * (`appearance.highlightActiveWindow`, appearance/window-style.ts).
  */
 
-import { DARK_CONTROLS, LIGHT_CONTROLS, useControlColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { CLEAR, DARK_CONTROLS, LIGHT_CONTROLS, PictureChoice, RADIUS, SPACE } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { AUTO_DARK_FROM, AUTO_DARK_TO } from "../appearance/auto.ts";
 import { DEFAULT_CORNERS, isCornerName } from "../shared/appearance/index.ts";
@@ -29,25 +29,28 @@ import { Spot } from "./spot.tsx";
 import type { SettingsStore } from "./store.ts";
 import { Choices, Hero, Page } from "./ui.tsx";
 
-/** A theme's picture: its surface, a bar, and a card, in that theme's own tokens. Dark's bar is a hairline's white on the black, as the menu bar's edge reads there. */
+/** A theme's picture: its surface, a bar, and a card, in that theme's own tokens; each bar is its mode's hairline, as the menu bar's edge reads there. */
 const THEME = {
-  light: { ground: LIGHT_CONTROLS.surface, bar: "#d9d1e6", card: LIGHT_CONTROLS.off },
+  light: { ground: LIGHT_CONTROLS.surface, bar: LIGHT_CONTROLS.line, card: LIGHT_CONTROLS.off },
   dark: { ground: DARK_CONTROLS.surface, bar: DARK_CONTROLS.line, card: DARK_CONTROLS.off },
 } as const;
 
 type Theme = (typeof THEME)[keyof typeof THEME];
 
+/** A theme's picture: 84 tall at radius 14, ringed 4 out when chosen (design.html, "Settings": Hero). */
+const THEME_PICTURE = { height: 84, radius: 14, room: SPACE.xs } as const;
+
 /** The picture, 84 tall: a bar along the top, a card under it; `ground` false leaves the ground to its holder (Automatic's halves). */
 function ThemePicture({ theme, ground = true }: { theme: Theme; ground?: boolean }) {
   return (
-    <View style={{ flex: 1, position: "relative", borderRadius: 14, backgroundColor: ground ? theme.ground : "#00000000" }}>
-      <View style={{ position: "absolute", left: 10, top: 10, right: 36, height: 10, borderRadius: 5, backgroundColor: theme.bar }} />
-      <View style={{ position: "absolute", left: 10, top: 28, width: "60%", height: 38, borderRadius: 10, backgroundColor: theme.card }} />
+    <View style={{ flex: 1, position: "relative", borderRadius: THEME_PICTURE.radius, backgroundColor: ground ? theme.ground : CLEAR }}>
+      <View style={{ position: "absolute", left: 10, top: 10, right: 36, height: 10, borderRadius: RADIUS.row, backgroundColor: theme.bar }} />
+      <View style={{ position: "absolute", left: 10, top: 28, width: "60%", height: 38, borderRadius: RADIUS.card, backgroundColor: theme.card }} />
     </View>
   );
 }
 
-/** A theme to pick: its picture and its name, ringed in green when chosen. */
+/** A theme to pick: its picture and its name under it, ringed in the on colour when chosen (CO-9). */
 function ThemeChoice({
   label,
   selected,
@@ -61,30 +64,20 @@ function ThemeChoice({
   onPress: () => void;
   children: ReactNode;
 }) {
-  const colors = useControlColors();
   return (
     // A Tab stop in the themes' group: the arrows move between them, Space or Return picks one (KB-1).
-    <View
+    <PictureChoice
       testID={testID}
-      focusable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected }}
+      label={label}
+      caption={label}
+      chosen={selected}
       onPress={onPress}
-      style={{
-        flex: 1,
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 6,
-        padding: 8,
-        borderRadius: 20,
-        borderWidth: 2.5,
-        borderColor: selected ? colors.on : "#00000000",
-      }}
+      radius={THEME_PICTURE.radius}
+      room={THEME_PICTURE.room}
+      grow
     >
-      <View style={{ width: "100%", height: 84, flexDirection: "row" }}>{children}</View>
-      <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.offInk }}>{label}</Text>
-    </View>
+      <View style={{ width: "100%", height: THEME_PICTURE.height, flexDirection: "row" }}>{children}</View>
+    </PictureChoice>
   );
 }
 
@@ -112,7 +105,7 @@ export function AppearancePreviews({ flags, settings }: { flags: FlagsStore; set
     });
   return (
     // One Tab stop, entered at the chosen theme (KB-1).
-    <View testID="appearance-mode" focusGroup accessibilityRole="group" style={{ flex: 1, flexDirection: "row", gap: 12 }}>
+    <View testID="appearance-mode" focusGroup accessibilityRole="listbox" style={{ flex: 1, flexDirection: "row", gap: SPACE.inset }}>
       <ThemeChoice testID="appearance-light" label="Light" selected={!auto && !dark} onPress={() => pick(false)}>
         <ThemePicture theme={THEME.light} />
       </ThemeChoice>
@@ -126,15 +119,33 @@ export function AppearancePreviews({ flags, settings }: { flags: FlagsStore; set
         onPress={() => choose("Automatic", () => settings.patch("appearance", { auto: true }))}
       >
         {/* Metal clips to rectangles, so each half rounds its own outer corners and squares the inner ones with a patch. */}
-        <View style={{ flex: 1, flexDirection: "column", overflow: "hidden", alignItems: "flex-start", borderRadius: 14, backgroundColor: THEME.light.ground }}>
+        <View
+          style={{
+            flex: 1,
+            flexDirection: "column",
+            overflow: "hidden",
+            alignItems: "flex-start",
+            borderRadius: THEME_PICTURE.radius,
+            backgroundColor: THEME.light.ground,
+          }}
+        >
           <View style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 14, backgroundColor: THEME.light.ground }} />
-          <View style={{ width: "200%", height: 84, flexDirection: "row" }}>
+          <View style={{ width: "200%", height: THEME_PICTURE.height, flexDirection: "row" }}>
             <ThemePicture theme={THEME.light} ground={false} />
           </View>
         </View>
-        <View style={{ flex: 1, flexDirection: "column", overflow: "hidden", alignItems: "flex-end", borderRadius: 14, backgroundColor: THEME.dark.ground }}>
+        <View
+          style={{
+            flex: 1,
+            flexDirection: "column",
+            overflow: "hidden",
+            alignItems: "flex-end",
+            borderRadius: THEME_PICTURE.radius,
+            backgroundColor: THEME.dark.ground,
+          }}
+        >
           <View style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 14, backgroundColor: THEME.dark.ground }} />
-          <View style={{ width: "200%", height: 84, flexDirection: "row" }}>
+          <View style={{ width: "200%", height: THEME_PICTURE.height, flexDirection: "row" }}>
             <ThemePicture theme={THEME.dark} ground={false} />
           </View>
         </View>
@@ -191,7 +202,7 @@ export function AppearancePane({ flags, settings, pick }: { flags: FlagsStore; s
         <Setting id="appearance/highlight-active-window" control="appearance-highlight-window" />
       </Group>
       <Caption>
-        Light and Dark are the same choice as Control Center's Dark Mode. The accent never colours the tally, a widget's number, the agents' purple, the
+        Light and Dark are the same choice as Control Center's Dark Mode. The accent never colors the tally, a widget's number, the agents' purple, the
         microphone or an error: those keep their meaning whatever you pick. Other apps follow it where they can.
       </Caption>
     </Page>

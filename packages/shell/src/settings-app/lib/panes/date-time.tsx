@@ -6,27 +6,33 @@
  * shell follow them at once.
  */
 
-import { Text, View } from "@mirinjs/metal";
+import { View } from "@mirinjs/metal";
 import { TimezonePicker } from "../../../region/pickers.tsx";
 import { describeFailure, type RegionStore, useRegion } from "../../../region/store.ts";
-import { describeZone } from "../../../region/timezones.ts";
-import { Caption, Group, TUCK } from "../../../shared/cards/index.ts";
+import { describeZone, type Zone } from "../../../region/timezones.ts";
+import { Caption, Group } from "../../../shared/cards/index.ts";
+import { paneTitle } from "../../../shared/settings/index.ts";
 import { formatClock, useClockPrefs, useMinuteClock, usesHour24 } from "../../../shared/time/index.ts";
-import { useColors } from "../../colors.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
 import { Page, Switch } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";
+import { Failure } from "./parts.tsx";
+
+/** A time zone by its city, country and offset ("Bogota · Colombia · GMT-5"), never its database id (VO-11, SE-A28). */
+export function zoneWords(id: string, zone: Zone | undefined): string {
+  if (!zone) return (id.split("/").at(-1) ?? id).replaceAll("_", " ");
+  return [zone.city, describeZone(zone)].filter(Boolean).join(" · ");
+}
 
 export function DateTimePane({ region, settings }: { region: RegionStore; settings: SettingsStore }) {
-  const colors = useColors();
   const state = useRegion(region);
   const prefs = useClockPrefs();
   const now = useMinuteClock();
   const { clock } = useSettings(settings).data;
   const zone = state.zones.find((candidate) => candidate.id === state.timezone);
   return (
-    <Page title="Date & Time">
+    <Page title={paneTitle("date-time")}>
       <Group>
         <Setting
           id="date-time/automatic-time"
@@ -47,20 +53,16 @@ export function DateTimePane({ region, settings }: { region: RegionStore; settin
         </Setting>
         <Setting id="date-time/show-date" control="datetime-show-date" />
       </Group>
-      <View testID="datetime-preview" style={{ ...TUCK, paddingHorizontal: 10 }}>
-        <Text style={{ fontSize: 11.5, color: colors.textMuted }}>{`The menu bar reads: ${formatClock(now, prefs)}`}</Text>
+      <View testID="datetime-preview">
+        <Caption>{`The menu bar reads: ${formatClock(now, prefs)}`}</Caption>
       </View>
       <Group>
-        <Setting id="date-time/time-zone" detail={`${state.timezone.replaceAll("_", " ")}${zone ? ` · ${describeZone(zone)}` : ""}`}>
+        <Setting id="date-time/time-zone" detail={zoneWords(state.timezone, zone)}>
           <TimezonePicker zones={state.zones} current={state.timezone} height={150} onPick={(id) => void region.setTimezone(id)} />
         </Setting>
       </Group>
       {state.busy !== null && <Caption>Changing it. If a password sheet appears, enter your password there.</Caption>}
-      {state.error !== null && (
-        <View testID="datetime-error" style={{ flexShrink: 0, paddingHorizontal: 10 }}>
-          <Text style={{ fontSize: 11, color: colors.critical }}>{describeFailure(state.error)}</Text>
-        </View>
-      )}
+      {state.error !== null && <Failure testID="datetime-error">{describeFailure(state.error)}</Failure>}
       {state.available === false && <Caption>This computer has no time service, so the time zone and clock sync cannot be changed here.</Caption>}
     </Page>
   );

@@ -5,6 +5,7 @@
  * and the keyboard agree; this file draws what they act on.
  */
 
+import { BatteryTile, RoundTile, SliderTile, type TileLook, WideTile } from "@dashi/ui";
 import type { ReactNode } from "react";
 import { useSyncExternalStore } from "react";
 import type { AppletTile } from "./applet-tiles.ts";
@@ -23,7 +24,6 @@ import {
 } from "./lib/control-actions.ts";
 import type { AddEntry } from "./lib/edit.tsx";
 import { useControlSnapshot } from "./lib/snapshot.ts";
-import { BatteryRow, RoundTile, SliderTile, type TileLook, WideTile } from "./tiles.tsx";
 
 const EMPTY: readonly AppletTile[] = [];
 const NO_APPLETS = { subscribe: () => () => {}, getSnapshot: () => EMPTY };
@@ -81,7 +81,7 @@ function renderTile(
   if (tile.id === "battery" && snapshot.battery) {
     const battery = snapshot.battery;
     return (
-      <BatteryRow
+      <BatteryTile
         look={{ percent: battery.percent, charging: battery.charging, limit: battery.limit, time: battery.time, glyph: shown.glyph }}
         onOpen={() => (editing ? undefined : actions.onBattery?.())}
       />

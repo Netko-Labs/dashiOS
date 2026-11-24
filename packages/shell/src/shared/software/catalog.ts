@@ -35,6 +35,9 @@ import { run as defaultRun, type Runner } from "./lib/run.ts";
 import { cacheRoot } from "./paths.ts";
 import { type Repo, type Source, sourcesFrom } from "./sources.ts";
 
+/** How long a catalog command may run (ms). */
+const TIMERS = { command: 60_000 } as const;
+
 export interface CatalogDeps {
   run?: Runner;
   fetch?: FetchLike;
@@ -122,7 +125,7 @@ export class Catalog {
   }
 
   private async text(command: string[]): Promise<string> {
-    const result = await this.run(command, { timeoutMs: 60_000, keep: 64 * 1024 * 1024 });
+    const result = await this.run(command, { timeoutMs: TIMERS.command, keep: 64 * 1024 * 1024 });
     return result.code === 0 ? result.output : "";
   }
 

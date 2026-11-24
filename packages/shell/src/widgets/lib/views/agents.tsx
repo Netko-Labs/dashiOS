@@ -1,5 +1,6 @@
 /** Agents (shiso): what Dashi and your agents do, the step it is on of about how many, and Stop. A critical question floods it. */
 
+import { SPACE } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { DotRow } from "../../../shared/inks/index.ts";
 import { useWidgetEnv } from "../../env.tsx";
@@ -32,9 +33,9 @@ export function AgentsWidget({ size }: { size: WidgetSize }) {
   return (
     <>
       <Head left={<Lab>{run.harnessName}</Lab>} right={air ? <NowTag tally={inks.tally} /> : <Meta>{`running · ${minutes} min`}</Meta>} />
-      <View style={{ flexDirection: size === "wide" ? "row" : "column", gap: size === "wide" ? 14 : 4, marginTop: 12 }}>
+      <View style={{ flexDirection: size === "wide" ? "row" : "column", gap: size === "wide" ? SPACE.button : SPACE.xs, marginTop: SPACE.inset }}>
         <Num value={run.question ? "1" : String(step)} unit={run.question ? "ask" : `/${about}`} size={64} />
-        <View style={{ flex: 1, flexDirection: "column", marginTop: 4 }}>
+        <View style={{ flex: 1, flexDirection: "column", marginTop: SPACE.xs }}>
           <Private what="Task" width={110}>
             <Title>{run.question ? run.question.title : run.request.split("\n")[0] || "A task"}</Title>
           </Private>

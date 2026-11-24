@@ -9,13 +9,13 @@
  * last: the full mixer is there.
  */
 
+import { SliderTile } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { type ReactNode, useEffect } from "react";
 import { percentText } from "../control-center/catalog.ts";
 import { BLUETOOTH } from "../control-center/glyphs.ts";
 import { GRID } from "../control-center/layout.ts";
 import { PageBody, PageHeader, PageNote, PageRow, PageSection } from "../control-center/page-parts.tsx";
-import { SliderTile } from "../control-center/tiles.tsx";
 import { speakerGlyph } from "../glyphs.ts";
 import type { Volume } from "../system/volume.ts";
 import { AppSections } from "./app-rows.tsx";

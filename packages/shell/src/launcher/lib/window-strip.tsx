@@ -5,7 +5,7 @@
  * where the frames are (`onLayout`).
  */
 
-import { useColors } from "@dashi/ui";
+import { RADIUS, useColors } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { STRIP } from "../pictures.ts";
@@ -40,7 +40,7 @@ export function WindowStrip({ windows, picked, indent, onLayout, onPick, access 
           style={{
             width: STRIP.width,
             height: STRIP.height,
-            borderRadius: 6,
+            borderRadius: RADIUS.row,
             borderWidth: 2,
             borderColor: index === picked ? colors.selectionBar : colors.separator,
             backgroundColor: colors.button,

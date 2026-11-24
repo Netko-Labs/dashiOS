@@ -58,6 +58,9 @@ export interface Laptop {
   close(): void;
 }
 
+/** Timers, in ms (not design measures): how often the windows holding the graphics card are looked at again. */
+const TIMERS = { holders: 15_000 } as const;
+
 const powerSourceOf = (battery: Battery | null): PowerSource =>
   battery ? { plugged: battery.state !== "discharging", percent: battery.percent } : { plugged: true, percent: null };
 
@@ -259,7 +262,7 @@ export function startLaptop(options: LaptopOptions): Laptop {
   const stopWake = followWake(options, { hardware, notifications, modes, graphics });
 
   void holders.refresh().then(() => graphics.start());
-  const windowsTimer = setInterval(() => void holders.refresh(), 15_000);
+  const windowsTimer = setInterval(() => void holders.refresh(), TIMERS.holders);
 
   return {
     store,

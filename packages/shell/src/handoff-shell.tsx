@@ -266,13 +266,16 @@ export async function readContext(deps: {
   };
 }
 
+/** Timers, in ms (not design measures): how long wl-paste may take before it is stopped. */
+const TIMERS = { paste: 400 } as const;
+
 /** The primary selection's text through wl-paste (the shell's data-control client), or null. */
 export async function primarySelection(): Promise<string | null> {
   const paste = Bun.which("wl-paste");
   if (!paste) return null;
   try {
     const child = Bun.spawn([paste, "--primary", "--no-newline", "--type", "text/plain"], { stdin: "ignore", stdout: "pipe", stderr: "ignore" });
-    const timer = setTimeout(() => child.kill(), 400);
+    const timer = setTimeout(() => child.kill(), TIMERS.paste);
     const text = await new Response(child.stdout).text();
     clearTimeout(timer);
     return (await child.exited) === 0 && text.length <= SELECTION_BYTES ? text : null;

@@ -8,7 +8,7 @@
  * asks, else a few to try.
  */
 
-import { useColors } from "@dashi/ui";
+import { ON_AGENT, pill, RADIUS, SPACE, useColors, WEIGHT } from "@dashi/ui";
 import { ScrollView, Svg, Text, View, type ViewHandle } from "@mirinjs/metal";
 import { useEffect, useRef } from "react";
 import type { DashiTurn, TranscriptView } from "../../../agents/index.ts";
@@ -35,6 +35,9 @@ export interface TalkViewProps {
   onLink(url: string): void;
 }
 
+/** The greeting's mark: a 24 disc in the persona's colour, its spark 14; the line under it starts past it. */
+const GREETING = { disc: 24, glyph: 14 } as const;
+
 function Empty({
   name,
   colour,
@@ -47,21 +50,32 @@ function Empty({
   const colors = useColors();
   const m = useMeasures();
   return (
-    <View testID="talk:empty" style={{ flexDirection: "column", paddingBottom: 6 }}>
-      <View style={{ flexDirection: "column", paddingLeft: 18, paddingRight: 18, paddingTop: 16, paddingBottom: 6, gap: 6 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 9 }}>
-          <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: colour, alignItems: "center", justifyContent: "center" }}>
-            <Svg markup={SPARKLE} size={14} color="#ffffff" />
+    <View testID="talk:empty" style={{ flexDirection: "column", paddingBottom: SPACE.s }}>
+      <View
+        style={{ flexDirection: "column", paddingLeft: SPACE.page, paddingRight: SPACE.page, paddingTop: SPACE.page, paddingBottom: SPACE.s, gap: SPACE.s }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
+          <View
+            style={{
+              width: GREETING.disc,
+              height: GREETING.disc,
+              borderRadius: pill(GREETING.disc),
+              backgroundColor: colour,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Svg markup={SPARKLE} size={GREETING.glyph} color={ON_AGENT} />
           </View>
-          <Text style={{ fontSize: m.title + 2, fontWeight: "bold", color: colors.text }}>{`Ask ${name}`}</Text>
+          <Text style={{ fontSize: m.greeting, fontWeight: WEIGHT.bold, color: colors.text }}>{`Ask ${name}`}</Text>
         </View>
-        <View style={{ paddingLeft: 33 }}>
-          <Text style={{ fontSize: m.title - 0.5, color: colors.textMuted }}>
+        <View style={{ paddingLeft: GREETING.disc + SPACE.m + SPACE.px }}>
+          <Text style={{ fontSize: m.talkDetail, color: colors.textMuted }}>
             {`Say it as you would out loud: open apps and sites, change settings, find files, ask anything. Hold ❖Space to say it instead.${model ? ` ${model}.` : ""}`}
           </Text>
         </View>
       </View>
-      <View style={{ flexDirection: "column", paddingLeft: 5, paddingRight: 5 }}>
+      <View style={{ flexDirection: "column", paddingLeft: SPACE.xs, paddingRight: SPACE.xs }}>
         {tries.map((text, index) => (
           <View
             key={text}
@@ -71,10 +85,10 @@ function Empty({
             style={{
               flexDirection: "row",
               alignItems: "center",
-              gap: 10,
+              gap: SPACE.gap,
               height: 34,
-              paddingLeft: 12,
-              borderRadius: 8,
+              paddingLeft: SPACE.inset,
+              borderRadius: RADIUS.control,
               ...(index === selected ? { backgroundColor: colors.selectionWash } : {}),
             }}
           >
@@ -96,11 +110,21 @@ function Header({ view, name, model }: { view: TranscriptView; name: string; mod
   const shown = view.turns.findLast((turn): turn is DashiTurn => turn.kind === "dashi" && turn.model !== "")?.model ?? model;
   const spoken = view.turns[0]?.kind === "person" && view.turns[0].by === "voice";
   return (
-    <View testID="talk:header" style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+    <View testID="talk:header" style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
       <Text style={{ fontSize: m.small, color: colors.textMuted }}>{name}</Text>
       {shown && (
-        <View testID="talk:model" style={{ backgroundColor: colors.button, borderRadius: 5, paddingLeft: 6, paddingRight: 6, paddingTop: 1, paddingBottom: 1 }}>
-          <Text style={{ fontSize: m.small, fontWeight: "semibold", color: colors.text }}>{shown}</Text>
+        <View
+          testID="talk:model"
+          style={{
+            backgroundColor: colors.button,
+            borderRadius: RADIUS.row,
+            paddingLeft: SPACE.s,
+            paddingRight: SPACE.s,
+            paddingTop: SPACE.px,
+            paddingBottom: SPACE.px,
+          }}
+        >
+          <Text style={{ fontSize: m.small, fontWeight: WEIGHT.semibold, color: colors.text }}>{shown}</Text>
         </View>
       )}
       {spoken && <Text style={{ fontSize: m.small, color: colors.textMuted }}>· Started by voice</Text>}
@@ -114,7 +138,7 @@ function DashiPart({ turn, last, props }: { turn: DashiTurn; last: boolean; prop
   const { view } = props;
   const failed = turn.state === "failed";
   return (
-    <View testID={`talk:dashi:${turn.id}`} style={{ flexDirection: "column", gap: 6 }}>
+    <View testID={`talk:dashi:${turn.id}`} style={{ flexDirection: "column", gap: SPACE.s }}>
       <Who name={props.name} colour={props.colour} spoken={turn.by === "voice"} />
       <Steps turn={turn} />
       {!failed && (turn.text || turn.state === "working") && (
@@ -129,7 +153,7 @@ function DashiPart({ turn, last, props }: { turn: DashiTurn; last: boolean; prop
       {last && view.waiting && <WaitingLine waiting={view.waiting} onAnswer={props.onAnswer} />}
       {last && view.background && turn.state === "working" && (
         <View testID="talk:background" style={{ paddingLeft: TURN_INDENT }}>
-          <Text style={{ fontSize: m.small + 1, color: colors.textMuted }}>
+          <Text style={{ fontSize: m.line, color: colors.textMuted }}>
             Working on its own now. You can close this: the menu bar shows it, and a notification says when it's done.
           </Text>
         </View>
@@ -150,7 +174,16 @@ export function TalkView(props: TalkViewProps) {
   const lastDashi = view.turns.findLastIndex((turn) => turn.kind === "dashi");
   return (
     <ScrollView ref={scroll} testID="talk:thread" style={{ maxHeight: THREAD_MOST, flexShrink: 1 }}>
-      <View style={{ flexDirection: "column", gap: 14, paddingLeft: 18, paddingRight: 18, paddingTop: 14, paddingBottom: 12 }}>
+      <View
+        style={{
+          flexDirection: "column",
+          gap: SPACE.button,
+          paddingLeft: SPACE.page,
+          paddingRight: SPACE.page,
+          paddingTop: SPACE.button,
+          paddingBottom: SPACE.inset,
+        }}
+      >
         <Header view={view} name={props.name} model={props.model} />
         {view.turns.map((turn, index) =>
           turn.kind === "person" ? (

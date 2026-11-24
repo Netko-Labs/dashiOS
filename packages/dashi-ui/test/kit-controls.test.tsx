@@ -3,20 +3,24 @@
 import { expect, test } from "bun:test";
 import { View } from "@mirinjs/metal";
 import { Button } from "../src/button.tsx";
-import { CHECKBOX, Checkbox } from "../src/checkbox.tsx";
+import { CHECKBOX, Checkbox, CheckMark } from "../src/checkbox.tsx";
 import { CHIP, Chip } from "../src/chip.tsx";
 import { ShowStates } from "../src/control-state.tsx";
-import { SEARCH } from "../src/glyphs.ts";
+import { GLYPH_BUTTON, GlyphButton } from "../src/glyph-button.tsx";
+import { CLOSE, SEARCH } from "../src/glyphs.ts";
+import { InlineField } from "../src/inline-field.tsx";
 import { placeholderAt, SEARCH_FIELD, SearchField } from "../src/search-field.tsx";
 import { SEGMENTED, Segmented } from "../src/segmented.tsx";
-import { PANEL_SWITCH, Switch } from "../src/switch.tsx";
+import { INKS_SWITCH, PANEL_SWITCH, Switch } from "../src/switch.tsx";
+import { TextArea } from "../src/text-area.tsx";
 import { TextField } from "../src/text-field.tsx";
 import { TextLink } from "../src/text-link.tsx";
 import { LIGHT_CONTROLS } from "../src/theme/controls.ts";
+import { INK_PAPER, INK_TEXT } from "../src/theme/inks.ts";
 import { lightColors } from "../src/theme/palette.ts";
 import { noop } from "./support/controls-view.ts";
 import { fakeClockEachTest } from "./support/time.ts";
-import { sent, words } from "./support/tree.ts";
+import { type SentNode, sent, words } from "./support/tree.ts";
 
 fakeClockEachTest();
 
@@ -42,6 +46,19 @@ test("Button: 28, a small 24 in 12 SemiBold, fill takes the row; the panel look 
   root.unmount();
 });
 
+test("Button: the inks look is a 28 pill on the Inks' paper with ink words; never the accent", async () => {
+  const { node, root } = await sent(
+    <View>
+      <Button testID="inks" label="Edit widgets" look="inks" onPress={noop} />
+      <Button testID="inks-ink" label="Done" look="inks" primary onPress={noop} />
+    </View>,
+  );
+  expect(node("inks")?.props).toMatchObject({ height: 28, cornerRadius: 14, background: INK_PAPER.light, borderColor: INK_TEXT.light.hairline });
+  expect(node("inks")?.props).toMatchObject({ focusable: true, access: { role: "button", label: "Edit widgets" } });
+  expect(node("inks-ink")?.props.background).toBe(INK_TEXT.light.ink);
+  root.unmount();
+});
+
 test("Switch: the panel look is 46 × 28, its off track an outline; on is the one on in both looks", async () => {
   const { node, root } = await sent(
     <View>
@@ -53,6 +70,43 @@ test("Switch: the panel look is 46 × 28, its off track an outline; on is the on
   expect(node("window")?.props).toMatchObject({ background: lightColors.selection, access: { role: "switch", label: "Wi-Fi", checked: true } });
   expect(node("panel-on")?.props).toMatchObject({ width: PANEL_SWITCH.width, height: PANEL_SWITCH.height, background: lightColors.selection });
   expect(node("panel-off")?.props).toMatchObject({ borderWidth: PANEL_SWITCH.edge, borderColor: LIGHT_CONTROLS.muted });
+  root.unmount();
+});
+
+test("Switch: the inks look is the widget area's, 36 × 20 in the Inks' ink, never the accent", async () => {
+  const { node, root } = await sent(
+    <View>
+      <Switch testID="inks-on" look="inks" on label="May go on air" onChange={noop} />
+      <Switch testID="inks-off" look="inks" on={false} label="May go on air" onChange={noop} />
+    </View>,
+  );
+  expect(node("inks-on")?.props).toMatchObject({ width: INKS_SWITCH.width, height: INKS_SWITCH.height, background: INK_TEXT.light.ink });
+  expect(node("inks-on")?.props).toMatchObject({ access: { role: "switch", label: "May go on air", checked: true }, focusable: true });
+  expect(node("inks-off")?.props.background).toBe(INK_TEXT.light.hairline);
+  expect(node("inks-on")?.props.background).not.toBe(lightColors.selection);
+  expect(INK_PAPER.light).toBeDefined();
+  root.unmount();
+});
+
+test("GlyphButton: round, named for screen readers, a Tab stop; filled shows a disc; disabled is dimmed and takes no press", async () => {
+  let pressed = 0;
+  const { node, host, root } = await sent(
+    <View>
+      <GlyphButton testID="close" glyph={CLOSE} label="Remove" onPress={() => pressed++} />
+      <GlyphButton testID="filled" glyph={CLOSE} label="Remove" size="small" filled onPress={noop} />
+      <GlyphButton testID="off" glyph={CLOSE} label="Remove" disabled onPress={() => pressed++} />
+      <GlyphButton testID="mic" glyph={CLOSE} label="Microphone" on onPress={noop} />
+    </View>,
+  );
+  expect(node("close")?.props).toMatchObject({ width: GLYPH_BUTTON.regular.target, cornerRadius: GLYPH_BUTTON.regular.target / 2, focusable: true });
+  expect(node("close")?.props).toMatchObject({ access: { role: "button", label: "Remove" } });
+  expect(node("filled")?.props).toMatchObject({ width: GLYPH_BUTTON.small.target, background: lightColors.track });
+  expect(node("off")?.props).toMatchObject({ opacity: 0.4 });
+  expect(node("off")?.props.focusable).toBeUndefined();
+  expect(node("mic")?.props).toMatchObject({ background: lightColors.selection, access: { label: "Microphone", checked: true } });
+  host.emit({ type: "press", nodeId: root.nodeId("close") ?? "" });
+  host.emit({ type: "press", nodeId: root.nodeId("off") ?? "" });
+  expect(pressed).toBe(1);
   root.unmount();
 });
 
@@ -155,5 +209,82 @@ test("TextLink: ink and underlined, a link for screen readers (Q3)", async () =>
   expect(node("other")?.props).toMatchObject({ focusable: true, access: { role: "link", label: "Other…" } });
   expect(json()).toContain('"underline"');
   expect(json()).not.toContain(lightColors.accentInk);
+  root.unmount();
+});
+
+test("TextArea: a field's edge, ground and focus over many lines; it fills its column, or stands its height", async () => {
+  const { node, root } = await sent(
+    <View>
+      <TextArea testID="notes" value="Milk" label="Notes" onChangeText={noop} />
+      <TextArea testID="file" value="" placeholder="Text" small height={120} onChangeText={noop} />
+    </View>,
+  );
+  expect(node("notes")?.props).toMatchObject({
+    multiline: true,
+    cornerRadius: 7,
+    size: 13,
+    flex: 1,
+    borderColor: lightColors.controlEdge,
+    focusBorderColor: lightColors.focusRing,
+    access: { label: "Notes" },
+  });
+  expect(node("file")?.props).toMatchObject({ height: 120, size: 12, access: { label: "Text" } });
+  root.unmount();
+});
+
+test("CheckMark: the box alone for a list whose row is the control; a pick-one list's is round with a dot", async () => {
+  const { node, root } = await sent(
+    <View>
+      <CheckMark testID="ticked" checked />
+      <CheckMark testID="empty" checked={false} />
+      <CheckMark testID="picked" checked round />
+    </View>,
+  );
+  expect(node("ticked")?.props).toMatchObject({ width: CHECKBOX.box, cornerRadius: 4 });
+  expect(node("ticked")?.props.focusable).toBeUndefined();
+  expect(node("ticked")?.props.access).toBeUndefined();
+  expect(node("empty")?.props).toMatchObject({ borderColor: lightColors.controlEdge });
+  expect(node("picked")?.props).toMatchObject({ cornerRadius: CHECKBOX.box / 2 });
+  root.unmount();
+});
+
+test("InlineField: no box at rest, the focus ring's edge while it has the keyboard; Checkbox can show its box alone; a small TextLink is 11", async () => {
+  const { node, root } = await sent(
+    <View>
+      <InlineField testID="title" value="" placeholder="New event" size="caption" onChangeText={noop} />
+      <Checkbox testID="shown" label="Show Work" checked hideLabel onChange={noop} />
+      <TextLink testID="more" label="3 more" size="small" onPress={noop} />
+    </View>,
+  );
+  expect(node("title")?.props).toMatchObject({
+    size: 11,
+    background: "#00000000",
+    borderColor: "#00000000",
+    focusBorderColor: lightColors.focusRing,
+    access: { label: "New event" },
+  });
+  expect(node("shown")?.props).toMatchObject({ access: { role: "checkbox", label: "Show Work" } });
+  expect(words(node("shown"))).toEqual([]);
+  expect(words(node("more"))).toEqual(["3 more"]);
+  root.unmount();
+});
+
+test("Button: a label shorter than the least width sits in the middle, in both looks", async () => {
+  const { node, root } = await sent(
+    <View>
+      <Button testID="ok" label="OK" primary onPress={noop} />
+      <Button testID="go" label="Go" look="panel" onPress={noop} />
+    </View>,
+  );
+  for (const id of ["ok", "go"]) {
+    const label = node(id)?.children?.find((child): child is SentNode => typeof child === "object" && child !== null && "props" in child);
+    expect(JSON.stringify(label?.props)).toContain('"center"');
+  }
+  root.unmount();
+});
+
+test("Checkbox: short of room it gives way and its words are cut, never run under what is beside it", async () => {
+  const { node, root } = await sent(<Checkbox testID="always" label="Always use for PDF documents" checked={false} onChange={noop} />);
+  expect(node("always")?.props).toMatchObject({ shrink: true, minWidth: 0 });
   root.unmount();
 });

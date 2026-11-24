@@ -9,7 +9,8 @@
  * it on or changes a pick (the shell asks the compositor whose press it was).
  */
 
-import { Text, TextInput, View } from "@mirinjs/metal";
+import { SPACE, TextField, TYPE } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import {
   ALONE_MAX_MINUTES,
@@ -23,7 +24,7 @@ import {
   recordSummary,
 } from "../../../agents/alone/index.ts";
 import { label, type Scope } from "../../../agents/consent.ts";
-import { Button, Caption, Group, useSurface } from "../../../shared/cards/index.ts";
+import { Caption, Group } from "../../../shared/cards/index.ts";
 import { elapsedText, formatTime, useClockPrefs } from "../../../shared/time/index.ts";
 import { useColors } from "../../colors.ts";
 import type { PaneContext } from "../../context.ts";
@@ -32,6 +33,10 @@ import { Choices, Switch } from "../../ui.tsx";
 import { Row as Item } from "../row.tsx";
 import { Setting } from "../setting.tsx";
 import { AddSite, Ticks } from "./agents-alone-parts.tsx";
+import { MiniButton } from "./parts.tsx";
+
+/** The custom minutes' field: room for "480". */
+const MINUTES_FIELD = 56;
 
 /** How many of the last times it lists. */
 const RECORDS_SHOWN = 3;
@@ -79,7 +84,6 @@ function usePicks(ctx: Pick<PaneContext, "grants" | "sites">) {
 /** The picks, before it is on. */
 function Picks({ picks, alone }: { picks: ReturnType<typeof usePicks>; alone: Alone }) {
   const colors = useColors();
-  const surface = useSurface();
   const { scopes, setScopes, offered, setOffered, sites, setSites, time, setTime, custom, setCustom, throughLock, setThroughLock } = picks;
   const [problem, setProblem] = useState<string | null>(null);
   // A pick changes only when the person's own press changed it: an agent's pointer or keys here change nothing.
@@ -101,20 +105,20 @@ function Picks({ picks, alone }: { picks: ReturnType<typeof usePicks>; alone: Al
           <Switch testID="alone-switch" on={false} onChange={start} />
         </Setting>
         <Setting id="agents/work-alone-time" stack>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: SPACE.m }}>
             <Choices testID="alone-time" options={TIMES} value={time} onChange={(value) => mine(() => setTime(value))} />
             {time === "custom" && (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <View style={{ width: 56, height: 28, justifyContent: "center", paddingHorizontal: 8, borderRadius: 8, backgroundColor: surface.field }}>
-                  <TextInput
-                    testID="alone-custom"
-                    value={custom}
-                    onChangeText={(text) => mine(() => setCustom(text))}
-                    onSubmitEditing={start}
-                    style={{ flex: 1, fontSize: 12, color: colors.text, backgroundColor: "#00000000" }}
-                  />
-                </View>
-                <Text style={{ fontSize: 12, color: minutes === null ? colors.critical : colors.textMuted }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
+                <TextField
+                  look="panel"
+                  testID="alone-custom"
+                  label="Minutes"
+                  width={MINUTES_FIELD}
+                  value={custom}
+                  onChangeText={(text) => mine(() => setCustom(text))}
+                  onSubmit={start}
+                />
+                <Text style={{ fontSize: TYPE.panel.detail.size, color: minutes === null ? colors.critical : colors.textMuted }}>
                   {minutes === null ? `minutes, from 1 to ${ALONE_MAX_MINUTES}` : "minutes"}
                 </Text>
               </View>
@@ -172,7 +176,7 @@ function Records({ records, onShow }: { records: readonly AloneRecord[]; onShow?
             label={`${started.toLocaleDateString(prefs.locale, { month: "short", day: "numeric" })}, ${formatTime(started, prefs)} · ${elapsedText(record.ended - record.started)}`}
             detail={recordSummary(record)}
           >
-            {onShow && <Button testID={`alone-record-show:${record.started}`} label="Show" onPress={() => onShow(record)} />}
+            {onShow && <MiniButton testID={`alone-record-show:${record.started}`} label="Show" onPress={() => onShow(record)} />}
           </Item>
         );
       })}

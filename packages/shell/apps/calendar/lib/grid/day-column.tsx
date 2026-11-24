@@ -5,7 +5,7 @@
  * the half hour, a second click on it makes an hour-long event there.
  */
 
-import { useColors } from "@dashi/ui";
+import { pill, useColors } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { addDays, type Day, dayPart, type Local, minuteOfDay, type Occurrence } from "../../../../src/shared/calendar/index.ts";
 import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
@@ -46,20 +46,37 @@ export interface DayColumnProps {
 function HourLines() {
   const colors = useColors();
   return Array.from({ length: 24 }, (_, hour) => (
-    <View key={hour} style={{ height: HOUR_HEIGHT, flexShrink: 0, borderBottomWidth: 1, borderColor: colors.separator }} />
+    <View key={hour} style={{ height: HOUR_HEIGHT, flexShrink: 0, borderBottomWidth: RULE, borderColor: colors.separator }} />
   ));
 }
 
-/** The time now runs across every day shown, in kombu; today's has the dot. */
+/** The now line's dot on today's column, and the line: 2 thick there, 1 on the other days. */
+const NOW_DOT = 10;
+const NOW_LINE = { today: 2, other: 1 } as const;
+/** A half hour picked, washed in the accent (it is chosen); a new event being named keeps clear of its column's sides, and at least this tall. */
+const PICKED_WASH = 0.14;
+const PENDING = { left: 2, right: 4, least: 20 } as const;
+/** The hour rules. */
+const RULE = 1;
+
+/**
+ * The time now runs across every day shown, in ink (CO-2: the accent means
+ * chosen or on, never the time): today's line 2 thick in ink with its dot,
+ * the other days' 1 thick in muted ink, as today's mark in the heads is ink.
+ */
 function NowLine({ minutes, isToday }: { minutes: number; isToday: boolean }) {
   const colors = useColors();
   return (
     <View
       testID={isToday ? "now" : undefined}
-      style={{ position: "absolute", left: 0, right: 0, top: yAtMinutes(minutes) - 5, height: 10, justifyContent: "center" }}
+      style={{ position: "absolute", left: 0, right: 0, top: yAtMinutes(minutes) - NOW_DOT / 2, height: NOW_DOT, justifyContent: "center" }}
     >
-      <View style={{ height: isToday ? 2 : 1, backgroundColor: isToday ? colors.selection : tint(colors.selection, 0.45) }} />
-      {isToday && <View style={{ position: "absolute", left: -5, width: 10, height: 10, borderRadius: 5, backgroundColor: colors.selection }} />}
+      <View style={{ height: isToday ? NOW_LINE.today : NOW_LINE.other, backgroundColor: isToday ? colors.text : colors.textMuted }} />
+      {isToday && (
+        <View
+          style={{ position: "absolute", left: -NOW_DOT / 2, width: NOW_DOT, height: NOW_DOT, borderRadius: pill(NOW_DOT), backgroundColor: colors.text }}
+        />
+      )}
     </View>
   );
 }
@@ -83,13 +100,13 @@ export function DayColumn({ day, days, isToday, nowMinutes, prefs, occurrences, 
           ? handlers.begin({ kind: "create", x: info.x, y: info.y, day, minutes: minutesFor(info.y - (info.bounds?.y ?? info.y)) }, geometry)
           : handlers.track(info)
       }
-      style={{ flex: 1, minWidth: 0, height: GRID_HEIGHT, position: "relative", flexDirection: "column", borderLeftWidth: 1, borderColor: colors.separator }}
+      style={{ flex: 1, minWidth: 0, height: GRID_HEIGHT, position: "relative", flexDirection: "column", borderLeftWidth: RULE, borderColor: colors.separator }}
     >
       <HourLines />
       {day === selected && selectedSlot !== null && (
         <View
           testID="selected-slot"
-          style={{ position: "absolute", left: 0, right: 0, top: yAtMinutes(selectedSlot), height: HALF, backgroundColor: tint(colors.selection, 0.14) }}
+          style={{ position: "absolute", left: 0, right: 0, top: yAtMinutes(selectedSlot), height: HALF, backgroundColor: tint(colors.selection, PICKED_WASH) }}
         />
       )}
       {placed.map((each) => {
@@ -116,7 +133,7 @@ export function DayColumn({ day, days, isToday, nowMinutes, prefs, occurrences, 
           top={ghost.top}
           bottom={ghost.bottom}
           color={ghostColor}
-          title={drag?.occurrence ? titleOf(drag.occurrence.event) : "New Event"}
+          title={drag?.occurrence ? titleOf(drag.occurrence.event) : "New event"}
           times={timeSpan({ allDay: false }, preview.start, preview.end, prefs)}
         />
       )}
@@ -124,10 +141,10 @@ export function DayColumn({ day, days, isToday, nowMinutes, prefs, occurrences, 
         <View
           style={{
             position: "absolute",
-            left: 2,
-            right: 4,
+            left: PENDING.left,
+            right: PENDING.right,
             top: yAtMinutes(pendingHere.top),
-            height: Math.max(yAtMinutes(pendingHere.bottom - pendingHere.top) - 1, 20),
+            height: Math.max(yAtMinutes(pendingHere.bottom - pendingHere.top) - 1, PENDING.least),
           }}
         >
           <InlineTitle

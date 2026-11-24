@@ -6,13 +6,16 @@
  * draw with them.
  */
 
-import { KeyedText, Button as KitButton, Shortcut, type Surface, useControlColors } from "@dashi/ui";
+import { CLEAR, KeyedText, Button as KitButton, RADIUS, Shortcut, SPACE, type Surface, TYPE, useControlColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { Children, createContext, Fragment, isValidElement, type ReactNode, useContext, useMemo } from "react";
 import { CardRowsContext, cardRows } from "./edge.ts";
 
 /** A card's corner radius (Settings' PAGE.cardRadius). */
-export const CARD_RADIUS = 24;
+export const CARD_RADIUS = RADIUS.panelCard;
+
+/** Where a card's words start: its rows' edge, 16 in (SE-9; Settings' PAGE.inset). */
+export const CARD_INSET = SPACE.page;
 
 /** Whether the cards here are lit: a `cards` Spot was asked for (settings-app/spot.tsx). */
 export const CardLit = createContext(false);
@@ -25,9 +28,9 @@ export const CardLit = createContext(false);
  * (Settings' layout rules, test/settings-scroll.test.tsx). In a page,
  * whose height is its content's, nothing shrinks anyway.
  */
-export const TUCK = { marginTop: -4 } as const;
+export const TUCK = { marginTop: -SPACE.xs } as const;
 /** A space between two words of a caption at 11.5. */
-const CAPTION_SPACE = 3;
+const CAPTION = { space: 3, above: SPACE.s } as const;
 
 /** Settings' surfaces, from Control Center's tokens: a text field or a sunk list sits on the window's color. */
 export function useSurface(): Surface {
@@ -42,38 +45,62 @@ function rowsOf(children: ReactNode): ReactNode[] {
   );
 }
 
-/** A card of rows, a hairline between them; lit while a link to its section (a `cards` Spot) shows it. Its rows keep one left edge (edge.ts). */
-export function Group({ children, testID }: { children: ReactNode; testID?: string }) {
+/** Rows with a hairline between them. */
+function Hairlined({ rows }: { rows: ReactNode[] }) {
+  const colors = useControlColors();
+  return rows.map((row, index) => (
+    // The rows of a card never reorder.
+    <Fragment key={index}>
+      {index > 0 && <View style={{ height: 1, backgroundColor: colors.line }} />}
+      {row}
+    </Fragment>
+  ));
+}
+
+/** How a card's pressable rows are one Tab stop: a `listbox` you pick one row from, or a `list` of things. */
+export type RowListRole = "listbox" | "list";
+
+const focusGroupOf = (role: RowListRole | undefined) => (role !== undefined ? { focusGroup: true, accessibilityRole: role } : {});
+
+/**
+ * A card of rows, a hairline between them; lit while a link to its section
+ * (a `cards` Spot) shows it. Its rows keep one left edge (edge.ts). A card
+ * of pressable rows (`list`) is one Tab stop the arrows move through.
+ */
+export function Group({ children, testID, list }: { children: ReactNode; testID?: string; list?: RowListRole }) {
   const colors = useControlColors();
   const lit = useContext(CardLit);
-  const rows = rowsOf(children);
   const edge = useMemo(() => cardRows(testID ?? "card"), [testID]);
   return (
     <CardRowsContext.Provider value={edge}>
       <View
         {...(testID !== undefined ? { testID } : {})}
+        {...focusGroupOf(list)}
         style={{ flexShrink: 0, flexDirection: "column", borderRadius: CARD_RADIUS, backgroundColor: colors.off, overflow: "hidden" }}
       >
         {/* Always there, so lighting the card never remounts its rows. */}
-        <View style={{ flexDirection: "column", backgroundColor: lit ? colors.lit : "#00000000" }}>
-          {rows.map((row, index) => (
-            // The rows of a card never reorder.
-            <Fragment key={index}>
-              {index > 0 && <View style={{ height: 1, backgroundColor: colors.line }} />}
-              {row}
-            </Fragment>
-          ))}
+        <View style={{ flexDirection: "column", backgroundColor: lit ? colors.lit : CLEAR }}>
+          <Hairlined rows={rowsOf(children)} />
         </View>
       </View>
     </CardRowsContext.Provider>
   );
 }
 
+/** Some of a card's rows as one Tab stop (a list under a setting's row), hairlines kept between them. */
+export function RowList({ children, testID, role }: { children: ReactNode; testID?: string; role: RowListRole }) {
+  return (
+    <View {...(testID !== undefined ? { testID } : {})} {...focusGroupOf(role)} style={{ flexDirection: "column" }}>
+      <Hairlined rows={rowsOf(children)} />
+    </View>
+  );
+}
+
 /** A row whose label is data, not a setting (a login, a device); a form's field. Settings' own rows are `Setting`s. */
 
 /**
- * A heading over cards, or a sentence under them (tucked 4 closer to the
- * card, `TUCK`); `keys` draws a shortcut after it ("⌥❖D"). With keys the
+ * A heading over cards (11.5 SemiBold muted), or a sentence under them
+ * (tucked 4 closer to the card, `TUCK`), on the rows' 16 edge (SE-9); `keys` draws a shortcut after it ("⌥❖D"). With keys the
  * sentence is laid out a word at a time in a row that wraps, the last word
  * and the keys as one piece: in a narrow window the keys stay after the last
  * word, on its line, where a wrapped block of text left them floating at its
@@ -81,8 +108,8 @@ export function Group({ children, testID }: { children: ReactNode; testID?: stri
  */
 export function Caption({ children, above, keys }: { children: string; above?: boolean; keys?: string }) {
   const colors = useControlColors();
-  const text = { fontSize: 11.5, fontWeight: above ? "semibold" : "normal", color: colors.muted } as const;
-  const place = { ...(above ? ({ flexShrink: 0, marginTop: 6 } as const) : TUCK), paddingLeft: 10, paddingRight: 10 };
+  const text = { fontSize: TYPE.panel.detail.size, fontWeight: above ? WEIGHT.semibold : WEIGHT.regular, color: colors.muted } as const;
+  const place = { ...(above ? ({ flexShrink: 0, marginTop: CAPTION.above } as const) : TUCK), paddingLeft: CARD_INSET, paddingRight: CARD_INSET };
   if (!keys) {
     return (
       <View style={place}>
@@ -96,7 +123,7 @@ export function Caption({ children, above, keys }: { children: string; above?: b
   return (
     <View
       accessibilityLabel={`${children} ${keys}`}
-      style={{ ...place, flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: CAPTION_SPACE, rowGap: 0 }}
+      style={{ ...place, flexDirection: "row", flexWrap: "wrap", alignItems: "center", columnGap: CAPTION.space, rowGap: 0 }}
     >
       {words.map((word, index) => (
         // Words have no identity beyond their place in the sentence.
@@ -104,20 +131,20 @@ export function Caption({ children, above, keys }: { children: string; above?: b
           {word}
         </Text>
       ))}
-      <View testID="caption-keys" style={{ flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 0 }}>
+      <View testID="caption-keys" style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs, flexShrink: 0 }}>
         <Text style={text}>{last}</Text>
-        <Shortcut keys={keys} color={colors.muted} size={11} />
+        <Shortcut keys={keys} color={colors.muted} size={TYPE.caption.size} />
       </View>
     </View>
   );
 }
 
-/** A line of explanation, or of nothing to show. */
+/** A card's "nothing here" or "still looking" (SE-9): never a failure, which is `Failure`. */
 export function Note({ children, testID }: { children: string; testID?: string }) {
   const colors = useControlColors();
   return (
-    <View {...(testID !== undefined ? { testID } : {})} style={{ padding: 16, alignItems: "center" }}>
-      <Text style={{ fontSize: 12, color: colors.muted, textAlign: "center" }}>{children}</Text>
+    <View {...(testID !== undefined ? { testID } : {})} style={{ padding: CARD_INSET, alignItems: "center" }}>
+      <Text style={{ fontSize: TYPE.secondary.size, color: colors.muted, textAlign: "center" }}>{children}</Text>
     </View>
   );
 }

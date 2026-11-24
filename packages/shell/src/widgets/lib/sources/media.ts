@@ -13,7 +13,8 @@ const ROOT = "org.mpris.MediaPlayer2";
 const PLAYER = "org.mpris.MediaPlayer2.Player";
 const PATH = "/org/mpris/MediaPlayer2";
 const PREFIX = "org.mpris.MediaPlayer2.";
-const LOOK_MS = 10_000;
+/** Timers (not design motion, tokens.md): how often the player is looked at. */
+const TIMERS = { look: 10_000 } as const;
 
 export interface Playing {
   /** The player's bus name, where commands go. */
@@ -90,7 +91,7 @@ export class Media extends Source<Playing | null> {
   start(): () => void {
     const look = () => void this.look().catch(() => {});
     look();
-    const timer = setInterval(look, LOOK_MS);
+    const timer = setInterval(look, TIMERS.look);
     return () => {
       clearInterval(timer);
       for (const each of this.players.values()) void each.stop?.();

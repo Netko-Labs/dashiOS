@@ -4,7 +4,7 @@
  * file is dragged over the window.
  */
 
-import { useColors } from "@dashi/ui";
+import { RADIUS, SPACE, useColors } from "@dashi/ui";
 import { type Bounds, type DropInfo, View } from "@mirinjs/metal";
 import { useState } from "react";
 import type { Day, Occurrence } from "../../../../src/shared/calendar/index.ts";
@@ -14,6 +14,9 @@ import type { Grid } from "../hooks/use-grid.ts";
 import { isIcsPath } from "../import.ts";
 import type { CalendarState } from "../state.ts";
 import { MonthView } from "./month-view.tsx";
+
+/** The edge round the content while an .ics file is over it: it will be taken (chosen). */
+const DROP_EDGE = 2;
 
 /** An .ics file dragged over the window: whether one is over it now, and its import when it is let go. */
 function useIcsDrop(importPath: (path: string) => void): { dropping: boolean; onDrop: (drop: DropInfo) => void } {
@@ -81,7 +84,16 @@ export function CalendarContent({
       {dropping && (
         <View
           testID="drop-target"
-          style={{ position: "absolute", left: 4, top: 4, right: 4, bottom: 4, borderRadius: 8, borderWidth: 2, borderColor: colors.selection }}
+          style={{
+            position: "absolute",
+            left: SPACE.xs,
+            top: SPACE.xs,
+            right: SPACE.xs,
+            bottom: SPACE.xs,
+            borderRadius: RADIUS.control,
+            borderWidth: DROP_EDGE,
+            borderColor: colors.selection,
+          }}
         />
       )}
     </View>

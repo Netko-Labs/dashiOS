@@ -4,7 +4,7 @@
  * overlay surface (no keyboard) a little above the bottom edge's center.
  */
 
-import { useColors } from "@dashi/ui";
+import { pill, RADIUS, SHADOW, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { type NativeHostOptions, render, Svg, Text, View } from "@mirinjs/metal";
 import { type BottomStack, bottomStack } from "../../capsule/index.ts";
 import { batteryGlyph, micGlyph, SUN, speakerGlyph, trackpadGlyph } from "../../glyphs.ts";
@@ -12,7 +12,7 @@ import { keyboardLightGlyph, modeGlyph } from "../../laptop/index.ts";
 import { spawnShellHost } from "../../shared/metal/index.ts";
 import { litSegments, type OpenOsd, OSD, type OsdState, type OsdStore, useOsd } from "../osd-state.ts";
 
-const SEGMENT = { width: 8, height: 6, gap: 2 } as const;
+const SEGMENT = { width: 8, height: 6, gap: SPACE.xxs } as const;
 
 function glyphOf(state: OsdState): string {
   switch (state.kind) {
@@ -74,12 +74,13 @@ export function OsdPanel({ store }: { store: OsdStore }) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "flex-end",
-          paddingBottom: 26,
-          borderRadius: 26,
+          paddingBottom: SPACE.xl,
+          // The soft family (RA-2): 28; a HUD over the desktop floats on lg (DE-1).
+          borderRadius: RADIUS.panel,
           backgroundColor: colors.osd,
           borderWidth: 1,
           borderColor: colors.dockBorder,
-          shadow: "xl",
+          shadow: SHADOW.lg,
         }}
       >
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -90,14 +91,18 @@ export function OsdPanel({ store }: { store: OsdStore }) {
             <Svg markup={glyphOf(state)} size={96} color={colors.text} />
           )}
         </View>
-        {caption(state) !== null ? <Text style={{ fontSize: 14, fontWeight: "semibold", color: colors.text }}>{caption(state)}</Text> : <LevelBar lit={lit} />}
+        {caption(state) !== null ? (
+          <Text style={{ fontSize: TYPE.panel.name.size, fontWeight: WEIGHT.semibold, color: colors.text }}>{caption(state)}</Text>
+        ) : (
+          <LevelBar lit={lit} />
+        )}
       </View>
     </View>
   );
 }
 
 /** The small indicator's measures: the capsule's height, a glyph, the level. */
-export const SMALL_OSD = { height: 31, width: 196, glyph: 15, segment: 6, gap: 2, margin: 12, above: 8 } as const;
+export const SMALL_OSD = { height: 31, width: 196, glyph: 15, segment: 6, gap: SPACE.xxs, margin: SPACE.inset, above: 8 } as const;
 
 /** The indicator drawn small, for while the capsule or the card has the bottom centre (pill-v2 README, "Where it sits"): one row, above it. */
 export function SmallOsdPanel({ store }: { store: OsdStore }) {
@@ -113,26 +118,31 @@ export function SmallOsdPanel({ store }: { store: OsdStore }) {
           height: SMALL_OSD.height,
           flexDirection: "row",
           alignItems: "center",
-          gap: 8,
-          paddingLeft: 12,
-          paddingRight: 12,
-          borderRadius: SMALL_OSD.height / 2,
+          gap: SPACE.m,
+          paddingLeft: SPACE.inset,
+          paddingRight: SPACE.inset,
+          borderRadius: pill(SMALL_OSD.height),
           backgroundColor: colors.osd,
           borderWidth: 1,
           borderColor: colors.dockBorder,
-          shadow: "lg",
+          shadow: SHADOW.lg,
         }}
       >
         <Svg markup={glyphOf(state)} size={SMALL_OSD.glyph} color={colors.text} />
         {words !== null ? (
-          <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>{words}</Text>
+          <Text style={{ fontSize: TYPE.secondary.size, fontWeight: WEIGHT.semibold, color: colors.text }}>{words}</Text>
         ) : (
           <View style={{ flexDirection: "row", gap: SMALL_OSD.gap }}>
             {Array.from({ length: OSD.segments }, (_, index) => (
               // The segments never reorder.
               <View
                 key={index}
-                style={{ width: SMALL_OSD.segment, height: SMALL_OSD.segment, borderRadius: 1.5, backgroundColor: index < lit ? colors.osdOn : colors.osdOff }}
+                style={{
+                  width: SMALL_OSD.segment,
+                  height: SMALL_OSD.segment,
+                  borderRadius: RADIUS.thumb,
+                  backgroundColor: index < lit ? colors.osdOn : colors.osdOff,
+                }}
               />
             ))}
           </View>

@@ -128,7 +128,8 @@ test("at the largest text size the rows grow with their type", async () => {
   const big = await mount({ entries: [FILES, app("Firefox")] });
   await big.type("f");
   expect(big.tree()).toContain('"height":60');
-  expect(big.tree()).toContain('"size":26');
+  // The field's 17 at 1.5, to the half point (typeAt, TY-3).
+  expect(big.tree()).toContain('"size":25.5');
 });
 
 test("pictures already shown hide the moment their frames move, and show again once the frames hold still", () => {

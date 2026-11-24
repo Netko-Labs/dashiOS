@@ -10,10 +10,10 @@
  * recording the screen" in the toolbar instead of closing it on nothing.
  */
 
-import { buttonLook, useColors } from "@dashi/ui";
-import { Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { Button, type Choice, GlyphButton, RADIUS, Segmented, SPACE, TYPE, useColors } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import type { OpenOverlay, OverlayHandle } from "../../overlay.tsx";
+import { KeyCatcher, type OpenOverlay, type OverlayHandle } from "../../overlay.tsx";
 import { CLOSE, CAPTURE_GLYPHS as GLYPHS, MICROPHONE } from "../glyphs.ts";
 import type { CaptureMode } from "../types.ts";
 
@@ -36,49 +36,22 @@ const TITLES: Record<CaptureMode, string> = {
 
 export const isRecording = (mode: CaptureMode): boolean => mode === "record-screen" || mode === "record-area";
 
+/** The toolbar's row, and a divider's height in it. */
 const WIDTH = 600;
 const HEIGHT = 48;
+const DIVIDER = 22;
 
 export interface ToolbarChoice {
   mode: CaptureMode;
   microphone: boolean;
 }
 
-/** One of the toolbar's glyph buttons; the chosen mode's is filled. */
-function ToolButton({ testID, chosen, glyph, onPress }: { testID: string; chosen: boolean; glyph: string; onPress: () => void }) {
-  const colors = useColors();
-  return (
-    <View
-      testID={testID}
-      onPress={onPress}
-      style={{
-        width: 34,
-        height: 30,
-        borderRadius: 7,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: chosen ? colors.selection : "#00000000",
-        hoverBackgroundColor: chosen ? colors.selection : colors.button,
-      }}
-    >
-      <Svg markup={glyph} size={18} color={chosen ? colors.onAccent : colors.text} />
-    </View>
-  );
-}
-
-/** The button that does it: Capture, or Record. */
-function GoButton({ label, onPress }: { label: string; onPress: () => void }) {
-  const look = buttonLook(useColors(), "primary");
-  return (
-    <View
-      testID="capture-toolbar:go"
-      onPress={onPress}
-      style={{ height: 30, paddingHorizontal: 14, borderRadius: 7, justifyContent: "center", backgroundColor: look.fill, hoverBackgroundColor: look.hover }}
-    >
-      <Text style={{ fontSize: 13, fontWeight: "semibold", color: look.ink }}>{label}</Text>
-    </View>
-  );
-}
+/** The five modes, one pick (UI-2): glyph segments named by what they capture. */
+const MODES: ReadonlyArray<Choice<CaptureMode>> = (["screen", "window", "area", "record-screen", "record-area"] as const).map((mode) => ({
+  value: mode,
+  label: TITLES[mode],
+  glyph: GLYPHS[mode],
+}));
 
 function Toolbar({
   initial,
@@ -103,10 +76,9 @@ function Toolbar({
     setNotice(null);
     setMode(next);
   };
-  const button = (key: string, chosen: boolean, glyph: string, onPress: () => void, testID: string) => (
-    <ToolButton key={key} testID={testID} chosen={chosen} glyph={glyph} onPress={onPress} />
+  const divider = (key: string) => (
+    <View key={key} style={{ width: 1, height: DIVIDER, backgroundColor: colors.separator, marginLeft: SPACE.xs, marginRight: SPACE.xs }} />
   );
-  const divider = (key: string) => <View key={key} style={{ width: 1, height: 22, backgroundColor: colors.separator, marginLeft: 4, marginRight: 4 }} />;
   return (
     <View
       testID="capture-toolbar"
@@ -115,41 +87,33 @@ function Toolbar({
         height: HEIGHT,
         flexDirection: "row",
         alignItems: "center",
-        gap: 2,
-        paddingHorizontal: 8,
-        borderRadius: 12,
+        gap: SPACE.xxs,
+        paddingHorizontal: SPACE.m,
+        borderRadius: RADIUS.sheet,
         backgroundColor: colors.menu,
         borderWidth: 1,
         borderColor: colors.separator,
       }}
     >
-      {/* Keys reach Metal only through a focused text input. */}
-      <View style={{ position: "absolute", left: 0, top: 0, width: 1, height: 1, opacity: 0, overflow: "hidden" }}>
-        <TextInput
-          value=""
-          autoFocus
-          onSubmitEditing={go}
-          onKeyPress={(key) => {
-            if (key === "Escape") onDone(null);
-          }}
-          style={{ width: 1, height: 1, backgroundColor: "#00000000" }}
-        />
-      </View>
-      {button("close", false, CLOSE, () => onDone(null), "capture-toolbar:close")}
+      <KeyCatcher onKey={(key) => key === "Escape" && onDone(null)} onSubmit={go} />
+      <GlyphButton testID="capture-toolbar:close" glyph={CLOSE} label="Close" onPress={() => onDone(null)} />
       {divider("d1")}
-      {(["screen", "window", "area"] as const).map((each) => button(each, mode === each, GLYPHS[each], () => choose(each), `capture-toolbar:${each}`))}
+      <Segmented testID="capture-toolbar-mode" options={MODES} value={mode} onChange={choose} />
       {divider("d2")}
-      {(["record-screen", "record-area"] as const).map((each) => button(each, mode === each, GLYPHS[each], () => choose(each), `capture-toolbar:${each}`))}
-      {divider("d3")}
-      <View style={{ opacity: isRecording(mode) ? 1 : 0.35 }}>
-        {button("microphone", microphone && isRecording(mode), MICROPHONE, () => isRecording(mode) && setMicrophone(!microphone), "capture-toolbar:microphone")}
-      </View>
-      <View testID="capture-toolbar:title" style={{ flex: 1, minWidth: 0, marginLeft: 6 }}>
-        <Text numberOfLines={1} style={{ fontSize: 11.5, color: notice ? colors.text : colors.textMuted }}>
+      <GlyphButton
+        testID="capture-toolbar:microphone"
+        glyph={MICROPHONE}
+        label="Record with the microphone"
+        on={microphone && isRecording(mode)}
+        disabled={!isRecording(mode)}
+        onPress={() => setMicrophone(!microphone)}
+      />
+      <View testID="capture-toolbar:title" style={{ flex: 1, minWidth: 0, marginLeft: SPACE.s }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: notice ? colors.text : colors.textMuted }}>
           {notice ?? (isRecording(mode) ? `${TITLES[mode]}${microphone ? ", with sound" : ""}` : TITLES[mode])}
         </Text>
       </View>
-      <GoButton label={ACTION[mode]} onPress={go} />
+      <Button testID="capture-toolbar:go" label={ACTION[mode]} primary onPress={go} />
     </View>
   );
 }

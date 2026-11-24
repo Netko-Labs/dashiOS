@@ -1,5 +1,6 @@
 /** Timer (wakame): the time left large, thickening as it nears zero (#14); Pause, +1 min, and a quick start when none runs. */
 
+import { SPACE } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { DotRow } from "../../../shared/inks/index.ts";
 import { countdownText, useSecondTick } from "../../../tally/index.ts";
@@ -39,21 +40,21 @@ export function TimerFace({ timer, size, air, live }: { timer: Timer; size: Widg
   );
   if (live || size === "wide")
     return (
-      <View style={{ flexDirection: "column", gap: 6 }}>
+      <View style={{ flexDirection: "column", gap: SPACE.s }}>
         <Head
           left={
-            <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+            <View style={{ flexDirection: "row", gap: SPACE.m, alignItems: "center" }}>
               <Lab>{timer.label === "Timer" ? "Timer" : `Timer · ${timer.label}`}</Lab>
               <Meta>{ends}</Meta>
             </View>
           }
           right={air ? <NowTag tally={inks.tally} /> : null}
         />
-        <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-end" }}>
+        <View style={{ flexDirection: "row", gap: SPACE.button, alignItems: "flex-end" }}>
           <Num value={countdownText(timer.endsAt ?? now + left, now)} size={46} weight={weight} />
-          <View style={{ flex: 1, flexDirection: "column", gap: 8 }}>
+          <View style={{ flex: 1, flexDirection: "column", gap: SPACE.m }}>
             <DotRow count={28} value={share} pitch={7.1} radius={0.32} lit={c.value} unlit={c.off} />
-            <View style={{ flexDirection: "row", gap: 6 }}>
+            <View style={{ flexDirection: "row", gap: SPACE.s }}>
               {buttons}
               <Grow />
               <Btn icon="x" round onPress={() => timers?.stop(timer.id)} testID="timer-close" />
@@ -71,7 +72,7 @@ export function TimerFace({ timer, size, air, live }: { timer: Timer; size: Widg
         <>
           <Grow />
           <DotRow count={20} value={share} pitch={7.2} radius={0.32} lit={c.value} unlit={c.off} />
-          <View style={{ flexDirection: "row", gap: 6, marginTop: 10 }}>{buttons}</View>
+          <View style={{ flexDirection: "row", gap: SPACE.s, marginTop: SPACE.gap }}>{buttons}</View>
         </>
       )}
     </>
@@ -89,7 +90,7 @@ export function TimerWidget({ size }: { size: WidgetSize }) {
       <Head left={<Lab>Timer</Lab>} />
       <Grow />
       <Words>Start one</Words>
-      <View style={{ flexDirection: "row", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+      <View style={{ flexDirection: "row", gap: SPACE.s, marginTop: SPACE.m, flexWrap: "wrap" }}>
         {QUICK_TIMERS.slice(0, size === "compact" ? 2 : 4).map((minutes) => (
           <Btn key={minutes} label={`${minutes} min`} onPress={() => hub?.timers.start("Timer", minutes)} testID={`timer-start:${minutes}`} />
         ))}

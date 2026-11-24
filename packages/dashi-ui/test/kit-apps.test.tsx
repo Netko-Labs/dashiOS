@@ -81,8 +81,8 @@ test("Sheet, tall and bare: the window's ground, no padding, its height giving w
 test("SearchField with crumbs: at rest the box holds them and is one Tab stop; editing, it fills its row with its tools at the end", async () => {
   const { node, root } = await sent(
     <View>
-      <SearchField testID="rest" value="" onChangeText={noop} fill rest={<View testID="crumbs" />} restLabel="Path" onPressRest={noop} />
-      <SearchField testID="edit" value="rep" onChangeText={noop} fill minWidth={96} accessory={<View testID="scope" />} />
+      <SearchField testID="rest" value="" onChangeText={noop} width="fill" rest={<View testID="crumbs" />} restLabel="Path" onPressRest={noop} />
+      <SearchField testID="edit" value="rep" onChangeText={noop} width="fill" minWidth={96} accessory={<View testID="scope" />} />
     </View>,
   );
   expect(node("rest")?.props).toMatchObject({ focusable: true, access: { role: "button", label: "Path" } });

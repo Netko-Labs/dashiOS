@@ -4,8 +4,8 @@
  * `--checkbox` adds a box to tick before OK is enabled (a license to accept).
  */
 
-import { glyphs, useColors, useSurface } from "@dashi/ui";
-import { ScrollView, Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { Checkbox, RADIUS, SPACE, TextArea, TYPE, useColors, useSurface } from "@dashi/ui";
+import { ScrollView, Text } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { type Answer, DialogFrame, standardButtons } from "./frame.tsx";
 import type { TextInfoSpec } from "./spec.ts";
@@ -31,30 +31,7 @@ function useSource(filename: string | null): string {
   return text;
 }
 
-function Checkbox({ label, on, onToggle }: { label: string; on: boolean; onToggle: () => void }) {
-  const colors = useColors();
-  return (
-    <View testID="dialog:checkbox" onPress={onToggle} style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 0 }}>
-      <View
-        style={{
-          width: 16,
-          height: 16,
-          borderRadius: 4,
-          borderWidth: on ? 0 : 1.5,
-          borderColor: colors.checkbox,
-          backgroundColor: on ? colors.selection : "#00000000",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {on && <Svg markup={glyphs.CHECK} size={12} color={colors.onAccent} />}
-      </View>
-      <Text style={{ fontSize: 13, color: colors.text }}>{label}</Text>
-    </View>
-  );
-}
-
-export function TextInfoDialog({ spec, answer }: { spec: TextInfoSpec; answer: Answer }) {
+export function TextInfoView({ spec, answer }: { spec: TextInfoSpec; answer: Answer }) {
   const colors = useColors();
   const surface = useSurface();
   const source = useSource(spec.filename);
@@ -71,39 +48,29 @@ export function TextInfoDialog({ spec, answer }: { spec: TextInfoSpec; answer: A
     onOk: ok,
     okDisabled: spec.checkbox !== null && !accepted,
   });
-  const pane = { flex: 1, minHeight: 0, borderRadius: 8, borderWidth: 1, borderColor: colors.separator, backgroundColor: surface.card };
+  const pane = { flex: 1, minHeight: 0, borderRadius: RADIUS.control, borderWidth: 1, borderColor: colors.separator, backgroundColor: surface.card };
   return (
     <DialogFrame title={spec.title} buttons={buttons} onCancel={() => answer(1)} keys={!spec.editable}>
       {spec.editable ? (
-        <TextInput
+        <TextArea
           testID="dialog:text-info"
           value={text}
-          multiline
+          label={spec.title}
+          small
           autoFocus
           onChangeText={setEdited}
           onKeyPress={(key) => key === "Escape" && answer(1)}
-          style={{
-            flex: 1,
-            minHeight: 0,
-            borderRadius: 8,
-            borderColor: colors.separator,
-            backgroundColor: surface.card,
-            padding: 8,
-            fontSize: 12,
-            color: colors.text,
-            focusBorderColor: colors.focusRing,
-          }}
         />
       ) : (
-        <ScrollView testID="dialog:text-info" style={{ ...pane, flexDirection: "column", padding: 8 }}>
+        <ScrollView testID="dialog:text-info" style={{ ...pane, flexDirection: "column", padding: SPACE.m }}>
           {text.split("\n").map((line, index) => (
-            <Text key={index} style={{ fontSize: 12, color: colors.text, lineHeight: 16 }}>
+            <Text key={index} style={{ fontSize: TYPE.secondary.size, color: colors.text, lineHeight: TYPE.secondary.line }}>
               {line === "" ? " " : line}
             </Text>
           ))}
         </ScrollView>
       )}
-      {spec.checkbox !== null && <Checkbox label={spec.checkbox} on={accepted} onToggle={() => setAccepted((now) => !now)} />}
+      {spec.checkbox !== null && <Checkbox testID="dialog:checkbox" label={spec.checkbox} checked={accepted} onChange={setAccepted} />}
     </DialogFrame>
   );
 }

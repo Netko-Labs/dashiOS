@@ -10,6 +10,8 @@ export const LOGO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"
 export const CLEAR = svg(`<circle cx="8" cy="8" r="6.2" stroke="#000" stroke-width="1.3" fill="none"/>${stroke("M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2", 1.4)}`);
 /** An x: dismiss a notice. */
 export const CLOSE = svg(stroke("M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6", 1.6));
+/** A plus: add one more (the overview's new Desktop). */
+export const ADD = svg(stroke("M8 3.2v9.6M3.2 8h9.6", 1.6));
 export const CHEVRON_UP = svg(stroke("M4.5 10l3.5-3.5 3.5 3.5", 1.6));
 export const CHEVRON_DOWN = svg(stroke("M4.5 6.5l3.5 3.5 3.5-3.5", 1.6));
 /** Three dots: "More" where there is no room for the word (a toolbar's, the menu bar's, a row's). One glyph everywhere. */

@@ -3,11 +3,11 @@
  * Center"): the tile it was opened from becomes the page's header (back,
  * name, what it is set to, its switch) and grows from where the tile was to
  * the panel's width; the rows under it are 48-point pills that fade in. A
- * chosen row is "on", so it is green, as a tile is. The Wi-Fi, Bluetooth,
+ * chosen row is "on", so it wears the one on, as a tile does. The Wi-Fi, Bluetooth,
  * Sound, power mode, keyboard light and graphics pages are built from these.
  */
 
-import { useColors, useControlColors, useGrow } from "@dashi/ui";
+import { KnobButton, OPACITY, PANEL_SWITCH, pill, RADIUS, SPACE, Switch, TILE, TYPE, useColors, useControlColors, useGrow, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext } from "react";
 import { AppIcon } from "../shared/apps/index.ts";
@@ -20,32 +20,24 @@ export const PageOrigin = createContext<{ left: number; top: number; width: numb
 
 const INNER = GRID.width - 2 * GRID.padding;
 
-/** The header's switch: 42 × 24, its knob at the right when on. */
-function HeaderSwitch({ testID, label, on, onChange }: { testID: string; label: string; on: boolean; onChange: (on: boolean) => void }) {
+/** A page row: 48 tall, its knob 36 holding a 16 glyph or a 22 app icon. */
+export const PAGE_ROW = { height: 48, knob: 36, glyph: 16, icon: 22 } as const;
+
+/**
+ * The header's switch: the kit's panel switch, lit on a lit header; the
+ * page's keys reach it, so its ring is Metal's, shown by them (KB-2).
+ */
+function HeaderOnOff({ testID, label, on, lit, onChange }: { testID: string; label: string; on: boolean; lit: boolean; onChange: (on: boolean) => void }) {
   const colors = useControlColors();
   const key = usePageKey(testID, () => onChange(!on));
   return (
     <View
       testID={testID}
-      onPress={() => onChange(!on)}
       onLayout={key.onLayout}
-      accessibilityRole="switch"
-      accessibilityLabel={label}
-      accessibilityState={{ checked: on }}
       focusRingShown={key.focused}
-      style={{
-        width: 42,
-        height: 24,
-        borderRadius: 12,
-        padding: 3,
-        flexDirection: "row",
-        justifyContent: on ? "flex-end" : "flex-start",
-        backgroundColor: on ? colors.onInk : colors.line,
-        position: "relative",
-        focusRingColor: colors.focus,
-      }}
+      style={{ borderRadius: pill(PANEL_SWITCH.height), focusRingColor: colors.focus }}
     >
-      <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: on ? colors.on : colors.offInk }} />
+      <Switch testID={`${testID}:control`} look="panel" lit={lit} label={label} on={on} focusable={false} onChange={onChange} />
     </View>
   );
 }
@@ -75,43 +67,28 @@ export function PageHeader({ testID, title, detail, on, onBack, toggle }: PageHe
         width: Math.round(from.width + (INNER - from.width) * grow),
         left: Math.round(from.left * (1 - grow)),
         top: Math.round(from.top * (1 - grow)),
-        marginBottom: 10,
+        marginBottom: SPACE.gap,
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
-        paddingLeft: 6,
-        paddingRight: 14,
-        borderRadius: on ? 18 : GRID.radius,
+        gap: SPACE.gap,
+        paddingLeft: SPACE.s,
+        paddingRight: SPACE.button,
+        borderRadius: on ? TILE.radius.on : TILE.radius.off,
         backgroundColor: on ? colors.on : colors.off,
       }}
     >
-      <View
-        testID={`${testID}-back`}
-        onPress={onBack}
-        accessibilityRole="button"
-        accessibilityLabel="Back"
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: 22,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: on ? colors.knobOn : colors.knobOff,
-        }}
-      >
-        <Svg markup={BACK} size={18} color={ink} />
-      </View>
+      <KnobButton testID={`${testID}-back`} glyph={BACK} label="Back" size={TILE.knob} lit={on} onPress={onBack} />
       <View style={{ flex: 1, flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: ink }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: ink }}>
           {title}
         </Text>
         {detail ? (
-          <Text numberOfLines={1} style={{ fontSize: 11, color: ink, opacity: 0.74 }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: ink, opacity: OPACITY.soft }}>
             {detail}
           </Text>
         ) : null}
       </View>
-      {toggle && <HeaderSwitch testID={`${testID}-switch`} label={title} on={toggle.on} onChange={toggle.onChange} />}
+      {toggle && <HeaderOnOff testID={`${testID}-switch`} label={title} on={toggle.on} lit={on} onChange={toggle.onChange} />}
     </View>
   );
 }
@@ -120,7 +97,7 @@ export function PageHeader({ testID, title, detail, on, onBack, toggle }: PageHe
 export function PageBody({ children, testID }: { children: ReactNode; testID?: string }) {
   const grow = Math.min(useGrow(), 1);
   return (
-    <View testID={testID} style={{ flexDirection: "column", gap: 6, opacity: Math.max(grow, 0) }}>
+    <View testID={testID} style={{ flexDirection: "column", gap: SPACE.s, opacity: Math.max(grow, 0) }}>
       {children}
     </View>
   );
@@ -137,7 +114,7 @@ export interface PageRowProps {
   detail?: string | null;
   /** Small glyphs at the right (a lock, the signal). */
   trailing?: ReactNode;
-  /** The row chosen (a mode, a level, an output): green, as a tile that is on. */
+  /** The row chosen (a mode, a level, an output): the one on, as a tile that is on. */
   checked?: boolean;
   onPress?: () => void;
 }
@@ -146,7 +123,7 @@ export function PageRow({ testID, label, glyph, icon, detail, trailing, checked 
   const colors = useControlColors();
   const ink = checked ? colors.onInk : colors.offInk;
   const key = usePageKey(testID, onPress);
-  const radius = checked ? 18 : 24;
+  const radius = checked ? TILE.radius.on : RADIUS.panelCard;
   return (
     <View
       testID={testID}
@@ -156,12 +133,12 @@ export function PageRow({ testID, label, glyph, icon, detail, trailing, checked 
       accessibilityState={{ checked }}
       focusRingShown={key.focused}
       style={{
-        height: 48,
+        height: PAGE_ROW.height,
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
-        paddingLeft: glyph || icon ? 6 : 16,
-        paddingRight: 14,
+        gap: SPACE.gap,
+        paddingLeft: glyph || icon ? SPACE.s : SPACE.page,
+        paddingRight: SPACE.button,
         borderRadius: radius,
         backgroundColor: checked ? colors.on : colors.off,
         position: "relative",
@@ -171,25 +148,29 @@ export function PageRow({ testID, label, glyph, icon, detail, trailing, checked 
       {(glyph || icon) && (
         <View
           style={{
-            width: 36,
-            height: 36,
-            borderRadius: 18,
+            width: PAGE_ROW.knob,
+            height: PAGE_ROW.knob,
+            borderRadius: pill(PAGE_ROW.knob),
             alignItems: "center",
             justifyContent: "center",
             backgroundColor: checked ? colors.knobOn : colors.knobOff,
           }}
         >
-          {icon ? <AppIcon source={icon} style={{ width: 22, height: 22 }} /> : <Svg markup={glyph ?? ""} size={16} color={ink} />}
+          {icon ? (
+            <AppIcon source={icon} style={{ width: PAGE_ROW.icon, height: PAGE_ROW.icon }} />
+          ) : (
+            <Svg markup={glyph ?? ""} size={PAGE_ROW.glyph} color={ink} />
+          )}
         </View>
       )}
       <View style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, color: ink }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: ink }}>
           {label}
         </Text>
       </View>
       {(detail || trailing) && (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, opacity: 0.7 }}>
-          {detail && <Text style={{ fontSize: 11, color: ink }}>{detail}</Text>}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s, opacity: OPACITY.soft }}>
+          {detail && <Text style={{ fontSize: TYPE.caption.size, color: ink }}>{detail}</Text>}
           {trailing}
         </View>
       )}
@@ -201,9 +182,14 @@ export function PageRow({ testID, label, glyph, icon, detail, trailing, checked 
 export function PageSection({ children, trailing }: { children: string; trailing?: ReactNode }) {
   const colors = useControlColors();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", paddingLeft: 8, paddingRight: 8, paddingTop: 4, paddingBottom: 0 }}>
-      <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.muted }}>{children}</Text>
-      {trailing && <View style={{ marginLeft: "auto" }}>{trailing}</View>}
+    <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: SPACE.m, paddingTop: SPACE.xs }}>
+      <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.muted }}>{children}</Text>
+      {trailing && (
+        <>
+          <View style={{ flex: 1 }} />
+          {trailing}
+        </>
+      )}
     </View>
   );
 }
@@ -213,8 +199,8 @@ export function PageNote({ children, testID, tone = "muted" }: { children: strin
   const colors = useControlColors();
   const { ume } = useColors();
   return (
-    <View testID={testID} style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 4, paddingBottom: 4 }}>
-      <Text style={{ fontSize: 11, color: tone === "critical" ? ume : colors.muted }}>{children}</Text>
+    <View testID={testID} style={{ paddingHorizontal: SPACE.m, paddingVertical: SPACE.xs }}>
+      <Text style={{ fontSize: TYPE.caption.size, color: tone === "critical" ? ume : colors.muted }}>{children}</Text>
     </View>
   );
 }

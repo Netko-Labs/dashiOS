@@ -72,7 +72,7 @@ const WIDEST_ROW = 8 + PAGE.knob + 12 + PAGE.words + 12 + INK_SLIDER.width + 16;
 export const SETTINGS_WINDOW = {
   width: 920,
   height: 640,
-  minWidth: SIDEBAR.width + 2 * PAGE.margin + WIDEST_ROW,
+  minWidth: SIDEBAR.width + 2 * PAGE.sides + WIDEST_ROW,
   minHeight: 300,
 } as const;
 

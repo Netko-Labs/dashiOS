@@ -5,9 +5,9 @@
  * that may be open closes first: it would only sit in the way.
  */
 
-import { SHEET_SIZE } from "../menus/sheets.tsx";
+import { sheetSurfaceWidth } from "../menus/sheets.tsx";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
-import { PairingSheet } from "./lib/sheet.tsx";
+import { PairingQuestions } from "./lib/sheet.tsx";
 import type { BluetoothStore } from "./store.ts";
 
 export class PairingPrompt {
@@ -38,11 +38,11 @@ export class PairingPrompt {
     const handle: OverlayHandle = this.open(
       {
         title: "Bluetooth pairing",
-        width: SHEET_SIZE.width + 2 * SHEET_SIZE.margin,
+        width: sheetSurfaceWidth(),
         height: 330,
         surface: { layer: "overlay", keyboard: "exclusive", namespace: "dashi.bluetooth-pairing" },
       },
-      <PairingSheet bluetooth={this.bluetooth} />,
+      <PairingQuestions bluetooth={this.bluetooth} />,
       () => {
         // The host went by itself: the question is unanswered, so the answer is no.
         if (this.current !== handle) return;

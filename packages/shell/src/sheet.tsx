@@ -4,9 +4,11 @@
  * Help menu there is no ❖ to release, so it closes on a click or Esc.
  * An app that publishes its menus (app-menus/) gets its own shortcuts in the
  * app column, as the Mac lists a menu's keys; any other app, the standard ones.
+ * Drawn on the kit's sheet card (radius 12, solid, RA-2), its title 13 Bold
+ * as every sheet's (CD-2), its column heads captions (600, sentence case).
  */
 
-import { Shortcut, useColors } from "@dashi/ui";
+import { SheetCard, Shortcut, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { KeyCatcher } from "./overlay.tsx";
 import type { PublishedMenus } from "./shared/app-menus/index.ts";
@@ -32,6 +34,10 @@ const WINDOW_KEYS: Rows = [
   ["Hide", "❖H"],
   ["Quit", "❖Q"],
 ];
+/** A shortcut's row, and the room between the columns. */
+const ROW = 22;
+const COLUMN_GAP = 22;
+
 /** Rows a column holds at most, so the sheet never grows. */
 export const MAX_ROWS = 11;
 
@@ -115,45 +121,33 @@ export function ShortcutSheet({ appName, published = null, onClose }: { appName:
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }} onPress={onClose}>
       {onClose && <KeyCatcher onKey={(key) => key === "Escape" && onClose()} />}
-      <View
-        style={{
-          width: SHEET.width,
-          flexDirection: "column",
-          gap: 14,
-          padding: 20,
-          borderRadius: 18,
-          backgroundColor: colors.launcher,
-          borderWidth: 1,
-          borderColor: colors.dockBorder,
-          shadow: "xl",
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <Text style={{ fontSize: 16, fontWeight: "bold", color: colors.text }}>{appName}</Text>
+      <SheetCard testID="shortcut-sheet" width={SHEET.width}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.gap, marginBottom: SPACE.xs }}>
+          <Text style={{ fontSize: TYPE.body.size, lineHeight: TYPE.body.line, fontWeight: WEIGHT.bold, color: colors.text }}>{appName}</Text>
           {onClose ? (
-            <Text style={{ fontSize: 12, color: colors.textMuted }}>Keyboard shortcuts · Esc or a click closes</Text>
+            <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>Keyboard shortcuts · Esc or a click closes</Text>
           ) : (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-              <Text style={{ fontSize: 12, color: colors.textMuted }}>Keyboard shortcuts · release</Text>
-              <Shortcut keys="❖" color={colors.textMuted} size={12} />
-              <Text style={{ fontSize: 12, color: colors.textMuted }}>to close</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs }}>
+              <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>Keyboard shortcuts · release</Text>
+              <Shortcut keys="❖" color={colors.textMuted} size={TYPE.secondary.size} />
+              <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>to close</Text>
             </View>
           )}
         </View>
-        <View style={{ flexDirection: "row", gap: 22 }}>
+        <View style={{ flexDirection: "row", gap: COLUMN_GAP }}>
           {groups.map(([title, rows]) => (
-            <View key={title} style={{ flex: 1, flexDirection: "column", gap: 4 }}>
-              <Text style={{ fontSize: 11, fontWeight: "bold", color: colors.textMuted }}>{title.toUpperCase()}</Text>
+            <View key={title} style={{ flex: 1, flexDirection: "column", gap: SPACE.xs }}>
+              <Text style={{ fontSize: TYPE.caption.size, lineHeight: TYPE.caption.line, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>{title}</Text>
               {rows.map(([label, keys]) => (
-                <View key={label} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 22 }}>
-                  <Text style={{ fontSize: 13, color: colors.text }}>{label}</Text>
+                <View key={label} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: ROW }}>
+                  <Text style={{ fontSize: TYPE.body.size, color: colors.text }}>{label}</Text>
                   <Shortcut keys={keys} color={colors.textMuted} />
                 </View>
               ))}
             </View>
           ))}
         </View>
-      </View>
+      </SheetCard>
     </View>
   );
 }

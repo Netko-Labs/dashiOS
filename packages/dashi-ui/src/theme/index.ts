@@ -26,6 +26,9 @@ export {
   KNOB,
   LOCK_GLASS,
   LOGIN,
+  LOGIN_LIGHT,
+  type LoginColors,
+  loginColors,
   MEDIA_SCRIM,
   ON_AGENT,
   ON_DANGER,
@@ -36,7 +39,7 @@ export {
 } from "./colors.ts";
 export { contrastRatio, parseHex } from "./contrast.ts";
 export { type ControlPalette, controlPalette, DARK_CONTROLS, LIGHT_CONTROLS } from "./controls.ts";
-export { GNOME_ACCENTS, GTK_DARK, GTK_LIGHT, GTK_STATUS, type GtkNamedColors, type GtkStatusColors } from "./gtk.ts";
+export { GNOME_ACCENTS, GTK_DARK, GTK_LIGHT, GTK_STATUS, type GtkNamedColors, type GtkStatusColors, WINDOW_LIGHTS } from "./gtk.ts";
 export {
   INK_NAMES,
   INK_PAPER,

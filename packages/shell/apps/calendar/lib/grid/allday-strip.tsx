@@ -5,23 +5,30 @@
  * part picks the day; a double click makes an event there.
  */
 
-import { useColors } from "@dashi/ui";
+import { CLEAR, OPACITY, RADIUS, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type Day, dayPart, type Occurrence } from "../../../../src/shared/calendar/index.ts";
 import { inkOn, tint } from "../colors.ts";
 import { titleOf } from "../format.ts";
 import { allDayOn, MONTH_CHIP_HEIGHT } from "../layout.ts";
-import { occurrenceKey } from "./event-block.tsx";
+import { occurrenceKey, PICKED_RING } from "./event-block.tsx";
 import type { GridHandlers, GridState } from "./grid-props.ts";
 import { InlineTitle } from "./inline-title.tsx";
+import { MoreEvents } from "./more-events.tsx";
 
 export const ALL_DAY_ROWS = 4;
+/** A day's cell: its padding round the bars, and the wash of a dragged event over the days it would cover. */
+const CELL_PADDING = 3;
+const LANDING_WASH = 0.18;
+/** The strip's room under its rows, the hairlines, and where "All-day" sits in the gutter. */
+const STRIP_FOOT = 8;
+const RULE = 1;
 
 /** Whether an all-day preview covers `day`. */
 const covers = (preview: { start: string; end: string }, day: Day): boolean => dayPart(preview.start) <= day && day < dayPart(preview.end);
 
-/** One all-day event's chip: a press opens it, a drag moves it to another day. */
-function AllDayChip({
+/** One all-day event, a bar in its calendar's colour: a press opens it, a drag moves it to another day. */
+function AllDayBar({
   occurrence,
   color,
   day,
@@ -44,7 +51,10 @@ function AllDayChip({
     <View
       testID={`chip:${key}`}
       focusable
-      accessibilityRole="button"
+      // An event is a thing the person picks, not a button.
+      accessibilityRole="option"
+      accessibilityState={{ selected: selectedEvent === key }}
+      accessibilityLabel={titleOf(occurrence.event)}
       onPress={(info) => handlers.open(occurrence, info.bounds)}
       onPointer={(info) =>
         info.phase === "down" ? handlers.begin({ kind: "move-days", x: info.x, y: info.y, day, occurrence }, geometry) : handlers.track(info)
@@ -52,17 +62,17 @@ function AllDayChip({
       style={{
         height: MONTH_CHIP_HEIGHT - 1,
         flexShrink: 0,
-        paddingHorizontal: 5,
-        borderRadius: 4,
+        paddingHorizontal: SPACE.xs,
+        borderRadius: RADIUS.check,
         justifyContent: "center",
         backgroundColor: color,
-        borderWidth: selectedEvent === key ? 2 : 0,
+        borderWidth: selectedEvent === key ? PICKED_RING : 0,
         borderColor: colors.text,
-        opacity: dragged ? 0.35 : 1,
+        opacity: dragged ? OPACITY.disabled : 1,
         focusRingColor: colors.focusRing,
       }}
     >
-      <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: "semibold", color: inkOn(color) }}>
+      <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: inkOn(color) }}>
         {titleOf(occurrence.event)}
       </Text>
     </View>
@@ -102,12 +112,12 @@ function AllDayCell({
         flex: 1,
         minWidth: 0,
         flexDirection: "column",
-        gap: 1,
-        padding: 3,
-        borderLeftWidth: 1,
+        gap: SPACE.px,
+        padding: CELL_PADDING,
+        borderLeftWidth: RULE,
         borderColor: colors.separator,
         overflow: "hidden",
-        backgroundColor: ghost && covers(ghost, day) ? tint(colorOf(ghost.occurrence.calendarId), 0.18) : "#00000000",
+        backgroundColor: ghost && covers(ghost, day) ? tint(colorOf(ghost.occurrence.calendarId), LANDING_WASH) : CLEAR,
       }}
     >
       {pending && day === pendingDay && (
@@ -123,7 +133,7 @@ function AllDayCell({
         </View>
       )}
       {shown.map((occurrence) => (
-        <AllDayChip
+        <AllDayBar
           key={occurrenceKey(occurrence)}
           occurrence={occurrence}
           color={colorOf(occurrence.calendarId)}
@@ -133,15 +143,7 @@ function AllDayCell({
           handlers={handlers}
         />
       ))}
-      {all.length > shown.length && (
-        <View
-          testID={`more:${day}`}
-          onPress={() => handlers.showDay(day)}
-          style={{ height: MONTH_CHIP_HEIGHT - 1, justifyContent: "center", paddingHorizontal: 5 }}
-        >
-          <Text numberOfLines={1} style={{ fontSize: 10, fontWeight: "semibold", color: colors.textMuted }}>{`${all.length - shown.length} more`}</Text>
-        </View>
-      )}
+      {all.length > shown.length && <MoreEvents testID={`more:${day}`} count={all.length - shown.length} onPress={() => handlers.showDay(day)} />}
     </View>
   );
 }
@@ -170,9 +172,11 @@ export function AllDayStrip({
   const rows = Math.min(ALL_DAY_ROWS, Math.max(1, ...days.map((day) => allDayOn(occurrences, day).length + (day === pendingDay ? 1 : 0))));
   const geometry = { days, columnWidth };
   return (
-    <View style={{ flexShrink: 0, flexDirection: "row", height: rows * MONTH_CHIP_HEIGHT + 8, borderBottomWidth: 1, borderColor: colors.separator }}>
-      <View style={{ width: gutter, flexShrink: 0, alignItems: "flex-end", paddingRight: 8, paddingTop: 5 }}>
-        <Text style={{ fontSize: 10, color: colors.textMuted }}>All-day</Text>
+    <View
+      style={{ flexShrink: 0, flexDirection: "row", height: rows * MONTH_CHIP_HEIGHT + STRIP_FOOT, borderBottomWidth: RULE, borderColor: colors.separator }}
+    >
+      <View style={{ width: gutter, flexShrink: 0, alignItems: "flex-end", paddingRight: SPACE.m, paddingTop: SPACE.xs }}>
+        <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>All-day</Text>
       </View>
       {days.map((day) => (
         <AllDayCell key={day} day={day} occurrences={occurrences} colorOf={colorOf} geometry={geometry} ghost={ghost} state={state} handlers={handlers} />

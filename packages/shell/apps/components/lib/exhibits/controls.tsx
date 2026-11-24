@@ -1,9 +1,13 @@
 /** The gallery's control pages: buttons, pickers, switches and sliders, and fields. */
 
 import {
+  ADD,
   Button,
   Choices,
+  CLOSE,
+  GlyphButton,
   glyphs,
+  InlineField,
   MoreButton,
   PopUpButton,
   type PopUpOption,
@@ -11,6 +15,7 @@ import {
   Segmented,
   Slider,
   Switch,
+  TextArea,
   TextField,
   ToolbarButton,
 } from "@dashi/ui";
@@ -51,6 +56,26 @@ export function ButtonsPage() {
               <View style={{ width: 160, flexDirection: "row" }}>
                 <Button testID={`button:${state}:fill`} label="Continue" fill primary disabled={disabled} onPress={noop} />
               </View>
+            </>
+          )}
+        </States>
+      </Exhibit>
+      <Exhibit title="Button, inks" note="The widget area's (Edit widgets): a pill on the Inks' paper, ink words; the one that goes ahead is ink.">
+        <States>
+          {({ state, disabled }) => (
+            <>
+              <Button testID={`button-inks:${state}:edit`} label="Edit widgets" look="inks" disabled={disabled} onPress={noop} />
+              <Button testID={`button-inks:${state}:done`} label="Done" look="inks" primary disabled={disabled} onPress={noop} />
+            </>
+          )}
+        </States>
+      </Exhibit>
+      <Exhibit title="Glyph button" note="One glyph, round, named for screen readers: a notification's ✕ (filled, small), the overview's + and ×.">
+        <States>
+          {({ state, disabled }) => (
+            <>
+              <GlyphButton testID={`glyph-button:${state}:add`} glyph={ADD} label="New Desktop" disabled={disabled} onPress={noop} />
+              <GlyphButton testID={`glyph-button:${state}:close`} glyph={CLOSE} label="Remove" size="small" filled disabled={disabled} onPress={noop} />
             </>
           )}
         </States>
@@ -183,6 +208,11 @@ export function SwitchesPage() {
           )}
         </States>
       </Exhibit>
+      <Exhibit title="Switch, inks" note="The widget area's (the gallery's May go on air): ink and paper, never the accent.">
+        <States states={["enabled", "focused", "disabled"]}>
+          {({ state, disabled }) => <Switch testID={`switch-inks:${state}`} look="inks" on={on} onChange={setOn} disabled={disabled} />}
+        </States>
+      </Exhibit>
       <Exhibit title="Slider" note="A setting's slider: press or drag; the value is committed once, when the button lifts.">
         <States states={["enabled", "focused", "disabled"]}>
           {({ state, disabled }) => (
@@ -202,6 +232,8 @@ export function SwitchesPage() {
 export function FieldsPage() {
   const [text, setText] = useState("Groceries");
   const [query, setQuery] = useState("");
+  const [inline, setInline] = useState("");
+  const [notes, setNotes] = useState("Bring the projector.\nRoom 4 is booked until noon.");
   return (
     <PageBody>
       <Exhibit
@@ -222,6 +254,19 @@ export function FieldsPage() {
         <TextField testID="field:invalid" value="12" label="Code" invalid message="Six digits." onChangeText={noop} width={220} />
         <TextField testID="field:disabled" value="alexk" disabled onChangeText={noop} width={220} />
         <TextField testID="field:panel" look="panel" value="Alex Kim" onChangeText={noop} width={220} />
+      </Exhibit>
+      <Exhibit title="Text area" note="A text field's edge, ground and focus over many lines: an event's notes, a text a dialog lets the person edit.">
+        <View style={{ width: 260, height: 84, flexDirection: "column" }}>
+          <TextArea testID="field:area" value={notes} label="Notes" onChangeText={setNotes} />
+        </View>
+      </Exhibit>
+      <Exhibit
+        title="In-place field"
+        note="A name typed on what it names (a new event on Calendar's grid): no box; the focus ring's edge while it has the keyboard."
+      >
+        <View style={{ width: 160 }}>
+          <InlineField testID="field:inline" value={inline} placeholder="New event" size="caption" onChangeText={setInline} />
+        </View>
       </Exhibit>
       <Exhibit title="Search field" note="210, shrinking to 96; its words shorten to Search under 140 and end in an ellipsis. Esc empties it first.">
         <SearchField testID="field:search" value={query} onChangeText={setQuery} placeholder="Search apps and add-ons" />

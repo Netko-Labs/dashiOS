@@ -79,3 +79,9 @@ export function subjectOf(request: Pick<AppChooserRequest, "filename" | "uri" | 
   }
   return request.contentType ?? "this";
 }
+
+/** "Always use for PDF documents": the kind's name (the MIME database's) in the plural, its first word lowered unless it is an initialism. */
+export function alwaysLabel(kind: string): string {
+  const lowered = /^[A-Z][a-z]/.test(kind) ? `${kind[0]?.toLowerCase()}${kind.slice(1)}` : kind;
+  return `Always use for ${lowered.endsWith("s") ? lowered : `${lowered}s`}`;
+}

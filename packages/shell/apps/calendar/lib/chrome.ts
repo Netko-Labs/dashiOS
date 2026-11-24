@@ -1,6 +1,8 @@
+import { SIDEBAR, SIDEBAR_WIDTH } from "@dashi/ui";
+
 /**
  * How Calendar's window gives way as it narrows (review 54): the sidebar
- * folds to a rail of calendar dots first, then Day / Week / Month folds into
+ * folds to its rail first (LA-5: the calendars' tiles), then Day / Week / Month folds into
  * one pop-up and the title takes its short form. ‹ Today ›, the view, Find and
  * + keep their places and their widths at every size; the title takes what is
  * left and ends in an ellipsis (view.tsx). Below `CALENDAR_LEAST` the window
@@ -9,16 +11,20 @@
 
 /** The window's least size: the rail, a week's seven columns of about 60 pt, and every toolbar control with the short title. */
 export const CALENDAR_LEAST = { width: 520, height: 320 } as const;
-/** Below this window width the sidebar is a rail of calendar dots. */
+/** Below this window width the sidebar is the rail (LA-5 names Calendar's 640). */
 export const RAIL_BELOW = 640;
-/** The rail: a 22 pt dot target in 17 either side. */
-export const RAIL_WIDTH = 56;
-/** The full sidebar, as `@dashi/ui`'s `SIDEBAR_WIDTH`. */
-export const SIDEBAR_FULL = 200;
+/** The rail, the kit's (`SIDEBAR.rail`). */
+export const RAIL_WIDTH = SIDEBAR.rail;
+/** The full sidebar, the kit's. */
+export const SIDEBAR_FULL = SIDEBAR_WIDTH;
 
-/** The toolbar's controls, as drawn: ‹ 32, Today 58, › 32, the view (segments or pop-up), Find 32 and + 32, 10 apart. */
-const NAV = 32 + 10 + 58 + 10 + 32;
-const SEGMENTS = 3 * 52 + 2 * 2 + 2 * 2;
+/** Day, Week and Month, each this wide. */
+export const SEGMENT_WIDTH = 52;
+/** Today: the kit's small button, its 12 SemiBold word 12 in from either end. */
+const TODAY_WIDTH = 60;
+/** The toolbar's controls, as drawn: ‹ 32, Today, › 32, the view (segments or pop-up), Find 32 and + 32, 10 apart. */
+const NAV = 32 + 10 + TODAY_WIDTH + 10 + 32;
+const SEGMENTS = 3 * SEGMENT_WIDTH + 2 * 2 + 2 * 2;
 export const VIEW_POPUP_WIDTH = 84;
 const ENDS = 32 + 10 + 32;
 /** The controls' width with the segments, and with the pop-up. */
@@ -31,7 +37,7 @@ const RIGHT_INSET = 12;
 const CONTROLS_CLEAR = 76 + 14;
 
 export interface CalendarChrome {
-  /** The sidebar shows only its calendars, as dots. */
+  /** The sidebar is its rail: the calendars' tiles alone. */
   rail: boolean;
   /** The sidebar's width. */
   sidebarWidth: number;

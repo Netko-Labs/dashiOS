@@ -1,5 +1,6 @@
 /** One placed widget: its card (floods when it holds the tally), and its kind's view inside. */
 
+import { SPACE } from "@dashi/ui";
 import { Card } from "../../card.tsx";
 import { widgetInfo } from "../../catalog.ts";
 import { useWidgetEnv } from "../../env.tsx";
@@ -88,7 +89,7 @@ export function WidgetTile({ kind, size, width, height, showPrivate, air, testID
       width={width}
       height={height}
       compact={compact}
-      {...(compact && size === "mini" ? { padding: 10 } : {})}
+      {...(compact && size === "mini" ? { padding: SPACE.gap } : {})}
       {...(testID ? { testID } : {})}
       {...(onPress ? { onPress } : {})}
       {...(onContext ? { onContext } : {})}

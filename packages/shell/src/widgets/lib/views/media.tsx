@@ -1,6 +1,6 @@
 /** Music (the sleeve's colour): the album print, title and artist, where it is, and play, pause, next, previous. */
 
-import { useDark } from "@dashi/ui";
+import { RADIUS, SPACE, useDark } from "@dashi/ui";
 import { Dots, Svg, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState } from "react";
 import { DotRow, dotsInset } from "../../../shared/inks/index.ts";
@@ -40,7 +40,7 @@ function DotPrint({ print, size, sleeve }: { print: Print; size: number; sleeve:
   const layers = useMemo(() => halftoneLayers(print), [print]);
   const pitch = size / ART_GRID;
   return (
-    <View style={{ width: size, height: size, borderRadius: 12, backgroundColor: c.off }}>
+    <View style={{ width: size, height: size, borderRadius: RADIUS.sheet, backgroundColor: c.off }}>
       {layers.map((layer) => (
         <View key={`${layer.colour}:${layer.radius}`} style={{ position: "absolute", left: 0, top: 0, padding: dotsInset(pitch, layer.radius * pitch) }}>
           <Dots
@@ -67,7 +67,7 @@ function MaskPrint({ print, size, sleeve }: { print: Print; size: number; sleeve
   const c = useCard();
   const masks = useMemo(() => halftone(print), [print]);
   return (
-    <View style={{ width: size, height: size, borderRadius: 12, backgroundColor: c.off }}>
+    <View style={{ width: size, height: size, borderRadius: RADIUS.sheet, backgroundColor: c.off }}>
       <View style={{ position: "absolute", left: 0, top: 0 }}>
         <Svg markup={masks.ink} size={size} color={c.ink} />
       </View>
@@ -98,7 +98,7 @@ export function MediaWidget({ size, air }: { size: WidgetSize; air: boolean }) {
   const share = playing.length > 0 ? at / playing.length : 0;
   const command = (member: "PlayPause" | "Next" | "Previous") => () => void hub?.media.command(member).catch(() => {});
   const controls = (
-    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: SPACE.s }}>
       <Btn icon="prev" round onPress={command("Previous")} testID="media-prev" />
       <Btn icon={playing.playing ? "pause" : "play"} round fill onPress={command("PlayPause")} testID="media-play" />
       <Btn icon="next" round onPress={command("Next")} testID="media-next" />
@@ -113,7 +113,7 @@ export function MediaWidget({ size, air }: { size: WidgetSize; air: boolean }) {
             <View style={{ height: 8 }} />
           </>
         ) : null}
-        <View style={{ flexDirection: "row", gap: 10 }}>
+        <View style={{ flexDirection: "row", gap: SPACE.gap }}>
           <Halftone print={print} size={56} sleeve={sleeve} />
           <View style={{ flex: 1, flexDirection: "column" }}>
             <Title>{playing.title}</Title>
@@ -126,7 +126,7 @@ export function MediaWidget({ size, air }: { size: WidgetSize; air: boolean }) {
       </>
     );
   return (
-    <View style={{ flexDirection: "row", gap: 14, flex: 1 }}>
+    <View style={{ flexDirection: "row", gap: SPACE.button, flex: 1 }}>
       <Halftone print={print} size={144} sleeve={sleeve} />
       <View style={{ flex: 1, flexDirection: "column" }}>
         {air ? (
@@ -139,7 +139,7 @@ export function MediaWidget({ size, air }: { size: WidgetSize; air: boolean }) {
         <Words>{playing.artist}</Words>
         <Grow />
         <DotRow count={23} value={share} pitch={7.3} radius={0.32} lit={c.value} unlit={c.off} />
-        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: SPACE.xs }}>
           <Meta>{mmss(at)}</Meta>
           <Meta>{playing.length > 0 ? `−${mmss(playing.length - at)}` : ""}</Meta>
         </View>

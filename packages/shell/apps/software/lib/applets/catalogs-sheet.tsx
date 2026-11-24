@@ -3,18 +3,19 @@
  * from, Dashi's first and built in, each added one with Remove…, and Add
  * Catalog…: a name, the index's address and the catalog's public key. The
  * index must be there and signed with that key before it is added; when it
- * isn't, the sheet says why in plain words. Removing one keeps its applets
- * installed, with no updates.
+ * isn't, the sheet says why in plain words, as the key field's line. Removing one keeps its applets
+ * installed, with no updates. Both are form sheets (UI-15); removing one asks
+ * on the alert frame.
  */
 
-import { AlertSheet, Button, Group, Row, Sheet, TextField, useColors, WARNING } from "@dashi/ui";
+import { AlertSheet, Button, FormSheet, Group, Row, SPACE, TextField, TYPE, useColors, WARNING } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useRef, useState } from "react";
 import type { CatalogLoad, CatalogSource } from "../../../../src/shared/applet-store/index.ts";
 import { useServices } from "../services.ts";
 import { useAppletState } from "./rows.tsx";
 
-/** The list and the Add a Catalog form are one sheet, so they keep one width. */
+/** The list and the Add a catalog form are one sheet, so they keep one width. */
 const SHEET_WIDTH = 480;
 
 /** What a catalog's row says under its name: built in, how many applets, or why it isn't listing any. */
@@ -43,12 +44,12 @@ export function catalogDetail(source: CatalogSource, load: CatalogLoad | undefin
   return state === where ? where : `${state} · ${where}`;
 }
 
-/** A label 4 over its own field, and the sheet's gap away from the field above. */
+/** A label over its own field (the kit's field names itself for screen readers; this shows the name). */
 function Labeled({ label, children }: { label: string; children: ReactNode }) {
   const colors = useColors();
   return (
-    <View style={{ flexShrink: 0, flexDirection: "column", gap: 4 }}>
-      <Text style={{ fontSize: 12, color: colors.textMuted }}>{label}</Text>
+    <View style={{ flexShrink: 0, flexDirection: "column", gap: SPACE.xs }}>
+      <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>{label}</Text>
       {children}
     </View>
   );
@@ -85,44 +86,39 @@ function AddCatalog({ onDone }: { onDone: () => void }) {
     if (pressed === "Escape") leave();
   };
   return (
-    <Sheet testID="add-catalog" width={SHEET_WIDTH} onCancel={leave}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Add a Catalog</Text>
-      <Text style={{ fontSize: 12, lineHeight: 17, color: colors.textMuted }}>
+    <FormSheet
+      testID="add-catalog"
+      width={SHEET_WIDTH}
+      title="Add a catalog"
+      buttons={[
+        { label: "Cancel", testID: "add-catalog:cancel", onPress: leave, cancel: true },
+        { label: busy ? "Checking…" : "Add catalog", testID: "add-catalog:add", kind: "primary", disabled: !ready, onPress: submit },
+      ]}
+    >
+      <Text style={{ fontSize: TYPE.secondary.size, lineHeight: TYPE.secondary.line, color: colors.textMuted }}>
         Applets from it are checked as Dashi’s are, but nobody at Dashi reviews them. Add only catalogs you trust.
       </Text>
-      <Labeled label="Name">
-        <TextField testID="add-catalog:name" value={name} placeholder="Team Applets" autoFocus onChangeText={setName} onSubmit={submit} onKeyPress={escape} />
-      </Labeled>
-      <Labeled label="Index address">
-        <TextField
-          testID="add-catalog:url"
-          value={url}
-          placeholder="https://example.com/applets/index.json"
-          onChangeText={setUrl}
-          onSubmit={submit}
-          onKeyPress={escape}
-        />
-      </Labeled>
-      <Labeled label="Public key">
-        <TextField
-          testID="add-catalog:key"
-          value={key}
-          placeholder="RWQ… (from the catalog’s .pub file)"
-          onChangeText={setKey}
-          onSubmit={submit}
-          onKeyPress={escape}
-        />
-      </Labeled>
-      {error !== null && (
-        <View testID="add-catalog:error" style={{ paddingTop: 2 }}>
-          <Text style={{ fontSize: 12, lineHeight: 17, color: colors.ume }}>{error}</Text>
-        </View>
-      )}
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-        <Button label="Cancel" testID="add-catalog:cancel" onPress={leave} />
-        <Button label={busy ? "Checking…" : "Add Catalog"} testID="add-catalog:add" primary disabled={!ready} onPress={submit} />
-      </View>
-    </Sheet>
+      {[
+        { id: "name", label: "Name", value: name, set: setName, placeholder: "Team Applets" },
+        { id: "url", label: "Index address", value: url, set: setUrl, placeholder: "https://example.com/applets/index.json" },
+        { id: "key", label: "Public key", value: key, set: setKey, placeholder: "RWQ… (from the catalog’s .pub file)" },
+      ].map((field) => (
+        <Labeled key={field.id} label={field.label}>
+          <TextField
+            testID={`add-catalog:${field.id}`}
+            label={field.label}
+            value={field.value}
+            placeholder={field.placeholder}
+            autoFocus={field.id === "name"}
+            onChangeText={field.set}
+            onSubmit={submit}
+            onKeyPress={escape}
+            // Why it couldn't be added is the key field's line, in ume (PA-6: a field's problem under the field).
+            {...(field.id === "key" && error !== null ? { message: error, invalid: true } : {})}
+          />
+        </Labeled>
+      ))}
+    </FormSheet>
   );
 }
 
@@ -164,9 +160,14 @@ export function CatalogsSheet({ onClose }: { onClose: () => void }) {
   if (mode.kind === "remove") return <RemoveCatalog source={mode.source} onDone={() => setMode({ kind: "list" })} />;
   const sources = applets.sources();
   return (
-    <Sheet testID="catalogs" width={SHEET_WIDTH} onCancel={onClose} onConfirm={onClose}>
-      <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>Catalogs</Text>
-      <Text style={{ fontSize: 12, lineHeight: 17, color: colors.textMuted }}>
+    <FormSheet
+      testID="catalogs"
+      width={SHEET_WIDTH}
+      title="Catalogs"
+      buttons={[{ label: "Done", testID: "catalogs:done", kind: "primary", cancel: true, onPress: onClose }]}
+      footer={<Button label="Add catalog…" testID="catalogs:add" onPress={() => setMode({ kind: "add" })} />}
+    >
+      <Text style={{ fontSize: TYPE.secondary.size, lineHeight: TYPE.secondary.line, color: colors.textMuted }}>
         Menu bar applets come from these catalogs. Dashi checks each one’s signature before it lists anything from it.
       </Text>
       <Group testID="catalogs:list">
@@ -184,12 +185,6 @@ export function CatalogsSheet({ onClose }: { onClose: () => void }) {
           </Row>
         ))}
       </Group>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}>
-        <View style={{ flex: 1, flexDirection: "row" }}>
-          <Button label="Add Catalog…" testID="catalogs:add" onPress={() => setMode({ kind: "add" })} />
-        </View>
-        <Button label="Done" testID="catalogs:done" primary onPress={onClose} />
-      </View>
-    </Sheet>
+    </FormSheet>
   );
 }

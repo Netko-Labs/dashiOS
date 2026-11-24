@@ -29,7 +29,7 @@ function glyphFor(kind: MessageKind): { glyph: string; tone: AlertTone } {
 }
 
 /** The one alert frame (UI-5): the first short line is the question, the rest the message under it. */
-export function MessageDialog({ spec, answer }: { spec: MessageSpec; answer: Answer }) {
+export function MessageView({ spec, answer }: { spec: MessageSpec; answer: Answer }) {
   const { headline, body } = splitMessage(spec.text);
   const question = spec.kind === "question";
   const buttons = standardButtons({

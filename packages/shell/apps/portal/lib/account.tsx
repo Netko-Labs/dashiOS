@@ -8,7 +8,7 @@
  *     → (u response, a{sv} results{id s, name s, image s})
  */
 
-import { AlertWindow, Avatar, alertWindowHeight, useColors } from "@dashi/ui";
+import { AlertWindow, Avatar, alertWindowHeight, RADIUS, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { Account } from "../../../src/shared/accounts/index.ts";
 import type { InterfaceSpec } from "../../../src/shared/dbus/index.ts";
@@ -90,18 +90,20 @@ function AccountSheet({ request, account, answer }: { request: AccountRequest; a
       glyph={PERSON}
       tone="neutral"
       buttons={[
-        { label: "Don’t Share", testID: "account:deny", onPress: () => answer(false), cancel: true },
+        { label: "Don’t share", testID: "account:deny", onPress: () => answer(false), cancel: true },
         // Sharing is a click, never a stray Enter.
         { label: "Share", testID: "account:share", onPress: () => answer(true), kind: "primary", isDefault: false },
       ]}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 10, borderRadius: 10, backgroundColor: colors.button }}>
+      <View
+        style={{ flexDirection: "row", alignItems: "center", gap: SPACE.inset, padding: SPACE.gap, borderRadius: RADIUS.card, backgroundColor: colors.button }}
+      >
         <Avatar name={name} {...(account.iconFile ? { picture: account.iconFile } : {})} size={44} />
-        <View style={{ flexDirection: "column", gap: 2, minWidth: 0 }}>
-          <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+        <View style={{ flexDirection: "column", gap: SPACE.xxs, minWidth: 0 }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
             {name}
           </Text>
-          <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
             {account.userName}
           </Text>
         </View>
@@ -111,17 +113,14 @@ function AccountSheet({ request, account, answer }: { request: AccountRequest; a
 }
 
 export function askShareOnScreen(show: ShowDialog): AskShare {
-  return (request, account, signal) =>
-    show<boolean>(
-      {
-        parent: request.parent,
-        title: "Share Your Name",
-        width: SHARE_WIDTH,
-        // As tall as its question, the reason, the card and the buttons (vertical space is sacred).
-        height: alertWindowHeight({ question: shareQuestion(request), message: shareReason(request) ?? "", extra: SHARE_CARD }, SHARE_WIDTH),
-      },
+  return (request, account, signal) => {
+    // As tall as its question, the reason, the card and the buttons (vertical space is sacred); an alert opens at its least.
+    const height = alertWindowHeight({ question: shareQuestion(request), message: shareReason(request) ?? "", extra: SHARE_CARD }, SHARE_WIDTH);
+    return show<boolean>(
+      { parent: request.parent, title: "Share your name", width: SHARE_WIDTH, height, least: { width: SHARE_WIDTH, height } },
       (answer) => <AccountSheet request={request} account={account} answer={answer} />,
       signal,
       false,
     );
+  };
 }

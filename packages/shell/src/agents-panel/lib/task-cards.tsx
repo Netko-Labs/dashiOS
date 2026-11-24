@@ -7,7 +7,7 @@
  * the launcher).
  */
 
-import { useColors } from "@dashi/ui";
+import { OPACITY, RADIUS, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { cut, type TaskView } from "../../agents/index.ts";
 import { SPARK } from "../../shared/settings/index.ts";
@@ -47,15 +47,15 @@ function TaskStep({ step }: { step: TaskView["steps"][number] }) {
   const kind = step.state.kind;
   const mark = kind === "done" ? "✓" : kind === "failed" || kind === "invalid" || kind === "not-allowed" ? "✕" : kind === "skipped" ? "–" : "";
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: 18 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s, height: 18 }}>
       <View style={{ width: 12, alignItems: "center" }}>
         {mark === "" ? (
-          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: kind === "running" ? colors.agent : colors.separator }} />
+          <View style={{ width: 7, height: 7, borderRadius: RADIUS.check, backgroundColor: kind === "running" ? colors.agent : colors.separator }} />
         ) : (
-          <Text style={{ fontSize: 11, color: kind === "done" ? colors.textMuted : colors.criticalInk }}>{mark}</Text>
+          <Text style={{ fontSize: TYPE.caption.size, color: kind === "done" ? colors.textMuted : colors.criticalInk }}>{mark}</Text>
         )}
       </View>
-      <Text numberOfLines={1} style={{ fontSize: 12, color: kind === "running" || kind === "ready" ? colors.text : colors.textMuted }}>
+      <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: kind === "running" || kind === "ready" ? colors.text : colors.textMuted }}>
         {step.undone ? `${step.title} (put back)` : step.title}
       </Text>
     </View>
@@ -71,34 +71,34 @@ export function TaskCard({ task, first, focused, tasks }: { task: TaskView; firs
       testID={`agents-task:${task.id}`}
       style={{
         flexDirection: "row",
-        gap: 10,
-        padding: 10,
-        borderRadius: 9,
+        gap: SPACE.gap,
+        padding: SPACE.gap,
+        borderRadius: RADIUS.card,
         ...(first ? {} : { borderTopWidth: 1, borderColor: colors.separator }),
         ...(focused ? { backgroundColor: colors.selectionWash } : {}),
-        ...(works ? {} : { opacity: 0.8 }),
+        ...(works ? {} : { opacity: OPACITY.soft }),
       }}
     >
-      <View style={{ width: 28, height: 28, borderRadius: 7, alignItems: "center", justifyContent: "center", backgroundColor: colors.agentWash }}>
+      <View style={{ width: 28, height: 28, borderRadius: RADIUS.control, alignItems: "center", justifyContent: "center", backgroundColor: colors.agentWash }}>
         <Svg markup={SPARK} size={15} color={colors.agent} />
       </View>
-      <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 2 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+      <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.xxs }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
           {cut(task.request, 60)}
         </Text>
-        <Text numberOfLines={1} style={{ fontSize: 12, color: task.phase === "planned" ? colors.broth : colors.textMuted }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: task.phase === "planned" ? colors.broth : colors.textMuted }}>
           {taskLine(task)}
         </Text>
         {task.steps.map((step) => (
           <TaskStep key={step.id} step={step} />
         ))}
         {task.said !== "" && !works && (
-          <View testID={`agents-task-said:${task.id}`} style={{ marginTop: 2 }}>
-            <Text style={{ fontSize: 12.5, color: colors.text }}>{task.said}</Text>
+          <View testID={`agents-task-said:${task.id}`} style={{ marginTop: SPACE.xxs }}>
+            <Text style={{ fontSize: TYPE.panel.body.size, color: colors.text }}>{task.said}</Text>
           </View>
         )}
         {(works || undos.length > 0) && (
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: SPACE.s, marginTop: SPACE.s }}>
             {task.phase === "planned" && <Small testID={`agents-task-answer:${task.id}`} label="Answer" primary onPress={() => tasks.answer(task.id)} />}
             {works && <Small testID={`agents-task-stop:${task.id}`} label="Stop" danger onPress={() => tasks.stop(task.id)} />}
             {!works &&

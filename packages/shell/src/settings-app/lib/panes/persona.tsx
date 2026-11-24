@@ -9,7 +9,6 @@
  */
 
 import { type Confirm, FoldedChoices, useConfirm } from "@dashi/ui";
-import { View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import {
   CHARACTERS,
@@ -30,14 +29,14 @@ import { basicsHere } from "../../../voice/index.ts";
 import type { PaneContext } from "../../context.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
-import { Hero, Page } from "../../ui.tsx";
+import { Page } from "../../ui.tsx";
 import { LANGUAGE_WORDS, TALK_WORDS } from "../changes/words.ts";
 import { type ByPerson, ONLY_YOU, type PersonOnly, usePersonOnly } from "../person-only.ts";
 import { Setting } from "../setting.tsx";
 import { MiniButton } from "./parts.tsx";
 import { AboutYou } from "./persona-about.tsx";
 import { Look } from "./persona-look.tsx";
-import { CapsulePreview, CharacterFilesNotes, LineField } from "./persona-parts.tsx";
+import { CharacterFilesNotes, PersonaHero, PersonaText } from "./persona-parts.tsx";
 import { Share, type ShareDialogs } from "./persona-share.tsx";
 import type { VoicePaneSource } from "./voice.tsx";
 import { voiceChoices } from "./voice-words.ts";
@@ -111,7 +110,15 @@ function Who({ settings, persona, guard, voices }: Parts) {
   return (
     <Group testID="persona-who">
       <Setting id="persona/name" testID="persona-name" {...quiet(guard, "persona/name", problem ?? undefined)}>
-        <LineField testID="persona-name-field" value={view.name} placeholder="Dashi" max={NAME_MAX} onKeep={keepName} onDraft={() => setProblem(null)} />
+        <PersonaText
+          testID="persona-name-field"
+          label="Dashi's name"
+          value={view.name}
+          placeholder="Dashi"
+          max={NAME_MAX}
+          onKeep={keepName}
+          onDraft={() => setProblem(null)}
+        />
       </Setting>
       <Setting id="persona/character" testID="persona-character" {...quiet(guard, "persona/character", about)} stack>
         <FoldedChoices
@@ -126,8 +133,9 @@ function Who({ settings, persona, guard, voices }: Parts) {
         />
       </Setting>
       <Setting id="persona/you" testID="persona-you" {...quiet(guard, "persona/you")}>
-        <LineField
+        <PersonaText
           testID="persona-you-field"
+          label="What Dashi calls you"
           value={view.you}
           placeholder="Alex"
           max={YOU_MAX}
@@ -203,12 +211,13 @@ function Own({ settings, persona, guard, ask }: Parts) {
   return (
     <Group testID="persona-own">
       <Setting id="persona/note" testID="persona-note" {...quiet(guard, "persona/note")} stack>
-        <LineField
+        <PersonaText
           testID="persona-note-field"
+          label="In your own words"
           value={view.note}
           placeholder="Short answers in the morning. Spanish at home."
           max={NOTE_MAX}
-          width="100%"
+          width="fill"
           onKeep={(text) => guard.mine("persona/note", () => settings.patch("persona", { note: text.trim() === "" ? undefined : text.trim() }))}
         />
       </Setting>
@@ -240,29 +249,17 @@ export function PersonaPane(props: PersonaPaneProps) {
   return (
     <>
       <Page title="Your Dashi">
-        <Hero testID="persona-hero">
-          <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, padding: 8 }}>
-            <CapsulePreview
-              colour={view.colour}
-              mark={view.mark}
-              dots={view.dots}
-              motion={view.motion}
-              name={view.name}
-              still={useSettings(settings).data.appearance.reduceMotion === true}
-              line={previewLine(view, persona.source.language())}
-              said={said}
-            />
-            <MiniButton
-              testID="persona-hear"
-              label={voices ? "Hear it" : "Turn on Voice to hear it"}
-              disabled={!voices}
-              onPress={() => {
-                setSaid((times) => times + 1);
-                voice?.sample(view.voice ?? voices?.own ?? "");
-              }}
-            />
-          </View>
-        </Hero>
+        <PersonaHero
+          view={view}
+          still={useSettings(settings).data.appearance.reduceMotion === true}
+          line={previewLine(view, persona.source.language())}
+          said={said}
+          canHear={voices !== null}
+          onHear={() => {
+            setSaid((times) => times + 1);
+            voice?.sample(view.voice ?? voices?.own ?? "");
+          }}
+        />
         <Who {...parts} />
         <Sound {...parts} />
         <Look {...parts} />
