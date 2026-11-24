@@ -16,7 +16,8 @@ import type * as mcp from "../mcp.ts";
 import type { SessionContext, SessionTask } from "./session-types.ts";
 
 /** How a sheet names a program: the name it claims when it gives one, else its process's. */
-const sheetName = (who: Who): string => (who.remote ? "An agent on another machine" : (who.claims ?? who.name));
+/** Who asks, inside the consent sheet's question (UI-5, VO-10): "Allow an agent on another machine to use this computer?" */
+const sheetName = (who: Who): string => (who.remote ? "an agent on another machine" : (who.claims ?? who.name));
 
 /** What the scopes need of the connection they are for. */
 export interface ScopeHost {
@@ -143,7 +144,7 @@ export class Scopes {
   }
 
   /**
-   * The one sheet a program sees (decisions.md D260): the first time it calls, "<it> wants to use this computer",
+   * The one sheet a program sees (decisions.md D260): the first time it calls, "Allow <it> to use this computer?",
    * every kind of tool at once, kept for the program on Always Allow. What is critical asks on its own sheet anyway.
    */
   private async ask(): Promise<void> {
@@ -158,7 +159,7 @@ export class Scopes {
       agent: this.host.id,
       who: this.host.who(),
       scopes: choices(needs, this.granted),
-      title: `${sheetName(this.host.who())} wants to use this computer`,
+      title: `Allow ${sheetName(this.host.who())} to use this computer?`,
     };
     const controller = new AbortController();
     this.askAbort = controller;

@@ -3,7 +3,7 @@
  * until it is answered (the same kind of surface as the power sheets).
  */
 
-import { SHEET_SIZE } from "../menus/sheets.tsx";
+import { sheetSurfaceWidth } from "../menus/sheets.tsx";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 import { PasswordSheet } from "./lib/password.tsx";
 import type { WifiStore } from "./store.ts";
@@ -22,7 +22,7 @@ export class PasswordPrompt {
     const handle = this.open(
       {
         title: "Wi-Fi password",
-        width: SHEET_SIZE.width + 2 * SHEET_SIZE.margin,
+        width: sheetSurfaceWidth(),
         height: 330,
         surface: { layer: "overlay", keyboard: "exclusive", namespace: "dashi.wifi-password" },
       },

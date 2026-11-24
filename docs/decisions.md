@@ -7938,3 +7938,132 @@ short words, as the rulebook is written.
   `WINDOW_LIGHTS` in the theme.
 - **Why:** TK-1; the plan's snap rule (tokens.md).
 - **Undo:** per file.
+
+### D620. A shell sheet with no window is the kit's sheet, centred on its own surface, without a scrim
+
+- **Date:** 2026-11-24. The `design-sheets` agent's (W2; UI-5, T17).
+- **Question:** the shell's sheets (power, polkit, Wi-Fi, Bluetooth, the agents', Force Quit,
+  Displays' keep) are layer surfaces with no window to hang from. Copy the alert frame in the
+  shell, or teach the kit's sheet to stand alone?
+- **Choice:** the kit's `Sheet`, `AlertSheet` and `FormSheet` take `place="screen"`: the same card
+  (radius 12, padding 20, solid, `xl`) centred on the surface, its keys the same, no scrim (there
+  is no window to dim; the screen is not the asker's). `AlertSheet` also takes `keys={false}` for a
+  sheet that must never take the keyboard by itself, and `icon` puts the asker's own picture (an
+  app's, an applet's) in the tile's place. The menus' `Panel` and the three hand-made `Button`s
+  are gone; `menus/sheets.tsx` keeps only the surface's size.
+- **Why:** UI-5 says one frame, "centred on the screen only when it has none"; a second frame in
+  the shell is what T17 found.
+- **Cost:** two small kit commits (with tests and a Components app entry).
+- **Undo:** drop the props; the shell would need its own frame again.
+
+### D621. Change Password hangs from Settings: its own surface laid exactly over Settings' window
+
+- **Date:** 2026-11-24. The `design-sheets` agent's (SE-A47, SE-15).
+- **Question:** the sheet was see-through, centred on the screen, with no scrim. Drawing it inside
+  Settings' window would let an agent's pointer (which works in a window it names) reach the
+  password fields.
+- **Choice:** it stays a surface of its own that holds the keyboard, but the prompt asks the
+  compositor for Settings' frame and lays the surface over it exactly (anchored top left, margins
+  from the screen's corner, `exclusiveZone: -1`): the kit's `FormSheet` hangs under Settings'
+  title row (`hang`, the 38 strip) over the scrim, clipped to the window's radius. Without a
+  compositor or a Settings window, it is centred as before. `settings-app/services.ts` and
+  `boot/settings.ts` (W4's and W3's files) each gained one line to pass where Settings is.
+- **Why:** SE-15 and UI-5: a sheet is the same sheet wherever it opens; the safety stays.
+- **Cost:** the surface covers Settings' window, so the window can't be moved or reached while
+  the sheet is open (as a sheet holds its window); a window moved by other means (an agent, a
+  screen unplugged) leaves the sheet where it was.
+- **Undo:** pass no `settingsPlace`.
+
+### D622. What a shell sheet's tile shows
+
+- **Date:** 2026-11-24. The `design-sheets` agent's (UI-5, R4).
+- **Choice:** the power sheets: Dashi's mark for Log out, `RESTART`, `SHUT_DOWN`; the agents'
+  sheets (consent, confirm, question, sign-in, approval): the shiso tile with the agents' spark
+  (`tone="agent"`); polkit: the requesting app's icon, else `LOCK`; Force Quit's question: the
+  app's icon; the person's confirm sheet: `WARNING` in ume when it destroys, else `INFO`; Wi-Fi:
+  its bars; Bluetooth: its glyph; Displays' keep sheet: `INFO`.
+- **Why:** R4: the tile says the job; the accent never washes one.
+- **Undo:** per sheet.
+
+### D623. Who answers a shell sheet's keys
+
+- **Date:** 2026-11-24. The `design-sheets` agent's (UI-6, SH-5, CD-18).
+- **Choice:** Force Quit's question: Force Quit is ume and Cancel the default, so Enter cancels
+  (the controller's `submit` too). A grant or an agent's sheet (consent, confirm, sign-in,
+  question, approval, the person's confirm, Displays' keep) has `keys={false}`: only a click or a
+  field's own Enter answers it, as before. Bluetooth: Pair is never Enter's; the sheets that
+  show a code to type on the device leave Enter alone and only Esc cancels. A field takes Enter
+  and Esc while it has the keyboard; the sheet's keys take them otherwise.
+- **Why:** a stray Enter must not end an app, pair a device or grant anything.
+- **Undo:** per sheet, the button's `isDefault`.
+
+### D624. The shell sheets' words
+
+- **Date:** 2026-11-24. The `design-sheets` agent's (T34 for W2: SH-15, SH-36; VO-10, VO-1).
+- **Choice:** answers in sentence case with the curly apostrophe: "Don’t allow", "Always allow",
+  "Allow once", "Allow for this task", "Don’t answer", "Log out", "Shut down", "Go back",
+  "Change password", "Forget this device", "Search again", and "My devices", "Nearby devices",
+  "Not connected" in Control Center's Bluetooth and Wi-Fi pages. Questions say what will happen:
+  the first consent sheet's heading, set in `agents/lib/session/session-scopes.ts` (a W3 file, one
+  line), is "Allow an agent on another machine to use this computer?";
+  "Log out now?", "Restart now?", "Shut down now?"; an agent's: "Allow Claude to use Dashi?",
+  "Allow Claude to force “Notes” to quit?"; "Join “Home”?"; "Force “Notes” to quit?" with "Its
+  unsaved changes will be lost."; the Force Quit list "Force quit an app". Names keep their
+  capitals ("Force Quit" the command). The stop note is a `Notice`: "Stopped Claude. It can
+  connect again later."
+- **Why:** VO-1, VO-10, and UI-5's question as the first line.
+- **Undo:** strings only.
+
+### D625. `menus/sheets.tsx` is W2's
+
+- **Date:** 2026-11-24. The `design-sheets` agent's.
+- **Question:** the plan gives W2 "menus/lib/sheets.tsx", which does not exist; the file is
+  `menus/sheets.tsx`, which the owners map then filed under W3, with one entry on each of W3's
+  H21 and H22 lists.
+- **Choice:** the owners map names `menus/sheets` for W2; with the file down to a size constant,
+  its two entries leave W3's lists (one line each).
+- **Cost:** W3's branch may meet those two removed lines when it merges.
+- **Undo:** none wanted.
+
+### D626. Polkit's people are a segmented control; its details a MoreButton
+
+- **Date:** 2026-11-24. The `design-sheets` agent's (R3, VO-8).
+- **Choice:** who to authenticate as, when polkitd offers more than one, is the kit's
+  `Segmented` (one of a few), not pills in the accent; "Details" is `MoreButton` ("Details" /
+  "Hide details"), its rows captions over secondary words.
+- **Why:** R3 (pick one is one control) and VO-8; the accent means chosen, and the segment's own
+  look says that.
+- **Undo:** per control.
+
+### D627. The sign-in sheet's logins are pick rows
+
+- **Date:** 2026-11-24. The `design-sheets` agent's (UI-13).
+- **Choice:** each login is the kit's `PickRow` (the account, "site · where it is saved" as its
+  detail) in a `PickList`; the hand-drawn radio and the row of dots are gone (the message says
+  the agent sees dots).
+- **Why:** UI-13: one row to pick one from; the radio was a pick-one drawn by hand.
+- **Undo:** the old rows in git.
+
+### D628. The applet consent sheet is the alert frame with the applet's icon
+
+- **Date:** 2026-11-24. The `design-sheets` agent's (UI-5, VO-8).
+- **Choice:** `AlertSheet` with `icon` (the applet's icon, or its letter on its tint in
+  `ON_TINT`), in Software's window and centred on the shell's surface (`place="screen"`); "Already
+  allowed (n)" is a `MoreButton`.
+- **Why:** UI-5's one frame; the hand-made disclosure and the `#ffffffee` letter were H21 and H22
+  offenders.
+- **Undo:** per part.
+
+### D629. Small calls made while moving the sheets
+
+- **Date:** 2026-11-24. The `design-sheets` agent's.
+- **Choice:** About's name is a page's title (TY-1, 20 Bold) on the sheet card; the shortcut
+  sheet's column heads are captions (11, 600, sentence case) under a 13 Bold title; Bluetooth's
+  code is the named figure (28) with the digits the device has taken in ink and the rest muted
+  (not the accent: it is progress, not a choice); the agents' "Your turn" banner is radius 12 on
+  `lg`; the time zone and language pickers use the kit's `SearchField` (`width="fill"`, a kit
+  addition; the window look, since the panel look's ground is Settings' card's and the field
+  vanished on it, seen in the VM) and `PickRow`; Control Center's Bluetooth "…" is a `ToolbarButton` and its Forget
+  question in place has an ume Forget; Force Quit's list rows are 30 (the pick row's height).
+- **Why:** each follows a rule already written (TY-1, CO-1, RA-2, DE-1, UI-11, UI-13, UI-6).
+- **Undo:** per line.

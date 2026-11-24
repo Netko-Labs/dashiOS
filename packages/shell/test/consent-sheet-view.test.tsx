@@ -25,13 +25,14 @@ test("Other permissions opens every one of them at once, a tick each, and the an
   const press = (testID: string) => emit({ type: "press", nodeId: root.nodeId(testID) ?? "" });
   const others = SCOPES.filter((scope) => scope.id !== "act");
 
-  expect(root.lastTree()).toContain(`Other permissions (${others.length})…`);
+  expect(root.lastTree()).toContain(`Other permissions (${others.length})`);
+  expect(root.lastTree()).not.toContain(`Other permissions (${others.length})…`);
   expect(root.nodeId("consent-scope:screen")).toBeUndefined();
   await press("consent-more");
   for (const scope of others) expect(root.nodeId(`consent-scope:${scope.id}`)).toBeDefined();
   // What the pointed-at one allows, on a line of its own that keeps its height.
   expect(root.lastTree()).toContain("Point at one to see what it allows.");
-  await emit({ type: "hover", nodeId: root.nodeId("consent-scope:screen") ?? "", hovered: true });
+  await emit({ type: "hover", nodeId: root.nodeId("consent-scope:screen:cell") ?? "", hovered: true });
   expect(root.lastTree()).toContain("Screenshots of the screen");
 
   await press("consent-scope:screen");
@@ -70,6 +71,8 @@ test("what is needed now comes first with its words; what Always Allow keeps is 
   for (const id of allowed) expect(root.nodeId(`consent-scope:${id}`)).toBeDefined();
   const files = SCOPES.find((scope) => scope.id === "files");
   expect(tree).not.toContain(files?.detail ?? "?");
-  expect(tree).toContain(`Other permissions (${SCOPES.length - allowed.size - 1})…`);
+  expect(tree).toContain(`Other permissions (${SCOPES.length - allowed.size - 1})`);
+  // A disclosure (VO-8): the kit's MoreButton, ink words and a chevron, never an ellipsis or the accent.
+  expect(tree).toContain('"role":"button"');
   root.unmount();
 });

@@ -6,18 +6,23 @@
  * layer, so agents' pictures blank it.
  */
 
-import { TextSelectionLook, useColors } from "@dashi/ui";
-import { type NativeHostTransport, type NativeRoot, render, Text, TextInput, View } from "@mirinjs/metal";
+import { AlertSheet, LOCK, TextField, TextSelectionLook } from "@dashi/ui";
+import { type NativeHostTransport, type NativeRoot, render } from "@mirinjs/metal";
 import { useState } from "react";
 import { SHEET_LAYERS } from "./agents/index.ts";
 import { type ApprovalsUi, describe, type Question } from "./agents/secrets/approvals.ts";
-import { Button, opaque } from "./consent.tsx";
 import { spawnShellHost } from "./shared/metal/index.ts";
 
 export const APPROVAL = { width: 460, height: 300 } as const;
+const WIDTH = APPROVAL.width - 60;
 
+/**
+ * The alert frame (UI-5) with the agents' shiso tile and a lock: the question,
+ * what it is, the password field (UI-9), "Don’t allow" and the go-ahead. Only
+ * the typed password answers it (Enter in the field); the sheet's own keys
+ * never do.
+ */
 function ApprovalSheet({ question, onApprove, onDeny }: { question: Question; onApprove: (password: string) => Promise<string | null>; onDeny: () => void }) {
-  const colors = useColors();
   const [password, setPassword] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
   const words = describe(question);
@@ -29,44 +34,35 @@ function ApprovalSheet({ question, onApprove, onDeny }: { question: Question; on
     });
   };
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <View
-        occlude
-        style={{
-          width: APPROVAL.width - 60,
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 6,
-          padding: 22,
-          borderRadius: 18,
-          backgroundColor: opaque(colors.launcher),
-          borderWidth: 1,
-          borderColor: colors.dockBorder,
-          shadow: "xl",
+    <AlertSheet
+      testID="approval-sheet"
+      place="screen"
+      keys={false}
+      width={WIDTH}
+      question={words.title}
+      message={words.detail}
+      glyph={LOCK}
+      tone="agent"
+      buttons={[
+        { label: "Don’t allow", testID: "approval-deny", onPress: onDeny, cancel: true },
+        { label: question.kind === "pay" ? "Pay" : "Allow", testID: "approval-go", onPress: approve, kind: "primary", disabled: password === "" },
+      ]}
+    >
+      <TextField
+        testID="approval-password"
+        value={password}
+        secure
+        autoFocus
+        placeholder="Password"
+        onChangeText={(text) => {
+          setPassword(text);
+          if (problem) setProblem(null);
         }}
-      >
-        <View style={{ width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center", backgroundColor: colors.agentWash }}>
-          <Text style={{ fontSize: 22, color: colors.agentInk }}>◎</Text>
-        </View>
-        <Text style={{ fontSize: 16, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{words.title}</Text>
-        <Text style={{ fontSize: 12, color: problem ? colors.critical : colors.textMuted, textAlign: "center" }}>{problem ?? words.detail}</Text>
-        <View style={{ alignSelf: "stretch", marginTop: 8 }}>
-          <TextInput
-            testID="approval-password"
-            value={password}
-            placeholder="Password"
-            secureTextEntry
-            onChangeText={setPassword}
-            onSubmitEditing={approve}
-            style={{ width: "100%", fontSize: 13, padding: 7, borderRadius: 7, color: colors.text, backgroundColor: colors.button }}
-          />
-        </View>
-        <View style={{ alignSelf: "stretch", flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
-          <Button label="Deny" onPress={onDeny} />
-          <Button label={question.kind === "pay" ? "Pay" : "Allow"} primary onPress={approve} />
-        </View>
-      </View>
-    </View>
+        onSubmit={approve}
+        onKeyPress={(key) => key === "Escape" && onDeny()}
+        {...(problem ? { message: problem, invalid: true } : {})}
+      />
+    </AlertSheet>
   );
 }
 

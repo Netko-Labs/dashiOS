@@ -7,6 +7,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { windowPlaceOf } from "../accounts/index.ts";
 import {
   type AgentStore,
   type Agents,
@@ -62,6 +63,7 @@ export function startSettingsApps(compositor: Compositor | null, system: SystemS
       battery: late.get("batteryMonitor"),
       laptop: late.get("laptop"),
       refresh: late.get("autoRefresh"),
+      settingsPlace: windowPlaceOf(compositor, SETTINGS_APP_ID),
     }));
   return { forceQuit, paneServicesOf };
 }

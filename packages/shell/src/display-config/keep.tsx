@@ -6,58 +6,55 @@
  * agent input never reaches it (agents drive windows, not layer surfaces).
  */
 
-import { useColors } from "@dashi/ui";
+import { AlertSheet, INFO, KeySink, TYPE, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
-import { Button } from "../consent.tsx";
 import type { OpenOverlay } from "../overlay.tsx";
 import type { AskToKeep, KeepAsk } from "./lib/trial.ts";
 
 export const KEEP_SHEET = { width: 440, height: 190 } as const;
+/** How often the count down looks at the clock. */
+const TICK_MS = 250;
+const WIDTH = KEEP_SHEET.width - 40;
 
 /** Whole seconds left, never below zero. */
 export function secondsLeft(deadline: number, now: number): number {
   return Math.max(0, Math.ceil((deadline - now) / 1000));
 }
 
+/**
+ * The alert frame (UI-5) on its own surface: the question, what changed, the
+ * count down, "Go back" (what Esc presses) and "Keep". It never takes the
+ * keyboard by itself, so Enter typed elsewhere can't keep a change.
+ */
 export function KeepSheet({ ask }: { ask: KeepAsk }) {
   const colors = useColors();
   const [left, setLeft] = useState(() => secondsLeft(ask.deadline, Date.now()));
   useEffect(() => {
-    const timer = setInterval(() => setLeft(secondsLeft(ask.deadline, Date.now())), 250);
+    const timer = setInterval(() => setLeft(secondsLeft(ask.deadline, Date.now())), TICK_MS);
     return () => clearInterval(timer);
   }, [ask.deadline]);
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <View
-        occlude
-        testID="display-keep"
-        style={{
-          width: KEEP_SHEET.width - 40,
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 4,
-          padding: 20,
-          borderRadius: 18,
-          backgroundColor: colors.launcher,
-          borderWidth: 1,
-          borderColor: colors.dockBorder,
-          shadow: "xl",
-        }}
-      >
-        <Text style={{ fontSize: 16, fontWeight: "bold", color: colors.text, textAlign: "center" }}>Keep these display settings?</Text>
-        <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>{ask.summary}</Text>
-        <View testID="display-keep-left" style={{ marginTop: 8 }}>
-          <Text style={{ fontSize: 13, color: colors.text, textAlign: "center" }}>
-            {`Going back in ${left} ${left === 1 ? "second" : "seconds"} if you do nothing.`}
-          </Text>
-        </View>
-        <View style={{ alignSelf: "stretch", flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
-          <Button label="Go Back" onPress={() => ask.answer(false)} />
-          <Button label="Keep" primary onPress={() => ask.answer(true)} />
-        </View>
+    <AlertSheet
+      testID="display-keep"
+      place="screen"
+      keys={false}
+      width={WIDTH}
+      question="Keep these display settings?"
+      message={ask.summary}
+      glyph={INFO}
+      buttons={[
+        { label: "Go back", testID: "display-keep-back", onPress: () => ask.answer(false), cancel: true },
+        { label: "Keep", testID: "display-keep-keep", onPress: () => ask.answer(true), kind: "primary", isDefault: false },
+      ]}
+    >
+      <KeySink testID="display-keep:esc" onKey={(key) => key.kind === "escape" && ask.answer(false)} />
+      <View testID="display-keep-left">
+        <Text style={{ fontSize: TYPE.body.size, lineHeight: TYPE.body.line, color: colors.text }}>
+          {`Going back in ${left} ${left === 1 ? "second" : "seconds"} if you do nothing.`}
+        </Text>
       </View>
-    </View>
+    </AlertSheet>
   );
 }
 

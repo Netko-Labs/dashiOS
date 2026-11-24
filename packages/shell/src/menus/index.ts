@@ -3,7 +3,7 @@ export { MenuController, useMenus } from "./controller.ts";
 export { findEntry, helpCommand, openHelp, README } from "./launch.ts";
 export { appWindows, BAR_MENUS, barMenus, buildMenu, isEnabled, stepHighlight, windowMenus } from "./model.ts";
 export type { ControlCenterStores, EntryFor, Menus, MenusOptions } from "./options.ts";
-export { Button, Panel, SHEET_SIZE } from "./sheets.tsx";
+export { SHEET_SIZE, sheetSurfaceWidth } from "./sheets.tsx";
 export { startMenus } from "./start.tsx";
 export { extraEntries, type StatusMenuAction } from "./status-menu.ts";
 export type {
