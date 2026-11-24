@@ -8,8 +8,7 @@
  * and an agent's changes nothing. Choosing a character is one change and one Undo.
  */
 
-import { type Confirm, FoldedChoices, SPACE, useConfirm } from "@dashi/ui";
-import { View } from "@mirinjs/metal";
+import { type Confirm, FoldedChoices, useConfirm } from "@dashi/ui";
 import { useState, useSyncExternalStore } from "react";
 import {
   CHARACTERS,
@@ -30,14 +29,14 @@ import { basicsHere } from "../../../voice/index.ts";
 import type { PaneContext } from "../../context.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
-import { Hero, Page } from "../../ui.tsx";
+import { Page } from "../../ui.tsx";
 import { LANGUAGE_WORDS, TALK_WORDS } from "../changes/words.ts";
 import { type ByPerson, ONLY_YOU, type PersonOnly, usePersonOnly } from "../person-only.ts";
 import { Setting } from "../setting.tsx";
 import { MiniButton } from "./parts.tsx";
 import { AboutYou } from "./persona-about.tsx";
 import { Look } from "./persona-look.tsx";
-import { CapsulePreview, CharacterFilesNotes, PersonaText } from "./persona-parts.tsx";
+import { CharacterFilesNotes, PersonaHero, PersonaText } from "./persona-parts.tsx";
 import { Share, type ShareDialogs } from "./persona-share.tsx";
 import type { VoicePaneSource } from "./voice.tsx";
 import { voiceChoices } from "./voice-words.ts";
@@ -250,31 +249,17 @@ export function PersonaPane(props: PersonaPaneProps) {
   return (
     <>
       <Page title="Your Dashi">
-        <Hero testID="persona-hero">
-          <View
-            style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: SPACE.inset, padding: SPACE.m }}
-          >
-            <CapsulePreview
-              colour={view.colour}
-              mark={view.mark}
-              dots={view.dots}
-              motion={view.motion}
-              name={view.name}
-              still={useSettings(settings).data.appearance.reduceMotion === true}
-              line={previewLine(view, persona.source.language())}
-              said={said}
-            />
-            <MiniButton
-              testID="persona-hear"
-              label={voices ? "Hear it" : "Turn on Voice to hear it"}
-              disabled={!voices}
-              onPress={() => {
-                setSaid((times) => times + 1);
-                voice?.sample(view.voice ?? voices?.own ?? "");
-              }}
-            />
-          </View>
-        </Hero>
+        <PersonaHero
+          view={view}
+          still={useSettings(settings).data.appearance.reduceMotion === true}
+          line={previewLine(view, persona.source.language())}
+          said={said}
+          canHear={voices !== null}
+          onHear={() => {
+            setSaid((times) => times + 1);
+            voice?.sample(view.voice ?? voices?.own ?? "");
+          }}
+        />
         <Who {...parts} />
         <Sound {...parts} />
         <Look {...parts} />

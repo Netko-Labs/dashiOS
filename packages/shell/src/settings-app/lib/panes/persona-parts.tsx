@@ -6,11 +6,12 @@
 import { CAPSULE as CAPSULE_INKS, OPACITY, PictureChoice, SPACE, TextField, TYPE, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { COLOURS, type Colour, type ColourId, type PersonaSource } from "../../../persona/index.ts";
+import { COLOURS, type Colour, type ColourId, type PersonaSource, type PersonaView } from "../../../persona/index.ts";
 import { Caption } from "../../../shared/cards/index.ts";
 import { FaceDots } from "../../../shared/face/index.ts";
 import { markSvg, type PersonaDots, type PersonaMark, type PersonaMotion } from "../../../shared/pill/index.ts";
-import { Failure } from "./parts.tsx";
+import { Hero } from "../../ui.tsx";
+import { Failure, MiniButton } from "./parts.tsx";
 
 /** The capsule's measures (dashi-0.9.0-design/round3/pill-v2): 31 points tall, a white disc at its left, a light line round the fill. */
 export const CAPSULE = { height: 31, disc: 21, dot: 4, mark: 13, rule: 13, line: CAPSULE_INKS.rimOnFill } as const;
@@ -96,6 +97,32 @@ export function CapsulePreview({
         </Text>
       </View>
     </View>
+  );
+}
+
+/** Your Dashi's hero: the capsule as it will look, and "Hear it". */
+export function PersonaHero({
+  view,
+  line,
+  still,
+  said,
+  canHear,
+  onHear,
+}: {
+  view: Pick<PersonaView, "colour" | "mark" | "dots" | "motion" | "name">;
+  line: string;
+  still: boolean;
+  said: number;
+  canHear: boolean;
+  onHear: () => void;
+}) {
+  return (
+    <Hero testID="persona-hero">
+      <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: SPACE.inset, padding: SPACE.m }}>
+        <CapsulePreview colour={view.colour} mark={view.mark} dots={view.dots} motion={view.motion} name={view.name} still={still} line={line} said={said} />
+        <MiniButton testID="persona-hear" label={canHear ? "Hear it" : "Turn on Voice to hear it"} disabled={!canHear} onPress={onHear} />
+      </View>
+    </Hero>
   );
 }
 
