@@ -1,17 +1,17 @@
 /**
  * Glance (round five, frames 7 and 14): the lock screen at rest. Black,
- * the clock in real type (never dots), and under it the one thing on air:
+ * the lock's clock in real type, hours over minutes (never dots: D670),
+ * dimmed to grey, and under it the one thing on air:
  * the tally's dot, its words, and a hollow ring when something waits on
  * standby. Nothing else. Its content moves a few points each minute so no
  * pixel burns in; any key or press wakes the lock screen as it was.
  */
 
+import { InksClock, inkTokens, pill, SPACE, TRUE_BLACK, TYPE, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
-import { useHostAbilities } from "../shared/metal/index.ts";
 import { onAirWords, useSecondTick } from "../tally/index.ts";
 import { useWidgetEnv } from "./env.tsx";
-import { clockText } from "./lib/data.ts";
-import { clockFace } from "./lib/numerals.ts";
+import { lockTime, useClockDisplay } from "./lock.tsx";
 
 /** The burn-in nudge: where the content sits this minute, a few points from the middle, round a small square. */
 export function glanceNudge(now: number): { x: number; y: number } {
@@ -30,27 +30,34 @@ export function glanceNudge(now: number): { x: number; y: number } {
   return { x: x ?? 0, y: y ?? 0 };
 }
 
+/** Glance's own measures: the tally's dot and the standby ring, and the ring's line. */
+const GLANCE = { dot: 8, ring: 1.3 } as const;
+
 export function Glance({ onWake }: { onWake: () => void }) {
-  const { now, hour24, tally, inks } = useWidgetEnv();
+  const { now, hour24, tally } = useWidgetEnv();
+  // Black at rest whatever the mode (OLED: fewer lit pixels), so always Dark's inks, the clock in their tertiary.
+  const inks = inkTokens("dark");
+  const grey = inks.text.tertiary;
   const item = tally.item;
   const tick = useSecondTick(item?.countdown !== undefined);
   const nudge = glanceNudge(now);
-  const face = clockFace(useHostAbilities());
+  const display = useClockDisplay();
+  const dot = { width: GLANCE.dot, height: GLANCE.dot, borderRadius: pill(GLANCE.dot) } as const;
   return (
     <View
       testID="glance"
       onPress={onWake}
-      style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, backgroundColor: "#000000", alignItems: "center", justifyContent: "center" }}
+      style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, backgroundColor: TRUE_BLACK.ground, alignItems: "center", justifyContent: "center" }}
     >
-      <View style={{ flexDirection: "column", alignItems: "center", gap: 14, marginLeft: nudge.x * 2, marginTop: nudge.y * 2 }}>
-        <Text style={{ fontSize: 120, color: "#8E8E8C", ...face }}>{clockText(now, hour24)}</Text>
+      <View style={{ flexDirection: "column", alignItems: "center", gap: SPACE.button, marginLeft: nudge.x * 2, marginTop: nudge.y * 2 }}>
+        <InksClock time={lockTime(now, hour24)} color={grey} display={display} testID="glance-clock" />
         {item ? (
-          <View testID="glance-now" style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: inks.tally }} />
-            <Text style={{ fontSize: 14, fontWeight: "semibold", color: item.ink ? inks.dimmed[item.ink] : "#8E8E8C" }}>
+          <View testID="glance-now" style={{ flexDirection: "row", alignItems: "center", gap: SPACE.gap }}>
+            <View style={{ ...dot, backgroundColor: inks.tally }} />
+            <Text style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: item.ink ? inks.dimmed[item.ink] : grey }}>
               {(item.key.startsWith("event:") ? `Next ${onAirWords({ label: "" }, tick)}` : onAirWords(item, tick)).toUpperCase()}
             </Text>
-            {tally.standby.length > 0 ? <View style={{ width: 8, height: 8, borderRadius: 4, borderWidth: 1.3, borderColor: "#8E8E8C" }} /> : null}
+            {tally.standby.length > 0 ? <View style={{ ...dot, borderWidth: GLANCE.ring, borderColor: grey }} /> : null}
           </View>
         ) : null}
       </View>

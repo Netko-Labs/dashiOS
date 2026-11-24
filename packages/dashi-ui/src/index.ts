@@ -51,10 +51,21 @@ export {
   STOP,
   WARNING,
 } from "./glyphs.ts";
+export { CLOCK_DAY, ClockHead, type ClockHeadProps, clockFace, clockParts, InksClock, type InksClockProps } from "./inks-clock.tsx";
 export { KeySink, type KeySinkProps } from "./key-sink.tsx";
 export { KeyedText, type KeyedTextStyle, keyGlyphSize, namesKeys } from "./keyed-text.tsx";
 export { type KeyInput, keyName } from "./keys.ts";
-export { Avatar, LOGIN_FOCUS_RING, LOGIN_GROUND, LOGIN_INK, LOGIN_MUTED, LoginScreen, type LoginScreenProps, type PowerAction } from "./login-screen.tsx";
+export { Avatar, LOGIN_PARTS, LoginBackLink, LoginChip, LoginPerson } from "./login-parts.tsx";
+export {
+  LOGIN_FOCUS_RING,
+  LOGIN_GROUND,
+  LOGIN_INK,
+  LOGIN_MUTED,
+  LOGIN_SCREEN,
+  LoginScreen,
+  type LoginScreenProps,
+  type PowerAction,
+} from "./login-screen.tsx";
 export { MENU, type MenuRowKind, menuHeight, menuLabelLeft, placeMenu, rowTop, type Size } from "./menu-place.ts";
 export { type MenuHighlight, MenuHighlightContext, MenuLine, MenuRow, type MenuRowProps, menuHighlight } from "./menu-row.tsx";
 export { MONTH_GRID, MonthGrid, type MonthGridProps } from "./month-grid.tsx";
@@ -186,7 +197,10 @@ export {
   LIGHT_SURFACE,
   LOCK_GLASS,
   LOGIN,
+  LOGIN_LIGHT,
+  type LoginColors,
   lightColors,
+  loginColors,
   MEDIA_SCRIM,
   MOTION,
   type Oklch,

@@ -7420,3 +7420,117 @@ short words, as the rulebook is written.
 - **Why:** each follows a rule already written (UI-12, UI-14, PA-6, PA-7, PA-17, VS-8, LA-5).
 - **Cost:** none beyond each line.
 - **Undo:** per component.
+
+### D541. A surface opens on the screen it names or not at all; the Dock opens again as the bars do
+
+- **Date:** 2026-11-24. `v10/screens-fix`, mirin `v10-screens-fix`.
+- **Found:** replugged, the second screen's menu bar opened on the first
+  (two bars there, none on the second), every time with a debug compositor.
+  Plain overlays (the bars after the first, the Dock) open on the warm
+  spare Metal host, started before the screen came. Its registry hears of
+  the new `wl_output` when it comes and binds it, and the name arrives a
+  round trip later; asked at once for `output: "Virtual-2"`, the host
+  didn't know that name, opened with no screen named, and the compositor
+  put it on its first screen. A slow compositor (or a screen that wakes
+  slowly, NVIDIA's) widens the gap. The lock screen's hosts and the Dock
+  name their screen the same way.
+- **Decision:** fixed where it starts, in mirin's host (`screen.rs`): a
+  layer or lock surface that names a screen the host doesn't know waits for
+  it, up to 3 s, and if it never comes opens nothing and ends, saying why;
+  it never opens on another screen. The shell's side was there for the bars
+  (a bar whose host died opens again a second later, three times a minute)
+  and the lock (a lock host that died is put back a second later); the Dock
+  now does the same (`dock/lib/surface.ts`) before it reports the loss that
+  ends the session.
+- **Cost:** a surface for a screen that never becomes known shows 3 s late,
+  or not at all; a Dock that dies four times in a minute still ends the
+  session, as one that died once did before.
+- **Undo:** mirin's `with_role` back to dropping an unknown name;
+  `DockSurface` reporting the first death.
+
+### D670. One clock for the lock, the login screen and Glance, in @dashi/ui
+
+- **Date:** 2026-11-24. The `design-lock` agent's (W7), on the owner's Q1.
+- **Question:** the lock drew its stacked 120 ExtraLight clock, Glance one line of 120, and the login
+  screen 88 Bold. Where does the one clock live, and how does a host that cannot draw Inter Display
+  get it?
+- **Choice:** `@dashi/ui`'s `InksClock` (hours over minutes, `TYPE.clock`, `WEIGHT.display.extraLight`
+  in the display family) and `ClockHead` (the day's row in the Inks' body size, upper case, then the
+  clock, then what the host hangs under it). The lock's head, the login screen's default head, the
+  greeter's other screens and its picker, and Glance all draw them; Glance is stacked too, as inks
+  frame 7 draws it. The face is asked only where the host says `fontWeights` and `displayFont`: the
+  shell reads its hosts' registry (`useClockDisplay`), the greeter its own hosts' protocol lines
+  (`greeter/src/display.ts`); until a host says, the clock is Regular.
+- **Why:** design.html says the two screens have one look, and the inks clock is the newer, approved
+  drawing; one component cannot drift.
+- **Cost:** on the login screen the clock takes two lines (about 224 points) where it took one; the
+  layout still fits a 617-point-tall screen.
+- **Undo:** give `ClockHead` a one-line variant and pass it from the greeter.
+
+### D671. The lock follows the person's mode; its Light look
+
+- **Date:** 2026-11-24. The `design-lock` agent's (W7), on the owner's Q2.
+- **Question:** what are the lock's colours in Light, and what stays Dark?
+- **Choice:** `LoginScreen` takes `mode`; the lock passes the person's (`useDark()`), the greeter
+  always Dark. `LOGIN_LIGHT` (beside `LOGIN`, `loginColors(mode)`): the wallpaper lightened to 82% of
+  the Inks' Light paper, Light's ink and 70% of it, the washes 10% to 25% of the ink, the light
+  palette's `criticalInk` and focus ring. The widgets on it sit on `LOCK_GLASS.light` (`#FFFFFF5C`,
+  a 22% ink hairline), the inks' frame 5 values; Dark keeps `LOCK_GLASS.dark`. Glance stays black in
+  both modes, in Dark's inks (fewer lit pixels at rest).
+- **Why:** the frames' lighter wash (15% to 53% white) leaves dark words unreadable over a dark
+  wallpaper in Light Mode; at 82% the ink reads 4.5:1, the error 4:1 and the ring 3:1 over a black
+  wallpaper, as Dark's 72% does over a white one (`dashi-ui/test/inks-clock.test.tsx`).
+- **Cost:** a milkier lock in Light than frame 5 shows.
+- **Undo:** lower `LOGIN_LIGHT.ground`'s alpha in `theme/colors.ts`.
+
+### D672. The lock's ink shift follows its wash: lighter on Dark's, darker on Light's
+
+- **Date:** 2026-11-24. The `design-lock` agent's (W7).
+- **Question:** `INK_RULE.lockL` was `{ light: +0.05, dark: -0.04 }`, so the always-Dark lock printed its
+  inks 4 points darker on a dark wash, the opposite of inks frame 4 ("5 points lighter for the dark
+  wash") and frame 5 ("4 points darker for the milky wash").
+- **Choice:** `{ dark: +0.05, light: -0.04 }`, keyed by the mode the lock now follows.
+- **Why:** the frames are the approved design, and the lock now has both washes.
+- **Cost:** none: the lock was the only reader.
+- **Undo:** swap the two numbers back.
+
+### D673. The login screen on the tokens
+
+- **Date:** 2026-11-24. The `design-lock` agent's (W7), closing AB-5, AB-6, AB-42, AB-43.
+- **Question:** the login screen's raw values: a pink error, white alphas, 16 and 14 point words, a 32
+  tall field with no edge, a typed chevron.
+- **Choice:** the name 15 SemiBold (`TYPE.heading`), the field 13 (`TYPE.body`) and 28 tall, a pill,
+  its 1 px edge the glass hairline at rest and the focus ring while it has the keyboard (KB-2); the
+  hint 12, the power labels 11, the people on the picker 13 SemiBold, the initials 28
+  (`TYPE.figure`) at both picture sizes; a wrong password in the mode's `criticalInk`. "Other users"
+  in sentence case after a drawn `CHEVRON_LEFT` at 12; the session a chip 22 tall, radius half of it.
+  The login screen's own measures are `LOGIN_SCREEN` and `LOGIN_PARTS` beside it in `@dashi/ui`.
+- **Why:** TY-1, CO-5, CO-7, KB-2, CP-4, RA-1.
+- **Cost:** none.
+- **Undo:** per value.
+
+### D674. The login screen's controls live in the kit
+
+- **Date:** 2026-11-24. The `design-lock` agent's (W7).
+- **Question:** the greeter drew "Other users", the session pill and the people on its picker as
+  hand-made buttons (H22's three hits); the kit's `Button` and `Chip` are the window palette's, not the
+  login screen's look on the darkened wallpaper.
+- **Choice:** `@dashi/ui`'s `login-parts.tsx`: `Avatar`, `LoginBackLink`, `LoginChip`, `LoginPerson`, each
+  taking the look's `LoginColors`, each with a name for screen readers; the Components app shows them
+  on its new "Login and lock" page.
+- **Why:** a control is never drawn in a module (H22, UI-1); these have one look and one user, the login
+  screen, which itself lives in the kit.
+- **Cost:** three small components only the greeter uses.
+- **Undo:** none needed; fold them into `Button` if it gains a login look.
+
+### D675. The day's upper case is ClockHead's, on the shared formatter's string
+
+- **Date:** 2026-11-24. The `design-lock` agent's (W7), closing SH-13.
+- **Question:** the lock wrote its day with `toLocaleDateString(…).toUpperCase()`, beside the shared
+  formatter; Metal has no `textTransform`.
+- **Choice:** the lock passes `shared/time`'s `formatLongDay` and `ClockHead` upper-cases that string
+  (`toLocaleUpperCase`) in one place. The greeter runs before the shell and anyone's Region settings,
+  so it keeps its own `formatDay` with the same options in the machine's locale.
+- **Why:** PA-14: one formatter; upper case is presentation, not a second format.
+- **Cost:** a screen reader reads the day in capitals, as it did.
+- **Undo:** a `textTransform` in mirin Metal, then drop the call.

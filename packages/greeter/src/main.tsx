@@ -11,6 +11,7 @@
 import { hostTextAntialiasing, TextSelectionLook } from "@dashi/ui";
 import { type NativeHostTransport, render, spawnNativeHost } from "@mirinjs/metal";
 import type { ReactElement } from "react";
+import { noteHost } from "./display.ts";
 import { connectGreetd, Login, type LoginState } from "./greetd/index.ts";
 import { recall, remember } from "./memory.ts";
 import { metalHost } from "./paths.ts";
@@ -59,7 +60,7 @@ const store: LoginStore = {
 
 /** A full-screen surface on `output` (undefined: the compositor's choice), the keyboard's when `keyboard`. */
 function surfaceOn(output: string | undefined, keyboard: boolean): NativeHostTransport {
-  return spawnNativeHost(metalHost(), {
+  const host = spawnNativeHost(metalHost(), {
     title: "Login",
     appId: "dev.dashi.greeter",
     // Grays, or what the environment opted in to (D142).
@@ -76,6 +77,9 @@ function surfaceOn(output: string | undefined, keyboard: boolean): NativeHostTra
     // What a screen reader calls it (`MIRIN_METAL_APP_NAME`); a host from before ignores it.
     env: { MIRIN_METAL_APP_NAME: "Dashi" },
   });
+  // Its protocol line says whether the clock may be Inter Display ExtraLight.
+  noteHost(host);
+  return host;
 }
 
 const greeter = <Greeter users={users} sessions={sessions} initialUser={initialUser} initialSession={initialSession} login={store} onPower={power} />;
@@ -96,6 +100,10 @@ function show(element: ReactElement, output: string | undefined, keyboard: boole
     },
   };
 }
+
+/** How long the form waits for the compositor to name the main screen; how long "Starting…" shows before the greeter ends. */
+const FORM_WAIT_MS = 1500;
+const CLOSE_AFTER_MS = 400;
 
 // The login form goes on the main screen; the compositor is asked which that
 // is, for a moment, before the form opens wherever the compositor puts it.
@@ -124,7 +132,7 @@ const stopScreens = await watchScreens(arrange).catch((error) => {
 });
 setTimeout(() => {
   if (form === null) form = show(greeter, undefined, true);
-}, 1500);
+}, FORM_WAIT_MS);
 
 /** In: remember who, close up, and end the compositor so greetd starts the session. */
 function finish(): void {
@@ -137,5 +145,5 @@ function finish(): void {
     const compositor = Number(process.env.DASHI_GREETER_COMPOSITOR);
     if (Number.isInteger(compositor) && compositor > 1) process.kill(compositor, "SIGTERM");
     process.exit(0);
-  }, 400);
+  }, CLOSE_AFTER_MS);
 }
