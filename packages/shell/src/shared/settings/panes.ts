@@ -78,12 +78,14 @@ export interface PaneInfo {
 }
 
 /**
- * As the approved design lists them: Appearance to Control Center, then
- * Connect (Wi-Fi, Bluetooth, Sound), This laptop (Battery & Power, Graphics,
+ * As the approved design lists them, in sentence case (VO-1; SE-16: the
+ * network pane is Network, Wi-Fi a search word): Appearance to Control
+ * Center, then Connect (Network, Bluetooth, Sound), This laptop (Battery &
+ * power, Graphics,
  * Keyboard, Trackpad), You (Users, Passwords, Agents, Privacy). The panes it
  * didn't draw join the group they belong to, after the drawn ones:
  * Notifications with the desktop, Mouse and About with the laptop, Lock
- * Screen, Date & Time, Language & Region and Recently changed with you.
+ * screen, Date & time, Language & region and Recently changed with you.
  */
 export const PANES: readonly PaneInfo[] = [
   { id: "appearance", title: "Appearance", glyph: CONTRAST, group: "look" },
@@ -92,10 +94,10 @@ export const PANES: readonly PaneInfo[] = [
   { id: "desktop-dock", title: "Desktop & Dock", glyph: DOCK, group: "look" },
   { id: "control-center", title: "Control Center", glyph: GRID, group: "look" },
   { id: "notifications", title: "Notifications", glyph: BELL, group: "look" },
-  { id: "network", title: "Wi-Fi", glyph: WIFI, group: "connect" },
+  { id: "network", title: "Network", glyph: WIFI, group: "connect" },
   { id: "bluetooth", title: "Bluetooth", glyph: BLUETOOTH, group: "connect" },
   { id: "sound", title: "Sound", glyph: VOLUME, group: "connect" },
-  { id: "battery", title: "Battery & Power", glyph: BATTERY, group: "laptop" },
+  { id: "battery", title: "Battery & power", glyph: BATTERY, group: "laptop" },
   { id: "graphics", title: "Graphics", glyph: GPU, group: "laptop", optional: true },
   { id: "keyboard", title: "Keyboard", glyph: KEYBOARD, group: "laptop" },
   { id: "trackpad", title: "Trackpad", glyph: TRACKPAD, group: "laptop" },
@@ -107,9 +109,9 @@ export const PANES: readonly PaneInfo[] = [
   { id: "privacy", title: "Privacy", glyph: SHIELD, group: "you" },
   { id: "persona", title: "Your Dashi", glyph: PERSONA, group: "you" },
   { id: "voice", title: "Voice", glyph: MIC, group: "you" },
-  { id: "lock-screen", title: "Lock Screen", glyph: LOCK, group: "you" },
-  { id: "date-time", title: "Date & Time", glyph: CLOCK, group: "you" },
-  { id: "language-region", title: "Language & Region", glyph: GLOBE, group: "you" },
+  { id: "lock-screen", title: "Lock screen", glyph: LOCK, group: "you" },
+  { id: "date-time", title: "Date & time", glyph: CLOCK, group: "you" },
+  { id: "language-region", title: "Language & region", glyph: GLOBE, group: "you" },
   { id: "recent", title: "Recently changed", glyph: HISTORY, group: "you" },
 ];
 

@@ -47,3 +47,12 @@ test("a field with a least width gives way down to it; its status is muted words
   expect(again.nodeId("search:status")).toBeUndefined();
   again.unmount();
 });
+
+test("a field that fills its row, made with its words selected", async () => {
+  const host = fakeHost();
+  const root = render(<SearchField testID="search" look="panel" width="fill" selectAll value="wifi" onChangeText={() => {}} />, host.transport);
+  await settle();
+  expect(host.last()).toContain('"flex":1');
+  expect(host.last()).toContain('"selection":{"start":0,"end":4}');
+  root.unmount();
+});

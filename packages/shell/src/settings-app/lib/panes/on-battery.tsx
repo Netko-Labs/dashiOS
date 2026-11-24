@@ -7,7 +7,7 @@
  * switch, a screen with a lower rate.
  */
 
-import { TextLink, useControlColors } from "@dashi/ui";
+import { SPACE, TextLink, TYPE, useControlColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useCallback, useSyncExternalStore } from "react";
 import { type AutoRefresh, builtInScreen, type RefreshScreen } from "../../../display-config/auto-refresh.ts";
@@ -77,10 +77,10 @@ export function OnBatteryRow({ laptop, refresh, show }: { laptop: Laptop | null;
   const line = onBatteryLine(graphics, screen);
   if (line === null) return null;
   const links = (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-      {graphics && <TextLink testID="on-battery-graphics" label={paneTitle("graphics")} onPress={() => show("graphics", "mode")} />}
-      {graphics && screen && <Text style={{ fontSize: 12.5, color: colors.muted }}>·</Text>}
-      {screen && <TextLink testID="on-battery-refresh" label={paneTitle("displays")} onPress={() => show("displays", "refresh-rate")} />}
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
+      {graphics && <TextLink look="panel" testID="on-battery-graphics" label={paneTitle("graphics")} onPress={() => show("graphics", "mode")} />}
+      {graphics && screen && <Text style={{ fontSize: TYPE.panel.body.size, color: colors.muted }}>·</Text>}
+      {screen && <TextLink look="panel" testID="on-battery-refresh" label={paneTitle("displays")} onPress={() => show("displays", "refresh-rate")} />}
     </View>
   );
   return (

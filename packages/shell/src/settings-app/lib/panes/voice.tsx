@@ -15,7 +15,7 @@
  * (person-only.ts): an agent's press changes nothing and the row says so.
  */
 
-import { FoldedChoices } from "@dashi/ui";
+import { FoldedChoices, Loading, SPACE } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { speedWord } from "../../../rewrite/speed-word.ts";
@@ -39,12 +39,12 @@ import type { SettingsStore } from "../../store.ts";
 import { Page, Switch } from "../../ui.tsx";
 import { type ByPerson, ONLY_YOU, type PersonOnly, usePersonOnly } from "../person-only.ts";
 import { Setting } from "../setting.tsx";
-import { MiniButton } from "./parts.tsx";
+import { Failure, MiniButton } from "./parts.tsx";
 import { ModelChoiceRows } from "./voice-choice.tsx";
 import { DictationRows } from "./voice-dictation.tsx";
 import { DictationHistoryRows } from "./voice-dictation-history.tsx";
 import { DictationWordsRows } from "./voice-dictation-words.tsx";
-import { Progress, Remove } from "./voice-fetch-parts.tsx";
+import { Fetching, Remove } from "./voice-fetch-parts.tsx";
 import { VoiceLanguages } from "./voice-languages.tsx";
 import { TalkRows } from "./voice-talk.tsx";
 import { correctionsOffer, offerWords, REWRITE_GEMMA_SET, REWRITE_SET, removeWords, setsWords, speedWords, voiceChoices, whatFetching } from "./voice-words.ts";
@@ -97,14 +97,14 @@ function ModelsRow({
       id={id}
       testID={id.replace("/", "-")}
       detail={detail}
-      {...(fetching ? { below: <Progress testID={`${id.replace("/", "-")}-progress`} received={fetching.received} bytes={fetching.bytes} /> } : {})}
+      {...(fetching ? { below: <Fetching testID={`${id.replace("/", "-")}-progress`} received={fetching.received} bytes={fetching.bytes} /> } : {})}
     >
       {fetching ? (
         <MiniButton testID={`${id.replace("/", "-")}-pause`} label="Pause" onPress={() => void voice.models.pause()} />
       ) : here ? (
         <Remove testID={`${id.replace("/", "-")}-remove`} onRemove={remove} />
       ) : (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
           {part && <Remove testID={`${id.replace("/", "-")}-remove`} onRemove={remove} />}
           <MiniButton
             testID={`${id.replace("/", "-")}-fetch`}
@@ -136,7 +136,7 @@ function KeyAndVoice({ settings, voice, view, guard }: { settings: SettingsStore
       </Setting>
       {choices.length > 0 && (
         <Setting id="voice/dashis-voice" testID="voice-voice" {...(guard.refused === "voice/dashis-voice" ? { detail: ONLY_YOU } : {})} stack>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m, flexWrap: "wrap" }}>
             <FoldedChoices
               testID="voice-voice-choice"
               value={spoken}
@@ -197,6 +197,21 @@ interface VoicePaneProps {
   byPerson?: ByPerson;
 }
 
+/** The pane while Voice's service is still being looked for, or isn't running. */
+function VoiceMissing({ looking }: { looking: boolean }) {
+  return (
+    <Page title="Voice">
+      <Group testID="voice-missing">
+        {looking ? (
+          <Loading testID="voice-looking" label="Looking for Voice…" />
+        ) : (
+          <Note>Voice isn't running in this session. Log out and in again to start it.</Note>
+        )}
+      </Group>
+    </Page>
+  );
+}
+
 export function VoicePane({ settings, voice, dictation, byPerson }: VoicePaneProps) {
   const view = useSyncExternalStore(voice.models.subscribe, voice.models.getSnapshot);
   // Asked for (settings.json); it is on once its models are here too.
@@ -209,15 +224,7 @@ export function VoicePane({ settings, voice, dictation, byPerson }: VoicePanePro
     void voice.models.refresh();
     return voice.models.watch();
   }, [voice]);
-  if (view.service !== "ready") {
-    return (
-      <Page title="Voice">
-        <Group testID="voice-missing">
-          <Note>{view.service === "looking" ? "Looking for Voice…" : "Voice isn't running in this session. Log out and in again to start it."}</Note>
-        </Group>
-      </Page>
-    );
-  }
+  if (view.service !== "ready") return <VoiceMissing looking={view.service === "looking"} />;
   const basics = basicSets(view.sets);
   const more = view.sets.filter((set) => !set.basic && set.id !== REWRITE_SET && set.id !== REWRITE_GEMMA_SET);
   const whisperHere = view.sets.some((set) => set.id === "whisper" && set.installed);
@@ -250,7 +257,7 @@ export function VoicePane({ settings, voice, dictation, byPerson }: VoicePanePro
           <ModelsRow id="voice/models" sets={basics} view={view} voice={voice} offer={offer} onFetch={fetchBasics} guard={guard} />
         )}
       </Group>
-      {view.error !== null && <Note testID="voice-error">{view.error}</Note>}
+      {view.error !== null && <Failure testID="voice-error">{view.error}</Failure>}
       {on && <KeyAndVoice settings={settings} voice={voice} view={view} guard={guard} />}
       {on && <TalkRows settings={settings} guard={guard} />}
       {on && <DictationRows settings={settings} guard={guard} />}

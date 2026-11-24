@@ -203,7 +203,7 @@ test("the preview says its line when the character changes, then rests; never at
     await settle();
     expect(root.nodeId("persona-capsule-dots:line:saying")).toBeDefined();
     // Four words, then rest.
-    await clock.advance(SAYING.wordMs * 4 + 10, SAYING.wordMs);
+    await clock.advance(SAYING.perWord * 4 + 10, SAYING.perWord);
     await settle();
     expect(root.nodeId("persona-capsule-dots:line:saying")).toBeUndefined();
     expect(root.nodeId("persona-capsule-dots:line")).toBeDefined();

@@ -20,8 +20,12 @@ import { type WatchOptions, watchLines } from "../../system/watch.ts";
 import { GraphMap, JsonArrays } from "./lib/graph-map.ts";
 import { type Graph, parseGraph } from "./streams.ts";
 
-/** A burst of updates (a stream starting links several ports) is told once. */
-const SETTLE_MS = 40;
+/**
+ * Timers, in ms: a burst of updates (a stream starting links several ports)
+ * is told once, after `settle`; pw-dump restarts after `restart`, backing off
+ * to `backoff`, and counts as healthy after `healthy`.
+ */
+const TIMING = { settle: 40, restart: 1000, backoff: 5000, healthy: 10_000 } as const;
 
 export const EMPTY_GRAPH: Graph = { streams: [], outputs: [], inputs: [], defaultOutput: null };
 
@@ -47,7 +51,13 @@ export interface GraphWatch {
 const followPipeWire =
   (options: Pick<WatchOptions, "which" | "spawn"> = {}): Follow =>
   (onLine, onStart) =>
-    watchLines(["pw-dump", "--monitor", "--no-colors"], onLine, { restartMs: 1000, maxDelayMs: 5000, healthyMs: 10_000, onStart, ...options });
+    watchLines(["pw-dump", "--monitor", "--no-colors"], onLine, {
+      restartMs: TIMING.restart,
+      maxDelayMs: TIMING.backoff,
+      healthyMs: TIMING.healthy,
+      onStart,
+      ...options,
+    });
 
 /** Reads one object whole (`pw-dump <id>`): its text, or null. */
 export type ReadObject = (id: number) => Promise<string | null>;
@@ -118,7 +128,7 @@ export function pipewireWatch(options: PipeWireWatchOptions = {}): PipeWireWatch
       const objects = map.values();
       told = objects;
       for (const listener of [...listeners]) listener(objects);
-    }, SETTLE_MS);
+    }, TIMING.settle);
   };
   const metadata = metadataReader(readObject, {
     generation: () => generation,

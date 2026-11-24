@@ -17,7 +17,7 @@ export function PanelOverdriveSection({ laptop }: { laptop: Laptop | null }) {
   if (!laptop || !knob) return null;
   return (
     <>
-      <Caption above>Built-in Display</Caption>
+      <Caption above>Built-in display</Caption>
       <Group testID="displays-overdrive">
         <Setting id="displays/panel-overdrive">
           <Switch testID="displays-overdrive-switch" on={knob.value === true} onChange={(on) => void laptop.store.set("panel-overdrive", on)} />

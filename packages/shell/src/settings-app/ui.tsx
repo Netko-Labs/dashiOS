@@ -5,13 +5,13 @@
  * what the pane controls), then cards (radius 24, the off tile's color) of
  * 56-tall rows, a row's glyph on a round knob, hairlines between them.
  * Choices are segmented pills, sliders the ink flat slider, switches show
- * their track when off, and a button that goes ahead is ink: green only ever
- * means "on". Everything paints with the live Dark Mode.
+ * their track when off, and a button that goes ahead is ink: the on colour
+ * only ever means "on". Everything paints with the live Dark Mode.
  */
 
-import { FoldedChoices, InkSlider, Switch as KitSwitch, useColors, useControlColors } from "@dashi/ui";
+import { FoldedChoices, InkSlider, Switch as KitSwitch, type Look, SPACE, TYPE, useColors, useControlColors, WEIGHT } from "@dashi/ui";
 import { type Bounds, ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
-import { createContext, type ReactNode, useContext, useMemo, useRef } from "react";
+import { type ComponentType, createContext, type ReactNode, useContext, useMemo, useRef } from "react";
 import { PAGE } from "./lib/row.tsx";
 import { PAGE_GAP, PageContext } from "./spot.tsx";
 
@@ -19,12 +19,20 @@ import { PAGE_GAP, PageContext } from "./spot.tsx";
 export const PAGE_MAX_WIDTH = 720;
 
 /** A hero: a picture of what the pane controls (the themes, the display, the battery, the panel), on a card with rounder corners. */
-export function Hero({ children, testID, padding = 14 }: { children: ReactNode; testID?: string; padding?: number }) {
+export function Hero({ children, testID, padding = SPACE.button }: { children: ReactNode; testID?: string; padding?: number }) {
   const colors = useControlColors();
   return (
     <View
       {...(testID !== undefined ? { testID } : {})}
-      style={{ flexShrink: 0, flexDirection: "row", alignItems: "stretch", gap: 12, padding, borderRadius: PAGE.heroRadius, backgroundColor: colors.off }}
+      style={{
+        flexShrink: 0,
+        flexDirection: "row",
+        alignItems: "stretch",
+        gap: SPACE.inset,
+        padding,
+        borderRadius: PAGE.heroRadius,
+        backgroundColor: colors.off,
+      }}
     >
       {children}
     </View>
@@ -52,25 +60,18 @@ export function Choices<T extends string | number>(props: {
   return <FoldedChoices {...props} />;
 }
 
-/** A setting's slider: Control Center's flat ink slider, its glyph on a chip and its value at the right. */
-export function Slider(props: {
-  value: number;
-  range?: { min: number; max: number; step: number };
-  width?: number;
-  testID: string;
-  onChange?: (value: number) => void;
-  onCommit?: (value: number) => void;
-  glyph?: string;
-  format?: (value: number) => string;
-  disabled?: boolean;
-}) {
-  return <InkSlider {...props} />;
+/** A setting's slider: the kit's flat ink slider (the panel look), its glyph on a chip and its value at the right. */
+export const Slider = InkSlider;
+
+/** The kit's control in the panel look, every prop but the look its own. */
+function inPanelLook<P extends { look?: Look }>(Control: ComponentType<P>): ComponentType<Omit<P, "look">> {
+  return function InPanelLook(props: Omit<P, "look">) {
+    return <Control {...(props as P)} look="panel" />;
+  };
 }
 
-/** An on/off switch: its track shows when off, the one "on" when on. */
-export function Switch({ on, testID, onChange, disabled }: { on: boolean; testID: string; onChange?: (on: boolean) => void; disabled?: boolean }) {
-  return <KitSwitch look="panel" on={on} testID={testID} {...(onChange ? { onChange } : {})} {...(disabled ? { disabled } : {})} />;
-}
+/** An on/off switch: the kit's, in the panel look (its track shows when off, the one "on" when on). */
+export const Switch = inPanelLook(KitSwitch);
 
 /** The settings file couldn't be written just now (view.tsx provides it; the page says so at its top). */
 export const SaveError = createContext(false);
@@ -99,19 +100,19 @@ function TitleRow({ title, detail }: { title: string; detail?: string | undefine
         flexShrink: 0,
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
-        paddingLeft: PAGE.margin,
-        paddingRight: PAGE.margin,
+        gap: SPACE.gap,
+        paddingLeft: PAGE.sides,
+        paddingRight: PAGE.sides,
         // Centred on `line`: the row's middle moved up by what is left below it.
         paddingBottom: PAGE.title - 2 * line,
       }}
     >
       <View style={{ flexShrink: 0 }}>
-        <Text style={{ fontSize: 18, fontWeight: "semibold", color: colors.text }}>{title}</Text>
+        <Text style={{ fontSize: TYPE.panel.title.size, fontWeight: WEIGHT.semibold, color: colors.text }}>{title}</Text>
       </View>
       {detail !== undefined && detail !== "" && (
         <View testID="settings-title-detail" style={{ flexShrink: 0 }}>
-          <Text style={{ fontSize: 12.5, color: colors.muted }}>{`· ${detail}`}</Text>
+          <Text style={{ fontSize: TYPE.panel.body.size, color: colors.muted }}>{`· ${detail}`}</Text>
         </View>
       )}
       <View style={{ flex: 1 }} />
@@ -140,7 +141,7 @@ export function Page({ title, detail, children }: { title: string; detail?: stri
           onLayout={(laid) => {
             bounds.current = laid;
           }}
-          style={{ flex: 1, flexDirection: "column", paddingLeft: PAGE.margin, paddingRight: PAGE.margin, paddingBottom: PAGE.margin }}
+          style={{ flex: 1, flexDirection: "column", paddingLeft: PAGE.sides, paddingRight: PAGE.sides, paddingBottom: PAGE.sides }}
         >
           {/* Never shorter than its content: the scroll range is this column's height, and in a narrow window
               mirin's layout guesses a row of wrapped pills shorter than it is, so a shrinking column lost its last lines. */}
@@ -149,8 +150,8 @@ export function Page({ title, detail, children }: { title: string; detail?: stri
             style={{ width: "100%", maxWidth: PAGE_MAX_WIDTH, alignSelf: "center", flexShrink: 0, flexDirection: "column", gap: PAGE_GAP }}
           >
             {unsaved && (
-              <View testID="settings-error" style={{ paddingLeft: 10, paddingRight: 10 }}>
-                <Text style={{ fontSize: 12, color: critical }}>
+              <View testID="settings-error" style={{ paddingLeft: PAGE.inset, paddingRight: PAGE.inset }}>
+                <Text style={{ fontSize: TYPE.panel.detail.size, color: critical }}>
                   Your last change couldn't be saved. Check that your home folder has free space, then try again.
                 </Text>
               </View>

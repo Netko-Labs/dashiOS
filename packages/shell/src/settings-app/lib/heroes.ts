@@ -6,6 +6,7 @@
  * known is left out, never made up.
  */
 
+import { SPACE } from "@dashi/ui";
 import { formatWatts, statusLine } from "../../battery/panel-numbers.ts";
 import type { Placed } from "../../control-center/layout.ts";
 import { type Monitor, monitorLabel, refreshLabel, sizeLabel, uprightSize } from "../../display-config/monitors.ts";
@@ -54,7 +55,7 @@ export function aspectLabel(width: number, height: number): string | null {
 }
 
 export interface DisplayHero {
-  /** "Built-in", or the monitor's make and model. */
+  /** "Built-in", the monitor's model, or "Display" (`displayName`). */
   name: string;
   /**
    * What only the hero says, under the picture, each fact once (the title
@@ -74,11 +75,29 @@ export interface HeroPlace {
   several?: boolean;
   /** The cards have a Refresh rate row, which says the rate. */
   rateRow?: boolean;
+  /** Every display, so two without a model are told apart ("Display 1", "Display 2"). */
+  all?: readonly Monitor[];
+}
+
+/** A display without a make and model (no EDID): the compositor names it by its connector, which no person reads. */
+const unnamed = (monitor: Monitor): boolean => !monitor.builtIn && monitorLabel(monitor) === monitor.name;
+
+/**
+ * A display by its plain name, never its connector (VO-11, SE-A28): "Built-in", its model, or "Display" (numbered
+ * by connector order when several have no model).
+ */
+export function displayName(monitor: Monitor, all: readonly Monitor[] = [monitor]): string {
+  if (monitor.builtIn) return "Built-in";
+  if (!unnamed(monitor)) return monitorLabel(monitor);
+  const nameless = all.filter(unnamed).map((each) => each.name);
+  if (!nameless.includes(monitor.name)) nameless.push(monitor.name);
+  if (nameless.length < 2) return "Display";
+  return `Display ${nameless.sort().indexOf(monitor.name) + 1}`;
 }
 
 /** The display hero for a monitor: its name, the facts only it says, and its shape fitted in `box`. */
 export function displayHero(monitor: Monitor, box: { width: number; height: number }, place: HeroPlace = {}): DisplayHero {
-  const name = monitor.builtIn ? "Built-in" : monitorLabel(monitor);
+  const name = displayName(monitor, place.all);
   const size = uprightSize(monitor);
   const aspect = size ? aspectLabel(size.width, size.height) : null;
   const label = [name, ...(size ? [sizeLabel(size)] : ["Off"]), ...(aspect ? [aspect] : [])].join(" · ");
@@ -107,24 +126,24 @@ export function scaleOffer(choices: readonly number[], current: number, count = 
 }
 
 /** The miniature of the panel: 300 wide, 10 in, tiles 7 apart, rows 44. */
-export const MINIATURE = { width: 300, padding: 10, gap: 7, row: 44, columns: 4 } as const;
+export const MINIATURE = { width: 300, padding: SPACE.gap, tileGap: 7, row: 44, columns: 4 } as const;
 
-const MINI_COLUMN = (MINIATURE.width - 2 * MINIATURE.padding - (MINIATURE.columns - 1) * MINIATURE.gap) / MINIATURE.columns;
+const MINI_COLUMN = (MINIATURE.width - 2 * MINIATURE.padding - (MINIATURE.columns - 1) * MINIATURE.tileGap) / MINIATURE.columns;
 
 /** Where a placed tile sits in the miniature, from its top left. */
 export function miniatureFrame(tile: Pick<Placed, "col" | "row" | "cols" | "rows">): { left: number; top: number; width: number; height: number } {
   return {
-    left: Math.round(tile.col * (MINI_COLUMN + MINIATURE.gap)),
-    top: tile.row * (MINIATURE.row + MINIATURE.gap),
-    width: Math.round(tile.cols * MINI_COLUMN + (tile.cols - 1) * MINIATURE.gap),
-    height: tile.rows * MINIATURE.row + (tile.rows - 1) * MINIATURE.gap,
+    left: Math.round(tile.col * (MINI_COLUMN + MINIATURE.tileGap)),
+    top: tile.row * (MINIATURE.row + MINIATURE.tileGap),
+    width: Math.round(tile.cols * MINI_COLUMN + (tile.cols - 1) * MINIATURE.tileGap),
+    height: tile.rows * MINIATURE.row + (tile.rows - 1) * MINIATURE.tileGap,
   };
 }
 
 /** The miniature's height for the placed tiles, its padding included. */
 export function miniatureHeight(placed: readonly Pick<Placed, "row" | "rows">[]): number {
   const rows = Math.max(0, ...placed.map((tile) => tile.row + tile.rows));
-  return 2 * MINIATURE.padding + (rows === 0 ? 0 : rows * MINIATURE.row + (rows - 1) * MINIATURE.gap);
+  return 2 * MINIATURE.padding + (rows === 0 ? 0 : rows * MINIATURE.row + (rows - 1) * MINIATURE.tileGap);
 }
 
 /** An applet's controls, as Settings › Control Center lists them: "Lid light · Fans · CPU", and how many. */

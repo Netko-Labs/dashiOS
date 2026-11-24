@@ -8,8 +8,8 @@
  * shown. The tiles' own presses are off meanwhile.
  */
 
-import { useControlColors } from "@dashi/ui";
-import { type Bounds, Svg, View } from "@mirinjs/metal";
+import { KnobButton } from "@dashi/ui";
+import { type Bounds, View } from "@mirinjs/metal";
 import { type ReactNode, useRef } from "react";
 import { MINUS } from "../glyphs.ts";
 import { frameOf, GRID, gridHeight, type Placed, tileAt } from "../layout.ts";
@@ -28,31 +28,26 @@ export interface EditHandlers {
 /** The "−" on a tile in edit mode: ink, round, 20 across, 5 out from the corner. */
 export const REMOVE_MARK = { size: 20, out: 5 } as const;
 
+/** The "−" glyph on it. */
+const REMOVE_GLYPH = 12;
+
 /** Where a tile's "−" sits in the grid: 5 out from the tile's top left. */
 export function removeMarkAt(frame: { left: number; top: number }): { left: number; top: number } {
   return { left: frame.left - REMOVE_MARK.out, top: frame.top - REMOVE_MARK.out };
 }
 
 function RemoveMark({ id, frame, onRemove }: { id: string; frame: { left: number; top: number }; onRemove: (id: string) => void }) {
-  const colors = useControlColors();
   return (
-    <View
-      testID={`cc-remove:${id}`}
-      onPointer={(event) => event.phase === "up" && onRemove(id)}
-      accessibilityRole="button"
-      accessibilityLabel="Remove"
-      style={{
-        position: "absolute",
-        ...removeMarkAt(frame),
-        width: REMOVE_MARK.size,
-        height: REMOVE_MARK.size,
-        borderRadius: REMOVE_MARK.size / 2,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: colors.text,
-      }}
-    >
-      <Svg markup={MINUS} size={12} color={colors.surface} />
+    <View testID={`cc-remove:${id}`} style={{ position: "absolute", ...removeMarkAt(frame) }}>
+      <KnobButton
+        testID={`cc-remove-button:${id}`}
+        glyph={MINUS}
+        label="Remove"
+        inked
+        size={REMOVE_MARK.size}
+        glyphSize={REMOVE_GLYPH}
+        onPress={() => onRemove(id)}
+      />
     </View>
   );
 }

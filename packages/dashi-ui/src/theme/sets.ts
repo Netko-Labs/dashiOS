@@ -135,6 +135,8 @@ export const CAPSULE = {
   softOnInk: "#ffffffa8",
   softOnPaper: "#1d1d1fa8",
   softOnFill: "#ffffffd0",
+  /** The light line round the capsule's fill (pill-v2): white at 35 %. */
+  rimOnFill: "#ffffff59",
   /** The rim of dictation's capsule in Light. */
   rimOnInk: "#c9c6d2",
   /** Done, on paper and on ink. */

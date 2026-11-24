@@ -26,7 +26,8 @@ import { GraphicsTeller } from "./lib/teller.ts";
 import type { Loss } from "./lost-card.ts";
 import { decideGraphics, type GraphicsDecision, type GraphicsMode, listNames } from "./policy.ts";
 
-export const GRAPHICS_REFRESH_MS = 15_000;
+/** How often the graphics card is read again, and how soon after signalling its holders to quit. */
+export const GRAPHICS_REFRESH = { every: 15_000, afterQuit: 1500 } as const;
 
 export interface GraphicsSnapshot {
   /** There is a graphics card (two GPUs). */
@@ -126,7 +127,7 @@ export class GraphicsController {
       const [mode, cards, allowed] = await Promise.all([backend.mode(), backend.gpus(), backend.allowed()]);
       this.publish({ switchable: mode !== null, mode, cards, allowed });
     }
-    this.timer = setInterval(() => void this.refresh(), GRAPHICS_REFRESH_MS);
+    this.timer = setInterval(() => void this.refresh(), GRAPHICS_REFRESH.every);
     await this.refresh();
     this.teller.started(dashiMode(this.snapshot.mode));
   }
@@ -193,7 +194,7 @@ export class GraphicsController {
       });
     const now = groupHolders(this.holdingNow(card), this.nameOf, [], null);
     for (const holder of now) if (name === undefined || holder.name === name) for (const pid of holder.pids) signal(pid);
-    setTimeout(() => void this.refresh(), 1500);
+    setTimeout(() => void this.refresh(), GRAPHICS_REFRESH.afterQuit);
   }
 
   /** Reads the holders, the card's screens and its power state again (the battery menu asks before it opens). */

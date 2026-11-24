@@ -9,4 +9,3 @@ export { PageBody, PageHeader, PageNote, PageRow, PageSection } from "./page-par
 export { type PageKeyRow, type PageKeys, PageKeysContext, usePageKey, usePageKeys } from "./page-stops.ts";
 export { ControlCenterPanel, type ControlCenterProps } from "./panel.tsx";
 export { bluetoothRadio, type Radio, radiosFor } from "./radios.ts";
-export { SliderTile } from "./tiles.tsx";

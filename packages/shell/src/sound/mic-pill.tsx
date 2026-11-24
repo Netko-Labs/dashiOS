@@ -8,13 +8,13 @@
  * microphone and doesn't light it.
  */
 
-import { useColors } from "@dashi/ui";
-import { type Bounds, Svg, View } from "@mirinjs/metal";
+import { KnobButton, useColors } from "@dashi/ui";
+import type { Bounds } from "@mirinjs/metal";
 import { useRef } from "react";
 import { MICROPHONE } from "../settings-app/glyphs-machine.ts";
 
-/** A pill 20 tall, radius 10, 7 in; the glyph 13. */
-export const MIC_PILL = { height: 20, padding: 7, glyph: 13 } as const;
+/** A pill 20 tall, radius 10, 7 in; the glyph 13 (the menu bar reaches it by its own keys, not Tab). */
+export const MIC_PILL = { height: 20, inset: 7, glyph: 13 } as const;
 
 export interface MicPillProps {
   /** What it says, "Signal is using the microphone."; none draws nothing. */
@@ -25,14 +25,23 @@ export interface MicPillProps {
   onTip?: (tip: { text: string; bounds: Bounds } | null) => void;
 }
 
-export function MicPill({ words, onPress, onTip }: MicPillProps) {
+/** The pill on the kit's KnobButton: the microphone's own wash and ink (its job's colours, not the on colour). */
+export function MicIndicator({ words, onPress, onTip }: MicPillProps) {
   const colors = useColors();
   const laid = useRef<Bounds | null>(null);
   if (words === "") return null;
   const box = (bounds?: Bounds) => bounds ?? laid.current ?? { x: 0, y: 0, width: 0, height: 0 };
   return (
-    <View
+    <KnobButton
       testID="mic-indicator"
+      glyph={MICROPHONE}
+      label={words}
+      size={MIC_PILL.height}
+      width={MIC_PILL.glyph + 2 * MIC_PILL.inset}
+      glyphSize={MIC_PILL.glyph}
+      ground={colors.microphoneWash}
+      ink={colors.microphone}
+      focusable={false}
       onLayout={(bounds) => {
         laid.current = bounds;
       }}
@@ -42,20 +51,6 @@ export function MicPill({ words, onPress, onTip }: MicPillProps) {
         onPress(at.x + at.width);
       }}
       onHoverChange={(hovered, bounds) => onTip?.(hovered ? { text: words, bounds: box(bounds) } : null)}
-      accessibilityRole="button"
-      accessibilityLabel={words}
-      style={{
-        flexShrink: 0,
-        flexDirection: "row",
-        alignItems: "center",
-        height: MIC_PILL.height,
-        paddingLeft: MIC_PILL.padding,
-        paddingRight: MIC_PILL.padding,
-        borderRadius: MIC_PILL.height / 2,
-        backgroundColor: colors.microphoneWash,
-      }}
-    >
-      <Svg markup={MICROPHONE} size={MIC_PILL.glyph} color={colors.microphone} />
-    </View>
+    />
   );
 }

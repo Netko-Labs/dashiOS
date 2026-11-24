@@ -15,6 +15,7 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { isRecord } from "@dashi/shape";
+import { MOTION } from "@dashi/ui";
 import type { Compositor } from "./compositor/index.ts";
 import type { FlagsStore } from "./shared/control-center/index.ts";
 
@@ -25,13 +26,16 @@ export interface Tint {
 }
 
 /** Daylight: the screen as it is. */
+/** How often Night Shift looks at the clock for its schedule. */
+const NIGHT_LOOK = { everyMs: 30_000 } as const;
+
 export const NEUTRAL_KELVIN = 6500;
 /** How warm Night Shift is unless the settings say otherwise. */
 export const DEFAULT_KELVIN = 3400;
 const MIN_KELVIN = 1900;
 
 const FADE_STEPS = 12;
-const FADE_MS = 1500;
+const FADE_MS = MOTION.nightShift;
 
 /** Approximate sRGB of a black body at `kelvin` (Tanner Helland's fit), 0 to 255 per channel. */
 function blackBody(kelvin: number): Tint {
@@ -157,7 +161,7 @@ export function startNightShift(
   const stopFlags = flags.subscribe(() => void follow());
   tick();
   void follow();
-  const timer = setInterval(tick, 30_000);
+  const timer = setInterval(tick, NIGHT_LOOK.everyMs);
   return () => {
     clearInterval(timer);
     stopFlags();

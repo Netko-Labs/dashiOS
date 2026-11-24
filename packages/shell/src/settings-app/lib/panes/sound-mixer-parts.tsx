@@ -7,11 +7,10 @@
  * volume", "Mute Helium", "Play Helium on").
  */
 
-import { InkSlider, MoreButton, PopUpButton, type PopUpOption, useControlColors } from "@dashi/ui";
+import { InkSlider, MoreButton, PopUpButton, type PopUpOption, pill, SPACE, TYPE, useControlColors, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { AppIcon } from "../../../shared/apps/index.ts";
-import { type MixerOutput, MuteKnob, type StreamMeters, type StreamSound, useMeterLevel } from "../../../sound/index.ts";
+import { type MixerOutput, Mute, type StreamMeters, type StreamSound, useMeterLevel } from "../../../sound/index.ts";
 import { PAGE } from "../row.tsx";
 
 /**
@@ -32,8 +31,25 @@ export const APPS_CARD = {
   meter: { width: 64, height: 4 },
   stream: 44,
   tied: 0,
-  apart: 14,
+  apart: SPACE.button,
+  /** Under a stream's row, and between a title and its controls on one line. */
+  under: SPACE.s,
 } as const;
+
+/** An app's row in the mixer: a Settings row (knob, words, controls) whose controls wrap under the words. */
+export const MIXER_ROW = {
+  minHeight: PAGE.row,
+  flexDirection: "row",
+  flexWrap: "wrap",
+  alignItems: "center",
+  rowGap: SPACE.m,
+  columnGap: PAGE.gap,
+  padding: PAGE.knobInset,
+  paddingRight: PAGE.inset,
+} as const;
+
+/** An app's name on its row, as a Settings row's (SE-8). */
+export const APP_NAME = { fontSize: TYPE.panel.name.size, fontWeight: WEIGHT.semibold } as const;
 
 /** Whether a stream's controls wrapped under its title: the row is then taller than its one line and a half of the controls' height. */
 export function streamWrapped(height: number): boolean {
@@ -46,30 +62,12 @@ export function streamWrapped(height: number): boolean {
  * so the space under a slider is more than twice the space over it.
  */
 export function streamSpacing(wrapped: boolean): { paddingTop: number; rowGap: number; paddingBottom: number } {
-  return wrapped ? { paddingTop: APPS_CARD.apart, rowGap: APPS_CARD.tied, paddingBottom: 6 } : { paddingTop: 0, rowGap: 6, paddingBottom: 6 };
+  return wrapped
+    ? { paddingTop: APPS_CARD.apart, rowGap: APPS_CARD.tied, paddingBottom: APPS_CARD.under }
+    : { paddingTop: 0, rowGap: APPS_CARD.under, paddingBottom: APPS_CARD.under };
 }
 
 const VOLUME = { min: 0, max: 1, step: 0.01 } as const;
-
-/** The app's icon on the row's 40 knob. */
-export function IconKnob({ icon }: { icon: string }) {
-  const colors = useControlColors();
-  return (
-    <View
-      style={{
-        width: PAGE.knob,
-        height: PAGE.knob,
-        flexShrink: 0,
-        borderRadius: PAGE.knob / 2,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: colors.knobRest,
-      }}
-    >
-      <AppIcon source={icon} style={{ width: APPS_CARD.icon, height: APPS_CARD.icon }} />
-    </View>
-  );
-}
 
 /** A level as a bar: ink on the line colour, never green (it is a reading, not a switch that is on). */
 export function MeterBar({
@@ -91,9 +89,9 @@ export function MeterBar({
       // A picture to a screen reader: a level read out ten times a second would drown everything else.
       accessibilityRole="image"
       accessibilityLabel="Level meter"
-      style={{ width, height, flexShrink: 0, borderRadius: height / 2, overflow: "hidden", backgroundColor: colors.line }}
+      style={{ width, height, flexShrink: 0, borderRadius: pill(height), overflow: "hidden", backgroundColor: colors.line }}
     >
-      <View testID={`${testID}-fill`} style={{ width: Math.round(width * shown), height, borderRadius: height / 2, backgroundColor: colors.fill }} />
+      <View testID={`${testID}-fill`} style={{ width: Math.round(width * shown), height, borderRadius: pill(height), backgroundColor: colors.fill }} />
     </View>
   );
 }
@@ -138,9 +136,9 @@ export function StatusLine({
   const colors = useControlColors();
   const open = fold?.open === true;
   return (
-    <View style={{ height: APPS_CARD.line, flexDirection: "row", alignItems: "center", gap: 8 }}>
+    <View style={{ height: APPS_CARD.line, flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
       {fold && <MoreButton testID={`${testID}:fold`} open={fold.open} onPress={fold.onPress} more={`${parts.length} streams`} less="Hide streams" />}
-      {!playing && <Text style={{ fontSize: 11.5, color: colors.muted }}>Paused</Text>}
+      {!playing && <Text style={{ fontSize: TYPE.panel.detail.size, color: colors.muted }}>Paused</Text>}
       {playing && !open && <LiveMeter testID={`${testID}:meter`} meters={meters} serials={meterNodes(parts)} muted={muted} />}
     </View>
   );
@@ -148,7 +146,7 @@ export function StatusLine({
 
 /** A row's controls, kept together: in a narrow window they go under the words as one line, never one of them alone. */
 export function Controls({ children }: { children: ReactNode }) {
-  return <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 12 }}>{children}</View>;
+  return <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: SPACE.inset }}>{children}</View>;
 }
 
 /** A level's slider and its mute button, named for `what` ("Helium", "Helium, Playback 2"). */
@@ -169,7 +167,7 @@ export function Fader({
 }) {
   const colors = useControlColors();
   return (
-    <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 8 }}>
+    <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
       <View accessibilityRole="group" accessibilityLabel={`${what} volume`}>
         <InkSlider
           testID={`${testID}-volume`}
@@ -180,7 +178,7 @@ export function Fader({
           onChange={onLevel}
         />
       </View>
-      <MuteKnob
+      <Mute
         testID={`${testID}-mute`}
         focusable
         label={`Mute ${what}`}
@@ -274,7 +272,7 @@ export function StreamRow({
         flexDirection: "row",
         flexWrap: "wrap",
         alignItems: "center",
-        columnGap: 12,
+        columnGap: SPACE.inset,
         paddingLeft: PAGE.knobInset,
         paddingRight: PAGE.inset,
         ...streamSpacing(wrapped),
@@ -283,7 +281,7 @@ export function StreamRow({
       {/* The knob's room, so the title starts where the app's name does and wrapped controls sit under the app's. */}
       <View style={{ width: PAGE.knob, height: 1, flexShrink: 0 }} />
       <View style={{ flex: 1, flexDirection: "column", minWidth: PAGE.words }}>
-        <Text numberOfLines={1} style={{ fontSize: 12.5, color: colors.offInk }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.panel.body.size, color: colors.offInk }}>
           {part.title}
         </Text>
         <StatusLine testID={testID} parts={[part]} playing={part.playing} muted={part.muted} meters={meters} />

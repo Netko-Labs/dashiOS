@@ -60,7 +60,14 @@ export const YOU_ROWS = [
   },
   { id: "date-time/time-zone", glyph: GLOBE, title: "Time zone", keywords: ["timezone"], kind: "value", stack: true },
 
-  { id: "language-region/language", glyph: LANGUAGE, title: "Language and region", keywords: ["language", "locale", "region"], kind: "value", stack: true },
+  {
+    id: "language-region/language",
+    glyph: LANGUAGE,
+    title: "Language & region",
+    keywords: ["language", "locale", "region", "language and region"],
+    kind: "value",
+    stack: true,
+  },
   {
     id: "language-region/first-day-of-week",
     glyph: CALENDAR,
@@ -258,6 +265,7 @@ export const YOU_ROWS = [
     kind: "value",
   },
 
+  { id: "about/version", title: "Dashi", name: "Dashi's version", keywords: ["version", "build", "release"], kind: "value" },
   { id: "about/name", title: "Name", name: "Computer name", keywords: ["hostname", "computer name"], kind: "value" },
   { id: "about/based-on", title: "Based on", keywords: ["fedora", "distribution"], kind: "value" },
   { id: "about/kernel", title: "Kernel", keywords: ["linux", "kernel version"], kind: "value" },
