@@ -7,7 +7,7 @@
  * tooltip (chrome.ts).
  */
 
-import { RADIUS, SidebarItem, SidebarSection, SPACE, ToolbarButton, useColors } from "@dashi/ui";
+import { GlyphButton, RADIUS, SidebarItem, SidebarSection, SPACE, useColors } from "@dashi/ui";
 import { ScrollView, View } from "@mirinjs/metal";
 import { isInside } from "../files/index.ts";
 import { useFiles, useFilesState } from "./context.ts";
@@ -20,7 +20,7 @@ import { favorites, folderAt, type GlyphName, type Location, sameLocation } from
 /**
  * A place: the kit's sidebar row (and its rail), in a drop target that lights
  * the one drop look while files over it would go in (CO-9). Its action (Eject)
- * is a toolbar button at the row's end, in the full sidebar only.
+ * is a glyph button at the row's end, in the full sidebar only.
  */
 function Row({
   id,
@@ -56,7 +56,7 @@ function Row({
         rail={rail}
         {...(action
           ? {
-              accessory: <ToolbarButton testID={`place:${id}:${action.id}`} glyph={action.glyph} tooltip={action.label} onPress={action.onPress} />,
+              accessory: <GlyphButton testID={`place:${id}:${action.id}`} glyph={action.glyph} label={action.label} quiet onPress={action.onPress} />,
             }
           : {})}
       />

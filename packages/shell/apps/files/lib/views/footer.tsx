@@ -1,6 +1,6 @@
 /** The notice over the content's foot, only while it has something: running jobs with Cancel, and the last message. The path and the status line are the omnibox's. */
 
-import { Button, Notice, ProgressBar, SPACE, ToolbarButton, TYPE, useColors, useUndo } from "@dashi/ui";
+import { Button, GlyphButton, Notice, ProgressBar, SPACE, TYPE, useColors, useUndo } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useFiles, useFilesOps, useFilesState, useJobs } from "../../../../src/shared/file-browser/context.ts";
 import { formatSize } from "../../../../src/shared/file-browser/format.ts";
@@ -27,7 +27,7 @@ function JobRow({ job }: { job: Job }) {
       {ratio !== null && job.total !== null && job.total > 1000 && (
         <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>{`${formatSize(job.done)} of ${formatSize(job.total)}`}</Text>
       )}
-      <ToolbarButton testID={`job:${job.id}:cancel`} glyph={CLOSE} tooltip="Cancel" onPress={() => ops.jobs.cancel(job.id)} />
+      <GlyphButton testID={`job:${job.id}:cancel`} glyph={CLOSE} label="Cancel" quiet onPress={() => ops.jobs.cancel(job.id)} />
     </View>
   );
 }

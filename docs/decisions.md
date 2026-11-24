@@ -8083,6 +8083,10 @@ short words, as the rulebook is written.
 - **Why:** a control has one home (UI-1); the apps keep their layout and lose their copies.
 - **Cost:** three components with one user each today.
 - **Undo:** move them back into Terminal, Calculator and the editors, and list them on H22.
+- **After the 0.10 merge:** W6's `TextArea` (a boxed many-line field) and `InlineField` (one line
+  in place, no `selection`) don't cover a document's page (line numbers, highlights, a tab that
+  types, a kept caret), so the editors keep `EditableText`; its `inline` look and `InlineField` do
+  overlap for a rename, and can fold into one once `InlineField` takes a `selection`.
 
 ### D651. One Get Info and one Open With, in the file browser, for Files, Preview and the chooser
 
@@ -8153,7 +8157,7 @@ short words, as the rulebook is written.
   its glyph and "Drop files here, or press ⇧❖N for a new folder." where it can take them.
   `dropLook()` (drop.ts) is the one drop look: `selectionWash` under a 2 px `selection` edge at
   the target's radius, for the listing, a tile, a sidebar place and a crumb. Small calls: a job's
-  Cancel is a glyph `ToolbarButton`; Eject is a `ToolbarButton` in `SidebarItem`'s accessory; the
+  Cancel and a drive's Eject are the kit's `GlyphButton` (W3's, quiet; Eject in `SidebarItem`'s accessory); the
   alias arrow is a mark (`LinkMark`), not a badge; an unknown file's extension label is part of
   its icon's drawing, scaled with it, not a size on TY-1; Files' menu-bar keys and its context
   menus read one table (`apps/files/lib/shortcuts.ts`), and Show in Folder is in the File menu.
