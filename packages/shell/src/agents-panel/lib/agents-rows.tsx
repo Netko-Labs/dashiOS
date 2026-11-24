@@ -7,33 +7,15 @@
  * and the StoppedNote says so (consent.tsx).
  */
 
-import { buttonLook, Shortcut, useColors } from "@dashi/ui";
+import { Button, Chip, type ChipTone, ON_AGENT, RADIUS, Shortcut, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { type AgentEntry, accessWords, discGlyph, watchTime } from "../../agents/index.ts";
 import { spaceLabel } from "../../spaces/index.ts";
 
-/** A small button of a card: Show, Stop, Undo. */
+/** A small button of a card: Show, Stop, Undo; the kit's small Button (Stop in ume: it ends the agent's work). */
 export function Small({ label, primary, danger, testID, onPress }: { label: string; primary?: true; danger?: true; testID: string; onPress: () => void }) {
-  const colors = useColors();
-  const look = buttonLook(colors, "primary");
-  return (
-    <View
-      testID={testID}
-      onPress={onPress}
-      style={{
-        height: 24,
-        paddingLeft: 10,
-        paddingRight: 10,
-        borderRadius: 6,
-        justifyContent: "center",
-        backgroundColor: primary ? look.fill : colors.button,
-        hoverBackgroundColor: primary ? look.hover : colors.separator,
-      }}
-    >
-      <Text style={{ fontSize: 12, fontWeight: "semibold", color: primary ? look.ink : danger ? colors.criticalInk : colors.text }}>{label}</Text>
-    </View>
-  );
+  return <Button testID={testID} label={label} size="small" {...(primary ? { primary } : {})} {...(danger ? { danger } : {})} onPress={onPress} />;
 }
 
 /** A connected agent's row: its glyph on a round shiso tile. */
@@ -65,24 +47,10 @@ function useSeconds(ticking: boolean): number {
  * it has: "Recording the screen · 2:14", once a second while the panel is open.
  */
 export function AccessChip({ entry }: { entry: Pick<AgentEntry, "watching" | "watchingSince" | "phase" | "kind"> }) {
-  const colors = useColors();
   const timed = watchTime(entry, 0) !== null;
   const time = watchTime(entry, useSeconds(timed));
-  const [wash, ink] = entry.watching
-    ? [colors.captureWash, colors.criticalInk]
-    : entry.phase === "waiting"
-      ? [colors.brothWash, colors.broth]
-      : [colors.agentWash, colors.agentInk];
-  return (
-    <View
-      testID="agents-access"
-      style={{ flexShrink: 0, height: 16, paddingLeft: 6, paddingRight: 6, borderRadius: 6, justifyContent: "center", backgroundColor: wash }}
-    >
-      <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: "semibold", color: ink }}>
-        {time ? `${accessWords(entry)} · ${time}` : accessWords(entry)}
-      </Text>
-    </View>
-  );
+  const tone: ChipTone = entry.watching ? "danger" : entry.phase === "waiting" ? "warning" : "agent";
+  return <Chip testID="agents-access" tone={tone} label={time ? `${accessWords(entry)} · ${time}` : accessWords(entry)} />;
 }
 
 /** The red dot on a tile: this agent sees or records the screen, or uses its pointer. */
@@ -97,39 +65,12 @@ export function TileDot({ ring }: { ring: string }) {
         right: -2,
         width: 11,
         height: 11,
-        borderRadius: 6,
+        borderRadius: RADIUS.row,
         borderWidth: 2,
         borderColor: ring,
         backgroundColor: colors.critical,
       }}
     />
-  );
-}
-
-/** "Show": go to the Desktop an agent works on (the screen slides there; the person asked to look). */
-function ShowButton({ testID, onPress }: { testID: string; onPress: () => void }) {
-  const colors = useColors();
-  return (
-    <View
-      testID={testID}
-      onPress={onPress}
-      style={{ flexShrink: 0, height: 24, paddingLeft: 10, paddingRight: 10, borderRadius: 6, justifyContent: "center", backgroundColor: colors.button }}
-    >
-      <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>Show</Text>
-    </View>
-  );
-}
-
-function StopButton({ testID, onPress }: { testID: string; onPress: () => void }) {
-  const colors = useColors();
-  return (
-    <View
-      testID={testID}
-      onPress={onPress}
-      style={{ flexShrink: 0, height: 24, paddingLeft: 10, paddingRight: 10, borderRadius: 6, justifyContent: "center", backgroundColor: colors.button }}
-    >
-      <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.criticalInk }}>Stop</Text>
-    </View>
   );
 }
 
@@ -181,18 +122,19 @@ export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; fi
   const colors = useColors();
   const line = rowLine(entry);
   const id = entry.agent?.id ?? entry.key;
-  const show = space !== undefined && onShow ? <ShowButton testID={`agents-show-agent:${id}`} onPress={() => onShow(space)} /> : null;
-  const stop = <StopButton testID={`agents-stop-agent:${id}`} onPress={onStop} />;
+  // "Show": go to the Desktop an agent works on (the screen slides there; the person asked to look).
+  const show = space !== undefined && onShow ? <Small testID={`agents-show-agent:${id}`} label="Show" onPress={() => onShow(space)} /> : null;
+  const stop = <Small testID={`agents-stop-agent:${id}`} label="Stop" danger onPress={onStop} />;
   const title = (
-    <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "semibold", color: colors.text }}>
+    <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.semibold, color: colors.text }}>
       {rowTitle(entry)}
     </Text>
   );
   const words = (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, minWidth: 0 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s, minWidth: 0 }}>
       {line.chip && <AccessChip entry={entry} />}
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
           {line.words}
         </Text>
       </View>
@@ -204,9 +146,9 @@ export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; fi
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
-        padding: 10,
-        borderRadius: 9,
+        gap: SPACE.gap,
+        padding: SPACE.gap,
+        borderRadius: RADIUS.card,
         ...(first ? {} : { borderTopWidth: 1, borderColor: colors.separator }),
       }}
     >
@@ -221,12 +163,12 @@ export function ConnectionRow({ entry, first, actions }: { entry: AgentEntry; fi
           position: "relative",
         }}
       >
-        <Svg markup={discGlyph(entry.harness)} size={18} color="#ffffff" />
+        <Svg markup={discGlyph(entry.harness)} size={18} color={ON_AGENT} />
         {entry.watching && <TileDot ring={colors.menu.slice(0, 7)} />}
       </View>
       {/* The buttons sit beside the title only, and the line under it has the row's whole width: nothing in it is cut. */}
-      <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 3 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, minWidth: 0 }}>
+      <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: SPACE.xxs }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.gap, minWidth: 0 }}>
           <View style={{ flex: 1, minWidth: 0 }}>{title}</View>
           {show}
           {stop}
@@ -243,8 +185,8 @@ export const idleWords = (idle: number, rows: number): string => (rows > 0 ? `${
 export function IdleLine({ idle, rows }: { idle: number; rows: number }) {
   const colors = useColors();
   return (
-    <View testID="agents-idle" style={{ paddingTop: 6, paddingBottom: 6, paddingLeft: 10, paddingRight: 10 }}>
-      <Text numberOfLines={1} style={{ fontSize: 12, color: colors.textMuted }}>
+    <View testID="agents-idle" style={{ paddingTop: SPACE.s, paddingBottom: SPACE.s, paddingLeft: SPACE.gap, paddingRight: SPACE.gap }}>
+      <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
         {idleWords(idle, rows)}
       </Text>
     </View>
@@ -261,21 +203,19 @@ export function StopAllFooter({ onStopAll }: { onStopAll: () => void }) {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingTop: 8,
-        paddingBottom: 4,
-        paddingLeft: 10,
-        paddingRight: 10,
+        paddingTop: SPACE.m,
+        paddingBottom: SPACE.xs,
+        paddingLeft: SPACE.gap,
+        paddingRight: SPACE.gap,
         borderTopWidth: 1,
         borderColor: colors.separator,
       }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-        <Text style={{ fontSize: 12, color: colors.textMuted }}>From anywhere:</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs }}>
+        <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>From anywhere:</Text>
         <Shortcut keys="⌃❖Esc" color={colors.textMuted} size={12} />
       </View>
-      <View testID="agents-stop-all" onPress={onStopAll} style={{ height: 24, paddingLeft: 8, paddingRight: 8, borderRadius: 6, justifyContent: "center" }}>
-        <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.criticalInk }}>Stop all</Text>
-      </View>
+      <Small testID="agents-stop-all" label="Stop all" danger onPress={onStopAll} />
     </View>
   );
 }
