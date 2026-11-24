@@ -6,7 +6,7 @@
  * on the neutral wash: done is not "on").
  */
 
-import { Svg, Text, View } from "@mirinjs/metal";
+import { Image, Svg, Text, View } from "@mirinjs/metal";
 import { pill, SPACE, TYPE, useColors, WEIGHT } from "./theme/index.ts";
 import type { Palette } from "./theme/palette.ts";
 
@@ -36,6 +36,7 @@ export function Chip({
   tone = "neutral",
   size = "status",
   glyph,
+  picture,
   testID,
 }: {
   label: string;
@@ -43,6 +44,8 @@ export function Chip({
   /** "toolbar": VS-5's 24-tall chip in a window's controls row. */
   size?: "status" | "toolbar";
   glyph?: string;
+  /** An app's icon before the words (a path or URL): what a field is about, as the launcher's scope. */
+  picture?: string;
   testID?: string;
 }) {
   const colors = useColors();
@@ -65,6 +68,15 @@ export function Chip({
         backgroundColor: wash,
       }}
     >
+      {picture !== undefined && (
+        <Image
+          source={picture}
+          style={{
+            width: toolbar ? CHIP.toolbarGlyph + SPACE.xs : CHIP.glyph + SPACE.xxs,
+            height: toolbar ? CHIP.toolbarGlyph + SPACE.xs : CHIP.glyph + SPACE.xxs,
+          }}
+        />
+      )}
       {glyph !== undefined && <Svg markup={glyph} size={toolbar ? CHIP.toolbarGlyph : CHIP.glyph} color={ink} />}
       <Text numberOfLines={1} style={{ fontSize: toolbar ? TYPE.secondary.size : TYPE.caption.size, fontWeight: WEIGHT.semibold, color: ink }}>
         {label}

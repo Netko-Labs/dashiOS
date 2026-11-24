@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
-import { Field } from "../src/launcher/lib/field.tsx";
+import { FieldRow } from "../src/launcher/lib/field.tsx";
 import { fitWords, leastRoom, PLACEHOLDER_SLACK, unmeasured } from "../src/launcher/lib/fit-words.ts";
 import { settle } from "./support/time.ts";
 
@@ -25,7 +25,7 @@ test("the field measures its room and the words where they are drawn, then shows
   const listeners: ((event: NativeEvent) => void)[] = [];
   const transport: NativeTransport = { send() {}, onEvent: (listener) => listeners.push(listener), onClose() {}, simulate() {}, close() {} };
   const root = render(
-    <Field
+    <FieldRow
       value=""
       placeholder={["Reply to Alex Kim's long-named helper", "Follow up…"]}
       hints={[]}

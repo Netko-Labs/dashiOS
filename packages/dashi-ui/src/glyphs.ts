@@ -10,6 +10,10 @@ export const LOGO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"
 export const CLEAR = svg(`<circle cx="8" cy="8" r="6.2" stroke="#000" stroke-width="1.3" fill="none"/>${stroke("M5.9 5.9l4.2 4.2M10.1 5.9l-4.2 4.2", 1.4)}`);
 /** An x: dismiss a notice. */
 export const CLOSE = svg(stroke("M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6", 1.6));
+/** A question mark: something waits on the person (the agents' mark and the capsule's disc on amber). */
+export const QUESTION = svg(`${stroke("M5.6 5.6a2.4 2.4 0 1 1 3.6 2.1c-.8.5-1.2 1-1.2 1.9", 1.8)}<circle cx="8" cy="12.4" r="1.1" fill="#000"/>`);
+/** A filled rounded square: stop (the capsule's Done while hands-free, a recording). */
+export const SQUARE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="2.5" fill="#000"/></svg>`;
 /** A plus: add one more (the overview's new Desktop). */
 export const ADD = svg(stroke("M8 3.2v9.6M3.2 8h9.6", 1.6));
 export const CHEVRON_UP = svg(stroke("M4.5 10l3.5-3.5 3.5 3.5", 1.6));

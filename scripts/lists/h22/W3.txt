@@ -1,17 +1,2 @@
 # H22 (scripts/check-design-kit.ts): controls drawn outside @dashi/ui, per file. Shrink-only: move each
 # onto the kit's control (UI-1, UI-8 to UI-15), then `bun scripts/check-design-kit.ts --shrink`.
-2	packages/shell/src/alone-chip.tsx
-1	packages/shell/src/capsule/lib/card.tsx
-2	packages/shell/src/capsule/lib/parts.tsx
-2	packages/shell/src/launcher/lib/field.tsx
-6	packages/shell/src/launcher/lib/form-choices.tsx
-1	packages/shell/src/launcher/lib/form-view.tsx
-3	packages/shell/src/launcher/lib/talk/panel.tsx
-1	packages/shell/src/launcher/lib/talk/turns.tsx
-1	packages/shell/src/launcher/lib/talk/view.tsx
-2	packages/shell/src/menus/lib/popover.tsx
-1	packages/shell/src/menus/lib/view.tsx
-1	packages/shell/src/overlay.tsx
-1	packages/shell/src/recorder/indicator.tsx
-1	packages/shell/src/screenshots/screenshot-area.tsx
-2	packages/shell/src/voice/chip.tsx

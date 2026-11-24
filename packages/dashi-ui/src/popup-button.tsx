@@ -62,6 +62,11 @@ export interface PopUpButtonProps<T extends string | number> {
   disabled?: boolean;
   /** Keyboard focus is on it (`data-focused`, the gallery's state rows); real keyboard focus is Metal's ring (KB-2). */
   focused?: boolean;
+  /**
+   * Its options open in place, drawn by the owner (the launcher is one surface: no menu over it); a
+   * press or Return calls this instead of opening the kit's menu.
+   */
+  opensInPlace?: () => void;
 }
 
 /** The button's face: as wide as asked, or as its label needs. */
@@ -113,13 +118,17 @@ export function PopUpButton<T extends string | number>({
   glyph,
   disabled,
   focused,
+  opensInPlace,
 }: PopUpButtonProps<T>) {
   const colors = useColors();
   const state = useControlState({ disabled, focused });
   const [open, setOpen] = useState<Bounds | null>(null);
   // Pointer presses carry the button's bounds; the last layout stands in for a key's.
   const laid = useRef<Bounds | null>(null);
-  const openAt = (bounds: Bounds | undefined): void => setOpen(bounds ?? laid.current ?? { x: 0, y: 0, width: width ?? 0, height: 28 });
+  const openAt = (bounds: Bounds | undefined): void => {
+    if (opensInPlace) opensInPlace();
+    else setOpen(bounds ?? laid.current ?? { x: 0, y: 0, width: width ?? 0, height: 28 });
+  };
   const choices = options.filter(isOption);
   const chosen = choices.find((option) => option.value === value);
   const look = buttonLook(colors, "secondary", { pressed: state.pressed || open !== null });

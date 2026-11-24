@@ -1,7 +1,7 @@
 /** The capsule's small parts: the five dots, a one-line text, a button, Dashi's disc. */
 
-import { AMBER, CAPSULE as CAPSULE_INKS, CLEAR, KeyedText, MOTION, OPACITY, RADIUS, Shortcut, SPACE, WEIGHT } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
+import { AMBER, type ButtonInks, CAPSULE as CAPSULE_INKS, KeyedText, Button as KitButton, MOTION, OPACITY, QUESTION, SPACE, SQUARE, WEIGHT } from "@dashi/ui";
+import { Svg, View } from "@mirinjs/metal";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Cell } from "../../shared/pill/index.ts";
 import { useFaceMark } from "./face-scope.tsx";
@@ -98,44 +98,36 @@ interface ButtonProps {
   keys?: string;
   /** Not armed yet, or not for now: drawn faint, and a press does nothing. */
   off?: boolean;
-  measures?: { height: number; paddingX: number; fontSize: number };
+  /** The card's size (24), not the line's (22). */
+  card?: boolean;
   testID?: string;
 }
 
-/** A button of the capsule or the card: an outline, or filled for the yes. */
-export function Button({ label, colours, onPress, primary = false, square = false, off = false, keys, measures = CAPSULE.button, testID }: ButtonProps) {
-  const color = primary ? colours.onPrimary : colours.text;
+/** The persona's colours as the kit's capsule look takes them (UI-8): words and outline, the yes filled. */
+export const buttonInks = (colours: CapsuleColours): ButtonInks => ({
+  ink: colours.text,
+  ground: colours.fill,
+  edge: colours.rim,
+  fill: colours.primary,
+  onFill: colours.onPrimary,
+  soft: colours.soft,
+});
+
+/** A button of the capsule (small) or the card: the kit's Button in its capsule look, an outline, or filled for the yes. */
+export function Button({ label, colours, onPress, primary = false, square = false, off = false, keys, card = false, testID }: ButtonProps) {
   return (
-    <View
+    <KitButton
       testID={testID ?? `capsule-button:${label}`}
-      onPress={() => {
-        if (!off) onPress();
-      }}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={{
-        flexShrink: 0,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: CAPSULE.button.gap,
-        height: measures.height,
-        paddingLeft: measures.paddingX,
-        paddingRight: measures.paddingX,
-        borderRadius: measures.height / 2,
-        backgroundColor: primary ? colours.primary : CLEAR,
-        borderWidth: primary ? 0 : 1,
-        borderColor: colours.text,
-        opacity: off ? OPACITY.disabled : 1,
-      }}
-    >
-      {square && (
-        <View style={{ flexShrink: 0, alignSelf: "center", width: CAPSULE.stop, height: CAPSULE.stop, borderRadius: RADIUS.thumb, backgroundColor: color }} />
-      )}
-      <Text numberOfLines={1} style={{ fontSize: measures.fontSize, fontWeight: WEIGHT.semibold, color }}>
-        {label}
-      </Text>
-      {keys && <Shortcut keys={keys} color={colours.soft} size={measures.fontSize - 1} />}
-    </View>
+      label={label}
+      look="capsule"
+      size={card ? "regular" : "small"}
+      inks={buttonInks(colours)}
+      {...(primary ? { primary } : {})}
+      {...(square ? { glyph: SQUARE } : {})}
+      {...(keys ? { keys } : {})}
+      disabled={off}
+      onPress={onPress}
+    />
   );
 }
 
@@ -156,7 +148,7 @@ export function Disc({ colours, size = CAPSULE.disc, asks = false }: { colours: 
       }}
     >
       {asks ? (
-        <Text style={{ fontSize: size * 0.62, fontWeight: WEIGHT.bold, color: AMBER.ink }}>?</Text>
+        <Svg markup={QUESTION} size={Math.round(size * 0.62)} color={AMBER.ink} />
       ) : (
         <Svg markup={mark} size={Math.round(size * 0.58)} color={colours.fill} />
       )}

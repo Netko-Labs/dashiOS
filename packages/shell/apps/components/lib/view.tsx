@@ -18,6 +18,7 @@ import { ChecksPage, PanelPage, PicksPage, StatesPage } from "./exhibits/kit.tsx
 import { LoginPage } from "./exhibits/login.tsx";
 import { MeasuresPage } from "./exhibits/measures.tsx";
 import { ListsPage, RowsPage, ShortcutsPage } from "./exhibits/structure.tsx";
+import { TintedPage } from "./exhibits/tinted.tsx";
 import { ColorsPage, GroundsPage, TintsPage, TypePage } from "./exhibits/tokens.tsx";
 import { galleryMenus } from "./menus.ts";
 import { MODES, type Mode, PAGES, type PageId, pageLabel, stepPage } from "./pages.ts";
@@ -43,6 +44,7 @@ const PAGE_VIEWS: Readonly<Record<PageId, () => ReactNode>> = {
   panel: () => <PanelPage />,
   shortcuts: () => <ShortcutsPage />,
   login: () => <LoginPage />,
+  tinted: () => <TintedPage />,
   colors: () => <ColorsPage />,
   grounds: () => <GroundsPage />,
   tints: () => <TintsPage />,

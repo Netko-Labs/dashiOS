@@ -18,13 +18,13 @@ import { type MenuController, useMenus } from "../controller.ts";
 import { buildMenu } from "../model.ts";
 import type { StatusMenuAction } from "../status-menu.ts";
 import type { MenuAction, MenuEntry } from "../types.ts";
-import { DropdownMenu } from "./view.tsx";
+import { BarDropdown } from "./view.tsx";
 
 /** The live region's words: read by screen readers, never seen. */
 const SPOKEN = { size: 1 } as const;
 
 /** A status item's menu: the dropdown, telling its owner when it goes, however it went. */
-function StatusMenu({
+function StatusDropdown({
   entries,
   right,
   room,
@@ -45,7 +45,7 @@ function StatusMenu({
 }) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: once, when this menu goes.
   useEffect(() => onClosed, []);
-  return <DropdownMenu entries={entries} x={right} alignRight room={room} fromKeys={fromKeys} onSide={onSide} onClose={onClose} onChoose={onChoose} />;
+  return <BarDropdown entries={entries} x={right} alignRight room={room} fromKeys={fromKeys} onSide={onSide} onClose={onClose} onChoose={onChoose} />;
 }
 
 /**
@@ -128,12 +128,12 @@ interface OpenMenuProps extends Pick<PopoverRootProps, "controller" | "onDockCho
 }
 
 /** The open menu, when the popover is one: the bar's, a Dock icon's, or a status item's. Choosing a row closes it first. */
-function OpenMenu({ popover, entries, room, fromKeys: fromBar, controller, onChoose, onDockChoose, onStatusChoose, onStatusClosed }: OpenMenuProps) {
+function TitleDropdown({ popover, entries, room, fromKeys: fromBar, controller, onChoose, onDockChoose, onStatusChoose, onStatusClosed }: OpenMenuProps) {
   const close = () => controller.close();
   return (
     <>
       {popover.kind === "menu" && (
-        <DropdownMenu
+        <BarDropdown
           key={popover.id}
           entries={entries}
           x={popover.x}
@@ -148,7 +148,7 @@ function OpenMenu({ popover, entries, room, fromKeys: fromBar, controller, onCho
         />
       )}
       {popover.kind === "dock-menu" && (
-        <DropdownMenu
+        <BarDropdown
           entries={popover.entries}
           x={popover.x}
           above={popover.above ?? DOCK_MENU_ABOVE}
@@ -161,7 +161,7 @@ function OpenMenu({ popover, entries, room, fromKeys: fromBar, controller, onCho
         />
       )}
       {popover.kind === "status-menu" && (
-        <StatusMenu
+        <StatusDropdown
           key={popover.key}
           entries={popover.entries}
           right={popover.right}
@@ -228,7 +228,7 @@ export function PopoverRoot({
       />
       {popover === null && bar !== undefined && <BarAnnouncer label={controller.labelOf(bar)} accessible={accessible} />}
       {popover !== null && (
-        <OpenMenu
+        <TitleDropdown
           popover={popover}
           entries={entries}
           room={room}

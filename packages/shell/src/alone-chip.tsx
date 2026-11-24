@@ -7,14 +7,14 @@
  * beside the agent mark in the bar's one row: no second bar, no banner.
  */
 
-import { SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
-import { type Bounds, Text, View } from "@mirinjs/metal";
+import { BAR_ITEM, BarItem, SQUARE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { type Bounds, Svg, Text } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import type { AloneState } from "./agents/index.ts";
 import { elapsedText } from "./shared/time/index.ts";
 
-/** The chip's measures: the agent mark's height and corner, a stop square, and the time. */
-export const ALONE_CHIP = { height: 22, padding: SPACE.s, gap: SPACE.xs, square: 8, squareRadius: 2, fontSize: TYPE.secondary.size } as const;
+/** The chip's measures: the bar item's height (UI-18), its stop square, and the time. */
+export const ALONE_CHIP = { height: BAR_ITEM.height, square: 10, fontSize: TYPE.secondary.size } as const;
 
 /** The time left as the chip says it: "59:59", "0:07"; whole seconds, rounded up, so it never reads 0:00 while on. */
 export function leftText(ends: number, now: number): string {
@@ -52,8 +52,10 @@ export function AloneChip({ state, onStop, onTip }: AloneChipProps) {
   const left = leftText(state.ends, now);
   const box = (bounds?: Bounds) => bounds ?? laid.current ?? { x: 0, y: 0, width: 0, height: 0 };
   return (
-    <View
+    <BarItem
       testID="alone-chip"
+      tone="agent"
+      label={`Agents work alone, ${left} left. Stop`}
       onLayout={(bounds) => {
         laid.current = bounds;
       }}
@@ -62,24 +64,11 @@ export function AloneChip({ state, onStop, onTip }: AloneChipProps) {
         onStop();
       }}
       onHoverChange={(hovered, bounds) => onTip?.(hovered ? { text: aloneTip(left), bounds: box(bounds) } : null)}
-      accessibilityRole="button"
-      accessibilityLabel={`Agents work alone, ${left} left. Stop`}
-      style={{
-        flexShrink: 0,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: ALONE_CHIP.gap,
-        height: ALONE_CHIP.height,
-        paddingLeft: ALONE_CHIP.padding,
-        paddingRight: ALONE_CHIP.padding,
-        borderRadius: ALONE_CHIP.height / 2,
-        backgroundColor: colors.agentWash,
-      }}
     >
-      <View style={{ width: ALONE_CHIP.square, height: ALONE_CHIP.square, borderRadius: ALONE_CHIP.squareRadius, backgroundColor: colors.agent }} />
+      <Svg markup={SQUARE} size={ALONE_CHIP.square} color={colors.agent} />
       <Text numberOfLines={1} style={{ fontSize: ALONE_CHIP.fontSize, fontWeight: WEIGHT.semibold, color: colors.agentInk }}>
         {left}
       </Text>
-    </View>
+    </BarItem>
   );
 }

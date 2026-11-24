@@ -15,8 +15,11 @@ export {
   toneColors,
 } from "./alert.tsx";
 export { ALERT_WINDOW, type AlertContent, alertButtonsWidth, alertWindowHeight, alertWordsWidth, wrappedLines } from "./alert-size.ts";
-export { BUTTON, Button, type ButtonProps, type ButtonSize, type Look } from "./button.tsx";
+export { BAR_ITEM, BarItem, type BarItemProps, type BarItemTone, barItemColors } from "./bar-item.tsx";
+export { BareField, type BareFieldProps } from "./bare-field.tsx";
+export { Button } from "./button.tsx";
 export { type ButtonKind, type ButtonLook, buttonLook } from "./button-look.ts";
+export { BUTTON, type ButtonInks, type ButtonProps, type ButtonSize, type Look } from "./button-measures.ts";
 export { CHECKBOX, Checkbox, type CheckboxProps, CheckMark } from "./checkbox.tsx";
 export { CHIP, Chip, type ChipTone, chipColors } from "./chip.tsx";
 export { type Choice, Choices } from "./choices.tsx";
@@ -46,10 +49,12 @@ export {
   MORE,
   OFFLINE,
   PROBLEM,
+  QUESTION,
   RESTART,
   SEARCH,
   SHUT_DOWN,
   SLEEP,
+  SQUARE,
   STOP,
   WARNING,
 } from "./glyphs.ts";
@@ -274,6 +279,7 @@ export {
   WINDOW_LIGHTS,
 } from "./theme/index.ts";
 export { TILE_SIZE, Tile } from "./tile.tsx";
+export { inksButtonColors } from "./tinted-button.tsx";
 export { TITLE_TAB, TitleTab, TitleTabMore, type TitleTabProps } from "./title-tab.tsx";
 export { TOOLTIP_DELAY_MS, type Tooltip, TooltipLayer, tooltipOrigin, useTooltip, useWindowLayer } from "./tooltip.tsx";
 export { JOIN_MS as UNDO_JOIN_MS, redoLabel, UNDO_LIMIT, type UndoAction, UndoStack, type UndoState, undoLabel, undoMenuItems, useUndo } from "./undo.ts";

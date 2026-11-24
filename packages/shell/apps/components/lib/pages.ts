@@ -23,6 +23,7 @@ export type PageId =
   | "login"
   | "colors"
   | "grounds"
+  | "tinted"
   | "tints"
   | "type"
   | "measures";
@@ -49,6 +50,7 @@ export const PAGES: readonly Page[] = [
   { id: "picks", label: "Pick rows, months and forms", section: "Controls" },
   { id: "apps", label: "Tabs, keys and text", section: "Controls" },
   { id: "panel", label: "The panel look", section: "Controls" },
+  { id: "tinted", label: "Tinted looks and the bar", section: "Controls" },
   { id: "shortcuts", label: "Shortcuts and glyphs", section: "Controls" },
   { id: "login", label: "Login and lock", section: "Controls" },
   { id: "colors", label: "Colors", section: "Tokens" },

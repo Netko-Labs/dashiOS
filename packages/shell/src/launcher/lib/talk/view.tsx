@@ -38,7 +38,8 @@ export interface TalkViewProps {
 /** The greeting's mark: a 24 disc in the persona's colour, its spark 14; the line under it starts past it. */
 const GREETING = { disc: 24, glyph: 14 } as const;
 
-function Empty({
+/** The conversation before its first turn: the persona greets, and offers a few things to try (the approved conversation design; not an empty state). */
+function Greeting({
   name,
   colour,
   model,
@@ -170,7 +171,7 @@ export function TalkView(props: TalkViewProps) {
   // Kept at the newest line as words and steps come.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `tick` stands for what grew
   useEffect(() => scroll.current?.scrollToEnd(), [tick]);
-  if (view.turns.length === 0) return <Empty {...props} />;
+  if (view.turns.length === 0) return <Greeting {...props} />;
   const lastDashi = view.turns.findLastIndex((turn) => turn.kind === "dashi");
   return (
     <ScrollView ref={scroll} testID="talk:thread" style={{ maxHeight: THREAD_MOST, flexShrink: 1 }}>

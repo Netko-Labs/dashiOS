@@ -7,10 +7,9 @@
  * here.
  */
 
-import { RADIUS, SEARCH, Shortcut, SPACE, useColors } from "@dashi/ui";
-import { Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { BareField, Chip, SEARCH, Shortcut, SPACE, useColors } from "@dashi/ui";
+import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { AppIcon } from "../../shared/apps/index.ts";
 import { noticeAccess } from "../access.ts";
 import type { RowIcon } from "../row-model.ts";
 import type { Hint } from "../verbs.ts";
@@ -45,13 +44,6 @@ export interface FieldProps {
   onKey(key: "Escape" | "ArrowUp" | "ArrowDown"): void;
 }
 
-function ChipIcon({ icon, size }: { icon: RowIcon; size: number }) {
-  const colors = useColors();
-  if ("image" in icon) return <AppIcon source={icon.image} style={{ width: size + 2, height: size + 2 }} />;
-  if ("glyph" in icon) return <Svg markup={icon.glyph} size={size} color={colors.text} />;
-  return null;
-}
-
 /** A number that grows each time `yielding` turns false: the form that had the keyboard went. */
 function useRegained(yielding: boolean): number {
   const [count, setCount] = useState(0);
@@ -66,31 +58,18 @@ function useRegained(yielding: boolean): number {
 /** Words measured as the field draws them, by size: the same words at the same size are measured once a session. */
 const measured = new Map<string, number>();
 
-/** What the field is about (an app, a scope), before the words. */
-function Chip({ chip }: { chip: NonNullable<FieldProps["chip"]> }) {
-  const colors = useColors();
-  const m = useMeasures();
+/** What the field is about (an app, a scope), before the words: the kit's toolbar Chip, with the app's picture or glyph. */
+function Scope({ chip }: { chip: NonNullable<FieldProps["chip"]> }) {
+  const icon = chip.icon;
   return (
-    <View
-      testID="launcher:chip"
-      style={{
-        // It gives way before the field's least room (a long request at the largest text size).
-        flexShrink: 1,
-        minWidth: 0,
-        flexDirection: "row",
-        alignItems: "center",
-        gap: SPACE.s,
-        height: m.chip,
-        paddingLeft: SPACE.m,
-        paddingRight: SPACE.m,
-        borderRadius: RADIUS.control,
-        backgroundColor: colors.button,
-      }}
-    >
-      {chip.icon && <ChipIcon icon={chip.icon} size={Math.round(m.title * 1.08)} />}
-      <Text numberOfLines={1} style={{ fontSize: m.title, color: colors.text }}>
-        {chip.title}
-      </Text>
+    <View style={{ flexShrink: 1, minWidth: 0 }}>
+      <Chip
+        testID="launcher:chip"
+        label={chip.title}
+        size="toolbar"
+        {...(icon && "image" in icon ? { picture: icon.image } : {})}
+        {...(icon && "glyph" in icon ? { glyph: icon.glyph } : {})}
+      />
     </View>
   );
 }
@@ -111,7 +90,8 @@ function Hints({ hints }: { hints: readonly Hint[] }) {
   );
 }
 
-export function Field({
+/** The launcher's one chrome row: the magnifier (or the persona's spark), the scope, the kit's bare field, the hints. */
+export function FieldRow({
   value,
   revision,
   placeholder,
@@ -139,7 +119,7 @@ export function Field({
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.gap, paddingLeft: SPACE.page, paddingRight: SPACE.page, height: m.field }}>
       <Svg markup={glyph?.markup ?? SEARCH} size={m.searchGlyph} color={glyph?.color ?? colors.textMuted} />
-      {chip && <Chip chip={chip} />}
+      {chip && <Scope chip={chip} />}
       <View
         testID="launcher:field-room"
         style={{ flex: 1, minWidth: leastRoom(choices, widthOf), flexDirection: "row", alignItems: "center" }}
@@ -163,19 +143,18 @@ export function Field({
         ))}
         {/* Metal draws a focused empty field's placeholder, muted, right after the caret. */}
         {/* Mounted again when a form goes: autoFocus is the only way to take the keyboard back (never as it comes: its own first field takes it). */}
-        <TextInput
-          key={`field:${regained}`}
+        <BareField
+          focusKey={`field:${regained}`}
           testID="launcher:field"
           value={value}
-          {...(revision === undefined ? {} : { valueRevision: revision })}
+          {...(revision === undefined ? {} : { revision })}
           placeholder={shown}
-          {...(secure ? { secureTextEntry: true } : {})}
-          autoFocus
+          size={m.fieldText}
+          {...(secure ? { secure: true } : {})}
           onChangeText={onChangeText}
-          onSubmitEditing={onSubmit}
+          onSubmit={onSubmit}
           onKeyPress={onKey}
-          {...(access ?? {})}
-          style={{ flex: 1, fontSize: m.fieldText, color: colors.text, placeholderColor: colors.textMuted }}
+          {...(access ? { access } : {})}
         />
       </View>
       {notice ? (

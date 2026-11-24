@@ -29,6 +29,9 @@ const SURFACE: NonNullable<NativeHostOptions["surface"]> = {
 /** The compositor needs about a frame to stop drawing a surface whose client exited. */
 const SETTLE_MS = 60;
 
+/** The line that says what to do: this far under the screen's top, clear of the menu bar and its menus. */
+const HINT = { below: 48 } as const;
+
 function Dropper({ onDone }: { onDone: (at: Point | null) => void }) {
   return (
     <View
@@ -40,7 +43,7 @@ function Dropper({ onDone }: { onDone: (at: Point | null) => void }) {
       <KeyCatcher onKey={(key) => key === "Escape" && onDone(null)} />
       <View
         style={{
-          marginTop: 48,
+          marginTop: HINT.below,
           paddingLeft: SPACE.inset,
           paddingRight: SPACE.inset,
           paddingTop: SPACE.s,

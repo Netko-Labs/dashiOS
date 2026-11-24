@@ -13,7 +13,7 @@
  * tooltip under the bar.
  */
 
-import { AMBER, CAPSULE, ON_AGENT, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { AMBER, CAPSULE, ON_AGENT, QUESTION, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef } from "react";
 import { discGlyph } from "./agents/index.ts";
@@ -21,7 +21,7 @@ import { opaque } from "./consent.tsx";
 import { SPARK } from "./shared/settings/index.ts";
 
 /** The mark's measures (docs/design.html, "The mark"). */
-export const MARK = { height: 22, padding: SPACE.xs, disc: 18, glyph: 12, dot: 12, askDisc: 16 } as const;
+export const MARK = { height: 22, padding: SPACE.xs, disc: 18, glyph: 12, dot: 12, askDisc: 16, askGlyph: 11 } as const;
 
 /** Amber, the colour of "needs you" (SH-7: one signal, the theme's AMBER), and the ink on it. */
 const NEED = { fill: AMBER.fill, ink: AMBER.ink, glyph: AMBER.deep } as const;
@@ -61,7 +61,7 @@ function Asking({ need }: { need: number }) {
           justifyContent: "center",
         }}
       >
-        <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.bold, color: NEED.ink }}>?</Text>
+        <Svg markup={QUESTION} size={MARK.askGlyph} color={NEED.ink} />
       </View>
       <View testID="agent-mark-count">
         <Text style={{ fontSize: TYPE.panel.detail.size, fontWeight: WEIGHT.bold, color: NEED.ink }}>{String(need)}</Text>

@@ -10,8 +10,8 @@
  */
 
 import type { FieldValue, ViewNode } from "@dashi/applet";
-import { RADIUS, SPACE, useColors, useSurface } from "@dashi/ui";
-import { Text, TextInput, View } from "@mirinjs/metal";
+import { SPACE, TextArea, TextField, useColors } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { CheckboxField, DropdownField, TagPickerField } from "./form-choices.tsx";
 import { nameOf } from "./form-fields.ts";
@@ -80,37 +80,37 @@ interface FieldKeys {
   escape(): void;
 }
 
-/** A line of words, or a long text (a description). */
-function Words({ field, value, change, keys, m }: { field: ViewNode; value: string; change(value: string): void; keys: FieldKeys; m: Measures }) {
-  const colors = useColors();
-  const surface = useSurface();
-  const long = field.t === "TextArea";
+/** A line of words (the kit's TextField; Return moves on), or a long text (its TextArea; ⌃↩ sends). */
+function Words({ field, value, change, keys }: { field: ViewNode; value: string; change(value: string): void; keys: FieldKeys; m: Measures }) {
   const placeholder = words(field, "placeholder");
+  const testID = `launcher:form:${nameOf(field)}:input`;
+  const onKeyPress = (key: "Escape" | "ArrowUp" | "ArrowDown"): void => {
+    if (key === "Escape") keys.escape();
+  };
+  if (field.t === "TextArea") {
+    return (
+      <TextArea
+        testID={testID}
+        value={value}
+        {...(placeholder ? { placeholder } : {})}
+        {...(keys.first ? { autoFocus: true } : {})}
+        height={FORM.area}
+        onChangeText={change}
+        onSubmit={keys.submit}
+        onKeyPress={onKeyPress}
+      />
+    );
+  }
   return (
-    <TextInput
-      testID={`launcher:form:${nameOf(field)}:input`}
+    <TextField
+      testID={testID}
       value={value}
       {...(placeholder ? { placeholder } : {})}
       {...(keys.first ? { autoFocus: true } : {})}
-      {...(field.p.secure === true ? { secureTextEntry: true } : {})}
-      {...(long ? { multiline: true, submitBehavior: "newline" as const } : { focusNextOnSubmit: true })}
+      {...(field.p.secure === true ? { secure: true } : {})}
+      focusNextOnSubmit
       onChangeText={change}
-      // A line moves on (focusNextOnSubmit); a long field's ⌃↩ sends.
-      onSubmitEditing={long ? keys.submit : undefined}
-      onKeyPress={(key) => {
-        if (key === "Escape") keys.escape();
-      }}
-      style={{
-        ...(long ? { height: FORM.area } : { height: FORM.line }),
-        padding: SPACE.s,
-        fontSize: m.title,
-        borderRadius: RADIUS.control,
-        color: colors.text,
-        placeholderColor: colors.textDisabled,
-        backgroundColor: surface.card,
-        borderColor: colors.separator,
-        focusBorderColor: colors.focusRing,
-      }}
+      onKeyPress={onKeyPress}
     />
   );
 }

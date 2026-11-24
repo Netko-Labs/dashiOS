@@ -1,7 +1,7 @@
 /** The pieces every widget is printed from (round five's chrome.js): labels, words, the one number, buttons, rules and blanks. */
 
-import { CLEAR, ON_TINT, pill, RADIUS, SPACE, TYPE, WEIGHT } from "@dashi/ui";
-import { Svg, Text, View, type ViewStyle } from "@mirinjs/metal";
+import { Button, type ButtonInks, CLEAR, GlyphButton, ON_TINT, pill, RADIUS, SPACE, TYPE, WEIGHT } from "@dashi/ui";
+import { Svg, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { type GlyphName, glyph } from "../shared/inks/index.ts";
 import { useHostAbilities } from "../shared/metal/index.ts";
@@ -138,9 +138,14 @@ export function VRule({ margin = 12 }: { margin?: number }) {
   return <View style={{ width: 1, alignSelf: "stretch", backgroundColor: c.hairline, marginLeft: margin, marginRight: margin }} />;
 }
 
-/** A widget's button: 26 tall, or a 30 round one (60 wide when filled). */
-const BTN = { height: 26, round: 30 } as const;
+/** What a round button's glyph does, for screen readers when it has no words. */
+const GLYPH_NAMES: Partial<Record<GlyphName, string>> = { plus: "Add a minute", prev: "Previous", next: "Next", play: "Play", pause: "Pause", x: "Close" };
 
+/**
+ * A widget's button: the kit's Button in the inks look, in the card's own
+ * colours (on air or on glass too), 26 tall; or a round GlyphButton, 30
+ * (60 wide when it leads, filled).
+ */
 export function Btn({
   label,
   icon,
@@ -159,27 +164,26 @@ export function Btn({
   grow?: boolean;
 }) {
   const c = useCard();
-  const fg = fill ? c.onFill : c.ink;
-  const style: ViewStyle = {
-    height: round ? BTN.round : BTN.height,
-    ...(round ? { width: fill ? 2 * BTN.round : BTN.round } : { paddingLeft: SPACE.inset, paddingRight: SPACE.inset }),
-    ...(grow ? { flex: 1 } : {}),
-    borderRadius: pill(round ? BTN.round : BTN.height),
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: SPACE.s,
-    backgroundColor: fill ? c.fill : CLEAR,
-    ...(fill ? {} : { borderWidth: 1, borderColor: c.hairline }),
-  };
+  const inks: ButtonInks = { ink: c.ink, ground: CLEAR, edge: c.hairline, fill: c.fill, onFill: c.onFill };
+  const press = onPress ?? (() => {});
+  const name = label ?? (icon ? (GLYPH_NAMES[icon] ?? icon) : "");
+  const id = testID ?? `widget-button:${name}`;
+  if (round && icon) {
+    return <GlyphButton testID={id} glyph={glyph(icon)} label={name} look="inks" inks={inks} {...(fill ? { filled: true, wide: true } : {})} onPress={press} />;
+  }
   return (
-    <View testID={testID} onPress={onPress} style={style}>
-      {icon ? <Svg markup={glyph(icon)} size={round ? 13 : 11} color={fg} /> : null}
-      {label ? (
-        <Text numberOfLines={1} style={{ fontSize: TYPE.panel.detail.size, fontWeight: WEIGHT.semibold, color: fg }}>
-          {label}
-        </Text>
-      ) : null}
+    <View style={grow ? { flex: 1, flexDirection: "row" } : { flexDirection: "row" }}>
+      <Button
+        testID={id}
+        label={name}
+        look="inks"
+        size="small"
+        inks={inks}
+        {...(fill ? { primary: true } : {})}
+        {...(grow ? { fill: true } : {})}
+        {...(icon ? { glyph: glyph(icon) } : {})}
+        onPress={press}
+      />
     </View>
   );
 }

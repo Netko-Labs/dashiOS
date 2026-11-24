@@ -9,6 +9,9 @@ import { ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import type { FlowView, PageInfo } from "../flow.ts";
 
+/** Setup's page: its words this far in from the window's sides, and the welcome page's room above the bowl without window controls. */
+export const SETUP_PAGE = { inset: 56, welcomeTop: 40 } as const;
+
 export interface FrameProps {
   info: PageInfo;
   view: FlowView;
@@ -57,7 +60,7 @@ export function Frame({ info, view, glyph, tint, children, continueLabel, contin
             alignItems: "center",
             gap: SPACE.s,
             paddingTop: controls ? SPACE.xs : SPACE.sheet,
-            paddingHorizontal: 56,
+            paddingHorizontal: SETUP_PAGE.inset,
           }}
         >
           {glyph && tint && <Tile glyph={glyph} tint={tint} size={44} />}
@@ -71,7 +74,7 @@ export function Frame({ info, view, glyph, tint, children, continueLabel, contin
       )}
       <ScrollView
         testID={`setup-page:${info.id}`}
-        style={{ flex: 1, flexDirection: "column", paddingHorizontal: 56, paddingTop: SPACE.page, paddingBottom: SPACE.inset }}
+        style={{ flex: 1, flexDirection: "column", paddingHorizontal: SETUP_PAGE.inset, paddingTop: SPACE.page, paddingBottom: SPACE.inset }}
       >
         {/* Never shorter than its content: the scroll range is this column's height (as Settings' pages, settings-app/ui.tsx). */}
         <View testID={`setup-page:${info.id}:content`} style={{ flexShrink: 0, flexDirection: "column", gap: SPACE.button }}>

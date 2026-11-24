@@ -8068,6 +8068,45 @@ short words, as the rulebook is written.
 - **Why:** each follows a rule already written (TY-1, CO-1, RA-2, DE-1, UI-11, UI-13, UI-6).
 - **Undo:** per line.
 
+### D638. The kit's tinted looks, its bar item, and what H22 counts as built on the kit
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3, round 2; UI-8, UI-9, UI-18, IC-3).
+- **Question:** the capsule's buttons wear the persona's colours and a widget's the card's (on air,
+  on glass); the menu bar's own pills (work alone, the voice, a recording) and the launcher's field
+  had no kit control to be.
+- **Choice:** `Button` takes two tinted looks drawn in colours their surface gives (`inks`, a
+  `ButtonInks`): `look="inks"` (26 small, a card's paper, hairline and fill) and `look="capsule"`
+  (pill-v2's 24 and 22, outlined in the persona's words, the yes filled, keys after the words);
+  `GlyphButton` an inks look (30, 60 wide), a `large` 28 and a `tone` (ink or the agents' shiso);
+  `BarItem` (UI-18), `BareField` (the launcher's), `QUESTION` and `SQUARE` glyphs, a Chip with an
+  app's `picture`, a PopUpButton that `opensInPlace`, TextField's `focusNextOnSubmit`, TextArea's
+  `onSubmit`, keys after a window Button's words. H22's escape (D609) takes a component that renders
+  the kit's `Chip`, `BarItem`, `Checkbox` or `PopUpButton` as that control in place.
+- **Why:** UI-8 already said the capsule's and the panel's buttons are Button's looks; each module's
+  hand-drawn copy is gone (h22/W3 47 → 0).
+- **Cost:** the capsule card's choices are pill buttons, centred, 24 tall (they were 27 rows at radius
+  8, left-aligned); the conversation's Stop and Send are 28 GlyphButtons; the launcher form's fields
+  are the kit's 13, not the launcher's text-size scale; a wider H22 escape lets a component that
+  renders one of those beside a hand-drawn control pass.
+- **Undo:** per component; the frames in `scripts/check-design-kit.ts`.
+
+### D639. Round 2's smaller calls: one key sink, the bar's dropdowns named, the conversation's greeting
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3, round 2).
+- **Choice:** the overlays' `KeyCatcher` (23 callers) and the screenshot area's catcher are the kit's
+  `KeySink` (Metal's window keys) instead of a hidden text input; the bar's dropdowns are
+  `BarDropdown`, `StatusDropdown` and `TitleDropdown` (built from the kit's `MenuRow`, they are the bar's
+  surfaces, not the kit's PopupMenu); the launcher's row is `FieldRow` and the conversation's first
+  screen `Greeting` (the approved design, not an empty state); the widgets' `Btn` draws the kit's inks
+  Button or GlyphButton in its card's colours; the overview's shelf gap snaps 18 → 16, the switcher's
+  and the row's gaps are SPACE tokens, Setup's 56 inset and the eyedropper's 48 line are named beside
+  their component.
+- **Why:** each follows a rule already written (UI-8, UI-9, KB-1, H21b).
+- **Cost:** a surface that had keys only through a focused text input now relies on Metal's window
+  keys (checked in the VM: the area, the agents' panel, the capture toolbar, the eyedropper, the
+  screenshot area).
+- **Undo:** per file.
+
 ### D650. Three kit pieces for the apps: words edited in place, title tabs, keypad keys
 
 - **Date:** 2026-11-24. The `design-apps-a` agent's (W5; H22, UI-1).

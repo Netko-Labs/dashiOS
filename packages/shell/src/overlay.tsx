@@ -5,8 +5,8 @@
  * host that dies by itself is the same close.
  */
 
-import { CLEAR, TextSelectionLook } from "@dashi/ui";
-import { type NativeHostOptions, type NativeHostTransport, render, TextInput, View } from "@mirinjs/metal";
+import { KeySink, TextSelectionLook } from "@dashi/ui";
+import { type NativeHostOptions, type NativeHostTransport, render } from "@mirinjs/metal";
 import type { ReactElement } from "react";
 import { METAL_HOST } from "./shared/apps/index.ts";
 import { hostTakesLeast, spawnShellHost, WarmHost, windowFor } from "./shared/metal/index.ts";
@@ -79,22 +79,21 @@ export const openOverlay: OpenOverlay = (options, element, onClosed, onHost) => 
 export type NavigationKey = "Escape" | "ArrowUp" | "ArrowDown";
 
 /**
- * Keys for an overlay with nothing to type into. Metal reports Esc, the
- * arrows, and Enter only from a focused text input, so this is an invisible
- * one that never keeps what is typed. Needs the surface to hold the keyboard.
+ * Keys for an overlay with nothing to type into: the kit's KeySink, which
+ * hears the window's keys while no field has the keyboard (Metal's
+ * `onWindowKeyDown`). Esc and the arrows go to `onKey`, Return to
+ * `onSubmit`. Needs the surface to hold the keyboard.
  */
 export function KeyCatcher({ onKey, onSubmit, testID }: { onKey: (key: NavigationKey) => void; onSubmit?: () => void; testID?: string }) {
   return (
-    <View style={{ position: "absolute", left: 0, top: 0, width: 1, height: 1, opacity: 0, overflow: "hidden" }}>
-      <TextInput
-        testID={testID}
-        value=""
-        autoFocus
-        onChangeText={() => {}}
-        onKeyPress={onKey}
-        onSubmitEditing={() => onSubmit?.()}
-        style={{ width: 1, height: 1, backgroundColor: CLEAR }}
-      />
-    </View>
+    <KeySink
+      {...(testID ? { testID } : {})}
+      onKey={(key) => {
+        if (key.kind === "escape") onKey("Escape");
+        else if (key.kind === "up") onKey("ArrowUp");
+        else if (key.kind === "down") onKey("ArrowDown");
+        else if (key.kind === "enter") onSubmit?.();
+      }}
+    />
   );
 }

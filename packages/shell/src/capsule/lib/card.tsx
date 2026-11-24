@@ -8,14 +8,14 @@
  * meant for what was there before answers nothing.
  */
 
-import { KeyedText, OPACITY, RADIUS, SHADOW, SPACE, WEIGHT } from "@dashi/ui";
+import { KeyedText, Button as KitButton, RADIUS, SHADOW, SPACE, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { type Cell, STOP_KEYS } from "../../shared/pill/index.ts";
 import type { OpenCard } from "../types.ts";
 import { CARD, type CapsuleColours } from "./measures.ts";
 import { type CardContent, cardContent } from "./model.ts";
-import { Button, Disc, Dots } from "./parts.tsx";
+import { Button, buttonInks, Disc, Dots } from "./parts.tsx";
 
 /** What a press or a key on the card comes to. */
 export type CardAnswer = { do: "yes" } | { do: "no" } | { do: "choose"; text: string } | { do: "read" } | { do: "close" } | { do: "unfocus" };
@@ -148,7 +148,7 @@ function Buttons({
       primary={primary}
       off={!armed}
       colours={colours}
-      measures={CARD.button}
+      card
       onPress={() => onAnswer(answer)}
       testID={`card-button:${answer.do}`}
     />
@@ -175,27 +175,17 @@ function Choices({
   onAnswer(answer: CardAnswer): void;
 }) {
   return choices.map((choice) => (
-    <View
-      key={choice}
-      testID={`card-choice:${choice}`}
-      onPress={() => armed && onAnswer({ do: "choose", text: choice })}
-      accessibilityRole="button"
-      style={{
-        height: CARD.choice,
-        borderRadius: RADIUS.control,
-        paddingLeft: SPACE.m,
-        paddingRight: SPACE.m,
-        marginBottom: SPACE.xs,
-        flexDirection: "row",
-        alignItems: "center",
-        borderWidth: 1,
-        borderColor: colours.text,
-        opacity: armed ? 1 : OPACITY.disabled,
-      }}
-    >
-      <Text numberOfLines={1} style={{ fontSize: CARD.choiceSize, fontWeight: WEIGHT.semibold, color: colours.text }}>
-        {choice}
-      </Text>
+    // Each a row's width, in the kit's capsule look (UI-8).
+    <View key={choice} style={{ flexDirection: "row", marginBottom: SPACE.xs }}>
+      <KitButton
+        testID={`card-choice:${choice}`}
+        label={choice}
+        look="capsule"
+        fill
+        inks={buttonInks(colours)}
+        disabled={!armed}
+        onPress={() => onAnswer({ do: "choose", text: choice })}
+      />
     </View>
   ));
 }
