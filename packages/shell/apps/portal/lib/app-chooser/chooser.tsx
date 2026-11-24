@@ -180,14 +180,16 @@ function OpenWith({
   );
 }
 
-/** The least Open With takes (LA-3): three app rows, the Always box and Cancel and Open in one row. */
+/** Open With's size: the Always box's words beside Cancel and Open. */
+const OPEN_WITH = { width: 460, height: 320 } as const;
+/** The least it takes (LA-3): three app rows, and Cancel and Open in one row beside the Always box, its words cut short. */
 const OPEN_WITH_LEAST = { width: 360, height: 240 } as const;
 
 export function chooseOnScreen(show: ShowDialog, defaultFor: (mime: string) => Promise<string | null> = gioDefault): ChooseApp {
   return async (request, list, signal) => {
     const defaultId = request.contentType ? await defaultFor(request.contentType).catch(() => null) : null;
     const choice = await show<AppChoice | null>(
-      { parent: request.parent, title: "Open With", width: 400, height: 320, least: OPEN_WITH_LEAST },
+      { parent: request.parent, title: "Open With", width: OPEN_WITH.width, height: OPEN_WITH.height, least: OPEN_WITH_LEAST },
       (answer) => <OpenWith request={request} list={list} defaultId={defaultId} answer={answer} />,
       signal,
       null,
