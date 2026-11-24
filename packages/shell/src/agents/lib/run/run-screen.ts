@@ -10,6 +10,17 @@ import { scratchDir } from "../scratch.ts";
 import { named, noWindow, subject } from "../subject.ts";
 import type { Handlers } from "./run-types.ts";
 
+/**
+ * What a picture's words say: its size and scale, and, while a sheet waits
+ * for the person (a consent, a question), that the grey block is that sheet,
+ * blanked: theirs to answer, never an agent's to read or press.
+ */
+export function pictureNote(size: { width: number; height: number }, scale: number, sheetUp: boolean): string {
+  const measure = `${size.width}×${size.height} pixels at scale ${scale}: divide pixel positions by ${scale} for points.`;
+  if (!sheetUp) return measure;
+  return `${measure} The grey block is a Dashi sheet waiting for the person (a permission or a question), blanked in agents' pictures: it is theirs to read and answer, and agents can't press it.`;
+}
+
 async function screenshot(id: number | null, rect: Rect | undefined, ctx: RunContext): Promise<ToolResult> {
   if (id !== null) {
     const window = await named(ctx.compositor, id);
@@ -39,7 +50,7 @@ async function screenshot(id: number | null, rect: Rect | undefined, ctx: RunCon
     return {
       content: [
         { type: "image", data, mimeType: "image/png" },
-        { type: "text", text: `${answer.width}×${answer.height} pixels at scale ${scale}: divide pixel positions by ${scale} for points.` },
+        { type: "text", text: pictureNote(answer, scale, id === null && ctx.ui.sheetUp?.() === true) },
       ],
     };
   } finally {

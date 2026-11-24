@@ -5,7 +5,7 @@ import { litAfter, MENU, menuFits, menuHeight, placeMenu, rowTop } from "../src/
 import { popUpMenuAt, popUpMenuWidth, popUpOrigin } from "../src/popup-button.tsx";
 import { isSeparator, MENU_SEPARATOR, type MenuEntry, tidyEntries } from "../src/popup-menu.tsx";
 import { clampFraction, SPOKES, SWEEP_TICKS, spinnerMarkup, spokeOpacities, sweepOffset } from "../src/progress-math.ts";
-import { fractionAt, fractionOf, keyValues, knobLeft, nearestIndex, UNIT_RANGE, valueAt } from "../src/slider-math.ts";
+import { fractionAt, fractionOf, keyValues, knobLeft, nearestIndex, notchLabel, UNIT_RANGE, valueAt } from "../src/slider-math.ts";
 import { contrastRatio } from "../src/theme/contrast.ts";
 import { darkColors, lightColors } from "../src/theme/palette.ts";
 import { DARK_SURFACE, LIGHT_SURFACE } from "../src/theme/surface.ts";
@@ -217,4 +217,18 @@ describe("states", () => {
       }
     });
   }
+});
+
+// The installed pass read Appearance's sample slider's stops as "0.15000000000000002",
+// "0.30000000000000004" (what a screen reader would say).
+test("a slider's stops are named without a float's noise", () => {
+  const free = keyValues(UNIT_RANGE);
+  expect(free).toContain(0.15);
+  expect(free).toContain(0.3);
+  expect(free.map((value) => notchLabel(value, UNIT_RANGE))).toContain("15%");
+  for (const value of free) expect(notchLabel(value, UNIT_RANGE)).toMatch(/^\d{1,3}%$/);
+  const scale = { min: 1, max: 2, step: 0.05 };
+  for (const value of keyValues(scale)) expect(notchLabel(value, scale)).toMatch(/^\d(\.\d{1,2})?$/);
+  expect(notchLabel(0.1 + 0.2, { min: 0, max: 10, step: 0.1 })).toBe("0.3");
+  expect(notchLabel(0.1 + 0.2, { min: 0, max: 10, step: 0 })).toBe("0.3");
 });

@@ -18,7 +18,7 @@
 import { type Bounds, Svg, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { useControlState } from "./control-state.tsx";
-import { fractionAt, fractionOf, keyValues, knobLeft, nearestIndex, type SliderRange, UNIT_RANGE, valueAt } from "./slider-math.ts";
+import { fractionAt, fractionOf, keyValues, knobLeft, nearestIndex, notchLabel, type SliderRange, UNIT_RANGE, valueAt } from "./slider-math.ts";
 import { StepKeys } from "./step-keys.tsx";
 import { KNOB as KNOB_INK, lightColors, SHADOW, useColors } from "./theme/index.ts";
 
@@ -151,7 +151,7 @@ export function Slider({ value, range = UNIT_RANGE, width = 220, testID, onChang
       {!disabled && (
         <StepKeys
           testID={testID}
-          labels={notches.map(String)}
+          labels={notches.map((notch) => notchLabel(notch, range))}
           index={nearestIndex(notches, shown)}
           onStep={(at) => {
             const next = notches[at];

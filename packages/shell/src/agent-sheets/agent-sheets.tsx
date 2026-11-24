@@ -123,6 +123,7 @@ export function createAgentUi(options: AgentUiOptions): AgentUi & PersonSheets &
       turns.end(agent, false);
     },
     stopped: (names) => notes.show(names),
+    sheetUp: () => sheets.busy,
     whenNoSheet() {
       return sheets.busy ? new Promise((resolve) => clearWaiters.push(resolve)) : Promise.resolve();
     },

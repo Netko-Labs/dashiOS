@@ -156,3 +156,9 @@ test("the gallery is in the launcher but not in a new Dock", () => {
   expect(components?.exec?.[1]).toEndWith("apps/components/main.tsx");
   expect(dockDefaults([{ id: "dev.dashi.components" }])).toEqual([]);
 });
+
+// The installed pass: "Pick rows, months and f…" in the 200-wide sidebar. "Errors, empty and
+// loading" (25) is the longest name that showed whole there, so every name keeps to that.
+test("every page's name fits the sidebar whole", () => {
+  for (const page of PAGES) expect(page.label.length).toBeLessThanOrEqual("Errors, empty and loading".length);
+});

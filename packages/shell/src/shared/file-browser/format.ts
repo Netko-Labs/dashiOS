@@ -87,3 +87,22 @@ export function statusLine(total: number, selected: readonly { size: number; kin
   }
   return free === null ? formatCount(total) : `${formatCount(total)}, ${formatSize(free)} available`;
 }
+
+/**
+ * Where an item is, as Get Info says it (PA-18): the folder in words, never a
+ * bare `~` (which reads as a dash). "Home" for the home folder, "Home ›
+ * Documents › Work" inside it, "Computer" for the root, the path elsewhere.
+ */
+export function formatPlace(folder: string, home: string): string {
+  if (folder === home) return "Home";
+  if (folder === "/") return "Computer";
+  if (home !== "/" && folder.startsWith(`${home}/`))
+    return [
+      "Home",
+      ...folder
+        .slice(home.length + 1)
+        .split("/")
+        .filter(Boolean),
+    ].join(" › ");
+  return folder;
+}

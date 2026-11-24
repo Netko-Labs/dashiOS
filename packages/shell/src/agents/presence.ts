@@ -159,6 +159,8 @@ export interface AgentUi {
   stopped(names: readonly string[]): void;
   /** Resolves once no consent sheet is on screen (screenshots wait for it). */
   whenNoSheet(): Promise<void>;
+  /** Whether a sheet waits for the person now: it is blanked in agents' pictures, and their screenshot says so. */
+  sheetUp?(): boolean;
 }
 
 /** An agent's status while a sheet of its asks the person something (session.ts): it waits for you. */

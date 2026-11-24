@@ -114,7 +114,8 @@ export function BatteryWidget({ size }: { size: WidgetSize }) {
       <>
         <Head left={<Lab>This computer</Lab>} right={<Glyph name="bolt" size={13} tone="value" />} />
         <Grow />
-        <Words>No battery: it runs on the wall.</Words>
+        {/* Its one line whole: two lines where the card has the room, the short form in one row of cells. */}
+        {size === "compact" ? <Words>No battery</Words> : <Words lines={2}>No battery: it runs on the wall.</Words>}
       </>
     );
   const words = batteryWords(battery.state, battery.percent, battery.minutesLeft);

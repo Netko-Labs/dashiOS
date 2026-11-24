@@ -14,9 +14,9 @@ export interface Palette {
   hover: string;
   separator: string;
   dot: string;
-  /** Glass for overlays that hold text (launcher, shortcut sheet): more tint. */
+  /** Overlays that hold text (launcher, shortcut sheet): opaque until the compositor can blur behind them (DE-4, D697). */
   launcher: string;
-  /** Dropdowns and Control Center: nearly opaque, since nothing blurs what is behind them yet. */
+  /** Dropdowns and Control Center: opaque, since nothing blurs what is behind them yet (DE-4, D697). */
   menu: string;
   /** Every menu's edge, the menu bar's and a window's alike: a dark hairline in Light, true black's 12% edge in Dark, where a shadow has nothing to darken. */
   menuEdge: string;
@@ -157,8 +157,8 @@ export const lightColors: Palette = {
   hover: "#ffffff59",
   separator: "#1d1d1f26",
   dot: "#1d1d1fcc",
-  launcher: "#f5f5f7f5",
-  menu: "#f6f6f8f7",
+  launcher: "#f5f5f7",
+  menu: "#f6f6f8",
   menuEdge: "#1d1d1f26",
   osd: "#f5f5f7e0",
   osdOn: "#1d1d1fd9",
@@ -233,7 +233,7 @@ const { ground: BLACK, lift: LIFT, raised: RAISED, ink: INK, hairline: HAIRLINE,
  * near-black steps above, edged in white hairlines. Muted ink is 60% of the
  * ink. Glass over the wallpaper (the menu bar, the Dock) is black, never a
  * smoky gray; glass that holds text over windows (the launcher, menus, the
- * on-screen display) is a lift, nearly opaque. The accent, ume, broth, moss
+ * on-screen display) is a lift, opaque where it holds text (DE-4). The accent, ume, broth, moss
  * and shiso keep their jobs and their Dark inks.
  */
 export const darkColors: Palette = {
@@ -247,8 +247,8 @@ export const darkColors: Palette = {
   hover: "#ffffff1a",
   separator: HAIRLINE,
   dot: `${INK}cc`,
-  launcher: `${LIFT}f5`,
-  menu: `${RAISED}f7`,
+  launcher: LIFT,
+  menu: RAISED,
   menuEdge: EDGE,
   osd: `${LIFT}e6`,
   osdOn: `${INK}d9`,

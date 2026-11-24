@@ -3,8 +3,7 @@
 import { FormSheet, Group, PopUpButton, Row, Slider } from "@dashi/ui";
 import { useState } from "react";
 import type { InfoRow } from "../../../../src/shared/file-browser/file-sheets.tsx";
-import { formatDate, formatSize } from "../../../../src/shared/file-browser/format.ts";
-import { tilde } from "../../../../src/shared/files/index.ts";
+import { formatDate, formatPlace, formatSize } from "../../../../src/shared/file-browser/format.ts";
 import { EXPORT_FORMATS, type ExportFormat } from "../convert.ts";
 import { type FileFacts, formatCount, formatDimensions, megapixels } from "../info.ts";
 
@@ -15,7 +14,7 @@ export function infoRows(facts: FileFacts, extra: readonly InfoRow[], home = pro
     ...extra,
     ["Size", `${formatSize(facts.size)}${facts.size >= 1000 ? ` (${formatCount(facts.size, locale)} bytes)` : ""}`],
     ["Modified", formatDate(facts.modifiedMs, { locale })],
-    ["Where", tilde(facts.folder, home)],
+    ["Where", formatPlace(facts.folder, home)],
   ];
 }
 

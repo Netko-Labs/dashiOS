@@ -29,7 +29,7 @@ async function tree(element: ReactElement): Promise<(testID: string) => { node: 
   const mounted = render(element, transport);
   await settle();
   const root = JSON.parse(trees.at(-1) ?? "{}") as Node;
-  const ids = new Map(["chooser", "chooser:name-box", "chooser:name"].map((testID) => [testID, mounted.nodeId(testID)]));
+  const ids = new Map(["chooser", "chooser:name-box", "chooser:name", "chooser:footer", "content"].map((testID) => [testID, mounted.nodeId(testID)]));
   mounted.unmount();
   return (testID: string) => {
     const found = walk(root, null, ids.get(testID));
@@ -72,4 +72,13 @@ test("as a sheet it hangs below the title bar and stays inside the window", asyn
   expect(Number(card.props?.width)).toBeLessThanOrEqual(CHOOSER_SHEET.width);
   expect(card.props).toMatchObject({ height: CHOOSER_SHEET.height, minHeight: 0 });
   expect(card.props?.shrink).not.toBe(false);
+});
+
+// The installed pass: Cancel and Open sat on the grid, and the last row's names were hidden behind them.
+test("Cancel and Open sit on a strip of their own, under a hairline, below the listing", async () => {
+  const find = await sheet();
+  const footer = find("chooser:footer");
+  expect(footer.node.props).toMatchObject({ shrink: false, borderTop: 1 });
+  // The listing is in a column of its own beside the strip, not in the strip's.
+  expect(footer.parent?.children).not.toContain(find("content").node);
 });
