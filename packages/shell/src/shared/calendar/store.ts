@@ -11,6 +11,7 @@
 import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, unlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { TINTS } from "@dashi/ui";
 import { isErrno } from "../files/errno.ts";
 import { isRegularFile, writeAtomic, writeNew } from "../fs/index.ts";
 import { type EventInput, makeEvent } from "./event.ts";
@@ -158,7 +159,7 @@ export class CalendarStore {
   }
 
   recolor(id: string, color: string): void {
-    if (!isColor(color)) throw new CalendarError("A color is written like #3d7ab0.");
+    if (!isColor(color)) throw new CalendarError(`A color is written like ${TINTS.mizu.toLowerCase()}.`);
     this.mutate(id, (calendar) => {
       calendar.color = color.toLowerCase();
     });

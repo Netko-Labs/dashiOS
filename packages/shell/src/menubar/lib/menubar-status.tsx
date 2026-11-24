@@ -7,7 +7,7 @@
  * something went, with a dot when one of those wants attention.
  */
 
-import { useColors } from "@dashi/ui";
+import { CLEAR, RADIUS, useColors } from "@dashi/ui";
 import { type Bounds, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { type BarStop, MORE_STOP, type StopKind } from "../../menus/index.ts";
@@ -130,8 +130,8 @@ function arrangeStatus(
           flexDirection: "row",
           alignItems: "center",
           height: 22,
-          borderRadius: 5,
-          backgroundColor: areaOpen ? areaFill : "#00000000",
+          borderRadius: RADIUS.row,
+          backgroundColor: areaOpen ? areaFill : CLEAR,
         }}
       >
         {area}

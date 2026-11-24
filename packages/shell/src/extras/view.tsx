@@ -6,7 +6,7 @@
  * that asks for attention gets a dot, as a Dock icon does.
  */
 
-import { Picture, useColors } from "@dashi/ui";
+import { CLEAR, Picture, pill, RADIUS, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { useRef } from "react";
 import type { MenuBarExtra } from "./types.ts";
@@ -15,8 +15,18 @@ import type { MenuBarExtra } from "./types.ts";
 function Letter({ title }: { title: string }) {
   const colors = useColors();
   return (
-    <View style={{ width: SIZE, height: SIZE, borderRadius: 4, borderWidth: 1.5, borderColor: colors.text, alignItems: "center", justifyContent: "center" }}>
-      <Text style={{ fontSize: 10, fontWeight: "bold", color: colors.text }}>{[...title][0]?.toUpperCase() ?? "?"}</Text>
+    <View
+      style={{
+        width: SIZE,
+        height: SIZE,
+        borderRadius: RADIUS.check,
+        borderWidth: 1.5,
+        borderColor: colors.text,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.bold, color: colors.text }}>{[...title][0]?.toUpperCase() ?? "?"}</Text>
     </View>
   );
 }
@@ -25,6 +35,8 @@ function Letter({ title }: { title: string }) {
 const SIZE = 16;
 /** A tile in "…"'s row. */
 export const TILE = 36;
+/** The signs on a row: the DEV badge's height (the panel's micro words on their line) and the attention dot. */
+const SIGN = { badge: TYPE.panel.micro.line, dot: 6 } as const;
 
 export interface ExtraItemProps {
   extra: MenuBarExtra;
@@ -62,15 +74,15 @@ export function ExtraItem({ extra, open, onMenu, onActivate, tile = false, acces
       style={{
         height: tile ? TILE : 22,
         ...(tile ? { minWidth: TILE } : {}),
-        paddingLeft: tile ? 9 : 7,
-        paddingRight: tile ? 9 : 7,
+        paddingLeft: tile ? SPACE.m : SPACE.s,
+        paddingRight: tile ? SPACE.m : SPACE.s,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        gap: 5,
-        borderRadius: tile ? 12 : 5,
+        gap: SPACE.xs,
+        borderRadius: tile ? RADIUS.sheet : RADIUS.row,
         position: "relative",
-        backgroundColor: open ? colors.openWash : tile ? colors.button : "#00000000",
+        backgroundColor: open ? colors.openWash : tile ? colors.button : CLEAR,
       }}
     >
       {extra.icon?.kind === "glyph" && <Svg markup={extra.icon.markup} size={SIZE} color={colors.text} />}
@@ -80,7 +92,7 @@ export function ExtraItem({ extra, open, onMenu, onActivate, tile = false, acces
       )}
       {extra.icon === null && extra.label === undefined && <Letter title={extra.title} />}
       {extra.label !== undefined && (
-        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.text }}>
           {extra.label}
         </Text>
       )}
@@ -88,15 +100,23 @@ export function ExtraItem({ extra, open, onMenu, onActivate, tile = false, acces
         // `dashi-applet dev`: a developer's applet, not one installed from the store.
         <View
           testID={`extra-dev:${extra.key}`}
-          style={{ height: 12, paddingLeft: 3, paddingRight: 3, borderRadius: 3, borderWidth: 1, borderColor: colors.textMuted, justifyContent: "center" }}
+          style={{
+            height: SIGN.badge,
+            paddingLeft: SPACE.xxs,
+            paddingRight: SPACE.xxs,
+            borderRadius: RADIUS.thumb,
+            borderWidth: 1,
+            borderColor: colors.textMuted,
+            justifyContent: "center",
+          }}
         >
-          <Text style={{ fontSize: 8, fontWeight: "bold", color: colors.textMuted }}>DEV</Text>
+          <Text style={{ fontSize: TYPE.panel.micro.size, fontWeight: WEIGHT.bold, color: colors.textMuted }}>DEV</Text>
         </View>
       )}
       {extra.attention && (
         <View
           testID={`extra-attention:${extra.key}`}
-          style={{ position: "absolute", top: 2, right: 3, width: 6, height: 6, borderRadius: 3, backgroundColor: colors.critical }}
+          style={{ position: "absolute", top: 2, right: 3, width: SIGN.dot, height: SIGN.dot, borderRadius: pill(SIGN.dot), backgroundColor: colors.critical }}
         />
       )}
     </View>

@@ -15,7 +15,7 @@
  * (voice/chip.tsx).
  */
 
-import { LOGO, useColors } from "@dashi/ui";
+import { LOGO, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { type AppMenuStore, useAppMenus } from "../app-menus/index.ts";
@@ -42,7 +42,7 @@ export interface MenuBarProps extends StatusSources {
 }
 
 /** The bar's row; the clock's pill has 8 of its own at the right. */
-const BAR = { flex: 1, flexDirection: "row", alignItems: "center", paddingLeft: 6, paddingRight: 6, position: "relative" } as const;
+const BAR = { flex: 1, flexDirection: "row", alignItems: "center", paddingLeft: SPACE.s, paddingRight: SPACE.s, position: "relative" } as const;
 
 /**
  * A hairline, not a shadow: a shadow needs a surface taller than the bar, and that would take clicks from the windows' top edge.
@@ -81,7 +81,7 @@ function useBarWidths() {
 export function MenuBar(props: MenuBarProps) {
   const { apps, toplevels, menus, appMenus, output, installed, accessible = () => false } = props;
   const colors = useColors();
-  const label = { fontSize: 13, color: colors.text } as const;
+  const label = { fontSize: TYPE.body.size, color: colors.text } as const;
   const { popover, focused, frozenName } = useOwnPopover(menus, output);
   const { barWidth, menusWidth, statusWidth, setBarWidth, setMenusWidth, setStatusWidth, setFullWidth } = useBarWidths();
   const appName = useBarName(apps, toplevels, installed, frozenName);
@@ -114,7 +114,7 @@ export function MenuBar(props: MenuBarProps) {
         {menu("dashi", <Svg markup={LOGO} size={16} color={colors.text} />)}
         {menu(
           "app",
-          <Text numberOfLines={1} style={{ ...label, fontWeight: "bold" }}>
+          <Text numberOfLines={1} style={{ ...label, fontWeight: WEIGHT.bold }}>
             {appName}
           </Text>,
         )}

@@ -6,7 +6,7 @@
  * looks like @dashi/ui's tooltips (tooltip.tsx).
  */
 
-import { TOOLTIP_DELAY_MS, useColors } from "@dashi/ui";
+import { RADIUS, SHADOW, SPACE, TOOLTIP_DELAY_MS, TYPE, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import type { OpenOverlay, OverlayHandle } from "../overlay.tsx";
 import { MENU_BAR_HEIGHT } from "../theme.ts";
@@ -32,23 +32,23 @@ export function tipLeft(x: number, width: number, barWidth: number | undefined):
 function Tip({ text }: { text: string }) {
   const colors = useColors();
   return (
-    <View style={{ flex: 1, alignItems: "center", paddingTop: 4 }}>
+    <View style={{ flex: 1, alignItems: "center", paddingTop: SPACE.xs }}>
       <View
         testID="bar-tip"
         style={{
           height: 22,
-          paddingLeft: 8,
-          paddingRight: 8,
-          borderRadius: 5,
+          paddingLeft: SPACE.m,
+          paddingRight: SPACE.m,
+          borderRadius: RADIUS.row,
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: colors.menu,
           borderWidth: 1,
           borderColor: colors.separator,
-          shadow: "sm",
+          shadow: SHADOW.sm,
         }}
       >
-        <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.text }}>
           {text}
         </Text>
       </View>

@@ -7,6 +7,7 @@
  * area; each row is centered, and so is the block.
  */
 
+import { SPACE } from "@dashi/ui";
 import type { Rect } from "../../layout.ts";
 
 export interface OverviewWindow {
@@ -28,7 +29,10 @@ export interface OverviewOptions {
   gap: number;
 }
 
-export const OVERVIEW_DEFAULTS: OverviewOptions = { margin: 40, gap: 24 };
+/** The overview's room from the screen's edges: its own measure (40), beside it. */
+const OVERVIEW_EDGE = { inset: 40 } as const;
+
+export const OVERVIEW_DEFAULTS: OverviewOptions = { margin: OVERVIEW_EDGE.inset, gap: SPACE.xl };
 
 /** How many halvings of the scale range the search makes: far finer than a pixel. */
 const STEPS = 40;

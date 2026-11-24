@@ -13,7 +13,7 @@
  * tooltip under the bar.
  */
 
-import { useColors } from "@dashi/ui";
+import { AMBER, CAPSULE, ON_AGENT, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef } from "react";
 import { discGlyph } from "./agents/index.ts";
@@ -21,10 +21,10 @@ import { opaque } from "./consent.tsx";
 import { SPARK } from "./shared/settings/index.ts";
 
 /** The mark's measures (docs/design.html, "The mark"). */
-export const MARK = { height: 22, padding: 5, disc: 18, glyph: 12, dot: 12, askDisc: 16 } as const;
+export const MARK = { height: 22, padding: SPACE.xs, disc: 18, glyph: 12, dot: 12, askDisc: 16 } as const;
 
-/** Amber, the colour of "needs you" (the design's #f0b93c), and the ink on it. */
-const NEED = { fill: "#F0B93C", ink: "#1D1D1F", glyph: "#86600A" } as const;
+/** Amber, the colour of "needs you" (SH-7: one signal, the theme's AMBER), and the ink on it. */
+const NEED = { fill: AMBER.fill, ink: AMBER.ink, glyph: AMBER.deep } as const;
 
 /** The red dot: an agent sees or records the screen, or uses its pointer. Ringed in the bar's color, so it reads on the mark. */
 function RedDot() {
@@ -56,15 +56,15 @@ function Asking({ need }: { need: number }) {
           width: MARK.askDisc,
           height: MARK.askDisc,
           borderRadius: MARK.askDisc / 2,
-          backgroundColor: "#ffffff",
+          backgroundColor: CAPSULE.white,
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <Text style={{ fontSize: 11, fontWeight: "bold", color: NEED.ink }}>?</Text>
+        <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.bold, color: NEED.ink }}>?</Text>
       </View>
       <View testID="agent-mark-count">
-        <Text style={{ fontSize: 11.5, fontWeight: "bold", color: NEED.ink }}>{String(need)}</Text>
+        <Text style={{ fontSize: TYPE.panel.detail.size, fontWeight: WEIGHT.bold, color: NEED.ink }}>{String(need)}</Text>
       </View>
     </>
   );
@@ -96,7 +96,7 @@ function Outside({ sessions, harness, ink }: { sessions: number; harness: string
       <Svg markup={discGlyph(harness)} size={MARK.glyph} color={ink} />
       {sessions > 1 && (
         <View testID="agent-mark-sessions">
-          <Text style={{ fontSize: 11.5, fontWeight: "bold", color: ink }}>{String(sessions)}</Text>
+          <Text style={{ fontSize: TYPE.panel.detail.size, fontWeight: WEIGHT.bold, color: ink }}>{String(sessions)}</Text>
         </View>
       )}
     </>
@@ -111,7 +111,7 @@ function Working({ ink, glyph, working }: { ink: string; glyph: string; working:
       <Spark ink={ink} glyph={glyph} />
       {working && (
         <View testID="agent-mark-working">
-          <Text style={{ fontSize: 11.5, fontWeight: "semibold", color: colors.agentInk }}>Working</Text>
+          <Text style={{ fontSize: TYPE.panel.detail.size, fontWeight: WEIGHT.semibold, color: colors.agentInk }}>Working</Text>
         </View>
       )}
     </>
@@ -195,10 +195,10 @@ export function AgentMark(props: AgentMarkProps) {
         flexShrink: 0,
         flexDirection: "row",
         alignItems: "center",
-        gap: 5,
+        gap: SPACE.xs,
         height: MARK.height,
-        paddingLeft: asking ? 3 : MARK.padding,
-        paddingRight: asking || working || (outside && outside.sessions > 1) ? 8 : MARK.padding,
+        paddingLeft: asking ? SPACE.xxs : MARK.padding,
+        paddingRight: asking || working || (outside && outside.sessions > 1) ? SPACE.m : MARK.padding,
         borderRadius: MARK.height / 2,
         position: "relative",
         backgroundColor: asking ? NEED.fill : open ? ink : colors.agentWash,
@@ -215,9 +215,9 @@ export function AgentMark(props: AgentMarkProps) {
           <View
             testID="agent-mark-agents"
             onPress={press(onAgents ?? onPress)}
-            style={{ flexDirection: "row", alignItems: "center", gap: 4, height: MARK.height }}
+            style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs, height: MARK.height }}
           >
-            <Outside sessions={outside.sessions} harness={outside.harness} ink={open ? "#ffffff" : colors.agentInk} />
+            <Outside sessions={outside.sessions} harness={outside.harness} ink={open ? ON_AGENT : colors.agentInk} />
           </View>
         </>
       ) : (

@@ -11,9 +11,11 @@
  * ends when the button lifts, wherever the pointer is.
  */
 
+import { DELAY } from "@dashi/ui";
+
 export const GESTURE = {
   /** Holding still this long opens the menu. */
-  holdMs: 500,
+  holdMs: DELAY.arm,
   /** A press that moves farther than this is a drag, not a click. */
   slop: 5,
   /** Pulled this far above where it went down, an icon is on its way out. */

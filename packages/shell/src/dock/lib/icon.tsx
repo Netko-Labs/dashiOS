@@ -4,7 +4,7 @@
  * right-click it reports (view.tsx decides what those do).
  */
 
-import { useColors } from "@dashi/ui";
+import { CLEAR, RADIUS, SPACE, useColors } from "@dashi/ui";
 import { type Bounds, type PointerInfo, View } from "@mirinjs/metal";
 import { useRef } from "react";
 import { AppIcon } from "../../shared/apps/index.ts";
@@ -19,9 +19,9 @@ export function Divider() {
       style={{
         width: 1,
         height: DOCK.icon - 4,
-        marginTop: 2,
-        marginLeft: 2,
-        marginRight: 2,
+        marginTop: SPACE.xxs,
+        marginLeft: SPACE.xxs,
+        marginRight: SPACE.xxs,
         backgroundColor: colors.separator,
       }}
     />
@@ -70,7 +70,7 @@ export function DockIcon({
   };
   return (
     <View
-      style={{ flexDirection: "column", alignItems: "center", gap: 3 }}
+      style={{ flexDirection: "column", alignItems: "center", gap: SPACE.xxs }}
       onLayout={(bounds) => {
         laid.current = bounds;
         onTile?.(bounds);
@@ -92,7 +92,7 @@ export function DockIcon({
               right: -3,
               width: 14,
               height: 14,
-              borderRadius: 7,
+              borderRadius: RADIUS.control,
               borderWidth: 2,
               borderColor: colors.dock,
               backgroundColor: colors.critical,
@@ -105,7 +105,7 @@ export function DockIcon({
           width: DOCK.dot,
           height: DOCK.dot,
           borderRadius: DOCK.dot / 2,
-          backgroundColor: running ? colors.dot : "#00000000",
+          backgroundColor: running ? colors.dot : CLEAR,
         }}
       />
     </View>

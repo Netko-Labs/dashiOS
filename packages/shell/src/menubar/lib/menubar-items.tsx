@@ -4,7 +4,7 @@
  * menubar.tsx lays out the titles, menubar-status.tsx the status side.
  */
 
-import { MORE, useColors, useControlColors } from "@dashi/ui";
+import { CLEAR, MORE, pill, RADIUS, SPACE, useColors, useControlColors } from "@dashi/ui";
 import { type Bounds, Svg, View } from "@mirinjs/metal";
 import { type ReactNode, useRef } from "react";
 import type { BarMenuId } from "../../menus/index.ts";
@@ -12,6 +12,8 @@ import { MORE_WIDTH } from "./menubar-fit.ts";
 
 /** "…"'s name for a screen reader. */
 export const MORE_LABEL = "More menu bar items";
+/** The ume dot on "…" when a hidden item asks for attention. */
+const ATTENTION_DOT = { size: 6 } as const;
 
 /**
  * The keyboard's ring on a bar item (menus/bar-keys.ts): 2 px of the
@@ -56,13 +58,13 @@ export function StatusItem({
       {...(label === undefined ? {} : { accessibilityRole: "button" as const, accessibilityLabel: label, accessibilityState: { expanded: open } })}
       style={{
         height: 22,
-        paddingLeft: 7,
-        paddingRight: 7,
+        paddingLeft: SPACE.s,
+        paddingRight: SPACE.s,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: 5,
-        backgroundColor: open ? colors.openWash : "#00000000",
+        borderRadius: RADIUS.row,
+        backgroundColor: open ? colors.openWash : CLEAR,
       }}
     >
       {children}
@@ -107,7 +109,7 @@ export function More({
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
-        backgroundColor: open ? colors.openWash : "#00000000",
+        backgroundColor: open ? colors.openWash : CLEAR,
       }}
     >
       <Svg markup={MORE} size={16} color={colors.text} />
@@ -115,7 +117,15 @@ export function More({
       {attention && (
         <View
           testID="status-more-attention"
-          style={{ position: "absolute", top: 1, right: 1, width: 6, height: 6, borderRadius: 3, backgroundColor: colors.critical }}
+          style={{
+            position: "absolute",
+            top: 1,
+            right: 1,
+            width: ATTENTION_DOT.size,
+            height: ATTENTION_DOT.size,
+            borderRadius: pill(ATTENTION_DOT.size),
+            backgroundColor: colors.critical,
+          }}
         />
       )}
     </View>
@@ -161,11 +171,11 @@ export function Title({
         flexDirection: "row",
         alignItems: "center",
         height: 22,
-        paddingLeft: 10,
-        paddingRight: 10,
-        borderRadius: 5,
+        paddingLeft: SPACE.gap,
+        paddingRight: SPACE.gap,
+        borderRadius: RADIUS.row,
         position: "relative",
-        backgroundColor: open ? colors.openWash : "#00000000",
+        backgroundColor: open ? colors.openWash : CLEAR,
       }}
     >
       {children}
