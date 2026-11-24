@@ -119,5 +119,7 @@ export async function screensChanged(context: ScreensContext, before: readonly O
   }
   // One line per change, so a report from real hardware says what happened (decisions.md D9).
   const names = (outputs: readonly Output[]) => outputs.map((output) => output.name).join(", ") || "none";
-  console.error(`dashi-shell: screens: gone ${names(gone)}, came ${names(came)}; ${moved} windows moved off, ${back} back (${context.displaced.size} away from their screen)`);
+  console.error(
+    `dashi-shell: screens: gone ${names(gone)}, came ${names(came)}; ${moved} windows moved off, ${back} back (${context.displaced.size} away from their screen)`,
+  );
 }
