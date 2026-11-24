@@ -1,6 +1,6 @@
 /**
  * Which app a process is, from what /proc says about it alone: its command
- * line, its control group, and its name (CP-6: show the app's name, never
+ * line, its control group, and its name (VO-6: show the app's name, never
  * `bun` or `mirin-metal-host`). Pure: the catalog of installed apps comes in
  * (catalog.ts), the facts come in (Activity Monitor's reader, the battery
  * monitor), an identity or null goes out. A process with no identity of its

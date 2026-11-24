@@ -138,12 +138,12 @@ Findings:
 - [ ] 7 Passwords structure (split Passwords and Payments, reveal, copy, edit, search, the add sheet): later. Without a vault the pane now says why instead of showing a blank page.
 - [x] 8 Error states: the bottom error bar is gone; a failed save is a line at the top of the page in plain words (`ui.tsx` `Page`); Displays no longer shows raw error text. [ ] One `Failure` in `@dashi/ui` for Battery, Date & Time and Language & Region: later (PA-6).
 - [x] 9 Keyboard & menus: the focus model reaches Settings' controls (wave 1, `7c6f59a`); Edit › Find ❖F. [ ] A View menu of panes, Back and Forward (❖[ ❖]); Setup's Return and Esc: later.
-- [x] 10 Brand and copy: "Mission Control" is Overview, the Spaces row is Dashi's own (wave 1); Desktop & Dock's caption draws its shortcut instead of typing it. [ ] "Night Shift" renamed: later (CP-5, an open question).
+- [x] 10 Brand and copy: "Mission Control" is Overview, the Spaces row is Dashi's own (wave 1); Desktop & Dock's caption draws its shortcut instead of typing it. [ ] "Night Shift" renamed: later (VO-5, an open question).
 - [x] 11 Setup skipping (`c52d897`).
 - [x] 12 Header strip: title 13 Bold, a hairline, search and Recently changed in it, no second row (`header.tsx`). [ ] Back and Forward in it: later.
 - [x] 13 Duplicated settings: "Turn display off after" lives in Battery & Power; Lock Screen says what it is and goes there. [ ] One "Menu bar" group in Desktop & Dock: later.
 - [ ] 14 Consistency (slider values, section headings, `Value` and `MiniButton` copies): one Slider came in wave 1 (`4a8b7aa`); the rest later.
-- [x] 15 Copy: sentence case for Power mode, IP address, Subnet mask, DNS servers, MAC address; Lock Screen's button is "Lock". [ ] The rest of the Title Case and jargon pass: later (CP-1).
+- [x] 15 Copy: sentence case for Power mode, IP address, Subnet mask, DNS servers, MAC address; Lock Screen's button is "Lock". [ ] The rest of the Title Case and jargon pass: later (VO-1).
 - [ ] 16 Missing basics (per-app Notifications, password delay, a shortcut list, manual time, renaming the computer): later.
 - [ ] 17 Battery & Power (the live slider value, why Charge Now is off, the lid summary, Advanced…): later.
 - [ ] 18 Robustness: the change log writes off the moment of the change; settings.json itself still writes synchronously, and there is no error boundary: later.

@@ -7,7 +7,7 @@
  * chord but two (⌥❖Esc and ⌥❖D are bound) and ⇧❖Q is Quit
  * (app-menus/lib/reserved.ts), so no ❖Q variant can reach the app. Rows are
  * disabled under a sheet or a menu, which hold the window. Menu-bar commands
- * are Title Case (CP-2).
+ * are Title Case (VO-2).
  */
 
 import { enabledIds, type MenuSpec } from "../../kit/index.ts";

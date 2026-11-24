@@ -1,5 +1,5 @@
 /**
- * The name cell: an app's disclosure chevron (CP-8: a chevron, in ink) and
+ * The name cell: an app's disclosure chevron (VO-8: a chevron, in ink) and
  * icon, its name and how many processes it has; a process under its app
  * indented; a process no app started on its own, by its name.
  */

@@ -6916,6 +6916,262 @@ short words, as the rulebook is written.
   screen a frame is on (tiles, Fill, Center, Back, fitting, placing, Move to)
   follows.
 - **Undo:** `screens[0]` back as `screenFor`'s fallback.
+### D570. One clock: the inks clock on the lock screen, the login screen and Glance
+
+- **Date:** 2026-11-24. The owner's answer to Q1 of the 0.10 design plan
+  (`dashi-0.10.0-review/10-design-audit/plan/`, theme T31). `v10/design-rules`.
+- **Question:** design.html's TY-1 named an 88 Bold clock on one line; the
+  lock and Glance draw the approved inks clock (120 Inter Display ExtraLight,
+  hours over minutes); the login screen still drew the 0.8-era 88 Bold.
+- **Choice:** the inks clock everywhere. TY-1 names it (`TYPE.clock`, 120 over
+  a 112 line), TY-2 allows Inter Display's weights for numbers only, and the
+  login screen and the greeter take the lock's component (W7).
+- **Why:** design.html says the two screens have one look, the inks clock is
+  the newer approved drawing and already ships on two of the three, and one
+  component is less than two.
+- **Cost:** the login screen is redrawn; an older Metal host without display
+  weights draws it Regular, as it does on the lock today.
+- **Undo:** TY-1 back to "88 Bold, one line" and the lock and Glance redrawn,
+  or TY-1 naming two clocks (the plan's options B and C).
+
+### D571. The lock follows the person's mode; the login screen stays Dark
+
+- **Date:** 2026-11-24. The owner's answer to Q2 (T32).
+- **Question:** design.html said the login and lock screens have one look,
+  Dark's. The inks round drew a Light lock (frame 5), and the inventory said
+  the lock should follow the person.
+- **Choice:** the lock follows Light and Dark, with the inks' Light set and
+  `lockGlass`; the login screen stays Dark. One layout and one clock for both.
+- **Why:** the lock belongs to someone signed in; the login screen to nobody
+  yet, so Dark stays its neutral. No owner rule forbids it, and two approved
+  designs ask for it.
+- **Cost:** a second set of lock tokens (from `inks.ts`'s Light inks, which
+  exist), and a Light lock to check for contrast.
+- **Undo:** "Dark is true black" back to "one look, Dark's", and a line under
+  How to use this page that the inks' Light lock frame is superseded.
+
+### D572. Progress bars and links are ink, never the accent
+
+- **Date:** 2026-11-24. The owner's answer to Q3 (T15). Overrides that part
+  of the accent design (D430–D436).
+- **Question:** the approved accent design shows progress and links in the
+  accent; with the default accent that is Kombu's green, and the owner's rule
+  is that the on colour means on only.
+- **Choice:** a progress bar is ink on its track; a link is ink, underlined.
+  `accentInk` is for a chosen pill's words on a wash and the launcher's tags.
+  CO-1, CO-10, the Contrast table and the Progress row say so.
+- **Why:** a progress bar is not on and a link is not chosen; Control
+  Center's and Settings' sliders and Settings' one bar are ink already, and
+  the earlier approved inventory said "links in ink and underlined".
+- **Cost:** `ProgressBar` changes colour (W1); an approved frame loses.
+- **Undo:** CO-1 naming progress and links as the accent's, and the Progress
+  row "the accent on track".
+
+### D573. One control kit, `@dashi/ui`, with two looks; metal-ui only inside it
+
+- **Date:** 2026-11-24. The owner's answer to Q4 (T07).
+- **Question:** conventions.md said metal-ui first; no app imports it. The
+  shell's `shared/controls` was a second kit beside `@dashi/ui`.
+- **Choice:** `@dashi/ui` is the one kit, with a window look and a panel look
+  (`look="panel"`); `shared/controls` moves in as the panel look (W1).
+  `@mirinjs/metal-ui` is used inside `@dashi/ui` where it already has the
+  part, and apps never import it. conventions.md's "UI Components", CLAUDE.md
+  and AGENTS.md, design.html's Components and UI-1 say so; the open question
+  is closed.
+- **Why:** every app and fifteen shell modules are built on the two Dashi
+  kits; one kit gives one place per control, one slider math, one ring, and
+  lets H22 say "controls come from `@dashi/ui`".
+- **Cost:** `shared/controls` moves, and its fifteen users' imports change.
+  Fixes metal-ui needs still go to mirin (fix-mirin-at-the-source).
+- **Undo:** conventions.md's "metal-ui first" back, and a Dashi theme for
+  metal-ui (the plan's option B).
+
+### D574. Settings and Control Center keep a named second row of sizes and radii
+
+- **Date:** 2026-11-24. The owner's answer to Q5 (T02, T03).
+- **Question:** TY-1 and RA-1 denied the panel language (Settings, Control
+  Center, the menu bar, the capsule, the launcher's conversation) that the
+  approved designs draw and the code follows.
+- **Choice:** TY-1 names a panel row (10.5, 11.5, 12.5, 13.5, 18) beside the
+  app row (11, 12, 13, 15, 17, 20), and RA-1 names the surface radii (menu 9,
+  widget 14, Settings' card 24, panel 28, capsule card 17.5, Dock 18, icon
+  10.5). The stray sizes (8, 10, 14, 16, 22, 30) and radii (6, 8, 9, 16, 18
+  outside their surfaces) go. TK-2 names the three looks.
+- **Why:** the panel language is designed and approved; naming it turns 174
+  "off-scale" sizes into about 80 real fixes.
+- **Cost:** a second row to learn; H21a's allow-list is longer.
+- **Undo:** drop the panel row and fold the panels onto the app row (the
+  plan's option B), which redraws Control Center and pill-v2.
+
+### D575. Three shadows: sm, xl, and lg for floating HUDs
+
+- **Date:** 2026-11-24. The 0.10 design plan's R1 (T04).
+- **Choice:** DE-1 names sm (controls, cards), xl (sheets, menus, popovers)
+  and lg (the capsule and card, banners, the OSD); no md, no xs. md maps to
+  sm or xl, xs to sm.
+- **Why:** pill-v2 (approved) says lg, and banners and the OSD float the same
+  way.
+- **Cost:** a third preset to keep.
+- **Undo:** DE-1 back to two, and the HUDs onto xl.
+
+### D576. "On" is one token per mode
+
+- **Date:** 2026-11-24. R2 (T06).
+- **Choice:** the guard's `selection` under `onAccent` is "on" for every
+  switch, tick, chosen pill and lit tile, in the apps and in Settings and
+  Control Center. Control Center's Kombu-only `#2F6F5B` / `#86D3B6` under
+  `#0B2A20` go, and so does Settings' own menu highlight (CO-9).
+- **Why:** a picked accent already reaches both kits this way
+  (`shared/controls/palette.ts`); only Kombu disagreed.
+- **Cost:** Control Center's Dark on is deeper; W1 checks it reads as a fill
+  on the off tile `#141417` (3:1).
+- **Undo:** the two constants back in the panel palette.
+
+### D577. Segmented and choice pills: one look each per kit, glyph segments
+
+- **Date:** 2026-11-24. R3 (T09).
+- **Choice:** UI-2's two pick-one controls keep one look each, in each look
+  of the kit; `Segmented` takes glyph segments, each with a name, and its
+  chosen segment casts sm.
+- **Why:** UI-2 already names exactly these two; the drift was hand-made
+  copies.
+- **Undo:** none needed; a third control would need a rule first.
+
+### D578. An alert's tile says the job; the accent never washes it
+
+- **Date:** 2026-11-24. R4 (T16).
+- **Choice:** ume for destroy and failure, broth for caution, shiso for an
+  agent's question, neutral for everything else.
+- **Why:** the inventory said "the alert tile neutral"; CO-1.
+- **Undo:** add the accent back to the Alert row.
+
+### D579. Terminal's cursor and bell are ink; its palette lives in the theme
+
+- **Date:** 2026-11-24. R5 (T30).
+- **Choice:** the cursor and the bell's edge are the grid's ink, as a field's
+  caret is (CO-9); the Light ground is `surface.window`; the palette moves into
+  `@dashi/ui`'s theme as the terminal set, read by foot, kitty and GTK
+  terminals. The open question "Terminal colors" is closed.
+- **Why:** a cursor is not on; it removes two whites from one window.
+- **Undo:** the Cursor row back to kombu, the ground to `#FBFAF7`.
+
+### D580. Copy: American spelling, sentence case, curly apostrophes, no "Are you sure"
+
+- **Date:** 2026-11-24. R6 (T34).
+- **Choice:** VO-9 (color, center; "colour" stays a search word), VO-1
+  (sentence case everywhere outside the menu bar), VO-3 (curly apostrophes,
+  checked), VO-10 ("Log out now?").
+- **Why:** design.html's own example says "Accent color"; the code and GTK
+  say color and center.
+- **Cost:** many strings, each in its workstream.
+- **Undo:** drop VO-9 and VO-10.
+
+### D581. The file chooser is a sheet for Dashi's own apps
+
+- **Date:** 2026-11-24. R7 (T39).
+- **Choice:** PA-12: a first-party app's Open, Save As and Export show the
+  chooser as a sheet over its window, with Files' row; the portal's window is
+  for other apps; never a typed path.
+- **Why:** it keeps the window's context, and one browser.
+- **Undo:** PA-12 without its 0.10 sentences.
+
+### D582. Missing hardware, and the Wi-Fi pane is Network
+
+- **Date:** 2026-11-24. R8 (T42).
+- **Choice:** SE-17 for hardware that isn't there; SE-16 renames the Wi-Fi
+  pane Network, keeping "Wi-Fi" as a search word and its old address (SE-4).
+- **Why:** the pane holds Ethernet and VPN.
+- **Undo:** the pane's name back; the address never changed.
+
+### D583. The copy rules are VO-1 to VO-11; the capsule keeps CP
+
+- **Date:** 2026-11-24. R9 (T43).
+- **Question:** CP- named two sets of rules on one page: the capsule's
+  CP-1…CP-10 and the copy rules CP-1…CP-8.
+- **Choice:** the copy rules become VO-n (Voice), keeping their numbers, and
+  new ones continue at VO-9. Citations in docs and code comments that are
+  about words, casing, ellipses, shortcuts in text, "Dashi", names, pane names
+  or disclosure are renamed; one about the capsule stays CP-n. Decisions,
+  commit messages and the 0.4 and 0.5 release pages are not rewritten (their
+  links point at the new anchor).
+- **Why:** fewer citations to rewrite than renaming the capsule's.
+- **Undo:** rename back; the anchors `#vo-n` would break.
+
+### D584. Owner rules outrank store-v2's frames
+
+- **Date:** 2026-11-24. R10 (T44).
+- **Choice:** the Store's "Reviewed by Dashi" seal is ink, a count muted, a
+  sidebar selection CO-9's; "How to use this page" lists them.
+- **Why:** owner rules outrank approved frames.
+- **Undo:** none wanted while the owner rules stand.
+
+### D585. Appearance's rows keep their knobs
+
+- **Date:** 2026-11-24. R11 (T41).
+- **Choice:** the accent frames' knob-less Appearance rows were incidental;
+  SE-6 and SE-13 hold.
+- **Undo:** an SE-13 exception for Appearance.
+
+### D586. One notification card
+
+- **Date:** 2026-11-24. R12 (T25).
+- **Choice:** the new Notifications section: radius 12, padding 12, icon 28
+  at radius 7, actions small Buttons, the banner on lg (NO-1 to NO-4).
+  CD-29's 36 icon is dropped: one card wins.
+- **Undo:** the banner's own card back.
+
+### D587. A checkbox is on in the on token
+
+- **Date:** 2026-11-24. R13 (T12).
+- **Choice:** `Checkbox` on is the on token with an `onAccent` tick; Settings'
+  Ticks become its panel look (UI-10).
+- **Why:** a tick is "chosen", which is the accent's job; the approved accent
+  design lists the checkbox.
+- **Undo:** the tick in ink.
+
+### D588. A chosen widget is ringed in ink, never purple
+
+- **Date:** 2026-11-24. R14 (T29).
+- **Choice:** in the widget area a chosen row or widget is an ink wash with a
+  2 px ink edge (CO-9); purple never marks a choice made with the pointer
+  (KB-2).
+- **Why:** the accent README says "Edit mode's chosen widget uses ink";
+  purple is the keyboard's and agents'.
+- **Undo:** none wanted while KB-2 stands.
+
+### D589. design.html binds its measures to tokens with `data-token`
+
+- **Date:** 2026-11-24. `v10/design-rules` (W0).
+- **Question:** H24 must compare design.html with the code, and the page's
+  measures are prose.
+- **Choice:** an element that states a measure carries `data-token="NAME"`,
+  NAME as in the 0.10 plan's `tokens.md` (`TYPE.body`, `RADIUS.card`,
+  `SHADOW.lg`, `MOTION.step`) or an exported constant (`MENU.padding`), and
+  its text is the value: the numbers in it, in order, are the token's (a
+  `TYPE` role is size then line; a `WEIGHT` its number, which Metal names
+  `normal`, `semibold`, `bold`, `extralight`, `light`, `medium`; a `SHADOW`
+  its preset's name). The token
+  tables carry it on each value cell (the name shows under it); the
+  component tables on spans around the numbers. W1's
+  `scripts/check-design-sync.ts` reads them.
+- **Why:** one attribute is all a check needs, and a person reading the page
+  sees which token a number is.
+- **Cost:** the rest of the page's measures (component heights, the
+  launcher's) are bound only as they get a token.
+- **Undo:** strip the attributes and the CSS that shows them.
+
+### D590. A 0.10 rule not yet in code names its workstream
+
+- **Date:** 2026-11-24. W0.
+- **Choice:** every rule the 0.10 plan added or changed says "(0.10)", and,
+  where the code doesn't follow it yet, carries the page's usual "Not yet in
+  code" tag naming the workstream that makes it so (W1 to W7, as "How to use
+  this page" lists them) and what the code does today. A workstream edits
+  only those notes in the sections it owns.
+- **Why:** the page already marks rules ahead of the code this way; naming the
+  workstream says who removes the tag.
+- **Undo:** none needed; tags go as the code follows.
+
 ### D600. The measures are tokens in @dashi/ui's theme, named by role, with Metal's own words
 
 - **Date:** 2026-11-24. The `design-kit` agent's (W1a of the 0.10 design plan).
