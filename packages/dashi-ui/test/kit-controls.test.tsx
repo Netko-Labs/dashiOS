@@ -7,6 +7,7 @@ import { CHECKBOX, Checkbox, CheckMark } from "../src/checkbox.tsx";
 import { CHIP, Chip } from "../src/chip.tsx";
 import { ShowStates } from "../src/control-state.tsx";
 import { SEARCH } from "../src/glyphs.ts";
+import { InlineField } from "../src/inline-field.tsx";
 import { placeholderAt, SEARCH_FIELD, SearchField } from "../src/search-field.tsx";
 import { SEGMENTED, Segmented } from "../src/segmented.tsx";
 import { PANEL_SWITCH, Switch } from "../src/switch.tsx";
@@ -192,5 +193,26 @@ test("CheckMark: the box alone for a list whose row is the control; a pick-one l
   expect(node("ticked")?.props.access).toBeUndefined();
   expect(node("empty")?.props).toMatchObject({ borderColor: lightColors.controlEdge });
   expect(node("picked")?.props).toMatchObject({ cornerRadius: CHECKBOX.box / 2 });
+  root.unmount();
+});
+
+test("InlineField: no box at rest, the focus ring's edge while it has the keyboard; Checkbox can show its box alone; a small TextLink is 11", async () => {
+  const { node, root } = await sent(
+    <View>
+      <InlineField testID="title" value="" placeholder="New event" size="caption" onChangeText={noop} />
+      <Checkbox testID="shown" label="Show Work" checked hideLabel onChange={noop} />
+      <TextLink testID="more" label="3 more" size="small" onPress={noop} />
+    </View>,
+  );
+  expect(node("title")?.props).toMatchObject({
+    size: 11,
+    background: "#00000000",
+    borderColor: "#00000000",
+    focusBorderColor: lightColors.focusRing,
+    access: { label: "New event" },
+  });
+  expect(node("shown")?.props).toMatchObject({ access: { role: "checkbox", label: "Show Work" } });
+  expect(words(node("shown"))).toEqual([]);
+  expect(words(node("more"))).toEqual(["3 more"]);
   root.unmount();
 });

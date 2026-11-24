@@ -25,9 +25,11 @@ export interface CheckboxProps {
   /** Keyboard focus is on it (`data-focused`, the gallery's state rows); real keyboard focus is Metal's ring (KB-2). */
   focused?: boolean;
   look?: Look;
+  /** The box alone on screen, its label only for screen readers: a row that names it already (Calendar's "Show ‹name›"). */
+  hideLabel?: boolean;
 }
 
-export function Checkbox({ label, checked, onChange, testID, disabled, focused, look = "window" }: CheckboxProps) {
+export function Checkbox({ label, checked, onChange, testID, disabled, focused, look = "window", hideLabel = false }: CheckboxProps) {
   const colors = useColors();
   const surface = useSurface();
   const state = useControlState({ disabled, focused });
@@ -70,9 +72,11 @@ export function Checkbox({ label, checked, onChange, testID, disabled, focused, 
       >
         {checked && <Svg markup={CHECK} size={CHECKBOX.tick} color={onInk} />}
       </View>
-      <Text numberOfLines={1} style={{ fontSize: look === "panel" ? TYPE.panel.body.size : TYPE.body.size, color: colors.text }}>
-        {label}
-      </Text>
+      {!hideLabel && (
+        <Text numberOfLines={1} style={{ fontSize: look === "panel" ? TYPE.panel.body.size : TYPE.body.size, color: colors.text }}>
+          {label}
+        </Text>
+      )}
     </View>
   );
 }

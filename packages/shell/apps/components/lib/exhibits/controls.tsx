@@ -4,6 +4,7 @@ import {
   Button,
   Choices,
   glyphs,
+  InlineField,
   MoreButton,
   PopUpButton,
   type PopUpOption,
@@ -203,6 +204,7 @@ export function SwitchesPage() {
 export function FieldsPage() {
   const [text, setText] = useState("Groceries");
   const [query, setQuery] = useState("");
+  const [inline, setInline] = useState("");
   const [notes, setNotes] = useState("Bring the projector.\nRoom 4 is booked until noon.");
   return (
     <PageBody>
@@ -228,6 +230,14 @@ export function FieldsPage() {
       <Exhibit title="Text area" note="A text field's edge, ground and focus over many lines: an event's notes, a text a dialog lets the person edit.">
         <View style={{ width: 260, height: 84, flexDirection: "column" }}>
           <TextArea testID="field:area" value={notes} label="Notes" onChangeText={setNotes} />
+        </View>
+      </Exhibit>
+      <Exhibit
+        title="In-place field"
+        note="A name typed on what it names (a new event on Calendar's grid): no box; the focus ring's edge while it has the keyboard."
+      >
+        <View style={{ width: 160 }}>
+          <InlineField testID="field:inline" value={inline} placeholder="New event" size="caption" onChangeText={setInline} />
         </View>
       </Exhibit>
       <Exhibit title="Search field" note="210, shrinking to 96; its words shorten to Search under 140 and end in an ellipsis. Esc empties it first.">

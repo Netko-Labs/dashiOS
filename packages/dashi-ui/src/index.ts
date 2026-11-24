@@ -49,6 +49,7 @@ export {
   STOP,
   WARNING,
 } from "./glyphs.ts";
+export { InlineField, type InlineFieldProps } from "./inline-field.tsx";
 export { KeySink, type KeySinkProps } from "./key-sink.tsx";
 export { KeyedText, type KeyedTextStyle, keyGlyphSize, namesKeys } from "./keyed-text.tsx";
 export { type KeyInput, keyName } from "./keys.ts";

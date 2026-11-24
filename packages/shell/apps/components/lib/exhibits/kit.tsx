@@ -55,6 +55,9 @@ export function ChecksPage() {
           {({ state, disabled }) => <Checkbox testID={`check:panel:${state}`} look="panel" label="Websites" checked onChange={noop} disabled={disabled} />}
         </States>
       </Exhibit>
+      <Exhibit title="Checkbox, its box alone" note="A row that names it already: its label is only read aloud (Calendar's Show ‹name›).">
+        <Checkbox testID="check:hidden-label" label="Show Work" checked={checked} onChange={setChecked} hideLabel />
+      </Exhibit>
       <Exhibit title="Check mark" note="The box alone, for a list whose row is the control (dashi-dialog's checklist); a pick-one list's is round.">
         <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
           <CheckMark testID="mark:on" checked />
@@ -128,6 +131,7 @@ export function PanelPage() {
           </View>
         </View>
         <TextLink testID="link:panel" look="panel" label="Other…" onPress={noop} />
+        <TextLink testID="link:small" size="small" label="3 more" onPress={noop} />
       </Exhibit>
     </PageBody>
   );
