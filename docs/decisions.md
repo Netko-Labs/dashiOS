@@ -6613,10 +6613,13 @@ short words, as the rulebook is written.
   in a row move it back a twentieth, up to 0.6 (`udev/pacing.rs`). Frames
   started off schedule (after an idle look) don't move it; with variable
   refresh none is late. A screen that makes its vblanks is drawn as before.
-- **Cost:** a slow screen shows input a little sooner after the vblank but
-  gives clients that draw on input (not on frame callbacks) less of the
-  frame before the compositor draws; at most one late frame every 10 s or so
-  while it settles.
+- **Cost:** a slow screen draws earlier in the frame, so what it shows is
+  older when it appears: input that comes between the new start and 0.6 of
+  the frame waits one more frame. In the VM (two screens, a glxgears on
+  each) late frames went from 3.4 % to under 0.1 % and the wait from queue
+  to vblank from 6 to 12 ms (dashi-0.10.0-review/01-screens-gpu). Clients'
+  time to draw is the same (they hear when the frame is queued). At most a
+  late frame every 10 s or so while the start settles.
 - **Undo:** `schedule(…, frame_time(&output).mul_f64(0.6))` back in
   `frame_finished`; drop `Pacing`.
 
