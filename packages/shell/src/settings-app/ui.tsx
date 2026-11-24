@@ -64,7 +64,7 @@ export function Choices<T extends string | number>(props: {
 export const Slider = InkSlider;
 
 /** The kit's control in the panel look, every prop but the look its own. */
-function inPanelLook<P extends { look?: Look }>(Control: ComponentType<P>): ComponentType<Omit<P, "look">> {
+function inPanelLook<P extends { look?: Look | "inks" }>(Control: ComponentType<P>): ComponentType<Omit<P, "look">> {
   return function InPanelLook(props: Omit<P, "look">) {
     return <Control {...(props as P)} look="panel" />;
   };

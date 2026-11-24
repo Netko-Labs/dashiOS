@@ -57,7 +57,8 @@ export function Switch({ on, testID, onChange, disabled, focused, focusable = tr
   const onLit = lit && on;
   const panelTrack = state.pressed ? panel.knobOff : CLEAR;
   const windowTrack = state.pressed ? colors.pressed : colors.track;
-  const track = look === "inks" ? (on ? INK_TEXT[mode].ink : INK_TEXT[mode].hairline) : onLit ? shade.onInk : on ? onFill : look === "panel" ? panelTrack : windowTrack;
+  const track =
+    look === "inks" ? (on ? INK_TEXT[mode].ink : INK_TEXT[mode].hairline) : onLit ? shade.onInk : on ? onFill : look === "panel" ? panelTrack : windowTrack;
   const knob = look === "inks" ? INK_PAPER[mode] : onLit ? shade.on : look === "panel" ? (on ? shade.onInk : panel.muted) : KNOB;
   return (
     <View
