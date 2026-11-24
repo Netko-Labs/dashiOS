@@ -19,8 +19,11 @@ import { EventSheet } from "../sheets/event-sheet.tsx";
 import { SheetLayer } from "../sheets/sheet-layer.tsx";
 import type { CalendarState } from "../state.ts";
 import { choosableCalendars } from "../target.ts";
-import { EventPopover } from "./popover.tsx";
+import { EventPopover, POPOVER_WIDTH } from "./popover.tsx";
 import { resultsPlace, SearchResults } from "./search-results.tsx";
+
+/** Where a popover opened from the keyboard (no event on screen to hang from) stands: centred, this far down the content. */
+const POPOVER_FALLBACK_TOP = 40;
 
 export interface OverlayProps {
   model: CalendarModel;
@@ -103,7 +106,7 @@ export function calendarOverlay({
       <EventPopover
         occurrence={grid.popover.occurrence}
         calendar={model.calendar(grid.popover.occurrence.calendarId)}
-        anchor={grid.popover.bounds ?? { x: area.x + area.width / 2 - 135, y: area.y + 40, width: 0, height: 0 }}
+        anchor={grid.popover.bounds ?? { x: area.x + area.width / 2 - POPOVER_WIDTH / 2, y: area.y + POPOVER_FALLBACK_TOP, width: 0, height: 0 }}
         area={area}
         prefs={prefs}
         onEdit={() => grid.popover && edits.openSheet(grid.popover.occurrence)}

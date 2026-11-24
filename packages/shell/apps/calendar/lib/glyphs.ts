@@ -4,9 +4,6 @@ const svg = (body: string): string => `<svg xmlns="http://www.w3.org/2000/svg" v
 const stroke = (d: string, width = 1.4): string =>
   `<path d="${d}" stroke="#000" stroke-width="${width}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
 
-/** Previous and next (Calendar's own: an app draws no glyph from a shell module, design.html UI-1). */
-export const CHEVRON_LEFT = svg(stroke("M10 3.4L5.4 8L10 12.6", 1.6));
-export const CHEVRON_RIGHT = svg(stroke("M6 3.4L10.6 8L6 12.6", 1.6));
 /** New Event. */
 export const PLUS = svg(stroke("M8 3v10M3 8h10", 1.7));
 /** A tray with an arrow into it: Import. */
@@ -22,7 +19,3 @@ export const LOCATION = svg(`${stroke("M8 14s4.4-4 4.4-7.2A4.4 4.4 0 0 0 3.6 6.8
 export const BELL = svg(`${stroke("M4 11.2V7.4a4 4 0 0 1 8 0v3.8l1 1H3z", 1.3)}${stroke("M6.6 13.6a1.5 1.5 0 0 0 2.8 0", 1.3)}`);
 export const REPEAT = svg(`${stroke("M3 7.4V6.6A2 2 0 0 1 5 4.6h7.4M10.4 2.6l2 2-2 2")}${stroke("M13 8.6v.8a2 2 0 0 1-2 2H3.6M5.6 13.4l-2-2 2-2")}`);
 export const CLOSE = svg(stroke("M4 4l8 8M12 4l-8 8", 1.6));
-/** Three dots: a row's menu. */
-export const ELLIPSIS = svg(
-  `<circle cx="3.6" cy="8" r="1.25" fill="#000"/><circle cx="8" cy="8" r="1.25" fill="#000"/><circle cx="12.4" cy="8" r="1.25" fill="#000"/>`,
-);

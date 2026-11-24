@@ -1,6 +1,8 @@
 /**
  * Calendar's menus in the menu bar (the kit's `useAppMenus`): File (a new
- * event, named in place; a new calendar; import and export), Edit (Undo and
+ * event, named in place; a new calendar; the lit calendar's Edit, Hide or
+ * Show and Delete, its sidebar menu's commands (UI-17, PA-8); import and
+ * export), Edit (Undo and
  * Redo of a change to an event, Delete, Find), Event (the picked event: Edit
  * Event…, Duplicate), and View (Day, Week, Month, Today, previous and next).
  * The shortcuts are real: Metal reports no ❖ chords to the app, but the shell
@@ -20,11 +22,16 @@ export interface MenuContext {
   modal: boolean;
   /** An event is picked. */
   picked: boolean;
+  /** The lit calendar in the sidebar (where new events go), and whether it shows. */
+  calendar: { visible: boolean } | null;
   /** What Edit › Undo and Redo would take back. */
   undo: UndoState;
   actions: {
     newEvent(): void;
     newCalendar(): void;
+    editCalendar(): void;
+    toggleCalendar(): void;
+    deleteCalendar(): void;
     importFile(): void;
     exportFile(): void;
     setView(view: View): void;
@@ -47,6 +54,12 @@ function runAction(id: string, actions: MenuContext["actions"]): void {
       return actions.newEvent();
     case "calendar:new":
       return actions.newCalendar();
+    case "calendar:edit":
+      return actions.editCalendar();
+    case "calendar:toggle":
+      return actions.toggleCalendar();
+    case "calendar:delete":
+      return actions.deleteCalendar();
     case "import":
       return actions.importFile();
     case "export":
@@ -98,13 +111,18 @@ function viewMenu(view: MenuContext["view"], free: boolean): MenuSpec {
 }
 
 export function calendarMenus(context: MenuContext): { menus: MenuSpec[]; run: (id: string) => void } {
-  const { actions, modal, view, picked } = context;
+  const { actions, modal, view, picked, calendar } = context;
   const free = !modal;
+  const lit = free && calendar !== null;
   const file: MenuSpec = {
     id: "file",
     items: [
       { id: "event:new", label: "New Event", shortcut: "❖N", enabled: free },
       { id: "calendar:new", label: "New Calendar…", shortcut: "⇧❖N", enabled: free },
+      { type: "separator" },
+      { id: "calendar:edit", label: "Edit Calendar…", enabled: lit },
+      { id: "calendar:toggle", label: calendar?.visible === false ? "Show Calendar" : "Hide Calendar", enabled: lit },
+      { id: "calendar:delete", label: "Delete Calendar…", enabled: lit },
       { type: "separator" },
       { id: "import", label: "Import…", enabled: free },
       { id: "export", label: "Export…", enabled: free },

@@ -6,9 +6,14 @@
  * elsewhere on the grid saves it as it is.
  */
 
-import { useColors } from "@dashi/ui";
-import { Text, TextInput, View } from "@mirinjs/metal";
+import { InlineField, RADIUS, SPACE, TYPE, useColors } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { tint } from "../colors.ts";
+import { EVENT_EDGE } from "./event-block.tsx";
+
+/** The field's line in a chip and in a block, and its colour's wash under it. */
+const LINE = { chip: 15, block: 18 } as const;
+const WASH = { chip: 0.32, block: 0.4 } as const;
 
 export interface Pending {
   calendarId: string;
@@ -48,40 +53,31 @@ export function InlineTitle({
       onPointer={() => {}}
       style={{
         flexDirection: "column",
-        gap: 1,
+        gap: SPACE.px,
         width: "100%",
         height: "100%",
-        paddingHorizontal: 4,
-        paddingVertical: chip ? 0 : 2,
-        borderRadius: chip ? 4 : 5,
-        borderLeftWidth: chip ? 0 : 3,
+        paddingHorizontal: SPACE.xs,
+        paddingVertical: chip ? 0 : SPACE.xxs,
+        borderRadius: chip ? RADIUS.check : RADIUS.row,
+        borderLeftWidth: chip ? 0 : EVENT_EDGE,
         borderColor: color,
-        backgroundColor: tint(color, chip ? 0.32 : 0.4),
+        backgroundColor: tint(color, chip ? WASH.chip : WASH.block),
         justifyContent: chip ? "center" : "flex-start",
       }}
     >
-      <TextInput
+      <InlineField
         testID="pending-title"
         value={pending.title}
-        placeholder="New Event"
+        placeholder="New event"
         autoFocus
+        size="caption"
+        height={chip ? LINE.chip : LINE.block}
         onChangeText={onChange}
-        onSubmitEditing={onDone}
+        onSubmit={onDone}
         onKeyPress={(key) => key === "Escape" && onCancel()}
-        style={{
-          width: "100%",
-          height: chip ? 15 : 18,
-          fontSize: 11,
-          padding: 0,
-          color: colors.text,
-          placeholderColor: colors.textMuted,
-          backgroundColor: "#00000000",
-          borderColor: "#00000000",
-          focusBorderColor: "#00000000",
-        }}
       />
       {label !== undefined && !chip && (
-        <Text numberOfLines={1} style={{ fontSize: 10, color: colors.textMuted }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
           {label}
         </Text>
       )}

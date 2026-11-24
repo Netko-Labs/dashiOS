@@ -4,13 +4,13 @@
  * place: the period shown, or Find's field.
  */
 
-import { PopUpButton, SEARCH, SearchField, Segmented, ToolbarButton, useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { Button, CHEVRON_LEFT, CHEVRON_RIGHT, PopUpButton, SEARCH, SEARCH_FIELD, SearchField, Segmented, ToolbarButton } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import type { Day } from "../../../../src/shared/calendar/index.ts";
 import type { ClockPrefs } from "../../../../src/shared/time/index.ts";
-import { type CalendarChrome, VIEW_POPUP_WIDTH } from "../chrome.ts";
+import { type CalendarChrome, SEGMENT_WIDTH, VIEW_POPUP_WIDTH } from "../chrome.ts";
 import { shortViewTitle, viewTitle } from "../format.ts";
-import { CHEVRON_LEFT, CHEVRON_RIGHT, PLUS } from "../glyphs.ts";
+import { PLUS } from "../glyphs.ts";
 import type { Find } from "../hooks/use-find.ts";
 import type { View as ViewName } from "../layout.ts";
 import type { CalendarModel } from "../model.ts";
@@ -22,29 +22,9 @@ const VIEW_OPTIONS = [
   { value: "month", label: "Month" },
 ] as const;
 
+/** Today: the kit's small button, a Tab stop between ‹ and › (KB-1); Space or Return goes to today. */
 export function TodayButton({ onPress }: { onPress: () => void }) {
-  const colors = useColors();
-  return (
-    // A Tab stop between ‹ and › (KB-1); Space or Return goes to today.
-    <View
-      testID="today"
-      focusable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={{
-        height: 28,
-        paddingHorizontal: 12,
-        borderRadius: 7,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: colors.button,
-        hoverBackgroundColor: colors.separator,
-        focusRingColor: colors.focusRing,
-      }}
-    >
-      <Text style={{ fontSize: 12, color: colors.text }}>Today</Text>
-    </View>
-  );
+  return <Button testID="today" label="Today" size="small" onPress={onPress} />;
 }
 
 /** The period shown, in full and short; the short form is for a narrow window. */
@@ -77,7 +57,7 @@ export function CalendarToolbar({
           <PopUpButton testID="view" options={VIEW_OPTIONS} value={view} onChange={(next: ViewName) => model.setView(next)} width={VIEW_POPUP_WIDTH} />
         </View>
       ) : (
-        <Segmented testID="view" options={VIEW_OPTIONS} value={view} onChange={(next: ViewName) => model.setView(next)} segmentWidth={52} />
+        <Segmented testID="view" options={VIEW_OPTIONS} value={view} onChange={(next: ViewName) => model.setView(next)} segmentWidth={SEGMENT_WIDTH} />
       )}
       <ToolbarButton
         testID="find-button"
@@ -91,46 +71,35 @@ export function CalendarToolbar({
 }
 
 /**
- * The period shown, or Find's field, in the title's place: opening Find moves
- * no control. The title takes the room the controls leave and ends in an
- * ellipsis; a narrow window shows its short form.
+ * Find's field, in the title's place while Find is open (VS-8, AppWindow's
+ * `titleSlot`): opening it moves no control. It is the one search field
+ * (UI-11): 210, shrinking to 96 when the toolbar is short of room.
  */
-export function ToolbarCenter({ heading, chrome, find }: { heading: { title: string; short: string }; chrome: CalendarChrome; find: Find }) {
-  const colors = useColors();
+export function FindSlot({ find }: { find: Find }) {
   const { search, findAt, results } = find;
-  if (search) {
-    return (
-      <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center" }}>
-        <View
-          onLayout={(bounds) => {
-            if (findAt === null || bounds.x !== findAt.x || bounds.y !== findAt.y || bounds.width !== findAt.width) find.setFindAt(bounds);
-          }}
-          style={{ flex: 1, minWidth: 0, maxWidth: 260, flexDirection: "row" }}
-        >
-          <SearchField
-            testID="find"
-            value={search.query}
-            placeholder="Find events"
-            autoFocus
-            width={260}
-            minWidth={96}
-            onChangeText={(query) => find.setSearch({ query, active: 0 })}
-            onSubmit={() => find.pickResult(results[search.active])}
-            onKeyPress={(key) => {
-              if (key === "Escape") find.close();
-              else find.setSearch({ ...search, active: Math.max(0, Math.min(results.length - 1, search.active + (key === "ArrowDown" ? 1 : -1))) });
-            }}
-          />
-        </View>
-      </View>
-    );
-  }
+  if (!search) return null;
   return (
-    <View testID="window-title" style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center" }}>
-      <View style={{ flexShrink: 1, minWidth: 0, maxWidth: 320 }}>
-        <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
-          {chrome.compact ? heading.short : heading.title}
-        </Text>
+    <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center" }}>
+      <View
+        onLayout={(bounds) => {
+          if (findAt === null || bounds.x !== findAt.x || bounds.y !== findAt.y || bounds.width !== findAt.width) find.setFindAt(bounds);
+        }}
+        style={{ flex: 1, minWidth: 0, maxWidth: SEARCH_FIELD.width, flexDirection: "row" }}
+      >
+        <SearchField
+          testID="find"
+          value={search.query}
+          placeholder="Search events"
+          autoFocus
+          variant="find"
+          minWidth={SEARCH_FIELD.least}
+          onChangeText={(query) => find.setSearch({ query, active: 0 })}
+          onSubmit={() => find.pickResult(results[search.active])}
+          onKeyPress={(key) => {
+            if (key === "Escape") find.close();
+            else find.setSearch({ ...search, active: Math.max(0, Math.min(results.length - 1, search.active + (key === "ArrowDown" ? 1 : -1))) });
+          }}
+        />
       </View>
     </View>
   );

@@ -110,7 +110,7 @@ test("the menus' chords are free for the app, and nothing runs behind a sheet", 
   const ran: string[] = [];
   const actions = new Proxy({}, { get: (_target, name) => () => ran.push(String(name)) }) as MenuContext["actions"];
   const undo = { canUndo: true, canRedo: false, undoName: "Move Event", redoName: null, busy: false, undoStep: 1 };
-  const { menus, run } = calendarMenus({ view: "week", modal: false, picked: true, undo, actions });
+  const { menus, run } = calendarMenus({ view: "week", modal: false, picked: true, calendar: { visible: true }, undo, actions });
   for (const row of menus.flatMap((menu) => menu.items)) {
     const shortcut = "shortcut" in row ? row.shortcut : undefined;
     const chord = shortcut ? chordFromShortcut(shortcut) : null;
@@ -120,8 +120,22 @@ test("the menus' chords are free for the app, and nothing runs behind a sheet", 
   run("event:duplicate");
   run("delete");
   expect(ran).toEqual(["duplicate", "deleteEvent"]);
-  calendarMenus({ view: "week", modal: true, picked: true, undo, actions }).run("delete");
+  calendarMenus({ view: "week", modal: true, picked: true, calendar: { visible: true }, undo, actions }).run("delete");
   expect(ran).toEqual(["duplicate", "deleteEvent"]);
+});
+
+test("the sidebar menu's commands are in the menu bar too, on the lit calendar (UI-17)", () => {
+  const ran: string[] = [];
+  const actions = new Proxy({}, { get: (_target, name) => () => ran.push(String(name)) }) as MenuContext["actions"];
+  const undo = { canUndo: false, canRedo: false, undoName: null, redoName: null, busy: false, undoStep: 0 };
+  const hidden = calendarMenus({ view: "week", modal: false, picked: false, calendar: { visible: false }, undo, actions });
+  const rows = hidden.menus.flatMap((menu) => menu.items).filter((row) => "id" in row && row.id.startsWith("calendar:"));
+  expect(rows.map((row) => ("label" in row ? row.label : ""))).toEqual(["New Calendar…", "Edit Calendar…", "Show Calendar", "Delete Calendar…"]);
+  hidden.run("calendar:toggle");
+  hidden.run("calendar:delete");
+  expect(ran).toEqual(["toggleCalendar", "deleteCalendar"]);
+  calendarMenus({ view: "week", modal: false, picked: false, calendar: null, undo, actions }).run("calendar:edit");
+  expect(ran).toEqual(["toggleCalendar", "deleteCalendar"]);
 });
 
 test("Find has every word, coming events first", () => {
