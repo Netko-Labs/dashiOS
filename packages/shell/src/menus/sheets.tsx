@@ -4,8 +4,8 @@
  * modules' (Wi-Fi, Bluetooth, accounts, polkit) use them.
  */
 
-import { buttonLook, useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { Button as KitButton, RADIUS, SHADOW, SPACE, useColors } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 
 /** Panel size, and the margin the shadow needs on each side. */
@@ -21,13 +21,14 @@ export function Panel({ children }: { children: ReactNode }) {
           width: SHEET_SIZE.width,
           flexDirection: "column",
           alignItems: "center",
-          gap: 10,
-          padding: 22,
-          borderRadius: 16,
+          gap: SPACE.gap,
+          padding: SPACE.sheet,
+          // A sheet is 12 (RA-2).
+          borderRadius: RADIUS.sheet,
           backgroundColor: colors.menu,
           borderWidth: 1,
           borderColor: colors.dockBorder,
-          shadow: "xl",
+          shadow: SHADOW.xl,
         }}
       >
         {children}
@@ -36,6 +37,7 @@ export function Panel({ children }: { children: ReactNode }) {
   );
 }
 
+/** A sheet's button: the kit's Button, taking its share of the row (UI-8). */
 export function Button({
   label,
   primary,
@@ -50,24 +52,5 @@ export function Button({
   testID: string;
   onPress: () => void;
 }) {
-  const colors = useColors();
-  const look = buttonLook(colors, "primary");
-  return (
-    <View
-      testID={testID}
-      onPress={disabled ? undefined : onPress}
-      style={{
-        flex: 1,
-        height: 28,
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: 7,
-        backgroundColor: primary ? look.fill : colors.button,
-        hoverBackgroundColor: primary && !disabled ? look.hover : primary ? look.fill : colors.button,
-        opacity: disabled ? 0.45 : 1,
-      }}
-    >
-      <Text style={{ fontSize: 13, fontWeight: primary ? "semibold" : "normal", color: primary ? look.ink : colors.text }}>{label}</Text>
-    </View>
-  );
+  return <KitButton testID={testID} label={label} fill {...(primary ? { primary } : {})} {...(disabled ? { disabled } : {})} onPress={onPress} />;
 }

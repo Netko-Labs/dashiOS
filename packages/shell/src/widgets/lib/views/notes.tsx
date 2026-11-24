@@ -1,5 +1,6 @@
 /** Notes (plain ink: the person's words): the pinned note, else the newest; blanks on the lock screen. */
 
+import { SPACE } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useMemo } from "react";
 import { useWidgetEnv } from "../../env.tsx";
@@ -32,11 +33,11 @@ export function NotesWidget({ size }: { size: WidgetSize }) {
       <Private what="Note" width={100}>
         <Title>{note.title}</Title>
       </Private>
-      <View style={{ flexDirection: "column", marginTop: 6 }}>
+      <View style={{ flexDirection: "column", marginTop: SPACE.s }}>
         {lines.map((line, i) => (
           <View key={`${i}${line}`} style={{ flexDirection: "column" }}>
             <Rule />
-            <View style={{ paddingTop: 4, paddingBottom: 4 }}>
+            <View style={{ paddingTop: SPACE.xs, paddingBottom: SPACE.xs }}>
               <Private what="" width={[86, 64, 100, 72][i] ?? 80}>
                 <Words ink>{line}</Words>
               </Private>

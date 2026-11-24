@@ -8,6 +8,9 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { Source } from "./source.ts";
 
+/** Timers (not design motion, tokens.md): how often the load is read while a card shows it. */
+const TIMERS = { read: 2000 } as const;
+
 export interface SystemNumbers {
   /** 0–100. */
   processor: number;
@@ -78,7 +81,7 @@ export class SystemLoad extends Source<SystemNumbers | null> {
   watch(seen: boolean): void {
     if (seen && this.timer === null) {
       this.read();
-      this.timer = setInterval(() => this.read(), 2000);
+      this.timer = setInterval(() => this.read(), TIMERS.read);
     } else if (!seen && this.timer !== null) {
       clearInterval(this.timer);
       this.timer = null;

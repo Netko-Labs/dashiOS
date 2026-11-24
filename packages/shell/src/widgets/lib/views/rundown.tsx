@@ -5,6 +5,7 @@
  * words in plain ink. It leaves out what a placed widget already shows (#24).
  */
 
+import { RADIUS, SPACE } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import { glyph } from "../../../shared/inks/index.ts";
 import { useWidgetEnv } from "../../env.tsx";
@@ -23,15 +24,15 @@ function ReceiptRow({ row, hour24 }: { row: RundownRow; hour24: boolean }) {
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 10,
+        gap: SPACE.gap,
         height: 30,
-        paddingLeft: 11,
-        paddingRight: 10,
-        borderRadius: 6,
+        paddingLeft: SPACE.inset,
+        paddingRight: SPACE.gap,
+        borderRadius: RADIUS.row,
         backgroundColor: alpha(ink, tally.houseDown ? 0.08 : 0.12),
       }}
     >
-      <View style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, borderRadius: 2, backgroundColor: ink }} />
+      <View style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, borderRadius: RADIUS.thumb, backgroundColor: ink }} />
       <Svg markup={glyph(row.glyph)} size={13} color={ink} />
       <View style={{ width: 40 }}>
         <Title size={12.5}>{clockText(row.at, hour24)}</Title>
@@ -64,9 +65,9 @@ export function RundownWidget({ size }: { size: WidgetSize }) {
   return (
     <>
       <Head left={<Lab>{`Rundown · ${day}`}</Lab>} right={<Meta>today</Meta>} />
-      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 12, marginTop: 12 }}>
+      <View style={{ flexDirection: "row", alignItems: "flex-end", gap: SPACE.inset, marginTop: SPACE.inset }}>
         <Num value={hero.value} unit={hero.unit} size={58} weight={hero.near} {...(heroInk ? { ink: heroInk } : { plain: true })} />
-        <View style={{ flex: 1, flexDirection: "column", marginBottom: 3 }}>
+        <View style={{ flex: 1, flexDirection: "column", marginBottom: SPACE.xxs }}>
           {hero.private ? (
             <Private what="Event" width={110}>
               <Title>{hero.title}</Title>
@@ -78,7 +79,7 @@ export function RundownWidget({ size }: { size: WidgetSize }) {
         </View>
       </View>
       <Grow />
-      <View style={{ flexDirection: "column", gap: 4 }}>
+      <View style={{ flexDirection: "column", gap: SPACE.xs }}>
         {rows.length === 0 ? (
           <Words>Nothing else today</Words>
         ) : (

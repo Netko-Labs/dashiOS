@@ -7,7 +7,7 @@
  * column (gallery.tsx).
  */
 
-import { RADIUS, SPACE } from "@dashi/ui";
+import { OPACITY, pill, RADIUS, SPACE, TYPE, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useRef, useState } from "react";
 import { textWidth } from "../shared/file-browser/tile-name.ts";
@@ -34,9 +34,11 @@ export function tagOf(info: WidgetInfo | null, from: WidgetSize | null, size: Wi
  * Rundown Large's last line, pass 54): the card's own 14-point padding is
  * under its top half (D500).
  */
-export const TAG = { left: 10, right: 10, padding: 8, height: 20, fontSize: 11, below: -10 } as const;
+export const TAG = { left: 10, right: 10, padding: SPACE.m, height: 20, fontSize: TYPE.caption.size, below: -10 } as const;
 /** Semibold runs a little wider than `textWidth`'s estimate. */
 const SEMIBOLD = 1.1;
+/** The header pill over the column while editing: 26 tall. */
+const EDIT_HEAD = { height: 26 } as const;
 
 /** The tag's words, fullest first: with the ink, without it, then the size alone. */
 function tagChoices(info: WidgetInfo | null, from: WidgetSize | null, size: WidgetSize): string[] {
@@ -87,7 +89,9 @@ function Decoration({ placed, tag, resizable, chosen, onChoose, onRemove, onResi
     >
       {chosen ? <View style={{ position: "absolute", ...CHOSEN_RING, borderColor: inks.text.ink }} /> : null}
       {hover || chosen ? (
-        <View style={{ position: "absolute", top: 8, left: width / 2 - 14, width: 28, height: 4, borderRadius: 2, backgroundColor: inks.text.tertiary }} />
+        <View
+          style={{ position: "absolute", top: 8, left: width / 2 - 14, width: 28, height: 4, borderRadius: RADIUS.thumb, backgroundColor: inks.text.tertiary }}
+        />
       ) : null}
       <View
         testID={`remove:${placed.placement.id}`}
@@ -98,19 +102,19 @@ function Decoration({ placed, tag, resizable, chosen, onChoose, onRemove, onResi
           top: -7,
           width: 20,
           height: 20,
-          borderRadius: 10,
+          borderRadius: RADIUS.card,
           backgroundColor: inks.text.ink,
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <View style={{ width: 8, height: 1.6, borderRadius: 1, backgroundColor: inks.paper }} />
+        <View style={{ width: 8, height: 1.6, borderRadius: RADIUS.thumb, backgroundColor: inks.paper }} />
       </View>
       {resizable ? (
         <View
           testID={`resize:${placed.placement.id}`}
           onPress={onResize}
-          style={{ position: "absolute", right: -3, top: height / 2 - 15, width: 5, height: 30, borderRadius: 2, backgroundColor: inks.text.ink }}
+          style={{ position: "absolute", right: -3, top: height / 2 - 15, width: 5, height: 30, borderRadius: RADIUS.thumb, backgroundColor: inks.text.ink }}
         />
       ) : null}
       {chosen && tag ? (
@@ -127,7 +131,7 @@ function Decoration({ placed, tag, resizable, chosen, onChoose, onRemove, onResi
             justifyContent: "center",
           }}
         >
-          <Text numberOfLines={1} style={{ fontSize: TAG.fontSize, fontWeight: "semibold", color: inks.paper }}>
+          <Text numberOfLines={1} style={{ fontSize: TAG.fontSize, fontWeight: WEIGHT.semibold, color: inks.paper }}>
             {tag}
           </Text>
         </View>
@@ -165,7 +169,7 @@ export function EditWidgets({ placements, session: edit, onDone }: { placements:
     const moved = offset(placement.id);
     const info = widgetInfo(placement.kind, edit.infos);
     return (
-      <View style={{ width: placed.width, height: placed.height, ...(moved === null ? {} : { top: moved, opacity: 0.85 }) }}>
+      <View style={{ width: placed.width, height: placed.height, ...(moved === null ? {} : { top: moved, opacity: OPACITY.strong }) }}>
         {tile}
         <Decoration
           placed={placed}
@@ -181,26 +185,26 @@ export function EditWidgets({ placements, session: edit, onDone }: { placements:
     );
   };
   return (
-    <View style={{ flexDirection: "column", gap: 10 }}>
+    <View style={{ flexDirection: "column", gap: SPACE.gap }}>
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
-          gap: 10,
-          height: 26,
-          paddingLeft: 12,
-          paddingRight: 12,
-          borderRadius: 13,
+          gap: SPACE.gap,
+          height: EDIT_HEAD.height,
+          paddingLeft: SPACE.inset,
+          paddingRight: SPACE.inset,
+          borderRadius: pill(EDIT_HEAD.height),
           backgroundColor: inks.paper,
           borderWidth: 1,
           borderColor: inks.text.hairline,
         }}
       >
-        <Text numberOfLines={1} style={{ fontSize: 10.5, fontWeight: "semibold", color: inks.text.ink }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.inks.small.size, fontWeight: WEIGHT.semibold, color: inks.text.ink }}>
           EDIT WIDGETS
         </Text>
         <View style={{ marginLeft: "auto" }}>
-          <Text numberOfLines={1} style={{ fontSize: 11.5, color: inks.text.secondary }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.panel.detail.size, color: inks.text.secondary }}>
             {EDIT_HINT}
           </Text>
         </View>

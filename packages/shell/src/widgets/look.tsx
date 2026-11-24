@@ -6,6 +6,7 @@
  */
 
 import type { InkName, InkTokens } from "@dashi/ui";
+import { LOCK_GLASS } from "@dashi/ui";
 import { createContext, useContext } from "react";
 import { inkOf } from "../shared/inks/index.ts";
 
@@ -62,12 +63,12 @@ export function cardColours(look: CardLook): CardColours {
   }
   const text = inks.text;
   return {
-    paper: look.glass ? "#00000047" : inks.paper,
+    paper: look.glass ? LOCK_GLASS.paper : inks.paper,
     value: inkOf(inks, look.ink, { down: look.houseDown, onAir: false }),
     ink: text.ink,
     secondary: text.secondary,
     tertiary: text.tertiary,
-    hairline: look.glass ? "#FFFFFF33" : text.hairline,
+    hairline: look.glass ? LOCK_GLASS.hairline : text.hairline,
     off: alpha(text.ink, 0.19),
     fill: text.ink,
     onFill: inks.paper,

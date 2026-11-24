@@ -5,9 +5,10 @@
  * smalls that come next to each other sit side by side.
  */
 
+import { SPACE } from "@dashi/ui";
 import type { Placed, Placement, WidgetSize } from "./types.ts";
 
-export const GRID = { cell: 80, gap: 12, columns: 4 } as const;
+export const GRID = { cell: 80, gap: SPACE.inset, columns: 4 } as const;
 /** The column's width: 4 × 80 + 3 × 12. */
 export const COLUMN_WIDTH = GRID.columns * GRID.cell + (GRID.columns - 1) * GRID.gap;
 

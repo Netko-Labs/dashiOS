@@ -8,7 +8,7 @@
  */
 
 import { Button, SPACE } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { View } from "@mirinjs/metal";
 import { useMemo, useState } from "react";
 import { KeyCatcher } from "../overlay.tsx";
 import { useMinuteClock } from "../shared/time/index.ts";

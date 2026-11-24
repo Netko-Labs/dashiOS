@@ -24,6 +24,9 @@ import { Weather } from "./lib/sources/weather.ts";
 import { WidgetStore } from "./store.ts";
 import type { HubRun } from "./types.ts";
 
+/** Timers (not design motion, tokens.md): events come due by the clock alone, so the hub looks every 30 s. */
+const TIMERS = { feed: 30_000 } as const;
+
 /** A notification as the hub sends it (notifications' `NotifyInput`; named here so the two modules don't import each other). */
 export interface HubNotice {
   appName: string;
@@ -157,7 +160,7 @@ export class WidgetHub {
     const bridge = calendarBridge();
     if (bridge) this.stops.push(bridge.subscribe(feed));
     // Events come due by the clock alone: look every 30 s.
-    const minute = setInterval(feed, 30_000);
+    const minute = setInterval(feed, TIMERS.feed);
     this.stops.push(() => clearInterval(minute));
     if (this.needs.live !== false) {
       this.stops.push(this.weather.start(), this.media.start(), this.extensions.start());
