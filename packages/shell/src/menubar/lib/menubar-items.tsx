@@ -62,7 +62,7 @@ export function StatusItem({
         alignItems: "center",
         justifyContent: "center",
         borderRadius: 5,
-        backgroundColor: open ? colors.switcherSelection : "#00000000",
+        backgroundColor: open ? colors.openWash : "#00000000",
       }}
     >
       {children}
@@ -107,7 +107,7 @@ export function More({
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
-        backgroundColor: open ? colors.switcherSelection : "#00000000",
+        backgroundColor: open ? colors.openWash : "#00000000",
       }}
     >
       <Svg markup={MORE} size={16} color={colors.text} />
@@ -165,7 +165,7 @@ export function Title({
         paddingRight: 10,
         borderRadius: 5,
         position: "relative",
-        backgroundColor: open ? colors.switcherSelection : "#00000000",
+        backgroundColor: open ? colors.openWash : "#00000000",
       }}
     >
       {children}

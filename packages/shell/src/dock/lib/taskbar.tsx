@@ -243,8 +243,8 @@ function TaskbarItem({
         paddingLeft: 8,
         paddingRight: 8,
         borderRadius: TASKBAR.radius,
-        backgroundColor: lit ? colors.switcherSelection : "#00000000",
-        hoverBackgroundColor: lit ? colors.switcherSelection : colors.hover,
+        backgroundColor: lit ? colors.openWash : "#00000000",
+        hoverBackgroundColor: lit ? colors.openWash : colors.hover,
       }}
     >
       {/* The entrance moves the content, not the button's box: the minimize animation aims at the box. */}

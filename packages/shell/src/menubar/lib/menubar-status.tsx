@@ -204,7 +204,7 @@ export function StatusSide({
     wrap,
     more,
     areaOpen,
-    colors.switcherSelection,
+    colors.openWash,
   );
   return (
     <View

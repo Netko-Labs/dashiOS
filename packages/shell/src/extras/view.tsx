@@ -70,7 +70,7 @@ export function ExtraItem({ extra, open, onMenu, onActivate, tile = false, acces
         gap: 5,
         borderRadius: tile ? 12 : 5,
         position: "relative",
-        backgroundColor: open ? colors.switcherSelection : tile ? colors.button : "#00000000",
+        backgroundColor: open ? colors.openWash : tile ? colors.button : "#00000000",
       }}
     >
       {extra.icon?.kind === "glyph" && <Svg markup={extra.icon.markup} size={SIZE} color={colors.text} />}

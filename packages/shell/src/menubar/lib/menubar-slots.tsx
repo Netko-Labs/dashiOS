@@ -169,7 +169,7 @@ function clockSlot({ clock, popover, colors, on, accessible = false }: SlotConte
           paddingLeft: 8,
           paddingRight: 8,
           borderRadius: 5,
-          backgroundColor: popover?.kind === "notification-center" ? colors.switcherSelection : "#00000000",
+          backgroundColor: popover?.kind === "notification-center" ? colors.openWash : "#00000000",
         }}
       >
         <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
