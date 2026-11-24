@@ -64,7 +64,6 @@ function PaperRow({ media, chosen, onChange }: { media: string[]; chosen: string
 }
 
 function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value: SheetAnswer) => void }) {
-  const colors = useColors();
   const [choice, setChoice] = useState<PrintChoice>(request.start);
   const [more, setMore] = useState(false);
   const [rangeMode, setRangeMode] = useState(request.start.pages !== "");
@@ -95,9 +94,7 @@ function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value
         { label: "Print", testID: "print:print", onPress: print, primary: true, disabled: !canPrint },
       ]}
     >
-      {request.printers.length === 0 && (
-        <Text style={{ fontSize: TYPE.body.size, color: colors.textMuted }}>No printers are set up. Add one in Settings, or save a PDF.</Text>
-      )}
+      {request.printers.length === 0 && <PrinterNote text="No printers are set up. Add one in Settings, or save a PDF." />}
       {/* The rows on a card, so their 12 of inset is the card's: the words around it, More… and the buttons keep the sheet's edge. */}
       <Group testID="print:rows">
         {request.printers.length > 0 && (
@@ -134,16 +131,22 @@ function PrintSheet({ request, answer }: { request: SheetRequest; answer: (value
         </Row>
       </Group>
       {/* The printer's problem, under the card that holds it, in ume ink (PA-6). */}
-      {printer && !printer.accepting && (
-        <View testID="print:not-accepting">
-          <Text style={{ fontSize: TYPE.secondary.size, color: colors.critical }}>This printer isn’t taking jobs right now.</Text>
-        </View>
-      )}
+      {printer && !printer.accepting && <PrinterNote problem text="This printer isn’t taking jobs right now." />}
       {twoSided && <Checkbox testID="print:two-sided" label="Two-sided" checked={choice.twoSided} onChange={(on) => update({ twoSided: on })} />}
       <MoreButton testID="print:more" open={more} more="More options" less="Fewer options" onPress={() => setMore(!more)} />
       {more && media.length > 0 && <PaperRow media={media} chosen={choice.media ?? media[0] ?? ""} onChange={(keyword) => update({ media: keyword })} />}
       {more && printer?.color && <Checkbox testID="print:color" label="Color" checked={choice.color} onChange={(on) => update({ color: on })} />}
     </PortalFrame>
+  );
+}
+
+/** A line about the printers: none set up (muted), or the chosen one's problem (ume, 12, under its card). */
+function PrinterNote({ text, problem = false }: { text: string; problem?: boolean }) {
+  const colors = useColors();
+  return (
+    <View testID={problem ? "print:not-accepting" : "print:no-printers"}>
+      <Text style={{ fontSize: problem ? TYPE.secondary.size : TYPE.body.size, color: problem ? colors.critical : colors.textMuted }}>{text}</Text>
+    </View>
   );
 }
 
