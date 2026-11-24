@@ -138,6 +138,7 @@ packages/shell/apps/preview/main.tsx	packages/shell/src/shared/apps
 packages/shell/apps/preview/main.tsx	packages/shell/src/shared/clipboard
 packages/shell/apps/preview/main.tsx	packages/shell/src/shared/control-center
 packages/shell/apps/preview/main.tsx	packages/shell/src/shared/dbus
+packages/shell/apps/preview/main.tsx	packages/shell/src/shared/file-browser
 packages/shell/apps/preview/main.tsx	packages/shell/src/shared/files
 packages/shell/apps/preview/main.tsx	packages/shell/src/shared/io
 packages/shell/apps/preview/main.tsx	packages/shell/src/shared/locale
