@@ -2,7 +2,7 @@
 # H14 (docs/conventions.md, "Hard rules"): the repository holds only source.
 #   - nothing generated is tracked (bytecode, build output, images);
 #   - CLAUDE.md and AGENTS.md are the same file but for their title line, and
-#     AGENTS.md names every hard rule (H1 to H20);
+#     AGENTS.md names every hard rule (H1 to H20, H21a, H21b, H22 to H24);
 #   - every version agrees: the Rust crates, the packages, the browser
 #     extension and spin/build-rpms;
 #   - no tracked file holds a merge's conflict markers.
@@ -35,7 +35,7 @@ fi
 if ! diff <(tail -n +2 CLAUDE.md) <(tail -n +2 AGENTS.md) >/dev/null; then
 	fail "CLAUDE.md and AGENTS.md differ (beyond their first line); keep them equivalent"
 fi
-for n in $(seq 1 20); do
+for n in $(seq 1 20) 21a 21b 22 23 24; do
 	grep -q "\bH$n\b" AGENTS.md || fail "AGENTS.md does not name hard rule H$n"
 done
 

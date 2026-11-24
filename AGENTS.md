@@ -15,9 +15,10 @@ the same change.
   accounts) is the shell's, sent over IPC.
 - **TypeScript defines the UI; mirin Metal draws it.** Surfaces are React
   through `@mirinjs/metal`, drawn by `mirin-metal-host` (sumi, mirin's engine).
-- **Components:** `@mirinjs/metal-ui` (shadcn) for anything shadcn has;
-  `@dashi/ui` for Dashi's own; app-local otherwise. See `docs/conventions.md`,
-  "UI Components".
+- **Components:** one kit, `@dashi/ui`, in two looks (window and panel) for
+  every control; `@mirinjs/metal-ui` only inside `@dashi/ui`; app-local only
+  for what is not a control. Every measure and colour is a token from its
+  theme. See `docs/conventions.md`, "UI Components", and `docs/design.html`.
 - Runtime and package manager: Bun. Compositor: smithay on calloop.
 - mirin is a sibling checkout at `../mirin`, on the branch that goes with
   Dashi's (for a release branch, the one `.mirin-branch` names: mirin's
@@ -95,6 +96,14 @@ only shrink, so fix offenders, never add them, and trim the list
 - H18: only a module's own files import its `lib/`; `lib/` is never in a package's `exports` and holds no entry point.
 - H19: from outside a module, import its `index.ts` (or a file its `index.ts` re-exports), never a file inside it; only an `index.ts` re-exports.
 - H20: `shared/` code is used by two sibling modules or more, in a folder named for its concern.
+- H21a: no hex outside `@dashi/ui`'s `theme/`; no font size, radius, weight or shadow off design.html's scales (TY-1, TY-2, RA-1, DE-1).
+- H21b: every measure in a style is a token (`TYPE`, `SPACE`, `RADIUS`, `OPACITY`, `MOTION`, …) or a named constant beside its component in `@dashi/ui`.
+- H22: controls come from `@dashi/ui`: no hand-drawn control, bare `TextInput` or control-named component outside it.
+- H23: colours keep their one job: the accent never paints widgets, the lock, Glance, a logo, a chart, an avatar or progress; purple only for agents and the focus ring.
+- H24: design.html and the code agree: every measure it binds with `data-token` holds that token's value.
+
+H21a to H24 are the design rules (`docs/design.html`); each runs from the commit that adds
+its `scripts/check-design-*.ts`, with one list per workstream (`scripts/lists/<check>/W1.txt` …).
 
 A module is a folder under `packages/shell/src/`, a concern under `src/shared/`, an app,
 or a folder under a package's `src/`: `index.ts` (re-exports only), `types.ts`, its public

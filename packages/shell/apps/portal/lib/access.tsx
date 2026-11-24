@@ -89,7 +89,7 @@ export function accessInterface(requests: Requests, ask: AskAccess): InterfaceSp
 /** The line under the question when the app gave none. */
 export const accessFallback = (app: string): string => `Dashi remembers your answer, so ${app} won’t ask again.`;
 
-/** Where the person reviews and takes back what they answered: the pane's name comes from the pane list (CP-7). */
+/** Where the person reviews and takes back what they answered: the pane's name comes from the pane list (VO-7). */
 export const PRIVACY_LINK = "dashi://settings/privacy/apps";
 export const privacyLabel = (): string => `${paneTitle("privacy")}…`;
 

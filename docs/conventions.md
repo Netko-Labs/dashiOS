@@ -32,6 +32,11 @@ A hard rule is one a machine checks on every push. Everything else in this
 file is guidance that people and agents keep. `bun run check` runs every check
 below, the same command CI runs (`.github/workflows/check.yml`);
 `bun run check:fast` runs the quick ones (about 15 s) and is the pre-push hook.
+H21a to H24 are the design rules (`docs/design.html`, decisions.md D570 to
+D590): they came with the 0.10 design plan, and each runs in `bun run check`
+from the commit that adds its script (W1's `scripts/check-design-*.ts`). Their
+lists are split by workstream (`scripts/lists/<check>/W1.txt` … `W7.txt`), so
+no two branches edit the same list.
 
 | # | Rule | Checked by | Run alone |
 | --- | --- | --- | --- |
@@ -55,6 +60,11 @@ below, the same command CI runs (`.github/workflows/check.yml`);
 | H18 | Only a module's own files import its `lib/` (a test may, to test a private helper). `lib/` is never in a package's `exports` or `bin`, and holds no `main.ts`. | `scripts/check-modules.ts` (`lib-imports`) | `bun scripts/check-modules.ts` |
 | H19 | From outside a module, import its `index.ts`, or a file its `index.ts` re-exports; never another file inside it. A test may also import the module's `lib/`, and a nested module's public files. Only an `index.ts` (or a file a package's `exports` names) re-exports: no file keeps an old import path alive. | `scripts/check-modules.ts` (`deep-imports`, `re-exports`) | `bun scripts/check-modules.ts` |
 | H20 | A `shared/` concern is used by two sibling modules or more, and sits in a folder named for its concern: no loose files in `shared/`, no `utils/` or `helpers/`. | `scripts/check-modules.ts` (`shared-use`) | `bun scripts/check-modules.ts` |
+| H21a | Colours and scales: no hex outside `packages/dashi-ui/src/theme/`; no font size off TY-1's rows, radius off RA-1, weight off TY-2, shadow off DE-1 (design.html CO-5, TK-1). | `scripts/check-design-values.ts`, per workstream (`scripts/lists/h21/W1.txt` … `W7.txt`) | `bun scripts/check-design-values.ts` |
+| H21b | Every measure is a token: no literal for a size, line height, spacing, radius, opacity or duration in a style; a component's own measure is a named constant beside it in `@dashi/ui` (design.html TK-1, TY-3). | `scripts/check-design-measures.ts`, per workstream (`scripts/lists/h21b/W1.txt` … `W7.txt`); lands after W2–W7's token swaps | `bun scripts/check-design-measures.ts` |
+| H22 | Controls come from the kit: no role-drawn control, bare `TextInput` or control-named component outside `@dashi/ui`; a component that renders a kit `Sheet` or `Button` is not one (design.html UI-1, UI-8 to UI-15). | `scripts/check-design-kit.ts`, per workstream (`scripts/lists/h22/W1.txt` … `W7.txt`) | `bun scripts/check-design-kit.ts` |
+| H23 | Colours keep their one job: the accent never paints widgets, the lock, Glance, a logo, a chart, an avatar or progress; purple only in agents' modules, Metal's ring or a field's own focus edge; no palette from another platform (design.html CO-1, CO-2, CO-10, CO-13, KB-2). No list: it fails on any hit. | `scripts/check-design-colours.ts` | `bun scripts/check-design-colours.ts` |
+| H24 | design.html and the code agree: each measure the page binds with `data-token` holds the value of that token or constant (decisions.md D589). | `scripts/check-design-sync.ts` | `bun scripts/check-design-sync.ts` |
 
 ### The lists
 
@@ -216,25 +226,37 @@ new Rust crates under `crates/<name>`, in the root Cargo workspace.
 
 ## UI Components
 
-Pick a component's home in this order:
+There is one kit, `@dashi/ui`, with two looks (decisions.md D573; design.html
+TK-2, UI-1):
 
-1. **`@mirinjs/metal-ui`** for anything shadcn/ui has (button, input, switch,
-   slider, select, dialog, sheet, popover, menu, tabs, table, tooltip,
-   calendar, …). Use it as shadcn documents it; do not wrap it to restyle it.
-   If metal-ui lacks something shadcn has, fix it in mirin, not here.
-2. **`@dashi/ui`** for components that are Dashi's own and that shadcn does not
-   have: the grouped-row controls, the app window and its unified title bar,
-   sheets in the Dashi style, the key sink, shortcut glyphs, Dashi's palettes.
-   Follow metal-ui's conventions there too (props, `data-*` state, composition).
-3. **The app or shell module** for a component only one place uses. Promote it
-   to `@dashi/ui` when a second app or shell module needs it, not before.
+1. **`@dashi/ui`** for every control (button, text field, search field,
+   switch, checkbox, slider, segmented, pop-up button, chip, sheet, form sheet,
+   pick row, month grid, progress, error and empty states, …) and for what is
+   Dashi's own: the grouped-row controls, the app window and its unified title
+   bar, the key sink, shortcut glyphs, the theme's colours and measures. Each
+   control has two looks, chosen by `look`: the window look (apps and sheets)
+   and the panel look (Settings, Control Center, the battery panel, the menu
+   bar, the capsule, the launcher's conversation, the Installer). The shell's
+   `shared/controls` is not a second kit: it is the panel look, and moves into
+   `@dashi/ui`.
+2. **`@mirinjs/metal-ui`** only inside `@dashi/ui`, where it already has the
+   part, behind `@dashi/ui`'s names. Apps and shell modules never import it.
+   Follow metal-ui's conventions in `@dashi/ui` (props, `data-*` state,
+   composition). If metal-ui lacks or breaks something, fix it in mirin, not
+   here.
+3. **The app or shell module** for a component only one place uses that is not
+   a control. Promote it to `@dashi/ui` when a second app or shell module needs
+   it, not before. A control is never drawn in a module (H22).
+
+Every measure and colour in a style is a token from `@dashi/ui`'s theme
+(`theme/`: palette, surfaces, and `measures.ts`'s `TYPE`, `WEIGHT`, `SPACE`,
+`RADIUS`, `SHADOW`, `OPACITY`, `MOTION`, `DELAY`, `CURVE`), never a literal
+(H21a, H21b); design.html states each value and names its token (H24).
 
 `@dashi/ui` holds components and design tokens only: no D-Bus, no files, no
 processes, no shell state. What it needs from the host (Dark Mode) comes in
 through a small interface the host connects (`setAppearanceSource`).
 
-Existing `@dashi/ui` components that duplicate a shadcn one move to metal-ui
-over time; see `tasks/todo.md`.
 
 ## `lib/` And `shared/`
 
