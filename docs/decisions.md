@@ -7420,3 +7420,30 @@ short words, as the rulebook is written.
 - **Why:** each follows a rule already written (UI-12, UI-14, PA-6, PA-7, PA-17, VS-8, LA-5).
 - **Cost:** none beyond each line.
 - **Undo:** per component.
+
+### D541. A surface opens on the screen it names or not at all; the Dock opens again as the bars do
+
+- **Date:** 2026-11-24. `v10/screens-fix`, mirin `v10-screens-fix`.
+- **Found:** replugged, the second screen's menu bar opened on the first
+  (two bars there, none on the second), every time with a debug compositor.
+  Plain overlays (the bars after the first, the Dock) open on the warm
+  spare Metal host, started before the screen came. Its registry hears of
+  the new `wl_output` when it comes and binds it, and the name arrives a
+  round trip later; asked at once for `output: "Virtual-2"`, the host
+  didn't know that name, opened with no screen named, and the compositor
+  put it on its first screen. A slow compositor (or a screen that wakes
+  slowly, NVIDIA's) widens the gap. The lock screen's hosts and the Dock
+  name their screen the same way.
+- **Decision:** fixed where it starts, in mirin's host (`screen.rs`): a
+  layer or lock surface that names a screen the host doesn't know waits for
+  it, up to 3 s, and if it never comes opens nothing and ends, saying why;
+  it never opens on another screen. The shell's side was there for the bars
+  (a bar whose host died opens again a second later, three times a minute)
+  and the lock (a lock host that died is put back a second later); the Dock
+  now does the same (`dock/lib/surface.ts`) before it reports the loss that
+  ends the session.
+- **Cost:** a surface for a screen that never becomes known shows 3 s late,
+  or not at all; a Dock that dies four times in a minute still ends the
+  session, as one that died once did before.
+- **Undo:** mirin's `with_role` back to dropping an unknown name;
+  `DockSurface` reporting the first death.
