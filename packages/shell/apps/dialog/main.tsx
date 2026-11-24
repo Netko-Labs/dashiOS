@@ -10,18 +10,18 @@ import { existsSync, writeSync } from "node:fs";
 import type { ReactElement } from "react";
 import { METAL_HOST } from "../../src/shared/apps/index.ts";
 import { type RunningApp, runApp } from "../kit/index.ts";
-import { CalendarDialog } from "./lib/calendar.tsx";
+import { CalendarView } from "./lib/calendar.tsx";
 import { prepare } from "./lib/cli.ts";
-import { EntryDialog, PasswordDialog } from "./lib/entry.tsx";
-import { FileSelectionDialog } from "./lib/file-selection-view.tsx";
+import { EntryView, PasswordView } from "./lib/entry.tsx";
+import { FileSelectionView } from "./lib/file-selection-view.tsx";
 import type { Answer } from "./lib/frame.tsx";
-import { ListDialog } from "./lib/list-view.tsx";
-import { MessageDialog } from "./lib/message.tsx";
-import { ProgressDialog } from "./lib/progress-view.tsx";
-import { ScaleDialog } from "./lib/scale.tsx";
-import { dialogSize, type Size } from "./lib/size.ts";
+import { ListView } from "./lib/list-view.tsx";
+import { MessageView } from "./lib/message.tsx";
+import { ProgressView } from "./lib/progress-view.tsx";
+import { ScaleView } from "./lib/scale.tsx";
+import { dialogLeast, dialogSize, type Size } from "./lib/size.ts";
 import type { DialogSpec } from "./lib/spec.ts";
-import { TextInfoDialog } from "./lib/text-info.tsx";
+import { TextInfoView } from "./lib/text-info.tsx";
 import { cannotShow } from "./lib/where.ts";
 
 /** Zenity's status when the dialog's `--timeout` runs out. */
@@ -42,23 +42,23 @@ function dialogFor(spec: DialogSpec, answer: Answer, size: Size): ReactElement {
     case "warning":
     case "error":
     case "question":
-      return <MessageDialog spec={spec} answer={answer} />;
+      return <MessageView spec={spec} answer={answer} />;
     case "progress":
-      return <ProgressDialog spec={spec} answer={answer} />;
+      return <ProgressView spec={spec} answer={answer} />;
     case "entry":
-      return <EntryDialog spec={spec} answer={answer} />;
+      return <EntryView spec={spec} answer={answer} />;
     case "password":
-      return <PasswordDialog spec={spec} answer={answer} />;
+      return <PasswordView spec={spec} answer={answer} />;
     case "list":
-      return <ListDialog spec={spec} answer={answer} />;
+      return <ListView spec={spec} answer={answer} />;
     case "text-info":
-      return <TextInfoDialog spec={spec} answer={answer} />;
+      return <TextInfoView spec={spec} answer={answer} />;
     case "scale":
-      return <ScaleDialog spec={spec} answer={answer} width={size.width} print={print} />;
+      return <ScaleView spec={spec} answer={answer} width={size.width} print={print} />;
     case "calendar":
-      return <CalendarDialog spec={spec} answer={answer} />;
+      return <CalendarView spec={spec} answer={answer} />;
     case "file-selection":
-      return <FileSelectionDialog spec={spec} answer={answer} />;
+      return <FileSelectionView spec={spec} answer={answer} />;
   }
 }
 
@@ -88,5 +88,5 @@ if (problem) {
   process.exit(255);
 }
 const size = dialogSize(spec, spec.kind === "list" ? Math.ceil(spec.cells.length / spec.columns.length) : 0);
-app = runApp({ id: "dev.dashi.dialog", title: spec.title, size, host, closeCode: 1 }, dialogFor(spec, answer, size));
+app = runApp({ id: "dev.dashi.dialog", title: spec.title, size, minSize: dialogLeast(size), host, closeCode: 1 }, dialogFor(spec, answer, size));
 if (spec.timeout !== null) setTimeout(() => answer(TIMED_OUT), spec.timeout * 1000);

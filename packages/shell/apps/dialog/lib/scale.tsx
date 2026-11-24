@@ -4,16 +4,17 @@
  * `--print-partial` prints each value as the slider settles on it too.
  */
 
-import { Slider, useColors } from "@dashi/ui";
+import { Slider, SPACE, TYPE, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { type Answer, DialogFrame, standardButtons } from "./frame.tsx";
+import { Prompt } from "./prompt.tsx";
 import { LAYOUT } from "./size.ts";
 import type { ScaleSpec } from "./spec.ts";
 
 const VALUE_WIDTH = 44;
 
-export function ScaleDialog({ spec, answer, width, print }: { spec: ScaleSpec; answer: Answer; width: number; print: (text: string) => void }) {
+export function ScaleView({ spec, answer, width, print }: { spec: ScaleSpec; answer: Answer; width: number; print: (text: string) => void }) {
   const colors = useColors();
   const [value, setValue] = useState(spec.value);
   const range = { min: spec.min, max: spec.max, step: spec.step };
@@ -41,16 +42,12 @@ export function ScaleDialog({ spec, answer, width, print }: { spec: ScaleSpec; a
         else if (key.kind === "down") change(value - spec.step);
       }}
     >
-      {spec.text !== "" && (
-        <View testID="dialog:text">
-          <Text style={{ fontSize: 13, color: colors.text, lineHeight: 17 }}>{spec.text}</Text>
-        </View>
-      )}
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexShrink: 0 }}>
+      <Prompt text={spec.text} />
+      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.gap, flexShrink: 0 }}>
         <Slider testID="dialog:scale" value={value} range={range} width={Math.max(sliderWidth, 80)} onCommit={change} />
         {!spec.hideValue && (
           <View style={{ width: VALUE_WIDTH }}>
-            <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text, textAlign: "right" }}>
+            <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: colors.text, textAlign: "right" }}>
               {String(value)}
             </Text>
           </View>

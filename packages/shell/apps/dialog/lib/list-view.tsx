@@ -6,42 +6,16 @@
  * command line, or from stdin one cell a line as they arrive.
  */
 
-import { type Column, glyphs, type KeyInput, moveSelection, type SortState, sortRows, Table, useColors } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
+import { CheckMark, type Column, type KeyInput, moveSelection, RADIUS, type SortState, sortRows, Table, useColors } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState } from "react";
 import { type Answer, DialogFrame, standardButtons } from "./frame.tsx";
 import { initialTicks, type ListRow, listOutput, rowsFrom, shownColumns } from "./list.ts";
+import { Prompt } from "./prompt.tsx";
 import type { ListSpec } from "./spec.ts";
 import { readStdinLines } from "./stdin.ts";
 
 const TOGGLE_WIDTH = 34;
-
-/** A row's tick box or radio button, drawn only: a click anywhere on the row ticks it. */
-function Toggle({ on, radio, testID }: { on: boolean; radio: boolean; testID: string }) {
-  const colors = useColors();
-  return (
-    <View
-      testID={testID}
-      style={{
-        width: 14,
-        height: 14,
-        borderRadius: radio ? 7 : 4,
-        borderWidth: on ? 0 : 1.5,
-        borderColor: colors.checkbox,
-        backgroundColor: on ? colors.selection : "#00000000",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      {on &&
-        (radio ? (
-          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.onAccent }} />
-        ) : (
-          <Svg markup={glyphs.CHECK} size={11} color={colors.onAccent} />
-        ))}
-    </View>
-  );
-}
 
 /** The cells as they come: the command line's, or stdin's, a line each. */
 function useCells(initial: readonly string[]): string[] {
@@ -66,13 +40,14 @@ function listColumns(spec: ListSpec, ticks: { ticked: Set<number>; radio: boolea
           title: spec.columns[index] ?? "",
           width: TOGGLE_WIDTH,
           text: (row) => (ticks.ticked.has(row.id) ? "TRUE" : "FALSE"),
-          cell: (row) => <Toggle on={ticks.ticked.has(row.id)} radio={ticks.radio} testID={`dialog:tick:${row.id}`} />,
+          // The box alone: a click anywhere on the row ticks it, and the row is what takes the keyboard.
+          cell: (row) => <CheckMark checked={ticks.ticked.has(row.id)} round={ticks.radio} testID={`dialog:tick:${row.id}`} />,
         }
       : { key: `c${index}`, title: spec.columns[index] ?? "", text: (row) => row.cells[index] ?? "" },
   );
 }
 
-export function ListDialog({ spec, answer }: { spec: ListSpec; answer: Answer }) {
+export function ListView({ spec, answer }: { spec: ListSpec; answer: Answer }) {
   const colors = useColors();
   const cells = useCells(spec.cells);
   const rows = useMemo(() => rowsFrom(cells, spec.columns.length), [cells, spec.columns.length]);
@@ -129,12 +104,8 @@ export function ListDialog({ spec, answer }: { spec: ListSpec; answer: Answer })
   const buttons = standardButtons({ okLabel: spec.okLabel, cancelLabel: spec.cancelLabel, extraButtons: spec.extraButtons, answer, onOk: ok });
   return (
     <DialogFrame title={spec.title} buttons={buttons} onCancel={() => answer(1)} onKey={onKey}>
-      {spec.text !== "" && (
-        <View testID="dialog:text">
-          <Text style={{ fontSize: 13, color: colors.text, lineHeight: 17 }}>{spec.text}</Text>
-        </View>
-      )}
-      <View style={{ flex: 1, minHeight: 0, borderRadius: 8, borderWidth: 1, borderColor: colors.separator, overflow: "hidden" }}>
+      <Prompt text={spec.text} />
+      <View style={{ flex: 1, minHeight: 0, borderRadius: RADIUS.control, borderWidth: 1, borderColor: colors.separator, overflow: "hidden" }}>
         <Table
           testID="dialog:list"
           columns={columns}
