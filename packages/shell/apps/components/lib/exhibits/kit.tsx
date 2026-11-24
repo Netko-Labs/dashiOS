@@ -18,15 +18,22 @@ import {
   NoResults,
   PickList,
   PickRow,
+  PictureChoice,
+  RADIUS,
   Segmented,
+  SPACE,
   Switch,
   TextLink,
+  useColors,
 } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useState } from "react";
 import { Exhibit, PageBody, States, useOverlay } from "../specimen.tsx";
 
 const noop = (): void => {};
+
+/** The picture choice's stand-in pictures. */
+const PICTURE = { width: 96, height: 54, dot: 34 } as const;
 
 const SIZES = [
   { value: "s", label: "Small" },
@@ -166,6 +173,8 @@ export function StatesPage() {
 
 export function PicksPage() {
   const [app, setApp] = useState("preview");
+  const [picture, setPicture] = useState("dusk");
+  const colors = useColors();
   const [day, setDay] = useState({ year: 2026, month: 10, date: 26 });
   const [month, setMonth] = useState({ year: 2026, month: 10 });
   const show = useOverlay();
@@ -190,6 +199,29 @@ export function PicksPage() {
           <PickRow testID="pick:editor" label="Text Editor" glyph={glyphs.INFO} chosen={app === "editor"} onPress={() => setApp("editor")} />
           <PickRow testID="pick:off" label="Terminal" glyph={glyphs.INFO} chosen={false} disabled onPress={noop} />
         </PickList>
+      </Exhibit>
+      <Exhibit
+        title="Picture choice"
+        note="A picture to pick (CO-9): the chosen one ringed 2.5 in the on colour, concentric with it; ink where the choices are colours."
+      >
+        <View testID="pictures" focusGroup accessibilityRole="listbox" style={{ flexDirection: "row", gap: SPACE.inset, alignItems: "flex-start" }}>
+          {["dawn", "dusk"].map((name) => (
+            <PictureChoice
+              key={name}
+              testID={`picture:${name}`}
+              label={name}
+              caption={name}
+              chosen={picture === name}
+              radius={RADIUS.row}
+              onPress={() => setPicture(name)}
+            >
+              <View style={{ width: PICTURE.width, height: PICTURE.height, borderRadius: RADIUS.row, backgroundColor: colors.separator }} />
+            </PictureChoice>
+          ))}
+          <PictureChoice testID="picture:ink" label="Ume" caption="Ume" small ring="ink" chosen radius={PICTURE.dot / 2} onPress={noop}>
+            <View style={{ width: PICTURE.dot, height: PICTURE.dot, borderRadius: PICTURE.dot / 2, backgroundColor: colors.separator }} />
+          </PictureChoice>
+        </View>
       </Exhibit>
       <Exhibit title="Month grid" note="The one month (UI-14): today an ink disc, the chosen day the selection wash, a day with something on it an ink dot.">
         <MonthGrid

@@ -87,6 +87,7 @@ export {
 } from "./panel/index.ts";
 export { PICK_ROW, PickList, PickRow, type PickRowProps } from "./pick-row.tsx";
 export { Picture, type PictureProps } from "./picture.tsx";
+export { PICTURE_CHOICE, PictureChoice, type PictureChoiceProps, pictureRingRadius } from "./picture-choice.tsx";
 export { PopUpButton, type PopUpButtonProps, type PopUpOption, popUpMenuWidth, popUpOrigin } from "./popup-button.tsx";
 export { isSeparator, MENU_SEPARATOR, type MenuEntry, type MenuItem, MenuList, type MenuSeparator, PopupMenu, tidyEntries } from "./popup-menu.tsx";
 export { LOADING_DELAY_MS, Loading, PROGRESS_BAR, ProgressBar, type ProgressBarProps, Spinner, useShownAfter } from "./progress.tsx";
