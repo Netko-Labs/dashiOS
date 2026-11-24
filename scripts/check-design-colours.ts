@@ -13,7 +13,7 @@
 //   foreign-palette   another platform's system colours outside the GTK bridge
 // Each hit counts against its file, on its workstream's list, scripts/lists/h23/<W>.txt, which only
 // shrinks: once the 0.10 workstreams land, every list is empty and any hit fails.
-// Run: bun scripts/check-design-colors.ts [--shrink] [--list]
+// Run: bun scripts/check-design-colours.ts [--shrink] [--list]
 
 import { byWorkstream, listedCounts } from "./design-lists.ts";
 import { isScanned } from "./design-scan.ts";
@@ -87,10 +87,10 @@ if (import.meta.main) {
   const found: Counts = new Map();
   for (const each of hits) found.set(each.file, (found.get(each.file) ?? 0) + 1);
   const header = [
-    "# H23 (scripts/check-design-colors.ts): colours off their one job, per file. Shrink-only, to empty:",
-    "# fix the code (CO-1, CO-2, CO-10, CO-13, KB-2), then `bun scripts/check-design-colors.ts --shrink`.",
+    "# H23 (scripts/check-design-colours.ts): colours off their one job, per file. Shrink-only, to empty:",
+    "# fix the code (CO-1, CO-2, CO-10, CO-13, KB-2), then `bun scripts/check-design-colours.ts --shrink`.",
   ];
   const outcomes = byWorkstream("h23", found, "colours off their job", header);
-  console.log(`check-design-colors: ${hits.length} off their job; files listed per workstream: ${listedCounts(outcomes)}`);
-  report("check-design-colors", outcomes);
+  console.log(`check-design-colours: ${hits.length} off their job; files listed per workstream: ${listedCounts(outcomes)}`);
+  report("check-design-colours", outcomes);
 }

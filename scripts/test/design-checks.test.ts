@@ -1,7 +1,7 @@
 // The design checks' pure parts (H21a, H23): what each counts, and which workstream's list it lands on.
 import { describe, expect, test } from "bun:test";
 import { STEPS } from "../check.ts";
-import { colorJobs } from "../check-design-colors.ts";
+import { colorJobs } from "../check-design-colours.ts";
 import { countByFile } from "../check-design-values.ts";
 import { ownerOf, splitByOwner } from "../design-lists.ts";
 import { isOffScale, isScanned, scanText } from "../design-scan.ts";
@@ -76,6 +76,6 @@ describe("the lists, one per workstream", () => {
   test("bun run check runs both, in the fast set", () => {
     const fast = STEPS.filter((step) => step.fast).map((step) => step.command.join(" "));
     expect(fast).toContain("bun scripts/check-design-values.ts");
-    expect(fast).toContain("bun scripts/check-design-colors.ts");
+    expect(fast).toContain("bun scripts/check-design-colours.ts");
   });
 });

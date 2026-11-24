@@ -26,7 +26,7 @@ export const STEPS: Step[] = [
   { name: "H18 H19 H20 modules", command: ["bun", "scripts/check-modules.ts"], fast: true },
   { name: "H7 H8 H10 boundaries", command: ["bun", "scripts/check-boundaries.ts"], fast: true },
   { name: "H21a design values on the scales", command: ["bun", "scripts/check-design-values.ts"], fast: true },
-  { name: "H23 colours keep their job", command: ["bun", "scripts/check-design-colors.ts"], fast: true },
+  { name: "H23 colours keep their job", command: ["bun", "scripts/check-design-colours.ts"], fast: true },
   { name: "H13 shell scripts", command: ["bun", "scripts/check-shell.ts"], fast: true },
   { name: "H16 boot weight", command: ["bun", "scripts/boot-weight.ts"], fast: true },
   { name: "entry weight (the modules each entry loads)", command: ["bun", "scripts/entry-weight.ts", "--check"], fast: true },
