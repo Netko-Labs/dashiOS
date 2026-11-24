@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test";
 import type { WindowKeyInfo } from "@mirinjs/metal";
-import { foldCrumbs } from "../apps/files/lib/omnibox/crumbs.tsx";
 import { extensionLabel } from "../src/shared/file-browser/file-icon.tsx";
 import { browserKey } from "../src/shared/file-browser/keys.ts";
 import { CATEGORY_TINTS, DARK_INK, iconKind, iconMarkup, LIGHT_INK } from "../src/shared/file-browser/lib/file-icons.ts";
+import { foldCrumbs } from "../src/shared/file-browser/lib/omnibox/crumbs.tsx";
 import { navigate } from "../src/shared/file-browser/lib/selection.ts";
 import { DEFAULT_PREFS, parsePrefs } from "../src/shared/file-browser/prefs.ts";
 import { looksLikeText } from "../src/shared/files/sniff.ts";

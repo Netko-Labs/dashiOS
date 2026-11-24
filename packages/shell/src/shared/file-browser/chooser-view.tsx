@@ -13,8 +13,8 @@
  */
 
 import { existsSync } from "node:fs";
-import { AppWindow, SHEET_MARGIN, Sheet, SPACE, TYPE, useColors, useSurface, WEIGHT } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
+import { AppWindow, SHEET_MARGIN, Sheet, SPACE, useSurface } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { useEffect, useMemo } from "react";
 import type { ChooserRequest } from "../files/index.ts";
 import { Listing } from "./browser.tsx";
@@ -32,6 +32,7 @@ export function ChooserView(props: ChooserViewProps & { title: string }) {
       <AppWindow
         title={props.title}
         leading={parts.leading}
+        titleSlot={parts.omnibox}
         toolbar={parts.tools}
         sidebar={parts.sidebar}
         sidebarWidth={CHOOSER_SHEET.sidebar}
@@ -77,22 +78,18 @@ export function AppChooser({ request, answer, env }: { request: ChooserRequest; 
 
 /** The chooser over an app's own window (pass it as `AppWindow`'s overlay): Text Editor's and Preview's Open, Save As and Export. */
 export function ChooserSheet(props: ChooserViewProps & { title: string }) {
-  const colors = useColors();
   const surface = useSurface();
   const parts = useChooserParts(props);
   const m = CHOOSER_SHEET;
   return (
     <Files.Provider value={parts.context}>
-      <Sheet testID="chooser" width={m.width} height={m.height} bare>
+      <Sheet testID="chooser" width={m.width} height={m.height} bare label={props.title}>
         {parts.keys}
-        {/* The window's own toolbar row: 38 tall, its title 13 Bold (VS-1). */}
+        {/* The window's own toolbar row, 38 tall (VS-1): Back and Up, Files' omnibox in the title's place, the view switch. */}
         <View style={{ height: m.toolbar, flexShrink: 0, flexDirection: "row", alignItems: "center", gap: SPACE.s, paddingHorizontal: SPACE.gap }}>
           {parts.leading}
-          <View style={{ flex: 1, minWidth: 0, paddingHorizontal: SPACE.s }}>
-            <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.bold, color: colors.text }}>
-              {props.title}
-            </Text>
-          </View>
+          {/* The title's place is the omnibox's (VS-8); the sheet is named by its title for screen readers. */}
+          <View style={{ flex: 1, minWidth: 0, flexDirection: "row", paddingHorizontal: SPACE.s }}>{parts.omnibox}</View>
           {parts.tools}
         </View>
         <View style={{ flex: 1, flexDirection: "row", minHeight: 0 }}>

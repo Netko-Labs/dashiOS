@@ -13,12 +13,12 @@
 
 import { MENU, rowLook, SelectionBar, SHADOW, SPACE, TYPE, useColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import { useFilesState } from "../../../../src/shared/file-browser/context.ts";
-import { sidebarGlyph } from "../../../../src/shared/file-browser/glyphs.ts";
-import type { Location } from "../../../../src/shared/file-browser/location.ts";
-import { displayPath } from "../../../../src/shared/file-browser/omnibox.ts";
-import { Crumbs } from "./crumbs.tsx";
-import { Editor } from "./omnibox-editor.tsx";
+import { useFilesState } from "./context.ts";
+import { sidebarGlyph } from "./glyphs.ts";
+import { Crumbs } from "./lib/omnibox/crumbs.tsx";
+import { Editor } from "./lib/omnibox/editor.tsx";
+import type { Location } from "./location.ts";
+import { displayPath } from "./omnibox.ts";
 import type { OmniboxProps, Suggestions } from "./omnibox-props.ts";
 
 /** The list is at least this wide under a narrow field. */

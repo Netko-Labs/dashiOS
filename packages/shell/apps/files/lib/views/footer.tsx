@@ -3,7 +3,7 @@
 import { Button, Notice, ProgressBar, SPACE, ToolbarButton, TYPE, useColors, useUndo } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useFiles, useFilesOps, useFilesState, useJobs } from "../../../../src/shared/file-browser/context.ts";
-import { formatCount, formatSize } from "../../../../src/shared/file-browser/format.ts";
+import { formatSize } from "../../../../src/shared/file-browser/format.ts";
 import { CLOSE } from "../../../../src/shared/file-browser/glyphs.ts";
 import type { Job } from "../../../../src/shared/file-browser/jobs.ts";
 
@@ -30,16 +30,6 @@ function JobRow({ job }: { job: Job }) {
       <ToolbarButton testID={`job:${job.id}:cancel`} glyph={CLOSE} tooltip="Cancel" onPress={() => ops.jobs.cancel(job.id)} />
     </View>
   );
-}
-
-/** "12 items, 41.3 GB available", or "3 of 12 selected, 4.2 MB". */
-export function statusLine(total: number, selected: readonly { size: number; kind: string }[], free: number | null): string {
-  if (selected.length > 0) {
-    const bytes = selected.filter((item) => item.kind === "file").reduce((sum, item) => sum + item.size, 0);
-    const size = selected.some((item) => item.kind === "file") ? `, ${formatSize(bytes)}` : "";
-    return `${selected.length} of ${formatCount(total)} selected${size}`;
-  }
-  return free === null ? formatCount(total) : `${formatCount(total)}, ${formatSize(free)} available`;
 }
 
 export function Footer() {

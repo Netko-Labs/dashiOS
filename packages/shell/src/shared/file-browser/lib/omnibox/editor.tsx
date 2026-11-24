@@ -8,10 +8,10 @@
 import { SEARCH, SearchField, Segmented, TYPE, useColors } from "@dashi/ui";
 import { type Bounds, Text } from "@mirinjs/metal";
 import { useEffect, useMemo, useState } from "react";
-import { useFiles, useFilesState } from "../../../../src/shared/file-browser/context.ts";
-import { sidebarGlyph } from "../../../../src/shared/file-browser/glyphs.ts";
-import { completions, intentOf } from "../../../../src/shared/file-browser/omnibox.ts";
-import type { OmniboxProps } from "./omnibox-props.ts";
+import { useFiles, useFilesState } from "../../context.ts";
+import { sidebarGlyph } from "../../glyphs.ts";
+import { completions, intentOf } from "../../omnibox.ts";
+import type { OmniboxProps } from "../../omnibox-props.ts";
 
 /** Tells the window what to list under the omnibox: the folders offered, the one lit, and what a pick does. */
 function useSuggestions(

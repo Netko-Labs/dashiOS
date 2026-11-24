@@ -5,13 +5,15 @@
  * a save that would replace a file asks.
  */
 
-import { AlertSheet, Button, glyphs, Note, PopUpButton, SearchField, Switch, TextField, ToolbarButton, useColors } from "@dashi/ui";
+import { AlertSheet, Button, glyphs, PopUpButton, Switch, TextField, ToolbarButton, TYPE, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { filterExtension, withExtension } from "../../../files/index.ts";
-import { type ChooserModel, folderName, folderTrail } from "../../chooser-model.ts";
-import { BACK, FOLDER_PLUS, sidebarGlyph } from "../../glyphs.ts";
+import { type ChooserModel, folderName } from "../../chooser-model.ts";
+import { BACK, FOLDER_PLUS } from "../../glyphs.ts";
+import { Omnibox } from "../../omnibox-view.tsx";
 import { ViewPicker } from "../../toolbar.tsx";
 import type { ChooserInput } from "./use-chooser-input.ts";
+import type { OmniboxState } from "./use-omnibox.ts";
 
 const UP = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 13V3.6M3.8 7.6L8 3.4l4.2 4.2" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
@@ -32,36 +34,32 @@ export function ChooserLeading({ model, input }: { model: ChooserModel; input: C
   );
 }
 
-export function ChooserTools({ model, input }: { model: ChooserModel; input: ChooserInput }) {
-  const { store } = model;
-  const folder = model.folder();
+/** The toolbar's end: the view switch, and New Folder when saving. */
+export function ChooserTools({ model }: { model: ChooserModel }) {
   return (
     <>
-      {folder !== null && (
-        // The folder showing; its menu is the folder and each folder it is in, the one showing ticked.
-        <PopUpButton
-          testID="chooser:folder"
-          glyph={sidebarGlyph("folder")}
-          options={folderTrail(folder, model.home).map((each) => ({ value: each.path, label: each.name }))}
-          value={folder}
-          onChange={(path) => store.go({ kind: "folder", path })}
-        />
-      )}
       <ViewPicker />
       {model.canMakeFolder() && <ToolbarButton testID="chooser:new-folder" glyph={FOLDER_PLUS} tooltip="New folder" onPress={() => void model.newFolder()} />}
-      <SearchField
-        testID="chooser:search"
-        autoFocus={model.request.mode !== "save"}
-        placeholder="Search"
-        // It shares the header's room, so a small window's sheet keeps it inside, clear of the edge.
-        width={200}
-        minWidth={100}
-        value={input.typedPath ?? input.files.query}
-        onChangeText={input.search}
-        onKeyPress={input.searchKeys}
-        onSubmit={input.submitSearch}
-      />
     </>
+  );
+}
+
+/**
+ * Files' omnibox in the title's place (R7, VS-8): the path as crumbs, a typed path, a search, so the
+ * chooser and Files read as one browser. Its suggestions hang in the overlay.
+ */
+export function ChooserOmnibox({ omnibox, refocus }: { omnibox: OmniboxState; refocus: () => void }) {
+  return (
+    <Omnibox
+      editing={omnibox.editing}
+      session={omnibox.session}
+      onEdit={omnibox.edit}
+      onDone={() => {
+        omnibox.edit(null);
+        refocus();
+      }}
+      onSuggest={omnibox.setSuggestions}
+    />
   );
 }
 
@@ -92,8 +90,14 @@ export function NameRow({ model, input }: { model: ChooserModel; input: ChooserI
   );
 }
 
+/** What is wrong with what was typed or chosen: a line in ume over the listing (PA-6). */
 export function ProblemNote({ problem }: { problem: string }) {
-  return <Note testID="chooser:problem">{problem}</Note>;
+  const colors = useColors();
+  return (
+    <View testID="chooser:problem" accessibilityRole="alert">
+      <Text style={{ fontSize: TYPE.secondary.size, color: colors.ume }}>{problem}</Text>
+    </View>
+  );
 }
 
 export function ChooserFooter({ model, input, cancel }: { model: ChooserModel; input: ChooserInput; cancel: () => void }) {

@@ -75,7 +75,8 @@ export function useChooserInput({
   const state = useChooser(model);
   const files = useSyncExternalStore(model.store.subscribe, model.store.getSnapshot);
   const { store, request } = model;
-  const [focus, setFocus] = useState(0);
+  // The listing takes the keyboard from the start, but in a save, where the name field has it.
+  const [focus, setFocus] = useState(model.request.mode === "save" ? 0 : 1);
   const [peek, setPeek] = useState(false);
   const [typedPath, setTypedPath] = useState<string | null>(null);
   const refocus = useCallback(() => setFocus((n) => n + 1), []);

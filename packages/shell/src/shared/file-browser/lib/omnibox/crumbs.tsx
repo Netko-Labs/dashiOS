@@ -8,12 +8,12 @@
 import { RADIUS, SEARCH, SearchField, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { useFiles, useFilesState } from "../../../../src/shared/file-browser/context.ts";
-import { dropLook, useDropTarget } from "../../../../src/shared/file-browser/drop.ts";
-import { CHEVRON } from "../../../../src/shared/file-browser/glyphs.ts";
-import { type Location, pathSegments } from "../../../../src/shared/file-browser/location.ts";
-import { textWidth } from "../../../../src/shared/file-browser/tile-name.ts";
-import { statusLine } from "../views/footer.tsx";
+import { useFiles, useFilesState } from "../../context.ts";
+import { dropLook, useDropTarget } from "../../drop.ts";
+import { statusLine } from "../../format.ts";
+import { CHEVRON } from "../../glyphs.ts";
+import { type Location, pathSegments } from "../../location.ts";
+import { textWidth } from "../../tile-name.ts";
 
 /** Crumbs shown in full before the first ones fold into “…”. */
 const CRUMBS_SHOWN = 4;

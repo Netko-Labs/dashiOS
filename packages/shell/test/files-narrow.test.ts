@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { chromeFor } from "../apps/files/lib/chrome.ts";
-import { fitCrumbs } from "../apps/files/lib/omnibox/crumbs.tsx";
 import { conflictMessage } from "../apps/files/lib/views/conflict-sheet.tsx";
+import { fitCrumbs } from "../src/shared/file-browser/lib/omnibox/crumbs.tsx";
 import { fileColumns, fitColumns, NAME_FLOOR } from "../src/shared/file-browser/lib/sort.ts";
 import { whereLine } from "../src/shared/file-browser/lib/views/grid.tsx";
 import { columnsFor, gridInset } from "../src/shared/file-browser/lib/views/grid-places.ts";
