@@ -10,7 +10,7 @@
  * them. Pure.
  */
 
-import type { Palette } from "@dashi/ui";
+import { CLEAR, type Palette, TYPE, WEIGHT } from "@dashi/ui";
 import type { TextRun } from "@mirinjs/metal";
 import type { Selection } from "./format.ts";
 import type { Span } from "./markup.ts";
@@ -28,9 +28,6 @@ export interface Look {
   pressable: ReadonlyMap<number, Pressable>;
 }
 
-/** No ink: a table row's or a rule's place, drawn under the field. */
-const CLEAR = "#00000000";
-
 /** The size a table's row placeholder is drawn at, so the row is as tall as the drawn table's. */
 export type RowSize = (table: number, rows: number) => number;
 
@@ -40,19 +37,20 @@ function runOf(span: Shown, ink: Ink, rowSize: RowSize): TextRun | null {
     case "bullet":
       return { ...at, color: ink.textMuted };
     case "label":
-      return { ...at, color: ink.textMuted, fontSize: 11 };
+      return { ...at, color: ink.textMuted, fontSize: TYPE.caption.size };
     case "fenced":
       return { ...at, fontFamily: "monospace" };
     case "rule":
+      // No ink: a rule's place, drawn under the field.
       return { ...at, color: CLEAR };
     case "row":
       return { ...at, color: CLEAR, fontSize: rowSize(span.table, span.rows) };
     case "marker":
       return { ...at, color: ink.textDisabled };
     case "heading":
-      return { ...at, fontWeight: "bold", fontSize: headingSize(span.level) };
+      return { ...at, fontWeight: WEIGHT.bold, fontSize: headingSize(span.level) };
     case "bold":
-      return { ...at, fontWeight: "bold" };
+      return { ...at, fontWeight: WEIGHT.bold };
     case "italic":
       return { ...at, fontStyle: "italic" };
     case "strike":
@@ -64,7 +62,7 @@ function runOf(span: Shown, ink: Ink, rowSize: RowSize): TextRun | null {
     case "done":
       return { ...at, color: ink.textMuted, textDecorationLine: "line-through" };
     case "box":
-      return { ...at, color: span.checked ? ink.moss : ink.textMuted, fontWeight: "bold", press: true };
+      return { ...at, color: span.checked ? ink.moss : ink.textMuted, fontWeight: WEIGHT.bold, press: true };
     case "link":
       return { ...at, textDecorationLine: "underline", press: true };
   }

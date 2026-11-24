@@ -90,7 +90,7 @@ export function useEditorSheets({
   const openPath = (path: string): string | null => {
     if (path === state.path) return null;
     if (!model.isPristine) newWindow([path]);
-    else if (!model.open(path)) return model.getSnapshot().notice?.text ?? "It couldn't be opened.";
+    else if (!model.open(path)) return model.getSnapshot().notice?.text ?? "It couldn’t be opened.";
     return null;
   };
   // Open and Save As are Files' own chooser over the window (src/shared/file-browser/), never a typed path (PA-12).

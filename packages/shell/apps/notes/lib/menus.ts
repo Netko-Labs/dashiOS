@@ -61,6 +61,9 @@ export interface MenuContext {
   };
 }
 
+/** The chords the menu bar and the context menus both show, from one table (UI-17). */
+export const NOTE_KEYS = { newNote: "❖N", newFolder: "⇧❖N", deleteNote: "❖⌫", find: "❖F" } as const;
+
 /** Format's rows: the command, its label, and its chord. */
 const FORMATS: ReadonlyArray<{ command: FormatCommand; label: string; shortcut?: string } | null> = [
   { command: "bold", label: "Bold", shortcut: "❖B" },
@@ -93,10 +96,10 @@ function fileMenu(context: MenuContext): MenuSpec {
   return {
     id: "file",
     items: [
-      { id: "note:new", label: "New Note", shortcut: "❖N", enabled: !inTrash },
-      { id: "folder:new", label: "New Folder…", shortcut: "⇧❖N" },
+      { id: "note:new", label: "New Note", shortcut: NOTE_KEYS.newNote, enabled: !inTrash },
+      { id: "folder:new", label: "New Folder…", shortcut: NOTE_KEYS.newFolder },
       { type: "separator" },
-      { id: "note:delete", label: "Delete Note", enabled: hasNote },
+      { id: "note:delete", label: "Delete Note", shortcut: NOTE_KEYS.deleteNote, enabled: hasNote },
       { id: "note:restore", label: "Restore Note", enabled: hasDeleted },
       { id: "note:purge", label: "Delete Note Forever…", enabled: hasDeleted },
       { id: "trash:empty", label: "Delete All Recently Deleted…", enabled: context.anyDeleted },
@@ -119,7 +122,7 @@ function editMenu(context: MenuContext): MenuSpec {
       { id: "paste", label: "Paste", shortcut: "❖V", enabled: hasNote },
       { id: "select-all", label: "Select All", shortcut: "❖A", enabled: hasNote || hasDeleted },
       { type: "separator" },
-      { id: "find", label: "Find…", shortcut: "❖F" },
+      { id: "find", label: "Find", shortcut: NOTE_KEYS.find },
       { id: "find:next", label: "Find Next", shortcut: "❖G", enabled: context.hasMatches },
       { id: "find:previous", label: "Find Previous", shortcut: "⇧❖G", enabled: context.hasMatches },
     ],

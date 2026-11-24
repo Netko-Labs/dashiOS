@@ -6,7 +6,7 @@
  */
 
 import { statSync } from "node:fs";
-import { useColors, useSurface } from "@dashi/ui";
+import { pill, SPACE, TYPE, useColors, useSurface } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useMemo, useState } from "react";
 import { lineCount } from "../find.ts";
@@ -92,16 +92,19 @@ export function EditorContent({
         scroll={scroll}
         reveal={state.reveal}
       />
-      {!hasNotice && <CountsChip text={countsLine({ counts: stats, encoding: state.encoding, lineEnding: state.lineEnding })} />}
+      {!hasNotice && <Counts text={countsLine({ counts: stats, encoding: state.encoding, lineEnding: state.lineEnding })} />}
     </View>
   );
 }
 
+/** The counts' pill: 24 tall, a pill's radius. */
+const COUNTS_HEIGHT = 24;
+
 /**
- * The counts at the text's foot, at its right: a quiet pill, as a toolbar's state chip is (VS-5), but on the
- * window's own ground with a hairline edge, since it floats over text that must not show through it.
+ * The counts at the text's foot, at its right: a reading, not a control, so not the kit's Chip: a quiet pill on
+ * the window's own ground with a hairline edge, since it floats over text that must not show through it.
  */
-function CountsChip({ text }: { text: string }) {
+function Counts({ text }: { text: string }) {
   const colors = useColors();
   const surface = useSurface();
   return (
@@ -110,11 +113,11 @@ function CountsChip({ text }: { text: string }) {
       style={{
         position: "absolute",
         // On the toolbar's right edge (its 12 of padding), so the chip ends under the Find field.
-        right: 12,
-        bottom: 12,
-        height: 24,
-        paddingHorizontal: 10,
-        borderRadius: 12,
+        right: SPACE.inset,
+        bottom: SPACE.inset,
+        height: COUNTS_HEIGHT,
+        paddingHorizontal: SPACE.gap,
+        borderRadius: pill(COUNTS_HEIGHT),
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: surface.window,
@@ -122,7 +125,7 @@ function CountsChip({ text }: { text: string }) {
         borderColor: colors.separator,
       }}
     >
-      <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+      <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
         {text}
       </Text>
     </View>

@@ -132,10 +132,10 @@ describe("file names", () => {
 describe("errors in plain sentences", () => {
   test("a system error's code never shows", () => {
     const denied = Object.assign(new Error("EACCES: permission denied, open '/x'"), { code: "EACCES" });
-    expect(plainError(denied, "save")).toBe("Notes couldn't save this note. It isn't allowed to write in the Notes folder in Documents.");
-    expect(plainError(Object.assign(new Error("x"), { code: "ENOSPC" }), "create")).toBe("Notes couldn't make a new note. The disk is full.");
-    expect(plainError(new NotesError(`"x" is not a note id.`), "change")).toBe("Notes couldn't do that. That note isn't there any more.");
-    expect(plainError(new Error("weird"), "read")).toBe("Notes couldn't read your notes folder.");
+    expect(plainError(denied, "save")).toBe("Notes couldn’t save this note. It isn’t allowed to write in the Notes folder in Documents.");
+    expect(plainError(Object.assign(new Error("x"), { code: "ENOSPC" }), "create")).toBe("Notes couldn’t make a new note. The disk is full.");
+    expect(plainError(new NotesError(`"x" is not a note id.`), "change")).toBe("Notes couldn’t do that. That note isn’t there any more.");
+    expect(plainError(new Error("weird"), "read")).toBe("Notes couldn’t read your notes folder.");
   });
 });
 

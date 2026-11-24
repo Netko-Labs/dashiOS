@@ -3,7 +3,7 @@
  * place in it ("2 of 4"). It shares the row with the title.
  */
 
-import { SearchField, ToolbarButton } from "@dashi/ui";
+import { SEARCH_FIELD, SearchField, ToolbarButton } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { NEW, OPEN, SAVE } from "../glyphs.ts";
 import type { EditorModel } from "../model.ts";
@@ -11,9 +11,9 @@ import type { EditorState } from "../state.ts";
 import { findPlace } from "../status.ts";
 import type { EditorSheets } from "../use-editor-sheets.ts";
 
-/** Find's field: as wide as this with room, never narrower than FIND_MIN. */
-const FIND_WIDTH = 200;
-const FIND_MIN = 120;
+/** Find's field: the kit's measure (VS-7), 210 with room, never narrower than 96. */
+const FIND_WIDTH = SEARCH_FIELD.width;
+const FIND_MIN = SEARCH_FIELD.least;
 
 export function EditorToolbar({
   model,

@@ -17,14 +17,16 @@
  * (main.tsx), never by remounting it.
  */
 
-import { useColors, useSurface } from "@dashi/ui";
-import { ScrollView, Text, type TextHighlight, TextInput, type TextSelection, View } from "@mirinjs/metal";
+import { EditableText, SPACE, useColors, useSurface } from "@dashi/ui";
+import { ScrollView, Text, type TextHighlight, type TextSelection, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import type { EditorPrefs } from "../prefs.ts";
 
-const PADDING = 24;
+const PADDING = SPACE.xl;
 /** Left of the text with line numbers on: the gutter is room enough. */
-const GUTTER_PADDING = 8;
+const GUTTER_PADDING = SPACE.m;
+/** Timers, not motion: the scroll waits this long for the layout, and keeps following this long after an append. */
+const FOLLOW = { afterMs: 40, forMs: 400 } as const;
 
 /**
  * The gutter's width for a text of `lines` lines at `fontSize`: room for its
@@ -56,7 +58,7 @@ export interface TextAreaProps {
   reveal: { offset: number; seq: number } | null;
 }
 
-const FIELD = { width: "100%", padding: 0, backgroundColor: "#00000000" } as const;
+const FIELD = { width: "100%", padding: 0 } as const;
 
 /** Typing at the end keeps the end in view: the view follows it down for a moment after each new line is laid out. */
 function useFollowEnd(scroll: TextAreaProps["scroll"]): { following: { current: boolean }; followEnd: () => void } {
@@ -73,10 +75,10 @@ function useFollowEnd(scroll: TextAreaProps["scroll"]): { following: { current: 
   );
   const followEnd = (): void => {
     following.current = true;
-    later(() => scroll(10_000_000, false), 40);
+    later(() => scroll(10_000_000, false), FOLLOW.afterMs);
     later(() => {
       following.current = false;
-    }, 400);
+    }, FOLLOW.forMs);
   };
   return { following, followEnd };
 }
@@ -100,7 +102,7 @@ export function TextArea({ text, prefs, lines, session, selection, onSelectionCh
   const left = prefs.lineNumbers ? GUTTER_PADDING : PADDING;
   return (
     <ScrollView testID="editor" onLayout={(bounds) => setHeight(bounds.height)} style={{ flex: 1, backgroundColor: surface.card }}>
-      <View style={{ padding: PADDING, paddingLeft: left, paddingTop: 16, flexDirection: "column", flexShrink: 0, minHeight: height }}>
+      <View style={{ padding: PADDING, paddingLeft: left, paddingTop: SPACE.page, flexDirection: "column", flexShrink: 0, minHeight: height }}>
         <View style={{ position: "relative", flexDirection: "column", flexShrink: 0, width: "100%" }}>
           <View
             testID="text-measure"
@@ -126,7 +128,7 @@ export function TextArea({ text, prefs, lines, session, selection, onSelectionCh
               <Text style={textStyle}>{text.slice(0, revealing.offset)}</Text>
             </View>
           )}
-          <TextInput
+          <EditableText
             key={`text:${session}`}
             testID="text"
             multiline
@@ -149,9 +151,7 @@ export function TextArea({ text, prefs, lines, session, selection, onSelectionCh
             style={{
               ...FIELD,
               ...textStyle,
-              height: Math.max(200, height - 40, Math.ceil(measured) + 4),
-              color: colors.text,
-              placeholderColor: colors.textDisabled,
+              height: Math.max(200, height - 40, Math.ceil(measured) + SPACE.xs),
             }}
           />
         </View>

@@ -13,7 +13,7 @@ import type { Overlays } from "../hooks/use-overlays.ts";
 import { type DateForm, noticeWidth } from "../layout.ts";
 import type { Source } from "../list.ts";
 import type { NotesModel } from "../model.ts";
-import { Editor } from "./editor.tsx";
+import { Editor, type EmptyPage } from "./editor.tsx";
 import { NoteList } from "./rows.tsx";
 
 const DATE_FORMS: Record<DateForm, Intl.DateTimeFormatOptions> = {
@@ -32,11 +32,13 @@ export interface NotesHost {
   press(keystroke: string): void;
   /** Opens a link from a note (❖-click). */
   openLink(url: string): void;
+  /** Whether a field has the keyboard (the title, the body, the search): ❖⌫ is then the field's. */
+  typing?: () => boolean;
 }
 
-/** What the note's page says when there is no note to show. */
-function emptyFor(data: NotesData): { title: string; message: string; canCreate: boolean } {
-  if (data.searchingNow) return { title: "No matches", message: "Nothing matches your search.", canCreate: false };
+/** What the note's page says when there is no note to show; a search that found nothing is the kit's NoResults (PA-17). */
+function emptyFor(data: NotesData): EmptyPage {
+  if (data.searchingNow) return { title: "No results", message: "", canCreate: false, query: data.state.query };
   if (data.inTrash) return { title: "Nothing deleted", message: "Deleted notes stay here for 30 days.", canCreate: false };
   if (data.counts.all === 0)
     return { title: "Write your first note", message: "Notes are Markdown files in Documents › Notes, yours to open anywhere.", canCreate: true };
@@ -102,7 +104,7 @@ export function NotesContent({
   windowWidth: number;
   notice: ReactElement | null;
 }) {
-  const { state, rows, row, inTrash, searchingNow, now } = data;
+  const { state, rows, row, searchingNow, now } = data;
   const { sheet, menu, takeKeys, setSheet } = overlays;
   return (
     <>
@@ -123,7 +125,6 @@ export function NotesContent({
           showFolder={searchingNow || state.source.kind === "all"}
           folderLabel={folderLabel}
           now={now}
-          emptyText={searchingNow ? "No matches" : inTrash ? "Nothing deleted" : "No notes yet"}
         />
         <View style={{ flex: 1, minWidth: 0, flexDirection: "column", position: "relative" }}>
           <Editor

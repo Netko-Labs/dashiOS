@@ -21,6 +21,6 @@ export function openWindow(command: readonly string[], cwd: string): void {
   try {
     Bun.spawn([...command], { cwd, stdio: ["ignore", "ignore", "inherit"] }).unref();
   } catch (error) {
-    console.error(`dev.dashi.editor: couldn't open a window: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(`dev.dashi.editor: couldn’t open a window: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

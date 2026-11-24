@@ -113,9 +113,9 @@ export function NotesSheet({ sheet, onClose, actions }: { sheet: SheetState; onC
       return (
         <ConfirmSheet
           testID="purge"
-          title={`Delete “${untitled(sheet.title)}” forever?`}
-          message="This note can't be restored afterwards."
-          confirmLabel="Delete Forever"
+          title={`Delete “${untitled(sheet.title)}”?`}
+          message="It leaves Recently Deleted for good. You can’t undo this."
+          confirmLabel="Delete"
           danger
           onConfirm={done(actions.purge)}
           onCancel={onClose}
@@ -125,9 +125,9 @@ export function NotesSheet({ sheet, onClose, actions }: { sheet: SheetState; onC
       return (
         <ConfirmSheet
           testID="empty-trash"
-          title="Delete everything in Recently Deleted?"
-          message={`${sheet.count === 1 ? "1 note" : `${sheet.count} notes`} will be deleted forever.`}
-          confirmLabel="Delete All"
+          title="Delete all of Recently Deleted?"
+          message={`${sheet.count === 1 ? "1 note goes" : `${sheet.count} notes go`} for good. You can’t undo this.`}
+          confirmLabel="Delete all"
           danger
           onConfirm={done(actions.emptyTrash)}
           onCancel={onClose}

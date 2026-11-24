@@ -56,7 +56,7 @@ describe("the document", () => {
     editor.edit("kept");
     expect(editor.open(join(dir, "missing.txt"))).toBe(false);
     expect(editor.getSnapshot().text).toBe("kept");
-    expect(editor.getSnapshot().notice).toEqual({ text: "“missing.txt” couldn't be opened. There is no such file.", tone: "error" });
+    expect(editor.getSnapshot().notice).toEqual({ text: "“missing.txt” couldn’t be opened. There is no such file.", tone: "error" });
   });
 
   test("a failed save keeps the changes and says why", () => {

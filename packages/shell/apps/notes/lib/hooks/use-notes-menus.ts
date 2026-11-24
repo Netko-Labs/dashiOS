@@ -45,6 +45,7 @@ export function useNotesMenus({
   focus,
   actions,
   press,
+  typing,
 }: {
   model: NotesModel;
   data: NotesData;
@@ -53,6 +54,8 @@ export function useNotesMenus({
   actions: NoteActions;
   /** Sends a key to the field with the keyboard ("ctrl-c"): Edit's Cut, Copy, Paste and Select All. */
   press: (keystroke: string) => void;
+  /** Whether a field has the keyboard. */
+  typing?: () => boolean;
 }): void {
   const { state, row, inTrash, openNote } = data;
   const { setSheet } = overlays;
@@ -75,7 +78,12 @@ export function useNotesMenus({
       newFolder: () => setSheet({ kind: "new-folder" }),
       renameFolder: (name) => setSheet({ kind: "rename-folder", name }),
       deleteFolder: (name) => setSheet({ kind: "delete-folder", name, count: folderCount(name) }),
-      deleteNote: () => model.trashSelected(),
+      // ❖⌫ in a field deletes to the line's start (KB-6), as the compositor writes it for a field; elsewhere it deletes the note.
+      deleteNote: () => {
+        if (!typing?.()) return model.trashSelected();
+        press("shift-home");
+        press("backspace");
+      },
       restore: () => model.restoreSelected(),
       purge: () => row && setSheet({ kind: "purge", title: row.title }),
       emptyTrash: () => setSheet({ kind: "empty-trash", count: state.deleted.length }),
