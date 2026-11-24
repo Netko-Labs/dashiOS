@@ -24,7 +24,7 @@ import { useColors } from "../../colors.ts";
 import type { PaneServices } from "../../services.ts";
 import { Page, Switch } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";
-import { Failure, KindMark, ListRow, MiniButton, Value } from "./parts.tsx";
+import { ConfirmDelete, Failure, KindMark, ListRow, MiniButton, Value } from "./parts.tsx";
 
 function NetworkRow({ network, current, state, onJoin }: { network: WifiNetwork; current: boolean; state: WifiState; onJoin: (network: WifiNetwork) => void }) {
   const colors = useColors();
@@ -32,7 +32,7 @@ function NetworkRow({ network, current, state, onJoin }: { network: WifiNetwork;
   const thisOne = state.join.phase === "joining" && state.join.key === network.key;
   const detail = current ? "Connected" : network.known ? "Known network" : network.secured ? "Password required" : "Open";
   return (
-    <ListRow testID={`net-wifi:${network.ssid}`} name={network.ssid} detail={detail} bold={current}>
+    <ListRow testID={`net-wifi:${network.ssid}`} name={network.ssid} detail={detail}>
       <KindMark glyph={wifiGlyph(network.bars)} />
       {network.secured && <Svg markup={LOCK} size={11} color={colors.textMuted} />}
       {!current &&
@@ -47,11 +47,6 @@ function NetworkRow({ network, current, state, onJoin }: { network: WifiNetwork;
 
 /** The networks joined before; forgetting one asks first, in its row. */
 function KnownNetworks({ state, onForget }: { state: ReturnType<typeof useWifi>; onForget: (saved: SavedNetwork) => void }) {
-  const [asking, setAsking] = useState<string | null>(null);
-  const forget = (saved: SavedNetwork) => {
-    setAsking(null);
-    onForget(saved);
-  };
   return (
     <>
       <Caption above>Known Networks</Caption>
@@ -63,14 +58,7 @@ function KnownNetworks({ state, onForget }: { state: ReturnType<typeof useWifi>;
             name={saved.ssid}
             detail={state.current?.key === saved.key ? "Connected" : "Joins automatically when in range"}
           >
-            {asking === saved.key ? (
-              <>
-                <MiniButton testID={`net-forget-cancel:${saved.ssid}`} label="Cancel" onPress={() => setAsking(null)} />
-                <MiniButton testID={`net-forget-confirm:${saved.ssid}`} label="Forget" tone="critical" onPress={() => forget(saved)} />
-              </>
-            ) : (
-              <MiniButton testID={`net-forget:${saved.ssid}`} label="Forget…" tone="critical" onPress={() => setAsking(saved.key)} />
-            )}
+            <ConfirmDelete testID={`net-forget:${saved.ssid}`} verb="Forget" onDelete={() => onForget(saved)} />
           </ListRow>
         ))}
       </Group>

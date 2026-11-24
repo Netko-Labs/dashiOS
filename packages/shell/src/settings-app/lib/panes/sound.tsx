@@ -14,15 +14,12 @@
  * title's detail is the output in use (VS-2).
  */
 
-import { CHECK } from "@dashi/ui";
-import { Svg } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { speakerGlyph } from "../../../glyphs.ts";
 import { Caption, Group, Note } from "../../../shared/cards/index.ts";
 import { MIC, MIC_OFF, MUTE, VOLUME as VOLUME_KNOB } from "../../../shared/settings/index.ts";
 import { type LevelMeter, meterShown, type SoundState, type SoundStore, useLevels, useSound } from "../../../sound/index.ts";
 import type { Volume } from "../../../system/volume.ts";
-import { useColors } from "../../colors.ts";
 import { MICROPHONE } from "../../glyphs-machine.ts";
 import type { PaneServices } from "../../services.ts";
 import { Page, Slider, Switch } from "../../ui.tsx";
@@ -59,12 +56,11 @@ function useDevices(store: SoundStore): SoundState {
 }
 
 function Devices({ store, state, side, testID }: { store: SoundStore; state: SoundState; side: "output" | "input"; testID: string }) {
-  const colors = useColors();
   const list = deviceList(state);
   if (list === "reading") return null;
   return (
     <>
-      <Group testID={testID}>
+      <Group testID={testID} {...(list === "devices" ? { list: "listbox" as const } : {})}>
         {list === "unavailable" ? (
           <Note>{side === "output" ? "Sound isn't available on this computer." : "Input devices aren't available on this computer."}</Note>
         ) : list === "none" ? (
@@ -75,11 +71,9 @@ function Devices({ store, state, side, testID }: { store: SoundStore; state: Sou
               key={device.id}
               testID={`${side}-device:${device.label}`}
               name={device.label}
-              bold={device.current}
-              onPress={device.current ? undefined : () => void store.choose(device.id)}
-            >
-              {device.current && <Svg markup={CHECK} size={14} color={colors.text} />}
-            </ListRow>
+              chosen={device.current}
+              onPress={() => !device.current && void store.choose(device.id)}
+            />
           ))
         )}
       </Group>

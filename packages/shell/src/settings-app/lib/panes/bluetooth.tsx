@@ -19,7 +19,7 @@ import { useColors } from "../../colors.ts";
 import type { PaneServices } from "../../services.ts";
 import { Page, Switch } from "../../ui.tsx";
 import { Setting } from "../setting.tsx";
-import { Failure, KindMark, ListRow, MiniButton } from "./parts.tsx";
+import { ConfirmDelete, Failure, KindMark, ListRow, MiniButton } from "./parts.tsx";
 
 const BUSY = { connecting: "Connecting…", disconnecting: "Disconnecting…", pairing: "Pairing…", forgetting: "Forgetting…" } as const;
 
@@ -35,50 +35,30 @@ function Battery({ percent, name }: { percent: number; name: string }) {
   );
 }
 
-function MyDevice({
-  device,
-  state,
-  confirming,
-  onConfirm,
-  services,
-}: {
-  device: BluetoothDevice;
-  state: BluetoothState;
-  confirming: boolean;
-  onConfirm: (asking: boolean) => void;
-  services: PaneServices;
-}) {
+function MyDevice({ device, state, services }: { device: BluetoothDevice; state: BluetoothState; services: PaneServices }) {
   const { bluetooth } = services;
   const busy = state.busy[device.path];
-  const detail = busy ? BUSY[busy] : device.connected ? "Connected" : "Not Connected";
+  const [asking, setAsking] = useState(false);
+  const detail = busy ? BUSY[busy] : device.connected ? "Connected" : "Not connected";
   return (
-    <ListRow testID={`bt-device:${device.name}`} name={device.name} detail={detail} bold={device.connected}>
+    <ListRow testID={`bt-device:${device.name}`} name={device.name} detail={detail}>
       <KindMark glyph={deviceGlyph(device.kind)} />
       {device.battery !== null && !busy && <Battery percent={device.battery} name={device.name} />}
-      {confirming ? (
-        <>
-          <MiniButton testID={`bt-forget-cancel:${device.name}`} label="Cancel" onPress={() => onConfirm(false)} />
-          <MiniButton
-            testID={`bt-forget-confirm:${device.name}`}
-            label="Forget"
-            tone="critical"
-            onPress={() => {
-              onConfirm(false);
-              void bluetooth.forget(device);
-            }}
-          />
-        </>
-      ) : (
-        <>
-          <MiniButton
-            testID={`bt-toggle:${device.name}`}
-            label={device.connected ? "Disconnect" : "Connect"}
-            disabled={busy !== undefined}
-            onPress={() => void (device.connected ? bluetooth.disconnect(device) : bluetooth.connect(device))}
-          />
-          <MiniButton testID={`bt-forget:${device.name}`} label="Forget…" tone="critical" disabled={busy !== undefined} onPress={() => onConfirm(true)} />
-        </>
+      {!asking && (
+        <MiniButton
+          testID={`bt-toggle:${device.name}`}
+          label={device.connected ? "Disconnect" : "Connect"}
+          disabled={busy !== undefined}
+          onPress={() => void (device.connected ? bluetooth.disconnect(device) : bluetooth.connect(device))}
+        />
       )}
+      <ConfirmDelete
+        testID={`bt-forget:${device.name}`}
+        verb="Forget"
+        disabled={busy !== undefined}
+        onAsking={setAsking}
+        onDelete={() => void bluetooth.forget(device)}
+      />
     </ListRow>
   );
 }
@@ -86,7 +66,6 @@ function MyDevice({
 function Devices({ services }: { services: PaneServices }) {
   const { bluetooth } = services;
   const state = useBluetooth(bluetooth);
-  const [asking, setAsking] = useState<string | null>(null);
   const searching = state.discovering || state.available === null;
   const { failure } = state;
   return (
@@ -96,14 +75,7 @@ function Devices({ services }: { services: PaneServices }) {
           <Caption above>My Devices</Caption>
           <Group testID="bt-mine">
             {state.mine.map((device) => (
-              <MyDevice
-                key={device.path}
-                device={device}
-                state={state}
-                services={services}
-                confirming={asking === device.path}
-                onConfirm={(on) => setAsking(on ? device.path : null)}
-              />
+              <MyDevice key={device.path} device={device} state={state} services={services} />
             ))}
           </Group>
         </>
