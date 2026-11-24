@@ -10,38 +10,31 @@
  * to confirm: a stray Enter must not pair a device.
  */
 
-import { useColors } from "@dashi/ui";
-import { Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { type AlertButton, AlertSheet, KeySink, SPACE, TextField, TYPE, useColors, WEIGHT } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { BLUETOOTH } from "../../control-center/index.ts";
-import { Button, Panel } from "../../menus/sheets.tsx";
-import { KeyCatcher } from "../../overlay.tsx";
 import type { BluetoothStore } from "../store.ts";
 import { useBluetooth } from "../store.ts";
 import type { PairingRequest } from "../types.ts";
 import { isPin } from "./values.ts";
 
-const Title = ({ children }: { children: string }) => {
-  const colors = useColors();
-  return <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{children}</Text>;
-};
-
-const Hint = ({ children, bad }: { children: string; bad?: boolean }) => {
+/** A code to read, big; the first `typed` digits are in ink as the device takes them, the rest muted. */
+function Code({ code, typed }: { code: string; typed?: number }) {
   const colors = useColors();
   return (
-    <View style={{ alignSelf: "stretch" }}>
-      <Text style={{ fontSize: 12, color: bad ? colors.critical : colors.textMuted, textAlign: "center" }}>{children}</Text>
-    </View>
-  );
-};
-
-/** A code to read, big; the first `typed` digits are lit as the device takes them. */
-function Code({ code, typed = 0 }: { code: string; typed?: number }) {
-  const colors = useColors();
-  return (
-    <View testID="bt-code" style={{ flexDirection: "row", gap: 3, paddingTop: 4, paddingBottom: 4 }}>
+    <View testID="bt-code" style={{ flexDirection: "row", gap: SPACE.xs }}>
       {[...code].map((digit, index) => (
-        <Text key={index} style={{ fontSize: 30, fontWeight: "bold", fontFamily: "monospace", color: index < typed ? colors.selection : colors.text }}>
+        <Text
+          key={index}
+          style={{
+            fontSize: TYPE.figure.size,
+            lineHeight: TYPE.figure.line,
+            fontWeight: WEIGHT.bold,
+            fontFamily: "monospace",
+            color: typed === undefined || index < typed ? colors.text : colors.textMuted,
+          }}
+        >
           {digit}
         </Text>
       ))}
@@ -49,117 +42,107 @@ function Code({ code, typed = 0 }: { code: string; typed?: number }) {
   );
 }
 
-function Frame({ children }: { children: ReactNode }) {
-  const colors = useColors();
+/**
+ * The alert frame (UI-5) on its own surface, with Bluetooth's glyph. Esc
+ * cancels everywhere; `enter` false where nothing typed is there to confirm,
+ * so a stray Enter neither pairs nor cancels.
+ */
+function Frame({
+  store,
+  question,
+  message,
+  pair,
+  enter = true,
+  children,
+}: {
+  store: BluetoothStore;
+  question: string;
+  message: string;
+  /** Pair beside Cancel: what Enter never presses here (only a click pairs). */
+  pair: boolean;
+  enter?: boolean;
+  children?: ReactNode;
+}) {
+  const buttons: AlertButton[] = [
+    { label: "Cancel", testID: "bt-cancel", onPress: () => store.decline(), cancel: true, isDefault: false },
+    ...(pair ? [{ label: "Pair", testID: "bt-pair", onPress: () => store.answer(), kind: "primary" as const, isDefault: false }] : []),
+  ];
   return (
-    <Panel>
-      <Svg markup={BLUETOOTH} size={28} color={colors.text} />
+    <AlertSheet testID="bt-sheet" place="screen" question={question} message={message} glyph={BLUETOOTH} buttons={buttons} keys={enter}>
+      {!enter && <KeySink testID="bt-sheet:esc" onKey={(key) => key.kind === "escape" && store.decline()} />}
       {children}
-    </Panel>
+    </AlertSheet>
   );
 }
 
-/** Pair / Cancel, or just Cancel when there is nothing to agree to. */
-function Answer({ store, pair }: { store: BluetoothStore; pair: boolean }) {
-  return (
-    <View style={{ flexDirection: "row", alignSelf: "stretch", gap: 10, marginTop: 4 }}>
-      <Button testID="bt-cancel" label="Cancel" onPress={() => store.decline()} />
-      {pair && <Button testID="bt-pair" label="Pair" primary onPress={() => store.answer()} />}
-    </View>
-  );
-}
-
-/** A PIN or a passkey typed here. */
+/** A PIN or a passkey typed here: Enter pairs once what is typed could be one. */
 function Entry({ store, request }: { store: BluetoothStore; request: Extract<PairingRequest, { kind: "enter-pin" | "enter-passkey" }> }) {
-  const colors = useColors();
   const [text, setText] = useState("");
   const pin = request.kind === "enter-pin";
   const valid = pin ? isPin(text) : /^\d{1,6}$/.test(text);
   const submit = () => valid && store.answer(text);
-  const hint =
-    text !== "" && !valid
-      ? pin
-        ? "A PIN is 1 to 16 letters, numbers, or symbols."
-        : "The code is up to six digits."
-      : pin
-        ? "Many devices use 0000 or 1234. For a keyboard, pick any PIN, then type it on the keyboard and press Enter."
-        : "Type the digits the device is showing.";
+  const wrong = text !== "" && !valid;
+  const hint = wrong
+    ? pin
+      ? "A PIN is 1 to 16 letters, numbers, or symbols."
+      : "The code is up to six digits."
+    : pin
+      ? "Many devices use 0000 or 1234. For a keyboard, pick any PIN, then type it on the keyboard and press Enter."
+      : "Type the digits the device is showing.";
   return (
-    <Frame>
-      <Title>{pin ? `Enter the PIN for “${request.name}”` : `Enter the code shown on “${request.name}”`}</Title>
-      <View
-        style={{
-          alignSelf: "stretch",
-          height: 30,
-          justifyContent: "center",
-          paddingLeft: 10,
-          paddingRight: 10,
-          borderRadius: 7,
-          backgroundColor: colors.tile,
-          borderWidth: 1,
-          borderColor: colors.separator,
-        }}
-      >
-        <TextInput
-          testID="bt-entry"
-          value={text}
-          autoFocus
-          placeholder={pin ? "PIN" : "Code"}
-          onChangeText={setText}
-          onSubmitEditing={submit}
-          onKeyPress={(key) => key === "Escape" && store.decline()}
-          style={{ fontSize: 13, color: colors.text, placeholderColor: colors.textMuted, backgroundColor: "#00000000" }}
-        />
-      </View>
-      <Hint bad={text !== "" && !valid}>{hint}</Hint>
-      <View style={{ flexDirection: "row", alignSelf: "stretch", gap: 10, marginTop: 4 }}>
-        <Button testID="bt-cancel" label="Cancel" onPress={() => store.decline()} />
-        <Button testID="bt-pair" label="Pair" primary disabled={!valid} onPress={submit} />
-      </View>
-    </Frame>
+    <AlertSheet
+      testID="bt-sheet"
+      place="screen"
+      question={pin ? `Enter the PIN for “${request.name}”` : `Enter the code shown on “${request.name}”`}
+      glyph={BLUETOOTH}
+      buttons={[
+        { label: "Cancel", testID: "bt-cancel", onPress: () => store.decline(), cancel: true },
+        { label: "Pair", testID: "bt-pair", onPress: submit, kind: "primary", disabled: !valid },
+      ]}
+    >
+      <TextField
+        testID="bt-entry"
+        value={text}
+        autoFocus
+        placeholder={pin ? "PIN" : "Code"}
+        onChangeText={setText}
+        onSubmit={submit}
+        onKeyPress={(key) => key === "Escape" && store.decline()}
+        message={hint}
+        invalid={wrong}
+      />
+    </AlertSheet>
   );
 }
 
 /** What is on the sheet for this request. */
-function Sheet({ store, request }: { store: BluetoothStore; request: PairingRequest }) {
+function PairingQuestion({ store, request }: { store: BluetoothStore; request: PairingRequest }) {
   switch (request.kind) {
     case "confirm":
       return (
-        <Frame>
-          <KeyCatcher onKey={(key) => key === "Escape" && store.decline()} />
-          <Title>{`Pair with “${request.name}”?`}</Title>
-          <Hint>Make sure this code matches the one shown on the device.</Hint>
+        <Frame store={store} question={`Pair with “${request.name}”?`} message="Make sure this code matches the one shown on the device." pair>
           <Code code={request.passkey} />
-          <Answer store={store} pair />
         </Frame>
       );
     case "authorize":
       return (
-        <Frame>
-          <KeyCatcher onKey={(key) => key === "Escape" && store.decline()} />
-          <Title>{`“${request.name}” wants to pair with this computer.`}</Title>
-          <Hint>Only pair with a device you recognize.</Hint>
-          <Answer store={store} pair />
-        </Frame>
+        <Frame
+          store={store}
+          question={`Pair with “${request.name}”?`}
+          message="It wants to pair with this computer. Only pair with a device you recognize."
+          pair
+        />
       );
     case "show-passkey":
       return (
-        <Frame>
-          <KeyCatcher onKey={(key) => key === "Escape" && store.decline()} />
-          <Title>{`Pair with “${request.name}”`}</Title>
-          <Hint>Type this code on the device, then press Enter.</Hint>
+        <Frame store={store} question={`Type this code on “${request.name}”`} message="Then press Enter on the device." pair={false} enter={false}>
           <Code code={request.passkey} typed={request.entered} />
-          <Answer store={store} pair={false} />
         </Frame>
       );
     case "show-pin":
       return (
-        <Frame>
-          <KeyCatcher onKey={(key) => key === "Escape" && store.decline()} />
-          <Title>{`Pair with “${request.name}”`}</Title>
-          <Hint>Type this PIN on the device, then press Enter.</Hint>
+        <Frame store={store} question={`Type this PIN on “${request.name}”`} message="Then press Enter on the device." pair={false} enter={false}>
           <Code code={request.pin} />
-          <Answer store={store} pair={false} />
         </Frame>
       );
     case "enter-pin":
@@ -168,8 +151,8 @@ function Sheet({ store, request }: { store: BluetoothStore; request: PairingRequ
   }
 }
 
-export function PairingSheet({ bluetooth }: { bluetooth: BluetoothStore }) {
+export function PairingQuestions({ bluetooth }: { bluetooth: BluetoothStore }) {
   const { prompt } = useBluetooth(bluetooth);
   // A new question is a new sheet: what was typed for the last one does not carry over.
-  return prompt ? <Sheet key={`${prompt.path}:${prompt.kind}`} store={bluetooth} request={prompt} /> : null;
+  return prompt ? <PairingQuestion key={`${prompt.path}:${prompt.kind}`} store={bluetooth} request={prompt} /> : null;
 }

@@ -7,7 +7,7 @@
  * fills; "Wi-Fi Settings…" is last.
  */
 
-import { useControlColors } from "@dashi/ui";
+import { SPACE, useControlColors } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useRef } from "react";
 import { PADLOCK } from "../control-center/glyphs.ts";
@@ -87,13 +87,13 @@ export function WifiPage({ wifi, radio, onRadio, onChoose, onBack, onSettings }:
       <PageHeader
         testID="wifi-header"
         title="Wi-Fi"
-        detail={!on ? "Off" : (state.current?.ssid ?? "Not Connected")}
+        detail={!on ? "Off" : (state.current?.ssid ?? "Not connected")}
         on={on}
         onBack={onBack}
         toggle={{ on, onChange: onRadio }}
       />
       <PageBody testID="wifi-list">
-        <View style={{ flexDirection: "column", gap: 6, maxHeight: LIST_HEIGHT, overflow: "scroll" }}>
+        <View style={{ flexDirection: "column", gap: SPACE.s, maxHeight: LIST_HEIGHT, overflow: "scroll" }}>
           {!on ? (
             <PageNote>Wi-Fi is off</PageNote>
           ) : state.available === false ? (

@@ -1,14 +1,12 @@
 import { expect, test } from "bun:test";
 import { Appearance, Button, contrastRatio, DARK_CONTROLS, darkColors, LIGHT_CONTROLS, LOGIN_FOCUS_RING, lightColors } from "@dashi/ui";
 import { type NativeEvent, type NativeTransport, render, View } from "@mirinjs/metal";
-import { Button as ConsentButton } from "../src/consent.tsx";
-import { Button as SheetButton } from "../src/menus/sheets.tsx";
+import { ConfirmSheet } from "../src/menus/lib/power-sheets.tsx";
 import { settle } from "./support/time.ts";
 
 // One purple ring and ink primary buttons (docs/design.html KB-2, UI-4;
-// decisions.md D15, D16): the shell's own palette and the buttons its sheets
-// draw themselves take @dashi/ui's ring and its primary look, and nothing
-// that goes ahead is green.
+// decisions.md D15, D16): the shell's own palette and its sheets take
+// @dashi/ui's ring and its Button (UI-8), and nothing that goes ahead is green.
 
 function fakeHost(): { transport: NativeTransport; last: () => string } {
   const trees: string[] = [];
@@ -41,7 +39,7 @@ test("a pill's ink button keeps its words AA at rest and under the pointer", () 
   }
 });
 
-test("the buttons sheets draw themselves go ahead in ink, never green, Light and Dark", async () => {
+test("a shell sheet's go-ahead is the kit's ink Button, never green, Light and Dark", async () => {
   for (const [dark, colors] of [
     [false, lightColors],
     [true, darkColors],
@@ -50,8 +48,7 @@ test("the buttons sheets draw themselves go ahead in ink, never green, Light and
     const root = render(
       <Appearance dark={dark}>
         <View>
-          <ConsentButton label="Allow" primary testID="consent" onPress={() => {}} />
-          <SheetButton label="Restart" primary testID="sheet" onPress={() => {}} />
+          <ConfirmSheet what="restart" onConfirm={() => {}} onCancel={() => {}} />
           <Button look="panel" label="Continue" primary testID="pill" onPress={() => {}} />
         </View>
       </Appearance>,
@@ -59,7 +56,7 @@ test("the buttons sheets draw themselves go ahead in ink, never green, Light and
     );
     await settle();
     const frame = host.last();
-    expect(frame.split(`"background":"${colors.primary}"`).length - 1).toBeGreaterThanOrEqual(2);
+    expect(frame.split(`"background":"${colors.primary}"`).length - 1).toBeGreaterThanOrEqual(1);
     expect(frame).toContain(`"hoverBackground":"${colors.primaryHover}"`);
     expect(frame).toContain(`"color":"${colors.onPrimary}"`);
     expect(frame).not.toContain(colors.selection);

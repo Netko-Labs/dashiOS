@@ -34,7 +34,7 @@ export interface SearchFieldProps {
   testID: string;
   /** "Search ‹what›". */
   placeholder?: string;
-  /** Pixels, or "fill": as wide as its row gives it (Settings' sidebar). */
+  /** Points, or "fill": as wide as its row (Settings' sidebar) or its column (a picker's search over its list) gives it. */
   width?: number | "fill";
   /** With it, the field shrinks toward this width when its toolbar row is short of room; without, it keeps `width`. */
   minWidth?: number;
@@ -81,7 +81,7 @@ export function SearchField({
       onLayout={(bounds) => setLaid((was) => (Math.abs(was - bounds.width) < 0.5 ? was : bounds.width))}
       style={{
         height: m.height,
-        ...(width === "fill" ? { flex: 1, minWidth: 0 } : { width }),
+        ...(width === "fill" ? { flex: 1, minWidth: 0, alignSelf: "stretch" as const } : { width }),
         ...(width === "fill" ? {} : minWidth === undefined ? { flexShrink: 0 as const } : { flexShrink: 1 as const, minWidth }),
         flexDirection: "row",
         position: "relative",

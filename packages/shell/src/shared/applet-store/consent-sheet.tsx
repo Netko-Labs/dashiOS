@@ -6,14 +6,27 @@
  * "Signed by its author"), and what it will be able to do in the plain lines
  * Software's trust card and Settings use (@dashi/applet's permissions.ts).
  * For an update, what is new comes first and what was already allowed folds
- * away. Built on @dashi/ui's sheet (radius 12, padding 20, a 40 px icon):
- * `Sheet` in Software's window, `SheetCard` on the shell's own surface. A
- * grant: Enter never says yes, only a click does (UI-6).
+ * away. The alert frame (UI-5) with the applet's icon as its tile:
+ * `AlertSheet` hung in Software's window, centred on the shell's own surface.
+ * A grant: Enter never says yes, only a click does (UI-6).
  */
 
 import { asksForPassword, COMMANDS_CONSENT, cannotDo, describePermission, type Manifest, permissionName } from "@dashi/applet";
-import { type AlertButton, AlertButtons, CHEVRON_DOWN, CHEVRON_UP, KeySink, Sheet, SheetCard, tintFor, useColors } from "@dashi/ui";
-import { Image, Svg, Text, View } from "@mirinjs/metal";
+import {
+  ALERT_TILE,
+  type AlertButton,
+  AlertSheet,
+  type AlertSheetProps,
+  MoreButton,
+  ON_TINT,
+  RADIUS,
+  SPACE,
+  TYPE,
+  tintFor,
+  useColors,
+  WEIGHT,
+} from "@dashi/ui";
+import { Image, Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 
 /** The sheet's surface on the shell, with room for its shadow and a long list. */
@@ -82,11 +95,13 @@ const MESSAGE: Record<ConsentKind, string> = {
   allow: "It was added to this computer and asks before it runs for the first time.",
 };
 
+/** Its icon on the tile's 40 square, or its first letter on its tint until there is one. */
 function Icon({ file, name }: { file: string | null | undefined; name: string }) {
-  if (file) return <Image source={file} style={{ width: 40, height: 40, borderRadius: 10 }} />;
+  const square = { width: ALERT_TILE.size, height: ALERT_TILE.size, borderRadius: RADIUS.card } as const;
+  if (file) return <Image source={file} style={square} />;
   return (
-    <View style={{ width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: tintFor(name) }}>
-      <Text style={{ fontSize: 18, fontWeight: "bold", color: "#ffffffee" }}>{([...name.trim()][0] ?? "?").toUpperCase()}</Text>
+    <View style={{ ...square, alignItems: "center", justifyContent: "center", backgroundColor: tintFor(name) }}>
+      <Text style={{ fontSize: TYPE.title.size, fontWeight: WEIGHT.bold, color: ON_TINT }}>{([...name.trim()][0] ?? "?").toUpperCase()}</Text>
     </View>
   );
 }
@@ -94,12 +109,12 @@ function Icon({ file, name }: { file: string | null | undefined; name: string })
 function Lines({ lines, testID }: { lines: readonly string[]; testID: string }) {
   const colors = useColors();
   return (
-    <View testID={testID} style={{ flexDirection: "column", gap: 4 }}>
+    <View testID={testID} style={{ flexDirection: "column", gap: SPACE.xs }}>
       {lines.map((line) => (
-        <View key={line} style={{ flexDirection: "row", gap: 8, alignItems: "flex-start" }}>
-          <Text style={{ fontSize: 13, color: colors.textMuted }}>•</Text>
+        <View key={line} style={{ flexDirection: "row", gap: SPACE.m, alignItems: "flex-start" }}>
+          <Text style={{ fontSize: TYPE.body.size, color: colors.textMuted }}>•</Text>
           <View style={{ flexShrink: 1 }}>
-            <Text style={{ fontSize: 13, color: colors.text }}>{line}</Text>
+            <Text style={{ fontSize: TYPE.body.size, lineHeight: TYPE.body.line, color: colors.text }}>{line}</Text>
           </View>
         </View>
       ))}
@@ -120,64 +135,52 @@ function consentButtons(kind: ConsentKind, onAnswer: (yes: boolean) => void): Al
   ];
 }
 
-/** The sheet's insides: the icon and the question, who vouches for it, what it can do, the buttons. */
-export function AppletConsentBody({ manifest, kind, reviewed, signed = false, granted, icon, onAnswer }: AppletConsentProps) {
+/** The sheet's words and buttons: the icon and the question, who vouches for it, what it can do. Esc says no; Enter says nothing. */
+function useAppletConsent({ manifest, kind, reviewed, signed = false, granted, icon, onAnswer }: AppletConsentProps): AlertSheetProps {
   const colors = useColors();
   const [showKept, setShowKept] = useState(false);
   const { fresh, kept } = splitAsks(manifest, kind === "update" ? granted : []);
   const cannot = cannotDo(manifest.permissions);
-  return (
-    <>
-      <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start" }}>
-        <Icon file={icon} name={manifest.name} />
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "column", gap: 4 }}>
-          <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text, lineHeight: 17 }}>{QUESTION[kind](manifest.name)}</Text>
-          <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>{MESSAGE[kind]}</Text>
-          <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>{trustLine(manifest, reviewed, signed)}</Text>
+  const caption = { fontSize: TYPE.caption.size, lineHeight: TYPE.caption.line, fontWeight: WEIGHT.semibold, color: colors.textMuted } as const;
+  return {
+    testID: "applet-consent",
+    width: WIDTH,
+    question: QUESTION[kind](manifest.name),
+    message: MESSAGE[kind],
+    glyph: "",
+    icon: <Icon file={icon} name={manifest.name} />,
+    buttons: consentButtons(kind, onAnswer),
+    children: (
+      <>
+        <Text style={{ fontSize: TYPE.secondary.size, lineHeight: TYPE.secondary.line, color: colors.textMuted }}>{trustLine(manifest, reviewed, signed)}</Text>
+        <View style={{ flexDirection: "column", gap: SPACE.s }}>
+          <Text style={caption}>
+            {fresh.length === 0 ? "It asks for nothing more than showing itself in the menu bar" : kind === "update" ? "New" : "It will be able to"}
+          </Text>
+          <Lines lines={fresh} testID="applet-consent:new" />
+          {kept.length > 0 && (
+            <MoreButton
+              testID="applet-consent:kept-toggle"
+              open={showKept}
+              more={`Already allowed (${kept.length})`}
+              less="Hide what is allowed"
+              onPress={() => setShowKept((now) => !now)}
+            />
+          )}
+          {showKept && <Lines lines={kept} testID="applet-consent:kept" />}
+          {cannot !== null && <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>{cannot}</Text>}
         </View>
-      </View>
-      <View style={{ flexDirection: "column", gap: 6, paddingLeft: 54, flexShrink: 0 }}>
-        <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>
-          {fresh.length === 0 ? "It asks for nothing more than showing itself in the menu bar" : kind === "update" ? "New" : "It will be able to"}
-        </Text>
-        <Lines lines={fresh} testID="applet-consent:new" />
-        {kept.length > 0 && (
-          <View
-            testID="applet-consent:kept-toggle"
-            focusable
-            accessibilityRole="button"
-            onPress={() => setShowKept((now) => !now)}
-            style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}
-          >
-            <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>{`Already allowed (${kept.length})`}</Text>
-            <Svg markup={showKept ? CHEVRON_UP : CHEVRON_DOWN} size={10} color={colors.textMuted} />
-          </View>
-        )}
-        {showKept && <Lines lines={kept} testID="applet-consent:kept" />}
-        {cannot !== null && <Text style={{ fontSize: 12, color: colors.textMuted }}>{cannot}</Text>}
-      </View>
-      <AlertButtons buttons={consentButtons(kind, onAnswer)} />
-    </>
-  );
+      </>
+    ),
+  };
 }
 
-/** In a window (Software): a sheet hung from its toolbar. Esc says no; Enter says nothing. */
+/** In a window (Software): a sheet hung from its toolbar. */
 export function AppletConsentSheet(props: AppletConsentProps) {
-  return (
-    <Sheet testID="applet-consent" width={WIDTH} onCancel={() => props.onAnswer(false)}>
-      <AppletConsentBody {...props} />
-    </Sheet>
-  );
+  return <AlertSheet {...useAppletConsent(props)} />;
 }
 
-/** On the shell's own surface (an applet added another way): the same card, centered, Esc says no. */
+/** On the shell's own surface (an applet added another way): the same sheet, centred. */
 export function AppletConsentCard(props: AppletConsentProps) {
-  return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <KeySink testID="applet-consent:keys" onKey={(key) => key.kind === "escape" && props.onAnswer(false)} />
-      <SheetCard testID="applet-consent" width={WIDTH}>
-        <AppletConsentBody {...props} />
-      </SheetCard>
-    </View>
-  );
+  return <AlertSheet {...useAppletConsent(props)} place="screen" />;
 }

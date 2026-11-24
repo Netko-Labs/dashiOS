@@ -1,24 +1,26 @@
 /**
  * Control Center's Bluetooth page, grown out of the Bluetooth tile
  * (control-center/page-parts.tsx): the tile is its header (back, the device
- * connected, the power switch), then "My Devices" (a connected one is green,
- * as a tile that is on; "Not Connected" otherwise; the battery when the
- * device says), then "Nearby Devices" with a quiet "Searching…" while the
+ * connected, the power switch), then "My devices" (a connected one is green,
+ * as a tile that is on; "Not connected" otherwise; the battery when the
+ * device says), then "Nearby devices" with a quiet "Searching…" while the
  * page looks for them. A press connects, disconnects, or pairs. The "⋯" on a
- * device of yours opens "Forget This Device", which asks once more before it
+ * device of yours opens "Forget this device", which asks once more before it
  * unpairs.
  */
 
-import { MORE, useControlColors } from "@dashi/ui";
+import { Button, MORE, SPACE, ToolbarButton, TYPE, useControlColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { PageBody, PageHeader, PageNote, PageRow, PageSection } from "../control-center/page-parts.tsx";
 import { batteryGlyph } from "../glyphs.ts";
-import { Button } from "../menus/sheets.tsx";
 import { failureLine } from "./failures.ts";
 import { deviceGlyph } from "./glyphs.ts";
 import { type BluetoothStore, useBluetooth } from "./store.ts";
 import type { BluetoothDevice, BluetoothState, Busy } from "./types.ts";
+
+/** The question under a row starts under its name, clear of its glyph. */
+const FORGET_INSET = 40;
 
 /** The list shows this many points of rows, then scrolls. */
 const LIST_HEIGHT = 380;
@@ -50,7 +52,7 @@ function Row({
 }) {
   const colors = useControlColors();
   const mine = device.paired || device.connected;
-  const detail = busy ? BUSY_TEXT[busy] : mine ? (device.connected ? "Connected" : "Not Connected") : null;
+  const detail = busy ? BUSY_TEXT[busy] : mine ? (device.connected ? "Connected" : "Not connected") : null;
   const ink = device.connected ? colors.onInk : colors.offInk;
   return (
     <PageRow
@@ -63,40 +65,19 @@ function Row({
       trailing={
         <>
           {device.battery !== null && !busy && (
-            <View testID={`bt-battery:${device.name}`} style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+            <View testID={`bt-battery:${device.name}`} style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xxs }}>
               <Svg markup={batteryGlyph(device.battery, false)} width={18} height={9} color={ink} />
-              <Text style={{ fontSize: 11, color: ink }}>{`${device.battery}%`}</Text>
+              <Text style={{ fontSize: TYPE.caption.size, color: ink }}>{`${device.battery}%`}</Text>
             </View>
           )}
-          {onMore && (
-            <View
-              testID={`bt-more:${device.name}`}
-              onPress={onMore}
-              focusable
-              accessibilityRole="button"
-              accessibilityLabel="More"
-              accessibilityState={{ expanded: moreOpen }}
-              style={{
-                width: 26,
-                height: 26,
-                borderRadius: 13,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: moreOpen ? colors.knobOff : "#00000000",
-                hoverBackgroundColor: colors.knobOff,
-                focusRingColor: colors.focus,
-              }}
-            >
-              <Svg markup={MORE} size={16} color={ink} />
-            </View>
-          )}
+          {onMore && <ToolbarButton testID={`bt-more:${device.name}`} glyph={MORE} tooltip="More" active={moreOpen} onPress={onMore} />}
         </>
       }
     />
   );
 }
 
-/** What opens under a device of yours: Forget This Device, then an are-you-sure. */
+/** What opens under a device of yours: Forget this device, then the question in place (Forget in ume: it can't be undone). */
 function ForgetStrip({
   device,
   confirming,
@@ -111,15 +92,17 @@ function ForgetStrip({
   onForget: () => void;
 }) {
   const colors = useControlColors();
-  if (!confirming) return <PageRow testID={`bt-forget:${device.name}`} label="Forget This Device" onPress={onAsk} />;
+  if (!confirming) return <PageRow testID={`bt-forget:${device.name}`} label="Forget this device" onPress={onAsk} />;
   return (
-    <View style={{ flexDirection: "column", gap: 6, paddingLeft: 40, paddingRight: 6, paddingTop: 2, paddingBottom: 6 }}>
+    <View style={{ flexDirection: "column", gap: SPACE.s, paddingLeft: FORGET_INSET, paddingRight: SPACE.s, paddingTop: SPACE.xxs, paddingBottom: SPACE.s }}>
       <View testID="bt-forget-question">
-        <Text style={{ fontSize: 12, color: colors.text }}>{`Forget “${device.name}”? You will need to pair it again.`}</Text>
+        <Text style={{ fontSize: TYPE.panel.detail.size, lineHeight: TYPE.panel.detail.line, color: colors.text }}>
+          {`Forget “${device.name}”? You will need to pair it again.`}
+        </Text>
       </View>
-      <View style={{ flexDirection: "row", gap: 8 }}>
-        <Button testID="bt-forget-cancel" label="Cancel" onPress={onCancel} />
-        <Button testID="bt-forget-confirm" label="Forget" primary onPress={onForget} />
+      <View style={{ flexDirection: "row", gap: SPACE.m }}>
+        <Button testID="bt-forget-cancel" label="Cancel" look="panel" size="small" onPress={onCancel} />
+        <Button testID="bt-forget-confirm" label="Forget" look="panel" size="small" danger onPress={onForget} />
       </View>
     </View>
   );
@@ -133,10 +116,10 @@ function List({ state, store }: { state: BluetoothState; store: BluetoothStore }
   const choose = (device: BluetoothDevice) => void store.choose(device);
   const searching = state.discovering || state.available === null;
   return (
-    <View style={{ flexDirection: "column", gap: 6, maxHeight: LIST_HEIGHT, overflow: "scroll" }}>
-      {state.mine.length > 0 && <PageSection>My Devices</PageSection>}
+    <View style={{ flexDirection: "column", gap: SPACE.s, maxHeight: LIST_HEIGHT, overflow: "scroll" }}>
+      {state.mine.length > 0 && <PageSection>My devices</PageSection>}
       {state.mine.map((device) => (
-        <View key={device.path} style={{ flexDirection: "column", gap: 6 }}>
+        <View key={device.path} style={{ flexDirection: "column", gap: SPACE.s }}>
           <Row
             device={device}
             busy={state.busy[device.path]}
@@ -163,16 +146,14 @@ function List({ state, store }: { state: BluetoothState; store: BluetoothStore }
         trailing={
           searching ? (
             <View testID="bt-searching">
-              <Text style={{ fontSize: 11, color: colors.muted }}>Searching…</Text>
+              <Text style={{ fontSize: TYPE.caption.size, color: colors.muted }}>Searching…</Text>
             </View>
           ) : (
-            <View testID="bt-search-again" onPress={() => store.searchAgain()}>
-              <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.text }}>Search Again</Text>
-            </View>
+            <Button testID="bt-search-again" label="Search again" look="panel" size="small" onPress={() => store.searchAgain()} />
           )
         }
       >
-        Nearby Devices
+        Nearby devices
       </PageSection>
       {state.nearby.map((device) => (
         <Row key={device.path} device={device} busy={state.busy[device.path]} idle={idle(device)} onChoose={choose} />

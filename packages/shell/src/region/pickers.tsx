@@ -5,12 +5,13 @@
  * caller decides what a pick does.
  */
 
+import { PickRow, SearchField, SPACE, TYPE, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { useColors } from "../settings-app/colors.ts";
 import { Choices } from "../settings-app/ui.tsx";
 import { formatsForRegion, isRegionOf, type LocaleEntry, regionRows, searchLocales } from "../shared/locale/index.ts";
-import { PickList, PickNote, PickRow, SearchField } from "./lib/pick.tsx";
+import { PickList, PickNote } from "./lib/pick.tsx";
 import { describeZone, searchZones, type Zone, zoneAreas } from "./timezones.ts";
 
 /** A typed search shows at most this many zones; "Type more" says there are others. */
@@ -39,8 +40,8 @@ export function TimezonePicker({
   const rows = found.filter((zone) => searching || zone.id !== current);
   const shown = rows.slice(0, MAX_ROWS);
   return (
-    <View testID="timezone-picker" style={{ alignSelf: "stretch", flexDirection: "column", gap: 8 }}>
-      <SearchField testID="timezone-search" value={query} onChange={setQuery} placeholder="Search for a city or country" />
+    <View testID="timezone-picker" style={{ alignSelf: "stretch", flexDirection: "column", gap: SPACE.m }}>
+      <SearchField testID="timezone-search" width="fill" value={query} onChangeText={setQuery} placeholder="Search for a city or country" />
       {!searching && areas.length > 0 && (
         <Choices testID="timezone-area" value={area ?? ""} options={areas.map((each) => ({ value: each, label: each }))} onChange={setArea} />
       )}
@@ -100,12 +101,12 @@ export function LocalePickers({
   const allRegions = regionRows(found);
   const currentRegion = !searching && formats !== undefined ? allRegions.find((entry) => isRegionOf(locales, entry.region as string, formats)) : undefined;
   const regions = currentRegion ? allRegions.filter((entry) => entry !== currentRegion) : allRegions;
-  const heading = (text: string) => <Text style={{ fontSize: 11, fontWeight: "semibold", color: colors.textMuted }}>{text}</Text>;
+  const heading = (text: string) => <Text style={{ fontSize: TYPE.caption.size, fontWeight: WEIGHT.semibold, color: colors.textMuted }}>{text}</Text>;
   return (
-    <View testID="locale-pickers" style={{ alignSelf: "stretch", flexDirection: "column", gap: 8 }}>
-      <SearchField testID="locale-search" value={query} onChange={setQuery} placeholder="Search languages and regions" />
-      <View style={{ flexDirection: "row", gap: 10 }}>
-        <View style={{ flex: 1, flexDirection: "column", gap: 4, minWidth: 0 }}>
+    <View testID="locale-pickers" style={{ alignSelf: "stretch", flexDirection: "column", gap: SPACE.m }}>
+      <SearchField testID="locale-search" width="fill" value={query} onChangeText={setQuery} placeholder="Search languages and regions" />
+      <View style={{ flexDirection: "row", gap: SPACE.gap }}>
+        <View style={{ flex: 1, flexDirection: "column", gap: SPACE.xs, minWidth: 0 }}>
           {heading("Language")}
           <PickList testID="locale-languages" height={height}>
             {locales.length === 0 && <PickNote testID="locale-none">No languages are installed on this system.</PickNote>}
@@ -118,7 +119,7 @@ export function LocalePickers({
             ))}
           </PickList>
         </View>
-        <View style={{ flex: 1, flexDirection: "column", gap: 4, minWidth: 0 }}>
+        <View style={{ flex: 1, flexDirection: "column", gap: SPACE.xs, minWidth: 0 }}>
           {heading("Region formats")}
           <PickList testID="locale-regions" height={height}>
             {!searching && <PickRow testID="region:follow" label="Same as language" chosen={formats === undefined} onPress={() => onFormats(undefined)} />}

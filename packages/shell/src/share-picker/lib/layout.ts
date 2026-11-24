@@ -6,14 +6,15 @@
  * `screen`, `window-thumbnails`); the panel draws their frames and names.
  */
 
+import { SPACE } from "@dashi/ui";
 import type { Rect } from "../../layout.ts";
 
 export const PICKER = {
   width: 720,
-  pad: 20,
+  pad: SPACE.sheet,
   title: 28,
   heading: 22,
-  gap: 14,
+  gap: SPACE.button,
   screen: { height: 112 },
   window: { width: 154, height: 96 },
   caption: 20,

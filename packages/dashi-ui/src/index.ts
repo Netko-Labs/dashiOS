@@ -6,6 +6,7 @@ export {
   AlertButtons,
   type AlertProps,
   AlertSheet,
+  type AlertSheetProps,
   type AlertTone,
   AlertWindow,
   type AlertWindowProps,
@@ -122,7 +123,7 @@ export { defaultScale, isBuiltIn, SCALES, type ScreenSize } from "./scale.ts";
 export { placeholderAt, SEARCH_FIELD, SearchField, type SearchFieldProps } from "./search-field.tsx";
 export { type MorePill, type PillsLaid, PillsWrapped, pillsWrapped, SEGMENTED, SEGMENTED_WINDOW, Segmented, type SegmentedProps } from "./segmented.tsx";
 export { type RowLook, rowLook, SELECTION_BAR, SelectionBar, selectionBarHeight, TextSelectionLook } from "./selection.tsx";
-export { SHEET_MARGIN, Sheet, SheetCard, type SheetProps, sheetBodyRoom, sheetWidth } from "./sheet.tsx";
+export { SHEET_MARGIN, Sheet, SheetCard, type SheetPlace, type SheetProps, sheetBodyRoom, sheetWidth } from "./sheet.tsx";
 export { KEY_GLYPHS, Shortcut, shortcutParts } from "./shortcut.tsx";
 export { railTip, SIDEBAR, SIDEBAR_ROW_HEIGHT, SidebarItem, type SidebarItemProps } from "./sidebar.tsx";
 export { Slider, type SliderProps } from "./slider.tsx";

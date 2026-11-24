@@ -79,9 +79,14 @@ export class ForceQuitController {
     this.set({ ...this.state, asking: this.state.selected });
   }
 
-  /** Enter. It only asks, never confirms, so a stray key cannot end an app. */
+  /**
+   * Enter. From the list it asks; at the question it presses Cancel, the
+   * default (UI-6: Force Quit loses work, so it is ume and never Enter's), so
+   * a stray key cannot end an app.
+   */
   submit(): void {
-    this.ask();
+    if (this.state.asking !== null) this.cancel();
+    else this.ask();
   }
 
   /** The question's Cancel: back to the list. */
