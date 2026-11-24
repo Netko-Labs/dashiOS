@@ -12,7 +12,7 @@ import { iconFor } from "../icons.ts";
 import type { Rect } from "../marquee/geometry.ts";
 import { marqueeOf } from "../marquee/of.ts";
 import { columnMode, fileColumns, fitColumns } from "../sort.ts";
-import { RenameField } from "./rename-field.tsx";
+import { RenameInPlace } from "./rename-field.tsx";
 
 const ROW = 26;
 /** The table's rows start this far in from its sides, and it keeps this much under the last (`@dashi/ui`'s `Table`). */
@@ -57,7 +57,7 @@ function NameCell({ item, selected, faded, renaming, emblems, drag, onGrip }: Na
     return (
       <View style={{ ...look, flex: 1 }}>
         <FileIcon item={item} size={ICON} emblems={emblems} />
-        <RenameField item={item} />
+        <RenameInPlace item={item} />
       </View>
     );
   }

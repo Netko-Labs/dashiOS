@@ -47,10 +47,13 @@ const PAGE_GLYPHS: Readonly<Record<Exclude<Category, "folder" | "other">, string
 const gradient = (id: string, [top, bottom]: [string, string]): string =>
   `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${top}"/><stop offset="1" stop-color="${bottom}"/></linearGradient>`;
 
+/** A glyph's SVG template is drawn in black and tinted where it is used: its ink, found to be replaced. */
+const TEMPLATE_INK = /#000\b/g;
+
 /** A sidebar glyph's drawing, recolored and placed: its strokes and fills in `color`. */
 function emblemMarkup(name: Emblem, color: string): string {
   const inner = /<svg[^>]*>([\s\S]*)<\/svg>/.exec(sidebarGlyph(name))?.[1] ?? "";
-  return `<g transform="translate(22 26) scale(1.25)">${inner.replaceAll("#000", color)}</g>`;
+  return `<g transform="translate(22 26) scale(1.25)">${inner.replace(TEMPLATE_INK, color)}</g>`;
 }
 
 /** The SVG document for an icon in one appearance (64 units square). */

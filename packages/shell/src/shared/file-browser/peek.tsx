@@ -6,7 +6,7 @@
  */
 
 import { closeSync, openSync, readSync } from "node:fs";
-import { Button, useColors, useSurface } from "@dashi/ui";
+import { Button, RADIUS, SCRIM, SHADOW, SPACE, TYPE, useColors, useDark, useSurface, WEIGHT } from "@dashi/ui";
 import { Image, ScrollView, Text, View } from "@mirinjs/metal";
 import { useMemo } from "react";
 import { categoryOf, type FileItem, kindText, looksLikeText } from "../files/index.ts";
@@ -17,6 +17,8 @@ import { previewFor } from "./lib/icons.ts";
 import type { Step } from "./lib/selection.ts";
 
 const TEXT_BYTES = 16 * 1024;
+/** The peek's room: a picture or text this big, an icon this big, the card's content as wide. */
+const PEEK = { width: 520, height: 340, iconHeight: 200, icon: 96, preview: 512 } as const;
 
 /** The start of a text file, or null when it isn't text (or can't be read). */
 export function textStart(path: string, bytes = TEXT_BYTES): string | null {
@@ -38,23 +40,28 @@ export function textStart(path: string, bytes = TEXT_BYTES): string | null {
 function Body({ item }: { item: FileItem }) {
   const colors = useColors();
   const { store } = useFiles();
-  const picture = useMemo(() => (item.kind === "file" ? previewFor(item, 512, store.env.cache) : null), [item, store.env.cache]);
+  const picture = useMemo(() => (item.kind === "file" ? previewFor(item, PEEK.preview, store.env.cache) : null), [item, store.env.cache]);
   const category = categoryOf(item.mime);
   const text = useMemo(
     () => (item.kind === "file" && !picture && (category === "text" || category === "code") ? textStart(item.path) : null),
     [item, picture, category],
   );
-  if (picture) return <Image source={picture} resizeMode="contain" style={{ width: 520, height: 340 }} />;
+  if (picture) return <Image source={picture} resizeMode="contain" style={{ width: PEEK.width, height: PEEK.height }} />;
   if (text !== null)
     return (
-      <ScrollView testID="peek:text" style={{ width: 520, height: 340, padding: 10, borderRadius: 6, backgroundColor: colors.button }}>
-        <Text style={{ fontSize: 12, fontFamily: "monospace", color: colors.text }}>{text}</Text>
+      <ScrollView
+        testID="peek:text"
+        style={{ width: PEEK.width, height: PEEK.height, padding: SPACE.gap, borderRadius: RADIUS.row, backgroundColor: colors.button }}
+      >
+        <Text style={{ fontSize: TYPE.secondary.size, fontFamily: "monospace", color: colors.text }}>{text}</Text>
       </ScrollView>
     );
   return (
-    <View testID="peek:icon" style={{ width: 520, height: 200, alignItems: "center", justifyContent: "center", gap: 10 }}>
-      <FileIcon item={item} size={96} emblems={store.emblems} />
-      <Text style={{ fontSize: 12, color: colors.textMuted }}>{item.kind === "folder" ? kindText(item) : `${kindText(item)} · ${formatSize(item.size)}`}</Text>
+    <View testID="peek:icon" style={{ width: PEEK.width, height: PEEK.iconHeight, alignItems: "center", justifyContent: "center", gap: SPACE.gap }}>
+      <FileIcon item={item} size={PEEK.icon} emblems={store.emblems} />
+      <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>
+        {item.kind === "folder" ? kindText(item) : `${kindText(item)} · ${formatSize(item.size)}`}
+      </Text>
     </View>
   );
 }
@@ -62,6 +69,7 @@ function Body({ item }: { item: FileItem }) {
 export function Peek({ onClose }: { onClose: () => void }) {
   const colors = useColors();
   const surface = useSurface();
+  const dark = useDark();
   const { store } = useFiles();
   useFilesState();
   const item = store.selectedItems().at(-1);
@@ -71,7 +79,16 @@ export function Peek({ onClose }: { onClose: () => void }) {
       occlude
       testID="peek:scrim"
       onPress={onClose}
-      style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center", backgroundColor: "#00000033" }}
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: dark ? SCRIM.dark : SCRIM.light,
+      }}
     >
       <View
         testID="peek"
@@ -96,18 +113,18 @@ export function Peek({ onClose }: { onClose: () => void }) {
         style={{
           flexDirection: "column",
           alignItems: "center",
-          gap: 10,
-          padding: 16,
-          borderRadius: 12,
+          gap: SPACE.gap,
+          padding: SPACE.page,
+          borderRadius: RADIUS.sheet,
           backgroundColor: surface.card,
-          borderWidth: 1,
+          borderWidth: SPACE.px,
           borderColor: colors.separator,
-          shadow: "xl",
+          shadow: SHADOW.xl,
         }}
       >
-        <View style={{ width: 520, flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={{ width: PEEK.width, flexDirection: "row", alignItems: "center", gap: SPACE.m }}>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
+            <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.bold, color: colors.text }}>
               {item.name}
             </Text>
           </View>

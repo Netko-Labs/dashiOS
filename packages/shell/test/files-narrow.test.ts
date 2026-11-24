@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { chromeFor, RAIL_WIDTH } from "../apps/files/lib/chrome.ts";
+import { chromeFor } from "../apps/files/lib/chrome.ts";
 import { fitCrumbs } from "../apps/files/lib/omnibox/crumbs.tsx";
 import { conflictMessage } from "../apps/files/lib/views/conflict-sheet.tsx";
 import { fileColumns, fitColumns, NAME_FLOOR } from "../src/shared/file-browser/lib/sort.ts";
@@ -31,7 +31,6 @@ test("the sidebar is a rail below 560 and New Folder leaves the toolbar below 48
   expect(chromeFor(539)).toEqual({ rail: true, compact: false });
   expect(chromeFor(519)).toEqual({ rail: true, compact: false });
   expect(chromeFor(400)).toEqual({ rail: true, compact: true });
-  expect(RAIL_WIDTH).toBe(56);
 });
 
 const crumbs = (names: string[], room: number): string[] =>

@@ -7,32 +7,21 @@
  * tooltip (chrome.ts).
  */
 
-import { rowLook, SelectionBar, SIDEBAR_ROW_HEIGHT, SidebarSection, useColors, useTooltip } from "@dashi/ui";
-import { ScrollView, Svg, Text, View } from "@mirinjs/metal";
+import { RADIUS, SidebarItem, SidebarSection, SPACE, ToolbarButton, useColors } from "@dashi/ui";
+import { ScrollView, View } from "@mirinjs/metal";
 import { isInside } from "../files/index.ts";
 import { useFiles, useFilesState } from "./context.ts";
-import { useDropTarget } from "./drop.ts";
+import { dropLook, useDropTarget } from "./drop.ts";
 import { EJECT, sidebarGlyph } from "./glyphs.ts";
 import { mount } from "./lib/drives.ts";
 import type { Volume } from "./lib/mounts.ts";
 import { favorites, folderAt, type GlyphName, type Location, sameLocation } from "./location.ts";
 
-/** The small button at a row's end (Eject, Empty). */
-function RowAction({ testID, glyph, label, color, onPress }: { testID: string; glyph: string; label: string; color: string; onPress: () => void }) {
-  const colors = useColors();
-  return (
-    <View
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={{ width: 22, height: 22, borderRadius: 5, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
-    >
-      <Svg markup={glyph} size={13} color={color} />
-    </View>
-  );
-}
-
+/**
+ * A place: the kit's sidebar row (and its rail), in a drop target that lights
+ * the one drop look while files over it would go in (CO-9). Its action (Eject)
+ * is a toolbar button at the row's end, in the full sidebar only.
+ */
 function Row({
   id,
   name,
@@ -56,48 +45,21 @@ function Row({
 }) {
   const colors = useColors();
   const drop = useDropTarget(dropInto);
-  const look = rowLook(colors, current);
-  const tip = useTooltip(rail ? name : undefined);
   return (
-    <View
-      testID={`place:${id}`}
-      accessibilityRole="button"
-      accessibilityLabel={name}
-      onPress={() => {
-        tip.hide();
-        onPress();
-      }}
-      onHoverChange={tip.onHoverChange}
-      {...drop.props}
-      style={{
-        height: SIDEBAR_ROW_HEIGHT,
-        flexShrink: 0,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: rail ? "center" : "flex-start",
-        gap: 9,
-        paddingLeft: rail ? 0 : 8,
-        paddingRight: rail ? 0 : 4,
-        borderRadius: 7,
-        backgroundColor: look.ground,
-        hoverBackgroundColor: look.hover,
-        ...(drop.over ? { borderWidth: 2, borderColor: colors.selection } : {}),
-      }}
-    >
-      {current && <SelectionBar rowHeight={SIDEBAR_ROW_HEIGHT} />}
-      {/* Kombu marks the selected row only; a glyph is muted at rest and ink on the wash (CO-2). */}
-      <Svg markup={sidebarGlyph(glyph)} size={16} color={look.glyph} />
-      {!rail && (
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: current ? "semibold" : "normal", color: look.ink }}>
-            {name}
-          </Text>
-        </View>
-      )}
-      {action && !rail && (
-        <RowAction testID={`place:${id}:${action.id}`} glyph={action.glyph} label={action.label} color={look.glyph} onPress={action.onPress} />
-      )}
-      {tip.node}
+    <View testID={`place:${id}:drop`} {...drop.props} style={{ flexShrink: 0, borderRadius: RADIUS.control, ...dropLook(colors, drop.over, RADIUS.control) }}>
+      <SidebarItem
+        testID={`place:${id}`}
+        label={name}
+        glyph={sidebarGlyph(glyph)}
+        selected={current}
+        onPress={onPress}
+        rail={rail}
+        {...(action
+          ? {
+              accessory: <ToolbarButton testID={`place:${id}:${action.id}`} glyph={action.glyph} tooltip={action.label} onPress={action.onPress} />,
+            }
+          : {})}
+      />
     </View>
   );
 }
@@ -116,7 +78,7 @@ export function Sidebar({ recents = true, rail = false }: { recents?: boolean; r
     location.kind === "folder" &&
     (volume.mountPoint === "/" ? location.path === "/" : isInside(volume.mountPoint, location.path));
   return (
-    <ScrollView testID="places" style={{ flex: 1, minHeight: 0, flexDirection: "column", gap: 2 }}>
+    <ScrollView testID="places" style={{ flex: 1, minHeight: 0, flexDirection: "column", gap: SPACE.xxs }}>
       <SidebarSection {...(rail ? {} : { title: "Favorites" })}>
         {favorites(store.env.dirs, store.env.home)
           .filter((place) => recents || place.location.kind !== "recents")

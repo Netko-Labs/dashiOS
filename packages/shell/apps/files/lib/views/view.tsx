@@ -18,7 +18,7 @@ import type { Operations } from "../../../../src/shared/file-browser/operations.
 import { Sidebar } from "../../../../src/shared/file-browser/sidebar.tsx";
 import type { FilesStore } from "../../../../src/shared/file-browser/store.ts";
 import { Controls, Leading } from "../../../../src/shared/file-browser/toolbar.tsx";
-import { chromeFor, RAIL_WIDTH } from "../chrome.ts";
+import { chromeFor } from "../chrome.ts";
 import { Omnibox } from "../omnibox/omnibox.tsx";
 import type { Suggestions } from "../omnibox/omnibox-props.ts";
 import { useOverlays } from "../use-overlays.ts";
@@ -47,7 +47,7 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
   const actions = useWindowActions({ store, ops, state, overlays, setEditing, info });
   const overlay = filesOverlay({ store, ops, actions, state, overlays, suggestions });
 
-  const title = state.found !== null ? "Search Results" : locationTitle(state.location, store.env.home);
+  const title = state.found !== null ? "Search results" : locationTitle(state.location, store.env.home);
 
   return (
     <Files.Provider value={{ store, ops, actions }}>
@@ -82,7 +82,7 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
               />
             }
             sidebar={<Sidebar rail={chrome.rail} />}
-            {...(chrome.rail ? { sidebarWidth: RAIL_WIDTH } : {})}
+            rail={chrome.rail}
             notice={<Footer />}
             overlay={overlay}
           >

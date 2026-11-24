@@ -6,12 +6,12 @@
  * measures, and what of a cell is the item, are grid-places.ts.
  */
 
-import { useColors, useDark } from "@dashi/ui";
+import { CLEAR, OPACITY, pill, RADIUS, SPACE, TYPE, useColors, useDark } from "@dashi/ui";
 import { Image, ScrollView, Svg, Text, View } from "@mirinjs/metal";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import type { FileItem } from "../../../files/index.ts";
 import { useFiles, useFilesState } from "../../context.ts";
-import { useDropTarget } from "../../drop.ts";
+import { dropLook, useDropTarget } from "../../drop.ts";
 import { FileIcon } from "../../file-icon.tsx";
 import { LINK_BADGE } from "../../glyphs.ts";
 import { fitMiddle, tileName } from "../../tile-name.ts";
@@ -39,16 +39,18 @@ import {
   TILE_WIDTH,
   tileRects,
 } from "./grid-places.ts";
-import { RenameField } from "./rename-field.tsx";
+import { RenameInPlace } from "./rename-field.tsx";
 
-/** The room the "where" line has, in ems of its 10 px type: 90 px. */
-const WHERE_ROOM = (TILE_WIDTH - 14) / 10;
+/** The room the "where" line has, in ems of its caption type (TYPE.caption, 11): 90 px. */
+const WHERE_ROOM = (TILE_WIDTH - SPACE.button) / TYPE.caption.size;
+/** A link's mark on its picture: an arrow in a small round. */
+const LINK_MARK = { size: 18, glyph: 11 } as const;
 
 /** A search result's folder, its middle taken out once to fit under the tile (never cut again at its end). */
 export const whereLine = (where: string): string => fitMiddle(where, WHERE_ROOM);
 
-/** The arrow on a link's picture. */
-function LinkBadge() {
+/** The arrow on a link's picture: a mark, not a control (IC-3). */
+function LinkMark() {
   const colors = useColors();
   return (
     <View
@@ -56,17 +58,17 @@ function LinkBadge() {
         position: "absolute",
         left: 0,
         bottom: 0,
-        width: 18,
-        height: 18,
-        borderRadius: 9,
+        width: LINK_MARK.size,
+        height: LINK_MARK.size,
+        borderRadius: pill(LINK_MARK.size),
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: colors.menu,
-        borderWidth: 1,
+        borderWidth: SPACE.px,
         borderColor: colors.separator,
       }}
     >
-      <Svg markup={LINK_BADGE} size={11} color={colors.text} />
+      <Svg markup={LINK_BADGE} size={LINK_MARK.glyph} color={colors.text} />
     </View>
   );
 }
@@ -97,7 +99,7 @@ function Tile({
   // biome-ignore lint/correctness/useExhaustiveDependencies: `made` says when to look in the cache again
   const picture = useMemo(() => previewFor(item, 128, store.env.cache), [item, store.env.cache, made]);
   const drop = useDropTarget(item.kind === "folder" ? item.path : null);
-  const lit = selected || drop.over;
+  const lit = selected;
   // The icon and the name are the item (D111): a press on either is the item's (it drags it, and the listing around
   // hears none of it, so no marquee starts there); a press on the rest of the cell is one on empty space.
   const grip: Grip = {
@@ -112,7 +114,7 @@ function Tile({
       actions.menu(point, "item");
     },
   };
-  const hover = lit ? "#00000000" : colors.button;
+  const hover = lit ? CLEAR : colors.button;
   return (
     <View
       testID={`cell:${item.path}`}
@@ -125,22 +127,24 @@ function Tile({
         alignItems: "center",
         paddingTop: PICTURE_TOP,
         gap: NAME_GAP,
-        borderRadius: 8,
-        opacity: dimmed ? 0.45 : item.hidden ? 0.65 : 1,
-        backgroundColor: lit ? colors.selectionWash : "#00000000",
+        borderRadius: RADIUS.control,
+        // Cut, waiting for Paste: half there; a hidden file a little less there.
+        opacity: dimmed ? OPACITY.half : item.hidden ? OPACITY.faint : 1,
+        backgroundColor: lit ? colors.selectionWash : CLEAR,
+        ...dropLook(colors, drop.over, RADIUS.control),
       }}
     >
       <View
         testID={`item:${item.path}`}
         {...grip}
-        style={{ width: PICTURE, height: PICTURE, alignItems: "center", justifyContent: "center", borderRadius: 6, hoverBackgroundColor: hover }}
+        style={{ width: PICTURE, height: PICTURE, alignItems: "center", justifyContent: "center", borderRadius: RADIUS.row, hoverBackgroundColor: hover }}
       >
         {picture ? (
-          <Image source={picture} resizeMode="contain" style={{ width: PICTURE, height: PICTURE, borderRadius: 3 }} />
+          <Image source={picture} resizeMode="contain" style={{ width: PICTURE, height: PICTURE, borderRadius: RADIUS.thumb }} />
         ) : (
           <FileIcon item={item} size={PICTURE} emblems={store.emblems} />
         )}
-        {item.isLink && <LinkBadge />}
+        {item.isLink && <LinkMark />}
       </View>
       <TileName item={item} selected={selected} renaming={renaming} grip={grip} hover={hover} />
     </View>
@@ -153,7 +157,7 @@ function TileName({ item, selected, renaming, grip, hover }: { item: FileItem; s
   return (
     <View style={{ width: NAME_BOX, alignItems: "center" }}>
       {renaming ? (
-        <RenameField item={item} width={NAME_BOX} />
+        <RenameInPlace item={item} width={NAME_BOX} />
       ) : (
         <View
           testID={`name:${item.path}`}
@@ -162,18 +166,18 @@ function TileName({ item, selected, renaming, grip, hover }: { item: FileItem; s
             maxWidth: NAME_BOX,
             paddingHorizontal: NAME_PAD_X,
             paddingVertical: NAME_PAD_Y,
-            borderRadius: 4,
+            borderRadius: RADIUS.check,
             hoverBackgroundColor: hover,
             ...(item.where !== undefined ? { height: NAME_HEIGHT } : {}),
           }}
         >
-          <Text style={{ fontSize: 12, lineHeight: NAME_LINE, color: selected ? colors.onSelection : colors.text, textAlign: "center" }}>
+          <Text style={{ fontSize: TYPE.secondary.size, lineHeight: NAME_LINE, color: selected ? colors.onSelection : colors.text, textAlign: "center" }}>
             {tileName(item.name, NAME_ROOM)}
           </Text>
         </View>
       )}
       {item.where !== undefined && (
-        <Text numberOfLines={1} style={{ fontSize: 10, color: selected ? colors.onSelection : colors.textMuted, textAlign: "center" }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: selected ? colors.onSelection : colors.textMuted, textAlign: "center" }}>
           {whereLine(item.where)}
         </Text>
       )}

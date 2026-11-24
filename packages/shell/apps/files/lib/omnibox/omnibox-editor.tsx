@@ -5,13 +5,12 @@
  * this folder or everywhere (a two-way switch). Escape gives the crumbs back.
  */
 
-import { SEARCH, Segmented, useColors } from "@dashi/ui";
-import { type Bounds, Svg, Text, TextInput, View } from "@mirinjs/metal";
+import { SEARCH, SearchField, Segmented, TYPE, useColors } from "@dashi/ui";
+import { type Bounds, Text } from "@mirinjs/metal";
 import { useEffect, useMemo, useState } from "react";
 import { useFiles, useFilesState } from "../../../../src/shared/file-browser/context.ts";
-import { CLOSE, sidebarGlyph } from "../../../../src/shared/file-browser/glyphs.ts";
+import { sidebarGlyph } from "../../../../src/shared/file-browser/glyphs.ts";
 import { completions, intentOf } from "../../../../src/shared/file-browser/omnibox.ts";
-import { Field } from "./omnibox-field.tsx";
 import type { OmniboxProps } from "./omnibox-props.ts";
 
 /** Tells the window what to list under the omnibox: the folders offered, the one lit, and what a pick does. */
@@ -43,7 +42,7 @@ function SearchScope() {
     state.location.kind === "folder" ? (state.location.path === store.env.home ? "Home" : (state.location.path.split("/").at(-1) ?? "")) : "This list";
   return (
     <>
-      {state.searching && <Text style={{ fontSize: 11, color: colors.textMuted }}>Searching…</Text>}
+      {state.searching && <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>Searching…</Text>}
       <Segmented
         testID="omnibox:scope"
         options={[
@@ -57,23 +56,7 @@ function SearchScope() {
   );
 }
 
-function ClearButton({ onPress }: { onPress: () => void }) {
-  const colors = useColors();
-  return (
-    <View
-      testID="omnibox:clear"
-      accessibilityRole="button"
-      accessibilityLabel="Clear"
-      onPress={onPress}
-      style={{ width: 18, height: 18, borderRadius: 9, alignItems: "center", justifyContent: "center", hoverBackgroundColor: colors.button }}
-    >
-      <Svg markup={CLOSE} size={10} color={colors.textMuted} />
-    </View>
-  );
-}
-
 export function Editor({ editing, onDone, onSuggest }: OmniboxProps) {
-  const colors = useColors();
   const { store, actions } = useFiles();
   const state = useFilesState();
   const [text, setText] = useState(editing ?? state.query);
@@ -90,60 +73,54 @@ export function Editor({ editing, onDone, onSuggest }: OmniboxProps) {
     }
     onDone();
   };
+  const leave = (): void => {
+    if (state.query !== "") store.setQuery("");
+    onDone();
+    actions.refocus();
+  };
 
   useSuggestions(onSuggest, bounds, offered, highlighted, (index) => go(offered[index] ?? text));
 
+  // The kit's search field, a find (Esc leaves at once): a folder glyph while a path is typed, where a search looks at its end.
   return (
-    <Field testID="omnibox" onLayout={setBounds}>
-      <View style={{ width: 22, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <Svg markup={intent === "path" ? sidebarGlyph("folder") : SEARCH} size={13} color={colors.textMuted} />
-      </View>
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <TextInput
-          testID="omnibox:text"
-          value={text}
-          autoFocus={editing !== null}
-          placeholder="Search, or type a path"
-          onChangeText={(next) => {
-            setText(next);
-            setHighlighted(-1);
-            if (intentOf(next) === "search") store.setQuery(next);
-            else if (state.query !== "") store.setQuery("");
-          }}
-          onSubmitEditing={(typed) => {
-            if (intentOf(typed) === "path") go(highlighted >= 0 ? (offered[highlighted] ?? typed) : typed);
-            else {
-              onDone();
-              actions.refocus();
-            }
-          }}
-          onKeyPress={(key) => {
-            if (key === "Escape") {
-              // Whatever was half typed goes with it: the next edit starts from its own text.
-              setText("");
-              if (state.query !== "") store.setQuery("");
-              onDone();
-              actions.refocus();
-            } else if (intent === "path" && offered.length > 0) {
-              const step = key === "ArrowDown" ? 1 : -1;
-              setHighlighted((now) => Math.max(-1, Math.min(offered.length - 1, now + step)));
-            } else if (key === "ArrowDown") {
-              onDone();
-              store.move("down");
-              actions.refocus();
-            }
-          }}
-          style={{ fontSize: 13, color: colors.text, placeholderColor: colors.textDisabled }}
-        />
-      </View>
-      {intent === "search" && text.trim() !== "" && <SearchScope />}
-      <ClearButton
-        onPress={() => {
-          if (state.query !== "") store.setQuery("");
+    <SearchField
+      testID="omnibox"
+      fill
+      variant="find"
+      value={text}
+      glyph={intent === "path" ? sidebarGlyph("folder") : SEARCH}
+      autoFocus={editing !== null}
+      placeholder="Search, or type a path"
+      onLayout={setBounds}
+      accessory={intent === "search" && text.trim() !== "" ? <SearchScope /> : undefined}
+      onClear={leave}
+      onChangeText={(next) => {
+        setText(next);
+        setHighlighted(-1);
+        if (intentOf(next) === "search") store.setQuery(next);
+        else if (state.query !== "") store.setQuery("");
+      }}
+      onSubmit={(typed) => {
+        if (intentOf(typed) === "path") go(highlighted >= 0 ? (offered[highlighted] ?? typed) : typed);
+        else {
           onDone();
           actions.refocus();
-        }}
-      />
-    </Field>
+        }
+      }}
+      onKeyPress={(key) => {
+        if (key === "Escape") {
+          // Whatever was half typed goes with it: the next edit starts from its own text.
+          setText("");
+          leave();
+        } else if (intent === "path" && offered.length > 0) {
+          const step = key === "ArrowDown" ? 1 : -1;
+          setHighlighted((now) => Math.max(-1, Math.min(offered.length - 1, now + step)));
+        } else if (key === "ArrowDown") {
+          onDone();
+          store.move("down");
+          actions.refocus();
+        }
+      }}
+    />
   );
 }
