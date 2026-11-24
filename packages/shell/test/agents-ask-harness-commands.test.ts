@@ -39,6 +39,8 @@ describe("command lines", () => {
     expect(config.permission).toEqual({ edit: "deny", bash: "deny", webfetch: "deny" });
     expect(config.agent["dashi-plan"].prompt).toBe(HARNESS_PROMPT);
     expect(opencode.args.slice(-2)).toEqual(["--", "dark mode"]);
+    // Its own server inside the sandbox, never the person's background service.
+    expect(opencode.args).toEqual(expect.arrayContaining(["--standalone", "--archived"]));
   });
 
   test("their output is read for the session, the words and what went wrong", () => {
