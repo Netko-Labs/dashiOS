@@ -1,6 +1,6 @@
 /** The capsule's small parts: the five dots, a one-line text, a button, Dashi's disc. */
 
-import { KeyedText, Shortcut } from "@dashi/ui";
+import { AMBER, CAPSULE as CAPSULE_INKS, CLEAR, KeyedText, MOTION, OPACITY, RADIUS, Shortcut, SPACE, WEIGHT } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Cell } from "../../shared/pill/index.ts";
@@ -19,7 +19,7 @@ export function Dots({ level, color, dim = false }: { level: Pick<Cell<number>, 
   return (
     <View
       testID="capsule-dots"
-      style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: CAPSULE.dotGap, height: CAPSULE.dotsHeight, opacity: dim ? 0.5 : 1 }}
+      style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: CAPSULE.dotGap, height: CAPSULE.dotsHeight, opacity: dim ? OPACITY.half : 1 }}
     >
       {dotHeights(level ? now : 0).map((height, index) => (
         // The dots never reorder.
@@ -36,15 +36,21 @@ export function Working({ color, still }: { color: string; still: boolean }) {
   const [lit, setLit] = useState(0);
   useEffect(() => {
     if (still) return;
-    const timer = setInterval(() => setLit((now) => (now + 1) % 3), 320);
+    const timer = setInterval(() => setLit((now) => (now + 1) % 3), MOTION.pulse);
     return () => clearInterval(timer);
   }, [still]);
   return (
-    <View testID="capsule-working" style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: 3 }}>
+    <View testID="capsule-working" style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: SPACE.xxs }}>
       {[0, 1, 2].map((dot) => (
         <View
           key={dot}
-          style={{ width: CAPSULE.dot, height: CAPSULE.dot, borderRadius: CAPSULE.dot / 2, backgroundColor: color, opacity: still || dot === lit ? 1 : 0.4 }}
+          style={{
+            width: CAPSULE.dot,
+            height: CAPSULE.dot,
+            borderRadius: CAPSULE.dot / 2,
+            backgroundColor: color,
+            opacity: still || dot === lit ? 1 : OPACITY.disabled,
+          }}
         />
       ))}
     </View>
@@ -68,7 +74,7 @@ export function Line({
   return (
     <View testID={testID} style={{ flexShrink: 0 }}>
       {/* A line may name keys ("Hold ❖Space to talk"): drawn at the text's size. */}
-      <KeyedText oneLine style={{ fontSize: size, color, fontWeight: bold ? "semibold" : "normal" }}>
+      <KeyedText oneLine style={{ fontSize: size, color, fontWeight: bold ? WEIGHT.semibold : WEIGHT.regular }}>
         {children}
       </KeyedText>
     </View>
@@ -76,7 +82,9 @@ export function Line({
 }
 
 /** The thin line between the words and what can be pressed. */
-export const Separator = ({ color }: { color: string }) => <View style={{ flexShrink: 0, width: 1, height: 13, backgroundColor: color, opacity: 0.5 }} />;
+export const Separator = ({ color }: { color: string }) => (
+  <View style={{ flexShrink: 0, width: 1, height: 13, backgroundColor: color, opacity: OPACITY.half }} />
+);
 
 interface ButtonProps {
   label: string;
@@ -114,14 +122,16 @@ export function Button({ label, colours, onPress, primary = false, square = fals
         paddingLeft: measures.paddingX,
         paddingRight: measures.paddingX,
         borderRadius: measures.height / 2,
-        backgroundColor: primary ? colours.primary : "#00000000",
+        backgroundColor: primary ? colours.primary : CLEAR,
         borderWidth: primary ? 0 : 1,
         borderColor: colours.text,
-        opacity: off ? 0.45 : 1,
+        opacity: off ? OPACITY.disabled : 1,
       }}
     >
-      {square && <View style={{ flexShrink: 0, alignSelf: "center", width: CAPSULE.stop, height: CAPSULE.stop, borderRadius: 2, backgroundColor: color }} />}
-      <Text numberOfLines={1} style={{ fontSize: measures.fontSize, fontWeight: "semibold", color }}>
+      {square && (
+        <View style={{ flexShrink: 0, alignSelf: "center", width: CAPSULE.stop, height: CAPSULE.stop, borderRadius: RADIUS.thumb, backgroundColor: color }} />
+      )}
+      <Text numberOfLines={1} style={{ fontSize: measures.fontSize, fontWeight: WEIGHT.semibold, color }}>
         {label}
       </Text>
       {keys && <Shortcut keys={keys} color={colours.soft} size={measures.fontSize - 1} />}
@@ -142,11 +152,11 @@ export function Disc({ colours, size = CAPSULE.disc, asks = false }: { colours: 
         borderRadius: size / 2,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: asks ? colours.amber : "#ffffff",
+        backgroundColor: asks ? colours.amber : CAPSULE_INKS.white,
       }}
     >
       {asks ? (
-        <Text style={{ fontSize: size * 0.62, fontWeight: "bold", color: "#1d1d1f" }}>?</Text>
+        <Text style={{ fontSize: size * 0.62, fontWeight: WEIGHT.bold, color: AMBER.ink }}>?</Text>
       ) : (
         <Svg markup={mark} size={Math.round(size * 0.58)} color={colours.fill} />
       )}

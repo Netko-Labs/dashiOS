@@ -4,7 +4,7 @@
  * its bounds, which is all of it that takes the pointer.
  */
 
-import { useDark } from "@dashi/ui";
+import { CLEAR, useDark } from "@dashi/ui";
 import { type Bounds, View } from "@mirinjs/metal";
 import { type ReactNode, useSyncExternalStore } from "react";
 import { type Cell, type DictationCommand, goesToVoice, type Persona, type VoiceModeCommand } from "../../shared/pill/index.ts";
@@ -82,7 +82,7 @@ export function CapsuleView(props: CapsuleViewProps) {
               flexShrink: 0,
               borderRadius: CARD.radius + CARD.focusLine,
               borderWidth: CARD.focusLine,
-              borderColor: shown.card.keyboard ? CARD.focusInk : "#00000000",
+              borderColor: shown.card.keyboard ? CARD.focusInk : CLEAR,
             }}
           >
             <Card

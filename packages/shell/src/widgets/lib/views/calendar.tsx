@@ -1,7 +1,9 @@
 /** Calendar (miso): today's date large and what is next; on the lock screen, the events are blanks and the month has no busy marks (#27). */
 
+import { SPACE, TYPE, WEIGHT, weekdayLetters } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { instantOf, type Occurrence } from "../../../shared/calendar/index.ts";
+import { firstDayIndex, useClockPrefs } from "../../../shared/time/index.ts";
 import { useWidgetEnv } from "../../env.tsx";
 import { useCard } from "../../look.tsx";
 import { Grow, Head, Lab, Meta, Num, Private, Rule, Title, VRule, Words } from "../../parts.tsx";
@@ -17,12 +19,17 @@ export function inWords(at: number, now: number): string {
   return minutes < 90 ? `in ${minutes} min` : `in ${Math.round(minutes / 60)} h`;
 }
 
-/** The month; it never marks busy days (the area has the Calendar widget's own list, and the lock screen must not, #27). */
+/**
+ * The month, its week from the region's first day (UI-14); it never marks busy days (the area has the
+ * Calendar widget's own list, and the lock screen must not, #27).
+ */
 function MonthGrid({ now, cell }: { now: number; cell: number }) {
   const c = useCard();
+  const prefs = useClockPrefs();
+  const firstDay = firstDayIndex(prefs.locale, prefs.firstWeekday);
   const date = new Date(now);
   const first = new Date(date.getFullYear(), date.getMonth(), 1);
-  const lead = (first.getDay() + 6) % 7;
+  const lead = (first.getDay() - firstDay + 7) % 7;
   const days = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   const cells: (number | null)[] = [...Array.from({ length: lead }, () => null), ...Array.from({ length: days }, (_, i) => i + 1)];
   const rows: (number | null)[][] = [];
@@ -31,9 +38,9 @@ function MonthGrid({ now, cell }: { now: number; cell: number }) {
   return (
     <View style={{ flexDirection: "column" }}>
       <View style={{ flexDirection: "row" }}>
-        {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+        {weekdayLetters(firstDay, prefs.locale).map((d, i) => (
           <View key={`${d}${i}`} style={{ width: cell, alignItems: "center" }}>
-            <Text style={{ fontSize: 9.5, fontWeight: "semibold", color: c.tertiary }}>{d}</Text>
+            <Text style={{ fontSize: TYPE.inks.label.size, fontWeight: WEIGHT.semibold, color: c.tertiary }}>{d}</Text>
           </View>
         ))}
       </View>
@@ -52,10 +59,10 @@ function MonthGrid({ now, cell }: { now: number; cell: number }) {
                     justifyContent: "center",
                   }}
                 >
-                  <Text style={{ fontSize: 10.5, fontWeight: "bold", color: c.onFill }}>{String(day)}</Text>
+                  <Text style={{ fontSize: TYPE.inks.small.size, fontWeight: WEIGHT.bold, color: c.onFill }}>{String(day)}</Text>
                 </View>
               ) : (
-                <Text style={{ fontSize: 10.5, color: day < today ? c.tertiary : c.ink }}>{String(day)}</Text>
+                <Text style={{ fontSize: TYPE.inks.small.size, color: day < today ? c.tertiary : c.ink }}>{String(day)}</Text>
               )}
             </View>
           ))}
@@ -76,9 +83,9 @@ export function CalendarWidget({ size }: { size: WidgetSize }) {
     return (
       <>
         <Head left={<Lab>{day.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</Lab>} />
-        <View style={{ flexDirection: "row", gap: 16, marginTop: 12 }}>
+        <View style={{ flexDirection: "row", gap: SPACE.page, marginTop: SPACE.inset }}>
           <MonthGrid now={now} cell={23} />
-          <View style={{ flexDirection: "column", gap: 6, flex: 1 }}>
+          <View style={{ flexDirection: "column", gap: SPACE.s, flex: 1 }}>
             <Num value={String(day.getDate())} size={84} />
             <Lab>{weekday}</Lab>
           </View>
@@ -92,7 +99,7 @@ export function CalendarWidget({ size }: { size: WidgetSize }) {
     return (
       <>
         <Head left={<Lab>Up next</Lab>} right={<Meta>{`${upcoming.length} ahead`}</Meta>} />
-        <View style={{ flexDirection: "row", gap: 14, flex: 1, marginTop: 10 }}>
+        <View style={{ flexDirection: "row", gap: SPACE.button, flex: 1, marginTop: SPACE.gap }}>
           <View style={{ flexDirection: "column", width: 112 }}>
             {next ? (
               <Num
@@ -141,7 +148,7 @@ function EventRows({ events, hour24 }: { events: readonly Occurrence[]; hour24: 
       {events.map((event, i) => (
         <View key={`${event.event.uid}${event.start}`} style={{ flexDirection: "column" }}>
           {i ? <Rule /> : null}
-          <View style={{ flexDirection: "column", paddingTop: 6, paddingBottom: 6 }}>
+          <View style={{ flexDirection: "column", paddingTop: SPACE.s, paddingBottom: SPACE.s }}>
             <Private what="Event" width={120}>
               <Title weight={i ? "500" : "semibold"}>{event.event.title || "Event"}</Title>
             </Private>
@@ -159,7 +166,7 @@ function CompactNext({ next, now, hour24 }: { next: Occurrence | null; now: numb
     <>
       <Head left={<Lab>Next</Lab>} right={next?.event.location ? <Meta>{next.event.location}</Meta> : undefined} />
       <Grow />
-      <View style={{ flexDirection: "row", gap: 9, alignItems: "flex-end" }}>
+      <View style={{ flexDirection: "row", gap: SPACE.m, alignItems: "flex-end" }}>
         <Num value={next ? clockText(startOf(next), hour24) : String(new Date(now).getDate())} size={30} />
         {next ? (
           <Private what="Event" width="fill">

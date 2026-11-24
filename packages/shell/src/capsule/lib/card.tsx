@@ -8,7 +8,7 @@
  * meant for what was there before answers nothing.
  */
 
-import { KeyedText } from "@dashi/ui";
+import { KeyedText, OPACITY, RADIUS, SHADOW, SPACE, WEIGHT } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useEffect, useState } from "react";
 import { type Cell, STOP_KEYS } from "../../shared/pill/index.ts";
@@ -79,10 +79,10 @@ function useArmed(armsAt: number, now: () => number): boolean {
 
 function Head({ content, colours, asks }: { content: CardContent; colours: CapsuleColours; asks: boolean }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 5 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s, marginBottom: SPACE.xs }}>
       <Disc colours={colours} size={CARD.disc} asks={asks} />
       <View style={{ flexShrink: 0 }}>
-        <Text numberOfLines={1} style={{ fontSize: CARD.headSize + 0.5, fontWeight: "semibold", color: colours.text }}>
+        <Text numberOfLines={1} style={{ fontSize: CARD.whoSize, fontWeight: WEIGHT.semibold, color: colours.text }}>
           {content.who}
         </Text>
       </View>
@@ -103,14 +103,14 @@ function Message({ content, colours }: { content: CardContent; colours: CapsuleC
       testID="card-message"
       style={{
         flexDirection: "column",
-        gap: 2,
-        borderRadius: 8,
-        paddingLeft: 9,
-        paddingRight: 9,
-        paddingTop: 6,
-        paddingBottom: 6,
-        marginTop: 5,
-        marginBottom: 6,
+        gap: SPACE.xxs,
+        borderRadius: RADIUS.control,
+        paddingLeft: SPACE.m,
+        paddingRight: SPACE.m,
+        paddingTop: SPACE.s,
+        paddingBottom: SPACE.s,
+        marginTop: SPACE.xs,
+        marginBottom: SPACE.s,
         borderWidth: 1,
         borderColor: colours.soft,
       }}
@@ -182,18 +182,18 @@ function Choices({
       accessibilityRole="button"
       style={{
         height: CARD.choice,
-        borderRadius: 8,
-        paddingLeft: 9,
-        paddingRight: 9,
-        marginBottom: 4,
+        borderRadius: RADIUS.control,
+        paddingLeft: SPACE.m,
+        paddingRight: SPACE.m,
+        marginBottom: SPACE.xs,
         flexDirection: "row",
         alignItems: "center",
         borderWidth: 1,
         borderColor: colours.text,
-        opacity: armed ? 1 : 0.45,
+        opacity: armed ? 1 : OPACITY.disabled,
       }}
     >
-      <Text numberOfLines={1} style={{ fontSize: CARD.fontSize - 1, fontWeight: "semibold", color: colours.text }}>
+      <Text numberOfLines={1} style={{ fontSize: CARD.choiceSize, fontWeight: WEIGHT.semibold, color: colours.text }}>
         {choice}
       </Text>
     </View>
@@ -225,15 +225,15 @@ export function Card(props: CardProps) {
         // A thin light rim, as the capsule's; with the keyboard (its keys are heard on a surface of their own, card-keys.tsx), the white outline. The amber is the disc's and the Dock's.
         borderWidth: card.keyboard ? CARD.focusRim : CARD.rim,
         borderColor: colours.rim,
-        shadow: "xl",
+        shadow: SHADOW.xl,
       }}
     >
       <Head content={content} colours={colours} asks={asks} />
-      {content.question !== "" && <Text style={{ fontSize: CARD.questionSize, fontWeight: "semibold", color: colours.text }}>{content.question}</Text>}
+      {content.question !== "" && <Text style={{ fontSize: CARD.questionSize, fontWeight: WEIGHT.semibold, color: colours.text }}>{content.question}</Text>}
       <Message content={content} colours={colours} />
       <Choices choices={content.choices} armed={armed} colours={colours} onAnswer={props.onAnswer} />
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 7, marginTop: 2 }}>
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 6 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.s, marginTop: SPACE.xxs }}>
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: SPACE.s }}>
           {props.listening && <Dots level={props.still ? null : props.level} color={colours.text} />}
           <View testID="card-hint" style={{ flex: 1, minWidth: 0 }}>
             {foot.words !== "" && (
@@ -242,7 +242,7 @@ export function Card(props: CardProps) {
                   fontSize: CARD.hintSize,
                   lineHeight: CARD.hintSize * 1.35,
                   color: foot.loud ? colours.text : colours.soft,
-                  ...(foot.bold ? { fontWeight: "semibold" as const } : {}),
+                  ...(foot.bold ? { fontWeight: WEIGHT.semibold } : {}),
                 }}
               >
                 {foot.words}

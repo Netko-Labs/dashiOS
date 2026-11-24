@@ -1,7 +1,11 @@
 /** The fake's scenes (fake.ts): each state the capsule and the card draw, by name, and three that move. */
 
+import { PERSONA_COLORS } from "@dashi/ui";
 import { DEFAULT_PERSONA, type DictationState } from "../../shared/pill/index.ts";
 import { type Scene, type Stage, script, wobble } from "./fake.ts";
+
+/** Miso's scene wears the persona set's moss (D59). */
+const MOSS = PERSONA_COLORS.find((colour) => colour.id === "moss") ?? PERSONA_COLORS[0];
 
 const HEARD = "The release notes are almost done and um Alex is checking the screenshots this afternoon";
 const ASK = "Turn on Dark Mode and open Notes";
@@ -194,6 +198,6 @@ export const SCENES: Readonly<Record<string, Scene>> = {
   },
   /** A spoken answer, word by word. */
   "v-speak": (stage) => speak(stage, "It is half past eleven on Friday night, and the build is green.", 260),
-  "persona-miso": (stage) => stage.hub.persona.set({ ...DEFAULT_PERSONA, name: "Miso", colour: "#1f8a5b", mark: "dots" }),
+  "persona-miso": (stage) => stage.hub.persona.set({ ...DEFAULT_PERSONA, name: "Miso", colour: MOSS?.from ?? DEFAULT_PERSONA.colour, mark: "dots" }),
   "persona-dashi": (stage) => stage.hub.persona.set(DEFAULT_PERSONA),
 };

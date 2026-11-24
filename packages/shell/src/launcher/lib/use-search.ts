@@ -39,7 +39,7 @@ import { usePictures } from "./use-pictures.ts";
  */
 export const FILE_DELAY_MS = 0;
 /** How long a notice ("Copied") stays at the field's right end. */
-const NOTICE_MS = 2_000;
+const NOTICE = { showMs: 2_000 } as const;
 
 const NO_WORLD: WorldSnapshot = { actions: [], windows: [], serial: 0 };
 const NO_PREFS: LauncherPrefsSnapshot = { aliases: new Map(), aliasOf: () => undefined, keyOf: () => undefined };
@@ -126,7 +126,7 @@ function useNoticeAndLink(presented: Presented | null | undefined, s: LauncherSt
   const { notice, setNotice, setMode } = s;
   useEffect(() => {
     if (!notice) return;
-    const timer = setTimeout(() => setNotice(null), NOTICE_MS);
+    const timer = setTimeout(() => setNotice(null), NOTICE.showMs);
     return () => clearTimeout(timer);
   }, [notice, setNotice]);
 

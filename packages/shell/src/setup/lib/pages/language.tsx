@@ -1,4 +1,4 @@
-import { useColors } from "@dashi/ui";
+import { TYPE, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { describeFailure, LocalePickers, useRegion } from "../../../region/index.ts";
 import { useSettings } from "../../../settings-app/hooks.ts";
@@ -20,7 +20,7 @@ export function LanguagePage({ ctx }: { ctx: SetupContext }) {
         onFormats={(formats) => ctx.settings.patch("region", { formats })}
       />
       <View testID="setup-language-note" style={{ flexShrink: 0 }}>
-        <Text style={{ fontSize: 11, color: state.error ? colors.critical : colors.textMuted }}>
+        <Text style={{ fontSize: TYPE.caption.size, color: state.error ? colors.critical : colors.textMuted }}>
           {state.error
             ? describeFailure(state.error)
             : state.busy === "language"

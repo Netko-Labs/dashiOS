@@ -5,7 +5,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { inkTokens } from "@dashi/ui";
+import { inkTokens, WEIGHT } from "@dashi/ui";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { DotRow } from "../src/shared/inks/index.ts";
 import { HostRegistry, hostAbilities, NO_ABILITIES } from "../src/shared/metal/index.ts";
@@ -112,7 +112,8 @@ describe("numbers", () => {
   });
 
   test("Inter Display on a new host, Regular or Medium as before on an older one", async () => {
-    expect(numberFace(NO_ABILITIES, 76, 1)).toEqual({ fontWeight: "500" });
+    // Display Medium by its token (TY-2: a display weight is WEIGHT.display.*, never a literal).
+    expect(numberFace(NO_ABILITIES, 76, 1)).toEqual({ fontWeight: WEIGHT.display.medium });
     expect(numberFace(NO_ABILITIES, 76, 0)).toEqual({});
     const card = (node: React.ReactNode) => (
       <Card look={{ inks: inkTokens("light"), ink: "matcha", air: false, houseDown: false, redact: false }} width={172} height={172}>

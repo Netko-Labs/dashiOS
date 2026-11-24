@@ -73,6 +73,8 @@ describe("H22 controls from the kit", () => {
   test("a sheet of its own built on the kit's Sheet or Button is not a new control", () => {
     expect(kinds('function RenameSheet() { return <FormSheet title="Rename" buttons={[]} />; }')).toEqual([]);
     expect(kinds('function DoneButton() { return <Button label="Done" />; }')).toEqual([]);
+    // A status built on the kit's Chip (D634): the agents' access chip, the bar's "Screen is being shared".
+    expect(kinds('function AccessChip() { return <Chip label="Connected" tone="agent" />; }')).toEqual([]);
   });
 });
 

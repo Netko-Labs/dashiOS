@@ -13,7 +13,7 @@
  * there, or gone.
  */
 
-import { CURVE } from "@dashi/ui";
+import { CURVE, MOTION } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { type ReactElement, useSyncExternalStore } from "react";
 
@@ -22,15 +22,15 @@ const FRAME_MS = 16;
 /** The entrance and exit, in ms (docs/design.html, Motion). */
 export const DOCK_MOTION = {
   /** The panel rising into place. */
-  showMs: 420,
+  showMs: MOTION.dockPanel,
   /** The whole entrance, the last icon's settle included. */
-  entranceMs: 640,
+  entranceMs: MOTION.dockAll,
   /** The panel dropping away. */
-  hideMs: 180,
+  hideMs: MOTION.exit,
   /** Between one icon's start and the next's. */
   staggerMs: 22,
   /** One icon's rise. */
-  iconMs: 380,
+  iconMs: MOTION.dockIcon,
   /** How far below its place an icon starts, in px. */
   iconDrop: 14,
 } as const;

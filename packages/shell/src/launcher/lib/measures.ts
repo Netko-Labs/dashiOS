@@ -6,20 +6,23 @@
  * surface is 600 tall at every size, or shorter on a short screen (place.ts);
  * as rows grow or the surface shrinks, fewer of them are listed, so nothing
  * is ever clipped. `measuresFor` is pure; `useMeasures` is what
- * the panel's parts draw with.
+ * the panel's parts draw with. Its words are TYPE's roles through
+ * `typeAt()`, the one reader of the text size (TY-1, TY-3): the field 17,
+ * a name 13, what follows 12, the kind 11; the conversation's words are the
+ * panel row's (13.5, 12.5, 10.5) and its greeting a heading (15).
  */
 
-import { scaled, useTextSize } from "@dashi/ui";
+import { SPACE, scaled, typeAt, useTextSize } from "@dashi/ui";
 import { createContext, useContext } from "react";
 
 /** The launcher's surface: the panel's width, and as tall as its most rows at any text size. */
 export const SURFACE = { width: 620, height: 600 } as const;
 
-/** The panel's frame: a 1 px border all round (and over the list), 5 px padding inside the list, 12 px corners. */
-export const PANEL = { border: 1, padding: 5, radius: 12 } as const;
+/** The panel's frame: a 1 px border all round (and over the list), 4 px padding inside the list, 12 px corners. */
+export const PANEL = { border: 1, padding: SPACE.xs, radius: 12 } as const;
 
-/** At text size 1 (LA-1, TY-1). */
-const BASE = { field: 48, fieldText: 17, row: 40, head: 22, icon: 28, glyph: 16, title: 13, detail: 12, small: 11, chip: 26, searchGlyph: 18 } as const;
+/** At text size 1 (LA-1): the rows, icons and glyphs, which grow with the type. */
+const BASE = { field: 48, row: 40, head: 22, icon: 28, glyph: 16, chip: 26, searchGlyph: 18, emoji: 18 } as const;
 
 /** At most, at any size: the answer and what the ranking found; files; rows of a plain list (All apps). */
 const MOST = { local: 5, files: 3, allApps: 8 } as const;
@@ -40,6 +43,20 @@ export interface Measures {
   detail: number;
   /** The kind, a head, a key, a hint. */
   small: number;
+  /** The conversation's words (13.5), and its quieter line: a step, the greeting's line (12.5). */
+  talk: number;
+  talkDetail: number;
+  /** 12: a fold's count, code, a name over a turn, a button's words. */
+  line: number;
+  /** 10.5: a key's hint, "Said". */
+  micro: number;
+  /** 15: the conversation's greeting. */
+  greeting: number;
+  /** A detail's headings: 17 and 13.5. */
+  h1: number;
+  h2: number;
+  /** An emoji drawn as an app's icon. */
+  emoji: number;
   chip: number;
   searchGlyph: number;
   /** Instant rows listed (the answer included), and file rows under them. */
@@ -64,6 +81,7 @@ export const SurfaceHeight = createContext<number>(SURFACE.height);
 /** The measures at `textSize` (1 is the standard), on a surface `height` tall. */
 export function measuresFor(textSize: number, height: number = SURFACE.height): Measures {
   const at = (px: number) => scaled(px, textSize);
+  const type = typeAt(textSize);
   const field = at(BASE.field);
   const row = at(BASE.row);
   const head = at(BASE.head);
@@ -80,14 +98,22 @@ export function measuresFor(textSize: number, height: number = SURFACE.height): 
   return {
     textSize,
     field,
-    fieldText: at(BASE.fieldText),
+    fieldText: type.field.size,
     row,
     head,
     icon: at(BASE.icon),
     glyph: at(BASE.glyph),
-    title: at(BASE.title),
-    detail: at(BASE.detail),
-    small: at(BASE.small),
+    title: type.body.size,
+    detail: type.secondary.size,
+    small: type.caption.size,
+    talk: type.panel.name.size,
+    talkDetail: type.panel.body.size,
+    line: type.secondary.size,
+    micro: type.panel.micro.size,
+    greeting: type.heading.size,
+    h1: type.field.size,
+    h2: type.panel.name.size,
+    emoji: at(BASE.emoji),
     chip: at(BASE.chip),
     searchGlyph: at(BASE.searchGlyph),
     localRows: best.local,

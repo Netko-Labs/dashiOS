@@ -25,6 +25,8 @@ export interface ExtensionWidget {
 export const extensionKind = (appletId: string, widgetId: string): `ext:${string}` => `ext:${appletId}/${widgetId}`;
 
 const MAX_TREE_BYTES = 64 * 1024;
+/** Timers (not design motion, tokens.md): a burst of file changes settles this long before a reload. */
+const TIMERS = { settle: 300 } as const;
 
 function readTree(paths: readonly string[]): ViewNode | { error: string } {
   for (const path of paths) {
@@ -84,7 +86,7 @@ export class ExtensionWidgets extends Source<readonly ExtensionWidget[]> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const soon = () => {
       clearTimeout(timer);
-      timer = setTimeout(() => this.reload(), 300);
+      timer = setTimeout(() => this.reload(), TIMERS.settle);
     };
     for (const dir of [this.root, this.dataRoot])
       try {

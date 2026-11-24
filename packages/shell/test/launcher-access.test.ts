@@ -43,13 +43,15 @@ test("bigger text grows every row and lists fewer, so the most it lists always f
   for (const size of TEXT_SIZES) {
     const m = measuresFor(size);
     expect(m.row).toBeGreaterThanOrEqual(last.row);
-    expect(m.fieldText).toBe(Math.round(17 * size));
+    // Type is TYPE through typeAt(): to the half point (TY-3).
+    expect(m.fieldText).toBe(Math.round(17 * size * 2) / 2);
     expect(m.localRows).toBeGreaterThanOrEqual(3);
     expect(m.fileRows).toBeGreaterThanOrEqual(1);
     // The tallest the results get, and the tallest plain list (a head and its rows), both fit under the field.
     expect(tallest(m.localRows, m.fileRows, m.row, m.head)).toBeLessThanOrEqual(m.room);
     expect(m.head + m.listRows * m.row).toBeLessThanOrEqual(m.room);
-    expect(m.field + 3 + 10 + m.room).toBe(SURFACE.height);
+    // Three borders and the list's padding (SPACE.xs) above and below.
+    expect(m.field + 3 + 8 + m.room).toBe(SURFACE.height);
     last = m;
   }
   expect(measuresFor(1.5).localRows + measuresFor(1.5).fileRows).toBeLessThan(8);

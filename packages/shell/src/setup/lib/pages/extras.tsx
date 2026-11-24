@@ -1,5 +1,5 @@
-import { Caption, CHECK, Group, Row, Switch, useColors } from "@dashi/ui";
-import { Svg, Text, View } from "@mirinjs/metal";
+import { Caption, CHECKBOX, Checkbox, Group, Row, SPACE, Switch, TYPE, useColors } from "@dashi/ui";
+import { Text, View } from "@mirinjs/metal";
 import { useEffect, useSyncExternalStore } from "react";
 import { RECOMMENDED_APPS, type RecommendedApp } from "../../../shared/software/index.ts";
 import type { SetupContext } from "../context.ts";
@@ -17,7 +17,7 @@ function Installed({ testID }: { testID: string }) {
   const colors = useColors();
   return (
     <View testID={testID} style={{ flexShrink: 0 }}>
-      <Text style={{ fontSize: 12, color: colors.textMuted }}>Installed</Text>
+      <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted }}>Installed</Text>
     </View>
   );
 }
@@ -25,28 +25,10 @@ function Installed({ testID }: { testID: string }) {
 function AppRow({ app, ticked, onToggle }: { app: RecommendedApp; ticked: boolean; onToggle: () => void }) {
   const colors = useColors();
   return (
-    <View
-      testID={`setup-app:${app.id}`}
-      onPress={onToggle}
-      style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 8, hoverBackgroundColor: colors.button }}
-    >
-      <View
-        style={{
-          width: 16,
-          height: 16,
-          borderRadius: 4,
-          alignItems: "center",
-          justifyContent: "center",
-          borderWidth: ticked ? 0 : 1,
-          borderColor: colors.separator,
-          backgroundColor: ticked ? colors.selection : colors.button,
-        }}
-      >
-        {ticked && <Svg markup={CHECK} size={11} color={colors.onAccent} />}
-      </View>
-      <View style={{ flex: 1, flexDirection: "column", gap: 1, minWidth: 0 }}>
-        <Text style={{ fontSize: 13, color: colors.text }}>{app.name}</Text>
-        <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textMuted }}>
+    <View testID={`setup-app:${app.id}`} style={{ flexDirection: "column", gap: SPACE.px, paddingHorizontal: SPACE.inset, paddingVertical: SPACE.m }}>
+      <Checkbox testID={`setup-app:${app.id}:tick`} label={app.name} checked={ticked} onChange={onToggle} />
+      <View style={{ paddingLeft: CHECKBOX.box + CHECKBOX.gap, minWidth: 0 }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.caption.size, color: colors.textMuted }}>
           {app.summary}
         </Text>
       </View>

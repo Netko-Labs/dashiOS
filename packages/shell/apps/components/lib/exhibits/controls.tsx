@@ -1,8 +1,11 @@
 /** The gallery's control pages: buttons, pickers, switches and sliders, and fields. */
 
 import {
+  ADD,
   Button,
   Choices,
+  CLOSE,
+  GlyphButton,
   glyphs,
   InlineField,
   MoreButton,
@@ -53,6 +56,26 @@ export function ButtonsPage() {
               <View style={{ width: 160, flexDirection: "row" }}>
                 <Button testID={`button:${state}:fill`} label="Continue" fill primary disabled={disabled} onPress={noop} />
               </View>
+            </>
+          )}
+        </States>
+      </Exhibit>
+      <Exhibit title="Button, inks" note="The widget area's (Edit widgets): a pill on the Inks' paper, ink words; the one that goes ahead is ink.">
+        <States>
+          {({ state, disabled }) => (
+            <>
+              <Button testID={`button-inks:${state}:edit`} label="Edit widgets" look="inks" disabled={disabled} onPress={noop} />
+              <Button testID={`button-inks:${state}:done`} label="Done" look="inks" primary disabled={disabled} onPress={noop} />
+            </>
+          )}
+        </States>
+      </Exhibit>
+      <Exhibit title="Glyph button" note="One glyph, round, named for screen readers: a notification's ✕ (filled, small), the overview's + and ×.">
+        <States>
+          {({ state, disabled }) => (
+            <>
+              <GlyphButton testID={`glyph-button:${state}:add`} glyph={ADD} label="New Desktop" disabled={disabled} onPress={noop} />
+              <GlyphButton testID={`glyph-button:${state}:close`} glyph={CLOSE} label="Remove" size="small" filled disabled={disabled} onPress={noop} />
             </>
           )}
         </States>
@@ -183,6 +206,11 @@ export function SwitchesPage() {
               <Switch testID={`switch:${state}:b`} on={!on} onChange={(next) => setOn(!next)} disabled={disabled} />
             </>
           )}
+        </States>
+      </Exhibit>
+      <Exhibit title="Switch, inks" note="The widget area's (the gallery's May go on air): ink and paper, never the accent.">
+        <States states={["enabled", "focused", "disabled"]}>
+          {({ state, disabled }) => <Switch testID={`switch-inks:${state}`} look="inks" on={on} onChange={setOn} disabled={disabled} />}
         </States>
       </Exhibit>
       <Exhibit title="Slider" note="A setting's slider: press or drag; the value is committed once, when the button lifts.">

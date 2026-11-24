@@ -35,7 +35,7 @@ interface Parts {
 }
 
 /** How long the conversation stays after Keep working on it, so its line is read, before the launcher closes. */
-export const KEPT_CLOSE_MS = 900;
+export const KEPT = { closeMs: 900 } as const;
 
 /** Return in the conversation (lib/talk/talk-mode.ts): the words sent, a question answered, a failure's way on, or a try. */
 function talkReturn({ props, s }: Parts): void {
@@ -77,7 +77,7 @@ function keepWorking({ props, s }: Parts): void {
   if (!dashi) return;
   const words = s.filter.trim();
   if (words && dashi.type(words)) s.setFilter("");
-  if (dashi.keepWorking()) setTimeout(props.onClose, KEPT_CLOSE_MS);
+  if (dashi.keepWorking()) setTimeout(props.onClose, KEPT.closeMs);
 }
 
 /** Return: the selected row's first verb, the chosen verb, the alias or key kept, the words to Dashi's agent. */

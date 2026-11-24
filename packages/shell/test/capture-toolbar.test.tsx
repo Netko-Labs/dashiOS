@@ -138,12 +138,12 @@ test("Record while an agent records says so in the toolbar, which stays; a scree
     for (const listener of listeners) listener({ type: "press", nodeId: id });
     await settle(20);
   };
-  await press("capture-toolbar:record-screen");
+  await press("capture-toolbar-mode:record-screen");
   await press("capture-toolbar:go");
   expect(trees.at(-1)).toContain("An agent is recording the screen");
   expect(closes).toEqual([]);
   // Another mode takes the words back; a screenshot needs no recorder, so it goes.
-  await press("capture-toolbar:screen");
+  await press("capture-toolbar-mode:screen");
   expect(trees.at(-1)).not.toContain("An agent is recording the screen");
   await press("capture-toolbar:go");
   await settle();

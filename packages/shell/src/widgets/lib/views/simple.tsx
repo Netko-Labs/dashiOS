@@ -1,5 +1,6 @@
 /** Clock and World Clocks (plain ink), Battery (matcha) and System (plain ink). */
 
+import { SPACE } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useEffect } from "react";
 import { hereZone, zoneCity } from "../../../shared/calendar/index.ts";
@@ -58,7 +59,7 @@ export function ClockWidget({ size }: { size: WidgetSize }) {
         <>
           <Grow />
           {WORLD_ZONES.slice(0, 2).map((zone) => (
-            <View key={zone} style={{ flexDirection: "row", justifyContent: "space-between", paddingTop: 3 }}>
+            <View key={zone} style={{ flexDirection: "row", justifyContent: "space-between", paddingTop: SPACE.xxs }}>
               <Words>{zoneCity(zone)}</Words>
               <Words ink>{zoneClock(now, zone, hour24)}</Words>
             </View>
@@ -82,8 +83,8 @@ export function WorldWidget({ size }: { size: WidgetSize }) {
           const hour = new Date(new Date(now).toLocaleString("en-US", { timeZone: zone })).getHours();
           return (
             <View key={zone} style={{ flexDirection: "row", flex: i ? 1 : 1.3 }}>
-              {i ? <VRule margin={12} /> : null}
-              <View style={{ flexDirection: "column", gap: 6, flex: 1 }}>
+              {i ? <VRule margin={SPACE.inset} /> : null}
+              <View style={{ flexDirection: "column", gap: SPACE.s, flex: 1 }}>
                 <Num value={zoneClock(now, zone, hour24)} size={i ? 28 : 38} plain />
                 <Lab>{zoneCity(zone)}</Lab>
                 <Meta>{offsetWords(now, zone)}</Meta>
@@ -164,7 +165,7 @@ export function SystemWidget({ size }: { size: WidgetSize }) {
       {rows.map(([name, value], i) => (
         <View key={name} style={{ flexDirection: "column" }}>
           {i ? <Rule /> : null}
-          <View style={{ flexDirection: "row", justifyContent: "space-between", paddingTop: 3, paddingBottom: 3 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", paddingTop: SPACE.xxs, paddingBottom: SPACE.xxs }}>
             <Words>{name}</Words>
             <Words ink>{value}</Words>
           </View>

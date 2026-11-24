@@ -6,27 +6,20 @@
  * make it so the stack (stack.ts) can place them.
  */
 
-import { useColors } from "@dashi/ui";
-import { Text, View } from "@mirinjs/metal";
-import { AppIcon } from "../../shared/apps/index.ts";
+import { Button, SHADOW, SPACE, useColors } from "@dashi/ui";
+import { View } from "@mirinjs/metal";
 import { type NotificationStore, useNotifications } from "../store.ts";
 import { ellipsize } from "../text.ts";
 import type { Notification, NotificationAction } from "../types.ts";
+import { NOTE_CARD, NoteCard, NoteTime } from "./card.tsx";
 import { notificationIcon } from "./icon.ts";
 
 export const BANNER = {
   /** The panel's width. */
   width: 344,
   /** Transparent room around the panel for its shadow, on every side of the surface. */
-  shadow: 12,
-  radius: 14,
-  padding: 12,
-  icon: 36,
-  gap: 10,
-  summaryLine: 18,
+  shadow: SPACE.inset,
   bodyLines: 2,
-  bodyLine: 16,
-  actionRow: 26,
   /** What two lines of the body hold; a longer one is cut with an ellipsis. */
   bodyChars: 88,
   /** What the title's one line holds beside "now", in bold; a longer one is cut with an ellipsis (the host's own cut can clip instead). */
@@ -39,40 +32,20 @@ export function buttonsFor(notification: Pick<Notification, "actions">): Notific
 }
 
 /**
- * The panel's height. The body always reserves its full two lines: its
+ * The panel's height: the card's padding around its icon or its words,
+ * whichever is taller. The body always reserves its full two lines: its
  * wrapping isn't known before painting, and a banner that changed height
  * as it was read would have to be rebuilt.
  */
 export function bannerHeight(notification: Pick<Notification, "body" | "actions">): number {
-  const text = BANNER.summaryLine + (notification.body ? 4 + BANNER.bodyLines * BANNER.bodyLine : 0);
-  const buttons = buttonsFor(notification).length > 0 ? 8 + BANNER.actionRow : 0;
-  return BANNER.padding * 2 + Math.max(BANNER.icon, text) + buttons;
+  const body = notification.body ? NOTE_CARD.textGap + BANNER.bodyLines * NOTE_CARD.bodyLine : 0;
+  const buttons = buttonsFor(notification).length > 0 ? NOTE_CARD.actionsGap + NOTE_CARD.actionRow : 0;
+  return NOTE_CARD.padding * 2 + Math.max(NOTE_CARD.icon, NOTE_CARD.summaryLine + body + buttons);
 }
 
 /** The surface's size: the panel with its shadow room. */
 export function bannerSurface(notification: Pick<Notification, "body" | "actions">): { width: number; height: number } {
   return { width: BANNER.width + BANNER.shadow * 2, height: bannerHeight(notification) + BANNER.shadow * 2 };
-}
-
-function ActionButton({ label, testID, onPress }: { label: string; testID: string; onPress: () => void }) {
-  const colors = useColors();
-  return (
-    <View
-      testID={testID}
-      style={{
-        height: BANNER.actionRow,
-        paddingLeft: 10,
-        paddingRight: 10,
-        borderRadius: 7,
-        justifyContent: "center",
-        backgroundColor: colors.button,
-        hoverBackgroundColor: colors.separator,
-      }}
-      onPress={onPress}
-    >
-      <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>{label}</Text>
-    </View>
-  );
 }
 
 /** The banner for notification `id`, following the store while it lives. */
@@ -93,49 +66,37 @@ export function Banner({ store, id }: { store: NotificationStore; id: number }) 
         style={{
           width: BANNER.width,
           height: bannerHeight(notification),
-          flexDirection: "column",
-          gap: 8,
-          padding: BANNER.padding,
-          borderRadius: BANNER.radius,
+          borderRadius: NOTE_CARD.radius,
           backgroundColor: colors.launcher,
           borderWidth: 1,
           borderColor: colors.dockBorder,
-          shadow: "lg",
+          shadow: SHADOW.lg,
         }}
         onPress={press}
         onHoverChange={(hovered) => store.hold(id, hovered)}
       >
-        <View style={{ flexDirection: "row", gap: BANNER.gap, flex: 1 }}>
-          <AppIcon source={notificationIcon(notification)} resizeMode="contain" style={{ width: BANNER.icon, height: BANNER.icon, borderRadius: 8 }} />
-          <View style={{ flex: 1, flexDirection: "column", gap: 4 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, height: BANNER.summaryLine }}>
-              {notification.urgency === "critical" && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.critical }} />}
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: "bold", color: colors.text }}>
-                  {ellipsize(notification.summary || notification.appName, BANNER.summaryChars)}
-                </Text>
-              </View>
-              <Text style={{ fontSize: 11, color: colors.textMuted }}>now</Text>
-            </View>
-            {notification.body !== "" && (
-              <View style={{ height: BANNER.bodyLines * BANNER.bodyLine, overflow: "hidden" }}>
-                <Text style={{ fontSize: 12, lineHeight: BANNER.bodyLine, color: colors.textMuted }}>{ellipsize(notification.body, BANNER.bodyChars)}</Text>
-              </View>
-            )}
-          </View>
-        </View>
-        {buttons.length > 0 && (
-          <View style={{ flexDirection: "row", gap: 6, paddingLeft: BANNER.icon + BANNER.gap }}>
-            {buttons.map((action) => (
-              <ActionButton
-                key={action.key}
-                testID={`banner-action:${action.key}`}
-                label={action.label || action.key}
-                onPress={() => store.invoke(id, action.key)}
-              />
-            ))}
-          </View>
-        )}
+        <NoteCard
+          testID="banner-card"
+          icon={notificationIcon(notification)}
+          title={ellipsize(notification.summary || notification.appName, BANNER.summaryChars)}
+          body={ellipsize(notification.body, BANNER.bodyChars)}
+          bodyLines={BANNER.bodyLines}
+          critical={notification.urgency === "critical"}
+          aside={<NoteTime words="now" />}
+          {...(buttons.length > 0
+            ? {
+                actions: buttons.map((action) => (
+                  <Button
+                    key={action.key}
+                    testID={`banner-action:${action.key}`}
+                    label={action.label || action.key}
+                    size="small"
+                    onPress={() => store.invoke(id, action.key)}
+                  />
+                )),
+              }
+            : {})}
+        />
       </View>
     </View>
   );

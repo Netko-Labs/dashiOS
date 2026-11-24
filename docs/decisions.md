@@ -7702,3 +7702,95 @@ short words, as the rulebook is written.
 - **Why:** VO-1, TK-1, UI-14.
 - **Cost:** none.
 - **Undo:** per line.
+
+### D630. The notification centre panel goes; the widget area is where notifications are kept
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3; NO-1 to NO-3, SH-6, SH-34, CD-29).
+- **Question:** the plan asks for one notification card, the month card on `MonthGrid` and an
+  ink today in "the notification centre". `NotificationCenterPanel` (`notifications/center.tsx`,
+  its cards and its month card) has drawn nothing since 17 Nov: the menu bar opens
+  `NotificationArea`, the widget area with paper notes (95ab3a61).
+- **Choice:** delete the dead panel, its parts and its month card. The one card is
+  `notifications/lib/card.tsx` (`NOTE_CARD`: radius 12, padding 12, icon 28 at radius 7, the
+  kit's small Buttons): the banner draws it; the area's paper note takes its measures on a
+  widget's paper and corner (CO-11) with the kit's inks Buttons. The month beside the notes is
+  the Calendar widget's, which now starts its week on the region's first day.
+- **Why:** fixing a surface nobody sees would leave two cards and a dead month grid to maintain.
+- **Cost:** no centre to fall back to without the widget area; design.html's Notifications
+  section is rewritten to say so.
+- **Undo:** restore the three files from cd2f7a44^ and point `menus/lib/popover.tsx` at the panel.
+
+### D631. The widget area's controls are the kit's, in an inks look
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3; CO-2, CO-11, TK-2).
+- **Question:** the widget area never wears the accent, so the kit's Switch (the one on) and
+  Button (window or panel look) can't be dropped in; the gallery's "May go on air" and "Edit
+  widgets" were drawn by hand.
+- **Choice:** `look="inks"` on the kit's `Switch` (36 × 20, ink on, hairline off, a paper knob)
+  and `Button` (a 28 pill on the Inks' paper under a hairline; the one that goes ahead is ink),
+  from `INK_TEXT`/`INK_PAPER` by the mode. A chosen widget, size or gallery row is an ink wash
+  under a 2 px ink edge (CO-9, D588).
+- **Why:** TK-2 names three looks; the kit had two.
+- **Cost:** the widgets' own `Btn` (inside cards, filled with a widget's ink) is still hand-drawn;
+  it is the next to move onto the inks Button.
+- **Undo:** drop the `inks` branches in `switch.tsx` and `button.tsx`.
+
+### D632. A button that is one glyph is the kit's GlyphButton
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3; IC-3, SH-29).
+- **Question:** the overview's × and +, a notification's ✕ and the capture toolbar's tools were
+  font characters or hand-drawn discs, unnamed for screen readers.
+- **Choice:** `GlyphButton` in `@dashi/ui`: round, 24 (18 small), `filled` for a disc at rest,
+  `quiet`, and `on` for one that turns something on (the one on, read as checked). A
+  toolbar's square glyph button stays `ToolbarButton`. `ADD` joins the glyphs.
+- **Why:** UI-8's one-button rule, for buttons without words.
+- **Cost:** the overview's + is a 24 target in its 34 disc (the disc takes the press too).
+- **Undo:** per caller.
+
+### D633. The switcher's pick is a selection; `switcherSelection` is `openWash`
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3; CO-9, SH-12, SH-26).
+- **Choice:** the chosen app's tile is `selectionWash`, named, an option; the soft ink wash keeps
+  its other jobs (an open bar item, the "…" row, the taskbar's open button) under the name
+  `openWash`, in the palette (W1's file: a rename only).
+- **Undo:** the palette key and five callers.
+
+### D634. H22 lets a status built on the kit's Chip keep its name
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3; UI-12, D609).
+- **Question:** the agents' `AccessChip` and the bar's `CapturePill` now render the kit's
+  `Chip`; H22 still counted their names.
+- **Choice:** `Chip` joins `KIT_FRAMES`, as Sheet and Button did in D609.
+- **Undo:** take it out of `scripts/check-design-kit.ts`.
+
+### D635. In the two-screen folders, tokens only: their hand-drawn controls wait
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3).
+- **Question:** the lead's brief: the menu bar, Dock, launcher and lock were just reworked for
+  two screens, and a fix for their hosts is merging, so in those folders swap tokens and
+  restructure nothing. H22 lists 15 hand-drawn controls in the launcher (its field and chip, the
+  form's choices, the conversation's buttons and empty line).
+- **Choice:** the launcher, menu bar and Dock get token swaps only (and the launcher's sizes on
+  `typeAt()`); their H22 entries stay listed. The bar's own pressable items in other folders
+  (work alone, the voice chip, the recording stop) wait for the same move: a kit bar item.
+- **Why:** the owner's instruction for this round outranks emptying the list now.
+- **Cost:** `h22/W3` ends at 28, not 0.
+- **Undo:** none needed: the next round moves them.
+
+### D636. Setup's progress dots and running mark are ink
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3; SH-30, CO-2, Q3).
+- **Choice:** the mark is Kombu's constant (`KOMBU_SEED`), a done step moss, a running step and
+  the current page's dot ink (progress is ink, Q3), titles at `TYPE.title` 20.
+- **Undo:** the colours in `setup/lib/`.
+
+### D637. Small calls made in W3's token swap
+
+- **Date:** 2026-11-24. The `design-chrome` agent's (W3).
+- **Choice:** the plan's snapping everywhere (5→4, 7→6, 9→8, 11/13→12, 18→16, 22→20, radius
+  6→5, 8→7, 9→10, 14/16/18→12 outside the Inks); timers stay named constants in objects
+  (`TIMERS`, `KEPT.closeMs`), not MOTION; a hit area's key catcher (`KeyCatcher`) is still a
+  hidden `TextInput` (moving every overlay to `KeySink` wants a VM pass of its own); the
+  capsule's buttons keep their pill-v2 look (the kit has no persona-coloured button); the
+  agents' Stop is the danger Button; panels' empty lines are 12 muted (SH-31).
+- **Undo:** per file.

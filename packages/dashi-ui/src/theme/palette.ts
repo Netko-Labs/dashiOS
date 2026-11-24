@@ -82,8 +82,8 @@ export interface Palette {
    * over 3:1 on true black and its lifts and glass.
    */
   focusRing: string;
-  /** The chosen app in the switcher, and an open menu bar item: a soft wash. */
-  switcherSelection: string;
+  /** An open menu bar item, the "…" row's open item, the Dock's open taskbar button: a soft ink wash, not a selection (CO-9). */
+  openWash: string;
   /** Secondary buttons' fill (and a hover wash); their edge is `controlEdge`. */
   button: string;
   /** The edge of a secondary button: at least 3:1 against the window, the sidebar, and a card. */
@@ -177,7 +177,7 @@ export const lightColors: Palette = {
   onSelection: "#1d1d1f",
   onAccent: "#ffffff",
   focusRing: "#6E56CF",
-  switcherSelection: "#1d1d1f24",
+  openWash: "#1d1d1f24",
   button: "#1d1d1f12",
   controlEdge: "#1d1d1f80",
   pressed: "#1d1d1f42",
@@ -267,7 +267,7 @@ export const darkColors: Palette = {
   onSelection: INK,
   onAccent: "#ffffff",
   focusRing: "#8B76E8",
-  switcherSelection: "#ffffff24",
+  openWash: "#ffffff24",
   button: "#ffffff1f",
   controlEdge: `${INK}66`,
   pressed: "#ffffff3d",

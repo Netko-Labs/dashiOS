@@ -6,6 +6,7 @@
  * lock screen, it shows a lock in the corner.
  */
 
+import { SPACE } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
 import { glyph } from "../shared/inks/index.ts";
@@ -58,7 +59,7 @@ export function Card({ look, width, height, compact, padding, testID, onPress, o
               flex: 1,
               flexDirection: "column",
               alignItems: "stretch",
-              padding: padding ?? (compact ? 12 : 14),
+              padding: padding ?? (compact ? SPACE.inset : SPACE.button),
               borderRadius: radius,
               backgroundColor: colours.paper,
               ...(look.air ? {} : { borderWidth: 1, borderColor: colours.hairline }),

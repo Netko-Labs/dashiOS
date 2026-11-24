@@ -9,7 +9,7 @@
  * (place.ts).
  */
 
-import { MENU, MenuLine, MenuRow, menuHeight, type Size, useColors, useSurface } from "@dashi/ui";
+import { MENU, MenuLine, MenuRow, menuHeight, SHADOW, type Size, useColors, useSurface } from "@dashi/ui";
 import { ScrollView, View, type ViewStyle } from "@mirinjs/metal";
 import { useState } from "react";
 import { isEnabled, stepHighlight } from "../model.ts";
@@ -77,7 +77,7 @@ function panelStyle(place: ReturnType<typeof placeDropdown>, ground: string, edg
     backgroundColor: ground,
     borderWidth: MENU.edge,
     borderColor: edge,
-    shadow: "xl",
+    shadow: SHADOW.xl,
   };
 }
 

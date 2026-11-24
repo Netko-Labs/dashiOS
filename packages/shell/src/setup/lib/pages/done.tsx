@@ -1,4 +1,4 @@
-import { Button, Group, Row, Shortcut, useColors } from "@dashi/ui";
+import { Button, Group, Row, Shortcut, SPACE, TYPE, useColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import { useRegion } from "../../../region/index.ts";
@@ -14,7 +14,7 @@ function Value({ children, testID }: { children: string; testID: string }) {
   const colors = useColors();
   return (
     <View testID={testID} style={{ flexShrink: 1, minWidth: 0 }}>
-      <Text numberOfLines={1} style={{ fontSize: 13, color: colors.textMuted }}>
+      <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: colors.textMuted }}>
         {children}
       </Text>
     </View>
@@ -26,12 +26,12 @@ function TapToFind({ ctx }: { ctx: SetupContext }) {
   const colors = useColors();
   return (
     <Group testID="setup-launcher">
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44, paddingHorizontal: 12, paddingVertical: 8 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.inset, minHeight: 44, paddingHorizontal: SPACE.inset, paddingVertical: SPACE.m }}>
         {/* ❖ is drawn, not typed: text fonts don't reliably carry it (shortcut.tsx). */}
-        <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 5 }}>
-          <Text style={{ fontSize: 13, color: colors.text }}>Tap</Text>
+        <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: SPACE.xs }}>
+          <Text style={{ fontSize: TYPE.body.size, color: colors.text }}>Tap</Text>
           <Shortcut keys="❖" color={colors.text} size={13} />
-          <Text style={{ fontSize: 13, color: colors.text }}>to find anything</Text>
+          <Text style={{ fontSize: TYPE.body.size, color: colors.text }}>to find anything</Text>
         </View>
         {ctx.openLauncher && <Button label="Try it" testID="setup-try-launcher" onPress={() => ctx.openLauncher?.()} />}
       </View>

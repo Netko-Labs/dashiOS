@@ -1,4 +1,4 @@
-import { Button, LOGO, useColors } from "@dashi/ui";
+import { Button, KOMBU_SEED, LOGO, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
 import { useMemo } from "react";
 import { PAGE_INFO } from "../../flow.ts";
@@ -12,18 +12,21 @@ export function WelcomePage() {
   // Booted from the live ISO: the installer is one click away.
   const installer = useMemo(systemLiveInstaller, []);
   return (
-    <View style={{ flex: 1, flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, paddingTop: controls ? 0 : 40 }}>
-      <Svg markup={LOGO} size={96} color={colors.selection} />
+    <View style={{ flex: 1, flexDirection: "column", alignItems: "center", justifyContent: "center", gap: SPACE.gap, paddingTop: controls ? 0 : 40 }}>
+      {/* The mark is Kombu's own constant, never the person's accent (CO-2). */}
+      <Svg markup={LOGO} size={96} color={KOMBU_SEED} />
       <View testID="setup-title">
-        <Text style={{ fontSize: 30, fontWeight: "bold", color: colors.text, textAlign: "center" }}>{info.title}</Text>
+        <Text style={{ fontSize: TYPE.title.size, fontWeight: WEIGHT.bold, color: colors.text, textAlign: "center" }}>{info.title}</Text>
       </View>
       <View testID="setup-subtitle" style={{ maxWidth: 420 }}>
-        <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: "center" }}>{info.subtitle}</Text>
+        <Text style={{ fontSize: TYPE.body.size, color: colors.textMuted, textAlign: "center" }}>{info.subtitle}</Text>
       </View>
       {installer && (
-        <View style={{ flexDirection: "column", alignItems: "center", gap: 6, paddingTop: 8 }}>
+        <View style={{ flexDirection: "column", alignItems: "center", gap: SPACE.s, paddingTop: SPACE.m }}>
           <Button testID="setup-install" label="Install Dashi…" onPress={() => startInstaller(installer)} />
-          <Text style={{ fontSize: 11, color: colors.textMuted, textAlign: "center" }}>You are trying Dashi from a USB drive. Install it to keep it.</Text>
+          <Text style={{ fontSize: TYPE.caption.size, color: colors.textMuted, textAlign: "center" }}>
+            You are trying Dashi from a USB drive. Install it to keep it.
+          </Text>
         </View>
       )}
     </View>

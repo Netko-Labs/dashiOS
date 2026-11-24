@@ -7,6 +7,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { INK_TEXT, lightColors } from "@dashi/ui";
 import { type NativeEvent, type NativeRoot, type NativeTransport, render, View } from "@mirinjs/metal";
 import { NotificationArea } from "../src/notifications/area.tsx";
 import { NotificationStore } from "../src/notifications/index.ts";
@@ -126,5 +127,22 @@ describe("editing widgets by keyboard, with the host's key names", () => {
     await key("escape");
     expect(root.nodeId("widget-gallery")).toBeUndefined();
     expect(root.nodeId("widget-edit-keys")).toBeDefined();
+  });
+
+  test("the picked size and the chosen row are ringed in ink, never the focus ring's purple (CO-9, KB-2)", async () => {
+    await press("edit-widgets");
+    await press("edit-add");
+    interface Node {
+      props?: Record<string, unknown>;
+      children?: Node[];
+    }
+    const byId = (node: Node, nodeId: string): Node | null =>
+      node.props?.id === nodeId ? node : ((node.children ?? []).map((child) => byId(child, nodeId)).find(Boolean) ?? null);
+    const tree = JSON.parse(trees.at(-1) ?? "{}") as Node;
+    const edgeOf = (testID: string): string => String(byId(tree, id(testID))?.props?.borderColor ?? "").toLowerCase();
+    for (const testID of ["picked:weather:compact", "gallery:weather"]) {
+      expect(edgeOf(testID)).toBe(INK_TEXT.light.ink.toLowerCase());
+      expect(edgeOf(testID)).not.toBe(lightColors.focusRing.toLowerCase());
+    }
   });
 });

@@ -1,6 +1,7 @@
 /** An outside extension's widget, drawn from its tree in Dashi's type and plain ink (it cannot ask for an ink, #30); private nodes blank on the lock screen. */
 
 import type { ViewNode } from "@dashi/applet";
+import { SPACE, TYPE } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { DotRow } from "../../../shared/inks/index.ts";
 import { useCard, useRedacted } from "../../look.tsx";
@@ -23,7 +24,9 @@ function Node({ node }: { node: ViewNode }) {
     case "Row":
     case "Column":
       return (
-        <View style={{ flexDirection: node.t === "Row" ? "row" : "column", gap: count(node, "gap", 6), alignItems: node.t === "Row" ? "center" : "stretch" }}>
+        <View
+          style={{ flexDirection: node.t === "Row" ? "row" : "column", gap: count(node, "gap", SPACE.s), alignItems: node.t === "Row" ? "center" : "stretch" }}
+        >
           {node.c.map((child) => (
             <Node key={child.i} node={child} />
           ))}
@@ -52,7 +55,7 @@ function Node({ node }: { node: ViewNode }) {
       );
     case "Image": {
       const svg = prop(node, "svg");
-      return svg ? <Svg markup={svg} size={14} color={c.secondary} /> : <Text style={{ fontSize: 14 }}>{prop(node, "emoji")}</Text>;
+      return svg ? <Svg markup={svg} size={14} color={c.secondary} /> : <Text style={{ fontSize: TYPE.body.size }}>{prop(node, "emoji")}</Text>;
     }
     default:
       return null;
@@ -81,7 +84,7 @@ export function ExtensionView({ widget }: { widget: ExtensionWidget | undefined 
     <>
       <Head left={<Lab>{prop(tree, "title") || widget.info.name}</Lab>} right={prop(tree, "detail") ? <Meta>{prop(tree, "detail")}</Meta> : undefined} />
       <View style={{ height: 10 }} />
-      <View style={{ flex: 1, flexDirection: "column", gap: 6 }}>
+      <View style={{ flex: 1, flexDirection: "column", gap: SPACE.s }}>
         {tree.c.map((child) => (
           <Node key={child.i} node={child} />
         ))}

@@ -5,6 +5,7 @@
  * A right-click pins a card (the design's long press, D403).
  */
 
+import { SPACE, TYPE } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { glyph, isGlyphName } from "../shared/inks/index.ts";
 import { type OnAirItem, onAirWords, systemTally, useSecondTick } from "../tally/index.ts";
@@ -32,14 +33,14 @@ function RunCard({ item, air }: { item: OnAirItem; air: boolean }) {
     <>
       <Head
         left={
-          <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+          <View style={{ flexDirection: "row", gap: SPACE.m, alignItems: "center" }}>
             <Lab>{run?.harnessName ?? "Dashi"}</Lab>
             <Meta>{asking ? "asks you" : `running · ${minutes} min`}</Meta>
           </View>
         }
         right={air ? <NowTag tally={inks.tally} /> : <Standby />}
       />
-      <View style={{ flexDirection: "row", gap: 14, marginTop: 8, alignItems: "center" }}>
+      <View style={{ flexDirection: "row", gap: SPACE.button, marginTop: SPACE.m, alignItems: "center" }}>
         <Num value={asking ? "1" : String(step)} unit={asking ? "ask" : `/${about}`} size={34} />
         <View style={{ flex: 1, flexDirection: "column" }}>
           <Title>{asking ? item.label : run?.request.split("\n")[0] || item.label}</Title>
@@ -77,7 +78,7 @@ function LiveCard({ item, air }: { item: OnAirItem; air: boolean }) {
       look={{ inks, ink: item.ink, air, houseDown: tally.houseDown && !air, redact: false }}
       width={COLUMN_WIDTH}
       compact
-      padding={13}
+      padding={SPACE.inset}
       testID={`live:${item.key}`}
       onContext={pin}
     >
@@ -100,7 +101,7 @@ function FoldRow({ items }: { items: readonly OnAirItem[] }) {
       width={COLUMN_WIDTH}
       height={44}
       compact
-      padding={12}
+      padding={SPACE.inset}
       testID="live-fold"
     >
       <FoldInside items={items} />
@@ -112,17 +113,17 @@ function FoldInside({ items }: { items: readonly OnAirItem[] }) {
   const c = useCard();
   const { inks, tally } = useWidgetEnv();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 9, flex: 1 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACE.m, flex: 1 }}>
       <Lab>{`${items.length} more live`}</Lab>
       <Grow />
       {items.map((item) => (
-        <View key={item.key} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+        <View key={item.key} style={{ flexDirection: "row", alignItems: "center", gap: SPACE.xs }}>
           <Svg
             markup={glyph(isGlyphName(item.glyph) ? item.glyph : "spark")}
             size={12}
             color={item.ink ? (tally.houseDown ? inks.dimmed[item.ink] : inks.ink[item.ink]) : c.ink}
           />
-          <Text numberOfLines={1} style={{ fontSize: 12.5, color: c.ink }}>
+          <Text numberOfLines={1} style={{ fontSize: TYPE.inks.body.size, color: c.ink }}>
             {item.label}
           </Text>
         </View>
@@ -137,7 +138,7 @@ export function LiveCards() {
   const { cards, folded } = foldLive(liveItems(tally, placedKinds));
   if (cards.length === 0) return null;
   return (
-    <View style={{ flexDirection: "column", gap: 10 }}>
+    <View style={{ flexDirection: "column", gap: SPACE.gap }}>
       {cards.map((item) => (
         <LiveCard key={item.key} item={item} air={tally.holder === item.key} />
       ))}

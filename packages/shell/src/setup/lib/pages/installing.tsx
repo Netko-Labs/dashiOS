@@ -1,4 +1,4 @@
-import { Button, CHECK, Group, ProgressBar, useColors, WARNING } from "@dashi/ui";
+import { Button, CHECK, Group, ProgressBar, RADIUS, SPACE, TYPE, useColors, WARNING } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useSyncExternalStore } from "react";
 import type { SetupContext } from "../context.ts";
@@ -10,15 +10,15 @@ type Mark = "waiting" | "running" | "done" | "failed";
 function StatusRow({ testID, label, line, mark, fraction }: { testID: string; label: string; line: string; mark: Mark; fraction: number | null }) {
   const colors = useColors();
   return (
-    <View testID={testID} style={{ flexDirection: "row", alignItems: "center", gap: 10, padding: 12 }}>
+    <View testID={testID} style={{ flexDirection: "row", alignItems: "center", gap: SPACE.gap, padding: SPACE.inset }}>
       <View style={{ width: 16, alignItems: "center" }}>
-        {mark === "done" && <Svg markup={CHECK} size={13} color={colors.selection} />}
+        {mark === "done" && <Svg markup={CHECK} size={13} color={colors.moss} />}
         {mark === "failed" && <Svg markup={WARNING} size={13} color={colors.critical} />}
-        {mark === "running" && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.selection }} />}
+        {mark === "running" && <View style={{ width: 7, height: 7, borderRadius: RADIUS.check, backgroundColor: colors.textMuted }} />}
       </View>
-      <View style={{ flex: 1, flexDirection: "column", gap: 2, minWidth: 0 }}>
-        <Text style={{ fontSize: 13, color: colors.text }}>{label}</Text>
-        <Text style={{ fontSize: 11, color: mark === "failed" ? colors.critical : colors.textMuted }}>{line}</Text>
+      <View style={{ flex: 1, flexDirection: "column", gap: SPACE.xxs, minWidth: 0 }}>
+        <Text style={{ fontSize: TYPE.body.size, color: colors.text }}>{label}</Text>
+        <Text style={{ fontSize: TYPE.caption.size, color: mark === "failed" ? colors.critical : colors.textMuted }}>{line}</Text>
       </View>
       {mark === "running" && fraction !== null && <ProgressBar value={fraction} width={120} />}
     </View>
@@ -64,8 +64,8 @@ export function InstallingPage({ ctx }: { ctx: SetupContext }) {
         </Group>
       )}
       {notice && (
-        <View testID="setup-installing-notice" style={{ flexShrink: 0, flexDirection: "column", alignItems: "center", gap: 10, paddingTop: 4 }}>
-          <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center" }}>{notice.message}</Text>
+        <View testID="setup-installing-notice" style={{ flexShrink: 0, flexDirection: "column", alignItems: "center", gap: SPACE.gap, paddingTop: SPACE.xs }}>
+          <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted, textAlign: "center" }}>{notice.message}</Text>
           {notice.action && (
             <Button testID="setup-installing-retry" label={notice.action === "retry" ? "Retry" : "Try again"} onPress={() => void ctx.extras.retry()} />
           )}

@@ -21,7 +21,7 @@ const ROLES = new Set(["button", "switch", "checkbox", "radio", "tab", "slider",
 const CONTROL_NAME =
   /(Button|Switch|Toggle|Slider|Checkbox|Tick|Segmented|SearchField|TextField|Field|Sheet|Dialog|Alert|Tooltip|Spinner|Progress|ProgressBar|EmptyState|Empty|Menu|Badge|Chip|Pill|Pills|Knob)$/;
 /** What a component built on the kit renders: it is then the kit's control in place, not a new one. */
-const KIT_FRAMES = new Set(["Sheet", "SheetCard", "AlertSheet", "FormSheet", "ConfirmSheet", "Button", "KitButton", "AlertWindow"]);
+const KIT_FRAMES = new Set(["Sheet", "SheetCard", "AlertSheet", "FormSheet", "ConfirmSheet", "Button", "KitButton", "AlertWindow", "Chip"]);
 
 export interface KitHit {
   file: string;

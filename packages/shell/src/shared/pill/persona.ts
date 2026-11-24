@@ -7,6 +7,8 @@
  */
 
 /** The glyph in Dashi's white disc (look.ts draws each). */
+import { CAPSULE } from "@dashi/ui";
+
 export const PERSONA_GLYPHS = ["spark", "bowl", "dot", "moon", "leaf", "drop", "flame", "paw"] as const;
 export type PersonaGlyph = (typeof PERSONA_GLYPHS)[number];
 /** What leads Dashi's capsule: a glyph in its disc, or `dots` for no disc at all (the first slice's choice, still honoured). Dictation's capsule is always five dots. */
@@ -41,7 +43,7 @@ export interface Persona {
 
 export const DEFAULT_PERSONA: Persona = {
   name: "Dashi",
-  colour: "#6E56CF",
+  colour: CAPSULE.defaultPurple,
   mark: "spark",
   dots: "line",
   motion: "calm",

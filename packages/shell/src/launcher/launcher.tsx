@@ -27,7 +27,7 @@
  *   narrows the panel to its rows behind a chip; Esc leaves it.
  */
 
-import { useColors } from "@dashi/ui";
+import { SHADOW, useColors } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { fieldAccess } from "./access.ts";
 import { useCommands, useExtraKeys } from "./lib/commands.ts";
@@ -99,7 +99,7 @@ function LauncherPanel(props: LauncherProps) {
           backgroundColor: mode.kind === "talk" ? colors.launcher.slice(0, 7) : colors.launcher,
           borderWidth: 1,
           borderColor: colors.separator,
-          shadow: "xl",
+          shadow: SHADOW.xl,
           overflow: "hidden",
         }}
       >

@@ -10,13 +10,14 @@
  * draws the frames, and boot/launcher.tsx puts the rects on the screen.
  */
 
+import { SPACE } from "@dashi/ui";
 import type { LauncherWindow } from "./lib/items.ts";
 import { windowsOf } from "./lib/items.ts";
 import { keepInView } from "./lib/selection.ts";
 import type { Row } from "./row-model.ts";
 
 /** A picture's frame (16:10), the gap between frames, and the strip's height with its padding. */
-export const STRIP = { width: 112, height: 70, gap: 8, padTop: 4, padBottom: 8, shown: 4, inset: 3 } as const;
+export const STRIP = { width: 112, height: 70, gap: SPACE.m, padTop: 4, padBottom: 8, shown: 4, inset: 3 } as const;
 export const STRIP_HEIGHT = STRIP.padTop + STRIP.height + STRIP.padBottom;
 
 /** The pictures the launcher shows: which row they open under, and which window is picked. */

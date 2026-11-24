@@ -7,14 +7,14 @@
  * beside the agent mark in the bar's one row: no second bar, no banner.
  */
 
-import { useColors } from "@dashi/ui";
+import { SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { type Bounds, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import type { AloneState } from "./agents/index.ts";
 import { elapsedText } from "./shared/time/index.ts";
 
 /** The chip's measures: the agent mark's height and corner, a stop square, and the time. */
-export const ALONE_CHIP = { height: 22, padding: 7, gap: 5, square: 8, squareRadius: 2, fontSize: 12 } as const;
+export const ALONE_CHIP = { height: 22, padding: SPACE.s, gap: SPACE.xs, square: 8, squareRadius: 2, fontSize: TYPE.secondary.size } as const;
 
 /** The time left as the chip says it: "59:59", "0:07"; whole seconds, rounded up, so it never reads 0:00 while on. */
 export function leftText(ends: number, now: number): string {
@@ -77,7 +77,7 @@ export function AloneChip({ state, onStop, onTip }: AloneChipProps) {
       }}
     >
       <View style={{ width: ALONE_CHIP.square, height: ALONE_CHIP.square, borderRadius: ALONE_CHIP.squareRadius, backgroundColor: colors.agent }} />
-      <Text numberOfLines={1} style={{ fontSize: ALONE_CHIP.fontSize, fontWeight: "semibold", color: colors.agentInk }}>
+      <Text numberOfLines={1} style={{ fontSize: ALONE_CHIP.fontSize, fontWeight: WEIGHT.semibold, color: colors.agentInk }}>
         {left}
       </Text>
     </View>

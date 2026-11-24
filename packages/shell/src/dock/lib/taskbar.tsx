@@ -10,7 +10,7 @@
  * the clock and the status icons, so the bar's right side is empty.
  */
 
-import { useColors } from "@dashi/ui";
+import { CLEAR, RADIUS, SPACE, TYPE, useColors, WEIGHT } from "@dashi/ui";
 import { type Bounds, type PointerInfo, Text, View, type ViewStyle } from "@mirinjs/metal";
 import { useRef } from "react";
 import { appFor } from "../../apps.ts";
@@ -88,9 +88,9 @@ function barStyle(colors: ReturnType<typeof useColors>, slid: SlideState): ViewS
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingLeft: 8,
-    paddingRight: 8,
+    gap: SPACE.xs,
+    paddingLeft: SPACE.m,
+    paddingRight: SPACE.m,
     backgroundColor: colors.dock,
     borderTopWidth: 1,
     borderColor: colors.dockBorder,
@@ -190,8 +190,8 @@ function RunningMark({ running, lit }: { running: boolean; lit: boolean }) {
         left: lit ? 10 : 18,
         right: lit ? 10 : 18,
         height: 2,
-        borderRadius: 1,
-        backgroundColor: running ? colors.dot : "#00000000",
+        borderRadius: RADIUS.thumb,
+        backgroundColor: running ? colors.dot : CLEAR,
       }}
     />
   );
@@ -240,11 +240,11 @@ function TaskbarItem({
         justifyContent: "center",
         height: TASKBAR.buttonHeight,
         maxWidth: TASKBAR.buttonMaxWidth,
-        paddingLeft: 8,
-        paddingRight: 8,
+        paddingLeft: SPACE.m,
+        paddingRight: SPACE.m,
         borderRadius: TASKBAR.radius,
-        backgroundColor: lit ? colors.switcherSelection : "#00000000",
-        hoverBackgroundColor: lit ? colors.switcherSelection : colors.hover,
+        backgroundColor: lit ? colors.openWash : CLEAR,
+        hoverBackgroundColor: lit ? colors.openWash : colors.hover,
       }}
     >
       {/* The entrance moves the content, not the button's box: the minimize animation aims at the box. */}
@@ -252,7 +252,7 @@ function TaskbarItem({
         style={{
           flexDirection: "row",
           alignItems: "center",
-          gap: 8,
+          gap: SPACE.m,
           opacity: (minimized ? 0.6 : 1) * dim * rise.opacity,
           position: "relative",
           top: rise.offset,
@@ -261,12 +261,14 @@ function TaskbarItem({
         <AppIcon source={button.entry.app.icon} style={{ width: TASKBAR.icon, height: TASKBAR.icon }} />
         {button.label !== "" && (
           <View style={{ flexShrink: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: 12, color: colors.text, fontWeight: lit ? "semibold" : "normal" }}>
+            <Text numberOfLines={1} style={{ fontSize: TYPE.secondary.size, color: colors.text, fontWeight: lit ? WEIGHT.semibold : WEIGHT.regular }}>
               {button.label}
             </Text>
           </View>
         )}
-        {attention && <View testID={`taskbar-${name}-attention`} style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.critical }} />}
+        {attention && (
+          <View testID={`taskbar-${name}-attention`} style={{ width: 8, height: 8, borderRadius: RADIUS.check, backgroundColor: colors.critical }} />
+        )}
       </View>
       <RunningMark running={running} lit={lit} />
     </View>

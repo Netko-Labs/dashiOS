@@ -1,19 +1,26 @@
 /**
  * A notification in the area, printed as paper (round five, frame 1): the
- * app's icon in a ring, its name in small capitals, the time (or "+2" when
- * its group holds more), the title, the body, and its actions as buttons.
+ * app's icon, its name in small capitals, the time (or "+2" when its group
+ * holds more), the title, the body, and its actions as the kit's Buttons in
+ * the inks look. The measures are the one card's (NO-1, card.tsx); its
+ * paper and corner are a widget's (CO-11).
  * A group of several shows two hairline edges under it; a press on "+n"
  * opens the rest.
  */
 
+import { Button, RADIUS, SPACE } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useMemo } from "react";
 import { AppIcon } from "../../shared/apps/index.ts";
-import { Btn, Card, cardColours, Lab, Meta, Title, useCard, type WidgetEnv, Words } from "../../widgets/index.ts";
+import { Card, cardColours, Lab, Meta, Title, type WidgetEnv, Words } from "../../widgets/index.ts";
 import { ellipsize } from "../text.ts";
 import type { HistoryEntry } from "../types.ts";
+import { NOTE_CARD } from "./card.tsx";
 import { relativeTime } from "./group.ts";
 import { notificationIcon } from "./icon.ts";
+
+/** The note's width in the area's column. */
+const PAPER_NOTE = { width: 356 } as const;
 
 export function PaperNote({
   entry,
@@ -41,7 +48,7 @@ export function PaperNote({
   const paper = cardColours(look);
   const actions = entry.closed ? [] : entry.actions.filter((action) => action.key !== "default").slice(0, 3);
   return (
-    <View style={{ marginBottom: more > 0 ? 6 : 0 }}>
+    <View style={{ marginBottom: more > 0 ? SPACE.s : 0 }}>
       {more > 0 ? (
         <View
           style={{
@@ -50,20 +57,20 @@ export function PaperNote({
             right: 10,
             bottom: -5,
             height: 12,
-            borderRadius: 10,
+            borderRadius: RADIUS.card,
             borderWidth: 1,
             borderColor: paper.hairline,
             backgroundColor: paper.paper,
           }}
         />
       ) : null}
-      <Card look={look} width={356} padding={13} testID={`nc-card:${entry.id}`} {...(onOpen ? { onPress: onOpen } : {})}>
-        <View style={{ flexDirection: "row", gap: 11 }}>
-          <NoteIcon source={icon} />
+      <Card look={look} width={PAPER_NOTE.width} padding={NOTE_CARD.padding} testID={`nc-card:${entry.id}`} {...(onOpen ? { onPress: onOpen } : {})}>
+        <View style={{ flexDirection: "row", gap: NOTE_CARD.gap }}>
+          <AppIcon source={icon} resizeMode="contain" style={{ width: NOTE_CARD.icon, height: NOTE_CARD.icon, borderRadius: NOTE_CARD.iconRadius }} />
           <View style={{ flex: 1, flexDirection: "column" }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: SPACE.xxs }}>
               <Lab>{entry.appName || "Notification"}</Lab>
-              <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+              <View style={{ flexDirection: "row", gap: SPACE.s, alignItems: "center" }}>
                 {more > 0 ? (
                   <View testID={`nc-more:${entry.id}`} {...(onMore ? { onPress: onMore } : {})}>
                     <Meta>{`+${more}`}</Meta>
@@ -75,12 +82,13 @@ export function PaperNote({
             <Title>{ellipsize(entry.summary || entry.appName, 40)}</Title>
             {entry.body !== "" ? <Words lines={3}>{ellipsize(entry.body, 140)}</Words> : null}
             {actions.length > 0 ? (
-              <View style={{ flexDirection: "row", gap: 6, marginTop: 9 }}>
+              <View style={{ flexDirection: "row", gap: SPACE.s, marginTop: NOTE_CARD.actionsGap }}>
                 {actions.map((action, i) => (
-                  <Btn
+                  <Button
                     key={action.key}
-                    label={action.label}
-                    fill={i === actions.length - 1 && actions.length > 1}
+                    label={action.label || action.key}
+                    look="inks"
+                    primary={i === actions.length - 1 && actions.length > 1}
                     onPress={() => onAction(action.key)}
                     testID={`nc-action:${entry.id}:${action.key}`}
                   />
@@ -90,15 +98,6 @@ export function PaperNote({
           </View>
         </View>
       </Card>
-    </View>
-  );
-}
-
-function NoteIcon({ source }: { source: string }) {
-  const c = useCard();
-  return (
-    <View style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: c.hairline, alignItems: "center", justifyContent: "center" }}>
-      <AppIcon source={source} resizeMode="contain" style={{ width: 16, height: 16, borderRadius: 4 }} />
     </View>
   );
 }

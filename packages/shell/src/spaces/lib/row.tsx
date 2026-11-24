@@ -18,7 +18,7 @@ import { View } from "@mirinjs/metal";
 import { useState, useSyncExternalStore } from "react";
 import { KeyCatcher } from "../../overlay.tsx";
 import { ROW } from "./row-layout.ts";
-import { at, CLOSE, RenameField, RowAdd, RowClose, RowName, RowPictures, useNamePress } from "./row-parts.tsx";
+import { at, CLOSE, RowAdd, RowClose, RowName, RowPictures, RowRename, useNamePress } from "./row-parts.tsx";
 import { rowShape, SHELF_HEIGHT } from "./shelf.ts";
 import type { Desktops } from "./state.ts";
 
@@ -83,7 +83,7 @@ export function SpacesRow(props: RowProps) {
       {shape.open ? <RowPictures pictures={shape.layout.pictures} {...shown} onSwitch={props.onSwitch} onOverSpace={props.onOverSpace} /> : null}
       {names.map((rect, index) =>
         renaming?.index === index ? (
-          <RenameField
+          <RowRename
             key={`rename-${index}`}
             index={index}
             rect={rect}

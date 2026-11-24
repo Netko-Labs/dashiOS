@@ -27,8 +27,10 @@ export { EMPTY_STATE, EmptyState, NoResults, noResultsMessage } from "./empty-st
 export { ERROR_STATE, ErrorState } from "./error-state.tsx";
 export { FoldedChoices, type FoldedChoicesProps } from "./folded.tsx";
 export { FormSheet, type FormSheetProps } from "./form-sheet.tsx";
+export { GLYPH_BUTTON, GlyphButton, type GlyphButtonProps } from "./glyph-button.tsx";
 export * as glyphs from "./glyphs.ts";
 export {
+  ADD,
   CHECK,
   CHEVRON_DOWN,
   CHEVRON_LEFT,
@@ -127,7 +129,7 @@ export {
   valueAt,
 } from "./slider-math.ts";
 export { StepKeys, type StepKeysProps } from "./step-keys.tsx";
-export { PANEL_SWITCH, SWITCH, Switch, type SwitchProps } from "./switch.tsx";
+export { INKS_SWITCH, PANEL_SWITCH, SWITCH, Switch, type SwitchProps } from "./switch.tsx";
 export { Table, type TableProps } from "./table.tsx";
 export type { Column } from "./table-parts.tsx";
 export { holdOrder, moveSelection, nextSort, type SortableColumn, type SortState, sortRows } from "./table-sort.ts";

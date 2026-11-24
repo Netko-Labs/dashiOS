@@ -8,6 +8,7 @@
  */
 
 import type { Palette } from "@dashi/ui";
+import { CLEAR, RADIUS, SPACE, TYPE } from "@dashi/ui";
 import { type Bounds, Svg, Text, View } from "@mirinjs/metal";
 import { MOON } from "../../control-center/index.ts";
 import { batteryGlyph, CONTROL_CENTER, networkGlyph, speakerGlyph } from "../../glyphs.ts";
@@ -60,8 +61,8 @@ function batterySlot({ battery, batteryPercent, popover, colors, on, named }: Sl
       node: (
         <StatusItem testID="status-battery" onPress={on.battery} open={popover?.kind === "battery" && popover.right !== null} {...named(label)}>
           {batteryPercent && (
-            <View testID="status-battery-percent" style={{ marginRight: 5 }}>
-              <Text style={{ fontSize: 12, color: batteryLow ? colors.batteryLow : colors.text }}>{`${battery.percent}%`}</Text>
+            <View testID="status-battery-percent" style={{ marginRight: SPACE.xs }}>
+              <Text style={{ fontSize: TYPE.secondary.size, color: batteryLow ? colors.batteryLow : colors.text }}>{`${battery.percent}%`}</Text>
             </View>
           )}
           <Svg
@@ -163,16 +164,16 @@ function clockSlot({ clock, popover, colors, on, accessible = false }: SlotConte
         style={{
           flexDirection: "row",
           alignItems: "center",
-          gap: 6,
+          gap: SPACE.s,
           justifyContent: "center",
           height: 22,
-          paddingLeft: 8,
-          paddingRight: 8,
-          borderRadius: 5,
-          backgroundColor: popover?.kind === "notification-center" ? colors.switcherSelection : "#00000000",
+          paddingLeft: SPACE.m,
+          paddingRight: SPACE.m,
+          borderRadius: RADIUS.row,
+          backgroundColor: popover?.kind === "notification-center" ? colors.openWash : CLEAR,
         }}
       >
-        <Text numberOfLines={1} style={{ fontSize: 13, color: colors.text }}>
+        <Text numberOfLines={1} style={{ fontSize: TYPE.body.size, color: colors.text }}>
           {clock}
         </Text>
       </View>
