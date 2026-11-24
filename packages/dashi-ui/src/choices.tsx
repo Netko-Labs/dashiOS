@@ -7,7 +7,10 @@ import { useColors } from "./theme/index.ts";
 
 export interface Choice<T> {
   value: T;
+  /** Its words, or its name when it shows a glyph (screen readers and agents say it). */
   label: string;
+  /** A glyph in place of the words (a segmented control's view switch). */
+  glyph?: string;
 }
 
 /** Choices as pills in a row that wraps; the chosen one takes the accent. */

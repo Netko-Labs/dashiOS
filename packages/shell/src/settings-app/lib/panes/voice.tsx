@@ -15,11 +15,11 @@
  * (person-only.ts): an agent's press changes nothing and the row says so.
  */
 
+import { FoldedChoices } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { speedWord } from "../../../rewrite/speed-word.ts";
 import { Caption, Group, Note } from "../../../shared/cards/index.ts";
-import { FoldedChoices } from "../../../shared/controls/folded.tsx";
 import {
   basicSets,
   basicsHere,

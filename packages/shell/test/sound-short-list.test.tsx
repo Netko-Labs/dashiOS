@@ -61,7 +61,7 @@ describe("an app's row by the keyboard", () => {
   });
 
   test("↓ reaches the row; ← and → move its level, Space mutes it, and a muted app steps up from silence", async () => {
-    const { transport, emit } = host();
+    const { transport, emit, trees } = host();
     const levels: Array<[string, number]> = [];
     const muted: Array<[string, boolean]> = [];
     function Page() {
@@ -92,7 +92,8 @@ describe("an app's row by the keyboard", () => {
       await settle();
     };
     await key("down");
-    expect(root.nodeId("cc-page-focus-ring")).toBeDefined();
+    // Metal draws the ring where the page's keys are (focusRingShown), not a hand-drawn border.
+    expect(trees.at(-1)).toContain('"focusRingShown":true');
     await key("right");
     await key("left");
     await key("space");

@@ -7,12 +7,10 @@
  * volume", "Mute Helium", "Play Helium on").
  */
 
-import { MoreButton, PopUpButton, type PopUpOption } from "@dashi/ui";
+import { InkSlider, MoreButton, PopUpButton, type PopUpOption, useControlColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
 import { AppIcon } from "../../../shared/apps/index.ts";
-import { InkSlider } from "../../../shared/controls/ink-slider.tsx";
-import { useControlColors } from "../../../shared/controls/palette.ts";
 import { type MixerOutput, MuteKnob, type StreamMeters, type StreamSound, useMeterLevel } from "../../../sound/index.ts";
 import { PAGE } from "../row.tsx";
 

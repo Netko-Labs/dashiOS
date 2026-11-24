@@ -123,7 +123,7 @@ function AccessSheet({ request, app, answer, open }: { request: AccessRequest; a
       question={request.title}
       message={detail}
       glyph={camera ? CAMERA : glyphs.LOCK}
-      tone="accent"
+      tone="neutral"
       footer={<Button testID="access:privacy" label={privacyLabel()} onPress={() => void open(PRIVACY_LINK)} />}
       buttons={[
         { label: request.denyLabel, testID: "access:deny", onPress: () => reply(false), cancel: true },

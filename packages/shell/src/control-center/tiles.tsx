@@ -14,12 +14,9 @@
  * applet's that isn't running.
  */
 
+import { fillLength, GlyphDisc, InkFill, LimitBar, levelAt, useControlColors, useSpring } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
-import { useSpring } from "../shared/controls/motion.ts";
-import { useControlColors } from "../shared/controls/palette.ts";
-import { Chip, FocusRing, InkFill, LimitBar } from "../shared/controls/parts.tsx";
-import { fillLength, levelAt } from "../shared/controls/slider-math.ts";
 import { GRID } from "./layout.ts";
 
 /** Corners of a tile off, and on. */
@@ -165,12 +162,12 @@ export function SliderTile({ look, standing, onLevel }: { look: SliderLook; stan
             <Text style={{ fontSize: 11, fontWeight: "semibold", color: valueOnInk ? colors.fillInk : colors.muted }}>{look.value}</Text>
           </View>
           <View style={{ position: "absolute", bottom: 10, left: 0, right: 0, alignItems: "center" }}>
-            <Chip glyph={look.glyph} />
+            <GlyphDisc glyph={look.glyph} />
           </View>
         </>
       ) : (
         <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 10, paddingLeft: 12, paddingRight: 14 }}>
-          <Chip glyph={look.glyph} />
+          <GlyphDisc glyph={look.glyph} />
           <View style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2, borderRadius: 10, backgroundColor: colors.chip }}>
             <Text style={{ fontSize: 12, fontWeight: "semibold", color: colors.text }}>{look.title}</Text>
           </View>
@@ -234,10 +231,23 @@ export function TileFrame({
   radius: number;
   children: ReactNode;
 }) {
+  const colors = useControlColors();
   return (
-    <View style={{ position: "absolute", left: frame.left, top: frame.top, width: frame.width, height: frame.height, flexDirection: "column" }}>
+    <View
+      testID={focused ? "cc-focus-ring" : undefined}
+      focusRingShown={focused}
+      style={{
+        position: "absolute",
+        left: frame.left,
+        top: frame.top,
+        width: frame.width,
+        height: frame.height,
+        flexDirection: "column",
+        borderRadius: radius,
+        focusRingColor: colors.focus,
+      }}
+    >
       {children}
-      {focused && <FocusRing radius={radius} />}
     </View>
   );
 }

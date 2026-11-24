@@ -43,7 +43,7 @@ export const BLANK_CHOICES: ReadonlyArray<{ value: number; label: string }> = [
   { value: 1800, label: "30 minutes" },
 ];
 
-/** The four the screen-off row shows as pills; the rest are under "More" (shared/controls/fold.ts). */
+/** The four the screen-off row shows as pills; the rest are under "More" (@dashi/ui panel/fold.ts). */
 export const BLANK_COMMON: readonly number[] = [120, 300, 600, 0];
 
 /** The choice for a saved number of seconds: itself when listed, else the one nearest above (a hand-edited 90 s shows as 2 minutes). */

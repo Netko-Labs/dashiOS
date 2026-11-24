@@ -9,13 +9,9 @@
  * means "on". Everything paints with the live Dark Mode.
  */
 
-import { useColors } from "@dashi/ui";
+import { FoldedChoices, InkSlider, Switch as KitSwitch, useColors, useControlColors } from "@dashi/ui";
 import { type Bounds, ScrollView, Text, useWindowChrome, View } from "@mirinjs/metal";
 import { createContext, type ReactNode, useContext, useMemo, useRef } from "react";
-import { FoldedChoices } from "../shared/controls/folded.tsx";
-import { InkSlider } from "../shared/controls/ink-slider.tsx";
-import { ControlSwitch } from "../shared/controls/inputs.tsx";
-import { useControlColors } from "../shared/controls/palette.ts";
 import { PAGE } from "./lib/row.tsx";
 import { PAGE_GAP, PageContext } from "./spot.tsx";
 
@@ -43,7 +39,7 @@ export interface Choice<T> {
 /**
  * Choices as segmented pills, the chosen one green with the tighter corner;
  * past five, the four commonest (`common`, else the first four) and "More"
- * for the rest, the one in use always among the pills (shared/controls/fold.ts).
+ * for the rest, the one in use always among the pills (@dashi/ui panel/fold.ts).
  */
 export function Choices<T extends string | number>(props: {
   options: ReadonlyArray<Choice<T>>;
@@ -71,9 +67,9 @@ export function Slider(props: {
   return <InkSlider {...props} />;
 }
 
-/** An on/off switch: its track shows when off, Dashi green when on. */
+/** An on/off switch: its track shows when off, the one "on" when on. */
 export function Switch({ on, testID, onChange, disabled }: { on: boolean; testID: string; onChange?: (on: boolean) => void; disabled?: boolean }) {
-  return <ControlSwitch on={on} testID={testID} {...(onChange ? { onChange } : {})} {...(disabled ? { disabled } : {})} />;
+  return <KitSwitch look="panel" on={on} testID={testID} {...(onChange ? { onChange } : {})} {...(disabled ? { disabled } : {})} />;
 }
 
 /** The settings file couldn't be written just now (view.tsx provides it; the page says so at its top). */

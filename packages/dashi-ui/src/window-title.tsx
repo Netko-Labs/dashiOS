@@ -13,8 +13,8 @@
  */
 
 import { Text, View } from "@mirinjs/metal";
-import { useState } from "react";
-import { useColors } from "./theme/index.ts";
+import { type ReactNode, useState } from "react";
+import { SPACE, TYPE, useColors, WEIGHT } from "./theme/index.ts";
 
 /** The widest a window's title gets in its toolbar before it is cut. */
 export const TITLE_MAX = 320;
@@ -32,11 +32,18 @@ export function titleRoom(width: number): number {
   return Math.min(TITLE_KEEP, Math.max(TITLE_MIN, Math.ceil(width)));
 }
 
-export function WindowTitle({ title, detail }: { title: string; detail?: string }) {
+/** A place in a run, written one way (VS-8): "2 of 12". */
+export const placeOf = (index: number, count: number): string => `${index + 1} of ${count}`;
+
+/**
+ * The title, its detail after " — ", and `after`: tools that follow the title
+ * in its row (Preview's), which keep their width while the detail gives way.
+ */
+export function WindowTitle({ title, detail, after }: { title: string; detail?: string; after?: ReactNode }) {
   const colors = useColors();
   // The title's own width, measured by an unseen copy: Metal sizes a view that grows from nothing.
   const [width, setWidth] = useState(0);
-  const name = { fontSize: 13, lineHeight: TITLE_LINE, fontWeight: "bold", color: colors.text } as const;
+  const name = { fontSize: TYPE.body.size, lineHeight: TITLE_LINE, fontWeight: WEIGHT.bold, color: colors.text } as const;
   return (
     <View testID="window-title" style={{ flex: 1, minWidth: titleRoom(width), flexDirection: "row", alignItems: "center", position: "relative" }}>
       <View style={{ position: "absolute", left: 0, top: 0, width: TITLE_KEEP, height: 0, overflow: "hidden", opacity: 0, flexDirection: "row" }}>
@@ -55,6 +62,7 @@ export function WindowTitle({ title, detail }: { title: string; detail?: string 
         </View>
         {detail ? <TitleDetail text={` — ${detail}`} color={colors.textMuted} /> : null}
       </View>
+      {after !== undefined && <View style={{ flexShrink: 0, flexDirection: "row", alignItems: "center", gap: SPACE.m, marginLeft: SPACE.m }}>{after}</View>}
     </View>
   );
 }
@@ -66,7 +74,7 @@ export function WindowTitle({ title, detail }: { title: string; detail?: string 
  * "— 1 note" was cut to a bare "…" in a narrow window).
  */
 function TitleDetail({ text, color }: { text: string; color: string }) {
-  const style = { fontSize: 13, lineHeight: TITLE_LINE, color };
+  const style = { fontSize: TYPE.body.size, lineHeight: TITLE_LINE, color };
   return (
     <View testID="window-title-detail" style={{ flexGrow: 1, flexShrink: 0, minWidth: 0, height: TITLE_LINE, position: "relative" }}>
       <View testID="window-title-detail-room" style={{ maxWidth: DETAIL_KEEP, height: 0, overflow: "hidden", opacity: 0 }}>

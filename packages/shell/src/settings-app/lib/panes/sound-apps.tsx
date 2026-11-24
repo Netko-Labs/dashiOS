@@ -13,10 +13,10 @@
  * With none: "No apps are playing sound."
  */
 
+import { useControlColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { useState } from "react";
 import { Caption, Group, Note } from "../../../shared/cards/index.ts";
-import { useControlColors } from "../../../shared/controls/palette.ts";
 import { type AppMixer, type AppSound, type MixerOutput, type StreamMeters, useMixer } from "../../../sound/index.ts";
 import { Spot } from "../../spot.tsx";
 import { appSpot } from "../find.ts";

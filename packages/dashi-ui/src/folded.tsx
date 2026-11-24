@@ -8,11 +8,12 @@
  * "More"): the word and a chevron, never an underline or an ellipsis.
  */
 
-import { PopupMenu, useWindowLayer } from "@dashi/ui";
 import { type Bounds, createPortal } from "@mirinjs/metal";
 import { useRef, useState } from "react";
-import { foldChoices, moreMenuOrigin } from "./fold.ts";
-import { Segmented, type SegmentedProps } from "./inputs.tsx";
+import { foldChoices, moreMenuOrigin } from "./panel/index.ts";
+import { PopupMenu } from "./popup-menu.tsx";
+import { Segmented, type SegmentedProps } from "./segmented.tsx";
+import { useWindowLayer } from "./tooltip.tsx";
 
 export interface FoldedChoicesProps<T extends string | number> extends SegmentedProps<T> {
   /** The commonest choices, shown as pills when the row folds; the first four otherwise. */
@@ -51,7 +52,15 @@ export function FoldedChoices<T extends string | number>({ options, value, onCha
         })();
   return (
     <>
-      <Segmented options={fold.shown} value={value} onChange={onChange} testID={testID} {...(disabled ? { disabled } : {})} {...(more ? { more } : {})} />
+      <Segmented
+        look="panel"
+        options={fold.shown}
+        value={value}
+        onChange={onChange}
+        testID={testID}
+        {...(disabled ? { disabled } : {})}
+        {...(more ? { more } : {})}
+      />
       {menu}
     </>
   );

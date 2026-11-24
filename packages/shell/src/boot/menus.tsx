@@ -4,6 +4,7 @@
  * the menus, Control Center and the battery panel that show them.
  */
 
+import { setControlMotion } from "@dashi/ui";
 import type { Compositor } from "../compositor/index.ts";
 import { AutoRefresh, MirrorStore, rateOnPower } from "../display-config/index.ts";
 import { bottomInset, dockSign } from "../dock/index.ts";
@@ -15,7 +16,6 @@ import { extraEntries, type Menus, type StatusMenuAction, startMenus, useMenus }
 import type { Notifications } from "../notifications/index.ts";
 import { chargeTarget, powerOffReason } from "../power/index.ts";
 import type { App } from "../shared/apps/index.ts";
-import { setControlMotion } from "../shared/controls/index.ts";
 import { isPaneId } from "../shared/settings/index.ts";
 import { startAppMixer } from "../sound/index.ts";
 import { MENU_BAR_HEIGHT } from "../theme.ts";
@@ -85,7 +85,7 @@ export function startMachine(needs: MachineNeeds): Machine {
   // An applet's pick of the power mode is the same as one in Control Center.
   needs.programs.appletPower.connect(laptop.modes);
   const autoRefresh = late.set("autoRefresh", startAutoRefresh(needs));
-  // Control Center's tiles step their corners and pages only while Reduce Motion is off (shared/controls/motion.ts).
+  // Control Center's tiles step their corners and pages only while Reduce Motion is off (@dashi/ui panel/motion.ts).
   setControlMotion(() => needs.look.state.reduceMotion);
   const chargeLimit = (): number | null => {
     if (!laptop.store.getSnapshot().knobs.has("charge-limit")) return null;

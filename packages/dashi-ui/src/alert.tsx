@@ -19,7 +19,11 @@ import type { ButtonKind } from "./button-look.ts";
 import { KeySink } from "./key-sink.tsx";
 import type { KeyInput } from "./keys.ts";
 import { Sheet } from "./sheet.tsx";
-import { useColors, useSurface } from "./theme/index.ts";
+import { RADIUS, SPACE, TYPE, useColors, useSurface, WEIGHT } from "./theme/index.ts";
+
+/** The glyph's tile: 40 at radius 10, its glyph 22. */
+export const ALERT_TILE = { size: 40, glyph: 22 } as const;
+
 import type { Palette } from "./theme/palette.ts";
 import { TooltipLayer } from "./tooltip.tsx";
 import { useTitleBarInset } from "./window.tsx";
@@ -41,8 +45,12 @@ export interface AlertButton {
   disabled?: boolean;
 }
 
-/** What the glyph's tile says: kombu for a question or a permission, ume before destroying, broth for a warning. */
-export type AlertTone = "neutral" | "accent" | "danger" | "warning";
+/**
+ * What the glyph's tile says (R4, design.html "Alert"): ume before destroying
+ * or after a failure, broth for a caution, shiso for an agent's question,
+ * neutral for everything else. The accent never washes a tile.
+ */
+export type AlertTone = "neutral" | "danger" | "warning" | "agent";
 
 /** The button a key presses: Esc the cancel one (or the only one), Enter the default one. */
 export function alertKeyTarget(key: KeyInput, buttons: readonly AlertButton[]): AlertButton | null {
@@ -65,8 +73,8 @@ export function pressForKey(key: KeyInput, buttons: readonly AlertButton[]): boo
 
 export function toneColors(tone: AlertTone, colors: Palette): { wash: string; ink: string } {
   switch (tone) {
-    case "accent":
-      return { wash: colors.selectionWash, ink: colors.selection };
+    case "agent":
+      return { wash: colors.agentWash, ink: colors.agent };
     case "danger":
       return { wash: colors.umeWash, ink: colors.ume };
     case "warning":
@@ -96,20 +104,32 @@ function AlertBody({ question, message, glyph, tone = "neutral", children, scrol
   const { wash, ink } = toneColors(tone, colors);
   const words = (
     <>
-      {question !== "" && <Text style={{ fontSize: 13, fontWeight: "bold", color: colors.text, lineHeight: 17 }}>{question}</Text>}
-      {message !== undefined && message !== "" && <Text style={{ fontSize: 12, color: colors.textMuted, lineHeight: 16 }}>{message}</Text>}
-      {children !== undefined && <View style={{ flexDirection: "column", gap: 8, marginTop: 6, flexShrink: 0 }}>{children}</View>}
+      {question !== "" && <Text style={{ fontSize: TYPE.body.size, fontWeight: WEIGHT.bold, color: colors.text, lineHeight: TYPE.body.line }}>{question}</Text>}
+      {message !== undefined && message !== "" && (
+        <Text style={{ fontSize: TYPE.secondary.size, color: colors.textMuted, lineHeight: TYPE.secondary.line }}>{message}</Text>
+      )}
+      {children !== undefined && <View style={{ flexDirection: "column", gap: SPACE.m, marginTop: SPACE.s, flexShrink: 0 }}>{children}</View>}
     </>
   );
   return (
-    <View style={{ flexDirection: "row", gap: 14, alignItems: "flex-start", ...(scroll ? { flex: 1, minHeight: 0 } : {}) }}>
-      <View style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: wash }}>
-        <Svg markup={glyph} size={22} color={ink} />
+    <View style={{ flexDirection: "row", gap: SPACE.button, alignItems: "flex-start", ...(scroll ? { flex: 1, minHeight: 0 } : {}) }}>
+      <View
+        style={{
+          width: ALERT_TILE.size,
+          height: ALERT_TILE.size,
+          flexShrink: 0,
+          borderRadius: RADIUS.card,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: wash,
+        }}
+      >
+        <Svg markup={glyph} size={ALERT_TILE.glyph} color={ink} />
       </View>
       {scroll ? (
-        <ScrollView style={{ flex: 1, flexDirection: "column", gap: 4, minWidth: 0 }}>{words}</ScrollView>
+        <ScrollView style={{ flex: 1, flexDirection: "column", gap: SPACE.xs, minWidth: 0 }}>{words}</ScrollView>
       ) : (
-        <View style={{ flex: 1, flexDirection: "column", gap: 4, minWidth: 0 }}>{words}</View>
+        <View style={{ flex: 1, flexDirection: "column", gap: SPACE.xs, minWidth: 0 }}>{words}</View>
       )}
     </View>
   );
@@ -119,8 +139,8 @@ function AlertBody({ question, message, glyph, tone = "neutral", children, scrol
 export function AlertButtons({ buttons, footer }: { buttons: readonly AlertButton[]; footer?: ReactNode }) {
   const enter = alertKeyTarget({ kind: "enter" }, buttons);
   return (
-    <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 6, flexShrink: 0 }}>
-      {footer !== undefined && <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8, minWidth: 0 }}>{footer}</View>}
+    <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", flexWrap: "wrap", gap: SPACE.m, marginTop: SPACE.s, flexShrink: 0 }}>
+      {footer !== undefined && <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: SPACE.m, minWidth: 0 }}>{footer}</View>}
       {buttons.map((button) => (
         <Button
           key={button.testID}
@@ -140,7 +160,7 @@ export function AlertButtons({ buttons, footer }: { buttons: readonly AlertButto
 /** The alert as it is, for laying out anywhere (the gallery shows one). */
 export function Alert(props: AlertProps) {
   return (
-    <View style={{ flexDirection: "column", gap: 10 }}>
+    <View style={{ flexDirection: "column", gap: SPACE.gap }}>
       <AlertBody {...props} />
       <AlertButtons buttons={props.buttons} footer={props.footer} />
     </View>

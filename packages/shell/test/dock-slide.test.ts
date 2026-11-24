@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
+import { CURVE } from "@dashi/ui";
 import { DOCK_MOTION, iconRise, panelOpacity, Slide } from "../src/dock/lib/slide.tsx";
-import { springOut } from "../src/shared/controls/motion.ts";
 
 const slides: Slide[] = [];
 const make = (reduce = false): Slide => {
@@ -51,10 +51,10 @@ test("icons rise one after another, overshoot a little, and settle", () => {
   expect(iconRise(early, 0).offset).toBeLessThan(iconRise(early, 4).offset);
   expect(iconRise(0, 0)).toEqual({ offset: DOCK_MOTION.iconDrop, opacity: 0 });
   expect(iconRise(1, 7)).toEqual({ offset: 0, opacity: 1 });
-  const curve = Array.from({ length: 101 }, (_, i) => springOut(i / 100));
+  const curve = Array.from({ length: 101 }, (_, i) => CURVE.spring(i / 100));
   expect(Math.max(...curve)).toBeGreaterThan(1);
   expect(Math.max(...curve)).toBeLessThan(1.2);
-  expect(springOut(1)).toBe(1);
+  expect(CURVE.spring(1)).toBe(1);
 });
 
 test("the panel fades in with its rise and is opaque in place", () => {

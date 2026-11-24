@@ -7,13 +7,10 @@
  * (`below`: the charge limit's switch, and its slider while it is on).
  */
 
-import { ControlName, KeyedText } from "@dashi/ui";
+import { ControlName, KeyedText, Knob, type PillsLaid, PillsWrapped, useControlColors } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { type ReactNode, useContext, useLayoutEffect, useRef, useState } from "react";
 import { CARD_RADIUS, CardRowsContext } from "../../shared/cards/index.ts";
-import { type PillsLaid, PillsWrapped } from "../../shared/controls/inputs.tsx";
-import { useControlColors } from "../../shared/controls/palette.ts";
-import { Knob } from "../../shared/controls/parts.tsx";
 
 /** Tell the card this row is in whether it starts with a knob (edge.ts: one left edge per card). */
 export function useCardRow(knob: boolean): void {

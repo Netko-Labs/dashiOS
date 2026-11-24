@@ -10,10 +10,9 @@
  * stays as it is. None while nobody records.
  */
 
-import { useColors as usePalette } from "@dashi/ui";
+import { useControlColors, useColors as usePalette } from "@dashi/ui";
 import { Text, View } from "@mirinjs/metal";
 import { Group } from "../../../shared/cards/index.ts";
-import { useControlColors } from "../../../shared/controls/palette.ts";
 import { type AppMixer, type AppRecording, type MixerOutput, type StreamMeters, useMixer } from "../../../sound/index.ts";
 import { Spot } from "../../spot.tsx";
 import { PAGE, useCardRow } from "../row.tsx";

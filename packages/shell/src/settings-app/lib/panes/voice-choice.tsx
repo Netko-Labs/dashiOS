@@ -5,9 +5,9 @@
  * on this computer is fetched by the row under it (voice.tsx `Corrections`). Only the person's own press changes them.
  */
 
+import { FoldedChoices } from "@dashi/ui";
 import { CORRECTION_CHOICES, type CorrectionChoice, isCorrectionChoice } from "../../../rewrite/index.ts";
 import { Group, Note } from "../../../shared/cards/index.ts";
-import { FoldedChoices } from "../../../shared/controls/folded.tsx";
 import { isRecognizer, RECOGNIZERS, type Recognizer } from "../../../voice/index.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";

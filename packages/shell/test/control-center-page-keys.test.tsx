@@ -110,17 +110,17 @@ describe("a page's rows by the keyboard", () => {
     const holds = (node: Node, id: string): boolean => node.props?.id === id || (node.children ?? []).some((child) => holds(child, id));
     const byId = (node: Node, id: string): Node | null =>
       node.props?.id === id ? node : ((node.children ?? []).map((child) => byId(child, id)).find(Boolean) ?? null);
-    /** The row whose view holds the ring. */
+    /** Metal's ring, shown by the page's own keys (focusRingShown): no hand-drawn ring (KB-2). */
+    const shows = (node: Node): boolean => node.props?.focusRingShown === true || (node.children ?? []).some(shows);
+    /** The row whose view shows the ring. */
     const ringOn = (): string | undefined => {
-      const ring = root.nodeId("cc-page-focus-ring");
-      if (!ring) return undefined;
       const tree = JSON.parse(last) as Node;
       return rows.find((id) => {
         const row = byId(tree, root.nodeId(id) ?? "");
-        return row !== null && holds(row, ring);
+        return row !== null && shows(row);
       });
     };
-    expect(root.nodeId("cc-page-focus-ring")).toBeUndefined();
+    expect(shows(JSON.parse(last) as Node)).toBe(false);
     await key("down");
     expect(ringOn()).toBe("wifi-header-switch");
     await key("space");

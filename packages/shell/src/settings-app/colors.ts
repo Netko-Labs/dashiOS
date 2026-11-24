@@ -8,8 +8,7 @@
  * purple. The job colors (ume, broth, shiso) stay @dashi/ui's.
  */
 
-import { type Palette, useColors as usePalette } from "@dashi/ui";
-import { useControlColors } from "../shared/controls/palette.ts";
+import { type Palette, useControlColors, useColors as usePalette } from "@dashi/ui";
 
 export function useColors(): Palette {
   const palette = usePalette();

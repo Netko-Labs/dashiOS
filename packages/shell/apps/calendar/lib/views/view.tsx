@@ -73,7 +73,7 @@ export function CalendarWindow({ model, chooser }: { model: CalendarModel; choos
       toolbar={<CalendarToolbar model={model} state={state} chrome={chrome} find={find} newEvent={grid.newEvent} />}
       overlay={calendarOverlay({ model, state, prefs, firstDay, area, windowWidth, colorOf, overlays, edits, files, find, grid })}
       notice={notice}
-      center={<ToolbarCenter heading={heading} chrome={chrome} find={find} />}
+      titleSlot={<ToolbarCenter heading={heading} chrome={chrome} find={find} />}
       sidebarWidth={chrome.sidebarWidth}
       sidebar={
         <SidebarPane

@@ -9,13 +9,12 @@
  * unpairs.
  */
 
-import { MORE } from "@dashi/ui";
+import { MORE, useControlColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { useEffect, useRef, useState } from "react";
 import { PageBody, PageHeader, PageNote, PageRow, PageSection } from "../control-center/page-parts.tsx";
 import { batteryGlyph } from "../glyphs.ts";
 import { Button } from "../menus/sheets.tsx";
-import { useControlColors } from "../shared/controls/palette.ts";
 import { failureLine } from "./failures.ts";
 import { deviceGlyph } from "./glyphs.ts";
 import { type BluetoothStore, useBluetooth } from "./store.ts";

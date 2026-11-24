@@ -8,10 +8,9 @@
  * window's top layer, over the cards, as a row's "More" menu is.
  */
 
-import { Button, controlPalette, isAccentHex, TextField, useWindowLayer } from "@dashi/ui";
+import { Button, controlPalette, isAccentHex, TextField, useControlColors, useWindowLayer } from "@dashi/ui";
 import { type Bounds, createPortal, Image, type PointerInfo, Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useMemo, useState } from "react";
-import { useControlColors } from "../../../shared/controls/palette.ts";
 import { bandsUnderStrip } from "./bands.ts";
 import { FIELD, hexOf, hsvToRgb, hueField, hueStrip, rgbToHsv, STRIP } from "./images.ts";
 

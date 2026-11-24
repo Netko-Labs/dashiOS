@@ -7,12 +7,12 @@
  * fills; "Wi-Fi Settings…" is last.
  */
 
+import { useControlColors } from "@dashi/ui";
 import { Svg, View } from "@mirinjs/metal";
 import { type ReactNode, useEffect, useRef } from "react";
 import { PADLOCK } from "../control-center/glyphs.ts";
 import { PageBody, PageHeader, PageNote, PageRow, PageSection } from "../control-center/page-parts.tsx";
 import { wifiGlyph } from "../glyphs.ts";
-import { useControlColors } from "../shared/controls/palette.ts";
 import { joinMessage } from "./networks.ts";
 import { type JoinState, useWifi, type WifiState, type WifiStore } from "./store.ts";
 import type { WifiNetwork } from "./types.ts";

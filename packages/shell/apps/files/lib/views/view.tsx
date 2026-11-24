@@ -61,7 +61,7 @@ export function FilesWindow({ store, ops, info }: { store: FilesStore; ops: Oper
           <AppWindow
             title={title}
             leading={<Leading />}
-            center={
+            titleSlot={
               <Omnibox
                 editing={editing}
                 session={editSession}

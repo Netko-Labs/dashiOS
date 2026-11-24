@@ -15,7 +15,7 @@
  */
 
 import { isRecord } from "@dashi/shape";
-import type { Direction } from "../shared/controls/slider-math.ts";
+import type { Direction } from "@dashi/ui";
 
 export const TILE_SIZES = ["round", "wide", "tall", "flat"] as const;
 export type TileSize = (typeof TILE_SIZES)[number];

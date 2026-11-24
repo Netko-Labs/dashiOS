@@ -7,10 +7,9 @@
  * ("Buttons stay ink"). Nothing in it does anything.
  */
 
-import { Button, CHECK, Choices, MenuRow, ProgressBar, rowLook, SelectionBar, Slider, Switch, useColors } from "@dashi/ui";
+import { Button, CHECK, Choices, MenuRow, ProgressBar, rowLook, SelectionBar, Slider, Switch, useColors, useControlColors } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
 import { type ReactNode, useState } from "react";
-import { useControlColors } from "../../../shared/controls/palette.ts";
 
 const COLUMN = { flex: 1, minWidth: 0, flexDirection: "column", gap: 10, padding: 12, borderRadius: 16 } as const;
 

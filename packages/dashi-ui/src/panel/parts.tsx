@@ -3,12 +3,12 @@
  * Settings, the battery panel and the tiles' pages draw with too
  * (docs/design.html, "Control Center" and "Settings"): a round knob holding
  * a glyph, the chip a slider's glyph sits on, a slider's ink fill, the
- * green bar with the charge limit's tick, and the purple keyboard ring.
+ * reading's bar with the charge limit's tick.
  */
 
-import { pill, TYPE } from "@dashi/ui";
 import { Svg, Text, View } from "@mirinjs/metal";
-import { useControlColors } from "./palette.ts";
+import { pill, TYPE, useColors } from "../theme/index.ts";
+import { useControlColors } from "./colors.ts";
 
 /**
  * A glyph on a round knob: a Settings row's (40, its circle at rest), a
@@ -49,7 +49,7 @@ export function Knob({
 /** The chip a slider's glyph sits on: 32 across, the surface's color. */
 const SLIDER_CHIP = 32;
 
-export function Chip({ glyph }: { glyph: string }) {
+export function GlyphDisc({ glyph }: { glyph: string }) {
   const colors = useControlColors();
   return (
     <View
@@ -96,18 +96,33 @@ export function InkFill({ length, total, standing, radius }: { length: number; t
   );
 }
 
+/** Under this charge a reading turns ume (CO-13). */
+export const LOW_CHARGE = 10;
+
 /**
- * A bar filled to `percent` in Dashi green, with a tick at the charge limit
- * (the battery row, the battery panel's gauge, Settings' battery hero).
- * Widths are shares of the bar, so it fits whatever room it is given.
+ * A reading's bar filled to `percent` in the fill's ink, ume under 10 %
+ * (CO-13: a reading is never "on"), with a tick at the charge limit (the
+ * battery row, the battery panel's gauge, Settings' battery hero). Widths
+ * are shares of the bar, so it fits whatever room it is given.
  */
 export function LimitBar({ percent, limit, height, label }: { percent: number; limit: number | null; height: number; label?: boolean }) {
   const colors = useControlColors();
+  const { critical } = useColors();
   const share = (value: number): `${number}%` => `${Math.min(Math.max(value, 0), 100)}%`;
   const tick = height + 8;
   return (
     <View style={{ flex: 1, height, borderRadius: height / 2, backgroundColor: colors.line, position: "relative" }}>
-      <View style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: share(percent), borderRadius: height / 2, backgroundColor: colors.on }} />
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: share(percent),
+          borderRadius: height / 2,
+          backgroundColor: percent < LOW_CHARGE ? critical : colors.fill,
+        }}
+      />
       {limit !== null && limit < 100 && (
         <View style={{ position: "absolute", left: 0, right: 0, top: -4, height: tick, flexDirection: "row" }}>
           <View style={{ width: share(limit) }} />
@@ -121,16 +136,5 @@ export function LimitBar({ percent, limit, height, label }: { percent: number; l
         </View>
       )}
     </View>
-  );
-}
-
-/** The keyboard's ring: 2 px of purple, 2 px out, round with what it rings. */
-export function FocusRing({ radius, testID = "cc-focus-ring" }: { radius: number; testID?: string }) {
-  const colors = useControlColors();
-  return (
-    <View
-      testID={testID}
-      style={{ position: "absolute", left: -4, top: -4, right: -4, bottom: -4, borderRadius: radius + 4, borderWidth: 2, borderColor: colors.focus }}
-    />
   );
 }

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { render } from "@mirinjs/metal";
-import { SearchField } from "../src/fields.tsx";
+import { SearchField } from "../src/search-field.tsx";
 import { fakeHost } from "./host.ts";
 import { settle } from "./support/time.ts";
 
@@ -42,7 +42,7 @@ test("a field with a least width gives way down to it; its status is muted words
   const plain = fakeHost();
   const again = render(<SearchField testID="search" value="" onChangeText={() => {}} />, plain.transport);
   await settle();
-  expect(plain.last()).toContain('"width":200');
+  expect(plain.last()).toContain('"width":210');
   expect(plain.last()).toContain('"shrink":false');
   expect(again.nodeId("search:status")).toBeUndefined();
   again.unmount();

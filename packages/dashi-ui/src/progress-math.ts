@@ -6,8 +6,10 @@
  * tick with the lit spoke moved on.
  */
 
+import { MOTION } from "./theme/index.ts";
+
 /** How often the moving parts draw: smooth enough, and cheap (each tick sends a tree). */
-export const PROGRESS_TICK_MS = 80;
+export const PROGRESS_TICK_MS = MOTION.step;
 /** One sweep of the indeterminate bar, there and back, in ticks. */
 export const SWEEP_TICKS = 24;
 /** The indeterminate bar's segment, as a share of the track. */

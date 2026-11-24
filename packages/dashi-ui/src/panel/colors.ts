@@ -4,7 +4,8 @@
  * a menu's lit row in them, and a floating panel's edge.
  */
 
-import { type ControlPalette, controlPalette, DARK_CONTROLS, type MenuHighlight, useAccent, useDark } from "@dashi/ui";
+import type { MenuHighlight } from "../menu-row.tsx";
+import { type ControlPalette, controlPalette, DARK_CONTROLS, useAccent, useDark } from "../theme/index.ts";
 
 export function useControlColors(): ControlPalette {
   return controlPalette(useDark(), useAccent());

@@ -1,8 +1,8 @@
 /** The sidebar's search field: a pill the color of an off tile, with the text input in it. */
 
+import { useControlColors } from "@dashi/ui";
 import { Svg, TextInput, View } from "@mirinjs/metal";
 import { useState } from "react";
-import { useControlColors } from "../../shared/controls/palette.ts";
 import { SEARCH } from "../../shared/settings/index.ts";
 import { SIDEBAR } from "./sidebar-measures.ts";
 

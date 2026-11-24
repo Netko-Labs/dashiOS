@@ -16,6 +16,7 @@
 
 import { type PressInfo, Svg, Text, useWindowChrome, View } from "@mirinjs/metal";
 import type { ReactNode } from "react";
+import { SIDEBAR } from "./sidebar.tsx";
 import { CLEAR, useColors, useSurface } from "./theme/index.ts";
 import { TooltipLayer, useTooltip } from "./tooltip.tsx";
 import { WindowTitle } from "./window-title.tsx";
@@ -64,11 +65,21 @@ export interface AppWindowProps {
   leading?: ReactNode;
   /** The toolbar's controls, at its end. */
   toolbar?: ReactNode;
-  /** In place of the title, filling the toolbar between `leading` and `toolbar` (Files' omnibox). `title` stays the window's name. */
-  center?: ReactNode;
+  /**
+   * VS-8: the title's room given away. What takes its place (Find, Files'
+   * omnibox) goes in `titleSlot`, filling the toolbar between `leading` and
+   * `toolbar`; `title` stays the window's name (the Dock, the switcher,
+   * screen readers). With neither, the title shows.
+   */
+  hideTitle?: boolean;
+  titleSlot?: ReactNode;
+  /** Tools after the title, in its row (Preview's): the title's detail gives way before them (WindowTitle). */
+  afterTitle?: ReactNode;
   /** The sidebar's rows (`SidebarSection`s and `SidebarItem`s). */
   sidebar?: ReactNode;
   sidebarWidth?: number;
+  /** The sidebar folded to its 56 rail (LA-5): its rows draw `rail` too. */
+  rail?: boolean;
   /**
    * Something happening, floating over the foot of the content (a `Notice`):
    * a job's progress, an error with its action. Only while it lasts.
@@ -79,33 +90,35 @@ export interface AppWindowProps {
   children: ReactNode;
 }
 
-export function AppWindow({ title, detail, leading, toolbar, center, sidebar, sidebarWidth = SIDEBAR_WIDTH, notice, overlay, children }: AppWindowProps) {
+export function AppWindow({
+  title,
+  detail,
+  leading,
+  toolbar,
+  hideTitle,
+  titleSlot,
+  afterTitle,
+  sidebar,
+  sidebarWidth: wide = SIDEBAR_WIDTH,
+  rail,
+  notice,
+  overlay,
+  children,
+}: AppWindowProps) {
   const colors = useColors();
   const surface = useSurface();
   const inset = useTitleBarInset();
   const height = Math.max(inset.top, TOOLBAR_HEIGHT);
+  const sidebarWidth = rail ? SIDEBAR.rail : wide;
+  const titleGone = hideTitle === true || titleSlot !== undefined;
   return (
     // The focus ring is kombu in every control inside (KB-2).
     <View style={{ flex: 1, flexDirection: "row", backgroundColor: surface.window, position: "relative", focusRingColor: colors.focusRing }}>
       <TooltipLayer>
         {sidebar !== undefined && (
-          <View
-            testID="window-sidebar"
-            style={{
-              width: sidebarWidth,
-              flexShrink: 0,
-              flexDirection: "column",
-              gap: 2,
-              paddingHorizontal: 10,
-              paddingBottom: 10,
-              backgroundColor: surface.sidebar,
-              borderRightWidth: 1,
-              borderColor: colors.separator,
-            }}
-          >
-            <View dragRegion style={{ height: inset.unified ? height : 10, flexShrink: 0, marginLeft: -10, marginRight: -10 }} />
+          <WindowSidebar width={sidebarWidth} top={inset.unified ? height : WINDOW_SIDEBAR_TOP}>
             {sidebar}
-          </View>
+          </WindowSidebar>
         )}
         <View style={{ flex: 1, flexDirection: "column", minWidth: 0 }}>
           {(inset.unified || toolbar !== undefined) && (
@@ -125,11 +138,11 @@ export function AppWindow({ title, detail, leading, toolbar, center, sidebar, si
               }}
             >
               {leading}
-              {center}
-              {center === undefined && inset.unified ? (
-                <WindowTitle title={title} {...(detail ? { detail } : {})} />
+              {titleSlot}
+              {!titleGone && inset.unified ? (
+                <WindowTitle title={title} {...(detail ? { detail } : {})} {...(afterTitle !== undefined ? { after: afterTitle } : {})} />
               ) : (
-                center === undefined && <View style={{ flex: 1 }} />
+                titleSlot === undefined && <View style={{ flex: 1 }} />
               )}
               {toolbar}
             </View>
@@ -240,6 +253,34 @@ export function ToolbarButton({
         </Text>
       )}
       {tip.node}
+    </View>
+  );
+}
+
+/** The sidebar's strip under the window controls when the title bar is the compositor's. */
+const WINDOW_SIDEBAR_TOP = 10;
+
+/** The sidebar: its own ground and edge, its top strip a grab handle. */
+function WindowSidebar({ width, top, children }: { width: number; top: number; children: ReactNode }) {
+  const colors = useColors();
+  const surface = useSurface();
+  return (
+    <View
+      testID="window-sidebar"
+      style={{
+        width,
+        flexShrink: 0,
+        flexDirection: "column",
+        gap: 2,
+        paddingHorizontal: 10,
+        paddingBottom: 10,
+        backgroundColor: surface.sidebar,
+        borderRightWidth: 1,
+        borderColor: colors.separator,
+      }}
+    >
+      <View dragRegion style={{ height: top, flexShrink: 0, marginLeft: -10, marginRight: -10 }} />
+      {children}
     </View>
   );
 }

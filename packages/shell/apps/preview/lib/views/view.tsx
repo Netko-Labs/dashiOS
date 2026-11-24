@@ -94,7 +94,7 @@ export function PreviewWindow({ viewer, clipboard, cacheDir }: { viewer: Viewer;
   return (
     <AppWindow
       title={toolbar.title}
-      center={<ToolbarRow title={toolbar.title} plan={toolbar.plan} busy={toolbar.busy} props={toolbar.props} shown={toolbar.shown} onRoom={toolbar.setRoom} />}
+      titleSlot={<ToolbarRow {...toolbar} onRoom={toolbar.setRoom} />}
       // Present, if empty, so the row is there with the compositor's own title bar too.
       toolbar={null}
       sidebar={sidebarShown ? <PreviewSidebar snap={snap} doc={doc} viewer={viewer} width={chrome.sidebarWidth} /> : undefined}

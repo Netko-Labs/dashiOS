@@ -7,9 +7,9 @@
  * arranging, the hero is the arrangement to drag (arrangement.tsx).
  */
 
+import { useControlColors } from "@dashi/ui";
 import { Image, Text, View } from "@mirinjs/metal";
 import type { Monitor } from "../../../display-config/monitors.ts";
-import { useControlColors } from "../../../shared/controls/palette.ts";
 import { displayHero, type HeroPlace } from "../heroes.ts";
 
 /** The box a display is drawn in: 220 × 138 at most, smaller when several share the hero. */

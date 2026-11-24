@@ -13,9 +13,9 @@
  * there, or gone.
  */
 
+import { CURVE } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
 import { type ReactElement, useSyncExternalStore } from "react";
-import { springOut } from "../../shared/controls/motion.ts";
 
 const FRAME_MS = 16;
 
@@ -57,7 +57,7 @@ export function iconRise(rise: number, index: number): { offset: number; opacity
   // The icons start as the panel is a third of the way up.
   const start = showMs / 3 + Math.min(index, 12) * staggerMs;
   const t = Math.min(1, Math.max(0, (rise * entranceMs - start) / iconMs));
-  return { offset: (1 - springOut(t)) * iconDrop, opacity: Math.min(1, t * 2.5) };
+  return { offset: (1 - CURVE.spring(t)) * iconDrop, opacity: Math.min(1, t * 2.5) };
 }
 
 /** The panel's opacity during an entrance: it fades in over the first half of its rise. */

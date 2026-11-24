@@ -5,9 +5,9 @@
  * (boot/dictation.ts). Only the person's own press changes them.
  */
 
+import { FoldedChoices } from "@dashi/ui";
 import { DICTATION_KEY_LABELS } from "../../../dictation/index.ts";
 import { Group } from "../../../shared/cards/index.ts";
-import { FoldedChoices } from "../../../shared/controls/folded.tsx";
 import { DICTATION_KEYS, isDictationKeyId } from "../../../shared/pill/index.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";

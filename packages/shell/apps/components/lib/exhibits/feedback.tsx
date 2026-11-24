@@ -178,7 +178,7 @@ export function AlertsPage() {
           question="“Terminal” can’t be quit from here."
           message="It is part of the session."
           glyph={glyphs.INFO}
-          tone="accent"
+          tone="neutral"
           buttons={[{ label: "OK", testID: "alert:still:ok", onPress: noop, kind: "primary" }]}
         />
       </Exhibit>

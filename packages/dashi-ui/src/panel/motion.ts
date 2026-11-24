@@ -7,16 +7,10 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-
-/** Past 1 a little and back (an underdamped spring, settled at t = 1): the Dock's icons and these. */
-export const springOut = (t: number): number => {
-  if (t <= 0) return 0;
-  if (t >= 1) return 1;
-  return 1 - Math.exp(-6 * t) * Math.cos(9 * t) * (1 - t ** 8);
-};
+import { CURVE, MOTION } from "../theme/index.ts";
 
 /** The spring's length. */
-export const CONTROL_MOTION_MS = 220;
+export const CONTROL_MOTION_MS = MOTION.base;
 const FRAME_MS = 16;
 
 /** Reduce Motion, as the shell knows it; main.tsx connects it. */
@@ -27,7 +21,7 @@ export function setControlMotion(reduce: () => boolean): void {
 }
 
 /** Where a value is `t` of the way (0..1) along the spring from `from` to `to`. */
-export const springAt = (from: number, to: number, t: number): number => from + (to - from) * springOut(Math.min(Math.max(t, 0), 1));
+export const springAt = (from: number, to: number, t: number): number => from + (to - from) * CURVE.spring(Math.min(Math.max(t, 0), 1));
 
 /** `target`, reached over the spring whenever it changes (at once with Reduce Motion, and on the first render). */
 export function useSpring(target: number, ms: number = CONTROL_MOTION_MS): number {

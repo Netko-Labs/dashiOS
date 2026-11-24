@@ -7,8 +7,8 @@
  * press changes them.
  */
 
+import { FoldedChoices } from "@dashi/ui";
 import { View } from "@mirinjs/metal";
-import { FoldedChoices } from "../../../shared/controls/folded.tsx";
 import { type ModelsView, type SpokenTongue, spokenTongues, type TongueCode, type VoiceParts, withTongue } from "../../../voice/index.ts";
 import { useSettings } from "../../hooks.ts";
 import type { SettingsStore } from "../../store.ts";
