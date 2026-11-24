@@ -78,9 +78,7 @@ function Words({ words, width, fill }: { words: string; width: number; fill: num
       }}
     >
       <View testID="ink-slider-value" style={{ flexShrink: 0 }} onLayout={(laid) => setWide((was) => (Math.abs(was - laid.width) < 0.5 ? was : laid.width))}>
-        <Text style={{ fontSize: TYPE.panel.detail.size, fontWeight: WEIGHT.semibold, color: onInk ? colors.fillInk : colors.muted }}>
-          {words}
-        </Text>
+        <Text style={{ fontSize: TYPE.panel.detail.size, fontWeight: WEIGHT.semibold, color: onInk ? colors.fillInk : colors.muted }}>{words}</Text>
       </View>
     </View>
   );
