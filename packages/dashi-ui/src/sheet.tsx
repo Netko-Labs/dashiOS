@@ -23,6 +23,8 @@ export interface SheetProps {
   height?: number;
   /** The card as the window's ground with no padding: a sheet laid out like a window inside (the file chooser). */
   bare?: boolean;
+  /** What screen readers call it when no heading in it does (the chooser, whose title's place is the path). */
+  label?: string;
 }
 
 /** The least room a sheet keeps from the window's sides and foot. */
@@ -51,6 +53,7 @@ export function SheetCard({
   marginTop = 0,
   height,
   bare = false,
+  label,
 }: {
   children: ReactNode;
   testID: string;
@@ -58,6 +61,7 @@ export function SheetCard({
   marginTop?: number;
   height?: number;
   bare?: boolean;
+  label?: string;
 }) {
   const colors = useColors();
   const surface = useSurface();
@@ -69,6 +73,7 @@ export function SheetCard({
       // Tab stays in the sheet while it is open; the window behind can't take the keyboard.
       focusTrap
       accessibilityRole="dialog"
+      {...(label !== undefined ? { accessibilityLabel: label } : {})}
       style={{
         width,
         marginTop,
@@ -92,7 +97,7 @@ export function sheetWidth(width: number, room: number): number {
   return room > 0 ? Math.max(0, Math.min(width, room - 2 * SHEET_MARGIN)) : width;
 }
 
-export function Sheet({ children, testID, width = 380, onCancel, onConfirm, height, bare }: SheetProps) {
+export function Sheet({ children, testID, width = 380, onCancel, onConfirm, height, bare, label }: SheetProps) {
   const colors = useColors();
   const dark = useDark();
   const inset = useTitleBarInset();
@@ -135,6 +140,7 @@ export function Sheet({ children, testID, width = 380, onCancel, onConfirm, heig
         marginTop={Math.max(inset.top, 0) + 8}
         {...(height !== undefined ? { height } : {})}
         bare={bare === true}
+        {...(label !== undefined ? { label } : {})}
       >
         {children}
       </SheetCard>
