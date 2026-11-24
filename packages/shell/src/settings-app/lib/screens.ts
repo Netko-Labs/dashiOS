@@ -1,8 +1,9 @@
 /**
  * The screens Settings lists, and the scale choice for each. The compositor
  * knows the screens (IPC `outputs`) and changes a scale at once (IPC `output`);
- * the choice is also written to settings.json so the next session starts with
- * it (displays.ts reads it back).
+ * the arrangement keeps the choice by monitor in displays.json so the next
+ * session, or the monitor plugged in again, starts with it
+ * (display-config/manager.ts `setScale`, scale.ts).
  */
 
 import { SCALES } from "@dashi/ui";
@@ -39,7 +40,7 @@ export function scaleChoices(screen: ScreenInfo): number[] {
 export const isCurrentScale = (screen: ScreenInfo, scale: number): boolean => Math.abs(screen.scale - scale) < 0.005;
 
 /** What the Displays pane asks of the arrangement service (display-config/manager.ts). */
-export type Arranger = Pick<DisplayManager, "setMode" | "setRotation" | "setPrimary" | "setEnabled" | "arrange" | "onPending" | "pending">;
+export type Arranger = Pick<DisplayManager, "setMode" | "setRotation" | "setPrimary" | "setEnabled" | "arrange" | "setScale" | "onPending" | "pending">;
 
 export interface ScreensState {
   screens: readonly ScreenInfo[];
@@ -60,7 +61,7 @@ export class ScreensStore {
   /** `compositor` null is a run without dashi-comp: no screens. */
   constructor(
     private readonly compositor: Pick<Compositor, "outputs" | "output" | "outputsConfig" | "mirror" | "on"> | null,
-    private readonly settings: Pick<SettingsStore, "setDisplayScale" | "setDisplayVrr" | "setDisplayRefresh">,
+    private readonly settings: Pick<SettingsStore, "setDisplayVrr" | "setDisplayRefresh">,
     /** Null without the arrangement service: the pane shows the screens and their scales only. */
     private readonly displays: Arranger | null = null,
   ) {}
@@ -97,12 +98,15 @@ export class ScreensStore {
   async setScale(name: string, scale: number): Promise<void> {
     if (!this.compositor) return;
     try {
-      await this.compositor.output({ name, scale });
+      // Through the arrangement when there is one, so the screens beside it move to keep touching (D553).
+      const result = this.displays
+        ? await this.displays.setScale(name, scale)
+        : await this.compositor.output({ name, scale }).then(() => ({ error: undefined }));
+      if (result.error !== undefined) throw new Error(result.error);
     } catch (error) {
       this.set({ ...this.snapshot, error: message(error) });
       return;
     }
-    this.settings.setDisplayScale(name, scale);
     this.set({ ...this.snapshot, error: null });
     await this.refresh();
   }

@@ -3,9 +3,11 @@
  * snaps its edge against it (and its top, bottom, or middle against the
  * other's); it never overlaps, and it always touches an edge of another so
  * the pointer can cross. Positions are in points, the space the compositor
- * lays out in. The compositor enforces the same rules when it places
- * screens (comp/src/outputs/place.rs); this is what the view shows while
- * dragging, so that what is dropped is what is applied.
+ * lays out in. The compositor puts screens where it is told; `settle` keeps
+ * the same rules for every change the shell asks for (a scale, a mode, a
+ * screen plugged in), so a screen that grows never covers its neighbour
+ * (decisions.md D553). The view shows the same rules while dragging, so that
+ * what is dropped is what is applied.
  */
 
 export interface Box {
@@ -102,6 +104,28 @@ export function snapDrag(moving: Box, others: readonly Box[], wanted: Spot, dist
   const cost = (spot: Spot): number => Math.hypot(spot.x - wanted.x, spot.y - wanted.y);
   const best = pool.reduce((a, b) => (cost(b) < cost(a) ? b : a));
   return { x: Math.round(best.x), y: Math.round(best.y) };
+}
+
+/**
+ * The screens moved as little as needed so none overlaps another and each
+ * touches one (D553). `anchor` (the main display) stays where it is; the
+ * others, nearest it first, keep their place when it is free and touches
+ * one already placed, else go to the nearest such spot.
+ */
+export function settle<T extends Box>(boxes: readonly T[], anchor?: string): T[] {
+  const first = boxes.find((box) => box.name === anchor) ?? boxes[0];
+  if (!first) return [];
+  const center = (box: Box) => ({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
+  const from = center(first);
+  const rest = boxes
+    .filter((box) => box !== first)
+    .sort((a, b) => Math.hypot(center(a).x - from.x, center(a).y - from.y) - Math.hypot(center(b).x - from.x, center(b).y - from.y));
+  const placed: T[] = [first];
+  for (const box of rest) {
+    const fine = placed.every((other) => !overlaps(box, other)) && placed.some((other) => touches(box, other));
+    placed.push(fine ? box : { ...box, ...snapDrag(box, placed, { x: box.x, y: box.y }, 0) });
+  }
+  return boxes.map((box) => placed.find((each) => each.name === box.name) ?? box);
 }
 
 /** The boxes moved so the top-left of all of them is the origin. */

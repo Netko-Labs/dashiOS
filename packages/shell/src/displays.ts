@@ -1,12 +1,15 @@
 /**
  * Each screen's scale when nobody chose one: a sharp laptop panel or a 4K
  * monitor shouldn't come up with everything tiny. Bun picks it from the
- * screen's pixel density (`defaultScale`, @dashi/ui: the login screen uses it too) and asks dashi-comp (IPC `output {name, scale}`)
- * once per screen, the first time that screen is seen in this session.
+ * screen's pixel density and how far away it is seen (`defaultScale`,
+ * @dashi/ui: the login screen uses it too); the arrangement asks dashi-comp
+ * for it whenever a set of screens is restored (display-config/manager.ts).
  * A screen that reports no physical size (a projector, a VM) stays at 1.
  *
- * A scale the person chose in System Settings (settings.json `displays`) wins
- * over the computed one; `saved` says which, by screen name.
+ * A scale the person chose in System Settings wins over the computed one;
+ * `saved` says which, by the monitor's identity (make, model, serial: the
+ * scale follows the monitor to another port, and another monitor on the same
+ * port gets its own; display-config/scale.ts).
  */
 
 import { defaultScale, SCALES } from "@dashi/ui";
@@ -17,6 +20,10 @@ import { toWire } from "./display-config/plan.ts";
 
 export interface ScreenInfo {
   name: string;
+  /** Who the monitor is (its EDID), as `identityOf` (display-config/monitors.ts) reads it; empty when it does not say. */
+  make: string;
+  model: string;
+  serial: string;
   /** Pixels, the current mode as it looks (a screen turned on its side is taller than wide). */
   width: number;
   height: number;
@@ -56,9 +63,16 @@ export function screensOf(outputs: readonly Output[]): ScreenInfo[] {
     if (!output.enabled || output.mirrorOf !== null) return [];
     const seen = seenSize(output);
     if (!seen) return [];
-    return [{ name: output.name, ...seen, scale: output.scale, ...(output.frame ? { frame: output.frame } : {}) }];
+    const { name, make, model, serial } = output;
+    return [{ name, make, model, serial, ...seen, scale: output.scale, ...(output.frame ? { frame: output.frame } : {}) }];
   });
 }
+
+/** Who a monitor is, as the saved scales know it. */
+export type MonitorId = Pick<ScreenInfo, "name" | "make" | "model" | "serial">;
+
+/** The scale the person chose for a monitor, if they did. */
+export type SavedScale = (monitor: MonitorId) => number | undefined;
 
 /**
  * The scale a screen comes up with: the one the person chose, else the
@@ -66,18 +80,19 @@ export function screensOf(outputs: readonly Output[]): ScreenInfo[] {
  * a chosen one: settings.json is a file anyone can edit, and a screen that
  * was swapped for a smaller one must not come up too big to use.
  */
-export function initialScale(screen: ScreenInfo, saved: (name: string) => number | undefined): number {
-  const chosen = saved(screen.name);
+export function initialScale(screen: ScreenInfo, saved: SavedScale): number {
+  const chosen = saved(screen);
   return chosen !== undefined && leavesRoom(screen, chosen) ? chosen : defaultScale(screen);
 }
 
 /**
- * Give each newly seen screen its saved or default scale, now and whenever
- * screens change. Returns a stop function.
+ * Give each newly seen screen its saved variable refresh rate, now and
+ * whenever screens change. Returns a stop function. Its scale comes with the
+ * arrangement (display-config/manager.ts `restore`), which keeps the screens
+ * apart and touching as it changes sizes (D553).
  */
 export function startDisplays(
-  compositor: Pick<Compositor, "outputs" | "outputsConfig" | "output" | "on">,
-  saved: (name: string) => number | undefined = () => undefined,
+  compositor: Pick<Compositor, "outputs" | "outputsConfig" | "on">,
   savedVrr: (name: string) => VrrMode | undefined = () => undefined,
 ): () => void {
   const seen = new Set<string>();
@@ -94,10 +109,6 @@ export function startDisplays(
         await compositor.outputsConfig(toWire({ outputs: [{ name: screen.name, vrr }] }));
         console.log(`dashi-shell: ${screen.name} variable refresh rate ${vrr}`);
       }
-      const scale = initialScale(screen, saved);
-      if (scale === screen.scale) continue;
-      await compositor.output({ name: screen.name, scale });
-      console.log(`dashi-shell: ${screen.name} at scale ${scale}`);
     }
   };
   const run = () => void apply().catch((error) => console.error("dashi-shell: could not scale the screens:", error));

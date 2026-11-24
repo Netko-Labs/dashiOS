@@ -6660,3 +6660,141 @@ short words, as the rulebook is written.
   numbers: if `path=cpu-copy` or `compose_ms` on HDMI-A-1 is large, (1) is
   next, with a per-screen dmabuf tranche for card0.
 - **Undo:** nothing to undo; this records why the path stays.
+
+### D550. A screen taller than a 27-inch one is seen from farther, and its default scale says so
+
+- **Date:** 2026-11-23. `v10/screens-setup`.
+- **Found:** `defaultScale` asked every monitor for 105 pixels per inch at
+  scale 1, whatever its size. The owner's Samsung (890 × 500 mm, about 40
+  inches) at 4K is 110 ppi: it came up at 1, so its text was two thirds the
+  angle of the laptop's (2880 × 1800 at 1.75 on 300 × 190 mm), seen from a
+  metre away.
+- **Decision:** a monitor whose short side is taller than a 27-inch 16:9
+  screen's (336 mm) wants fewer pixels per inch, in step with its height
+  (`DESK_HEIGHT_MM`, `@dashi/ui` `scale.ts`): seen from farther, the same
+  text needs fewer to look as big. The 40-inch 4K comes up at 1.5 (2560 × 1440
+  points), at 1080p and 1440p at 1; a 55-inch 4K TV at 1.5. Desk monitors
+  (24, 27 inches, a 34-inch ultrawide, as tall as a 27) keep what they had;
+  built-in panels too. The short side stands for the height, so a monitor on
+  its side counts as itself. The login screen uses the same function.
+- **Cost:** a 32-inch 4K now comes up at 1.5, not 1.25.
+- **Undo:** drop `comfortablePpi`'s height term.
+
+### D551. A chosen scale belongs to the monitor, not to the port
+
+- **Date:** 2026-11-23. `v10/screens-setup`.
+- **Found:** the scale a person chose was kept in settings.json by connector
+  (`displays.HDMI-A-1.scale`): the Samsung moved to the other HDMI port lost
+  it, and a projector plugged into its port got it.
+- **Decision:** kept in `displays.json` `scales`, by the monitor's identity
+  (EDID make, model, serial; `identityOf`), beside the arrangements
+  (`display-config/scale.ts`, `ScreenScales`). A scale kept by port from
+  before is taken over by the first monitor seen on that port, and the
+  port's entry goes. Settings and agents' `set_display_scale` remember it
+  the same way.
+- **Cost:** two monitors of the same model with no serial on different
+  ports still share nothing: each is known by its port (as their
+  arrangements are).
+- **Undo:** `ScreenScales.of` back to `settingsStore.displayScale(name)`.
+
+### D552. A monitor nobody chose a mode for runs its native size at its fastest rate
+
+- **Date:** 2026-11-23. `v10/screens-setup`.
+- **Found:** a monitor came up at the mode its EDID prefers and nothing
+  changed it until a person did: many TVs prefer 4K at 30 Hz over HDMI and
+  take 60. In a new set of screens, a monitor whose mode was saved in
+  another set (the laptop with the TV, then with another monitor) ran its
+  preferred mode again: in the VM, QEMU's 640 × 480.
+- **Decision:** the mode a monitor runs when a set is restored: the set's
+  saved one; else the one it last ran in any saved arrangement
+  (`DisplayStore.lastMode`); else `defaultMode`, its native size
+  (`nativeSize`) at the fastest rate it offers there; else what it runs. A
+  monitor that prefers less than it offers has no native size and keeps
+  what it came up with (Dashi cannot tell a TV's real size from a list).
+  A default the screens refuse (a cable that cannot carry it) is dropped
+  and the rest of the arrangement is asked for again, without it.
+- **Cost:** a 1080p monitor that offers 144 Hz comes up at 144: what it is
+  for, and more power than 60.
+- **Undo:** `defaultModes: false` in `DisplayManager.restore`.
+
+### D553. The shell keeps screens apart and touching, on every change
+
+- **Date:** 2026-11-23. `v10/screens-setup`.
+- **Found:** the comments said the compositor keeps screens apart and
+  touching (`comp/src/outputs/place.rs`); no such file exists, and
+  `outputs-config` puts a screen exactly where it is told. A screen that
+  grew (a smaller scale, a larger mode) covered its neighbour: in the VM the
+  second screen sat at x 640 under the first, 1098 points wide. One that
+  shrank left a gap the pointer could not cross.
+- **Decision:** every request the arrangement makes (a restore, a mode, a
+  rotation, a scale, a screen turned on) carries the positions that keep
+  every screen touching another and overlapping none (`settle`,
+  `display-config/layout.ts`; `settled`, `plan.ts`): the main display stays,
+  the others, nearest it first, keep their place if it is free and touching,
+  else go to the nearest spot against those placed. A restore with nothing
+  to restore still puts overlapping screens right. Settings' scale and an
+  agent's go through the arrangement (`DisplayManager.setScale`); the scale
+  at first sight comes with the restore (`startDisplays` keeps only the
+  variable refresh rate). Sizes in points are rounded up, as smithay does.
+  Policy stays in the shell: the compositor still only places.
+- **Cost:** a screen may move by itself when its neighbour changes size.
+- **Undo:** drop `settled` from `DisplayManager.apply` and `restore`.
+
+### D554. The lock screen is on every screen; the whole of it where the person is
+
+- **Date:** 2026-11-23. `v10/screens-setup`.
+- **Found:** one lock host, on the screen the compositor advertised first.
+  The other screen showed the bare wallpaper, bright, as if unlocked
+  (dashi-comp drew nothing of the session there, so nothing leaked, but it
+  did not look locked), and the password field could be on the screen the
+  person was not looking at.
+- **Decision:** a lock host for each screen (mirin's lock surface takes
+  `output` now): the whole lock screen (widgets, power buttons) on the
+  screen the person was on, and on each other screen a quieter one: the day
+  and the time, who is signing in and the field, as the login screen's
+  backdrop, no widgets (`lock/lib/screens.ts`, `LockScreen` `cover`). Each
+  has the field because dashi-comp gives the keys to the lock surface under
+  the pointer. A screen plugged in while locked is covered; one unplugged is
+  let go; if it held the whole lock, it opens on a screen that is left. One
+  password unlocks them all (dashi-comp unlocks every lock at the first
+  unlock) and the shell closes the rest. A cover whose lock arrives after the
+  unlock would keep the session locked: the lock screen comes back (safe).
+- **Cost:** a Metal host per screen while locked.
+- **Undo:** `planLock` returning no covers.
+
+### D555. The Dock follows the person to the screen they push against
+
+- **Date:** 2026-11-23. `v10/screens-setup`.
+- **Found:** the Dock lived on the main display only. With the laptop as
+  the main display and the work on the TV, the Dock was on the screen the
+  person was not looking at, and nothing brought it over.
+- **Decision:** as on a Mac: the pointer resting 250 ms (`FOLLOW_MS`)
+  against another screen's bottom edge moves the Dock there, shown or
+  autohidden (`dock/presenter.ts`). While the Dock is not out, the one-pixel
+  band is claimed along every screen's bottom edge (IPC `edges` without an
+  `output`), and the pointer's screen is asked when it arrives. The Dock
+  goes back to the main display when that changes or its screen goes; a
+  change of screens that leaves its screen there (a scale) leaves it where
+  it is. The notification area's room and the minimize animation follow
+  the Dock's real screen (`dockSign`), not the main display's.
+- **Cost:** a Dock that stays shown has its exclusive zone on the screen it
+  followed to, so windows there are squeezed and the other screen's grow.
+- **Undo:** leave `pointerScreen` out of `startDock`'s options.
+
+### D556. Captures and the lock's press go where the person is; ⇧❖3 takes every screen
+
+- **Date:** 2026-11-23. `v10/screens-setup`.
+- **Found:** ⇧❖4's selection and ⇧❖5's toolbar opened on the screen of the
+  focused window, else the first screen (not the main display); ⇧❖3 took
+  only the screen under the pointer; a card pressed on the lock screen
+  opened the notification area on the first bar.
+- **Decision:** ⇧❖4, ⇧❖5 and the recorder's "screen" open on the pointer's
+  screen, else the focused window's, else the main display
+  (`boot/overlays.tsx` `screenOf`); ⇧❖3 saves a picture of every screen, the
+  main display's first ("… (2).png" for the next), as a Mac does; the lock's
+  press opens the area on the person's screen (`boot/inks.ts`). Every
+  screen's bar keeps the front app's menus (Dashi has no inactive bar: one
+  row, nothing dimmed), and the same wallpaper fills every screen (one
+  choice; a wallpaper per screen needs the compositor to take one each).
+- **Cost:** ⇧❖3 with two screens makes two files.
+- **Undo:** `screenNames` back to one `undefined`.

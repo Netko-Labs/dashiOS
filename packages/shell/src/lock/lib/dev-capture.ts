@@ -14,8 +14,11 @@
  * - it acts only while the screen is locked, and pictures only the screen:
  *   while locked, dashi-comp draws nothing of the session into a capture,
  *   only the wallpaper and the lock surface (render/scene.rs);
- * - a picture is asked by creating `ask` in the folder; the shell takes it
- *   away and writes `lock-<n>.png` beside it. Nothing it writes is read back.
+ * - a picture is asked by creating `ask` in the folder (the screen under the
+ *   pointer) or `ask-<screen>` (that screen, by its output name: with two
+ *   screens the other one shows the lock too); the shell takes it away and
+ *   writes `lock-<n>.png` (`lock-<n>-<screen>.png`) beside it. Nothing it
+ *   writes is read back, and an ask's contents are never read.
  */
 
 import { existsSync, lstatSync, rmSync } from "node:fs";
@@ -46,7 +49,9 @@ export function devCaptureFolder(
 
 export interface DevCaptureDeps {
   locked(): boolean;
-  capture(path: string): Promise<unknown>;
+  capture(path: string, output?: string): Promise<unknown>;
+  /** The screens' output names, for `ask-<screen>`. */
+  screens?(): Promise<readonly string[]>;
   now?(): number;
   exists?(path: string): boolean;
   remove?(path: string): void;
@@ -55,12 +60,15 @@ export interface DevCaptureDeps {
 
 /** One look: while locked, an `ask` in the folder becomes a picture. Resolves with its path, or null. */
 export async function lookForAsk(dir: string, deps: DevCaptureDeps): Promise<string | null> {
-  const ask = join(dir, "ask");
   const exists = deps.exists ?? existsSync;
-  if (!deps.locked() || !exists(ask)) return null;
-  (deps.remove ?? ((path: string) => rmSync(path, { force: true })))(ask);
-  const path = join(dir, `lock-${(deps.now ?? Date.now)()}.png`);
-  await deps.capture(path);
+  if (!deps.locked()) return null;
+  const screens = (await deps.screens?.().catch(() => [])) ?? [];
+  const asks = [{ ask: join(dir, "ask"), output: undefined }, ...screens.map((output) => ({ ask: join(dir, `ask-${output}`), output }))];
+  const asked = asks.find((each) => exists(each.ask));
+  if (!asked) return null;
+  (deps.remove ?? ((path: string) => rmSync(path, { force: true })))(asked.ask);
+  const path = join(dir, `lock-${(deps.now ?? Date.now)()}${asked.output === undefined ? "" : `-${asked.output}`}.png`);
+  await deps.capture(path, asked.output);
   deps.log?.(`dashi-shell: dev lock capture saved to ${path}`);
   return path;
 }

@@ -37,14 +37,15 @@ export function screenshotName(when: Date, taken: (name: string) => boolean): st
 }
 
 /**
- * Save a PNG of the screen, of `rect` on it (global logical pixels), or of
- * `window` (the compositor's window number).
+ * Save a PNG of the screen (`output`, else the one under the pointer), of
+ * `rect` on it (global logical pixels), or of `window` (the compositor's
+ * window number).
  * Resolves with the path once dashi-comp has written it; rejects with its
  * error (for example, a window with no surface).
  */
 export async function takeScreenshot(
   compositor: Pick<Compositor, "capture">,
-  options: { window?: number; rect?: { x: number; y: number; width: number; height: number } } = {},
+  options: { window?: number; rect?: { x: number; y: number; width: number; height: number }; output?: string } = {},
 ): Promise<string> {
   const dir = screenshotDirectory();
   mkdirSync(dir, { recursive: true });
@@ -60,6 +61,7 @@ export async function takeScreenshot(
       path,
       ...(options.window === undefined ? {} : { window: options.window }),
       ...(options.rect === undefined ? {} : { rect: options.rect }),
+      ...(options.output === undefined ? {} : { output: options.output }),
     });
   } finally {
     inFlight.delete(path);

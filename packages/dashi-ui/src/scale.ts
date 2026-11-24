@@ -20,6 +20,15 @@ export const SCALES = [1, 1.25, 1.5, 1.75, 2, 2.5, 3] as const;
 /** Pixels per inch that look right at scale 1: closer for a built-in panel, farther for a monitor. */
 const COMFORTABLE_PPI = { builtIn: 125, monitor: 105 } as const;
 
+/**
+ * The height (mm) of the tallest monitor seen from a desk's usual distance: a
+ * 27-inch 16:9 screen (and a 34-inch ultrawide, as tall). A taller screen is
+ * seen from farther, in step with its height, so the same text needs fewer
+ * pixels per inch to look as big: a 40-inch screen wants about two thirds of
+ * a 27-inch one's (decisions.md D550).
+ */
+const DESK_HEIGHT_MM = 336;
+
 /** A scaled screen keeps at least this much room (logical pixels). */
 const MIN_LOGICAL = { width: 1200, height: 700 } as const;
 
@@ -28,13 +37,20 @@ export function isBuiltIn(name: string): boolean {
   return /^(eDP|LVDS|DSI)/i.test(name);
 }
 
+/** The density that looks right at scale 1 from where the screen is seen; the short side stands for the height, so a screen turned on its side counts as itself. */
+function comfortablePpi(screen: ScreenSize): number {
+  if (isBuiltIn(screen.name)) return COMFORTABLE_PPI.builtIn;
+  const height = Math.min(screen.widthMm, screen.heightMm);
+  return COMFORTABLE_PPI.monitor * Math.min(1, DESK_HEIGHT_MM / height);
+}
+
 /** The scale a screen gets when nobody chose one. */
 export function defaultScale(screen: ScreenSize): number {
   const { width, height, widthMm, heightMm } = screen;
   // Sizes under 5 cm are made up (EDID placeholders); trust neither.
   if (widthMm < 50 || heightMm < 50 || width <= 0 || height <= 0) return 1;
   const ppi = Math.hypot(width, height) / (Math.hypot(widthMm, heightMm) / 25.4);
-  const wanted = ppi / (isBuiltIn(screen.name) ? COMFORTABLE_PPI.builtIn : COMFORTABLE_PPI.monitor);
+  const wanted = ppi / comfortablePpi(screen);
   const roomy = SCALES.filter((scale) => width / scale >= MIN_LOGICAL.width && height / scale >= MIN_LOGICAL.height);
   // The closest offered scale to what the density wants, never below 1 and
   // never so large the screen gets cramped.

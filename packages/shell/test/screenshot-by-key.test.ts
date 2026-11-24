@@ -7,7 +7,7 @@
  */
 
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runAction } from "../src/actions/lib/run.ts";
@@ -17,6 +17,7 @@ import { Screenshots } from "../src/boot/overlays.tsx";
 import type { LateParts } from "../src/boot/parts.ts";
 import { Late, Services } from "../src/boot/services.ts";
 import type { Compositor } from "../src/compositor/client.ts";
+import { outputsOf } from "../src/compositor/outputs.ts";
 import { KEYMAP } from "../src/keymap/keymap.ts";
 import { NotificationStore } from "../src/notifications/store.ts";
 
@@ -31,12 +32,18 @@ afterEach(() => {
   rmSync(home, { recursive: true, force: true });
 });
 
-function shots() {
+function shots(outputs: unknown[] = []) {
   const captured: string[] = [];
   const closed: string[] = [];
   const compositor = {
-    capture: async ({ path }: { path: string }) => void captured.push(path),
+    capture: async ({ path, output }: { path: string; output?: string }) => {
+      // As dashi-comp does: the file is there once the capture answers.
+      mkdirSync(join(path, ".."), { recursive: true });
+      writeFileSync(path, "");
+      captured.push(output === undefined ? path : `${path} ${output}`);
+    },
     windows: async () => [],
+    outputs: async () => outputsOf({ outputs }),
   } as unknown as Compositor;
   const late = new Late<LateParts>();
   late.set("overlays", { has: (kind: string) => kind === "launcher", closeAndWait: async (kind: string) => void closed.push(kind) } as never);
@@ -51,6 +58,22 @@ test("⇧❖3 over the open launcher takes the screen with the launcher still up
   expect(closed).toEqual([]);
   expect(captured).toHaveLength(1);
   expect(captured[0]).toStartWith(join(home, "Pictures", "Screenshots", "Screenshot "));
+  services.closeAll();
+});
+
+test("⇧❖3 with two screens takes a picture of each, the main display's first", async () => {
+  const screen = (name: string, x: number, primary: boolean) => ({
+    name,
+    enabled: true,
+    primary,
+    scale: 1,
+    mode: { width: 1920, height: 1080, refreshMhz: 60000 },
+    frame: { x, y: 0, width: 1920, height: 1080 },
+  });
+  const { screenshots, captured, services } = shots([screen("eDP-1", 0, false), screen("HDMI-A-1", 1920, true)]);
+  await screenshots.run("screen", null, true);
+  expect(captured.map((each) => each.split(" ").at(-1))).toEqual(["HDMI-A-1", "eDP-1"]);
+  expect(captured[1]).toContain("(2).png");
   services.closeAll();
 });
 

@@ -10,6 +10,7 @@ import { setWidgetHub, WidgetHub } from "../widgets/index.ts";
 import type { Handoff } from "./agents.ts";
 import type { LateParts } from "./parts.ts";
 import type { Late, Services } from "./services.ts";
+import type { Screens } from "./session.ts";
 
 export interface InksNeeds {
   notifications: Notifications;
@@ -17,9 +18,11 @@ export interface InksNeeds {
   handoff: Handoff;
   services: Services;
   late: Late<LateParts>;
+  /** Where the person is: a card pressed on the lock screen opens the notification area there (D556). */
+  screens?: Pick<Screens, "whereIsPerson">;
 }
 
-export function startInks({ notifications, system, handoff, services, late }: InksNeeds): WidgetHub {
+export function startInks({ notifications, system, handoff, services, late, screens }: InksNeeds): WidgetHub {
   const runs = handoff.handoffShell.service.runs;
   const pill = late.get("pill");
   const hub = new WidgetHub({
@@ -30,7 +33,8 @@ export function startInks({ notifications, system, handoff, services, late }: In
     notices: { subscribe: notifications.store.subscribe, getSnapshot: () => notifications.store.getSnapshot().history },
     openAsk: (id) => void pill.voiceCommands.send({ do: "open-ask", id }),
     stopRun: (id) => handoff.handoffShell.service.stop(id),
-    openArea: () => void late.peek("menus")?.controller.openNotificationCenter(),
+    openArea: () =>
+      void (screens?.whereIsPerson() ?? Promise.resolve(undefined)).then((output) => late.peek("menus")?.controller.openNotificationCenter(output)),
   });
   setWidgetHub(hub);
   const stop = hub.start();
