@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { LIGHT_SURFACE, lightColors, MENU } from "@dashi/ui";
 import { type NativeTransport, render } from "@mirinjs/metal";
-import { DropdownMenu } from "../src/menus/lib/view.tsx";
+import { BarDropdown } from "../src/menus/lib/view.tsx";
 import type { MenuEntry } from "../src/menus/types.ts";
 import { settle } from "./support/time.ts";
 
@@ -31,7 +31,7 @@ test("the menu bar's dropdown draws every menu's rows and edge, inside the scree
     { kind: "item", label: "Show Sidebar", checked: true, action: "sidebar" },
     { kind: "item", label: "Can't", action: null },
   ];
-  const root = render(<DropdownMenu entries={entries} x={1250} room={{ width: 1280, height: 772 }} onChoose={() => {}} onClose={() => {}} />, transport);
+  const root = render(<BarDropdown entries={entries} x={1250} room={{ width: 1280, height: 772 }} onChoose={() => {}} onClose={() => {}} />, transport);
   await settle();
   const tree = JSON.parse(trees.at(-1) ?? "{}") as Drawn;
   const panel = find(tree, root.nodeId("menu-panel") ?? "");

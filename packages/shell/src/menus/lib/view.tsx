@@ -40,7 +40,7 @@ export function dropdownKey(
   }
 }
 
-interface DropdownMenuProps<A> {
+interface BarDropdownProps<A> {
   entries: readonly MenuEntry<A>[];
   /** The panel's left edge, in screen pixels (its center with `above`, its right edge with `alignRight`). */
   x: number;
@@ -81,7 +81,7 @@ function panelStyle(place: ReturnType<typeof placeDropdown>, ground: string, edg
   };
 }
 
-export function DropdownMenu<A>({
+export function BarDropdown<A>({
   entries,
   x,
   above,
@@ -91,7 +91,7 @@ export function DropdownMenu<A>({
   onSide,
   onChoose,
   onClose,
-}: DropdownMenuProps<A>) {
+}: BarDropdownProps<A>) {
   const colors = useColors();
   const surface = useSurface();
   const [highlight, setHighlight] = useState<number | null>(() => (fromKeys ? stepHighlight(entries, null, "down") : null));
