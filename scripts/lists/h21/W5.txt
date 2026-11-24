@@ -12,7 +12,6 @@
 1	packages/shell/apps/notes/lib/views/note-page.tsx
 3	packages/shell/apps/notes/lib/views/page-under.tsx
 1	packages/shell/apps/notes/lib/views/rows.tsx
-1	packages/shell/apps/preview/lib/views/sheets.tsx
 1	packages/shell/apps/preview/lib/views/states.tsx
 3	packages/shell/apps/preview/lib/views/strip.tsx
 1	packages/shell/apps/preview/lib/views/view.tsx

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { type NativeEvent, type NativeTransport, render } from "@mirinjs/metal";
 import { titleWidth } from "../apps/preview/lib/fold.ts";
 import { Viewer } from "../apps/preview/lib/viewer.ts";
-import { InfoSheet } from "../apps/preview/lib/views/sheets.tsx";
+import { InfoSheet } from "../src/shared/file-browser/file-sheets.tsx";
 import { EmptyView, RECENT_FOLDER_WIDTH } from "../apps/preview/lib/views/states.tsx";
 import { STRIP } from "../apps/preview/lib/views/strip.tsx";
 import { PreviewWindow } from "../apps/preview/lib/views/view.tsx";

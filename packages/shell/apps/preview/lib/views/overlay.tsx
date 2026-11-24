@@ -5,13 +5,14 @@
 
 import { ConfirmSheet, type MenuEntry, PopupMenu } from "@dashi/ui";
 import type { ReactElement } from "react";
+import { InfoSheet, OpenWithSheet } from "../../../../src/shared/file-browser/file-sheets.tsx";
 import * as commands from "../commands.ts";
 import type { ExportFormat } from "../convert.ts";
 import * as glyphs from "../glyphs.ts";
 import type { Handler } from "../handlers.ts";
 import type { Snapshot } from "../snapshot.ts";
 import { turned } from "../zoom.ts";
-import { ExportSheet, InfoSheet, imageRows, infoRows, MessageSheet, OpenWithSheet, pdfRows } from "./sheets.tsx";
+import { ExportSheet, imageRows, infoRows, MessageSheet, pdfRows } from "./sheets.tsx";
 
 export type SheetState =
   | { kind: "info" }
@@ -87,8 +88,8 @@ export function PreviewSheet({
     case "open-with":
       return (
         <OpenWithSheet
-          handlers={sheet.handlers ?? []}
-          loading={sheet.handlers === null}
+          name={snap.name}
+          apps={sheet.handlers}
           onClose={onClose}
           onPick={(handler) => {
             onClose();

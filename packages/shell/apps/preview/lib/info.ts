@@ -1,31 +1,12 @@
 /**
- * The facts the info sheet shows, and how they are written: numbers and dates
- * in the system's locale (docs/design.html, PA-14), sizes in decimal units as
- * Files writes them. The facts come from the stat the open already did, so
+ * The facts the info sheet shows, and how its counts are written, in the
+ * system's locale; sizes and dates are written by the file browser's one
+ * formatter (docs/design.html PA-14, `src/shared/file-browser/format.ts`). The facts come from the stat the open already did, so
  * nothing here touches the disk.
  */
 
 import { basename, dirname } from "node:path";
 import { FORMATS, type Format } from "../../../src/shared/files/kinds.ts";
-
-/** 1,234 bytes as "1.2 KB": decimal units, as the Files app and most file managers write them. */
-export function formatBytes(bytes: number, locale?: string): string {
-  if (!Number.isFinite(bytes) || bytes < 0) return "";
-  if (bytes < 1000) return `${bytes} ${bytes === 1 ? "byte" : "bytes"}`;
-  const units = ["KB", "MB", "GB", "TB"];
-  let value = bytes;
-  let unit = -1;
-  while (value >= 1000 && unit < units.length - 1) {
-    value /= 1000;
-    unit++;
-  }
-  const number = new Intl.NumberFormat(locale, { maximumFractionDigits: value >= 100 ? 0 : 1 }).format(value);
-  return `${number} ${units[unit]}`;
-}
-
-export function formatDate(ms: number, locale?: string): string {
-  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(ms));
-}
 
 /** A whole number with the locale's grouping: "4,032". */
 export const formatCount = (value: number, locale?: string): string => new Intl.NumberFormat(locale).format(value);

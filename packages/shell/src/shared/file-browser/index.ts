@@ -11,6 +11,7 @@ export { Files, type FilesContext, useFiles, useFilesOps, useFilesState, useJobs
 export { useDropTarget } from "./drop.ts";
 export { type Env, systemEnv } from "./env.ts";
 export { extensionLabel, FileIcon } from "./file-icon.tsx";
+export { FILE_SHEET, firstChoice, type InfoRow, InfoSheet, type OpenWithChoice, OpenWithSheet } from "./file-sheets.tsx";
 export { formatCount, formatDate, formatSize, octal, permissionString } from "./format.ts";
 export { CHEVRON, CLOSE, FOLDER_PLUS, sidebarGlyph } from "./glyphs.ts";
 export type { Job } from "./jobs.ts";
