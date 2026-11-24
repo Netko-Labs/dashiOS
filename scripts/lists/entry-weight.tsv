@@ -68,6 +68,8 @@ packages/shell/apps/dialog/main.tsx	packages/shell/src/shared/fs
 packages/shell/apps/dialog/main.tsx	packages/shell/src/shared/io
 packages/shell/apps/dialog/main.tsx	packages/shell/src/shared/locale
 packages/shell/apps/dialog/main.tsx	packages/shell/src/shared/metal
+packages/shell/apps/dialog/main.tsx	packages/shell/src/shared/settings
+packages/shell/apps/dialog/main.tsx	packages/shell/src/shared/time
 packages/shell/apps/editor/main.tsx	packages/shell/apps/editor
 packages/shell/apps/editor/main.tsx	packages/shell/apps/kit
 packages/shell/apps/editor/main.tsx	packages/shell/src/shared/app-menus
