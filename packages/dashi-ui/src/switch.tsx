@@ -4,7 +4,9 @@
  * (CO-1). The window look is the Mac's pill, 38 × 22, its white knob at the
  * end; the panel look is Settings' and Control Center's, 46 × 28, whose
  * track shows as an outline while off. Held, it deepens; disabled, the
- * whole switch is dimmed (UI-4).
+ * whole switch is dimmed (UI-4). The inks look is the widget area's, which
+ * the accent never paints (CO-2, CO-11): 36 × 20, on in the Inks' ink with
+ * a paper knob, off on the hairline.
  */
 
 import { View } from "@mirinjs/metal";
@@ -13,12 +15,14 @@ import type { Look } from "./button.tsx";
 import { ControlName } from "./control-name.ts";
 import { useControlState } from "./control-state.tsx";
 import { useControlColors } from "./panel/index.ts";
-import { CLEAR, KNOB, onOf, pill, SHADOW, useColors } from "./theme/index.ts";
+import { CLEAR, INK_PAPER, INK_TEXT, KNOB, onOf, pill, SHADOW, useColors, useDark } from "./theme/index.ts";
 
 /** The window look: 38 × 22, an 18 knob 2 in. */
 export const SWITCH = { width: 38, height: 22, knob: 18, inset: 2 } as const;
 /** The panel look: 46 × 28, a 20 knob 4 in, an off track's outline 2. */
 export const PANEL_SWITCH = { width: 46, height: 28, knob: 20, inset: 4, edge: 2 } as const;
+/** The inks look (the widget area): 36 × 20, a 16 knob 2 in. */
+export const INKS_SWITCH = { width: 36, height: 20, knob: 16, inset: 2 } as const;
 
 export interface SwitchProps {
   on: boolean;
@@ -32,7 +36,8 @@ export interface SwitchProps {
   focusable?: boolean;
   /** What it turns on, for screen readers and agents; by default the label of the `Row` it is in. */
   label?: string;
-  look?: Look;
+  /** The window look, the panel look, or the widget area's inks. */
+  look?: Look | "inks";
 }
 
 export function Switch({ on, testID, onChange, disabled, focused, focusable = true, label, look = "window" }: SwitchProps) {
@@ -42,12 +47,15 @@ export function Switch({ on, testID, onChange, disabled, focused, focusable = tr
   const name = label ?? fromRow;
   const state = useControlState({ disabled, focused });
   const enabled = onChange !== undefined && disabled !== true;
+  const mode = useDark() ? "dark" : "light";
   const lit = onOf(colors);
   const onFill = state.pressed ? colors.selectionPressed : lit.on;
-  const m = look === "panel" ? PANEL_SWITCH : SWITCH;
+  const m = look === "panel" ? PANEL_SWITCH : look === "inks" ? INKS_SWITCH : SWITCH;
   const offEdge = look === "panel" && !on;
-  const track = on ? onFill : look === "panel" ? (state.pressed ? panel.knobOff : CLEAR) : state.pressed ? colors.pressed : colors.track;
-  const knob = look === "panel" ? (on ? lit.onInk : panel.muted) : KNOB;
+  const panelTrack = state.pressed ? panel.knobOff : CLEAR;
+  const windowTrack = state.pressed ? colors.pressed : colors.track;
+  const track = look === "inks" ? (on ? INK_TEXT[mode].ink : INK_TEXT[mode].hairline) : on ? onFill : look === "panel" ? panelTrack : windowTrack;
+  const knob = look === "panel" ? (on ? lit.onInk : panel.muted) : look === "inks" ? INK_PAPER[mode] : KNOB;
   return (
     <View
       testID={testID}

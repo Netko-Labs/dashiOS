@@ -9,10 +9,11 @@ import { ShowStates } from "../src/control-state.tsx";
 import { SEARCH } from "../src/glyphs.ts";
 import { placeholderAt, SEARCH_FIELD, SearchField } from "../src/search-field.tsx";
 import { SEGMENTED, Segmented } from "../src/segmented.tsx";
-import { PANEL_SWITCH, Switch } from "../src/switch.tsx";
+import { INKS_SWITCH, PANEL_SWITCH, Switch } from "../src/switch.tsx";
 import { TextField } from "../src/text-field.tsx";
 import { TextLink } from "../src/text-link.tsx";
 import { LIGHT_CONTROLS } from "../src/theme/controls.ts";
+import { INK_PAPER, INK_TEXT } from "../src/theme/inks.ts";
 import { lightColors } from "../src/theme/palette.ts";
 import { noop } from "./support/controls-view.ts";
 import { fakeClockEachTest } from "./support/time.ts";
@@ -53,6 +54,21 @@ test("Switch: the panel look is 46 × 28, its off track an outline; on is the on
   expect(node("window")?.props).toMatchObject({ background: lightColors.selection, access: { role: "switch", label: "Wi-Fi", checked: true } });
   expect(node("panel-on")?.props).toMatchObject({ width: PANEL_SWITCH.width, height: PANEL_SWITCH.height, background: lightColors.selection });
   expect(node("panel-off")?.props).toMatchObject({ borderWidth: PANEL_SWITCH.edge, borderColor: LIGHT_CONTROLS.muted });
+  root.unmount();
+});
+
+test("Switch: the inks look is the widget area's, 36 × 20 in the Inks' ink, never the accent", async () => {
+  const { node, root } = await sent(
+    <View>
+      <Switch testID="inks-on" look="inks" on label="May go on air" onChange={noop} />
+      <Switch testID="inks-off" look="inks" on={false} label="May go on air" onChange={noop} />
+    </View>,
+  );
+  expect(node("inks-on")?.props).toMatchObject({ width: INKS_SWITCH.width, height: INKS_SWITCH.height, background: INK_TEXT.light.ink });
+  expect(node("inks-on")?.props).toMatchObject({ access: { role: "switch", label: "May go on air", checked: true }, focusable: true });
+  expect(node("inks-off")?.props.background).toBe(INK_TEXT.light.hairline);
+  expect(node("inks-on")?.props.background).not.toBe(lightColors.selection);
+  expect(INK_PAPER.light).toBeDefined();
   root.unmount();
 });
 

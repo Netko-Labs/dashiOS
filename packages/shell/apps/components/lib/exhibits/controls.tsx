@@ -183,6 +183,11 @@ export function SwitchesPage() {
           )}
         </States>
       </Exhibit>
+      <Exhibit title="Switch, inks" note="The widget area's (the gallery's May go on air): ink and paper, never the accent.">
+        <States states={["enabled", "focused", "disabled"]}>
+          {({ state, disabled }) => <Switch testID={`switch-inks:${state}`} look="inks" on={on} onChange={setOn} disabled={disabled} />}
+        </States>
+      </Exhibit>
       <Exhibit title="Slider" note="A setting's slider: press or drag; the value is committed once, when the button lifts.">
         <States states={["enabled", "focused", "disabled"]}>
           {({ state, disabled }) => (
